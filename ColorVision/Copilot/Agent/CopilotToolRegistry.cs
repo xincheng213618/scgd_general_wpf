@@ -198,39 +198,12 @@ namespace ColorVision.Copilot
             };
             var tools = localTools
                 .Concat(CopilotSharedCapabilityCatalog.All.Select(definition =>
-                    CreateSharedAgentTool(definition, applicationCapabilities)))
+                    definition.CreateAgentTool(applicationCapabilities)))
                 .ToArray();
             CopilotSharedCapabilityCatalog.ValidateAgentSurface(tools);
             ValidateApplicationCapabilityRuntime(tools, applicationCapabilities);
             return tools;
         }
-
-        private static ICopilotTool CreateSharedAgentTool(
-            CopilotSharedCapabilityDefinition capability,
-            ICopilotApplicationCapabilityInvoker applicationCapabilities) =>
-            capability.Id switch
-            {
-                "docs.search" => new CopilotSearchDocsTool(),
-                "workspace.search-files" => new CopilotSearchFilesTool(),
-                "workspace.grep-text" => new CopilotGrepTextTool(),
-                "workspace.read-file" => new CopilotReadLocalFileTool(),
-                "workspace.list-directory" => new CopilotListDirectoryTool(),
-                "diagnostics.recent-log" => new CopilotGetRecentLogTool(),
-                "template.saved-context" => new CopilotInspectSavedTemplateTool(applicationCapabilities),
-                "template.type-context" => new CopilotInspectTemplateTypeTool(applicationCapabilities),
-                "flow.graph" => new CopilotInspectFlowGraphTool(applicationCapabilities),
-                "flow.node-catalog" => new CopilotSearchFlowNodeCatalogTool(applicationCapabilities),
-                "flow.preview-patch" => new CopilotPreviewFlowPatchTool(applicationCapabilities),
-                "flow.apply-patch" => new CopilotApplyFlowPatchTool(applicationCapabilities),
-                "application.execute-menu" => new CopilotExecuteMenuTool(applicationCapabilities),
-                "application.create-flow" => new CopilotCreateFlowTool(applicationCapabilities),
-                "template.preview-patch" => new CopilotTemplatePatchTool(applicationCapabilities),
-                "template.apply-patch" => new CopilotApplyTemplatePatchTool(applicationCapabilities),
-                "application.set-theme" => new CopilotSetThemeTool(applicationCapabilities),
-                "application.set-language" => new CopilotSetLanguageTool(applicationCapabilities),
-                _ => throw new InvalidOperationException(
-                    $"Shared capability '{capability.Id}' does not have an Agent tool adapter."),
-            };
 
         private static void ValidateApplicationCapabilityRuntime(
             IEnumerable<ICopilotTool> tools,

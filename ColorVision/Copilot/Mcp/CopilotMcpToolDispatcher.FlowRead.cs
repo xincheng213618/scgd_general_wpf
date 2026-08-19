@@ -18,7 +18,7 @@ namespace ColorVision.Copilot.Mcp
             return CopilotMcpToolCallResult.Ok(FormatFlowSnapshot(snapshot));
         }
 
-        private async Task<CopilotMcpToolCallResult> GetFlowGraphAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        internal async Task<CopilotMcpToolCallResult> GetFlowGraphAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
         {
             var snapshot = await _environment.FlowSnapshotProvider(cancellationToken);
             if (snapshot == null)
@@ -71,7 +71,7 @@ namespace ColorVision.Copilot.Mcp
             return CopilotMcpToolCallResult.Ok(JsonSerializer.Serialize(payload, StructuredJsonOptions));
         }
 
-        private async Task<CopilotMcpToolCallResult> GetFlowNodeCatalogAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        internal async Task<CopilotMcpToolCallResult> GetFlowNodeCatalogAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
         {
             var query = GetString(arguments, "query");
             var maxResults = Math.Clamp(GetInt(arguments, "max_results") ?? 30, 1, 100);

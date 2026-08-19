@@ -77,7 +77,7 @@ namespace ColorVision.Copilot.Mcp
             return new CopilotPanelTarget(string.IsNullOrWhiteSpace(normalizedAlias) ? "copilot" : normalizedAlias, targetId);
         }
 
-        private async Task<CopilotMcpToolCallResult> ExecuteMenuAsync(
+        internal async Task<CopilotMcpToolCallResult> ExecuteMenuAsync(
             IReadOnlyDictionary<string, JsonElement>? arguments,
             CopilotExecutionScope executionScope,
             CancellationToken cancellationToken)

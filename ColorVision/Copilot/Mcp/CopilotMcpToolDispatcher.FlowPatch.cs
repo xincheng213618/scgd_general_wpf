@@ -8,14 +8,14 @@ namespace ColorVision.Copilot.Mcp
 {
     internal sealed partial class CopilotMcpToolDispatcher
     {
-        private async Task<CopilotMcpToolCallResult> PreviewFlowPatchAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        internal async Task<CopilotMcpToolCallResult> PreviewFlowPatchAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
         {
             if (!TryBuildFlowPatchRequest(arguments, out var request, out var error))
                 return CopilotMcpToolCallResult.Fail("invalid_flow_patch", error);
             return await _environment.PreviewFlowPatchHandler(request, cancellationToken);
         }
 
-        private async Task<CopilotMcpToolCallResult> ApplyFlowPatchAsync(
+        internal async Task<CopilotMcpToolCallResult> ApplyFlowPatchAsync(
             IReadOnlyDictionary<string, JsonElement>? arguments,
             CopilotExecutionScope executionScope,
             CancellationToken cancellationToken)

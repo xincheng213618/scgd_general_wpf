@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
@@ -98,9 +99,29 @@ namespace ColorVision.Copilot
         CopilotSharedCapabilityMcpMetadata McpMetadata,
         CopilotSharedCapabilityPresentation Presentation,
         CopilotSharedCapabilityExecutionRoute ExecutionRoute,
+        Func<ICopilotApplicationCapabilityInvoker, ICopilotTool> AgentToolFactory,
+        Func<CopilotMcpToolDispatcher, CopilotScopedMcpToolHandler> McpHandlerFactory,
         string InputContractDifference = "")
     {
         public bool SharesInputSchema => ReferenceEquals(AgentInputSchema, McpInputSchema);
+
+        public ICopilotTool CreateAgentTool(
+            ICopilotApplicationCapabilityInvoker applicationCapabilities)
+        {
+            ArgumentNullException.ThrowIfNull(applicationCapabilities);
+            return AgentToolFactory(applicationCapabilities)
+                ?? throw new InvalidOperationException(
+                    $"Shared capability '{Id}' returned no Agent tool binding.");
+        }
+
+        public CopilotScopedMcpToolHandler CreateMcpHandler(
+            CopilotMcpToolDispatcher dispatcher)
+        {
+            ArgumentNullException.ThrowIfNull(dispatcher);
+            return McpHandlerFactory(dispatcher)
+                ?? throw new InvalidOperationException(
+                    $"Shared capability '{Id}' returned no MCP handler binding.");
+        }
 
         public CopilotSharedCapabilitySafetyClass SafetyClass =>
             (AgentCapability.Access, AgentCapability.RiskLevel, AgentCapability.ApprovalMode) switch
@@ -290,6 +311,8 @@ namespace ColorVision.Copilot
                 CopilotSharedAgentToolNames.SearchDocs,
                 "search_docs",
                 SearchDocsInputSchema,
+                _ => new CopilotSearchDocsTool(),
+                dispatcher => (arguments, _, token) => dispatcher.SearchDocsAsync(arguments, token),
                 executionRoute: CopilotSharedCapabilityExecutionRoute.SurfaceCapabilityAdapter,
                 evidenceMode: CopilotToolEvidenceMode.RedactedExcerpt,
                 agentDescription: "Search the ColorVision online documentation index and return the most relevant snippets by section, page, and heading. Useful for software usage, menus, devices, plugins, developer guides, and architecture questions.",
@@ -305,6 +328,8 @@ namespace ColorVision.Copilot
                 CopilotSharedAgentToolNames.SearchFiles,
                 "search_files",
                 SearchFilesInputSchema,
+                _ => new CopilotSearchFilesTool(),
+                dispatcher => (arguments, scope, token) => Task.FromResult(dispatcher.SearchFiles(arguments, scope, token)),
                 executionRoute: CopilotSharedCapabilityExecutionRoute.WorkspaceAuthorizationAdapter,
                 agentDescription: "Find one stable bounded page of candidate files by file name or path fragment, optionally limited to one workspace directory, with a continuation cursor when more matches remain. A completed empty search is successful evidence, not a tool failure; inspect scan_complete before concluding that a file is absent.",
                 mcpDescription: "Search one stable bounded page of file names and relative paths under allowed ColorVision workspace roots. Required argument: query. Optional: path, cursor.",
@@ -316,6 +341,8 @@ namespace ColorVision.Copilot
                 CopilotSharedAgentToolNames.GrepText,
                 "grep_text",
                 GrepTextInputSchema,
+                _ => new CopilotGrepTextTool(),
+                dispatcher => (arguments, scope, token) => Task.FromResult(dispatcher.GrepText(arguments, scope, token)),
                 executionRoute: CopilotSharedCapabilityExecutionRoute.WorkspaceAuthorizationAdapter,
                 agentDescription: "Search one stable bounded page of workspace text matches, optionally limited to one workspace file or directory, with an opaque continuation cursor when more matches remain. A completed empty search is successful evidence, not a tool failure; inspect scan_complete before concluding that text is absent.",
                 mcpDescription: "Search one stable bounded page of text matches under allowed ColorVision workspace roots using a literal case-insensitive query. The optional path may identify one file or directory. Required argument: query. Optional: path, cursor.",
@@ -329,6 +356,8 @@ namespace ColorVision.Copilot
                 ReadAllowedFileAgentInputSchema,
                 ReadAllowedFileMcpInputSchema,
                 "Agent calls may omit path to batch-read preselected files; external MCP calls require one explicit file path.",
+                _ => new CopilotReadLocalFileTool(),
+                dispatcher => (arguments, scope, token) => dispatcher.ReadAllowedFileAsync(arguments, scope, token),
                 executionRoute: CopilotSharedCapabilityExecutionRoute.WorkspaceAuthorizationAdapter,
                 agentDescription: "Read bounded local text allowed for the current round, prefix every returned source line with its authoritative one-based L<number>: coordinate, and report a safe line-and-column continuation cursor when content is truncated. When multiple exact files are preselected, omit path and line range to batch-read one task-focused evidence window from every file in one call. Otherwise, for known files or symbols, use GrepText on each exact file first and request focused line ranges; an unbounded read intentionally returns only the first bounded segment.",
                 mcpDescription: "Read a text file only if it is under an allowed ColorVision workspace root. Required argument: path. Optional: start_line, start_column, end_line.",
@@ -340,6 +369,8 @@ namespace ColorVision.Copilot
                 CopilotSharedAgentToolNames.ListDirectory,
                 "list_allowed_directory",
                 ListAllowedDirectoryInputSchema,
+                _ => new CopilotListDirectoryTool(),
+                dispatcher => (arguments, scope, token) => Task.FromResult(dispatcher.ListAllowedDirectory(arguments, scope, token)),
                 executionRoute: CopilotSharedCapabilityExecutionRoute.WorkspaceAuthorizationAdapter,
                 agentDescription: "List one stable, bounded page of files and subdirectories from an allowed local directory, with an opaque continuation cursor when more entries remain.",
                 mcpDescription: "List one stable bounded directory page only if it is under an allowed ColorVision workspace root. Optional arguments: path, cursor.",
@@ -351,6 +382,8 @@ namespace ColorVision.Copilot
                 CopilotSharedAgentToolNames.GetRecentLog,
                 "get_recent_log",
                 RecentLogInputSchema,
+                _ => new CopilotGetRecentLogTool(),
+                dispatcher => (arguments, _, token) => dispatcher.GetRecentLogAsync(arguments, token),
                 executionRoute: CopilotSharedCapabilityExecutionRoute.SurfaceCapabilityAdapter,
                 agentDescription: "Read recent ColorVision application logs for failure or exception diagnosis. Do not use this tool for Windows version, port, process, service, or other machine-state inspection.",
                 mcpDescription: "Read recent ColorVision application log lines. Optional arguments: query, max_lines.",
@@ -362,6 +395,8 @@ namespace ColorVision.Copilot
                 CopilotSharedAgentToolNames.InspectSavedTemplate,
                 "get_saved_template_context",
                 SavedTemplateContextInputSchema,
+                applicationCapabilities => new CopilotInspectSavedTemplateTool(applicationCapabilities),
+                _ => (arguments, _, _) => Task.FromResult(CopilotMcpToolDispatcher.GetSavedTemplateContext(arguments)),
                 executionTimeout: TimeSpan.FromSeconds(15),
                 auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
                 agentDescription: "Read the exact saved template attached with @ as a bounded, redacted, read-only in-memory snapshot. Use the template_code and template_name from that reference before describing its values. This never queries the database, modifies, or saves a template.",
@@ -375,6 +410,8 @@ namespace ColorVision.Copilot
                 CopilotSharedAgentToolNames.InspectTemplateType,
                 "get_template_type_context",
                 TemplateTypeContextInputSchema,
+                applicationCapabilities => new CopilotInspectTemplateTypeTool(applicationCapabilities),
+                _ => (arguments, _, _) => Task.FromResult(CopilotMcpToolDispatcher.GetTemplateTypeContext(arguments)),
                 executionTimeout: TimeSpan.FromSeconds(15),
                 auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
                 agentDescription: "Inspect the template type attached with @ as bounded read-only metadata: identity, loaded saved names, and browsable parameter field schema without values. Use its exact template_code. This never queries the database, reads template values, modifies, or saves a template.",
@@ -388,6 +425,8 @@ namespace ColorVision.Copilot
                 CopilotSharedAgentToolNames.InspectFlowGraph,
                 "get_flow_graph",
                 FlowGraphInputSchema,
+                applicationCapabilities => new CopilotInspectFlowGraphTool(applicationCapabilities),
+                dispatcher => (arguments, _, token) => dispatcher.GetFlowGraphAsync(arguments, token),
                 executionTimeout: TimeSpan.FromSeconds(15),
                 auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
                 agentDescription: "Inspect the active ColorVision flow as a structured graph with a revision, stable node ids, exact runtime type keys, ports, and edges. Use this instead of reading the binary .stn file.",
@@ -401,6 +440,8 @@ namespace ColorVision.Copilot
                 CopilotSharedAgentToolNames.SearchFlowNodeCatalog,
                 "get_flow_node_catalog",
                 FlowNodeCatalogInputSchema,
+                applicationCapabilities => new CopilotSearchFlowNodeCatalogTool(applicationCapabilities),
+                dispatcher => (arguments, _, token) => dispatcher.GetFlowNodeCatalogAsync(arguments, token),
                 executionTimeout: TimeSpan.FromSeconds(15),
                 auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
                 agentDescription: "Search the node types loaded by the active Flow editor. Returns exact type keys and writable property schemas. Search first and never guess which camera node the user means.",
@@ -414,6 +455,8 @@ namespace ColorVision.Copilot
                 CopilotSharedAgentToolNames.PreviewFlowPatch,
                 "preview_flow_patch",
                 FlowPatchInputSchema,
+                applicationCapabilities => new CopilotPreviewFlowPatchTool(applicationCapabilities),
+                dispatcher => (arguments, _, token) => dispatcher.PreviewFlowPatchAsync(arguments, token),
                 executionTimeout: TimeSpan.FromSeconds(15),
                 auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
                 agentDescription: "Validate exactly one add_node, set_property, or connect operation against the active Flow graph revision. Use exact ids, port ids, and type keys from the read tools. This never edits, saves, or runs the flow.",
@@ -427,6 +470,8 @@ namespace ColorVision.Copilot
                 CopilotSharedAgentToolNames.ApplyFlowPatch,
                 "apply_flow_patch",
                 FlowPatchInputSchema,
+                applicationCapabilities => new CopilotApplyFlowPatchTool(applicationCapabilities),
+                dispatcher => (arguments, scope, token) => dispatcher.ApplyFlowPatchAsync(arguments, scope, token),
                 CopilotSharedCapabilitySafetyClass.ApprovalRequiredWrite,
                 CopilotToolIdempotency.NonIdempotent,
                 auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
@@ -448,6 +493,8 @@ namespace ColorVision.Copilot
                 ExecuteMenuAgentInputSchema,
                 ExecuteMenuMcpInputSchema,
                 "The Agent surface exposes only the approval-bound execution path; external MCP also exposes dry_run resolution.",
+                applicationCapabilities => new CopilotExecuteMenuTool(applicationCapabilities),
+                dispatcher => (arguments, scope, token) => dispatcher.ExecuteMenuAsync(arguments, scope, token),
                 CopilotSharedCapabilitySafetyClass.ApprovalRequiredWrite,
                 CopilotToolIdempotency.Unknown,
                 agentDescription: "Execute a generic main-menu command by exact menu selector, name, or path after explicit approval. For an attached @ menu reference, copy its ExecuteMenu query value exactly into input.query. Prefer dedicated tools such as SetTheme, ConvertBatchImages, or OpenBatchImageProcessing when available; never use this generic fallback for batch image conversion or processing.",
@@ -467,6 +514,8 @@ namespace ColorVision.Copilot
                 CopilotSharedAgentToolNames.CreateFlow,
                 "create_flow",
                 CreateFlowInputSchema,
+                applicationCapabilities => new CopilotCreateFlowTool(applicationCapabilities),
+                dispatcher => (arguments, scope, token) => dispatcher.CreateFlowAsync(arguments, scope, token),
                 CopilotSharedCapabilitySafetyClass.ApprovalRequiredWrite,
                 CopilotToolIdempotency.NonIdempotent,
                 agentDescription: "Create a new empty ColorVision flow after explicit user approval. Put the optional requested flow name in input.name; omit it to generate a timestamped name. This tool stages the action and never opens the flow-template manager.",
@@ -482,6 +531,8 @@ namespace ColorVision.Copilot
                 CopilotSharedAgentToolNames.TemplatePatch,
                 "preview_template_patch",
                 PreviewTemplatePatchInputSchema,
+                applicationCapabilities => new CopilotTemplatePatchTool(applicationCapabilities),
+                dispatcher => (arguments, _, _) => Task.FromResult(dispatcher.PreviewTemplatePatch(arguments)),
                 idempotency: CopilotToolIdempotency.Unknown,
                 agentDescription: "Preview guarded changes to the active template JSON with template_identifier and proposed_changes. This function never applies or saves the template; use ApplyTemplatePatch for an existing preview.",
                 mcpDescription: "Preview a proposed template JSON patch without saving it. Required arguments: template_identifier, proposed_changes. Optional: current_json.",
@@ -494,6 +545,8 @@ namespace ColorVision.Copilot
                 CopilotSharedAgentToolNames.ApplyTemplatePatch,
                 "apply_template_patch",
                 ApplyTemplatePatchInputSchema,
+                applicationCapabilities => new CopilotApplyTemplatePatchTool(applicationCapabilities),
+                dispatcher => (arguments, scope, token) => dispatcher.ApplyTemplatePatchAsync(arguments, scope, token),
                 CopilotSharedCapabilitySafetyClass.ApprovalRequiredWrite,
                 CopilotToolIdempotency.NonIdempotent,
                 agentDescription: "Apply an existing guarded template preview after explicit approval using input.preview_id. The change affects only the active editor and does not save the template.",
@@ -512,6 +565,8 @@ namespace ColorVision.Copilot
                 CopilotSharedAgentToolNames.SetTheme,
                 "set_theme",
                 SetThemeInputSchema,
+                applicationCapabilities => new CopilotSetThemeTool(applicationCapabilities),
+                dispatcher => (arguments, _, token) => dispatcher.SetThemeAsync(arguments, token),
                 CopilotSharedCapabilitySafetyClass.LowRiskWrite,
                 CopilotToolIdempotency.Idempotent,
                 agentDescription: "Switch the application theme requested by the user. input.theme is a target such as system, dark, light, pink, or cyan.",
@@ -528,6 +583,8 @@ namespace ColorVision.Copilot
                 CopilotSharedAgentToolNames.SetLanguage,
                 "set_language",
                 SetLanguageInputSchema,
+                applicationCapabilities => new CopilotSetLanguageTool(applicationCapabilities),
+                dispatcher => (arguments, scope, token) => dispatcher.SetLanguageAsync(arguments, scope, token),
                 CopilotSharedCapabilitySafetyClass.ApprovalRequiredWrite,
                 CopilotToolIdempotency.Idempotent,
                 agentDescription: "Switch the UI language requested by the user. input.language accepts a language or culture name such as English, Chinese, en-US, or zh-Hans. The change may ask for confirmation and restart the application.",
@@ -845,6 +902,8 @@ namespace ColorVision.Copilot
             string agentToolName,
             string mcpToolName,
             CopilotToolInputSchema inputSchema,
+            Func<ICopilotApplicationCapabilityInvoker, ICopilotTool> agentToolFactory,
+            Func<CopilotMcpToolDispatcher, CopilotScopedMcpToolHandler> mcpHandlerFactory,
             CopilotSharedCapabilitySafetyClass safetyClass = CopilotSharedCapabilitySafetyClass.ReadOnly,
             CopilotToolIdempotency idempotency = CopilotToolIdempotency.Idempotent,
             TimeSpan? executionTimeout = null,
@@ -866,7 +925,9 @@ namespace ColorVision.Copilot
                 approvalMetadata,
                 mcpMetadata,
                 presentation,
-                executionRoute);
+                executionRoute,
+                agentToolFactory,
+                mcpHandlerFactory);
             return new CopilotSharedCapabilityDefinition(
                 id,
                 agentToolName,
@@ -884,7 +945,9 @@ namespace ColorVision.Copilot
                 approvalMetadata,
                 mcpMetadata!,
                 presentation!,
-                executionRoute);
+                executionRoute,
+                agentToolFactory,
+                mcpHandlerFactory);
         }
 
         private static CopilotSharedCapabilityDefinition SurfaceSpecific(
@@ -894,6 +957,8 @@ namespace ColorVision.Copilot
             CopilotToolInputSchema agentInputSchema,
             CopilotToolInputSchema mcpInputSchema,
             string difference,
+            Func<ICopilotApplicationCapabilityInvoker, ICopilotTool> agentToolFactory,
+            Func<CopilotMcpToolDispatcher, CopilotScopedMcpToolHandler> mcpHandlerFactory,
             CopilotSharedCapabilitySafetyClass safetyClass = CopilotSharedCapabilitySafetyClass.ReadOnly,
             CopilotToolIdempotency idempotency = CopilotToolIdempotency.Idempotent,
             TimeSpan? executionTimeout = null,
@@ -916,7 +981,9 @@ namespace ColorVision.Copilot
                 approvalMetadata,
                 mcpMetadata,
                 presentation,
-                executionRoute);
+                executionRoute,
+                agentToolFactory,
+                mcpHandlerFactory);
             return new CopilotSharedCapabilityDefinition(
                 id,
                 agentToolName,
@@ -935,6 +1002,8 @@ namespace ColorVision.Copilot
                 mcpMetadata!,
                 presentation!,
                 executionRoute,
+                agentToolFactory,
+                mcpHandlerFactory,
                 difference);
         }
 
@@ -945,7 +1014,9 @@ namespace ColorVision.Copilot
             CopilotSharedCapabilityApprovalMetadata approvalMetadata,
             CopilotSharedCapabilityMcpMetadata? mcpMetadata,
             CopilotSharedCapabilityPresentation? presentation,
-            CopilotSharedCapabilityExecutionRoute executionRoute)
+            CopilotSharedCapabilityExecutionRoute executionRoute,
+            Func<ICopilotApplicationCapabilityInvoker, ICopilotTool> agentToolFactory,
+            Func<CopilotMcpToolDispatcher, CopilotScopedMcpToolHandler> mcpHandlerFactory)
         {
             if (string.IsNullOrWhiteSpace(agentDescription)
                 || string.IsNullOrWhiteSpace(mcpDescription))
@@ -971,6 +1042,8 @@ namespace ColorVision.Copilot
             if (!Enum.IsDefined(executionRoute)
                 || executionRoute == CopilotSharedCapabilityExecutionRoute.Unspecified)
                 throw new ArgumentOutOfRangeException(nameof(executionRoute));
+            ArgumentNullException.ThrowIfNull(agentToolFactory);
+            ArgumentNullException.ThrowIfNull(mcpHandlerFactory);
         }
 
         private static CopilotSharedCapabilityPresentation Presentation(

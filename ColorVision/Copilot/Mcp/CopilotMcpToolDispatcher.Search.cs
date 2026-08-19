@@ -11,7 +11,7 @@ namespace ColorVision.Copilot.Mcp
 {
     internal sealed partial class CopilotMcpToolDispatcher
     {
-        private async Task<CopilotMcpToolCallResult> GetRecentLogAsync(
+        internal async Task<CopilotMcpToolCallResult> GetRecentLogAsync(
             IReadOnlyDictionary<string, JsonElement>? arguments,
             CancellationToken cancellationToken)
         {
@@ -26,7 +26,7 @@ namespace ColorVision.Copilot.Mcp
             return ToMcpResult(result, "log_unavailable");
         }
 
-        private async Task<CopilotMcpToolCallResult> SearchDocsAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        internal async Task<CopilotMcpToolCallResult> SearchDocsAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
         {
             var query = GetString(arguments, "query");
             if (string.IsNullOrWhiteSpace(query))
@@ -36,7 +36,7 @@ namespace ColorVision.Copilot.Mcp
             return ToMcpResult(result, "docs_search_failed");
         }
 
-        private CopilotMcpToolCallResult SearchFiles(
+        internal CopilotMcpToolCallResult SearchFiles(
             IReadOnlyDictionary<string, JsonElement>? arguments,
             CopilotExecutionScope executionScope,
             CancellationToken cancellationToken)
@@ -71,7 +71,7 @@ namespace ColorVision.Copilot.Mcp
             return ToMcpResult(result.ToCapabilityResult(), "file_search_failed");
         }
 
-        private CopilotMcpToolCallResult GrepText(
+        internal CopilotMcpToolCallResult GrepText(
             IReadOnlyDictionary<string, JsonElement>? arguments,
             CopilotExecutionScope executionScope,
             CancellationToken cancellationToken)
@@ -99,7 +99,7 @@ namespace ColorVision.Copilot.Mcp
             return ToMcpResult(result.ToCapabilityResult(), "grep_failed");
         }
 
-        private async Task<CopilotMcpToolCallResult> ReadAllowedFileAsync(
+        internal async Task<CopilotMcpToolCallResult> ReadAllowedFileAsync(
             IReadOnlyDictionary<string, JsonElement>? arguments,
             CopilotExecutionScope executionScope,
             CancellationToken cancellationToken)
@@ -130,7 +130,7 @@ namespace ColorVision.Copilot.Mcp
             return ToMcpResult(result, "read_failed");
         }
 
-        private CopilotMcpToolCallResult ListAllowedDirectory(
+        internal CopilotMcpToolCallResult ListAllowedDirectory(
             IReadOnlyDictionary<string, JsonElement>? arguments,
             CopilotExecutionScope executionScope,
             CancellationToken cancellationToken)

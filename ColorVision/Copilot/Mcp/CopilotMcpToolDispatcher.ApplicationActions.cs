@@ -9,7 +9,7 @@ namespace ColorVision.Copilot.Mcp
 {
     internal sealed partial class CopilotMcpToolDispatcher
     {
-        private async Task<CopilotMcpToolCallResult> CreateFlowAsync(
+        internal async Task<CopilotMcpToolCallResult> CreateFlowAsync(
             IReadOnlyDictionary<string, JsonElement>? arguments,
             CopilotExecutionScope executionScope,
             CancellationToken cancellationToken)
@@ -60,7 +60,7 @@ namespace ColorVision.Copilot.Mcp
                 cancellationToken);
         }
 
-        private async Task<CopilotMcpToolCallResult> SetThemeAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        internal async Task<CopilotMcpToolCallResult> SetThemeAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
         {
             var themeQuery = FirstNonEmpty(GetString(arguments, "theme"), GetString(arguments, "query"));
             if (string.IsNullOrWhiteSpace(themeQuery))
@@ -73,7 +73,7 @@ namespace ColorVision.Copilot.Mcp
             return ToMcpResult(result, "theme_change_failed");
         }
 
-        private async Task<CopilotMcpToolCallResult> SetLanguageAsync(
+        internal async Task<CopilotMcpToolCallResult> SetLanguageAsync(
             IReadOnlyDictionary<string, JsonElement>? arguments,
             CopilotExecutionScope executionScope,
             CancellationToken cancellationToken)

@@ -539,6 +539,22 @@ public sealed class CopilotSharedCapabilityCatalogTests
     }
 
     [Fact]
+    public void EverySharedCapabilityOwnsBothRuntimeBindings()
+    {
+        var applicationCapabilities = CopilotApplicationCapabilityInvokerFactory.CreateDefault();
+        var mcpDispatcher = new CopilotMcpToolDispatcher();
+
+        foreach (var definition in CopilotSharedCapabilityCatalog.All)
+        {
+            var agentTool = definition.CreateAgentTool(applicationCapabilities);
+            var mcpHandler = definition.CreateMcpHandler(mcpDispatcher);
+
+            Assert.Equal(definition.AgentToolName, agentTool.Name);
+            Assert.NotNull(mcpHandler);
+        }
+    }
+
+    [Fact]
     public void DefaultApplicationCapabilityRuntimeIsProcessShared()
     {
         var first = CopilotApplicationCapabilityInvokerFactory.CreateDefault();

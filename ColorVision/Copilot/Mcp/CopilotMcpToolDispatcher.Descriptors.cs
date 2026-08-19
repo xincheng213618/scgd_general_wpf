@@ -123,31 +123,6 @@ namespace ColorVision.Copilot.Mcp
                     capability.AgentCapability.Idempotency,
                     capability.McpMetadata.DestructiveHint,
                     capability.McpMetadata.OpenWorldHint),
-                ResolveSharedHandler(capability));
-
-        private CopilotScopedMcpToolHandler ResolveSharedHandler(
-            CopilotSharedCapabilityDefinition capability) => capability.Id switch
-            {
-                "docs.search" => (arguments, _, token) => SearchDocsAsync(arguments, token),
-                "workspace.search-files" => (arguments, scope, token) => Task.FromResult(SearchFiles(arguments, scope, token)),
-                "workspace.grep-text" => (arguments, scope, token) => Task.FromResult(GrepText(arguments, scope, token)),
-                "workspace.read-file" => (arguments, scope, token) => ReadAllowedFileAsync(arguments, scope, token),
-                "workspace.list-directory" => (arguments, scope, token) => Task.FromResult(ListAllowedDirectory(arguments, scope, token)),
-                "diagnostics.recent-log" => (arguments, _, token) => GetRecentLogAsync(arguments, token),
-                "template.saved-context" => (arguments, _, _) => Task.FromResult(GetSavedTemplateContext(arguments)),
-                "template.type-context" => (arguments, _, _) => Task.FromResult(GetTemplateTypeContext(arguments)),
-                "flow.graph" => (arguments, _, token) => GetFlowGraphAsync(arguments, token),
-                "flow.node-catalog" => (arguments, _, token) => GetFlowNodeCatalogAsync(arguments, token),
-                "flow.preview-patch" => (arguments, _, token) => PreviewFlowPatchAsync(arguments, token),
-                "flow.apply-patch" => (arguments, scope, token) => ApplyFlowPatchAsync(arguments, scope, token),
-                "application.execute-menu" => (arguments, scope, token) => ExecuteMenuAsync(arguments, scope, token),
-                "application.create-flow" => (arguments, scope, token) => CreateFlowAsync(arguments, scope, token),
-                "template.preview-patch" => (arguments, _, _) => Task.FromResult(PreviewTemplatePatch(arguments)),
-                "template.apply-patch" => (arguments, scope, token) => ApplyTemplatePatchAsync(arguments, scope, token),
-                "application.set-theme" => (arguments, _, token) => SetThemeAsync(arguments, token),
-                "application.set-language" => (arguments, scope, token) => SetLanguageAsync(arguments, scope, token),
-                _ => throw new InvalidOperationException(
-                    $"Shared capability '{capability.Id}' does not have an MCP execution handler."),
-            };
+                capability.CreateMcpHandler(this));
     }
 }
