@@ -19,6 +19,19 @@ public class AppResponsiveLayoutTest {
     }
 
     @Test
+    public void compactWindowsUseBottomNavigation() {
+        assertFalse(AppResponsiveLayout.usesNavigationRail(360));
+        assertFalse(AppResponsiveLayout.usesNavigationRail(599));
+    }
+
+    @Test
+    public void mediumAndExpandedWindowsUseNavigationRail() {
+        assertTrue(AppResponsiveLayout.usesNavigationRail(600));
+        assertTrue(AppResponsiveLayout.usesNavigationRail(840));
+        assertFalse(AppResponsiveLayout.usesNavigationRail(0));
+    }
+
+    @Test
     public void largeFontUsesSingleColumnLayoutsAcrossTheApp() {
         assertTrue(AppResponsiveLayout.usesSingleColumn(600, 1.2f));
         assertTrue(AppResponsiveLayout.usesSingleColumn(840, 1.3f));

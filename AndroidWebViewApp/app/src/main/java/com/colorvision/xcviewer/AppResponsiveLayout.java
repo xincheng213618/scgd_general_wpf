@@ -14,6 +14,10 @@ final class AppResponsiveLayout {
         return compactWidth || largeFont;
     }
 
+    static boolean usesNavigationRail(int screenWidthDp) {
+        return screenWidthDp > COMPACT_WIDTH_MAX_DP;
+    }
+
     static boolean usesStackedControlRow(int screenWidthDp, float fontScale) {
         return screenWidthDp > 0
                 && Float.isFinite(fontScale)

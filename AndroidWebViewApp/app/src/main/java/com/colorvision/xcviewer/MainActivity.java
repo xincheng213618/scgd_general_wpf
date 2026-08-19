@@ -21,6 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.content.FileProvider;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -31,6 +32,8 @@ import androidx.core.widget.TextViewCompat;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.navigation.NavigationBarView;
+import com.google.android.material.navigationrail.NavigationRailView;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
 
@@ -58,13 +61,15 @@ public class MainActivity extends AppCompatActivity {
     private FrameLayout root;
     private LinearLayout appShell;
     private FrameLayout setupContainer;
+    private CoordinatorLayout snackbarHost;
     private ProgressBar progressBar;
     private AppPreferences appPreferences;
     private ThemeManager themeManager;
     private TextView headerTitle;
     private TextView headerSubtitle;
-    private BottomNavigationView bottomNavigation;
-    private boolean updatingBottomNavigation;
+    private NavigationBarView topLevelNavigation;
+    private boolean navigationRail;
+    private boolean updatingTopLevelNavigation;
     private boolean openedFromOperations;
     private int currentTab = TAB_OPERATIONS;
     private String lastNotificationPermissionStatus = "";
@@ -125,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT));
 
-        applyTopSystemBarInset(root);
+        applySystemBarInsets(root);
         setContentView(root);
         ViewCompat.requestApplyInsets(root);
 
@@ -185,22 +190,42 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private LinearLayout createAppShell() {
+        navigationRail = AppResponsiveLayout.usesNavigationRail(
+                getResources().getConfiguration().screenWidthDp);
         LinearLayout shell = new LinearLayout(this);
-        shell.setOrientation(LinearLayout.VERTICAL);
+        shell.setOrientation(navigationRail
+                ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
         shell.setBackgroundColor(shellBackgroundColor());
-        shell.addView(createTopBar(), new LinearLayout.LayoutParams(
+        LinearLayout workspace = new LinearLayout(this);
+        workspace.setOrientation(LinearLayout.VERTICAL);
+        workspace.setBackgroundColor(shellBackgroundColor());
+        workspace.addView(createTopBar(), new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
 
-        shell.addView(setupContainer, new LinearLayout.LayoutParams(
+        workspace.addView(setupContainer, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 0,
                 1));
+        snackbarHost = new CoordinatorLayout(this);
+        snackbarHost.addView(workspace, new CoordinatorLayout.LayoutParams(
+                CoordinatorLayout.LayoutParams.MATCH_PARENT,
+                CoordinatorLayout.LayoutParams.MATCH_PARENT));
 
-        bottomNavigation = createBottomNav();
-        shell.addView(bottomNavigation, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
+        topLevelNavigation = createTopLevelNavigation();
+        if (navigationRail) {
+            shell.addView(topLevelNavigation, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT));
+            shell.addView(snackbarHost, new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+        } else {
+            shell.addView(snackbarHost, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
+            shell.addView(topLevelNavigation, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+        }
         return shell;
     }
 
@@ -232,10 +257,14 @@ public class MainActivity extends AppCompatActivity {
         return bar;
     }
 
-    private BottomNavigationView createBottomNav() {
-        BottomNavigationView nav = new BottomNavigationView(this);
+    private NavigationBarView createTopLevelNavigation() {
+        NavigationBarView nav = navigationRail
+                ? new NavigationRailView(this) : new BottomNavigationView(this);
         nav.setBackgroundColor(bottomNavBackgroundColor());
-        nav.setLabelVisibilityMode(BottomNavigationView.LABEL_VISIBILITY_LABELED);
+        nav.setLabelVisibilityMode(NavigationBarView.LABEL_VISIBILITY_LABELED);
+        if (nav instanceof NavigationRailView) {
+            ((NavigationRailView) nav).setMenuGravity(Gravity.CENTER);
+        }
         nav.getMenu().add(0, NAV_OPERATIONS, 0, "概览").setIcon(R.drawable.ic_devices_24);
         nav.getMenu().add(0, NAV_PROBLEMS, 1, "问题")
                 .setIcon(R.drawable.ic_report_problem_24);
@@ -243,7 +272,7 @@ public class MainActivity extends AppCompatActivity {
         nav.getMenu().add(0, NAV_SETTINGS, 3, "设置").setIcon(R.drawable.ic_settings_24);
         renderProblemNavigationBadge(nav);
         nav.setOnItemSelectedListener(item -> {
-            if (updatingBottomNavigation) {
+            if (updatingTopLevelNavigation) {
                 return true;
             }
             if (item.getItemId() == NAV_OPERATIONS) {
@@ -271,7 +300,7 @@ public class MainActivity extends AppCompatActivity {
         return nav;
     }
 
-    private void renderProblemNavigationBadge(BottomNavigationView navigation) {
+    private void renderProblemNavigationBadge(NavigationBarView navigation) {
         OperationsProblemBadgeRenderer.render(
                 navigation,
                 NAV_PROBLEMS,
@@ -283,15 +312,15 @@ public class MainActivity extends AppCompatActivity {
 
     private void selectTab(int tab) {
         currentTab = tab;
-        if (bottomNavigation == null) {
+        if (topLevelNavigation == null) {
             return;
         }
         int itemId = tab == TAB_SETTINGS
                 ? NAV_SETTINGS : tab == TAB_TOOLS ? NAV_TOOLS : NAV_OPERATIONS;
-        if (bottomNavigation.getSelectedItemId() != itemId) {
-            updatingBottomNavigation = true;
-            bottomNavigation.setSelectedItemId(itemId);
-            updatingBottomNavigation = false;
+        if (topLevelNavigation.getSelectedItemId() != itemId) {
+            updatingTopLevelNavigation = true;
+            topLevelNavigation.setSelectedItemId(itemId);
+            updatingTopLevelNavigation = false;
         }
     }
 
@@ -545,10 +574,7 @@ public class MainActivity extends AppCompatActivity {
         if (watchPreferenceSnackbar != null) {
             watchPreferenceSnackbar.dismiss();
         }
-        watchPreferenceSnackbar = Snackbar.make(root, message, Snackbar.LENGTH_LONG);
-        if (bottomNavigation != null) {
-            watchPreferenceSnackbar.setAnchorView(bottomNavigation);
-        }
+        watchPreferenceSnackbar = Snackbar.make(snackbarHost, message, Snackbar.LENGTH_LONG);
         if (offerReminderAction) {
             watchPreferenceSnackbar.setAction("开启提醒", view -> manageNotificationPermission());
         }
@@ -766,7 +792,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        renderProblemNavigationBadge(bottomNavigation);
+        renderProblemNavigationBadge(topLevelNavigation);
         boolean granted = hasCameraPermission();
         String notificationStatus = appPreferences == null
                 ? "" : notificationPermissionStatus();
@@ -1079,14 +1105,18 @@ public class MainActivity extends AppCompatActivity {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
-    private void applyTopSystemBarInset(View insetHost) {
+    private void applySystemBarInsets(View insetHost) {
         ViewCompat.setOnApplyWindowInsetsListener(insetHost, (view, windowInsets) -> {
             Insets statusBars = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars());
             Insets displayCutout = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout());
+            Insets navigationBars = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.navigationBars());
             int topInset = AppWindowInsetsPolicy.topContentInset(
                     statusBars.top, displayCutout.top);
+            int bottomInset = AppWindowInsetsPolicy.bottomContentInset(
+                    navigationRail, navigationBars.bottom);
             view.setPadding(view.getPaddingLeft(), topInset,
-                    view.getPaddingRight(), view.getPaddingBottom());
+                    view.getPaddingRight(), bottomInset);
             return windowInsets;
         });
     }

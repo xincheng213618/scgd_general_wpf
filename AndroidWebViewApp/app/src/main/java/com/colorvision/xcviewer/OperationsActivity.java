@@ -31,6 +31,7 @@ import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.content.FileProvider;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -45,6 +46,8 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.navigation.NavigationBarView;
+import com.google.android.material.navigationrail.NavigationRailView;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
 
@@ -183,7 +186,9 @@ public class OperationsActivity extends AppCompatActivity {
     private int connectionCheckGeneration;
     private int remoteTaskGeneration;
     private int fleetCheckGeneration;
-    private BottomNavigationView bottomNavigation;
+    private NavigationBarView topLevelNavigation;
+    private CoordinatorLayout snackbarHost;
+    private boolean navigationRail;
     private boolean fleetCheckInFlight;
     private String pendingOperationsDestination = "";
     private String currentDestination = OperationsDestinationState.OVERVIEW;
@@ -193,7 +198,7 @@ public class OperationsActivity extends AppCompatActivity {
     private boolean returnToTriageOnBack;
     private boolean returnToToolboxOnBack;
     private boolean returnToSettingsOnBack;
-    private boolean updatingBottomNavigation;
+    private boolean updatingTopLevelNavigation;
     private boolean updatingTopLevelScroll;
     private boolean settingsConnectionInFlight;
     private NotificationSettingsController notificationSettingsController;
@@ -292,9 +297,15 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void createView() {
+        navigationRail = AppResponsiveLayout.usesNavigationRail(
+                getResources().getConfiguration().screenWidthDp);
         LinearLayout shell = new LinearLayout(this);
-        shell.setOrientation(LinearLayout.VERTICAL);
+        shell.setOrientation(navigationRail
+                ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
         shell.setBackgroundColor(themeManager.pageBackgroundColor());
+        LinearLayout workspace = new LinearLayout(this);
+        workspace.setOrientation(LinearLayout.VERTICAL);
+        workspace.setBackgroundColor(themeManager.pageBackgroundColor());
 
         ScrollView scroll = new ScrollView(this);
         dashboardScroll = scroll;
@@ -375,7 +386,7 @@ public class OperationsActivity extends AppCompatActivity {
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
         header.addView(title, titleParams);
-        shell.addView(header, new LinearLayout.LayoutParams(
+        workspace.addView(header, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
 
@@ -458,33 +469,56 @@ public class OperationsActivity extends AppCompatActivity {
                 dp(4));
         settingsProgressParams.gravity = Gravity.TOP;
         contentHost.addView(settingsProgress, settingsProgressParams);
-        shell.addView(contentHost, new LinearLayout.LayoutParams(
+        workspace.addView(contentHost, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
-        bottomNavigation = createBottomNavigation();
-        shell.addView(bottomNavigation, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-        applyTopSystemBarInset(shell);
+        snackbarHost = new CoordinatorLayout(this);
+        snackbarHost.addView(workspace, new CoordinatorLayout.LayoutParams(
+                CoordinatorLayout.LayoutParams.MATCH_PARENT,
+                CoordinatorLayout.LayoutParams.MATCH_PARENT));
+        topLevelNavigation = createTopLevelNavigation();
+        if (navigationRail) {
+            shell.addView(topLevelNavigation, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT));
+            shell.addView(snackbarHost, new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+        } else {
+            shell.addView(snackbarHost, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
+            shell.addView(topLevelNavigation, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+        }
+        applySystemBarInsets(shell);
         setContentView(shell);
         ViewCompat.requestApplyInsets(shell);
         refreshOperationsTargetPresentation();
     }
 
-    private void applyTopSystemBarInset(View insetHost) {
+    private void applySystemBarInsets(View insetHost) {
         ViewCompat.setOnApplyWindowInsetsListener(insetHost, (view, windowInsets) -> {
             Insets statusBars = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars());
             Insets displayCutout = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout());
+            Insets navigationBars = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.navigationBars());
             int topInset = AppWindowInsetsPolicy.topContentInset(
                     statusBars.top, displayCutout.top);
+            int bottomInset = AppWindowInsetsPolicy.bottomContentInset(
+                    navigationRail, navigationBars.bottom);
             view.setPadding(view.getPaddingLeft(), topInset,
-                    view.getPaddingRight(), view.getPaddingBottom());
+                    view.getPaddingRight(), bottomInset);
             return windowInsets;
         });
     }
 
-    private BottomNavigationView createBottomNavigation() {
-        BottomNavigationView navigation = new BottomNavigationView(this);
+    private NavigationBarView createTopLevelNavigation() {
+        NavigationBarView navigation = navigationRail
+                ? new NavigationRailView(this) : new BottomNavigationView(this);
         navigation.setBackgroundColor(themeManager.bottomNavBackgroundColor());
-        navigation.setLabelVisibilityMode(BottomNavigationView.LABEL_VISIBILITY_LABELED);
+        navigation.setLabelVisibilityMode(NavigationBarView.LABEL_VISIBILITY_LABELED);
+        if (navigation instanceof NavigationRailView) {
+            ((NavigationRailView) navigation).setMenuGravity(Gravity.CENTER);
+        }
         navigation.getMenu().add(0, NAV_OPERATIONS, 0, "概览").setIcon(R.drawable.ic_devices_24);
         navigation.getMenu().add(0, NAV_PROBLEMS, 1, "问题")
                 .setIcon(R.drawable.ic_report_problem_24);
@@ -494,7 +528,7 @@ public class OperationsActivity extends AppCompatActivity {
                 navigation, preferences.getOperationsWatchState(), 0);
         navigation.setSelectedItemId(NAV_OPERATIONS);
         navigation.setOnItemSelectedListener(item -> {
-            if (updatingBottomNavigation) {
+            if (updatingTopLevelNavigation) {
                 return true;
             }
             if (item.getItemId() == NAV_OPERATIONS) {
@@ -572,7 +606,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void renderProblemNavigationBadge(
-            BottomNavigationView navigation, String watchState, int issueCount) {
+            NavigationBarView navigation, String watchState, int issueCount) {
         OperationsProblemBadgeRenderer.render(
                 navigation,
                 NAV_PROBLEMS,
@@ -584,7 +618,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void refreshProblemNavigationBadge() {
         renderProblemNavigationBadge(
-                bottomNavigation,
+                topLevelNavigation,
                 problemBadgeState.isEmpty()
                         ? preferences.getOperationsWatchState() : problemBadgeState,
                 problemBadgeCount);
@@ -816,7 +850,7 @@ public class OperationsActivity extends AppCompatActivity {
         rebuildSettingsPage(false);
         setCurrentDestination(OperationsDestinationState.SETTINGS);
         returnToSettingsOnBack = false;
-        syncBottomNavigation();
+        syncTopLevelNavigation();
         setDashboardVisible(true);
         setShowingDashboardSummary(false);
         title.setTitle("设置");
@@ -940,10 +974,9 @@ public class OperationsActivity extends AppCompatActivity {
             settingsFeedbackSnackbar.dismiss();
         }
         settingsFeedbackSnackbar = Snackbar.make(
-                contentHost,
+                snackbarHost,
                 message,
                 Snackbar.LENGTH_LONG);
-        settingsFeedbackSnackbar.setAnchorView(bottomNavigation);
         if (offerReminderAction) {
             settingsFeedbackSnackbar.setAction(
                     "开启提醒",
@@ -1802,9 +1835,6 @@ public class OperationsActivity extends AppCompatActivity {
                 PairingSuccessPresentation.message(
                         existingProfile, preferences.getOperationsProfileLabel(hostId)),
                 Snackbar.LENGTH_LONG);
-        if (bottomNavigation != null) {
-            snackbar.setAnchorView(bottomNavigation);
-        }
         snackbar.setAction(PairingSuccessPresentation.renameAction(),
                 v -> promptRenameOperationsProfile(
                         hostId, this::refreshOperationsTargetPresentation));
@@ -1951,7 +1981,7 @@ public class OperationsActivity extends AppCompatActivity {
             settingsScroll.setVisibility(settingsVisible ? View.VISIBLE : View.GONE);
         }
         refreshDetailsCardVisibility();
-        syncBottomNavigation();
+        syncTopLevelNavigation();
         refreshOperationsHeaderNavigation();
         restoreTopLevelScroll(normalized);
     }
@@ -3523,9 +3553,6 @@ public class OperationsActivity extends AppCompatActivity {
         if (showResult && activityResumed && dashboardRefresh != null
                 && message != null && !message.isEmpty()) {
             Snackbar snackbar = Snackbar.make(dashboardRefresh, message, Snackbar.LENGTH_SHORT);
-            if (bottomNavigation != null) {
-                snackbar.setAnchorView(bottomNavigation);
-            }
             snackbar.show();
         }
     }
@@ -7360,11 +7387,11 @@ public class OperationsActivity extends AppCompatActivity {
     @Override
     protected void onRestart() {
         super.onRestart();
-        syncBottomNavigation();
+        syncTopLevelNavigation();
     }
 
-    private void syncBottomNavigation() {
-        if (bottomNavigation == null) {
+    private void syncTopLevelNavigation() {
+        if (topLevelNavigation == null) {
             return;
         }
         int destination;
@@ -7380,10 +7407,10 @@ public class OperationsActivity extends AppCompatActivity {
         } else {
             destination = NAV_OPERATIONS;
         }
-        if (bottomNavigation.getSelectedItemId() != destination) {
-            updatingBottomNavigation = true;
-            bottomNavigation.setSelectedItemId(destination);
-            updatingBottomNavigation = false;
+        if (topLevelNavigation.getSelectedItemId() != destination) {
+            updatingTopLevelNavigation = true;
+            topLevelNavigation.setSelectedItemId(destination);
+            updatingTopLevelNavigation = false;
         }
     }
 
@@ -7457,7 +7484,7 @@ public class OperationsActivity extends AppCompatActivity {
                 && notificationChanged) {
             refreshSettingsPage();
         }
-        syncBottomNavigation();
+        syncTopLevelNavigation();
         refreshProblemNavigationBadge();
         activityResumed = true;
         refreshOperationsTargetPresentation();

@@ -19,4 +19,15 @@ public class AppWindowInsetsPolicyTest {
     public void invalidNegativeInsetsDoNotCreateNegativePadding() {
         assertEquals(0, AppWindowInsetsPolicy.topContentInset(-1, -4));
     }
+
+    @Test
+    public void navigationRailKeepsContentAboveTheGestureInset() {
+        assertEquals(52, AppWindowInsetsPolicy.bottomContentInset(true, 52));
+        assertEquals(0, AppWindowInsetsPolicy.bottomContentInset(true, -1));
+    }
+
+    @Test
+    public void bottomNavigationOwnsItsSystemInset() {
+        assertEquals(0, AppWindowInsetsPolicy.bottomContentInset(false, 52));
+    }
 }
