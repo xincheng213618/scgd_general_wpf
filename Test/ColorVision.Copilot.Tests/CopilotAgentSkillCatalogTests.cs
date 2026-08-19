@@ -717,6 +717,11 @@ public sealed class CopilotAgentSkillCatalogTests
             source.SkillFilePath = Path.Combine(skillDirectory, "changed", "SKILL.md");
             Assert.NotEqual(source.SkillFilePath, request.AgentSkillReference?.SkillFilePath);
 
+            var returned = request.AgentSkillReference!;
+            returned.Name = "changed-through-getter";
+            Assert.Equal("shared-skill", request.AgentSkillReference?.Name);
+            Assert.NotSame(returned, request.AgentSkillReference);
+
             request = CopilotAgentRequestFactory.Create(
                 new CopilotAgentRequestPlan { UserText = "Do not invoke a skill." },
                 input);

@@ -153,7 +153,12 @@ namespace ColorVision.Copilot
 
         public string ActiveGoalText { get; init; } = string.Empty;
 
-        public CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget { get; init; }
+        public CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget
+        {
+            get => _workspaceReviewTarget?.CreateSnapshot();
+            init => _workspaceReviewTarget = value?.CreateSnapshot();
+        }
+        private readonly CopilotWorkspaceReviewTargetContext? _workspaceReviewTarget;
 
         public CopilotProfileConfig Profile { get; init; } = null!;
 
@@ -367,7 +372,12 @@ namespace ColorVision.Copilot
             new ReadOnlyDictionary<string, CopilotAgentSkillOverrideState>(
                 new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase));
 
-        public CopilotAgentSkillReference? AgentSkillReference { get; init; }
+        public CopilotAgentSkillReference? AgentSkillReference
+        {
+            get => _agentSkillReference?.CreateSnapshot();
+            init => _agentSkillReference = value?.CreateSnapshot();
+        }
+        private readonly CopilotAgentSkillReference? _agentSkillReference;
 
         public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers
         {
