@@ -645,6 +645,7 @@ namespace ColorVision.Copilot
                 builder.AppendLine(JsonSerializer.Serialize(new
                 {
                     Type = item.Type.ToString(),
+                    item.RunId,
                     item.ToolName,
                     item.State,
                     item.Summary,

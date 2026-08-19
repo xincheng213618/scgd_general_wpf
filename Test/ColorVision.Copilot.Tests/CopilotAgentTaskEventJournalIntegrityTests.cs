@@ -340,6 +340,59 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void FinalAnswerRecoveryPreservesTheSourceRunOfHistoricalOutcomes()
+    {
+        var firstRun = new CopilotAgentTaskEventJournalBuilder();
+        firstRun.RecordRunStarted();
+        firstRun.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "HistoricalTool",
+                Success = true,
+                Summary = "Historical tool completed.",
+            },
+            CreateExecution(
+                "historical-call",
+                CopilotToolExecutionState.Completed,
+                completedAtUtc: DateTimeOffset.UtcNow,
+                toolName: "HistoricalTool")));
+        firstRun.RecordStop(CopilotAgentStopReason.Completed);
+
+        var currentRun = new CopilotAgentTaskEventJournalBuilder(firstRun.Snapshot());
+        currentRun.RecordRunStarted();
+        currentRun.RecordBlocker(new CopilotAgentBlockerSnapshot
+        {
+            Kind = CopilotAgentBlockerKind.ProviderOutput,
+            Code = "provider_empty_output",
+            Summary = "The current run produced no final answer.",
+            RequiresUserInput = true,
+        });
+        currentRun.RecordStop(CopilotAgentStopReason.IncompleteOutput);
+
+        var prompt = CopilotAgentTaskEventJournal.BuildFinalAnswerRecoveryPrompt(
+            currentRun.Snapshot());
+        var records = prompt.Split(
+                ["\r\n", "\n"],
+                StringSplitOptions.RemoveEmptyEntries)
+            .Where(line => line.StartsWith('{'))
+            .Select(line => JsonSerializer.Deserialize<JsonElement>(line))
+            .ToArray();
+
+        Assert.Collection(
+            records,
+            outcome =>
+            {
+                Assert.Equal("ToolCompleted", outcome.GetProperty("Type").GetString());
+                Assert.Equal(firstRun.RunId, outcome.GetProperty("RunId").GetString());
+            },
+            blocker =>
+            {
+                Assert.Equal("BlockerDetected", blocker.GetProperty("Type").GetString());
+                Assert.Equal(currentRun.RunId, blocker.GetProperty("RunId").GetString());
+            });
+    }
+
+    [Fact]
     public void InterruptedStopClosesEveryDanglingToolBeforeRunStop()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();
