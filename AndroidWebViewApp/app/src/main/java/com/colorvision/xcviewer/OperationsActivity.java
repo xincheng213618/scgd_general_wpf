@@ -137,6 +137,7 @@ public class OperationsActivity extends AppCompatActivity {
     private TextView dashboardFreshness;
     private TextView details;
     private MaterialCardView detailsCard;
+    private OperationsConnectionContent.SummaryView connectionSummaryView;
     private LinearProgressIndicator progress;
     private SwipeRefreshLayout dashboardRefresh;
     private FrameLayout contentHost;
@@ -1368,6 +1369,43 @@ public class OperationsActivity extends AppCompatActivity {
                 OperationsProfileRegistry.MAX_PROFILES));
         actions.removeAllViews();
 
+        addDashboardSection("当前连接");
+        connectionSummaryView = OperationsConnectionContent.createSummary(
+                this,
+                themeManager,
+                connectionPresentation(checking));
+        actions.addView(connectionSummaryView.view, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        addDashboardSection("电脑管理");
+        actions.addView(OperationsConnectionContent.createManagement(
+                this,
+                themeManager,
+                OperationsProfileRegistry.MAX_PROFILES,
+                new OperationsConnectionContent.Handler() {
+                    @Override
+                    public void onRenameComputer() {
+                        promptRenameOperationsProfile(
+                                preferences.getOperationsHostId(),
+                                OperationsActivity.this::showConnectionPreference);
+                    }
+
+                    @Override
+                    public void onAddComputer() {
+                        startOperationsPairingScan();
+                    }
+
+                    @Override
+                    public void onPairingHelp() {
+                        PairingHelpDialog.show(
+                                OperationsActivity.this,
+                                OperationsActivity.this::startOperationsPairingScan);
+                    }
+                }), new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+
         if (OperationsConnectionOverview.showsFleetTools(profileCount)) {
             addDashboardSection("电脑");
             if (fleet.hasPriorityAction()) {
@@ -1401,15 +1439,6 @@ public class OperationsActivity extends AppCompatActivity {
                 relayPreferred,
                 v -> selectConnectionPreference(OperationsConnectionPreference.DIRECT),
                 v -> selectConnectionPreference(OperationsConnectionPreference.RELAY));
-
-        addDashboardSection("电脑管理");
-        addDashboardActionRow(
-                dashboardButton("命名当前电脑", v -> promptRenameOperationsProfile(
-                        preferences.getOperationsHostId(), this::showConnectionPreference)),
-                dashboardButton("扫描并添加电脑", v -> startOperationsPairingScan()));
-        addDashboardWideAction(dashboardButton(
-                "配对码在哪里？",
-                v -> PairingHelpDialog.show(this, this::startOperationsPairingScan)));
 
         addDashboardSection("安全说明");
         addDashboardInfoCard(OperationsConnectionOverview.connectionNote());
@@ -1473,6 +1502,21 @@ public class OperationsActivity extends AppCompatActivity {
                 result,
                 preferences.getOperationsProfiles().size(),
                 OperationsProfileRegistry.MAX_PROFILES));
+        if (connectionSummaryView != null) {
+            connectionSummaryView.render(connectionPresentation(result));
+        }
+    }
+
+    private OperationsConnectionPresentation.ViewModel connectionPresentation(
+            OperationsConnectionOverviewProbe.Result result) {
+        boolean relayPreferred = OperationsConnectionPreference.prefersRelay(
+                preferences.getOperationsConnectionPreference());
+        return OperationsConnectionPresentation.from(
+                preferences.getActiveOperationsProfileLabel(),
+                relayPreferred ? "固定中继" : "现场直连",
+                result,
+                preferences.getOperationsProfiles().size(),
+                OperationsProfileRegistry.MAX_PROFILES);
     }
 
     private View operationsProfileButton(
@@ -1929,6 +1973,8 @@ public class OperationsActivity extends AppCompatActivity {
         }
         boolean hideForTriage = OperationsDestinationState.TRIAGE.equals(currentDestination);
         boolean hideForToolbox = OperationsDestinationState.TOOLS.equals(currentDestination);
+        boolean hideForConnections = OperationsDestinationState.CONNECTIONS.equals(
+                currentDestination);
         boolean hideForStructuredDetail = OperationsDestinationState.CAPABILITY_DETAIL.equals(
                 currentDestination)
                 && (PATH_SERVICE_HEALTH.equals(dashboardDetailPath)
@@ -1940,6 +1986,7 @@ public class OperationsActivity extends AppCompatActivity {
                 currentDestination) && showingDashboardSummary && !remoteDashboard;
         detailsCard.setVisibility(hideForTriage
                 || hideForToolbox
+                || hideForConnections
                 || hideForStructuredDetail
                 || hideDirectDashboardSummary
                 ? View.GONE : View.VISIBLE);

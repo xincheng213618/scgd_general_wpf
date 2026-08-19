@@ -27,7 +27,7 @@ final class OperationsConnectionOverview {
             int profileCount,
             int maximumProfiles) {
         String value = "当前电脑 " + safe(activeProfileLabel, "未命名电脑")
-                + "\n当前通道 " + activeChannel(result)
+                + "\n当前通道 " + activeChannelLabel(result)
                 + " · 首选 " + safe(preferredChannel, "正在确认")
                 + "\n已配对电脑 " + Math.max(0, profileCount)
                 + " / " + Math.max(0, maximumProfiles);
@@ -53,7 +53,7 @@ final class OperationsConnectionOverview {
                 + "证书指纹、时间线和最近任务；其他电脑不受影响。";
     }
 
-    private static String activeChannel(OperationsConnectionOverviewProbe.Result result) {
+    static String activeChannelLabel(OperationsConnectionOverviewProbe.Result result) {
         if (result == null
                 || result.channel == OperationsConnectionOverviewProbe.Channel.CHECKING) {
             return "正在确认";
