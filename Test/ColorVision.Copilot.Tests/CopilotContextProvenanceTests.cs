@@ -6,6 +6,31 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotContextProvenanceTests
 {
     [Fact]
+    public void PreparedAndConversationMessageSurfacesAreDetachedAndReadOnly()
+    {
+        var original = new CopilotRequestMessage("user", "original");
+        var source = new List<CopilotRequestMessage> { original };
+        var prepared = new CopilotAgentPreparedPrompt(source, original.Content);
+        var history = new CopilotConversationHistorySnapshot(source, source);
+
+        source[0] = new CopilotRequestMessage("user", "source-mutated");
+
+        Assert.Equal(original, Assert.Single(prepared.Messages));
+        Assert.Equal(original, Assert.Single(history.ModelMessages));
+        Assert.Equal(original, Assert.Single(history.VisibleMessages));
+        AssertReadOnly(prepared.Messages);
+        AssertReadOnly(history.ModelMessages);
+        AssertReadOnly(history.VisibleMessages);
+
+        static void AssertReadOnly(IReadOnlyList<CopilotRequestMessage> messages)
+        {
+            var items = Assert.IsAssignableFrom<IList<CopilotRequestMessage>>(messages);
+            Assert.True(items.IsReadOnly);
+            Assert.Throws<NotSupportedException>(() => items[0] = new CopilotRequestMessage("user", "replacement"));
+        }
+    }
+
+    [Fact]
     public void PreparedPromptDerivesOrderedMetadataFromActualUserRoleComposition()
     {
         const string sensitive = "TOP_SECRET_PROMPT_BODY_9281";

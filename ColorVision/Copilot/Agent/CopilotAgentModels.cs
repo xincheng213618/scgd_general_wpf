@@ -22,7 +22,7 @@ namespace ColorVision.Copilot
             string preparedUserMessageContent,
             CopilotContextProvenanceSnapshot contextProvenance)
         {
-            Messages = messages ?? Array.Empty<CopilotRequestMessage>();
+            Messages = Array.AsReadOnly((messages ?? Array.Empty<CopilotRequestMessage>()).ToArray());
             PreparedUserMessageContent = preparedUserMessageContent ?? string.Empty;
             ContextProvenance = contextProvenance ?? CopilotContextProvenanceSnapshot.Empty;
         }
