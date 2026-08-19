@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 import shutil
 import subprocess
+import time
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -14,12 +15,28 @@ except ImportError:
     from backend_client import create_http_session, resolve_upload_base_url
 
 
-CONNECT_TIMEOUT_SECONDS = 5
+CONNECT_TIMEOUT_SECONDS = 10
 READ_TIMEOUT_SECONDS = 15
+REMOTE_REQUEST_ATTEMPTS = 3
+REMOTE_RETRY_DELAY_SECONDS = 2
 
 
 class ReleaseVerificationError(RuntimeError):
     pass
+
+
+def get_remote_response(session, url: str, **kwargs):
+    for attempt in range(1, REMOTE_REQUEST_ATTEMPTS + 1):
+        try:
+            return session.get(url, **kwargs)
+        except OSError as exc:
+            if attempt == REMOTE_REQUEST_ATTEMPTS:
+                raise ReleaseVerificationError(
+                    f"{url} failed after {REMOTE_REQUEST_ATTEMPTS} attempts: {exc}"
+                ) from exc
+            time.sleep(REMOTE_RETRY_DELAY_SECONDS * attempt)
+
+    raise AssertionError("unreachable")
 
 
 def read_version(repo_root: Path) -> str:
@@ -73,7 +90,8 @@ def verify_signature(installer: Path) -> str:
 def verify_latest_version(base_url: str, version: str) -> str:
     session = create_http_session()
     try:
-        response = session.get(
+        response = get_remote_response(
+            session,
             f"{base_url}/api/app/latest-version",
             timeout=(CONNECT_TIMEOUT_SECONDS, READ_TIMEOUT_SECONDS),
         )
@@ -95,7 +113,8 @@ def verify_latest_version(base_url: str, version: str) -> str:
 def verify_changelog(base_url: str, version: str) -> str:
     session = create_http_session()
     try:
-        response = session.get(
+        response = get_remote_response(
+            session,
             f"{base_url}/api/app/changelog",
             timeout=(CONNECT_TIMEOUT_SECONDS, READ_TIMEOUT_SECONDS),
         )
@@ -119,7 +138,8 @@ def verify_remote_size(base_url: str, endpoint: str, local_file: Path) -> str:
     session = create_http_session()
     response = None
     try:
-        response = session.get(
+        response = get_remote_response(
+            session,
             f"{base_url}{endpoint}",
             headers={"Range": "bytes=0-0"},
             stream=True,
