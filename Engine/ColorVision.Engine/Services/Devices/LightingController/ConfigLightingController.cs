@@ -50,11 +50,13 @@ namespace ColorVision.Engine.Services.Devices.LightingController
         public string CommandFormat { get => _CommandFormat; set { _CommandFormat = value; OnPropertyChanged(); } }
         private string _CommandFormat = "S{0}{1:D4}#";
 
+        [JsonIgnore]
+        public Dictionary<string, string> CustomCmd { get; set; } = [];
+
         [Browsable(false), JsonIgnore]
         public IEnumerable<PMChannelConfig> Channels => [CHA, CHB];
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class PMChannelConfig : ViewModelBase
     {
         public PMChannelConfig()
