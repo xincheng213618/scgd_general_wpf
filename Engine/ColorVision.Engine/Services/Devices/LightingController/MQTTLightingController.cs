@@ -41,8 +41,10 @@ namespace ColorVision.Engine.Services.Devices.LightingController
 
         private void UpdateChannelValue(JObject? data)
         {
+            JToken? channelToken = data?.GetValue("Channel", StringComparison.OrdinalIgnoreCase)
+                ?? data?.GetValue("Y", StringComparison.OrdinalIgnoreCase);
             if (data == null
-                || !data.TryGetValue("Y", StringComparison.OrdinalIgnoreCase, out JToken? channelToken)
+                || channelToken == null
                 || !data.TryGetValue("Value", StringComparison.OrdinalIgnoreCase, out JToken? valueToken)
                 || !int.TryParse(valueToken.ToString(), out int value))
                 return;
@@ -64,7 +66,7 @@ namespace ColorVision.Engine.Services.Devices.LightingController
                 EventName = MQTTPMEventEnum.Event_SetValue,
                 Params = new Dictionary<string, object>
                 {
-                    ["Y"] = channelCode,
+                    ["Channel"] = channelCode,
                     ["Value"] = value,
                 },
             };
@@ -76,14 +78,24 @@ namespace ColorVision.Engine.Services.Devices.LightingController
             MsgSend msg = new()
             {
                 EventName = MQTTPMEventEnum.Event_GetValue,
-                Params = new Dictionary<string, object> { ["Y"] = channelCode },
+                Params = new Dictionary<string, object> { ["Channel"] = channelCode },
             };
             return PublishAsyncClient(msg, GetTimeout());
         }
 
-        public MsgRecord TurnOn(PMChannelConfig channel) => SetValue(channel.Code, channel.OnValue);
+        public MsgRecord TurnOn(string channel) => PublishChannelCommand(MQTTPMEventEnum.Event_TurnOn, channel);
 
-        public MsgRecord TurnOff(PMChannelConfig channel) => SetValue(channel.Code, channel.OffValue);
+        public MsgRecord TurnOff(string channel) => PublishChannelCommand(MQTTPMEventEnum.Event_TurnOff, channel);
+
+        private MsgRecord PublishChannelCommand(string eventName, string channel)
+        {
+            MsgSend msg = new()
+            {
+                EventName = eventName,
+                Params = new Dictionary<string, object> { ["Channel"] = channel },
+            };
+            return PublishAsyncClient(msg, GetTimeout());
+        }
 
         private MsgRecord Publish(string eventName)
         {

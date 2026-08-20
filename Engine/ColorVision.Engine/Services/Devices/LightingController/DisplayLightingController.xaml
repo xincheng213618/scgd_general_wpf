@@ -52,35 +52,28 @@
                         <Button x:Name="ButtonClose" Background="Red" Click="Close_Click" Content="{x:Static properties:Resources.Close}" Foreground="White" />
                     </StackPanel>
 
-                    <ItemsControl x:Name="ChannelsPanel" ItemsSource="{Binding Config.Channels}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type local:PMChannelConfig}">
-                                <Border Margin="0,2"
-                                        Padding="6"
-                                        Background="{DynamicResource SecondaryRegionBrush}"
-                                        BorderBrush="{DynamicResource BorderBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="4">
-                                    <StackPanel>
-                                        <DockPanel Margin="0,0,0,5">
-                                            <TextBlock DockPanel.Dock="Right" Opacity="0.65" Text="{Binding Code}" />
-                                            <TextBlock FontWeight="SemiBold" Text="{Binding Name}" />
-                                        </DockPanel>
-                                        <DockPanel Margin="0,0,0,5">
-                                            <Button DockPanel.Dock="Right" Margin="4,0,0,0" Click="GetValue_Click" Content="{x:Static properties:Resources.Refresh}" />
-                                            <Button DockPanel.Dock="Right" Margin="4,0,0,0" Click="SetValue_Click" Content="{x:Static properties:Resources.Settings}" />
-                                            <TextBlock Width="42" Text="{x:Static properties:Resources.Value}" />
-                                            <TextBox MinWidth="70" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
-                                        </DockPanel>
-                                        <UniformGrid Columns="2">
-                                            <Button Margin="0,0,2,0" Click="TurnOn_Click" Content="{x:Static properties:Resources.PowerOn}" />
-                                            <Button Margin="2,0,0,0" Click="TurnOff_Click" Content="{x:Static properties:Resources.PowerOff}" />
-                                        </UniformGrid>
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <StackPanel x:Name="ChannelsPanel">
+                        <ComboBox x:Name="CbChannel"
+                                  Width="80"
+                                  Margin="0,0,0,4"
+                                  HorizontalAlignment="Left"
+                                  DisplayMemberPath="Name"
+                                  ItemsSource="{Binding Config.Channels}"
+                                  SelectedIndex="0"
+                                  Style="{StaticResource ComboBox.Small}" />
+
+                        <DockPanel Margin="0,0,0,4" DataContext="{Binding SelectedItem, ElementName=CbChannel}">
+                            <Button DockPanel.Dock="Right" Margin="4,0,0,0" Click="GetValue_Click" Content="{x:Static properties:Resources.Refresh}" />
+                            <Button DockPanel.Dock="Right" Margin="4,0,0,0" Click="SetValue_Click" Content="{x:Static properties:Resources.Settings}" />
+                            <TextBlock Width="42" Text="{x:Static properties:Resources.Value}" />
+                            <TextBox MinWidth="70" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
+                        </DockPanel>
+
+                        <UniformGrid Columns="2" DataContext="{Binding SelectedItem, ElementName=CbChannel}">
+                            <Button Margin="0,0,2,0" Click="TurnOn_Click" Content="{x:Static properties:Resources.PowerOn}" />
+                            <Button Margin="2,0,0,0" Click="TurnOff_Click" Content="{x:Static properties:Resources.PowerOff}" />
+                        </UniformGrid>
+                    </StackPanel>
                 </StackPanel>
             </StackPanel>
         </Border>

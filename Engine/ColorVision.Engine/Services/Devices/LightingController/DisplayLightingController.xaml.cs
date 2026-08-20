@@ -95,13 +95,13 @@ namespace ColorVision.Engine.Services.Devices.LightingController
         private void TurnOn_Click(object sender, RoutedEventArgs e)
         {
             if (TryGetChannel(sender, out Button button, out PMChannelConfig channel))
-                SendCommand(button, DService.TurnOn(channel), () => channel.Value = channel.OnValue);
+                SendCommand(button, DService.TurnOn(channel.Code));
         }
 
         private void TurnOff_Click(object sender, RoutedEventArgs e)
         {
             if (TryGetChannel(sender, out Button button, out PMChannelConfig channel))
-                SendCommand(button, DService.TurnOff(channel), () => channel.Value = channel.OffValue);
+                SendCommand(button, DService.TurnOff(channel.Code));
         }
 
         private static bool TryGetChannel(object sender, out Button button, out PMChannelConfig channel)
@@ -111,7 +111,7 @@ namespace ColorVision.Engine.Services.Devices.LightingController
             return button != null && channel != null && !string.IsNullOrWhiteSpace(channel.Code);
         }
 
-        private static void SendCommand(Button button, MsgRecord msgRecord, Action? onSuccess = null)
+        private static void SendCommand(Button button, MsgRecord msgRecord)
         {
             EventHandler<MsgRecordState>? handler = null;
             handler = (_, state) =>
@@ -121,10 +121,7 @@ namespace ColorVision.Engine.Services.Devices.LightingController
 
                 msgRecord.MsgRecordStateChanged -= handler;
                 if (state == MsgRecordState.Success)
-                {
-                    onSuccess?.Invoke();
                     return;
-                }
 
                 string status = state == MsgRecordState.Timeout ? Properties.Resources.Timeout : Properties.Resources.Failure;
                 string detail = msgRecord.MsgReturn?.Message;
