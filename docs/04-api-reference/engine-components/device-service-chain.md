@@ -58,12 +58,13 @@ SysDictionaryModel
 | `Motor` | `DeviceMotor` | `ConfigMotor` |
 | `ThirdPartyAlgorithms` | `DeviceThirdPartyAlgorithms` | `ConfigThirdPartyAlgorithms` |
 | `Flow` | `DeviceFlowDevice` | `ConfigFlowDevice` |
+| `LightingControl` | `DeviceLightingController` | `ConfigLightingController` |
 
 如果 `SysResourceModel.Type` 对应的 `ServiceTypes` 没有注册工厂，`CreateService()` 会返回 `null`，设备不会进入 `DeviceServices`。
 
 ## 显示和过滤
 
-`LoadServices()` 读取字典后会跳过 `6, 11, 12, 13, 14, 15, 16, 17`，对应 FileServer、FocusRing、Flow、Archived、ThirdPartyAlgorithms、ThirdPartyAlgorithms32、PowerControl、LightingControl 等类型。枚举存在不代表左侧类型树一定显示。
+`LoadServices()` 读取字典后会跳过 FileServer、FocusRing、Flow、ThirdPartyAlgorithms、ThirdPartyAlgorithms32 和 PowerControl。`LightingControl` 不在过滤列表中，会按照字典值 `16` 和资源层级生成类型节点、终端及设备。
 
 显示区由 `GenDeviceDisplayControl()` 从 `TypeServices` 遍历设备，或由 `GenControl(ObservableCollection<DeviceService>)` 用指定集合生成。两者都会先放入 `FlowEngineManager.GetInstance().DisplayFlow`，再追加各设备的 `GetDisplayControl()`。设备树有设备但主区域没有页时，先查 `GetDisplayControl()`、`IDisPlayControl`、`GenDeviceDisplayControl()` 和 `RestoreControl()`。
 
