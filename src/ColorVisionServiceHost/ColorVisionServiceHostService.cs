@@ -11,6 +11,7 @@ internal class ColorVisionServiceHostService : ServiceBase
     private readonly object _lifecycleSync = new();
     private readonly Func<IServiceHostPipeServerLifetime> _serverFactory;
     private readonly IApplicationUpdateScanProtectionLifetime _scanProtection;
+    private readonly IApplicationStartupIntegrityMonitorLifetime _startupIntegrityMonitor;
     private readonly TimeProvider _timeProvider;
     private readonly Func<Task, TimeSpan, bool>? _waitForCompletion;
     private readonly Action<int> _requestAdditionalTime;
@@ -23,7 +24,8 @@ internal class ColorVisionServiceHostService : ServiceBase
     public ColorVisionServiceHostService()
         : this(
             static () => new ServiceHostPipeServer(new ServiceHostCommandHandler()),
-            ApplicationUpdateScanProtectionService.Default)
+            ApplicationUpdateScanProtectionService.Default,
+            startupIntegrityMonitor: ApplicationStartupIntegrityMonitor.Default)
     {
     }
 
@@ -34,10 +36,12 @@ internal class ColorVisionServiceHostService : ServiceBase
         Func<Task, TimeSpan, bool>? waitForCompletion = null,
         Action<int>? requestAdditionalTime = null,
         Action<TimeSpan>? reportOverBudget = null,
-        Action<Exception>? reportShutdownFailure = null)
+        Action<Exception>? reportShutdownFailure = null,
+        IApplicationStartupIntegrityMonitorLifetime? startupIntegrityMonitor = null)
     {
         _serverFactory = serverFactory ?? throw new ArgumentNullException(nameof(serverFactory));
         _scanProtection = scanProtection ?? throw new ArgumentNullException(nameof(scanProtection));
+        _startupIntegrityMonitor = startupIntegrityMonitor ?? NullApplicationStartupIntegrityMonitor.Instance;
         _timeProvider = timeProvider ?? TimeProvider.System;
         _waitForCompletion = waitForCompletion;
         _requestAdditionalTime = requestAdditionalTime ?? RequestAdditionalTime;
@@ -69,6 +73,9 @@ internal class ColorVisionServiceHostService : ServiceBase
             Task startupCleanupTask = _scanProtection.Start()
                 ?? throw new InvalidOperationException("Scan-protection startup returned a null task.");
             ObserveBackgroundFailure(startupCleanupTask, "Scan-protection startup cleanup");
+            Task startupIntegrityTask = _startupIntegrityMonitor.Start()
+                ?? throw new InvalidOperationException("Startup-integrity monitoring returned a null startup task.");
+            ObserveBackgroundFailure(startupIntegrityTask, "Application startup-integrity monitoring");
 
             Task runTask = server.RunAsync(CancellationToken.None)
                 ?? throw new InvalidOperationException("The pipe server returned a null run task.");
@@ -93,7 +100,8 @@ internal class ColorVisionServiceHostService : ServiceBase
             Task rollbackTask = CompleteShutdownAsync(
                 server,
                 InvokeStop(server.StopAsync),
-                InvokeStop(_scanProtection.StopAsync));
+                InvokeStop(_scanProtection.StopAsync),
+                InvokeStop(_startupIntegrityMonitor.StopAsync));
             WaitForTerminalShutdown(rollbackTask);
             throw;
         }
@@ -141,7 +149,12 @@ internal class ColorVisionServiceHostService : ServiceBase
                 ? Task.CompletedTask
                 : InvokeStop(server.StopAsync);
             Task scanStopTask = InvokeStop(_scanProtection.StopAsync);
-            _shutdownTask = CompleteShutdownAsync(server, serverStopTask, scanStopTask);
+            Task startupIntegrityStopTask = InvokeStop(_startupIntegrityMonitor.StopAsync);
+            _shutdownTask = CompleteShutdownAsync(
+                server,
+                serverStopTask,
+                scanStopTask,
+                startupIntegrityStopTask);
             return _shutdownTask;
         }
     }
@@ -149,7 +162,8 @@ internal class ColorVisionServiceHostService : ServiceBase
     private async Task CompleteShutdownAsync(
         IServiceHostPipeServerLifetime? server,
         Task serverStopTask,
-        Task scanStopTask)
+        Task scanStopTask,
+        Task startupIntegrityStopTask)
     {
         // Keep all post-admission cleanup inside the tracked task even when both
         // component stop tasks have already completed synchronously.
@@ -157,16 +171,18 @@ internal class ColorVisionServiceHostService : ServiceBase
 
         try
         {
-            await Task.WhenAll(serverStopTask, scanStopTask).ConfigureAwait(false);
+            await Task.WhenAll(serverStopTask, scanStopTask, startupIntegrityStopTask).ConfigureAwait(false);
         }
         catch
         {
             ReportTaskFailure(serverStopTask, "Pipe server shutdown");
             ReportTaskFailure(scanStopTask, "Scan-protection shutdown");
+            ReportTaskFailure(startupIntegrityStopTask, "Application startup-integrity monitoring shutdown");
         }
 
         TryDispose(server, "Pipe server");
         TryDispose(_scanProtection, "Scan-protection service");
+        TryDispose(_startupIntegrityMonitor, "Application startup-integrity monitor");
 
         lock (_lifecycleSync)
         {

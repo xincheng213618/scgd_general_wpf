@@ -414,6 +414,7 @@ namespace ColorVision.UI.ServiceHost
         {
             return !command.Equals("ping", StringComparison.OrdinalIgnoreCase)
                 && !command.Equals("status", StringComparison.OrdinalIgnoreCase)
+                && !command.Equals("application-startup-status", StringComparison.OrdinalIgnoreCase)
                 && !command.Equals("issue-broker-ticket", StringComparison.OrdinalIgnoreCase)
                 && !command.Equals("self-update", StringComparison.OrdinalIgnoreCase)
                 && !command.Equals("prepare-application-update", StringComparison.OrdinalIgnoreCase);
