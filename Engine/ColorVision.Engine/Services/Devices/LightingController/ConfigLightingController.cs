@@ -10,6 +10,8 @@ namespace ColorVision.Engine.Services.Devices.LightingController
 {
     public class ConfigLightingController : DeviceServiceConfig
     {
+        public string Category { get; set; } = "default";
+
         [Category("Connection"), LocalizedDisplayName(nameof(Resources.AutoConnect))]
         public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; OnPropertyChanged(); } }
         private bool _IsAutoOpen = true;
@@ -50,7 +52,7 @@ namespace ColorVision.Engine.Services.Devices.LightingController
         public string CommandFormat { get => _CommandFormat; set { _CommandFormat = value; OnPropertyChanged(); } }
         private string _CommandFormat = "S{0}{1:D4}#";
 
-        [JsonIgnore]
+        [Browsable(false), JsonIgnore]
         public Dictionary<string, string> CustomCmd { get; set; } = [];
 
         [Browsable(false), JsonIgnore]
