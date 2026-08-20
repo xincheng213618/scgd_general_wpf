@@ -15,8 +15,6 @@ public sealed class SpectrumCorrectionOptions
 {
     public double MeasuredEpsilon { get; init; } = 1e-12;
     public double RelativeMeasuredThreshold { get; init; } = 1e-4;
-    public double MinimumValidPointFraction { get; init; } = 0.1;
-    public double MinimumValidWavelengthSpanFraction { get; init; } = 0.5;
     public double MinimumCorrectionFactor { get; init; }
     public double MaximumCorrectionFactor { get; init; } = double.PositiveInfinity;
 }
@@ -111,8 +109,6 @@ public static class SpectrumMagnitudeCorrector
             throw new InvalidOperationException(
                 $"Only {validFactorIndices.Count} measured spectrum point(s) are greater than the effective low-signal threshold {effectiveMeasuredThreshold:G17}; at least two are required.");
         }
-        ValidateValidCoverage(targetWavelengths, validFactorIndices, validatedOptions);
-
         FillMissingFactors(targetWavelengths, factors, hasMeasuredFactor, validFactorIndices);
 
         int filledFactorCount = currentFile.Count - validFactorIndices.Count;
@@ -215,10 +211,6 @@ public static class SpectrumMagnitudeCorrector
             throw new ArgumentOutOfRangeException(nameof(options), "Measured epsilon must be finite and non-negative.");
         if (!double.IsFinite(options.RelativeMeasuredThreshold) || options.RelativeMeasuredThreshold < 0 || options.RelativeMeasuredThreshold >= 1)
             throw new ArgumentOutOfRangeException(nameof(options), "Relative measured threshold must be finite and in the range [0, 1).");
-        if (!double.IsFinite(options.MinimumValidPointFraction) || options.MinimumValidPointFraction <= 0 || options.MinimumValidPointFraction > 1)
-            throw new ArgumentOutOfRangeException(nameof(options), "Minimum valid point fraction must be finite and in the range (0, 1].");
-        if (!double.IsFinite(options.MinimumValidWavelengthSpanFraction) || options.MinimumValidWavelengthSpanFraction <= 0 || options.MinimumValidWavelengthSpanFraction > 1)
-            throw new ArgumentOutOfRangeException(nameof(options), "Minimum valid wavelength span fraction must be finite and in the range (0, 1].");
         if (!double.IsFinite(options.MinimumCorrectionFactor) || options.MinimumCorrectionFactor < 0)
             throw new ArgumentOutOfRangeException(nameof(options), "Minimum correction factor must be finite and non-negative.");
         if (double.IsNaN(options.MaximumCorrectionFactor) || options.MaximumCorrectionFactor <= 0)
@@ -226,28 +218,6 @@ public static class SpectrumMagnitudeCorrector
         if (options.MinimumCorrectionFactor > options.MaximumCorrectionFactor)
             throw new ArgumentException("Minimum correction factor cannot exceed maximum correction factor.", nameof(options));
         return options;
-    }
-
-    private static void ValidateValidCoverage(
-        ReadOnlyCollection<double> wavelengths,
-        List<int> validFactorIndices,
-        SpectrumCorrectionOptions options)
-    {
-        int requiredPointCount = Math.Max(2, checked((int)Math.Ceiling(wavelengths.Count * options.MinimumValidPointFraction)));
-        if (validFactorIndices.Count < requiredPointCount)
-        {
-            throw new InvalidOperationException(
-                $"Only {validFactorIndices.Count} of {wavelengths.Count} measured spectrum points have usable signal; at least {requiredPointCount} are required.");
-        }
-
-        double totalSpan = wavelengths[^1] - wavelengths[0];
-        double validSpan = wavelengths[validFactorIndices[^1]] - wavelengths[validFactorIndices[0]];
-        double spanFraction = validSpan / totalSpan;
-        if (spanFraction + 1e-12 < options.MinimumValidWavelengthSpanFraction)
-        {
-            throw new InvalidOperationException(
-                $"Usable measured spectrum points span only {spanFraction:P2} of the DAT wavelength range; at least {options.MinimumValidWavelengthSpanFraction:P2} is required.");
-        }
     }
 
     private static void ValidateFactor(double factor, double? wavelength, SpectrumCorrectionOptions options)

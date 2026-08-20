@@ -260,19 +260,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         private async Task<SpectrumMeasurementSnapshot> CaptureCorrectionMeasurementAsync(CancellationToken cancellationToken)
         {
-            if (DisplayConfig.IsLuminousFluxMode)
-            {
-                throw new InvalidOperationException(
-                    "当前为 EQE/光通量模式，不能用于幅值光谱校正。请切换到普通亮度/色度光谱模式后重试。");
-            }
-
             Config.EnsureCalibrationGroups();
-            if (DisplayConfig.IsWithND || Config.ActiveCalibrationGroup.NDHoleIndex >= 0)
-            {
-                throw new InvalidOperationException(
-                    "当前启用了 ND 测量或选择了 ND 标定组；首版仅支持普通光谱幅值校正，请切回普通标定组后重试。");
-            }
-
             DeviceStatusType deviceStatus = DService.DeviceStatus;
             if (!IsCorrectionCaptureReadyStatus(deviceStatus))
             {
@@ -338,9 +326,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 throw new InvalidOperationException(
                     $"光谱结果设备不匹配：期望 {Config.Code}，实际 {entity.DeviceCode ?? "<空>"}。");
             }
-            if (entity.DataType)
-                throw new InvalidOperationException("本次返回的是 EQE 结果，不能用于幅值光谱校正。请切换到普通光谱测量模式后重试。");
-
             double[] relativeSpectrum = LoadCorrectionRelativeSpectrum(entity);
             (double start, double end, double interval, int pointCount) = ResolveCorrectionWavelengthMetadata(entity, relativeSpectrum.Length);
             double[] croppedSpectrum = relativeSpectrum.Take(pointCount).ToArray();
@@ -352,9 +337,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             if (!double.IsFinite(absoluteScale) || absoluteScale <= 0)
                 throw new InvalidOperationException("服务返回的绝对光谱系数无效，不能用于光谱校正。");
 
-            double photometricValue = entity.fPh ?? double.NaN;
-            if (!double.IsFinite(photometricValue))
-                throw new InvalidOperationException("服务返回的光度值无效，不能用于光谱校正。");
+            double photometricValue = entity.DataType
+                ? entity.LuminousFlux ?? entity.fPh ?? double.NaN
+                : entity.fPh ?? double.NaN;
 
             string magnitudeFilePath = ResolveActiveMagnitudeFilePath();
             if (!File.Exists(magnitudeFilePath))
@@ -378,7 +363,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 photometricValue,
                 entity.IntTime ?? DisplayConfig.IntTime,
                 entity.iAveNum ?? DisplayConfig.AveNum,
-                "Luminance",
+                entity.DataType ? "LuminousFlux" : "Luminance",
                 Config.ActiveCalibrationGroupName ?? string.Empty,
                 magnitudeFilePath,
                 magnitudeFileSha256);
@@ -394,12 +379,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             try
             {
                 Config.EnsureCalibrationGroups();
-                if (DisplayConfig.IsWithND || Config.ActiveCalibrationGroup.NDHoleIndex >= 0)
-                {
-                    return SpectrumCorrectionApplyResult.Failure(
-                        "当前启用了 ND 测量或选择了 ND 标定组，不能应用普通光谱幅值文件；请切回普通标定组并重新采集。");
-                }
-
                 if (!await correctionMeasurementGate.WaitAsync(0, cancellationToken))
                     return SpectrumCorrectionApplyResult.Failure("光谱仪正在执行其他测量或校正操作，不能应用幅值标定文件。");
 

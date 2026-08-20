@@ -264,7 +264,7 @@ public class SpectrumMagnitudeCorrectorTests
     }
 
     [Fact]
-    public void FullSpectrumCorrection_RejectsUsableSignalConfinedToNarrowWavelengthSpan()
+    public void FullSpectrumCorrection_AcceptsUsableSignalConfinedToNarrowWavelengthSpan()
     {
         MagnitudeCalibrationFile current = MagnitudeCalibrationFile.Create(
             4.5f,
@@ -274,14 +274,14 @@ public class SpectrumMagnitudeCorrectorTests
         ServiceSpectrumMeasurement measured = new(380, 384, 1, new[] { 1d, 1d, 0d, 0d, 0d }, 1);
         SpectrumSeries standard = new([380d, 384d], [1d, 1d]);
 
-        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
-            SpectrumMagnitudeCorrector.CorrectFullSpectrum(current, measured, standard));
+        SpectrumCorrectionResult result = SpectrumMagnitudeCorrector.CorrectFullSpectrum(current, measured, standard);
 
-        Assert.Contains("span", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(3, result.FilledFactorCount);
+        Assert.All(result.CorrectionFactors, factor => Assert.Equal(1d, factor, 10));
     }
 
     [Fact]
-    public void FullSpectrumCorrection_RequiresMinimumUsablePointFraction()
+    public void FullSpectrumCorrection_AcceptsTwoUsablePointsAcrossTheSpectrum()
     {
         double[] wavelengths = Enumerable.Range(0, 100).Select(index => 380d + index).ToArray();
         double[] measuredValues = new double[100];
@@ -295,10 +295,10 @@ public class SpectrumMagnitudeCorrectorTests
         ServiceSpectrumMeasurement measured = new(380, 479, 1, measuredValues, 1);
         SpectrumSeries standard = new([380d, 479d], [1d, 1d]);
 
-        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
-            SpectrumMagnitudeCorrector.CorrectFullSpectrum(current, measured, standard));
+        SpectrumCorrectionResult result = SpectrumMagnitudeCorrector.CorrectFullSpectrum(current, measured, standard);
 
-        Assert.Contains("at least 10", exception.Message);
+        Assert.Equal(98, result.FilledFactorCount);
+        Assert.All(result.CorrectionFactors, factor => Assert.Equal(1d, factor, 10));
     }
 
     [Theory]
