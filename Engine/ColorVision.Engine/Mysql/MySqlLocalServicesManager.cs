@@ -156,7 +156,16 @@ namespace ColorVision.Database
         private static readonly string[] CandidateTimeColumns = { "create_time", "create_date", "add_time" };
         private static MySqlLocalServicesManager _instance;
         private static readonly object _locker = new();
-        public static MySqlLocalServicesManager GetInstance() { lock (_locker) { return _instance ??= new MySqlLocalServicesManager(); } }
+        public static MySqlLocalServicesManager GetInstance()
+        {
+            if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
+                return dispatcher.Invoke(GetInstance);
+
+            lock (_locker)
+            {
+                return _instance ??= new MySqlLocalServicesManager();
+            }
+        }
 
         internal static T RunDatabaseMaintenance<T>(Func<T> maintenanceAction)
         {

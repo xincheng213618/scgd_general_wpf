@@ -244,40 +244,6 @@ namespace ColorVision.Database
                 .ToArray();
         }
 
-        internal static IReadOnlyList<string> FindUnselectedRequiredDetailTables(
-            IReadOnlyCollection<string> requestedTableNames,
-            IReadOnlyCollection<string> existingTableNames)
-        {
-            ArgumentNullException.ThrowIfNull(requestedTableNames);
-            ArgumentNullException.ThrowIfNull(existingTableNames);
-
-            var requested = requestedTableNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var existing = existingTableNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var missingDependencies = new List<CleanupTableDefinition>();
-
-            if (requested.Contains(ResultMasterTableName))
-            {
-                missingDependencies.AddRange(existing
-                    .Where(IsAlgorithmDetailTableName)
-                    .Where(tableName => !requested.Contains(tableName))
-                    .Select(tableName => new CleanupTableDefinition(tableName, CleanupTableKind.AlgorithmDetail)));
-            }
-
-            if (requested.Contains(MeasureBatchTableName))
-            {
-                missingDependencies.AddRange(existing
-                    .Where(IsMeasureDetailTableName)
-                    .Where(tableName => !requested.Contains(tableName))
-                    .Select(tableName => new CleanupTableDefinition(tableName, CleanupTableKind.MeasureDetail)));
-            }
-
-            return missingDependencies
-                .OrderBy(GetCleanupOrder)
-                .ThenBy(definition => definition.TableName, StringComparer.OrdinalIgnoreCase)
-                .Select(definition => definition.TableName)
-                .ToArray();
-        }
-
         internal static IReadOnlyList<string> FindUnknownDetailTables(IReadOnlyCollection<string> existingTableNames)
         {
             ArgumentNullException.ThrowIfNull(existingTableNames);
@@ -295,13 +261,6 @@ namespace ColorVision.Database
         {
             using var db = CreateDbClient(timeout: 30);
             var existingTables = GetExistingTables(db);
-            var missingDependencies = FindUnselectedRequiredDetailTables(tableNames, existingTables);
-            if (missingDependencies.Count > 0)
-            {
-                string dependencyList = string.Join(Environment.NewLine, missingDependencies.Select(tableName => $"- {tableName}"));
-                throw new InvalidOperationException(
-                    EngineLocalization.Get("不能清理所选主表，因为仍存在未选中的关联明细表。请同时选择以下数据表：") + Environment.NewLine + dependencyList);
-            }
 
             var requestedTables = tableNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
             var definitions = CleanupTableDefinitions

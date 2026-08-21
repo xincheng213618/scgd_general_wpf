@@ -918,7 +918,7 @@ namespace ColorVision.Update
                 string executableName = Path.GetFileName(Environment.ProcessPath) ?? "ColorVision.exe";
                 File.WriteAllText(batchFilePath, string.Empty);
                 handoffState = ExitUpdateHandoff.Prepare(programDirectory, tempRoot);
-                Task downloadManagerStopTask = Aria2cDownloadManager.GetInstance().StopDaemonForUpdateHandoffAsync();
+                Task downloadManagerStopTask = Aria2cDownloadManager.StopExistingDaemonForUpdateHandoffAsync();
                 Task<string?> scanProtectionTask = Task.Run(() => ApplicationUpdateScanProtection.TryBegin(tempRoot));
                 ApplicationUpdateProcessCoordinator.CloseOtherApplicationProcesses();
                 scanProtectionId = scanProtectionTask.GetAwaiter().GetResult();
