@@ -20,8 +20,8 @@
 
 | 测试文件 | 覆盖面 |
 | --- | --- |
-| `ConfigServiceAdaptersTests.cs`、`BrushJsonConverterTests.cs` | 配置 adapter、基础配置、WPF brush JSON 序列化 |
-| `PropertyEditorWindowTests.cs`、`ListEditorTests.cs`、`NestedListEditorTests.cs` | PropertyGrid、属性编辑窗口、列表编辑器 |
+| `ConfigServiceAdaptersTests.cs`、`ConfigHandlerPersistenceTests.cs`、`ThemeSettingsTests.cs` | 配置 adapter、配置持久化和主题设置 |
+| `PropertyEditorContractTests.cs`、`PropertyEditSessionTests.cs`、`ListEditorTests.cs` | PropertyGrid 契约、编辑会话和列表编辑器 |
 | `UniversalSortTests.cs`、`TreemapLayoutTests.cs` | 通用排序、Treemap 布局 |
 | `TerminalScreenBufferTests.cs`、`STNodeCopyPasteTests.cs` | 终端屏幕缓冲、Flow/STNode 复制粘贴 |
 | `LogEntryParserTests.cs`、`LogHistoryReaderTests.cs`、`LogSearchHelperTests.cs` | 日志解析、历史读取和搜索 |

@@ -1,6 +1,6 @@
 # ColorVision.UI.Desktop
 
-> 版本: 1.5.5.1 | 目标框架: .NET 10.0 Windows | 输出类型: WinExe
+> 目标框架：.NET 10 Windows；输出类型：WinExe（以 `ColorVision.UI.Desktop.csproj` 为准）
 
 ## 功能定位
 
@@ -56,7 +56,7 @@
 
 ## 构建
 
-```bash
-dotnet build UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj
-dotnet run --project UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj
+```powershell
+dotnet build .\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj -p:Platform=x64
+dotnet run --project .\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj -p:Platform=x64
 ```

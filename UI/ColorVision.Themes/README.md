@@ -1,6 +1,6 @@
 # ColorVision.Themes
 
-> 版本: 1.5.5.1 | 目标框架: .NET 8.0 / .NET 10.0 Windows
+> 目标框架：.NET 8 / .NET 10 Windows（以 `ColorVision.Themes.csproj` 为准）
 
 ## 功能定位
 
@@ -52,6 +52,6 @@
 
 ## 构建
 
-```bash
-dotnet build UI/ColorVision.Themes/ColorVision.Themes.csproj
+```powershell
+dotnet build .\UI\ColorVision.Themes\ColorVision.Themes.csproj -p:Platform=x64
 ```

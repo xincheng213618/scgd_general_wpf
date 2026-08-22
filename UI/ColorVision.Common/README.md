@@ -1,6 +1,6 @@
 # ColorVision.Common
 
-> 版本: 1.5.5.1 | 目标框架: .NET 8.0 / .NET 10.0 Windows
+> 目标框架：.NET 8 / .NET 10 Windows（以 `ColorVision.Common.csproj` 为准）
 
 ## 功能定位
 
@@ -78,6 +78,6 @@ ColorVision 系统的通用基础框架库，提供 MVVM 架构、接口定义�
 
 ## 构建
 
-```bash
-dotnet build UI/ColorVision.Common/ColorVision.Common.csproj
+```powershell
+dotnet build .\UI\ColorVision.Common\ColorVision.Common.csproj -p:Platform=x64
 ```

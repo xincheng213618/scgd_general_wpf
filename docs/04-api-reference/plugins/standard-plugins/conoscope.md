@@ -4,12 +4,7 @@ Conoscope 是 `Plugins/Conoscope/` 下的 VAM/锥镜分析插件，用于锥镜�
 
 ## manifest
 
-| 字段 | 当前值 |
-| --- | --- |
-| `Id` | `Conoscope` |
-| `version` | `1.4.7.6` |
-| `dllpath` | `Conoscope.dll` |
-| `requires` | `1.4.12.22` |
+插件身份为 `Conoscope`，入口程序集为 `Conoscope.dll`。发布版本来自项目编译出的 DLL `FileVersion`；同目录 `manifest.json` 记录插件身份、入口程序集和最低宿主版本。
 
 ## 先查什么
 

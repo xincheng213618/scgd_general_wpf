@@ -1,6 +1,6 @@
 # Spectrum 插件
 
-`Plugins/Spectrum/` 是光谱仪测量工作台插件。当前发布版本为 `2.3.3.12`，最低宿主版本为 `1.4.12.45`；程序集版本以 `Spectrum.csproj` 为事实源，发布脚本会校验并同步 `manifest.json`。
+`Plugins/Spectrum/` 是光谱仪测量工作台插件。程序集版本以 `Spectrum.csproj` 为事实源，最低宿主版本读取同目录 `manifest.json`；发布脚本会校验并同步两者，不在说明页复制易漂移的版本号。
 
 ## 先查什么
 

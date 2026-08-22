@@ -2,7 +2,7 @@
 
 Spectrum 是 ColorVision 的光谱仪测量插件，也可以作为独立 WPF 程序运行。它负责设备连接、光谱采集、校零、自动积分、结果保存、曲线显示、EQE 和校准文件管理。
 
-当前发布版本为 `2.3.3.12`，项目目标框架为 `net10.0-windows`。版本事实源是 `Spectrum.csproj` 编译出的 DLL `FileVersion`；发布脚本会同步 `manifest.json`。
+项目目标框架为 `net10.0-windows`。版本事实源是 `Spectrum.csproj` 编译出的 DLL `FileVersion`；最低宿主版本读取 `manifest.json`，发布脚本会校验并同步两者。
 
 ## 先从哪里看
 

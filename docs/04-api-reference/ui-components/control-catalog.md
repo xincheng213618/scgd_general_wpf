@@ -15,7 +15,9 @@
 | 数据库浏览和通用查询 | `UI/ColorVision.Database/` | [ColorVision.Database](./ColorVision.Database.md) |
 | Socket 管理和状态栏 | `UI/ColorVision.SocketProtocol/` | [ColorVision.SocketProtocol](./ColorVision.SocketProtocol.md) |
 | Quartz 调度窗口 | `UI/ColorVision.Scheduler/` | [ColorVision.Scheduler](./ColorVision.Scheduler.md) |
-| 工作区、编辑器、终端、RBAC | `UI/ColorVision.Solution/` | [ColorVision.Solution](./ColorVision.Solution.md) |
+| 工作区、编辑器、终端 | `UI/ColorVision.Solution/` | [ColorVision.Solution](./ColorVision.Solution.md) |
+| 多图查看、缩略图、景深融合 | `UI/ColorVision.ImageTools/` | [ColorVision.ImageTools](./ColorVision.ImageTools.md) |
+| 登录、用户、角色、权限、会话 | `UI/ColorVision.Rbac/` | [RBAC 模块](../../03-architecture/security/rbac.md) |
 
 ## 扩展点
 
@@ -54,7 +56,7 @@
 | 3D / CIE | `UI/ColorVision.ImageEditor/EditorTools/ThreeD/`、`UI/ColorVision.ImageEditor/Cie/` |
 | Solution 文件树 | `UI/ColorVision.Solution/TreeViewControl.xaml` |
 | Solution 终端 | `UI/ColorVision.Solution/Terminal/TerminalControl.xaml` |
-| RBAC | `UI/ColorVision.Solution/Rbac/` |
+| RBAC | `UI/ColorVision.Rbac/RbacManagerWindow.xaml` |
 
 ## 落点规则
 
@@ -68,6 +70,8 @@
 | Socket 管理基础设施 | `ColorVision.SocketProtocol` | 写具体项目测试流程 |
 | 调度窗口和 Job 管理 | `ColorVision.Scheduler` | 把长耗时算法写进窗口 |
 | 工作区、编辑器、终端 | `ColorVision.Solution` | 写设备控制主链路 |
+| 多图查看和融合工具 | `ColorVision.ImageTools` | 把工具实现放回工作区壳层 |
+| 用户、角色和权限管理 | `ColorVision.Rbac` | 把账户数据或细权限实现放进 Common |
 | 市场、下载、向导、诊断 | `ColorVision.UI.Desktop` | 当作主程序入口 |
 
 ## 修改后要同步

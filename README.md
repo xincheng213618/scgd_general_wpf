@@ -43,8 +43,8 @@ ColorVision 是一个 Windows WPF 视觉检测平台，面向光电检测、设�
 ## 构建
 
 ```powershell
-dotnet restore
-dotnet build build.sln -p:Platform=x64
+dotnet restore .\ColorVision\ColorVision.csproj
+dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64
 ```
 
 单独构建和运行主程序：
@@ -57,7 +57,8 @@ dotnet run --project ColorVision/ColorVision.csproj -p:Platform=x64
 GitHub Actions 的 Windows 构建使用 MSBuild：
 
 ```powershell
-msbuild build.sln /p:Configuration=Release /p:Platform=x64
+dotnet restore .\build.sln
+msbuild .\build.sln /m /p:Configuration=Release /p:Platform=x64
 ```
 
 ## 测试
@@ -99,7 +100,7 @@ npm run docs:build
 已有构建产物时可单独复查：
 
 ```powershell
-npm run docs:validate
+npm run docs:validate:dist
 ```
 
 启动本地文档站：
@@ -108,10 +109,7 @@ npm run docs:validate
 npm run docs:dev
 ```
 
-文档语言策略：
-
-- 简体中文是完整文档和事实来源。
-- 英文、繁体中文、日文、韩文历史副本已从当前工作树移除；如确有交付需要，可从 Git 历史找回后重新维护。
+简体中文是当前维护的文档和事实来源。
 
 ## 打包与发布
 

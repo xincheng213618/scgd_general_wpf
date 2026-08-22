@@ -1,6 +1,6 @@
 # ColorVision.Database
 
-> 版本: 1.5.5.1 | 目标框架: .NET 8.0 / .NET 10.0 Windows | UI框架: WPF
+> 目标框架：.NET 8 / .NET 10 Windows；UI 框架：WPF（以 `ColorVision.Database.csproj` 为准）
 
 ## 功能定位
 
@@ -36,9 +36,7 @@
 
 ```
 ColorVision.Database/
-├── IEntity.cs                  # 实体接口 (int Id)
-├── EntityBase.cs               # 实体基类 (POCO)
-├── ViewEntity.cs               # 可绑定实体基类 (INotifyPropertyChanged)
+├── IEntity.cs                  # 实体接口及 EntityBase/ViewEntity
 ├── BaseTableDao.cs             # 泛型 DAO + 扩展方法 (CRUD/分页/批量)
 ├── DatabaseType.cs             # 数据库类型枚举
 ├── IDatabaseBrowserProvider.cs # 数据库浏览器 Provider 接口
@@ -110,6 +108,6 @@ window.Show();
 
 ## 构建
 
-```bash
-dotnet build UI/ColorVision.Database/ColorVision.Database.csproj -f net8.0-windows -p:Platform=x64
+```powershell
+dotnet build .\UI\ColorVision.Database\ColorVision.Database.csproj -f net10.0-windows7.0 -p:Platform=x64
 ```

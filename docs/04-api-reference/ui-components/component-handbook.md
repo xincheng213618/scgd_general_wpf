@@ -15,7 +15,9 @@
 | Quartz 定时任务、任务历史、任务窗口 | `ColorVision.Scheduler` |
 | 图像查看、overlay、绘图工具、伪彩、CIE、3D | `ColorVision.ImageEditor` |
 | 设置窗口、向导、插件市场、下载和诊断工具 | `ColorVision.UI.Desktop` |
-| `.cvsln` 工作区、文件树、编辑器、终端、RBAC | `ColorVision.Solution` |
+| `.cvsln` 工作区、文件树、编辑器、终端 | `ColorVision.Solution` |
+| 多图查看、缩略图缓存、景深融合 | `ColorVision.ImageTools` |
+| 登录、用户、角色、权限、会话和审计 | `ColorVision.Rbac` |
 
 如果你按控件、窗口或扩展点查源码，看 [UI 组件目录](./control-catalog.md)。如果你排查运行时发现机制，看 [UI 运行时组件](./ui-runtime-handoff.md)。如果你要发 DLL 或 NuGet 包，看 [UI DLL 发布](./publishing.md)。
 
@@ -32,7 +34,9 @@
 | `ColorVision.Scheduler.dll` | Quartz 调度、任务配置、执行历史、任务管理窗口 | 任务程序集未被发现、Cron/历史库不一致 | [ColorVision.Scheduler](./ColorVision.Scheduler.md) |
 | `ColorVision.ImageEditor.dll` | `ImageView`、绘图图元、工具发现、结果 overlay、伪彩、CIE、3D、实时图像 | 工具初始化副作用、overlay 坐标和图像缩放不一致 | [ColorVision.ImageEditor](./ColorVision.ImageEditor.md) |
 | `ColorVision.UI.Desktop` | 设置、向导、插件市场、下载器、第三方应用、反馈和诊断窗口 | 被误认为主程序入口；实际主程序仍在 `ColorVision/` | [ColorVision.UI.Desktop](./ColorVision.UI.Desktop.md) |
-| `ColorVision.Solution.dll` | 工作区、文件树、编辑器、AvalonDock、终端、本地 RBAC | 把 Engine 流程或客户业务塞进工作区壳层 | [ColorVision.Solution](./ColorVision.Solution.md) |
+| `ColorVision.Solution.dll` | 工作区、文件树、编辑器、AvalonDock、终端 | 把 Engine 流程或客户业务塞进工作区壳层 | [ColorVision.Solution](./ColorVision.Solution.md) |
+| `ColorVision.ImageTools.dll` | 多图查看、缩略图缓存、景深融合和 Solution 菜单贡献 | 把通用图像工具重新耦合进 Solution | [ColorVision.ImageTools](./ColorVision.ImageTools.md) |
+| `ColorVision.Rbac.dll` | 本地账户、角色、权限、会话和审计窗口 | 把细权限误写成全产品统一网关 | [RBAC 模块](../../03-architecture/security/rbac.md) |
 
 ## 依赖方向
 
@@ -54,6 +58,10 @@ flowchart TD
   ImageEditor --> Solution
   UIDesktop --> Solution
   UI --> Solution
+  Solution --> ImageTools["ImageTools"]
+  ImageEditor --> ImageTools
+  Database --> Rbac["Rbac"]
+  Solution --> Rbac
 ```
 
 维护原则：底层包不要反向依赖高层窗口、Engine 业务、插件或客户项目。看到反向引用需求时，优先抽接口、事件或 Provider，而不是直接引用高层程序集。
@@ -71,6 +79,8 @@ flowchart TD
 | 新增 Socket JSON 事件 | `ColorVision.SocketProtocol` 契约 + 插件/项目包 Handler |
 | 新增定时任务 | `ColorVision.Scheduler` 的 Quartz `IJob` |
 | 新增工作区编辑器或文件类型支持 | `ColorVision.Solution` |
+| 新增多图查看或文件夹融合能力 | `ColorVision.ImageTools` |
+| 新增账户、角色或细粒度权限能力 | `ColorVision.Rbac` |
 
 ## 发布前检查
 

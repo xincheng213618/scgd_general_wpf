@@ -36,7 +36,7 @@
 
 ## 发布检查
 
-`ColorVision.ImageEditor.csproj` 当前目标为 `net10.0-windows7.0`，平台包含 `AnyCPU;x64`，并生成 NuGet 包。发布时不要只看 DLL 是否存在，还要抽查资源和 native runtime。
+`ColorVision.ImageEditor.csproj` 当前目标为 `net10.0-windows7.0`，平台为 `x64`，并生成 NuGet 包。发布时不要只看 DLL 是否存在，还要抽查资源和 native runtime。
 
 | 检查项 | 重点 |
 | --- | --- |

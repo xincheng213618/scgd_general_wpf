@@ -79,7 +79,7 @@ Flow 节点里的常规 POI 字段由节点属性指定 PropertyEditor，并通�
 | `Engine/ColorVision.Engine/Templates/POI/POIFilters/TemplatePoiFilterParam.cs` | 过滤模板 |
 | `Engine/ColorVision.Engine/Templates/POI/POIRevise/TemplatePoiReviseParam.cs` | 修正模板 |
 | `Engine/ColorVision.Engine/Templates/POI/POIOutput/TemplatePoiOutputParam.cs` | 输出模板 |
-| `Engine/ColorVision.Engine/Templates/POI/POIGenCali/TemplatePoiGenCalParam.cs` | 标定生成模板 |
+| `Engine/ColorVision.Engine/Templates/POI/POIGenCali/TemplatePOICalParam.cs` | 标定生成模板 |
 | `Engine/ColorVision.Engine/Templates/Jsons/PoiAnalysis/AlgorithmPoiAnalysis.cs` | JSON POI 分析 |
 | `Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI/AlgorithmSFRFindROI.cs` | SFR ROI 查找 |
 | `Engine/ColorVision.Engine/Templates/Jsons/OLEDAOI/AlgorithmOLEDAOI.cs` | OLED AOI |

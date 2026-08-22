@@ -7,7 +7,7 @@
 从代码看，当前安全相关能力主要分成两层：
 
 - `UI/ColorVision.Common/Authorizations/` 下的粗粒度 `PermissionMode`
-- `UI/ColorVision.Solution/Rbac/` 下的本地 RBAC 子系统
+- `UI/ColorVision.Rbac/` 下的本地 RBAC 模块
 
 这两层不是互斥关系，而是并存。
 
@@ -27,9 +27,9 @@
 
 所以如果只看 RBAC 服务层，很容易高估当前系统已经完成的细粒度接入范围。
 
-## 第二层：Solution 侧本地 RBAC
+## 第二层：独立的本地 RBAC 模块
 
-更细的用户、角色、权限、会话和审计能力，当前集中在 `UI/ColorVision.Solution/Rbac/`。
+更细的用户、角色、权限、会话和审计能力，当前集中在 `UI/ColorVision.Rbac/`。
 
 这个子系统当前的特点是：
 
@@ -38,7 +38,7 @@
 - 通过 SqlSugar CodeFirst 初始化表结构
 - 提供登录、用户管理、权限管理、会话和审计服务
 
-它更像“Solution 侧本地账户与权限模块”，而不是整个产品所有安全能力的唯一总入口。
+它是主程序注册的内置账户与权限模块，而不是整个产品所有安全能力的唯一总入口。
 
 ## 当前安全章最该关注什么
 
@@ -75,12 +75,12 @@
 
 1. `UI/ColorVision.Common/Authorizations/PermissionMode.cs`
 2. `UI/ColorVision.Common/Authorizations/AccessControl.cs`
-3. `UI/ColorVision.Solution/Rbac/RbacManager.cs`
-4. `UI/ColorVision.Solution/Rbac/Services/Auth/AuthService.cs`
-5. `UI/ColorVision.Solution/Rbac/Services/SessionService.cs`
-6. `UI/ColorVision.Solution/Rbac/Services/PermissionChecker.cs`
-7. `UI/ColorVision.Solution/Rbac/UserManagerWindow.xaml.cs`
-8. `UI/ColorVision.Solution/Rbac/PermissionManagerWindow.xaml.cs`
+3. `UI/ColorVision.Rbac/RbacManager.cs`
+4. `UI/ColorVision.Rbac/Services/Auth/AuthService.cs`
+5. `UI/ColorVision.Rbac/Services/SessionService.cs`
+6. `UI/ColorVision.Rbac/Services/PermissionChecker.cs`
+7. `UI/ColorVision.Rbac/UserManagerWindow.xaml.cs`
+8. `UI/ColorVision.Rbac/PermissionManagerWindow.xaml.cs`
 
 ## 说明
 

@@ -8,8 +8,8 @@ AR/VR 显示设备光学性能专业测试系统 — 基于 ColorVision 平台�
 |------|------|
 | 框架 | .NET 10.0 / WPF (Windows x64) |
 | 架构 | ColorVision 平台插件 |
-| 版本 | 1.1.7.99 |
-| 插件要求 | ColorVision >= 1.4.12.44 |
+| 版本 | 以 `ProjectARVRPro.csproj` 和 `manifest.json` 为准 |
+| 插件要求 | 以 `manifest.json` 的 `requires` 为准 |
 | 数据库 | MySQL (SqlSugar) — 批次/算法数据；SQLite — 本地测试结果 |
 | 配置持久化 | JSON 文件 (ProcessGroups / Recipe) |
 
@@ -212,12 +212,12 @@ public class MTFHVProcessConfig : ProcessConfigBase
 
 ## 构建
 
-```bash
+```powershell
 # 构建
-dotnet build Projects/ProjectARVRPro/ProjectARVRPro.csproj
+dotnet build .\Projects\ProjectARVRPro\ProjectARVRPro.csproj -p:Platform=x64
 
 # 构建 Release x64
-dotnet build Projects/ProjectARVRPro/ProjectARVRPro.csproj -c Release -p:Platform=x64
+dotnet build .\Projects\ProjectARVRPro\ProjectARVRPro.csproj -c Release -p:Platform=x64
 ```
 
 ## 相关文档

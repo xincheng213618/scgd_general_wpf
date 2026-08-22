@@ -59,22 +59,23 @@ desktop `view=update` contracts remain unchanged for existing clients.
 
 ## Quick Start
 
-```bash
-pip install -r requirements.txt
-python app.py                        # uses config.json
-python app.py --storage /path/to/dir # override storage path
-python app.py --port 8080            # override port
-python app.py --debug                # debug mode
+```powershell
+python -m pip install -r .\requirements.txt
+python .\app.py                       # uses config.json
+$storage = Join-Path $env:TEMP 'ColorVisionBackend'
+python .\app.py --storage $storage    # override storage path
+python .\app.py --port 8080           # override port
+python .\app.py --debug               # debug mode
 ```
 
 ### Index Management
 
-```bash
+```powershell
 # Refresh the full plugin index
-python app.py --refresh-index
+python .\app.py --refresh-index
 
 # Refresh a single plugin's index
-python app.py --refresh-plugin-index MyPlugin
+python .\app.py --refresh-plugin-index MyPlugin
 ```
 
 ## Admin API
@@ -470,10 +471,10 @@ and any rotation errors.
 
 ### Creating a Key
 
-```bash
-curl -X POST http://localhost:9998/api/admin/api-keys \
-  -u admin:password \
-  -H "Content-Type: application/json" \
+```powershell
+curl.exe -X POST http://localhost:9998/api/admin/api-keys `
+  -u admin:password `
+  -H "Content-Type: application/json" `
   -d '{"name": "CI Pipeline", "scopes": "plugin:publish,release:publish"}'
 ```
 
@@ -490,12 +491,12 @@ The response includes the full key (shown only once):
 
 ### Using a Key
 
-```bash
-curl -X POST http://localhost:9998/api/packages/publish \
-  -H "Authorization: Bearer cvmp_a1b2c3d4_e5f6g7h8i9j0..." \
-  -F "PluginId=MyPlugin" \
-  -F "Version=1.0.0" \
-  -F "package=@MyPlugin-1.0.0.cvxp"
+```powershell
+curl.exe -X POST http://localhost:9998/api/packages/publish `
+  -H "Authorization: Bearer cvmp_a1b2c3d4_e5f6g7h8i9j0..." `
+  -F "PluginId=MyPlugin" `
+  -F "Version=1.0.0" `
+  -F "package=@.\MyPlugin-1.0.0.cvxp"
 ```
 
 ### Available Scopes
@@ -554,10 +555,10 @@ The React admin UI exposes this workflow at `/admin/files`. API authentication
 accepts web session, Basic Auth using `upload_auth`, or Bearer API key with
 `file:transfer` (or `admin:*`).
 
-```bash
-curl -u admin:password -T "big-file.zip" http://localhost:9998/api/transfer/files/big-file.zip
-curl -u admin:password -O http://localhost:9998/api/transfer/files/big-file.zip
-curl -u admin:password -X DELETE http://localhost:9998/api/transfer/files/big-file.zip
+```powershell
+curl.exe -u admin:password -T ".\big-file.zip" http://localhost:9998/api/transfer/files/big-file.zip
+curl.exe -u admin:password -O http://localhost:9998/api/transfer/files/big-file.zip
+curl.exe -u admin:password -X DELETE http://localhost:9998/api/transfer/files/big-file.zip
 ```
 
 If deployed behind a reverse proxy, configure that proxy to allow large request bodies as well.
@@ -659,8 +660,8 @@ When indexes are populated, most API requests read from SQLite instead of scanni
 
 ## Testing
 
-```bash
-python -m pytest Web/Backend
+```powershell
+python -m unittest discover -p "test_*.py"
 ```
 
 ## Existing API Compatibility

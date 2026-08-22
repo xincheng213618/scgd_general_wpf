@@ -71,4 +71,4 @@
 | 浏览器主链 | `DatabaseBrowserWindow.xaml.cs`、`DatabaseBrowserProviderRegistry.cs`、`IDatabaseBrowserProvider.cs` |
 | Provider 通用逻辑 | `DatabaseBrowserProviderBase.cs`、`DatabaseBrowserModels.cs` |
 | MySQL 接入 | `MySqlControl.cs` |
-| 业务实体访问 | `IEntity.cs`、`EntityBase.cs`、`ViewEntity.cs`、`BaseTableDao.cs` |
+| 业务实体访问 | `IEntity.cs`（包含 `EntityBase`、`ViewEntity`）、`BaseTableDao.cs` |

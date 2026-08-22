@@ -17,13 +17,7 @@
 
 ## manifest
 
-| 字段 | 当前值 |
-| --- | --- |
-| `Id` | `WindowsServicePlugin` |
-| `name` | `视彩服务插件` |
-| `version` | `1.4.3.22` |
-| `dllpath` | `WindowsServicePlugin.dll` |
-| `requires` | `1.3.12.34` |
+插件身份为 `WindowsServicePlugin`，入口程序集为 `WindowsServicePlugin.dll`。发布版本来自项目编译出的 DLL `FileVersion`；同目录 `manifest.json` 记录插件身份、入口程序集和最低宿主版本。
 
 ## 能力边界
 

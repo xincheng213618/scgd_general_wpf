@@ -63,7 +63,7 @@ namespace ColorVision.ImageEditor
 
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
-                foreach (var type in assembly.GetTypes())
+                foreach (var type in AssemblyHandler.GetInstance().GetTypes(assembly))
                 {
                     if (typeof(IDVContextMenu).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
                     {
@@ -78,7 +78,7 @@ namespace ColorVision.ImageEditor
             // 加载上下文菜单
             foreach (var assembly in Application.Current.GetAssemblies())
             {
-                foreach (var type in assembly.GetTypes())
+                foreach (var type in AssemblyHandler.GetInstance().GetTypes(assembly))
                 {
                     if (typeof(IIEditorToolContextMenu).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
                     {
@@ -93,7 +93,7 @@ namespace ColorVision.ImageEditor
             // 加载编辑器工具
             foreach (var assembly in Application.Current.GetAssemblies())
             {
-                foreach (var type in assembly.GetTypes())
+                foreach (var type in AssemblyHandler.GetInstance().GetTypes(assembly))
                 {
                     if (typeof(IEditorTool).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract && CanCreateGlobalEditorTool(type))
                     {
@@ -114,7 +114,7 @@ namespace ColorVision.ImageEditor
             // 加载图像打开器
             foreach (var assembly in AssemblyService.Instance.GetAssemblies())
             {
-                foreach (var type in assembly.GetTypes())
+                foreach (var type in AssemblyHandler.GetInstance().GetTypes(assembly))
                 {
                     if (typeof(IImageOpen).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
                     {

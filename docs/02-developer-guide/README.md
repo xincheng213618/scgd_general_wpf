@@ -30,13 +30,15 @@
 ## 常用命令
 
 ```powershell
-dotnet restore
-dotnet build build.sln -p:Platform=x64
+dotnet restore .\ColorVision\ColorVision.csproj
+dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64
 dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64
 dotnet test Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj -c Release -p:Platform=x64
 npm run docs:build
-npm run docs:validate
+npm run docs:validate:dist
 ```
+
+完整 `build.sln` 包含 native 项目，应在 Visual Studio Developer PowerShell 中使用 `dotnet restore .\build.sln` 后执行 `msbuild .\build.sln /m /p:Configuration=Release /p:Platform=x64`。
 
 发布命令会改变远端状态，普通插件/项目包、Spectrum 双通道和主程序分别使用：
 

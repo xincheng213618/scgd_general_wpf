@@ -4,14 +4,13 @@
 
 ## 先记住
 
-Ghost 检测不是独立公共算法包，而是 `ColorVision.Engine` 中 ARVR 模板族的一支。它由参数模板、WPF 运行面板、MQTT 命令、结果 DAO、图像叠加和 CSV 导出组成。
+Ghost 检测不是独立公共算法包，而是 `ColorVision.Engine` 中 ARVR 模板族的一支。它由参数模板、通用显示算法配置、MQTT 命令、结果 DAO、图像叠加和 CSV 导出组成。
 
 ## 当前最关键的文件
 
 - `Engine/ColorVision.Engine/Templates/ARVR/Ghost/TemplateGhost.cs`
 - `Engine/ColorVision.Engine/Templates/ARVR/Ghost/GhostParam.cs`
 - `Engine/ColorVision.Engine/Templates/ARVR/Ghost/AlgorithmGhost.cs`
-- `Engine/ColorVision.Engine/Templates/ARVR/Ghost/DisplayGhost.xaml.cs`
 - `Engine/ColorVision.Engine/Templates/ARVR/Ghost/ViewHandleGhost.cs`
 - `Engine/ColorVision.Engine/Templates/ARVR/Ghost/AlgResultGhostDao.cs`
 
@@ -23,8 +22,8 @@ Ghost 检测不是独立公共算法包，而是 `ColorVision.Engine` 中 ARVR �
 | --- | --- |
 | 模板入口 | `TemplateGhost : ITemplate<GhostParam>`，`TemplateDicId = 7`，`Code = ghost` |
 | 参数模型 | `Ghost_radius`、`Ghost_cols`、`Ghost_rows`、`Ghost_ratioH`、`Ghost_ratioL`，偏向点阵几何和灰度比例 |
-| 算法宿主 | `AlgorithmGhost` 负责窗口、颜色、模板、设备和图像路径打包，不是本地图像处理内核 |
-| 运行界面 | `DisplayGhost` 绑定参数，选择 `BLUE/GREEN/RED`，读取设备图像、本地图像和批次输入 |
+| 算法宿主 | `AlgorithmGhost` 负责颜色、模板、设备和图像输入打包，不是本地图像处理内核 |
+| 运行配置 | `GhostDisplayAlgorithmConfig` 在通用 `DisplayAlgorithmBase` 界面中提供 Ghost 模板和 `BLUE/GREEN/RED` 颜色选择 |
 | 命令链 | `SendCommand(...)` 打包 `ImgFileName`、`FileType`、`DeviceCode`、`DeviceType`、`TemplateParam`、`Color`，发布 `Ghost` 事件 |
 
 ## 结果当前怎么处理
@@ -53,5 +52,4 @@ Ghost 检测不是独立公共算法包，而是 `ColorVision.Engine` 中 ARVR �
 1. `Engine/ColorVision.Engine/Templates/ARVR/Ghost/TemplateGhost.cs`
 2. `Engine/ColorVision.Engine/Templates/ARVR/Ghost/GhostParam.cs`
 3. `Engine/ColorVision.Engine/Templates/ARVR/Ghost/AlgorithmGhost.cs`
-4. `Engine/ColorVision.Engine/Templates/ARVR/Ghost/DisplayGhost.xaml.cs`
-5. `Engine/ColorVision.Engine/Templates/ARVR/Ghost/ViewHandleGhost.cs`
+4. `Engine/ColorVision.Engine/Templates/ARVR/Ghost/ViewHandleGhost.cs`

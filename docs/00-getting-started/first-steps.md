@@ -13,8 +13,8 @@
 源码调试前先执行：
 
 ```powershell
-dotnet restore
-dotnet build ColorVision/ColorVision.csproj -p:Platform=x64
+dotnet restore .\ColorVision\ColorVision.csproj
+dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64
 ```
 
 ## 首次启动会做什么

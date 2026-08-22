@@ -2,7 +2,7 @@
 
 这个目录用于对外分发给第三方插件作者。
 
-目标是让插件作者最后只拿到一个 `cvplugin.exe`。第一次双击时如果当前目录还没有 `pluginkit.config.json`，它会在 cmd 里引导用户完成配置；后续再双击就会自动按 config 执行构建、打包和上传。
+对外分发时，插件作者只需要 `cvplugin.exe`。第一次双击时如果当前目录还没有 `pluginkit.config.json`，它会在 cmd 里引导用户完成配置；后续再双击就会自动按 config 执行构建、打包和上传。
 
 ## 目录说明
 
@@ -21,7 +21,7 @@
 
 ## 推荐使用流程
 
-1. 把未来打包出来的 `cvplugin.exe` 放到插件项目目录。
+1. 把构建或分发得到的 `cvplugin.exe` 放到插件项目目录。
 2. 第一次双击时，如果当前目录没有 `pluginkit.config.json`，它会提示：
    - 是否配置构建步骤。
    - 默认使用当前目录下的单个 `.csproj`，也可以改成别的 `.csproj`、别的项目目录，或输入 `cmd:<命令>` 作为自定义构建命令。
@@ -30,7 +30,7 @@
 3. 确认后会在当前目录写入 `pluginkit.config.json`。
 4. 后续再双击 `cvplugin.exe`，会自动读取当前目录的 `pluginkit.config.json`，并按配置执行构建、打包和上传。
 
-仓库内调试这个流程时，也可以直接运行 `scripts/package_cvxp.py`；无参数行为和未来的 exe 是一致的。
+仓库内调试这个流程时，也可以直接运行 `scripts/package_cvxp.py`；无参数行为和 exe 一致。
 
 仓库内如果不想先打 exe，也可以直接运行：
 
@@ -64,7 +64,7 @@ python -m pip install requests
 
 - 这个目录可以单独拷贝出去使用。
 - `pluginkit.config.json` 现在会额外记录 `buildEnabled`、`uploadEnabled`、`keepPackageAfterUpload`，并且支持 `buildCommand` 这种自定义构建命令。
-- 如果未来把 `package_cvxp.py` 打成单个 `cvplugin.exe`，需要把 `shared_files.json` 一起打进 exe 资源里；脚本已经兼容 PyInstaller 这类运行时解包目录。
+- 构建单文件 `cvplugin.exe` 时，需要把 `shared_files.json` 一起打进 exe 资源；脚本已经兼容 PyInstaller 运行时解包目录。
 - 如果只是想重新生成 `cvplugin.exe`，直接双击 `build.bat` 即可。
 - 如果 `keepPackageAfterUpload = false`，上传成功后不仅会删除本地 `.cvxp`，还会在输出目录原本不存在或原本为空时一并删掉空的输出目录。
 - 仓库内重新构建 exe 时，可以运行：`python -m PyInstaller --noconfirm --clean cvplugin.spec`。

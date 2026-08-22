@@ -28,7 +28,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ColorVision.UI" Version="1.5.5.1" />
+    <!-- 替换为与宿主其他 ColorVision 包一致的已发布版本 -->
+    <PackageReference Include="ColorVision.UI" Version="PUBLISHED_VERSION" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,7 +42,7 @@
 
 ## 2. manifest.json
 
-插件根目录必须包含 `manifest.json`。`id` 要稳定，后续更新、安装、卸载都以它为唯一标识。
+插件根目录必须包含 `manifest.json`。`id` 要稳定，后续更新、安装、卸载都以它为唯一标识；示例中的 `requires` 必须替换为插件真实支持的最低宿主版本。
 
 ```json
 {
@@ -51,7 +52,7 @@
   "version": "0.1.0.0",
   "description": "一个独立维护的 ColorVision 插件。",
   "dllpath": "DemoPlugin.dll",
-  "requires": "1.4.6.25",
+  "requires": "1.0.0.0",
   "author": "Your Name",
   "entry_point": "DemoPlugin.DemoMenuProvider",
   "icon": "PackageIcon.png"
@@ -142,11 +143,11 @@ C:\Path\To\ColorVision\bin\x64\Debug\net10.0-windows\Plugins\DemoPlugin
 3. 确认后会在当前目录生成 `pluginkit.config.json`。
 4. 后续再次双击 `cvplugin.exe`，它会自动读取当前目录的 `pluginkit.config.json`，并按配置执行构建、打包和上传。
 
-如果你在仓库里直接运行 `scripts/package_cvxp.py`，无参数时的行为和未来的 `cvplugin.exe` 是一致的。
+如果你在仓库里直接运行 `scripts/package_cvxp.py`，无参数时的行为和 `cvplugin.exe` 一致。
 
 ## 6. 仓库内调试入口
 
-仓库内如果还没把脚本打成 `cvplugin.exe`，可以直接运行 `scripts/package_cvxp.py`。无参数行为和未来的 `cvplugin.exe` 一致：没有 config 时先进入交互式配置，有 config 时直接执行。
+仓库内不构建 `cvplugin.exe` 时，可以直接运行 `scripts/package_cvxp.py`。无参数行为与 exe 一致：没有 config 时先进入交互式配置，有 config 时直接执行。
 
 需要自定义行为时，也可以直接调用：
 

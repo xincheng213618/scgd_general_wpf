@@ -216,52 +216,6 @@ public class FlowEngineControl
 | **控制节点** | 流程控制 | 条件判断、流程跳转 |
 | **结束节点** | 流程结束 | 结果收集、清理工作 |
 
-<!-- MAINTAINER-WORKFLOW: FLOWENGINELIB-DLL-SYNC -->
-## 维护者流程：服务 DLL 对比与选择性合并
-
-> [!IMPORTANT]
-> 本节是服务侧 `FlowEngineLib.dll` 同步流程的仓库内记录。以后只需说明“按 FlowEngineLib DLL 对比合并流程处理”并提供 DLL 路径，无需重复描述完整步骤。
-
-### 合并边界
-
-- 服务 DLL 通常是 `net472` 和本地 DLL 引用；本仓库使用 `net8.0-windows;net10.0-windows`、`PackageReference` 和 `ProjectReference`，不能整库覆盖。
-- 保留仓库已有的 MQTT/并发处理、流程停止与结束语义、`FlowEngineLocalization`、`_MinTime` / `_IsPublishStatus` 的有意删除，以及仅保存不执行的 `FlowTimeout`。
-- 新增流程节点必须保留服务端的完整命名空间、类型名、枚举名、命令字符串和 `STNode` 分类，避免旧流程反序列化失败；只适配仓库已有约定，例如 `OnPropertyChanged`。
-- 未明确要求时，不联动版本号、发布、提交或推送。
-
-### 操作步骤
-
-先在 PowerShell 中设置服务依赖目录、已安装基线和待比较 DLL：
-
-```powershell
-$serviceInstallTool = (Resolve-Path -LiteralPath (Read-Host '请输入服务 InstallTool 目录') -ErrorAction Stop).Path
-$installedFlowEngineDll = Join-Path -Path $serviceInstallTool -ChildPath 'FlowEngineLib.dll'
-$incomingFlowEngineDll = (Resolve-Path -LiteralPath (Read-Host '请输入待比较的 FlowEngineLib.dll') -ErrorAction Stop).Path
-
-if (-not (Test-Path -LiteralPath $installedFlowEngineDll -PathType Leaf)) {
-    throw "未找到已安装基线 DLL: $installedFlowEngineDll"
-}
-```
-
-1. 使用上述变量校验服务依赖目录、已安装基线和待比较 DLL。
-2. 保留 `$installedFlowEngineDll` 作为已安装基线。待比较 DLL 放到同一目录时使用 `FlowEngineLib.<version>.dll`，不要覆盖基线。
-3. 使用与本机 ILSpy 匹配版本的官方 `ilspycmd`，将 `$incomingFlowEngineDll` 反编译到版本化目录，并通过 `--referencepath` 指向 `$serviceInstallTool`。
-4. 将 `$installedFlowEngineDll` 反编译到临时目录，先比较“已安装基线 → `$incomingFlowEngineDll`”，只定位本次服务发布的真实增量。
-5. 再逐项对照 `Engine\FlowEngineLib`。检查新增/修改文件、公开类型和公开成员；必要时构建仓库程序集后用 Mono.Cecil 交叉核验，避免漏掉同名文件中的 API 变化。
-6. 只合并确认需要的功能补丁，不覆盖仓库侧完整文件。
-7. 构建、检查命令映射和最终工作区，保持无关的用户修改不变。
-
-```powershell
-dotnet build .\Engine\FlowEngineLib\FlowEngineLib.csproj -p:Platform=x64 --no-restore -m:1 /nodeReuse:false -v:minimal
-git status --short
-```
-
-### 已处理服务基线
-
-- [x] `2026.7.21.0`：已合并 `PGGECS_DemuraNode`、`PGGECS_KeyNode` 及对应枚举，保留 `/06 PG` 分类并增加仓库侧 `OnPropertyChanged`。
-- [x] `2026.7.21.0`：未合并 `FlowLocalizationHelper`，仓库已有 `FlowEngineLocalization`。
-- [x] `2026.7.21.0`：未合并服务侧 `CVBaseServerNodeHub` 完成路径；仓库已有更完整的结束与同流程处理，服务侧反编译路径还可能重复传递完成数据。
-
 ## 开发调试
 
 ```powershell
@@ -274,22 +228,6 @@ dotnet clean .\Engine\FlowEngineLib\FlowEngineLib.csproj
 # 发布项目
 dotnet publish .\Engine\FlowEngineLib\FlowEngineLib.csproj -c Release
 ```
-
-### 调试技巧
-
-1. **启用详细日志**
-   ```csharp
-   LogHelper.SetLogLevel(LogLevel.Debug);
-   ```
-
-2. **断点调试**
-   - 在 `DoServerWork` 方法设置断点
-   - 检查 `CVStartCFC` 对象内容
-   - 监视节点状态变化
-
-3. **MQTT消息监控**
-   - 使用 MQTT.fx 或 MQTTX 工具
-   - 监听主题: `{ServiceType}/{DeviceCode}/#`
 
 ## 最佳实践
 
@@ -333,16 +271,8 @@ dotnet publish .\Engine\FlowEngineLib\FlowEngineLib.csproj -c Release
 ## 相关文档链接
 
 - [详细技术文档](../../docs/04-api-reference/engine-components/FlowEngineLib.md)
-- [流程引擎概述](../../docs/02-developer-guide/algorithm-engine-templates/flow-engine/流程引擎.md)
 - [节点开发指南](../../docs/02-developer-guide/core-concepts/extensibility.md)
 - [ST.Library.UI](../ST.Library.UI/README.md)
-
-## 版本历史
-
-### v1.6.1 (当前版本)
-- 优化MQTT连接稳定性
-- 增加新的算法节点
-- 性能优化和bug修复
 
 ## 维护者
 

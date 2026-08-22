@@ -46,8 +46,7 @@
 
 ## 边界
 
-- 主题持久化、预览卡编辑器、菜单和快捷键入口在 `UI/ColorVision.UI/Themes`，不是本项目单独完成。
-- `ThemesHotKey` 负责主题菜单、`Ctrl + Shift + T` 轮换和写入 `ThemeConfig.Instance.Theme`。
+- 主题持久化和预览卡编辑器位于 `UI/ColorVision.UI/Themes/ThemeConfig.cs` 与 `ThemePropertiesEditor.cs`，不是本项目单独完成。
 - 旧文档提到的 `Theme.Custom`、`ThemeManager.ResourceDictionaryCustom`、`ThemeConfig.FollowSystem` 当前不存在。
 - 新增主题不是只加一个 XAML，还要改枚举、资源列表、标题栏逻辑、图标策略和包资源。
 
@@ -69,6 +68,6 @@
 | 任务 | 先看 |
 | --- | --- |
 | 理解主题切换 | `ThemeManager.cs`、`ThemeManagerExtensions.cs`、`Theme.cs` |
-| 理解菜单和配置接入 | `UI/ColorVision.UI/Themes/ThemeConfig.cs`、`ThemesHotKey.cs` |
+| 理解配置接入 | `UI/ColorVision.UI/Themes/ThemeConfig.cs`、`ThemePropertiesEditor.cs` |
 | 检查主题资源 | `Themes/Base.xaml`、`Themes/Dark.xaml`、`Themes/White.xaml` |
 | 判断能否扩展主题 | 先查 `Theme` 枚举和 `ThemeManager`，当前没有开放注册模型 |

@@ -1,6 +1,6 @@
 # ColorVision.UI.Desktop
 
-`UI/ColorVision.UI.Desktop/` 是桌面侧辅助壳层功能集合，包含设置、向导、菜单管理、配置管理、插件市场、下载、第三方应用入口、反馈和崩溃诊断。它不是整个产品主入口；真正主程序在 `ColorVision/`。
+`UI/ColorVision.UI.Desktop/` 是桌面侧辅助壳层功能集合，包含设置、向导、菜单管理、插件市场、下载、第三方应用入口、反馈和崩溃诊断。它不是整个产品主入口；真正主程序在 `ColorVision/`。
 
 ## 先查什么
 
@@ -20,12 +20,12 @@
 | 能力 | 当前入口 | 说明 |
 | --- | --- | --- |
 | 设置窗口 | `Settings/SettingWindow.xaml.cs` | 从 `ConfigSettingManager` 取设置项，按分组生成 Tab，支持自定义 View 懒加载 |
-| 配置管理 | `ConfigManagerWindow.xaml(.cs)` | 桌面侧集中配置管理窗口 |
 | 向导流程 | `WizardManager`、`WizardWindow`、`WizardWindowConfig` | 扫描 `IWizardStep`，按 `Order` 排序并驱动步骤切换 |
 | 菜单项管理 | `MenuItemManagerConfig`、`MenuItemManagerWindow` | 管理菜单项设置与持久化 |
 | 插件市场 | `MarketplaceWindow`、`MarketplaceClient`、`MarketplacePackageDownloadService` | 展示市场内容、Markdown、下载和安装入口 |
 | 下载管理 | `Aria2cDownloadManager`、`DownloadWindow` | 使用内置 `aria2c.exe` 管理下载 |
 | 第三方应用 | `SystemAppProvider`、`CustomAppProvider`、`ThirdPartyAppsWindow` | 系统工具、自定义应用和磁盘 Treemap 入口 |
+| 主程序工具贡献 | `ColorVision/ToolPlugins/ThirdPartyApps/` | 通过 `IThirdPartyAppProvider` 向第三方应用窗口补充主程序工具；“上网网卡选择”可读取 IPv4、DNS、网关和 Metric，修改所选接口的 Metric，或将 DNS 设为 `114.114.114.114` 后刷新缓存 |
 | 崩溃诊断 | `Diagnostics/CrashDumpSettingsControl`、`CrashDumpConfiguration` | 通过通用属性反射生成 WER LocalDumps 设置，由后台特权服务写入 HKLM；支持手动保存当前进程 Dump 和反馈包收集 |
 | 反馈诊断 | `Feedback/`、`Feedback/Collectors/WindowsEventLogCollector` | 打包应用日志、系统信息、Dump 和 Windows Application/System 警告或错误 |
 | 诊断窗口 | `ViewDllVersionsWindow` | 查看已加载程序集版本、产品版本和路径 |
@@ -40,7 +40,7 @@
 | 下载链 | `DownloadWindow` -> `Aria2cDownloadManager` -> `aria2c.exe` / RPC daemon |
 | 崩溃诊断链 | `SettingWindow` -> `CrashDumpSettingsProvider` -> 通用属性编辑器 -> `ColorVisionServiceHost` / WER LocalDumps / `DumpHelper` |
 | 反馈收集链 | `FeedbackWindow` -> `IFeedbackLogCollector` -> 应用日志、系统信息、Dump、Windows 事件日志 |
-| 管理链 | `MenuItemManagerWindow`、`ConfigManagerWindow`、`ViewDllVersionsWindow` |
+| 管理链 | `MenuItemManagerWindow`、`ViewDllVersionsWindow` |
 
 ## 新增功能检查
 
@@ -79,9 +79,10 @@
 
 | 任务 | 先看 |
 | --- | --- |
-| 设置和配置窗口 | `Settings/SettingWindow.xaml.cs`、`ConfigManagerWindow.xaml.cs` |
+| 设置窗口 | `Settings/SettingWindow.xaml.cs`、`Settings/SettingWindowController.cs` |
 | 向导流程 | `Wizards/WizardWindow.xaml.cs`、`Wizards/WizardWindowConfig.cs` |
 | 菜单管理 | `MenuItemManager/MenuItemManagerConfig.cs`、`MenuItemManagerWindow.xaml.cs` |
 | 插件市场和下载 | `Marketplace/`、`Download/`、`WebViewService.cs` |
 | 第三方应用 | `ThirdPartyApps/SystemAppProvider.cs`、`ThirdPartyAppsWindow.xaml.cs` |
+| 主程序网卡工具 | `ColorVision/ToolPlugins/ThirdPartyApps/InternalAppProvider.cs`、`NetworkAdapterPriorityService.cs`、`NetworkAdapterPriorityWindow.xaml.cs` |
 | 崩溃与反馈诊断 | `Diagnostics/`、`Feedback/`、`ColorVision.Common/NativeMethods/DumpHelper.cs` |

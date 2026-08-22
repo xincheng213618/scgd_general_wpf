@@ -22,6 +22,7 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
         public string AutomaticMetric { get; set; } = string.Empty;
         public string IPv4Address { get; set; } = string.Empty;
         public string DefaultGateway { get; set; } = string.Empty;
+        public string DnsServers { get; set; } = string.Empty;
         public int? RouteMetric { get; set; }
 
         public bool IsConnected => ConnectionState.Equals("Connected", StringComparison.OrdinalIgnoreCase);
@@ -36,6 +37,7 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
     internal static class NetworkAdapterPriorityService
     {
         internal const int PreferredMetric = 5;
+        internal const string PreferredDnsServer = "114.114.114.114";
 
         private const string ReadAdaptersScript = """
             $ErrorActionPreference = 'Stop'
@@ -43,10 +45,12 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
             [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 
             $configurations = @(Get-NetIPConfiguration -ErrorAction SilentlyContinue)
+            $dnsConfigurations = @(Get-DnsClientServerAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue)
             $defaultRoutes = @(Get-NetRoute -AddressFamily IPv4 -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue)
             $result = @(Get-NetIPInterface -AddressFamily IPv4 -ErrorAction Stop | ForEach-Object {
                 $interface = $_
                 $configuration = $configurations | Where-Object InterfaceIndex -eq $interface.InterfaceIndex | Select-Object -First 1
+                $dnsConfiguration = $dnsConfigurations | Where-Object InterfaceIndex -eq $interface.InterfaceIndex | Select-Object -First 1
                 $defaultRoute = $defaultRoutes |
                     Where-Object InterfaceIndex -eq $interface.InterfaceIndex |
                     Sort-Object RouteMetric |
@@ -60,6 +64,7 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
                     AutomaticMetric = [string]$interface.AutomaticMetric
                     IPv4Address = [string](@($configuration.IPv4Address | ForEach-Object IPAddress) -join ', ')
                     DefaultGateway = [string](@($configuration.IPv4DefaultGateway | ForEach-Object NextHop) -join ', ')
+                    DnsServers = [string](@($dnsConfiguration.ServerAddresses) -join ', ')
                     RouteMetric = if ($null -ne $defaultRoute) { [int]$defaultRoute.RouteMetric } else { $null }
                 }
             })
@@ -78,12 +83,17 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
 
         public static Task SetPreferredAsync(int interfaceIndex, CancellationToken cancellationToken = default)
         {
-            return RunMetricCommandAsync(BuildSetPreferredScript(interfaceIndex), "设置网卡优先级失败", cancellationToken);
+            return RunElevatedCommandAsync(BuildSetPreferredScript(interfaceIndex), "设置网卡优先级失败", cancellationToken);
         }
 
         public static Task RestoreAutomaticMetricAsync(int interfaceIndex, CancellationToken cancellationToken = default)
         {
-            return RunMetricCommandAsync(BuildRestoreAutomaticMetricScript(interfaceIndex), "恢复自动 Metric 失败", cancellationToken);
+            return RunElevatedCommandAsync(BuildRestoreAutomaticMetricScript(interfaceIndex), "恢复自动 Metric 失败", cancellationToken);
+        }
+
+        public static Task SetDnsAndFlushAsync(int interfaceIndex, CancellationToken cancellationToken = default)
+        {
+            return RunElevatedCommandAsync(BuildSetDnsAndFlushScript(interfaceIndex), "设置 DNS 或刷新缓存失败", cancellationToken);
         }
 
         internal static IReadOnlyList<NetworkAdapterInfo> ParseAdapters(string json)
@@ -122,7 +132,17 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
                 """;
         }
 
-        private static async Task RunMetricCommandAsync(string script, string errorPrefix, CancellationToken cancellationToken)
+        internal static string BuildSetDnsAndFlushScript(int interfaceIndex)
+        {
+            ValidateInterfaceIndex(interfaceIndex);
+            return $$"""
+                $ErrorActionPreference = 'Stop'
+                Set-DnsClientServerAddress -InterfaceIndex {{interfaceIndex}} -ServerAddresses '{{PreferredDnsServer}}' -ErrorAction Stop
+                Clear-DnsClientCache -ErrorAction Stop
+                """;
+        }
+
+        private static async Task RunElevatedCommandAsync(string script, string errorPrefix, CancellationToken cancellationToken)
         {
             ProcessResult result = await RunPowerShellAsync(script, requireAdministrator: true, cancellationToken).ConfigureAwait(false);
             if (result.ExitCode != 0)

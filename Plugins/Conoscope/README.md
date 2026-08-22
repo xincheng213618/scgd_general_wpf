@@ -1,6 +1,6 @@
 # Conoscope
 
-当前源码版本：1.4.7.6。版本事实源是 `Conoscope.csproj` 编译出的 DLL `FileVersion`；发布脚本会同步 `manifest.json`。
+版本事实源是 `Conoscope.csproj` 编译出的 DLL `FileVersion`；发布脚本会同步 `manifest.json`。
 
 Conoscope 是 ColorVision 中用于锥光镜图像观察、参考坐标分析、关注点采样和综合色域/对比度计算的插件。当前代码按六个容易定位的职责组织：
 
@@ -11,7 +11,7 @@ Conoscope 是 ColorVision 中用于锥光镜图像观察、参考坐标分析、
 - Analysis 负责关注点快照、色域/对比度计算和结果窗口。
 - Settings / Integration 负责全局默认值、型号、参考图、宿主和相机边界。
 
-## 1.4.7.6 重点
+## 当前实现重点
 
 - 删除仅按方法类别拆分的 View/Window partial，主窗口和单文档 View 各保留一个可见的 WPF 组合点。
 - `ConoscopeDocument` 独占 X/Y/Z Mat、取消源和加载版本；Y 通道先形成首屏，X/Z 在后台顺序补齐，连续打开只允许最新请求提交。

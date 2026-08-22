@@ -43,11 +43,11 @@
   "version": "1.0.0.0",
   "description": "插件说明",
   "dllpath": "MyPlugin.dll",
-  "requires": "1.4.12.35"
+  "requires": "1.0.0.0"
 }
 ```
 
-`id` 必须稳定且唯一，`dllpath` 必须指向实际生成的程序集。发布版本由编译后 DLL 的 `FileVersion` 派生，`manifest.json` 的 `version` 应保持同步，但不是普通插件打包的权威版本源。没有 manifest 时按“目录名 + 同名 DLL”加载只是兼容路径，不是新插件方案。
+`id` 必须稳定且唯一，`dllpath` 必须指向实际生成的程序集，`requires` 要替换为插件真实支持的最低宿主版本。发布版本由编译后 DLL 的 `FileVersion` 派生，`manifest.json` 的 `version` 应保持同步，但不是普通插件打包的权威版本源。没有 manifest 时按“目录名 + 同名 DLL”加载只是兼容路径，不是新插件方案。
 
 ## 3. 接入宿主扩展点
 

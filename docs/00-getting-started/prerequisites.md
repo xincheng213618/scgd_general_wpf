@@ -12,8 +12,8 @@
 
 ### 操作系统
 
-- Windows 10 1903 及以上版本，或 Windows 11
-- 建议使用 x64 系统环境
+- Windows 10 或 Windows 11
+- x64 系统环境
 - 首次安装、升级或涉及系统服务配置时，建议使用具有管理员权限的账户
 
 ### 硬件与显示
@@ -37,14 +37,14 @@
 
 当前仓库以 Windows WPF 和 x64 为主，建议准备以下环境：
 
-- .NET 8.0 SDK 或 .NET 10.0 SDK
+- .NET 10 SDK
 - Visual Studio 2022 或更新版本（推荐）
 - Git 与 PowerShell（用于获取仓库和执行脚本）
 
 建议使用 x64 平台构建主程序：
 
 ```powershell
-dotnet restore
+dotnet restore .\ColorVision\ColorVision.csproj
 dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64
 ```
 

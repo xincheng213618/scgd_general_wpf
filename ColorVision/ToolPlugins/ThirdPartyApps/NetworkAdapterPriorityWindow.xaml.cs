@@ -1,6 +1,7 @@
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -42,9 +43,10 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
             if (result != MessageBoxResult.Yes)
                 return;
 
-            await RunMetricChangeAsync(
+            await RunAdapterChangeAsync(
                 () => NetworkAdapterPriorityService.SetPreferredAsync(adapter.InterfaceIndex),
-                $"已将“{adapter.InterfaceAlias}”设为首选（Metric {NetworkAdapterPriorityService.PreferredMetric}）。").ConfigureAwait(true);
+                $"已将“{adapter.InterfaceAlias}”设为首选（Metric {NetworkAdapterPriorityService.PreferredMetric}）。",
+                adapter.InterfaceIndex).ConfigureAwait(true);
         }
 
         private async void RestoreAutomaticButton_Click(object sender, RoutedEventArgs e)
@@ -61,9 +63,30 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
             if (result != MessageBoxResult.Yes)
                 return;
 
-            await RunMetricChangeAsync(
+            await RunAdapterChangeAsync(
                 () => NetworkAdapterPriorityService.RestoreAutomaticMetricAsync(adapter.InterfaceIndex),
-                $"已恢复“{adapter.InterfaceAlias}”的自动 Metric。").ConfigureAwait(true);
+                $"已恢复“{adapter.InterfaceAlias}”的自动 Metric。",
+                adapter.InterfaceIndex).ConfigureAwait(true);
+        }
+
+        private async void SetDnsAndFlushButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (AdaptersGrid.SelectedItem is not NetworkAdapterInfo adapter)
+                return;
+
+            MessageBoxResult result = MessageBox.Show(
+                this,
+                $"将“{adapter.InterfaceAlias}”的 IPv4 DNS 设置为 {NetworkAdapterPriorityService.PreferredDnsServer}，然后刷新 Windows DNS 缓存。\n\n此操作会替换该网卡现有的手动 DNS 列表，是否继续？",
+                "设置 DNS 并刷新缓存",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (result != MessageBoxResult.Yes)
+                return;
+
+            await RunAdapterChangeAsync(
+                () => NetworkAdapterPriorityService.SetDnsAndFlushAsync(adapter.InterfaceIndex),
+                $"已将“{adapter.InterfaceAlias}”的 DNS 设置为 {NetworkAdapterPriorityService.PreferredDnsServer}，并刷新 DNS 缓存。",
+                adapter.InterfaceIndex).ConfigureAwait(true);
         }
 
         private void AdaptersGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -76,15 +99,19 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
             Close();
         }
 
-        private async Task RefreshAdaptersAsync(string? successMessage = null)
+        private async Task RefreshAdaptersAsync(string? successMessage = null, int? selectedInterfaceIndex = null)
         {
-            SetBusy(true, "正在读取 IPv4 网卡和默认路由……");
+            SetBusy(true, "正在读取 IPv4 网卡、DNS 和默认路由……");
             try
             {
                 IReadOnlyList<NetworkAdapterInfo> adapters = await NetworkAdapterPriorityService.GetAdaptersAsync().ConfigureAwait(true);
                 AdaptersGrid.ItemsSource = adapters;
                 if (adapters.Count > 0)
-                    AdaptersGrid.SelectedIndex = 0;
+                {
+                    AdaptersGrid.SelectedItem = selectedInterfaceIndex.HasValue
+                        ? adapters.FirstOrDefault(adapter => adapter.InterfaceIndex == selectedInterfaceIndex.Value) ?? adapters[0]
+                        : adapters[0];
+                }
 
                 StatusText.Text = successMessage ?? $"已读取 {adapters.Count} 个 IPv4 接口。Metric 数值越小，优先级通常越高。";
             }
@@ -99,13 +126,13 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
             }
         }
 
-        private async Task RunMetricChangeAsync(Func<Task> changeAction, string successMessage)
+        private async Task RunAdapterChangeAsync(Func<Task> changeAction, string successMessage, int selectedInterfaceIndex)
         {
             SetBusy(true, "正在等待管理员授权并修改网卡设置……");
             try
             {
                 await changeAction().ConfigureAwait(true);
-                await RefreshAdaptersAsync(successMessage).ConfigureAwait(true);
+                await RefreshAdaptersAsync(successMessage, selectedInterfaceIndex).ConfigureAwait(true);
             }
             catch (OperationCanceledException ex)
             {
@@ -138,6 +165,7 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
             bool hasSelection = AdaptersGrid.SelectedItem is NetworkAdapterInfo;
             SetPreferredButton.IsEnabled = !_isBusy && hasSelection;
             RestoreAutomaticButton.IsEnabled = !_isBusy && hasSelection;
+            SetDnsAndFlushButton.IsEnabled = !_isBusy && hasSelection;
         }
     }
 }
