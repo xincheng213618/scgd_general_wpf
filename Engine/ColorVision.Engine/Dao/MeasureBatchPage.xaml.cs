@@ -1,11 +1,16 @@
 ﻿#pragma warning disable CA1001,CA1863
 using ColorVision.Database;
 using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.Results;
+using ColorVision.ImageEditor;
 using ColorVision.UI;
+using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,12 +30,23 @@ namespace ColorVision.Engine
         private CopilotDynamicContextSession? _copilotContextSession;
         private Window? _copilotHostWindow;
         private string _lastSelectedResultKind = string.Empty;
+        private readonly ObservableCollection<GridViewColumnVisibility> _algorithmDetailColumnVisibilitys = new();
+        private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
+        private readonly ViewResultContext _algorithmResultContext;
 
         public MeasureBatchPage(Frame frame, MeasureBatchModel measureBatchModel)
         {
             Frame = frame;
             MeasureBatchModel = measureBatchModel;
             InitializeComponent();
+            _algorithmResultContext = new ViewResultContext
+            {
+                ImageView = algorithmImagePreview,
+                ListView = algorithmDetailListView,
+                LeftGridViewColumnVisibilitys = _algorithmDetailColumnVisibilitys,
+                SideTextBox = algorithmDetailTextBox
+            };
+            CommandBindings.Add(new CommandBinding(AlgorithmResultDataSaver.SaveCommand, SaveSideDataCommand_Executed, SaveSideDataCommand_CanExecute));
         }
 
         public ObservableCollection<ViewResultImage> ViewResultImages { get; set; } = new ObservableCollection<ViewResultImage>();
@@ -59,12 +75,24 @@ namespace ColorVision.Engine
             {
                 ViewResultAlgs.Add(new ViewResultAlg(item));
             }
+
+            if (ViewResultImages.Count > 0)
+                listView1.SelectedIndex = 0;
+            if (ViewResultAlgs.Count > 0)
+                listView2.SelectedIndex = 0;
+
+            ResultTabs.SelectedIndex = ViewResultImages.Count > 0 || ViewResultAlgs.Count == 0 ? 0 : 1;
+            _lastSelectedResultKind = ResultTabs.SelectedIndex == 0 ? "image" : "algorithm";
+            ShowSelectedImageResult();
+            ShowSelectedAlgorithmResult();
             EnsureCopilotContextRegistered();
             PublishCopilotContext();
         }
 
         private void Page_Unloaded(object sender, RoutedEventArgs e)
         {
+            imagePreview.Clear();
+            ClearAlgorithmResultSurface();
             ReleaseCopilotContext();
         }
 
@@ -94,11 +122,100 @@ namespace ColorVision.Engine
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (ReferenceEquals(sender, listView1) && listView1.SelectedItem != null)
+            {
                 _lastSelectedResultKind = "image";
+                ShowSelectedImageResult();
+            }
             else if (ReferenceEquals(sender, listView2) && listView2.SelectedItem != null)
+            {
                 _lastSelectedResultKind = "algorithm";
+                ShowSelectedAlgorithmResult();
+            }
             _copilotContextSession?.Activate();
             PublishCopilotContext();
+        }
+
+        private void ResultTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!ReferenceEquals(e.Source, ResultTabs))
+                return;
+
+            _lastSelectedResultKind = ResultTabs.SelectedIndex == 0 ? "image" : "algorithm";
+            _copilotContextSession?.Activate();
+            PublishCopilotContext();
+        }
+
+        private void ShowSelectedImageResult()
+        {
+            imagePreview.Clear();
+            if (listView1.SelectedItem is not ViewResultImage result)
+                return;
+
+            string? filePath = File.Exists(result.FileUrl)
+                ? result.FileUrl
+                : File.Exists(result.FilePath) ? result.FilePath : null;
+            if (filePath != null)
+                imagePreview.OpenImage(filePath);
+        }
+
+        private void ShowSelectedAlgorithmResult()
+        {
+            ClearAlgorithmResultSurface();
+            if (listView2.SelectedItem is not ViewResultAlg result ||
+                ResultHandleRegistry.GetInstance().ResultHandles.FirstOrDefault(item => item.CanHandle1(result)) is not { } resultHandle)
+                return;
+
+            resultHandle.Load(_algorithmResultContext, result);
+            PrepareAlgorithmResultImageSurface(result);
+            resultHandle.Handle(_algorithmResultContext, result);
+        }
+
+        private void ClearAlgorithmResultSurface()
+        {
+            algorithmDetailListView.ItemsSource = null;
+            if (algorithmDetailListView.View is GridView gridView)
+                gridView.Columns.Clear();
+            _algorithmDetailColumnVisibilitys.Clear();
+            algorithmDetailTextBox.Clear();
+            algorithmDetailTextBox.Visibility = Visibility.Collapsed;
+            algorithmImagePreview.Clear();
+        }
+
+        private void PrepareAlgorithmResultImageSurface(ViewResultAlg result)
+        {
+            algorithmImagePreview.ImageShow.Clear();
+            if (File.Exists(result.FilePath))
+                return;
+
+            if (!AlgorithmResultImageDimensions.TryRecoverFromMeasureResults(result, out int width, out int height))
+                return;
+
+            var placeholder = _resultImagePlaceholderCache.GetOrCreate(width, height);
+            algorithmImagePreview.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(MeasureBatchPage), "历史算法结果坐标空间宽度");
+            algorithmImagePreview.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(MeasureBatchPage), "历史算法结果坐标空间高度");
+            algorithmImagePreview.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(MeasureBatchPage), "历史算法结果图像像素宽度");
+            algorithmImagePreview.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(MeasureBatchPage), "历史算法结果图像像素高度");
+            algorithmImagePreview.SetImageSource(placeholder, enableEditorImageServices: false, configureDefaultLayerController: false);
+            algorithmImagePreview.UpdateZoomAndScale();
+        }
+
+        private void SaveSideDataCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = e.Parameter is ViewResultAlg result && AlgorithmResultDataSaver.CanSave(result);
+            e.Handled = true;
+        }
+
+        private void SaveSideDataCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (e.Parameter is ViewResultAlg result)
+                AlgorithmResultDataSaver.PromptAndSave(_algorithmResultContext, new[] { result });
+            e.Handled = true;
+        }
+
+        private void AlgorithmResult_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            if (sender is ListViewItem { DataContext: ViewResultAlg result })
+                AlgorithmResultDataSaver.EnsureContextMenu(result);
         }
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
@@ -115,7 +232,11 @@ namespace ColorVision.Engine
                 {
                     AlgorithmView = new AlgorithmView();
                     Window window = new Window() { Content = AlgorithmView ,Owner =Application.Current.GetActiveWindow() };
-                    window.Closed += (s, args) => AlgorithmView = null; // 订阅窗口关闭事件
+                    window.Closed += (s, args) =>
+                    {
+                        AlgorithmView?.Dispose();
+                        AlgorithmView = null;
+                    };
                     window.Show();
                 }
 

@@ -50,6 +50,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
             Device = device;
             InitializeComponent();
+            CommandBindings.Add(new CommandBinding(AlgorithmResultDataSaver.SaveCommand, SaveSideDataCommand_Executed, SaveSideDataCommand_CanExecute));
         }
 
         public ViewAlgorithmConfig Config => ViewAlgorithmConfig.Instance;
@@ -372,36 +373,31 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public void SideSave(ViewResultAlg result,string selectedPath)
         {
-            var resultHandle = ResultHandleRegistry.GetInstance().ResultHandles.FirstOrDefault(item => item.CanHandle1(result));
-            if (resultHandle == null)
-                return;
-
-            resultHandle.Load(ViewResultContext, result);
-            resultHandle.SideSave(result, selectedPath);
+            AlgorithmResultDataSaver.Save(ViewResultContext, result, selectedPath);
         }
 
         private void SideSave_Click(object sender, RoutedEventArgs e)
         {
-            if (listView1.SelectedItems.Count > 0)
-            {
-                using var dialog = new System.Windows.Forms.FolderBrowserDialog();
-                dialog.Description = Properties.Resources.SelectSaveFolder;
-                dialog.ShowNewFolderButton = true;
-                if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                string selectedPath = dialog.SelectedPath;
+            AlgorithmResultDataSaver.PromptAndSave(ViewResultContext, listView1.SelectedItems.Cast<ViewResultAlg>());
+        }
 
-                foreach (var selectedItem in listView1.SelectedItems)
-                {
-                    if (selectedItem is ViewResultAlg result)
-                    {
-                        SideSave(result, selectedPath);
-                    }
-                }
-            }
-            else
-            {
-                MessageBox.Show(Properties.Resources.SelectDataFirst);
-            }
+        private void SaveSideDataCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = _isInitialized && !_isDisposed && e.Parameter is ViewResultAlg result && AlgorithmResultDataSaver.CanSave(result);
+            e.Handled = true;
+        }
+
+        private void SaveSideDataCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (e.Parameter is ViewResultAlg result)
+                AlgorithmResultDataSaver.PromptAndSave(ViewResultContext, new[] { result });
+            e.Handled = true;
+        }
+
+        private void AlgorithmResult_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            if (sender is ListViewItem { DataContext: ViewResultAlg result })
+                AlgorithmResultDataSaver.EnsureContextMenu(result);
         }
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)

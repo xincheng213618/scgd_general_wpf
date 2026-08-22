@@ -105,6 +105,7 @@
                         <Style BasedOn="{StaticResource ListViewItemBaseStyle.Small}" TargetType="{x:Type ListViewItem}">
                             <Setter Property="ContextMenu" Value="{Binding ContextMenu}" />
                             <Setter Property="Opacity" Value="1" />
+                            <EventSetter Event="ContextMenuOpening" Handler="AlgorithmResult_ContextMenuOpening" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsFileExists}" Value="False">
                                     <Setter Property="Opacity" Value="0.7" />
