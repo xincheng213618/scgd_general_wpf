@@ -56,6 +56,26 @@ public class OpenCvImageAlgorithmsInPlaceTests
     [InlineData("Gray16")]
     [InlineData("Bgr24")]
     [InlineData("Bgra32")]
+    public void ThresholdMatchesExplicitSourceClone(string format)
+    {
+        const double threshold = 83;
+        VerifyAgainstExplicitSourceClone(
+            "阈值处理",
+            format,
+            options => SetOption(options, "Threshold", threshold),
+            (source, destination) => Cv2.Threshold(
+                source,
+                destination,
+                threshold,
+                source.Depth() == MatType.CV_16U ? ushort.MaxValue : byte.MaxValue,
+                ThresholdTypes.Binary));
+    }
+
+    [Theory]
+    [InlineData("Gray8")]
+    [InlineData("Gray16")]
+    [InlineData("Bgr24")]
+    [InlineData("Bgra32")]
     public void SharpenMatchesExplicitSourceClone(string format)
     {
         using Mat kernel = Mat.FromArray(new float[,]

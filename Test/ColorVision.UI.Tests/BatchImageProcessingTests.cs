@@ -354,6 +354,29 @@ public class BatchImageProcessingTests
     }
 
     [Theory]
+    [InlineData("伪彩色", 1)]
+    [InlineData("Canny 边缘检测", 1)]
+    [InlineData("直方图均衡化", 1)]
+    [InlineData("直方图均衡化", 3)]
+    public void EightBitFastPathsHandleNonContinuousInput(string algorithmName, int channels)
+    {
+        using Mat backing = new(25, 31, MatType.MakeType(MatType.CV_8U, channels));
+        Cv2.Randu(backing, Scalar.All(0), Scalar.All(byte.MaxValue + 1d));
+        using Mat original = backing.Clone();
+        using Mat source = new(backing, new Rect(3, 2, 23, 19));
+        using Mat continuousSource = source.Clone();
+        Assert.False(source.IsContinuous());
+
+        BatchImageAlgorithmDefinition algorithm = BatchImageAlgorithms.CreateAll()
+            .Single(item => item.Name == algorithmName);
+        using Mat expected = algorithm.Apply(continuousSource);
+        using Mat actual = algorithm.Apply(source);
+
+        AssertMatsEqual(expected, actual);
+        AssertMatsEqual(original, backing);
+    }
+
+    [Theory]
     [InlineData("sample.cvraw")]
     [InlineData("sample.cvcie")]
     public void ColorVisionLoaderReadsARealSerializedFile(string fileName)

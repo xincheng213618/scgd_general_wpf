@@ -172,7 +172,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
         {
             if (source.Channels() == 1)
             {
-                return source.Clone();
+                return new Mat(source, new Rect(0, 0, source.Cols, source.Rows));
             }
 
             Mat result = new();
@@ -187,7 +187,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
         {
             if (source.Channels() == 3)
             {
-                return source.Clone();
+                return new Mat(source, new Rect(0, 0, source.Cols, source.Rows));
             }
 
             Mat result = new();
@@ -202,7 +202,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
         {
             if (source.Depth() == MatType.CV_8U)
             {
-                return source.Clone();
+                return new Mat(source, new Rect(0, 0, source.Cols, source.Rows));
             }
 
             using Mat normalized = new();
