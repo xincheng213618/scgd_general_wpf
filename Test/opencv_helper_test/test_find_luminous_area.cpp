@@ -44,6 +44,7 @@ bool RunCalibrationLegacyColorComparison(
 
 bool RunP2AlgorithmTests();
 bool RunNativeLoggingTests();
+bool RunPseudoColorTests();
 
 static std::atomic<int> g_videoCallbackFrames{ 0 };
 static std::atomic<int> g_videoStatusPlaying{ 0 };
@@ -2765,6 +2766,9 @@ int main(int argc, char* argv[])
     if (argc == 2 && std::string(argv[1]) == "--native-log") {
         return RunNativeLoggingTests() ? 0 : 1;
     }
+    if (argc == 2 && std::string(argv[1]) == "--pseudo-color") {
+        return RunPseudoColorTests() ? 0 : 1;
+    }
 
     std::cout << "========================================" << std::endl;
     std::cout << "M_FindLuminousArea smoke test" << std::endl;
@@ -2937,6 +2941,11 @@ int main(int argc, char* argv[])
 
     if (!RunNativeLoggingTests()) {
         std::cerr << "Native logging tests failed" << std::endl;
+        return 1;
+    }
+
+    if (!RunPseudoColorTests()) {
+        std::cerr << "Pseudo-color regression tests failed" << std::endl;
         return 1;
     }
 

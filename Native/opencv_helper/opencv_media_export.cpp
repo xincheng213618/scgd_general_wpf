@@ -863,14 +863,8 @@ COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, ui
 		if (mat.empty())
 			return -1;
 
-		cv::Mat temp;
-		cv::Mat source;
-		int sourceRet = SelectSingleChannelSource(mat, channel, temp, source);
-		if (sourceRet != 0)
-			return sourceRet;
-
 		cv::Mat out;
-		int ret = pseudoColorTo(source, out, min, max, types);
+		int ret = pseudoColorTo(mat, out, min, max, types, channel);
 		if (ret != 0)
 			return ret;
 
@@ -886,14 +880,8 @@ COLORVISIONCORE_API int M_PseudoColorAutoRange(HImage img, HImage* outImage, uin
 		if (mat.empty())
 			return -1;
 
-		cv::Mat temp;
-		cv::Mat source;
-		int sourceRet = SelectSingleChannelSource(mat, channel, temp, source);
-		if (sourceRet != 0)
-			return sourceRet;
-
 		cv::Mat out;
-		int ret = pseudoColorAutoRangeTo(source, out, min, max, types, dataMin, dataMax);
+		int ret = pseudoColorAutoRangeTo(mat, out, min, max, types, dataMin, dataMax, channel);
 		if (ret != 0)
 			return ret;
 
@@ -913,13 +901,7 @@ COLORVISIONCORE_API int M_PseudoColorInto(HImage img, HImage outImage, uint min,
 		if (!IsPseudoColorOutputCompatible(mat, output))
 			return -2;
 
-		cv::Mat temp;
-		cv::Mat source;
-		int sourceRet = SelectSingleChannelSource(mat, channel, temp, source);
-		if (sourceRet != 0)
-			return sourceRet;
-
-		return pseudoColorTo(source, output, min, max, types);
+		return pseudoColorTo(mat, output, min, max, types, channel);
 		});
 }
 
@@ -935,13 +917,7 @@ COLORVISIONCORE_API int M_PseudoColorAutoRangeInto(HImage img, HImage outImage, 
 		if (!IsPseudoColorOutputCompatible(mat, output))
 			return -2;
 
-		cv::Mat temp;
-		cv::Mat source;
-		int sourceRet = SelectSingleChannelSource(mat, channel, temp, source);
-		if (sourceRet != 0)
-			return sourceRet;
-
-		return pseudoColorAutoRangeTo(source, output, min, max, types, dataMin, dataMax);
+		return pseudoColorAutoRangeTo(mat, output, min, max, types, dataMin, dataMax, channel);
 		});
 }
 

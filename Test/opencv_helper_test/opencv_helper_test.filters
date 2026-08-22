@@ -30,6 +30,9 @@
     <ClCompile Include="test_native_logging.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="test_pseudo_color.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CVCIEFile.hpp">
