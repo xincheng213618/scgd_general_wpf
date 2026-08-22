@@ -111,6 +111,7 @@ namespace ColorVision
         }
     }
 
+    [System.Obsolete("Use F11 directly for full-screen mode.")]
     public class ExportMenuViewMax :MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.View;

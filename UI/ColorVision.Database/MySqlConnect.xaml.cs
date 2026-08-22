@@ -11,6 +11,7 @@ using System.Windows.Input;
 
 namespace ColorVision.Database
 {
+    [Obsolete("The MySQL submenu was replaced by the top-level MySQL tool entry.")]
     public class ExportMySqlMenuItem : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
@@ -19,9 +20,10 @@ namespace ColorVision.Database
         public override int Order => 20;
     }
 
+    [Obsolete("The standalone MySQL connection menu entry was removed.")]
     public class ExportMySqlConnect : MenuItemBase
     {
-        public override string OwnerGuid => nameof(ExportMySqlMenuItem);
+        public override string OwnerGuid => "ExportMySqlMenuItem";
         public override string GuidId => nameof(ExportMySqlConnect);
         public override string Header => Resources.MysqlConnectionConfiguration;
         public override int Order => 2;

@@ -11,6 +11,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using DatabaseResources = ColorVision.Database.Properties.Resources;
+using EngineResources = ColorVision.Engine.Properties.Resources;
 
 namespace ColorVision.Database
 {
@@ -34,10 +36,10 @@ namespace ColorVision.Database
 
     public class ExportMySqlTool : MenuItemBase
     {
-        public override string OwnerGuid => nameof(ExportMySqlMenuItem);
+        public override string OwnerGuid => MenuItemConstants.View;
         public override string GuidId => nameof(ExportMySqlTool);
         public override string Header => ColorVision.UI.Properties.Resources.MysqlTool;
-        public override int Order => 2;
+        public override int Order => 20;
 
         public override void Execute()
         {
@@ -306,6 +308,29 @@ namespace ColorVision.Database
         private void OpenCleanupWindow_Click(object sender, RoutedEventArgs e)
         {
             DatabaseCleanupWindow.OpenWindow();
+        }
+
+        private async void InitializeTables_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBoxResult confirmation = MessageBox.Show(
+                this,
+                $"{DatabaseResources.MenuMySqlInitTables}\r\n\r\n{EngineResources.ResetDatabasePrompt}",
+                EngineResources.Engine_Msg_ConfirmResetTitle,
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning,
+                MessageBoxResult.No);
+            if (confirmation != MessageBoxResult.Yes)
+                return;
+
+            InitializeTablesButton.IsEnabled = false;
+            try
+            {
+                await MySqlTableInitializer.InitializeWithNotificationAsync(this);
+            }
+            finally
+            {
+                InitializeTablesButton.IsEnabled = true;
+            }
         }
 
     }

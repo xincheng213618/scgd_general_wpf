@@ -698,12 +698,26 @@ namespace ColorVision.Update
                 ? marketplaceManager.RefreshVersionsAsync(cancellationToken)
                 : Task.CompletedTask;
 
-            await Task.WhenAll(applicationTask, pluginVersionsTask);
+            bool pluginVersionsAvailable = true;
+            try
+            {
+                await pluginVersionsTask;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                pluginVersionsAvailable = false;
+                log.Warn($"Plugin update metadata is temporarily unavailable: {ex.GetBaseException().Message}");
+            }
+
             AutoUpdatePlanCheckResult applicationResult = await applicationTask;
             AutoUpdatePlan? applicationPlan = applicationResult.Plan;
 
             CombinedPluginUpdatePlan? pluginPlan = null;
-            if (marketplaceManager != null)
+            if (marketplaceManager != null && pluginVersionsAvailable)
             {
                 Version? hostVersion = ResolvePluginPlanHostVersion(
                     applicationPlan,
@@ -718,7 +732,10 @@ namespace ColorVision.Update
             }
 
             log.Info($"Update check completed in {stopwatch.ElapsedMilliseconds}ms. ApplicationUpdate={applicationPlan != null}, PluginUpdates={pluginPlan?.Updates.Count ?? 0}.");
-            return new UpdatePlansResult(applicationPlan, pluginPlan, applicationResult.Status);
+            UpdateServerCheckStatus serverCheckStatus = pluginVersionsAvailable
+                ? applicationResult.Status
+                : UpdateServerCheckStatus.ServerUnavailable;
+            return new UpdatePlansResult(applicationPlan, pluginPlan, serverCheckStatus);
         }
 
         private sealed record UpdatePlansResult(

@@ -7,6 +7,7 @@ namespace ColorVision.Solution.Workspace
     /// <summary>
     /// 视图菜单 → 保存窗口布局
     /// </summary>
+    [System.Obsolete("The save window layout menu entry was removed.")]
     public class MenuSaveLayout : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
@@ -22,6 +23,7 @@ namespace ColorVision.Solution.Workspace
     /// <summary>
     /// 视图菜单 → 应用窗口布局
     /// </summary>
+    [System.Obsolete("The apply window layout menu entry was removed.")]
     public class MenuApplyLayout : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.View;

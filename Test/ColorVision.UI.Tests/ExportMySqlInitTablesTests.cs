@@ -12,7 +12,7 @@ public sealed class ExportMySqlInitTablesTests
         List<Type> attemptedTypes = new();
 
         AggregateException exception = Assert.Throws<AggregateException>(() =>
-            ExportMySqlInitTables.InitTableTypes(
+            MySqlTableInitializer.InitTableTypes(
                 [typeof(FailingTable), typeof(SucceedingTable)],
                 type =>
                 {
@@ -34,7 +34,7 @@ public sealed class ExportMySqlInitTablesTests
     {
         List<Type> attemptedTypes = new();
 
-        ExportMySqlInitTables.InitTableTypes(
+        MySqlTableInitializer.InitTableTypes(
             [typeof(FailingTable), typeof(SucceedingTable)],
             attemptedTypes.Add);
 

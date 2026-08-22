@@ -13,6 +13,7 @@ using System.Windows.Input;
 namespace ColorVision.Engine.MQTT
 {
 
+    [Obsolete("The MQTT menu entry was removed.")]
     public class ExportMQTTMenuItem : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
@@ -26,9 +27,10 @@ namespace ColorVision.Engine.MQTT
     }
 
 
+    [Obsolete("The MQTT connection configuration menu entry was removed.")]
     public class ExportMQTTConnect : MenuItemBase
     {
-        public override string OwnerGuid => nameof(ExportMQTTMenuItem);
+        public override string OwnerGuid => "ExportMQTTMenuItem";
         public override string GuidId => nameof(ExportMQTTConnect);
         public override string Header => Resources.MqttConnectionConfiguration;
         public override int Order => 2;
