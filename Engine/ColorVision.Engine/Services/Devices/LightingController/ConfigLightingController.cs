@@ -5,11 +5,18 @@ using ColorVision.Engine.Utilities;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 
 namespace ColorVision.Engine.Services.Devices.LightingController
 {
     public class ConfigLightingController : DeviceServiceConfig
     {
+        public ConfigLightingController()
+        {
+            _CHA.PropertyChanged += Channel_PropertyChanged;
+            _CHB.PropertyChanged += Channel_PropertyChanged;
+        }
+
         public string Category { get; set; } = "default";
 
         [Category("Connection"), LocalizedDisplayName(nameof(Resources.AutoConnect))]
@@ -41,11 +48,35 @@ namespace ColorVision.Engine.Services.Devices.LightingController
         private int _Delay;
 
         [Category("Channel"), DisplayName("Channel A")]
-        public PMChannelConfig CHA { get => _CHA; set { _CHA = value; OnPropertyChanged(); OnPropertyChanged(nameof(Channels)); } }
+        public PMChannelConfig CHA
+        {
+            get => _CHA;
+            set
+            {
+                _CHA.PropertyChanged -= Channel_PropertyChanged;
+                _CHA = value;
+                _CHA.PropertyChanged += Channel_PropertyChanged;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(Channels));
+                OnPropertyChanged(nameof(EnabledChannels));
+            }
+        }
         private PMChannelConfig _CHA = new("A", "A");
 
         [Category("Channel"), DisplayName("Channel B")]
-        public PMChannelConfig CHB { get => _CHB; set { _CHB = value; OnPropertyChanged(); OnPropertyChanged(nameof(Channels)); } }
+        public PMChannelConfig CHB
+        {
+            get => _CHB;
+            set
+            {
+                _CHB.PropertyChanged -= Channel_PropertyChanged;
+                _CHB = value;
+                _CHB.PropertyChanged += Channel_PropertyChanged;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(Channels));
+                OnPropertyChanged(nameof(EnabledChannels));
+            }
+        }
         private PMChannelConfig _CHB = new("B", "B");
 
         [Category("Communication"), DisplayName("Command Format"), Description("0 is the channel code and 1 is the channel value.")]
@@ -57,6 +88,15 @@ namespace ColorVision.Engine.Services.Devices.LightingController
 
         [Browsable(false), JsonIgnore]
         public IEnumerable<PMChannelConfig> Channels => [CHA, CHB];
+
+        [Browsable(false), JsonIgnore]
+        public IEnumerable<PMChannelConfig> EnabledChannels => Channels.Where(channel => channel.Enable);
+
+        private void Channel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(PMChannelConfig.Enable))
+                OnPropertyChanged(nameof(EnabledChannels));
+        }
     }
 
     public class PMChannelConfig : ViewModelBase
@@ -70,6 +110,10 @@ namespace ColorVision.Engine.Services.Devices.LightingController
             Code = code;
             Name = name;
         }
+
+        [DisplayName("Enable")]
+        public bool Enable { get => _Enable; set { _Enable = value; OnPropertyChanged(); } }
+        private bool _Enable = true;
 
         [DisplayName("Code")]
         public string Code { get => _Code; set { _Code = value; OnPropertyChanged(); } }
