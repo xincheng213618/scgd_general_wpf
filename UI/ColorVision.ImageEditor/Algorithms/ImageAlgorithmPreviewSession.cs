@@ -2,7 +2,6 @@
 using ColorVision.Core;
 using OpenCvSharp;
 using System;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -12,14 +11,17 @@ namespace ColorVision.ImageEditor.Algorithms
     internal sealed class ImageAlgorithmPreviewSession
     {
         private readonly ImageProcessingContext _image;
-        private readonly byte[] _originalPixels;
+        private readonly BitmapSource _originalSource;
+        private readonly long _originalRevision;
         private bool _isCompleted;
+        private bool _needsRestore;
 
-        private ImageAlgorithmPreviewSession(ImageProcessingContext image, WriteableBitmap previewBitmap)
+        private ImageAlgorithmPreviewSession(ImageProcessingContext image, BitmapSource originalSource, WriteableBitmap previewBitmap)
         {
             _image = image;
+            _originalSource = originalSource;
+            _originalRevision = image?.ImageRevision ?? 0;
             PreviewBitmap = previewBitmap;
-            _originalPixels = CopyPixels(previewBitmap);
         }
 
         public WriteableBitmap PreviewBitmap { get; }
@@ -35,12 +37,12 @@ namespace ColorVision.ImageEditor.Algorithms
             WriteableBitmap preview = new WriteableBitmap(bitmapSource);
             image.FunctionImage = preview;
             image.ImageShow.Source = preview;
-            return new ImageAlgorithmPreviewSession(image, preview);
+            return new ImageAlgorithmPreviewSession(image, bitmapSource, preview);
         }
 
         public void Apply(Action<Mat> apply)
         {
-            if (_isCompleted)
+            if (!TryContinue())
             {
                 return;
             }
@@ -48,7 +50,12 @@ namespace ColorVision.ImageEditor.Algorithms
             PreviewBitmap.Lock();
             try
             {
-                Marshal.Copy(_originalPixels, 0, PreviewBitmap.BackBuffer, _originalPixels.Length);
+                if (_needsRestore)
+                {
+                    CopyOriginalPixels();
+                }
+
+                _needsRestore = true;
                 PreviewBitmap.AddDirtyRect(new Int32Rect(0, 0, PreviewBitmap.PixelWidth, PreviewBitmap.PixelHeight));
                 MatType matType = GetMatType(PreviewBitmap.Format);
                 using Mat mat = Mat.FromPixelData(PreviewBitmap.PixelHeight, PreviewBitmap.PixelWidth, matType, PreviewBitmap.BackBuffer, PreviewBitmap.BackBufferStride);
@@ -62,6 +69,11 @@ namespace ColorVision.ImageEditor.Algorithms
 
         public void Commit()
         {
+            if (!TryContinue())
+            {
+                return;
+            }
+
             _image.ViewBitmapSource = PreviewBitmap;
             _image.ImageShow.Source = _image.ViewBitmapSource;
             _image.NotifySourcePixelsChanged();
@@ -71,7 +83,7 @@ namespace ColorVision.ImageEditor.Algorithms
 
         public void ShowOriginal()
         {
-            if (_isCompleted)
+            if (!TryContinue())
             {
                 return;
             }
@@ -101,11 +113,17 @@ namespace ColorVision.ImageEditor.Algorithms
 
         private void RestoreOriginal()
         {
+            if (!_needsRestore)
+            {
+                return;
+            }
+
             PreviewBitmap.Lock();
             try
             {
-                Marshal.Copy(_originalPixels, 0, PreviewBitmap.BackBuffer, _originalPixels.Length);
+                CopyOriginalPixels();
                 PreviewBitmap.AddDirtyRect(new Int32Rect(0, 0, PreviewBitmap.PixelWidth, PreviewBitmap.PixelHeight));
+                _needsRestore = false;
             }
             finally
             {
@@ -113,22 +131,26 @@ namespace ColorVision.ImageEditor.Algorithms
             }
         }
 
-        private static byte[] CopyPixels(WriteableBitmap bitmap)
+        private bool TryContinue()
         {
-            int size = bitmap.BackBufferStride * bitmap.PixelHeight;
-            byte[] pixels = new byte[size];
-
-            bitmap.Lock();
-            try
+            if (_isCompleted)
             {
-                Marshal.Copy(bitmap.BackBuffer, pixels, 0, size);
-            }
-            finally
-            {
-                bitmap.Unlock();
+                return false;
             }
 
-            return pixels;
+            if (_image is not null && !_image.IsCurrentImageRevision(_originalRevision))
+            {
+                Cancel();
+                return false;
+            }
+
+            return true;
+        }
+
+        private void CopyOriginalPixels()
+        {
+            int bufferSize = checked(PreviewBitmap.BackBufferStride * PreviewBitmap.PixelHeight);
+            _originalSource.CopyPixels(Int32Rect.Empty, PreviewBitmap.BackBuffer, bufferSize, PreviewBitmap.BackBufferStride);
         }
 
         private static MatType GetMatType(PixelFormat pixelFormat)
