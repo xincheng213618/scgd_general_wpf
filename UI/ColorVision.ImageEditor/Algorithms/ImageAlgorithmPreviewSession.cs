@@ -40,14 +40,19 @@ namespace ColorVision.ImageEditor.Algorithms
 
         public void Apply(Action<Mat> apply)
         {
-            RestoreOriginal();
+            if (_isCompleted)
+            {
+                return;
+            }
+
             PreviewBitmap.Lock();
             try
             {
+                Marshal.Copy(_originalPixels, 0, PreviewBitmap.BackBuffer, _originalPixels.Length);
+                PreviewBitmap.AddDirtyRect(new Int32Rect(0, 0, PreviewBitmap.PixelWidth, PreviewBitmap.PixelHeight));
                 MatType matType = GetMatType(PreviewBitmap.Format);
                 using Mat mat = Mat.FromPixelData(PreviewBitmap.PixelHeight, PreviewBitmap.PixelWidth, matType, PreviewBitmap.BackBuffer, PreviewBitmap.BackBufferStride);
                 apply(mat);
-                PreviewBitmap.AddDirtyRect(new Int32Rect(0, 0, PreviewBitmap.PixelWidth, PreviewBitmap.PixelHeight));
             }
             finally
             {

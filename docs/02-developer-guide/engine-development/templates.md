@@ -14,7 +14,7 @@
 | MySQL 模板 | `ITemplate<T>`、`ParamModBase`、`ModMasterModel`、`ModDetailModel` | 通过 `TemplateDicId` 读取系统字典和模板明细 |
 | JSON 模板 | `ITemplateJson<T>`、`TemplateJsonParam` | 以 JSON 字段承载复杂算法参数 |
 | 编辑入口 | `TemplateEditorWindow`、`EditTemplateJson`、具体编辑控件 | 新建、复制、编辑、导入、导出 |
-| Flow 绑定 | `Templates/Flow/`、`NodeConfigurator` | 节点配置面板读取模板并写入节点参数 |
+| Flow 绑定 | `Templates/Flow/TemplateFlow.cs`、`FlowProcessing/Editor/NodeConfiguration/` | 前者持久化流程模板，后者由 `NodeConfiguratorRegistry` 选择配置器并写回节点参数 |
 | 结果展示 | `ViewHandle*`、`IResultHandleBase` | 算法结果解析和 overlay，不属于模板保存本身 |
 
 ## 选择哪种模板
@@ -24,7 +24,7 @@
 | 参数来自系统字典，字段结构稳定 | `ITemplate<T>` + `ParamModBase` | `TemplatePoi`、`TemplateSFR`、`TemplateImageCropping` |
 | 算法参数层级复杂，字段经常随算法版本变动 | `ITemplateJson<T>` + `TemplateJsonParam` | `TemplateSFR2`、`TemplateOLEDAOI`、`TemplateKB` |
 | 设备自己的运行参数 | 设备目录下的 `Templates/` | Camera、PG、Sensor、SMU 目录下的模板 |
-| Flow 流程模板 | `Templates/Flow/TemplateFlow` | 流程组和节点配置 |
+| Flow 流程模板 | `Templates/Flow/TemplateFlow.cs` | Base64 画布、导入导出、版本与搜索侧车 |
 | 只是客户最终输出格式 | 项目包 `Process` / exporter | 不要放进通用模板层 |
 
 ## 新增模板步骤
@@ -36,7 +36,7 @@
 5. 如需从数据库恢复，实现 `GetMysqlCommand()` 并确认 `TemplateDicId` / 字典项正确。
 6. 准备编辑入口：普通参数用 PropertyGrid/编辑控件，JSON 参数用 `EditTemplateJson` 或专用编辑页。
 7. 如果算法执行要引用模板，在 `Algorithm*` 中把模板 ID、名称和相关 POI 模板写入 `CVTemplateParam`。
-8. 如果 Flow 节点要选择模板，在 `NodeConfigurator` 或节点属性面板里加下拉和编辑按钮。
+8. 如果 Flow 节点要选择模板，在 `FlowProcessing/Editor/NodeConfiguration/` 增加或扩展 configurator 并交给 `NodeConfiguratorRegistry`；普通属性继续走节点元数据面板。
 9. 如果有新结果类型，再补 `ViewHandle*` 和结果展示文档。
 
 ## 保存和兼容要点

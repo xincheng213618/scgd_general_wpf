@@ -37,7 +37,9 @@ namespace Spectrum.Socket
                 log.Info("Socket指令: 执行光谱仪校零");
 
                 using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(30));
-                int result = manager.PerformDarkCalibrationAsync(timeout.Token).GetAwaiter().GetResult();
+                int result = manager.PerformDarkCalibrationAsync(
+                    requireShutter: true,
+                    cancellationToken: timeout.Token).GetAwaiter().GetResult();
                 if (result == 1)
                 {
                     log.Info("校零完成");
@@ -61,7 +63,7 @@ namespace Spectrum.Socket
                 }
                 else
                 {
-                    string errorMsg = Spectrometer.GetErrorMessage(result);
+                    string errorMsg = manager.GetOperationErrorMessage(result);
                     log.Error($"校零失败: {errorMsg}");
                     return new SocketResponse
                     {

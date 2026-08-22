@@ -20,7 +20,7 @@
 3. 业务算法 UI 通常继承 `DisplayAlgorithmBase`，并暴露 `OpenTemplateCommand` 一类入口。
 4. `SendCommand(...)` 组装 `CVTemplateParam`、文件路径、设备信息等参数。
 5. 参数通过 `MQTTAlgorithm` 或相邻服务链发给真正执行端。
-6. 流程模板进入 `TemplateFlow` + `FlowEngineToolWindow` + `FlowEngineLib` 链路。
+6. `TemplateFlow` 持久化画布，`FlowProcessing/Editor` 编辑，`FlowExecutionSession` / `FlowHeadlessExecutionService` 再把 snapshot 交给 `FlowEngineLib`。
 
 很多 `Templates/*/Algorithm*.cs` 当前更像“算法前端适配器”，不是最终算子本身。
 
@@ -29,7 +29,7 @@
 | 模块 | 关键入口 | 关注点 |
 | --- | --- | --- |
 | 模板注册与管理 | `ITemplate.cs`、`TemplateControl.cs`、`TemplateEditorWindow` | 模板怎么出现、打开和编辑 |
-| Flow 模板 | `TemplateFlow.cs`、`FlowEngineToolWindow`、`DisplayFlow` | 流程图、流程编辑、导入导出和批次执行 |
+| Flow 模板与运行 | `Templates/Flow/`、`FlowProcessing/Editor/`、`FlowProcessing/Runtime/` | 持久化与 `.cvflow`、画布编辑、交互/无界面执行和最终化 |
 | JSON 模板 | `ITemplateJson<T>`、`TemplateJsonParam`、`EditTemplateJson` | JSON 装载、保存、导入导出、文本/属性编辑 |
 | 业务模板族 | `POI/`、`ARVR/`、`LedCheck/`、`Jsons/` | 不同历史阶段的业务算法接入 |
 

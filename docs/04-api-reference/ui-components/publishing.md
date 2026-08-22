@@ -29,7 +29,7 @@
 ## 构建和包资源
 
 ```powershell
-dotnet restore
+dotnet restore .\ColorVision\ColorVision.csproj
 dotnet build ColorVision/ColorVision.csproj -c Release -p:Platform=x64
 dotnet build UI/<Project>/<Project>.csproj -c Release -p:Platform=x64
 ```

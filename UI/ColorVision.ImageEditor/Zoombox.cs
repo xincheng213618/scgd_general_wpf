@@ -240,7 +240,7 @@ namespace ColorVision.ImageEditor
             ScaleTransform.SetCurrentValue(ScaleTransform.ScaleXProperty, scale.X);
             ScaleTransform.SetCurrentValue(ScaleTransform.ScaleYProperty, scale.Y);
             this.SetCurrentValue(ContentMatrixProperty, Matrix.Multiply(this.ContentMatrix, ScaleTransform.Value));
-            ContentMatrixChanged?.Invoke(this, new EventArgs());
+            ContentMatrixChanged?.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>
@@ -276,7 +276,7 @@ namespace ColorVision.ImageEditor
             TranslateTransform.SetCurrentValue(TranslateTransform.XProperty, (this.ActualWidth - (scale * size.Width)) / 2);
             TranslateTransform.SetCurrentValue(TranslateTransform.YProperty, (this.ActualHeight - (scale * size.Height)) / 2);
             this.SetCurrentValue(ContentMatrixProperty, Matrix.Multiply(ScaleTransform.Value, TranslateTransform.Value));
-            ContentMatrixChanged?.Invoke(this, new EventArgs());
+            ContentMatrixChanged?.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>
@@ -313,7 +313,7 @@ namespace ColorVision.ImageEditor
             TranslateTransform.SetCurrentValue(TranslateTransform.XProperty, (this.ActualWidth - (scale * size.Width)) / 2);
             TranslateTransform.SetCurrentValue(TranslateTransform.YProperty, (this.ActualHeight - (scale * size.Height)) / 2);
             this.SetCurrentValue(ContentMatrixProperty, Matrix.Multiply(ScaleTransform.Value, TranslateTransform.Value));
-            ContentMatrixChanged?.Invoke(this, new EventArgs());
+            ContentMatrixChanged?.Invoke(this, EventArgs.Empty);
         }
 
         public void ZoomToContentRect(Rect contentRect)
@@ -359,7 +359,7 @@ namespace ColorVision.ImageEditor
             TranslateTransform.SetCurrentValue(TranslateTransform.XProperty, (this.ActualWidth - (scale * width)) / 2 - (scale * x));
             TranslateTransform.SetCurrentValue(TranslateTransform.YProperty, (this.ActualHeight - (scale * height)) / 2 - (scale * y));
             this.SetCurrentValue(ContentMatrixProperty, Matrix.Multiply(ScaleTransform.Value, TranslateTransform.Value));
-            ContentMatrixChanged?.Invoke(this, new EventArgs());
+            ContentMatrixChanged?.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>
@@ -368,7 +368,7 @@ namespace ColorVision.ImageEditor
         public void ZoomNone()
         {
             this.SetCurrentValue(ContentMatrixProperty, Matrix.Identity);
-            ContentMatrixChanged?.Invoke(this, new EventArgs());
+            ContentMatrixChanged?.Invoke(this, EventArgs.Empty);
         }
 
         /// <inheritdoc />
@@ -430,7 +430,7 @@ namespace ColorVision.ImageEditor
                 TranslateTransform.SetCurrentValue(TranslateTransform.XProperty, delta.Translation.X);
                 TranslateTransform.SetCurrentValue(TranslateTransform.YProperty, delta.Translation.Y);
                 this.SetCurrentValue(ContentMatrixProperty, Matrix.Multiply(this.ContentMatrix, TranslateTransform.Value));
-                ContentMatrixChanged?.Invoke(this, new EventArgs());
+                ContentMatrixChanged?.Invoke(this, EventArgs.Empty);
             }
 
             // Calling InvalidateRequerySuggested as we are using RoutedCommands
@@ -500,7 +500,7 @@ namespace ColorVision.ImageEditor
                 TranslateTransform.SetCurrentValue(TranslateTransform.YProperty, delta.Y);
                 this.SetCurrentValue(ContentMatrixProperty, Matrix.Multiply(this.ContentMatrix, TranslateTransform.Value));
                 this.position = newPos;
-                ContentMatrixChanged?.Invoke(this, new EventArgs());
+                ContentMatrixChanged?.Invoke(this, EventArgs.Empty);
             }
 
             base.OnMouseMove(e);

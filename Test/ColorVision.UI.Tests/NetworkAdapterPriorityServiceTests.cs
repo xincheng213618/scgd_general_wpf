@@ -36,6 +36,7 @@ namespace ColorVision.UI.Tests
                     "AutomaticMetric": "Disabled",
                     "IPv4Address": "192.168.1.20",
                     "DefaultGateway": "192.168.1.1",
+                    "DnsServers": "114.114.114.114",
                     "RouteMetric": 0
                   }
                 ]
@@ -46,6 +47,7 @@ namespace ColorVision.UI.Tests
             Assert.Equal(2, adapters.Count);
             Assert.Equal("以太网", adapters[0].InterfaceAlias);
             Assert.Equal("5", adapters[0].EffectiveMetricText);
+            Assert.Equal("114.114.114.114", adapters[0].DnsServers);
             Assert.Equal("以太网 2", adapters[1].InterfaceAlias);
         }
 
@@ -71,9 +73,25 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void BuildSetDnsAndFlushScript_TargetsSelectedAdapterAndFlushesCache()
+        {
+            string script = NetworkAdapterPriorityService.BuildSetDnsAndFlushScript(12);
+
+            Assert.Contains("Set-DnsClientServerAddress", script, StringComparison.Ordinal);
+            Assert.Contains("-InterfaceIndex 12", script, StringComparison.Ordinal);
+            Assert.Contains("-ServerAddresses '114.114.114.114'", script, StringComparison.Ordinal);
+            Assert.Contains("Clear-DnsClientCache", script, StringComparison.Ordinal);
+            Assert.True(
+                script.IndexOf("Set-DnsClientServerAddress", StringComparison.Ordinal) <
+                script.IndexOf("Clear-DnsClientCache", StringComparison.Ordinal));
+            Assert.DoesNotContain("InterfaceAlias", script, StringComparison.Ordinal);
+        }
+
+        [Fact]
         public void BuildSetPreferredScript_RejectsInvalidInterfaceIndex()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => NetworkAdapterPriorityService.BuildSetPreferredScript(0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => NetworkAdapterPriorityService.BuildSetDnsAndFlushScript(0));
         }
     }
 }

@@ -1,10 +1,10 @@
 # ColorVision.Core
 
-> 版本: 1.5.5.1 | 目标框架: .NET 10.0 Windows (仅 x64)
+> 目标框架：.NET 8 / .NET 10 Windows；运行时资产仅提供 x64（以 `ColorVision.Core.csproj` 为准）
 
 ## 功能定位
 
-OpenCV 4.13 的 .NET 互操作层，提供高性能图像处理算法调用接口。通过 P/Invoke 调用原生 C++ DLL，封装为易用的 C# API。
+OpenCV 4.14 的 .NET 互操作层，提供高性能图像处理算法调用接口。通过 P/Invoke 调用原生 C++ DLL，封装为易用的 C# API。
 
 ## 主要功能
 
@@ -44,8 +44,8 @@ OpenCV 4.13 的 .NET 互操作层，提供高性能图像处理算法调用接�
 
 ## 构建
 
-```bash
-dotnet build UI/ColorVision.Core/ColorVision.Core.csproj
+```powershell
+dotnet build .\UI\ColorVision.Core\ColorVision.Core.csproj -p:Platform=x64
 ```
 
-> 注意: 仅支持 x64 平台，需要 OpenCV 4.13 原生 DLL
+> 注意: 仅支持 x64 平台，需要 OpenCV 4.14 原生 DLL

@@ -1,33 +1,20 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using log4net;
-using System.Windows;
+﻿using ColorVision.UI;
 
 namespace Conoscope.Core
 {
 
-    public class ConoscopeManager : ViewModelBase
+    public sealed class ConoscopeManager
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ConoscopeManager));
-        private static ConoscopeManager _instance;
-        private static readonly object _locker = new();
-        public static ConoscopeManager GetInstance() { lock (_locker) { return _instance ??= new ConoscopeManager(); } }
+        public static ConoscopeManager Instance { get; } = new();
 
-        public ConoscopeConfig Config { get; set; }
+        public ConoscopeConfig Config { get; }
         public ConoscopeGlobalReferenceStore GlobalReferences { get; }
-        public RelayCommand EditConoscopeConfigCommand { get; set; }
 
-        public void EditConoscopeConfig()
+        private ConoscopeManager()
         {
-            new ConoscopeConfigWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            ConoscopeModuleService.RefreshAllConoscopeConfiguration();
-        }
-
-        public ConoscopeManager() 
-        {
-            Config =ConfigService.Instance.GetRequiredService<ConoscopeConfig>();
+            Config = ConfigService.Instance.GetRequiredService<ConoscopeConfig>();
+            Config.NormalizeAfterLoad();
             GlobalReferences = new ConoscopeGlobalReferenceStore(Config);
-            EditConoscopeConfigCommand = new RelayCommand(a=> EditConoscopeConfig());
         }
 
     }

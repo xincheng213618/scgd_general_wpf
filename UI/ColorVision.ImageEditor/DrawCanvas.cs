@@ -123,7 +123,7 @@ namespace ColorVision.ImageEditor
         protected override Visual GetVisualChild(int index) => visuals[index];
         protected override int VisualChildrenCount => visuals.Count;
 
-        public bool ContainsVisual(Visual visual) => visuals.Contains(visual);
+        public bool ContainsVisual(Visual visual) => visualSet.Contains(visual);
 
 
         public event EventHandler? ImageInitialized;
@@ -282,9 +282,10 @@ namespace ColorVision.ImageEditor
 
         public void RemoveVisualCommand(Visual? visual)
         {
+            int index = visuals.IndexOf(visual);
             if (!TryRemoveVisual(visual)) return;
 
-            Action undoaction = () => AddVisual(visual);
+            Action undoaction = () => InsertVisual(index, visual);
             Action redoaction = () => RemoveVisual(visual);
             AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移除" });
         }
@@ -337,7 +338,7 @@ namespace ColorVision.ImageEditor
         public void BatchTopVisuals(IEnumerable<Visual> topVisuals)
         {
             // 用 HashSet 提高查找性能（避免重复）
-            var toMove = topVisuals?.Where(v => v != null && visuals.Contains(v)).ToList();
+            var toMove = topVisuals?.Where(v => v != null && visualSet.Contains(v)).ToList();
             if (toMove == null || toMove.Count == 0) return;
 
             foreach (var visual in toMove)

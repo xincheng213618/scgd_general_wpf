@@ -1,4 +1,5 @@
 using ColorVision.UI.Menus;
+using ColorVision.UI;
 using SpectrumResources = Spectrum.Properties.Resources;
 
 namespace Spectrum.Menus
@@ -16,7 +17,7 @@ namespace Spectrum.Menus
         public override void Execute()
         {
             MainWindowConfig.Instance.EqeEnabled = !MainWindowConfig.Instance.EqeEnabled;
-            MainWindow.Instance?.UpdateEqeColumnsVisibility(MainWindowConfig.Instance.EqeEnabled);
+            ConfigService.Instance.SaveConfigs();
             MenuManager.GetInstance().RefreshMenuItemsByGuid(OwnerGuid);
         }
 

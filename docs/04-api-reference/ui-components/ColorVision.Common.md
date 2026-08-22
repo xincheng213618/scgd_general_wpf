@@ -10,7 +10,7 @@
 | 菜单、状态栏或初始化器没有出现 | `Interfaces/Menus/`、`Interfaces/StatusBar/`、`Interfaces/IInitializer/` 和实现程序集 |
 | 绑定值变化但界面不刷新 | `ViewModelBase`、属性 setter、`OnPropertyChanged` |
 | 按钮命令状态不更新 | `RelayCommand`、`CanExecute` 刷新触发点 |
-| 权限表现和预期不一致 | `AccessControl`、`PermissionMode`，再回到 `UI/ColorVision.Solution/Rbac` |
+| 权限表现和预期不一致 | `AccessControl`、`PermissionMode`，再回到 `UI/ColorVision.Rbac/` |
 | 原生调用只在某台机器失败 | `NativeMethods/`、x64 平台、Windows API 可用性和资源路径 |
 
 ## 当前能力
@@ -31,9 +31,9 @@
 | 层级 | 负责什么 |
 | --- | --- |
 | `ColorVision.Common` | `Authorization.Instance.PermissionMode`、`AccessControl.Check(...)`、基础 Attribute |
-| `ColorVision.Solution` | 本地用户、角色、权限点、策略、管理界面 |
+| `ColorVision.Rbac` | 本地用户、角色、权限点、会话、审计和管理界面 |
 
-Common 只适合放粗粒度通用检查。需要精细到页面、按钮、角色或用户的权限，回到 `UI/ColorVision.Solution/Rbac`。
+Common 只适合放粗粒度通用检查。需要精细到页面、按钮、角色或用户的权限，回到 `UI/ColorVision.Rbac/`。
 
 ## 什么该放这里
 
@@ -65,7 +65,7 @@ Common 只适合放粗粒度通用检查。需要精细到页面、按钮、角�
 | 根依赖边界 | 是否新增高层项目引用 |
 | MVVM 基础 | 属性通知、命令执行和可执行状态不回退 |
 | 扩展契约 | 菜单、状态栏、初始化器实现仍能被上层发现 |
-| 权限边界 | Common 粗权限不会绕过 Solution 本地 RBAC |
+| 权限边界 | Common 粗权限不会绕过 `ColorVision.Rbac` 的本地账户与权限检查 |
 | 原生辅助 | x64 和当前 Windows 版本下 Win32 调用可用 |
 
 ## 关键文件

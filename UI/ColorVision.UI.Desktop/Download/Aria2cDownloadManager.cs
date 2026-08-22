@@ -45,6 +45,17 @@ namespace ColorVision.UI.Desktop.Download
             }
         }
 
+        public static Task StopExistingDaemonForUpdateHandoffAsync()
+        {
+            Aria2cDownloadManager? instance;
+            lock (_locker)
+            {
+                instance = _instance;
+            }
+
+            return instance?.StopDaemonForUpdateHandoffAsync() ?? Task.CompletedTask;
+        }
+
         public static string DirectoryPath { get; set; } = Environments.DirDownloads;
         public static string DbPath { get; set; } = Path.Combine(DirectoryPath, "Downloads.db");
 

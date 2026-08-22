@@ -13,6 +13,7 @@ namespace ColorVision.UI.Tests
         [Theory]
         [InlineData("self-update")]
         [InlineData("prepare-application-update")]
+        [InlineData("application-startup-status")]
         public void UpdateOnlyCommandsUseDirectCallerAndPayloadValidation(string command)
         {
             Assert.False(ServiceHostClient.RequiresBrokerTicket(command));

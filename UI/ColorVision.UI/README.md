@@ -1,6 +1,6 @@
 # ColorVision.UI
 
-> 版本: 1.5.5.1 | 目标框架: .NET 8.0 / .NET 10.0 Windows
+> 目标框架：.NET 8 / .NET 10 Windows（以 `ColorVision.UI.csproj` 为准）
 
 ## 功能定位
 
@@ -65,6 +65,6 @@
 
 ## 构建
 
-```bash
-dotnet build UI/ColorVision.UI/ColorVision.UI.csproj
+```powershell
+dotnet build .\UI\ColorVision.UI\ColorVision.UI.csproj -p:Platform=x64
 ```

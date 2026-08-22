@@ -1,4 +1,4 @@
-#pragma warning disable CA1822,CA1863
+#pragma warning disable CA1001,CA1822,CA1863 // App-lifetime controller owns the operation gate.
 using ColorVision.Common.MVVM;
 using cvColorVision;
 using log4net;
@@ -26,6 +26,7 @@ namespace Spectrum.Configs
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SmuController));
 
+        private readonly SemaphoreSlim operationGate = new(1, 1);
         private bool _isBusy;
         private int _deviceId = -1;
 
@@ -40,11 +41,11 @@ namespace Spectrum.Configs
         [JsonIgnore]
         public bool IsBusy
         {
-            get => _isBusy;
+            get => Volatile.Read(ref _isBusy);
             private set
             {
                 if (_isBusy == value) return;
-                _isBusy = value;
+                Volatile.Write(ref _isBusy, value);
                 OnPropertyChanged();
                 RefreshStateProperties();
             }
@@ -291,11 +292,26 @@ namespace Spectrum.Configs
             }
 
             _deviceId = devId;
+            try
+            {
+                if (!ApplyConnectionSettingsCore()) log.Warn($"SMU apply connection settings after open failed: DevID={devId}");
+                if (!ApplyDisplaySettingsCore()) log.Warn($"SMU apply display settings after open failed: DevID={devId}");
 
-            if (!ApplyConnectionSettingsCore()) log.Warn($"SMU apply connection settings after open failed: DevID={devId}");
-            if (!ApplyDisplaySettingsCore()) log.Warn($"SMU apply display settings after open failed: DevID={devId}");
-
-            return ReadIdnCore(devId);
+                return ReadIdnCore(devId);
+            }
+            catch
+            {
+                try
+                {
+                    CloseCore();
+                }
+                catch (Exception closeException)
+                {
+                    log.Warn($"SMU cleanup after open failure failed: DevID={devId}", closeException);
+                    _deviceId = -1;
+                }
+                throw;
+            }
         }
 
         private void CloseCore()
@@ -306,13 +322,17 @@ namespace Spectrum.Configs
             }
 
             int devId = _deviceId;
-            int closeOutputCode = PassSx.CloseOutput(devId);
-            if (closeOutputCode != 1) log.Warn(BuildPassSxError("SMU close output before close", closeOutputCode, $"DevID={devId}"));
-
-            int closeDeviceCode = PassSx.CloseDevice(devId);
-            if (closeDeviceCode != 1) log.Warn(BuildPassSxError("SMU close device", closeDeviceCode, $"DevID={devId}"));
-
-            _deviceId = -1;
+            try
+            {
+                int closeOutputCode = PassSx.CloseOutput(devId);
+                if (closeOutputCode != 1) log.Warn(BuildPassSxError("SMU close output before close", closeOutputCode, $"DevID={devId}"));
+            }
+            finally
+            {
+                int closeDeviceCode = PassSx.CloseDevice(devId);
+                _deviceId = -1;
+                if (closeDeviceCode != 1) log.Warn(BuildPassSxError("SMU close device", closeDeviceCode, $"DevID={devId}"));
+            }
         }
 
         private SmuMeasurementSnapshot? CaptureMeasurementCore()
@@ -347,20 +367,71 @@ namespace Spectrum.Configs
             return new SmuMeasurementSnapshot((float)rstV, (float)(rstI * 1000.0));
         }
 
-        public async Task<bool> OpenAsync()
+        private bool TryBeginOperation()
         {
-            if (IsOpen) return true;
-            if (IsBusy) return false;
-            if (string.IsNullOrWhiteSpace(Config.DevName))
-            {
-                LastErrorMessage = SpectrumResources.DeviceNameRequired;
-                StatusText = SpectrumResources.未连接;
+            if (!operationGate.Wait(0))
                 return false;
-            }
 
-            IsBusy = true;
             try
             {
+                IsBusy = true;
+                return true;
+            }
+            catch
+            {
+                Volatile.Write(ref _isBusy, false);
+                operationGate.Release();
+                throw;
+            }
+        }
+
+        private async ValueTask<bool> TryBeginOperationAsync(CancellationToken cancellationToken = default)
+        {
+            if (!await operationGate.WaitAsync(0, cancellationToken))
+                return false;
+
+            try
+            {
+                IsBusy = true;
+                return true;
+            }
+            catch
+            {
+                Volatile.Write(ref _isBusy, false);
+                operationGate.Release();
+                throw;
+            }
+        }
+
+        private void EndOperation()
+        {
+            // Publish the idle state before releasing the gate. Otherwise a new operation
+            // could acquire the gate and set IsBusy=true before this operation writes false.
+            try
+            {
+                IsBusy = false;
+            }
+            finally
+            {
+                operationGate.Release();
+            }
+        }
+
+        public async Task<bool> OpenAsync()
+        {
+            if (!await TryBeginOperationAsync())
+                return false;
+
+            try
+            {
+                if (IsOpen) return true;
+                if (string.IsNullOrWhiteSpace(Config.DevName))
+                {
+                    LastErrorMessage = SpectrumResources.DeviceNameRequired;
+                    StatusText = SpectrumResources.未连接;
+                    return false;
+                }
+
                 StatusText = SpectrumResources.ConnectingSourceMeter;
                 LastErrorMessage = string.Empty;
                 string? version = await Task.Run(OpenCore);
@@ -382,40 +453,50 @@ namespace Spectrum.Configs
             }
             finally
             {
-                IsBusy = false;
+                EndOperation();
             }
         }
 
         public bool Open()
         {
-            if (IsOpen) return true;
-            if (string.IsNullOrWhiteSpace(Config.DevName)) return false;
+            if (!TryBeginOperation()) return false;
 
-            string? version = OpenCore();
-            if (version is null)
+            try
             {
-                LastErrorMessage = SpectrumResources.SourceMeterConnectFailedCheckSettings;
-                StatusText = SpectrumResources.ConnectionFailedTitle;
-                RefreshStateProperties();
-                return false;
-            }
+                if (IsOpen) return true;
+                if (string.IsNullOrWhiteSpace(Config.DevName)) return false;
 
-            Version = version;
-            LastErrorMessage = string.Empty;
-            StatusText = SpectrumResources.ConnectedStatus;
-            RefreshStateProperties();
-            log.Info($"SMU opened: DevID={_deviceId}, Version={Version}");
-            return true;
+                string? version = OpenCore();
+                if (version is null)
+                {
+                    LastErrorMessage = SpectrumResources.SourceMeterConnectFailedCheckSettings;
+                    StatusText = SpectrumResources.ConnectionFailedTitle;
+                    RefreshStateProperties();
+                    return false;
+                }
+
+                Version = version;
+                LastErrorMessage = string.Empty;
+                StatusText = SpectrumResources.ConnectedStatus;
+                RefreshStateProperties();
+                log.Info($"SMU opened: DevID={_deviceId}, Version={Version}");
+                return true;
+            }
+            finally
+            {
+                EndOperation();
+            }
         }
 
         public async Task CloseAsync()
         {
-            if (!IsOpen || IsBusy) return;
+            if (!await TryBeginOperationAsync()) return;
 
-            IsBusy = true;
-            StatusText = SpectrumResources.DisconnectingSourceMeter;
             try
             {
+                if (!IsOpen) return;
+
+                StatusText = SpectrumResources.DisconnectingSourceMeter;
                 await Task.Run(CloseCore);
                 DisplayConfig.ClearOutput();
                 Version = string.Empty;
@@ -426,24 +507,68 @@ namespace Spectrum.Configs
             }
             finally
             {
-                IsBusy = false;
+                EndOperation();
             }
         }
 
         public void Close()
         {
-            if (!IsOpen) return;
+            if (!TryBeginOperation()) return;
 
-            CloseCore();
-            DisplayConfig.ClearOutput();
-            Version = string.Empty;
-            LastErrorMessage = string.Empty;
-            StatusText = SpectrumResources.未连接;
-            RefreshStateProperties();
-            log.Info("SMU closed");
+            try
+            {
+                if (!IsOpen) return;
+
+                CloseCore();
+                DisplayConfig.ClearOutput();
+                Version = string.Empty;
+                LastErrorMessage = string.Empty;
+                StatusText = SpectrumResources.未连接;
+                RefreshStateProperties();
+                log.Info("SMU closed");
+            }
+            finally
+            {
+                EndOperation();
+            }
         }
 
-        public SmuMeasurementSnapshot? CaptureMeasurementSnapshot() => CaptureMeasurementCore();
+        /// <summary>
+        /// Attempts an immediate, serialized capture for the spectrometer measurement path.
+        /// A null result means that the SMU was unavailable, busy, or the native capture failed.
+        /// </summary>
+        public SmuMeasurementSnapshot? CaptureMeasurementSnapshot()
+        {
+            if (!TryBeginOperation()) return null;
+            try
+            {
+                return CaptureMeasurementCore();
+            }
+            finally
+            {
+                EndOperation();
+            }
+        }
+
+        /// <summary>
+        /// Attempts an immediate asynchronous capture without racing SMU open, close, or UI measurement.
+        /// </summary>
+        public async Task<(bool Entered, SmuMeasurementSnapshot? Snapshot)> TryCaptureMeasurementSnapshotAsync(
+            CancellationToken cancellationToken = default)
+        {
+            if (!await TryBeginOperationAsync(cancellationToken))
+                return (false, null);
+
+            try
+            {
+                SmuMeasurementSnapshot? snapshot = await Task.Run(CaptureMeasurementCore, CancellationToken.None);
+                return (true, snapshot);
+            }
+            finally
+            {
+                EndOperation();
+            }
+        }
 
         public void ApplyMeasurement(SmuMeasurementSnapshot snapshot)
         {
@@ -453,11 +578,12 @@ namespace Spectrum.Configs
 
         public async Task<bool> MeasureAndApplyAsync()
         {
-            if (!IsOpen || IsBusy) return false;
+            if (!await TryBeginOperationAsync()) return false;
 
-            IsBusy = true;
             try
             {
+                if (!IsOpen) return false;
+
                 StatusText = SpectrumResources.MeasuringAndReading;
                 SmuMeasurementSnapshot? snapshot = await Task.Run(CaptureMeasurementCore);
                 if (snapshot is null)
@@ -475,49 +601,67 @@ namespace Spectrum.Configs
             }
             finally
             {
-                IsBusy = false;
+                EndOperation();
             }
         }
 
         public bool MeasureData()
         {
-            if (!IsOpen) return false;
+            if (!TryBeginOperation()) return false;
 
-            SmuMeasurementSnapshot? snapshot = CaptureMeasurementCore();
-            if (snapshot is null)
+            try
             {
-                LastErrorMessage = SpectrumResources.SourceMeterReadFailed;
-                StatusText = SpectrumResources.ReadFailedTitle;
-                return false;
-            }
+                if (!IsOpen) return false;
 
-            ApplyMeasurement(snapshot.Value);
-            LastErrorMessage = string.Empty;
-            StatusText = string.Format(SpectrumResources.ReadCompletedAt, DateTime.Now.ToString("HH:mm:ss"));
-            log.Info($"SMU MeasureData: V={V}, I={I} mA");
-            return true;
+                SmuMeasurementSnapshot? snapshot = CaptureMeasurementCore();
+                if (snapshot is null)
+                {
+                    LastErrorMessage = SpectrumResources.SourceMeterReadFailed;
+                    StatusText = SpectrumResources.ReadFailedTitle;
+                    return false;
+                }
+
+                ApplyMeasurement(snapshot.Value);
+                LastErrorMessage = string.Empty;
+                StatusText = string.Format(SpectrumResources.ReadCompletedAt, DateTime.Now.ToString("HH:mm:ss"));
+                log.Info($"SMU MeasureData: V={V}, I={I} mA");
+                return true;
+            }
+            finally
+            {
+                EndOperation();
+            }
         }
 
         public (float voltage, float currentMA) GetVI() => ((float)(DisplayConfig.V ?? 0), (float)(DisplayConfig.I ?? 0));
 
         public bool CloseOutput()
         {
-            if (!IsOpen || IsBusy) return false;
+            if (!TryBeginOperation()) return false;
 
-            int closeOutputCode = PassSx.CloseOutput(_deviceId);
-            if (closeOutputCode != 1)
+            try
             {
-                log.Warn(BuildPassSxError("关闭源表输出失败", closeOutputCode, $"DevID={_deviceId}"));
-                LastErrorMessage = SpectrumResources.SourceMeterCloseOutputFailed;
-                StatusText = SpectrumResources.CloseOutputFailedTitle;
-                return false;
-            }
+                if (!IsOpen) return false;
 
-            DisplayConfig.ClearOutput();
-            LastErrorMessage = string.Empty;
-            StatusText = SpectrumResources.OutputClosed;
-            log.Info("SMU output closed");
-            return true;
+                int closeOutputCode = PassSx.CloseOutput(_deviceId);
+                if (closeOutputCode != 1)
+                {
+                    log.Warn(BuildPassSxError("关闭源表输出失败", closeOutputCode, $"DevID={_deviceId}"));
+                    LastErrorMessage = SpectrumResources.SourceMeterCloseOutputFailed;
+                    StatusText = SpectrumResources.CloseOutputFailedTitle;
+                    return false;
+                }
+
+                DisplayConfig.ClearOutput();
+                LastErrorMessage = string.Empty;
+                StatusText = SpectrumResources.OutputClosed;
+                log.Info("SMU output closed");
+                return true;
+            }
+            finally
+            {
+                EndOperation();
+            }
         }
     }
 }

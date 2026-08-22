@@ -6,7 +6,7 @@
 
 开始之前，先阅读 [系统要求](./prerequisites.md)，重点确认以下几项：
 
-- 当前环境是 Windows 10 1903+ 或 Windows 11
+- 当前环境是 Windows 10 或 Windows 11
 - 使用 x64 环境
 - 拥有安装目录的写权限；若涉及服务配置，建议使用管理员权限
 - 如果需要在线更新或访问远程服务，网络环境可用
@@ -45,7 +45,7 @@
 ### 最小步骤
 
 ```powershell
-dotnet restore
+dotnet restore .\ColorVision\ColorVision.csproj
 dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64
 dotnet run --project .\ColorVision\ColorVision.csproj -p:Platform=x64
 ```

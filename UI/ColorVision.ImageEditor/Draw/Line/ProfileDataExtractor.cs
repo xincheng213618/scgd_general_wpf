@@ -46,13 +46,21 @@ namespace ColorVision.ImageEditor.Draw.Line
             if (totalLength <= 0)
                 return ProfileData.CreateSingleChannel(new List<double>());
 
-            if (isMultiChannel)
+            bitmap.Lock();
+            try
             {
-                return ExtractMultiChannelData(points, bitmap, totalSteps, totalLength, closePath);
+                if (isMultiChannel)
+                {
+                    return ExtractMultiChannelData(points, bitmap, totalSteps, totalLength, closePath);
+                }
+                else
+                {
+                    return ExtractSingleChannelData(points, bitmap, totalSteps, totalLength, closePath);
+                }
             }
-            else
+            finally
             {
-                return ExtractSingleChannelData(points, bitmap, totalSteps, totalLength, closePath);
+                bitmap.Unlock();
             }
         }
 
@@ -154,64 +162,56 @@ namespace ColorVision.ImageEditor.Draw.Line
                 return;
             }
 
-            bitmap.Lock();
-            try
+            unsafe
             {
-                unsafe
+                int bytesPerPixel = bitmap.Format.BitsPerPixel / 8;
+                IntPtr pPixel = bitmap.BackBuffer + y * bitmap.BackBufferStride + x * bytesPerPixel;
+
+                double value = 0;
+                var format = bitmap.Format;
+
+                if (format == PixelFormats.Gray8 || format == PixelFormats.Indexed8)
                 {
-                    int bytesPerPixel = bitmap.Format.BitsPerPixel / 8;
-                    IntPtr pPixel = bitmap.BackBuffer + y * bitmap.BackBufferStride + x * bytesPerPixel;
-
-                    double value = 0;
-                    var format = bitmap.Format;
-
-                    if (format == PixelFormats.Gray8 || format == PixelFormats.Indexed8)
-                    {
-                        value = *((byte*)pPixel);
-                    }
-                    else if (format == PixelFormats.Gray16)
-                    {
-                        value = *((ushort*)pPixel);
-                    }
-                    else if (format == PixelFormats.Gray32Float)
-                    {
-                        value = *((float*)pPixel);
-                    }
-                    else if (format == PixelFormats.Bgr24)
-                    {
-                        byte* p = (byte*)pPixel;
-                        value = 0.299 * p[2] + 0.587 * p[1] + 0.114 * p[0];
-                    }
-                    else if (format == PixelFormats.Rgb24)
-                    {
-                        byte* p = (byte*)pPixel;
-                        value = 0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2];
-                    }
-                    else if (format == PixelFormats.Bgr32 || format == PixelFormats.Bgra32 || format == PixelFormats.Pbgra32)
-                    {
-                        byte* p = (byte*)pPixel;
-                        value = 0.299 * p[2] + 0.587 * p[1] + 0.114 * p[0];
-                    }
-                    else if (format == PixelFormats.Rgb48)
-                    {
-                        ushort* p = (ushort*)pPixel;
-                        const double maxVal = ushort.MaxValue;
-                        double r = p[0] / maxVal;
-                        double g = p[1] / maxVal;
-                        double b = p[2] / maxVal;
-                        value = (0.299 * r + 0.587 * g + 0.114 * b) * maxVal;
-                    }
-                    else
-                    {
-                        return;
-                    }
-
-                    dataList.Add(value);
+                    value = *((byte*)pPixel);
                 }
-            }
-            finally
-            {
-                bitmap.Unlock();
+                else if (format == PixelFormats.Gray16)
+                {
+                    value = *((ushort*)pPixel);
+                }
+                else if (format == PixelFormats.Gray32Float)
+                {
+                    value = *((float*)pPixel);
+                }
+                else if (format == PixelFormats.Bgr24)
+                {
+                    byte* p = (byte*)pPixel;
+                    value = 0.299 * p[2] + 0.587 * p[1] + 0.114 * p[0];
+                }
+                else if (format == PixelFormats.Rgb24)
+                {
+                    byte* p = (byte*)pPixel;
+                    value = 0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2];
+                }
+                else if (format == PixelFormats.Bgr32 || format == PixelFormats.Bgra32 || format == PixelFormats.Pbgra32)
+                {
+                    byte* p = (byte*)pPixel;
+                    value = 0.299 * p[2] + 0.587 * p[1] + 0.114 * p[0];
+                }
+                else if (format == PixelFormats.Rgb48)
+                {
+                    ushort* p = (ushort*)pPixel;
+                    const double maxVal = ushort.MaxValue;
+                    double r = p[0] / maxVal;
+                    double g = p[1] / maxVal;
+                    double b = p[2] / maxVal;
+                    value = (0.299 * r + 0.587 * g + 0.114 * b) * maxVal;
+                }
+                else
+                {
+                    return;
+                }
+
+                dataList.Add(value);
             }
         }
 
@@ -229,63 +229,55 @@ namespace ColorVision.ImageEditor.Draw.Line
                 return;
             }
 
-            bitmap.Lock();
-            try
+            unsafe
             {
-                unsafe
+                int bytesPerPixel = bitmap.Format.BitsPerPixel / 8;
+                IntPtr pPixel = bitmap.BackBuffer + y * bitmap.BackBufferStride + x * bytesPerPixel;
+                var format = bitmap.Format;
+
+                double r = 0, g = 0, b = 0, gray = 0;
+
+                if (format == PixelFormats.Bgr24)
                 {
-                    int bytesPerPixel = bitmap.Format.BitsPerPixel / 8;
-                    IntPtr pPixel = bitmap.BackBuffer + y * bitmap.BackBufferStride + x * bytesPerPixel;
-                    var format = bitmap.Format;
-
-                    double r = 0, g = 0, b = 0, gray = 0;
-
-                    if (format == PixelFormats.Bgr24)
-                    {
-                        byte* p = (byte*)pPixel;
-                        b = p[0];
-                        g = p[1];
-                        r = p[2];
-                        gray = 0.299 * r + 0.587 * g + 0.114 * b;
-                    }
-                    else if (format == PixelFormats.Rgb24)
-                    {
-                        byte* p = (byte*)pPixel;
-                        r = p[0];
-                        g = p[1];
-                        b = p[2];
-                        gray = 0.299 * r + 0.587 * g + 0.114 * b;
-                    }
-                    else if (format == PixelFormats.Bgr32 || format == PixelFormats.Bgra32 || format == PixelFormats.Pbgra32)
-                    {
-                        byte* p = (byte*)pPixel;
-                        b = p[0];
-                        g = p[1];
-                        r = p[2];
-                        gray = 0.299 * r + 0.587 * g + 0.114 * b;
-                    }
-                    else if (format == PixelFormats.Rgb48)
-                    {
-                        ushort* p = (ushort*)pPixel;
-                        r = p[0];
-                        g = p[1];
-                        b = p[2];
-                        gray = 0.299 * r + 0.587 * g + 0.114 * b;
-                    }
-                    else
-                    {
-                        return;
-                    }
-
-                    redList.Add(r);
-                    greenList.Add(g);
-                    blueList.Add(b);
-                    grayList.Add(gray);
+                    byte* p = (byte*)pPixel;
+                    b = p[0];
+                    g = p[1];
+                    r = p[2];
+                    gray = 0.299 * r + 0.587 * g + 0.114 * b;
                 }
-            }
-            finally
-            {
-                bitmap.Unlock();
+                else if (format == PixelFormats.Rgb24)
+                {
+                    byte* p = (byte*)pPixel;
+                    r = p[0];
+                    g = p[1];
+                    b = p[2];
+                    gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                }
+                else if (format == PixelFormats.Bgr32 || format == PixelFormats.Bgra32 || format == PixelFormats.Pbgra32)
+                {
+                    byte* p = (byte*)pPixel;
+                    b = p[0];
+                    g = p[1];
+                    r = p[2];
+                    gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                }
+                else if (format == PixelFormats.Rgb48)
+                {
+                    ushort* p = (ushort*)pPixel;
+                    r = p[0];
+                    g = p[1];
+                    b = p[2];
+                    gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                }
+                else
+                {
+                    return;
+                }
+
+                redList.Add(r);
+                greenList.Add(g);
+                blueList.Add(b);
+                grayList.Add(gray);
             }
         }
     }

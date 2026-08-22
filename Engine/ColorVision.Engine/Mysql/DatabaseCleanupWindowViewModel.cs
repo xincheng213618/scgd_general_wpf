@@ -36,7 +36,7 @@ namespace ColorVision.Database
             _maintenanceProvider = provider as IDatabaseCleanupMaintenanceProvider;
             _migrationProvider = provider as IDatabaseCleanupMigrationProvider;
             _description = provider.Description;
-            _backupBeforeCleanup = _backupProvider != null;
+            _backupBeforeCleanup = false;
 
             RefreshCommand = new RelayCommand(_ => _ = RefreshAsync(), _ => !IsBusy);
             BackupCommand = new RelayCommand(_ => _ = ExecuteBackupAsync(), _ => !IsBusy && SupportsBackup);

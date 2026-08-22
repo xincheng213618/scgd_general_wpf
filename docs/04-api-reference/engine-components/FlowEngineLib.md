@@ -1,6 +1,6 @@
 # FlowEngineLib
 
-`Engine/FlowEngineLib/` 是节点执行内核，不是完整的宿主工作流系统。模板管理、流程保存、服务列表和项目结果处理在 `ColorVision.Engine/Templates/Flow/` 和 `Projects/*`。
+`Engine/FlowEngineLib/` 是节点图执行内核，不是完整的宿主工作流系统。模板持久化、版本和搜索位于 `ColorVision.Engine/Templates/Flow/`；编辑器、交互式/无界面执行、前后处理和诊断位于 `ColorVision.Engine/FlowProcessing/`，项目结果处理仍在 `Projects/*`。
 
 ## 先查什么
 
@@ -13,17 +13,17 @@
 | 节点执行但流程不结束 | 是否连接 `CVEndNode`，是否走到 `CVStartCFC.FireFinished()` |
 | `Finished` 重复触发 | `clear()` 是否解绑旧 `BaseStartNode.Finished` |
 | 项目包收不到结果 | `FlowEngineControl.Finished` 到宿主 `FlowCompleted` 的桥接 |
-| UI 选择和节点参数不一致 | `Templates/Flow/NodeConfigurator/` 是否把参数写回节点 |
+| UI 选择和节点参数不一致 | `FlowProcessing/Editor/NodeConfiguration/` 是否把参数写回节点 |
 
 ## 控制面
 
 | 对象 | 负责 |
 | --- | --- |
-| `FlowEngineControl` | 挂接 `STNodeEditor`、加载画布、管理开始节点和服务节点、抛出 `Finished` |
+| `FlowEngineControl` | 通过图宿主加载画布，管理开始节点和服务节点，抛出引擎级 `Finished` |
 | `CVFlowContainer` | 多开始节点、按 key 追加/加载/启动流程 |
-| `FlowNodeManager` | 设备视图和服务节点同步 |
-| `FlowServiceManager` | MQTT service 绑定 |
+| `FlowNodeManager` / `FlowServiceManager` | 设备视图、服务节点同步和 MQTT service 绑定 |
 | `FlowEngineAPI` | 启动、停止、开始节点查询的外部接口 |
+| `FlowRuntimeHost` / `FlowEngineRunner` | 为无界面执行持有隔离节点图、服务快照和明确的加载/运行/停止生命周期 |
 
 `FlowEngineControl.NodeAdded` 会把节点分成两类：`BaseStartNode` 进入 `startNodeNames` 并订阅完成事件；`CVBaseServerNode` 进入服务节点集合并同步到设备视图。
 
@@ -41,7 +41,7 @@
 
 ## 弃用节点兼容
 
-标记 `Obsolete` 的节点类型会从 `STNodeTreeView` 的新建/右键目录和 Copilot 节点目录中排除，但仍由节点类型注册表保留，因此旧画布可以继续反序列化。当前包括 `/10 MQTT` 的 4 个旧节点、`/09 合规验证`、`/11 ROI`、`/12 第三方算法`，以及已下线模板对应的旧校正/图像拼接节点。不要删除这些类型，除非已经完成存量流程迁移。
+标记 `Obsolete` 的节点类型会从 `STNodeTreeView` 的新建/右键目录和 Copilot 节点目录中排除，但仍由节点类型注册表保留，因此旧画布可以继续反序列化。例如旧 MQTT、V5 开始/结束、合规验证、ROI、第三方算法、校正和图像拼接节点都走这条兼容路径；完成存量流程迁移前不要删除这些类型。
 
 ## 完成链路
 
@@ -53,21 +53,24 @@ flowchart TD
   End --> Finish["CVStartCFC.FireFinished()"]
   Finish --> StartEvent["BaseStartNode.Finished"]
   StartEvent --> EngineEvent["FlowEngineControl.Finished"]
-  EngineEvent --> Host["ColorVision.Engine FlowControl.FlowCompleted"]
+  EngineEvent --> Host["FlowControl.FlowCompleted / EngineExecutionCompleted"]
+  Host --> Finalizer["FlowRunFinalizer / PostProcess"]
+  Finalizer --> Finalized["RunFinalized"]
 ```
 
-“节点完成”不等于“流程完成”。真正的流程结束必须进入 End 节点并触发上面的 finished 链。
+“节点完成”不等于“流程图完成”。流程图必须进入 End 节点并触发 `Finished` 链；`EngineExecutionCompleted` 之后仍可能执行后处理，需要最终业务结果的调用方应等待 `RunFinalized`。
 
 ## 宿主边界
 
-FlowEngineLib 只知道节点和执行状态。主程序里的这些工作在 Engine 模板层：
+FlowEngineLib 只知道节点图和引擎执行状态。主程序里的这些工作分布在模板层和 `FlowProcessing`：
 
 | 工作 | 入口 |
 | --- | --- |
-| 从模板加载 Base64 流程 | `Templates/Flow/TemplateFlow.cs` |
-| 显示、编辑和运行流程 | `Templates/Flow/DisplayFlow.xaml.cs` |
-| 包装完成事件给项目包 | `Templates/Flow/FlowControl.cs` |
-| 给节点绑定设备/模板/参数 | `Templates/Flow/NodeConfigurator/` |
+| 持久化 Base64 流程和 `.cvflow` 包 | `Templates/Flow/TemplateFlow.cs`、`Templates/Flow/FlowPackageHelper.cs` |
+| 显示和编辑流程 | `FlowProcessing/Runtime/ViewFlow.xaml.cs`、`FlowProcessing/Editor/FlowEditorCanvas.xaml.cs` |
+| 编排交互式执行和最终化 | `FlowProcessing/Runtime/FlowExecutionSession.cs`、`FlowRunExecutor.cs`、`FlowRunFinalizer.cs` |
+| 执行已保存流程或无界面流程 | `FlowProcessing/Runtime/FlowExecutionCoordinator.cs`、`FlowHeadlessExecutionService.cs` |
+| 给节点绑定设备/模板/参数 | `FlowProcessing/Editor/NodeConfiguration/` |
 
 如果问题是模板下拉、流程保存、项目结果解析，通常不在 FlowEngineLib 里修。
 
@@ -83,11 +86,10 @@ FlowEngineLib 只知道节点和执行状态。主程序里的这些工作在 En
 | 参数链 | 模板、图像、颜色、POI、SMU 能进入请求数据 |
 | 完成链 | 结束时能抛出 SN、状态、耗时、消息和错误节点 |
 | 清理 | 停止或重新加载后不叠加旧事件 |
-| 宿主桥接 | `DisplayFlow`/`FlowControl` 能接到模板、服务和运行按钮 |
+| 宿主桥接 | `ViewFlow`/`FlowExecutionSession` 能接到模板、服务、运行按钮和最终化结果 |
 
 ## 不要这样理解
 
 - FlowEngineLib 不是完整 DSL 平台；它是节点执行内核。
 - 不要把项目判定写进节点内核。
-- 不要把服务绑定问题误判成节点执行问题，先看 NodeConfigurator。
-- 不要忽略 `loadedCanvas` 缓存，它会影响重复加载行为。
+- 不要把服务绑定问题误判成节点执行问题，先看 `FlowProcessing/Editor/NodeConfiguration/` 和服务快照；也不要忽略会影响重复加载的 `loadedCanvas` 缓存。

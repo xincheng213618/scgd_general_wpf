@@ -20,6 +20,9 @@ namespace Conoscope.Core
         private readonly ConoscopeConfig workingConfig;
         private static readonly DisplayMetadataProvider MetadataProvider = new DisplayMetadataProvider();
 
+        public bool CurrentModelGeometryChanged { get; private set; }
+        public bool CurrentModelViewSettingsChanged { get; private set; }
+
         public ConoscopeConfigWindow(ConoscopeConfig config)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
@@ -31,9 +34,14 @@ namespace Conoscope.Core
             InitializeOptions();
 
             basicSettingsPanel.DataContext = workingConfig;
-            PreprocessSettingsHost.Content = new ConoscopePreprocessSettingsControl(workingConfig, persistChanges: false);
+            PreprocessSettingsHost.Content = new ConoscopePreprocessSettingsControl(workingConfig);
             cbCurrentModel.SelectedItem = workingConfig.CurrentModel;
             RefreshModelEditors();
+        }
+
+        public void SelectPreprocessTab()
+        {
+            tabPreprocess.IsSelected = true;
         }
 
         private void InitializeLocalizedText()
@@ -103,11 +111,6 @@ namespace Conoscope.Core
             basicSettingsPanel.DataContext = null;
             basicSettingsPanel.DataContext = workingConfig;
             RefreshModelEditors();
-            if (PreprocessSettingsHost.Content is ConoscopePreprocessSettingsControl preprocessControl)
-            {
-                preprocessControl.RefreshFromConfig();
-            }
-
             tbSettingsStatus.Text = UiText("Ui_DefaultsLoaded", "已载入默认值；应用并保存后才会生效。");
         }
 
@@ -128,6 +131,7 @@ namespace Conoscope.Core
             CopyEditableSettings(config, backup);
             try
             {
+                UpdateCurrentModelChangeFlags();
                 CopyEditableSettings(workingConfig, config);
                 ConfigService.Instance.Save<ConoscopeConfig>();
                 DialogResult = true;
@@ -141,6 +145,57 @@ namespace Conoscope.Core
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
+        }
+
+        private void UpdateCurrentModelChangeFlags()
+        {
+            ConoscopeModelProfile source = workingConfig.CurrentModelProfile;
+            ConoscopeModelProfile? target = config.ModelProfiles.FirstOrDefault(item => item.ModelType == source.ModelType);
+            if (target == null)
+            {
+                CurrentModelGeometryChanged = true;
+                CurrentModelViewSettingsChanged = true;
+                return;
+            }
+
+            CurrentModelGeometryChanged = source.MaxAngle != target.MaxAngle
+                || source.CalculationDiameterPixels != target.CalculationDiameterPixels
+                || source.ManualConoscopeCoefficient != target.ManualConoscopeCoefficient;
+            CurrentModelViewSettingsChanged = CurrentModelGeometryChanged
+                || !HaveEquivalentCoordinateAxis(source.CoordinateAxisParam, target.CoordinateAxisParam);
+        }
+
+        private static bool HaveEquivalentCoordinateAxis(ConoscopeCoordinateAxisParam left, ConoscopeCoordinateAxisParam right)
+        {
+            return left.IsInteractionEnabled == right.IsInteractionEnabled
+                && left.MaxAngle == right.MaxAngle
+                && left.ConoscopeCoefficient == right.ConoscopeCoefficient
+                && left.CenterX == right.CenterX
+                && left.CenterY == right.CenterY
+                && left.AxisRadius == right.AxisRadius
+                && left.AzimuthStep == right.AzimuthStep
+                && left.PolarStep == right.PolarStep
+                && left.LineWidth == right.LineWidth
+                && HaveEquivalentBrush(left.AxisBrush, right.AxisBrush)
+                && left.ReferenceMode == right.ReferenceMode
+                && left.ReferenceAngle == right.ReferenceAngle
+                && left.ReferenceRadiusAngle == right.ReferenceRadiusAngle
+                && left.ReferenceLineWidth == right.ReferenceLineWidth
+                && HaveEquivalentBrush(left.ReferenceBrush, right.ReferenceBrush)
+                && left.IsMaskVisible == right.IsMaskVisible
+                && left.MaskOpacity == right.MaskOpacity
+                && left.MaskColor == right.MaskColor
+                && left.IsTextVisible == right.IsTextVisible
+                && left.FontSize == right.FontSize
+                && HaveEquivalentBrush(left.TextBrush, right.TextBrush);
+        }
+
+        private static bool HaveEquivalentBrush(Brush left, Brush right)
+        {
+            return string.Equals(
+                left.ToString(CultureInfo.InvariantCulture),
+                right.ToString(CultureInfo.InvariantCulture),
+                StringComparison.Ordinal);
         }
 
         private void btnCancel_Click(object sender, RoutedEventArgs e)

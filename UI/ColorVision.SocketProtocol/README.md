@@ -1,6 +1,6 @@
 # ColorVision.SocketProtocol
 
-> 版本: 1.5.5.1 | 目标框架: .NET 8.0 / .NET 10.0 Windows
+> 目标框架：.NET 8 / .NET 10 Windows（以 `ColorVision.SocketProtocol.csproj` 为准）
 
 `ColorVision.SocketProtocol` 是 ColorVision 桌面端的本地 TCP 通信模块。它不是单纯的协议模型库，而是把 Socket 服务启停、JSON/Text 请求分发、SQLite 消息历史、状态栏入口和管理窗口整合在一起的运行时模块。
 

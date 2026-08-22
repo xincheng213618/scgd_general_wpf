@@ -44,6 +44,22 @@ namespace Spectrum.Configs
         [JsonIgnore]
         public CalibrationGroup? ActiveGroup => Groups.FirstOrDefault(g => g.GroupName == ActiveGroupName);
 
+        public CalibrationGroupConfig Clone()
+        {
+            CalibrationGroupConfig clone = new() { ActiveGroupName = ActiveGroupName };
+            foreach (CalibrationGroup group in Groups)
+            {
+                clone.Groups.Add(new CalibrationGroup
+                {
+                    GroupName = group.GroupName,
+                    WavelengthFile = group.WavelengthFile,
+                    MaguideFile = group.MaguideFile,
+                    FilterWheelPosition = group.FilterWheelPosition
+                });
+            }
+            return clone;
+        }
+
         /// <summary>
         /// Gets the config directory for a specific spectrometer SN.
         /// Path: {MyDocuments}/Spectrometer/{SN}/
@@ -98,8 +114,9 @@ namespace Spectrum.Configs
         /// <summary>
         /// Saves calibration group config for a given SN.
         /// </summary>
-        public void Save(string sn)
+        public bool TrySave(string sn, out string errorMessage)
         {
+            string? temporaryPath = null;
             try
             {
                 string dir = GetConfigDirectory(sn);
@@ -107,13 +124,38 @@ namespace Spectrum.Configs
                     Directory.CreateDirectory(dir);
 
                 string filePath = GetConfigFilePath(sn);
+                temporaryPath = Path.Combine(dir, $".{Path.GetFileName(filePath)}.{Guid.NewGuid():N}.tmp");
                 string json = JsonConvert.SerializeObject(this, Formatting.Indented);
-                File.WriteAllText(filePath, json);
+                using (FileStream stream = new(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
+                using (StreamWriter writer = new(stream))
+                {
+                    writer.Write(json);
+                    writer.Flush();
+                    stream.Flush(flushToDisk: true);
+                }
+
+                if (File.Exists(filePath))
+                    File.Replace(temporaryPath, filePath, destinationBackupFileName: null);
+                else
+                    File.Move(temporaryPath, filePath);
+                temporaryPath = null;
                 log.Info($"Saved calibration config for SN={sn}");
+                errorMessage = string.Empty;
+                return true;
             }
             catch (Exception ex)
             {
                 log.Error($"Failed to save calibration config for SN={sn}", ex);
+                errorMessage = ex.GetBaseException().Message;
+                return false;
+            }
+            finally
+            {
+                if (temporaryPath != null)
+                {
+                    try { File.Delete(temporaryPath); }
+                    catch (Exception ex) { log.Warn($"Failed to remove temporary calibration config: {temporaryPath}", ex); }
+                }
             }
         }
 

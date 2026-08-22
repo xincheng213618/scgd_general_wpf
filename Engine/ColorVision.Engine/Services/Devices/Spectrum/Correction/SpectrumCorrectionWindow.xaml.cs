@@ -100,7 +100,9 @@ public partial class SpectrumCorrectionWindow : Window
             CalibrationGroupText.Text = EmptyAsDash(snapshot.CalibrationGroupName);
             ResultText.Text = $"#{snapshot.ResultId} · {snapshot.MeasuredAt:yyyy-MM-dd HH:mm:ss}";
             MagnitudeFileText.Text = snapshot.MagnitudeFilePath;
-            MeasuredBrightnessTextBox.Text = snapshot.PhotometricValue.ToString("G10", CultureInfo.CurrentCulture);
+            MeasuredBrightnessTextBox.Text = double.IsFinite(snapshot.PhotometricValue)
+                ? snapshot.PhotometricValue.ToString("G10", CultureInfo.CurrentCulture)
+                : "—";
             UpdateBrightnessRatio();
             PopulateMeasuredRows(measurement.ToAbsoluteSpectrum());
             PlotMeasurementOnly();

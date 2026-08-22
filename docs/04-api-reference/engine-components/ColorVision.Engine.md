@@ -11,8 +11,8 @@
 | JSON 模板保存失败 | `ITemplateJson<T>` 数据库读写、模板名重复、schema 是否发布 |
 | 设备资源没有变成服务对象 | `SysResourceModel.Type`、`ServiceTypes`、`DeviceServiceFactoryRegistry` |
 | 设备命令一直 Timeout | MQTT 主题、service token、`MqttRCService` 状态、`MsgRecord` |
-| Flow 节点没有服务 | `FlowEngineManager`、RC 服务列表、`DisplayFlow` 刷新逻辑 |
-| Flow 跑完项目拿不到结果 | `FlowCompleted`、`ViewResultAlg`、项目包 `Process/` 映射 |
+| Flow 节点没有服务 | `FlowEngineManager`、RC 服务列表、`FlowNodeManager.UpdateDevice`、工作区刷新状态 |
+| Flow 引擎结束但结果没回去 | 共享链查 `RunFinalized`；现有项目窗口再查自己的 `FlowCompleted` 最终化、`Processing` 和结果映射 |
 | overlay 不对 | `IResultHandleBase`、结果类型、ImageEditor 图元和坐标转换 |
 | 打包后图标/schema/工具缺失 | `ColorVision.Engine.csproj` 的 `Resource` / `None Update` |
 
@@ -22,7 +22,7 @@
 | --- | --- | --- |
 | 模板注册 | `TemplateControl` | MySQL 可用后扫描 `IITemplateLoad` 并注册到 `ITemplateNames` |
 | JSON 模板 | `ITemplateJson<T>`、`EditTemplateJson` | 数据库读写、参数包装、文本/属性/注释视图编辑 |
-| Flow 桥接 | `FlowEngineManager`、`DisplayFlow` | 将 Flow 模板、服务 token、节点刷新和 UI 操作接到 `FlowEngineLib` |
+| Flow 编排 | `FlowProcessing/Runtime`、`FlowProcessing/Editor` | 将 Flow 模板、服务 token、交互式/无界面执行、节点编辑和最终化接到 `FlowEngineLib` |
 | 设备服务 | `DeviceService`、`DeviceServiceFactoryRegistry` | 树节点、菜单、配置导入导出、服务对象工厂 |
 | MQTT 运行时 | `MQTTServiceBase`、`MqttRCService` | 发布/订阅、消息记录、心跳、RC 注册和 token 缓存 |
 | 算法适配 | `AlgorithmPOI`、`AlgorithmMTF` 等 | 打开模板编辑器、组装 MQTT 参数、调用设备服务 |
@@ -35,7 +35,7 @@
 3. 设备资源按 `ServiceTypes` 进入 `DeviceServiceFactoryRegistry` 创建服务对象。
 4. 设备/算法服务通过 `MQTTServiceBase` 发送命令，并用 `MsgRecord` 追踪状态。
 5. `MqttRCService` 维护注册中心连接和 service token。
-6. Flow 模板通过 `FlowEngineManager` / `DisplayFlow` 接入 `FlowEngineLib` 和服务节点。
+6. Flow 模板由 `FlowEngineManager` 和 `ViewFlow` 组成交互式工作区，`FlowExecutionCoordinator` 提供 UI 调度与无界面入口；底层节点图仍由 `FlowEngineLib` 执行。
 7. 结果由 handler 命中类型后交给 ImageEditor 或表格展示。
 
 ## 检查
@@ -56,7 +56,7 @@
 
 - 很多算法类只是模板/参数/MQTT 的适配器，不是本地算法内核。
 - 模板系统依赖数据库和程序集扫描，不是完全本地静态模板集。
-- Flow 执行内核在 `FlowEngineLib`，主程序编辑、选择和运行还需要 `Templates/Flow/` 桥接层。
+- Flow 执行内核在 `FlowEngineLib`；`Templates/Flow/` 保留模板持久化、版本和搜索，编辑、选择、运行、前后处理与诊断位于 `FlowProcessing/`。
 - 设备实例化当前以 `DeviceServiceFactoryRegistry` 为中心，不建议继续写分散构造说明。
 
 ## 关键文件
@@ -67,5 +67,7 @@
 | JSON 编辑 | `Templates/Jsons/EditTemplateJson.xaml.cs` |
 | 设备服务 | `Services/DeviceService.cs`、`Services/Devices/DeviceServiceFactory.cs` |
 | MQTT/RC | `Services/Core/MQTTServiceBase.cs`、`Services/RC/MQTTRCService.cs` |
-| Flow 桥接 | `Templates/Flow/FlowEngineManager.cs`、`Templates/Flow/DisplayFlow.xaml.cs` |
+| Flow 模板 | `Templates/Flow/TemplateFlow.cs`、`Templates/Flow/Versioning/` |
+| Flow 编辑 | `FlowProcessing/Editor/FlowEditorCanvas.xaml.cs`、`FlowProcessing/Editor/NodeConfiguration/` |
+| Flow 运行 | `FlowProcessing/Runtime/FlowEngineManager.cs`、`FlowProcessing/Runtime/ViewFlow.xaml.cs`、`FlowProcessing/Runtime/FlowExecutionCoordinator.cs` |
 | 算法适配 | `Templates/POI/AlgorithmImp/AlgorithmPOI.cs`、`Templates/ARVR/MTF/AlgorithmMTF.cs` |

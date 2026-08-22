@@ -71,7 +71,7 @@ namespace ProjectARVRPro.Process.W255
                             {
                                 testResult.CenterLunimance = new ObjectiveTestItem
                                 {
-                                    Name = "CenterLunimance",
+                                    Name = "CenterLunimance",  
                                     LowLimit = recipeConfig.CenterLunimance.Min,
                                     UpLimit = recipeConfig.CenterLunimance.Max,
                                     Value = poi.Y,

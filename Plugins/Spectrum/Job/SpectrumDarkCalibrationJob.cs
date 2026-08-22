@@ -26,7 +26,9 @@ namespace Spectrum.Job
 
             log.Info("开始执行光谱仪校零任务");
 
-            int ret = await manager.PerformDarkCalibrationAsync(context.CancellationToken);
+            int ret = await manager.PerformDarkCalibrationAsync(
+                requireShutter: true,
+                cancellationToken: context.CancellationToken);
 
             if (ret == SpectrometerManager.OperationBusy)
             {
@@ -38,7 +40,7 @@ namespace Spectrum.Job
             }
             else
             {
-                string errorMsg = Spectrometer.GetErrorMessage(ret);
+                string errorMsg = manager.GetOperationErrorMessage(ret);
                 log.Error($"校零任务执行失败: {errorMsg}");
                 throw new JobExecutionException($"校零失败: {errorMsg}");
             }

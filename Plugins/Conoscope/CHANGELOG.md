@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## Unreleased
+
+## [1.4.7.6] 2026.08.20
+- 撤销 ConoscopeView/ConoscopeWindow 仅按方法类别拆分的机械 partial 结构；删除 17 个实现碎片，以单一组合点暴露真实调用关系。
+- 新增 `ConoscopeDocument` 独占 X/Y/Z Mat、Y-first 分阶段加载、取消和 latest-wins 提交，并补齐取消/预处理异常路径的释放规则。
+- 预处理设置页改为直接 TwoWay 绑定，删除重复设置窗口、手工控件镜像和配置刷新风暴；活动 View 的持久语义状态开始直接绑定 Ribbon，坐标轴样式修改不再触发整张大图重渲染。
+- 统一显示与导出的通道可用性：Contrast 只要求 Y 与对侧参考，衍生通道失败不再用 Y 静默冒充，ImageCenter 色差参考按数据版本缓存。
+- 保留轻量 `ConoscopeImageHost`，将关注点 visual/工具/菜单/边界收进内部 editor，增加互斥交互模式和明确的“新文档重置/同文档换图”语义。
+- POI 数据库事务移出 View；全局参考 Store 通过事件通知 UI，移除 View 到静态 Window 的反向刷新调用。
+- 增加 Document、State、通道能力和机械 partial 约束测试，并支持用真实 CVCIE 样本记录逐通道性能数据。
+
 ## [1.4.7.5] 2026.08.08
 - 默认高斯滤波核由 55 调整为 7，减少大图打开耗时；设置界面仍允许按需要调回 55 或其他奇数。
 - 大型 CVCIE 改为按通道异步读取：Y 通道先显示，X/Z 后台顺序补齐；连续打开时只允许最新请求回写，并移除重复 Y 处理和强制全局 GC。

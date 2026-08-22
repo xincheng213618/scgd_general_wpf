@@ -45,7 +45,7 @@
 
 - `Templates/TemplateControl.cs`：模板发现与注册入口。
 - `Templates/TemplateEditorWindow.xaml.cs`：模板编辑窗口。
-- `Templates/Flow/TemplateFlow.cs`：流程模板与流程编辑器接入点。
+- `Templates/Flow/TemplateFlow.cs`：流程模板持久化与导入导出入口；编辑器位于 `FlowProcessing/Editor/`，运行工作区位于 `FlowProcessing/Runtime/`。
 - `Templates/Jsons/ITemplateJson.cs`：JSON 模板的公共装载/导入导出逻辑。
 - `Templates/Jsons/EditTemplateJson.xaml(.cs)`：JSON 模板编辑控件，负责文本/属性两种编辑模式。
 - `Templates/POI/AlgorithmImp/AlgorithmPOI.cs`、`Templates/ARVR/*/Algorithm*.cs`：典型业务算法 UI 与消息组装入口。

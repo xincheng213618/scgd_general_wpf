@@ -17,7 +17,6 @@
 - `Engine/ColorVision.Engine/Templates/FindLightArea/TemplateRoi.cs`
 - `Engine/ColorVision.Engine/Templates/FindLightArea/ROIParam.cs`
 - `Engine/ColorVision.Engine/Templates/FindLightArea/AlgorithmRoi.cs`
-- `Engine/ColorVision.Engine/Templates/FindLightArea/DisplayRoi.xaml.cs`
 - `Engine/ColorVision.Engine/Templates/Jsons/ImageROI/TemplateImageROI.cs`
 - `Engine/ColorVision.Engine/Templates/Jsons/ImageROI/AlgorithmImageROI.cs`
 - `Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI/TemplateSFRFindROI.cs`
@@ -27,7 +26,7 @@
 
 当前经典 ROI 实际落在 `FindLightArea`，不是旧文档写的 `Templates/ROI`。`TemplateRoi` 的关键特征是 `Name = FindLightArea`、`Code = FindLightArea`、`TemplateDicId = 31`，并通过 `GetMysqlCommand()` 返回 `MysqlRoi`。
 
-`RoiParam` 只暴露 `Threshold`、`Times`、`SmoothSize` 三项参数。`AlgorithmRoi` 打开模板编辑窗口、获取 `DisplayRoi`，并组装 `Event_LightArea2_GetData` 请求；`DisplayRoi` 负责选择模板、图像源服务、批次号、原始文件和本地图像输入。
+`RoiParam` 只暴露 `Threshold`、`Times`、`SmoothSize` 三项参数。`AlgorithmRoi` 使用 `SingleTemplateDisplayAlgorithmConfig` 和通用 `DisplayAlgorithmBase` 取得模板与图像输入，再组装 `Event_LightArea2_GetData` 请求。
 
 ## 两条 JSON ROI 分支
 
@@ -77,6 +76,6 @@
 
 1. `Engine/ColorVision.Engine/Templates/FindLightArea/TemplateRoi.cs`
 2. `Engine/ColorVision.Engine/Templates/FindLightArea/AlgorithmRoi.cs`
-3. `Engine/ColorVision.Engine/Templates/FindLightArea/DisplayRoi.xaml.cs`
+3. `Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmConfiguration.cs`
 4. `Engine/ColorVision.Engine/Templates/Jsons/ImageROI/TemplateImageROI.cs`
 5. `Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI/TemplateSFRFindROI.cs`

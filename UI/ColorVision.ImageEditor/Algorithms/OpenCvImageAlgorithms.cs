@@ -1,6 +1,5 @@
 using OpenCvSharp;
 using System;
-using System.Linq;
 
 namespace ColorVision.ImageEditor.Algorithms
 {
@@ -71,56 +70,52 @@ namespace ColorVision.ImageEditor.Algorithms
 
         public static void GaussianBlur(Mat mat, int kernelSize, double sigma)
         {
-            using Mat source = mat.Clone();
-            Cv2.GaussianBlur(source, mat, new OpenCvSharp.Size(EnsureOdd(kernelSize), EnsureOdd(kernelSize)), sigma);
+            Cv2.GaussianBlur(mat, mat, new OpenCvSharp.Size(EnsureOdd(kernelSize), EnsureOdd(kernelSize)), sigma);
         }
 
         public static void MedianBlur(Mat mat, int kernelSize)
         {
-            using Mat source = mat.Clone();
-            Cv2.MedianBlur(source, mat, EnsureOdd(kernelSize));
+            Cv2.MedianBlur(mat, mat, EnsureOdd(kernelSize));
         }
 
         public static void Sharpen(Mat mat)
         {
-            using Mat source = mat.Clone();
             using Mat kernel = Mat.FromArray(new float[,]
             {
                 { 0, -1, 0 },
                 { -1, 5, -1 },
                 { 0, -1, 0 },
             });
-            Cv2.Filter2D(source, mat, mat.Depth(), kernel);
+            Cv2.Filter2D(mat, mat, mat.Depth(), kernel);
         }
 
         public static void Morphology(Mat mat, MorphologyOperation operation, int kernelSize, int iterations)
         {
-            using Mat source = mat.Clone();
             using Mat kernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(EnsureOdd(kernelSize), EnsureOdd(kernelSize)));
             iterations = Math.Max(1, iterations);
 
             switch (operation)
             {
                 case MorphologyOperation.Erode:
-                    Cv2.Erode(source, mat, kernel, iterations: iterations);
+                    Cv2.Erode(mat, mat, kernel, iterations: iterations);
                     break;
                 case MorphologyOperation.Dilate:
-                    Cv2.Dilate(source, mat, kernel, iterations: iterations);
+                    Cv2.Dilate(mat, mat, kernel, iterations: iterations);
                     break;
                 case MorphologyOperation.Open:
-                    Cv2.MorphologyEx(source, mat, MorphTypes.Open, kernel, iterations: iterations);
+                    Cv2.MorphologyEx(mat, mat, MorphTypes.Open, kernel, iterations: iterations);
                     break;
                 case MorphologyOperation.Close:
-                    Cv2.MorphologyEx(source, mat, MorphTypes.Close, kernel, iterations: iterations);
+                    Cv2.MorphologyEx(mat, mat, MorphTypes.Close, kernel, iterations: iterations);
                     break;
                 case MorphologyOperation.Gradient:
-                    Cv2.MorphologyEx(source, mat, MorphTypes.Gradient, kernel, iterations: iterations);
+                    Cv2.MorphologyEx(mat, mat, MorphTypes.Gradient, kernel, iterations: iterations);
                     break;
                 case MorphologyOperation.TopHat:
-                    Cv2.MorphologyEx(source, mat, MorphTypes.TopHat, kernel, iterations: iterations);
+                    Cv2.MorphologyEx(mat, mat, MorphTypes.TopHat, kernel, iterations: iterations);
                     break;
                 case MorphologyOperation.BlackHat:
-                    Cv2.MorphologyEx(source, mat, MorphTypes.BlackHat, kernel, iterations: iterations);
+                    Cv2.MorphologyEx(mat, mat, MorphTypes.BlackHat, kernel, iterations: iterations);
                     break;
             }
         }
@@ -129,8 +124,7 @@ namespace ColorVision.ImageEditor.Algorithms
         {
             if (operation == FilterDenoiseOperation.Blur)
             {
-                using Mat source = mat.Clone();
-                Cv2.Blur(source, mat, new OpenCvSharp.Size(EnsureOdd(kernelSize), EnsureOdd(kernelSize)));
+                Cv2.Blur(mat, mat, new OpenCvSharp.Size(EnsureOdd(kernelSize), EnsureOdd(kernelSize)));
                 return;
             }
 
@@ -155,34 +149,14 @@ namespace ColorVision.ImageEditor.Algorithms
                 return;
             }
 
-            Mat[] channels = Cv2.Split(mat);
-            try
-            {
-                using Mat color = new();
-                using Mat filteredColor = new();
-                Cv2.Merge(channels.Take(3).ToArray(), color);
-                Cv2.BilateralFilter(color, filteredColor, diameter, sigmaColor, sigmaSpace);
-
-                Mat[] filteredChannels = Cv2.Split(filteredColor);
-                try
-                {
-                    Cv2.Merge(new[] { filteredChannels[0], filteredChannels[1], filteredChannels[2], channels[3] }, mat);
-                }
-                finally
-                {
-                    foreach (Mat channel in filteredChannels)
-                    {
-                        channel.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                foreach (Mat channel in channels)
-                {
-                    channel.Dispose();
-                }
-            }
+            using Mat color = new();
+            using Mat filteredColor = new();
+            using Mat alpha = new();
+            Cv2.CvtColor(mat, color, ColorConversionCodes.BGRA2BGR);
+            Cv2.ExtractChannel(mat, alpha, 3);
+            Cv2.BilateralFilter(color, filteredColor, diameter, sigmaColor, sigmaSpace);
+            Cv2.CvtColor(filteredColor, mat, ColorConversionCodes.BGR2BGRA);
+            Cv2.InsertChannel(alpha, mat, 3);
         }
 
         private static int EnsureOdd(int value)
@@ -193,12 +167,11 @@ namespace ColorVision.ImageEditor.Algorithms
 
         private static void ApplyToneAdjustment(Mat mat, double alpha, double beta, double gamma, double maximum)
         {
-            using Mat source = mat.Clone();
             MatType workingType = mat.Depth() == MatType.CV_64F
                 ? MatType.MakeType(MatType.CV_64F, mat.Channels())
                 : MatType.MakeType(MatType.CV_32F, mat.Channels());
             using Mat normalized = new();
-            source.ConvertTo(normalized, workingType, 1 / maximum);
+            mat.ConvertTo(normalized, workingType, 1 / maximum);
             normalized.ConvertTo(normalized, workingType, alpha, beta);
             Cv2.Max(normalized, 0, normalized);
             Cv2.Pow(normalized, 1 / gamma, normalized);

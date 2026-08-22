@@ -10,9 +10,7 @@
 
 ## Install
 
-```xml
-<PackageReference Include="ColorVision.ImageTools" Version="1.5.6.1" />
-```
+Use the published `ColorVision.ImageTools` package version that matches the other ColorVision packages in the host. Do not copy a version from this README; the project and package feed are the sources of truth.
 
 The package targets `net10.0-windows7.0` and is intended for WPF applications.
 

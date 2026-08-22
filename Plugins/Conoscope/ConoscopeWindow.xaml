@@ -87,16 +87,16 @@
                                                 <RowDefinition Height="Auto" />
                                             </Grid.RowDefinitions>
                                             <WrapPanel>
-                                                <ComboBox x:Name="cbActiveDisplayChannel" Width="112" SelectionChanged="cbActiveDisplayChannel_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
-                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelX}" Tag="X"/>
-                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelY}" Tag="Y"/>
-                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelZ}" Tag="Z"/>
-                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieX}" Tag="CieX"/>
-                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieY}" Tag="CieY"/>
-                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="CieU"/>
-                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="CieV"/>
-                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="ColorDifference"/>
-                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelContrast}" Tag="Contrast"/>
+                                                <ComboBox x:Name="cbActiveDisplayChannel" Width="112" SelectedValuePath="Tag" SelectedValue="{Binding DisplayChannel, Mode=OneWay}" SelectionChanged="cbActiveDisplayChannel_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelX}" Tag="{x:Static core:ExportChannel.X}"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelY}" Tag="{x:Static core:ExportChannel.Y}"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelZ}" Tag="{x:Static core:ExportChannel.Z}"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieX}" Tag="{x:Static core:ExportChannel.CieX}"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieY}" Tag="{x:Static core:ExportChannel.CieY}"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieU}" Tag="{x:Static core:ExportChannel.CieU}"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelCieV}" Tag="{x:Static core:ExportChannel.CieV}"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelDeltaUV}" Tag="{x:Static core:ExportChannel.ColorDifference}"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ChannelContrast}" Tag="{x:Static core:ExportChannel.Contrast}"/>
                                                 </ComboBox>
                                                 <TextBlock Text="{x:Static properties:Resources.LabelReference}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                                 <RadioButton x:Name="rbActiveReferenceLine" GroupName="ActiveReferenceMode" Checked="rbActiveReferenceLine_Checked" Style="{StaticResource ReferenceModeRadioStyle}" ToolTip="{x:Static properties:Resources.RefAzimuthLine}">
@@ -214,7 +214,6 @@
                                             <ComboBox x:Name="cbCalibrationTemplate"
                                                       Width="140"
                                                       DisplayMemberPath="Key"
-                                                      SelectionChanged="cbCalibrationTemplate_SelectionChanged"
                                                       Style="{StaticResource RibbonComboBoxStyle}" />
                                             <Button x:Name="btnEditCalibrationTemplates"
                                                     Click="btnEditCalibrationTemplates_Click"
@@ -415,30 +414,32 @@
                                         <WrapPanel>
                                             <TextBlock Text="{x:Static properties:Resources.GroupGamut}" Style="{StaticResource RibbonFieldLabelStyle}" />
                                             <ComboBox x:Name="cbRibbonGamutStandard" Width="120" Style="{StaticResource RibbonComboBoxStyle}" />
-                                            <TextBlock Text="{x:Static properties:Resources.GroupColorDifference}" Style="{StaticResource RibbonFieldLabelStyle}" Margin="8,0,6,0" />
-                                            <ComboBox x:Name="cbActiveColorDifferenceReference" Width="134" SelectionChanged="cbActiveColorDifferenceReference_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
-                                                <ComboBoxItem Content="{x:Static properties:Resources.CbiD65}" Tag="D65"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.CbiD50}" Tag="D50"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.CbiA}" Tag="A"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.CbiD75}" Tag="D75"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.CbiCenter50px}" Tag="ImageCenter"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.CbiCustomCoord}" Tag="Custom"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.CbiMeasuredBase}" Tag="ReferenceImage"/>
-                                            </ComboBox>
-                                            <StackPanel x:Name="panelActiveColorDifferenceCustomUv" Orientation="Horizontal" Visibility="Collapsed">
-                                                <TextBlock Text="u:" Style="{StaticResource RibbonFieldLabelStyle}" Margin="0,0,3,0" />
-                                                <TextBox x:Name="txtActiveColorDifferenceCustomU" Width="62" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="txtActiveColorDifferenceCustom_PreviewKeyDown" LostFocus="txtActiveColorDifferenceCustom_LostFocus" />
-                                                <TextBlock Text="v:" Style="{StaticResource RibbonFieldLabelStyle}" Margin="4,0,3,0" />
-                                                <TextBox x:Name="txtActiveColorDifferenceCustomV" Width="62" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="txtActiveColorDifferenceCustom_PreviewKeyDown" LostFocus="txtActiveColorDifferenceCustom_LostFocus" />
-                                            </StackPanel>
-                                            <Button x:Name="btnActiveSaveColorDifferenceReference" Content="{x:Static properties:Resources.BtnColorDifferenceReference}" Click="btnActiveSaveColorDifferenceReference_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.BtnColorDifferenceReference}" />
-                                            <TextBlock Text="{x:Static properties:Resources.GroupContrast}" Style="{StaticResource RibbonFieldLabelStyle}" Margin="8,0,6,0" />
-                                            <ComboBox x:Name="cbActiveContrastImageKind" Width="84" SelectionChanged="cbActiveContrastImageKind_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
-                                                <ComboBoxItem Content="{x:Static properties:Resources.ContrastImageBlack}" Tag="Black"/>
-                                                <ComboBoxItem Content="{x:Static properties:Resources.ContrastImageWhite}" Tag="White"/>
-                                            </ComboBox>
-                                            <Button x:Name="btnActiveSaveBlackContrastReference" Content="{x:Static properties:Resources.BtnBlackReference}" Click="btnActiveSaveBlackContrastReference_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.BtnBlackReference}" />
-                                            <Button x:Name="btnActiveSaveWhiteContrastReference" Content="{x:Static properties:Resources.BtnWhiteReference}" Click="btnActiveSaveWhiteContrastReference_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.BtnWhiteReference}" />
+                                            <WrapPanel x:Name="panelActiveAnalysisParameters">
+                                                <TextBlock Text="{x:Static properties:Resources.GroupColorDifference}" Style="{StaticResource RibbonFieldLabelStyle}" Margin="8,0,6,0" />
+                                                <ComboBox x:Name="cbActiveColorDifferenceReference" Width="134" SelectedValuePath="Tag" SelectedValue="{Binding ColorDifferenceReferenceMode, Mode=OneWay}" SelectionChanged="cbActiveColorDifferenceReference_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiD65}" Tag="{x:Static core:ColorDifferenceReferenceMode.D65}"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiD50}" Tag="{x:Static core:ColorDifferenceReferenceMode.D50}"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiA}" Tag="{x:Static core:ColorDifferenceReferenceMode.A}"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiD75}" Tag="{x:Static core:ColorDifferenceReferenceMode.D75}"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiCenter50px}" Tag="{x:Static core:ColorDifferenceReferenceMode.ImageCenter}"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiCustomCoord}" Tag="{x:Static core:ColorDifferenceReferenceMode.Custom}"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.CbiMeasuredBase}" Tag="{x:Static core:ColorDifferenceReferenceMode.ReferenceImage}"/>
+                                                </ComboBox>
+                                                <StackPanel x:Name="panelActiveColorDifferenceCustomUv" Orientation="Horizontal" Visibility="Collapsed">
+                                                    <TextBlock Text="u:" Style="{StaticResource RibbonFieldLabelStyle}" Margin="0,0,3,0" />
+                                                    <TextBox x:Name="txtActiveColorDifferenceCustomU" Width="62" Text="{Binding ColorDifferenceCustomU, Mode=OneWay, StringFormat={}{0:F4}}" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="txtActiveColorDifferenceCustom_PreviewKeyDown" LostFocus="txtActiveColorDifferenceCustom_LostFocus" />
+                                                    <TextBlock Text="v:" Style="{StaticResource RibbonFieldLabelStyle}" Margin="4,0,3,0" />
+                                                    <TextBox x:Name="txtActiveColorDifferenceCustomV" Width="62" Text="{Binding ColorDifferenceCustomV, Mode=OneWay, StringFormat={}{0:F4}}" Style="{StaticResource RibbonTextBoxStyle}" PreviewKeyDown="txtActiveColorDifferenceCustom_PreviewKeyDown" LostFocus="txtActiveColorDifferenceCustom_LostFocus" />
+                                                </StackPanel>
+                                                <Button x:Name="btnActiveSaveColorDifferenceReference" Content="{x:Static properties:Resources.BtnColorDifferenceReference}" Click="btnActiveSaveColorDifferenceReference_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.BtnColorDifferenceReference}" />
+                                                <TextBlock Text="{x:Static properties:Resources.GroupContrast}" Style="{StaticResource RibbonFieldLabelStyle}" Margin="8,0,6,0" />
+                                                <ComboBox x:Name="cbActiveContrastImageKind" Width="84" SelectedValuePath="Tag" SelectedValue="{Binding ContrastImageKind, Mode=OneWay}" SelectionChanged="cbActiveContrastImageKind_SelectionChanged" Style="{StaticResource RibbonComboBoxStyle}">
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ContrastImageBlack}" Tag="{x:Static core:ContrastReferenceKind.Black}"/>
+                                                    <ComboBoxItem Content="{x:Static properties:Resources.ContrastImageWhite}" Tag="{x:Static core:ContrastReferenceKind.White}"/>
+                                                </ComboBox>
+                                                <Button x:Name="btnActiveSaveBlackContrastReference" Content="{x:Static properties:Resources.BtnBlackReference}" Click="btnActiveSaveBlackContrastReference_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.BtnBlackReference}" />
+                                                <Button x:Name="btnActiveSaveWhiteContrastReference" Content="{x:Static properties:Resources.BtnWhiteReference}" Click="btnActiveSaveWhiteContrastReference_Click" Style="{StaticResource RibbonSmallButtonStyle}" ToolTip="{x:Static properties:Resources.BtnWhiteReference}" />
+                                            </WrapPanel>
                                         </WrapPanel>
                                         <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupAnalysisParameters}" Style="{StaticResource RibbonGroupHeaderStyle}" />
                                     </Grid>
@@ -483,7 +484,7 @@
                                             <Button Click="btnSaveWindowConfig_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="{x:Static properties:Resources.TipSaveWindowConfig}">
                                                 <TextBlock Text="&#xE74E;" Style="{StaticResource RibbonIconTextStyle}" />
                                             </Button>
-                                            <Button Command="{Binding EditConoscopeConfigCommand}" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpenConoscopeSettings}">
+                                            <Button Click="btnOpenConoscopeSettings_Click" Style="{StaticResource RibbonLargeButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpenConoscopeSettings}">
                                                 <Button.Triggers>
                                                     <EventTrigger RoutedEvent="Button.Click">
                                                         <BeginStoryboard>

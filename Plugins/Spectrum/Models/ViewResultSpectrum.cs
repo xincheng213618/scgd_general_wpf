@@ -354,6 +354,8 @@ namespace Spectrum.Models
         {
             V = voltage;
             I = currentMA;
+            RadiantFlux = 0;
+            LuminousEfficacy = null;
 
             if (currentMA != 0 && fPL != null && fPL.Length > 0)
             {
@@ -396,6 +398,42 @@ namespace Spectrum.Models
             OnPropertyChanged(nameof(V));
             OnPropertyChanged(nameof(I));
         }
+
+        internal EqeState CaptureEqeState() => new(
+            V,
+            I,
+            Eqe,
+            LuminousFlux,
+            RadiantFlux,
+            LuminousEfficacy,
+            IsRecalculated);
+
+        internal void RestoreEqeState(EqeState state)
+        {
+            V = state.Voltage;
+            I = state.CurrentMilliamp;
+            Eqe = state.Eqe;
+            LuminousFlux = state.LuminousFlux;
+            RadiantFlux = state.RadiantFlux;
+            LuminousEfficacy = state.LuminousEfficacy;
+            IsRecalculated = state.IsRecalculated;
+            OnPropertyChanged(nameof(Eqe));
+            OnPropertyChanged(nameof(EqePercent));
+            OnPropertyChanged(nameof(LuminousFlux));
+            OnPropertyChanged(nameof(RadiantFlux));
+            OnPropertyChanged(nameof(LuminousEfficacy));
+            OnPropertyChanged(nameof(V));
+            OnPropertyChanged(nameof(I));
+        }
+
+        internal readonly record struct EqeState(
+            float Voltage,
+            float CurrentMilliamp,
+            double? Eqe,
+            float? LuminousFlux,
+            double? RadiantFlux,
+            double? LuminousEfficacy,
+            bool IsRecalculated);
 
         private static float GetSafeLuminanceValue(float rawLuminance)
         {

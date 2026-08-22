@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.Devices.FileServer;
 using ColorVision.Engine.Services.Devices.FlowDevice;
+using ColorVision.Engine.Services.Devices.LightingController;
 using ColorVision.Engine.Services.Devices.Motor;
 using ColorVision.Engine.Services.Devices.PG;
 using ColorVision.Engine.Services.Devices.Sensor;
@@ -200,6 +201,11 @@ namespace ColorVision.Engine.Services.Devices
             Register(new DeviceServiceFactory<ConfigFlowDevice>(
                 ServiceTypes.Flow,
                 sysResourceModel => new DeviceFlowDevice(sysResourceModel)));
+
+            Register(new DeviceServiceFactory<ConfigLightingController>(
+                ServiceTypes.LightingControl,
+                sysResourceModel => new DeviceLightingController(sysResourceModel),
+                "COMDrawingImage"));
         }
     }
 }

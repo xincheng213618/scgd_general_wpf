@@ -43,8 +43,8 @@ ColorVision 是一个 Windows WPF 视觉检测平台，面向光电检测、设�
 ## 构建
 
 ```powershell
-dotnet restore
-dotnet build build.sln -p:Platform=x64
+dotnet restore .\ColorVision\ColorVision.csproj
+dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64
 ```
 
 单独构建和运行主程序：
@@ -57,7 +57,8 @@ dotnet run --project ColorVision/ColorVision.csproj -p:Platform=x64
 GitHub Actions 的 Windows 构建使用 MSBuild：
 
 ```powershell
-msbuild build.sln /p:Configuration=Release /p:Platform=x64
+dotnet restore .\build.sln
+msbuild .\build.sln /m /p:Configuration=Release /p:Platform=x64
 ```
 
 ## 测试
@@ -99,7 +100,7 @@ npm run docs:build
 已有构建产物时可单独复查：
 
 ```powershell
-npm run docs:validate
+npm run docs:validate:dist
 ```
 
 启动本地文档站：
@@ -108,10 +109,7 @@ npm run docs:validate
 npm run docs:dev
 ```
 
-文档语言策略：
-
-- 简体中文是完整文档和事实来源。
-- 英文、繁体中文、日文、韩文历史副本已从当前工作树移除；如确有交付需要，可从 Git 历史找回后重新维护。
+简体中文是当前维护的文档和事实来源。
 
 ## 打包与发布
 
@@ -123,12 +121,20 @@ Scripts\release.bat
 
 不要为主安装包新增或使用本地-only 发布捷径。发布脚本链负责构建、打包、上传发布产物、更新远端发布元数据和生成更新包。
 
-本地打包插件或客户项目：
+发布普通插件或客户项目包：
 
 ```powershell
-Scripts\package_plugin.bat Spectrum
+Scripts\package_plugin.bat Conoscope
 Scripts\package_project.bat ProjectLUX
 ```
+
+Spectrum 同时维护独立 ZIP 和 `.cvxp` 两个更新源，正式发布使用：
+
+```powershell
+Scripts\Spectrum.bat --release-notes "本次变更说明"
+```
+
+这些 wrapper 默认会上传；普通插件/项目包的本地 `.cvxp` 会在上传尝试结束后删除。主程序仍只使用 `Scripts\release.bat`，不要混用三个发布入口。
 
 更多说明：
 

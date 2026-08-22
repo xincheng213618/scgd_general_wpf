@@ -1,19 +1,20 @@
 ﻿#pragma warning disable CA1051,CA1805,CA1806,CA1822
 using ColorVision.Common.MVVM;
-using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
 using SpectrumResources = Spectrum.Properties.Resources;
-using Spectrum.Calibration;
 using Spectrum.Configs;
 using Spectrum.Data;
 using Spectrum.License;
+using Spectrum.Models;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
-using System.Windows;
 
 #pragma warning disable CA1001 // App-lifetime singleton owns the device gate.
 
@@ -23,20 +24,6 @@ namespace Spectrum
     public class SetEmissionSP100Config : ViewModelBase, IConfig
     {
         public static SetEmissionSP100Config Instance => ConfigService.Instance.GetRequiredService<SetEmissionSP100Config>();
-
-        public event EventHandler EditChanged;
-
-        [JsonIgnore]
-        public RelayCommand EditCommand { get; set; }
-        public SetEmissionSP100Config()
-        {
-            EditCommand = new RelayCommand(a =>
-            {
-                new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                EditChanged?.Invoke(this, new EventArgs());
-            } );
-        }
-
 
         public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; OnPropertyChanged(); } }
         private bool _IsEnabled = true;
@@ -118,30 +105,30 @@ namespace Spectrum
     public class AutodarkParam : ViewModelBase,IConfig
     {
         [DisplayName("起始时间(ms)")]
-        public float fTimeStart { get => _fTimeStart; set { _fTimeStart = value; OnPropertyChanged(); } }
+        public float fTimeStart { get => _fTimeStart; set { _fTimeStart = value; OnPropertyChanged(); OnPropertyChanged(nameof(nEndTime)); } }
         private float _fTimeStart = 50f;
 
         [DisplayName("步进(ms)")]
-        public int nStepTime { get => _nStepTime; set { _nStepTime = value; OnPropertyChanged(); } }
+        public int nStepTime { get => _nStepTime; set { _nStepTime = value; OnPropertyChanged(); OnPropertyChanged(nameof(nEndTime)); } }
         private int _nStepTime = 100;
 
         [DisplayName("测量次数")]
-        public int nStepCount { get => _nStepCount; set { _nStepCount = value; OnPropertyChanged(); OnPropertyChanged(nameof(nEndTime)); } }
+        public int nStepCount { get => _nStepCount; set { _nStepCount = Math.Max(1, value); OnPropertyChanged(); OnPropertyChanged(nameof(nEndTime)); } }
         private int _nStepCount = 1;
 
         [DisplayName("结束时间(ms)")]
-        public int nEndTime { get => (int)Math.Round(fTimeStart + _nStepCount * nStepTime); set { RecalculateStepCount(value); ; } }
+        public int nEndTime { get => (int)Math.Round(fTimeStart + (nStepCount - 1) * nStepTime); set => RecalculateStepCount(value); }
 
         private void RecalculateStepCount(int _nEndTime)
         {
             if (nStepTime > 0)
             {
-                var count = Math.Round((_nEndTime - fTimeStart) / nStepTime);
-                nStepCount = (int)count;
+                double intervals = Math.Max(0, (_nEndTime - fTimeStart) / nStepTime);
+                nStepCount = (int)Math.Round(intervals) + 1;
             }
             else
             {
-                nStepCount = 0;
+                nStepCount = 1;
             }
         }
 
@@ -171,14 +158,58 @@ namespace Spectrum
         }
     }
 
+    public sealed record SpectrumMeasurementResult(
+        ViewResultSpectrum? Result,
+        int? ErrorCode = null,
+        string? ErrorMessage = null,
+        bool IsBusy = false)
+    {
+        public bool IsSuccess => Result != null;
+    }
 
-    public partial class SpectrometerManager : ViewModelBase,IConfig
+    internal sealed record SpectrumCalibrationSnapshot(
+        string GroupName,
+        string WavelengthPath,
+        string WavelengthSha256,
+        string MagnitudePath,
+        string MagnitudeSha256)
+    {
+        internal bool MatchesConfigured(string groupName, string wavelengthPath, string magnitudePath)
+        {
+            try
+            {
+                return string.Equals(GroupName, groupName, StringComparison.Ordinal)
+                    && string.Equals(WavelengthPath, Path.GetFullPath(wavelengthPath), StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(MagnitudePath, Path.GetFullPath(magnitudePath), StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+    }
+
+    public sealed record SpectrumCalibrationApplyResult(bool IsSuccess, string ErrorMessage)
+    {
+        public static SpectrumCalibrationApplyResult Success { get; } = new(true, string.Empty);
+
+        internal int RequestVersion { get; init; }
+    }
+
+    public class SpectrometerManager : ViewModelBase,IConfig
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SpectrometerManager));
         private readonly SemaphoreSlim deviceOperationGate = new(1, 1);
         private readonly object measurementStateLock = new();
+        private readonly object calibrationStateLock = new();
         private int measurementPauseCount;
         private TaskCompletionSource<bool>? measurementsDrained;
+        private SpectrumCalibrationSnapshot? loadedCalibration;
+        private int calibrationRequestVersion;
+        private bool calibrationLoadInProgress;
+        private int pendingCalibrationConfigurationVersion;
+
+        public const int CalibrationUnavailable = int.MinValue + 1;
 
         public SpectrumConfig Config => ConfigService.Instance.GetRequiredService<SpectrumConfig>();
 
@@ -209,6 +240,40 @@ namespace Spectrum
         [JsonIgnore]
         public bool IsBusy => IsDeviceBusy || IsMeasurementActive || SmuController.IsBusy || ShutterController.IsBusy || FilterWheelController.IsBusy;
         private int activeMeasurementCount;
+
+        [JsonIgnore]
+        public bool IsCalibrationConfigurationPending => Volatile.Read(ref pendingCalibrationConfigurationVersion) != 0;
+
+        [JsonIgnore]
+        public bool IsCalibrationReady => IsConnected
+            && !Volatile.Read(ref calibrationLoadInProgress)
+            && !IsCalibrationConfigurationPending
+            && loadedCalibration?.MatchesConfigured(ActiveCalibrationGroupName, WavelengthFile, MaguideFile) == true;
+
+        [JsonIgnore]
+        public string CalibrationStatus
+        {
+            get => _CalibrationStatus;
+            private set { _CalibrationStatus = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsCalibrationReady)); }
+        }
+        private string _CalibrationStatus = "标定文件尚未加载";
+
+        [JsonIgnore]
+        public string LastOperationError
+        {
+            get => _LastOperationError;
+            private set { _LastOperationError = value; OnPropertyChanged(); }
+        }
+        private string _LastOperationError = string.Empty;
+
+        public const int ShutterOperationFailed = int.MinValue + 2;
+
+        public string GetOperationErrorMessage(int resultCode)
+        {
+            return resultCode is CalibrationUnavailable or ShutterOperationFailed
+                ? LastOperationError
+                : Spectrometer.GetErrorMessage(resultCode);
+        }
 
         internal MeasurementAdmissionPause StopAcceptingMeasurements()
         {
@@ -268,7 +333,7 @@ namespace Spectrum
         }
         
         [JsonIgnore]
-        public bool IsConnected { get => _IsConnected; private set { _IsConnected = value; OnPropertyChanged(); OnPropertyChanged(nameof(ConnectionTypeDisplay)); OnPropertyChanged(nameof(HardwareModel)); } }
+        public bool IsConnected { get => _IsConnected; private set { _IsConnected = value; OnPropertyChanged(); OnPropertyChanged(nameof(ConnectionTypeDisplay)); OnPropertyChanged(nameof(HardwareModel)); OnPropertyChanged(nameof(IsCalibrationReady)); } }
         private bool _IsConnected = false;
 
         /// <summary>
@@ -334,24 +399,19 @@ namespace Spectrum
             get => CalibrationGroupConfig.ActiveGroupName;
             set
             {
-                if (CalibrationGroupConfig.ActiveGroupName == value) return;
-                CalibrationGroupConfig.ActiveGroupName = value;
-                OnPropertyChanged();
-                ApplyActiveGroup();
-                SaveCalibrationConfig();
+                lock (calibrationStateLock)
+                {
+                    if (CalibrationGroupConfig.ActiveGroupName == value) return;
+                    string previousGroupName = CalibrationGroupConfig.ActiveGroupName;
+                    CalibrationGroupConfig.ActiveGroupName = value;
+                    OnPropertyChanged();
+                    ApplyActiveGroup(previousGroupName);
+                    if (!IsConnected)
+                        SaveCalibrationConfig();
+                }
             }
         }
 
-        [JsonIgnore]
-        public RelayCommand AddCalibrationGroupCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand RemoveCalibrationGroupCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand SetGroupWavelengthFileCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand SetGroupMaguideFileCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand OpenCalibrationGroupWindowCommand { get; set; }
         [JsonIgnore]
         public RelayCommand ApplyActiveGroupCommand { get; set; }
 
@@ -370,16 +430,29 @@ namespace Spectrum
         /// <summary>
         /// Saves calibration config for the current SN.
         /// </summary>
-        public void SaveCalibrationConfig()
+        public bool SaveCalibrationConfig()
         {
-            if (string.IsNullOrEmpty(SerialNumber)) return;
-            CalibrationGroupConfig.Save(SerialNumber);
+            lock (calibrationStateLock)
+            {
+                if (string.IsNullOrEmpty(SerialNumber))
+                {
+                    LastOperationError = "设备序列号未知，无法保存标定配置";
+                    return false;
+                }
+
+                CalibrationGroupConfig configuration = CalibrationGroupConfig.Clone();
+                if (configuration.TrySave(SerialNumber, out string errorMessage))
+                    return true;
+
+                LastOperationError = $"保存标定配置失败：{errorMessage}";
+                return false;
+            }
         }
 
         /// <summary>
         /// Applies the active calibration group: updates WavelengthFile/MaguideFile and reloads if connected.
         /// </summary>
-        private void ApplyActiveGroup()
+        private void ApplyActiveGroup(string? rollbackGroupName = null)
         {
             var group = CalibrationGroupConfig.ActiveGroup;
             if (group == null) return;
@@ -388,25 +461,539 @@ namespace Spectrum
             MaguideFile = group.MaguideFile;
 
             if (IsConnected && Handle != IntPtr.Zero)
-                _ = ReloadCalibrationFilesAsync();
+            {
+                string? lastLoadedGroupName = loadedCalibration?.GroupName;
+                CalibrationGroupConfig requestedConfiguration = CalibrationGroupConfig.Clone();
+                int requestVersion = BeginCalibrationRequest("正在加载标定文件…", requiresConfigurationCommit: true);
+                _ = ReloadActiveGroupAsync(
+                    requestVersion,
+                    requestedConfiguration,
+                    rollbackGroupName,
+                    lastLoadedGroupName);
+            }
+            else
+            {
+                loadedCalibration = null;
+                CalibrationStatus = "连接光谱仪后加载标定文件";
+            }
         }
 
-        private async Task ReloadCalibrationFilesAsync()
+        private async Task ReloadActiveGroupAsync(
+            int requestVersion,
+            CalibrationGroupConfig requestedConfiguration,
+            string? rollbackGroupName,
+            string? lastLoadedGroupName)
         {
+            CalibrationGroup requestedGroup = requestedConfiguration.ActiveGroup
+                ?? throw new InvalidOperationException("标定配置中没有活动分组");
+            SpectrumCalibrationApplyResult result = await ReloadCalibrationFilesAsync(
+                requestVersion,
+                requestedGroup.GroupName,
+                requestedGroup.WavelengthFile,
+                requestedGroup.MaguideFile).ConfigureAwait(false);
+
+            if (requestVersion != Volatile.Read(ref calibrationRequestVersion))
+                return;
+
+            if (result.IsSuccess)
+            {
+                if (CommitCalibrationConfiguration(requestedConfiguration, requestVersion))
+                    return;
+
+                if (requestVersion != Volatile.Read(ref calibrationRequestVersion))
+                    return;
+
+                string saveError = LastOperationError;
+                if (TryRestoreConfiguredCalibration(lastLoadedGroupName, requestVersion))
+                {
+                    SpectrumCalibrationApplyResult restore = await RestoreConfiguredCalibrationAsync(requestVersion).ConfigureAwait(false);
+                    string restoreStatus = restore.IsSuccess
+                        ? $"标定切换未保存，已恢复：{ActiveCalibrationGroupName}（{saveError}）"
+                        : $"标定切换未保存且恢复失败：{restore.ErrorMessage}";
+                    TrySetCalibrationStatus(restore.RequestVersion, restoreStatus);
+                }
+                else
+                {
+                    ClearPendingCalibrationConfiguration(requestVersion);
+                    SpectrumCalibrationSnapshot? loadedSnapshot = GetLoadedCalibrationSnapshot();
+                    if (loadedSnapshot != null)
+                        InvalidateLoadedCalibration(loadedSnapshot, $"标定配置保存失败：{saveError}");
+                    TrySetCalibrationStatus(requestVersion, $"标定已加载但配置保存失败：{saveError}");
+                }
+                return;
+            }
+
+            string? restoredGroupName = loadedCalibration?.GroupName ?? rollbackGroupName;
+            if (TryRestoreConfiguredCalibration(restoredGroupName, requestVersion))
+            {
+                ClearPendingCalibrationConfiguration(requestVersion);
+                string failureStatus = IsCalibrationReady
+                    ? $"标定切换失败，继续使用：{restoredGroupName}"
+                    : $"标定切换失败，原标定也不可用：{result.ErrorMessage}";
+                TrySetCalibrationStatus(requestVersion, failureStatus);
+            }
+            else
+            {
+                ClearPendingCalibrationConfiguration(requestVersion);
+            }
+        }
+
+        private bool TryRestoreConfiguredCalibration(string? groupName, int expectedRequestVersion)
+        {
+            lock (calibrationStateLock)
+            {
+                if (expectedRequestVersion != calibrationRequestVersion)
+                    return false;
+
+                CalibrationGroup? group = CalibrationGroupConfig.Groups.FirstOrDefault(item =>
+                    string.Equals(item.GroupName, groupName, StringComparison.Ordinal));
+                if (group == null)
+                    return false;
+
+                CalibrationGroupConfig.ActiveGroupName = group.GroupName;
+                _WavelengthFile = group.WavelengthFile;
+                _MaguideFile = group.MaguideFile;
+                OnPropertyChanged(nameof(ActiveCalibrationGroupName));
+                OnPropertyChanged(nameof(WavelengthFile));
+                OnPropertyChanged(nameof(MaguideFile));
+                OnPropertyChanged(nameof(IsCalibrationReady));
+                return true;
+            }
+        }
+
+        private int BeginCalibrationRequest(
+            string status,
+            bool requiresConfigurationCommit = false,
+            bool rejectWhenConfigurationPending = false)
+        {
+            lock (calibrationStateLock)
+            {
+                if (rejectWhenConfigurationPending && pendingCalibrationConfigurationVersion != 0)
+                    return 0;
+
+                int requestVersion = ++calibrationRequestVersion;
+                calibrationLoadInProgress = true;
+                if (requiresConfigurationCommit)
+                {
+                    pendingCalibrationConfigurationVersion = requestVersion;
+                    OnPropertyChanged(nameof(IsCalibrationConfigurationPending));
+                }
+                CalibrationStatus = status;
+                LastOperationError = string.Empty;
+                return requestVersion;
+            }
+        }
+
+        private void ClearPendingCalibrationConfiguration(int requestVersion)
+        {
+            lock (calibrationStateLock)
+            {
+                if (pendingCalibrationConfigurationVersion != requestVersion)
+                    return;
+
+                pendingCalibrationConfigurationVersion = 0;
+                OnPropertyChanged(nameof(IsCalibrationConfigurationPending));
+                OnPropertyChanged(nameof(IsCalibrationReady));
+            }
+        }
+
+        internal bool IsCalibrationRequestCurrent(int requestVersion)
+        {
+            lock (calibrationStateLock)
+                return requestVersion != 0 && requestVersion == calibrationRequestVersion;
+        }
+
+        private bool TrySetCalibrationStatus(int expectedRequestVersion, string status)
+        {
+            lock (calibrationStateLock)
+            {
+                if (expectedRequestVersion == 0 || expectedRequestVersion != calibrationRequestVersion)
+                    return false;
+
+                CalibrationStatus = status;
+                return true;
+            }
+        }
+
+        public Task<SpectrumCalibrationApplyResult> ApplyConfiguredCalibrationAsync(CancellationToken cancellationToken = default)
+            => ApplyCalibrationRequestAsync(
+                ActiveCalibrationGroupName,
+                WavelengthFile,
+                MaguideFile,
+                requiresConfigurationCommit: false,
+                rejectWhenConfigurationPending: true,
+                cancellationToken);
+
+        internal async Task<SpectrumCalibrationApplyResult> ApplyCalibrationAsync(
+            string groupName,
+            string wavelengthFile,
+            string magnitudeFile,
+            CancellationToken cancellationToken = default)
+            => await ApplyCalibrationRequestAsync(
+                groupName,
+                wavelengthFile,
+                magnitudeFile,
+                requiresConfigurationCommit: true,
+                rejectWhenConfigurationPending: false,
+                cancellationToken).ConfigureAwait(false);
+
+        internal async Task<SpectrumCalibrationApplyResult> RestoreConfiguredCalibrationAsync(
+            int pendingRequestVersion,
+            CancellationToken cancellationToken = default)
+        {
+            if (!TryBeginCalibrationRestore(
+                pendingRequestVersion,
+                out int restoreRequestVersion,
+                out string groupName,
+                out string wavelengthFile,
+                out string magnitudeFile))
+            {
+                return new SpectrumCalibrationApplyResult(false, "标定恢复请求已被更新的选择替代");
+            }
+
             try
             {
-                await RunExclusiveAsync(token => Task.Run(() =>
+                SpectrumCalibrationApplyResult result = await ReloadCalibrationFilesAsync(
+                    restoreRequestVersion,
+                    groupName,
+                    wavelengthFile,
+                    magnitudeFile,
+                    cancellationToken).ConfigureAwait(false);
+                return result with { RequestVersion = restoreRequestVersion };
+            }
+            finally
+            {
+                ClearPendingCalibrationConfiguration(pendingRequestVersion);
+            }
+        }
+
+        private bool TryBeginCalibrationRestore(
+            int pendingRequestVersion,
+            out int restoreRequestVersion,
+            out string groupName,
+            out string wavelengthFile,
+            out string magnitudeFile)
+        {
+            lock (calibrationStateLock)
+            {
+                if (pendingRequestVersion == 0
+                    || calibrationRequestVersion != pendingRequestVersion
+                    || pendingCalibrationConfigurationVersion != pendingRequestVersion)
+                {
+                    restoreRequestVersion = 0;
+                    groupName = string.Empty;
+                    wavelengthFile = string.Empty;
+                    magnitudeFile = string.Empty;
+                    return false;
+                }
+
+                restoreRequestVersion = ++calibrationRequestVersion;
+                groupName = ActiveCalibrationGroupName;
+                wavelengthFile = WavelengthFile;
+                magnitudeFile = MaguideFile;
+                calibrationLoadInProgress = true;
+                CalibrationStatus = "正在恢复上一组标定文件…";
+                LastOperationError = string.Empty;
+                return true;
+            }
+        }
+
+        private async Task<SpectrumCalibrationApplyResult> ApplyCalibrationRequestAsync(
+            string groupName,
+            string wavelengthFile,
+            string magnitudeFile,
+            bool requiresConfigurationCommit,
+            bool rejectWhenConfigurationPending,
+            CancellationToken cancellationToken)
+        {
+            int requestVersion = BeginCalibrationRequest(
+                "正在加载标定文件…",
+                requiresConfigurationCommit,
+                rejectWhenConfigurationPending);
+            if (requestVersion == 0)
+                return new SpectrumCalibrationApplyResult(false, "标定配置正在提交，请稍候");
+
+            try
+            {
+                SpectrumCalibrationApplyResult result = await ReloadCalibrationFilesAsync(
+                    requestVersion,
+                    groupName,
+                    wavelengthFile,
+                    magnitudeFile,
+                    cancellationToken).ConfigureAwait(false);
+                if (requiresConfigurationCommit && !result.IsSuccess)
+                    ClearPendingCalibrationConfiguration(requestVersion);
+                return result with { RequestVersion = requestVersion };
+            }
+            catch
+            {
+                if (requiresConfigurationCommit)
+                    ClearPendingCalibrationConfiguration(requestVersion);
+                throw;
+            }
+        }
+
+        private async Task<SpectrumCalibrationApplyResult> ReloadCalibrationFilesAsync(
+            int requestVersion,
+            string groupName,
+            string wavelengthFile,
+            string magnitudeFile,
+            CancellationToken cancellationToken = default)
+        {
+            SpectrumCalibrationSnapshot? previousSnapshot = loadedCalibration;
+            bool candidateLoadStarted = false;
+            try
+            {
+                if (!TryCreateCalibrationSnapshot(groupName, wavelengthFile, magnitudeFile, out SpectrumCalibrationSnapshot? candidate, out string validationError))
+                {
+                    SpectrumCalibrationApplyResult invalid = new(false, validationError);
+                    CommitCalibrationResult(requestVersion, previousSnapshot, invalid);
+                    return invalid;
+                }
+
+                SpectrumCalibrationApplyResult result = await RunExclusiveAsync(token => Task.Run(() =>
                 {
                     token.ThrowIfCancellationRequested();
-                    if (IsConnected && Handle != IntPtr.Zero)
-                        LoadCalibrationFilesCore();
-                    return true;
-                }, CancellationToken.None));
+                    if (requestVersion != Volatile.Read(ref calibrationRequestVersion))
+                        return new SpectrumCalibrationApplyResult(false, "标定加载请求已被更新的选择替代");
+                    if (!IsConnected || Handle == IntPtr.Zero)
+                        return new SpectrumCalibrationApplyResult(false, "光谱仪未连接");
+
+                    candidateLoadStarted = true;
+                    SpectrumCalibrationApplyResult loadResult;
+                    try
+                    {
+                        loadResult = LoadCalibrationFilesCore(candidate!);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("加载候选标定时发生异常", ex);
+                        loadResult = new SpectrumCalibrationApplyResult(false, ex.GetBaseException().Message);
+                    }
+                    if (loadResult.IsSuccess)
+                        return CompleteCalibrationLoadWithinDeviceGate(requestVersion, candidate, loadResult);
+
+                    if (previousSnapshot != null)
+                    {
+                        SpectrumCalibrationApplyResult restoreResult;
+                        try
+                        {
+                            restoreResult = LoadCalibrationFilesCore(previousSnapshot);
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error("恢复上一组标定时发生异常", ex);
+                            restoreResult = new SpectrumCalibrationApplyResult(false, ex.GetBaseException().Message);
+                        }
+                        if (restoreResult.IsSuccess)
+                        {
+                            SpectrumCalibrationApplyResult restoredFailure = loadResult with
+                            {
+                                ErrorMessage = $"{loadResult.ErrorMessage}；已恢复上一组标定"
+                            };
+                            return CompleteCalibrationLoadWithinDeviceGate(requestVersion, previousSnapshot, restoredFailure);
+                        }
+
+                        SpectrumCalibrationApplyResult restoreFailed = loadResult with
+                        {
+                            ErrorMessage = $"{loadResult.ErrorMessage}；恢复上一组标定也失败：{restoreResult.ErrorMessage}"
+                        };
+                        return CompleteCalibrationLoadWithinDeviceGate(requestVersion, null, restoreFailed);
+                    }
+
+                    return CompleteCalibrationLoadWithinDeviceGate(requestVersion, null, loadResult);
+                }, CancellationToken.None), cancellationToken).ConfigureAwait(false);
+
+                return result;
+            }
+            catch (OperationCanceledException)
+            {
+                SpectrumCalibrationApplyResult cancelled = new(false, "标定文件加载已取消");
+                CommitCalibrationResult(requestVersion, previousSnapshot, cancelled);
+                throw;
             }
             catch (Exception ex)
             {
                 log.Warn("切换校准组时重新加载标定文件失败", ex);
+                SpectrumCalibrationApplyResult failed = new(false, ex.GetBaseException().Message);
+                CommitCalibrationResult(requestVersion, candidateLoadStarted ? null : previousSnapshot, failed);
+                return failed;
             }
+        }
+
+        private bool CommitCalibrationResult(
+            int requestVersion,
+            SpectrumCalibrationSnapshot? snapshot,
+            SpectrumCalibrationApplyResult result)
+        {
+            lock (calibrationStateLock)
+            {
+                if (requestVersion != calibrationRequestVersion)
+                    return false;
+
+                loadedCalibration = snapshot;
+                calibrationLoadInProgress = false;
+                LastOperationError = result.ErrorMessage;
+                if (result.IsSuccess)
+                    CalibrationStatus = $"标定已加载：{snapshot!.GroupName}";
+                else if (snapshot != null)
+                    CalibrationStatus = $"标定切换失败，已恢复：{snapshot.GroupName}";
+                else
+                    CalibrationStatus = $"标定不可用：{result.ErrorMessage}";
+                return true;
+            }
+        }
+
+        private SpectrumCalibrationSnapshot? GetLoadedCalibrationSnapshot()
+        {
+            lock (calibrationStateLock)
+                return loadedCalibration;
+        }
+
+        private SpectrumCalibrationApplyResult CompleteCalibrationLoadWithinDeviceGate(
+            int requestVersion,
+            SpectrumCalibrationSnapshot? effectiveSnapshot,
+            SpectrumCalibrationApplyResult result)
+        {
+            if (CommitCalibrationResult(requestVersion, effectiveSnapshot, result))
+                return result;
+
+            SpectrumCalibrationSnapshot? declaredSnapshot = GetLoadedCalibrationSnapshot();
+            if (declaredSnapshot != null && declaredSnapshot != effectiveSnapshot)
+            {
+                SpectrumCalibrationApplyResult restoreResult;
+                try
+                {
+                    restoreResult = LoadCalibrationFilesCore(declaredSnapshot);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("恢复被替代请求之前的标定时发生异常", ex);
+                    restoreResult = new SpectrumCalibrationApplyResult(false, ex.GetBaseException().Message);
+                }
+
+                if (!restoreResult.IsSuccess)
+                {
+                    InvalidateLoadedCalibration(
+                        declaredSnapshot,
+                        $"被替代的标定请求已改变硬件，恢复失败：{restoreResult.ErrorMessage}");
+                }
+            }
+
+            return new SpectrumCalibrationApplyResult(false, "标定加载请求已被更新的选择替代");
+        }
+
+        private void InvalidateLoadedCalibration(SpectrumCalibrationSnapshot expectedSnapshot, string errorMessage)
+        {
+            lock (calibrationStateLock)
+            {
+                if (loadedCalibration != expectedSnapshot)
+                    return;
+
+                loadedCalibration = null;
+                LastOperationError = errorMessage;
+                if (calibrationLoadInProgress)
+                    OnPropertyChanged(nameof(IsCalibrationReady));
+                else
+                    CalibrationStatus = $"标定不可用：{errorMessage}";
+            }
+        }
+
+        internal bool CommitCalibrationConfiguration(CalibrationGroupConfig configuration, int expectedRequestVersion = 0)
+        {
+            ArgumentNullException.ThrowIfNull(configuration);
+            lock (calibrationStateLock)
+            {
+                if (expectedRequestVersion != 0 && expectedRequestVersion != calibrationRequestVersion)
+                {
+                    LastOperationError = "标定加载请求已被更新的选择替代";
+                    return false;
+                }
+
+                CalibrationGroupConfig committedConfiguration = configuration.Clone();
+                CalibrationGroup? activeGroup = committedConfiguration.ActiveGroup;
+                if (activeGroup == null)
+                    throw new InvalidOperationException("标定配置中没有活动分组");
+
+                if (string.IsNullOrEmpty(SerialNumber))
+                {
+                    LastOperationError = "设备序列号未知，无法保存标定配置";
+                    return false;
+                }
+                if (!committedConfiguration.TrySave(SerialNumber, out string saveError))
+                {
+                    LastOperationError = $"保存标定配置失败：{saveError}";
+                    return false;
+                }
+
+                CalibrationGroupConfig = committedConfiguration;
+                activeGroup = CalibrationGroupConfig.ActiveGroup
+                    ?? throw new InvalidOperationException("标定配置中没有活动分组");
+                _WavelengthFile = activeGroup.WavelengthFile;
+                _MaguideFile = activeGroup.MaguideFile;
+                pendingCalibrationConfigurationVersion = 0;
+                OnPropertyChanged(nameof(IsCalibrationConfigurationPending));
+                OnPropertyChanged(nameof(ActiveCalibrationGroupName));
+                OnPropertyChanged(nameof(WavelengthFile));
+                OnPropertyChanged(nameof(MaguideFile));
+                OnPropertyChanged(nameof(IsCalibrationReady));
+
+                if (IsCalibrationReady)
+                    CalibrationStatus = $"标定已加载：{activeGroup.GroupName}";
+                else if (!IsConnected)
+                    CalibrationStatus = "连接光谱仪后加载标定文件";
+
+                LastOperationError = string.Empty;
+                return true;
+            }
+        }
+
+        internal static bool TryCreateCalibrationSnapshot(
+            string groupName,
+            string wavelengthFile,
+            string magnitudeFile,
+            out SpectrumCalibrationSnapshot? snapshot,
+            out string errorMessage)
+        {
+            snapshot = null;
+            errorMessage = string.Empty;
+            try
+            {
+                string wavelengthPath = Path.GetFullPath(wavelengthFile);
+                CalibrationFileValidationResult wavelengthValidation = CalibrationFileValidator.ValidateWavelengthFile(wavelengthPath);
+                if (!wavelengthValidation.IsValid)
+                {
+                    errorMessage = $"波长文件无效：{wavelengthValidation.Message}";
+                    return false;
+                }
+
+                string magnitudePath = Path.GetFullPath(magnitudeFile);
+                CalibrationFileValidationResult magnitudeValidation = CalibrationFileValidator.ValidateMaguideFile(magnitudePath);
+                if (!magnitudeValidation.IsValid)
+                {
+                    errorMessage = $"幅值文件无效：{magnitudeValidation.Message}";
+                    return false;
+                }
+
+                snapshot = new SpectrumCalibrationSnapshot(
+                    groupName,
+                    wavelengthPath,
+                    ComputeFileSha256(wavelengthPath),
+                    magnitudePath,
+                    ComputeFileSha256(magnitudePath));
+                return true;
+            }
+            catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                errorMessage = $"无法读取标定文件：{ex.GetBaseException().Message}";
+                return false;
+            }
+        }
+
+        private static string ComputeFileSha256(string filePath)
+        {
+            using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return Convert.ToHexString(SHA256.HashData(stream));
         }
 
         /// <summary>
@@ -415,11 +1002,14 @@ namespace Spectrum
         /// </summary>
         public void OnNDPositionChanged(string ndPositionName)
         {
-            var group = CalibrationGroupConfig.FindGroupForNDPosition(ndPositionName);
-            if (group != null)
+            string? groupName;
+            lock (calibrationStateLock)
+                groupName = CalibrationGroupConfig.FindGroupForNDPosition(ndPositionName)?.GroupName;
+
+            if (groupName != null)
             {
-                log.Debug($"ND 位置切换至 '{ndPositionName}'，自动切换校准组 '{group.GroupName}'");
-                ActiveCalibrationGroupName = group.GroupName;
+                log.Debug($"ND 位置切换至 '{ndPositionName}'，自动切换校准组 '{groupName}'");
+                ActiveCalibrationGroupName = groupName;
             }
             else
             {
@@ -434,16 +1024,22 @@ namespace Spectrum
         private void OnFilterWheelPositionChanged(int position)
         {
             // First try to find a group by FilterWheelPosition
-            var group = CalibrationGroupConfig.FindGroupForFilterWheelPosition(position);
-            if (group != null)
+            string? groupName;
+            string? ndName;
+            lock (calibrationStateLock)
             {
-                log.Debug($"滤光轮位置切换至 {position}，自动切换校准组 '{group.GroupName}'");
-                Application.Current.Dispatcher.Invoke(() => ActiveCalibrationGroupName = group.GroupName);
+                groupName = CalibrationGroupConfig.FindGroupForFilterWheelPosition(position)?.GroupName;
+                ndName = groupName == null ? FilterWheelConfig.GetHoleName(position) : null;
+            }
+
+            if (groupName != null)
+            {
+                log.Debug($"滤光轮位置切换至 {position}，自动切换校准组 '{groupName}'");
+                ActiveCalibrationGroupName = groupName;
                 return;
             }
 
             // Fallback: try to find by ND name
-            string? ndName = FilterWheelConfig.GetHoleName(position);
             if (!string.IsNullOrEmpty(ndName))
             {
                 OnNDPositionChanged(ndName);
@@ -454,180 +1050,17 @@ namespace Spectrum
             }
         }
 
-        /// <summary>
-        /// Whether the CFW (filter wheel) is connected.
-        /// </summary>
-        [JsonIgnore]
-        public bool IsNDConnected { get => _IsNDConnected; set { _IsNDConnected = value; OnPropertyChanged(); } }
-        private bool _IsNDConnected;
-
-        [JsonIgnore]
-        public RelayCommand LoadWavelengthFileCommand { get; set; }
-
-        [JsonIgnore]
-        public RelayCommand SetCSFileCommand { get; set; }
-
-        [JsonIgnore]
-        public RelayCommand SetMaguideOutputFileCommand { get; set; }
-
-        [JsonIgnore]
-        public RelayCommand LoadMaguideFileCommand { get; set; }
-
-        [JsonIgnore]
-        public RelayCommand GetDarkDataCommand { get; set; }
-
-        [JsonIgnore]
-        public RelayCommand GetLightDataCommand { get; set; }
-
-        [JsonIgnore]
-        public RelayCommand GenerateAmplitudeCommand { get; set; }
-
-        [JsonIgnore]
-        public RelayCommand EditIntTimeConfigCommand { get; set; }
-
-        [JsonIgnore]
-        public RelayCommand EditAutodarkParamCommand { get; set; }
-
-        [JsonIgnore]
-        public RelayCommand EditSmuConfigCommand { get; set; }
-
-
         public SpectrometerManager()
         {
-            SetCSFileCommand = new RelayCommand(a => SetFile(path => CSFile = path));
-            GetDarkDataCommand = new RelayCommand(async a => await GetDarkDataAsync());
-            GetLightDataCommand = new RelayCommand(async a => await GetLightDataAsync());
-            GenerateAmplitudeCommand = new RelayCommand(async a => await GenerateAmplitudeAsync());
-
             MaguideFile = "Magiude.dat";
-
-            LoadWavelengthFileCommand = new RelayCommand(async a => await LoadWavelengthFileAsync());
-            LoadMaguideFileCommand = new RelayCommand(async a => await LoadMaguideFileAsync());
-            SetMaguideOutputFileCommand = new RelayCommand(a => SetMaguideOutputFile());
-            EditIntTimeConfigCommand = new RelayCommand(a => EditMeasurementDataConfig());
-
-            EditAutodarkParamCommand = new RelayCommand(a => EditAutodarkParam());
-
-            EditSmuConfigCommand = new RelayCommand(a => new PropertyEditorWindow(SmuController.Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
-
-            GetSpectrSerialNumberCommand = new RelayCommand(async a => await GetSpectrSerialNumberAsync());
-
-            EditNDConfigCommand = new RelayCommand(a => new PropertyEditorWindow(NDConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
-            ConnectNDCommand = new RelayCommand(a => ConnectND());
-
-            AddCalibrationGroupCommand = new RelayCommand(a => AddCalibrationGroup());
-            RemoveCalibrationGroupCommand = new RelayCommand(a => RemoveCalibrationGroup());
-            SetGroupWavelengthFileCommand = new RelayCommand(a => SetActiveGroupFile(isWavelength: true));
-            SetGroupMaguideFileCommand = new RelayCommand(a => SetActiveGroupFile(isWavelength: false));
-            OpenCalibrationGroupWindowCommand = new RelayCommand(a => OpenCalibrationGroupWindow());
             ApplyActiveGroupCommand = new RelayCommand(a => ApplyActiveGroup());
-
-            EditFilterWheelConfigCommand = new RelayCommand(a => new PropertyEditorWindow(FilterWheelConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
-
-            EditShutterConfigCommand = new RelayCommand(a => new PropertyEditorWindow(ShutterController.Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
 
             // Subscribe to filter wheel position changes for auto-switching calibration groups
             FilterWheelController.PositionChanged += OnFilterWheelPositionChanged;
         }
-        public NDConfig NDConfig => Config.NDConfig;
         public FilterWheelConfig FilterWheelConfig => Config.FilterWheelConfig;
 
-        public RelayCommand EditNDConfigCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand EditFilterWheelConfigCommand { get; set; }
-
-        [JsonIgnore]
-        public RelayCommand EditShutterConfigCommand { get; set; }
-
-        public RelayCommand ConnectNDCommand { get; set; }
-
-        public IntPtr NDHandle { get; set; } = IntPtr.Zero;
-
-        public void ConnectND()
-        {
-            NDHandle = NdCFWPortAPI.CM_CreatNdCFWPort(NDConfig.SzComName, (uint)NDConfig.BaudRate, false);
-            if (NDHandle == IntPtr.Zero)
-            {
-                log.Warn("ND 滤光轮连接失败");
-                IsNDConnected = false;
-            }
-            else
-            {
-                log.Info("ND 滤光轮连接成功");
-                IsNDConnected = true;
-            }
-        }
-
-        private void AddCalibrationGroup()
-        {
-            // Generate a unique group name
-            int idx = CalibrationGroupConfig.Groups.Count;
-            string newName;
-            do
-            {
-                newName = $"Group{idx}";
-                idx++;
-            } while (CalibrationGroupConfig.Groups.Any(g => g.GroupName == newName));
-
-            CalibrationGroupConfig.Groups.Add(new CalibrationGroup
-            {
-                GroupName = newName,
-                WavelengthFile = WavelengthFile,
-                MaguideFile = MaguideFile,
-            });
-            OnPropertyChanged(nameof(CalibrationGroupNames));
-            SaveCalibrationConfig();
-        }
-
-        private void RemoveCalibrationGroup()
-        {
-            if (CalibrationGroupConfig.Groups.Count <= 1)
-            {
-                log.Debug("不能删除最后一个校准组");
-                return;
-            }
-            var group = CalibrationGroupConfig.ActiveGroup;
-            if (group == null) return;
-            CalibrationGroupConfig.Groups.Remove(group);
-            ActiveCalibrationGroupName = CalibrationGroupConfig.Groups.FirstOrDefault()?.GroupName ?? "Default";
-            OnPropertyChanged(nameof(CalibrationGroupNames));
-            SaveCalibrationConfig();
-        }
-
-        private void SetActiveGroupFile(bool isWavelength)
-        {
-            var group = CalibrationGroupConfig.ActiveGroup;
-            if (group == null) return;
-
-            using var dialog = new System.Windows.Forms.OpenFileDialog();
-            dialog.Filter = "DAT files (*.dat)|*.dat|All Files|*.*";
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                if (isWavelength)
-                {
-                    group.WavelengthFile = dialog.FileName;
-                    WavelengthFile = dialog.FileName;
-                }
-                else
-                {
-                    group.MaguideFile = dialog.FileName;
-                    MaguideFile = dialog.FileName;
-                }
-                SaveCalibrationConfig();
-            }
-        }
-
-        private void OpenCalibrationGroupWindow()
-        {
-            new CalibrationGroupWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            // After dialog closed, refresh bindings
-            OnPropertyChanged(nameof(CalibrationGroupNames));
-            OnPropertyChanged(nameof(ActiveCalibrationGroupName));
-        }
-
-
-        public RelayCommand GetSpectrSerialNumberCommand { get; set; }
-        public async Task GetSpectrSerialNumberAsync()
+        public async Task<(int Result, string Json)> GetSpectrometerSerialNumbersAsync(CancellationToken cancellationToken = default)
         {
             (int Result, string Json) discovery = await RunExclusiveAsync(token => Task.Run(() =>
             {
@@ -636,17 +1069,11 @@ namespace Spectrum
                 StringBuilder result = new(bufferLength);
                 int nativeResult = Spectrometer.CM_Emission_GetAllSN((int)Config.SpectrometerType, GetDiscoveryComPort(), result, bufferLength);
                 return (nativeResult, result.ToString());
-            }, CancellationToken.None));
+            }, token), cancellationToken).ConfigureAwait(false);
 
             if (discovery.Result != 1)
-            {
                 log.Warn($"获取光谱仪设备列表失败: Type={Config.SpectrometerType}, NativeResult={discovery.Result}");
-                MessageBox1.Show(Application.Current.GetActiveWindow(), $"获取设备列表失败（原生返回值: {discovery.Result}）", "Sprectrum");
-                return;
-            }
-
-            string display = FormatSerialNumberResult(discovery.Json);
-            MessageBox1.Show(Application.Current.GetActiveWindow(), display, "Sprectrum");
+            return discovery;
         }
 
 
@@ -699,31 +1126,10 @@ namespace Spectrum
         }
 
 
-        public void SetMaguideOutputFile()
-        {
-            using (System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog())
-            {
-                saveFileDialog.FileName = $"Magiude_{DateTime.Now:yyyyMMdd_HHmmss}.dat";
-                saveFileDialog.Filter = "DAT files (*.dat)|*.dat|All files (*.*)|*.*";
-                saveFileDialog.Title = "选择保存文件路径";
-
-                if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                {
-                    MaguideFileOutput = saveFileDialog.FileName;
-
-                }
-            }
-        }
-
         public MeasurementDataConfig MeasurementDataConfig { get; set; } = new MeasurementDataConfig();
         public IntTimeConfig IntTimeConfig => MeasurementDataConfig.IntTimeConfig;
 
         public GetDataConfig GetDataConfig => MeasurementDataConfig.GetDataConfig;
-
-        public void EditMeasurementDataConfig()
-        {
-            new PropertyEditorWindow(MeasurementDataConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
 
 
 
@@ -854,14 +1260,6 @@ namespace Spectrum
                 // Loading the group updates both file paths. IsConnected remains false here,
                 // so ApplyActiveGroup does not load the same files a second time.
                 LoadCalibrationConfig();
-                LoadCalibrationFilesCore();
-
-                int sp100Result = ApplySp100ConfigurationCore();
-                if (sp100Result != 1)
-                {
-                    log.Warn($"SP100 参数设置失败: {Spectrometer.GetErrorMessage(sp100Result)}");
-                }
-
                 HardwareModel = Config.SpectrometerType switch
                 {
                     SpectrometerType.CMvSpectra => "SP-100",
@@ -870,6 +1268,36 @@ namespace Spectrum
                     _ => Config.SpectrometerType.ToString()
                 };
                 IsConnected = true;
+
+                if (!TryCreateCalibrationSnapshot(ActiveCalibrationGroupName, WavelengthFile, MaguideFile, out SpectrumCalibrationSnapshot? calibration, out string calibrationError))
+                {
+                    LastOperationError = calibrationError;
+                    CalibrationStatus = $"标定不可用：{calibrationError}";
+                    log.Error(CalibrationStatus);
+                }
+                else
+                {
+                    SpectrumCalibrationApplyResult calibrationResult = LoadCalibrationFilesCore(calibration!);
+                    if (!calibrationResult.IsSuccess)
+                    {
+                        LastOperationError = calibrationResult.ErrorMessage;
+                        CalibrationStatus = $"标定不可用：{calibrationResult.ErrorMessage}";
+                        log.Error(CalibrationStatus);
+                    }
+                    else
+                    {
+                        loadedCalibration = calibration;
+                        LastOperationError = string.Empty;
+                        CalibrationStatus = $"标定已加载：{calibration!.GroupName}";
+                    }
+                }
+
+                int sp100Result = ApplySp100ConfigurationCore();
+                if (sp100Result != 1)
+                {
+                    log.Warn($"SP100 参数设置失败: {Spectrometer.GetErrorMessage(sp100Result)}");
+                }
+
                 log.Info($"光谱仪连接成功，型号 {HardwareModel}，序列号 {SerialNumber}");
                 return 1;
             }
@@ -899,7 +1327,7 @@ namespace Spectrum
                         return true;
                     }
 
-                    log.Debug($"重连尝试 {attempt} 失败: {Spectrometer.GetErrorMessage(result)}");
+                    log.Debug($"重连尝试 {attempt} 失败: {GetOperationErrorMessage(result)}");
                     if (attempt < maxAttempts)
                     {
                         await Task.Delay(200, token).ConfigureAwait(false);
@@ -958,9 +1386,18 @@ namespace Spectrum
 
         private void ResetConnectionState()
         {
-            Handle = IntPtr.Zero;
-            IsConnected = false;
-            SerialNumber = string.Empty;
+            lock (calibrationStateLock)
+            {
+                calibrationRequestVersion++;
+                calibrationLoadInProgress = false;
+                pendingCalibrationConfigurationVersion = 0;
+                OnPropertyChanged(nameof(IsCalibrationConfigurationPending));
+                loadedCalibration = null;
+                Handle = IntPtr.Zero;
+                IsConnected = false;
+                SerialNumber = string.Empty;
+                CalibrationStatus = "标定文件尚未加载";
+            }
             SpectrometerNativeSession.Release(SpectrometerNativeSessionOwner.Main);
         }
 
@@ -1009,19 +1446,27 @@ namespace Spectrum
             SerialNumber = "Unknown";
         }
 
-        private void LoadCalibrationFilesCore()
+        private SpectrumCalibrationApplyResult LoadCalibrationFilesCore(SpectrumCalibrationSnapshot snapshot)
         {
-            int wavelengthResult = Spectrometer.CM_Emission_LoadWavaLengthFile(Handle, WavelengthFile);
-            if (wavelengthResult == 1)
-                log.Info($"加载波长文件成功: {WavelengthFile}");
-            else
-                log.Warn($"加载波长文件失败: {WavelengthFile}, {Spectrometer.GetErrorMessage(wavelengthResult)}");
+            int wavelengthResult = Spectrometer.CM_Emission_LoadWavaLengthFile(Handle, snapshot.WavelengthPath);
+            if (wavelengthResult != 1)
+            {
+                string message = $"加载波长文件失败：{Spectrometer.GetErrorMessage(wavelengthResult)}";
+                log.Warn($"{message}，文件: {snapshot.WavelengthPath}");
+                return new SpectrumCalibrationApplyResult(false, message);
+            }
 
-            int magnitudeResult = Spectrometer.CM_Emission_LoadMagiudeFile(Handle, MaguideFile);
-            if (magnitudeResult == 1)
-                log.Info($"加载幅值文件成功: {MaguideFile}");
-            else
-                log.Warn($"加载幅值文件失败: {MaguideFile}, {Spectrometer.GetErrorMessage(magnitudeResult)}");
+            log.Info($"加载波长文件成功: {snapshot.WavelengthPath}");
+            int magnitudeResult = Spectrometer.CM_Emission_LoadMagiudeFile(Handle, snapshot.MagnitudePath);
+            if (magnitudeResult != 1)
+            {
+                string message = $"加载幅值文件失败：{Spectrometer.GetErrorMessage(magnitudeResult)}";
+                log.Warn($"{message}，文件: {snapshot.MagnitudePath}");
+                return new SpectrumCalibrationApplyResult(false, message);
+            }
+
+            log.Info($"加载幅值文件成功: {snapshot.MagnitudePath}");
+            return SpectrumCalibrationApplyResult.Success;
         }
 
         private int ApplySp100ConfigurationCore()
@@ -1058,7 +1503,9 @@ namespace Spectrum
         /// 可被定时任务和Socket指令共享调用
         /// </summary>
         /// <returns>校零结果：1=成功，其他=失败</returns>
-        public async Task<int> PerformDarkCalibrationAsync(CancellationToken cancellationToken = default)
+        public async Task<int> PerformDarkCalibrationAsync(
+            bool requireShutter = false,
+            CancellationToken cancellationToken = default)
         {
             var operation = await TryRunExclusiveAsync(
                 token => Task.Run(async () =>
@@ -1067,30 +1514,65 @@ namespace Spectrum
                     if (!IsConnected || Handle == IntPtr.Zero)
                         return -1;
 
-                    bool shouldControlShutter = ShutterController.IsConnected;
-                    try
-                    {
-                        if (shouldControlShutter)
-                        {
-                            log.Debug("关闭快门进行校零");
-                            await ShutterController.CloseShutter();
-                        }
-
-                        token.ThrowIfCancellationRequested();
-                        return Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fDarkData);
-                    }
-                    finally
-                    {
-                        if (shouldControlShutter && ShutterController.IsConnected)
-                        {
-                            log.Debug("打开快门");
-                            await ShutterController.OpenShutter();
-                        }
-                    }
+                    (int result, string error) = await CaptureDarkWithShutterCoreAsync(requireShutter, token).ConfigureAwait(false);
+                    LastOperationError = error;
+                    return result;
                 }, CancellationToken.None),
                 cancellationToken).ConfigureAwait(false);
 
             return operation.Entered ? operation.Result : OperationBusy;
+        }
+
+        private async Task<(int Result, string Error)> CaptureDarkWithShutterCoreAsync(
+            bool requireShutter,
+            CancellationToken cancellationToken)
+        {
+            bool shouldControlShutter = ShutterController.IsConnected;
+            if (requireShutter && !shouldControlShutter)
+                return (ShutterOperationFailed, Properties.Resources.NoShutterAutoZero);
+
+            if (shouldControlShutter)
+            {
+                log.Debug("关闭快门进行校零");
+                if (!await ShutterController.CloseShutter().ConfigureAwait(false))
+                {
+                    string closeError = string.IsNullOrWhiteSpace(ShutterController.LastErrorMessage)
+                        ? "快门未能确认关闭"
+                        : ShutterController.LastErrorMessage;
+                    log.Warn($"{closeError}，校零已取消；尝试恢复打开快门");
+                    bool recovered = await ShutterController.OpenShutter().ConfigureAwait(false);
+                    string recoveryError = recovered
+                        ? string.Empty
+                        : string.IsNullOrWhiteSpace(ShutterController.LastErrorMessage)
+                            ? "；恢复打开快门也失败，请检查光路"
+                            : $"；{ShutterController.LastErrorMessage}，请检查光路";
+                    return (ShutterOperationFailed, $"{closeError}，校零已取消{recoveryError}");
+                }
+            }
+
+            int result;
+            bool reopened = true;
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                result = Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fDarkData);
+            }
+            finally
+            {
+                if (shouldControlShutter)
+                {
+                    log.Debug("打开快门");
+                    reopened = await ShutterController.OpenShutter().ConfigureAwait(false);
+                }
+            }
+
+            if (!reopened)
+                return (ShutterOperationFailed, string.IsNullOrWhiteSpace(ShutterController.LastErrorMessage)
+                    ? "校零后快门未能重新打开，请检查光路"
+                    : $"{ShutterController.LastErrorMessage}，请检查光路");
+            return result == 1
+                ? (1, string.Empty)
+                : (result, $"校零失败: {Spectrometer.GetErrorMessage(result)}");
         }
 
         /// <summary>
@@ -1098,20 +1580,11 @@ namespace Spectrum
         /// </summary>
         public event EventHandler DataAcquired;
 
-        public async Task GenerateAmplitudeAsync()
+        public async Task<(int CaptureResult, int GenerateResult)> GenerateAmplitudeAsync(
+            string outputPath,
+            CancellationToken cancellationToken = default)
         {
-            string outputPath = MaguideFileOutput;
-            if (string.IsNullOrEmpty(outputPath))
-            {
-                using var saveFileDialog = new System.Windows.Forms.SaveFileDialog();
-                saveFileDialog.FileName = $"Magiude_{DateTime.Now:yyyyMMdd_HHmmss}.dat";
-                saveFileDialog.Filter = "DAT files (*.dat)|*.dat|All files (*.*)|*.*";
-                saveFileDialog.Title = "选择幅值标定文件保存路径";
-                if (saveFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
-                    return;
-                outputPath = saveFileDialog.FileName;
-                MaguideFileOutput = outputPath;
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
 
             var result = await RunExclusiveAsync(token => Task.Run(() =>
             {
@@ -1126,65 +1599,60 @@ namespace Spectrum
                 log.Debug($"生成幅值文件参数: IntTime={IntTime}, CSFile={CSFile}, WavelengthFile={WavelengthFile}, MaguideFileOutput={outputPath}");
                 int generate = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, outputPath);
                 return (Capture: capture, Generate: generate);
-            }, CancellationToken.None));
+            }, token), cancellationToken).ConfigureAwait(false);
 
             if (result.Capture != 1)
             {
                 string errorMsg = Spectrometer.GetErrorMessage(result.Capture);
                 log.Error($"获取 LightData 失败: {errorMsg}");
-                MessageBox.Show($"获取 LightData 失败: {errorMsg}");
-                return;
+                return (result.Capture, result.Generate);
             }
             DataAcquired?.Invoke(this, EventArgs.Empty);
 
             if (result.Generate == 1)
-            {
                 log.Info($"幅值文件生成成功: {outputPath}");
-                MessageBox.Show($"生成成功\n文件: {outputPath}");
-            }
             else
             {
                 string errorMsg = Spectrometer.GetErrorMessage(result.Generate);
                 log.Error($"幅值文件生成失败: {errorMsg}");
-                MessageBox.Show($"生成失败: {errorMsg}");
             }
+
+            return (result.Capture, result.Generate);
         }
 
-        public async Task GetLightDataAsync()
+        public async Task<int> CaptureLightDataAsync(CancellationToken cancellationToken = default)
         {
-            int ret = await CaptureCalibrationDataAsync(fLightData);
+            int ret = await CaptureCalibrationDataAsync(fLightData, cancellationToken).ConfigureAwait(false);
             if (ret == 1)
             {
                 log.Info("LightData 获取成功");
                 DataAcquired?.Invoke(this, EventArgs.Empty);
-                MessageBox.Show("获取成功");
             }
             else
             {
                 string errorMsg = Spectrometer.GetErrorMessage(ret);
                 log.Error($"LightData 获取失败: {errorMsg}");
-                MessageBox.Show($"获取失败: {errorMsg}");
             }
+            return ret;
         }
 
-        public async Task GetDarkDataAsync()
+        public async Task<int> CaptureDarkDataAsync(CancellationToken cancellationToken = default)
         {
-            int ret = await CaptureCalibrationDataAsync(fDarkData);
+            int ret = await CaptureCalibrationDataAsync(fDarkData, cancellationToken).ConfigureAwait(false);
             if (ret == 1)
             {
                 log.Info("校零成功");
                 DataAcquired?.Invoke(this, EventArgs.Empty);
-                MessageBox.Show("校零成功");
             }
             else
             {
                 string errorMsg = Spectrometer.GetErrorMessage(ret);
                 log.Error($"校零失败: {errorMsg}");
-                MessageBox.Show($"校零失败: {errorMsg}");
             }
+            return ret;
         }
 
-        private Task<int> CaptureCalibrationDataAsync(float[] destination)
+        private Task<int> CaptureCalibrationDataAsync(float[] destination, CancellationToken cancellationToken)
         {
             return RunExclusiveAsync(token => Task.Run(() =>
             {
@@ -1192,7 +1660,7 @@ namespace Spectrum
                 return IsConnected && Handle != IntPtr.Zero
                     ? Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, destination)
                     : -1;
-            }, CancellationToken.None));
+            }, token), cancellationToken);
         }
 
         public float[] fDarkData = new float[2048];
@@ -1206,14 +1674,41 @@ namespace Spectrum
         public int Average { get => _Average; set { _Average = value; OnPropertyChanged(); } }
         private int _Average = 1;
 
-        public string WavelengthFile { get => _WavelengthFile; set { _WavelengthFile = value; OnPropertyChanged(); } }
+        public string WavelengthFile
+        {
+            get => _WavelengthFile;
+            set
+            {
+                if (string.Equals(_WavelengthFile, value, StringComparison.Ordinal)) return;
+                _WavelengthFile = value;
+                OnPropertyChanged();
+                OnCalibrationPathChanged();
+            }
+        }
         private string _WavelengthFile = "WavaLength.dat";
 
         public string CSFile { get => _CSFile; set { _CSFile = value; OnPropertyChanged(); } }
         private string _CSFile;
 
-        public string MaguideFile { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
+        public string MaguideFile
+        {
+            get => _MaguideFile;
+            set
+            {
+                if (string.Equals(_MaguideFile, value, StringComparison.Ordinal)) return;
+                _MaguideFile = value;
+                OnPropertyChanged();
+                OnCalibrationPathChanged();
+            }
+        }
         private string _MaguideFile;
+
+        private void OnCalibrationPathChanged()
+        {
+            OnPropertyChanged(nameof(IsCalibrationReady));
+            if (IsConnected && !IsCalibrationReady)
+                CalibrationStatus = "标定配置已改变，等待重新加载";
+        }
 
         public string MaguideFileOutput { get => _MaguideFileOutput; set { _MaguideFileOutput = value; OnPropertyChanged(); } }
         private string _MaguideFileOutput;
@@ -1222,35 +1717,6 @@ namespace Spectrum
 
         public AutodarkParam AutodarkParam { get => _AutodarkParam; set { _AutodarkParam = value; OnPropertyChanged(); } }
         private AutodarkParam _AutodarkParam = new AutodarkParam();
-        public void EditAutodarkParam()
-        {
-            var win = new PropertyEditorWindow(AutodarkParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            // Add adaptive auto dark execution button to the property editor window
-            if (AutodarkParam.ExecuteAdaptiveAutoDark != null)
-            {
-                var btn = new System.Windows.Controls.Button
-                {
-                    Content = "执行自适应校零",
-                    Margin = new Thickness(10, 10, 10, 0),
-                    Padding = new Thickness(10, 4, 10, 4),
-                    Background = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#E67E22")),
-                    Foreground = System.Windows.Media.Brushes.White
-                };
-                btn.Click += (s, e) => AutodarkParam.ExecuteAdaptiveAutoDark?.Invoke();
-                if (win.Content is System.Windows.Controls.Panel panel)
-                {
-                    panel.Children.Add(btn);
-                }
-                else if (win.Content is System.Windows.UIElement existingContent)
-                {
-                    var sp = new System.Windows.Controls.StackPanel();
-                    sp.Children.Add(existingContent);
-                    sp.Children.Add(btn);
-                    win.Content = sp;
-                }
-            }
-            win.ShowDialog();
-        }
 
         /// <summary>
         /// 自动校零
@@ -1273,61 +1739,354 @@ namespace Spectrum
         private bool _EnableAutoIntegration;
 
 
-        private async Task LoadMaguideFileAsync()
-        {
-            int ret = await RunExclusiveAsync(token => Task.Run(() =>
-            {
-                token.ThrowIfCancellationRequested();
-                return IsConnected && Handle != IntPtr.Zero
-                    ? Spectrometer.CM_Emission_LoadMagiudeFile(Handle, MaguideFile)
-                    : -1;
-            }, CancellationToken.None));
-            if (ret == 1)
-            {
-                log.Info($"加载幅值文件成功: {MaguideFile}");
-                MessageBox.Show("配置幅值文件成功");
-            }
-            else
-            {
-                string errorMsg = Spectrometer.GetErrorMessage(ret);
-                log.Error($"加载幅值文件失败: {MaguideFile}, {errorMsg}");
-                MessageBox.Show($"配置幅值文件失败: {errorMsg}");
-            }
-        }
-        private async Task LoadWavelengthFileAsync()
-        {
-            int ret = await RunExclusiveAsync(token => Task.Run(() =>
-            {
-                token.ThrowIfCancellationRequested();
-                return IsConnected && Handle != IntPtr.Zero
-                    ? Spectrometer.CM_Emission_LoadWavaLengthFile(Handle, WavelengthFile)
-                    : -1;
-            }, CancellationToken.None));
-            if (ret == 1)
-            {
-                log.Info($"加载波长文件成功: {WavelengthFile}");
-                MessageBox.Show("配置波长文件成功");
-            }
-            else
-            {
-                string errorMsg = Spectrometer.GetErrorMessage(ret);
-                log.Error($"加载波长文件失败: {WavelengthFile}, {errorMsg}");
-                MessageBox.Show($"配置波长文件失败: {errorMsg}");
-            }
-        }
+        public const int OperationBusy = int.MinValue;
 
-
-        private void SetFile(Action<string> setFilePath)
+        public async Task<(bool Entered, float? IntegrationTime)> TryGetAutoIntegrationTimeAsync(CancellationToken cancellationToken = default)
         {
-            using (var dialog = new System.Windows.Forms.OpenFileDialog())
-            {
-                dialog.Filter = "All Files|*.*"; // Optionally set a filter for file types
-                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            var operation = await TryRunExclusiveAsync(
+                token => Task.Run<float?>(() =>
                 {
-                    setFilePath(dialog.FileName);
+                    token.ThrowIfCancellationRequested();
+                    if (!IsConnected || Handle == IntPtr.Zero)
+                        return null;
+
+                    (int returnCode, float integrationTime) = GetAutoIntegrationTimeCore();
+                    if (returnCode != 1)
+                    {
+                        log.Warn($"自动积分时间获取失败: {Spectrometer.GetErrorMessage(returnCode)}");
+                        return null;
+                    }
+
+                    if (GetDataConfig.IsSyncFrequencyEnabled)
+                    {
+                        COLOR_PARA colorParam = new();
+                        float synchronizedTime = integrationTime;
+                        int syncResult = Spectrometer.CM_Emission_GetDataSyncfreq(
+                            Handle, 0, GetDataConfig.Syncfreq, GetDataConfig.SyncfreqFactor,
+                            ref synchronizedTime, Average, GetDataConfig.FilterBW, fDarkData,
+                            0, 0, GetDataConfig.SetWL1, GetDataConfig.SetWL2, ref colorParam);
+                        if (syncResult == 1)
+                            integrationTime = synchronizedTime;
+                        else
+                            log.Warn($"同步频率调整积分时间失败: {Spectrometer.GetErrorMessage(syncResult)}");
+                    }
+
+                    IntTime = integrationTime;
+                    return integrationTime;
+                }, CancellationToken.None),
+                cancellationToken).ConfigureAwait(false);
+
+            return (operation.Entered, operation.Result);
+        }
+
+        public async Task<int> PerformAdaptiveDarkCalibrationAsync(CancellationToken cancellationToken = default)
+        {
+            var operation = await TryRunExclusiveAsync(
+                token => Task.Run(() =>
+                {
+                    token.ThrowIfCancellationRequested();
+                    if (!IsConnected || Handle == IntPtr.Zero)
+                        return -1;
+                    return Spectrometer.CM_Emission_Init_Auto_Dark(
+                        Handle, AutodarkParam.fTimeStart, AutodarkParam.nStepTime,
+                        AutodarkParam.nStepCount, Average);
+                }, CancellationToken.None),
+                cancellationToken).ConfigureAwait(false);
+
+            return operation.Entered ? operation.Result : OperationBusy;
+        }
+
+        public async Task<SpectrumMeasurementResult> MeasureAsync(CancellationToken cancellationToken = default)
+        {
+            if (!TryStartMeasurement())
+                return new SpectrumMeasurementResult(null, ErrorMessage: "光谱测量服务正在停止", IsBusy: true);
+
+            try
+            {
+                return await MeasureTrackedAsync(cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                FinishMeasurement();
+            }
+        }
+
+        private async Task<SpectrumMeasurementResult> MeasureTrackedAsync(CancellationToken cancellationToken)
+        {
+            Stopwatch totalStopwatch = Stopwatch.StartNew();
+            SpectrumMeasurementProfile profile = new()
+            {
+                CreateTime = DateTime.Now,
+                MeasurementMode = GetDataConfig.IsSyncFrequencyEnabled ? "sync-frequency" : "standard"
+            };
+            bool operationStarted = false;
+            bool profilePersisted = false;
+
+            SpectrumMeasurementResult Failure(int? code, string message)
+            {
+                profile.ErrorCode = code;
+                profile.ErrorMessage = message;
+                profile.IsSuccess = false;
+                log.Warn(message);
+                return new SpectrumMeasurementResult(null, code, message);
+            }
+
+            try
+            {
+                var operation = await TryRunExclusiveAsync(
+                    token => Task.Run(async () =>
+                    {
+                        operationStarted = true;
+                        return await CaptureMeasurementCoreAsync(profile, token).ConfigureAwait(false);
+                    }, CancellationToken.None),
+                    cancellationToken).ConfigureAwait(false);
+
+                if (!operation.Entered)
+                    return new SpectrumMeasurementResult(null, ErrorMessage: "光谱仪正在执行其他操作", IsBusy: true);
+
+                MeasurementCapture capture = operation.Result
+                    ?? new MeasurementCapture(null, null, null, null, "测量未返回结果");
+                if (!capture.ColorParam.HasValue)
+                    return Failure(capture.ErrorCode, capture.ErrorMessage ?? "测量失败");
+
+                cancellationToken.ThrowIfCancellationRequested();
+                SprectrumModel model = new()
+                {
+                    ColorParam = capture.ColorParam.Value,
+                    TotalDurationMs = totalStopwatch.ElapsedMilliseconds
+                };
+                totalStopwatch.Stop();
+                profile.TotalDurationMs = totalStopwatch.ElapsedMilliseconds;
+                ViewResultSpectrum viewResult = ViewResultManager.SaveMeasurement(model, capture.EqeVoltage, capture.EqeCurrent, profile);
+                profilePersisted = true;
+                return new SpectrumMeasurementResult(viewResult);
+            }
+            catch (OperationCanceledException)
+            {
+                profile.ErrorMessage = "测量已取消";
+                throw;
+            }
+            catch (Exception ex)
+            {
+                log.Error("光谱测量异常", ex);
+                return Failure(null, ex.GetBaseException().Message);
+            }
+            finally
+            {
+                if (totalStopwatch.IsRunning)
+                    totalStopwatch.Stop();
+                if (!profilePersisted)
+                    profile.TotalDurationMs = totalStopwatch.ElapsedMilliseconds;
+                if (operationStarted && !profilePersisted)
+                {
+                    try
+                    {
+                        ViewResultManager.SaveMeasurementProfile(profile);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("保存测量耗时记录失败", ex);
+                    }
+                }
+                if (operationStarted)
+                    log.Info($"测量耗时: total={profile.TotalDurationMs}ms, autoDark={profile.AutoDarkDurationMs ?? 0}ms, autoIntegration={profile.AutoIntegrationDurationMs ?? 0}ms, adaptiveDark={profile.AdaptiveAutoDarkDurationMs ?? 0}ms, acquire={profile.AcquireDurationMs ?? 0}ms, persist={profile.PersistDurationMs ?? 0}ms, success={profile.IsSuccess}, spectrumId={profile.SpectrumId?.ToString() ?? "-"}");
+            }
+        }
+
+        private async Task<MeasurementCapture> CaptureMeasurementCoreAsync(SpectrumMeasurementProfile profile, CancellationToken cancellationToken)
+        {
+            MeasurementCapture Failure(int? code, string message)
+            {
+                profile.ErrorCode = code;
+                profile.ErrorMessage = message;
+                return new MeasurementCapture(null, null, null, code, message);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!IsConnected || Handle == IntPtr.Zero)
+                return Failure(null, "光谱仪未连接");
+            if (!TryGetCalibrationNotReadyReason(out string calibrationError))
+                return Failure(CalibrationUnavailable, calibrationError);
+
+            profile.InputParametersJson = CreateMeasurementInputSnapshotJson();
+
+            if (EnableAutodark)
+            {
+                Stopwatch stepStopwatch = Stopwatch.StartNew();
+                (int darkResult, string darkError) = await CaptureDarkWithShutterCoreAsync(requireShutter: true, cancellationToken).ConfigureAwait(false);
+                profile.AutoDarkDurationMs = stepStopwatch.ElapsedMilliseconds;
+                if (darkResult != 1)
+                    return Failure(darkResult, darkError);
+            }
+
+            float integrationTime = IntTime;
+            if (EnableAutoIntegration)
+            {
+                Stopwatch stepStopwatch = Stopwatch.StartNew();
+                (int returnCode, float value) = GetAutoIntegrationTimeCore();
+                profile.AutoIntegrationDurationMs = stepStopwatch.ElapsedMilliseconds;
+                if (returnCode != 1)
+                    return Failure(returnCode, $"自动积分时间获取失败: {Spectrometer.GetErrorMessage(returnCode)}");
+
+                integrationTime = value;
+                if (!GetDataConfig.IsSyncFrequencyEnabled)
+                    IntTime = integrationTime;
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            if (EnableAdaptiveAutoDark)
+            {
+                float darkIntegrationTime = EnableAutoIntegration && GetDataConfig.IsSyncFrequencyEnabled ? integrationTime : IntTime;
+                Stopwatch stepStopwatch = Stopwatch.StartNew();
+                int adaptiveDarkResult = Spectrometer.CM_Emission_AutoDarkStorage(Handle, darkIntegrationTime, Average, 0, fDarkData);
+                profile.AdaptiveAutoDarkDurationMs = stepStopwatch.ElapsedMilliseconds;
+                if (adaptiveDarkResult == 0)
+                    return Failure(adaptiveDarkResult, Properties.Resources.PleaseRunAdaptiveAutoDarkFirst);
+                if (adaptiveDarkResult != 1)
+                    return Failure(adaptiveDarkResult, $"自适应校零数据获取失败: {Spectrometer.GetErrorMessage(adaptiveDarkResult)}");
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            COLOR_PARA colorParam = new();
+            Stopwatch acquireStopwatch = Stopwatch.StartNew();
+            int acquireResult;
+            if (GetDataConfig.IsSyncFrequencyEnabled)
+            {
+                float syncIntegrationTime = EnableAutoIntegration ? integrationTime : IntTime;
+                acquireResult = Spectrometer.CM_Emission_GetDataSyncfreq(
+                    Handle, 0, GetDataConfig.Syncfreq, GetDataConfig.SyncfreqFactor,
+                    ref syncIntegrationTime, Average, GetDataConfig.FilterBW, fDarkData,
+                    0, 0, GetDataConfig.SetWL1, GetDataConfig.SetWL2, ref colorParam);
+                if (acquireResult == 1 && EnableAutoIntegration)
+                    IntTime = syncIntegrationTime;
+            }
+            else
+            {
+                acquireResult = Spectrometer.CM_Emission_GetData(
+                    Handle, 0, IntTime, Average, GetDataConfig.FilterBW, fDarkData,
+                    0, 0, GetDataConfig.SetWL1, GetDataConfig.SetWL2, ref colorParam);
+                if (acquireResult == -13007)
+                {
+                    log.Warn($"采集数据超时，正在重试: {Spectrometer.GetErrorMessage(acquireResult)}");
+                    acquireResult = Spectrometer.CM_Emission_GetData(
+                        Handle, 0, IntTime, Average, GetDataConfig.FilterBW, fDarkData,
+                        0, 0, GetDataConfig.SetWL1, GetDataConfig.SetWL2, ref colorParam);
                 }
             }
+
+            profile.AcquireDurationMs = acquireStopwatch.ElapsedMilliseconds;
+            if (acquireResult != 1)
+                return Failure(acquireResult, $"光谱数据采集失败: {Spectrometer.GetErrorMessage(acquireResult)}");
+
+            colorParam.fPh = colorParam.fPh < 1 ? (float)Math.Round(colorParam.fPh, 4) : (float)Math.Round(colorParam.fPh, 2);
+
+            float? eqeVoltage = null;
+            float? eqeCurrent = null;
+            if (MainWindowConfig.Instance.EqeEnabled)
+            {
+                eqeVoltage = MainWindowConfig.Instance.EqeVoltage;
+                eqeCurrent = MainWindowConfig.Instance.EqeCurrentMA;
+                if (SmuController.IsOpen)
+                {
+                    (bool entered, SmuMeasurementSnapshot? captured) = await SmuController
+                        .TryCaptureMeasurementSnapshotAsync(cancellationToken)
+                        .ConfigureAwait(false);
+                    if (entered && captured is { } snapshot)
+                    {
+                        SmuController.ApplyMeasurement(snapshot);
+                        eqeVoltage = snapshot.Voltage;
+                        eqeCurrent = snapshot.CurrentMA;
+                        MainWindowConfig.Instance.EqeVoltage = snapshot.Voltage;
+                        MainWindowConfig.Instance.EqeCurrentMA = snapshot.CurrentMA;
+                    }
+                }
+            }
+
+            return new MeasurementCapture(colorParam, eqeVoltage, eqeCurrent, null, null);
         }
 
+        private sealed record MeasurementCapture(
+            COLOR_PARA? ColorParam,
+            float? EqeVoltage,
+            float? EqeCurrent,
+            int? ErrorCode,
+            string? ErrorMessage);
+
+        private (int ReturnCode, float Value) GetAutoIntegrationTimeCore()
+        {
+            float integrationTime = 0;
+            int result = IntTimeConfig.IsOldVersion
+                ? Spectrometer.CM_Emission_GetAutoTime(Handle, ref integrationTime, IntTimeConfig.IntLimitTime, IntTimeConfig.AutoIntTimeB, (int)IntTimeConfig.MaxPercent)
+                : Spectrometer.CM_Emission_GetAutoTimeEx(Handle, ref integrationTime, IntTimeConfig.IntLimitTime, IntTimeConfig.AutoIntTimeB, IntTimeConfig.Max, null);
+            return (result, integrationTime);
+        }
+
+        private bool TryGetCalibrationNotReadyReason(out string errorMessage)
+        {
+            if (Volatile.Read(ref calibrationLoadInProgress))
+            {
+                errorMessage = "标定文件正在加载，请稍候";
+                return false;
+            }
+            if (Volatile.Read(ref pendingCalibrationConfigurationVersion) != 0)
+            {
+                errorMessage = "标定配置正在提交，请稍候";
+                return false;
+            }
+
+            SpectrumCalibrationSnapshot? snapshot = loadedCalibration;
+            if (snapshot == null || !snapshot.MatchesConfigured(ActiveCalibrationGroupName, WavelengthFile, MaguideFile))
+            {
+                errorMessage = string.IsNullOrWhiteSpace(CalibrationStatus)
+                    ? "标定文件尚未成功加载"
+                    : CalibrationStatus;
+                return false;
+            }
+
+            try
+            {
+                if (!string.Equals(snapshot.WavelengthSha256, ComputeFileSha256(snapshot.WavelengthPath), StringComparison.OrdinalIgnoreCase)
+                    || !string.Equals(snapshot.MagnitudeSha256, ComputeFileSha256(snapshot.MagnitudePath), StringComparison.OrdinalIgnoreCase))
+                {
+                    loadedCalibration = null;
+                    CalibrationStatus = "标定文件在加载后发生变化，请重新加载";
+                    errorMessage = CalibrationStatus;
+                    return false;
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                loadedCalibration = null;
+                CalibrationStatus = $"无法验证已加载的标定文件：{ex.GetBaseException().Message}";
+                errorMessage = CalibrationStatus;
+                return false;
+            }
+
+            errorMessage = string.Empty;
+            return true;
+        }
+
+        private string CreateMeasurementInputSnapshotJson()
+        {
+            return JsonConvert.SerializeObject(new
+            {
+                RequestedIntTime = IntTime,
+                Average,
+                GetDataConfig.FilterBW,
+                EnableAutodark,
+                EnableAdaptiveAutoDark,
+                EnableAutoIntegration,
+                GetDataConfig.IsSyncFrequencyEnabled,
+                GetDataConfig.Syncfreq,
+                GetDataConfig.SyncfreqFactor,
+                GetDataConfig.SetWL1,
+                GetDataConfig.SetWL2,
+                CalibrationGroup = loadedCalibration?.GroupName,
+                WavelengthFile = loadedCalibration?.WavelengthPath,
+                WavelengthSha256 = loadedCalibration?.WavelengthSha256,
+                MagnitudeFile = loadedCalibration?.MagnitudePath,
+                MagnitudeSha256 = loadedCalibration?.MagnitudeSha256
+            });
+        }
     }
 }

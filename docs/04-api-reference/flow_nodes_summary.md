@@ -7,7 +7,7 @@
 | 范围 | 源码目录 |
 | --- | --- |
 | 节点实现 | `Engine/FlowEngineLib/` |
-| 节点配置器 | `Engine/ColorVision.Engine/Templates/Flow/NodeConfigurator/` |
+| 节点补充配置 | `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/` |
 
 ## 当前分类概览
 
@@ -29,5 +29,5 @@
 推荐命令：
 
 ```powershell
-rg -n "class .*Node|NodeType|NodeConfigurator" Engine/FlowEngineLib Engine/ColorVision.Engine/Templates/Flow
+rg -n "class .*Node|NodeType|NodeConfigurator|FlowNodePropertyEditor|PropertyEditorType" Engine/FlowEngineLib Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration Engine/ColorVision.Engine/PropertyEditor
 ```

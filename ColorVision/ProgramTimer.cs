@@ -86,6 +86,7 @@ namespace ColorVision
             else
                 attemptKey.SetValue("Component", component.Trim(), RegistryValueKind.String);
             DeleteRecoverySource(attemptKey);
+            StartupFailureGuard.ReportProgress(stage, component);
         }
 
         /// <summary>
@@ -97,9 +98,16 @@ namespace ColorVision
             regKey.DeleteSubKeyTree(GetCurrentAttemptSubKeyPath(), false);
             DeleteLegacyAttemptForCurrentProcess(regKey);
             _attemptCompleted = true;
+            StartupFailureGuard.MarkReady();
         }
 
-        public static void CompleteForRecoveryRestart() => Clear();
+        public static void CompleteForRecoveryRestart()
+        {
+            using RegistryKey regKey = Registry.CurrentUser.CreateSubKey(RegistryPath);
+            regKey.DeleteSubKeyTree(GetCurrentAttemptSubKeyPath(), false);
+            DeleteLegacyAttemptForCurrentProcess(regKey);
+            _attemptCompleted = true;
+        }
 
         public static void OnApplicationExit()
         {

@@ -16,7 +16,7 @@ Engine 开发要先确认你改的是哪条业务链。不要把设备、模板�
 | --- | --- | --- |
 | 新增设备服务 | `Engine/ColorVision.Engine/Services/Devices/` | 通过 `DeviceServiceFactoryRegistry` 注册 |
 | 新增模板 | `Engine/ColorVision.Engine/Templates/` | 实现 `ITemplate<T>` 或 `ITemplateJson<T>` |
-| 新增流程节点 | `Engine/ColorVision.Engine/Templates/Flow/`、`Engine/FlowEngineLib/` | 同时补节点和配置器 |
+| 新增流程节点 | `Engine/FlowEngineLib/`、`Engine/ColorVision.Engine/FlowProcessing/Nodes/` | 公共节点放执行内核，Engine 本地节点放 `Nodes/`；需要设备或模板选择时同步补 `FlowProcessing/Editor/NodeConfiguration/` |
 | 修改 MQTT 行为 | `Engine/ColorVision.Engine/MQTT/`、设备服务目录 | 检查 topic、命令参数和返回结果 |
 | 修改 OpenCV/native | `Engine/cvColorVision/`、`UI/ColorVision.Core/` | 检查 native DLL 和 runtime 打包 |
 | 修改结果展示 | `Templates/*/ViewHandle*.cs`、`UI/ColorVision.ImageEditor/` | 不要把客户判定写进通用 handler |

@@ -1,6 +1,6 @@
 # ColorVision.ImageEditor
 
-> 版本: 1.5.5.1 | 目标框架: .NET 10.0 Windows
+> 目标框架：.NET 10 Windows x64（以 `ColorVision.ImageEditor.csproj` 为准）
 
 ## 维护文档
 
@@ -82,6 +82,6 @@
 
 ## 构建
 
-```bash
-dotnet build UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj
+```powershell
+dotnet build .\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj -p:Platform=x64
 ```

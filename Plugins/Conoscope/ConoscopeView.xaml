@@ -3,12 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:Conoscope="clr-namespace:Conoscope.Core"
-    xmlns:local="clr-namespace:Conoscope"
+        xmlns:local="clr-namespace:Conoscope"
         xmlns:properties="clr-namespace:Conoscope.Properties"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance Conoscope:ConoscopeManager}"
         Background="{DynamicResource GlobalBackground}" d:Height="720" d:Width="1280" Initialized="Window_Initialized">
     <UserControl.Resources>
         <Style x:Key="PanelHeaderTextStyle" TargetType="TextBlock">
@@ -112,16 +110,6 @@
             <Setter Property="Height" Value="28"/>
             <Setter Property="Margin" Value="0"/>
         </Style>
-        <DrawingBrush x:Key="TransparentGridBrush" Opacity="0.1" TileMode="Tile" Viewport="0 0 20 20" ViewportUnits="Absolute">
-            <DrawingBrush.Drawing>
-                <DrawingGroup>
-                    <GeometryDrawing Brush="Gray" Geometry="M0,0 L0,10 10,10 10,0 Z" />
-                    <GeometryDrawing Brush="Transparent" Geometry="M10,0 L10,10 20,10 20,0 Z" />
-                    <GeometryDrawing Brush="Transparent" Geometry="M0,10 L0,20 10,20 10,10 Z" />
-                    <GeometryDrawing Brush="Gray" Geometry="M10,10 L10,20 20,20 20,10 Z" />
-                </DrawingGroup>
-            </DrawingBrush.Drawing>
-        </DrawingBrush>
     </UserControl.Resources>
 
     <Grid>
@@ -131,7 +119,7 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <Grid x:Name="ImageViewHost" Grid.Column="0" Background="{StaticResource TransparentGridBrush}">
+        <Grid x:Name="ImageViewHost" Grid.Column="0" Background="{DynamicResource TransparentGridBrush}">
             <local:ConoscopeImageHost x:Name="ImageView" />
             <Border x:Name="PseudoColorLegendPanel" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" Padding="8" Background="#DD1E1E1E" BorderBrush="#66FFFFFF" BorderThickness="1" CornerRadius="6" Visibility="Collapsed" IsHitTestVisible="False">
                 <StackPanel>

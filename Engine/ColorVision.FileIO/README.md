@@ -1,6 +1,6 @@
 # ColorVision.FileIO
 
-> 版本: 1.3.12.24 | 目标框架: .NET 8.0 / .NET 10.0 Windows
+> 目标框架：.NET Framework 4.6.1、.NET 6、.NET 8 和 .NET 10；AnyCPU（以 `ColorVision.FileIO.csproj` 为准）
 
 ## 🎯 功能定位
 
@@ -202,22 +202,10 @@ public static class FileValidator
 
 ## 开发调试
 
-```bash
+```powershell
 # 构建项目
-dotnet build Engine/ColorVision.FileIO/ColorVision.FileIO.csproj
-
-# 运行测试
-dotnet test
+dotnet build .\Engine\ColorVision.FileIO\ColorVision.FileIO.csproj -p:Platform=AnyCPU
 ```
-
-## 优化说明（v1.3.12.24+）
-
-- **异常处理增强**：所有文件流和二进制读取操作均已加 try-catch，异常会通过 Debug.WriteLine 记录，提升健壮性。
-- **MagicHeader 常量统一**：所有 CVCIE 文件头字符串均统一使用 MagicHeader 常量，避免硬编码。
-- **资源释放优化**：所有文件流操作均使用 using，防止资源泄漏。
-- **内存分配保护**：大文件读取时分配内存已加 OutOfMemoryException 保护，防止 OOM 崩溃。
-- **职责细化与冗余合并**：部分复杂方法已建议细化为更小单元，冗余代码合并，提升可维护性。
-- **注释与文档**：关键结构和方法已补充 XML 注释，便于二次开发和维护。
 
 ## 最佳实践
 

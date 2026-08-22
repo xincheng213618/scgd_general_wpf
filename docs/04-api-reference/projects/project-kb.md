@@ -17,12 +17,7 @@
 
 ## manifest
 
-| 字段 | 当前值 |
-| --- | --- |
-| `Id` | `ProjectKB` |
-| `version` | `1.4.4.5` |
-| `dllpath` | `ProjectKB.dll` |
-| `requires` | `1.3.15.10` |
+项目身份为 `ProjectKB`，入口程序集为 `ProjectKB.dll`。发布版本和最低宿主版本会随交付变化，维护和打包时直接读取 `Projects/ProjectKB/ProjectKB.csproj` 与 `manifest.json`，不要在说明页复制一份版本号。
 
 ## 运行链路
 

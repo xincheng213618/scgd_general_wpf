@@ -56,7 +56,7 @@
 
 ### 想看这些构件怎样被编排进流程
 
-优先读 [流程引擎](../templates/flow-engine.md) 以及 `Templates/Flow/NodeConfigurator`。
+优先读 [流程引擎](../templates/flow-engine.md) 以及 `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/`。
 
 ## 当前几个最容易写错的点
 

@@ -1,6 +1,6 @@
 # RBAC 模块
 
-RBAC 当前实现集中在 `UI/ColorVision.Solution/Rbac/`。它是桌面 Solution 侧的本地用户、角色、权限、会话和审计模块，不是 Engine 层统一安全内核，也不是远程身份平台。
+RBAC 当前实现集中在独立项目 `UI/ColorVision.Rbac/`，并由 `ColorVision/BuiltInModules.cs` 注册到主程序。它负责本地用户、角色、权限、会话和审计，不是 Engine 层统一安全内核，也不是远程身份平台。
 
 ## 先查什么
 
@@ -19,7 +19,7 @@ RBAC 当前实现集中在 `UI/ColorVision.Solution/Rbac/`。它是桌面 Soluti
 1. 创建 `%AppData%/ColorVision/Config/`。
 2. 打开或创建本地 SQLite 数据库 `Rbac.db`。
 3. 通过 SqlSugar CodeFirst 初始化 RBAC 实体表。
-4. 初始化 `AuthService`、`UserService`、`RoleService`、`PermissionService`、`AuditLogService`、`SessionService`、`PermissionChecker`、`TenantService`。
+4. 初始化 `AuthService`、`UserService`、`RoleService`、`PermissionService`、`AuditLogService`、`SessionService` 和 `PermissionChecker`。
 5. 创建默认管理员角色和管理员用户。
 6. 写入预置权限，并把全部权限分配给 `admin` 角色。
 7. 如果有登录缓存，把用户 `PermissionMode` 同步到全局授权状态。
@@ -35,7 +35,6 @@ RBAC 当前实现集中在 `UI/ColorVision.Solution/Rbac/`。它是桌面 Soluti
 | `RolePermissionEntity` | `sys_role_permission` | 角色到权限码的关联 |
 | `SessionEntity` | `sys_session` | SessionToken、设备、IP、创建/过期/活跃/撤销状态 |
 | `AuditLogEntity` | `sys_audit_log` | 用户、动作、明细、时间、IP |
-| `TenantEntity` / `UserTenantEntity` | 租户相关表 | 已预留租户维度，但不是当前桌面入口主线 |
 
 ## 登录链路
 
@@ -85,3 +84,5 @@ RBAC 当前实现集中在 `UI/ColorVision.Solution/Rbac/`。它是桌面 Soluti
 | 权限缓存 | `Services/PermissionChecker.cs` |
 | 用户管理 | `UserManagerWindow.xaml.cs` |
 | 权限管理 | `PermissionManagerWindow.xaml.cs` |
+
+目标框架、包依赖和版本以 `UI/ColorVision.Rbac/ColorVision.Rbac.csproj` 为准。修改模块注册时，同时检查 `ColorVision/BuiltInModules.cs` 和 `ModuleCatalogTests`。

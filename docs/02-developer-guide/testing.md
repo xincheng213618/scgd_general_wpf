@@ -20,8 +20,8 @@
 
 | 测试文件 | 覆盖面 |
 | --- | --- |
-| `ConfigServiceAdaptersTests.cs`、`BrushJsonConverterTests.cs` | 配置 adapter、基础配置、WPF brush JSON 序列化 |
-| `PropertyEditorWindowTests.cs`、`ListEditorTests.cs`、`NestedListEditorTests.cs` | PropertyGrid、属性编辑窗口、列表编辑器 |
+| `ConfigServiceAdaptersTests.cs`、`ConfigHandlerPersistenceTests.cs`、`ThemeSettingsTests.cs` | 配置 adapter、配置持久化和主题设置 |
+| `PropertyEditorContractTests.cs`、`PropertyEditSessionTests.cs`、`ListEditorTests.cs` | PropertyGrid 契约、编辑会话和列表编辑器 |
 | `UniversalSortTests.cs`、`TreemapLayoutTests.cs` | 通用排序、Treemap 布局 |
 | `TerminalScreenBufferTests.cs`、`STNodeCopyPasteTests.cs` | 终端屏幕缓冲、Flow/STNode 复制粘贴 |
 | `LogEntryParserTests.cs`、`LogHistoryReaderTests.cs`、`LogSearchHelperTests.cs` | 日志解析、历史读取和搜索 |
@@ -43,6 +43,16 @@ dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64 --filter "FullyQualifiedN
 dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64
 dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64 --filter "FullyQualifiedName~CopilotMcp"
 ```
+
+## Spectrum 与 Conoscope
+
+```powershell
+dotnet test .\Test\Spectrum.Tests\Spectrum.Tests.csproj -p:Platform=x64
+dotnet test .\Test\Conoscope.Tests\Conoscope.Tests.csproj -p:Platform=x64
+```
+
+- Spectrum 覆盖有效范围、标定预检/SHA-256 快照、CSV 实际波长与调用时快照、校正算法，以及 Manager 不得持有 UI 对象的架构边界；真机仍需验证光谱仪、快门、滤光轮和 SMU。
+- Conoscope 覆盖 CVCIE 逐通道读取、Document staged load/所有权、ViewState/导出 readiness、关注点、分析、伪彩和 MVS 边界；设置 `CONOSCOPE_REAL_SAMPLE` 可追加真实样本测试，但不要把绝对路径写入仓库。
 
 ## native 和后端
 
@@ -81,7 +91,5 @@ dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64 --filter "FullyQuali
 
 ## 维护规则
 
-- 新增 `.csproj` 测试项目时，同步更新本页、[项目结构总览](../05-resources/project-structure/README.md) 和侧边栏导航。
-- 新增关键测试类时，把它归入本页的测试文件覆盖表。
-- 不要把 `Test/**/bin`、`Test/**/obj` 当成源码证据。
+- 新增测试项目或关键测试类时，同步本页、[项目结构总览](../05-resources/project-structure/README.md) 和侧边栏导航；不要把 `Test/**/bin`、`Test/**/obj` 当成源码证据。
 - 修改 UI、Engine、插件或项目文档后，仍需运行 `npm run docs:build` 验证文档站。

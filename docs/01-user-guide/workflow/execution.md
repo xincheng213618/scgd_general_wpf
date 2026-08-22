@@ -30,6 +30,8 @@
 | 结果和状态 | 完成后记录批次状态、耗时和摘要；停止会记为取消 |
 | 日志区 | 优先看最后一个节点、预处理失败、取消执行或状态消息 |
 
+流程图到达结束节点只代表引擎阶段完成。`ViewFlow`、`FlowJob` 和共享自动化链需要等待 `RunFinalized`，不能只把 `EngineExecutionCompleted` 当作整轮完成；部分现有 `Projects/*` 窗口仍直接监听 `FlowControl.FlowCompleted`，再调用项目自己的最终化或 `Processing`，排查时不要把两条链混在一起。
+
 ## 流程运行要记录什么
 
 流程运行记录不能只保存一份流程文件。维护人员需要知道它依赖哪些设备、模板、输入、结果和外部系统。
@@ -77,4 +79,4 @@
 ## 说明
 
 - 本页只保留当前可证实的执行与排查入口，不再继续维护没有实现依据的单步、断点等描述。
-- 相关实现主要位于 `Engine/ColorVision.Engine/Templates/Flow/DisplayFlow.xaml.cs`、`ViewFlow.xaml.cs` 和 `FlowControl.cs`。
+- 主程序入口位于 `Engine/ColorVision.Engine/FlowProcessing/Runtime/DisplayFlow.xaml.cs`；交互式执行、停止和最终化主要由同目录的 `ViewFlow.xaml.cs`、`FlowExecutionSession.cs`、`FlowRunExecutor.cs` 与 `FlowRunFinalizer.cs` 协作，无界面执行入口是 `FlowExecutionCoordinator.cs` 和 `FlowHeadlessExecutionService.cs`。

@@ -60,10 +60,11 @@
 当用户进入流程窗口后，运行时主链延伸为：
 
 ```text
-DisplayFlow -> FlowControl -> FlowEngineLib -> MQTTRCService -> 设备/算法服务
+DisplayFlow/ViewFlow -> FlowExecutionSession -> FlowControl -> FlowEngineLib
+    -> EngineExecutionCompleted -> FlowRunFinalizer -> RunFinalized
 ```
 
-执行过程中持续更新当前运行节点、执行日志、批次进度、节点记录和消息记录。
+`MQTTRCService` 为节点图提供设备/算法 service token。执行过程中持续更新当前节点、日志、批次和消息；图引擎完成后仍要等待后处理最终化。
 
 ## 常见失败点
 

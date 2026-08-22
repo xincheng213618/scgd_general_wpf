@@ -1,6 +1,6 @@
 # ColorVision.Scheduler
 
-> 版本: 1.5.6.1 | 目标框架: .NET 8.0 / .NET 10.0 Windows
+> 目标框架：.NET 8 / .NET 10 Windows（以 `ColorVision.Scheduler.csproj` 为准）
 
 ## 功能定位
 

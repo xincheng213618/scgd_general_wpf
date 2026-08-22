@@ -47,41 +47,8 @@ namespace Spectrum.Configs
 
         public ShutterConfig ShutterConfig { get => _ShutterConfig; set { _ShutterConfig = value; OnPropertyChanged(); } }
         private ShutterConfig _ShutterConfig = new ShutterConfig();
-        public NDConfig NDConfig { get => _NDConfig; set { _NDConfig = value; OnPropertyChanged(); } }
-        private NDConfig _NDConfig = new NDConfig();
 
         public FilterWheelConfig FilterWheelConfig { get => _FilterWheelConfig; set { _FilterWheelConfig = value; OnPropertyChanged(); } }
         private FilterWheelConfig _FilterWheelConfig = new FilterWheelConfig();
-    }
-
-    public class NDConfig : ViewModelBase, IConfig
-    {
-        public bool IsNDPort { get => _IsNDPort; set { _IsNDPort = value; OnPropertyChanged(); } }
-        private bool _IsNDPort;
-
-        [PropertyEditorType(typeof(TextSerialPortPropertiesEditor))]
-        public string SzComName { get => _szComName; set { _szComName = value; OnPropertyChanged(); } }
-        private string _szComName = "COM1";
-
-        [PropertyEditorType(typeof(TextBaudRatePropertiesEditor))]
-        public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
-        private int _BaudRate = 9600;
-
-        public bool EnableResetND { get => _EnableResetND; set { _EnableResetND = value; OnPropertyChanged(); } }
-        private bool _EnableResetND;
-
-        public double NDMaxExpTime { get => _NDMaxExpTime; set { _NDMaxExpTime = value; OnPropertyChanged(); } }
-        private double _NDMaxExpTime;
-
-        public double NDMinExpTime { get => _NDMinExpTime; set { _NDMinExpTime = value; OnPropertyChanged(); } }
-        private double _NDMinExpTime;
-
-        public List<int> NDRate { get; set; } = new List<int>();
-
-        public List<string> NDCaliNameGroups { get; set; } = new List<string>();
-
-        [DisplayName("DarkNDPort")]
-        public int DarkNDPort { get => _DarkNDPort; set { _DarkNDPort = value; OnPropertyChanged(); } }
-        private int _DarkNDPort = -1;
     }
 }

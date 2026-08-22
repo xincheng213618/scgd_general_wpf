@@ -1,82 +1,82 @@
-# FlowEngineLib 架构
+# Flow 架构
 
-Flow 能力跨两层：`Engine/FlowEngineLib/` 提供节点执行控制和基础节点，`Engine/ColorVision.Engine/Templates/Flow/` 把流程模板、编辑窗口、运行窗口和批次处理接入主程序。
+当前 Flow 已从旧的模板目录内 UI 链拆成执行内核、持久模板、编辑器、运行编排和阶段扩展五个真实边界。
+
+## 目录边界
+
+- `Engine/FlowEngineLib/`：节点图、开始/结束节点、服务节点、隔离 RuntimeHost 和无 UI 运行器。
+- `Engine/ColorVision.Engine/Templates/Flow/`：流程模板、STN 画布数据、`.cvflow` 包、版本和搜索侧车。
+- `Engine/ColorVision.Engine/FlowProcessing/Editor/`：画布、属性面板、节点菜单、布局、校验和独立编辑窗口。
+- `Engine/ColorVision.Engine/FlowProcessing/Runtime/`：工作区、交互式会话、执行/最终化与无界面协调。
+- `FlowProcessing/{PreProcess,PostProcess,Diagnostics,Scheduling,Compilation}/`：阶段扩展、诊断恢复、Quartz 和 STND v1 投影。
 
 ## 先查什么
 
 | 现象 | 第一检查点 |
 | --- | --- |
-| 流程无法启动 | 是否存在 `BaseStartNode` / `MQTTStartNode`，`FlowEngineControl.GetStartNodeName()` |
-| 节点执行完但流程没结束 | `nodeEndEvent` 只是节点级事件，真正完成要看 `CVEndNode` -> `FireFinished()` |
-| Flow 打开但无节点 | `Load(...)` / `LoadFromBase64(...)` 数据、节点 DLL 是否加载 |
-| 服务节点不可用 | `FlowEngineControl.services`、RC service token、Engine 层节点刷新 |
-| 调度执行卡住 | `FlowEngineManager.RunFlowAsync()`、UI Dispatcher、`FlowCompleted` |
-| 完成后项目没处理 | `FlowControl.FinishedAsync`、`FlowExecutionSession.FlowControl_FlowCompleted`、项目包 `Processing` |
+| 流程无法启动 | `FlowValidator`、开始节点、service snapshot、`FlowRunLifecycleGate` |
+| 节点执行完但流程没结束 | `nodeEndEvent` 只是节点事件；整图结束看 `CVEndNode` 和 `FlowCompleted` |
+| 共享 UI/调度链引擎结束但结果未完成 | 后处理仍可运行；等待 `RunFinalized` / `RunFlowAndWaitForFinalizationAsync()` |
+| 快速切模板后画布错乱 | `FlowTemplateWorkspaceController` generation 和 latest-wins 提交 |
+| 节点属性缺设备/模板选择 | `FlowNodePropertyMetadataProvider`、`Editor/NodeConfiguration/` |
+| Quartz 卡住 | 区分 `FlowJob` 与 `HeadlessFlowJob`，检查最终结果等待方式 |
+| 无界面执行触碰编辑器 | 应使用独立 `FlowRuntimeHost` 的 `FlowHeadlessExecutionService` |
+| 失败难追踪 | `FlowExecutionJournalCoordinator`、Run/Event/Attempt 和 Incident |
 
-## 核心对象
+## 主要所有者
 
-| 对象 | 作用 |
+| 对象 | 责任 |
 | --- | --- |
-| `FlowEngineControl` | 绑定 `STNodeEditor`，识别开始节点/服务节点，加载画布，启动/停止流程，转发 `Finished` |
-| `BaseStartNode` | 创建 `CVStartCFC`，向下游派发动作，并在结束时触发 `Finished` |
-| `CVBaseServerNode` | 设备/算法服务节点基类，处理运行、超时、失败、返回数据和下游传递 |
-| `CVEndNode` | 结束节点，调用 `startAction.FireFinished()` 标记整条流程完成 |
-| `TemplateFlow` | 让流程图以模板形式存储、导入、导出和编辑 |
-| `FlowEngineToolWindow` | 独立流程编辑窗口，承载节点画布和编辑命令 |
-| `ViewFlow` / `FlowExecutionSession` | 内置流程选择、加载、运行、批次、日志、完成回调和后处理 |
-| `DisplayFlow` | 主程序宿主壳，负责视图注册、选中状态和服务重启 |
-| `FlowControl` | 承接流程启动、停止和完成事件 |
+| `FlowEngineControl` | 加载图、识别开始/服务节点、启动/停止并发布整图完成 |
+| `IFlowGraphHost` 及两个实现 | 适配可视 `STNodeEditor` 与无界面 `CVNodeContainer`，不拥有选择/缩放/命令 UI |
+| `FlowRuntimeHost` / `FlowEngineRunner` | 隔离一代非可视图及运行生命周期，不访问 WPF Application/Dispatcher/Window |
+| `TemplateFlow` / `FlowPackageHelper` | 数据库模板、STN Base64 和 `.cvflow`；本地 `.stn` 由工作区打开/保存 |
+| `FlowEditorCanvas` | 组合节点画布、属性面板、文档视图、编辑命令和布局 |
+| `FlowTemplateWorkspaceController` | 每个 `ViewFlow` 的模板选择、加载、起点和 refresh generation |
+| `FlowExecutionSession` / `FlowRunExecutor` | 批次、前处理、一次引擎运行、取消/超时和引擎完成事件 |
+| `FlowRunFinalizer` / `FlowRunLifecycleGate` | 后处理、最终 outcome、持久化收尾和单 active run 门禁 |
+| `FlowExecutionCoordinator` / `FlowHeadlessExecutionService` | UI 调度入口和不可变 snapshot 的隔离无界面执行 |
 
-## 执行完成链
+## 两条执行链
 
-1. `FlowEngineControl` 绑定编辑器并收集开始节点、服务节点。
-2. `LoadFromBase64(...)` 或 `Load(...)` 载入流程图。
-3. `StartNode(...)` 选择指定开始节点，或默认取第一个开始节点。
-4. `BaseStartNode` 创建 `CVStartCFC` 并派发到下游。
-5. `CVBaseServerNode` 派生节点处理自己的运行、超时、失败和数据传递。
-6. `CVEndNode` 调用 `startAction.FireFinished()`。
-7. `BaseStartNode.Finished` 被触发。
-8. `FlowEngineControl.Start_Finished(...)` 再抛出 `FlowEngineControl.Finished`。
-9. Engine 层 `FlowControl.FinishedAsync` 转成 `FlowCompleted`。
+```text
+UI: ViewFlow -> FlowExecutionSession -> snapshot/gate/batch/journal/preprocess
+    -> FlowRunExecutor -> FlowControl -> FlowEngineLib -> FlowRunFinalizer -> RunFinalized
+Headless: FlowExecutionCoordinator -> immutable STN/service request
+    -> FlowHeadlessExecutionService -> new FlowRuntimeHost -> FlowEngineRunner -> result
+```
 
-关键点：`nodeEndEvent` 不是流程完成事件，只是节点级反馈。
+事件含义不能混用：`nodeEndEvent` 是单节点结束；`FlowControl.FlowCompleted` / `EngineExecutionCompleted` 是图引擎结束；`RunFinalized` 才表示引擎和全部后处理已收尾。`FlowExecutionCompleted` 只是过时兼容别名，Required 后处理失败会改变最终结果，Warning 失败只记录警告。
 
-## Engine 宿主链
+无界面服务不读当前画布、不复用 `ViewFlow`/`FlowControl`，也不自动创建 UI 批次或执行前后处理。请求创建时复制 STN 和 service token；调用方需要批次或业务阶段时必须显式编排。
 
-| 层 | 当前职责 |
-| --- | --- |
-| `TemplateFlow` | 模板列表、双击打开编辑器、`.stn` / `.cvflow` 导入导出、关联模板处理 |
-| `FlowEngineToolWindow` | 加载 `FlowEngineLib.dll`，提供撤销/重做/复制/粘贴/缩放/自动对齐 |
-| `STNodeEditorHelper` | 连接属性面板、节点树、节点配置器、合法性检查 |
-| `ViewFlow` | 完整流程工作区，组合编辑画布和执行状态 |
-| `FlowExecutionSession` | 刷新流程模板、启动前预处理、运行日志、批次信息、完成后处理 |
-| `DisplayFlow` | 主程序视图注册和服务宿主，不包含流程执行逻辑 |
+## 编辑与扩展
 
-## 扩展落点
+`FlowEngineToolWindow` 只承载 standalone `ViewFlow`，由 `ViewFlow` 组合 `FlowEditorCanvas`。Canvas 持有 `STNodeEditor`；空白右键动态发现节点，布局、导航、校验和文档展示由 Editor 内各自的真实服务负责。
 
-| 要扩展什么 | 通常改哪里 |
-| --- | --- |
-| 新流程节点 | `FlowEngineLib` 节点实现及其开始/结束/服务链行为 |
-| 新模板型流程 | `TemplateFlow` 相邻的模板管理、导入导出和编辑窗口接入 |
-| 节点属性 UI | `STNodeEditorHelper` 或 `NodeConfigurator/` |
-| 运行后项目处理 | `FlowExecutionSession` 完成链和项目包 `Processing` |
+- 普通字段用 `STNodePropertyAttribute`；专用控件用 `FlowNodePropertyEditorAttribute`，经 metadata provider、selector 和 registry 接入统一 PropertyEditor。
+- 多模板族或随算法变化的节点选择面板放进 `Editor/NodeConfiguration/`，复用 `NodeConfiguratorRegistry` 和 `NodePanelBuilder`。
+- 节点执行语义放 `FlowEngineLib`，本地节点放 `FlowProcessing/Nodes/`，不要把运行或属性 UI 塞回 `TemplateFlow`。
 
-## 边界
+## 调度、诊断与边界
 
-- FlowEngineLib 不是独立完成全部 UI 的框架；主程序编辑和运行要经过 Engine 宿主层。
-- 开始节点不是任意节点；没有开始节点时流程不能正常启动。
-- 失败传播要看节点类型，控制器不会统一兜底推断所有失败。
-- MQTT、日志、批次和后处理不是库本身的纯基础设施承诺，而是在 Engine 层组合起来。
+- `FlowJob` 走当前选中 UI 流程和完整批次/前后处理；`HeadlessFlowJob` 走已保存 STN，并防止同一 JobDetail 并发。
+- journal 和 abandoned-run recovery 是 fail-open 辅助诊断，诊断库不可用不能阻止生产流程。
+- `FlowCanvasCatalogBuilder` 从 STND v1 生成版本/搜索投影，不建立 live editor graph、不改源画布；codec 可能短暂实例化节点以发现 option schema。
+- `FlowEngineLib` 不拥有模板数据库、WPF 工作区、批次或项目后处理；UI 会话与 RuntimeHost 不共享可变画布或节点实例。
+- 部分现有 `Projects/*` 窗口仍直接持有 `FlowControl`，在 `FlowCompleted` 后执行项目自己的最终化；它们尚未接入共享 `RunFinalized`，不能按目标架构描述为已经迁移。
+- 没有开始节点、service snapshot 不完整或门禁拒绝时必须明确拒绝启动；`DisplayFlow` 只是宿主壳。
 
 ## 关键文件
 
 | 任务 | 先看 |
 | --- | --- |
-| 执行控制 | `Engine/FlowEngineLib/FlowEngineControl.cs` |
-| 开始/结束 | `Start/BaseStartNode.cs`、`End/CVEndNode.cs` |
-| 服务节点 | `Base/CVBaseServerNode.cs` |
-| 模板宿主 | `Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs` |
-| 编辑窗口 | `FlowEngineToolWindow.xaml.cs`、`STNodeEditorHelper.cs` |
-| 流程工作区 | `ViewFlow.xaml.cs`、`FlowExecutionSession.cs` |
-| 主程序壳 | `DisplayFlow.xaml.cs` |
-| 执行控制 | `FlowControl.cs` |
+| 节点执行 | `Engine/FlowEngineLib/FlowEngineControl.cs`、`Engine/FlowEngineLib/Runtime/{FlowGraphHost,FlowRuntimeHost,FlowEngineRunner}.cs` |
+| 模板与包 | `Engine/ColorVision.Engine/Templates/Flow/{TemplateFlow,FlowPackageHelper}.cs` |
+| 编辑器与属性 | `Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml.cs`、`FlowNodePropertyMetadataProvider.cs`、`NodeConfiguration/` |
+| UI 工作区 | `Engine/ColorVision.Engine/FlowProcessing/Runtime/{ViewFlow.xaml.cs,FlowTemplateWorkspaceController.cs}` |
+| UI 执行 | `Engine/ColorVision.Engine/FlowProcessing/Runtime/{FlowExecutionSession,FlowRunExecutor,FlowRunFinalizer,FlowRunLifecycleGate}.cs` |
+| 无界面执行 | `Engine/ColorVision.Engine/FlowProcessing/Runtime/{FlowExecutionCoordinator,FlowHeadlessExecutionService}.cs` |
+| 调度/投影/诊断 | `Engine/ColorVision.Engine/FlowProcessing/{Scheduling,Compilation,Diagnostics}/` |
+
+存储、`.cvflow`、调度和验收契约见 [流程引擎 API](../../../04-api-reference/algorithms/templates/flow-engine.md)。

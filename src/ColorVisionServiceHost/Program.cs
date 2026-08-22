@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.ServiceProcess;
 
 namespace ColorVisionServiceHost;
@@ -6,6 +7,11 @@ internal static class Program
 {
     private static async Task<int> Main(string[] args)
     {
+        if (args.Length >= 1 && string.Equals(args[0], "--show-startup-integrity-warning", StringComparison.OrdinalIgnoreCase))
+        {
+            return ShowStartupIntegrityWarning(args.Skip(1).FirstOrDefault());
+        }
+
         if (args.Any(arg => string.Equals(arg, "--run", StringComparison.OrdinalIgnoreCase)))
         {
             return await RunConsoleAsync().ConfigureAwait(false);
@@ -25,9 +31,44 @@ internal static class Program
         Console.WriteLine("ColorVisionServiceHost demo");
         Console.WriteLine("  --run                 Run in console mode");
         Console.WriteLine("  --send ping           Send a demo command to the running service");
+        Console.WriteLine("  --show-startup-integrity-warning [application-directory]");
         Console.WriteLine();
         Console.WriteLine("Install/start/stop/uninstall is intentionally handled by ColorVision.");
         return 0;
+    }
+
+    private static int ShowStartupIntegrityWarning(string? applicationDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(applicationDirectory))
+        {
+            IReadOnlyList<string> executablePaths = InstalledColorVisionLocator.FindExecutablePaths();
+            string? executablePath = executablePaths.Count > 0 ? executablePaths[0] : null;
+            applicationDirectory = string.IsNullOrWhiteSpace(executablePath)
+                ? null
+                : Path.GetDirectoryName(executablePath);
+        }
+
+        if (string.IsNullOrWhiteSpace(applicationDirectory) || !Directory.Exists(applicationDirectory))
+        {
+            Console.Error.WriteLine("Unable to locate a registered ColorVision installation.");
+            return 2;
+        }
+
+        IReadOnlyList<string> missingFiles =
+            ApplicationRuntimeDependencyInspector.FindMissingDependencies(applicationDirectory);
+        if (missingFiles.Count == 0)
+        {
+            Console.Error.WriteLine($"No missing ColorVision runtime files were found in {applicationDirectory}.");
+            return 1;
+        }
+
+        int sessionId = Process.GetCurrentProcess().SessionId;
+        bool sent = InteractiveSessionMessageService.TryShowMissingDependencyMessage(sessionId, missingFiles);
+        Console.WriteLine(
+            sent
+                ? $"Startup-integrity warning sent to session {sessionId}."
+                : $"Unable to send startup-integrity warning to session {sessionId}.");
+        return sent ? 0 : 1;
     }
 
     private static async Task<int> RunConsoleAsync()

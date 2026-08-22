@@ -27,7 +27,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
         public DrawingVisualScaleHost()
         {
             visual = new DrawingVisual();
-            DefalutTextAttribute.Defalut.PropertyChanged += Defalut_PropertyChanged;
+            PropertyChangedEventManager.AddHandler(DefalutTextAttribute.Defalut, Defalut_PropertyChanged, string.Empty);
         }
 
         public DrawingVisualScaleHost(ImageViewConfig config) : this()

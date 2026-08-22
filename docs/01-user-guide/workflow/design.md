@@ -46,9 +46,9 @@
 
 ## 设计时要特别注意什么
 
-### 画布上的内容不等于已经保存
+### 交互运行和已保存版本要分清
 
-你在设计器里看见的内容，如果还没保存，就不一定是后续执行真正会跑到的版本。执行前一定先保存。
+UI 手动运行会取得当前画布快照，可以验证尚未保存的修改；关闭重开、Quartz 和无界面运行只使用最后保存的版本。发布或启用调度前必须保存，并确认 FlowKey 对应正确模板。
 
 ### 选中的流程模板要和编辑目标一致
 
@@ -68,7 +68,7 @@
 
 ### 改了流程，但执行结果像没变
 
-- 先确认是否已经保存
+- 先确认入口：UI 手动运行读取当前画布，调度/无界面运行读取已保存版本
 - 再确认执行页选中的是不是同一条流程模板
 - 如果导入过模块或流程，检查是不是改错了对象
 
@@ -86,4 +86,4 @@
 ## 说明
 
 - 本页只保留流程设计的使用入口，不再继续维护泛化的流程编辑器介绍。
-- 相关实现主要位于 `Engine/ColorVision.Engine/Templates/Flow/ViewFlow.xaml.cs`。
+- 模板创建、导入、导出和持久化仍位于 `Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs`；设计工作区由 `Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs` 编排，画布、属性面板和自动布局位于 `Engine/ColorVision.Engine/FlowProcessing/Editor/`。

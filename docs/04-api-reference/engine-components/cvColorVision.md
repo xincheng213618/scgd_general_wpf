@@ -17,7 +17,7 @@
 
 | 能力 | 当前入口 | 说明 |
 | --- | --- | --- |
-| 相机/通用视觉 | `cvCameraCSLib.cs` | 相机打开关闭、预览、取帧、配置 JSON、自动曝光、ROI、采样、TIFF、对焦和多类检测函数 |
+| 相机/通用视觉 | `Camera/cvCameraCSLib.*.cs` | 相机打开关闭、预览、取帧、配置 JSON、自动曝光、ROI、采样、TIFF、对焦和多类检测函数 |
 | 色彩采样 | `ConvertXYZ.cs` | XYZ 缓冲初始化/释放，Circle/Rect/批量点位采样，xyz/uv/CCT/主波长导出 |
 | OLED 算法 | `CvOledDLL.cs` | `cvOled.dll` 参数加载、图片读入、像素查找、像素重建、摩尔纹滤波 |
 | 图卡 | `PG.cs` | PG 初始化、TCP/串口连接、Start/Stop/Reset、帧切换 |
@@ -67,7 +67,7 @@
 ## 边界
 
 - 关键能力主要来自 native DLL，C# 负责声明、薄包装和数据类型桥接。
-- `cvCameraCSLib.cs` 名字像相机库，但实际还暴露色彩采样、图像处理、自动对焦和检测函数。
+- `cvCameraCSLib` 由 `Camera/cvCameraCSLib.*.cs` 多个 partial 文件组成，除相机控制外还暴露图像处理、自动对焦和检测函数。
 - 接口粒度不统一，不能硬写成整齐分层 API。
 - 上层 Engine、设备服务和插件调用这里；这里不编排宿主窗口或业务流程。
 
@@ -75,7 +75,7 @@
 
 | 任务 | 先看 |
 | --- | --- |
-| 总绑定面 | `cvCameraCSLib.cs` |
+| 相机绑定面 | `Camera/cvCameraCSLib.Core.cs`、`Capture.cs`、`Configuration.cs`、`Discovery.cs`、`Calibration.cs`、`ImageProcessing.cs` |
 | XYZ 采样 | `ConvertXYZ.cs` |
 | OLED | `CvOledDLL.cs` |
 | 图卡 | `PG.cs` |

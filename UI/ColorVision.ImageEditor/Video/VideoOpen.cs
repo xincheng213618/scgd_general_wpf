@@ -1,4 +1,4 @@
-#pragma warning disable CA1806,CS0414
+#pragma warning disable CA1806
 using ColorVision.Core;
 using ColorVision.ImageEditor.Abstractions;
 using log4net;
@@ -6,7 +6,6 @@ using System;
 using System.ComponentModel;
 using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -62,7 +61,6 @@ namespace ColorVision.ImageEditor.Video
 
         // Audio sync drift correction
         private int _droppedFrameCount;
-        private int _lastSyncFrame;
 
         // Current resize scale
         private double _currentResizeScale = 1.0;
@@ -264,8 +262,8 @@ namespace ColorVision.ImageEditor.Video
                 SetupAutoHideTimer(imageView);
             });
 
-            // Subscribe to clear event to cleanup
-            imageView.ClearImageEventHandler += OnImageCleared;
+            // Closing through the config event also covers opening another file.
+            context.Config.Cleared += OnConfigCleared;
         }
 
         private void SetupAutoHideTimer(ImageView imageView)
@@ -344,7 +342,7 @@ namespace ColorVision.ImageEditor.Video
             }
         }
 
-        private void OnImageCleared(object? sender, EventArgs e)
+        private void OnConfigCleared(object? sender, EventArgs e)
         {
             CloseVideo();
         }
@@ -380,7 +378,6 @@ namespace ColorVision.ImageEditor.Video
             if (_videoHandle <= 0 || _isPlaying) return;
 
             _droppedFrameCount = 0;
-            _lastSyncFrame = 0;
 
             _frameCallbackDelegate = OnFrameReceived;
             _statusCallbackDelegate = OnStatusChanged;
@@ -421,6 +418,12 @@ namespace ColorVision.ImageEditor.Video
 
         private void OnFrameReceived(int handle, ref HImage frame, int currentFrame, int totalFrames, IntPtr userData)
         {
+            if (handle <= 0 || handle != _videoHandle)
+            {
+                frame.Dispose();
+                return;
+            }
+
             // Frame dropping: if previous frame is still being processed by UI, skip this frame
             if (Interlocked.CompareExchange(ref _isProcessingFrame, 1, 0) != 0)
             {
@@ -448,7 +451,7 @@ namespace ColorVision.ImageEditor.Video
                 {
                     try
                     {
-                        if (_videoHandle > 0)
+                        if (handle == _videoHandle)
                         {
                             UpdateFrameDisplay(localFrame);
 
@@ -519,7 +522,7 @@ namespace ColorVision.ImageEditor.Video
                 _writeableBitmap.PixelWidth == frame.cols &&
                 _writeableBitmap.PixelHeight == frame.rows)
             {
-                // Fast path: reuse existing WriteableBitmap with parallel copy for large frames
+                // Fast path: reuse the existing WriteableBitmap.
                 UpdateWriteableBitmapFast(_writeableBitmap, frame);
                 _imageView?.NotifySourcePixelsChanged();
             }
@@ -530,10 +533,6 @@ namespace ColorVision.ImageEditor.Video
             }
         }
 
-        /// <summary>
-        /// High-performance WriteableBitmap update using parallel memory copy for large frames.
-        /// For 8K (7680×4320×3ch) frames, parallel copy reduces time from ~25ms to ~5ms.
-        /// </summary>
         private static void UpdateWriteableBitmapFast(WriteableBitmap writeableBitmap, HImage hImage)
         {
             writeableBitmap.Lock();
@@ -568,17 +567,9 @@ namespace ColorVision.ImageEditor.Video
                     byte* pSrc = (byte*)hImage.pData;
                     byte* pDst = (byte*)writeableBitmap.BackBuffer;
 
-                    if (totalBytes > 1024 * 1024) // > 1MB: use parallel copy
+                    if (srcStride == bytesPerRow && dstStride == bytesPerRow)
                     {
-                        Parallel.For(0, rows, new ParallelOptions
-                        {
-                            MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1)
-                        }, y =>
-                        {
-                            byte* src = pSrc + ((long)y * srcStride);
-                            byte* dst = pDst + ((long)y * dstStride);
-                            Buffer.MemoryCopy(src, dst, bytesPerRow, bytesPerRow);
-                        });
+                        Buffer.MemoryCopy(pSrc, pDst, totalBytes, totalBytes);
                     }
                     else
                     {
@@ -601,12 +592,16 @@ namespace ColorVision.ImageEditor.Video
 
         private void OnStatusChanged(int handle, int status, IntPtr userData)
         {
+            if (handle <= 0 || handle != _videoHandle) return;
+
             try
             {
                 Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
                 {
                     try
                     {
+                        if (handle != _videoHandle) return;
+
                         switch (status)
                         {
                             case 0: // Paused
@@ -844,21 +839,23 @@ namespace ColorVision.ImageEditor.Video
             // Remove mouse event handlers
             if (_imageView != null)
             {
+                _imageView.Config.Cleared -= OnConfigCleared;
                 _imageView.MouseMove -= OnImageViewMouseMove;
                 _imageView.MouseEnter -= OnImageViewMouseMove;
             }
 
-            if (_videoHandle > 0)
+            int videoHandle = _videoHandle;
+            _videoHandle = -1;
+            if (videoHandle > 0)
             {
                 if (_isPlaying)
                 {
-                    OpenCVMediaHelper.M_VideoPause(_videoHandle);
-                    _isPlaying = false;
+                    OpenCVMediaHelper.M_VideoPause(videoHandle);
                 }
 
-                OpenCVMediaHelper.M_VideoClose(_videoHandle);
-                _videoHandle = -1;
+                OpenCVMediaHelper.M_VideoClose(videoHandle);
             }
+            _isPlaying = false;
 
             // Close audio player
             Application.Current?.Dispatcher.Invoke(() =>
@@ -877,40 +874,38 @@ namespace ColorVision.ImageEditor.Video
                 if (_videoToolBar != null)
                 {
                     // Remove only video-specific controls; other workflow components may share this toolbar.
-                    if (_playPauseButton != null && _videoToolBar.Items.Contains(_playPauseButton))
-                        _videoToolBar.Items.Remove(_playPauseButton);
-                    if (_stopButton != null && _videoToolBar.Items.Contains(_stopButton))
-                        _videoToolBar.Items.Remove(_stopButton);
-                    if (_muteButton != null && _videoToolBar.Items.Contains(_muteButton))
-                        _videoToolBar.Items.Remove(_muteButton);
-                    if (_progressSlider != null && _videoToolBar.Items.Contains(_progressSlider))
-                        _videoToolBar.Items.Remove(_progressSlider);
-                    if (_timeTextBlock != null && _videoToolBar.Items.Contains(_timeTextBlock))
-                        _videoToolBar.Items.Remove(_timeTextBlock);
-                    if (_frameInfoTextBlock != null && _videoToolBar.Items.Contains(_frameInfoTextBlock))
-                        _videoToolBar.Items.Remove(_frameInfoTextBlock);
-                    if (_speedComboBox != null && _videoToolBar.Items.Contains(_speedComboBox))
-                        _videoToolBar.Items.Remove(_speedComboBox);
-                    if (_resizeComboBox != null && _videoToolBar.Items.Contains(_resizeComboBox))
-                        _videoToolBar.Items.Remove(_resizeComboBox);
-                    if (_autoHideCheckBox != null && _videoToolBar.Items.Contains(_autoHideCheckBox))
-                        _videoToolBar.Items.Remove(_autoHideCheckBox);
+                    if (_playPauseButton != null) _videoToolBar.Items.Remove(_playPauseButton);
+                    if (_stopButton != null) _videoToolBar.Items.Remove(_stopButton);
+                    if (_muteButton != null) _videoToolBar.Items.Remove(_muteButton);
+                    if (_progressSlider != null) _videoToolBar.Items.Remove(_progressSlider);
+                    if (_timeTextBlock != null) _videoToolBar.Items.Remove(_timeTextBlock);
+                    if (_frameInfoTextBlock != null) _videoToolBar.Items.Remove(_frameInfoTextBlock);
+                    if (_speedComboBox != null) _videoToolBar.Items.Remove(_speedComboBox);
+                    if (_resizeComboBox != null) _videoToolBar.Items.Remove(_resizeComboBox);
+                    if (_autoHideCheckBox != null) _videoToolBar.Items.Remove(_autoHideCheckBox);
 
                     // Restore toolbar opacity
                     _videoToolBar.Opacity = 0.8;
                 }
             });
 
-            if (_imageView != null)
-            {
-                _imageView.ClearImageEventHandler -= OnImageCleared;
-            }
-
             _frameCallbackDelegate = null;
             _statusCallbackDelegate = null;
             _writeableBitmap = null;
+            _progressSlider = null;
+            _playPauseButton = null;
+            _stopButton = null;
+            _muteButton = null;
+            _speedComboBox = null;
+            _resizeComboBox = null;
+            _timeTextBlock = null;
+            _frameInfoTextBlock = null;
+            _videoToolBar = null;
+            _autoHideCheckBox = null;
+            _mediaPlayer = null;
             _imageView = null;
             _currentFilePath = null;
+            _isDragging = false;
         }
     }
 }

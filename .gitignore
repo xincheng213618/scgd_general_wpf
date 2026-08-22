@@ -36,6 +36,9 @@ bld/
 # Local Copilot temporary profile injection
 ColorVision/Copilot/Config/CopilotTemporaryProfileSource.Local.cs
 
+# Codex remote attachment cache
+.codex-remote-attachments/
+
 # Visual Studio 2015/2017 cache/options directory
 .vs/
 .idea/
@@ -415,4 +418,11 @@ build/
 /_codeql_detected_source_root
 /.claude/settings.local.json
 /Test/opencv_helper_test/out.png
+
+# The OpenCV SDK is vendored and must remain visible when versioned binaries are replaced.
+!packages/opencv/
+!packages/opencv/include/
+!packages/opencv/include/**
+!packages/opencv/x64/
+!packages/opencv/x64/**
 

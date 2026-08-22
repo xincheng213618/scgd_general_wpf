@@ -80,24 +80,17 @@ namespace ColorVision.ImageEditor.Draw
             {
                 FormattedText formattedText = CreateFormattedText(TextAttribute.Text, TextAttribute.Brush);
                 size = formattedText.Width / 2;
-                DrawText(dc, TextAttribute.Text, new Point(Attribute.Center.X - size, Attribute.Center.Y - formattedText.Height / 2), TextAttribute.Brush);
+                if (!string.IsNullOrWhiteSpace(TextAttribute.Text))
+                {
+                    dc.DrawText(formattedText, new Point(Attribute.Center.X - size, Attribute.Center.Y - formattedText.Height / 2));
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(Attribute.Msg))
             {
                 FormattedText formattedText = CreateFormattedText(Attribute.Msg, TextAttribute.Brush);
-                DrawText(dc, Attribute.Msg, new Point(Attribute.Center.X + size + Radius / 2, Attribute.Center.Y - formattedText.Height / 2), TextAttribute.Brush);
+                dc.DrawText(formattedText, new Point(Attribute.Center.X + size + Radius / 2, Attribute.Center.Y - formattedText.Height / 2));
             }
-        }
-
-        private void DrawText(DrawingContext dc, string text, Point origin, Brush foreground)
-        {
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return;
-            }
-
-            dc.DrawText(CreateFormattedText(text, foreground), origin);
         }
 
         private FormattedText CreateFormattedText(string text, Brush brush)

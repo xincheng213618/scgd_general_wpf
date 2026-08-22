@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -88,54 +87,6 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
         }
 
         public HImage Image => _image;
-
-        public static P2ImageSnapshot Copy(HImage source)
-        {
-            if (source.pData == IntPtr.Zero || source.rows <= 0 || source.cols <= 0 || source.channels <= 0 ||
-                source.depth <= 0 || source.depth % 8 != 0)
-            {
-                throw new InvalidOperationException("当前图像缓存无效。");
-            }
-
-            int rowBytes = checked(source.cols * source.channels * (source.depth / 8));
-            int sourceStride = source.stride > 0 ? source.stride : rowBytes;
-            if (sourceStride < rowBytes)
-            {
-                throw new InvalidOperationException("当前图像缓存步长无效。");
-            }
-
-            int totalBytes = checked(rowBytes * source.rows);
-            IntPtr buffer = Marshal.AllocCoTaskMem(totalBytes);
-            try
-            {
-                byte[] row = new byte[rowBytes];
-                for (int y = 0; y < source.rows; ++y)
-                {
-                    Marshal.Copy(IntPtr.Add(source.pData, checked(y * sourceStride)), row, 0, rowBytes);
-                    Marshal.Copy(row, 0, IntPtr.Add(buffer, checked(y * rowBytes)), rowBytes);
-                }
-
-                HImage copy = new()
-                {
-                    rows = source.rows,
-                    cols = source.cols,
-                    channels = source.channels,
-                    depth = source.depth,
-                    stride = rowBytes,
-                    isDispose = false,
-                    pData = buffer
-                };
-                buffer = IntPtr.Zero;
-                return new P2ImageSnapshot(copy);
-            }
-            finally
-            {
-                if (buffer != IntPtr.Zero)
-                {
-                    Marshal.FreeCoTaskMem(buffer);
-                }
-            }
-        }
 
         public static P2ImageSnapshot FromBitmap(BitmapSource source)
         {

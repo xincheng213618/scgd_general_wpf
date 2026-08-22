@@ -47,6 +47,24 @@ class InstallerRuntimeValidationTests(unittest.TestCase):
 
         self.assertFalse(validate_installer_runtime_dlls(self.runtime_directory, aip_path, report=lambda _: None))
 
+    def test_rejects_native_runtime_dll_missing_from_installer_mapping(self) -> None:
+        native_relative_path = "runtimes/win-x64/native/opencv_core4140.dll"
+        native_path = self.runtime_directory / native_relative_path
+        native_path.parent.mkdir(parents=True)
+        native_path.write_bytes(b"opencv")
+        aip_path = self._write_aip(REQUIRED_SERVICE_HOST_RUNTIME_PATHS)
+
+        self.assertFalse(validate_installer_runtime_dlls(self.runtime_directory, aip_path, report=lambda _: None))
+
+    def test_accepts_native_runtime_dll_in_installer_mapping(self) -> None:
+        native_relative_path = "runtimes/win-x64/native/opencv_core4140.dll"
+        native_path = self.runtime_directory / native_relative_path
+        native_path.parent.mkdir(parents=True)
+        native_path.write_bytes(b"opencv")
+        aip_path = self._write_aip(REQUIRED_SERVICE_HOST_RUNTIME_PATHS, (native_relative_path,))
+
+        self.assertTrue(validate_installer_runtime_dlls(self.runtime_directory, aip_path, report=lambda _: None))
+
     def test_shared_files_release_gate_accepts_matching_set(self) -> None:
         manifest_path = self.root / "shared_files.json"
         shared_files = sorted(
@@ -136,8 +154,12 @@ class InstallerRuntimeValidationTests(unittest.TestCase):
         ))
         self.assertEqual(runtime_output.read_bytes(), project_output.read_bytes())
 
-    def _write_aip(self, service_host_paths: tuple[str, ...]) -> Path:
-        source_paths = ["C:\\build\\ColorVision.UI.dll", *[f"C:\\build\\{path}" for path in service_host_paths]]
+    def _write_aip(self, service_host_paths: tuple[str, ...], additional_paths: tuple[str, ...] = ()) -> Path:
+        source_paths = [
+            "C:\\build\\ColorVision.UI.dll",
+            *[f"C:\\build\\{path}" for path in service_host_paths],
+            *[f"C:\\build\\{path}" for path in additional_paths],
+        ]
         rows = "".join(f'<ROW SourcePath="{path}" />' for path in source_paths)
         aip_path = self.root / "ColorVision.aip"
         aip_path.write_text(f"<DOCUMENT>{rows}</DOCUMENT>", encoding="utf-8")

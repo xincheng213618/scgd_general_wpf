@@ -45,7 +45,7 @@
 ## 验证建议
 
 ```powershell
-dotnet build UI/ColorVision.Solution/ColorVision.Solution.csproj -p:Platform=x64 -v:minimal
+dotnet build .\UI\ColorVision.Rbac\ColorVision.Rbac.csproj -p:Platform=x64 -v:minimal
 ```
 
 建议在 UI 中补充手工验证：

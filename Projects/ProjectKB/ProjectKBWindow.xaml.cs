@@ -1656,7 +1656,6 @@ namespace ProjectKB
             if (sender is not ListView listView) return;
 
             int requestId = Interlocked.Increment(ref _resultImageRequestId);
-            ClearKeyOverlayState();
             if (listView.SelectedItem is not KBItemMaster kBItem)
             {
                 ClearResultImageSurface();
@@ -1685,7 +1684,7 @@ namespace ProjectKB
                 return;
             }
 
-            ClearResultImageSurface();
+            // Keep the current presentation visible while the next image is decoded to avoid a blank frame.
             (WriteableBitmap? Bitmap, int Width, int Height) presentation;
             try
             {
@@ -1693,6 +1692,8 @@ namespace ProjectKB
             }
             catch (Exception ex)
             {
+                if (!_isDisposed && requestId == _resultImageRequestId)
+                    ClearResultImageSurface();
                 log.Error($"准备 KB 历史结果图像失败，Id={kBItem.Id}", ex);
                 return;
             }
@@ -1729,24 +1730,69 @@ namespace ProjectKB
             listView.CommandBindings.Clear();
         }
 
-        private static WriteableBitmap? TryLoadResultBitmap(string filePath)
+        internal static WriteableBitmap? TryLoadResultBitmap(string filePath)
         {
-            try
-            {
-                using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                BitmapDecoder decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
-                if (decoder.Frames.Count == 0) return null;
+            const int maxAttempts = 51;
+            const int retryDelayMilliseconds = 100;
 
-                WriteableBitmap bitmap = new(decoder.Frames[0]);
-                bitmap.Freeze();
-                return bitmap;
-            }
-            catch (Exception ex)
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
-                log.Warn($"结果图像加载失败: {filePath}", ex);
-                return null;
+                try
+                {
+                    // Allow other readers, but deny writers so a partially written PNG is never decoded.
+                    using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
+                    if (Path.GetExtension(filePath).Equals(".png", StringComparison.OrdinalIgnoreCase)
+                        && !HasCompletePngTrailer(stream))
+                    {
+                        stream.Dispose();
+                        if (attempt < maxAttempts)
+                        {
+                            Thread.Sleep(retryDelayMilliseconds);
+                            continue;
+                        }
+
+                        log.Warn($"结果 PNG 尚未写入完整: {filePath}");
+                        return null;
+                    }
+
+                    BitmapDecoder decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+                    if (decoder.Frames.Count == 0) return null;
+
+                    WriteableBitmap bitmap = new(decoder.Frames[0]);
+                    bitmap.Freeze();
+                    return bitmap;
+                }
+                catch (IOException ex) when (IsFileSharingViolation(ex) && attempt < maxAttempts)
+                {
+                    Thread.Sleep(retryDelayMilliseconds);
+                }
+                catch (FileFormatException) when (attempt < maxAttempts)
+                {
+                    Thread.Sleep(retryDelayMilliseconds);
+                }
+                catch (Exception ex)
+                {
+                    log.Warn($"结果图像加载失败: {filePath}", ex);
+                    return null;
+                }
             }
+
+            return null;
         }
+
+        private static bool HasCompletePngTrailer(FileStream stream)
+        {
+            ReadOnlySpan<byte> pngEndMarker = [0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82];
+            if (stream.Length < pngEndMarker.Length) return false;
+
+            Span<byte> trailer = stackalloc byte[pngEndMarker.Length];
+            stream.Position = stream.Length - trailer.Length;
+            stream.ReadExactly(trailer);
+            stream.Position = 0;
+            return trailer.SequenceEqual(pngEndMarker);
+        }
+
+        private static bool IsFileSharingViolation(IOException exception) => (exception.HResult & 0xFFFF) is 32 or 33;
 
         private static (WriteableBitmap? Bitmap, int Width, int Height) LoadResultImagePresentation(KBItemMaster result)
         {
@@ -1793,6 +1839,7 @@ namespace ProjectKB
 
         private void ClearResultImageSurface()
         {
+            ClearKeyOverlayState();
             if (ImageView.ImageShow.Source != null
                 || !string.IsNullOrWhiteSpace(ImageView.Config.FilePath))
             {

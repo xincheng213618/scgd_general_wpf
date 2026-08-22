@@ -18,8 +18,8 @@
 
 | 项 | 当前值 |
 | --- | --- |
-| `Id` / `version` / `dllpath` | `ProjectLUX` / `1.0` / `ProjectLUX.dll` |
-| `requires` | `1.3.15.10` |
+| `Id` / `dllpath` | `ProjectLUX` / `ProjectLUX.dll` |
+| 版本与宿主要求 | 读取 `ProjectLUX.csproj` 和 `manifest.json` |
 | 主窗口 | `LUXWindow.xaml.cs` |
 | 流程 | `Process/`、`ProcessGroup`、`ProcessMeta` |
 | 判定和修正 | `Recipe/`、`Fix/` |

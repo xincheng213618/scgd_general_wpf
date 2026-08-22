@@ -79,7 +79,7 @@
 - **Modbus触发** - 根据Modbus信号自动触发测试
 
 ### 默认配置
-- **IP地址**: 192.168.6.1
+- **IP地址**: 127.0.0.1
 - **端口**: 502
 - **寄存器地址**: D0 (0号地址)
 - **自动连接**: UI启动时自动尝试连接
@@ -126,8 +126,8 @@
 
 ## 开发调试
 
-```bash
-dotnet build Projects/ProjectKB/ProjectKB.csproj
+```powershell
+dotnet build .\Projects\ProjectKB\ProjectKB.csproj -p:Platform=x64
 ```
 
 ## 目录说明

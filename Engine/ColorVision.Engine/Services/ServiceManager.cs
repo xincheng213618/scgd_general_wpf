@@ -169,7 +169,12 @@ namespace ColorVision.Engine.Services
             TypeServices.Clear();
             foreach (var sysDictionaryModel in SysDictionaryModels)
             {
-                if(sysDictionaryModel.Value == 6 || sysDictionaryModel.Value == 11 || sysDictionaryModel.Value == 12 || sysDictionaryModel.Value == 13 || sysDictionaryModel.Value == 14 || sysDictionaryModel.Value == 15 || sysDictionaryModel.Value == 16 || sysDictionaryModel.Value == 17)
+                if (sysDictionaryModel.Value == (int)ServiceTypes.FileServer
+                    || sysDictionaryModel.Value == (int)ServiceTypes.FocusRing
+                    || sysDictionaryModel.Value == (int)ServiceTypes.Flow
+                    || sysDictionaryModel.Value == (int)ServiceTypes.ThirdPartyAlgorithms
+                    || sysDictionaryModel.Value == (int)ServiceTypes.ThirdPartyAlgorithms32
+                    || sysDictionaryModel.Value == (int)ServiceTypes.PowerControl)
                 {
                     continue;
                 }

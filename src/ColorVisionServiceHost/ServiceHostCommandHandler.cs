@@ -81,6 +81,7 @@ internal sealed class ServiceHostCommandHandler
                     time = DateTimeOffset.Now,
                 }),
                 "status" => ServiceHostResponse.FromObject(request.RequestId, true, "running", BuildStatus(_startedAt)),
+                "application-startup-status" => HandleApplicationStartupStatus(request, context),
                 "write-demo-marker" => WriteDemoMarker(request.RequestId),
                 "self-update" => SelfUpdate(request),
                 "prepare-application-update" => PrepareApplicationUpdateAccess(request, context),
@@ -138,6 +139,37 @@ internal sealed class ServiceHostCommandHandler
             baseDirectory = AppContext.BaseDirectory,
             logFile = ServiceHostLog.LogFilePath,
         };
+    }
+
+    private static ServiceHostResponse HandleApplicationStartupStatus(
+        ServiceHostRequest request,
+        ServiceHostRequestContext context)
+    {
+        if (!string.Equals(Path.GetFileName(context.ProcessPath), "ColorVision.exe", StringComparison.OrdinalIgnoreCase))
+            return ServiceHostResponse.FromObject(request.RequestId, false, "startup_status_caller_not_allowed");
+
+        string state = GetRequiredDataValue(request, "state").Trim().ToLowerInvariant();
+        if (!ApplicationStartupStatusHub.IsKnownState(state))
+            return ServiceHostResponse.FromObject(request.RequestId, false, "startup_status_state_not_supported");
+
+        string stage = Truncate(GetOptionalDataValue(request, "stage", string.Empty).Trim(), 160);
+        string component = Truncate(GetOptionalDataValue(request, "component", string.Empty).Trim(), 320);
+        string exceptionType = Truncate(GetOptionalNestedDataValue(request, "details", "exceptionType"), 320);
+        string detail = Truncate(GetOptionalNestedDataValue(request, "details", "detail"), 1000);
+        bool promptShown = GetOptionalNestedDataBool(request, "details", "promptShown");
+        ApplicationStartupStatusReport report = new(
+            context.ProcessId,
+            state,
+            stage,
+            component,
+            exceptionType,
+            detail,
+            promptShown);
+        bool accepted = ApplicationStartupStatusHub.Default.Report(report);
+        return ServiceHostResponse.FromObject(
+            request.RequestId,
+            accepted,
+            accepted ? "startup_status_accepted" : "startup_status_already_completed");
     }
 
     private static ServiceHostResponse WriteDemoMarker(string requestId)
@@ -1164,6 +1196,23 @@ internal sealed class ServiceHostCommandHandler
         return string.IsNullOrWhiteSpace(value) ? defaultValue : value;
     }
 
+    private static string GetOptionalNestedDataValue(ServiceHostRequest request, string parentName, string name)
+    {
+        string? value = request.Data?[parentName]?[name]?.ToString();
+        return value?.Trim() ?? string.Empty;
+    }
+
+    private static bool GetOptionalNestedDataBool(ServiceHostRequest request, string parentName, string name)
+    {
+        string? value = request.Data?[parentName]?[name]?.ToString();
+        return bool.TryParse(value, out bool result) && result;
+    }
+
+    private static string Truncate(string value, int maximumLength)
+    {
+        return value.Length <= maximumLength ? value : value[..maximumLength];
+    }
+
     private static int GetOptionalDataInt(ServiceHostRequest request, string name, int defaultValue)
     {
         string? value = request.Data?[name]?.ToString();
@@ -1590,6 +1639,7 @@ internal sealed class ServiceHostCommandHandler
     {
         return !command.Equals("ping", StringComparison.OrdinalIgnoreCase)
             && !command.Equals("status", StringComparison.OrdinalIgnoreCase)
+            && !command.Equals("application-startup-status", StringComparison.OrdinalIgnoreCase)
             && !command.Equals("issue-broker-ticket", StringComparison.OrdinalIgnoreCase)
             && !command.Equals("self-update", StringComparison.OrdinalIgnoreCase)
             && !command.Equals("prepare-application-update", StringComparison.OrdinalIgnoreCase);

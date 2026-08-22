@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace ColorVision.UI.Tests;
 
@@ -246,6 +247,112 @@ public class BatchImageProcessingTests
         }
     }
 
+    [Fact]
+    public void SavingNonContinuousPngPreservesRoiPixelsAndSource()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"colorvision-batch-{Guid.NewGuid():N}");
+        string filePath = Path.Combine(directory, "roi.png");
+        try
+        {
+            using Mat source = new(5, 7, MatType.CV_8UC3);
+            Cv2.Randu(source, Scalar.All(0), Scalar.All(256));
+            using Mat original = source.Clone();
+            using Mat roi = new(source, new Rect(2, 1, 3, 3));
+            using Mat expected = roi.Clone();
+            Assert.False(roi.IsContinuous());
+
+            BatchImageOutput.Save(roi, filePath);
+
+            using Mat loaded = Cv2.ImRead(filePath, ImreadModes.Unchanged);
+            AssertMatsEqual(expected, loaded);
+            AssertMatsEqual(original, source);
+            Assert.Equal(expected.At<Vec3b>(1, 1), roi.At<Vec3b>(1, 1));
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public void SavingFourChannelJpegDropsAlphaWithoutChangingSource()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"colorvision-batch-{Guid.NewGuid():N}");
+        string filePath = Path.Combine(directory, "result.jpg");
+        try
+        {
+            using Mat source = new(8, 8, MatType.CV_8UC4);
+            Cv2.Randu(source, Scalar.All(0), Scalar.All(256));
+            using Mat original = source.Clone();
+
+            BatchImageOutput.Save(source, filePath);
+
+            using Mat loaded = Cv2.ImRead(filePath, ImreadModes.Unchanged);
+            Assert.Equal(3, loaded.Channels());
+            AssertMatsEqual(original, source);
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public void SavingFloatPngNormalizesToSixteenBitWithoutChangingSource()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"colorvision-batch-{Guid.NewGuid():N}");
+        string filePath = Path.Combine(directory, "normalized.png");
+        try
+        {
+            using Mat source = Mat.FromArray(new float[,] { { -2, 0, 2 }, { 4, 8, 16 } });
+            using Mat original = source.Clone();
+            using Mat normalized = new();
+            Cv2.Normalize(source, normalized, 0, ushort.MaxValue, NormTypes.MinMax);
+            using Mat expected = new();
+            normalized.ConvertTo(expected, MatType.CV_16U);
+
+            BatchImageOutput.Save(source, filePath);
+
+            using Mat loaded = Cv2.ImRead(filePath, ImreadModes.Unchanged);
+            AssertMatsEqual(expected, loaded);
+            AssertMatsEqual(original, source);
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(3, false)]
+    [InlineData(4, false)]
+    [InlineData(3, true)]
+    [InlineData(4, true)]
+    public void HistogramEqualizationMatchesLegacyOutput(int channels, bool sixteenBit)
+    {
+        MatType type = MatType.MakeType(sixteenBit ? MatType.CV_16U : MatType.CV_8U, channels);
+        using Mat source = new(19, 23, type);
+        Cv2.Randu(source, Scalar.All(0), Scalar.All(sixteenBit ? ushort.MaxValue + 1d : byte.MaxValue + 1d));
+        using Mat original = source.Clone();
+        using Mat expected = ApplyLegacyHistogramEqualization(source);
+        BatchImageAlgorithmDefinition algorithm = BatchImageAlgorithms.CreateAll()
+            .Single(item => item.Name == "直方图均衡化");
+
+        using Mat actual = algorithm.Apply(source);
+
+        AssertMatsEqual(expected, actual);
+        AssertMatsEqual(original, source);
+    }
+
     [Theory]
     [InlineData("sample.cvraw")]
     [InlineData("sample.cvcie")]
@@ -297,5 +404,69 @@ public class BatchImageProcessingTests
         optionsType.GetProperty("Contrast")!.SetValue(algorithm.Options, contrast);
         optionsType.GetProperty("Gamma")!.SetValue(algorithm.Options, gamma);
         return algorithm;
+    }
+
+    private static Mat ApplyLegacyHistogramEqualization(Mat source)
+    {
+        using Mat source8 = ConvertTo8BitLegacy(source);
+        using Mat bgr = new();
+        if (source8.Channels() == 3)
+        {
+            source8.CopyTo(bgr);
+        }
+        else
+        {
+            Cv2.CvtColor(source8, bgr, ColorConversionCodes.BGRA2BGR);
+        }
+
+        using Mat yCrCb = new();
+        Cv2.CvtColor(bgr, yCrCb, ColorConversionCodes.BGR2YCrCb);
+        Mat[] channels = Cv2.Split(yCrCb);
+        try
+        {
+            Cv2.EqualizeHist(channels[0], channels[0]);
+            using Mat merged = new();
+            Cv2.Merge(channels, merged);
+            Mat result = new();
+            Cv2.CvtColor(merged, result, ColorConversionCodes.YCrCb2BGR);
+            return result;
+        }
+        finally
+        {
+            foreach (Mat channel in channels)
+            {
+                channel.Dispose();
+            }
+        }
+    }
+
+    private static Mat ConvertTo8BitLegacy(Mat source)
+    {
+        if (source.Depth() == MatType.CV_8U)
+        {
+            return source.Clone();
+        }
+
+        using Mat normalized = new();
+        Cv2.Normalize(source, normalized, 0, byte.MaxValue, NormTypes.MinMax);
+        Mat result = new();
+        normalized.ConvertTo(result, MatType.CV_8U);
+        return result;
+    }
+
+    private static void AssertMatsEqual(Mat expected, Mat actual)
+    {
+        Assert.Equal(expected.Type(), actual.Type());
+        Assert.Equal(expected.Rows, actual.Rows);
+        Assert.Equal(expected.Cols, actual.Cols);
+        Assert.True(expected.IsContinuous());
+        Assert.True(actual.IsContinuous());
+
+        int length = checked((int)(expected.Total() * expected.ElemSize()));
+        byte[] expectedBytes = new byte[length];
+        byte[] actualBytes = new byte[length];
+        Marshal.Copy(expected.Data, expectedBytes, 0, length);
+        Marshal.Copy(actual.Data, actualBytes, 0, length);
+        Assert.Equal(expectedBytes, actualBytes);
     }
 }

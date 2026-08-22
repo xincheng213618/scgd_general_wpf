@@ -42,9 +42,11 @@ namespace ColorVision.ImageEditor.Draw
             using DrawingContext dc = RenderOpen();
             if (Points.Count >= 1)
             {
-                for (int i = 1; i < Points.Count; i++)
+                if (Points.Count >= 2)
                 {
-                    dc.DrawLine(new Pen(brush, Attribute.Pen.Thickness),Points[i-1], Points[i]);
+                    Pen pen = new(brush, Attribute.Pen.Thickness);
+                    for (int i = 1; i < Points.Count; i++)
+                        dc.DrawLine(pen, Points[i-1], Points[i]);
                 }
                 if (MovePoints != null)
                 {
@@ -54,7 +56,9 @@ namespace ColorVision.ImageEditor.Draw
 
             if (Points.Count > 0)
             {
-                FormattedText formattedText1 = new(ColorVision.ImageEditor.Properties.Resources.Ruler_StartPoint, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                Typeface typeface = new(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
+                double pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+                FormattedText formattedText1 = new(ColorVision.ImageEditor.Properties.Resources.Ruler_StartPoint, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, fontSize, brush, pixelsPerDip);
                 formattedText1.TextAlignment = TextAlignment.Center;
                 dc.DrawText(formattedText1, Points[0]);
 
@@ -64,7 +68,7 @@ namespace ColorVision.ImageEditor.Draw
                     double len = GetDistance(Points[i], Points[i - 1]);
                     len = len * ActualLength;
                     lenAll += len;
-                    FormattedText formattedText2 = new(len.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                    FormattedText formattedText2 = new(len.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, fontSize, brush, pixelsPerDip);
                     dc.DrawText(formattedText2, Points[i]);
                 }
 
@@ -76,12 +80,12 @@ namespace ColorVision.ImageEditor.Draw
                     {
                         lenAll += Lastlen;
 
-                        FormattedText formattedText2 = new(ColorVision.ImageEditor.Properties.Resources.Ruler_TotalLength + lenAll.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                        FormattedText formattedText2 = new(ColorVision.ImageEditor.Properties.Resources.Ruler_TotalLength + lenAll.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, fontSize, brush, pixelsPerDip);
                         dc.DrawText(formattedText2, Points[^1]);
                     }
                     else
                     {
-                        FormattedText formattedText2 = new(Lastlen.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                        FormattedText formattedText2 = new(Lastlen.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, fontSize, brush, pixelsPerDip);
                         dc.DrawText(formattedText2, Points[^1]);
                     }
                 }

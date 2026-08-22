@@ -70,14 +70,23 @@ namespace ColorVision
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             Application.Current.DispatcherUnhandledException += Application_DispatcherUnhandledException;
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+            StartupFailureGuard.Begin();
             #endif
 
         }
         private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
-            log.Fatal("捕获到 UI Dispatcher 未处理异常，已静默记录。", e.Exception);
+            try
+            {
+                log.Fatal("捕获到 UI Dispatcher 未处理异常，已静默记录。", e.Exception);
+            }
+            catch
+            {
+                // The startup guard must remain usable when logging dependencies are unavailable.
+            }
             //使用这一行代码告诉运行时，该异常被处理了，不再作为UnhandledException抛出了。
             e.Handled = true;
+            StartupFailureGuard.TryHandleStartupFailure(e.Exception);
         }
 
         void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)

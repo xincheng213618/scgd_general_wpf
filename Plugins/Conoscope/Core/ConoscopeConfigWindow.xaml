@@ -150,7 +150,7 @@
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="{x:Static properties:Resources.GroupBoxPreprocessSettings}">
+            <TabItem x:Name="tabPreprocess" Header="{x:Static properties:Resources.GroupBoxPreprocessSettings}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="12">
                     <ContentControl x:Name="PreprocessSettingsHost"/>
                 </ScrollViewer>

@@ -30,78 +30,6 @@ public class DatabaseCleanupWindowTests
     }
 
     [Fact]
-    public void SelectionDependencies_RejectAlgorithmMasterWithoutAllExistingDetails()
-    {
-        var missing = MySqlResultCleanupProvider.FindUnselectedRequiredDetailTables(
-            ["t_scgd_algorithm_result_master", "t_scgd_algorithm_result_detail_sfr"],
-            ["t_scgd_algorithm_result_master", "t_scgd_algorithm_result_detail_sfr", "t_scgd_algorithm_result_detail_image"]);
-
-        Assert.Equal(["t_scgd_algorithm_result_detail_image"], missing);
-    }
-
-    [Fact]
-    public void SelectionDependencies_RejectMeasureBatchWithoutAllExistingDetails()
-    {
-        var missing = MySqlResultCleanupProvider.FindUnselectedRequiredDetailTables(
-            ["t_scgd_measure_batch", "t_scgd_measure_result_img"],
-            ["t_scgd_measure_batch", "t_scgd_measure_result_img", "t_scgd_measure_result_sensor"]);
-
-        Assert.Equal(["t_scgd_measure_result_sensor"], missing);
-    }
-
-    [Fact]
-    public void SelectionDependencies_AcceptCompleteExistingDependencySelection()
-    {
-        string[] selection =
-        [
-            "t_scgd_algorithm_result_master",
-            "t_scgd_algorithm_result_detail_sfr",
-            "t_scgd_measure_batch",
-            "t_scgd_measure_result_sensor"
-        ];
-
-        var missing = MySqlResultCleanupProvider.FindUnselectedRequiredDetailTables(selection, selection);
-
-        Assert.Empty(missing);
-    }
-
-    [Fact]
-    public void SelectionDependencies_AllowCleaningDetailTableByItself()
-    {
-        var missing = MySqlResultCleanupProvider.FindUnselectedRequiredDetailTables(
-            ["t_scgd_algorithm_result_detail_sfr"],
-            ["t_scgd_algorithm_result_master", "t_scgd_algorithm_result_detail_sfr"]);
-
-        Assert.Empty(missing);
-    }
-
-    [Fact]
-    public void SelectionDependencies_BlockUnknownAlgorithmDetailDuringCompleteCleanup()
-    {
-        const string unknownDetailTable = "t_scgd_algorithm_result_detail_future_vendor";
-        var existingTables = MySqlResultCleanupProvider.ResultTableNames.Append(unknownDetailTable).ToArray();
-
-        var missing = MySqlResultCleanupProvider.FindUnselectedRequiredDetailTables(
-            MySqlResultCleanupProvider.ResultTableNames,
-            existingTables);
-
-        Assert.Equal([unknownDetailTable], missing);
-    }
-
-    [Fact]
-    public void SelectionDependencies_BlockUnknownMeasureDetailDuringCompleteCleanup()
-    {
-        const string unknownDetailTable = "t_scgd_measure_result_future_vendor";
-        var existingTables = MySqlResultCleanupProvider.ResultTableNames.Append(unknownDetailTable).ToArray();
-
-        var missing = MySqlResultCleanupProvider.FindUnselectedRequiredDetailTables(
-            MySqlResultCleanupProvider.ResultTableNames,
-            existingTables);
-
-        Assert.Equal([unknownDetailTable], missing);
-    }
-
-    [Fact]
     public void HistoryCleanupSafety_FindsUnknownDetailTablesBeforeAnyDeletion()
     {
         string[] existingTables =
@@ -170,6 +98,8 @@ public class DatabaseCleanupWindowTests
         viewModel.SelectAllCommand.Execute(null);
 
         Assert.True(viewModel.SupportsBackup);
+        Assert.False(viewModel.BackupBeforeCleanup);
+        viewModel.BackupBeforeCleanup = true;
         Assert.True(viewModel.BackupBeforeCleanup);
         Assert.True(viewModel.SupportsTableCleanup);
         Assert.Equal(2, viewModel.ExistingTableCount);

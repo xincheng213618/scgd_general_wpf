@@ -1,6 +1,6 @@
 # cvColorVision
 
-> 版本: 2025.8.9.0 | 目标框架: .NET 8.0 / .NET 10.0 Windows
+> 目标框架：.NET 10 Windows x64（以 `cvColorVision.csproj` 为准）
 
 ## 🎯 功能定位
 
@@ -218,7 +218,7 @@ public static class Spectrometer
 
 ## 目录说明
 
-- `cvCameraCSLib.cs` - 相机控制主模块
+- `Camera/cvCameraCSLib.*.cs` - 相机控制、采集、配置、发现、标定和图像处理 partial 实现
 - `ConvertXYZ.cs` - 色彩空间转换
 - `SensorComm.cs` - 传感器通信
 - `Spectrometer.cs` - 光谱仪支持

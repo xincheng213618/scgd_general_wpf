@@ -15,7 +15,9 @@
 | ColorVision.Scheduler | Quartz 调度、任务历史、管理窗口 | [ColorVision.Scheduler](./ColorVision.Scheduler.md) |
 | ColorVision.ImageEditor | 图像查看、绘制、结果 overlay、3D/CIE | [ColorVision.ImageEditor](./ColorVision.ImageEditor.md) |
 | ColorVision.UI.Desktop | 设置、向导、插件市场、桌面工具 | [ColorVision.UI.Desktop](./ColorVision.UI.Desktop.md) |
-| ColorVision.Solution | 工作区、编辑器、终端、RBAC、本地项目管理 | [ColorVision.Solution](./ColorVision.Solution.md) |
+| ColorVision.Solution | 工作区、编辑器、终端、本地项目管理 | [ColorVision.Solution](./ColorVision.Solution.md) |
+| ColorVision.ImageTools | 多图查看、缩略图缓存、景深融合 | [ColorVision.ImageTools](./ColorVision.ImageTools.md) |
+| ColorVision.Rbac | 本地用户、角色、权限、会话和审计 | [RBAC 模块](../../03-architecture/security/rbac.md) |
 
 ## 维护入口
 
@@ -43,6 +45,10 @@ flowchart LR
   Database --> Solution["ColorVision.Solution"]
   ImageEditor --> Solution
   UIDesktop --> Solution
+  Solution --> ImageTools["ColorVision.ImageTools"]
+  ImageEditor --> ImageTools
+  Database --> Rbac["ColorVision.Rbac"]
+  Solution --> Rbac
 ```
 
 维护时重点看依赖方向，不要在底层包里反向引用高层窗口或项目业务。

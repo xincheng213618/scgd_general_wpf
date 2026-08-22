@@ -52,11 +52,11 @@
 2. 再看各插件自己的 `manifest.json` 和 `.csproj`，确认它到底是不是当前工作区里的真实项目。
 3. 最后进入具体插件目录，例如 [Plugins/Spectrum/README.md](Spectrum/README.md) 或 [Plugins/SystemMonitor/README.md](SystemMonitor/README.md)。
 
-## 当前已知的文档漂移
+## 文档维护状态
 
-- 旧版插件索引仍然列出当前源码树里不存在的目录。
+- 旧版插件索引曾列出当前源码树里不存在的目录；本页已只保留当前真实项目。
 - [docs/04-api-reference/plugins/standard-plugins/pattern.md](../docs/04-api-reference/plugins/standard-plugins/pattern.md) 已经改成现状说明，因为对应插件源码当前缺失。
-- `docs/04-api-reference/plugins/standard-plugins/` 下其余几页也仍有明显的旧模板痕迹，阅读时需要继续以源码为准。
+- 其余标准插件页已按当前源码和发布入口同步；插件结构或发布脚本变化时应同时更新对应页面。
 
 ## 继续阅读
 

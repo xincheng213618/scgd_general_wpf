@@ -1,6 +1,6 @@
 # ColorVision.Solution
 
-> 版本: 1.5.6.1 | 目标框架: .NET 10.0 Windows
+> 目标框架：.NET 10 Windows（以 `ColorVision.Solution.csproj` 为准）
 
 ColorVision 的单工作区资源管理、项目模型和文档打开模块。界面参考 Visual Studio 的 Solution Explorer，但只实现 ColorVision 当前业务需要的文件夹、`.cvsln`、`.cvproj` 与 .NET MSBuild 项目能力。
 

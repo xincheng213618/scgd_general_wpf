@@ -4,7 +4,6 @@ using log4net;
 using Spectrum.TimedButtons;
 using System.IO.Ports;
 using System.Text;
-using System.Windows;
 using System.Windows.Input;
 
 namespace Spectrum.Configs
@@ -36,6 +35,13 @@ namespace Spectrum.Configs
         }
 
         public string StatusText => IsConnected ? "已连接 (Connected)" : "未连接 (Disconnected)";
+
+        public string LastErrorMessage
+        {
+            get => _lastErrorMessage;
+            private set { _lastErrorMessage = value; OnPropertyChanged(); }
+        }
+        private string _lastErrorMessage = string.Empty;
 
         /// <summary>
         /// Current filter wheel position (0-4), or -1 if unknown.
@@ -73,22 +79,22 @@ namespace Spectrum.Configs
         public FilterWheelController()
         {
             ConnectCommand = new TimedButtonCommand(
-                async _ => await Task.FromResult(Connect()),
-                _ => !IsConnected,
+                async _ => await ConnectAsync(),
+                _ => !IsConnected && !IsBusy,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
                 "filter-wheel-connect");
 
             DisconnectCommand = new TimedButtonCommand(
-                async _ => await Task.FromResult(Disconnect()),
-                _ => IsConnected && !SpectrometerManager.Instance.IsDeviceBusy,
+                async _ => await DisconnectAsync(),
+                _ => IsConnected && !IsBusy && !SpectrometerManager.Instance.IsDeviceBusy,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
                 "filter-wheel-disconnect");
 
             QueryPositionCommand = new TimedButtonCommand(
                 async _ => await QueryPositionAsync() >= 0,
-                _ => IsConnected && !SpectrometerManager.Instance.IsDeviceBusy,
+                _ => IsConnected && !IsBusy && !SpectrometerManager.Instance.IsDeviceBusy,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
                 "filter-wheel-query");
@@ -108,13 +114,13 @@ namespace Spectrum.Configs
 
                     return false;
                 },
-                _ => IsConnected && !SpectrometerManager.Instance.IsDeviceBusy,
+                _ => IsConnected && !IsBusy && !SpectrometerManager.Instance.IsDeviceBusy,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
                 "filter-wheel-set-position");
         }
 
-        public bool Connect()
+        private bool ConnectCore()
         {
             try
             {
@@ -128,22 +134,30 @@ namespace Spectrum.Configs
                 log.Info($"FilterWheel: 尝试连接到串口 {Config.SzComName}，波特率 {Config.BaudRate}");
                 _serialPort.Open();
                 IsConnected = true;
+                LastErrorMessage = string.Empty;
                 log.Info("FilterWheel: 连接成功");
-
-                // Query current position after connect
-                _ = QueryPositionAsync();
                 return true;
             }
             catch (Exception ex)
             {
-                log.Error($"FilterWheel: 打开串口失败: {ex.Message}");
-                MessageBox.Show($"打开滤色轮串口失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                LastErrorMessage = $"打开滤色轮串口失败: {ex.Message}";
+                log.Error(LastErrorMessage, ex);
                 IsConnected = false;
+                SerialPort? serialPort = _serialPort;
+                _serialPort = null;
+                try
+                {
+                    serialPort?.Dispose();
+                }
+                catch (Exception disposeException)
+                {
+                    log.Warn("FilterWheel: 释放打开失败的串口失败", disposeException);
+                }
                 return false;
             }
         }
 
-        public bool Disconnect()
+        private bool DisconnectCore()
         {
             bool success = true;
             try
@@ -155,8 +169,8 @@ namespace Spectrum.Configs
             }
             catch (Exception ex)
             {
-                log.Error($"FilterWheel: 关闭串口失败: {ex.Message}");
-                MessageBox.Show($"关闭滤色轮串口失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                LastErrorMessage = $"关闭滤色轮串口失败: {ex.Message}";
+                log.Error(LastErrorMessage, ex);
                 success = false;
             }
             finally
@@ -179,6 +193,26 @@ namespace Spectrum.Configs
             return success;
         }
 
+        public bool Connect()
+        {
+            bool connected = RunSerialized(ConnectCore);
+            if (connected)
+                _ = QueryPositionAsync();
+            return connected;
+        }
+
+        public bool Disconnect() => RunSerialized(DisconnectCore);
+
+        private async Task<bool> ConnectAsync()
+        {
+            bool connected = await RunSerializedAsync(() => Task.Run(ConnectCore));
+            if (connected)
+                await QueryPositionAsync();
+            return connected;
+        }
+
+        private Task<bool> DisconnectAsync() => RunSerializedAsync(() => Task.Run(DisconnectCore));
+
         /// <summary>
         /// Sends "NOW" to query the current filter wheel position.
         /// </summary>
@@ -187,10 +221,15 @@ namespace Spectrum.Configs
             string? response = await SendCommandAsync("NOW");
             if (response != null && int.TryParse(response.Trim(), out int pos) && pos >= 0 && pos <= 4)
             {
+                bool positionChanged = CurrentPosition != pos;
                 CurrentPosition = pos;
+                LastErrorMessage = string.Empty;
                 log.Info($"FilterWheel: 当前位置 = {pos} ({CurrentPositionName})");
+                if (positionChanged)
+                    PositionChanged?.Invoke(pos);
                 return pos;
             }
+            LastErrorMessage = "滤色轮位置查询失败";
             log.Warn($"FilterWheel: 查询位置失败，响应: '{response}'");
             return -1;
         }
@@ -209,11 +248,15 @@ namespace Spectrum.Configs
             string? response = await SendCommandAsync(position.ToString());
             if (response != null && int.TryParse(response.Trim(), out int confirmedPos) && confirmedPos == position)
             {
+                bool positionChanged = CurrentPosition != confirmedPos;
                 CurrentPosition = confirmedPos;
+                LastErrorMessage = string.Empty;
                 log.Info($"FilterWheel: 设置位置成功 = {confirmedPos} ({CurrentPositionName})");
-                PositionChanged?.Invoke(confirmedPos);
+                if (positionChanged)
+                    PositionChanged?.Invoke(confirmedPos);
                 return true;
             }
+            LastErrorMessage = $"滤色轮位置 {position} 切换失败";
             log.Warn($"FilterWheel: 设置位置 {position} 失败，响应: '{response}'");
             return false;
         }
@@ -223,9 +266,7 @@ namespace Spectrum.Configs
 
         private async Task<string?> SendCommandAsync(string cmd)
         {
-            Interlocked.Increment(ref activeOperationCount);
-            await commandGate.WaitAsync();
-            try
+            return await RunSerializedAsync(async () =>
             {
                 if (_serialPort == null || !_serialPort.IsOpen)
                     return null;
@@ -267,22 +308,61 @@ namespace Spectrum.Configs
                 }
                 catch (Exception ex)
                 {
-                    log.Error($"FilterWheel: 发送或读取指令失败: {ex.Message}");
-                    MessageBox.Show($"滤色轮通信失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                    Disconnect();
+                    LastErrorMessage = $"滤色轮通信失败: {ex.Message}";
+                    log.Error(LastErrorMessage, ex);
+                    // The operation already owns commandGate. Tear down the failed port
+                    // directly instead of re-entering the same gate.
+                    DisconnectCore();
                     return null;
+                }
+            });
+        }
+
+        private async Task<T> RunSerializedAsync<T>(Func<Task<T>> operation)
+        {
+            Interlocked.Increment(ref activeOperationCount);
+            try
+            {
+                await commandGate.WaitAsync();
+                try
+                {
+                    return await operation();
+                }
+                finally
+                {
+                    commandGate.Release();
                 }
             }
             finally
             {
-                commandGate.Release();
+                Interlocked.Decrement(ref activeOperationCount);
+            }
+        }
+
+        private T RunSerialized<T>(Func<T> operation)
+        {
+            Interlocked.Increment(ref activeOperationCount);
+            try
+            {
+                commandGate.Wait();
+                try
+                {
+                    return operation();
+                }
+                finally
+                {
+                    commandGate.Release();
+                }
+            }
+            finally
+            {
                 Interlocked.Decrement(ref activeOperationCount);
             }
         }
 
         public void Dispose()
         {
-            Disconnect();
+            RunSerialized(DisconnectCore);
             GC.SuppressFinalize(this);
         }
     }

@@ -10,7 +10,7 @@
 | 模板类 | `TemplateRoi : ITemplate<RoiParam>, IITemplateLoad` |
 | 参数类 | `RoiParam` |
 | 执行入口 | `AlgorithmRoi`，显示名“发光区定位1” |
-| UI 面板 | `DisplayRoi.xaml(.cs)` |
+| 运行配置 | `SingleTemplateDisplayAlgorithmConfig` + `DisplayAlgorithmBase` 通用界面 |
 | MQTT 事件 | `MQTTAlgorithmEventEnum.Event_LightArea2_GetData` |
 | 结果处理 | `ViewHandleFindLightArea` |
 | 结果表 | `t_scgd_algorithm_result_detail_light_area` |
@@ -22,24 +22,22 @@
 | `TemplateRoi.cs` | 注册 `FindLightArea` 模板，设置 `TemplateDicId = 31`，并通过 `MysqlRoi` 恢复模板字典。 |
 | `ROIParam.cs` | 保存 ROI 参数：`Threshold`、`Times`、`SmoothSize`。 |
 | `AlgorithmRoi.cs` | 组装算法请求，填入图像、设备和模板参数，并发布 MQTT 命令。 |
-| `DisplayRoi.xaml.cs` | 提供模板选择、图像选择、批次号/Raw/本地文件输入和执行按钮。 |
 | `AlgResultLightAreaDao.cs` | 定义结果模型、结果加载、图像覆盖层和列表展示。 |
 | `MysqlRoi.cs` | 恢复 MySQL 字典和默认模板项。 |
 
 ## 执行链路
 
 1. `TemplateRoi` 被模板系统扫描到后，进入 `TemplateControl` 的全局模板集合。
-2. 用户在算法面板选择 `TemplateRoi.Params` 中的一个 `RoiParam`。
-3. `DisplayRoi` 支持三类输入：批次号、算法服务 Raw/CIE 文件、本地图像文件。
-4. 文件扩展名会被映射为 `Raw`、`CIE`、`Tif` 或 `Src`；如果算法服务的 `HistoryFilePath` 里能找到历史路径，会先替换成完整路径。
-5. `AlgorithmRoi.SendCommand(...)` 组装参数：
+2. 用户在通用显示算法界面选择 `TemplateRoi.Params` 中的一个 `RoiParam`。
+3. `DisplayAlgorithmBase` 提供设备图像和本地图像输入，并把扩展名映射为对应 `FileExtType`。
+4. `AlgorithmRoi.SendCommand(...)` 组装参数：
    - `ImgFileName`
    - `FileType`
    - `DeviceCode`
    - `DeviceType`
    - `TemplateParam`，只传模板 `ID` 和 `Name`
-6. 命令通过 `DService.PublishAsyncClient(...)` 发往 `Event_LightArea2_GetData`。
-7. 结果回写后，`ViewHandleFindLightArea` 按 `ViewResultAlgType.LightArea` / `FindLightArea` 加载点位并展示。
+5. 命令通过 `DService.PublishAsyncClient(...)` 发往 `Event_LightArea2_GetData`。
+6. 结果回写后，`ViewHandleFindLightArea` 按 `ViewResultAlgType.LightArea` / `FindLightArea` 加载点位并展示。
 
 ## 参数说明
 
@@ -63,8 +61,8 @@
 | 现象 | 优先排查 |
 | --- | --- |
 | 模板下拉为空 | `TemplateRoi` 是否被程序集装载，`IITemplateLoad` 是否执行，`TemplateDicId = 31` 的字典是否恢复。 |
-| 点击执行提示未选模板 | `TemplateRoi.Params` 是否加载到 `ComboxTemplate.ItemsSource`。 |
-| 算法服务收不到图像 | `ImgFileName` 是本地路径、Raw 文件名还是历史路径；`FileType` 是否和扩展名匹配。 |
+| 点击执行提示未选模板 | `TemplateRoi.Params` 是否已经加载，通用模板选择项是否有有效 `Value`。 |
+| 算法服务收不到图像 | 通用图像输入是否取得路径；`ImgFileName` 和 `FileType` 是否匹配。 |
 | 结果页无点位 | 结果类型是否是 `LightArea` 或 `FindLightArea`，`t_scgd_algorithm_result_detail_light_area.pid` 是否对应主结果。 |
 | 覆盖层形状异常 | 先看 `Threshold`、`Times`、`SmoothSize` 和输入图像，再看 `GrahamScan` 凸包输入点。 |
 

@@ -3,14 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:local="clr-namespace:Spectrum"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:models="clr-namespace:Spectrum.Models"
         xmlns:properties="clr-namespace:Spectrum.Properties"
-        xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
-        xmlns:wfi="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
-        xmlns:wpf="http://schemas.microsoft.com/netfx/2007/xaml/presentation"
         xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:SpectrometerManager}"
@@ -38,7 +34,7 @@
         </Grid.RowDefinitions>
         <Grid>
             <Menu x:Name="menu" Grid.Row="0" Padding="2" />
-            <Button Width="18" Height="18" Margin="5,0,5,0" Padding="2" HorizontalAlignment="Right" Command="{Binding SetEmissionSP100Config.EditCommand}">
+            <Button Width="18" Height="18" Margin="5,0,5,0" Padding="2" HorizontalAlignment="Right" Click="EditEmissionSP100Config_Click">
                 <Button.Triggers>
                     <EventTrigger RoutedEvent="Button.Click">
                         <BeginStoryboard>
@@ -58,7 +54,7 @@
 
         <Border x:Name="ResourceInitializationBanner" Grid.Row="1" Padding="10,6" Background="#332196F3" BorderBrush="#802196F3" BorderThickness="0,1">
             <DockPanel>
-                <ProgressBar x:Name="ResourceInitializationProgress" Width="110" Height="6" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="#2196F3" IsIndeterminate="True" />
+                <ProgressBar x:Name="ResourceInitializationProgress" Width="110" Height="6" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource PrimaryBrush}" IsIndeterminate="True" />
                 <TextBlock x:Name="ResourceInitializationText" FontWeight="SemiBold" Text="{x:Static properties:Resources.CvCameraInitializing}" />
             </DockPanel>
         </Border>
@@ -72,13 +68,13 @@
                         <xcad:LayoutAnchorablePane>
                             <xcad:LayoutAnchorable x:Name="ControlPanelPane" Title="{x:Static properties:Resources.ControlPanel}" CanAutoHide="True" CanClose="False" CanFloat="True" ContentId="ControlPanel">
                                 <ScrollViewer Margin="3,0,3,5">
-                                    <StackPanel x:Name="MainStackPanel">
+                                    <StackPanel>
 
                                         <!--  ═══ 光谱仪连接 (Spectrometer Connection) ═══  -->
                                         <GroupBox x:Name="SpectrometerConnectionGroup" Header="{x:Static properties:Resources.SpectrometerConnection}" IsEnabled="False">
                                             <StackPanel>
                                                 <StackPanel Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter1}}">
-                                                    <Button Margin="0,0,0,4" Command="{Binding GetSpectrSerialNumberCommand}" Content="{x:Static properties:Resources.GetDeviceList}" />
+                                                    <Button Margin="0,0,0,4" Click="GetSpectrometerSerialNumbers_Click" Content="{x:Static properties:Resources.GetDeviceList}" />
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
                                                         <ComboBox x:Name="ComboBoxSpectrometerType" Width="140" DisplayMemberPath="Value" SelectedValue="{Binding Config.SpectrometerType}" SelectedValuePath="Key" Style="{StaticResource ComboBox.Small}" />
                                                         <CheckBox Margin="10,0,0,0" VerticalAlignment="Center" Content="{x:Static properties:Resources.SerialPortConnection}" IsChecked="{Binding Config.IsComPort}" />
@@ -96,8 +92,8 @@
                                                 </StackPanel>
 
                                                 <Grid Margin="0,4,0,0">
-                                                    <Button Padding="12,4" Background="#2196F3" Click="Button_Click" Content="{x:Static properties:Resources.连接光谱仪}" Foreground="White" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter1}}" />
-                                                    <Button x:Name="ButtonClose" Padding="12,4" Background="#E53935" Click="ButtonClose_Click" Content="{x:Static properties:Resources.断开光谱仪}" Foreground="White" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                    <Button Padding="12,4" Background="{DynamicResource PrimaryBrush}" Click="Button_Click" Content="{x:Static properties:Resources.连接光谱仪}" Foreground="White" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter1}}" />
+                                                    <Button Padding="12,4" Background="{DynamicResource DangerBrush}" Click="ButtonClose_Click" Content="{x:Static properties:Resources.断开光谱仪}" Foreground="White" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}" />
                                                 </Grid>
                                             </StackPanel>
                                         </GroupBox>
@@ -106,31 +102,43 @@
                                         <GroupBox Header="{x:Static properties:Resources.CalibrationFiles}">
                                             <StackPanel>
                                                 <DockPanel Margin="0,0,0,6">
-                                                    <Button Margin="4,0,0,0" Padding="8,2" Command="{Binding OpenCalibrationGroupWindowCommand}" Content="{x:Static properties:Resources.Manage}" DockPanel.Dock="Right" ToolTip="{x:Static properties:Resources.OpenCalibrationGroupTooltip}" />
+                                                    <Button Margin="4,0,0,0" Padding="8,2" Click="OpenCalibrationGroupWindow_Click" Content="{x:Static properties:Resources.Manage}" DockPanel.Dock="Right" ToolTip="{x:Static properties:Resources.OpenCalibrationGroupTooltip}" />
                                                     <Button Margin="4,0,0,0" Padding="8,2" Command="{Binding ApplyActiveGroupCommand}" Content="{x:Static properties:Resources.LoadGroup}" DockPanel.Dock="Right" ToolTip="{x:Static properties:Resources.ApplyCalibrationGroupTooltip}" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}" />
                                                     <TextBlock Width="60" Text="{x:Static properties:Resources.CurrentGroup}" />
                                                     <ComboBox ItemsSource="{Binding CalibrationGroupNames}" SelectedItem="{Binding ActiveCalibrationGroupName, Mode=TwoWay}" Style="{StaticResource ComboBox.Small}" />
                                                 </DockPanel>
                                                 <DockPanel Margin="0,0,0,4">
-                                                    <Button Margin="5,0,0,0" Command="{Binding LoadWavelengthFileCommand}" Content="{x:Static properties:Resources.Load}" DockPanel.Dock="Right" Style="{StaticResource ButtonDefault.Small}" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                    <Button Margin="5,0,0,0" Click="ReloadCalibrationFiles_Click" Content="{x:Static properties:Resources.Load}" DockPanel.Dock="Right" Style="{StaticResource ButtonDefault.Small}" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}" />
                                                     <TextBlock MinWidth="60" Text="{x:Static properties:Resources.WavelengthCalibration}" />
                                                     <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" Text="{Binding WavelengthFile}" ToolTip="{Binding WavelengthFile}" />
                                                 </DockPanel>
                                                 <DockPanel>
-                                                    <Button Margin="5,0,0,0" Command="{Binding LoadMaguideFileCommand}" Content="{x:Static properties:Resources.Load}" DockPanel.Dock="Right" Style="{StaticResource ButtonDefault.Small}" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                    <Button Margin="5,0,0,0" Click="ReloadCalibrationFiles_Click" Content="{x:Static properties:Resources.Load}" DockPanel.Dock="Right" Style="{StaticResource ButtonDefault.Small}" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}" />
                                                     <TextBlock MinWidth="60" Text="{x:Static properties:Resources.MagnitudeCalibration}" />
                                                     <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" Text="{Binding MaguideFile}" ToolTip="{Binding MaguideFile}" />
                                                 </DockPanel>
+                                                <TextBlock Margin="0,5,0,0" FontSize="11" Text="{Binding CalibrationStatus}" TextWrapping="Wrap" ToolTip="{Binding CalibrationStatus}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="{DynamicResource WarningBrush}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsCalibrationReady}" Value="True">
+                                                                    <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
                                             </StackPanel>
                                         </GroupBox>
 
                                         <!--  ═══ 测量参数 (Measurement Parameters) ═══  -->
-                                        <GroupBox Header="{x:Static properties:Resources.MeasurementParameters}" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}">
+                                        <GroupBox Header="{x:Static properties:Resources.MeasurementParameters}" IsEnabled="{Binding IsCalibrationReady}" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}">
                                             <StackPanel>
                                                 <StackPanel Margin="0,0,0,6" Orientation="Horizontal">
                                                     <TextBlock Width="110" Text="{x:Static properties:Resources.IntegrationTimeMs}" />
                                                     <TextBox Width="90" VerticalAlignment="Center" Style="{StaticResource TextBox.Small}" Text="{Binding IntTime}" TextWrapping="Wrap" />
-                                                    <Button Width="20" Height="20" Margin="4,0,4,0" Padding="0" HorizontalAlignment="Left" Command="{Binding EditIntTimeConfigCommand}">
+                                                    <Button Width="20" Height="20" Margin="4,0,4,0" Padding="0" HorizontalAlignment="Left" Click="EditMeasurementDataConfig_Click">
                                                         <Button.Triggers>
                                                             <EventTrigger RoutedEvent="Button.Click">
                                                                 <BeginStoryboard>
@@ -146,7 +154,7 @@
                                                             </TextBlock.RenderTransform>
                                                         </TextBlock>
                                                     </Button>
-                                                    <Button x:Name="ButtonAutoInt" Padding="10,4" Background="#E67E22" Click="AutoIntTime_Click" Content="{x:Static properties:Resources.自动积分}" Foreground="White" />
+                                                    <Button x:Name="ButtonAutoInt" Padding="10,4" Background="{DynamicResource WarningBrush}" Click="AutoIntTime_Click" Content="{x:Static properties:Resources.自动积分}" Foreground="White" />
                                                 </StackPanel>
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock Width="110" Text="{x:Static properties:Resources.平均次数}" />
@@ -160,8 +168,8 @@
                                             <StackPanel>
                                                 <TextBlock Margin="0,0,0,4" FontWeight="SemiBold" Text="{x:Static properties:Resources.ZeroCalibration}" />
                                                 <StackPanel Margin="0,0,0,6" Orientation="Horizontal">
-                                                    <Button x:Name="button3" Margin="0,0,4,0" Padding="10,4" Background="#E67E22" Click="Button3_Click" Content="{x:Static properties:Resources.单次校零}" Foreground="White" />
-                                                    <Button Width="20" Height="20" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Command="{Binding EditAutodarkParamCommand}">
+                                                    <Button x:Name="button3" Margin="0,0,4,0" Padding="10,4" Background="{DynamicResource WarningBrush}" Click="Button3_Click" Content="{x:Static properties:Resources.单次校零}" Foreground="White" />
+                                                    <Button Width="20" Height="20" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Click="EditAutodarkParam_Click">
                                                         <Button.Triggers>
                                                             <EventTrigger RoutedEvent="Button.Click">
                                                                 <BeginStoryboard>
@@ -189,7 +197,7 @@
                                                 <Separator Margin="0,2,0,6" />
 
                                                 <TextBlock Margin="0,0,0,4" FontWeight="SemiBold" Text="{x:Static properties:Resources.单次测试}" />
-                                                <Button x:Name="button5" Margin="0,0,0,8" Padding="10,6" HorizontalAlignment="Stretch" Background="#3498DB" Click="Button5_Click" Content="{x:Static properties:Resources.单次测试}" FontWeight="SemiBold" Foreground="White" />
+                                                <Button x:Name="button5" Margin="0,0,0,8" Padding="10,6" HorizontalAlignment="Stretch" Background="{DynamicResource PrimaryBrush}" Click="Button5_Click" Content="{x:Static properties:Resources.单次测试}" FontWeight="SemiBold" Foreground="White" IsEnabled="{Binding IsCalibrationReady}" />
 
                                                 <TextBlock Margin="0,0,0,4" FontWeight="SemiBold" Text="{x:Static properties:Resources.连续测试}" />
                                                 <Grid Margin="0,0,0,6">
@@ -209,22 +217,22 @@
                                                     <TextBox Grid.Row="0" Grid.Column="3" Margin="0,0,0,4" VerticalAlignment="Center" Style="{StaticResource TextBox.Small}" Text="{Binding MeasurementNum}" TextWrapping="Wrap" />
                                                     <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,6,0" Text="{x:Static properties:Resources.Progress}" />
                                                     <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" VerticalAlignment="Center" Orientation="Horizontal">
-                                                        <TextBlock FontWeight="SemiBold" Foreground="#3498DB" Text="{Binding LoopMeasureNum}" />
+                                                        <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBrush}" Text="{Binding LoopMeasureNum}" />
                                                         <TextBlock Text=" / " />
                                                         <TextBlock Text="{Binding MeasurementNum}" />
                                                     </StackPanel>
                                                 </Grid>
-                                                <ProgressBar x:Name="ContinuousProgressBar" Height="15" Margin="0,4,0,4" Foreground="#3498DB" Maximum="100" Minimum="0" Value="0" />
+                                                <ProgressBar x:Name="ContinuousProgressBar" Height="15" Margin="0,4,0,4" Foreground="{DynamicResource PrimaryBrush}" Maximum="100" Minimum="0" Value="0" />
                                                 <StackPanel x:Name="TimeEstimationPanel" Margin="0,0,0,4" Orientation="Horizontal" Visibility="Collapsed">
                                                     <TextBlock FontSize="11" Text="{x:Static properties:Resources.Elapsed}" />
-                                                    <TextBlock x:Name="ElapsedTimeText" FontSize="11" FontWeight="SemiBold" Foreground="#2196F3" Text="--:--" />
+                                                    <TextBlock x:Name="ElapsedTimeText" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBrush}" Text="--:--" />
                                                     <TextBlock FontSize="11" Text="{x:Static properties:Resources.Remaining}" />
-                                                    <TextBlock x:Name="RemainingTimeText" FontSize="11" FontWeight="SemiBold" Foreground="#E67E22" Text="--:--" />
+                                                    <TextBlock x:Name="RemainingTimeText" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource WarningBrush}" Text="--:--" />
                                                 </StackPanel>
 
                                                 <Grid Margin="0,2,0,0" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}">
-                                                    <Button x:Name="button6" Padding="10,6" HorizontalAlignment="Stretch" Background="#27AE60" Click="Button6_Click" Content="{x:Static properties:Resources.连续测试}" FontWeight="SemiBold" Foreground="White" />
-                                                    <Button x:Name="button7" Padding="10,6" HorizontalAlignment="Stretch" Background="#E53935" Click="Button7_Click" Content="{x:Static properties:Resources.停止}" FontWeight="SemiBold" Foreground="White" Visibility="Collapsed" />
+                                                    <Button x:Name="button6" Padding="10,6" HorizontalAlignment="Stretch" Background="{DynamicResource SuccessBrush}" Click="Button6_Click" Content="{x:Static properties:Resources.连续测试}" FontWeight="SemiBold" Foreground="White" IsEnabled="{Binding IsCalibrationReady}" />
+                                                    <Button x:Name="button7" Padding="10,6" HorizontalAlignment="Stretch" Background="{DynamicResource DangerBrush}" Click="Button7_Click" Content="{x:Static properties:Resources.停止}" FontWeight="SemiBold" Foreground="White" Visibility="Collapsed" />
                                                 </Grid>
                                             </StackPanel>
                                         </GroupBox>
@@ -235,8 +243,8 @@
                                                 <!--  Not connected: show connect button + gear  -->
                                                 <StackPanel Visibility="{Binding ShutterController.IsConnected, Converter={StaticResource bool2VisibilityConverter1}}">
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
-                                                        <Button Padding="10,4" Background="#2196F3" Command="{Binding ShutterController.ConnectCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{x:Static properties:Resources.Connect}" Foreground="White" />
-                                                        <Button Width="20" Height="20" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Command="{Binding EditShutterConfigCommand}">
+                                                        <Button Padding="10,4" Background="{DynamicResource PrimaryBrush}" Command="{Binding ShutterController.ConnectCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{x:Static properties:Resources.Connect}" Foreground="White" />
+                                                        <Button Width="20" Height="20" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Click="EditShutterConfig_Click">
                                                             <Button.Triggers>
                                                                 <EventTrigger RoutedEvent="Button.Click">
                                                                     <BeginStoryboard>
@@ -258,11 +266,12 @@
                                                 <!--  Connected: show status + disconnect + open/close  -->
                                                 <StackPanel Visibility="{Binding ShutterController.IsConnected, Converter={StaticResource bool2VisibilityConverter}}">
                                                     <StackPanel Orientation="Horizontal">
-                                                        <Button Margin="0,0,4,0" Padding="8,2" Background="#E53935" Command="{Binding ShutterController.DisconnectCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{x:Static properties:Resources.Disconnect}" Foreground="White" />
+                                                        <Button Margin="0,0,4,0" Padding="8,2" Background="{DynamicResource DangerBrush}" Command="{Binding ShutterController.DisconnectCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{x:Static properties:Resources.Disconnect}" Foreground="White" />
                                                         <Button Margin="0,0,4,0" Padding="8,2" Command="{Binding ShutterController.OpenShutterCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{x:Static properties:Resources.OpenShutter}" />
                                                         <Button Margin="0,0,4,0" Padding="8,2" Command="{Binding ShutterController.CloseShutterCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{x:Static properties:Resources.CloseShutter}" />
                                                     </StackPanel>
                                                 </StackPanel>
+                                                <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="{DynamicResource DangerBrush}" Text="{Binding ShutterController.LastErrorMessage}" TextWrapping="Wrap" />
                                             </StackPanel>
                                         </GroupBox>
 
@@ -272,8 +281,8 @@
                                                 <!--  Connection controls (visible when NOT connected)  -->
                                                 <StackPanel Visibility="{Binding FilterWheelController.IsConnected, Converter={StaticResource bool2VisibilityConverter1}}">
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
-                                                        <Button Padding="10,4" Background="#2196F3" Command="{Binding FilterWheelController.ConnectCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{x:Static properties:Resources.Connect}" Foreground="White" />
-                                                        <Button Width="20" Height="20" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Command="{Binding EditFilterWheelConfigCommand}">
+                                                        <Button Padding="10,4" Background="{DynamicResource PrimaryBrush}" Command="{Binding FilterWheelController.ConnectCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{x:Static properties:Resources.Connect}" Foreground="White" />
+                                                        <Button Width="20" Height="20" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Click="EditFilterWheelConfig_Click">
                                                             <Button.Triggers>
                                                                 <EventTrigger RoutedEvent="Button.Click">
                                                                     <BeginStoryboard>
@@ -296,9 +305,9 @@
                                                 <StackPanel Visibility="{Binding FilterWheelController.IsConnected, Converter={StaticResource bool2VisibilityConverter}}">
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
                                                         <TextBlock VerticalAlignment="Center" Text="{x:Static properties:Resources.CurrentPosition}" />
-                                                        <TextBlock Margin="4,0,8,0" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#2196F3" Text="{Binding FilterWheelController.CurrentPositionName}" />
+                                                        <TextBlock Margin="4,0,8,0" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBrush}" Text="{Binding FilterWheelController.CurrentPositionName}" />
                                                         <Button Margin="0,0,4,0" Padding="8,2" Command="{Binding FilterWheelController.QueryPositionCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{x:Static properties:Resources.Query}" />
-                                                        <Button Padding="8,2" Background="#E53935" Command="{Binding FilterWheelController.DisconnectCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{x:Static properties:Resources.Disconnect}" Foreground="White" />
+                                                        <Button Padding="8,2" Background="{DynamicResource DangerBrush}" Command="{Binding FilterWheelController.DisconnectCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{x:Static properties:Resources.Disconnect}" Foreground="White" />
                                                     </StackPanel>
 
                                                     <!--  Position buttons  -->
@@ -321,20 +330,21 @@
                                                         </ItemsControl.ItemTemplate>
                                                     </ItemsControl>
                                                 </StackPanel>
+                                                <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="{DynamicResource DangerBrush}" Text="{Binding FilterWheelController.LastErrorMessage}" TextWrapping="Wrap" />
                                             </StackPanel>
                                         </GroupBox>
 
                                         <!--  ═══ 光通量参数配置 ═══  -->
                                         <GroupBox x:Name="EqeGroupBox" Header="{x:Static properties:Resources.EqeParameterConfig}" Visibility="Collapsed">
                                             <StackPanel>
-                                                <StackPanel x:Name="EqePanel" Visibility="Collapsed">
+                                                <StackPanel x:Name="EqePanel">
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
                                                         <TextBlock Width="80" Text="{x:Static properties:Resources.VoltageLabel}" />
-                                                        <TextBox x:Name="TextBoxVoltage" Width="80" Style="{StaticResource TextBox.Small}" Text="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=EqeVoltage, UpdateSourceTrigger=PropertyChanged}" />
+                                                        <TextBox Width="80" Style="{StaticResource TextBox.Small}" Text="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=EqeVoltage, UpdateSourceTrigger=PropertyChanged}" />
                                                     </StackPanel>
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
                                                         <TextBlock Width="80" Text="{x:Static properties:Resources.CurrentMilliampLabel}" />
-                                                        <TextBox x:Name="TextBoxCurrentMA" Width="80" Style="{StaticResource TextBox.Small}" Text="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=EqeCurrentMA, UpdateSourceTrigger=PropertyChanged}" />
+                                                        <TextBox Width="80" Style="{StaticResource TextBox.Small}" Text="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=EqeCurrentMA, UpdateSourceTrigger=PropertyChanged}" />
                                                     </StackPanel>
                                                     <Button Margin="0,4,0,0" HorizontalAlignment="Left" Click="CalculateEqe_Click" Content="{x:Static properties:Resources.RecalculateEqe}" />
 
@@ -348,16 +358,16 @@
                                                         <Button x:Name="SmuConnectButton" Padding="10,4" Click="SmuConnect_Click" Content="{Binding SmuController.ConnectButtonText}" Foreground="White" IsEnabled="{Binding SmuController.CanToggleConnection}">
                                                             <Button.Style>
                                                                 <Style TargetType="Button">
-                                                                    <Setter Property="Background" Value="#2196F3" />
+                                                                    <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
                                                                     <Style.Triggers>
                                                                         <DataTrigger Binding="{Binding SmuController.IsOpen}" Value="True">
-                                                                            <Setter Property="Background" Value="#E53935" />
+                                                                            <Setter Property="Background" Value="{DynamicResource DangerBrush}" />
                                                                         </DataTrigger>
                                                                     </Style.Triggers>
                                                                 </Style>
                                                             </Button.Style>
                                                         </Button>
-                                                        <Button Width="20" Height="20" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Command="{Binding EditSmuConfigCommand}" IsEnabled="{Binding SmuController.CanEditConnectionSettings}" Visibility="{Binding SmuController.IsOpen, Converter={StaticResource bool2VisibilityConverter1}}">
+                                                        <Button Width="20" Height="20" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Click="EditSmuConfig_Click" IsEnabled="{Binding SmuController.CanEditConnectionSettings}" Visibility="{Binding SmuController.IsOpen, Converter={StaticResource bool2VisibilityConverter1}}">
                                                             <Button.Triggers>
                                                                 <EventTrigger RoutedEvent="Button.Click">
                                                                     <BeginStoryboard>
@@ -392,9 +402,9 @@
                                                     </StackPanel>
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
                                                         <TextBlock Width="20" Text="V:" />
-                                                        <TextBlock x:Name="SmuVDisplay" Width="80" Foreground="DodgerBlue" Text="{Binding SmuController.DisplayConfig.V, StringFormat='{}{0:F4}'}" />
+                                                        <TextBlock Width="80" Foreground="{DynamicResource PrimaryBrush}" Text="{Binding SmuController.DisplayConfig.V, StringFormat='{}{0:F4}'}" />
                                                         <TextBlock Width="45" Margin="8,0,0,0" Text="I(mA):" />
-                                                        <TextBlock x:Name="SmuIDisplay" Width="80" Foreground="DodgerBlue" Text="{Binding SmuController.DisplayConfig.I, StringFormat='{}{0:F4}'}" />
+                                                        <TextBlock Width="80" Foreground="{DynamicResource PrimaryBrush}" Text="{Binding SmuController.DisplayConfig.I, StringFormat='{}{0:F4}'}" />
                                                     </StackPanel>
                                                 </StackPanel>
                                             </StackPanel>
@@ -466,41 +476,39 @@
                                             </ListView>
 
                                         </Grid>
-                                        <GridSplitter Grid.Row="1" Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#FFFFFF" DragCompleted="GridSplitter_DragCompleted" />
-                                        <Grid x:Name="Grid1" Grid.Row="2">
+                                        <GridSplitter Grid.Row="1" Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="{DynamicResource BorderBrush}" DragCompleted="GridSplitter_DragCompleted" />
+                                        <Grid Grid.Row="2">
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="32" />
                                                 <RowDefinition Height="Auto" />
                                             </Grid.RowDefinitions>
                                             <ToolBarTray Grid.Row="0" HorizontalAlignment="Left">
                                                 <ToolBar Padding="3,2">
-                                                    <ToggleButton Margin="2,0,0,0" Click="ButtonMul_Click" IsChecked="True">
+                                                    <ToggleButton Margin="2,0,0,0" Click="ButtonMul_Click">
                                                         <Image Source="{DynamicResource DrawingImageSwitch}" Stretch="Uniform" />
                                                     </ToggleButton>
-                                                    <ToggleButton x:Name="ToggleSpectrumType" Margin="2,0,0,0" Click="ToggleSpectrumType_Click" ToolTip="{x:Static properties:Resources.ToggleSpectrumTypeTooltip}">
+                                                    <ToggleButton Margin="2,0,0,0" Click="ToggleSpectrumType_Click" ToolTip="{x:Static properties:Resources.ToggleSpectrumTypeTooltip}">
                                                         <TextBlock x:Name="SpectrumTypeText" Text="{x:Static properties:Resources.相对光谱}" />
                                                     </ToggleButton>
                                                     <Separator />
                                                     <Button Margin="2,0,0,0" Command="{Binding ViewResultManager.QueryCommand}" Content="{x:Static properties:Resources.Query}" ToolTip="{x:Static properties:Resources.QueryDataTooltip}" />
                                                     <Button Margin="2,0,0,0" Command="{Binding ViewResultManager.GenericQueryCommand}" Content="{x:Static properties:Resources.GenericQuery}" />
-                                                    <Button Margin="2,0,0,0" Command="{Binding ViewResultManager.ReloadCommand}" Content="{x:Static properties:Resources.Reload}" ToolTip="{x:Static properties:Resources.ReloadDataTooltip}" />
                                                     <Separator />
-                                                    <Button Margin="2,0,0,0" Command="{Binding ViewResultManager.DeleteAllCommand}" Content="{x:Static properties:Resources.ClearRecords}" Foreground="#E53935" ToolTip="{x:Static properties:Resources.DeleteAllRecordsTooltip}" />
-                                                    <Button Margin="2,0,0,0" Command="{Binding ViewResultManager.ResetDatabaseCommand}" Content="{x:Static properties:Resources.ResetDatabase}" Foreground="#E53935" ToolTip="{x:Static properties:Resources.ResetDatabaseTooltip}" />
+                                                    <Button Margin="2,0,0,0" Command="{Binding ViewResultManager.DeleteAllCommand}" Content="{x:Static properties:Resources.ClearRecords}" Foreground="{DynamicResource DangerBrush}" ToolTip="{x:Static properties:Resources.DeleteAllRecordsTooltip}" />
+                                                    <Button Margin="2,0,0,0" Command="{Binding ViewResultManager.ResetDatabaseCommand}" Content="{x:Static properties:Resources.ResetDatabase}" Foreground="{DynamicResource DangerBrush}" ToolTip="{x:Static properties:Resources.ResetDatabaseTooltip}" />
                                                     <Separator />
                                                     <TextBlock Margin="4,0,2,0" VerticalAlignment="Center" Text="{x:Static properties:Resources.LoadCount}" />
                                                     <TextBox Width="50" VerticalAlignment="Center" Text="{Binding ViewResultManager.Config.Count, UpdateSourceTrigger=PropertyChanged}" ToolTip="{x:Static properties:Resources.LoadCountTooltip}" />
                                                 </ToolBar>
                                             </ToolBarTray>
                                             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                                                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
                                                     <Button Width="25" Height="25" Margin="0,1,5,0" Padding="2" Click="OpenCieWindow_Click" ToolTip="{x:Static properties:Resources.CieChromaticityDiagram}">
                                                         <Image Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png" Stretch="Uniform" />
                                                     </Button>
                                                     <Button Width="25" Height="25" Margin="0,1,5,0" Padding="2" Click="Export_Click">
                                                         <Rectangle Width="16" Height="16" Fill="{DynamicResource DISave}" />
                                                     </Button>
-                                                    <Button Width="25" Height="25" Margin="0,1,5,0" Padding="2" Click="Cleartable_Click">
+                                                    <Button Width="25" Height="25" Margin="0,1,5,0" Padding="2" Click="Cleartable_Click" ToolTip="清空当前视图（不删除数据库记录）">
                                                         <Button.Triggers>
                                                             <EventTrigger RoutedEvent="Button.Click">
                                                                 <BeginStoryboard>
@@ -533,10 +541,9 @@
                                                             </TextBlock.RenderTransform>
                                                         </TextBlock>
                                                     </Button>
-                                                </StackPanel>
                                             </StackPanel>
 
-                                            <ListView x:Name="ViewResultList" Grid.Row="1" Height="250" Padding="2" BorderThickness="0" PreviewKeyDown="listView1_PreviewKeyDown" SelectedIndex="{Binding ViewResultManager.ViewReslutsSelectedIndex}" SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}">
+                                            <ListView x:Name="ViewResultList" Grid.Row="1" Height="250" Padding="2" BorderThickness="0" PreviewKeyDown="listView1_PreviewKeyDown" SelectedIndex="{Binding ViewResultManager.ViewReslutsSelectedIndex}" SelectionChanged="listView1_SelectionChanged" SelectionMode="Extended" Style="{StaticResource ListView.Small}">
                                                 <ListView.Resources>
                                                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                                                 </ListView.Resources>
@@ -631,7 +638,7 @@
                                                                                 <Style.Triggers>
                                                                                     <DataTrigger Binding="{Binding IsRecalculated}" Value="True">
                                                                                         <Setter Property="Text" Value="重新计算" />
-                                                                                        <Setter Property="Foreground" Value="#E67E22" />
+                                                                                        <Setter Property="Foreground" Value="{DynamicResource WarningBrush}" />
                                                                                     </DataTrigger>
                                                                                 </Style.Triggers>
                                                                             </Style>
@@ -800,10 +807,10 @@
                         <!--  ═══ Bottom: Log + Native Log ═══  -->
                         <xcad:LayoutAnchorablePaneGroup DockHeight="250">
                             <xcad:LayoutAnchorablePane>
-                                <xcad:LayoutAnchorable x:Name="LogPane" Title="{x:Static properties:Resources.Log}" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="LogPanel">
+                                <xcad:LayoutAnchorable Title="{x:Static properties:Resources.Log}" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="LogPanel">
                                     <Grid x:Name="LogGrid" />
                                 </xcad:LayoutAnchorable>
-                                <xcad:LayoutAnchorable x:Name="NativeLogPane" Title="{x:Static properties:Resources.NativeSpectrumLog}" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="NativeLogPanel">
+                                <xcad:LayoutAnchorable Title="{x:Static properties:Resources.NativeSpectrumLog}" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="NativeLogPanel">
                                     <Grid x:Name="NativeLogGrid" />
                                 </xcad:LayoutAnchorable>
                             </xcad:LayoutAnchorablePane>

@@ -78,11 +78,6 @@ namespace ColorVision.ImageEditor.Draw
         {
             if (SelectVisuals.Count == 0) return false;
 
-            double thickness = 1 / ZoomboxSub.ContentMatrix.M11;
-            double smallRectSize = 10 * thickness;
-            double halfSmallRectSize = smallRectSize / 2;
-
-
             bool Check(SelectionHandleRect selectVisual)
             {
                 ISelectVisual = selectVisual.ISelectVisual;
@@ -90,18 +85,6 @@ namespace ColorVision.ImageEditor.Draw
                 Rect Rect = selectVisual.rect;
 
                 OldRect = new Rect(Rect.X, Rect.Y, Rect.Width, Rect.Height);
-
-                // 计算每个角落的小矩形，使其中心在角落
-                Rect topLeft = new Rect(Rect.Left - halfSmallRectSize, Rect.Top - halfSmallRectSize, smallRectSize, smallRectSize);
-                Rect topRight = new Rect(Rect.Right - halfSmallRectSize, Rect.Top - halfSmallRectSize, smallRectSize, smallRectSize);
-                Rect bottomLeft = new Rect(Rect.Left - halfSmallRectSize, Rect.Bottom - halfSmallRectSize, smallRectSize, smallRectSize);
-                Rect bottomRight = new Rect(Rect.Right - halfSmallRectSize, Rect.Bottom - halfSmallRectSize, smallRectSize, smallRectSize);
-
-                // 计算每条边中间的小矩形，使其中心在边的中点
-                Rect middleTop = new Rect(Rect.Left + (Rect.Width / 2) - halfSmallRectSize, Rect.Top - halfSmallRectSize, smallRectSize, smallRectSize);
-                Rect middleBottom = new Rect(Rect.Left + (Rect.Width / 2) - halfSmallRectSize, Rect.Bottom - halfSmallRectSize, smallRectSize, smallRectSize);
-                Rect middleLeft = new Rect(Rect.Left - halfSmallRectSize, Rect.Top + (Rect.Height / 2) - halfSmallRectSize, smallRectSize, smallRectSize);
-                Rect middleRight = new Rect(Rect.Right - halfSmallRectSize, Rect.Top + (Rect.Height / 2) - halfSmallRectSize, smallRectSize, smallRectSize);
 
                 // 检查点在哪个小矩形内
                 if (selectVisual.topLeft.Contains(point))
@@ -288,8 +271,11 @@ namespace ColorVision.ImageEditor.Draw
             using DrawingContext dc = this.RenderOpen();
             if (SelectVisuals.Count == 0)
                 return;
+            double thickness = 1 / ZoomboxSub.ContentMatrix.M11;
+            Pen blackPen = new(Brushes.Black, thickness * 1.5);
+            Pen whitePen = new(Brushes.White, thickness);
             Rect unionRect = SelectVisuals.Select(v => v.GetRect()).Aggregate((a, b) => Rect.Union(a, b));
-            dc.DrawRectangle(SolidColorBrush, new Pen(Brushes.Transparent, 0), unionRect);
+            dc.DrawRectangle(SolidColorBrush, null, unionRect);
 
             selectRects.Clear();
 
@@ -308,10 +294,8 @@ namespace ColorVision.ImageEditor.Draw
 
             void RenderRect(Rect rect, ISelectVisual selectVisual =null)
             {
-                double thickness = 1 / ZoomboxSub.ContentMatrix.M11;
-                double thickness1 = thickness * 1.5;
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), rect);
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), rect);
+                dc.DrawRectangle(Brushes.Transparent, blackPen, rect);
+                dc.DrawRectangle(Brushes.Transparent, whitePen, rect);
 
                 // 小矩形的尺寸
                 double smallRectSize = 10 * thickness;
@@ -344,25 +328,25 @@ namespace ColorVision.ImageEditor.Draw
 
                 // 绘制小矩形
 
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), topLeft);
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), topRight);
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), bottomLeft);
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), bottomRight);
+                dc.DrawRectangle(Brushes.Transparent, blackPen, topLeft);
+                dc.DrawRectangle(Brushes.Transparent, blackPen, topRight);
+                dc.DrawRectangle(Brushes.Transparent, blackPen, bottomLeft);
+                dc.DrawRectangle(Brushes.Transparent, blackPen, bottomRight);
 
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), middleTop);
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), middleBottom);
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), middleLeft);
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, thickness1), middleRight);
+                dc.DrawRectangle(Brushes.Transparent, blackPen, middleTop);
+                dc.DrawRectangle(Brushes.Transparent, blackPen, middleBottom);
+                dc.DrawRectangle(Brushes.Transparent, blackPen, middleLeft);
+                dc.DrawRectangle(Brushes.Transparent, blackPen, middleRight);
 
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), topLeft);
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), topRight);
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), bottomLeft);
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), bottomRight);
+                dc.DrawRectangle(Brushes.Transparent, whitePen, topLeft);
+                dc.DrawRectangle(Brushes.Transparent, whitePen, topRight);
+                dc.DrawRectangle(Brushes.Transparent, whitePen, bottomLeft);
+                dc.DrawRectangle(Brushes.Transparent, whitePen, bottomRight);
 
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), middleTop);
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), middleBottom);
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), middleLeft);
-                dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), middleRight);
+                dc.DrawRectangle(Brushes.Transparent, whitePen, middleTop);
+                dc.DrawRectangle(Brushes.Transparent, whitePen, middleBottom);
+                dc.DrawRectangle(Brushes.Transparent, whitePen, middleLeft);
+                dc.DrawRectangle(Brushes.Transparent, whitePen, middleRight);
 
 
 
@@ -371,14 +355,13 @@ namespace ColorVision.ImageEditor.Draw
                 Point end = start + new Vector(0, -40 * thickness);
 
                 // Draw line
-                dc.DrawLine(new Pen(Brushes.Black, thickness1), start, end);
-                dc.DrawLine(new Pen(Brushes.White, thickness), start, end);
+                dc.DrawLine(blackPen, start, end);
+                dc.DrawLine(whitePen, start, end);
 
                 // Draw rotation icon (simple circle for demonstration)
                 double iconSize = 10 * thickness;
-                Rect iconRect = new Rect(end.X - iconSize / 2, end.Y - iconSize / 2, iconSize, iconSize);
-                dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.Black, thickness1), end, iconSize / 2, iconSize / 2);
-                dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.White, thickness), end, iconSize / 2, iconSize / 2);
+                dc.DrawEllipse(Brushes.Transparent, blackPen, end, iconSize / 2, iconSize / 2);
+                dc.DrawEllipse(Brushes.Transparent, whitePen, end, iconSize / 2, iconSize / 2);
             }
         }
         /// <summary>
@@ -395,34 +378,14 @@ namespace ColorVision.ImageEditor.Draw
             int canvasHeight = (int)Math.Ceiling(DrawCanvas.ActualHeight);
             if (canvasWidth == 0 || canvasHeight == 0) return;
 
-            // 3. 新建全局大图
-            var rtb = new RenderTargetBitmap(canvasWidth, canvasHeight, 96, 96, PixelFormats.Pbgra32);
-
-            // 4. 渲染所有选中的Visual到全局
-            var dv = new DrawingVisual();
-            using (var dc = dv.RenderOpen())
-            {
-                foreach (var visual in SelectVisuals)
-                {
-                    if (visual is DrawingVisual drawVisual)
-                    {
-                        // 直接绘制，不偏移
-                        dc.DrawDrawing(drawVisual.Drawing);
-                    }
-                }
-            }
-            rtb.Render(dv);
-
-            // 5. 用 CroppedBitmap 截取 unionRect 区域
             var cropRect = new Int32Rect(
                 (int)Math.Floor(unionRect.X),
                 (int)Math.Floor(unionRect.Y),
                 (int)Math.Ceiling(unionRect.Width),
                 (int)Math.Ceiling(unionRect.Height)
             );
-            var cropped = new CroppedBitmap(rtb, cropRect);
+            BitmapSource cropped = RasterizeSelection(SelectVisuals, canvasWidth, canvasHeight, cropRect);
 
-            // 4. 清空原选中，添加新的栅格化对象
             foreach (var visual in SelectVisuals.OfType<DrawingVisual>())
             {
                 DrawCanvas.RemoveVisual(visual);
@@ -432,9 +395,29 @@ namespace ColorVision.ImageEditor.Draw
 
             DrawCanvas.AddVisualCommand(rasterVisual);
             SelectVisuals.Add(rasterVisual);
-            // 5. 触发重绘
             Render();
         }
+
+        private static RenderTargetBitmap RasterizeSelection(IEnumerable<ISelectVisual> visuals, int canvasWidth, int canvasHeight, Int32Rect cropRect)
+        {
+            Int32Rect renderRect = cropRect.IsEmpty ? new Int32Rect(0, 0, canvasWidth, canvasHeight) : cropRect;
+            if (!cropRect.IsEmpty && (renderRect.X < 0 || renderRect.Y < 0 || renderRect.Width <= 0 || renderRect.Height <= 0 ||
+                (long)renderRect.X + renderRect.Width > canvasWidth || (long)renderRect.Y + renderRect.Height > canvasHeight))
+                throw new ArgumentException("The crop rectangle must be within the canvas.", nameof(cropRect));
+
+            RenderTargetBitmap bitmap = new(renderRect.Width, renderRect.Height, 96, 96, PixelFormats.Pbgra32);
+            DrawingVisual composite = new();
+            using (DrawingContext context = composite.RenderOpen())
+            {
+                context.PushTransform(new TranslateTransform(-renderRect.X, -renderRect.Y));
+                foreach (DrawingVisual visual in visuals.OfType<DrawingVisual>())
+                    context.DrawDrawing(visual.Drawing);
+                context.Pop();
+            }
+            bitmap.Render(composite);
+            return bitmap;
+        }
+
         private void PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (SelectVisuals.Count == 0 || !EditorContext.IsImageEditMode )
@@ -727,7 +710,14 @@ namespace ColorVision.ImageEditor.Draw
 
         public void Dispose()
         {
-            DrawCanvas?.RemoveVisual(this);
+            if (DrawCanvas != null)
+            {
+                DrawCanvas.PreviewMouseLeftButtonDown -= DrawCanvas_PreviewMouseLeftButtonDown;
+                DrawCanvas.MouseMove -= DrawCanvas_MouseMove;
+                DrawCanvas.PreviewMouseUp -= DrawCanvas_PreviewMouseUp;
+                DrawCanvas.PreviewKeyDown -= PreviewKeyDown;
+                DrawCanvas.RemoveVisual(this);
+            }
             if (ZoomboxSub != null)
                 ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
             SelectVisualChanged = null;
