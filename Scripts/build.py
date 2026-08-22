@@ -194,9 +194,11 @@ def validate_installer_runtime_dlls(
         source_path.rsplit("/", 1)[-1]
         for source_path in installer_source_paths
     }
+    native_runtime_path = runtime_path / "runtimes" / "win-x64" / "native"
+    runtime_dlls = [*runtime_path.glob("*.dll"), *native_runtime_path.glob("*.dll")]
     missing_dlls = sorted(
         file_path.name
-        for file_path in runtime_path.glob("*.dll")
+        for file_path in runtime_dlls
         if file_path.is_file() and file_path.name.casefold() not in installer_sources
     )
     if missing_dlls:
@@ -212,7 +214,7 @@ def validate_installer_runtime_dlls(
         report("Advanced Installer does not include ServiceHost runtime files: " + ", ".join(missing_service_host_paths))
         return False
 
-    report("Verified root runtime DLLs and the complete ServiceHost runtime in Advanced Installer.")
+    report("Verified root and win-x64 native runtime DLLs plus the complete ServiceHost runtime in Advanced Installer.")
     return True
 
 

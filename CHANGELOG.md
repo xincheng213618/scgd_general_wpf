@@ -1,5 +1,11 @@
 #   CHANGELOG
 
+## [1.4.13.1] 2026.08.22
+
+1. 将 OpenCV 与 OpenCV contrib 原生 SDK 从 4.13.0 升级至 4.14.0，同步 VC18 x64 头文件以及 Release/Debug 导入库和运行时 DLL。
+2. 将自编原生模块的链接和发布依赖从 `4130` 更新为 `4140`，保留 nonfree、IPP、OpenCL、FFmpeg 和 CPU 指令集运行时分派配置；OpenCvSharp4 继续保留其运行时所需的 FFmpeg 4.13 插件。
+3. 更新 Agent Framework、MCP、WebView2、log4net、SqlSugarCore、NPOI、.NET 运行时补丁包和测试工具等 NuGet 依赖；保留 OpenCvSharp4 最新 4.13 包组以及 ScottPlot 兼容依赖。
+
 ## [1.4.12.73] 2026.08.21
 
 1. 修复 MySQL 结果表执行“完整备份并清理”时，后台线程首次初始化带 WPF 菜单的 MySQL 管理对象而触发 STA 异常的问题；耗时的数据库备份和清理仍在后台执行。

@@ -989,10 +989,11 @@ void ApplyMedianBlur(const cv::Mat& src, cv::Mat& dst, int kernelSize)
 // 锐化
 void ApplySharpen(const cv::Mat& src, cv::Mat& dst)
 {
-    cv::Mat kernel = (cv::Mat_<float>(3, 3) <<
-        0, -1, 0,
-        -1, 5, -1,
-        0, -1, 0);
+    const cv::Mat_<float> kernel({ 3, 3 }, {
+        0.0f, -1.0f, 0.0f,
+        -1.0f, 5.0f, -1.0f,
+        0.0f, -1.0f, 0.0f
+    });
     cv::filter2D(src, dst, src.depth(), kernel);
 }
 

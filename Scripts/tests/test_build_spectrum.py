@@ -328,7 +328,7 @@ class SpectrumClientUpdateContractTests(unittest.TestCase):
         cls.repo_root = Path(__file__).resolve().parents[2]
 
     def test_install_gate_covers_continuous_and_serial_operations(self) -> None:
-        measurement = (self.repo_root / "Plugins/Spectrum/MainWindow.Measurement.cs").read_text(encoding="utf-8")
+        measurement = (self.repo_root / "Plugins/Spectrum/MainWindow.xaml.cs").read_text(encoding="utf-8")
         manager = (self.repo_root / "Plugins/Spectrum/SpectrometerManager.cs").read_text(encoding="utf-8")
 
         self.assertIn(
