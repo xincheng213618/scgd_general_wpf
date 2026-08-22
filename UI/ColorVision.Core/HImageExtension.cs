@@ -11,9 +11,6 @@ namespace ColorVision.Core
 {
     public static class HImageExtension
     {
-        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
-        private static extern void RtlMoveMemory(IntPtr Destination, IntPtr Source, uint Length);
-
         private static bool TryGetRowCopyLayout(HImage hImage, out int bytesPerRow, out int sourceStride)
         {
             bytesPerRow = 0;
@@ -149,7 +146,7 @@ namespace ColorVision.Core
             { PixelFormats.Gray16, (1, 16) },
             { PixelFormats.Bgr24, (3, 8) }, // Halcon usually 3 channels
             { PixelFormats.Rgb24, (3, 8) },
-            { PixelFormats.Bgr32, (3, 8) }, // 32-bit usually padded 3 channels
+            { PixelFormats.Bgr32, (4, 8) },
             { PixelFormats.Bgra32, (4, 8) },
             { PixelFormats.Rgb48, (3, 16) }
         };
@@ -290,25 +287,22 @@ namespace ColorVision.Core
             }
 
             writeableBitmap.Lock();
-
-            unsafe
+            try
             {
-                byte* src = (byte*)hImage.pData;
-                byte* dst = (byte*)writeableBitmap.BackBuffer;
-
-                for (int y = 0; y < hImage.rows; y++)
-                {
-                    RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)bytesPerRow);
-                    src += sourceStride;
-                    dst += writeableBitmap.BackBufferStride;
-                }
+                CopyImageBuffer(
+                    hImage.pData,
+                    sourceStride,
+                    writeableBitmap.BackBuffer,
+                    writeableBitmap.BackBufferStride,
+                    hImage.rows,
+                    bytesPerRow);
+                writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
+            }
+            finally
+            {
+                writeableBitmap.Unlock();
             }
 
-            //RtlMoveMemory(writeableBitmap.BackBuffer, hImage.pData, (uint)(hImage.cols * hImage.rows * hImage.channels * (hImage.depth / 8)));
-            //writeableBitmap.Lock();
-
-            writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
-            writeableBitmap.Unlock();
             return writeableBitmap;
         }
 

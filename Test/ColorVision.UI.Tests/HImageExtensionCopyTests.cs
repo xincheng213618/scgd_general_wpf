@@ -118,6 +118,50 @@ public sealed class HImageExtensionCopyTests
     }
 
     [Theory]
+    [InlineData(3, false)]
+    [InlineData(4, true)]
+    public void UpdateWriteableBitmapRequiresFourChannelStorageForBgr32(int channels, bool expectedUpdate)
+    {
+        const int width = 3;
+        const int height = 2;
+        int bytesPerRow = width * channels;
+        byte[] source = CreatePixels(height, bytesPerRow, bytesPerRow);
+        byte[] originalTarget = Enumerable.Repeat((byte)0xA5, width * height * 4).ToArray();
+        IntPtr buffer = Marshal.AllocCoTaskMem(source.Length);
+        Marshal.Copy(source, 0, buffer, source.Length);
+        HImage image = new()
+        {
+            rows = height,
+            cols = width,
+            channels = channels,
+            depth = 8,
+            stride = bytesPerRow,
+            isDispose = true,
+            pData = buffer
+        };
+
+        try
+        {
+            (bool updated, byte[] pixels) = WpfTestHost.Invoke(() =>
+            {
+                WriteableBitmap bitmap = new(width, height, 96, 96, PixelFormats.Bgr32, null);
+                bitmap.WritePixels(new Int32Rect(0, 0, width, height), originalTarget, width * 4, 0);
+                bool success = HImageExtension.UpdateWriteableBitmap(bitmap, image);
+                byte[] pixels = new byte[width * height * 4];
+                bitmap.CopyPixels(pixels, width * 4, 0);
+                return (success, pixels);
+            });
+
+            Assert.Equal(expectedUpdate, updated);
+            Assert.Equal(expectedUpdate ? source : originalTarget, pixels);
+        }
+        finally
+        {
+            Marshal.FreeCoTaskMem(buffer);
+        }
+    }
+
+    [Theory]
     [InlineData(4, 0)]
     [InlineData(5, 0)]
     [InlineData(5, 3)]
@@ -145,6 +189,48 @@ public sealed class HImageExtensionCopyTests
         try
         {
             WriteableBitmap bitmap = await WpfTestHost.Invoke(() => image.ToWriteableBitmapAsync());
+            byte[] actual = WpfTestHost.Invoke(() =>
+            {
+                byte[] pixels = new byte[height * bytesPerRow];
+                bitmap.CopyPixels(pixels, bytesPerRow, 0);
+                return pixels;
+            });
+            Assert.Equal(ExtractActivePixels(source, height, bytesPerRow, sourceStride), actual);
+        }
+        finally
+        {
+            Marshal.FreeCoTaskMem(buffer);
+        }
+    }
+
+    [Theory]
+    [InlineData(4, 0)]
+    [InlineData(5, 0)]
+    [InlineData(5, 3)]
+    public void ToWriteableBitmapCopiesTightAndPaddedRows(int width, int sourcePadding)
+    {
+        const int height = 4;
+        const int channels = 3;
+        const int depth = 8;
+        int bytesPerRow = width * channels;
+        int sourceStride = bytesPerRow + sourcePadding;
+        byte[] source = CreatePixels(height, bytesPerRow, sourceStride);
+        IntPtr buffer = Marshal.AllocCoTaskMem(source.Length);
+        Marshal.Copy(source, 0, buffer, source.Length);
+        HImage image = new()
+        {
+            rows = height,
+            cols = width,
+            channels = channels,
+            depth = depth,
+            stride = sourceStride,
+            isDispose = true,
+            pData = buffer
+        };
+
+        try
+        {
+            WriteableBitmap bitmap = WpfTestHost.Invoke(() => image.ToWriteableBitmap());
             byte[] actual = WpfTestHost.Invoke(() =>
             {
                 byte[] pixels = new byte[height * bytesPerRow];
