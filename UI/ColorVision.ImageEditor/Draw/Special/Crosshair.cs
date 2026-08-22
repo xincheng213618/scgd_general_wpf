@@ -135,11 +135,8 @@ namespace ColorVision.ImageEditor.Draw.Special
                 point.X = point.X / controlWidth * imageWidth;
                 point.Y = point.Y / controlHeight * imageHeight;
 
-                var bitPoint = new Point(point.X.ToInt32(), point.Y.ToInt32());
-
                 if (point.X.ToInt32() >= 0 && point.X.ToInt32() < bitmap.PixelWidth && point.Y.ToInt32() >= 0 && point.Y.ToInt32() < bitmap.PixelHeight)
                 {
-                    var color = bitmap.GetPixelColor(point.X.ToInt32(), point.Y.ToInt32());
                     DrawImage(actPoint);
                 }
             }

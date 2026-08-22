@@ -159,23 +159,13 @@ namespace ColorVision.ImageEditor.BatchProcessing
             using Mat bgr = ConvertToBgr(source8);
             using Mat yCrCb = new();
             Cv2.CvtColor(bgr, yCrCb, ColorConversionCodes.BGR2YCrCb);
-            Mat[] channels = Cv2.Split(yCrCb);
-            try
-            {
-                Cv2.EqualizeHist(channels[0], channels[0]);
-                using Mat merged = new();
-                Cv2.Merge(channels, merged);
-                Mat result = new();
-                Cv2.CvtColor(merged, result, ColorConversionCodes.YCrCb2BGR);
-                return result;
-            }
-            finally
-            {
-                foreach (Mat channel in channels)
-                {
-                    channel.Dispose();
-                }
-            }
+            using Mat luminance = new();
+            Cv2.ExtractChannel(yCrCb, luminance, 0);
+            Cv2.EqualizeHist(luminance, luminance);
+            Cv2.InsertChannel(luminance, yCrCb, 0);
+            Mat result = new();
+            Cv2.CvtColor(yCrCb, result, ColorConversionCodes.YCrCb2BGR);
+            return result;
         }
 
         private static Mat ConvertToGray(Mat source)

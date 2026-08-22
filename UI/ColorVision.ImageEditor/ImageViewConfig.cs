@@ -45,12 +45,13 @@ namespace ColorVision.ImageEditor
                 return (T)service;
             }
 
-            if (Activator.CreateInstance(type) is IImageEditorConfig defaultConfig)
+            if (Activator.CreateInstance(type) is T defaultConfig)
             {
                 Configs[type] = defaultConfig;
+                return defaultConfig;
             }
-            // 此处递归调用是为了确保缓存和异常处理逻辑一致
-            return GetRequiredService<T>();
+
+            throw new InvalidOperationException($"Unable to create required image editor configuration '{type.FullName}'.");
         }
         public event EventHandler Cleared;
         [JsonIgnore]

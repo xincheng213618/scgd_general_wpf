@@ -45,12 +45,11 @@ namespace ColorVision.ImageEditor.Draw
         {
             using DrawingContext dc = RenderOpen();
 
-            if (Points.Count >= 1)
+            if (Points.Count >= 2)
             {
+                Pen pen = new(Attribute.Pen.Brush, Attribute.Pen.Thickness);
                 for (int i = 1; i < Points.Count; i++)
-                {
-                    dc.DrawLine(new Pen(Attribute.Pen.Brush, Attribute.Pen.Thickness), Points[i - 1], Points[i]);
-                }
+                    dc.DrawLine(pen, Points[i - 1], Points[i]);
             }
         }
 

@@ -53,16 +53,15 @@ namespace ColorVision.ImageEditor.Draw
         public override void Render()
         {
             using DrawingContext dc = RenderOpen();
-            if (Points.Count >= 1)
+            if (Points.Count >= 2)
             {
+                Pen pen = new(Attribute.Pen.Brush, Attribute.Pen.Thickness);
                 for (int i = 1; i < Points.Count; i++)
-                {
-                    dc.DrawLine(new Pen(Attribute.Pen.Brush, Attribute.Pen.Thickness), Points[i - 1], Points[i]);
-                }
-
-                if (IsComple)
-                    dc.DrawLine(Attribute.Pen, Attribute.Points[Attribute.Points.Count - 1], Attribute.Points[0]);
+                    dc.DrawLine(pen, Points[i - 1], Points[i]);
             }
+
+            if (IsComple && Points.Count >= 1)
+                dc.DrawLine(Attribute.Pen, Attribute.Points[Attribute.Points.Count - 1], Attribute.Points[0]);
         }
 
         public override Rect GetRect()

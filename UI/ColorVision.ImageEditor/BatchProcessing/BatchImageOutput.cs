@@ -64,10 +64,39 @@ namespace ColorVision.ImageEditor.BatchProcessing
             }
 
             string extension = Path.GetExtension(filePath).ToLowerInvariant();
-            using Mat writable = PrepareForEncoder(image, extension);
-            if (!Cv2.ImWrite(filePath, writable))
+            bool supportsHighDepth = extension is ".png" or ".tif" or ".tiff";
+            bool supportsDepth = image.Depth() == MatType.CV_8U
+                || supportsHighDepth && image.Depth() == MatType.CV_16U
+                || extension is ".tif" or ".tiff" && (image.Depth() == MatType.CV_32F || image.Depth() == MatType.CV_64F);
+            Mat writable = image;
+            Mat? convertedDepth = null;
+            Mat? convertedChannels = null;
+            try
             {
-                throw new IOException($"保存图像失败：{filePath}");
+                if (!supportsDepth)
+                {
+                    convertedDepth = new Mat();
+                    Cv2.Normalize(image, convertedDepth, 0, supportsHighDepth ? ushort.MaxValue : byte.MaxValue, NormTypes.MinMax);
+                    convertedDepth.ConvertTo(convertedDepth, supportsHighDepth ? MatType.CV_16U : MatType.CV_8U);
+                    writable = convertedDepth;
+                }
+
+                if (extension is ".jpg" or ".jpeg" && writable.Channels() == 4)
+                {
+                    convertedChannels = new Mat();
+                    Cv2.CvtColor(writable, convertedChannels, ColorConversionCodes.BGRA2BGR);
+                    writable = convertedChannels;
+                }
+
+                if (!Cv2.ImWrite(filePath, writable))
+                {
+                    throw new IOException($"保存图像失败：{filePath}");
+                }
+            }
+            finally
+            {
+                convertedChannels?.Dispose();
+                convertedDepth?.Dispose();
             }
         }
 
@@ -94,44 +123,5 @@ namespace ColorVision.ImageEditor.BatchProcessing
             return relative == "." ? directory : Path.Combine(directory, relative);
         }
 
-        private static Mat PrepareForEncoder(Mat image, string extension)
-        {
-            bool supportsHighDepth = extension is ".png" or ".tif" or ".tiff";
-            if (image.Depth() == MatType.CV_8U)
-            {
-                return PrepareChannels(image, extension);
-            }
-
-            if (supportsHighDepth && image.Depth() == MatType.CV_16U)
-            {
-                return PrepareChannels(image, extension);
-            }
-
-            if (extension is ".tif" or ".tiff" && (image.Depth() == MatType.CV_32F || image.Depth() == MatType.CV_64F))
-            {
-                return PrepareChannels(image, extension);
-            }
-
-            Mat normalized = new();
-            Cv2.Normalize(image, normalized, 0, supportsHighDepth ? ushort.MaxValue : byte.MaxValue, NormTypes.MinMax);
-            Mat converted = new();
-            normalized.ConvertTo(converted, supportsHighDepth ? MatType.CV_16U : MatType.CV_8U);
-            normalized.Dispose();
-            Mat prepared = PrepareChannels(converted, extension);
-            converted.Dispose();
-            return prepared;
-        }
-
-        private static Mat PrepareChannels(Mat image, string extension)
-        {
-            if (extension is not ".jpg" and not ".jpeg" || image.Channels() != 4)
-            {
-                return image.Clone();
-            }
-
-            Mat result = new();
-            Cv2.CvtColor(image, result, ColorConversionCodes.BGRA2BGR);
-            return result;
-        }
     }
 }

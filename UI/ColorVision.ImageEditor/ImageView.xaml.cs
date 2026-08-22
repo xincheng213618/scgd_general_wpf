@@ -244,10 +244,6 @@ namespace ColorVision.ImageEditor
                 ImageShow.TextFontSizeOverride = e;
                 ImageShow.ApplyLayoutScaleToVisuals();
             };
-            Zoombox1.ContentMatrixChanged += (s, e) =>
-            {
-                UpdateDrawingVisualScale();
-            };
             Zoombox1.LayoutUpdated += (s, e) =>
             {
                 SchedulePixelValueOverlayRefresh();
@@ -300,7 +296,6 @@ namespace ColorVision.ImageEditor
             PseudoColorTool?.Reset();
             FunctionImage = null;
             _imageFrameStore.Invalidate();
-            GC.Collect();
         }
 
         public bool ImageEditMode
@@ -1722,7 +1717,6 @@ namespace ColorVision.ImageEditor
 
             Zoombox1.Child = null;
             ZoomGrid.Children.Clear();
-            GC.Collect();
             GC.SuppressFinalize(this);
         }
 

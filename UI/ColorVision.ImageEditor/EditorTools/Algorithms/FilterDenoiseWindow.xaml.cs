@@ -78,6 +78,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
 
         protected override void OnClosed(EventArgs e)
         {
+            DebounceTimer.Cancel(_debounceKey);
             _preview.CancelIfActive();
             base.OnClosed(e);
         }

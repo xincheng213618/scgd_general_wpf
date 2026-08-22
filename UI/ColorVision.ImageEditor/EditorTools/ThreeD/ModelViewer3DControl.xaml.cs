@@ -4,7 +4,6 @@ using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -1055,7 +1054,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             if (currentModelGroup == null || selectedNode?.Model == null)
                 return;
 
-            foreach (var key in nodeByModel.Keys.ToList())
+            foreach (var key in nodeByModel.Keys)
                 modelVisibility[key] = false;
 
             SetVisibilityRecursive(selectedNode.Model, true);
@@ -1064,7 +1063,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
 
         private void ShowAllNodes_Click(object sender, RoutedEventArgs e)
         {
-            foreach (var key in nodeByModel.Keys.ToList())
+            foreach (var key in nodeByModel.Keys)
                 modelVisibility[key] = true;
 
             ApplyModelVisibility();
