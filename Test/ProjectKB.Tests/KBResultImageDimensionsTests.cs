@@ -80,17 +80,17 @@ public sealed class KBResultImageDimensionsTests
         try
         {
             SavePng(filePath, width: 19, height: 13);
-            using ManualResetEventSlim loadStarted = new();
+            TaskCompletionSource<bool> loadStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
             Task<WriteableBitmap?> loadTask;
 
             using (FileStream exclusiveWriter = new(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
             {
                 loadTask = Task.Run(() =>
                 {
-                    loadStarted.Set();
+                    loadStarted.TrySetResult(true);
                     return ProjectKBWindow.TryLoadResultBitmap(filePath);
                 });
-                Assert.True(loadStarted.Wait(TimeSpan.FromSeconds(1)));
+                await loadStarted.Task.WaitAsync(TimeSpan.FromSeconds(3));
                 await Task.Delay(250);
                 Assert.False(loadTask.IsCompleted);
             }
@@ -114,7 +114,7 @@ public sealed class KBResultImageDimensionsTests
         byte[] png = CreatePng(width: 23, height: 15);
         try
         {
-            using ManualResetEventSlim loadStarted = new();
+            TaskCompletionSource<bool> loadStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
             Task<WriteableBitmap?> loadTask;
 
             using (FileStream writer = new(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete))
@@ -124,11 +124,11 @@ public sealed class KBResultImageDimensionsTests
                 writer.Flush(flushToDisk: true);
                 loadTask = Task.Run(() =>
                 {
-                    loadStarted.Set();
+                    loadStarted.TrySetResult(true);
                     return ProjectKBWindow.TryLoadResultBitmap(filePath);
                 });
 
-                Assert.True(loadStarted.Wait(TimeSpan.FromSeconds(1)));
+                await loadStarted.Task.WaitAsync(TimeSpan.FromSeconds(3));
                 await Task.Delay(250);
                 Assert.False(loadTask.IsCompleted);
 
