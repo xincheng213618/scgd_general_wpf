@@ -117,6 +117,48 @@ public sealed class HImageExtensionCopyTests
         }
     }
 
+    [Theory]
+    [InlineData(4, 0)]
+    [InlineData(5, 0)]
+    [InlineData(5, 3)]
+    public async Task ToWriteableBitmapAsyncCopiesTightAndPaddedRows(int width, int sourcePadding)
+    {
+        const int height = 4;
+        const int channels = 3;
+        const int depth = 8;
+        int bytesPerRow = width * channels;
+        int sourceStride = bytesPerRow + sourcePadding;
+        byte[] source = CreatePixels(height, bytesPerRow, sourceStride);
+        IntPtr buffer = Marshal.AllocCoTaskMem(source.Length);
+        Marshal.Copy(source, 0, buffer, source.Length);
+        HImage image = new()
+        {
+            rows = height,
+            cols = width,
+            channels = channels,
+            depth = depth,
+            stride = sourceStride,
+            isDispose = true,
+            pData = buffer
+        };
+
+        try
+        {
+            WriteableBitmap bitmap = await WpfTestHost.Invoke(() => image.ToWriteableBitmapAsync());
+            byte[] actual = WpfTestHost.Invoke(() =>
+            {
+                byte[] pixels = new byte[height * bytesPerRow];
+                bitmap.CopyPixels(pixels, bytesPerRow, 0);
+                return pixels;
+            });
+            Assert.Equal(ExtractActivePixels(source, height, bytesPerRow, sourceStride), actual);
+        }
+        finally
+        {
+            Marshal.FreeCoTaskMem(buffer);
+        }
+    }
+
     private static byte[] CreatePixels(int rows, int bytesPerRow, int stride)
     {
         byte[] pixels = new byte[rows * stride];

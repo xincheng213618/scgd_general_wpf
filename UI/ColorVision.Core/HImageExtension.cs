@@ -246,7 +246,6 @@ namespace ColorVision.Core
 
             // Calculate parameters needed for the copy
             int strideDest = writeableBitmap.BackBufferStride;
-            long pDataSrc = (long)hImage.pData; // Store pointer as long to safely pass to task
             if (strideDest < bytesPerLine)
             {
                 throw new ArgumentException("Invalid destination bitmap stride.", nameof(hImage));
@@ -256,32 +255,14 @@ namespace ColorVision.Core
             writeableBitmap.Lock();
             try
             {
-                long pDataDest = (long)writeableBitmap.BackBuffer;
-                await Task.Run(() =>
-                {
-                    var parallelOptions = new ParallelOptions
-                    {
-                        MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1)
-                    };
-
-                    unsafe
-                    {
-                        byte* pSrcBase = (byte*)pDataSrc;
-                        byte* pDstBase = (byte*)pDataDest;
-
-                        Parallel.For(0, height, parallelOptions, y =>
-                        {
-                            // 指针运算：使用 long 避免 32位 溢出（虽然行偏移通常不会溢出，但习惯要好）
-                            byte* src = pSrcBase + ((long)y * strideSrc);
-                            byte* dst = pDstBase + ((long)y * strideDest);
-
-                            // Copy
-                            // 参数3: destinationSizeInBytes。这里传 bytesPerLine 是因为我们只操作这一行，
-                            // 只要保证 bytesPerLine <= strideDest 即可，这是安全的。
-                            Buffer.MemoryCopy(src, dst, bytesPerLine, bytesPerLine);
-                        });
-                    }
-                });
+                IntPtr destination = writeableBitmap.BackBuffer;
+                await Task.Run(() => CopyImageBuffer(
+                    hImage.pData,
+                    strideSrc,
+                    destination,
+                    strideDest,
+                    height,
+                    bytesPerLine));
 
                 // 3. UI Thread: Mark as dirty and return
                 writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
