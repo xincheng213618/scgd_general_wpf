@@ -6,6 +6,7 @@ using System.Windows;
 namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam
 {
 
+    [System.Obsolete("Camera-template menu entry removed from the main menu.")]
     public class MenuICameraExp : MenuItemBase
     {
         public override string OwnerGuid => nameof(MenuItemCamera);

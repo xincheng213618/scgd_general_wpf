@@ -5,6 +5,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.OLEDImageProcessing
 {
+    [System.Obsolete("Algorithm-template menu entry removed from the main menu.")]
     public class MenuLocalizationImageEnhancement : MenuITemplateAlgorithmBase
     {
         public override string Header => "局部图像增强";

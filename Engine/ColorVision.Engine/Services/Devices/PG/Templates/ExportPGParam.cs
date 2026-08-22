@@ -8,6 +8,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.PG.Templates
 {
+    [System.Obsolete("PG-template menu entry removed from the main menu.")]
     public class ExportPGParam : MenuItemBase
     {
         public override string OwnerGuid => nameof(MenuTemplate);

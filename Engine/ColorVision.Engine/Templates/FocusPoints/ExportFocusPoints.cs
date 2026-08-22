@@ -2,6 +2,7 @@
 
 namespace ColorVision.Engine.Templates.FocusPoints
 {
+    [System.Obsolete("Algorithm-template menu entry removed from the main menu.")]
     public class ExportFocusPoints : MenuITemplateAlgorithmBase
     {
         public override int Order => 2;

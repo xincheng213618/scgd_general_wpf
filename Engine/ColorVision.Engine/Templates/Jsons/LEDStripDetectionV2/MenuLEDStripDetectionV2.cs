@@ -2,6 +2,7 @@
 
 namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
 {
+    [System.Obsolete("Algorithm-template menu entry removed from the main menu.")]
     public class MenuLEDStripDetectionV2 : MenuITemplateAlgorithmBase
     {
         public override string Header => ColorVision.Engine.Properties.Resources.LightBarDetectionV2;

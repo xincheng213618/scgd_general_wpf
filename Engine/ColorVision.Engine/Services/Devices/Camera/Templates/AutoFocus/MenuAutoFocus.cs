@@ -3,6 +3,7 @@ using ColorVision.Engine.Templates.Menus;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus
 {
+    [System.Obsolete("Camera-template menu entry removed from the main menu.")]
     public class MenuAutoFocus : MenuItemTemplateBase
     {
         public override string OwnerGuid => nameof(MenuItemCamera);

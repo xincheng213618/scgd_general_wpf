@@ -5,6 +5,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.ImageROI
 {
+    [System.Obsolete("Algorithm-template menu entry removed from the main menu.")]
     public class ExportTemplateImageROI : MenuITemplateAlgorithmBase
     {
         public override string Header => ColorVision.Engine.Properties.Resources.ImageCrop;

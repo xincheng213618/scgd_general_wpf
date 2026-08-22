@@ -2,6 +2,7 @@
 
 namespace ColorVision.Engine.Templates.Menus
 {
+    [System.Obsolete("Algorithm-template menu removed from the main menu.")]
     public class MenuITemplateAlgorithm : MenuItemBase
     {
         public override string OwnerGuid => nameof(MenuTemplate);
@@ -9,6 +10,7 @@ namespace ColorVision.Engine.Templates.Menus
         public override int Order => 3;
     }
 
+    [System.Obsolete("Algorithm-template menu entries removed from the main menu.")]
     public abstract class MenuITemplateAlgorithmBase : MenuItemTemplateBase
     {
         public override string OwnerGuid => nameof(MenuITemplateAlgorithm);

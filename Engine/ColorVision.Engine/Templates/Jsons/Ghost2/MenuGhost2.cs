@@ -4,6 +4,7 @@ using ColorVision.Engine.Templates.Menus;
 
 namespace ColorVision.Engine.Templates.Jsons.Ghost2
 {
+    [System.Obsolete("Algorithm-template menu entry removed from the main menu.")]
     public class MenuGhost2 : MenuITemplateAlgorithmBase
     {
         public override string Header => ColorVision.Engine.Properties.Resources.GhostingDetection2_0;

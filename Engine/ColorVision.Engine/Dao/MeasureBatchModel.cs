@@ -20,7 +20,7 @@ namespace ColorVision.Engine
     public class MeasureBatchModel : ViewEntity, IInitTables
     {
 
-        [SugarColumn(ColumnName = "t_id", IsNullable = true)]
+        [SugarColumn(ColumnName = "t_id", IsNullable = true, ColumnDescription = "t_scgd_measure_template_master")]
         public int? TId { get; set; }
 
         [SugarColumn(ColumnName = "name",IsNullable = true)]
@@ -28,10 +28,10 @@ namespace ColorVision.Engine
         [SugarColumn(ColumnName = "code",IsNullable = true)]
         public string? Code { get; set; }
 
-        [SugarColumn(ColumnName = "create_date")]
+        [SugarColumn(ColumnName = "create_date", IsNullable = false, DefaultValue = "CURRENT_TIMESTAMP", ColumnDescription = "创建日期")]
         public DateTime? CreateDate { get; set; } = DateTime.Now;
 
-        [SugarColumn(ColumnName = "total_time")]
+        [SugarColumn(ColumnName = "total_time", IsNullable = false, DefaultValue = "0")]
         public int TotalTime { get; set; }
 
         [SugarColumn(ColumnName = "result",IsNullable =true)]
@@ -43,10 +43,10 @@ namespace ColorVision.Engine
 
         public event EventHandler <FlowStatus> FlowStatusChaned;
 
-        [SugarColumn(ColumnName = "archived_flag")]
+        [SugarColumn(ColumnName = "archived_flag", ColumnDataType = "smallint", Length = 6, IsNullable = true, DefaultValue = "0", ColumnDescription = "归档状态,-1:不归档，0:待归档，1:已归档，-2:归档失败")]
         public ArchiveStatus ArchiveStatus { get; set; } = ArchiveStatus.Pending;
 
-        [SugarColumn(ColumnName = "tenant_id")]
+        [SugarColumn(ColumnName = "tenant_id", IsNullable = true)]
         public int TenantId { get; set; }
     }
 

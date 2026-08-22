@@ -6,6 +6,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.AutoExpTime
 {
+    [System.Obsolete("Camera-template menu entry removed from the main menu.")]
     public class MenuAutoExpTimeV2 : MenuItemTemplateBase
     {
         public override string OwnerGuid => nameof(MenuItemCamera);

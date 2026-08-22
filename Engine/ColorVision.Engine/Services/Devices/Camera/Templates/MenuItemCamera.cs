@@ -3,6 +3,7 @@ using ColorVision.UI.Menus;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Templates
 {
+    [System.Obsolete("Camera-template menu removed from the main menu.")]
     public class MenuItemCamera : MenuItemBase
     {
         public override string OwnerGuid => nameof(MenuTemplate);

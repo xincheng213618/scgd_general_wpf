@@ -5,6 +5,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.DetectScreenDefects
 {
+    [System.Obsolete("Algorithm-template menu entry removed from the main menu.")]
     public class MenuDetectScreenDefects : MenuITemplateAlgorithmBase
     {
         public override string Header => Properties.Resources.ScreenDefectDetection;
