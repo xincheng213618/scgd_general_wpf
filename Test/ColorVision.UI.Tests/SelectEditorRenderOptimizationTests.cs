@@ -37,6 +37,32 @@ public class SelectEditorRenderOptimizationTests
     }
 
     [Fact]
+    public void LargeSelectionsUseSingleUnionHandle()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new();
+            Zoombox zoombox = new() { ContentMatrix = Matrix.Identity };
+            SelectEditorVisual editor = new(new DrawEditorContext(canvas, zoombox));
+            TestSelectVisual selected = new(new Rect(40, 40, 10, 10));
+            editor.SelectVisuals.Add(selected);
+            editor.SelectVisuals.Add(new TestSelectVisual(new Rect(0, 0, 10, 10)));
+            for (int i = 0; i < 29; i++)
+                editor.SelectVisuals.Add(new TestSelectVisual(new Rect(100 + i * 20, 100, 10, 10)));
+
+            editor.Render();
+            Assert.True(editor.GetContainingRect(new Point(40, 40)));
+            Assert.Same(selected, editor.ISelectVisual);
+
+            editor.SelectVisuals.Add(new TestSelectVisual(new Rect(700, 100, 10, 10)));
+            editor.Render();
+            Assert.True(editor.GetContainingRect(new Point(40, 40)));
+            Assert.Null(editor.ISelectVisual);
+            editor.Dispose();
+        });
+    }
+
+    [Fact]
     public void DisposedSelectionEditorCanBeCollectedWhileCanvasStaysAlive()
     {
         WpfTestHost.Invoke(() =>

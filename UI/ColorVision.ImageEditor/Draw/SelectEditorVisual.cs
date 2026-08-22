@@ -35,6 +35,8 @@ namespace ColorVision.ImageEditor.Draw
 
     public class SelectEditorVisual : DrawingVisual,IDisposable
     {
+        private const int DetailedSelectionLimit = 32;
+
         public DrawCanvas DrawCanvas { get; set; }
 
         public Zoombox ZoomboxSub { get; set; }
@@ -279,8 +281,7 @@ namespace ColorVision.ImageEditor.Draw
 
             selectRects.Clear();
 
-            //全局选中性能太差
-            if (SelectVisuals.Count < 1000)
+            if (SelectVisuals.Count < DetailedSelectionLimit)
             {
                 foreach (var item in SelectVisuals)
                 {
@@ -433,69 +434,32 @@ namespace ColorVision.ImageEditor.Draw
 
             if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (realKey == Key.Left || realKey == Key.A))
             {
-                foreach (var selectVisual in SelectVisuals)
-                {
-                    var OldRect = selectVisual.GetRect();
-                    Rect rect = new Rect(OldRect.X - 2, OldRect.Y, OldRect.Width, OldRect.Height);
-                    selectVisual.SetRect(rect);
-                    Render();
-                }
+                TransformSelection(-2, 0, 0, 0);
                 e.Handled = true;
             }
             else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (realKey == Key.Right || realKey == Key.D))
             {
-                foreach (var selectVisual in SelectVisuals)
-                {
-                    var OldRect = selectVisual.GetRect();
-                    Rect rect = new Rect(OldRect.X + 2, OldRect.Y, OldRect.Width, OldRect.Height);
-                    selectVisual.SetRect(rect);
-                    Render();
-                }
-
+                TransformSelection(2, 0, 0, 0);
                 e.Handled = true;
             }
             else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (realKey == Key.Up || realKey == Key.W))
             {
-                foreach (var selectVisual in SelectVisuals)
-                {
-                    var OldRect = selectVisual.GetRect();
-                    Rect rect = new Rect(OldRect.X, OldRect.Y - 2, OldRect.Width, OldRect.Height);
-                    selectVisual.SetRect(rect);
-                    Render();
-                }
+                TransformSelection(0, -2, 0, 0);
                 e.Handled = true;
             }
             else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (realKey == Key.Down || realKey == Key.S))
             {
-                foreach (var selectVisual in SelectVisuals)
-                {
-                    var OldRect = selectVisual.GetRect();
-                    Rect rect = new Rect(OldRect.X, OldRect.Y + 2, OldRect.Width, OldRect.Height);
-                    selectVisual.SetRect(rect);
-                    Render();
-                }
+                TransformSelection(0, 2, 0, 0);
                 e.Handled = true;
             }
             else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (realKey == Key.Add || realKey == Key.I))
             {
-                foreach (var selectVisual in SelectVisuals)
-                {
-                    var OldRect = selectVisual.GetRect();
-                    Rect rect = new Rect(OldRect.X - 1, OldRect.Y - 1, OldRect.Width + 2, OldRect.Height + 2);
-                    selectVisual.SetRect(rect);
-                    Render();
-                }
+                TransformSelection(-1, -1, 2, 2);
                 e.Handled = true;
             }
             else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (realKey == Key.Subtract || realKey == Key.O))
             {
-                foreach (var selectVisual in SelectVisuals)
-                {
-                    var OldRect = selectVisual.GetRect();
-                    Rect rect = new Rect(OldRect.X + 1, OldRect.Y + 1, OldRect.Width - 2, OldRect.Height - 2);
-                    selectVisual.SetRect(rect);
-                    Render();
-                }
+                TransformSelection(1, 1, -2, -2);
                 e.Handled = true;
             }
             else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (realKey == Key.Delete))
@@ -508,6 +472,20 @@ namespace ColorVision.ImageEditor.Draw
                 e.Handled = true;
 
             }
+        }
+
+        private void TransformSelection(double xOffset, double yOffset, double widthOffset, double heightOffset)
+        {
+            foreach (var selectVisual in SelectVisuals)
+            {
+                Rect oldRect = selectVisual.GetRect();
+                selectVisual.SetRect(new Rect(
+                    oldRect.X + xOffset,
+                    oldRect.Y + yOffset,
+                    oldRect.Width + widthOffset,
+                    oldRect.Height + heightOffset));
+            }
+            Render();
         }
 
 
