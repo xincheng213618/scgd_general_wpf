@@ -36,6 +36,9 @@ bld/
 # Local Copilot temporary profile injection
 ColorVision/Copilot/Config/CopilotTemporaryProfileSource.Local.cs
 
+# Codex remote attachment cache
+.codex-remote-attachments/
+
 # Visual Studio 2015/2017 cache/options directory
 .vs/
 .idea/
