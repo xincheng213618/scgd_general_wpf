@@ -1,19 +1,9 @@
 using ColorVision.Database;
-using ColorVision.Engine.Templates.Menus;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.ImageROI
 {
-    [System.Obsolete("Algorithm-template menu entry removed from the main menu.")]
-    public class ExportTemplateImageROI : MenuITemplateAlgorithmBase
-    {
-        public override string Header => ColorVision.Engine.Properties.Resources.ImageCrop;
-        public override int Order => 0;
-        public override ITemplate Template => new TemplateImageROI();
-
-    }
-
     public class TemplateImageROI : ITemplateJson<TemplateJsonParam>, IITemplateLoad
     {
         public static ObservableCollection<TemplateModel<TemplateJsonParam>> Params { get; set; } = new ObservableCollection<TemplateModel<TemplateJsonParam>>();

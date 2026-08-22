@@ -1,18 +1,9 @@
 using ColorVision.Database;
-using ColorVision.Engine.Templates.Menus;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.DetectScreenDefects
 {
-    [System.Obsolete("Algorithm-template menu entry removed from the main menu.")]
-    public class MenuDetectScreenDefects : MenuITemplateAlgorithmBase
-    {
-        public override string Header => Properties.Resources.ScreenDefectDetection;
-        public override int Order => 1058;
-        public override ITemplate Template => new TemplateDetectScreenDefects();
-    }
-
     public class TemplateDetectScreenDefects : ITemplateJson<TemplateJsonParam>, IITemplateLoad
     {
         public static ObservableCollection<TemplateModel<TemplateJsonParam>> Params { get; set; } = new ObservableCollection<TemplateModel<TemplateJsonParam>>();

@@ -1,23 +1,8 @@
 using ColorVision.Themes;
-using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace ColorVision.Database
 {
-    [System.Obsolete("Database cleanup is available from the MySQL tool window.")]
-    public class ExportDatabaseCleanupTool : MenuItemBase
-    {
-        public override string OwnerGuid => "ExportMySqlMenuItem";
-        public override string GuidId => nameof(ExportDatabaseCleanupTool);
-        public override string Header => ColorVision.Engine.Properties.Resources.DataCleanup;
-        public override int Order => 3;
-
-        public override void Execute()
-        {
-            DatabaseCleanupWindow.OpenWindow();
-        }
-    }
-
     public partial class DatabaseCleanupWindow : Window
     {
         private static DatabaseCleanupWindow? _instance;

@@ -9,6 +9,7 @@ public class MenuDiscoveryExclusionTests
     [InlineData("ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.MenuThirdPartyAlgorithms")]
     [InlineData("ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.MenuItemProviderSensor")]
     [InlineData("ColorVision.Engine.Templates.Menus.MenuITemplateAlgorithm")]
+    [InlineData("ColorVision.Engine.Templates.Menus.MenuITemplateAlgorithmBase")]
     [InlineData("ColorVision.Engine.Templates.FocusPoints.ExportFocusPoints")]
     [InlineData("ColorVision.Engine.Templates.FindLightArea.ExportRoi")]
     [InlineData("ColorVision.Engine.Templates.Matching.ExportMenuItemMatching")]
@@ -35,7 +36,7 @@ public class MenuDiscoveryExclusionTests
     [InlineData("ColorVision.Solution.Workspace.MenuSaveLayout")]
     [InlineData("ColorVision.Solution.Workspace.MenuApplyLayout")]
     [InlineData("ColorVision.ExportMenuViewMax")]
-    public void ObsoleteMenuType_IsExcludedFromMenuDiscovery(string typeName)
+    public void RemovedMenuType_IsAbsent(string typeName)
     {
         Assembly[] menuAssemblies =
         [
@@ -44,15 +45,7 @@ public class MenuDiscoveryExclusionTests
             typeof(ColorVision.Solution.Workspace.WorkspaceManager).Assembly,
             typeof(ColorVision.App).Assembly,
         ];
-        Type menuType = menuAssemblies
-            .Select(assembly => assembly.GetType(typeName, throwOnError: false))
-            .FirstOrDefault(type => type != null)
-            ?? throw new InvalidOperationException($"Menu type not found: {typeName}");
-        Assert.NotNull(menuType.GetCustomAttribute<ObsoleteAttribute>(inherit: false));
-
-        MethodInfo? candidateCheck = typeof(ColorVision.UI.Menus.MenuManager).GetMethod("IsConcreteMenuCandidate", BindingFlags.NonPublic | BindingFlags.Static);
-        Assert.NotNull(candidateCheck);
-        Assert.False(Assert.IsType<bool>(candidateCheck.Invoke(null, [menuType])));
+        Assert.All(menuAssemblies, assembly => Assert.Null(assembly.GetType(typeName, throwOnError: false)));
     }
 
     [Fact]

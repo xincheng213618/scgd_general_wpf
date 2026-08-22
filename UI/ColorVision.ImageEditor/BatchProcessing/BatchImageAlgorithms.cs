@@ -205,9 +205,15 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 return new Mat(source, new Rect(0, 0, source.Cols, source.Rows));
             }
 
+            Mat result = new();
+            if (source.Depth() == MatType.CV_16U)
+            {
+                Cv2.Normalize(source, result, 0, byte.MaxValue, NormTypes.MinMax, MatType.CV_8U);
+                return result;
+            }
+
             using Mat normalized = new();
             Cv2.Normalize(source, normalized, 0, byte.MaxValue, NormTypes.MinMax);
-            Mat result = new();
             normalized.ConvertTo(result, MatType.CV_8U);
             return result;
         }

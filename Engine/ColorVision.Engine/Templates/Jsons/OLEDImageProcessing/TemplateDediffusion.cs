@@ -1,18 +1,9 @@
 using ColorVision.Database;
-using ColorVision.Engine.Templates.Menus;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.OLEDImageProcessing
 {
-    [System.Obsolete("Algorithm-template menu entry removed from the main menu.")]
-    public class MenuDediffusion : MenuITemplateAlgorithmBase
-    {
-        public override string Header => "解串扰";
-        public override int Order => 1202;
-        public override ITemplate Template => new TemplateDediffusion();
-    }
-
     public class TemplateDediffusion : ITemplateJson<TemplateJsonParam>, IITemplateLoad
     {
         public static ObservableCollection<TemplateModel<TemplateJsonParam>> Params { get; } = new();

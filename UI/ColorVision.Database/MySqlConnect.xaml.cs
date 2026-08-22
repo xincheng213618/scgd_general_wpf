@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Database.Properties;
 using ColorVision.Themes;
-using ColorVision.UI.Menus;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -11,28 +9,6 @@ using System.Windows.Input;
 
 namespace ColorVision.Database
 {
-    [Obsolete("The MySQL submenu was replaced by the top-level MySQL tool entry.")]
-    public class ExportMySqlMenuItem : MenuItemBase
-    {
-        public override string OwnerGuid => MenuItemConstants.View;
-        public override string GuidId => nameof(ExportMySqlMenuItem);
-        public override string Header => Resources.MenuMySql;
-        public override int Order => 20;
-    }
-
-    [Obsolete("The standalone MySQL connection menu entry was removed.")]
-    public class ExportMySqlConnect : MenuItemBase
-    {
-        public override string OwnerGuid => "ExportMySqlMenuItem";
-        public override string GuidId => nameof(ExportMySqlConnect);
-        public override string Header => Resources.MysqlConnectionConfiguration;
-        public override int Order => 2;
-
-        public override void Execute()
-        {
-            new MySqlConnect() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
-        }
-    }
     /// <summary>
     /// MySqlConnect.xaml 的交互逻辑
     /// </summary>

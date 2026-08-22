@@ -111,23 +111,6 @@ namespace ColorVision
         }
     }
 
-    [System.Obsolete("Use F11 directly for full-screen mode.")]
-    public class ExportMenuViewMax :MenuItemBase
-    {
-        public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => ColorVision.Properties.Resources.FullScreen;
-        public override Visibility Visibility => Visibility.Collapsed;
-
-        public override void Execute()
-        {
-            MainWindowConfig.Instance.IsFull = !MainWindowConfig.Instance.IsFull;
-            MenuManager.GetInstance().RefreshMenuItemsByGuid(OwnerGuid);
-        }
-        public override bool? IsChecked => MainWindowConfig.Instance.IsFull ? true : null;
-    }
-
-
-
     public class ExportMenuViewStatusBar : MenuItemBase,IHotKey
     {
         public override string OwnerGuid => MenuItemConstants.View;

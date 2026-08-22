@@ -377,6 +377,30 @@ public class BatchImageProcessingTests
     }
 
     [Theory]
+    [InlineData("伪彩色")]
+    [InlineData("Canny 边缘检测")]
+    [InlineData("直方图均衡化")]
+    public void SixteenBitNormalizationMatchesLegacyOutput(string algorithmName)
+    {
+        using Mat backing = new(25, 31, MatType.CV_16UC1);
+        Cv2.Randu(backing, Scalar.All(0), Scalar.All(ushort.MaxValue + 1d));
+        using Mat original = backing.Clone();
+        using Mat source = new(backing, new Rect(3, 2, 23, 19));
+        using Mat normalized = new();
+        using Mat source8 = new();
+        Cv2.Normalize(source, normalized, 0, byte.MaxValue, NormTypes.MinMax);
+        normalized.ConvertTo(source8, MatType.CV_8U);
+        using Mat expected = ApplyLegacyEightBitAlgorithm(algorithmName, source8);
+
+        BatchImageAlgorithmDefinition algorithm = BatchImageAlgorithms.CreateAll()
+            .Single(item => item.Name == algorithmName);
+        using Mat actual = algorithm.Apply(source);
+
+        AssertMatsEqual(expected, actual);
+        AssertMatsEqual(original, backing);
+    }
+
+    [Theory]
     [InlineData("sample.cvraw")]
     [InlineData("sample.cvcie")]
     public void ColorVisionLoaderReadsARealSerializedFile(string fileName)
@@ -474,6 +498,27 @@ public class BatchImageProcessingTests
         Cv2.Normalize(source, normalized, 0, byte.MaxValue, NormTypes.MinMax);
         Mat result = new();
         normalized.ConvertTo(result, MatType.CV_8U);
+        return result;
+    }
+
+    private static Mat ApplyLegacyEightBitAlgorithm(string algorithmName, Mat source)
+    {
+        Mat result = new();
+        switch (algorithmName)
+        {
+            case "伪彩色":
+                Cv2.ApplyColorMap(source, result, OpenCvSharp.ColormapTypes.Jet);
+                break;
+            case "Canny 边缘检测":
+                Cv2.Canny(source, result, 100, 200);
+                break;
+            case "直方图均衡化":
+                Cv2.EqualizeHist(source, result);
+                break;
+            default:
+                result.Dispose();
+                throw new ArgumentOutOfRangeException(nameof(algorithmName), algorithmName, null);
+        }
         return result;
     }
 

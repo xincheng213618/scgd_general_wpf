@@ -1,8 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Properties;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
-using ColorVision.UI.Menus;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -12,35 +10,6 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.MQTT
 {
-
-    [Obsolete("The MQTT menu entry was removed.")]
-    public class ExportMQTTMenuItem : MenuItemBase
-    {
-        public override string OwnerGuid => MenuItemConstants.View;
-        public override string GuidId => nameof(ExportMQTTMenuItem);
-        public override string Header => "MQTT";
-        public override int Order => 20;
-        public override void Execute()
-        {
-            new MQTTConnect() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
-        }
-    }
-
-
-    [Obsolete("The MQTT connection configuration menu entry was removed.")]
-    public class ExportMQTTConnect : MenuItemBase
-    {
-        public override string OwnerGuid => "ExportMQTTMenuItem";
-        public override string GuidId => nameof(ExportMQTTConnect);
-        public override string Header => Resources.MqttConnectionConfiguration;
-        public override int Order => 2;
-        public override void Execute()
-        {
-            new MQTTConnect() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
-        }
-    }
-
-
 
     /// <summary>
     /// MySqlConnect.xaml 的交互逻辑

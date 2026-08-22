@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CA1822
 using ColorVision.UI;
 using ColorVision.Database.Properties;
-using ColorVision.UI.Menus;
 using log4net;
 using SqlSugar;
 using System;
@@ -87,20 +86,6 @@ namespace ColorVision.Database
                 MessageBox.Show(message, caption, MessageBoxButton.OK, image);
             else
                 MessageBox.Show(owner, message, caption, MessageBoxButton.OK, image);
-        }
-    }
-
-    [Obsolete("MySQL table initialization is available from the MySQL tool window.")]
-    public class ExportMySqlInitTables : MenuItemBase
-    {
-        public override string OwnerGuid => "ExportMySqlMenuItem";
-        public override string GuidId => nameof(ExportMySqlInitTables);
-        public override string Header => Resources.MenuMySqlInitTables;
-        public override int Order => 2;
-
-        public override async void Execute()
-        {
-            await MySqlTableInitializer.InitializeWithNotificationAsync(WindowHelpers.GetActiveWindow());
         }
     }
 }
