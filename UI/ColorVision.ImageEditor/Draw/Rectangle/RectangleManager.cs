@@ -69,7 +69,7 @@ namespace ColorVision.ImageEditor.Draw
             RectangleTextProperties rectangleTextProperties = new RectangleTextProperties
             {
                 Id = did,
-                Pen = new Pen(Brushes.Red, 1 / Zoombox.ContentMatrix.M11),
+                Pen = new Pen(Brushes.Red, 1 / GetSafeZoomRatio()),
                 Text = "Point_" + did,
             };
 

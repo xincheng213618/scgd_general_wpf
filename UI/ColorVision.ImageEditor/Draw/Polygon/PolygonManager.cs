@@ -34,9 +34,20 @@ namespace ColorVision.ImageEditor.Draw
 
         protected override void OnVisualCreated(DVPolygon visual)
         {
-            double zoomRatio = Math.Max(Zoombox.ContentMatrix.M11, 0.0001);
+            double zoomRatio = GetSafeZoomRatio();
             visual.Attribute.Brush = StyleConfig.StrokeBrush;
             visual.Attribute.Pen = new Pen(StyleConfig.StrokeBrush, StyleConfig.StrokeThickness / zoomRatio);
+        }
+
+        protected override void OnVisualCompleted(DVPolygon visual)
+        {
+            if (visual.Points.Count < 2)
+            {
+                CancelActiveVisual();
+                return;
+            }
+
+            base.OnVisualCompleted(visual);
         }
     }
 }

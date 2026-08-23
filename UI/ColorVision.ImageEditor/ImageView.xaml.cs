@@ -747,6 +747,7 @@ namespace ColorVision.ImageEditor
         public BitmapSource? CaptureSnapshot()
         {
             Dispatcher.VerifyAccess();
+            CommitActiveDrawingEditsForOutput();
             ImageShow.UpdateLayout();
             int pixelWidth = GetRenderPixelLength(ImageShow.ActualWidth, ImageShow.RenderSize.Width);
             int pixelHeight = GetRenderPixelLength(ImageShow.ActualHeight, ImageShow.RenderSize.Height);
@@ -963,6 +964,15 @@ namespace ColorVision.ImageEditor
             dialog.FileName = "annotations-" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
+            CommitActiveDrawingEditsForOutput();
+            visuals = EditorContext.DrawEditorContext.DrawingVisualLists.OfType<DrawingVisualBase>().ToList();
+            document = AnnotationMapper.CreateDocument(visuals);
+            if (document.Items.Count == 0)
+            {
+                WpfMessageBox.Show(Properties.Resources.ImageView_NoAnnotationTypes, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             File.WriteAllText(dialog.FileName, AnnotationMapper.Serialize(document));
 
             int skippedCount = visuals.Count - document.Items.Count;
@@ -970,6 +980,23 @@ namespace ColorVision.ImageEditor
                 ? string.Format(Properties.Resources.ImageView_ExportedAnnotationsWithSkip, document.Items.Count, skippedCount)
                 : string.Format(Properties.Resources.ImageView_ExportedAnnotations, document.Items.Count);
             WpfMessageBox.Show(message, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void CommitActiveDrawingEditsForOutput()
+        {
+            List<IEditableDrawingVisual> activeEditors = EditorContext.DrawEditorContext.DrawingVisualLists
+                .OfType<IEditableDrawingVisual>()
+                .Where(editor => editor.IsEditing)
+                .ToList();
+            if (activeEditors.Count == 0)
+                return;
+
+            foreach (IEditableDrawingVisual editor in activeEditors)
+                editor.EndEdit(true);
+
+            // Editing starts with an empty selection. Keep that state and avoid
+            // exporting the selection handles restored by EndEdit.
+            EditorContext.DrawEditorContext.SelectionVisual.ClearRender();
         }
 
         public void ImportAnnotations()

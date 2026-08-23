@@ -1,4 +1,5 @@
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Draw;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,6 +11,96 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ImageViewSnapshotSaveTests
 {
+    [Fact]
+    public void BackgroundSnapshotCommitsActiveTextOnlyWhenOverlaysAreIncluded()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewTestResources();
+            using ImageView imageView = new();
+            BitmapSource source = BitmapSource.Create(
+                160,
+                80,
+                96,
+                96,
+                PixelFormats.Bgra32,
+                null,
+                new byte[160 * 80 * 4],
+                160 * 4);
+            source.Freeze();
+            imageView.ImageShow.Source = source;
+
+            TextProperties properties = new()
+            {
+                Text = "Original text",
+                Position = new Point(12, 16),
+                FontSize = 18,
+                Foreground = Brushes.White,
+                Background = Brushes.Transparent,
+            };
+            DVText text = new(properties);
+            text.Render();
+            imageView.ImageShow.AddVisual(text);
+            text.BeginEdit(imageView.EditorContext.TextEditingContext);
+            TextBox editor = Assert.IsType<TextBox>(Assert.Single(
+                imageView.EditorContext.TextEditingContext.TextEditorOverlay.Children));
+            editor.Text = "Saved draft 中文";
+
+            ImageViewSnapshot? sourceOnly = imageView.CaptureSnapshotForBackgroundSave(includeOverlays: false);
+            Assert.NotNull(sourceOnly);
+            sourceOnly.Dispose();
+            Assert.True(text.IsEditing);
+            Assert.Equal("Original text", properties.Text);
+
+            ImageViewSnapshot? withOverlays = imageView.CaptureSnapshotForBackgroundSave(includeOverlays: true);
+            Assert.NotNull(withOverlays);
+            withOverlays.Dispose();
+            Assert.False(text.IsEditing);
+            Assert.Equal("Saved draft 中文", properties.Text);
+            Assert.NotNull(text.Drawing);
+            Assert.Single(imageView.ImageShow.UndoStack);
+            Assert.Empty(imageView.EditorContext.DrawEditorContext.SelectionVisual.SelectVisuals);
+        });
+    }
+
+    [Fact]
+    public void UnsupportedOverlayDoesNotCommitAnActiveTextDraft()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewTestResources();
+            using ImageView imageView = new();
+            BitmapSource source = BitmapSource.Create(
+                16,
+                8,
+                96,
+                96,
+                PixelFormats.Bgra32,
+                null,
+                new byte[16 * 8 * 4],
+                16 * 4);
+            source.Freeze();
+            imageView.ImageShow.Source = source;
+
+            TextProperties properties = new() { Text = "Original", Position = new Point(1, 1) };
+            DVText text = new(properties);
+            text.Render();
+            imageView.ImageShow.AddVisual(text);
+            text.BeginEdit(imageView.EditorContext.TextEditingContext);
+            TextBox editor = Assert.IsType<TextBox>(Assert.Single(
+                imageView.EditorContext.TextEditingContext.TextEditorOverlay.Children));
+            editor.Text = "Uncommitted draft";
+
+            DrawingVisual unsupported = new() { Effect = new System.Windows.Media.Effects.BlurEffect() };
+            imageView.ImageShow.AddVisual(unsupported);
+
+            Assert.Null(imageView.CaptureSnapshotForBackgroundSave(includeOverlays: true));
+            Assert.True(text.IsEditing);
+            Assert.Equal("Original", properties.Text);
+            Assert.Empty(imageView.ImageShow.UndoStack);
+        });
+    }
+
     [Fact]
     public async Task SaveSnapshotAsync_ComposesFrozenSceneOnBackgroundStaThread()
     {

@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 
@@ -60,62 +58,53 @@ namespace ColorVision.ImageEditor.Draw
             using DrawingContext dc = RenderOpen();
             if (Points.Count <= 0) return;
 
-            PathFigure pf = new PathFigure();
-            pf.StartPoint = Points[0];
-
-            List<Point> controls = new List<Point>();
-            for (int i = 0; i < Points.Count; i++)
+            StreamGeometry geometry = new();
+            using (StreamGeometryContext geometryContext = geometry.Open())
             {
-                controls.AddRange(Control1(Points, i));
-            }
-            for (int i = 1; i < Points.Count; i++)
-            {
-                BezierSegment bs = new BezierSegment(controls[i * 2 - 1], controls[i * 2], Points[i], true);
-                bs.IsSmoothJoin = true;
+                geometryContext.BeginFigure(Points[0], isFilled: true, isClosed: false);
 
-                pf.Segments.Add(bs);
+                GetControlPoints(Points, 0, out _, out Point previousRight);
+                for (int i = 1; i < Points.Count; i++)
+                {
+                    GetControlPoints(Points, i, out Point currentLeft, out Point currentRight);
+                    geometryContext.BezierTo(previousRight, currentLeft, Points[i], isStroked: true, isSmoothJoin: true);
+                    previousRight = currentRight;
+                }
             }
 
-            PathGeometry pathGeometry = new();
-            pathGeometry.Figures.Add(pf);
-
-            dc.DrawGeometry(Attribute.Brush, Attribute.Pen, pathGeometry);
+            geometry.Freeze();
+            dc.DrawGeometry(Attribute.Brush, Attribute.Pen, geometry);
         }
 
 
         public static List<Point> Control1(List<Point> list, int n)
         {
-            List<Point> point = new List<Point>();
-            point.Add(new Point());
-            point.Add(new Point());
+            GetControlPoints(list, n, out Point left, out Point right);
+            return new List<Point> { left, right };
+        }
+
+        private static void GetControlPoints(List<Point> list, int n, out Point left, out Point right)
+        {
             if (n == 0)
             {
-                point[0] = list[0];
+                left = list[0];
             }
             else
             {
-                point[0] = Average(list[n - 1], list[n]);
+                left = Average(list[n - 1], list[n]);
             }
             if (n == list.Count - 1)
             {
-                point[1] = list[list.Count - 1];
+                right = list[list.Count - 1];
             }
             else
             {
-                point[1] = Average(list[n], list[n + 1]);
+                right = Average(list[n], list[n + 1]);
             }
-            Point ave = Average(point[0], point[1]);
+            Point ave = Average(left, right);
             Point sh = Sub(list[n], ave);
-            point[0] = Mul(Add(point[0], sh), list[n], 0.6);
-            point[1] = Mul(Add(point[1], sh), list[n], 0.6);
-            //Line line = new Line();
-            //line.X1 = point[0].X;
-            //line.Y1 = point[0].Y;
-            //line.X2 = point[1].X;
-            //line.Y2 = point[1].Y;
-            //line.Stroke = Brushes.Red;
-            //MapCanvas.Children.Add(line);
-            return point;
+            left = Mul(Add(left, sh), list[n], 0.6);
+            right = Mul(Add(right, sh), list[n], 0.6);
         }
         public static Point Average(Point x, Point y)
         {
@@ -139,41 +128,13 @@ namespace ColorVision.ImageEditor.Draw
 
         public override Rect GetRect()
         {
-            if (Points == null || Points.Count == 0)
-                return Rect.Empty;
-
-            double minX = Points.Min(p => p.X);
-            double minY = Points.Min(p => p.Y);
-            double maxX = Points.Max(p => p.X);
-            double maxY = Points.Max(p => p.Y);
-
-            return new Rect(new Point(minX, minY), new Point(maxX, maxY));
+            return PointCollectionGeometry.GetBounds(Points);
         }
 
         public override void SetRect(Rect rect)
         {
-            if (Points == null || Points.Count == 0)
-                return;
-
-            Rect oldRect = GetRect();
-            if (oldRect == Rect.Empty)
-                return;
-
-            double scaleX = rect.Width / oldRect.Width;
-            double scaleY = rect.Height / oldRect.Height;
-
-            for (int i = 0; i < Points.Count; i++)
-            {
-                double relativeX = (Points[i].X - oldRect.X) * scaleX + rect.X;
-                double relativeY = (Points[i].Y - oldRect.Y) * scaleY + rect.Y;
-
-                // 限制在目标 rect 范围内
-                relativeX = Math.Max(rect.X, Math.Min(relativeX, rect.X + rect.Width));
-                relativeY = Math.Max(rect.Y, Math.Min(relativeY, rect.Y + rect.Height));
-
-                Points[i] = new Point(relativeX, relativeY);
-            }
-            Render();
+            if (PointCollectionGeometry.MapToRect(Points, rect))
+                Render();
         }
 
 

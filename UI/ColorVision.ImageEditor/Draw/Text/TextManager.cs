@@ -18,7 +18,19 @@ namespace ColorVision.ImageEditor.Draw
         private bool _IsLocked;
 
         [Browsable(false)]
-        public double DefaultFontSize { get => _DefaultFontSize; set { if (_DefaultFontSize == value) return; _DefaultFontSize = value; OnPropertyChanged(); } }
+        public double DefaultFontSize
+        {
+            get => _DefaultFontSize;
+            set
+            {
+                double next = double.IsFinite(value) && value > 0 ? TextRenderCore.NormalizeFontSize(value) : 10;
+                if (_DefaultFontSize.Equals(next))
+                    return;
+
+                _DefaultFontSize = next;
+                OnPropertyChanged();
+            }
+        }
         private double _DefaultFontSize = 18;
 
         public string DefaultText { get => _DefaultText; set { if (string.Equals(_DefaultText, value, StringComparison.Ordinal)) return; _DefaultText = value; OnPropertyChanged(); } }
@@ -107,6 +119,7 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.MouseMove += MouseMove;
             DrawCanvas.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp += Image_PreviewMouseUp;
+            DrawCanvas.LostMouseCapture += DrawCanvas_LostMouseCapture;
             DrawCanvas.VisualsRemove += DrawCanvas_VisualsRemove;
         }
 
@@ -116,12 +129,24 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.MouseMove -= MouseMove;
             DrawCanvas.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp -= Image_PreviewMouseUp;
+            DrawCanvas.LostMouseCapture -= DrawCanvas_LostMouseCapture;
             DrawCanvas.VisualsRemove -= DrawCanvas_VisualsRemove;
-            if (IsMouseDown)
-                DrawCanvas.ReleaseMouseCapture();
+            bool releaseMouseCapture = IsMouseDown && DrawCanvas.IsMouseCaptured;
             IsMouseDown = false;
+            if (releaseMouseCapture)
+                DrawCanvas.ReleaseMouseCapture();
             CancelPendingCreation();
             SelectionVisual.ClearRender();
+        }
+
+        private void DrawCanvas_LostMouseCapture(object sender, MouseEventArgs e)
+        {
+            if (!IsMouseDown)
+                return;
+
+            IsMouseDown = false;
+            CancelPendingCreation();
+            IsChecked = false;
         }
 
         private void CancelPendingCreation()
@@ -192,9 +217,13 @@ namespace ColorVision.ImageEditor.Draw
             textProperties.Id = did;
             textProperties.Text = Config.DefaultText;
             textProperties.Position = MouseDownP;
-            textProperties.Pen = new Pen(Brushes.Transparent, 1 / Zoombox.ContentMatrix.M11);
-            textProperties.TextAttribute.FontSize = Config.DefaultFontSize;
-            textProperties.Rect = new Rect(MouseDownP.X, MouseDownP.Y, 1, Config.DefaultFontSize);
+            double fontSize = TextRenderCore.NormalizeFontSize(Config.DefaultFontSize);
+            double zoomRatio = Math.Abs(Zoombox.ContentMatrix.M11);
+            if (!double.IsFinite(zoomRatio) || zoomRatio <= 0)
+                zoomRatio = 1;
+            textProperties.Pen = new Pen(Brushes.Transparent, 1 / zoomRatio);
+            textProperties.TextAttribute.FontSize = fontSize;
+            textProperties.Rect = new Rect(MouseDownP.X, MouseDownP.Y, 1, fontSize);
             DVText createdText = new(textProperties);
             TextCache = createdText;
             createdText.Render();
@@ -224,8 +253,8 @@ namespace ColorVision.ImageEditor.Draw
                 return;
             }
 
-            DrawCanvas.ReleaseMouseCapture();
             IsMouseDown = false;
+            DrawCanvas.ReleaseMouseCapture();
             if (TextCache != null)
             {
                 DVText createdText = TextCache;

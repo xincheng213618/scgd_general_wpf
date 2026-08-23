@@ -2,6 +2,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -88,12 +89,59 @@ public sealed class DrawTextManagerLifecycleTests
     }
 
     [Fact]
-    public void MouseUpTransfersCreationToEditorAndCancellingRemovesTheWholeCreation()
+    public void LosingMouseCaptureCancelsPendingTextAndCreationHistory()
     {
         WpfTestHost.Invoke(() =>
         {
             using TextManagerFixture fixture = new();
-            fixture.Manager.Config.DefaultText = string.Empty;
+            Window window = fixture.ShowHost();
+            Grid host = Assert.IsType<Grid>(window.Content);
+            Button captureTarget = new()
+            {
+                Width = 1,
+                Height = 1,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Bottom,
+            };
+            host.Children.Add(captureTarget);
+            host.UpdateLayout();
+
+            try
+            {
+                fixture.Manager.IsChecked = true;
+                InvokeMouseDown(fixture.Manager, fixture.DrawCanvas);
+                Assert.True(fixture.DrawCanvas.IsMouseCaptured);
+                Assert.Single(fixture.DrawCanvas.Visuals.OfType<DVText>());
+                Assert.Single(fixture.DrawCanvas.UndoStack);
+
+                Assert.True(captureTarget.CaptureMouse());
+
+                Assert.False(fixture.Manager.IsChecked);
+                Assert.Null(fixture.Context.DrawEditorManager.Current);
+                Assert.Empty(fixture.DrawCanvas.Visuals.OfType<DVText>());
+                Assert.Empty(fixture.DrawCanvas.UndoStack);
+                Assert.Empty(fixture.DrawCanvas.RedoStack);
+                Assert.False(GetPrivateField<bool>(fixture.Manager, "IsMouseDown"));
+                Assert.Null(GetPrivateField<DVText?>(fixture.Manager, "TextCache"));
+                Assert.Null(GetPrivateField<ActionCommand?>(fixture.Manager, "PendingCreationCommand"));
+            }
+            finally
+            {
+                captureTarget.ReleaseMouseCapture();
+                window.Close();
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("Default annotation")]
+    public void MouseUpTransfersCreationToEditorAndCancellingRemovesTheWholeCreation(string defaultText)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using TextManagerFixture fixture = new();
+            fixture.Manager.Config.DefaultText = defaultText;
             fixture.Manager.IsChecked = true;
 
             InvokeMouseDown(fixture.Manager, fixture.DrawCanvas);
@@ -106,6 +154,7 @@ public sealed class DrawTextManagerLifecycleTests
             Assert.Null(GetPrivateField<DVText?>(fixture.Manager, "TextCache"));
             Assert.Null(GetPrivateField<ActionCommand?>(fixture.Manager, "PendingCreationCommand"));
             Assert.Single(fixture.DrawCanvas.UndoStack);
+            Assert.IsType<TextBox>(Assert.Single(fixture.EditorOverlay.Children)).Text = "cancelled draft";
 
             createdText.EndEdit(false);
 
@@ -113,6 +162,27 @@ public sealed class DrawTextManagerLifecycleTests
             Assert.False(fixture.DrawCanvas.ContainsVisual(createdText));
             Assert.Empty(fixture.DrawCanvas.UndoStack);
             Assert.Empty(fixture.DrawCanvas.RedoStack);
+        });
+    }
+
+    [Fact]
+    public void CreatingTextBeforeZoomInitializationUsesFiniteFallbackPen()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using TextManagerFixture fixture = new();
+            fixture.Context.Zoombox.ContentMatrix = default;
+            fixture.Manager.IsChecked = true;
+
+            InvokeMouseDown(fixture.Manager, fixture.DrawCanvas);
+
+            DVText createdText = Assert.Single(fixture.DrawCanvas.Visuals.OfType<DVText>());
+            Assert.True(double.IsFinite(createdText.Pen.Thickness));
+            Assert.Equal(1, createdText.Pen.Thickness);
+
+            fixture.Manager.IsChecked = false;
+            Assert.False(fixture.DrawCanvas.ContainsVisual(createdText));
+            Assert.Empty(fixture.DrawCanvas.UndoStack);
         });
     }
 
@@ -236,6 +306,112 @@ public sealed class DrawTextManagerLifecycleTests
             {
                 fixture.Manager.Dispose();
                 defaultStyle.FontSize = originalFontSize;
+            }
+        });
+    }
+
+    [Fact]
+    public void NonFiniteDefaultFontSizesNormalizeWithoutRecursiveNotifications()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using TextManagerFixture fixture = new();
+            DefaultTextStyleConfig defaultStyle = DefaultTextStyleConfig.Current;
+            double originalFontSize = defaultStyle.FontSize;
+            int styleNotifications = 0;
+            int configNotifications = 0;
+            PropertyChangedEventHandler styleHandler = (_, e) =>
+            {
+                if (e.PropertyName == nameof(DefaultTextStyleConfig.FontSize))
+                    styleNotifications++;
+            };
+            PropertyChangedEventHandler configHandler = (_, e) =>
+            {
+                if (e.PropertyName == nameof(TextManagerConfig.DefaultFontSize))
+                    configNotifications++;
+            };
+
+            try
+            {
+                defaultStyle.FontSize = 24;
+                fixture.Manager.IsChecked = true;
+                defaultStyle.PropertyChanged += styleHandler;
+                fixture.Manager.Config.PropertyChanged += configHandler;
+
+                defaultStyle.FontSize = double.NaN;
+
+                Assert.Equal(10, defaultStyle.FontSize);
+                Assert.Equal(10, fixture.Manager.Config.DefaultFontSize);
+                Assert.Equal(1, styleNotifications);
+                Assert.Equal(1, configNotifications);
+
+                fixture.Manager.Config.DefaultFontSize = 22;
+                styleNotifications = 0;
+                configNotifications = 0;
+
+                fixture.Manager.Config.DefaultFontSize = double.PositiveInfinity;
+
+                Assert.Equal(10, defaultStyle.FontSize);
+                Assert.Equal(10, fixture.Manager.Config.DefaultFontSize);
+                Assert.Equal(1, styleNotifications);
+                Assert.Equal(1, configNotifications);
+            }
+            finally
+            {
+                defaultStyle.PropertyChanged -= styleHandler;
+                fixture.Manager.Config.PropertyChanged -= configHandler;
+                fixture.Manager.IsChecked = false;
+                defaultStyle.FontSize = originalFontSize;
+            }
+        });
+    }
+
+    [Fact]
+    public void DefaultTextStyleNotifiesEachEffectiveStyleChangeOnce()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DefaultTextStyleConfig config = new();
+            List<string?> changedProperties = new();
+            config.PropertyChanged += (_, e) => changedProperties.Add(e.PropertyName);
+
+            AssertSingleChange(
+                () => config.Brush = Brushes.Blue,
+                nameof(DefaultTextStyleConfig.SerializedBrush),
+                nameof(DefaultTextStyleConfig.Brush));
+            AssertSingleChange(
+                () => config.FontFamily = new FontFamily("Segoe UI"),
+                nameof(DefaultTextStyleConfig.SerializedFontFamily),
+                nameof(DefaultTextStyleConfig.FontFamily));
+            AssertSingleChange(
+                () => config.FontStyle = FontStyles.Italic,
+                nameof(DefaultTextStyleConfig.SerializedFontStyle),
+                nameof(DefaultTextStyleConfig.FontStyle));
+            AssertSingleChange(
+                () => config.FontWeight = FontWeights.Bold,
+                nameof(DefaultTextStyleConfig.SerializedFontWeight),
+                nameof(DefaultTextStyleConfig.FontWeight));
+            AssertSingleChange(
+                () => config.FontStretch = FontStretches.Expanded,
+                nameof(DefaultTextStyleConfig.SerializedFontStretch),
+                nameof(DefaultTextStyleConfig.FontStretch));
+            AssertSingleChange(
+                () => config.FlowDirection = FlowDirection.RightToLeft,
+                nameof(DefaultTextStyleConfig.SerializedFlowDirection),
+                nameof(DefaultTextStyleConfig.FlowDirection));
+
+            void AssertSingleChange(Action change, string serializedProperty, string publicProperty)
+            {
+                changedProperties.Clear();
+                change();
+                Assert.Collection(
+                    changedProperties,
+                    propertyName => Assert.Equal(serializedProperty, propertyName),
+                    propertyName => Assert.Equal(publicProperty, propertyName));
+
+                changedProperties.Clear();
+                change();
+                Assert.Empty(changedProperties);
             }
         });
     }

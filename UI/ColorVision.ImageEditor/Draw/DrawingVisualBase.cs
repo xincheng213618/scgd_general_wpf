@@ -22,21 +22,35 @@ namespace ColorVision.ImageEditor.Draw
         protected bool ApplyLayoutScaleCore(DrawingVisualScaleContext context, Pen? currentPen, Action<Pen>? assignPen = null, double? currentFontSize = null, Action<double>? assignFontSize = null)
         {
             bool isRender = false;
+            double layoutScale = double.IsFinite(context.Scale) && context.Scale > 0
+                ? TextRenderCore.NormalizeFontSize(context.Scale * 10) / 10
+                : 1;
+            double fontSizeOverride = double.IsFinite(context.TextFontSizeOverride) && context.TextFontSizeOverride > 0
+                ? TextRenderCore.NormalizeFontSize(context.TextFontSizeOverride)
+                : 0;
 
             if (currentPen != null)
             {
-                LayoutBasePenThickness ??= currentPen.Thickness > 0 ? currentPen.Thickness : 1;
+                LayoutBasePenThickness ??= NormalizePenThickness(currentPen.Thickness);
 
                 Pen pen = currentPen;
                 if (pen.IsFrozen)
                 {
                     pen = pen.Clone();
-                    assignPen?.Invoke(pen);
+                    double? basePenThickness = LayoutBasePenThickness;
+                    try
+                    {
+                        assignPen?.Invoke(pen);
+                    }
+                    finally
+                    {
+                        LayoutBasePenThickness = basePenThickness;
+                    }
                 }
 
-                double targetThickness = context.IsLayoutUpdated
-                    ? context.Scale
-                    : context.TextFontSizeOverride > 0 ? context.TextFontSizeOverride / 10 : LayoutBasePenThickness.Value;
+                double targetThickness = NormalizePenThickness(context.IsLayoutUpdated
+                    ? layoutScale
+                    : fontSizeOverride > 0 ? fontSizeOverride / 10 : LayoutBasePenThickness.Value);
                 if (pen.Thickness != targetThickness)
                 {
                     pen.Thickness = targetThickness;
@@ -46,11 +60,13 @@ namespace ColorVision.ImageEditor.Draw
 
             if (currentFontSize is double fontSize && assignFontSize != null)
             {
-                LayoutBaseFontSize ??= fontSize > 0 ? fontSize : (LayoutBasePenThickness ?? 1) * 10;
+                LayoutBaseFontSize ??= double.IsFinite(fontSize) && fontSize > 0
+                    ? TextRenderCore.NormalizeFontSize(fontSize)
+                    : TextRenderCore.NormalizeFontSize((LayoutBasePenThickness ?? 1) * 10);
 
-                double targetFontSize = context.IsLayoutUpdated
-                    ? context.Scale * 10
-                    : context.TextFontSizeOverride > 0 ? context.TextFontSizeOverride : LayoutBaseFontSize.Value;
+                double targetFontSize = TextRenderCore.NormalizeFontSize(context.IsLayoutUpdated
+                    ? layoutScale * 10
+                    : fontSizeOverride > 0 ? fontSizeOverride : LayoutBaseFontSize.Value);
                 if (fontSize != targetFontSize)
                 {
                     assignFontSize(targetFontSize);
@@ -62,6 +78,14 @@ namespace ColorVision.ImageEditor.Draw
                 Render();
 
             return isRender;
+        }
+
+        private static double NormalizePenThickness(double thickness)
+        {
+            if (!double.IsFinite(thickness) || thickness <= 0)
+                return 1;
+
+            return TextRenderCore.NormalizeFontSize(thickness * 10) / 10;
         }
 
         public virtual Rect GetRect() => new Rect();

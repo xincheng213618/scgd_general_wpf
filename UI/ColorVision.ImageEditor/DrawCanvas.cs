@@ -236,25 +236,34 @@ namespace ColorVision.ImageEditor
                 scalableVisual.ApplyLayoutScale(context);
         }
 
-        private bool TryAddVisual(Visual? visual, int? index = null, bool raiseEvents = true)
+        private bool TryAddVisual(Visual? visual, int? index = null, bool raiseEvents = true, DrawingVisualScaleContext? scaleContext = null)
         {
             if (visual == null || !visualSet.Add(visual)) return false;
 
-            ApplyLayoutScale(visual, CreateScaleContext());
-
-            if (index.HasValue)
+            try
             {
-                int targetIndex = index.Value;
-                if (targetIndex < 0) targetIndex = 0;
-                if (targetIndex > visuals.Count) targetIndex = visuals.Count;
-                visuals.Insert(targetIndex, visual);
-            }
-            else
-            {
-                visuals.Add(visual);
-            }
+                ApplyLayoutScale(visual, scaleContext ?? CreateScaleContext());
 
-            AddVisualTree(visual);
+                if (index.HasValue)
+                {
+                    int targetIndex = index.Value;
+                    if (targetIndex < 0) targetIndex = 0;
+                    if (targetIndex > visuals.Count) targetIndex = visuals.Count;
+                    visuals.Insert(targetIndex, visual);
+                }
+                else
+                {
+                    visuals.Add(visual);
+                }
+
+                AddVisualTree(visual);
+            }
+            catch
+            {
+                visuals.Remove(visual);
+                visualSet.Remove(visual);
+                throw;
+            }
 
             if (raiseEvents)
                 RaiseVisualAdded(visual);
@@ -300,17 +309,21 @@ namespace ColorVision.ImageEditor
 
             List<Visual> addedVisuals = new();
             DrawingVisualScaleContext context = CreateScaleContext();
-            foreach (Visual visual in items)
+            try
             {
-                if (visual == null || !visualSet.Add(visual))
+                foreach (Visual visual in items)
                 {
-                    continue;
-                }
+                    if (!TryAddVisual(visual, raiseEvents: false, scaleContext: context))
+                        continue;
 
-                ApplyLayoutScale(visual, context);
-                visuals.Add(visual);
-                AddVisualTree(visual);
-                addedVisuals.Add(visual);
+                    addedVisuals.Add(visual);
+                }
+            }
+            catch
+            {
+                for (int i = addedVisuals.Count - 1; i >= 0; i--)
+                    TryRemoveVisual(addedVisuals[i], raiseEvents: false);
+                throw;
             }
 
             if (addedVisuals.Count > 0)
@@ -460,7 +473,15 @@ namespace ColorVision.ImageEditor
         private void AddVisualTree(Visual visual)
         {
             AddVisualChild(visual);
-            AddLogicalChild(visual);
+            try
+            {
+                AddLogicalChild(visual);
+            }
+            catch
+            {
+                RemoveVisualChild(visual);
+                throw;
+            }
         }
 
         private void RemoveVisualTree(Visual visual)

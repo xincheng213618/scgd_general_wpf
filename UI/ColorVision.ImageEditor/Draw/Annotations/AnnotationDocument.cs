@@ -204,8 +204,12 @@ namespace ColorVision.ImageEditor.Draw.Annotations
             if (token.Type == JTokenType.Integer)
                 return (AnnotationKind)token.Value<int>();
 
-            if (token.Type == JTokenType.String && Enum.TryParse(token.Value<string>(), true, out AnnotationKind kind))
-                return kind;
+            if (token.Type == JTokenType.String)
+            {
+                string? value = token.Value<string>();
+                if (value != null && !value.Contains(',') && Enum.TryParse(value, true, out AnnotationKind kind))
+                    return kind;
+            }
 
             throw new JsonSerializationException($"Unsupported annotation kind value: {token}");
         }

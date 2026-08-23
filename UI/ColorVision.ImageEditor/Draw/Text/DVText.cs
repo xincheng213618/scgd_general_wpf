@@ -199,6 +199,8 @@ namespace ColorVision.ImageEditor.Draw
             using DrawingContext dc = RenderOpen();
             if (!Attribute.IsShowText || string.IsNullOrEmpty(TextAttribute.Text))
             {
+                // Keep hidden and empty annotations selectable without changing pixels.
+                dc.DrawRectangle(Brushes.Transparent, null, _renderBounds);
                 return;
             }
 
@@ -297,12 +299,13 @@ namespace ColorVision.ImageEditor.Draw
             double authoredFontSize = TextRenderCore.NormalizeFontSize(TextAttribute.FontSize);
             if (_layoutScaleContext.IsLayoutUpdated)
             {
-                return authoredFontSize * _layoutScaleContext.Scale;
+                return TextRenderCore.NormalizeFontSize(authoredFontSize * _layoutScaleContext.Scale);
             }
 
-            return _layoutScaleContext.TextFontSizeOverride > 0
+            double renderFontSize = _layoutScaleContext.TextFontSizeOverride > 0
                 ? _layoutScaleContext.TextFontSizeOverride
                 : authoredFontSize;
+            return TextRenderCore.NormalizeFontSize(renderFontSize);
         }
 
         private FormattedText CreateFormattedText(string text, double fontSize)
@@ -348,6 +351,23 @@ namespace ColorVision.ImageEditor.Draw
             _editTextBox.MinHeight = Math.Max(editorFontSize, 1);
             _editTextBox.Width = Math.Max(textWidth, _editTextBox.MinWidth);
             _editTextBox.Height = Math.Max(textHeight, _editTextBox.MinHeight);
+        }
+
+        private void UpdateEditorBoundsFromLayout()
+        {
+            if (_editTextBox == null
+                || !double.IsFinite(_editTextBox.ExtentWidth)
+                || !double.IsFinite(_editTextBox.ExtentHeight))
+            {
+                return;
+            }
+
+            double width = Math.Max(_editTextBox.ExtentWidth, _editTextBox.MinWidth);
+            double height = Math.Max(_editTextBox.ExtentHeight, _editTextBox.MinHeight);
+            if (_editTextBox.Width != width)
+                _editTextBox.Width = width;
+            if (_editTextBox.Height != height)
+                _editTextBox.Height = height;
         }
 
         private void UpdateEditorTransform()
@@ -463,13 +483,13 @@ namespace ColorVision.ImageEditor.Draw
             textBox.FontStyle = TextAttribute.FontStyle;
             textBox.FontWeight = TextAttribute.FontWeight;
             textBox.FontStretch = TextAttribute.FontStretch;
-            textBox.FlowDirection = TextAttribute.FlowDirection;
+            textBox.FlowDirection = TextRenderCore.NormalizeFlowDirection(TextAttribute.FlowDirection);
             textBox.Foreground = TextAttribute.Brush;
             textBox.CaretBrush = TextAttribute.Brush;
             textBox.Background = Attribute.Background ?? Brushes.Transparent;
         }
 
-        private void FocusEditor()
+        private void FocusEditor(Point? canvasPoint = null)
         {
             if (_editTextBox == null)
             {
@@ -485,18 +505,20 @@ namespace ColorVision.ImageEditor.Draw
 
                 _editTextBox.Focus();
                 Keyboard.Focus(_editTextBox);
+                if (canvasPoint is Point point)
+                {
+                    _editTextBox.UpdateLayout();
+                    Point editorPoint = new(point.X - Attribute.Position.X, point.Y - Attribute.Position.Y);
+                    int characterIndex = _editTextBox.GetCharacterIndexFromPoint(editorPoint, snapToText: true);
+                    if (characterIndex >= 0)
+                    {
+                        _editTextBox.Select(characterIndex, 0);
+                        return;
+                    }
+                }
+
                 _editTextBox.SelectAll();
             }), DispatcherPriority.Input);
-        }
-
-        private void OnEditorTextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (_editTextBox == null)
-            {
-                return;
-            }
-
-            UpdateEditorBounds();
         }
 
         private void OnEditorPreviewKeyDown(object sender, KeyEventArgs e)
@@ -561,6 +583,7 @@ namespace ColorVision.ImageEditor.Draw
 
         private void OnEditorLayoutUpdated(object? sender, EventArgs e)
         {
+            UpdateEditorBoundsFromLayout();
             TrackCanvasTransform();
             RequestEditorTransformUpdate();
         }
@@ -693,7 +716,6 @@ namespace ColorVision.ImageEditor.Draw
                 return;
             }
 
-            _editTextBox.TextChanged -= OnEditorTextChanged;
             _editTextBox.PreviewKeyDown -= OnEditorPreviewKeyDown;
             _editTextBox.LostKeyboardFocus -= OnEditorLostKeyboardFocus;
 
@@ -753,11 +775,16 @@ namespace ColorVision.ImageEditor.Draw
         /// </summary>
         public void BeginEdit(TextEditingContext context)
         {
+            BeginEditCore(context, null);
+        }
+
+        private void BeginEditCore(TextEditingContext context, Point? canvasPoint)
+        {
             ArgumentNullException.ThrowIfNull(context);
 
             if (_isEditing)
             {
-                FocusEditor();
+                FocusEditor(canvasPoint);
                 return;
             }
 
@@ -774,7 +801,6 @@ namespace ColorVision.ImageEditor.Draw
             TrackCanvasTransform();
 
             _editTextBox = CreateEditorTextBox();
-            _editTextBox.TextChanged += OnEditorTextChanged;
             _editTextBox.PreviewKeyDown += OnEditorPreviewKeyDown;
             _editTextBox.LostKeyboardFocus += OnEditorLostKeyboardFocus;
             Canvas.SetLeft(_editTextBox, 0);
@@ -787,7 +813,7 @@ namespace ColorVision.ImageEditor.Draw
             ClearVisual();
             UpdateEditorBounds();
             UpdateEditorTransform();
-            FocusEditor();
+            FocusEditor(canvasPoint);
         }
 
         /// <summary>
@@ -819,8 +845,9 @@ namespace ColorVision.ImageEditor.Draw
                 Attribute.Text = finalText;
             }
 
+            bool cancelNewText = creationCommand != null && !saveChanges;
             bool removeEmptyText = string.IsNullOrWhiteSpace(finalText) && (creationCommand != null || textChanged);
-            if (removeEmptyText && context != null)
+            if ((cancelNewText || removeEmptyText) && context != null)
             {
                 if (creationCommand != null)
                 {
@@ -860,7 +887,7 @@ namespace ColorVision.ImageEditor.Draw
         {
             if (GetRect().Contains(point))
             {
-                BeginEdit(context);
+                BeginEditCore(context, point);
                 return true;
             }
             return false;

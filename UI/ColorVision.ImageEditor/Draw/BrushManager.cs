@@ -64,6 +64,9 @@ namespace ColorVision.ImageEditor.Draw
             get => _strokeThickness;
             set
             {
+                if (!double.IsFinite(value))
+                    return;
+
                 double next = Math.Max(1, value);
                 if (_strokeThickness == next)
                 {
@@ -82,6 +85,9 @@ namespace ColorVision.ImageEditor.Draw
             get => _sampleSpacing;
             set
             {
+                if (!double.IsFinite(value))
+                    return;
+
                 double next = Math.Max(0.5, value);
                 if (_sampleSpacing == next)
                 {
@@ -145,6 +151,9 @@ namespace ColorVision.ImageEditor.Draw
             get => _screenThickness;
             set
             {
+                if (!double.IsFinite(value))
+                    return;
+
                 double next = Math.Max(1, value);
                 if (_screenThickness == next)
                 {
@@ -163,6 +172,9 @@ namespace ColorVision.ImageEditor.Draw
             get => ScreenThickness;
             set
             {
+                if (!double.IsFinite(value))
+                    return;
+
                 double next = Math.Max(1, value);
                 if (ScreenThickness == next)
                 {
@@ -229,7 +241,7 @@ namespace ColorVision.ImageEditor.Draw
                 scale = 1;
             }
 
-            double targetThickness = Attribute.ScreenThickness * scale;
+            double targetThickness = TextRenderCore.NormalizeFontSize(Attribute.ScreenThickness * scale * 10) / 10;
             Pen pen = Pen;
             if (pen.Thickness == targetThickness)
             {
@@ -306,25 +318,9 @@ namespace ColorVision.ImageEditor.Draw
 
         public override Rect GetRect()
         {
-            if (Points.Count == 0)
-            {
+            Rect rect = PointCollectionGeometry.GetBounds(Points);
+            if (rect.IsEmpty)
                 return Rect.Empty;
-            }
-
-            double minX = double.MaxValue;
-            double minY = double.MaxValue;
-            double maxX = double.MinValue;
-            double maxY = double.MinValue;
-
-            foreach (Point point in Points)
-            {
-                minX = Math.Min(minX, point.X);
-                minY = Math.Min(minY, point.Y);
-                maxX = Math.Max(maxX, point.X);
-                maxY = Math.Max(maxY, point.Y);
-            }
-
-            Rect rect = new Rect(new Point(minX, minY), new Point(maxX, maxY));
             double halfThickness = Pen.Thickness / 2;
             rect.Inflate(halfThickness, halfThickness);
             return rect;
@@ -353,9 +349,6 @@ namespace ColorVision.ImageEditor.Draw
                 Render();
                 return;
             }
-
-            double scaleX = currentRect.Width == 0 ? 1 : rect.Width / currentRect.Width;
-            double scaleY = currentRect.Height == 0 ? 1 : rect.Height / currentRect.Height;
 
             for (int i = 0; i < Points.Count; i++)
             {
@@ -432,8 +425,14 @@ namespace ColorVision.ImageEditor.Draw
             return false;
         }
 
+        protected override void OnActivated()
+        {
+            DrawCanvas.LostMouseCapture += DrawCanvas_LostMouseCapture;
+        }
+
         protected override void OnDeactivated()
         {
+            DrawCanvas.LostMouseCapture -= DrawCanvas_LostMouseCapture;
             CancelPreviewRender();
             if (_currentStroke != null && DrawCanvas.ContainsVisual(_currentStroke))
             {
@@ -441,6 +440,12 @@ namespace ColorVision.ImageEditor.Draw
             }
 
             _currentStroke = null;
+        }
+
+        private void DrawCanvas_LostMouseCapture(object sender, MouseEventArgs e)
+        {
+            if (IsMouseDown)
+                IsChecked = false;
         }
 
         protected override void OnBeginDraw(Point startPoint, MouseButtonEventArgs e)
@@ -503,18 +508,6 @@ namespace ColorVision.ImageEditor.Draw
                 _currentStroke.Points.Add(endPoint);
             }
 
-            if (_currentStroke.Points.Count < 2)
-            {
-                if (DrawCanvas.ContainsVisual(_currentStroke))
-                {
-                    DrawCanvas.RemoveOverlayVisual(_currentStroke);
-                }
-
-                _currentStroke = null;
-                e.Handled = true;
-                return;
-            }
-
             DVBrushStroke completedStroke = _currentStroke;
             if (DrawCanvas.ContainsVisual(completedStroke))
             {
@@ -537,12 +530,6 @@ namespace ColorVision.ImageEditor.Draw
 
             SelectVisual(completedStroke);
             e.Handled = true;
-        }
-
-        private double GetSafeZoomRatio()
-        {
-            double zoomRatio = Zoombox.ContentMatrix.M11;
-            return double.IsFinite(zoomRatio) && zoomRatio > 0 ? zoomRatio : 1;
         }
 
         private void RequestPreviewRender()

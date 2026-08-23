@@ -732,6 +732,10 @@ namespace Conoscope
             {
                 if (!canvas.ContainsVisual(circle))
                 {
+                    if (circle.Drawing == null)
+                    {
+                        circle.Render();
+                    }
                     canvas.AddVisualCommand(circle);
                 }
 

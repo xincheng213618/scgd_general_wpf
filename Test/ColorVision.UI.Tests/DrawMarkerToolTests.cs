@@ -2,8 +2,10 @@ using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Annotations;
+using ColorVision.ImageEditor.Draw.Special;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -11,6 +13,44 @@ namespace ColorVision.UI.Tests;
 
 public sealed class DrawMarkerToolTests
 {
+    [Fact]
+    public void TransientCrosshairAndMagnifierDoNotCreateUndoHistory()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas drawCanvas = new();
+            Zoombox zoombox = new() { Child = drawCanvas, ContentMatrix = Matrix.Identity };
+            DrawEditorContext context = new(drawCanvas, zoombox);
+            Crosshair crosshair = new(context);
+            MouseMagnifierManager magnifier = new(context);
+
+            try
+            {
+                crosshair.IsShow = true;
+                magnifier.IsChecked = true;
+                magnifier.MouseLeave(drawCanvas, CreateMouseMoveArgs());
+                magnifier.MouseEnter(drawCanvas, CreateMouseMoveArgs());
+
+                Assert.Equal(2, drawCanvas.Visuals.Count);
+                Assert.Empty(drawCanvas.UndoStack);
+                Assert.Empty(drawCanvas.RedoStack);
+
+                crosshair.IsShow = false;
+                magnifier.IsChecked = false;
+
+                Assert.Empty(drawCanvas.Visuals);
+                Assert.Empty(drawCanvas.UndoStack);
+                Assert.Empty(drawCanvas.RedoStack);
+            }
+            finally
+            {
+                crosshair.IsShow = false;
+                magnifier.IsChecked = false;
+                drawCanvas.Dispose();
+            }
+        });
+    }
+
     [Fact]
     public void DeactivatingDragToolReleasesMouseCapture()
     {
@@ -334,6 +374,167 @@ public sealed class DrawMarkerToolTests
     }
 
     [Fact]
+    public void MultiPointToolLosingMouseCaptureCancelsTheActiveMarker()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas drawCanvas = new();
+            Zoombox zoombox = new() { Child = drawCanvas, ContentMatrix = Matrix.Identity };
+            Grid root = new();
+            root.Children.Add(zoombox);
+            Button captureTarget = new()
+            {
+                Width = 1,
+                Height = 1,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Bottom,
+            };
+            root.Children.Add(captureTarget);
+            Window window = new()
+            {
+                Content = root,
+                ShowInTaskbar = false,
+                WindowStyle = WindowStyle.None,
+                Width = 400,
+                Height = 300,
+                Left = -10000,
+                Top = -10000,
+            };
+            DrawEditorContext context = new(drawCanvas, zoombox);
+            SelectEditorVisual selection = new(context);
+            context.SelectionVisual = selection;
+            LineManager manager = new(context);
+
+            try
+            {
+                window.Show();
+                manager.IsChecked = true;
+                typeof(MultiPointDrawingToolBase<DVLine>)
+                    .GetMethod("HandlePreviewMouseLeftButtonDown", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(manager, [drawCanvas, CreateMouseButtonArgs(Mouse.PreviewMouseDownEvent)]);
+
+                Assert.True(drawCanvas.IsMouseCaptured);
+                Assert.Single(drawCanvas.Visuals.OfType<DVLine>());
+                Assert.Single(drawCanvas.UndoStack);
+                Assert.True(captureTarget.CaptureMouse());
+
+                Assert.False(manager.IsChecked);
+                Assert.Null(context.DrawEditorManager.Current);
+                Assert.Empty(drawCanvas.Visuals.OfType<DVLine>());
+                Assert.Empty(drawCanvas.UndoStack);
+                Assert.Empty(drawCanvas.RedoStack);
+                Assert.Empty(selection.SelectVisuals);
+            }
+            finally
+            {
+                captureTarget.ReleaseMouseCapture();
+                window.Close();
+                manager.Dispose();
+                selection.Dispose();
+                drawCanvas.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void LosingMouseCapturePreservesAnActiveMultiClickDraft()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas drawCanvas = new();
+            Zoombox zoombox = new() { Child = drawCanvas, ContentMatrix = Matrix.Identity };
+            Grid root = new();
+            root.Children.Add(zoombox);
+            Button captureTarget = new()
+            {
+                Width = 1,
+                Height = 1,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Bottom,
+            };
+            root.Children.Add(captureTarget);
+            Window window = new()
+            {
+                Content = root,
+                ShowInTaskbar = false,
+                WindowStyle = WindowStyle.None,
+                Width = 400,
+                Height = 300,
+                Left = -10000,
+                Top = -10000,
+            };
+            DrawEditorContext context = new(drawCanvas, zoombox);
+            SelectEditorVisual selection = new(context);
+            context.SelectionVisual = selection;
+            PolygonManager manager = new(context);
+
+            try
+            {
+                window.Show();
+                manager.IsChecked = true;
+                BeginPolygonGesture(manager, drawCanvas);
+                DVPolygon draft = Assert.Single(drawCanvas.Visuals.OfType<DVPolygon>());
+                Assert.True(drawCanvas.IsMouseCaptured);
+
+                Assert.True(captureTarget.CaptureMouse());
+
+                Assert.True(manager.IsChecked);
+                Assert.Same(manager, context.DrawEditorManager.Current);
+                Assert.Same(draft, GetActivePolygon(manager));
+                Assert.True(drawCanvas.ContainsVisual(draft));
+                Assert.Single(drawCanvas.UndoStack);
+                Assert.Empty(drawCanvas.RedoStack);
+
+                manager.IsChecked = false;
+                Assert.False(drawCanvas.ContainsVisual(draft));
+                Assert.Empty(drawCanvas.UndoStack);
+            }
+            finally
+            {
+                captureTarget.ReleaseMouseCapture();
+                window.Close();
+                manager.Dispose();
+                selection.Dispose();
+                drawCanvas.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void IncompletePolygonAndBezierCompletionLeavesNoGhostOrHistory()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas drawCanvas = new();
+            Zoombox zoombox = new() { Child = drawCanvas, ContentMatrix = Matrix.Identity };
+            DrawEditorContext context = new(drawCanvas, zoombox);
+            SelectEditorVisual selection = new(context);
+            context.SelectionVisual = selection;
+            using PolygonManager polygonManager = new(context);
+            using BezierCurveManager bezierManager = new(context);
+
+            DVPolygon polygon = new(new PolygonProperties
+            {
+                Points = [new Point(20, 20), new Point(20, 20)],
+            });
+            AssertIncompleteCompletionIsCancelled(polygonManager, polygon, drawCanvas);
+
+            DVBezierCurve bezier = new(new BezierCurveProperties
+            {
+                Points = [new Point(40, 40), new Point(40, 40)],
+            })
+            {
+                AutoAttributeChanged = false,
+            };
+            AssertIncompleteCompletionIsCancelled(bezierManager, bezier, drawCanvas);
+
+            Assert.Empty(selection.SelectVisuals);
+            selection.Dispose();
+            drawCanvas.Dispose();
+        });
+    }
+
+    [Fact]
     public void BrushStrokeUsesOneStreamGeometryForManyPoints()
     {
         WpfTestHost.Invoke(() =>
@@ -377,6 +578,55 @@ public sealed class DrawMarkerToolTests
             Assert.Equal(Colors.Red.B, restoredBrush.Color.B);
             Assert.Equal(1, restoredBrush.Opacity);
         });
+    }
+
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    public void BrushNumericSettingsRejectNonFiniteValues(double invalidValue)
+    {
+        BrushManagerConfig config = new()
+        {
+            StrokeThickness = 7,
+            SampleSpacing = 3,
+        };
+        BrushStrokeProperties properties = new()
+        {
+            StrokeThickness = 9,
+        };
+
+        config.StrokeThickness = invalidValue;
+        config.SampleSpacing = invalidValue;
+        properties.ScreenThickness = invalidValue;
+        properties.StrokeThickness = invalidValue;
+
+        Assert.Equal(7, config.StrokeThickness);
+        Assert.Equal(3, config.SampleSpacing);
+        Assert.Equal(9, properties.ScreenThickness);
+        Assert.Equal(9, properties.Pen.Thickness);
+    }
+
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    public void MultiPointNumericSettingsRejectNonFiniteThickness(double invalidValue)
+    {
+        MultiPointDrawingToolStyleConfig config = new() { StrokeThickness = 5 };
+        LineProperties line = new() { StrokeThickness = 6 };
+        PolygonProperties polygon = new() { StrokeThickness = 7 };
+        BezierCurveProperties bezier = new() { StrokeThickness = 8 };
+
+        config.StrokeThickness = invalidValue;
+        line.StrokeThickness = invalidValue;
+        polygon.StrokeThickness = invalidValue;
+        bezier.StrokeThickness = invalidValue;
+
+        Assert.Equal(5, config.StrokeThickness);
+        Assert.Equal(6, line.StrokeThickness);
+        Assert.Equal(7, polygon.StrokeThickness);
+        Assert.Equal(8, bezier.StrokeThickness);
     }
 
     [Fact]
@@ -426,6 +676,30 @@ public sealed class DrawMarkerToolTests
     }
 
     [Theory]
+    [InlineData(double.NaN, 4)]
+    [InlineData(double.PositiveInfinity, 4)]
+    [InlineData(double.MaxValue, 3579.1)]
+    public void BrushLayoutScaleNormalizesUnsafePublicScale(double scale, double expectedThickness)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DVBrushStroke stroke = new(new BrushStrokeProperties
+            {
+                Pen = new Pen(Brushes.Gold, 4),
+                ScreenThickness = 4,
+                Points = new List<Point> { new(5, 5), new(30, 25) },
+            });
+
+            stroke.ApplyLayoutScale(new DrawingVisualScaleContext(true, scale, 0));
+            stroke.Render();
+
+            Assert.True(double.IsFinite(stroke.Pen.Thickness));
+            Assert.Equal(expectedThickness, stroke.Pen.Thickness);
+        });
+    }
+
+    [Theory]
+    [InlineData(-2.0)]
     [InlineData(0.5)]
     [InlineData(1.0)]
     [InlineData(2.0)]
@@ -440,7 +714,7 @@ public sealed class DrawMarkerToolTests
             context.SelectionVisual = selection;
             BrushManager manager = new(context);
             manager.Config.SampleSpacing = 4;
-            double documentSpacing = manager.Config.SampleSpacing / zoomRatio;
+            double documentSpacing = manager.Config.SampleSpacing / Math.Abs(zoomRatio);
 
             try
             {
@@ -458,6 +732,103 @@ public sealed class DrawMarkerToolTests
             }
             finally
             {
+                manager.Dispose();
+                selection.Dispose();
+                drawCanvas.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void ClickingWithBrushCreatesAnUndoableDot()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas drawCanvas = new();
+            Zoombox zoombox = new() { Child = drawCanvas, ContentMatrix = Matrix.Identity };
+            DrawEditorContext context = new(drawCanvas, zoombox);
+            SelectEditorVisual selection = new(context);
+            context.SelectionVisual = selection;
+            BrushManager manager = new(context);
+            Point point = new(24, 36);
+
+            try
+            {
+                manager.IsChecked = true;
+                InvokeBrushMethod(manager, "OnBeginDraw", point, CreateMouseButtonArgs(Mouse.PreviewMouseDownEvent));
+                InvokeBrushMethod(manager, "OnEndDraw", point, CreateMouseButtonArgs(Mouse.PreviewMouseUpEvent));
+
+                DVBrushStroke stroke = Assert.Single(drawCanvas.Visuals.OfType<DVBrushStroke>());
+                Assert.Equal(point, Assert.Single(stroke.Points));
+                Assert.Single(drawCanvas.UndoStack);
+                Assert.Contains(stroke, selection.SelectVisuals);
+
+                drawCanvas.Undo();
+                Assert.False(drawCanvas.ContainsVisual(stroke));
+                drawCanvas.Redo();
+                Assert.True(drawCanvas.ContainsVisual(stroke));
+            }
+            finally
+            {
+                manager.Dispose();
+                selection.Dispose();
+                drawCanvas.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void BrushLosingMouseCaptureCancelsTheTransientStroke()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas drawCanvas = new();
+            Zoombox zoombox = new() { Child = drawCanvas, ContentMatrix = Matrix.Identity };
+            Grid root = new();
+            root.Children.Add(zoombox);
+            Button captureTarget = new()
+            {
+                Width = 1,
+                Height = 1,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Bottom,
+            };
+            root.Children.Add(captureTarget);
+            Window window = new()
+            {
+                Content = root,
+                ShowInTaskbar = false,
+                WindowStyle = WindowStyle.None,
+                Width = 400,
+                Height = 300,
+                Left = -10000,
+                Top = -10000,
+            };
+            DrawEditorContext context = new(drawCanvas, zoombox);
+            SelectEditorVisual selection = new(context);
+            context.SelectionVisual = selection;
+            BrushManager manager = new(context);
+
+            try
+            {
+                window.Show();
+                manager.IsChecked = true;
+                BeginDragGesture(manager, drawCanvas);
+
+                Assert.True(drawCanvas.IsMouseCaptured);
+                Assert.Single(drawCanvas.Visuals.OfType<DVBrushStroke>());
+                Assert.True(captureTarget.CaptureMouse());
+
+                Assert.False(manager.IsChecked);
+                Assert.Empty(drawCanvas.Visuals.OfType<DVBrushStroke>());
+                Assert.Empty(drawCanvas.UndoStack);
+                Assert.Empty(drawCanvas.RedoStack);
+                Assert.Empty(selection.SelectVisuals);
+            }
+            finally
+            {
+                captureTarget.ReleaseMouseCapture();
+                window.Close();
                 manager.Dispose();
                 selection.Dispose();
                 drawCanvas.Dispose();
@@ -743,6 +1114,215 @@ public sealed class DrawMarkerToolTests
     }
 
     [Fact]
+    public void ImportedNonFiniteLineThicknessUsesTheFiniteFallback()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            LineAnnotationItem item = new()
+            {
+                Points = [new AnnotationPoint { X = 10, Y = 20 }, new AnnotationPoint { X = 80, Y = 45 }],
+                Style = new AnnotationShapeStyle
+                {
+                    StrokeColor = Colors.Red.ToString(),
+                    StrokeThickness = double.PositiveInfinity,
+                },
+            };
+
+            DVLine line = Assert.IsType<DVLine>(AnnotationMapper.ToVisual(item));
+            line.Render();
+            Rect bounds = line.GetRect();
+
+            Assert.Equal(1, line.Pen.Thickness);
+            Assert.True(double.IsFinite(bounds.X));
+            Assert.True(double.IsFinite(bounds.Y));
+            Assert.True(double.IsFinite(bounds.Width));
+            Assert.True(double.IsFinite(bounds.Height));
+        });
+    }
+
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    public void MarkerAnnotationImportRejectsNonFiniteCoordinates(double invalidValue)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            Assert.Throws<Newtonsoft.Json.JsonSerializationException>(() => AnnotationMapper.ToProperties(new TextAnnotationItem
+            {
+                Position = new AnnotationPoint { X = invalidValue, Y = 0 },
+            }));
+            Assert.Throws<Newtonsoft.Json.JsonSerializationException>(() => AnnotationMapper.ToProperties(new LineAnnotationItem
+            {
+                Points = [new AnnotationPoint { X = 0, Y = 0 }, new AnnotationPoint { X = invalidValue, Y = 1 }],
+            }));
+            Assert.Throws<Newtonsoft.Json.JsonSerializationException>(() => AnnotationMapper.ToProperties(new PolygonAnnotationItem
+            {
+                Points = [new AnnotationPoint { X = 0, Y = 0 }, new AnnotationPoint { X = 1, Y = invalidValue }],
+            }));
+            Assert.Throws<Newtonsoft.Json.JsonSerializationException>(() => AnnotationMapper.ToProperties(new BezierCurveAnnotationItem
+            {
+                Points = [new AnnotationPoint { X = 0, Y = 0 }, new AnnotationPoint { X = invalidValue, Y = 1 }],
+            }));
+        });
+    }
+
+    [Fact]
+    public void IncompleteFiniteMarkerAnnotationsRemainImportCompatible()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            TextProperties text = Assert.IsType<TextProperties>(AnnotationMapper.ToProperties(new TextAnnotationItem
+            {
+                Position = null!,
+            }));
+            Assert.Equal(new Point(), text.Position);
+
+            LineProperties emptyLine = Assert.IsType<LineProperties>(AnnotationMapper.ToProperties(new LineAnnotationItem
+            {
+                Points = null!,
+            }));
+            Assert.Empty(emptyLine.Points);
+
+            LineProperties line = Assert.IsType<LineProperties>(AnnotationMapper.ToProperties(new LineAnnotationItem
+            {
+                Points = [new AnnotationPoint { X = 4, Y = 5 }],
+            }));
+            Assert.Equal(new Point(4, 5), Assert.Single(line.Points));
+
+            PolygonProperties openPolygon = Assert.IsType<PolygonProperties>(AnnotationMapper.ToProperties(new PolygonAnnotationItem
+            {
+                Points = [new AnnotationPoint()],
+            }));
+            Assert.Equal(new Point(), Assert.Single(openPolygon.Points));
+
+            PolygonProperties closedPolygon = Assert.IsType<PolygonProperties>(AnnotationMapper.ToProperties(new PolygonAnnotationItem
+            {
+                IsClosed = true,
+                Points = [new AnnotationPoint(), new AnnotationPoint { X = 1 }],
+            }));
+            Assert.Equal([new Point(), new Point(1, 0)], closedPolygon.Points);
+
+            BezierCurveProperties bezier = Assert.IsType<BezierCurveProperties>(AnnotationMapper.ToProperties(new BezierCurveAnnotationItem
+            {
+                Points = [new AnnotationPoint(), null!],
+            }));
+            Assert.Equal([new Point(), new Point()], bezier.Points);
+
+            DrawingVisualBase[] source =
+            [
+                new DVLine(new LineProperties { Points = [new Point(1, 2)] }),
+                new DVPolygon(new PolygonProperties { Points = [new Point(3, 4), new Point(5, 6)] }) { IsComple = true },
+                new DVBezierCurve(new BezierCurveProperties { Points = [] }),
+            ];
+            AnnotationDocument document = AnnotationMapper.CreateDocument(source);
+            AnnotationDocument deserialized = AnnotationMapper.Deserialize(AnnotationMapper.Serialize(document));
+            IReadOnlyList<DrawingVisualBase> imported = AnnotationMapper.ToVisuals(deserialized);
+
+            Assert.Equal(3, imported.Count);
+            Assert.Single(Assert.IsType<DVLine>(imported[0]).Points);
+            DVPolygon importedPolygon = Assert.IsType<DVPolygon>(imported[1]);
+            Assert.Equal(2, importedPolygon.Points.Count);
+            Assert.True(importedPolygon.IsComple);
+            Assert.Empty(Assert.IsType<DVBezierCurve>(imported[2]).Points);
+        });
+    }
+
+    [Fact]
+    public void LineCreationBeforeZoomInitializationUsesFiniteFallbackPen()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas drawCanvas = new();
+            Zoombox zoombox = new() { Child = drawCanvas, ContentMatrix = default };
+            DrawEditorContext context = new(drawCanvas, zoombox);
+            LineManager manager = new(context);
+            DVLine line = new();
+            MethodInfo initialize = typeof(LineManager).GetMethod("OnVisualCreated", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+            try
+            {
+                initialize.Invoke(manager, [line]);
+
+                Assert.True(double.IsFinite(line.Pen.Thickness));
+                Assert.Equal(1, line.Pen.Thickness);
+            }
+            finally
+            {
+                manager.Dispose();
+                drawCanvas.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void MultiPointCreationBeforeZoomInitializationUsesFiniteFallbackPens()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas drawCanvas = new();
+            Zoombox zoombox = new() { Child = drawCanvas, ContentMatrix = default };
+            DrawEditorContext context = new(drawCanvas, zoombox);
+            PolygonManager polygonManager = new(context);
+            BezierCurveManager bezierManager = new(context);
+            DVPolygon polygon = new();
+            DVBezierCurve bezier = new();
+
+            try
+            {
+                typeof(PolygonManager).GetMethod("OnVisualCreated", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(polygonManager, [polygon]);
+                typeof(BezierCurveManager).GetMethod("OnVisualCreated", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(bezierManager, [bezier]);
+
+                Assert.True(double.IsFinite(polygon.Pen.Thickness));
+                Assert.True(double.IsFinite(bezier.Pen.Thickness));
+                Assert.Equal(1, polygon.Pen.Thickness);
+                Assert.Equal(1, bezier.Pen.Thickness);
+            }
+            finally
+            {
+                polygonManager.Dispose();
+                bezierManager.Dispose();
+                drawCanvas.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void ZeroLengthLineDoesNotLeaveVisualOrCreationHistory()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas drawCanvas = new();
+            Zoombox zoombox = new() { Child = drawCanvas, ContentMatrix = Matrix.Identity };
+            DrawEditorContext context = new(drawCanvas, zoombox);
+            SelectEditorVisual selection = new(context);
+            context.SelectionVisual = selection;
+            LineManager manager = new(context);
+
+            try
+            {
+                manager.IsChecked = true;
+                MethodInfo mouseDown = typeof(MultiPointDrawingToolBase<DVLine>).GetMethod("HandlePreviewMouseLeftButtonDown", BindingFlags.Instance | BindingFlags.NonPublic)!;
+                MethodInfo mouseUp = typeof(MultiPointDrawingToolBase<DVLine>).GetMethod("HandlePreviewMouseUp", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+                mouseDown.Invoke(manager, [drawCanvas, CreateMouseButtonArgs(Mouse.PreviewMouseDownEvent)]);
+                mouseUp.Invoke(manager, [drawCanvas, CreateMouseButtonArgs(Mouse.PreviewMouseUpEvent)]);
+
+                Assert.Empty(drawCanvas.Visuals.OfType<DVLine>());
+                Assert.Empty(drawCanvas.UndoStack);
+                Assert.Empty(drawCanvas.RedoStack);
+                Assert.Empty(selection.SelectVisuals);
+            }
+            finally
+            {
+                manager.Dispose();
+                selection.Dispose();
+                drawCanvas.Dispose();
+            }
+        });
+    }
+
+    [Fact]
     public void ZeroLengthArrowDoesNotLeaveVisualOrCreationHistory()
     {
         WpfTestHost.Invoke(() =>
@@ -966,6 +1546,29 @@ public sealed class DrawMarkerToolTests
         FieldInfo creationCommandField = typeof(MultiPointDrawingToolBase<DVPolygon>).GetField("_activeCreationCommand", BindingFlags.Instance | BindingFlags.NonPublic)!;
         activeVisualField.SetValue(manager, polygon);
         creationCommandField.SetValue(manager, creationCommand);
+    }
+
+    private static void AssertIncompleteCompletionIsCancelled<TVisual>(
+        MultiPointDrawingToolBase<TVisual> manager,
+        TVisual visual,
+        DrawCanvas drawCanvas)
+        where TVisual : DrawingVisual, ISelectVisual
+    {
+        Type managerBaseType = typeof(MultiPointDrawingToolBase<TVisual>);
+        FieldInfo activeVisualField = managerBaseType.GetField("<ActiveVisual>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        FieldInfo creationCommandField = managerBaseType.GetField("_activeCreationCommand", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        MethodInfo complete = managerBaseType.GetMethod("CompleteCurrentVisual", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        drawCanvas.AddVisualCommand(visual);
+        activeVisualField.SetValue(manager, visual);
+        creationCommandField.SetValue(manager, drawCanvas.UndoStack[^1]);
+
+        complete.Invoke(manager, [true]);
+
+        Assert.False(drawCanvas.ContainsVisual(visual));
+        Assert.Empty(drawCanvas.UndoStack);
+        Assert.Empty(drawCanvas.RedoStack);
+        Assert.Null(activeVisualField.GetValue(manager));
+        Assert.Null(creationCommandField.GetValue(manager));
     }
 
     private static void BeginPolygonGesture(PolygonManager manager, DrawCanvas drawCanvas)

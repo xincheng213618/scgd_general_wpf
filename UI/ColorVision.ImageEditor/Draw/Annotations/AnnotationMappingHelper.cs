@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -38,7 +39,9 @@ namespace ColorVision.ImageEditor.Draw.Annotations
 
             Brush fillBrush = TextStyleSerialization.DeserializeBrush(style.FillColor ?? string.Empty, fillFallback);
             Brush strokeBrush = TextStyleSerialization.DeserializeBrush(style.StrokeColor ?? string.Empty, penFallback?.Brush ?? fillBrush);
-            double strokeThickness = style.StrokeThickness > 0 ? style.StrokeThickness : penFallback?.Thickness ?? 1;
+            double strokeThickness = double.IsFinite(style.StrokeThickness) && style.StrokeThickness > 0
+                ? style.StrokeThickness
+                : penFallback?.Thickness ?? 1;
 
             setFill(fillBrush);
             setPen(new Pen(strokeBrush, strokeThickness));
@@ -87,6 +90,17 @@ namespace ColorVision.ImageEditor.Draw.Annotations
             return new Point(point?.X ?? 0, point?.Y ?? 0);
         }
 
+        internal static Point ToFinitePoint(AnnotationPoint? point, string fieldName)
+        {
+            if (point == null)
+                return default;
+
+            if (!double.IsFinite(point.X) || !double.IsFinite(point.Y))
+                throw new JsonSerializationException($"{fieldName} must contain finite X and Y values.");
+
+            return new Point(point.X, point.Y);
+        }
+
         internal static AnnotationRect ToAnnotationRect(Rect rect)
         {
             return new AnnotationRect { X = rect.X, Y = rect.Y, Width = rect.Width, Height = rect.Height };
@@ -106,15 +120,15 @@ namespace ColorVision.ImageEditor.Draw.Annotations
             return result;
         }
 
-        internal static List<Point> ToPoints(IReadOnlyList<AnnotationPoint>? points)
+        internal static List<Point> ToFinitePoints(IReadOnlyList<AnnotationPoint>? points, string annotationName)
         {
-            List<Point> result = new();
             if (points == null)
-                return result;
+                return new List<Point>();
 
-            foreach (AnnotationPoint point in points)
+            List<Point> result = new(points.Count);
+            for (int i = 0; i < points.Count; i++)
             {
-                result.Add(ToPoint(point));
+                result.Add(ToFinitePoint(points[i], $"{annotationName} point {i}"));
             }
 
             return result;

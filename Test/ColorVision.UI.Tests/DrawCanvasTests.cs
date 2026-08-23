@@ -26,6 +26,54 @@ public class DrawCanvasTests
     }
 
     [Fact]
+    public void FailedLayoutScaleDoesNotPoisonVisualMembership()
+    {
+        RunOnStaThread(() =>
+        {
+            using DrawCanvas canvas = new();
+            ThrowingScaleVisual visual = new();
+
+            Assert.Throws<InvalidOperationException>(() => canvas.AddVisuals([visual]));
+            Assert.False(canvas.ContainsVisual(visual));
+            Assert.DoesNotContain(visual, canvas.Visuals);
+
+            visual.ShouldThrow = false;
+            Assert.Equal(1, canvas.AddVisuals([visual, visual]));
+            Assert.True(canvas.ContainsVisual(visual));
+            Assert.Equal(new Visual[] { visual }, canvas.Visuals);
+        });
+    }
+
+    [Fact]
+    public void BatchLayoutScaleFailureRollsBackEarlierVisualsWithoutEvents()
+    {
+        RunOnStaThread(() =>
+        {
+            using DrawCanvas canvas = new();
+            DrawingVisual first = new();
+            ThrowingScaleVisual failing = new();
+            int addEventCount = 0;
+            int changedEventCount = 0;
+            canvas.VisualsAdd += (_, _) => addEventCount++;
+            canvas.VisualsChanged += (_, _) => changedEventCount++;
+
+            Assert.Throws<InvalidOperationException>(() => canvas.AddVisuals([first, failing]));
+
+            Assert.Empty(canvas.Visuals);
+            Assert.False(canvas.ContainsVisual(first));
+            Assert.False(canvas.ContainsVisual(failing));
+            Assert.Equal(0, addEventCount);
+            Assert.Equal(0, changedEventCount);
+
+            failing.ShouldThrow = false;
+            Assert.Equal(2, canvas.AddVisuals([first, failing]));
+            Assert.Equal(new Visual[] { first, failing }, canvas.Visuals);
+            Assert.Equal(1, addEventCount);
+            Assert.Equal(1, changedEventCount);
+        });
+    }
+
+    [Fact]
     public void BatchTopVisualsPreservesExistingOrderingSemantics()
     {
         RunOnStaThread(() =>
@@ -111,6 +159,17 @@ public class DrawCanvasTests
         if (failure != null)
         {
             ExceptionDispatchInfo.Capture(failure).Throw();
+        }
+    }
+
+    private sealed class ThrowingScaleVisual : DrawingVisual, ILayoutScaleDrawingVisual
+    {
+        public bool ShouldThrow { get; set; } = true;
+
+        public void ApplyLayoutScale(DrawingVisualScaleContext context)
+        {
+            if (ShouldThrow)
+                throw new InvalidOperationException("Synthetic layout-scale failure.");
         }
     }
 }

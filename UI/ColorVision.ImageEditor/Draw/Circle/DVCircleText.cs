@@ -95,7 +95,14 @@ namespace ColorVision.ImageEditor.Draw
 
         private FormattedText CreateFormattedText(string text, Brush brush)
         {
-            return new FormattedText(text, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+            return new FormattedText(
+                text,
+                CultureInfo.CurrentCulture,
+                TextRenderCore.NormalizeFlowDirection(TextAttribute.FlowDirection),
+                new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch),
+                TextRenderCore.NormalizeFontSize(TextAttribute.FontSize),
+                brush,
+                TextRenderCore.NormalizePixelsPerDip(VisualTreeHelper.GetDpi(this).PixelsPerDip));
         }
 
         public override Rect GetRect()

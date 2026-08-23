@@ -74,9 +74,73 @@ public class PoiPointModelTests
             Assert.Equal(new Point(100, 80), circle.Attribute.Center);
             Assert.Equal(10, circle.Attribute.Radius);
             Assert.Equal("value", circle.Attribute.Msg);
+            Assert.Equal(12, circle.Attribute.FontSize);
+            Assert.NotNull(circle.Drawing);
             Assert.Equal(new Rect(35, 35, 30, 10), rectangle.Attribute.Rect);
+            Assert.Equal(12, rectangle.Attribute.FontSize);
+            Assert.NotNull(rectangle.Drawing);
             Assert.Equal(4, point.Attribute.Radius);
+            Assert.NotNull(point.Drawing);
             Assert.Same(circlePoint, circle.BaseAttribute.Tag);
+        });
+    }
+
+    [Fact]
+    public void AddRangePreparesVisualsAtTheFinalCanvasScaleAndRaisesOneBatchEvent()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            Application application = Application.Current ?? new Application();
+            application.Resources["TextBox.Small"] = new Style(typeof(System.Windows.Controls.TextBox));
+            application.Resources["ComboBox.Small"] = new Style(typeof(System.Windows.Controls.ComboBox));
+            application.Resources["ToolBarBaseStyle"] = new Style(typeof(System.Windows.Controls.ToolBar));
+            application.Resources["ToolBarImage"] = new Style(typeof(System.Windows.Controls.Image));
+            application.Resources["BaseStyle"] = new Style(typeof(System.Windows.Controls.Control));
+            application.Resources["RangeSliderBaseStyle"] = new Style(typeof(HandyControl.Controls.RangeSlider));
+            application.Resources["bool2VisibilityConverter"] = new System.Windows.Controls.BooleanToVisibilityConverter();
+            using ImageView imageView = new();
+            imageView.ImageShow.IsLayoutUpdated = true;
+            imageView.ImageShow.Scale = 2.5;
+            int initialVisualCount = imageView.ImageShow.Visuals.Count;
+            PoiPoint[] points =
+            [
+                new PoiPoint(1, -1, "C1", PoiShape.Circle, 100, 80, 20, 20),
+                new PoiPoint(2, -1, "R2", PoiShape.Rect, 50, 40, 30, 10),
+                new PoiPoint(3, -1, "P3", PoiShape.Point, 12, 14, 1, 1),
+            ];
+            int addEventCount = 0;
+            VisualChangedEventArgs? addEvent = null;
+            imageView.ImageShow.VisualsAdd += (_, e) =>
+            {
+                addEventCount++;
+                addEvent = e;
+            };
+
+            int added = PoiOverlayRenderer.AddRange(imageView, points, point => $"value-{point.Id}");
+
+            Assert.Equal(3, added);
+            Assert.Equal(initialVisualCount + 3, imageView.ImageShow.Visuals.Count);
+            Assert.Equal(1, addEventCount);
+            Assert.NotNull(addEvent);
+            Assert.Equal(VisualChangeType.AddRange, addEvent.ChangeType);
+            Assert.Equal(3, addEvent.Visuals.Count);
+
+            DVCircleText circle = Assert.IsType<DVCircleText>(imageView.ImageShow.Visuals[initialVisualCount]);
+            DVRectangleText rectangle = Assert.IsType<DVRectangleText>(imageView.ImageShow.Visuals[initialVisualCount + 1]);
+            DVCircle point = Assert.IsType<DVCircle>(imageView.ImageShow.Visuals[initialVisualCount + 2]);
+            Assert.Equal(2.5, circle.Pen.Thickness);
+            Assert.Equal(25, circle.TextAttribute.FontSize);
+            Assert.Equal("value-1", circle.Attribute.Msg);
+            Assert.Equal(2.5, rectangle.Pen.Thickness);
+            Assert.Equal(25, rectangle.TextAttribute.FontSize);
+            Assert.Equal("value-2", rectangle.Attribute.Msg);
+            Assert.Equal(2.5, point.Pen.Thickness);
+            Assert.NotNull(circle.Drawing);
+            Assert.NotNull(rectangle.Drawing);
+            Assert.NotNull(point.Drawing);
+            Assert.Same(points[0], circle.BaseAttribute.Tag);
+            Assert.Same(points[1], rectangle.BaseAttribute.Tag);
+            Assert.Same(points[2], point.BaseAttribute.Tag);
         });
     }
 

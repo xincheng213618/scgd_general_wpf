@@ -85,14 +85,7 @@ namespace ColorVision.ImageEditor.Draw
                 string textToDraw = Attribute.IsShowText ? TextAttribute.Text : string.Empty;
                 if (!string.IsNullOrEmpty(textToDraw))
                 {
-                    FormattedText formattedText = new(
-                        textToDraw,
-                        CultureInfo.CurrentCulture,
-                        TextAttribute.FlowDirection,
-                        new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch),
-                        TextAttribute.FontSize,
-                        TextAttribute.Brush,
-                        VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                    FormattedText formattedText = CreateFormattedText(textToDraw);
                     size = formattedText.Width / 2;
                     Point origin = new Point();
                     double halfWidth = formattedText.Width / 2;
@@ -134,10 +127,23 @@ namespace ColorVision.ImageEditor.Draw
             }
             if (!string.IsNullOrWhiteSpace(Attribute.Msg))
             {
-                FormattedText formattedText = new FormattedText(Attribute.Msg, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                FormattedText formattedText = CreateFormattedText(Attribute.Msg);
                 dc.DrawText(formattedText, new Point(Attribute.Rect.X + size + Attribute.Rect.Width / 2 + Attribute.Pen.Thickness, Attribute.Rect.Y + Attribute.Rect.Height / 2 - formattedText.Height / 2));
             }
         }
+
+        private FormattedText CreateFormattedText(string text)
+        {
+            return new FormattedText(
+                text,
+                CultureInfo.CurrentCulture,
+                TextRenderCore.NormalizeFlowDirection(TextAttribute.FlowDirection),
+                new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch),
+                TextRenderCore.NormalizeFontSize(TextAttribute.FontSize),
+                TextAttribute.Brush,
+                TextRenderCore.NormalizePixelsPerDip(VisualTreeHelper.GetDpi(this).PixelsPerDip));
+        }
+
         public override Rect GetRect()
         {
             return Rect;

@@ -230,6 +230,16 @@ public sealed class DrawShapeCompatibilityTests
     }
 
     [Theory]
+    [InlineData("Text, Line")]
+    [InlineData("Circle, Rectangle")]
+    public void CombinedAnnotationKindsAreRejectedInsteadOfBecomingAnotherShape(string kind)
+    {
+        string json = $"{{\"Items\":[{{\"Kind\":\"{kind}\"}}]}}";
+
+        Assert.Throws<Newtonsoft.Json.JsonSerializationException>(() => AnnotationMapper.Deserialize(json));
+    }
+
+    [Theory]
     [InlineData(typeof(CircleManager), "DrawCircleCache")]
     [InlineData(typeof(RectangleManager), "DrawingRectangleCache")]
     public void ShapeCreationRemovedByVisualsAddKeepsTheDetachedDraftForLegacyPluginTracking(Type managerType, string cacheFieldName)
@@ -268,6 +278,7 @@ public sealed class DrawShapeCompatibilityTests
                 updateDraw.Invoke(manager, new object[] { new Point(90, 100), moveArgs });
 
                 Assert.True(propertyChangeCount > 0);
+                Assert.NotNull(Assert.IsAssignableFrom<DrawingVisual>(detachedVisual).Drawing);
             }
             finally
             {
@@ -286,6 +297,74 @@ public sealed class DrawShapeCompatibilityTests
                     canvas.RemoveVisualCommand((Visual)visual);
                 }
             }
+        });
+    }
+
+    [Theory]
+    [InlineData(typeof(CircleManager), "DrawCircleCache", 0.0, 1.0)]
+    [InlineData(typeof(RectangleManager), "DrawingRectangleCache", 0.0, 1.0)]
+    [InlineData(typeof(CircleManager), "DrawCircleCache", 1e-10, 3579.1)]
+    [InlineData(typeof(RectangleManager), "DrawingRectangleCache", 1e-10, 3579.1)]
+    public void ShapeCreationWithUnsafeZoomUsesFiniteFallbackPen(Type managerType, string cacheFieldName, double zoomRatio, double expectedThickness)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new() { IsLayoutUpdated = false };
+            Zoombox zoombox = new() { Child = canvas, ContentMatrix = new Matrix(zoomRatio, 0, 0, zoomRatio, 0, 0) };
+            DrawEditorContext context = new(canvas, zoombox);
+            SelectEditorVisual selection = new(context);
+            context.SelectionVisual = selection;
+            IDrawEditorToggleTool manager = Assert.IsAssignableFrom<IDrawEditorToggleTool>(Activator.CreateInstance(managerType, context));
+            IDisposable disposableManager = Assert.IsAssignableFrom<IDisposable>(manager);
+
+            try
+            {
+                MethodInfo beginDraw = managerType.GetMethod("OnBeginDraw", BindingFlags.Instance | BindingFlags.NonPublic)!;
+                MouseButtonEventArgs args = new(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left)
+                {
+                    RoutedEvent = Mouse.PreviewMouseDownEvent,
+                };
+                beginDraw.Invoke(manager, [new Point(20, 30), args]);
+
+                DrawingVisualBase visual = Assert.IsAssignableFrom<DrawingVisualBase>(
+                    managerType.GetField(cacheFieldName, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(manager));
+                Pen pen = visual switch
+                {
+                    DVCircleText circle => circle.Pen,
+                    DVRectangleText rectangle => rectangle.Pen,
+                    _ => throw new InvalidOperationException(),
+                };
+                Assert.True(double.IsFinite(pen.Thickness));
+                Assert.Equal(expectedThickness, pen.Thickness);
+            }
+            finally
+            {
+                disposableManager.Dispose();
+                selection.Dispose();
+                canvas.Dispose();
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.MaxValue)]
+    public void TextShapesRenderSafelyWhenPluginsProvideInvalidFontSizes(double fontSize)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DVCircleText circle = new(new CircleTextProperties { Text = "Circle" });
+            DVRectangleText rectangle = new(new RectangleTextProperties { Text = "Rectangle" });
+
+            circle.Attribute.FontSize = fontSize;
+            rectangle.Attribute.FontSize = fontSize;
+
+            Assert.Equal(fontSize, circle.Attribute.FontSize);
+            Assert.Equal(fontSize, rectangle.Attribute.FontSize);
+            Assert.NotNull(circle.Drawing);
+            Assert.NotNull(rectangle.Drawing);
         });
     }
 

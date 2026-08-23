@@ -128,7 +128,12 @@ namespace ColorVision.ImageEditor.Draw
 
         public static FlowDirection DeserializeFlowDirection(string value, FlowDirection fallback)
         {
-            return Enum.TryParse(value, true, out FlowDirection flowDirection) ? flowDirection : fallback;
+            return !string.IsNullOrWhiteSpace(value)
+                && !value.Contains(',')
+                && Enum.TryParse(value, true, out FlowDirection flowDirection)
+                && Enum.IsDefined(flowDirection)
+                ? flowDirection
+                : fallback;
         }
     }
 }

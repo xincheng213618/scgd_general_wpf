@@ -64,7 +64,7 @@ namespace ColorVision.ImageEditor.Draw
             CircleTextProperties circleTextProperties = new CircleTextProperties();
             int did = GetNextDrawingVisualId();
             circleTextProperties.Id = did;
-            circleTextProperties.Pen = new Pen(Brushes.Red, 1 / Zoombox.ContentMatrix.M11);
+            circleTextProperties.Pen = new Pen(Brushes.Red, 1 / GetSafeZoomRatio());
             circleTextProperties.Center = startPoint;
             circleTextProperties.Radius = Config.DefalutRadius;
             circleTextProperties.Text = "Point_" + did;
