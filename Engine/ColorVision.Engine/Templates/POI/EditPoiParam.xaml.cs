@@ -897,7 +897,6 @@ namespace ColorVision.Engine.Templates.POI
                             break;
                         DVDatumPolygon Polygon = new() { IsComple = true };
                         Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
-                        Polygon.Attribute.Brush = Brushes.Transparent;
                         Polygon.Attribute.Points.Add(result[0]);
                         Polygon.Attribute.Points.Add(result[1]);
                         Polygon.Attribute.Points.Add(result[2]);
@@ -909,7 +908,6 @@ namespace ColorVision.Engine.Templates.POI
                     case GraphicTypes.Polygon:
                         DVDatumPolygon Polygon1 = new() { IsComple = false };
                         Polygon1.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
-                        Polygon1.Attribute.Brush = Brushes.Transparent;
                         foreach (var item in PoiConfig.Polygons)
                         {
                             Polygon1.Attribute.Points.Add(new Point(item.X, item.Y));
