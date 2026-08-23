@@ -140,7 +140,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_AddCondition", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 添加筛选字段 的本地化字符串。
         /// </summary>
@@ -149,7 +149,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_AddFilterField", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 添加选中字段到查询条件 的本地化字符串。
         /// </summary>
@@ -176,7 +176,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_AllConditionsMustMatch", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 应用筛选 的本地化字符串。
         /// </summary>
@@ -185,7 +185,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_ApplyFilter", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 账号或密码错误，请检查！ 的本地化字符串。
         /// </summary>
@@ -203,7 +203,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_BooleanFalse", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 是 的本地化字符串。
         /// </summary>
@@ -212,7 +212,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_BooleanTrue", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 数据库浏览器 的本地化字符串。
         /// </summary>
@@ -239,7 +239,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_ClearConditions", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 清空表 的本地化字符串。
         /// </summary>
@@ -257,7 +257,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_ClearTableConfirm", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 关闭 的本地化字符串。
         /// </summary>
@@ -266,7 +266,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_Close", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 确认删除 的本地化字符串。
         /// </summary>
@@ -410,7 +410,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FieldBatchId", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 编码 的本地化字符串。
         /// </summary>
@@ -419,7 +419,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FieldCode", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 创建时间 的本地化字符串。
         /// </summary>
@@ -428,7 +428,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FieldCreateTime", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 文件名 的本地化字符串。
         /// </summary>
@@ -437,7 +437,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FieldFileName", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 流程状态 的本地化字符串。
         /// </summary>
@@ -446,7 +446,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FieldFlowStatus", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 ID 的本地化字符串。
         /// </summary>
@@ -455,7 +455,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FieldId", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 消息 的本地化字符串。
         /// </summary>
@@ -464,7 +464,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FieldMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 型号 的本地化字符串。
         /// </summary>
@@ -473,7 +473,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FieldModel", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 名称 的本地化字符串。
         /// </summary>
@@ -482,7 +482,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FieldName", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 结果 的本地化字符串。
         /// </summary>
@@ -491,7 +491,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FieldResult", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 运行时间 的本地化字符串。
         /// </summary>
@@ -500,7 +500,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FieldRunTime", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 测试类型 的本地化字符串。
         /// </summary>
@@ -509,7 +509,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FieldTestType", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 更新时间 的本地化字符串。
         /// </summary>
@@ -518,7 +518,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FieldUpdateTime", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 序号 的本地化字符串。
         /// </summary>
@@ -527,7 +527,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FieldZIndex", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 筛选条件 的本地化字符串。
         /// </summary>
@@ -536,7 +536,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FilterConditions", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 添加一个或多个条件，应用后将在当前结果表中显示匹配记录。 的本地化字符串。
         /// </summary>
@@ -545,7 +545,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FilterDataDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 筛选数据 的本地化字符串。
         /// </summary>
@@ -554,7 +554,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FilterDataTitle", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 字段 的本地化字符串。
         /// </summary>
@@ -563,7 +563,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FilterFieldColumn", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 {0}的筛选条件 的本地化字符串。
         /// </summary>
@@ -572,7 +572,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FilterOperatorAutomationName", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 条件 的本地化字符串。
         /// </summary>
@@ -581,7 +581,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FilterOperatorColumn", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 {0}的筛选值 的本地化字符串。
         /// </summary>
@@ -590,7 +590,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FilterValueAutomationName", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 值 的本地化字符串。
         /// </summary>
@@ -599,7 +599,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FilterValueColumn", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 “{0}”无法使用值“{1}”。 的本地化字符串。
         /// </summary>
@@ -608,7 +608,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FilterValueInvalid", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请填写“{0}”的筛选值。 的本地化字符串。
         /// </summary>
@@ -617,7 +617,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_FilterValueRequired", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 初始化Mysql表失败，请查看日志。 的本地化字符串。
         /// </summary>
@@ -689,7 +689,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_MaxResults", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 最多返回数量必须是 1 到 10000 之间的整数。 的本地化字符串。
         /// </summary>
@@ -698,7 +698,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_MaxResultsRange", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 Mysql配置 的本地化字符串。
         /// </summary>
@@ -734,7 +734,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_NewestFirst", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 暂无数据 的本地化字符串。
         /// </summary>
@@ -770,7 +770,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_NoFilterConditions", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 不添加条件时，将按下方设置返回最近的数据。也可以从上方选择字段开始筛选。 的本地化字符串。
         /// </summary>
@@ -779,7 +779,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_NoFilterConditionsDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前表没有可插入的列。 的本地化字符串。
         /// </summary>
@@ -806,7 +806,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_OldestFirst", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 操作失败：{0} 的本地化字符串。
         /// </summary>
@@ -815,7 +815,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_OperationFailed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 包含 的本地化字符串。
         /// </summary>
@@ -824,7 +824,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_OperatorContains", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 等于 的本地化字符串。
         /// </summary>
@@ -833,7 +833,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_OperatorEqual", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 大于 的本地化字符串。
         /// </summary>
@@ -842,7 +842,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_OperatorGreater", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 大于或等于 的本地化字符串。
         /// </summary>
@@ -851,7 +851,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_OperatorGreaterOrEqual", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 小于 的本地化字符串。
         /// </summary>
@@ -860,7 +860,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_OperatorLess", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 小于或等于 的本地化字符串。
         /// </summary>
@@ -869,7 +869,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_OperatorLessOrEqual", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 不等于 的本地化字符串。
         /// </summary>
@@ -878,7 +878,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_OperatorNotEqual", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 第 的本地化字符串。
         /// </summary>
@@ -1040,7 +1040,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_RemoveNamedCondition", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 重置 的本地化字符串。
         /// </summary>
@@ -1076,7 +1076,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_ResultUnit", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 保存 的本地化字符串。
         /// </summary>
@@ -1130,7 +1130,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_SelectFilterField", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请先选择一行 的本地化字符串。
         /// </summary>
@@ -1157,7 +1157,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_SortById", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 按类型排序 的本地化字符串。
         /// </summary>
@@ -1202,7 +1202,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_TableMaintenance", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 截断表 的本地化字符串。
         /// </summary>
@@ -1220,7 +1220,7 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("DB_TruncateTableConfirm", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 撤销 的本地化字符串。
         /// </summary>
@@ -1294,7 +1294,7 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
-        ///   查找类似 初始化 MySQL 表(调试) 的本地化字符串。
+        ///   查找类似 初始化 MySQL 表 的本地化字符串。
         /// </summary>
         public static string MenuMySqlInitTables {
             get {

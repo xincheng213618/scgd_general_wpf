@@ -5,7 +5,10 @@ using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Templates.FindLightArea;
+using ColorVision.Engine.Templates.POI;
+using ColorVision.ImageEditor;
 using FlowEngineLib.Base;
+using FlowEngineLib.PropertyEditor;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Text;
@@ -28,8 +31,13 @@ public sealed class LocalFindLuminousAreaNodeTests
         Assert.Equal(["IN"], node.GetAllInputOptions().Select(option => option.Text));
         Assert.Equal(["OUT"], node.GetAllOutputOptions().Select(option => option.Text));
         Assert.Equal(string.Empty, node.ImageFilePath);
+        Assert.Equal(string.Empty, node.SavePOITempName);
         Assert.Equal(Int32Rect.Empty, node.SearchRegion);
         Assert.Equal(LocalFindLuminousAreaNode.DefaultMinimumConfidence, node.MinimumConfidence);
+        Assert.Null(typeof(LocalFindLuminousAreaNode).GetProperty("BufferLen"));
+        Assert.Null(typeof(LocalFindLuminousAreaNode).GetProperty("OIndex"));
+        Assert.Equal(typeof(FlowPoiTemplateEditor), FlowNodePropertyEditorAttribute.Resolve(
+            typeof(LocalFindLuminousAreaNode), nameof(LocalFindLuminousAreaNode.SavePOITempName)));
     }
 
     [Fact]
@@ -47,6 +55,7 @@ public sealed class LocalFindLuminousAreaNodeTests
         LocalFindLuminousAreaNode original = new();
         original.Create();
         original.ImageFilePath = @"C:\images\white.cvraw";
+        original.SavePOITempName = "POI_W_AUTO";
         original.SearchRegion = new Int32Rect(12, 34, 560, 780);
         original.MinimumConfidence = 0.72;
         Dictionary<string, byte[]> state = ParseState(original.GetSaveData());
@@ -56,6 +65,7 @@ public sealed class LocalFindLuminousAreaNodeTests
         restored.OnLoadNode(state);
 
         Assert.Equal(original.ImageFilePath, restored.ImageFilePath);
+        Assert.Equal(original.SavePOITempName, restored.SavePOITempName);
         Assert.Equal(original.SearchRegion, restored.SearchRegion);
         Assert.Equal(original.MinimumConfidence, restored.MinimumConfidence);
     }
@@ -189,6 +199,141 @@ public sealed class LocalFindLuminousAreaNodeTests
         Assert.All(details, detail => Assert.Equal(42, detail.Pid));
         Assert.Equal(corners.Select(corner => corner.X), details.Select(detail => detail.PosX));
         Assert.Equal(corners.Select(corner => corner.Y), details.Select(detail => detail.PosY));
+    }
+
+    [Theory]
+    [InlineData(LocalLuminousAreaPoiTemplateUpdater.RectPointType, (int)LocalLuminousAreaPoiTemplateShape.Rectangle, 60, 46)]
+    [InlineData(LocalLuminousAreaPoiTemplateUpdater.LeftTopRectPointType, (int)LocalLuminousAreaPoiTemplateShape.LeftTopRectangle, 9, 20)]
+    public void PoiSaveTemplateUpdatesSingleServiceRectangle(
+        int pointType,
+        int expectedShape,
+        int expectedX,
+        int expectedY)
+    {
+        PoiDetailModel source = new()
+        {
+            Id = 7,
+            Pid = 3,
+            Name = "Area",
+            Type = (GraphicTypes)pointType,
+            PixX = 1,
+            PixY = 2,
+            PixWidth = 3,
+            PixHeight = 4
+        };
+
+        LocalLuminousAreaPoiTemplateUpdate update = LocalLuminousAreaPoiTemplateUpdater.BuildUpdate(
+            [source], CreateFractionalLuminousAreaPoints(), "POI_W_AUTO");
+
+        Assert.Equal((LocalLuminousAreaPoiTemplateShape)expectedShape, update.Shape);
+        PoiDetailModel detail = Assert.Single(update.Details);
+        Assert.Equal(7, detail.Id);
+        Assert.Equal(3, detail.Pid);
+        Assert.Equal("Area", detail.Name);
+        Assert.Equal(pointType, (int)detail.Type);
+        Assert.Equal(expectedX, detail.PixX);
+        Assert.Equal(expectedY, detail.PixY);
+        Assert.Equal(102, detail.PixWidth);
+        Assert.Equal(52, detail.PixHeight);
+        Assert.Equal(1, source.PixX);
+        Assert.Equal(2, source.PixY);
+    }
+
+    [Fact]
+    public void PoiSaveTemplateRectangleIncludesIntegerMaximumLikeOpenCvBoundingRect()
+    {
+        PoiDetailModel source = new() { Id = 8, Pid = 3, Type = (GraphicTypes)LocalLuminousAreaPoiTemplateUpdater.LeftTopRectPointType };
+        LuminousAreaPoint[] corners =
+        [
+            new(10, 20),
+            new(110, 20),
+            new(110, 70),
+            new(10, 70)
+        ];
+
+        PoiDetailModel detail = Assert.Single(LocalLuminousAreaPoiTemplateUpdater.BuildUpdate([source], corners).Details);
+
+        Assert.Equal(10, detail.PixX);
+        Assert.Equal(20, detail.PixY);
+        Assert.Equal(101, detail.PixWidth);
+        Assert.Equal(51, detail.PixHeight);
+    }
+
+    [Theory]
+    [InlineData(LocalLuminousAreaPoiTemplateUpdater.PolygonFourPointType)]
+    [InlineData(LocalLuminousAreaPoiTemplateUpdater.LeftTopRectPointType)]
+    public void PoiSaveTemplateUpdatesFourCornersAndNormalizesServicePointType(int storedPointType)
+    {
+        PoiDetailModel[] source = Enumerable.Range(0, 4)
+            .Select(index => new PoiDetailModel
+            {
+                Id = 20 + index,
+                Pid = 5,
+                Name = new[] { "LeftTop", "RightTop", "RightBottom", "LeftBottom" }[index],
+                Type = (GraphicTypes)storedPointType,
+                PixWidth = 8,
+                PixHeight = 9
+            })
+            .ToArray();
+
+        LocalLuminousAreaPoiTemplateUpdate update = LocalLuminousAreaPoiTemplateUpdater.BuildUpdate(
+            source, CreateFractionalLuminousAreaPoints(), "POI_W_AUTO");
+
+        Assert.Equal(LocalLuminousAreaPoiTemplateShape.PolygonFour, update.Shape);
+        Assert.Equal([10, 110, 109, 9], update.Details.Select(detail => detail.PixX));
+        Assert.Equal([20, 21, 71, 70], update.Details.Select(detail => detail.PixY));
+        Assert.All(update.Details, detail =>
+        {
+            Assert.Equal(LocalLuminousAreaPoiTemplateUpdater.PolygonFourPointType, (int)detail.Type);
+            Assert.Equal(0, detail.PixWidth);
+            Assert.Equal(0, detail.PixHeight);
+        });
+    }
+
+    [Fact]
+    public void PoiSaveTemplateUsesFirstFourPointRowAsLegacyServiceDiscriminator()
+    {
+        int[] storedTypes =
+        [
+            LocalLuminousAreaPoiTemplateUpdater.PolygonFourPointType,
+            (int)GraphicTypes.Circle,
+            (int)GraphicTypes.Rect,
+            (int)GraphicTypes.Polygon
+        ];
+        PoiDetailModel[] source = storedTypes.Select((type, index) => new PoiDetailModel
+        {
+            Id = 30 + index,
+            Pid = 6,
+            Type = (GraphicTypes)type
+        }).ToArray();
+
+        LocalLuminousAreaPoiTemplateUpdate update = LocalLuminousAreaPoiTemplateUpdater.BuildUpdate(
+            source, CreateFractionalLuminousAreaPoints(), "POI_W_AUTO");
+
+        Assert.Equal(LocalLuminousAreaPoiTemplateShape.PolygonFour, update.Shape);
+        Assert.All(update.Details, detail =>
+            Assert.Equal(LocalLuminousAreaPoiTemplateUpdater.PolygonFourPointType, (int)detail.Type));
+    }
+
+    [Fact]
+    public void PoiSaveTemplateRejectsUnsupportedShapeWithoutMutatingSource()
+    {
+        PoiDetailModel source = new()
+        {
+            Id = 1,
+            Pid = 2,
+            Type = GraphicTypes.Circle,
+            PixX = 33,
+            PixY = 44
+        };
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
+            LocalLuminousAreaPoiTemplateUpdater.BuildUpdate([source], CreateFractionalLuminousAreaPoints(), "BadTemplate"));
+
+        Assert.Contains("Rect/LTRect", exception.Message);
+        Assert.Contains("PolygonFour", exception.Message);
+        Assert.Equal(33, source.PixX);
+        Assert.Equal(44, source.PixY);
     }
 
     [Fact]
@@ -370,6 +515,7 @@ public sealed class LocalFindLuminousAreaNodeTests
             Assert.Equal(["LT", "RT", "RB", "LB"], persisted.Corners.Select(corner => corner.Name));
             Assert.NotNull(published);
             Assert.Equal(73, published!.MasterId);
+            Assert.Equal("FindLightArea", published.OperatorCode);
             Assert.Equal(action.SerialNumber, published.SerialNumber);
             Assert.Equal(73, Convert.ToInt32(action.Data["MasterId"]));
             Assert.Equal((int)ViewResultAlgType.FindLightArea, Convert.ToInt32(action.Data["MasterResultType"]));
@@ -385,6 +531,116 @@ public sealed class LocalFindLuminousAreaNodeTests
         finally
         {
             action?.RuntimeResources.Dispose();
+            if (File.Exists(filePath)) File.Delete(filePath);
+        }
+    }
+
+    [Fact]
+    public void ConfiguredPoiTemplateUpdatesBeforeResultPersistence()
+    {
+        CVStartCFC action = CreateRawAction("poi-save-template");
+        List<string> events = [];
+        LocalFindLuminousAreaPersistenceRequest? persisted = null;
+        FakeNodeServices services = new()
+        {
+            DetectHandler = (_, _, _) => CreateSuccessfulDetection(),
+            UpdatePoiTemplateHandler = (templateName, corners) =>
+            {
+                events.Add("UpdatePoiTemplate");
+                Assert.Equal("POI_W_AUTO", templateName);
+                Assert.Equal(["LT", "RT", "RB", "LB"], corners.Select(corner => corner.Name));
+                return LocalLuminousAreaPoiTemplateShape.PolygonFour;
+            },
+            PersistHandler = request =>
+            {
+                events.Add("Persist");
+                persisted = request;
+                return 181;
+            },
+            PublishHandler = _ => events.Add("Publish")
+        };
+        LocalFindLuminousAreaNode node = new(services) { SavePOITempName = " POI_W_AUTO " };
+        try
+        {
+            LocalFindLuminousAreaNodeResultData result = node.ExecuteSynchronously(action);
+
+            Assert.Equal(["UpdatePoiTemplate", "Persist", "Publish"], events);
+            Assert.Equal(1, services.UpdatePoiTemplateCount);
+            Assert.Equal("POI_W_AUTO", result.SavePoiTemplateName);
+            Assert.Equal(nameof(LocalLuminousAreaPoiTemplateShape.PolygonFour), result.SavePoiTemplateShape);
+            Assert.Equal("POI_W_AUTO", action.Data["LocalLuminousAreaSavePOITemplate"]);
+            Assert.Equal(nameof(LocalLuminousAreaPoiTemplateShape.PolygonFour), action.Data["LocalLuminousAreaSavePOITemplateShape"]);
+            Assert.NotNull(persisted);
+            JObject parameters = JObject.FromObject(persisted!.Parameters);
+            Assert.Equal("POI_W_AUTO", parameters["SavePOITemplate"]?.Value<string>("Name"));
+            Assert.Equal(nameof(LocalLuminousAreaPoiTemplateShape.PolygonFour), parameters["SavePOITemplate"]?.Value<string>("Shape"));
+        }
+        finally
+        {
+            action.RuntimeResources.Dispose();
+        }
+    }
+
+    [Fact]
+    public void PoiTemplateUpdateFailureDoesNotPersistOrPublishResult()
+    {
+        CVStartCFC action = CreateRawAction("poi-save-template-failure");
+        FakeNodeServices services = new()
+        {
+            DetectHandler = (_, _, _) => CreateSuccessfulDetection(),
+            UpdatePoiTemplateHandler = (_, _) => throw new InvalidOperationException("invalid POI template"),
+            PersistHandler = _ => throw new InvalidOperationException("Persist must not run.")
+        };
+        LocalFindLuminousAreaNode node = new(services) { SavePOITempName = "BadTemplate" };
+        try
+        {
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => node.ExecuteSynchronously(action));
+
+            Assert.Equal("invalid POI template", exception.Message);
+            Assert.Equal(1, services.UpdatePoiTemplateCount);
+            Assert.Equal(0, services.PersistCount);
+            Assert.Equal(0, services.PublishCount);
+            Assert.False(action.Data.ContainsKey("MasterId"));
+        }
+        finally
+        {
+            action.RuntimeResources.Dispose();
+        }
+    }
+
+    [Fact]
+    public void InputImageResultFallsBackToPersistedFileWhenMemoryFrameIsUnavailable()
+    {
+        string filePath = Path.Combine(Path.GetTempPath(), $"ColorVision-LuminousArea-Input-{Guid.NewGuid():N}.png");
+        CVStartCFC action = new("input-image-result");
+        try
+        {
+            WriteGray8Png(filePath, 8, 6);
+            action.MasterValue(null, 92, (int)CVCommCore.CVResultType.Camera_Img);
+            FakeNodeServices services = new()
+            {
+                GetImageResultHandler = masterId =>
+                {
+                    Assert.Equal(92, masterId);
+                    return new MeasureResultImgModel { Id = masterId, FileUrl = filePath };
+                },
+                LoadFrameHandler = LocalFrameFileService.Load,
+                DetectHandler = (_, _, _) => CreateSuccessfulDetection(),
+                PersistHandler = _ => 193
+            };
+            LocalFindLuminousAreaNode node = new(services);
+
+            LocalFindLuminousAreaNodeResultData result = node.ExecuteSynchronously(action);
+
+            Assert.Equal(1, services.GetImageResultCount);
+            Assert.Equal(1, services.LoadCount);
+            Assert.Equal(Path.GetFullPath(filePath), result.ImageFilePath);
+            Assert.Equal(92, result.SourceMasterId);
+            Assert.Equal(193, result.MasterId);
+        }
+        finally
+        {
+            action.RuntimeResources.Dispose();
             if (File.Exists(filePath)) File.Delete(filePath);
         }
     }
@@ -674,6 +930,14 @@ public sealed class LocalFindLuminousAreaNodeTests
         new() { Name = "LB", X = 1, Y = 4 }
     ];
 
+    private static LuminousAreaPoint[] CreateFractionalLuminousAreaPoints() =>
+    [
+        new(10.2, 20.7),
+        new(110.1, 21.2),
+        new(109.4, 71.9),
+        new(9.8, 70.3)
+    ];
+
     private static CVStartCFC CreateRawAction(string serialNumber)
     {
         const int width = 8;
@@ -710,12 +974,16 @@ public sealed class LocalFindLuminousAreaNodeTests
     private sealed class FakeNodeServices : ILocalFindLuminousAreaNodeServices
     {
         public Func<string, LocalFlowFrame> LoadFrameHandler { get; init; } = _ => throw new InvalidOperationException("File loading was not configured.");
+        public Func<int, MeasureResultImgModel?> GetImageResultHandler { get; init; } = _ => throw new InvalidOperationException("Image-result loading was not configured.");
         public Func<HImage, RoiRect, double, LuminousAreaDetectionResult> DetectHandler { get; init; } = (_, _, _) => throw new InvalidOperationException("Detection was not configured.");
+        public Func<string, IReadOnlyList<LocalLuminousAreaCorner>, LocalLuminousAreaPoiTemplateShape> UpdatePoiTemplateHandler { get; init; } = (_, _) => throw new InvalidOperationException("POI-template updating was not configured.");
         public Func<LocalFindLuminousAreaPersistenceRequest, int> PersistHandler { get; init; } = _ => throw new InvalidOperationException("Persistence was not configured.");
         public Action<LocalFindLuminousAreaPublishRequest> PublishHandler { get; init; } = _ => { };
 
         public int LoadCount { get; private set; }
+        public int GetImageResultCount { get; private set; }
         public int DetectCount { get; private set; }
+        public int UpdatePoiTemplateCount { get; private set; }
         public int PersistCount { get; private set; }
         public int PublishCount { get; private set; }
 
@@ -725,10 +993,24 @@ public sealed class LocalFindLuminousAreaNodeTests
             return LoadFrameHandler(filePath);
         }
 
+        public MeasureResultImgModel? GetImageResult(int masterId)
+        {
+            GetImageResultCount++;
+            return GetImageResultHandler(masterId);
+        }
+
         public LuminousAreaDetectionResult Detect(HImage image, RoiRect roi, double minimumConfidence)
         {
             DetectCount++;
             return DetectHandler(image, roi, minimumConfidence);
+        }
+
+        public LocalLuminousAreaPoiTemplateShape UpdatePoiTemplate(
+            string templateName,
+            IReadOnlyList<LocalLuminousAreaCorner> corners)
+        {
+            UpdatePoiTemplateCount++;
+            return UpdatePoiTemplateHandler(templateName, corners);
         }
 
         public int Persist(LocalFindLuminousAreaPersistenceRequest request)

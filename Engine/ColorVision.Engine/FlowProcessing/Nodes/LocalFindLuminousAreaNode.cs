@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.FindLightArea;
+using ColorVision.Engine.Templates.POI;
 using FlowEngineLib.Base;
 using FlowEngineLib.PropertyEditor;
 using Newtonsoft.Json;
@@ -63,6 +64,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public IReadOnlyList<LocalLuminousAreaCorner> Corners { get; init; } = Array.Empty<LocalLuminousAreaCorner>();
         public IReadOnlyList<LuminousAreaSideQuality> SideQuality { get; init; } = Array.Empty<LuminousAreaSideQuality>();
         public IReadOnlyList<string> Warnings { get; init; } = Array.Empty<string>();
+        public string? SavePoiTemplateName { get; init; }
+        public string? SavePoiTemplateShape { get; init; }
         public int TotalTime { get; init; }
         public object? POIResult => Corners;
     }
@@ -95,7 +98,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     internal interface ILocalFindLuminousAreaNodeServices
     {
         LocalFlowFrame LoadFrame(string filePath);
+        MeasureResultImgModel? GetImageResult(int masterId);
         LuminousAreaDetectionResult Detect(HImage image, RoiRect roi, double minimumConfidence);
+        LocalLuminousAreaPoiTemplateShape UpdatePoiTemplate(string templateName, IReadOnlyList<LocalLuminousAreaCorner> corners);
         int Persist(LocalFindLuminousAreaPersistenceRequest request);
         void Publish(LocalFindLuminousAreaPublishRequest request);
     }
@@ -110,8 +115,17 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         public LocalFlowFrame LoadFrame(string filePath) => LocalFrameFileService.Load(filePath);
 
+        public MeasureResultImgModel? GetImageResult(int masterId) => MeasureImgResultDao.Instance.GetById(masterId);
+
         public LuminousAreaDetectionResult Detect(HImage image, RoiRect roi, double minimumConfidence) =>
             LuminousAreaNative.DetectV2(image, roi, minimumConfidence);
+
+        public LocalLuminousAreaPoiTemplateShape UpdatePoiTemplate(
+            string templateName,
+            IReadOnlyList<LocalLuminousAreaCorner> corners) =>
+            LocalLuminousAreaPoiTemplateUpdater.Update(
+                templateName,
+                corners.Select(corner => new LuminousAreaPoint(corner.X, corner.Y)).ToArray());
 
         public int Persist(LocalFindLuminousAreaPersistenceRequest request)
         {
@@ -173,25 +187,39 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     }
 
     [STNode("Flow_CustomNodes", "本地发光区定位(V2)")]
+    [FlowNodePropertyEditorAttribute(nameof(SavePOITempName), typeof(FlowPoiTemplateEditor))]
     public sealed class LocalFindLuminousAreaNode : LocalFlowNodeBase
     {
         internal const double DefaultMinimumConfidence = 0.25;
         private static readonly string[] CornerNames = ["LT", "RT", "RB", "LB"];
 
         private string imageFilePath = string.Empty;
+        private string savePoiTempName = string.Empty;
         private Int32Rect searchRegion = Int32Rect.Empty;
         private double minimumConfidence = DefaultMinimumConfidence;
         private readonly ILocalFindLuminousAreaNodeServices services;
 
         [Category("本地发光区定位")]
         [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
-        [STNodeProperty("图像文件", "可选后备输入；优先使用上游本地内存帧，仅在没有上游帧时读取该文件", true)]
+        [STNodeProperty("图像文件", "可选后备输入；优先使用上游本地内存帧，没有内存帧时先读该文件，再回退到 IN 图像结果", true)]
         public string ImageFilePath
         {
             get => imageFilePath;
             set
             {
                 imageFilePath = value ?? string.Empty;
+                OnPropertyChanged();
+            }
+        }
+
+        [Category("本地发光区定位")]
+        [STNodeProperty("POI保存模板", "可选；定位成功后按旧发光区服务契约更新一个 Rect/LTRect 或四个 PolygonFour 模板明细", true)]
+        public string SavePOITempName
+        {
+            get => savePoiTempName;
+            set
+            {
+                savePoiTempName = value ?? string.Empty;
                 OnPropertyChanged();
             }
         }
@@ -225,7 +253,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
 
         internal LocalFindLuminousAreaNode(ILocalFindLuminousAreaNodeServices services)
-            : base("本地发光区定位(V2)", "LocalFindLuminousAreaV2", "FindLuminousAreaV2")
+            : base("本地发光区定位(V2)", "LocalFindLuminousAreaV2", "FindLightArea")
         {
             this.services = services ?? throw new ArgumentNullException(nameof(services));
             SelectFirstAvailableDevice<DeviceAlgorithm>();
@@ -257,6 +285,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 LocalLuminousAreaCorner[] corners = ValidateDetection(detection, MinimumConfidence);
                 double confidence = detection.Confidence!.Value;
                 int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
+                string? savePoiTemplateName = string.IsNullOrWhiteSpace(SavePOITempName) ? null : SavePOITempName.Trim();
+                LocalLuminousAreaPoiTemplateShape? savePoiTemplateShape = savePoiTemplateName == null
+                    ? null
+                    : services.UpdatePoiTemplate(savePoiTemplateName, corners);
                 string algorithmDeviceCode = ResolveAvailableDeviceCode<DeviceAlgorithm>();
                 int masterId = services.Persist(new LocalFindLuminousAreaPersistenceRequest
                 {
@@ -277,6 +309,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         Confidence = confidence,
                         CornerOrder = CornerNames,
                         Corners = corners,
+                        SavePOITemplate = savePoiTemplateName == null ? null : new
+                        {
+                            Name = savePoiTemplateName,
+                            Shape = savePoiTemplateShape?.ToString()
+                        },
                         detection.SideQuality,
                         detection.Warnings,
                         PrimaryBufferKind = lease.Metadata.PrimaryBufferKind.ToString(),
@@ -299,6 +336,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 action.Data["LocalLuminousAreaConfidence"] = confidence;
                 action.Data["LocalLuminousAreaCornerOrder"] = "LT,RT,RB,LB";
                 action.Data["LocalLuminousAreaWarnings"] = detection.Warnings.ToArray();
+                if (savePoiTemplateName != null)
+                {
+                    action.Data["LocalLuminousAreaSavePOITemplate"] = savePoiTemplateName;
+                    action.Data["LocalLuminousAreaSavePOITemplateShape"] = savePoiTemplateShape!.Value.ToString();
+                }
                 action.MasterValue(null, masterId, (int)ViewResultAlgType.FindLightArea);
                 services.Publish(new LocalFindLuminousAreaPublishRequest
                 {
@@ -320,6 +362,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     Corners = corners,
                     SideQuality = detection.SideQuality,
                     Warnings = detection.Warnings,
+                    SavePoiTemplateName = savePoiTemplateName,
+                    SavePoiTemplateShape = savePoiTemplateShape?.ToString(),
                     TotalTime = totalTime
                 };
             }
@@ -339,6 +383,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 ImageFilePath,
                 SearchRegion,
                 MinimumConfidence,
+                SavePOITempName,
                 Algorithm = "RobustV2"
             });
         }
@@ -472,24 +517,78 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 return currentFrame;
             }
 
-            if (!string.IsNullOrWhiteSpace(ImageFilePath))
+            string? fallbackFile = ResolveFallbackFile(action, out int sourceMasterId);
+            if (fallbackFile != null)
             {
-                string path;
-                try
-                {
-                    path = Path.GetFullPath(ImageFilePath.Trim());
-                }
-                catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
-                {
-                    throw new InvalidOperationException($"图像文件路径无效：{ImageFilePath}", ex);
-                }
-                if (!File.Exists(path)) throw new FileNotFoundException("发光区定位图像文件不存在。", path);
-                ownedFrame = services.LoadFrame(path);
-                imageFile = path;
+                if (!File.Exists(fallbackFile)) throw new FileNotFoundException("发光区定位图像文件不存在。", fallbackFile);
+                ownedFrame = services.LoadFrame(fallbackFile);
+                if (sourceMasterId > 0) ownedFrame.MasterId = sourceMasterId;
+                imageFile = fallbackFile;
                 return ownedFrame;
             }
 
-            throw new InvalidOperationException("流程中没有可用的本地图像内存帧；请连接本地取图节点或配置图像文件。");
+            throw new InvalidOperationException("流程中没有可用的本地图像内存帧或图像结果；请连接本地取图/校正节点，或配置图像文件。");
+        }
+
+        private string? ResolveFallbackFile(CVStartCFC action, out int sourceMasterId)
+        {
+            sourceMasterId = -1;
+            if (!string.IsNullOrWhiteSpace(ImageFilePath))
+                return NormalizeImagePath(ImageFilePath, "配置的图像文件");
+
+            bool hasInput = TryGetInputMasterResult(action, 0, out int masterId, out int masterResultType, out _);
+            if (!hasInput)
+            {
+                masterId = ReadActionInt(action, "MasterId");
+                masterResultType = ReadActionInt(action, "MasterResultType");
+            }
+            if (masterId <= 0) return null;
+            if (masterResultType is not (int)CVCommCore.CVResultType.Camera_Img
+                and not (int)CVCommCore.CVResultType.Algorithm_Calibration)
+            {
+                throw new InvalidOperationException(
+                    $"IN 接收到的不是图像结果：MasterId={masterId}，ResultType={masterResultType}。请将图像或本地校正节点连接到 IN。");
+            }
+
+            MeasureResultImgModel imageResult = services.GetImageResult(masterId)
+                ?? throw new InvalidOperationException($"找不到 IN 图像结果：MasterId={masterId}。");
+            sourceMasterId = masterId;
+            string? firstCandidate = null;
+            foreach (string? candidate in new[] { imageResult.FileUrl, imageResult.RawFile })
+            {
+                if (string.IsNullOrWhiteSpace(candidate)) continue;
+                string fullPath = NormalizeImagePath(candidate, $"IN 图像结果 {masterId}");
+                firstCandidate ??= fullPath;
+                if (File.Exists(fullPath)) return fullPath;
+            }
+            if (firstCandidate == null)
+                throw new InvalidOperationException($"IN 图像结果没有可读取的文件路径：MasterId={masterId}。");
+            return firstCandidate;
+        }
+
+        private static string NormalizeImagePath(string value, string source)
+        {
+            try
+            {
+                return Path.GetFullPath(value.Trim());
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                throw new InvalidOperationException($"{source}路径无效：{value}", ex);
+            }
+        }
+
+        private static int ReadActionInt(CVStartCFC action, string key)
+        {
+            if (!action.Data.TryGetValue(key, out object? value) || value == null) return -1;
+            try
+            {
+                return Convert.ToInt32(value);
+            }
+            catch
+            {
+                return -1;
+            }
         }
 
         private static string? ResolveFrameFile(LocalFlowFrame frame)
