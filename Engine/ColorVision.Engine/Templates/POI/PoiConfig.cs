@@ -122,6 +122,9 @@ namespace ColorVision.Engine.Templates.POI
         public bool IsPointMask { get => DefaultPointType == GraphicTypes.Quadrilateral; set { if (value) DefaultPointType = GraphicTypes.Rect; OnPropertyChanged(); } }
         public GraphicTypes DefaultPointType { set; get; }
 
+        public DrawingGraphicPosition PointPosition { get => _PointPosition; set { _PointPosition = value; OnPropertyChanged(); } }
+        private DrawingGraphicPosition _PointPosition = DrawingGraphicPosition.Internal;
+
         public FindLuminousArea FindLuminousArea { get; set; } = new FindLuminousArea();
 
         public FindLuminousAreaCorner FindLuminousAreaCorner { get; set; } = new FindLuminousAreaCorner();
