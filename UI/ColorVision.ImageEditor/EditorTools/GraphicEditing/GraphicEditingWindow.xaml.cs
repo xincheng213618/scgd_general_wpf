@@ -491,7 +491,6 @@ namespace ColorVision.ImageEditor
                         ImageShow.RemoveVisualCommand(Polygon);
                         Polygon = new DVDatumPolygon() { IsComple = true };
                         Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / DrawContext.Zoombox.ContentMatrix.M11);
-                        Polygon.Attribute.Brush = Brushes.Transparent;
                         foreach (Point corner in corners)
                         {
                             Polygon.Attribute.Points.Add(corner);
@@ -567,7 +566,6 @@ namespace ColorVision.ImageEditor
             ImageShow.RemoveVisualCommand(Polygon);
             Polygon = new DVDatumPolygon() { IsComple = true };
             Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / DrawContext.Zoombox.ContentMatrix.M11);
-            Polygon.Attribute.Brush = Brushes.Transparent;
             Polygon.Attribute.Points.Add(result1[0]);
             Polygon.Attribute.Points.Add(result1[1]);
             Polygon.Attribute.Points.Add(result1[2]);
@@ -981,7 +979,6 @@ namespace ColorVision.ImageEditor
             ImageShow.RemoveVisualCommand(Polygon);
             Polygon = new DVDatumPolygon() { IsComple = true };
             Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / DrawContext.Zoombox.ContentMatrix.M11);
-            Polygon.Attribute.Brush = Brushes.Transparent;
             Polygon.Attribute.Points.Add(sorted[0]);
             Polygon.Attribute.Points.Add(sorted[1]);
             Polygon.Attribute.Points.Add(sorted[2]);

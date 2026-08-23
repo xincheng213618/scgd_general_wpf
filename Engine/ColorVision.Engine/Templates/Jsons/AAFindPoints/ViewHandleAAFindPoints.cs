@@ -156,7 +156,6 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
 
                 DVDatumPolygon Polygon = new() { IsComple = true };
                 Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / ctx.ImageView.Zoombox1.ContentMatrix.M11);
-                Polygon.Attribute.Brush = Brushes.Transparent;
 
                 foreach (var item in viewResult.AAFindPoint.Corner)
                 {

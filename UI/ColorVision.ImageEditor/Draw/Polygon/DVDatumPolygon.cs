@@ -28,12 +28,9 @@ namespace ColorVision.ImageEditor.Draw
 
             if (Attribute.Points.Count > 1)
             {
-                Pen whiteOutlinePen = new(Brushes.White, Attribute.Pen.Thickness + 2); // 描边比实际线条厚2个单位
                 for (int i = 0; i < Attribute.Points.Count - 1; i++)
-                {
-                    dc.DrawLine(whiteOutlinePen, Attribute.Points[i], Attribute.Points[i+1]);
                     dc.DrawLine(Attribute.Pen, Attribute.Points[i], Attribute.Points[i + 1]);
-                }
+
                 if (IsComple)
                     dc.DrawLine(Attribute.Pen, Attribute.Points[Attribute.Points.Count - 1], Attribute.Points[0]);
             }
