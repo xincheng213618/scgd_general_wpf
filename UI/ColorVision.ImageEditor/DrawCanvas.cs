@@ -225,6 +225,23 @@ namespace ColorVision.ImageEditor
                 ApplyLayoutScale(visual, context);
         }
 
+        protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+        {
+            base.OnDpiChanged(oldDpi, newDpi);
+            if (HasSameDpi(oldDpi, newDpi))
+                return;
+
+            foreach (Visual visual in visuals)
+            {
+                if (visual is IDrawingVisual drawingVisual
+                    && visual is DrawingVisual renderedVisual
+                    && renderedVisual.Drawing != null)
+                {
+                    drawingVisual.Render();
+                }
+            }
+        }
+
         private DrawingVisualScaleContext CreateScaleContext()
         {
             return new DrawingVisualScaleContext(IsLayoutUpdated, Scale, TextFontSizeOverride);
@@ -236,13 +253,40 @@ namespace ColorVision.ImageEditor
                 scalableVisual.ApplyLayoutScale(context);
         }
 
+        internal bool TrySynchronizeDetachedVisualDpi(Visual visual)
+        {
+            if (!Dispatcher.CheckAccess()
+                || VisualTreeHelper.GetParent(visual) != null
+                || PresentationSource.FromVisual(visual) != null)
+            {
+                return false;
+            }
+
+            DpiScale visualDpi = VisualTreeHelper.GetDpi(visual);
+            DpiScale canvasDpi = VisualTreeHelper.GetDpi(this);
+            if (HasSameDpi(visualDpi, canvasDpi))
+                return false;
+
+            VisualTreeHelper.SetRootDpi(visual, canvasDpi);
+            return true;
+        }
+
+        private static bool HasSameDpi(DpiScale left, DpiScale right)
+        {
+            return left.DpiScaleX == right.DpiScaleX && left.DpiScaleY == right.DpiScaleY;
+        }
+
         private bool TryAddVisual(Visual? visual, int? index = null, bool raiseEvents = true, DrawingVisualScaleContext? scaleContext = null)
         {
             if (visual == null || !visualSet.Add(visual)) return false;
 
             try
             {
+                bool hadDrawing = visual is DrawingVisual drawingVisual && drawingVisual.Drawing != null;
+                bool dpiChanged = TrySynchronizeDetachedVisualDpi(visual);
                 ApplyLayoutScale(visual, scaleContext ?? CreateScaleContext());
+                if (dpiChanged && hadDrawing && visual is IDrawingVisual drawable)
+                    drawable.Render();
 
                 if (index.HasValue)
                 {

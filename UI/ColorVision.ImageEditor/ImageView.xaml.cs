@@ -257,12 +257,14 @@ namespace ColorVision.ImageEditor
 
             Config.ShowMsgChanged += (s, e) =>
             {
-                if (!e)
+                foreach (var drawingVisual in EditorContext.DrawEditorContext.DrawingVisualLists)
                 {
-                    foreach (var drawingVisual in EditorContext.DrawEditorContext.DrawingVisualLists)
-                    {
-                        drawingVisual.BaseAttribute.Msg = string.Empty;
-                    }
+                    if (drawingVisual is not DrawingVisualBase visual || visual.IsMessageVisible == e)
+                        continue;
+
+                    visual.IsMessageVisible = e;
+                    if (visual.BaseAttribute is BaseProperties baseAttribute && !string.IsNullOrWhiteSpace(baseAttribute.Msg))
+                        visual.Render();
                 }
             };
 
@@ -1031,12 +1033,35 @@ namespace ColorVision.ImageEditor
         {
             if (e.Visual is IDrawingVisual visual)
             {
+                ApplyDrawingVisualDisplayConfig(visual);
                 EditorContext.DrawEditorContext.DrawingVisualLists.Add(visual);
                 return;
             }
 
             List<IDrawingVisual> drawingVisuals = e.Visuals.OfType<IDrawingVisual>().ToList();
+            foreach (IDrawingVisual drawingVisual in drawingVisuals)
+                ApplyDrawingVisualDisplayConfig(drawingVisual);
             EditorContext.DrawEditorContext.AddDrawingVisuals(drawingVisuals);
+        }
+
+        private void ApplyDrawingVisualDisplayConfig(IDrawingVisual visual, bool renderChanges = true)
+        {
+            bool requiresRender = false;
+            BaseProperties? baseAttribute = visual.BaseAttribute;
+            if (baseAttribute is ITextProperties textProperties && textProperties.IsShowText != Config.IsShowText)
+            {
+                textProperties.IsShowText = Config.IsShowText;
+                requiresRender = true;
+            }
+
+            if (visual is DrawingVisualBase drawingVisual && drawingVisual.IsMessageVisible != Config.IsShowMsg)
+            {
+                drawingVisual.IsMessageVisible = Config.IsShowMsg;
+                requiresRender |= baseAttribute != null && !string.IsNullOrWhiteSpace(baseAttribute.Msg);
+            }
+
+            if (requiresRender && renderChanges)
+                visual.Render();
         }
 
         private void ImageShow_VisualsRemove(object? sender, VisualChangedEventArgs e)
@@ -1590,6 +1615,24 @@ namespace ColorVision.ImageEditor
 
         public void AddVisual(Visual visual)
         {
+            if (visual is IDrawingVisual drawingVisual
+                && visual is DrawingVisual renderedVisual
+                && renderedVisual.Drawing == null)
+            {
+                ImageShow.TrySynchronizeDetachedVisualDpi(renderedVisual);
+                ApplyDrawingVisualDisplayConfig(drawingVisual, renderChanges: false);
+                if (visual is ILayoutScaleDrawingVisual scalableVisual)
+                {
+                    scalableVisual.ApplyLayoutScale(new DrawingVisualScaleContext(
+                        ImageShow.IsLayoutUpdated,
+                        ImageShow.Scale,
+                        ImageShow.TextFontSizeOverride));
+                }
+
+                if (renderedVisual.Drawing == null)
+                    drawingVisual.Render();
+            }
+
             ImageShow.AddVisualCommand(visual);
         }
 

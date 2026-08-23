@@ -511,15 +511,16 @@ namespace ProjectLUX.Process.MTFHVAR
                 foreach (var item in testResult.MTFDetailViewReslut.MTFResult.result)
                 {
                     id++;
-                    DVRectangleText Rectangle = new();
-                    Rectangle.Attribute.Rect = new Rect(item.x, item.y, item.w, item.h);
-                    Rectangle.Attribute.Brush = Brushes.Transparent;
-                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                    Rectangle.Attribute.Id = id;
-                    Rectangle.Attribute.Text = item.name + "_" + item.id;
-                    Rectangle.Attribute.Msg = item.mtfValue.ToString();
-                    Rectangle.Render();
-                    ctx.ImageView.AddVisual(Rectangle);
+                    DVRectangleText rectangle = new(new RectangleTextProperties
+                    {
+                        Rect = new Rect(item.x, item.y, item.w, item.h),
+                        Brush = Brushes.Transparent,
+                        Pen = new Pen(Brushes.Red, 1),
+                        Id = id,
+                        Text = item.name + "_" + item.id,
+                        Msg = item.mtfValue.ToString(),
+                    });
+                    ctx.ImageView.AddVisual(rectangle);
                 }
             }
         }

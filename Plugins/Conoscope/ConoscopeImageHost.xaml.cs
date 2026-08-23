@@ -828,7 +828,6 @@ namespace Conoscope
 
                 if (changed)
                 {
-                    circle.Render();
                     RefreshSelection();
                 }
             }
@@ -1039,7 +1038,6 @@ namespace Conoscope
                     radius = editor.ClampCircleRadius(center, radius);
                     draftCircle.Attribute.Radius = radius;
                     draftCircle.Attribute.RadiusY = radius;
-                    draftCircle.Render();
                     e.Handled = true;
                 }
 
@@ -1060,7 +1058,6 @@ namespace Conoscope
                     else
                     {
                         editor.ConstrainCircleToBoundary(circle);
-                        circle.Render();
                     }
 
                     e.Handled = true;

@@ -12,6 +12,186 @@ namespace ColorVision.UI.Tests;
 public sealed class ImageViewSnapshotSaveTests
 {
     [Fact]
+    public void HighLevelAddVisualPreparesOneFrameWithoutRedrawingPreparedShapes()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewTestResources();
+            using ImageView imageView = new();
+            imageView.Config.IsLayoutUpdated = false;
+            imageView.Config.DrawingTextFontSize = 10;
+
+            CountingPreparedRectangle unrendered = new(new RectangleTextProperties
+            {
+                Rect = new Rect(10, 20, 30, 40),
+                Pen = new Pen(Brushes.Red, 1),
+                Text = "unrendered",
+            });
+            Assert.Null(unrendered.Drawing);
+            imageView.AddVisual(unrendered);
+            Assert.Equal(1, unrendered.RenderCount);
+            Assert.NotNull(unrendered.Drawing);
+
+            CountingPreparedRectangle prepared = new(new RectangleTextProperties
+            {
+                Rect = new Rect(50, 60, 30, 40),
+                Pen = new Pen(Brushes.Blue, 1),
+                Text = "prepared",
+            });
+            prepared.Render();
+            imageView.AddVisual(prepared);
+            Assert.Equal(1, prepared.RenderCount);
+
+            imageView.Config.IsShowText = false;
+            CountingPreparedRectangle preparedWithDifferentVisibility = new(new RectangleTextProperties
+            {
+                Rect = new Rect(90, 100, 30, 40),
+                Pen = new Pen(Brushes.Green, 1),
+                Text = "hide on add",
+            });
+            preparedWithDifferentVisibility.Render();
+            Assert.True(CountGlyphRuns(preparedWithDifferentVisibility.Drawing) > 0);
+            imageView.AddVisual(preparedWithDifferentVisibility);
+            Assert.Equal(2, preparedWithDifferentVisibility.RenderCount);
+            Assert.Equal(0, CountGlyphRuns(preparedWithDifferentVisibility.Drawing));
+        });
+    }
+
+    [Fact]
+    public void HighLevelAddVisualRendersItsFirstFrameAtTheCanvasDpi()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewTestResources();
+            using ImageView imageView = new();
+            CountingPreparedRectangle rectangle = new(new RectangleTextProperties
+            {
+                Rect = new Rect(10, 20, 30, 40),
+                Pen = new Pen(Brushes.Red, 1),
+                Text = "DPI",
+            });
+            DpiScale sourceDpi = VisualTreeHelper.GetDpi(rectangle);
+            DpiScale canvasDpi = CreateDifferentDpi(sourceDpi, 2);
+            Decorator canvasParent = Assert.IsAssignableFrom<Decorator>(imageView.FindName("Zoombox1"));
+            canvasParent.Child = null;
+            Assert.Null(VisualTreeHelper.GetParent(imageView.ImageShow));
+            VisualTreeHelper.SetRootDpi(imageView.ImageShow, canvasDpi);
+            VisualTreeHelper.SetRootDpi(rectangle, sourceDpi);
+            Assert.Equal(canvasDpi.PixelsPerDip, VisualTreeHelper.GetDpi(imageView.ImageShow).PixelsPerDip);
+            Assert.Equal(sourceDpi.PixelsPerDip, VisualTreeHelper.GetDpi(rectangle).PixelsPerDip);
+
+            imageView.AddVisual(rectangle);
+
+            Assert.Equal(1, rectangle.RenderCount);
+            Assert.Equal(canvasDpi.PixelsPerDip, VisualTreeHelper.GetDpi(rectangle).PixelsPerDip);
+            AssertGlyphDpi(rectangle.Drawing, canvasDpi.PixelsPerDip);
+            imageView.ImageShow.RemoveVisual(rectangle);
+            VisualTreeHelper.SetRootDpi(rectangle, sourceDpi);
+            VisualTreeHelper.SetRootDpi(imageView.ImageShow, sourceDpi);
+            canvasParent.Child = imageView.ImageShow;
+        });
+    }
+
+    [Fact]
+    public void DrawCanvasRefreshesExistingTextWhenItsDpiChanges()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using DrawCanvas canvas = new();
+            CountingPreparedRectangle rectangle = new(new RectangleTextProperties
+            {
+                Rect = new Rect(10, 20, 30, 40),
+                Pen = new Pen(Brushes.Red, 1),
+                Text = "DPI",
+            });
+            DpiScale sourceDpi = VisualTreeHelper.GetDpi(rectangle);
+            rectangle.Render();
+            AssertGlyphDpi(rectangle.Drawing, sourceDpi.PixelsPerDip);
+
+            DpiScale canvasDpi = CreateDifferentDpi(sourceDpi, 2);
+            VisualTreeHelper.SetRootDpi(canvas, canvasDpi);
+            VisualTreeHelper.SetRootDpi(rectangle, sourceDpi);
+            Assert.Null(VisualTreeHelper.GetParent(rectangle));
+            Assert.Null(PresentationSource.FromVisual(rectangle));
+            Assert.Equal(canvasDpi.PixelsPerDip, VisualTreeHelper.GetDpi(canvas).PixelsPerDip);
+            Assert.Equal(sourceDpi.PixelsPerDip, VisualTreeHelper.GetDpi(rectangle).PixelsPerDip);
+
+            canvas.AddVisual(rectangle);
+
+            Assert.Equal(2, rectangle.RenderCount);
+            AssertGlyphDpi(rectangle.Drawing, canvasDpi.PixelsPerDip);
+
+            DpiScale movedDpi = CreateDifferentDpi(canvasDpi, 3);
+            VisualTreeHelper.SetRootDpi(canvas, movedDpi);
+
+            Assert.Equal(3, rectangle.RenderCount);
+            Assert.Equal(movedDpi.PixelsPerDip, VisualTreeHelper.GetDpi(canvas).PixelsPerDip);
+            canvas.RemoveVisual(rectangle);
+            VisualTreeHelper.SetRootDpi(rectangle, sourceDpi);
+            VisualTreeHelper.SetRootDpi(canvas, sourceDpi);
+        });
+    }
+
+    [Fact]
+    public void AddedResultShapesInheritTextVisibilityAndPreserveHiddenMessages()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewTestResources();
+            using ImageView imageView = new();
+            imageView.Config.IsShowText = false;
+            imageView.Config.IsShowMsg = false;
+
+            DVCircleText circle = new(new CircleTextProperties
+            {
+                Center = new Point(40, 40),
+                Radius = 20,
+                Brush = Brushes.Transparent,
+                Pen = new Pen(Brushes.Red, 1),
+                Text = "Circle name",
+                Msg = "Circle detail",
+            });
+            DVRectangleText rectangle = new(new RectangleTextProperties
+            {
+                Rect = new Rect(80, 20, 60, 40),
+                Brush = Brushes.Transparent,
+                Pen = new Pen(Brushes.Red, 1),
+                Text = "Rectangle name",
+                Msg = "Rectangle detail",
+            });
+            circle.Render();
+            rectangle.Render();
+            AttributeLessDrawingVisual pluginVisual = new();
+            pluginVisual.Render();
+
+            imageView.ImageShow.AddVisuals([circle, rectangle, pluginVisual]);
+
+            Assert.False(circle.Attribute.IsShowText);
+            Assert.False(rectangle.Attribute.IsShowText);
+            Assert.Equal("Circle detail", circle.Attribute.Msg);
+            Assert.Equal("Rectangle detail", rectangle.Attribute.Msg);
+            Assert.Equal(0, CountGlyphRuns(circle.Drawing) + CountGlyphRuns(rectangle.Drawing));
+            Assert.NotNull(pluginVisual.Drawing);
+
+            imageView.Config.IsShowText = true;
+            Assert.True(CountGlyphRuns(circle.Drawing) + CountGlyphRuns(rectangle.Drawing) > 0);
+
+            imageView.Config.IsShowText = false;
+            Assert.Equal(0, CountGlyphRuns(circle.Drawing) + CountGlyphRuns(rectangle.Drawing));
+
+            imageView.Config.IsShowMsg = true;
+            Assert.True(CountGlyphRuns(circle.Drawing) + CountGlyphRuns(rectangle.Drawing) > 0);
+            Assert.Equal("Circle detail", circle.Attribute.Msg);
+            Assert.Equal("Rectangle detail", rectangle.Attribute.Msg);
+
+            imageView.Config.IsShowMsg = false;
+            Assert.Equal(0, CountGlyphRuns(circle.Drawing) + CountGlyphRuns(rectangle.Drawing));
+            Assert.Equal("Circle detail", circle.Attribute.Msg);
+            Assert.Equal("Rectangle detail", rectangle.Attribute.Msg);
+        });
+    }
+
+    [Fact]
     public void BackgroundSnapshotCommitsActiveTextOnlyWhenOverlaysAreIncluded()
     {
         WpfTestHost.Invoke(() =>
@@ -935,6 +1115,75 @@ public sealed class ImageViewSnapshotSaveTests
     private static T RunOnSta<T>(Func<T> action)
     {
         return WpfTestHost.Invoke(action);
+    }
+
+    private static int CountGlyphRuns(Drawing? drawing)
+    {
+        return drawing switch
+        {
+            GlyphRunDrawing => 1,
+            DrawingGroup group => group.Children.Sum(CountGlyphRuns),
+            _ => 0,
+        };
+    }
+
+    private static IEnumerable<GlyphRunDrawing> GetGlyphRuns(Drawing? drawing)
+    {
+        if (drawing is GlyphRunDrawing glyphRun)
+        {
+            yield return glyphRun;
+            yield break;
+        }
+
+        if (drawing is not DrawingGroup group)
+            yield break;
+
+        foreach (Drawing child in group.Children)
+        {
+            foreach (GlyphRunDrawing descendant in GetGlyphRuns(child))
+                yield return descendant;
+        }
+    }
+
+    private static void AssertGlyphDpi(Drawing? drawing, double expectedPixelsPerDip)
+    {
+        List<GlyphRunDrawing> glyphRuns = GetGlyphRuns(drawing).ToList();
+        Assert.NotEmpty(glyphRuns);
+        Assert.All(glyphRuns, glyph => Assert.Equal(expectedPixelsPerDip, glyph.GlyphRun.PixelsPerDip));
+    }
+
+    private static DpiScale CreateDifferentDpi(DpiScale current, double preferredScale)
+    {
+        double scale = current.DpiScaleX == preferredScale && current.DpiScaleY == preferredScale
+            ? preferredScale == 1 ? 2 : 1
+            : preferredScale;
+        return new DpiScale(scale, scale);
+    }
+
+    private sealed class AttributeLessDrawingVisual : DrawingVisualBase, IDrawingVisual
+    {
+        public Pen Pen { get; set; } = new(Brushes.Gray, 1);
+
+        public override void Render()
+        {
+            using DrawingContext context = RenderOpen();
+            context.DrawLine(Pen, new Point(0, 0), new Point(10, 10));
+        }
+    }
+
+    private sealed class CountingPreparedRectangle : DVRectangleText
+    {
+        public CountingPreparedRectangle(RectangleTextProperties properties) : base(properties)
+        {
+        }
+
+        public int RenderCount { get; private set; }
+
+        public override void Render()
+        {
+            RenderCount++;
+            base.Render();
+        }
     }
 
     private static void EnsureImageViewTestResources()

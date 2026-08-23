@@ -175,19 +175,23 @@ namespace ProjectARVRPro.Process.ScreenDefects
 
         private static void DrawDefect(IProcessExecutionContext ctx, ScreenDefectData defect)
         {
-            var rectangle = new DVRectangleText();
-            rectangle.Attribute.Rect = new Rect(defect.X, defect.Y, defect.Width, defect.Height);
-            rectangle.Attribute.Brush = Brushes.Transparent;
-            rectangle.Attribute.Pen = new Pen(GetDefectBrush(defect.Type), 1);
-            rectangle.Attribute.Id = defect.Id;
-            rectangle.Attribute.Text = defect.Id.ToString(CultureInfo.InvariantCulture);
-            rectangle.Attribute.Msg =
-                $"type:{defect.Type}{Environment.NewLine}" +
-                $"area:{Format(defect.Area, "F4")}{Environment.NewLine}" +
-                $"contrast:{Format(defect.Contrast, "F4")}{Environment.NewLine}" +
-                $"mean:{Format(defect.MeanValue, "F4")}{Environment.NewLine}" +
-                $"local:{Format(defect.LocalMean, "F4")}";
-            rectangle.Render();
+            if (!ProcessExtensions.TryCreateOverlayRect(defect.X, defect.Y, defect.Width, defect.Height, out Rect overlayRect))
+                return;
+
+            DVRectangleText rectangle = new(new RectangleTextProperties
+            {
+                Rect = overlayRect,
+                Brush = Brushes.Transparent,
+                Pen = new Pen(GetDefectBrush(defect.Type), 1),
+                Id = defect.Id,
+                Text = defect.Id.ToString(CultureInfo.InvariantCulture),
+                Msg =
+                    $"type:{defect.Type}{Environment.NewLine}" +
+                    $"area:{Format(defect.Area, "F4")}{Environment.NewLine}" +
+                    $"contrast:{Format(defect.Contrast, "F4")}{Environment.NewLine}" +
+                    $"mean:{Format(defect.MeanValue, "F4")}{Environment.NewLine}" +
+                    $"local:{Format(defect.LocalMean, "F4")}",
+            });
             ctx.ImageView.AddVisual(rectangle);
         }
 

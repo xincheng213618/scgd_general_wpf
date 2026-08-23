@@ -6,7 +6,6 @@ using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
 using ProjectARVRPro.Recipe;
 using System.Text;
-using System.Windows;
 using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.MTF.MTF07
@@ -115,13 +114,10 @@ namespace ProjectARVRPro.Process.MTF.MTF07
                 if (!Config.TryGetItemName(item.name, out _))
                     continue;
 
-                DVRectangleText rectangle = new();
-                rectangle.Attribute.Rect = new Rect(item.x, item.y, item.w, item.h);
-                rectangle.Attribute.Brush = Brushes.Transparent;
-                rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                rectangle.Attribute.Id = ++id;
-                rectangle.Attribute.Msg = item.mtfValue?.ToString(Config.ShowConfig);
-                rectangle.Render();
+                id++;
+                if (!ProcessExtensions.TryCreateMtfOverlay(item, id, Config.ShowConfig, out DVRectangleText rectangle))
+                    continue;
+
                 ctx.ImageView.AddVisual(rectangle);
             }
         }

@@ -127,18 +127,25 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
 
         private static bool TryNormalizeRoi(RoiRect requestedRoi, HImage image, out RoiRect roi)
         {
-            int x = requestedRoi.Width > 0 && requestedRoi.Height > 0 ? Math.Max(0, requestedRoi.X) : 0;
-            int y = requestedRoi.Width > 0 && requestedRoi.Height > 0 ? Math.Max(0, requestedRoi.Y) : 0;
-            int right = requestedRoi.Width > 0 && requestedRoi.Height > 0
-                ? Math.Min(image.cols, requestedRoi.X + requestedRoi.Width)
-                : image.cols;
-            int bottom = requestedRoi.Width > 0 && requestedRoi.Height > 0
-                ? Math.Min(image.rows, requestedRoi.Y + requestedRoi.Height)
-                : image.rows;
-            int width = right - x;
-            int height = bottom - y;
-            roi = width > 0 && height > 0 ? new RoiRect(x, y, width, height) : new RoiRect();
-            return width > 0 && height > 0;
+            roi = new RoiRect();
+            if (image.cols <= 0 || image.rows <= 0)
+                return false;
+
+            if (requestedRoi.Width <= 0 || requestedRoi.Height <= 0)
+            {
+                roi = new RoiRect(0, 0, image.cols, image.rows);
+                return true;
+            }
+
+            long left = Math.Max(0L, requestedRoi.X);
+            long top = Math.Max(0L, requestedRoi.Y);
+            long right = Math.Min((long)image.cols, (long)requestedRoi.X + requestedRoi.Width);
+            long bottom = Math.Min((long)image.rows, (long)requestedRoi.Y + requestedRoi.Height);
+            if (right <= left || bottom <= top)
+                return false;
+
+            roi = new RoiRect((int)left, (int)top, (int)(right - left), (int)(bottom - top));
+            return true;
         }
 
         private static string CreateDefaultConfigJson()
@@ -185,20 +192,19 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
         private static void DrawResultOverlay(DistortionP9NativeResult result, DrawEditorContext drawContext)
         {
             double zoom = drawContext.Zoombox.ContentMatrix.M11;
-            if (zoom <= 0)
-            {
-                zoom = 1.0;
-            }
+            double scale = double.IsFinite(zoom) && zoom > 0 ? 1.0 / zoom : 1.0;
+            if (!double.IsFinite(scale) || !double.IsFinite(20.0 * scale))
+                scale = 1.0;
 
-            double stroke = Math.Max(1.0 / zoom, 0.5);
-            double radius = Math.Max(20.0 / zoom, 4.0);
+            double stroke = Math.Max(scale, 0.5);
+            double radius = Math.Max(20.0 * scale, 4.0);
             Pen linePen = new(Brushes.DeepSkyBlue, stroke);
             Pen circlePen = new(Brushes.OrangeRed, stroke * 1.5);
             Pen candidatePen = new(Brushes.Gold, stroke * 1.2);
 
             foreach (DistortionP9Point point in result.CandidatePoints)
             {
-                if (IsSelectedPoint(point, result.Points))
+                if (!HasFiniteCoordinates(point) || IsSelectedPoint(point, result.Points))
                 {
                     continue;
                 }
@@ -222,27 +228,39 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
 
             foreach (DistortionP9Point point in result.Points.OrderBy(p => p.Id))
             {
-                AddCircle(drawContext, point, radius, circlePen, Brushes.OrangeRed);
+                if (HasFiniteCoordinates(point))
+                    AddCircle(drawContext, point, radius, circlePen, Brushes.OrangeRed);
             }
+        }
+
+        private static bool HasFiniteCoordinates(DistortionP9Point? point)
+        {
+            return point != null && double.IsFinite(point.X) && double.IsFinite(point.Y);
         }
 
         private static bool IsSelectedPoint(DistortionP9Point candidate, IReadOnlyCollection<DistortionP9Point> selectedPoints)
         {
             const double tolerance = 1.0;
-            return selectedPoints.Any(point =>
+            return selectedPoints.Any(point => HasFiniteCoordinates(point) &&
                 Math.Abs(point.X - candidate.X) <= tolerance &&
                 Math.Abs(point.Y - candidate.Y) <= tolerance);
         }
 
         private static void AddCircle(DrawEditorContext drawContext, DistortionP9Point point, double radius, Pen pen, Brush textBrush)
         {
-            DVCircleText circle = new();
-            circle.Attribute.Center = new Point(point.X, point.Y);
-            circle.Attribute.Radius = radius;
-            circle.Attribute.Brush = Brushes.Transparent;
-            circle.Attribute.Pen = pen;
-            circle.Attribute.Text = point.Name ?? point.Id.ToString();
-            circle.Attribute.Foreground = textBrush;
+            if (!HasFiniteCoordinates(point))
+                return;
+
+            DVCircleText circle = new(new CircleTextProperties
+            {
+                Center = new Point(point.X, point.Y),
+                Radius = radius,
+                Brush = Brushes.Transparent,
+                Pen = pen,
+                Text = point.Name ?? point.Id.ToString(),
+                Foreground = textBrush,
+            });
+            circle.TextAttribute.FontSize = 20;
             circle.Render();
             drawContext.DrawCanvas.AddVisualCommand(circle);
         }
@@ -252,7 +270,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
             DistortionP9Point?[,] grid = new DistortionP9Point?[3, 3];
             foreach (DistortionP9Point point in points)
             {
-                if (point.Row >= 0 && point.Row < 3 && point.Col >= 0 && point.Col < 3)
+                if (HasFiniteCoordinates(point) && point.Row >= 0 && point.Row < 3 && point.Col >= 0 && point.Col < 3)
                 {
                     grid[point.Row, point.Col] = point;
                 }
@@ -263,18 +281,17 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
 
         private static void AddLine(DrawEditorContext drawContext, Pen pen, params DistortionP9Point?[] points)
         {
-            DistortionP9Point[] validPoints = points.Where(p => p != null).Cast<DistortionP9Point>().ToArray();
+            DistortionP9Point[] validPoints = points.Where(HasFiniteCoordinates).Cast<DistortionP9Point>().ToArray();
             if (validPoints.Length < 2)
             {
                 return;
             }
 
-            DVLine line = new();
-            line.Attribute.Pen = pen;
-            foreach (DistortionP9Point point in validPoints)
+            DVLine line = new(new LineProperties
             {
-                line.Attribute.Points.Add(new Point(point.X, point.Y));
-            }
+                Pen = pen.CloneCurrentValue(),
+                Points = validPoints.Select(point => new Point(point.X, point.Y)).ToList(),
+            });
             line.Render();
             drawContext.DrawCanvas.AddVisualCommand(line);
         }
@@ -322,31 +339,53 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
         {
             roi = new RoiRect();
 
-            double dpiScaleX = _config.GetProperties<double>("DpiX") / 96.0;
-            double dpiScaleY = _config.GetProperties<double>("DpiY") / 96.0;
-            int x = (int)Math.Round(rectangle.Rect.X * dpiScaleX);
-            int y = (int)Math.Round(rectangle.Rect.Y * dpiScaleY);
-            int w = (int)Math.Round(rectangle.Rect.Width * dpiScaleX);
-            int h = (int)Math.Round(rectangle.Rect.Height * dpiScaleY);
-
-            if (w <= 0 || h <= 0)
+            double dpiX = _config.GetProperties<double>("DpiX");
+            double dpiY = _config.GetProperties<double>("DpiY");
+            if (!double.IsFinite(dpiX) || dpiX <= 0 || !double.IsFinite(dpiY) || dpiY <= 0
+                || image.cols <= 0 || image.rows <= 0)
             {
                 return false;
             }
 
-            int roiX = Math.Max(0, x);
-            int roiY = Math.Max(0, y);
-            int roiX2 = Math.Min(image.cols, x + w);
-            int roiY2 = Math.Min(image.rows, y + h);
-            int roiW = roiX2 - roiX;
-            int roiH = roiY2 - roiY;
+            double dpiScaleX = dpiX / 96.0;
+            double dpiScaleY = dpiY / 96.0;
+            Rect rect = rectangle.Rect;
+            if (!TryRoundToInt(rect.X * dpiScaleX, out int x)
+                || !TryRoundToInt(rect.Y * dpiScaleY, out int y)
+                || !TryRoundToInt(rect.Width * dpiScaleX, out int w)
+                || !TryRoundToInt(rect.Height * dpiScaleY, out int h)
+                || w <= 0
+                || h <= 0)
+            {
+                return false;
+            }
+
+            long roiX = Math.Max(0L, x);
+            long roiY = Math.Max(0L, y);
+            long roiX2 = Math.Min((long)image.cols, (long)x + w);
+            long roiY2 = Math.Min((long)image.rows, (long)y + h);
+            long roiW = roiX2 - roiX;
+            long roiH = roiY2 - roiY;
 
             if (roiW <= 0 || roiH <= 0)
             {
                 return false;
             }
 
-            roi = new RoiRect(roiX, roiY, roiW, roiH);
+            roi = new RoiRect((int)roiX, (int)roiY, (int)roiW, (int)roiH);
+            return true;
+        }
+
+        private static bool TryRoundToInt(double value, out int result)
+        {
+            double rounded = Math.Round(value);
+            if (!double.IsFinite(rounded) || rounded < int.MinValue || rounded > int.MaxValue)
+            {
+                result = 0;
+                return false;
+            }
+
+            result = (int)rounded;
             return true;
         }
     }

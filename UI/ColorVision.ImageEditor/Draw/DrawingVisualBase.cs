@@ -15,6 +15,7 @@ namespace ColorVision.ImageEditor.Draw
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         public virtual BaseProperties BaseAttribute { get; }
         public virtual int ID { get; set; }
+        internal bool IsMessageVisible { get; set; } = true;
         protected double? LayoutBasePenThickness { get; set; }
         protected double? LayoutBaseFontSize { get; set; }
         public virtual void Render() { }
@@ -107,7 +108,43 @@ namespace ColorVision.ImageEditor.Draw
 
         public object ToolTip { get; set; }
 
-        public T Attribute { get; set; }
+        public T Attribute
+        {
+            get => _attribute;
+            set
+            {
+                if (ReferenceEquals(_attribute, value))
+                    return;
+
+                if (_attributePropertyChangedHandler != null && !ReferenceEquals(_attribute, null))
+                    _attribute.PropertyChanged -= _attributePropertyChangedHandler;
+
+                _attribute = value;
+                LayoutBasePenThickness = null;
+                LayoutBaseFontSize = null;
+
+                if (_attributePropertyChangedHandler != null && !ReferenceEquals(_attribute, null))
+                {
+                    _attribute.PropertyChanged += _attributePropertyChangedHandler;
+                    if (Drawing != null)
+                        _attributePropertyChangedHandler(_attribute, new PropertyChangedEventArgs(string.Empty));
+                }
+            }
+        }
+        private T _attribute = null!;
+        private PropertyChangedEventHandler? _attributePropertyChangedHandler;
+
+        internal void ObserveAttributeChanges(PropertyChangedEventHandler handler)
+        {
+            ArgumentNullException.ThrowIfNull(handler);
+
+            if (_attributePropertyChangedHandler != null && !ReferenceEquals(_attribute, null))
+                _attribute.PropertyChanged -= _attributePropertyChangedHandler;
+
+            _attributePropertyChangedHandler = handler;
+            if (!ReferenceEquals(_attribute, null))
+                _attribute.PropertyChanged += _attributePropertyChangedHandler;
+        }
     }
 
     public class DrawingVisualBaseDVContextMenu : IDVContextMenu

@@ -77,9 +77,10 @@ namespace ColorVision.ImageEditor.Draw
         {
             if (DrawCircleCache != null)
             {
-                double radius = Math.Sqrt((Math.Pow(currentPoint.X - MouseDownPoint.X, 2) + Math.Pow(currentPoint.Y - MouseDownPoint.Y, 2)));
-                DrawCircleCache.Attribute.Radius = radius;
-                DrawCircleCache.Render();
+                double deltaX = currentPoint.X - MouseDownPoint.X;
+                double deltaY = currentPoint.Y - MouseDownPoint.Y;
+                double radius = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
+                DrawCircleCache.SetRadiusAndRender(radius);
             }
         }
 

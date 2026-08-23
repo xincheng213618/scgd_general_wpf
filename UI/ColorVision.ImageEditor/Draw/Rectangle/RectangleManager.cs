@@ -93,8 +93,10 @@ namespace ColorVision.ImageEditor.Draw
         {
             if (DrawingRectangleCache != null)
             {
-                DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownPoint, currentPoint);
-                DrawingRectangleCache.Render();
+                Rect rect = Config.UseCenter
+                    ? new Rect(MouseDownPoint - (currentPoint - MouseDownPoint), currentPoint)
+                    : new Rect(MouseDownPoint, currentPoint);
+                DrawingRectangleCache.SetRect(rect);
             }
         }
 

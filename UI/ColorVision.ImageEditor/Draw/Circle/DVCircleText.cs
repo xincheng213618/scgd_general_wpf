@@ -43,6 +43,8 @@ namespace ColorVision.ImageEditor.Draw
 
     public class DVCircleText : DrawingVisualBase<CircleTextProperties>, IDrawingVisual,ICircle, ILayoutScaleDrawingVisual, ICompactInspectorProvider
     {
+        private bool _deferAttributeRender;
+
         public TextAttribute TextAttribute { get => Attribute.TextAttribute; }
 
         public Point Center { get => Attribute.Center; set => Attribute.Center = value; }
@@ -53,19 +55,56 @@ namespace ColorVision.ImageEditor.Draw
         {
             Attribute = new CircleTextProperties();
             TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
-            Attribute.PropertyChanged += (s, e) => Render();
+            ObserveAttributeChanges(OnAttributePropertyChanged);
         }
 
         public DVCircleText(CircleTextProperties circleTextProperties)
         {
             Attribute = circleTextProperties;
             TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
-            Attribute.PropertyChanged += (s, e) => Render();
+            ObserveAttributeChanges(OnAttributePropertyChanged);
+        }
+
+        private void OnAttributePropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(CircleTextProperties.Pen))
+                LayoutBasePenThickness = null;
+            if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(CircleTextProperties.FontSize))
+                LayoutBaseFontSize = null;
+
+            if (!_deferAttributeRender)
+                Render();
+        }
+
+        internal void SetRadiusAndRender(double radius)
+        {
+            bool wasDeferred = _deferAttributeRender;
+            _deferAttributeRender = true;
+            try
+            {
+                Attribute.Radius = radius;
+            }
+            finally
+            {
+                _deferAttributeRender = wasDeferred;
+            }
+
+            if (!wasDeferred)
+                Render();
         }
 
         public void ApplyLayoutScale(DrawingVisualScaleContext context)
         {
-            ApplyLayoutScaleCore(context, Pen, value => Pen = value, TextAttribute.FontSize, value => TextAttribute.FontSize = value);
+            bool wasDeferred = _deferAttributeRender;
+            _deferAttributeRender = true;
+            try
+            {
+                ApplyLayoutScaleCore(context, Pen, value => Pen = value, TextAttribute.FontSize, value => TextAttribute.FontSize = value);
+            }
+            finally
+            {
+                _deferAttributeRender = wasDeferred;
+            }
         }
 
 
@@ -73,7 +112,10 @@ namespace ColorVision.ImageEditor.Draw
         public override void Render()
         {
             using DrawingContext dc = RenderOpen();
-            dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.RadiusY);
+            if (!ShapeGeometry.TryGetEllipseBounds(Attribute.Center, Attribute.Radius, Attribute.RadiusY, out Rect bounds))
+                return;
+
+            dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, bounds.Width / 2, bounds.Height / 2);
 
             double size = 0;
             if (Attribute.IsShowText)
@@ -86,10 +128,10 @@ namespace ColorVision.ImageEditor.Draw
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(Attribute.Msg))
+            if (IsMessageVisible && !string.IsNullOrWhiteSpace(Attribute.Msg))
             {
                 FormattedText formattedText = CreateFormattedText(Attribute.Msg, TextAttribute.Brush);
-                dc.DrawText(formattedText, new Point(Attribute.Center.X + size + Radius / 2, Attribute.Center.Y - formattedText.Height / 2));
+                dc.DrawText(formattedText, new Point(Attribute.Center.X + size + bounds.Width / 4, Attribute.Center.Y - formattedText.Height / 2));
             }
         }
 
@@ -107,14 +149,30 @@ namespace ColorVision.ImageEditor.Draw
 
         public override Rect GetRect()
         {
-            return new Rect(Attribute.Center.X - Attribute.Radius, Attribute.Center.Y - Attribute.RadiusY, Attribute.Radius * 2, Attribute.RadiusY * 2);
+            return ShapeGeometry.TryGetEllipseBounds(Attribute.Center, Attribute.Radius, Attribute.RadiusY, out Rect bounds)
+                ? bounds
+                : Rect.Empty;
         }
         public override void SetRect(Rect rect)
         {
-            Attribute.Center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
-            Attribute.Radius = rect.Width / 2;
-            Attribute.RadiusY = rect.Height / 2;
-            Render();
+            if (!ShapeGeometry.IsFinite(rect))
+                return;
+
+            bool wasDeferred = _deferAttributeRender;
+            _deferAttributeRender = true;
+            try
+            {
+                Attribute.Center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+                Attribute.Radius = rect.Width / 2;
+                Attribute.RadiusY = rect.Height / 2;
+            }
+            finally
+            {
+                _deferAttributeRender = wasDeferred;
+            }
+
+            if (!wasDeferred)
+                Render();
         }
 
         public IEnumerable<CompactInspectorItem> GetCompactInspectorItems()
