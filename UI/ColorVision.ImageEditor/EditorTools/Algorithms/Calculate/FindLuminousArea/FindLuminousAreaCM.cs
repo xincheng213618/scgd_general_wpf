@@ -22,76 +22,44 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
             ImageFrameLease? lease = ImageContext.AcquireImageFrame();
             if (lease == null) return;
 
-            string FindLuminousAreajson = findLuminousAreaCorner.ToJsonN();
             long revision = lease.Revision;
             _ = Task.Run(() =>
             {
-                int length;
-                IntPtr resultPtr;
+                LuminousAreaDetectionResult detectionResult;
                 using (lease)
                 {
-                    length = OpenCVMediaHelper.M_FindLuminousArea(lease.Image, roiRect, FindLuminousAreajson, out resultPtr);
+                    detectionResult = LuminousAreaDetector.Detect(lease.Image, roiRect, findLuminousAreaCorner);
                 }
-                if (length > 0)
-                {
-                    string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
 
-                    Application.Current.Dispatcher.BeginInvoke(() =>
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    if (!ImageContext.IsCurrentImageRevision(revision)) return;
+
+                    if (!detectionResult.HasValidCorners)
                     {
-                        if (!ImageContext.IsCurrentImageRevision(revision)) return;
+                        MessageBox.Show(LuminousAreaDetector.GetFailureMessage(detectionResult), "发光区定位", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
 
-                        if (findLuminousAreaCorner.UseRotatedRect)
-                        {
-                            var jObj = Newtonsoft.Json.Linq.JObject.Parse(result);
-                            var corners = jObj["Corners"].ToObject<List<List<float>>>();
-                            if (corners.Count == 4)
-                            {
-                                List<Point> pts_src = new();
-                                pts_src.Add(new Point(roiRect.X + (int)corners[0][0],roiRect.Y + (int)corners[0][1]));
-                                pts_src.Add(new Point(roiRect.X + (int)corners[1][0],roiRect.Y + (int)corners[1][1]));
-                                pts_src.Add(new Point(roiRect.X + (int)corners[2][0],roiRect.Y + (int)corners[2][1]));
-                                pts_src.Add(new Point(roiRect.X + (int)corners[3][0],roiRect.Y + (int)corners[3][1]));
-                                List<Point> result1 = Helpers.SortPolyPoints(pts_src);
-
-                                DVPolygon Polygon = new DVPolygon() { IsComple = true };
-                                Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / DrawContext.Zoombox.ContentMatrix.M11);
-                                Polygon.Attribute.Brush = Brushes.Transparent;
-                                Polygon.Attribute.Points.Add(result1[0]);
-                                Polygon.Attribute.Points.Add(result1[1]);
-                                Polygon.Attribute.Points.Add(result1[2]);
-                                Polygon.Attribute.Points.Add(result1[3]);
-                                Polygon.Render();
-                                DrawContext.DrawCanvas.AddVisualCommand(Polygon);
-                            }
-                        }
-                        else
-                        {
-                            MRect rect = Newtonsoft.Json.JsonConvert.DeserializeObject<MRect>(result);
-                           
-                            List<Point> pts_src = new();
-                            pts_src.Add(new Point(roiRect.X + rect.X, roiRect.Y + rect.Y));
-                            pts_src.Add(new Point(roiRect.X + rect.X + rect.Width, roiRect.Y + rect.Y));
-                            pts_src.Add(new Point(roiRect.X + rect.X + rect.Width, roiRect.Y + rect.Y + rect.Height));
-                            pts_src.Add(new Point(roiRect.X + rect.X, roiRect.Y + rect.Y + rect.Height));
-                            List<Point> result1 = Helpers.SortPolyPoints(pts_src);
-
-                            DVPolygon Polygon = new DVPolygon() { IsComple = true };
-                            Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / DrawContext.Zoombox.ContentMatrix.M11);
-                            Polygon.Attribute.Brush = Brushes.Transparent;
-                            Polygon.Attribute.Points.Add(result1[0]);
-                            Polygon.Attribute.Points.Add(result1[1]);
-                            Polygon.Attribute.Points.Add(result1[2]);
-                            Polygon.Attribute.Points.Add(result1[3]);
-                            Polygon.Render();
-                            DrawContext.DrawCanvas.AddVisualCommand(Polygon);
-                        }
-
-                    });
-                }
-                else
-                {
-                    Console.WriteLine("Error occurred, code: " + length);
-                }
+                    DVPolygon polygon = new() { IsComple = true };
+                    polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / DrawContext.Zoombox.ContentMatrix.M11);
+                    polygon.Attribute.Brush = Brushes.Transparent;
+                    double pixelToDipX = LuminousAreaDetector.GetPixelToDipScale(
+                        ImageContext.Config.GetProperties<double>(ImageViewPropertyKeys.DpiX));
+                    double pixelToDipY = LuminousAreaDetector.GetPixelToDipScale(
+                        ImageContext.Config.GetProperties<double>(ImageViewPropertyKeys.DpiY));
+                    foreach (LuminousAreaPoint corner in detectionResult.Corners)
+                    {
+                        polygon.Attribute.Points.Add(new Point(corner.X * pixelToDipX, corner.Y * pixelToDipY));
+                    }
+                    polygon.Render();
+                    DrawContext.DrawCanvas.AddVisualCommand(polygon);
+                    string warningMessage = LuminousAreaDetector.GetWarningMessage(detectionResult);
+                    if (!string.IsNullOrEmpty(warningMessage))
+                    {
+                        MessageBox.Show(warningMessage, "发光区定位（需复核）", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                });
             });
         }
     }
@@ -118,11 +86,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
             using ImageFrameLease? lease = _imageContext.AcquireImageFrame();
             if (lease == null) return menuItems;
             HImage hImage = lease.Image;
-            double DpiX = _config.GetProperties<double>("DpiX");
-            double DpiY = _config.GetProperties<double>("DpiY");
-
-            double DpiScaleX = DpiX / 96.0;
-            double DpiScaleY = DpiY / 96.0; // 每毫米多少像素
+            double DpiScaleX = LuminousAreaDetector.GetDipToPixelScale(
+                _config.GetProperties<double>(ImageViewPropertyKeys.DpiX));
+            double DpiScaleY = LuminousAreaDetector.GetDipToPixelScale(
+                _config.GetProperties<double>(ImageViewPropertyKeys.DpiY));
 
             // 图像尺寸
             int imgWidth = hImage.cols;

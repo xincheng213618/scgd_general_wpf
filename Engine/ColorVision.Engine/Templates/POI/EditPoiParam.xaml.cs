@@ -1503,7 +1503,6 @@ namespace ColorVision.Engine.Templates.POI
         {
             Application.Current.Dispatcher.BeginInvoke((Action)(() =>
             {
-                string FindLuminousAreajson = PoiConfig.FindLuminousArea.ToJsonN();
                 ImageFrameLease? acquiredLease = ImageView.AcquireImageFrame();
                 if (acquiredLease != null)
                 {
@@ -1511,46 +1510,38 @@ namespace ColorVision.Engine.Templates.POI
                     long revision = lease.Revision;
                     _ = Task.Run(() =>
                     {
-                        int length;
-                        IntPtr resultPtr;
+                        LuminousAreaDetectionResult detectionResult;
                         using (lease)
                         {
-                            length = OpenCVMediaHelper.M_FindLuminousArea(lease.Image, new RoiRect(), FindLuminousAreajson, out resultPtr);
+                            detectionResult = LuminousAreaDetector.Detect(lease.Image, new RoiRect(), PoiConfig.FindLuminousArea);
                         }
-                        if (length > 0)
-                        {
-                            string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
-                            Console.WriteLine("Result: " + result);
-                            MRect rect = Newtonsoft.Json.JsonConvert.DeserializeObject<MRect>(result);
 
-                            Application.Current.Dispatcher.BeginInvoke(() =>
+                        if (!string.IsNullOrWhiteSpace(detectionResult.RawJson))
+                        {
+                            log.Info(detectionResult.RawJson);
+                        }
+
+                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
+                            if (!ImageView.IsCurrentImageRevision(revision))
+                                return;
+
+                            if (!detectionResult.HasValidCorners)
                             {
-                                if (!ImageView.IsCurrentImageRevision(revision))
-                                    return;
+                                MessageBox.Show(this, LuminousAreaDetector.GetFailureMessage(detectionResult), "发光区定位", MessageBoxButton.OK, MessageBoxImage.Warning);
+                                return;
+                            }
 
-                                if (rect.Width ==0)
-                                {
-                                    PoiConfig.AreaRectWidth = (int)ImageView.ViewBitmapSource.Width;
-                                    PoiConfig.AreaRectHeight = (int)ImageView.ViewBitmapSource.Height;
-                                    PoiConfig.CenterX = (int)ImageView.ViewBitmapSource.Width /2;
-                                    PoiConfig.CenterY = (int)ImageView.ViewBitmapSource.Height /2;
-                                }
-                                else
-                                {
-                                    PoiConfig.AreaRectWidth = rect.Width;
-                                    PoiConfig.AreaRectHeight = rect.Height;
-                                    PoiConfig.CenterX = rect.X + rect.Width / 2;
-                                    PoiConfig.CenterY = rect.Y + rect.Height / 2;
-                                }
-
-                                RenderPoiConfig();
-                            });
-
-                        }
-                        else
-                        {
-                            Console.WriteLine("Error occurred, code: " + length);
-                        }
+                            double dpiX = ImageView.Config.GetProperties<double>(ImageViewPropertyKeys.DpiX);
+                            double dpiY = ImageView.Config.GetProperties<double>(ImageViewPropertyKeys.DpiY);
+                            MRect rect = LuminousAreaDetector.GetDipBoundingRect(detectionResult, dpiX, dpiY);
+                            PoiConfig.AreaRectWidth = rect.Width;
+                            PoiConfig.AreaRectHeight = rect.Height;
+                            PoiConfig.CenterX = rect.X + rect.Width / 2;
+                            PoiConfig.CenterY = rect.Y + rect.Height / 2;
+                            RenderPoiConfig();
+                            ShowLuminousAreaWarnings(detectionResult);
+                        });
                     });
                 }
                 else
@@ -1744,7 +1735,6 @@ namespace ColorVision.Engine.Templates.POI
         {
             Application.Current.Dispatcher.BeginInvoke((Action)(() =>
             {
-                string FindLuminousAreaCornerjson = PoiConfig.FindLuminousAreaCorner.ToJsonN();
                 ImageFrameLease? acquiredLease = ImageView.AcquireImageFrame();
                 if (acquiredLease != null)
                 {
@@ -1752,57 +1742,37 @@ namespace ColorVision.Engine.Templates.POI
                     long revision = lease.Revision;
                     _ = Task.Run(() =>
                     {
-                        int length;
-                        IntPtr resultPtr;
+                        LuminousAreaDetectionResult detectionResult;
                         using (lease)
                         {
-                            length = OpenCVMediaHelper.M_FindLuminousArea(lease.Image, new RoiRect(), FindLuminousAreaCornerjson, out resultPtr);
+                            detectionResult = LuminousAreaDetector.Detect(lease.Image, new RoiRect(), PoiConfig.FindLuminousAreaCorner);
                         }
-                        if (length > 0)
-                        {
-                            string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
-                            log.Info(result);
 
-                            Application.Current.Dispatcher.BeginInvoke(() =>
+                        if (!string.IsNullOrWhiteSpace(detectionResult.RawJson))
+                        {
+                            log.Info(detectionResult.RawJson);
+                        }
+
+                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
+                            if (!ImageView.IsCurrentImageRevision(revision))
+                                return;
+
+                            if (!detectionResult.HasValidCorners)
                             {
-                                if (!ImageView.IsCurrentImageRevision(revision))
-                                    return;
+                                MessageBox.Show(this, LuminousAreaDetector.GetFailureMessage(detectionResult), "发光区定位", MessageBoxButton.OK, MessageBoxImage.Warning);
+                                return;
+                            }
 
-                                if (PoiConfig.FindLuminousAreaCorner.UseRotatedRect)
-                                {
-                                    var jObj = Newtonsoft.Json.Linq.JObject.Parse(result);
-                                    var corners = jObj["Corners"]?.ToObject<List<List<float>>>();
-                                    if (corners?.Count == 4 && corners.All(corner => corner.Count >= 2))
-                                    {
-                                        var orderedCorners = OrderQuadrilateralCorners(corners
-                                            .Select(corner => new Point(corner[0], corner[1]))
-                                            .ToList());
-                                        ApplyQuadrilateralCorners(orderedCorners);
-                                    }
-
-
-
-                                }
-                                else
-                                {
-                                    MRect rect = Newtonsoft.Json.JsonConvert.DeserializeObject<MRect>(result);
-                                    PoiConfig.Polygon1X = rect.X;
-                                    PoiConfig.Polygon1Y = rect.Y;
-                                    PoiConfig.Polygon2X = rect.X + rect.Width;
-                                    PoiConfig.Polygon2Y = rect.Y;
-                                    PoiConfig.Polygon3X = rect.X + rect.Width;
-                                    PoiConfig.Polygon3Y = rect.Y + rect.Height;
-                                    PoiConfig.Polygon4X = rect.X;
-                                    PoiConfig.Polygon4Y = rect.Y + rect.Height;
-                                }
-                                RenderPoiConfig();
-                            });
-
-                        }
-                        else
-                        {
-                            Console.WriteLine("Error occurred, code: " + length);
-                        }
+                            double dpiX = ImageView.Config.GetProperties<double>(ImageViewPropertyKeys.DpiX);
+                            double dpiY = ImageView.Config.GetProperties<double>(ImageViewPropertyKeys.DpiY);
+                            ApplyQuadrilateralCorners(detectionResult.Corners
+                                .Select(corner => LuminousAreaDetector.ConvertPixelToDip(corner, dpiX, dpiY))
+                                .Select(corner => new Point(corner.X, corner.Y))
+                                .ToList());
+                            RenderPoiConfig();
+                            ShowLuminousAreaWarnings(detectionResult);
+                        });
                     });
                 }
                 else
@@ -1812,35 +1782,13 @@ namespace ColorVision.Engine.Templates.POI
             }));
         }
 
-        private static List<Point> OrderQuadrilateralCorners(List<Point> corners)
+        private void ShowLuminousAreaWarnings(LuminousAreaDetectionResult detectionResult)
         {
-            if (corners.Count != 4)
-                return corners.ToList();
-
-            double centerX = corners.Average(point => point.X);
-            double centerY = corners.Average(point => point.Y);
-
-            var ordered = corners
-                .OrderBy(point => Math.Atan2(point.Y - centerY, point.X - centerX))
-                .ToList();
-
-            int leftTopIndex = 0;
-            for (int i = 1; i < ordered.Count; i++)
+            string warningMessage = LuminousAreaDetector.GetWarningMessage(detectionResult);
+            if (!string.IsNullOrEmpty(warningMessage))
             {
-                double currentScore = ordered[i].X + ordered[i].Y;
-                double bestScore = ordered[leftTopIndex].X + ordered[leftTopIndex].Y;
-
-                if (currentScore < bestScore ||
-                    (Math.Abs(currentScore - bestScore) < 0.0001 && ordered[i].Y < ordered[leftTopIndex].Y))
-                {
-                    leftTopIndex = i;
-                }
+                MessageBox.Show(this, warningMessage, "发光区定位（需复核）", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
-
-            return ordered
-                .Skip(leftTopIndex)
-                .Concat(ordered.Take(leftTopIndex))
-                .ToList();
         }
 
         private void ApplyQuadrilateralCorners(List<Point> corners)

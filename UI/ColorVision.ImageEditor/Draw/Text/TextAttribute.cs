@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1711
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
+using System;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;
@@ -13,7 +14,19 @@ namespace ColorVision.ImageEditor.Draw
         private static DefaultTextStyleConfig DefaultSettings => DefaultTextStyleConfig.Current;
 
         [Category("TextAttribute"), DisplayName("Text")]
-        public string Text { get => _Text; set { _Text = value; OnPropertyChanged(); } }
+        public string Text
+        {
+            get => _Text;
+            set
+            {
+                string next = value ?? string.Empty;
+                if (string.Equals(_Text, next, StringComparison.Ordinal))
+                    return;
+
+                _Text = next;
+                OnPropertyChanged();
+            }
+        }
         private string _Text = string.Empty;
 
         [Category("TextAttribute"), DisplayName("FontSize")]

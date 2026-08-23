@@ -72,6 +72,12 @@ extern "C" COLORVISIONCORE_API int M_Threshold(HImage img, HImage* outImage, dou
 
 extern "C" COLORVISIONCORE_API int M_FindLuminousArea(HImage img, RoiRect roi,const char* config, char** result);
 
+// Robust four-edge luminous-area locator. A positive return value means a JSON
+// result was produced; inspect JSON Success because a valid call may be rejected
+// for insufficient image evidence. ROI coordinates remain ROI-local, matching
+// M_FindLuminousArea. Release result with FreeResult.
+extern "C" COLORVISIONCORE_API int M_FindLuminousAreaV2(HImage image, RoiRect roi, const char* configJson, char** resultJson);
+
 extern "C" COLORVISIONCORE_API int M_ConvertGray32Float(HImage img, HImage* outImage);
 
 extern "C" COLORVISIONCORE_API int M_StitchImages(const char* config, HImage* outImage);

@@ -706,6 +706,72 @@ COLORVISIONCORE_API int M_FindLuminousArea(HImage img, RoiRect roi,
 
 ---
 
+### M_FindLuminousAreaV2
+
+Robustly locate a perspective luminous quadrilateral. The V2 detector uses
+multi-scale coarse candidates, multiple edge candidates per caliper, robust
+four-line fitting, and independent per-side quality checks. It does not fall
+back to `M_FindLuminousArea`.
+
+```cpp
+COLORVISIONCORE_API int M_FindLuminousAreaV2(HImage image, RoiRect roi,
+    const char* configJson, char** resultJson);
+```
+
+The recommended automatic configuration is an empty object:
+
+```json
+{}
+```
+
+Most callers should expose only `MinConfidence` (default `0.25`). Advanced
+optional keys are `MinAreaRatio`, `MaxAreaRatio`, `SearchWidthRatio`,
+`MinEdgeContrast`, `CaliperCount`, `MaxProcessingSize`, and `AllowBorder`
+(default `true`; set it to `false` only when border-touching candidates must be
+excluded). `MaxAreaRatio` defaults to `0.999`, so a near-full-frame display is
+still detectable when its four boundaries remain observable.
+
+Corners are always ordered `LT, RT, RB, LB`. When an ROI is supplied, corner
+coordinates are ROI-local, as with the legacy detector.
+
+```json
+{
+  "Success": true,
+  "Algorithm": "RobustV2",
+  "Corners": [
+    {"X": 100.1, "Y": 50.2},
+    {"X": 300.0, "Y": 48.8},
+    {"X": 305.4, "Y": 201.0},
+    {"X": 96.2, "Y": 203.1}
+  ],
+  "Confidence": 0.93,
+  "SideQuality": [
+    {"Name": "Top", "Coverage": 1.0, "InlierRatio": 0.95,
+     "ContrastP10": 0.21, "FitRms": 0.42, "MaxGap": 0.03,
+     "Confidence": 0.91, "SampleCount": 40, "InlierCount": 38}
+  ],
+  "FailureReason": "",
+  "Warnings": []
+}
+```
+
+A positive return value always means JSON was allocated, including normal
+algorithm rejection (`Success=false`, for example `NoSignal`, `NoCandidate`,
+`InsufficientSideSupport`, `InsufficientIndependentGeometry`,
+`UnstableCorners`, or `LowConfidence`). Automatic mode favors recovery: a
+cross-threshold-stable coarse quadrilateral can extrapolate one weak side, or
+two adjacent weak sides when two non-parallel sides retain dense measured line
+support. It accepts geometrically recoverable border clipping and reports
+partial/inferred-side warnings with a lower confidence. Comparable spatially
+distinct candidates are ranked and the best is returned with
+`AmbiguousCandidates` and `MultipleComparableCandidates` warnings. Cases
+without enough independent geometry (including only two opposite/parallel
+edges, no-signal, full-frame gradients, and noise-only images) remain rejected.
+Negative values are reserved for invalid arguments/JSON or system exceptions.
+Always release a non-null result with `FreeResult()`.
+
+---
+
 ### M_FindLightBeads
 
 Detect LED/light bead positions in grid pattern.

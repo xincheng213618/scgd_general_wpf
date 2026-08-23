@@ -45,6 +45,32 @@ public class DrawCanvasTests
     }
 
     [Fact]
+    public void BatchTopVisualsIgnoresDuplicateInputs()
+    {
+        RunOnStaThread(() =>
+        {
+            using DrawCanvas canvas = new();
+            DrawingVisual first = new();
+            DrawingVisual second = new();
+            DrawingVisual third = new();
+            canvas.AddVisual(first);
+            canvas.AddVisual(second);
+            canvas.AddVisual(third);
+            int topChangeCount = 0;
+            canvas.VisualsChanged += (_, e) =>
+            {
+                if (e.ChangeType == VisualChangeType.Top)
+                    topChangeCount++;
+            };
+
+            canvas.BatchTopVisuals([second, second, first, first]);
+
+            Assert.Equal(new Visual[] { third, second, first }, canvas.Visuals);
+            Assert.Equal(1, topChangeCount);
+        });
+    }
+
+    [Fact]
     public void UndoRemoveRestoresOriginalVisualOrder()
     {
         RunOnStaThread(() =>

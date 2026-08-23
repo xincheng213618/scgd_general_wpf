@@ -13,17 +13,19 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class TextManagerConfig : ViewModelBase
     {
-        public bool IsLocked { get => _IsLocked; set { _IsLocked = value; OnPropertyChanged(); } }
+        [Browsable(false)]
+        public bool IsLocked { get => _IsLocked; set { if (_IsLocked == value) return; _IsLocked = value; OnPropertyChanged(); } }
         private bool _IsLocked;
 
         [Browsable(false)]
-        public double DefaultFontSize { get => _DefaultFontSize; set { _DefaultFontSize = value; OnPropertyChanged(); } }
+        public double DefaultFontSize { get => _DefaultFontSize; set { if (_DefaultFontSize == value) return; _DefaultFontSize = value; OnPropertyChanged(); } }
         private double _DefaultFontSize = 18;
 
-        public string DefaultText { get => _DefaultText; set { _DefaultText = value; OnPropertyChanged(); } }
+        public string DefaultText { get => _DefaultText; set { if (string.Equals(_DefaultText, value, StringComparison.Ordinal)) return; _DefaultText = value; OnPropertyChanged(); } }
         private string _DefaultText = string.Empty;
 
-        public bool FollowZoom { get => _FollowZoom; set { _FollowZoom = value; OnPropertyChanged(); } }
+        [Browsable(false)]
+        public bool FollowZoom { get => _FollowZoom; set { if (_FollowZoom == value) return; _FollowZoom = value; OnPropertyChanged(); } }
         private bool _FollowZoom = true;
     }
 
@@ -31,7 +33,23 @@ namespace ColorVision.ImageEditor.Draw
     {
         private const string DefaultStyleSaveKeyPrefix = "TextManagerDefaultStyleSave_";
 
-        public TextManagerConfig Config { get; set; } = new TextManagerConfig();
+        public TextManagerConfig Config
+        {
+            get => _config;
+            set
+            {
+                TextManagerConfig next = value ?? new TextManagerConfig();
+                if (ReferenceEquals(_config, next))
+                {
+                    return;
+                }
+
+                _config.PropertyChanged -= Config_PropertyChanged;
+                _config = next;
+                _config.PropertyChanged += Config_PropertyChanged;
+            }
+        }
+        private TextManagerConfig _config = new TextManagerConfig();
         private static DefaultTextStyleConfig DefaultTextStyle => DefaultTextStyleConfig.Current;
 
 
@@ -40,8 +58,8 @@ namespace ColorVision.ImageEditor.Draw
         {
             Order = 8;
             Icon = new TextBlock() { Text = "A" };
-            Config.DefaultFontSize = DefaultTextStyle.FontSize;
-            Config.PropertyChanged += Config_PropertyChanged;
+            _config.DefaultFontSize = DefaultTextStyle.FontSize;
+            _config.PropertyChanged += Config_PropertyChanged;
         }
 
         public override bool IsChecked
@@ -67,6 +85,7 @@ namespace ColorVision.ImageEditor.Draw
 
 
         private DVText? TextCache;
+        private ActionCommand? PendingCreationCommand;
         private Point MouseDownP;
         private bool IsMouseDown;
         private int CheckNo()
@@ -86,22 +105,41 @@ namespace ColorVision.ImageEditor.Draw
             Config.DefaultFontSize = DefaultTextStyle.FontSize;
             DefaultTextStyle.PropertyChanged += DefaultTextStyle_PropertyChanged;
             DrawCanvas.MouseMove += MouseMove;
-            DrawCanvas.MouseEnter += MouseEnter;
-            DrawCanvas.MouseLeave += MouseLeave;
             DrawCanvas.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp += Image_PreviewMouseUp;
+            DrawCanvas.VisualsRemove += DrawCanvas_VisualsRemove;
         }
 
         private void UnLoad()
         {
             DefaultTextStyle.PropertyChanged -= DefaultTextStyle_PropertyChanged;
             DrawCanvas.MouseMove -= MouseMove;
-            DrawCanvas.MouseEnter -= MouseEnter;
-            DrawCanvas.MouseLeave -= MouseLeave;
             DrawCanvas.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp -= Image_PreviewMouseUp;
-            TextCache = null;
+            DrawCanvas.VisualsRemove -= DrawCanvas_VisualsRemove;
+            if (IsMouseDown)
+                DrawCanvas.ReleaseMouseCapture();
+            IsMouseDown = false;
+            CancelPendingCreation();
             SelectionVisual.ClearRender();
+        }
+
+        private void CancelPendingCreation()
+        {
+            DVText? pendingText = TextCache;
+            ActionCommand? creationCommand = PendingCreationCommand;
+            TextCache = null;
+            PendingCreationCommand = null;
+
+            if (pendingText != null && DrawCanvas.ContainsVisual(pendingText))
+            {
+                DrawCanvas.RemoveVisual(pendingText);
+            }
+
+            if (creationCommand != null)
+            {
+                DrawCanvas.DiscardActionCommand(creationCommand);
+            }
         }
 
         private void DefaultTextStyle_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -111,7 +149,7 @@ namespace ColorVision.ImageEditor.Draw
                 Config.DefaultFontSize = DefaultTextStyle.FontSize;
             }
 
-            DebounceTimer.AddOrResetTimer(DefaultStyleSaveKeyPrefix + TextContext.Id, 120, DefaultTextStyleConfig.SaveCurrent);
+            DebounceTimer.AddOrResetTimer(DefaultStyleSaveKeyPrefix, 120, DefaultTextStyleConfig.SaveCurrent);
         }
 
         private void Config_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -128,7 +166,6 @@ namespace ColorVision.ImageEditor.Draw
             {
                 new CompactInspectorPropertyItem { Source = DefaultTextStyle, PropertyName = nameof(DefaultTextStyle.FontSize), Icon = CompactInspectorIcons.CreateText("A"), Width = 56, Order = 10, EditorKind = CompactInspectorEditorKind.Number, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_DefaultFontSize },
                 new CompactInspectorPropertyItem { Source = DefaultTextStyle, PropertyName = nameof(DefaultTextStyle.Brush), Order = 20, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_DefaultColor },
-                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.FollowZoom), Icon = CompactInspectorIcons.CreateText("⤢"), Order = 30, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_FollowZoom },
             };
         }
 
@@ -158,25 +195,66 @@ namespace ColorVision.ImageEditor.Draw
             textProperties.Pen = new Pen(Brushes.Transparent, 1 / Zoombox.ContentMatrix.M11);
             textProperties.TextAttribute.FontSize = Config.DefaultFontSize;
             textProperties.Rect = new Rect(MouseDownP.X, MouseDownP.Y, 1, Config.DefaultFontSize);
-            TextCache = new DVText(textProperties);
-            TextCache.Render();
-            DrawCanvas.AddVisualCommand(TextCache);
+            DVText createdText = new(textProperties);
+            TextCache = createdText;
+            createdText.Render();
+            PendingCreationCommand = null;
+            ActionCommand? creationCommand = DrawCanvas.AddVisualCommandCore(createdText);
+            if (creationCommand == null || !IsChecked || !ReferenceEquals(TextCache, createdText) || !DrawCanvas.ContainsVisual(createdText))
+            {
+                if (DrawCanvas.ContainsVisual(createdText))
+                    DrawCanvas.RemoveVisual(createdText);
+                if (creationCommand != null)
+                    DrawCanvas.DiscardActionCommand(creationCommand);
+                if (ReferenceEquals(TextCache, createdText))
+                    TextCache = null;
+                e.Handled = true;
+                return;
+            }
+
+            PendingCreationCommand = creationCommand;
+            createdText.TrackCreationCommand(creationCommand);
             e.Handled = true;
         }
 
         private void Image_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (!IsMouseDown || e.ChangedButton != MouseButton.Left)
+            {
+                return;
+            }
+
             DrawCanvas.ReleaseMouseCapture();
             IsMouseDown = false;
             if (TextCache != null)
             {
                 DVText createdText = TextCache;
                 TextCache = null;
-                SelectionVisual.SetRender(createdText);
+                PendingCreationCommand = null;
                 createdText.BeginEdit(TextContext);
                 IsChecked = false;
             }
             e.Handled = true;
+        }
+
+        private void DrawCanvas_VisualsRemove(object? sender, VisualChangedEventArgs e)
+        {
+            if (TextCache == null || !ReferenceEquals(e.Visual, TextCache))
+            {
+                return;
+            }
+
+            DVText removedText = TextCache;
+            ActionCommand? creationCommand = PendingCreationCommand;
+            TextCache = null;
+            PendingCreationCommand = null;
+            IsMouseDown = false;
+            DrawCanvas.ReleaseMouseCapture();
+
+            if (creationCommand != null && !DrawCanvas.IsVisualRemovalCommandInProgress(removedText))
+            {
+                DrawCanvas.DiscardActionCommand(creationCommand);
+            }
         }
 
         private void MouseMove(object sender, MouseEventArgs e)
@@ -187,13 +265,18 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
 
-        private void MouseEnter(object sender, MouseEventArgs e) { }
-        private void MouseLeave(object sender, MouseEventArgs e) { }
-
         public void Dispose()
         {
-            Config.PropertyChanged -= Config_PropertyChanged;
-            UnLoad();
+            if (IsChecked)
+            {
+                IsChecked = false;
+            }
+            else
+            {
+                CancelPendingCreation();
+            }
+
+            _config.PropertyChanged -= Config_PropertyChanged;
             GC.SuppressFinalize(this);
         }
     }

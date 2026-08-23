@@ -35,6 +35,7 @@ namespace ColorVision.ImageEditor
         private readonly EditorContext _context;
         private readonly List<IEditorTool> _imageOpenEditorTools = new();
         private readonly List<FrameworkElement> _generatedToolElements = new();
+        private readonly HashSet<ButtonBase> _generatedIconHosts = new();
         private IImageOpen? _currentImageOpen;
 
         public T? GetIEditorTool<T>() where T : IEditorTool => GetEffectiveEditorTools().OfType<T>().FirstOrDefault();
@@ -197,14 +198,7 @@ namespace ColorVision.ImageEditor
 
         public void RefreshToolBars()
         {
-            foreach (FrameworkElement element in _generatedToolElements.ToArray())
-            {
-                if (element.Parent is ToolBar parentToolBar)
-                {
-                    parentToolBar.Items.Remove(element);
-                }
-            }
-            _generatedToolElements.Clear();
+            ClearGeneratedToolElements();
 
             foreach (var group in GetEffectiveEditorTools().GroupBy(t => t.ToolBarLocal))
             {
@@ -227,6 +221,10 @@ namespace ColorVision.ImageEditor
 
                     toolBar.Items.Add(btn);
                     _generatedToolElements.Add(btn);
+                    if (tool is not IEditorCustomControlTool && btn is ButtonBase iconHost)
+                    {
+                        _generatedIconHosts.Add(iconHost);
+                    }
                     hasExistingItems = true;
                 }
             }
@@ -239,6 +237,8 @@ namespace ColorVision.ImageEditor
                 lifecycle.OnEditorToolsDeactivated(_context);
             }
 
+            ClearGeneratedToolElements();
+
             HashSet<IDisposable> disposableTools = new();
             foreach (IDisposable item in IEditorTools.Concat(_imageOpenEditorTools).OfType<IDisposable>())
             {
@@ -249,8 +249,26 @@ namespace ColorVision.ImageEditor
             }
 
             _imageOpenEditorTools.Clear();
-            _generatedToolElements.Clear();
             GC.SuppressFinalize(this);
+        }
+
+        private void ClearGeneratedToolElements()
+        {
+            foreach (FrameworkElement element in _generatedToolElements)
+            {
+                if (element is ButtonBase buttonBase && _generatedIconHosts.Remove(buttonBase))
+                {
+                    buttonBase.Content = null;
+                }
+
+                if (element.Parent is ToolBar parentToolBar)
+                {
+                    parentToolBar.Items.Remove(element);
+                }
+            }
+
+            _generatedToolElements.Clear();
+            _generatedIconHosts.Clear();
         }
 
         private static bool CanCreateGlobalEditorTool(Type type)

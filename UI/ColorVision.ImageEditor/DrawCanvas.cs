@@ -61,9 +61,16 @@ namespace ColorVision.ImageEditor
         #region ActionCommand
         public ObservableCollection<ActionCommand> UndoStack { get; } = new();
         public ObservableCollection<ActionCommand> RedoStack { get; } = new();
+        private ActionCommand? _executingActionCommand;
+        private bool _discardExecutingActionCommand;
+        private bool _isExecutingHistoryAction;
+        private readonly HashSet<Visual> _visualRemovalCommandTargets = new();
+        private readonly HashSet<Visual> _visualCommandAdditionsInProgress = new();
 
         public void ClearActionCommand()
         {
+            if (_executingActionCommand != null)
+                _discardExecutingActionCommand = true;
             UndoStack.Clear();
             RedoStack.Clear();
         }
@@ -76,24 +83,82 @@ namespace ColorVision.ImageEditor
 
         public void Undo()
         {
-            if (UndoStack.Count > 0)
+            if (_isExecutingHistoryAction || UndoStack.Count == 0)
+                return;
+
+            ActionCommand undoAction = UndoStack[^1];
+            _isExecutingHistoryAction = true;
+            _executingActionCommand = undoAction;
+            _discardExecutingActionCommand = false;
+            try
             {
-                var undoAction = UndoStack[^1];
                 UndoStack.RemoveAt(UndoStack.Count - 1);
                 undoAction.UndoAction();
-                RedoStack.Add(undoAction);
+
+                if (!_discardExecutingActionCommand)
+                    RedoStack.Add(undoAction);
+
+                if (_discardExecutingActionCommand)
+                {
+                    UndoStack.Remove(undoAction);
+                    RedoStack.Remove(undoAction);
+                }
+            }
+            finally
+            {
+                _executingActionCommand = null;
+                _discardExecutingActionCommand = false;
+                _isExecutingHistoryAction = false;
             }
         }
 
         public void Redo()
         {
-            if (RedoStack.Count > 0)
+            if (_isExecutingHistoryAction || RedoStack.Count == 0)
+                return;
+
+            ActionCommand redoAction = RedoStack[^1];
+            _isExecutingHistoryAction = true;
+            _executingActionCommand = redoAction;
+            _discardExecutingActionCommand = false;
+            try
             {
-                var redoAction = RedoStack[^1];
                 RedoStack.RemoveAt(RedoStack.Count - 1);
                 redoAction.RedoAction();
-                UndoStack.Add(redoAction);
+
+                if (!_discardExecutingActionCommand)
+                    UndoStack.Add(redoAction);
+
+                if (_discardExecutingActionCommand)
+                {
+                    UndoStack.Remove(redoAction);
+                    RedoStack.Remove(redoAction);
+                }
             }
+            finally
+            {
+                _executingActionCommand = null;
+                _discardExecutingActionCommand = false;
+                _isExecutingHistoryAction = false;
+            }
+        }
+
+        internal void DiscardActionCommand(ActionCommand actionCommand)
+        {
+            ArgumentNullException.ThrowIfNull(actionCommand);
+            if (ReferenceEquals(_executingActionCommand, actionCommand))
+            {
+                _discardExecutingActionCommand = true;
+                return;
+            }
+
+            UndoStack.Remove(actionCommand);
+            RedoStack.Remove(actionCommand);
+        }
+
+        internal bool IsVisualRemovalCommandInProgress(Visual visual)
+        {
+            return _visualRemovalCommandTargets.Contains(visual);
         }
         #endregion
 
@@ -139,7 +204,7 @@ namespace ColorVision.ImageEditor
         {
             ClearActionCommand();
             foreach (Visual item in visuals.ToList())
-                TryRemoveVisual(item);
+                TryRemoveVisual(item, raiseEvents: !overlayVisuals.Contains(item));
 
             overlayVisuals.Clear();
             VisualsChanged?.Invoke(this, new VisualChangedEventArgs((Visual?)null, VisualChangeType.Clear));
@@ -274,16 +339,54 @@ namespace ColorVision.ImageEditor
         public void AddVisualCommand(Visual visual)
         {
             if (!TryAddVisual(visual)) return;
+            AddVisualActionCommand(visual);
+        }
 
+        internal ActionCommand? AddVisualCommandCore(Visual visual)
+        {
+            bool ownsAdditionMarker = _visualCommandAdditionsInProgress.Add(visual);
+            bool added;
+            try
+            {
+                added = TryAddVisual(visual);
+            }
+            finally
+            {
+                if (ownsAdditionMarker)
+                    _visualCommandAdditionsInProgress.Remove(visual);
+            }
+
+            if (!added || !ContainsVisual(visual)) return null;
+            return AddVisualActionCommand(visual);
+        }
+
+        private ActionCommand AddVisualActionCommand(Visual visual)
+        {
             Action undoaction = () => RemoveVisual(visual);
             Action redoaction = () => AddVisual(visual);
-            AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "添加" });
+            ActionCommand command = new(undoaction, redoaction) { Header = "添加" };
+            AddActionCommand(command);
+            return command;
         }
 
         public void RemoveVisualCommand(Visual? visual)
         {
             int index = visuals.IndexOf(visual);
-            if (!TryRemoveVisual(visual)) return;
+            if (visual == null) return;
+
+            bool ownsRemovalMarker = _visualRemovalCommandTargets.Add(visual);
+            bool removed;
+            try
+            {
+                removed = TryRemoveVisual(visual);
+            }
+            finally
+            {
+                if (ownsRemovalMarker)
+                    _visualRemovalCommandTargets.Remove(visual);
+            }
+            if (!removed) return;
+            if (_visualCommandAdditionsInProgress.Contains(visual)) return;
 
             Action undoaction = () => InsertVisual(index, visual);
             Action redoaction = () => RemoveVisual(visual);
@@ -337,8 +440,9 @@ namespace ColorVision.ImageEditor
         // 批量置顶
         public void BatchTopVisuals(IEnumerable<Visual> topVisuals)
         {
-            // 用 HashSet 提高查找性能（避免重复）
-            var toMove = topVisuals?.Where(v => v != null && visualSet.Contains(v)).ToList();
+            // Materialize once because callers may provide a lazy view over Visuals.
+            // Distinct also avoids rebuilding the visual tree repeatedly for duplicate input.
+            var toMove = topVisuals?.Where(visualSet.Contains).Distinct().ToList();
             if (toMove == null || toMove.Count == 0) return;
 
             foreach (var visual in toMove)

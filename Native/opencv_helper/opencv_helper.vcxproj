@@ -201,6 +201,7 @@
     <ClInclude Include="algorithm\distortion\distortion_p9.h" />
     <ClInclude Include="algorithm\ghost\ghost_detection.h" />
     <ClInclude Include="algorithm\keyboard_led\keyboard_led.h" />
+    <ClInclude Include="algorithm\luminous_area\luminous_area_v2.h" />
     <ClInclude Include="algorithm\matching\rotated_template_matching.h" />
     <ClInclude Include="algorithm\sfr\sfr_bmw4.h" />
     <ClInclude Include="algorithm\sfr\sfr_slanted.h" />
@@ -240,6 +241,9 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="algorithm\keyboard_led\keyboard_led.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="algorithm\luminous_area\luminous_area_v2.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="algorithm\matching\rotated_template_matching.cpp">

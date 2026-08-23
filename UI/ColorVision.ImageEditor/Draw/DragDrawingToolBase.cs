@@ -118,6 +118,10 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.MouseLeave -= HandleMouseLeave;
             DrawCanvas.PreviewMouseLeftButtonDown -= HandlePreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp -= HandlePreviewMouseUp;
+            if (IsMouseDown)
+            {
+                DrawCanvas.ReleaseMouseCapture();
+            }
             IsMouseDown = false;
         }
 
@@ -142,19 +146,23 @@ namespace ColorVision.ImageEditor.Draw
 
         private void HandlePreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
-            DrawCanvas.ReleaseMouseCapture();
+            if (!IsMouseDown || e.ChangedButton != MouseButton.Left)
+            {
+                return;
+            }
+
             MouseUpPoint = e.GetPosition(DrawCanvas);
             IsMouseDown = false;
+            DrawCanvas.ReleaseMouseCapture();
             OnEndDraw(MouseUpPoint, e);
         }
 
         private void HandleMouseMove(object sender, MouseEventArgs e)
         {
-            if (IsMouseDown)
-            {
-                OnUpdateDraw(e.GetPosition(DrawCanvas), e);
-            }
+            if (!IsMouseDown)
+                return;
 
+            OnUpdateDraw(e.GetPosition(DrawCanvas), e);
             e.Handled = true;
         }
 

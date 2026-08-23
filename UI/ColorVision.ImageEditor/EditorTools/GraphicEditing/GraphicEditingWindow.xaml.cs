@@ -162,20 +162,46 @@ namespace ColorVision.ImageEditor
 
     }
 
-    public class FindLuminousArea : Common.MVVM.ViewModelBase
+    public class FindLuminousArea : FindLuminousAreaCorner
     {
-        [DisplayName("Threshold")]
-        public int Threshold { get => _Threshold; set {  _Threshold = value; OnPropertyChanged(); } }
-        private int _Threshold = 20;
+        public FindLuminousArea()
+        {
+            // The legacy rectangle entry omitted UseRotatedRect and the native
+            // API consequently defaulted it to false. Preserve that behavior
+            // when an old configuration is explicitly switched to Legacy.
+            UseRotatedRect = false;
+        }
     }
 
     public class FindLuminousAreaCorner : Common.MVVM.ViewModelBase
     {
-        [DisplayName("Threshold")]
+        [Category("定位"), DisplayName("算法")]
+        [Description("鲁棒自动定位适用于透视、暗角和局部异常；经典定位用于兼容旧流程。")]
+        public LuminousAreaDetectionMode Algorithm { get => _Algorithm; set { _Algorithm = value; OnPropertyChanged(); } }
+        private LuminousAreaDetectionMode _Algorithm = LuminousAreaDetectionMode.RobustV2;
+
+        [Category("定位"), DisplayName("最低可信度")]
+        [Description("结果低于此可信度时拒绝定位。默认偏向高召回；误检敏感时可调高。")]
+        [PropertyVisibility(nameof(Algorithm), LuminousAreaDetectionMode.RobustV2)]
+        public double MinConfidence
+        {
+            get => _MinConfidence;
+            set
+            {
+                if (!double.IsFinite(value)) value = 0.25;
+                _MinConfidence = Math.Clamp(value, 0, 1);
+                OnPropertyChanged();
+            }
+        }
+        private double _MinConfidence = 0.25;
+
+        [Category("经典算法"), DisplayName("Threshold")]
+        [PropertyVisibility(nameof(Algorithm), LuminousAreaDetectionMode.Legacy)]
         public int Threshold { get => _Threshold; set { _Threshold = value; OnPropertyChanged(); } }
         private int _Threshold = 20;
 
-        [DisplayName("UseRotatedRect")]
+        [Category("经典算法"), DisplayName("UseRotatedRect")]
+        [PropertyVisibility(nameof(Algorithm), LuminousAreaDetectionMode.Legacy)]
         public bool UseRotatedRect { get => _UseRotatedRect; set { _UseRotatedRect = value; OnPropertyChanged(); } }
         private bool _UseRotatedRect = true;
     }
@@ -423,7 +449,6 @@ namespace ColorVision.ImageEditor
         DVDatumPolygon Polygon;
         private void FindLuminousAreaCorner_Click(object sender, RoutedEventArgs e)
         {
-            string FindLuminousAreajson = Config.FindLuminousAreaCorner.ToJsonN();
             ImageFrameLease? acquiredLease = ImageContext.AcquireImageFrame();
             if (acquiredLease != null)
             {
@@ -431,76 +456,59 @@ namespace ColorVision.ImageEditor
                 long revision = lease.Revision;
                 _ = Task.Run(() =>
                 {
-                    int length;
-                    IntPtr resultPtr;
+                    LuminousAreaDetectionResult detectionResult;
                     using (lease)
                     {
-                        length = OpenCVMediaHelper.M_FindLuminousArea(lease.Image, new RoiRect(), FindLuminousAreajson, out resultPtr);
+                        detectionResult = LuminousAreaDetector.Detect(lease.Image, new RoiRect(), Config.FindLuminousAreaCorner);
                     }
-                    if (length > 0)
-                    {
-                        string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
-                        Console.WriteLine("Result: " + result);
 
-                        Application.Current.Dispatcher.BeginInvoke(() =>
+                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        if (!ImageContext.IsCurrentImageRevision(revision))
+                            return;
+
+                        if (!detectionResult.HasValidCorners)
                         {
-                            if (!ImageContext.IsCurrentImageRevision(revision))
-                                return;
+                            MessageBox.Show(this, LuminousAreaDetector.GetFailureMessage(detectionResult), "发光区定位", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            return;
+                        }
 
-                            if (Config.FindLuminousAreaCorner.UseRotatedRect)
-                            {
-                                var jObj = Newtonsoft.Json.Linq.JObject.Parse(result);
-                                var corners = jObj["Corners"].ToObject<List<List<float>>>();
-                                if (corners.Count == 4)
-                                {
-                                    Config.Polygon1X = (int)corners[0][0];
-                                    Config.Polygon1Y = (int)corners[0][1];
-                                    Config.Polygon2X = (int)corners[1][0];
-                                    Config.Polygon2Y = (int)corners[1][1];
-                                    Config.Polygon3X = (int)corners[2][0];
-                                    Config.Polygon3Y = (int)corners[2][1];
-                                    Config.Polygon4X = (int)corners[3][0];
-                                    Config.Polygon4Y = (int)corners[3][1];
-                                }
-                            }
-                            else
-                            {
-                                MRect rect = Newtonsoft.Json.JsonConvert.DeserializeObject<MRect>(result);
-                                {
-                                    Config.Polygon1X = rect.X;
-                                    Config.Polygon1Y = rect.Y;
-                                    Config.Polygon2X = rect.X + rect.Width;
-                                    Config.Polygon2Y = rect.Y;
-                                    Config.Polygon3X = rect.X + rect.Width;
-                                    Config.Polygon3Y = rect.Y + rect.Height;
-                                    Config.Polygon4X = rect.X;
-                                    Config.Polygon4Y = rect.Y + rect.Height;
-                                }
-                            }
-                            List<Point> pts_src = new();
-                            pts_src.Add(Config.Polygon1);
-                            pts_src.Add(Config.Polygon2);
-                            pts_src.Add(Config.Polygon3);
-                            pts_src.Add(Config.Polygon4);
+                        double dpiX = ImageContext.Config.GetProperties<double>(ImageViewPropertyKeys.DpiX);
+                        double dpiY = ImageContext.Config.GetProperties<double>(ImageViewPropertyKeys.DpiY);
+                        Point[] corners = detectionResult.Corners
+                            .Select(corner => LuminousAreaDetector.ConvertPixelToDip(corner, dpiX, dpiY))
+                            .Select(corner => new Point(corner.X, corner.Y))
+                            .ToArray();
+                        Config.Polygon1X = (int)Math.Round(corners[0].X);
+                        Config.Polygon1Y = (int)Math.Round(corners[0].Y);
+                        Config.Polygon2X = (int)Math.Round(corners[1].X);
+                        Config.Polygon2Y = (int)Math.Round(corners[1].Y);
+                        Config.Polygon3X = (int)Math.Round(corners[2].X);
+                        Config.Polygon3Y = (int)Math.Round(corners[2].Y);
+                        Config.Polygon4X = (int)Math.Round(corners[3].X);
+                        Config.Polygon4Y = (int)Math.Round(corners[3].Y);
 
-                            List<Point> result1 = Helpers.SortPolyPoints(pts_src);
-                            ImageShow.RemoveVisualCommand(Polygon);
-                            Polygon = new DVDatumPolygon() { IsComple = true };
-                            Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / DrawContext.Zoombox.ContentMatrix.M11);
-                            Polygon.Attribute.Brush = Brushes.Transparent;
-                            Polygon.Attribute.Points.Add(result1[0]);
-                            Polygon.Attribute.Points.Add(result1[1]);
-                            Polygon.Attribute.Points.Add(result1[2]);
-                            Polygon.Attribute.Points.Add(result1[3]);
-                            Polygon.Render();
-                            ImageShow.AddVisualCommand(Polygon);
-                        });
-                    }
-                    else
-                    {
-                        Console.WriteLine("Error occurred, code: " + length);
-                    }
+                        ImageShow.RemoveVisualCommand(Polygon);
+                        Polygon = new DVDatumPolygon() { IsComple = true };
+                        Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / DrawContext.Zoombox.ContentMatrix.M11);
+                        Polygon.Attribute.Brush = Brushes.Transparent;
+                        foreach (Point corner in corners)
+                        {
+                            Polygon.Attribute.Points.Add(corner);
+                        }
+                        Polygon.Render();
+                        ImageShow.AddVisualCommand(Polygon);
+                        string warningMessage = LuminousAreaDetector.GetWarningMessage(detectionResult);
+                        if (!string.IsNullOrEmpty(warningMessage))
+                        {
+                            MessageBox.Show(this, warningMessage, "发光区定位（需复核）", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        }
+                    });
                 });
+            }
+            else
+            {
+                MessageBox.Show(this, "请先加载实际图像", "ColorVision");
             }
         }
 

@@ -203,33 +203,46 @@ namespace ColorVision.ImageEditor.Draw
         public DVBrushStroke()
         {
             Attribute = new BrushStrokeProperties();
-            Attribute.PropertyChanged += (s, e) => Render();
+            Attribute.PropertyChanged += Attribute_PropertyChanged;
         }
 
         public DVBrushStroke(BrushStrokeProperties attribute)
         {
             Attribute = attribute;
             Attribute.Points ??= new List<Point>();
-            Attribute.PropertyChanged += (s, e) => Render();
+            Attribute.PropertyChanged += Attribute_PropertyChanged;
+        }
+
+        private void Attribute_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(BrushStrokeProperties.ScreenThickness))
+            {
+                Render();
+            }
         }
 
         public void ApplyLayoutScale(DrawingVisualScaleContext context)
         {
-            Pen pen = Pen;
-            if (pen.IsFrozen)
-            {
-                pen = pen.Clone();
-                Pen = pen;
-            }
-
             double scale = context.Scale;
-            if (double.IsNaN(scale) || double.IsInfinity(scale) || scale <= 0)
+            if (!double.IsFinite(scale) || scale <= 0)
             {
                 scale = 1;
             }
 
             double targetThickness = Attribute.ScreenThickness * scale;
-            if (pen.Thickness != targetThickness)
+            Pen pen = Pen;
+            if (pen.Thickness == targetThickness)
+            {
+                return;
+            }
+
+            if (pen.IsFrozen)
+            {
+                pen = pen.Clone();
+                pen.Thickness = targetThickness;
+                Pen = pen;
+            }
+            else
             {
                 pen.Thickness = targetThickness;
                 Render();
@@ -252,15 +265,43 @@ namespace ColorVision.ImageEditor.Draw
                 return;
             }
 
-            Pen drawPen = Pen;
+            Pen drawPen = PrepareDrawPen(Pen);
+
+            StreamGeometry geometry = new();
+            using (StreamGeometryContext geometryContext = geometry.Open())
+            {
+                geometryContext.BeginFigure(Points[0], isFilled: false, isClosed: false);
+                for (int i = 1; i < Points.Count; i++)
+                {
+                    geometryContext.LineTo(Points[i], isStroked: true, isSmoothJoin: true);
+                }
+            }
+
+            if (geometry.CanFreeze)
+            {
+                geometry.Freeze();
+            }
+
+            dc.DrawGeometry(null, drawPen, geometry);
+        }
+
+        private static Pen PrepareDrawPen(Pen pen)
+        {
+            if (pen.StartLineCap == PenLineCap.Round && pen.EndLineCap == PenLineCap.Round && pen.LineJoin == PenLineJoin.Round)
+            {
+                return pen;
+            }
+
+            Pen drawPen = pen.CloneCurrentValue();
             drawPen.StartLineCap = PenLineCap.Round;
             drawPen.EndLineCap = PenLineCap.Round;
             drawPen.LineJoin = PenLineJoin.Round;
-
-            for (int i = 1; i < Points.Count; i++)
+            if (drawPen.CanFreeze)
             {
-                dc.DrawLine(drawPen, Points[i - 1], Points[i]);
+                drawPen.Freeze();
             }
+
+            return drawPen;
         }
 
         public override Rect GetRect()
@@ -353,6 +394,7 @@ namespace ColorVision.ImageEditor.Draw
     public class BrushManager : DragDrawingToolBase
     {
         private DVBrushStroke? _currentStroke;
+        private bool _previewRenderPending;
 
         public BrushManagerConfig Config { get; } = new BrushManagerConfig();
 
@@ -392,9 +434,10 @@ namespace ColorVision.ImageEditor.Draw
 
         protected override void OnDeactivated()
         {
+            CancelPreviewRender();
             if (_currentStroke != null && DrawCanvas.ContainsVisual(_currentStroke))
             {
-                DrawCanvas.RemoveVisual(_currentStroke);
+                DrawCanvas.RemoveOverlayVisual(_currentStroke);
             }
 
             _currentStroke = null;
@@ -408,7 +451,7 @@ namespace ColorVision.ImageEditor.Draw
             {
                 Id = GetNextDrawingVisualId(),
                 ScreenThickness = Config.StrokeThickness,
-                Pen = new Pen(CreateDisplayBrush(), Config.StrokeThickness / Math.Max(Zoombox.ContentMatrix.M11, 0.0001))
+                Pen = new Pen(CreateDisplayBrush(), Config.StrokeThickness / GetSafeZoomRatio())
                 {
                     StartLineCap = PenLineCap.Round,
                     EndLineCap = PenLineCap.Round,
@@ -419,34 +462,39 @@ namespace ColorVision.ImageEditor.Draw
 
             _currentStroke = new DVBrushStroke(properties);
             _currentStroke.Render();
-            DrawCanvas.AddVisual(_currentStroke);
+            DrawCanvas.AddOverlayVisual(_currentStroke);
             e.Handled = true;
         }
 
         protected override void OnUpdateDraw(Point currentPoint, MouseEventArgs e)
         {
-            if (_currentStroke == null)
+            if (_currentStroke == null || !DrawCanvas.ContainsVisual(_currentStroke))
             {
+                CancelPreviewRender();
+                _currentStroke = null;
                 return;
             }
 
-            double minSpacing = Config.SampleSpacing / Math.Max(Zoombox.ContentMatrix.M11, 0.0001);
+            double minSpacing = Config.SampleSpacing / GetSafeZoomRatio();
             Point lastPoint = _currentStroke.Points[^1];
+            Vector delta = currentPoint - lastPoint;
 
-            if ((currentPoint - lastPoint).Length < minSpacing)
+            if (delta.X * delta.X + delta.Y * delta.Y < minSpacing * minSpacing)
             {
                 return;
             }
 
             _currentStroke.Points.Add(currentPoint);
-            _currentStroke.Render();
+            RequestPreviewRender();
             e.Handled = true;
         }
 
         protected override void OnEndDraw(Point endPoint, MouseButtonEventArgs e)
         {
-            if (_currentStroke == null)
+            CancelPreviewRender();
+            if (_currentStroke == null || !DrawCanvas.ContainsVisual(_currentStroke))
             {
+                _currentStroke = null;
                 return;
             }
 
@@ -459,7 +507,7 @@ namespace ColorVision.ImageEditor.Draw
             {
                 if (DrawCanvas.ContainsVisual(_currentStroke))
                 {
-                    DrawCanvas.RemoveVisual(_currentStroke);
+                    DrawCanvas.RemoveOverlayVisual(_currentStroke);
                 }
 
                 _currentStroke = null;
@@ -467,16 +515,65 @@ namespace ColorVision.ImageEditor.Draw
                 return;
             }
 
-            if (DrawCanvas.ContainsVisual(_currentStroke))
+            DVBrushStroke completedStroke = _currentStroke;
+            if (DrawCanvas.ContainsVisual(completedStroke))
             {
-                DrawCanvas.RemoveVisual(_currentStroke);
+                DrawCanvas.RemoveOverlayVisual(completedStroke);
             }
 
-            _currentStroke.Render();
-            DrawCanvas.AddVisualCommand(_currentStroke);
-            SelectVisual(_currentStroke);
+            bool requireActiveTool = IsChecked;
             _currentStroke = null;
+            completedStroke.Render();
+            ActionCommand? creationCommand = DrawCanvas.AddVisualCommandCore(completedStroke);
+            if (creationCommand == null || (requireActiveTool && !IsChecked) || !DrawCanvas.ContainsVisual(completedStroke))
+            {
+                if (DrawCanvas.ContainsVisual(completedStroke))
+                    DrawCanvas.RemoveVisual(completedStroke);
+                if (creationCommand != null)
+                    DrawCanvas.DiscardActionCommand(creationCommand);
+                e.Handled = true;
+                return;
+            }
+
+            SelectVisual(completedStroke);
             e.Handled = true;
+        }
+
+        private double GetSafeZoomRatio()
+        {
+            double zoomRatio = Zoombox.ContentMatrix.M11;
+            return double.IsFinite(zoomRatio) && zoomRatio > 0 ? zoomRatio : 1;
+        }
+
+        private void RequestPreviewRender()
+        {
+            if (_previewRenderPending)
+            {
+                return;
+            }
+
+            _previewRenderPending = true;
+            CompositionTarget.Rendering += RenderPreviewOnNextFrame;
+        }
+
+        private void RenderPreviewOnNextFrame(object? sender, EventArgs e)
+        {
+            CancelPreviewRender();
+            if (_currentStroke != null && DrawCanvas.ContainsVisual(_currentStroke))
+            {
+                _currentStroke.Render();
+            }
+        }
+
+        private void CancelPreviewRender()
+        {
+            if (!_previewRenderPending)
+            {
+                return;
+            }
+
+            CompositionTarget.Rendering -= RenderPreviewOnNextFrame;
+            _previewRenderPending = false;
         }
     }
 }

@@ -47,9 +47,16 @@ namespace ColorVision.ImageEditor.Draw.Annotations
             if (item is not CircleAnnotationItem circleItem)
                 throw new NotSupportedException($"Unsupported circle annotation type: {item.GetType().FullName}");
 
-            return circleItem.TextStyle != null
-                ? new DVCircleText((CircleTextProperties)ToProperties(circleItem))
-                : new DVCircle((CircleProperties)ToProperties(circleItem));
+            if (circleItem.TextStyle == null)
+                return new DVCircle((CircleProperties)ToProperties(circleItem));
+
+            CircleTextProperties properties = (CircleTextProperties)ToProperties(circleItem);
+            DVCircleText visual = new(properties);
+
+            // The legacy constructor only overwrites FontSize; the remaining style is already on properties.
+            if (circleItem.TextStyle.FontSize > 0)
+                visual.TextAttribute.FontSize = circleItem.TextStyle.FontSize;
+            return visual;
         }
 
         private static CircleAnnotationItem ToCircleItem(CircleProperties properties)

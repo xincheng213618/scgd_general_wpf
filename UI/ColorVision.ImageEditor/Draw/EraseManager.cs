@@ -1,5 +1,7 @@
 ﻿#pragma warning disable CS0414,CS8625
+using ColorVision.Common.MVVM;
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -8,6 +10,15 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class EraseManager : RegionOperationToolBase
     {
+        private static readonly SolidColorBrush SelectionFill = new(Color.FromArgb(0x77, 0xF3, 0xF3, 0xF3));
+        private static readonly Pen SelectionBorder = new(Brushes.Blue, 1);
+
+        static EraseManager()
+        {
+            SelectionFill.Freeze();
+            SelectionBorder.Freeze();
+        }
+
         public EraseManager(DrawEditorContext context) : base(context)
         {
             Order = 2;
@@ -25,8 +36,6 @@ namespace ColorVision.ImageEditor.Draw
         {
             EraseVisual = new DrawingVisual();
             DrawCanvas.MouseMove += MouseMove;
-            DrawCanvas.MouseEnter += MouseEnter;
-            DrawCanvas.MouseLeave += MouseLeave;
             DrawCanvas.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp += Image_PreviewMouseUp;
         }
@@ -34,10 +43,12 @@ namespace ColorVision.ImageEditor.Draw
         protected override void UnLoadCore()
         {
             DrawCanvas.MouseMove -= MouseMove;
-            DrawCanvas.MouseEnter -= MouseEnter;
-            DrawCanvas.MouseLeave -= MouseLeave;
             DrawCanvas.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp -= Image_PreviewMouseUp;
+            if (IsMouseDown)
+                DrawCanvas.ReleaseMouseCapture();
+            DrawCanvas.RemoveOverlayVisual(EraseVisual);
+            IsMouseDown = false;
             EraseVisual = null;
         }
 
@@ -48,84 +59,108 @@ namespace ColorVision.ImageEditor.Draw
         public void DrawSelectRect(Rect rect)
         {
             using DrawingContext dc = EraseVisual.RenderOpen();
-            dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
+            dc.DrawRectangle(SelectionFill, SelectionBorder, rect);
         }
         private void PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             DrawCanvas.CaptureMouse();
-            MouseDownP = e.GetPosition(DrawCanvas);
-            IsMouseDown = true;
-
-
-            using DrawingContext dc = EraseVisual.RenderOpen();
-            dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), new Rect(MouseDownP, MouseDownP));
-            DrawCanvas.AddVisualCommand(EraseVisual);
-
-            EditorContext.SelectionVisual.ClearRender();
+            BeginErase(e.GetPosition(DrawCanvas));
             e.Handled = true;
         }
 
 
         private void Image_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (!IsMouseDown || e.ChangedButton != MouseButton.Left)
+                return;
+
             DrawCanvas.ReleaseMouseCapture();
-            MouseUpP = e.GetPosition(DrawCanvas);
-
-            IsMouseDown = false;
-
-            RemoveVisualIfAllowed(DrawCanvas.GetVisual<Visual>(MouseDownP));
-            RemoveVisualIfAllowed(DrawCanvas.GetVisual<Visual>(MouseUpP));
-
-            foreach (var item in DrawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP))))
-            {
-                RemoveVisualIfAllowed(item);
-            }
-            DrawCanvas.RemoveVisualCommand(EraseVisual);
+            CompleteErase(e.GetPosition(DrawCanvas));
             e.Handled = true;
         }
 
-        private void RemoveVisualIfAllowed(Visual? visual)
+        private void BeginErase(Point point)
         {
-            if (visual == null || ReferenceEquals(visual, EraseVisual))
-            {
-                return;
-            }
-
-            if (CanEraseVisual?.Invoke(visual) == false)
-            {
-                return;
-            }
-
-            DrawCanvas.RemoveVisualCommand(visual);
+            MouseDownP = point;
+            IsMouseDown = true;
+            DrawSelectRect(new Rect(point, point));
+            DrawCanvas.AddOverlayVisual(EraseVisual);
+            EditorContext.SelectionVisual.ClearRender();
         }
 
+        private void CompleteErase(Point point)
+        {
+            MouseUpP = point;
+            IsMouseDown = false;
+
+            // The marquee is transient UI. Removing it before hit testing also keeps it
+            // from obscuring the visual under either endpoint.
+            DrawCanvas.RemoveOverlayVisual(EraseVisual);
+
+            HashSet<Visual> eraseCandidates = new();
+            AddEraseCandidate(eraseCandidates, DrawCanvas.GetVisual<Visual>(MouseDownP));
+            AddEraseCandidate(eraseCandidates, DrawCanvas.GetVisual<Visual>(MouseUpP));
+            foreach (DrawingVisual visual in DrawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP))))
+                AddEraseCandidate(eraseCandidates, visual);
+
+            RemoveVisualsAsSingleCommand(eraseCandidates);
+        }
+
+        private void AddEraseCandidate(HashSet<Visual> candidates, Visual? visual)
+        {
+            if (visual == null || ReferenceEquals(visual, EraseVisual) || candidates.Contains(visual))
+                return;
+
+            if (CanEraseVisual?.Invoke(visual) == false)
+                return;
+
+            candidates.Add(visual);
+        }
+
+        private void RemoveVisualsAsSingleCommand(HashSet<Visual> candidates)
+        {
+            List<(Visual Visual, int Index)> targets = new(candidates.Count);
+            for (int index = 0; index < DrawCanvas.Visuals.Count; index++)
+            {
+                Visual visual = DrawCanvas.Visuals[index];
+                if (candidates.Contains(visual))
+                    targets.Add((visual, index));
+            }
+            if (targets.Count == 0)
+                return;
+
+            foreach ((Visual visual, _) in targets)
+                DrawCanvas.RemoveVisual(visual);
+
+            DrawCanvas.AddActionCommand(new ActionCommand(
+                () =>
+                {
+                    foreach ((Visual visual, int index) in targets)
+                        DrawCanvas.InsertVisual(index, visual);
+                },
+                () =>
+                {
+                    foreach ((Visual visual, _) in targets)
+                        DrawCanvas.RemoveVisual(visual);
+                })
+            {
+                Header = "移除",
+            });
+        }
 
 
         private void MouseMove(object sender, MouseEventArgs e)
         {
-            if (IsMouseDown)
-            {
-                if (EraseVisual != null)
-                {
-                    var point = e.GetPosition(DrawCanvas);
+            if (!IsMouseDown)
+                return;
 
-                    using DrawingContext dc = EraseVisual.RenderOpen();
-                    dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), new Rect(MouseDownP, point));
-                }
+            if (EraseVisual != null)
+            {
+                var point = e.GetPosition(DrawCanvas);
+                DrawSelectRect(new Rect(MouseDownP, point));
             }
             e.Handled = true;
         }
-
-        private void MouseEnter(object sender, MouseEventArgs e)
-        {
-
-        }
-
-        private void MouseLeave(object sender, MouseEventArgs e)
-        {
-        }
-
-
 
     }
 }

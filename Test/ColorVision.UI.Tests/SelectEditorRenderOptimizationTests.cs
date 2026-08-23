@@ -1,10 +1,13 @@
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
 
@@ -37,6 +40,24 @@ public class SelectEditorRenderOptimizationTests
     }
 
     [Fact]
+    public void SelectionRenderFallsBackWhenZoomMatrixIsNotReady()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new();
+            Zoombox zoombox = new() { ContentMatrix = new Matrix(0, 0, 0, 0, 0, 0) };
+            SelectEditorVisual editor = new(new DrawEditorContext(canvas, zoombox));
+            TestSelectVisual selected = new(new Rect(30, 50, 100, 80));
+            editor.SelectVisuals.Add(selected);
+
+            editor.Render();
+
+            Assert.True(editor.GetContainingRect(new Point(30, 50)));
+            editor.Dispose();
+        });
+    }
+
+    [Fact]
     public void LargeSelectionsUseSingleUnionHandle()
     {
         WpfTestHost.Invoke(() =>
@@ -58,6 +79,135 @@ public class SelectEditorRenderOptimizationTests
             editor.Render();
             Assert.True(editor.GetContainingRect(new Point(40, 40)));
             Assert.Null(editor.ISelectVisual);
+            Assert.Equal(Cursors.SizeAll, zoombox.Cursor);
+            editor.Dispose();
+        });
+    }
+
+    [Fact]
+    public void LayoutUpdatesReuseOneTimerAndIgnoreEmptySelections()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new();
+            Zoombox zoombox = new() { ContentMatrix = Matrix.Identity };
+            SelectEditorVisual editor = new(new DrawEditorContext(canvas, zoombox));
+            FieldInfo timerField = typeof(SelectEditorVisual).GetField("_layoutRenderTimer", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            MethodInfo layoutUpdated = typeof(SelectEditorVisual).GetMethod("ZoomboxSub_LayoutUpdated", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            DispatcherTimer timer = Assert.IsType<DispatcherTimer>(timerField.GetValue(editor));
+
+            editor.SetRenders(Array.Empty<TestSelectVisual>());
+            layoutUpdated.Invoke(editor, [zoombox, EventArgs.Empty]);
+            Assert.False(timer.IsEnabled);
+
+            editor.SetRender(new TestSelectVisual(new Rect(20, 20, 40, 30)));
+            layoutUpdated.Invoke(editor, [zoombox, EventArgs.Empty]);
+            layoutUpdated.Invoke(editor, [zoombox, EventArgs.Empty]);
+            Assert.True(timer.IsEnabled);
+            Assert.Same(timer, timerField.GetValue(editor));
+
+            editor.ClearRender();
+            Assert.False(timer.IsEnabled);
+            editor.Dispose();
+        });
+    }
+
+    [Fact]
+    public void SelectionRenderQueriesLongBrushBoundsOnce()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new();
+            Zoombox zoombox = new() { ContentMatrix = Matrix.Identity };
+            SelectEditorVisual editor = new(new DrawEditorContext(canvas, zoombox));
+            BrushStrokeProperties properties = new() { Pen = new Pen(Brushes.Red, 4) };
+            for (int index = 0; index < 20_000; index++)
+            {
+                properties.Points.Add(new Point(index * 0.25, 40 + index % 7));
+            }
+            CountingBoundsBrushStroke stroke = new(properties);
+            editor.SelectVisuals.Add(stroke);
+
+            editor.Render();
+
+            Assert.Equal(1, stroke.GetRectCallCount);
+            editor.Dispose();
+        });
+    }
+
+    [Fact]
+    public void ClearingSelectionReleasesCachedHandleTargets()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new();
+            Zoombox zoombox = new() { ContentMatrix = Matrix.Identity };
+            SelectEditorVisual editor = new(new DrawEditorContext(canvas, zoombox));
+            TestSelectVisual selected = new(new Rect(30, 50, 100, 80));
+            editor.SetRender(selected);
+
+            Assert.True(editor.GetContainingRect(new Point(27, 47)));
+            Assert.Same(selected, editor.ISelectVisual);
+
+            editor.ClearRender();
+
+            Assert.False(editor.GetContainingRect(new Point(27, 47)));
+            Assert.Null(editor.ISelectVisual);
+            editor.Dispose();
+        });
+    }
+
+    [Fact]
+    public void RenderingDuringResizeKeepsTheInteractionTargetUntilSelectionIsCleared()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new();
+            Zoombox zoombox = new() { ContentMatrix = Matrix.Identity };
+            SelectEditorVisual editor = new(new DrawEditorContext(canvas, zoombox));
+            TestSelectVisual selected = new(new Rect(30, 50, 100, 80));
+            editor.SetRender(selected);
+
+            Assert.True(editor.GetContainingRect(new Point(130, 130)));
+            Assert.Same(selected, editor.ISelectVisual);
+            FieldInfo mouseDownField = typeof(SelectEditorVisual).GetField("IsMouseDown", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            mouseDownField.SetValue(editor, true);
+
+            selected.SetRect(new Rect(30, 50, 120, 100));
+            editor.Render();
+            Assert.Same(selected, editor.ISelectVisual);
+
+            selected.SetRect(new Rect(30, 50, 140, 120));
+            editor.Render();
+            Assert.Same(selected, editor.ISelectVisual);
+
+            editor.ClearRender();
+            Assert.Null(editor.ISelectVisual);
+            editor.Dispose();
+        });
+    }
+
+    [Fact]
+    public void UndoingASelectedVisualClearsSelectionState()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new();
+            Zoombox zoombox = new() { ContentMatrix = Matrix.Identity };
+            SelectEditorVisual editor = new(new DrawEditorContext(canvas, zoombox));
+            TestSelectVisual selected = new(new Rect(30, 50, 100, 80));
+            canvas.AddVisualCommand(selected);
+            editor.SetRender(selected);
+
+            Assert.Single(editor.SelectVisuals);
+            Assert.True(editor.GetContainingRect(new Point(30, 50)));
+
+            canvas.Undo();
+
+            Assert.False(canvas.ContainsVisual(selected));
+            Assert.Empty(editor.SelectVisuals);
+            Assert.Null(editor.ISelectVisual);
+            Assert.False(editor.GetContainingRect(new Point(30, 50)));
             editor.Dispose();
         });
     }
@@ -75,6 +225,31 @@ public class SelectEditorRenderOptimizationTests
             Assert.Empty(canvas.Visuals);
             GC.KeepAlive(canvas);
             GC.KeepAlive(zoombox);
+        });
+    }
+
+    [Fact]
+    public void DisposingDuringMarqueeRemovesTransientVisualAndReleasesInteractionState()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new();
+            Zoombox zoombox = new() { ContentMatrix = Matrix.Identity };
+            SelectEditorVisual editor = new(new DrawEditorContext(canvas, zoombox));
+            FieldInfo selectionRectField = typeof(SelectEditorVisual).GetField("SelectRect", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            FieldInfo mouseDownField = typeof(SelectEditorVisual).GetField("IsMouseDown", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            DrawingVisual selectionRect = Assert.IsType<DrawingVisual>(selectionRectField.GetValue(editor));
+            canvas.AddVisual(selectionRect);
+            mouseDownField.SetValue(editor, true);
+            canvas.CaptureMouse();
+
+            editor.Dispose();
+
+            Assert.False(canvas.ContainsVisual(selectionRect));
+            Assert.False(Assert.IsType<bool>(mouseDownField.GetValue(editor)));
+            Assert.False(canvas.IsMouseCaptured);
+            Assert.Empty(canvas.Visuals);
+            canvas.Dispose();
         });
     }
 
@@ -268,5 +443,21 @@ public class SelectEditorRenderOptimizationTests
         public Rect GetRect() => rect;
 
         public void SetRect(Rect value) => rect = value;
+    }
+
+    private sealed class CountingBoundsBrushStroke : DVBrushStroke
+    {
+        public CountingBoundsBrushStroke(BrushStrokeProperties properties)
+            : base(properties)
+        {
+        }
+
+        public int GetRectCallCount { get; private set; }
+
+        public override Rect GetRect()
+        {
+            GetRectCallCount++;
+            return base.GetRect();
+        }
     }
 }

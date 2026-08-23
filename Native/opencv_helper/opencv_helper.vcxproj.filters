@@ -34,6 +34,9 @@
     <Filter Include="算法\Calibration">
       <UniqueIdentifier>{54e2196b-0adb-4a30-bad4-61d6cc148b13}</UniqueIdentifier>
     </Filter>
+    <Filter Include="算法\LuminousArea">
+      <UniqueIdentifier>{0d144be4-fdc0-437f-8915-c052e16648db}</UniqueIdentifier>
+    </Filter>
     <Filter Include="导出">
       <UniqueIdentifier>{a1b2c3d4-1234-5678-9abc-def012345678}</UniqueIdentifier>
     </Filter>
@@ -94,6 +97,9 @@
     <ClInclude Include="algorithm\calibration\calibration_geometric.h">
       <Filter>算法\Calibration</Filter>
     </ClInclude>
+    <ClInclude Include="algorithm\luminous_area\luminous_area_v2.h">
+      <Filter>算法\LuminousArea</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -148,6 +154,9 @@
       <Filter>算法\Calibration</Filter>
     </ClCompile>
     <ClCompile Include="algorithm\poi\poi_batch.cpp" />
+    <ClCompile Include="algorithm\luminous_area\luminous_area_v2.cpp">
+      <Filter>算法\LuminousArea</Filter>
+    </ClCompile>
     <ClCompile Include="exports\poi_export.cpp" />
     <ClCompile Include="exports\calibration_export.cpp">
       <Filter>导出</Filter>
