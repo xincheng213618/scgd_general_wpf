@@ -47,7 +47,7 @@ namespace ColorVision.ImageEditor.Draw
 
             if (Points.Count >= 2)
             {
-                Pen pen = new(Attribute.Pen.Brush, Attribute.Pen.Thickness);
+                Pen pen = Attribute.Pen;
                 for (int i = 1; i < Points.Count; i++)
                     dc.DrawLine(pen, Points[i - 1], Points[i]);
             }

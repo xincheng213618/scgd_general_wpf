@@ -357,6 +357,29 @@ public sealed class DrawMarkerToolTests
     }
 
     [Fact]
+    public void BrushConfigurationSerializationPreservesEffectiveOpacity()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            BrushManagerConfig source = new()
+            {
+                StrokeBrush = new SolidColorBrush(Colors.Red) { Opacity = 0.35 },
+            };
+            BrushManagerConfig restored = new()
+            {
+                SerializedStrokeBrush = source.SerializedStrokeBrush,
+            };
+
+            SolidColorBrush restoredBrush = Assert.IsType<SolidColorBrush>(restored.StrokeBrush);
+            Assert.Equal((byte)89, restoredBrush.Color.A);
+            Assert.Equal(Colors.Red.R, restoredBrush.Color.R);
+            Assert.Equal(Colors.Red.G, restoredBrush.Color.G);
+            Assert.Equal(Colors.Red.B, restoredBrush.Color.B);
+            Assert.Equal(1, restoredBrush.Opacity);
+        });
+    }
+
+    [Fact]
     public void BrushStrokeDoesNotMutateOrRejectAFrozenPen()
     {
         WpfTestHost.Invoke(() =>
@@ -707,8 +730,13 @@ public sealed class DrawMarkerToolTests
             Assert.True(arrow.Points[3].Y < 20);
 
             AnnotationItem item = Assert.IsType<LineAnnotationItem>(AnnotationMapper.ToItem(arrow));
-            DVLine restored = Assert.IsType<DVLine>(AnnotationMapper.ToVisual(item));
+            AnnotationDocument document = new();
+            document.Items.Add(item);
+            AnnotationDocument restoredDocument = AnnotationMapper.Deserialize(AnnotationMapper.Serialize(document));
+            DVLine restored = Assert.IsType<DVLine>(AnnotationMapper.ToVisual(Assert.Single(restoredDocument.Items)));
             Assert.Equal(arrow.Points, restored.Points);
+            Assert.Equal(arrow.Pen.Thickness, restored.Pen.Thickness);
+            Assert.Equal(arrow.Pen.Brush.ToString(), restored.Pen.Brush.ToString());
 
             drawCanvas.Dispose();
         });

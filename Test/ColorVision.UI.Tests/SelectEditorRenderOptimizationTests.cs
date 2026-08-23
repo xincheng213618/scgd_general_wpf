@@ -254,6 +254,33 @@ public class SelectEditorRenderOptimizationTests
     }
 
     [Fact]
+    public void InactiveSelectionDoesNotConsumeKeyboardInput()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new();
+            Zoombox zoombox = new() { ContentMatrix = Matrix.Identity };
+            DrawEditorContext context = new(canvas, zoombox) { IsImageEditMode = true };
+            SelectEditorVisual editor = new(context);
+            MethodInfo previewKeyDown = typeof(SelectEditorVisual).GetMethod("PreviewKeyDown", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            TestPresentationSource inputSource = new();
+
+            KeyEventArgs noSelectionArgs = new(Keyboard.PrimaryDevice, inputSource, Environment.TickCount, Key.A);
+            previewKeyDown.Invoke(editor, [canvas, noSelectionArgs]);
+            Assert.False(noSelectionArgs.Handled);
+
+            editor.SetRender(new TestSelectVisual(new Rect(20, 20, 30, 30)));
+            context.IsImageEditMode = false;
+            KeyEventArgs inactiveModeArgs = new(Keyboard.PrimaryDevice, inputSource, Environment.TickCount, Key.A);
+            previewKeyDown.Invoke(editor, [canvas, inactiveModeArgs]);
+            Assert.False(inactiveModeArgs.Handled);
+
+            editor.Dispose();
+            canvas.Dispose();
+        });
+    }
+
+    [Fact]
     public void LineRenderMatchesLegacyPerSegmentPens()
     {
         WpfTestHost.Invoke(() =>
@@ -266,6 +293,76 @@ public class SelectEditorRenderOptimizationTests
             DrawingVisual expected = RenderLegacyLine(points, sourcePen);
 
             AssertVisualPixelsEqual(expected, actual, 280, 150);
+        });
+    }
+
+    [Fact]
+    public void LineRenderPreservesConfiguredPenStyle()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            Pen sourcePen = new(Brushes.CornflowerBlue, 3)
+            {
+                DashStyle = DashStyles.Dash,
+                DashCap = PenLineCap.Round,
+                StartLineCap = PenLineCap.Square,
+                EndLineCap = PenLineCap.Triangle,
+                LineJoin = PenLineJoin.Bevel,
+            };
+            DVLine line = new(new LineProperties
+            {
+                Points = [new Point(20, 20), new Point(80, 40), new Point(140, 20)],
+                Pen = sourcePen,
+            });
+
+            line.Render();
+
+            DrawingGroup drawing = Assert.IsType<DrawingGroup>(line.Drawing);
+            Assert.Equal(2, drawing.Children.Count);
+            foreach (GeometryDrawing segment in drawing.Children.Cast<GeometryDrawing>())
+            {
+                Pen renderedPen = Assert.IsType<Pen>(segment.Pen);
+                Assert.Equal(sourcePen.DashCap, renderedPen.DashCap);
+                Assert.Equal(sourcePen.StartLineCap, renderedPen.StartLineCap);
+                Assert.Equal(sourcePen.EndLineCap, renderedPen.EndLineCap);
+                Assert.Equal(sourcePen.LineJoin, renderedPen.LineJoin);
+                Assert.Equal(sourcePen.DashStyle.Dashes, renderedPen.DashStyle.Dashes);
+            }
+        });
+    }
+
+    [Fact]
+    public void LineLayoutScaleClonesFrozenPenWithoutLosingStyle()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            Pen frozenPen = new(Brushes.CornflowerBlue, 3)
+            {
+                DashStyle = DashStyles.Dot,
+                DashCap = PenLineCap.Round,
+                StartLineCap = PenLineCap.Square,
+                EndLineCap = PenLineCap.Triangle,
+                LineJoin = PenLineJoin.Bevel,
+            };
+            frozenPen.Freeze();
+            DVLine line = new(new LineProperties
+            {
+                Points = [new Point(20, 20), new Point(140, 40)],
+                Pen = frozenPen,
+            });
+
+            line.Render();
+            line.ApplyLayoutScale(new DrawingVisualScaleContext(true, 5, 0));
+
+            Assert.True(frozenPen.IsFrozen);
+            Assert.Equal(3, frozenPen.Thickness);
+            Assert.NotSame(frozenPen, line.Pen);
+            Assert.Equal(5, line.Pen.Thickness);
+            Assert.Equal(frozenPen.DashCap, line.Pen.DashCap);
+            Assert.Equal(frozenPen.StartLineCap, line.Pen.StartLineCap);
+            Assert.Equal(frozenPen.EndLineCap, line.Pen.EndLineCap);
+            Assert.Equal(frozenPen.LineJoin, line.Pen.LineJoin);
+            Assert.Equal(frozenPen.DashStyle.Dashes, line.Pen.DashStyle.Dashes);
         });
     }
 
@@ -443,6 +540,15 @@ public class SelectEditorRenderOptimizationTests
         public Rect GetRect() => rect;
 
         public void SetRect(Rect value) => rect = value;
+    }
+
+    private sealed class TestPresentationSource : PresentationSource
+    {
+        public override Visual RootVisual { get; set; } = new DrawingVisual();
+
+        public override bool IsDisposed => false;
+
+        protected override CompositionTarget GetCompositionTargetCore() => null!;
     }
 
     private sealed class CountingBoundsBrushStroke : DVBrushStroke

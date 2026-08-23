@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 
@@ -12,7 +13,17 @@ namespace ColorVision.ImageEditor.Draw
 
         public static string SerializeBrush(Brush brush)
         {
-            return brush == null ? string.Empty : BrushConverter.ConvertToInvariantString(brush) ?? brush.ToString();
+            if (brush == null)
+                return string.Empty;
+
+            if (brush is SolidColorBrush solidColorBrush && solidColorBrush.Opacity < 1)
+            {
+                Color color = solidColorBrush.Color;
+                byte effectiveAlpha = (byte)Math.Round(color.A * Math.Clamp(solidColorBrush.Opacity, 0, 1), MidpointRounding.AwayFromZero);
+                return Color.FromArgb(effectiveAlpha, color.R, color.G, color.B).ToString(CultureInfo.InvariantCulture);
+            }
+
+            return BrushConverter.ConvertToInvariantString(brush) ?? brush.ToString();
         }
 
         public static Brush DeserializeBrush(string value, Brush fallback)

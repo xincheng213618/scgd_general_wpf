@@ -550,9 +550,8 @@ namespace ColorVision.ImageEditor.Draw
 
         private void PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (SelectVisuals.Count == 0 || !EditorContext.IsImageEditMode )
+            if (SelectVisuals.Count == 0 || !EditorContext.IsImageEditMode)
             {
-                e.Handled = true;
                 return;
             }
             Key realKey = e.Key;
@@ -633,17 +632,18 @@ namespace ColorVision.ImageEditor.Draw
             if (!EditorContext.IsImageEditMode || EditorContext.DrawEditorManager.Current !=null)
                 return;
 
-            DrawCanvas.CaptureMouse();
-            MouseDownP = e.GetPosition(DrawCanvas);
-            LastMouseMove = MouseDownP;
-            IsMouseDown = true;
-
+            Point mousePosition = e.GetPosition(DrawCanvas);
             if (e.ClickCount == 2)
             {
-                HandleDoubleClick(MouseDownP);
+                HandleDoubleClick(mousePosition);
                 e.Handled = true;
                 return;
             }
+
+            DrawCanvas.CaptureMouse();
+            MouseDownP = mousePosition;
+            LastMouseMove = MouseDownP;
+            IsMouseDown = true;
 
             var MouseVisual = DrawCanvas.GetVisual<Visual>(MouseDownP);
             if (MouseVisual == this)

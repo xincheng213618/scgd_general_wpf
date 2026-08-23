@@ -233,6 +233,47 @@ public sealed class DrawTextRegressionTests
     }
 
     [Fact]
+    public void DoubleClickingTextDoesNotLeaveSelectionGestureActive()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            TextProperties properties = CreateProperties();
+            DVText text = new(properties);
+            TextEditFixture fixture = new(text);
+
+            try
+            {
+                SelectEditorVisual selection = fixture.Context.SelectionVisual;
+                selection.EditorContext.IsImageEditMode = true;
+                MouseButtonEventArgs args = new(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left)
+                {
+                    RoutedEvent = Mouse.PreviewMouseDownEvent,
+                };
+                typeof(MouseButtonEventArgs).GetProperty(nameof(MouseButtonEventArgs.ClickCount))!.SetValue(args, 2);
+                Point clickPoint = args.GetPosition(fixture.Context.DrawCanvas);
+                properties.Position = new Point(clickPoint.X - 1, clickPoint.Y - 1);
+                text.Render();
+                Assert.True(text.GetRect().Contains(clickPoint));
+                selection.SetRender(text);
+                MethodInfo mouseDown = typeof(SelectEditorVisual).GetMethod("DrawCanvas_PreviewMouseLeftButtonDown", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+                mouseDown.Invoke(selection, [fixture.Context.DrawCanvas, args]);
+
+                Assert.True(args.Handled);
+                Assert.True(text.IsEditing);
+                FieldInfo gestureState = typeof(SelectEditorVisual).GetField("IsMouseDown", BindingFlags.Instance | BindingFlags.NonPublic)!;
+                Assert.False(Assert.IsType<bool>(gestureState.GetValue(selection)));
+            }
+            finally
+            {
+                if (text.IsEditing)
+                    text.EndEdit(false);
+                fixture.Dispose();
+            }
+        });
+    }
+
+    [Fact]
     public void EditingAcceptsMultilineUnicodeAndExpandsTheEditor()
     {
         WpfTestHost.Invoke(() =>
@@ -1010,7 +1051,7 @@ public sealed class DrawTextRegressionTests
             source.TextAttribute.FontWeight = FontWeights.SemiBold;
             source.TextAttribute.FontStretch = FontStretches.Expanded;
             source.TextAttribute.FlowDirection = FlowDirection.RightToLeft;
-            source.TextAttribute.Brush = Brushes.AliceBlue;
+            source.TextAttribute.Brush = new SolidColorBrush(Colors.AliceBlue) { Opacity = 0.4 };
 
             AnnotationDocument document = AnnotationMapper.CreateDocument(new BaseProperties[] { source });
             string json = AnnotationMapper.Serialize(document);
@@ -1030,8 +1071,8 @@ public sealed class DrawTextRegressionTests
             Assert.Equal(source.FontWeight, restored.FontWeight);
             Assert.Equal(source.FontStretch, restored.FontStretch);
             Assert.Equal(source.FlowDirection, restored.FlowDirection);
-            Assert.Equal(GetColor(source.Foreground), GetColor(restored.Foreground));
-            Assert.Equal(GetColor(source.Background), GetColor(restored.Background));
+            Assert.Equal(GetEffectiveColor(source.Foreground), GetEffectiveColor(restored.Foreground));
+            Assert.Equal(GetEffectiveColor(source.Background), GetEffectiveColor(restored.Background));
         });
     }
 
@@ -1069,6 +1110,14 @@ public sealed class DrawTextRegressionTests
     private static Color GetColor(Brush brush)
     {
         return Assert.IsType<SolidColorBrush>(brush).Color;
+    }
+
+    private static Color GetEffectiveColor(Brush brush)
+    {
+        SolidColorBrush solidColorBrush = Assert.IsType<SolidColorBrush>(brush);
+        Color color = solidColorBrush.Color;
+        byte effectiveAlpha = (byte)Math.Round(color.A * solidColorBrush.Opacity, MidpointRounding.AwayFromZero);
+        return Color.FromArgb(effectiveAlpha, color.R, color.G, color.B);
     }
 
     private static int CountNonTransparentPixels(DrawingVisual visual)
