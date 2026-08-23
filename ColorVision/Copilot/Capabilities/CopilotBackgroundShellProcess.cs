@@ -1,10 +1,8 @@
 using ColorVision.Copilot.Mcp;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -15,54 +13,64 @@ namespace ColorVision.Copilot
 {
     internal sealed class CopilotBackgroundShellProcessLauncher : ICopilotBackgroundShellProcessLauncher
     {
-        public Task<ICopilotBackgroundShellProcess> StartAsync(
+        private readonly Func<Process, CopilotWindowsProcessJob?> _tryAssignProcessJob;
+        private readonly Func<Process, Task> _waitForExitAsync;
+        private readonly Func<TimeSpan, CancellationToken, Task> _delayAsync;
+
+        public CopilotBackgroundShellProcessLauncher()
+            : this(CopilotWindowsProcessJob.TryAssign)
+        {
+        }
+
+        internal CopilotBackgroundShellProcessLauncher(
+            Func<Process, CopilotWindowsProcessJob?> tryAssignProcessJob)
+            : this(
+                tryAssignProcessJob,
+                static process => process.WaitForExitAsync(),
+                static (delay, cancellationToken) => Task.Delay(delay, cancellationToken))
+        {
+        }
+
+        internal CopilotBackgroundShellProcessLauncher(
+            Func<Process, CopilotWindowsProcessJob?> tryAssignProcessJob,
+            Func<Process, Task> waitForExitAsync,
+            Func<TimeSpan, CancellationToken, Task> delayAsync)
+        {
+            _tryAssignProcessJob = tryAssignProcessJob
+                ?? throw new ArgumentNullException(nameof(tryAssignProcessJob));
+            _waitForExitAsync = waitForExitAsync
+                ?? throw new ArgumentNullException(nameof(waitForExitAsync));
+            _delayAsync = delayAsync
+                ?? throw new ArgumentNullException(nameof(delayAsync));
+        }
+
+        public async Task<ICopilotBackgroundShellProcess> StartAsync(
             CopilotShellProcessCommand command,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(command);
             cancellationToken.ThrowIfCancellationRequested();
             var streamEncoding = CopilotShellProcessRunner.GetStreamEncoding(command.Shell);
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = command.ExecutablePath,
-                WorkingDirectory = command.WorkingDirectory,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                StandardOutputEncoding = streamEncoding,
-                StandardErrorEncoding = streamEncoding,
-            };
-            foreach (var argument in command.Arguments)
-                startInfo.ArgumentList.Add(argument);
-            if (command.EnvironmentVariables != null)
-            {
-                startInfo.Environment.Clear();
-                foreach (var pair in command.EnvironmentVariables)
-                    startInfo.Environment[pair.Key] = pair.Value;
-            }
-            startInfo.Environment["NO_COLOR"] = "1";
-            foreach (var name in startInfo.Environment.Keys
-                .Where(CopilotCodexShellEnvironmentPolicy.IsNonInheritableEnvironmentVariable)
-                .ToArray())
-            {
-                startInfo.Environment.Remove(name);
-            }
-
-            var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+            var launchedProcess = await CopilotSuspendedProcessLauncher.LaunchAsync(
+                    command.ExecutablePath,
+                    command.Arguments,
+                    command.WorkingDirectory,
+                    CopilotShellProcessRunner.CreateEnvironmentVariables(command),
+                    streamEncoding,
+                    _tryAssignProcessJob,
+                    cancellationToken)
+                .ConfigureAwait(false);
             try
             {
-                if (!process.Start())
-                    throw new InvalidOperationException("The background shell process did not start.");
-                var processJob = CopilotWindowsProcessJob.TryAssign(process);
-                process.StandardInput.Close();
-                return Task.FromResult<ICopilotBackgroundShellProcess>(
-                    new CopilotBackgroundShellProcess(process, processJob, command.Timeout));
+                return new CopilotBackgroundShellProcess(
+                    launchedProcess,
+                    command.Timeout,
+                    _waitForExitAsync,
+                    _delayAsync);
             }
             catch
             {
-                process.Dispose();
+                launchedProcess.Dispose();
                 throw;
             }
         }
@@ -71,7 +79,12 @@ namespace ColorVision.Copilot
     internal sealed class CopilotBackgroundShellProcess : ICopilotBackgroundShellProcess
     {
         private readonly Process _process;
-        private readonly CopilotWindowsProcessJob? _processJob;
+        private readonly CopilotWindowsProcessJob _processJob;
+        private readonly CopilotSuspendedProcessLauncher _launchedProcess;
+        private readonly StreamReader _standardOutputReader;
+        private readonly StreamReader _standardErrorReader;
+        private readonly Func<Process, Task> _waitForExitAsync;
+        private readonly Func<TimeSpan, CancellationToken, Task> _delayAsync;
         private readonly CancellationTokenSource _outputReadSource = new();
         private readonly BoundedOutput _standardOutput;
         private readonly BoundedOutput _standardError;
@@ -88,26 +101,35 @@ namespace ColorVision.Copilot
         private static TimeSpan DisposeCompletionTimeout { get; } =
             CopilotProcessExecutionSupport.ProcessTreeExitTimeout + TimeSpan.FromSeconds(2);
 
-        public CopilotBackgroundShellProcess(
-            Process process,
-            CopilotWindowsProcessJob? processJob,
-            TimeSpan maximumLifetime)
+        internal CopilotBackgroundShellProcess(
+            CopilotSuspendedProcessLauncher launchedProcess,
+            TimeSpan maximumLifetime,
+            Func<Process, Task> waitForExitAsync,
+            Func<TimeSpan, CancellationToken, Task> delayAsync)
         {
-            _process = process ?? throw new ArgumentNullException(nameof(process));
-            _processJob = processJob;
-            ProcessId = process.Id;
-            ProcessTreeContained = processJob != null;
+            _launchedProcess = launchedProcess
+                ?? throw new ArgumentNullException(nameof(launchedProcess));
+            _process = launchedProcess.Process;
+            _processJob = launchedProcess.ProcessJob;
+            _standardOutputReader = launchedProcess.StandardOutput;
+            _standardErrorReader = launchedProcess.StandardError;
+            _waitForExitAsync = waitForExitAsync
+                ?? throw new ArgumentNullException(nameof(waitForExitAsync));
+            _delayAsync = delayAsync
+                ?? throw new ArgumentNullException(nameof(delayAsync));
+            ProcessId = _process.Id;
+            ProcessTreeContained = true;
             _standardOutput = new BoundedOutput("stdout");
             _standardError = new BoundedOutput("stderr");
             _standardOutputTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
-                process.StandardOutput,
+                _standardOutputReader,
                 CopilotBackgroundShellCommandRegistry.MaximumOutputCharacters,
                 0,
                 "\n...<earlier background output truncated>...\n",
                 _outputReadSource.Token,
                 value => AppendOutput(_standardOutput, value));
             _standardErrorTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
-                process.StandardError,
+                _standardErrorReader,
                 CopilotBackgroundShellCommandRegistry.MaximumOutputCharacters,
                 0,
                 "\n...<earlier background error output truncated>...\n",
@@ -218,114 +240,106 @@ namespace ColorVision.Copilot
         private async Task<CopilotBackgroundShellProcessCompletion> MonitorAsync(
             TimeSpan maximumLifetime)
         {
+            Exception? monitoringFailure = null;
+            using var lifetimeSource = new CancellationTokenSource();
             try
             {
-                var processExit = _process.WaitForExitAsync();
-                var lifetime = Task.Delay(maximumLifetime);
+                var processExit = _waitForExitAsync(_process);
+                var lifetime = _delayAsync(maximumLifetime, lifetimeSource.Token);
                 if (await Task.WhenAny(processExit, lifetime).ConfigureAwait(false) == lifetime)
                 {
+                    await lifetime.ConfigureAwait(false);
                     Interlocked.CompareExchange(ref _terminationReason, 2, 0);
-                    await CopilotProcessExecutionSupport.TerminateProcessTreeAsync(_process, _processJob)
-                        .ConfigureAwait(false);
                 }
                 else
                 {
                     await processExit.ConfigureAwait(false);
-                    await CopilotProcessExecutionSupport.TerminateProcessTreeAsync(_process, _processJob)
+                }
+            }
+            catch (Exception ex) when (ex is IOException or Win32Exception or InvalidOperationException or ObjectDisposedException)
+            {
+                monitoringFailure = ex;
+            }
+            finally
+            {
+                // A completed root no longer needs its maximum-lifetime timer. More
+                // importantly, no wait failure may publish a terminal observation while
+                // the contained process tree is still allowed to run.
+                lifetimeSource.Cancel();
+                try
+                {
+                    await CopilotProcessExecutionSupport.TerminateProcessTreeAsync(
+                            _process,
+                            _processJob)
                         .ConfigureAwait(false);
                 }
+                catch (Exception ex) when (ex is IOException or Win32Exception or InvalidOperationException or ObjectDisposedException)
+                {
+                    monitoringFailure ??= ex;
+                }
+            }
 
+            try
+            {
                 var (standardOutput, standardError) =
                     await CopilotProcessExecutionSupport.DrainOutputAsync(
                         _standardOutputTask,
                         _standardErrorTask,
                         _outputReadSource,
-                        _process.StandardOutput,
-                        _process.StandardError).ConfigureAwait(false);
+                        _standardOutputReader,
+                        _standardErrorReader).ConfigureAwait(false);
                 _standardOutput.ReplacePreview(standardOutput);
                 _standardError.ReplacePreview(standardError);
-                _standardOutput.CompleteArchive();
-                _standardError.CompleteArchive();
-                var exitCode = CopilotProcessExecutionSupport.TryGetExitCode(_process);
-                var reason = Volatile.Read(ref _terminationReason);
-                var state = reason switch
-                {
-                    1 => CopilotBackgroundShellCommandState.Stopped,
-                    2 => CopilotBackgroundShellCommandState.Expired,
-                    _ when exitCode == 0 => CopilotBackgroundShellCommandState.Completed,
-                    _ => CopilotBackgroundShellCommandState.Failed,
-                };
-                var output = GetOutputSnapshot();
-                return new CopilotBackgroundShellProcessCompletion(
-                    state,
-                    exitCode,
-                    DateTimeOffset.UtcNow,
-                    output.StandardOutput,
-                    output.StandardError)
-                {
-                    ObservedStandardOutputCharacters =
-                        output.ObservedStandardOutputCharacters,
-                    ObservedStandardErrorCharacters =
-                        output.ObservedStandardErrorCharacters,
-                    StandardOutputTruncated =
-                        output.StandardOutputTruncated,
-                    StandardErrorTruncated =
-                        output.StandardErrorTruncated,
-                    StandardOutputArchiveAvailable =
-                        output.StandardOutputArchiveAvailable,
-                    StandardErrorArchiveAvailable =
-                        output.StandardErrorArchiveAvailable,
-                    ArchivedStandardOutputCharacters =
-                        output.ArchivedStandardOutputCharacters,
-                    ArchivedStandardErrorCharacters =
-                        output.ArchivedStandardErrorCharacters,
-                    StandardOutputArchiveTruncated =
-                        output.StandardOutputArchiveTruncated,
-                    StandardErrorArchiveTruncated =
-                        output.StandardErrorArchiveTruncated,
-                    ObservationVersion = output.ObservationVersion,
-                };
             }
             catch (Exception ex) when (ex is IOException or Win32Exception or InvalidOperationException or ObjectDisposedException)
             {
-                AppendOutput(
-                    _standardError,
-                    CopilotMcpAuditLogger.RedactText(ex.Message));
-                _standardOutput.CompleteArchive();
-                _standardError.CompleteArchive();
-                var output = GetOutputSnapshot();
-                return new CopilotBackgroundShellProcessCompletion(
-                    Volatile.Read(ref _terminationReason) == 1
-                        ? CopilotBackgroundShellCommandState.Stopped
-                        : CopilotBackgroundShellCommandState.Failed,
-                    CopilotProcessExecutionSupport.TryGetExitCode(_process),
-                    DateTimeOffset.UtcNow,
-                    output.StandardOutput,
-                    output.StandardError)
-                {
-                    ObservedStandardOutputCharacters =
-                        output.ObservedStandardOutputCharacters,
-                    ObservedStandardErrorCharacters =
-                        output.ObservedStandardErrorCharacters,
-                    StandardOutputTruncated =
-                        output.StandardOutputTruncated,
-                    StandardErrorTruncated =
-                        output.StandardErrorTruncated,
-                    StandardOutputArchiveAvailable =
-                        output.StandardOutputArchiveAvailable,
-                    StandardErrorArchiveAvailable =
-                        output.StandardErrorArchiveAvailable,
-                    ArchivedStandardOutputCharacters =
-                        output.ArchivedStandardOutputCharacters,
-                    ArchivedStandardErrorCharacters =
-                        output.ArchivedStandardErrorCharacters,
-                    StandardOutputArchiveTruncated =
-                        output.StandardOutputArchiveTruncated,
-                    StandardErrorArchiveTruncated =
-                        output.StandardErrorArchiveTruncated,
-                    ObservationVersion = output.ObservationVersion,
-                };
+                monitoringFailure ??= ex;
             }
+
+            if (monitoringFailure != null)
+                AppendOutput(_standardError, CopilotMcpAuditLogger.RedactText(monitoringFailure.Message));
+            _standardOutput.CompleteArchive();
+            _standardError.CompleteArchive();
+            var exitCode = CopilotProcessExecutionSupport.TryGetExitCode(_process);
+            var reason = Volatile.Read(ref _terminationReason);
+            var state = reason switch
+            {
+                1 => CopilotBackgroundShellCommandState.Stopped,
+                2 => CopilotBackgroundShellCommandState.Expired,
+                _ when monitoringFailure != null => CopilotBackgroundShellCommandState.Failed,
+                _ when exitCode == 0 => CopilotBackgroundShellCommandState.Completed,
+                _ => CopilotBackgroundShellCommandState.Failed,
+            };
+            var output = GetOutputSnapshot();
+            return new CopilotBackgroundShellProcessCompletion(
+                state,
+                exitCode,
+                DateTimeOffset.UtcNow,
+                output.StandardOutput,
+                output.StandardError)
+            {
+                ObservedStandardOutputCharacters =
+                    output.ObservedStandardOutputCharacters,
+                ObservedStandardErrorCharacters =
+                    output.ObservedStandardErrorCharacters,
+                StandardOutputTruncated =
+                    output.StandardOutputTruncated,
+                StandardErrorTruncated =
+                    output.StandardErrorTruncated,
+                StandardOutputArchiveAvailable =
+                    output.StandardOutputArchiveAvailable,
+                StandardErrorArchiveAvailable =
+                    output.StandardErrorArchiveAvailable,
+                ArchivedStandardOutputCharacters =
+                    output.ArchivedStandardOutputCharacters,
+                ArchivedStandardErrorCharacters =
+                    output.ArchivedStandardErrorCharacters,
+                StandardOutputArchiveTruncated =
+                    output.StandardOutputArchiveTruncated,
+                StandardErrorArchiveTruncated =
+                    output.StandardErrorArchiveTruncated,
+                ObservationVersion = output.ObservationVersion,
+            };
         }
 
         private void AppendOutput(
@@ -403,8 +417,7 @@ namespace ColorVision.Copilot
                 _outputReadSource.Dispose();
                 _standardOutput.Dispose();
                 _standardError.Dispose();
-                _processJob?.Dispose();
-                _process.Dispose();
+                _launchedProcess.Dispose();
             }
         }
 

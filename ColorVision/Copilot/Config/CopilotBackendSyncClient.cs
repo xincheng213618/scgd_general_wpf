@@ -99,6 +99,7 @@ namespace ColorVision.Copilot
         {
             AllowAutoRedirect = false,
             AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
+            UseCookies = false,
         };
 
         private readonly HttpClient _httpClient;

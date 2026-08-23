@@ -434,56 +434,48 @@ namespace ColorVision.Copilot
     internal sealed class CopilotWorkspaceValidationProcessRunner : ICopilotWorkspaceValidationRunner
     {
         private const int MaxStreamCharacters = 32_768;
+        private readonly Func<Process, CopilotWindowsProcessJob?> _tryAssignProcessJob;
+
+        public CopilotWorkspaceValidationProcessRunner()
+            : this(CopilotWindowsProcessJob.TryAssign)
+        {
+        }
+
+        internal CopilotWorkspaceValidationProcessRunner(
+            Func<Process, CopilotWindowsProcessJob?> tryAssignProcessJob)
+        {
+            _tryAssignProcessJob = tryAssignProcessJob
+                ?? throw new ArgumentNullException(nameof(tryAssignProcessJob));
+        }
 
         public async Task<CopilotWorkspaceValidationProcessResult> RunAsync(
             CopilotWorkspaceValidationCommand command,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(command);
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = command.ExecutablePath,
-                WorkingDirectory = command.WorkingDirectory,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                StandardOutputEncoding = Encoding.UTF8,
-                StandardErrorEncoding = Encoding.UTF8,
-            };
-            foreach (var argument in command.Arguments)
-                startInfo.ArgumentList.Add(argument);
-            if (command.EnvironmentVariables != null)
-            {
-                startInfo.Environment.Clear();
-                foreach (var pair in command.EnvironmentVariables)
-                    startInfo.Environment[pair.Key] = pair.Value;
-            }
-            startInfo.Environment["DOTNET_NOLOGO"] = "1";
-            startInfo.Environment["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1";
-            foreach (var name in startInfo.Environment.Keys
-                .Where(CopilotCodexShellEnvironmentPolicy.IsNonInheritableEnvironmentVariable)
-                .ToArray())
-            {
-                startInfo.Environment.Remove(name);
-            }
-
-            using var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
             var stopwatch = Stopwatch.StartNew();
-            if (!process.Start())
-                throw new InvalidOperationException("The dotnet validation process did not start.");
-            using var processJob = CopilotWindowsProcessJob.TryAssign(process);
+            using var launchedProcess = await CopilotSuspendedProcessLauncher.LaunchAsync(
+                    command.ExecutablePath,
+                    command.Arguments,
+                    command.WorkingDirectory,
+                    CreateEnvironmentVariables(command),
+                    Encoding.UTF8,
+                    _tryAssignProcessJob,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            var process = launchedProcess.Process;
+            var processJob = launchedProcess.ProcessJob;
 
             using var outputReadSource = new CancellationTokenSource();
             var stdoutTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
-                process.StandardOutput,
+                launchedProcess.StandardOutput,
                 MaxStreamCharacters,
                 8_192,
                 "\n...<validation output truncated>...\n",
                 outputReadSource.Token,
                 command.StandardOutputReceived);
             var stderrTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
-                process.StandardError,
+                launchedProcess.StandardError,
                 MaxStreamCharacters,
                 8_192,
                 "\n...<validation output truncated>...\n",
@@ -510,7 +502,11 @@ namespace ColorVision.Copilot
             // the same bounded lifecycle as the approved validation command.
             await CopilotProcessExecutionSupport.TerminateProcessTreeAsync(process, processJob);
             var (standardOutput, standardError) = await CopilotProcessExecutionSupport.DrainOutputAsync(
-                stdoutTask, stderrTask, outputReadSource, process.StandardOutput, process.StandardError);
+                stdoutTask,
+                stderrTask,
+                outputReadSource,
+                launchedProcess.StandardOutput,
+                launchedProcess.StandardError);
             stopwatch.Stop();
             if (cancelledByCaller)
                 throw new OperationCanceledException(cancellationToken);
@@ -520,6 +516,31 @@ namespace ColorVision.Copilot
                 standardOutput,
                 standardError,
                 stopwatch.Elapsed);
+        }
+
+        private static Dictionary<string, string> CreateEnvironmentVariables(
+            CopilotWorkspaceValidationCommand command)
+        {
+            var environment = command.EnvironmentVariables == null
+                ? Environment.GetEnvironmentVariables()
+                    .Cast<System.Collections.DictionaryEntry>()
+                    .Where(entry => entry.Key is string && entry.Value is string)
+                    .ToDictionary(
+                        entry => (string)entry.Key,
+                        entry => (string)entry.Value!,
+                        StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, string>(
+                    command.EnvironmentVariables,
+                    StringComparer.OrdinalIgnoreCase);
+            environment["DOTNET_NOLOGO"] = "1";
+            environment["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1";
+            foreach (var name in environment.Keys
+                .Where(CopilotCodexShellEnvironmentPolicy.IsNonInheritableEnvironmentVariable)
+                .ToArray())
+            {
+                environment.Remove(name);
+            }
+            return environment;
         }
 
     }

@@ -1,6 +1,7 @@
 using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -39,6 +40,8 @@ namespace ColorVision.Copilot
         public const int MaxDiscoveredPageLinks = 12;
         public const int MaxWebPageUrlCharacters = 8192;
 
+        private const string Nat64DiscoveryHost = "ipv4only.arpa.";
+        private static readonly int[] Nat64PrefixLengths = [32, 40, 48, 56, 64, 96];
         private static readonly Regex HttpUrlRegex = new("https?://[^\\s\\\"'<>]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly char[] UrlTrimCharacters = { '.', ',', ';', ':', '!', '?', ')', ']', '}', '>', '"', '\'', '\uFF0C', '\u3002', '\uFF1B', '\uFF1A', '\uFF01', '\uFF1F', '\uFF09', '\u3011', '\u300B', '\u3001' };
         private static readonly HashSet<string> NonPageExtensions = new(StringComparer.OrdinalIgnoreCase)
@@ -119,7 +122,13 @@ namespace ColorVision.Copilot
                 throw new InvalidOperationException("The web page returned a redirect without a Location header.");
 
             var resolved = location.IsAbsoluteUri ? location : new Uri(currentUri, location);
-            return ValidateWebPageUri(resolved);
+            var validated = ValidateWebPageUri(resolved);
+            if (string.Equals(currentUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(validated.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("The web page redirect cannot downgrade an HTTPS connection to HTTP.");
+            }
+            return validated;
         }
 
         public static string BuildFetchedWebPageContextBlock(CopilotFetchedWebPageContent page)
@@ -463,39 +472,45 @@ namespace ColorVision.Copilot
 
         private static Uri ValidateWebPageUri(Uri uri)
         {
-            if (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
-                && !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException("Only http/https web page URLs are allowed.");
-            }
-
-            if (uri.IsLoopback || string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("Fetching localhost or loopback URLs is not allowed.");
-            if (!string.IsNullOrWhiteSpace(uri.UserInfo))
-                throw new InvalidOperationException("Web page URLs containing embedded credentials are not allowed.");
-            if (IPAddress.TryParse(uri.Host, out var parsedAddress)
-                && IsBlockedWebPageAddress(parsedAddress))
-            {
-                throw new InvalidOperationException("Fetching private, local, or reserved IP addresses is not allowed.");
-            }
+            ArgumentNullException.ThrowIfNull(uri);
+            var rejectionReason = GetWebPageUriRejectionReason(uri);
+            if (rejectionReason != null)
+                throw new InvalidOperationException(rejectionReason);
 
             return uri;
         }
 
         internal static bool IsPotentiallyPublicWebPageUri(Uri? uri)
         {
-            if (uri == null
-                || (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
-                    && !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
-                || uri.IsLoopback
-                || string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase)
-                || !string.IsNullOrWhiteSpace(uri.UserInfo))
-            {
-                return false;
-            }
+            return GetWebPageUriRejectionReason(uri) == null;
+        }
 
-            return !IPAddress.TryParse(uri.Host, out var parsedAddress)
-                || !IsBlockedWebPageAddress(parsedAddress);
+        private static string? GetWebPageUriRejectionReason(Uri? uri)
+        {
+            if (uri == null || !uri.IsAbsoluteUri)
+                return "The web page URL is not valid.";
+            if (uri.AbsoluteUri.Length > MaxWebPageUrlCharacters)
+                return $"The web page URL exceeds the {MaxWebPageUrlCharacters:N0}-character limit.";
+            if (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            {
+                return "Only http/https web page URLs are allowed.";
+            }
+            if (uri.Port is < 1 or > 65535)
+                return "The web page URL port must be between 1 and 65535.";
+            if (!string.IsNullOrWhiteSpace(uri.UserInfo))
+                return "Web page URLs containing embedded credentials are not allowed.";
+
+            var normalizedHost = NormalizeWebPageHostForPolicy(uri.IdnHost);
+            if (string.IsNullOrWhiteSpace(normalizedHost))
+                return "The web page URL host is not valid.";
+            if (uri.IsLoopback || IsLocalhostWebPageHost(normalizedHost))
+                return "Fetching localhost or loopback URLs is not allowed.";
+
+            var parsedAddress = ParseWebPageAddress(normalizedHost);
+            return parsedAddress != null && IsBlockedWebPageAddress(parsedAddress)
+                ? "Fetching private, local, or reserved IP addresses is not allowed."
+                : null;
         }
 
         private static bool IsRedirectStatusCode(HttpStatusCode statusCode)
@@ -510,7 +525,7 @@ namespace ColorVision.Copilot
         private static async Task EnsureAllowedWebPageUriAsync(Uri uri, CancellationToken cancellationToken)
         {
             var addresses = await ResolveWebPageAddressesAsync(
-                uri.DnsSafeHost,
+                uri.IdnHost,
                 static (host, token) => Dns.GetHostAddressesAsync(host, token),
                 cancellationToken);
             if (addresses.Length == 0)
@@ -541,6 +556,16 @@ namespace ColorVision.Copilot
             if (addresses.Any(IsBlockedWebPageAddress))
                 throw new InvalidOperationException("The target web page resolved to a local, private, or reserved IP address and was rejected.");
 
+            if (addresses.Any(static address => address.AddressFamily == AddressFamily.InterNetworkV6))
+            {
+                var nat64Prefixes = await DiscoverNat64PrefixesAsync(resolveAddressesAsync, cancellationToken);
+                if (addresses.Any(address => IsBlockedNat64TranslatedWebPageAddress(address, nat64Prefixes)))
+                {
+                    throw new InvalidOperationException(
+                        "The target web page resolved through NAT64 to a local, private, or reserved IPv4 address and was rejected.");
+                }
+            }
+
             Exception? lastConnectionError = null;
             foreach (var address in addresses)
             {
@@ -567,9 +592,43 @@ namespace ColorVision.Copilot
             Func<string, CancellationToken, Task<IPAddress[]>> resolveAddressesAsync,
             CancellationToken cancellationToken)
         {
-            if (IPAddress.TryParse(host, out var parsedAddress))
+            var normalizedHost = NormalizeWebPageHostForPolicy(host);
+            if (IsLocalhostWebPageHost(normalizedHost))
+                return Task.FromResult(new[] { IPAddress.Loopback });
+
+            var parsedAddress = ParseWebPageAddress(normalizedHost);
+            if (parsedAddress != null)
                 return Task.FromResult(new[] { parsedAddress });
             return resolveAddressesAsync(host, cancellationToken);
+        }
+
+        private static string NormalizeWebPageHostForPolicy(string host)
+        {
+            var normalized = (host ?? string.Empty).Trim();
+            if (!IPAddress.TryParse(normalized, out _))
+            {
+                try
+                {
+                    normalized = new IdnMapping().GetAscii(normalized);
+                }
+                catch (ArgumentException)
+                {
+                    // DNS resolution remains guarded even when an invalid IDN cannot be normalized here.
+                }
+            }
+
+            return normalized.TrimEnd('.');
+        }
+
+        private static bool IsLocalhostWebPageHost(string host)
+        {
+            return string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase)
+                || host.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static IPAddress? ParseWebPageAddress(string host)
+        {
+            return IPAddress.TryParse(host, out var parsedAddress) ? parsedAddress : null;
         }
 
         private static bool IsBlockedWebPageAddress(IPAddress address)
@@ -579,8 +638,9 @@ namespace ColorVision.Copilot
 
             if (address.AddressFamily == AddressFamily.InterNetworkV6)
             {
+                // IPv4-mapped values are API representations, not globally reachable IPv6 destinations.
                 if (address.IsIPv4MappedToIPv6)
-                    return IsBlockedWebPageAddress(address.MapToIPv4());
+                    return true;
                 if (address.Equals(IPAddress.IPv6Any)
                     || address.IsIPv6LinkLocal
                     || address.IsIPv6SiteLocal
@@ -588,9 +648,15 @@ namespace ColorVision.Copilot
                     return true;
 
                 var bytes = address.GetAddressBytes();
-                return bytes.Length != 16
-                    || (bytes[0] & 0xFE) == 0xFC
-                    || bytes is [0x20, 0x01, 0x0D, 0xB8, ..];
+                if (bytes.Length != 16)
+                    return true;
+
+                // RFC 6052's well-known NAT64 prefix carries IPv4 in the final 32 bits.
+                // Network-specific prefixes are discovered and checked at the connection boundary.
+                if (bytes is [0x00, 0x64, 0xFF, 0x9B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, ..])
+                    return IsBlockedWebPageAddress(new IPAddress(bytes.AsSpan(12, 4)));
+
+                return !IsAllowedGlobalUnicastWebPageAddress(bytes);
             }
 
             if (address.AddressFamily != AddressFamily.InterNetwork)
@@ -600,22 +666,195 @@ namespace ColorVision.Copilot
             if (bytesV4.Length != 4)
                 return true;
 
+            return IsBlockedIpv4WebPageAddress(bytesV4);
+        }
+
+        private static bool IsBlockedIpv4WebPageAddress(ReadOnlySpan<byte> bytesV4)
+        {
+            // IANA special-purpose snapshot 2025-10-09. Protocol-only anycast blocks are not web targets.
+            // Azure WireServer is also host-local inside Azure despite using an otherwise public address.
             return bytesV4[0] switch
             {
                 0 => true,
                 10 => true,
                 127 => true,
+                168 when bytesV4[1] == 63 && bytesV4[2] == 129 && bytesV4[3] == 16 => true,
                 169 when bytesV4[1] == 254 => true,
                 172 when bytesV4[1] >= 16 && bytesV4[1] <= 31 => true,
                 192 when bytesV4[1] == 168 => true,
                 192 when bytesV4[1] == 0 && bytesV4[2] == 0 => true,
                 192 when bytesV4[1] == 0 && bytesV4[2] == 2 => true,
+                192 when bytesV4[1] == 31 && bytesV4[2] == 196 => true,
+                192 when bytesV4[1] == 52 && bytesV4[2] == 193 => true,
                 192 when bytesV4[1] == 88 && bytesV4[2] == 99 => true,
+                192 when bytesV4[1] == 175 && bytesV4[2] == 48 => true,
                 198 when bytesV4[1] is 18 or 19 => true,
                 198 when bytesV4[1] == 51 && bytesV4[2] == 100 => true,
                 203 when bytesV4[1] == 0 && bytesV4[2] == 113 => true,
                 100 when bytesV4[1] >= 64 && bytesV4[1] <= 127 => true,
                 >= 224 => true,
+                _ => false,
+            };
+        }
+
+        private static async Task<IReadOnlyList<WebPageNat64Prefix>> DiscoverNat64PrefixesAsync(
+            Func<string, CancellationToken, Task<IPAddress[]>> resolveAddressesAsync,
+            CancellationToken cancellationToken)
+        {
+            IPAddress[] discoveryAddresses;
+            try
+            {
+                discoveryAddresses = await resolveAddressesAsync(Nat64DiscoveryHost, cancellationToken);
+            }
+            catch (SocketException)
+            {
+                return Array.Empty<WebPageNat64Prefix>();
+            }
+
+            return ExtractNat64Prefixes(discoveryAddresses);
+        }
+
+        private static IReadOnlyList<WebPageNat64Prefix> ExtractNat64Prefixes(IEnumerable<IPAddress> discoveryAddresses)
+        {
+            var candidates = new List<WebPageNat64PrefixCandidate>();
+            Span<byte> embeddedIpv4 = stackalloc byte[4];
+            var discoveryAddressIndex = 0;
+            foreach (var address in discoveryAddresses)
+            {
+                if (address.AddressFamily != AddressFamily.InterNetworkV6)
+                {
+                    discoveryAddressIndex++;
+                    continue;
+                }
+
+                var bytes = address.GetAddressBytes();
+                foreach (var prefixLength in Nat64PrefixLengths)
+                {
+                    if (!TryExtractNat64Ipv4Address(bytes, prefixLength, embeddedIpv4)
+                        || !IsNat64DiscoveryIpv4Address(embeddedIpv4))
+                    {
+                        continue;
+                    }
+
+                    var prefixBytes = bytes.AsSpan(0, prefixLength / 8).ToArray();
+                    var candidate = candidates.FirstOrDefault(prefix => prefix.Length == prefixLength
+                        && prefix.Bytes.AsSpan().SequenceEqual(prefixBytes));
+                    if (candidate == null)
+                    {
+                        candidate = new WebPageNat64PrefixCandidate(prefixBytes, prefixLength);
+                        candidates.Add(candidate);
+                    }
+
+                    candidate.DiscoveryIpv4LastOctets.Add(embeddedIpv4[3]);
+                    candidate.DiscoveryAddressIndexes.Add(discoveryAddressIndex);
+                }
+
+                discoveryAddressIndex++;
+            }
+
+            var corroboratedCandidates = candidates
+                .Where(static candidate => candidate.DiscoveryIpv4LastOctets.Count == 2)
+                .ToArray();
+            if (corroboratedCandidates.Length == 0)
+            {
+                // A resolver may return only one of the two discovery addresses. Keep every
+                // standard-layout candidate in that case so ambiguity cannot remove the real prefix.
+                return candidates
+                    .Select(static candidate => candidate.ToPrefix())
+                    .ToArray();
+            }
+
+            var corroboratedAddressIndexes = corroboratedCandidates
+                .SelectMany(static candidate => candidate.DiscoveryAddressIndexes)
+                .ToHashSet();
+            return candidates
+                .Where(candidate => candidate.DiscoveryIpv4LastOctets.Count == 2
+                    || candidate.DiscoveryAddressIndexes.Any(index => !corroboratedAddressIndexes.Contains(index)))
+                .Select(static candidate => candidate.ToPrefix())
+                .ToArray();
+        }
+
+        private static bool IsBlockedNat64TranslatedWebPageAddress(
+            IPAddress address,
+            IReadOnlyList<WebPageNat64Prefix> prefixes)
+        {
+            if (address.AddressFamily != AddressFamily.InterNetworkV6 || prefixes.Count == 0)
+                return false;
+
+            var bytes = address.GetAddressBytes();
+            Span<byte> embeddedIpv4 = stackalloc byte[4];
+            foreach (var prefix in prefixes)
+            {
+                if (!bytes.AsSpan(0, prefix.Bytes.Length).SequenceEqual(prefix.Bytes))
+                    continue;
+
+                if (TryExtractNat64Ipv4Address(bytes, prefix.Length, embeddedIpv4)
+                    && IsBlockedIpv4WebPageAddress(embeddedIpv4))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryExtractNat64Ipv4Address(
+            ReadOnlySpan<byte> ipv6Bytes,
+            int prefixLength,
+            Span<byte> destination)
+        {
+            if (ipv6Bytes.Length != 16 || destination.Length < 4 || !Nat64PrefixLengths.Contains(prefixLength))
+                return false;
+            if (ipv6Bytes[8] != 0)
+                return false;
+
+            var prefixBytes = prefixLength / 8;
+            for (var index = 0; index < 4; index++)
+            {
+                var sourceIndex = prefixBytes + index;
+                if (prefixLength < 96 && sourceIndex >= 8)
+                    sourceIndex++;
+                destination[index] = ipv6Bytes[sourceIndex];
+            }
+
+            return true;
+        }
+
+        private static bool IsNat64DiscoveryIpv4Address(ReadOnlySpan<byte> address)
+        {
+            return address.Length == 4
+                && address[0] == 192
+                && address[1] == 0
+                && address[2] == 0
+                && address[3] is 170 or 171;
+        }
+
+        private static bool IsAllowedGlobalUnicastWebPageAddress(ReadOnlySpan<byte> bytes)
+        {
+            // Compressed from IANA's ALLOCATED IPv6 global-unicast rows (2025-10-10 snapshot).
+            // Protocol-specific 2001::/23 and 6to4 2002::/16 are intentionally not web targets.
+            var firstHextet = (bytes[0] << 8) | bytes[1];
+            var secondHextet = (bytes[2] << 8) | bytes[3];
+
+            if (firstHextet == 0x2001)
+            {
+                return (secondHextet is >= 0x0200 and <= 0x0FFF && secondHextet != 0x0DB8)
+                    || secondHextet is >= 0x1200 and <= 0x4DFF
+                    || secondHextet is >= 0x5000 and <= 0x5FFF
+                    || secondHextet is >= 0x8000 and <= 0xBFFF;
+            }
+
+            return firstHextet switch
+            {
+                0x2003 => secondHextet <= 0x3FFF,
+                >= 0x2400 and <= 0x241F => true,
+                >= 0x2600 and <= 0x260F => true,
+                0x2610 => secondHextet <= 0x01FF,
+                0x2620 => secondHextet <= 0x01FF,
+                >= 0x2630 and <= 0x263F => true,
+                >= 0x2800 and <= 0x280F => true,
+                >= 0x2A00 and <= 0x2A1F => true,
+                >= 0x2C00 and <= 0x2C0F => true,
                 _ => false,
             };
         }
@@ -631,19 +870,24 @@ namespace ColorVision.Copilot
 
         private static HttpClient CreateHttpClient()
         {
-            var handler = new SocketsHttpHandler
-            {
-                AllowAutoRedirect = false,
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
-                UseProxy = false,
-                ConnectCallback = ConnectToAllowedWebPageHostAsync,
-            };
-            var client = new HttpClient(handler)
+            var client = new HttpClient(CreateHttpHandler())
             {
                 Timeout = TimeSpan.FromSeconds(20),
             };
             client.DefaultRequestHeaders.UserAgent.ParseAdd("ColorVision-Copilot-Agent/1.0");
             return client;
+        }
+
+        internal static SocketsHttpHandler CreateHttpHandler()
+        {
+            return new SocketsHttpHandler
+            {
+                AllowAutoRedirect = false,
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
+                UseCookies = false,
+                UseProxy = false,
+                ConnectCallback = ConnectToAllowedWebPageHostAsync,
+            };
         }
 
         private static ValueTask<Stream> ConnectToAllowedWebPageHostAsync(
@@ -672,6 +916,27 @@ namespace ColorVision.Copilot
                 socket.Dispose();
                 throw;
             }
+        }
+
+        private readonly record struct WebPageNat64Prefix(byte[] Bytes, int Length);
+
+        private sealed class WebPageNat64PrefixCandidate
+        {
+            public byte[] Bytes { get; }
+
+            public int Length { get; }
+
+            public HashSet<byte> DiscoveryIpv4LastOctets { get; } = new();
+
+            public HashSet<int> DiscoveryAddressIndexes { get; } = new();
+
+            public WebPageNat64PrefixCandidate(byte[] bytes, int length)
+            {
+                Bytes = bytes;
+                Length = length;
+            }
+
+            public WebPageNat64Prefix ToPrefix() => new(Bytes, Length);
         }
     }
 }
