@@ -209,7 +209,16 @@
     <value>加载</value>
   </data>
   <data name="ThirdPartyApps" xml:space="preserve">
-    <value>第三方应用管理</value>
+    <value>应用与工具</value>
+  </data>
+  <data name="ThirdPartyAppsCategoryInternal" xml:space="preserve">
+    <value>内部工具</value>
+  </data>
+  <data name="ThirdPartyAppsCategoryExternal" xml:space="preserve">
+    <value>外部应用</value>
+  </data>
+  <data name="ThirdPartyAppsCategoryCustom" xml:space="preserve">
+    <value>自定义</value>
   </data>
   <data name="Open" xml:space="preserve">
     <value>打开</value>

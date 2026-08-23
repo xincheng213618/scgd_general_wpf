@@ -10,7 +10,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
             manager.Refresh();
 
             foreach (var app in manager.Apps
-                .Where(app => app.IsInstalled && !string.IsNullOrWhiteSpace(app.Name))
+                .Where(app => app.IsAuthorized && app.IsInstalled && !string.IsNullOrWhiteSpace(app.Name))
                 .OrderBy(app => app.Order)
                 .ThenBy(app => app.Name, StringComparer.CurrentCultureIgnoreCase))
             {
@@ -41,7 +41,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                 ?? app.InstallerPath
                 ?? app.Name;
 
-            return $"thirdparty:{app.Group}:{app.Name}:{launchTarget}";
+            return $"thirdparty:{app.Category}:{app.Group}:{app.Name}:{launchTarget}";
         }
     }
 }

@@ -1,6 +1,6 @@
 using ColorVision.Common.ThirdPartyApps;
 using ColorVision.Database.Properties;
-using System;
+using ColorVision.UI.Authorizations;
 using System.Collections.Generic;
 using System.Windows;
 
@@ -16,9 +16,11 @@ namespace ColorVision.Database
                 {
                     Name = Resources.MenuEntityBrowser,
                     Group = "ColorVision",
+                    Category = ThirdPartyAppCategory.Internal,
+                    RequiredPermission = PermissionMode.Administrator,
                     Order = 50,
+                    IconGlyph = ThirdPartyAppIconGlyphs.Database,
                     LaunchAction = OpenDatabaseBrowser,
-                    GetIconPath = () => Environment.ProcessPath
                 }
             };
         }

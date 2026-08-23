@@ -1,10 +1,14 @@
 ﻿using ColorVision.Common.MVVM;
+using Newtonsoft.Json;
 using System.ComponentModel;
 
 namespace ColorVision.UI.Desktop.MenuItemManager
 {
     public class MenuItemSetting : ViewModelBase
     {
+        public string TargetName { get => _targetName; set => SetProperty(ref _targetName, value); }
+        private string _targetName = string.Empty;
+
         public string GuidId { get => _guidId; set => SetProperty(ref _guidId, value); }
         private string _guidId = string.Empty;
 
@@ -38,5 +42,27 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         [Browsable(false)]
         public string? SourceAssembly { get => _sourceAssembly; set => SetProperty(ref _sourceAssembly, value); }
         private string? _sourceAssembly;
+    }
+
+    /// <summary>
+    /// Persisted menu customization. Catalog metadata stays in <see cref="MenuItemSetting"/>
+    /// and is rebuilt from the currently available menu items when the editor opens.
+    /// </summary>
+    public sealed class MenuItemOverride
+    {
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public string? TargetName { get; set; }
+
+        public string GuidId { get; set; } = string.Empty;
+
+        [DefaultValue(true)]
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public bool IsVisible { get; set; } = true;
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public int? OrderOverride { get; set; }
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public string? OwnerGuidOverride { get; set; }
     }
 }

@@ -9,8 +9,10 @@ namespace ColorVision.UI.Desktop.MenuItemManager
 {
     public class OwnerGuidOption
     {
+        public string TargetName { get; set; } = string.Empty;
         public string GuidId { get; set; } = string.Empty;
         public string DisplayPath { get; set; } = string.Empty;
+        public MenuItemScopeKey ScopeKey => new(TargetName, GuidId);
 
         public override string ToString() => DisplayPath;
     }
@@ -38,14 +40,15 @@ namespace ColorVision.UI.Desktop.MenuItemManager
     public partial class MenuItemManagerWindow : Window
     {
         private const string RootGuid = MenuItemConstants.Menu;
-        private const string MenuItemDragFormat = "ColorVision.MenuItemManager.MenuItemGuid";
+        private const string MenuItemDragFormat = "ColorVision.MenuItemManager.MenuItemScopeKey";
 
         private ObservableCollection<MenuItemSetting> _allSettings = new();
-        private readonly HashSet<string> _expandedGuids = new(StringComparer.Ordinal);
-        private string? _selectedOwnerGuid = RootGuid;
+        private readonly HashSet<MenuItemScopeKey> _expandedKeys = new();
+        private string _selectedTargetName = MenuItemConstants.MainWindowTarget;
+        private MenuItemScopeKey _selectedOwnerKey = new(MenuItemConstants.MainWindowTarget, RootGuid);
         private MenuItemSetting? _selectedSetting;
         private Point _dragStartPoint;
-        private string? _dragSourceGuid;
+        private MenuItemScopeKey? _dragSourceKey;
         private bool _isRefreshing;
         private bool _isReplacingMenuItemRows;
         private bool _isSelectingTreeNode;
@@ -80,12 +83,43 @@ namespace ColorVision.UI.Desktop.MenuItemManager
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            MenuItemManagerService.ApplySettings();
-            _allSettings = MenuItemManagerConfig.Instance.Settings;
+            _allSettings = MenuItemManagerService.CreateEditingSnapshot();
+            InitializeTargetScopes();
 
             RefreshEditorPreview(restoreSelection: false);
             RestoreLastSelectedTreeNode();
         }
+
+        private void InitializeTargetScopes()
+        {
+            var targetNames = _allSettings
+                .Select(setting => setting.TargetName)
+                .Where(targetName => !string.IsNullOrWhiteSpace(targetName))
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(targetName => string.Equals(targetName, MenuItemConstants.GlobalTarget, StringComparison.Ordinal) ? 0 : 1)
+                .ThenBy(targetName => targetName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            string? savedTarget = MenuItemManagerConfig.Instance.LastSelectedTargetName;
+            _selectedTargetName = targetNames.Contains(savedTarget, StringComparer.Ordinal)
+                ? savedTarget!
+                : targetNames.Contains(MenuItemConstants.MainWindowTarget, StringComparer.Ordinal)
+                    ? MenuItemConstants.MainWindowTarget
+                    : targetNames.FirstOrDefault() ?? MenuItemConstants.GlobalTarget;
+
+            TargetScopeComboBox.ItemsSource = targetNames;
+            TargetScopeComboBox.SelectedItem = _selectedTargetName;
+            _selectedOwnerKey = RootKey;
+        }
+
+        private MenuItemScopeKey RootKey => new(_selectedTargetName, RootGuid);
+
+        private IEnumerable<MenuItemSetting> CurrentSurfaceSettings => _allSettings.Where(setting =>
+            string.Equals(setting.TargetName, _selectedTargetName, StringComparison.Ordinal)
+            || (!string.Equals(_selectedTargetName, MenuItemConstants.GlobalTarget, StringComparison.Ordinal)
+                && string.Equals(setting.TargetName, MenuItemConstants.GlobalTarget, StringComparison.Ordinal)));
+
+        private static MenuItemScopeKey GetScopeKey(MenuItemSetting setting) => new(setting.TargetName, setting.GuidId);
 
         private void RefreshEditorPreview(bool restoreSelection = true)
         {
@@ -101,8 +135,8 @@ namespace ColorVision.UI.Desktop.MenuItemManager
                 BuildAvailableOwnerGuids();
                 BuildTreeView();
 
-                if (restoreSelection && !string.IsNullOrEmpty(_selectedOwnerGuid))
-                    SelectTreeNodeQuietly(_selectedOwnerGuid);
+                if (restoreSelection)
+                    SelectTreeNodeQuietly(_selectedOwnerKey);
 
                 RefreshMenuItemList();
                 ShowSelectedDetail();
@@ -114,27 +148,26 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             }
         }
 
-        private Dictionary<string, MenuItemSetting> CreateSettingsByGuid()
+        private Dictionary<MenuItemScopeKey, MenuItemSetting> CreateSettingsByKey()
         {
-            return _allSettings
+            return CurrentSurfaceSettings
                 .Where(setting => !string.IsNullOrWhiteSpace(setting.GuidId))
-                .GroupBy(setting => setting.GuidId, StringComparer.Ordinal)
-                .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+                .GroupBy(GetScopeKey)
+                .ToDictionary(group => group.Key, group => group.First());
         }
 
-        private Dictionary<string, List<MenuItemSetting>> CreateChildrenLookup()
+        private Dictionary<MenuItemScopeKey, List<MenuItemSetting>> CreateChildrenLookup()
         {
-            var lookup = new Dictionary<string, List<MenuItemSetting>>(StringComparer.Ordinal);
-            foreach (var setting in _allSettings)
+            var lookup = new Dictionary<MenuItemScopeKey, List<MenuItemSetting>>();
+            var settingsByKey = CreateSettingsByKey();
+            foreach (var setting in CurrentSurfaceSettings)
             {
-                var ownerGuid = GetEffectiveOwner(setting);
-                if (string.IsNullOrWhiteSpace(ownerGuid))
-                    ownerGuid = RootGuid;
+                MenuItemScopeKey ownerKey = ResolveOwnerKey(setting, GetEffectiveOwner(setting), settingsByKey) ?? RootKey;
 
-                if (!lookup.TryGetValue(ownerGuid, out var children))
+                if (!lookup.TryGetValue(ownerKey, out var children))
                 {
                     children = new List<MenuItemSetting>();
-                    lookup.Add(ownerGuid, children);
+                    lookup.Add(ownerKey, children);
                 }
 
                 children.Add(setting);
@@ -145,19 +178,31 @@ namespace ColorVision.UI.Desktop.MenuItemManager
 
         private void BuildAvailableOwnerGuids()
         {
-            var guids = new HashSet<string>(StringComparer.Ordinal) { RootGuid };
-            foreach (var setting in _allSettings)
+            var options = new Dictionary<MenuItemScopeKey, OwnerGuidOption>
+            {
+                [RootKey] = new OwnerGuidOption
+                {
+                    TargetName = RootKey.TargetName,
+                    GuidId = RootGuid,
+                    DisplayPath = $"[{_selectedTargetName}] Menu"
+                }
+            };
+
+            foreach (var setting in CurrentSurfaceSettings)
             {
                 if (!string.IsNullOrWhiteSpace(setting.GuidId))
-                    guids.Add(setting.GuidId);
-                if (!string.IsNullOrWhiteSpace(setting.OwnerGuid))
-                    guids.Add(setting.OwnerGuid);
-                if (!string.IsNullOrWhiteSpace(setting.OwnerGuidOverride))
-                    guids.Add(setting.OwnerGuidOverride);
+                {
+                    MenuItemScopeKey key = GetScopeKey(setting);
+                    options[key] = new OwnerGuidOption
+                    {
+                        TargetName = key.TargetName,
+                        GuidId = key.GuidId,
+                        DisplayPath = $"[{key.TargetName}] {GetCurrentPath(setting)}"
+                    };
+                }
             }
 
-            AvailableOwnerGuids = guids
-                .Select(guid => new OwnerGuidOption { GuidId = guid, DisplayPath = GetPathForGuid(guid) })
+            AvailableOwnerGuids = options.Values
                 .OrderBy(option => option.DisplayPath, StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
@@ -166,15 +211,15 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         {
             MenuTreeView.Items.Clear();
 
-            var rootNode = CreateTreeNode(RootGuid, "Menu", null, true);
+            var rootNode = CreateTreeNode(RootKey, $"Menu ({_selectedTargetName})", null, true);
             rootNode.IsExpanded = true;
             MenuTreeView.Items.Add(rootNode);
 
             var childrenLookup = CreateChildrenLookup();
-            AddTreeChildren(rootNode, RootGuid, childrenLookup, new HashSet<string>(StringComparer.Ordinal) { RootGuid });
+            AddTreeChildren(rootNode, RootKey, childrenLookup, new HashSet<MenuItemScopeKey> { RootKey });
         }
 
-        private TreeViewItem CreateTreeNode(string guid, string header, MenuItemSetting? setting, bool isRoot = false)
+        private TreeViewItem CreateTreeNode(MenuItemScopeKey key, string header, MenuItemSetting? setting, bool isRoot = false)
         {
             var displayText = setting == null ? header : GetTreeNodeText(setting);
             var textBlock = new TextBlock
@@ -190,8 +235,8 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             var node = new TreeViewItem
             {
                 Header = textBlock,
-                Tag = guid,
-                IsExpanded = isRoot || _expandedGuids.Contains(guid)
+                Tag = key,
+                IsExpanded = isRoot || _expandedKeys.Contains(key)
             };
             node.Selected += TreeNode_Selected;
             return node;
@@ -203,27 +248,45 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             return setting.IsVisible ? displayName : $"{displayName} (Hidden)";
         }
 
-        private void AddTreeChildren(TreeViewItem parent, string ownerGuid, Dictionary<string, List<MenuItemSetting>> childrenLookup, HashSet<string> visited)
+        private void AddTreeChildren(TreeViewItem parent, MenuItemScopeKey ownerKey, Dictionary<MenuItemScopeKey, List<MenuItemSetting>> childrenLookup, HashSet<MenuItemScopeKey> visited)
         {
-            if (!childrenLookup.TryGetValue(ownerGuid, out var children)) return;
+            if (!childrenLookup.TryGetValue(ownerKey, out var children)) return;
 
             foreach (var child in children.OrderBy(GetEffectiveOrder).ThenBy(GetDisplayName, StringComparer.OrdinalIgnoreCase))
             {
                 if (string.IsNullOrWhiteSpace(child.GuidId)) continue;
-                if (visited.Contains(child.GuidId)) continue;
+                MenuItemScopeKey childKey = GetScopeKey(child);
+                if (visited.Contains(childKey)) continue;
 
-                var node = CreateTreeNode(child.GuidId, GetDisplayName(child), child);
+                var node = CreateTreeNode(childKey, GetDisplayName(child), child);
                 parent.Items.Add(node);
 
-                visited.Add(child.GuidId);
-                AddTreeChildren(node, child.GuidId, childrenLookup, visited);
-                visited.Remove(child.GuidId);
+                visited.Add(childKey);
+                AddTreeChildren(node, childKey, childrenLookup, visited);
+                visited.Remove(childKey);
             }
+        }
+
+        private MenuItemScopeKey? ResolveOwnerKey(
+            MenuItemSetting setting,
+            string ownerGuid,
+            Dictionary<MenuItemScopeKey, MenuItemSetting>? settingsByKey = null)
+        {
+            if (string.Equals(ownerGuid, RootGuid, StringComparison.Ordinal))
+                return RootKey;
+
+            settingsByKey ??= CreateSettingsByKey();
+            var sameTargetKey = new MenuItemScopeKey(setting.TargetName, ownerGuid);
+            if (settingsByKey.ContainsKey(sameTargetKey))
+                return sameTargetKey;
+
+            var globalKey = new MenuItemScopeKey(MenuItemConstants.GlobalTarget, ownerGuid);
+            return settingsByKey.ContainsKey(globalKey) ? globalKey : null;
         }
 
         private void CaptureExpandedTreeState()
         {
-            _expandedGuids.Clear();
+            _expandedKeys.Clear();
             CaptureExpandedTreeState(MenuTreeView);
         }
 
@@ -233,8 +296,8 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             {
                 if (item is not TreeViewItem treeViewItem) continue;
 
-                if (treeViewItem.IsExpanded && treeViewItem.Tag is string guid)
-                    _expandedGuids.Add(guid);
+                if (treeViewItem.IsExpanded && treeViewItem.Tag is MenuItemScopeKey key)
+                    _expandedKeys.Add(key);
 
                 CaptureExpandedTreeState(treeViewItem);
             }
@@ -242,19 +305,44 @@ namespace ColorVision.UI.Desktop.MenuItemManager
 
         private void RestoreLastSelectedTreeNode()
         {
-            var lastNode = MenuItemManagerConfig.Instance.LastSelectedTreeNode;
-            _selectedOwnerGuid = string.IsNullOrWhiteSpace(lastNode) ? RootGuid : lastNode;
+            MenuItemManagerConfig config = MenuItemManagerConfig.Instance;
+            _selectedOwnerKey = ResolveSavedSelection(config.LastSelectedTreeNodeTargetName, config.LastSelectedTreeNode);
 
-            if (!SelectTreeNodeQuietly(_selectedOwnerGuid))
+            if (!SelectTreeNodeQuietly(_selectedOwnerKey))
             {
-                _selectedOwnerGuid = RootGuid;
-                SelectTreeNodeQuietly(RootGuid);
+                _selectedOwnerKey = RootKey;
+                SelectTreeNodeQuietly(RootKey);
             }
 
-            _selectedSetting = FindSetting(_selectedOwnerGuid);
+            _selectedSetting = FindSetting(_selectedOwnerKey);
         }
 
-        private bool SelectTreeNodeQuietly(string tag)
+        private MenuItemScopeKey ResolveSavedSelection(string? targetName, string? guidId)
+        {
+            if (string.IsNullOrWhiteSpace(guidId) || string.Equals(guidId, RootGuid, StringComparison.Ordinal))
+                return RootKey;
+
+            if (!string.IsNullOrWhiteSpace(targetName))
+            {
+                var savedKey = new MenuItemScopeKey(targetName, guidId);
+                if (FindSetting(savedKey) != null
+                    && (string.Equals(targetName, _selectedTargetName, StringComparison.Ordinal)
+                        || string.Equals(targetName, MenuItemConstants.GlobalTarget, StringComparison.Ordinal)))
+                {
+                    return savedKey;
+                }
+            }
+
+            // Compatibility with configs written before tree-node scope was persisted.
+            var sameTargetKey = new MenuItemScopeKey(_selectedTargetName, guidId);
+            if (FindSetting(sameTargetKey) != null)
+                return sameTargetKey;
+
+            var globalKey = new MenuItemScopeKey(MenuItemConstants.GlobalTarget, guidId);
+            return FindSetting(globalKey) != null ? globalKey : RootKey;
+        }
+
+        private bool SelectTreeNodeQuietly(MenuItemScopeKey tag)
         {
             try
             {
@@ -267,13 +355,13 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             }
         }
 
-        private static bool SelectTreeNodeByTag(ItemsControl parent, string tag)
+        private static bool SelectTreeNodeByTag(ItemsControl parent, MenuItemScopeKey tag)
         {
             foreach (var item in parent.Items)
             {
                 if (item is not TreeViewItem treeViewItem) continue;
 
-                if (treeViewItem.Tag is string currentTag && string.Equals(currentTag, tag, StringComparison.Ordinal))
+                if (treeViewItem.Tag is MenuItemScopeKey currentTag && currentTag == tag)
                 {
                     treeViewItem.IsSelected = true;
                     return true;
@@ -291,26 +379,28 @@ namespace ColorVision.UI.Desktop.MenuItemManager
 
         private void SaveLastSelectedTreeNode()
         {
-            MenuItemManagerConfig.Instance.LastSelectedTreeNode = _selectedOwnerGuid;
+            MenuItemManagerConfig.Instance.LastSelectedTargetName = _selectedTargetName;
+            MenuItemManagerConfig.Instance.LastSelectedTreeNodeTargetName = _selectedOwnerKey.TargetName;
+            MenuItemManagerConfig.Instance.LastSelectedTreeNode = _selectedOwnerKey.GuidId;
         }
 
         private void TreeNode_Selected(object sender, RoutedEventArgs e)
         {
             e.Handled = true;
             if (_isRefreshing || _isSelectingTreeNode) return;
-            if (sender is not TreeViewItem treeViewItem || treeViewItem.Tag is not string ownerGuid) return;
+            if (sender is not TreeViewItem treeViewItem || treeViewItem.Tag is not MenuItemScopeKey ownerKey) return;
 
-            _selectedOwnerGuid = ownerGuid;
-            _selectedSetting = FindSetting(ownerGuid);
+            _selectedOwnerKey = ownerKey;
+            _selectedSetting = FindSetting(ownerKey);
             SaveLastSelectedTreeNode();
             RefreshMenuItemList();
             ShowSelectedDetail();
         }
 
-        private MenuItemSetting? FindSetting(string? guid)
+        private MenuItemSetting? FindSetting(MenuItemScopeKey key)
         {
-            if (string.IsNullOrWhiteSpace(guid)) return null;
-            return _allSettings.FirstOrDefault(setting => string.Equals(setting.GuidId, guid, StringComparison.Ordinal));
+            if (string.IsNullOrWhiteSpace(key.GuidId)) return null;
+            return _allSettings.FirstOrDefault(setting => GetScopeKey(setting) == key);
         }
 
         private void RefreshMenuItemList()
@@ -320,7 +410,7 @@ namespace ColorVision.UI.Desktop.MenuItemManager
 
             if (!string.IsNullOrWhiteSpace(searchText))
             {
-                items = _allSettings
+                items = CurrentSurfaceSettings
                     .Where(setting => IsSearchMatch(setting, searchText))
                     .OrderBy(GetCurrentPath, StringComparer.OrdinalIgnoreCase)
                     .ToList();
@@ -328,25 +418,26 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             }
             else
             {
-                var ownerGuid = string.IsNullOrWhiteSpace(_selectedOwnerGuid) ? RootGuid : _selectedOwnerGuid;
-                items = _allSettings
-                    .Where(setting => string.Equals(GetEffectiveOwner(setting), ownerGuid, StringComparison.Ordinal))
+                MenuItemScopeKey ownerKey = _selectedOwnerKey;
+                var settingsByKey = CreateSettingsByKey();
+                items = CurrentSurfaceSettings
+                    .Where(setting => (ResolveOwnerKey(setting, GetEffectiveOwner(setting), settingsByKey) ?? RootKey) == ownerKey)
                     .OrderBy(GetEffectiveOrder)
                     .ThenBy(GetDisplayName, StringComparer.OrdinalIgnoreCase)
                     .ToList();
-                ListTitle.Text = ownerGuid == RootGuid ? $"Top-level Menu Items ({items.Count})" : $"Direct Children ({items.Count})";
+                ListTitle.Text = ownerKey == RootKey ? $"Top-level Menu Items ({items.Count})" : $"Direct Children ({items.Count})";
             }
 
             var rows = items.Select(CreateListRow).ToList();
-            var selectedGuid = _selectedSetting?.GuidId;
+            MenuItemScopeKey? selectedKey = _selectedSetting == null ? null : GetScopeKey(_selectedSetting);
 
             try
             {
                 _isReplacingMenuItemRows = true;
                 MenuItemDataGrid.ItemsSource = rows;
 
-                if (!string.IsNullOrWhiteSpace(selectedGuid))
-                    MenuItemDataGrid.SelectedItem = rows.FirstOrDefault(row => string.Equals(row.Setting.GuidId, selectedGuid, StringComparison.Ordinal));
+                if (selectedKey.HasValue)
+                    MenuItemDataGrid.SelectedItem = rows.FirstOrDefault(row => GetScopeKey(row.Setting) == selectedKey.Value);
             }
             finally
             {
@@ -368,11 +459,12 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         private string GetCurrentPath(MenuItemSetting setting)
         {
             var parts = new List<string> { GetDisplayName(setting) };
-            var settingsByGuid = CreateSettingsByGuid();
-            var currentGuid = GetEffectiveOwner(setting);
-            var visited = new HashSet<string>(StringComparer.Ordinal);
+            var settingsByKey = CreateSettingsByKey();
+            string currentGuid = GetEffectiveOwner(setting);
+            MenuItemSetting currentSetting = setting;
+            var visited = new HashSet<MenuItemScopeKey>();
 
-            while (!string.IsNullOrWhiteSpace(currentGuid) && visited.Add(currentGuid))
+            while (!string.IsNullOrWhiteSpace(currentGuid))
             {
                 if (string.Equals(currentGuid, RootGuid, StringComparison.Ordinal))
                 {
@@ -380,13 +472,15 @@ namespace ColorVision.UI.Desktop.MenuItemManager
                     break;
                 }
 
-                if (!settingsByGuid.TryGetValue(currentGuid, out var parentSetting))
+                MenuItemScopeKey? parentKey = ResolveOwnerKey(currentSetting, currentGuid, settingsByKey);
+                if (!parentKey.HasValue || !visited.Add(parentKey.Value) || !settingsByKey.TryGetValue(parentKey.Value, out var parentSetting))
                 {
                     parts.Add(currentGuid);
                     break;
                 }
 
                 parts.Add(GetDisplayName(parentSetting));
+                currentSetting = parentSetting;
                 currentGuid = GetEffectiveOwner(parentSetting);
             }
 
@@ -394,24 +488,14 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             return string.Join(" > ", parts);
         }
 
-        private string GetPathForGuid(string? guid)
+        private string GetPathForGuid(MenuItemSetting source, string? guid)
         {
             if (string.IsNullOrWhiteSpace(guid)) return string.Empty;
             if (string.Equals(guid, RootGuid, StringComparison.Ordinal)) return "Menu";
 
-            var setting = FindSetting(guid);
-            return setting == null ? guid : GetCurrentPath(setting);
-        }
-
-        private string? ResolveGuidIdFromDisplayPath(string displayPath)
-        {
-            if (string.IsNullOrWhiteSpace(displayPath)) return null;
-
-            var option = AvailableOwnerGuids.FirstOrDefault(o => string.Equals(o.DisplayPath, displayPath, StringComparison.Ordinal));
-            if (option != null) return option.GuidId;
-
-            var directMatch = AvailableOwnerGuids.FirstOrDefault(o => string.Equals(o.GuidId, displayPath, StringComparison.Ordinal));
-            return directMatch?.GuidId ?? displayPath;
+            var settingsByKey = CreateSettingsByKey();
+            MenuItemScopeKey? key = ResolveOwnerKey(source, guid, settingsByKey);
+            return key.HasValue && settingsByKey.TryGetValue(key.Value, out var setting) ? GetCurrentPath(setting) : guid;
         }
 
         private void MenuItemDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -445,24 +529,24 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         private void DragSource_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             _dragStartPoint = e.GetPosition(this);
-            _dragSourceGuid = null;
+            _dragSourceKey = null;
 
             if (ShouldIgnoreDragSource(e.OriginalSource as DependencyObject))
                 return;
 
             if (sender == MenuTreeView)
-                _dragSourceGuid = GetTreeNodeGuid(e.OriginalSource as DependencyObject);
+                _dragSourceKey = GetTreeNodeKey(e.OriginalSource as DependencyObject);
             else if (sender == MenuItemDataGrid)
-                _dragSourceGuid = GetGridRowSetting(e.OriginalSource as DependencyObject)?.GuidId;
+                _dragSourceKey = GetGridRowSetting(e.OriginalSource as DependencyObject) is { } rowSetting ? GetScopeKey(rowSetting) : null;
 
-            if (string.Equals(_dragSourceGuid, RootGuid, StringComparison.Ordinal))
-                _dragSourceGuid = null;
+            if (_dragSourceKey == RootKey)
+                _dragSourceKey = null;
         }
 
         private void DragSource_MouseMove(object sender, MouseEventArgs e)
         {
             if (Mouse.LeftButton != MouseButtonState.Pressed) return;
-            if (string.IsNullOrWhiteSpace(_dragSourceGuid)) return;
+            if (!_dragSourceKey.HasValue) return;
 
             var currentPosition = e.GetPosition(this);
             if (Math.Abs(currentPosition.X - _dragStartPoint.X) < SystemParameters.MinimumHorizontalDragDistance
@@ -471,11 +555,11 @@ namespace ColorVision.UI.Desktop.MenuItemManager
                 return;
             }
 
-            var sourceSetting = FindSetting(_dragSourceGuid);
+            var sourceSetting = FindSetting(_dragSourceKey.Value);
             if (sourceSetting == null) return;
 
-            DragDrop.DoDragDrop((DependencyObject)sender, new DataObject(MenuItemDragFormat, sourceSetting.GuidId), DragDropEffects.Move);
-            _dragSourceGuid = null;
+            DragDrop.DoDragDrop((DependencyObject)sender, new DataObject(MenuItemDragFormat, GetScopeKey(sourceSetting)), DragDropEffects.Move);
+            _dragSourceKey = null;
         }
 
         private void MenuTreeView_DragOver(object sender, DragEventArgs e)
@@ -483,8 +567,8 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             e.Effects = DragDropEffects.None;
             if (TryGetDraggedSetting(e.Data, out var setting))
             {
-                var targetOwnerGuid = GetTreeNodeGuid(e.OriginalSource as DependencyObject) ?? RootGuid;
-                if (MenuItemManagerService.IsValidOwnerOverride(setting, targetOwnerGuid))
+                MenuItemScopeKey targetOwnerKey = GetTreeNodeKey(e.OriginalSource as DependencyObject) ?? RootKey;
+                if (CanMoveToOwner(setting, targetOwnerKey))
                     e.Effects = DragDropEffects.Move;
             }
 
@@ -495,8 +579,8 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         {
             if (!TryGetDraggedSetting(e.Data, out var setting)) return;
 
-            var targetOwnerGuid = GetTreeNodeGuid(e.OriginalSource as DependencyObject) ?? RootGuid;
-            MoveSettingToOwner(setting, targetOwnerGuid);
+            MenuItemScopeKey targetOwnerKey = GetTreeNodeKey(e.OriginalSource as DependencyObject) ?? RootKey;
+            MoveSettingToOwner(setting, targetOwnerKey);
             e.Handled = true;
         }
 
@@ -505,8 +589,8 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             e.Effects = DragDropEffects.None;
             if (TryGetDraggedSetting(e.Data, out var setting))
             {
-                var targetOwnerGuid = GetDropTargetOwnerGuid(e.OriginalSource as DependencyObject);
-                if (MenuItemManagerService.IsValidOwnerOverride(setting, targetOwnerGuid))
+                MenuItemScopeKey targetOwnerKey = GetDropTargetOwnerKey(e.OriginalSource as DependencyObject);
+                if (CanMoveToOwner(setting, targetOwnerKey))
                     e.Effects = DragDropEffects.Move;
             }
 
@@ -520,28 +604,30 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             var targetRow = FindVisualParent<DataGridRow>(e.OriginalSource as DependencyObject);
             if (targetRow?.DataContext is MenuItemListRow row && !ReferenceEquals(row.Setting, setting))
             {
-                var targetOwnerGuid = GetEffectiveOwner(row.Setting);
-                var targetChildren = GetOrderedChildren(targetOwnerGuid).Where(child => !ReferenceEquals(child, setting)).ToList();
+                MenuItemScopeKey targetOwnerKey = ResolveOwnerKey(row.Setting, GetEffectiveOwner(row.Setting)) ?? RootKey;
+                var targetChildren = GetOrderedChildren(targetOwnerKey).Where(child => !ReferenceEquals(child, setting)).ToList();
                 var targetIndex = targetChildren.FindIndex(child => ReferenceEquals(child, row.Setting));
                 if (targetIndex < 0) targetIndex = targetChildren.Count;
 
                 if (e.GetPosition(targetRow).Y > targetRow.ActualHeight / 2)
                     targetIndex++;
 
-                MoveSettingToOwner(setting, targetOwnerGuid, targetIndex);
+                MoveSettingToOwner(setting, targetOwnerKey, targetIndex);
             }
             else
             {
-                MoveSettingToOwner(setting, NormalizeOwnerGuid(_selectedOwnerGuid), int.MaxValue);
+                MoveSettingToOwner(setting, _selectedOwnerKey, int.MaxValue);
             }
 
             e.Handled = true;
         }
 
-        private string GetDropTargetOwnerGuid(DependencyObject? originalSource)
+        private MenuItemScopeKey GetDropTargetOwnerKey(DependencyObject? originalSource)
         {
             var rowSetting = GetGridRowSetting(originalSource);
-            return rowSetting == null ? NormalizeOwnerGuid(_selectedOwnerGuid) : GetEffectiveOwner(rowSetting);
+            return rowSetting == null
+                ? _selectedOwnerKey
+                : ResolveOwnerKey(rowSetting, GetEffectiveOwner(rowSetting)) ?? RootKey;
         }
 
         private static bool ShouldIgnoreDragSource(DependencyObject? source)
@@ -552,10 +638,10 @@ namespace ColorVision.UI.Desktop.MenuItemManager
                 || FindVisualParent<Button>(source) != null;
         }
 
-        private static string? GetTreeNodeGuid(DependencyObject? source)
+        private static MenuItemScopeKey? GetTreeNodeKey(DependencyObject? source)
         {
             var treeViewItem = FindVisualParent<TreeViewItem>(source);
-            return treeViewItem?.Tag as string;
+            return treeViewItem?.Tag is MenuItemScopeKey key ? key : null;
         }
 
         private static MenuItemSetting? GetGridRowSetting(DependencyObject? source)
@@ -568,9 +654,9 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         {
             setting = null!;
             if (!data.GetDataPresent(MenuItemDragFormat)) return false;
-            if (data.GetData(MenuItemDragFormat) is not string guid) return false;
+            if (data.GetData(MenuItemDragFormat) is not MenuItemScopeKey key) return false;
 
-            setting = FindSetting(guid)!;
+            setting = FindSetting(key)!;
             return setting != null;
         }
 
@@ -599,46 +685,65 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             return null;
         }
 
-        private void MoveSettingToOwner(MenuItemSetting setting, string targetOwnerGuid, int insertIndex = int.MaxValue)
+        private bool CanMoveToOwner(MenuItemSetting setting, MenuItemScopeKey targetOwnerKey)
         {
-            targetOwnerGuid = NormalizeOwnerGuid(targetOwnerGuid);
-            if (!MenuItemManagerService.IsValidOwnerOverride(setting, targetOwnerGuid)) return;
+            if (string.Equals(targetOwnerKey.GuidId, RootGuid, StringComparison.Ordinal))
+                return targetOwnerKey == RootKey
+                    && (string.Equals(setting.TargetName, _selectedTargetName, StringComparison.Ordinal)
+                        || string.Equals(setting.TargetName, MenuItemConstants.GlobalTarget, StringComparison.Ordinal))
+                    && MenuItemManagerService.IsValidOwnerOverride(setting, RootGuid, _allSettings);
 
-            var targetChildren = GetOrderedChildren(targetOwnerGuid)
+            // Owner overrides persist a Guid only. When the same Guid exists in both the
+            // target and Global scopes, runtime lookup selects the target-local item first.
+            // Reject a visually selected key that cannot be represented by that persisted value.
+            if (ResolveOwnerKey(setting, targetOwnerKey.GuidId) != targetOwnerKey)
+                return false;
+
+            MenuItemSetting? owner = FindSetting(targetOwnerKey);
+            return owner != null
+                && MenuItemManagerService.IsOwnerInAllowedScope(setting, owner)
+                && MenuItemManagerService.IsValidOwnerOverride(setting, targetOwnerKey.GuidId, _allSettings);
+        }
+
+        private void MoveSettingToOwner(MenuItemSetting setting, MenuItemScopeKey targetOwnerKey, int insertIndex = int.MaxValue)
+        {
+            if (!CanMoveToOwner(setting, targetOwnerKey)) return;
+
+            var targetChildren = GetOrderedChildren(targetOwnerKey)
                 .Where(child => !ReferenceEquals(child, setting))
                 .ToList();
             insertIndex = Math.Clamp(insertIndex, 0, targetChildren.Count);
 
-            var orderSlots = CreateOrderSlots(targetOwnerGuid, targetChildren.Count + 1);
+            var orderSlots = CreateOrderSlots(targetOwnerKey, targetChildren.Count + 1);
             targetChildren.Insert(insertIndex, setting);
 
-            setting.OwnerGuidOverride = string.Equals(NormalizeOwnerGuid(setting.OwnerGuid), targetOwnerGuid, StringComparison.Ordinal)
+            setting.OwnerGuidOverride = string.Equals(NormalizeOwnerGuid(setting.OwnerGuid), targetOwnerKey.GuidId, StringComparison.Ordinal)
                 ? null
-                : targetOwnerGuid;
+                : targetOwnerKey.GuidId;
 
             for (var i = 0; i < targetChildren.Count; i++)
                 SetOrderOverride(targetChildren[i], orderSlots[i]);
 
-            _selectedOwnerGuid = targetOwnerGuid;
+            _selectedOwnerKey = string.Equals(targetOwnerKey.GuidId, RootGuid, StringComparison.Ordinal) ? RootKey : targetOwnerKey;
             _selectedSetting = setting;
-            _expandedGuids.Add(targetOwnerGuid);
+            _expandedKeys.Add(targetOwnerKey);
             SaveLastSelectedTreeNode();
             RefreshEditorPreview();
         }
 
-        private List<MenuItemSetting> GetOrderedChildren(string ownerGuid)
+        private List<MenuItemSetting> GetOrderedChildren(MenuItemScopeKey ownerKey)
         {
-            ownerGuid = NormalizeOwnerGuid(ownerGuid);
-            return _allSettings
-                .Where(setting => string.Equals(GetEffectiveOwner(setting), ownerGuid, StringComparison.Ordinal))
+            var settingsByKey = CreateSettingsByKey();
+            return CurrentSurfaceSettings
+                .Where(setting => (ResolveOwnerKey(setting, GetEffectiveOwner(setting), settingsByKey) ?? RootKey) == ownerKey)
                 .OrderBy(GetEffectiveOrder)
                 .ThenBy(GetDisplayName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
 
-        private List<int> CreateOrderSlots(string ownerGuid, int requiredCount)
+        private List<int> CreateOrderSlots(MenuItemScopeKey ownerKey, int requiredCount)
         {
-            var slots = GetOrderedChildren(ownerGuid)
+            var slots = GetOrderedChildren(ownerKey)
                 .Select(GetEffectiveOrder)
                 .OrderBy(order => order)
                 .ToList();
@@ -693,9 +798,10 @@ namespace ColorVision.UI.Desktop.MenuItemManager
                 DetailPanel.Children.Clear();
 
                 AddInfoRow(DetailPanel, "Current path", GetCurrentPath(setting));
+                AddInfoRow(DetailPanel, "Target", setting.TargetName);
                 AddInfoRow(DetailPanel, "GuidId", setting.GuidId);
-                AddInfoRow(DetailPanel, "Default owner", GetPathForGuid(setting.OwnerGuid));
-                AddInfoRow(DetailPanel, "Current owner", GetPathForGuid(GetEffectiveOwner(setting)));
+                AddInfoRow(DetailPanel, "Default owner", GetPathForGuid(setting, setting.OwnerGuid));
+                AddInfoRow(DetailPanel, "Current owner", GetPathForGuid(setting, GetEffectiveOwner(setting)));
                 AddInfoRow(DetailPanel, "Source assembly", setting.SourceAssembly ?? "Unknown");
                 AddInfoRow(DetailPanel, "Source type", setting.SourceType ?? "Unknown");
 
@@ -711,12 +817,14 @@ namespace ColorVision.UI.Desktop.MenuItemManager
                 DetailPanel.Children.Add(visibleCheckBox);
 
                 DetailPanel.Children.Add(CreateSectionLabel("Move to"));
+                List<OwnerGuidOption> ownerOptions = GetValidOwnerGuidOptions(setting);
+                MenuItemScopeKey currentOwnerKey = ResolveOwnerKey(setting, GetEffectiveOwner(setting))
+                    ?? new MenuItemScopeKey(setting.TargetName, RootGuid);
                 var ownerCombo = new ComboBox
                 {
-                    ItemsSource = GetValidOwnerGuidOptions(setting),
+                    ItemsSource = ownerOptions,
                     DisplayMemberPath = nameof(OwnerGuidOption.DisplayPath),
-                    SelectedValuePath = nameof(OwnerGuidOption.GuidId),
-                    SelectedValue = setting.OwnerGuidOverride ?? setting.OwnerGuid ?? RootGuid,
+                    SelectedItem = ownerOptions.FirstOrDefault(option => option.ScopeKey == currentOwnerKey),
                     Margin = new Thickness(0, 0, 0, 8),
                     HorizontalAlignment = HorizontalAlignment.Stretch
                 };
@@ -855,29 +963,29 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         private List<OwnerGuidOption> GetValidOwnerGuidOptions(MenuItemSetting setting)
         {
             return AvailableOwnerGuids
-                .Where(option => MenuItemManagerService.IsValidOwnerOverride(setting, option.GuidId))
+                .Where(option => CanMoveToOwner(setting, option.ScopeKey))
                 .ToList();
         }
 
         private void ApplyOwnerGuidFromCombo(MenuItemSetting setting, ComboBox combo)
         {
             if (_isRefreshing || _isUpdatingDetail) return;
-            if (combo.SelectedValue is not string guidId) return;
+            if (combo.SelectedItem is not OwnerGuidOption option) return;
 
-            if (TrySetOwnerGuidOverride(setting, guidId))
+            if (TrySetOwnerGuidOverride(setting, option))
                 RefreshEditorPreview();
         }
 
-        private bool TrySetOwnerGuidOverride(MenuItemSetting setting, string? selectedValue)
+        private bool TrySetOwnerGuidOverride(MenuItemSetting setting, OwnerGuidOption option)
         {
-            var guidId = ResolveGuidIdFromDisplayPath(selectedValue ?? string.Empty);
+            string guidId = option.GuidId;
             if (string.IsNullOrWhiteSpace(guidId) || string.Equals(guidId, setting.OwnerGuid, StringComparison.Ordinal))
             {
                 setting.OwnerGuidOverride = null;
                 return true;
             }
 
-            if (!MenuItemManagerService.IsValidOwnerOverride(setting, guidId))
+            if (!CanMoveToOwner(setting, option.ScopeKey))
                 return false;
 
             setting.OwnerGuidOverride = guidId;
@@ -914,10 +1022,31 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             RefreshMenuItemList();
         }
 
+        private void TargetScopeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isRefreshing || TargetScopeComboBox.SelectedItem is not string targetName)
+                return;
+            if (string.Equals(_selectedTargetName, targetName, StringComparison.Ordinal))
+                return;
+
+            CaptureExpandedTreeState();
+            _selectedTargetName = targetName;
+            _selectedOwnerKey = RootKey;
+            _selectedSetting = null;
+            SaveLastSelectedTreeNode();
+            RefreshEditorPreview(restoreSelection: false);
+        }
+
         private void Apply_Click(object sender, RoutedEventArgs e)
         {
-            MenuItemManagerService.RebuildMenu();
-            ConfigHandler.GetInstance().SaveConfigs();
+            MenuItemScopeKey selectedKey = _selectedOwnerKey;
+            MenuItemScopeKey? selectedSettingKey = _selectedSetting == null ? null : GetScopeKey(_selectedSetting);
+            MenuItemManagerService.CommitEditingSnapshot(_allSettings);
+            _allSettings = MenuItemManagerService.CreateEditingSnapshot();
+            InitializeTargetScopes();
+            if (FindSetting(selectedKey) != null)
+                _selectedOwnerKey = selectedKey;
+            _selectedSetting = selectedSettingKey.HasValue ? FindSetting(selectedSettingKey.Value) : null;
             RefreshEditorPreview();
             MessageBox.Show("Settings applied and menu rebuilt.", "MenuItemManager", MessageBoxButton.OK, MessageBoxImage.Information);
         }
@@ -934,19 +1063,23 @@ namespace ColorVision.UI.Desktop.MenuItemManager
                 setting.OwnerGuidOverride = null;
             }
 
-            _selectedOwnerGuid = RootGuid;
+            _selectedOwnerKey = RootKey;
             _selectedSetting = null;
-            MenuItemManagerService.RebuildMenu();
-            ConfigHandler.GetInstance().SaveConfigs();
             RefreshEditorPreview();
+        }
+
+        private void Cancel_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
         }
 
         private void UpdateStatusText()
         {
-            int total = _allSettings.Count;
-            int hidden = _allSettings.Count(s => !s.IsVisible);
-            int customOrder = _allSettings.Count(s => s.OrderOverride.HasValue);
-            int movedItems = _allSettings.Count(s => !string.IsNullOrEmpty(s.OwnerGuidOverride));
+            List<MenuItemSetting> surfaceSettings = CurrentSurfaceSettings.ToList();
+            int total = surfaceSettings.Count;
+            int hidden = surfaceSettings.Count(s => !s.IsVisible);
+            int customOrder = surfaceSettings.Count(s => s.OrderOverride.HasValue);
+            int movedItems = surfaceSettings.Count(s => !string.IsNullOrEmpty(s.OwnerGuidOverride));
             StatusText.Text = $"Total: {total} | Hidden: {hidden} | Custom Order: {customOrder} | Moved: {movedItems}";
         }
     }

@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1865
 using ColorVision.Common.MVVM;
+using ColorVision.UI.Authorizations;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -33,6 +34,8 @@ namespace ColorVision.Common.ThirdPartyApps
     {
         public string Name { get; set; } = string.Empty;
         public string Group { get; set; } = string.Empty;
+        public ThirdPartyAppCategory Category { get; set; } = ThirdPartyAppCategory.External;
+        public PermissionMode RequiredPermission { get; set; } = PermissionMode.Guest;
         public int Order { get; set; } = 100;
         public string InstallerPath { get; set; } = string.Empty;
         public string? InstalledExePath { get; set; }
@@ -98,8 +101,24 @@ namespace ColorVision.Common.ThirdPartyApps
         }
         private ImageSource? _iconSource;
 
-        public ICommand DoubleClickCommand => new RelayCommand(a => OnDoubleClick());
-        public ICommand OpenDirectoryCommand => new RelayCommand(a => OnOpenDirectory(), b => !string.IsNullOrEmpty(GetDirectoryPath()));
+        /// <summary>
+        /// Semantic icon used when no executable icon can be extracted.
+        /// </summary>
+        public string IconGlyph { get; set; } = ThirdPartyAppIconGlyphs.Default;
+
+        public bool IsAuthorized
+        {
+            get
+            {
+                Authorization? authorization = Authorization.Instance;
+                return authorization != null && IsAuthorizedFor(authorization.PermissionMode);
+            }
+        }
+
+        public bool IsAuthorizedFor(PermissionMode permissionMode) => permissionMode <= RequiredPermission;
+
+        public ICommand DoubleClickCommand => new RelayCommand(a => OnDoubleClick(), b => IsAuthorized);
+        public ICommand OpenDirectoryCommand => new RelayCommand(a => OnOpenDirectory(), b => IsAuthorized && !string.IsNullOrEmpty(GetDirectoryPath()));
 
         public void RefreshStatus()
         {
@@ -276,6 +295,9 @@ namespace ColorVision.Common.ThirdPartyApps
 
         private void OnDoubleClick()
         {
+            if (!IsAuthorized)
+                return;
+
             if (LaunchAction != null)
             {
                 try
@@ -324,6 +346,9 @@ namespace ColorVision.Common.ThirdPartyApps
 
         public bool CanRunInstaller()
         {
+            if (!IsAuthorized)
+                return false;
+
             if (InstallAction != null)
                 return true;
 
@@ -332,6 +357,9 @@ namespace ColorVision.Common.ThirdPartyApps
 
         public void RunInstaller()
         {
+            if (!IsAuthorized)
+                return;
+
             if (InstallAction != null)
             {
                 try
@@ -375,6 +403,9 @@ namespace ColorVision.Common.ThirdPartyApps
 
         private void OnOpenDirectory()
         {
+            if (!IsAuthorized)
+                return;
+
             string? dir = GetDirectoryPath();
             if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
             {

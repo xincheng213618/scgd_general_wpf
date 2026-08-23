@@ -5,7 +5,7 @@ namespace ColorVision.UI.Menus.Base.File
 {
     public class MenuPrint : MenuItemFileBase
     {
-        public override string GuidId => "Cut";
+        public override string GuidId => nameof(MenuPrint);
         public override string Header => Resources.MenuPrint;
         public override int Order => 50;
         public override string InputGestureText => "Ctrl+P";

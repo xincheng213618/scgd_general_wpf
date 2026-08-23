@@ -1,5 +1,5 @@
 using ColorVision.Common.ThirdPartyApps;
-using System;
+using ColorVision.UI.Authorizations;
 using System.Collections.Generic;
 using System.Windows;
 
@@ -15,9 +15,11 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                 {
                     Name = Properties.Resources.MenuModelViewer3D,
                     Group = "ColorVision",
+                    Category = ThirdPartyAppCategory.Internal,
+                    RequiredPermission = PermissionMode.Guest,
                     Order = 10,
+                    IconGlyph = ThirdPartyAppIconGlyphs.Model3D,
                     LaunchAction = OpenModelViewer,
-                    GetIconPath = () => Environment.ProcessPath
                 }
             };
         }

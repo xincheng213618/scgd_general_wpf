@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.ThirdPartyApps;
 using ColorVision.UI.Menus;
 
 namespace ColorVision.UI.Desktop.ThirdPartyApps
@@ -12,7 +13,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                 FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
                 FontSize = 15,
                 HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
-                Text = "\xE74C",
+                Text = ThirdPartyAppIconGlyphs.Default,
                 TextAlignment = System.Windows.TextAlignment.Center,
                 VerticalAlignment = System.Windows.VerticalAlignment.Center
             };

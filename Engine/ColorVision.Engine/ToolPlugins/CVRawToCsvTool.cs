@@ -2,6 +2,7 @@
 using ColorVision.Common.ThirdPartyApps;
 using ColorVision.Engine.Media;
 using ColorVision.FileIO;
+using ColorVision.UI.Authorizations;
 using Microsoft.Win32;
 using OpenCvSharp;
 using System;
@@ -21,7 +22,10 @@ namespace ColorVision.Engine.ToolPlugins
                 {
                     Name = "CVRaw To CSV",
                     Group = Properties.Resources.InternalTools,
+                    Category = ThirdPartyAppCategory.Internal,
+                    RequiredPermission = PermissionMode.Guest,
                     Order = 8,
+                    IconGlyph = ThirdPartyAppIconGlyphs.Export,
                     LaunchAction = () => new CVRawToCsvTool().Execute(),
                 }
             };
