@@ -83,6 +83,9 @@ namespace ProjectARVRPro.Process.DemuraAOI
             return Task.FromResult(true);
         }
 
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<DemuraAoiTestResult>(result, string.IsNullOrWhiteSpace(Config.Name) ? "DemuraAOI" : Config.Name.Trim());
+
         public override void Render(IProcessExecutionContext ctx)
         {
         }

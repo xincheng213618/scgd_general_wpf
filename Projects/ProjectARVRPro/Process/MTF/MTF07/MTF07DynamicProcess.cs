@@ -99,6 +99,9 @@ namespace ProjectARVRPro.Process.MTF.MTF07
             }
         }
 
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<TTestResult>(result, Config.GetOutputKey());
+
         public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson))

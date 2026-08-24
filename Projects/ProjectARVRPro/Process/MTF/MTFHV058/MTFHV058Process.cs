@@ -265,6 +265,9 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
         }
 
 
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<MTFHV058TestResult>(result, string.IsNullOrWhiteSpace(Config.Name) ? "MTF058" : Config.Name.Trim());
+
         public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;

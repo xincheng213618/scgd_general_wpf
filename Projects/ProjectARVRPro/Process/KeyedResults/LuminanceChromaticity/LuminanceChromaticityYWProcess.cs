@@ -213,6 +213,9 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
             UpLimit = recipe.Max
         };
 
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<LuminanceChromaticityYWTestResult>(result, Config.GetOutputKey());
+
         public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson))

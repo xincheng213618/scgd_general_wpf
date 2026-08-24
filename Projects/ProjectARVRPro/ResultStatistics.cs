@@ -707,6 +707,17 @@ namespace ProjectARVRPro
             return query.OrderBy(item => item.Id, OrderByType.Asc).ToList();
         }
 
+        public IReadOnlyList<ProjectARVRReuslt> QueryFlowDetailsForExport(ResultStatisticsRecordRow record)
+        {
+            List<ProjectARVRReuslt> results = QueryFlowDetails(record).ToList();
+            if (results.Count == 0)
+                return results;
+
+            using SqlSugarClient db = CreateClient();
+            ResultJsonPayloadStorage.LoadViewResultJsons(db, results);
+            return results;
+        }
+
         public IReadOnlyList<FlowExecutionRecordRow> QueryFlowExecutions(FlowExecutionQuery query)
         {
             ValidateFlowExecutionQuery(query);

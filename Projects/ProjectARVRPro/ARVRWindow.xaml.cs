@@ -1482,7 +1482,12 @@ namespace ProjectARVRPro
                     }
                     else
                     {
-                        ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, filePath);
+                        IReadOnlyList<ProjectARVRReuslt> flowResults = ViewResultManager.GetObjectiveTestFlowResults(ObjectiveTestResultRecordId);
+                        IReadOnlyList<ObjectiveTestCsvRow> rows = ProjectARVRResultCsvExporter.CollectRows(flowResults);
+                        if (rows.Count > 0)
+                            ProjectARVRResultCsvExporter.ExportRows(rows, filePath);
+                        else
+                            ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, filePath);
                     }
                 }
                 catch (Exception ex)

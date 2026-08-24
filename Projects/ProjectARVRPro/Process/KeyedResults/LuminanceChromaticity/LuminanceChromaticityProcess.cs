@@ -184,6 +184,9 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
             };
         }
 
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<LuminanceChromaticityTestResult>(result, Config.GetOutputKey());
+
         public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson))

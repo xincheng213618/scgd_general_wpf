@@ -11,14 +11,21 @@ namespace ProjectARVRPro
         private static readonly string[] FixedHeaders = ["SN", "开始时间", "结束时间"];
 
         public static void ExportToCsv(IEnumerable<ObjectiveTestResultRecord> records, string filePath)
+            => ExportToCsv(records, new Dictionary<int, IReadOnlyList<ProjectARVRReuslt>>(), filePath);
+
+        public static void ExportToCsv(
+            IEnumerable<ObjectiveTestResultRecord> records,
+            IReadOnlyDictionary<int, IReadOnlyList<ProjectARVRReuslt>> flowResultsByRecordId,
+            string filePath)
         {
             ArgumentNullException.ThrowIfNull(records);
+            ArgumentNullException.ThrowIfNull(flowResultsByRecordId);
             ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 
             List<ObjectiveTestResultRecord> recordList = records.ToList();
             IReadOnlyList<ObjectiveTestResultMetric> columns = recordList.Count == 0
                 ? Array.Empty<ObjectiveTestResultMetric>()
-                : CollectMetrics(recordList[0]);
+                : CollectMetrics(recordList[0], flowResultsByRecordId);
 
             using var writer = new StreamWriter(filePath, false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
             writer.NewLine = "\r\n";
@@ -26,7 +33,7 @@ namespace ProjectARVRPro
 
             foreach (ObjectiveTestResultRecord record in recordList)
             {
-                Dictionary<string, string> values = CollectMetrics(record)
+                Dictionary<string, string> values = CollectMetrics(record, flowResultsByRecordId)
                     .ToDictionary(metric => metric.Key, metric => metric.Value, StringComparer.OrdinalIgnoreCase);
 
                 var row = new List<string>(3 + columns.Count)
@@ -43,8 +50,17 @@ namespace ProjectARVRPro
             }
         }
 
-        private static IReadOnlyList<ObjectiveTestResultMetric> CollectMetrics(ObjectiveTestResultRecord record)
+        private static IReadOnlyList<ObjectiveTestResultMetric> CollectMetrics(
+            ObjectiveTestResultRecord record,
+            IReadOnlyDictionary<int, IReadOnlyList<ProjectARVRReuslt>> flowResultsByRecordId)
         {
+            if (flowResultsByRecordId.TryGetValue(record.Id, out IReadOnlyList<ProjectARVRReuslt>? flowResults))
+            {
+                IReadOnlyList<ObjectiveTestResultMetric> flowMetrics = ProjectARVRResultCsvExporter.CollectMetrics(flowResults);
+                if (flowMetrics.Count > 0)
+                    return flowMetrics;
+            }
+
             if (string.IsNullOrWhiteSpace(record.ObjectiveTestResultJson))
                 return Array.Empty<ObjectiveTestResultMetric>();
 

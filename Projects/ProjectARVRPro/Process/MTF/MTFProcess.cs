@@ -79,6 +79,9 @@ namespace ProjectARVRPro.Process.MTF
             }
         }
 
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<MTFTestResult>(result, string.IsNullOrWhiteSpace(Config.Name) ? "MTF" : Config.Name.Trim());
+
         public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;

@@ -67,6 +67,9 @@ namespace ProjectARVRPro.Process.MTF.MTFHVDynamic
             }
         }
 
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<MTFHVDynamicTestResult>(result, string.IsNullOrWhiteSpace(Config.Name) ? "MTFHV" : Config.Name.Trim());
+
         public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;

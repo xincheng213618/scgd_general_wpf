@@ -142,6 +142,9 @@ namespace ProjectARVRPro.Process.Distortion
             }
         }
 
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<DistortionDynamicTestResult>(result, string.IsNullOrWhiteSpace(Config.Name) ? "Distortion" : Config.Name.Trim());
+
         public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;

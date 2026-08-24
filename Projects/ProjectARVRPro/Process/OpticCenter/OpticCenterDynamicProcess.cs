@@ -98,6 +98,9 @@ namespace ProjectARVRPro.Process.OpticCenter
             }
         }
 
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<OpticCenterDynamicTestResult>(result, string.IsNullOrWhiteSpace(Config.Name) ? "Optical_Center" : Config.Name.Trim());
+
         public override void Render(IProcessExecutionContext ctx)
         {
         }
