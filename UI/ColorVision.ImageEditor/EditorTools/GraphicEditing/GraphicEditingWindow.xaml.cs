@@ -195,12 +195,14 @@ namespace ColorVision.ImageEditor
         }
         private double _MinConfidence = 0.25;
 
-        [Category("经典算法"), DisplayName("Threshold")]
+        [Category("定位"), DisplayName("经典阈值")]
+        [Description("经典兼容算法使用的二值化阈值。")]
         [PropertyVisibility(nameof(Algorithm), LuminousAreaDetectionMode.Legacy)]
         public int Threshold { get => _Threshold; set { _Threshold = value; OnPropertyChanged(); } }
         private int _Threshold = 20;
 
-        [Category("经典算法"), DisplayName("UseRotatedRect")]
+        [Category("定位"), DisplayName("经典旋转矩形")]
+        [Description("启用后，经典兼容算法使用旋转矩形输出四角点。")]
         [PropertyVisibility(nameof(Algorithm), LuminousAreaDetectionMode.Legacy)]
         public bool UseRotatedRect { get => _UseRotatedRect; set { _UseRotatedRect = value; OnPropertyChanged(); } }
         private bool _UseRotatedRect = true;
