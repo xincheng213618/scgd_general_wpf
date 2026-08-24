@@ -17,6 +17,30 @@ public sealed class CopilotForegroundProcessEvidenceTests : IDisposable
         Guid.NewGuid().ToString("N")));
 
     [Fact]
+    public async Task ShellContainmentFailureUsesStableFailureCode()
+    {
+        Directory.CreateDirectory(_root);
+        var shellPath = Path.Combine(_root, "powershell.exe");
+        File.WriteAllText(shellPath, string.Empty);
+        var service = new CopilotShellCommandService(
+            new ContainmentFailureShellRunner(),
+            _ => shellPath);
+
+        var result = await service.ExecuteAsync(
+            CreateRequest(),
+            CreateShellInput("Get-Location"),
+            CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Equal(CopilotToolFailureKind.Internal, result.FailureKind);
+        Assert.Equal(
+            CopilotShellCommandService.ProcessTreeContainmentUnavailableFailureCode,
+            result.FailureCode);
+        Assert.Contains("process-tree containment", result.Summary, StringComparison.Ordinal);
+        Assert.Contains("Windows Job Object", result.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ForegroundServicesPublishOnlyFixedStructuredProcessOutcomes()
     {
         Directory.CreateDirectory(_root);
@@ -311,6 +335,18 @@ public sealed class CopilotForegroundProcessEvidenceTests : IDisposable
         {
             cancellationToken.ThrowIfCancellationRequested();
             return Task.FromResult(_results.Dequeue());
+        }
+    }
+
+    private sealed class ContainmentFailureShellRunner : ICopilotShellProcessRunner
+    {
+        public Task<CopilotShellProcessResult> RunAsync(
+            CopilotShellProcessCommand command,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            throw new CopilotProcessTreeContainmentException(
+                "The process could not be assigned to a Windows Job Object.");
         }
     }
 }

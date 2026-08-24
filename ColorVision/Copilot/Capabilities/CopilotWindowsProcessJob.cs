@@ -3,10 +3,19 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
+    internal sealed class CopilotProcessTreeContainmentException : InvalidOperationException
+    {
+        public CopilotProcessTreeContainmentException(string message, Exception? innerException = null)
+            : base(message, innerException)
+        {
+        }
+    }
+
     /// <summary>
     /// Places one shell process and its descendants in a disposable Windows Job Object.
     /// Closing the job is a final safety net; callers should terminate it explicitly before
@@ -70,6 +79,42 @@ namespace ColorVision.Copilot
             }
         }
 
+        public static async Task<CopilotWindowsProcessJob> AssignRequiredAsync(
+            Process process,
+            Func<Process, CopilotWindowsProcessJob?> tryAssign)
+        {
+            ArgumentNullException.ThrowIfNull(process);
+            ArgumentNullException.ThrowIfNull(tryAssign);
+
+            Exception? assignmentFailure = null;
+            try
+            {
+                var processJob = tryAssign(process);
+                if (processJob != null)
+                    return processJob;
+            }
+            catch (OutOfMemoryException)
+            {
+                await CopilotProcessExecutionSupport.TerminateProcessTreeAsync(
+                        process,
+                        processJob: null)
+                    .ConfigureAwait(false);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                assignmentFailure = ex;
+            }
+
+            await CopilotProcessExecutionSupport.TerminateProcessTreeAsync(process, processJob: null)
+                .ConfigureAwait(false);
+            var rootProcessExited = TryHasExited(process);
+            var message = rootProcessExited
+                ? "The process could not be assigned to a kill-on-close Windows Job Object; execution was aborted and the root process was terminated."
+                : "The process could not be assigned to a kill-on-close Windows Job Object; execution was aborted, but root-process termination could not be confirmed.";
+            throw new CopilotProcessTreeContainmentException(message, assignmentFailure);
+        }
+
         public bool TryTerminate()
         {
             var handle = _handle;
@@ -79,32 +124,6 @@ namespace ColorVision.Copilot
             try
             {
                 return TerminateJobObject(handle, 1);
-            }
-            catch (ObjectDisposedException)
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Removes this job's kill-on-close limit after the root process has completed so an
-        /// intentionally detached hook helper can outlive the runner. Failure stays fail-closed:
-        /// disposing the job will still terminate any remaining descendants.
-        /// </summary>
-        public bool TryPreserveDescendants()
-        {
-            var handle = _handle;
-            if (handle == null || handle.IsClosed || handle.IsInvalid)
-                return false;
-
-            try
-            {
-                var information = new JobObjectExtendedLimitInformation();
-                return SetInformationJobObject(
-                    handle,
-                    JobObjectInformationClass.ExtendedLimitInformation,
-                    ref information,
-                    (uint)Marshal.SizeOf<JobObjectExtendedLimitInformation>());
             }
             catch (ObjectDisposedException)
             {
@@ -156,10 +175,21 @@ namespace ColorVision.Copilot
             }
         }
 
+        private static bool TryHasExited(Process process)
+        {
+            try
+            {
+                return process.HasExited;
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or ObjectDisposedException or Win32Exception)
+            {
+                return false;
+            }
+        }
+
         public void Dispose()
         {
-            _handle?.Dispose();
-            _handle = null;
+            Interlocked.Exchange(ref _handle, null)?.Dispose();
         }
 
         private enum JobObjectInformationClass

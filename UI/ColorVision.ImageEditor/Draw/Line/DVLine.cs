@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 
@@ -55,18 +54,9 @@ namespace ColorVision.ImageEditor.Draw
 
         public override Rect GetRect()
         {
-            if (Points.Count == 0)
-            {
+            Rect rect = PointCollectionGeometry.GetBounds(Points);
+            if (rect.IsEmpty)
                 return Rect.Empty;
-            }
-
-            // 计算所有点的边界
-            double minX = Points.Min(p => p.X);
-            double minY = Points.Min(p => p.Y);
-            double maxX = Points.Max(p => p.X);
-            double maxY = Points.Max(p => p.Y);
-
-            var rect = new Rect(new Point(minX, minY), new Point(maxX, maxY));
 
             // 考虑画笔粗细，向外扩展矩形
             // 这确保了即使是水平或垂直的直线，其矩形也具有厚度
@@ -98,22 +88,12 @@ namespace ColorVision.ImageEditor.Draw
             double scaleX = rect.Width / currentRect.Width;
             double scaleY = rect.Height / currentRect.Height;
 
-            var newPoints = new List<Point>();
+            List<Point> newPoints = new(Points.Count);
             for (int i = 0; i < Points.Count; i++)
             {
-                // 1. 将点平移到原点坐标系
-                double translatedX = Points[i].X - currentRect.X;
-                double translatedY = Points[i].Y - currentRect.Y;
-
-                // 2. 进行缩放
-                double scaledX = translatedX * scaleX;
-                double scaledY = translatedY * scaleY;
-
-                // 3. 平移到新矩形的位置
-                double finalX = scaledX + rect.X;
-                double finalY = scaledY + rect.Y;
-
-                newPoints.Add(new Point(finalX, finalY));
+                newPoints.Add(new Point(
+                    (Points[i].X - currentRect.X) * scaleX + rect.X,
+                    (Points[i].Y - currentRect.Y) * scaleY + rect.Y));
             }
 
             Attribute.Points = newPoints;

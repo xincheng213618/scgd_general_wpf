@@ -1,4 +1,5 @@
 using ColorVision.Common.ThirdPartyApps;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Desktop.Properties;
 using System.Windows;
 
@@ -52,9 +53,11 @@ namespace ColorVision.UI.Desktop.TimedButtons
                 {
                     Name = Resources.MenuTimedButtonOperationStats,
                     Group = "ColorVision",
+                    Category = ThirdPartyAppCategory.Internal,
+                    RequiredPermission = PermissionMode.Guest,
                     Order = 11,
+                    IconGlyph = ThirdPartyAppIconGlyphs.Statistics,
                     LaunchAction = () => new TimedButtonOperationStatsWindowLauncher().OpenWindow(),
-                    GetIconPath = () => Environment.ProcessPath
                 }
             };
         }

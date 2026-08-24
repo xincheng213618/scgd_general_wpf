@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.ThirdPartyApps;
+using ColorVision.UI.Authorizations;
 using System.Windows;
 
 namespace ColorVision.UI.Desktop.ThirdPartyApps.Treemap
@@ -13,7 +14,10 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps.Treemap
                 {
                     Name = "Treemap",
                     Group = "ColorVision",
+                    Category = ThirdPartyAppCategory.Internal,
+                    RequiredPermission = PermissionMode.Guest,
                     Order = -1000,
+                    IconGlyph = ThirdPartyAppIconGlyphs.Treemap,
                     LaunchAction = () =>
                     {
                         new TreemapWindow
@@ -22,7 +26,6 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps.Treemap
                             WindowStartupLocation = WindowStartupLocation.CenterOwner
                         }.Show();
                     },
-                    GetIconPath = () => Environment.ProcessPath
                 }
             };
         }

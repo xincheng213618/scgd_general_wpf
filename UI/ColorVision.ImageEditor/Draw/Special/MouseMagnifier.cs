@@ -110,12 +110,12 @@ namespace ColorVision.ImageEditor.Draw.Special
             if (Control)
             {
                 if (!Image.ContainsVisual(DrawVisualImage))
-                    Image.AddVisualCommand(DrawVisualImage);
+                    Image.AddOverlayVisual(DrawVisualImage);
             }
             else
             {
                 if (Image.ContainsVisual(DrawVisualImage))
-                    Image.RemoveVisualCommand(DrawVisualImage);
+                    Image.RemoveOverlayVisual(DrawVisualImage);
             }
         }
     }

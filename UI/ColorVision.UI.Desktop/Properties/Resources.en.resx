@@ -229,7 +229,16 @@
     <value>Loading</value>
   </data>
   <data name="ThirdPartyApps" xml:space="preserve">
-    <value>Third-Party Apps</value>
+    <value>Apps &amp; Tools</value>
+  </data>
+  <data name="ThirdPartyAppsCategoryInternal" xml:space="preserve">
+    <value>Internal Tools</value>
+  </data>
+  <data name="ThirdPartyAppsCategoryExternal" xml:space="preserve">
+    <value>External Apps</value>
+  </data>
+  <data name="ThirdPartyAppsCategoryCustom" xml:space="preserve">
+    <value>Custom</value>
   </data>
   <data name="Open" xml:space="preserve">
     <value>Open</value>

@@ -2,6 +2,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -29,8 +30,9 @@ namespace ColorVision.Copilot
     {
         public const string ConfigAESKey = "ColorVision";
         public const string ConfigAESVector = "CopilotConfig";
-        public const int CurrentSchemaVersion = 6;
-        public const string DefaultBackendSyncUrl = "http://xc213618.ddns.me:9998";
+        public const int CurrentSchemaVersion = 8;
+        public const string DefaultBackendSyncUrl = "";
+        internal const string LegacyInsecureBackendSyncUrl = "http://xc213618.ddns.me:9998";
 
         public static CopilotConfig Instance => ConfigHandler.GetInstance().GetRequiredService<CopilotConfig>();
 
@@ -54,7 +56,20 @@ namespace ColorVision.Copilot
             get => _allowInsecureBackendSync;
             set => SetProperty(ref _allowInsecureBackendSync, value);
         }
-        private bool _allowInsecureBackendSync = true;
+        private bool _allowInsecureBackendSync;
+
+        public bool ShouldSerializeAllowInsecureBackendSync() => false;
+
+        [Browsable(false)]
+        public string WebPagePref64Prefixes
+        {
+            get => _webPagePref64Prefixes;
+            set => SetProperty(ref _webPagePref64Prefixes, value?.Trim() ?? string.Empty);
+        }
+        private string _webPagePref64Prefixes = string.Empty;
+
+        public bool ShouldSerializeWebPagePref64Prefixes() =>
+            !string.IsNullOrWhiteSpace(WebPagePref64Prefixes);
 
         [Browsable(false)]
         public int SchemaVersion { get; set; }
@@ -142,24 +157,51 @@ namespace ColorVision.Copilot
 
             changed |= CopilotTemporaryProfileSource.Sync(Profiles);
 
+            for (var index = Profiles.Count - 1; index >= 0; index--)
+            {
+                var profile = Profiles[index];
+                if (IsUntrustedBackendProfile(profile))
+                {
+                    Profiles.RemoveAt(index);
+                    changed = true;
+                    continue;
+                }
+                if (profile.IsBackendSynced && profile.AllowInsecureHttp)
+                {
+                    profile.AllowInsecureHttp = false;
+                    changed = true;
+                }
+            }
+
+            if (IsLegacyInsecureBackendSyncUrl(BackendSyncUrl))
+            {
+                BackendSyncUrl = DefaultBackendSyncUrl;
+                changed = true;
+            }
+
             if (Profiles.Count == 0)
             {
                 Profiles.Add(CopilotProfileConfig.CreateDefault());
                 changed = true;
             }
 
-            if (string.IsNullOrWhiteSpace(BackendSyncUrl))
+            if (AllowInsecureBackendSync)
             {
-                BackendSyncUrl = DefaultBackendSyncUrl;
+                AllowInsecureBackendSync = false;
                 changed = true;
             }
 
-            if (SchemaVersion < 5
-                && string.Equals(BackendSyncUrl.TrimEnd('/'), DefaultBackendSyncUrl, StringComparison.OrdinalIgnoreCase)
-                && !AllowInsecureBackendSync)
+            if (CopilotWebPagePref64Configuration.TryParse(
+                    WebPagePref64Prefixes,
+                    out var pref64Prefixes,
+                    out _))
             {
-                AllowInsecureBackendSync = true;
-                changed = true;
+                var normalizedPref64Prefixes = CopilotWebPagePref64Configuration.Format(pref64Prefixes);
+                if (!string.Equals(WebPagePref64Prefixes, normalizedPref64Prefixes, StringComparison.Ordinal))
+                {
+                    WebPagePref64Prefixes = normalizedPref64Prefixes;
+                    changed = true;
+                }
             }
 
             if (SchemaVersion < CurrentSchemaVersion)
@@ -169,9 +211,7 @@ namespace ColorVision.Copilot
             }
 
             foreach (var profile in Profiles)
-            {
                 changed |= profile.EnsureValid();
-            }
 
             for (var index = ExternalMcpServers.Count - 1; index >= 0; index--)
             {
@@ -198,6 +238,34 @@ namespace ColorVision.Copilot
             return changed;
         }
 
+        private static bool IsUntrustedBackendProfile(CopilotProfileConfig profile)
+        {
+            var hasSyncSource = !string.IsNullOrWhiteSpace(profile.SyncSource);
+            var hasSyncProfileId = !string.IsNullOrWhiteSpace(profile.SyncProfileId);
+            if (!hasSyncSource && !hasSyncProfileId)
+                return false;
+            if (!hasSyncSource || !hasSyncProfileId)
+                return true;
+
+            return !CopilotBackendSyncClient.IsTrustedSyncSource(profile.SyncSource)
+                || !CopilotProviderEndpoint.Validate(
+                    profile.BaseUrl,
+                    profile.ProviderType,
+                    allowInsecureHttp: false).IsValid;
+        }
+
+        private static bool IsLegacyInsecureBackendSyncUrl(string? value)
+        {
+            return Uri.TryCreate(value?.Trim(), UriKind.Absolute, out var candidate)
+                && Uri.TryCreate(LegacyInsecureBackendSyncUrl, UriKind.Absolute, out var legacy)
+                && string.Equals(candidate.Scheme, legacy.Scheme, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(
+                    candidate.IdnHost.TrimEnd('.'),
+                    legacy.IdnHost.TrimEnd('.'),
+                    StringComparison.OrdinalIgnoreCase)
+                && candidate.Port == legacy.Port;
+        }
+
         public CopilotProfileConfig? FindProfile(string? profileId)
         {
             if (string.IsNullOrWhiteSpace(profileId))
@@ -210,6 +278,110 @@ namespace ColorVision.Copilot
         {
             return Profiles.FirstOrDefault(profile => profile.IsConfigured)
                 ?? Profiles.FirstOrDefault();
+        }
+
+        internal CopilotConfig CreatePersistenceSnapshot(
+            IEnumerable<CopilotProfileConfig>? profiles = null)
+        {
+            var profileSnapshot = (profiles ?? Profiles ?? Enumerable.Empty<CopilotProfileConfig>())
+                .Where(profile => profile != null)
+                .Select(profile => profile.Clone());
+            var externalMcpServerSnapshot = (ExternalMcpServers
+                    ?? new ObservableCollection<CopilotMcpClientServerConfig>())
+                .Where(server => server != null)
+                .Select(server => server.Clone());
+
+            return new CopilotConfig
+            {
+                Profiles = new ObservableCollection<CopilotProfileConfig>(profileSnapshot),
+                ExternalMcpServers = new ObservableCollection<CopilotMcpClientServerConfig>(externalMcpServerSnapshot),
+                AgentDefaults = AgentDefaults?.Clone() ?? new CopilotAgentDefaultsConfig(),
+                BackendSyncUrl = BackendSyncUrl,
+                AllowInsecureBackendSync = AllowInsecureBackendSync,
+                WebPagePref64Prefixes = WebPagePref64Prefixes,
+                SchemaVersion = SchemaVersion,
+                McpEnabled = McpEnabled,
+                McpPort = McpPort,
+                McpBearerToken = McpBearerToken,
+                AutoShowPanelOnFirstLaunch = AutoShowPanelOnFirstLaunch,
+            };
+        }
+
+        internal void ApplyPersistenceSnapshot(CopilotConfig snapshot)
+        {
+            CommitPersistenceSnapshot(snapshot);
+            NotifyPersistenceSnapshotApplied();
+        }
+
+        internal void CommitPersistenceSnapshot(CopilotConfig snapshot)
+        {
+            ArgumentNullException.ThrowIfNull(snapshot);
+
+            var profiles = CreateProfileCollection(snapshot.Profiles);
+            var externalMcpServers = new ObservableCollection<CopilotMcpClientServerConfig>((snapshot.ExternalMcpServers
+                    ?? new ObservableCollection<CopilotMcpClientServerConfig>())
+                .Where(server => server != null)
+                .Select(server => server.Clone())
+                .ToArray());
+            var agentDefaults = snapshot.AgentDefaults?.Clone() ?? new CopilotAgentDefaultsConfig();
+
+            Profiles = profiles;
+            ExternalMcpServers = externalMcpServers;
+            AgentDefaults = agentDefaults;
+            _backendSyncUrl = snapshot.BackendSyncUrl;
+            _allowInsecureBackendSync = snapshot.AllowInsecureBackendSync;
+            _webPagePref64Prefixes = snapshot.WebPagePref64Prefixes;
+            SchemaVersion = snapshot.SchemaVersion;
+            _mcpEnabled = snapshot.McpEnabled;
+            _mcpPort = snapshot.McpPort;
+            _mcpBearerToken = snapshot.McpBearerToken;
+            _autoShowPanelOnFirstLaunch = snapshot.AutoShowPanelOnFirstLaunch;
+        }
+
+        internal void NotifyPersistenceSnapshotApplied()
+        {
+            OnPropertyChanged(nameof(Profiles));
+            OnPropertyChanged(nameof(ExternalMcpServers));
+            OnPropertyChanged(nameof(AgentDefaults));
+            OnPropertyChanged(nameof(BackendSyncUrl));
+            OnPropertyChanged(nameof(AllowInsecureBackendSync));
+            OnPropertyChanged(nameof(WebPagePref64Prefixes));
+            OnPropertyChanged(nameof(SchemaVersion));
+            OnPropertyChanged(nameof(IsPersistenceBlocked));
+            OnPropertyChanged(nameof(McpEnabled));
+            OnPropertyChanged(nameof(McpPort));
+            OnPropertyChanged(nameof(McpBearerToken));
+            OnPropertyChanged(nameof(McpEndpoint));
+            OnPropertyChanged(nameof(AutoShowPanelOnFirstLaunch));
+            OnPropertyChanged(nameof(IsConfigured));
+        }
+
+        internal void ReplaceProfiles(IEnumerable<CopilotProfileConfig> profiles)
+        {
+            CommitProfiles(profiles);
+            NotifyProfilesReplaced();
+        }
+
+        internal void CommitProfiles(IEnumerable<CopilotProfileConfig> profiles)
+        {
+            ArgumentNullException.ThrowIfNull(profiles);
+            var profileCollection = CreateProfileCollection(profiles);
+            Profiles = profileCollection;
+        }
+
+        internal void NotifyProfilesReplaced()
+        {
+            OnPropertyChanged(nameof(Profiles));
+            OnPropertyChanged(nameof(IsConfigured));
+        }
+
+        private static ObservableCollection<CopilotProfileConfig> CreateProfileCollection(
+            IEnumerable<CopilotProfileConfig> profiles)
+        {
+            return new ObservableCollection<CopilotProfileConfig>(profiles
+                .Where(profile => profile != null)
+                .Select(profile => profile.Clone())
+                .ToArray());
         }
 
         public static string GenerateMcpBearerToken()

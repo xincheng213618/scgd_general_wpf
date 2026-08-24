@@ -49,12 +49,23 @@ namespace ColorVision.Copilot
 
                 var item = catalog[request.CatalogIndex - 1];
                 var disabled = request.Action == CopilotAgentSkillCommandAction.Disable;
-                var changed = SetAgentSkillPathState(
+                var status = TrySetAgentSkillPathState(
                     item,
-                    disabled ? CopilotAgentSkillOverrideState.Off : CopilotAgentSkillOverrideState.On);
-                resultPrefix = changed
-                    ? $"已按精确路径{(disabled ? "关闭" : "启用")} #{request.CatalogIndex} ${item.Name}；从下一次请求开始生效。"
-                    : $"#{request.CatalogIndex} ${item.Name} 的精确路径已经处于请求状态。";
+                    disabled ? CopilotAgentSkillOverrideState.Off : CopilotAgentSkillOverrideState.On,
+                    out var changed,
+                    out var errorMessage);
+                resultPrefix = status switch
+                {
+                    ConfigSavePublicationStatus.NotPersisted =>
+                        $"未更改 #{request.CatalogIndex} ${item.Name}：配置保存失败。{Environment.NewLine}"
+                        + CopilotUserFacingErrorFormatter.Sanitize(errorMessage),
+                    ConfigSavePublicationStatus.PersistedButPublishFailed =>
+                        $"#{request.CatalogIndex} ${item.Name} 的状态已保存，但当前聊天界面未能刷新。{Environment.NewLine}"
+                        + CopilotUserFacingErrorFormatter.Sanitize(errorMessage),
+                    _ when changed =>
+                        $"已按精确路径{(disabled ? "关闭" : "启用")} #{request.CatalogIndex} ${item.Name}；从下一次请求开始生效。",
+                    _ => $"#{request.CatalogIndex} ${item.Name} 的精确路径已经处于请求状态。",
+                };
             }
 
             ShowLocalCommandResult(
@@ -100,15 +111,21 @@ namespace ColorVision.Copilot
                 .ToArray();
         }
 
-        private bool SetAgentSkillPathState(
+        internal ConfigSavePublicationStatus TrySetAgentSkillPathState(
             CopilotAgentSkillCatalogItem item,
-            CopilotAgentSkillOverrideState state)
+            CopilotAgentSkillOverrideState state,
+            out bool changed,
+            out string errorMessage)
         {
             var agentDefaults = _config.AgentDefaults;
             var skillFilePath = CopilotAgentSkillOverrideConfig.NormalizeSkillFilePath(item.SkillFilePath);
             if (skillFilePath.Length == 0
                 || state is not (CopilotAgentSkillOverrideState.On or CopilotAgentSkillOverrideState.Off))
-                return false;
+            {
+                changed = false;
+                errorMessage = "The skill path or requested state is invalid.";
+                return ConfigSavePublicationStatus.NotPersisted;
+            }
 
             var entries = CopilotAgentSkillOverrideConfig.Normalize(agentDefaults.SkillOverrides)
                 .Where(entry => !string.Equals(entry.SkillFilePath, skillFilePath, StringComparison.OrdinalIgnoreCase))
@@ -123,18 +140,34 @@ namespace ColorVision.Copilot
 
             var normalized = CopilotAgentSkillOverrideConfig.Normalize(entries);
             var before = CopilotAgentSkillOverrideConfig.Normalize(agentDefaults.SkillOverrides);
-            var changed = !before
+            changed = !before
                 .Select(entry => (entry.Name, entry.SkillFilePath, entry.State))
                 .SequenceEqual(normalized.Select(entry => (entry.Name, entry.SkillFilePath, entry.State)));
             if (!changed)
-                return false;
+            {
+                errorMessage = string.Empty;
+                return ConfigSavePublicationStatus.PersistedAndPublished;
+            }
 
-            agentDefaults.SkillOverrides.Clear();
-            foreach (var entry in normalized)
-                agentDefaults.SkillOverrides.Add(entry);
-            CopilotAgentSkillCatalog.Invalidate();
-            PersistConfig();
-            return true;
+            var status = TryPersistConfigMutation(candidate =>
+            {
+                candidate.AgentDefaults.SkillOverrides.Clear();
+                foreach (var entry in normalized)
+                    candidate.AgentDefaults.SkillOverrides.Add(entry.Clone());
+            }, out errorMessage);
+            if (status != ConfigSavePublicationStatus.PersistedAndPublished)
+                return status;
+
+            try
+            {
+                CopilotAgentSkillCatalog.Invalidate();
+                return ConfigSavePublicationStatus.PersistedAndPublished;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.GetBaseException().Message;
+                return ConfigSavePublicationStatus.PersistedButPublishFailed;
+            }
         }
 
         private string BuildPermissionDiagnosticsReport()

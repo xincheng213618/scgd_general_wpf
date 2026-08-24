@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Media;
+using System.ComponentModel;
 
 namespace ColorVision.ImageEditor.Draw
 {
@@ -13,15 +14,21 @@ namespace ColorVision.ImageEditor.Draw
         public DVDatumRectangle()
         {
             Attribute = new RectangleProperties();
-            Attribute.PropertyChanged += (s, e) =>
-            {
-                if (AutoAttributeChanged) Render();
-            };
+            ObserveAttributeChanges(OnAttributePropertyChanged);
+        }
+
+        private void OnAttributePropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (AutoAttributeChanged)
+                Render();
         }
 
         public override void Render()
         {
             using DrawingContext dc = RenderOpen();
+            if (Attribute.Rect.IsEmpty || !ShapeGeometry.IsFinite(Attribute.Rect))
+                return;
+
             dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);
         }
     }

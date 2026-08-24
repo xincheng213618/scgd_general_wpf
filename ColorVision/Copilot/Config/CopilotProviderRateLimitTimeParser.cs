@@ -112,6 +112,7 @@ namespace ColorVision.Copilot
             decimal totalMilliseconds = 0;
             var index = 0;
             var hasComponent = false;
+            var isSaturated = false;
             while (index < value.Length)
             {
                 while (index < value.Length && char.IsWhiteSpace(value[index]))
@@ -181,14 +182,13 @@ namespace ColorVision.Copilot
                 var maximumMilliseconds = (decimal)TimeSpan.MaxValue.Ticks / TimeSpan.TicksPerMillisecond;
                 if (amount > maximumMilliseconds / unitMilliseconds)
                 {
-                    duration = TimeSpan.MaxValue;
-                    return true;
+                    isSaturated = true;
                 }
-                totalMilliseconds += amount * unitMilliseconds;
-                if (totalMilliseconds >= maximumMilliseconds)
+                else if (!isSaturated)
                 {
-                    duration = TimeSpan.MaxValue;
-                    return true;
+                    totalMilliseconds += amount * unitMilliseconds;
+                    if (totalMilliseconds >= maximumMilliseconds)
+                        isSaturated = true;
                 }
                 hasComponent = true;
             }
@@ -199,9 +199,11 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            duration = TimeSpan.FromTicks(
-                decimal.ToInt64(decimal.Truncate(
-                    totalMilliseconds * TimeSpan.TicksPerMillisecond)));
+            duration = isSaturated
+                ? TimeSpan.MaxValue
+                : TimeSpan.FromTicks(
+                    decimal.ToInt64(decimal.Truncate(
+                        totalMilliseconds * TimeSpan.TicksPerMillisecond)));
             return true;
         }
 

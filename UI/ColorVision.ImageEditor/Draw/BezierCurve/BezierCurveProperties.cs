@@ -45,6 +45,9 @@ namespace ColorVision.ImageEditor.Draw
             get => Pen?.Thickness ?? 1;
             set
             {
+                if (!double.IsFinite(value))
+                    return;
+
                 double next = value < 1 ? 1 : value;
                 Pen writablePen = EnsureWritablePen();
                 if (writablePen.Thickness == next)

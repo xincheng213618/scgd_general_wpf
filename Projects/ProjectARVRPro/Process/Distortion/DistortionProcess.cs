@@ -134,6 +134,9 @@ namespace ProjectARVRPro.Process.Distortion
             }
         }
 
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<DistortionTestResult>(result, "Distortion");
+
         public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
@@ -142,13 +145,19 @@ namespace ProjectARVRPro.Process.Distortion
 
             foreach (var points in testResult.Points)
             {
-                DVCircleText Circle = new();
-                Circle.Attribute.Center = new System.Windows.Point(points.X, points.Y);
-                Circle.Attribute.Radius = 200;
-                Circle.Attribute.Brush = Brushes.Transparent;
-                Circle.Attribute.Pen = new Pen(Brushes.Red, 1 );
-                Circle.Attribute.Text = $"{Environment.NewLine} X:{points.X.ToString("F0")}{Environment.NewLine}Y:{points.Y.ToString("F0")}";
-                Circle.Render();
+                if (!ProcessExtensions.TryCreateOverlayPoint(points.X, points.Y, out System.Windows.Point center))
+                    continue;
+
+                CircleTextProperties properties = new()
+                {
+                    Center = center,
+                    Radius = 200,
+                    Brush = Brushes.Transparent,
+                    Pen = new Pen(Brushes.Red, 1),
+                    Text = $"{Environment.NewLine} X:{points.X.ToString("F0")}{Environment.NewLine}Y:{points.Y.ToString("F0")}",
+                };
+                DVCircleText Circle = new(properties);
+                Circle.TextAttribute.FontSize = 20;
                 ctx.ImageView.AddVisual(Circle);
             }
 

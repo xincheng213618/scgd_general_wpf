@@ -57,8 +57,24 @@ namespace ColorVision.Copilot.Mcp
         private static readonly object SyncRoot = new();
         private static readonly List<CopilotMcpAuditEntry> RecentEntries = new();
         private static readonly AsyncLocal<CopilotMcpAuditScope?> CurrentScope = new();
+        private static readonly Regex AuthorizationHeaderLineRegex = new(
+            "(?<name>^[ \\t]*(?:proxy-)?authorization[ \\t]*:[ \\t]*)[^\\r\\n]*",
+            RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
+
+        private static readonly Regex AuthorizationQuotedValueRegex = new(
+            @"(?<name>[""']?\bauthorization[""']?\s*[:=]\s*)(?<quote>[""'])(?:\\.|(?!\k<quote>)[^\\\r\n])*\k<quote>",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static readonly Regex AuthorizationInlineHeaderRegex = new(
+            @"(?<name>\bauthorization\s*[:=]\s*)[^\r\n;]*",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static readonly Regex AuthorizationHeaderRegex = new(
+            "(?<name>[\"']?\\bauthorization[\"']?\\s*[:=]\\s*)(?<quote>[\"']?)[^\\r\\n,;\"'}]+",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         private static readonly Regex SensitiveInlineRegex = new(
-            "(?<name>[\"']?(?:password|passwd|pwd|secret|token|api[_-]?key|apikey|access[_-]?key|private[_-]?key|authorization|bearer)[\"']?\\s*[:=]\\s*)[\"']?[^,;\\s\"'}]+[\"']?",
+            "(?<name>[\"']?(?:password|passwd|pwd|secret|token|api[_-]?key|apikey|access[_-]?key|private[_-]?key|bearer)[\"']?\\s*[:=]\\s*)[\"']?[^,;\\s\"'}]+[\"']?",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         private static readonly Regex BearerRegex = new(
@@ -312,6 +328,18 @@ namespace ColorVision.Copilot.Mcp
         private static string Redact(string? value)
         {
             var text = value ?? string.Empty;
+            text = AuthorizationHeaderLineRegex.Replace(
+                text,
+                "${name}<redacted>");
+            text = AuthorizationQuotedValueRegex.Replace(
+                text,
+                "${name}${quote}<redacted>${quote}");
+            text = AuthorizationInlineHeaderRegex.Replace(
+                text,
+                "${name}<redacted>");
+            text = AuthorizationHeaderRegex.Replace(
+                text,
+                "${name}${quote}<redacted>");
             text = BearerRegex.Replace(text, "Bearer <redacted>");
             text = OpenAiApiKeyRegex.Replace(text, "<redacted>");
             text = AwsAccessKeyIdRegex.Replace(text, "<redacted>");

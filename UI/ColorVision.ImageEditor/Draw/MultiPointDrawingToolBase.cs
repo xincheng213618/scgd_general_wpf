@@ -31,6 +31,9 @@ namespace ColorVision.ImageEditor.Draw
             get => _strokeThickness;
             set
             {
+                if (!double.IsFinite(value))
+                    return;
+
                 double next = Math.Max(1, value);
                 if (_strokeThickness == next)
                 {
@@ -59,6 +62,15 @@ namespace ColorVision.ImageEditor.Draw
         protected Zoombox Zoombox => EditorContext.Zoombox;
         protected SelectEditorVisual SelectionVisual => EditorContext.SelectionVisual;
         protected MultiPointDrawingToolStyleConfig StyleConfig { get; } = new();
+
+        private protected double GetSafeZoomRatio()
+        {
+            double zoomRatio = Math.Abs(Zoombox.ContentMatrix.M11);
+            if (!double.IsFinite(zoomRatio) || zoomRatio <= 0)
+                return 1;
+
+            return Math.Max(zoomRatio, 0.0001);
+        }
 
         protected TVisual? ActiveVisual { get; private set; }
         private ActionCommand? _activeCreationCommand;
@@ -167,6 +179,7 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.MouseMove += HandleMouseMove;
             DrawCanvas.PreviewMouseLeftButtonDown += HandlePreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp += HandlePreviewMouseUp;
+            DrawCanvas.LostMouseCapture += DrawCanvas_LostMouseCapture;
             DrawCanvas.VisualsRemove += DrawCanvas_VisualsRemove;
         }
 
@@ -176,12 +189,27 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.MouseMove -= HandleMouseMove;
             DrawCanvas.PreviewMouseLeftButtonDown -= HandlePreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp -= HandlePreviewMouseUp;
+            DrawCanvas.LostMouseCapture -= DrawCanvas_LostMouseCapture;
             DrawCanvas.VisualsRemove -= DrawCanvas_VisualsRemove;
+            _isMouseDown = false;
             if (_ownsMouseCapture)
                 DrawCanvas.ReleaseMouseCapture();
             _ownsMouseCapture = false;
-            _isMouseDown = false;
             CancelActiveVisual();
+        }
+
+        private void DrawCanvas_LostMouseCapture(object sender, MouseEventArgs e)
+        {
+            if (!_isMouseDown)
+                return;
+
+            _isMouseDown = false;
+            _ownsMouseCapture = false;
+            if (CompleteOnMouseUp)
+            {
+                CancelActiveVisual();
+                IsChecked = false;
+            }
         }
 
         private void DrawCanvas_VisualsRemove(object? sender, VisualChangedEventArgs e)

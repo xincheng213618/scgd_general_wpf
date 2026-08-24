@@ -19,6 +19,15 @@ namespace ColorVision.ImageEditor.Draw
         protected DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
         protected Zoombox Zoombox => EditorContext.Zoombox;
 
+        private protected double GetSafeZoomRatio()
+        {
+            double zoomRatio = Math.Abs(Zoombox.ContentMatrix.M11);
+            if (!double.IsFinite(zoomRatio) || zoomRatio <= 0)
+                return 1;
+
+            return Math.Max(zoomRatio, 0.0001);
+        }
+
         protected Point MouseDownPoint { get; private set; }
         protected Point MouseUpPoint { get; private set; }
         protected bool IsMouseDown { get; private set; }

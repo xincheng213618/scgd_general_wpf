@@ -100,6 +100,20 @@ namespace ColorVision.Copilot
                     CopilotToolFailureKind.NotFound,
                     $"{CopilotShellCommandService.GetShellLabel(execution.Shell)} could not be located in a trusted system path.");
             }
+            var fullExecutablePath = Path.GetFullPath(executablePath);
+            var arguments = CopilotShellCommandService.BuildArguments(
+                execution.Shell,
+                execution.CommandText);
+            if (!CopilotShellCommandService.TryBuildSupportedCommandLine(
+                    execution.Shell,
+                    fullExecutablePath,
+                    arguments,
+                    out _))
+            {
+                return StartFailure(
+                    CopilotToolFailureKind.Validation,
+                    $"The encoded command line cannot exceed {CopilotShellCommandService.GetMaximumCommandLineCharacters(execution.Shell)} characters for {CopilotShellCommandService.GetShellLabel(execution.Shell)}.");
+            }
 
             lock (_syncRoot)
             {
@@ -142,8 +156,8 @@ namespace ColorVision.Copilot
                 process = await _launcher.StartAsync(
                     new CopilotShellProcessCommand(
                         execution.Shell,
-                        Path.GetFullPath(executablePath),
-                        CopilotShellCommandService.BuildArguments(execution.Shell, execution.CommandText),
+                        fullExecutablePath,
+                        arguments,
                         execution.WorkingDirectory,
                         TimeSpan.FromSeconds(lifetimeSeconds))
                     {

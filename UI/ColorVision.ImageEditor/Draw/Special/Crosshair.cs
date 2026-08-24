@@ -57,12 +57,12 @@ namespace ColorVision.ImageEditor.Draw.Special
             if (Control)
             {
                 if (!DrawCanvas.ContainsVisual(DrawVisualImage))
-                    DrawCanvas.AddVisualCommand(DrawVisualImage);
+                    DrawCanvas.AddOverlayVisual(DrawVisualImage);
             }
             else
             {
                 if (DrawCanvas.ContainsVisual(DrawVisualImage))
-                    DrawCanvas.RemoveVisualCommand(DrawVisualImage);
+                    DrawCanvas.RemoveOverlayVisual(DrawVisualImage);
             }
         }
 

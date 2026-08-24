@@ -233,6 +233,9 @@ namespace ProjectARVRPro.Process.W255
             ctx.Result.Result &= testResult.ColorUniformity.TestResult;
         }
 
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<W255TestResult>(result, "W255");
+
         public override void Render (IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;

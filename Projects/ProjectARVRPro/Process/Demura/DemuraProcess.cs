@@ -132,6 +132,9 @@ namespace ProjectARVRPro.Process.Demura
             }
         }
 
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<DemuraTestResult>(result, string.IsNullOrWhiteSpace(Config.Name) ? "Demura" : Config.Name.Trim());
+
         public override void Render(IProcessExecutionContext ctx)
         {
         }

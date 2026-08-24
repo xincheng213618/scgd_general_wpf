@@ -19,7 +19,7 @@
 | Conoscope | `Plugins/Conoscope/` | DLL `FileVersion` / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Conoscope/Conoscope.csproj)；[manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Conoscope/manifest.json) 为同步副本 | Tool 菜单 `VAM`，ImageEditor 右键打开 | 锥镜/VAM 图像观察、关注点、参考轴、预处理、色域和对比度分析、MVS 观察相机 | MVS 依赖海康 `MvCameraControl.dll`；关注点逻辑是插件本地实现 |
 | Spectrum | `Plugins/Spectrum/` | DLL `FileVersion` / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Spectrum/Spectrum.csproj)；[manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Spectrum/manifest.json) 为同步副本 | Tool 菜单光谱窗口，Spectrum 窗口级菜单/状态栏，Socket JSON 指令 | 光谱仪连接、标定分组、测量、EQE、CIE、SQLite 结果、许可证、Socket 远程控制 | 依赖光谱仪 native DLL、OpenCV、串口、许可证；连接状态与标定可测量状态必须分开判断 |
 | SystemMonitor | `Plugins/SystemMonitor/` | [manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/SystemMonitor/manifest.json) / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/SystemMonitor/SystemMonitor.csproj) | Tool 菜单，设置页，主程序状态栏 | CPU/RAM/磁盘/网络/进程/GPU/缓存监控和状态栏投影 | 性能计数器可能初始化失败并降级；监控单例位于 `ColorVision.UI.Configs` 命名空间 |
-| WindowsServicePlugin | `Plugins/WindowsServicePlugin/` | [manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/WindowsServicePlugin/manifest.json) / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj) | Help 菜单服务管理器，向导入口 | CVWindowsService 安装/注册/启动停止、MySQL/MQTT 安装配置、服务目录和配置同步 | 会改 Windows 服务、MySQL、MQTT 和本机文件；需要管理员权限；不支持增量服务包 |
+| WindowsServicePlugin | `Plugins/WindowsServicePlugin/` | [manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/WindowsServicePlugin/manifest.json) / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj) | “应用与工具 > 内部工具”中的管理员工具，向导入口 | CVWindowsService 安装/注册/启动停止、MySQL/MQTT 安装配置、服务目录和配置同步 | 会改 Windows 服务、MySQL、MQTT 和本机文件；需要管理员权限；不支持增量服务包 |
 
 发布版本来自主 DLL `FileVersion`（通常由 `.csproj VersionPrefix` 生成）；`manifest` 负责发布身份、DLL 路径、最低宿主要求，并由打包器同步版本。交付时要同时确认：
 
@@ -35,7 +35,7 @@
 | Conoscope | `MenuConoscopeWindow` -> Tool / `VAM` | `ConoscopeWindow` Ribbon、View 菜单、`MenuMVSVideo` | 每标签页 `ConoscopeViewState` + `ConoscopeDocument`；全局 `ConoscopeConfig` / ReferenceStore | `ConoscopeConfigWindow`（含预处理页） | 无 | `ConoscopeImageViewContextMenu` 接入 ImageEditor 右键菜单 |
 | Spectrum | `MenuSpectrumWindow` -> Tool | `LoadMenuForWindow("Spectrum", menu)`，包含帮助、布局、许可证、原生日志等菜单 | `SpectrumStatusBarProvider`，目标窗口 `Spectrum` | 多个 `ConfigService` 配置对象 | 5 个 `ISocketJsonHandler` | Quartz 任务、SQLite 结果、许可证同步 |
 | SystemMonitor | `SystemMonitorProvider` -> Tool | 无独立复杂菜单 | `SystemMonitorIStatusBarProvider` | `IConfigSettingProvider` | 无 | `SystemMonitorControl` 同时用于设置页和窗口 |
-| WindowsServicePlugin | `MenuServiceManager` -> Help | 服务管理窗口内部命令 | 无 | `ServiceManagerConfig`、`MySqlServiceConfig`、`MqttServiceConfig` | 无 | `InstallServiceManager` 作为向导步骤入口 |
+| WindowsServicePlugin | `ServiceManagerAppProvider` -> 应用与工具 / 内部工具（管理员） | 服务管理窗口内部命令 | 无 | `ServiceManagerConfig`、`MySqlServiceConfig`、`MqttServiceConfig` | 无 | `InstallServiceManager` 作为向导步骤入口 |
 
 ## 外部依赖和运行时边界
 

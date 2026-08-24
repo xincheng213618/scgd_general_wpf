@@ -254,7 +254,15 @@ def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_
     try:
         print(f"Running MSBuild: {msbuild_path} {solution_path}")
         subprocess.run(
-            [str(msbuild_path), str(solution_path), "/p:Configuration=Release", "/p:Platform=x64"],
+            [
+                str(msbuild_path),
+                str(solution_path),
+                "/m:1",
+                "/nr:false",
+                "/p:BuildInParallel=false",
+                "/p:Configuration=Release",
+                "/p:Platform=x64",
+            ],
             check=True,
         )
 

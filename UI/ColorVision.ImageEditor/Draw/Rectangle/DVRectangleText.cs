@@ -21,7 +21,19 @@ namespace ColorVision.ImageEditor.Draw
         [Browsable(false)]
         public TextAttribute TextAttribute { get; set; } = new TextAttribute();
         public bool IsShowText { get; set; } = true;
-        public RectangleTextPosition Position { get; set;} = RectangleTextPosition.Center;
+        public RectangleTextPosition Position
+        {
+            get => _position;
+            set
+            {
+                if (_position == value)
+                    return;
+
+                _position = value;
+                OnPropertyChanged();
+            }
+        }
+        private RectangleTextPosition _position = RectangleTextPosition.Center;
 
         [Category("Attribute"), DisplayName("Text")]
         public string Text { get => TextAttribute.Text; set { TextAttribute.Text = value; OnPropertyChanged(); } }
@@ -50,6 +62,8 @@ namespace ColorVision.ImageEditor.Draw
 
     public class DVRectangleText : DrawingVisualBase<RectangleTextProperties>, IDrawingVisual,IRectangle, ILayoutScaleDrawingVisual, ICompactInspectorProvider
     {
+        private bool _deferAttributeRender;
+
         public TextAttribute TextAttribute { get => Attribute.TextAttribute; }
 
         public Rect Rect { get => Attribute.Rect; set => Attribute.Rect = value; }
@@ -59,24 +73,47 @@ namespace ColorVision.ImageEditor.Draw
         {
             Attribute = new RectangleTextProperties();
             TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
-            Attribute.PropertyChanged += (s, e) => Render(); 
+            ObserveAttributeChanges(OnAttributePropertyChanged);
         }
 
         public DVRectangleText(RectangleTextProperties rectangleTextProperties)
         {
             Attribute = rectangleTextProperties;
             TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
-            Attribute.PropertyChanged += (s, e) => Render();
+            ObserveAttributeChanges(OnAttributePropertyChanged);
+        }
+
+        private void OnAttributePropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(RectangleTextProperties.Pen))
+                LayoutBasePenThickness = null;
+            if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(RectangleTextProperties.FontSize))
+                LayoutBaseFontSize = null;
+
+            if (!_deferAttributeRender)
+                Render();
         }
 
         public void ApplyLayoutScale(DrawingVisualScaleContext context)
         {
-            ApplyLayoutScaleCore(context, Pen, value => Pen = value, TextAttribute.FontSize, value => TextAttribute.FontSize = value);
+            bool wasDeferred = _deferAttributeRender;
+            _deferAttributeRender = true;
+            try
+            {
+                ApplyLayoutScaleCore(context, Pen, value => Pen = value, TextAttribute.FontSize, value => TextAttribute.FontSize = value);
+            }
+            finally
+            {
+                _deferAttributeRender = wasDeferred;
+            }
         }
 
         public override void Render()
         {
             using DrawingContext dc = RenderOpen();
+            if (Attribute.Rect.IsEmpty || !ShapeGeometry.IsFinite(Attribute.Rect))
+                return;
+
             dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);
 
             double size = 0;
@@ -85,14 +122,7 @@ namespace ColorVision.ImageEditor.Draw
                 string textToDraw = Attribute.IsShowText ? TextAttribute.Text : string.Empty;
                 if (!string.IsNullOrEmpty(textToDraw))
                 {
-                    FormattedText formattedText = new(
-                        textToDraw,
-                        CultureInfo.CurrentCulture,
-                        TextAttribute.FlowDirection,
-                        new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch),
-                        TextAttribute.FontSize,
-                        TextAttribute.Brush,
-                        VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                    FormattedText formattedText = CreateFormattedText(textToDraw);
                     size = formattedText.Width / 2;
                     Point origin = new Point();
                     double halfWidth = formattedText.Width / 2;
@@ -106,6 +136,7 @@ namespace ColorVision.ImageEditor.Draw
                     switch (Attribute.Position) // Assuming Attribute has a 'Position' property of type RectangleTextPosition
                     {
                         case RectangleTextPosition.Center:
+                        default:
                             origin.X = rectCenterX - halfWidth;
                             origin.Y = rectCenterY - halfHeight;
                             break;
@@ -132,20 +163,47 @@ namespace ColorVision.ImageEditor.Draw
                     dc.DrawText(formattedText, origin);
                 }
             }
-            if (!string.IsNullOrWhiteSpace(Attribute.Msg))
+            if (IsMessageVisible && !string.IsNullOrWhiteSpace(Attribute.Msg))
             {
-                FormattedText formattedText = new FormattedText(Attribute.Msg, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                FormattedText formattedText = CreateFormattedText(Attribute.Msg);
                 dc.DrawText(formattedText, new Point(Attribute.Rect.X + size + Attribute.Rect.Width / 2 + Attribute.Pen.Thickness, Attribute.Rect.Y + Attribute.Rect.Height / 2 - formattedText.Height / 2));
             }
         }
+
+        private FormattedText CreateFormattedText(string text)
+        {
+            return new FormattedText(
+                text,
+                CultureInfo.CurrentCulture,
+                TextRenderCore.NormalizeFlowDirection(TextAttribute.FlowDirection),
+                new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch),
+                TextRenderCore.NormalizeFontSize(TextAttribute.FontSize),
+                TextAttribute.Brush,
+                TextRenderCore.NormalizePixelsPerDip(VisualTreeHelper.GetDpi(this).PixelsPerDip));
+        }
+
         public override Rect GetRect()
         {
-            return Rect;
+            return Rect.IsEmpty || ShapeGeometry.IsFinite(Rect) ? Rect : System.Windows.Rect.Empty;
         }
         public override void SetRect(Rect rect)
         {
-            Rect = rect;
-            Render();
+            if (!rect.IsEmpty && !ShapeGeometry.IsFinite(rect))
+                return;
+
+            bool wasDeferred = _deferAttributeRender;
+            _deferAttributeRender = true;
+            try
+            {
+                Rect = rect;
+            }
+            finally
+            {
+                _deferAttributeRender = wasDeferred;
+            }
+
+            if (!wasDeferred)
+                Render();
         }
 
         public IEnumerable<CompactInspectorItem> GetCompactInspectorItems()

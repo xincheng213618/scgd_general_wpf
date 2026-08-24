@@ -33,6 +33,27 @@ public sealed class DrawTextRegressionTests
         });
     }
 
+    [Theory]
+    [InlineData("", true)]
+    [InlineData("Selectable while hidden", false)]
+    public void EmptyAndHiddenTextKeepATransparentHitTarget(string value, bool isVisible)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            TextProperties properties = CreateProperties();
+            properties.Text = value;
+            properties.IsShowText = isVisible;
+            DVText text = new(properties);
+            text.Render();
+
+            Rect bounds = text.GetRect();
+            HitTestResult? hit = VisualTreeHelper.HitTest(text, new Point(bounds.X + bounds.Width / 2, bounds.Y + bounds.Height / 2));
+
+            Assert.Same(text, hit?.VisualHit);
+            Assert.Equal(0, CountNonTransparentPixels(text));
+        });
+    }
+
     [Fact]
     public void StandaloneTextParticipatesInTheSharedVisibilityContract()
     {
@@ -78,6 +99,66 @@ public sealed class DrawTextRegressionTests
 
             Assert.True(text.RenderCount > 0);
             Assert.True(text.GetRect().Height > initialHeight);
+        });
+    }
+
+    [Fact]
+    public void ReassigningTheSameTextStyleDoesNotRenderAgain()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            TextProperties properties = CreateProperties();
+            CountingText text = new(properties);
+            text.Render();
+            text.ResetRenderCount();
+            TextAttribute attribute = properties.TextAttribute;
+
+            attribute.FontSize = attribute.FontSize;
+            attribute.Brush = attribute.Brush;
+            attribute.FontFamily = attribute.FontFamily;
+            attribute.FontStyle = attribute.FontStyle;
+            attribute.FontWeight = attribute.FontWeight;
+            attribute.FontStretch = attribute.FontStretch;
+            attribute.FlowDirection = attribute.FlowDirection;
+
+            Assert.Equal(0, text.RenderCount);
+        });
+    }
+
+    [Fact]
+    public void DoubleClickPlacesTheCaretNearTheClickedCharacterWhileF2StyleEditingSelectsAll()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            TextProperties properties = CreateProperties();
+            properties.Text = "abcdef";
+            DVText text = new(properties);
+            text.Render();
+            TextEditFixture fixture = new(text);
+
+            try
+            {
+                Rect bounds = text.GetRect();
+                Assert.True(text.HandleDoubleClick(
+                    fixture.Context,
+                    new Point(bounds.Right - 1, bounds.Top + bounds.Height / 2)));
+                fixture.EditorOverlay.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+                TextBox editor = Assert.IsType<TextBox>(Assert.Single(fixture.EditorOverlay.Children));
+                Assert.Equal(0, editor.SelectionLength);
+                Assert.InRange(editor.CaretIndex, 4, properties.Text.Length);
+
+                text.EndEdit(false);
+                text.BeginEdit(fixture.Context);
+                fixture.EditorOverlay.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+                editor = Assert.IsType<TextBox>(Assert.Single(fixture.EditorOverlay.Children));
+                Assert.Equal(properties.Text.Length, editor.SelectionLength);
+            }
+            finally
+            {
+                if (text.IsEditing)
+                    text.EndEdit(false);
+                fixture.Dispose();
+            }
         });
     }
 
@@ -290,12 +371,93 @@ public sealed class DrawTextRegressionTests
                 const string multilineText = "第一行\r\nSecond line\r\n第三行";
 
                 editor.Text = multilineText;
+                fixture.EditorOverlay.UpdateLayout();
 
                 Assert.True(editor.AcceptsReturn);
                 Assert.True(editor.Height > singleLineHeight);
                 text.EndEdit(true);
                 Assert.Equal(multilineText, properties.Text);
                 Assert.True(text.GetRect().Height > singleLineHeight);
+            }
+            finally
+            {
+                fixture.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void LongTextEditsUseTheFinalTextBoxLayoutExtent()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            TextProperties properties = CreateProperties();
+            DVText text = new(properties);
+            TextEditFixture fixture = new(text);
+
+            try
+            {
+                text.BeginEdit(fixture.Context);
+                TextBox editor = Assert.IsType<TextBox>(Assert.Single(fixture.EditorOverlay.Children));
+                double initialWidth = editor.Width;
+
+                editor.Text = new string('A', 4096);
+                fixture.EditorOverlay.UpdateLayout();
+                double expandedWidth = editor.Width;
+                editor.Text = new string('B', 4096);
+                const string suffix = "\r\n第二行 العربية emoji🙂 trailing  ";
+                string finalText = new string('W', 512) + suffix;
+                editor.Text = finalText;
+                fixture.EditorOverlay.UpdateLayout();
+
+                double editorWidth = editor.Width;
+                double editorHeight = editor.Height;
+                Assert.True(expandedWidth > initialWidth);
+                Assert.True(editorWidth < expandedWidth);
+
+                text.EndEdit(true);
+                Rect renderedBounds = text.GetRect();
+                Assert.Equal(finalText, properties.Text);
+                Assert.InRange(Math.Abs(editorWidth - renderedBounds.Width), 0, 0.01);
+                Assert.InRange(Math.Abs(editorHeight - renderedBounds.Height), 0, 0.01);
+            }
+            finally
+            {
+                fixture.Dispose();
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(0.5)]
+    [InlineData(2.0)]
+    public void RtlScaledMultilineEditingMatchesFinalRenderedBounds(double scale)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            TextProperties properties = CreateProperties();
+            properties.FlowDirection = FlowDirection.RightToLeft;
+            DVText text = new(properties);
+            TextEditFixture fixture = new(text);
+
+            try
+            {
+                text.ApplyLayoutScale(new DrawingVisualScaleContext(true, scale, 0));
+                text.BeginEdit(fixture.Context);
+                TextBox editor = Assert.IsType<TextBox>(Assert.Single(fixture.EditorOverlay.Children));
+                const string finalText = "العربية עברית English\r\n\r\n";
+                editor.Text = finalText;
+                fixture.EditorOverlay.UpdateLayout();
+                double editorWidth = editor.Width;
+                double editorHeight = editor.Height;
+
+                Assert.Equal(FlowDirection.RightToLeft, editor.FlowDirection);
+                text.EndEdit(true);
+
+                Rect renderedBounds = text.GetRect();
+                Assert.Equal(finalText, properties.Text);
+                Assert.InRange(Math.Abs(editorWidth - renderedBounds.Width), 0, 0.01);
+                Assert.InRange(Math.Abs(editorHeight - renderedBounds.Height), 0, 0.01);
             }
             finally
             {
@@ -327,6 +489,7 @@ public sealed class DrawTextRegressionTests
                 text.BeginEdit(fixture.Context);
                 TextBox editor = Assert.IsType<TextBox>(Assert.Single(fixture.EditorOverlay.Children));
                 editor.Text = "First line" + lineBreak;
+                fixture.EditorOverlay.UpdateLayout();
 
                 Assert.True(editor.Height > singleLineHeight * 1.5);
                 text.EndEdit(true);
@@ -1073,6 +1236,135 @@ public sealed class DrawTextRegressionTests
             Assert.Equal(source.FlowDirection, restored.FlowDirection);
             Assert.Equal(GetEffectiveColor(source.Foreground), GetEffectiveColor(restored.Foreground));
             Assert.Equal(GetEffectiveColor(source.Background), GetEffectiveColor(restored.Background));
+        });
+    }
+
+    [Theory]
+    [InlineData("2")]
+    [InlineData("-1")]
+    [InlineData("LeftToRight, RightToLeft")]
+    public void InvalidSerializedFlowDirectionFallsBackBeforeTextRendering(string serializedFlowDirection)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            TextAnnotationItem item = new()
+            {
+                TextStyle = new AnnotationTextStyle
+                {
+                    Text = "Inspection note",
+                    FontSize = 18,
+                    FlowDirection = serializedFlowDirection,
+                },
+            };
+
+            DVText text = Assert.IsType<DVText>(AnnotationMapper.ToVisual(item));
+
+            Assert.Equal(FlowDirection.LeftToRight, text.TextAttribute.FlowDirection);
+            text.Render();
+        });
+    }
+
+    [Theory]
+    [InlineData(1_000_000d)]
+    [InlineData(double.MaxValue)]
+    public void ExtremeImportedFontSizesRenderAndEditWithoutChangingTheModel(double authoredFontSize)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            TextAnnotationItem item = new()
+            {
+                TextStyle = new AnnotationTextStyle
+                {
+                    Text = "Inspection note",
+                    FontSize = authoredFontSize,
+                },
+            };
+            DVText text = Assert.IsType<DVText>(AnnotationMapper.ToVisual(item));
+            TextProperties properties = text.Attribute;
+            TextEditFixture fixture = new(text);
+
+            try
+            {
+                text.Render();
+                Rect bounds = text.GetRect();
+                Assert.True(double.IsFinite(bounds.Width));
+                Assert.True(double.IsFinite(bounds.Height));
+
+                text.BeginEdit(fixture.Context);
+                TextBox editor = Assert.IsType<TextBox>(Assert.Single(fixture.EditorOverlay.Children));
+                Assert.InRange(editor.FontSize, 1, 35791);
+                Assert.Equal(authoredFontSize, properties.FontSize);
+                text.EndEdit(false);
+            }
+            finally
+            {
+                fixture.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void MissingStandaloneTextStyleProducesAFormatError()
+    {
+        TextAnnotationItem item = new() { TextStyle = null! };
+
+        Newtonsoft.Json.JsonSerializationException exception = Assert.Throws<Newtonsoft.Json.JsonSerializationException>(() => AnnotationMapper.ToVisual(item));
+
+        Assert.Contains(nameof(TextAnnotationItem.TextStyle), exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void InvalidDirectFlowDirectionIsNormalizedAtRenderAndEditBoundaries()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            TextProperties properties = CreateProperties();
+            FlowDirection invalidFlowDirection = (FlowDirection)2;
+            properties.FlowDirection = invalidFlowDirection;
+            DVText text = new(properties);
+            TextEditFixture fixture = new(text);
+
+            try
+            {
+                text.Render();
+                text.BeginEdit(fixture.Context);
+                TextBox editor = Assert.IsType<TextBox>(Assert.Single(fixture.EditorOverlay.Children));
+
+                Assert.Equal(FlowDirection.LeftToRight, editor.FlowDirection);
+                Assert.Equal(invalidFlowDirection, properties.FlowDirection);
+                text.EndEdit(false);
+            }
+            finally
+            {
+                fixture.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void NullDirectFontFamilyFallsBackAtRenderAndEditBoundaries()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            TextProperties properties = CreateProperties();
+            properties.FontFamily = null!;
+            DVText text = new(properties);
+            TextEditFixture fixture = new(text);
+
+            try
+            {
+                text.Render();
+                text.BeginEdit(fixture.Context);
+                TextBox editor = Assert.IsType<TextBox>(Assert.Single(fixture.EditorOverlay.Children));
+
+                Assert.NotNull(properties.FontFamily);
+                Assert.Equal(properties.FontFamily, editor.FontFamily);
+                text.EndEdit(false);
+            }
+            finally
+            {
+                fixture.Dispose();
+            }
         });
     }
 

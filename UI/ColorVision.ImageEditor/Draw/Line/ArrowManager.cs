@@ -31,11 +31,7 @@ namespace ColorVision.ImageEditor.Draw
             }
 
             direction.Normalize();
-            double zoomRatio = Math.Abs(Zoombox.ContentMatrix.M11);
-            if (!double.IsFinite(zoomRatio) || zoomRatio <= 0)
-            {
-                zoomRatio = 1;
-            }
+            double zoomRatio = GetSafeZoomRatio();
 
             double headLength = Math.Min(length * 0.35, 14 / zoomRatio);
             double halfHeadWidth = headLength * 0.55;

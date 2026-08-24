@@ -1,7 +1,6 @@
 using ColorVision.Common.ThirdPartyApps;
-using System;
+using ColorVision.UI.Authorizations;
 using System.Collections.Generic;
-using System.IO;
 using System.Windows;
 
 namespace ColorVision.ToolPlugins.ThirdPartyApps
@@ -16,7 +15,10 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
                 {
                     Name = "上网网卡选择",
                     Group = ThirdPartyAppGroupNames.CommonTools,
+                    Category = ThirdPartyAppCategory.Internal,
+                    RequiredPermission = PermissionMode.Administrator,
                     Order = -897,
+                    IconGlyph = ThirdPartyAppIconGlyphs.NetworkAdapter,
                     LaunchAction = () =>
                     {
                         new NetworkAdapterPriorityWindow
@@ -25,9 +27,6 @@ namespace ColorVision.ToolPlugins.ThirdPartyApps
                             WindowStartupLocation = WindowStartupLocation.CenterOwner
                         }.Show();
                     },
-                    GetIconPath = () => Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.System),
-                        "control.exe")
                 }
             };
         }

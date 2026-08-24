@@ -149,6 +149,26 @@ public sealed class LuminousAreaDetectionUiTests
     }
 
     [Fact]
+    public void AlgorithmAndConditionalParametersShareOneCategory()
+    {
+        string[] propertyNames =
+        [
+            nameof(FindLuminousAreaCorner.Algorithm),
+            nameof(FindLuminousAreaCorner.MinConfidence),
+            nameof(FindLuminousAreaCorner.Threshold),
+            nameof(FindLuminousAreaCorner.UseRotatedRect)
+        ];
+
+        Assert.All(propertyNames, propertyName =>
+        {
+            CategoryAttribute category = typeof(FindLuminousAreaCorner)
+                .GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public)!
+                .GetCustomAttribute<CategoryAttribute>()!;
+            Assert.Equal("定位", category.Category);
+        });
+    }
+
+    [Fact]
     public void NativeV2ResultParsesSideMetricsAndKeepsCornerContract()
     {
         const string json = """

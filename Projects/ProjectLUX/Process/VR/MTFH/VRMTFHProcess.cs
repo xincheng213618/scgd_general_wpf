@@ -243,9 +243,6 @@ namespace ProjectLUX.Process.VR.MTFH
                 {
                     var item = results[i];
                     id++;
-                    DVRectangleText Rectangle = new();
-                    Rectangle.Attribute.Rect = new Rect(item.x, item.y, item.w, item.h);
-                    Rectangle.Attribute.Brush = Brushes.Transparent;
 
                     // 默认红色
                     Brush penBrush = Brushes.Red;
@@ -280,10 +277,14 @@ namespace ProjectLUX.Process.VR.MTFH
                         // 超过 D 区域的默认为 Red
                     }
 
-                    Rectangle.Attribute.Pen = new Pen(penBrush, 1);
-                    Rectangle.Attribute.Id = id;
-                    Rectangle.Render();
-                    ctx.ImageView.AddVisual(Rectangle);
+                    DVRectangleText rectangle = new(new RectangleTextProperties
+                    {
+                        Rect = new Rect(item.x, item.y, item.w, item.h),
+                        Brush = Brushes.Transparent,
+                        Pen = new Pen(penBrush, 1),
+                        Id = id,
+                    });
+                    ctx.ImageView.AddVisual(rectangle);
                 }
             }
         }

@@ -3,8 +3,8 @@
 namespace ColorVision.Common.ThirdPartyApps
 {
     /// <summary>
-    /// Interface for providing third-party application definitions.
-    /// Implement this interface in plugins to register additional apps in the Third-Party Apps window.
+    /// Provides application and tool definitions for the centralized Apps &amp; Tools launcher.
+    /// Implement this interface in plugins to register internal, system, external, or custom tools.
     /// Implementations are discovered automatically via assembly scanning.
     /// </summary>
     public interface IThirdPartyAppProvider

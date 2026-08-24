@@ -54,13 +54,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
                             int cx = roiRect.X + center[0];
                             int cy = roiRect.Y + center[1];
 
-                            DVCircle circle = new DVCircle();
-                            circle.Attribute.Center = new Point(cx, cy);
-                            circle.Attribute.Radius = config.Radius;
-                            circle.Attribute.Pen = new Pen(Brushes.Red, 1 / DrawContext.Zoombox.ContentMatrix.M11);
-                            circle.Attribute.Brush = Brushes.Transparent;
-                            circle.Render();
-                            DrawContext.DrawCanvas.AddVisualCommand(circle);
+                            AddCircleOverlay(new Point(cx, cy), config.Radius, Brushes.Red);
                         }
 
                         foreach (var blackCenter in blackCenters)
@@ -68,13 +62,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
                             int cx = roiRect.X + blackCenter[0];
                             int cy = roiRect.Y + blackCenter[1];
 
-                            DVCircle circle = new DVCircle();
-                            circle.Attribute.Center = new Point(cx, cy);
-                            circle.Attribute.Radius = config.Radius;
-                            circle.Attribute.Pen = new Pen(Brushes.Yellow, 1 / DrawContext.Zoombox.ContentMatrix.M11);
-                            circle.Attribute.Brush = Brushes.Transparent;
-                            circle.Render();
-                            DrawContext.DrawCanvas.AddVisualCommand(circle);
+                            AddCircleOverlay(new Point(cx, cy), config.Radius, Brushes.Yellow);
                         }
 
                         // 显示统计信息
@@ -106,6 +94,24 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
                     });
                 }
             });
+        }
+
+        private void AddCircleOverlay(Point center, double radius, Brush stroke)
+        {
+            double zoom = Math.Abs(DrawContext.Zoombox.ContentMatrix.M11);
+            double strokeThickness = double.IsFinite(zoom) && zoom > 0 ? 1.0 / zoom : 1.0;
+            if (!double.IsFinite(strokeThickness))
+                strokeThickness = 1.0;
+
+            DVCircle circle = new(new CircleProperties
+            {
+                Center = center,
+                Radius = radius,
+                Pen = new Pen(stroke, strokeThickness),
+                Brush = Brushes.Transparent,
+            });
+            circle.Render();
+            DrawContext.DrawCanvas.AddVisualCommand(circle);
         }
     }
 

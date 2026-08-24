@@ -69,6 +69,9 @@ namespace ProjectARVRPro.Process.POI
             }
         }
 
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<PoiDynamicTestResult>(result, string.IsNullOrWhiteSpace(Config.Name) ? "POI" : Config.Name.Trim());
+
         public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;

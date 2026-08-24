@@ -95,42 +95,48 @@ namespace ColorVision.Copilot
             PropertyNameCaseInsensitive = true,
             NumberHandling = JsonNumberHandling.Strict,
         };
-        private static readonly HttpMessageHandler SharedHandler = new HttpClientHandler
-        {
-            AllowAutoRedirect = false,
-            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
-        };
+        private static readonly HttpMessageHandler SharedHandler = CreateTransportHandler(useProxy: true);
+        private static readonly HttpMessageHandler LoopbackHandler = CreateTransportHandler(useProxy: false);
 
         private readonly HttpClient _httpClient;
+        private readonly HttpClient _loopbackHttpClient;
         private readonly Func<CopilotBackendDeviceIdentity> _deviceIdentityProvider;
 
         public CopilotBackendSyncClient()
-            : this(new HttpClient(SharedHandler, disposeHandler: false)
-            {
-                Timeout = TimeSpan.FromSeconds(30),
-            }, CopilotBackendDeviceIdentity.CreateCurrent)
+            : this(
+                CreateHttpClient(SharedHandler),
+                CreateHttpClient(LoopbackHandler),
+                CopilotBackendDeviceIdentity.CreateCurrent)
         {
         }
 
         internal CopilotBackendSyncClient(HttpClient httpClient)
-            : this(httpClient, CopilotBackendDeviceIdentity.CreateCurrent)
+            : this(httpClient, httpClient, CopilotBackendDeviceIdentity.CreateCurrent)
         {
         }
 
         internal CopilotBackendSyncClient(
             HttpClient httpClient,
             Func<CopilotBackendDeviceIdentity> deviceIdentityProvider)
+            : this(httpClient, httpClient, deviceIdentityProvider)
+        {
+        }
+
+        internal CopilotBackendSyncClient(
+            HttpClient httpClient,
+            HttpClient loopbackHttpClient,
+            Func<CopilotBackendDeviceIdentity> deviceIdentityProvider)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            _loopbackHttpClient = loopbackHttpClient ?? throw new ArgumentNullException(nameof(loopbackHttpClient));
             _deviceIdentityProvider = deviceIdentityProvider ?? throw new ArgumentNullException(nameof(deviceIdentityProvider));
         }
 
         public async Task<CopilotBackendConfigResponse> FetchAsync(
             string baseUrl,
-            bool allowInsecureHttp,
             CancellationToken cancellationToken)
         {
-            var endpoint = BuildEndpoint(baseUrl, allowInsecureHttp);
+            var endpoint = BuildEndpoint(baseUrl);
             var identity = NormalizeIdentity(_deviceIdentityProvider());
             var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
             var nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
@@ -140,7 +146,10 @@ namespace ColorVision.Copilot
             request.Headers.UserAgent.ParseAdd("ColorVision-Copilot/1.0");
             AddDeviceProofHeaders(request, identity, timestamp, nonce);
 
-            using var response = await _httpClient.SendAsync(
+            var httpClient = endpoint.Scheme == Uri.UriSchemeHttp
+                ? _loopbackHttpClient
+                : _httpClient;
+            using var response = await httpClient.SendAsync(
                 request,
                 HttpCompletionOption.ResponseHeadersRead,
                 cancellationToken).ConfigureAwait(false);
@@ -236,7 +245,7 @@ namespace ColorVision.Copilot
             return normalized;
         }
 
-        internal static Uri BuildEndpoint(string baseUrl, bool allowInsecureHttp)
+        internal static Uri BuildEndpoint(string baseUrl)
         {
             var normalized = (baseUrl ?? string.Empty).Trim();
             if (!Uri.TryCreate(normalized, UriKind.Absolute, out var baseUri)
@@ -252,12 +261,12 @@ namespace ColorVision.Copilot
                 throw new InvalidOperationException("Backend URL cannot contain credentials, a query, or a fragment.");
             }
 
-            var isLoopback = string.Equals(baseUri.Host, "localhost", StringComparison.OrdinalIgnoreCase)
-                || (IPAddress.TryParse(baseUri.Host, out var ipAddress) && IPAddress.IsLoopback(ipAddress));
-            if (baseUri.Scheme == Uri.UriSchemeHttp && !isLoopback && !allowInsecureHttp)
+            var normalizedHost = baseUri.IdnHost.TrimEnd('.');
+            var isLoopback = IsLoopbackHost(normalizedHost);
+            if (baseUri.Scheme == Uri.UriSchemeHttp && !isLoopback)
             {
                 throw new InvalidOperationException(
-                    "Remote HTTP sync is blocked because model API keys would be sent without transport encryption. Use HTTPS or a trusted configured network.");
+                    "Remote backend sync requires HTTPS because managed API keys and profile settings are security-sensitive. HTTP is allowed only for a loopback service on this computer.");
             }
 
             var builder = new UriBuilder(baseUri)
@@ -266,8 +275,42 @@ namespace ColorVision.Copilot
                 Query = string.Empty,
                 Fragment = string.Empty,
             };
+            if (isLoopback)
+                builder.Host = normalizedHost;
             return builder.Uri;
         }
+
+        internal static bool TryBuildEndpoint(
+            string? baseUrl,
+            out Uri? endpoint,
+            out string errorMessage)
+        {
+            try
+            {
+                endpoint = BuildEndpoint(baseUrl ?? string.Empty);
+                errorMessage = string.Empty;
+                return true;
+            }
+            catch (InvalidOperationException ex)
+            {
+                endpoint = null;
+                errorMessage = ex.Message;
+                return false;
+            }
+        }
+
+        internal static bool IsTrustedSyncSource(string? source) =>
+            !string.IsNullOrWhiteSpace(source)
+            && TryBuildEndpoint(source, out _, out _);
+
+        internal static HttpClientHandler CreateTransportHandler(bool useProxy) =>
+            new()
+            {
+                AllowAutoRedirect = false,
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
+                UseCookies = false,
+                UseProxy = useProxy,
+            };
 
         internal static CopilotBackendMergeResult MergeProfiles(
             ObservableCollection<CopilotProfileConfig> profiles,
@@ -277,10 +320,13 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(profiles);
             ArgumentNullException.ThrowIfNull(response);
 
-            var source = BuildEndpoint(baseUrl, allowInsecureHttp: true).GetLeftPart(UriPartial.Authority).TrimEnd('/');
+            var source = BuildEndpoint(baseUrl).GetLeftPart(UriPartial.Authority).TrimEnd('/');
             var incoming = new Dictionary<string, CopilotProfileConfig>(StringComparer.Ordinal);
+            var incomingRemoteIds = new List<string>();
             foreach (var item in response.Profiles ?? new List<CopilotBackendProfile>())
             {
+                if (item == null)
+                    throw new InvalidOperationException("The backend returned a null profile entry.");
                 var remoteId = (item.Id ?? string.Empty).Trim();
                 if (string.IsNullOrWhiteSpace(remoteId))
                     throw new InvalidOperationException("The backend returned a profile without an id.");
@@ -288,13 +334,19 @@ namespace ColorVision.Copilot
                     throw new InvalidOperationException($"The backend returned duplicate profile id '{remoteId}'.");
 
                 incoming.Add(remoteId, CreateProfile(item, source, remoteId));
+                incomingRemoteIds.Add(remoteId);
             }
 
-            var existingByRemoteId = profiles
+            var existingGroups = profiles
                 .Where(profile => string.Equals(profile.SyncSource, source, StringComparison.OrdinalIgnoreCase)
                     && !string.IsNullOrWhiteSpace(profile.SyncProfileId))
                 .GroupBy(profile => profile.SyncProfileId, StringComparer.Ordinal)
+                .ToArray();
+            var existingByRemoteId = existingGroups
                 .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+            var duplicateProfiles = existingGroups
+                .SelectMany(group => group.Skip(1))
+                .ToHashSet();
 
             var added = 0;
             var updated = 0;
@@ -314,10 +366,13 @@ namespace ColorVision.Copilot
 
             var staleProfiles = profiles
                 .Where(profile => string.Equals(profile.SyncSource, source, StringComparison.OrdinalIgnoreCase)
-                    && !incoming.ContainsKey(profile.SyncProfileId))
+                    && (!incoming.ContainsKey(profile.SyncProfileId)
+                        || duplicateProfiles.Contains(profile)))
                 .ToArray();
             foreach (var staleProfile in staleProfiles)
                 profiles.Remove(staleProfile);
+
+            ReorderManagedProfiles(profiles, incomingRemoteIds, source);
 
             var defaultRemoteId = (response.DefaultProfileId ?? string.Empty).Trim();
             var defaultLocalProfileId = profiles.FirstOrDefault(profile =>
@@ -327,8 +382,40 @@ namespace ColorVision.Copilot
             return new CopilotBackendMergeResult(added, updated, staleProfiles.Length, defaultLocalProfileId);
         }
 
+        private static void ReorderManagedProfiles(
+            ObservableCollection<CopilotProfileConfig> profiles,
+            IEnumerable<string> remoteIds,
+            string source)
+        {
+            var managedProfiles = profiles
+                .Where(profile => string.Equals(profile.SyncSource, source, StringComparison.OrdinalIgnoreCase)
+                    && !string.IsNullOrWhiteSpace(profile.SyncProfileId))
+                .ToArray();
+            if (managedProfiles.Length == 0)
+                return;
+
+            var managedByRemoteId = managedProfiles.ToDictionary(
+                profile => profile.SyncProfileId,
+                StringComparer.Ordinal);
+            var orderedManagedProfiles = remoteIds
+                .Where(managedByRemoteId.ContainsKey)
+                .Select(remoteId => managedByRemoteId[remoteId])
+                .ToArray();
+            var insertionIndex = profiles.IndexOf(managedProfiles[0]);
+            foreach (var profile in managedProfiles)
+                profiles.Remove(profile);
+            foreach (var profile in orderedManagedProfiles)
+                profiles.Insert(insertionIndex++, profile);
+        }
+
         private static CopilotProfileConfig CreateProfile(CopilotBackendProfile item, string source, string remoteId)
         {
+            var apiKey = (item.ApiKey ?? string.Empty).Trim();
+            if (CopilotCredentialProtector.IsProtected(apiKey))
+            {
+                throw new InvalidOperationException(
+                    $"Backend profile '{remoteId}' contains a local protected-credential envelope instead of a transport API key.");
+            }
             if (!Enum.TryParse<CopilotVendorType>(item.VendorType, ignoreCase: true, out var vendorType)
                 || !Enum.IsDefined(vendorType))
             {
@@ -351,9 +438,9 @@ namespace ColorVision.Copilot
                 Name = item.Name,
                 VendorType = vendorType,
                 ProviderType = providerType,
-                ApiKey = item.ApiKey,
+                ApiKey = apiKey,
                 BaseUrl = item.BaseUrl,
-                AllowInsecureHttp = item.AllowInsecureHttp,
+                AllowInsecureHttp = false,
                 Model = item.Model,
                 SupportsImageInput = item.SupportsImageInput,
                 ReasoningMode = reasoningMode,
@@ -401,6 +488,19 @@ namespace ColorVision.Copilot
                 output.Write(buffer, 0, count);
             }
             return Encoding.UTF8.GetString(output.ToArray());
+        }
+
+        private static HttpClient CreateHttpClient(HttpMessageHandler handler) =>
+            new(handler, disposeHandler: false)
+            {
+                Timeout = TimeSpan.FromSeconds(30),
+            };
+
+        private static bool IsLoopbackHost(string host)
+        {
+            return string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase)
+                || (IPAddress.TryParse(host, out var ipAddress)
+                    && IPAddress.IsLoopback(ipAddress));
         }
 
         private static string BuildErrorMessage(HttpStatusCode statusCode, string responseBody)

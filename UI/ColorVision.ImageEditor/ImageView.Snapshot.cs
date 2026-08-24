@@ -390,6 +390,24 @@ namespace ColorVision.ImageEditor
             if (source == null)
                 return null;
 
+            if (includeOverlays)
+            {
+                foreach (Visual visual in ImageShow.Visuals)
+                {
+                    if (visual is not DrawingVisual drawingVisual
+                        || drawingVisual.Effect != null
+                        || drawingVisual.CacheMode != null)
+                    {
+                        log.WarnFormat(
+                            "ImageView background snapshot does not support visual type {0}.",
+                            visual.GetType().FullName);
+                        return null;
+                    }
+                }
+
+                CommitActiveDrawingEditsForOutput();
+            }
+
             SnapshotImageBufferLease? imageBuffer = null;
             BitmapSource? frozenSource = null;
             try
@@ -537,7 +555,9 @@ namespace ColorVision.ImageEditor
             }
 
             DrawingGroup drawing = new();
-            drawing.Children.Add(drawingVisual.Drawing.CloneCurrentValue());
+            DrawingGroup? visualDrawing = drawingVisual.Drawing;
+            if (visualDrawing != null)
+                drawing.Children.Add(visualDrawing.CloneCurrentValue());
 
             TransformGroup transforms = new();
             if (drawingVisual.Transform != null && !drawingVisual.Transform.Value.IsIdentity)

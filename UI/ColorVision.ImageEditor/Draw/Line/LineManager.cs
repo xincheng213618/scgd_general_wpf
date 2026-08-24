@@ -33,9 +33,23 @@ namespace ColorVision.ImageEditor.Draw
 
         protected override void OnVisualCreated(DVLine visual)
         {
-            double zoomRatio = Math.Max(Zoombox.ContentMatrix.M11, 0.0001);
+            double zoomRatio = GetSafeZoomRatio();
             visual.Attribute.Brush = StyleConfig.StrokeBrush;
             visual.Attribute.Pen = new Pen(StyleConfig.StrokeBrush, StyleConfig.StrokeThickness / zoomRatio);
+        }
+
+        protected override void OnVisualMouseUp(DVLine visual, Point point)
+        {
+            if (visual.Points.Count < 2)
+            {
+                CancelActiveVisual();
+                return;
+            }
+
+            Vector direction = visual.Points[^1] - visual.Points[0];
+            double lengthSquared = direction.LengthSquared;
+            if (!double.IsFinite(lengthSquared) || lengthSquared <= 0)
+                CancelActiveVisual();
         }
     }
 }

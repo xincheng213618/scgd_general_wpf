@@ -80,14 +80,16 @@ namespace ProjectLUX.Process.Distortion
 
             foreach (var points in testResult.Points)
             {
-                DVCircleText Circle = new();
-                Circle.Attribute.Center = new System.Windows.Point(points.X, points.Y);
-                Circle.Attribute.Radius = 20 / ctx.ImageView.Zoombox1.ContentMatrix.M11;
-                Circle.Attribute.Brush = Brushes.Transparent;
-                Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / ctx.ImageView.Zoombox1.ContentMatrix.M11);
-                Circle.Attribute.Text = $"{Environment.NewLine} X:{points.X.ToString("F0")}{Environment.NewLine}Y:{points.Y.ToString("F0")}";
-                Circle.Render();
-                ctx.ImageView.AddVisual(Circle);
+                DVCircleText circle = new(new CircleTextProperties
+                {
+                    Center = new System.Windows.Point(points.X, points.Y),
+                    Radius = 20 / ctx.ImageView.Zoombox1.ContentMatrix.M11,
+                    Brush = Brushes.Transparent,
+                    Pen = new Pen(Brushes.Red, 1 / ctx.ImageView.Zoombox1.ContentMatrix.M11),
+                    Text = $"{Environment.NewLine} X:{points.X.ToString("F0")}{Environment.NewLine}Y:{points.Y.ToString("F0")}",
+                });
+                circle.TextAttribute.FontSize = 20;
+                ctx.ImageView.AddVisual(circle);
             }
 
         }

@@ -1,5 +1,6 @@
 #pragma warning disable CA1707
 using System.ComponentModel;
+using ProjectARVRPro.Process.KeyedResults;
 
 namespace ProjectARVRPro.Process.MTF.MTFH
 {
@@ -8,6 +9,12 @@ namespace ProjectARVRPro.Process.MTF.MTFH
     /// </summary>
     public class MTFHProcessConfig : ProcessConfigBase<MTFHRecipeConfig>
     {
+        [Category("输出配置")]
+        [DisplayName("导出名称")]
+        [Description("写入DynamicTestResults并导出CSV时使用的组名；配置多个MTFH流程时应使用不同名称。")]
+        public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
+        private string _Name = "MTFH";
+
         public string ShowConfig { get => _ShowConfig; set { _ShowConfig = value; OnPropertyChanged(); } }
         private string _ShowConfig = "F3";
 
@@ -46,5 +53,7 @@ namespace ProjectARVRPro.Process.MTF.MTFH
         [DisplayName("RightDown_0.8F_H解析Key")]
         public string Key_RightDown_0_8F { get => _Key_RightDown_0_8F; set { _Key_RightDown_0_8F = value; OnPropertyChanged(); } }
         private string _Key_RightDown_0_8F = "RightDown_0.8F_H";
+
+        public string GetOutputName() => KeyedTestResultDictionary.NormalizeKey(Name, "MTFH");
     }
 }

@@ -215,6 +215,9 @@ namespace ProjectARVRPro.Process.AOI
             return true;
         }
 
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<AoiTestResult>(result, string.IsNullOrWhiteSpace(Config.Name) ? "AOI" : Config.Name.Trim());
+
         public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;

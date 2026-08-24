@@ -45,8 +45,28 @@ namespace ColorVision.Copilot
             if (profile.ReasoningMode == normalized)
                 return;
 
-            profile.ReasoningMode = normalized;
-            PersistConfig();
+            var status = TryPersistConfigMutation(candidate =>
+            {
+                var candidateProfile = candidate.FindProfile(profile.Id)
+                    ?? throw new InvalidOperationException("The selected model profile is no longer available.");
+                candidateProfile.ReasoningMode = normalized;
+            }, out var errorMessage);
+            if (status == ConfigSavePublicationStatus.NotPersisted)
+            {
+                SetPendingActionFeedback(
+                    "推理模式未更改：配置保存失败。" + Environment.NewLine
+                    + CopilotUserFacingErrorFormatter.Sanitize(errorMessage));
+                RefreshSelectedProfileReasoningState();
+                return;
+            }
+            if (status == ConfigSavePublicationStatus.PersistedButPublishFailed)
+            {
+                SetPendingActionFeedback(
+                    "推理模式已保存，但当前聊天界面未能刷新。" + Environment.NewLine
+                    + CopilotUserFacingErrorFormatter.Sanitize(errorMessage));
+                return;
+            }
+
             RefreshSelectedProfileReasoningState();
         }
         public string InputPlaceholder => IsPromptHistorySearchOpen

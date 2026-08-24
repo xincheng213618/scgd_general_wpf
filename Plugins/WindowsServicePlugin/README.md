@@ -21,7 +21,7 @@ points have been removed from the plugin surface.
 
 | Entry | Purpose |
 | --- | --- |
-| `ServiceManager/MenuServiceManager.cs` | Help menu entry for the in-app service manager. |
+| `ServiceManager/MenuServiceManager.cs` | Administrator-only provider under Apps & Tools > Internal. |
 | `ServiceManager/InstallServiceManager.cs` | Wizard entry that opens the in-app service manager. |
 | `ServiceManager/ServiceManagerWindow.xaml` | Main service manager window. |
 | `ServiceManager/ServiceInstallWindow.xaml` | Local install/update window. |

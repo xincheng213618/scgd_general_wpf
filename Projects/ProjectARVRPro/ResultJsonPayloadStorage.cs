@@ -92,6 +92,37 @@ namespace ProjectARVRPro
             }
         }
 
+        public static void LoadViewResultJsons(SqlSugarClient db, IEnumerable<ProjectARVRReuslt> results)
+        {
+            ArgumentNullException.ThrowIfNull(db);
+            ArgumentNullException.ThrowIfNull(results);
+
+            Dictionary<int, ProjectARVRReuslt> resultsById = results
+                .Where(item => item.Id > 0)
+                .GroupBy(item => item.Id)
+                .ToDictionary(group => group.Key, group => group.First());
+            if (resultsById.Count == 0)
+                return;
+
+            foreach (int[] ids in resultsById.Keys.Chunk(500))
+            {
+                SugarParameter[] parameters = ids
+                    .Select((id, index) => new SugarParameter($"@id{index}", id))
+                    .ToArray();
+                string parameterList = string.Join(", ", parameters.Select(item => item.ParameterName));
+                DataTable table = db.Ado.GetDataTable(
+                    $"SELECT \"Id\", \"{ViewResultColumnName}\" FROM \"{ViewResultTableName}\" WHERE \"Id\" IN ({parameterList});",
+                    parameters);
+
+                foreach (DataRow row in table.Rows)
+                {
+                    int id = Convert.ToInt32(row["Id"]);
+                    if (resultsById.TryGetValue(id, out ProjectARVRReuslt? result))
+                        result.ViewResultJson = Decompress(ReadBytes(row[ViewResultColumnName]));
+                }
+            }
+        }
+
         internal static byte[]? Compress(string? json)
         {
             if (string.IsNullOrEmpty(json))

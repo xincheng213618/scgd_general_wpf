@@ -93,6 +93,31 @@ public sealed class CopilotWorkspaceValidationEnvironmentTests : IDisposable
         Assert.DoesNotContain("federation-secret", result.StandardOutput, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task RunnerDoesNotExecuteValidationWhenWindowsJobIsUnavailable()
+    {
+        Directory.CreateDirectory(_root);
+        var executionMarker = Path.Combine(_root, "must-not-run.txt");
+        var systemRoot = Environment.GetEnvironmentVariable("SystemRoot")
+            ?? Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+        var commandPrompt = Environment.GetEnvironmentVariable("ComSpec")
+            ?? Path.Combine(systemRoot, "System32", "cmd.exe");
+        var runner = new CopilotWorkspaceValidationProcessRunner(_ => null);
+
+        await Assert.ThrowsAsync<CopilotProcessTreeContainmentException>(() =>
+            runner.RunAsync(
+                new CopilotWorkspaceValidationCommand(
+                    commandPrompt,
+                    ["/d", "/s", "/c", "echo executed>must-not-run.txt"],
+                    _root,
+                    TimeSpan.FromSeconds(10)),
+                CancellationToken.None));
+
+        Assert.False(
+            File.Exists(executionMarker),
+            "The validation command ran before failed Job Object assignment was rejected.");
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_root))

@@ -8,15 +8,27 @@ namespace ColorVision.ImageEditor.Draw
     internal static class TextRenderCore
     {
         private const double MinimumFontSize = 1;
+        // WPF rejects FormattedText em sizes above approximately 35791.394.
+        private const double MaximumFontSize = 35791;
 
         public static double NormalizeFontSize(double fontSize)
         {
-            return double.IsFinite(fontSize) && fontSize > 0 ? fontSize : MinimumFontSize;
+            if (double.IsPositiveInfinity(fontSize))
+                return MaximumFontSize;
+
+            return double.IsFinite(fontSize) && fontSize > 0
+                ? Math.Min(fontSize, MaximumFontSize)
+                : MinimumFontSize;
         }
 
         public static double NormalizePixelsPerDip(double pixelsPerDip)
         {
             return double.IsFinite(pixelsPerDip) && pixelsPerDip > 0 ? pixelsPerDip : 1;
+        }
+
+        public static FlowDirection NormalizeFlowDirection(FlowDirection flowDirection)
+        {
+            return Enum.IsDefined(flowDirection) ? flowDirection : FlowDirection.LeftToRight;
         }
 
         public static FormattedText CreateFormattedText(TextAttribute attribute, string? text, double fontSize, double pixelsPerDip, bool measureEmptyText = false)
@@ -38,7 +50,7 @@ namespace ColorVision.ImageEditor.Draw
             return new FormattedText(
                 value,
                 CultureInfo.CurrentCulture,
-                attribute.FlowDirection,
+                NormalizeFlowDirection(attribute.FlowDirection),
                 new Typeface(attribute.FontFamily, attribute.FontStyle, attribute.FontWeight, attribute.FontStretch),
                 NormalizeFontSize(fontSize),
                 attribute.Brush,

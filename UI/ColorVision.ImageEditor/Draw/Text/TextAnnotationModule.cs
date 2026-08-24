@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System;
 
 namespace ColorVision.ImageEditor.Draw.Annotations
@@ -43,14 +44,16 @@ namespace ColorVision.ImageEditor.Draw.Annotations
             if (item is not TextAnnotationItem textItem)
                 throw new NotSupportedException($"Unsupported text annotation type: {item.GetType().FullName}");
 
+            AnnotationTextStyle textStyle = textItem.TextStyle
+                ?? throw new JsonSerializationException("Text annotation is missing TextStyle.");
             TextProperties properties = new();
             AnnotationMappingHelper.ApplyBaseProperties(textItem, properties);
-            properties.Position = AnnotationMappingHelper.ToPoint(textItem.Position);
-            AnnotationMappingHelper.ApplyTextStyle(textItem.TextStyle, properties.TextAttribute);
-            properties.IsShowText = textItem.TextStyle.Visible;
-            if (!string.IsNullOrWhiteSpace(textItem.TextStyle.BackgroundColor))
+            properties.Position = AnnotationMappingHelper.ToFinitePoint(textItem.Position, "Text position");
+            AnnotationMappingHelper.ApplyTextStyle(textStyle, properties.TextAttribute);
+            properties.IsShowText = textStyle.Visible;
+            if (!string.IsNullOrWhiteSpace(textStyle.BackgroundColor))
             {
-                properties.Background = TextStyleSerialization.DeserializeBrush(textItem.TextStyle.BackgroundColor, properties.Background);
+                properties.Background = TextStyleSerialization.DeserializeBrush(textStyle.BackgroundColor, properties.Background);
             }
 
             return properties;

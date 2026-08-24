@@ -1184,24 +1184,31 @@ namespace ProjectARVRPro
                     return;
                 }
 
+                bool useLegacy = _viewResultManager.Config.UseLegacyARVROutput;
                 ObjectiveTestResult? result = JsonConvert.DeserializeObject<ObjectiveTestResult>(record.ObjectiveTestResultJson ?? string.Empty);
-                if (result == null)
+                if (useLegacy && result == null)
                 {
-                    MessageBox.Show(this, "ObjectiveTestResult 为空，无法导出。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(this, "ObjectiveTestResult 为空，无法导出旧版 CSV。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
-                bool useLegacy = _viewResultManager.Config.UseLegacyARVROutput;
                 await Task.Run(() =>
                 {
                     if (useLegacy)
                     {
-                        LegacyARVRObjectiveTestResult legacyResult = LegacyARVRConverter.ToLegacy(result);
+                        LegacyARVRObjectiveTestResult legacyResult = LegacyARVRConverter.ToLegacy(result!);
                         LegacyARVRCsvExporter.ExportToCsv(new List<LegacyARVRObjectiveTestResult> { legacyResult }, fileName);
                     }
                     else
                     {
-                        ObjectiveTestResultCsvExporter.ExportToCsv(result, fileName);
+                        IReadOnlyList<ProjectARVRReuslt> flowResults = _statisticsStore.QueryFlowDetailsForExport(row);
+                        IReadOnlyList<ObjectiveTestCsvRow> rows = ProjectARVRResultCsvExporter.CollectRows(flowResults);
+                        if (rows.Count > 0)
+                            ProjectARVRResultCsvExporter.ExportRows(rows, fileName);
+                        else if (result != null)
+                            ObjectiveTestResultCsvExporter.ExportToCsv(result, fileName);
+                        else
+                            throw new InvalidOperationException("没有可导出的单流程结果或聚合结果。");
                     }
                 });
                 MessageBox.Show(this, $"导出完成：{fileName}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -1249,7 +1256,10 @@ namespace ProjectARVRPro
                         .Where(row => recordsById.ContainsKey(row.Id))
                         .Select(row => recordsById[row.Id])
                         .ToList();
-                    ObjectiveTestResultBatchCsvExporter.ExportToCsv(records, fileName);
+                    Dictionary<int, IReadOnlyList<ProjectARVRReuslt>> flowResultsByRecordId = selectedRows
+                        .Where(row => recordsById.ContainsKey(row.Id))
+                        .ToDictionary(row => row.Id, row => _statisticsStore.QueryFlowDetailsForExport(row));
+                    ObjectiveTestResultBatchCsvExporter.ExportToCsv(records, flowResultsByRecordId, fileName);
                     return records;
                 });
 

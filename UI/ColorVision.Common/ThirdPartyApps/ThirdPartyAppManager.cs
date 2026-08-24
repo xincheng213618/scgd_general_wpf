@@ -133,7 +133,7 @@ namespace ColorVision.Common.ThirdPartyApps
             if (!string.IsNullOrWhiteSpace(path))
                 return $"path:{NormalizePath(path)}|args:{app.LaunchArguments}";
 
-            return $"name:{app.Group}|{app.Name}";
+            return $"name:{app.Category}:{app.Group}|{app.Name}";
         }
 
         private static bool ShouldReplace(ThirdPartyAppInfo existingApp, ThirdPartyAppInfo candidateApp)

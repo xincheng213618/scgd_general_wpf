@@ -257,12 +257,14 @@ namespace ColorVision.ImageEditor
 
             Config.ShowMsgChanged += (s, e) =>
             {
-                if (!e)
+                foreach (var drawingVisual in EditorContext.DrawEditorContext.DrawingVisualLists)
                 {
-                    foreach (var drawingVisual in EditorContext.DrawEditorContext.DrawingVisualLists)
-                    {
-                        drawingVisual.BaseAttribute.Msg = string.Empty;
-                    }
+                    if (drawingVisual is not DrawingVisualBase visual || visual.IsMessageVisible == e)
+                        continue;
+
+                    visual.IsMessageVisible = e;
+                    if (visual.BaseAttribute is BaseProperties baseAttribute && !string.IsNullOrWhiteSpace(baseAttribute.Msg))
+                        visual.Render();
                 }
             };
 
@@ -747,6 +749,7 @@ namespace ColorVision.ImageEditor
         public BitmapSource? CaptureSnapshot()
         {
             Dispatcher.VerifyAccess();
+            CommitActiveDrawingEditsForOutput();
             ImageShow.UpdateLayout();
             int pixelWidth = GetRenderPixelLength(ImageShow.ActualWidth, ImageShow.RenderSize.Width);
             int pixelHeight = GetRenderPixelLength(ImageShow.ActualHeight, ImageShow.RenderSize.Height);
@@ -963,6 +966,15 @@ namespace ColorVision.ImageEditor
             dialog.FileName = "annotations-" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
+            CommitActiveDrawingEditsForOutput();
+            visuals = EditorContext.DrawEditorContext.DrawingVisualLists.OfType<DrawingVisualBase>().ToList();
+            document = AnnotationMapper.CreateDocument(visuals);
+            if (document.Items.Count == 0)
+            {
+                WpfMessageBox.Show(Properties.Resources.ImageView_NoAnnotationTypes, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             File.WriteAllText(dialog.FileName, AnnotationMapper.Serialize(document));
 
             int skippedCount = visuals.Count - document.Items.Count;
@@ -970,6 +982,23 @@ namespace ColorVision.ImageEditor
                 ? string.Format(Properties.Resources.ImageView_ExportedAnnotationsWithSkip, document.Items.Count, skippedCount)
                 : string.Format(Properties.Resources.ImageView_ExportedAnnotations, document.Items.Count);
             WpfMessageBox.Show(message, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void CommitActiveDrawingEditsForOutput()
+        {
+            List<IEditableDrawingVisual> activeEditors = EditorContext.DrawEditorContext.DrawingVisualLists
+                .OfType<IEditableDrawingVisual>()
+                .Where(editor => editor.IsEditing)
+                .ToList();
+            if (activeEditors.Count == 0)
+                return;
+
+            foreach (IEditableDrawingVisual editor in activeEditors)
+                editor.EndEdit(true);
+
+            // Editing starts with an empty selection. Keep that state and avoid
+            // exporting the selection handles restored by EndEdit.
+            EditorContext.DrawEditorContext.SelectionVisual.ClearRender();
         }
 
         public void ImportAnnotations()
@@ -1004,12 +1033,35 @@ namespace ColorVision.ImageEditor
         {
             if (e.Visual is IDrawingVisual visual)
             {
+                ApplyDrawingVisualDisplayConfig(visual);
                 EditorContext.DrawEditorContext.DrawingVisualLists.Add(visual);
                 return;
             }
 
             List<IDrawingVisual> drawingVisuals = e.Visuals.OfType<IDrawingVisual>().ToList();
+            foreach (IDrawingVisual drawingVisual in drawingVisuals)
+                ApplyDrawingVisualDisplayConfig(drawingVisual);
             EditorContext.DrawEditorContext.AddDrawingVisuals(drawingVisuals);
+        }
+
+        private void ApplyDrawingVisualDisplayConfig(IDrawingVisual visual, bool renderChanges = true)
+        {
+            bool requiresRender = false;
+            BaseProperties? baseAttribute = visual.BaseAttribute;
+            if (baseAttribute is ITextProperties textProperties && textProperties.IsShowText != Config.IsShowText)
+            {
+                textProperties.IsShowText = Config.IsShowText;
+                requiresRender = true;
+            }
+
+            if (visual is DrawingVisualBase drawingVisual && drawingVisual.IsMessageVisible != Config.IsShowMsg)
+            {
+                drawingVisual.IsMessageVisible = Config.IsShowMsg;
+                requiresRender |= baseAttribute != null && !string.IsNullOrWhiteSpace(baseAttribute.Msg);
+            }
+
+            if (requiresRender && renderChanges)
+                visual.Render();
         }
 
         private void ImageShow_VisualsRemove(object? sender, VisualChangedEventArgs e)
@@ -1563,6 +1615,24 @@ namespace ColorVision.ImageEditor
 
         public void AddVisual(Visual visual)
         {
+            if (visual is IDrawingVisual drawingVisual
+                && visual is DrawingVisual renderedVisual
+                && renderedVisual.Drawing == null)
+            {
+                ImageShow.TrySynchronizeDetachedVisualDpi(renderedVisual);
+                ApplyDrawingVisualDisplayConfig(drawingVisual, renderChanges: false);
+                if (visual is ILayoutScaleDrawingVisual scalableVisual)
+                {
+                    scalableVisual.ApplyLayoutScale(new DrawingVisualScaleContext(
+                        ImageShow.IsLayoutUpdated,
+                        ImageShow.Scale,
+                        ImageShow.TextFontSizeOverride));
+                }
+
+                if (renderedVisual.Drawing == null)
+                    drawingVisual.Render();
+            }
+
             ImageShow.AddVisualCommand(visual);
         }
 

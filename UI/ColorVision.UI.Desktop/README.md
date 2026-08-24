@@ -27,10 +27,11 @@
 - **WizardWindowConfig** — 向导完成状态持久化
 
 ### 菜单管理 (MenuItemManager/)
-- **MenuItemManagerWindow** — 可视化菜单结构编辑
-- **MenuItemManagerConfig** — 菜单配置持久化
+- **MenuItemManagerWindow** — 可视化菜单结构编辑，从“应用与工具 / 内部工具”进入
+- **MenuItemManagerConfig** — 仅持久化按窗口作用域区分的菜单覆盖项
 
-### 第三方应用 (ThirdPartyApps/)
+### 应用与工具 (ThirdPartyApps/)
+- **ThirdPartyAppsWindow** — 统一承载内部、系统、外部和自定义工具
 - **SystemAppProvider** — Windows 系统工具集合
 
 ### 其他

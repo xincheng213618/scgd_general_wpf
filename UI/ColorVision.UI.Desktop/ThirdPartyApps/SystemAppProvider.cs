@@ -13,30 +13,35 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                 {
                     Name = "CMD",
                     Group = group,
+                    Category = ThirdPartyAppCategory.System,
                     LaunchPath = "cmd.exe",
                 },
                 new ThirdPartyAppInfo
                 {
                     Name = "PowerShell",
                     Group = group,
+                    Category = ThirdPartyAppCategory.System,
                     LaunchPath = "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe",
                 },
                 new ThirdPartyAppInfo
                 {
                     Name = "Control Panel",
                     Group = group,
+                    Category = ThirdPartyAppCategory.System,
                     LaunchPath = "control.exe",
                 },
                 new ThirdPartyAppInfo
                 {
                     Name = "Registry Editor",
                     Group = group,
+                    Category = ThirdPartyAppCategory.System,
                     LaunchPath = "C:\\Windows\\SysWOW64\\regedit.exe",
                 },
                 new ThirdPartyAppInfo
                 {
                     Name = "Group Policy",
                     Group = group,
+                    Category = ThirdPartyAppCategory.System,
                     LaunchPath = "mmc.exe",
                     LaunchArguments = "gpedit.msc",
                 },
@@ -44,18 +49,21 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                 {
                     Name = "System Information",
                     Group = group,
+                    Category = ThirdPartyAppCategory.System,
                     LaunchPath = "msinfo32.exe",
                 },
                 new ThirdPartyAppInfo
                 {
                     Name = "Remote Desktop",
                     Group = group,
+                    Category = ThirdPartyAppCategory.System,
                     LaunchPath = "mstsc.exe",
                 },
                 new ThirdPartyAppInfo
                 {
                     Name = "Event Viewer",
                     Group = group,
+                    Category = ThirdPartyAppCategory.System,
                     LaunchPath = "mmc.exe",
                     LaunchArguments = "eventvwr.msc",
                 },
@@ -63,6 +71,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                 {
                     Name = "Task Scheduler",
                     Group = group,
+                    Category = ThirdPartyAppCategory.System,
                     LaunchPath = "mmc.exe",
                     LaunchArguments = "taskschd.msc",
                 },
@@ -70,6 +79,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                 {
                     Name = "Network Connections",
                     Group = group,
+                    Category = ThirdPartyAppCategory.System,
                     LaunchPath = "control.exe",
                     LaunchArguments = "ncpa.cpl",
                 },

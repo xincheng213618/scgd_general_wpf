@@ -22,6 +22,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
             {
                 Name = entry.Name,
                 Group = !string.IsNullOrEmpty(entry.Group) ? entry.Group : CustomAppsConfig.Instance.DefaultCustomGroup,
+                Category = ThirdPartyAppCategory.Custom,
                 Order = entry.Order,
             };
 

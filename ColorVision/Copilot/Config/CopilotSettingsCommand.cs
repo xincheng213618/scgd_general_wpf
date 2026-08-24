@@ -5,7 +5,7 @@ namespace ColorVision.Copilot
     internal static class CopilotSettingsCommand
     {
         internal const string Usage =
-            "用法：/settings [models|agent|mcp|sync]。省略参数时打开模型设置。";
+            "用法：/settings [models|agent|web|mcp|sync]。省略参数时打开模型设置。";
 
         internal static bool TryResolvePage(
             string? arguments,
@@ -23,6 +23,14 @@ namespace ColorVision.Copilot
             if (string.Equals(normalized, "agent", StringComparison.OrdinalIgnoreCase))
             {
                 page = CopilotSettingsPage.Agent;
+                return true;
+            }
+
+            if (string.Equals(normalized, "web", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalized, "nat64", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalized, "pref64", StringComparison.OrdinalIgnoreCase))
+            {
+                page = CopilotSettingsPage.Web;
                 return true;
             }
 

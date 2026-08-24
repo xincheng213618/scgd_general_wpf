@@ -97,6 +97,14 @@ class IncrementalServiceHostPackageTests(unittest.TestCase):
         with self.assertRaisesRegex(FileNotFoundError, "ServiceHost runtime is incomplete"):
             validate_service_host_runtime(self.new_directory)
 
+    def test_runtime_validation_rejects_missing_management_dependency(self) -> None:
+        for relative_path in REQUIRED_SERVICE_HOST_RUNTIME_PATHS:
+            self._write_file(self.new_directory / relative_path, b"runtime")
+        (self.new_directory / "ServiceHost/System.Management.dll").unlink()
+
+        with self.assertRaisesRegex(FileNotFoundError, "ServiceHost/System.Management.dll"):
+            validate_service_host_runtime(self.new_directory)
+
     @staticmethod
     def _write_file(path: Path, content: bytes) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)

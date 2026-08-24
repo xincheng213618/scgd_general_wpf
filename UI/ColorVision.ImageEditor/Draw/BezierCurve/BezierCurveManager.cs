@@ -33,13 +33,19 @@ namespace ColorVision.ImageEditor.Draw
 
         protected override void OnVisualCreated(DVBezierCurve visual)
         {
-            double zoomRatio = Math.Max(Zoombox.ContentMatrix.M11, 0.0001);
+            double zoomRatio = GetSafeZoomRatio();
             visual.Attribute.Brush = StyleConfig.StrokeBrush;
             visual.Attribute.Pen = new Pen(StyleConfig.StrokeBrush, StyleConfig.StrokeThickness / zoomRatio);
         }
 
         protected override void OnVisualCompleted(DVBezierCurve visual)
         {
+            if (visual.Points.Count < 2)
+            {
+                CancelActiveVisual();
+                return;
+            }
+
             visual.AutoAttributeChanged = true;
             base.OnVisualCompleted(visual);
         }

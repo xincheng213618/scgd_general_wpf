@@ -9,8 +9,6 @@ using SqlSugar;
 using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Text;
-using System.Windows;
-using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.MTF.MTFV
 {
@@ -143,7 +141,7 @@ namespace ProjectARVRPro.Process.MTF.MTFV
                     testResult.MTF_V_LeftDown_0_8F,
                     testResult.MTF_V_RightDown_0_8F
                 };
-                ctx.ObjectiveTestResult.DynamicTestResults["MTFV"] = items;
+                ctx.ObjectiveTestResult.DynamicTestResults[Config.GetOutputName()] = items;
 
                 return true;
             }
@@ -153,6 +151,9 @@ namespace ProjectARVRPro.Process.MTF.MTFV
                 return false;
             }
         }
+
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<MTFVTestResult>(result, Config.GetOutputName());
 
         public override void Render(IProcessExecutionContext ctx)
         {
@@ -166,13 +167,9 @@ namespace ProjectARVRPro.Process.MTF.MTFV
                 foreach (var item in testResult.MTFDetailViewReslut.MTFResult.result)
                 {
                     id++;
-                    DVRectangleText Rectangle = new();
-                    Rectangle.Attribute.Rect = new Rect(item.x, item.y, item.w, item.h);
-                    Rectangle.Attribute.Brush = Brushes.Transparent;
-                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                    Rectangle.Attribute.Id = id;
-                    Rectangle.Attribute.Msg = item.mtfValue?.ToString(Config.ShowConfig);
-                    Rectangle.Render();
+                    if (!ProcessExtensions.TryCreateMtfOverlay(item, id, Config.ShowConfig, out DVRectangleText Rectangle))
+                        continue;
+
                     ctx.ImageView.AddVisual(Rectangle);
                 }
             }
@@ -182,7 +179,7 @@ namespace ProjectARVRPro.Process.MTF.MTFV
         {
             var result = ctx.Result;
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("MTF 058-V（竖条纹）画面结果");
+            sb.AppendLine($"{Config.GetOutputName()} 画面结果");
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) { AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return; }
 
