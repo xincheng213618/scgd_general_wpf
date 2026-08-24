@@ -9,7 +9,7 @@ ARVR 不是一个统一 schema，而是一组传统模板、JSON 模板、POI �
 | MTF/SFR 结果点位不对 | 请求是否带 `POITemplateParam` |
 | Flow 节点模板下拉不对 | `AlgorithmNodeConfigurators.cs` 的 ARVR 分支 |
 | 手动运行正常、流程运行异常 | 比对手动 `Algorithm*.cs` 和 `AlgorithmARVRNode.getBaseEventData()` |
-| FOV/Distortion 模板混乱 | 传统模板和 JSON V2 是否同时挂到同一 `TempName` |
+| MTF/FOV/Distortion 模板混乱 | MTF、FOV 只挂 JSON V2；Distortion 再检查传统模板和 JSON V2 是否同时挂到同一 `TempName` |
 | SFR 曲线打不开或导出异常 | `WindowSFR`、结果表采样数据和 `ViewHandleSFR` |
 | Ghost overlay 不对 | 请求 `Color`、点阵行列和结果 handler |
 | 双目融合/SFR_FindROI 找不到传统模板 | 它们走 JSON 模板，不在 `Templates/ARVR/` 传统目录里 |
@@ -18,9 +18,9 @@ ARVR 不是一个统一 schema，而是一组传统模板、JSON 模板、POI �
 
 | 家族 | 模板 | 代码/字典 | 事件 | 结果入口 |
 | --- | --- | --- | --- | --- |
-| FOV | `TemplateFOV` | `Code = FOV`，`TemplateDicId = 6` | `Event_FOV_GetData` | `ViewHandleFOV` |
+| FOV | `TemplateDFOV` | `Code = FOV`，`TemplateDicId = 39` | `FOV` | `ViewHandleDFOV` |
 | Ghost | `TemplateGhost` | `Code = ghost`，`TemplateDicId = 7` | `Ghost` | `ViewHandleGhost` |
-| MTF | `TemplateMTF` | `Code = MTF`，`TemplateDicId = 8` | `Event_MTF_GetData` | `ViewHandleMTF` |
+| MTF | `TemplateMTF2` | `Code = MTF`，`TemplateDicId = 48` | `MTF` | `ViewHandleMTF2` |
 | SFR | `TemplateSFR` | `Code = SFR`，`TemplateDicId = 9` | `Event_SFR_GetData` | `ViewHandleSFR`、`WindowSFR` |
 | Distortion | `TemplateDistortionParam` | `Code = distortion`，`TemplateDicId = 10` | `Distortion` | `ViewHandleDistortion` |
 | AOI | `TemplateAOIParam` | `Code = AOI`，`TemplateDicId = 12` | 主要作为参数配置 | 项目/AOI 链路消费 |
@@ -32,9 +32,7 @@ ARVR 不是一个统一 schema，而是一组传统模板、JSON 模板、POI �
 
 | 算法 | 关键点 |
 | --- | --- |
-| MTF | `AlgorithmMTF` 选择 `TemplateMTF` 和 `TemplatePoi`，请求必须带 `POITemplateParam` |
 | SFR | `AlgorithmSFR` 选择 `TemplateSFR` 和 `TemplatePoi`，结果曲线在 `WindowSFR` |
-| FOV | `AlgorithmFOV` 发布 `Event_FOV_GetData`，显示侧还会处理批次、Raw 和本地图像输入 |
 | Distortion | `AlgorithmDistortion` 发布 `Distortion`，结果映射看 `ViewResultDistortion` |
 | Ghost | `AlgorithmGhost` 附带 `Color`，发布 `Ghost` |
 
@@ -46,9 +44,9 @@ ARVR 不是一个统一 schema，而是一组传统模板、JSON 模板、POI �
 
 | Flow 算子 | `operatorCode` | 模板选择 |
 | --- | --- | --- |
-| MTF | `MTF` | `TemplateMTF` + `TemplatePoi` |
+| MTF | `MTF` | `TemplateMTF2` + `TemplatePoi` |
 | SFR | `SFR` | `TemplateSFR` + `TemplatePoi` |
-| FOV | `FOV` | `TemplateDFOV` + `TemplateFOV` |
+| FOV | `FOV` | `TemplateDFOV` |
 | 畸变 | `Distortion` | `TemplateDistortion2` + `TemplateDistortionParam` |
 | SFR_FindROI | `ARVR.SFR.FindROI` | `TemplateSFRFindROI` + `TemplatePoi` |
 | 双目融合 | `ARVR.BinocularFusion` | `TemplateBinocularFusion` |
@@ -60,9 +58,9 @@ Flow 请求还会统一带 `BufferLen`、颜色通道、上一步图像参数和
 
 | 结果类型 | Handler | 排查重点 |
 | --- | --- | --- |
-| `FOV` | `ViewHandleFOV` | 图像输入、角度/距离字段 |
+| `FOV` | `ViewHandleDFOV` | JSON V2 角度/距离字段 |
 | `Ghost` | `ViewHandleGhost` | 颜色通道、点阵数量、overlay |
-| `MTF` | `ViewHandleMTF` | POI 点值、CSV、统计值 |
+| `MTF` | `ViewHandleMTF2` | JSON V2 POI 点值、CSV、统计值 |
 | `SFR` | `ViewHandleSFR`、`WindowSFR` | `Pdfrequency`、`PdomainSamplingData` 曲线 |
 | `Distortion` | `ViewHandleDistortion`、`ViewResultDistortion` | 枚举映射、最终点阵 |
 | `ARVR_BinocularFusion` | `ViewHandleBinocularFusion` | JSON V2 结果 |
@@ -73,9 +71,9 @@ Flow 请求还会统一带 `BufferLen`、颜色通道、上一步图像参数和
 
 | 场景 | 通过标准 |
 | --- | --- |
-| 手动 MTF/SFR | 请求同时包含参数模板和 POI 模板，结果能被对应 handler 接住 |
+| 手动 MTF2/SFR | 请求同时包含参数模板和 POI 模板，结果能被对应 handler 接住 |
 | Flow ARVR 节点 | 切换算法类型后，模板选择器和 `operatorCode` 一起变化 |
-| FOV/Distortion | 传统模板和 JSON V2 不串用，结果展示正确 |
+| FOV/MTF | 只显示 JSON V2 模板，结果由 V2 handler 接管 |
 | SFR 曲线 | `WindowSFR` 能打开曲线，CSV 字段和采样数据一致 |
 | Ghost | 请求带 `Color`，点阵数量和 overlay 一致 |
 | JSON 分支 | BinocularFusion、SFR_FindROI、FindCross 走对应 JSON 模板 |
@@ -84,10 +82,10 @@ Flow 请求还会统一带 `BufferLen`、颜色通道、上一步图像参数和
 
 | 文件 | 作用 |
 | --- | --- |
-| `Templates/ARVR/MTF/AlgorithmMTF.cs` | MTF 手动请求 |
+| `Templates/Jsons/MTF2/AlgorithmMTF2.cs` | MTF 2.0 手动请求 |
 | `Templates/ARVR/SFR/AlgorithmSFR.cs` | SFR 手动请求 |
 | `Templates/ARVR/SFR/WindowSFR.xaml.cs` | SFR 曲线和导出 |
-| `Templates/ARVR/FOV/DisplayFOV.xaml.cs` | FOV 输入和显示 |
+| `Templates/Jsons/FOV2/AlgorithmFOV2.cs` | FOV 2.0 手动请求 |
 | `Templates/ARVR/Distortion/ViewResultDistortion.cs` | Distortion 结果映射 |
 | `Templates/ARVR/Ghost/AlgorithmGhost.cs` | Ghost 请求 |
 | `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs` | Flow ARVR 补充属性面板 |

@@ -3,7 +3,6 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.FocusPoints;
-using ColorVision.Engine.Templates.FOV;
 using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.Jsons.AAFindPoints;
@@ -19,7 +18,6 @@ using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.Engine.Templates.Jsons.SFRFindROI;
 using ColorVision.Engine.Templates.LedCheck;
 using ColorVision.Engine.Templates.LEDStripDetection;
-using ColorVision.Engine.Templates.MTF;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.SFR;
 
@@ -73,7 +71,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                 switch (node.Algorithm)
                 {
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.MTF:
-                        context.AddTemplatePanel(nameof(node.TempName), "MTF", new TemplateMTF());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), "MTF2", new TemplateMTF2());
                         context.AddTemplatePanel(nameof(node.POITempName), "POI", new TemplatePoi());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.SFR:
@@ -82,7 +80,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.FOV:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "DFOV", new TemplateDFOV());
-                        context.AddTemplatePanel(nameof(node.TempName), "FOV", new TemplateFOV());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.畸变:
                         context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.Distortion, new TemplateDistortion2());
@@ -126,7 +123,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                 switch (node.Algorithm)
                 {
                     case FlowEngineLib.Algorithm.AlgorithmType.MTF:
-                        context.AddTemplatePanel(nameof(node.TempName), "MTF", new TemplateMTF());
                         context.AddTemplateJsonPanel(nameof(node.TempName), "MTF2", new TemplateMTF2());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.SFR:
@@ -134,7 +130,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.FOV:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "DFOV", new TemplateDFOV());
-                        context.AddTemplatePanel(nameof(node.TempName), "FOV", new TemplateFOV());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.鬼影:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "GhostQK", new TemplateGhostQK());

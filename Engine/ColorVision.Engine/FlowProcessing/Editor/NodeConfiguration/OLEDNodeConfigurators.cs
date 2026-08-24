@@ -7,7 +7,6 @@ using ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForRePicGradingV2;
 using ColorVision.Engine.Templates.Jsons.OLEDImageProcessing;
 using ColorVision.Engine.Templates.ImageCropping;
 using Jsons = ColorVision.Engine.Templates.Jsons;
-using MTF = ColorVision.Engine.Templates.MTF;
 using SFR = ColorVision.Engine.Templates.SFR;
 
 namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
@@ -67,7 +66,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                 {
                     case FlowEngineLib.Algorithm.Algorithm2Type.MTF:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "MTF2", new Jsons.MTF2.TemplateMTF2());
-                        context.AddTemplatePanel(nameof(node.TempName), "MTF", new MTF.TemplateMTF());
                         break;
                     case FlowEngineLib.Algorithm.Algorithm2Type.SFR:
                         context.AddTemplatePanel(nameof(node.TempName), "SFR", new SFR.TemplateSFR());
