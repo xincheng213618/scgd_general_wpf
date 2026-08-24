@@ -13,7 +13,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                 FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
                 FontSize = 15,
                 HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
-                Text = ThirdPartyAppIconGlyphs.Default,
+                Text = ThirdPartyAppIconGlyphs.Launcher,
                 TextAlignment = System.Windows.TextAlignment.Center,
                 VerticalAlignment = System.Windows.VerticalAlignment.Center
             };

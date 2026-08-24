@@ -126,7 +126,9 @@ namespace ColorVision.Copilot
             });
 
         private readonly CopilotModelConnectionDiagnostic _modelConnectionDiagnostic = new();
-        private readonly CopilotBackendSyncClient _backendSyncClient = new();
+        private readonly CopilotBackendSyncClient _backendSyncClient;
+        private readonly ConfigHandler _configHandler;
+        private readonly CopilotConfig _config;
         private readonly CancellationTokenSource _lifetimeCancellation = new();
         private CancellationTokenSource? _modelConnectionTestCancellation;
         private bool _isApplyingPreset;
@@ -136,10 +138,24 @@ namespace ColorVision.Copilot
         private string _activeProfileId = string.Empty;
 
         public CopilotSettingsViewModel()
+            : this(
+                ConfigHandler.GetInstance(),
+                new CopilotBackendSyncClient(),
+                initialState: null)
         {
-            var config = CopilotConfig.Instance;
+        }
+
+        internal CopilotSettingsViewModel(
+            ConfigHandler configHandler,
+            CopilotBackendSyncClient backendSyncClient,
+            CopilotChatState? initialState)
+        {
+            _configHandler = configHandler ?? throw new ArgumentNullException(nameof(configHandler));
+            _backendSyncClient = backendSyncClient ?? throw new ArgumentNullException(nameof(backendSyncClient));
+            _config = _configHandler.GetRequiredService<CopilotConfig>();
+            var config = _config;
             if (config.EnsureInitialized())
-                ConfigHandler.GetInstance().Save<CopilotConfig>();
+                _configHandler.Save<CopilotConfig>();
 
             ProviderOptions = new ReadOnlyCollection<CopilotProviderOption>(new[]
             {
@@ -174,7 +190,7 @@ namespace ColorVision.Copilot
             if (Profiles.Count == 0)
                 Profiles.Add(CopilotProfileConfig.CreateDefault());
 
-            var state = CopilotChatStateStore.Instance.Load();
+            var state = initialState ?? CopilotChatStateStore.Instance.Load();
             _activeProfileId = Profiles.Any(profile => string.Equals(profile.Id, state.ActiveProfileId, StringComparison.Ordinal))
                 ? state.ActiveProfileId
                 : string.Empty;
@@ -228,8 +244,8 @@ namespace ColorVision.Copilot
             McpEndpoint = BuildMcpEndpoint();
             McpBearerToken = config.McpBearerToken;
             ExternalMcpServersText = CopilotMcpClientConfigurationText.Format(config.ExternalMcpServers);
+            WebPagePref64PrefixesText = config.WebPagePref64Prefixes;
             BackendSyncUrl = config.BackendSyncUrl;
-            AllowInsecureBackendSync = config.AllowInsecureBackendSync;
             RefreshMcpStatusText();
             RefreshMcpDiagnostics();
             RefreshAgentSkillDiagnostics();
@@ -264,6 +280,8 @@ namespace ColorVision.Copilot
             {
                 if (SetProperty(ref _backendSyncUrl, value ?? string.Empty))
                 {
+                    OnPropertyChanged(nameof(IsBackendSyncEndpointValid));
+                    OnPropertyChanged(nameof(BackendSyncEndpointStatusText));
                     OnPropertyChanged(nameof(CanSyncBackendConfig));
                     CommandManager.InvalidateRequerySuggested();
                     MarkSettingsPending("Backend sync settings changed. Click Apply or Save to keep them.");
@@ -272,16 +290,26 @@ namespace ColorVision.Copilot
         }
         private string _backendSyncUrl = CopilotConfig.DefaultBackendSyncUrl;
 
-        public bool AllowInsecureBackendSync
+        public bool IsBackendSyncEndpointValid =>
+            CopilotBackendSyncClient.TryBuildEndpoint(BackendSyncUrl, out _, out _);
+
+        public string BackendSyncEndpointStatusText
         {
-            get => _allowInsecureBackendSync;
-            set
+            get
             {
-                if (SetProperty(ref _allowInsecureBackendSync, value))
-                    MarkSettingsPending("Backend sync transport policy changed. Click Apply or Save to keep it.");
+                if (!CopilotBackendSyncClient.TryBuildEndpoint(
+                        BackendSyncUrl,
+                        out var endpoint,
+                        out var errorMessage))
+                {
+                    return errorMessage;
+                }
+
+                return string.Equals(endpoint!.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)
+                    ? "HTTPS protects managed API keys and profile settings in transit."
+                    : "Loopback HTTP is allowed only for a backend service on this computer.";
             }
         }
-        private bool _allowInsecureBackendSync;
 
         public bool IsSyncingBackendConfig
         {
@@ -299,14 +327,14 @@ namespace ColorVision.Copilot
 
         public bool CanSyncBackendConfig => !_disposed
             && !IsSyncingBackendConfig
-            && !string.IsNullOrWhiteSpace(BackendSyncUrl);
+            && IsBackendSyncEndpointValid;
 
         public string BackendSyncStatusText
         {
             get => _backendSyncStatusText;
             private set => SetProperty(ref _backendSyncStatusText, value ?? string.Empty);
         }
-        private string _backendSyncStatusText = "Click Download and sync to verify this device and update managed model profiles.";
+        private string _backendSyncStatusText = "Enter an HTTPS backend URL, then click Download and sync.";
 
         public RelayCommand AddProfileCommand { get; }
 
@@ -449,9 +477,14 @@ namespace ColorVision.Copilot
         }
         private bool _hasUnsavedSettings;
 
-        public bool CanApplySettings => HasUnsavedSettings && IsMcpPortValid && IsExternalMcpServersValid;
+        public bool CanApplySettings => HasUnsavedSettings
+            && IsMcpPortValid
+            && IsExternalMcpServersValid
+            && IsWebPagePref64PrefixesValid;
 
-        public bool CanSaveSettings => IsMcpPortValid && IsExternalMcpServersValid;
+        public bool CanSaveSettings => IsMcpPortValid
+            && IsExternalMcpServersValid
+            && IsWebPagePref64PrefixesValid;
 
         public string SettingsCancelButtonText => HasUnsavedSettings ? "Cancel" : "Close";
 
@@ -559,6 +592,22 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(SelectedProfileUsageActionText));
             OnPropertyChanged(nameof(SelectedProfileUsageText));
             CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void SetActiveProfileId(string? profileId)
+        {
+            var normalizedProfileId = string.IsNullOrWhiteSpace(profileId)
+                ? _activeProfileId
+                : profileId;
+            if (string.Equals(_activeProfileId, normalizedProfileId, StringComparison.Ordinal))
+            {
+                OnSelectedProfileUsageChanged();
+                return;
+            }
+
+            _activeProfileId = normalizedProfileId;
+            OnPropertyChanged(nameof(ActiveProfileId));
+            OnSelectedProfileUsageChanged();
         }
 
         private CopilotProfileConfig CreateProfileForVendor(CopilotVendorType vendorType)

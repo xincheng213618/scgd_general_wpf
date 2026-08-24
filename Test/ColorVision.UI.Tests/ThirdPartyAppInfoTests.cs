@@ -82,6 +82,13 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void LauncherKeepsClassicToolbarGlyphSeparateFromCardFallback()
+        {
+            Assert.Equal("\uE74C", ThirdPartyAppIconGlyphs.Launcher);
+            Assert.NotEqual(ThirdPartyAppIconGlyphs.Default, ThirdPartyAppIconGlyphs.Launcher);
+        }
+
+        [Fact]
         public void InternalProvidersExposeDistinctSemanticIcons()
         {
             IThirdPartyAppProvider[] providers =

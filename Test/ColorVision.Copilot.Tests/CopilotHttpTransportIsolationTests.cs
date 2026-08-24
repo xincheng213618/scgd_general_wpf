@@ -194,11 +194,11 @@ public sealed class CopilotHttpTransportIsolationTests
 
     private static HttpClient CreateBackendSyncClient()
     {
-        var sharedHandlerField = typeof(CopilotBackendSyncClient).GetField(
-            "SharedHandler",
+        var loopbackHandlerField = typeof(CopilotBackendSyncClient).GetField(
+            "LoopbackHandler",
             BindingFlags.NonPublic | BindingFlags.Static);
-        Assert.NotNull(sharedHandlerField);
-        var handler = Assert.IsAssignableFrom<HttpMessageHandler>(sharedHandlerField.GetValue(null));
+        Assert.NotNull(loopbackHandlerField);
+        var handler = Assert.IsAssignableFrom<HttpMessageHandler>(loopbackHandlerField.GetValue(null));
         return new HttpClient(handler, disposeHandler: false)
         {
             Timeout = TimeSpan.FromSeconds(5),

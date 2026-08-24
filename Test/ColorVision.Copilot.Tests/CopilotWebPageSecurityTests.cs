@@ -146,6 +146,35 @@ public sealed class CopilotWebPageSecurityTests
         { "2001:4860:1234:5678:0:abcd:c000:aa", "2001:4860:1234:5678:0:abcd:808:808" },
     };
 
+    public static TheoryData<string, string> ConfiguredBlockedNetworkSpecificNat64Addresses => new()
+    {
+        { "2001:4860::/32", "2001:4860:a00:1::" },
+        { "2001:4860:1200::/40", "2001:4860:120a:0:1::" },
+        { "2001:4860:1234::/48", "2001:4860:1234:a00:0:100::" },
+        { "2001:4860:1234:5600::/56", "2001:4860:1234:560a:0:1::" },
+        { "2001:4860:1234:5678::/64", "2001:4860:1234:5678:a:0:1be:ef01" },
+        { "2001:4860:1234:5678:0:abcd::/96", "2001:4860:1234:5678:0:abcd:a00:1" },
+    };
+
+    public static TheoryData<string, string> ConfiguredPublicNetworkSpecificNat64Addresses => new()
+    {
+        { "2001:4860::/32", "2001:4860:808:808::" },
+        { "2001:4860:1200::/40", "2001:4860:1208:808:8::" },
+        { "2001:4860:1234::/48", "2001:4860:1234:808:8:800::" },
+        { "2001:4860:1234:5600::/56", "2001:4860:1234:5608:8:808::" },
+        { "2001:4860:1234:5678::/64", "2001:4860:1234:5678:8:808:800:0" },
+        { "2001:4860:1234:5678:0:abcd::/96", "2001:4860:1234:5678:0:abcd:808:808" },
+    };
+
+    public static TheoryData<string, string> ConfiguredMalformedNetworkSpecificNat64Addresses => new()
+    {
+        { "2001:4860::/32", "2001:4860:a00:1:100::" },
+        { "2001:4860:1200::/40", "2001:4860:120a:0:101::" },
+        { "2001:4860:1234::/48", "2001:4860:1234:a00:100:100::" },
+        { "2001:4860:1234:5600::/56", "2001:4860:1234:560a:100:1::" },
+        { "2001:4860:1234:5678::/64", "2001:4860:1234:5678:10a:0:1be:ef01" },
+    };
+
     [Theory]
     [InlineData("http://localhost")]
     [InlineData("http://[::1]")]
@@ -383,6 +412,7 @@ public sealed class CopilotWebPageSecurityTests
                     connectCalls++;
                     return ValueTask.FromResult<Stream>(new MemoryStream());
                 },
+                string.Empty,
                 CancellationToken.None));
 
         Assert.Contains("private", exception.Message, StringComparison.OrdinalIgnoreCase);
@@ -404,6 +434,7 @@ public sealed class CopilotWebPageSecurityTests
                     connectCalls++;
                     return ValueTask.FromResult<Stream>(new MemoryStream());
                 },
+                string.Empty,
                 CancellationToken.None));
 
         Assert.Contains("private", exception.Message, StringComparison.OrdinalIgnoreCase);
@@ -430,6 +461,7 @@ public sealed class CopilotWebPageSecurityTests
                     connectCalls++;
                     return ValueTask.FromResult<Stream>(new MemoryStream());
                 },
+                string.Empty,
                 CancellationToken.None));
 
         Assert.Contains("private", exception.Message, StringComparison.OrdinalIgnoreCase);
@@ -459,6 +491,7 @@ public sealed class CopilotWebPageSecurityTests
                     connectCalls++;
                     return ValueTask.FromResult<Stream>(new MemoryStream());
                 },
+                string.Empty,
                 CancellationToken.None));
 
         Assert.Contains("NAT64", exception.Message, StringComparison.OrdinalIgnoreCase);
@@ -488,10 +521,200 @@ public sealed class CopilotWebPageSecurityTests
                 connectedEndpoint = endpoint;
                 return ValueTask.FromResult<Stream>(new MemoryStream());
             },
+            string.Empty,
             CancellationToken.None);
 
         Assert.NotNull(connectedEndpoint);
         Assert.Equal(expectedAddress, connectedEndpoint.Address);
+    }
+
+    [Theory]
+    [MemberData(nameof(ConfiguredBlockedNetworkSpecificNat64Addresses))]
+    public async Task ConnectionGuardUsesConfiguredNat64PrefixWhenDiscoveryFails(
+        string configuredPrefix,
+        string targetAddress)
+    {
+        var connectCalls = 0;
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await CopilotWebPageToolSupport.ConnectToAllowedWebPageHostAsync(
+                new DnsEndPoint("translated.example", 443),
+                (host, _) => string.Equals(host, "ipv4only.arpa.", StringComparison.OrdinalIgnoreCase)
+                    ? Task.FromException<IPAddress[]>(new SocketException((int)SocketError.HostNotFound))
+                    : Task.FromResult(new[] { IPAddress.Parse(targetAddress) }),
+                (_, _) =>
+                {
+                    connectCalls++;
+                    return ValueTask.FromResult<Stream>(new MemoryStream());
+                },
+                configuredPrefix,
+                CancellationToken.None));
+
+        Assert.Contains("NAT64", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("private", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, connectCalls);
+    }
+
+    [Fact]
+    public async Task RequestPreflightAppliesUpdatedPref64BeforeAPooledConnectionCanBeReused()
+    {
+        var uri = new Uri("https://translated.example/resource");
+        var targetAddress = IPAddress.Parse("2001:4860:a00:1::");
+        Task<IPAddress[]> ResolveAsync(string host, CancellationToken _)
+        {
+            return string.Equals(host, "ipv4only.arpa.", StringComparison.OrdinalIgnoreCase)
+                ? Task.FromException<IPAddress[]>(new SocketException((int)SocketError.HostNotFound))
+                : Task.FromResult(new[] { targetAddress });
+        }
+
+        await CopilotWebPageToolSupport.EnsureAllowedWebPageUriAsync(
+            uri,
+            ResolveAsync,
+            string.Empty,
+            CancellationToken.None);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CopilotWebPageToolSupport.EnsureAllowedWebPageUriAsync(
+                uri,
+                ResolveAsync,
+                "2001:4860::/32",
+                CancellationToken.None));
+
+        Assert.Contains("NAT64", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task RequestPreflightRejectsInvalidPref64BeforeResolving()
+    {
+        var resolverCalls = 0;
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CopilotWebPageToolSupport.EnsureAllowedWebPageUriAsync(
+                new Uri("https://public.example/resource"),
+                (_, _) =>
+                {
+                    resolverCalls++;
+                    return Task.FromResult(new[] { IPAddress.Parse("1.1.1.1") });
+                },
+                "2001:4860::1/96",
+                CancellationToken.None));
+
+        Assert.Contains("Pref64", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, resolverCalls);
+    }
+
+    [Theory]
+    [MemberData(nameof(ConfiguredPublicNetworkSpecificNat64Addresses))]
+    public async Task ConnectionGuardAllowsPublicIpv4EmbeddedInConfiguredNat64PrefixWhenDiscoveryFails(
+        string configuredPrefix,
+        string targetAddress)
+    {
+        var expectedAddress = IPAddress.Parse(targetAddress);
+        IPEndPoint? connectedEndpoint = null;
+
+        await using var stream = await CopilotWebPageToolSupport.ConnectToAllowedWebPageHostAsync(
+            new DnsEndPoint("translated.example", 443),
+            (host, _) => string.Equals(host, "ipv4only.arpa.", StringComparison.OrdinalIgnoreCase)
+                ? Task.FromException<IPAddress[]>(new SocketException((int)SocketError.HostNotFound))
+                : Task.FromResult(new[] { expectedAddress }),
+            (endpoint, _) =>
+            {
+                connectedEndpoint = endpoint;
+                return ValueTask.FromResult<Stream>(new MemoryStream());
+            },
+            configuredPrefix,
+            CancellationToken.None);
+
+        Assert.NotNull(connectedEndpoint);
+        Assert.Equal(expectedAddress, connectedEndpoint.Address);
+    }
+
+    [Theory]
+    [MemberData(nameof(ConfiguredMalformedNetworkSpecificNat64Addresses))]
+    public async Task ConnectionGuardRejectsMatchedNat64PrefixWithNonZeroUOctet(
+        string configuredPrefix,
+        string targetAddress)
+    {
+        var connectCalls = 0;
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await CopilotWebPageToolSupport.ConnectToAllowedWebPageHostAsync(
+                new DnsEndPoint("translated.example", 443),
+                (host, _) => string.Equals(host, "ipv4only.arpa.", StringComparison.OrdinalIgnoreCase)
+                    ? Task.FromException<IPAddress[]>(new SocketException((int)SocketError.HostNotFound))
+                    : Task.FromResult(new[] { IPAddress.Parse(targetAddress) }),
+                (_, _) =>
+                {
+                    connectCalls++;
+                    return ValueTask.FromResult<Stream>(new MemoryStream());
+                },
+                configuredPrefix,
+                CancellationToken.None));
+
+        Assert.Contains("NAT64", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, connectCalls);
+    }
+
+    [Theory]
+    [InlineData("2001:4860:a00:1::")]
+    [InlineData("2606:4700:1234:5678:0:abcd:a00:1")]
+    public async Task ConnectionGuardCombinesConfiguredAndDiscoveredNat64Prefixes(string targetAddress)
+    {
+        var connectCalls = 0;
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await CopilotWebPageToolSupport.ConnectToAllowedWebPageHostAsync(
+                new DnsEndPoint("translated.example", 443),
+                (host, _) => Task.FromResult(string.Equals(host, "ipv4only.arpa.", StringComparison.OrdinalIgnoreCase)
+                    ? new[]
+                    {
+                        IPAddress.Parse("2606:4700:1234:5678:0:abcd:c000:aa"),
+                        IPAddress.Parse("2606:4700:1234:5678:0:abcd:c000:ab"),
+                    }
+                    : new[] { IPAddress.Parse(targetAddress) }),
+                (_, _) =>
+                {
+                    connectCalls++;
+                    return ValueTask.FromResult<Stream>(new MemoryStream());
+                },
+                "2001:4860::/32",
+                CancellationToken.None));
+
+        Assert.Contains("NAT64", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, connectCalls);
+    }
+
+    [Theory]
+    [InlineData("not-a-prefix")]
+    [InlineData("192.0.2.0/24")]
+    [InlineData("2001:4860::/72")]
+    [InlineData("2001:4860::1/96")]
+    [InlineData("2001:4860:1234:5678:100::/96")]
+    public async Task ConnectionGuardRejectsInvalidConfiguredNat64PrefixBeforeResolving(
+        string configuredPrefix)
+    {
+        var resolverCalls = 0;
+        var connectCalls = 0;
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await CopilotWebPageToolSupport.ConnectToAllowedWebPageHostAsync(
+                new DnsEndPoint("public.example", 443),
+                (_, _) =>
+                {
+                    resolverCalls++;
+                    return Task.FromResult(new[] { IPAddress.Parse("1.1.1.1") });
+                },
+                (_, _) =>
+                {
+                    connectCalls++;
+                    return ValueTask.FromResult<Stream>(new MemoryStream());
+                },
+                configuredPrefix,
+                CancellationToken.None));
+
+        Assert.Contains("Pref64", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, resolverCalls);
+        Assert.Equal(0, connectCalls);
     }
 
     [Theory]
@@ -519,6 +742,7 @@ public sealed class CopilotWebPageSecurityTests
                 connectedEndpoint = endpoint;
                 return ValueTask.FromResult<Stream>(new MemoryStream());
             },
+            string.Empty,
             CancellationToken.None);
 
         Assert.NotNull(connectedEndpoint);
@@ -546,6 +770,7 @@ public sealed class CopilotWebPageSecurityTests
                     connectCalls++;
                     return ValueTask.FromResult<Stream>(new MemoryStream());
                 },
+                string.Empty,
                 CancellationToken.None));
 
         Assert.Contains("NAT64", exception.Message, StringComparison.OrdinalIgnoreCase);
@@ -572,6 +797,7 @@ public sealed class CopilotWebPageSecurityTests
                 connectedEndpoint = endpoint;
                 return ValueTask.FromResult<Stream>(new MemoryStream());
             },
+            string.Empty,
             CancellationToken.None);
 
         Assert.NotNull(connectedEndpoint);
@@ -601,6 +827,7 @@ public sealed class CopilotWebPageSecurityTests
                     connectCalls++;
                     return ValueTask.FromResult<Stream>(new MemoryStream());
                 },
+                string.Empty,
                 CancellationToken.None));
 
         Assert.Contains("private", exception.Message, StringComparison.OrdinalIgnoreCase);
@@ -624,6 +851,7 @@ public sealed class CopilotWebPageSecurityTests
                 connectedEndpoint = endpoint;
                 return ValueTask.FromResult<Stream>(new MemoryStream());
             },
+            string.Empty,
             CancellationToken.None);
 
         Assert.NotNull(connectedEndpoint);
@@ -648,11 +876,38 @@ public sealed class CopilotWebPageSecurityTests
                     throw new SocketException((int)SocketError.HostUnreachable);
                 return ValueTask.FromResult<Stream>(new MemoryStream());
             },
+            string.Empty,
             CancellationToken.None);
 
         Assert.Collection(
             attempts,
             attempt => Assert.Equal(firstAddress, attempt.Address),
             attempt => Assert.Equal(secondAddress, attempt.Address));
+    }
+
+    [Fact]
+    public async Task ConnectionGuardPreservesCancellationReportedAsASocketFailure()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var attempts = 0;
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            await CopilotWebPageToolSupport.ConnectToAllowedWebPageHostAsync(
+                new DnsEndPoint("public.example", 443),
+                (_, _) => Task.FromResult(new[]
+                {
+                    IPAddress.Parse("1.1.1.1"),
+                    IPAddress.Parse("8.8.8.8"),
+                }),
+                (_, _) =>
+                {
+                    attempts++;
+                    cancellation.Cancel();
+                    throw new SocketException((int)SocketError.OperationAborted);
+                },
+                string.Empty,
+                cancellation.Token));
+
+        Assert.Equal(1, attempts);
     }
 }

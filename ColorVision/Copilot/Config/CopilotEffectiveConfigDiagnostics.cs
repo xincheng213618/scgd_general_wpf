@@ -27,6 +27,7 @@ namespace ColorVision.Copilot
         int? SchemaVersion,
         bool HasAgentDefaults,
         bool HasMcpSettings,
+        bool HasWebPageNetworkSettings,
         IReadOnlySet<string> PersistedProfileIds);
 
     internal sealed class CopilotEffectiveConfigDiagnosticContext
@@ -112,12 +113,18 @@ namespace ColorVision.Copilot
                     string.Equals(property.Name, nameof(CopilotConfig.McpEnabled), StringComparison.OrdinalIgnoreCase)
                     || string.Equals(property.Name, nameof(CopilotConfig.McpPort), StringComparison.OrdinalIgnoreCase)
                     || string.Equals(property.Name, nameof(CopilotConfig.ExternalMcpServers), StringComparison.OrdinalIgnoreCase));
+                var hasWebPageNetworkSettings = section.Properties().Any(property =>
+                    string.Equals(
+                        property.Name,
+                        nameof(CopilotConfig.WebPagePref64Prefixes),
+                        StringComparison.OrdinalIgnoreCase));
                 return new CopilotConfigFileProbe(
                     normalizedPath,
                     CopilotConfigFileProbeState.Loaded,
                     schemaVersion,
                     hasAgentDefaults,
                     hasMcpSettings,
+                    hasWebPageNetworkSettings,
                     profileIds);
             }
             catch (JsonException)
@@ -196,7 +203,7 @@ namespace ColorVision.Copilot
                     ? "当前运行已在请求启动时固定模型 Profile、Agent 预算、Skill 覆盖和外部 MCP 列表；设置修改只影响后续请求。临时权限仍受当前任务与到期时间约束。"
                     : "下一次请求会从上述当前值创建独立请求快照；临时权限仍按会话、工作区、任务与到期时间单独约束。")
                 .AppendLine("来源说明：文件状态按执行命令时重新探测；应用未保留每个键的启动期来源，因此文件在启动后被修改、删除或损坏时只报告“当前文件来源未证实”。")
-                .Append("脱敏：报告仅使用主配置的节、schema、属性存在性与 Profile ID 元数据；不会输出 API Key、MCP Bearer、系统提示正文、后端同步地址、外部 MCP 地址或其他配置值；模型端点仅显示 origin。");
+                .Append("脱敏：报告仅使用主配置的节、schema、属性存在性与 Profile ID 元数据；不会输出 API Key、MCP Bearer、系统提示正文、后端同步地址、Pref64 前缀、外部 MCP 地址或其他配置值；模型端点仅显示 origin。");
             return builder.ToString();
         }
 
@@ -1374,6 +1381,15 @@ namespace ColorVision.Copilot
                 : configProbe.State == CopilotConfigFileProbeState.Loaded
                     ? "内置默认或迁移"
                     : "已加载运行时值（当前文件来源未证实）";
+            var pref64Source = configProbe.HasWebPageNetworkSettings
+                ? "应用配置 CopilotConfig"
+                : configProbe.State == CopilotConfigFileProbeState.Loaded
+                    ? "内置默认或迁移"
+                    : "已加载运行时值（当前文件来源未证实）";
+            var pref64IsValid = CopilotWebPagePref64Configuration.TryParse(
+                config.WebPagePref64Prefixes,
+                out var pref64Prefixes,
+                out _);
             builder.AppendLine()
                 .AppendLine("集成")
                 .Append("- 本机 MCP：")
@@ -1390,7 +1406,13 @@ namespace ColorVision.Copilot
                 .Append(enabledExternalServers.ToString("N0", CultureInfo.CurrentCulture))
                 .Append(" / ")
                 .Append(config.ExternalMcpServers?.Count.ToString("N0", CultureInfo.CurrentCulture) ?? "0")
-                .AppendLine(" 个已启用");
+                .AppendLine(" 个已启用")
+                .Append("- 公网 Web Pref64：")
+                .Append(pref64IsValid
+                    ? $"RFC 7050 自动发现开启 · 配置 {pref64Prefixes.Count.ToString("N0", CultureInfo.CurrentCulture)} 个"
+                    : "配置语法无效（公网 Web 抓取失败关闭）")
+                .Append(" · 来源 ")
+                .AppendLine(pref64Source);
         }
 
         private static string FormatConfigProbe(
@@ -1508,6 +1530,7 @@ namespace ColorVision.Copilot
                 filePath,
                 state,
                 null,
+                false,
                 false,
                 false,
                 new HashSet<string>(StringComparer.Ordinal));

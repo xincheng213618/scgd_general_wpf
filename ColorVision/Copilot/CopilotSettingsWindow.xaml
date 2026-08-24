@@ -569,6 +569,54 @@
                     </Border>
                 </ScrollViewer>
             </TabItem>
+            <TabItem Header="Web">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <Border Margin="12" Padding="18" Style="{StaticResource SettingsSurfaceBorderStyle}">
+                        <StackPanel MaxWidth="760">
+                            <TextBlock Style="{StaticResource SettingsPanelTitleStyle}" Text="Public web access" />
+                            <TextBlock Margin="0,6,0,16"
+                                       Style="{StaticResource SettingsHintTextStyle}"
+                                       Text="Configure trusted Pref64 prefixes for networks where RFC 7050 discovery is unavailable or incomplete. This setting strengthens private-address detection for FetchUrl, web attachments, and search deep reads."
+                                       TextWrapping="Wrap" />
+
+                            <Border Style="{StaticResource SettingsUsageBandBorderStyle}">
+                                <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
+                                           Opacity="0.82"
+                                           Text="Normally leave this empty. Enter one IPv6 CIDR per line only when your network administrator provides its NAT64 Pref64. Supported prefix lengths are /32, /40, /48, /56, /64, and /96. Configured prefixes do not grant access to private targets."
+                                           TextWrapping="Wrap" />
+                            </Border>
+
+                            <TextBlock Margin="0,6,0,6"
+                                       Style="{StaticResource SettingsFieldLabelStyle}"
+                                       Text="Pref64 fallback prefixes" />
+                            <TextBox MinHeight="132"
+                                     AcceptsReturn="True"
+                                     FontFamily="Consolas"
+                                     HorizontalScrollBarVisibility="Auto"
+                                     Text="{Binding WebPagePref64PrefixesText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     TextWrapping="NoWrap"
+                                     ToolTip="One IPv6 CIDR per line. Blank lines and comment lines are ignored."
+                                     VerticalScrollBarVisibility="Auto" />
+                            <TextBlock Margin="0,7,0,0"
+                                       FontSize="11"
+                                       Text="{Binding WebPagePref64PrefixesValidationText}"
+                                       TextWrapping="Wrap">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource SettingsHintTextStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsWebPagePref64PrefixesValid}" Value="False">
+                                                <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+                                                <Setter Property="FontWeight" Value="SemiBold" />
+                                                <Setter Property="Opacity" Value="0.95" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+                </ScrollViewer>
+            </TabItem>
             <TabItem Header="MCP">
                 <ScrollViewer Padding="10"
                               HorizontalScrollBarVisibility="Disabled"
@@ -589,9 +637,31 @@
                             <Border Style="{StaticResource SettingsUsageBandBorderStyle}">
                                 <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
                                            Opacity="0.82"
-                                           Text="ColorVision verifies this device automatically with the installed version key and local device information. No sync API key needs to be entered."
+                                           Text="ColorVision verifies this device automatically with the installed version key and local device information. Remote backends must use HTTPS; HTTP is allowed only for a service on this computer."
                                            TextWrapping="Wrap" />
                             </Border>
+
+                            <TextBlock Margin="0,18,0,6"
+                                       Style="{StaticResource SettingsFieldLabelStyle}"
+                                       Text="Backend URL" />
+                            <TextBox Text="{Binding BackendSyncUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Use an HTTPS origin. The fixed /api/copilot/config path is added automatically." />
+                            <TextBlock Margin="0,7,0,0"
+                                       FontSize="11"
+                                       Text="{Binding BackendSyncEndpointStatusText}"
+                                       TextWrapping="Wrap">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource SettingsHintTextStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsBackendSyncEndpointValid}" Value="False">
+                                                <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+                                                <Setter Property="FontWeight" Value="SemiBold" />
+                                                <Setter Property="Opacity" Value="0.95" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
 
                             <DockPanel Margin="0,18,0,0">
                                 <Button DockPanel.Dock="Right"

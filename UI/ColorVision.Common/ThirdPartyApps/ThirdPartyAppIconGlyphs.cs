@@ -5,6 +5,7 @@ namespace ColorVision.Common.ThirdPartyApps
     /// </summary>
     public static class ThirdPartyAppIconGlyphs
     {
+        public const string Launcher = "\uE74C";        // Classic toolbar launcher
         public const string Default = "\uE71D";         // AllApps
         public const string MenuManager = "\uEDE3";     // ButtonMenu
         public const string NetworkAdapter = "\uEDA3";  // NetworkAdapter

@@ -51,7 +51,6 @@ namespace ColorVision.Copilot
             ".rar", ".svg", ".tar", ".webm", ".webp", ".woff", ".woff2", ".xls", ".xlsx", ".zip",
         };
         private static readonly JsonSerializerOptions IndentedJsonOptions = new() { WriteIndented = true };
-        private static readonly HttpClient HttpClient = CreateHttpClient();
 
         public static List<string> ExtractHttpUrls(string text)
         {
@@ -88,15 +87,38 @@ namespace ColorVision.Copilot
             return normalized;
         }
 
-        public static async Task<CopilotFetchedWebPageContent> LoadWebPageContentAsync(string url, CancellationToken cancellationToken)
+        public static Task<CopilotFetchedWebPageContent> LoadWebPageContentAsync(string url, CancellationToken cancellationToken)
         {
+            return LoadWebPageContentAsync(
+                url,
+                static (host, token) => Dns.GetHostAddressesAsync(host, token),
+                static () => CreateHttpHandler(),
+                static () => CopilotConfig.Instance.WebPagePref64Prefixes,
+                cancellationToken);
+        }
+
+        internal static async Task<CopilotFetchedWebPageContent> LoadWebPageContentAsync(
+            string url,
+            Func<string, CancellationToken, Task<IPAddress[]>> resolveAddressesAsync,
+            Func<HttpMessageHandler> createHttpHandler,
+            Func<string?> getConfiguredPref64Prefixes,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(resolveAddressesAsync);
+            ArgumentNullException.ThrowIfNull(createHttpHandler);
+            ArgumentNullException.ThrowIfNull(getConfiguredPref64Prefixes);
             var currentUri = NormalizeAndValidateWebPageUri(url);
             for (var redirectCount = 0; ; redirectCount++)
             {
-                await EnsureAllowedWebPageUriAsync(currentUri, cancellationToken);
+                await EnsureAllowedWebPageUriAsync(
+                    currentUri,
+                    resolveAddressesAsync,
+                    getConfiguredPref64Prefixes(),
+                    cancellationToken);
 
-                using var request = new HttpRequestMessage(HttpMethod.Get, currentUri);
-                using var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                using var httpClient = CreateHttpClient(createHttpHandler());
+                using var request = CreateWebPageRequestMessage(currentUri);
+                using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                 if (IsRedirectStatusCode(response.StatusCode))
                 {
                     if (redirectCount >= MaxWebPageRedirects)
@@ -522,23 +544,31 @@ namespace ColorVision.Copilot
                 or HttpStatusCode.PermanentRedirect;
         }
 
-        private static async Task EnsureAllowedWebPageUriAsync(Uri uri, CancellationToken cancellationToken)
+        internal static async Task EnsureAllowedWebPageUriAsync(
+            Uri uri,
+            Func<string, CancellationToken, Task<IPAddress[]>> resolveAddressesAsync,
+            string? configuredPref64Prefixes,
+            CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(uri);
+            ArgumentNullException.ThrowIfNull(resolveAddressesAsync);
+            var configuredNat64Prefixes = ParseConfiguredPref64Prefixes(configuredPref64Prefixes);
             var addresses = await ResolveWebPageAddressesAsync(
                 uri.IdnHost,
-                static (host, token) => Dns.GetHostAddressesAsync(host, token),
+                resolveAddressesAsync,
                 cancellationToken);
-            if (addresses.Length == 0)
-                throw new InvalidOperationException("Could not resolve the target web page address.");
-
-            if (addresses.Any(IsBlockedWebPageAddress))
-                throw new InvalidOperationException("The target web page resolved to a local, private, or reserved IP address and was rejected.");
+            await EnsureAllowedResolvedWebPageAddressesAsync(
+                addresses,
+                resolveAddressesAsync,
+                configuredNat64Prefixes,
+                cancellationToken);
         }
 
         internal static async ValueTask<Stream> ConnectToAllowedWebPageHostAsync(
             DnsEndPoint endpoint,
             Func<string, CancellationToken, Task<IPAddress[]>> resolveAddressesAsync,
             Func<IPEndPoint, CancellationToken, ValueTask<Stream>> connectAsync,
+            string? configuredPref64Prefixes,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(endpoint);
@@ -546,25 +576,17 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(connectAsync);
             if (string.IsNullOrWhiteSpace(endpoint.Host) || endpoint.Port is < 1 or > 65535)
                 throw new InvalidOperationException("The web page connection endpoint is not valid.");
+            var configuredNat64Prefixes = ParseConfiguredPref64Prefixes(configuredPref64Prefixes);
 
             var addresses = await ResolveWebPageAddressesAsync(
                 endpoint.Host,
                 resolveAddressesAsync,
                 cancellationToken);
-            if (addresses.Length == 0)
-                throw new InvalidOperationException("Could not resolve the target web page address.");
-            if (addresses.Any(IsBlockedWebPageAddress))
-                throw new InvalidOperationException("The target web page resolved to a local, private, or reserved IP address and was rejected.");
-
-            if (addresses.Any(static address => address.AddressFamily == AddressFamily.InterNetworkV6))
-            {
-                var nat64Prefixes = await DiscoverNat64PrefixesAsync(resolveAddressesAsync, cancellationToken);
-                if (addresses.Any(address => IsBlockedNat64TranslatedWebPageAddress(address, nat64Prefixes)))
-                {
-                    throw new InvalidOperationException(
-                        "The target web page resolved through NAT64 to a local, private, or reserved IPv4 address and was rejected.");
-                }
-            }
+            await EnsureAllowedResolvedWebPageAddressesAsync(
+                addresses,
+                resolveAddressesAsync,
+                configuredNat64Prefixes,
+                cancellationToken);
 
             Exception? lastConnectionError = null;
             foreach (var address in addresses)
@@ -578,6 +600,7 @@ namespace ColorVision.Copilot
                 }
                 catch (Exception ex) when (ex is SocketException or IOException)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     lastConnectionError = ex;
                 }
             }
@@ -585,6 +608,43 @@ namespace ColorVision.Copilot
             throw new HttpRequestException(
                 "Could not connect to any validated target web page address.",
                 lastConnectionError);
+        }
+
+        private static IReadOnlyList<WebPageNat64Prefix> ParseConfiguredPref64Prefixes(
+            string? configuredPref64Prefixes)
+        {
+            if (CopilotWebPagePref64Configuration.TryParse(
+                    configuredPref64Prefixes,
+                    out var configuredNat64Prefixes,
+                    out var pref64ConfigurationError))
+            {
+                return configuredNat64Prefixes;
+            }
+
+            throw new InvalidOperationException(
+                $"The configured web page Pref64 prefixes are invalid: {pref64ConfigurationError}");
+        }
+
+        private static async Task EnsureAllowedResolvedWebPageAddressesAsync(
+            IPAddress[] addresses,
+            Func<string, CancellationToken, Task<IPAddress[]>> resolveAddressesAsync,
+            IReadOnlyList<WebPageNat64Prefix> configuredNat64Prefixes,
+            CancellationToken cancellationToken)
+        {
+            if (addresses.Length == 0)
+                throw new InvalidOperationException("Could not resolve the target web page address.");
+            if (addresses.Any(IsBlockedWebPageAddress))
+                throw new InvalidOperationException("The target web page resolved to a local, private, or reserved IP address and was rejected.");
+            if (!addresses.Any(static address => address.AddressFamily == AddressFamily.InterNetworkV6))
+                return;
+
+            var discoveredNat64Prefixes = await DiscoverNat64PrefixesAsync(resolveAddressesAsync, cancellationToken);
+            var nat64Prefixes = MergeNat64Prefixes(configuredNat64Prefixes, discoveredNat64Prefixes);
+            if (addresses.Any(address => IsBlockedNat64TranslatedWebPageAddress(address, nat64Prefixes)))
+            {
+                throw new InvalidOperationException(
+                    "The target web page resolved through NAT64 to a local, private, or reserved IPv4 address and was rejected.");
+            }
         }
 
         private static Task<IPAddress[]> ResolveWebPageAddressesAsync(
@@ -714,7 +774,29 @@ namespace ColorVision.Copilot
             return ExtractNat64Prefixes(discoveryAddresses);
         }
 
-        private static IReadOnlyList<WebPageNat64Prefix> ExtractNat64Prefixes(IEnumerable<IPAddress> discoveryAddresses)
+        private static IReadOnlyList<WebPageNat64Prefix> MergeNat64Prefixes(
+            IReadOnlyList<WebPageNat64Prefix> configuredPrefixes,
+            IReadOnlyList<WebPageNat64Prefix> discoveredPrefixes)
+        {
+            if (configuredPrefixes.Count == 0)
+                return discoveredPrefixes;
+            if (discoveredPrefixes.Count == 0)
+                return configuredPrefixes;
+
+            var merged = configuredPrefixes.ToList();
+            foreach (var discoveredPrefix in discoveredPrefixes)
+            {
+                if (!merged.Any(prefix => prefix.Length == discoveredPrefix.Length
+                    && prefix.Bytes.AsSpan().SequenceEqual(discoveredPrefix.Bytes)))
+                {
+                    merged.Add(discoveredPrefix);
+                }
+            }
+
+            return merged;
+        }
+
+        private static WebPageNat64Prefix[] ExtractNat64Prefixes(IEnumerable<IPAddress> discoveryAddresses)
         {
             var candidates = new List<WebPageNat64PrefixCandidate>();
             Span<byte> embeddedIpv4 = stackalloc byte[4];
@@ -788,11 +870,12 @@ namespace ColorVision.Copilot
                 if (!bytes.AsSpan(0, prefix.Bytes.Length).SequenceEqual(prefix.Bytes))
                     continue;
 
-                if (TryExtractNat64Ipv4Address(bytes, prefix.Length, embeddedIpv4)
-                    && IsBlockedIpv4WebPageAddress(embeddedIpv4))
-                {
+                // A configured/discovered Pref64 is deny-only. Once it matches, malformed
+                // RFC 6052 layout (including a non-zero u octet) must not fall back to being
+                // treated as an unrelated public IPv6 address.
+                if (!TryExtractNat64Ipv4Address(bytes, prefix.Length, embeddedIpv4)
+                    || IsBlockedIpv4WebPageAddress(embeddedIpv4))
                     return true;
-                }
             }
 
             return false;
@@ -868,9 +951,10 @@ namespace ColorVision.Copilot
                 cancellationToken);
         }
 
-        private static HttpClient CreateHttpClient()
+        private static HttpClient CreateHttpClient(HttpMessageHandler handler)
         {
-            var client = new HttpClient(CreateHttpHandler())
+            ArgumentNullException.ThrowIfNull(handler);
+            var client = new HttpClient(handler, disposeHandler: true)
             {
                 Timeout = TimeSpan.FromSeconds(20),
             };
@@ -884,10 +968,28 @@ namespace ColorVision.Copilot
             {
                 AllowAutoRedirect = false,
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
+                // Production owns a fresh handler per outgoing request. Zero lifetimes keep
+                // the same invariant if this handler is accidentally reused by another caller.
+                PooledConnectionIdleTimeout = TimeSpan.Zero,
+                PooledConnectionLifetime = TimeSpan.Zero,
                 UseCookies = false,
                 UseProxy = false,
                 ConnectCallback = ConnectToAllowedWebPageHostAsync,
             };
+        }
+
+        internal static HttpRequestMessage CreateWebPageRequestMessage(Uri uri)
+        {
+            ArgumentNullException.ThrowIfNull(uri);
+            // Prefer HTTP/2 for modern and h2-only HTTPS origins, while retaining HTTP/1.1
+            // fallback. A fresh handler/client owns each outgoing request, so negotiation
+            // cannot reintroduce a connection validated under an earlier DNS/Pref64 policy.
+            var request = new HttpRequestMessage(HttpMethod.Get, uri)
+            {
+                Version = HttpVersion.Version20,
+                VersionPolicy = HttpVersionPolicy.RequestVersionOrLower,
+            };
+            return request;
         }
 
         private static ValueTask<Stream> ConnectToAllowedWebPageHostAsync(
@@ -898,6 +1000,7 @@ namespace ColorVision.Copilot
                 context.DnsEndPoint,
                 static (host, token) => Dns.GetHostAddressesAsync(host, token),
                 ConnectSocketAsync,
+                CopilotConfig.Instance.WebPagePref64Prefixes,
                 cancellationToken);
         }
 
@@ -917,8 +1020,6 @@ namespace ColorVision.Copilot
                 throw;
             }
         }
-
-        private readonly record struct WebPageNat64Prefix(byte[] Bytes, int Length);
 
         private sealed class WebPageNat64PrefixCandidate
         {
