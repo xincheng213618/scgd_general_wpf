@@ -141,7 +141,7 @@ namespace ProjectARVRPro.Process.MTF.MTFV
                     testResult.MTF_V_LeftDown_0_8F,
                     testResult.MTF_V_RightDown_0_8F
                 };
-                ctx.ObjectiveTestResult.DynamicTestResults["MTFV"] = items;
+                ctx.ObjectiveTestResult.DynamicTestResults[Config.GetOutputName()] = items;
 
                 return true;
             }
@@ -176,7 +176,7 @@ namespace ProjectARVRPro.Process.MTF.MTFV
         {
             var result = ctx.Result;
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("MTF 058-V（竖条纹）画面结果");
+            sb.AppendLine($"{Config.GetOutputName()} 画面结果");
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) { AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return; }
 

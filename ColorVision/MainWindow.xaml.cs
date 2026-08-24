@@ -408,6 +408,7 @@ namespace ColorVision
         {
             ContentRendered -= MainWindow_ContentRendered;
             ProgramTimer.StopAndReport();
+            StartupRegistryChecker.Clear();
             Update.ApplicationUpdateScanProtection.CompleteAfterUpdateRestart();
             PluginRecoveryBackupService.Instance.ScheduleHealthyStartupBackups();
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
