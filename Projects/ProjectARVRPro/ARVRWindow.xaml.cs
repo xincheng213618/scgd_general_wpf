@@ -91,7 +91,6 @@ namespace ProjectARVRPro
         private int ObjectiveTestResultRecordId;
         private string _objectiveSessionSerialNumber = string.Empty;
         private bool _objectiveSessionCompleted;
-        private bool _objectiveSessionPrepared;
         private (int Code, string Message)? _firstFlowFailure;
         private string _lastFlowFailureMessage = string.Empty;
         private IProcess? _currentFlowProcess;
@@ -102,39 +101,30 @@ namespace ProjectARVRPro
         private bool _isFlowLifecycleActive;
         private bool _runAllSessionPrepared;
 
-        private bool IsTestSessionBusy => _isFlowStartPending
+        private bool IsTestExecutionBusy => IsSwitchRun
+            || _isFlowStartPending
             || flowControl.IsFlowRun
             || _isFlowLifecycleActive
             || _isRunAllRunning
-            || _runAllSessionPrepared
-            || _objectiveSessionPrepared;
+            || _runAllSessionPrepared;
 
         public string InitTest(string? serialNumber)
         {
-            TryInitTest(serialNumber, out string resolvedSerialNumber);
-            return resolvedSerialNumber;
-        }
-
-        public bool TryInitTest(string? serialNumber, out string resolvedSerialNumber)
-        {
-            if (IsTestSessionBusy)
-            {
-                resolvedSerialNumber = string.IsNullOrWhiteSpace(_objectiveSessionSerialNumber)
-                    ? ProjectARVRProConfig.Instance.SN
-                    : _objectiveSessionSerialNumber;
-                log.Warn($"当前测试尚未结束，拒绝重新初始化SN：{serialNumber}");
-                return false;
-            }
-
-            resolvedSerialNumber = InitializeTestSession(serialNumber);
-            return true;
+            return InitializeTestSession(serialNumber);
         }
 
         public bool TryPrepareRunAllSession(string? serialNumber, out string resolvedSerialNumber)
         {
-            if (!TryInitTest(serialNumber, out resolvedSerialNumber))
+            if (IsTestExecutionBusy)
+            {
+                resolvedSerialNumber = string.IsNullOrWhiteSpace(_objectiveSessionSerialNumber)
+                    ? ProjectARVRProConfig.Instance.SN
+                    : _objectiveSessionSerialNumber;
+                log.Warn($"当前测试正在执行，拒绝启动 RunAll：{serialNumber}");
                 return false;
+            }
 
+            resolvedSerialNumber = InitializeTestSession(serialNumber);
             _runAllSessionPrepared = true;
             return true;
         }
@@ -145,7 +135,6 @@ namespace ProjectARVRPro
             ObjectiveTestResult = new ObjectiveTestResult { SessionStartTime = DateTime.Now };
             ObjectiveTestResultRecordId = 0;
             _objectiveSessionCompleted = false;
-            _objectiveSessionPrepared = true;
             _firstFlowFailure = null;
             _lastFlowFailureMessage = string.Empty;
             _currentFlowProcess = null;
@@ -220,17 +209,17 @@ namespace ProjectARVRPro
                 }
 
                 log.Info("没有可执行的 ARVR 流程");
-                AbortPreparedTestSession("没有可执行的 ARVR 流程");
+                AbortCurrentTestSession("没有可执行的 ARVR 流程");
                 return false;
             }
             catch (OperationCanceledException)
             {
-                AbortPreparedTestSession("测试已取消");
+                AbortCurrentTestSession("测试已取消");
                 throw;
             }
             catch (Exception ex)
             {
-                AbortPreparedTestSession($"启动下一项 ARVR 流程失败: {ex.Message}");
+                AbortCurrentTestSession($"启动下一项 ARVR 流程失败: {ex.Message}");
                 throw;
             }
             finally
@@ -239,9 +228,9 @@ namespace ProjectARVRPro
             }
         }
 
-        private void AbortPreparedTestSession(string message)
+        private void AbortCurrentTestSession(string message)
         {
-            if (!_objectiveSessionPrepared || _objectiveSessionCompleted)
+            if (_objectiveSessionCompleted || !ObjectiveTestResult.SessionStartTime.HasValue)
                 return;
 
             RecordFlowFailure(message);
@@ -720,7 +709,6 @@ namespace ProjectARVRPro
                 }
                 else
                 {
-                    _objectiveSessionPrepared = false;
                     _objectiveSessionCompleted = true;
                 }
                 throw;
@@ -752,7 +740,6 @@ namespace ProjectARVRPro
                 }
                 else
                 {
-                    _objectiveSessionPrepared = false;
                     _objectiveSessionCompleted = true;
                 }
                 log.Error($"流程启动异常 => flow={flowTemplate.Key}", ex);
@@ -1461,7 +1448,6 @@ namespace ProjectARVRPro
                 return;
 
             _objectiveSessionCompleted = true;
-            _objectiveSessionPrepared = false;
             FinalizeObjectiveTestResultRecord();
             SetStepProgress(CurrentTestType, completed: true);
 
@@ -1617,7 +1603,7 @@ namespace ProjectARVRPro
                 return;
             }
 
-            if (IsTestSessionBusy)
+            if (IsTestExecutionBusy)
             {
                 log.Warn($"当前测试尚未结束，暂不重放历史批次：{batch.Id}");
                 MessageBox.Show(this, "当前测试尚未结束，请在测试完成后再打开历史批次。", "ColorVision");
@@ -1689,7 +1675,6 @@ namespace ProjectARVRPro
             SaveObjectiveTestResultRecord(result);
             SelectViewResult(result);
             _objectiveSessionCompleted = true;
-            _objectiveSessionPrepared = false;
         }
 
         private void EnsureObjectiveResultSession(string serialNumber, DateTime? sessionStartTime = null)
@@ -2354,12 +2339,6 @@ namespace ProjectARVRPro
                 log.Info("当前存在流程执行或正在处理流程结果，无法一键执行");
                 return;
             }
-            if (_objectiveSessionPrepared && !_runAllSessionPrepared)
-            {
-                log.Info("当前分步测试会话尚未结束，无法一键执行");
-                return;
-            }
-
             _isRunAllRunning = true;
             CurrentFlowResult = null!;
             ProjectARVRReuslt? lastPersistedRunAllResult = null;
