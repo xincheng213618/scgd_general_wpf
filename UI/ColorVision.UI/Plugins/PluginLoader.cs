@@ -12,12 +12,15 @@ namespace ColorVision.UI.Plugins
     public static class PluginLoader
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PluginLoader));
+        private static int _lastLoadFailureCount;
         private static readonly HashSet<string> RetiredPluginIds = new(StringComparer.OrdinalIgnoreCase)
         {
             "EventVWR"
         };
 
         public static PluginLoaderrConfig Config => PluginLoaderrConfig.Instance;
+
+        public static bool LastLoadCompletedWithoutFailures => Volatile.Read(ref _lastLoadFailureCount) == 0;
 
         internal static bool IsRetiredPlugin(string? pluginId)
         {
@@ -42,6 +45,11 @@ namespace ColorVision.UI.Plugins
             }
 
             return false;
+        }
+
+        internal static bool IsPluginAssemblyAvailable(string? dllPath)
+        {
+            return !string.IsNullOrWhiteSpace(dllPath) && File.Exists(dllPath);
         }
 
         public static void LoadPlugins()
@@ -82,6 +90,7 @@ namespace ColorVision.UI.Plugins
             IEnumerable<string>? skipOncePluginIds,
             Action<string>? onPluginLoading)
         {
+            Volatile.Write(ref _lastLoadFailureCount, 0);
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
@@ -162,6 +171,7 @@ namespace ColorVision.UI.Plugins
                         manifest = JsonConvert.DeserializeObject<PluginManifest>(manifestContent);
                         if (string.IsNullOrWhiteSpace(manifest.Id))
                         {
+                            RecordLoadFailure();
                             log.Warn(string.Format(Properties.Resources.PluginMissingId, directory));
                             continue;
                         }
@@ -234,8 +244,9 @@ namespace ColorVision.UI.Plugins
                                             string expectedDll = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, dep.Key + ".dll");
                                             if (!File.Exists(expectedDll))
                                             {
+                                                depsOk = false;
                                                 log.Warn(string.Format(Properties.Resources.DependencyDllNotFound, dep.Key, expectedDll));
-                                                continue;
+                                                break;
                                             }
 
                                             // 获取dll实际版本
@@ -267,11 +278,12 @@ namespace ColorVision.UI.Plugins
                             }
                             if (!depsOk)
                             {
+                                RecordLoadFailure();
                                 continue;
                             }
                         }
                       
-                        if (File.Exists(dllPath))
+                        if (IsPluginAssemblyAvailable(dllPath))
                         {
                             log.Info(string.Format(Properties.Resources.LoadingPlugin, manifest.Name));
 
@@ -293,13 +305,14 @@ namespace ColorVision.UI.Plugins
                         }
                         else
                         {
+                            RecordLoadFailure();
                             log.Warn(string.Format(Properties.Resources.PluginDllNotFound, dllPath));
                         }
                     }
                     else
                     {
                         dllPath = Path.Combine(directory, dirName + ".dll");
-                        if (File.Exists(dllPath))
+                        if (IsPluginAssemblyAvailable(dllPath))
                         {
                             Assembly assembly = Assembly.LoadFrom(dllPath);
                             moduleCatalog?.AddPlugin(dirName, assembly);
@@ -307,12 +320,14 @@ namespace ColorVision.UI.Plugins
                         }
                         else
                         {
+                            RecordLoadFailure();
                             log.Warn(string.Format(Properties.Resources.PluginDllNotFound, dllPath));
                         }
                     }
                 }
                 catch (Exception ex)
                 {
+                    RecordLoadFailure();
                     MessageBox.Show(string.Format(Properties.Resources.PluginLoadError, ex.Message), "ColorVision");
                     log.Error(ex);
                 }
@@ -320,6 +335,11 @@ namespace ColorVision.UI.Plugins
 
             pluginConfig.Save();
             AssemblyHandler.GetInstance().RefreshAssemblies();
+        }
+
+        private static void RecordLoadFailure()
+        {
+            Interlocked.Increment(ref _lastLoadFailureCount);
         }
     }
 }

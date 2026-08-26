@@ -58,13 +58,23 @@ internal static class StartupFailureGuard
         ArgumentNullException.ThrowIfNull(exception);
         if (Volatile.Read(ref _begun) == 0
             || Volatile.Read(ref _startupCompleted) != 0
-            || !TryCreateFailurePresentation(exception, out StartupFailurePresentation? presentation))
+            || !TryCreateFailurePresentation(exception, out StartupFailurePresentation? presentation)
+            || presentation == null)
         {
             return false;
         }
 
         if (Interlocked.Exchange(ref _failurePromptShown, 1) != 0)
             return true;
+
+        try
+        {
+            StartupRegistryChecker.MarkDependencyFailure(presentation.Component);
+        }
+        catch
+        {
+            // The native fallback prompt must remain available even if recovery state cannot be persisted.
+        }
 
         SendStatus(
             "failed-handled",

@@ -48,7 +48,7 @@ namespace ColorVision
         public static bool CheckAndSet()
         {
             using RegistryKey regKey = Registry.CurrentUser.CreateSubKey(RegistryPath);
-            List<StartupFailureInfo> incompleteAttempts = ReadAndRemoveIncompleteAttempts(regKey);
+            List<StartupFailureInfo> incompleteAttempts = ReadAndRemoveIncompleteAttempts(regKey, InstallationKey);
             StartupFailureInfo? legacyFailure = ReadAndMigrateLegacyAttempt(regKey);
             if (legacyFailure != null)
                 incompleteAttempts.Add(legacyFailure);
@@ -89,6 +89,25 @@ namespace ColorVision
             StartupFailureGuard.ReportProgress(stage, component);
         }
 
+        public static void MarkDependencyFailure(string component)
+        {
+            if (_attemptCompleted)
+                return;
+
+            using RegistryKey? attemptKey = Registry.CurrentUser.OpenSubKey(
+                $@"{RegistryPath}\{GetCurrentAttemptSubKeyPath()}",
+                writable: true);
+            if (attemptKey == null || ReadNullableInt32(attemptKey, "ProcessId") != Environment.ProcessId)
+                return;
+
+            attemptKey.SetValue("Stage", "DependencyFailure", RegistryValueKind.String);
+            if (string.IsNullOrWhiteSpace(component))
+                attemptKey.DeleteValue("Component", false);
+            else
+                attemptKey.SetValue("Component", component.Trim(), RegistryValueKind.String);
+            DeleteRecoverySource(attemptKey);
+        }
+
         /// <summary>
         /// 启动成功后清理当前进程的启动记录。
         /// </summary>
@@ -115,11 +134,11 @@ namespace ColorVision
                 Clear();
         }
 
-        private static List<StartupFailureInfo> ReadAndRemoveIncompleteAttempts(RegistryKey regKey)
+        internal static List<StartupFailureInfo> ReadAndRemoveIncompleteAttempts(RegistryKey regKey, string installationKey)
         {
             List<StartupFailureInfo> incompleteAttempts = new();
             using RegistryKey? installationAttemptsKey = regKey.OpenSubKey(
-                $@"{StartupAttemptsSubKey}\{InstallationKey}",
+                $@"{StartupAttemptsSubKey}\{installationKey}",
                 writable: true);
             if (installationAttemptsKey == null)
                 return incompleteAttempts;

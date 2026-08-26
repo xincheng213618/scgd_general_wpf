@@ -1,4 +1,4 @@
-# Copilot attachment composer design QA
++# Copilot attachment composer design QA
 
 ## Evidence
 
@@ -231,5 +231,48 @@ The native 660 x 650 captures are readable focused views of both core states. `c
 
 - P3: capture the creation dialog under ColorVision's dark theme and at 150% display scaling if those variants become release-gating visual targets.
 - P3: if Codex exposes a stable completion callback in a future installed version, replace the bounded directory watcher with that callback while keeping the same visible flow.
+
+final result: passed
+
+---
+
+# ColorVision 程序备份界面设计核验
+
+- Source visual truth: `C:\Users\17917\AppData\Local\Temp\codex-clipboard-5a728fa0-346b-42d6-9fec-d0f5bca2a7d4.png`
+- Implementation screenshot: `C:\Users\17917\AppData\Local\Temp\ColorVision-application-snapshots-final.png`
+- Viewport: Windows WPF 窗口，设计尺寸 940 × 610 DIPs
+- Source pixels: 1272 × 769；implementation pixels: 927 × 603
+- Density normalization: 两张图来自不同 Windows DPI 捕获环境，按完整窗口边界和相对布局比例比较，不以原始像素一一对应
+- State: 自动存档已启用；自动存档、默认快照、手动用户快照和更新快照同时显示；手动快照刚创建完成并选中
+
+## Full-view comparison evidence
+
+原有标题、快照根目录、更新前快照开关、程序目录、版本、快照表格和底部操作栏均保留。新增自动存档卡片位于标题区与手动快照操作之间，没有遮挡表格或底部操作；窗口在设计尺寸内无溢出、裁切或不可达按钮。手动“创建快照”完成后，新行立即出现在表格中并被选中。
+
+## Focused region comparison evidence
+
+- 自动存档区：开关、行为说明、实际路径和“更改位置 / 默认位置 / 打开位置”构成一个完整配置单元，层级和按钮尺寸与现有窗口一致。
+- 手动快照区：`创建快照 / 重建默认 / 打开目录` 仍紧邻程序目录信息，未与自动存档动作混淆。
+- 列表区：新增“自动存档”类型沿用现有五列表格；自动存档固定文件名为 `autosave.zip`，手动创建仍显示“用户快照”和带时间的独立文件名。
+- 启动恢复主界面：缺少应用 DLL 时推荐按钮显示“完整安装包修复”；“退出 ColorVision”和“正常启动”位于底栏两端。
+
+## Findings
+
+没有发现需要修复的 P0、P1 或 P2 问题。
+
+- 字体与排版：沿用现有 WPF 字体、字号和粗细层级；长路径使用省略显示并保留辅助功能完整文本。
+- 间距与布局节奏：自动存档卡片与上下区域间距一致，按钮组没有拥挤或越界。
+- 色彩与视觉令牌：继续使用现有窗口背景、弱边框、选中行和主按钮令牌，无新增不一致颜色。
+- 图像与资产：界面没有新增位图或品牌资产；系统窗口图标保持原样。
+- 文案与内容：明确区分“自动存档”“用户快照”“更新快照”；说明了自动存档只在正常进入主界面后后台固定覆盖，不延长启动等待。
+
+## Comparison history
+
+- Earlier issue: 手动创建完成后列表没有立即更新。Fix: 创建结果直接加入绑定集合、选中并滚动到新行。Post-fix evidence: implementation screenshot 中 `ColorVision-1.4.13.11-20260826-132029.zip` 已立即显示并选中。
+- Earlier issue: 程序备份只有手动/更新快照，没有正常启动后的自动覆盖存档。Fix: 新增自动存档配置卡片、固定 `autosave.zip` 和后台健康启动触发。Post-fix evidence: implementation screenshot 顶部显示已启用自动存档，列表首行显示 `autosave.zip`。
+
+## Follow-up polish
+
+没有阻塞项。不同 DPI 下路径会更早进入省略显示，这是为保证操作按钮始终可见的预期行为。
 
 final result: passed

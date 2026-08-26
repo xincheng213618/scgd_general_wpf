@@ -135,6 +135,27 @@ public sealed class ApplicationStartupIntegrityMonitorTests : IDisposable
             out _));
     }
 
+    [Theory]
+    [InlineData("dll")]
+    [InlineData("entry")]
+    [InlineData("bad-image")]
+    public void StartupFailurePresentationRecognizesNativeOrDamagedDllFailures(string failureKind)
+    {
+        Exception failure = failureKind switch
+        {
+            "dll" => new DllNotFoundException("missing native library"),
+            "entry" => new EntryPointNotFoundException("missing native export"),
+            "bad-image" => new BadImageFormatException("damaged managed library", "Damaged.Component.dll"),
+            _ => throw new ArgumentOutOfRangeException(nameof(failureKind)),
+        };
+
+        Assert.True(global::ColorVision.StartupFailureGuard.TryCreateFailurePresentation(
+            failure,
+            out global::ColorVision.StartupFailurePresentation? presentation));
+        Assert.NotNull(presentation);
+        Assert.Contains("重新安装 ColorVision", presentation.Message, StringComparison.Ordinal);
+    }
+
     public void Dispose()
     {
         Directory.Delete(_applicationDirectory, recursive: true);

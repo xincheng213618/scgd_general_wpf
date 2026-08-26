@@ -5,14 +5,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:ColorVision.Properties"
         Title="{x:Static properties:Resources.UpdatePreviewApplicationSnapshotsLink}"
-        Width="860"
-        Height="520"
-        MinWidth="760"
-        MinHeight="440"
+        Width="940"
+        Height="610"
+        MinWidth="820"
+        MinHeight="520"
         Background="{DynamicResource GlobalBackground}"
         mc:Ignorable="d">
     <Grid Margin="18">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -40,31 +41,64 @@
 
             <StackPanel Grid.Column="1"
                         VerticalAlignment="Top">
-                <CheckBox Margin="0,0,0,10"
-                          HorizontalAlignment="Right"
+                <CheckBox HorizontalAlignment="Right"
                           Content="{x:Static properties:Resources.CreateSnapshotBeforeUpdate}"
                           IsChecked="{Binding CreateSnapshotBeforeUpdate, Mode=TwoWay}"
                           ToolTip="{x:Static properties:Resources.CreateSnapshotBeforeUpdateDescription}" />
-                <StackPanel HorizontalAlignment="Right"
-                            Orientation="Horizontal">
-                    <Button Margin="0,0,8,0"
-                            Click="CreateSnapshot_Click"
-                            Content="创建快照"
-                            IsEnabled="{Binding CanRunCommand}" />
-                    <Button Margin="0,0,8,0"
-                            Click="RebuildDefault_Click"
-                            Content="重建默认"
-                            IsEnabled="{Binding CanRunCommand}" />
-                    <Button Click="OpenFolder_Click"
-                            Content="打开目录" />
-                </StackPanel>
             </StackPanel>
         </Grid>
 
-        <Grid Grid.Row="1" Margin="0,16,0,10">
+        <Border Grid.Row="1"
+                Margin="0,16,0,0"
+                Padding="14"
+                BorderBrush="{DynamicResource GlobalBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel>
+                    <CheckBox FontSize="14"
+                              FontWeight="SemiBold"
+                              Content="正常启动后自动存档"
+                              IsChecked="{Binding CreateAutomaticSnapshotAfterHealthyStartup, Mode=TwoWay}" />
+                    <TextBlock Margin="24,6,0,0"
+                               FontSize="12"
+                               Foreground="{DynamicResource GlobalTextBrush}"
+                               Opacity="0.72"
+                               Text="新版本正常进入主界面后在后台保存，固定覆盖一份，不延长启动等待。" />
+                    <TextBlock Margin="24,8,18,0"
+                               FontSize="12"
+                               Foreground="{DynamicResource GlobalTextBrush}"
+                               Opacity="0.72"
+                               Text="{Binding AutomaticSnapshotDirectory}"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTip="{Binding AutomaticSnapshotDirectory}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                    <Button Margin="0,0,8,0"
+                            Click="ChooseAutomaticSnapshotDirectory_Click"
+                            Content="更改位置" />
+                    <Button Margin="0,0,8,0"
+                            Click="ResetAutomaticSnapshotDirectory_Click"
+                            Content="默认位置" />
+                    <Button Click="OpenAutomaticSnapshotDirectory_Click"
+                            Content="打开位置" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="2" Margin="0,14,0,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
@@ -82,14 +116,31 @@
                        Text="{Binding ProgramDirectory}"
                        TextTrimming="CharacterEllipsis" />
             <TextBlock Grid.Column="2"
+                       Margin="0,0,18,0"
                        VerticalAlignment="Center"
                        FontSize="13"
                        Foreground="{DynamicResource GlobalTextBrush}"
                        Opacity="0.72"
                        Text="{Binding CurrentVersion}" />
+
+            <StackPanel Grid.Column="3"
+                        HorizontalAlignment="Right"
+                        Orientation="Horizontal">
+                <Button Margin="0,0,8,0"
+                        Click="CreateSnapshot_Click"
+                        Content="创建快照"
+                        IsEnabled="{Binding CanRunCommand}" />
+                <Button Margin="0,0,8,0"
+                        Click="RebuildDefault_Click"
+                        Content="重建默认"
+                        IsEnabled="{Binding CanRunCommand}" />
+                <Button Click="OpenFolder_Click"
+                        Content="打开目录" />
+            </StackPanel>
         </Grid>
 
-        <DataGrid Grid.Row="2"
+        <DataGrid x:Name="SnapshotGrid"
+                  Grid.Row="3"
                   AutoGenerateColumns="False"
                   Background="Transparent"
                   BorderBrush="{DynamicResource GlobalBorderBrush}"
@@ -122,7 +173,7 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <Grid Grid.Row="3" Margin="0,14,0,0">
+        <Grid Grid.Row="4" Margin="0,14,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />

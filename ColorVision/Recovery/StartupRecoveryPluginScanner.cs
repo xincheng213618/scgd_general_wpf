@@ -113,7 +113,7 @@ namespace ColorVision.Recovery
             IReadOnlyList<PluginRecoveryBackupInfo> backups;
             try
             {
-                backups = PluginRecoveryBackupService.Instance.GetAvailableBackups(programDirectory);
+                backups = PluginRecoveryBackupService.Instance.GetRecoveryBackupCandidates(programDirectory);
             }
             catch
             {

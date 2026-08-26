@@ -266,6 +266,35 @@ namespace ColorVision.UI.Plugins
             return null;
         }
 
+        public PluginRecoveryBackupInfo? GetRecoveryBackupCandidate(string pluginId, string pluginDirectory)
+        {
+            PluginLocation location;
+            try
+            {
+                location = ResolvePluginLocation(pluginId, pluginDirectory);
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+
+            string pluginBackupRoot = GetPluginBackupRoot(location.InstallationKey, pluginId);
+            if (!Directory.Exists(pluginBackupRoot))
+                return null;
+            EnsureDirectoryChainIsNotReparsePoint(_backupRootDirectory, pluginBackupRoot);
+
+            foreach (string backupDirectory in Directory
+                .EnumerateDirectories(pluginBackupRoot, "*", SearchOption.TopDirectoryOnly)
+                .Where(path => !path.EndsWith(".creating", StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase))
+            {
+                if (TryReadRecoveryBackupCandidate(backupDirectory, location, out PluginRecoveryBackupInfo? backup))
+                    return backup;
+            }
+
+            return null;
+        }
+
         public IReadOnlyList<PluginRecoveryBackupInfo> GetAvailableBackups(string programDirectory)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(programDirectory);
@@ -306,6 +335,58 @@ namespace ColorVision.UI.Plugins
                     .FirstOrDefault();
                 if (latest != null)
                     latestBackups.Add(latest);
+            }
+
+            return latestBackups
+                .OrderByDescending(backup => backup.CreatedUtc)
+                .ThenBy(backup => backup.PluginName, StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
+        }
+
+        public IReadOnlyList<PluginRecoveryBackupInfo> GetRecoveryBackupCandidates(string programDirectory)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(programDirectory);
+            if (!Path.IsPathFullyQualified(programDirectory))
+                throw new ArgumentException("ColorVision installation directory must be an absolute path.", nameof(programDirectory));
+            string normalizedProgramDirectory = NormalizeDirectory(programDirectory);
+            string installationKey = ExitUpdateHandoff.GetInstallationKey(normalizedProgramDirectory);
+            string installationRoot = Path.Combine(_backupRootDirectory, installationKey);
+            if (!Directory.Exists(installationRoot))
+                return Array.Empty<PluginRecoveryBackupInfo>();
+            EnsureDirectoryChainIsNotReparsePoint(_backupRootDirectory, installationRoot);
+
+            var latestBackups = new List<PluginRecoveryBackupInfo>();
+            foreach (string pluginRoot in Directory.EnumerateDirectories(installationRoot, "*", SearchOption.TopDirectoryOnly))
+            {
+                try
+                {
+                    EnsureExistingDirectoryIsNotReparsePoint(pluginRoot, "Plugin-scoped recovery backup root", mustExist: true);
+                }
+                catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+                {
+                    log.Warn($"Ignored unsafe plugin recovery backup root '{pluginRoot}': {ex.Message}");
+                    continue;
+                }
+
+                foreach (string backupDirectory in Directory
+                    .EnumerateDirectories(pluginRoot, "*", SearchOption.TopDirectoryOnly)
+                    .Where(path => !path.EndsWith(".creating", StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase))
+                {
+                    if (!TryReadRecoveryBackupCandidate(backupDirectory, expectedLocation: null, out PluginRecoveryBackupInfo? backup)
+                        || backup == null
+                        || !string.Equals(backup.InstallationKey, installationKey, StringComparison.Ordinal)
+                        || !string.Equals(
+                            NormalizeDirectory(Path.GetDirectoryName(Path.GetDirectoryName(backup.PluginDirectory)!)!),
+                            normalizedProgramDirectory,
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    latestBackups.Add(backup);
+                    break;
+                }
             }
 
             return latestBackups
@@ -491,6 +572,31 @@ namespace ColorVision.UI.Plugins
             PluginLocation? expectedLocation,
             CancellationToken cancellationToken = default)
         {
+            (PluginRecoveryBackupInfo backup, PluginRecoveryBackupMetadata metadata) =
+                ReadBackupMetadataCore(backupDirectory, expectedLocation, cancellationToken);
+            DirectoryCatalog actualCatalog = CreateDirectoryCatalog(backup.PayloadDirectory, cancellationToken);
+            if (metadata.FileCount != actualCatalog.Files.Count
+                || metadata.TotalBytes != actualCatalog.Files.Sum(file => file.Length)
+                || !string.Equals(metadata.DirectoryHash, actualCatalog.DirectoryHash, StringComparison.OrdinalIgnoreCase)
+                || !new DirectoryCatalog(metadata.Files, metadata.DirectoryHash).EqualsContent(actualCatalog))
+            {
+                throw new InvalidDataException("Plugin recovery backup payload failed SHA-256 verification.");
+            }
+
+            PluginRecoveryManifestMetadata? actualManifest = TryReadManifestMetadata(
+                Path.Combine(backup.PayloadDirectory, "manifest.json"));
+            if (!ManifestMetadataMatches(metadata.Manifest, actualManifest))
+                throw new InvalidDataException("Plugin recovery backup manifest metadata does not match its payload.");
+
+            return backup;
+        }
+
+        private (PluginRecoveryBackupInfo Backup, PluginRecoveryBackupMetadata Metadata) ReadBackupMetadataCore(
+            string backupDirectory,
+            PluginLocation? expectedLocation,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
             string normalizedBackupDirectory = NormalizeDirectory(backupDirectory);
             EnsureDirectoryChainIsNotReparsePoint(_backupRootDirectory, normalizedBackupDirectory);
             string metadataPath = Path.Combine(normalizedBackupDirectory, MetadataFileName);
@@ -516,6 +622,9 @@ namespace ColorVision.UI.Plugins
                 || string.IsNullOrWhiteSpace(metadata.InstallationKey)
                 || string.IsNullOrWhiteSpace(metadata.DirectoryHash)
                 || metadata.Files == null
+                || metadata.FileCount < 0
+                || metadata.TotalBytes < 0
+                || metadata.FileCount != metadata.Files.Count
                 || metadata.CreatedUtc == default)
             {
                 throw new InvalidDataException("Plugin recovery backup metadata is incomplete or unsupported.");
@@ -541,21 +650,8 @@ namespace ColorVision.UI.Plugins
                 throw new InvalidDataException("Plugin recovery backup is outside its installation-scoped backup directory.");
 
             string payloadDirectory = Path.Combine(normalizedBackupDirectory, PayloadDirectoryName);
-            DirectoryCatalog actualCatalog = CreateDirectoryCatalog(payloadDirectory, cancellationToken);
-            if (metadata.FileCount != metadata.Files.Count
-                || metadata.FileCount != actualCatalog.Files.Count
-                || metadata.TotalBytes != actualCatalog.Files.Sum(file => file.Length)
-                || !string.Equals(metadata.DirectoryHash, actualCatalog.DirectoryHash, StringComparison.OrdinalIgnoreCase)
-                || !new DirectoryCatalog(metadata.Files, metadata.DirectoryHash).EqualsContent(actualCatalog))
-            {
-                throw new InvalidDataException("Plugin recovery backup payload failed SHA-256 verification.");
-            }
-
-            PluginRecoveryManifestMetadata? actualManifest = TryReadManifestMetadata(Path.Combine(payloadDirectory, "manifest.json"));
-            if (!ManifestMetadataMatches(metadata.Manifest, actualManifest))
-                throw new InvalidDataException("Plugin recovery backup manifest metadata does not match its payload.");
-
-            return new PluginRecoveryBackupInfo
+            EnsureDirectoryChainIsNotReparsePoint(_backupRootDirectory, payloadDirectory);
+            PluginRecoveryBackupInfo backup = new()
             {
                 PluginId = metadata.PluginId,
                 PluginDirectory = metadataLocation.PluginDirectory,
@@ -568,6 +664,7 @@ namespace ColorVision.UI.Plugins
                 TotalBytes = metadata.TotalBytes,
                 Manifest = metadata.Manifest,
             };
+            return (backup, metadata);
         }
 
         private bool TryReadBackupMetadata(
@@ -583,6 +680,24 @@ namespace ColorVision.UI.Plugins
             catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or JsonException)
             {
                 log.Warn($"Ignored invalid plugin recovery backup '{backupDirectory}': {ex.Message}");
+                backup = null;
+                return false;
+            }
+        }
+
+        private bool TryReadRecoveryBackupCandidate(
+            string backupDirectory,
+            PluginLocation? expectedLocation,
+            out PluginRecoveryBackupInfo? backup)
+        {
+            try
+            {
+                backup = ReadBackupMetadataCore(backupDirectory, expectedLocation).Backup;
+                return true;
+            }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or JsonException)
+            {
+                log.Warn($"Ignored invalid plugin recovery backup metadata '{backupDirectory}': {ex.Message}");
                 backup = null;
                 return false;
             }

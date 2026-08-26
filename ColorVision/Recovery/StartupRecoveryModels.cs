@@ -13,6 +13,7 @@ namespace ColorVision.Recovery
         SkipSelectedOnce,
         SkipAllOnce,
         DisableSelectedAndStart,
+        RunSetupWizard,
         Exit,
     }
 
@@ -38,7 +39,7 @@ namespace ColorVision.Recovery
     {
         private bool _isSelected;
         private bool _isRecoveryBusy;
-        private string _backupText = "无可用备份";
+        private string _backupText = "无备份";
         private PluginRecoveryBackupInfo? _backup;
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -124,7 +125,7 @@ namespace ColorVision.Recovery
         public void SetBackup(PluginRecoveryBackupInfo? backup)
         {
             _backup = backup;
-            BackupText = backup == null ? "无可用备份" : "回退";
+            BackupText = backup == null ? "无备份" : "验证并回退";
             OnPropertyChanged(nameof(Backup));
             OnPropertyChanged(nameof(CanRestoreBackup));
         }
