@@ -22,6 +22,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Common", "UI\ColorVision.Common\ColorVision.Common.csproj", "{C8071225-73B5-4559-A22E-CD057B424A3C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Core", "UI\ColorVision.Core\ColorVision.Core.csproj", "{F5A74929-90C7-407C-87F4-D2176ACC2ACC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{AA343239-476E-43E3-BEE3-D3313C883341} = {AA343239-476E-43E3-BEE3-D3313C883341}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Themes", "UI\ColorVision.Themes\ColorVision.Themes.csproj", "{64AAF73B-1782-4D82-AEB5-868E21516768}"
 EndProject

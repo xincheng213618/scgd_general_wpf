@@ -7,13 +7,16 @@ namespace ColorVision.UI.Desktop.Marketplace
         public Version? HostVersion { get; init; }
         public List<CombinedPluginUpdateItem> Updates { get; } = new();
         public List<string> SkippedIncompatiblePlugins { get; } = new();
+        public List<string> UnresolvedPlugins { get; } = new();
         public bool HasUpdates => Updates.Count > 0;
+        public bool IsComplete => UnresolvedPlugins.Count == 0;
 
         public CombinedPluginUpdatePlan CreateCompatibleSubset(Version hostVersion)
         {
             CombinedPluginUpdatePlan subset = new() { HostVersion = hostVersion };
             subset.Updates.AddRange(Updates.Where(item => PluginUpdateCompatibility.IsCompatibleWithHostVersion(item.VersionInfo.RequiresVersion, hostVersion)));
             subset.SkippedIncompatiblePlugins.AddRange(SkippedIncompatiblePlugins);
+            subset.UnresolvedPlugins.AddRange(UnresolvedPlugins);
             subset.SkippedIncompatiblePlugins.AddRange(Updates
                 .Where(item => !PluginUpdateCompatibility.IsCompatibleWithHostVersion(item.VersionInfo.RequiresVersion, hostVersion))
                 .Select(item => item.Plugin.Name ?? item.Plugin.PackageName ?? "Unknown"));

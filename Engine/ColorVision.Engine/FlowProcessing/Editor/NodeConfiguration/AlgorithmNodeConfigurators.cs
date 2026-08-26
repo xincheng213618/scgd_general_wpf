@@ -72,11 +72,9 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                 {
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.MTF:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "MTF2", new TemplateMTF2());
-                        context.AddTemplatePanel(nameof(node.POITempName), "POI", new TemplatePoi());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.SFR:
                         context.AddTemplatePanel(nameof(node.TempName), "SFR", new TemplateSFR());
-                        context.AddTemplatePanel(nameof(node.POITempName), "POI", new TemplatePoi());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.FOV:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "DFOV", new TemplateDFOV());
@@ -87,14 +85,12 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.SFR_FindROI:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "SFR_FindROI", new TemplateSFRFindROI());
-                        context.AddTemplatePanel(nameof(node.POITempName), "POI", new TemplatePoi());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.双目融合:
                         context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.BinocularFusion, new TemplateBinocularFusion());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.十字计算:
                         context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.CrossCalc, new TemplateFindCross());
-                        context.AddTemplatePanel(nameof(node.POITempName), "ROI", new TemplatePoi());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.屏幕缺陷检测:
                     context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.ScreenDefectDetection, new TemplateDetectScreenDefects());

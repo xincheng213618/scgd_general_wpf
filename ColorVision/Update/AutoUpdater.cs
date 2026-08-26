@@ -1166,9 +1166,16 @@ namespace ColorVision.Update
             sb.AppendLine(":copy_application_files");
             sb.AppendLine("where robocopy >nul 2>nul");
             sb.AppendLine("if errorlevel 1 goto copy_application_files_xcopy");
-            sb.AppendLine("robocopy \"%STAGE%\" \"%TARGET%\" *.* /E /IS /IT /XF ColorVision.ShellExtension* /NFL /NDL /NP /NJH /NJS /R:2 /W:1");
-            sb.AppendLine("if errorlevel 8 exit /b 8");
+            sb.AppendLine("set \"ROBOCOPY_LOG=%UPDATE_ROOT%\\robocopy.log\"");
+            sb.AppendLine("robocopy \"%STAGE%\" \"%TARGET%\" *.* /E /IS /IT /XF ColorVision.ShellExtension* /NDL /NP /NJH /NJS /R:10 /W:1 >\"%ROBOCOPY_LOG%\" 2>&1");
+            sb.AppendLine("set \"ROBOCOPY_EXIT=%ERRORLEVEL%\"");
+            sb.AppendLine("if %ROBOCOPY_EXIT% GEQ 8 goto copy_application_files_robocopy_failed");
+            sb.AppendLine("del /f /q \"%ROBOCOPY_LOG%\" >nul 2>nul");
             sb.AppendLine("exit /b 0");
+            sb.AppendLine(":copy_application_files_robocopy_failed");
+            sb.AppendLine("if exist \"%ROBOCOPY_LOG%\" type \"%ROBOCOPY_LOG%\" >>\"%UPDATE_LOG%\" 2>nul");
+            sb.AppendLine(">>\"%UPDATE_LOG%\" echo [%date% %time%] Application file copy failed with robocopy exit code %ROBOCOPY_EXIT%.");
+            sb.AppendLine("exit /b %ROBOCOPY_EXIT%");
             sb.AppendLine(":copy_application_files_xcopy");
             sb.AppendLine("xcopy /y /e /i \"%STAGE%\\*\" \"%TARGET%\\\" >nul");
             sb.AppendLine("if errorlevel 1 exit /b 1");

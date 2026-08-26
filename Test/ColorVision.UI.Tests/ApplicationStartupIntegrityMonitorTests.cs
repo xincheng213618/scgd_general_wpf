@@ -100,6 +100,23 @@ public sealed class ApplicationStartupIntegrityMonitorTests : IDisposable
         hub.Forget(1234);
     }
 
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, true, false)]
+    [InlineData(true, false, true)]
+    public void MissingDependencyMessageIsOnlyShownAfterProcessExitedBeforeStartupCompleted(
+        bool processExitedBeforeObservationDeadline,
+        bool terminalStatusReceived,
+        bool expected)
+    {
+        Assert.Equal(
+            expected,
+            ApplicationStartupIntegrityMonitor.ShouldShowMissingDependencyMessage(
+                processExitedBeforeObservationDeadline,
+                terminalStatusReceived));
+    }
+
     [Fact]
     public void StartupFailurePresentationRecognizesMissingAssemblyButNotDataFile()
     {

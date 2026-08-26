@@ -75,6 +75,22 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void ApplicationBatchRetriesTransientCopyLocksAndLogsRobocopyDetails()
+        {
+            string batch = BuildApplicationBatch(
+                Path.Combine(_rootDirectory, "Retry Stage"),
+                Path.Combine(_rootDirectory, "Retry Root"),
+                Path.Combine(_rootDirectory, "Retry Target"),
+                "ColorVisionTestProbe.exe",
+                restartApplication: false);
+
+            Assert.Contains("/R:10 /W:1 >\"%ROBOCOPY_LOG%\" 2>&1", batch, StringComparison.Ordinal);
+            Assert.Contains("type \"%ROBOCOPY_LOG%\" >>\"%UPDATE_LOG%\"", batch, StringComparison.Ordinal);
+            Assert.Contains("Application file copy failed with robocopy exit code %ROBOCOPY_EXIT%.", batch, StringComparison.Ordinal);
+            Assert.DoesNotContain("/XF ColorVision.ShellExtension* /NFL", batch, StringComparison.Ordinal);
+        }
+
+        [Fact]
         public async Task PluginBatchCopiesPluginAndCleansSpecialCharacterStageDirectory()
         {
             string tempRoot = Path.Combine(_rootDirectory, "Plugin Stage");

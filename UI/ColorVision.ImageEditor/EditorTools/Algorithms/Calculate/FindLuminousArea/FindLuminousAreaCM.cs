@@ -6,8 +6,10 @@ using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
 using ColorVision.Util.Draw.Rectangle;
+using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,6 +21,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
     {
         public void Execute(FindLuminousAreaCorner findLuminousAreaCorner, RoiRect roiRect)
         {
+            AlgorithmResultOverlay.ClearTagged(DrawContext, AlgorithmResultOverlay.FindLuminousAreaTag);
+            long requestId = AlgorithmResultOverlay.BeginRequest(DrawContext, AlgorithmResultOverlay.FindLuminousAreaTag);
+
             ImageFrameLease? lease = ImageContext.AcquireImageFrame();
             if (lease == null) return;
 
@@ -33,7 +38,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
 
                 Application.Current.Dispatcher.BeginInvoke(() =>
                 {
-                    if (!ImageContext.IsCurrentImageRevision(revision)) return;
+                    if (!ImageContext.IsCurrentImageRevision(revision) ||
+                        !AlgorithmResultOverlay.IsCurrentRequest(DrawContext, AlgorithmResultOverlay.FindLuminousAreaTag, requestId)) return;
 
                     if (!detectionResult.HasValidCorners)
                     {
@@ -41,19 +47,44 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
                         return;
                     }
 
-                    DVPolygon polygon = new() { IsComple = true };
-                    polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / DrawContext.Zoombox.ContentMatrix.M11);
-                    polygon.Attribute.Brush = Brushes.Transparent;
                     double pixelToDipX = LuminousAreaDetector.GetPixelToDipScale(
                         ImageContext.Config.GetProperties<double>(ImageViewPropertyKeys.DpiX));
                     double pixelToDipY = LuminousAreaDetector.GetPixelToDipScale(
                         ImageContext.Config.GetProperties<double>(ImageViewPropertyKeys.DpiY));
-                    foreach (LuminousAreaPoint corner in detectionResult.Corners)
+                    Point[] corners = detectionResult.Corners
+                        .Select(corner => new Point(corner.X * pixelToDipX, corner.Y * pixelToDipY))
+                        .ToArray();
+                    double zoom = AlgorithmResultOverlay.GetZoom(DrawContext);
+                    AlgorithmResultOverlay.AddPolygon(
+                        DrawContext,
+                        corners,
+                        new Pen(Brushes.DeepSkyBlue, 1.5 / zoom),
+                        AlgorithmResultOverlay.FindLuminousAreaTag);
+
+                    Point center = new(corners.Average(point => point.X), corners.Average(point => point.Y));
+                    double topLength = (corners[1] - corners[0]).Length;
+                    double leftLength = (corners[3] - corners[0]).Length;
+                    double armLength = Math.Clamp(Math.Min(topLength, leftLength) * 0.08, 24 / zoom, 240 / zoom);
+                    Vector topDirection = corners[1] - corners[0];
+                    if (topDirection.Length > 0)
                     {
-                        polygon.Attribute.Points.Add(new Point(corner.X * pixelToDipX, corner.Y * pixelToDipY));
+                        topDirection.Normalize();
+                        Vector verticalDirection = new(-topDirection.Y, topDirection.X);
+                        Pen crossPen = new(Brushes.DeepSkyBlue, 1.5 / zoom);
+                        AlgorithmResultOverlay.AddLine(DrawContext, center - topDirection * armLength, center + topDirection * armLength, crossPen, AlgorithmResultOverlay.FindLuminousAreaTag);
+                        AlgorithmResultOverlay.AddLine(DrawContext, center - verticalDirection * armLength, center + verticalDirection * armLength, crossPen.CloneCurrentValue(), AlgorithmResultOverlay.FindLuminousAreaTag);
                     }
-                    polygon.Render();
-                    DrawContext.DrawCanvas.AddVisualCommand(polygon);
+
+                    double centerPixelX = detectionResult.Corners.Average(point => point.X);
+                    double centerPixelY = detectionResult.Corners.Average(point => point.Y);
+                    LuminousAreaPoint lt = detectionResult.Corners[0];
+                    LuminousAreaPoint rt = detectionResult.Corners[1];
+                    double angle = Math.Atan2(rt.Y - lt.Y, rt.X - lt.X) * 180 / Math.PI;
+                    string confidence = detectionResult.Confidence.HasValue ? detectionResult.Confidence.Value.ToString("F3") : "N/A";
+                    string message = $"发光区  center=({centerPixelX:F3}, {centerPixelY:F3})  angle={angle:F4}°  confidence={confidence}";
+                    Brush messageBrush = detectionResult.Warnings.Count == 0 ? Brushes.DeepSkyBlue : Brushes.Orange;
+                    AlgorithmResultOverlay.AddLabel(DrawContext, center, message, messageBrush, AlgorithmResultOverlay.FindLuminousAreaTag);
+
                     string warningMessage = LuminousAreaDetector.GetWarningMessage(detectionResult);
                     if (!string.IsNullOrEmpty(warningMessage))
                     {
@@ -96,10 +127,14 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
             int imgHeight = hImage.rows;
 
             // 用户绘制的矩形
-            int x = (int)Math.Round(dvRectangle.Rect.X * DpiScaleX);
-            int y = (int)Math.Round(dvRectangle.Rect.Y * DpiScaleY);
-            int w = (int)Math.Round(dvRectangle.Rect.Width * DpiScaleX);
-            int h = (int)Math.Round(dvRectangle.Rect.Height * DpiScaleY);
+            double left = dvRectangle.Rect.Left * DpiScaleX;
+            double top = dvRectangle.Rect.Top * DpiScaleY;
+            double right = dvRectangle.Rect.Right * DpiScaleX;
+            double bottom = dvRectangle.Rect.Bottom * DpiScaleY;
+            int x = (int)Math.Floor(left);
+            int y = (int)Math.Floor(top);
+            int w = (int)Math.Ceiling(right) - x;
+            int h = (int)Math.Ceiling(bottom) - y;
 
             // 先保证宽高为正
             if (w <= 0 || h <= 0)

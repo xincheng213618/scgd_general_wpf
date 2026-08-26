@@ -36,10 +36,9 @@ namespace ColorVision.ShellExtension
         /// </summary>
         protected override Mat? CreateMatFromFileData(CVCIEFile fileInfo)
         {
+            Mat? src = null;
             try
             {
-                Mat? src = null;
-
                 if (fileInfo.FileExtType == CVType.Tif)
                 {
                     src = Cv2.ImDecode(fileInfo.Data, ImreadModes.Unchanged);
@@ -72,6 +71,7 @@ namespace ColorVision.ShellExtension
             }
             catch (Exception ex)
             {
+                src?.Dispose();
                 ShellLog.Log($"{ProviderName}: CreateMatFromFileData error: {ex.Message}");
                 return null;
             }

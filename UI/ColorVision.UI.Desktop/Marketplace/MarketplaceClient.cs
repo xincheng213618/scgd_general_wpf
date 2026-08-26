@@ -27,6 +27,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         private static readonly ConcurrentDictionary<string, CachedPluginDetail> _pluginDetailCache = new(StringComparer.OrdinalIgnoreCase);
         private static readonly ConcurrentDictionary<string, CachedPluginDetail> _pluginUpdateMetadataCache = new(StringComparer.OrdinalIgnoreCase);
         private static readonly TimeSpan UpdateRequestTimeout = TimeSpan.FromSeconds(6);
+        private static readonly TimeSpan PluginUpdateMetadataAttemptTimeout = TimeSpan.FromSeconds(2);
 
         private static MarketplaceClient? _instance;
         private static readonly object _locker = new();
@@ -154,14 +155,16 @@ namespace ColorVision.UI.Desktop.Marketplace
         {
             try
             {
-                using CancellationTokenSource timeoutSource = new(UpdateRequestTimeout);
                 string url = $"{baseUrl}/api/plugins/{Uri.EscapeDataString(pluginId)}?view=update";
-                using HttpResponseMessage response = await UpdateHttpClientProvider.GetClient().GetAsync(url, timeoutSource.Token).ConfigureAwait(false);
+                using HttpResponseMessage response = await UpdateHttpClientProvider.SendWithTransientRetryAsync(
+                    () => new HttpRequestMessage(HttpMethod.Get, url),
+                    PluginUpdateMetadataAttemptTimeout,
+                    CancellationToken.None).ConfigureAwait(false);
                 if (response.StatusCode == HttpStatusCode.NotFound)
                     return null;
 
                 response.EnsureSuccessStatusCode();
-                string json = await response.Content.ReadAsStringAsync(timeoutSource.Token).ConfigureAwait(false);
+                string json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 MarketplacePluginDetail? detail = JsonConvert.DeserializeObject<MarketplacePluginDetail>(json);
                 if (detail != null)
                     _pluginUpdateMetadataCache[pluginId] = new CachedPluginDetail(detail);
@@ -175,7 +178,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                     return staleDetail;
                 }
 
-                log.Warn($"Plugin update metadata request timed out for {pluginId} after {UpdateRequestTimeout.TotalSeconds:0} seconds.");
+                log.Warn($"Plugin update metadata request timed out for {pluginId} after transient retries.");
                 return null;
             }
             catch (Exception ex)

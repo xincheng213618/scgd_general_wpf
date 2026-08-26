@@ -1,3 +1,4 @@
+using FlowEngineLib.Algorithm;
 using log4net;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
@@ -46,6 +47,25 @@ public class CVBaseServerNodeHub : CVBaseServerNode
 	{
 		DoInputDataTransfer(sender as STNodeOption, e);
 	}
+
+	protected override bool getPreStepParam(int idx, AlgorithmPreStepParam param)
+	{
+		if (param != null && idx >= 0 && idx < masterInput.Length && masterInput[idx] != null)
+		{
+			CVStartCFC input = masterInput[idx];
+			bool hasMasterResult = input.Data.ContainsKey("MasterId")
+				|| input.Data.ContainsKey("MasterResultType")
+				|| input.Data.ContainsKey("MasterValue");
+			if (hasMasterResult)
+			{
+				_getPreStepParam(input, param);
+				return true;
+			}
+		}
+
+		return base.getPreStepParam(idx, param);
+	}
+
     private static bool ShouldEndFlowImmediately(CVStartCFC start)
     {
         return start.TryGetStopStatus(out _);

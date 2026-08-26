@@ -46,6 +46,8 @@ bool RunCalibrationLegacyColorComparison(
 bool RunP2AlgorithmTests();
 bool RunNativeLoggingTests();
 bool RunPseudoColorTests();
+bool RunFindCrossLocalSyntheticTests();
+int RunFindCrossLocalCvRawCommand(int argc, char* argv[]);
 bool ReadCIEFile(const std::string& filePath, CVCIEFile& fileInfo);
 
 static std::atomic<int> g_videoCallbackFrames{ 0 };
@@ -3601,6 +3603,12 @@ int main(int argc, char* argv[])
     if (argc == 2 && std::string(argv[1]) == "--luminous-v2-only") {
         return RunLuminousAreaV2SyntheticTests() ? 0 : 1;
     }
+    if (argc == 2 && std::string(argv[1]) == "--find-cross-only") {
+        return RunFindCrossLocalSyntheticTests() ? 0 : 1;
+    }
+    if (argc >= 2 && std::string(argv[1]) == "--find-cross-cvraw") {
+        return RunFindCrossLocalCvRawCommand(argc, argv);
+    }
     if (argc == 3 && std::string(argv[1]) == "--luminous-v2-cvraw") {
         return RunLuminousAreaV2CvRaw(std::filesystem::u8path(argv[2]), true) ? 0 : 1;
     }
@@ -3634,6 +3642,11 @@ int main(int argc, char* argv[])
 
     if (!RunLuminousAreaV2SyntheticTests()) {
         std::cerr << "M_FindLuminousAreaV2 synthetic regression failed" << std::endl;
+        return 1;
+    }
+
+    if (!RunFindCrossLocalSyntheticTests()) {
+        std::cerr << "M_FindCrossLocal synthetic regression failed" << std::endl;
         return 1;
     }
 

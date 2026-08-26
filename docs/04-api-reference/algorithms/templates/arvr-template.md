@@ -42,6 +42,8 @@ ARVR 不是一个统一 schema，而是一组传统模板、JSON 模板、POI �
 
 `AlgorithmARVRNode` 决定 `operatorCode`，`AlgorithmARVRNodeConfigurator` 决定属性面板挂哪些模板：
 
+POI 使用 `AlgorithmARVRNode.POITempName` 原生属性行及 `FlowPoiTemplateEditor`，显示在常规节点属性区，不再由配置器额外插入一行。
+
 | Flow 算子 | `operatorCode` | 模板选择 |
 | --- | --- | --- |
 | MTF | `MTF` | `TemplateMTF2` + `TemplatePoi` |

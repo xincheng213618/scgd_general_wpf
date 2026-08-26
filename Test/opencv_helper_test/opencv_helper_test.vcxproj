@@ -162,6 +162,7 @@
     <ClCompile Include="test_p2_algorithms.cpp" />
     <ClCompile Include="test_calibration.cpp" />
     <ClCompile Include="test_cuda_fusion.cpp" />
+    <ClCompile Include="test_find_cross.cpp" />
     <ClCompile Include="test_find_luminous_area.cpp" />
     <ClCompile Include="test_native_logging.cpp" />
     <ClCompile Include="test_pseudo_color.cpp" />

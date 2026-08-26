@@ -24,6 +24,9 @@
     <ClCompile Include="test_find_luminous_area.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="test_find_cross.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
     <ClCompile Include="test_cuda_fusion.cpp">
       <Filter>源文件</Filter>
     </ClCompile>

@@ -1,3 +1,4 @@
+using FlowEngineLib.Algorithm;
 using log4net;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
@@ -35,6 +36,24 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
 	protected override void m_in_start_DataTransfer(object sender, STNodeOptionEventArgs e)
 	{
 		DoInputDataTransfer(sender as STNodeOption, e);
+	}
+
+	protected override bool getPreStepParam(int idx, AlgorithmPreStepParam param)
+	{
+		if (param != null && idx >= 0 && idx < masterInput.Length && masterInput[idx] != null)
+		{
+			CVStartCFC input = masterInput[idx];
+			bool hasMasterResult = input.Data.ContainsKey("MasterId")
+				|| input.Data.ContainsKey("MasterResultType")
+				|| input.Data.ContainsKey("MasterValue");
+			if (hasMasterResult)
+			{
+				_getPreStepParam(input, param);
+				return true;
+			}
+		}
+
+		return base.getPreStepParam(idx, param);
 	}
 
 	private void DoInputDataTransfer(STNodeOption sender, STNodeOptionEventArgs e)

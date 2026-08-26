@@ -674,6 +674,7 @@ namespace ColorVision.Update
                 VersionInfo = item.VersionInfo,
             }));
             clone.SkippedIncompatiblePlugins.AddRange(source.SkippedIncompatiblePlugins);
+            clone.UnresolvedPlugins.AddRange(source.UnresolvedPlugins);
             return clone;
         }
 
@@ -728,13 +729,24 @@ namespace ColorVision.Update
                     pluginPlan = await marketplaceManager.BuildCombinedUpdatePlanFromCurrentVersionsAsync(
                         hostVersion,
                         cancellationToken);
+                    if (!pluginPlan.IsComplete)
+                    {
+                        pluginVersionsAvailable = false;
+                        log.Warn($"Plugin update metadata remains unresolved after retries: {string.Join(", ", pluginPlan.UnresolvedPlugins)}.");
+                    }
                 }
             }
 
-            log.Info($"Update check completed in {stopwatch.ElapsedMilliseconds}ms. ApplicationUpdate={applicationPlan != null}, PluginUpdates={pluginPlan?.Updates.Count ?? 0}.");
+            log.Info($"Update check completed in {stopwatch.ElapsedMilliseconds}ms. ApplicationUpdate={applicationPlan != null}, PluginUpdates={pluginPlan?.Updates.Count ?? 0}, PluginPlanComplete={pluginPlan?.IsComplete != false}.");
             UpdateServerCheckStatus serverCheckStatus = pluginVersionsAvailable
                 ? applicationResult.Status
                 : UpdateServerCheckStatus.ServerUnavailable;
+            if (serverCheckStatus != UpdateServerCheckStatus.Success)
+            {
+                log.Info("The update check was incomplete; application and plugin updates will both be deferred.");
+                return new UpdatePlansResult(null, null, serverCheckStatus);
+            }
+
             return new UpdatePlansResult(applicationPlan, pluginPlan, serverCheckStatus);
         }
 

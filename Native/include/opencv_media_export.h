@@ -78,6 +78,20 @@ extern "C" COLORVISIONCORE_API int M_FindLuminousArea(HImage img, RoiRect roi,co
 // M_FindLuminousArea. Release result with FreeResult.
 extern "C" COLORVISIONCORE_API int M_FindLuminousAreaV2(HImage image, RoiRect roi, const char* configJson, char** resultJson);
 
+// Local replacement for the legacy FindCross entry point. PatternCross is the
+// default mode and fits the two displayed Pattern axes; OuterPanel is available
+// only as an explicit assist mode. Results use global image coordinates in a
+// legacy-compatible {result:[...]} envelope plus diagnostics. A valid call can
+// return an empty result array when Pattern evidence is insufficient. Release
+// the positive-length JSON result with FreeResult.
+extern "C" COLORVISIONCORE_API int M_FindCrossLocal(HImage image, RoiRect roi, const char* configJson, char** resultJson);
+
+// Returns the byte count required for the current thread's most recent
+// M_FindCrossLocal error, including the trailing null. If buffer is null or too
+// small, no bytes are written and the required count is still returned. Call on
+// the same thread immediately after M_FindCrossLocal reports an error.
+extern "C" COLORVISIONCORE_API int M_FindCrossLocalGetLastError(char* buffer, std::uint32_t bufferLength);
+
 extern "C" COLORVISIONCORE_API int M_ConvertGray32Float(HImage img, HImage* outImage);
 
 extern "C" COLORVISIONCORE_API int M_StitchImages(const char* config, HImage* outImage);

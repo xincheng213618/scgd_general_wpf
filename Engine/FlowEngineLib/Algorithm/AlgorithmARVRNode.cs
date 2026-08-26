@@ -1,9 +1,11 @@
 using FlowEngineLib.Base;
+using FlowEngineLib.PropertyEditor;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Algorithm;
 
 [STNode("/03_2 Algorithm")]
+[FlowNodePropertyEditorAttribute(nameof(POITempName), typeof(FlowPoiTemplateEditor))]
 public class AlgorithmARVRNode : CVBaseServerNode
 {
 	private AlgorithmARVRType _Algorithm;
