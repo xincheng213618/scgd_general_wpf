@@ -55,6 +55,71 @@ final result: passed
 
 ---
 
+# ColorVision 服务主机管理界面设计核验
+
+## Comparison target
+
+- Source visual truth:
+  - `C:\Users\17917\AppData\Local\Temp\codex-clipboard-fc13cfba-c927-4c55-87ce-ff113c4509ad.png`：原服务主机管理页的功能基线。
+  - `C:\Users\17917\AppData\Local\Temp\codex-clipboard-5d8aa0bd-1131-4c79-960b-6f52c68f62b0.png`：启动恢复页的商业产品层级、标签页和支持入口参考。
+  - `C:\Users\17917\AppData\Local\Temp\codex-clipboard-bdbcbc19-c145-4b02-b2d1-fbda9775644f.png`：检查更新页的留白、克制信息密度和右上角版本表达参考。
+- Rendered implementation:
+  - `C:\Users\17917\AppData\Local\Temp\ColorVisionCodexUi\service-host\status-and-logs-96dpi.png`
+  - `C:\Users\17917\AppData\Local\Temp\ColorVisionCodexUi\service-host\support-and-diagnostics-96dpi.png`
+  - `C:\Users\17917\AppData\Local\Temp\ColorVisionCodexUi\service-host\system-maintenance-96dpi.png`
+- State: light theme; local service is running, the isolated unsigned harness cannot use the trusted service pipe, and the current development package has same-version binary differences that intentionally exercise the repair recommendation state.
+
+## Viewport and normalization
+
+- Source pixels: 1422 × 1026 at 96 DPI and 1362 × 860 at 96 DPI for the two design-direction references.
+- Implementation logical viewport: 1240 × 780 DIPs; client capture region is approximately 1225 × 743 DIPs.
+- Native implementation capture: 1838 × 1114 pixels at 150% Windows scaling.
+- Normalized implementation evidence: 1225 × 743 pixels at 96 DPI, downsampled with high-quality bicubic interpolation.
+- The references are different ColorVision tasks rather than the same service-host state, so comparison evaluates shared product hierarchy, density, spacing, typography, tokens, and action placement without claiming pixel-identical content.
+
+## Findings
+
+No actionable P0, P1, or P2 finding remains.
+
+- Fonts and typography: the page keeps ColorVision's existing WPF font family and optical hierarchy. One 28-DIP title, 17-DIP recommendation title, 18-DIP section titles, and restrained 11–14-DIP supporting text match the reference direction; long file details truncate in the compact status strip instead of forcing extra rows.
+- Spacing and layout rhythm: the earlier compressed left control column is removed. `状态与日志 / 支持与诊断 / 系统维护` each receive the full content width, while the recommendation banner remains persistent above the tabs. The final system-maintenance page uses a balanced two-column allocation and a single bottom advanced-maintenance strip, with no clipped controls.
+- Colors and visual tokens: all primary, secondary, surface, border, text, and accent colors reuse `UpdateDialogTheme` resources. Blue is reserved for the recommended action and feedback submission; error red is used only for the actual integrity problem.
+- Image quality and assets: no product imagery is required. The health indicator uses the existing Segoe MDL2 icon family; no emoji, placeholder, custom SVG, or fabricated visual asset was introduced.
+- Copy and content: normal version information appears once in the upper-right title area. Version details expand only when running, installed, and package versions differ or one is unavailable. Support actions are separated from system maintenance; raw paths are no longer presented as a diagnostic form.
+- Interactions and affordances: the main tabs, nested log tabs, automatic log refresh, file opening, status refresh, feedback submission, service control, system integration, and com0com controls are native keyboard-focusable WPF controls. Disabled service actions remain visibly disabled according to current state.
+- Accessibility and viewport resilience: no overlap or persistent-control clipping is visible at the 1240 × 780 design size. Native controls expose their Chinese labels through UI Automation, and long diagnostic copy wraps or trims rather than colliding with actions.
+
+## Full-view comparison evidence
+
+The combined comparison shows that the revised service-host window now follows the same pattern as the supplied recovery and update pages: large single-purpose heading, version at the upper right, one persistent recommended-action banner, a shallow tab row, and one full-width task area with deliberate whitespace. The default page gives the real log viewer most of the remaining area instead of treating it as a small debug textbox.
+
+## Focused region comparison evidence
+
+The normalized full-view captures are sufficiently large to read the status strip, log tabs, support buttons, maintenance labels, disabled states, and recommendation copy. No separate crop was needed. The support and maintenance captures serve as focused state evidence for the two non-default tabs.
+
+## Comparison history
+
+1. Initial implementation: P1 content allocation problem—service operations, support, paths, and system maintenance were compressed into a 326-DIP left column while logs occupied the right. Fix: replace the split admin-dashboard layout with three full-width product task tabs.
+2. Initial support page: P2 information architecture problem—raw paths and diagnostic actions were mixed under `路径与诊断`. Fix: make `发送反馈 / 复制诊断摘要 / 打开日志目录` the primary support workflow and demote package/install directories to support-only auxiliary actions.
+3. First system-maintenance capture: P2 vertical overflow—`高级维护` was below the visible content boundary. Fix: place service control and system integration side by side and keep advanced maintenance in one bottom strip.
+4. Post-fix evidence: the three final normalized screenshots show the revised hierarchy, uncompressed maintenance controls, visible logs, restrained whitespace, and no remaining P0/P1/P2 issue.
+
+## Runtime and functional verification
+
+- The isolated WPF harness loaded all three tabs and rendered the real service and install logs without modifying the running service or installed files.
+- The install-log reader now decodes both UTF-8 and legacy GBK lines, so historical Chinese timestamps are no longer garbled.
+- Missing and mismatched runtime assets are surfaced as an explicit recommended repair state; incomplete packaged assets block a futile reinstall and direct the user to the full installer.
+- A nullable startup-status `details` payload no longer throws in the service host.
+- Focused tests: 33 passed, 0 failed.
+
+## Follow-up polish
+
+- P3: capture the same pages in ColorVision dark theme and through a signed production executable; the isolated harness is intentionally rejected by the trusted service pipe, so its connection value is `服务无响应` even though the installed service is running.
+
+final result: passed
+
+---
+
 # Desktop pet Copilot approval-card design QA
 
 ## Comparison target

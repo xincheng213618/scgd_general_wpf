@@ -58,7 +58,6 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
 
             DVPolygon polygon = new() { IsComple = true };
             polygon.Attribute.Pen = pen;
-            polygon.Attribute.Brush = Brushes.Transparent;
             polygon.Attribute.Points.AddRange(points);
             Add(drawContext, polygon, tag);
         }

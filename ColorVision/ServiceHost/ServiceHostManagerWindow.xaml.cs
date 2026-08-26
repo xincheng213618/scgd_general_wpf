@@ -1,12 +1,17 @@
 #pragma warning disable CA1863
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
+using System.Windows.Threading;
+using ColorVision.UI.Desktop.Feedback;
 using ColorVision.UI.ServiceHost;
 using ColorVision.UI.LogImp;
 using ColorVision.Update.Export;
@@ -24,34 +29,67 @@ namespace ColorVision.ServiceHost
             "ColorVision",
             "ServiceHost",
             "ColorVisionServiceHost.log");
+        private static readonly string InstallLogPath = Path.Combine(
+            ServiceHostProtocol.InstallDirectory,
+            "install.log");
 
         private ServiceHostStatus? _lastStatus;
         private Com0ComStatusInfo? _com0ComStatus;
         private bool _isBusy;
+        private bool _isRefreshingLogs;
         private readonly ModuleLogViewerBinder _logBinder;
+        private readonly DispatcherTimer _logRefreshTimer;
+        private long _serviceLogLength = -1;
+        private DateTime _serviceLogWriteTimeUtc = DateTime.MinValue;
+        private long _installLogLength = -1;
+        private DateTime _installLogWriteTimeUtc = DateTime.MinValue;
+        private string _lastInstallationFailure = string.Empty;
 
         public ServiceHostManagerWindow()
         {
             InitializeComponent();
             _logBinder = new ModuleLogViewerBinder(LogViewer, "ColorVision.ServiceHost");
+            _logRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            _logRefreshTimer.Tick += LogRefreshTimer_Tick;
             InitializeStaticText();
-            Loaded += async (_, _) => await RefreshStatusAsync().ConfigureAwait(true);
-            Closed += (_, _) => _logBinder.Dispose();
+            Loaded += ServiceHostManagerWindow_Loaded;
+            Closed += ServiceHostManagerWindow_Closed;
+        }
+
+        private async void ServiceHostManagerWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            AppendLog("Service Host 管理页面已打开。");
+            await RefreshStatusAsync().ConfigureAwait(true);
+            _logRefreshTimer.Start();
+        }
+
+        private void ServiceHostManagerWindow_Closed(object? sender, EventArgs e)
+        {
+            _logRefreshTimer.Stop();
+            _logBinder.Dispose();
+        }
+
+        private async void LogRefreshTimer_Tick(object? sender, EventArgs e)
+        {
+            if (AutoRefreshLogsCheckBox.IsChecked == true)
+                await RefreshFileLogsAsync(force: false).ConfigureAwait(true);
         }
 
         private void InitializeStaticText()
         {
             ServiceNameText.Text = ServiceHostProtocol.ServiceName;
-            PackagePathText.Text = ServiceHostProtocol.PackageExecutablePath;
-            InstalledPathText.Text = ServiceHostProtocol.InstalledExecutablePath;
-            LogPathText.Text = ServiceHostLogPath;
-            SummaryText.Text = "Checking...";
-            ActionHintText.Text = "Refresh";
+            SummaryText.Text = "正在检查服务状态…";
+            ActionHintText.Text = "建议操作：刷新";
         }
 
         private async void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
             await RefreshStatusAsync().ConfigureAwait(true);
+        }
+
+        private async void RefreshLogsButton_Click(object sender, RoutedEventArgs e)
+        {
+            await RefreshFileLogsAsync(force: true).ConfigureAwait(true);
         }
 
         private async void InstallButton_Click(object sender, RoutedEventArgs e)
@@ -204,7 +242,28 @@ namespace ColorVision.ServiceHost
 
         private void OpenLogButton_Click(object sender, RoutedEventArgs e)
         {
-            OpenPath(ServiceHostLogPath, "Service host log file was not found.");
+            string path = ReferenceEquals(LogTabs.SelectedItem, InstallLogTab) ? InstallLogPath : ServiceHostLogPath;
+            OpenPath(path, "日志文件不存在。");
+        }
+
+        private void OpenLogFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            OpenPath(Path.GetDirectoryName(ServiceHostLogPath) ?? ServiceHostProtocol.InstallDirectory, "日志目录不存在。");
+        }
+
+        private void SendFeedbackButton_Click(object sender, RoutedEventArgs e)
+        {
+            string[] attachments = new[] { ServiceHostLogPath, InstallLogPath }
+                .Where(File.Exists)
+                .ToArray();
+            FeedbackWindow window = new(
+                "ColorVision 服务主机问题\n\n现象：\n\n复现步骤：\n",
+                attachments)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            };
+            window.ShowDialog();
         }
 
         private void CopyStatusButton_Click(object sender, RoutedEventArgs e)
@@ -224,19 +283,39 @@ namespace ColorVision.ServiceHost
         {
             SetBusy(true);
             AppendLog($"> {name}");
+            string failureMessage = string.Empty;
             try
             {
                 ServiceHostOperationResult result = await operation(CancellationToken.None).ConfigureAwait(true);
                 AppendLog(result.Summary);
+                if (!result.Success)
+                {
+                    failureMessage = string.IsNullOrWhiteSpace(result.Error)
+                        ? $"操作未成功，退出码 {result.ExitCode}。"
+                        : result.Error.Trim();
+                }
             }
             catch (Exception ex)
             {
                 AppendLog(ex.ToString());
+                failureMessage = ex.Message;
             }
             finally
             {
                 await RefreshStatusAsync().ConfigureAwait(true);
                 SetBusy(false);
+            }
+
+            if (!string.IsNullOrWhiteSpace(failureMessage))
+            {
+                if (name.Contains("Install", StringComparison.OrdinalIgnoreCase))
+                    LogTabs.SelectedItem = InstallLogTab;
+                MessageBox.Show(
+                    this,
+                    $"{name} 失败。{Environment.NewLine}{failureMessage}{Environment.NewLine}{Environment.NewLine}已保留安装记录和服务日志供诊断。",
+                    "ColorVision 服务主机",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
             }
         }
 
@@ -365,16 +444,108 @@ namespace ColorVision.ServiceHost
             }
             catch (Exception ex)
             {
-                SummaryText.Text = "Status: unknown";
-                StateText.Text = "Unknown";
-                ActionHintText.Text = "Refresh failed";
+                SummaryText.Text = "无法读取服务状态";
+                SummaryText.Visibility = Visibility.Visible;
+                VersionBadgeText.Text = "当前版本 未知";
+                StateText.Text = "未知";
+                ActionHintText.Text = "建议操作：检查日志后重试";
                 AppendLog(ex.Message);
                 HideCom0ComTab();
             }
             finally
             {
                 UpdateButtonAvailability();
+                await RefreshFileLogsAsync(force: false).ConfigureAwait(true);
             }
+        }
+
+        private async Task RefreshFileLogsAsync(bool force)
+        {
+            if (_isRefreshingLogs)
+                return;
+
+            _isRefreshingLogs = true;
+            try
+            {
+                (ServiceHostLogSnapshot serviceLog, ServiceHostLogSnapshot installLog) = await Task.Run(() =>
+                {
+                    ServiceHostLogSnapshot serviceSnapshot = ServiceHostLogReader.ReadTail(ServiceHostLogPath, 180_000);
+                    ServiceHostLogSnapshot installSnapshot = ServiceHostLogReader.ReadTail(InstallLogPath, 120_000);
+                    return (serviceSnapshot, installSnapshot);
+                }).ConfigureAwait(true);
+
+                ApplyLogSnapshot(
+                    ServiceLogViewer,
+                    ServiceLogMetaText,
+                    serviceLog,
+                    "服务运行日志",
+                    ref _serviceLogLength,
+                    ref _serviceLogWriteTimeUtc,
+                    force);
+                ApplyLogSnapshot(
+                    InstallLogViewer,
+                    InstallLogMetaText,
+                    installLog,
+                    "安装记录",
+                    ref _installLogLength,
+                    ref _installLogWriteTimeUtc,
+                    force);
+
+                _lastInstallationFailure = ServiceHostLogReader.GetLatestInstallationFailure(installLog.Text);
+                if (_lastStatus != null)
+                    UpdateHealthView(_lastStatus);
+            }
+            finally
+            {
+                _isRefreshingLogs = false;
+            }
+        }
+
+        private static void ApplyLogSnapshot(
+            ColorVision.UI.LogImp.Controls.LogViewerControl viewer,
+            System.Windows.Controls.TextBlock metadataText,
+            ServiceHostLogSnapshot snapshot,
+            string label,
+            ref long previousLength,
+            ref DateTime previousWriteTimeUtc,
+            bool force)
+        {
+            if (!snapshot.Exists)
+            {
+                metadataText.Text = $"{label}尚未创建";
+                if (force || previousLength != 0)
+                    viewer.SetText("当前还没有日志。服务首次运行或执行安装后，记录会自动显示在这里。", latestAtTop: false);
+                previousLength = 0;
+                previousWriteTimeUtc = DateTime.MinValue;
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(snapshot.Error))
+            {
+                metadataText.Text = $"{label}读取失败";
+                viewer.SetText($"无法读取日志：{snapshot.Error}", latestAtTop: false);
+                previousLength = -1;
+                previousWriteTimeUtc = DateTime.MinValue;
+                return;
+            }
+
+            metadataText.Text = snapshot.Length == 0
+                ? $"{label}为空"
+                : $"{label} · {FormatFileSize(snapshot.Length)} · {snapshot.LastWriteTimeUtc.ToLocalTime():HH:mm:ss} 更新 · 显示最新内容";
+            if (force || snapshot.Length != previousLength || snapshot.LastWriteTimeUtc != previousWriteTimeUtc)
+                viewer.SetText(string.IsNullOrWhiteSpace(snapshot.Text) ? "日志文件为空。" : snapshot.Text, latestAtTop: false);
+
+            previousLength = snapshot.Length;
+            previousWriteTimeUtc = snapshot.LastWriteTimeUtc;
+        }
+
+        private static string FormatFileSize(long bytes)
+        {
+            if (bytes >= 1024L * 1024L)
+                return $"{bytes / 1024d / 1024d:0.##} MB";
+            if (bytes >= 1024L)
+                return $"{bytes / 1024d:0.##} KB";
+            return $"{bytes} B";
         }
 
         private async Task RefreshCom0ComAsync(bool serviceRunning)
@@ -476,30 +647,218 @@ namespace ColorVision.ServiceHost
 
         private void UpdateStatusView(ServiceHostStatus status)
         {
-            SummaryText.Text = status.DisplayText;
-            StateText.Text = status.State.ToString();
-            PackageVersionText.Text = FormatVersion(status.PackageVersion);
-            InstalledVersionText.Text = FormatVersion(status.InstalledVersion);
-            RunningVersionText.Text = FormatVersion(status.RunningVersion);
-            PackagePathText.Text = status.PackageExecutablePath;
-            InstalledPathText.Text = status.InstalledExecutablePath;
-            RunningProcessText.Text = string.IsNullOrWhiteSpace(status.RunningProcessPath) ? "-" : status.RunningProcessPath;
-            LogPathText.Text = ServiceHostLogPath;
+            UpdateVersionPresentation(status);
+            StateText.Text = FormatState(status.State);
             ActionHintText.Text = GetActionHint(status);
+            ConnectionText.Text = status.State == ServiceHostInstallState.Running && status.RunningVersion != null
+                ? "连接正常"
+                : status.State == ServiceHostInstallState.Running ? "服务无响应" : "未连接";
+            UpdateIntegrityView(status.RuntimeIntegrity);
+            UpdateHealthView(status);
+            UpdateStateBadge(status.State);
+        }
+
+        private void UpdateVersionPresentation(ServiceHostStatus status)
+        {
+            Version? displayVersion = status.RunningVersion ?? status.InstalledVersion ?? status.PackageVersion;
+            string versionText = FormatVersion(displayVersion);
+            VersionBadgeText.Text = $"当前版本 {versionText}";
+            Title = displayVersion == null ? "ColorVision 服务主机" : $"ColorVision 服务主机 {versionText}";
+
+            string detail = BuildSummaryText(status);
+            SummaryText.Text = detail;
+            SummaryText.Visibility = string.IsNullOrWhiteSpace(detail) ? Visibility.Collapsed : Visibility.Visible;
         }
 
         private static string GetActionHint(ServiceHostStatus status)
         {
+            if (status.HasIncompletePackage)
+                return "建议操作：使用完整安装包修复 ColorVision";
+            if (status.HasIncompleteInstalledRuntime)
+                return "建议操作：重新安装并修复服务";
             if (status.NeedsInstall)
-                return status.IsPackageAvailable ? "Install service host" : "Package missing";
+                return status.IsPackageAvailable ? "建议操作：安装服务" : "建议操作：使用完整安装包修复";
             if (status.NeedsUpdate)
-                return status.CanSelfUpdate ? "Self update available" : "Install / update available";
+                return status.CanSelfUpdate ? "建议操作：后台更新服务" : "建议操作：安装或更新服务";
             if (status.State == ServiceHostInstallState.Stopped)
-                return "Start service host";
+                return "建议操作：启动服务";
             if (status.State == ServiceHostInstallState.Running)
-                return "Ready";
+                return "当前无需处理";
 
-            return "Check service host";
+            return "建议操作：刷新并检查日志";
+        }
+
+        private void UpdateHealthView(ServiceHostStatus status)
+        {
+            string title;
+            string description;
+            string icon;
+            string foregroundKey;
+            string backgroundKey;
+            string installButtonText;
+            string installButtonStyle;
+
+            if (status.HasIncompletePackage)
+            {
+                title = "服务程序包不完整";
+                description = $"当前 ColorVision 程序包缺少 {status.RuntimeIntegrity.MissingPackageFiles.Count} 个服务文件：{BuildFileIssuePreview(status.RuntimeIntegrity.MissingPackageFiles)}。请使用完整安装包修复。";
+                icon = "\uE783";
+                foregroundKey = "ServiceHost.Error";
+                backgroundKey = "ServiceHost.ErrorBackground";
+                installButtonText = "需要完整安装包";
+                installButtonStyle = "PrimaryActionButtonStyle";
+            }
+            else if (status.HasIncompleteInstalledRuntime)
+            {
+                title = "服务安装不完整";
+                description = $"检测到 {status.RuntimeIntegrity.InstalledIssueCount} 个缺失或不一致的文件：{BuildInstalledIssuePreview(status.RuntimeIntegrity)}。重新安装会从当前完整程序包恢复这些文件。";
+                icon = "\uE783";
+                foregroundKey = "ServiceHost.Error";
+                backgroundKey = "ServiceHost.ErrorBackground";
+                installButtonText = "重新安装并修复";
+                installButtonStyle = "PrimaryActionButtonStyle";
+            }
+            else if (!string.IsNullOrWhiteSpace(_lastInstallationFailure))
+            {
+                title = "上次安装未完成";
+                description = $"安装记录显示失败：{TrimLogPrefix(_lastInstallationFailure)}。当前服务状态为“{FormatState(status.State)}”，建议重新安装并验证。";
+                icon = "\uE7BA";
+                foregroundKey = "ServiceHost.Warning";
+                backgroundKey = "ServiceHost.WarningBackground";
+                installButtonText = "重新安装并验证";
+                installButtonStyle = "PrimaryActionButtonStyle";
+            }
+            else if (status.NeedsInstall)
+            {
+                title = "服务尚未安装";
+                description = "系统维护服务不可用，更新和需要管理员权限的操作可能无法完成。";
+                icon = "\uE783";
+                foregroundKey = "ServiceHost.Error";
+                backgroundKey = "ServiceHost.ErrorBackground";
+                installButtonText = "安装服务";
+                installButtonStyle = "PrimaryActionButtonStyle";
+            }
+            else if (status.NeedsUpdate || status.NeedsRepair || status.State != ServiceHostInstallState.Running)
+            {
+                title = status.State == ServiceHostInstallState.Stopped ? "服务已停止" : "服务需要处理";
+                description = status.NeedsUpdate
+                    ? "程序包与当前服务版本或内容不一致，建议更新后重新检查。"
+                    : "服务没有处于可用状态，请按建议操作恢复。";
+                icon = "\uE7BA";
+                foregroundKey = "ServiceHost.Warning";
+                backgroundKey = "ServiceHost.WarningBackground";
+                installButtonText = status.State == ServiceHostInstallState.Stopped ? "安装或修复服务" : "更新或修复服务";
+                installButtonStyle = "PrimaryActionButtonStyle";
+            }
+            else
+            {
+                title = "服务运行正常";
+                description = status.RuntimeIntegrity.CanEvaluate
+                    ? $"服务连接正常，版本一致，已核对 {status.RuntimeIntegrity.ExpectedFiles.Count} 个运行时文件。"
+                    : "服务连接正常，当前版本可以使用。";
+                icon = "\uE930";
+                foregroundKey = "ServiceHost.Success";
+                backgroundKey = "ServiceHost.SuccessBackground";
+                installButtonText = "重新安装服务";
+                installButtonStyle = "CompactActionButtonStyle";
+            }
+
+            HealthTitleText.Text = title;
+            HealthDescriptionText.Text = description;
+            HealthIconText.Text = icon;
+            HealthIconText.Foreground = (Brush)FindResource(foregroundKey);
+            HealthIconBorder.Background = (Brush)FindResource(backgroundKey);
+            InstallButton.Content = installButtonText;
+            InstallButton.Style = (Style)FindResource(installButtonStyle);
+            ActionHintText.Text = GetActionHint(status);
+        }
+
+        private void UpdateIntegrityView(ServiceHostRuntimeIntegrity integrity)
+        {
+            if (!integrity.CanEvaluate)
+            {
+                IntegrityText.Text = "无法核对";
+                IntegrityDetailText.Text = "服务程序包目录不可用";
+                return;
+            }
+
+            if (!integrity.IsPackageComplete)
+            {
+                IntegrityText.Text = $"程序包缺少 {integrity.MissingPackageFiles.Count} 个文件";
+                IntegrityDetailText.Text = BuildFileIssuePreview(integrity.MissingPackageFiles);
+                return;
+            }
+
+            if (!integrity.IsInstalledComplete)
+            {
+                IntegrityText.Text = $"发现 {integrity.InstalledIssueCount} 个文件问题";
+                IntegrityDetailText.Text = BuildInstalledIssuePreview(integrity);
+                return;
+            }
+
+            IntegrityText.Text = $"{integrity.ExpectedFiles.Count} 个文件完整";
+            IntegrityDetailText.Text = "程序包与安装目录一致";
+        }
+
+        private void UpdateStateBadge(ServiceHostInstallState state)
+        {
+            string foregroundKey = state == ServiceHostInstallState.Running
+                ? "ServiceHost.Success"
+                : state == ServiceHostInstallState.Stopped ? "ServiceHost.Warning" : "ServiceHost.Error";
+            string backgroundKey = state == ServiceHostInstallState.Running
+                ? "ServiceHost.SuccessBackground"
+                : state == ServiceHostInstallState.Stopped ? "ServiceHost.WarningBackground" : "ServiceHost.ErrorBackground";
+            StateText.Foreground = (Brush)FindResource(foregroundKey);
+            StateBadgeBorder.Background = (Brush)FindResource(backgroundKey);
+        }
+
+        private static string BuildSummaryText(ServiceHostStatus status)
+        {
+            if (status.RunningVersion != null
+                && status.InstalledVersion != null
+                && status.PackageVersion != null
+                && status.RunningVersion == status.InstalledVersion
+                && status.InstalledVersion == status.PackageVersion)
+            {
+                return string.Empty;
+            }
+
+            return $"运行 {FormatVersion(status.RunningVersion)} · 安装 {FormatVersion(status.InstalledVersion)} · 程序包 {FormatVersion(status.PackageVersion)}";
+        }
+
+        private static string FormatState(ServiceHostInstallState state)
+        {
+            return state switch
+            {
+                ServiceHostInstallState.Running => "运行中",
+                ServiceHostInstallState.Stopped => "已停止",
+                ServiceHostInstallState.NotInstalled => "未安装",
+                _ => "未知",
+            };
+        }
+
+        private static string BuildInstalledIssuePreview(ServiceHostRuntimeIntegrity integrity)
+        {
+            IEnumerable<string> issues = integrity.MissingInstalledFiles
+                .Select(path => $"缺少 {path}")
+                .Concat(integrity.MismatchedInstalledFiles.Select(path => $"不一致 {path}"));
+            return BuildFileIssuePreview(issues);
+        }
+
+        private static string BuildFileIssuePreview(IEnumerable<string> paths)
+        {
+            string[] items = paths.Take(3).ToArray();
+            int totalCount = paths.Count();
+            string preview = items.Length == 0 ? "未提供文件详情" : string.Join("、", items);
+            return totalCount > items.Length ? $"{preview}，另有 {totalCount - items.Length} 个" : preview;
+        }
+
+        private static string TrimLogPrefix(string line)
+        {
+            int closingBracket = line.IndexOf(']');
+            return closingBracket >= 0 && closingBracket + 1 < line.Length
+                ? line[(closingBracket + 1)..].Trim()
+                : line.Trim();
         }
 
         private void SetBusy(bool busy)
@@ -516,7 +875,10 @@ namespace ColorVision.ServiceHost
             bool isInstalled = isRunning || isStopped || _lastStatus?.State == ServiceHostInstallState.Unknown;
 
             RefreshButton.IsEnabled = enabled;
-            InstallButton.IsEnabled = enabled;
+            InstallButton.IsEnabled = enabled
+                && _lastStatus?.IsPackageAvailable == true
+                && _lastStatus.RuntimeIntegrity.IsPackageComplete
+                && !_lastStatus.WouldInstallDowngrade;
             SelfUpdateButton.IsEnabled = enabled && _lastStatus?.CanSelfUpdate == true;
             StartButton.IsEnabled = enabled && isStopped;
             StopButton.IsEnabled = enabled && isRunning;
@@ -529,8 +891,11 @@ namespace ColorVision.ServiceHost
             WriteMarkerButton.IsEnabled = enabled && isRunning;
             OpenPackageButton.IsEnabled = enabled;
             OpenInstalledButton.IsEnabled = enabled;
+            OpenLogFolderButton.IsEnabled = enabled;
             OpenLogButton.IsEnabled = enabled;
             CopyStatusButton.IsEnabled = enabled;
+            SendFeedbackButton.IsEnabled = enabled;
+            RefreshLogsButton.IsEnabled = enabled;
             bool canManageCom0Com = enabled && isRunning && _com0ComStatus?.Installed == true;
             bool hasValidPortSelection = Com0ComPortAComboBox.SelectedItem is int portA
                 && Com0ComPortBComboBox.SelectedItem is int portB
@@ -558,7 +923,13 @@ namespace ColorVision.ServiceHost
             builder.AppendLine($"PackagePath: {status.PackageExecutablePath}");
             builder.AppendLine($"InstalledPath: {status.InstalledExecutablePath}");
             builder.AppendLine($"RunningProcess: {status.RunningProcessPath}");
+            builder.AppendLine($"PackageComplete: {status.RuntimeIntegrity.IsPackageComplete}");
+            builder.AppendLine($"InstalledComplete: {status.RuntimeIntegrity.IsInstalledComplete}");
+            builder.AppendLine($"MissingPackageFiles: {string.Join(", ", status.RuntimeIntegrity.MissingPackageFiles)}");
+            builder.AppendLine($"MissingInstalledFiles: {string.Join(", ", status.RuntimeIntegrity.MissingInstalledFiles)}");
+            builder.AppendLine($"MismatchedInstalledFiles: {string.Join(", ", status.RuntimeIntegrity.MismatchedInstalledFiles)}");
             builder.AppendLine($"LogPath: {ServiceHostLogPath}");
+            builder.AppendLine($"InstallLogPath: {InstallLogPath}");
             builder.AppendLine($"RawOutput: {status.RawOutput}");
             return builder.ToString();
         }

@@ -1,4 +1,8 @@
 using ColorVision.ServiceHost;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
 
 namespace ColorVision.UI.Tests
 {
@@ -189,6 +193,71 @@ namespace ColorVision.UI.Tests
             Assert.Equal(ServiceHostStartupAction.None, ServiceHostStartupUpdateChecker.ResolveAction(status));
         }
 
+        [Fact]
+        public void MissingInstalledRuntimeFileRequiresRepair()
+        {
+            string root = Path.Combine(Path.GetTempPath(), $"ColorVision-ServiceHostIntegrity-{Guid.NewGuid():N}");
+            string packageDirectory = Path.Combine(root, "package");
+            string installedDirectory = Path.Combine(root, "installed");
+            Directory.CreateDirectory(packageDirectory);
+            Directory.CreateDirectory(installedDirectory);
+            try
+            {
+                WriteRuntimeFixture(packageDirectory);
+                CopyDirectory(packageDirectory, installedDirectory);
+                File.Delete(Path.Combine(installedDirectory, "System.Management.dll"));
+
+                ServiceHostRuntimeIntegrity integrity = ServiceHostRuntimeIntegrityChecker.Inspect(packageDirectory, installedDirectory);
+                ServiceHostStatus status = new()
+                {
+                    State = ServiceHostInstallState.Running,
+                    PackageExecutablePath = Path.Combine(packageDirectory, "ColorVisionServiceHost.exe"),
+                    InstalledExecutablePath = Path.Combine(installedDirectory, "ColorVisionServiceHost.exe"),
+                    PackageVersion = new Version(1, 4, 13, 13),
+                    InstalledVersion = new Version(1, 4, 13, 13),
+                    RunningVersion = new Version(1, 4, 13, 13),
+                    RunningProcessPath = Path.Combine(installedDirectory, "ColorVisionServiceHost.exe"),
+                    RuntimeIntegrity = integrity,
+                };
+
+                Assert.True(integrity.IsPackageComplete);
+                Assert.False(integrity.IsInstalledComplete);
+                Assert.Contains("System.Management.dll", integrity.MissingInstalledFiles);
+                Assert.True(status.HasIncompleteInstalledRuntime);
+                Assert.True(status.NeedsRepair);
+                Assert.False(status.IsReady);
+                Assert.Equal(ServiceHostStartupAction.SelfUpdate, ServiceHostStartupUpdateChecker.ResolveAction(status));
+            }
+            finally
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+
+        [Fact]
+        public void MissingPackageDependencyIsReportedBeforeInstall()
+        {
+            string root = Path.Combine(Path.GetTempPath(), $"ColorVision-ServiceHostPackage-{Guid.NewGuid():N}");
+            string packageDirectory = Path.Combine(root, "package");
+            string installedDirectory = Path.Combine(root, "installed");
+            Directory.CreateDirectory(packageDirectory);
+            Directory.CreateDirectory(installedDirectory);
+            try
+            {
+                WriteRuntimeFixture(packageDirectory);
+                File.Delete(Path.Combine(packageDirectory, "System.Management.dll"));
+
+                ServiceHostRuntimeIntegrity integrity = ServiceHostRuntimeIntegrityChecker.Inspect(packageDirectory, installedDirectory);
+
+                Assert.False(integrity.IsPackageComplete);
+                Assert.Contains("System.Management.dll", integrity.MissingPackageFiles);
+            }
+            finally
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+
         private static ServiceHostStatus CreateStatus(Version? runningVersion) => new()
         {
             State = ServiceHostInstallState.Running,
@@ -217,7 +286,47 @@ namespace ColorVision.UI.Tests
                 RunningProcessPath = runningProcessPath,
                 PackageSha256 = source.PackageSha256,
                 InstalledSha256 = source.InstalledSha256,
+                RuntimeIntegrity = source.RuntimeIntegrity,
             };
+        }
+
+        private static void WriteRuntimeFixture(string directory)
+        {
+            File.WriteAllText(Path.Combine(directory, "ColorVisionServiceHost.exe"), "host-exe");
+            File.WriteAllText(Path.Combine(directory, "ColorVisionServiceHost.dll"), "host-dll");
+            File.WriteAllText(Path.Combine(directory, "ColorVisionServiceHost.runtimeconfig.json"), "{}");
+            File.WriteAllText(Path.Combine(directory, "System.Management.dll"), "management");
+            File.WriteAllText(
+                Path.Combine(directory, "ColorVisionServiceHost.deps.json"),
+                JsonSerializer.Serialize(new
+                {
+                    targets = new Dictionary<string, object>
+                    {
+                        [".NETCoreApp,Version=v10.0"] = new Dictionary<string, object>
+                        {
+                            ["ColorVisionServiceHost/1.0.0"] = new
+                            {
+                                runtime = new Dictionary<string, object>
+                                {
+                                    ["ColorVisionServiceHost.dll"] = new { },
+                                },
+                            },
+                            ["System.Management/10.0.0"] = new
+                            {
+                                runtime = new Dictionary<string, object>
+                                {
+                                    ["lib/net10.0/System.Management.dll"] = new { },
+                                },
+                            },
+                        },
+                    },
+                }));
+        }
+
+        private static void CopyDirectory(string sourceDirectory, string destinationDirectory)
+        {
+            foreach (string sourceFile in Directory.EnumerateFiles(sourceDirectory))
+                File.Copy(sourceFile, Path.Combine(destinationDirectory, Path.GetFileName(sourceFile)));
         }
     }
 }

@@ -10,6 +10,7 @@ using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -31,8 +32,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
             _ = Task.Run(() =>
             {
                 LuminousAreaDetectionResult detectionResult;
+                int imageWidth;
+                int imageHeight;
                 using (lease)
                 {
+                    imageWidth = lease.Width;
+                    imageHeight = lease.Height;
                     detectionResult = LuminousAreaDetector.Detect(lease.Image, roiRect, findLuminousAreaCorner);
                 }
 
@@ -75,23 +80,83 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
                         AlgorithmResultOverlay.AddLine(DrawContext, center - verticalDirection * armLength, center + verticalDirection * armLength, crossPen.CloneCurrentValue(), AlgorithmResultOverlay.FindLuminousAreaTag);
                     }
 
-                    double centerPixelX = detectionResult.Corners.Average(point => point.X);
-                    double centerPixelY = detectionResult.Corners.Average(point => point.Y);
-                    LuminousAreaPoint lt = detectionResult.Corners[0];
-                    LuminousAreaPoint rt = detectionResult.Corners[1];
-                    double angle = Math.Atan2(rt.Y - lt.Y, rt.X - lt.X) * 180 / Math.PI;
-                    string confidence = detectionResult.Confidence.HasValue ? detectionResult.Confidence.Value.ToString("F3") : "N/A";
-                    string message = $"发光区  center=({centerPixelX:F3}, {centerPixelY:F3})  angle={angle:F4}°  confidence={confidence}";
-                    Brush messageBrush = detectionResult.Warnings.Count == 0 ? Brushes.DeepSkyBlue : Brushes.Orange;
-                    AlgorithmResultOverlay.AddLabel(DrawContext, center, message, messageBrush, AlgorithmResultOverlay.FindLuminousAreaTag);
-
-                    string warningMessage = LuminousAreaDetector.GetWarningMessage(detectionResult);
-                    if (!string.IsNullOrEmpty(warningMessage))
-                    {
-                        MessageBox.Show(warningMessage, "发光区定位（需复核）", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    }
+                    ShowResultDialog(detectionResult, roiRect, imageWidth, imageHeight);
                 });
             });
+        }
+
+        internal static string BuildResultMessage(LuminousAreaDetectionResult result, RoiRect roi, int imageWidth, int imageHeight)
+        {
+            ArgumentNullException.ThrowIfNull(result);
+
+            string[] cornerNames = ["左上 LT", "右上 RT", "右下 RB", "左下 LB"];
+            double centerX = result.Corners.Average(point => point.X);
+            double centerY = result.Corners.Average(point => point.Y);
+            LuminousAreaPoint lt = result.Corners[0];
+            LuminousAreaPoint rt = result.Corners[1];
+            double angle = Math.Atan2(rt.Y - lt.Y, rt.X - lt.X) * 180 / Math.PI;
+            MRect bounds = LuminousAreaDetector.GetBoundingRect(result);
+
+            StringBuilder message = new();
+            message.AppendLine("发光区定位成功");
+            message.AppendLine();
+            message.AppendLine($"算法：{result.Algorithm}");
+            message.AppendLine($"图像尺寸：{imageWidth} × {imageHeight} px");
+            message.AppendLine(roi.Width > 0 && roi.Height > 0
+                ? $"搜索区域：X={roi.X}, Y={roi.Y}, W={roi.Width}, H={roi.Height}"
+                : "搜索区域：全图");
+            message.AppendLine($"中心：({centerX:F3}, {centerY:F3}) px");
+            message.AppendLine($"旋转角度：{angle:F4}°");
+            message.AppendLine($"可信度：{(result.Confidence.HasValue ? result.Confidence.Value.ToString("F3") : "N/A")}");
+            message.AppendLine($"外接矩形：X={bounds.X}, Y={bounds.Y}, W={bounds.Width}, H={bounds.Height}");
+            message.AppendLine();
+            message.AppendLine("四角坐标（原图像素）：");
+            for (int index = 0; index < result.Corners.Count; index++)
+            {
+                LuminousAreaPoint corner = result.Corners[index];
+                message.AppendLine($"  {cornerNames[index]}：({corner.X:F3}, {corner.Y:F3})");
+            }
+
+            if (result.SideQuality.Count > 0)
+            {
+                message.AppendLine();
+                message.AppendLine("边缘质量：");
+                foreach (LuminousAreaSideQuality side in result.SideQuality)
+                {
+                    string score = side.Score.HasValue ? side.Score.Value.ToString("F3") : "N/A";
+                    string metrics = string.Join(", ", side.Metrics.OrderBy(item => item.Key).Select(item => $"{item.Key}={item.Value:F3}"));
+                    message.AppendLine(string.IsNullOrEmpty(metrics)
+                        ? $"  {side.Side}：score={score}"
+                        : $"  {side.Side}：score={score}, {metrics}");
+                }
+            }
+
+            string warningMessage = LuminousAreaDetector.GetWarningMessage(result);
+            if (!string.IsNullOrEmpty(warningMessage))
+            {
+                message.AppendLine();
+                message.AppendLine("警告：");
+                message.Append(warningMessage);
+            }
+
+            return message.ToString().TrimEnd();
+        }
+
+        private static void ShowResultDialog(LuminousAreaDetectionResult result, RoiRect roi, int imageWidth, int imageHeight)
+        {
+            bool hasWarnings = result.Warnings.Count > 0;
+            string title = hasWarnings ? "发光区定位结果（需复核）" : "发光区定位结果";
+            MessageBoxImage icon = hasWarnings ? MessageBoxImage.Warning : MessageBoxImage.Information;
+            string message = BuildResultMessage(result, roi, imageWidth, imageHeight);
+            Window? owner = Application.Current.GetActiveWindow();
+            if (owner != null)
+            {
+                MessageBox.Show(owner, message, title, MessageBoxButton.OK, icon);
+            }
+            else
+            {
+                MessageBox.Show(message, title, MessageBoxButton.OK, icon);
+            }
         }
     }
     public class DVCMFindLuminousArea : IDVContextMenu

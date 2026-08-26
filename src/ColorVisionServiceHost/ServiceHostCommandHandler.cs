@@ -3,6 +3,7 @@ using Microsoft.Win32;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.ServiceProcess;
+using Newtonsoft.Json.Linq;
 
 namespace ColorVisionServiceHost;
 
@@ -1198,13 +1199,19 @@ internal sealed class ServiceHostCommandHandler
 
     private static string GetOptionalNestedDataValue(ServiceHostRequest request, string parentName, string name)
     {
-        string? value = request.Data?[parentName]?[name]?.ToString();
+        if (request.Data is not JObject data || data[parentName] is not JObject parent)
+            return string.Empty;
+
+        string? value = parent[name]?.ToString();
         return value?.Trim() ?? string.Empty;
     }
 
     private static bool GetOptionalNestedDataBool(ServiceHostRequest request, string parentName, string name)
     {
-        string? value = request.Data?[parentName]?[name]?.ToString();
+        if (request.Data is not JObject data || data[parentName] is not JObject parent)
+            return false;
+
+        string? value = parent[name]?.ToString();
         return bool.TryParse(value, out bool result) && result;
     }
 
