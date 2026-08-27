@@ -1,4 +1,5 @@
 using ColorVision.ImageEditor;
+using ColorVision.Core;
 using OpenCvSharp;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -216,16 +217,39 @@ public class ImageAlgorithmPreviewSessionTests
         Func<ImageSource?> getFunctionImage,
         Action<ImageSource?> setFunctionImage)
     {
+        Guid documentInstanceId = Guid.NewGuid();
         Type bindingType = typeof(ImageProcessingContext).Assembly.GetType(
             "ColorVision.ImageEditor.ImageProcessingContextBinding",
             throwOnError: true)!;
         object binding = Activator.CreateInstance(bindingType, nonPublic: true)!;
+        bindingType.GetProperty("IsInitialized")!.SetValue(binding, (Func<bool>)(() => true));
+        bindingType.GetProperty("GetDocumentInstanceId")!.SetValue(binding, (Func<Guid>)(() => documentInstanceId));
+        bindingType.GetProperty("IsDisposed")!.SetValue(binding, (Func<bool>)(() => false));
         bindingType.GetProperty("GetImageRevision")!.SetValue(binding, getRevision);
+        bindingType.GetProperty("AcquireImageFrame")!.SetValue(binding, (Func<ImageFrameLease?>)(() =>
+        {
+            WriteableBitmap bitmap = getViewSource() as WriteableBitmap
+                ?? throw new InvalidOperationException("The test context requires a writeable bitmap source.");
+            HImage image = bitmap.ToHImage();
+            SourceImageFrame frame = new(image, getRevision(), static ownedImage => ownedImage.Dispose());
+            try
+            {
+                return frame.Acquire();
+            }
+            finally
+            {
+                frame.Dispose();
+            }
+        }));
         bindingType.GetProperty("IsCurrentImageRevision")!.SetValue(binding, isCurrentRevision);
+        bindingType.GetProperty("NotifySourcePixelsChanged")!.SetValue(binding, (Action)(() => { }));
         bindingType.GetProperty("GetViewBitmapSource")!.SetValue(binding, getViewSource);
         bindingType.GetProperty("SetViewBitmapSource")!.SetValue(binding, setViewSource);
         bindingType.GetProperty("GetFunctionImage")!.SetValue(binding, getFunctionImage);
         bindingType.GetProperty("SetFunctionImage")!.SetValue(binding, setFunctionImage);
+        bindingType.GetProperty("GetSelectedLayerSourceChannelIndex")!.SetValue(binding, (Func<int>)(() => 0));
+        bindingType.GetProperty("SetImageSource")!.SetValue(binding, (Action<ImageSource>)(value => setViewSource(value)));
+        bindingType.GetProperty("UpdateZoomAndScale")!.SetValue(binding, (Action)(() => { }));
 
         ConstructorInfo constructor = typeof(ImageProcessingContext).GetConstructor(
             BindingFlags.Instance | BindingFlags.NonPublic,

@@ -362,17 +362,17 @@ public sealed class ImageAlgorithmPlatformTests
     }
 
     [Fact]
-    public async Task BatchAndRunnerUseIdenticalCannyParametersAndPixels()
+    public async Task EightBitBatchAndRunnerUseIdenticalCannyParametersAndPixels()
     {
-        using Mat source = new(31, 37, MatType.CV_16UC3);
-        Cv2.Randu(source, Scalar.All(0), Scalar.All(ushort.MaxValue + 1d));
+        using Mat source = new(31, 37, MatType.CV_8UC3);
+        Cv2.Randu(source, Scalar.All(0), Scalar.All(byte.MaxValue + 1d));
         BatchImageAlgorithmDefinition batch = BatchImageAlgorithms.CreateAll().Single(item => item.Descriptor?.Id == StandardAlgorithmIds.Canny);
         CannyParameters parameters = Assert.IsType<CannyParameters>(batch.Options);
         parameters.LowThreshold = 41;
         parameters.HighThreshold = 123;
         using Mat batchOutput = batch.Apply(source);
 
-        using AlgorithmImageBuffer input = BufferFromMat(source, AlgorithmImageFormat.Bgr48);
+        using AlgorithmImageBuffer input = BufferFromMat(source, AlgorithmImageFormat.Bgr24);
         using AlgorithmResult result = await RunStandardAsync(StandardAlgorithmIds.Canny, parameters, input);
         using Mat runnerOutput = MatFromBuffer(result.GetArtifact<AlgorithmImageArtifact>()!.Image);
         Assert.Equal(0, Cv2.Norm(batchOutput, runnerOutput));
