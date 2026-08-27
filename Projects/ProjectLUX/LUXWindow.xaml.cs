@@ -10,6 +10,7 @@ using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.FlowProcessing;
+using ColorVision.ImageEditor;
 using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI;
@@ -18,6 +19,7 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
 using ProjectLUX.Fix;
+using ProjectLUX.ImageExport;
 using ProjectLUX.Process;
 using ProjectLUX.Services;
 using SqlSugar;
@@ -33,6 +35,7 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ProjectLUX
 {
@@ -165,7 +168,18 @@ namespace ProjectLUX
         private Timer timer;
         private bool _isDisposed;
         private readonly CancellationTokenSource _lifetimeCancellation = new();
-        private int _resultImageRequestId;
+        private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
+        private readonly SemaphoreSlim _resultImagePresentationGate = new(1, 1);
+        private readonly HashSet<ProjectLUXReuslt> _automaticImageExportResults = new(ReferenceEqualityComparer.Instance);
+        private long _resultImagePresentationVersion;
+        private CancellationTokenSource? _resultImagePresentationCancellation;
+        private static readonly HashSet<string> ResultOverlayConfigNames =
+        [
+            nameof(ProjectLUXConfig.ResultOverlayShowName),
+            nameof(ProjectLUXConfig.ResultOverlayShowDetail),
+            nameof(ProjectLUXConfig.ResultOverlayFontSize),
+            nameof(ProjectLUXConfig.ResultOverlayAutoRefresh)
+        ];
         Stopwatch stopwatch = new Stopwatch();
 
 
@@ -179,6 +193,8 @@ namespace ProjectLUX
             // 先挂载集合，再恢复共享的选中索引，避免空列表把校正后的索引写回单例。
             listView1.ItemsSource = ViewResluts;
             this.DataContext = ProjectLUXConfig.Instance;
+            ProjectConfig.PropertyChanged += ProjectConfig_PropertyChanged;
+            ApplyResultOverlayConfig();
 
             flowEngine = new FlowEngineControl(false);
             STNodeEditorMain = new STNodeEditor();
@@ -208,6 +224,7 @@ namespace ProjectLUX
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
+            ImageView.ExternalRenderCompleted += ImageView_ExternalRenderCompleted;
 
         }
 
@@ -336,7 +353,6 @@ namespace ProjectLUX
 
         ProjectLUXReuslt CurrentFlowResult { get; set; }
         int TryCount = 0;
-        public bool IsSaveImageReuslt { get; set; }
 
         public async Task RunTemplate()
         {
@@ -630,10 +646,18 @@ namespace ProjectLUX
                             log.Info("无法连接到" + ProjectLUXConfig.Instance.ResultSavePath);
                         }
 
+                        ViewResultManagerConfig exportConfig = ViewResultManager.Config;
+                        if (exportConfig.IsSaveImageReuslt || exportConfig.IsSaveSourceImage)
+                            _automaticImageExportResults.Add(result);
                         ViewResultManager.Save(result);
+                        if (_automaticImageExportResults.Contains(result)
+                            && !ReferenceEquals(listView1.SelectedItem, result))
+                        {
+                            listView1.SelectedItem = result;
+                            listView1.ScrollIntoView(result);
+                        }
                         ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
                         SaveObjectiveTestResultRecord(result);
-                        IsSaveImageReuslt = ViewResultManager.Config.IsSaveImageReuslt;
 
                         if (!string.IsNullOrWhiteSpace(ReturnCode))
                         {
@@ -706,7 +730,8 @@ namespace ProjectLUX
 
         private void Button_Click_Clear(object sender, RoutedEventArgs e)
         {
-            Interlocked.Increment(ref _resultImageRequestId);
+            Interlocked.Increment(ref _resultImagePresentationVersion);
+            Interlocked.Exchange(ref _resultImagePresentationCancellation, null)?.Cancel();
             ViewResultManager.ViewReslutsSelectedIndex = -1;
             ViewResluts.Clear();
             ImageView.Clear();
@@ -714,13 +739,21 @@ namespace ProjectLUX
             outputText.Background = Brushes.White;
         }
 
+        private void Button_Click_EditResultConfig(object sender, RoutedEventArgs e)
+        {
+            ViewResultManager.Config.SourceImageSupportsBmp = CanCurrentSourceExportBmp();
+            ViewResultManager.EditConfig();
+        }
+
         private void listView1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            if (_isDisposed) return;
-            if (sender is not ListView listView) return;
+            if (_isDisposed)
+                return;
 
-            int requestId = Interlocked.Increment(ref _resultImageRequestId);
-            if (listView.SelectedItem is ProjectLUXReuslt result)
+            long requestVersion = Interlocked.Increment(ref _resultImagePresentationVersion);
+            Interlocked.Exchange(ref _resultImagePresentationCancellation, null)?.Cancel();
+
+            if (sender is ListView listView && listView.SelectedItem is ProjectLUXReuslt result)
             {
                 listView.ScrollIntoView(result);
                 try
@@ -742,63 +775,489 @@ namespace ProjectLUX
                     log.Error(ex);
                 }
 
-                _ = Task.Run(() =>
+                IReadOnlyList<ResultImageFileCandidate> imageCandidates = ResultImageFileCandidates.GetExisting(result);
+                CancellationTokenSource requestCancellation = new();
+                Interlocked.Exchange(ref _resultImagePresentationCancellation, requestCancellation)?.Cancel();
+                _ = Application.Current.Dispatcher.BeginInvoke(async () =>
                 {
-                    if (_isDisposed || requestId != Volatile.Read(ref _resultImageRequestId))
-                        return;
-
-                    bool fileExists = File.Exists(result.FileName);
-                    _ = Application.Current.Dispatcher.BeginInvoke(() =>
+                    bool gateEntered = false;
+                    try
                     {
-                        if (_isDisposed ||
-                            requestId != Volatile.Read(ref _resultImageRequestId) ||
-                            !ReferenceEquals(listView1.SelectedItem, result))
+                        await _resultImagePresentationGate.WaitAsync(requestCancellation.Token);
+                        gateEntered = true;
+                        if (!IsCurrentResultImageRequest(requestVersion, result))
                             return;
 
-                        if (!fileExists || !File.Exists(result.FileName))
+                        bool hasDisplaySurface = false;
+                        bool renderOverlays = true;
+                        ResultImageFileCandidate? openedCandidate = await ResultImageFileCandidates.OpenFirstAsync(
+                            imageCandidates,
+                            async (candidate, cancellationToken) =>
+                            {
+                                BitmapSource? loadedSource = await OpenResultImageAsync(candidate.FilePath, cancellationToken);
+                                if (!IsCurrentResultImageRequest(requestVersion, result))
+                                    throw new OperationCanceledException(cancellationToken);
+                                return loadedSource != null;
+                            },
+                            (candidate, exception) =>
+                            {
+                                if (exception is TimeoutException)
+                                    log.Warn($"加载结果图片超时，将尝试下一候选图：{candidate.FilePath}", exception);
+                                else if (exception != null)
+                                    log.Warn($"加载结果图片失败，将尝试下一候选图：{candidate.FilePath}", exception);
+                                else
+                                    log.Warn($"加载结果图片后没有有效图像，将尝试下一候选图：{candidate.FilePath}");
+                            },
+                            requestCancellation.Token);
+                        if (openedCandidate is ResultImageFileCandidate candidate
+                            && GetLoadedImageSource() is BitmapSource)
                         {
-                            ImageView.Clear();
-                            return;
+                            hasDisplaySurface = true;
+                            renderOverlays = candidate.RequiresOverlayRendering;
+                            if (candidate.Kind != ResultImageFileKind.Original)
+                                log.Info($"算法原图不可用，已改用{DescribeResultImageCandidate(candidate.Kind)}：{candidate.FilePath}");
                         }
 
-                        // Preserve the current bitmap so compatible CVRAW results keep the viewport.
-                        ImageView.OpenImage(result.FileName);
-                        ImageView.ImageShow.Clear();
-
-                        if (result.FlowStatus != FlowStatus.Completed)
-                            return;
-
-                        var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
-                        if (meta?.Process != null)
+                        if (!hasDisplaySurface)
                         {
-                            try
+                            if (TryGetResultImageDimensions(result, out int width, out int height))
                             {
-                                var ctx = new IProcessExecutionContext
-                                {
-                                    Result = result,
-                                    ObjectiveTestResult = ObjectiveTestResult,
-                                    FixConfig = ObjectiveTestResultFix,
-                                    RecipeConfig = RecipeConfig,
-                                    ImageView = ImageView,
-                                    Logger = log
-                                };
-                                meta.Process.Render(ctx);
+                                ShowResultImagePlaceholder(width, height);
+                                hasDisplaySurface = true;
                             }
-                            catch (Exception ex)
+                            else
                             {
-                                log.Error("自定义 IProcess 执行异常", ex);
+                                ClearResultImageSurface();
+                                log.Warn($"结果图片不存在且没有可用尺寸，已清除旧底图：resultId={result.Id}, file={result.FileName}");
                             }
                         }
 
-                        SaveImageResultIfNeeded(result, requestId);
-                    });
+                        if (hasDisplaySurface && HasResultDisplaySurface())
+                        {
+                            if (renderOverlays)
+                                RenderResultImage(result);
+                            else
+                                ShowSavedResultImage(result);
+                        }
+                        else
+                        {
+                            ImageView.NotifyExternalRenderCompleted(result, succeeded: false);
+                        }
+                    }
+                    catch (OperationCanceledException) when (requestCancellation.IsCancellationRequested)
+                    {
+                        _automaticImageExportResults.Remove(result);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (IsCurrentResultImageRequest(requestVersion, result))
+                        {
+                            ImageView.NotifyExternalRenderCompleted(result, succeeded: false);
+                            ClearResultImageSurface();
+                        }
+                        log.Error("加载结果图片失败", ex);
+                    }
+                    finally
+                    {
+                        if (gateEntered)
+                            _resultImagePresentationGate.Release();
+                        Interlocked.CompareExchange(ref _resultImagePresentationCancellation, null, requestCancellation);
+                        requestCancellation.Dispose();
+                    }
                 });
-
             }
             else
             {
-                ImageView.Clear();
+                ClearResultImageSurface();
             }
+        }
+
+        private void RenderResultImage(ProjectLUXReuslt result)
+        {
+            bool succeeded = false;
+            try
+            {
+                ImageView.ImageShow.Clear();
+                ApplyResultOverlayConfig();
+
+                if (result.FlowStatus != FlowStatus.Completed)
+                    return;
+
+                var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
+                if (meta?.Process == null)
+                    return;
+
+                var ctx = new IProcessExecutionContext
+                {
+                    Result = result,
+                    ObjectiveTestResult = ObjectiveTestResult,
+                    FixConfig = ObjectiveTestResultFix,
+                    RecipeConfig = RecipeConfig,
+                    ImageView = ImageView,
+                    Logger = log
+                };
+                meta.Process.Render(ctx);
+                succeeded = HasResultDisplaySurface();
+            }
+            catch (Exception ex)
+            {
+                log.Error("自定义 IProcess 执行异常", ex);
+            }
+            finally
+            {
+                ImageView.NotifyExternalRenderCompleted(result, succeeded);
+            }
+        }
+
+        private void ShowSavedResultImage(ProjectLUXReuslt result)
+        {
+            ImageView.ImageShow.Clear();
+            ImageView.NotifyExternalRenderCompleted(result, succeeded: HasResultDisplaySurface());
+        }
+
+        private static string DescribeResultImageCandidate(ResultImageFileKind kind) => kind switch
+        {
+            ResultImageFileKind.SavedSource => "已保存原图并重新渲染标记",
+            ResultImageFileKind.SavedResult => "已保存标记图",
+            _ => "算法原图",
+        };
+
+        private async Task<BitmapSource?> OpenResultImageAsync(string filePath, CancellationToken cancellationToken)
+        {
+            string? activeFilePath = ImageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
+            if (string.Equals(activeFilePath, filePath, StringComparison.OrdinalIgnoreCase)
+                && GetLoadedImageSource() is BitmapSource currentSource)
+                return currentSource;
+
+            TaskCompletionSource<ImageViewImageSourceLoadedEventArgs> imageLoaded = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            EventHandler<ImageViewImageSourceLoadedEventArgs> imageSourceLoaded = (_, e) => imageLoaded.TrySetResult(e);
+            ImageView.ImageSourceLoaded += imageSourceLoaded;
+            try
+            {
+                ImageView.OpenImage(filePath);
+                ImageViewImageSourceLoadedEventArgs loaded = await imageLoaded.Task.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken);
+                activeFilePath = ImageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
+                if (!string.Equals(activeFilePath, filePath, StringComparison.OrdinalIgnoreCase)
+                    || !ImageView.IsCurrentImageRevision(loaded.ImageRevision))
+                {
+                    return null;
+                }
+
+                return loaded.Source as BitmapSource;
+            }
+            finally
+            {
+                ImageView.ImageSourceLoaded -= imageSourceLoaded;
+            }
+        }
+
+        private bool IsCurrentResultImageRequest(long requestVersion, ProjectLUXReuslt result)
+        {
+            return !_isDisposed
+                && requestVersion == Volatile.Read(ref _resultImagePresentationVersion)
+                && ReferenceEquals(listView1.SelectedItem, result);
+        }
+
+        private static bool TryGetResultImageDimensions(ProjectLUXReuslt result, out int width, out int height)
+        {
+            width = result.ImageWidth.GetValueOrDefault();
+            height = result.ImageHeight.GetValueOrDefault();
+            return width > 0 && height > 0;
+        }
+
+        private void ShowResultImagePlaceholder(int width, int height)
+        {
+            DrawingImage placeholder = _resultImagePlaceholderCache.GetOrCreate(width, height);
+            if (!_resultImagePlaceholderCache.IsCurrent(ImageView.ImageShow.Source, width, height))
+            {
+                ImageView.Clear();
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(LUXWindow), "历史结果坐标空间宽度");
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(LUXWindow), "历史结果坐标空间高度");
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(LUXWindow), "历史结果图像像素宽度");
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(LUXWindow), "历史结果图像像素高度");
+                ImageView.SetImageSource(placeholder, enableEditorImageServices: false, configureDefaultLayerController: false);
+                ImageView.UpdateZoomAndScale();
+            }
+        }
+
+        private void ClearResultImageSurface()
+        {
+            string? activeFilePath = ImageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
+            if (ImageView.ImageShow.Source != null || !string.IsNullOrWhiteSpace(activeFilePath))
+                ImageView.Clear();
+        }
+
+        private bool HasResultDisplaySurface() => ImageView.ImageShow.Source != null;
+
+        private BitmapSource? GetLoadedImageSource()
+        {
+            return ImageView.ViewBitmapSource as BitmapSource
+                ?? ImageView.ImageShow.Source as BitmapSource;
+        }
+
+        private void ImageView_ExternalRenderCompleted(
+            object? sender,
+            ImageViewExternalRenderCompletedEventArgs e)
+        {
+            if (e.Context is not ProjectLUXReuslt result
+                || !_automaticImageExportResults.Remove(result))
+                return;
+
+            if (_isDisposed
+                || !e.Succeeded
+                || e.Source is not BitmapSource
+                || !ImageView.IsCurrentImageRevision(e.ImageRevision))
+            {
+                log.Warn("图像导出已取消：本次结果的图像加载或外部渲染未成功完成。");
+                return;
+            }
+
+            log.Info("ImageEditor图像加载及外部点位渲染已完成，开始捕获本次结果快照。");
+            StartImageExportFromLoadedImage(result);
+        }
+
+        private bool CanCurrentSourceExportBmp()
+        {
+            if (!ImageView.Dispatcher.CheckAccess())
+                return ImageView.Dispatcher.Invoke(CanCurrentSourceExportBmp);
+
+            BitmapSource? source = GetLoadedImageSource();
+            return source != null && ColorVision.ImageEditor.ImageView.CanBmpPreserveSourceBitDepth(source.Format);
+        }
+
+        private void StartImageExportFromLoadedImage(ProjectLUXReuslt result)
+        {
+            ViewResultManagerConfig config = ViewResultManager.Config;
+            bool saveResultImage = config.IsSaveImageReuslt;
+            bool saveSourceImage = config.IsSaveSourceImage;
+            ResultImageFormat resultFormat = config.ResultSnapshotFormat;
+            ImageExportSize resultSize = config.ResultSnapshotSize;
+            bool includeOverlays = saveResultImage && config.ResultSnapshotIncludeOverlays;
+            SourceImageFormat sourceFormat = config.SourceExportFormat;
+            SourceTiffCompression sourceTiffCompression = config.SourceTiffCompressionMode;
+            string outputRoot = config.CsvSavePath;
+            bool saveByDate = config.SaveByDate;
+            DateTime requestedAt = result.CreateTime == default ? DateTime.Now : result.CreateTime;
+
+            ImageViewSnapshot? snapshot = null;
+            try
+            {
+                if (_isDisposed || (!saveResultImage && !saveSourceImage))
+                    return;
+                ImageView.Dispatcher.VerifyAccess();
+
+                log.Info($"准备图像导出：8位标记图={saveResultImage}，保留位深原图={saveSourceImage}");
+
+                BitmapSource? loadedSource = GetLoadedImageSource();
+                if (loadedSource == null)
+                {
+                    log.Warn("图像导出失败：渲染完成后ImageEditor仍没有有效像素源；不会回读CVRAW或其他磁盘文件。");
+                    return;
+                }
+
+                if (saveSourceImage
+                    && sourceFormat == SourceImageFormat.BMP
+                    && !ColorVision.ImageEditor.ImageView.CanBmpPreserveSourceBitDepth(loadedSource.Format))
+                {
+                    saveSourceImage = false;
+                    log.Warn(
+                        $"当前原图格式为 {loadedSource.Format}（{loadedSource.Format.BitsPerPixel}bpp），"
+                        + "BMP无法逐像素保留该位深；已跳过原图BMP，请改选PNG或TIFF。");
+                }
+
+                if (!saveResultImage && !saveSourceImage)
+                    return;
+
+                Stopwatch snapshotStopwatch = Stopwatch.StartNew();
+                snapshot = ImageView.CaptureSnapshotForBackgroundSave(includeOverlays);
+                snapshotStopwatch.Stop();
+                if (snapshot == null)
+                {
+                    log.Warn("图像导出失败：ImageEditor无法生成后台快照。");
+                    return;
+                }
+                log.Info(
+                    $"ImageEditor像素与场景快照准备完成，源格式 {loadedSource.Format}，"
+                    + $"耗时 {snapshotStopwatch.ElapsedMilliseconds}ms。");
+
+                if (_isDisposed)
+                    return;
+
+                _ = ExportImagesAsync(
+                    snapshot,
+                    saveResultImage,
+                    saveSourceImage,
+                    resultFormat,
+                    resultSize,
+                    includeOverlays,
+                    sourceFormat,
+                    sourceTiffCompression,
+                    result,
+                    outputRoot,
+                    saveByDate,
+                    requestedAt);
+                snapshot = null;
+            }
+            catch (Exception ex)
+            {
+                log.Error("准备ImageEditor图像导出任务失败", ex);
+            }
+            finally
+            {
+                snapshot?.Dispose();
+            }
+        }
+
+        private async Task ExportImagesAsync(
+            ImageViewSnapshot? snapshot,
+            bool saveResultImage,
+            bool saveSourceImage,
+            ResultImageFormat resultFormat,
+            ImageExportSize resultSize,
+            bool includeOverlays,
+            SourceImageFormat sourceFormat,
+            SourceTiffCompression sourceTiffCompression,
+            ProjectLUXReuslt result,
+            string outputRoot,
+            bool saveByDate,
+            DateTime requestedAt)
+        {
+            string? renderedFilePath = null;
+            string? sourceFilePath = null;
+            Stopwatch? exportStopwatch = null;
+            bool exportCompleted = false;
+            ProjectImageExportAttempt? exportAttempt = null;
+            ProjectImageExportAttemptResult exportResult = new();
+            try
+            {
+                if (_isDisposed)
+                    return;
+
+                string outputDirectory = ProjectImageExportService.BuildOutputDirectory(
+                    outputRoot,
+                    saveByDate,
+                    requestedAt,
+                    result.SN);
+
+                if (snapshot == null)
+                    return;
+
+                string sourceName = string.IsNullOrWhiteSpace(result.FileName)
+                    ? $"Image_{result.Id}_{requestedAt:yyyyMMddTHHmmssfffffff}"
+                    : result.FileName;
+                if (saveResultImage)
+                {
+                    string fileStem = ProjectImageExportService.BuildResultFileStem(sourceName, result.Model);
+                    renderedFilePath = ProjectImageExportService.BuildFilePath(
+                        outputDirectory,
+                        fileStem,
+                        ProjectImageExportService.GetResultExtension(resultFormat));
+                    string overlayDescription = includeOverlays ? "混合标记" : "仅底图";
+                    log.Info(
+                        $"后台导出8位标记图：{resultFormat}，{DescribeImageSize(resultSize)}，{overlayDescription}，"
+                        + (resultFormat == ResultImageFormat.JPEG ? "JPEG质量100" : "PNG自动压缩"));
+                }
+                if (saveSourceImage)
+                {
+                    string fileStem = ProjectImageExportService.BuildSourceFileStem(sourceName, result.Model);
+                    sourceFilePath = ProjectImageExportService.BuildFilePath(
+                        outputDirectory,
+                        fileStem,
+                        ProjectImageExportService.GetSourceExtension(sourceFormat));
+                    string sourceDescription = sourceFormat switch
+                    {
+                        SourceImageFormat.TIFF => $"TIFF {sourceTiffCompression}无损压缩",
+                        SourceImageFormat.PNG => "PNG自动无损压缩",
+                        _ => "BMP（仅8位源图）",
+                    };
+                    log.Info($"后台导出原尺寸、原位深、无标记原图：{sourceDescription}");
+                }
+
+                exportAttempt = new ProjectImageExportAttempt(renderedFilePath, sourceFilePath);
+                ImageViewSnapshotExportOptions exportOptions = exportAttempt.CreateOptions(
+                    ProjectImageExportService.CreateRenderedOptions(resultFormat, resultSize),
+                    ProjectImageExportService.CreateSourceOptions(sourceFormat, sourceTiffCompression));
+
+                exportStopwatch = Stopwatch.StartNew();
+                ImageViewSnapshot ownedSnapshot = snapshot;
+                snapshot = null;
+                await ColorVision.ImageEditor.ImageView.SaveSnapshotExportsAsync(
+                    ownedSnapshot,
+                    exportOptions).ConfigureAwait(false);
+                exportCompleted = true;
+            }
+            catch (Exception ex)
+            {
+                log.Error("图像导出任务失败；已停止本任务，之前已经写盘的文件不会回滚。", ex);
+            }
+            finally
+            {
+                exportStopwatch?.Stop();
+                if (exportAttempt != null)
+                {
+                    exportResult = exportAttempt.CommitSuccessfulChannels((channel, fileName, ex) =>
+                        log.Error($"{channel}已编码，但替换正式导出文件失败：{fileName}", ex));
+                    exportAttempt.Dispose();
+                }
+                ResultImageExportPathUpdate pathUpdate = ResultImageExportPathUpdate.From(
+                    exportResult,
+                    includeOverlays,
+                    result.SavedResultImageFileName);
+                if (pathUpdate.UpdateSavedResultImageFileName || pathUpdate.UpdateSavedSourceImageFileName)
+                {
+                    try
+                    {
+                        ViewResultManager.UpdateSavedImagePaths(result, pathUpdate);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("图像已写盘，但保存本次成功导出路径到结果数据库失败；内存结果未更新。", ex);
+                    }
+                }
+                LogExportedImage("8位标记图", exportResult.RenderedFileName);
+                LogExportedImage("原位深原图", exportResult.SourceFileName);
+                if (exportStopwatch != null)
+                {
+                    string outcome = exportCompleted ? "完成" : "结束（含失败）";
+                    log.Info($"ImageEditor图像导出任务{outcome}，总耗时 {exportStopwatch.ElapsedMilliseconds}ms。");
+                }
+                snapshot?.Dispose();
+            }
+        }
+
+        private static string DescribeImageSize(ImageExportSize size) => size switch
+        {
+            ImageExportSize.二分之一尺寸 => "1/2尺寸",
+            ImageExportSize.四分之一尺寸 => "1/4尺寸",
+            _ => "完整尺寸",
+        };
+
+        private static void LogExportedImage(string label, string? filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+                return;
+
+            FileInfo file = new(filePath);
+            log.Info($"{label}写盘完成：{filePath}，{file.Length / 1024d / 1024d:F2}MiB。");
+        }
+
+        private void ApplyResultOverlayConfig()
+        {
+            ProjectLUXConfig config = ProjectLUXConfig.Instance;
+            ImageView.Config.IsShowText = config.ResultOverlayShowName;
+            ImageView.Config.IsShowMsg = config.ResultOverlayShowDetail;
+            ImageView.Config.DrawingTextFontSize = config.ResultOverlayFontSize;
+            ImageView.Config.IsLayoutUpdated = config.ResultOverlayAutoRefresh;
+            ImageView.ImageShow.TextFontSizeOverride = config.ResultOverlayFontSize;
+            ImageView.ImageShow.ApplyLayoutScaleToVisuals();
+        }
+
+        private void ProjectConfig_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (!string.IsNullOrEmpty(e.PropertyName) && !ResultOverlayConfigNames.Contains(e.PropertyName))
+                return;
+
+            ApplyResultOverlayConfig();
         }
 
         internal static void DetachResultListView(ListView listView, SelectionChangedEventHandler selectionChangedHandler)
@@ -808,69 +1267,6 @@ namespace ProjectLUX
             listView.ItemsSource = null;
             listView.ContextMenu = null;
             listView.CommandBindings.Clear();
-        }
-
-        private void SaveImageResultIfNeeded(ProjectLUXReuslt result, int requestId)
-        {
-            if (!IsSaveImageReuslt) return;
-
-            log.Info($"IsSaveImageReuslt:{IsSaveImageReuslt}");
-            IsSaveImageReuslt = false;
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await Task.Delay(ViewResultManager.Config.SaveImageReusltDelay);
-                    if (_isDisposed || requestId != Volatile.Read(ref _resultImageRequestId)) return;
-
-                    bool isCurrentSelection = Application.Current?.Dispatcher.Invoke(() =>
-                        !_isDisposed &&
-                        requestId == Volatile.Read(ref _resultImageRequestId) &&
-                        ReferenceEquals(listView1.SelectedItem, result)) ?? false;
-                    if (!isCurrentSelection) return;
-
-                    string linkPath = ViewResultManager.Config.CsvSavePath;
-                    string sn = result.SN;
-
-                    if (ViewResultManager.Config.SaveByDate)
-                    {
-                        string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-                        linkPath = Path.Combine(linkPath, dateFolder);
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(sn))
-                    {
-                        foreach (char c in Path.GetInvalidFileNameChars())
-                        {
-                            sn = sn.Replace(c.ToString(), "");
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(sn))
-                        {
-                            linkPath = Path.Combine(linkPath, sn);
-                        }
-                    }
-
-                    if (!Directory.Exists(linkPath))
-                        Directory.CreateDirectory(linkPath);
-
-                    string filePath = Path.Combine(linkPath, $"{result.Model}.png");
-                    log.Info(filePath);
-                    Application.Current?.Dispatcher.Invoke(() =>
-                    {
-                        if (_isDisposed ||
-                            requestId != Volatile.Read(ref _resultImageRequestId) ||
-                            !ReferenceEquals(listView1.SelectedItem, result))
-                            return;
-
-                        ImageView.Save(filePath);
-                    });
-                }
-                catch (Exception ex)
-                {
-                    log.Error("保存结果截图失败", ex);
-                }
-            });
         }
 
         public void GenoutputText(ProjectLUXReuslt result)
@@ -964,9 +1360,13 @@ namespace ProjectLUX
 
             _isDisposed = true;
             _lifetimeCancellation.Cancel();
-            Interlocked.Increment(ref _resultImageRequestId);
+            Interlocked.Increment(ref _resultImagePresentationVersion);
+            Interlocked.Exchange(ref _resultImagePresentationCancellation, null)?.Cancel();
+            _automaticImageExportResults.Clear();
+            ImageView.ExternalRenderCompleted -= ImageView_ExternalRenderCompleted;
             DetachResultListView(listView1, listView1_SelectionChanged);
             ProcessManager.ActiveGroupChanged -= ProcessManager_ActiveGroupChanged;
+            ProjectConfig.PropertyChanged -= ProjectConfig_PropertyChanged;
             ImageView.Dispose();
             if (flowControl != null)
             {

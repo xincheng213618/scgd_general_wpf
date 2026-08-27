@@ -79,7 +79,26 @@ namespace ProjectLUX
         private int _BatchId;
 
         public string Model { get; set; } = string.Empty;
+
         public string FileName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// ImageEditor 导出的原位深、无标记原图。算法原图被清理后优先用它恢复底图并重新渲染标记。
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public string? SavedSourceImageFileName { get; set; }
+
+        /// <summary>
+        /// ImageEditor 导出的标记图。没有任何可用原图时直接显示，避免重复绘制标记。
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public string? SavedResultImageFileName { get; set; }
+
+        [SugarColumn(IsNullable = true)]
+        public int? ImageWidth { get; set; }
+
+        [SugarColumn(IsNullable = true)]
+        public int? ImageHeight { get; set; }
 
         public string SN { get; set; } = string.Empty;
 
