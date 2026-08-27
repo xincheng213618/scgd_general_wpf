@@ -138,6 +138,25 @@ public class DrawCanvasTests
         });
     }
 
+    [Fact]
+    public void ClearingTransientOverlaysPreservesPersistentVisuals()
+    {
+        RunOnStaThread(() =>
+        {
+            using DrawCanvas canvas = new();
+            DrawingVisual persistent = new();
+            DrawingVisual transient = new();
+            canvas.AddVisual(persistent);
+            canvas.AddOverlayVisual(transient);
+
+            canvas.ClearOverlayVisuals();
+
+            Assert.True(canvas.ContainsVisual(persistent));
+            Assert.False(canvas.ContainsVisual(transient));
+            Assert.Equal(new Visual[] { persistent }, canvas.Visuals);
+        });
+    }
+
     private static void RunOnStaThread(Action action)
     {
         Exception? failure = null;

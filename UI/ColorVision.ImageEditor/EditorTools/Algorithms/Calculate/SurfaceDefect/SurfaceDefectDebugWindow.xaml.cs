@@ -25,6 +25,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
         private readonly List<SurfaceDefectOverlayVisual> _overlayVisuals = new();
         private SurfaceDefectNativeResult? _result;
         private string _rawJson = string.Empty;
+        private bool _closed;
 
         public SurfaceDefectDebugWindow(ImageProcessingContext imageContext, DrawEditorContext drawContext, RoiRect roi)
         {
@@ -38,6 +39,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
             RoiInfoText.Text = BuildRoiText();
             HeaderSummaryText.Text = "未检测";
             StatusText.Text = "调整参数后点击检测；结果会以临时 overlay 画在当前图上。";
+            Closed += (_, _) =>
+            {
+                _closed = true;
+                ClearOverlay();
+            };
         }
 
         private async void DetectButton_Click(object sender, RoutedEventArgs e)
@@ -68,13 +74,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
             try
             {
                 SurfaceDefectNativeResult result = await Task.Run(() => RunNative(lease.Image, roi, configJson));
-                if (!_imageContext.IsCurrentImageRevision(revision)) return;
+                if (_closed || !_imageContext.IsCurrentImageRevision(revision)) return;
 
                 ApplyResult(result);
             }
             catch (Exception ex)
             {
-                if (!_imageContext.IsCurrentImageRevision(revision)) return;
+                if (_closed || !_imageContext.IsCurrentImageRevision(revision)) return;
 
                 StatusText.Text = ex.Message;
                 MessageBox.Show(this, ex.Message, "表面缺陷/Mura 检测", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -82,7 +88,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
             finally
             {
                 lease.Dispose();
-                DetectButton.IsEnabled = true;
+                if (!_closed) DetectButton.IsEnabled = true;
             }
         }
 

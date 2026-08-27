@@ -1,4 +1,5 @@
 using ColorVision.Common.Utilities;
+using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using log4net;
 using System;
@@ -19,7 +20,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         {
             InitializeComponent();
             _preview = ImageAlgorithmPreviewSession.Start(image);
-            ApplyGaussianBlur((int)KernelSizeSlider.Value, SigmaSlider.Value);
+            _ = ApplyGaussianBlurAsync((int)KernelSizeSlider.Value, SigmaSlider.Value);
         }
 
         private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -40,27 +41,33 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 }
 
                 double sigma = SigmaSlider.Value;
-                DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, () => ApplyGaussianBlur(kernelSize, sigma));
+                DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, () => _ = ApplyGaussianBlurAsync(kernelSize, sigma));
             }
         }
 
-        private void ApplyGaussianBlur(int kernelSize, double sigma)
+        private async System.Threading.Tasks.Task<bool> ApplyGaussianBlurAsync(int kernelSize, double sigma)
         {
             try
             {
-                _preview?.Apply(mat => OpenCvImageAlgorithms.GaussianBlur(mat, kernelSize, sigma));
+                if (_preview == null) return false;
+                GaussianBlurParameters parameters = new() { KernelSize = kernelSize, Sigma = sigma };
+                AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.GaussianBlur, parameters);
+                using AlgorithmResult result = await _preview.PreviewAsync(invocation);
+                return result.Status == AlgorithmResultStatus.Succeeded && _preview.IsCurrent(invocation.InvocationId);
             }
             catch (Exception ex)
             {
                 log.Error(ex);
-                MessageBox.Show(ex.Message);
+                return false;
             }
         }
 
-        private void Apply_Click(object sender, RoutedEventArgs e)
+        private async void Apply_Click(object sender, RoutedEventArgs e)
         {
-            _preview?.Commit();
-            Close();
+            DebounceTimer.Cancel(_debounceKey);
+            int kernelSize = (int)KernelSizeSlider.Value;
+            if (kernelSize % 2 == 0) kernelSize++;
+            if (await ApplyGaussianBlurAsync(kernelSize, SigmaSlider.Value) && _preview?.Commit() == true) Close();
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
@@ -72,7 +79,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         protected override void OnClosed(EventArgs e)
         {
             DebounceTimer.Cancel(_debounceKey);
-            _preview?.CancelIfActive();
+            _preview?.Dispose();
             base.OnClosed(e);
         }
     }

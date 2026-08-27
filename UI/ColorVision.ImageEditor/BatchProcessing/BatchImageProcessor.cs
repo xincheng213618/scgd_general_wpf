@@ -143,7 +143,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                     using Mat source = loader.Load(item.FilePath);
                     sourceRead = true;
                     cancellationToken.ThrowIfCancellationRequested();
-                    using Mat result = request.Algorithm.Apply(source);
+                    using Mat result = request.Algorithm.Apply(source, cancellationToken);
                     cancellationToken.ThrowIfCancellationRequested();
                     BatchImageOutput.Save(result, outputPath);
 

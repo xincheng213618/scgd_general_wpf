@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.BatchProcessing;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR;
@@ -352,7 +353,22 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 Command = blurCommand
             });
 
+            ValidateCatalogBindings(MenuItemMetadatas);
             return MenuItemMetadatas;
+        }
+
+        private static void ValidateCatalogBindings(IEnumerable<MenuItemMetadata> items)
+        {
+            foreach (MenuItemMetadata item in items)
+            {
+                if (!string.Equals(item.OwnerGuid, "Algorithms", System.StringComparison.Ordinal)
+                    || string.Equals(item.GuidId, "BatchImageProcessing", System.StringComparison.Ordinal))
+                {
+                    continue;
+                }
+                if (!ImageAlgorithmPlatform.Catalog.TryResolveAlias(item.GuidId ?? string.Empty, out _))
+                    throw new System.InvalidOperationException($"Algorithm menu compatibility ID '{item.GuidId}' is not registered in the Catalog.");
+            }
         }
     }
 }

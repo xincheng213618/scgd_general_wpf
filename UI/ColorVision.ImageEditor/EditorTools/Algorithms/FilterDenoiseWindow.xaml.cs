@@ -1,4 +1,5 @@
 using ColorVision.Common.Utilities;
+using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using log4net;
 using System;
@@ -18,7 +19,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             _preview = ImageAlgorithmPreviewSession.Start(image);
             FilterCombo.SelectedIndex = defaultFilter;
             UpdatePanelVisibility();
-            ApplyPreview();
+            _ = ApplyPreviewAsync();
         }
 
         private void Param_Changed(object sender, RoutedEventArgs e)
@@ -29,7 +30,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             }
 
             UpdatePanelVisibility();
-            DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, ApplyPreview);
+            DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, () => _ = ApplyPreviewAsync());
         }
 
         private void UpdatePanelVisibility()
@@ -44,30 +45,33 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             SigmaColorPanel.Visibility = isBilateral ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private void ApplyPreview()
+        private async System.Threading.Tasks.Task<bool> ApplyPreviewAsync()
         {
             try
             {
                 int kernelSize = (int)KernelSlider.Value;
-                FilterDenoiseOperation operation = FilterCombo.SelectedIndex == 0
-                    ? FilterDenoiseOperation.Bilateral
-                    : FilterDenoiseOperation.Blur;
-                double sigmaSpace = SigmaSlider.Value;
-                double sigmaColor = SigmaColorSlider.Value;
-
-                _preview.Apply(mat => OpenCvImageAlgorithms.FilterDenoise(mat, operation, kernelSize, sigmaColor, sigmaSpace));
+                DenoiseParameters parameters = new()
+                {
+                    Operation = FilterCombo.SelectedIndex == 0 ? StandardDenoiseOperation.Bilateral : StandardDenoiseOperation.MeanBlur,
+                    KernelSize = kernelSize % 2 == 0 ? kernelSize + 1 : kernelSize,
+                    SigmaSpace = SigmaSlider.Value,
+                    SigmaColor = SigmaColorSlider.Value,
+                };
+                AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.Denoise, parameters);
+                using AlgorithmResult result = await _preview.PreviewAsync(invocation);
+                return result.Status == AlgorithmResultStatus.Succeeded && _preview.IsCurrent(invocation.InvocationId);
             }
             catch (Exception ex)
             {
                 log.Error(ex);
-                MessageBox.Show(ex.Message);
+                return false;
             }
         }
 
-        private void Apply_Click(object sender, RoutedEventArgs e)
+        private async void Apply_Click(object sender, RoutedEventArgs e)
         {
-            _preview.Commit();
-            Close();
+            DebounceTimer.Cancel(_debounceKey);
+            if (await ApplyPreviewAsync() && _preview.Commit()) Close();
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
@@ -79,7 +83,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         protected override void OnClosed(EventArgs e)
         {
             DebounceTimer.Cancel(_debounceKey);
-            _preview.CancelIfActive();
+            _preview.Dispose();
             base.OnClosed(e);
         }
     }

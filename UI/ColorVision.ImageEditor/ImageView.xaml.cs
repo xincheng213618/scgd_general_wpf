@@ -44,6 +44,7 @@ namespace ColorVision.ImageEditor
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
         private readonly DefaultImageViewDisplayConfig _defaultDisplayConfig = DefaultImageViewDisplayConfig.Current;
         private readonly ImageFrameStore _imageFrameStore = new();
+        private readonly Guid _documentInstanceId = Guid.NewGuid();
         private readonly List<Func<IEnumerable<ImageViewSettingsEntry>>> _settingsEntries = new();
         private int _disposed;
 
@@ -166,6 +167,8 @@ namespace ColorVision.ImageEditor
                 new ImageProcessingContextBinding
                 {
                     IsInitialized = () => IsInitialized,
+                    GetDocumentInstanceId = () => _documentInstanceId,
+                    IsDisposed = () => Volatile.Read(ref _disposed) != 0,
                     GetImageRevision = () => ImageRevision,
                     AcquireImageFrame = AcquireImageFrame,
                     IsCurrentImageRevision = IsCurrentImageRevision,

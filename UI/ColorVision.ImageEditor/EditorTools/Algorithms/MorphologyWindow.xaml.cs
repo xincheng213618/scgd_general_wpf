@@ -1,4 +1,5 @@
 using ColorVision.Common.Utilities;
+using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using log4net;
 using System;
@@ -17,7 +18,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             InitializeComponent();
             _preview = ImageAlgorithmPreviewSession.Start(image);
             OperationCombo.SelectedIndex = defaultOperation;
-            ApplyPreview();
+            _ = ApplyPreviewAsync();
         }
 
         private void Param_Changed(object sender, RoutedEventArgs e)
@@ -27,30 +28,36 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 return;
             }
 
-            DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, ApplyPreview);
+            DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, () => _ = ApplyPreviewAsync());
         }
 
-        private void ApplyPreview()
+        private async System.Threading.Tasks.Task<bool> ApplyPreviewAsync()
         {
             try
             {
                 int kernelSize = (int)KernelSlider.Value;
                 int iterations = Math.Max(1, (int)IterSlider.Value);
-                MorphologyOperation operation = (MorphologyOperation)Math.Max(0, OperationCombo.SelectedIndex);
-
-                _preview.Apply(mat => OpenCvImageAlgorithms.Morphology(mat, operation, kernelSize, iterations));
+                MorphologyParameters parameters = new()
+                {
+                    Operation = (StandardMorphologyOperation)Math.Max(0, OperationCombo.SelectedIndex),
+                    KernelSize = kernelSize % 2 == 0 ? kernelSize + 1 : kernelSize,
+                    Iterations = iterations,
+                };
+                AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.Morphology, parameters);
+                using AlgorithmResult result = await _preview.PreviewAsync(invocation);
+                return result.Status == AlgorithmResultStatus.Succeeded && _preview.IsCurrent(invocation.InvocationId);
             }
             catch (Exception ex)
             {
                 log.Error(ex);
-                MessageBox.Show(ex.Message);
+                return false;
             }
         }
 
-        private void Apply_Click(object sender, RoutedEventArgs e)
+        private async void Apply_Click(object sender, RoutedEventArgs e)
         {
-            _preview.Commit();
-            Close();
+            DebounceTimer.Cancel(_debounceKey);
+            if (await ApplyPreviewAsync() && _preview.Commit()) Close();
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
@@ -62,7 +69,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         protected override void OnClosed(EventArgs e)
         {
             DebounceTimer.Cancel(_debounceKey);
-            _preview.CancelIfActive();
+            _preview.Dispose();
             base.OnClosed(e);
         }
     }

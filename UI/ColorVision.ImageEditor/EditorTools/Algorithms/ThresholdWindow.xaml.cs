@@ -1,7 +1,7 @@
 using ColorVision.Common.Utilities;
+using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using log4net;
-using OpenCvSharp;
 using System;
 using System.Windows;
 
@@ -26,7 +26,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             // 根据图像深度设置最大值
             int maxVal = _image.Config.GetProperties<int>("Max");
             ThresholdSlider.Maximum = maxVal;
-            ApplyThreshold();
+            _ = ApplyThresholdAsync();
         }
 
         private void ThresholdSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -36,33 +36,34 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 return;
             }
 
-            DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, ApplyThreshold);
+            DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, () => _ = ApplyThresholdAsync());
         }
 
-        private void ApplyThreshold()
+        private async System.Threading.Tasks.Task<bool> ApplyThresholdAsync()
         {
             if (_preview == null)
             {
-                return;
+                return false;
             }
 
             try
             {
-                double thresh = ThresholdSlider.Value;
-                double maxval = _image.Config.GetProperties<int>("Max");
-                _preview.Apply(mat => OpenCvImageAlgorithms.Threshold(mat, thresh, maxval, ThresholdTypes.Binary));
+                ThresholdParameters parameters = new() { Threshold = ThresholdSlider.Value };
+                AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.Threshold, parameters);
+                using AlgorithmResult result = await _preview.PreviewAsync(invocation);
+                return result.Status == AlgorithmResultStatus.Succeeded && _preview.IsCurrent(invocation.InvocationId);
             }
             catch (Exception ex)
             {
                 log.Error(ex);
-                MessageBox.Show(ex.Message);
+                return false;
             }
         }
 
-        private void Apply_Click(object sender, RoutedEventArgs e)
+        private async void Apply_Click(object sender, RoutedEventArgs e)
         {
-            _preview?.Commit();
-            Close();
+            DebounceTimer.Cancel(_debounceKey);
+            if (await ApplyThresholdAsync() && _preview?.Commit() == true) Close();
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
@@ -74,7 +75,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         protected override void OnClosed(EventArgs e)
         {
             DebounceTimer.Cancel(_debounceKey);
-            _preview?.CancelIfActive();
+            _preview?.Dispose();
             base.OnClosed(e);
         }
     }

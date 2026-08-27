@@ -172,6 +172,24 @@
         },
         {
           "text": {
+            "root": "统一图像算法平台 V1"
+          },
+          "link": "/02-developer-guide/core-concepts/image-algorithm-platform-v1"
+        },
+        {
+          "text": {
+            "root": "ROI 统计 V1（M1）"
+          },
+          "link": "/02-developer-guide/core-concepts/roi-statistics-v1"
+        },
+        {
+          "text": {
+            "root": "灰度与颜色剖面 V1（M2）"
+          },
+          "link": "/02-developer-guide/core-concepts/image-profile-v1"
+        },
+        {
+          "text": {
             "root": "测试与验证"
           },
           "link": "/02-developer-guide/testing"

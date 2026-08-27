@@ -1,22 +1,38 @@
-using ColorVision.Core;
+using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using OpenCvSharp;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.Linq;
+using System.Text.Json;
+using System.Threading;
 
 namespace ColorVision.ImageEditor.BatchProcessing
 {
+    /// <summary>Compatibility view model over a catalog descriptor and one mutable parameter instance.</summary>
     public sealed class BatchImageAlgorithmDefinition
     {
-        private readonly Func<Mat, Mat> _apply;
+        private readonly Func<Mat, CancellationToken, Mat>? _legacyApply;
+        private readonly bool _preserveLegacyBatchBehavior;
 
         public BatchImageAlgorithmDefinition(string name, string suffix, object options, Func<Mat, Mat> apply)
         {
             Name = name;
             Suffix = suffix;
             Options = options;
-            _apply = apply;
+            _legacyApply = (source, _) => apply(source);
+        }
+
+        internal BatchImageAlgorithmDefinition(
+            AlgorithmDescriptor descriptor,
+            IAlgorithmParameters parameters,
+            bool preserveLegacyBatchBehavior = false)
+        {
+            Descriptor = descriptor;
+            Name = descriptor.Name;
+            Suffix = descriptor.OutputSuffix;
+            Options = parameters;
+            _preserveLegacyBatchBehavior = preserveLegacyBatchBehavior;
         }
 
         public string Name { get; }
@@ -25,147 +41,109 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
         public object Options { get; }
 
-        public Mat Apply(Mat source) => _apply(source);
-    }
+        public AlgorithmDescriptor? Descriptor { get; }
 
-    public static class BatchImageAlgorithms
-    {
-        public static BatchImageAlgorithmDefinition CreateFormatOnly()
+        public bool IsFormatOnly => Descriptor == null && Options is NoBatchAlgorithmOptions;
+
+        public Mat Apply(Mat source) => Apply(source, CancellationToken.None);
+
+        public Mat Apply(Mat source, CancellationToken cancellationToken)
         {
-            return new BatchImageAlgorithmDefinition("仅转换格式", string.Empty, new NoBatchAlgorithmOptions(), source => source.Clone());
-        }
-
-        public static IReadOnlyList<BatchImageAlgorithmDefinition> CreateAll()
-        {
-            PseudoColorBatchOptions pseudoColor = new();
-            WhiteBalanceBatchOptions whiteBalance = new();
-            BasicAdjustmentBatchOptions basicAdjustment = new();
-            ThresholdBatchOptions threshold = new();
-            GaussianBlurBatchOptions gaussianBlur = new();
-            MedianBlurBatchOptions medianBlur = new();
-            CannyBatchOptions canny = new();
-            MorphologyBatchOptions morphology = new();
-            FilterDenoiseBatchOptions denoise = new();
-
-            return new List<BatchImageAlgorithmDefinition>
+            ArgumentNullException.ThrowIfNull(source);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (_legacyApply != null)
             {
-                CreateFormatOnly(),
-                InPlace("反相", "_invert", new NoBatchAlgorithmOptions(), OpenCvImageAlgorithms.Invert),
-                new("伪彩色", "_pseudo", pseudoColor, source => ApplyPseudoColor(source, pseudoColor)),
-                new("自动色阶", "_autolevels", new NoBatchAlgorithmOptions(), ApplyAutoLevels),
-                new("白平衡", "_whitebalance", whiteBalance, source => ApplyWhiteBalance(source, whiteBalance)),
-                InPlace("基础调整", "_adjusted", basicAdjustment,
-                    mat => OpenCvImageAlgorithms.AdjustBasic(
-                        mat,
-                        basicAdjustment.Exposure,
-                        basicAdjustment.Brightness,
-                        basicAdjustment.Contrast,
-                        basicAdjustment.Gamma)),
-                InPlace("阈值处理", "_threshold", threshold,
-                    mat => OpenCvImageAlgorithms.Threshold(mat, threshold.Threshold, GetMaximum(mat.Depth()), ThresholdTypes.Binary)),
-                InPlace("锐化", "_sharpen", new NoBatchAlgorithmOptions(), OpenCvImageAlgorithms.Sharpen),
-                InPlace("高斯模糊", "_gaussian", gaussianBlur,
-                    mat => OpenCvImageAlgorithms.GaussianBlur(mat, gaussianBlur.KernelSize, gaussianBlur.Sigma)),
-                InPlace("中值滤波", "_median", medianBlur,
-                    mat => OpenCvImageAlgorithms.MedianBlur(mat, medianBlur.KernelSize)),
-                new("Canny 边缘检测", "_canny", canny, source => ApplyCanny(source, canny)),
-                new("直方图均衡化", "_equalized", new NoBatchAlgorithmOptions(), ApplyHistogramEqualization),
-                InPlace("形态学操作", "_morphology", morphology,
-                    mat => OpenCvImageAlgorithms.Morphology(mat, (MorphologyOperation)morphology.Operation, morphology.KernelSize, morphology.Iterations)),
-                InPlace("降噪滤波", "_denoise", denoise,
-                    mat => OpenCvImageAlgorithms.FilterDenoise(mat, (FilterDenoiseOperation)denoise.Operation, denoise.KernelSize, denoise.SigmaColor, denoise.SigmaSpace)),
-            };
-        }
-
-        private static BatchImageAlgorithmDefinition InPlace(string name, string suffix, object options, Action<Mat> apply)
-        {
-            return new BatchImageAlgorithmDefinition(name, suffix, options, source =>
-            {
-                Mat result = source.Clone();
+                Mat legacyResult = _legacyApply(source, cancellationToken);
                 try
                 {
-                    apply(result);
-                    return result;
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return legacyResult;
                 }
                 catch
                 {
-                    result.Dispose();
+                    legacyResult.Dispose();
                     throw;
                 }
-            });
-        }
-
-        private static Mat ApplyPseudoColor(Mat source, PseudoColorBatchOptions options)
-        {
-            using Mat gray = ConvertToGray(source);
-            using Mat gray8 = ConvertTo8Bit(gray);
-            Mat result = new();
-            Cv2.ApplyColorMap(gray8, result, (OpenCvSharp.ColormapTypes)(int)options.Colormap);
-            return result;
-        }
-
-        private static Mat ApplyAutoLevels(Mat source)
-        {
-            Mat result = new();
-            Cv2.Normalize(source, result, 0, GetMaximum(source.Depth()), NormTypes.MinMax);
-            return result;
-        }
-
-        private static Mat ApplyWhiteBalance(Mat source, WhiteBalanceBatchOptions options)
-        {
-            if (source.Channels() < 3)
-            {
-                throw new InvalidOperationException("白平衡仅支持三通道或四通道彩色图像。");
             }
 
-            Mat[] channels = Cv2.Split(source);
+            AlgorithmDescriptor descriptor = Descriptor ?? throw new InvalidOperationException("The batch algorithm has no catalog descriptor.");
+            IAlgorithmParameters parameters = CreateCompatibilityParameters((IAlgorithmParameters)Options);
+            using Mat? compatibilityInput = _preserveLegacyBatchBehavior
+                ? CreateLegacyCompatibilityInput(source, descriptor.Id, parameters, cancellationToken)
+                : null;
+            cancellationToken.ThrowIfCancellationRequested();
+            AlgorithmImageBuffer inputImage = AlgorithmImageInterop.FromMat(compatibilityInput ?? source);
+            AlgorithmInvocation invocation = new()
+            {
+                AlgorithmId = descriptor.Id,
+                AlgorithmVersion = descriptor.Version,
+                ParameterSchemaVersion = parameters.SchemaVersion,
+                Parameters = AlgorithmJson.ToElement(parameters),
+            };
+            using AlgorithmResult result = ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest
+            {
+                Invocation = invocation,
+                Inputs = new[]
+                {
+                    new AlgorithmInput
+                    {
+                        Name = "source",
+                        Image = inputImage,
+                        Ownership = AlgorithmInputOwnership.Transferred,
+                    },
+                },
+                RequiredCapabilities = AlgorithmHostCapabilities.Batch | AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local,
+            }, cancellationToken).AsTask().GetAwaiter().GetResult();
+
+            if (result.Status == AlgorithmResultStatus.Cancelled) throw new OperationCanceledException(cancellationToken);
+            if (result.Status != AlgorithmResultStatus.Succeeded)
+            {
+                string message = string.Join("; ", result.Failures.Select(failure => $"{failure.Code}: {failure.Message}"));
+                throw new InvalidOperationException(string.IsNullOrWhiteSpace(message) ? "Algorithm execution failed." : message);
+            }
+
+            AlgorithmImageArtifact image = result.GetArtifact<AlgorithmImageArtifact>()
+                ?? throw new InvalidOperationException("The algorithm did not return a primary image artifact.");
+            Mat output = AlgorithmImageInterop.ToMat(image.Image);
             try
             {
-                channels[0].ConvertTo(channels[0], channels[0].Type(), options.BlueScale);
-                channels[1].ConvertTo(channels[1], channels[1].Type(), options.GreenScale);
-                channels[2].ConvertTo(channels[2], channels[2].Type(), options.RedScale);
-                Mat result = new();
-                Cv2.Merge(channels, result);
-                return result;
+                cancellationToken.ThrowIfCancellationRequested();
+                return output;
             }
-            finally
+            catch
             {
-                foreach (Mat channel in channels)
-                {
-                    channel.Dispose();
-                }
+                output.Dispose();
+                throw;
             }
         }
 
-        private static Mat ApplyCanny(Mat source, CannyBatchOptions options)
+        private static Mat? CreateLegacyCompatibilityInput(
+            Mat source,
+            AlgorithmId algorithmId,
+            IAlgorithmParameters parameters,
+            CancellationToken cancellationToken)
         {
-            using Mat gray = ConvertToGray(source);
-            using Mat gray8 = ConvertTo8Bit(gray);
-            Mat result = new();
-            Cv2.Canny(gray8, result, options.LowThreshold, options.HighThreshold);
-            return result;
-        }
-
-        private static Mat ApplyHistogramEqualization(Mat source)
-        {
-            using Mat source8 = ConvertTo8Bit(source);
-            if (source8.Channels() == 1)
+            cancellationToken.ThrowIfCancellationRequested();
+            if ((algorithmId == StandardAlgorithmIds.PseudoColor && IsLegacyPseudoColorMode(parameters))
+                || algorithmId == StandardAlgorithmIds.Canny)
             {
-                Mat grayResult = new();
-                Cv2.EqualizeHist(source8, grayResult);
-                return grayResult;
+                using Mat gray = ConvertToGray(source);
+                return ConvertTo8Bit(gray);
             }
 
-            using Mat bgr = ConvertToBgr(source8);
-            using Mat yCrCb = new();
-            Cv2.CvtColor(bgr, yCrCb, ColorConversionCodes.BGR2YCrCb);
-            using Mat luminance = new();
-            Cv2.ExtractChannel(yCrCb, luminance, 0);
-            Cv2.EqualizeHist(luminance, luminance);
-            Cv2.InsertChannel(luminance, yCrCb, 0);
-            Mat result = new();
-            Cv2.CvtColor(yCrCb, result, ColorConversionCodes.YCrCb2BGR);
-            return result;
+            return algorithmId == StandardAlgorithmIds.HistogramEqualization
+                ? ConvertTo8Bit(source)
+                : null;
+        }
+
+        private static bool IsLegacyPseudoColorMode(IAlgorithmParameters parameters)
+        {
+            PseudoColorParameters value = (PseudoColorParameters)parameters;
+            return value.UseNominalRange
+                && value.Minimum == 0
+                && value.Maximum == byte.MaxValue
+                && value.Channel == -1
+                && !value.AutoRange;
         }
 
         private static Mat ConvertToGray(Mat source)
@@ -179,21 +157,6 @@ namespace ColorVision.ImageEditor.BatchProcessing
             ColorConversionCodes conversion = source.Channels() == 4
                 ? ColorConversionCodes.BGRA2GRAY
                 : ColorConversionCodes.BGR2GRAY;
-            Cv2.CvtColor(source, result, conversion);
-            return result;
-        }
-
-        private static Mat ConvertToBgr(Mat source)
-        {
-            if (source.Channels() == 3)
-            {
-                return new Mat(source, new Rect(0, 0, source.Cols, source.Rows));
-            }
-
-            Mat result = new();
-            ColorConversionCodes conversion = source.Channels() == 4
-                ? ColorConversionCodes.BGRA2BGR
-                : ColorConversionCodes.GRAY2BGR;
             Cv2.CvtColor(source, result, conversion);
             return result;
         }
@@ -218,131 +181,160 @@ namespace ColorVision.ImageEditor.BatchProcessing
             return result;
         }
 
-        private static double GetMaximum(MatType depth)
+        private static IAlgorithmParameters CreateCompatibilityParameters(IAlgorithmParameters parameters)
         {
-            if (depth == MatType.CV_16U)
+            IAlgorithmParameters clone = AlgorithmJson.ToElement(parameters)
+                .Deserialize(parameters.GetType(), AlgorithmJson.Options) as IAlgorithmParameters
+                ?? throw new InvalidOperationException($"Could not copy parameters of type '{parameters.GetType().Name}'.");
+            switch (clone)
             {
-                return ushort.MaxValue;
+                case GaussianBlurParameters value:
+                    value.KernelSize = NormalizeOdd(value.KernelSize, 1);
+                    break;
+                case MedianBlurParameters value:
+                    value.KernelSize = NormalizeOdd(value.KernelSize, 3);
+                    break;
+                case MorphologyParameters value:
+                    value.KernelSize = NormalizeOdd(value.KernelSize, 1);
+                    break;
+                case DenoiseParameters value:
+                    value.KernelSize = NormalizeOdd(value.KernelSize, 1);
+                    break;
+            }
+            return clone;
+        }
+
+        private static int NormalizeOdd(int value, int minimum)
+        {
+            value = Math.Max(minimum, value);
+            return value % 2 == 0 ? value + 1 : value;
+        }
+    }
+
+    public static class BatchImageAlgorithms
+    {
+        private static readonly AlgorithmId[] CompatibilityOrder =
+        {
+            StandardAlgorithmIds.Invert,
+            StandardAlgorithmIds.PseudoColor,
+            StandardAlgorithmIds.AutoLevels,
+            StandardAlgorithmIds.WhiteBalance,
+            StandardAlgorithmIds.BasicAdjustment,
+            StandardAlgorithmIds.Threshold,
+            StandardAlgorithmIds.Sharpen,
+            StandardAlgorithmIds.GaussianBlur,
+            StandardAlgorithmIds.MedianBlur,
+            StandardAlgorithmIds.Canny,
+            StandardAlgorithmIds.HistogramEqualization,
+            StandardAlgorithmIds.Morphology,
+            StandardAlgorithmIds.Denoise,
+        };
+
+        public static BatchImageAlgorithmDefinition CreateFormatOnly()
+            => new("仅转换格式", string.Empty, new NoBatchAlgorithmOptions(), source => source.Clone());
+
+        public static IReadOnlyList<BatchImageAlgorithmDefinition> CreateAll()
+        {
+            List<BatchImageAlgorithmDefinition> algorithms = new() { CreateFormatOnly() };
+            foreach (AlgorithmId id in CompatibilityOrder)
+            {
+                if (!ImageAlgorithmPlatform.Catalog.TryResolve(id, out AlgorithmDescriptor? descriptor)
+                    || descriptor == null
+                    || (descriptor.Capabilities & AlgorithmHostCapabilities.Batch) == 0)
+                {
+                    continue;
+                }
+                algorithms.Add(new BatchImageAlgorithmDefinition(
+                    descriptor,
+                    CreateDefaultParameters(descriptor),
+                    preserveLegacyBatchBehavior: true));
+            }
+            return algorithms;
+        }
+
+        public static bool TryCreateForCopilot(
+            string idOrAlias,
+            JsonElement? parameters,
+            out BatchImageAlgorithmDefinition? algorithm,
+            out string error)
+        {
+            algorithm = null;
+            if (!ImageAlgorithmPlatform.Catalog.TryResolveAlias(idOrAlias, out AlgorithmDescriptor? descriptor) || descriptor == null)
+            {
+                error = $"Algorithm '{idOrAlias}' is not registered.";
+                return false;
             }
 
-            if (depth == MatType.CV_32F || depth == MatType.CV_64F)
+            const AlgorithmHostCapabilities required = AlgorithmHostCapabilities.Copilot
+                | AlgorithmHostCapabilities.Batch
+                | AlgorithmHostCapabilities.Headless
+                | AlgorithmHostCapabilities.Local
+                | AlgorithmHostCapabilities.Deterministic;
+            if (!StandardAlgorithmCatalog.IsExplicitlyAllowedForCopilot(descriptor.Id)
+                || (descriptor.Capabilities & required) != required)
             {
-                return 1d;
+                error = $"Algorithm '{descriptor.Id}' is not on the explicit Copilot local/headless/deterministic whitelist.";
+                return false;
             }
 
-            return byte.MaxValue;
+            try
+            {
+                JsonElement json = parameters is { ValueKind: not JsonValueKind.Undefined and not JsonValueKind.Null }
+                    ? parameters.Value
+                    : descriptor.ParameterSchema.Defaults;
+                if (json.ValueKind != JsonValueKind.Object)
+                {
+                    error = "Algorithm parameters must be a JSON object.";
+                    return false;
+                }
+                HashSet<string> allowedFields = descriptor.ParameterSchema.Fields
+                    .Select(field => field.Name)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                string? unknownField = json.EnumerateObject()
+                    .Select(property => property.Name)
+                    .FirstOrDefault(name => !allowedFields.Contains(name));
+                if (unknownField != null)
+                {
+                    error = $"Parameter '{unknownField}' is not defined by '{descriptor.Id}' schema {descriptor.ParameterSchema.Version}.";
+                    return false;
+                }
+                if (json.Deserialize(descriptor.ParameterType, AlgorithmJson.Options) is not IAlgorithmParameters parsed)
+                {
+                    error = $"Could not deserialize parameters for '{descriptor.Id}'.";
+                    return false;
+                }
+                AlgorithmValidationResult validation = parsed.Validate();
+                if (!validation.IsValid)
+                {
+                    error = string.Join("; ", validation.Issues.Select(issue => $"{issue.Path}: {issue.Message}"));
+                    return false;
+                }
+                algorithm = new BatchImageAlgorithmDefinition(descriptor, parsed);
+                error = string.Empty;
+                return true;
+            }
+            catch (Exception exception) when (exception is JsonException or NotSupportedException)
+            {
+                error = $"Invalid parameters for '{descriptor.Id}': {exception.Message}";
+                return false;
+            }
+        }
+
+        private static IAlgorithmParameters CreateDefaultParameters(AlgorithmDescriptor descriptor)
+        {
+            IAlgorithmParameters parameters = descriptor.ParameterSchema.Defaults
+                .Deserialize(descriptor.ParameterType, AlgorithmJson.Options) as IAlgorithmParameters
+                ?? throw new InvalidOperationException($"Could not create default parameters for '{descriptor.Id}'.");
+            if (parameters is CannyParameters canny)
+            {
+                canny.LowThreshold = 100;
+                canny.HighThreshold = 200;
+            }
+            return parameters;
         }
     }
 
     internal sealed class NoBatchAlgorithmOptions
     {
-    }
-
-    internal sealed class PseudoColorBatchOptions
-    {
-        [DisplayName("色图")]
-        public ColorVision.Core.ColormapTypes Colormap { get; set; } = ColorVision.Core.ColormapTypes.COLORMAP_JET;
-    }
-
-    internal sealed class WhiteBalanceBatchOptions
-    {
-        [DisplayName("红色通道系数")]
-        public double RedScale { get; set; } = 1;
-
-        [DisplayName("绿色通道系数")]
-        public double GreenScale { get; set; } = 1;
-
-        [DisplayName("蓝色通道系数")]
-        public double BlueScale { get; set; } = 1;
-    }
-
-    internal sealed class BasicAdjustmentBatchOptions
-    {
-        [DisplayName("曝光 (EV, -5~5)")]
-        public double Exposure { get; set; }
-
-        [DisplayName("亮度偏移 % (-100~100)")]
-        public double Brightness { get; set; }
-
-        [DisplayName("对比度 % (-100~100)")]
-        public double Contrast { get; set; }
-
-        [DisplayName("Gamma (0.1~5)")]
-        public double Gamma { get; set; } = 1;
-    }
-
-    internal sealed class ThresholdBatchOptions
-    {
-        [DisplayName("阈值")]
-        public double Threshold { get; set; } = 128;
-
-    }
-
-    internal sealed class GaussianBlurBatchOptions
-    {
-        [DisplayName("核大小（奇数）")]
-        public int KernelSize { get; set; } = 5;
-
-        [DisplayName("Sigma")]
-        public double Sigma { get; set; } = 1.5;
-    }
-
-    internal sealed class MedianBlurBatchOptions
-    {
-        [DisplayName("核大小（奇数）")]
-        public int KernelSize { get; set; } = 5;
-    }
-
-    internal sealed class CannyBatchOptions
-    {
-        [DisplayName("低阈值")]
-        public double LowThreshold { get; set; } = 100;
-
-        [DisplayName("高阈值")]
-        public double HighThreshold { get; set; } = 200;
-    }
-
-    internal sealed class MorphologyBatchOptions
-    {
-        [DisplayName("操作")]
-        public BatchMorphologyOperation Operation { get; set; } = BatchMorphologyOperation.腐蚀;
-
-        [DisplayName("核大小（奇数）")]
-        public int KernelSize { get; set; } = 3;
-
-        [DisplayName("迭代次数")]
-        public int Iterations { get; set; } = 1;
-    }
-
-    internal sealed class FilterDenoiseBatchOptions
-    {
-        [DisplayName("滤波类型")]
-        public BatchFilterDenoiseOperation Operation { get; set; } = BatchFilterDenoiseOperation.双边滤波;
-
-        [DisplayName("核大小（奇数）")]
-        public int KernelSize { get; set; } = 5;
-
-        [DisplayName("颜色 Sigma")]
-        public double SigmaColor { get; set; } = 75;
-
-        [DisplayName("空间 Sigma")]
-        public double SigmaSpace { get; set; } = 75;
-    }
-
-    internal enum BatchMorphologyOperation
-    {
-        腐蚀,
-        膨胀,
-        开运算,
-        闭运算,
-        形态学梯度,
-        顶帽,
-        黑帽,
-    }
-
-    internal enum BatchFilterDenoiseOperation
-    {
-        双边滤波,
-        均值模糊,
     }
 }

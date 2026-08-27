@@ -1,4 +1,5 @@
 using ColorVision.UI;
+using ColorVision.ImageEditor.Algorithms;
 using log4net;
 using OpenCvSharp;
 using System;
@@ -70,7 +71,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
             }
 
             SuffixTextBox.Text = algorithm.Suffix;
-            AlgorithmOptionsContent.Content = algorithm.Options is NoBatchAlgorithmOptions
+            AlgorithmOptionsContent.Content = algorithm.IsFormatOnly || algorithm.Options is NoAlgorithmParameters
                 ? new TextBlock { Text = "此算法无需额外参数", Opacity = 0.7 }
                 : PropertyEditorHelper.GenPropertyEditorControl(algorithm.Options, showCategoryHeader: false);
         }

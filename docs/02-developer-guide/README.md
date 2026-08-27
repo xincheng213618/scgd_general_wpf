@@ -12,6 +12,8 @@
 | 维护客户项目包 | [项目说明](../00-projects/README.md)、[项目包总览](../04-api-reference/projects/README.md) |
 | 修改 Engine、设备、模板或 Flow | [Engine 开发](./engine-development/README.md)、[Engine 组件](../04-api-reference/engine-components/README.md) |
 | 修改 UI 类库、菜单、设置或图像编辑器 | [UI 组件](../04-api-reference/ui-components/README.md) |
+| 新增或迁移本地图像算法 | [统一图像算法平台 V1](./core-concepts/image-algorithm-platform-v1.md) |
+| 使用或维护 ROI 统计、剖面、图像比较 | [ROI 统计 V1（M1）](./core-concepts/roi-statistics-v1.md)、[灰度与颜色剖面 V1（M2）](./core-concepts/image-profile-v1.md)、[图像比较基础 V1（M3）](./core-concepts/image-comparison-v1.md)、[图像比较高级 V1（M4）](./core-concepts/image-comparison-advanced-v1.md) |
 | 新增 Flow 节点或扩展点 | [扩展点](../04-api-reference/extensions/README.md)、[Flow 节点扩展](../04-api-reference/extensions/flow-node.md) |
 | 维护插件市场后端 | [插件市场后端](./backend/README.md) |
 | 维护 Copilot Agent 或工具执行链 | [Copilot Agent Runtime](./core-concepts/copilot-agent-runtime.md) |

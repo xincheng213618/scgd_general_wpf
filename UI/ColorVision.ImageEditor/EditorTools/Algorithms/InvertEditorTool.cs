@@ -1,4 +1,5 @@
 using ColorVision.ImageEditor.Algorithms;
+using ColorVision.Algorithms;
 using log4net;
 using System;
 using System.Diagnostics;
@@ -20,26 +21,29 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             _image = image;
         }
 
-        public void Execute()
+        public async void Execute()
         {
-            Application.Current.Dispatcher.BeginInvoke(() =>
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            log.Info("InvertImage - 开始执行");
+            try
             {
-                Stopwatch stopwatch = new Stopwatch();
-                stopwatch.Start();
-                log.Info("InvertImage - 开始执行");
+                using AlgorithmResult result = await ImageAlgorithmApplier.ApplyAsync(
+                    _image,
+                    AlgorithmInvocation.Create(StandardAlgorithmIds.Invert, new NoAlgorithmParameters()));
+                EnsureSucceeded(result);
+                log.Info($"InvertImage 完成 - 耗时: {stopwatch.Elapsed}");
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+                MessageBox.Show(ex.Message);
+            }
+        }
 
-                try
-                {
-                    ImageAlgorithmApplier.Apply(_image, OpenCvImageAlgorithms.Invert);
-                    stopwatch.Stop();
-                    log.Info($"InvertImage 完成 - 耗时: {stopwatch.Elapsed}");
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex);
-                    MessageBox.Show(ex.Message);
-                }
-            });
+        private static void EnsureSucceeded(AlgorithmResult result)
+        {
+            if (result.Status == AlgorithmResultStatus.Succeeded) return;
+            throw new InvalidOperationException(string.Join("; ", result.Failures));
         }
     }
 }

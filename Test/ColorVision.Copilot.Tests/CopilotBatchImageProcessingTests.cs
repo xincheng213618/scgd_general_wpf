@@ -2,12 +2,153 @@ using ColorVision.Copilot;
 using ColorVision.FileIO;
 using OpenCvSharp;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotBatchImageProcessingTests
 {
+    [Fact]
+    public async Task CopilotRunsOnlyApprovedWhitelistedCatalogAlgorithmAndReturnsEvidence()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"colorvision-copilot-algorithm-{Guid.NewGuid():N}");
+        string sourcePath = Path.Combine(directory, "sample.png");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            byte[] pixels = [0, 1, 127, 255, 16, 240];
+            using (Mat source = new(2, 3, MatType.CV_8UC1))
+            {
+                Marshal.Copy(pixels, 0, source.Data, pixels.Length);
+                Assert.True(Cv2.ImWrite(sourcePath, source));
+            }
+
+            CopilotConvertBatchImagesTool tool = new();
+            CopilotAgentRequest request = new()
+            {
+                UserText = "对图片执行反相",
+                Mode = CopilotAgentMode.Auto,
+                SearchRootPaths = [directory],
+                ReadableLocalDirectoryPaths = [directory],
+                WritableLocalRootPaths = [directory],
+            };
+            Assert.True(tool.InputSchema.TryBind(
+                new Dictionary<string, object?>
+                {
+                    ["sources"] = new[] { sourcePath },
+                    ["format"] = "png",
+                    ["algorithm"] = "colorvision.image.invert",
+                    ["parameters"] = JsonSerializer.SerializeToElement(new { }),
+                },
+                out CopilotAgentToolInput input,
+                out string bindError), bindError);
+
+            CopilotToolResult unapproved = await tool.ExecuteAsync(request, input, CancellationToken.None);
+            Assert.False(unapproved.Success);
+            Assert.Equal(CopilotToolFailureKind.Authorization, unapproved.FailureKind);
+
+            CopilotToolResult approved = await ((ICopilotFrameworkApprovedTool)tool).ExecuteApprovedAsync(request, input, CancellationToken.None);
+            Assert.True(approved.Success, approved.ErrorMessage);
+            string outputPath = Path.Combine(directory, "sample_invert.png");
+            Assert.True(File.Exists(outputPath));
+            using Mat output = Cv2.ImRead(outputPath, ImreadModes.Grayscale);
+            byte[] actual = new byte[pixels.Length];
+            Marshal.Copy(output.Data, actual, 0, actual.Length);
+            Assert.Equal(pixels.Select(value => (byte)~value), actual);
+            using JsonDocument evidence = JsonDocument.Parse(approved.Content);
+            Assert.Equal("colorvision.image.invert", evidence.RootElement.GetProperty("algorithm").GetString());
+            Assert.Equal("1.0.0", evidence.RootElement.GetProperty("algorithm_version").GetString());
+            Assert.Equal(1, evidence.RootElement.GetProperty("parameter_schema_version").GetInt32());
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task CopilotRejectsCatalogAlgorithmOutsideExplicitWhitelist()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"colorvision-copilot-algorithm-denied-{Guid.NewGuid():N}");
+        string sourcePath = Path.Combine(directory, "sample.png");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            using (Mat source = new(2, 2, MatType.CV_8UC1, Scalar.All(42))) Assert.True(Cv2.ImWrite(sourcePath, source));
+            CopilotConvertBatchImagesTool tool = new();
+            CopilotAgentRequest request = new()
+            {
+                UserText = "执行未列入白名单的算法",
+                Mode = CopilotAgentMode.Auto,
+                SearchRootPaths = [directory],
+                ReadableLocalDirectoryPaths = [directory],
+                WritableLocalRootPaths = [directory],
+            };
+            Assert.True(tool.InputSchema.TryBind(
+                new Dictionary<string, object?>
+                {
+                    ["sources"] = new[] { sourcePath },
+                    ["format"] = "png",
+                    ["algorithm"] = "colorvision.image.remove-moire",
+                },
+                out CopilotAgentToolInput input,
+                out string bindError), bindError);
+
+            CopilotToolResult result = await ((ICopilotFrameworkApprovedTool)tool).ExecuteApprovedAsync(request, input, CancellationToken.None);
+            Assert.False(result.Success);
+            Assert.Equal(CopilotToolFailureKind.Authorization, result.FailureKind);
+            Assert.Contains("whitelist", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+            Assert.False(File.Exists(Path.Combine(directory, "sample_demoire.png")));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task CopilotRejectsParametersOutsideTheSelectedAlgorithmContract()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"colorvision-copilot-parameter-denied-{Guid.NewGuid():N}");
+        string sourcePath = Path.Combine(directory, "sample.png");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            using (Mat source = new(2, 2, MatType.CV_8UC1, Scalar.All(42))) Assert.True(Cv2.ImWrite(sourcePath, source));
+            CopilotConvertBatchImagesTool tool = new();
+            CopilotAgentRequest request = new()
+            {
+                UserText = "执行反相并传入无关参数",
+                Mode = CopilotAgentMode.Auto,
+                SearchRootPaths = [directory],
+                ReadableLocalDirectoryPaths = [directory],
+                WritableLocalRootPaths = [directory],
+            };
+            Assert.True(tool.InputSchema.TryBind(
+                new Dictionary<string, object?>
+                {
+                    ["sources"] = new[] { sourcePath },
+                    ["format"] = "png",
+                    ["algorithm"] = "colorvision.image.invert",
+                    ["parameters"] = JsonSerializer.SerializeToElement(new { threshold = 10 }),
+                },
+                out CopilotAgentToolInput input,
+                out string bindError), bindError);
+
+            CopilotToolResult result = await ((ICopilotFrameworkApprovedTool)tool).ExecuteApprovedAsync(request, input, CancellationToken.None);
+
+            Assert.False(result.Success);
+            Assert.Equal(CopilotToolFailureKind.Authorization, result.FailureKind);
+            Assert.Contains("not defined", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+            Assert.False(File.Exists(Path.Combine(directory, "sample_invert.png")));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task ApprovedCopilotToolConvertsARealCvrawAndNeverOverwrites()
     {

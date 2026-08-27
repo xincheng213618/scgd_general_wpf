@@ -1,3 +1,4 @@
+using ColorVision.Algorithms;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
 using System;
@@ -10,6 +11,10 @@ namespace ColorVision.ImageEditor
     public sealed class ImageProcessingContext
     {
         private readonly ImageProcessingContextBinding _binding;
+        private readonly object _algorithmPreviewSync = new();
+        private Guid _activeAlgorithmPreviewSessionId;
+        private Guid _latestAlgorithmPreviewInvocationId;
+        private long _algorithmPreviewGeneration;
 
         internal ImageProcessingContext(
             ImageViewConfig config,
@@ -29,7 +34,13 @@ namespace ColorVision.ImageEditor
 
         public Dispatcher Dispatcher { get; }
 
+        public AlgorithmOverlayStore AlgorithmOverlays { get; } = new();
+
         public bool IsInitialized => _binding.IsInitialized();
+
+        public Guid DocumentInstanceId => _binding.GetDocumentInstanceId();
+
+        public bool IsDisposed => _binding.IsDisposed();
 
         public long ImageRevision => _binding.GetImageRevision();
 
@@ -45,6 +56,8 @@ namespace ColorVision.ImageEditor
 
         public void NotifySourcePixelsChanged()
         {
+            InvalidateAlgorithmPreviewSessions();
+            AlgorithmOverlays.ClearTransient();
             _binding.NotifySourcePixelsChanged();
         }
 
@@ -69,7 +82,92 @@ namespace ColorVision.ImageEditor
 
         public void SetImageSource(ImageSource imageSource)
         {
+            InvalidateAlgorithmPreviewSessions();
+            AlgorithmOverlays.Clear();
             _binding.SetImageSource(imageSource);
+        }
+
+        internal void BeginAlgorithmPreviewSession(Guid sessionId)
+        {
+            lock (_algorithmPreviewSync)
+            {
+                _algorithmPreviewGeneration++;
+                _activeAlgorithmPreviewSessionId = sessionId;
+                _latestAlgorithmPreviewInvocationId = Guid.Empty;
+            }
+        }
+
+        internal bool SetLatestAlgorithmPreviewInvocation(Guid sessionId, Guid invocationId)
+        {
+            lock (_algorithmPreviewSync)
+            {
+                if (_activeAlgorithmPreviewSessionId != sessionId) return false;
+                _latestAlgorithmPreviewInvocationId = invocationId;
+                return true;
+            }
+        }
+
+        internal bool IsCurrentAlgorithmPreview(Guid sessionId, Guid invocationId)
+        {
+            lock (_algorithmPreviewSync)
+            {
+                return _activeAlgorithmPreviewSessionId == sessionId
+                    && _latestAlgorithmPreviewInvocationId == invocationId;
+            }
+        }
+
+        internal bool HasActiveAlgorithmPreview
+        {
+            get
+            {
+                lock (_algorithmPreviewSync) return _activeAlgorithmPreviewSessionId != Guid.Empty;
+            }
+        }
+
+        internal long AlgorithmPreviewGeneration
+        {
+            get
+            {
+                lock (_algorithmPreviewSync) return _algorithmPreviewGeneration;
+            }
+        }
+
+        internal bool TryCompleteAlgorithmPreview(Guid sessionId, Guid invocationId)
+        {
+            lock (_algorithmPreviewSync)
+            {
+                if (_activeAlgorithmPreviewSessionId != sessionId
+                    || _latestAlgorithmPreviewInvocationId != invocationId)
+                {
+                    return false;
+                }
+                _algorithmPreviewGeneration++;
+                _activeAlgorithmPreviewSessionId = Guid.Empty;
+                _latestAlgorithmPreviewInvocationId = Guid.Empty;
+                return true;
+            }
+        }
+
+        internal bool TryCancelAlgorithmPreview(Guid sessionId)
+        {
+            lock (_algorithmPreviewSync)
+            {
+                if (_activeAlgorithmPreviewSessionId != sessionId) return false;
+                _algorithmPreviewGeneration++;
+                _activeAlgorithmPreviewSessionId = Guid.Empty;
+                _latestAlgorithmPreviewInvocationId = Guid.Empty;
+                return true;
+            }
+        }
+
+        private void InvalidateAlgorithmPreviewSessions()
+        {
+            lock (_algorithmPreviewSync)
+            {
+                _algorithmPreviewGeneration++;
+                _activeAlgorithmPreviewSessionId = Guid.Empty;
+                _latestAlgorithmPreviewInvocationId = Guid.Empty;
+            }
         }
 
         public void UpdateZoomAndScale()
@@ -81,6 +179,10 @@ namespace ColorVision.ImageEditor
     internal sealed class ImageProcessingContextBinding
     {
         public required Func<bool> IsInitialized { get; init; }
+
+        public required Func<Guid> GetDocumentInstanceId { get; init; }
+
+        public required Func<bool> IsDisposed { get; init; }
 
         public required Func<long> GetImageRevision { get; init; }
 
