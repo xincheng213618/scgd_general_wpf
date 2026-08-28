@@ -262,22 +262,9 @@ namespace ColorVision.Copilot
                 return true;
             }
 
-            var initialContext = CaptureHostedTurnSnapshot(
+            var submissionContext = CaptureHostedTurnSnapshot(
                 conversation,
                 attachmentOverride: Array.Empty<CopilotAttachmentItem>());
-            if (!TryResolveProjectTrustForSubmission(
-                initialContext,
-                () => CaptureHostedTurnSnapshot(
-                    conversation,
-                    attachmentOverride: Array.Empty<CopilotAttachmentItem>()),
-                out var submissionContext))
-            {
-                message = PauseGoalAfterStartQueueFailure(
-                    conversation,
-                    goal,
-                    "项目工作区尚未获得本轮所需的信任确认，编辑后的目标首轮工作没有进入队列");
-                return true;
-            }
 
             var requestProfile = CreateConversationRequestProfile(
                 profile,

@@ -1,4 +1,3 @@
-using ColorVision.Themes;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -15,7 +14,7 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Cie
 {
-    public partial class ManualColorGamutWindow : Window
+    public partial class ManualColorGamutView : UserControl
     {
         private readonly List<StandardOption> standardOptions = new();
         private readonly ObservableCollection<ManualColorGamutResultRow> resultRows = new();
@@ -23,13 +22,12 @@ namespace ColorVision.ImageEditor.Cie
         private bool isUpdatingText;
         private bool isUpdatingSelection;
 
-        public ManualColorGamutWindow()
+        public ManualColorGamutView()
         {
             InitializeComponent();
-            this.ApplyCaption();
         }
 
-        private void Window_Initialized(object sender, EventArgs e)
+        private void View_Initialized(object sender, EventArgs e)
         {
             standardOptions.AddRange(CieColorGamutStandards.All.Select(item => new StandardOption(item)));
             StandardOption? defaultOption = standardOptions.FirstOrDefault(item => string.Equals(item.Standard.Name, CieGamuts.SRgb.Name, StringComparison.Ordinal))
@@ -294,7 +292,7 @@ namespace ColorVision.ImageEditor.Cie
         {
             if (resultRows.Count == 0)
             {
-                MessageBox.Show(this, "没有可导出的计算结果。", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowMessage("没有可导出的计算结果。", MessageBoxImage.Information);
                 return;
             }
 
@@ -305,7 +303,9 @@ namespace ColorVision.ImageEditor.Cie
                 FileName = $"ManualColorGamut_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
             };
 
-            if (dialog.ShowDialog(this) != true)
+            Window? owner = Window.GetWindow(this);
+            bool? accepted = owner == null ? dialog.ShowDialog() : dialog.ShowDialog(owner);
+            if (accepted != true)
             {
                 return;
             }
@@ -313,12 +313,25 @@ namespace ColorVision.ImageEditor.Cie
             try
             {
                 WriteCsv(dialog.FileName, BuildCsvRows());
-                MessageBox.Show(this, $"导出成功：{dialog.FileName}", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowMessage($"导出成功：{dialog.FileName}", MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, $"导出失败：{ex.Message}", Title, MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowMessage($"导出失败：{ex.Message}", MessageBoxImage.Error);
             }
+        }
+
+        private void ShowMessage(string message, MessageBoxImage image)
+        {
+            const string title = "CIE 色度图";
+            Window? owner = Window.GetWindow(this);
+            if (owner == null)
+            {
+                MessageBox.Show(message, title, MessageBoxButton.OK, image);
+                return;
+            }
+
+            MessageBox.Show(owner, message, title, MessageBoxButton.OK, image);
         }
 
         private IEnumerable<IReadOnlyList<string>> BuildCsvRows()

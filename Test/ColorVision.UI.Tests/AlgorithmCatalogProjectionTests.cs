@@ -107,6 +107,12 @@ public sealed class AlgorithmCatalogProjectionTests
         Assert.Equal(expectedInteractive.Length, interactiveEntries.Select(item => item.Presentation.CompatibilityId).Distinct().Count());
         Assert.All(interactiveEntries, item => Assert.True(catalog.TryResolveAlias(item.Presentation.CompatibilityId, out AlgorithmDescriptor? resolved)
             && resolved?.Id == item.Descriptor.Id, item.Presentation.CompatibilityId));
+        AlgorithmInteractiveCatalogEntry[] filters = interactiveEntries
+            .Where(item => item.Presentation.Group?.Id == "AlgorithmFilters")
+            .ToArray();
+        Assert.Equal(new[] { "GaussianBlur", "MedianBlur", "BilateralFilter", "Blur" },
+            filters.Select(item => item.Presentation.CompatibilityId));
+        Assert.All(filters, item => Assert.Equal("滤波", item.Presentation.Group!.DisplayName));
         Assert.Equal(expectedBatch.Length, AlgorithmCatalogProjection.ForBatchImageProcessing(catalog)
             .Select(item => item.Presentation!.BatchImageProcessingOrder).Distinct().Count());
 
@@ -175,6 +181,56 @@ public sealed class AlgorithmCatalogProjectionTests
             "test.presentation-negative-order",
             AlgorithmHostCapabilities.Batch | AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local,
             new AlgorithmPresentationMetadata(BatchImageProcessingOrder: -1))));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AlgorithmCatalog().Register(Descriptor(
+            "test.presentation-negative-group-order",
+            AlgorithmHostCapabilities.Interactive | AlgorithmHostCapabilities.Local,
+            new AlgorithmPresentationMetadata(InteractiveEntries:
+            [
+                new AlgorithmInteractivePresentation(
+                    "GroupedEntry",
+                    1)
+                {
+                    Group = new AlgorithmInteractiveGroupPresentation("InvalidGroup", -1),
+                },
+            ]))));
+        Assert.Throws<InvalidOperationException>(() => new AlgorithmCatalog().Register(Descriptor(
+            "test.presentation-group-id-conflict",
+            AlgorithmHostCapabilities.Interactive | AlgorithmHostCapabilities.Local,
+            new AlgorithmPresentationMetadata(InteractiveEntries:
+            [
+                new AlgorithmInteractivePresentation(
+                    "SameId",
+                    1)
+                {
+                    Group = new AlgorithmInteractiveGroupPresentation("SameId", 1),
+                },
+            ]))));
+
+        AlgorithmCatalog groupedCatalog = new();
+        groupedCatalog.Register(Descriptor(
+            "test.presentation-group-owner",
+            AlgorithmHostCapabilities.Interactive | AlgorithmHostCapabilities.Local,
+            new AlgorithmPresentationMetadata(InteractiveEntries:
+            [
+                new AlgorithmInteractivePresentation(
+                    "FirstGroupedEntry",
+                    1)
+                {
+                    Group = new AlgorithmInteractiveGroupPresentation("SharedGroup", 1, "Shared"),
+                },
+            ])));
+        Assert.Throws<InvalidOperationException>(() => groupedCatalog.Register(Descriptor(
+            "test.presentation-group-conflict",
+            AlgorithmHostCapabilities.Interactive | AlgorithmHostCapabilities.Local,
+            new AlgorithmPresentationMetadata(InteractiveEntries:
+            [
+                new AlgorithmInteractivePresentation(
+                    "SecondGroupedEntry",
+                    2)
+                {
+                    Group = new AlgorithmInteractiveGroupPresentation("SharedGroup", 2, "Changed"),
+                },
+            ]))));
     }
 
     [Fact]
@@ -431,12 +487,16 @@ public sealed class AlgorithmCatalogProjectionTests
     [Fact]
     public void AlgorithmsContextMenuRendersTheCatalogProjectionIncludingGenericFallback()
     {
+        AlgorithmInteractiveGroupPresentation group = new("TestFilterGroup", 40, "Test filters");
         AlgorithmCatalog catalog = new();
         catalog.Register(Descriptor(
             "test.context-menu-projection",
             AlgorithmHostCapabilities.Interactive | AlgorithmHostCapabilities.Local,
             new AlgorithmPresentationMetadata(
-                InteractiveEntries: [new AlgorithmInteractivePresentation("TestContextMenuProjection", 42, "Projected algorithm")])));
+                InteractiveEntries:
+                [
+                    new AlgorithmInteractivePresentation("TestContextMenuProjection", 42, "Projected algorithm") { Group = group },
+                ])));
 
         using AlgorithmExecutionScheduler scheduler = new(cpuConcurrency: 1);
         AlgorithmRuntime runtime = new(catalog, [new ProjectionProvider()], scheduler);
@@ -463,9 +523,15 @@ public sealed class AlgorithmCatalogProjectionTests
             WpfTestHost.Invoke(() =>
             {
                 AlgorithmsContextMenu menu = new(view.EditorContext.ProcessingContext, runtime);
-                ColorVision.UI.Menus.MenuItemMetadata projected = Assert.Single(menu.GetContextMenuItems(), item => item.GuidId == "TestContextMenuProjection");
-                Assert.Equal("Algorithms", projected.OwnerGuid);
-                Assert.Equal(42, projected.Order);
+                List<ColorVision.UI.Menus.MenuItemMetadata> items = menu.GetContextMenuItems();
+                ColorVision.UI.Menus.MenuItemMetadata category = Assert.Single(items, item => item.GuidId == group.Id);
+                Assert.Equal("Algorithms", category.OwnerGuid);
+                Assert.Equal(group.Order, category.Order);
+                Assert.Equal(group.DisplayName, category.Header);
+                Assert.Null(category.Command);
+                ColorVision.UI.Menus.MenuItemMetadata projected = Assert.Single(items, item => item.GuidId == "TestContextMenuProjection");
+                Assert.Equal(group.Id, projected.OwnerGuid);
+                Assert.Equal(1, projected.Order);
                 Assert.Equal("Projected algorithm", projected.Header);
                 Assert.NotNull(projected.Command);
 

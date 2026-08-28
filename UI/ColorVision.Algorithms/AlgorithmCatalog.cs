@@ -55,11 +55,20 @@ public sealed record AlgorithmPresentationMetadata(
     int? BatchImageProcessingOrder = null,
     IReadOnlyList<AlgorithmInteractivePresentation>? InteractiveEntries = null);
 
+public sealed record AlgorithmInteractiveGroupPresentation(
+    string Id,
+    int Order,
+    string? DisplayName = null,
+    string? ResourceKey = null);
+
 public sealed record AlgorithmInteractivePresentation(
     string CompatibilityId,
     int Order,
     string? DisplayName = null,
-    string? ResourceKey = null);
+    string? ResourceKey = null)
+{
+    public AlgorithmInteractiveGroupPresentation? Group { get; init; }
+}
 
 public sealed record AlgorithmInteractiveCatalogEntry(
     AlgorithmDescriptor Descriptor,
@@ -91,6 +100,7 @@ public sealed class AlgorithmCatalog : IAlgorithmCatalog
     private readonly Dictionary<AlgorithmId, AlgorithmDescriptor> _descriptors = new();
     private readonly Dictionary<string, AlgorithmId> _aliases = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, AlgorithmId> _interactivePresentationIds = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, AlgorithmInteractiveGroupPresentation> _interactiveGroups = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<int, AlgorithmId> _batchPresentationOrders = new();
 
     public IReadOnlyCollection<AlgorithmDescriptor> Descriptors
@@ -120,6 +130,11 @@ public sealed class AlgorithmCatalog : IAlgorithmCatalog
             .ToArray();
         AlgorithmInteractivePresentation[] interactiveEntries = (snapshot.Presentation?.InteractiveEntries
             ?? Array.Empty<AlgorithmInteractivePresentation>()).ToArray();
+        AlgorithmInteractiveGroupPresentation[] interactiveGroups = interactiveEntries
+            .Select(entry => entry.Group)
+            .OfType<AlgorithmInteractiveGroupPresentation>()
+            .DistinctBy(group => group.Id, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
         lock (_sync)
         {
@@ -136,6 +151,19 @@ public sealed class AlgorithmCatalog : IAlgorithmCatalog
             {
                 if (_interactivePresentationIds.TryGetValue(entry.CompatibilityId, out AlgorithmId existing) && existing != snapshot.Id)
                     throw new InvalidOperationException($"Interactive presentation ID '{entry.CompatibilityId}' is already registered for '{existing}'.");
+                if (_interactiveGroups.ContainsKey(entry.CompatibilityId))
+                    throw new InvalidOperationException($"Interactive presentation ID '{entry.CompatibilityId}' conflicts with an interactive group ID.");
+            }
+
+            foreach (AlgorithmInteractiveGroupPresentation group in interactiveGroups)
+            {
+                if (_interactivePresentationIds.ContainsKey(group.Id))
+                    throw new InvalidOperationException($"Interactive group ID '{group.Id}' conflicts with an interactive presentation ID.");
+                if (_interactiveGroups.TryGetValue(group.Id, out AlgorithmInteractiveGroupPresentation? existingGroup)
+                    && existingGroup != group)
+                {
+                    throw new InvalidOperationException($"Interactive group ID '{group.Id}' is registered with different presentation metadata.");
+                }
             }
 
             int? batchOrder = snapshot.Presentation?.BatchImageProcessingOrder;
@@ -152,6 +180,8 @@ public sealed class AlgorithmCatalog : IAlgorithmCatalog
             foreach (string alias in normalizedAliases) _aliases[alias] = snapshot.Id;
             foreach (AlgorithmInteractivePresentation entry in interactiveEntries)
                 _interactivePresentationIds.Add(entry.CompatibilityId, snapshot.Id);
+            foreach (AlgorithmInteractiveGroupPresentation group in interactiveGroups)
+                _interactiveGroups.TryAdd(group.Id, group);
             if (batchOrder.HasValue) _batchPresentationOrders.Add(batchOrder.Value, snapshot.Id);
         }
     }
@@ -187,7 +217,7 @@ public sealed class AlgorithmCatalog : IAlgorithmCatalog
                 InteractiveEntries = descriptor.Presentation.InteractiveEntries == null
                     ? null
                     : Array.AsReadOnly(descriptor.Presentation.InteractiveEntries
-                        .Select(entry => entry with { })
+                        .Select(entry => entry with { Group = entry.Group is null ? null : entry.Group with { } })
                         .ToArray()),
             };
         return descriptor with
@@ -239,6 +269,7 @@ public sealed class AlgorithmCatalog : IAlgorithmCatalog
             throw new ArgumentOutOfRangeException(nameof(descriptor), "Batch image-processing order cannot be negative.");
 
         HashSet<string> ids = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, AlgorithmInteractiveGroupPresentation> groups = new(StringComparer.OrdinalIgnoreCase);
         foreach (AlgorithmInteractivePresentation entry in presentation?.InteractiveEntries ?? Array.Empty<AlgorithmInteractivePresentation>())
         {
             if (string.IsNullOrWhiteSpace(entry.CompatibilityId))
@@ -247,7 +278,20 @@ public sealed class AlgorithmCatalog : IAlgorithmCatalog
                 throw new ArgumentOutOfRangeException(nameof(descriptor), "Interactive presentation order cannot be negative.");
             if (!ids.Add(entry.CompatibilityId))
                 throw new InvalidOperationException($"Interactive presentation ID '{entry.CompatibilityId}' is duplicated for '{descriptor.Id}'.");
+            if (entry.Group is not AlgorithmInteractiveGroupPresentation group) continue;
+            if (string.IsNullOrWhiteSpace(group.Id))
+                throw new ArgumentException("Interactive group ID cannot be empty.", nameof(descriptor));
+            if (group.Order < 0)
+                throw new ArgumentOutOfRangeException(nameof(descriptor), "Interactive group order cannot be negative.");
+            if (groups.TryGetValue(group.Id, out AlgorithmInteractiveGroupPresentation? existingGroup)
+                && existingGroup != group)
+            {
+                throw new InvalidOperationException($"Interactive group ID '{group.Id}' has inconsistent presentation metadata for '{descriptor.Id}'.");
+            }
+            groups[group.Id] = group;
         }
+        if (ids.Overlaps(groups.Keys))
+            throw new InvalidOperationException($"An interactive presentation ID conflicts with an interactive group ID for '{descriptor.Id}'.");
     }
 }
 

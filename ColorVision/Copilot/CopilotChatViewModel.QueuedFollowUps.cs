@@ -74,20 +74,7 @@ namespace ColorVision.Copilot
             var initialSubmissionContext = CaptureHostedTurnSnapshot(
                 conversation,
                 attachmentOverride: capturedAttachments);
-            CopilotAgentHostContextSnapshot submissionContext;
-            if (isLocalCommand)
-            {
-                submissionContext = initialSubmissionContext;
-            }
-            else if (!TryResolveProjectTrustForSubmission(
-                         initialSubmissionContext,
-                         () => CaptureHostedTurnSnapshot(
-                             conversation,
-                             attachmentOverride: capturedAttachments),
-                         out submissionContext))
-            {
-                return false;
-            }
+            var submissionContext = initialSubmissionContext;
             var requestProfile = CreateConversationRequestProfile(
                 profile,
                 conversation,
@@ -766,16 +753,6 @@ namespace ColorVision.Copilot
                 var submissionContext = CaptureHostedTurnSnapshot(
                     conversation,
                     attachmentOverride: attachments);
-                if (!record.IsLocalCommand
-                    && CopilotCodexProjectTrustPersistence.RequiresDecision(
-                        submissionContext.PrimaryTrustedProjectRootPath,
-                        submissionContext.ProjectInstructionDiscoveryOptions))
-                {
-                    if (_followUpQueue.RestoreRecoveryToDraft(runId))
-                        restoredDraftCount++;
-                    continue;
-                }
-
                 var requestProfile = CreateConversationRequestProfile(
                     profile,
                     conversation,

@@ -1100,4 +1100,7 @@ Double-click object: Focus</value>
   <data name="ThreeD_WireframeRenderMode" xml:space="preserve">
     <value>Wireframe</value>
   </data>
+  <data name="Algorithm_FilterCategory" xml:space="preserve">
+    <value>Filtering</value>
+  </data>
 </root>

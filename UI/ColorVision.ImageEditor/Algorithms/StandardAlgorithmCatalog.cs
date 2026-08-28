@@ -57,6 +57,12 @@ namespace ColorVision.ImageEditor.Algorithms
             | AlgorithmHostCapabilities.Local
             | AlgorithmHostCapabilities.Deterministic;
 
+        private static readonly AlgorithmInteractiveGroupPresentation FilterGroup = new(
+            "AlgorithmFilters",
+            8,
+            "滤波",
+            "Algorithm_FilterCategory");
+
         public static AlgorithmCatalog Create()
         {
             AlgorithmCatalog catalog = new();
@@ -71,9 +77,9 @@ namespace ColorVision.ImageEditor.Algorithms
             catalog.Register(Descriptor(StandardAlgorithmIds.Sharpen, "锐化", "像素处理", "固定 3x3 锐化核；保持输入格式。", new NoAlgorithmParameters(), CommonFormats, "_sharpen",
                 presentation: Presentation(7, Entry("Sharpen", 7, resourceKey: "Sharpening"))), "Sharpen");
             catalog.Register(Descriptor(StandardAlgorithmIds.GaussianBlur, "高斯模糊", "像素处理", "奇数核高斯模糊；保持输入格式。", new GaussianBlurParameters(), CommonFormats, "_gaussian",
-                presentation: Presentation(8, Entry("GaussianBlur", 8, resourceKey: "GaussianBlur"))), "GaussianBlur");
+                presentation: Presentation(8, Entry("GaussianBlur", 8, resourceKey: "GaussianBlur", group: FilterGroup))), "GaussianBlur");
             catalog.Register(Descriptor(StandardAlgorithmIds.MedianBlur, "中值滤波", "像素处理", "奇数核中值滤波；保持输入格式。", new MedianBlurParameters(), CommonFormats, "_median",
-                presentation: Presentation(9, Entry("MedianBlur", 9, resourceKey: "MedianFilter"))), "MedianBlur");
+                presentation: Presentation(9, Entry("MedianBlur", 9, resourceKey: "MedianFilter", group: FilterGroup))), "MedianBlur");
             catalog.Register(Descriptor(StandardAlgorithmIds.Morphology, "形态学操作", "像素处理", "腐蚀、膨胀、开闭运算、梯度、顶帽或黑帽。", new MorphologyParameters(), CommonFormats, "_morphology",
                 presentation: Presentation(12,
                     Entry("Erode", 12, "腐蚀"),
@@ -81,8 +87,8 @@ namespace ColorVision.ImageEditor.Algorithms
                     Entry("MorphologyEx", 14, "形态学操作"))), "Morphology", "Erode", "Dilate", "MorphologyEx");
             catalog.Register(Descriptor(StandardAlgorithmIds.Denoise, "降噪滤波", "像素处理", "双边滤波或均值滤波；颜色 Sigma 按 0..255 标称刻度映射，四通道 alpha 保持不变。", new DenoiseParameters(), CommonFormats, "_denoise",
                 presentation: Presentation(13,
-                    Entry("BilateralFilter", 16, "双边滤波"),
-                    Entry("Blur", 17, "均值模糊"))) with { Version = new AlgorithmVersion(1, 1, 0) }, "Denoise", "BilateralFilter", "Blur");
+                    Entry("BilateralFilter", 16, "双边滤波", group: FilterGroup),
+                    Entry("Blur", 17, "均值模糊", group: FilterGroup))) with { Version = new AlgorithmVersion(1, 1, 0) }, "Denoise", "BilateralFilter", "Blur");
             catalog.Register(Descriptor(StandardAlgorithmIds.AutoLevels, "自动色阶", "像素处理", "按输入全局最小值和最大值拉伸到位深标称范围。", new NoAlgorithmParameters(), CommonFormats, "_autolevels",
                 presentation: Presentation(3, Entry("AutoLevelsAdjust", 2, resourceKey: "AutoLevelsAdjustment"))), "AutoLevels", "AutoLevelsAdjust");
             catalog.Register(Descriptor(StandardAlgorithmIds.WhiteBalance, "白平衡", "像素处理", "缩放 B/G/R 通道；四通道 alpha 保持不变。", new WhiteBalanceParameters(), ColorFormats, "_whitebalance",
@@ -391,8 +397,9 @@ namespace ColorVision.ImageEditor.Algorithms
             string compatibilityId,
             int order,
             string? displayName = null,
-            string? resourceKey = null)
-            => new(compatibilityId, order, displayName, resourceKey);
+            string? resourceKey = null,
+            AlgorithmInteractiveGroupPresentation? group = null)
+            => new(compatibilityId, order, displayName, resourceKey) { Group = group };
 
         private static (double? Minimum, double? Maximum, IReadOnlyList<string>? Allowed, string? Unit) ResolveFieldContract(
             AlgorithmId id,

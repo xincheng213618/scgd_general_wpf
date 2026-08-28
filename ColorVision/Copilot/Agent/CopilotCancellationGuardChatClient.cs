@@ -81,6 +81,7 @@ namespace ColorVision.Copilot
                 _enumerator?.Current
                 ?? throw new ObjectDisposedException(nameof(CancellationGuardEnumerator));
 
+            [DebuggerNonUserCode]
             public async ValueTask<bool> MoveNextAsync(CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();

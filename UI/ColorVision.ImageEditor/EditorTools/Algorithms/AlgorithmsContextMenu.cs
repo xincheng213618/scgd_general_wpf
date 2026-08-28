@@ -117,14 +117,41 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 },
             ];
 
-            foreach (AlgorithmInteractiveCatalogEntry entry in AlgorithmCatalogProjection.ForInteractiveMenu(Runtime.Catalog)
-                .Where(entry => CanExecuteDescriptor(entry.Descriptor)))
+            AlgorithmInteractiveCatalogEntry[] interactiveEntries = AlgorithmCatalogProjection.ForInteractiveMenu(Runtime.Catalog)
+                .Where(entry => CanExecuteDescriptor(entry.Descriptor))
+                .ToArray();
+            foreach (AlgorithmInteractiveGroupPresentation group in interactiveEntries
+                .Select(entry => entry.Presentation.Group)
+                .OfType<AlgorithmInteractiveGroupPresentation>()
+                .DistinctBy(group => group.Id, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(group => group.Order)
+                .ThenBy(group => group.Id, StringComparer.Ordinal))
             {
                 items.Add(new MenuItemMetadata
                 {
                     OwnerGuid = "Algorithms",
+                    GuidId = group.Id,
+                    Order = group.Order,
+                    Header = ResolveHeader(group.DisplayName, group.ResourceKey, group.Id),
+                });
+            }
+
+            Dictionary<string, int> groupItemOrders = new(StringComparer.OrdinalIgnoreCase);
+            foreach (AlgorithmInteractiveCatalogEntry entry in interactiveEntries)
+            {
+                string ownerGuid = entry.Presentation.Group?.Id ?? "Algorithms";
+                int order = entry.Presentation.Order;
+                if (entry.Presentation.Group != null)
+                {
+                    groupItemOrders.TryGetValue(ownerGuid, out int previousOrder);
+                    order = previousOrder + 1;
+                    groupItemOrders[ownerGuid] = order;
+                }
+                items.Add(new MenuItemMetadata
+                {
+                    OwnerGuid = ownerGuid,
                     GuidId = entry.Presentation.CompatibilityId,
-                    Order = entry.Presentation.Order,
+                    Order = order,
                     Header = ResolveHeader(entry),
                     Command = CreateCommand(entry),
                 });
@@ -205,14 +232,17 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             => StandardAlgorithmAdapterContract.IsCompatible(descriptor);
 
         private static string ResolveHeader(AlgorithmInteractiveCatalogEntry entry)
+            => ResolveHeader(entry.Presentation.DisplayName, entry.Presentation.ResourceKey, entry.Descriptor.Name);
+
+        private static string ResolveHeader(string? displayName, string? resourceKey, string fallback)
         {
-            if (!string.IsNullOrWhiteSpace(entry.Presentation.ResourceKey))
+            if (!string.IsNullOrWhiteSpace(resourceKey))
             {
                 CultureInfo culture = ColorVision.ImageEditor.Properties.Resources.Culture ?? CultureInfo.CurrentUICulture;
-                string? localized = ColorVision.ImageEditor.Properties.Resources.ResourceManager.GetString(entry.Presentation.ResourceKey, culture);
+                string? localized = ColorVision.ImageEditor.Properties.Resources.ResourceManager.GetString(resourceKey, culture);
                 if (!string.IsNullOrWhiteSpace(localized)) return localized;
             }
-            return entry.Presentation.DisplayName ?? entry.Descriptor.Name;
+            return displayName ?? fallback;
         }
 
         private bool IsColorImage() => imageContext.Config.GetProperties<int>("Channel") > 1;

@@ -75,7 +75,7 @@ namespace ColorVision.Copilot
             string? globalInstructionRootPath,
             CopilotProjectInstructionDiscoveryOptions? discoveryOptions = null)
         {
-            var options = discoveryOptions ?? CopilotProjectInstructionDiscoveryConfig.Load(globalInstructionRootPath);
+            var options = discoveryOptions ?? CopilotProjectInstructionDiscoveryConfig.CreateDefault();
             var candidates = BuildCandidatePaths(searchRootPaths, activeDocumentPath, additionalTargetFilePaths, options);
             AddGlobalCandidate(candidates, globalInstructionRootPath);
             return DiscoverCandidates(candidates, options.MaximumBytes);

@@ -1100,4 +1100,7 @@
   <data name="ThreeD_WireframeRenderMode" xml:space="preserve">
     <value>線框</value>
   </data>
+  <data name="Algorithm_FilterCategory" xml:space="preserve">
+    <value>濾波</value>
+  </data>
 </root>

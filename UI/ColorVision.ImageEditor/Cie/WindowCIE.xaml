@@ -46,6 +46,10 @@
         </Style>
     </Window.Resources>
 
+    <TabControl x:Name="CieTabs"
+                BorderThickness="0"
+                Background="{DynamicResource GlobalBackground}">
+        <TabItem Header="色度图">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -286,4 +290,9 @@
                        Text="Cursor: --" />
         </Border>
     </Grid>
+        </TabItem>
+        <TabItem Header="色域计算">
+            <cie:ManualColorGamutView />
+        </TabItem>
+    </TabControl>
 </Window>

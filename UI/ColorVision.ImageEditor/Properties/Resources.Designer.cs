@@ -187,6 +187,15 @@ namespace ColorVision.ImageEditor.Properties {
         }
 
         /// <summary>
+        ///   查找类似 滤波 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_FilterCategory {
+            get {
+                return ResourceManager.GetString("Algorithm_FilterCategory", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 伽马校正 的本地化字符串。
         /// </summary>
         public static string Algorithm_GammaCorrectionTitle {
