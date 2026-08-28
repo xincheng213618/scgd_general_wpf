@@ -24,6 +24,17 @@ namespace ColorVision.ImageEditor.Algorithms
         public static readonly AlgorithmId RoiStatistics = new("colorvision.analysis.roi-statistics");
         public static readonly AlgorithmId ImageProfile = new("colorvision.analysis.image-profile");
         public static readonly AlgorithmId ImageComparison = new("colorvision.analysis.image-comparison");
+        public static readonly AlgorithmId BlobComponents = new("colorvision.analysis.blob-components");
+        public static readonly AlgorithmId Contours = new("colorvision.analysis.contours");
+        public static readonly AlgorithmId SubpixelEdge = new("colorvision.measurement.subpixel-edge");
+        public static readonly AlgorithmId LineFit = new("colorvision.measurement.line-fit");
+        public static readonly AlgorithmId CircleFit = new("colorvision.measurement.circle-fit");
+        public static readonly AlgorithmId GeometricTransform = new("colorvision.geometry.transform");
+        public static readonly AlgorithmId ImageRegistration = new("colorvision.geometry.registration");
+        public static readonly AlgorithmId LensDistortionCorrection = new("colorvision.geometry.lens-distortion-correction");
+        public static readonly AlgorithmId ImagingCorrection = new("colorvision.calibration.imaging-correction");
+        public static readonly AlgorithmId FrequencySpectrum = new("colorvision.frequency.spectrum-analysis");
+        public static readonly AlgorithmId MoireAnalysis = new("colorvision.frequency.moire-analysis");
     }
 
     public abstract class StandardAlgorithmParameters : IAlgorithmParameters
@@ -168,13 +179,22 @@ namespace ColorVision.ImageEditor.Algorithms
 
     public sealed class ThresholdParameters : StandardAlgorithmParameters
     {
-        [DisplayName("阈值")]
+        public const double MaximumNominalThreshold = byte.MaxValue;
+        public const double MaximumAbsoluteThreshold = ushort.MaxValue;
+
+        [Browsable(false), JsonIgnore]
+        public override int SchemaVersion => 2;
+
+        [DisplayName("按位深标称范围缩放")]
+        public bool UseNominalRange { get; set; } = true;
+
+        [DisplayName("阈值（标称模式为 0..255）")]
         public double Threshold { get; set; } = 128;
 
         public override AlgorithmValidationResult Validate()
         {
             AlgorithmValidationResult result = new();
-            Range(result, nameof(Threshold), Threshold, 0, ushort.MaxValue);
+            Range(result, nameof(Threshold), Threshold, 0, UseNominalRange ? MaximumNominalThreshold : MaximumAbsoluteThreshold);
             return result;
         }
     }
@@ -249,13 +269,19 @@ namespace ColorVision.ImageEditor.Algorithms
 
     public sealed class DenoiseParameters : StandardAlgorithmParameters
     {
+        [Browsable(false), JsonIgnore]
+        public override int SchemaVersion => 2;
+
         [DisplayName("滤波类型")]
         public StandardDenoiseOperation Operation { get; set; }
 
         [DisplayName("核大小（奇数）")]
         public int KernelSize { get; set; } = 5;
 
-        [DisplayName("颜色 Sigma")]
+        [DisplayName("颜色 Sigma 按位深标称范围缩放")]
+        public bool UseNominalColorSigma { get; set; } = true;
+
+        [DisplayName("颜色 Sigma（标称模式为 0..255）")]
         public double SigmaColor { get; set; } = 75;
 
         [DisplayName("空间 Sigma")]
@@ -266,7 +292,7 @@ namespace ColorVision.ImageEditor.Algorithms
             AlgorithmValidationResult result = new();
             if (!Enum.IsDefined(Operation)) result.Add(nameof(Operation), "invalid_enum", "Unknown denoise operation.");
             Odd(result, nameof(KernelSize), KernelSize, 1, 255);
-            Range(result, nameof(SigmaColor), SigmaColor, 0, 10000);
+            Range(result, nameof(SigmaColor), SigmaColor, 0, UseNominalColorSigma ? byte.MaxValue : 10000);
             Range(result, nameof(SigmaSpace), SigmaSpace, 0, 10000);
             return result;
         }

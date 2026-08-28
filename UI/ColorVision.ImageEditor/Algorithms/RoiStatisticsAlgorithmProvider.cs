@@ -11,9 +11,10 @@ using System.Threading.Tasks;
 namespace ColorVision.ImageEditor.Algorithms
 {
     /// <summary>Deterministic CPU implementation of rectangle, circle and polygon ROI statistics.</summary>
-    public sealed class RoiStatisticsAlgorithmProvider : IImageAlgorithmProvider
+    public sealed class RoiStatisticsAlgorithmProvider : IImageAlgorithmProvider, IAlgorithmDescriptorSupport
     {
         private const string ResultSchema = "colorvision.analysis.roi-statistics/v1";
+        internal const long MaximumExactFloatingValueBytes = 16L * 1024 * 1024;
         private static readonly IReadOnlySet<AlgorithmImageFormat> Formats = Enum.GetValues<AlgorithmImageFormat>().ToHashSet();
 
         public AlgorithmProviderMetadata Metadata { get; } = new(
@@ -27,6 +28,11 @@ namespace ColorVision.ImageEditor.Algorithms
                 | AlgorithmHostCapabilities.Roi,
             Formats,
             "1.0.0");
+
+        public bool CanExecuteDescriptor(AlgorithmDescriptor descriptor, out string? reason)
+        {
+            return StandardAlgorithmAdapterContract.IsCanonicalProviderContract(descriptor, StandardAlgorithmIds.RoiStatistics, out reason);
+        }
 
         public bool CanExecute(AlgorithmDescriptor descriptor, IReadOnlyList<AlgorithmInput> inputs, out string? reason)
         {
@@ -53,20 +59,41 @@ namespace ColorVision.ImageEditor.Algorithms
             if (roi.IsEmpty)
                 return ValueTask.FromResult(Failure(context, "roi_empty_after_clip", "The ROI does not contain any image pixel centers after clipping.", "roi"));
 
+            int channelCount = image.Format.Channels();
+            long? preflightPixelCount = null;
+            if (image.Format.IsFloatingPoint())
+            {
+                long maximumPixels = MaximumExactFloatingValueBytes / checked(channelCount * sizeof(float));
+                context.Progress?.Report(new AlgorithmProgress(0.02, "roi.float-budget", "Checking the exact floating-point statistics budget"));
+                preflightPixelCount = CountIncludedPixels(roi, maximumPixels, cancellationToken);
+                if (ExceedsExactFloatingStatisticsBudget(preflightPixelCount.Value, channelCount, out _))
+                {
+                    return ValueTask.FromResult(Failure(
+                        context,
+                        "roi_exact_float_statistics_budget_exceeded",
+                        $"Exact floating-point percentiles and histograms retain at most {MaximumExactFloatingValueBytes} bytes of ROI samples; reduce the ROI or channel count.",
+                        "roi"));
+                }
+            }
+
             context.Progress?.Report(new AlgorithmProgress(0.05, "roi.scan", "Scanning ROI pixels"));
-            ChannelAccumulator[] channels = Enumerable.Range(0, image.Format.Channels())
-                .Select(index => new ChannelAccumulator(index, ChannelName(image.Format, index), image.Format))
+            int floatingCapacity = preflightPixelCount.HasValue ? checked((int)preflightPixelCount.Value) : 0;
+            ChannelAccumulator[] channels = Enumerable.Range(0, channelCount)
+                .Select(index => new ChannelAccumulator(index, ChannelName(image.Format, index), image.Format, floatingCapacity))
                 .ToArray();
             long includedPixels = Scan(image, roi, channels, cancellationToken, context.Progress);
             if (includedPixels == 0)
                 return ValueTask.FromResult(Failure(context, "roi_empty_after_clip", "The ROI does not contain any image pixel centers after clipping.", "roi"));
 
-            foreach (ChannelAccumulator channel in channels) channel.PreparePercentiles();
-            context.Progress?.Report(new AlgorithmProgress(0.55, "roi.bad-pixels", "Detecting local outlier candidates"));
-            List<BadPixelCandidate> returnedCandidates = new();
-            HashSet<long> badPixelLocations = new();
-            if (parameters.DetectBadPixelCandidates)
-                DetectBadPixels(image, roi, channels, parameters, returnedCandidates, badPixelLocations, cancellationToken, context.Progress);
+            context.Progress?.Report(new AlgorithmProgress(0.5, "roi.percentiles", "Ordering finite samples for exact percentiles"));
+            cancellationToken.ThrowIfCancellationRequested();
+            foreach (ChannelAccumulator channel in channels) channel.PreparePercentiles(cancellationToken);
+            BadPixelDetectionResult badPixels = BadPixelDetectionResult.Empty;
+            if (parameters.DetectBadPixelCandidates && parameters.MaximumBadPixelCandidates > 0)
+            {
+                context.Progress?.Report(new AlgorithmProgress(0.55, "roi.bad-pixels", "Detecting local outlier candidates"));
+                badPixels = DetectBadPixels(image, roi, channels, parameters, cancellationToken, context.Progress);
+            }
 
             context.Progress?.Report(new AlgorithmProgress(0.82, "roi.artifacts", "Building structured result artifacts"));
             IReadOnlyList<AlgorithmArtifact> artifacts = BuildArtifacts(
@@ -75,22 +102,22 @@ namespace ColorVision.ImageEditor.Algorithms
                 roi,
                 channels,
                 includedPixels,
-                returnedCandidates,
-                badPixelLocations.Count,
+                badPixels.Candidates,
+                badPixels.UniquePixelCount,
                 parameters);
             List<AlgorithmDiagnosticMessage> messages = new();
             if (roi.WasClipped)
                 messages.Add(new AlgorithmDiagnosticMessage("roi_clipped", "The requested ROI was intersected with the image bounds."));
             long totalCandidates = channels.Sum(channel => channel.BadPixelCandidateCount);
-            if (totalCandidates > returnedCandidates.Count)
+            if (totalCandidates > badPixels.Candidates.Count)
             {
                 messages.Add(new AlgorithmDiagnosticMessage(
                     "bad_pixel_candidates_truncated",
-                    $"Detected {totalCandidates} candidates; returned {returnedCandidates.Count} by parameter limit.",
+                    $"Detected {totalCandidates} candidates; returned {badPixels.Candidates.Count} strongest candidates by parameter limit.",
                     Data: new Dictionary<string, string>
                     {
                         ["detected"] = totalCandidates.ToString(CultureInfo.InvariantCulture),
-                        ["returned"] = returnedCandidates.Count.ToString(CultureInfo.InvariantCulture),
+                        ["returned"] = badPixels.Candidates.Count.ToString(CultureInfo.InvariantCulture),
                     }));
             }
 
@@ -103,6 +130,42 @@ namespace ColorVision.ImageEditor.Algorithms
                 Artifacts = artifacts,
                 Diagnostics = new AlgorithmExecutionDiagnostics { Messages = messages },
             });
+        }
+
+        private static long CountIncludedPixels(
+            AlgorithmPixelRoi roi,
+            long maximumPixels,
+            CancellationToken cancellationToken)
+        {
+            long included = 0;
+            for (int y = roi.MinimumY; y < roi.MaximumYExclusive; y++)
+            {
+                if (((y - roi.MinimumY) & 31) == 0) cancellationToken.ThrowIfCancellationRequested();
+                for (int x = roi.MinimumX; x < roi.MaximumXExclusive; x++)
+                {
+                    if (((x - roi.MinimumX) & 1023) == 0) cancellationToken.ThrowIfCancellationRequested();
+                    if (!roi.Contains(x, y)) continue;
+                    included++;
+                    if (included > maximumPixels) return included;
+                }
+            }
+            return included;
+        }
+
+        internal static bool ExceedsExactFloatingStatisticsBudget(long pixelCount, int channelCount, out long requiredBytes)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(pixelCount);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(channelCount);
+            try
+            {
+                requiredBytes = checked(pixelCount * channelCount * sizeof(float));
+            }
+            catch (OverflowException)
+            {
+                requiredBytes = long.MaxValue;
+                return true;
+            }
+            return requiredBytes > MaximumExactFloatingValueBytes;
         }
 
         private static long Scan(
@@ -132,16 +195,18 @@ namespace ColorVision.ImageEditor.Algorithms
             return included;
         }
 
-        private static void DetectBadPixels(
+        private static BadPixelDetectionResult DetectBadPixels(
             AlgorithmImageBuffer image,
             AlgorithmPixelRoi roi,
             ChannelAccumulator[] channels,
             RoiStatisticsParameters parameters,
-            List<BadPixelCandidate> returned,
-            HashSet<long> badPixelLocations,
             CancellationToken cancellationToken,
             IProgress<AlgorithmProgress>? progress)
         {
+            PriorityQueue<BadPixelCandidate, BadPixelCandidate> strongest = new(
+                parameters.MaximumBadPixelCandidates,
+                BadPixelCandidateComparer.Instance);
+            long uniquePixelCount = 0;
             int radius = parameters.BadPixelNeighborhoodRadius;
             int maximumNeighbors = checked((radius * 2 + 1) * (radius * 2 + 1) - 1);
             double[] neighbors = new double[maximumNeighbors];
@@ -155,7 +220,9 @@ namespace ColorVision.ImageEditor.Algorithms
                 }
                 for (int x = roi.MinimumX; x < roi.MaximumXExclusive; x++)
                 {
+                    if (((x - roi.MinimumX) & 255) == 0) cancellationToken.ThrowIfCancellationRequested();
                     if (!roi.Contains(x, y)) continue;
+                    bool pixelIsCandidate = false;
                     for (int channelIndex = 0; channelIndex < channels.Length; channelIndex++)
                     {
                         double value = ReadValue(image, x, y, channelIndex);
@@ -188,15 +255,38 @@ namespace ColorVision.ImageEditor.Algorithms
 
                         ChannelAccumulator channel = channels[channelIndex];
                         channel.BadPixelCandidateCount++;
-                        badPixelLocations.Add(((long)y << 32) | (uint)x);
-                        if (returned.Count < parameters.MaximumBadPixelCandidates)
+                        pixelIsCandidate = true;
+                        double confidence = threshold <= 0 ? 1 : Math.Clamp(1 - threshold / deviation, 0, 1);
+                        BadPixelCandidate candidate = new(
+                            x,
+                            y,
+                            channelIndex,
+                            channel.Name,
+                            value,
+                            median,
+                            deviation,
+                            threshold,
+                            confidence);
+                        if (strongest.Count < parameters.MaximumBadPixelCandidates)
                         {
-                            double confidence = threshold <= 0 ? 1 : Math.Clamp(1 - threshold / deviation, 0, 1);
-                            returned.Add(new BadPixelCandidate(x, y, channelIndex, channel.Name, value, median, deviation, threshold, confidence));
+                            strongest.Enqueue(candidate, candidate);
+                        }
+                        else if (strongest.TryPeek(out BadPixelCandidate weakest, out _)
+                            && BadPixelCandidateComparer.Instance.Compare(candidate, weakest) > 0)
+                        {
+                            strongest.Dequeue();
+                            strongest.Enqueue(candidate, candidate);
                         }
                     }
+                    if (pixelIsCandidate) uniquePixelCount++;
                 }
             }
+
+            BadPixelCandidate[] candidates = strongest.UnorderedItems
+                .Select(item => item.Element)
+                .ToArray();
+            Array.Sort(candidates, (left, right) => BadPixelCandidateComparer.Instance.Compare(right, left));
+            return new BadPixelDetectionResult(candidates, uniquePixelCount);
         }
 
         private static IReadOnlyList<AlgorithmArtifact> BuildArtifacts(
@@ -315,7 +405,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 standardDeviation = "population",
                 percentileInterpolation = "linear-rank-n-minus-one",
                 integerHistogramRange = "bit-depth-nominal",
-                floatHistogramRange = "finite-roi-min-max",
+                floatHistogramRange = "finite-roi-min-max; constant distributions use one closed degenerate bin [value,value]",
             });
 
             return new AlgorithmArtifact[]
@@ -392,18 +482,48 @@ namespace ColorVision.ImageEditor.Algorithms
             double Threshold,
             double Confidence);
 
+        private readonly record struct BadPixelDetectionResult(
+            IReadOnlyList<BadPixelCandidate> Candidates,
+            long UniquePixelCount)
+        {
+            public static BadPixelDetectionResult Empty { get; } = new(Array.Empty<BadPixelCandidate>(), 0);
+        }
+
+        private sealed class BadPixelCandidateComparer : IComparer<BadPixelCandidate>
+        {
+            public static BadPixelCandidateComparer Instance { get; } = new();
+
+            public int Compare(BadPixelCandidate left, BadPixelCandidate right)
+            {
+                int comparison = left.Confidence.CompareTo(right.Confidence);
+                if (comparison != 0) return comparison;
+                comparison = StrengthRatio(left).CompareTo(StrengthRatio(right));
+                if (comparison != 0) return comparison;
+                comparison = left.Deviation.CompareTo(right.Deviation);
+                if (comparison != 0) return comparison;
+                comparison = right.Y.CompareTo(left.Y);
+                if (comparison != 0) return comparison;
+                comparison = right.X.CompareTo(left.X);
+                if (comparison != 0) return comparison;
+                return right.Channel.CompareTo(left.Channel);
+            }
+
+            private static double StrengthRatio(BadPixelCandidate candidate)
+                => candidate.Threshold <= 0 ? double.PositiveInfinity : candidate.Deviation / candidate.Threshold;
+        }
+
         private sealed class ChannelAccumulator
         {
             private readonly long[]? _integerCounts;
             private readonly List<float>? _floatValues;
             private double _m2;
 
-            public ChannelAccumulator(int index, string name, AlgorithmImageFormat format)
+            public ChannelAccumulator(int index, string name, AlgorithmImageFormat format, int floatingCapacity)
             {
                 Index = index;
                 Name = name;
                 NominalMaximum = format.BitsPerChannel() switch { 8 => byte.MaxValue, 16 => ushort.MaxValue, _ => 1 };
-                if (format.IsFloatingPoint()) _floatValues = new List<float>();
+                if (format.IsFloatingPoint()) _floatValues = new List<float>(floatingCapacity);
                 else _integerCounts = new long[(int)NominalMaximum + 1];
             }
 
@@ -446,9 +566,11 @@ namespace ColorVision.ImageEditor.Algorithms
                 else _floatValues!.Add((float)value);
             }
 
-            public void PreparePercentiles()
+            public void PreparePercentiles(CancellationToken cancellationToken)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 _floatValues?.Sort();
+                cancellationToken.ThrowIfCancellationRequested();
             }
 
             public double Percentile(double percentile)
@@ -480,15 +602,20 @@ namespace ColorVision.ImageEditor.Algorithms
 
                 if (ValidCount == 0) yield break;
                 double rangeFloat = Maximum - Minimum;
+                if (rangeFloat == 0)
+                {
+                    yield return new HistogramBin(0, Minimum, Maximum, true, ValidCount);
+                    yield break;
+                }
                 foreach (float value in _floatValues!)
                 {
-                    int index = rangeFloat <= 0 ? 0 : (int)Math.Min(bins - 1, (value - Minimum) / rangeFloat * bins);
+                    int index = (int)Math.Min(bins - 1, (value - Minimum) / rangeFloat * bins);
                     counts[index]++;
                 }
                 for (int index = 0; index < bins; index++)
                 {
-                    double lower = rangeFloat <= 0 ? Minimum : Minimum + rangeFloat * index / bins;
-                    double upper = rangeFloat <= 0 ? Maximum : Minimum + rangeFloat * (index + 1) / bins;
+                    double lower = Minimum + rangeFloat * index / bins;
+                    double upper = Minimum + rangeFloat * (index + 1) / bins;
                     yield return new HistogramBin(index, lower, upper, index == bins - 1, counts[index]);
                 }
             }

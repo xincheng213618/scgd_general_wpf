@@ -1,15 +1,15 @@
 ---
 name: colorvision-batch-image-conversion
-description: Convert CVRAW or CVCIE with ColorVision's native decoder, including direct conversion and explicit Python, CMD, or command-line batch wrappers around ColorVision.exe. Also covers the interactive batch processor. Use for CVRAW转TIFF、批量转换CVRAW、Python批量转换CVRAW、ColorVision命令行导出、批量图片处理、批量执行算法.
+description: Convert CVRAW or CVCIE with ColorVision's native decoder, or run one explicitly whitelisted local/headless/deterministic Catalog image algorithm through the approved batch tool. Also covers explicit Python, CMD, or command-line conversion wrappers and the interactive batch processor. Use for CVRAW转TIFF、批量转换CVRAW、Python批量转换CVRAW、ColorVision命令行导出、批量图片处理、批量执行算法.
 ---
 
-# ColorVision batch image conversion
+# ColorVision batch image conversion and approved algorithms
 
 CVRAW and CVCIE are proprietary ColorVision formats. They must be decoded by ColorVision. Never parse their binary layout in Python, PowerShell, Pillow, OpenCV, tifffile, or another generic image package, and never install packages for that purpose.
 
 ## Choose one route
 
-- Direct conversion request: call `ConvertBatchImages` with the exact approved files or directories.
+- Direct conversion or explicit image-algorithm request: call `ConvertBatchImages` with the exact approved files or directories. For an algorithm, also pass its stable Catalog ID or compatibility alias and only parameters from that descriptor's schema.
 - Explicit Python, CMD, PowerShell, CLI, or reusable-script request: create a wrapper that invokes `ColorVision.exe` with the CLI contract below. Do not substitute `ExecuteMenu`, `OpenBatchImageProcessing`, or a generated decoder.
 - Interactive request: call `OpenBatchImageProcessing` only when the user asks to open the UI or needs manual algorithm/options configuration.
 
@@ -49,4 +49,6 @@ Use `colorvision-script-automation` to create and run the saved wrapper. The wra
 
 ## Direct native tool requirements
 
-For `ConvertBatchImages`, pass only paths from the current approved local scope and set `recursive: true` only when requested. `same-as-source` maps CVRAW/CVCIE to TIFF. One approved call is bounded to 500 files and repeated calls create numbered outputs instead of replacing files. Report returned rows and counts; opening a window is never conversion evidence.
+For `ConvertBatchImages`, pass only paths from the current approved local scope and set `recursive: true` only when requested. `same-as-source` maps CVRAW/CVCIE to TIFF. One approved call is bounded to 500 files and repeated calls create numbered outputs instead of replacing files. Report returned rows and counts; opening a window is never conversion or algorithm-execution evidence.
+
+When `algorithm` is present, the tool resolves it through the unified Catalog and then enforces the explicit Copilot allowlist plus `Batch | Headless | Local | Deterministic | Copilot` capabilities. Never invent a provider ID, reflect over device/remote algorithms, pass an arbitrary model, or bypass a rejection with `ExecuteMenu`, shell, or generated code. Unknown, unrelated, and out-of-range parameter fields are rejected by the schema and Catalog contract. Format conversion remains an output policy rather than an algorithm.

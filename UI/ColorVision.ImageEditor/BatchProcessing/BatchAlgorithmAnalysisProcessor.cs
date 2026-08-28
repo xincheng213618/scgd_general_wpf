@@ -46,10 +46,17 @@ namespace ColorVision.ImageEditor.BatchProcessing
     public sealed class BatchAlgorithmAnalysisProcessor
     {
         private readonly IBatchImageLoader[] _loaders;
+        private readonly AlgorithmRuntime _runtime;
 
         public BatchAlgorithmAnalysisProcessor(IEnumerable<IBatchImageLoader> loaders)
+            : this(loaders, ImageAlgorithmPlatform.Runtime)
+        {
+        }
+
+        public BatchAlgorithmAnalysisProcessor(IEnumerable<IBatchImageLoader> loaders, AlgorithmRuntime runtime)
         {
             ArgumentNullException.ThrowIfNull(loaders);
+            _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
             _loaders = loaders.Where(loader => loader != null).GroupBy(loader => loader.GetType()).Select(group => group.First()).ToArray();
             if (_loaders.Length == 0) throw new ArgumentException("At least one batch image loader is required.", nameof(loaders));
         }
@@ -78,7 +85,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                     using Mat source = loader.Load(item.FilePath);
                     AlgorithmInvocation invocation = CloneInvocation(request.Invocation, item.FilePath);
                     AlgorithmImageBuffer input = AlgorithmImageInterop.FromMat(source);
-                    using AlgorithmResult result = await ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest
+                    using AlgorithmResult result = await _runtime.Runner.RunAsync(new AlgorithmRunRequest
                     {
                         Invocation = invocation,
                         Inputs =
@@ -92,7 +99,8 @@ namespace ColorVision.ImageEditor.BatchProcessing
                             },
                         ],
                         RequiredCapabilities = AlgorithmHostCapabilities.Batch | AlgorithmHostCapabilities.Headless
-                            | AlgorithmHostCapabilities.Local | AlgorithmHostCapabilities.Roi,
+                            | AlgorithmHostCapabilities.Local
+                            | (invocation.Roi != null ? AlgorithmHostCapabilities.Roi : AlgorithmHostCapabilities.None),
                     }, cancellationToken);
                     if (result.Status == AlgorithmResultStatus.Cancelled)
                     {

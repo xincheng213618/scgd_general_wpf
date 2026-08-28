@@ -100,7 +100,7 @@ public sealed class ImageComparisonV1Tests
     }
 
     [Fact]
-    public async Task FloatDifferenceOverflowKeepsIeeeArtifactAndIsExcludedFromMetrics()
+    public async Task FloatDifferenceOverflowKeepsIeeeArtifactWhileMetricsRemainDoublePrecision()
     {
         using AlgorithmImageBuffer reference = Floats([float.MaxValue, 1f], 2, 1, AlgorithmImageFormat.Gray32Float);
         using AlgorithmImageBuffer candidate = Floats([-float.MaxValue, 0f], 2, 1, AlgorithmImageFormat.Gray32Float);
@@ -109,9 +109,66 @@ public sealed class ImageComparisonV1Tests
         float[] signed = Floats(Image(result, "signed-difference"));
         Assert.True(float.IsPositiveInfinity(signed[0]));
         Assert.Equal(1f, signed[1]);
+        double difference = (double)float.MaxValue - -(double)float.MaxValue;
+        double expectedMse = (difference * difference + 1) / 2;
+        Assert.Equal(2, Measurement(result, "comparison.finite_sample_count"));
+        Assert.Equal(0, Measurement(result, "comparison.invalid_sample_count"));
+        Assert.InRange(Measurement(result, "comparison.mse"), expectedMse * (1 - 1e-12), expectedMse * (1 + 1e-12));
+        Assert.Contains(result.Diagnostics.Messages, message => message.Code == "float_difference_artifact_overflow");
+        Assert.Equal("float32-input; float64-difference-and-accumulation",
+            result.GetArtifact<AlgorithmImageArtifact>("signed-difference")!.Metadata!["metricPrecision"]);
+    }
+
+    [Fact]
+    public async Task FiniteFloatExtremesRemainValidWhenDifferenceExceedsFloatRange()
+    {
+        using AlgorithmImageBuffer reference = Floats([float.MaxValue], 1, 1, AlgorithmImageFormat.Gray32Float);
+        using AlgorithmImageBuffer candidate = Floats([-float.MaxValue], 1, 1, AlgorithmImageFormat.Gray32Float);
+        using AlgorithmResult result = await RunAsync(reference, candidate, new ImageComparisonParameters
+        {
+            FloatPeakValue = 1,
+            EnableSsim = false,
+            EnableAlignmentPrecheck = false,
+        });
+
+        Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
+        double difference = (double)float.MaxValue - -(double)float.MaxValue;
+        double expectedMse = difference * difference;
+        Assert.InRange(Measurement(result, "comparison.mse"), expectedMse * (1 - 1e-12), expectedMse * (1 + 1e-12));
+        Assert.Equal(difference, Measurement(result, "comparison.rmse"), 12);
+        Assert.Equal(20 * Math.Log10(1 / difference), Measurement(result, "comparison.psnr_db"), 12);
         Assert.Equal(1, Measurement(result, "comparison.finite_sample_count"));
-        Assert.Equal(1, Measurement(result, "comparison.invalid_sample_count"));
-        Assert.Equal(1, Measurement(result, "comparison.mse"));
+        Assert.Equal(0, Measurement(result, "comparison.invalid_sample_count"));
+        Assert.Equal("saturate-to-display-range",
+            result.GetArtifact<AlgorithmImageArtifact>("absolute-difference-visualization")!.Metadata!["finiteOutOfRange"]);
+    }
+
+    [Fact]
+    public async Task AdjacentFloatExtremesAndNonFiniteInputsKeepFiniteMetricPairsDistinct()
+    {
+        float nearMaximum = float.BitDecrement(float.MaxValue);
+        using AlgorithmImageBuffer reference = Floats(
+            [float.MaxValue, nearMaximum, float.NaN, float.PositiveInfinity, float.NegativeInfinity],
+            5, 1, AlgorithmImageFormat.Gray32Float);
+        using AlgorithmImageBuffer candidate = Floats(
+            [-float.MaxValue, -nearMaximum, 0, float.PositiveInfinity, 0],
+            5, 1, AlgorithmImageFormat.Gray32Float);
+        using AlgorithmResult result = await RunAsync(reference, candidate, new ImageComparisonParameters
+        {
+            FloatPeakValue = 2,
+            EnableSsim = false,
+            EnableAlignmentPrecheck = false,
+        });
+
+        double first = (double)float.MaxValue - -(double)float.MaxValue;
+        double second = (double)nearMaximum - -(double)nearMaximum;
+        double expectedMse = (first * first + second * second) / 2;
+        Assert.InRange(Measurement(result, "comparison.mse"), expectedMse * (1 - 1e-12), expectedMse * (1 + 1e-12));
+        Assert.Equal(2, Measurement(result, "comparison.finite_sample_count"));
+        Assert.Equal(3, Measurement(result, "comparison.invalid_sample_count"));
+        Assert.Equal(20 * Math.Log10(2 / Math.Sqrt(expectedMse)), Measurement(result, "comparison.psnr_db"), 12);
+        Assert.Equal(new[] { true, true, false, false, false },
+            Floats(Image(result, "signed-difference")).Select(float.IsPositiveInfinity).ToArray());
     }
 
     [Fact]
@@ -234,6 +291,122 @@ public sealed class ImageComparisonV1Tests
     }
 
     [Fact]
+    public async Task RequestedOutputPlanMaterializesOnlyTheSelectedArtifact()
+    {
+        using AlgorithmImageBuffer reference = Gray8([1, 2, 3, 4], 2, 2);
+        using AlgorithmImageBuffer candidate = Gray8([4, 3, 2, 1], 2, 2);
+        ImageComparisonParameters parameters = new()
+        {
+            EnableSsim = false,
+            EnableAlignmentPrecheck = false,
+        };
+        using AlgorithmResult result = await ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest
+        {
+            Invocation = new AlgorithmInvocation
+            {
+                AlgorithmId = StandardAlgorithmIds.ImageComparison,
+                ParameterSchemaVersion = parameters.SchemaVersion,
+                Parameters = AlgorithmJson.ToElement(parameters),
+                Metadata = new Dictionary<string, string>
+                {
+                    ["colorvision.image-comparison.requested-artifacts"] = "difference-heatmap",
+                },
+            },
+            Inputs =
+            [
+                Input("reference", reference, AlgorithmInputOwnership.Borrowed),
+                Input("candidate", candidate, AlgorithmInputOwnership.Borrowed),
+            ],
+            RequiredCapabilities = AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local | AlgorithmHostCapabilities.MultiInput,
+        });
+
+        AlgorithmImageArtifact artifact = Assert.Single(result.Artifacts.OfType<AlgorithmImageArtifact>());
+        Assert.Equal("difference-heatmap", artifact.Name);
+    }
+
+    [Fact]
+    public async Task FourKLegacyFiveArtifactPlanIsRejectedBeforeLargeOutputAllocation()
+    {
+        const int width = 3840;
+        const int height = 2160;
+        int stride = checked(width * AlgorithmImageFormat.Bgra32.BytesPerPixel());
+        using AlgorithmImageBuffer reference = new(width, height, stride, AlgorithmImageFormat.Bgra32, new byte[checked(stride * height)]);
+        using AlgorithmImageBuffer candidate = new(width, height, stride, AlgorithmImageFormat.Bgra32, new byte[checked(stride * height)]);
+        ImageComparisonParameters parameters = new()
+        {
+            EnableSsim = false,
+            EnableAlignmentPrecheck = false,
+        };
+
+        long allocatedBefore = GC.GetTotalAllocatedBytes(precise: true);
+        using AlgorithmResult result = await RunAsync(reference, candidate, parameters);
+        long allocated = GC.GetTotalAllocatedBytes(precise: true) - allocatedBefore;
+
+        Assert.Equal(AlgorithmResultStatus.Failed, result.Status);
+        Assert.Contains(result.Failures, failure => failure.Code == "comparison_output_budget_exceeded");
+        Assert.Empty(result.Artifacts.OfType<AlgorithmImageArtifact>());
+        Assert.True(allocated < 16L * 1024 * 1024,
+            $"Budget rejection allocated {allocated:N0} bytes after both inputs were already constructed.");
+    }
+
+    [Fact]
+    public void PreCancelledComparisonDoesNotEnterPreparationOrAllocateOutputImages()
+    {
+        const int width = 3840;
+        const int height = 2160;
+        int stride = width;
+        using AlgorithmImageBuffer reference = new(width, height, stride, AlgorithmImageFormat.Gray8, new byte[checked(stride * height)]);
+        using AlgorithmImageBuffer candidate = new(width, height, stride, AlgorithmImageFormat.Gray8, new byte[checked(stride * height)]);
+        using CancellationTokenSource cancellation = new();
+        cancellation.Cancel();
+        List<AlgorithmProgress> progressValues = [];
+        InlineProgress progress = new(progressValues.Add);
+        long allocatedBefore = GC.GetTotalAllocatedBytes(precise: true);
+
+        using AlgorithmResult result = ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest
+        {
+            Invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.ImageComparison, new ImageComparisonParameters()),
+            Inputs = [Input("reference", reference, AlgorithmInputOwnership.Borrowed), Input("candidate", candidate, AlgorithmInputOwnership.Borrowed)],
+            RequiredCapabilities = AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local | AlgorithmHostCapabilities.MultiInput,
+            Progress = progress,
+        }, cancellation.Token).AsTask().GetAwaiter().GetResult();
+        long allocated = GC.GetTotalAllocatedBytes(precise: true) - allocatedBefore;
+
+        Assert.Equal(AlgorithmResultStatus.Cancelled, result.Status);
+        Assert.Empty(result.Artifacts.OfType<AlgorithmImageArtifact>());
+        Assert.DoesNotContain(progressValues, value => value.Stage == "comparison.prepare");
+        Assert.True(allocated < 2L * 1024 * 1024,
+            $"A pre-cancelled comparison allocated {allocated:N0} bytes after its inputs were constructed.");
+    }
+
+    [Fact]
+    public async Task InvalidRequestedOutputPlanIsAValidationFailureWithoutImages()
+    {
+        using AlgorithmImageBuffer reference = Gray8([1], 1, 1);
+        using AlgorithmImageBuffer candidate = Gray8([2], 1, 1);
+        ImageComparisonParameters parameters = new() { EnableSsim = false, EnableAlignmentPrecheck = false };
+        using AlgorithmResult result = await ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest
+        {
+            Invocation = new AlgorithmInvocation
+            {
+                AlgorithmId = StandardAlgorithmIds.ImageComparison,
+                ParameterSchemaVersion = parameters.SchemaVersion,
+                Parameters = AlgorithmJson.ToElement(parameters),
+                Metadata = new Dictionary<string, string>
+                {
+                    [ImageComparisonOutputPlan.MetadataKey] = "not-a-comparison-artifact",
+                },
+            },
+            Inputs = [Input("reference", reference, AlgorithmInputOwnership.Borrowed), Input("candidate", candidate, AlgorithmInputOwnership.Borrowed)],
+            RequiredCapabilities = AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local | AlgorithmHostCapabilities.MultiInput,
+        });
+
+        Assert.Equal(AlgorithmResultStatus.Failed, result.Status);
+        Assert.Contains(result.Failures, failure => failure.Code == "comparison_output_plan_invalid");
+        Assert.Empty(result.Artifacts.OfType<AlgorithmImageArtifact>());
+    }
+
+    [Fact]
     public async Task StructuredValidationFailureAlsoReleasesBothTransferredInputs()
     {
         AlgorithmImageBuffer reference = Gray8([1, 2], 2, 1);
@@ -266,7 +439,11 @@ public sealed class ImageComparisonV1Tests
     {
         using AlgorithmImageBuffer reference = Gray8([1, 2, 3], 3, 1);
         using AlgorithmImageBuffer candidate = Gray8([1, 4, 1], 3, 1);
-        AlgorithmResult result = await RunAsync(reference, candidate);
+        AlgorithmResult result = await RunAsync(
+            reference,
+            candidate,
+            outputs: ImageComparisonArtifactOutputs.InteractiveVisualizations);
+        Assert.Equal(3, result.Artifacts.OfType<AlgorithmImageArtifact>().Count());
         WpfTestHost.Invoke(() =>
         {
             EnsureResources();
@@ -322,10 +499,11 @@ public sealed class ImageComparisonV1Tests
         AlgorithmImageBuffer candidate,
         ImageComparisonParameters? parameters = null,
         string? leftSpace = "encoded-device-values",
-        string? rightSpace = "encoded-device-values")
+        string? rightSpace = "encoded-device-values",
+        ImageComparisonArtifactOutputs? outputs = null)
         => await ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest
         {
-            Invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.ImageComparison, parameters ?? new ImageComparisonParameters()),
+            Invocation = CreateInvocation(parameters ?? new ImageComparisonParameters(), outputs),
             Inputs =
             [
                 Input("reference", reference, AlgorithmInputOwnership.Borrowed, leftSpace),
@@ -333,6 +511,19 @@ public sealed class ImageComparisonV1Tests
             ],
             RequiredCapabilities = AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local | AlgorithmHostCapabilities.MultiInput,
         });
+
+    private static AlgorithmInvocation CreateInvocation(
+        ImageComparisonParameters parameters,
+        ImageComparisonArtifactOutputs? outputs)
+        => new()
+        {
+            AlgorithmId = StandardAlgorithmIds.ImageComparison,
+            ParameterSchemaVersion = parameters.SchemaVersion,
+            Parameters = AlgorithmJson.ToElement(parameters),
+            Metadata = outputs.HasValue
+                ? ImageComparisonOutputPlan.CreateMetadata(outputs.Value)
+                : new Dictionary<string, string>(),
+        };
 
     private static AlgorithmInput Input(string name, AlgorithmImageBuffer image, AlgorithmInputOwnership ownership, string? colorSpace = "encoded-device-values")
         => new() { Name = name, Image = image, Ownership = ownership, ColorSpace = colorSpace };

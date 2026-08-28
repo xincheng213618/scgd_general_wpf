@@ -57,7 +57,18 @@ namespace ColorVision.ImageEditor
         /// For polygon/quadrilateral selections: the collection of points
         /// </summary>
         public List<Point> Points { get; set; } = new();
+
+        /// <summary>The immutable image scope on which these coordinates were collected.</summary>
+        public ImageSelectionScope? SourceScope { get; internal set; }
     }
+
+    public sealed record ImageSelectionScope(
+        Guid DocumentInstanceId,
+        long SourceRevision,
+        int PixelWidth,
+        int PixelHeight,
+        double DpiX,
+        double DpiY);
 
     /// <summary>
     /// Provides a transient (non-recording) drawing selection mode on an existing ImageView.
@@ -81,6 +92,9 @@ namespace ColorVision.ImageEditor
         private readonly Zoombox _zoombox;
         private readonly TaskCompletionSource<SelectResult> _tcs;
         private readonly SelectShapeType _shapeType;
+        private readonly ImageProcessingContext? _processingContext;
+        private ImageSelectionScope? _sourceScope;
+        private bool _cleanedUp;
 
         private DrawingVisual _visual;
         private Point _mouseDown;
@@ -103,11 +117,23 @@ namespace ColorVision.ImageEditor
             _drawCanvas = drawContext.DrawCanvas;
             _zoombox = drawContext.Zoombox;
             _shapeType = shapeType;
+            _processingContext = drawContext.ProcessingContext;
             _tcs = new TaskCompletionSource<SelectResult>();
         }
 
         public Task<SelectResult> Start()
         {
+            _sourceScope = CaptureSourceScope(_processingContext);
+            if (_processingContext != null)
+            {
+                _processingContext.DocumentScopeChanged += OnDocumentScopeChanged;
+                if (_sourceScope == null || !IsSourceScopeCurrent(_processingContext, _sourceScope))
+                {
+                    InvalidateSourceScope();
+                    return _tcs.Task;
+                }
+            }
+
             _previousCursor = _zoombox.Cursor;
             _previousActivateOn = _zoombox.ActivateOn;
             _previousEditMode = _drawContext.IsImageEditMode;
@@ -143,7 +169,15 @@ namespace ColorVision.ImageEditor
             if (IsMultiClickMode)
             {
                 // Multi-click mode: each click adds a point
-                _polygonPoints.Add(pos);
+                if (_shapeType == SelectShapeType.Quadrilateral && _polygonPoints.Count >= 4)
+                {
+                    // An invalid fourth point keeps the session active; the next click corrects it.
+                    _polygonPoints[^1] = pos;
+                }
+                else
+                {
+                    _polygonPoints.Add(pos);
+                }
                 if (_visual == null)
                 {
                     _visual = new DrawingVisual();
@@ -154,9 +188,7 @@ namespace ColorVision.ImageEditor
                 if (_shapeType == SelectShapeType.Quadrilateral && _polygonPoints.Count >= 4)
                 {
                     RenderPolygonPreview(pos);
-                    var result = BuildPolygonResult(_polygonPoints);
-                    Cleanup();
-                    _tcs.TrySetResult(result);
+                    TryCompletePolygon();
                     e.Handled = true;
                     return;
                 }
@@ -216,16 +248,14 @@ namespace ColorVision.ImageEditor
             // Build result
             SelectResult result = BuildDragResult(_mouseDown, mouseUp);
 
-            // Clean up
-            Cleanup();
-
-            if (result.Rect.Width > 1 && result.Rect.Height > 1)
+            if (IsValidDragResult(result) && TryBindSourceScope(result))
             {
+                Cleanup();
                 _tcs.TrySetResult(result);
             }
             else
             {
-                _tcs.TrySetResult(null);
+                ResetDragAttempt();
             }
 
             e.Handled = true;
@@ -235,12 +265,14 @@ namespace ColorVision.ImageEditor
         {
             if (IsMultiClickMode)
             {
-                // Right-click completes polygon if enough points, otherwise cancels
-                if (_polygonPoints != null && _polygonPoints.Count >= 2)
+                // An invalid free-form polygon remains active so the user can add/correct points.
+                if (_shapeType == SelectShapeType.Polygon)
                 {
-                    var result = BuildPolygonResult(_polygonPoints);
-                    Cleanup();
-                    _tcs.TrySetResult(result);
+                    TryCompletePolygon();
+                }
+                else if (_polygonPoints != null && _polygonPoints.Count >= 4)
+                {
+                    TryCompletePolygon();
                 }
                 else
                 {
@@ -271,18 +303,7 @@ namespace ColorVision.ImageEditor
             {
                 if (realKey == Key.Enter || realKey == Key.Space || realKey == Key.End || realKey == Key.Tab)
                 {
-                    // Complete polygon
-                    if (_polygonPoints != null && _polygonPoints.Count >= 2)
-                    {
-                        var result = BuildPolygonResult(_polygonPoints);
-                        Cleanup();
-                        _tcs.TrySetResult(result);
-                    }
-                    else
-                    {
-                        Cleanup();
-                        _tcs.TrySetResult(null);
-                    }
+                    TryCompletePolygon();
                     e.Handled = true;
                 }
             }
@@ -381,9 +402,180 @@ namespace ColorVision.ImageEditor
             };
         }
 
-        private void Cleanup()
+        private bool TryCompletePolygon()
+        {
+            if (_polygonPoints == null || !IsValidPolygon(_polygonPoints))
+            {
+                return false;
+            }
+
+            SelectResult result = BuildPolygonResult(_polygonPoints);
+            if (!TryBindSourceScope(result))
+            {
+                return false;
+            }
+            Cleanup();
+            _tcs.TrySetResult(result);
+            return true;
+        }
+
+        private void ResetDragAttempt()
         {
             _isDrawing = false;
+            if (_visual != null)
+            {
+                _drawCanvas.RemoveVisual(_visual);
+                _visual = null;
+            }
+        }
+
+        internal static bool IsValidDragResult(SelectResult result)
+            => result != null
+                && IsFinite(result.Rect.X)
+                && IsFinite(result.Rect.Y)
+                && IsFinite(result.Rect.Width)
+                && IsFinite(result.Rect.Height)
+                && result.Rect.Width > 1
+                && result.Rect.Height > 1;
+
+        internal static bool IsValidPolygon(IReadOnlyList<Point> points)
+        {
+            if (points == null || points.Count < 3 || points.Any(point => !IsFinite(point.X) || !IsFinite(point.Y)))
+            {
+                return false;
+            }
+
+            double twiceArea = 0;
+            for (int index = 0; index < points.Count; index++)
+            {
+                Point current = points[index];
+                Point next = points[(index + 1) % points.Count];
+                if (current == next)
+                {
+                    return false;
+                }
+                twiceArea += current.X * next.Y - next.X * current.Y;
+            }
+            if (!IsFinite(twiceArea) || Math.Abs(twiceArea) <= 1e-6)
+            {
+                return false;
+            }
+
+            // V1 accepts simple polygons only. Self-intersections have ambiguous fill/ROI semantics.
+            for (int first = 0; first < points.Count; first++)
+            {
+                int firstNext = (first + 1) % points.Count;
+                for (int second = first + 1; second < points.Count; second++)
+                {
+                    int secondNext = (second + 1) % points.Count;
+                    if (first == second || firstNext == second || secondNext == first)
+                    {
+                        continue;
+                    }
+                    if (SegmentsIntersect(points[first], points[firstNext], points[second], points[secondNext]))
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        private static bool SegmentsIntersect(Point a, Point b, Point c, Point d)
+        {
+            double abC = Cross(a, b, c);
+            double abD = Cross(a, b, d);
+            double cdA = Cross(c, d, a);
+            double cdB = Cross(c, d, b);
+            const double tolerance = 1e-9;
+            if (Math.Abs(abC) <= tolerance && IsWithinSegment(a, b, c)) return true;
+            if (Math.Abs(abD) <= tolerance && IsWithinSegment(a, b, d)) return true;
+            if (Math.Abs(cdA) <= tolerance && IsWithinSegment(c, d, a)) return true;
+            if (Math.Abs(cdB) <= tolerance && IsWithinSegment(c, d, b)) return true;
+            return (abC > 0) != (abD > 0) && (cdA > 0) != (cdB > 0);
+        }
+
+        private static double Cross(Point start, Point end, Point point)
+            => (end.X - start.X) * (point.Y - start.Y) - (end.Y - start.Y) * (point.X - start.X);
+
+        private static bool IsWithinSegment(Point start, Point end, Point point)
+            => point.X >= Math.Min(start.X, end.X) - 1e-9
+                && point.X <= Math.Max(start.X, end.X) + 1e-9
+                && point.Y >= Math.Min(start.Y, end.Y) - 1e-9
+                && point.Y <= Math.Max(start.Y, end.Y) + 1e-9;
+
+        private static bool IsFinite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
+
+        private bool TryBindSourceScope(SelectResult result)
+        {
+            if (_processingContext == null)
+            {
+                return true;
+            }
+            if (_sourceScope == null || !IsSourceScopeCurrent(_processingContext, _sourceScope))
+            {
+                InvalidateSourceScope();
+                return false;
+            }
+
+            result.SourceScope = _sourceScope;
+            return true;
+        }
+
+        private void OnDocumentScopeChanged(object? sender, EventArgs e)
+        {
+            if (_processingContext != null
+                && _sourceScope != null
+                && !IsSourceScopeCurrent(_processingContext, _sourceScope))
+            {
+                InvalidateSourceScope();
+            }
+        }
+
+        private void InvalidateSourceScope()
+        {
+            Cleanup();
+            _tcs.TrySetResult(null);
+        }
+
+        internal static ImageSelectionScope? CaptureSourceScope(ImageProcessingContext? context)
+        {
+            if (context?.ViewBitmapSource is not System.Windows.Media.Imaging.BitmapSource bitmap)
+            {
+                return null;
+            }
+            return new ImageSelectionScope(
+                context.DocumentInstanceId,
+                context.ImageRevision,
+                bitmap.PixelWidth,
+                bitmap.PixelHeight,
+                bitmap.DpiX,
+                bitmap.DpiY);
+        }
+
+        internal static bool IsSourceScopeCurrent(ImageProcessingContext context, ImageSelectionScope scope)
+            => !context.IsDisposed
+                && context.DocumentInstanceId == scope.DocumentInstanceId
+                && context.IsCurrentImageRevision(scope.SourceRevision)
+                && context.ViewBitmapSource is System.Windows.Media.Imaging.BitmapSource bitmap
+                && bitmap.PixelWidth == scope.PixelWidth
+                && bitmap.PixelHeight == scope.PixelHeight
+                && bitmap.DpiX.Equals(scope.DpiX)
+                && bitmap.DpiY.Equals(scope.DpiY);
+
+        private void Cleanup()
+        {
+            if (_cleanedUp)
+            {
+                return;
+            }
+            _cleanedUp = true;
+            _isDrawing = false;
+
+            if (_processingContext != null)
+            {
+                _processingContext.DocumentScopeChanged -= OnDocumentScopeChanged;
+            }
 
             _drawCanvas.PreviewMouseLeftButtonDown -= OnMouseDown;
             _drawCanvas.PreviewMouseMove -= OnMouseMove;

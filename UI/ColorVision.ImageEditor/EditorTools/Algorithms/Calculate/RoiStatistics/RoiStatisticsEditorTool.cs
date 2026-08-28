@@ -19,69 +19,87 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
     /// <summary>ImageView adapter for the catalog-backed ROI statistics algorithm.</summary>
     public sealed class RoiStatisticsEditorTool(ImageProcessingContext image, DrawEditorContext draw)
     {
+        private readonly Guid _ownerId = Guid.NewGuid();
+
         public async void Execute(SelectShapeType shapeType)
         {
-            RoiStatisticsParameters? parameters = EditParameters();
+            AlgorithmAnalysisWindowOwner windowOwner = AlgorithmAnalysisWindowOwner.Capture();
+            RoiStatisticsParameters? parameters = EditParameters(windowOwner.Current);
             if (parameters == null) return;
 
             SelectResult? selection = await new TransientRoiSelectionSession(draw, shapeType).Start();
             if (selection == null) return;
             AlgorithmRoi roi = FromSelection(selection, image.ViewBitmapSource as BitmapSource);
-            await ExecuteAsync(roi, parameters);
+            await ExecuteAsync(roi, parameters, selection.SourceScope, windowOwner);
         }
 
         public async void Execute(AlgorithmRoi roi)
         {
-            RoiStatisticsParameters? parameters = EditParameters();
+            AlgorithmAnalysisWindowOwner windowOwner = AlgorithmAnalysisWindowOwner.Capture();
+            ImageSelectionScope? sourceScope = TransientRoiSelectionSession.CaptureSourceScope(image);
+            if (sourceScope == null) return;
+            RoiStatisticsParameters? parameters = EditParameters(windowOwner.Current);
             if (parameters == null) return;
-            await ExecuteAsync(roi, parameters);
+            await ExecuteAsync(roi, parameters, sourceScope, windowOwner);
         }
 
-        internal async Task ExecuteAsync(AlgorithmRoi roi, RoiStatisticsParameters parameters)
+        internal async Task ExecuteAsync(
+            AlgorithmRoi roi,
+            RoiStatisticsParameters parameters,
+            ImageSelectionScope? expectedScope = null,
+            AlgorithmAnalysisWindowOwner? windowOwner = null)
         {
             ArgumentNullException.ThrowIfNull(roi);
             ArgumentNullException.ThrowIfNull(parameters);
+            windowOwner ??= AlgorithmAnalysisWindowOwner.Capture();
             AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.RoiStatistics, parameters, roi);
             Guid documentId = image.DocumentInstanceId;
             AlgorithmInput input;
             try
             {
-                input = ImageAlgorithmInputFactory.Acquire(image);
+                input = ImageAlgorithmInputFactory.Acquire(image, expectedScope);
             }
             catch (Exception exception)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "ROI 统计", MessageBoxButton.OK, MessageBoxImage.Error);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, "ROI 统计", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             if (!long.TryParse(input.SourceRevision, NumberStyles.Integer, CultureInfo.InvariantCulture, out long sourceRevision))
             {
                 input.Image.Dispose();
-                MessageBox.Show(Application.Current.GetActiveWindow(), "无法确定当前图像 revision。", "ROI 统计", MessageBoxButton.OK, MessageBoxImage.Error);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, "无法确定当前图像 revision。", "ROI 统计", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
-            using CancellationTokenSource cancellation = ImageAlgorithmAnalysisSession.Begin(image, invocation.InvocationId);
-            ImageAlgorithmProgressWindow progressWindow;
+            using CancellationTokenSource cancellation = ImageAlgorithmAnalysisSession.Begin(
+                image,
+                documentId,
+                sourceRevision,
+                _ownerId,
+                invocation.InvocationId);
+            ImageAlgorithmProgressWindow? progressWindow = null;
             try
             {
-                progressWindow = new ImageAlgorithmProgressWindow("ROI 统计", cancellation)
-                {
-                    Owner = Application.Current.GetActiveWindow(),
-                };
+                progressWindow = new ImageAlgorithmProgressWindow("ROI 统计", cancellation);
+                if (!windowOwner.TryAssign(progressWindow))
+                    throw new InvalidOperationException("发起 ROI 统计的窗口已关闭，请重试。");
                 progressWindow.Show();
             }
             catch (Exception exception)
             {
-                input.Image.Dispose();
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "ROI 统计", MessageBoxButton.OK, MessageBoxImage.Error);
+                Exception? ignored = null;
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => progressWindow?.Complete(), ref ignored);
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(input.Image.Dispose, ref ignored);
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId), ref ignored);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, "ROI 统计", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             AlgorithmResult? result = null;
             try
             {
                 Progress<AlgorithmProgress> progress = new(value => progressWindow.Report(value));
-                result = await ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest
+                result = await image.AlgorithmRuntime.Runner.RunAsync(new AlgorithmRunRequest
                 {
                     Invocation = invocation,
                     Inputs = [input],
@@ -91,66 +109,66 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
             }
             catch (Exception exception)
             {
-                input.Image.Dispose();
+                Exception? ignored = null;
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(input.Image.Dispose, ref ignored);
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId), ref ignored);
                 if (!progressWindow.WasCancelled)
-                    MessageBox.Show(progressWindow.Owner, exception.Message, "ROI 统计", MessageBoxButton.OK, MessageBoxImage.Error);
+                    AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, "ROI 统计", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             finally
             {
-                progressWindow.Complete();
-                ImageAlgorithmAnalysisSession.CompleteRun(image, invocation.InvocationId, cancellation);
+                Exception? ignored = null;
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(progressWindow.Complete, ref ignored);
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => ImageAlgorithmAnalysisSession.CompleteRun(image, invocation.InvocationId, cancellation), ref ignored);
             }
 
             if (result.Status == AlgorithmResultStatus.Cancelled || progressWindow.WasCancelled)
             {
                 result.Dispose();
+                ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
                 return;
             }
             if (!ImageAlgorithmAnalysisSession.IsCurrent(image, documentId, sourceRevision, invocation.InvocationId))
             {
                 result.Dispose();
+                ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
                 return;
             }
             if (result.Status != AlgorithmResultStatus.Succeeded)
             {
                 string message = string.Join(Environment.NewLine, result.Failures.Select(failure => $"[{failure.Code}] {failure.Message}"));
                 result.Dispose();
-                MessageBox.Show(progressWindow.Owner, message, "ROI 统计失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, message, "ROI 统计失败", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (!ImageAlgorithmAnalysisSession.CanPresent(image, documentId, sourceRevision, invocation.InvocationId, out Window? previous))
             {
                 result.Dispose();
+                ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
                 return;
             }
 
-            previous?.Close();
-            RoiStatisticsResultWindow resultWindow;
-            try
-            {
-                resultWindow = new RoiStatisticsResultWindow(result, image, draw)
-                {
-                    Owner = Application.Current.GetActiveWindow(),
-                };
-            }
-            catch (Exception exception)
-            {
-                result.Dispose();
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "ROI 统计结果", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-            ImageAlgorithmAnalysisSession.Present(image, invocation.InvocationId, resultWindow);
-            resultWindow.Show();
+            bool shown = AlgorithmAnalysisResultWindowTransaction.TryShow(
+                result,
+                windowOwner,
+                value => new RoiStatisticsResultWindow(value, image, draw),
+                window => ImageAlgorithmAnalysisSession.Present(image, invocation.InvocationId, window),
+                () => ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId),
+                previous,
+                out Exception? presentationFailure);
+            if (!shown && presentationFailure != null)
+                AlgorithmAnalysisMessageBox.Show(windowOwner, presentationFailure.Message, "ROI 统计结果", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
-        private static RoiStatisticsParameters? EditParameters()
+        private static RoiStatisticsParameters? EditParameters(Window? owner)
         {
             RoiStatisticsParameters parameters = new();
             PropertyEditorWindow window = new(parameters)
             {
                 Title = "ROI 统计参数",
-                Owner = Application.Current.GetActiveWindow(),
+                Owner = owner,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
             bool submitted = false;
@@ -200,8 +218,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
         private static double SafeDpi(double dpi) => double.IsFinite(dpi) && dpi > 0 ? dpi : 96;
     }
 
-    public sealed class RoiStatisticsContextMenu(ImageProcessingContext image, DrawEditorContext draw) : IIEditorToolContextMenu
+    public sealed class RoiStatisticsContextMenu(ImageProcessingContext image, DrawEditorContext draw) : IIEditorToolContextMenu, IAlgorithmCatalogBoundMenu
     {
+        public AlgorithmId AlgorithmId => StandardAlgorithmIds.RoiStatistics;
+
+        public bool RequiresRoi => true;
+
         public List<MenuItemMetadata> GetContextMenuItems()
         {
             RoiStatisticsEditorTool tool = new(image, draw);
@@ -224,8 +246,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
         };
     }
 
-    public sealed class RoiStatisticsRectangleDrawingContextMenu(ImageProcessingContext image, DrawEditorContext draw) : IDVContextMenu
+    public sealed class RoiStatisticsRectangleDrawingContextMenu(ImageProcessingContext image, DrawEditorContext draw) : IDVContextMenu, IAlgorithmCatalogBoundMenu
     {
+        public AlgorithmId AlgorithmId => StandardAlgorithmIds.RoiStatistics;
+
+        public bool RequiresRoi => true;
+
         public Type ContextType => typeof(IRectangle);
 
         public IEnumerable<MenuItem> GetContextMenuItems(object obj)
@@ -238,8 +264,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
         }
     }
 
-    public sealed class RoiStatisticsCircleDrawingContextMenu(ImageProcessingContext image, DrawEditorContext draw) : IDVContextMenu
+    public sealed class RoiStatisticsCircleDrawingContextMenu(ImageProcessingContext image, DrawEditorContext draw) : IDVContextMenu, IAlgorithmCatalogBoundMenu
     {
+        public AlgorithmId AlgorithmId => StandardAlgorithmIds.RoiStatistics;
+
+        public bool RequiresRoi => true;
+
         public Type ContextType => typeof(ICircle);
 
         public IEnumerable<MenuItem> GetContextMenuItems(object obj)
@@ -252,8 +282,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
         }
     }
 
-    public sealed class RoiStatisticsPolygonDrawingContextMenu(ImageProcessingContext image, DrawEditorContext draw) : IDVContextMenu
+    public sealed class RoiStatisticsPolygonDrawingContextMenu(ImageProcessingContext image, DrawEditorContext draw) : IDVContextMenu, IAlgorithmCatalogBoundMenu
     {
+        public AlgorithmId AlgorithmId => StandardAlgorithmIds.RoiStatistics;
+
+        public bool RequiresRoi => true;
+
         public Type ContextType => typeof(DVPolygon);
 
         public IEnumerable<MenuItem> GetContextMenuItems(object obj)

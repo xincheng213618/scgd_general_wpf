@@ -66,7 +66,7 @@ public class OpenCvImageAlgorithmsInPlaceTests
             (source, destination) => Cv2.Threshold(
                 source,
                 destination,
-                threshold,
+                source.Depth() == MatType.CV_16U ? threshold * 257 : threshold,
                 source.Depth() == MatType.CV_16U ? ushort.MaxValue : byte.MaxValue,
                 ThresholdTypes.Binary));
     }
@@ -122,7 +122,8 @@ public class OpenCvImageAlgorithmsInPlaceTests
         using Mat source = CreateFourChannelSource(format);
         using Mat original = source.Clone();
         using Mat expected = source.Clone();
-        ApplyReferenceBilateral(expected, diameter, sigmaColor, sigmaSpace);
+        double nominalMaximum = source.Depth() == MatType.CV_16U ? ushort.MaxValue : source.Depth() == MatType.CV_32F ? 1 : byte.MaxValue;
+        ApplyReferenceBilateral(expected, diameter, sigmaColor / byte.MaxValue * nominalMaximum, sigmaSpace);
 
         BatchImageAlgorithmDefinition algorithm = BatchImageAlgorithms.CreateAll()
             .Single(item => item.Name == "降噪滤波");

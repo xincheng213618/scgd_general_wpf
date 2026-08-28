@@ -13,11 +13,12 @@ using System.Windows;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
 {
-    public partial class RoiStatisticsResultWindow : Window
+    public partial class RoiStatisticsResultWindow : Window, IDisposable
     {
         private readonly AlgorithmResult _result;
-        private readonly IDisposable _overlaySession;
+        private IDisposable? _overlaySession;
         private bool _disposed;
+        private Exception? _disposeFailure;
 
         public RoiStatisticsResultWindow(AlgorithmResult result, ImageProcessingContext image, DrawEditorContext draw)
         {
@@ -28,17 +29,27 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
                 ?? throw new ArgumentException("The result has no ROI histogram.", nameof(result));
             AlgorithmTableArtifact candidates = result.GetArtifact<AlgorithmTableArtifact>("bad-pixel-candidates")
                 ?? throw new ArgumentException("The result has no bad-pixel candidate table.", nameof(result));
-            InitializeComponent();
             _result = result;
-            _overlaySession = AlgorithmOverlayRenderer.Apply(image, draw, result);
-            SummaryGrid.ItemsSource = ToTable(summary).DefaultView;
-            HistogramGrid.ItemsSource = ToTable(histogram).DefaultView;
-            CandidatesGrid.ItemsSource = ToTable(candidates).DefaultView;
-            double pixelCount = Measurement("roi.pixel_count");
-            double badPixels = Measurement("roi.bad_pixel_candidate_count");
-            SummaryText.Text = $"ROI 像素：{pixelCount:N0}；通道：{summary.Rows.Count}；坏点候选：{badPixels:N0}。统计值排除 NaN/Infinity，StdDev 为总体标准差。";
-            RenderHistogram(histogram);
-            Closed += (_, _) => DisposeOwnedState();
+            try
+            {
+                InitializeComponent();
+                SummaryGrid.ItemsSource = ToTable(summary).DefaultView;
+                HistogramGrid.ItemsSource = ToTable(histogram).DefaultView;
+                CandidatesGrid.ItemsSource = ToTable(candidates).DefaultView;
+                double pixelCount = Measurement("roi.pixel_count");
+                double badPixels = Measurement("roi.bad_pixel_candidate_count");
+                SummaryText.Text = $"ROI 像素：{pixelCount:N0}；通道：{summary.Rows.Count}；坏点候选：{badPixels:N0}。统计值排除 NaN/Infinity，StdDev 为总体标准差。";
+                RenderHistogram(histogram);
+                _overlaySession = AlgorithmOverlayRenderer.Apply(image, draw, result);
+                Closed += (_, _) => DisposeOwnedState();
+            }
+            catch
+            {
+                Exception? ignored = null;
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => _overlaySession?.Dispose(), ref ignored);
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(result.Dispose, ref ignored);
+                throw;
+            }
         }
 
         private void RenderHistogram(AlgorithmTableArtifact table)
@@ -129,12 +140,22 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
 
         private void Close_Click(object sender, RoutedEventArgs e) => Close();
 
-        private void DisposeOwnedState()
+        public void Dispose()
         {
-            if (_disposed) return;
+            Exception? failure = null;
+            if (IsLoaded) AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(Close, ref failure);
+            failure ??= DisposeOwnedState();
+            GC.SuppressFinalize(this);
+            if (failure != null) throw failure;
+        }
+
+        private Exception? DisposeOwnedState()
+        {
+            if (_disposed) return _disposeFailure;
             _disposed = true;
-            _overlaySession.Dispose();
-            _result.Dispose();
+            AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => _overlaySession?.Dispose(), ref _disposeFailure);
+            AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(_result.Dispose, ref _disposeFailure);
+            return _disposeFailure;
         }
     }
 }

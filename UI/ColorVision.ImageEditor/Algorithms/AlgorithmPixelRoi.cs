@@ -28,7 +28,7 @@ namespace ColorVision.ImageEditor.Algorithms
         public bool IsEmpty => MinimumX >= MaximumXExclusive || MinimumY >= MaximumYExclusive;
         public required AlgorithmGeometry Geometry { get; init; }
 
-        public static AlgorithmPixelRoi WholeImage(AlgorithmImageBuffer image) => new()
+        public static AlgorithmPixelRoi WholeImage(AlgorithmImageBuffer image, string geometryId = "comparison-region") => new()
         {
             Kind = AlgorithmPixelRoiKind.Rectangle,
             Left = 0,
@@ -39,7 +39,7 @@ namespace ColorVision.ImageEditor.Algorithms
             MinimumY = 0,
             MaximumXExclusive = image.Width,
             MaximumYExclusive = image.Height,
-            Geometry = new AlgorithmGeometry("comparison-region", AlgorithmGeometryKind.Rectangle, [new(0, 0), new(image.Width, image.Height)]),
+            Geometry = new AlgorithmGeometry(geometryId, AlgorithmGeometryKind.Rectangle, [new(0, 0), new(image.Width, image.Height)]),
         };
 
         public static AlgorithmPixelRoi Create(AlgorithmRoi roi, AlgorithmImageBuffer image)

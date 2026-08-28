@@ -37,6 +37,8 @@ namespace ColorVision.ImageEditor.BatchProcessing
         public bool Cancelled { get; init; }
 
         public string ErrorMessage { get; init; } = string.Empty;
+
+        public string ErrorCode { get; init; } = string.Empty;
     }
 
     public sealed class BatchImageProgress
@@ -171,6 +173,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                         SourcePath = item.FilePath,
                         OutputPath = outputPath,
                         SourceRead = sourceRead,
+                        ErrorCode = "cancelled",
                         Cancelled = true,
                         ErrorMessage = "Processing was cancelled.",
                     });
@@ -191,6 +194,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                         SourcePath = item.FilePath,
                         OutputPath = outputPath,
                         SourceRead = sourceRead,
+                        ErrorCode = ex is BatchImageAlgorithmContractException contract ? contract.Code : "processing_failed",
                         ErrorMessage = ex.Message,
                     });
                     reportProgress?.Invoke(new BatchImageProgress

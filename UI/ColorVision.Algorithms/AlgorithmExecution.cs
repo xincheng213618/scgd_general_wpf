@@ -23,9 +23,42 @@ public interface IImageAlgorithmProvider
 {
     AlgorithmProviderMetadata Metadata { get; }
 
+    /// <summary>
+    /// Reports whether this provider implements the descriptor independently of a concrete
+    /// invocation. The default is deliberately fail-closed: older providers remain source and
+    /// binary compatible, but must explicitly declare descriptor support before a host projects
+    /// them as executable. Execution still performs the input-aware <see cref="CanExecute"/> check.
+    /// </summary>
+    bool CanExecuteDescriptor(AlgorithmDescriptor descriptor, out string? reason)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        reason = "descriptor_support_not_declared";
+        return false;
+    }
+
     bool CanExecute(AlgorithmDescriptor descriptor, IReadOnlyList<AlgorithmInput> inputs, out string? reason);
 
     ValueTask<AlgorithmResult> ExecuteAsync(AlgorithmExecutionContext context, CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// Explicit opt-in for descriptor-level support projection and canonical contract gating.
+/// Providers compiled before this interface remain executable through their input-aware
+/// <see cref="IImageAlgorithmProvider.CanExecute"/> contract, but are deliberately hidden from
+/// descriptor-only menus because those hosts do not have real inputs with which to probe them.
+/// </summary>
+public interface IAlgorithmDescriptorSupport
+{
+    bool CanExecuteDescriptor(AlgorithmDescriptor descriptor, out string? reason);
+}
+
+/// <summary>
+/// Optional descriptor-level runtime dependency probe used by host projections. This is kept
+/// separate from descriptor compatibility and from the input-aware execution check.
+/// </summary>
+public interface IAlgorithmProviderAvailability
+{
+    bool IsAvailable(AlgorithmDescriptor descriptor, out string? reason);
 }
 
 public interface IAlgorithmExecutionScheduler
@@ -99,6 +132,53 @@ public sealed class AlgorithmRunRequest
     public IProgress<AlgorithmProgress>? Progress { get; init; }
 }
 
+/// <summary>
+/// Derives invocation capabilities from the operation that will actually run. Descriptor ROI
+/// support describes what is allowed; it never turns a whole-image call into an ROI call.
+/// </summary>
+public static class AlgorithmInvocationCapabilities
+{
+    public static AlgorithmHostCapabilities Derive(
+        AlgorithmHostCapabilities hostCapabilities,
+        int inputCount,
+        bool hasRoi)
+    {
+        if (inputCount < 0) throw new ArgumentOutOfRangeException(nameof(inputCount));
+        AlgorithmHostCapabilities required = hostCapabilities;
+        if (inputCount > 1) required |= AlgorithmHostCapabilities.MultiInput;
+        if (hasRoi) required |= AlgorithmHostCapabilities.Roi;
+        return required;
+    }
+
+    public static AlgorithmHostCapabilities Derive(
+        AlgorithmHostCapabilities hostCapabilities,
+        IReadOnlyList<AlgorithmInput> inputs,
+        AlgorithmRoi? roi)
+    {
+        ArgumentNullException.ThrowIfNull(inputs);
+        return Derive(hostCapabilities, inputs.Count, roi != null);
+    }
+
+    public static bool TryPlan(
+        AlgorithmDescriptor descriptor,
+        AlgorithmHostCapabilities hostCapabilities,
+        int inputCount,
+        bool hasRoi,
+        out AlgorithmHostCapabilities requiredCapabilities)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        requiredCapabilities = Derive(hostCapabilities, inputCount, hasRoi);
+        if (inputCount < descriptor.MinimumInputCount || inputCount > descriptor.MaximumInputCount)
+            return false;
+        if (hasRoi && !descriptor.SupportsRectangleRoi && !descriptor.SupportsCircleRoi
+            && !descriptor.SupportsPolygonRoi && !descriptor.SupportsPolylineRoi)
+        {
+            return false;
+        }
+        return (descriptor.Capabilities & requiredCapabilities) == requiredCapabilities;
+    }
+}
+
 public sealed class AlgorithmRunner
 {
     private readonly IAlgorithmCatalog _catalog;
@@ -111,10 +191,27 @@ public sealed class AlgorithmRunner
         IEnumerable<IImageAlgorithmProvider> providers,
         IAlgorithmExecutionScheduler scheduler,
         IEnumerable<IAlgorithmParameterMigrator>? migrators = null)
+        : this(catalog, new AlgorithmProviderRegistry(providers), scheduler, migrators)
+    {
+    }
+
+    /// <summary>Creates a runner from an already frozen provider registry without adding a constructor overload that is ambiguous for legacy null calls.</summary>
+    public static AlgorithmRunner CreateWithProviderRegistry(
+        IAlgorithmCatalog catalog,
+        AlgorithmProviderRegistry providerRegistry,
+        IAlgorithmExecutionScheduler scheduler,
+        IEnumerable<IAlgorithmParameterMigrator>? migrators = null)
+        => new(catalog, providerRegistry, scheduler, migrators);
+
+    private AlgorithmRunner(
+        IAlgorithmCatalog catalog,
+        AlgorithmProviderRegistry providerRegistry,
+        IAlgorithmExecutionScheduler scheduler,
+        IEnumerable<IAlgorithmParameterMigrator>? migrators = null)
     {
         _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
-        _providers = providers?.OrderByDescending(provider => provider.Metadata.Priority).ToArray()
-            ?? throw new ArgumentNullException(nameof(providers));
+        ArgumentNullException.ThrowIfNull(providerRegistry);
+        _providers = providerRegistry.Providers;
         _scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
         _migrators = (migrators ?? Array.Empty<IAlgorithmParameterMigrator>())
             .ToDictionary(migrator => (migrator.AlgorithmId, migrator.FromSchemaVersion));
@@ -135,7 +232,16 @@ public sealed class AlgorithmRunner
             if (request.Invocation.AlgorithmVersion is AlgorithmVersion requestedVersion && requestedVersion.Major != descriptor.Version.Major)
                 return Failure(request.Invocation, descriptor, "algorithm_version_incompatible", $"Requested {requestedVersion}; catalog provides {descriptor.Version}.", startedAt, stopwatch.Elapsed);
 
-            if ((descriptor.Capabilities & request.RequiredCapabilities) != request.RequiredCapabilities)
+            AlgorithmHostCapabilities effectiveCapabilities = AlgorithmInvocationCapabilities.Derive(
+                request.RequiredCapabilities,
+                request.Inputs,
+                request.Invocation.Roi);
+
+            AlgorithmValidationResult? roiValidation = ValidateRoi(descriptor, request.Invocation.Roi);
+            if (roiValidation is { IsValid: false })
+                return ValidationFailure(request.Invocation, descriptor, roiValidation, startedAt, stopwatch.Elapsed);
+
+            if ((descriptor.Capabilities & effectiveCapabilities) != effectiveCapabilities)
                 return Failure(request.Invocation, descriptor, "host_capability_unsupported", "The algorithm does not declare all capabilities required by this host.", startedAt, stopwatch.Elapsed);
 
             if (request.Inputs.Count < descriptor.MinimumInputCount || request.Inputs.Count > descriptor.MaximumInputCount)
@@ -146,10 +252,6 @@ public sealed class AlgorithmRunner
                 if (!descriptor.SupportedFormats.Contains(input.Image.Format))
                     return Failure(request.Invocation, descriptor, "unsupported_format", $"Input '{input.Name}' format {input.Image.Format} is unsupported.", startedAt, stopwatch.Elapsed, "inputs");
             }
-
-            AlgorithmValidationResult? roiValidation = ValidateRoi(descriptor, request.Invocation.Roi);
-            if (roiValidation is { IsValid: false })
-                return ValidationFailure(request.Invocation, descriptor, roiValidation, startedAt, stopwatch.Elapsed);
 
             JsonElement parameterJson = MigrateParameters(request.Invocation, descriptor);
             if (parameterJson.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null) parameterJson = descriptor.ParameterSchema.Defaults;
@@ -170,7 +272,11 @@ public sealed class AlgorithmRunner
             if (!parameterValidation.IsValid)
                 return ValidationFailure(request.Invocation, descriptor, parameterValidation, startedAt, stopwatch.Elapsed);
 
-            IImageAlgorithmProvider? provider = SelectProvider(request, descriptor, out IReadOnlyList<AlgorithmDiagnosticMessage> selectionDiagnostics);
+            IImageAlgorithmProvider? provider = SelectProvider(
+                request,
+                descriptor,
+                effectiveCapabilities,
+                out IReadOnlyList<AlgorithmDiagnosticMessage> selectionDiagnostics);
             if (provider == null)
                 return Failure(request.Invocation, descriptor, "provider_unavailable", "No compatible provider is available.", startedAt, stopwatch.Elapsed,
                     details: selectionDiagnostics.GroupBy(message => message.Code).ToDictionary(group => group.Key, group => string.Join(" | ", group.Select(message => message.Message))));
@@ -306,6 +412,7 @@ public sealed class AlgorithmRunner
     private IImageAlgorithmProvider? SelectProvider(
         AlgorithmRunRequest request,
         AlgorithmDescriptor descriptor,
+        AlgorithmHostCapabilities effectiveCapabilities,
         out IReadOnlyList<AlgorithmDiagnosticMessage> diagnostics)
     {
         List<AlgorithmDiagnosticMessage> messages = new();
@@ -315,9 +422,26 @@ public sealed class AlgorithmRunner
 
         foreach (IImageAlgorithmProvider provider in candidates)
         {
-            if ((provider.Metadata.Capabilities & request.RequiredCapabilities) != request.RequiredCapabilities)
+            if (!AlgorithmExecutionPlanePolicy.Matches(provider.Metadata.ExecutionPlane, effectiveCapabilities))
+            {
+                messages.Add(new AlgorithmDiagnosticMessage("provider_execution_plane_mismatch", $"{provider.Metadata.ProviderId} is on the {provider.Metadata.ExecutionPlane} execution plane.", "debug"));
+                continue;
+            }
+            if ((provider.Metadata.Capabilities & effectiveCapabilities) != effectiveCapabilities)
             {
                 messages.Add(new AlgorithmDiagnosticMessage("provider_capability_mismatch", $"{provider.Metadata.ProviderId} lacks required host capabilities.", "debug"));
+                continue;
+            }
+            if (provider is IAlgorithmDescriptorSupport descriptorSupport
+                && !descriptorSupport.CanExecuteDescriptor(descriptor, out string? descriptorReason))
+            {
+                messages.Add(new AlgorithmDiagnosticMessage("provider_descriptor_contract_mismatch", $"{provider.Metadata.ProviderId}: {descriptorReason}", "debug"));
+                continue;
+            }
+            if (provider is IAlgorithmProviderAvailability availability
+                && !availability.IsAvailable(descriptor, out string? availabilityReason))
+            {
+                messages.Add(new AlgorithmDiagnosticMessage("provider_dependency_unavailable", $"{provider.Metadata.ProviderId}: {availabilityReason}", "debug"));
                 continue;
             }
             if (request.Inputs.Any(input => !provider.Metadata.SupportedFormats.Contains(input.Image.Format)))

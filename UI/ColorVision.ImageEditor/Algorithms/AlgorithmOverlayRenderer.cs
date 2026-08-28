@@ -23,23 +23,40 @@ namespace ColorVision.ImageEditor.Algorithms
                 .SelectMany(artifact => artifact.Geometries.Select(geometry => (geometry.Id, geometry, artifact.CoordinateSpace)))
                 .GroupBy(item => item.Id, StringComparer.Ordinal)
                 .ToDictionary(group => group.Key, group => (group.Last().geometry, group.Last().CoordinateSpace), StringComparer.Ordinal);
-            List<RenderedOverlay> rendered = new();
-            foreach (AlgorithmOverlayArtifact overlay in result.Artifacts.OfType<AlgorithmOverlayArtifact>())
+            Guid documentInstanceId = image.DocumentInstanceId;
+            long sourceRevision = image.ImageRevision;
+            List<IAlgorithmOverlayRegistration> registrations = new();
+            try
             {
-                DrawingVisual visual = new();
-                using (DrawingContext context = visual.RenderOpen())
+                foreach (AlgorithmOverlayArtifact overlay in result.Artifacts.OfType<AlgorithmOverlayArtifact>())
                 {
-                    foreach (AlgorithmOverlayItem item in overlay.Items)
+                    DrawingVisual visual = new();
+                    using (DrawingContext context = visual.RenderOpen())
                     {
-                        if (!geometries.TryGetValue(item.GeometryId, out var entry)) continue;
-                        DrawGeometry(context, entry.Geometry, entry.Space, item.Style, image, draw.ZoomRatio);
+                        foreach (AlgorithmOverlayItem item in overlay.Items)
+                        {
+                            if (!geometries.TryGetValue(item.GeometryId, out var entry)) continue;
+                            DrawGeometry(context, entry.Geometry, entry.Space, item.Style, image, draw.ZoomRatio);
+                        }
+                    }
+                    if (image.TryRegisterAlgorithmOverlay(
+                        overlay,
+                        visual,
+                        documentInstanceId,
+                        sourceRevision,
+                        out IAlgorithmOverlayRegistration? registration))
+                    {
+                        registrations.Add(registration);
                     }
                 }
-                draw.DrawCanvas.AddOverlayVisual(visual);
-                image.AlgorithmOverlays.Apply(overlay);
-                rendered.Add(new RenderedOverlay(overlay.Name, overlay.Lifetime, visual));
+                return new RenderSession(registrations);
             }
-            return new RenderSession(image, draw.DrawCanvas, rendered);
+            catch
+            {
+                foreach (IAlgorithmOverlayRegistration registration in registrations)
+                    registration.Remove();
+                throw;
+            }
         }
 
         private static void DrawGeometry(
@@ -118,9 +135,7 @@ namespace ColorVision.ImageEditor.Algorithms
             return fallback;
         }
 
-        private sealed record RenderedOverlay(string Name, AlgorithmOverlayLifetime Lifetime, Visual Visual);
-
-        private sealed class RenderSession(ImageProcessingContext image, DrawCanvas canvas, IReadOnlyList<RenderedOverlay> rendered) : IDisposable
+        private sealed class RenderSession(IReadOnlyList<IAlgorithmOverlayRegistration> registrations) : IDisposable
         {
             private bool _disposed;
 
@@ -128,11 +143,8 @@ namespace ColorVision.ImageEditor.Algorithms
             {
                 if (_disposed) return;
                 _disposed = true;
-                foreach (RenderedOverlay overlay in rendered.Where(item => item.Lifetime == AlgorithmOverlayLifetime.Transient))
-                {
-                    if (canvas.ContainsVisual(overlay.Visual)) canvas.RemoveOverlayVisual(overlay.Visual);
-                    image.AlgorithmOverlays.Remove(overlay.Name);
-                }
+                foreach (IAlgorithmOverlayRegistration registration in registrations)
+                    registration.Dispose();
             }
         }
     }

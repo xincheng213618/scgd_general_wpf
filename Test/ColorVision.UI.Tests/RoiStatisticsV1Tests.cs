@@ -60,6 +60,202 @@ public sealed class RoiStatisticsV1Tests
     }
 
     [Fact]
+    public async Task Gray32FloatPercentilesRemainExactForOrdinaryRois()
+    {
+        float[] values = [9, 1, 5, 3];
+        using AlgorithmImageBuffer input = new(
+            values.Length,
+            1,
+            values.Length * sizeof(float),
+            AlgorithmImageFormat.Gray32Float,
+            MemoryMarshal.AsBytes(values.AsSpan()).ToArray());
+        RoiStatisticsParameters parameters = new()
+        {
+            DetectBadPixelCandidates = false,
+            HistogramBins = 4,
+            Percentiles = [25, 50, 75],
+        };
+
+        using AlgorithmResult result = await RunAsync(
+            input,
+            new RectangleAlgorithmRoi(0, 0, values.Length, 1),
+            parameters);
+
+        Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
+        double[] percentiles = result.GetArtifact<AlgorithmMeasurementArtifact>()!.Measurements
+            .Where(measurement => measurement.Name == "channel.percentile" && measurement.Channel == 0)
+            .Select(measurement => measurement.Value)
+            .ToArray();
+        Assert.Equal([2.5, 4, 6], percentiles);
+    }
+
+    [Fact]
+    public async Task FullFrame4KGray32FloatExceedingExactPercentileBudgetIsRejectedBeforeScan()
+    {
+        const int width = 3840;
+        const int height = 2160;
+        using AlgorithmImageBuffer input = new(
+            width,
+            height,
+            checked(width * sizeof(float)),
+            AlgorithmImageFormat.Gray32Float,
+            new byte[checked(width * height * sizeof(float))]);
+        List<string> stages = [];
+
+        using AlgorithmResult result = await RunAsync(
+            input,
+            new RectangleAlgorithmRoi(0, 0, width, height),
+            new RoiStatisticsParameters { DetectBadPixelCandidates = false, HistogramBins = 16 },
+            new InlineProgress(progress => stages.Add(progress.Stage)));
+
+        Assert.Equal(AlgorithmResultStatus.Failed, result.Status);
+        Assert.Contains(result.Failures, failure => failure.Code == "roi_exact_float_statistics_budget_exceeded");
+        Assert.DoesNotContain("roi.scan", stages);
+    }
+
+    [Theory]
+    [InlineData(7680, 4320, 1)]
+    [InlineData(3840, 2160, 4)]
+    public void EightKGrayAndFourChannelFourKExceedTheExactFloatSampleBudgetWithoutAllocatingFrames(
+        int width,
+        int height,
+        int channels)
+    {
+        long pixels = checked((long)width * height);
+
+        Assert.True(RoiStatisticsAlgorithmProvider.ExceedsExactFloatingStatisticsBudget(pixels, channels, out long requiredBytes));
+        Assert.True(requiredBytes > RoiStatisticsAlgorithmProvider.MaximumExactFloatingValueBytes);
+    }
+
+    [Fact]
+    public async Task CancellationBeforeExactFloatOrderingSkipsTheSortAndArtifacts()
+    {
+        float[] values = Enumerable.Range(0, 100_000).Select(index => (float)(index % 997)).ToArray();
+        using AlgorithmImageBuffer input = new(
+            values.Length,
+            1,
+            values.Length * sizeof(float),
+            AlgorithmImageFormat.Gray32Float,
+            MemoryMarshal.AsBytes(values.AsSpan()).ToArray());
+        using CancellationTokenSource cancellation = new();
+
+        using AlgorithmResult result = await RunAsync(
+            input,
+            new RectangleAlgorithmRoi(0, 0, values.Length, 1),
+            new RoiStatisticsParameters { DetectBadPixelCandidates = false, HistogramBins = 16 },
+            new InlineProgress(progress =>
+            {
+                if (progress.Stage == "roi.percentiles") cancellation.Cancel();
+            }),
+            cancellation.Token);
+
+        Assert.Equal(AlgorithmResultStatus.Cancelled, result.Status);
+        Assert.Empty(result.Artifacts);
+    }
+
+    [Fact]
+    public async Task ZeroBadPixelCandidateCapDisablesDetectionAndStorage()
+    {
+        const int width = 64;
+        const int height = 64;
+        byte[] checkerboard = Enumerable.Range(0, width * height)
+            .Select(index => (byte)(((index / width + index % width) & 1) == 0 ? 0 : 255))
+            .ToArray();
+        using AlgorithmImageBuffer input = Buffer(checkerboard, width, height);
+        List<string> stages = [];
+        RoiStatisticsParameters parameters = new()
+        {
+            HistogramBins = 16,
+            DetectBadPixelCandidates = true,
+            BadPixelSigmaThreshold = 0.1,
+            BadPixelMinimumDeviationFraction = 0,
+            MaximumBadPixelCandidates = 0,
+        };
+
+        using AlgorithmResult result = await RunAsync(
+            input,
+            new RectangleAlgorithmRoi(0, 0, width, height),
+            parameters,
+            new InlineProgress(progress => stages.Add(progress.Stage)));
+
+        Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
+        Assert.Equal(0, Measurement(result, "roi.bad_pixel_candidate_count"));
+        Assert.Equal(0, Measurement(result, "roi.bad_pixel_channel_candidate_count"));
+        Assert.Empty(result.GetArtifact<AlgorithmTableArtifact>("bad-pixel-candidates")!.Rows);
+        Assert.DoesNotContain("roi.bad-pixels", stages);
+    }
+
+    [Fact]
+    public async Task BoundedBadPixelCandidatesKeepTheStrongestDeterministically()
+    {
+        const int width = 7;
+        byte[] pixels = Enumerable.Repeat((byte)100, width * 3).ToArray();
+        pixels[width + 2] = 200;
+        pixels[width + 4] = 255;
+        RoiStatisticsParameters parameters = new()
+        {
+            HistogramBins = 16,
+            DetectBadPixelCandidates = true,
+            BadPixelSigmaThreshold = 0.1,
+            BadPixelMinimumDeviationFraction = 0,
+            MaximumBadPixelCandidates = 1,
+        };
+
+        using AlgorithmImageBuffer input = Buffer(pixels, width, 3);
+        using AlgorithmResult result = await RunAsync(input, new RectangleAlgorithmRoi(0, 0, width, 3), parameters);
+
+        Assert.Equal(2, Measurement(result, "roi.bad_pixel_candidate_count"));
+        Assert.Equal(2, Measurement(result, "roi.bad_pixel_channel_candidate_count"));
+        IReadOnlyDictionary<string, JsonElement> candidate = Assert.Single(
+            result.GetArtifact<AlgorithmTableArtifact>("bad-pixel-candidates")!.Rows);
+        Assert.Equal(4, candidate["X"].GetInt32());
+        Assert.Equal(1, candidate["Y"].GetInt32());
+        Assert.Equal(255, candidate["Value"].GetDouble());
+
+        parameters.MaximumBadPixelCandidates = 10;
+        using AlgorithmImageBuffer allInput = Buffer(pixels, width, 3);
+        using AlgorithmResult all = await RunAsync(allInput, new RectangleAlgorithmRoi(0, 0, width, 3), parameters);
+        AlgorithmTableArtifact allCandidates = all.GetArtifact<AlgorithmTableArtifact>("bad-pixel-candidates")!;
+        Assert.Equal(2, allCandidates.Rows.Count);
+        Assert.Equal(new[] { 255d, 200d }, allCandidates.Rows.Select(row => row["Value"].GetDouble()));
+    }
+
+    [Theory]
+    [InlineData(AlgorithmImageFormat.Gray8, 0d, false)]
+    [InlineData(AlgorithmImageFormat.Gray16, 1234d, false)]
+    [InlineData(AlgorithmImageFormat.Gray32Float, -3.5d, false)]
+    [InlineData(AlgorithmImageFormat.Gray32Float, 0d, false)]
+    [InlineData(AlgorithmImageFormat.Gray32Float, -2d, true)]
+    public async Task ConstantHistogramsContainEveryFiniteSampleInAConsistentInterval(
+        AlgorithmImageFormat format,
+        double value,
+        bool includeNaN)
+    {
+        using AlgorithmImageBuffer input = ConstantBuffer(format, value, includeNaN);
+        using AlgorithmResult result = await RunAsync(input, new RectangleAlgorithmRoi(0, 0, input.Width, 1));
+
+        Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
+        AlgorithmTableArtifact histogram = result.GetArtifact<AlgorithmTableArtifact>("roi-histogram")!;
+        long finiteCount = (long)Measurement(result, "channel.valid_count", 0);
+        Assert.Equal(finiteCount, histogram.Rows.Sum(row => row["Count"].GetInt64()));
+        IReadOnlyDictionary<string, JsonElement> occupied = Assert.Single(
+            histogram.Rows.Where(row => row["Count"].GetInt64() > 0));
+        double lower = occupied["LowerInclusive"].GetDouble();
+        double upper = occupied["Upper"].GetDouble();
+        bool upperInclusive = occupied["UpperInclusive"].GetBoolean();
+        Assert.True(value >= lower && (value < upper || upperInclusive && value <= upper),
+            $"Value {value:R} is not contained by {(upperInclusive ? "[lower, upper]" : "[lower, upper)")} = [{lower:R}, {upper:R}{(upperInclusive ? "]" : ")")}.");
+        if (format.IsFloatingPoint())
+        {
+            Assert.Single(histogram.Rows);
+            Assert.Equal(value, lower);
+            Assert.Equal(value, upper);
+            Assert.True(upperInclusive);
+        }
+        Assert.Equal(includeNaN ? 1 : 0, Measurement(result, "channel.nan_count", 0));
+    }
+
+    [Fact]
     public async Task MissingAndOutOfBoundsRoiReturnStructuredFailures()
     {
         using AlgorithmImageBuffer missingInput = Buffer([1, 2, 3, 4], 2, 2);
@@ -221,24 +417,29 @@ public sealed class RoiStatisticsV1Tests
         });
         try
         {
-            Type session = typeof(RoiStatisticsEditorTool).Assembly.GetType(
-                "ColorVision.ImageEditor.Algorithms.ImageAlgorithmAnalysisSession",
-                throwOnError: true)!;
-            MethodInfo begin = session.GetMethod("Begin", BindingFlags.Public | BindingFlags.Static)!;
-            MethodInfo isCurrent = session.GetMethod("IsCurrent", BindingFlags.Public | BindingFlags.Static)!;
             ImageProcessingContext context = WpfTestHost.Invoke(() => imageView.EditorContext.ProcessingContext);
             Guid documentId = WpfTestHost.Invoke(() => context.DocumentInstanceId);
             long revision = WpfTestHost.Invoke(() => context.ImageRevision);
             Guid olderId = Guid.NewGuid();
             Guid latestId = Guid.NewGuid();
-            using CancellationTokenSource older = Assert.IsType<CancellationTokenSource>(begin.Invoke(null, [context, olderId]));
-            using CancellationTokenSource latest = Assert.IsType<CancellationTokenSource>(begin.Invoke(null, [context, latestId]));
+            using CancellationTokenSource older = ImageAlgorithmAnalysisSession.Begin(
+                context,
+                documentId,
+                revision,
+                Guid.NewGuid(),
+                olderId);
+            using CancellationTokenSource latest = ImageAlgorithmAnalysisSession.Begin(
+                context,
+                documentId,
+                revision,
+                Guid.NewGuid(),
+                latestId);
             Assert.True(older.IsCancellationRequested);
-            Assert.False(Assert.IsType<bool>(isCurrent.Invoke(null, [context, documentId, revision, olderId])));
-            Assert.True(Assert.IsType<bool>(isCurrent.Invoke(null, [context, documentId, revision, latestId])));
+            Assert.False(ImageAlgorithmAnalysisSession.IsCurrent(context, documentId, revision, olderId));
+            Assert.True(ImageAlgorithmAnalysisSession.IsCurrent(context, documentId, revision, latestId));
 
             WpfTestHost.Invoke(context.NotifySourcePixelsChanged);
-            Assert.False(Assert.IsType<bool>(isCurrent.Invoke(null, [context, documentId, revision, latestId])));
+            Assert.False(ImageAlgorithmAnalysisSession.IsCurrent(context, documentId, revision, latestId));
         }
         finally
         {
@@ -249,15 +450,27 @@ public sealed class RoiStatisticsV1Tests
     private static readonly byte[] TestPixels = [0, 1, 2, 3, 4, 5, 6, 7];
 
     private static async Task<AlgorithmResult> RunAsync(AlgorithmImageBuffer input, AlgorithmRoi? roi)
+        => await RunAsync(
+            input,
+            roi,
+            new RoiStatisticsParameters { DetectBadPixelCandidates = false, HistogramBins = 16 });
+
+    private static async Task<AlgorithmResult> RunAsync(
+        AlgorithmImageBuffer input,
+        AlgorithmRoi? roi,
+        RoiStatisticsParameters parameters,
+        IProgress<AlgorithmProgress>? progress = null,
+        CancellationToken cancellationToken = default)
         => await ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest
         {
             Invocation = AlgorithmInvocation.Create(
                 StandardAlgorithmIds.RoiStatistics,
-                new RoiStatisticsParameters { DetectBadPixelCandidates = false, HistogramBins = 16 },
+                parameters,
                 roi),
             Inputs = [new AlgorithmInput { Name = "source", Image = input, Ownership = AlgorithmInputOwnership.Borrowed }],
             RequiredCapabilities = AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local,
-        });
+            Progress = progress,
+        }, cancellationToken);
 
     private static double Measurement(AlgorithmResult result, string name, int? channel = null)
         => result.GetArtifact<AlgorithmMeasurementArtifact>()!.Measurements
@@ -265,6 +478,21 @@ public sealed class RoiStatisticsV1Tests
 
     private static AlgorithmImageBuffer Buffer(byte[] pixels, int width, int height)
         => new(width, height, width, AlgorithmImageFormat.Gray8, pixels.ToArray());
+
+    private static AlgorithmImageBuffer ConstantBuffer(AlgorithmImageFormat format, double value, bool includeNaN)
+    {
+        int count = includeNaN ? 4 : 3;
+        if (format == AlgorithmImageFormat.Gray8)
+            return new AlgorithmImageBuffer(count, 1, count, format, Enumerable.Repeat((byte)value, count).ToArray());
+        if (format == AlgorithmImageFormat.Gray16)
+        {
+            ushort[] samples = Enumerable.Repeat((ushort)value, count).ToArray();
+            return new AlgorithmImageBuffer(count, 1, count * sizeof(ushort), format, MemoryMarshal.AsBytes(samples.AsSpan()).ToArray());
+        }
+        float[] floats = Enumerable.Repeat((float)value, count).ToArray();
+        if (includeNaN) floats[^1] = float.NaN;
+        return new AlgorithmImageBuffer(count, 1, count * sizeof(float), format, MemoryMarshal.AsBytes(floats.AsSpan()).ToArray());
+    }
 
     private static string CreateTemporaryDirectory()
     {
@@ -302,5 +530,10 @@ public sealed class RoiStatisticsV1Tests
             Marshal.Copy(TestPixels, 0, mat.Data, TestPixels.Length);
             return mat;
         }
+    }
+
+    private sealed class InlineProgress(Action<AlgorithmProgress> report) : IProgress<AlgorithmProgress>
+    {
+        public void Report(AlgorithmProgress value) => report(value);
     }
 }

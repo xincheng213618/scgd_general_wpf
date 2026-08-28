@@ -23,11 +23,41 @@ public sealed class ImageAlgorithmPlatformTests
     public void CatalogHasUniqueStableIdentitiesVersionsAndCompatibilityAliases()
     {
         AlgorithmCatalog catalog = StandardAlgorithmCatalog.Create();
-        Assert.Equal(17, catalog.Descriptors.Count);
+        Assert.Equal(28, catalog.Descriptors.Count);
         Assert.Equal(catalog.Descriptors.Count, catalog.Descriptors.Select(item => item.Id).Distinct().Count());
-        Assert.All(catalog.Descriptors, descriptor => Assert.Equal(
-            descriptor.Id == StandardAlgorithmIds.ImageComparison ? new AlgorithmVersion(1, 1, 0) : new AlgorithmVersion(1, 0, 0),
-            descriptor.Version));
+        IReadOnlyDictionary<AlgorithmId, AlgorithmVersion> expectedVersions = new Dictionary<AlgorithmId, AlgorithmVersion>
+        {
+            [StandardAlgorithmIds.Invert] = new(1, 0, 0),
+            [StandardAlgorithmIds.Canny] = new(1, 0, 0),
+            [StandardAlgorithmIds.BasicAdjustment] = new(1, 0, 0),
+            [StandardAlgorithmIds.Threshold] = new(1, 1, 0),
+            [StandardAlgorithmIds.Sharpen] = new(1, 0, 0),
+            [StandardAlgorithmIds.GaussianBlur] = new(1, 0, 0),
+            [StandardAlgorithmIds.MedianBlur] = new(1, 0, 0),
+            [StandardAlgorithmIds.Morphology] = new(1, 0, 0),
+            [StandardAlgorithmIds.Denoise] = new(1, 1, 0),
+            [StandardAlgorithmIds.AutoLevels] = new(1, 0, 0),
+            [StandardAlgorithmIds.WhiteBalance] = new(1, 0, 0),
+            [StandardAlgorithmIds.HistogramEqualization] = new(1, 0, 0),
+            [StandardAlgorithmIds.RemoveMoire] = new(1, 0, 0),
+            [StandardAlgorithmIds.PseudoColor] = new(1, 0, 0),
+            [StandardAlgorithmIds.RoiStatistics] = new(1, 0, 0),
+            [StandardAlgorithmIds.ImageProfile] = new(1, 1, 0),
+            [StandardAlgorithmIds.ImageComparison] = new(1, 1, 0),
+            [StandardAlgorithmIds.BlobComponents] = new(1, 0, 0),
+            [StandardAlgorithmIds.Contours] = new(1, 0, 0),
+            [StandardAlgorithmIds.SubpixelEdge] = new(1, 0, 0),
+            [StandardAlgorithmIds.LineFit] = new(1, 0, 0),
+            [StandardAlgorithmIds.CircleFit] = new(1, 0, 0),
+            [StandardAlgorithmIds.GeometricTransform] = new(1, 0, 0),
+            [StandardAlgorithmIds.ImageRegistration] = new(1, 0, 0),
+            [StandardAlgorithmIds.LensDistortionCorrection] = new(1, 0, 0),
+            [StandardAlgorithmIds.ImagingCorrection] = new(1, 0, 0),
+            [StandardAlgorithmIds.FrequencySpectrum] = new(1, 0, 0),
+            [StandardAlgorithmIds.MoireAnalysis] = new(1, 0, 0),
+        };
+        Assert.Equal(expectedVersions.Keys.OrderBy(id => id.Value), catalog.Descriptors.Select(item => item.Id).OrderBy(id => id.Value));
+        Assert.All(catalog.Descriptors, descriptor => Assert.Equal(expectedVersions[descriptor.Id], descriptor.Version));
         Assert.All(catalog.Descriptors, descriptor =>
         {
             Assert.NotNull(descriptor.OutputFormats);
@@ -40,7 +70,7 @@ public sealed class ImageAlgorithmPlatformTests
         [
             "InvertImage", "EdgeDetection", "BasicAdjustment", "Threshold", "Sharpen", "GaussianBlur",
             "MedianBlur", "Erode", "Dilate", "MorphologyEx", "BilateralFilter", "Blur", "AutoLevelsAdjust",
-            "WhiteBalance", "HistogramEqualization", "RemoveMoire", "PseudoColor", "RoiStatistics", "ImageProfile", "ImageComparison",
+            "WhiteBalance", "HistogramEqualization", "RemoveMoire", "PseudoColor", "RoiStatistics", "ImageProfile", "ImageComparison", "ConnectedComponents", "FindContours", "SubpixelEdge", "LineFit", "CircleFit", "GeometricTransform", "ImageRegistration", "LensDistortionCorrection", "ImagingCorrection", "FrequencySpectrum", "MoireAnalysis",
         ];
         Assert.All(aliases, alias => Assert.True(catalog.TryResolveAlias(alias, out _), alias));
 
@@ -60,6 +90,17 @@ public sealed class ImageAlgorithmPlatformTests
         Assert.DoesNotContain(copilot, descriptor => descriptor.Id == StandardAlgorithmIds.RoiStatistics);
         Assert.DoesNotContain(copilot, descriptor => descriptor.Id == StandardAlgorithmIds.ImageProfile);
         Assert.DoesNotContain(copilot, descriptor => descriptor.Id == StandardAlgorithmIds.ImageComparison);
+        Assert.DoesNotContain(copilot, descriptor => descriptor.Id == StandardAlgorithmIds.BlobComponents);
+        Assert.DoesNotContain(copilot, descriptor => descriptor.Id == StandardAlgorithmIds.Contours);
+        Assert.DoesNotContain(copilot, descriptor => descriptor.Id == StandardAlgorithmIds.SubpixelEdge);
+        Assert.DoesNotContain(copilot, descriptor => descriptor.Id == StandardAlgorithmIds.LineFit);
+        Assert.DoesNotContain(copilot, descriptor => descriptor.Id == StandardAlgorithmIds.CircleFit);
+        Assert.DoesNotContain(copilot, descriptor => descriptor.Id == StandardAlgorithmIds.GeometricTransform);
+        Assert.DoesNotContain(copilot, descriptor => descriptor.Id == StandardAlgorithmIds.ImageRegistration);
+        Assert.DoesNotContain(copilot, descriptor => descriptor.Id == StandardAlgorithmIds.LensDistortionCorrection);
+        Assert.DoesNotContain(copilot, descriptor => descriptor.Id == StandardAlgorithmIds.ImagingCorrection);
+        Assert.DoesNotContain(copilot, descriptor => descriptor.Id == StandardAlgorithmIds.FrequencySpectrum);
+        Assert.DoesNotContain(copilot, descriptor => descriptor.Id == StandardAlgorithmIds.MoireAnalysis);
 
         AlgorithmId[] expectedBatchOrder =
         [
@@ -76,6 +117,9 @@ public sealed class ImageAlgorithmPlatformTests
             StandardAlgorithmIds.HistogramEqualization,
             StandardAlgorithmIds.Morphology,
             StandardAlgorithmIds.Denoise,
+            StandardAlgorithmIds.GeometricTransform,
+            StandardAlgorithmIds.LensDistortionCorrection,
+            StandardAlgorithmIds.ImagingCorrection,
         ];
         Assert.Equal(expectedBatchOrder, BatchImageAlgorithms.CreateAll().Skip(1).Select(item => item.Descriptor!.Id));
     }
@@ -648,7 +692,17 @@ public sealed class ImageAlgorithmPlatformTests
                        AlgorithmInvocation.Create(StandardAlgorithmIds.Invert, new NoAlgorithmParameters())))
             {
                 Assert.Equal(AlgorithmResultStatus.Succeeded, preview.Status);
+                WriteableBitmap committedBitmap = GetPreviewBitmap(committing);
                 Assert.True(WpfTestHost.Invoke(() => InvokeCommit(committing)));
+                Assert.Same(committedBitmap, WpfTestHost.Invoke(() => context.ViewBitmapSource));
+                Assert.Same(committedBitmap, WpfTestHost.Invoke(() => context.ImageShow.Source));
+                Assert.Null(WpfTestHost.Invoke(() => context.FunctionImage));
+                Assert.Equal(byte.MaxValue, WpfTestHost.Invoke(() =>
+                {
+                    byte[] pixel = new byte[1];
+                    committedBitmap.CopyPixels(new Int32Rect(0, 0, 1, 1), pixel, 1, 0);
+                    return pixel[0];
+                }));
             }
             Assert.Equal(beforeCommit + 1, WpfTestHost.Invoke(() => imageView.ImageRevision));
             WpfTestHost.Invoke(() => ((IDisposable)committing).Dispose());
@@ -668,6 +722,145 @@ public sealed class ImageAlgorithmPlatformTests
         }
         finally
         {
+            WpfTestHost.Invoke(imageView.Dispose);
+        }
+    }
+
+    [Fact]
+    public void ImageDocumentMutationEntrypointsAdvanceRevisionOnceAndInvalidateAnalysis()
+    {
+        ImageView imageView = WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewTestResources();
+            ImageView view = new();
+            view.SetImageSource(CreateGrayBitmap(), enableEditorImageServices: false, configureDefaultLayerController: false);
+            return view;
+        });
+
+        try
+        {
+            ImageProcessingContext context = WpfTestHost.Invoke(() => imageView.EditorContext.ProcessingContext);
+            AssertMutation(context.NotifySourcePixelsChanged);
+            AssertMutation(() => imageView.SetImageSource(
+                CreateGrayBitmap(),
+                enableEditorImageServices: false,
+                configureDefaultLayerController: false));
+            AssertMutation(imageView.Clear);
+
+            void AssertMutation(Action mutation)
+            {
+                Guid documentId = WpfTestHost.Invoke(() => context.DocumentInstanceId);
+                long sourceRevision = WpfTestHost.Invoke(() => context.ImageRevision);
+                Guid invocationId = Guid.NewGuid();
+                using CancellationTokenSource cancellation = WpfTestHost.Invoke(() =>
+                    ImageAlgorithmAnalysisSession.Begin(
+                        context,
+                        documentId,
+                        sourceRevision,
+                        Guid.NewGuid(),
+                        invocationId));
+
+                WpfTestHost.Invoke(mutation);
+
+                Assert.Equal(sourceRevision + 1, WpfTestHost.Invoke(() => context.ImageRevision));
+                Assert.True(cancellation.IsCancellationRequested);
+                Assert.False(ImageAlgorithmAnalysisSession.IsCurrent(
+                    context,
+                    documentId,
+                    sourceRevision,
+                    invocationId));
+            }
+        }
+        finally
+        {
+            WpfTestHost.Invoke(imageView.Dispose);
+        }
+    }
+
+    [Fact]
+    public async Task ClearDuringInFlightAlgorithmWorkCancelsRunsAndRejectsLateResults()
+    {
+        ImageView imageView = WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewTestResources();
+            ImageView view = new();
+            view.SetImageSource(CreateGrayBitmap(), enableEditorImageServices: false, configureDefaultLayerController: false);
+            return view;
+        });
+        object? preview = null;
+
+        try
+        {
+            ImageProcessingContext context = WpfTestHost.Invoke(() => imageView.EditorContext.ProcessingContext);
+            preview = WpfTestHost.Invoke(() => StartPreviewSession(context));
+            Guid previewSessionId = (Guid)preview.GetType()
+                .GetField("_sessionId", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(preview)!;
+            Guid previewInvocationId = Guid.NewGuid();
+            using CancellationTokenSource previewCancellation = new();
+            Guid previewDocumentId = WpfTestHost.Invoke(() => context.DocumentInstanceId);
+            long previewRevision = WpfTestHost.Invoke(() => context.ImageRevision);
+            Assert.True(WpfTestHost.Invoke(() => context.TryBeginAlgorithmPreviewInvocation(
+                previewSessionId,
+                previewDocumentId,
+                previewRevision,
+                previewInvocationId,
+                previewCancellation,
+                out _)));
+            Task previewCancelled = WaitForCancellationAsync(previewCancellation.Token);
+            long beforeClear = WpfTestHost.Invoke(() => imageView.ImageRevision);
+            WpfTestHost.Invoke(imageView.Clear);
+            await previewCancelled.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Equal(beforeClear + 1, WpfTestHost.Invoke(() => imageView.ImageRevision));
+            Assert.True(previewCancellation.IsCancellationRequested);
+            Assert.False(WpfTestHost.Invoke(() => InvokeCommit(preview)));
+            Assert.Equal(beforeClear + 1, WpfTestHost.Invoke(() => imageView.ImageRevision));
+            Assert.Null(WpfTestHost.Invoke(() => context.ViewBitmapSource));
+            Assert.Null(WpfTestHost.Invoke(() => context.ImageShow.Source));
+
+            WpfTestHost.Invoke(() =>
+            {
+                ((IDisposable)preview).Dispose();
+                imageView.SetImageSource(
+                    CreateGrayBitmap(),
+                    enableEditorImageServices: false,
+                    configureDefaultLayerController: false);
+            });
+            preview = null;
+
+            Guid analysisDocumentId = WpfTestHost.Invoke(() => context.DocumentInstanceId);
+            long analysisRevision = WpfTestHost.Invoke(() => context.ImageRevision);
+            Guid analysisInvocationId = Guid.NewGuid();
+            using CancellationTokenSource analysisCancellation = WpfTestHost.Invoke(() =>
+                ImageAlgorithmAnalysisSession.Begin(
+                    context,
+                    analysisDocumentId,
+                    analysisRevision,
+                    Guid.NewGuid(),
+                    analysisInvocationId));
+            Task analysisCancelled = WaitForCancellationAsync(analysisCancellation.Token);
+            long beforeAnalysisClear = WpfTestHost.Invoke(() => imageView.ImageRevision);
+            WpfTestHost.Invoke(imageView.Clear);
+            await analysisCancelled.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Equal(beforeAnalysisClear + 1, WpfTestHost.Invoke(() => imageView.ImageRevision));
+            Assert.False(ImageAlgorithmAnalysisSession.IsCurrent(
+                context,
+                analysisDocumentId,
+                analysisRevision,
+                analysisInvocationId));
+            Assert.False(ImageAlgorithmAnalysisSession.CanPresent(
+                context,
+                analysisDocumentId,
+                analysisRevision,
+                analysisInvocationId,
+                out System.Windows.Window? previous));
+            Assert.Null(previous);
+        }
+        finally
+        {
+            if (preview != null) WpfTestHost.Invoke(() => ((IDisposable)preview).Dispose());
             WpfTestHost.Invoke(imageView.Dispose);
         }
     }
@@ -820,6 +1013,17 @@ public sealed class ImageAlgorithmPlatformTests
 
     private static bool InvokeCommit(object session)
         => (bool)session.GetType().GetMethod("Commit", BindingFlags.Public | BindingFlags.Instance)!.Invoke(session, null)!;
+
+    private static async Task WaitForCancellationAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+    }
 
     private static AlgorithmDescriptor Descriptor(AlgorithmId id, IReadOnlySet<AlgorithmImageFormat> formats)
     {

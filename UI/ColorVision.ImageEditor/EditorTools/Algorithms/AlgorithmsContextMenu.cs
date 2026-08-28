@@ -1,374 +1,274 @@
+using ColorVision.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.BatchProcessing;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR;
+using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GeometricTransform;
+using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageRegistration;
+using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.LensDistortionCorrection;
+using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImagingCorrection;
+using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FrequencySpectrum;
+using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.MoireAnalysis;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
+using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms
 {
     /// <summary>
-    /// 图像算法上下文菜单 - 提供图像处理算法的右键菜单
+    /// WPF compatibility adapter over the catalog-driven interactive presentation projection.
+    /// Specialized editors remain mapped here, but membership, capability filtering and order
+    /// are owned by the catalog rather than by a second UI algorithm list.
     /// </summary>
     public record class AlgorithmsContextMenu(ImageProcessingContext imageContext) : IIEditorToolContextMenu
     {
+        private readonly DrawEditorContext? _drawContext;
+        private readonly IAlgorithmAnalysisResultPresenter _analysisPresenter = DefaultAlgorithmAnalysisResultPresenter.Instance;
+        private readonly Func<AlgorithmRuntime, BatchImageProcessingWindow> _batchWindowFactory = runtime => new BatchImageProcessingWindow(runtime);
+        private readonly Action<BatchImageProcessingWindow> _batchWindowPresenter = ShowBatchWindowDefault;
+
+        private AlgorithmRuntime Runtime => (imageContext ?? throw new InvalidOperationException("The menu has no image context.")).AlgorithmRuntime;
+
+        public AlgorithmsContextMenu(ImageProcessingContext imageContext, DrawEditorContext drawContext)
+            : this(imageContext)
+        {
+            _drawContext = drawContext ?? throw new ArgumentNullException(nameof(drawContext));
+        }
+
+        internal AlgorithmsContextMenu(
+            ImageProcessingContext imageContext,
+            AlgorithmRuntime runtime,
+            Action<AlgorithmResult, string>? analysisPresenter = null)
+            : this(
+                imageContext,
+                runtime,
+                analysisPresenter == null ? DefaultAlgorithmAnalysisResultPresenter.Instance : new DelegateAlgorithmAnalysisResultPresenter(analysisPresenter),
+                runtime => new BatchImageProcessingWindow(runtime),
+                ShowBatchWindowDefault)
+        {
+        }
+
+        internal AlgorithmsContextMenu(
+            ImageProcessingContext imageContext,
+            AlgorithmRuntime runtime,
+            IAlgorithmAnalysisResultPresenter analysisPresenter,
+            Func<AlgorithmRuntime, BatchImageProcessingWindow> batchWindowFactory,
+            Action<BatchImageProcessingWindow> batchWindowPresenter)
+            : this(imageContext)
+        {
+            ArgumentNullException.ThrowIfNull(runtime);
+            ArgumentNullException.ThrowIfNull(analysisPresenter);
+            ArgumentNullException.ThrowIfNull(batchWindowFactory);
+            ArgumentNullException.ThrowIfNull(batchWindowPresenter);
+            if (!ReferenceEquals(runtime, imageContext.AlgorithmRuntime))
+                throw new ArgumentException("The menu runtime must be the ImageProcessingContext runtime.", nameof(runtime));
+            _analysisPresenter = analysisPresenter;
+            _batchWindowFactory = batchWindowFactory;
+            _batchWindowPresenter = batchWindowPresenter;
+        }
+
         public List<MenuItemMetadata> GetContextMenuItems()
         {
-            var MenuItemMetadatas = new List<MenuItemMetadata>();
-            
-            // 主菜单项
-            MenuItemMetadatas.Add(new MenuItemMetadata() 
-            { 
-                GuidId = "Algorithms", 
-                Order = 103, 
-                Header = ColorVision.ImageEditor.Properties.Resources.ImageAlgorithm, 
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata()
-            {
-                GuidId = "AlgorithmsCall",
-                Order = 104,
-                Header = Properties.Resources.Algorithm_AlgorithmCalls,
-            });
-
-            RelayCommand batchProcessingCommand = new(o =>
-            {
-                var window = new BatchImageProcessingWindow
+            List<MenuItemMetadata> items =
+            [
+                new()
                 {
-                    Owner = Application.Current.GetActiveWindow()
-                };
-                window.ShowDialog();
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata()
-            {
-                OwnerGuid = "Algorithms",
-                GuidId = "BatchImageProcessing",
-                Order = 0,
-                Header = "批量执行算法...",
-                Command = batchProcessingCommand,
-            });
-
-            RelayCommand SFRCommand = new(o =>
-            {
-                var tool = new SFREditorTool(imageContext);
-                tool.Execute();
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata()
-            {
-                OwnerGuid = "AlgorithmsCall",
-                GuidId = "SFR",
-                Order = 1,
-                Header = Properties.Resources.Algorithm_SfrMtfAnalysis,
-                Command = SFRCommand
-            });
-
-            RelayCommand ArtculationCommand = new(o =>
-            {
-                var tool = new ArtculationEditorTool(imageContext);
-                tool.Execute();
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata()
-            {
-                OwnerGuid = "AlgorithmsCall",
-                GuidId = "Artculation",
-                Order = 1,
-                Header = Properties.Resources.Artculation_MenuHeader,
-                Command = ArtculationCommand
-            });
-
-
-            // 反相 - 直接应用，无需参数
-            RelayCommand invertCommand = new(o =>
-            {
-                var tool = new InvertEditorTool(imageContext);
-                tool.Execute();
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata() 
-            { 
-                OwnerGuid = "Algorithms", 
-                GuidId = "InvertImage", 
-                Order = 1, 
-                Header = ColorVision.ImageEditor.Properties.Resources.Invert, 
-                Command = invertCommand 
-            });
-
-            // 自动色阶调整 - 直接应用，无需参数
-            RelayCommand autoLevelsCommand = new(o =>
-            {
-                var tool = new AutoLevelsAdjustEditorTool(imageContext);
-                tool.Execute();
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata() 
-            { 
-                OwnerGuid = "Algorithms", 
-                GuidId = "AutoLevelsAdjust", 
-                Order = 2, 
-                Header = ColorVision.ImageEditor.Properties.Resources.AutoLevelsAdjustment, 
-                Command = autoLevelsCommand 
-            });
-
-            // 白平衡 - 打开窗口调整 (仅适用于多通道图像)
-            RelayCommand whiteBalanceCommand = new(
-                o =>
-                {
-                    var window = new WhiteBalanceWindow(imageContext)
-                    {
-                        Owner = Application.Current.GetActiveWindow()
-                    };
-                    window.ShowDialog();
+                    GuidId = "Algorithms",
+                    Order = 103,
+                    Header = ColorVision.ImageEditor.Properties.Resources.ImageAlgorithm,
                 },
-                o =>
+                new()
                 {
-                    // 白平衡仅适用于多通道（彩色）图像
-                    int channels = imageContext.Config.GetProperties<int>("Channel");
-                    return channels > 1;
+                    GuidId = "AlgorithmsCall",
+                    Order = 104,
+                    Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_AlgorithmCalls,
+                },
+                new()
+                {
+                    OwnerGuid = "Algorithms",
+                    GuidId = "BatchImageProcessing",
+                    Order = 0,
+                    Header = "批量执行算法...",
+                    Command = new RelayCommand(_ => ShowBatchWindow()),
+                },
+                new()
+                {
+                    OwnerGuid = "AlgorithmsCall",
+                    GuidId = "SFR",
+                    Order = 1,
+                    Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_SfrMtfAnalysis,
+                    Command = new RelayCommand(_ => new SFREditorTool(imageContext).Execute()),
+                },
+                new()
+                {
+                    OwnerGuid = "AlgorithmsCall",
+                    GuidId = "Artculation",
+                    Order = 1,
+                    Header = ColorVision.ImageEditor.Properties.Resources.Artculation_MenuHeader,
+                    Command = new RelayCommand(_ => new ArtculationEditorTool(imageContext).Execute()),
+                },
+            ];
+
+            foreach (AlgorithmInteractiveCatalogEntry entry in AlgorithmCatalogProjection.ForInteractiveMenu(Runtime.Catalog)
+                .Where(entry => CanExecuteDescriptor(entry.Descriptor)))
+            {
+                items.Add(new MenuItemMetadata
+                {
+                    OwnerGuid = "Algorithms",
+                    GuidId = entry.Presentation.CompatibilityId,
+                    Order = entry.Presentation.Order,
+                    Header = ResolveHeader(entry),
+                    Command = CreateCommand(entry),
                 });
-            MenuItemMetadatas.Add(new MenuItemMetadata() 
-            { 
-                OwnerGuid = "Algorithms", 
-                GuidId = "WhiteBalance", 
-                Order = 3, 
-                Header =ColorVision.ImageEditor.Properties.Resources.WhiteBalanceAdjustment, 
-                Command = whiteBalanceCommand 
-            });
+            }
 
-            // 基础调整 - 曝光、亮度、对比度和 Gamma 使用同一套预览与应用语义
-            RelayCommand basicAdjustmentCommand = new(o =>
-            {
-                var window = new BasicAdjustmentWindow(imageContext)
-                {
-                    Owner = Application.Current.GetActiveWindow()
-                };
-                window.ShowDialog();
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata() 
-            { 
-                OwnerGuid = "Algorithms", 
-                GuidId = "BasicAdjustment",
-                Order = 4, 
-                Header = ColorVision.ImageEditor.Properties.Resources.LuminanceContrastAdjustment, 
-                Command = basicAdjustmentCommand
-            });
-
-            // 阈值处理 - 打开窗口调整
-            RelayCommand thresholdCommand = new(o =>
-            {
-                var window = new ThresholdWindow(imageContext)
-                {
-                    Owner = Application.Current.GetActiveWindow()
-                };
-                window.ShowDialog();
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata() 
-            { 
-                OwnerGuid = "Algorithms", 
-                GuidId = "Threshold", 
-                Order = 5,
-                Header = ColorVision.ImageEditor.Properties.Resources.ThresholdProcessing, 
-                Command = thresholdCommand 
-            });
-
-            // 去除摩尔纹 - 直接应用，无需参数
-            RelayCommand removeMoireCommand = new(o =>
-            {
-                var tool = new RemoveMoireEditorTool(imageContext);
-                tool.Execute();
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata() 
-            { 
-                OwnerGuid = "Algorithms", 
-                GuidId = "RemoveMoire", 
-                Order = 6,
-                Header = ColorVision.ImageEditor.Properties.Resources.MoireRemove, 
-                Command = removeMoireCommand 
-            });
-
-            // 锐化 - 直接应用，无需参数
-            RelayCommand sharpenCommand = new(o =>
-            {
-                var tool = new SharpenEditorTool(imageContext);
-                tool.Execute();
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata() 
-            { 
-                OwnerGuid = "Algorithms", 
-                GuidId = "Sharpen", 
-                Order = 7,
-                Header = ColorVision.ImageEditor.Properties.Resources.Sharpening, 
-                Command = sharpenCommand 
-            });
-
-            // 高斯模糊 - 打开窗口调整
-            RelayCommand gaussianBlurCommand = new(o =>
-            {
-                var window = new GaussianBlurWindow(imageContext)
-                {
-                    Owner = Application.Current.GetActiveWindow()
-                };
-                window.ShowDialog();
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata() 
-            { 
-                OwnerGuid = "Algorithms", 
-                GuidId = "GaussianBlur", 
-                Order = 8,
-                Header = ColorVision.ImageEditor.Properties.Resources.GaussianBlur, 
-                Command = gaussianBlurCommand 
-            });
-
-            // 中值滤波 - 打开窗口调整
-            RelayCommand medianBlurCommand = new(o =>
-            {
-                var window = new MedianBlurWindow(imageContext)
-                {
-                    Owner = Application.Current.GetActiveWindow()
-                };
-                window.ShowDialog();
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata() 
-            { 
-                OwnerGuid = "Algorithms", 
-                GuidId = "MedianBlur", 
-                Order = 9,
-                Header = ColorVision.ImageEditor.Properties.Resources.MedianFilter, 
-                Command = medianBlurCommand 
-            });
-
-            // 边缘检测 - 打开窗口调整
-            RelayCommand edgeDetectionCommand = new(o =>
-            {
-                var window = new EdgeDetectionWindow(imageContext)
-                {
-                    Owner = Application.Current.GetActiveWindow()
-                };
-                window.ShowDialog();
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata() 
-            { 
-                OwnerGuid = "Algorithms", 
-                GuidId = "EdgeDetection", 
-                Order = 10,
-                Header = ColorVision.ImageEditor.Properties.Resources.Canny, 
-                Command = edgeDetectionCommand 
-            });
-
-            // 直方图均衡化 - 直接应用，无需参数
-            RelayCommand histogramEqualizationCommand = new(o =>
-            {
-                var tool = new HistogramEqualizationEditorTool(imageContext);
-                tool.Execute();
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata() 
-            { 
-                OwnerGuid = "Algorithms", 
-                GuidId = "HistogramEqualization", 
-                Order = 11,
-                Header = ColorVision.ImageEditor.Properties.Resources.HistogramEqualization, 
-                Command = histogramEqualizationCommand 
-            });
-
-            RelayCommand erodeCommand = new(o =>
-            {
-                var window = new MorphologyWindow(imageContext, 0)
-                {
-                    Owner = Application.Current.GetActiveWindow()
-                };
-                window.ShowDialog();
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata()
-            {
-                OwnerGuid = "Algorithms",
-                GuidId = "Erode",
-                Order = 12,
-                Header = "腐蚀",
-                Command = erodeCommand
-            });
-
-            RelayCommand dilateCommand = new(o =>
-            {
-                var window = new MorphologyWindow(imageContext, 1)
-                {
-                    Owner = Application.Current.GetActiveWindow()
-                };
-                window.ShowDialog();
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata()
-            {
-                OwnerGuid = "Algorithms",
-                GuidId = "Dilate",
-                Order = 13,
-                Header = "膨胀",
-                Command = dilateCommand
-            });
-
-            RelayCommand morphologyCommand = new(o =>
-            {
-                var window = new MorphologyWindow(imageContext, 2)
-                {
-                    Owner = Application.Current.GetActiveWindow()
-                };
-                window.ShowDialog();
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata()
-            {
-                OwnerGuid = "Algorithms",
-                GuidId = "MorphologyEx",
-                Order = 14,
-                Header = "形态学操作",
-                Command = morphologyCommand
-            });
-
-            RelayCommand bilateralFilterCommand = new(o =>
-            {
-                var window = new FilterDenoiseWindow(imageContext, 0)
-                {
-                    Owner = Application.Current.GetActiveWindow()
-                };
-                window.ShowDialog();
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata()
-            {
-                OwnerGuid = "Algorithms",
-                GuidId = "BilateralFilter",
-                Order = 16,
-                Header = "双边滤波",
-                Command = bilateralFilterCommand
-            });
-
-            RelayCommand blurCommand = new(o =>
-            {
-                var window = new FilterDenoiseWindow(imageContext, 1)
-                {
-                    Owner = Application.Current.GetActiveWindow()
-                };
-                window.ShowDialog();
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata()
-            {
-                OwnerGuid = "Algorithms",
-                GuidId = "Blur",
-                Order = 17,
-                Header = "均值模糊",
-                Command = blurCommand
-            });
-
-            ValidateCatalogBindings(MenuItemMetadatas);
-            return MenuItemMetadatas;
+            return items;
         }
 
-        private static void ValidateCatalogBindings(IEnumerable<MenuItemMetadata> items)
+        private void ShowBatchWindow()
         {
-            foreach (MenuItemMetadata item in items)
+            BatchImageProcessingWindow window = _batchWindowFactory(Runtime);
+            _batchWindowPresenter(window);
+        }
+
+        private static void ShowBatchWindowDefault(BatchImageProcessingWindow window)
+        {
+            window.Owner = Application.Current.GetActiveWindow();
+            window.ShowDialog();
+        }
+
+        private RelayCommand CreateCommand(AlgorithmInteractiveCatalogEntry entry)
+        {
+            string compatibilityId = entry.Presentation.CompatibilityId;
+            AlgorithmId id = entry.Descriptor.Id;
+            if (!UsesSpecializedAdapter(entry.Descriptor))
+                return new RelayCommand(
+                    _ => _ = ExecuteCatalogDefaultAsync(entry.Descriptor),
+                    _ => CanExecuteDescriptor(entry.Descriptor));
+            RelayCommand specialized = (id, compatibilityId) switch
             {
-                if (!string.Equals(item.OwnerGuid, "Algorithms", System.StringComparison.Ordinal)
-                    || string.Equals(item.GuidId, "BatchImageProcessing", System.StringComparison.Ordinal))
+                (var algorithmId, "InvertImage") when algorithmId == StandardAlgorithmIds.Invert => new RelayCommand(_ => new InvertEditorTool(imageContext).Execute()),
+                (var algorithmId, "AutoLevelsAdjust") when algorithmId == StandardAlgorithmIds.AutoLevels => new RelayCommand(_ => new AutoLevelsAdjustEditorTool(imageContext).Execute()),
+                (var algorithmId, "WhiteBalance") when algorithmId == StandardAlgorithmIds.WhiteBalance => new RelayCommand(_ => ShowWindow(new WhiteBalanceWindow(imageContext)), _ => IsColorImage()),
+                (var algorithmId, "BasicAdjustment") when algorithmId == StandardAlgorithmIds.BasicAdjustment => new RelayCommand(_ => ShowWindow(new BasicAdjustmentWindow(imageContext))),
+                (var algorithmId, "Threshold") when algorithmId == StandardAlgorithmIds.Threshold => new RelayCommand(_ => ShowWindow(new ThresholdWindow(imageContext))),
+                (var algorithmId, "RemoveMoire") when algorithmId == StandardAlgorithmIds.RemoveMoire => new RelayCommand(_ => new RemoveMoireEditorTool(imageContext).Execute()),
+                (var algorithmId, "Sharpen") when algorithmId == StandardAlgorithmIds.Sharpen => new RelayCommand(_ => new SharpenEditorTool(imageContext).Execute()),
+                (var algorithmId, "GaussianBlur") when algorithmId == StandardAlgorithmIds.GaussianBlur => new RelayCommand(_ => ShowWindow(new GaussianBlurWindow(imageContext))),
+                (var algorithmId, "MedianBlur") when algorithmId == StandardAlgorithmIds.MedianBlur => new RelayCommand(_ => ShowWindow(new MedianBlurWindow(imageContext))),
+                (var algorithmId, "EdgeDetection") when algorithmId == StandardAlgorithmIds.Canny => new RelayCommand(_ => ShowWindow(new EdgeDetectionWindow(imageContext))),
+                (var algorithmId, "HistogramEqualization") when algorithmId == StandardAlgorithmIds.HistogramEqualization => new RelayCommand(_ => new HistogramEqualizationEditorTool(imageContext).Execute()),
+                (var algorithmId, "Erode") when algorithmId == StandardAlgorithmIds.Morphology => new RelayCommand(_ => ShowWindow(new MorphologyWindow(imageContext, 0))),
+                (var algorithmId, "Dilate") when algorithmId == StandardAlgorithmIds.Morphology => new RelayCommand(_ => ShowWindow(new MorphologyWindow(imageContext, 1))),
+                (var algorithmId, "MorphologyEx") when algorithmId == StandardAlgorithmIds.Morphology => new RelayCommand(_ => ShowWindow(new MorphologyWindow(imageContext, 2))),
+                (var algorithmId, "BilateralFilter") when algorithmId == StandardAlgorithmIds.Denoise => new RelayCommand(_ => ShowWindow(new FilterDenoiseWindow(imageContext, 0))),
+                (var algorithmId, "Blur") when algorithmId == StandardAlgorithmIds.Denoise => new RelayCommand(_ => ShowWindow(new FilterDenoiseWindow(imageContext, 1))),
+                (var algorithmId, "GeometricTransform") when algorithmId == StandardAlgorithmIds.GeometricTransform => new RelayCommand(_ => _ = new GeometricTransformEditorTool(imageContext).ExecuteAsync()),
+                (var algorithmId, "ImageRegistration") when algorithmId == StandardAlgorithmIds.ImageRegistration => new RelayCommand(_ => _ = new ImageRegistrationEditorTool(imageContext, _drawContext).ExecuteAsync()),
+                (var algorithmId, "LensDistortionCorrection") when algorithmId == StandardAlgorithmIds.LensDistortionCorrection => new RelayCommand(_ => _ = new LensDistortionCorrectionEditorTool(imageContext).ExecuteAsync()),
+                (var algorithmId, "ImagingCorrection") when algorithmId == StandardAlgorithmIds.ImagingCorrection => new RelayCommand(_ => _ = new ImagingCorrectionEditorTool(imageContext).ExecuteAsync()),
+                (var algorithmId, "FrequencySpectrum") when algorithmId == StandardAlgorithmIds.FrequencySpectrum => new RelayCommand(_ => _ = new FrequencySpectrumEditorTool(imageContext).ExecuteAsync()),
+                (var algorithmId, "MoireAnalysis") when algorithmId == StandardAlgorithmIds.MoireAnalysis => new RelayCommand(_ => _ = new MoireAnalysisEditorTool(imageContext).ExecuteAsync()),
+                _ => new RelayCommand(
+                    _ => _ = ExecuteCatalogDefaultAsync(entry.Descriptor),
+                    _ => CanExecuteDescriptor(entry.Descriptor)),
+            };
+            return new RelayCommand(
+                parameter => specialized.Execute(parameter),
+                parameter => CanExecuteDescriptor(entry.Descriptor) && specialized.CanExecute(parameter));
+        }
+
+        private bool CanExecuteDescriptor(AlgorithmDescriptor descriptor)
+        {
+            int plannedInputCount = UsesSpecializedAdapter(descriptor)
+                && descriptor.Id == StandardAlgorithmIds.ImageRegistration
+                ? 2
+                : 1;
+            return StandardAlgorithmAdapterContract.TryGetInteractiveRequiredCapabilities(
+                    descriptor,
+                    plannedInputCount,
+                    hasRoi: false,
+                    AlgorithmHostCapabilities.Interactive | AlgorithmHostCapabilities.Local,
+                    out AlgorithmHostCapabilities required)
+                && Runtime.CanExecuteDescriptor(descriptor, required);
+        }
+
+        internal static bool UsesSpecializedAdapter(AlgorithmDescriptor descriptor)
+            => StandardAlgorithmAdapterContract.IsCompatible(descriptor);
+
+        private static string ResolveHeader(AlgorithmInteractiveCatalogEntry entry)
+        {
+            if (!string.IsNullOrWhiteSpace(entry.Presentation.ResourceKey))
+            {
+                CultureInfo culture = ColorVision.ImageEditor.Properties.Resources.Culture ?? CultureInfo.CurrentUICulture;
+                string? localized = ColorVision.ImageEditor.Properties.Resources.ResourceManager.GetString(entry.Presentation.ResourceKey, culture);
+                if (!string.IsNullOrWhiteSpace(localized)) return localized;
+            }
+            return entry.Presentation.DisplayName ?? entry.Descriptor.Name;
+        }
+
+        private bool IsColorImage() => imageContext.Config.GetProperties<int>("Channel") > 1;
+
+        private static void ShowWindow(Window window)
+        {
+            window.Owner = Application.Current.GetActiveWindow();
+            window.ShowDialog();
+        }
+
+        internal async Task<AlgorithmResultStatus> ExecuteCatalogDefaultAsync(AlgorithmDescriptor descriptor)
+        {
+            try
+            {
+                IAlgorithmParameters parameters = descriptor.ParameterSchema.Defaults
+                    .Deserialize(descriptor.ParameterType, AlgorithmJson.Options) as IAlgorithmParameters
+                    ?? throw new InvalidOperationException($"Could not create default parameters for '{descriptor.Id}'.");
+                if (parameters is not NoAlgorithmParameters)
                 {
-                    continue;
+                    bool submitted = false;
+                    PropertyEditorWindow editor = new(parameters, PropertyEditorEditMode.Transactional)
+                    {
+                        Owner = Application.Current.GetActiveWindow(),
+                        Title = descriptor.Name,
+                    };
+                    editor.Submitted += (_, _) => submitted = true;
+                    editor.ShowDialog();
+                    if (!submitted) return AlgorithmResultStatus.Cancelled;
                 }
-                if (!ImageAlgorithmPlatform.Catalog.TryResolveAlias(item.GuidId ?? string.Empty, out _))
-                    throw new System.InvalidOperationException($"Algorithm menu compatibility ID '{item.GuidId}' is not registered in the Catalog.");
+
+                AlgorithmValidationResult validation = parameters.Validate();
+                if (!validation.IsValid)
+                {
+                    MessageBox.Show(string.Join("; ", validation.Issues), descriptor.Name, MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return AlgorithmResultStatus.Failed;
+                }
+
+                AlgorithmInvocation invocation = AlgorithmInvocation.Create(descriptor.Id, parameters);
+                using AlgorithmResult result = await ImageAlgorithmApplier.ApplyAsync(imageContext, invocation);
+                if (result.Status == AlgorithmResultStatus.Succeeded
+                    && descriptor.ResultSemantics == AlgorithmResultSemantics.Analysis)
+                {
+                    _analysisPresenter.Present(result, descriptor.Name);
+                }
+                if (result.Status is not AlgorithmResultStatus.Succeeded and not AlgorithmResultStatus.Cancelled)
+                {
+                    MessageBox.Show(string.Join("; ", result.Failures), descriptor.Name, MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+                return result.Status;
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(exception.Message, descriptor.Name, MessageBoxButton.OK, MessageBoxImage.Error);
+                return AlgorithmResultStatus.Failed;
             }
         }
+
     }
 }

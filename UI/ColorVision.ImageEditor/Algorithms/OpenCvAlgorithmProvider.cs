@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.ImageEditor.Algorithms
 {
-    public sealed class OpenCvAlgorithmProvider : IImageAlgorithmProvider
+    public sealed class OpenCvAlgorithmProvider : IImageAlgorithmProvider, IAlgorithmDescriptorSupport
     {
         private static readonly HashSet<AlgorithmImageFormat> Formats = Enum.GetValues<AlgorithmImageFormat>().ToHashSet();
         private static readonly HashSet<AlgorithmId> SupportedIds = new()
@@ -40,6 +40,11 @@ namespace ColorVision.ImageEditor.Algorithms
             Formats,
             typeof(Cv2).Assembly.GetName().Version?.ToString());
 
+        public bool CanExecuteDescriptor(AlgorithmDescriptor descriptor, out string? reason)
+        {
+            return StandardAlgorithmAdapterContract.IsCanonicalProviderContract(descriptor, SupportedIds, out reason);
+        }
+
         public bool CanExecute(AlgorithmDescriptor descriptor, IReadOnlyList<AlgorithmInput> inputs, out string? reason)
         {
             if (!SupportedIds.Contains(descriptor.Id))
@@ -68,11 +73,11 @@ namespace ColorVision.ImageEditor.Algorithms
                     AlgorithmId = context.Descriptor.Id,
                     AlgorithmVersion = context.Descriptor.Version,
                     Status = AlgorithmResultStatus.Failed,
-                    Failures = new[] { failure },
+                    Failures = new[] { failure! },
                 });
             }
-            using Mat source = AlgorithmImageInterop.ToMat(input.Image);
-            using Mat result = Execute(source, context.Descriptor.Id, context.Parameters, cancellationToken);
+            using AlgorithmImageMatLease source = AlgorithmImageInterop.BorrowReadOnly(input.Image);
+            using Mat result = Execute(source.Mat, context.Descriptor.Id, context.Parameters, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             AlgorithmImageBuffer output = AlgorithmImageInterop.FromMat(result, input.Image.DpiX, input.Image.DpiY);
             return ValueTask.FromResult(new AlgorithmResult
@@ -106,6 +111,24 @@ namespace ColorVision.ImageEditor.Algorithms
                     });
                 return true;
             }
+            if (id == StandardAlgorithmIds.Threshold)
+            {
+                ThresholdParameters value = (ThresholdParameters)parameters;
+                double maximum = GetMaximum(format);
+                if (!value.UseNominalRange && value.Threshold > maximum)
+                {
+                    failure = new AlgorithmFailure(
+                        "parameter_format_unsupported",
+                        $"Absolute threshold {value.Threshold} exceeds the nominal maximum {maximum} for {format}.",
+                        nameof(ThresholdParameters.Threshold),
+                        new Dictionary<string, string>
+                        {
+                            ["format"] = format.ToString(),
+                            ["maximum"] = maximum.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                        });
+                    return true;
+                }
+            }
             failure = null;
             return false;
         }
@@ -124,7 +147,9 @@ namespace ColorVision.ImageEditor.Algorithms
                 else if (id == StandardAlgorithmIds.Threshold)
                 {
                     ThresholdParameters value = (ThresholdParameters)parameters;
-                    OpenCvImageAlgorithms.Threshold(result, value.Threshold, GetMaximum(result.Depth()));
+                    double maximum = GetMaximum(result.Depth());
+                    double threshold = ResolveNominal8BitValue(value.Threshold, value.UseNominalRange, maximum);
+                    OpenCvImageAlgorithms.Threshold(result, threshold, maximum);
                 }
                 else if (id == StandardAlgorithmIds.Sharpen) OpenCvImageAlgorithms.Sharpen(result);
                 else if (id == StandardAlgorithmIds.GaussianBlur)
@@ -145,7 +170,8 @@ namespace ColorVision.ImageEditor.Algorithms
                 else if (id == StandardAlgorithmIds.Denoise)
                 {
                     DenoiseParameters value = (DenoiseParameters)parameters;
-                    OpenCvImageAlgorithms.FilterDenoise(result, (FilterDenoiseOperation)value.Operation, value.KernelSize, value.SigmaColor, value.SigmaSpace);
+                    double sigmaColor = ResolveNominal8BitValue(value.SigmaColor, value.UseNominalColorSigma, GetMaximum(result.Depth()));
+                    OpenCvImageAlgorithms.FilterDenoise(result, (FilterDenoiseOperation)value.Operation, value.KernelSize, sigmaColor, value.SigmaSpace);
                 }
                 else if (id == StandardAlgorithmIds.AutoLevels)
                 {
@@ -366,5 +392,11 @@ namespace ColorVision.ImageEditor.Algorithms
             if (depth == MatType.CV_32F || depth == MatType.CV_64F) return 1;
             throw new NotSupportedException($"Unsupported image depth: {depth}");
         }
+
+        private static double GetMaximum(AlgorithmImageFormat format)
+            => format.IsFloatingPoint() ? 1 : format.BitsPerChannel() == 8 ? byte.MaxValue : ushort.MaxValue;
+
+        internal static double ResolveNominal8BitValue(double value, bool useNominalRange, double formatMaximum)
+            => useNominalRange ? value / byte.MaxValue * formatMaximum : value;
     }
 }

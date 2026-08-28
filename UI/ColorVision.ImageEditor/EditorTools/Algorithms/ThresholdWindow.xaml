@@ -25,9 +25,9 @@
                                   IsSnapToTickEnabled="True" 
                                   SmallChange="1" 
                                   LargeChange="10" 
-                                  Value="0" 
+                                  Value="128"
                                   Minimum="0" 
-                                  Maximum="65535"
+                                  Maximum="255"
                                   ValueChanged="ThresholdSlider_ValueChanged"/>
             </DockPanel>
         </StackPanel>

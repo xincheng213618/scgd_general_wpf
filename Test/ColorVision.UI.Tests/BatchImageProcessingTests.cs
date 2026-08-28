@@ -1,4 +1,5 @@
 using ColorVision.ImageEditor.BatchProcessing;
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Engine.Media;
 using ColorVision.FileIO;
 using OpenCvSharp;
@@ -369,6 +370,11 @@ public class BatchImageProcessingTests
 
         BatchImageAlgorithmDefinition algorithm = BatchImageAlgorithms.CreateAll()
             .Single(item => item.Name == algorithmName);
+        if (algorithm.Options is CannyParameters canny)
+        {
+            canny.LowThreshold = 100;
+            canny.HighThreshold = 200;
+        }
         using Mat expected = algorithm.Apply(continuousSource);
         using Mat actual = algorithm.Apply(source);
 
@@ -394,10 +400,41 @@ public class BatchImageProcessingTests
 
         BatchImageAlgorithmDefinition algorithm = BatchImageAlgorithms.CreateAll()
             .Single(item => item.Name == algorithmName);
+        if (algorithm.Options is CannyParameters canny)
+        {
+            canny.LowThreshold = 100;
+            canny.HighThreshold = 200;
+        }
         using Mat actual = algorithm.Apply(source);
 
         AssertMatsEqual(expected, actual);
         AssertMatsEqual(original, backing);
+    }
+
+    [Fact]
+    public void CannyLegacyCompatibilityTestUsesExplicitThresholdSensitive100And200Parameters()
+    {
+        using Mat source = new(48, 64, MatType.CV_8UC1, Scalar.All(50));
+        using (Mat rightHalf = new(source, new Rect(32, 0, 32, 48))) rightHalf.SetTo(Scalar.All(90));
+        BatchImageAlgorithmDefinition explicitAlgorithm = BatchImageAlgorithms.CreateAll()
+            .Single(item => item.Name == "Canny 边缘检测");
+        CannyParameters explicitParameters = Assert.IsType<CannyParameters>(explicitAlgorithm.Options);
+        explicitParameters.LowThreshold = 100;
+        explicitParameters.HighThreshold = 200;
+        BatchImageAlgorithmDefinition defaultAlgorithm = BatchImageAlgorithms.CreateAll()
+            .Single(item => item.Name == "Canny 边缘检测");
+        CannyParameters defaults = Assert.IsType<CannyParameters>(defaultAlgorithm.Options);
+        Assert.Equal(50, defaults.LowThreshold);
+        Assert.Equal(150, defaults.HighThreshold);
+
+        using Mat expected = new();
+        Cv2.Canny(source, expected, 100, 200);
+        using Mat actual = explicitAlgorithm.Apply(source);
+        using Mat defaultOutput = defaultAlgorithm.Apply(source);
+
+        AssertMatsEqual(expected, actual);
+        Assert.NotEqual(0, Cv2.CountNonZero(defaultOutput));
+        Assert.NotEqual(Cv2.CountNonZero(defaultOutput), Cv2.CountNonZero(actual));
     }
 
     [Theory]

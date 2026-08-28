@@ -405,6 +405,62 @@ namespace ColorVision.Copilot
             "batch convert", "convert", "export",
         };
 
+        private static readonly string[] BatchImageAlgorithmExecutionMarkers =
+        {
+            "执行算法", "运行算法", "应用算法", "批量执行算法",
+            "执行反相", "运行反相", "应用反相", "反相处理", "图片反相", "图像反相", "把这些图片反相", "把这些图像反相", "将这些图片反相", "将这些图像反相",
+            "执行边缘检测", "运行边缘检测", "应用边缘检测", "阈值处理", "锐化处理",
+            "应用高斯模糊", "应用中值模糊", "执行形态学", "执行降噪", "应用自动色阶", "应用白平衡", "执行白平衡", "做白平衡", "应用直方图均衡", "执行直方图均衡", "应用伪彩色",
+            "run algorithm", "apply algorithm", "run canny", "apply canny", "canny edge",
+            "invert image", "invert images", "invert these images", "invert the images", "threshold image", "threshold images", "sharpen image", "sharpen images",
+            "apply gaussian blur", "apply median blur", "run morphology", "apply denoise", "apply auto levels", "apply white balance", "white-balance these images", "white balance these images",
+            "apply histogram equalization", "run histogram equalization", "apply pseudo color", "apply pseudocolor",
+            "use histogram equalization", "please invert these images", "please invert the images", "please invert all images",
+        };
+
+        private static readonly string[] BatchImageAlgorithmAdvisoryMarkers =
+        {
+            "该不该", "要不要", "是否应该", "应不应该", "需不需要", "是否需要", "建议我", "建议我们",
+            "should i", "should we", "whether i should", "whether we should", "do i need to", "do we need to", "would you recommend", "is it advisable",
+        };
+
+        private static readonly string[] BatchImageAlgorithmNameMarkers =
+        {
+            "反相", "Canny", "边缘检测", "阈值", "锐化", "高斯模糊", "中值模糊", "形态学", "降噪",
+            "自动色阶", "白平衡", "直方图均衡", "伪彩色",
+            "invert", "canny", "edge detection", "threshold", "sharpen", "gaussian blur", "median blur",
+            "morphology", "denoise", "auto levels", "white balance", "white-balance", "histogram equalization", "pseudo color", "pseudocolor",
+        };
+
+        private static readonly string[] BatchImageAlgorithmTargetMarkers =
+        {
+            "这些图片", "这些图像", "多张图片", "多张图像", "所有图片", "所有图像", "全部图片", "全部图像", "批量图片", "批量图像",
+            "对图片", "对图像",
+            "these images", "the images", "all images", "multiple images", "batch images", "batch image", " images",
+        };
+
+        private static readonly string[] BatchImageAlgorithmChineseCommandMarkers =
+        {
+            "执行", "运行", "应用", "采用", "使用", "请对", "请把", "请将", "把这些", "将这些", "给这些", "对这些", "批量处理", "做白平衡",
+        };
+
+        private static readonly string[] BatchImageAlgorithmEnglishCommandMarkers =
+        {
+            "run", "apply", "use", "process", "convert",
+        };
+
+        private static readonly string[] BatchImageAlgorithmNegationMarkers =
+        {
+            "不要", "不需要", "无需", "别对", "禁止", "不执行", "不运行", "不应用",
+            "do not", "don't", "dont", "not apply", "not run", "without applying", "without running",
+        };
+
+        private static readonly string[] BatchImageAlgorithmReadOnlyStateMarkers =
+        {
+            "最佳实践", "处理结果", "结果不对", "结果异常", "已经做过", "已经处理", "曾经处理", "是否正常", "当前状态",
+            "best practice", "best practices", "was applied", "were applied", "have applied", "has applied", "i applied", "we applied", "already applied", "previously applied", "processing result", "current status", "yesterday",
+        };
+
         private static readonly HashSet<string> BatchImageFileExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
             ".cvraw", ".cvcie", ".bmp", ".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff",

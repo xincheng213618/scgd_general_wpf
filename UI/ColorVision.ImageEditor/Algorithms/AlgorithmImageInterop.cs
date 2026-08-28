@@ -1,7 +1,7 @@
 using ColorVision.Algorithms;
 using OpenCvSharp;
 using System;
-using System.Runtime.InteropServices;
+using System.Buffers;
 
 namespace ColorVision.ImageEditor.Algorithms
 {
@@ -9,16 +9,15 @@ namespace ColorVision.ImageEditor.Algorithms
     {
         public static Mat ToMat(AlgorithmImageBuffer image)
         {
-            Mat result = new(image.Height, image.Width, ToMatType(image.Format));
-            ReadOnlySpan<byte> source = image.Data.Span;
-            int rowBytes = checked(image.Width * image.Format.BytesPerPixel());
-            for (int row = 0; row < image.Height; row++)
-            {
-                byte[] rowData = source.Slice(row * image.Stride, rowBytes).ToArray();
-                Marshal.Copy(rowData, 0, result.Ptr(row), rowBytes);
-            }
-            return result;
+            using AlgorithmImageMatLease source = BorrowReadOnly(image);
+            return source.Mat.Clone();
         }
+
+        /// <summary>
+        /// Pins the immutable algorithm input and exposes it as an OpenCV header without copying pixels.
+        /// Providers must not mutate this Mat and must dispose the lease before the image buffer.
+        /// </summary>
+        public static AlgorithmImageMatLease BorrowReadOnly(AlgorithmImageBuffer image) => new(image);
 
         public static AlgorithmImageBuffer FromMat(Mat mat, double dpiX = 96, double dpiY = 96)
         {
@@ -28,13 +27,17 @@ namespace ColorVision.ImageEditor.Algorithms
             int height = mat.Rows;
             int stride = checked(width * format.BytesPerPixel());
             byte[] data = new byte[checked(stride * height)];
-            byte[] rowData = new byte[stride];
+            CopyRows(mat, data, stride, height);
+            return new AlgorithmImageBuffer(width, height, stride, format, data, dpiX, dpiY);
+        }
+
+        private static unsafe void CopyRows(Mat source, byte[] destination, int rowBytes, int height)
+        {
             for (int row = 0; row < height; row++)
             {
-                Marshal.Copy(mat.Ptr(row), rowData, 0, stride);
-                Buffer.BlockCopy(rowData, 0, data, row * stride, stride);
+                ReadOnlySpan<byte> sourceRow = new((void*)source.Ptr(row), rowBytes);
+                sourceRow.CopyTo(destination.AsSpan(row * rowBytes, rowBytes));
             }
-            return new AlgorithmImageBuffer(width, height, stride, format, data, dpiX, dpiY);
         }
 
         public static MatType ToMatType(AlgorithmImageFormat format) => format switch
@@ -63,6 +66,42 @@ namespace ColorVision.ImageEditor.Algorithms
             if (type == MatType.CV_16UC4) return AlgorithmImageFormat.Bgra64;
             if (type == MatType.CV_32FC4) return AlgorithmImageFormat.Bgra128Float;
             throw new NotSupportedException($"Unsupported OpenCV image type: {type}.");
+        }
+    }
+
+    internal sealed class AlgorithmImageMatLease : IDisposable
+    {
+        private MemoryHandle _pin;
+        private bool _disposed;
+
+        public unsafe AlgorithmImageMatLease(AlgorithmImageBuffer image)
+        {
+            ArgumentNullException.ThrowIfNull(image);
+            _pin = image.Data.Pin();
+            try
+            {
+                Mat = Mat.FromPixelData(
+                    image.Height,
+                    image.Width,
+                    AlgorithmImageInterop.ToMatType(image.Format),
+                    (IntPtr)_pin.Pointer,
+                    image.Stride);
+            }
+            catch
+            {
+                _pin.Dispose();
+                throw;
+            }
+        }
+
+        public Mat Mat { get; }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            Mat.Dispose();
+            _pin.Dispose();
         }
     }
 }

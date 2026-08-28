@@ -11,9 +11,10 @@ using System.Threading.Tasks;
 namespace ColorVision.ImageEditor.Algorithms
 {
     /// <summary>Deterministic, precision-preserving two-input comparison for identically encoded images.</summary>
-    public sealed class ImageComparisonAlgorithmProvider : IImageAlgorithmProvider
+    public sealed class ImageComparisonAlgorithmProvider : IImageAlgorithmProvider, IAlgorithmDescriptorSupport
     {
         private const string ResultSchema = "colorvision.analysis.image-comparison/v2";
+        internal const long MaximumRetainedOutputBytes = 192L * 1024 * 1024;
         private static readonly HashSet<AlgorithmImageFormat> Formats = Enum.GetValues<AlgorithmImageFormat>().ToHashSet();
 
         public AlgorithmProviderMetadata Metadata { get; } = new(
@@ -23,9 +24,15 @@ namespace ColorVision.ImageEditor.Algorithms
             AlgorithmExecutionPlane.Local,
             110,
             AlgorithmHostCapabilities.Interactive | AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local
-                | AlgorithmHostCapabilities.Deterministic | AlgorithmHostCapabilities.MultiInput,
+                | AlgorithmHostCapabilities.Deterministic | AlgorithmHostCapabilities.MultiInput
+                | AlgorithmHostCapabilities.Roi,
             Formats,
             "1.0.0");
+
+        public bool CanExecuteDescriptor(AlgorithmDescriptor descriptor, out string? reason)
+        {
+            return StandardAlgorithmAdapterContract.IsCanonicalProviderContract(descriptor, StandardAlgorithmIds.ImageComparison, out reason);
+        }
 
         public bool CanExecute(AlgorithmDescriptor descriptor, IReadOnlyList<AlgorithmInput> inputs, out string? reason)
         {
@@ -73,18 +80,47 @@ namespace ColorVision.ImageEditor.Algorithms
                 : AlgorithmPixelRoi.Create(context.Invocation.Roi, reference);
             if (region.IsEmpty)
                 return ValueTask.FromResult(Failure(context, "comparison_roi_empty", "The comparison ROI contains no reference pixel centers after clipping.", "roi"));
-            context.Progress?.Report(new AlgorithmProgress(0.04, "comparison.prepare", "Allocating exact and display artifacts"));
+            if (!ImageComparisonOutputPlan.TryResolve(context.Invocation, out ImageComparisonArtifactOutputs requestedOutputs, out string? outputPlanReason))
+                return ValueTask.FromResult(Failure(context, "comparison_output_plan_invalid", outputPlanReason!, "metadata"));
+
+            cancellationToken.ThrowIfCancellationRequested();
             int channels = reference.Format.Channels();
             int bytesPerChannel = reference.Format.BitsPerChannel() / 8;
             int exactStride = checked(reference.Width * reference.Format.BytesPerPixel());
-            byte[] absoluteData = new byte[checked(exactStride * reference.Height)];
             AlgorithmImageFormat signedFormat = SignedFormat(channels);
             int signedStride = checked(reference.Width * signedFormat.BytesPerPixel());
-            byte[] signedData = new byte[checked(signedStride * reference.Height)];
             int visualStride = checked(reference.Width * 3);
-            byte[] absoluteVisualData = new byte[checked(visualStride * reference.Height)];
-            byte[] signedVisualData = new byte[absoluteVisualData.Length];
-            byte[] heatmapData = new byte[absoluteVisualData.Length];
+            long exactBytes = checked((long)exactStride * reference.Height);
+            long signedBytes = checked((long)signedStride * reference.Height);
+            long visualBytes = checked((long)visualStride * reference.Height);
+            long retainedOutputBytes = EstimateRetainedOutputBytes(requestedOutputs, exactBytes, signedBytes, visualBytes);
+            if (retainedOutputBytes > MaximumRetainedOutputBytes
+                || RequestedArrayExceedsRuntimeLimit(requestedOutputs, exactBytes, signedBytes, visualBytes))
+            {
+                return ValueTask.FromResult(Failure(
+                    context,
+                    "comparison_output_budget_exceeded",
+                    $"Requested comparison image artifacts require {retainedOutputBytes.ToString(CultureInfo.InvariantCulture)} bytes; "
+                        + $"the retained-output budget is {MaximumRetainedOutputBytes.ToString(CultureInfo.InvariantCulture)} bytes.",
+                    "metadata"));
+            }
+
+            context.Progress?.Report(new AlgorithmProgress(0.04, "comparison.prepare", "Allocating requested comparison artifacts"));
+            byte[]? absoluteData = Has(requestedOutputs, ImageComparisonArtifactOutputs.AbsoluteDifference)
+                ? AllocateOutput(exactBytes, cancellationToken)
+                : null;
+            byte[]? signedData = Has(requestedOutputs, ImageComparisonArtifactOutputs.SignedDifference)
+                ? AllocateOutput(signedBytes, cancellationToken)
+                : null;
+            byte[]? absoluteVisualData = Has(requestedOutputs, ImageComparisonArtifactOutputs.AbsoluteVisualization)
+                ? AllocateOutput(visualBytes, cancellationToken)
+                : null;
+            byte[]? signedVisualData = Has(requestedOutputs, ImageComparisonArtifactOutputs.SignedVisualization)
+                ? AllocateOutput(visualBytes, cancellationToken)
+                : null;
+            byte[]? heatmapData = Has(requestedOutputs, ImageComparisonArtifactOutputs.Heatmap)
+                ? AllocateOutput(visualBytes, cancellationToken)
+                : null;
             ChannelMetrics[] perChannel = Enumerable.Range(0, channels).Select(_ => new ChannelMetrics()).ToArray();
             ChannelMetrics aggregate = new();
             double nominalPeak = reference.Format.IsFloatingPoint() ? parameters.FloatPeakValue : reference.Format.BitsPerChannel() == 8 ? byte.MaxValue : ushort.MaxValue;
@@ -92,6 +128,7 @@ namespace ColorVision.ImageEditor.Algorithms
             ReadOnlySpan<byte> left = reference.Data.Span;
             ReadOnlySpan<byte> right = candidate.Data.Span;
             double[] differences = new double[4];
+            long floatArtifactOverflowCount = 0;
 
             for (int y = 0; y < reference.Height; y++)
             {
@@ -117,12 +154,21 @@ namespace ColorVision.ImageEditor.Algorithms
                         int rightOffset = candidateRow + (x * channels + channel) * bytesPerChannel;
                         double leftValue = Read(reference.Format, left, leftOffset);
                         double rightValue = Read(reference.Format, right, rightOffset);
-                        double difference = reference.Format.IsFloatingPoint() ? (float)(leftValue - rightValue) : leftValue - rightValue;
+                        double difference = leftValue - rightValue;
                         differences[channel] = difference;
                         if (!double.IsFinite(difference)) displayInvalid = true;
                         double absolute = Math.Abs(difference);
-                        WriteAbsolute(reference.Format, absoluteData, absoluteRow + (x * channels + channel) * bytesPerChannel, absolute);
-                        BinaryPrimitives.WriteSingleLittleEndian(signedData.AsSpan(signedRow + (x * channels + channel) * 4, 4), (float)difference);
+                        if (signedData != null
+                            && reference.Format.IsFloatingPoint()
+                            && double.IsFinite(difference)
+                            && absolute > float.MaxValue)
+                        {
+                            floatArtifactOverflowCount++;
+                        }
+                        if (absoluteData != null)
+                            WriteAbsolute(reference.Format, absoluteData, absoluteRow + (x * channels + channel) * bytesPerChannel, absolute);
+                        if (signedData != null)
+                            BinaryPrimitives.WriteSingleLittleEndian(signedData.AsSpan(signedRow + (x * channels + channel) * 4, 4), (float)difference);
 
                         bool include = channel != 3 || parameters.IncludeAlphaInMetrics;
                         if (!include || !inRegion) continue;
@@ -139,9 +185,12 @@ namespace ColorVision.ImageEditor.Algorithms
                             heatmapInvalid = true;
                         }
                     }
-                    WriteVisualPixel(absoluteVisualData, visualRow + x * 3, differences, channels, displayMaximum, false, displayInvalid);
-                    WriteVisualPixel(signedVisualData, visualRow + x * 3, differences, channels, displayMaximum, true, displayInvalid);
-                    WriteHeatmapPixel(heatmapData, visualRow + x * 3, pixelMaximum, displayMaximum, inRegion, heatmapInvalid);
+                    if (absoluteVisualData != null)
+                        WriteVisualPixel(absoluteVisualData, visualRow + x * 3, differences, channels, displayMaximum, false, displayInvalid);
+                    if (signedVisualData != null)
+                        WriteVisualPixel(signedVisualData, visualRow + x * 3, differences, channels, displayMaximum, true, displayInvalid);
+                    if (heatmapData != null)
+                        WriteHeatmapPixel(heatmapData, visualRow + x * 3, pixelMaximum, displayMaximum, inRegion, heatmapInvalid);
                 }
             }
 
@@ -154,18 +203,26 @@ namespace ColorVision.ImageEditor.Algorithms
             List<AlgorithmArtifact> artifacts = new();
             try
             {
-                artifacts.Add(new AlgorithmImageArtifact("absolute-difference", "absolute-difference",
-                    new AlgorithmImageBuffer(reference.Width, reference.Height, exactStride, reference.Format, absoluteData, reference.DpiX, reference.DpiY),
-                    ExactMetadata(reference, candidate, "absolute")));
-                artifacts.Add(new AlgorithmImageArtifact("signed-difference", "signed-difference",
-                    new AlgorithmImageBuffer(reference.Width, reference.Height, signedStride, signedFormat, signedData, reference.DpiX, reference.DpiY),
-                    ExactMetadata(reference, candidate, "reference-minus-candidate")));
-                artifacts.Add(new AlgorithmImageArtifact("absolute-difference-visualization", "visualization",
-                    new AlgorithmImageBuffer(reference.Width, reference.Height, visualStride, AlgorithmImageFormat.Bgr24, absoluteVisualData, reference.DpiX, reference.DpiY)));
-                artifacts.Add(new AlgorithmImageArtifact("signed-difference-visualization", "visualization",
-                    new AlgorithmImageBuffer(reference.Width, reference.Height, visualStride, AlgorithmImageFormat.Bgr24, signedVisualData, reference.DpiX, reference.DpiY)));
-                artifacts.Add(new AlgorithmImageArtifact("difference-heatmap", "heatmap",
-                    new AlgorithmImageBuffer(reference.Width, reference.Height, visualStride, AlgorithmImageFormat.Bgr24, heatmapData, reference.DpiX, reference.DpiY)));
+                if (absoluteData != null)
+                    artifacts.Add(new AlgorithmImageArtifact("absolute-difference", "absolute-difference",
+                        new AlgorithmImageBuffer(reference.Width, reference.Height, exactStride, reference.Format, absoluteData, reference.DpiX, reference.DpiY),
+                        ExactMetadata(reference, candidate, "absolute")));
+                if (signedData != null)
+                    artifacts.Add(new AlgorithmImageArtifact("signed-difference", "signed-difference",
+                        new AlgorithmImageBuffer(reference.Width, reference.Height, signedStride, signedFormat, signedData, reference.DpiX, reference.DpiY),
+                        ExactMetadata(reference, candidate, "reference-minus-candidate")));
+                if (absoluteVisualData != null)
+                    artifacts.Add(new AlgorithmImageArtifact("absolute-difference-visualization", "visualization",
+                        new AlgorithmImageBuffer(reference.Width, reference.Height, visualStride, AlgorithmImageFormat.Bgr24, absoluteVisualData, reference.DpiX, reference.DpiY),
+                        DisplayMetadata(displayMaximum, "absolute")));
+                if (signedVisualData != null)
+                    artifacts.Add(new AlgorithmImageArtifact("signed-difference-visualization", "visualization",
+                        new AlgorithmImageBuffer(reference.Width, reference.Height, visualStride, AlgorithmImageFormat.Bgr24, signedVisualData, reference.DpiX, reference.DpiY),
+                        DisplayMetadata(displayMaximum, "signed-midpoint")));
+                if (heatmapData != null)
+                    artifacts.Add(new AlgorithmImageArtifact("difference-heatmap", "heatmap",
+                        new AlgorithmImageBuffer(reference.Width, reference.Height, visualStride, AlgorithmImageFormat.Bgr24, heatmapData, reference.DpiX, reference.DpiY),
+                        DisplayMetadata(displayMaximum, "heatmap")));
                 artifacts.Add(BuildMeasurements(perChannel, aggregate, reference.Format, parameters.IncludeAlphaInMetrics, nominalPeak, quality));
                 artifacts.Add(BuildTable(perChannel, reference.Format, parameters.IncludeAlphaInMetrics, nominalPeak, quality));
                 artifacts.Add(BuildAlignmentTable(quality.Alignment));
@@ -211,6 +268,9 @@ namespace ColorVision.ImageEditor.Algorithms
                     candidateDpi = new { x = candidate.DpiX, y = candidate.DpiY },
                     peakValue = nominalPeak,
                     heatmapMaximum = displayMaximum,
+                    requestedImageArtifacts = ImageComparisonOutputPlan.Describe(requestedOutputs),
+                    retainedOutputBytes,
+                    retainedOutputBudgetBytes = MaximumRetainedOutputBytes,
                     region = new
                     {
                         isRoi = context.Invocation.Roi != null,
@@ -251,6 +311,13 @@ namespace ColorVision.ImageEditor.Algorithms
             {
                 diagnostics.Add(new AlgorithmDiagnosticMessage("nonfinite_samples_excluded",
                     $"Excluded {aggregate.InvalidCount.ToString(CultureInfo.InvariantCulture)} non-finite sample pairs from metrics; exact difference artifacts retain NaN."));
+            }
+            if (floatArtifactOverflowCount > 0)
+            {
+                diagnostics.Add(new AlgorithmDiagnosticMessage(
+                    "float_difference_artifact_overflow",
+                    $"{floatArtifactOverflowCount.ToString(CultureInfo.InvariantCulture)} finite double-domain difference sample(s) exceed Float32 artifact range and are stored as IEEE infinity; metrics remain finite double precision.",
+                    "warning"));
             }
             if (parameters.EnableSsim && quality.ValidSsimWindowCount == 0)
                 diagnostics.Add(new AlgorithmDiagnosticMessage("ssim_unavailable", "No SSIM window met the finite-sample requirement.", "warning"));
@@ -393,7 +460,53 @@ namespace ColorVision.ImageEditor.Algorithms
                 ["referenceFormat"] = reference.Format.ToString(),
                 ["candidateFormat"] = candidate.Format.ToString(),
                 ["precision"] = "unscaled-device-values",
+                ["metricPrecision"] = reference.Format.IsFloatingPoint() ? "float32-input; float64-difference-and-accumulation" : "exact-integer-input; float64-accumulation",
+                ["floatingArtifactOverflow"] = reference.Format.IsFloatingPoint() ? "finite values outside Float32 range are encoded as signed IEEE infinity" : "not-applicable",
             };
+
+        private static Dictionary<string, string> DisplayMetadata(double maximum, string semantics)
+            => new()
+            {
+                ["semantics"] = semantics,
+                ["normalizationMaximum"] = maximum.ToString("R", CultureInfo.InvariantCulture),
+                ["finiteOutOfRange"] = "saturate-to-display-range",
+                ["nonFinite"] = "magenta",
+            };
+
+        private static long EstimateRetainedOutputBytes(
+            ImageComparisonArtifactOutputs outputs,
+            long exactBytes,
+            long signedBytes,
+            long visualBytes)
+        {
+            long total = 0;
+            if (Has(outputs, ImageComparisonArtifactOutputs.AbsoluteDifference)) total = checked(total + exactBytes);
+            if (Has(outputs, ImageComparisonArtifactOutputs.SignedDifference)) total = checked(total + signedBytes);
+            if (Has(outputs, ImageComparisonArtifactOutputs.AbsoluteVisualization)) total = checked(total + visualBytes);
+            if (Has(outputs, ImageComparisonArtifactOutputs.SignedVisualization)) total = checked(total + visualBytes);
+            if (Has(outputs, ImageComparisonArtifactOutputs.Heatmap)) total = checked(total + visualBytes);
+            return total;
+        }
+
+        private static bool RequestedArrayExceedsRuntimeLimit(
+            ImageComparisonArtifactOutputs outputs,
+            long exactBytes,
+            long signedBytes,
+            long visualBytes)
+        {
+            return (Has(outputs, ImageComparisonArtifactOutputs.AbsoluteDifference) && exactBytes > Array.MaxLength)
+                || (Has(outputs, ImageComparisonArtifactOutputs.SignedDifference) && signedBytes > Array.MaxLength)
+                || (Has(outputs, ImageComparisonArtifactOutputs.InteractiveVisualizations) && visualBytes > Array.MaxLength);
+        }
+
+        private static byte[] AllocateOutput(long bytes, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return new byte[checked((int)bytes)];
+        }
+
+        private static bool Has(ImageComparisonArtifactOutputs outputs, ImageComparisonArtifactOutputs requested)
+            => (outputs & requested) != 0;
 
         private static void WriteVisualPixel(byte[] output, int offset, ReadOnlySpan<double> differences, int channels, double maximum, bool signed, bool invalid)
         {

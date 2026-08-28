@@ -23,9 +23,18 @@ namespace ColorVision.ImageEditor.Draw.Line
                 || format == PixelFormats.Rgba64;
 
         public static ProfileData ExtractAlongPath(IList<Point> points, WriteableBitmap bitmap, int totalSteps = 500, bool closePath = false)
+            => ExtractAlongPath(points, bitmap, ImageAlgorithmPlatform.Runtime, totalSteps, closePath);
+
+        public static ProfileData ExtractAlongPath(
+            IList<Point> points,
+            WriteableBitmap bitmap,
+            AlgorithmRuntime runtime,
+            int totalSteps = 500,
+            bool closePath = false)
         {
             ArgumentNullException.ThrowIfNull(points);
             ArgumentNullException.ThrowIfNull(bitmap);
+            ArgumentNullException.ThrowIfNull(runtime);
             if (points.Count < 2 || totalSteps < 2) return ProfileData.CreateSingleChannel([]);
 
             double scaleX = SafeDpi(bitmap.DpiX) / 96;
@@ -51,7 +60,7 @@ namespace ColorVision.ImageEditor.Draw.Line
                 StandardAlgorithmIds.ImageProfile,
                 parameters,
                 new PolylineAlgorithmRoi(pixelPoints));
-            using AlgorithmResult result = ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest
+            using AlgorithmResult result = runtime.Runner.RunAsync(new AlgorithmRunRequest
             {
                 Invocation = invocation,
                 Inputs = [new AlgorithmInput { Name = "source", Image = input, Ownership = AlgorithmInputOwnership.Transferred }],

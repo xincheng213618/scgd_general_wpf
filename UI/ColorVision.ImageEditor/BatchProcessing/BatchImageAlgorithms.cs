@@ -9,11 +9,26 @@ using System.Threading;
 
 namespace ColorVision.ImageEditor.BatchProcessing
 {
+    public sealed class BatchImageAlgorithmContractException : InvalidOperationException
+    {
+        public BatchImageAlgorithmContractException(string code, string message)
+            : base($"{Normalize(code)}: {message}")
+        {
+            Code = Normalize(code);
+        }
+
+        public string Code { get; }
+
+        private static string Normalize(string code)
+            => string.IsNullOrWhiteSpace(code) ? "algorithm_contract_violation" : code;
+    }
+
     /// <summary>Compatibility view model over a catalog descriptor and one mutable parameter instance.</summary>
     public sealed class BatchImageAlgorithmDefinition
     {
         private readonly Func<Mat, CancellationToken, Mat>? _legacyApply;
         private readonly bool _preserveLegacyBatchBehavior;
+        private readonly AlgorithmRuntime? _runtime;
 
         public BatchImageAlgorithmDefinition(string name, string suffix, object options, Func<Mat, Mat> apply)
         {
@@ -24,10 +39,12 @@ namespace ColorVision.ImageEditor.BatchProcessing
         }
 
         internal BatchImageAlgorithmDefinition(
+            AlgorithmRuntime runtime,
             AlgorithmDescriptor descriptor,
             IAlgorithmParameters parameters,
             bool preserveLegacyBatchBehavior = false)
         {
+            _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
             Descriptor = descriptor;
             Name = descriptor.Name;
             Suffix = descriptor.OutputSuffix;
@@ -80,19 +97,44 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 ParameterSchemaVersion = parameters.SchemaVersion,
                 Parameters = AlgorithmJson.ToElement(parameters),
             };
-            using AlgorithmResult result = ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest
+            List<AlgorithmInput> inputs =
+            [
+                new AlgorithmInput
+                {
+                    Name = "source",
+                    Image = inputImage,
+                    Ownership = AlgorithmInputOwnership.Transferred,
+                    ColorSpace = "encoded-device-values",
+                },
+            ];
+            try
+            {
+                if (parameters is ImagingCorrectionParameters correction)
+                {
+                    inputs.AddRange(AlgorithmReferenceImageLoader.LoadEnabledReferences(correction));
+                    invocation = new AlgorithmInvocation
+                    {
+                        InvocationId = invocation.InvocationId,
+                        AlgorithmId = invocation.AlgorithmId,
+                        AlgorithmVersion = invocation.AlgorithmVersion,
+                        ParameterSchemaVersion = invocation.ParameterSchemaVersion,
+                        Parameters = invocation.Parameters,
+                        Inputs = inputs.Select(value => new AlgorithmInputReference(value.Name, value.SourceUri, value.SourceRevision, value.Checksum)).ToArray(),
+                    };
+                }
+            }
+            catch
+            {
+                foreach (AlgorithmInput input in inputs.Where(value => value.Ownership == AlgorithmInputOwnership.Transferred)) input.Image.Dispose();
+                throw;
+            }
+            using AlgorithmResult result = (_runtime ?? throw new InvalidOperationException("The catalog algorithm has no execution runtime."))
+                .Runner.RunAsync(new AlgorithmRunRequest
             {
                 Invocation = invocation,
-                Inputs = new[]
-                {
-                    new AlgorithmInput
-                    {
-                        Name = "source",
-                        Image = inputImage,
-                        Ownership = AlgorithmInputOwnership.Transferred,
-                    },
-                },
-                RequiredCapabilities = AlgorithmHostCapabilities.Batch | AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local,
+                Inputs = inputs,
+                RequiredCapabilities = AlgorithmHostCapabilities.Batch | AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local
+                    | (inputs.Count > 1 ? AlgorithmHostCapabilities.MultiInput : AlgorithmHostCapabilities.None),
             }, cancellationToken).AsTask().GetAwaiter().GetResult();
 
             if (result.Status == AlgorithmResultStatus.Cancelled) throw new OperationCanceledException(cancellationToken);
@@ -102,8 +144,14 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 throw new InvalidOperationException(string.IsNullOrWhiteSpace(message) ? "Algorithm execution failed." : message);
             }
 
-            AlgorithmImageArtifact image = result.GetArtifact<AlgorithmImageArtifact>()
-                ?? throw new InvalidOperationException("The algorithm did not return a primary image artifact.");
+            AlgorithmPrimaryImageSelection primary = AlgorithmArtifactSelection.SelectPrimaryImage(result.Artifacts);
+            AlgorithmImageArtifact image = primary.Status switch
+            {
+                AlgorithmPrimaryImageSelectionStatus.Selected => primary.Artifact!,
+                AlgorithmPrimaryImageSelectionStatus.None => throw new BatchImageAlgorithmContractException("primary_image_missing", "The algorithm returned no image artifact."),
+                AlgorithmPrimaryImageSelectionStatus.Missing => throw new BatchImageAlgorithmContractException("primary_image_contract_violation", $"The result contains {primary.ImageArtifactCount} image artifact(s), but none has Role=primary."),
+                _ => throw new BatchImageAlgorithmContractException("primary_image_contract_violation", $"The result contains {primary.PrimaryArtifactCount} Role=primary image artifacts; exactly one is required."),
+            };
             Mat output = AlgorithmImageInterop.ToMat(image.Image);
             try
             {
@@ -213,38 +261,52 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
     public static class BatchImageAlgorithms
     {
-        private static readonly AlgorithmId[] CompatibilityOrder =
-        {
-            StandardAlgorithmIds.Invert,
-            StandardAlgorithmIds.PseudoColor,
-            StandardAlgorithmIds.AutoLevels,
-            StandardAlgorithmIds.WhiteBalance,
-            StandardAlgorithmIds.BasicAdjustment,
-            StandardAlgorithmIds.Threshold,
-            StandardAlgorithmIds.Sharpen,
-            StandardAlgorithmIds.GaussianBlur,
-            StandardAlgorithmIds.MedianBlur,
-            StandardAlgorithmIds.Canny,
-            StandardAlgorithmIds.HistogramEqualization,
-            StandardAlgorithmIds.Morphology,
-            StandardAlgorithmIds.Denoise,
-        };
-
         public static BatchImageAlgorithmDefinition CreateFormatOnly()
             => new("仅转换格式", string.Empty, new NoBatchAlgorithmOptions(), source => source.Clone());
 
         public static IReadOnlyList<BatchImageAlgorithmDefinition> CreateAll()
+            => CreateAll(ImageAlgorithmPlatform.Runtime);
+
+        public static IReadOnlyList<BatchImageAlgorithmDefinition> CreateAll(IAlgorithmCatalog catalog)
         {
-            List<BatchImageAlgorithmDefinition> algorithms = new() { CreateFormatOnly() };
-            foreach (AlgorithmId id in CompatibilityOrder)
+            ArgumentNullException.ThrowIfNull(catalog);
+            AlgorithmRuntime defaultRuntime = ImageAlgorithmPlatform.Runtime;
+            // Enumerate an arbitrary catalog exactly once, then deep-freeze it through the
+            // transactional catalog boundary. Validation and runtime construction consume only
+            // this immutable generation, preventing a second-enumeration descriptor injection.
+            AlgorithmDescriptor[] source = catalog.Descriptors
+                .Select(descriptor => descriptor ?? throw new ArgumentException("Catalog descriptor collections cannot contain null values.", nameof(catalog)))
+                .ToArray();
+            AlgorithmCatalog snapshot = new();
+            foreach (AlgorithmDescriptor descriptor in source) snapshot.Register(descriptor);
+
+            foreach (AlgorithmDescriptor descriptor in snapshot.Descriptors)
             {
-                if (!ImageAlgorithmPlatform.Catalog.TryResolve(id, out AlgorithmDescriptor? descriptor)
-                    || descriptor == null
-                    || (descriptor.Capabilities & AlgorithmHostCapabilities.Batch) == 0)
+                if (!defaultRuntime.Catalog.TryResolve(descriptor.Id, out AlgorithmDescriptor? registered)
+                    || registered == null
+                    || !AlgorithmDescriptorContract.Equals(descriptor, registered))
                 {
-                    continue;
+                    throw new ArgumentException(
+                        $"Algorithm '{descriptor.Id}' is not part of the default execution runtime. "
+                        + "Pass an AlgorithmRuntime containing the catalog, providers and migrators instead.",
+                        nameof(catalog));
                 }
+            }
+            return CreateAll(defaultRuntime.WithCatalog(snapshot));
+        }
+
+        public static IReadOnlyList<BatchImageAlgorithmDefinition> CreateAll(AlgorithmRuntime runtime)
+        {
+            ArgumentNullException.ThrowIfNull(runtime);
+            List<BatchImageAlgorithmDefinition> algorithms = new() { CreateFormatOnly() };
+            foreach (AlgorithmDescriptor descriptor in AlgorithmCatalogProjection.ForBatchImageProcessing(runtime.Catalog))
+            {
+                const AlgorithmHostCapabilities required = AlgorithmHostCapabilities.Batch
+                    | AlgorithmHostCapabilities.Headless
+                    | AlgorithmHostCapabilities.Local;
+                if (!runtime.CanExecuteDescriptor(descriptor, required)) continue;
                 algorithms.Add(new BatchImageAlgorithmDefinition(
+                    runtime,
                     descriptor,
                     CreateDefaultParameters(descriptor),
                     preserveLegacyBatchBehavior: true));
@@ -257,9 +319,18 @@ namespace ColorVision.ImageEditor.BatchProcessing
             JsonElement? parameters,
             out BatchImageAlgorithmDefinition? algorithm,
             out string error)
+            => TryCreateForCopilot(ImageAlgorithmPlatform.Runtime, idOrAlias, parameters, out algorithm, out error);
+
+        public static bool TryCreateForCopilot(
+            AlgorithmRuntime runtime,
+            string idOrAlias,
+            JsonElement? parameters,
+            out BatchImageAlgorithmDefinition? algorithm,
+            out string error)
         {
+            ArgumentNullException.ThrowIfNull(runtime);
             algorithm = null;
-            if (!ImageAlgorithmPlatform.Catalog.TryResolveAlias(idOrAlias, out AlgorithmDescriptor? descriptor) || descriptor == null)
+            if (!runtime.Catalog.TryResolveAlias(idOrAlias, out AlgorithmDescriptor? descriptor) || descriptor == null)
             {
                 error = $"Algorithm '{idOrAlias}' is not registered.";
                 return false;
@@ -271,9 +342,15 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 | AlgorithmHostCapabilities.Local
                 | AlgorithmHostCapabilities.Deterministic;
             if (!StandardAlgorithmCatalog.IsExplicitlyAllowedForCopilot(descriptor.Id)
+                || descriptor.ResultSemantics != AlgorithmResultSemantics.ImageTransform
                 || (descriptor.Capabilities & required) != required)
             {
                 error = $"Algorithm '{descriptor.Id}' is not on the explicit Copilot local/headless/deterministic whitelist.";
+                return false;
+            }
+            if (!runtime.CanAttemptExecution(descriptor, required))
+            {
+                error = $"Algorithm '{descriptor.Id}' has no compatible provider for Copilot execution.";
                 return false;
             }
 
@@ -309,7 +386,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                     error = string.Join("; ", validation.Issues.Select(issue => $"{issue.Path}: {issue.Message}"));
                     return false;
                 }
-                algorithm = new BatchImageAlgorithmDefinition(descriptor, parsed);
+                algorithm = new BatchImageAlgorithmDefinition(runtime, descriptor, parsed);
                 error = string.Empty;
                 return true;
             }
@@ -325,11 +402,6 @@ namespace ColorVision.ImageEditor.BatchProcessing
             IAlgorithmParameters parameters = descriptor.ParameterSchema.Defaults
                 .Deserialize(descriptor.ParameterType, AlgorithmJson.Options) as IAlgorithmParameters
                 ?? throw new InvalidOperationException($"Could not create default parameters for '{descriptor.Id}'.");
-            if (parameters is CannyParameters canny)
-            {
-                canny.LowThreshold = 100;
-                canny.HighThreshold = 200;
-            }
             return parameters;
         }
     }

@@ -186,16 +186,36 @@ namespace ColorVision.Copilot
             return IsAgentRequest(request)
                 && !ExplicitlyDisallowsWriteAccess(request)
                 && !ContainsAny(request!.UserText, ConceptualQuestionMarkers)
+                && !ContainsAny(request.UserText, BatchImageAlgorithmAdvisoryMarkers)
                 && !(ContainsAny(request.UserText, ScriptRuntimeMarkers)
                     && ContainsAny(request.UserText, ScriptExecutionMarkers))
                 && ContainsAny(request.UserText, BatchImageMarkers)
-                && ContainsAny(request.UserText, BatchImageActionMarkers);
+                && (ContainsAny(request.UserText, BatchImageActionMarkers)
+                    || IsBatchImageAlgorithmMutation(request.UserText));
         }
 
         public static bool NeedsBatchImageConversionExecution(CopilotAgentRequest? request)
         {
             return NeedsBatchImageProcessing(request)
-                && ContainsAny(request!.UserText, BatchImageConversionMarkers);
+                && (ContainsAny(request!.UserText, BatchImageConversionMarkers)
+                    || IsBatchImageAlgorithmMutation(request.UserText));
+        }
+
+        private static bool IsBatchImageAlgorithmMutation(string text)
+        {
+            if (ContainsAny(text, ConceptualQuestionMarkers)
+                || ContainsAny(text, BatchImageAlgorithmAdvisoryMarkers)
+                || ContainsAny(text, BatchImageAlgorithmNegationMarkers)
+                || ContainsAny(text, BatchImageAlgorithmReadOnlyStateMarkers)
+                || !ContainsAny(text, BatchImageAlgorithmNameMarkers)
+                || !ContainsAny(text, BatchImageAlgorithmTargetMarkers))
+            {
+                return false;
+            }
+
+            return ContainsAny(text, BatchImageAlgorithmExecutionMarkers)
+                || ContainsAny(text, BatchImageAlgorithmChineseCommandMarkers)
+                || ContainsAnyEnglishWordForm(text, BatchImageAlgorithmEnglishCommandMarkers);
         }
     }
 }

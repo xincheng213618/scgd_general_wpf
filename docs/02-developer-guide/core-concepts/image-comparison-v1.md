@@ -23,11 +23,11 @@ schema 1 的 `ImageComparisonParameters` 有三个参数：
 - `FloatPeakValue` 默认 `1`，是 float 输入计算 PSNR 的显式峰值；8/16-bit 固定使用 255/65535。
 - `HeatmapMaximum` 默认 `0`，表示使用上述峰值作显示归一化上限；正值用于固定可复现的显示量程。
 
-对所有被统计通道的有限样本对，`MSE = mean((reference-candidate)^2)`，`RMSE = sqrt(MSE)`，`PSNR = 20 log10(peak/RMSE)`。完全相同时 PSNR 为 `Infinity`，JSON 以命名浮点字符串安全导出。float 按 IEEE 32-bit 语义做差；输入非有限或差值溢出的样本不进入指标并计入 invalid count，精确差分保留相应 NaN/Infinity，显示图以洋红标识。
+对所有被统计通道的有限样本对，`MSE = mean((reference-candidate)^2)`，`RMSE = sqrt(MSE)`，`PSNR = 20 log10(peak/RMSE)`。完全相同时 PSNR 为 `Infinity`，JSON 以命名浮点字符串安全导出。float 输入先读入 double 域再做差和累计，因此两个有限 Float32 极值的差仍进入指标；若差值超出 Float32 artifact 范围，有符号差图按 IEEE Infinity 保存并产生 warning，而 double 指标不丢样本。输入本身的 NaN/Infinity 不进入指标并计入 invalid count，显示图以洋红标识。
 
 ## Result artifacts
 
-一次成功执行返回：
+算法定义以下五种图像 artifact：
 
 - `absolute-difference`：精确绝对差，保持输入尺寸、位深和通道；
 - `signed-difference`：精确有符号差，统一为同通道 32-bit float；
@@ -37,11 +37,13 @@ schema 1 的 `ImageComparisonParameters` 有三个参数：
 - `image-comparison` Measurement 与 StructuredData；
 - `image-comparison-channels` Table，包含逐通道 MSE、RMSE、PSNR、最大差值及有效/无效计数。
 
-精确 artifact 和显示 artifact 故意分离；不得用截图或热力图反推数值。所有图像由 `AlgorithmResult` 统一持有并释放，Runner 仍负责释放 transferred 双输入。
+精确 artifact 和显示 artifact 故意分离；不得用截图或热力图反推数值。未携带输出提示的旧 Invocation 仍返回五张图，保持公开调用兼容。新调用可在 Invocation metadata 的 `colorvision.image-comparison.requested-artifacts` 中列出实际需要的名称，或使用 `metrics-only`；Measurement、Table、Geometry、StructuredData 与 Diagnostics 始终返回。未知名称以 `comparison_output_plan_invalid` 结构化拒绝。
+
+provider 在任何输出分配前计算所请求图像的 `stride × height × count`，总 retained image 上限为 192 MiB，单数组还必须满足运行时数组上限；超限返回 `comparison_output_budget_exceeded`，不会先分配再失败。每次大数组分配前检查取消。所有已生成图像仍由 `AlgorithmResult` 统一持有并释放，Runner 负责释放 transferred 双输入。
 
 ## ImageView 使用
 
-在“算法调用 → 图像比较”中选择“全图比较...”，设置参数后选择候选文件。当前 ImageView 和候选文件都会形成不可变快照，再通过同一 Runner 执行。结果窗提供差分热力/绝对差/有符号差显示、可调 blink、交互 split、逐通道指标、CSV/JSON 导出和当前显示 PNG 保存。导出默认拒绝覆盖已有文件；M4 另增加三种 ROI 入口和质量诊断页。
+在“算法调用 → 图像比较”中选择“全图比较...”，设置参数后选择候选文件。当前 ImageView 和候选文件都会形成不可变快照，再通过同一 Runner 执行。ImageView 明确请求三张 BGR24 visualization，不再同时保留两张未显示的全分辨率精确差图；结果窗提供差分热力/绝对差/有符号差显示、可调 blink、交互 split、逐通道指标、CSV/JSON 导出和当前显示 PNG 保存。需要精确差图的 headless/API 调用应在输出计划中显式请求。导出默认拒绝覆盖已有文件；M4 另增加三种 ROI 入口和质量诊断页。
 
 交互调用复用共享 analysis session。取消、关闭进度窗、当前文档 revision 改变、切图或较新的 Invocation 都会阻止迟到结果显示；关闭结果窗会释放全部 result image。
 
@@ -51,6 +53,6 @@ Descriptor 声明 `Interactive | Headless | Local | Deterministic | MultiInput`�
 
 ## 验证边界
 
-回归覆盖 8-bit golden、16-bit/BGRA、float/NaN、alpha 策略、精确差分、MSE/RMSE/PSNR 数值容差、输入只读、命名方向、尺寸/格式/颜色标签结构化拒绝、DPI warning、完美匹配 JSON、取消、双输入释放、结果统一释放、Catalog/白名单和 WPF 结果窗。阶段验收的具体命令与通过数量记录在任务报告中。
+回归覆盖 8-bit golden、16-bit/BGRA、float 极值/NaN/Infinity、alpha 策略、精确差分、MSE/RMSE/PSNR 数值容差、输入只读、命名方向、尺寸/格式/颜色标签结构化拒绝、DPI warning、完美匹配 JSON、预取消、输出计划、4K 分配前预算拒绝、双输入释放、结果统一释放、Catalog/白名单和 WPF 结果窗。阶段验收的具体命令与通过数量记录在任务报告中。
 
 高级比较的当前契约、数值规则和门禁见 [图像比较高级 V1（M4）](./image-comparison-advanced-v1.md)。

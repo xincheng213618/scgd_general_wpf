@@ -22,13 +22,16 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
     /// <summary>ImageView adapter for strict two-input image comparison.</summary>
     public sealed class ImageComparisonEditorTool(ImageProcessingContext image, DrawEditorContext draw)
     {
+        private readonly Guid _ownerId = Guid.NewGuid();
+
         public async void Execute() => await ExecuteCoreAsync(null);
 
         public async void Execute(SelectShapeType shapeType) => await ExecuteCoreAsync(shapeType);
 
         private async Task ExecuteCoreAsync(SelectShapeType? shapeType)
         {
-            ImageComparisonParameters? parameters = EditParameters();
+            AlgorithmAnalysisWindowOwner windowOwner = AlgorithmAnalysisWindowOwner.Capture();
+            ImageComparisonParameters? parameters = EditParameters(windowOwner.Current);
             if (parameters == null) return;
             OpenFileDialog dialog = new()
             {
@@ -37,22 +40,30 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
                 CheckFileExists = true,
                 Multiselect = false,
             };
-            if (dialog.ShowDialog(Application.Current.GetActiveWindow()) != true) return;
+            if (dialog.ShowDialog(windowOwner.Current) != true) return;
 
             AlgorithmRoi? roi = null;
+            ImageSelectionScope? expectedScope = null;
             if (shapeType.HasValue)
             {
                 SelectResult? selection = await new TransientRoiSelectionSession(draw, shapeType.Value).Start();
                 if (selection == null) return;
                 roi = RoiStatisticsEditorTool.FromSelection(selection, image.ViewBitmapSource as BitmapSource);
+                expectedScope = selection.SourceScope;
             }
-            await ExecuteAsync(dialog.FileName, parameters, roi);
+            await ExecuteAsync(dialog.FileName, parameters, roi, expectedScope, windowOwner);
         }
 
-        internal async Task ExecuteAsync(string candidatePath, ImageComparisonParameters parameters, AlgorithmRoi? roi)
+        internal async Task ExecuteAsync(
+            string candidatePath,
+            ImageComparisonParameters parameters,
+            AlgorithmRoi? roi,
+            ImageSelectionScope? expectedScope = null,
+            AlgorithmAnalysisWindowOwner? windowOwner = null)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(candidatePath);
             ArgumentNullException.ThrowIfNull(parameters);
+            windowOwner ??= AlgorithmAnalysisWindowOwner.Capture();
             Guid documentId = image.DocumentInstanceId;
             AlgorithmInput? referenceInput = null;
             AlgorithmInput? candidateInput = null;
@@ -60,7 +71,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
             BitmapSource candidateSnapshot;
             try
             {
-                referenceInput = ImageAlgorithmInputFactory.Acquire(image, "reference");
+                referenceInput = ImageAlgorithmInputFactory.Acquire(image, expectedScope, "reference");
                 referenceSnapshot = Snapshot(image.ViewBitmapSource as BitmapSource
                     ?? throw new InvalidOperationException("当前 ImageView 没有可比较的位图。"));
                 candidateSnapshot = await Task.Run(() => Load(candidatePath));
@@ -77,7 +88,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
             {
                 referenceInput?.Image.Dispose();
                 candidateInput?.Image.Dispose();
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "图像比较", MessageBoxButton.OK, MessageBoxImage.Error);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, "图像比较", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -86,7 +97,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
             {
                 referenceInput.Image.Dispose();
                 candidateInput.Image.Dispose();
-                MessageBox.Show(Application.Current.GetActiveWindow(), "当前图像在创建比较快照时已改变，请重试。", "图像比较", MessageBoxButton.OK, MessageBoxImage.Information);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, "当前图像在创建比较快照时已改变，请重试。", "图像比较", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -101,19 +112,30 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
                     new AlgorithmInputReference("candidate", Uri: candidateInput.SourceUri),
                 ],
                 Roi = roi,
+                Metadata = ImageComparisonOutputPlan.CreateMetadata(ImageComparisonArtifactOutputs.InteractiveVisualizations),
             };
-            using CancellationTokenSource cancellation = ImageAlgorithmAnalysisSession.Begin(image, invocation.InvocationId);
-            ImageAlgorithmProgressWindow progressWindow;
+            using CancellationTokenSource cancellation = ImageAlgorithmAnalysisSession.Begin(
+                image,
+                documentId,
+                sourceRevision,
+                _ownerId,
+                invocation.InvocationId);
+            ImageAlgorithmProgressWindow? progressWindow = null;
             try
             {
-                progressWindow = new ImageAlgorithmProgressWindow("图像比较", cancellation) { Owner = Application.Current.GetActiveWindow() };
+                progressWindow = new ImageAlgorithmProgressWindow("图像比较", cancellation);
+                if (!windowOwner.TryAssign(progressWindow))
+                    throw new InvalidOperationException("发起图像比较的窗口已关闭，请重试。");
                 progressWindow.Show();
             }
             catch (Exception exception)
             {
-                referenceInput.Image.Dispose();
-                candidateInput.Image.Dispose();
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "图像比较", MessageBoxButton.OK, MessageBoxImage.Error);
+                Exception? ignored = null;
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => progressWindow?.Complete(), ref ignored);
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(referenceInput.Image.Dispose, ref ignored);
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(candidateInput.Image.Dispose, ref ignored);
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId), ref ignored);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, "图像比较", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -121,77 +143,80 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
             try
             {
                 Progress<AlgorithmProgress> progress = new(value => progressWindow.Report(value));
-                result = await ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest
+                result = await image.AlgorithmRuntime.Runner.RunAsync(new AlgorithmRunRequest
                 {
                     Invocation = invocation,
                     Inputs = [referenceInput, candidateInput],
-                    RequiredCapabilities = AlgorithmHostCapabilities.Interactive | AlgorithmHostCapabilities.Local | AlgorithmHostCapabilities.MultiInput,
+                    RequiredCapabilities = AlgorithmInvocationCapabilities.Derive(
+                        AlgorithmHostCapabilities.Interactive | AlgorithmHostCapabilities.Local,
+                        inputCount: 2,
+                        hasRoi: roi != null),
                     Progress = progress,
                 }, cancellation.Token);
             }
             catch (Exception exception)
             {
-                referenceInput.Image.Dispose();
-                candidateInput.Image.Dispose();
+                Exception? ignored = null;
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(referenceInput.Image.Dispose, ref ignored);
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(candidateInput.Image.Dispose, ref ignored);
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId), ref ignored);
                 if (!progressWindow.WasCancelled)
-                    MessageBox.Show(progressWindow.Owner, exception.Message, "图像比较", MessageBoxButton.OK, MessageBoxImage.Error);
+                    AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, "图像比较", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             finally
             {
-                progressWindow.Complete();
-                ImageAlgorithmAnalysisSession.CompleteRun(image, invocation.InvocationId, cancellation);
+                Exception? ignored = null;
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(progressWindow.Complete, ref ignored);
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => ImageAlgorithmAnalysisSession.CompleteRun(image, invocation.InvocationId, cancellation), ref ignored);
             }
 
             if (result.Status == AlgorithmResultStatus.Cancelled || progressWindow.WasCancelled)
             {
                 result.Dispose();
+                ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
                 return;
             }
             if (!ImageAlgorithmAnalysisSession.IsCurrent(image, documentId, sourceRevision, invocation.InvocationId))
             {
                 result.Dispose();
+                ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
                 return;
             }
             if (result.Status != AlgorithmResultStatus.Succeeded)
             {
                 string message = string.Join(Environment.NewLine, result.Failures.Select(failure => $"[{failure.Code}] {failure.Message}"));
                 result.Dispose();
-                MessageBox.Show(progressWindow.Owner, message, "图像比较失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, message, "图像比较失败", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (!ImageAlgorithmAnalysisSession.CanPresent(image, documentId, sourceRevision, invocation.InvocationId, out Window? previous))
             {
                 result.Dispose();
+                ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
                 return;
             }
 
-            previous?.Close();
-            ImageComparisonResultWindow resultWindow;
-            try
-            {
-                resultWindow = new ImageComparisonResultWindow(result, referenceSnapshot, candidateSnapshot, Path.GetFileName(candidatePath), image, draw)
-                {
-                    Owner = Application.Current.GetActiveWindow(),
-                };
-            }
-            catch (Exception exception)
-            {
-                result.Dispose();
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "图像比较结果", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-            ImageAlgorithmAnalysisSession.Present(image, invocation.InvocationId, resultWindow);
-            resultWindow.Show();
+            bool shown = AlgorithmAnalysisResultWindowTransaction.TryShow(
+                result,
+                windowOwner,
+                value => new ImageComparisonResultWindow(value, referenceSnapshot, candidateSnapshot, Path.GetFileName(candidatePath), image, draw),
+                window => ImageAlgorithmAnalysisSession.Present(image, invocation.InvocationId, window),
+                () => ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId),
+                previous,
+                out Exception? presentationFailure);
+            if (!shown && presentationFailure != null)
+                AlgorithmAnalysisMessageBox.Show(windowOwner, presentationFailure.Message, "图像比较结果", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
-        private static ImageComparisonParameters? EditParameters()
+        private static ImageComparisonParameters? EditParameters(Window? owner)
         {
             ImageComparisonParameters parameters = new();
             PropertyEditorWindow window = new(parameters)
             {
                 Title = "图像比较参数",
-                Owner = Application.Current.GetActiveWindow(),
+                Owner = owner,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
             bool submitted = false;
@@ -219,8 +244,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
         }
     }
 
-    public sealed class ImageComparisonContextMenu(ImageProcessingContext image, DrawEditorContext draw) : IIEditorToolContextMenu
+    public sealed class ImageComparisonContextMenu(ImageProcessingContext image, DrawEditorContext draw) : IIEditorToolContextMenu, IAlgorithmCatalogBoundMenu
     {
+        public AlgorithmId AlgorithmId => StandardAlgorithmIds.ImageComparison;
+
+        public int PlannedInputCount => 2;
+
         public List<MenuItemMetadata> GetContextMenuItems()
         {
             ImageComparisonEditorTool tool = new(image, draw);
@@ -233,20 +262,32 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
                     Order = 2,
                     Header = "图像比较",
                 },
-                Item("ImageComparisonWhole", "全图比较...", 0, tool.Execute),
-                Item("ImageComparisonRectangle", "矩形 ROI...", 1, () => tool.Execute(SelectShapeType.Rectangle)),
-                Item("ImageComparisonCircle", "圆形 ROI...", 2, () => tool.Execute(SelectShapeType.Circle)),
-                Item("ImageComparisonPolygon", "多边形 ROI...", 3, () => tool.Execute(SelectShapeType.Polygon)),
+                Item("ImageComparisonWhole", "全图比较...", 0, tool.Execute, hasRoi: false),
+                Item("ImageComparisonRectangle", "矩形 ROI...", 1, () => tool.Execute(SelectShapeType.Rectangle), hasRoi: true),
+                Item("ImageComparisonCircle", "圆形 ROI...", 2, () => tool.Execute(SelectShapeType.Circle), hasRoi: true),
+                Item("ImageComparisonPolygon", "多边形 ROI...", 3, () => tool.Execute(SelectShapeType.Polygon), hasRoi: true),
             ];
         }
 
-        private static MenuItemMetadata Item(string id, string header, int order, Action execute) => new()
+        private MenuItemMetadata Item(string id, string header, int order, Action execute, bool hasRoi) => new()
         {
             OwnerGuid = "ImageComparison",
             GuidId = id,
             Order = order,
             Header = header,
-            Command = new RelayCommand(_ => execute()),
+            Command = new RelayCommand(_ => execute(), _ => CanExecute(hasRoi)),
         };
+
+        private bool CanExecute(bool hasRoi)
+            => image.AlgorithmRuntime.Catalog.TryResolve(AlgorithmId, out AlgorithmDescriptor? descriptor)
+                && descriptor != null
+                && StandardAlgorithmAdapterContract.IsCompatible(descriptor)
+                && StandardAlgorithmAdapterContract.TryGetInteractiveRequiredCapabilities(
+                    descriptor,
+                    inputCount: 2,
+                    hasRoi,
+                    AlgorithmHostCapabilities.Interactive | AlgorithmHostCapabilities.Local,
+                    out AlgorithmHostCapabilities required)
+                && image.AlgorithmRuntime.CanExecuteDescriptor(descriptor, required);
     }
 }

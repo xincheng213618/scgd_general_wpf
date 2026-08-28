@@ -23,9 +23,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             _image = image;
             _preview = ImageAlgorithmPreviewSession.Start(image);
             
-            // 根据图像深度设置最大值
-            int maxVal = _image.Config.GetProperties<int>("Max");
-            ThresholdSlider.Maximum = maxVal;
+            ThresholdParameters defaults = new();
+            ThresholdSlider.Maximum = byte.MaxValue;
+            ThresholdSlider.Value = defaults.Threshold;
             _ = ApplyThresholdAsync();
         }
 
@@ -48,7 +48,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
 
             try
             {
-                ThresholdParameters parameters = new() { Threshold = ThresholdSlider.Value };
+                ThresholdParameters parameters = CreateParameters(ThresholdSlider.Value);
                 AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.Threshold, parameters);
                 using AlgorithmResult result = await _preview.PreviewAsync(invocation);
                 return result.Status == AlgorithmResultStatus.Succeeded && _preview.IsCurrent(invocation.InvocationId);
@@ -59,6 +59,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 return false;
             }
         }
+
+        internal static ThresholdParameters CreateParameters(double threshold)
+            => new() { Threshold = threshold, UseNominalRange = true };
 
         private async void Apply_Click(object sender, RoutedEventArgs e)
         {

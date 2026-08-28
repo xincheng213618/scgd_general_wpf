@@ -1,0 +1,37 @@
+<Window x:Class="ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.LensDistortionCorrection.LensDistortionCorrectionResultWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="镜头畸变校正结果" Height="720" Width="980" WindowStartupLocation="CenterOwner">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="190"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock x:Name="SummaryText" TextWrapping="Wrap" Margin="0,0,0,8"/>
+        <TabControl Grid.Row="1">
+            <TabItem Header="校正图像">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <Image x:Name="CorrectedPreview" Stretch="None"/>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="有效区域 mask">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <Image x:Name="MaskPreview" Stretch="None"/>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+        <TabControl Grid.Row="2" Margin="0,8">
+            <TabItem Header="相机矩阵"><DataGrid x:Name="MatrixGrid" AutoGenerateColumns="True" IsReadOnly="True"/></TabItem>
+            <TabItem Header="畸变系数"><DataGrid x:Name="CoefficientGrid" AutoGenerateColumns="True" IsReadOnly="True"/></TabItem>
+        </TabControl>
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="保存校正图..." Width="105" Margin="0,0,8,0" Click="SaveImage_Click"/>
+            <Button Content="保存 mask..." Width="95" Margin="0,0,8,0" Click="SaveMask_Click"/>
+            <Button Content="导出 CSV..." Width="95" Margin="0,0,8,0" Click="ExportCsv_Click"/>
+            <Button Content="导出 JSON..." Width="95" Margin="0,0,8,0" Click="ExportJson_Click"/>
+            <Button Content="关闭" Width="75" Click="Close_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

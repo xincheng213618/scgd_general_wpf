@@ -1,3 +1,4 @@
+using ColorVision.Algorithms;
 using ColorVision.UI;
 using ColorVision.ImageEditor.Algorithms;
 using log4net;
@@ -24,12 +25,31 @@ namespace ColorVision.ImageEditor.BatchProcessing
         private CancellationTokenSource? _cancellationTokenSource;
 
         public BatchImageProcessingWindow()
+            : this(ImageAlgorithmPlatform.Runtime)
         {
+        }
+
+        public BatchImageProcessingWindow(AlgorithmRuntime runtime)
+            : this(BatchImageAlgorithms.CreateAll(runtime))
+        {
+        }
+
+        public BatchImageProcessingWindow(IReadOnlyList<BatchImageAlgorithmDefinition> algorithms)
+            : this(algorithms, LoadImageLoaders())
+        {
+        }
+
+        internal BatchImageProcessingWindow(
+            IReadOnlyList<BatchImageAlgorithmDefinition> algorithms,
+            IReadOnlyList<IBatchImageLoader> loaders)
+        {
+            ArgumentNullException.ThrowIfNull(algorithms);
+            ArgumentNullException.ThrowIfNull(loaders);
             InitializeComponent();
             DataContext = this;
 
-            _processor = new BatchImageProcessor(LoadImageLoaders());
-            _algorithms = BatchImageAlgorithms.CreateAll();
+            _processor = new BatchImageProcessor(loaders);
+            _algorithms = algorithms.ToArray();
             AlgorithmComboBox.ItemsSource = _algorithms;
             AlgorithmComboBox.SelectedIndex = 0;
 
@@ -47,6 +67,8 @@ namespace ColorVision.ImageEditor.BatchProcessing
         }
 
         public ObservableCollection<BatchImageItem> Files { get; } = new();
+
+        internal IReadOnlyList<BatchImageAlgorithmDefinition> Algorithms => _algorithms;
 
         private static IBatchImageLoader[] LoadImageLoaders()
         {

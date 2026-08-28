@@ -173,6 +173,7 @@ public enum AlgorithmHostCapabilities
     Copilot = 1 << 6,
     MultiInput = 1 << 7,
     Roi = 1 << 8,
+    RemoteDevice = 1 << 9,
 }
 
 public enum AlgorithmProviderKind

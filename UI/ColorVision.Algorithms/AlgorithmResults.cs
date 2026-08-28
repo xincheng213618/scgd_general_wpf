@@ -46,6 +46,42 @@ public sealed record AlgorithmImageArtifact(
     public void Dispose() => Image.Dispose();
 }
 
+public enum AlgorithmPrimaryImageSelectionStatus
+{
+    None,
+    Selected,
+    Missing,
+    Ambiguous,
+}
+
+public readonly record struct AlgorithmPrimaryImageSelection(
+    AlgorithmPrimaryImageSelectionStatus Status,
+    AlgorithmImageArtifact? Artifact,
+    int ImageArtifactCount,
+    int PrimaryArtifactCount);
+
+/// <summary>Host-neutral image-result selection shared by interactive and batch adapters.</summary>
+public static class AlgorithmArtifactSelection
+{
+    public static AlgorithmPrimaryImageSelection SelectPrimaryImage(IEnumerable<AlgorithmArtifact> artifacts)
+    {
+        ArgumentNullException.ThrowIfNull(artifacts);
+        AlgorithmImageArtifact[] images = artifacts.OfType<AlgorithmImageArtifact>().ToArray();
+        if (images.Length == 0)
+            return new AlgorithmPrimaryImageSelection(AlgorithmPrimaryImageSelectionStatus.None, null, 0, 0);
+
+        AlgorithmImageArtifact[] primary = images
+            .Where(artifact => string.Equals(artifact.Role, "primary", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        return primary.Length switch
+        {
+            1 => new AlgorithmPrimaryImageSelection(AlgorithmPrimaryImageSelectionStatus.Selected, primary[0], images.Length, 1),
+            0 => new AlgorithmPrimaryImageSelection(AlgorithmPrimaryImageSelectionStatus.Missing, null, images.Length, 0),
+            _ => new AlgorithmPrimaryImageSelection(AlgorithmPrimaryImageSelectionStatus.Ambiguous, null, images.Length, primary.Length),
+        };
+    }
+}
+
 public sealed record AlgorithmMeasurement(
     string Name,
     double Value,
@@ -107,58 +143,231 @@ public sealed record AlgorithmOverlayArtifact(
     AlgorithmOverlayLifetime Lifetime,
     IReadOnlyList<AlgorithmOverlayItem> Items) : AlgorithmArtifact(Name);
 
+public enum AlgorithmOverlayStoreChangeKind
+{
+    Applied,
+    Removed,
+    Cleared,
+}
+
+public sealed record AlgorithmOverlayStoreChange(
+    string Name,
+    AlgorithmOverlayArtifact? DetachedArtifact = null)
+{
+    public Guid? DetachedEntryId { get; init; }
+}
+
+public sealed record AlgorithmOverlayStoreEntry(
+    Guid EntryId,
+    AlgorithmOverlayArtifact Artifact);
+
+public sealed class AlgorithmOverlayStoreChangedEventArgs(
+    AlgorithmOverlayStoreChangeKind changeKind,
+    IReadOnlyList<AlgorithmOverlayStoreChange> changes) : EventArgs
+{
+    public AlgorithmOverlayStoreChangeKind ChangeKind { get; } = changeKind;
+
+    public IReadOnlyList<AlgorithmOverlayStoreChange> Changes { get; } = changes;
+
+    public IReadOnlyList<string> Names { get; } = changes.Select(change => change.Name).ToArray();
+
+    public Guid? OriginId { get; private set; }
+
+    public AlgorithmOverlayStoreChangedEventArgs(
+        AlgorithmOverlayStoreChangeKind changeKind,
+        IReadOnlyList<AlgorithmOverlayStoreChange> changes,
+        Guid? originId)
+        : this(changeKind, changes)
+    {
+        OriginId = originId;
+    }
+}
+
 /// <summary>Host-neutral lifetime store: transient overlays are invalidated by source changes; persistent overlays survive until explicitly cleared.</summary>
 public sealed class AlgorithmOverlayStore
 {
     private readonly object _sync = new();
-    private readonly Dictionary<string, AlgorithmOverlayArtifact> _transient = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, AlgorithmOverlayArtifact> _persistent = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, AlgorithmOverlayStoreEntry> _transient = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, AlgorithmOverlayStoreEntry> _persistent = new(StringComparer.Ordinal);
+
+    public event EventHandler<AlgorithmOverlayStoreChangedEventArgs>? Changed;
 
     public IReadOnlyList<AlgorithmOverlayArtifact> Snapshot()
     {
-        lock (_sync) return _persistent.Values.Concat(_transient.Values).ToArray();
+        lock (_sync) return _persistent.Values.Concat(_transient.Values).Select(entry => entry.Artifact).ToArray();
     }
 
     public void Apply(AlgorithmOverlayArtifact artifact)
+        => Apply(artifact, originId: null);
+
+    public AlgorithmOverlayStoreEntry Apply(AlgorithmOverlayArtifact artifact, Guid originId)
+        => Apply(artifact, (Guid?)originId);
+
+    private AlgorithmOverlayStoreEntry Apply(AlgorithmOverlayArtifact artifact, Guid? originId)
     {
         ArgumentNullException.ThrowIfNull(artifact);
+        List<AlgorithmOverlayStoreChange> changes = [];
+        AlgorithmOverlayStoreEntry applied = new(Guid.NewGuid(), artifact);
+        AlgorithmOverlayStoreEntry? previousTarget = null;
+        AlgorithmOverlayStoreEntry? previousOther = null;
+        Dictionary<string, AlgorithmOverlayStoreEntry> target;
+        Dictionary<string, AlgorithmOverlayStoreEntry> other;
         lock (_sync)
         {
-            Dictionary<string, AlgorithmOverlayArtifact> target = artifact.Lifetime == AlgorithmOverlayLifetime.Transient
+            target = artifact.Lifetime == AlgorithmOverlayLifetime.Transient
                 ? _transient
                 : _persistent;
-            Dictionary<string, AlgorithmOverlayArtifact> other = artifact.Lifetime == AlgorithmOverlayLifetime.Transient
+            other = artifact.Lifetime == AlgorithmOverlayLifetime.Transient
                 ? _persistent
                 : _transient;
-            other.Remove(artifact.Name);
-            target[artifact.Name] = artifact;
+            if (other.Remove(artifact.Name, out previousOther)) changes.Add(Detached(previousOther));
+            if (target.TryGetValue(artifact.Name, out previousTarget)) changes.Add(Detached(previousTarget));
+            target[artifact.Name] = applied;
         }
+        if (changes.Count == 0) changes.Add(new AlgorithmOverlayStoreChange(artifact.Name));
+        try
+        {
+            Changed?.Invoke(this, new AlgorithmOverlayStoreChangedEventArgs(
+                AlgorithmOverlayStoreChangeKind.Applied,
+                changes,
+                originId));
+        }
+        catch
+        {
+            lock (_sync)
+            {
+                if (target.TryGetValue(artifact.Name, out AlgorithmOverlayStoreEntry? current)
+                    && current.EntryId == applied.EntryId)
+                {
+                    target.Remove(artifact.Name);
+                    if (previousTarget != null) target[artifact.Name] = previousTarget;
+                    if (previousOther != null) other[artifact.Name] = previousOther;
+                }
+            }
+            throw;
+        }
+        return applied;
     }
 
     public void ClearTransient()
+        => ClearTransient(originId: null);
+
+    public void ClearTransient(Guid originId)
+        => ClearTransient((Guid?)originId);
+
+    private void ClearTransient(Guid? originId)
     {
-        lock (_sync) _transient.Clear();
+        AlgorithmOverlayStoreChange[] changes;
+        lock (_sync)
+        {
+            changes = _transient.Values.Select(Detached).ToArray();
+            _transient.Clear();
+        }
+        RaiseCleared(changes, originId);
     }
 
     public void ClearPersistent()
+        => ClearPersistent(originId: null);
+
+    public void ClearPersistent(Guid originId)
+        => ClearPersistent((Guid?)originId);
+
+    private void ClearPersistent(Guid? originId)
     {
-        lock (_sync) _persistent.Clear();
+        AlgorithmOverlayStoreChange[] changes;
+        lock (_sync)
+        {
+            changes = _persistent.Values.Select(Detached).ToArray();
+            _persistent.Clear();
+        }
+        RaiseCleared(changes, originId);
     }
 
     public bool Remove(string name)
+        => Remove(name, expectedEntryId: null, originId: null);
+
+    public bool Remove(string name, Guid expectedEntryId, Guid originId)
+        => Remove(name, (Guid?)expectedEntryId, originId);
+
+    private bool Remove(string name, Guid? expectedEntryId, Guid? originId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        lock (_sync) return _transient.Remove(name) | _persistent.Remove(name);
+        List<AlgorithmOverlayStoreChange> changes = [];
+        lock (_sync)
+        {
+            if (_transient.TryGetValue(name, out AlgorithmOverlayStoreEntry? transient)
+                && (!expectedEntryId.HasValue || transient.EntryId == expectedEntryId.Value))
+            {
+                _transient.Remove(name);
+                changes.Add(Detached(transient));
+            }
+            if (_persistent.TryGetValue(name, out AlgorithmOverlayStoreEntry? persistent)
+                && (!expectedEntryId.HasValue || persistent.EntryId == expectedEntryId.Value))
+            {
+                _persistent.Remove(name);
+                changes.Add(Detached(persistent));
+            }
+        }
+        if (changes.Count > 0)
+        {
+            try
+            {
+                Changed?.Invoke(this, new AlgorithmOverlayStoreChangedEventArgs(
+                    AlgorithmOverlayStoreChangeKind.Removed,
+                    changes,
+                    originId));
+            }
+            catch
+            {
+                lock (_sync)
+                {
+                    foreach (AlgorithmOverlayStoreChange change in changes)
+                    {
+                        if (change.DetachedArtifact == null || !change.DetachedEntryId.HasValue) continue;
+                        Dictionary<string, AlgorithmOverlayStoreEntry> target = change.DetachedArtifact.Lifetime == AlgorithmOverlayLifetime.Transient
+                            ? _transient
+                            : _persistent;
+                        if (!target.ContainsKey(change.Name))
+                            target[change.Name] = new AlgorithmOverlayStoreEntry(change.DetachedEntryId.Value, change.DetachedArtifact);
+                    }
+                }
+                throw;
+            }
+        }
+        return changes.Count > 0;
     }
 
     public void Clear()
+        => Clear(originId: null);
+
+    public void Clear(Guid originId)
+        => Clear((Guid?)originId);
+
+    private void Clear(Guid? originId)
     {
+        AlgorithmOverlayStoreChange[] changes;
         lock (_sync)
         {
+            changes = _persistent.Values.Concat(_transient.Values)
+                .Select(Detached)
+                .ToArray();
             _transient.Clear();
             _persistent.Clear();
         }
+        RaiseCleared(changes, originId);
     }
+
+    private void RaiseCleared(AlgorithmOverlayStoreChange[] changes, Guid? originId)
+    {
+        if (changes.Length == 0) return;
+        Changed?.Invoke(this, new AlgorithmOverlayStoreChangedEventArgs(
+            AlgorithmOverlayStoreChangeKind.Cleared,
+            changes,
+            originId));
+    }
+
+    private static AlgorithmOverlayStoreChange Detached(AlgorithmOverlayStoreEntry entry)
+        => new(entry.Artifact.Name, entry.Artifact) { DetachedEntryId = entry.EntryId };
 }
 
 public sealed class AlgorithmResult : IDisposable

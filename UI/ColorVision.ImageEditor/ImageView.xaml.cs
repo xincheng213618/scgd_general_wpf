@@ -1,6 +1,8 @@
 ﻿#pragma warning disable CA1863,CS8625
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
+using ColorVision.Algorithms;
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Annotations;
@@ -47,6 +49,7 @@ namespace ColorVision.ImageEditor
         private readonly Guid _documentInstanceId = Guid.NewGuid();
         private readonly List<Func<IEnumerable<ImageViewSettingsEntry>>> _settingsEntries = new();
         private int _disposed;
+        private bool _suppressConfigClearDocumentMutation;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -151,8 +154,26 @@ namespace ColorVision.ImageEditor
         private bool _isLayerSelectorEnabled = true;
 
 
+        private readonly AlgorithmRuntime _algorithmRuntime;
+
+        internal Action<AlgorithmInvocationClaim>? AlgorithmClaimStateUpdateHook { get; set; }
+
+        internal Action<AlgorithmInvocationClaim>? AlgorithmPreviewPublicationHook { get; set; }
+
+        internal Action<AlgorithmInvocationClaim>? AlgorithmPreviewCommitHook { get; set; }
+
+        internal Action<AlgorithmInvocationClaim>? AlgorithmPreviewClaimAcceptedHook { get; set; }
+
+        internal Action<long, long>? ImageDocumentRevisionAdvancedHook { get; set; }
+
         public ImageView()
+            : this(ImageAlgorithmPlatform.Runtime)
         {
+        }
+
+        public ImageView(AlgorithmRuntime algorithmRuntime)
+        {
+            _algorithmRuntime = algorithmRuntime ?? throw new ArgumentNullException(nameof(algorithmRuntime));
             InitializeComponent();
         }
 
@@ -180,7 +201,12 @@ namespace ColorVision.ImageEditor
                     GetSelectedLayerSourceChannelIndex = GetSelectedLayerSourceChannelIndex,
                     SetImageSource = SetImageSource,
                     UpdateZoomAndScale = UpdateZoomAndScale,
-                });
+                    BeforeAlgorithmClaimStateUpdate = claim => AlgorithmClaimStateUpdateHook?.Invoke(claim),
+                    BeforeAlgorithmPreviewPublication = claim => AlgorithmPreviewPublicationHook?.Invoke(claim),
+                    BeforeAlgorithmPreviewCommit = claim => AlgorithmPreviewCommitHook?.Invoke(claim),
+                    AfterAlgorithmPreviewClaimAccepted = claim => AlgorithmPreviewClaimAcceptedHook?.Invoke(claim),
+                },
+                _algorithmRuntime);
             return new EditorContext(
                 this,
                 config,
@@ -298,9 +324,10 @@ namespace ColorVision.ImageEditor
 
         private void Config_Cleared(object? sender, EventArgs e)
         {
+            if (!_suppressConfigClearDocumentMutation)
+                ApplyImageDocumentMutation(ImageDocumentMutationKind.SourcePixelsChanged);
             PseudoColorTool?.Reset();
             FunctionImage = null;
-            _imageFrameStore.Invalidate();
         }
 
         public bool ImageEditMode
@@ -1249,13 +1276,22 @@ namespace ColorVision.ImageEditor
 
         public void Clear()
         {
+            ApplyImageDocumentMutation(ImageDocumentMutationKind.ImageCleared);
             ClearImageGroup();
-            InvalidatePseudoColorRender();
             ClearImageEventHandler?.Invoke(this, new EventArgs());
             EditorContext.IImageOpen = null;
             IEditorToolFactory.ApplyImageOpenTools(null);
             SetLayerController(null);
-            Config.ClearProperties();
+            bool previousSuppression = _suppressConfigClearDocumentMutation;
+            _suppressConfigClearDocumentMutation = true;
+            try
+            {
+                Config.ClearProperties();
+            }
+            finally
+            {
+                _suppressConfigClearDocumentMutation = previousSuppression;
+            }
             FunctionImage = null;
             ViewBitmapSource = null;
             ImageShow.Clear();
@@ -1438,7 +1474,18 @@ namespace ColorVision.ImageEditor
 
         public void NotifySourcePixelsChanged()
         {
-            _imageFrameStore.Invalidate();
+            ApplyImageDocumentMutation(ImageDocumentMutationKind.SourcePixelsChanged);
+        }
+
+        private void ApplyImageDocumentMutation(ImageDocumentMutationKind mutationKind)
+        {
+            long previousRevision = _imageFrameStore.Revision;
+            long currentRevision = _imageFrameStore.Invalidate();
+            ImageDocumentRevisionAdvancedHook?.Invoke(previousRevision, currentRevision);
+            EditorContext?.ProcessingContext.InvalidateForDocumentMutation(
+                mutationKind,
+                previousRevision,
+                currentRevision);
             InvalidatePseudoColorRender();
         }
 
@@ -1471,9 +1518,8 @@ namespace ColorVision.ImageEditor
 
         public void SetImageSource(ImageSource imageSource, bool enableEditorImageServices, bool configureDefaultLayerController)
         {
+            ApplyImageDocumentMutation(ImageDocumentMutationKind.ImageSourceReplaced);
             PseudoColorTool?.Reset();
-            InvalidatePseudoColorRender();
-            _imageFrameStore.Invalidate();
             FunctionImage = null;
             ViewBitmapSource = null;
             ImageShow.Source = null;
@@ -1773,6 +1819,7 @@ namespace ColorVision.ImageEditor
             EditorContext?.DrawEditorContext.MouseInfoProvider.Dispose();
             EditorContext?.CompactInspectorPresenter?.Dispose();
             EditorContext?.DrawEditorContext.DrawingVisualLists?.Clear();
+            EditorContext?.ProcessingContext.DisposeAlgorithmOverlays();
             Zoombox1.ContentMatrixChanged -= Zoombox1_ContentMatrixChanged;
             Loaded -= ImageView_Loaded;
             Unloaded -= ImageView_Unloaded;

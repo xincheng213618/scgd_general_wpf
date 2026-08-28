@@ -20,6 +20,21 @@ namespace ColorVision.UI.Tests;
 public sealed class ImageProfileV1Tests
 {
     [Fact]
+    public void SchemaV1PreservesTheHistoricalDefaultAndMaximumSampleContract()
+    {
+        ImageProfileParameters defaults = new();
+        Assert.Equal(1, defaults.SchemaVersion);
+        Assert.Equal(100_000, defaults.MaximumSamples);
+
+        ImageProfileParameters historical = new() { MaximumSamples = 1_000_000 };
+        Assert.True(historical.Validate().IsValid);
+        string json = JsonSerializer.Serialize(historical, AlgorithmJson.Options);
+        ImageProfileParameters restored = JsonSerializer.Deserialize<ImageProfileParameters>(json, AlgorithmJson.Options)!;
+        Assert.Equal(1_000_000, restored.MaximumSamples);
+        Assert.True(restored.Validate().IsValid);
+    }
+
+    [Fact]
     public void ParameterValidationRejectsInvalidSpacingEnumsAndLimit()
     {
         ImageProfileParameters parameters = new()
@@ -27,7 +42,7 @@ public sealed class ImageProfileV1Tests
             SampleSpacingPixels = 0,
             Interpolation = (ImageProfileInterpolation)99,
             BoundaryMode = (ImageProfileBoundaryMode)99,
-            MaximumSamples = 1,
+            MaximumSamples = 1_000_001,
         };
         AlgorithmValidationResult validation = parameters.Validate();
         Assert.False(validation.IsValid);
@@ -35,6 +50,74 @@ public sealed class ImageProfileV1Tests
         Assert.Contains(validation.Issues, issue => issue.Path == nameof(parameters.Interpolation));
         Assert.Contains(validation.Issues, issue => issue.Path == nameof(parameters.BoundaryMode));
         Assert.Contains(validation.Issues, issue => issue.Path == nameof(parameters.MaximumSamples));
+        Assert.Contains(new ImageProfileParameters { MaximumSamples = 1 }.Validate().Issues,
+            issue => issue.Path == nameof(parameters.MaximumSamples));
+    }
+
+    [Fact]
+    public async Task ColorProfileResultBudgetRejectsBeforeSamplingOrAllocatingRows()
+    {
+        using AlgorithmImageBuffer input = new(151, 1, 604, AlgorithmImageFormat.Bgra32, new byte[604]);
+        List<string> stages = [];
+        AlgorithmInvocation invocation = AlgorithmInvocation.Create(
+            StandardAlgorithmIds.ImageProfile,
+            new ImageProfileParameters { SampleSpacingPixels = 0.01, MaximumSamples = 50_000 },
+            new PolylineAlgorithmRoi([new(0, 0), new(150, 0)]));
+
+        using AlgorithmResult result = await ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest
+        {
+            Invocation = invocation,
+            Inputs = [new AlgorithmInput { Name = "source", Image = input, Ownership = AlgorithmInputOwnership.Borrowed }],
+            RequiredCapabilities = AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local | AlgorithmHostCapabilities.Roi,
+            Progress = new InlineProgress(value => stages.Add(value.Stage)),
+        });
+
+        Assert.Equal(AlgorithmResultStatus.Failed, result.Status);
+        Assert.Contains(result.Failures, failure => failure.Code == "profile_result_budget_exceeded");
+        Assert.Null(result.GetArtifact<AlgorithmTableArtifact>("image-profile-samples"));
+        Assert.DoesNotContain("profile.sample", stages);
+    }
+
+    [Theory]
+    [InlineData(4_096)]
+    [InlineData(8_192)]
+    public async Task FourAndEightKSubpixelProfilesAreRejectedBeforeSampling(int width)
+    {
+        using AlgorithmImageBuffer input = Buffer(new byte[width], width, 1);
+        List<string> stages = [];
+        AlgorithmInvocation invocation = AlgorithmInvocation.Create(
+            StandardAlgorithmIds.ImageProfile,
+            new ImageProfileParameters { SampleSpacingPixels = 0.01, MaximumSamples = ImageProfileParameters.AbsoluteMaximumSamples },
+            new PolylineAlgorithmRoi([new(0, 0), new(width - 1, 0)]));
+
+        using AlgorithmResult result = await ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest
+        {
+            Invocation = invocation,
+            Inputs = [new AlgorithmInput { Name = "source", Image = input, Ownership = AlgorithmInputOwnership.Borrowed }],
+            RequiredCapabilities = AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local | AlgorithmHostCapabilities.Roi,
+            Progress = new InlineProgress(value => stages.Add(value.Stage)),
+        });
+
+        Assert.Equal(AlgorithmResultStatus.Failed, result.Status);
+        Assert.Contains(result.Failures, failure => failure.Code == "profile_execution_sample_budget_exceeded");
+        Assert.DoesNotContain("profile.sample", stages);
+    }
+
+    [Fact]
+    public async Task OversizedPolylinePointCountIsRejectedBeforeSegmentMaterialization()
+    {
+        using AlgorithmImageBuffer input = Buffer([0, 1], 2, 1);
+        AlgorithmPoint[] points = Enumerable.Range(0, ImageProfileParameters.MaximumPathPoints + 1)
+            .Select(index => new AlgorithmPoint(index & 1, 0))
+            .ToArray();
+
+        using AlgorithmResult result = await RunAsync(
+            input,
+            new PolylineAlgorithmRoi(points),
+            new ImageProfileParameters { MaximumSamples = ImageProfileParameters.AbsoluteMaximumSamples });
+
+        Assert.Equal(AlgorithmResultStatus.Failed, result.Status);
+        Assert.Contains(result.Failures, failure => failure.Code == "profile_path_point_limit_exceeded");
     }
 
     [Fact]
@@ -85,6 +168,19 @@ public sealed class ImageProfileV1Tests
         Assert.Equal(new double[] { 0, 2, 8, 18, 23 }, Values(table, "Gray"));
         Assert.Equal(new double[] { 0, 2, 4, 6, 7 }, Values(table, "DistancePixels"));
         Assert.Equal(new[] { 0, 0, 1, 1, 1 }, table.Rows.Select(row => row["SegmentIndex"].GetInt32()));
+    }
+
+    [Fact]
+    public async Task SegmentIndexPreservesTheOriginalPathIndexAfterDegenerateSegmentsAreFiltered()
+    {
+        using AlgorithmImageBuffer input = Buffer([10, 20, 30], 3, 1);
+        using AlgorithmResult result = await RunAsync(
+            input,
+            new PolylineAlgorithmRoi([new(0, 0), new(0, 0), new(2, 0)]),
+            new ImageProfileParameters { Interpolation = ImageProfileInterpolation.Nearest });
+
+        Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
+        Assert.All(Samples(result).Rows, row => Assert.Equal(1, row["SegmentIndex"].GetInt32()));
     }
 
     [Fact]
@@ -218,7 +314,7 @@ public sealed class ImageProfileV1Tests
         AlgorithmImageBuffer input = Buffer(new byte[4096], 4096, 1);
         AlgorithmInvocation invocation = AlgorithmInvocation.Create(
             StandardAlgorithmIds.ImageProfile,
-            new ImageProfileParameters { SampleSpacingPixels = 0.01, MaximumSamples = 1_000_000 },
+            new ImageProfileParameters { SampleSpacingPixels = 0.2, MaximumSamples = ImageProfileParameters.AbsoluteMaximumSamples },
             new PolylineAlgorithmRoi([new(0, 0), new(4095, 0)]));
         using AlgorithmResult result = await ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest
         {
@@ -300,6 +396,72 @@ public sealed class ImageProfileV1Tests
         {
             if (!result.IsDisposed) result.Dispose();
             WpfTestHost.Invoke(imageView.Dispose);
+        }
+    }
+
+    [Fact]
+    public async Task ResultWindowDownsamplesLargeTablesInsteadOfCopyingEveryRowToWpfControls()
+    {
+        const int samples = 3_001;
+        using AlgorithmImageBuffer input = Buffer(new byte[samples], samples, 1);
+        AlgorithmResult result = await RunAsync(
+            input,
+            new PolylineAlgorithmRoi([new(0, 0), new(samples - 1, 0)]),
+            new ImageProfileParameters { Interpolation = ImageProfileInterpolation.Nearest });
+        ImageView imageView = WpfTestHost.Invoke(() =>
+        {
+            EnsureResources();
+            ImageView view = new();
+            WriteableBitmap bitmap = new(samples, 1, 96, 96, PixelFormats.Gray8, null);
+            bitmap.WritePixels(new Int32Rect(0, 0, samples, 1), new byte[samples], samples, 0);
+            view.SetImageSource(bitmap, enableEditorImageServices: false, configureDefaultLayerController: false);
+            return view;
+        });
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                ImageProfileResultWindow window = new(result, imageView.EditorContext.ProcessingContext, imageView.EditorContext.DrawEditorContext);
+                DataGrid grid = Assert.IsType<DataGrid>(window.FindName("SamplesGrid"));
+                TextBlock summary = Assert.IsType<TextBlock>(window.FindName("SummaryText"));
+                Assert.InRange(grid.Items.Count, 2, 2_000);
+                Assert.Contains("3,001", summary.Text, StringComparison.Ordinal);
+                Assert.Contains("2,000", summary.Text, StringComparison.Ordinal);
+                window.Close();
+            });
+        }
+        finally
+        {
+            if (!result.IsDisposed) result.Dispose();
+            WpfTestHost.Invoke(imageView.Dispose);
+        }
+    }
+
+    [Fact]
+    public async Task AsyncCsvExportKeepsEveryProfileRowBeyondTheWpfPreviewLimit()
+    {
+        const int samples = 2_501;
+        string directory = Path.Combine(Path.GetTempPath(), $"ColorVision-ProfileExport-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            using AlgorithmImageBuffer input = Buffer(new byte[samples], samples, 1);
+            using AlgorithmResult result = await RunAsync(
+                input,
+                new PolylineAlgorithmRoi([new(0, 0), new(samples - 1, 0)]),
+                new ImageProfileParameters { Interpolation = ImageProfileInterpolation.Nearest });
+
+            IReadOnlyList<string> outputs = await AlgorithmResultExporter.ExportCsvBundleAsync(
+                result,
+                Path.Combine(directory, "profile.csv"),
+                cancellationToken: CancellationToken.None);
+            string samplesPath = Assert.Single(outputs, path => Path.GetFileName(path).Contains("image-profile-samples", StringComparison.Ordinal));
+
+            Assert.Equal(samples + 1, File.ReadLines(samplesPath).Count());
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
         }
     }
 

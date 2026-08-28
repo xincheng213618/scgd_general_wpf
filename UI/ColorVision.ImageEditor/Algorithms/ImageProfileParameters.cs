@@ -19,6 +19,12 @@ namespace ColorVision.ImageEditor.Algorithms
     /// <summary>Stable V1 sampling contract; path geometry belongs to Invocation.Roi.</summary>
     public sealed class ImageProfileParameters : StandardAlgorithmParameters
     {
+        public const int DefaultMaximumSamples = 100_000;
+        public const int AbsoluteMaximumSamples = 1_000_000;
+        public const int ExecutionMaximumSamples = 50_000;
+        public const int MaximumPathPoints = 4_096;
+        public const long MaximumEstimatedResultBytes = 64L * 1024 * 1024;
+
         [DisplayName("采样间距 (px)")]
         [Description("沿折线累计像素距离采样；开放路径始终包含首尾点。")]
         public double SampleSpacingPixels { get; set; } = 1;
@@ -41,7 +47,8 @@ namespace ColorVision.ImageEditor.Algorithms
         public bool IncludeAlpha { get; set; } = true;
 
         [DisplayName("最大采样点数")]
-        public int MaximumSamples { get; set; } = 100_000;
+        [Description("V1 持久契约允许到 1000000；实际执行仍受当前资源和结果字节预算限制。")]
+        public int MaximumSamples { get; set; } = DefaultMaximumSamples;
 
         public override AlgorithmValidationResult Validate()
         {
@@ -51,8 +58,8 @@ namespace ColorVision.ImageEditor.Algorithms
                 result.Add(nameof(Interpolation), "invalid_enum", "Interpolation is invalid.");
             if (!System.Enum.IsDefined(BoundaryMode))
                 result.Add(nameof(BoundaryMode), "invalid_enum", "BoundaryMode is invalid.");
-            if (MaximumSamples is < 2 or > 1_000_000)
-                result.Add(nameof(MaximumSamples), "out_of_range", "MaximumSamples must be between 2 and 1000000.");
+            if (MaximumSamples is < 2 or > AbsoluteMaximumSamples)
+                result.Add(nameof(MaximumSamples), "out_of_range", $"MaximumSamples must be between 2 and {AbsoluteMaximumSamples}.");
             return result;
         }
     }

@@ -15,8 +15,10 @@
         <ScottPlot:WpfPlot Grid.Row="1" x:Name="ProfilePlot"/>
         <DataGrid Grid.Row="2" x:Name="SamplesGrid" IsReadOnly="True" AutoGenerateColumns="True" CanUserAddRows="False"/>
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-            <Button Content="导出 CSV" Width="96" Margin="0,0,8,0" Click="ExportCsv_Click"/>
-            <Button Content="导出 JSON" Width="96" Margin="0,0,8,0" Click="ExportJson_Click"/>
+            <ProgressBar x:Name="ExportProgress" Width="140" Height="12" Minimum="0" Maximum="100" Visibility="Collapsed" Margin="0,0,8,0"/>
+            <Button x:Name="CancelExportButton" Content="取消导出" Width="88" Margin="0,0,8,0" Visibility="Collapsed" Click="CancelExport_Click"/>
+            <Button x:Name="ExportCsvButton" Content="导出 CSV" Width="96" Margin="0,0,8,0" Click="ExportCsv_Click"/>
+            <Button x:Name="ExportJsonButton" Content="导出 JSON" Width="96" Margin="0,0,8,0" Click="ExportJson_Click"/>
             <Button Content="关闭" Width="88" IsCancel="True" Click="Close_Click"/>
         </StackPanel>
     </Grid>

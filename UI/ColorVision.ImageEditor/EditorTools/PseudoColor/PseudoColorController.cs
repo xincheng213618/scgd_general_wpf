@@ -128,9 +128,8 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 
         public void RestoreSource()
         {
-            bool hadSession = _previewSession != null;
             bool restoredOwnedPreview = DisposePreviewSession();
-            if (restoredOwnedPreview || hadSession || _owner.HasActiveAlgorithmPreview) return;
+            if (restoredOwnedPreview || _owner.HasActiveAlgorithmPreview) return;
             _owner.ImageShow.Source = _owner.ViewBitmapSource;
             _owner.FunctionImage = null;
         }
@@ -327,7 +326,9 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
             ImageAlgorithmPreviewSession? session = await _owner.Dispatcher.InvokeAsync(() =>
             {
                 if (!IsCurrentRequest(request) || !IsEnabled) return null;
-                if (_previewSession == null || _previewSession.SourceRevision != request.ImageRevision)
+                if (_previewSession == null
+                    || _previewSession.SourceRevision != request.ImageRevision
+                    || !_previewSession.OwnsHostPreview)
                 {
                     DisposePreviewSession();
                     _previewSession = ImageAlgorithmPreviewSession.Start(_owner);

@@ -1,5 +1,8 @@
 using ColorVision.Copilot;
+using ColorVision.Algorithms;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor.Algorithms;
+using ColorVision.ImageEditor.BatchProcessing;
 using OpenCvSharp;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -9,6 +12,234 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotBatchImageProcessingTests
 {
+    [Fact]
+    public async Task CopilotToolExecutesTheInjectedRuntimeInsteadOfTheGlobalProvider()
+    {
+        AlgorithmDescriptor invert = StandardAlgorithmCatalog.Create().Descriptors.Single(
+            descriptor => descriptor.Id == StandardAlgorithmIds.Invert);
+        AlgorithmCatalog catalog = new();
+        catalog.Register(invert, "InvertImage");
+        int executions = 0;
+        InjectedProvider provider = new(() => Interlocked.Increment(ref executions));
+        using AlgorithmExecutionScheduler scheduler = new(cpuConcurrency: 1);
+        AlgorithmRuntime runtime = new(catalog, [provider], scheduler);
+        CopilotConvertBatchImagesTool tool = new(
+            new BatchImageProcessor([new StandardBatchImageLoader()]),
+            runtime);
+        string directory = Path.Combine(Path.GetTempPath(), $"colorvision-copilot-runtime-{Guid.NewGuid():N}");
+        string sourcePath = Path.Combine(directory, "sample.png");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            using (Mat source = new(2, 3, MatType.CV_8UC1, Scalar.All(7))) Assert.True(Cv2.ImWrite(sourcePath, source));
+            CopilotAgentRequest request = new()
+            {
+                UserText = "对图片执行反相",
+                Mode = CopilotAgentMode.Auto,
+                SearchRootPaths = [directory],
+                ReadableLocalDirectoryPaths = [directory],
+                WritableLocalRootPaths = [directory],
+            };
+            Assert.True(tool.InputSchema.TryBind(
+                new Dictionary<string, object?>
+                {
+                    ["sources"] = new[] { sourcePath },
+                    ["format"] = "png",
+                    ["algorithm"] = "InvertImage",
+                    ["parameters"] = JsonSerializer.SerializeToElement(new { }),
+                },
+                out CopilotAgentToolInput input,
+                out string bindError), bindError);
+
+            CopilotToolResult result = await ((ICopilotFrameworkApprovedTool)tool).ExecuteApprovedAsync(request, input, CancellationToken.None);
+
+            Assert.True(result.Success, result.ErrorMessage);
+            Assert.Equal(1, executions);
+            using Mat output = Cv2.ImRead(Path.Combine(directory, "sample_invert.png"), ImreadModes.Grayscale);
+            Assert.Equal(33, output.At<byte>(0, 0));
+            Assert.Equal(33, output.At<byte>(1, 2));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CopilotCreationRejectsAWhitelistedIdWhoseRuntimeContractIsAnalysis()
+    {
+        AlgorithmDescriptor invert = StandardAlgorithmCatalog.Create().Descriptors.Single(
+            descriptor => descriptor.Id == StandardAlgorithmIds.Invert) with
+        {
+            ResultSemantics = AlgorithmResultSemantics.Analysis,
+        };
+        AlgorithmCatalog catalog = new();
+        catalog.Register(invert, "InvertImage");
+        using AlgorithmExecutionScheduler scheduler = new(cpuConcurrency: 1);
+        AlgorithmRuntime runtime = new(catalog, [new InjectedProvider(() => { })], scheduler);
+
+        bool created = BatchImageAlgorithms.TryCreateForCopilot(
+            runtime,
+            "InvertImage",
+            null,
+            out BatchImageAlgorithmDefinition? algorithm,
+            out string error);
+
+        Assert.False(created);
+        Assert.Null(algorithm);
+        Assert.Contains("whitelist", error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("对这些图片执行 Canny 边缘检测")]
+    [InlineData("把这些图像做白平衡")]
+    [InlineData("Run Canny on these images")]
+    [InlineData("对图片执行反相")]
+    public void NaturalLanguageAlgorithmIntentReachesTheApprovedWhitelistedExecutionTool(string userText)
+    {
+        CopilotAgentRequest request = new()
+        {
+            UserText = userText,
+            Mode = CopilotAgentMode.Auto,
+        };
+        CopilotToolRegistry registry = new(CopilotToolRegistry.CreateCoreDefaultTools());
+
+        IReadOnlyList<ICopilotTool> available = registry.FindTools(request);
+        ICopilotTool tool = Assert.Single(available, item => item.Name == "ConvertBatchImages");
+        Assert.IsType<CopilotConvertBatchImagesTool>(tool);
+        Assert.DoesNotContain(available, item => item.Name == "OpenBatchImageProcessing");
+        Assert.Equal(CopilotToolAccess.Write, tool.Capability.Access);
+        Assert.Equal(CopilotToolApprovalMode.Always, tool.Capability.ApprovalMode);
+
+        CopilotAgentExecutionContract contract = CopilotAgentExecutionContract.Create(request, available);
+        Assert.Equal(CopilotAgentExecutionRequirement.BatchImageConversion, contract.Requirement);
+        Assert.Equal(["ConvertBatchImages"], contract.AcceptedToolNames);
+        Assert.Contains("ConvertBatchImages", contract.BuildInitialInstruction(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ConceptualAlgorithmQuestionDoesNotExposeTheWriteTool()
+    {
+        CopilotAgentRequest request = new()
+        {
+            UserText = "Canny 图像边缘检测是什么？",
+            Mode = CopilotAgentMode.Auto,
+        };
+
+        Assert.False(new CopilotConvertBatchImagesTool().IsAvailable(request));
+    }
+
+    [Theory]
+    [InlineData("Analyze this image's white balance")]
+    [InlineData("Check whether these images need histogram equalization")]
+    [InlineData("Evaluate the white balance of this image")]
+    [InlineData("看看这张图片的白平衡是否正常")]
+    [InlineData("分析这些图像是否需要直方图均衡")]
+    [InlineData("Should I apply white balance to these images?")]
+    [InlineData("Should we apply histogram equalization to these images?")]
+    [InlineData("我该不该对这些图片应用白平衡？")]
+    [InlineData("要不要给这些图像做直方图均衡？")]
+    [InlineData("是否应该对这些图片应用白平衡？")]
+    [InlineData("Batch image processing best practices for white balance")]
+    [InlineData("这张图像白平衡处理结果不对")]
+    [InlineData("Do not apply white balance to these images")]
+    [InlineData("I applied white balance to these images yesterday")]
+    [InlineData("White balance was applied to these images")]
+    [InlineData("Apply white balance to this image")]
+    [InlineData("不要对这些图片应用白平衡")]
+    [InlineData("这些图片已经做过白平衡")]
+    [InlineData("请对这张图片降噪")]
+    public void ReadOnlyAlgorithmAssessmentDoesNotCreateABatchImageWriteContract(string userText)
+    {
+        CopilotAgentRequest request = new() { UserText = userText, Mode = CopilotAgentMode.Auto };
+        CopilotToolRegistry registry = new(CopilotToolRegistry.CreateCoreDefaultTools());
+
+        IReadOnlyList<ICopilotTool> available = registry.FindTools(request);
+
+        Assert.DoesNotContain(available, tool => tool.Name == "ConvertBatchImages");
+        Assert.False(new CopilotConvertBatchImagesTool().IsAvailable(request));
+        Assert.NotEqual(
+            CopilotAgentExecutionRequirement.BatchImageConversion,
+            CopilotAgentExecutionContract.Create(request, available).Requirement);
+    }
+
+    [Theory]
+    [InlineData("Apply white balance to these images and save the outputs")]
+    [InlineData("Convert these images with histogram equalization")]
+    [InlineData("把这些图片应用白平衡并保存输出")]
+    [InlineData("批量处理这些图像：应用直方图均衡并导出")]
+    [InlineData("Please invert these images")]
+    [InlineData("请把这些图片反相")]
+    [InlineData("White-balance these images")]
+    [InlineData("Use histogram equalization on these images")]
+    [InlineData("请对这些图片降噪")]
+    [InlineData("Run denoise on all images")]
+    [InlineData("对多张图像应用阈值处理")]
+    public void ExplicitAlgorithmMutationStillRequiresTheAlwaysApprovedBatchTool(string userText)
+    {
+        CopilotAgentRequest request = new() { UserText = userText, Mode = CopilotAgentMode.Auto };
+        CopilotToolRegistry registry = new(CopilotToolRegistry.CreateCoreDefaultTools());
+
+        IReadOnlyList<ICopilotTool> available = registry.FindTools(request);
+        ICopilotTool tool = Assert.Single(available, item => item.Name == "ConvertBatchImages");
+        Assert.Equal(CopilotToolAccess.Write, tool.Capability.Access);
+        Assert.Equal(CopilotToolApprovalMode.Always, tool.Capability.ApprovalMode);
+        Assert.Equal(
+            CopilotAgentExecutionRequirement.BatchImageConversion,
+            CopilotAgentExecutionContract.Create(request, available).Requirement);
+    }
+
+    [Fact]
+    public void CopilotParameterSchemaUsesTheCatalogNominalIntensityContract()
+    {
+        JsonElement parameterSchema = new CopilotConvertBatchImagesTool()
+            .InputSchema.JsonSchema
+            .GetProperty("properties")
+            .GetProperty("parameters");
+        JsonElement properties = parameterSchema.GetProperty("properties");
+
+        Assert.Equal(ushort.MaxValue, properties.GetProperty("threshold").GetProperty("maximum").GetInt32());
+        Assert.Equal("boolean", properties.GetProperty("useNominalColorSigma").GetProperty("type").GetString());
+        string thresholdDescription = properties.GetProperty("threshold").GetProperty("description").GetString()!;
+        string modeDescription = properties.GetProperty("useNominalRange").GetProperty("description").GetString()!;
+        Assert.Contains("useNominalRange", thresholdDescription, StringComparison.Ordinal);
+        Assert.Contains("0..255", thresholdDescription, StringComparison.Ordinal);
+        Assert.Contains("0..65535", thresholdDescription, StringComparison.Ordinal);
+        Assert.Contains("input format", thresholdDescription, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("runtime", modeDescription, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("conditional", parameterSchema.GetProperty("$comment").GetString()!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void CopilotThresholdSchemaAllowsAbsolute16BitValuesButUnifiedValidationRejectsNominalOverflow()
+    {
+        CopilotConvertBatchImagesTool tool = new();
+        JsonElement absolute = JsonSerializer.SerializeToElement(new { threshold = ushort.MaxValue, useNominalRange = false });
+        Assert.True(tool.InputSchema.TryBind(
+            new Dictionary<string, object?>
+            {
+                ["sources"] = new[] { "sample.png" },
+                ["algorithm"] = "colorvision.image.threshold",
+                ["parameters"] = absolute,
+            },
+            out _,
+            out string bindError), bindError);
+        Assert.True(BatchImageAlgorithms.TryCreateForCopilot(
+            "colorvision.image.threshold",
+            absolute,
+            out BatchImageAlgorithmDefinition? algorithm,
+            out string createError), createError);
+        Assert.NotNull(algorithm);
+
+        JsonElement invalidNominal = JsonSerializer.SerializeToElement(new { threshold = 256, useNominalRange = true });
+        Assert.False(BatchImageAlgorithms.TryCreateForCopilot(
+            "colorvision.image.threshold",
+            invalidNominal,
+            out _,
+            out string validationError));
+        Assert.Contains(nameof(ThresholdParameters.Threshold), validationError, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task CopilotRunsOnlyApprovedWhitelistedCatalogAlgorithmAndReturnsEvidence()
     {
@@ -33,6 +264,7 @@ public sealed class CopilotBatchImageProcessingTests
                 ReadableLocalDirectoryPaths = [directory],
                 WritableLocalRootPaths = [directory],
             };
+            Assert.True(tool.IsAvailable(request));
             Assert.True(tool.InputSchema.TryBind(
                 new Dictionary<string, object?>
                 {
@@ -373,6 +605,44 @@ public sealed class CopilotBatchImageProcessingTests
         finally
         {
             Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    private sealed class InjectedProvider(Action onExecute) : IImageAlgorithmProvider
+    {
+        public AlgorithmProviderMetadata Metadata { get; } = new(
+            "copilot-injected-provider",
+            "Copilot injected provider",
+            AlgorithmProviderKind.Cpu,
+            AlgorithmExecutionPlane.Local,
+            100,
+            AlgorithmHostCapabilities.Copilot | AlgorithmHostCapabilities.Batch | AlgorithmHostCapabilities.Headless
+                | AlgorithmHostCapabilities.Local | AlgorithmHostCapabilities.Deterministic,
+            new HashSet<AlgorithmImageFormat> { AlgorithmImageFormat.Gray8 });
+
+        public bool CanExecute(AlgorithmDescriptor descriptor, IReadOnlyList<AlgorithmInput> inputs, out string? reason)
+        {
+            reason = descriptor.Id == StandardAlgorithmIds.Invert ? null : "wrong algorithm";
+            return reason == null;
+        }
+
+        public ValueTask<AlgorithmResult> ExecuteAsync(AlgorithmExecutionContext context, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            onExecute();
+            AlgorithmImageBuffer source = context.Inputs.Single().Image;
+            byte[] pixels = Enumerable.Repeat((byte)33, source.Stride * source.Height).ToArray();
+            return ValueTask.FromResult(new AlgorithmResult
+            {
+                Status = AlgorithmResultStatus.Succeeded,
+                Artifacts =
+                [
+                    new AlgorithmImageArtifact(
+                        "output",
+                        "primary",
+                        new AlgorithmImageBuffer(source.Width, source.Height, source.Stride, source.Format, pixels, source.DpiX, source.DpiY)),
+                ],
+            });
         }
     }
 }

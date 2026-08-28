@@ -16,16 +16,18 @@ using System.Windows.Threading;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparison
 {
-    public partial class ImageComparisonResultWindow : Window
+    public partial class ImageComparisonResultWindow : Window, IDisposable
     {
         private readonly AlgorithmResult _result;
         private readonly BitmapSource _reference;
         private readonly BitmapSource _candidate;
-        private readonly Dictionary<string, BitmapSource> _visualizations;
+        private readonly Dictionary<string, AlgorithmImageArtifact> _visualizations;
         private readonly DispatcherTimer _blinkTimer;
-        private readonly IDisposable _overlaySession;
+        private IDisposable? _overlaySession;
+        private string? _currentDifferenceName;
         private bool _showCandidate;
         private bool _disposed;
+        private Exception? _disposeFailure;
 
         public ImageComparisonResultWindow(
             AlgorithmResult result,
@@ -42,41 +44,55 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
                 ?? throw new ArgumentException("The result has no comparison channel table.", nameof(result));
             AlgorithmTableArtifact alignment = result.GetArtifact<AlgorithmTableArtifact>("image-comparison-alignment")
                 ?? throw new ArgumentException("The result has no alignment precheck table.", nameof(result));
-            InitializeComponent();
             _result = result;
             _reference = reference;
             _candidate = candidate;
             _visualizations = result.Artifacts.OfType<AlgorithmImageArtifact>()
                 .Where(artifact => artifact.Name.EndsWith("visualization", StringComparison.Ordinal) || artifact.Name == "difference-heatmap")
-                .ToDictionary(artifact => artifact.Name, artifact => (BitmapSource)ImageAlgorithmInputFactory.ToWriteableBitmap(artifact.Image), StringComparer.Ordinal);
-            _blinkTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(BlinkInterval.Value) };
-            _blinkTimer.Tick += (_, _) => ToggleBlink();
-            SplitReference.Source = _reference;
-            SplitCandidate.Source = _candidate;
-            BlinkImage.Source = _reference;
-            BlinkLabel.Text = "当前图像";
-            MetricsGrid.ItemsSource = ToTable(table).DefaultView;
-            AlignmentGrid.ItemsSource = ToTable(alignment).DefaultView;
-            DifferenceKind_SelectionChanged(this, null!);
-            double mse = measurements.Measurements.Single(item => item.Name == "comparison.mse").Value;
-            double rmse = measurements.Measurements.Single(item => item.Name == "comparison.rmse").Value;
-            double psnr = measurements.Measurements.Single(item => item.Name == "comparison.psnr_db").Value;
-            double? ssim = measurements.Measurements.FirstOrDefault(item => item.Name == "comparison.ssim")?.Value;
-            IReadOnlyDictionary<string, JsonElement> alignmentRow = alignment.Rows.Single();
-            string alignmentStatus = Display(alignmentRow["Status"]);
-            string shiftX = Display(alignmentRow["EstimatedShiftX"]);
-            string shiftY = Display(alignmentRow["EstimatedShiftY"]);
-            string confidence = Display(alignmentRow["Confidence"]);
-            string ssimText = ssim.HasValue ? ssim.Value.ToString("G10", CultureInfo.InvariantCulture) : "N/A";
-            SummaryText.Text = $"候选：{candidateName}；MSE={mse:G10}，RMSE={rmse:G10}，PSNR={(double.IsPositiveInfinity(psnr) ? "Infinity" : psnr.ToString("G10", CultureInfo.InvariantCulture))} dB，SSIM={ssimText}；对齐预检={alignmentStatus}，候选偏移=({shiftX}, {shiftY}) px，置信度={confidence}。差分数值 artifact 保持原始位深；对齐预检只报告，不修改图像。";
-            _overlaySession = AlgorithmOverlayRenderer.Apply(image, draw, result);
-            Closed += (_, _) => DisposeOwnedState();
+                .ToDictionary(artifact => artifact.Name, StringComparer.Ordinal);
+            _blinkTimer = new DispatcherTimer();
+            try
+            {
+                InitializeComponent();
+                _blinkTimer.Interval = TimeSpan.FromMilliseconds(BlinkInterval.Value);
+                _blinkTimer.Tick += (_, _) => ToggleBlink();
+                SplitReference.Source = _reference;
+                SplitCandidate.Source = _candidate;
+                BlinkImage.Source = _reference;
+                BlinkLabel.Text = "当前图像";
+                MetricsGrid.ItemsSource = ToTable(table).DefaultView;
+                AlignmentGrid.ItemsSource = ToTable(alignment).DefaultView;
+                DifferenceKind_SelectionChanged(this, null!);
+                double mse = measurements.Measurements.Single(item => item.Name == "comparison.mse").Value;
+                double rmse = measurements.Measurements.Single(item => item.Name == "comparison.rmse").Value;
+                double psnr = measurements.Measurements.Single(item => item.Name == "comparison.psnr_db").Value;
+                double? ssim = measurements.Measurements.FirstOrDefault(item => item.Name == "comparison.ssim")?.Value;
+                IReadOnlyDictionary<string, JsonElement> alignmentRow = alignment.Rows.Single();
+                string alignmentStatus = Display(alignmentRow["Status"]);
+                string shiftX = Display(alignmentRow["EstimatedShiftX"]);
+                string shiftY = Display(alignmentRow["EstimatedShiftY"]);
+                string confidence = Display(alignmentRow["Confidence"]);
+                string ssimText = ssim.HasValue ? ssim.Value.ToString("G10", CultureInfo.InvariantCulture) : "N/A";
+                SummaryText.Text = $"候选：{candidateName}；MSE={mse:G10}，RMSE={rmse:G10}，PSNR={(double.IsPositiveInfinity(psnr) ? "Infinity" : psnr.ToString("G10", CultureInfo.InvariantCulture))} dB，SSIM={ssimText}；对齐预检={alignmentStatus}，候选偏移=({shiftX}, {shiftY}) px，置信度={confidence}。差分数值 artifact 保持原始位深；对齐预检只报告，不修改图像。";
+                _overlaySession = AlgorithmOverlayRenderer.Apply(image, draw, result);
+                Closed += (_, _) => DisposeOwnedState();
+            }
+            catch
+            {
+                Exception? ignored = null;
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(_blinkTimer.Stop, ref ignored);
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => _overlaySession?.Dispose(), ref ignored);
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(result.Dispose, ref ignored);
+                throw;
+            }
         }
 
         private void DifferenceKind_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (!IsInitialized || DifferenceKind.SelectedItem is not ComboBoxItem item || item.Tag is not string name) return;
-            if (_visualizations != null && _visualizations.TryGetValue(name, out BitmapSource? source)) DifferenceImage.Source = source;
+            if (_currentDifferenceName == name || _visualizations == null || !_visualizations.TryGetValue(name, out AlgorithmImageArtifact? artifact)) return;
+            DifferenceImage.Source = ImageAlgorithmInputFactory.ToWriteableBitmap(artifact.Image);
+            _currentDifferenceName = name;
         }
 
         private void BlinkButton_Click(object sender, RoutedEventArgs e)
@@ -197,13 +213,27 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
 
         private void Close_Click(object sender, RoutedEventArgs e) => Close();
 
-        private void DisposeOwnedState()
+        public void Dispose()
         {
-            if (_disposed) return;
+            Exception? failure = null;
+            if (IsLoaded) AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(Close, ref failure);
+            failure ??= DisposeOwnedState();
+            GC.SuppressFinalize(this);
+            if (failure != null) throw failure;
+        }
+
+        private Exception? DisposeOwnedState()
+        {
+            if (_disposed) return _disposeFailure;
             _disposed = true;
-            _blinkTimer.Stop();
-            _overlaySession.Dispose();
-            _result.Dispose();
+            AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(_blinkTimer.Stop, ref _disposeFailure);
+            AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => DifferenceImage.Source = null, ref _disposeFailure);
+            AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => BlinkImage.Source = null, ref _disposeFailure);
+            AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => SplitReference.Source = null, ref _disposeFailure);
+            AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => SplitCandidate.Source = null, ref _disposeFailure);
+            AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => _overlaySession?.Dispose(), ref _disposeFailure);
+            AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(_result.Dispose, ref _disposeFailure);
+            return _disposeFailure;
         }
     }
 }

@@ -32,7 +32,7 @@ namespace ColorVision.ImageEditor.Algorithms
         public double BadPixelMinimumDeviationFraction { get; set; } = 0.02;
 
         [DisplayName("最多返回坏点候选")]
-        [Description("统计总数不截断；Table、Geometry 和 Overlay 最多返回该数量。")]
+        [Description("0 禁用候选扫描；正数时流式统计总数，Table、Geometry 和 Overlay 只保留该数量的最强候选。")]
         public int MaximumBadPixelCandidates { get; set; } = 1000;
 
         public override AlgorithmValidationResult Validate()

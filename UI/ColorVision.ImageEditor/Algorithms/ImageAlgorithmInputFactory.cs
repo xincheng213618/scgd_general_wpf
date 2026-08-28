@@ -1,6 +1,7 @@
 using ColorVision.Algorithms;
 using ColorVision.Core;
 using System;
+using System.Buffers;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media;
@@ -21,6 +22,39 @@ namespace ColorVision.ImageEditor.Algorithms
                 SourceRevision = revision.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 ColorSpace = "encoded-device-values",
             };
+        }
+
+        public static AlgorithmInput Acquire(
+            ImageProcessingContext image,
+            ImageSelectionScope? expectedScope,
+            string name = "source")
+        {
+            AlgorithmInput input = Acquire(image, name);
+            if (expectedScope == null)
+            {
+                return input;
+            }
+
+            bool revisionMatches = long.TryParse(
+                input.SourceRevision,
+                System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out long revision)
+                && revision == expectedScope.SourceRevision;
+            bool scopeMatches = image.DocumentInstanceId == expectedScope.DocumentInstanceId
+                && revisionMatches
+                && input.Image.Width == expectedScope.PixelWidth
+                && input.Image.Height == expectedScope.PixelHeight
+                && input.Image.DpiX.Equals(expectedScope.DpiX)
+                && input.Image.DpiY.Equals(expectedScope.DpiY)
+                && image.IsCurrentImageRevision(expectedScope.SourceRevision);
+            if (scopeMatches)
+            {
+                return input;
+            }
+
+            input.Image.Dispose();
+            throw new InvalidOperationException("The image changed while the ROI was being selected. Select the ROI again on the current image.");
         }
 
         /// <summary>
@@ -86,15 +120,25 @@ namespace ColorVision.ImageEditor.Algorithms
             return new AlgorithmImageBuffer(image.PixelWidth, image.PixelHeight, stride, format, data, image.DpiX, image.DpiY);
         }
 
-        public static WriteableBitmap ToWriteableBitmap(AlgorithmImageBuffer image)
+        public static unsafe WriteableBitmap ToWriteableBitmap(AlgorithmImageBuffer image)
         {
             WriteableBitmap bitmap = new(image.Width, image.Height, image.DpiX, image.DpiY, ToPixelFormat(image.Format), null);
-            byte[] data = image.Data.ToArray();
-            if (image.Format == AlgorithmImageFormat.Bgr48)
-                SwapRedBlue(data, image.Stride, image.Width, image.Height, 2, 3);
-            else if (image.Format == AlgorithmImageFormat.Bgra64)
-                SwapRedBlue(data, image.Stride, image.Width, image.Height, 2, 4);
-            bitmap.WritePixels(new Int32Rect(0, 0, image.Width, image.Height), data, image.Stride, 0);
+            Int32Rect bounds = new(0, 0, image.Width, image.Height);
+            if (image.Format is AlgorithmImageFormat.Bgr48 or AlgorithmImageFormat.Bgra64)
+            {
+                byte[] converted = image.Data.ToArray();
+                if (image.Format == AlgorithmImageFormat.Bgr48)
+                    SwapRedBlue(converted, image.Stride, image.Width, image.Height, 2, 3);
+                else
+                    SwapRedBlue(converted, image.Stride, image.Width, image.Height, 2, 4);
+                bitmap.WritePixels(bounds, converted, image.Stride, 0);
+            }
+            else
+            {
+                ReadOnlyMemory<byte> data = image.Data;
+                using MemoryHandle pin = data.Pin();
+                bitmap.WritePixels(bounds, (IntPtr)pin.Pointer, data.Length, image.Stride);
+            }
             return bitmap;
         }
 

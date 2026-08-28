@@ -14,6 +14,8 @@
     "Azure.Core.dll",
     "Azure.Identity.dll",
     "CHANGELOG.md",
+    "ColorVision.Algorithms.dll",
+    "ColorVision.Algorithms.pdb",
     "ColorVision.Common.dll",
     "ColorVision.Common.pdb",
     "ColorVision.Core.dll",

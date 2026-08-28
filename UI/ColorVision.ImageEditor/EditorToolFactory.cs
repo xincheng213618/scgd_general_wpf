@@ -1,4 +1,6 @@
+using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Abstractions;
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Settings;
 using ColorVision.UI;
@@ -70,6 +72,7 @@ namespace ColorVision.ImageEditor
                     {
                         if (CreateContextBoundOrDefaultInstance(type, context) is IDVContextMenu instance)
                         {
+                            if (!IsAlgorithmMenuExecutable(instance, context)) continue;
                             ContextMenuProviders.Add(instance);
                         }
                     }
@@ -85,6 +88,7 @@ namespace ColorVision.ImageEditor
                     {
                         if (CreateContextBoundInstance(type, context) is IIEditorToolContextMenu instance)
                         {
+                            if (!IsAlgorithmMenuExecutable(instance, context)) continue;
                             IIEditorToolContextMenus.Add(instance);
                         }
                     }
@@ -274,6 +278,22 @@ namespace ColorVision.ImageEditor
         private static bool CanCreateGlobalEditorTool(Type type)
         {
             return SelectContextConstructor(type) != null;
+        }
+
+        private static bool IsAlgorithmMenuExecutable(object instance, EditorContext context)
+        {
+            if (instance is not IAlgorithmCatalogBoundMenu algorithmMenu) return true;
+            AlgorithmRuntime runtime = context.ProcessingContext.AlgorithmRuntime;
+            return runtime.Catalog.TryResolve(algorithmMenu.AlgorithmId, out AlgorithmDescriptor? descriptor)
+                && descriptor != null
+                && StandardAlgorithmAdapterContract.IsCompatible(descriptor)
+                && StandardAlgorithmAdapterContract.TryGetInteractiveRequiredCapabilities(
+                    descriptor,
+                    algorithmMenu.PlannedInputCount,
+                    algorithmMenu.RequiresRoi,
+                    algorithmMenu.RequiredCapabilities,
+                    out AlgorithmHostCapabilities required)
+                && runtime.CanExecuteDescriptor(descriptor, required);
         }
 
         private static object? CreateContextBoundInstance(Type type, EditorContext context)

@@ -1,4 +1,6 @@
+using ColorVision.Algorithms;
 using ColorVision.Engine.Media;
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.BatchProcessing;
 using System;
 using System.Collections;
@@ -65,11 +67,12 @@ namespace ColorVision.Copilot
                 "Autumn", "Bone", "Jet", "Winter", "Rainbow", "Ocean", "Summer", "Spring", "Cool", "Hsv", "Pink", "Hot",
                 "Parula", "Magma", "Inferno", "Plasma", "Viridis", "Cividis", "Twilight", "TwilightShifted", "Turbo", "DeepGreen",
             ];
-            return new
+            return new Dictionary<string, object?>
             {
-                type = "object",
-                description = "Optional parameters for the selected algorithm. Unknown or unrelated fields are rejected after Catalog resolution.",
-                properties = new Dictionary<string, object?>
+                ["type"] = "object",
+                ["description"] = "Optional parameters for the selected algorithm. Unknown or unrelated fields are rejected after Catalog resolution.",
+                ["$comment"] = "The current ColorVision tool-schema dialect does not support JSON Schema if/then/else. Threshold's conditional useNominalRange contract is documented on both fields and enforced by the Catalog/runtime validator.",
+                ["properties"] = new Dictionary<string, object?>
                 {
                     ["lowThreshold"] = new { type = "number", minimum = 0, maximum = 255 },
                     ["highThreshold"] = new { type = "number", minimum = 0, maximum = 255 },
@@ -79,17 +82,28 @@ namespace ColorVision.Copilot
                     ["brightness"] = new { type = "number", minimum = -100, maximum = 100 },
                     ["contrast"] = new { type = "number", minimum = -100, maximum = 100 },
                     ["gamma"] = new { type = "number", minimum = 0.1, maximum = 5 },
-                    ["threshold"] = new { type = "number", minimum = 0, maximum = ushort.MaxValue },
+                    ["threshold"] = new
+                    {
+                        type = "number",
+                        minimum = 0,
+                        maximum = ThresholdParameters.MaximumAbsoluteThreshold,
+                        description = "Threshold mode is selected by useNominalRange. When true, use the 0..255 nominal scale and ColorVision scales it to the input format. When false, use raw 0..65535 DN, but the value must still fit every input format (for example Gray8 255, Gray16 65535, Gray32Float 1). The Catalog/runtime performs the final format-aware validation.",
+                    },
                     ["kernelSize"] = new { type = "integer", minimum = 1, maximum = 255 },
                     ["sigma"] = new { type = "number", minimum = 0, maximum = 1000 },
                     ["operation"] = new { type = "string", @enum = operations },
                     ["iterations"] = new { type = "integer", minimum = 1, maximum = 100 },
+                    ["useNominalColorSigma"] = new { type = "boolean" },
                     ["sigmaColor"] = new { type = "number", minimum = 0, maximum = 10000 },
                     ["sigmaSpace"] = new { type = "number", minimum = 0, maximum = 10000 },
                     ["redScale"] = new { type = "number", minimum = 0, maximum = 16 },
                     ["greenScale"] = new { type = "number", minimum = 0, maximum = 16 },
                     ["blueScale"] = new { type = "number", minimum = 0, maximum = 16 },
-                    ["useNominalRange"] = new { type = "boolean" },
+                    ["useNominalRange"] = new
+                    {
+                        type = "boolean",
+                        description = "Defaults to true. True selects the 0..255 nominal scale; false selects raw DN up to 65535. The runtime rejects values outside the selected mode and actual input-format range.",
+                    },
                     ["colormap"] = new { type = "string", @enum = colorMaps },
                     ["minimum"] = new { type = "integer", minimum = 0, maximum = uint.MaxValue },
                     ["maximum"] = new { type = "integer", minimum = 0, maximum = uint.MaxValue },
@@ -98,23 +112,30 @@ namespace ColorVision.Copilot
                     ["dataMinimum"] = new { type = "integer", minimum = 0, maximum = uint.MaxValue },
                     ["dataMaximum"] = new { type = "integer", minimum = 0, maximum = uint.MaxValue },
                 },
-                additionalProperties = false,
+                ["additionalProperties"] = false,
             };
         }
 
         private readonly BatchImageProcessor _processor;
+        private readonly AlgorithmRuntime _algorithmRuntime;
 
         public CopilotConvertBatchImagesTool()
             : this(new BatchImageProcessor([
                 new StandardBatchImageLoader(),
                 new CVRawBatchImageLoader(),
-            ]))
+            ]), ImageAlgorithmPlatform.Runtime)
         {
         }
 
         public CopilotConvertBatchImagesTool(BatchImageProcessor processor)
+            : this(processor, ImageAlgorithmPlatform.Runtime)
+        {
+        }
+
+        public CopilotConvertBatchImagesTool(BatchImageProcessor processor, AlgorithmRuntime algorithmRuntime)
         {
             _processor = processor ?? throw new ArgumentNullException(nameof(processor));
+            _algorithmRuntime = algorithmRuntime ?? throw new ArgumentNullException(nameof(algorithmRuntime));
         }
 
         public string Name => "ConvertBatchImages";
@@ -190,7 +211,7 @@ namespace ColorVision.Copilot
             {
                 algorithm = BatchImageAlgorithms.CreateFormatOnly();
             }
-            else if (!BatchImageAlgorithms.TryCreateForCopilot(options.Algorithm, options.Parameters, out BatchImageAlgorithmDefinition? selected, out string algorithmError)
+            else if (!BatchImageAlgorithms.TryCreateForCopilot(_algorithmRuntime, options.Algorithm, options.Parameters, out BatchImageAlgorithmDefinition? selected, out string algorithmError)
                      || selected == null)
             {
                 return Failure("The requested image algorithm is unavailable to Copilot.", algorithmError, CopilotToolFailureKind.Authorization);
