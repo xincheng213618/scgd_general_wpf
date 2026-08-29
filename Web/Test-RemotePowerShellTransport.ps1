@@ -31,8 +31,14 @@ $expectedUnicode = [string][char]0x90E8 + [char]0x7F72 + [char]0x901A + [char]0x
 $expectedUnicodeBase64 = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($expectedUnicode))
 $transport = New-WebRemotePowerShellTransport -ScriptText $scriptText
 $loaderText = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($transport.encoded_loader))
+$transportModuleText = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'RemotePowerShellTransport.psm1') -Raw
 Assert-Equal $true $loaderText.Contains('[Console]::In.ReadLine()') 'Transport loader does not consume a complete line.'
 Assert-Equal $false $loaderText.Contains('[Console]::In.ReadToEnd()') 'Transport loader still waits for stdin EOF.'
+Assert-Equal $true $transportModuleText.Contains('$process.StandardInput.Close()') 'Transport client does not close stdin after the payload line.'
+$payloadLines = @($transport.stdin_payload.TrimEnd("`r", "`n") -split '\r?\n')
+Assert-Equal $true ($payloadLines.Count -gt 2) 'Transport payload was not split into bounded chunks.'
+Assert-Equal '__COLORVISION_REMOTE_POWERSHELL_PAYLOAD_END__' $payloadLines[-1] 'Transport payload terminator changed.'
+Assert-Equal $true (@($payloadLines | Where-Object { $_.Length -gt 4096 }).Count -eq 0) 'Transport payload contains an oversized line.'
 
 $result = Invoke-WebRemotePowerShellProcess `
     -FilePath 'powershell.exe' `
@@ -46,8 +52,9 @@ Assert-Equal $expectedUnicodeBase64 $payload.unicode_base64 'Transport payload c
 
 [ordered]@{
     status = 'success'
-    loader = 'ReadLine'
-    stdin_left_open = $true
+    loader = 'chunked-ReadLine'
+    stdin_closed_after_write = $true
+    payload_chunks = $payloadLines.Count - 1
     payload_characters = $transport.stdin_payload.Length
     explicit_process_pipe = $true
 } | ConvertTo-Json -Compress

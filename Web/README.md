@@ -62,9 +62,10 @@ Normal origin deployment fetches once, then fast-forwards from the fetched
 `origin/<branch>` ref instead of opening a second connection during `pull`.
 When origin remains unavailable, create a verified transport bundle and pass
 its NAS path with `-RemoteGitBundle`.
-The SSH transport sends the encoded remote script as one newline-terminated
-payload. Its loader consumes that line immediately instead of waiting for stdin
-EOF, preventing abandoned PowerShell sessions when an SSH client disconnects.
+The SSH transport sends the encoded remote script as bounded newline-delimited
+chunks followed by an explicit terminator. Its loader consumes each chunk
+instead of waiting for stdin EOF, while the client closes stdin after the write
+so Windows OpenSSH cannot retain bytes or leave an abandoned PowerShell session.
 
 Deployment history keeps the newest 500 valid JSON records by default. Each
 write validates the existing file and replaces it atomically; malformed legacy
