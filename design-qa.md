@@ -52,7 +52,6 @@ Each source crop and its matching live implementation state were emitted togethe
 - P3: the revised fixed-size and recovery states were not recaptured under the dark theme; all changed colors remain dynamic theme resources.
 
 final result: passed
-
 ---
 
 # ColorVision 服务主机管理界面设计核验
@@ -339,5 +338,108 @@ final result: passed
 ## Follow-up polish
 
 没有阻塞项。不同 DPI 下路径会更早进入省略显示，这是为保证操作按钮始终可见的预期行为。
+
+final result: passed
+
+---
+
+# Design QA
+
+- Source visual truth: `C:\Users\17917\AppData\Local\Temp\codex-clipboard-92fadb80-8d80-4f18-8c2a-414a8613a77e.png`
+- Earlier implementation reference: `C:\Users\17917\AppData\Local\Temp\codex-clipboard-acf6661e-737a-4fb9-ae0c-d8ce0c89e17f.png`
+- Browser-rendered implementation: `C:\Users\17917\.codex\visualizations\2026\08\29\01a04c3c-115a-7e31-b691-da67f8bbd728\implementation-account-actions-normalized.png`
+- Side-by-side comparison: `C:\Users\17917\.codex\visualizations\2026\08\29\01a04c3c-115a-7e31-b691-da67f8bbd728\account-actions-comparison.png`
+- Open-menu evidence: `C:\Users\17917\.codex\visualizations\2026\08\29\01a04c3c-115a-7e31-b691-da67f8bbd728\implementation-account-menu.png`
+- Route/state: `/updates`, light theme, authenticated administrator `xincheng`
+- Viewport: 1280 x 720 CSS px at device scale factor 1.5
+- Source dimensions: 426 x 143 px
+- Implementation dimensions: captured from a 1920 x 1080 physical-pixel browser screenshot; the 426 x 143 physical-pixel account region corresponds to approximately 284 x 95 CSS px at 1.5 density. No raster resampling was used in the final normalized crop.
+
+## Full-view comparison evidence
+
+The supplied design target is itself a focused header crop, so the full comparison is the complete supplied 426 x 143 image beside an equal-size browser capture. The implementation preserves the three-part theme control, removes the blue primary management button and bordered exit button, and shows the shield icon plus `xincheng` as the account affordance. The differing blank area above and below the controls comes from the user's original crop including adjacent browser/page chrome and is not component drift.
+
+## Focused-region evidence
+
+No smaller crop is needed: the source contains only the theme and account controls, and all relevant typography, icons, spacing, color, and copy are readable at native resolution. A separate browser capture verifies that the account menu opens and contains `发布管理` and `退出登录`.
+
+## Fidelity surfaces
+
+- Fonts and typography: Ant Design uses the project's existing Segoe UI / Microsoft YaHei UI stack; label weight, size, line height, and single-line username treatment match the reference.
+- Spacing and layout rhythm: the former two large action buttons are replaced by one text-style account control beside the existing compact segmented theme selector. Alignment and control radii match the established admin-header pattern.
+- Colors and visual tokens: the account control is neutral instead of primary blue; the segmented control keeps the existing light-theme surface and selected-state treatment.
+- Image quality and asset fidelity: the reference contains standard UI icons only. The implementation uses the existing Ant Design sun, moon, shield, dashboard, and logout icons; no placeholder, custom SVG, CSS drawing, or generated raster asset was introduced.
+- Copy and content: the visible account copy is `xincheng`; `发布管理` and `退出登录` remain available inside the dropdown. `增量更新` is absent from the public header navigation while the `/updates` page remains available.
+
+## Findings
+
+No actionable P0, P1, or P2 mismatch remains.
+
+## Comparison history
+
+1. Earlier state: the user-provided current screenshot showed a P1 hierarchy mismatch—`发布管理` was a dominant blue CTA and `退出` was a second persistent button, unlike the selected compact account treatment.
+2. Fix: replaced both buttons with the same shield-and-username dropdown pattern used by the existing admin layout, retaining management and logout as menu actions. Removed `/updates` from the public header menu only.
+3. Post-fix evidence: the equal-size side-by-side comparison shows the intended compact control group. Browser DOM and interaction checks confirm that `发布管理` and `退出登录` are present and that selecting `发布管理` targets `/admin`.
+
+## Verification
+
+- Primary interactions tested: light-theme selection; account-menu open/close; publish-management menu selection.
+- Console errors checked: none during the `/updates` header and dropdown checks.
+- Static checks: frontend lint, 44 tests, and production build all passed.
+
+## Follow-up polish
+
+None required for the requested change.
+
+final result: passed
+
+---
+
+# Public brand icon and favicon QA
+
+- Source visual truth:
+  - `C:\Users\17917\AppData\Local\Temp\codex-clipboard-c1dc917b-caa9-4c97-8905-ba5717538f16.png`
+  - `C:\Users\17917\AppData\Local\Temp\codex-clipboard-8969d1c4-ce7e-4f2f-a0e4-69f382551d2a.png`
+- Browser-rendered implementation: `C:\Users\17917\.codex\visualizations\2026\08\29\01a04c3c-115a-7e31-b691-da67f8bbd728\implementation-icon-only-header-light.png`
+- Side-by-side comparison: `C:\Users\17917\.codex\visualizations\2026\08\29\01a04c3c-115a-7e31-b691-da67f8bbd728\icon-only-header-comparison.png`
+- Route/state: `/updates`, light theme for comparison; system theme restored after capture
+- Viewport: 1280 x 720 CSS px; focused crop 393 x 153 px; device scale factor 1
+- Source and implementation dimensions: 393 x 153 px each; no density resampling
+
+## Full-view comparison evidence
+
+The equal-size comparison uses the complete supplied header crop and the same-size implementation crop. The earlier two-line `INTERNAL PORTAL / ColorVision` lockup is gone; the public header now retains only the existing ColorVision eye icon while navigation remains aligned and readable.
+
+## Focused-region evidence
+
+No smaller crop is needed because the 393 x 153 comparison already renders the icon and adjacent navigation at readable size. Browser DOM inspection confirms that `.site-brand` has no text content, remains an accessible link named `ColorVision 首页`, and measures 38 x 38 CSS px in the compact viewport. The favicon link resolves to `/brand/colorvision-icon.png`; the asset returns HTTP 200 with `image/png` and is the same source image used in the header.
+
+## Fidelity surfaces
+
+- Fonts and typography: the requested brand copy is fully removed; no residual text, wrapping, or hidden duplicate remains.
+- Spacing and layout rhythm: the brand link shrinks to the icon width instead of preserving the former 220 px text-lockup reservation, so navigation uses the released space without a blank gap.
+- Colors and visual tokens: header backgrounds and existing theme behavior are unchanged; the supplied full-color ColorVision icon remains the only brand accent.
+- Image quality and asset fidelity: both header and favicon use the existing 512 x 512 `colorvision-icon.png` source asset. No recreated logo, placeholder, SVG, or CSS drawing was introduced.
+- Copy and content: visible `INTERNAL PORTAL` and `ColorVision` header copy are removed. Browser document titles continue to contain `ColorVision`, now paired with the ColorVision favicon configuration rather than the previous ICO fallback.
+
+## Findings
+
+No actionable P0, P1, or P2 mismatch remains.
+
+## Comparison history
+
+1. Earlier state: the public header showed a P1 content mismatch by retaining the full icon-plus-two-line lockup when only the icon was requested; the browser tab showed a generic globe instead of the product icon.
+2. Fix: removed the header copy and its reserved width, kept an accessible icon-only home link, and changed the favicon declaration from the oversized ICO path to the existing PNG brand asset.
+3. Post-fix evidence: the same-size browser comparison shows the icon-only header. DOM and HTTP checks confirm the PNG favicon URL, MIME type, successful load, and unchanged ColorVision document title.
+
+## Verification
+
+- Primary interactions tested: icon-only brand link remains discoverable as the ColorVision home link; theme state was changed only for capture and restored afterward.
+- Console errors checked: none.
+- Static checks: frontend lint, 44 tests, and production build all passed.
+
+## Follow-up polish
+
+None required for the requested change.
 
 final result: passed
