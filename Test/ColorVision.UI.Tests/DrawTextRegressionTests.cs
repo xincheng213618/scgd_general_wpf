@@ -860,7 +860,8 @@ public sealed class DrawTextRegressionTests
                 Matrix initial = editorTransform.Matrix;
 
                 rotation.Angle = 90;
-                editor.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+                fixture.Context.DrawCanvas.UpdateLayout();
+                editor.Dispatcher.Invoke(() => { }, DispatcherPriority.Loaded);
 
                 MatrixTransform updatedTransform = Assert.IsType<MatrixTransform>(editor.RenderTransform);
                 Matrix updated = updatedTransform.Matrix;
