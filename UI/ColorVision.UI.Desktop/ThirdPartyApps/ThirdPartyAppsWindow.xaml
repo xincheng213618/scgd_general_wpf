@@ -210,7 +210,7 @@
                                                 Visibility="Collapsed"
                                                 HorizontalAlignment="Center"
                                                 VerticalAlignment="Center">
-                                            <TextBlock Text="&#xE71D;"
+                                            <TextBlock Text="{Binding IconGlyph}"
                                                        FontFamily="Segoe MDL2 Assets"
                                                        FontSize="24"
                                                        Foreground="{DynamicResource PrimaryBrush}"

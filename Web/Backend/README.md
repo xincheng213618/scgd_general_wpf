@@ -214,6 +214,19 @@ the login UI hides the registration entry and `POST /api/auth/register`
 returns `403`; existing accounts and administrator-created accounts are not
 affected. Enabling the policy permits any visitor who can reach the site to
 create a regular `user` account, never an administrator account.
+Public signup is velocity-limited per source address: at most 20 attempts per
+10 minutes and 5 successful accounts per hour. The counters and concurrent
+reservations are stored in SQLite, survive restarts, and return `429` with a
+`Retry-After` header when a limit is active. Administrator-created accounts do
+not consume the public-signup quota.
+
+Password recovery uses an administrator-assisted workflow because the service
+does not have an outbound mail dependency. `POST /api/auth/password-recovery`
+always returns the same `202` response for existing, missing, inactive, and
+configuration-managed accounts. Matching database accounts receive one
+coalesced pending request, visible in user management; resetting the account
+password resolves it and still requires the user to replace the temporary
+password at next login.
 
 ### API Keys
 
@@ -244,25 +257,120 @@ cannot authenticate.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/admin/users` | List registered accounts without password hashes |
+| GET | `/api/admin/users` | List accounts; supports `q`, `role`, `origin`, `status`, `password_state`, `recovery_state`, allowlisted `sort_by`/`sort_order`, `limit`, and `offset` |
+| GET | `/api/admin/users/<id>/details` | Inspect one account's profile, pending recovery request, effective permissions, active sessions, and paged recent activity |
 | POST | `/api/admin/users` | Create a `user` or `admin` account |
+| DELETE | `/api/admin/users/<id>` | Permanently delete a disabled database account after confirming its current username |
+| PUT | `/api/admin/users/<id>/profile` | Update an account's display name and email |
 | PUT | `/api/admin/users/<id>/role` | Change an account role and revoke its existing sessions |
-| POST | `/api/admin/users/<id>/password` | Reset a password and revoke the account's other sessions |
+| POST | `/api/admin/users/<id>/password` | Reset a password, resolve pending recovery, revoke existing sessions, and require the account to replace the temporary password at next login |
+| POST | `/api/admin/users/<id>/password-change-required` | Keep the current password but revoke sessions and require the account to replace it at next login |
+| POST | `/api/admin/users/<id>/sessions/revoke` | Force the account's valid browser sessions offline without disabling it |
+| POST | `/api/admin/users/bulk-security` | Force logout or require a password change for up to 100 selected accounts with per-account outcomes |
 | POST | `/api/admin/users/<id>/enable` | Re-enable an account and revoke its previous sessions |
-| POST | `/api/admin/users/<id>/disable` | Disable an account and revoke its existing sessions |
+| POST | `/api/admin/users/<id>/disable` | Disable an account, revoke sessions, resolve pending recovery, and clear login-failure state |
+| GET | `/api/admin/login-security` | List active login-failure windows and source addresses |
+| POST | `/api/admin/login-security/unlock` | Clear one username's login-failure window |
+| GET | `/api/admin/registration-security` | List live public-registration counters by source address |
+| POST | `/api/admin/registration-security/clear` | Clear one source's completed registration counters while preserving in-flight reservations |
+| GET | `/api/admin/permissions` | List the role/permission matrix with active and total database-account counts per role |
+| PUT | `/api/admin/roles/<role>/permissions` | Replace an editable role's permissions, optionally rejecting stale `expected_revision` values |
+| GET | `/api/account` | Read the signed-in user's own profile plus effective permission codes and display metadata |
+| PUT | `/api/account` | Update the signed-in user's display name and email |
+| POST | `/api/auth/password-recovery` | Submit a privacy-preserving administrator-assisted password recovery request |
+| PUT | `/api/account/password` | Change the signed-in database user's password |
+| GET | `/api/account/sessions` | List the signed-in user's active browser sessions |
+| DELETE | `/api/account/sessions/<id>` | Revoke one other browser session |
+| DELETE | `/api/account/sessions/others` | Revoke every session except the current browser |
+| GET | `/api/account/activity` | Read the current account's privacy-scoped activity timeline |
 
 The current session account cannot be disabled or assigned a different role,
-and the last active administrator cannot be disabled or demoted. When an
+forced offline or deleted from user management, and the last active administrator cannot
+be disabled or demoted. User list responses include the number of non-revoked,
+authentication-version-matched browser sessions for each account. When an
 administrator resets their own password, the current browser session is updated
-to the new authentication version while all other sessions are revoked.
-When a database account has the same username as the legacy `upload_auth`
-administrator, its database status is authoritative and cannot be bypassed by
-the configuration credential fallback.
+to the new authentication version while all other sessions are revoked. Accounts
+created by an administrator and accounts whose password is reset by another
+administrator receive a temporary-password marker. Their browser session is
+restricted to their own profile, session/activity reads, logout, and password
+change until they replace that password; effective permissions and admin access
+are restored immediately afterward. Self-registration and an administrator
+changing their own password do not set this marker. Administrators can also set
+the marker without learning or replacing the current password; this expires all
+active sessions, after which the user signs in with the existing password and
+must immediately choose a new one.
+
+The configured `upload_auth` administrator remains authoritative and is never
+copied into the user table during startup. Its username is reserved from public
+or administrator-created registration. If an older installation already has a
+same-name database shadow record, the record is labelled as the configuration
+administrator and cannot be edited, disabled, demoted, password-reset, or
+forced into the database-account password-change flow from user management;
+only the current configuration credential can start a new
+browser session for that username.
+
+Permanent deletion is intentionally a two-stage operation. An administrator
+must disable the database account first, then confirm the account's current
+username in the delete request. Deletion removes the profile, password hash,
+session history, password-recovery records, and matching login-failure sources;
+administrator audit records remain available as historical evidence. The
+configured administrator and the current browser account cannot be deleted.
+
+The account-security page combines login protection with public-registration
+protection. Registration source rows distinguish blocked and tracking states,
+show both attempt and successful-account windows, refresh when a window expires,
+and can be cleared manually. A clear is concurrency-safe: existing counters are
+removed, but any request already holding a registration reservation remains
+accounted for when it completes. Manual clears are written to the audit log.
+
+New database-account passwords are validated consistently across public
+registration, administrator creation/reset, and self-service password changes.
+They must contain 15–128 Unicode characters; spaces and passphrases are allowed,
+and no character-class composition rule is imposed. This policy applies only
+when a password is newly set: existing password hashes and the configured
+`upload_auth` administrator credential remain valid and are not migrated.
+
+Administrator-assisted password-recovery requests remain pending for seven
+days after the most recent recorded submission. Expired requests are retained
+as system-resolved history for audit purposes, disappear from pending-account
+filters and totals, and no longer prevent the account from submitting a fresh
+request. The account-details drawer shows the effective expiration time.
+
+Account security transitions settle related state together. Disabling an
+account revokes its sessions, resolves any pending recovery request as
+`account_disabled`, and clears persisted login-failure sources. Re-enabling also
+clears failures accumulated while the account was inactive without reviving old
+sessions. Administrator password resets and both single-account and bulk
+"require password change" actions clear the same login-failure state, so an
+administrator-assisted recovery cannot leave the user blocked by an earlier
+throttle window. API responses and audit details report the affected counts.
+
+Database accounts persist `password_changed_at`. New registrations initialize
+it with account creation, administrator resets and self-service changes advance
+it, while a "require password change" marker alone does not pretend the secret
+was replaced. Existing installations backfill the value from account creation
+during schema v26. Personal and administrator account details show the value in
+the same localized time format as login and session activity.
 
 `GET /api/auth/session` includes `public_registration_enabled` so the public
 navigation and login page reflect the server-enforced policy. The value is a
 capability hint only; the registration endpoint rechecks the live setting for
 every request.
+
+Public registration is enabled in the shipped default configuration. New
+accounts retain the `user` role but are initially granted the same function
+permissions as the existing administrator. The grants are stored in SQLite in
+`roles`, `permissions`, and `role_permissions`; they can be reduced later from
+the permissions page without changing the configured administrator contract.
+Session payloads expose `can_access_admin` and the effective permission codes,
+while every protected backend endpoint remains the authoritative enforcement
+point. The administrator role is fixed at full access.
+
+Role-permission updates return an authoritative change summary containing the
+added and removed codes, the number of active accounts immediately affected,
+and the new revision. The same fields are persisted in the audit log, while
+registered-user requests read the live role matrix so an existing session
+cannot continue using a removed permission.
 
 ### Copilot Desktop Sync
 
@@ -437,14 +545,18 @@ Configuration defaults:
 
 The daily `database_backup` task creates a transactionally consistent SQLite
 snapshot and applies the same privacy cleanup and rotation contract used by the
-administrator backup action. The same scheduled retention pass also removes expired access rows from
-recognized `marketplace_backup_YYYYMMDD_HHMMSS.db` snapshots. A newly created
-database backup is scrubbed to the current cutoff before it is reported as
-successful, so database snapshots cannot bypass visitor retention.
+administrator backup action. The same scheduled retention pass also removes expired access rows and
+all browser sessions, login/registration limit sources, and password-recovery
+workflow rows from recognized `marketplace_backup_YYYYMMDD_HHMMSS.db`
+snapshots. User password hashes, profiles, roles, and permissions remain in the
+restorable snapshot, while its authentication version is advanced once so even
+a legacy signed browser cookie cannot survive a restore. A newly created database backup is scrubbed and
+integrity-checked before it is reported as successful, so a restored snapshot
+cannot reactivate a copied browser session or bypass visitor retention.
 
 `GET /api/admin/backup/db` lists only recognized snapshot names, UTC creation
-times, and sizes; filesystem paths are not returned. `POST /api/admin/backup/db`
-also applies the audit cutoff and immediately
+times, and sizes. Neither it nor `POST /api/admin/backup/db` returns filesystem
+paths. The create endpoint also applies the audit cutoff and immediately
 rotates exact `marketplace_backup_YYYYMMDD_HHMMSS.db` files. The backup created
 by the current request is explicitly protected. Non-matching names, symbolic
 links, paths outside the database directory, and snapshots that fail audit
@@ -521,9 +633,11 @@ curl.exe -X POST http://localhost:9998/api/packages/publish `
 | `update_index_check` | 10 min | Compare Update directory signature; refresh only if changed |
 | `tool_index_check` | 10 min | Compare Tool directory signature; refresh only if changed |
 | `cache_cleanup` | 1 hour | Delete expired cache entries |
+| `password_recovery_cleanup` | 1 hour | Expire idle sessions and bound login, registration, and password-recovery security state |
+| `transfer_file_cleanup` | 1 hour | Delete anonymous transfer files and share links after their 24-hour lifetime |
 | `access_analytics_retention` | 1 day | Delete access aggregates older than the configured retention window |
 | `job_history_retention` | 1 day | Delete completed job runs older than the configured retention window while preserving current state |
-| `admin_data_retention` | 1 day | Delete expired audit rows from the live DB and snapshots, then bound recognized manual DB backups |
+| `admin_data_retention` | 1 day | Delete expired audit rows, scrub transient account-security state from snapshots, then bound recognized DB backups |
 | `startup_index_check` | Once | Ensure all indexes are populated on startup |
 
 The scheduler starts automatically when `scheduler_enabled` is true (default). In debug mode, it only starts in the Flask reloader child process to avoid duplicate threads. Set `scheduler_enabled: false` in config.json to disable.
@@ -548,10 +662,38 @@ The protected transfer area is configured by `transfer_upload_dir` (default: `Tr
 |--------|----------|-------------|
 | GET | `/api/transfer/files` | List transfer files |
 | PUT/POST | `/api/transfer/files/<filename>` | Stream-upload a file without the package upload size limit |
+| POST | `/api/transfer/uploads` | Create or recover a resumable upload session from file metadata and fingerprint |
+| GET | `/api/transfer/uploads/<upload_id>` | Read the server-confirmed resumable offset |
+| PATCH | `/api/transfer/uploads/<upload_id>` | Append one chunk at the required `Upload-Offset` |
+| GET | `/api/transfer/shares/<token>` | Read public metadata for one unguessable file share |
+| GET | `/api/transfer/shares/<token>/download` | Download the exact file addressed by a share token |
 | GET | `/api/transfer/files/<filename>` | Download a transfer file |
 | DELETE | `/api/transfer/files/<filename>` | Delete a transfer file |
 
-The React admin UI exposes this workflow at `/admin/files`. API authentication
+The React UI exposes resumable uploads at `/transfer` and in the publish
+workspace. It sends 8 MB chunks and recovers the confirmed offset after a lost
+response, cancellation, page refresh, or server restart. Incomplete sessions
+are retained for seven days; completed session receipts are retained for one
+day. The original whole-file PUT/POST contract remains available for scripts.
+
+Anonymous upload is disabled by default. To expose an upload-only public page,
+set the following values in `config.json` and restart the service:
+
+```json
+"anonymous_transfer_upload_enabled": true,
+"anonymous_transfer_max_bytes": 2147483648
+```
+
+Guests may only create, inspect, and append their own resumable session, bound
+to a persistent browser client ID. They cannot list, download, delete, or
+overwrite transfer files. A completed guest upload receives an unguessable
+per-file sharing page and is automatically deleted with that link after 24
+hours. Signed-in uploads also receive per-file sharing pages but do not expire.
+The whole-file PUT/POST endpoint remains protected. Expired guest files are
+removed by an hourly scheduler job and opportunistically during transfer API
+traffic.
+
+API authentication
 accepts web session, Basic Auth using `upload_auth`, or Bearer API key with
 `file:transfer` (or `admin:*`).
 
@@ -639,6 +781,7 @@ When indexes are populated, most API requests read from SQLite instead of scanni
 | `routes/admin_api.py` | Admin REST API (cache, index, jobs, audit, deployments, keys, perf) |
 | `services/deployment_history.py` | Sanitized deployment-history query and pagination |
 | `services/performance_observability.py` | Bounded slow-request samples and performance-summary shaping |
+| `services/password_recovery_service.py` | Coalesced administrator-assisted password recovery lifecycle |
 | `ports/operations_support.py` / `db/repositories/operations_support.py` | Atomic Operations support-session persistence boundary |
 | `routes/frontend_spa.py` | React SPA static hosting and `/admin` auth gate |
 | `routes/pages.py` | Public site-data and download APIs |

@@ -64,6 +64,22 @@ namespace ProjectLUX
         public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; OnPropertyChanged(); } }
         private bool _LogControlVisibility = true;
 
+        [DisplayName("结果点位名称"), Category("结果图层")]
+        public bool ResultOverlayShowName { get => _ResultOverlayShowName; set { _ResultOverlayShowName = value; OnPropertyChanged(); } }
+        private bool _ResultOverlayShowName = true;
+
+        [DisplayName("结果详细数据"), Category("结果图层")]
+        public bool ResultOverlayShowDetail { get => _ResultOverlayShowDetail; set { _ResultOverlayShowDetail = value; OnPropertyChanged(); } }
+        private bool _ResultOverlayShowDetail = true;
+
+        [DisplayName("结果文字字号"), Category("结果图层")]
+        public double ResultOverlayFontSize { get => _ResultOverlayFontSize; set { _ResultOverlayFontSize = Math.Max(0, value); OnPropertyChanged(); } }
+        private double _ResultOverlayFontSize = 8;
+
+        [DisplayName("结果图层自动刷新"), Category("结果图层")]
+        public bool ResultOverlayAutoRefresh { get => _ResultOverlayAutoRefresh; set { _ResultOverlayAutoRefresh = value; OnPropertyChanged(); } }
+        private bool _ResultOverlayAutoRefresh;
+
 
         [DisplayName("重试次数")]
         public int TryCountMax { get => _TryCountMax; set { _TryCountMax = value; OnPropertyChanged(); } }

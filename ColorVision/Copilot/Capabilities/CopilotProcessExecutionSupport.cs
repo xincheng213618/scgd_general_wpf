@@ -34,7 +34,17 @@ namespace ColorVision.Copilot
             };
             if (processJob != null)
                 waits.Add(processJob.TryWaitForExitAsync(ProcessTreeExitTimeout));
-            await Task.WhenAll(waits).ConfigureAwait(false);
+            try
+            {
+                await Task.WhenAll(waits).ConfigureAwait(false);
+            }
+            finally
+            {
+                // The Job has KILL_ON_JOB_CLOSE and its handle is never inherited by
+                // the child. Closing our last handle is therefore the fail-closed path
+                // when explicit termination or accounting queries fail.
+                processJob?.Dispose();
+            }
         }
 
         public static int? TryGetExitCode(Process process)

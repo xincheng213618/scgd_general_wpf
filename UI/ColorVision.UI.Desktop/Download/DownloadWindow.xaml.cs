@@ -264,14 +264,6 @@ namespace ColorVision.UI.Desktop.Download
             _searchTimer.Start();
         }
 
-        private void Refresh_Click(object sender, RoutedEventArgs e)
-        {
-            _searchKeyword = null;
-            SearchTextBox.Text = string.Empty;
-            _currentPage = 1;
-            LoadData();
-        }
-
         private void Settings_Click(object sender, RoutedEventArgs e)
         {
             new PropertyEditorWindow(DownloadManagerConfig.Instance) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();

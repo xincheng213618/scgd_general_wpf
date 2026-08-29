@@ -4,6 +4,8 @@ Lightweight task scheduler for ColorVision Marketplace.
 Provides periodic background jobs for:
   - plugin_index_check: verify Plugins directory signature
   - cache_cleanup: delete expired cache_entry rows
+  - password_recovery_cleanup: bound transient account-security state
+  - transfer_file_cleanup: delete expired anonymous transfer files and links
   - job_history_retention: bound completed scheduler history
   - admin_data_retention: bound audit rows and recognized database snapshots
   - database_backup: create a daily privacy-cleaned database snapshot
@@ -62,6 +64,20 @@ DEFAULT_JOBS = [
         "id": "cache_cleanup",
         "name": "Cache Cleanup",
         "job_type": "cache_cleanup",
+        "interval_seconds": 3600,
+        "config": "{}",
+    },
+    {
+        "id": "password_recovery_cleanup",
+        "name": "Account Security Cleanup",
+        "job_type": "security_cleanup",
+        "interval_seconds": 3600,
+        "config": "{}",
+    },
+    {
+        "id": "transfer_file_cleanup",
+        "name": "Temporary Transfer Cleanup",
+        "job_type": "transfer_cleanup",
         "interval_seconds": 3600,
         "config": "{}",
     },
@@ -150,6 +166,10 @@ def run_job_now(
             summary = _run_artifact_index_check(cache, storage, "tools")
         elif job_id == "cache_cleanup":
             summary = _run_cache_cleanup(cache)
+        elif job_id == "password_recovery_cleanup":
+            summary = _run_password_recovery_cleanup(cache)
+        elif job_id == "transfer_file_cleanup":
+            summary = _run_transfer_file_cleanup(storage, config_getter)
         elif job_id == "access_analytics_retention":
             summary = _run_access_analytics_retention(cache, get_db, config_getter)
         elif job_id == "job_history_retention":
@@ -274,6 +294,32 @@ def _run_cache_cleanup(cache: CacheManager) -> str:
     return f"Cleaned {deleted} expired cache entries"
 
 
+def _run_password_recovery_cleanup(cache: CacheManager) -> str:
+    from services.account_security_cleanup import cleanup_account_security_data
+
+    result = cleanup_account_security_data(cache)
+    return (
+        f"Expired {result['password_recovery_expired']} password recovery requests; "
+        f"expired {result['sessions_expired']} inactive sessions; "
+        f"deleted {result['sessions_deleted']} revoked sessions, "
+        f"{result['login_attempts_deleted']} login attempts, "
+        f"{result['registration_limits_deleted']} registration limits, "
+        f"{result['password_recovery_limits_deleted']} recovery limits, and "
+        f"{result['password_recovery_deleted']} resolved recovery requests"
+    )
+
+
+def _run_transfer_file_cleanup(
+    storage: Path,
+    config_getter: Callable[[], dict[str, Any]],
+) -> str:
+    from transfer_files import cleanup_expired_transfer_files, transfer_root
+
+    config = config_getter()
+    deleted = cleanup_expired_transfer_files(transfer_root(storage, config))
+    return f"Deleted {deleted} expired temporary transfer files"
+
+
 def _run_access_analytics_retention(
     cache: CacheManager,
     get_db: Callable[[], Any],
@@ -345,6 +391,8 @@ def _run_admin_data_retention(
     return (
         f"Pruned {result['audit']['deleted']} audit rows and "
         f"{result['backupAudit']['deleted']} snapshot audit rows; "
+        f"invalidated {result['backupSecurity']['accountsInvalidated']} snapshot accounts and "
+        f"scrubbed {result['backupSecurity']['deleted']} transient security rows; "
         f"removed {result['backupFiles']['removedCount']} old database backups "
         f"(limit {result['backupFiles']['keepCount']})"
     )
@@ -362,6 +410,8 @@ def _run_database_backup(
     warning = f"; {warning_count} retention warning(s)" if warning_count else ""
     return (
         f"Created {result['backup_name']} ({result['backup_size_bytes']} bytes); "
+        f"invalidated {result['security_accounts_invalidated']} snapshot accounts and "
+        f"scrubbed {result['security_rows_deleted']} transient security rows; "
         f"retained {retention['afterCount']} of {retention['keepCount']} backups"
         f"{warning}"
     )

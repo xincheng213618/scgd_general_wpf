@@ -45,7 +45,7 @@
 | `LedCheckParam.cs` | 保存灯珠通道、固定半径、轮廓面积、二值化补正、灯珠网格数量等参数。 |
 | `AlgorithmLedCheck.cs` | 同时收集灯珠模板和 POI 模板，并发布 `Event_LED_Check_GetData`。 |
 | `DisplayLedCheck.xaml(.cs)` | 选择灯珠模板、POI 模板和图像来源。 |
-| `ViewHandleMTF.cs` | 从 POI 结果表恢复点位，以半径绘制灯珠结果。 |
+| `ViewHandleLedCheck.cs` | 从 POI 结果表恢复点位，以半径绘制灯珠结果。 |
 | `ViewResultLedCheck.cs` | 保存点位和半径。 |
 
 `LedCheck` 的请求比灯条定位多一个 `POITemplateParam`。当前 UI 使用 `TemplatePoi.Params.CreateEmpty()`，因此维护时要确认现场是允许空 POI，还是必须选择具体 POI 模板。

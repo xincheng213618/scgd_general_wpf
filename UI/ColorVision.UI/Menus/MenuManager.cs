@@ -9,6 +9,11 @@ using System.Windows.Input;
 
 namespace ColorVision.UI.Menus
 {
+    /// <summary>
+    /// Identifies a menu contribution without conflating equal GuidIds that belong to different windows.
+    /// </summary>
+    public readonly record struct MenuItemScopeKey(string TargetName, string GuidId);
+
     public class MenuManager : IMenuService
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MenuManager));
@@ -19,6 +24,9 @@ namespace ColorVision.UI.Menus
         public HashSet<string> FilteredGuids { get; } = new();
         public Dictionary<string, int> OrderOverrides { get; } = new();
         public Dictionary<string, string> OwnerGuidOverrides { get; } = new();
+        public HashSet<MenuItemScopeKey> ScopedFilteredItems { get; } = new();
+        public Dictionary<MenuItemScopeKey, int> ScopedOrderOverrides { get; } = new();
+        public Dictionary<MenuItemScopeKey, string> ScopedOwnerGuidOverrides { get; } = new();
 
         private readonly List<MenuRegistration> _menuRegistrations = new();
         private readonly Dictionary<Menu, List<MenuItem>> _menuBackups = new();
@@ -37,8 +45,29 @@ namespace ColorVision.UI.Menus
             MenuService.SetInstance(this);
         }
 
-        public int GetEffectiveOrder(IMenuItem mi) => mi.GuidId != null && OrderOverrides.TryGetValue(mi.GuidId, out var o) ? o : mi.Order;
-        public string? GetEffectiveOwnerGuid(IMenuItem mi) => mi.GuidId != null && OwnerGuidOverrides.TryGetValue(mi.GuidId, out var g) ? g : mi.OwnerGuid;
+        public int GetEffectiveOrder(IMenuItem mi)
+        {
+            if (mi.GuidId == null)
+                return mi.Order;
+
+            var key = CreateScopeKey(mi);
+            if (ScopedOrderOverrides.TryGetValue(key, out int scopedOrder))
+                return scopedOrder;
+
+            return OrderOverrides.TryGetValue(mi.GuidId, out int order) ? order : mi.Order;
+        }
+
+        public string? GetEffectiveOwnerGuid(IMenuItem mi)
+        {
+            if (mi.GuidId == null)
+                return mi.OwnerGuid;
+
+            var key = CreateScopeKey(mi);
+            if (ScopedOwnerGuidOverrides.TryGetValue(key, out string? scopedOwnerGuid))
+                return scopedOwnerGuid;
+
+            return OwnerGuidOverrides.TryGetValue(mi.GuidId, out string? ownerGuid) ? ownerGuid : mi.OwnerGuid;
+        }
 
         public void AddFilteredGuid(string guid) => FilteredGuids.Add(guid);
         public void AddFilteredGuids(IEnumerable<string> guids)
@@ -196,7 +225,7 @@ namespace ColorVision.UI.Menus
                 var windowSpecificItems = GetWindowSpecificItems(targetName, typeFilter);
 
                 var refreshedItems = windowSpecificItems
-                    .Where(mi => GetEffectiveOwnerGuid(mi) == ownerGuid && (mi.GuidId == null || !FilteredGuids.Contains(mi.GuidId)))
+                    .Where(mi => GetEffectiveOwnerGuid(mi) == ownerGuid)
                     .OrderBy(mi => GetEffectiveOrder(mi)).ToList();
                 var visited = new HashSet<string>(StringComparer.Ordinal) { ownerGuid };
 
@@ -334,8 +363,8 @@ namespace ColorVision.UI.Menus
         private List<IMenuItem> GetIMenuItemsFiltered(Func<Type, bool>? typeFilter)
         {
             var allMenuItems = CreateAllMenuItems(typeFilter);
-            var allFilteredGuids = GetAllFilteredGuids(allMenuItems, FilteredGuids);
-            return allMenuItems.Where(mi => mi.GuidId == null || !allFilteredGuids.Contains(mi.GuidId)).ToList();
+            var allFilteredItems = GetAllFilteredItems(allMenuItems);
+            return allMenuItems.Where(mi => mi.GuidId == null || !allFilteredItems.Contains(CreateScopeKey(mi))).ToList();
         }
 
         private List<IMenuItem> CreateAllMenuItems(Func<Type, bool>? typeFilter)
@@ -398,21 +427,41 @@ namespace ColorVision.UI.Menus
             return allMenuItems;
         }
 
-        private HashSet<string> GetAllFilteredGuids(IEnumerable<IMenuItem> allMenuItems, IEnumerable<string> initialGuids)
+        private HashSet<MenuItemScopeKey> GetAllFilteredItems(IReadOnlyCollection<IMenuItem> allMenuItems)
         {
-            var result = new HashSet<string>(initialGuids ?? Enumerable.Empty<string>());
+            var result = allMenuItems
+                .Where(item => item.GuidId != null
+                    && (FilteredGuids.Contains(item.GuidId) || ScopedFilteredItems.Contains(CreateScopeKey(item))))
+                .Select(CreateScopeKey)
+                .ToHashSet();
+
             bool added;
             do
             {
                 added = false;
                 foreach (var item in allMenuItems)
                 {
+                    if (item.GuidId == null)
+                        continue;
+
                     var effectiveOwner = GetEffectiveOwnerGuid(item);
-                    if (effectiveOwner != null && result.Contains(effectiveOwner) && item.GuidId != null && result.Add(item.GuidId))
+                    if (effectiveOwner != null && IsFilteredOwner(item.TargetName, effectiveOwner, result) && result.Add(CreateScopeKey(item)))
                         added = true;
                 }
             } while (added);
+
             return result;
+        }
+
+        private static bool IsFilteredOwner(string targetName, string ownerGuid, HashSet<MenuItemScopeKey> filteredItems)
+        {
+            return filteredItems.Contains(new MenuItemScopeKey(targetName, ownerGuid))
+                || filteredItems.Contains(new MenuItemScopeKey(MenuItemConstants.GlobalTarget, ownerGuid));
+        }
+
+        private static MenuItemScopeKey CreateScopeKey(IMenuItem item)
+        {
+            return new MenuItemScopeKey(item.TargetName, item.GuidId!);
         }
 
         /// <summary>

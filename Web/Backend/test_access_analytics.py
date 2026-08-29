@@ -175,6 +175,10 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
 
     def test_web_experience_boundary_accepts_only_normalized_routes_and_exact_fields(self):
         self.assertEqual(normalize_web_route("/plugins/ProjectARVRPro"), "/plugins/:pluginId")
+        self.assertEqual(
+            normalize_web_route("/transfer/share/0123456789abcdef0123456789abcdef"),
+            "/transfer/share/:token",
+        )
         self.assertEqual(normalize_web_route("/browse/Plugins/Camera"), "/browse/*")
         self.assertEqual(normalize_web_route("/admin/traffic/"), "/admin/traffic")
         self.assertEqual(

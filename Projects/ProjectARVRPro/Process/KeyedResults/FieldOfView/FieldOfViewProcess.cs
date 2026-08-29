@@ -89,6 +89,9 @@ namespace ProjectARVRPro.Process.KeyedResults.FieldOfView
             };
         }
 
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<FieldOfViewTestResult>(result, Config.GetOutputKey());
+
         public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson))

@@ -123,6 +123,18 @@ public sealed class PluginUpdateCompatibilityTests
         Assert.Contains("TargetOnly", subset.SkippedIncompatiblePlugins);
     }
 
+    [Fact]
+    public void CompatibleSubsetPreservesUnresolvedPluginMetadata()
+    {
+        CombinedPluginUpdatePlan plan = new() { HostVersion = new Version(1, 4, 10, 90) };
+        plan.UnresolvedPlugins.Add("UnavailablePlugin");
+
+        CombinedPluginUpdatePlan subset = plan.CreateCompatibleSubset(new Version(1, 4, 10, 85));
+
+        Assert.False(subset.IsComplete);
+        Assert.Contains("UnavailablePlugin", subset.UnresolvedPlugins);
+    }
+
     private static CombinedPluginUpdateItem CreateUpdate(string pluginId, string? requiresVersion)
     {
         PluginInfoVM plugin = (PluginInfoVM)RuntimeHelpers.GetUninitializedObject(typeof(PluginInfoVM));

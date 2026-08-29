@@ -4,8 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:properties="clr-namespace:ColorVision.UI.Desktop.Properties"
         mc:Ignorable="d"
-        Title="Menu Manager" Height="680" Width="1180"
+        Title="{x:Static properties:Resources.MenuMenuItemManager}" Height="680" Width="1180"
         Background="{DynamicResource GlobalBackground}" 
         UseLayoutRounding="True"
         Initialized="Window_Initialized">
@@ -18,19 +19,25 @@
 
         <Grid Grid.Row="0" Margin="8,8,8,6">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            
-            <hc:TextBox x:Name="SearchBox" Grid.Column="0" Margin="0,0,8,0"
+
+            <ComboBox x:Name="TargetScopeComboBox" Grid.Column="0" Width="180" Margin="0,0,8,0"
+                      VerticalContentAlignment="Center" SelectionChanged="TargetScopeComboBox_SelectionChanged"/>
+
+            <hc:TextBox x:Name="SearchBox" Grid.Column="1" Margin="0,0,8,0"
                        Style="{DynamicResource TextBoxPlusBaseStyle}" 
                        hc:InfoElement.Placeholder="Search menu names or paths..."
                        VerticalContentAlignment="Center" 
                        TextChanged="SearchBox_TextChanged"/>
 
-            <Button Grid.Column="1" Content="Apply" Click="Apply_Click" Margin="0,0,6,0" Padding="14,6" IsDefault="True"/>
-            <Button Grid.Column="2" Content="Reset" Click="Reset_Click" Padding="10,5" Opacity="0.66"/>
+            <Button Grid.Column="2" Content="Apply" Click="Apply_Click" Margin="0,0,6,0" Padding="14,6" IsDefault="True"/>
+            <Button Grid.Column="3" Content="Reset" Click="Reset_Click" Margin="0,0,6,0" Padding="10,5" Opacity="0.66"/>
+            <Button Grid.Column="4" Content="Cancel" Click="Cancel_Click" Padding="10,5" IsCancel="True"/>
         </Grid>
 
         <Grid Grid.Row="1" Margin="8,0,8,6">

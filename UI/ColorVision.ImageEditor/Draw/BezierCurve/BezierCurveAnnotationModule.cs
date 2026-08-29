@@ -46,7 +46,7 @@ namespace ColorVision.ImageEditor.Draw.Annotations
 
             BezierCurveProperties properties = new();
             AnnotationMappingHelper.ApplyBaseProperties(bezierCurveItem, properties);
-            properties.Points = AnnotationMappingHelper.ToPoints(bezierCurveItem.Points);
+            properties.Points = AnnotationMappingHelper.ToFinitePoints(bezierCurveItem.Points, "Bezier curve");
             AnnotationMappingHelper.ApplyShapeStyle(bezierCurveItem.Style, properties.Brush ?? Brushes.Transparent, properties.Pen, brush => properties.Brush = brush, pen => properties.Pen = pen);
             if (properties.Pen != null)
             {

@@ -172,6 +172,96 @@
         },
         {
           "text": {
+            "root": "统一图像算法平台 V1"
+          },
+          "link": "/02-developer-guide/core-concepts/image-algorithm-platform-v1"
+        },
+        {
+          "text": {
+            "root": "ONNX / AI 推理接入设计（Deferred）"
+          },
+          "link": "/02-developer-guide/core-concepts/onnx-inference-future-design"
+        },
+        {
+          "text": {
+            "root": "ROI 统计 V1（M1）"
+          },
+          "link": "/02-developer-guide/core-concepts/roi-statistics-v1"
+        },
+        {
+          "text": {
+            "root": "灰度与颜色剖面 V1（M2）"
+          },
+          "link": "/02-developer-guide/core-concepts/image-profile-v1"
+        },
+        {
+          "text": {
+            "root": "Blob / 连通域 V1（M5.1）"
+          },
+          "link": "/02-developer-guide/core-concepts/blob-analysis-v1"
+        },
+        {
+          "text": {
+            "root": "轮廓提取 V1（M5.2）"
+          },
+          "link": "/02-developer-guide/core-concepts/contour-analysis-v1"
+        },
+          {
+            "text": {
+              "root": "亚像素边缘 V1（M6.1）"
+            },
+            "link": "/02-developer-guide/core-concepts/subpixel-edge-v1"
+          },
+          {
+            "text": {
+              "root": "直线拟合 V1（M6.2）"
+            },
+            "link": "/02-developer-guide/core-concepts/line-fit-v1"
+          },
+          {
+            "text": {
+              "root": "圆拟合 V1（M6.3）"
+            },
+            "link": "/02-developer-guide/core-concepts/circle-fit-v1"
+          },
+          {
+            "text": {
+              "root": "几何变换 V1（M7）"
+            },
+            "link": "/02-developer-guide/core-concepts/geometric-transform-v1"
+          },
+          {
+            "text": {
+              "root": "图像配准 V1（M8.1）"
+            },
+            "link": "/02-developer-guide/core-concepts/image-registration-v1"
+          },
+          {
+            "text": {
+              "root": "镜头畸变校正 V1（M8.2）"
+            },
+            "link": "/02-developer-guide/core-concepts/lens-distortion-correction-v1"
+          },
+          {
+            "text": {
+              "root": "成像校正 V1（M9）"
+            },
+            "link": "/02-developer-guide/core-concepts/imaging-correction-v1"
+          },
+          {
+            "text": {
+              "root": "FFT / 频域分析 V1（M10）"
+            },
+            "link": "/02-developer-guide/core-concepts/frequency-spectrum-v1"
+          },
+          {
+            "text": {
+              "root": "摩尔纹分析 V1（M11）"
+            },
+            "link": "/02-developer-guide/core-concepts/moire-analysis-v1"
+          },
+        {
+          "text": {
             "root": "测试与验证"
           },
           "link": "/02-developer-guide/testing"

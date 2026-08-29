@@ -1064,10 +1064,36 @@ namespace ColorVision.Database
                 AppendMigrationDictionaryDependencySql));
         }
 
-        private string CreateMySqlBackup(string prefix, IReadOnlyCollection<string> tableNames, bool replaceExistingRows, Action<string>? preparePartFile = null)
+        internal static string CreateFeedbackResourceBackup()
         {
-            Directory.CreateDirectory(BackupPath);
-            string backupFile = Path.Combine(BackupPath, $"{prefix}_{DateTime.Now:yyyyMMddHHmmssfff}_{Guid.NewGuid():N}.sql");
+            return RunDatabaseMaintenance(() => CreateMySqlBackupFile(
+                Path.GetTempPath(),
+                "ColorVisionResources",
+                MigrationBackupTableNames,
+                replaceExistingRows: true,
+                AppendMigrationDictionaryDependencySql));
+        }
+
+        private string CreateMySqlBackup(
+            string prefix,
+            IReadOnlyCollection<string> tableNames,
+            bool replaceExistingRows,
+            Action<string>? preparePartFile = null)
+        {
+            string backupFile = CreateMySqlBackupFile(BackupPath, prefix, tableNames, replaceExistingRows, preparePartFile);
+            RunOnUi(() => Backups.Add(new MysqlBack(backupFile)));
+            return backupFile;
+        }
+
+        private static string CreateMySqlBackupFile(
+            string outputDirectory,
+            string prefix,
+            IReadOnlyCollection<string> tableNames,
+            bool replaceExistingRows,
+            Action<string>? preparePartFile)
+        {
+            Directory.CreateDirectory(outputDirectory);
+            string backupFile = Path.Combine(outputDirectory, $"{prefix}_{DateTime.Now:yyyyMMddHHmmssfff}_{Guid.NewGuid():N}.sql");
             string partFile = backupFile + ".part";
 
             try
@@ -1087,7 +1113,6 @@ namespace ColorVision.Database
                 throw;
             }
 
-            RunOnUi(() => Backups.Add(new MysqlBack(backupFile)));
             return backupFile;
         }
 
@@ -1176,7 +1201,7 @@ namespace ColorVision.Database
             return MigrationBackupTableNames.ToList();
         }
 
-        private void AppendMigrationDictionaryDependencySql(string backupFile)
+        private static void AppendMigrationDictionaryDependencySql(string backupFile)
         {
             try
             {

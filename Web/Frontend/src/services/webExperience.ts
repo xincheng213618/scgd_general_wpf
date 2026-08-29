@@ -59,6 +59,7 @@ export function normalizeExperienceRoute(pathname: string) {
   const route = raw === '/' ? raw : raw.replace(/\/+$/, '')
   if (exactRoutes.has(route)) return route
   if (/^\/plugins\/[A-Za-z0-9._-]{1,128}$/.test(route)) return '/plugins/:pluginId'
+  if (/^\/transfer\/share\/[0-9a-f]{32}$/i.test(route)) return '/transfer/share/:token'
   if (route.startsWith('/browse/')) return '/browse/*'
   return null
 }

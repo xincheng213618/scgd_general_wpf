@@ -52,9 +52,9 @@ int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types);
 
 int pseudoColorAutoRange(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types, uint dataMin, uint dataMax);
 
-int pseudoColorTo(const cv::Mat& image, cv::Mat& dst, uint min1, uint max1, cv::ColormapTypes types);
+int pseudoColorTo(const cv::Mat& image, cv::Mat& dst, uint min1, uint max1, cv::ColormapTypes types, int channel = -1);
 
-int pseudoColorAutoRangeTo(const cv::Mat& image, cv::Mat& dst, uint min1, uint max1, cv::ColormapTypes types, uint dataMin, uint dataMax);
+int pseudoColorAutoRangeTo(const cv::Mat& image, cv::Mat& dst, uint min1, uint max1, cv::ColormapTypes types, uint dataMin, uint dataMax, int channel = -1);
 
 /// <summary>
 ///自动对比度调整

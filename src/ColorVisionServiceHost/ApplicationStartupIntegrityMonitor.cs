@@ -254,6 +254,17 @@ internal sealed class ApplicationStartupIntegrityMonitor : IApplicationStartupIn
             if (missingFiles.Count == 0)
                 return;
 
+            bool processExitedBeforeObservationDeadline = completedTask == exitTask;
+            bool terminalStatusReceived = terminalStatusTask.IsCompletedSuccessfully;
+            if (!ShouldShowMissingDependencyMessage(processExitedBeforeObservationDeadline, terminalStatusReceived))
+            {
+                ServiceHostLog.Write(
+                    $"ColorVision startup dependency warning suppressed because the application remained running or reported startup completion. " +
+                    $"Process={processId}; Session={sessionId}; Application={applicationDirectory}; " +
+                    $"Missing={string.Join(", ", missingFiles)}");
+                return;
+            }
+
             ServiceHostLog.Write(
                 $"ColorVision startup integrity failure detected. Process={processId}; Session={sessionId}; " +
                 $"Application={applicationDirectory}; Missing={string.Join(", ", missingFiles)}");
@@ -271,6 +282,11 @@ internal sealed class ApplicationStartupIntegrityMonitor : IApplicationStartupIn
             _startupStatusHub.Forget(processId);
         }
     }
+
+    internal static bool ShouldShowMissingDependencyMessage(
+        bool processExitedBeforeObservationDeadline,
+        bool terminalStatusReceived) =>
+        processExitedBeforeObservationDeadline && !terminalStatusReceived;
 
     private static async Task WaitForProcessExitAsync(int processId, CancellationToken cancellationToken)
     {

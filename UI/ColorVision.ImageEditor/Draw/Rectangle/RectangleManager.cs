@@ -69,7 +69,7 @@ namespace ColorVision.ImageEditor.Draw
             RectangleTextProperties rectangleTextProperties = new RectangleTextProperties
             {
                 Id = did,
-                Pen = new Pen(Brushes.Red, 1 / Zoombox.ContentMatrix.M11),
+                Pen = new Pen(Brushes.Red, 1 / GetSafeZoomRatio()),
                 Text = "Point_" + did,
             };
 
@@ -93,8 +93,10 @@ namespace ColorVision.ImageEditor.Draw
         {
             if (DrawingRectangleCache != null)
             {
-                DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownPoint, currentPoint);
-                DrawingRectangleCache.Render();
+                Rect rect = Config.UseCenter
+                    ? new Rect(MouseDownPoint - (currentPoint - MouseDownPoint), currentPoint)
+                    : new Rect(MouseDownPoint, currentPoint);
+                DrawingRectangleCache.SetRect(rect);
             }
         }
 

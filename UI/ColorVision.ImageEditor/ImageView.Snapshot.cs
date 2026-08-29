@@ -207,22 +207,12 @@ namespace ColorVision.ImageEditor
             if (buffer.stride < bytesPerRow || bitmap.BackBufferStride < bytesPerRow)
                 throw new InvalidOperationException("Snapshot image buffer stride is invalid.");
 
-            bitmap.Lock();
-            try
-            {
-                for (int y = 0; y < buffer.rows; y++)
-                {
-                    SnapshotImageBufferPool.CopyMemory(
-                        IntPtr.Add(bitmap.BackBuffer, y * bitmap.BackBufferStride),
-                        IntPtr.Add(buffer.pData, y * buffer.stride),
-                        (uint)bytesPerRow);
-                }
-                bitmap.AddDirtyRect(new Int32Rect(0, 0, bitmap.PixelWidth, bitmap.PixelHeight));
-            }
-            finally
-            {
-                bitmap.Unlock();
-            }
+            int bufferSize = checked(buffer.stride * buffer.rows);
+            bitmap.WritePixels(
+                new Int32Rect(0, 0, bitmap.PixelWidth, bitmap.PixelHeight),
+                buffer.pData,
+                bufferSize,
+                buffer.stride);
             return bitmap;
         }
 
@@ -245,9 +235,6 @@ namespace ColorVision.ImageEditor
 
     internal sealed class SnapshotImageBufferPool
     {
-        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
-        internal static extern void CopyMemory(IntPtr destination, IntPtr source, uint length);
-
         private readonly object sync = new();
         private HImage? cachedImage;
         private PixelFormat cachedFormat;
@@ -371,21 +358,8 @@ namespace ColorVision.ImageEditor
             if (source.BackBufferStride < bytesPerRow || image.stride < bytesPerRow)
                 throw new InvalidOperationException("Snapshot image buffer stride is invalid.");
 
-            source.Lock();
-            try
-            {
-                for (int y = 0; y < image.rows; y++)
-                {
-                    CopyMemory(
-                        IntPtr.Add(image.pData, y * image.stride),
-                        IntPtr.Add(source.BackBuffer, y * source.BackBufferStride),
-                        (uint)bytesPerRow);
-                }
-            }
-            finally
-            {
-                source.Unlock();
-            }
+            int bufferSize = checked(image.stride * image.rows);
+            source.CopyPixels(Int32Rect.Empty, image.pData, bufferSize, image.stride);
         }
 
         private static int GetPackedRowBytes(int width, int bitsPerPixel)
@@ -415,6 +389,24 @@ namespace ColorVision.ImageEditor
                 ?? ImageShow.Source as BitmapSource;
             if (source == null)
                 return null;
+
+            if (includeOverlays)
+            {
+                foreach (Visual visual in ImageShow.Visuals)
+                {
+                    if (visual is not DrawingVisual drawingVisual
+                        || drawingVisual.Effect != null
+                        || drawingVisual.CacheMode != null)
+                    {
+                        log.WarnFormat(
+                            "ImageView background snapshot does not support visual type {0}.",
+                            visual.GetType().FullName);
+                        return null;
+                    }
+                }
+
+                CommitActiveDrawingEditsForOutput();
+            }
 
             SnapshotImageBufferLease? imageBuffer = null;
             BitmapSource? frozenSource = null;
@@ -563,7 +555,9 @@ namespace ColorVision.ImageEditor
             }
 
             DrawingGroup drawing = new();
-            drawing.Children.Add(drawingVisual.Drawing.CloneCurrentValue());
+            DrawingGroup? visualDrawing = drawingVisual.Drawing;
+            if (visualDrawing != null)
+                drawing.Children.Add(visualDrawing.CloneCurrentValue());
 
             TransformGroup transforms = new();
             if (drawingVisual.Transform != null && !drawingVisual.Transform.Value.IsIdentity)

@@ -156,6 +156,54 @@ public sealed class CopilotTurnEventStreamTests
     }
 
     [Fact]
+    public async Task DisposingEnumeratorEarlyReleasesQueuedEventsWhenProducerIgnoresCancellation()
+    {
+        var queuedEvent = new TaskCompletionSource<WeakReference<CopilotAgentEvent>>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseProducer = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var producerFinished = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var stream = RunTurnAsync(
+            async (sink, _) =>
+            {
+                try
+                {
+                    queuedEvent.TrySetResult(PublishWeaklyReferencedStatus(sink));
+                    await releaseProducer.Task;
+                    return CreateResult();
+                }
+                finally
+                {
+                    producerFinished.TrySetResult();
+                }
+            },
+            CancellationToken.None,
+            TimeSpan.FromMilliseconds(50));
+
+        try
+        {
+            WeakReference<CopilotAgentEvent> eventReference;
+            await using (var enumerator = stream.GetAsyncEnumerator())
+            {
+                Assert.True(await enumerator.MoveNextAsync());
+                Assert.IsType<CopilotTurnStartedEvent>(enumerator.Current);
+                eventReference = await queuedEvent.Task.WaitAsync(TimeSpan.FromSeconds(2));
+            }
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            Assert.False(eventReference.TryGetTarget(out _));
+        }
+        finally
+        {
+            releaseProducer.TrySetResult();
+            await producerFinished.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        }
+    }
+
+    [Fact]
     public async Task GracefulCancellationDrainsFinalEventsAndCompletion()
     {
         using var cancellation = new CancellationTokenSource();
@@ -559,6 +607,106 @@ public sealed class CopilotTurnEventStreamTests
         Assert.Equal(2, (await DrainAsync(buffer)).Count);
     }
 
+    [Fact]
+    public async Task BoundedBufferFailsBeforeACoalescedStreamEventExceedsItsCharacterBudget()
+    {
+        var buffer = new CopilotTurnEventBuffer(
+            maximumPendingEvents: 2,
+            maximumPendingStreamCharacters: 5);
+        Assert.True(buffer.TryWrite(
+            new CopilotTurnAgentEvent(CopilotAgentEvent.AnswerDelta("abc"))));
+        Assert.True(buffer.TryWrite(
+            new CopilotTurnAgentEvent(CopilotAgentEvent.AnswerDelta("de"))));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            buffer.TryWrite(
+                new CopilotTurnAgentEvent(CopilotAgentEvent.AnswerDelta("f"))));
+
+        Assert.Contains("5-character safety limit", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(1, buffer.PendingCount);
+        Assert.Equal(5, buffer.PendingStreamCharacters);
+        Assert.True(buffer.TryComplete());
+        var turnEvent = Assert.Single(await DrainAsync(buffer));
+        Assert.Equal(0, buffer.PendingStreamCharacters);
+        var agentEvent = Assert.IsType<CopilotTurnAgentEvent>(turnEvent).Event;
+        Assert.Equal("abcde", agentEvent.Text);
+    }
+
+    [Fact]
+    public void BoundedBufferRejectsAnInitialStreamEventLargerThanItsCharacterBudget()
+    {
+        var buffer = new CopilotTurnEventBuffer(
+            maximumPendingEvents: 4,
+            maximumPendingStreamCharacters: 4);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            buffer.TryWrite(
+                new CopilotTurnChatDeltaEvent(
+                    new CopilotStreamDelta("12", "345"))));
+
+        Assert.Contains("4-character safety limit", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, buffer.PendingCount);
+        Assert.Equal(0, buffer.PendingStreamCharacters);
+    }
+
+    [Fact]
+    public async Task BoundedBufferAccountsForBothSidesOfANonCoalescedChatDelta()
+    {
+        var buffer = new CopilotTurnEventBuffer(
+            maximumPendingEvents: 4,
+            maximumPendingStreamCharacters: 5);
+        Assert.True(buffer.TryWrite(
+            new CopilotTurnChatDeltaEvent(
+                new CopilotStreamDelta("ab", "cde"))));
+
+        Assert.Equal(1, buffer.PendingCount);
+        Assert.Equal(5, buffer.PendingStreamCharacters);
+        Assert.True(buffer.TryComplete());
+        var turnEvent = Assert.Single(await DrainAsync(buffer));
+        Assert.Equal(0, buffer.PendingStreamCharacters);
+        var delta = Assert.IsType<CopilotTurnChatDeltaEvent>(turnEvent).Delta;
+        Assert.Equal("ab", delta.ReasoningContent);
+        Assert.Equal("cde", delta.Content);
+    }
+
+    [Fact]
+    public async Task BoundedBufferPreservesWhitespaceAndReleasesItsExactCharacterBudget()
+    {
+        var buffer = new CopilotTurnEventBuffer(
+            maximumPendingEvents: 4,
+            maximumPendingStreamCharacters: 2);
+        Assert.True(buffer.TryWrite(
+            new CopilotTurnChatDeltaEvent(
+                new CopilotStreamDelta(" ", "x"))));
+
+        Assert.Equal(2, buffer.PendingStreamCharacters);
+        Assert.True(buffer.TryComplete());
+        var turnEvent = Assert.Single(await DrainAsync(buffer));
+        Assert.Equal(0, buffer.PendingStreamCharacters);
+        var delta = Assert.IsType<CopilotTurnChatDeltaEvent>(turnEvent).Delta;
+        Assert.Equal(" ", delta.ReasoningContent);
+        Assert.Equal("x", delta.Content);
+    }
+
+    [Fact]
+    public async Task AbandonClearsPendingEventsCharactersAndCompletionError()
+    {
+        var buffer = new CopilotTurnEventBuffer(
+            maximumPendingEvents: 4,
+            maximumPendingStreamCharacters: 4);
+        Assert.True(buffer.TryWrite(
+            new CopilotTurnAgentEvent(CopilotAgentEvent.AnswerDelta("test"))));
+        Assert.True(buffer.TryComplete(new InvalidOperationException("must be discarded")));
+
+        buffer.Abandon();
+
+        Assert.Equal(0, buffer.PendingCount);
+        Assert.Equal(0, buffer.PendingStreamCharacters);
+        Assert.False(buffer.TryWrite(
+            new CopilotTurnAgentEvent(CopilotAgentEvent.AnswerDelta("late"))));
+        Assert.Empty(await DrainAsync(buffer));
+    }
+
     private static async Task<List<CopilotTurnEvent>> DrainAsync(
         CopilotTurnEventBuffer buffer)
     {
@@ -566,6 +714,15 @@ public sealed class CopilotTurnEventStreamTests
         await foreach (var turnEvent in buffer.ReadAllAsync())
             events.Add(turnEvent);
         return events;
+    }
+
+    private static WeakReference<CopilotAgentEvent> PublishWeaklyReferencedStatus(
+        CopilotTurnEventSink sink)
+    {
+        var agentEvent = CopilotAgentEvent.Status(new string('x', 4096));
+        var reference = new WeakReference<CopilotAgentEvent>(agentEvent);
+        sink.OnAgentEvent(agentEvent);
+        return reference;
     }
 
     private static IAsyncEnumerable<CopilotTurnEvent> RunTurnAsync(

@@ -14,6 +14,7 @@ namespace ColorVision.Copilot
         {
             AllowAutoRedirect = false,
             AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
+            UseCookies = false,
         };
 
         public static HttpClient CreateClient(string? profileId = null)

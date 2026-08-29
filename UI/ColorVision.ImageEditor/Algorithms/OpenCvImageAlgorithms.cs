@@ -64,8 +64,7 @@ namespace ColorVision.ImageEditor.Algorithms
 
         public static void Threshold(Mat mat, double threshold, double maxValue, ThresholdTypes type = ThresholdTypes.Binary)
         {
-            using Mat source = mat.Clone();
-            Cv2.Threshold(source, mat, threshold, maxValue, type);
+            Cv2.Threshold(mat, mat, threshold, maxValue, type);
         }
 
         public static void GaussianBlur(Mat mat, int kernelSize, double sigma)

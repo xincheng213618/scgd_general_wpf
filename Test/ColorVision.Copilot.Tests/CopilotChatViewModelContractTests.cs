@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Windows.Input;
 using ColorVision.Copilot;
+using ColorVision.UI.Menus;
 
 namespace ColorVision.Copilot.Tests;
 
@@ -234,6 +235,40 @@ public sealed class CopilotChatViewModelContractTests
         Assert.Empty(getInstance.GetParameters());
         Assert.True(constructor.IsPrivate);
         Assert.Empty(constructor.GetParameters());
+
+        var service = CopilotPanelService.GetInstance();
+        Assert.Same(service, CopilotServiceRegistry.Current);
+    }
+
+    [Fact]
+    public void MainStatusBarExposesChatAssistantShortcut()
+    {
+        StatusBarMeta? item = null;
+        Exception? failure = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                item = Assert.Single(new CopilotStatusBarProvider().GetStatusBarIconMetadata());
+            }
+            catch (Exception ex)
+            {
+                failure = ex;
+            }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+
+        Assert.Null(failure);
+        Assert.NotNull(item);
+        Assert.Equal("CopilotAgent", item.Id);
+        Assert.Equal(CopilotUiText.CopilotPanelTitle, item.Name);
+        Assert.Equal(MenuItemConstants.MainWindowTarget, item.TargetName);
+        Assert.Equal(StatusBarAlignment.Right, item.Alignment);
+        Assert.True(item.IsVisible);
+        Assert.NotNull(item.Command);
+        Assert.NotNull(item.IconContent);
     }
 
     private static string FormatConstructor(ConstructorInfo constructor) =>

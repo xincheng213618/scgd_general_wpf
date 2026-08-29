@@ -100,6 +100,23 @@ public sealed class ApplicationStartupIntegrityMonitorTests : IDisposable
         hub.Forget(1234);
     }
 
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, true, false)]
+    [InlineData(true, false, true)]
+    public void MissingDependencyMessageIsOnlyShownAfterProcessExitedBeforeStartupCompleted(
+        bool processExitedBeforeObservationDeadline,
+        bool terminalStatusReceived,
+        bool expected)
+    {
+        Assert.Equal(
+            expected,
+            ApplicationStartupIntegrityMonitor.ShouldShowMissingDependencyMessage(
+                processExitedBeforeObservationDeadline,
+                terminalStatusReceived));
+    }
+
     [Fact]
     public void StartupFailurePresentationRecognizesMissingAssemblyButNotDataFile()
     {
@@ -116,6 +133,27 @@ public sealed class ApplicationStartupIntegrityMonitorTests : IDisposable
         Assert.False(global::ColorVision.StartupFailureGuard.TryCreateFailurePresentation(
             new FileNotFoundException("missing", @"C:\Data\measurement.json"),
             out _));
+    }
+
+    [Theory]
+    [InlineData("dll")]
+    [InlineData("entry")]
+    [InlineData("bad-image")]
+    public void StartupFailurePresentationRecognizesNativeOrDamagedDllFailures(string failureKind)
+    {
+        Exception failure = failureKind switch
+        {
+            "dll" => new DllNotFoundException("missing native library"),
+            "entry" => new EntryPointNotFoundException("missing native export"),
+            "bad-image" => new BadImageFormatException("damaged managed library", "Damaged.Component.dll"),
+            _ => throw new ArgumentOutOfRangeException(nameof(failureKind)),
+        };
+
+        Assert.True(global::ColorVision.StartupFailureGuard.TryCreateFailurePresentation(
+            failure,
+            out global::ColorVision.StartupFailurePresentation? presentation));
+        Assert.NotNull(presentation);
+        Assert.Contains("重新安装 ColorVision", presentation.Message, StringComparison.Ordinal);
     }
 
     public void Dispose()

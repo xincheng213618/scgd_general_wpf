@@ -41,6 +41,8 @@ namespace ColorVision.ImageEditor.Draw
 
         public Zoombox Zoombox { get; }
 
+        internal ImageProcessingContext? ProcessingContext { get; set; }
+
         public ImageMouseInfoProvider MouseInfoProvider { get; }
 
         public SelectEditorVisual SelectionVisual { get; set; } = null!;

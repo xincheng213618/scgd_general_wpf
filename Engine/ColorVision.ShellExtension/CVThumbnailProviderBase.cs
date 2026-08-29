@@ -51,6 +51,10 @@ namespace ColorVision.ShellExtension
                 ShellLog.Log($"{ProviderName}: IInitializeWithStream.Initialize exception: {ex}");
                 return E_FAIL;
             }
+            finally
+            {
+                ReleaseInputStream(pstream);
+            }
         }
 
         /// <summary>
@@ -73,13 +77,13 @@ namespace ColorVision.ShellExtension
         {
             phbmp = IntPtr.Zero;
             pdwAlpha = WtsAlphaType.WTSAT_RGB;
+            CVCIEFile? fileInfo = null;
 
             try
             {
                 if (cx == 0)
                     return E_INVALIDARG;
 
-                CVCIEFile fileInfo;
                 int index;
 
                 // Prefer stream data (from IInitializeWithStream), fall back to file path
@@ -165,7 +169,6 @@ namespace ColorVision.ShellExtension
                 {
                     thumbnail?.Dispose();
                     mat?.Dispose();
-                    fileInfo.Dispose();
                 }
             }
             catch (Exception ex)
@@ -174,6 +177,33 @@ namespace ColorVision.ShellExtension
                 ShellLog.Log($"{ProviderName}: GetThumbnail: exception: {ex}");
                 return E_FAIL;
             }
+            finally
+            {
+                fileInfo?.Dispose();
+                ReleaseRequestResources();
+            }
+        }
+
+        private void ReleaseInputStream(IStream stream)
+        {
+            try
+            {
+                if (Marshal.IsComObject(stream))
+                    Marshal.ReleaseComObject(stream);
+            }
+            catch (Exception ex)
+            {
+                ShellLog.Log($"{ProviderName}: failed to release input stream: {ex.Message}");
+            }
+        }
+
+        private void ReleaseRequestResources()
+        {
+            long bufferedBytes = _streamData?.LongLength ?? 0;
+            _streamData = null;
+            _filePath = null;
+            if (bufferedBytes > 0)
+                ShellLog.Log($"{ProviderName}: released request buffer ({bufferedBytes} bytes)");
         }
 
         /// <summary>
@@ -200,12 +230,12 @@ namespace ColorVision.ShellExtension
                 stream.Seek(0, 0, IntPtr.Zero); // STREAM_SEEK_SET = 0
 
                 byte[] buffer = new byte[size];
-                IntPtr bytesReadPtr = Marshal.AllocCoTaskMem(sizeof(long));
+                IntPtr bytesReadPtr = Marshal.AllocCoTaskMem(sizeof(int));
                 try
                 {
-                    Marshal.WriteInt64(bytesReadPtr, 0);
+                    Marshal.WriteInt32(bytesReadPtr, 0);
                     stream.Read(buffer, (int)size, bytesReadPtr);
-                    long bytesRead = Marshal.ReadInt64(bytesReadPtr);
+                    int bytesRead = Marshal.ReadInt32(bytesReadPtr);
                     if (bytesRead != size)
                     {
                         // Partial read - resize buffer
@@ -282,33 +312,45 @@ namespace ColorVision.ShellExtension
             DeleteDC(hdc);
 
             if (hbmp == IntPtr.Zero || ppvBits == IntPtr.Zero)
-                return IntPtr.Zero;
-
-            // Copy pixel data row by row (DIB stride is DWORD-aligned)
-            int dibStride = ((width * 3 + 3) / 4) * 4;
-            int matStride = (int)bgrMat.Step();
-
-            unsafe
             {
-                byte* dst = (byte*)ppvBits;
-                byte* src = (byte*)bgrMat.Data;
-                int copyLen = width * 3;
-
-                if (matStride == dibStride)
-                {
-                    // Strides match - copy entire image in one call
-                    Buffer.MemoryCopy(src, dst, (long)dibStride * height, (long)dibStride * height);
-                }
-                else
-                {
-                    for (int y = 0; y < height; y++)
-                    {
-                        Buffer.MemoryCopy(src + y * matStride, dst + y * dibStride, dibStride, copyLen);
-                    }
-                }
+                if (hbmp != IntPtr.Zero)
+                    DeleteObject(hbmp);
+                return IntPtr.Zero;
             }
 
-            return hbmp;
+            try
+            {
+                // Copy pixel data row by row (DIB stride is DWORD-aligned)
+                int dibStride = ((width * 3 + 3) / 4) * 4;
+                int matStride = (int)bgrMat.Step();
+
+                unsafe
+                {
+                    byte* dst = (byte*)ppvBits;
+                    byte* src = (byte*)bgrMat.Data;
+                    int copyLen = width * 3;
+
+                    if (matStride == dibStride)
+                    {
+                        // Strides match - copy entire image in one call
+                        Buffer.MemoryCopy(src, dst, (long)dibStride * height, (long)dibStride * height);
+                    }
+                    else
+                    {
+                        for (int y = 0; y < height; y++)
+                        {
+                            Buffer.MemoryCopy(src + y * matStride, dst + y * dibStride, dibStride, copyLen);
+                        }
+                    }
+                }
+
+                return hbmp;
+            }
+            catch
+            {
+                DeleteObject(hbmp);
+                throw;
+            }
         }
 
         #region Native methods
@@ -319,6 +361,10 @@ namespace ColorVision.ShellExtension
         [DllImport("gdi32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool DeleteDC(IntPtr hdc);
+
+        [DllImport("gdi32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool DeleteObject(IntPtr hObject);
 
         [DllImport("gdi32.dll")]
         private static extern IntPtr CreateDIBSection(IntPtr hdc, ref BITMAPINFO pbmi, uint usage, out IntPtr ppvBits, IntPtr hSection, uint offset);

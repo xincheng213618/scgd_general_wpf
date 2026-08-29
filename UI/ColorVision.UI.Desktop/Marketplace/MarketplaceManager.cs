@@ -304,9 +304,13 @@ namespace ColorVision.UI.Desktop.Marketplace
                 {
                     plan.SkippedIncompatiblePlugins.Add(result.Plugin.Name ?? result.Plugin.PackageName ?? "Unknown");
                 }
+                else
+                {
+                    plan.UnresolvedPlugins.Add(result.Plugin.Name ?? result.Plugin.PackageName ?? "Unknown");
+                }
             }
 
-            log.Info($"Plugin update plan completed. Candidates={pluginsToCheck.Count}, Updates={plan.Updates.Count}, Skipped={plan.SkippedIncompatiblePlugins.Count}, Took={stopwatch.ElapsedMilliseconds}ms.");
+            log.Info($"Plugin update plan completed. Candidates={pluginsToCheck.Count}, Updates={plan.Updates.Count}, Skipped={plan.SkippedIncompatiblePlugins.Count}, Unresolved={plan.UnresolvedPlugins.Count}, Took={stopwatch.ElapsedMilliseconds}ms.");
             return plan;
         }
 
@@ -323,8 +327,10 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         public bool StartCombinedUpdate(CombinedPluginUpdatePlan plan, string? restartArguments = null, Action? noRestartAction = null, CancellationToken cancellationToken = default)
         {
-            if (plan.Updates.Count == 0)
+            if (!plan.IsComplete || plan.Updates.Count == 0)
             {
+                if (!plan.IsComplete)
+                    log.Warn($"Plugin update was deferred because metadata is unresolved for: {string.Join(", ", plan.UnresolvedPlugins)}.");
                 noRestartAction?.Invoke();
                 return false;
             }
@@ -344,7 +350,7 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         public async Task<IReadOnlyList<string>> EnsureCombinedUpdatePackagesAsync(CombinedPluginUpdatePlan plan, bool showDownloadWindow, CancellationToken cancellationToken = default)
         {
-            if (!plan.HasUpdates)
+            if (!plan.IsComplete || !plan.HasUpdates)
                 return Array.Empty<string>();
 
             List<MarketplacePackageRequest> requests = CreateCombinedUpdateRequests(plan);
@@ -383,6 +389,12 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
 
             CombinedPluginUpdatePlan plan = await BuildCombinedUpdatePlanAsync(hostVersion, cancellationToken);
+            if (!plan.IsComplete)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), Resources.MarketplaceLoadFailed, Resources.PluginManagerWindow, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             if (!plan.HasUpdates)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), Resources.MarketplaceNoUpdates, Resources.PluginManagerWindow, MessageBoxButton.OK, MessageBoxImage.Information);

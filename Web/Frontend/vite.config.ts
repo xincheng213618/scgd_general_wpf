@@ -7,9 +7,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://127.0.0.1:9998',
-      '/login': 'http://127.0.0.1:9998',
-      '/logout': 'http://127.0.0.1:9998',
+      '/api': {
+        target: 'http://127.0.0.1:9998',
+        changeOrigin: false,
+      },
     },
   },
 })

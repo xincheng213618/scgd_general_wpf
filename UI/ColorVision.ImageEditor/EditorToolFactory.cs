@@ -1,4 +1,6 @@
+using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Abstractions;
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Settings;
 using ColorVision.UI;
@@ -35,6 +37,7 @@ namespace ColorVision.ImageEditor
         private readonly EditorContext _context;
         private readonly List<IEditorTool> _imageOpenEditorTools = new();
         private readonly List<FrameworkElement> _generatedToolElements = new();
+        private readonly HashSet<ButtonBase> _generatedIconHosts = new();
         private IImageOpen? _currentImageOpen;
 
         public T? GetIEditorTool<T>() where T : IEditorTool => GetEffectiveEditorTools().OfType<T>().FirstOrDefault();
@@ -69,6 +72,7 @@ namespace ColorVision.ImageEditor
                     {
                         if (CreateContextBoundOrDefaultInstance(type, context) is IDVContextMenu instance)
                         {
+                            if (!IsAlgorithmMenuExecutable(instance, context)) continue;
                             ContextMenuProviders.Add(instance);
                         }
                     }
@@ -84,6 +88,7 @@ namespace ColorVision.ImageEditor
                     {
                         if (CreateContextBoundInstance(type, context) is IIEditorToolContextMenu instance)
                         {
+                            if (!IsAlgorithmMenuExecutable(instance, context)) continue;
                             IIEditorToolContextMenus.Add(instance);
                         }
                     }
@@ -197,14 +202,7 @@ namespace ColorVision.ImageEditor
 
         public void RefreshToolBars()
         {
-            foreach (FrameworkElement element in _generatedToolElements.ToArray())
-            {
-                if (element.Parent is ToolBar parentToolBar)
-                {
-                    parentToolBar.Items.Remove(element);
-                }
-            }
-            _generatedToolElements.Clear();
+            ClearGeneratedToolElements();
 
             foreach (var group in GetEffectiveEditorTools().GroupBy(t => t.ToolBarLocal))
             {
@@ -227,6 +225,10 @@ namespace ColorVision.ImageEditor
 
                     toolBar.Items.Add(btn);
                     _generatedToolElements.Add(btn);
+                    if (tool is not IEditorCustomControlTool && btn is ButtonBase iconHost)
+                    {
+                        _generatedIconHosts.Add(iconHost);
+                    }
                     hasExistingItems = true;
                 }
             }
@@ -239,6 +241,8 @@ namespace ColorVision.ImageEditor
                 lifecycle.OnEditorToolsDeactivated(_context);
             }
 
+            ClearGeneratedToolElements();
+
             HashSet<IDisposable> disposableTools = new();
             foreach (IDisposable item in IEditorTools.Concat(_imageOpenEditorTools).OfType<IDisposable>())
             {
@@ -249,13 +253,47 @@ namespace ColorVision.ImageEditor
             }
 
             _imageOpenEditorTools.Clear();
-            _generatedToolElements.Clear();
             GC.SuppressFinalize(this);
+        }
+
+        private void ClearGeneratedToolElements()
+        {
+            foreach (FrameworkElement element in _generatedToolElements)
+            {
+                if (element is ButtonBase buttonBase && _generatedIconHosts.Remove(buttonBase))
+                {
+                    buttonBase.Content = null;
+                }
+
+                if (element.Parent is ToolBar parentToolBar)
+                {
+                    parentToolBar.Items.Remove(element);
+                }
+            }
+
+            _generatedToolElements.Clear();
+            _generatedIconHosts.Clear();
         }
 
         private static bool CanCreateGlobalEditorTool(Type type)
         {
             return SelectContextConstructor(type) != null;
+        }
+
+        private static bool IsAlgorithmMenuExecutable(object instance, EditorContext context)
+        {
+            if (instance is not IAlgorithmCatalogBoundMenu algorithmMenu) return true;
+            AlgorithmRuntime runtime = context.ProcessingContext.AlgorithmRuntime;
+            return runtime.Catalog.TryResolve(algorithmMenu.AlgorithmId, out AlgorithmDescriptor? descriptor)
+                && descriptor != null
+                && StandardAlgorithmAdapterContract.IsCompatible(descriptor)
+                && StandardAlgorithmAdapterContract.TryGetInteractiveRequiredCapabilities(
+                    descriptor,
+                    algorithmMenu.PlannedInputCount,
+                    algorithmMenu.RequiresRoi,
+                    algorithmMenu.RequiredCapabilities,
+                    out AlgorithmHostCapabilities required)
+                && runtime.CanExecuteDescriptor(descriptor, required);
         }
 
         private static object? CreateContextBoundInstance(Type type, EditorContext context)

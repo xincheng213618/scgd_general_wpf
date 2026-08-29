@@ -334,16 +334,22 @@ namespace ColorVision.Copilot
 
         private static HttpClient CreateHttpClient()
         {
-            var client = new HttpClient(new HttpClientHandler
-            {
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
-                MaxAutomaticRedirections = 5,
-            })
+            var client = new HttpClient(CreateHttpHandler())
             {
                 Timeout = TimeSpan.FromSeconds(20),
             };
             client.DefaultRequestHeaders.UserAgent.ParseAdd("ColorVision-Copilot-WebSearch/1.0");
             return client;
+        }
+
+        internal static HttpClientHandler CreateHttpHandler()
+        {
+            return new HttpClientHandler
+            {
+                AllowAutoRedirect = false,
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
+                UseCookies = false,
+            };
         }
 
         private sealed record SearchProvider(

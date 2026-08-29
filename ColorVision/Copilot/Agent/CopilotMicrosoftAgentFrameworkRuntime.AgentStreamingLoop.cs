@@ -108,6 +108,11 @@ namespace ColorVision.Copilot
                             providerFinishReason = update.FinishReason;
 
                         approvalRequests.AddRange(update.Contents.OfType<ToolApprovalRequestContent>());
+                        foreach (var reasoningContent in update.Contents.OfType<TextReasoningContent>())
+                        {
+                            if (!string.IsNullOrEmpty(reasoningContent.Text))
+                                emit(CopilotAgentEvent.ReasoningDelta(reasoningContent.Text));
+                        }
                         if (!string.IsNullOrEmpty(update.Text))
                             emit(CopilotAgentEvent.AnswerDelta(update.Text));
                     }

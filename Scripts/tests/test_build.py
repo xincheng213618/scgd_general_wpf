@@ -41,6 +41,14 @@ class InstallerRuntimeValidationTests(unittest.TestCase):
 
         self.assertFalse(validate_installer_runtime_dlls(self.runtime_directory, aip_path, report=lambda _: None))
 
+    def test_rejects_service_host_management_dependency_missing_from_installer_mapping(self) -> None:
+        missing_path = "ServiceHost/System.Management.dll"
+        aip_path = self._write_aip(tuple(
+            path for path in REQUIRED_SERVICE_HOST_RUNTIME_PATHS if path != missing_path
+        ))
+
+        self.assertFalse(validate_installer_runtime_dlls(self.runtime_directory, aip_path, report=lambda _: None))
+
     def test_rejects_incomplete_service_host_build_output(self) -> None:
         (self.runtime_directory / REQUIRED_SERVICE_HOST_RUNTIME_PATHS[0]).unlink()
         aip_path = self._write_aip(REQUIRED_SERVICE_HOST_RUNTIME_PATHS)

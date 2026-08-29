@@ -3,6 +3,7 @@
 #include "opencv_media_export.h"
 #include "algorithm.h"
 #include "algorithm/distortion/distortion_p9.h"
+#include "algorithm/luminous_area/luminous_area_v2.h"
 #include "algorithm/sfr/sfr_bmw4.h"
 #include "algorithm/surface_defect/surface_defect.h"
 #include "native_log.h"
@@ -863,14 +864,8 @@ COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, ui
 		if (mat.empty())
 			return -1;
 
-		cv::Mat temp;
-		cv::Mat source;
-		int sourceRet = SelectSingleChannelSource(mat, channel, temp, source);
-		if (sourceRet != 0)
-			return sourceRet;
-
 		cv::Mat out;
-		int ret = pseudoColorTo(source, out, min, max, types);
+		int ret = pseudoColorTo(mat, out, min, max, types, channel);
 		if (ret != 0)
 			return ret;
 
@@ -886,14 +881,8 @@ COLORVISIONCORE_API int M_PseudoColorAutoRange(HImage img, HImage* outImage, uin
 		if (mat.empty())
 			return -1;
 
-		cv::Mat temp;
-		cv::Mat source;
-		int sourceRet = SelectSingleChannelSource(mat, channel, temp, source);
-		if (sourceRet != 0)
-			return sourceRet;
-
 		cv::Mat out;
-		int ret = pseudoColorAutoRangeTo(source, out, min, max, types, dataMin, dataMax);
+		int ret = pseudoColorAutoRangeTo(mat, out, min, max, types, dataMin, dataMax, channel);
 		if (ret != 0)
 			return ret;
 
@@ -913,13 +902,7 @@ COLORVISIONCORE_API int M_PseudoColorInto(HImage img, HImage outImage, uint min,
 		if (!IsPseudoColorOutputCompatible(mat, output))
 			return -2;
 
-		cv::Mat temp;
-		cv::Mat source;
-		int sourceRet = SelectSingleChannelSource(mat, channel, temp, source);
-		if (sourceRet != 0)
-			return sourceRet;
-
-		return pseudoColorTo(source, output, min, max, types);
+		return pseudoColorTo(mat, output, min, max, types, channel);
 		});
 }
 
@@ -935,13 +918,7 @@ COLORVISIONCORE_API int M_PseudoColorAutoRangeInto(HImage img, HImage outImage, 
 		if (!IsPseudoColorOutputCompatible(mat, output))
 			return -2;
 
-		cv::Mat temp;
-		cv::Mat source;
-		int sourceRet = SelectSingleChannelSource(mat, channel, temp, source);
-		if (sourceRet != 0)
-			return sourceRet;
-
-		return pseudoColorAutoRangeTo(source, output, min, max, types, dataMin, dataMax);
+		return pseudoColorAutoRangeTo(mat, output, min, max, types, dataMin, dataMax, channel);
 		});
 }
 
@@ -1332,6 +1309,71 @@ COLORVISIONCORE_API int M_FindLuminousArea(HImage img, RoiRect roi, const char* 
 		}
 
 		return CopyJsonResult(outputJson, result);
+	});
+}
+
+COLORVISIONCORE_API int M_FindLuminousAreaV2(HImage image, RoiRect roi, const char* configJson, char** resultJson)
+{
+	return GuardIntExport([&]() -> int {
+		if (resultJson != nullptr) {
+			*resultJson = nullptr;
+		}
+
+		cv::Mat imageMat = CreateMatView(image);
+		if (imageMat.empty() || configJson == nullptr || resultJson == nullptr) {
+			return ExportInvalidArgument;
+		}
+
+		const cv::Rect imageBounds(0, 0, imageMat.cols, imageMat.rows);
+		const bool emptyRoi = roi.x == 0 && roi.y == 0 && roi.width == 0 && roi.height == 0;
+		const cv::Rect requestedRoi(roi.x, roi.y, roi.width, roi.height);
+		if (!emptyRoi && (requestedRoi.width <= 0 || requestedRoi.height <= 0
+			|| (requestedRoi & imageBounds) != requestedRoi)) {
+			return ExportInvalidArgument;
+		}
+		cv::Mat workImage = emptyRoi ? imageMat : imageMat(requestedRoi);
+
+		json config;
+		if (!TryParseJson(configJson, config)) {
+			return ExportInvalidJson;
+		}
+		cvnative::luminous::FindLuminousAreaV2Config parsedConfig;
+		std::string configError;
+		if (!cvnative::luminous::ParseFindLuminousAreaV2Config(config, parsedConfig, configError)) {
+			return ExportInvalidJson;
+		}
+
+		const cvnative::luminous::FindLuminousAreaV2Result detection =
+			cvnative::luminous::FindLuminousAreaV2(workImage, parsedConfig);
+		json output;
+		output["Success"] = detection.success;
+		output["Algorithm"] = "RobustV2";
+		output["Corners"] = json::array();
+		if (detection.hasCorners) {
+			for (const cv::Point2f& corner : detection.corners) {
+				output["Corners"].push_back({ { "X", corner.x }, { "Y", corner.y } });
+			}
+		}
+		output["Confidence"] = std::clamp(detection.confidence, 0.0, 1.0);
+		output["SideQuality"] = json::array();
+		static constexpr std::array<const char*, 4> sideNames{ "Top", "Right", "Bottom", "Left" };
+		for (size_t index = 0; index < detection.sideQuality.size(); ++index) {
+			const auto& side = detection.sideQuality[index];
+			output["SideQuality"].push_back({
+				{ "Name", sideNames[index] },
+				{ "Coverage", side.coverage },
+				{ "InlierRatio", side.inlierRatio },
+				{ "ContrastP10", side.contrastP10 },
+				{ "FitRms", side.fitRms },
+				{ "MaxGap", side.maxGap },
+				{ "Confidence", std::clamp(side.confidence, 0.0, 1.0) },
+				{ "SampleCount", side.sampleCount },
+				{ "InlierCount", side.inlierCount }
+			});
+		}
+		output["FailureReason"] = detection.success ? "" : detection.failureReason;
+		output["Warnings"] = detection.warnings;
+		return CopyJsonResult(output, resultJson);
 	});
 }
 

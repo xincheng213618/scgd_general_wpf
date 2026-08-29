@@ -485,6 +485,33 @@ namespace ProjectARVRPro
             return item.ViewResultJson;
         }
 
+        public IReadOnlyList<ProjectARVRReuslt> GetObjectiveTestFlowResults(int objectiveRecordId)
+        {
+            if (objectiveRecordId <= 0)
+                return Array.Empty<ProjectARVRReuslt>();
+
+            return ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
+            {
+                ObjectiveTestResultRecord? record = _db.Queryable<ObjectiveTestResultRecord>()
+                    .Where(item => item.Id == objectiveRecordId)
+                    .First();
+                if (record == null || record.ResultId <= 0 || string.IsNullOrWhiteSpace(record.SN))
+                    return (IReadOnlyList<ProjectARVRReuslt>)Array.Empty<ProjectARVRReuslt>();
+
+                int previousResultId = _db.Queryable<ObjectiveTestResultRecord>()
+                    .Where(item => item.SN == record.SN && item.Id < record.Id)
+                    .OrderBy(item => item.Id, OrderByType.Desc)
+                    .Select(item => item.ResultId)
+                    .First();
+                List<ProjectARVRReuslt> results = _db.Queryable<ProjectARVRReuslt>()
+                    .Where(item => item.SN == record.SN && item.Id > previousResultId && item.Id <= record.ResultId)
+                    .OrderBy(item => item.Id, OrderByType.Asc)
+                    .ToList();
+                ResultJsonPayloadStorage.LoadViewResultJsons(_db, results);
+                return results;
+            });
+        }
+
         private void AddViewResult(ProjectARVRReuslt item)
         {
             ViewResluts.Insert(0, item);

@@ -39,6 +39,14 @@ namespace ProjectARVRPro.Process
         }
 
         /// <summary>
+        /// Restores this process result and returns rows for the default objective CSV export.
+        /// </summary>
+        public IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result)
+        {
+            return Array.Empty<ObjectiveTestCsvRow>();
+        }
+
+        /// <summary>
         /// Sets the process configuration from a JSON string.
         /// </summary>
         /// <param name="configJson">The JSON string representing the configuration.</param>
@@ -79,6 +87,11 @@ namespace ProjectARVRPro.Process
         /// Gets the process configuration object.
         /// </summary>
         public object GetProcessConfig() => Config;
+
+        public virtual IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) => Array.Empty<ObjectiveTestCsvRow>();
+
+        protected IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows<TResult>(ProjectARVRReuslt result, string testScreen)
+            where TResult : class => ObjectiveTestCsvRowCollector.FromJson<TResult>(result?.ViewResultJson, testScreen);
 
         /// <summary>
         /// Sets the process configuration from a JSON string.

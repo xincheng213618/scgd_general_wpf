@@ -11,25 +11,171 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotShellProcessRunnerLifecycleTests
 {
     [Fact]
-    public async Task CompletedHookProcessCanPreserveDetachedDescendant()
+    public async Task MissingWindowsJobStopsShellAndFailsClosed()
     {
         var workspace = CreateTemporaryDirectory();
-        var markerPath = Path.Combine(workspace, "preserved.txt");
+        var executionMarker = Path.Combine(workspace, "must-not-run.txt");
+        ProcessIdentity? processIdentity = null;
         try
         {
-            var result = await RunDetachedMarkerCommandAsync(
-                workspace,
-                markerPath,
-                keepRootAlive: false,
-                preserveDescendants: true,
-                timeout: TimeSpan.FromSeconds(5));
+            var executable = CopilotShellCommandService.FindTrustedShellExecutable(
+                CopilotShellKind.PowerShell);
+            Assert.False(string.IsNullOrWhiteSpace(executable));
+            var runner = new CopilotShellProcessRunner(process =>
+            {
+                processIdentity = ProcessIdentity.Capture(process);
+                return null;
+            });
+
+            var exception = await Assert.ThrowsAsync<CopilotProcessTreeContainmentException>(() =>
+                runner.RunAsync(
+                    new CopilotShellProcessCommand(
+                        CopilotShellKind.PowerShell,
+                        executable!,
+                        CopilotShellCommandService.BuildArguments(
+                            CopilotShellKind.PowerShell,
+                            $"[System.IO.File]::WriteAllText({QuotePowerShellLiteral(executionMarker)}, 'ran'); Start-Sleep -Seconds 30"),
+                        workspace,
+                        TimeSpan.FromSeconds(35)),
+                    CancellationToken.None));
+
+            Assert.Contains("Windows Job Object", exception.Message, StringComparison.Ordinal);
+            Assert.NotNull(processIdentity);
+            Assert.True(
+                await WaitForProcessExitAsync(processIdentity.Value, TimeSpan.FromSeconds(2)),
+                $"Uncontained shell process {processIdentity.Value.Id} survived failed Job Object assignment.");
+            Assert.False(
+                File.Exists(executionMarker),
+                "The shell command ran before failed Job Object assignment was rejected.");
+        }
+        finally
+        {
+            if (processIdentity.HasValue)
+                await KillLeakedProcessAsync(processIdentity.Value);
+            await DeleteTemporaryDirectoryAsync(workspace);
+        }
+    }
+
+    [Fact]
+    public async Task ShellCommandStartsOnlyAfterWindowsJobAssignment()
+    {
+        var workspace = CreateTemporaryDirectory();
+        var executionMarker = Path.Combine(workspace, "assigned-before-run.txt");
+        using var gate = new BlockingJobAssigner(succeed: true);
+        try
+        {
+            var executable = Environment.GetEnvironmentVariable("ComSpec")
+                ?? Path.Combine(Environment.SystemDirectory, "cmd.exe");
+            var commandText = "echo executed>assigned-before-run.txt"
+                + " & echo stdout-token"
+                + " & echo stderr-token 1>&2"
+                + " & exit /b 23";
+            var runner = new CopilotShellProcessRunner(gate.Assign);
+            var runTask = Task.Run(() => runner.RunAsync(
+                new CopilotShellProcessCommand(
+                    CopilotShellKind.CommandPrompt,
+                    executable,
+                    CopilotShellCommandService.BuildArguments(
+                        CopilotShellKind.CommandPrompt,
+                        commandText),
+                    workspace,
+                    TimeSpan.FromSeconds(10)),
+                CancellationToken.None));
+
+            _ = await gate.Entered.WaitAsync(TimeSpan.FromSeconds(5));
+            var executedBeforeAssignment = await WaitForFileAsync(
+                executionMarker,
+                TimeSpan.FromSeconds(1));
+            gate.Release();
+            var result = await runTask.WaitAsync(TimeSpan.FromSeconds(10));
+
+            Assert.False(
+                executedBeforeAssignment,
+                "The shell command ran while its primary thread should still have been suspended.");
+            Assert.True(File.Exists(executionMarker));
+            Assert.Equal(23, result.ExitCode);
+            Assert.False(result.TimedOut);
+            Assert.True(result.ProcessTreeContained);
+            Assert.Contains("stdout-token", result.StandardOutput, StringComparison.Ordinal);
+            Assert.Contains("stderr-token", result.StandardError, StringComparison.Ordinal);
+        }
+        finally
+        {
+            gate.Release();
+            await DeleteTemporaryDirectoryAsync(workspace);
+        }
+    }
+
+    [Fact]
+    public async Task CancellationDuringWindowsJobAssignmentNeverResumesShell()
+    {
+        var workspace = CreateTemporaryDirectory();
+        var executionMarker = Path.Combine(workspace, "cancelled-before-run.txt");
+        using var gate = new BlockingJobAssigner(succeed: true);
+        using var cancellationSource = new CancellationTokenSource();
+        ProcessIdentity? processIdentity = null;
+        try
+        {
+            var executable = Environment.GetEnvironmentVariable("ComSpec")
+                ?? Path.Combine(Environment.SystemDirectory, "cmd.exe");
+            var runner = new CopilotShellProcessRunner(gate.Assign);
+            var runTask = Task.Run(() => runner.RunAsync(
+                new CopilotShellProcessCommand(
+                    CopilotShellKind.CommandPrompt,
+                    executable,
+                    CopilotShellCommandService.BuildArguments(
+                        CopilotShellKind.CommandPrompt,
+                        "echo executed>cancelled-before-run.txt"),
+                    workspace,
+                    TimeSpan.FromSeconds(10)),
+                cancellationSource.Token));
+
+            processIdentity = await gate.Entered.WaitAsync(TimeSpan.FromSeconds(5));
+            cancellationSource.Cancel();
+            gate.Release();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runTask);
+
+            Assert.False(
+                File.Exists(executionMarker),
+                "The cancelled shell command resumed after Job Object assignment.");
+            Assert.True(
+                await WaitForProcessExitAsync(processIdentity.Value, TimeSpan.FromSeconds(2)),
+                $"Cancelled suspended shell process {processIdentity.Value.Id} survived cleanup.");
+        }
+        finally
+        {
+            gate.Release();
+            if (processIdentity.HasValue)
+                await KillLeakedProcessAsync(processIdentity.Value);
+            await DeleteTemporaryDirectoryAsync(workspace);
+        }
+    }
+
+    [Fact]
+    public async Task RedirectedStreamsDrainWhenStderrFillsBeforeStdout()
+    {
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var executable = CopilotShellCommandService.FindTrustedShellExecutable(
+                CopilotShellKind.PowerShell);
+            Assert.False(string.IsNullOrWhiteSpace(executable));
+            var result = await new CopilotShellProcessRunner().RunAsync(
+                new CopilotShellProcessCommand(
+                    CopilotShellKind.PowerShell,
+                    executable!,
+                    CopilotShellCommandService.BuildArguments(
+                        CopilotShellKind.PowerShell,
+                        "[Console]::Error.Write(('e' * 131072)); [Console]::Out.Write('stdout-after-stderr'); exit 0"),
+                    workspace,
+                    TimeSpan.FromSeconds(10)),
+                CancellationToken.None);
 
             Assert.False(result.TimedOut);
             Assert.Equal(0, result.ExitCode);
-            Assert.True(result.ProcessTreeContained);
-            Assert.True(
-                await WaitForFileAsync(markerPath, TimeSpan.FromSeconds(5)),
-                "The completed hook's detached descendant was terminated with the root process.");
+            Assert.Contains("stdout-after-stderr", result.StandardOutput, StringComparison.Ordinal);
+            Assert.True(result.ObservedStandardErrorCharacters >= 131_072);
+            Assert.True(result.StandardErrorTruncated);
         }
         finally
         {
@@ -38,7 +184,7 @@ public sealed class CopilotShellProcessRunnerLifecycleTests
     }
 
     [Fact]
-    public async Task CompletedApprovedShellProcessStillTerminatesDetachedDescendant()
+    public async Task CompletedShellProcessTerminatesDetachedDescendant()
     {
         var workspace = CreateTemporaryDirectory();
         var markerPath = Path.Combine(workspace, "must-not-survive.txt");
@@ -48,7 +194,6 @@ public sealed class CopilotShellProcessRunnerLifecycleTests
                 workspace,
                 markerPath,
                 keepRootAlive: false,
-                preserveDescendants: false,
                 timeout: TimeSpan.FromSeconds(5));
 
             Assert.False(result.TimedOut);
@@ -67,7 +212,7 @@ public sealed class CopilotShellProcessRunnerLifecycleTests
     }
 
     [Fact]
-    public async Task TimedOutHookProcessStillTerminatesDetachedDescendant()
+    public async Task TimedOutShellProcessTerminatesDetachedDescendant()
     {
         var workspace = CreateTemporaryDirectory();
         var markerPath = Path.Combine(workspace, "must-not-exist.txt");
@@ -78,7 +223,6 @@ public sealed class CopilotShellProcessRunnerLifecycleTests
                 workspace,
                 markerPath,
                 keepRootAlive: true,
-                preserveDescendants: true,
                 timeout: TimeSpan.FromSeconds(5),
                 releaseMarkerPath: releaseMarkerPath);
 
@@ -88,7 +232,7 @@ public sealed class CopilotShellProcessRunnerLifecycleTests
             File.WriteAllText(releaseMarkerPath, "release");
             Assert.False(
                 await WaitForFileAsync(markerPath, TimeSpan.FromSeconds(2)),
-                "A detached descendant survived after the hook process timed out.");
+                "A detached descendant survived after the shell process timed out.");
         }
         finally
         {
@@ -97,7 +241,7 @@ public sealed class CopilotShellProcessRunnerLifecycleTests
     }
 
     [Fact]
-    public async Task CancelledHookProcessStillTerminatesDetachedDescendant()
+    public async Task CancelledShellProcessTerminatesDetachedDescendant()
     {
         var workspace = CreateTemporaryDirectory();
         var markerPath = Path.Combine(workspace, "cancelled-must-not-exist.txt");
@@ -111,7 +255,6 @@ public sealed class CopilotShellProcessRunnerLifecycleTests
                     workspace,
                     markerPath,
                     keepRootAlive: true,
-                    preserveDescendants: true,
                     timeout: TimeSpan.FromSeconds(5),
                     standardOutputReceived: chunk =>
                     {
@@ -127,7 +270,7 @@ public sealed class CopilotShellProcessRunnerLifecycleTests
             await Task.Delay(TimeSpan.FromSeconds(2));
             Assert.False(
                 File.Exists(markerPath),
-                "A detached descendant survived after the hook process was cancelled.");
+                "A detached descendant survived after the shell process was cancelled.");
         }
         finally
         {
@@ -139,7 +282,6 @@ public sealed class CopilotShellProcessRunnerLifecycleTests
         string workspace,
         string markerPath,
         bool keepRootAlive,
-        bool preserveDescendants,
         TimeSpan timeout,
         Action<string>? standardOutputReceived = null,
         string? releaseMarkerPath = null,
@@ -174,7 +316,6 @@ public sealed class CopilotShellProcessRunnerLifecycleTests
                 workspace,
                 timeout)
             {
-                PreserveDescendantsOnCompletion = preserveDescendants,
                 StandardOutputReceived = standardOutputReceived,
             },
             cancellationToken);
@@ -190,6 +331,75 @@ public sealed class CopilotShellProcessRunnerLifecycleTests
             await Task.Delay(25);
         }
         return File.Exists(path);
+    }
+
+    private static async Task<bool> WaitForProcessExitAsync(
+        ProcessIdentity identity,
+        TimeSpan timeout)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        while (stopwatch.Elapsed < timeout)
+        {
+            try
+            {
+                using var process = Process.GetProcessById(identity.Id);
+                if (process.HasExited || !identity.Matches(process))
+                    return true;
+            }
+            catch (ArgumentException)
+            {
+                return true;
+            }
+
+            await Task.Delay(25);
+        }
+        return false;
+    }
+
+    private static async Task KillLeakedProcessAsync(ProcessIdentity identity)
+    {
+        try
+        {
+            using var process = Process.GetProcessById(identity.Id);
+            if (process.HasExited || !identity.Matches(process))
+                return;
+            process.Kill(entireProcessTree: true);
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException
+            or System.ComponentModel.Win32Exception or TimeoutException)
+        {
+        }
+    }
+
+    private readonly record struct ProcessIdentity(int Id, DateTime StartTimeUtc)
+    {
+        public static ProcessIdentity Capture(Process process) =>
+            new(process.Id, process.StartTime.ToUniversalTime());
+
+        public bool Matches(Process process) =>
+            process.Id == Id && process.StartTime.ToUniversalTime() == StartTimeUtc;
+    }
+
+    private sealed class BlockingJobAssigner(bool succeed) : IDisposable
+    {
+        private readonly TaskCompletionSource<ProcessIdentity> _entered =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly ManualResetEventSlim _release = new();
+
+        public Task<ProcessIdentity> Entered => _entered.Task;
+
+        public CopilotWindowsProcessJob? Assign(Process process)
+        {
+            _entered.TrySetResult(ProcessIdentity.Capture(process));
+            if (!_release.Wait(TimeSpan.FromSeconds(10)))
+                throw new TimeoutException("The test did not release Job Object assignment.");
+            return succeed ? CopilotWindowsProcessJob.TryAssign(process) : null;
+        }
+
+        public void Release() => _release.Set();
+
+        public void Dispose() => _release.Dispose();
     }
 
     private static string QuotePowerShellLiteral(string value) =>

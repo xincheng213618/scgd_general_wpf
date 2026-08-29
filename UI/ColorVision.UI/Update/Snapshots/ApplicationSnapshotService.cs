@@ -36,7 +36,9 @@ namespace ColorVision.Update
 
         public required bool IsUpdate { get; init; }
 
-        public string SnapshotTypeText => IsDefault ? "默认快照" : IsUpdate ? "更新快照" : "用户快照";
+        public required bool IsAutomatic { get; init; }
+
+        public string SnapshotTypeText => IsAutomatic ? "自动存档" : IsDefault ? "默认快照" : IsUpdate ? "更新快照" : "用户快照";
 
         public string VersionText => string.IsNullOrWhiteSpace(VersionTarget) ? Version : $"{Version} -> {VersionTarget}";
 
@@ -78,8 +80,10 @@ namespace ColorVision.Update
     {
         private const string ManifestFileName = "snapshot-manifest.json";
         private const string DefaultSnapshotFileName = "default.zip";
+        private const string AutomaticSnapshotFileName = "autosave.zip";
         private const int MaxAutomaticUpdateSnapshots = 3;
         private const int CopyBufferSize = 1024 * 1024;
+        private static readonly TimeSpan HealthyStartupSnapshotDelay = TimeSpan.FromSeconds(10);
         private static readonly ILog log = LogManager.GetLogger(typeof(ApplicationSnapshotService));
         private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
         private static readonly object SnapshotCreationLock = new();
@@ -87,14 +91,21 @@ namespace ColorVision.Update
         {
             ".7z", ".avi", ".cvx", ".cvxp", ".gif", ".gz", ".jpeg", ".jpg", ".mp3", ".mp4", ".pdf", ".png", ".rar", ".webp", ".zip"
         };
+        private int _healthyStartupSnapshotScheduled;
 
         public static ApplicationSnapshotService Instance { get; } = new();
+
+        public event EventHandler<ApplicationSnapshotInfo>? SnapshotCreated;
 
         public string SnapshotDirectory => Path.Combine(
             Environments.DirApplicationSnapshots,
             ExitUpdateHandoff.GetInstallationKey(AppDomain.CurrentDomain.BaseDirectory));
 
         public string DefaultSnapshotPath => Path.Combine(SnapshotDirectory, DefaultSnapshotFileName);
+
+        public string AutomaticSnapshotDirectory => ResolveAutomaticSnapshotDirectory(GetConfiguredAutomaticSnapshotDirectory());
+
+        public string AutomaticSnapshotPath => Path.Combine(AutomaticSnapshotDirectory, AutomaticSnapshotFileName);
 
         private ApplicationSnapshotService()
         {
@@ -103,6 +114,30 @@ namespace ColorVision.Update
         public Task<ApplicationSnapshotInfo> CreateDefaultSnapshotAsync(bool force, CancellationToken cancellationToken = default)
         {
             return Task.Run(() => CreateSnapshotCore(DefaultSnapshotPath, SnapshotKind.Default, versionTarget: string.Empty, overwrite: force, cancellationToken), cancellationToken);
+        }
+
+        public void ScheduleHealthyStartupAutomaticSnapshot()
+        {
+            if (!GetSnapshotConfig().CreateAutomaticSnapshotAfterHealthyStartup
+                || Interlocked.Exchange(ref _healthyStartupSnapshotScheduled, 1) != 0)
+            {
+                return;
+            }
+
+            try
+            {
+                new Thread(CreateHealthyStartupAutomaticSnapshot)
+                {
+                    IsBackground = true,
+                    Name = "ColorVision application automatic snapshot",
+                    Priority = ThreadPriority.Lowest,
+                }.Start();
+            }
+            catch (Exception ex)
+            {
+                Volatile.Write(ref _healthyStartupSnapshotScheduled, 0);
+                log.Warn($"Unable to start the automatic application snapshot worker: {ex.Message}");
+            }
         }
 
         public Task<ApplicationSnapshotInfo> CreateUserSnapshotAsync(CancellationToken cancellationToken = default)
@@ -165,7 +200,8 @@ namespace ColorVision.Update
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Select(TryReadSnapshotInfoOrIgnore)
                 .OfType<ApplicationSnapshotInfo>()
-                .OrderByDescending(item => item.IsDefault)
+                .OrderByDescending(item => item.IsAutomatic)
+                .ThenByDescending(item => item.IsDefault)
                 .ThenByDescending(item => item.CreatedAt)
                 .ToList();
         }
@@ -173,8 +209,47 @@ namespace ColorVision.Update
         private IEnumerable<string> GetSnapshotSearchDirectories()
         {
             yield return SnapshotDirectory;
+            string automaticSnapshotDirectory = AutomaticSnapshotDirectory;
+            if (!string.Equals(automaticSnapshotDirectory, SnapshotDirectory, StringComparison.OrdinalIgnoreCase))
+                yield return automaticSnapshotDirectory;
             if (!string.Equals(SnapshotDirectory, Environments.DirApplicationSnapshots, StringComparison.OrdinalIgnoreCase))
                 yield return Environments.DirApplicationSnapshots;
+        }
+
+        public string ResolveAutomaticSnapshotDirectory(string? configuredDirectory)
+        {
+            string directory = string.IsNullOrWhiteSpace(configuredDirectory)
+                ? SnapshotDirectory
+                : Environment.ExpandEnvironmentVariables(configuredDirectory.Trim());
+            if (!Path.IsPathFullyQualified(directory))
+                throw new InvalidOperationException("自动存档位置必须是完整路径。");
+
+            string fullPath = NormalizeDirectory(directory);
+            string programDirectory = NormalizeDirectory(AppDomain.CurrentDomain.BaseDirectory);
+            if (string.Equals(fullPath, programDirectory, StringComparison.OrdinalIgnoreCase)
+                || IsPathUnderDirectory(programDirectory, fullPath))
+            {
+                throw new InvalidOperationException("自动存档位置不能放在 ColorVision 程序目录内。");
+            }
+
+            return fullPath;
+        }
+
+        internal static bool ShouldCreateAutomaticSnapshot(string snapshotPath, string currentVersion)
+        {
+            if (!File.Exists(snapshotPath))
+                return true;
+
+            try
+            {
+                ApplicationSnapshotInfo snapshot = ReadSnapshotInfo(snapshotPath);
+                return !snapshot.IsAutomatic
+                    || !string.Equals(snapshot.Version, currentVersion, StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+            {
+                return true;
+            }
         }
 
         public Task DeleteSnapshotAsync(ApplicationSnapshotInfo snapshot, CancellationToken cancellationToken = default)
@@ -242,7 +317,10 @@ namespace ColorVision.Update
                     JsonSerializer.Serialize(manifestStream, manifest, JsonOptions);
                 }
 
-                PromoteCompletedSnapshot(tempPath, snapshotPath);
+                if (kind == SnapshotKind.Automatic)
+                    PromoteCompletedAutomaticSnapshot(tempPath, snapshotPath);
+                else
+                    PromoteCompletedSnapshot(tempPath, snapshotPath);
                 return ReadSnapshotInfo(snapshotPath);
             }
             finally
@@ -332,6 +410,8 @@ namespace ColorVision.Update
                 || manifest?.IsDefault == true;
             bool isUpdate = string.Equals(manifest?.SnapshotKind, SnapshotKind.Update.ToString(), StringComparison.OrdinalIgnoreCase)
                 || fileInfo.Name.StartsWith("ColorVision-update-", StringComparison.OrdinalIgnoreCase);
+            bool isAutomatic = string.Equals(manifest?.SnapshotKind, SnapshotKind.Automatic.ToString(), StringComparison.OrdinalIgnoreCase)
+                || string.Equals(fileInfo.Name, AutomaticSnapshotFileName, StringComparison.OrdinalIgnoreCase);
 
             return new ApplicationSnapshotInfo
             {
@@ -343,6 +423,7 @@ namespace ColorVision.Update
                 SizeBytes = fileInfo.Exists ? fileInfo.Length : 0,
                 IsDefault = isDefault,
                 IsUpdate = isUpdate,
+                IsAutomatic = isAutomatic,
             };
         }
 
@@ -384,6 +465,47 @@ namespace ColorVision.Update
                 if (recoveryPath != null && !File.Exists(snapshotPath) && File.Exists(recoveryPath))
                     File.Move(recoveryPath, snapshotPath);
                 throw;
+            }
+        }
+
+        internal static void PromoteCompletedAutomaticSnapshot(string completedSnapshotPath, string snapshotPath)
+        {
+            if (!File.Exists(snapshotPath))
+            {
+                File.Move(completedSnapshotPath, snapshotPath);
+                return;
+            }
+
+            try
+            {
+                File.Replace(completedSnapshotPath, snapshotPath, destinationBackupFileName: null, ignoreMetadataErrors: true);
+                return;
+            }
+            catch (Exception ex) when (ex is IOException or PlatformNotSupportedException)
+            {
+                log.Debug($"Atomic automatic snapshot replacement was unavailable for '{snapshotPath}': {ex.Message}");
+            }
+
+            string previousPath = $"{snapshotPath}.{Guid.NewGuid():N}.previous";
+            File.Move(snapshotPath, previousPath);
+            try
+            {
+                File.Move(completedSnapshotPath, snapshotPath);
+            }
+            catch
+            {
+                if (!File.Exists(snapshotPath) && File.Exists(previousPath))
+                    File.Move(previousPath, snapshotPath);
+                throw;
+            }
+
+            try
+            {
+                File.Delete(previousPath);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                log.Debug($"Unable to remove the replaced automatic snapshot '{previousPath}': {ex.Message}");
             }
         }
 
@@ -559,11 +681,120 @@ namespace ColorVision.Update
                 .Replace(">", "^>");
         }
 
+        private void CreateHealthyStartupAutomaticSnapshot()
+        {
+            Thread.Sleep(HealthyStartupSnapshotDelay);
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            try
+            {
+                ApplicationSnapshotConfig config = GetSnapshotConfig();
+                if (!config.CreateAutomaticSnapshotAfterHealthyStartup)
+                    return;
+
+                string snapshotDirectory = ResolveAutomaticSnapshotDirectory(config.AutomaticSnapshotDirectory);
+                string snapshotPath = Path.Combine(snapshotDirectory, AutomaticSnapshotFileName);
+                string currentVersion = GetCurrentVersionText();
+                if (!ShouldCreateAutomaticSnapshot(snapshotPath, currentVersion))
+                {
+                    log.Info($"Automatic application snapshot is already current: {snapshotPath}");
+                    return;
+                }
+
+                DeleteAbandonedAutomaticSnapshotFiles(snapshotDirectory);
+                ApplicationSnapshotInfo snapshot = CreateSnapshotCore(
+                    snapshotPath,
+                    SnapshotKind.Automatic,
+                    versionTarget: string.Empty,
+                    overwrite: true,
+                    CancellationToken.None);
+                try
+                {
+                    SnapshotCreated?.Invoke(this, snapshot);
+                }
+                catch (Exception ex)
+                {
+                    log.Debug($"Automatic snapshot notification failed: {ex.Message}");
+                }
+                log.Info($"Created automatic application snapshot in {stopwatch.ElapsedMilliseconds} ms: {snapshotPath}");
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"Automatic application snapshot failed after {stopwatch.ElapsedMilliseconds} ms: {ex.Message}");
+            }
+        }
+
+        private static ApplicationSnapshotConfig GetSnapshotConfig()
+        {
+            return ConfigService.Instance.GetRequiredService<ApplicationSnapshotConfig>();
+        }
+
+        private static string? GetConfiguredAutomaticSnapshotDirectory()
+        {
+            try
+            {
+                return ConfigService.Instance?.GetRequiredService<ApplicationSnapshotConfig>().AutomaticSnapshotDirectory;
+            }
+            catch (InvalidOperationException)
+            {
+                return null;
+            }
+        }
+
+        private static void DeleteAbandonedAutomaticSnapshotFiles(string snapshotDirectory)
+        {
+            if (!Directory.Exists(snapshotDirectory))
+                return;
+
+            foreach (string filePath in Directory.EnumerateFiles(snapshotDirectory, $"{AutomaticSnapshotFileName}.*.tmp", SearchOption.TopDirectoryOnly))
+            {
+                try
+                {
+                    File.Delete(filePath);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    log.Debug($"Unable to remove abandoned automatic snapshot file '{filePath}': {ex.Message}");
+                }
+            }
+
+            foreach (string filePath in Directory.EnumerateFiles(snapshotDirectory, $"{AutomaticSnapshotFileName}.*.previous", SearchOption.TopDirectoryOnly))
+            {
+                try
+                {
+                    File.Delete(filePath);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    log.Debug($"Unable to remove a replaced automatic snapshot '{filePath}': {ex.Message}");
+                }
+            }
+        }
+
+        private static bool IsPathUnderDirectory(string directory, string candidatePath)
+        {
+            string normalizedDirectory = NormalizeDirectory(directory);
+            string prefix = Path.EndsInDirectorySeparator(normalizedDirectory)
+                ? normalizedDirectory
+                : normalizedDirectory + Path.DirectorySeparatorChar;
+            return candidatePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string NormalizeDirectory(string directory)
+        {
+            string fullPath = Path.GetFullPath(directory);
+            string? root = Path.GetPathRoot(fullPath);
+            string trimmed = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            return string.IsNullOrEmpty(trimmed) || (root != null && trimmed.Length < root.Length)
+                ? fullPath
+                : trimmed;
+        }
+
         private enum SnapshotKind
         {
             Default,
             User,
-            Update
+            Update,
+            Automatic
         }
     }
 }

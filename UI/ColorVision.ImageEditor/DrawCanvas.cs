@@ -61,9 +61,16 @@ namespace ColorVision.ImageEditor
         #region ActionCommand
         public ObservableCollection<ActionCommand> UndoStack { get; } = new();
         public ObservableCollection<ActionCommand> RedoStack { get; } = new();
+        private ActionCommand? _executingActionCommand;
+        private bool _discardExecutingActionCommand;
+        private bool _isExecutingHistoryAction;
+        private readonly HashSet<Visual> _visualRemovalCommandTargets = new();
+        private readonly HashSet<Visual> _visualCommandAdditionsInProgress = new();
 
         public void ClearActionCommand()
         {
+            if (_executingActionCommand != null)
+                _discardExecutingActionCommand = true;
             UndoStack.Clear();
             RedoStack.Clear();
         }
@@ -76,24 +83,82 @@ namespace ColorVision.ImageEditor
 
         public void Undo()
         {
-            if (UndoStack.Count > 0)
+            if (_isExecutingHistoryAction || UndoStack.Count == 0)
+                return;
+
+            ActionCommand undoAction = UndoStack[^1];
+            _isExecutingHistoryAction = true;
+            _executingActionCommand = undoAction;
+            _discardExecutingActionCommand = false;
+            try
             {
-                var undoAction = UndoStack[^1];
                 UndoStack.RemoveAt(UndoStack.Count - 1);
                 undoAction.UndoAction();
-                RedoStack.Add(undoAction);
+
+                if (!_discardExecutingActionCommand)
+                    RedoStack.Add(undoAction);
+
+                if (_discardExecutingActionCommand)
+                {
+                    UndoStack.Remove(undoAction);
+                    RedoStack.Remove(undoAction);
+                }
+            }
+            finally
+            {
+                _executingActionCommand = null;
+                _discardExecutingActionCommand = false;
+                _isExecutingHistoryAction = false;
             }
         }
 
         public void Redo()
         {
-            if (RedoStack.Count > 0)
+            if (_isExecutingHistoryAction || RedoStack.Count == 0)
+                return;
+
+            ActionCommand redoAction = RedoStack[^1];
+            _isExecutingHistoryAction = true;
+            _executingActionCommand = redoAction;
+            _discardExecutingActionCommand = false;
+            try
             {
-                var redoAction = RedoStack[^1];
                 RedoStack.RemoveAt(RedoStack.Count - 1);
                 redoAction.RedoAction();
-                UndoStack.Add(redoAction);
+
+                if (!_discardExecutingActionCommand)
+                    UndoStack.Add(redoAction);
+
+                if (_discardExecutingActionCommand)
+                {
+                    UndoStack.Remove(redoAction);
+                    RedoStack.Remove(redoAction);
+                }
             }
+            finally
+            {
+                _executingActionCommand = null;
+                _discardExecutingActionCommand = false;
+                _isExecutingHistoryAction = false;
+            }
+        }
+
+        internal void DiscardActionCommand(ActionCommand actionCommand)
+        {
+            ArgumentNullException.ThrowIfNull(actionCommand);
+            if (ReferenceEquals(_executingActionCommand, actionCommand))
+            {
+                _discardExecutingActionCommand = true;
+                return;
+            }
+
+            UndoStack.Remove(actionCommand);
+            RedoStack.Remove(actionCommand);
+        }
+
+        internal bool IsVisualRemovalCommandInProgress(Visual visual)
+        {
+            return _visualRemovalCommandTargets.Contains(visual);
         }
         #endregion
 
@@ -139,7 +204,7 @@ namespace ColorVision.ImageEditor
         {
             ClearActionCommand();
             foreach (Visual item in visuals.ToList())
-                TryRemoveVisual(item);
+                TryRemoveVisual(item, raiseEvents: !overlayVisuals.Contains(item));
 
             overlayVisuals.Clear();
             VisualsChanged?.Invoke(this, new VisualChangedEventArgs((Visual?)null, VisualChangeType.Clear));
@@ -160,6 +225,23 @@ namespace ColorVision.ImageEditor
                 ApplyLayoutScale(visual, context);
         }
 
+        protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+        {
+            base.OnDpiChanged(oldDpi, newDpi);
+            if (HasSameDpi(oldDpi, newDpi))
+                return;
+
+            foreach (Visual visual in visuals)
+            {
+                if (visual is IDrawingVisual drawingVisual
+                    && visual is DrawingVisual renderedVisual
+                    && renderedVisual.Drawing != null)
+                {
+                    drawingVisual.Render();
+                }
+            }
+        }
+
         private DrawingVisualScaleContext CreateScaleContext()
         {
             return new DrawingVisualScaleContext(IsLayoutUpdated, Scale, TextFontSizeOverride);
@@ -171,25 +253,61 @@ namespace ColorVision.ImageEditor
                 scalableVisual.ApplyLayoutScale(context);
         }
 
-        private bool TryAddVisual(Visual? visual, int? index = null, bool raiseEvents = true)
+        internal bool TrySynchronizeDetachedVisualDpi(Visual visual)
+        {
+            if (!Dispatcher.CheckAccess()
+                || VisualTreeHelper.GetParent(visual) != null
+                || PresentationSource.FromVisual(visual) != null)
+            {
+                return false;
+            }
+
+            DpiScale visualDpi = VisualTreeHelper.GetDpi(visual);
+            DpiScale canvasDpi = VisualTreeHelper.GetDpi(this);
+            if (HasSameDpi(visualDpi, canvasDpi))
+                return false;
+
+            VisualTreeHelper.SetRootDpi(visual, canvasDpi);
+            return true;
+        }
+
+        private static bool HasSameDpi(DpiScale left, DpiScale right)
+        {
+            return left.DpiScaleX == right.DpiScaleX && left.DpiScaleY == right.DpiScaleY;
+        }
+
+        private bool TryAddVisual(Visual? visual, int? index = null, bool raiseEvents = true, DrawingVisualScaleContext? scaleContext = null)
         {
             if (visual == null || !visualSet.Add(visual)) return false;
 
-            ApplyLayoutScale(visual, CreateScaleContext());
-
-            if (index.HasValue)
+            try
             {
-                int targetIndex = index.Value;
-                if (targetIndex < 0) targetIndex = 0;
-                if (targetIndex > visuals.Count) targetIndex = visuals.Count;
-                visuals.Insert(targetIndex, visual);
-            }
-            else
-            {
-                visuals.Add(visual);
-            }
+                bool hadDrawing = visual is DrawingVisual drawingVisual && drawingVisual.Drawing != null;
+                bool dpiChanged = TrySynchronizeDetachedVisualDpi(visual);
+                ApplyLayoutScale(visual, scaleContext ?? CreateScaleContext());
+                if (dpiChanged && hadDrawing && visual is IDrawingVisual drawable)
+                    drawable.Render();
 
-            AddVisualTree(visual);
+                if (index.HasValue)
+                {
+                    int targetIndex = index.Value;
+                    if (targetIndex < 0) targetIndex = 0;
+                    if (targetIndex > visuals.Count) targetIndex = visuals.Count;
+                    visuals.Insert(targetIndex, visual);
+                }
+                else
+                {
+                    visuals.Add(visual);
+                }
+
+                AddVisualTree(visual);
+            }
+            catch
+            {
+                visuals.Remove(visual);
+                visualSet.Remove(visual);
+                throw;
+            }
 
             if (raiseEvents)
                 RaiseVisualAdded(visual);
@@ -235,17 +353,21 @@ namespace ColorVision.ImageEditor
 
             List<Visual> addedVisuals = new();
             DrawingVisualScaleContext context = CreateScaleContext();
-            foreach (Visual visual in items)
+            try
             {
-                if (visual == null || !visualSet.Add(visual))
+                foreach (Visual visual in items)
                 {
-                    continue;
-                }
+                    if (!TryAddVisual(visual, raiseEvents: false, scaleContext: context))
+                        continue;
 
-                ApplyLayoutScale(visual, context);
-                visuals.Add(visual);
-                AddVisualTree(visual);
-                addedVisuals.Add(visual);
+                    addedVisuals.Add(visual);
+                }
+            }
+            catch
+            {
+                for (int i = addedVisuals.Count - 1; i >= 0; i--)
+                    TryRemoveVisual(addedVisuals[i], raiseEvents: false);
+                throw;
             }
 
             if (addedVisuals.Count > 0)
@@ -274,16 +396,54 @@ namespace ColorVision.ImageEditor
         public void AddVisualCommand(Visual visual)
         {
             if (!TryAddVisual(visual)) return;
+            AddVisualActionCommand(visual);
+        }
 
+        internal ActionCommand? AddVisualCommandCore(Visual visual)
+        {
+            bool ownsAdditionMarker = _visualCommandAdditionsInProgress.Add(visual);
+            bool added;
+            try
+            {
+                added = TryAddVisual(visual);
+            }
+            finally
+            {
+                if (ownsAdditionMarker)
+                    _visualCommandAdditionsInProgress.Remove(visual);
+            }
+
+            if (!added || !ContainsVisual(visual)) return null;
+            return AddVisualActionCommand(visual);
+        }
+
+        private ActionCommand AddVisualActionCommand(Visual visual)
+        {
             Action undoaction = () => RemoveVisual(visual);
             Action redoaction = () => AddVisual(visual);
-            AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "添加" });
+            ActionCommand command = new(undoaction, redoaction) { Header = "添加" };
+            AddActionCommand(command);
+            return command;
         }
 
         public void RemoveVisualCommand(Visual? visual)
         {
             int index = visuals.IndexOf(visual);
-            if (!TryRemoveVisual(visual)) return;
+            if (visual == null) return;
+
+            bool ownsRemovalMarker = _visualRemovalCommandTargets.Add(visual);
+            bool removed;
+            try
+            {
+                removed = TryRemoveVisual(visual);
+            }
+            finally
+            {
+                if (ownsRemovalMarker)
+                    _visualRemovalCommandTargets.Remove(visual);
+            }
+            if (!removed) return;
+            if (_visualCommandAdditionsInProgress.Contains(visual)) return;
 
             Action undoaction = () => InsertVisual(index, visual);
             Action redoaction = () => RemoveVisual(visual);
@@ -337,8 +497,9 @@ namespace ColorVision.ImageEditor
         // 批量置顶
         public void BatchTopVisuals(IEnumerable<Visual> topVisuals)
         {
-            // 用 HashSet 提高查找性能（避免重复）
-            var toMove = topVisuals?.Where(v => v != null && visualSet.Contains(v)).ToList();
+            // Materialize once because callers may provide a lazy view over Visuals.
+            // Distinct also avoids rebuilding the visual tree repeatedly for duplicate input.
+            var toMove = topVisuals?.Where(visualSet.Contains).Distinct().ToList();
             if (toMove == null || toMove.Count == 0) return;
 
             foreach (var visual in toMove)
@@ -356,7 +517,15 @@ namespace ColorVision.ImageEditor
         private void AddVisualTree(Visual visual)
         {
             AddVisualChild(visual);
-            AddLogicalChild(visual);
+            try
+            {
+                AddLogicalChild(visual);
+            }
+            catch
+            {
+                RemoveVisualChild(visual);
+                throw;
+            }
         }
 
         private void RemoveVisualTree(Visual visual)

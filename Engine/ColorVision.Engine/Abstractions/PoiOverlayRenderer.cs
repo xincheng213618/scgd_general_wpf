@@ -23,12 +23,25 @@ namespace ColorVision.Engine
     /// </summary>
     public static class PoiOverlayRenderer
     {
+        private static readonly PoiOverlayStyle DefaultStyle = new();
+
         public static DrawingVisualBase? CreateVisual(PoiPoint point, string? message = null, PoiOverlayStyle? style = null)
         {
-            ArgumentNullException.ThrowIfNull(point);
-            style ??= new PoiOverlayStyle();
+            style ??= DefaultStyle;
 
-            DrawingVisualBase? visual = point.PointType switch
+            DrawingVisualBase? visual = CreateVisualCore(point, message, style);
+            if (visual == null)
+                return null;
+
+            visual.BaseAttribute.Tag = point;
+            visual.Render();
+            return visual;
+        }
+
+        private static DrawingVisualBase? CreateVisualCore(PoiPoint point, string? message, PoiOverlayStyle style)
+        {
+            ArgumentNullException.ThrowIfNull(point);
+            return point.PointType switch
             {
                 PoiShape.Circle => CreateCircle(point, message, style),
                 PoiShape.Rect => CreateRectangle(point, message, style, isLeftTop: false),
@@ -36,21 +49,15 @@ namespace ColorVision.Engine
                 PoiShape.Point or PoiShape.LegacySolidPoint => CreatePoint(point, style),
                 _ => null
             };
-
-            if (visual != null)
-            {
-                visual.BaseAttribute.Tag = point;
-                visual.Render();
-            }
-            return visual;
         }
 
         public static bool Add(ImageView imageView, PoiPoint point, string? message = null, PoiOverlayStyle? style = null)
         {
             ArgumentNullException.ThrowIfNull(imageView);
-            DrawingVisualBase? visual = CreateVisual(point, message, style);
+            DrawingVisualBase? visual = CreateVisualCore(point, message, style ?? DefaultStyle);
             if (visual == null) return false;
 
+            PrepareVisual(visual, point, CreateScaleContext(imageView));
             imageView.ImageShow.AddVisual(visual);
             return true;
         }
@@ -60,27 +67,53 @@ namespace ColorVision.Engine
             ArgumentNullException.ThrowIfNull(imageView);
             ArgumentNullException.ThrowIfNull(points);
 
+            PoiOverlayStyle effectiveStyle = style ?? DefaultStyle;
             List<Visual> visuals = new();
+            DrawingVisualScaleContext scaleContext = CreateScaleContext(imageView);
             foreach (PoiPoint point in points)
             {
-                DrawingVisualBase? visual = CreateVisual(point, messageFactory?.Invoke(point), style);
-                if (visual != null) visuals.Add(visual);
+                DrawingVisualBase? visual = CreateVisualCore(point, messageFactory?.Invoke(point), effectiveStyle);
+                if (visual == null)
+                    continue;
+
+                PrepareVisual(visual, point, scaleContext);
+                visuals.Add(visual);
             }
             return imageView.ImageShow.AddVisuals(visuals);
         }
 
+        private static DrawingVisualScaleContext CreateScaleContext(ImageView imageView)
+        {
+            return new DrawingVisualScaleContext(
+                imageView.ImageShow.IsLayoutUpdated,
+                imageView.ImageShow.Scale,
+                imageView.ImageShow.TextFontSizeOverride);
+        }
+
+        private static void PrepareVisual(DrawingVisualBase visual, PoiPoint point, DrawingVisualScaleContext scaleContext)
+        {
+            visual.BaseAttribute.Tag = point;
+            if (visual is ILayoutScaleDrawingVisual scalableVisual)
+                scalableVisual.ApplyLayoutScale(scaleContext);
+            if (visual.Drawing == null)
+                visual.Render();
+        }
+
         private static DVCircleText CreateCircle(PoiPoint point, string? message, PoiOverlayStyle style)
         {
-            DVCircleText circle = new();
-            circle.Attribute.Center = new Point(point.PixelX, point.PixelY);
-            circle.Attribute.Radius = point.Radius;
-            circle.Attribute.Brush = style.Fill;
-            circle.Attribute.Pen = new Pen(style.Stroke, style.StrokeThickness);
-            circle.Attribute.Id = point.Id;
-            circle.Attribute.Text = point.Name;
-            circle.Attribute.Msg = message;
-            circle.Attribute.FontSize = style.FontSize;
-            circle.Attribute.IsShowText = style.ShowText;
+            CircleTextProperties properties = new()
+            {
+                Center = new Point(point.PixelX, point.PixelY),
+                Radius = point.Radius,
+                Brush = style.Fill,
+                Pen = new Pen(style.Stroke, style.StrokeThickness),
+                Id = point.Id,
+                Text = point.Name,
+                Msg = message,
+                IsShowText = style.ShowText,
+            };
+            DVCircleText circle = new(properties);
+            circle.TextAttribute.FontSize = style.FontSize;
             return circle;
         }
 
@@ -88,15 +121,18 @@ namespace ColorVision.Engine
         {
             double left = isLeftTop ? point.PixelX : point.PixelX - point.Width / 2;
             double top = isLeftTop ? point.PixelY : point.PixelY - point.Height / 2;
-            DVRectangleText rectangle = new();
-            rectangle.Attribute.Rect = new Rect(left, top, point.Width, point.Height);
-            rectangle.Attribute.Brush = style.Fill;
-            rectangle.Attribute.Pen = new Pen(style.Stroke, style.StrokeThickness);
-            rectangle.Attribute.Id = point.Id;
-            rectangle.Attribute.Text = point.Name;
-            rectangle.Attribute.Msg = message;
-            rectangle.Attribute.FontSize = style.FontSize;
-            rectangle.Attribute.IsShowText = style.ShowText;
+            RectangleTextProperties properties = new()
+            {
+                Rect = new Rect(left, top, point.Width, point.Height),
+                Brush = style.Fill,
+                Pen = new Pen(style.Stroke, style.StrokeThickness),
+                Id = point.Id,
+                Text = point.Name,
+                Msg = message,
+                IsShowText = style.ShowText,
+            };
+            DVRectangleText rectangle = new(properties);
+            rectangle.TextAttribute.FontSize = style.FontSize;
             return rectangle;
         }
 

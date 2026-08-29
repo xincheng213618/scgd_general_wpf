@@ -135,7 +135,7 @@ namespace ColorVision.Copilot
                     CopilotAgentExecutionRequirement.WorkspaceValidation => "approved workspace validation",
                     CopilotAgentExecutionRequirement.WorkspaceRollback => "approved workspace rollback",
                     CopilotAgentExecutionRequirement.ShellExecution => "approved command or script execution",
-                    CopilotAgentExecutionRequirement.BatchImageConversion => "approved native batch image conversion",
+                    CopilotAgentExecutionRequirement.BatchImageConversion => "approved native batch image conversion or whitelisted algorithm execution",
                     CopilotAgentExecutionRequirement.BatchImageProcessing => "native batch image processor",
                     _ => "no mandatory tool evidence",
                 };
@@ -338,7 +338,7 @@ namespace ColorVision.Copilot
             }
             if (missingGroup.Contains("ConvertBatchImages", StringComparer.OrdinalIgnoreCase))
             {
-                return "Execution contract: the user requested real native batch image conversion, but no successful conversion result was collected. Call ConvertBatchImages with the exact approved sources, output format, and destination. Base the answer on its succeeded/failed counts and output paths; do not substitute opening the batch window or merely describe how to convert.";
+                return "Execution contract: the user requested real native batch image conversion or whitelisted algorithm execution, but no successful result was collected. Call ConvertBatchImages with the exact approved sources, output policy, destination, and optional Catalog algorithm/parameters. Base the answer on its succeeded/failed counts and output paths; do not substitute opening the batch window or merely describe the operation.";
             }
             if (missingGroup.Contains("OpenBatchImageProcessing", StringComparer.OrdinalIgnoreCase))
             {

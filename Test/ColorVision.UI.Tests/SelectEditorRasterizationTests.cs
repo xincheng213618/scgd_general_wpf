@@ -1,4 +1,6 @@
+using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Draw.Rasterized;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Windows;
@@ -28,6 +30,46 @@ public class SelectEditorRasterizationTests
             BitmapSource actual = InvokeRoiRenderer(visuals, 80, 64, cropRect);
 
             AssertBitmapsEqual(expected, actual);
+        });
+    }
+
+    [Fact]
+    public void RasterizeReplacementUndoRestoresTheOriginalVisuals()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new() { Width = 80, Height = 64 };
+            SelectEditorVisual editor = new(new DrawEditorContext(
+                canvas,
+                new Zoombox { ContentMatrix = Matrix.Identity }));
+            try
+            {
+                ISelectVisual[] originals = CreateOverlappingVisuals(useFractionalBounds: false);
+                foreach (ISelectVisual original in originals)
+                    canvas.AddVisual((Visual)original);
+                editor.SetRenders(originals);
+                Assert.All(originals, original => Assert.True(canvas.ContainsVisual((Visual)original)));
+
+                editor.RasterizeSelectionAndReplace();
+
+                RasterizedSelectVisual raster = Assert.IsType<RasterizedSelectVisual>(Assert.Single(editor.SelectVisuals));
+                Assert.All(originals, original => Assert.False(canvas.ContainsVisual((Visual)original)));
+                Assert.True(canvas.ContainsVisual(raster));
+                Assert.Single(canvas.UndoStack);
+
+                canvas.Undo();
+                Assert.False(canvas.ContainsVisual(raster));
+                Assert.All(originals, original => Assert.True(canvas.ContainsVisual((Visual)original)));
+
+                canvas.Redo();
+                Assert.True(canvas.ContainsVisual(raster));
+                Assert.All(originals, original => Assert.False(canvas.ContainsVisual((Visual)original)));
+            }
+            finally
+            {
+                editor.Dispose();
+                canvas.Dispose();
+            }
         });
     }
 

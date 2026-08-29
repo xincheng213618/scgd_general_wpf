@@ -1,4 +1,5 @@
 using ColorVision.ImageEditor.Algorithms;
+using ColorVision.Algorithms;
 using log4net;
 using System;
 using System.Diagnostics;
@@ -20,26 +21,23 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             _image = image;
         }
 
-        public void Execute()
+        public async void Execute()
         {
-            Application.Current.Dispatcher.BeginInvoke(() =>
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            log.Info("Sharpen - 开始执行");
+            try
             {
-                Stopwatch stopwatch = new Stopwatch();
-                stopwatch.Start();
-                log.Info("Sharpen - 开始执行");
-
-                try
-                {
-                    ImageAlgorithmApplier.Apply(_image, OpenCvImageAlgorithms.Sharpen);
-                    stopwatch.Stop();
-                    log.Info($"Sharpen 完成 - 耗时: {stopwatch.Elapsed}");
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex);
-                    MessageBox.Show(ex.Message);
-                }
-            });
+                using AlgorithmResult result = await ImageAlgorithmApplier.ApplyAsync(
+                    _image,
+                    AlgorithmInvocation.Create(StandardAlgorithmIds.Sharpen, new NoAlgorithmParameters()));
+                if (result.Status != AlgorithmResultStatus.Succeeded) throw new InvalidOperationException(string.Join("; ", result.Failures));
+                log.Info($"Sharpen 完成 - 耗时: {stopwatch.Elapsed}");
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+                MessageBox.Show(ex.Message);
+            }
         }
     }
 }

@@ -1,5 +1,5 @@
 import { InboxOutlined } from '@ant-design/icons'
-import { Space, Tag, Typography } from 'antd'
+import { Typography } from 'antd'
 import { Navigate, useLocation } from 'react-router-dom'
 import { TransferPanel } from '../components/TransferPanel'
 import type { AuthSession } from '../types/site'
@@ -15,29 +15,37 @@ export function TransferPage({ session }: { session: AuthSession | null }) {
   if (accessState === 'login') {
     return <Navigate to={getTransferLoginUrl(location.pathname, location.search, location.hash)} replace />
   }
+  if (accessState === 'password-change') {
+    return <Navigate to="/account?password_change=required" replace />
+  }
+  if (accessState === 'forbidden') {
+    return <Navigate to="/account?access=updated" replace />
+  }
+
+  const anonymousUpload = !session.authenticated
 
   return (
-    <Space direction="vertical" size={16} className="page-stack">
-      <section className="compact-page-hero">
-        <div>
-          <span className="hero-kicker light">
-            <InboxOutlined />
-            Transfer
-          </span>
-          <Typography.Title level={2}>文件中转</Typography.Title>
-          <Typography.Paragraph>
-            登录后上传、下载和清理临时文件。普通用户只开放中转，发布和系统维护仍在后台处理。
-          </Typography.Paragraph>
+    <div className="page-stack transfer-page">
+      <section className="transfer-page-header">
+        <div className="transfer-page-title">
+          <span className="transfer-page-mark"><InboxOutlined /></span>
+          <div>
+            <span>ColorVision Transfer</span>
+            <Typography.Title level={2}>文件中转</Typography.Title>
+          </div>
         </div>
-        <div className="compact-stat-strip">
-          <span>
-            <strong>{session?.username || '-'}</strong>
-            当前账号
-          </span>
-          <Tag color={session.is_admin ? 'blue' : 'green'}>{session.is_admin ? '管理员' : '普通用户'}</Tag>
+        <div className="transfer-account">
+          <span className="transfer-account-avatar">{anonymousUpload ? 'V' : (session.username || 'U').slice(0, 1).toUpperCase()}</span>
+          <div>
+            <strong>{anonymousUpload ? '访客' : session.username || '-'}</strong>
+            <span>{anonymousUpload ? '仅上传' : session.is_admin ? '管理员' : '用户'}</span>
+          </div>
         </div>
       </section>
-      <TransferPanel />
-    </Space>
+      <TransferPanel
+        anonymousUpload={anonymousUpload}
+        maxUploadBytes={anonymousUpload ? session.anonymous_transfer_max_bytes : undefined}
+      />
+    </div>
   )
 }

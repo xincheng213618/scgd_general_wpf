@@ -53,7 +53,12 @@ namespace ColorVision.Update
 
     public static class UpdateHttpClientProvider
     {
-        private const int MetadataRequestAttemptCount = 2;
+        private const int MetadataRequestAttemptCount = 3;
+        private static readonly TimeSpan[] MetadataRequestRetryDelays =
+        [
+            TimeSpan.FromMilliseconds(300),
+            TimeSpan.FromMilliseconds(900),
+        ];
         private static readonly HttpClient SystemProxyClient = CreateClient(useProxy: true);
         private static readonly HttpClient DirectClient = CreateClient(useProxy: false);
 
@@ -85,6 +90,7 @@ namespace ColorVision.Update
                     if (attempt < MetadataRequestAttemptCount && IsTransientStatusCode(response.StatusCode))
                     {
                         response.Dispose();
+                        await DelayBeforeRetryAsync(attempt, cancellationToken).ConfigureAwait(false);
                         continue;
                     }
 
@@ -96,13 +102,20 @@ namespace ColorVision.Update
                 }
                 catch (OperationCanceledException) when (attempt < MetadataRequestAttemptCount)
                 {
+                    await DelayBeforeRetryAsync(attempt, cancellationToken).ConfigureAwait(false);
                 }
                 catch (HttpRequestException) when (attempt < MetadataRequestAttemptCount)
                 {
+                    await DelayBeforeRetryAsync(attempt, cancellationToken).ConfigureAwait(false);
                 }
             }
 
             throw new InvalidOperationException("The update metadata request retry loop completed without a response.");
+        }
+
+        private static Task DelayBeforeRetryAsync(int attempt, CancellationToken cancellationToken)
+        {
+            return Task.Delay(MetadataRequestRetryDelays[attempt - 1], cancellationToken);
         }
 
         private static bool IsTransientStatusCode(HttpStatusCode statusCode)

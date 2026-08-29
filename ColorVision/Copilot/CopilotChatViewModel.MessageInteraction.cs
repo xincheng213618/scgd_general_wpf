@@ -497,14 +497,7 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(prompt))
                 return;
 
-            var initialTurnSnapshot = CaptureHostedTurnSnapshot(conversation, userMessage);
-            if (!TryResolveProjectTrustForSubmission(
-                initialTurnSnapshot,
-                () => CaptureHostedTurnSnapshot(conversation, userMessage),
-                out var turnSnapshot))
-            {
-                return;
-            }
+            var turnSnapshot = CaptureHostedTurnSnapshot(conversation, userMessage);
             if (!TryPrepareExplicitSkillMcpDependencies(
                 prompt,
                 userMessage.AgentSkillReference,

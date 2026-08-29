@@ -1,92 +1,76 @@
-#pragma warning disable CS8625
+using ColorVision.Algorithms;
 using ColorVision.Common.Utilities;
-using ColorVision.Core;
+using ColorVision.ImageEditor.Algorithms;
 using log4net;
+using System;
 using System.Windows;
-using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms
 {
-    /// <summary>
-    /// WhiteBalanceWindow.xaml 的交互逻辑
-    /// </summary>
     public partial class WhiteBalanceWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(WhiteBalanceWindow));
-        private readonly ImageProcessingContext _image;
+        private readonly string _debounceKey = $"{nameof(WhiteBalanceWindow)}_{Guid.NewGuid():N}";
+        private readonly ImageAlgorithmPreviewSession _preview;
+        private readonly WhiteBalanceParameters _parameters = new();
 
         public WhiteBalanceWindow(ImageProcessingContext image)
         {
             InitializeComponent();
-            _image = image;
-
-            // 从配置中加载当前白平衡值
-            RedSlider.Value = 1;
-            GreenSlider.Value = 1;
-            BlueSlider.Value = 1;
+            _preview = ImageAlgorithmPreviewSession.Start(image);
+            RedSlider.Value = _parameters.RedScale;
+            GreenSlider.Value = _parameters.GreenScale;
+            BlueSlider.Value = _parameters.BlueScale;
+            _ = ApplyPreviewAsync();
         }
 
         private void WhiteBalanceSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (RedSlider != null && GreenSlider !=null && BlueSlider !=null)
-            {
-                double red = RedSlider.Value;
-                double green = GreenSlider.Value;
-                double blue = BlueSlider.Value;
-                DebounceTimer.AddOrResetTimer("AdjustWhiteBalance", 30, () => AdjustWhiteBalance(red, green, blue));
-            }
-
+            if (!IsInitialized || RedSlider == null || GreenSlider == null || BlueSlider == null) return;
+            _parameters.RedScale = RedSlider.Value;
+            _parameters.GreenScale = GreenSlider.Value;
+            _parameters.BlueScale = BlueSlider.Value;
+            DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, () => _ = ApplyPreviewAsync());
         }
 
-        private void AdjustWhiteBalance(double red,double green, double blue)
+        private async System.Threading.Tasks.Task<bool> ApplyPreviewAsync()
         {
-            using ImageFrameLease? lease = _image.AcquireImageFrame();
-            if (lease == null) return;
-
-            long revision = lease.Revision;
-            int ret = OpenCVMediaHelper.M_GetWhiteBalance(lease.Image, out HImage hImageProcessed, red, green, blue);
-
-            if (ret != 0)
+            try
             {
-                hImageProcessed.Dispose();
-                return;
+                AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.WhiteBalance, _parameters);
+                using AlgorithmResult result = await _preview.PreviewAsync(invocation);
+                if (result.Status == AlgorithmResultStatus.Failed) log.Warn(string.Join("; ", result.Failures));
+                return result.Status == AlgorithmResultStatus.Succeeded && _preview.IsCurrent(invocation.InvocationId);
             }
-
-            Application.Current?.Dispatcher.BeginInvoke(() =>
+            catch (ObjectDisposedException)
             {
-                if (!_image.IsCurrentImageRevision(revision))
-                {
-                    hImageProcessed.Dispose();
-                    return;
-                }
-
-                if (!HImageExtension.UpdateWriteableBitmap(_image.FunctionImage, hImageProcessed))
-                    _image.FunctionImage = hImageProcessed.ToWriteableBitmapAndDispose();
-
-                _image.ImageShow.Source = _image.FunctionImage;
-            });
+                return false;
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+                return false;
+            }
         }
 
-        private void Apply_Click(object sender, RoutedEventArgs e)
+        private async void Apply_Click(object sender, RoutedEventArgs e)
         {
-            // 应用更改到原始图像
-            if (_image.FunctionImage is System.Windows.Media.Imaging.WriteableBitmap writeableBitmap)
-            {
-                _image.ViewBitmapSource = writeableBitmap;
-                _image.ImageShow.Source = _image.ViewBitmapSource;
-                _image.NotifySourcePixelsChanged();
-                _image.FunctionImage = null;
-            }
-            Close();
+            DebounceTimer.Cancel(_debounceKey);
+            if (await ApplyPreviewAsync() && _preview.Commit()) Close();
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
-            // 取消更改，恢复原始图像
-            _image.ImageShow.Source = _image.ViewBitmapSource;
-            _image.FunctionImage = null;
+            DebounceTimer.Cancel(_debounceKey);
+            _preview.Cancel();
             Close();
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            DebounceTimer.Cancel(_debounceKey);
+            _preview.Dispose();
+            base.OnClosed(e);
         }
     }
 }
-

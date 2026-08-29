@@ -174,6 +174,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                     polygon.Points.Add(point.ToPoint());
 
                 polygon.IsComple = true;
+                polygon.Render();
                 ctx.ImageView.AddVisual(polygon);
             }
 

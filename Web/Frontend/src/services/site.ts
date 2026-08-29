@@ -171,38 +171,6 @@ export function deleteTransferFile(name: string) {
   return deleteJson<{ deleted: string }>(`/api/transfer/files/${encodeURIComponent(name)}`)
 }
 
-export async function uploadTransferFile(file: File, onProgress?: (percent: number) => void) {
-  const csrfToken = await getCsrfToken()
-  return new Promise<{ name: string; bytes_written: number; replaced: boolean; download_url: string }>(
-    (resolve, reject) => {
-      const xhr = new XMLHttpRequest()
-      xhr.open('PUT', `/api/transfer/files/${encodeURIComponent(file.name)}`)
-      configureWebXhr(xhr)
-      xhr.setRequestHeader('Content-Type', 'application/octet-stream')
-      xhr.setRequestHeader('X-CSRF-Token', csrfToken)
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable && onProgress) {
-          onProgress((event.loaded / event.total) * 100)
-        }
-      }
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve(xhr.response)
-          return
-        }
-        if (xhr.status === 401) {
-          redirectToLogin()
-          reject(new AuthRequiredError())
-          return
-        }
-        reject(new Error(getXhrErrorMessage(xhr.response, `Request failed with ${xhr.status}`)))
-      }
-      xhr.onerror = () => reject(new Error('上传失败'))
-      xhr.send(file)
-    },
-  )
-}
-
 export function getCvwsContext() {
   return getJson<CvwsContext>('/api/tool/cvwindowsservice/context')
 }

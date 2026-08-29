@@ -69,6 +69,29 @@ class FrontendSpaTests(unittest.TestCase):
         self.assertEqual(missing.status_code, 404)
         self.assertNotIn(b'<div id="root">', missing.data)
 
+    def test_known_spa_entry_points_support_direct_navigation_and_refresh(self):
+        paths = (
+            "/",
+            "/account",
+            "/account?password_change=required",
+            "/transfer",
+            "/transfer/share/example-token",
+            "/browse/Tool",
+            "/plugins/example-plugin",
+            "/admin/users",
+        )
+
+        for path in paths:
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.responses.append(response)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn(b'<div id="root">', response.data)
+                self.assertEqual(
+                    response.headers["Cache-Control"],
+                    "no-cache, must-revalidate",
+                )
+
     def test_assets_negotiate_precompressed_representations(self):
         brotli = self.client.get(
             "/assets/app-deadbeef.js",

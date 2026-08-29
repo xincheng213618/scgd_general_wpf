@@ -25,18 +25,9 @@ namespace ColorVision.Copilot
 
         public IReadOnlyDictionary<string, string?>? EnvironmentOverrides { get; init; }
 
-        public string StandardInput { get; init; } = string.Empty;
-
         public Action<string>? StandardOutputReceived { get; init; }
 
         public Action<string>? StandardErrorReceived { get; init; }
-
-        /// <summary>
-        /// Keeps descendants alive after the root process has completed. This is reserved for
-        /// command hooks, which may intentionally launch detached helpers; approved shell tools
-        /// must retain their default process-tree cleanup.
-        /// </summary>
-        public bool PreserveDescendantsOnCompletion { get; init; }
     }
 
     internal sealed record CopilotShellProcessResult(
@@ -67,8 +58,13 @@ namespace ColorVision.Copilot
     internal sealed class CopilotShellCommandService
     {
         public const int MaximumCommandCharacters = 16_384;
+        internal const int MaximumCommandPromptCommandLineCharacters = 8_191;
         internal const string NonzeroExitFailureCode = "shell_nonzero_exit";
         internal const string TimedOutFailureCode = "shell_timed_out";
+        internal const string ProcessTreeContainmentUnavailableFailureCode =
+            "process_tree_containment_unavailable";
+        internal const string CommandLineTooLongFailureCode =
+            "shell_command_line_too_long";
 
         private readonly ICopilotShellProcessRunner _runner;
         private readonly Func<CopilotShellKind, string?> _executablePathProvider;
@@ -131,6 +127,20 @@ namespace ColorVision.Copilot
                     $"{GetShellLabel(execution.Shell)} could not be located.",
                     "The selected Windows shell executable is not installed in a trusted system location.");
             }
+            var fullExecutablePath = Path.GetFullPath(executablePath);
+            var arguments = BuildArguments(execution.Shell, execution.CommandText);
+            if (!TryBuildSupportedCommandLine(
+                    execution.Shell,
+                    fullExecutablePath,
+                    arguments,
+                    out _))
+            {
+                return Failure(
+                    CopilotToolFailureKind.Validation,
+                    "The shell command is too long after Windows argument encoding.",
+                    $"The encoded command line cannot exceed {GetMaximumCommandLineCharacters(execution.Shell)} characters for {GetShellLabel(execution.Shell)}.",
+                    CommandLineTooLongFailureCode);
+            }
 
             CopilotShellProcessResult processResult;
             CopilotShellCommandOutputArchiveSnapshot? outputArchive = null;
@@ -141,8 +151,8 @@ namespace ColorVision.Copilot
                 progress?.Report($"正在启动 {shellLabel} 命令");
                 processResult = await _runner.RunAsync(new CopilotShellProcessCommand(
                     execution.Shell,
-                    Path.GetFullPath(executablePath),
-                    BuildArguments(execution.Shell, execution.CommandText),
+                    fullExecutablePath,
+                    arguments,
                     execution.WorkingDirectory,
                     TimeSpan.FromSeconds(execution.TimeoutSeconds))
                 {
@@ -180,6 +190,14 @@ namespace ColorVision.Copilot
             catch (OperationCanceledException)
             {
                 throw;
+            }
+            catch (CopilotProcessTreeContainmentException ex)
+            {
+                return Failure(
+                    CopilotToolFailureKind.Internal,
+                    "The shell command was blocked because process-tree containment is unavailable.",
+                    CopilotMcpAuditLogger.RedactText(ex.Message),
+                    ProcessTreeContainmentUnavailableFailureCode);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception or InvalidOperationException)
             {
@@ -336,6 +354,27 @@ namespace ColorVision.Copilot
                 : ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command",
                     "[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); $OutputEncoding = [Console]::OutputEncoding; " + commandText];
         }
+
+        internal static bool TryBuildSupportedCommandLine(
+            CopilotShellKind shell,
+            string executablePath,
+            IReadOnlyList<string> arguments,
+            out string commandLine)
+        {
+            if (!CopilotSuspendedProcessLauncher.TryBuildCommandLine(
+                    executablePath,
+                    arguments,
+                    out commandLine))
+            {
+                return false;
+            }
+            return commandLine.Length <= GetMaximumCommandLineCharacters(shell);
+        }
+
+        internal static int GetMaximumCommandLineCharacters(CopilotShellKind shell) =>
+            shell == CopilotShellKind.CommandPrompt
+                ? MaximumCommandPromptCommandLineCharacters
+                : CopilotSuspendedProcessLauncher.MaximumCommandLineCharacters;
 
         private static bool TryResolveWorkingDirectory(
             CopilotAgentRequest request,
@@ -548,13 +587,18 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static CopilotToolResult Failure(CopilotToolFailureKind kind, string summary, string error)
+        private static CopilotToolResult Failure(
+            CopilotToolFailureKind kind,
+            string summary,
+            string error,
+            string failureCode = "")
         {
             return new CopilotToolResult
             {
                 ToolName = "RunShellCommand",
                 Success = false,
                 FailureKind = kind,
+                FailureCode = failureCode,
                 Summary = summary,
                 ErrorMessage = error,
             };
@@ -570,60 +614,41 @@ namespace ColorVision.Copilot
     internal sealed class CopilotShellProcessRunner : ICopilotShellProcessRunner
     {
         private const int MaxStreamCharacters = 65_536;
+        private readonly Func<Process, CopilotWindowsProcessJob?> _tryAssignProcessJob;
+
+        public CopilotShellProcessRunner()
+            : this(CopilotWindowsProcessJob.TryAssign)
+        {
+        }
+
+        internal CopilotShellProcessRunner(
+            Func<Process, CopilotWindowsProcessJob?> tryAssignProcessJob)
+        {
+            _tryAssignProcessJob = tryAssignProcessJob
+                ?? throw new ArgumentNullException(nameof(tryAssignProcessJob));
+        }
+
         public async Task<CopilotShellProcessResult> RunAsync(CopilotShellProcessCommand command, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(command);
             var streamEncoding = GetStreamEncoding(command.Shell);
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = command.ExecutablePath,
-                WorkingDirectory = command.WorkingDirectory,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                StandardOutputEncoding = streamEncoding,
-                StandardErrorEncoding = streamEncoding,
-            };
-            foreach (var argument in command.Arguments)
-                startInfo.ArgumentList.Add(argument);
-            if (command.EnvironmentVariables != null)
-            {
-                startInfo.Environment.Clear();
-                foreach (var pair in command.EnvironmentVariables)
-                    startInfo.Environment[pair.Key] = pair.Value;
-            }
-            startInfo.Environment["NO_COLOR"] = "1";
-            if (command.EnvironmentOverrides != null)
-            {
-                foreach (var pair in command.EnvironmentOverrides)
-                {
-                    if (string.IsNullOrWhiteSpace(pair.Key))
-                        continue;
-                    if (pair.Value == null)
-                        startInfo.Environment.Remove(pair.Key);
-                    else
-                        startInfo.Environment[pair.Key] = pair.Value;
-                }
-            }
-            foreach (var name in startInfo.Environment.Keys
-                .Where(CopilotCodexShellEnvironmentPolicy.IsNonInheritableEnvironmentVariable)
-                .ToArray())
-            {
-                startInfo.Environment.Remove(name);
-            }
-
-            using var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
             var stopwatch = Stopwatch.StartNew();
-            if (!process.Start())
-                throw new InvalidOperationException("The shell process did not start.");
-            using var processJob = CopilotWindowsProcessJob.TryAssign(process);
+            using var launchedProcess = await CopilotSuspendedProcessLauncher.LaunchAsync(
+                    command.ExecutablePath,
+                    command.Arguments,
+                    command.WorkingDirectory,
+                    CreateEnvironmentVariables(command),
+                    streamEncoding,
+                    _tryAssignProcessJob,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            var process = launchedProcess.Process;
+            var processJob = launchedProcess.ProcessJob;
             using var outputReadSource = new CancellationTokenSource();
             long observedStandardOutputCharacters = 0;
             long observedStandardErrorCharacters = 0;
             var stdoutTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
-                process.StandardOutput,
+                launchedProcess.StandardOutput,
                 MaxStreamCharacters,
                 16_384,
                 "\n...<shell output truncated>...\n",
@@ -637,7 +662,7 @@ namespace ColorVision.Copilot
                     command.StandardOutputReceived?.Invoke(chunk);
                 });
             var stderrTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
-                process.StandardError,
+                launchedProcess.StandardError,
                 MaxStreamCharacters,
                 16_384,
                 "\n...<shell output truncated>...\n",
@@ -654,30 +679,9 @@ namespace ColorVision.Copilot
             timeoutSource.CancelAfter(command.Timeout);
             var timedOut = false;
             var cancelledByCaller = false;
-            var completed = false;
             try
             {
-                try
-                {
-                    if (!string.IsNullOrEmpty(command.StandardInput))
-                    {
-                        await process.StandardInput.WriteAsync(
-                            command.StandardInput.AsMemory(),
-                            timeoutSource.Token).ConfigureAwait(false);
-                        await process.StandardInput.FlushAsync(timeoutSource.Token)
-                            .ConfigureAwait(false);
-                    }
-                }
-                catch (IOException)
-                {
-                    // A hook or command may intentionally close stdin after reading a prefix.
-                }
-                finally
-                {
-                    process.StandardInput.Close();
-                }
                 await process.WaitForExitAsync(timeoutSource.Token);
-                completed = true;
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
@@ -689,18 +693,15 @@ namespace ColorVision.Copilot
             }
 
             cancelledByCaller |= cancellationToken.IsCancellationRequested;
-            var preserveDescendants = completed
-                && !cancelledByCaller
-                && command.PreserveDescendantsOnCompletion
-                && (processJob == null || processJob.TryPreserveDescendants());
-            if (!preserveDescendants)
-            {
-                // Approved shell commands and incomplete executions must not leave background
-                // descendants alive. Terminating before output drain also closes inherited pipes.
-                await CopilotProcessExecutionSupport.TerminateProcessTreeAsync(process, processJob);
-            }
+            // Shell commands must not leave background descendants alive. Terminating before
+            // output drain also closes inherited pipes, including after normal root completion.
+            await CopilotProcessExecutionSupport.TerminateProcessTreeAsync(process, processJob);
             var (standardOutput, standardError) = await CopilotProcessExecutionSupport.DrainOutputAsync(
-                stdoutTask, stderrTask, outputReadSource, process.StandardOutput, process.StandardError);
+                stdoutTask,
+                stderrTask,
+                outputReadSource,
+                launchedProcess.StandardOutput,
+                launchedProcess.StandardError);
             stopwatch.Stop();
             if (cancelledByCaller)
                 throw new OperationCanceledException(cancellationToken);
@@ -723,6 +724,43 @@ namespace ColorVision.Copilot
                     observedStandardErrorCharacters
                     > MaxStreamCharacters,
             };
+        }
+
+        internal static Dictionary<string, string> CreateEnvironmentVariables(
+            CopilotShellProcessCommand command)
+        {
+            ArgumentNullException.ThrowIfNull(command);
+            var environment = command.EnvironmentVariables == null
+                ? Environment.GetEnvironmentVariables()
+                    .Cast<System.Collections.DictionaryEntry>()
+                    .Where(entry => entry.Key is string && entry.Value is string)
+                    .ToDictionary(
+                        entry => (string)entry.Key,
+                        entry => (string)entry.Value!,
+                        StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, string>(
+                    command.EnvironmentVariables,
+                    StringComparer.OrdinalIgnoreCase);
+            environment["NO_COLOR"] = "1";
+            if (command.EnvironmentOverrides != null)
+            {
+                foreach (var pair in command.EnvironmentOverrides)
+                {
+                    if (string.IsNullOrWhiteSpace(pair.Key))
+                        continue;
+                    if (pair.Value == null)
+                        environment.Remove(pair.Key);
+                    else
+                        environment[pair.Key] = pair.Value;
+                }
+            }
+            foreach (var name in environment.Keys
+                .Where(CopilotCodexShellEnvironmentPolicy.IsNonInheritableEnvironmentVariable)
+                .ToArray())
+            {
+                environment.Remove(name);
+            }
+            return environment;
         }
 
         private static long SaturatingAdd(long value, int increment) =>

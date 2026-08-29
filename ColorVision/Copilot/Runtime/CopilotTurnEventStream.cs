@@ -13,6 +13,9 @@ namespace ColorVision.Copilot
     {
         internal static readonly TimeSpan DefaultProducerShutdownTimeout = TimeSpan.FromSeconds(7);
         internal const int DefaultMaximumPendingEvents = 4096;
+        // Match the upstream streaming response ceiling while bounding queued UTF-16 text
+        // when the UI consumer is stalled or a provider emits an abnormal stream.
+        internal const int DefaultMaximumPendingStreamCharacters = 8 * 1024 * 1024;
 
         public static async IAsyncEnumerable<CopilotTurnEvent> RunAsync(
             string turnId,
@@ -20,7 +23,8 @@ namespace ColorVision.Copilot
             Func<CopilotTurnEventSink, CancellationToken, Task<CopilotTurnResult>> runTurn,
             [EnumeratorCancellation] CancellationToken cancellationToken,
             TimeSpan? producerShutdownTimeout = null,
-            int maximumPendingEvents = DefaultMaximumPendingEvents)
+            int maximumPendingEvents = DefaultMaximumPendingEvents,
+            int maximumPendingStreamCharacters = DefaultMaximumPendingStreamCharacters)
         {
             turnId = CopilotTurnStartedEvent.NormalizeTurnId(turnId);
             if (!Enum.IsDefined(mode))
@@ -30,10 +34,13 @@ namespace ColorVision.Copilot
             if (shutdownTimeout <= TimeSpan.Zero || shutdownTimeout == Timeout.InfiniteTimeSpan)
                 throw new ArgumentOutOfRangeException(nameof(producerShutdownTimeout), "Producer shutdown timeout must be finite and positive.");
             ArgumentOutOfRangeException.ThrowIfLessThan(maximumPendingEvents, 1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(maximumPendingStreamCharacters, 1);
 
             using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             using var cancellationDrainGuard = new CancellationTokenSource();
-            var eventBuffer = new CopilotTurnEventBuffer(maximumPendingEvents);
+            var eventBuffer = new CopilotTurnEventBuffer(
+                maximumPendingEvents,
+                maximumPendingStreamCharacters);
             var sink = new CopilotTurnEventSink(turnEvent => eventBuffer.TryWrite(turnEvent));
             // Async delegates execute synchronously until their first incomplete await. Start the
             // entire turn on the thread pool so provider setup and extension code cannot occupy
@@ -61,7 +68,7 @@ namespace ColorVision.Copilot
             finally
             {
                 lifetime.Cancel();
-                eventBuffer.TryComplete();
+                eventBuffer.Abandon();
                 cancellationDrainGuard.Cancel();
                 var cancellationDrainOutcome = await cancellationDrain.ConfigureAwait(false);
                 if (cancellationDrainOutcome == CancellationDrainOutcome.NotRequested
@@ -178,16 +185,23 @@ namespace ColorVision.Copilot
     {
         private readonly object _gate = new();
         private readonly int _maximumPendingEvents;
+        private readonly int _maximumPendingStreamCharacters;
         private readonly int _streamCoalescingThreshold;
         private readonly LinkedList<PendingEvent> _pendingEvents = new();
+        private int _pendingStreamCharacters;
         private ExceptionDispatchInfo? _completionError;
         private bool _completed;
         private TaskCompletionSource _stateChanged = CreateStateChangedSignal();
 
-        public CopilotTurnEventBuffer(int maximumPendingEvents)
+        public CopilotTurnEventBuffer(
+            int maximumPendingEvents,
+            int maximumPendingStreamCharacters =
+                CopilotTurnEventStream.DefaultMaximumPendingStreamCharacters)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(maximumPendingEvents, 1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(maximumPendingStreamCharacters, 1);
             _maximumPendingEvents = maximumPendingEvents;
+            _maximumPendingStreamCharacters = maximumPendingStreamCharacters;
             _streamCoalescingThreshold = Math.Max(1, maximumPendingEvents / 2);
         }
 
@@ -200,6 +214,15 @@ namespace ColorVision.Copilot
             }
         }
 
+        internal int PendingStreamCharacters
+        {
+            get
+            {
+                lock (_gate)
+                    return _pendingStreamCharacters;
+            }
+        }
+
         public bool TryWrite(CopilotTurnEvent turnEvent)
         {
             ArgumentNullException.ThrowIfNull(turnEvent);
@@ -208,9 +231,13 @@ namespace ColorVision.Copilot
             {
                 if (_completed)
                     return false;
+                var lastPendingEvent = _pendingEvents.Last?.Value;
                 if (_pendingEvents.Count >= _streamCoalescingThreshold
-                    && _pendingEvents.Last?.Value.TryCoalesce(turnEvent) == true)
+                    && lastPendingEvent?.TryGetCoalescingText(turnEvent, out var coalescingText) == true)
                 {
+                    EnsurePendingStreamCapacityUnderLock(coalescingText.Length);
+                    lastPendingEvent.AppendStreamText(coalescingText);
+                    _pendingStreamCharacters += coalescingText.Length;
                     return true;
                 }
                 if (_pendingEvents.Count >= _maximumPendingEvents)
@@ -219,7 +246,10 @@ namespace ColorVision.Copilot
                         $"Copilot turn event backlog exceeded the {_maximumPendingEvents:N0}-event safety limit. The turn was stopped before unbounded UI memory growth.");
                 }
 
+                var streamCharacters = PendingEvent.GetStreamCharacterCount(turnEvent);
+                EnsurePendingStreamCapacityUnderLock(streamCharacters);
                 _pendingEvents.AddLast(new PendingEvent(turnEvent));
+                _pendingStreamCharacters += streamCharacters;
                 stateChanged = _stateChanged;
             }
 
@@ -242,6 +272,21 @@ namespace ColorVision.Copilot
 
             stateChanged.TrySetResult();
             return true;
+        }
+
+        public void Abandon()
+        {
+            TaskCompletionSource stateChanged;
+            lock (_gate)
+            {
+                _pendingEvents.Clear();
+                _pendingStreamCharacters = 0;
+                _completionError = null;
+                _completed = true;
+                stateChanged = _stateChanged;
+            }
+
+            stateChanged.TrySetResult();
         }
 
         public bool TryWriteTerminalAndComplete(
@@ -318,6 +363,7 @@ namespace ColorVision.Copilot
                     {
                         pendingEvent = _pendingEvents.First.Value;
                         _pendingEvents.RemoveFirst();
+                        _pendingStreamCharacters -= pendingEvent.StreamCharacterCount;
                     }
                     else
                     {
@@ -349,33 +395,82 @@ namespace ColorVision.Copilot
         private static TaskCompletionSource CreateStateChangedSignal() =>
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+        private void EnsurePendingStreamCapacityUnderLock(int additionalCharacters)
+        {
+            if (additionalCharacters <= _maximumPendingStreamCharacters - _pendingStreamCharacters)
+                return;
+
+            throw new InvalidOperationException(
+                $"Copilot turn streaming backlog exceeded the {_maximumPendingStreamCharacters:N0}-character safety limit. The turn was stopped before unbounded UI memory growth.");
+        }
+
         private sealed class PendingEvent
         {
-            private readonly CopilotTurnEvent _turnEvent;
+            private readonly CopilotTurnEvent? _turnEvent;
             private readonly StringBuilder? _streamText;
             private readonly PendingStreamKind _streamKind;
+            private readonly int _nonCoalescedStreamCharacters;
 
             public PendingEvent(CopilotTurnEvent turnEvent)
             {
-                _turnEvent = turnEvent;
-                (_streamKind, _streamText) = CreateStreamAccumulator(turnEvent);
+                var (streamKind, streamText) = GetStreamDescriptor(turnEvent);
+                _streamKind = streamKind;
+                if (streamText == null)
+                {
+                    _turnEvent = turnEvent;
+                    _streamText = null;
+                    _nonCoalescedStreamCharacters = GetStreamCharacterCount(turnEvent);
+                }
+                else
+                {
+                    _turnEvent = null;
+                    _streamText = new StringBuilder(streamText);
+                    _nonCoalescedStreamCharacters = 0;
+                }
             }
 
-            public bool TryCoalesce(CopilotTurnEvent next)
+            public int StreamCharacterCount =>
+                _streamText?.Length ?? _nonCoalescedStreamCharacters;
+
+            public static int GetStreamCharacterCount(CopilotTurnEvent turnEvent)
             {
-                if (_streamText != null && TryGetCompatibleStreamText(next, _streamKind, out var text))
+                var (_, coalescedText) = GetStreamDescriptor(turnEvent);
+                if (coalescedText != null)
+                    return coalescedText.Length;
+
+                if (turnEvent is CopilotTurnChatDeltaEvent chatDelta)
                 {
-                    _streamText.Append(text);
-                    return true;
+                    return AddClamped(
+                        chatDelta.Delta.ReasoningContent?.Length ?? 0,
+                        chatDelta.Delta.Content?.Length ?? 0);
+                }
+                if (turnEvent is CopilotTurnAgentEvent
+                    {
+                        Event.Type: CopilotAgentEventType.ReasoningDelta
+                            or CopilotAgentEventType.AnswerDelta,
+                    } agentEvent)
+                {
+                    return agentEvent.Event.Text?.Length ?? 0;
                 }
 
+                return 0;
+            }
+
+            public bool TryGetCoalescingText(CopilotTurnEvent next, out string text)
+            {
+                if (_streamText != null)
+                    return TryGetCompatibleStreamText(next, _streamKind, out text);
+
+                text = string.Empty;
                 return false;
             }
+
+            public void AppendStreamText(string text) => _streamText!.Append(text);
 
             public CopilotTurnEvent ToTurnEvent()
             {
                 if (_streamText == null)
-                    return _turnEvent;
+                    return _turnEvent!;
 
                 var text = _streamText.ToString();
                 return _streamKind switch
@@ -388,26 +483,28 @@ namespace ColorVision.Copilot
                         new CopilotTurnAgentEvent(CopilotAgentEvent.ReasoningDelta(text)),
                     PendingStreamKind.AgentAnswer =>
                         new CopilotTurnAgentEvent(CopilotAgentEvent.AnswerDelta(text)),
-                    _ => _turnEvent,
+                    _ => _turnEvent!,
                 };
             }
 
-            private static (PendingStreamKind Kind, StringBuilder? Text) CreateStreamAccumulator(
+            private static (PendingStreamKind Kind, string? Text) GetStreamDescriptor(
                 CopilotTurnEvent turnEvent)
             {
                 if (turnEvent is CopilotTurnChatDeltaEvent chatDelta)
                 {
-                    if (chatDelta.Delta.HasReasoning && !chatDelta.Delta.HasContent)
+                    if (chatDelta.Delta.HasReasoning
+                        && string.IsNullOrEmpty(chatDelta.Delta.Content))
                     {
                         return (
                             PendingStreamKind.ChatReasoning,
-                            new StringBuilder(chatDelta.Delta.ReasoningContent));
+                            chatDelta.Delta.ReasoningContent);
                     }
-                    if (chatDelta.Delta.HasContent && !chatDelta.Delta.HasReasoning)
+                    if (chatDelta.Delta.HasContent
+                        && string.IsNullOrEmpty(chatDelta.Delta.ReasoningContent))
                     {
                         return (
                             PendingStreamKind.ChatContent,
-                            new StringBuilder(chatDelta.Delta.Content));
+                            chatDelta.Delta.Content);
                     }
                 }
                 if (turnEvent is CopilotTurnAgentEvent agentEvent)
@@ -416,18 +513,21 @@ namespace ColorVision.Copilot
                     {
                         return (
                             PendingStreamKind.AgentReasoning,
-                            new StringBuilder(agentEvent.Event.Text));
+                            agentEvent.Event.Text);
                     }
                     if (agentEvent.Event.Type == CopilotAgentEventType.AnswerDelta)
                     {
                         return (
                             PendingStreamKind.AgentAnswer,
-                            new StringBuilder(agentEvent.Event.Text));
+                            agentEvent.Event.Text);
                     }
                 }
 
                 return (PendingStreamKind.None, null);
             }
+
+            private static int AddClamped(int left, int right) =>
+                left > int.MaxValue - right ? int.MaxValue : left + right;
 
             private static bool TryGetCompatibleStreamText(
                 CopilotTurnEvent turnEvent,
@@ -440,13 +540,13 @@ namespace ColorVision.Copilot
                     case PendingStreamKind.ChatReasoning
                         when turnEvent is CopilotTurnChatDeltaEvent chatReasoning
                             && chatReasoning.Delta.HasReasoning
-                            && !chatReasoning.Delta.HasContent:
+                            && string.IsNullOrEmpty(chatReasoning.Delta.Content):
                         text = chatReasoning.Delta.ReasoningContent;
                         return true;
                     case PendingStreamKind.ChatContent
                         when turnEvent is CopilotTurnChatDeltaEvent chatContent
                             && chatContent.Delta.HasContent
-                            && !chatContent.Delta.HasReasoning:
+                            && string.IsNullOrEmpty(chatContent.Delta.ReasoningContent):
                         text = chatContent.Delta.Content;
                         return true;
                     case PendingStreamKind.AgentReasoning

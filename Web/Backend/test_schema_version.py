@@ -7,6 +7,488 @@ from db.schema_version import CURRENT_SCHEMA_VERSION, ensure_schema_version
 
 
 class SchemaVersionTests(unittest.TestCase):
+    def test_v27_adds_persistent_password_recovery_velocity_limits(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 26);
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            columns = {
+                row["name"]
+                for row in db.execute("PRAGMA table_info(password_recovery_rate_limits)")
+            }
+            self.assertEqual(columns, {
+                "ip_address", "attempt_count", "window_started_at", "last_attempt_at",
+            })
+            indexes = {
+                row["name"]
+                for row in db.execute("PRAGMA index_list(password_recovery_rate_limits)")
+            }
+            self.assertIn("idx_password_recovery_rate_limits_stale", indexes)
+
+            ensure_schema_version(db)
+            self.assertEqual(db.execute(
+                "SELECT COUNT(*) FROM sqlite_master "
+                "WHERE type='table' AND name='password_recovery_rate_limits'"
+            ).fetchone()[0], 1)
+        finally:
+            db.close()
+
+    def test_v26_backfills_password_change_time_from_account_creation(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 25);
+                CREATE TABLE users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+                INSERT INTO users (username, password_hash, created_at)
+                VALUES ('existing-user', 'hash', '2026-08-29T00:00:00+00:00');
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            columns = {
+                row["name"] for row in db.execute("PRAGMA table_info(users)")
+            }
+            self.assertIn("password_changed_at", columns)
+            existing = db.execute(
+                "SELECT password_changed_at FROM users WHERE username = 'existing-user'"
+            ).fetchone()
+            self.assertEqual(
+                existing["password_changed_at"],
+                "2026-08-29T00:00:00+00:00",
+            )
+
+            db.execute(
+                "UPDATE users SET password_changed_at = '2026-08-30T00:00:00+00:00'"
+            )
+            db.commit()
+            ensure_schema_version(db)
+            self.assertEqual(db.execute(
+                "SELECT password_changed_at FROM users"
+            ).fetchone()[0], "2026-08-30T00:00:00+00:00")
+        finally:
+            db.close()
+
+    def test_v25_adds_one_pending_password_recovery_request_per_account(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                PRAGMA foreign_keys=ON;
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 24);
+                CREATE TABLE users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+                INSERT INTO users (username, password_hash, created_at)
+                VALUES ('existing-user', 'hash', '2026-08-29T00:00:00+00:00');
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            columns = {
+                row["name"] for row in db.execute(
+                    "PRAGMA table_info(password_recovery_requests)"
+                )
+            }
+            self.assertEqual(columns, {
+                "id", "user_id", "request_count", "first_requested_at",
+                "last_requested_at", "last_ip", "status", "resolved_at",
+                "resolved_by", "resolution",
+            })
+            indexes = {
+                row["name"] for row in db.execute(
+                    "PRAGMA index_list(password_recovery_requests)"
+                )
+            }
+            self.assertIn("idx_password_recovery_pending_user", indexes)
+            self.assertIn("idx_password_recovery_status_requested", indexes)
+
+            db.execute(
+                """INSERT INTO password_recovery_requests
+                       (user_id, first_requested_at, last_requested_at)
+                   VALUES (1, 'first', 'first')"""
+            )
+            with self.assertRaises(sqlite3.IntegrityError):
+                db.execute(
+                    """INSERT INTO password_recovery_requests
+                           (user_id, first_requested_at, last_requested_at)
+                       VALUES (1, 'second', 'second')"""
+                )
+            db.rollback()
+
+            ensure_schema_version(db)
+            self.assertEqual(db.execute(
+                "SELECT COUNT(*) FROM sqlite_master "
+                "WHERE type='table' AND name='password_recovery_requests'"
+            ).fetchone()[0], 1)
+        finally:
+            db.close()
+
+    def test_v24_marks_existing_accounts_as_legacy_and_indexes_origins(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 23);
+                CREATE TABLE users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    role TEXT DEFAULT 'user',
+                    is_active INTEGER DEFAULT 1,
+                    auth_version INTEGER NOT NULL DEFAULT 0,
+                    must_change_password INTEGER NOT NULL DEFAULT 0,
+                    display_name TEXT NOT NULL DEFAULT '',
+                    email TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT,
+                    last_login_at TEXT
+                );
+                INSERT INTO users (username, password_hash, created_at)
+                VALUES ('existing-user', 'hash', '2026-08-29T00:00:00+00:00');
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            columns = {
+                row["name"] for row in db.execute("PRAGMA table_info(users)")
+            }
+            self.assertIn("account_origin", columns)
+            existing = db.execute(
+                "SELECT account_origin FROM users WHERE username = 'existing-user'"
+            ).fetchone()
+            self.assertEqual(existing["account_origin"], "legacy")
+            indexes = {
+                row["name"] for row in db.execute("PRAGMA index_list(users)")
+            }
+            self.assertIn("idx_users_account_origin", indexes)
+
+            ensure_schema_version(db)
+            self.assertEqual(
+                sum(
+                    row["name"] == "account_origin"
+                    for row in db.execute("PRAGMA table_info(users)")
+                ),
+                1,
+            )
+        finally:
+            db.close()
+
+    def test_v23_marks_existing_accounts_as_not_requiring_a_password_change(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 22);
+                CREATE TABLE users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    role TEXT DEFAULT 'user',
+                    is_active INTEGER DEFAULT 1,
+                    auth_version INTEGER NOT NULL DEFAULT 0,
+                    display_name TEXT NOT NULL DEFAULT '',
+                    email TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT,
+                    last_login_at TEXT
+                );
+                INSERT INTO users (username, password_hash, created_at)
+                VALUES ('existing-user', 'hash', '2026-08-29T00:00:00+00:00');
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            columns = {
+                row["name"] for row in db.execute("PRAGMA table_info(users)")
+            }
+            self.assertIn("must_change_password", columns)
+            existing = db.execute(
+                "SELECT must_change_password FROM users WHERE username = 'existing-user'"
+            ).fetchone()
+            self.assertEqual(existing["must_change_password"], 0)
+
+            ensure_schema_version(db)
+            self.assertEqual(
+                sum(
+                    row["name"] == "must_change_password"
+                    for row in db.execute("PRAGMA table_info(users)")
+                ),
+                1,
+            )
+        finally:
+            db.close()
+
+    def test_v22_adds_persistent_registration_velocity_limits(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 21);
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            columns = {
+                row["name"]
+                for row in db.execute("PRAGMA table_info(registration_rate_limits)")
+            }
+            self.assertEqual(columns, {
+                "ip_address", "attempt_count", "attempt_window_started_at",
+                "success_count", "pending_count", "success_window_started_at",
+                "last_attempt_at",
+            })
+            indexes = {
+                row["name"]
+                for row in db.execute("PRAGMA index_list(registration_rate_limits)")
+            }
+            self.assertIn("idx_registration_rate_limits_stale", indexes)
+
+            ensure_schema_version(db)
+            self.assertEqual(
+                db.execute(
+                    "SELECT COUNT(*) FROM sqlite_master "
+                    "WHERE type='table' AND name='registration_rate_limits'"
+                ).fetchone()[0],
+                1,
+            )
+        finally:
+            db.close()
+
+    def test_v21_adds_persistent_login_attempt_windows(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 20);
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            columns = {
+                row["name"] for row in db.execute("PRAGMA table_info(login_attempts)")
+            }
+            self.assertEqual(columns, {
+                "username_key", "ip_address", "failed_count", "window_started_at",
+                "last_failed_at", "locked_until",
+            })
+            indexes = {
+                row["name"] for row in db.execute("PRAGMA index_list(login_attempts)")
+            }
+            self.assertIn("idx_login_attempts_expiry", indexes)
+
+            ensure_schema_version(db)
+            self.assertEqual(
+                db.execute(
+                    "SELECT COUNT(*) FROM sqlite_master "
+                    "WHERE type='table' AND name='login_attempts'"
+                ).fetchone()[0],
+                1,
+            )
+        finally:
+            db.close()
+
+    def test_v20_indexes_audit_targets_for_account_activity(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 19);
+                CREATE TABLE audit_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    actor_type TEXT,
+                    actor_id TEXT,
+                    action TEXT NOT NULL,
+                    target_type TEXT,
+                    target_id TEXT,
+                    ip TEXT,
+                    user_agent TEXT,
+                    detail TEXT,
+                    created_at TEXT NOT NULL
+                );
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            indexes = {
+                row["name"] for row in db.execute("PRAGMA index_list(audit_log)")
+            }
+            self.assertIn("idx_audit_target", indexes)
+            ensure_schema_version(db)
+            self.assertEqual(
+                db.execute(
+                    "SELECT COUNT(*) FROM sqlite_master "
+                    "WHERE type = 'index' AND name = 'idx_audit_target'"
+                ).fetchone()[0],
+                1,
+            )
+        finally:
+            db.close()
+
+    def test_v19_adds_independently_revocable_user_sessions(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        db.execute("PRAGMA foreign_keys=ON")
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 18);
+                CREATE TABLE users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    role TEXT DEFAULT 'user',
+                    is_active INTEGER DEFAULT 1,
+                    auth_version INTEGER NOT NULL DEFAULT 0,
+                    display_name TEXT NOT NULL DEFAULT '',
+                    email TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT,
+                    last_login_at TEXT
+                );
+                INSERT INTO users (username, password_hash, created_at)
+                VALUES ('session-user', 'hash', '2026-08-29T00:00:00+00:00');
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            columns = {
+                row["name"] for row in db.execute("PRAGMA table_info(user_sessions)")
+            }
+            self.assertEqual(columns, {
+                "id", "user_id", "auth_version", "ip_address", "user_agent",
+                "created_at", "last_seen_at", "revoked_at", "revoke_reason",
+            })
+            indexes = {
+                row["name"] for row in db.execute("PRAGMA index_list(user_sessions)")
+            }
+            self.assertIn("idx_user_sessions_active", indexes)
+            db.execute(
+                """INSERT INTO user_sessions
+                       (id, user_id, created_at, last_seen_at)
+                   VALUES ('session-1', 1, '2026-08-29', '2026-08-29')"""
+            )
+            db.execute("DELETE FROM users WHERE id = 1")
+            self.assertEqual(
+                db.execute("SELECT COUNT(*) FROM user_sessions").fetchone()[0],
+                0,
+            )
+        finally:
+            db.close()
+
+    def test_v18_adds_account_profile_fields_and_unique_email_index(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 17);
+                CREATE TABLE users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    role TEXT DEFAULT 'user',
+                    is_active INTEGER DEFAULT 1,
+                    auth_version INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT,
+                    last_login_at TEXT
+                );
+                INSERT INTO users (username, password_hash, created_at)
+                VALUES ('legacy-user', 'hash', '2026-08-29T00:00:00+00:00');
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            columns = {
+                row["name"] for row in db.execute("PRAGMA table_info(users)")
+            }
+            indexes = {
+                row["name"] for row in db.execute("PRAGMA index_list(users)")
+            }
+            self.assertIn("display_name", columns)
+            self.assertIn("email", columns)
+            self.assertIn("idx_users_email_unique", indexes)
+            legacy = db.execute(
+                "SELECT display_name, email FROM users WHERE username = 'legacy-user'"
+            ).fetchone()
+            self.assertEqual(dict(legacy), {"display_name": "", "email": ""})
+
+            db.execute(
+                "UPDATE users SET email = 'owner@example.com' WHERE username = 'legacy-user'"
+            )
+            with self.assertRaises(sqlite3.IntegrityError):
+                db.execute(
+                    """INSERT INTO users
+                           (username, password_hash, email, created_at)
+                       VALUES ('duplicate', 'hash', 'OWNER@example.com', '2026-08-29')"""
+                )
+        finally:
+            db.close()
+
+    def test_v17_seeds_roles_and_equal_default_permissions(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 16);
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            roles = {row["code"] for row in db.execute("SELECT code FROM roles")}
+            self.assertEqual(roles, {"admin", "user"})
+            admin_permissions = {
+                row["permission_code"]
+                for row in db.execute(
+                    "SELECT permission_code FROM role_permissions WHERE role_code = 'admin'"
+                )
+            }
+            user_permissions = {
+                row["permission_code"]
+                for row in db.execute(
+                    "SELECT permission_code FROM role_permissions WHERE role_code = 'user'"
+                )
+            }
+            self.assertEqual(user_permissions, admin_permissions)
+            self.assertIn("admin:access", user_permissions)
+            self.assertIn("permissions:manage", user_permissions)
+        finally:
+            db.close()
+
     def test_v6_removes_historical_head_bytes_from_route_and_daily_totals(self):
         db = sqlite3.connect(":memory:")
         db.row_factory = sqlite3.Row

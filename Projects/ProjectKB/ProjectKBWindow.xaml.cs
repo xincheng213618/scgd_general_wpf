@@ -1928,12 +1928,10 @@ namespace ProjectKB
                 if (_keyVisuals.TryGetValue(neighbor, out DVRectangle? neighborVisual))
                 {
                     neighborVisual.Pen = new Pen(Brushes.DeepSkyBlue, 10) { DashStyle = DashStyles.Dash };
-                    neighborVisual.Render();
                 }
             }
 
             selectedVisual.Pen = CreateSelectedKeyPen();
-            selectedVisual.Render();
 
             Pen circlePen = new(Brushes.DeepSkyBlue, 5) { DashStyle = DashStyles.Dash };
             CircleProperties circleProperties = new()
@@ -1973,7 +1971,6 @@ namespace ProjectKB
             foreach ((KBItem item, DVRectangle visual) in _keyVisuals)
             {
                 visual.Pen = CreateDefaultKeyPen(item, darkestKey, brightestKey);
-                visual.Render();
             }
             ImageView.ImageShow.ApplyLayoutScaleToVisuals();
         }

@@ -1176,7 +1176,7 @@ public class CVBaseServerNode : CVCommonNode
 		return true;
 	}
 
-	protected bool getPreStepParam(int idx, AlgorithmPreStepParam param)
+	protected virtual bool getPreStepParam(int idx, AlgorithmPreStepParam param)
 	{
 		CVBaseServerNode inputOpOwnerSvrNode = GetInputOpOwnerSvrNode(idx);
 		if (inputOpOwnerSvrNode != null)

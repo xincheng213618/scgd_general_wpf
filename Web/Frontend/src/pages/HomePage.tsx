@@ -13,7 +13,7 @@ import {
 import { Alert, Button, Col, Row, Skeleton, Space, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { getHome } from '../services/site'
-import type { HomePayload } from '../types/site'
+import type { AuthSession, HomePayload } from '../types/site'
 import { downloadPath, humanSize, shortDate } from '../utils/format'
 
 const { Title, Text } = Typography
@@ -57,7 +57,7 @@ function useDecorativeVideoSource() {
   return source
 }
 
-export function HomePage() {
+export function HomePage({ session }: { session?: AuthSession | null }) {
   const [data, setData] = useState<HomePayload | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -98,6 +98,7 @@ export function HomePage() {
   const releaseItems = (data.app_info.current_preview || []).slice(0, 3)
   const recentItems = data.recent_change_dashboard.slice(0, 3)
   const docItems = ((data.docs?.featured?.length ? data.docs.featured : data.docs?.recent) || []).slice(0, 4)
+  const guestUploadAvailable = !session?.authenticated && session?.anonymous_transfer_upload_enabled === true
 
   const proofItems = [
     { label: '最新版本', value: latestVersion },
@@ -175,10 +176,10 @@ export function HomePage() {
     },
     {
       title: '文件中转',
-      desc: '登录后上传与下载文件。',
+      desc: guestUploadAvailable ? '无需登录上传，分享链接 24 小时有效。' : '登录后上传与下载文件。',
       href: '/transfer',
       icon: <InboxOutlined />,
-      meta: '登录可用',
+      meta: guestUploadAvailable ? '访客可上传' : session?.authenticated ? '上传与管理' : '登录可用',
     },
   ]
 

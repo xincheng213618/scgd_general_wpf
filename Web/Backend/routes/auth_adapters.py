@@ -5,7 +5,7 @@ from __future__ import annotations
 from functools import wraps
 from typing import Any, Callable
 
-from flask import current_app, redirect, request, session, url_for
+from flask import current_app, jsonify, redirect, request, session, url_for
 
 from routes.browser_auth import apply_basic_auth_challenge
 from services.auth_policy import AuthPolicy
@@ -13,7 +13,10 @@ from routes.request_context import current_request_context, set_authenticated_re
 
 
 def check_web_session_auth() -> bool:
-    return bool(session.get("authenticated"))
+    return bool(
+        session.get("authenticated")
+        and not session.get("must_change_password")
+    )
 
 
 def require_web_auth(view_func):
@@ -45,12 +48,28 @@ def make_require_upload_auth(
         @wraps(view_func)
         def wrapper(*args, **kwargs):
             request_context = current_request_context()
+            required_scopes = ["plugin:publish"]
             decision = auth_policy.authorize(
                 request_context,
-                ["plugin:publish"],
+                required_scopes,
                 allow_admin_session=False,
+                allow_user_session=True,
             )
             if not decision.allowed:
+                if decision.reason == "password_change_required":
+                    return jsonify({
+                        "error": "Password change required",
+                        "status": 403,
+                        "code": "password_change_required",
+                        "next": "/account?password_change=required",
+                    }), 403
+                if decision.forbidden:
+                    return jsonify({
+                        "error": "Insufficient scope",
+                        "code": "insufficient_scope",
+                        "required": required_scopes,
+                        "status": 403,
+                    }), 403
                 return _unauthorized_response()
             set_authenticated_request_context(request_context.with_actor(decision.principal))
             return view_func(*args, **kwargs)

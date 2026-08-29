@@ -61,6 +61,8 @@ namespace ColorVision
         private bool _ownsSingleInstanceMutex;
         private SingleInstanceRuntimeCoordinator? _singleInstanceRuntimeCoordinator;
 
+        internal bool CanCreateAutomaticSnapshotAfterHealthyStartup { get; private set; }
+
         public App()
         {
             Startup += Application_Startup;
@@ -307,6 +309,7 @@ namespace ColorVision
             log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");
 
             bool shouldLoadPlugins = true;
+            bool shouldShowSetupWizard = false;
             IReadOnlyList<string> skipOncePluginKeys = Array.Empty<string>();
 
             if (!startupWasHealthy)
@@ -322,6 +325,7 @@ namespace ColorVision
                 }
 
                 shouldLoadPlugins = recoveryResult.Action != StartupRecoveryAction.SkipAllOnce;
+                shouldShowSetupWizard = recoveryResult.Action == StartupRecoveryAction.RunSetupWizard;
                 skipOncePluginKeys = recoveryResult.SelectedPluginKeys;
             }
 
@@ -339,6 +343,10 @@ namespace ColorVision
                 StartupRegistryChecker.MarkStage("PluginsSkipped");
             }
 
+            CanCreateAutomaticSnapshotAfterHealthyStartup = shouldLoadPlugins
+                && skipOncePluginKeys.Count == 0
+                && PluginLoader.LastLoadCompletedWithoutFailures;
+
             _moduleCatalog.Seal();
 
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
@@ -351,7 +359,7 @@ namespace ColorVision
 
             //代码先进入启动窗口
 
-            if (!WizardWindowConfig.Instance.WizardCompletionKey)
+            if (shouldShowSetupWizard || !WizardWindowConfig.Instance.WizardCompletionKey)
             {
                 _startupWizardWasShown = true;
                 WizardWindow wizardWindow = new WizardWindow();

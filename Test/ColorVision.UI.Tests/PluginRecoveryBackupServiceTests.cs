@@ -80,8 +80,29 @@ namespace ColorVision.UI.Tests
             File.WriteAllText(Path.Combine(created.PayloadDirectory, "payload.txt"), "corrupted");
 
             Assert.Null(service.GetAvailableBackup("third.party", pluginDirectory));
+            Assert.NotNull(service.GetRecoveryBackupCandidate("third.party", pluginDirectory));
+            Assert.Single(service.GetRecoveryBackupCandidates(programDirectory));
             Assert.False(service.TryReadBackupMetadata(created.BackupDirectory, out _));
             Assert.Throws<InvalidDataException>(() => service.ReadBackupMetadata(created.BackupDirectory));
+        }
+
+        [Fact]
+        public void RecoveryCandidateReadsMetadataWithoutOpeningPayloadFiles()
+        {
+            string programDirectory = Path.Combine(_tempDirectory, "FastRecoveryInstall");
+            string pluginDirectory = CreatePlugin(programDirectory, "third.party", "1.0", "payload");
+            PluginRecoveryBackupService service = new(Path.Combine(_tempDirectory, "Backups"));
+            PluginRecoveryBackupInfo created = service.CreateVerifiedBackup("third.party", pluginDirectory)!;
+
+            using FileStream lockedPayload = new(
+                Path.Combine(created.PayloadDirectory, "payload.txt"),
+                FileMode.Open,
+                FileAccess.ReadWrite,
+                FileShare.None);
+
+            Assert.NotNull(service.GetRecoveryBackupCandidate("third.party", pluginDirectory));
+            Assert.Single(service.GetRecoveryBackupCandidates(programDirectory));
+            Assert.Null(service.GetAvailableBackup("third.party", pluginDirectory));
         }
 
         [Fact]

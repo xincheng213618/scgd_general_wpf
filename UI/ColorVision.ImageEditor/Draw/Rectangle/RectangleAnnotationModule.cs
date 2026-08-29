@@ -47,9 +47,16 @@ namespace ColorVision.ImageEditor.Draw.Annotations
             if (item is not RectangleAnnotationItem rectangleItem)
                 throw new NotSupportedException($"Unsupported rectangle annotation type: {item.GetType().FullName}");
 
-            return rectangleItem.TextStyle != null
-                ? new DVRectangleText((RectangleTextProperties)ToProperties(rectangleItem))
-                : new DVRectangle((RectangleProperties)ToProperties(rectangleItem));
+            if (rectangleItem.TextStyle == null)
+                return new DVRectangle((RectangleProperties)ToProperties(rectangleItem));
+
+            RectangleTextProperties properties = (RectangleTextProperties)ToProperties(rectangleItem);
+            DVRectangleText visual = new(properties);
+
+            // The legacy constructor only overwrites FontSize; the remaining style is already on properties.
+            if (rectangleItem.TextStyle.FontSize > 0)
+                visual.TextAttribute.FontSize = rectangleItem.TextStyle.FontSize;
+            return visual;
         }
 
         private static RectangleAnnotationItem ToRectangleItem(RectangleProperties properties)

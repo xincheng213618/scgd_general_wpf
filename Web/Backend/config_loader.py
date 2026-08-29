@@ -21,6 +21,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "app_release_keep_count": 5,
     "plugin_package_keep_count": 3,
     "transfer_upload_dir": "Transfer",
+    "anonymous_transfer_upload_enabled": False,
+    "anonymous_transfer_max_bytes": 2 * 1024 * 1024 * 1024,
     "access_analytics_enabled": True,
     "access_analytics_queue_size": 4096,
     "access_analytics_batch_size": 128,
@@ -30,7 +32,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "job_run_retention_days": 30,
     "audit_log_retention_days": 365,
     "admin_db_backup_keep_count": 10,
-    "public_registration_enabled": False,
+    "public_registration_enabled": True,
     "upload_auth": {"username": "admin", "password": "admin"},
     "copilot_sync": {"version_keys": []},
 }

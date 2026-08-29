@@ -48,6 +48,43 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void UpdateLogCollectorIncludesRecentPerInstallationLogs()
+        {
+            string tempDirectory = Path.Combine(Path.GetTempPath(), $"ColorVision_UpdateLogCollectorTests_{Guid.NewGuid():N}");
+            string fullTempDirectory = Path.GetFullPath(tempDirectory);
+            Directory.CreateDirectory(fullTempDirectory);
+
+            try
+            {
+                DateTime utcNow = new(2026, 8, 26, 12, 0, 0, DateTimeKind.Utc);
+                string recentDirectory = Path.Combine(fullTempDirectory, "CURRENTINSTALL01");
+                string oldDirectory = Path.Combine(fullTempDirectory, "OLDINSTALL000001");
+                Directory.CreateDirectory(recentDirectory);
+                Directory.CreateDirectory(oldDirectory);
+                string recentPath = Path.Combine(recentDirectory, "update.log");
+                string oldPath = Path.Combine(oldDirectory, "update.log");
+                File.WriteAllText(recentPath, "recent updater failure");
+                File.WriteAllText(oldPath, "old updater failure");
+                File.SetLastWriteTimeUtc(recentPath, utcNow.AddDays(-1));
+                File.SetLastWriteTimeUtc(oldPath, utcNow.AddDays(-8));
+
+                IReadOnlyList<FileInfo> files = UpdateLogCollector.GetRecentUpdateLogs(fullTempDirectory, 7, utcNow);
+
+                FileInfo file = Assert.Single(files);
+                Assert.Equal(recentPath, file.FullName, ignoreCase: true);
+                Assert.IsAssignableFrom<IFeedbackLogCollector>(new UpdateLogCollector());
+            }
+            finally
+            {
+                if (Directory.Exists(fullTempDirectory)
+                    && fullTempDirectory.StartsWith(Path.GetFullPath(Path.GetTempPath()), StringComparison.OrdinalIgnoreCase))
+                {
+                    Directory.Delete(fullTempDirectory, true);
+                }
+            }
+        }
+
+        [Fact]
         public void ServiceLogCollectorDefaultsToSevenDays()
         {
             var collector = new ServiceLogCollector();

@@ -7,8 +7,6 @@ using Newtonsoft.Json;
 using ProjectARVRPro.Recipe;
 using System.Collections.ObjectModel;
 using System.Text;
-using System.Windows;
-using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.MTF.MTFHVDynamic
 {
@@ -69,6 +67,9 @@ namespace ProjectARVRPro.Process.MTF.MTFHVDynamic
             }
         }
 
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<MTFHVDynamicTestResult>(result, string.IsNullOrWhiteSpace(Config.Name) ? "MTFHV" : Config.Name.Trim());
+
         public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
@@ -80,13 +81,9 @@ namespace ProjectARVRPro.Process.MTF.MTFHVDynamic
             foreach (var item in testResult.MTFDetailViewReslut.MTFResult.result)
             {
                 id++;
-                DVRectangleText rectangle = new();
-                rectangle.Attribute.Rect = new Rect(item.x, item.y, item.w, item.h);
-                rectangle.Attribute.Brush = Brushes.Transparent;
-                rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                rectangle.Attribute.Id = id;
-                rectangle.Attribute.Msg = item.mtfValue?.ToString(Config.ShowConfig);
-                rectangle.Render();
+                if (!ProcessExtensions.TryCreateMtfOverlay(item, id, Config.ShowConfig, out DVRectangleText rectangle))
+                    continue;
+
                 ctx.ImageView.AddVisual(rectangle);
             }
         }

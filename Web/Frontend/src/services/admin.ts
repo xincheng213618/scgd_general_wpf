@@ -29,16 +29,38 @@ import type {
   IndexStatusResponse,
   JobRunPage,
   JobRunResult,
+  LoginSecurityListParams,
+  LoginSecurityPage,
+  LoginSecurityUnlockResult,
   OperationsOverview,
+  PermissionMatrix,
   ScheduledJob,
   RetentionSettingsResponse,
   RetentionSettingsUpdateResponse,
   RetentionSettingsValues,
+  RegistrationSecurityClearResult,
+  RegistrationSecurityListParams,
+  RegistrationSecurityPage,
   TrafficStatsResponse,
   UserAccount,
+  UserAccountDetails,
+  UserAccountPage,
+  UserBulkSecurityAction,
+  UserBulkSecurityResult,
+  UserDeleteResult,
+  UserListParams,
   UserPasswordResetResult,
+  UserPasswordChangeRequiredResult,
+  UserProfilePayload,
   UserRole,
+  UserSessionsRevokeResult,
+  UserStatusUpdateResult,
 } from '../types/admin'
+import { buildUserDetailsSearchParams, buildUserListSearchParams } from '../utils/userAccounts'
+import {
+  buildLoginSecuritySearchParams,
+  buildRegistrationSecuritySearchParams,
+} from '../utils/loginSecurity'
 import { deleteJson, getJson, postJson, putJson } from './request'
 
 export function getAdminStats() {
@@ -218,8 +240,41 @@ export function getDeploymentHistory(params: {
   return getJson<DeploymentHistoryResponse>(`/api/admin/deployments?${search.toString()}`)
 }
 
-export function listUsers() {
-  return getJson<UserAccount[]>('/api/admin/users')
+export function listUsers(params: UserListParams = {}) {
+  const search = buildUserListSearchParams(params)
+  return getJson<UserAccountPage>(`/api/admin/users?${search.toString()}`)
+}
+
+export function getUserDetails(
+  userId: number,
+  params: { current?: number, pageSize?: number } = {},
+) {
+  const search = buildUserDetailsSearchParams(params)
+  return getJson<UserAccountDetails>(
+    `/api/admin/users/${userId}/details?${search.toString()}`,
+  )
+}
+
+export function listLoginSecurity(params: LoginSecurityListParams = {}) {
+  const search = buildLoginSecuritySearchParams(params)
+  return getJson<LoginSecurityPage>(`/api/admin/login-security?${search.toString()}`)
+}
+
+export function unlockLoginSecurity(username: string) {
+  return postJson<LoginSecurityUnlockResult>('/api/admin/login-security/unlock', { username })
+}
+
+export function listRegistrationSecurity(params: RegistrationSecurityListParams = {}) {
+  const search = buildRegistrationSecuritySearchParams(params)
+  return getJson<RegistrationSecurityPage>(
+    `/api/admin/registration-security?${search.toString()}`,
+  )
+}
+
+export function clearRegistrationSecurity(ipAddress: string) {
+  return postJson<RegistrationSecurityClearResult>('/api/admin/registration-security/clear', {
+    ip_address: ipAddress,
+  })
 }
 
 export function getFeedbackInbox(params: {
@@ -262,15 +317,54 @@ export function createUserAccount(payload: CreateUserPayload) {
 }
 
 export function setUserEnabled(id: number, enabled: boolean) {
-  return postJson<UserAccount>(`/api/admin/users/${id}/${enabled ? 'enable' : 'disable'}`)
+  return postJson<UserStatusUpdateResult>(`/api/admin/users/${id}/${enabled ? 'enable' : 'disable'}`)
 }
 
 export function updateUserRole(id: number, role: UserRole) {
   return putJson<UserAccount>(`/api/admin/users/${id}/role`, { role })
 }
 
+export function updateUserProfile(id: number, payload: UserProfilePayload) {
+  return putJson<UserAccount>(`/api/admin/users/${id}/profile`, payload)
+}
+
 export function resetUserPassword(id: number, password: string) {
   return postJson<UserPasswordResetResult>(`/api/admin/users/${id}/password`, { password })
+}
+
+export function requireUserPasswordChange(id: number) {
+  return postJson<UserPasswordChangeRequiredResult>(
+    `/api/admin/users/${id}/password-change-required`,
+  )
+}
+
+export function revokeUserSessions(id: number) {
+  return postJson<UserSessionsRevokeResult>(`/api/admin/users/${id}/sessions/revoke`)
+}
+
+export function deleteUserAccount(id: number, username: string) {
+  return deleteJson<UserDeleteResult>(`/api/admin/users/${id}`, { username })
+}
+
+export function bulkUserSecurityAction(
+  userIds: number[],
+  action: UserBulkSecurityAction,
+) {
+  return postJson<UserBulkSecurityResult>('/api/admin/users/bulk-security', {
+    user_ids: userIds,
+    action,
+  })
+}
+
+export function getPermissionMatrix() {
+  return getJson<PermissionMatrix>('/api/admin/permissions')
+}
+
+export function updateRolePermissions(role: UserRole, permissions: string[], expectedRevision: string) {
+  return putJson<PermissionMatrix>(`/api/admin/roles/${encodeURIComponent(role)}/permissions`, {
+    permissions,
+    expected_revision: expectedRevision,
+  })
 }
 
 export function listCopilotProfiles() {

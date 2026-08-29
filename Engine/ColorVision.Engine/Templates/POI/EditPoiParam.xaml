@@ -82,29 +82,33 @@
 
             <Border Grid.Row="2"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="5,5,5,0">
                 <StackPanel Margin="2">
-                    <DockPanel Margin="0,2">
-                        <TextBlock Text="{x:Static properties:Resources.SaveToFile}"/>
-                        <ToggleButton  HorizontalAlignment="Left"  Margin="0,0,2,0" Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding PoiConfig.IsPoiCIEFile}"/>
-                    </DockPanel>
-                    <DockPanel Visibility="{Binding  PoiConfig.IsPoiCIEFile,Converter={StaticResource bool2VisibilityConverter}}">
-                        <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" >
-                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding PoiConfig.OpenPoiCIEFileCommand}"/>
-                            <TextBlock Text="&#xED25;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
-                        </Grid>
-                        <Button x:Name="button6" DockPanel.Dock="Right"  Content="{x:Static properties:Resources.Save}" Click="SaveFile_Click" Margin="2,0" />
-                        <Button DockPanel.Dock="Right"  Content="..." Command="{Binding PoiConfig.SetPoiFileCommand}" Margin="2,0" />
-                        <TextBox Margin="2,0" BorderThickness="1" Text="{Binding PoiConfig.PoiCIEFileName}"/>
-                    </DockPanel>
-                    <StackPanel Margin="2"  Orientation="Horizontal" Visibility="{Binding  PoiConfig.IsPoiCIEFile,Converter={StaticResource bool2VisibilityConverter}}">
-                        <TextBlock Text="{x:Static properties:Resources.Radius}" Width="40"/>
-                        <TextBox Text="{Binding PoiConfig.Thickness}"  Width="55"  />
-                    </StackPanel>
-                    <StackPanel x:Name="PoiFixStackPanel" >
-                        <StackPanel Orientation="Horizontal" Margin="0,2" >
-                            <TextBlock DockPanel.Dock="Left" Margin="2,0" Text="{x:Static properties:Resources.DataCorrectionFilePath}" Width="120"/>
-                            <TextBox Text="{Binding PoiConfig.PoiFixFilePath}" Margin="2,0"  Width="90"/>
-                            <Button DockPanel.Dock="Right" Margin="2,0" Content="{x:Static properties:Resources.Settings}" Click="PoiFix_Create_Click"/>
+                    <Expander Header="{x:Static properties:Resources.AdvancedSettings}" IsExpanded="False">
+                        <StackPanel Margin="2">
+                            <DockPanel Margin="0,2">
+                                <TextBlock Text="{x:Static properties:Resources.SaveToFile}"/>
+                                <ToggleButton HorizontalAlignment="Left" Margin="0,0,2,0" Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding PoiConfig.IsPoiCIEFile}"/>
+                            </DockPanel>
+                            <DockPanel Visibility="{Binding PoiConfig.IsPoiCIEFile,Converter={StaticResource bool2VisibilityConverter}}">
+                                <Grid Width="20" Margin="5,0" DockPanel.Dock="Right">
+                                    <Button Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding PoiConfig.OpenPoiCIEFileCommand}"/>
+                                    <TextBlock Text="&#xED25;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                </Grid>
+                                <Button x:Name="button6" DockPanel.Dock="Right" Content="{x:Static properties:Resources.Save}" Click="SaveFile_Click" Margin="2,0" />
+                                <Button DockPanel.Dock="Right" Content="..." Command="{Binding PoiConfig.SetPoiFileCommand}" Margin="2,0" />
+                                <TextBox Margin="2,0" BorderThickness="1" Text="{Binding PoiConfig.PoiCIEFileName}"/>
+                            </DockPanel>
+                            <StackPanel Margin="2" Orientation="Horizontal" Visibility="{Binding PoiConfig.IsPoiCIEFile,Converter={StaticResource bool2VisibilityConverter}}">
+                                <TextBlock Text="{x:Static properties:Resources.Radius}" Width="40"/>
+                                <TextBox Text="{Binding PoiConfig.Thickness}" Width="55" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,2">
+                                <TextBlock Margin="2,0" Text="{x:Static properties:Resources.DataCorrectionFilePath}" Width="120"/>
+                                <TextBox Text="{Binding PoiConfig.PoiFixFilePath}" Margin="2,0" Width="90"/>
+                                <Button Margin="2,0" Content="{x:Static properties:Resources.Settings}" Click="PoiFix_Create_Click"/>
+                            </StackPanel>
                         </StackPanel>
+                    </Expander>
+                    <StackPanel x:Name="PoiFixStackPanel" >
                         <DockPanel  Margin="2">
                             <TextBlock  Text="{x:Static properties:Resources.TopLeft}"  MinWidth="70" />
                             <TextBox  Text="{Binding  LeftTopX}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
@@ -167,14 +171,15 @@
                         <StackPanel  Margin="5">
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                                 <RadioButton x:Name="RadioButtonAreaCircle" GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaCircle}" Width="60" Content="{x:Static properties:Resources.Circle}"/>
-                                <RadioButton x:Name="RadioButtonAreaRect"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaRect}" Width="60" Content="{x:Static properties:Resources.Rect}"/>
                                 <RadioButton x:Name="RadioButtonAreaMask"  GroupName="shapeArea"   Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaMask}" Width="70" Content="{x:Static properties:Resources.Quadrilateral}"/>
                                 <RadioButton x:Name="RadioButtonAreaPolygon"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaPolygon}" Width="60" Content="{x:Static properties:Resources.Polyline}"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,5" >
                                 <ToggleButton HorizontalAlignment="Left" Height="16" Margin="0,0,2,0"  Style="{StaticResource ToggleButtonSwitch}"  BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="ShowPoiConfig_Click" IsChecked="{Binding PoiConfig.IsShowPoiConfig}"/>
                                 <TextBlock   HorizontalAlignment="Left"  Text="{x:Static properties:Resources.PointLayoutAreaDisplay}"/>
-                                <Button Content="{x:Static properties:Resources.FrameSelectArea}" Margin="10,0,0,0" Height="22" Padding="8,0" Click="DrawAreaOnImage_Click" ToolTip="{x:Static properties:Resources.FrameSelectAreaToolTip}"/>
+                                <Button Content="{x:Static properties:Resources.FrameSelectArea}" Visibility="{Binding PoiConfig.IsAreaMask,Converter={StaticResource bool2VisibilityConverter1}}" Margin="10,0,0,0" Height="22" Padding="8,0" Click="DrawAreaOnImage_Click" ToolTip="{x:Static properties:Resources.FrameSelectAreaToolTip}"/>
+                                <Button Content="{x:Static properties:Resources.Quadrilateral}" Visibility="{Binding PoiConfig.IsAreaMask,Converter={StaticResource bool2VisibilityConverter}}" Margin="10,0,0,0" Height="22" Padding="8,0" Click="DrawAreaOnImage_Click" ToolTip="{x:Static properties:Resources.FrameSelectAreaToolTip}"/>
+                                <Button Content="{x:Static properties:Resources.Rect}" Visibility="{Binding PoiConfig.IsAreaMask,Converter={StaticResource bool2VisibilityConverter}}" Margin="5,0,0,0" Height="22" Padding="8,0" Click="DrawRectangleAreaOnImage_Click" ToolTip="{x:Static properties:Resources.FrameSelectAreaToolTip}"/>
                             </StackPanel>
                             <StackPanel>
                                 <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaCircle,Converter={StaticResource bool2VisibilityConverter}}">
@@ -199,90 +204,6 @@
                                         </DockPanel>
                                     </UniformGrid>
 
-                                </StackPanel>
-                                <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaRect,Converter={StaticResource bool2VisibilityConverter}}">
-                                    <DockPanel Margin="0,2" >
-                                        <Button Content="{x:Static properties:Resources.FindActiveArea}" Margin="5,0,0,0" ToolTip="{x:Static properties:Resources.RunOnce}"  Click="FindLuminousArea_Click"   />
-                                        <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding PoiConfig.FindLuminousAreaEditCommand}" Padding="2" Height="25" Width="25" >
-                                            <Button.Triggers>
-                                                <EventTrigger RoutedEvent="Button.Click">
-                                                    <BeginStoryboard>
-                                                        <Storyboard>
-                                                            <DoubleAnimation Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </EventTrigger>
-                                            </Button.Triggers>
-                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
-                                                <TextBlock.RenderTransform>
-                                                    <RotateTransform x:Name="rotateTransform21"/>
-                                                </TextBlock.RenderTransform>
-                                            </TextBlock>
-                                        </Button>
-
-                                    </DockPanel>
-                                    <StackPanel Orientation="Horizontal"  Margin="2" HorizontalAlignment="Left">
-                                        <TextBlock Text="{x:Static properties:Resources.CentralPoint}"  MinWidth="50"/>
-                                        <TextBox  Text="{Binding PoiConfig.CenterX}" Width="55"  />
-                                        <TextBox  Text="{Binding PoiConfig.CenterY}" Width="55" Margin="5,0"  />
-                                        <Button Content="{x:Static properties:Resources.FillArea}" Click="Button_Click_2"/>
-                                    </StackPanel>
-                                    <UniformGrid  Columns="2">
-                                        <DockPanel Margin="2" HorizontalAlignment="Left">
-                                            <TextBlock Text="{x:Static properties:Resources.Width}" MinWidth="50"/>
-                                            <TextBox x:Name="tbWidth"  Width="55" Text="{Binding PoiConfig.AreaRectWidth}"  />
-                                        </DockPanel>
-                                        <DockPanel Margin="2" HorizontalAlignment="Left">
-                                            <TextBlock Text="{x:Static properties:Resources.height}" MinWidth="50"/>
-                                            <TextBox x:Name="tbHeight" Width="55"  Text="{Binding PoiConfig.AreaRectHeight}" />
-                                        </DockPanel>
-                                    </UniformGrid>
-
-
-                                    <Grid >
-                                        <Button Content="{x:Static properties:Resources.SetPointLayoutArea}" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
-                                        <StackPanel  HorizontalAlignment="Right">
-                                            <Button x:Name="ButtonImportMarin1" Content="{x:Static properties:Resources.MarginSettings}" Margin="3" Height="25" Click="ButtonImportMarin1_Click"/>
-                                            <Popup  x:Name="ImportMarinPopup1" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=ButtonImportMarin1}">
-                                                <Border  Style="{StaticResource BorderModuleArea}" Background="{DynamicResource SecondaryRegionBrush}" Width="150" CornerRadius="5">
-                                                    <StackPanel Margin="5">
-                                                        <UniformGrid Columns="2" >
-                                                            <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                <TextBlock VerticalAlignment="Center" Width="20"><Run Text="{x:Static properties:Resources.Up}"/><Run Text=":"/></TextBlock>
-                                                                <TextBox  x:Name="TextBoxUp2" Text="10" Margin="5,0" MinWidth="55" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                                            </DockPanel>
-                                                            <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                <TextBlock VerticalAlignment="Center" Width="20"><Run Text="{x:Static properties:Resources.Left}"/><Run Text=":"/></TextBlock>
-                                                                <TextBox   x:Name="TextBoxLeft2" Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                                            </DockPanel>
-                                                            <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                <TextBlock VerticalAlignment="Center" Width="20"><Run Text="{x:Static properties:Resources.Down}"/><Run Text=":"/></TextBlock>
-                                                                <TextBox  x:Name="TextBoxDown2"  Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                                            </DockPanel>
-                                                            <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                <TextBlock VerticalAlignment="Center" Width="20"><Run Text="{x:Static properties:Resources.Right}"/><Run Text=":"/></TextBlock>
-                                                                <TextBox  x:Name="TextBoxRight2"  Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                                            </DockPanel>
-                                                        </UniformGrid>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <ComboBox x:Name="ComboBoxBorderType11" HorizontalAlignment="Left"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="0,0,6,0"/>
-                                                            <Button Content="{x:Static properties:Resources.Settings}" Click="ButtonImportMarinSetting2"/>
-                                                        </StackPanel>
-                                                    </StackPanel>
-                                                </Border>
-                                            </Popup>
-                                        </StackPanel>
-                                    </Grid>
-                                    <UniformGrid  Columns="2" >
-                                        <DockPanel Margin="2" HorizontalAlignment="Left">
-                                            <TextBlock Text="{x:Static properties:Resources.RowCount}"  MinWidth="50"/>
-                                            <TextBox x:Name="tbX"  Width="55" Text="{Binding PoiConfig.AreaRectRow}"  />
-                                        </DockPanel>
-                                        <DockPanel Margin="2" HorizontalAlignment="Left">
-                                            <TextBlock Text="{x:Static properties:Resources.ColumCount}" MinWidth="50"/>
-                                            <TextBox x:Name="tbY" Width="55" Text="{Binding PoiConfig.AreaRectCol}" />
-                                        </DockPanel>
-                                    </UniformGrid>
                                 </StackPanel>
                                 <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaMask,Converter={StaticResource bool2VisibilityConverter}}">
                                     <Grid>
@@ -454,7 +375,7 @@
                                     <TextBox Text="{Binding PoiConfig.DefaultRectHeight}"  Width="55"  />
                                 </DockPanel>
                             </StackPanel>
-                            <ComboBox x:Name="ComboBoxBorderType2"  Visibility="{Binding ElementName=RadioButtonAreaMask,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}" HorizontalAlignment="Left" Width="100" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="5,3"/>
+                            <ComboBox x:Name="ComboBoxBorderType2" HorizontalAlignment="Left" Width="100" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key" SelectedValue="{Binding PoiConfig.PointPosition,Mode=TwoWay}" DisplayMemberPath="Value" Margin="5,3"/>
                             <Button x:Name="button2" Margin="5"  Height="30" Width="100" FontWeight="Bold" HorizontalAlignment="Left"  Content="{x:Static properties:Resources.Draw}" Click="Button2_Click"/>
                             <DockPanel Margin="5,2">
                                 <Button Content="{x:Static properties:Resources.AutoDetectKeyRegions}" Click="DetectKeyRegions_Click" ToolTip="{x:Static properties:Resources.AutoDetectKeyRegionsToolTip}" Style="{StaticResource ButtonDefault.Small}" />

@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-CURRENT_SCHEMA_VERSION = 16
+CURRENT_SCHEMA_VERSION = 27
 
 
 def ensure_schema_version(db: sqlite3.Connection) -> int:
@@ -77,6 +77,28 @@ def _run_migrations(db: sqlite3.Connection, from_version: int):
         _migration_v15(db)
     if from_version < 16:
         _migration_v16(db)
+    if from_version < 17:
+        _migration_v17(db)
+    if from_version < 18:
+        _migration_v18(db)
+    if from_version < 19:
+        _migration_v19(db)
+    if from_version < 20:
+        _migration_v20(db)
+    if from_version < 21:
+        _migration_v21(db)
+    if from_version < 22:
+        _migration_v22(db)
+    if from_version < 23:
+        _migration_v23(db)
+    if from_version < 24:
+        _migration_v24(db)
+    if from_version < 25:
+        _migration_v25(db)
+    if from_version < 26:
+        _migration_v26(db)
+    if from_version < 27:
+        _migration_v27(db)
 
 
 def _migration_v1(db: sqlite3.Connection):
@@ -469,6 +491,215 @@ def _migration_v16(db: sqlite3.Connection):
         );
         CREATE INDEX IF NOT EXISTS idx_access_error_daily_day
             ON access_error_daily(day);
+        """
+    )
+
+
+def _migration_v17(db: sqlite3.Connection):
+    """v17: Add database-backed roles and permissions for Web accounts."""
+    db.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS roles (
+            code        TEXT PRIMARY KEY,
+            name        TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            is_system   INTEGER NOT NULL DEFAULT 1,
+            created_at  TEXT NOT NULL,
+            updated_at  TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS permissions (
+            code        TEXT PRIMARY KEY,
+            name        TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            category    TEXT NOT NULL DEFAULT '',
+            sort_order  INTEGER NOT NULL DEFAULT 0,
+            created_at  TEXT NOT NULL,
+            updated_at  TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS role_permissions (
+            role_code      TEXT NOT NULL,
+            permission_code TEXT NOT NULL,
+            granted_at     TEXT NOT NULL,
+            PRIMARY KEY (role_code, permission_code),
+            FOREIGN KEY(role_code) REFERENCES roles(code),
+            FOREIGN KEY(permission_code) REFERENCES permissions(code)
+        );
+        CREATE INDEX IF NOT EXISTS idx_role_permissions_permission
+            ON role_permissions(permission_code, role_code);
+        """
+    )
+    from services.permission_service import seed_permission_catalog
+
+    seed_permission_catalog(db)
+
+
+def _migration_v18(db: sqlite3.Connection):
+    """v18: Add editable account profile metadata."""
+    users_table = db.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'users'"
+    ).fetchone()
+    if users_table is None:
+        return
+
+    _add_column_if_missing(db, "users", "display_name TEXT NOT NULL DEFAULT ''")
+    _add_column_if_missing(db, "users", "email TEXT NOT NULL DEFAULT ''")
+    db.execute(
+        """CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique
+           ON users(lower(email)) WHERE trim(email) != ''"""
+    )
+
+
+def _migration_v19(db: sqlite3.Connection):
+    """v19: Track independently revocable browser login sessions."""
+    db.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS user_sessions (
+            id            TEXT PRIMARY KEY,
+            user_id       INTEGER NOT NULL,
+            auth_version  INTEGER NOT NULL DEFAULT 0,
+            ip_address    TEXT NOT NULL DEFAULT '',
+            user_agent    TEXT NOT NULL DEFAULT '',
+            created_at    TEXT NOT NULL,
+            last_seen_at  TEXT NOT NULL,
+            revoked_at    TEXT,
+            revoke_reason TEXT NOT NULL DEFAULT '',
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_user_sessions_active
+            ON user_sessions(user_id, revoked_at, last_seen_at DESC);
+        """
+    )
+
+
+def _migration_v20(db: sqlite3.Connection):
+    """v20: Index audit targets for user-scoped activity timelines."""
+    audit_table = db.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'audit_log'"
+    ).fetchone()
+    if audit_table is not None:
+        db.execute(
+            """CREATE INDEX IF NOT EXISTS idx_audit_target
+               ON audit_log(target_type, target_id, id DESC)"""
+        )
+
+
+def _migration_v21(db: sqlite3.Connection):
+    """v21: Persist account-wide login throttling with per-source detail."""
+    db.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS login_attempts (
+            username_key      TEXT NOT NULL,
+            ip_address        TEXT NOT NULL,
+            failed_count      INTEGER NOT NULL DEFAULT 0,
+            window_started_at TEXT NOT NULL,
+            last_failed_at    TEXT NOT NULL,
+            locked_until      TEXT,
+            PRIMARY KEY (username_key, ip_address)
+        );
+        CREATE INDEX IF NOT EXISTS idx_login_attempts_expiry
+            ON login_attempts(locked_until, last_failed_at);
+        """
+    )
+
+
+def _migration_v22(db: sqlite3.Connection):
+    """v22: Persist per-source public-registration velocity limits."""
+    db.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS registration_rate_limits (
+            ip_address                TEXT PRIMARY KEY,
+            attempt_count             INTEGER NOT NULL DEFAULT 0,
+            attempt_window_started_at TEXT NOT NULL,
+            success_count             INTEGER NOT NULL DEFAULT 0,
+            pending_count             INTEGER NOT NULL DEFAULT 0,
+            success_window_started_at TEXT NOT NULL,
+            last_attempt_at           TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_registration_rate_limits_stale
+            ON registration_rate_limits(last_attempt_at);
+        """
+    )
+
+
+def _migration_v23(db: sqlite3.Connection):
+    """v23: Track administrator-issued passwords that must be replaced."""
+    _add_column_if_missing(
+        db,
+        "users",
+        "must_change_password INTEGER NOT NULL DEFAULT 0",
+    )
+
+
+def _migration_v24(db: sqlite3.Connection):
+    """v24: Persist how each database-backed account was created."""
+    _add_column_if_missing(
+        db,
+        "users",
+        "account_origin TEXT NOT NULL DEFAULT 'legacy'",
+    )
+    users_table = db.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'users'"
+    ).fetchone()
+    if users_table is not None:
+        db.execute(
+            """CREATE INDEX IF NOT EXISTS idx_users_account_origin
+               ON users(account_origin, id DESC)"""
+        )
+
+
+def _migration_v25(db: sqlite3.Connection):
+    """v25: Persist privacy-safe, administrator-assisted password recovery."""
+    db.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS password_recovery_requests (
+            id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id            INTEGER NOT NULL,
+            request_count      INTEGER NOT NULL DEFAULT 1,
+            first_requested_at TEXT NOT NULL,
+            last_requested_at  TEXT NOT NULL,
+            last_ip            TEXT NOT NULL DEFAULT '',
+            status             TEXT NOT NULL DEFAULT 'pending'
+                               CHECK(status IN ('pending', 'resolved')),
+            resolved_at        TEXT,
+            resolved_by        TEXT NOT NULL DEFAULT '',
+            resolution         TEXT NOT NULL DEFAULT '',
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_password_recovery_pending_user
+            ON password_recovery_requests(user_id) WHERE status = 'pending';
+        CREATE INDEX IF NOT EXISTS idx_password_recovery_status_requested
+            ON password_recovery_requests(status, last_requested_at DESC);
+        """
+    )
+
+
+def _migration_v26(db: sqlite3.Connection):
+    """v26: Track when each database account password was last set."""
+    _add_column_if_missing(db, "users", "password_changed_at TEXT")
+    users_table = db.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'users'"
+    ).fetchone()
+    if users_table is not None:
+        db.execute(
+            """UPDATE users SET password_changed_at = created_at
+               WHERE password_changed_at IS NULL AND created_at IS NOT NULL"""
+        )
+
+
+def _migration_v27(db: sqlite3.Connection):
+    """v27: Persist per-source password-recovery velocity limits."""
+    db.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS password_recovery_rate_limits (
+            ip_address        TEXT PRIMARY KEY,
+            attempt_count     INTEGER NOT NULL DEFAULT 0,
+            window_started_at TEXT NOT NULL,
+            last_attempt_at   TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_password_recovery_rate_limits_stale
+            ON password_recovery_rate_limits(last_attempt_at);
         """
     )
 

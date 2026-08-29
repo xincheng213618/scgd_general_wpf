@@ -1,19 +1,9 @@
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Camera.Templates;
-using ColorVision.Engine.Templates.Menus;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.AutoExpTime
 {
-    public class MenuAutoExpTimeV2 : MenuItemTemplateBase
-    {
-        public override string OwnerGuid => nameof(MenuItemCamera);
-        public override string Header => $"{ColorVision.Engine.Properties.Resources.AutoExploreTemplate} V2";
-        public override int Order => 24;
-        public override ITemplate Template => new TemplateAutoExpTimeV2();
-    }
-
     public class TemplateAutoExpTimeV2 : ITemplateJson<TemplateJsonParam>, IITemplateLoad
     {
         public static ObservableCollection<TemplateModel<TemplateJsonParam>> Params { get; set; } = new ObservableCollection<TemplateModel<TemplateJsonParam>>();

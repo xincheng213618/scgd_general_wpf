@@ -144,7 +144,6 @@ disable_unsafe_automatic_head(app)
 if __name__ == "__main__":
     from cli import build_parser, handle_cli_args
     from services.scheduler import ensure_default_jobs, SchedulerThread
-    from services.auth_service import ensure_admin_user
     import os as _os
 
     parser = build_parser()
@@ -186,7 +185,6 @@ if __name__ == "__main__":
     print(f"Listening on: http://{CONFIG['host']}:{CONFIG['port']}")
 
     ensure_default_jobs(_cache)
-    ensure_admin_user(_cache, CONFIG)
 
     scheduler_enabled = CONFIG.get("scheduler_enabled", True)
     is_reloader = _os.environ.get("WERKZEUG_RUN_MAIN") == "true"

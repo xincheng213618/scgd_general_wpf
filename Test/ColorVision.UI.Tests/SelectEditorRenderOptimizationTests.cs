@@ -1,10 +1,13 @@
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
 
@@ -37,6 +40,179 @@ public class SelectEditorRenderOptimizationTests
     }
 
     [Fact]
+    public void SelectionRenderFallsBackWhenZoomMatrixIsNotReady()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new();
+            Zoombox zoombox = new() { ContentMatrix = new Matrix(0, 0, 0, 0, 0, 0) };
+            SelectEditorVisual editor = new(new DrawEditorContext(canvas, zoombox));
+            TestSelectVisual selected = new(new Rect(30, 50, 100, 80));
+            editor.SelectVisuals.Add(selected);
+
+            editor.Render();
+
+            Assert.True(editor.GetContainingRect(new Point(30, 50)));
+            editor.Dispose();
+        });
+    }
+
+    [Fact]
+    public void LargeSelectionsUseSingleUnionHandle()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new();
+            Zoombox zoombox = new() { ContentMatrix = Matrix.Identity };
+            SelectEditorVisual editor = new(new DrawEditorContext(canvas, zoombox));
+            TestSelectVisual selected = new(new Rect(40, 40, 10, 10));
+            editor.SelectVisuals.Add(selected);
+            editor.SelectVisuals.Add(new TestSelectVisual(new Rect(0, 0, 10, 10)));
+            for (int i = 0; i < 29; i++)
+                editor.SelectVisuals.Add(new TestSelectVisual(new Rect(100 + i * 20, 100, 10, 10)));
+
+            editor.Render();
+            Assert.True(editor.GetContainingRect(new Point(40, 40)));
+            Assert.Same(selected, editor.ISelectVisual);
+
+            editor.SelectVisuals.Add(new TestSelectVisual(new Rect(700, 100, 10, 10)));
+            editor.Render();
+            Assert.True(editor.GetContainingRect(new Point(40, 40)));
+            Assert.Null(editor.ISelectVisual);
+            Assert.Equal(Cursors.SizeAll, zoombox.Cursor);
+            editor.Dispose();
+        });
+    }
+
+    [Fact]
+    public void LayoutUpdatesReuseOneTimerAndIgnoreEmptySelections()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new();
+            Zoombox zoombox = new() { ContentMatrix = Matrix.Identity };
+            SelectEditorVisual editor = new(new DrawEditorContext(canvas, zoombox));
+            FieldInfo timerField = typeof(SelectEditorVisual).GetField("_layoutRenderTimer", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            MethodInfo layoutUpdated = typeof(SelectEditorVisual).GetMethod("ZoomboxSub_LayoutUpdated", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            DispatcherTimer timer = Assert.IsType<DispatcherTimer>(timerField.GetValue(editor));
+
+            editor.SetRenders(Array.Empty<TestSelectVisual>());
+            layoutUpdated.Invoke(editor, [zoombox, EventArgs.Empty]);
+            Assert.False(timer.IsEnabled);
+
+            editor.SetRender(new TestSelectVisual(new Rect(20, 20, 40, 30)));
+            layoutUpdated.Invoke(editor, [zoombox, EventArgs.Empty]);
+            layoutUpdated.Invoke(editor, [zoombox, EventArgs.Empty]);
+            Assert.True(timer.IsEnabled);
+            Assert.Same(timer, timerField.GetValue(editor));
+
+            editor.ClearRender();
+            Assert.False(timer.IsEnabled);
+            editor.Dispose();
+        });
+    }
+
+    [Fact]
+    public void SelectionRenderQueriesLongBrushBoundsOnce()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new();
+            Zoombox zoombox = new() { ContentMatrix = Matrix.Identity };
+            SelectEditorVisual editor = new(new DrawEditorContext(canvas, zoombox));
+            BrushStrokeProperties properties = new() { Pen = new Pen(Brushes.Red, 4) };
+            for (int index = 0; index < 20_000; index++)
+            {
+                properties.Points.Add(new Point(index * 0.25, 40 + index % 7));
+            }
+            CountingBoundsBrushStroke stroke = new(properties);
+            editor.SelectVisuals.Add(stroke);
+
+            editor.Render();
+
+            Assert.Equal(1, stroke.GetRectCallCount);
+            editor.Dispose();
+        });
+    }
+
+    [Fact]
+    public void ClearingSelectionReleasesCachedHandleTargets()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new();
+            Zoombox zoombox = new() { ContentMatrix = Matrix.Identity };
+            SelectEditorVisual editor = new(new DrawEditorContext(canvas, zoombox));
+            TestSelectVisual selected = new(new Rect(30, 50, 100, 80));
+            editor.SetRender(selected);
+
+            Assert.True(editor.GetContainingRect(new Point(27, 47)));
+            Assert.Same(selected, editor.ISelectVisual);
+
+            editor.ClearRender();
+
+            Assert.False(editor.GetContainingRect(new Point(27, 47)));
+            Assert.Null(editor.ISelectVisual);
+            editor.Dispose();
+        });
+    }
+
+    [Fact]
+    public void RenderingDuringResizeKeepsTheInteractionTargetUntilSelectionIsCleared()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new();
+            Zoombox zoombox = new() { ContentMatrix = Matrix.Identity };
+            SelectEditorVisual editor = new(new DrawEditorContext(canvas, zoombox));
+            TestSelectVisual selected = new(new Rect(30, 50, 100, 80));
+            editor.SetRender(selected);
+
+            Assert.True(editor.GetContainingRect(new Point(130, 130)));
+            Assert.Same(selected, editor.ISelectVisual);
+            FieldInfo mouseDownField = typeof(SelectEditorVisual).GetField("IsMouseDown", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            mouseDownField.SetValue(editor, true);
+
+            selected.SetRect(new Rect(30, 50, 120, 100));
+            editor.Render();
+            Assert.Same(selected, editor.ISelectVisual);
+
+            selected.SetRect(new Rect(30, 50, 140, 120));
+            editor.Render();
+            Assert.Same(selected, editor.ISelectVisual);
+
+            editor.ClearRender();
+            Assert.Null(editor.ISelectVisual);
+            editor.Dispose();
+        });
+    }
+
+    [Fact]
+    public void UndoingASelectedVisualClearsSelectionState()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new();
+            Zoombox zoombox = new() { ContentMatrix = Matrix.Identity };
+            SelectEditorVisual editor = new(new DrawEditorContext(canvas, zoombox));
+            TestSelectVisual selected = new(new Rect(30, 50, 100, 80));
+            canvas.AddVisualCommand(selected);
+            editor.SetRender(selected);
+
+            Assert.Single(editor.SelectVisuals);
+            Assert.True(editor.GetContainingRect(new Point(30, 50)));
+
+            canvas.Undo();
+
+            Assert.False(canvas.ContainsVisual(selected));
+            Assert.Empty(editor.SelectVisuals);
+            Assert.Null(editor.ISelectVisual);
+            Assert.False(editor.GetContainingRect(new Point(30, 50)));
+            editor.Dispose();
+        });
+    }
+
+    [Fact]
     public void DisposedSelectionEditorCanBeCollectedWhileCanvasStaysAlive()
     {
         WpfTestHost.Invoke(() =>
@@ -49,6 +225,58 @@ public class SelectEditorRenderOptimizationTests
             Assert.Empty(canvas.Visuals);
             GC.KeepAlive(canvas);
             GC.KeepAlive(zoombox);
+        });
+    }
+
+    [Fact]
+    public void DisposingDuringMarqueeRemovesTransientVisualAndReleasesInteractionState()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new();
+            Zoombox zoombox = new() { ContentMatrix = Matrix.Identity };
+            SelectEditorVisual editor = new(new DrawEditorContext(canvas, zoombox));
+            FieldInfo selectionRectField = typeof(SelectEditorVisual).GetField("SelectRect", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            FieldInfo mouseDownField = typeof(SelectEditorVisual).GetField("IsMouseDown", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            DrawingVisual selectionRect = Assert.IsType<DrawingVisual>(selectionRectField.GetValue(editor));
+            canvas.AddVisual(selectionRect);
+            mouseDownField.SetValue(editor, true);
+            canvas.CaptureMouse();
+
+            editor.Dispose();
+
+            Assert.False(canvas.ContainsVisual(selectionRect));
+            Assert.False(Assert.IsType<bool>(mouseDownField.GetValue(editor)));
+            Assert.False(canvas.IsMouseCaptured);
+            Assert.Empty(canvas.Visuals);
+            canvas.Dispose();
+        });
+    }
+
+    [Fact]
+    public void InactiveSelectionDoesNotConsumeKeyboardInput()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DrawCanvas canvas = new();
+            Zoombox zoombox = new() { ContentMatrix = Matrix.Identity };
+            DrawEditorContext context = new(canvas, zoombox) { IsImageEditMode = true };
+            SelectEditorVisual editor = new(context);
+            MethodInfo previewKeyDown = typeof(SelectEditorVisual).GetMethod("PreviewKeyDown", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            TestPresentationSource inputSource = new();
+
+            KeyEventArgs noSelectionArgs = new(Keyboard.PrimaryDevice, inputSource, Environment.TickCount, Key.A);
+            previewKeyDown.Invoke(editor, [canvas, noSelectionArgs]);
+            Assert.False(noSelectionArgs.Handled);
+
+            editor.SetRender(new TestSelectVisual(new Rect(20, 20, 30, 30)));
+            context.IsImageEditMode = false;
+            KeyEventArgs inactiveModeArgs = new(Keyboard.PrimaryDevice, inputSource, Environment.TickCount, Key.A);
+            previewKeyDown.Invoke(editor, [canvas, inactiveModeArgs]);
+            Assert.False(inactiveModeArgs.Handled);
+
+            editor.Dispose();
+            canvas.Dispose();
         });
     }
 
@@ -69,6 +297,218 @@ public class SelectEditorRenderOptimizationTests
     }
 
     [Fact]
+    public void LineBoundsSinglePassPreservesGeometry()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            Pen pen = new(Brushes.Red, 3.5);
+            DVLine line = new(new LineProperties
+            {
+                Points = [new Point(40, -5), new Point(-12, 30), new Point(8, 4), new Point(75, 16)],
+                Pen = pen,
+            });
+
+            Rect bounds = line.GetRect();
+
+            double halfThickness = pen.Thickness / 2;
+            Rect expected = new(new Point(-12, -5), new Point(75, 30));
+            expected.Inflate(halfThickness, halfThickness);
+            Assert.Equal(expected, bounds);
+
+            line.Attribute.Points = [new Point(6, 9)];
+            Assert.Equal(new Rect(6 - halfThickness, 9 - halfThickness, pen.Thickness, pen.Thickness), line.GetRect());
+
+            line.Attribute.Points = [];
+            Assert.Equal(Rect.Empty, line.GetRect());
+        });
+    }
+
+    [Fact]
+    public void LineResizePreservesPointListReplacementAndCoordinates()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DVLine line = new(new LineProperties
+            {
+                Pen = new Pen(Brushes.Red, 2),
+                Points = [new Point(10, 20), new Point(30, 40)],
+            });
+            List<Point> originalPoints = line.Attribute.Points;
+
+            line.SetRect(new Rect(100, 200, 44, 66));
+
+            Assert.NotSame(originalPoints, line.Attribute.Points);
+            Assert.Equal([new Point(102, 203), new Point(142, 263)], line.Points);
+        });
+    }
+
+    [Fact]
+    public void BrushBoundsKeepPenInflationForEmptySingleAndNegativePoints()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DVBrushStroke stroke = new(new BrushStrokeProperties
+            {
+                Pen = new Pen(Brushes.Red, 4),
+                Points = [new Point(-10, 5), new Point(20, -7)],
+            });
+
+            Assert.Equal(new Rect(-12, -9, 34, 16), stroke.GetRect());
+
+            stroke.Attribute.Points = [new Point(6, 9)];
+            Assert.Equal(new Rect(4, 7, 4, 4), stroke.GetRect());
+
+            stroke.Attribute.Points = [];
+            Assert.Equal(Rect.Empty, stroke.GetRect());
+        });
+    }
+
+    [Fact]
+    public void LineRenderPreservesConfiguredPenStyle()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            Pen sourcePen = new(Brushes.CornflowerBlue, 3)
+            {
+                DashStyle = DashStyles.Dash,
+                DashCap = PenLineCap.Round,
+                StartLineCap = PenLineCap.Square,
+                EndLineCap = PenLineCap.Triangle,
+                LineJoin = PenLineJoin.Bevel,
+            };
+            DVLine line = new(new LineProperties
+            {
+                Points = [new Point(20, 20), new Point(80, 40), new Point(140, 20)],
+                Pen = sourcePen,
+            });
+
+            line.Render();
+
+            DrawingGroup drawing = Assert.IsType<DrawingGroup>(line.Drawing);
+            Assert.Equal(2, drawing.Children.Count);
+            foreach (GeometryDrawing segment in drawing.Children.Cast<GeometryDrawing>())
+            {
+                Pen renderedPen = Assert.IsType<Pen>(segment.Pen);
+                Assert.Equal(sourcePen.DashCap, renderedPen.DashCap);
+                Assert.Equal(sourcePen.StartLineCap, renderedPen.StartLineCap);
+                Assert.Equal(sourcePen.EndLineCap, renderedPen.EndLineCap);
+                Assert.Equal(sourcePen.LineJoin, renderedPen.LineJoin);
+                Assert.Equal(sourcePen.DashStyle.Dashes, renderedPen.DashStyle.Dashes);
+            }
+        });
+    }
+
+    [Fact]
+    public void LineLayoutScaleClonesFrozenPenWithoutLosingStyle()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            Pen frozenPen = new(Brushes.CornflowerBlue, 3)
+            {
+                DashStyle = DashStyles.Dot,
+                DashCap = PenLineCap.Round,
+                StartLineCap = PenLineCap.Square,
+                EndLineCap = PenLineCap.Triangle,
+                LineJoin = PenLineJoin.Bevel,
+            };
+            frozenPen.Freeze();
+            DVLine line = new(new LineProperties
+            {
+                Points = [new Point(20, 20), new Point(140, 40)],
+                Pen = frozenPen,
+            });
+
+            line.Render();
+            line.ApplyLayoutScale(new DrawingVisualScaleContext(true, 5, 0));
+
+            Assert.True(frozenPen.IsFrozen);
+            Assert.Equal(3, frozenPen.Thickness);
+            Assert.NotSame(frozenPen, line.Pen);
+            Assert.Equal(5, line.Pen.Thickness);
+            Assert.Equal(frozenPen.DashCap, line.Pen.DashCap);
+            Assert.Equal(frozenPen.StartLineCap, line.Pen.StartLineCap);
+            Assert.Equal(frozenPen.EndLineCap, line.Pen.EndLineCap);
+            Assert.Equal(frozenPen.LineJoin, line.Pen.LineJoin);
+            Assert.Equal(frozenPen.DashStyle.Dashes, line.Pen.DashStyle.Dashes);
+        });
+    }
+
+    [Fact]
+    public void FrozenPensRestoreTheirOriginalThicknessAfterTemporaryLayoutScale()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DVLine line = new(new LineProperties { Pen = CreateFrozenPen(3) });
+            DVPolygon polygon = new(new PolygonProperties { Pen = CreateFrozenPen(3) });
+            DVBezierCurve bezier = new(new BezierCurveProperties { Pen = CreateFrozenPen(3) });
+            DVCircle circle = new(new CircleProperties { Pen = CreateFrozenPen(3) });
+            DVRectangle rectangle = new(new RectangleProperties { Pen = CreateFrozenPen(3) });
+            (ILayoutScaleDrawingVisual Visual, Func<Pen> GetPen)[] visuals =
+            [
+                (line, () => line.Pen),
+                (polygon, () => polygon.Pen),
+                (bezier, () => bezier.Pen),
+                (circle, () => circle.Pen),
+                (rectangle, () => rectangle.Pen),
+            ];
+
+            foreach ((ILayoutScaleDrawingVisual visual, Func<Pen> getPen) in visuals)
+            {
+                Pen originalPen = getPen();
+
+                visual.ApplyLayoutScale(new DrawingVisualScaleContext(true, 5, 0));
+                Assert.True(originalPen.IsFrozen);
+                Assert.Equal(3, originalPen.Thickness);
+                Assert.NotSame(originalPen, getPen());
+                Assert.Equal(5, getPen().Thickness);
+
+                visual.ApplyLayoutScale(new DrawingVisualScaleContext(false, 1, 0));
+                Assert.Equal(3, getPen().Thickness);
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    public void TextShapeLayoutScaleNormalizesInvalidPublicScale(double scale)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DVCircleText circle = new(new CircleTextProperties { Pen = new Pen(Brushes.Red, 2), Text = "Circle" });
+            DVRectangleText rectangle = new(new RectangleTextProperties { Pen = new Pen(Brushes.Blue, 2), Text = "Rectangle" });
+
+            circle.ApplyLayoutScale(new DrawingVisualScaleContext(true, scale, 0));
+            rectangle.ApplyLayoutScale(new DrawingVisualScaleContext(true, scale, 0));
+
+            Assert.Equal(1, circle.Pen.Thickness);
+            Assert.Equal(10, circle.TextAttribute.FontSize);
+            Assert.Equal(1, rectangle.Pen.Thickness);
+            Assert.Equal(10, rectangle.TextAttribute.FontSize);
+        });
+    }
+
+    [Fact]
+    public void TextShapeLayoutScaleClampsHugeFiniteScaleBeforeRendering()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DVCircleText circle = new(new CircleTextProperties { Pen = new Pen(Brushes.Red, 2), Text = "Circle" });
+
+            circle.ApplyLayoutScale(new DrawingVisualScaleContext(true, double.MaxValue, 0));
+            circle.Render();
+
+            Assert.True(double.IsFinite(circle.Pen.Thickness));
+            Assert.InRange(circle.Pen.Thickness, 0.1, 3579.1);
+            Assert.True(double.IsFinite(circle.TextAttribute.FontSize));
+            Assert.InRange(circle.TextAttribute.FontSize, 1, 35791);
+        });
+    }
+
+    [Fact]
     public void PolygonRenderMatchesLegacyPerSegmentPens()
     {
         WpfTestHost.Invoke(() =>
@@ -84,6 +524,105 @@ public class SelectEditorRenderOptimizationTests
             DrawingVisual expected = RenderLegacyPolygon(points, sourcePen, isComplete: true);
 
             AssertVisualPixelsEqual(expected, actual, 280, 180);
+        });
+    }
+
+    [Fact]
+    public void PolygonAndBezierBoundsSinglePassPreserveGeometry()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            List<Point> points = [new(40, -5), new(-12, 30), new(8, 4), new(75, 16)];
+            DVPolygon polygon = new(new PolygonProperties { Points = [.. points] });
+            DVBezierCurve bezier = new(new BezierCurveProperties { Points = [.. points] });
+            Rect expected = new(new Point(-12, -5), new Point(75, 30));
+
+            Assert.Equal(expected, polygon.GetRect());
+            Assert.Equal(expected, bezier.GetRect());
+
+            polygon.Attribute.Points = [new Point(6, 9)];
+            bezier.Points = [new Point(6, 9)];
+            Assert.Equal(new Rect(6, 9, 0, 0), polygon.GetRect());
+            Assert.Equal(new Rect(6, 9, 0, 0), bezier.GetRect());
+
+            polygon.Attribute.Points = [];
+            bezier.Points = [];
+            Assert.Equal(Rect.Empty, polygon.GetRect());
+            Assert.Equal(Rect.Empty, bezier.GetRect());
+        });
+    }
+
+    [Fact]
+    public void DegeneratePolygonAndBezierResizeKeepsFiniteGeometry()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            Rect target = new(100, 200, 60, 90);
+            DVPolygon polygon = new(new PolygonProperties
+            {
+                Points = [new Point(10, 10), new Point(10, 20), new Point(10, 30)],
+            });
+            DVBezierCurve bezier = new(new BezierCurveProperties
+            {
+                Points = [new Point(10, 20), new Point(20, 20), new Point(30, 20)],
+            });
+
+            polygon.SetRect(target);
+            bezier.SetRect(target);
+
+            Assert.Equal([new Point(130, 200), new Point(130, 245), new Point(130, 290)], polygon.Points);
+            Assert.Equal([new Point(100, 245), new Point(130, 245), new Point(160, 245)], bezier.Points);
+            Assert.All(polygon.Points.Concat(bezier.Points), point =>
+            {
+                Assert.True(double.IsFinite(point.X));
+                Assert.True(double.IsFinite(point.Y));
+            });
+
+            polygon.Attribute.Points = [new Point(3, 7)];
+            bezier.Points = [new Point(3, 7)];
+            polygon.SetRect(target);
+            bezier.SetRect(target);
+            Assert.Equal(new Point(130, 245), Assert.Single(polygon.Points));
+            Assert.Equal(new Point(130, 245), Assert.Single(bezier.Points));
+        });
+    }
+
+    [Fact]
+    public void BezierStreamGeometryPreservesLegacyPixelsAndControlPoints()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            List<Point> points = [new Point(0, 0), new Point(100, 50), new Point(200, 0)];
+            Pen pen = new(new SolidColorBrush(Color.FromArgb(180, 40, 120, 220)), 3);
+            DVBezierCurve bezier = new(new BezierCurveProperties
+            {
+                Points = [.. points],
+                Pen = pen,
+            });
+
+            bezier.Render();
+
+            DrawingGroup drawing = Assert.IsType<DrawingGroup>(bezier.Drawing);
+            GeometryDrawing geometryDrawing = Assert.IsType<GeometryDrawing>(Assert.Single(drawing.Children));
+            StreamGeometry streamGeometry = Assert.IsType<StreamGeometry>(geometryDrawing.Geometry);
+            Assert.True(streamGeometry.IsFrozen);
+
+            Assert.Equal([new Point(-15, -7.5), new Point(15, 7.5)], DVBezierCurve.Control1(points, 0));
+            Assert.Equal([new Point(70, 50), new Point(130, 50)], DVBezierCurve.Control1(points, 1));
+            Assert.Equal([new Point(185, 7.5), new Point(215, -7.5)], DVBezierCurve.Control1(points, 2));
+
+            PathFigure legacyFigure = new() { StartPoint = points[0] };
+            legacyFigure.Segments.Add(new BezierSegment(new Point(15, 7.5), new Point(70, 50), points[1], true) { IsSmoothJoin = true });
+            legacyFigure.Segments.Add(new BezierSegment(new Point(130, 50), new Point(185, 7.5), points[2], true) { IsSmoothJoin = true });
+            PathGeometry legacyGeometry = new();
+            legacyGeometry.Figures.Add(legacyFigure);
+            DrawingVisual legacy = new();
+            using (DrawingContext context = legacy.RenderOpen())
+                context.DrawGeometry(pen.Brush, pen, legacyGeometry);
+
+            Assert.Equal(legacyGeometry.Bounds, streamGeometry.Bounds);
+            Assert.Equal(legacyGeometry.GetRenderBounds(pen), streamGeometry.GetRenderBounds(pen));
+            AssertVisualPixelsEqual(legacy, bezier, 220, 100);
         });
     }
 
@@ -140,6 +679,13 @@ public class SelectEditorRenderOptimizationTests
         for (int i = 1; i < points.Count; i++)
             context.DrawLine(new Pen(sourcePen.Brush, sourcePen.Thickness), points[i - 1], points[i]);
         return visual;
+    }
+
+    private static Pen CreateFrozenPen(double thickness)
+    {
+        Pen pen = new(Brushes.CornflowerBlue, thickness);
+        pen.Freeze();
+        return pen;
     }
 
     private static DrawingVisual RenderLegacyPolygon(List<Point> points, Pen sourcePen, bool isComplete)
@@ -242,5 +788,30 @@ public class SelectEditorRenderOptimizationTests
         public Rect GetRect() => rect;
 
         public void SetRect(Rect value) => rect = value;
+    }
+
+    private sealed class TestPresentationSource : PresentationSource
+    {
+        public override Visual RootVisual { get; set; } = new DrawingVisual();
+
+        public override bool IsDisposed => false;
+
+        protected override CompositionTarget GetCompositionTargetCore() => null!;
+    }
+
+    private sealed class CountingBoundsBrushStroke : DVBrushStroke
+    {
+        public CountingBoundsBrushStroke(BrushStrokeProperties properties)
+            : base(properties)
+        {
+        }
+
+        public int GetRectCallCount { get; private set; }
+
+        public override Rect GetRect()
+        {
+            GetRectCallCount++;
+            return base.GetRect();
+        }
     }
 }

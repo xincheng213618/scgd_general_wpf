@@ -47,6 +47,8 @@ namespace ColorVision.ServiceHost
 
         public string RunningProcessPath { get; init; } = string.Empty;
 
+        public ServiceHostRuntimeIntegrity RuntimeIntegrity { get; init; } = ServiceHostRuntimeIntegrity.Unavailable;
+
         public bool IsPackageAvailable => File.Exists(PackageExecutablePath);
 
         public bool NeedsInstall => State == ServiceHostInstallState.NotInstalled;
@@ -54,7 +56,7 @@ namespace ColorVision.ServiceHost
         public bool NeedsUpdate => IsPackageAvailable
             && PackageVersion != null
             && (InstalledVersion == null || PackageVersion > InstalledVersion || (RunningVersion != null && PackageVersion > RunningVersion)
-                || HasPackageContentMismatch);
+                || HasPackageContentMismatch || HasIncompleteInstalledRuntime);
 
         public bool HasPackageContentMismatch => PackageVersion != null
             && InstalledVersion != null
@@ -64,17 +66,25 @@ namespace ColorVision.ServiceHost
             && !string.Equals(PackageSha256, InstalledSha256, StringComparison.OrdinalIgnoreCase);
 
         public bool NeedsRepair => IsPackageAvailable
+            && (!RuntimeIntegrity.CanEvaluate || RuntimeIntegrity.IsPackageComplete)
             && (State == ServiceHostInstallState.Stopped
+                || HasIncompleteInstalledRuntime
                 || (State == ServiceHostInstallState.Running && (RunningVersion == null || !HasExpectedRunningPath)));
+
+        public bool HasIncompletePackage => RuntimeIntegrity.CanEvaluate && !RuntimeIntegrity.IsPackageComplete;
+
+        public bool HasIncompleteInstalledRuntime => RuntimeIntegrity.CanEvaluate && !RuntimeIntegrity.IsInstalledComplete;
 
         public bool HasExpectedRunningPath => IsSameExecutablePath(RunningProcessPath, InstalledExecutablePath);
 
         public bool IsReady => State == ServiceHostInstallState.Running
             && RunningVersion != null
-            && HasExpectedRunningPath;
+            && HasExpectedRunningPath
+            && !HasIncompleteInstalledRuntime;
 
         public bool HasCurrentOrNewerInstalledVersion => PackageVersion != null
             && InstalledVersion != null
+            && !HasIncompleteInstalledRuntime
             && (InstalledVersion > PackageVersion || (InstalledVersion == PackageVersion && !HasPackageContentMismatch));
 
         public bool WouldInstallDowngrade => PackageVersion != null
@@ -83,11 +93,14 @@ namespace ColorVision.ServiceHost
 
         public bool CanSelfUpdate => State == ServiceHostInstallState.Running
             && NeedsUpdate
+            && (!RuntimeIntegrity.CanEvaluate || RuntimeIntegrity.IsPackageComplete)
             && RunningVersion != null
             && HasExpectedRunningPath
             && RunningVersion.CompareTo(MinimumSelfUpdateVersion) >= 0;
 
-        public string DisplayText => State switch
+        public string DisplayText => HasIncompleteInstalledRuntime
+            ? $"Installed runtime incomplete ({RuntimeIntegrity.InstalledIssueCount} file issue(s))"
+            : State switch
         {
             ServiceHostInstallState.NotInstalled => $"Not installed, package {FormatVersion(PackageVersion)}",
             ServiceHostInstallState.Stopped => $"Stopped, installed {FormatVersion(InstalledVersion)}, package {FormatVersion(PackageVersion)}",
@@ -192,6 +205,19 @@ namespace ColorVision.ServiceHost
                 });
             }
 
+            ServiceHostRuntimeIntegrity integrity = ServiceHostRuntimeIntegrityChecker.Inspect(
+                ServiceHostProtocol.PackageDirectory,
+                ServiceHostProtocol.InstallDirectory);
+            if (!integrity.IsPackageComplete)
+            {
+                return Task.FromResult(new ServiceHostOperationResult
+                {
+                    Success = false,
+                    ExitCode = -1,
+                    Error = BuildIncompletePackageMessage(integrity),
+                });
+            }
+
             return RunPowerShellScriptAsync(CreateInstallScript(), requireAdministrator: true, cancellationToken);
         }
 
@@ -249,6 +275,11 @@ namespace ColorVision.ServiceHost
                         $"Unable to read the packaged service host version: {status.PackageExecutablePath}",
                         status,
                         attempts);
+                }
+
+                if (status.HasIncompletePackage)
+                {
+                    return CreateEnsureFailure(BuildIncompletePackageMessage(status.RuntimeIntegrity), status, attempts);
                 }
 
                 ServiceHostStartupAction action = ServiceHostStartupUpdateChecker.ResolveAction(status);
@@ -349,6 +380,19 @@ namespace ColorVision.ServiceHost
                 };
             }
 
+            ServiceHostRuntimeIntegrity integrity = ServiceHostRuntimeIntegrityChecker.Inspect(
+                ServiceHostProtocol.PackageDirectory,
+                ServiceHostProtocol.InstallDirectory);
+            if (!integrity.IsPackageComplete)
+            {
+                return new ServiceHostOperationResult
+                {
+                    Success = false,
+                    ExitCode = -1,
+                    Error = BuildIncompletePackageMessage(integrity),
+                };
+            }
+
             try
             {
                 ServiceHostResponse response = await ColorVisionServiceHostClient.Default
@@ -383,6 +427,9 @@ namespace ColorVision.ServiceHost
             Version? installedVersion = GetExecutableVersion(ServiceHostProtocol.InstalledExecutablePath);
             string packageSha256 = ComputeServiceHostContentSha256(ServiceHostProtocol.PackageExecutablePath);
             string installedSha256 = ComputeServiceHostContentSha256(ServiceHostProtocol.InstalledExecutablePath);
+            ServiceHostRuntimeIntegrity runtimeIntegrity = ServiceHostRuntimeIntegrityChecker.Inspect(
+                ServiceHostProtocol.PackageDirectory,
+                ServiceHostProtocol.InstallDirectory);
 
             try
             {
@@ -414,6 +461,7 @@ namespace ColorVision.ServiceHost
                     RunningProcessPath = runningProcessPath,
                     PackageSha256 = packageSha256,
                     InstalledSha256 = installedSha256,
+                    RuntimeIntegrity = runtimeIntegrity,
                 };
             }
             catch (InvalidOperationException ex)
@@ -429,6 +477,7 @@ namespace ColorVision.ServiceHost
                     InstalledVersion = installedVersion,
                     PackageSha256 = packageSha256,
                     InstalledSha256 = installedSha256,
+                    RuntimeIntegrity = runtimeIntegrity,
                 };
             }
             catch (Exception ex)
@@ -444,6 +493,7 @@ namespace ColorVision.ServiceHost
                     InstalledVersion = installedVersion,
                     PackageSha256 = packageSha256,
                     InstalledSha256 = installedSha256,
+                    RuntimeIntegrity = runtimeIntegrity,
                 };
             }
         }
@@ -463,6 +513,16 @@ namespace ColorVision.ServiceHost
             {
                 return string.Empty;
             }
+        }
+
+        private static string BuildIncompletePackageMessage(ServiceHostRuntimeIntegrity integrity)
+        {
+            string missingFiles = integrity.MissingPackageFiles.Count == 0
+                ? "runtime manifest unavailable"
+                : string.Join(", ", integrity.MissingPackageFiles.Take(8));
+            if (integrity.MissingPackageFiles.Count > 8)
+                missingFiles += $" and {integrity.MissingPackageFiles.Count - 8} more";
+            return $"The packaged ColorVisionServiceHost runtime is incomplete: {missingFiles}. Repair ColorVision with the full installer.";
         }
 
         private static async Task<ServiceHostEnsureResult> InstallAndWaitForReadyAsync(
@@ -522,7 +582,7 @@ namespace ColorVision.ServiceHost
 
         internal static bool IsReadyForPackagedVersion(ServiceHostStatus status)
         {
-            return status.IsReady && !status.NeedsUpdate;
+            return status.IsReady && !status.NeedsUpdate && !status.HasIncompletePackage;
         }
 
         private static ServiceHostEnsureResult CreateEnsureSuccess(ServiceHostStatus status, List<string> attempts)

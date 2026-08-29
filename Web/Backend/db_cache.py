@@ -201,10 +201,117 @@ class CacheManager:
                 role            TEXT DEFAULT 'admin',
                 is_active       INTEGER DEFAULT 1,
                 auth_version    INTEGER NOT NULL DEFAULT 0,
+                must_change_password INTEGER NOT NULL DEFAULT 0,
+                account_origin  TEXT NOT NULL DEFAULT 'legacy',
+                display_name    TEXT NOT NULL DEFAULT '',
+                email           TEXT NOT NULL DEFAULT '',
                 created_at      TEXT NOT NULL,
                 updated_at      TEXT,
-                last_login_at   TEXT
+                last_login_at   TEXT,
+                password_changed_at TEXT
             );
+            -- Independently revocable browser login sessions
+            CREATE TABLE IF NOT EXISTS user_sessions (
+                id              TEXT PRIMARY KEY,
+                user_id         INTEGER NOT NULL,
+                auth_version    INTEGER NOT NULL DEFAULT 0,
+                ip_address      TEXT NOT NULL DEFAULT '',
+                user_agent      TEXT NOT NULL DEFAULT '',
+                created_at      TEXT NOT NULL,
+                last_seen_at    TEXT NOT NULL,
+                revoked_at      TEXT,
+                revoke_reason   TEXT NOT NULL DEFAULT '',
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS idx_user_sessions_active
+                ON user_sessions(user_id, revoked_at, last_seen_at DESC);
+
+            -- Persisted failed-login windows, grouped by account and source address
+            CREATE TABLE IF NOT EXISTS login_attempts (
+                username_key     TEXT NOT NULL,
+                ip_address       TEXT NOT NULL,
+                failed_count     INTEGER NOT NULL DEFAULT 0,
+                window_started_at TEXT NOT NULL,
+                last_failed_at   TEXT NOT NULL,
+                locked_until     TEXT,
+                PRIMARY KEY (username_key, ip_address)
+            );
+            CREATE INDEX IF NOT EXISTS idx_login_attempts_expiry
+                ON login_attempts(locked_until, last_failed_at);
+
+            -- Per-source signup velocity windows with in-flight reservations
+            CREATE TABLE IF NOT EXISTS registration_rate_limits (
+                ip_address                 TEXT PRIMARY KEY,
+                attempt_count              INTEGER NOT NULL DEFAULT 0,
+                attempt_window_started_at  TEXT NOT NULL,
+                success_count              INTEGER NOT NULL DEFAULT 0,
+                pending_count              INTEGER NOT NULL DEFAULT 0,
+                success_window_started_at  TEXT NOT NULL,
+                last_attempt_at            TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_registration_rate_limits_stale
+                ON registration_rate_limits(last_attempt_at);
+
+            -- Administrator-assisted password recovery without account disclosure
+            CREATE TABLE IF NOT EXISTS password_recovery_requests (
+                id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id            INTEGER NOT NULL,
+                request_count      INTEGER NOT NULL DEFAULT 1,
+                first_requested_at TEXT NOT NULL,
+                last_requested_at  TEXT NOT NULL,
+                last_ip            TEXT NOT NULL DEFAULT '',
+                status             TEXT NOT NULL DEFAULT 'pending'
+                                   CHECK(status IN ('pending', 'resolved')),
+                resolved_at        TEXT,
+                resolved_by        TEXT NOT NULL DEFAULT '',
+                resolution         TEXT NOT NULL DEFAULT '',
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_password_recovery_pending_user
+                ON password_recovery_requests(user_id) WHERE status = 'pending';
+            CREATE INDEX IF NOT EXISTS idx_password_recovery_status_requested
+                ON password_recovery_requests(status, last_requested_at DESC);
+
+            -- Per-source password-recovery velocity windows
+            CREATE TABLE IF NOT EXISTS password_recovery_rate_limits (
+                ip_address        TEXT PRIMARY KEY,
+                attempt_count     INTEGER NOT NULL DEFAULT 0,
+                window_started_at TEXT NOT NULL,
+                last_attempt_at   TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_password_recovery_rate_limits_stale
+                ON password_recovery_rate_limits(last_attempt_at);
+
+            -- Role and permission catalog for browser accounts
+            CREATE TABLE IF NOT EXISTS roles (
+                code            TEXT PRIMARY KEY,
+                name            TEXT NOT NULL,
+                description     TEXT NOT NULL DEFAULT '',
+                is_system       INTEGER NOT NULL DEFAULT 1,
+                created_at      TEXT NOT NULL,
+                updated_at      TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS permissions (
+                code            TEXT PRIMARY KEY,
+                name            TEXT NOT NULL,
+                description     TEXT NOT NULL DEFAULT '',
+                category        TEXT NOT NULL DEFAULT '',
+                sort_order      INTEGER NOT NULL DEFAULT 0,
+                created_at      TEXT NOT NULL,
+                updated_at      TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS role_permissions (
+                role_code       TEXT NOT NULL,
+                permission_code TEXT NOT NULL,
+                granted_at      TEXT NOT NULL,
+                PRIMARY KEY (role_code, permission_code),
+                FOREIGN KEY(role_code) REFERENCES roles(code),
+                FOREIGN KEY(permission_code) REFERENCES permissions(code)
+            );
+            CREATE INDEX IF NOT EXISTS idx_role_permissions_permission
+                ON role_permissions(permission_code, role_code);
 
             -- API keys: lifecycle-managed keys with scopes
             CREATE TABLE IF NOT EXISTS api_keys (
@@ -259,6 +366,7 @@ class CacheManager:
             CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_log(action);
             CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at);
             CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_log(actor_type, actor_id, id DESC);
+            CREATE INDEX IF NOT EXISTS idx_audit_target ON audit_log(target_type, target_id, id DESC);
 
             -- Operations relay: outbound-only host control plane. Tasks are catalog-bound,
             -- immutable intents and never contain arbitrary commands.

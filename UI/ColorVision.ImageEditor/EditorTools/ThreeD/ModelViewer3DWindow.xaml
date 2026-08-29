@@ -6,7 +6,9 @@
         xmlns:local="clr-namespace:ColorVision.ImageEditor.EditorTools.ThreeD"
         xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resources.ThreeD_ModelViewer}" Height="700" Width="1100"
+        Title="{x:Static properties:Resources.ThreeD_ModelViewer}"
+        Height="780" Width="1280" MinHeight="560" MinWidth="820"
+        Background="{DynamicResource GlobalBackground}"
         Closed="Window_Closed">
     <local:ModelViewer3DControl x:Name="ViewerControl"/>
 </Window>

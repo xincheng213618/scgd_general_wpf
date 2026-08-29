@@ -1,5 +1,5 @@
 using ColorVision.Common.ThirdPartyApps;
-using ColorVision.UI.Menus;
+using ColorVision.UI.Authorizations;
 using System.Windows;
 
 namespace WindowsServicePlugin.ServiceManager
@@ -14,7 +14,10 @@ namespace WindowsServicePlugin.ServiceManager
                 {
                     Name = "服务管理器",
                     Group = "内部工具",
+                    Category = ThirdPartyAppCategory.Internal,
+                    RequiredPermission = PermissionMode.Administrator,
                     Order = 3,
+                    IconGlyph = ThirdPartyAppIconGlyphs.ServiceManager,
                     LaunchAction = () =>
                     {
                         new ServiceManagerWindow
@@ -28,17 +31,4 @@ namespace WindowsServicePlugin.ServiceManager
         }
     }
 
-    public class MenuServiceManager : MenuItemBase
-    {
-        public override string OwnerGuid => MenuItemConstants.Help;
-        public override string GuidId => "ServiceManager";
-        public override int Order => 0;
-        public override string Header => WindowsServicePlugin.Properties.Resources.ServiceManager;
-
-        public override void Execute()
-        {
-            var window = new ServiceManagerWindow();
-            window.Show();
-        }
-    }
 }

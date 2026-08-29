@@ -1,6 +1,8 @@
 ﻿#pragma warning disable CA1863,CS8625
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
+using ColorVision.Algorithms;
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Annotations;
@@ -44,8 +46,10 @@ namespace ColorVision.ImageEditor
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
         private readonly DefaultImageViewDisplayConfig _defaultDisplayConfig = DefaultImageViewDisplayConfig.Current;
         private readonly ImageFrameStore _imageFrameStore = new();
+        private readonly Guid _documentInstanceId = Guid.NewGuid();
         private readonly List<Func<IEnumerable<ImageViewSettingsEntry>>> _settingsEntries = new();
         private int _disposed;
+        private bool _suppressConfigClearDocumentMutation;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -150,8 +154,26 @@ namespace ColorVision.ImageEditor
         private bool _isLayerSelectorEnabled = true;
 
 
+        private readonly AlgorithmRuntime _algorithmRuntime;
+
+        internal Action<AlgorithmInvocationClaim>? AlgorithmClaimStateUpdateHook { get; set; }
+
+        internal Action<AlgorithmInvocationClaim>? AlgorithmPreviewPublicationHook { get; set; }
+
+        internal Action<AlgorithmInvocationClaim>? AlgorithmPreviewCommitHook { get; set; }
+
+        internal Action<AlgorithmInvocationClaim>? AlgorithmPreviewClaimAcceptedHook { get; set; }
+
+        internal Action<long, long>? ImageDocumentRevisionAdvancedHook { get; set; }
+
         public ImageView()
+            : this(ImageAlgorithmPlatform.Runtime)
         {
+        }
+
+        public ImageView(AlgorithmRuntime algorithmRuntime)
+        {
+            _algorithmRuntime = algorithmRuntime ?? throw new ArgumentNullException(nameof(algorithmRuntime));
             InitializeComponent();
         }
 
@@ -166,6 +188,8 @@ namespace ColorVision.ImageEditor
                 new ImageProcessingContextBinding
                 {
                     IsInitialized = () => IsInitialized,
+                    GetDocumentInstanceId = () => _documentInstanceId,
+                    IsDisposed = () => Volatile.Read(ref _disposed) != 0,
                     GetImageRevision = () => ImageRevision,
                     AcquireImageFrame = AcquireImageFrame,
                     IsCurrentImageRevision = IsCurrentImageRevision,
@@ -177,7 +201,12 @@ namespace ColorVision.ImageEditor
                     GetSelectedLayerSourceChannelIndex = GetSelectedLayerSourceChannelIndex,
                     SetImageSource = SetImageSource,
                     UpdateZoomAndScale = UpdateZoomAndScale,
-                });
+                    BeforeAlgorithmClaimStateUpdate = claim => AlgorithmClaimStateUpdateHook?.Invoke(claim),
+                    BeforeAlgorithmPreviewPublication = claim => AlgorithmPreviewPublicationHook?.Invoke(claim),
+                    BeforeAlgorithmPreviewCommit = claim => AlgorithmPreviewCommitHook?.Invoke(claim),
+                    AfterAlgorithmPreviewClaimAccepted = claim => AlgorithmPreviewClaimAcceptedHook?.Invoke(claim),
+                },
+                _algorithmRuntime);
             return new EditorContext(
                 this,
                 config,
@@ -257,12 +286,14 @@ namespace ColorVision.ImageEditor
 
             Config.ShowMsgChanged += (s, e) =>
             {
-                if (!e)
+                foreach (var drawingVisual in EditorContext.DrawEditorContext.DrawingVisualLists)
                 {
-                    foreach (var drawingVisual in EditorContext.DrawEditorContext.DrawingVisualLists)
-                    {
-                        drawingVisual.BaseAttribute.Msg = string.Empty;
-                    }
+                    if (drawingVisual is not DrawingVisualBase visual || visual.IsMessageVisible == e)
+                        continue;
+
+                    visual.IsMessageVisible = e;
+                    if (visual.BaseAttribute is BaseProperties baseAttribute && !string.IsNullOrWhiteSpace(baseAttribute.Msg))
+                        visual.Render();
                 }
             };
 
@@ -293,9 +324,10 @@ namespace ColorVision.ImageEditor
 
         private void Config_Cleared(object? sender, EventArgs e)
         {
+            if (!_suppressConfigClearDocumentMutation)
+                ApplyImageDocumentMutation(ImageDocumentMutationKind.SourcePixelsChanged);
             PseudoColorTool?.Reset();
             FunctionImage = null;
-            _imageFrameStore.Invalidate();
         }
 
         public bool ImageEditMode
@@ -747,6 +779,7 @@ namespace ColorVision.ImageEditor
         public BitmapSource? CaptureSnapshot()
         {
             Dispatcher.VerifyAccess();
+            CommitActiveDrawingEditsForOutput();
             ImageShow.UpdateLayout();
             int pixelWidth = GetRenderPixelLength(ImageShow.ActualWidth, ImageShow.RenderSize.Width);
             int pixelHeight = GetRenderPixelLength(ImageShow.ActualHeight, ImageShow.RenderSize.Height);
@@ -963,6 +996,15 @@ namespace ColorVision.ImageEditor
             dialog.FileName = "annotations-" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
+            CommitActiveDrawingEditsForOutput();
+            visuals = EditorContext.DrawEditorContext.DrawingVisualLists.OfType<DrawingVisualBase>().ToList();
+            document = AnnotationMapper.CreateDocument(visuals);
+            if (document.Items.Count == 0)
+            {
+                WpfMessageBox.Show(Properties.Resources.ImageView_NoAnnotationTypes, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             File.WriteAllText(dialog.FileName, AnnotationMapper.Serialize(document));
 
             int skippedCount = visuals.Count - document.Items.Count;
@@ -970,6 +1012,23 @@ namespace ColorVision.ImageEditor
                 ? string.Format(Properties.Resources.ImageView_ExportedAnnotationsWithSkip, document.Items.Count, skippedCount)
                 : string.Format(Properties.Resources.ImageView_ExportedAnnotations, document.Items.Count);
             WpfMessageBox.Show(message, Properties.Resources.ImageView_ExportAnnotations, MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void CommitActiveDrawingEditsForOutput()
+        {
+            List<IEditableDrawingVisual> activeEditors = EditorContext.DrawEditorContext.DrawingVisualLists
+                .OfType<IEditableDrawingVisual>()
+                .Where(editor => editor.IsEditing)
+                .ToList();
+            if (activeEditors.Count == 0)
+                return;
+
+            foreach (IEditableDrawingVisual editor in activeEditors)
+                editor.EndEdit(true);
+
+            // Editing starts with an empty selection. Keep that state and avoid
+            // exporting the selection handles restored by EndEdit.
+            EditorContext.DrawEditorContext.SelectionVisual.ClearRender();
         }
 
         public void ImportAnnotations()
@@ -1004,12 +1063,35 @@ namespace ColorVision.ImageEditor
         {
             if (e.Visual is IDrawingVisual visual)
             {
+                ApplyDrawingVisualDisplayConfig(visual);
                 EditorContext.DrawEditorContext.DrawingVisualLists.Add(visual);
                 return;
             }
 
             List<IDrawingVisual> drawingVisuals = e.Visuals.OfType<IDrawingVisual>().ToList();
+            foreach (IDrawingVisual drawingVisual in drawingVisuals)
+                ApplyDrawingVisualDisplayConfig(drawingVisual);
             EditorContext.DrawEditorContext.AddDrawingVisuals(drawingVisuals);
+        }
+
+        private void ApplyDrawingVisualDisplayConfig(IDrawingVisual visual, bool renderChanges = true)
+        {
+            bool requiresRender = false;
+            BaseProperties? baseAttribute = visual.BaseAttribute;
+            if (baseAttribute is ITextProperties textProperties && textProperties.IsShowText != Config.IsShowText)
+            {
+                textProperties.IsShowText = Config.IsShowText;
+                requiresRender = true;
+            }
+
+            if (visual is DrawingVisualBase drawingVisual && drawingVisual.IsMessageVisible != Config.IsShowMsg)
+            {
+                drawingVisual.IsMessageVisible = Config.IsShowMsg;
+                requiresRender |= baseAttribute != null && !string.IsNullOrWhiteSpace(baseAttribute.Msg);
+            }
+
+            if (requiresRender && renderChanges)
+                visual.Render();
         }
 
         private void ImageShow_VisualsRemove(object? sender, VisualChangedEventArgs e)
@@ -1194,13 +1276,22 @@ namespace ColorVision.ImageEditor
 
         public void Clear()
         {
+            ApplyImageDocumentMutation(ImageDocumentMutationKind.ImageCleared);
             ClearImageGroup();
-            InvalidatePseudoColorRender();
             ClearImageEventHandler?.Invoke(this, new EventArgs());
             EditorContext.IImageOpen = null;
             IEditorToolFactory.ApplyImageOpenTools(null);
             SetLayerController(null);
-            Config.ClearProperties();
+            bool previousSuppression = _suppressConfigClearDocumentMutation;
+            _suppressConfigClearDocumentMutation = true;
+            try
+            {
+                Config.ClearProperties();
+            }
+            finally
+            {
+                _suppressConfigClearDocumentMutation = previousSuppression;
+            }
             FunctionImage = null;
             ViewBitmapSource = null;
             ImageShow.Clear();
@@ -1383,7 +1474,18 @@ namespace ColorVision.ImageEditor
 
         public void NotifySourcePixelsChanged()
         {
-            _imageFrameStore.Invalidate();
+            ApplyImageDocumentMutation(ImageDocumentMutationKind.SourcePixelsChanged);
+        }
+
+        private void ApplyImageDocumentMutation(ImageDocumentMutationKind mutationKind)
+        {
+            long previousRevision = _imageFrameStore.Revision;
+            long currentRevision = _imageFrameStore.Invalidate();
+            ImageDocumentRevisionAdvancedHook?.Invoke(previousRevision, currentRevision);
+            EditorContext?.ProcessingContext.InvalidateForDocumentMutation(
+                mutationKind,
+                previousRevision,
+                currentRevision);
             InvalidatePseudoColorRender();
         }
 
@@ -1416,9 +1518,8 @@ namespace ColorVision.ImageEditor
 
         public void SetImageSource(ImageSource imageSource, bool enableEditorImageServices, bool configureDefaultLayerController)
         {
+            ApplyImageDocumentMutation(ImageDocumentMutationKind.ImageSourceReplaced);
             PseudoColorTool?.Reset();
-            InvalidatePseudoColorRender();
-            _imageFrameStore.Invalidate();
             FunctionImage = null;
             ViewBitmapSource = null;
             ImageShow.Source = null;
@@ -1563,6 +1664,24 @@ namespace ColorVision.ImageEditor
 
         public void AddVisual(Visual visual)
         {
+            if (visual is IDrawingVisual drawingVisual
+                && visual is DrawingVisual renderedVisual
+                && renderedVisual.Drawing == null)
+            {
+                ImageShow.TrySynchronizeDetachedVisualDpi(renderedVisual);
+                ApplyDrawingVisualDisplayConfig(drawingVisual, renderChanges: false);
+                if (visual is ILayoutScaleDrawingVisual scalableVisual)
+                {
+                    scalableVisual.ApplyLayoutScale(new DrawingVisualScaleContext(
+                        ImageShow.IsLayoutUpdated,
+                        ImageShow.Scale,
+                        ImageShow.TextFontSizeOverride));
+                }
+
+                if (renderedVisual.Drawing == null)
+                    drawingVisual.Render();
+            }
+
             ImageShow.AddVisualCommand(visual);
         }
 
@@ -1700,6 +1819,7 @@ namespace ColorVision.ImageEditor
             EditorContext?.DrawEditorContext.MouseInfoProvider.Dispose();
             EditorContext?.CompactInspectorPresenter?.Dispose();
             EditorContext?.DrawEditorContext.DrawingVisualLists?.Clear();
+            EditorContext?.ProcessingContext.DisposeAlgorithmOverlays();
             Zoombox1.ContentMatrixChanged -= Zoombox1_ContentMatrixChanged;
             Loaded -= ImageView_Loaded;
             Unloaded -= ImageView_Unloaded;

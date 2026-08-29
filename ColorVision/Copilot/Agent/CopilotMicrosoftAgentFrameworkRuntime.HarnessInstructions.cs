@@ -202,7 +202,7 @@ namespace ColorVision.Copilot
             if (toolNames.Contains("RunWorkspaceValidation"))
                 builder.AppendLine("RunWorkspaceValidation is the dedicated build/test surface. Prefer it over the general shell for workspace validation because it accepts only approved dotnet build/test tasks for workspace solution or project files, always runs after the relevant write has completed, and never restores packages. A nonzero exit is a terminal failed validation result with captured evidence, not a reason to repeat the same call. Set its optional platform only when the repository requires one, using the exact x64, x86, AnyCPU, or ARM64 whitelist value; arbitrary MSBuild properties are not supported.");
             if (toolNames.Contains("ConvertBatchImages"))
-                builder.AppendLine("ConvertBatchImages performs the approved native conversion and returns per-file output evidence. Prefer it for explicit CVRAW/CVCIE conversion instead of generating a decoder or merely opening a window.");
+                builder.AppendLine("ConvertBatchImages performs approved native conversion or one explicitly whitelisted local/headless/deterministic Catalog algorithm and returns per-file output evidence. Use it for explicit CVRAW/CVCIE conversion or image-algorithm execution instead of generating a decoder, calling an unlisted provider/model, or merely opening a window.");
             if (toolNames.Contains("OpenBatchImageProcessing"))
                 builder.AppendLine("OpenBatchImageProcessing only opens ColorVision's interactive batch image processor for manual review and algorithm configuration. Do not use it as evidence that a requested conversion completed.");
             if (toolNames.Contains("QueryFlowExecutionStats"))

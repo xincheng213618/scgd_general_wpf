@@ -883,4 +883,224 @@
   <data name="Draw_Edit" xml:space="preserve">
     <value>Edit</value>
   </data>
-  <data name="Algorithm_AlgorithmCalls" xml:space="preserve"><value>Algorithm Calls</value></data></root>
+  <data name="Algorithm_AlgorithmCalls" xml:space="preserve"><value>Algorithm Calls</value></data>
+  <data name="ThreeD_AutoOrientationApplied" xml:space="preserve">
+    <value>Model orientation was adjusted automatically.</value>
+  </data>
+  <data name="ThreeD_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ThreeD_Collapse" xml:space="preserve">
+    <value>Collapse</value>
+  </data>
+  <data name="ThreeD_DefaultMaterial" xml:space="preserve">
+    <value>Default material</value>
+  </data>
+  <data name="ThreeD_DimensionsModelUnits" xml:space="preserve">
+    <value>Dimensions (model units)</value>
+  </data>
+  <data name="ThreeD_Direct3DUnavailable" xml:space="preserve">
+    <value>Direct3D could not be initialized. Update the graphics driver or retry in a local session with hardware acceleration enabled.</value>
+  </data>
+  <data name="ThreeD_DisplayMode" xml:space="preserve">
+    <value>Display mode</value>
+  </data>
+  <data name="ThreeD_DropToOpenModel" xml:space="preserve">
+    <value>Drop to open model</value>
+  </data>
+  <data name="ThreeD_EmptyStateDescription" xml:space="preserve">
+    <value>Supports OBJ and STL, or drag a file here</value>
+  </data>
+  <data name="ThreeD_ExitIsolation" xml:space="preserve">
+    <value>Exit isolation</value>
+  </data>
+  <data name="ThreeD_ExportFailed" xml:space="preserve">
+    <value>Could not export the model. See the log for details.</value>
+  </data>
+  <data name="ThreeD_ExportCanceled" xml:space="preserve">
+    <value>Model export canceled.</value>
+  </data>
+  <data name="ThreeD_ExportFileFilter" xml:space="preserve">
+    <value>Wavefront OBJ (*.obj)|*.obj|STL (*.stl)|*.stl</value>
+  </data>
+  <data name="ThreeD_ExportSucceededFormat" xml:space="preserve">
+    <value>Model exported: {0}</value>
+  </data>
+  <data name="ThreeD_ExportingFileFormat" xml:space="preserve">
+    <value>Exporting {0}…</value>
+  </data>
+  <data name="ThreeD_FitView" xml:space="preserve">
+    <value>Fit view</value>
+  </data>
+  <data name="ThreeD_FlipVertical" xml:space="preserve">
+    <value>Flip vertical orientation</value>
+  </data>
+  <data name="ThreeD_Focus" xml:space="preserve">
+    <value>Focus</value>
+  </data>
+  <data name="ThreeD_FocusSelected" xml:space="preserve">
+    <value>Focus selected</value>
+  </data>
+  <data name="ThreeD_Geometry" xml:space="preserve">
+    <value>Geometry</value>
+  </data>
+  <data name="ThreeD_Hide" xml:space="preserve">
+    <value>Hide</value>
+  </data>
+  <data name="ThreeD_HideSelected" xml:space="preserve">
+    <value>Hide selected</value>
+  </data>
+  <data name="ThreeD_HiddenFormat" xml:space="preserve">
+    <value>Hidden: {0}</value>
+  </data>
+  <data name="ThreeD_Info" xml:space="preserve">
+    <value>Info</value>
+  </data>
+  <data name="ThreeD_Isolate" xml:space="preserve">
+    <value>Isolate</value>
+  </data>
+  <data name="ThreeD_IsolatingFormat" xml:space="preserve">
+    <value>Isolating {0}</value>
+  </data>
+  <data name="ThreeD_IsolationActive" xml:space="preserve">
+    <value>Viewing selected object in isolation</value>
+  </data>
+  <data name="ThreeD_IsolationExited" xml:space="preserve">
+    <value>Exited isolation and restored the previous visibility state.</value>
+  </data>
+  <data name="ThreeD_LoadCanceled" xml:space="preserve">
+    <value>Loading canceled. The current model was not changed.</value>
+  </data>
+  <data name="ThreeD_LoadDurationTexturesFormat" xml:space="preserve">
+    <value>{0} seconds · {1} textures</value>
+  </data>
+  <data name="ThreeD_LoadFailed" xml:space="preserve">
+    <value>Could not load the model. See the log for details.</value>
+  </data>
+  <data name="ThreeD_LoadFailedFileBusy" xml:space="preserve">
+    <value>Could not read the model file. Make sure it is not in use.</value>
+  </data>
+  <data name="ThreeD_LoadFailedFileMissing" xml:space="preserve">
+    <value>The model file does not exist or has been moved.</value>
+  </data>
+  <data name="ThreeD_LoadFailedNoPermission" xml:space="preserve">
+    <value>You do not have permission to read this model file.</value>
+  </data>
+  <data name="ThreeD_LoadFailedParse" xml:space="preserve">
+    <value>The model could not be parsed. The file may be damaged or incomplete.</value>
+  </data>
+  <data name="ThreeD_LoadFailedUnsupported" xml:space="preserve">
+    <value>Only OBJ and STL models are currently supported.</value>
+  </data>
+  <data name="ThreeD_Loading" xml:space="preserve">
+    <value>Load</value>
+  </data>
+  <data name="ThreeD_LoadingFileFormat" xml:space="preserve">
+    <value>Loading {0}…</value>
+  </data>
+  <data name="ThreeD_LoadingModel" xml:space="preserve">
+    <value>Loading model…</value>
+  </data>
+  <data name="ThreeD_Material" xml:space="preserve">
+    <value>Material</value>
+  </data>
+  <data name="ThreeD_Mesh" xml:space="preserve">
+    <value>Mesh</value>
+  </data>
+  <data name="ThreeD_ModelFileFilter" xml:space="preserve">
+    <value>3D models (*.obj;*.stl)|*.obj;*.stl|Wavefront OBJ (*.obj)|*.obj|STL (*.stl)|*.stl|All files (*.*)|*.*</value>
+  </data>
+  <data name="ThreeD_ModelInformation" xml:space="preserve">
+    <value>Model information</value>
+  </data>
+  <data name="ThreeD_ModelLoaded" xml:space="preserve">
+    <value>Model loaded</value>
+  </data>
+  <data name="ThreeD_ModelLoadedMissingTexturesFormat" xml:space="preserve">
+    <value>Model loaded, but {0} texture files are missing.</value>
+  </data>
+  <data name="ThreeD_ModelLoadedTrianglesFormat" xml:space="preserve">
+    <value>Model loaded: {0} triangles.</value>
+  </data>
+  <data name="ThreeD_ModelChangedRetry" xml:space="preserve">
+    <value>The model changed. Please try this operation again.</value>
+  </data>
+  <data name="ThreeD_More" xml:space="preserve">
+    <value>More</value>
+  </data>
+  <data name="ThreeD_MouseControls" xml:space="preserve">
+    <value>Mouse controls</value>
+  </data>
+  <data name="ThreeD_MouseControlsGuide" xml:space="preserve">
+    <value>Left-drag: Rotate
+Right-drag: Pan
+Mouse wheel: Zoom
+Double-click object: Focus</value>
+  </data>
+  <data name="ThreeD_NoValidBounds" xml:space="preserve">
+    <value>No valid bounding box was provided</value>
+  </data>
+  <data name="ThreeD_ObjectGroup" xml:space="preserve">
+    <value>Object group</value>
+  </data>
+  <data name="ThreeD_PngFileFilter" xml:space="preserve">
+    <value>PNG image (*.png)|*.png</value>
+  </data>
+  <data name="ThreeD_Reload" xml:space="preserve">
+    <value>Reload</value>
+  </data>
+  <data name="ThreeD_Scene" xml:space="preserve">
+    <value>Scene</value>
+  </data>
+  <data name="ThreeD_ScreenshotFailed" xml:space="preserve">
+    <value>Could not save the screenshot. See the log for details.</value>
+  </data>
+  <data name="ThreeD_ScreenshotSavedFormat" xml:space="preserve">
+    <value>Screenshot saved: {0}</value>
+  </data>
+  <data name="ThreeD_SearchNodes" xml:space="preserve">
+    <value>Search nodes</value>
+  </data>
+  <data name="ThreeD_SelectionTrianglesMaterialFormat" xml:space="preserve">
+    <value>{0} triangles · {1}</value>
+  </data>
+  <data name="ThreeD_ShowAll" xml:space="preserve">
+    <value>Show all</value>
+  </data>
+  <data name="ThreeD_ShownAll" xml:space="preserve">
+    <value>All objects are now visible.</value>
+  </data>
+  <data name="ThreeD_ShownFormat" xml:space="preserve">
+    <value>Shown: {0}</value>
+  </data>
+  <data name="ThreeD_Solid" xml:space="preserve">
+    <value>Solid</value>
+  </data>
+  <data name="ThreeD_StatusModel" xml:space="preserve">
+    <value>3D Model</value>
+  </data>
+  <data name="ThreeD_SupportedFormatsHint" xml:space="preserve">
+    <value>Supports OBJ and STL</value>
+  </data>
+  <data name="ThreeD_TexturedMaterial" xml:space="preserve">
+    <value>Textured</value>
+  </data>
+  <data name="ThreeD_ToggleVisibility" xml:space="preserve">
+    <value>Show/hide</value>
+  </data>
+  <data name="ThreeD_VerticalFlipped" xml:space="preserve">
+    <value>Vertical orientation flipped.</value>
+  </data>
+  <data name="ThreeD_VerticalRestored" xml:space="preserve">
+    <value>Original vertical orientation restored.</value>
+  </data>
+  <data name="ThreeD_VerticesTrianglesFormat" xml:space="preserve">
+    <value>{0} vertices · {1} triangles</value>
+  </data>
+  <data name="ThreeD_WireframeRenderMode" xml:space="preserve">
+    <value>Wireframe</value>
+  </data>
+  <data name="Algorithm_FilterCategory" xml:space="preserve">
+    <value>Filtering</value>
+  </data>
+</root>

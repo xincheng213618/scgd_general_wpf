@@ -1,3 +1,4 @@
+using ColorVision.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
@@ -74,6 +75,19 @@ namespace ColorVision.ImageEditor
     public interface IIEditorToolContextMenu
     {
         List<MenuItemMetadata> GetContextMenuItems();
+    }
+
+    /// <summary>Marks a specialized compatibility menu as executable only when its runtime owns the matching descriptor/provider.</summary>
+    public interface IAlgorithmCatalogBoundMenu
+    {
+        AlgorithmId AlgorithmId { get; }
+
+        AlgorithmHostCapabilities RequiredCapabilities
+            => AlgorithmHostCapabilities.Interactive | AlgorithmHostCapabilities.Local;
+
+        int PlannedInputCount => 1;
+
+        bool RequiresRoi => false;
     }
 
     /// <summary>

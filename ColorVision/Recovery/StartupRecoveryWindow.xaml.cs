@@ -1,6 +1,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Desktop.Feedback;
 using ColorVision.UI.Plugins;
 using ColorVision.Update;
 using System;
@@ -14,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 
 namespace ColorVision.Recovery
 {
@@ -48,6 +50,48 @@ namespace ColorVision.Recovery
 
         public string FailureSummary => BuildFailureSummary(_previousFailure);
 
+        public string RecoveryHeadline
+        {
+            get
+            {
+                string? component = RecordedComponent;
+                return _previousFailure?.Stage switch
+                {
+                    "LoadingPlugin" when component != null => $"上次启动在加载“{component}”时未完成",
+                    "LoadingPlugins" => "上次启动在准备插件时未完成",
+                    "PluginsLoaded" => "上次启动在插件加载完成后未结束",
+                    "DependencyFailure" when component != null => $"检测到启动组件“{component}”缺失或损坏",
+                    "DependencyFailure" => "检测到 ColorVision 启动组件缺失或损坏",
+                    "MainWindowInitializer" when component != null => $"上次启动在初始化“{component}”时未完成",
+                    "StartupInitializer" when component != null => $"上次启动在初始化“{component}”时未完成",
+                    "FeatureLauncher" when component != null => $"上次启动在打开“{component}”时未完成",
+                    "CoreInitialized" => "上次启动在初始化主程序时未完成",
+                    _ => "上次启动没有正常完成",
+                };
+            }
+        }
+
+        public string RecoveryExplanation => IsDependencyFailure
+            ? "建议使用完整安装包修复；现有配置和用户数据会保留。"
+            : IsPluginLoadingFailure
+                ? "建议使用安全启动，本次不加载任何插件。"
+                : "可先使用安全启动排除插件影响，或从右下角正常启动。";
+
+        public string RecommendedRecoveryActionText => IsDependencyFailure
+            ? "完整安装包修复"
+            : "安全启动";
+
+        private string? RecordedComponent => _previousFailure?.Component is { } component &&
+            !string.IsNullOrWhiteSpace(component)
+            ? component.Trim()
+            : null;
+
+        private bool IsPluginLoadingFailure =>
+            _previousFailure?.Stage?.Contains("plugin", StringComparison.OrdinalIgnoreCase) == true;
+
+        private bool IsDependencyFailure =>
+            string.Equals(_previousFailure?.Stage, "DependencyFailure", StringComparison.OrdinalIgnoreCase);
+
         public string UpdateStatusTitle
         {
             get => _updateStatusTitle;
@@ -79,8 +123,18 @@ namespace ColorVision.Recovery
         public bool CanRunApplicationUpdate =>
             !_isCheckingUpdates &&
             !_isRecoveryBusy &&
-            !_isRefreshingPlugins &&
-            (_applicationUpdatePlan != null || AutoUpdater.CurrentVersion != null);
+            _applicationUpdatePlan != null;
+
+        public bool CanRunFullApplicationRepair =>
+            !_isRecoveryBusy && AutoUpdater.CurrentVersion != null;
+
+        public bool CanRunRecommendedRecovery => IsDependencyFailure
+            ? CanRunFullApplicationRepair
+            : CanContinueStartup;
+
+        public Visibility ApplicationUpdateActionVisibility => _applicationUpdatePlan == null
+            ? Visibility.Collapsed
+            : Visibility.Visible;
 
         public bool CanRefreshPlugins => !_isRefreshingPlugins && !_isRecoveryBusy;
 
@@ -89,9 +143,9 @@ namespace ColorVision.Recovery
             !_isRefreshingPlugins &&
             Plugins.Any(item => item.IsSelected && !item.IsBackupOnly);
 
-        public bool CanContinueStartup => !_isRecoveryBusy && !_isRefreshingPlugins;
+        public bool CanContinueStartup => !_isRecoveryBusy;
 
-        public bool CanOpenOtherRecovery => !_isRecoveryBusy && !_isRefreshingPlugins;
+        public bool CanOpenOtherRecovery => !_isRecoveryBusy;
 
         public string PluginSummaryText
         {
@@ -130,6 +184,7 @@ namespace ColorVision.Recovery
         private async void StartupRecoveryWindow_Loaded(object sender, RoutedEventArgs e)
         {
             Loaded -= StartupRecoveryWindow_Loaded;
+            await Dispatcher.Yield(DispatcherPriority.Background);
             await Task.WhenAll(
                 RefreshPluginsAsync(_windowCancellation.Token),
                 CheckForApplicationUpdateAsync(_windowCancellation.Token));
@@ -194,10 +249,12 @@ namespace ColorVision.Recovery
                 }
 
                 OperationStatusText = Plugins.Count == 0
-                    ? "未发现插件目录"
-                    : "插件清单已加载";
-
+                    ? "正在读取备份记录..."
+                    : "插件清单已加载，正在读取备份记录...";
                 await LoadAvailableBackupsAsync(scannedPlugins, cancellationToken).ConfigureAwait(true);
+                OperationStatusText = Plugins.Count == 0
+                    ? "未发现插件或可恢复备份"
+                    : "插件和备份记录已加载";
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -233,7 +290,7 @@ namespace ColorVision.Recovery
                     PluginRecoveryBackupInfo? backup = item.Backup;
                     try
                     {
-                        backup ??= PluginRecoveryBackupService.Instance.GetAvailableBackup(
+                        backup ??= PluginRecoveryBackupService.Instance.GetRecoveryBackupCandidate(
                                 item.PluginId ?? item.DirectoryName,
                                 item.DirectoryPath);
                     }
@@ -338,6 +395,9 @@ namespace ColorVision.Recovery
         {
             OnPropertyChanged(nameof(UpdateProgressVisibility));
             OnPropertyChanged(nameof(CanRunApplicationUpdate));
+            OnPropertyChanged(nameof(CanRunFullApplicationRepair));
+            OnPropertyChanged(nameof(CanRunRecommendedRecovery));
+            OnPropertyChanged(nameof(ApplicationUpdateActionVisibility));
         }
 
         private void PluginItem_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -359,26 +419,36 @@ namespace ColorVision.Recovery
 
         private void ApplicationUpdate_Click(object sender, RoutedEventArgs e)
         {
-            if (!CanRunApplicationUpdate)
+            if (!CanRunApplicationUpdate || _applicationUpdatePlan == null)
                 return;
-
-            if (_applicationUpdatePlan == null)
-            {
-                Version? currentVersion = AutoUpdater.CurrentVersion;
-                if (currentVersion == null)
-                    return;
-
-                string message =
-                    $"将下载并运行 ColorVision {currentVersion} 的完整安装程序，用于修复当前版本。确定继续？";
-                if (MessageBox.Show(this, message, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
-                    return;
-
-                StartApplicationUpdate(() => AutoUpdater.StartFullUpdate(currentVersion, OnApplicationUpdateDownloadFailed));
-                return;
-            }
 
             AutoUpdatePlan plan = _applicationUpdatePlan;
             StartApplicationUpdate(() => AutoUpdater.StartUpdatePlan(plan, OnApplicationUpdateDownloadFailed));
+        }
+
+        private void FullApplicationRepair_Click(object sender, RoutedEventArgs e)
+        {
+            Version? currentVersion = AutoUpdater.CurrentVersion;
+            if (!CanRunFullApplicationRepair || currentVersion == null)
+                return;
+
+            string message =
+                $"将下载并运行 ColorVision {currentVersion} 的完整安装程序，用于修复当前版本。确定继续？";
+            if (MessageBox.Show(this, message, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                return;
+
+            StartApplicationUpdate(() => AutoUpdater.StartFullUpdate(currentVersion, OnApplicationUpdateDownloadFailed));
+        }
+
+        private void RecommendedRecovery_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsDependencyFailure)
+            {
+                FullApplicationRepair_Click(sender, e);
+                return;
+            }
+
+            SkipAll_Click(sender, e);
         }
 
         private void StartApplicationUpdate(Action startUpdate)
@@ -411,7 +481,7 @@ namespace ColorVision.Recovery
                 item.Backup == null)
                 return;
 
-            string message = $"将退出 ColorVision，并把插件“{item.DisplayName}”回退到最近一次有效备份。确定继续？";
+            string message = $"将先校验最近一次备份，再退出 ColorVision 并回退插件“{item.DisplayName}”。确定继续？";
             if (MessageBox.Show(this, message, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 return;
 
@@ -450,6 +520,23 @@ namespace ColorVision.Recovery
             }.ShowDialog();
         }
 
+        private void RunSetupWizard_Click(object sender, RoutedEventArgs e)
+        {
+            CloseWithResult(StartupRecoveryAction.RunSetupWizard, Array.Empty<StartupRecoveryPluginSelection>());
+        }
+
+        private void SendFeedback_Click(object sender, RoutedEventArgs e)
+        {
+            if (!CanOpenOtherRecovery)
+                return;
+
+            new FeedbackWindow(BuildFeedbackDraft(), null)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            }.ShowDialog();
+        }
+
         private void OpenApplicationLog_Click(object sender, RoutedEventArgs e)
         {
             if (!CanOpenOtherRecovery)
@@ -481,7 +568,7 @@ namespace ColorVision.Recovery
 
         private void NormalStart_Click(object sender, RoutedEventArgs e)
         {
-            CloseWithResult(StartupRecoveryAction.NormalStart, Array.Empty<StartupRecoveryPluginItem>());
+            CloseWithResult(StartupRecoveryAction.NormalStart, Array.Empty<StartupRecoveryPluginSelection>());
         }
 
         private void SkipSelected_Click(object sender, RoutedEventArgs e)
@@ -490,14 +577,16 @@ namespace ColorVision.Recovery
             if (selected.Length == 0)
                 return;
 
-            CloseWithResult(StartupRecoveryAction.SkipSelectedOnce, selected);
+            CloseWithResult(
+                StartupRecoveryAction.SkipSelectedOnce,
+                selected.Select(item => item.ToSelection()).ToArray());
         }
 
         private void SkipAll_Click(object sender, RoutedEventArgs e)
         {
             CloseWithResult(
                 StartupRecoveryAction.SkipAllOnce,
-                Plugins.Where(item => !item.IsBackupOnly).ToArray());
+                Array.Empty<StartupRecoveryPluginSelection>());
         }
 
         private void DisableSelected_Click(object sender, RoutedEventArgs e)
@@ -509,7 +598,9 @@ namespace ColorVision.Recovery
             try
             {
                 PersistDisabledPlugins(selected);
-                CloseWithResult(StartupRecoveryAction.DisableSelectedAndStart, selected);
+                CloseWithResult(
+                    StartupRecoveryAction.DisableSelectedAndStart,
+                    selected.Select(item => item.ToSelection()).ToArray());
             }
             catch (Exception ex)
             {
@@ -520,7 +611,7 @@ namespace ColorVision.Recovery
 
         private void Exit_Click(object sender, RoutedEventArgs e)
         {
-            CloseWithResult(StartupRecoveryAction.Exit, Array.Empty<StartupRecoveryPluginItem>());
+            CloseWithResult(StartupRecoveryAction.Exit, Array.Empty<StartupRecoveryPluginSelection>());
         }
 
         private StartupRecoveryPluginItem[] GetSelectedPlugins() =>
@@ -563,7 +654,7 @@ namespace ColorVision.Recovery
 
         private void CloseWithResult(
             StartupRecoveryAction action,
-            IReadOnlyCollection<StartupRecoveryPluginItem> selectedPlugins)
+            IReadOnlyCollection<StartupRecoveryPluginSelection> selectedPlugins)
         {
             if (_resultWasChosen || _isRecoveryBusy)
                 return;
@@ -571,7 +662,7 @@ namespace ColorVision.Recovery
             _resultWasChosen = true;
             Result = new StartupRecoveryResult(
                 action,
-                selectedPlugins.Select(item => item.ToSelection()).ToArray());
+                selectedPlugins.ToArray());
 
             try
             {
@@ -593,6 +684,8 @@ namespace ColorVision.Recovery
                 item.SetRecoveryBusy(isBusy);
 
             OnPropertyChanged(nameof(CanRunApplicationUpdate));
+            OnPropertyChanged(nameof(CanRunFullApplicationRepair));
+            OnPropertyChanged(nameof(CanRunRecommendedRecovery));
             OnPropertyChanged(nameof(CanRefreshPlugins));
             OnPropertyChanged(nameof(CanUseSelection));
             OnPropertyChanged(nameof(CanContinueStartup));
@@ -617,6 +710,22 @@ namespace ColorVision.Recovery
             return details.Count == 0
                 ? "上次启动未完成；没有记录到可确认的故障组件。"
                 : $"上次启动未完成（{string.Join("；", details)}）。“疑似”仅表示与记录匹配，不代表已确认插件有问题。";
+        }
+
+        private string BuildFeedbackDraft()
+        {
+            List<string> details = new() { "启动恢复反馈" };
+            if (!string.IsNullOrWhiteSpace(_previousFailure?.Stage))
+                details.Add($"阶段：{_previousFailure.Stage}");
+            if (!string.IsNullOrWhiteSpace(_previousFailure?.Component))
+                details.Add($"组件：{_previousFailure.Component}");
+            if (!string.IsNullOrWhiteSpace(_previousFailure?.Version))
+                details.Add($"版本：{_previousFailure.Version}");
+            if (_previousFailure?.StartedAt is { } startedAt)
+                details.Add($"时间：{startedAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
+            details.Add(string.Empty);
+            details.Add("问题描述：");
+            return string.Join(Environment.NewLine, details);
         }
 
         private static string ResolveApplicationLogDirectory()

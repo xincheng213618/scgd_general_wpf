@@ -25,7 +25,7 @@
 | Flow 编排 | `FlowProcessing/Runtime`、`FlowProcessing/Editor` | 将 Flow 模板、服务 token、交互式/无界面执行、节点编辑和最终化接到 `FlowEngineLib` |
 | 设备服务 | `DeviceService`、`DeviceServiceFactoryRegistry` | 树节点、菜单、配置导入导出、服务对象工厂 |
 | MQTT 运行时 | `MQTTServiceBase`、`MqttRCService` | 发布/订阅、消息记录、心跳、RC 注册和 token 缓存 |
-| 算法适配 | `AlgorithmPOI`、`AlgorithmMTF` 等 | 打开模板编辑器、组装 MQTT 参数、调用设备服务 |
+| 算法适配 | `AlgorithmPOI`、`AlgorithmMTF2` 等 | 打开模板编辑器、组装 MQTT 参数、调用设备服务 |
 | 结果展示 | `IViewResult`、`IResultHandleBase` | 连接历史结果、表格明细和 ImageEditor overlay |
 
 ## 运行链路
@@ -70,4 +70,4 @@
 | Flow 模板 | `Templates/Flow/TemplateFlow.cs`、`Templates/Flow/Versioning/` |
 | Flow 编辑 | `FlowProcessing/Editor/FlowEditorCanvas.xaml.cs`、`FlowProcessing/Editor/NodeConfiguration/` |
 | Flow 运行 | `FlowProcessing/Runtime/FlowEngineManager.cs`、`FlowProcessing/Runtime/ViewFlow.xaml.cs`、`FlowProcessing/Runtime/FlowExecutionCoordinator.cs` |
-| 算法适配 | `Templates/POI/AlgorithmImp/AlgorithmPOI.cs`、`Templates/ARVR/MTF/AlgorithmMTF.cs` |
+| 算法适配 | `Templates/POI/AlgorithmImp/AlgorithmPOI.cs`、`Templates/Jsons/MTF2/AlgorithmMTF2.cs` |

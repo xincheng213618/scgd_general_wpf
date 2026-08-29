@@ -33,29 +33,33 @@ namespace ColorVision.Copilot
                 SetSettingsNotice(externalMcpError);
                 return false;
             }
+            if (!CopilotWebPagePref64Configuration.TryParse(WebPagePref64PrefixesText, out var webPagePref64Prefixes, out var webPagePref64Error))
+            {
+                IsWebPagePref64PrefixesValid = false;
+                WebPagePref64PrefixesValidationText = webPagePref64Error;
+                SetSettingsNotice(webPagePref64Error);
+                return false;
+            }
 
             _isSavingSettings = true;
+            var persisted = false;
             try
             {
-                var config = CopilotConfig.Instance;
-                config.Profiles.Clear();
-                foreach (var profile in Profiles.Select(profile => profile.Clone()))
-                {
-                    profile.EnsureValid();
-                    config.Profiles.Add(profile);
-                }
+                var config = _config;
+                var selectedProfileId = SelectedProfile?.Id ?? string.Empty;
+                var candidate = config.CreatePersistenceSnapshot(Profiles);
 
-                config.McpEnabled = McpEnabled;
-                config.AgentDefaults.ContextWindowTokens = AgentContextWindowTokens;
-                config.AgentDefaults.AutoCompactConversationHistory = AutoCompactConversationHistory;
-                config.AgentDefaults.AutoCompactThresholdPercent = AutoCompactThresholdPercent;
-                config.AgentDefaults.AutoCompactInstructions = AutoCompactInstructions;
-                config.AgentDefaults.RequestTokenBudget = AgentRequestTokenBudget;
-                config.AgentDefaults.MaxToolCalls = MaxAgentToolCalls;
-                config.AgentDefaults.MaxAgentPasses = MaxAgentPasses;
-                config.AgentDefaults.TimeoutSeconds = AgentTimeoutSeconds;
-                config.AgentDefaults.PreferredShell = PreferredShell;
-                config.AgentDefaults.SkillOverrides.Clear();
+                candidate.McpEnabled = McpEnabled;
+                candidate.AgentDefaults.ContextWindowTokens = AgentContextWindowTokens;
+                candidate.AgentDefaults.AutoCompactConversationHistory = AutoCompactConversationHistory;
+                candidate.AgentDefaults.AutoCompactThresholdPercent = AutoCompactThresholdPercent;
+                candidate.AgentDefaults.AutoCompactInstructions = AutoCompactInstructions;
+                candidate.AgentDefaults.RequestTokenBudget = AgentRequestTokenBudget;
+                candidate.AgentDefaults.MaxToolCalls = MaxAgentToolCalls;
+                candidate.AgentDefaults.MaxAgentPasses = MaxAgentPasses;
+                candidate.AgentDefaults.TimeoutSeconds = AgentTimeoutSeconds;
+                candidate.AgentDefaults.PreferredShell = PreferredShell;
+                candidate.AgentDefaults.SkillOverrides.Clear();
                 foreach (var item in CopilotAgentSkillOverrideConfig.Normalize(AgentSkillSettings
                     .Where(setting => setting.State != CopilotAgentSkillOverrideState.Auto)
                     .Select(setting => new CopilotAgentSkillOverrideConfig
@@ -65,28 +69,77 @@ namespace ColorVision.Copilot
                         State = setting.State,
                     })))
                 {
-                    config.AgentDefaults.SkillOverrides.Add(item);
+                    candidate.AgentDefaults.SkillOverrides.Add(item);
                 }
-                config.McpPort = McpPort;
-                config.McpBearerToken = string.IsNullOrWhiteSpace(McpBearerToken)
+                candidate.McpPort = McpPort;
+                candidate.McpBearerToken = string.IsNullOrWhiteSpace(McpBearerToken)
                     ? CopilotConfig.GenerateMcpBearerToken()
                     : McpBearerToken.Trim();
-                config.ExternalMcpServers.Clear();
+                candidate.ExternalMcpServers.Clear();
                 foreach (var server in externalMcpServers)
-                    config.ExternalMcpServers.Add(server.Clone());
-                config.BackendSyncUrl = BackendSyncUrl.Trim();
-                config.AllowInsecureBackendSync = AllowInsecureBackendSync;
+                    candidate.ExternalMcpServers.Add(server.Clone());
+                candidate.WebPagePref64Prefixes = CopilotWebPagePref64Configuration.Format(webPagePref64Prefixes);
+                candidate.BackendSyncUrl = BackendSyncUrl.Trim();
 
-                config.EnsureInitialized();
+                candidate.EnsureInitialized();
+                var persistenceStatus = _configHandler.TrySaveAndPublish(
+                        candidate,
+                        () => config.CommitPersistenceSnapshot(candidate),
+                        out var persistenceError);
+                if (persistenceStatus == ConfigSavePublicationStatus.NotPersisted)
+                {
+                    SetSettingsNotice("Settings were not saved. " + SanitizeError(persistenceError));
+                    return false;
+                }
+
+                persisted = true;
+                if (persistenceStatus == ConfigSavePublicationStatus.PersistedButPublishFailed)
+                {
+                    HasAppliedChanges = true;
+                    HasUnsavedSettings = true;
+                    SetSettingsNotice(
+                        "Settings were saved, but the running application could not refresh. "
+                        + SanitizeError(persistenceError));
+                    return false;
+                }
+                config.NotifyPersistenceSnapshotApplied();
+                Profiles.Clear();
+                foreach (var profile in config.Profiles.Select(profile => profile.Clone()))
+                    Profiles.Add(profile);
+                SelectedProfile = Profiles.FirstOrDefault(profile =>
+                        string.Equals(profile.Id, selectedProfileId, StringComparison.Ordinal))
+                    ?? Profiles.FirstOrDefault(profile => profile.IsConfigured)
+                    ?? Profiles.FirstOrDefault();
                 McpPort = config.McpPort;
                 McpPortText = config.McpPort.ToString(CultureInfo.InvariantCulture);
                 McpEndpoint = BuildMcpEndpoint();
                 McpBearerToken = config.McpBearerToken;
-                ConfigHandler.GetInstance().Save<CopilotConfig>();
-                CopilotMcpServer.Instance.ApplyConfig();
+                WebPagePref64PrefixesText = config.WebPagePref64Prefixes;
+                BackendSyncUrl = config.BackendSyncUrl;
+                CopilotMcpServer.Instance.ApplySettings(new CopilotMcpRuntimeSettings
+                {
+                    Enabled = config.McpEnabled,
+                    Host = "127.0.0.1",
+                    Port = config.McpPort,
+                    BearerToken = config.McpBearerToken,
+                });
                 RefreshMcpStatusText();
                 RefreshMcpDiagnostics();
-                _activeProfileId = SelectedProfile?.Id ?? _activeProfileId;
+                SetActiveProfileId(SelectedProfile?.Id);
+            }
+            catch (Exception ex)
+            {
+                if (persisted)
+                {
+                    HasAppliedChanges = true;
+                    HasUnsavedSettings = true;
+                    SetSettingsNotice("Settings were saved, but the runtime refresh failed. " + SanitizeError(ex.Message));
+                }
+                else
+                {
+                    SetSettingsNotice("Settings were not saved. " + SanitizeError(ex.Message));
+                }
+                return false;
             }
             finally
             {
@@ -205,6 +258,8 @@ namespace ColorVision.Copilot
             var profile = SelectedProfile.Clone();
             profile.Id = Guid.NewGuid().ToString("N");
             profile.Name = $"{SelectedProfile.DisplayLabel} Copy";
+            profile.SyncSource = string.Empty;
+            profile.SyncProfileId = string.Empty;
             Profiles.Add(profile);
             SelectedProfile = profile;
             MarkSettingsPending($"Duplicated {SelectedProfile.DisplayLabel}. Click Apply or Save to keep it.");

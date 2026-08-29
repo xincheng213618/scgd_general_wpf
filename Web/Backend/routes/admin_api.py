@@ -14,46 +14,40 @@ Per-endpoint scope requirements:
   - POST /jobs/*/run          → jobs:write
   - POST /jobs/*/enable       → jobs:write
   - POST /jobs/*/disable      → jobs:write
-  - GET  /audit-log           → admin:*
-  - GET  /deployments         → admin:*
-  - GET  /operations/overview → admin:*
-  - GET  /feedback            → admin:*
-  - GET  /feedback/*          → admin:*
-  - PUT  /feedback/*/status   → admin:*
+  - GET  /audit-log           → audit:read
+  - GET  /deployments         → deployments:read
+  - GET  /operations/overview → operations:manage
+  - GET  /feedback            → feedback:manage
+  - GET  /feedback/*          → feedback:manage
+  - PUT  /feedback/*/status   → feedback:manage
   - GET  /stats/overview      → stats:read
   - GET  /docs/status         → cache:read
   - GET  /publish/integrity   → stats:read
-  - GET  /api-keys            → admin:*
-  - GET  /api-keys/scopes     → admin:*
-  - POST /api-keys            → admin:*
-  - POST /api-keys/*/revoke   → admin:*
-  - POST /api-keys/*/rotate   → admin:*
-  - GET  /api-keys/*/usage    → admin:*
-  - GET  /settings/retention  → admin:*
-  - PUT  /settings/retention  → admin:*
-  - GET  /settings/accounts   → admin:*
-  - PUT  /settings/accounts   → admin:*
-  - GET  /users              → admin:*
-  - POST /users              → admin:*
-  - PUT  /users/*/role       → admin:*
-  - POST /users/*/password   → admin:*
-  - POST /users/*/(enable|disable) → admin:*
-  - *    /copilot/profiles    → admin:*
+  - *    /api-keys            → api_keys:manage
+  - *    /settings/*          → settings:manage
+  - *    /users/*             → users:manage
+  - *    /login-security      → users:manage
+  - *    /registration-security → users:manage
+  - *    /permissions         → permissions:manage
+  - *    /roles/*/permissions → permissions:manage
+  - *    /copilot/profiles    → copilot:manage
 
-admin:* grants access to all endpoints.
-Session/Basic Auth always has full access.
+admin:* grants API keys access to all endpoints. Existing administrator
+sessions and Basic Auth retain full access. Registered-user sessions are
+checked against the database-backed role permission matrix.
 Transfer file endpoints use file:transfer.
 """
 
 from __future__ import annotations
 
+import hmac
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from flask import Blueprint, jsonify, request, send_file, session
+from flask import Blueprint, current_app, jsonify, request, send_file, session
 
 from db_cache import CacheManager, now_iso
 from ports.jobs import JobRepository
@@ -87,45 +81,57 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "refresh_docs_index": ["cache:refresh"],
     "refresh_all_indexes": ["cache:refresh"],
     "index_status": ["cache:read"],
-    "list_db_backups": ["admin:*"],
-    "backup_db": ["admin:*"],
+    "list_db_backups": ["backups:manage"],
+    "backup_db": ["backups:manage"],
     "list_jobs": ["jobs:read"],
     "list_job_runs": ["jobs:read"],
     "run_job": ["jobs:write"],
     "enable_job": ["jobs:write"],
     "disable_job": ["jobs:write"],
-    "audit_log": ["admin:*"],
-    "deployment_history": ["admin:*"],
-    "operations_overview": ["admin:*"],
-    "feedback_inbox": ["admin:*"],
-    "feedback_detail": ["admin:*"],
-    "feedback_attachment": ["admin:*"],
-    "update_feedback_status": ["admin:*"],
+    "audit_log": ["audit:read"],
+    "deployment_history": ["deployments:read"],
+    "operations_overview": ["operations:manage"],
+    "feedback_inbox": ["feedback:manage"],
+    "feedback_detail": ["feedback:manage"],
+    "feedback_attachment": ["feedback:manage"],
+    "update_feedback_status": ["feedback:manage"],
     "stats_overview": ["stats:read"],
     "traffic_stats": ["stats:read"],
-    "list_users": ["admin:*"],
-    "create_user_account": ["admin:*"],
-    "update_user_role": ["admin:*"],
-    "reset_user_password": ["admin:*"],
-    "enable_user": ["admin:*"],
-    "disable_user": ["admin:*"],
-    "list_api_keys": ["admin:*"],
-    "api_key_scopes": ["admin:*"],
-    "create_api_key": ["admin:*"],
-    "revoke_api_key": ["admin:*"],
-    "rotate_api_key": ["admin:*"],
-    "api_key_usage": ["admin:*"],
+    "list_users": ["users:manage"],
+    "user_details": ["users:manage"],
+    "create_user_account": ["users:manage"],
+    "delete_user_account": ["users:manage"],
+    "update_user_profile": ["users:manage"],
+    "update_user_role": ["users:manage"],
+    "reset_user_password": ["users:manage"],
+    "require_user_password_change": ["users:manage"],
+    "revoke_user_sessions": ["users:manage"],
+    "bulk_user_security_action": ["users:manage"],
+    "enable_user": ["users:manage"],
+    "disable_user": ["users:manage"],
+    "list_login_security": ["users:manage"],
+    "unlock_login_security": ["users:manage"],
+    "list_registration_security": ["users:manage"],
+    "clear_registration_security": ["users:manage"],
+    "list_permissions": ["permissions:manage"],
+    "update_role_permissions": ["permissions:manage"],
+    "list_api_keys": ["api_keys:manage"],
+    "api_key_scopes": ["api_keys:manage"],
+    "create_api_key": ["api_keys:manage"],
+    "revoke_api_key": ["api_keys:manage"],
+    "rotate_api_key": ["api_keys:manage"],
+    "api_key_usage": ["api_keys:manage"],
     "perf_summary": ["stats:read"],
     "docs_status": ["cache:read"],
     "publish_integrity": ["stats:read"],
-    "list_profiles": ["admin:*"],
-    "create_profile": ["admin:*"],
-    "update_profile": ["admin:*"],
-    "delete_profile": ["admin:*"],
-    "get_retention_settings": ["admin:*"],
-    "update_retention_settings": ["admin:*"],
-    "get_account_settings": ["admin:*"],
-    "update_account_settings": ["admin:*"],
+    "list_profiles": ["copilot:manage"],
+    "create_profile": ["copilot:manage"],
+    "update_profile": ["copilot:manage"],
+    "delete_profile": ["copilot:manage"],
+    "get_retention_settings": ["settings:manage"],
+    "update_retention_settings": ["settings:manage"],
+    "get_account_settings": ["settings:manage"],
+    "update_account_settings": ["settings:manage"],
 }
 
 
@@ -187,10 +193,21 @@ def _require_admin_auth(required_scopes: list[str] | None = None):
     ctx = _get_ctx()
     request_context = ctx.request_context_factory()
     scopes_to_check = required_scopes or ["admin:*"]
-    decision = ctx.auth_policy.authorize(request_context, scopes_to_check)
+    decision = ctx.auth_policy.authorize(
+        request_context,
+        scopes_to_check,
+        allow_user_session=True,
+    )
     if decision.allowed:
         set_authenticated_request_context(request_context.with_actor(decision.principal))
         return None
+    if decision.reason == "password_change_required":
+        return jsonify({
+            "error": "Password change required",
+            "code": "password_change_required",
+            "next": "/account?password_change=required",
+            "status": 403,
+        }), 403
     if decision.forbidden:
         ctx.cache.write_audit(
             actor_type=decision.principal.actor_type,
@@ -201,7 +218,12 @@ def _require_admin_auth(required_scopes: list[str] | None = None):
             ip=request_context.remote_addr or "",
             user_agent=request_context.user_agent,
         )
-        return jsonify({"error": "Insufficient scope", "required": required_scopes, "status": 403}), 403
+        return jsonify({
+            "error": "Insufficient scope",
+            "code": "insufficient_scope",
+            "required": required_scopes,
+            "status": 403,
+        }), 403
 
     ctx.cache.write_audit(
         actor_type="anonymous",
@@ -666,13 +688,16 @@ def backup_db():
         target_type="database",
         detail=(
             f"Backup to {result['backup_name']}; "
+            f"scrubbed {result['security_rows_deleted']} transient security row(s); "
             f"removed {result['backup_retention']['removedCount']} old backup(s)"
         ),
         ip=request.remote_addr or "",
         user_agent=request.headers.get("User-Agent", "")[:200],
     )
 
-    return jsonify(result)
+    public_result = dict(result)
+    public_result.pop("backup_path", None)
+    return jsonify(public_result)
 
 
 # ---------------------------------------------------------------------------
@@ -1046,9 +1071,32 @@ def traffic_stats():
 # User management
 # ---------------------------------------------------------------------------
 
+def _configured_admin_username() -> str:
+    upload_auth = _get_ctx().config_getter().get("upload_auth") or {}
+    if not isinstance(upload_auth, dict):
+        return ""
+    return str(upload_auth.get("username") or "").strip()
+
+
+def _is_config_admin_user(user: dict[str, Any]) -> bool:
+    configured = _configured_admin_username()
+    return bool(
+        configured
+        and configured.casefold() == str(user.get("username") or "").casefold()
+    )
+
+
+def _config_admin_management_error():
+    return jsonify({
+        "error": "配置管理员由服务配置维护，不能通过用户管理修改",
+        "status": 409,
+    }), 409
+
+
 def _admin_user_payload(user: dict[str, Any]) -> dict[str, Any]:
     payload = dict(user)
     payload.pop("auth_version", None)
+    payload["is_config_admin"] = _is_config_admin_user(user)
     return payload
 
 
@@ -1068,12 +1116,244 @@ def _is_current_session_user(user: dict[str, Any]) -> bool:
 
 @admin_api.route("/users", methods=["GET"])
 def list_users():
-    from services.auth_service import list_users as _list_users
+    from services.auth_service import list_users as _list_users, query_users
 
-    users = _list_users(_get_ctx().cache)
-    for user in users:
+    # Preserve the original array response for callers that do not request
+    # pagination. The administration UI always sends limit/offset.
+    if not request.args:
+        users = _list_users(_get_ctx().cache)
+        for user in users:
+            user["is_current"] = _is_current_session_user(user)
+        return jsonify([_admin_user_payload(user) for user in users])
+
+    query = str(request.args.get("q") or "").strip()
+    role = str(request.args.get("role") or "").strip()
+    status = str(request.args.get("status") or "").strip()
+    account_origin = str(request.args.get("origin") or "").strip()
+    password_state = str(request.args.get("password_state") or "").strip()
+    recovery_state = str(request.args.get("recovery_state") or "").strip()
+    sort_by = str(request.args.get("sort_by") or "").strip()
+    sort_order = str(request.args.get("sort_order") or "").strip()
+    if len(query) > 100:
+        return jsonify({"error": "q must be at most 100 characters"}), 400
+    if role not in {"", "admin", "user"}:
+        return jsonify({"error": "role must be 'admin' or 'user'"}), 400
+    if status not in {"", "active", "inactive"}:
+        return jsonify({"error": "status must be 'active' or 'inactive'"}), 400
+    if account_origin not in {
+        "", "self_registered", "administrator_created", "legacy",
+    }:
+        return jsonify({"error": "Unsupported account origin"}), 400
+    if password_state not in {"", "pending", "ready"}:
+        return jsonify({"error": "password_state must be 'pending' or 'ready'"}), 400
+    if recovery_state not in {"", "pending", "none"}:
+        return jsonify({"error": "recovery_state must be 'pending' or 'none'"}), 400
+    if sort_by not in {
+        "", "username", "display_name", "email", "role", "account_origin", "is_active",
+        "active_session_count", "created_at", "last_login_at",
+        "password_recovery_requested_at",
+    }:
+        return jsonify({"error": "Unsupported user sort field"}), 400
+    if sort_order not in {"", "asc", "desc"}:
+        return jsonify({"error": "sort_order must be 'asc' or 'desc'"}), 400
+    try:
+        limit = _query_int_arg("limit", 20, minimum=1, maximum=100)
+        offset = _query_int_arg("offset", 0, minimum=0)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    result = query_users(
+        _get_ctx().cache,
+        query=query,
+        role=role,
+        account_origin=account_origin,
+        active=True if status == "active" else False if status == "inactive" else None,
+        password_change_required=(
+            True if password_state == "pending"
+            else False if password_state == "ready"
+            else None
+        ),
+        password_recovery_pending=(
+            True if recovery_state == "pending"
+            else False if recovery_state == "none"
+            else None
+        ),
+        sort_by=sort_by,
+        sort_order=sort_order or "desc",
+        limit=limit,
+        offset=offset,
+    )
+    for user in result["items"]:
         user["is_current"] = _is_current_session_user(user)
-    return jsonify([_admin_user_payload(user) for user in users])
+    result["items"] = [_admin_user_payload(user) for user in result["items"]]
+    return jsonify(result)
+
+
+@admin_api.route("/users/<int:user_id>/details", methods=["GET"])
+def user_details(user_id: int):
+    """Return one managed account with active sessions and scoped activity."""
+    from services.account_activity_service import get_account_activity_page
+    from services.auth_service import get_user_by_id
+    from services.permission_service import describe_permissions, get_role_permission_codes
+    from services.password_recovery_service import get_pending_password_recovery
+    from services.session_service import list_user_sessions
+
+    try:
+        activity_limit = _query_int_arg("activity_limit", 8, minimum=1, maximum=50)
+        activity_offset = _query_int_arg("activity_offset", 0, minimum=0)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    ctx = _get_ctx()
+    target = get_user_by_id(ctx.cache, user_id)
+    if not target:
+        return jsonify({"error": "User not found"}), 404
+
+    current_session_id = (
+        str(session.get("login_session_id") or "")
+        if _is_current_session_user(target)
+        else ""
+    )
+    sessions = list_user_sessions(
+        ctx.cache,
+        user_id,
+        current_session_id=current_session_id,
+    )
+    target["active_session_count"] = len(sessions)
+    target["is_current"] = _is_current_session_user(target)
+    permission_codes = get_role_permission_codes(ctx.cache, str(target.get("role") or "user"))
+    return jsonify({
+        "user": _admin_user_payload(target),
+        "sessions": {
+            "items": sessions,
+            "total": len(sessions),
+        },
+        "permissions": describe_permissions(permission_codes),
+        "password_recovery": get_pending_password_recovery(ctx.cache, user_id),
+        "activity": get_account_activity_page(
+            ctx.cache,
+            username=str(target.get("username") or ""),
+            user_id=user_id,
+            limit=activity_limit,
+            offset=activity_offset,
+        ),
+    })
+
+
+@admin_api.route("/login-security", methods=["GET"])
+def list_login_security():
+    from services.login_throttle_service import get_login_security_page
+
+    query = str(request.args.get("q") or "").strip()
+    status = str(request.args.get("status") or "").strip()
+    if len(query) > 100:
+        return jsonify({"error": "q must be at most 100 characters"}), 400
+    if status not in {"", "locked", "tracking"}:
+        return jsonify({"error": "status must be 'locked' or 'tracking'"}), 400
+    try:
+        limit = _query_int_arg("limit", 20, minimum=1, maximum=100)
+        offset = _query_int_arg("offset", 0, minimum=0)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    return jsonify(get_login_security_page(
+        _get_ctx().cache,
+        configured_admin_username=_configured_admin_username(),
+        query=query,
+        status=status,
+        limit=limit,
+        offset=offset,
+    ))
+
+
+@admin_api.route("/login-security/unlock", methods=["POST"])
+def unlock_login_security():
+    from services.auth_service import get_user_by_username
+    from services.login_throttle_service import clear_login_failures
+
+    data = request.get_json(silent=True) or {}
+    username = str(data.get("username") or "").strip()
+    if not username:
+        return jsonify({"error": "username is required"}), 400
+    if len(username) > 128:
+        return jsonify({"error": "username must be at most 128 characters"}), 400
+
+    ctx = _get_ctx()
+    target = get_user_by_username(ctx.cache, username)
+    cleared_sources = clear_login_failures(ctx.cache, username)
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="login_throttle_unlock",
+        target_type="user" if target else "login_throttle",
+        target_id=str(target["id"] if target else username),
+        detail=f"username={username};cleared_sources={cleared_sources}",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify({
+        "status": "unlocked",
+        "username": str(target["username"] if target else username),
+        "cleared_sources": cleared_sources,
+    })
+
+
+@admin_api.route("/registration-security", methods=["GET"])
+def list_registration_security():
+    from services.registration_rate_limit_service import get_registration_security_page
+
+    query = str(request.args.get("q") or "").strip()
+    status = str(request.args.get("status") or "").strip()
+    if len(query) > 64:
+        return jsonify({"error": "q must be at most 64 characters"}), 400
+    if status not in {"", "blocked", "tracking"}:
+        return jsonify({"error": "status must be 'blocked' or 'tracking'"}), 400
+    try:
+        limit = _query_int_arg("limit", 20, minimum=1, maximum=100)
+        offset = _query_int_arg("offset", 0, minimum=0)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    return jsonify(get_registration_security_page(
+        _get_ctx().cache,
+        query=query,
+        status=status,
+        limit=limit,
+        offset=offset,
+    ))
+
+
+@admin_api.route("/registration-security/clear", methods=["POST"])
+def clear_registration_security():
+    from services.registration_rate_limit_service import clear_registration_rate_limit
+
+    data = request.get_json(silent=True) or {}
+    ip_address = str(data.get("ip_address") or "").strip()
+    if not ip_address:
+        return jsonify({"error": "ip_address is required"}), 400
+    if len(ip_address) > 64:
+        return jsonify({"error": "ip_address must be at most 64 characters"}), 400
+
+    result = clear_registration_rate_limit(_get_ctx().cache, ip_address)
+    _get_ctx().cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="registration_throttle_clear",
+        target_type="registration",
+        target_id=result.ip_address,
+        detail=(
+            f"ip_address={result.ip_address};cleared={str(result.cleared).lower()};"
+            f"pending_count={result.pending_count}"
+        ),
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify({
+        "status": "cleared" if result.cleared else "unchanged",
+        "ip_address": result.ip_address,
+        "cleared": result.cleared,
+        "pending_count": result.pending_count,
+    })
 
 
 @admin_api.route("/users", methods=["POST"])
@@ -1085,7 +1365,23 @@ def create_user_account():
     username = str(data.get("username") or "").strip()
     password = str(data.get("password") or "")
     role = str(data.get("role") or "user")
-    user, error = create_user(ctx.cache, username, password, role=role)
+    display_name = str(data.get("display_name") or "")
+    email = str(data.get("email") or "")
+    if (
+        _configured_admin_username()
+        and username.casefold() == _configured_admin_username().casefold()
+    ):
+        return _config_admin_management_error()
+    user, error = create_user(
+        ctx.cache,
+        username,
+        password,
+        role=role,
+        display_name=display_name,
+        email=email,
+        must_change_password=True,
+        account_origin="administrator_created",
+    )
     if error or not user:
         return jsonify({"error": error or "Account creation failed"}), 400
 
@@ -1095,20 +1391,118 @@ def create_user_account():
         action="user_create",
         target_type="user",
         target_id=str(user["id"]),
-        detail=f"username={user['username']};role={user['role']}",
+        detail=(
+            f"username={user['username']};role={user['role']};"
+            "must_change_password=true"
+        ),
         ip=request.remote_addr or "",
         user_agent=request.headers.get("User-Agent", "")[:200],
     )
     return jsonify(_admin_user_payload(user)), 201
 
 
-def _set_user_status(user_id: int, *, active: bool):
-    from services.auth_service import get_user_by_id, set_user_active
+@admin_api.route("/users/<int:user_id>/profile", methods=["PUT"])
+def update_user_profile(user_id: int):
+    from services.auth_service import get_user_by_id, update_user_profile as _update_profile
 
     ctx = _get_ctx()
     target = get_user_by_id(ctx.cache, user_id)
     if not target:
         return jsonify({"error": "User not found"}), 404
+    if _is_config_admin_user(target):
+        return _config_admin_management_error()
+    data = request.get_json(silent=True) or {}
+    updated, error = _update_profile(
+        ctx.cache,
+        user_id,
+        display_name=str(data.get("display_name") or ""),
+        email=str(data.get("email") or ""),
+    )
+    if error == "user_not_found":
+        return jsonify({"error": "User not found"}), 404
+    if error == "profile_update_failed":
+        return jsonify({"error": "User profile update failed"}), 500
+    if error or not updated:
+        return jsonify({"error": error or "User profile update failed"}), 400
+
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="user_profile_update",
+        target_type="user",
+        target_id=str(user_id),
+        detail=f"username={updated['username']};fields=display_name,email",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify(_admin_user_payload(updated))
+
+
+@admin_api.route("/users/<int:user_id>", methods=["DELETE"])
+def delete_user_account(user_id: int):
+    """Permanently delete a disabled database account after target confirmation."""
+    from services.auth_service import delete_inactive_user, get_user_by_id
+
+    ctx = _get_ctx()
+    target = get_user_by_id(ctx.cache, user_id)
+    if not target:
+        return jsonify({"error": "User not found"}), 404
+    if _is_config_admin_user(target):
+        return _config_admin_management_error()
+    if _is_current_session_user(target):
+        return jsonify({"error": "The current session account cannot be deleted"}), 409
+
+    data = request.get_json(silent=True) or {}
+    confirmed_username = str(data.get("username") or "").strip()
+    if not confirmed_username:
+        return jsonify({"error": "username confirmation is required"}), 400
+    if not hmac.compare_digest(
+        confirmed_username.casefold().encode("utf-8"),
+        str(target["username"]).casefold().encode("utf-8"),
+    ):
+        return jsonify({"error": "username confirmation does not match"}), 400
+
+    deleted, error = delete_inactive_user(ctx.cache, user_id)
+    if error == "account_must_be_disabled":
+        return jsonify({
+            "error": "Account must be disabled before deletion",
+            "code": error,
+        }), 409
+    if error == "user_not_found":
+        return jsonify({"error": "User not found"}), 404
+    if error or not deleted:
+        return jsonify({"error": "User deletion failed"}), 500
+
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="user_delete",
+        target_type="user",
+        target_id=str(user_id),
+        detail=(
+            f"username={deleted['username']};role={deleted['role']};"
+            f"sessions_deleted={deleted['sessions_deleted']};"
+            f"recovery_requests_deleted={deleted['password_recovery_requests_deleted']};"
+            f"cleared_sources={deleted['login_failure_sources_cleared']}"
+        ),
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify({"status": "deleted", **deleted})
+
+
+def _set_user_status(user_id: int, *, active: bool):
+    from services.auth_service import get_user_by_id, set_user_active
+    from services.login_throttle_service import clear_login_failures
+    from services.password_recovery_service import resolve_password_recovery_requests
+    from services.session_service import revoke_all_user_sessions
+
+    ctx = _get_ctx()
+    target = get_user_by_id(ctx.cache, user_id)
+    if not target:
+        return jsonify({"error": "User not found"}), 404
+    if _is_config_admin_user(target):
+        return _config_admin_management_error()
 
     is_current_session = _is_current_session_user(target)
     if not active and is_current_session:
@@ -1121,17 +1515,35 @@ def _set_user_status(user_id: int, *, active: bool):
         return jsonify({"error": "User update failed"}), 500
 
     action = "user_enable" if active else "user_disable"
+    revoked_sessions = revoke_all_user_sessions(ctx.cache, user_id, reason=action)
+    cleared_sources = clear_login_failures(ctx.cache, str(updated["username"]))
+    recovery_requests_resolved = 0
+    if not active:
+        recovery_requests_resolved = resolve_password_recovery_requests(
+            ctx.cache,
+            user_id,
+            resolved_by=_actor_id(),
+            resolution="account_disabled",
+        )
     ctx.cache.write_audit(
         actor_type=_actor_type(),
         actor_id=_actor_id(),
         action=action,
         target_type="user",
         target_id=str(user_id),
-        detail=f"username={updated['username']}",
+        detail=(
+            f"username={updated['username']};sessions_revoked={revoked_sessions};"
+            f"cleared_sources={cleared_sources};"
+            f"recovery_requests_resolved={recovery_requests_resolved}"
+        ),
         ip=request.remote_addr or "",
         user_agent=request.headers.get("User-Agent", "")[:200],
     )
-    return jsonify(_admin_user_payload(updated))
+    payload = _admin_user_payload(updated)
+    payload["sessions_revoked"] = revoked_sessions
+    payload["login_failure_sources_cleared"] = cleared_sources
+    payload["password_recovery_requests_resolved"] = recovery_requests_resolved
+    return jsonify(payload)
 
 
 @admin_api.route("/users/<int:user_id>/enable", methods=["POST"])
@@ -1152,6 +1564,8 @@ def update_user_role(user_id: int):
     target = get_user_by_id(ctx.cache, user_id)
     if not target:
         return jsonify({"error": "User not found"}), 404
+    if _is_config_admin_user(target):
+        return _config_admin_management_error()
     if _is_current_session_user(target):
         return jsonify({"error": "The current session account role cannot be changed"}), 409
 
@@ -1167,13 +1581,19 @@ def update_user_role(user_id: int):
     if error or not updated:
         return jsonify({"error": "User role update failed"}), 500
 
+    from services.session_service import revoke_all_user_sessions
+
+    revoked_sessions = revoke_all_user_sessions(ctx.cache, user_id, reason="role_changed")
     ctx.cache.write_audit(
         actor_type=_actor_type(),
         actor_id=_actor_id(),
         action="user_role_update",
         target_type="user",
         target_id=str(user_id),
-        detail=f"username={updated['username']};old_role={target['role']};new_role={updated['role']}",
+        detail=(
+            f"username={updated['username']};old_role={target['role']};"
+            f"new_role={updated['role']};sessions_revoked={revoked_sessions}"
+        ),
         ip=request.remote_addr or "",
         user_agent=request.headers.get("User-Agent", "")[:200],
     )
@@ -1183,15 +1603,24 @@ def update_user_role(user_id: int):
 @admin_api.route("/users/<int:user_id>/password", methods=["POST"])
 def reset_user_password(user_id: int):
     from services.auth_service import get_user_by_id, reset_user_password as _reset_password
+    from services.login_throttle_service import clear_login_failures
 
     ctx = _get_ctx()
     target = get_user_by_id(ctx.cache, user_id)
     if not target:
         return jsonify({"error": "User not found"}), 404
+    if _is_config_admin_user(target):
+        return _config_admin_management_error()
 
+    current_session_preserved = _is_current_session_user(target)
     data = request.get_json(silent=True) or {}
     password = str(data.get("password") or "")
-    updated, error = _reset_password(ctx.cache, user_id, password=password)
+    updated, error = _reset_password(
+        ctx.cache,
+        user_id,
+        password=password,
+        require_change=not current_session_preserved,
+    )
     if error == "user_not_found":
         return jsonify({"error": "User not found"}), 404
     if error in {"password_service_unavailable", "password_reset_failed"}:
@@ -1199,9 +1628,47 @@ def reset_user_password(user_id: int):
     if error or not updated:
         return jsonify({"error": error or "Password reset failed"}), 400
 
-    current_session_preserved = _is_current_session_user(target)
+    from services.session_service import (
+        create_user_session,
+        revoke_all_user_sessions,
+        restore_current_user_session,
+    )
+
+    revoked_sessions = revoke_all_user_sessions(ctx.cache, user_id, reason="password_reset")
+    restored_current_session = False
     if current_session_preserved:
         session["auth_version"] = int(updated.get("auth_version") or 0)
+        session["must_change_password"] = bool(updated.get("must_change_password"))
+        login_session_id = str(session.get("login_session_id") or "")
+        if login_session_id:
+            restored_current_session = restore_current_user_session(
+                ctx.cache,
+                user_id,
+                login_session_id,
+                auth_version=int(updated.get("auth_version") or 0),
+            )
+        if not restored_current_session:
+            session["login_session_id"] = create_user_session(
+                ctx.cache,
+                user_id,
+                auth_version=int(updated.get("auth_version") or 0),
+                ip_address=request.remote_addr or "",
+                user_agent=request.headers.get("User-Agent", ""),
+            )
+
+    recovery_requests_resolved = 0
+    try:
+        from services.password_recovery_service import resolve_password_recovery_requests
+
+        recovery_requests_resolved = resolve_password_recovery_requests(
+            ctx.cache,
+            user_id,
+            resolved_by=_actor_id(),
+            resolution="administrator_password_reset",
+        )
+    except Exception:
+        current_app.logger.exception("Unable to resolve password recovery after admin reset")
+    cleared_sources = clear_login_failures(ctx.cache, str(updated["username"]))
 
     ctx.cache.write_audit(
         actor_type=_actor_type(),
@@ -1209,14 +1676,339 @@ def reset_user_password(user_id: int):
         action="user_password_reset",
         target_type="user",
         target_id=str(user_id),
-        detail=f"username={updated['username']};sessions_invalidated=true",
+        detail=(
+            f"username={updated['username']};sessions_invalidated=true;"
+            f"sessions_revoked={max(0, revoked_sessions - (1 if restored_current_session else 0))};"
+            f"must_change_password={str(updated['must_change_password']).lower()}"
+            f";recovery_requests_resolved={recovery_requests_resolved};"
+            f"cleared_sources={cleared_sources}"
+        ),
         ip=request.remote_addr or "",
         user_agent=request.headers.get("User-Agent", "")[:200],
     )
     payload = _admin_user_payload(updated)
     payload["sessions_invalidated"] = True
     payload["current_session_preserved"] = current_session_preserved
+    payload["password_recovery_requests_resolved"] = recovery_requests_resolved
+    payload["login_failure_sources_cleared"] = cleared_sources
     return jsonify(payload)
+
+
+@admin_api.route("/users/<int:user_id>/password-change-required", methods=["POST"])
+def require_user_password_change(user_id: int):
+    """Expire active sessions and require a self-service password change."""
+    from services.auth_service import (
+        get_user_by_id,
+        require_user_password_change as _require_password_change,
+    )
+    from services.session_service import revoke_all_user_sessions
+    from services.login_throttle_service import clear_login_failures
+
+    ctx = _get_ctx()
+    target = get_user_by_id(ctx.cache, user_id)
+    if not target:
+        return jsonify({"error": "User not found"}), 404
+    if _is_config_admin_user(target):
+        return _config_admin_management_error()
+    if _is_current_session_user(target):
+        return jsonify({
+            "error": "The current session account cannot be forced to change password",
+            "status": 409,
+        }), 409
+
+    updated, error = _require_password_change(ctx.cache, user_id)
+    if error == "user_not_found":
+        return jsonify({"error": "User not found"}), 404
+    if error or not updated:
+        return jsonify({"error": "Password change requirement failed"}), 500
+
+    revoked_sessions = revoke_all_user_sessions(
+        ctx.cache,
+        user_id,
+        reason="administrator_password_change_required",
+    )
+    cleared_sources = clear_login_failures(ctx.cache, str(updated["username"]))
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="user_password_change_required",
+        target_type="user",
+        target_id=str(user_id),
+        detail=(
+            f"username={updated['username']};must_change_password=true;"
+            f"sessions_revoked={revoked_sessions};cleared_sources={cleared_sources}"
+        ),
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    payload = _admin_user_payload(updated)
+    payload["sessions_invalidated"] = True
+    payload["sessions_revoked"] = revoked_sessions
+    payload["login_failure_sources_cleared"] = cleared_sources
+    return jsonify(payload)
+
+
+@admin_api.route("/users/<int:user_id>/sessions/revoke", methods=["POST"])
+def revoke_user_sessions(user_id: int):
+    """Force a managed account offline without changing its status or password."""
+    from services.auth_service import get_user_by_id
+    from services.session_service import revoke_all_user_sessions
+
+    ctx = _get_ctx()
+    target = get_user_by_id(ctx.cache, user_id)
+    if not target:
+        return jsonify({"error": "User not found"}), 404
+    if _is_config_admin_user(target):
+        return _config_admin_management_error()
+    if _is_current_session_user(target):
+        return jsonify({"error": "The current session account cannot be forced offline"}), 409
+
+    revoked = revoke_all_user_sessions(
+        ctx.cache,
+        user_id,
+        reason="administrator_forced_logout",
+        auth_version=int(target.get("auth_version") or 0),
+    )
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="user_sessions_force_revoke",
+        target_type="user",
+        target_id=str(user_id),
+        detail=f"username={target['username']};sessions_revoked={revoked}",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify({
+        "status": "revoked",
+        "user_id": user_id,
+        "username": target["username"],
+        "revoked": revoked,
+    })
+
+
+@admin_api.route("/users/bulk-security", methods=["POST"])
+def bulk_user_security_action():
+    """Apply a bounded security action and report each account outcome."""
+    from services.auth_service import (
+        get_user_by_id,
+        require_user_password_change as _require_password_change,
+    )
+    from services.session_service import revoke_all_user_sessions
+    from services.login_throttle_service import clear_login_failures
+
+    data = request.get_json(silent=True) or {}
+    action = str(data.get("action") or "")
+    raw_user_ids = data.get("user_ids")
+    if action not in {"force_logout", "require_password_change"}:
+        return jsonify({
+            "error": "action must be 'force_logout' or 'require_password_change'",
+        }), 400
+    if not isinstance(raw_user_ids, list) or not raw_user_ids:
+        return jsonify({"error": "user_ids must be a non-empty integer array"}), 400
+    if len(raw_user_ids) > 100:
+        return jsonify({"error": "user_ids cannot contain more than 100 items"}), 400
+    if any(type(user_id) is not int or user_id <= 0 for user_id in raw_user_ids):
+        return jsonify({"error": "user_ids must contain positive integers"}), 400
+
+    user_ids = list(dict.fromkeys(raw_user_ids))
+    ctx = _get_ctx()
+    results: list[dict[str, Any]] = []
+    total_sessions_revoked = 0
+    total_login_failure_sources_cleared = 0
+    for user_id in user_ids:
+        target = get_user_by_id(ctx.cache, user_id)
+        if not target:
+            results.append({
+                "user_id": user_id,
+                "username": "",
+                "status": "failed",
+                "code": "user_not_found",
+                "error": "账号不存在",
+            })
+            continue
+        if _is_config_admin_user(target):
+            results.append({
+                "user_id": user_id,
+                "username": target["username"],
+                "status": "failed",
+                "code": "config_admin_managed",
+                "error": "配置管理员由服务配置维护",
+            })
+            continue
+        if _is_current_session_user(target):
+            results.append({
+                "user_id": user_id,
+                "username": target["username"],
+                "status": "failed",
+                "code": "current_session_account",
+                "error": "不能批量处置当前登录账号",
+            })
+            continue
+
+        try:
+            if action == "require_password_change":
+                updated, error = _require_password_change(ctx.cache, user_id)
+                if error or not updated:
+                    results.append({
+                        "user_id": user_id,
+                        "username": target["username"],
+                        "status": "failed",
+                        "code": error or "password_change_requirement_failed",
+                        "error": "要求改密失败",
+                    })
+                    continue
+                revoked = revoke_all_user_sessions(
+                    ctx.cache,
+                    user_id,
+                    reason="administrator_password_change_required",
+                )
+                cleared_sources = clear_login_failures(
+                    ctx.cache,
+                    str(target["username"]),
+                )
+                audit_action = "user_password_change_required"
+                audit_detail = (
+                    f"username={target['username']};must_change_password=true;"
+                    f"sessions_revoked={revoked};cleared_sources={cleared_sources};bulk=true"
+                )
+            else:
+                cleared_sources = 0
+                revoked = revoke_all_user_sessions(
+                    ctx.cache,
+                    user_id,
+                    reason="administrator_forced_logout",
+                    auth_version=int(target.get("auth_version") or 0),
+                )
+                audit_action = "user_sessions_force_revoke"
+                audit_detail = (
+                    f"username={target['username']};sessions_revoked={revoked};bulk=true"
+                )
+        except Exception:
+            current_app.logger.exception(
+                "Bulk user security action failed: action=%s user_id=%s",
+                action,
+                user_id,
+            )
+            results.append({
+                "user_id": user_id,
+                "username": target["username"],
+                "status": "failed",
+                "code": "operation_failed",
+                "error": "安全操作执行失败",
+            })
+            continue
+
+        total_sessions_revoked += revoked
+        total_login_failure_sources_cleared += cleared_sources
+        results.append({
+            "user_id": user_id,
+            "username": target["username"],
+            "status": "succeeded",
+            "sessions_revoked": revoked,
+            "login_failure_sources_cleared": cleared_sources,
+        })
+        ctx.cache.write_audit(
+            actor_type=_actor_type(),
+            actor_id=_actor_id(),
+            action=audit_action,
+            target_type="user",
+            target_id=str(user_id),
+            detail=audit_detail,
+            ip=request.remote_addr or "",
+            user_agent=request.headers.get("User-Agent", "")[:200],
+        )
+
+    succeeded = sum(item["status"] == "succeeded" for item in results)
+    failed = len(results) - succeeded
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="user_bulk_security_action",
+        target_type="user_batch",
+        target_id=action,
+        detail=(
+            f"action={action};requested={len(user_ids)};succeeded={succeeded};"
+            f"failed={failed};sessions_revoked={total_sessions_revoked};"
+            f"cleared_sources={total_login_failure_sources_cleared}"
+        ),
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify({
+        "action": action,
+        "requested": len(user_ids),
+        "succeeded": succeeded,
+        "failed": failed,
+        "sessions_revoked": total_sessions_revoked,
+        "login_failure_sources_cleared": total_login_failure_sources_cleared,
+        "results": results,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Role permission management
+# ---------------------------------------------------------------------------
+
+@admin_api.route("/permissions", methods=["GET"])
+def list_permissions():
+    from services.permission_service import list_permission_matrix
+
+    return jsonify(list_permission_matrix(_get_ctx().cache))
+
+
+@admin_api.route("/roles/<role>/permissions", methods=["PUT"])
+def update_role_permissions(role: str):
+    from services.permission_service import replace_role_permissions
+
+    data = request.get_json(silent=True) or {}
+    permissions = data.get("permissions")
+    expected_revision = data.get("expected_revision")
+    if not isinstance(permissions, list) or any(not isinstance(item, str) for item in permissions):
+        return jsonify({"error": "permissions must be a string array"}), 400
+    if expected_revision is not None and (
+        not isinstance(expected_revision, str)
+        or len(expected_revision) != 64
+        or any(character not in "0123456789abcdef" for character in expected_revision)
+    ):
+        return jsonify({"error": "expected_revision must be a lowercase SHA-256 value"}), 400
+
+    result, error = replace_role_permissions(
+        _get_ctx().cache,
+        role,
+        permissions,
+        expected_revision=expected_revision,
+    )
+    if error == "administrator_permissions_are_fixed":
+        return jsonify({"error": "The existing administrator permissions are fixed"}), 409
+    if error == "role_not_found":
+        return jsonify({"error": "Role not found"}), 404
+    if error and error.startswith("invalid_permissions:"):
+        return jsonify({"error": error}), 400
+    if error == "permission_revision_conflict":
+        return jsonify({
+            "error": "权限配置已被其他管理员更新，请刷新后重试",
+            "code": "permission_revision_conflict",
+        }), 409
+    if error or result is None:
+        return jsonify({"error": "Permission update failed"}), 500
+
+    _get_ctx().cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="role_permissions_update",
+        target_type="role",
+        target_id=role,
+        detail=(
+            f"added_permissions={','.join(result['change']['added']) or '-'};"
+            f"removed_permissions={','.join(result['change']['removed']) or '-'};"
+            f"affected_active_members={result['change']['affected_active_members']};"
+            f"revision={result['change']['revision']}"
+        ),
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify(result)
 
 
 # ---------------------------------------------------------------------------

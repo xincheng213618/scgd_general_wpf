@@ -1,6 +1,7 @@
 #pragma warning disable CA1863
 using ColorVision.Common.ThirdPartyApps;
 using ColorVision.Themes;
+using ColorVision.UI.Authorizations;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows;
@@ -32,9 +33,9 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
         private ObservableCollection<ThirdPartyAppInfo> _allApps = new();
         private List<ThirdPartyAppGroupItem> _groups = new();
         private string _allGroupsLabel = string.Empty;
-        private string _toolsGroupLabel = string.Empty;
         private CustomAppsConfig _customConfig = null!;
         private CancellationTokenSource? _loadCancellation;
+        private Authorization? _authorization;
 
         public ThirdPartyAppsWindow()
         {
@@ -46,7 +47,9 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
         {
             _customConfig = CustomAppsConfig.Instance;
             _allGroupsLabel = GetResourceString("ThirdPartyAppsAll", "All");
-            _toolsGroupLabel = IsChineseUICulture() ? "工具" : "Tools";
+            _authorization = Authorization.Instance;
+            if (_authorization != null)
+                _authorization.PermissionModeChanged += Authorization_PermissionModeChanged;
 
             SearchBox.ToolTip = Properties.Resources.Search;
             BtnAddApp.ToolTip = Properties.Resources.CustomApp_AddTooltip;
@@ -60,15 +63,20 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
 
         private void RefreshGroups()
         {
-            _groups = _allApps
-                .GroupBy(GetDisplayGroup)
-                .Where(g => !string.IsNullOrEmpty(g.Key))
-                .OrderBy(g => g.Min(a => a.Order))
-                .Select(g => new ThirdPartyAppGroupItem(g.Key, g.Count()))
+            var authorizedApps = _allApps.Where(app => app.IsAuthorized).ToList();
+            _groups = authorizedApps
+                .GroupBy(GetDisplayGroupKey)
+                .OrderBy(group => group.Key.Category)
+                .ThenBy(group => group.Min(app => app.Order))
+                .ThenBy(group => group.Key.Group, StringComparer.CurrentCultureIgnoreCase)
+                .Select(group => new ThirdPartyAppGroupItem(
+                    GetDisplayGroupName(group.Key),
+                    group.Count(),
+                    group.Key))
                 .ToList();
 
             GroupListBox.Items.Clear();
-            GroupListBox.Items.Add(new ThirdPartyAppGroupItem(_allGroupsLabel, _allApps.Count, true));
+            GroupListBox.Items.Add(new ThirdPartyAppGroupItem(_allGroupsLabel, authorizedApps.Count, null, true));
             foreach (var group in _groups)
             {
                 GroupListBox.Items.Add(group);
@@ -91,16 +99,18 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
             string keyword = SearchBox.Text.Trim();
             ThirdPartyAppGroupItem? selectedGroup = GroupListBox.SelectedItem as ThirdPartyAppGroupItem;
 
-            IEnumerable<ThirdPartyAppInfo> filtered = _allApps;
+            IEnumerable<ThirdPartyAppInfo> filtered = _allApps.Where(app => app.IsAuthorized);
 
-            if (selectedGroup is { IsAll: false })
+            if (selectedGroup is { IsAll: false, GroupKey: not null })
             {
-                filtered = filtered.Where(a => GetDisplayGroup(a) == selectedGroup.Name);
+                filtered = filtered.Where(app => GetDisplayGroupKey(app) == selectedGroup.GroupKey.Value);
             }
 
             if (!string.IsNullOrEmpty(keyword))
             {
-                filtered = filtered.Where(a => a.Name != null && a.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+                filtered = filtered.Where(app =>
+                    (app.Name?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || (app.Group?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false));
             }
 
             var result = filtered.OrderBy(a => a.Order).ThenBy(a => a.Name).ToList();
@@ -328,35 +338,31 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
             }
         }
 
-        private string GetDisplayGroup(ThirdPartyAppInfo app)
+        private static string GetCategoryDisplayName(ThirdPartyAppCategory category)
         {
-            if (IsBuiltInToolGroup(app.Group))
-                return _toolsGroupLabel;
-
-            return app.Group;
+            bool isChinese = IsChineseUICulture();
+            return category switch
+            {
+                ThirdPartyAppCategory.Internal => GetResourceString("ThirdPartyAppsCategoryInternal", isChinese ? "内部工具" : "Internal Tools"),
+                ThirdPartyAppCategory.System => Properties.Resources.SystemTools,
+                ThirdPartyAppCategory.External => GetResourceString("ThirdPartyAppsCategoryExternal", isChinese ? "外部应用" : "External Apps"),
+                ThirdPartyAppCategory.Custom => GetResourceString("ThirdPartyAppsCategoryCustom", isChinese ? "自定义" : "Custom"),
+                _ => category.ToString(),
+            };
         }
 
-        private static bool IsBuiltInToolGroup(string group)
+        private static ThirdPartyAppGroupKey GetDisplayGroupKey(ThirdPartyAppInfo app)
         {
-            if (string.IsNullOrWhiteSpace(group))
-                return false;
+            string group = app.Category is ThirdPartyAppCategory.External or ThirdPartyAppCategory.Custom
+                ? app.Group?.Trim() ?? string.Empty
+                : string.Empty;
+            return new ThirdPartyAppGroupKey(app.Category, group);
+        }
 
-            string normalized = group.Trim();
-            return normalized.Equals("ColorVision", StringComparison.OrdinalIgnoreCase)
-                   || normalized.Equals("常用工具", StringComparison.OrdinalIgnoreCase)
-                   || normalized.Equals("Common Tools", StringComparison.OrdinalIgnoreCase)
-                   || normalized.Equals("内置工具", StringComparison.OrdinalIgnoreCase)
-                   || normalized.Equals("內置工具", StringComparison.OrdinalIgnoreCase)
-                   || normalized.Equals("Built-in Tools", StringComparison.OrdinalIgnoreCase)
-                   || normalized.Equals("内部工具", StringComparison.OrdinalIgnoreCase)
-                   || normalized.Equals("內部工具", StringComparison.OrdinalIgnoreCase)
-                   || normalized.Equals("Internal Tools", StringComparison.OrdinalIgnoreCase)
-                   || normalized.Equals("安装工具", StringComparison.OrdinalIgnoreCase)
-                   || normalized.Equals("安裝工具", StringComparison.OrdinalIgnoreCase)
-                   || normalized.Equals("Install Tools", StringComparison.OrdinalIgnoreCase)
-                   || normalized.Equals("便携工具", StringComparison.OrdinalIgnoreCase)
-                   || normalized.Equals("便攜工具", StringComparison.OrdinalIgnoreCase)
-                   || normalized.Equals("Portable Tools", StringComparison.OrdinalIgnoreCase);
+        private static string GetDisplayGroupName(ThirdPartyAppGroupKey key)
+        {
+            string category = GetCategoryDisplayName(key.Category);
+            return string.IsNullOrWhiteSpace(key.Group) ? category : $"{category} · {key.Group}";
         }
 
         private static bool IsChineseUICulture()
@@ -366,9 +372,24 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
 
         protected override void OnClosed(EventArgs e)
         {
+            if (_authorization != null)
+                _authorization.PermissionModeChanged -= Authorization_PermissionModeChanged;
+            _authorization = null;
             _loadCancellation?.Cancel();
             _loadCancellation = null;
             base.OnClosed(e);
+        }
+
+        private void Authorization_PermissionModeChanged(object? sender, EventArgs e)
+        {
+            Dispatcher.InvokeAsync(() =>
+            {
+                if (!IsLoaded)
+                    return;
+
+                RefreshGroups();
+                ApplyFilter();
+            });
         }
 
         private static string GetResourceString(string key, string fallback)
@@ -376,18 +397,22 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
             return Properties.Resources.ResourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? fallback;
         }
 
+        internal readonly record struct ThirdPartyAppGroupKey(ThirdPartyAppCategory Category, string Group);
+
         public sealed class ThirdPartyAppGroupItem
         {
-            public ThirdPartyAppGroupItem(string name, int count, bool isAll = false)
+            internal ThirdPartyAppGroupItem(string name, int count, ThirdPartyAppGroupKey? groupKey, bool isAll = false)
             {
                 Name = name;
                 Count = count;
+                GroupKey = groupKey;
                 IsAll = isAll;
             }
 
             public string Name { get; }
             public string DisplayName => Name;
             public int Count { get; }
+            internal ThirdPartyAppGroupKey? GroupKey { get; }
             public bool IsAll { get; }
         }
     }

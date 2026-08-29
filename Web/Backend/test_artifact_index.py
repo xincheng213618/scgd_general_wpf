@@ -1080,7 +1080,7 @@ class SecurityTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         payload = response.get_json()
         self.assertEqual(payload["status"], "ok")
-        self.assertIn("backup_path", payload)
+        self.assertNotIn("backup_path", payload)
         self.assertGreater(payload["backup_size_bytes"], 0)
         self.assertEqual(payload["backup_retention"]["status"], "success")
         self.assertEqual(payload["backup_retention"]["beforeCount"], 12)
@@ -1089,7 +1089,7 @@ class SecurityTests(unittest.TestCase):
         self.assertEqual(payload["backup_retention"]["preservedUnclassified"], 1)
 
         # Verify backup file exists
-        backup_path = Path(payload["backup_path"])
+        backup_path = self.root / payload["backup_name"]
         self.assertTrue(backup_path.exists())
         self.assertFalse(old_backups[0].exists())
         self.assertFalse(old_backups[1].exists())

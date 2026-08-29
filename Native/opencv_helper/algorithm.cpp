@@ -481,7 +481,7 @@ int extractChannel(cv::Mat& input, cv::Mat& dst ,int channel)
 
 void GetOptimizedLUT(cv::ColormapTypes mapType, int minTh, int maxTh, cv::Mat& outLut)
 {
-    cv::Mat range(1, 256, CV_8U);
+    cv::Mat range(256, 1, CV_8U);
     std::iota(range.ptr<uint8_t>(), range.ptr<uint8_t>() + 256, 0);
 
     cv::applyColorMap(range, outLut, mapType);
@@ -499,14 +499,14 @@ void GetOptimizedLUT(cv::ColormapTypes mapType, int minTh, int maxTh, cv::Mat& o
 
 void GetStretchedLUT(cv::ColormapTypes mapType, int minTh, int maxTh, cv::Mat& outLut)
 {
-    cv::Mat range(1, 256, CV_8U);
+    cv::Mat range(256, 1, CV_8U);
     std::iota(range.ptr<uint8_t>(), range.ptr<uint8_t>() + 256, 0);
 
     cv::Mat fullColormap;
     cv::applyColorMap(range, fullColormap, mapType);
     const cv::Vec3b* cmPtr = fullColormap.ptr<cv::Vec3b>();
 
-    outLut.create(1, 256, CV_8UC3);
+    outLut.create(256, 1, CV_8UC3);
     cv::Vec3b* ptr = outLut.ptr<cv::Vec3b>();
 
     int rangeSize = maxTh - minTh;
@@ -526,17 +526,24 @@ void GetStretchedLUT(cv::ColormapTypes mapType, int minTh, int maxTh, cv::Mat& o
     }
 }
 
-static void applyLUT(const cv::Mat& image, const cv::Mat& lut, cv::Mat& result)
+static void applyLUT(const cv::Mat& image, const cv::Mat& lut, cv::Mat& result, int channel)
 {
+    if (channel < 0) {
+        cv::applyColorMap(image, result, lut);
+        return;
+    }
+
     result.create(image.rows, image.cols, CV_8UC3);
     const cv::Vec3b* lutPtr = lut.ptr<cv::Vec3b>();
+    const int channels = image.channels();
 
     cv::parallel_for_(cv::Range(0, image.rows), [&](const cv::Range& range) {
         for (int y = range.start; y < range.end; y++) {
-            const uint8_t* srcRow = image.ptr<uint8_t>(y);
+            const uint8_t* src = image.ptr<uint8_t>(y) + channel;
             cv::Vec3b* dstRow = result.ptr<cv::Vec3b>(y);
             for (int x = 0; x < image.cols; x++) {
-                dstRow[x] = lutPtr[srcRow[x]];
+                dstRow[x] = lutPtr[*src];
+                src += channels;
             }
         }
     });
@@ -581,32 +588,52 @@ static void GetCachedPseudoColorLUT(cv::ColormapTypes mapType, int minTh, int ma
     outLut = cache.lut;
 }
 
-static void applyLUT16U(const cv::Mat& image, const cv::Mat& lut, cv::Mat& result, double scale, double offset)
+static void applyLUT16U(const cv::Mat& image, const cv::Mat& lut, cv::Mat& result, double scale, double offset, int channel)
 {
     result.create(image.rows, image.cols, CV_8UC3);
     const cv::Vec3b* lutPtr = lut.ptr<cv::Vec3b>();
+    cv::Mat expandedLut(65536, 1, CV_8UC3);
+    cv::Vec3b* expandedLutPtr = expandedLut.ptr<cv::Vec3b>();
+    for (int value = 0; value < 65536; value++) {
+        expandedLutPtr[value] = lutPtr[cv::saturate_cast<uint8_t>(value * scale + offset)];
+    }
+
+    const int channels = image.channels();
+    const int sourceChannel = channel >= 0 ? channel : 0;
 
     cv::parallel_for_(cv::Range(0, image.rows), [&](const cv::Range& range) {
         for (int y = range.start; y < range.end; y++) {
-            const uint16_t* srcRow = image.ptr<uint16_t>(y);
+            const uint16_t* src = image.ptr<uint16_t>(y) + sourceChannel;
             cv::Vec3b* dstRow = result.ptr<cv::Vec3b>(y);
             for (int x = 0; x < image.cols; x++) {
-                const uint8_t index = cv::saturate_cast<uint8_t>(srcRow[x] * scale + offset);
-                dstRow[x] = lutPtr[index];
+                dstRow[x] = expandedLutPtr[*src];
+                src += channels;
             }
         }
     });
 }
 
-static int pseudoColorCore(const cv::Mat& image, cv::Mat& dst, uint min1, uint max1, cv::ColormapTypes types, bool autoRange, uint dataMin, uint dataMax)
+static int pseudoColorCore(const cv::Mat& image, cv::Mat& dst, uint min1, uint max1, cv::ColormapTypes types, bool autoRange, uint dataMin, uint dataMax, int channel)
 {
     if (image.empty()) return -1;
 
     cv::Mat gray;
     const cv::Mat* source = &image;
+    int sourceChannel = -1;
     if (image.channels() > 1) {
-        cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
-        source = &gray;
+        const bool hasSelectedChannel = channel >= 0 && channel < image.channels();
+        if (hasSelectedChannel && (image.depth() == CV_8U || image.depth() == CV_16U)) {
+            sourceChannel = channel;
+        }
+        else {
+            if (hasSelectedChannel) {
+                cv::extractChannel(image, gray, channel);
+            }
+            else {
+                cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
+            }
+            source = &gray;
+        }
     }
 
     cv::Mat source8;
@@ -635,7 +662,7 @@ static int pseudoColorCore(const cv::Mat& image, cv::Mat& dst, uint min1, uint m
 
         cv::Mat customLut;
         GetCachedPseudoColorLUT(types, (int)min1, (int)max1, autoRange, customLut);
-        applyLUT16U(*source, customLut, dst, scale, offset);
+        applyLUT16U(*source, customLut, dst, scale, offset, sourceChannel);
         return 0;
     }
         break;
@@ -661,18 +688,18 @@ static int pseudoColorCore(const cv::Mat& image, cv::Mat& dst, uint min1, uint m
 
     cv::Mat customLut;
     GetCachedPseudoColorLUT(types, (int)min1, (int)max1, autoRange, customLut);
-    applyLUT(*source, customLut, dst);
+    applyLUT(*source, customLut, dst, sourceChannel);
     return 0;
 }
 
-int pseudoColorTo(const cv::Mat& image, cv::Mat& dst, uint min1, uint max1, cv::ColormapTypes types)
+int pseudoColorTo(const cv::Mat& image, cv::Mat& dst, uint min1, uint max1, cv::ColormapTypes types, int channel)
 {
-    return pseudoColorCore(image, dst, min1, max1, types, false, 0, 0);
+    return pseudoColorCore(image, dst, min1, max1, types, false, 0, 0, channel);
 }
 
-int pseudoColorAutoRangeTo(const cv::Mat& image, cv::Mat& dst, uint min1, uint max1, cv::ColormapTypes types, uint dataMin, uint dataMax)
+int pseudoColorAutoRangeTo(const cv::Mat& image, cv::Mat& dst, uint min1, uint max1, cv::ColormapTypes types, uint dataMin, uint dataMax, int channel)
 {
-    return pseudoColorCore(image, dst, min1, max1, types, true, dataMin, dataMax);
+    return pseudoColorCore(image, dst, min1, max1, types, true, dataMin, dataMax, channel);
 }
 
 int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)

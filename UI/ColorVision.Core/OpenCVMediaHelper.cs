@@ -112,6 +112,16 @@ namespace ColorVision.Core
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_FindLuminousArea(HImage img, RoiRect roi, string config, out IntPtr str);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_FindLuminousAreaV2(HImage img, RoiRect roi, [MarshalAs(UnmanagedType.LPUTF8Str)] string config, out IntPtr str);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern int M_FindCrossLocal(HImage img, RoiRect roi, [MarshalAs(UnmanagedType.LPUTF8Str)] string config, out IntPtr str);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern int M_FindCrossLocalGetLastError([Out] byte[]? buffer, uint bufferLength);
+
         /// <summary>
         /// 伪彩色
         /// </summary>

@@ -126,6 +126,9 @@ namespace ProjectARVRPro.Process.OpticCenter
             AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<OpticCenterTestResult>(result, "Optical_Center");
+
         public override void Render(IProcessExecutionContext ctx)
         {
             

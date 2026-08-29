@@ -1,4 +1,4 @@
-# Copilot attachment composer design QA
++# Copilot attachment composer design QA
 
 ## Evidence
 
@@ -50,6 +50,70 @@ Each source crop and its matching live implementation state were emitted togethe
 ## Follow-up polish
 
 - P3: the revised fixed-size and recovery states were not recaptured under the dark theme; all changed colors remain dynamic theme resources.
+
+final result: passed
+---
+
+# ColorVision 服务主机管理界面设计核验
+
+## Comparison target
+
+- Source visual truth:
+  - `C:\Users\17917\AppData\Local\Temp\codex-clipboard-fc13cfba-c927-4c55-87ce-ff113c4509ad.png`：原服务主机管理页的功能基线。
+  - `C:\Users\17917\AppData\Local\Temp\codex-clipboard-5d8aa0bd-1131-4c79-960b-6f52c68f62b0.png`：启动恢复页的商业产品层级、标签页和支持入口参考。
+  - `C:\Users\17917\AppData\Local\Temp\codex-clipboard-bdbcbc19-c145-4b02-b2d1-fbda9775644f.png`：检查更新页的留白、克制信息密度和右上角版本表达参考。
+- Rendered implementation:
+  - `C:\Users\17917\AppData\Local\Temp\ColorVisionCodexUi\service-host\status-and-logs-96dpi.png`
+  - `C:\Users\17917\AppData\Local\Temp\ColorVisionCodexUi\service-host\support-and-diagnostics-96dpi.png`
+  - `C:\Users\17917\AppData\Local\Temp\ColorVisionCodexUi\service-host\system-maintenance-96dpi.png`
+- State: light theme; local service is running, the isolated unsigned harness cannot use the trusted service pipe, and the current development package has same-version binary differences that intentionally exercise the repair recommendation state.
+
+## Viewport and normalization
+
+- Source pixels: 1422 × 1026 at 96 DPI and 1362 × 860 at 96 DPI for the two design-direction references.
+- Implementation logical viewport: 1240 × 780 DIPs; client capture region is approximately 1225 × 743 DIPs.
+- Native implementation capture: 1838 × 1114 pixels at 150% Windows scaling.
+- Normalized implementation evidence: 1225 × 743 pixels at 96 DPI, downsampled with high-quality bicubic interpolation.
+- The references are different ColorVision tasks rather than the same service-host state, so comparison evaluates shared product hierarchy, density, spacing, typography, tokens, and action placement without claiming pixel-identical content.
+
+## Findings
+
+No actionable P0, P1, or P2 finding remains.
+
+- Fonts and typography: the page keeps ColorVision's existing WPF font family and optical hierarchy. One 28-DIP title, 17-DIP recommendation title, 18-DIP section titles, and restrained 11–14-DIP supporting text match the reference direction; long file details truncate in the compact status strip instead of forcing extra rows.
+- Spacing and layout rhythm: the earlier compressed left control column is removed. `状态与日志 / 支持与诊断 / 系统维护` each receive the full content width, while the recommendation banner remains persistent above the tabs. The final system-maintenance page uses a balanced two-column allocation and a single bottom advanced-maintenance strip, with no clipped controls.
+- Colors and visual tokens: all primary, secondary, surface, border, text, and accent colors reuse `UpdateDialogTheme` resources. Blue is reserved for the recommended action and feedback submission; error red is used only for the actual integrity problem.
+- Image quality and assets: no product imagery is required. The health indicator uses the existing Segoe MDL2 icon family; no emoji, placeholder, custom SVG, or fabricated visual asset was introduced.
+- Copy and content: normal version information appears once in the upper-right title area. Version details expand only when running, installed, and package versions differ or one is unavailable. Support actions are separated from system maintenance; raw paths are no longer presented as a diagnostic form.
+- Interactions and affordances: the main tabs, nested log tabs, automatic log refresh, file opening, status refresh, feedback submission, service control, system integration, and com0com controls are native keyboard-focusable WPF controls. Disabled service actions remain visibly disabled according to current state.
+- Accessibility and viewport resilience: no overlap or persistent-control clipping is visible at the 1240 × 780 design size. Native controls expose their Chinese labels through UI Automation, and long diagnostic copy wraps or trims rather than colliding with actions.
+
+## Full-view comparison evidence
+
+The combined comparison shows that the revised service-host window now follows the same pattern as the supplied recovery and update pages: large single-purpose heading, version at the upper right, one persistent recommended-action banner, a shallow tab row, and one full-width task area with deliberate whitespace. The default page gives the real log viewer most of the remaining area instead of treating it as a small debug textbox.
+
+## Focused region comparison evidence
+
+The normalized full-view captures are sufficiently large to read the status strip, log tabs, support buttons, maintenance labels, disabled states, and recommendation copy. No separate crop was needed. The support and maintenance captures serve as focused state evidence for the two non-default tabs.
+
+## Comparison history
+
+1. Initial implementation: P1 content allocation problem—service operations, support, paths, and system maintenance were compressed into a 326-DIP left column while logs occupied the right. Fix: replace the split admin-dashboard layout with three full-width product task tabs.
+2. Initial support page: P2 information architecture problem—raw paths and diagnostic actions were mixed under `路径与诊断`. Fix: make `发送反馈 / 复制诊断摘要 / 打开日志目录` the primary support workflow and demote package/install directories to support-only auxiliary actions.
+3. First system-maintenance capture: P2 vertical overflow—`高级维护` was below the visible content boundary. Fix: place service control and system integration side by side and keep advanced maintenance in one bottom strip.
+4. Post-fix evidence: the three final normalized screenshots show the revised hierarchy, uncompressed maintenance controls, visible logs, restrained whitespace, and no remaining P0/P1/P2 issue.
+
+## Runtime and functional verification
+
+- The isolated WPF harness loaded all three tabs and rendered the real service and install logs without modifying the running service or installed files.
+- The install-log reader now decodes both UTF-8 and legacy GBK lines, so historical Chinese timestamps are no longer garbled.
+- Missing and mismatched runtime assets are surfaced as an explicit recommended repair state; incomplete packaged assets block a futile reinstall and direct the user to the full installer.
+- A nullable startup-status `details` payload no longer throws in the service host.
+- Focused tests: 33 passed, 0 failed.
+
+## Follow-up polish
+
+- P3: capture the same pages in ColorVision dark theme and through a signed production executable; the isolated harness is intentionally rejected by the trusted service pipe, so its connection value is `服务无响应` even though the installed service is running.
 
 final result: passed
 
@@ -231,5 +295,151 @@ The native 660 x 650 captures are readable focused views of both core states. `c
 
 - P3: capture the creation dialog under ColorVision's dark theme and at 150% display scaling if those variants become release-gating visual targets.
 - P3: if Codex exposes a stable completion callback in a future installed version, replace the bounded directory watcher with that callback while keeping the same visible flow.
+
+final result: passed
+
+---
+
+# ColorVision 程序备份界面设计核验
+
+- Source visual truth: `C:\Users\17917\AppData\Local\Temp\codex-clipboard-5a728fa0-346b-42d6-9fec-d0f5bca2a7d4.png`
+- Implementation screenshot: `C:\Users\17917\AppData\Local\Temp\ColorVision-application-snapshots-final.png`
+- Viewport: Windows WPF 窗口，设计尺寸 940 × 610 DIPs
+- Source pixels: 1272 × 769；implementation pixels: 927 × 603
+- Density normalization: 两张图来自不同 Windows DPI 捕获环境，按完整窗口边界和相对布局比例比较，不以原始像素一一对应
+- State: 自动存档已启用；自动存档、默认快照、手动用户快照和更新快照同时显示；手动快照刚创建完成并选中
+
+## Full-view comparison evidence
+
+原有标题、快照根目录、更新前快照开关、程序目录、版本、快照表格和底部操作栏均保留。新增自动存档卡片位于标题区与手动快照操作之间，没有遮挡表格或底部操作；窗口在设计尺寸内无溢出、裁切或不可达按钮。手动“创建快照”完成后，新行立即出现在表格中并被选中。
+
+## Focused region comparison evidence
+
+- 自动存档区：开关、行为说明、实际路径和“更改位置 / 默认位置 / 打开位置”构成一个完整配置单元，层级和按钮尺寸与现有窗口一致。
+- 手动快照区：`创建快照 / 重建默认 / 打开目录` 仍紧邻程序目录信息，未与自动存档动作混淆。
+- 列表区：新增“自动存档”类型沿用现有五列表格；自动存档固定文件名为 `autosave.zip`，手动创建仍显示“用户快照”和带时间的独立文件名。
+- 启动恢复主界面：缺少应用 DLL 时推荐按钮显示“完整安装包修复”；“退出 ColorVision”和“正常启动”位于底栏两端。
+
+## Findings
+
+没有发现需要修复的 P0、P1 或 P2 问题。
+
+- 字体与排版：沿用现有 WPF 字体、字号和粗细层级；长路径使用省略显示并保留辅助功能完整文本。
+- 间距与布局节奏：自动存档卡片与上下区域间距一致，按钮组没有拥挤或越界。
+- 色彩与视觉令牌：继续使用现有窗口背景、弱边框、选中行和主按钮令牌，无新增不一致颜色。
+- 图像与资产：界面没有新增位图或品牌资产；系统窗口图标保持原样。
+- 文案与内容：明确区分“自动存档”“用户快照”“更新快照”；说明了自动存档只在正常进入主界面后后台固定覆盖，不延长启动等待。
+
+## Comparison history
+
+- Earlier issue: 手动创建完成后列表没有立即更新。Fix: 创建结果直接加入绑定集合、选中并滚动到新行。Post-fix evidence: implementation screenshot 中 `ColorVision-1.4.13.11-20260826-132029.zip` 已立即显示并选中。
+- Earlier issue: 程序备份只有手动/更新快照，没有正常启动后的自动覆盖存档。Fix: 新增自动存档配置卡片、固定 `autosave.zip` 和后台健康启动触发。Post-fix evidence: implementation screenshot 顶部显示已启用自动存档，列表首行显示 `autosave.zip`。
+
+## Follow-up polish
+
+没有阻塞项。不同 DPI 下路径会更早进入省略显示，这是为保证操作按钮始终可见的预期行为。
+
+final result: passed
+
+---
+
+# Design QA
+
+- Source visual truth: `C:\Users\17917\AppData\Local\Temp\codex-clipboard-92fadb80-8d80-4f18-8c2a-414a8613a77e.png`
+- Earlier implementation reference: `C:\Users\17917\AppData\Local\Temp\codex-clipboard-acf6661e-737a-4fb9-ae0c-d8ce0c89e17f.png`
+- Browser-rendered implementation: `C:\Users\17917\.codex\visualizations\2026\08\29\01a04c3c-115a-7e31-b691-da67f8bbd728\implementation-account-actions-normalized.png`
+- Side-by-side comparison: `C:\Users\17917\.codex\visualizations\2026\08\29\01a04c3c-115a-7e31-b691-da67f8bbd728\account-actions-comparison.png`
+- Open-menu evidence: `C:\Users\17917\.codex\visualizations\2026\08\29\01a04c3c-115a-7e31-b691-da67f8bbd728\implementation-account-menu.png`
+- Route/state: `/updates`, light theme, authenticated administrator `xincheng`
+- Viewport: 1280 x 720 CSS px at device scale factor 1.5
+- Source dimensions: 426 x 143 px
+- Implementation dimensions: captured from a 1920 x 1080 physical-pixel browser screenshot; the 426 x 143 physical-pixel account region corresponds to approximately 284 x 95 CSS px at 1.5 density. No raster resampling was used in the final normalized crop.
+
+## Full-view comparison evidence
+
+The supplied design target is itself a focused header crop, so the full comparison is the complete supplied 426 x 143 image beside an equal-size browser capture. The implementation preserves the three-part theme control, removes the blue primary management button and bordered exit button, and shows the shield icon plus `xincheng` as the account affordance. The differing blank area above and below the controls comes from the user's original crop including adjacent browser/page chrome and is not component drift.
+
+## Focused-region evidence
+
+No smaller crop is needed: the source contains only the theme and account controls, and all relevant typography, icons, spacing, color, and copy are readable at native resolution. A separate browser capture verifies that the account menu opens and contains `发布管理` and `退出登录`.
+
+## Fidelity surfaces
+
+- Fonts and typography: Ant Design uses the project's existing Segoe UI / Microsoft YaHei UI stack; label weight, size, line height, and single-line username treatment match the reference.
+- Spacing and layout rhythm: the former two large action buttons are replaced by one text-style account control beside the existing compact segmented theme selector. Alignment and control radii match the established admin-header pattern.
+- Colors and visual tokens: the account control is neutral instead of primary blue; the segmented control keeps the existing light-theme surface and selected-state treatment.
+- Image quality and asset fidelity: the reference contains standard UI icons only. The implementation uses the existing Ant Design sun, moon, shield, dashboard, and logout icons; no placeholder, custom SVG, CSS drawing, or generated raster asset was introduced.
+- Copy and content: the visible account copy is `xincheng`; `发布管理` and `退出登录` remain available inside the dropdown. `增量更新` is absent from the public header navigation while the `/updates` page remains available.
+
+## Findings
+
+No actionable P0, P1, or P2 mismatch remains.
+
+## Comparison history
+
+1. Earlier state: the user-provided current screenshot showed a P1 hierarchy mismatch—`发布管理` was a dominant blue CTA and `退出` was a second persistent button, unlike the selected compact account treatment.
+2. Fix: replaced both buttons with the same shield-and-username dropdown pattern used by the existing admin layout, retaining management and logout as menu actions. Removed `/updates` from the public header menu only.
+3. Post-fix evidence: the equal-size side-by-side comparison shows the intended compact control group. Browser DOM and interaction checks confirm that `发布管理` and `退出登录` are present and that selecting `发布管理` targets `/admin`.
+
+## Verification
+
+- Primary interactions tested: light-theme selection; account-menu open/close; publish-management menu selection.
+- Console errors checked: none during the `/updates` header and dropdown checks.
+- Static checks: frontend lint, 44 tests, and production build all passed.
+
+## Follow-up polish
+
+None required for the requested change.
+
+final result: passed
+
+---
+
+# Public brand icon and favicon QA
+
+- Source visual truth:
+  - `C:\Users\17917\AppData\Local\Temp\codex-clipboard-c1dc917b-caa9-4c97-8905-ba5717538f16.png`
+  - `C:\Users\17917\AppData\Local\Temp\codex-clipboard-8969d1c4-ce7e-4f2f-a0e4-69f382551d2a.png`
+- Browser-rendered implementation: `C:\Users\17917\.codex\visualizations\2026\08\29\01a04c3c-115a-7e31-b691-da67f8bbd728\implementation-icon-only-header-light.png`
+- Side-by-side comparison: `C:\Users\17917\.codex\visualizations\2026\08\29\01a04c3c-115a-7e31-b691-da67f8bbd728\icon-only-header-comparison.png`
+- Route/state: `/updates`, light theme for comparison; system theme restored after capture
+- Viewport: 1280 x 720 CSS px; focused crop 393 x 153 px; device scale factor 1
+- Source and implementation dimensions: 393 x 153 px each; no density resampling
+
+## Full-view comparison evidence
+
+The equal-size comparison uses the complete supplied header crop and the same-size implementation crop. The earlier two-line `INTERNAL PORTAL / ColorVision` lockup is gone; the public header now retains only the existing ColorVision eye icon while navigation remains aligned and readable.
+
+## Focused-region evidence
+
+No smaller crop is needed because the 393 x 153 comparison already renders the icon and adjacent navigation at readable size. Browser DOM inspection confirms that `.site-brand` has no text content, remains an accessible link named `ColorVision 首页`, and measures 38 x 38 CSS px in the compact viewport. The favicon link resolves to `/brand/colorvision-icon.png`; the asset returns HTTP 200 with `image/png` and is the same source image used in the header.
+
+## Fidelity surfaces
+
+- Fonts and typography: the requested brand copy is fully removed; no residual text, wrapping, or hidden duplicate remains.
+- Spacing and layout rhythm: the brand link shrinks to the icon width instead of preserving the former 220 px text-lockup reservation, so navigation uses the released space without a blank gap.
+- Colors and visual tokens: header backgrounds and existing theme behavior are unchanged; the supplied full-color ColorVision icon remains the only brand accent.
+- Image quality and asset fidelity: both header and favicon use the existing 512 x 512 `colorvision-icon.png` source asset. No recreated logo, placeholder, SVG, or CSS drawing was introduced.
+- Copy and content: visible `INTERNAL PORTAL` and `ColorVision` header copy are removed. Browser document titles continue to contain `ColorVision`, now paired with the ColorVision favicon configuration rather than the previous ICO fallback.
+
+## Findings
+
+No actionable P0, P1, or P2 mismatch remains.
+
+## Comparison history
+
+1. Earlier state: the public header showed a P1 content mismatch by retaining the full icon-plus-two-line lockup when only the icon was requested; the browser tab showed a generic globe instead of the product icon.
+2. Fix: removed the header copy and its reserved width, kept an accessible icon-only home link, and changed the favicon declaration from the oversized ICO path to the existing PNG brand asset.
+3. Post-fix evidence: the same-size browser comparison shows the icon-only header. DOM and HTTP checks confirm the PNG favicon URL, MIME type, successful load, and unchanged ColorVision document title.
+
+## Verification
+
+- Primary interactions tested: icon-only brand link remains discoverable as the ColorVision home link; theme state was changed only for capture and restored afterward.
+- Console errors checked: none.
+- Static checks: frontend lint, 44 tests, and production build all passed.
+
+## Follow-up polish
+
+None required for the requested change.
 
 final result: passed

@@ -12,6 +12,8 @@
 | 维护客户项目包 | [项目说明](../00-projects/README.md)、[项目包总览](../04-api-reference/projects/README.md) |
 | 修改 Engine、设备、模板或 Flow | [Engine 开发](./engine-development/README.md)、[Engine 组件](../04-api-reference/engine-components/README.md) |
 | 修改 UI 类库、菜单、设置或图像编辑器 | [UI 组件](../04-api-reference/ui-components/README.md) |
+| 新增或迁移本地图像算法、评估未来 ONNX / AI 推理接入 | [统一图像算法平台 V1](./core-concepts/image-algorithm-platform-v1.md)、[ONNX / AI 推理接入设计（Deferred）](./core-concepts/onnx-inference-future-design.md) |
+| 使用或维护 ROI 统计、剖面、图像比较、工业测量、几何/成像/频域分析 | [ROI 统计 V1（M1）](./core-concepts/roi-statistics-v1.md)、[灰度与颜色剖面 V1（M2）](./core-concepts/image-profile-v1.md)、[图像比较基础 V1（M3）](./core-concepts/image-comparison-v1.md)、[图像比较高级 V1（M4）](./core-concepts/image-comparison-advanced-v1.md)、[Blob / 连通域 V1（M5.1）](./core-concepts/blob-analysis-v1.md)、[轮廓提取 V1（M5.2）](./core-concepts/contour-analysis-v1.md)、[亚像素边缘 V1（M6.1）](./core-concepts/subpixel-edge-v1.md)、[直线拟合 V1（M6.2）](./core-concepts/line-fit-v1.md)、[圆拟合 V1（M6.3）](./core-concepts/circle-fit-v1.md)、[几何变换 V1（M7）](./core-concepts/geometric-transform-v1.md)、[图像配准 V1（M8.1）](./core-concepts/image-registration-v1.md)、[镜头畸变校正 V1（M8.2）](./core-concepts/lens-distortion-correction-v1.md)、[成像校正 V1（M9）](./core-concepts/imaging-correction-v1.md)、[FFT / 频域分析 V1（M10）](./core-concepts/frequency-spectrum-v1.md)、[摩尔纹分析 V1（M11）](./core-concepts/moire-analysis-v1.md) |
 | 新增 Flow 节点或扩展点 | [扩展点](../04-api-reference/extensions/README.md)、[Flow 节点扩展](../04-api-reference/extensions/flow-node.md) |
 | 维护插件市场后端 | [插件市场后端](./backend/README.md) |
 | 维护 Copilot Agent 或工具执行链 | [Copilot Agent Runtime](./core-concepts/copilot-agent-runtime.md) |
@@ -55,11 +57,9 @@ Scripts\release.bat
 宿主、官方插件和客户项目的 `Platform`/`PlatformTarget` 必须是 `x64`；RID 可以为空或为 `win-x64`，多 RID 只能包含 `win-x64`。
 x86、AnyCPU、ARM64、`win-x86`、`linux-x64` 和混合 RID 等显式覆盖都会由共享 MSBuild 策略在初始化阶段以及 Build/Pack 入口 fail-fast。
 
-`build.sln`、`scgd_general_wpf.sln` 和 `UI/UI.sln` 仍保留 `Any CPU`/`x86` 作为历史 IDE 与独立维护别名。
-除 `ColorVision.FileIO` 外，managed 项在这些别名下统一映射到 x64；x86 solution alias 中仍可能包含 Win32 native 维护配置。
-这些别名不代表新增交付平台，CI、安装器和发布脚本仍只接受 Release|x64。
+`build.sln`、`scgd_general_wpf.sln` 和 `UI/UI.sln` 只公开 `Debug|x64` 与 `Release|x64`；不再保留 Any CPU、x86 或其他历史 solution alias。除 `ColorVision.FileIO` 外，所有 managed 与 native 项目都在这两个配置下映射到 x64。CI、安装器和发布脚本只接受 Release|x64。
 
-`ColorVision.FileIO` 是唯一例外的独立纯托管 NuGet 包。两个包含它的 solution 会把所有历史 alias 映射到 `Any CPU`。
+`ColorVision.FileIO` 是唯一例外的独立纯托管 NuGet 包。包含它的 solution 在 x64 solution 配置下将该项目的 `ActiveCfg` 与 `Build.0` 映射到 `Any CPU`。
 规范产物位于无架构目录的 `Engine/ColorVision.FileIO/bin/Release`，并固定为单一 AnyCPU 程序集和同一包坐标；它要求 `Platform=AnyCPU`、`PlatformTarget=AnyCPU` 且 RID 为空，不生成 x64/x86/ARM64 变体。
 发布门禁会核对 nupkg 坐标、全部 PE 资产和 CLR flags。AnyCPU 包可被不同架构进程消费，
 并不表示 ColorVision 桌面宿主或官方插件已经支持 ARM64。

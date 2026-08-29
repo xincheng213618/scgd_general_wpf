@@ -124,7 +124,7 @@ namespace ColorVision.Copilot
 
         public string NewProfileUseNowButtonToolTip => CanSaveSettings
             ? $"Create a {CopilotVendorCatalog.GetLabel(NewProfileVendorType)} profile and make it active in chat."
-            : "Fix the MCP port before adding and using a model, because this action saves settings.";
+            : "Fix invalid settings before adding and using a model, because this action saves settings.";
 
         public bool HasAppliedChanges
         {

@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CA1822
 using ColorVision.UI;
 using ColorVision.Database.Properties;
-using ColorVision.UI.Menus;
 using log4net;
 using SqlSugar;
 using System;
@@ -18,39 +17,30 @@ namespace ColorVision.Database
 
     }
 
-    public class ExportMySqlInitTables : MenuItemBase
+    public static class MySqlTableInitializer
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ExportMySqlInitTables));
+        private static readonly ILog log = LogManager.GetLogger(typeof(MySqlTableInitializer));
 
-        public override string OwnerGuid => nameof(ExportMySqlMenuItem);
-        public override string GuidId => nameof(ExportMySqlInitTables);
-        public override string Header => Resources.MenuMySqlInitTables;
-        public override int Order => 2;
-
-        private static Stopwatch _stopwatch;
-
-        public override void Execute()
+        public static async Task InitializeWithNotificationAsync(Window? owner = null)
         {
-            Task.Run(() => InitTablesAsync()).ContinueWith(t =>
+            try
             {
-                if (t.IsFaulted)
-                {
-                    log.Error("初始化Mysql表失败", t.Exception);
-                    MessageBox.Show(Resources.DB_InitFailed, Resources.DB_Error, MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                else
-                {
-                    log.Info("Mysql表初始化完成");
-                    MessageBox.Show(Resources.DB_InitSuccess, Resources.DB_Success, MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-            });
-
+                await InitializeAsync();
+                log.Info("Mysql表初始化完成");
+                ShowMessage(owner, Resources.DB_InitSuccess, Resources.DB_Success, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                log.Error("初始化Mysql表失败", ex);
+                ShowMessage(owner, Resources.DB_InitFailed, Resources.DB_Error, MessageBoxImage.Error);
+            }
         }
 
-        public  async Task InitTablesAsync()
+        public static Task InitializeAsync() => Task.Run(Initialize);
+
+        private static void Initialize()
         {
-            _stopwatch = Stopwatch.StartNew();
-            await Task.Delay(0); // 模拟异步操作
+            Stopwatch stopwatch = Stopwatch.StartNew();
             IEnumerable<Type> tableTypes = AssemblyHandler.GetInstance().GetAssemblies()
                 .SelectMany(assembly => assembly.GetTypes())
                 .Where(type => typeof(IInitTables).IsAssignableFrom(type) && !type.IsAbstract);
@@ -60,8 +50,8 @@ namespace ColorVision.Database
                 DB.CodeFirst.InitTables(type);
             });
 
-            _stopwatch.Stop();
-            log.Info($"InitTables：{_stopwatch.Elapsed.TotalSeconds} 秒");
+            stopwatch.Stop();
+            log.Info($"InitTables：{stopwatch.Elapsed.TotalSeconds} 秒");
         }
 
         internal static void InitTableTypes(IEnumerable<Type> tableTypes, Action<Type> initializer)
@@ -89,6 +79,13 @@ namespace ColorVision.Database
                 throw new AggregateException("一个或多个 MySQL 表初始化失败。", failures);
             }
         }
-        
+
+        private static void ShowMessage(Window? owner, string message, string caption, MessageBoxImage image)
+        {
+            if (owner == null)
+                MessageBox.Show(message, caption, MessageBoxButton.OK, image);
+            else
+                MessageBox.Show(owner, message, caption, MessageBoxButton.OK, image);
+        }
     }
 }

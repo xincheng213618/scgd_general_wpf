@@ -1,0 +1,20 @@
+<Window x:Class="ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.MoireAnalysis.MoireAnalysisResultWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="摩尔纹分析结果" Width="1040" Height="720" MinWidth="800" MinHeight="560" WindowStartupLocation="CenterOwner">
+    <Grid Margin="10">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="2*"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <TextBlock x:Name="SummaryText" TextWrapping="Wrap" Margin="4,0,4,8"/>
+        <TabControl Grid.Row="1">
+            <TabItem Header="幅度频谱"><ScrollViewer><Image x:Name="SpectrumPreview" Stretch="None"/></ScrollViewer></TabItem>
+            <TabItem Header="候选热力图"><ScrollViewer><Image x:Name="HeatmapPreview" Stretch="None"/></ScrollViewer></TabItem>
+            <TabItem x:Name="FilteredTab" Header="notch 滤波亮度"><ScrollViewer><Image x:Name="FilteredPreview" Stretch="None"/></ScrollViewer></TabItem>
+        </TabControl>
+        <DataGrid Grid.Row="2" x:Name="SuggestionsGrid" Margin="0,8,0,0" IsReadOnly="True" AutoGenerateColumns="True" CanUserAddRows="False"/>
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="保存滤波图..." Width="105" Margin="0,0,8,0" Click="SaveFiltered_Click"/>
+            <Button Content="导出 CSV..." Width="95" Margin="0,0,8,0" Click="ExportCsv_Click"/>
+            <Button Content="导出 JSON..." Width="95" Margin="0,0,8,0" Click="ExportJson_Click"/>
+            <Button Content="关闭" Width="75" Click="Close_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

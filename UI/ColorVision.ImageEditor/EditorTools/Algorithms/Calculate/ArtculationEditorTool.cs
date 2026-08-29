@@ -86,7 +86,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
                     Owner = Application.Current.GetActiveWindow(),
                     WindowStartupLocation = WindowStartupLocation.CenterOwner
                 };
+                bool submitted = false;
+                propertyEditorWindow.Submitted += (_, _) => submitted = true;
                 propertyEditorWindow.ShowDialog();
+                if (!submitted) return;
 
                 ImageFrameLease? lease = _imageContext.AcquireImageFrame();
                 if (lease == null) return;
@@ -160,7 +163,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
+            bool submitted = false;
+            propertyEditorWindow.Submitted += (_, _) => submitted = true;
             propertyEditorWindow.ShowDialog();
+            if (!submitted) return;
 
             ImageFrameLease? lease = _image.AcquireImageFrame();
             if (lease == null) return;

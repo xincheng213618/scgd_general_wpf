@@ -6,7 +6,7 @@
 
 | 现象 | 第一检查点 |
 | --- | --- |
-| Help 菜单没有入口 | 插件目录、`manifest.json`、`WindowsServicePlugin.dll`、菜单初始化 |
+| “应用与工具 > 内部工具”没有服务管理器 | 当前账号是否为管理员、插件目录、`manifest.json`、`WindowsServicePlugin.dll`、应用提供器初始化 |
 | 操作提示拒绝访问 | 是否管理员启动、UAC、服务控制权限、目录 ACL |
 | `BaseLocation` 为空 | 服务是否已安装，服务路径或旧配置是否可读 |
 | 服务包无法安装 | 是否完整 `CVWindowsService` 包，是否包含服务根目录和 `CommonDll` |
@@ -36,7 +36,7 @@
 
 | 文件 | 作用 |
 | --- | --- |
-| `ServiceManager/MenuServiceManager.cs` | Help 菜单入口 |
+| `ServiceManager/MenuServiceManager.cs` | “应用与工具 > 内部工具”中的管理员工具提供器 |
 | `ServiceManager/InstallServiceManager.cs` | 安装向导入口 |
 | `ServiceManager/ServiceManagerWindow.xaml.cs` | 服务管理主窗口 |
 | `ServiceManager/ServiceManagerViewModel*.cs` | 服务状态、命令、配置同步 |
@@ -50,7 +50,7 @@
 推荐现场路径：
 
 1. 以管理员身份启动 ColorVision。
-2. 打开服务管理器，确认 `BaseLocation`，例如 `D:\CVService`。
+2. 从“应用与工具 > 内部工具”打开服务管理器，确认 `BaseLocation`，例如 `D:\CVService`。
 3. 打开安装窗口，选择完整 `CVWindowsService` 包。
 4. 按需要选择 MySQL ZIP 和 MQTT installer。
 5. 执行安装，检查窗口日志。
@@ -79,7 +79,7 @@ Scripts\package_plugin.bat WindowsServicePlugin
 
 | 验收项 | 通过标准 |
 | --- | --- |
-| 插件装载 | 服务管理器入口和安装向导入口可见 |
+| 插件装载 | 管理员账号可在“应用与工具 > 内部工具”看到服务管理器，安装向导入口可见 |
 | 权限边界 | 普通用户失败可理解，管理员环境能注册/启停 |
 | 状态刷新 | 能显示服务安装状态、运行状态、配置路径 |
 | 服务包校验 | 无效 ZIP 被拒绝，完整服务包能识别根目录和 `CommonDll` |

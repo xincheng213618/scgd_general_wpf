@@ -1,4 +1,6 @@
+using ColorVision.Algorithms;
 using ColorVision.Engine.Media;
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.BatchProcessing;
 using System;
 using System.Collections;
@@ -43,6 +45,8 @@ namespace ColorVision.Copilot
                     },
                     ["outputDirectory"] = new { type = "string", maxLength = 4096, description = "Optional output directory within the approved local scope. Omit to write beside each source." },
                     ["format"] = new { type = "string", @enum = new[] { "same-as-source", "tiff", "png", "jpeg", "bmp", "webp" }, description = "Output format. Defaults to same-as-source; CVRAW and CVCIE then become TIFF." },
+                    ["algorithm"] = new { type = "string", maxLength = 128, description = "Optional stable Catalog algorithm ID or compatibility alias. Only the explicit local, headless, deterministic Copilot whitelist is accepted." },
+                    ["parameters"] = CreateAlgorithmParametersSchema(),
                     ["recursive"] = new { type = "boolean", description = "Recursively enumerate source directories. Defaults to false." },
                     ["preserveFolderStructure"] = new { type = "boolean", description = "Preserve subdirectories below each source root when outputDirectory is set. Defaults to true." },
                     ["suffix"] = new { type = "string", maxLength = 64, description = "Optional suffix inserted before the output extension." },
@@ -51,24 +55,92 @@ namespace ColorVision.Copilot
                 ["additionalProperties"] = false,
             }));
 
+        private static object CreateAlgorithmParametersSchema()
+        {
+            string[] operations =
+            [
+                "Erode", "Dilate", "Open", "Close", "Gradient", "TopHat", "BlackHat",
+                "Bilateral", "MeanBlur",
+            ];
+            string[] colorMaps =
+            [
+                "Autumn", "Bone", "Jet", "Winter", "Rainbow", "Ocean", "Summer", "Spring", "Cool", "Hsv", "Pink", "Hot",
+                "Parula", "Magma", "Inferno", "Plasma", "Viridis", "Cividis", "Twilight", "TwilightShifted", "Turbo", "DeepGreen",
+            ];
+            return new Dictionary<string, object?>
+            {
+                ["type"] = "object",
+                ["description"] = "Optional parameters for the selected algorithm. Unknown or unrelated fields are rejected after Catalog resolution.",
+                ["$comment"] = "The current ColorVision tool-schema dialect does not support JSON Schema if/then/else. Threshold's conditional useNominalRange contract is documented on both fields and enforced by the Catalog/runtime validator.",
+                ["properties"] = new Dictionary<string, object?>
+                {
+                    ["lowThreshold"] = new { type = "number", minimum = 0, maximum = 255 },
+                    ["highThreshold"] = new { type = "number", minimum = 0, maximum = 255 },
+                    ["apertureSize"] = new { type = "integer", @enum = new[] { 3, 5, 7 } },
+                    ["l2Gradient"] = new { type = "boolean" },
+                    ["exposure"] = new { type = "number", minimum = -5, maximum = 5 },
+                    ["brightness"] = new { type = "number", minimum = -100, maximum = 100 },
+                    ["contrast"] = new { type = "number", minimum = -100, maximum = 100 },
+                    ["gamma"] = new { type = "number", minimum = 0.1, maximum = 5 },
+                    ["threshold"] = new
+                    {
+                        type = "number",
+                        minimum = 0,
+                        maximum = ThresholdParameters.MaximumAbsoluteThreshold,
+                        description = "Threshold mode is selected by useNominalRange. When true, use the 0..255 nominal scale and ColorVision scales it to the input format. When false, use raw 0..65535 DN, but the value must still fit every input format (for example Gray8 255, Gray16 65535, Gray32Float 1). The Catalog/runtime performs the final format-aware validation.",
+                    },
+                    ["kernelSize"] = new { type = "integer", minimum = 1, maximum = 255 },
+                    ["sigma"] = new { type = "number", minimum = 0, maximum = 1000 },
+                    ["operation"] = new { type = "string", @enum = operations },
+                    ["iterations"] = new { type = "integer", minimum = 1, maximum = 100 },
+                    ["useNominalColorSigma"] = new { type = "boolean" },
+                    ["sigmaColor"] = new { type = "number", minimum = 0, maximum = 10000 },
+                    ["sigmaSpace"] = new { type = "number", minimum = 0, maximum = 10000 },
+                    ["redScale"] = new { type = "number", minimum = 0, maximum = 16 },
+                    ["greenScale"] = new { type = "number", minimum = 0, maximum = 16 },
+                    ["blueScale"] = new { type = "number", minimum = 0, maximum = 16 },
+                    ["useNominalRange"] = new
+                    {
+                        type = "boolean",
+                        description = "Defaults to true. True selects the 0..255 nominal scale; false selects raw DN up to 65535. The runtime rejects values outside the selected mode and actual input-format range.",
+                    },
+                    ["colormap"] = new { type = "string", @enum = colorMaps },
+                    ["minimum"] = new { type = "integer", minimum = 0, maximum = uint.MaxValue },
+                    ["maximum"] = new { type = "integer", minimum = 0, maximum = uint.MaxValue },
+                    ["channel"] = new { type = "integer", minimum = -1, maximum = 3 },
+                    ["autoRange"] = new { type = "boolean" },
+                    ["dataMinimum"] = new { type = "integer", minimum = 0, maximum = uint.MaxValue },
+                    ["dataMaximum"] = new { type = "integer", minimum = 0, maximum = uint.MaxValue },
+                },
+                ["additionalProperties"] = false,
+            };
+        }
+
         private readonly BatchImageProcessor _processor;
+        private readonly AlgorithmRuntime _algorithmRuntime;
 
         public CopilotConvertBatchImagesTool()
             : this(new BatchImageProcessor([
                 new StandardBatchImageLoader(),
                 new CVRawBatchImageLoader(),
-            ]))
+            ]), ImageAlgorithmPlatform.Runtime)
         {
         }
 
         public CopilotConvertBatchImagesTool(BatchImageProcessor processor)
+            : this(processor, ImageAlgorithmPlatform.Runtime)
+        {
+        }
+
+        public CopilotConvertBatchImagesTool(BatchImageProcessor processor, AlgorithmRuntime algorithmRuntime)
         {
             _processor = processor ?? throw new ArgumentNullException(nameof(processor));
+            _algorithmRuntime = algorithmRuntime ?? throw new ArgumentNullException(nameof(algorithmRuntime));
         }
 
         public string Name => "ConvertBatchImages";
 
-        public string Description => "Convert up to 500 approved local CVRAW, CVCIE, TIFF, PNG, JPEG, BMP, or WebP files through ColorVision's native loaders. This performs the real format-only conversion, never overwrites an existing file, and returns per-file output or failure evidence.";
+        public string Description => "Convert or run one explicitly whitelisted local, headless, deterministic Catalog algorithm on up to 500 approved local images. This never overwrites an existing file and returns per-file output or failure evidence.";
 
         public CopilotToolCapabilityDescriptor Capability { get; } = CopilotToolCapabilityDescriptor.ProtectedWrite(
             CopilotToolIdempotency.NonIdempotent,
@@ -134,6 +206,20 @@ namespace ColorVision.Copilot
             {
                 return Failure("Batch image conversion output is outside the approved local scope.", outputError, CopilotToolFailureKind.Authorization);
             }
+            BatchImageAlgorithmDefinition algorithm;
+            if (string.IsNullOrWhiteSpace(options.Algorithm))
+            {
+                algorithm = BatchImageAlgorithms.CreateFormatOnly();
+            }
+            else if (!BatchImageAlgorithms.TryCreateForCopilot(_algorithmRuntime, options.Algorithm, options.Parameters, out BatchImageAlgorithmDefinition? selected, out string algorithmError)
+                     || selected == null)
+            {
+                return Failure("The requested image algorithm is unavailable to Copilot.", algorithmError, CopilotToolFailureKind.Authorization);
+            }
+            else
+            {
+                algorithm = selected;
+            }
 
             progress?.Report(
                 $"已准备 {items.Length} 个待转换图像文件",
@@ -149,10 +235,12 @@ namespace ColorVision.Copilot
                         new BatchImageProcessingRequest
                         {
                             Items = items,
-                            Algorithm = BatchImageAlgorithms.CreateFormatOnly(),
+                            Algorithm = algorithm,
                             OutputFormat = options.Format,
                             OutputDirectory = outputDirectory,
-                            Suffix = options.Suffix,
+                            Suffix = string.IsNullOrWhiteSpace(options.Suffix) && algorithm.Descriptor != null
+                                ? algorithm.Suffix
+                                : options.Suffix,
                             PreserveFolderStructure = options.PreserveFolderStructure,
                             AvoidOverwrite = true,
                         },
@@ -179,6 +267,9 @@ namespace ColorVision.Copilot
             });
             var content = JsonSerializer.Serialize(new
             {
+                algorithm = algorithm.Descriptor?.Id.Value ?? "format-only",
+                algorithm_version = algorithm.Descriptor?.Version.ToString(),
+                parameter_schema_version = algorithm.Descriptor?.ParameterSchema.Version,
                 requested = items.Length + skippedIdentityPaths.Length,
                 processed = result.Files.Count,
                 total = result.Files.Count,
@@ -197,8 +288,8 @@ namespace ColorVision.Copilot
                 Success = success,
                 Summary = success
                     ? skippedIdentityPaths.Length == 0
-                        ? $"Converted {result.Succeeded} image file(s) without overwriting existing outputs."
-                        : $"Converted {result.Succeeded} image file(s) and skipped {skippedIdentityPaths.Length} source file(s) already in the requested format."
+                        ? $"Processed {result.Succeeded} image file(s) without overwriting existing outputs."
+                        : $"Processed {result.Succeeded} image file(s) and skipped {skippedIdentityPaths.Length} source file(s) already in the requested format."
                     : $"Batch conversion completed with {result.Succeeded} succeeded, {result.Failed} failed, cancelled={result.Cancelled}.",
                 Content = content,
                 ErrorMessage = success ? string.Empty : FirstFailure(result),
@@ -245,9 +336,10 @@ namespace ColorVision.Copilot
                 sourceText += $"{Environment.NewLine}• 另有 {options.Sources.Count - sources.Length} 个输入";
             }
             var destination = string.IsNullOrWhiteSpace(options.OutputDirectory) ? "源文件所在目录" : options.OutputDirectory;
+            var algorithm = string.IsNullOrWhiteSpace(options.Algorithm) ? "仅格式转换" : options.Algorithm;
             return new CopilotToolApprovalPresentation(
-                "执行批量图像转换",
-                $"输入：{Environment.NewLine}{sourceText}{Environment.NewLine}输出：{destination}{Environment.NewLine}格式：{FormatName(options.Format)}{Environment.NewLine}递归：{options.Recursive}{Environment.NewLine}最多处理 {MaximumFiles} 个文件；已有文件不会被覆盖。");
+                "执行批量图像处理",
+                $"输入：{Environment.NewLine}{sourceText}{Environment.NewLine}算法：{algorithm}{Environment.NewLine}输出：{destination}{Environment.NewLine}格式：{FormatName(options.Format)}{Environment.NewLine}递归：{options.Recursive}{Environment.NewLine}最多处理 {MaximumFiles} 个文件；已有文件不会被覆盖。");
         }
 
         public string GetConcurrencyKey(CopilotAgentRequest request, CopilotAgentToolInput toolInput)
@@ -353,7 +445,8 @@ namespace ColorVision.Copilot
 
         private static bool HasIdentityOutputBesideSource(string sourcePath, ConversionOptions options)
         {
-            return string.IsNullOrWhiteSpace(options.OutputDirectory)
+            return string.IsNullOrWhiteSpace(options.Algorithm)
+                && string.IsNullOrWhiteSpace(options.OutputDirectory)
                 && string.IsNullOrWhiteSpace(options.Suffix)
                 && string.Equals(
                     Path.GetExtension(sourcePath),
@@ -449,9 +542,11 @@ namespace ColorVision.Copilot
             }
             if (!TryReadString(arguments, "outputDirectory", out var outputDirectory)
                 || !TryReadString(arguments, "format", out var formatText)
+                || !TryReadString(arguments, "algorithm", out var algorithm)
                 || !TryReadString(arguments, "suffix", out var suffix)
                 || !TryReadBoolean(arguments, "recursive", out var recursive)
-                || !TryReadBoolean(arguments, "preserveFolderStructure", out var preserveFolderStructure))
+                || !TryReadBoolean(arguments, "preserveFolderStructure", out var preserveFolderStructure)
+                || !TryReadObject(arguments, "parameters", out JsonElement? parameters))
             {
                 error = "One or more arguments have the wrong JSON type.";
                 return false;
@@ -475,6 +570,8 @@ namespace ColorVision.Copilot
                 Recursive = recursive ?? false,
                 PreserveFolderStructure = preserveFolderStructure ?? true,
                 Suffix = suffix,
+                Algorithm = algorithm,
+                Parameters = parameters,
             };
             return true;
         }
@@ -558,6 +655,35 @@ namespace ColorVision.Copilot
             return false;
         }
 
+        private static bool TryReadObject(IReadOnlyDictionary<string, object?> arguments, string name, out JsonElement? value)
+        {
+            var pair = arguments.FirstOrDefault(argument => string.Equals(argument.Key, name, StringComparison.OrdinalIgnoreCase));
+            if (pair.Key == null || pair.Value == null)
+            {
+                value = null;
+                return true;
+            }
+            if (pair.Value is JsonElement { ValueKind: JsonValueKind.Object } element)
+            {
+                value = element.Clone();
+                return true;
+            }
+            try
+            {
+                JsonElement serialized = JsonSerializer.SerializeToElement(pair.Value);
+                if (serialized.ValueKind == JsonValueKind.Object)
+                {
+                    value = serialized;
+                    return true;
+                }
+            }
+            catch (NotSupportedException)
+            {
+            }
+            value = null;
+            return false;
+        }
+
         private static bool TryParseFormat(string value, out BatchOutputFormat format)
         {
             format = (value ?? string.Empty).Trim().ToLowerInvariant() switch
@@ -609,6 +735,10 @@ namespace ColorVision.Copilot
             public bool PreserveFolderStructure { get; init; } = true;
 
             public string Suffix { get; init; } = string.Empty;
+
+            public string Algorithm { get; init; } = string.Empty;
+
+            public JsonElement? Parameters { get; init; }
         }
     }
 }

@@ -2691,7 +2691,6 @@ namespace Conoscope
             {
                 editModel.ApplyTo(circle);
                 ImageView.ConstrainFocusCircleToBoundary(circle);
-                circle.Render();
                 ImageView.RefreshFocusCircleSelection();
                 UpdateSelectedFocusPointInfo();
             };
@@ -2798,7 +2797,6 @@ namespace Conoscope
                 results.Add(result);
                 double msgRadiusDegrees = FocusPointMeasurementService.GetFocusCircleRadiusAngle(Math.Max(circle.Attribute.Radius, ConoscopeImageHost.MinimumFocusCircleRadius), currentPixelsPerDegree, currentImageRadius, MaxAngle);
                 circle.Attribute.Msg = $"{Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.FocusPointYUV, result.Y.ToString("F3"), result.u.ToString("F4"), result.v.ToString("F4"))}  R:{msgRadiusDegrees:F2}°  N:{sampleCount}";
-                circle.Render();
             }
 
             if (results.Count == 0)

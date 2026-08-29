@@ -29,9 +29,7 @@ namespace ColorVision.Copilot
                 return Blocked("请先打开项目或解决方案，再使用 /init。");
             }
 
-            var options = discoveryOptions
-                ?? CopilotProjectInstructionDiscoveryConfig.Load(
-                    CopilotAgentProjectInstructions.ResolveGlobalInstructionRootPath());
+            var options = discoveryOptions ?? CopilotProjectInstructionDiscoveryConfig.CreateDefault();
             var existingPath = CopilotAgentProjectInstructions.FindExistingSharedInstructionPath(normalizedRoot, options);
             if (existingPath != null)
             {

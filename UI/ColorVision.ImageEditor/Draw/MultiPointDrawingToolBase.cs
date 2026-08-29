@@ -31,6 +31,9 @@ namespace ColorVision.ImageEditor.Draw
             get => _strokeThickness;
             set
             {
+                if (!double.IsFinite(value))
+                    return;
+
                 double next = Math.Max(1, value);
                 if (_strokeThickness == next)
                 {
@@ -60,7 +63,19 @@ namespace ColorVision.ImageEditor.Draw
         protected SelectEditorVisual SelectionVisual => EditorContext.SelectionVisual;
         protected MultiPointDrawingToolStyleConfig StyleConfig { get; } = new();
 
+        private protected double GetSafeZoomRatio()
+        {
+            double zoomRatio = Math.Abs(Zoombox.ContentMatrix.M11);
+            if (!double.IsFinite(zoomRatio) || zoomRatio <= 0)
+                return 1;
+
+            return Math.Max(zoomRatio, 0.0001);
+        }
+
         protected TVisual? ActiveVisual { get; private set; }
+        private ActionCommand? _activeCreationCommand;
+        private bool _isMouseDown;
+        private bool _ownsMouseCapture;
 
         protected virtual bool SupportsKeyboardCompletion => false;
         protected virtual bool CompleteOnMouseUp => false;
@@ -164,6 +179,8 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.MouseMove += HandleMouseMove;
             DrawCanvas.PreviewMouseLeftButtonDown += HandlePreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp += HandlePreviewMouseUp;
+            DrawCanvas.LostMouseCapture += DrawCanvas_LostMouseCapture;
+            DrawCanvas.VisualsRemove += DrawCanvas_VisualsRemove;
         }
 
         private void UnLoad()
@@ -172,8 +189,48 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.MouseMove -= HandleMouseMove;
             DrawCanvas.PreviewMouseLeftButtonDown -= HandlePreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp -= HandlePreviewMouseUp;
-            DrawCanvas.ReleaseMouseCapture();
+            DrawCanvas.LostMouseCapture -= DrawCanvas_LostMouseCapture;
+            DrawCanvas.VisualsRemove -= DrawCanvas_VisualsRemove;
+            _isMouseDown = false;
+            if (_ownsMouseCapture)
+                DrawCanvas.ReleaseMouseCapture();
+            _ownsMouseCapture = false;
+            CancelActiveVisual();
+        }
+
+        private void DrawCanvas_LostMouseCapture(object sender, MouseEventArgs e)
+        {
+            if (!_isMouseDown)
+                return;
+
+            _isMouseDown = false;
+            _ownsMouseCapture = false;
+            if (CompleteOnMouseUp)
+            {
+                CancelActiveVisual();
+                IsChecked = false;
+            }
+        }
+
+        private void DrawCanvas_VisualsRemove(object? sender, VisualChangedEventArgs e)
+        {
+            if (!ReferenceEquals(e.Visual, ActiveVisual))
+            {
+                return;
+            }
+
+            ActionCommand? creationCommand = _activeCreationCommand;
+            bool preserveCreationHistory = e.Visual != null && DrawCanvas.IsVisualRemovalCommandInProgress(e.Visual);
             ActiveVisual = null;
+            _activeCreationCommand = null;
+            _isMouseDown = false;
+            if (_ownsMouseCapture)
+                DrawCanvas.ReleaseMouseCapture();
+            _ownsMouseCapture = false;
+            if (creationCommand != null && !preserveCreationHistory)
+            {
+                DrawCanvas.DiscardActionCommand(creationCommand);
+            }
         }
 
         private void HandlePreviewKeyDown(object sender, KeyEventArgs e)
@@ -202,7 +259,8 @@ namespace ColorVision.ImageEditor.Draw
 
         private void HandlePreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            DrawCanvas.CaptureMouse();
+            _ownsMouseCapture = DrawCanvas.CaptureMouse();
+            _isMouseDown = true;
             DrawCanvas.Focus();
 
             Point point = e.GetPosition(DrawCanvas);
@@ -212,7 +270,18 @@ namespace ColorVision.ImageEditor.Draw
                 InitializeVisual(visual, point);
                 OnVisualCreated(visual);
                 RenderVisual(visual);
-                DrawCanvas.AddVisualCommand(visual);
+                ActionCommand? creationCommand = DrawCanvas.AddVisualCommandCore(visual);
+                if (creationCommand == null || !IsChecked || !DrawCanvas.ContainsVisual(visual))
+                {
+                    if (DrawCanvas.ContainsVisual(visual))
+                        DrawCanvas.RemoveVisual(visual);
+                    if (creationCommand != null)
+                        DrawCanvas.DiscardActionCommand(creationCommand);
+                    e.Handled = true;
+                    return;
+                }
+
+                _activeCreationCommand = creationCommand;
                 ActiveVisual = visual;
             }
             else
@@ -226,7 +295,15 @@ namespace ColorVision.ImageEditor.Draw
 
         private void HandlePreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
-            DrawCanvas.ReleaseMouseCapture();
+            if (!_isMouseDown || e.ChangedButton != MouseButton.Left)
+            {
+                return;
+            }
+
+            _isMouseDown = false;
+            if (_ownsMouseCapture)
+                DrawCanvas.ReleaseMouseCapture();
+            _ownsMouseCapture = false;
             if (ActiveVisual != null)
             {
                 Point point = e.GetPosition(DrawCanvas);
@@ -250,12 +327,11 @@ namespace ColorVision.ImageEditor.Draw
 
         private void HandleMouseMove(object sender, MouseEventArgs e)
         {
-            if (ActiveVisual != null)
-            {
-                ReplacePreviewPoint(ActiveVisual, e.GetPosition(DrawCanvas));
-                RenderVisual(ActiveVisual);
-            }
+            if (ActiveVisual == null)
+                return;
 
+            ReplacePreviewPoint(ActiveVisual, e.GetPosition(DrawCanvas));
+            RenderVisual(ActiveVisual);
             e.Handled = true;
         }
 
@@ -291,17 +367,26 @@ namespace ColorVision.ImageEditor.Draw
             RenderVisual(visual);
             OnVisualCompleted(visual);
             ActiveVisual = null;
+            _activeCreationCommand = null;
         }
 
-        private void CancelActiveVisual()
+        internal void CancelActiveVisual()
         {
             if (ActiveVisual == null)
             {
                 return;
             }
 
-            DrawCanvas.RemoveVisualCommand(ActiveVisual);
+            TVisual visual = ActiveVisual;
+            ActionCommand? creationCommand = _activeCreationCommand;
             ActiveVisual = null;
+            _activeCreationCommand = null;
+
+            if (DrawCanvas.ContainsVisual(visual))
+                DrawCanvas.RemoveVisual(visual);
+
+            if (creationCommand != null)
+                DrawCanvas.DiscardActionCommand(creationCommand);
         }
 
         public virtual void Dispose()

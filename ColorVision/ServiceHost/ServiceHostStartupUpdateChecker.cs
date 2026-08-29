@@ -46,6 +46,9 @@ namespace ColorVision.ServiceHost
             if (!status.IsPackageAvailable || status.PackageVersion == null)
                 return ServiceHostStartupAction.None;
 
+            if (status.HasIncompletePackage)
+                return ServiceHostStartupAction.None;
+
             if (status.State == ServiceHostInstallState.Stopped && status.HasCurrentOrNewerInstalledVersion)
                 return ServiceHostStartupAction.Start;
 

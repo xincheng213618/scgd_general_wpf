@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1051,CA1711
 using ColorVision.Common.ThirdPartyApps;
+using ColorVision.UI.Authorizations;
 using Microsoft.Win32;
 using OpenCvSharp;
 using System;
@@ -26,7 +27,10 @@ namespace ColorVision.ToolPlugins
                 {
                     Name = "DAT File Reader",
                     Group = ColorVision.Engine.Properties.Resources.InternalTools,
+                    Category = ThirdPartyAppCategory.Internal,
+                    RequiredPermission = PermissionMode.Guest,
                     Order = 7,
+                    IconGlyph = ThirdPartyAppIconGlyphs.DataFile,
                     LaunchAction = Execute,
                 }
             };

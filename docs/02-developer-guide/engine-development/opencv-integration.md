@@ -9,7 +9,7 @@
 | 设备 SDK 绑定 | `Engine/cvColorVision/` | 相机、光谱仪、传感器、OLED 算法、MQTTMessageLib 数据类型和 native DLL 入口 |
 | UI/Core native 包装 | `UI/ColorVision.Core/` | `HImage`、`OpenCVMediaHelper`、`OpenCVCuda`、`ImageCompute`、native 日志桥 |
 | 文件解析和展示 | `Engine/ColorVision.Engine/Media/` | `.cvraw`、`.cvcie` 打开、缩略图、CIE 导出、鼠标探针和图像工具 |
-| 测试工程 | `Test/opencv_helper_test/` | C++ 验证工程，当前重点验证 `M_FindLuminousArea` |
+| 测试工程 | `Test/opencv_helper_test/` | C++ 验证工程，覆盖经典 `M_FindLuminousArea` 和鲁棒 `M_FindLuminousAreaV2` |
 | 文档入口 | [cvColorVision](../../04-api-reference/engine-components/cvColorVision.md)、[ColorVision.Core](../../04-api-reference/ui-components/ColorVision.Core.md) | 模块边界和 DLL 发布注意事项 |
 
 ## 什么时候改哪一层
@@ -28,6 +28,7 @@
 - C# 签名必须和 native 导出保持一致，包括 calling convention、字符串编码、结构体布局和内存释放方式。
 - `HImage` 带 native buffer，调用失败时要释放已经分配的输出，避免内存泄漏。
 - 返回 `IntPtr` 字符串的 helper 要确认是否需要调用 `FreeResult()`。
+- `M_FindLuminousAreaV2` 返回正数只表示成功生成了 JSON；业务成功还必须检查 JSON `Success`。其 native 角点为 ROI 局部坐标，统一托管包装会转换为整图坐标。
 - x64 是主交付目标，native DLL、测试工程和主程序平台要一致。
 - `opencv_helper.dll`、`opencv_cuda.dll`、OpenCV runtime 和项目输出目录要一起验证。
 - 不要把 `cvColorVision` 写成纯托管算法库，它主要是 native 能力绑定层和消息数据类型集合。
@@ -76,7 +77,7 @@ Test/opencv_helper_test/build_test_find_luminous.bat
 | 内存 | 连续处理多张图，进程内存不会持续单向增长 |
 | 图像结果 | 输出尺寸、通道、位深、stride 和颜色顺序正确 |
 | 文件打开 | `.cvraw` / `.cvcie` 能打开、缩略图能生成、旧文件不崩溃 |
-| 算法 helper | `M_FindLuminousArea` 等 native 测试通过，错误码和结果 JSON 可解释 |
+| 算法 helper | `M_FindLuminousArea` / `M_FindLuminousAreaV2` 的 native 测试、托管解析和真实 DLL 联调通过；错误码、拒绝原因和结果 JSON 可解释 |
 | 打包 | 主程序、插件或项目包输出里包含需要的 native DLL 和 runtime |
 
 ## 相关文档

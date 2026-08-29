@@ -2167,7 +2167,7 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
-        ///   查找类似 第三方应用管理 的本地化字符串。
+        ///   查找类似 应用与工具 的本地化字符串。
         /// </summary>
         public static string ThirdPartyApps {
             get {
@@ -2193,6 +2193,33 @@ namespace ColorVision.UI.Desktop.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 自定义 的本地化字符串。
+        /// </summary>
+        public static string ThirdPartyAppsCategoryCustom {
+            get {
+                return ResourceManager.GetString("ThirdPartyAppsCategoryCustom", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 外部应用 的本地化字符串。
+        /// </summary>
+        public static string ThirdPartyAppsCategoryExternal {
+            get {
+                return ResourceManager.GetString("ThirdPartyAppsCategoryExternal", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 内部工具 的本地化字符串。
+        /// </summary>
+        public static string ThirdPartyAppsCategoryInternal {
+            get {
+                return ResourceManager.GetString("ThirdPartyAppsCategoryInternal", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 {0} 个应用 的本地化字符串。
         /// </summary>

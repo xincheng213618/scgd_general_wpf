@@ -2,6 +2,7 @@ import type {
   DeploymentHistoryEntry,
   IndexStatusResponse,
   TrafficStatsResponse,
+  UserAccountSummary,
 } from '../types/admin'
 import { indexDefinitions } from './indexMaintenance.ts'
 
@@ -17,6 +18,51 @@ export interface DashboardIndexSummary extends DashboardHealthSummary {
   ready: number
   total: number
   problemScopes: string[]
+}
+
+export interface DashboardAccountTaskSummary extends DashboardHealthSummary {
+  pending: number
+  passwordChanges: number
+  passwordRecoveries: number
+}
+
+export function summarizeDashboardAccountTasks(
+  summary?: UserAccountSummary | null,
+): DashboardAccountTaskSummary {
+  if (!summary) {
+    return {
+      level: 'unknown',
+      label: '待加载',
+      detail: '尚未取得账号安全摘要',
+      pending: 0,
+      passwordChanges: 0,
+      passwordRecoveries: 0,
+    }
+  }
+  const passwordChanges = summary.pending_password_changes
+  const passwordRecoveries = summary.pending_password_recovery
+  const pending = passwordChanges + passwordRecoveries
+  if (pending === 0) {
+    return {
+      level: 'ok',
+      label: '无需处理',
+      detail: '当前没有密码找回或待改密账号',
+      pending,
+      passwordChanges,
+      passwordRecoveries,
+    }
+  }
+  const parts: string[] = []
+  if (passwordRecoveries > 0) parts.push(`${passwordRecoveries} 个找回申请`)
+  if (passwordChanges > 0) parts.push(`${passwordChanges} 个待改密账号`)
+  return {
+    level: 'warning',
+    label: `待处理 ${pending}`,
+    detail: parts.join('，'),
+    pending,
+    passwordChanges,
+    passwordRecoveries,
+  }
 }
 
 export function summarizeDashboardIndexes(

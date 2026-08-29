@@ -62,42 +62,28 @@ namespace ColorVision.Copilot
                 return true;
             }
 
-            if (!CopilotAgentSkillMcpDependencyInstaller.TryInstall(
+            var persistenceStatus = TryPersistSkillMcpDependencyPlan(
                 promptPlan,
-                _config.ExternalMcpServers,
                 out var addedServers,
-                out var error))
+                out var error);
+            if (persistenceStatus == ConfigSavePublicationStatus.NotPersisted)
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    error,
-                    "ColorVision · MCP 配置未改变",
+                    "MCP 配置保存失败；本次发送已取消。" + Environment.NewLine
+                    + CopilotUserFacingErrorFormatter.Sanitize(error),
+                    "ColorVision · MCP 配置未保存",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return false;
             }
-
-            try
+            if (persistenceStatus == ConfigSavePublicationStatus.PersistedButPublishFailed)
             {
-                PersistConfig();
-            }
-            catch (Exception ex)
-            {
-                foreach (var server in addedServers)
-                    _config.ExternalMcpServers.Remove(server);
-                try
-                {
-                    PersistConfig();
-                }
-                catch
-                {
-                }
-
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    "MCP 配置保存失败；本次发送已取消。" + Environment.NewLine
-                    + CopilotUserFacingErrorFormatter.Sanitize(ex.Message),
-                    "ColorVision · MCP 配置未保存",
+                    "MCP 配置已写入磁盘，但当前聊天运行时未能刷新；本次发送已取消。" + Environment.NewLine
+                    + CopilotUserFacingErrorFormatter.Sanitize(error),
+                    "ColorVision · MCP 运行时未刷新",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
                 return false;

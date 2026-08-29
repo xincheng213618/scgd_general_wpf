@@ -11,9 +11,6 @@ namespace ColorVision.Core
 {
     public static class HImageExtension
     {
-        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
-        private static extern void RtlMoveMemory(IntPtr Destination, IntPtr Source, uint Length);
-
         private static bool TryGetRowCopyLayout(HImage hImage, out int bytesPerRow, out int sourceStride)
         {
             bytesPerRow = 0;
@@ -37,6 +34,32 @@ namespace ColorVision.Core
             bytesPerRow = (int)rowBytes;
             sourceStride = hImage.stride > 0 ? hImage.stride : bytesPerRow;
             return sourceStride >= bytesPerRow;
+        }
+
+        private static unsafe void CopyImageBuffer(
+            IntPtr source,
+            int sourceStride,
+            IntPtr destination,
+            int destinationStride,
+            int rows,
+            int bytesPerRow)
+        {
+            byte* src = (byte*)source;
+            byte* dst = (byte*)destination;
+
+            if (sourceStride == bytesPerRow && destinationStride == bytesPerRow)
+            {
+                long length = checked((long)rows * bytesPerRow);
+                Buffer.MemoryCopy(src, dst, length, length);
+                return;
+            }
+
+            for (int y = 0; y < rows; y++)
+            {
+                Buffer.MemoryCopy(src, dst, bytesPerRow, bytesPerRow);
+                src += sourceStride;
+                dst += destinationStride;
+            }
         }
 
         public static WriteableBitmap ToWriteableBitmapAndDispose(this HImage hImage, double DpiX = 96, double DpiY = 96)
@@ -78,18 +101,7 @@ namespace ColorVision.Core
             if (imageSource is not WriteableBitmap writeableBitmap) return false;
 
             // Validate format, channel, and depth consistency
-            var formatInfoMap = new Dictionary<PixelFormat, (int channels, int depth)>
-            {
-                { PixelFormats.Gray8, (1, 8) },
-                { PixelFormats.Gray16, (1, 16) },
-                { PixelFormats.Bgr24, (3, 8) },
-                { PixelFormats.Rgb24, (3, 8) },
-                { PixelFormats.Bgr32, (3, 8) },
-                { PixelFormats.Bgra32, (4, 8) },
-                { PixelFormats.Rgb48, (3, 16) }
-            };
-
-            if (!formatInfoMap.TryGetValue(writeableBitmap.Format, out var formatInfo) ||
+            if (!FormatInfoMap.TryGetValue(writeableBitmap.Format, out var formatInfo) ||
                 hImage.channels != formatInfo.channels ||
                 hImage.depth != formatInfo.depth)
             {
@@ -110,18 +122,13 @@ namespace ColorVision.Core
             writeableBitmap.Lock();
             try
             {
-                unsafe
-                {
-                    byte* src = (byte*)hImage.pData;
-                    byte* dst = (byte*)writeableBitmap.BackBuffer;
-
-                    for (int y = 0; y < hImage.rows; y++)
-                    {
-                        RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)bytesPerRow);
-                        src += sourceStride;
-                        dst += writeableBitmap.BackBufferStride;
-                    }
-                }
+                CopyImageBuffer(
+                    hImage.pData,
+                    sourceStride,
+                    writeableBitmap.BackBuffer,
+                    writeableBitmap.BackBufferStride,
+                    hImage.rows,
+                    bytesPerRow);
 
                 writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, hImage.cols, hImage.rows));
             }
@@ -134,15 +141,15 @@ namespace ColorVision.Core
         }
 
         private static readonly Dictionary<PixelFormat, (int channels, int depth)> FormatInfoMap = new()
-    {
-        { PixelFormats.Gray8, (1, 8) },
-        { PixelFormats.Gray16, (1, 16) },
-        { PixelFormats.Bgr24, (3, 8) }, // Halcon usually 3 channels
-        { PixelFormats.Rgb24, (3, 8) },
-        { PixelFormats.Bgr32, (3, 8) }, // 32-bit usually padded 3 channels
-        { PixelFormats.Bgra32, (4, 8) },
-        { PixelFormats.Rgb48, (3, 16) }
-    };
+        {
+            { PixelFormats.Gray8, (1, 8) },
+            { PixelFormats.Gray16, (1, 16) },
+            { PixelFormats.Bgr24, (3, 8) }, // Halcon usually 3 channels
+            { PixelFormats.Rgb24, (3, 8) },
+            { PixelFormats.Bgr32, (4, 8) },
+            { PixelFormats.Bgra32, (4, 8) },
+            { PixelFormats.Rgb48, (3, 16) }
+        };
 
         /// <summary>
         /// Async update to keep UI responsive during copy
@@ -196,41 +203,13 @@ namespace ColorVision.Core
             try
             {
                 // 2. Heavy Lifting (在后台线程执行内存拷贝，释放 UI 线程)
-                await Task.Run(() =>
-                {
-                    unsafe
-                    {
-                        bool useParallel = (rows * bytesPerRow) > (1024 * 1024);
-                        if (useParallel)
-                        {
-                            byte* pSrcBase = (byte*)srcData;
-                            byte* pDstBase = (byte*)backBuffer;
-                            var parallelOptions = new ParallelOptions
-                            {
-                                MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1)
-                            };
-                            Parallel.For(0, rows, parallelOptions, y =>
-                            {
-                                byte* src = pSrcBase + (y * srcStride);
-                                byte* dst = pDstBase + (y * backBufferStride);
-                                Buffer.MemoryCopy(src, dst, bytesPerRow, bytesPerRow);
-                            });
-                        }
-                        else
-                        {
-                            // 【修复点】：使用提取好的指针变量，千万不要在这里访问 writeableBitmap
-                            byte* src = (byte*)srcData;
-                            byte* dst = (byte*)backBuffer;
-
-                            for (int y = 0; y < rows; y++)
-                            {
-                                RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)bytesPerRow);
-                                src += srcStride;
-                                dst += backBufferStride; // 使用提取的 backBufferStride
-                            }
-                        }
-                    }
-                });
+                await Task.Run(() => CopyImageBuffer(
+                    srcData,
+                    srcStride,
+                    backBuffer,
+                    backBufferStride,
+                    rows,
+                    bytesPerRow));
             }
             finally
             {
@@ -264,7 +243,6 @@ namespace ColorVision.Core
 
             // Calculate parameters needed for the copy
             int strideDest = writeableBitmap.BackBufferStride;
-            long pDataSrc = (long)hImage.pData; // Store pointer as long to safely pass to task
             if (strideDest < bytesPerLine)
             {
                 throw new ArgumentException("Invalid destination bitmap stride.", nameof(hImage));
@@ -274,32 +252,14 @@ namespace ColorVision.Core
             writeableBitmap.Lock();
             try
             {
-                long pDataDest = (long)writeableBitmap.BackBuffer;
-                await Task.Run(() =>
-                {
-                    var parallelOptions = new ParallelOptions
-                    {
-                        MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1)
-                    };
-
-                    unsafe
-                    {
-                        byte* pSrcBase = (byte*)pDataSrc;
-                        byte* pDstBase = (byte*)pDataDest;
-
-                        Parallel.For(0, height, parallelOptions, y =>
-                        {
-                            // 指针运算：使用 long 避免 32位 溢出（虽然行偏移通常不会溢出，但习惯要好）
-                            byte* src = pSrcBase + ((long)y * strideSrc);
-                            byte* dst = pDstBase + ((long)y * strideDest);
-
-                            // Copy
-                            // 参数3: destinationSizeInBytes。这里传 bytesPerLine 是因为我们只操作这一行，
-                            // 只要保证 bytesPerLine <= strideDest 即可，这是安全的。
-                            Buffer.MemoryCopy(src, dst, bytesPerLine, bytesPerLine);
-                        });
-                    }
-                });
+                IntPtr destination = writeableBitmap.BackBuffer;
+                await Task.Run(() => CopyImageBuffer(
+                    hImage.pData,
+                    strideSrc,
+                    destination,
+                    strideDest,
+                    height,
+                    bytesPerLine));
 
                 // 3. UI Thread: Mark as dirty and return
                 writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
@@ -327,25 +287,22 @@ namespace ColorVision.Core
             }
 
             writeableBitmap.Lock();
-
-            unsafe
+            try
             {
-                byte* src = (byte*)hImage.pData;
-                byte* dst = (byte*)writeableBitmap.BackBuffer;
-
-                for (int y = 0; y < hImage.rows; y++)
-                {
-                    RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)bytesPerRow);
-                    src += sourceStride;
-                    dst += writeableBitmap.BackBufferStride;
-                }
+                CopyImageBuffer(
+                    hImage.pData,
+                    sourceStride,
+                    writeableBitmap.BackBuffer,
+                    writeableBitmap.BackBufferStride,
+                    hImage.rows,
+                    bytesPerRow);
+                writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
+            }
+            finally
+            {
+                writeableBitmap.Unlock();
             }
 
-            //RtlMoveMemory(writeableBitmap.BackBuffer, hImage.pData, (uint)(hImage.cols * hImage.rows * hImage.channels * (hImage.depth / 8)));
-            //writeableBitmap.Lock();
-
-            writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
-            writeableBitmap.Unlock();
             return writeableBitmap;
         }
 
@@ -359,7 +316,6 @@ namespace ColorVision.Core
         {
             // Determine the number of channels and Depth based on the pixel format
             int channels, depth;
-            int bytesPerPixel;
 
             switch (writeableBitmap.Format.ToString())
             {
@@ -398,9 +354,6 @@ namespace ColorVision.Core
                     MessageBox.Show(string.Format(Properties.Resources.Core_UnsupportedFormat, writeableBitmap.Format));
                     throw new NotSupportedException("The pixel format is not supported.");
             }
-
-            bytesPerPixel = channels * (depth / 8);
-            int stride = writeableBitmap.PixelWidth * bytesPerPixel;
 
             // Create a borrowed HImage descriptor for the locked bitmap buffer.
             HImage hImage = new()
@@ -462,7 +415,8 @@ namespace ColorVision.Core
             }
 
             bytesPerPixel = channels * (depth / 8);
-            int stride = writeableBitmap.PixelWidth * bytesPerPixel;
+            int stride = checked(writeableBitmap.PixelWidth * bytesPerPixel);
+            int bufferSize = checked(writeableBitmap.PixelHeight * stride);
 
             // Create an owned HImage buffer.
             HImage hImage = new()
@@ -472,16 +426,14 @@ namespace ColorVision.Core
                 channels = channels,
                 depth = depth, // You might need to adjust this based on the actual bits per pixel
                 stride = stride,
-                pData = Marshal.AllocCoTaskMem(writeableBitmap.PixelWidth * writeableBitmap.PixelHeight * channels* (depth/8))
+                pData = Marshal.AllocCoTaskMem(bufferSize)
             };
 
             try
             {
                 if (writeableBitmap.IsFrozen)
                 {
-                    byte[] pixels = new byte[hImage.rows * stride];
-                    writeableBitmap.CopyPixels(pixels, stride, 0);
-                    Marshal.Copy(pixels, 0, hImage.pData, pixels.Length);
+                    writeableBitmap.CopyPixels(Int32Rect.Empty, hImage.pData, bufferSize, stride);
                     return hImage;
                 }
 
@@ -489,18 +441,13 @@ namespace ColorVision.Core
                 writeableBitmap.Lock();
                 try
                 {
-                    unsafe
-                    {
-                        byte* src = (byte*)writeableBitmap.BackBuffer;
-                        byte* dst = (byte*)hImage.pData;
-
-                        for (int y = 0; y < hImage.rows; y++)
-                        {
-                            RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)stride);
-                            src += writeableBitmap.BackBufferStride;
-                            dst += stride;
-                        }
-                    }
+                    CopyImageBuffer(
+                        writeableBitmap.BackBuffer,
+                        writeableBitmap.BackBufferStride,
+                        hImage.pData,
+                        stride,
+                        hImage.rows,
+                        stride);
                 }
                 finally
                 {

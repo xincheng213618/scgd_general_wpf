@@ -940,7 +940,6 @@ namespace ColorVision.Engine.Templates.POI
                         List<Point> result = Helpers.SortPolyPoints(pts_src);
                         DVDatumPolygon Polygon = new() { IsComple = true };
                         Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
-                        Polygon.Attribute.Brush = Brushes.Transparent;
                         Polygon.Attribute.Points.Add(result[0]);
                         Polygon.Attribute.Points.Add(result[1]);
                         Polygon.Attribute.Points.Add(result[2]);
@@ -952,7 +951,6 @@ namespace ColorVision.Engine.Templates.POI
                     case GraphicTypes.Polygon:
                         DVDatumPolygon Polygon1 = new() { IsComple = false };
                         Polygon1.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
-                        Polygon1.Attribute.Brush = Brushes.Transparent;
                         foreach (var item in PoiConfig.Polygons)
                         {
                             Polygon1.Attribute.Points.Add(new Point(item.X, item.Y));
@@ -1320,7 +1318,6 @@ namespace ColorVision.Engine.Templates.POI
         {
             Application.Current.Dispatcher.BeginInvoke((Action)(() =>
             {
-                string re = PoiConfig.FindLuminousArea.ToJsonN();
                 ImageFrameLease? acquiredLease = ImageView.AcquireImageFrame();
                 if (acquiredLease != null)
                 {
@@ -1328,46 +1325,42 @@ namespace ColorVision.Engine.Templates.POI
                     long revision = lease.Revision;
                     _ = Task.Run(() =>
                     {
-                        int length;
-                        IntPtr resultPtr;
+                        LuminousAreaDetectionResult detectionResult;
                         using (lease)
                         {
-                            length = OpenCVMediaHelper.M_FindLuminousArea(lease.Image, new RoiRect(), re, out resultPtr);
+                            detectionResult = LuminousAreaDetector.Detect(lease.Image, new RoiRect(), PoiConfig.FindLuminousArea);
                         }
-                        if (length > 0)
-                        {
-                            string result = OpenCVMediaHelper.PtrToStringAnsiAndFree(resultPtr);
-                            Console.WriteLine("Result: " + result);
-                            MRect rect = Newtonsoft.Json.JsonConvert.DeserializeObject<MRect>(result);
 
-                            Application.Current.Dispatcher.BeginInvoke(() =>
+                        if (!string.IsNullOrWhiteSpace(detectionResult.RawJson))
+                        {
+                            log.Info(detectionResult.RawJson);
+                        }
+
+                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
+                            if (!ImageView.IsCurrentImageRevision(revision))
+                                return;
+
+                            if (!detectionResult.HasValidCorners)
                             {
-                                if (!ImageView.IsCurrentImageRevision(revision))
-                                    return;
+                                MessageBox.Show(this, LuminousAreaDetector.GetFailureMessage(detectionResult), "发光区定位", MessageBoxButton.OK, MessageBoxImage.Warning);
+                                return;
+                            }
 
-                                if (rect.Width ==0)
-                                {
-                                    PoiConfig.AreaRectWidth = (int)ViewBitmapSource.Width;
-                                    PoiConfig.AreaRectHeight = (int)ViewBitmapSource.Height;
-                                    PoiConfig.CenterX = (int)ViewBitmapSource.Width /2;
-                                    PoiConfig.CenterY = (int)ViewBitmapSource.Height /2;
-                                }
-                                else
-                                {
-                                    PoiConfig.AreaRectWidth = rect.Width;
-                                    PoiConfig.AreaRectHeight = rect.Height;
-                                    PoiConfig.CenterX = rect.X + rect.Width / 2;
-                                    PoiConfig.CenterY = rect.Y + rect.Height / 2;
-                                }
-
-                                RenderPoiConfig();
-                            });
-
-                        }
-                        else
-                        {
-                            Console.WriteLine("Error occurred, code: " + length);
-                        }
+                            double dpiX = ImageView.Config.GetProperties<double>(ImageViewPropertyKeys.DpiX);
+                            double dpiY = ImageView.Config.GetProperties<double>(ImageViewPropertyKeys.DpiY);
+                            MRect rect = LuminousAreaDetector.GetDipBoundingRect(detectionResult, dpiX, dpiY);
+                            PoiConfig.AreaRectWidth = rect.Width;
+                            PoiConfig.AreaRectHeight = rect.Height;
+                            PoiConfig.CenterX = rect.X + rect.Width / 2;
+                            PoiConfig.CenterY = rect.Y + rect.Height / 2;
+                            RenderPoiConfig();
+                            string warningMessage = LuminousAreaDetector.GetWarningMessage(detectionResult);
+                            if (!string.IsNullOrEmpty(warningMessage))
+                            {
+                                MessageBox.Show(this, warningMessage, "发光区定位（需复核）", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            }
+                        });
                     });
                 }
                 else

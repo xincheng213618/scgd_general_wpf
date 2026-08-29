@@ -50,7 +50,9 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
             Type? nodeType = propertyInfo.ReflectedType;
             if (propertyInfo.Name == nameof(FlowEngineLib.Base.CVBaseServerNode.DeviceCode)
-                && (nodeType == typeof(LocalBuildPoiNode) || nodeType == typeof(LocalBuildPoiByTemplateNode)))
+                && (nodeType == typeof(LocalBuildPoiNode)
+                    || nodeType == typeof(LocalBuildPoiByTemplateNode)
+                    || nodeType == typeof(LocalFindLuminousAreaNode)))
             {
                 return false;
             }

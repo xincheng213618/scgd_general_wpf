@@ -56,6 +56,26 @@ public class OpenCvImageAlgorithmsInPlaceTests
     [InlineData("Gray16")]
     [InlineData("Bgr24")]
     [InlineData("Bgra32")]
+    public void ThresholdMatchesExplicitSourceClone(string format)
+    {
+        const double threshold = 83;
+        VerifyAgainstExplicitSourceClone(
+            "阈值处理",
+            format,
+            options => SetOption(options, "Threshold", threshold),
+            (source, destination) => Cv2.Threshold(
+                source,
+                destination,
+                source.Depth() == MatType.CV_16U ? threshold * 257 : threshold,
+                source.Depth() == MatType.CV_16U ? ushort.MaxValue : byte.MaxValue,
+                ThresholdTypes.Binary));
+    }
+
+    [Theory]
+    [InlineData("Gray8")]
+    [InlineData("Gray16")]
+    [InlineData("Bgr24")]
+    [InlineData("Bgra32")]
     public void SharpenMatchesExplicitSourceClone(string format)
     {
         using Mat kernel = Mat.FromArray(new float[,]
@@ -102,7 +122,8 @@ public class OpenCvImageAlgorithmsInPlaceTests
         using Mat source = CreateFourChannelSource(format);
         using Mat original = source.Clone();
         using Mat expected = source.Clone();
-        ApplyReferenceBilateral(expected, diameter, sigmaColor, sigmaSpace);
+        double nominalMaximum = source.Depth() == MatType.CV_16U ? ushort.MaxValue : source.Depth() == MatType.CV_32F ? 1 : byte.MaxValue;
+        ApplyReferenceBilateral(expected, diameter, sigmaColor / byte.MaxValue * nominalMaximum, sigmaSpace);
 
         BatchImageAlgorithmDefinition algorithm = BatchImageAlgorithms.CreateAll()
             .Single(item => item.Name == "降噪滤波");

@@ -1,8 +1,8 @@
+using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -11,40 +11,78 @@ using System.Windows.Threading;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class TextProperties : BaseProperties
+    public class TextProperties : BaseProperties, ITextProperties
     {
         [Browsable(false)]
-        public TextAttribute TextAttribute { get; set; } = new TextAttribute();
-        public bool IsShowText { get; set; } = true;
+        public TextAttribute TextAttribute
+        {
+            get => _textAttribute;
+            set
+            {
+                TextAttribute next = value ?? new TextAttribute();
+                if (ReferenceEquals(_textAttribute, next))
+                {
+                    return;
+                }
+
+                _textAttribute.PropertyChanged -= TextAttribute_PropertyChanged;
+                _textAttribute = next;
+                _textAttribute.PropertyChanged += TextAttribute_PropertyChanged;
+                OnPropertyChanged();
+            }
+        }
+        private TextAttribute _textAttribute;
+
+        public bool IsShowText
+        {
+            get => _isShowText;
+            set
+            {
+                if (_isShowText == value)
+                {
+                    return;
+                }
+
+                _isShowText = value;
+                OnPropertyChanged();
+            }
+        }
+        private bool _isShowText = true;
+
+        public TextProperties()
+        {
+            _textAttribute = new TextAttribute();
+            _textAttribute.PropertyChanged += TextAttribute_PropertyChanged;
+        }
 
         [Category("Text"), DisplayName("文本")]
-        public string Text { get => TextAttribute.Text; set { TextAttribute.Text = value; OnPropertyChanged(); } }
+        public string Text { get => TextAttribute.Text; set => TextAttribute.Text = value; }
 
         [Category("Text"), DisplayName("字体大小")]
-        public double FontSize { get => TextAttribute.FontSize; set { TextAttribute.FontSize = value; OnPropertyChanged(); } }
+        public double FontSize { get => TextAttribute.FontSize; set => TextAttribute.FontSize = value; }
 
         [Category("Text"), DisplayName("颜色"), JsonIgnore]
-        public Brush Foreground { get => TextAttribute.Brush; set { TextAttribute.Brush = value; OnPropertyChanged(); } }
+        public Brush Foreground { get => TextAttribute.Brush; set => TextAttribute.Brush = value; }
 
         [Category("Text"), DisplayName("字体"), JsonIgnore]
-        public FontFamily FontFamily { get => TextAttribute.FontFamily; set { TextAttribute.FontFamily = value; OnPropertyChanged(); } }
+        public FontFamily FontFamily { get => TextAttribute.FontFamily; set => TextAttribute.FontFamily = value; }
 
         [Category("Text"), DisplayName("FontStyle"), JsonIgnore]
-        public FontStyle FontStyle { get => TextAttribute.FontStyle; set { TextAttribute.FontStyle = value; OnPropertyChanged(); } }
+        public FontStyle FontStyle { get => TextAttribute.FontStyle; set => TextAttribute.FontStyle = value; }
         [Category("Text"), DisplayName("FontWeight"), JsonIgnore]
-        public FontWeight FontWeight { get => TextAttribute.FontWeight; set { TextAttribute.FontWeight = value; OnPropertyChanged(); } }
+        public FontWeight FontWeight { get => TextAttribute.FontWeight; set => TextAttribute.FontWeight = value; }
         [Category("Text"), DisplayName("FontStretch"), JsonIgnore]
-        public FontStretch FontStretch { get => TextAttribute.FontStretch; set { TextAttribute.FontStretch = value; OnPropertyChanged(); } }
+        public FontStretch FontStretch { get => TextAttribute.FontStretch; set => TextAttribute.FontStretch = value; }
 
         [Category("Text"), DisplayName("FlowDirection"), JsonIgnore]
-        public FlowDirection FlowDirection { get => TextAttribute.FlowDirection; set { TextAttribute.FlowDirection = value; OnPropertyChanged(); } }
+        public FlowDirection FlowDirection { get => TextAttribute.FlowDirection; set => TextAttribute.FlowDirection = value; }
 
         [Category("Text"), DisplayName("位置")]
         public Point Position { get => _Position; set { if (_Position == value) return; _Position = value; OnPropertyChanged(); } }
         private Point _Position = new Point(50,50);
 
         [Browsable(false)]
-        public Rect Rect { get => _Rect; set { _Rect = value; OnPropertyChanged(); } }
+        public Rect Rect { get => _Rect; set { if (_Rect == value) return; _Rect = value; OnPropertyChanged(); } }
         private Rect _Rect = new Rect(50,50,0,0);
 
         [Browsable(false), JsonIgnore]
@@ -61,6 +99,23 @@ namespace ColorVision.ImageEditor.Draw
         [Browsable(false)]
         public bool IsEditing { get => _IsEditing; set { _IsEditing = value; OnPropertyChanged(); } }
         private bool _IsEditing;
+
+        private void TextAttribute_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            string propertyName = e.PropertyName switch
+            {
+                nameof(TextAttribute.Text) => nameof(Text),
+                nameof(TextAttribute.FontSize) => nameof(FontSize),
+                nameof(TextAttribute.Brush) => nameof(Foreground),
+                nameof(TextAttribute.FontFamily) => nameof(FontFamily),
+                nameof(TextAttribute.FontStyle) => nameof(FontStyle),
+                nameof(TextAttribute.FontWeight) => nameof(FontWeight),
+                nameof(TextAttribute.FontStretch) => nameof(FontStretch),
+                nameof(TextAttribute.FlowDirection) => nameof(FlowDirection),
+                _ => nameof(TextAttribute),
+            };
+            OnPropertyChanged(propertyName);
+        }
     }
 
     public class DVText : DrawingVisualBase<TextProperties>, IDrawingVisual, IEditableDrawingVisual, ILayoutScaleDrawingVisual, ICompactInspectorProvider
@@ -74,33 +129,57 @@ namespace ColorVision.ImageEditor.Draw
         private TextEditingContext? _textContext;
         private string _originalText = string.Empty;
         private bool _isEditing;
+        private DrawingVisualScaleContext _layoutScaleContext = new(false, 1, 0);
+        private Rect _renderBounds = Rect.Empty;
+        private Matrix _editorTransform;
+        private bool _hasEditorTransform;
+        private Transform? _trackedCanvasTransform;
+        private bool _tracksCanvasTransformChanges;
+        private bool _canvasTransformUpdatePending;
+        private ActionCommand? _creationCommand;
 
         public DVText()
         {
             Attribute = new TextProperties();
             Attribute.Text = string.Empty;
             TextAttribute.FontSize = Attribute.Pen.Thickness * 10; // 与其它图元保持一致缩放策略
-            Attribute.PropertyChanged += (s, e) =>
-            {
-                if (e.PropertyName != nameof(TextProperties.Rect))
-                    Render();
-            };
+            Attribute.PropertyChanged += Attribute_PropertyChanged;
         }
         public DVText(TextProperties textProperties)
         {
             Attribute = textProperties;
-            if (Attribute.FontSize <= 0)
+            if (!double.IsFinite(Attribute.FontSize) || Attribute.FontSize <= 0)
                 TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
-            Attribute.PropertyChanged += (s, e) =>
-            {
-                if (e.PropertyName != nameof(TextProperties.Rect))
-                    Render();
-            };
+            Attribute.PropertyChanged += Attribute_PropertyChanged;
+        }
+
+        internal void TrackCreationCommand(ActionCommand command)
+        {
+            ArgumentNullException.ThrowIfNull(command);
+            _creationCommand = command;
         }
 
         public void ApplyLayoutScale(DrawingVisualScaleContext context)
         {
-            ApplyLayoutScaleCore(context, Pen, value => Pen = value, TextAttribute.FontSize, value => TextAttribute.FontSize = value);
+            double scale = double.IsFinite(context.Scale) && context.Scale > 0 ? context.Scale : 1;
+            double fontSizeOverride = double.IsFinite(context.TextFontSizeOverride) && context.TextFontSizeOverride > 0
+                ? context.TextFontSizeOverride
+                : 0;
+            DrawingVisualScaleContext normalizedContext = new(context.IsLayoutUpdated, scale, fontSizeOverride);
+            if (_layoutScaleContext == normalizedContext)
+            {
+                return;
+            }
+
+            _layoutScaleContext = normalizedContext;
+            if (_isEditing)
+            {
+                UpdateEditorBounds();
+            }
+            else
+            {
+                Render();
+            }
         }
 
         public override void Render()
@@ -108,59 +187,135 @@ namespace ColorVision.ImageEditor.Draw
             // 如果处于编辑模式，不渲染 DrawingVisual
             if (_isEditing) return;
 
+            double pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+            double authoredFontSize = TextRenderCore.NormalizeFontSize(TextAttribute.FontSize);
+            double renderFontSize = GetRenderFontSize();
+            FormattedText formattedText = TextRenderCore.CreateFormattedText(TextAttribute, TextAttribute.Text, renderFontSize, pixelsPerDip, measureEmptyText: true);
+            _renderBounds = TextRenderCore.GetBounds(formattedText, Attribute.Position);
+            Attribute.Rect = renderFontSize == authoredFontSize
+                ? _renderBounds
+                : TextRenderCore.Measure(TextAttribute, TextAttribute.Text, Attribute.Position, authoredFontSize, pixelsPerDip, measureEmptyText: true);
+
             using DrawingContext dc = RenderOpen();
-            FormattedText formattedText = new(
-                TextAttribute.Text,
-                CultureInfo.CurrentCulture,
-                TextAttribute.FlowDirection,
-                new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch),
-                TextAttribute.FontSize,
-                TextAttribute.Brush,
-                VisualTreeHelper.GetDpi(this).PixelsPerDip);
-
-            // 更新 Rect 以包含文本实际尺寸
-            var textWidth = formattedText.Width;
-            var textHeight = formattedText.Height;
-            Attribute.Rect = new Rect(Attribute.Position.X, Attribute.Position.Y, textWidth, textHeight);
-
-            if (Attribute.Background != null && Attribute.Background != Brushes.Transparent)
+            if (!Attribute.IsShowText || string.IsNullOrEmpty(TextAttribute.Text))
             {
-                dc.DrawRectangle(Attribute.Background, null, Attribute.Rect);
+                // Keep hidden and empty annotations selectable without changing pixels.
+                dc.DrawRectangle(Brushes.Transparent, null, _renderBounds);
+                return;
             }
+
+            dc.DrawRectangle(Attribute.Background ?? Brushes.Transparent, null, _renderBounds);
             dc.DrawText(formattedText, Attribute.Position);
         }
 
-        public override Rect GetRect() => Attribute.Rect;
+        public override Rect GetRect() => _renderBounds.IsEmpty ? Attribute.Rect : _renderBounds;
 
         public override void SetRect(Rect rect)
         {
-            Attribute.Rect = rect;
             Attribute.Position = new Point(rect.X, rect.Y);
-            Render();
         }
 
-        private double GetEditorScreenFontSize()
+        private void Attribute_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            double zoomRatio = _textContext?.ZoomRatio ?? 1;
-            if (double.IsNaN(zoomRatio) || double.IsInfinity(zoomRatio) || zoomRatio <= 0)
+            if (_isEditing && _editTextBox != null)
             {
-                zoomRatio = 1;
+                switch (e.PropertyName)
+                {
+                    case nameof(TextProperties.Text):
+                        SynchronizeEditorText();
+                        break;
+                    case nameof(TextProperties.FontSize):
+                    case nameof(TextProperties.FontFamily):
+                    case nameof(TextProperties.FontStyle):
+                    case nameof(TextProperties.FontWeight):
+                    case nameof(TextProperties.FontStretch):
+                    case nameof(TextProperties.FlowDirection):
+                        ApplyEditorStyle(_editTextBox);
+                        UpdateEditorBounds();
+                        break;
+                    case nameof(TextProperties.TextAttribute):
+                        ApplyEditorStyle(_editTextBox);
+                        if (!SynchronizeEditorText())
+                        {
+                            UpdateEditorBounds();
+                        }
+                        break;
+                    case nameof(TextProperties.Foreground):
+                    case nameof(TextProperties.Background):
+                        ApplyEditorStyle(_editTextBox);
+                        break;
+                    case nameof(TextProperties.Position):
+                        UpdateEditorTransform();
+                        break;
+                }
+
+                return;
             }
 
-            return Math.Max(TextAttribute.FontSize * zoomRatio, 1);
+            if (AffectsRendering(e.PropertyName))
+            {
+                Render();
+            }
+        }
+
+        private static bool AffectsRendering(string? propertyName)
+        {
+            return string.IsNullOrEmpty(propertyName) || propertyName is
+                nameof(TextProperties.Text) or
+                nameof(TextProperties.FontSize) or
+                nameof(TextProperties.Foreground) or
+                nameof(TextProperties.FontFamily) or
+                nameof(TextProperties.FontStyle) or
+                nameof(TextProperties.FontWeight) or
+                nameof(TextProperties.FontStretch) or
+                nameof(TextProperties.FlowDirection) or
+                nameof(TextProperties.TextAttribute) or
+                nameof(TextProperties.IsShowText) or
+                nameof(TextProperties.Position) or
+                nameof(TextProperties.Background);
+        }
+
+        private bool SynchronizeEditorText()
+        {
+            if (_editTextBox == null)
+            {
+                return false;
+            }
+
+            string modelText = Attribute.Text ?? string.Empty;
+            _originalText = modelText;
+            if (!string.Equals(_editTextBox.Text, modelText, StringComparison.Ordinal))
+            {
+                _editTextBox.Text = modelText;
+                _editTextBox.CaretIndex = modelText.Length;
+                return true;
+            }
+
+            return false;
+        }
+
+        private double GetRenderFontSize()
+        {
+            double authoredFontSize = TextRenderCore.NormalizeFontSize(TextAttribute.FontSize);
+            if (_layoutScaleContext.IsLayoutUpdated)
+            {
+                return TextRenderCore.NormalizeFontSize(authoredFontSize * _layoutScaleContext.Scale);
+            }
+
+            double renderFontSize = _layoutScaleContext.TextFontSizeOverride > 0
+                ? _layoutScaleContext.TextFontSizeOverride
+                : authoredFontSize;
+            return TextRenderCore.NormalizeFontSize(renderFontSize);
         }
 
         private FormattedText CreateFormattedText(string text, double fontSize)
         {
-            string measuredText = string.IsNullOrEmpty(text) ? " " : text;
-            return new FormattedText(
-                measuredText,
-                CultureInfo.CurrentCulture,
-                TextAttribute.FlowDirection,
-                new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch),
+            return TextRenderCore.CreateFormattedText(
+                TextAttribute,
+                text,
                 fontSize,
-                TextAttribute.Brush,
-                VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                VisualTreeHelper.GetDpi(this).PixelsPerDip,
+                measureEmptyText: true);
         }
 
         private void ClearVisual()
@@ -174,7 +329,8 @@ namespace ColorVision.ImageEditor.Draw
             {
                 new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Text), Icon = CompactInspectorIcons.CreateText("T"), Order = 10, Width = 140, EditorKind = CompactInspectorEditorKind.Text, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_Text },
                 new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Foreground), Order = 20, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_Color },
-                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.FontSize), Icon = CompactInspectorIcons.CreateText("A"), Width = 56, Order = 30, EditorKind = CompactInspectorEditorKind.Number, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_FontSize },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Background), Order = 30, EditorKind = CompactInspectorEditorKind.Brush },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.FontSize), Icon = CompactInspectorIcons.CreateText("A"), Width = 56, Order = 40, EditorKind = CompactInspectorEditorKind.Number, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_FontSize },
             };
         }
 
@@ -185,51 +341,155 @@ namespace ColorVision.ImageEditor.Draw
                 return;
             }
 
-            double editorFontSize = GetEditorScreenFontSize();
+            double editorFontSize = GetRenderFontSize();
             FormattedText formattedText = CreateFormattedText(_editTextBox.Text, editorFontSize);
             double textWidth = Math.Max(formattedText.WidthIncludingTrailingWhitespace, 1);
             double textHeight = Math.Max(formattedText.Height, editorFontSize);
-            Point overlayPoint = _textContext.TranslatePointToTextEditorOverlay(Attribute.Position);
 
             _editTextBox.FontSize = editorFontSize;
-            _editTextBox.MinWidth = Math.Max(editorFontSize, 12);
-            _editTextBox.MinHeight = Math.Max(editorFontSize + 2, 12);
-            _editTextBox.Width = Math.Max(textWidth + 4, _editTextBox.MinWidth);
-            _editTextBox.Height = Math.Max(textHeight + 4, _editTextBox.MinHeight);
+            _editTextBox.MinWidth = Math.Max(editorFontSize, 1);
+            _editTextBox.MinHeight = Math.Max(editorFontSize, 1);
+            _editTextBox.Width = Math.Max(textWidth, _editTextBox.MinWidth);
+            _editTextBox.Height = Math.Max(textHeight, _editTextBox.MinHeight);
+        }
 
-            Canvas.SetLeft(_editTextBox, overlayPoint.X);
-            Canvas.SetTop(_editTextBox, overlayPoint.Y);
+        private void UpdateEditorBoundsFromLayout()
+        {
+            if (_editTextBox == null
+                || !double.IsFinite(_editTextBox.ExtentWidth)
+                || !double.IsFinite(_editTextBox.ExtentHeight))
+            {
+                return;
+            }
 
-            Attribute.Rect = new Rect(Attribute.Position.X, Attribute.Position.Y, textWidth, textHeight);
+            double width = Math.Max(_editTextBox.ExtentWidth, _editTextBox.MinWidth);
+            double height = Math.Max(_editTextBox.ExtentHeight, _editTextBox.MinHeight);
+            if (_editTextBox.Width != width)
+                _editTextBox.Width = width;
+            if (_editTextBox.Height != height)
+                _editTextBox.Height = height;
+        }
+
+        private void UpdateEditorTransform()
+        {
+            if (_editTextBox == null || _textContext == null)
+            {
+                return;
+            }
+
+            Matrix transform = GetEditorTransform();
+            if (!_hasEditorTransform || _editorTransform != transform)
+            {
+                _editorTransform = transform;
+                _hasEditorTransform = true;
+                if (_editTextBox.RenderTransform is MatrixTransform editorTransform && !editorTransform.IsFrozen)
+                {
+                    editorTransform.Matrix = transform;
+                }
+                else
+                {
+                    _editTextBox.RenderTransform = new MatrixTransform(transform);
+                }
+            }
+        }
+
+        private Matrix GetEditorTransform()
+        {
+            if (_textContext == null || _editHost == null)
+            {
+                return Matrix.Identity;
+            }
+
+            try
+            {
+                GeneralTransform transform = _textContext.DrawCanvas.TransformToVisual(_editHost);
+                Point origin = transform.Transform(Attribute.Position);
+                Point horizontal = transform.Transform(Attribute.Position + new Vector(1, 0));
+                Point vertical = transform.Transform(Attribute.Position + new Vector(0, 1));
+                Matrix matrix = new(
+                    horizontal.X - origin.X,
+                    horizontal.Y - origin.Y,
+                    vertical.X - origin.X,
+                    vertical.Y - origin.Y,
+                    origin.X,
+                    origin.Y);
+
+                if (IsFinite(matrix))
+                {
+                    return matrix;
+                }
+            }
+            catch (InvalidOperationException)
+            {
+            }
+
+            double zoomRatio = _textContext.ZoomRatio;
+            if (!double.IsFinite(zoomRatio) || zoomRatio <= 0)
+            {
+                zoomRatio = 1;
+            }
+
+            Point fallbackPosition;
+            try
+            {
+                fallbackPosition = _textContext.TranslatePointToTextEditorOverlay(Attribute.Position);
+            }
+            catch (InvalidOperationException)
+            {
+                fallbackPosition = new Point(Attribute.Position.X * zoomRatio, Attribute.Position.Y * zoomRatio);
+            }
+
+            return new Matrix(zoomRatio, 0, 0, zoomRatio, fallbackPosition.X, fallbackPosition.Y);
+        }
+
+        private static bool IsFinite(Matrix matrix)
+        {
+            return double.IsFinite(matrix.M11)
+                && double.IsFinite(matrix.M12)
+                && double.IsFinite(matrix.M21)
+                && double.IsFinite(matrix.M22)
+                && double.IsFinite(matrix.OffsetX)
+                && double.IsFinite(matrix.OffsetY);
         }
 
         private TextBox CreateEditorTextBox()
         {
-            return new TextBox
+            TextBox textBox = new()
             {
                 Text = Attribute.Text,
-                FontSize = GetEditorScreenFontSize(),
-                FontFamily = TextAttribute.FontFamily,
-                FontStyle = TextAttribute.FontStyle,
-                FontWeight = TextAttribute.FontWeight,
-                FontStretch = TextAttribute.FontStretch,
-                FlowDirection = TextAttribute.FlowDirection,
-                Foreground = TextAttribute.Brush,
-                CaretBrush = TextAttribute.Brush,
-                Background = Brushes.White,
-                BorderThickness = new Thickness(1),
-                BorderBrush = Brushes.DeepSkyBlue,
+                BorderThickness = new Thickness(0),
+                BorderBrush = Brushes.Transparent,
                 Padding = new Thickness(0),
                 AcceptsReturn = true,
                 TextWrapping = TextWrapping.NoWrap,
-                MinWidth = 12,
-                MinHeight = 12,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Hidden,
+                FocusVisualStyle = null,
+                MinWidth = 1,
+                MinHeight = 1,
                 HorizontalAlignment = HorizontalAlignment.Left,
                 VerticalAlignment = VerticalAlignment.Top
             };
+            ApplyEditorStyle(textBox);
+            TextOptions.SetTextFormattingMode(textBox, TextFormattingMode.Ideal);
+            TextOptions.SetTextRenderingMode(textBox, TextRenderingMode.Auto);
+            return textBox;
         }
 
-        private void FocusEditor()
+        private void ApplyEditorStyle(TextBox textBox)
+        {
+            textBox.FontSize = GetRenderFontSize();
+            textBox.FontFamily = TextAttribute.FontFamily;
+            textBox.FontStyle = TextAttribute.FontStyle;
+            textBox.FontWeight = TextAttribute.FontWeight;
+            textBox.FontStretch = TextAttribute.FontStretch;
+            textBox.FlowDirection = TextRenderCore.NormalizeFlowDirection(TextAttribute.FlowDirection);
+            textBox.Foreground = TextAttribute.Brush;
+            textBox.CaretBrush = TextAttribute.Brush;
+            textBox.Background = Attribute.Background ?? Brushes.Transparent;
+        }
+
+        private void FocusEditor(Point? canvasPoint = null)
         {
             if (_editTextBox == null)
             {
@@ -245,19 +505,20 @@ namespace ColorVision.ImageEditor.Draw
 
                 _editTextBox.Focus();
                 Keyboard.Focus(_editTextBox);
+                if (canvasPoint is Point point)
+                {
+                    _editTextBox.UpdateLayout();
+                    Point editorPoint = new(point.X - Attribute.Position.X, point.Y - Attribute.Position.Y);
+                    int characterIndex = _editTextBox.GetCharacterIndexFromPoint(editorPoint, snapToText: true);
+                    if (characterIndex >= 0)
+                    {
+                        _editTextBox.Select(characterIndex, 0);
+                        return;
+                    }
+                }
+
                 _editTextBox.SelectAll();
             }), DispatcherPriority.Input);
-        }
-
-        private void OnEditorTextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (_editTextBox == null)
-            {
-                return;
-            }
-
-            Attribute.Text = _editTextBox.Text;
-            UpdateEditorBounds();
         }
 
         private void OnEditorPreviewKeyDown(object sender, KeyEventArgs e)
@@ -278,31 +539,174 @@ namespace ColorVision.ImageEditor.Draw
 
         private void OnEditorLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
-            if (_isEditing)
-            {
-                EndEdit(true);
-            }
-        }
-
-        private void OnZoomChanged(object? sender, EventArgs e)
-        {
-            UpdateEditorBounds();
-        }
-
-        private bool ShouldRemoveEmptyText()
-        {
-            return string.IsNullOrWhiteSpace(Attribute.Text);
-        }
-
-        private void RemoveFromCanvas()
-        {
-            if (_textContext == null)
+            if (ReferenceEquals(FindOwningContextMenu(e.NewFocus)?.PlacementTarget, _editTextBox))
             {
                 return;
             }
 
-            _textContext.SelectionVisual.ClearRender();
-            _textContext.DrawCanvas.RemoveVisualCommand(this);
+            if (_isEditing && e.NewFocus != null)
+            {
+                EndEditCore(saveChanges: true, restoreSelection: false);
+            }
+        }
+
+        private static ContextMenu? FindOwningContextMenu(IInputElement? focusedElement)
+        {
+            DependencyObject? current = focusedElement as DependencyObject;
+            while (current != null)
+            {
+                if (current is ContextMenu contextMenu)
+                    return contextMenu;
+
+                if (current is MenuItem menuItem && ItemsControl.ItemsControlFromItemContainer(menuItem) is ItemsControl owner)
+                {
+                    current = owner;
+                    continue;
+                }
+
+                current = LogicalTreeHelper.GetParent(current)
+                    ?? (current is Visual visual ? VisualTreeHelper.GetParent(visual) : null);
+            }
+
+            return null;
+        }
+
+        private void OnEditorHostUnloaded(object sender, RoutedEventArgs e)
+        {
+            EndEdit(true);
+        }
+
+        private void OnZoomChanged(object? sender, EventArgs e)
+        {
+            RequestEditorTransformUpdate();
+        }
+
+        private void OnEditorLayoutUpdated(object? sender, EventArgs e)
+        {
+            UpdateEditorBoundsFromLayout();
+            TrackCanvasTransform();
+            RequestEditorTransformUpdate();
+        }
+
+        private void OnCanvasTransformChanged(object? sender, EventArgs e)
+        {
+            RequestEditorTransformUpdate();
+        }
+
+        private void RequestEditorTransformUpdate()
+        {
+            if (_canvasTransformUpdatePending || _editTextBox == null)
+            {
+                return;
+            }
+
+            _canvasTransformUpdatePending = true;
+            _editTextBox.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                _canvasTransformUpdatePending = false;
+                UpdateEditorTransform();
+            }), DispatcherPriority.Loaded);
+        }
+
+        private void TrackCanvasTransform()
+        {
+            Transform? currentTransform = _textContext?.DrawCanvas.RenderTransform;
+            if (ReferenceEquals(_trackedCanvasTransform, currentTransform))
+            {
+                return;
+            }
+
+            if (_tracksCanvasTransformChanges && _trackedCanvasTransform != null)
+            {
+                if (!_trackedCanvasTransform.IsFrozen)
+                {
+                    _trackedCanvasTransform.Changed -= OnCanvasTransformChanged;
+                }
+                _tracksCanvasTransformChanges = false;
+            }
+
+            _trackedCanvasTransform = currentTransform;
+            if (_trackedCanvasTransform != null && !_trackedCanvasTransform.IsFrozen)
+            {
+                _trackedCanvasTransform.Changed += OnCanvasTransformChanged;
+                _tracksCanvasTransformChanges = true;
+            }
+        }
+
+        private void OnCanvasVisualsRemove(object? sender, VisualChangedEventArgs e)
+        {
+            if (_isEditing && ReferenceEquals(e.Visual, this))
+            {
+                ActionCommand? creationCommand = _creationCommand;
+                DetachEditingSession();
+                Render();
+                _creationCommand = null;
+                _originalText = string.Empty;
+                _editHost = null;
+                _textContext = null;
+                if (creationCommand != null && sender is DrawCanvas canvas && !canvas.IsVisualRemovalCommandInProgress(this))
+                {
+                    canvas.DiscardActionCommand(creationCommand);
+                }
+            }
+        }
+
+        private static int IndexOfVisual(DrawCanvas canvas, Visual visual)
+        {
+            for (int index = 0; index < canvas.Visuals.Count; index++)
+            {
+                if (ReferenceEquals(canvas.Visuals[index], visual))
+                {
+                    return index;
+                }
+            }
+
+            return -1;
+        }
+
+        private void CancelNewEmptyText(TextEditingContext context, ActionCommand creationCommand)
+        {
+            DrawCanvas canvas = context.DrawCanvas;
+            if (canvas.ContainsVisual(this))
+                canvas.RemoveVisual(this);
+            canvas.DiscardActionCommand(creationCommand);
+        }
+
+        private void RemoveExistingText(TextEditingContext context, string originalText, string finalText)
+        {
+            DrawCanvas canvas = context.DrawCanvas;
+            int index = IndexOfVisual(canvas, this);
+            if (index < 0)
+            {
+                return;
+            }
+
+            canvas.RemoveVisual(this);
+            canvas.AddActionCommand(new ActionCommand(
+                () =>
+                {
+                    Attribute.Text = originalText;
+                    canvas.InsertVisual(index, this);
+                },
+                () =>
+                {
+                    Attribute.Text = finalText;
+                    canvas.RemoveVisual(this);
+                })
+            {
+                Header = ColorVision.ImageEditor.Properties.Resources.Draw_Edit,
+            });
+        }
+
+        private void AddTextEditCommand(TextEditingContext context, string originalText, string finalText)
+        {
+            DrawCanvas canvas = context.DrawCanvas;
+            canvas.AddActionCommand(new ActionCommand(
+                () => Attribute.Text = originalText,
+                () => Attribute.Text = finalText)
+            {
+                Header = ColorVision.ImageEditor.Properties.Resources.Draw_Edit,
+            });
         }
 
         private void DetachEditorTextBox()
@@ -312,7 +716,6 @@ namespace ColorVision.ImageEditor.Draw
                 return;
             }
 
-            _editTextBox.TextChanged -= OnEditorTextChanged;
             _editTextBox.PreviewKeyDown -= OnEditorPreviewKeyDown;
             _editTextBox.LostKeyboardFocus -= OnEditorLostKeyboardFocus;
 
@@ -322,6 +725,37 @@ namespace ColorVision.ImageEditor.Draw
             }
 
             _editTextBox = null;
+        }
+
+        private void DetachEditingSession()
+        {
+            if (_editHost != null)
+            {
+                _editHost.Unloaded -= OnEditorHostUnloaded;
+            }
+
+            DetachEditorTextBox();
+
+            if (_textContext != null)
+            {
+                _textContext.Zoombox.ContentMatrixChanged -= OnZoomChanged;
+                _textContext.DrawCanvas.LayoutUpdated -= OnEditorLayoutUpdated;
+                _textContext.DrawCanvas.VisualsRemove -= OnCanvasVisualsRemove;
+            }
+
+            if (_tracksCanvasTransformChanges && _trackedCanvasTransform != null)
+            {
+                if (!_trackedCanvasTransform.IsFrozen)
+                {
+                    _trackedCanvasTransform.Changed -= OnCanvasTransformChanged;
+                }
+            }
+            _trackedCanvasTransform = null;
+            _tracksCanvasTransformChanges = false;
+            _canvasTransformUpdatePending = false;
+
+            _isEditing = false;
+            Attribute.IsEditing = false;
         }
 
         #region IEditableDrawingVisual 实现
@@ -341,11 +775,16 @@ namespace ColorVision.ImageEditor.Draw
         /// </summary>
         public void BeginEdit(TextEditingContext context)
         {
+            BeginEditCore(context, null);
+        }
+
+        private void BeginEditCore(TextEditingContext context, Point? canvasPoint)
+        {
             ArgumentNullException.ThrowIfNull(context);
 
             if (_isEditing)
             {
-                FocusEditor();
+                FocusEditor(canvasPoint);
                 return;
             }
 
@@ -353,21 +792,28 @@ namespace ColorVision.ImageEditor.Draw
             _editHost = context.TextEditorOverlay;
             _originalText = Attribute.Text;
             _isEditing = true;
+            _hasEditorTransform = false;
             Attribute.IsEditing = true;
             context.SelectionVisual.ClearRender();
             context.Zoombox.ContentMatrixChanged += OnZoomChanged;
+            context.DrawCanvas.LayoutUpdated += OnEditorLayoutUpdated;
+            context.DrawCanvas.VisualsRemove += OnCanvasVisualsRemove;
+            TrackCanvasTransform();
 
             _editTextBox = CreateEditorTextBox();
-            _editTextBox.TextChanged += OnEditorTextChanged;
             _editTextBox.PreviewKeyDown += OnEditorPreviewKeyDown;
             _editTextBox.LostKeyboardFocus += OnEditorLostKeyboardFocus;
+            Canvas.SetLeft(_editTextBox, 0);
+            Canvas.SetTop(_editTextBox, 0);
 
             _editHost.Children.Add(_editTextBox);
+            _editHost.Unloaded += OnEditorHostUnloaded;
             Panel.SetZIndex(_editTextBox, 1000);
 
             ClearVisual();
             UpdateEditorBounds();
-            FocusEditor();
+            UpdateEditorTransform();
+            FocusEditor(canvasPoint);
         }
 
         /// <summary>
@@ -375,45 +821,61 @@ namespace ColorVision.ImageEditor.Draw
         /// </summary>
         public void EndEdit(bool saveChanges)
         {
+            EndEditCore(saveChanges, restoreSelection: true);
+        }
+
+        private void EndEditCore(bool saveChanges, bool restoreSelection)
+        {
             if (!_isEditing)
             {
                 return;
             }
 
-            if (saveChanges && _editTextBox != null)
+            TextEditingContext? context = _textContext;
+            ActionCommand? creationCommand = _creationCommand;
+            string originalText = _originalText;
+            string finalText = saveChanges && _editTextBox != null ? _editTextBox.Text : originalText;
+
+            DetachEditingSession();
+
+            bool textChanged = !string.Equals(originalText, finalText, StringComparison.Ordinal);
+            bool modelNeedsUpdate = !string.Equals(Attribute.Text, finalText, StringComparison.Ordinal);
+            if (modelNeedsUpdate)
             {
-                Attribute.Text = _editTextBox.Text;
+                Attribute.Text = finalText;
+            }
+
+            bool cancelNewText = creationCommand != null && !saveChanges;
+            bool removeEmptyText = string.IsNullOrWhiteSpace(finalText) && (creationCommand != null || textChanged);
+            if ((cancelNewText || removeEmptyText) && context != null)
+            {
+                if (creationCommand != null)
+                {
+                    CancelNewEmptyText(context, creationCommand);
+                }
+                else
+                {
+                    RemoveExistingText(context, originalText, finalText);
+                }
             }
             else
             {
-                Attribute.Text = _originalText;
+                if (!modelNeedsUpdate)
+                {
+                    Render();
+                }
+                if (creationCommand == null && textChanged && context != null)
+                {
+                    AddTextEditCommand(context, originalText, finalText);
+                }
+                if (restoreSelection)
+                {
+                    context?.SelectionVisual.SetRender(this);
+                }
             }
 
-            DetachEditorTextBox();
-
-            if (_textContext != null)
-            {
-                _textContext.Zoombox.ContentMatrixChanged -= OnZoomChanged;
-            }
-
-            _isEditing = false;
-            Attribute.IsEditing = false;
-
-            bool removeEmptyText = ShouldRemoveEmptyText();
-            if (!removeEmptyText)
-            {
-                Render();
-            }
-
-            if (removeEmptyText)
-            {
-                RemoveFromCanvas();
-            }
-            else
-            {
-                _textContext?.SelectionVisual.SetRender(this);
-            }
-
+            _creationCommand = null;
+            _originalText = string.Empty;
             _editHost = null;
             _textContext = null;
         }
@@ -425,7 +887,7 @@ namespace ColorVision.ImageEditor.Draw
         {
             if (GetRect().Contains(point))
             {
-                BeginEdit(context);
+                BeginEditCore(context, point);
                 return true;
             }
             return false;

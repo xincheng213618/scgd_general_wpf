@@ -1,4 +1,5 @@
 using ColorVision.ImageEditor.BatchProcessing;
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Engine.Media;
 using ColorVision.FileIO;
 using OpenCvSharp;
@@ -354,6 +355,89 @@ public class BatchImageProcessingTests
     }
 
     [Theory]
+    [InlineData("伪彩色", 1)]
+    [InlineData("Canny 边缘检测", 1)]
+    [InlineData("直方图均衡化", 1)]
+    [InlineData("直方图均衡化", 3)]
+    public void EightBitFastPathsHandleNonContinuousInput(string algorithmName, int channels)
+    {
+        using Mat backing = new(25, 31, MatType.MakeType(MatType.CV_8U, channels));
+        Cv2.Randu(backing, Scalar.All(0), Scalar.All(byte.MaxValue + 1d));
+        using Mat original = backing.Clone();
+        using Mat source = new(backing, new Rect(3, 2, 23, 19));
+        using Mat continuousSource = source.Clone();
+        Assert.False(source.IsContinuous());
+
+        BatchImageAlgorithmDefinition algorithm = BatchImageAlgorithms.CreateAll()
+            .Single(item => item.Name == algorithmName);
+        if (algorithm.Options is CannyParameters canny)
+        {
+            canny.LowThreshold = 100;
+            canny.HighThreshold = 200;
+        }
+        using Mat expected = algorithm.Apply(continuousSource);
+        using Mat actual = algorithm.Apply(source);
+
+        AssertMatsEqual(expected, actual);
+        AssertMatsEqual(original, backing);
+    }
+
+    [Theory]
+    [InlineData("伪彩色")]
+    [InlineData("Canny 边缘检测")]
+    [InlineData("直方图均衡化")]
+    public void SixteenBitNormalizationMatchesLegacyOutput(string algorithmName)
+    {
+        using Mat backing = new(25, 31, MatType.CV_16UC1);
+        Cv2.Randu(backing, Scalar.All(0), Scalar.All(ushort.MaxValue + 1d));
+        using Mat original = backing.Clone();
+        using Mat source = new(backing, new Rect(3, 2, 23, 19));
+        using Mat normalized = new();
+        using Mat source8 = new();
+        Cv2.Normalize(source, normalized, 0, byte.MaxValue, NormTypes.MinMax);
+        normalized.ConvertTo(source8, MatType.CV_8U);
+        using Mat expected = ApplyLegacyEightBitAlgorithm(algorithmName, source8);
+
+        BatchImageAlgorithmDefinition algorithm = BatchImageAlgorithms.CreateAll()
+            .Single(item => item.Name == algorithmName);
+        if (algorithm.Options is CannyParameters canny)
+        {
+            canny.LowThreshold = 100;
+            canny.HighThreshold = 200;
+        }
+        using Mat actual = algorithm.Apply(source);
+
+        AssertMatsEqual(expected, actual);
+        AssertMatsEqual(original, backing);
+    }
+
+    [Fact]
+    public void CannyLegacyCompatibilityTestUsesExplicitThresholdSensitive100And200Parameters()
+    {
+        using Mat source = new(48, 64, MatType.CV_8UC1, Scalar.All(50));
+        using (Mat rightHalf = new(source, new Rect(32, 0, 32, 48))) rightHalf.SetTo(Scalar.All(90));
+        BatchImageAlgorithmDefinition explicitAlgorithm = BatchImageAlgorithms.CreateAll()
+            .Single(item => item.Name == "Canny 边缘检测");
+        CannyParameters explicitParameters = Assert.IsType<CannyParameters>(explicitAlgorithm.Options);
+        explicitParameters.LowThreshold = 100;
+        explicitParameters.HighThreshold = 200;
+        BatchImageAlgorithmDefinition defaultAlgorithm = BatchImageAlgorithms.CreateAll()
+            .Single(item => item.Name == "Canny 边缘检测");
+        CannyParameters defaults = Assert.IsType<CannyParameters>(defaultAlgorithm.Options);
+        Assert.Equal(50, defaults.LowThreshold);
+        Assert.Equal(150, defaults.HighThreshold);
+
+        using Mat expected = new();
+        Cv2.Canny(source, expected, 100, 200);
+        using Mat actual = explicitAlgorithm.Apply(source);
+        using Mat defaultOutput = defaultAlgorithm.Apply(source);
+
+        AssertMatsEqual(expected, actual);
+        Assert.NotEqual(0, Cv2.CountNonZero(defaultOutput));
+        Assert.NotEqual(Cv2.CountNonZero(defaultOutput), Cv2.CountNonZero(actual));
+    }
+
+    [Theory]
     [InlineData("sample.cvraw")]
     [InlineData("sample.cvcie")]
     public void ColorVisionLoaderReadsARealSerializedFile(string fileName)
@@ -451,6 +535,27 @@ public class BatchImageProcessingTests
         Cv2.Normalize(source, normalized, 0, byte.MaxValue, NormTypes.MinMax);
         Mat result = new();
         normalized.ConvertTo(result, MatType.CV_8U);
+        return result;
+    }
+
+    private static Mat ApplyLegacyEightBitAlgorithm(string algorithmName, Mat source)
+    {
+        Mat result = new();
+        switch (algorithmName)
+        {
+            case "伪彩色":
+                Cv2.ApplyColorMap(source, result, OpenCvSharp.ColormapTypes.Jet);
+                break;
+            case "Canny 边缘检测":
+                Cv2.Canny(source, result, 100, 200);
+                break;
+            case "直方图均衡化":
+                Cv2.EqualizeHist(source, result);
+                break;
+            default:
+                result.Dispose();
+                throw new ArgumentOutOfRangeException(nameof(algorithmName), algorithmName, null);
+        }
         return result;
     }
 

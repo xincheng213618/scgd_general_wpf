@@ -10,6 +10,7 @@ using ColorVision.UI;
 using log4net;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -209,15 +210,18 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
                             foreach (var item in mTFDetailViewReslut.FindCrossResult.result)
                             {
                                 id++;
+                                Point overlayCenter = ResolveOverlayCenter(item, result.AlgResultMasterModel, out bool usesRawCenter);
                                 DVCircleText cricle = new DVCircleText();
-                                cricle.Attribute.Center = new Point(item.center.x,item.center.y);
+                                cricle.Attribute.Center = overlayCenter;
                                 cricle.Attribute.Radius = 10;
                                 cricle.Attribute.Brush = Brushes.Red;
                                 cricle.Attribute.Pen = new Pen(Brushes.Red, OverlayPenThickness);
                                 cricle.Attribute.Id = id;
                                 cricle.Attribute.Text = id.ToString();
                                 cricle.Attribute.FontSize = OverlayFontSize;
-                                cricle.Attribute.Msg =  $"({FormatNumber(item.center.x)},{FormatNumber(item.center.y)}){Environment.NewLine}xtilt:{FormatNumber(item.tilt.tilt_x)}{Environment.NewLine}ytilt:{FormatNumber(item.tilt.tilt_y)}{Environment.NewLine}rotation:{FormatNumber(item.rotationAngle)}"  ;
+                                cricle.Attribute.Msg = usesRawCenter
+                                    ? $"raw:({FormatNumber(overlayCenter.X)},{FormatNumber(overlayCenter.Y)}){Environment.NewLine}result:({FormatNumber(item.center.x)},{FormatNumber(item.center.y)}){Environment.NewLine}xtilt:{FormatNumber(item.tilt.tilt_x)}{Environment.NewLine}ytilt:{FormatNumber(item.tilt.tilt_y)}{Environment.NewLine}rotation:{FormatNumber(item.rotationAngle)}"
+                                    : $"({FormatNumber(item.center.x)},{FormatNumber(item.center.y)}){Environment.NewLine}xtilt:{FormatNumber(item.tilt.tilt_x)}{Environment.NewLine}ytilt:{FormatNumber(item.tilt.tilt_y)}{Environment.NewLine}rotation:{FormatNumber(item.rotationAngle)}";
                                 cricle.Render();
                                 view.ImageView.AddVisual(cricle);
                             }
@@ -249,5 +253,73 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
                 }
             }
         }
+
+        internal static Point ResolveOverlayCenter(
+            FindCrossItem item,
+            AlgResultMasterModel? master,
+            out bool usesRawCenter)
+        {
+            usesRawCenter = TryGetLocalRawCenter(master, out Point rawCenter);
+            return usesRawCenter ? rawCenter : new Point(item.center.x, item.center.y);
+        }
+
+        internal static bool TryGetLocalRawCenter(
+            AlgResultMasterModel? master,
+            out Point rawCenter)
+        {
+            rawCenter = default;
+            if (master == null || string.IsNullOrWhiteSpace(master.Params)) return false;
+
+            try
+            {
+                JObject parameters = JObject.Parse(master.Params);
+                string? algorithm = GetValue(parameters, "Algorithm")?.Value<string>();
+                bool isLocalFindCross = string.Equals(master.TName, "LocalFindCross", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(algorithm, "LocalFindCross", StringComparison.OrdinalIgnoreCase);
+                if (!isLocalFindCross) return false;
+
+                if (TryReadRawCenter(GetValue(parameters, "Diagnostics"), out rawCenter)) return true;
+
+                JToken? rawJsonToken = GetValue(parameters, "RawJson");
+                if (rawJsonToken == null || rawJsonToken.Type == JTokenType.Null) return false;
+                JToken rawResult = rawJsonToken.Type == JTokenType.String
+                    ? JToken.Parse(rawJsonToken.Value<string>() ?? string.Empty)
+                    : rawJsonToken;
+                return rawResult is JObject rawResultObject
+                    && TryReadRawCenter(GetValue(rawResultObject, "diagnostics"), out rawCenter);
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
+            catch (OverflowException)
+            {
+                return false;
+            }
+            catch (InvalidCastException)
+            {
+                return false;
+            }
+        }
+
+        private static bool TryReadRawCenter(JToken? diagnosticsToken, out Point rawCenter)
+        {
+            rawCenter = default;
+            if (diagnosticsToken is not JObject diagnostics) return false;
+            if (GetValue(diagnostics, "RawGeometricCenter") is not JObject center) return false;
+
+            double? x = GetValue(center, "x")?.Value<double?>();
+            double? y = GetValue(center, "y")?.Value<double?>();
+            if (!x.HasValue || !y.HasValue || !double.IsFinite(x.Value) || !double.IsFinite(y.Value)) return false;
+            rawCenter = new Point(x.Value, y.Value);
+            return true;
+        }
+
+        private static JToken? GetValue(JObject value, string propertyName) =>
+            value.GetValue(propertyName, StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -3,15 +3,25 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile;
 
 namespace ColorVision.ImageEditor.Draw.Line
 {
     public class DVLineDVContextMenu : IDVContextMenu
     {
         private readonly DrawCanvas _drawCanvas;
+        private readonly ImageProcessingContext? _imageContext;
+        private readonly DrawEditorContext? _drawContext;
 
         public DVLineDVContextMenu(DrawCanvas drawCanvas)
         {
+            _drawCanvas = drawCanvas;
+        }
+
+        public DVLineDVContextMenu(ImageProcessingContext imageContext, DrawEditorContext drawContext, DrawCanvas drawCanvas)
+        {
+            _imageContext = imageContext;
+            _drawContext = drawContext;
             _drawCanvas = drawCanvas;
         }
 
@@ -28,6 +38,12 @@ namespace ColorVision.ImageEditor.Draw.Line
                     if (dVLine.Points == null || dVLine.Points.Count < 2)
                     {
                         MessageBox.Show(ColorVision.ImageEditor.Properties.Resources.Annotation_NotEnoughPoints, ColorVision.ImageEditor.Properties.Resources.Draw_Tip, MessageBoxButton.OK, MessageBoxImage.Information);
+                        return;
+                    }
+
+                    if (_imageContext != null && _drawContext != null)
+                    {
+                        new ImageProfileEditorTool(_imageContext, _drawContext).Execute(dVLine.Points, closePath: false);
                         return;
                     }
 

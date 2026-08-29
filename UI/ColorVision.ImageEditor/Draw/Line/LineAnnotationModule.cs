@@ -46,7 +46,7 @@ namespace ColorVision.ImageEditor.Draw.Annotations
 
             LineProperties properties = new();
             AnnotationMappingHelper.ApplyBaseProperties(lineItem, properties);
-            properties.Points = AnnotationMappingHelper.ToPoints(lineItem.Points);
+            properties.Points = AnnotationMappingHelper.ToFinitePoints(lineItem.Points, "Line");
             AnnotationMappingHelper.ApplyShapeStyle(lineItem.Style, properties.Brush ?? Brushes.Transparent, properties.Pen, brush => properties.Brush = brush, pen => properties.Pen = pen);
             if (properties.Pen != null)
             {

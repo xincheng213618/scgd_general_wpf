@@ -84,6 +84,9 @@ namespace ProjectARVRPro.Process.W51
             }
         }
 
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<W51TestResult>(result, "W51");
+
         public override void Render (IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;

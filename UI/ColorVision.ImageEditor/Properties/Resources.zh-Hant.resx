@@ -884,4 +884,223 @@
   <data name="Algorithm_ThresholdValue" xml:space="preserve">
     <value>閾值</value>
   </data>
+  <data name="ThreeD_AutoOrientationApplied" xml:space="preserve">
+    <value>已自動調整模型朝向。</value>
+  </data>
+  <data name="ThreeD_Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="ThreeD_Collapse" xml:space="preserve">
+    <value>收起</value>
+  </data>
+  <data name="ThreeD_DefaultMaterial" xml:space="preserve">
+    <value>預設材質</value>
+  </data>
+  <data name="ThreeD_DimensionsModelUnits" xml:space="preserve">
+    <value>尺寸（模型單位）</value>
+  </data>
+  <data name="ThreeD_Direct3DUnavailable" xml:space="preserve">
+    <value>無法初始化 Direct3D。請更新顯示卡驅動程式，或在啟用硬體加速的本機工作階段中重試。</value>
+  </data>
+  <data name="ThreeD_DisplayMode" xml:space="preserve">
+    <value>顯示模式</value>
+  </data>
+  <data name="ThreeD_DropToOpenModel" xml:space="preserve">
+    <value>放開以開啟模型</value>
+  </data>
+  <data name="ThreeD_EmptyStateDescription" xml:space="preserve">
+    <value>支援 OBJ 與 STL，也可以將檔案拖曳到這裡</value>
+  </data>
+  <data name="ThreeD_ExitIsolation" xml:space="preserve">
+    <value>退出隔離</value>
+  </data>
+  <data name="ThreeD_ExportFailed" xml:space="preserve">
+    <value>模型匯出失敗，請查看記錄以瞭解詳細資訊。</value>
+  </data>
+  <data name="ThreeD_ExportCanceled" xml:space="preserve">
+    <value>已取消模型匯出。</value>
+  </data>
+  <data name="ThreeD_ExportFileFilter" xml:space="preserve">
+    <value>Wavefront OBJ (*.obj)|*.obj|STL (*.stl)|*.stl</value>
+  </data>
+  <data name="ThreeD_ExportSucceededFormat" xml:space="preserve">
+    <value>模型已匯出：{0}</value>
+  </data>
+  <data name="ThreeD_ExportingFileFormat" xml:space="preserve">
+    <value>正在匯出 {0}…</value>
+  </data>
+  <data name="ThreeD_FitView" xml:space="preserve">
+    <value>適合視圖</value>
+  </data>
+  <data name="ThreeD_FlipVertical" xml:space="preserve">
+    <value>翻轉垂直方向</value>
+  </data>
+  <data name="ThreeD_Focus" xml:space="preserve">
+    <value>聚焦</value>
+  </data>
+  <data name="ThreeD_FocusSelected" xml:space="preserve">
+    <value>聚焦選取項目</value>
+  </data>
+  <data name="ThreeD_Geometry" xml:space="preserve">
+    <value>幾何</value>
+  </data>
+  <data name="ThreeD_Hide" xml:space="preserve">
+    <value>隱藏</value>
+  </data>
+  <data name="ThreeD_HideSelected" xml:space="preserve">
+    <value>隱藏選取項目</value>
+  </data>
+  <data name="ThreeD_HiddenFormat" xml:space="preserve">
+    <value>已隱藏 {0}</value>
+  </data>
+  <data name="ThreeD_Info" xml:space="preserve">
+    <value>資訊</value>
+  </data>
+  <data name="ThreeD_Isolate" xml:space="preserve">
+    <value>隔離</value>
+  </data>
+  <data name="ThreeD_IsolatingFormat" xml:space="preserve">
+    <value>正在隔離檢視 {0}</value>
+  </data>
+  <data name="ThreeD_IsolationActive" xml:space="preserve">
+    <value>正在隔離檢視選取的物件</value>
+  </data>
+  <data name="ThreeD_IsolationExited" xml:space="preserve">
+    <value>已退出隔離，並還原先前的顯示狀態。</value>
+  </data>
+  <data name="ThreeD_LoadCanceled" xml:space="preserve">
+    <value>已取消載入，目前模型未變更。</value>
+  </data>
+  <data name="ThreeD_LoadDurationTexturesFormat" xml:space="preserve">
+    <value>{0} 秒 · {1} 個貼圖</value>
+  </data>
+  <data name="ThreeD_LoadFailed" xml:space="preserve">
+    <value>載入模型失敗，請查看記錄以瞭解詳細資訊。</value>
+  </data>
+  <data name="ThreeD_LoadFailedFileBusy" xml:space="preserve">
+    <value>讀取模型檔案失敗，請確認檔案未被使用。</value>
+  </data>
+  <data name="ThreeD_LoadFailedFileMissing" xml:space="preserve">
+    <value>模型檔案不存在或已被移動。</value>
+  </data>
+  <data name="ThreeD_LoadFailedNoPermission" xml:space="preserve">
+    <value>沒有權限讀取此模型檔案。</value>
+  </data>
+  <data name="ThreeD_LoadFailedParse" xml:space="preserve">
+    <value>無法解析模型，檔案可能已損毀或格式不完整。</value>
+  </data>
+  <data name="ThreeD_LoadFailedUnsupported" xml:space="preserve">
+    <value>目前僅支援 OBJ 與 STL 模型。</value>
+  </data>
+  <data name="ThreeD_Loading" xml:space="preserve">
+    <value>載入</value>
+  </data>
+  <data name="ThreeD_LoadingFileFormat" xml:space="preserve">
+    <value>正在載入 {0}…</value>
+  </data>
+  <data name="ThreeD_LoadingModel" xml:space="preserve">
+    <value>正在載入模型…</value>
+  </data>
+  <data name="ThreeD_Material" xml:space="preserve">
+    <value>材質</value>
+  </data>
+  <data name="ThreeD_Mesh" xml:space="preserve">
+    <value>網格</value>
+  </data>
+  <data name="ThreeD_ModelFileFilter" xml:space="preserve">
+    <value>3D 模型 (*.obj;*.stl)|*.obj;*.stl|Wavefront OBJ (*.obj)|*.obj|STL (*.stl)|*.stl|所有檔案 (*.*)|*.*</value>
+  </data>
+  <data name="ThreeD_ModelInformation" xml:space="preserve">
+    <value>模型資訊</value>
+  </data>
+  <data name="ThreeD_ModelLoaded" xml:space="preserve">
+    <value>模型已載入</value>
+  </data>
+  <data name="ThreeD_ModelLoadedMissingTexturesFormat" xml:space="preserve">
+    <value>模型已載入，但有 {0} 個貼圖檔案遺失。</value>
+  </data>
+  <data name="ThreeD_ModelLoadedTrianglesFormat" xml:space="preserve">
+    <value>模型已載入：{0} 個三角形。</value>
+  </data>
+  <data name="ThreeD_ModelChangedRetry" xml:space="preserve">
+    <value>模型已變更，請重試此操作。</value>
+  </data>
+  <data name="ThreeD_More" xml:space="preserve">
+    <value>更多</value>
+  </data>
+  <data name="ThreeD_MouseControls" xml:space="preserve">
+    <value>滑鼠操作</value>
+  </data>
+  <data name="ThreeD_MouseControlsGuide" xml:space="preserve">
+    <value>按住左鍵拖曳：旋轉
+按住右鍵拖曳：平移
+滾輪：縮放
+按兩下物件：聚焦</value>
+  </data>
+  <data name="ThreeD_NoValidBounds" xml:space="preserve">
+    <value>未提供有效的邊界框</value>
+  </data>
+  <data name="ThreeD_ObjectGroup" xml:space="preserve">
+    <value>物件群組</value>
+  </data>
+  <data name="ThreeD_PngFileFilter" xml:space="preserve">
+    <value>PNG 影像 (*.png)|*.png</value>
+  </data>
+  <data name="ThreeD_Reload" xml:space="preserve">
+    <value>重新載入</value>
+  </data>
+  <data name="ThreeD_Scene" xml:space="preserve">
+    <value>場景</value>
+  </data>
+  <data name="ThreeD_ScreenshotFailed" xml:space="preserve">
+    <value>螢幕擷取畫面儲存失敗，請查看記錄以瞭解詳細資訊。</value>
+  </data>
+  <data name="ThreeD_ScreenshotSavedFormat" xml:space="preserve">
+    <value>螢幕擷取畫面已儲存：{0}</value>
+  </data>
+  <data name="ThreeD_SearchNodes" xml:space="preserve">
+    <value>搜尋節點</value>
+  </data>
+  <data name="ThreeD_SelectionTrianglesMaterialFormat" xml:space="preserve">
+    <value>{0} 個三角形 · {1}</value>
+  </data>
+  <data name="ThreeD_ShowAll" xml:space="preserve">
+    <value>全部顯示</value>
+  </data>
+  <data name="ThreeD_ShownAll" xml:space="preserve">
+    <value>已顯示所有物件。</value>
+  </data>
+  <data name="ThreeD_ShownFormat" xml:space="preserve">
+    <value>已顯示 {0}</value>
+  </data>
+  <data name="ThreeD_Solid" xml:space="preserve">
+    <value>實體</value>
+  </data>
+  <data name="ThreeD_StatusModel" xml:space="preserve">
+    <value>3D 模型</value>
+  </data>
+  <data name="ThreeD_SupportedFormatsHint" xml:space="preserve">
+    <value>支援 OBJ 與 STL</value>
+  </data>
+  <data name="ThreeD_TexturedMaterial" xml:space="preserve">
+    <value>紋理材質</value>
+  </data>
+  <data name="ThreeD_ToggleVisibility" xml:space="preserve">
+    <value>顯示/隱藏</value>
+  </data>
+  <data name="ThreeD_VerticalFlipped" xml:space="preserve">
+    <value>已翻轉垂直方向。</value>
+  </data>
+  <data name="ThreeD_VerticalRestored" xml:space="preserve">
+    <value>已還原原始垂直方向。</value>
+  </data>
+  <data name="ThreeD_VerticesTrianglesFormat" xml:space="preserve">
+    <value>{0} 個頂點 · {1} 個三角形</value>
+  </data>
+  <data name="ThreeD_WireframeRenderMode" xml:space="preserve">
+    <value>線框</value>
+  </data>
+  <data name="Algorithm_FilterCategory" xml:space="preserve">
+    <value>濾波</value>
+  </data>
 </root>

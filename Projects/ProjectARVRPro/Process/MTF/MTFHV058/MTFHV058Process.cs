@@ -8,8 +8,6 @@ using Newtonsoft.Json;
 using SqlSugar;
 using System.Reflection;
 using System.Text;
-using System.Windows;
-using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.MTF.MTFHV058
 {
@@ -267,6 +265,9 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
         }
 
 
+        public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
+            GetObjectiveCsvRows<MTFHV058TestResult>(result, string.IsNullOrWhiteSpace(Config.Name) ? "MTF058" : Config.Name.Trim());
+
         public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
@@ -279,13 +280,9 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
                 foreach (var item in testResult.MTFDetailViewReslut.MTFResult.result)
                 {
                     id++;
-                    DVRectangleText Rectangle = new();
-                    Rectangle.Attribute.Rect = new Rect(item.x, item.y, item.w, item.h);
-                    Rectangle.Attribute.Brush = Brushes.Transparent;
-                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                    Rectangle.Attribute.Id = id;
-                    Rectangle.Attribute.Msg = item.mtfValue?.ToString(Config.ShowConfig);
-                    Rectangle.Render();
+                    if (!ProcessExtensions.TryCreateMtfOverlay(item, id, Config.ShowConfig, out DVRectangleText Rectangle))
+                        continue;
+
                     ctx.ImageView.AddVisual(Rectangle);
                 }
             }

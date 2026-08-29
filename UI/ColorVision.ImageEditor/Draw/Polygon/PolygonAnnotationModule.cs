@@ -57,7 +57,7 @@ namespace ColorVision.ImageEditor.Draw.Annotations
 
             PolygonProperties properties = new();
             AnnotationMappingHelper.ApplyBaseProperties(polygonItem, properties);
-            properties.Points = AnnotationMappingHelper.ToPoints(polygonItem.Points);
+            properties.Points = AnnotationMappingHelper.ToFinitePoints(polygonItem.Points, "Polygon");
             AnnotationMappingHelper.ApplyShapeStyle(polygonItem.Style, properties.Brush ?? Brushes.Transparent, properties.Pen, brush => properties.Brush = brush, pen => properties.Pen = pen);
             if (properties.Pen != null)
             {

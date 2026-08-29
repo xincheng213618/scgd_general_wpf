@@ -133,7 +133,44 @@ public sealed class CopilotSecretRedactionTests
     }
 
     [Theory]
+    [InlineData(
+        "Authorization: Bearer shortsecret",
+        "Authorization: <redacted>")]
+    [InlineData(
+        "authorization: Basic dXNlcjpwYXNz",
+        "authorization: <redacted>")]
+    [InlineData(
+        "Authorization=Basic dXNlcjpwYXNz; retry=true",
+        "Authorization=<redacted>; retry=true")]
+    [InlineData(
+        "prefix Authorization=Digest username=\"Mufasa\", realm=\"private\", nonce=\"deadbeef\"; retry=true",
+        "prefix Authorization=<redacted>; retry=true")]
+    [InlineData(
+        "{\"Authorization\":\"Bearer shortsecret\",\"trace\":\"visible\"}",
+        "{\"Authorization\":\"<redacted>\",\"trace\":\"visible\"}")]
+    [InlineData(
+        "{\"Authorization\":\"Digest username=\\\"Mufasa\\\", realm=\\\"testrealm@host.com\\\", nonce=\\\"deadbeef\\\"\",\"trace\":\"visible\"}",
+        "{\"Authorization\":\"<redacted>\",\"trace\":\"visible\"}")]
+    [InlineData(
+        "Authorization: Bearer shortsecret\r\nX-Trace: visible",
+        "Authorization: <redacted>\r\nX-Trace: visible")]
+    [InlineData(
+        "Authorization: Digest username=\"Mufasa\", response=\"secret\"",
+        "Authorization: <redacted>")]
+    [InlineData(
+        "Proxy-Authorization: Basic dXNlcjpwYXNz",
+        "Proxy-Authorization: <redacted>")]
+    public void AuthorizationHeaderValuesAreFullyRedactedWithoutCrossingBoundaries(
+        string source,
+        string expected)
+    {
+        Assert.Equal(expected, CopilotMcpAuditLogger.RedactText(source));
+    }
+
+    [Theory]
     [InlineData("Bearer of good news")]
+    [InlineData("Bearer shortsecret")]
+    [InlineData("A bearer shortsecret appears in ordinary prose.")]
     [InlineData("Bearer abcdefghijklmno")]
     [InlineData("NotABearer abcdefghijklmnop")]
     [InlineData("Bearerabcdefghijklmnop")]

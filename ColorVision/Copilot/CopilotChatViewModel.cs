@@ -40,6 +40,7 @@ namespace ColorVision.Copilot
         private readonly CopilotLocalGitDiffService _localGitDiffService;
         private readonly CopilotPromptHistoryNavigator _promptHistoryNavigator = new();
         private readonly CopilotConversationFindSession _conversationFindSession = new();
+        private readonly ConfigHandler? _configHandler;
         private readonly CopilotConfig _config;
         private readonly ICopilotChatStateStore _stateStore;
         private readonly CopilotChatStatePersistenceCoordinator _statePersistenceCoordinator;
@@ -121,6 +122,7 @@ namespace ColorVision.Copilot
                 CopilotConfig.Instance,
                 new CopilotTurnRuntime(chatService),
                 CopilotAgentTaskHost.Shared,
+                ConfigHandler.GetInstance(),
                 persistConfigChanges: true)
         {
         }
@@ -130,13 +132,15 @@ namespace ColorVision.Copilot
             ICopilotChatStateStore stateStore,
             CopilotConfig config,
             ICopilotTurnRuntime turnRuntime,
-            CopilotAgentTaskHost taskHost)
+            CopilotAgentTaskHost taskHost,
+            ConfigHandler? configHandler = null)
             : this(
                 chatService ?? throw new ArgumentNullException(nameof(chatService)),
                 stateStore ?? throw new ArgumentNullException(nameof(stateStore)),
                 config ?? throw new ArgumentNullException(nameof(config)),
                 turnRuntime ?? throw new ArgumentNullException(nameof(turnRuntime)),
                 taskHost ?? throw new ArgumentNullException(nameof(taskHost)),
+                configHandler,
                 persistConfigChanges: false)
         {
         }
@@ -147,6 +151,7 @@ namespace ColorVision.Copilot
             CopilotConfig config,
             ICopilotTurnRuntime turnRuntime,
             CopilotAgentTaskHost taskHost,
+            ConfigHandler? configHandler,
             bool persistConfigChanges)
         {
             _chatService = chatService;
@@ -157,6 +162,7 @@ namespace ColorVision.Copilot
             _turnRuntime = turnRuntime;
             _taskHost = taskHost;
             _localGitDiffService = new CopilotLocalGitDiffService();
+            _configHandler = configHandler;
             _config = config;
             _stateStore = stateStore;
             _statePersistenceCoordinator = new CopilotChatStatePersistenceCoordinator(
@@ -186,7 +192,7 @@ namespace ColorVision.Copilot
             CopilotAgentSkillCatalog.CatalogChanged -= AgentSkillCatalog_CatalogChanged;
             CopilotAgentSkillCatalog.CatalogChanged += AgentSkillCatalog_CatalogChanged;
             if (_config.EnsureInitialized() && persistConfigChanges)
-                PersistConfig();
+                _ = TryPersistCurrentConfig(out _);
 
             _state = _stateStore.Load();
             var stateChanged = _state.EnsureInitializedAfterRestore(_config);
@@ -387,15 +393,6 @@ namespace ColorVision.Copilot
 
             CopilotAgentTaskEventJournalRegistry.Clear();
         }
-
-        private void PersistConfig()
-        {
-            ConfigHandler.GetInstance().Save<CopilotConfig>();
-            OnPropertyChanged(nameof(EmptyStateText));
-            OnPropertyChanged(nameof(CanShowCompactHistory));
-            OnPropertyChanged(nameof(CanSelectProfile));
-        }
-
 
         private enum CopilotAutomaticCompactionOutcome
         {

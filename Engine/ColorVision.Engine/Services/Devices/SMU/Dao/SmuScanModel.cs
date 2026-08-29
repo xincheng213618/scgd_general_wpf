@@ -16,6 +16,9 @@ namespace ColorVision.Engine.Services.Devices.SMU.Dao
         [SugarColumn(ColumnName = "z_index", IsNullable = true)]
         public int? ZIndex { get; set; }
 
+        [SugarColumn(ColumnName = "channel", ColumnDataType = "tinyint", Length = 1, IsNullable = true, ColumnDescription = "通道,0:A,1:B")]
+        public SMUChannelType ChannelType { get; set; } = SMUChannelType.A;
+
         [SugarColumn(ColumnName = "is_source_v", IsNullable = true, ColumnDescription = "是否电压")]
         public bool? IsSourceV { get; set; }
 
@@ -43,7 +46,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Dao
         [SugarColumn(ColumnName = "total_time", IsNullable = true, ColumnDescription = "总用时(ms)")]
         public int? TotalTime { get; set; }
 
-        [SugarColumn(ColumnName = "create_date", IsNullable = false, ColumnDescription = "创建日期")]
+        [SugarColumn(ColumnName = "create_date", IsNullable = false, ColumnDescription = "创建日期", DefaultValue = "CURRENT_TIMESTAMP")]
         public DateTime CreateDate { get; set; }
     }
 }

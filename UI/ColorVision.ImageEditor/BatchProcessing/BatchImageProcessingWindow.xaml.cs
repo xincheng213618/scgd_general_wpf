@@ -1,4 +1,6 @@
+using ColorVision.Algorithms;
 using ColorVision.UI;
+using ColorVision.ImageEditor.Algorithms;
 using log4net;
 using OpenCvSharp;
 using System;
@@ -23,12 +25,31 @@ namespace ColorVision.ImageEditor.BatchProcessing
         private CancellationTokenSource? _cancellationTokenSource;
 
         public BatchImageProcessingWindow()
+            : this(ImageAlgorithmPlatform.Runtime)
         {
+        }
+
+        public BatchImageProcessingWindow(AlgorithmRuntime runtime)
+            : this(BatchImageAlgorithms.CreateAll(runtime))
+        {
+        }
+
+        public BatchImageProcessingWindow(IReadOnlyList<BatchImageAlgorithmDefinition> algorithms)
+            : this(algorithms, LoadImageLoaders())
+        {
+        }
+
+        internal BatchImageProcessingWindow(
+            IReadOnlyList<BatchImageAlgorithmDefinition> algorithms,
+            IReadOnlyList<IBatchImageLoader> loaders)
+        {
+            ArgumentNullException.ThrowIfNull(algorithms);
+            ArgumentNullException.ThrowIfNull(loaders);
             InitializeComponent();
             DataContext = this;
 
-            _processor = new BatchImageProcessor(LoadImageLoaders());
-            _algorithms = BatchImageAlgorithms.CreateAll();
+            _processor = new BatchImageProcessor(loaders);
+            _algorithms = algorithms.ToArray();
             AlgorithmComboBox.ItemsSource = _algorithms;
             AlgorithmComboBox.SelectedIndex = 0;
 
@@ -46,6 +67,8 @@ namespace ColorVision.ImageEditor.BatchProcessing
         }
 
         public ObservableCollection<BatchImageItem> Files { get; } = new();
+
+        internal IReadOnlyList<BatchImageAlgorithmDefinition> Algorithms => _algorithms;
 
         private static IBatchImageLoader[] LoadImageLoaders()
         {
@@ -70,7 +93,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
             }
 
             SuffixTextBox.Text = algorithm.Suffix;
-            AlgorithmOptionsContent.Content = algorithm.Options is NoBatchAlgorithmOptions
+            AlgorithmOptionsContent.Content = algorithm.IsFormatOnly || algorithm.Options is NoAlgorithmParameters
                 ? new TextBlock { Text = "此算法无需额外参数", Opacity = 0.7 }
                 : PropertyEditorHelper.GenPropertyEditorControl(algorithm.Options, showCategoryHeader: false);
         }

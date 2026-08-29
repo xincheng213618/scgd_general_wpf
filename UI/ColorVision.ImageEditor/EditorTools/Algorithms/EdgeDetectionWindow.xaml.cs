@@ -1,84 +1,74 @@
-#pragma warning disable CS8625
+using ColorVision.Algorithms;
 using ColorVision.Common.Utilities;
-using ColorVision.Core;
+using ColorVision.ImageEditor.Algorithms;
 using log4net;
+using System;
 using System.Windows;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms
 {
-    /// <summary>
-    /// EdgeDetectionWindow.xaml 的交互逻辑
-    /// </summary>
     public partial class EdgeDetectionWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(EdgeDetectionWindow));
-        private readonly ImageProcessingContext _image;
+        private readonly string _debounceKey = $"{nameof(EdgeDetectionWindow)}_{Guid.NewGuid():N}";
+        private readonly ImageAlgorithmPreviewSession _preview;
+        private readonly CannyParameters _parameters = new();
 
         public EdgeDetectionWindow(ImageProcessingContext image)
         {
             InitializeComponent();
-            _image = image;
+            _preview = ImageAlgorithmPreviewSession.Start(image);
+            Threshold1Slider.Value = _parameters.LowThreshold;
+            Threshold2Slider.Value = _parameters.HighThreshold;
+            _ = ApplyPreviewAsync();
         }
 
         private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (Threshold1Slider != null && Threshold2Slider != null)
+            if (!IsInitialized || Threshold1Slider == null || Threshold2Slider == null) return;
+            _parameters.LowThreshold = Threshold1Slider.Value;
+            _parameters.HighThreshold = Threshold2Slider.Value;
+            DebounceTimer.AddOrResetTimerDispatcher(_debounceKey, 50, () => _ = ApplyPreviewAsync());
+        }
+
+        private async System.Threading.Tasks.Task<bool> ApplyPreviewAsync()
+        {
+            try
             {
-                double threshold1 = Threshold1Slider.Value;
-                double threshold2 = Threshold2Slider.Value;
-                DebounceTimer.AddOrResetTimer("ApplyEdgeDetection", 50, () => ApplyEdgeDetection(threshold1, threshold2));
+                AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.Canny, _parameters);
+                using AlgorithmResult result = await _preview.PreviewAsync(invocation);
+                if (result.Status == AlgorithmResultStatus.Failed) log.Warn(string.Join("; ", result.Failures));
+                return result.Status == AlgorithmResultStatus.Succeeded && _preview.IsCurrent(invocation.InvocationId);
+            }
+            catch (ObjectDisposedException)
+            {
+                return false;
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+                return false;
             }
         }
 
-        private void ApplyEdgeDetection(double threshold1, double threshold2)
+        private async void Apply_Click(object sender, RoutedEventArgs e)
         {
-            using ImageFrameLease? lease = _image.AcquireImageFrame();
-            if (lease == null) return;
-
-            long revision = lease.Revision;
-            int ret = OpenCVMediaHelper.M_ApplyCannyEdgeDetection(lease.Image, out HImage hImageProcessed, threshold1, threshold2);
-
-            if (ret != 0)
-            {
-                hImageProcessed.Dispose();
-                return;
-            }
-
-            Application.Current?.Dispatcher.BeginInvoke(() =>
-            {
-                if (!_image.IsCurrentImageRevision(revision))
-                {
-                    hImageProcessed.Dispose();
-                    return;
-                }
-
-                if (!HImageExtension.UpdateWriteableBitmap(_image.FunctionImage, hImageProcessed))
-                    _image.FunctionImage = hImageProcessed.ToWriteableBitmapAndDispose();
-
-                _image.ImageShow.Source = _image.FunctionImage;
-            });
-        }
-
-        private void Apply_Click(object sender, RoutedEventArgs e)
-        {
-            // 应用更改到原始图像
-            if (_image.FunctionImage is System.Windows.Media.Imaging.WriteableBitmap writeableBitmap)
-            {
-                _image.ViewBitmapSource = writeableBitmap;
-                _image.ImageShow.Source = _image.ViewBitmapSource;
-                _image.NotifySourcePixelsChanged();
-                _image.FunctionImage = null;
-            }
-            Close();
+            DebounceTimer.Cancel(_debounceKey);
+            if (await ApplyPreviewAsync() && _preview.Commit()) Close();
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
-            // 取消更改，恢复原始图像
-            _image.ImageShow.Source = _image.ViewBitmapSource;
-            _image.FunctionImage = null;
+            DebounceTimer.Cancel(_debounceKey);
+            _preview.Cancel();
             Close();
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            DebounceTimer.Cancel(_debounceKey);
+            _preview.Dispose();
+            base.OnClosed(e);
         }
     }
 }
-

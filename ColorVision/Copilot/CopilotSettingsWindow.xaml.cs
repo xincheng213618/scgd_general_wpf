@@ -7,10 +7,11 @@ namespace ColorVision.Copilot
 {
     public enum CopilotSettingsPage
     {
-        Models,
-        Agent,
-        Mcp,
-        BackendSync,
+        Models = 0,
+        Agent = 1,
+        Mcp = 2,
+        BackendSync = 3,
+        Web = 4,
     }
 
     public partial class CopilotSettingsWindow : Window
@@ -20,7 +21,19 @@ namespace ColorVision.Copilot
             InitializeComponent();
             this.ApplyCaption();
             DataContext = new CopilotSettingsViewModel();
-            SettingsTabs.SelectedIndex = (int)initialPage;
+            SettingsTabs.SelectedIndex = GetTabIndex(initialPage);
+        }
+
+        internal static int GetTabIndex(CopilotSettingsPage page)
+        {
+            return page switch
+            {
+                CopilotSettingsPage.Agent => 1,
+                CopilotSettingsPage.Web => 2,
+                CopilotSettingsPage.Mcp => 3,
+                CopilotSettingsPage.BackendSync => 4,
+                _ => 0,
+            };
         }
 
         public bool HasAppliedChanges => ViewModel.HasAppliedChanges;

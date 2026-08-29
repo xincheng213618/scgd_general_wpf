@@ -173,9 +173,12 @@ namespace ColorVision.Copilot
             if (layoutManager == null)
                 return;
 
+            // Materialize the service while the main workspace is being composed so
+            // context-menu callers can resolve it before the panel is opened once.
+            var panelService = CopilotPanelService.GetInstance();
             layoutManager.RegisterPanel(
                 CopilotPanelService.PanelId,
-                () => CopilotPanelService.GetInstance().GetOrCreatePanel(),
+                panelService.GetOrCreatePanel,
                 CopilotUiText.CopilotPanelTitle,
                 PanelPosition.Right);
         }

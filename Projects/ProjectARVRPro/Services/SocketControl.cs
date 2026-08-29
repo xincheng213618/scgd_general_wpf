@@ -35,7 +35,7 @@ namespace ProjectARVRPro.Services
 
             }
 
-            (bool initialized, string resolvedSerialNumber, int firstEnabledIndex) = Application.Current.Dispatcher.Invoke(() =>
+            (string resolvedSerialNumber, int firstEnabledIndex) = Application.Current.Dispatcher.Invoke(() =>
             {
                 var processMetas = Process.ProcessManager.GetInstance().ProcessMetas;
                 int firstEnabledInternalIndex = -1;
@@ -48,11 +48,11 @@ namespace ProjectARVRPro.Services
                     }
                 }
                 if (firstEnabledInternalIndex < 0)
-                    return (false, request.SerialNumber?.Trim() ?? string.Empty, firstEnabledInternalIndex);
+                    return (request.SerialNumber?.Trim() ?? string.Empty, firstEnabledInternalIndex);
 
-                bool initialized = ProjectWindowInstance.WindowInstance.TryInitTest(request.SerialNumber, out string resolvedSerialNumber);
+                string resolvedSerialNumber = ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
                 int externalIndex = firstEnabledInternalIndex + GetProcessEnableSocket.GetIndexOffset();
-                return (initialized, resolvedSerialNumber, externalIndex);
+                return (resolvedSerialNumber, externalIndex);
             });
             if (firstEnabledIndex < 0)
             {
@@ -62,17 +62,6 @@ namespace ProjectARVRPro.Services
                     EventName = EventName,
                     Code = -2,
                     Msg = "No enabled ARVR flow",
-                    SerialNumber = resolvedSerialNumber,
-                };
-            }
-            if (!initialized)
-            {
-                return new SocketResponse
-                {
-                    MsgID = request.MsgID,
-                    EventName = EventName,
-                    Code = -4,
-                    Msg = "ARVR test is busy",
                     SerialNumber = resolvedSerialNumber,
                 };
             }

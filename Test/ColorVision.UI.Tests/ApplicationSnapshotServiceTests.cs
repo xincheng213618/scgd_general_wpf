@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Text.Json;
 using ColorVision.UI;
 using ColorVision.Update;
 
@@ -57,6 +58,39 @@ public sealed class ApplicationSnapshotServiceTests : IDisposable
     }
 
     [Fact]
+    public void AutomaticSnapshotIsEnabledByDefault()
+    {
+        Assert.True(new ApplicationSnapshotConfig().CreateAutomaticSnapshotAfterHealthyStartup);
+    }
+
+    [Fact]
+    public void AutomaticSnapshotUsesOneFixedFileAndRecognizesCurrentVersion()
+    {
+        ApplicationSnapshotService service = ApplicationSnapshotService.Instance;
+        Directory.CreateDirectory(service.SnapshotDirectory);
+        string snapshotPath = Path.Combine(service.SnapshotDirectory, "autosave.zip");
+        using (ZipArchive archive = ZipFile.Open(snapshotPath, ZipArchiveMode.Create))
+        {
+            ZipArchiveEntry manifestEntry = archive.CreateEntry("snapshot-manifest.json");
+            using Stream manifestStream = manifestEntry.Open();
+            JsonSerializer.Serialize(manifestStream, new ApplicationSnapshotManifest
+            {
+                SnapshotKind = "Automatic",
+                CreatedAt = DateTime.Now,
+                Version = "1.2.3.4",
+                ProgramDirectory = AppDomain.CurrentDomain.BaseDirectory,
+            });
+        }
+
+        ApplicationSnapshotInfo snapshot = service.GetSnapshotInfo(snapshotPath);
+
+        Assert.True(snapshot.IsAutomatic);
+        Assert.Equal("自动存档", snapshot.SnapshotTypeText);
+        Assert.False(ApplicationSnapshotService.ShouldCreateAutomaticSnapshot(snapshotPath, "1.2.3.4"));
+        Assert.True(ApplicationSnapshotService.ShouldCreateAutomaticSnapshot(snapshotPath, "1.2.3.5"));
+    }
+
+    [Fact]
     public void RebuiltSnapshotPreservesPreviousFileInRecovery()
     {
         string snapshotDirectory = Path.Combine(_tempDirectory, "Snapshots", "Application");
@@ -72,6 +106,24 @@ public sealed class ApplicationSnapshotServiceTests : IDisposable
         Assert.False(File.Exists(completedSnapshotPath));
         string recoveryPath = Assert.Single(Directory.EnumerateFiles(Path.Combine(snapshotDirectory, "Recovery"), "*.zip"));
         Assert.Equal("previous snapshot", File.ReadAllText(recoveryPath));
+    }
+
+    [Fact]
+    public void AutomaticSnapshotReplacementDoesNotAccumulatePreviousVersions()
+    {
+        string snapshotDirectory = Path.Combine(_tempDirectory, "Snapshots", "Automatic");
+        Directory.CreateDirectory(snapshotDirectory);
+        string snapshotPath = Path.Combine(snapshotDirectory, "autosave.zip");
+        string completedSnapshotPath = Path.Combine(snapshotDirectory, "completed.tmp");
+        File.WriteAllText(snapshotPath, "previous automatic snapshot");
+        File.WriteAllText(completedSnapshotPath, "new automatic snapshot");
+
+        ApplicationSnapshotService.PromoteCompletedAutomaticSnapshot(completedSnapshotPath, snapshotPath);
+
+        Assert.Equal("new automatic snapshot", File.ReadAllText(snapshotPath));
+        Assert.False(File.Exists(completedSnapshotPath));
+        Assert.False(Directory.Exists(Path.Combine(snapshotDirectory, "Recovery")));
+        Assert.Single(Directory.EnumerateFiles(snapshotDirectory));
     }
 
     [Fact]
@@ -144,6 +196,7 @@ public sealed class ApplicationSnapshotServiceTests : IDisposable
             SizeBytes = new FileInfo(service.DefaultSnapshotPath).Length,
             IsDefault = true,
             IsUpdate = false,
+            IsAutomatic = false,
         };
 
         await service.DeleteSnapshotAsync(snapshot);

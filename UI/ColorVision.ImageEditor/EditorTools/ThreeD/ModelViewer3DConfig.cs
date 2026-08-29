@@ -56,5 +56,12 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             set { _HideExportedTextureFiles = value; OnPropertyChanged(); }
         }
         private bool _HideExportedTextureFiles = true;
+
+        public bool AutoOrientModel
+        {
+            get => _AutoOrientModel;
+            set { _AutoOrientModel = value; OnPropertyChanged(); }
+        }
+        private bool _AutoOrientModel = true;
     }
 }

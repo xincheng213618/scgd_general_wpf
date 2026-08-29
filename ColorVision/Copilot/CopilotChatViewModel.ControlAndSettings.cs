@@ -134,7 +134,7 @@ namespace ColorVision.Copilot
             var preferredConversationId = SelectedConversation?.Id ?? _state.ActiveConversationId;
 
             if (_config.EnsureInitialized())
-                PersistConfig();
+                _ = TryPersistCurrentConfig(out _);
 
             var requestedProfile = CopilotChatStateProfileReconciler.Apply(_state, _config, preferredProfileId);
 

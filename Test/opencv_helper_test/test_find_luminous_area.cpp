@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "test_cuda_fusion.h"
+#include "CVCIEFile.hpp"
 
 using json = nlohmann::json;
 
@@ -44,6 +45,10 @@ bool RunCalibrationLegacyColorComparison(
 
 bool RunP2AlgorithmTests();
 bool RunNativeLoggingTests();
+bool RunPseudoColorTests();
+bool RunFindCrossLocalSyntheticTests();
+int RunFindCrossLocalCvRawCommand(int argc, char* argv[]);
+bool ReadCIEFile(const std::string& filePath, CVCIEFile& fileInfo);
 
 static std::atomic<int> g_videoCallbackFrames{ 0 };
 static std::atomic<int> g_videoStatusPlaying{ 0 };
@@ -293,6 +298,833 @@ bool smokeInvalidJsonDoesNotThrow()
     }
 
     return ret < 0;
+}
+
+static cv::Mat createRobustLuminousFixture(
+    int width,
+    int height,
+    const std::array<cv::Point2f, 4>& corners,
+    bool severeArtifacts)
+{
+    cv::Mat mask = cv::Mat::zeros(height, width, CV_8U);
+    std::vector<cv::Point> polygon;
+    for (const cv::Point2f& corner : corners) {
+        polygon.emplace_back(cvRound(corner.x), cvRound(corner.y));
+    }
+    cv::fillConvexPoly(mask, polygon, cv::Scalar(255), cv::LINE_AA);
+
+    cv::Mat image(height, width, CV_32F, cv::Scalar(900.0f));
+    const cv::Point2f darkCorner = corners[0];
+    const double diagonal = std::hypot(static_cast<double>(width), static_cast<double>(height));
+    for (int y = 0; y < height; ++y) {
+        float* imageRow = image.ptr<float>(y);
+        const unsigned char* maskRow = mask.ptr<unsigned char>(y);
+        for (int x = 0; x < width; ++x) {
+            imageRow[x] += static_cast<float>(0.18 * x + 0.11 * y);
+            if (maskRow[x] == 0) {
+                continue;
+            }
+            const double cornerDistance = std::hypot(x - darkCorner.x, y - darkCorner.y) / diagonal;
+            const double vignette = severeArtifacts
+                ? 0.20 + 0.80 * std::clamp(cornerDistance / 0.38, 0.0, 1.0)
+                : 0.62 + 0.38 * std::clamp(cornerDistance / 0.28, 0.0, 1.0);
+            const double vertical = 0.90 + 0.10 * std::cos((y - height * 0.5) / height * CV_PI);
+            imageRow[x] = static_cast<float>(900.0 + 44000.0 * vignette * vertical);
+        }
+    }
+
+    if (severeArtifacts) {
+        // A local light leak creates a second, stronger edge outside the right
+        // side. It covers too little of the side to win the four-line consensus.
+        cv::Mat leakMask = cv::Mat::zeros(height, width, CV_8U);
+        const cv::Point center(
+            cvRound((corners[1].x + corners[2].x) * 0.5 + 26.0),
+            cvRound((corners[1].y + corners[2].y) * 0.5));
+        cv::ellipse(leakMask, center, cv::Size(72, 68), 7.0, 0.0, 360.0, cv::Scalar(255), cv::FILLED, cv::LINE_AA);
+        image.setTo(18500.0f, leakMask);
+
+        // A saturated inner patch exercises the fact that the nominal edge is
+        // found from side support rather than an intensity iso-contour.
+        cv::ellipse(image, cv::Point(width / 2, height / 2), cv::Size(95, 70), 0.0, 0.0, 360.0, cv::Scalar(65000.0f), cv::FILLED);
+    }
+
+    cv::GaussianBlur(image, image, cv::Size(), severeArtifacts ? 2.2 : 1.3);
+    cv::Mat noise(image.size(), CV_32F);
+    cv::RNG rng(severeArtifacts ? 0xA771 : 0x517);
+    rng.fill(noise, cv::RNG::NORMAL, 0.0, severeArtifacts ? 850.0 : 260.0);
+    image += noise;
+    cv::max(image, 0.0, image);
+    cv::min(image, 65535.0, image);
+    cv::Mat image16;
+    image.convertTo(image16, CV_16U);
+    return image16;
+}
+
+static double signedFixtureArea(const std::array<cv::Point2f, 4>& corners)
+{
+    double area = 0.0;
+    for (size_t index = 0; index < corners.size(); ++index) {
+        const cv::Point2f& current = corners[index];
+        const cv::Point2f& next = corners[(index + 1) % corners.size()];
+        area += static_cast<double>(current.x) * next.y - static_cast<double>(current.y) * next.x;
+    }
+    return area * 0.5;
+}
+
+static std::array<cv::Point2f, 4> orderFixtureCorners(std::array<cv::Point2f, 4> corners)
+{
+    cv::Point2f center{};
+    for (const cv::Point2f& corner : corners) {
+        center += corner;
+    }
+    center *= 0.25f;
+    std::sort(corners.begin(), corners.end(), [&](const cv::Point2f& left, const cv::Point2f& right) {
+        return std::atan2(left.y - center.y, left.x - center.x)
+            < std::atan2(right.y - center.y, right.x - center.x);
+    });
+    if (signedFixtureArea(corners) < 0.0) {
+        std::reverse(corners.begin(), corners.end());
+    }
+    auto first = std::min_element(corners.begin(), corners.end(), [](const cv::Point2f& left, const cv::Point2f& right) {
+        const double leftScore = left.x + left.y;
+        const double rightScore = right.x + right.y;
+        return leftScore == rightScore ? left.y < right.y : leftScore < rightScore;
+    });
+    std::rotate(corners.begin(), first, corners.end());
+    return corners;
+}
+
+static cv::Mat addSideEdgeOcclusion(
+    const cv::Mat& source,
+    const std::array<cv::Point2f, 4>& corners,
+    int side,
+    double startFraction,
+    double endFraction)
+{
+    cv::Mat occluded = source.clone();
+    cv::Point2f center{};
+    for (const cv::Point2f& corner : corners) {
+        center += corner;
+    }
+    center *= 0.25f;
+    const cv::Point2f start = corners[side];
+    const cv::Point2f end = corners[(side + 1) % corners.size()];
+    cv::Point2f inward = center - (start + end) * 0.5f;
+    inward *= static_cast<float>(1.0 / cv::norm(inward));
+    const cv::Point2f from = start + (end - start) * static_cast<float>(startFraction);
+    const cv::Point2f to = start + (end - start) * static_cast<float>(endFraction);
+    const std::vector<cv::Point> cover{
+        cv::Point(from - inward * 28.0f),
+        cv::Point(to - inward * 28.0f),
+        cv::Point(to + inward * 58.0f),
+        cv::Point(from + inward * 58.0f)
+    };
+    cv::fillConvexPoly(occluded, cover, cv::Scalar(950), cv::LINE_AA);
+    cv::GaussianBlur(occluded, occluded, cv::Size(), 1.1);
+    return occluded;
+}
+
+static cv::Mat addTopEdgeOcclusion(
+    const cv::Mat& source,
+    const std::array<cv::Point2f, 4>& corners,
+    double startFraction,
+    double endFraction)
+{
+    return addSideEdgeOcclusion(source, corners, 0, startFraction, endFraction);
+}
+
+static cv::Mat createNestedLuminousFixture(
+    int width,
+    int height,
+    const std::array<cv::Point2f, 4>& outerCorners,
+    const std::array<cv::Point2f, 4>& innerCorners)
+{
+    cv::Mat image(height, width, CV_32F, cv::Scalar(1800.0f));
+    cv::Mat outerMask = cv::Mat::zeros(height, width, CV_8U);
+    cv::Mat innerMask = cv::Mat::zeros(height, width, CV_8U);
+    std::vector<cv::Point> outer;
+    std::vector<cv::Point> inner;
+    for (const cv::Point2f& point : outerCorners) {
+        outer.emplace_back(cvRound(point.x), cvRound(point.y));
+    }
+    for (const cv::Point2f& point : innerCorners) {
+        inner.emplace_back(cvRound(point.x), cvRound(point.y));
+    }
+    cv::fillConvexPoly(outerMask, outer, cv::Scalar(255), cv::LINE_AA);
+    cv::fillConvexPoly(innerMask, inner, cv::Scalar(255), cv::LINE_AA);
+    // With the saturated inner rectangle setting the global high tail, the
+    // outer display normalizes to roughly 0.05--0.06 and appears only in the
+    // lowest threshold bucket across all three blur scales.
+    image.setTo(5000.0f, outerMask);
+    image.setTo(61000.0f, innerMask);
+    cv::GaussianBlur(image, image, cv::Size(), 1.5);
+    cv::Mat noise(image.size(), CV_32F);
+    cv::RNG rng(0x0A71E2);
+    rng.fill(noise, cv::RNG::NORMAL, 0.0, 180.0);
+    image += noise;
+    cv::max(image, 0.0, image);
+    cv::min(image, 65535.0, image);
+    cv::Mat image16;
+    image.convertTo(image16, CV_16U);
+    return image16;
+}
+
+static cv::Mat createManyNestedLuminousFixture(
+    int width,
+    int height,
+    const std::array<cv::Point2f, 4>& outerCorners)
+{
+    cv::Mat image(height, width, CV_32F, cv::Scalar(1800.0f));
+    std::vector<cv::Point> outer;
+    for (const cv::Point2f& point : outerCorners) {
+        outer.emplace_back(cvRound(point.x), cvRound(point.y));
+    }
+    cv::fillConvexPoly(image, outer, cv::Scalar(5000.0f), cv::LINE_AA);
+    for (int row = 0; row < 3; ++row) {
+        for (int column = 0; column < 5; ++column) {
+            cv::rectangle(
+                image,
+                cv::Rect(205 + column * 110, 178 + row * 132, 32, 26),
+                cv::Scalar(61000.0f),
+                cv::FILLED,
+                cv::LINE_AA);
+        }
+    }
+    cv::GaussianBlur(image, image, cv::Size(), 1.25);
+    cv::Mat noise(image.size(), CV_32F);
+    cv::RNG rng(0x0B10C5);
+    rng.fill(noise, cv::RNG::NORMAL, 0.0, 120.0);
+    image += noise;
+    cv::max(image, 0.0, image);
+    cv::min(image, 65535.0, image);
+    cv::Mat image16;
+    image.convertTo(image16, CV_16U);
+    return image16;
+}
+
+static cv::Mat createUniformLuminousFixture(
+    int width,
+    int height,
+    const std::array<cv::Point2f, 4>& corners,
+    uint16_t panelValue,
+    bool addTinySaturatedLeak)
+{
+    cv::Mat image(height, width, CV_16UC1, cv::Scalar(1200));
+    std::vector<cv::Point> polygon;
+    for (const cv::Point2f& point : corners) {
+        polygon.emplace_back(cvRound(point.x), cvRound(point.y));
+    }
+    cv::fillConvexPoly(image, polygon, cv::Scalar(panelValue), cv::LINE_AA);
+    if (addTinySaturatedLeak) {
+        // 48x44 is about 0.36% of this fixture: bright enough to dominate
+        // max-based normalization, but intentionally below the robust high tail.
+        cv::rectangle(
+            image,
+            cv::Rect(width / 2 - 24, height / 2 - 22, 48, 44),
+            cv::Scalar(65535),
+            cv::FILLED);
+    }
+    return image;
+}
+
+static cv::Mat createTwoWeakAdjacentSidesFixture(
+    int width,
+    int height,
+    const std::array<cv::Point2f, 4>& corners)
+{
+    cv::Mat sharp(height, width, CV_32F, cv::Scalar(1200.0f));
+    cv::rectangle(
+        sharp,
+        cv::Rect(
+            cvRound(corners[0].x),
+            cvRound(corners[0].y),
+            cvRound(corners[1].x - corners[0].x),
+            cvRound(corners[3].y - corners[0].y)),
+        cv::Scalar(48000.0f),
+        cv::FILLED);
+
+    cv::Mat softlyBounded;
+    cv::GaussianBlur(sharp, softlyBounded, cv::Size(), 70.0, 70.0, cv::BORDER_REPLICATE);
+    cv::Mat weakSideMask = cv::Mat::zeros(height, width, CV_8U);
+    cv::rectangle(
+        weakSideMask,
+        cv::Rect(0, 0, width, cvRound(corners[0].y + 110.0f)),
+        cv::Scalar(255),
+        cv::FILLED);
+    cv::rectangle(
+        weakSideMask,
+        cv::Rect(cvRound(corners[1].x - 220.0f), 0,
+            width - cvRound(corners[1].x - 220.0f), height),
+        cv::Scalar(255),
+        cv::FILLED);
+    softlyBounded.copyTo(sharp, weakSideMask);
+
+    cv::Mat noise(sharp.size(), CV_32F);
+    cv::RNG rng(0x2A6E5);
+    rng.fill(noise, cv::RNG::NORMAL, 0.0, 100.0);
+    sharp += noise;
+    cv::max(sharp, 0.0, sharp);
+    cv::min(sharp, 65535.0, sharp);
+    cv::Mat image16;
+    sharp.convertTo(image16, CV_16U);
+    return image16;
+}
+
+static bool validateLuminousV2Rejection(const json& output, const std::string& expectedReason = {})
+{
+    if (output.value("Success", true)
+        || output.value("Algorithm", std::string()) != "RobustV2"
+        || output.value("FailureReason", std::string()).empty()) {
+        std::cerr << "Expected V2 rejection: " << output.dump() << std::endl;
+        return false;
+    }
+    if (!expectedReason.empty() && output.value("FailureReason", std::string()) != expectedReason) {
+        std::cerr << "Unexpected V2 rejection reason: " << output.dump() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+static bool callLuminousV2(const cv::Mat& image, RoiRect roi, const json& config, json& output, int& returnCode)
+{
+    HImage hImage = createHImageFromMat(image);
+    char* result = nullptr;
+    const std::string configText = config.dump();
+    returnCode = M_FindLuminousAreaV2(hImage, roi, configText.c_str(), &result);
+    if (returnCode <= 0 || result == nullptr) {
+        if (result != nullptr) {
+            FreeResult(result);
+        }
+        return false;
+    }
+    output = json::parse(result, nullptr, false);
+    FreeResult(result);
+    return !output.is_discarded();
+}
+
+static bool validateLuminousV2Success(
+    const json& output,
+    const std::array<cv::Point2f, 4>& expected,
+    double tolerance)
+{
+    if (!output.value("Success", false)
+        || output.value("Algorithm", std::string()) != "RobustV2"
+        || !output.contains("Corners") || output["Corners"].size() != 4
+        || !output.contains("SideQuality") || output["SideQuality"].size() != 4
+        || !output.contains("Warnings") || !output["Warnings"].is_array()) {
+        std::cerr << "Unexpected V2 JSON: " << output.dump() << std::endl;
+        return false;
+    }
+
+    for (size_t index = 0; index < expected.size(); ++index) {
+        const double x = output["Corners"][index].value("X", -1e9);
+        const double y = output["Corners"][index].value("Y", -1e9);
+        if (std::hypot(x - expected[index].x, y - expected[index].y) > tolerance) {
+            std::cerr << "Corner " << index << " outside tolerance: " << x << ", " << y
+                << " expected " << expected[index].x << ", " << expected[index].y
+                << " JSON=" << output.dump() << std::endl;
+            return false;
+        }
+    }
+
+    const double confidence = output.value("Confidence", -1.0);
+    return confidence >= 0.0 && confidence <= 1.0
+        && output.value("FailureReason", std::string("missing")).empty();
+}
+
+static bool validateLuminousV2CanonicalCornerSet(
+    const json& output,
+    const std::array<cv::Point2f, 4>& expected,
+    double tolerance)
+{
+    if (!output.value("Success", false)
+        || !output.contains("Corners") || output["Corners"].size() != 4
+        || !output.contains("SideQuality") || output["SideQuality"].size() != 4) {
+        return false;
+    }
+    std::array<cv::Point2f, 4> actual{};
+    for (size_t index = 0; index < actual.size(); ++index) {
+        actual[index] = cv::Point2f(
+            output["Corners"][index].value("X", -1e9f),
+            output["Corners"][index].value("Y", -1e9f));
+    }
+    const auto leftTop = std::min_element(actual.begin(), actual.end(), [](const cv::Point2f& left, const cv::Point2f& right) {
+        const double leftScore = static_cast<double>(left.x) + left.y;
+        const double rightScore = static_cast<double>(right.x) + right.y;
+        return leftScore == rightScore ? left.y < right.y : leftScore < rightScore;
+    });
+    if (leftTop != actual.begin() || signedFixtureArea(actual) <= 0.0) {
+        return false;
+    }
+
+    std::array<bool, 4> matched{};
+    for (const cv::Point2f& point : actual) {
+        double bestDistance = std::numeric_limits<double>::max();
+        size_t bestIndex = expected.size();
+        for (size_t index = 0; index < expected.size(); ++index) {
+            if (!matched[index]) {
+                const double distance = cv::norm(point - expected[index]);
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    bestIndex = index;
+                }
+            }
+        }
+        if (bestIndex == expected.size() || bestDistance > tolerance) {
+            return false;
+        }
+        matched[bestIndex] = true;
+    }
+
+    static constexpr std::array<const char*, 4> sideNames{ "Top", "Right", "Bottom", "Left" };
+    for (size_t index = 0; index < sideNames.size(); ++index) {
+        if (output["SideQuality"][index].value("Name", std::string()) != sideNames[index]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool hasLuminousV2Warning(const json& output, const std::string& warning)
+{
+    if (!output.contains("Warnings") || !output["Warnings"].is_array()) {
+        return false;
+    }
+    return std::any_of(output["Warnings"].begin(), output["Warnings"].end(), [&](const json& value) {
+        return value.is_string() && value.get<std::string>() == warning;
+    });
+}
+
+static bool validateLuminousV2DegradedSuccess(
+    const json& output,
+    const std::array<cv::Point2f, 4>& expected,
+    double tolerance,
+    double cleanConfidence,
+    const std::string& requiredWarning = {})
+{
+    if (!validateLuminousV2Success(output, expected, tolerance)
+        || output["Warnings"].empty()) {
+        std::cerr << "Expected recoverable V2 result with diagnostics: " << output.dump() << std::endl;
+        return false;
+    }
+
+    const double confidence = output.value("Confidence", -1.0);
+    if (confidence >= cleanConfidence) {
+        std::cerr << "Recoverable degradation did not reduce confidence below " << cleanConfidence
+            << ": " << output.dump() << std::endl;
+        return false;
+    }
+    if (!requiredWarning.empty() && !hasLuminousV2Warning(output, requiredWarning)) {
+        std::cerr << "Missing V2 warning " << requiredWarning << ": " << output.dump() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool RunLuminousAreaV2SyntheticTests()
+{
+    std::cout << "M_FindLuminousAreaV2 synthetic regression..." << std::endl;
+    const std::array<cv::Point2f, 4> expected{
+        cv::Point2f(153.0f, 126.0f),
+        cv::Point2f(746.0f, 96.0f),
+        cv::Point2f(779.0f, 526.0f),
+        cv::Point2f(119.0f, 558.0f)
+    };
+    double cleanConfidence = -1.0;
+
+    for (bool severe : { false, true }) {
+        cv::Mat image = createRobustLuminousFixture(920, 680, expected, severe);
+        json output;
+        int returnCode = 0;
+        if (!callLuminousV2(image, RoiRect{ 0, 0, 0, 0 }, json::object(), output, returnCode)
+            || !validateLuminousV2Success(output, expected, severe ? 18.0 : 10.0)) {
+            std::cerr << "V2 " << (severe ? "artifact" : "perspective") << " fixture failed" << std::endl;
+            return false;
+        }
+        if (!severe) {
+            cleanConfidence = output.value("Confidence", -1.0);
+        }
+    }
+
+    bool coarseRetentionRegressionsPassed = true;
+    cv::Mat manyNestedLuminous = createManyNestedLuminousFixture(920, 680, expected);
+    json manyNestedLuminousOutput;
+    int manyNestedLuminousReturnCode = 0;
+    const auto manyNestedStarted = std::chrono::steady_clock::now();
+    if (!callLuminousV2(manyNestedLuminous, RoiRect{ 0, 0, 0, 0 }, json::object(),
+        manyNestedLuminousOutput, manyNestedLuminousReturnCode)
+        || !validateLuminousV2Success(manyNestedLuminousOutput, expected, 20.0)) {
+        std::cerr << "V2 many-inner-block weak-outer regression failed: "
+            << manyNestedLuminousOutput.dump() << std::endl;
+        coarseRetentionRegressionsPassed = false;
+    }
+    const double manyNestedElapsedMs = std::chrono::duration<double, std::milli>(
+        std::chrono::steady_clock::now() - manyNestedStarted).count();
+    std::cout << "Many-inner-block fixture ElapsedMs=" << manyNestedElapsedMs << std::endl;
+
+    const std::array<cv::Point2f, 4> ultraNearFullExpected{
+        cv::Point2f(1.0f, 1.0f), cv::Point2f(1598.0f, 1.0f),
+        cv::Point2f(1598.0f, 1198.0f), cv::Point2f(1.0f, 1198.0f)
+    };
+    cv::Mat ultraNearFull = createUniformLuminousFixture(
+        1600, 1200, ultraNearFullExpected, 42000, false);
+    json ultraNearFullOutput;
+    int ultraNearFullReturnCode = 0;
+    if (!callLuminousV2(ultraNearFull, RoiRect{ 0, 0, 0, 0 }, json::object(),
+        ultraNearFullOutput, ultraNearFullReturnCode)
+        || !validateLuminousV2Success(ultraNearFullOutput, ultraNearFullExpected, 6.0)) {
+        std::cerr << "V2 99.6-percent near-full regression failed: "
+            << ultraNearFullOutput.dump() << std::endl;
+        coarseRetentionRegressionsPassed = false;
+    }
+    if (!coarseRetentionRegressionsPassed) {
+        return false;
+    }
+
+    const std::array<cv::Point2f, 4> nearFullFrameExpected{
+        cv::Point2f(6.0f, 7.0f), cv::Point2f(893.0f, 6.0f),
+        cv::Point2f(892.0f, 653.0f), cv::Point2f(7.0f, 654.0f)
+    };
+    cv::Mat nearFullFrame = createRobustLuminousFixture(
+        900, 660, nearFullFrameExpected, false);
+    json nearFullFrameOutput;
+    int nearFullFrameReturnCode = 0;
+    if (!callLuminousV2(nearFullFrame, RoiRect{ 0, 0, 0, 0 }, json::object(),
+        nearFullFrameOutput, nearFullFrameReturnCode)
+        || !validateLuminousV2Success(nearFullFrameOutput, nearFullFrameExpected, 12.0)) {
+        std::cerr << "V2 near-full-frame luminous regression failed: "
+            << nearFullFrameOutput.dump() << std::endl;
+        return false;
+    }
+
+    cv::Mat nearFullUniform = createUniformLuminousFixture(
+        900, 660, nearFullFrameExpected, 42000, false);
+    json nearFullUniformOutput;
+    int nearFullUniformReturnCode = 0;
+    if (!callLuminousV2(nearFullUniform, RoiRect{ 0, 0, 0, 0 }, json::object(),
+        nearFullUniformOutput, nearFullUniformReturnCode)
+        || !validateLuminousV2Success(nearFullUniformOutput, nearFullFrameExpected, 10.0)) {
+        std::cerr << "V2 near-full-frame uniform regression failed: "
+            << nearFullUniformOutput.dump() << std::endl;
+        return false;
+    }
+
+    cv::Mat dimOuterWithTinyLeak = createUniformLuminousFixture(
+        920, 680, expected, 8500, true);
+    json dimOuterWithTinyLeakOutput;
+    int dimOuterWithTinyLeakReturnCode = 0;
+    if (!callLuminousV2(dimOuterWithTinyLeak, RoiRect{ 0, 0, 0, 0 }, json::object(),
+        dimOuterWithTinyLeakOutput, dimOuterWithTinyLeakReturnCode)
+        || !validateLuminousV2Success(dimOuterWithTinyLeakOutput, expected, 10.0)) {
+        std::cerr << "V2 dim-outer tiny-leak regression failed: "
+            << dimOuterWithTinyLeakOutput.dump() << std::endl;
+        return false;
+    }
+
+    const std::array<cv::Point2f, 4> smallBorderExpected{
+        cv::Point2f(0.0f, 249.0f), cv::Point2f(55.0f, 248.0f),
+        cv::Point2f(56.0f, 282.0f), cv::Point2f(0.0f, 284.0f)
+    };
+    cv::Mat smallBorderTarget = createUniformLuminousFixture(
+        900, 660, smallBorderExpected, 42000, false);
+    json smallBorderOutput;
+    int smallBorderReturnCode = 0;
+    if (!callLuminousV2(smallBorderTarget, RoiRect{ 0, 0, 0, 0 }, json::object(),
+        smallBorderOutput, smallBorderReturnCode)
+        || !validateLuminousV2Success(smallBorderOutput, smallBorderExpected, 5.0)) {
+        std::cerr << "V2 small border-target regression failed: "
+            << smallBorderOutput.dump() << std::endl;
+        return false;
+    }
+
+    cv::Point2f rotatedVertices[4];
+    cv::RotatedRect(cv::Point2f(450.0f, 380.0f), cv::Size2f(500.0f, 230.0f), 58.0f)
+        .points(rotatedVertices);
+    const std::array<cv::Point2f, 4> rotatedExpected = orderFixtureCorners({
+        rotatedVertices[0], rotatedVertices[1], rotatedVertices[2], rotatedVertices[3]
+    });
+    cv::Mat rotated = createRobustLuminousFixture(900, 760, rotatedExpected, false);
+    json rotatedOutput;
+    int rotatedReturnCode = 0;
+    if (!callLuminousV2(rotated, RoiRect{ 0, 0, 0, 0 }, json::object(), rotatedOutput, rotatedReturnCode)
+        || !validateLuminousV2Success(rotatedOutput, rotatedExpected, 14.0)) {
+        std::cerr << "V2 large-rotation regression failed" << std::endl;
+        return false;
+    }
+
+    cv::Point2f diamondVertices[4];
+    cv::RotatedRect(cv::Point2f(450.25f, 380.5f), cv::Size2f(500.0f, 230.0f), 45.0f)
+        .points(diamondVertices);
+    const std::array<cv::Point2f, 4> diamondExpected = orderFixtureCorners({
+        diamondVertices[0], diamondVertices[1], diamondVertices[2], diamondVertices[3]
+    });
+    cv::Mat diamond = createRobustLuminousFixture(900, 760, diamondExpected, false);
+    json diamondOutput;
+    int diamondReturnCode = 0;
+    if (!callLuminousV2(diamond, RoiRect{ 0, 0, 0, 0 }, json::object(), diamondOutput, diamondReturnCode)
+        || !validateLuminousV2CanonicalCornerSet(diamondOutput, diamondExpected, 14.0)) {
+        std::cerr << "V2 45-degree corner-order regression failed: " << diamondOutput.dump() << std::endl;
+        return false;
+    }
+
+    cv::Mat occlusionBase = createRobustLuminousFixture(920, 680, expected, false);
+    cv::Mat localOcclusion = addTopEdgeOcclusion(occlusionBase, expected, 0.42, 0.60);
+    json localOcclusionOutput;
+    int localOcclusionReturnCode = 0;
+    if (!callLuminousV2(localOcclusion, RoiRect{ 0, 0, 0, 0 }, json::object(),
+        localOcclusionOutput, localOcclusionReturnCode)
+        || !validateLuminousV2Success(localOcclusionOutput, expected, 18.0)) {
+        std::cerr << "V2 local-occlusion recovery regression failed" << std::endl;
+        return false;
+    }
+
+    cv::Mat longOcclusion = addTopEdgeOcclusion(occlusionBase, expected, 0.18, 0.82);
+    json longOcclusionOutput;
+    int longOcclusionReturnCode = 0;
+    if (!callLuminousV2(longOcclusion, RoiRect{ 0, 0, 0, 0 }, json::object(),
+        longOcclusionOutput, longOcclusionReturnCode)
+        || !validateLuminousV2DegradedSuccess(longOcclusionOutput, expected, 28.0, cleanConfidence)) {
+        std::cerr << "V2 inferable long-occlusion recovery regression failed" << std::endl;
+        return false;
+    }
+
+    const std::array<cv::Point2f, 4> adjacentWeakExpected{
+        cv::Point2f(150.0f, 120.0f), cv::Point2f(750.0f, 120.0f),
+        cv::Point2f(750.0f, 540.0f), cv::Point2f(150.0f, 540.0f)
+    };
+    cv::Mat adjacentWeakSides = createTwoWeakAdjacentSidesFixture(
+        900, 660, adjacentWeakExpected);
+    json adjacentWeakSidesOutput;
+    int adjacentWeakSidesReturnCode = 0;
+    if (!callLuminousV2(adjacentWeakSides, RoiRect{ 0, 0, 0, 0 }, json::object(),
+        adjacentWeakSidesOutput, adjacentWeakSidesReturnCode)
+        || !validateLuminousV2DegradedSuccess(
+            adjacentWeakSidesOutput, adjacentWeakExpected, 60.0, cleanConfidence, "InferredTopSide")
+        || !hasLuminousV2Warning(adjacentWeakSidesOutput, "InferredRightSide")) {
+        std::cerr << "V2 adjacent-side inference regression failed: "
+            << adjacentWeakSidesOutput.dump() << std::endl;
+        return false;
+    }
+
+    const std::array<cv::Point2f, 4> nestedInner{
+        cv::Point2f(246.0f, 204.0f), cv::Point2f(657.0f, 188.0f),
+        cv::Point2f(672.0f, 439.0f), cv::Point2f(228.0f, 458.0f)
+    };
+    cv::Mat nestedLuminous = createNestedLuminousFixture(
+        920, 680, expected, nestedInner);
+    json nestedLuminousOutput;
+    int nestedLuminousReturnCode = 0;
+    if (!callLuminousV2(nestedLuminous, RoiRect{ 0, 0, 0, 0 }, json::object(),
+        nestedLuminousOutput, nestedLuminousReturnCode)
+        || !validateLuminousV2Success(nestedLuminousOutput, expected, 18.0)) {
+        std::cerr << "V2 weak-outer nested-luminous regression failed: "
+            << nestedLuminousOutput.dump() << std::endl;
+        return false;
+    }
+
+    cv::Mat inferredOuterWithNestedLuminous = addTopEdgeOcclusion(
+        nestedLuminous, expected, 0.12, 0.88);
+    json inferredOuterWithNestedOutput;
+    int inferredOuterWithNestedReturnCode = 0;
+    if (!callLuminousV2(inferredOuterWithNestedLuminous, RoiRect{ 0, 0, 0, 0 }, json::object(),
+        inferredOuterWithNestedOutput, inferredOuterWithNestedReturnCode)
+        || !validateLuminousV2DegradedSuccess(
+            inferredOuterWithNestedOutput, expected, 30.0, cleanConfidence, "InferredTopSide")) {
+        std::cerr << "V2 inferred weak-outer nested-luminous regression failed: "
+            << inferredOuterWithNestedOutput.dump() << std::endl;
+        return false;
+    }
+
+    const std::array<cv::Point2f, 4> clippedExpected{
+        cv::Point2f(-28.0f, 132.0f),
+        cv::Point2f(520.0f, 108.0f),
+        cv::Point2f(548.0f, 504.0f),
+        cv::Point2f(46.0f, 532.0f)
+    };
+    const std::array<cv::Point2f, 4> clippedReferenceExpected{
+        cv::Point2f(52.0f, 132.0f),
+        cv::Point2f(600.0f, 108.0f),
+        cv::Point2f(628.0f, 504.0f),
+        cv::Point2f(126.0f, 532.0f)
+    };
+    cv::Mat clippedReference = createRobustLuminousFixture(700, 640, clippedReferenceExpected, false);
+    json clippedReferenceOutput;
+    int clippedReferenceReturnCode = 0;
+    if (!callLuminousV2(clippedReference, RoiRect{ 0, 0, 0, 0 }, json::object(),
+        clippedReferenceOutput, clippedReferenceReturnCode)
+        || !validateLuminousV2Success(clippedReferenceOutput, clippedReferenceExpected, 12.0)) {
+        std::cerr << "V2 clipped-area clean reference regression failed" << std::endl;
+        return false;
+    }
+
+    cv::Mat clipped = createRobustLuminousFixture(700, 640, clippedExpected, false);
+    json clippedOutput;
+    int clippedReturnCode = 0;
+    if (!callLuminousV2(clipped, RoiRect{ 0, 0, 0, 0 }, json::object(), clippedOutput, clippedReturnCode)
+        || !validateLuminousV2DegradedSuccess(clippedOutput, clippedExpected, 30.0,
+            clippedReferenceOutput.value("Confidence", -1.0))) {
+        std::cerr << "V2 inferable clipped-corner recovery regression failed" << std::endl;
+        return false;
+    }
+
+    const std::array<cv::Point2f, 4> candidateLeft{
+        cv::Point2f(65.0f, 128.0f), cv::Point2f(485.0f, 116.0f),
+        cv::Point2f(492.0f, 462.0f), cv::Point2f(54.0f, 474.0f)
+    };
+    const std::array<cv::Point2f, 4> candidateRight{
+        cv::Point2f(616.0f, 116.0f), cv::Point2f(1036.0f, 128.0f),
+        cv::Point2f(1047.0f, 474.0f), cv::Point2f(609.0f, 462.0f)
+    };
+    cv::Mat leftImage = addTopEdgeOcclusion(
+        createRobustLuminousFixture(1100, 590, candidateLeft, false), candidateLeft, 0.40, 0.60);
+    cv::Mat rightImage = createRobustLuminousFixture(1100, 590, candidateRight, false);
+    json preferredCandidateOutput;
+    int preferredCandidateReturnCode = 0;
+    if (!callLuminousV2(rightImage, RoiRect{ 0, 0, 0, 0 }, json::object(),
+        preferredCandidateOutput, preferredCandidateReturnCode)
+        || !validateLuminousV2Success(preferredCandidateOutput, candidateRight, 12.0)) {
+        std::cerr << "V2 preferred-candidate clean reference regression failed" << std::endl;
+        return false;
+    }
+
+    cv::Mat multiCandidateImage;
+    cv::max(leftImage, rightImage, multiCandidateImage);
+    json multiCandidateOutput;
+    int multiCandidateReturnCode = 0;
+    if (!callLuminousV2(multiCandidateImage, RoiRect{ 0, 0, 0, 0 }, json::object(),
+        multiCandidateOutput, multiCandidateReturnCode)
+        || !validateLuminousV2DegradedSuccess(multiCandidateOutput, candidateRight, 20.0,
+            preferredCandidateOutput.value("Confidence", -1.0), "MultipleComparableCandidates")) {
+        std::cerr << "V2 comparable-candidate preference regression failed" << std::endl;
+        return false;
+    }
+
+    // ROI coordinates intentionally remain local for compatibility with the
+    // existing managed caller, which applies the ROI offset itself.
+    cv::Mat local = createRobustLuminousFixture(920, 680, expected, true);
+    cv::Mat canvas(820, 1120, CV_16U, cv::Scalar(700));
+    const cv::Rect placement(87, 61, local.cols, local.rows);
+    local.copyTo(canvas(placement));
+    json roiOutput;
+    int roiReturnCode = 0;
+    if (!callLuminousV2(canvas, RoiRect{ placement.x, placement.y, placement.width, placement.height },
+        json::object(), roiOutput, roiReturnCode)
+        || !validateLuminousV2Success(roiOutput, expected, 18.0)) {
+        std::cerr << "V2 ROI-local coordinate regression failed" << std::endl;
+        return false;
+    }
+
+    json strictOutput;
+    int strictReturnCode = 0;
+    if (!callLuminousV2(local, RoiRect{ 0, 0, 0, 0 }, json{ { "MinConfidence", 1.0 } },
+        strictOutput, strictReturnCode)
+        || strictOutput.value("Success", true)
+        || strictOutput.value("FailureReason", std::string()) != "LowConfidence"
+        || strictOutput["Corners"].size() != 4) {
+        std::cerr << "V2 MinConfidence rejection regression failed: " << strictOutput.dump() << std::endl;
+        return false;
+    }
+
+    cv::Mat noSignal(360, 480, CV_16UC1, cv::Scalar(2400));
+    cv::Mat noiseOnly(360, 480, CV_16UC1);
+    cv::RNG failureRng(0xBAD51);
+    failureRng.fill(noiseOnly, cv::RNG::NORMAL, 2400.0, 750.0);
+    cv::Mat fullFrameGradient(360, 480, CV_16UC1);
+    for (int y = 0; y < fullFrameGradient.rows; ++y) {
+        uint16_t* row = fullFrameGradient.ptr<uint16_t>(y);
+        for (int x = 0; x < fullFrameGradient.cols; ++x) {
+            row[x] = static_cast<uint16_t>(1200 + x * 55 + y * 28);
+        }
+    }
+    cv::Mat smallBorderSpot(360, 480, CV_16UC1, cv::Scalar(1200));
+    cv::circle(smallBorderSpot, cv::Point(12, 180), 12, cv::Scalar(42000), cv::FILLED, cv::LINE_AA);
+    const std::array<cv::Point2f, 4> twoSideOnlyExpected{
+        cv::Point2f(-168.0f, 132.0f), cv::Point2f(868.0f, 108.0f),
+        cv::Point2f(884.0f, 504.0f), cv::Point2f(-182.0f, 532.0f)
+    };
+    cv::Mat twoSideOnly = createRobustLuminousFixture(700, 640, twoSideOnlyExpected, false);
+    for (const cv::Mat& rejectedImage : { noSignal, noiseOnly, fullFrameGradient, smallBorderSpot, twoSideOnly }) {
+        json rejected;
+        int rejectedReturnCode = 0;
+        if (!callLuminousV2(rejectedImage, RoiRect{ 0, 0, 0, 0 }, json::object(), rejected, rejectedReturnCode)
+            || !validateLuminousV2Rejection(rejected)
+            || !rejected.contains("Corners")) {
+            std::cerr << "V2 algorithm rejection contract failed: " << rejected.dump() << std::endl;
+            return false;
+        }
+    }
+    json noSignalOutput;
+    int noSignalReturnCode = 0;
+    if (!callLuminousV2(noSignal, RoiRect{ 0, 0, 0, 0 }, json::object(), noSignalOutput, noSignalReturnCode)
+        || !noSignalOutput["Corners"].empty()) {
+        std::cerr << "V2 no-signal result unexpectedly contained corners" << std::endl;
+        return false;
+    }
+
+    HImage validImage = createHImageFromMat(local);
+    char* invalidResult = reinterpret_cast<char*>(static_cast<uintptr_t>(1));
+    const int invalidJsonCode = M_FindLuminousAreaV2(
+        validImage, RoiRect{ 0, 0, 0, 0 }, "{", &invalidResult);
+    if (invalidJsonCode >= 0 || invalidResult != nullptr) {
+        std::cerr << "V2 invalid JSON contract failed" << std::endl;
+        return false;
+    }
+    const int invalidConfigCode = M_FindLuminousAreaV2(
+        validImage, RoiRect{ 0, 0, 0, 0 }, "{\"MinConfidence\":\"high\"}", &invalidResult);
+    if (invalidConfigCode >= 0 || invalidResult != nullptr) {
+        std::cerr << "V2 invalid option contract failed" << std::endl;
+        return false;
+    }
+
+    std::cout << "M_FindLuminousAreaV2 synthetic regression passed" << std::endl;
+    return true;
+}
+
+bool RunLuminousAreaV2CvRaw(const std::filesystem::path& path, bool expectSuccess)
+{
+    CVCIEFile file;
+    if (!ReadCIEFile(path.string(), file) || file.Data.empty()
+        || file.Rows <= 0 || file.Cols <= 0 || file.Bpp != 16 || file.Channels <= 0) {
+        std::cerr << "Unable to read cvraw: " << path << std::endl;
+        return false;
+    }
+
+    // Camera cvraw payloads use interleaved BGR channel storage. CIE XYZ files
+    // are the planar format; treating a raw payload as one plane can appear to
+    // work while actually mixing rows and channels.
+    HImage image{};
+    image.rows = file.Rows;
+    image.cols = file.Cols;
+    image.channels = file.Channels;
+    image.depth = file.Bpp;
+    image.stride = file.Cols * file.Channels * static_cast<int>(sizeof(uint16_t));
+    image.pData = file.Data.data();
+
+    char* result = nullptr;
+    const auto started = std::chrono::steady_clock::now();
+    const int returnCode = M_FindLuminousAreaV2(image, RoiRect{ 0, 0, 0, 0 }, "{}", &result);
+    const double elapsedMs = std::chrono::duration<double, std::milli>(
+        std::chrono::steady_clock::now() - started).count();
+    std::cout << "ReturnCode=" << returnCode << " ElapsedMs=" << elapsedMs << std::endl;
+    if (returnCode <= 0 || result == nullptr) {
+        return false;
+    }
+    std::cout << result << std::endl;
+    const json output = json::parse(result, nullptr, false);
+    FreeResult(result);
+    if (output.is_discarded()
+        || !output.contains("Corners")
+        || !output["Corners"].is_array()) {
+        return false;
+    }
+
+    if (expectSuccess) {
+        return output.value("Success", false) && output["Corners"].size() == 4;
+    }
+
+    return !output.value("Success", true)
+        && output["Corners"].empty()
+        && !output.value("FailureReason", std::string()).empty();
 }
 
 bool smokeFreeResultAcceptsNull()
@@ -2765,6 +3597,24 @@ int main(int argc, char* argv[])
     if (argc == 2 && std::string(argv[1]) == "--native-log") {
         return RunNativeLoggingTests() ? 0 : 1;
     }
+    if (argc == 2 && std::string(argv[1]) == "--pseudo-color") {
+        return RunPseudoColorTests() ? 0 : 1;
+    }
+    if (argc == 2 && std::string(argv[1]) == "--luminous-v2-only") {
+        return RunLuminousAreaV2SyntheticTests() ? 0 : 1;
+    }
+    if (argc == 2 && std::string(argv[1]) == "--find-cross-only") {
+        return RunFindCrossLocalSyntheticTests() ? 0 : 1;
+    }
+    if (argc >= 2 && std::string(argv[1]) == "--find-cross-cvraw") {
+        return RunFindCrossLocalCvRawCommand(argc, argv);
+    }
+    if (argc == 3 && std::string(argv[1]) == "--luminous-v2-cvraw") {
+        return RunLuminousAreaV2CvRaw(std::filesystem::u8path(argv[2]), true) ? 0 : 1;
+    }
+    if (argc == 3 && std::string(argv[1]) == "--luminous-v2-cvraw-reject") {
+        return RunLuminousAreaV2CvRaw(std::filesystem::u8path(argv[2]), false) ? 0 : 1;
+    }
 
     std::cout << "========================================" << std::endl;
     std::cout << "M_FindLuminousArea smoke test" << std::endl;
@@ -2787,6 +3637,16 @@ int main(int argc, char* argv[])
 
     if (!smokeFindLuminousArea()) {
         std::cerr << "Smoke test failed" << std::endl;
+        return 1;
+    }
+
+    if (!RunLuminousAreaV2SyntheticTests()) {
+        std::cerr << "M_FindLuminousAreaV2 synthetic regression failed" << std::endl;
+        return 1;
+    }
+
+    if (!RunFindCrossLocalSyntheticTests()) {
+        std::cerr << "M_FindCrossLocal synthetic regression failed" << std::endl;
         return 1;
     }
 
@@ -2937,6 +3797,11 @@ int main(int argc, char* argv[])
 
     if (!RunNativeLoggingTests()) {
         std::cerr << "Native logging tests failed" << std::endl;
+        return 1;
+    }
+
+    if (!RunPseudoColorTests()) {
+        std::cerr << "Pseudo-color regression tests failed" << std::endl;
         return 1;
     }
 

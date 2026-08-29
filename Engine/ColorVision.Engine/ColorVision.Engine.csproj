@@ -112,9 +112,6 @@
 		<Compile Update="Templates\Matching\DisplayMatching.xaml.cs">
 			<SubType>Code</SubType>
 		</Compile>
-		<Compile Update="Templates\ARVR\MTF\DisplayMTF.xaml.cs">
-			<SubType>Code</SubType>
-		</Compile>
 		<Compile Update="Templates\POI\AlgorithmImp\DisplayPOI.xaml.cs">
 			<SubType>Code</SubType>
 		</Compile>
