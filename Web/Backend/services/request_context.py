@@ -41,6 +41,7 @@ class RequestContext:
     client_version: str = ""
     session_authenticated: bool = False
     session_user_authenticated: bool = False
+    session_must_change_password: bool = False
     session_username: str = ""
     session_role: str = ""
     basic_username: str = ""

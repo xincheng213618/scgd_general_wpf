@@ -5,9 +5,10 @@ import type { ErrorInfo, ReactNode } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { PublicLayout } from './layouts/PublicLayout'
 import { getSession } from './services/auth'
+import { AUTHORIZATION_STATE_STALE_EVENT } from './services/request'
 import { startWebVitals, trackPageView } from './services/webExperience'
 import type { ThemeMode, UiDensity } from './types/admin'
-import type { AuthSession } from './types/site'
+import type { AuthSession, AuthSessionUpdater } from './types/site'
 
 const themeStorageKey = 'colorvision-web-theme'
 const densityStorageKey = 'colorvision-web-density'
@@ -21,6 +22,7 @@ const documentTitles: Record<string, string> = {
   '/tools': '工具下载 - ColorVision',
   '/transfer': '文件中转 - ColorVision',
   '/login': '登录 / 注册 - ColorVision',
+  '/account': '个人中心 - ColorVision',
   '/admin': '管理控制台 - ColorVision',
   '/admin/publish': '发布中心 - ColorVision',
   '/admin/files': '文件管理 - ColorVision',
@@ -30,6 +32,8 @@ const documentTitles: Record<string, string> = {
   '/admin/operations/hosts': '终端运维 - ColorVision',
   '/admin/feedback': '反馈收件箱 - ColorVision',
   '/admin/users': '账号管理 - ColorVision',
+  '/admin/login-security': '账号安全 - ColorVision',
+  '/admin/permissions': '权限管理 - ColorVision',
   '/admin/api-keys': 'API Key - ColorVision',
   '/admin/copilot': 'Copilot 配置 - ColorVision',
   '/admin/audit': '审计日志 - ColorVision',
@@ -41,6 +45,7 @@ function documentTitle(pathname: string) {
   const exactTitle = documentTitles[pathname]
   if (exactTitle) return exactTitle
   if (pathname.startsWith('/plugins/')) return '插件详情 - ColorVision'
+  if (pathname.startsWith('/transfer/share/')) return '文件分享 - ColorVision'
   if (pathname.startsWith('/browse')) return '文件浏览 - ColorVision'
   if (pathname.startsWith('/admin')) return '管理控制台 - ColorVision'
   return 'ColorVision'
@@ -71,6 +76,7 @@ function WebExperienceTracker() {
 }
 
 const AdminLayout = lazy(() => import('./layouts/AdminLayout').then((module) => ({ default: module.AdminLayout })))
+const AccountPage = lazy(() => import('./pages/AccountPage').then((module) => ({ default: module.AccountPage })))
 const ApiKeysPage = lazy(() => import('./pages/ApiKeysPage').then((module) => ({ default: module.ApiKeysPage })))
 const AuditPage = lazy(() => import('./pages/AuditPage').then((module) => ({ default: module.AuditPage })))
 const BrowsePage = lazy(() => import('./pages/BrowsePage').then((module) => ({ default: module.BrowsePage })))
@@ -83,7 +89,9 @@ const FilesPage = lazy(() => import('./pages/FilesPage').then((module) => ({ def
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage').then((module) => ({ default: module.FeedbackPage })))
 const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })))
 const JobsPage = lazy(() => import('./pages/JobsPage').then((module) => ({ default: module.JobsPage })))
+const LoginSecurityPage = lazy(() => import('./pages/LoginSecurityPage').then((module) => ({ default: module.LoginSecurityPage })))
 const OperationsPage = lazy(() => import('./pages/OperationsPage').then((module) => ({ default: module.OperationsPage })))
+const PermissionsPage = lazy(() => import('./pages/PermissionsPage').then((module) => ({ default: module.PermissionsPage })))
 const UsersPage = lazy(() => import('./pages/UsersPage').then((module) => ({ default: module.UsersPage })))
 const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })))
 const PluginDetailPage = lazy(() => import('./pages/PluginDetailPage').then((module) => ({ default: module.PluginDetailPage })))
@@ -94,6 +102,7 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage').then((module) => 
 const ToolsPage = lazy(() => import('./pages/ToolsPage').then((module) => ({ default: module.ToolsPage })))
 const TrafficPage = lazy(() => import('./pages/TrafficPage').then((module) => ({ default: module.TrafficPage })))
 const TransferPage = lazy(() => import('./pages/TransferPage').then((module) => ({ default: module.TransferPage })))
+const TransferSharePage = lazy(() => import('./pages/TransferSharePage').then((module) => ({ default: module.TransferSharePage })))
 const UpdatesPage = lazy(() => import('./pages/UpdatesPage').then((module) => ({ default: module.UpdatesPage })))
 
 function RouteFallback() {
@@ -195,25 +204,60 @@ function App() {
     [dark],
   )
 
-  const refreshSession = async () => {
+  const refreshSession: AuthSessionUpdater = async (nextSession) => {
+    if (nextSession) {
+      setSession(nextSession)
+      return true
+    }
     try {
       setSession(await getSession())
+      return true
     } catch {
-      setSession({ authenticated: false })
+      // A refresh failure is not proof that the authenticated server session ended.
+      return false
     }
   }
 
   useEffect(() => {
     let mounted = true
-    getSession()
-      .then((nextSession) => {
+    let requestInFlight = false
+    let refreshQueued = false
+
+    const synchronizeSession = async (fallbackToAnonymous: boolean): Promise<void> => {
+      if (requestInFlight) {
+        refreshQueued = true
+        return
+      }
+      requestInFlight = true
+      try {
+        const nextSession = await getSession()
         if (mounted) setSession(nextSession)
-      })
-      .catch(() => {
-        if (mounted) setSession({ authenticated: false })
-      })
+      } catch {
+        if (mounted && fallbackToAnonymous) setSession({ authenticated: false })
+      } finally {
+        requestInFlight = false
+        if (mounted && refreshQueued) {
+          refreshQueued = false
+          void synchronizeSession(false)
+        }
+      }
+    }
+    const handleAuthorizationStateStale = () => {
+      void synchronizeSession(false)
+    }
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void synchronizeSession(false)
+      }
+    }
+
+    window.addEventListener(AUTHORIZATION_STATE_STALE_EVENT, handleAuthorizationStateStale)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    void synchronizeSession(true)
     return () => {
       mounted = false
+      window.removeEventListener(AUTHORIZATION_STATE_STALE_EVENT, handleAuthorizationStateStale)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [])
 
@@ -244,7 +288,7 @@ function App() {
           <RouteErrorBoundary>
             <Routes>
             <Route element={publicLayout}>
-              <Route index element={<HomePage />} />
+              <Route index element={<HomePage session={session} />} />
               <Route path="plugins" element={<PluginsPage />} />
               <Route path="plugins/:pluginId" element={<PluginDetailPage />} />
               <Route path="releases" element={<ReleasesPage />} />
@@ -253,6 +297,8 @@ function App() {
               <Route path="tools" element={<ToolsPage />} />
               <Route path="browse/*" element={<BrowsePage />} />
               <Route path="transfer" element={<TransferPage session={session} />} />
+              <Route path="account" element={<AccountPage session={session} onSessionChanged={refreshSession} />} />
+              <Route path="transfer/share/:token" element={<TransferSharePage />} />
             </Route>
             <Route
               path="/login"
@@ -263,15 +309,17 @@ function App() {
               }
             />
             <Route path="/admin" element={adminLayout}>
-              <Route index element={<Dashboard />} />
-              <Route path="publish" element={<PublishPage />} />
+              <Route index element={<Dashboard session={session} />} />
+              <Route path="publish" element={<PublishPage session={session} />} />
               <Route path="files" element={<FilesPage />} />
-              <Route path="cache" element={<CachePage />} />
-              <Route path="jobs" element={<JobsPage />} />
+              <Route path="cache" element={<CachePage session={session} />} />
+              <Route path="jobs" element={<JobsPage session={session} />} />
               <Route path="deployments" element={<DeploymentHistoryPage />} />
               <Route path="operations/hosts" element={<OperationsPage />} />
               <Route path="feedback" element={<FeedbackPage />} />
               <Route path="users" element={<UsersPage />} />
+              <Route path="login-security" element={<LoginSecurityPage />} />
+              <Route path="permissions" element={<PermissionsPage onPermissionsChanged={refreshSession} />} />
               <Route path="api-keys" element={<ApiKeysPage />} />
               <Route path="copilot" element={<CopilotConfigPage />} />
               <Route path="audit" element={<AuditPage />} />

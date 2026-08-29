@@ -63,6 +63,60 @@ class AuthPolicyTests(unittest.TestCase):
         self.assertTrue(transfer.allowed)
         self.assertEqual(transfer.principal.actor_id, "operator")
 
+    def test_registered_user_defaults_to_full_role_permissions_when_opted_in(self):
+        context = RequestContext(
+            session_user_authenticated=True,
+            session_username="registered-user",
+            session_role="user",
+        )
+
+        decision = self.policy.authorize(
+            context,
+            ["users:manage"],
+            allow_user_session=True,
+        )
+
+        self.assertTrue(decision.allowed)
+        self.assertIn("users:manage", decision.principal.scopes)
+        self.assertFalse(decision.principal.is_admin)
+
+    def test_password_change_required_session_is_denied_until_password_changes(self):
+        context = RequestContext(
+            session_user_authenticated=True,
+            session_username="temporary-user",
+            session_role="user",
+            session_must_change_password=True,
+        )
+
+        decision = self.policy.authorize(
+            context,
+            ["file:transfer"],
+            allow_user_session=True,
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reason, "password_change_required")
+        self.assertEqual(decision.principal.actor_id, "temporary-user")
+
+    def test_explicit_credentials_can_override_a_restricted_browser_session(self):
+        context = RequestContext(
+            session_user_authenticated=True,
+            session_username="temporary-user",
+            session_role="user",
+            session_must_change_password=True,
+            basic_username="admin",
+            basic_password="secret",
+        )
+
+        decision = self.policy.authorize(
+            context,
+            ["plugin:publish"],
+            allow_user_session=True,
+        )
+
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.principal.auth_method, "basic")
+
     def test_api_key_scope_and_admin_wildcard_matrix(self):
         limited = create_api_key(
             self.cache,

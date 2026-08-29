@@ -31,6 +31,9 @@ class AuthPolicy:
     ):
         self._cache = cache
         self._get_upload_auth = get_upload_auth
+        from services.permission_service import ensure_permission_catalog
+
+        ensure_permission_catalog(cache)
 
     def authorize(
         self,
@@ -42,7 +45,20 @@ class AuthPolicy:
         allow_basic: bool = True,
         allow_bearer: bool = True,
     ) -> AuthorizationDecision:
-        if allow_admin_session and context.session_authenticated:
+        password_change_principal = Actor(
+            actor_type="user",
+            actor_id=context.session_username or "system",
+            auth_method="session",
+            role=context.session_role or "user",
+            authenticated=True,
+            is_admin=(context.session_role == "admin"),
+        )
+
+        if (
+            allow_admin_session
+            and context.session_authenticated
+            and not context.session_must_change_password
+        ):
             return self._allowed(
                 Actor(
                     actor_type="user",
@@ -54,17 +70,27 @@ class AuthPolicy:
                 )
             )
 
-        if allow_user_session and context.session_user_authenticated:
-            return self._allowed(
-                Actor(
-                    actor_type="user",
-                    actor_id=context.session_username or "system",
-                    auth_method="session",
-                    role=context.session_role or "user",
-                    authenticated=True,
-                    is_admin=context.session_role == "admin",
-                )
+        if (
+            allow_user_session
+            and context.session_user_authenticated
+            and not context.session_must_change_password
+        ):
+            from services.permission_service import get_role_permission_codes
+
+            role = context.session_role or "user"
+            principal = Actor(
+                actor_type="user",
+                actor_id=context.session_username or "system",
+                auth_method="session",
+                role=role,
+                scopes=get_role_permission_codes(self._cache, role),
+                authenticated=True,
+                is_admin=role == "admin",
             )
+            required = set(required_scopes or ())
+            if required and "admin:*" not in principal.scopes and not required <= principal.scopes:
+                return AuthorizationDecision(False, "insufficient_scope", principal)
+            return self._allowed(principal)
 
         if allow_basic and context.basic_username:
             expected_username, expected_password = self._get_upload_auth()
@@ -92,6 +118,16 @@ class AuthPolicy:
                 if required and "admin:*" not in principal.scopes and not required <= principal.scopes:
                     return AuthorizationDecision(False, "insufficient_scope", principal)
                 return self._allowed(principal)
+
+        if (
+            context.session_must_change_password
+            and (context.session_authenticated or context.session_user_authenticated)
+        ):
+            return AuthorizationDecision(
+                False,
+                "password_change_required",
+                password_change_principal,
+            )
 
         return AuthorizationDecision(False, "unauthenticated", Actor())
 

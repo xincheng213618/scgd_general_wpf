@@ -83,6 +83,7 @@ WEB_ROUTE_EXACT = frozenset({
     "/admin/settings",
 })
 WEB_PLUGIN_ROUTE = re.compile(r"^/plugins/[A-Za-z0-9._-]{1,128}$")
+WEB_TRANSFER_SHARE_ROUTE = re.compile(r"^/transfer/share/[0-9a-f]{32}$", re.IGNORECASE)
 
 
 @dataclass(frozen=True, slots=True)
@@ -183,6 +184,8 @@ def normalize_web_route(raw_route: Any) -> str:
         return route
     if WEB_PLUGIN_ROUTE.fullmatch(route):
         return "/plugins/:pluginId"
+    if WEB_TRANSFER_SHARE_ROUTE.fullmatch(route):
+        return "/transfer/share/:token"
     if route.startswith("/browse/"):
         return "/browse/*"
     raise ValueError("unsupported web route")

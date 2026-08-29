@@ -31,6 +31,7 @@ def current_request_context() -> RequestContext:
         client_version=request.headers.get("X-Client-Version", ""),
         session_authenticated=bool(session.get("authenticated")),
         session_user_authenticated=bool(session.get("user_authenticated")),
+        session_must_change_password=bool(session.get("must_change_password")),
         session_username=str(session.get("username") or ""),
         session_role=str(session.get("role") or ""),
         basic_username=basic_username,

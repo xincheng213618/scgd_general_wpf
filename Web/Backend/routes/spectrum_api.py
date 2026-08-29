@@ -41,8 +41,8 @@ def _get_storage():
     return _ctx.storage
 
 
-def _json_error(message: str, status: int):
-    return jsonify({"error": message, "status": status}), status
+def _json_error(message: str, status: int, **details):
+    return jsonify({"error": message, "status": status, **details}), status
 
 
 def _json_auth_error():
@@ -51,15 +51,32 @@ def _json_auth_error():
     return apply_basic_auth_challenge(response, "ColorVision Marketplace")
 
 
-def _has_publish_auth() -> bool:
+def _publish_auth_error():
     request_context = current_request_context()
+    required_scopes = ["release:publish"]
     decision = _ctx.auth_policy.authorize(
         request_context,
-        ["release:publish"],
+        required_scopes,
+        allow_user_session=True,
     )
     if decision.allowed:
         set_authenticated_request_context(request_context.with_actor(decision.principal))
-    return decision.allowed
+        return None
+    if decision.reason == "password_change_required":
+        return _json_error(
+            "Password change required",
+            403,
+            code="password_change_required",
+            next="/account?password_change=required",
+        )
+    if decision.forbidden:
+        return _json_error(
+            "Insufficient scope",
+            403,
+            code="insufficient_scope",
+            required=required_scopes,
+        )
+    return _json_auth_error()
 
 
 def _read_upload_bytes(field_name: str, limit: int) -> bytes:
@@ -149,8 +166,9 @@ def api_spectrum_download(version: str):
 
 @spectrum_api.route("/api/tool/spectrum/publish", methods=["POST"])
 def api_spectrum_publish():
-    if not _has_publish_auth():
-        return _json_auth_error()
+    auth_error = _publish_auth_error()
+    if auth_error is not None:
+        return auth_error
 
     if "Version" not in request.form:
         return _json_error("Missing multipart form field: Version", 400)

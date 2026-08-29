@@ -412,7 +412,8 @@ def register_all_blueprints(app, ctx, services, helpers):
         request_context = helpers["request_context_factory"]()
         decision = helpers["auth_policy"].authorize(
             request_context,
-            required_scopes or ["admin:*"],
+            required_scopes or ["admin:access"],
+            allow_user_session=True,
         )
         if decision.allowed:
             set_authenticated_request_context(request_context.with_actor(decision.principal))

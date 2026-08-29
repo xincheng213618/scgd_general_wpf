@@ -43,6 +43,15 @@ def create_database_backup(
                 config,
                 protected_paths=(backup_path,),
             )
+            cleanup_error_paths = {
+                str(Path(path).resolve()).casefold()
+                for path in (
+                    *admin_retention["backupAudit"]["errorPaths"],
+                    *admin_retention["backupSecurity"]["errorPaths"],
+                )
+            }
+            if str(backup_path.resolve()).casefold() in cleanup_error_paths:
+                raise RuntimeError("The new snapshot failed privacy cleanup")
         except Exception as exc:
             backup_path.unlink(missing_ok=True)
             raise RuntimeError(f"Backup retention cleanup failed: {exc}") from exc
@@ -52,6 +61,11 @@ def create_database_backup(
         backup_retention["errors"] = admin_retention["errors"]
         backup_retention["auditDeleted"] = admin_retention["audit"]["deleted"]
         backup_retention["snapshotAuditDeleted"] = admin_retention["backupAudit"]["deleted"]
+        backup_retention["securityRowsDeleted"] = admin_retention["backupSecurity"]["deleted"]
+        backup_retention["securityAccountsInvalidated"] = (
+            admin_retention["backupSecurity"]["accountsInvalidated"]
+        )
+        backup_retention["securitySnapshotsScrubbed"] = admin_retention["backupSecurity"]["backups"]
 
         return {
             "status": "ok",
@@ -59,6 +73,10 @@ def create_database_backup(
             "backup_path": str(backup_path),
             "backup_size_bytes": backup_path.stat().st_size,
             "access_analytics_deleted": access_cleanup["deleted"],
+            "security_rows_deleted": admin_retention["backupSecurity"]["deleted"],
+            "security_accounts_invalidated": (
+                admin_retention["backupSecurity"]["accountsInvalidated"]
+            ),
             "backup_retention": backup_retention,
         }
 

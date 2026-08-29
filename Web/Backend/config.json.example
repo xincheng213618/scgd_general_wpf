@@ -7,6 +7,8 @@
     "app_release_keep_count": 5,
     "plugin_package_keep_count": 3,
     "transfer_upload_dir": "Transfer",
+    "anonymous_transfer_upload_enabled": false,
+    "anonymous_transfer_max_bytes": 2147483648,
     "access_analytics_enabled": true,
     "access_analytics_queue_size": 4096,
     "access_analytics_batch_size": 128,
@@ -15,7 +17,7 @@
     "job_run_retention_days": 30,
     "audit_log_retention_days": 365,
     "admin_db_backup_keep_count": 10,
-    "public_registration_enabled": false,
+    "public_registration_enabled": true,
     "upload_auth": {
         "username": "admin",
         "password": "change-this-password"

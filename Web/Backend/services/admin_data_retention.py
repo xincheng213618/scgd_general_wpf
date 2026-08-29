@@ -134,6 +134,49 @@ def prune_audit_log_backups(
     }
 
 
+def scrub_account_security_backups(
+    directory: Path,
+    *,
+    skip_paths: Iterable[Path] = (),
+) -> dict[str, Any]:
+    """Remove transient authentication state from recognized DB snapshots."""
+    from services.account_security_cleanup import scrub_account_security_database
+
+    root = Path(directory).resolve()
+    skipped = {_resolved_key(Path(path)) for path in skip_paths}
+    results: list[dict[str, Any]] = []
+    errors: list[str] = []
+    error_paths: list[str] = []
+    if not root.is_dir():
+        return {
+            "backups": 0,
+            "deleted": 0,
+            "accountsInvalidated": 0,
+            "results": [],
+            "errors": [],
+            "errorPaths": [],
+        }
+
+    for path in sorted(root.glob("marketplace_backup_*.db")):
+        if not _is_recognized_backup(path, root) or _resolved_key(path) in skipped:
+            continue
+        try:
+            results.append(scrub_account_security_database(path))
+        except Exception as exc:
+            errors.append(f"{path.name}: {exc}")
+            error_paths.append(str(path))
+    return {
+        "backups": len(results),
+        "deleted": sum(int(item["deleted"]) for item in results),
+        "accountsInvalidated": sum(
+            int(item["accounts_invalidated"]) for item in results
+        ),
+        "results": results,
+        "errors": errors,
+        "errorPaths": error_paths,
+    }
+
+
 def prune_manual_db_backups(
     directory: Path,
     *,
@@ -216,19 +259,29 @@ def run_admin_data_retention(
         retention_days=audit_days,
         now=now,
     )
+    backup_security = scrub_account_security_backups(
+        db_directory,
+        skip_paths=(Path(path) for path in backup_audit["errorPaths"]),
+    )
     backup_files = prune_manual_db_backups(
         db_directory,
         keep_count=backup_count,
         protected_paths=(
             *(Path(path) for path in backup_audit["errorPaths"]),
+            *(Path(path) for path in backup_security["errorPaths"]),
             *protected_paths,
         ),
     )
-    errors = [*backup_audit["errors"], *backup_files["errors"]]
+    errors = [
+        *backup_audit["errors"],
+        *backup_security["errors"],
+        *backup_files["errors"],
+    ]
     return {
         "status": "success" if not errors else "error",
         "audit": live_audit,
         "backupAudit": backup_audit,
+        "backupSecurity": backup_security,
         "backupFiles": backup_files,
         "errors": errors,
     }

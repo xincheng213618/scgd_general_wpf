@@ -309,25 +309,115 @@ export interface UploadContext {
 
 export interface AuthSession {
   authenticated: boolean
+  anonymous_transfer_max_bytes?: number
+  anonymous_transfer_upload_enabled?: boolean
   csrf_token?: string
+  can_access_admin?: boolean
   is_admin?: boolean
+  must_change_password?: boolean
+  permissions?: string[]
   public_registration_enabled?: boolean
   role?: string
   username?: string
 }
 
+export type AuthSessionUpdater = (nextSession?: AuthSession) => Promise<boolean>
+
+export interface AccountProfile {
+  username: string
+  display_name: string
+  email: string
+  role: string
+  account_origin: 'self_registered' | 'administrator_created' | 'legacy' | null
+  is_admin: boolean
+  can_access_admin: boolean
+  permissions: string[]
+  permission_details: AccountPermissionDefinition[]
+  created_at?: string | null
+  updated_at?: string | null
+  last_login_at?: string | null
+  password_changed_at?: string | null
+  can_change_password: boolean
+  can_edit_profile: boolean
+  can_manage_sessions: boolean
+  must_change_password: boolean
+}
+
+export interface AccountPermissionDefinition {
+  code: string
+  name: string
+  description: string
+  category: string
+  sort_order: number
+}
+
+export interface LoginSession {
+  id: string
+  ip_address: string
+  user_agent: string
+  created_at: string
+  last_seen_at: string
+  is_current: boolean
+}
+
+export interface LoginSessionsResponse {
+  items: LoginSession[]
+  total: number
+}
+
+export type AccountActivitySource = 'self' | 'administrator' | 'anonymous'
+
+export interface AccountActivityEntry {
+  id: number
+  action: string
+  source: AccountActivitySource
+  ip: string
+  user_agent: string
+  detail: string
+  created_at: string
+  security: boolean
+}
+
+export interface AccountActivityResponse {
+  entries: AccountActivityEntry[]
+  total: number
+  limit: number
+  offset: number
+  summary: {
+    failed_logins: number
+    throttled_logins: number
+    security_events: number
+  }
+}
+
 export interface TransferFile {
+  expires_at?: string | null
   name: string
   size: number
   modified: string
   modified_display?: string
   download_url: string
+  share_url: string
+  temporary?: boolean
 }
 
 export interface TransferFilesResponse {
   root: string
   files: TransferFile[]
   total_size: number
+}
+
+export interface TransferShare {
+  token: string
+  name: string
+  size: number
+  modified: string
+  modified_display?: string
+  created_at: string
+  expires_at?: string | null
+  temporary: boolean
+  share_url: string
+  download_url: string
 }
 
 export interface CvwsPackage {

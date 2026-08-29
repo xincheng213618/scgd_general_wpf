@@ -11,6 +11,7 @@ import {
   FolderOpenOutlined,
   InboxOutlined,
   LogoutOutlined,
+  LockOutlined,
   MoonOutlined,
   ReloadOutlined,
   RobotOutlined,
@@ -18,15 +19,17 @@ import {
   SettingOutlined,
   SunOutlined,
   TeamOutlined,
+  UserOutlined,
 } from '@ant-design/icons'
 import type { ProSettings } from '@ant-design/pro-components'
 import { PageContainer, ProLayout } from '@ant-design/pro-components'
-import { App, Button, Dropdown, Segmented, Space } from 'antd'
-import { useState, type ReactNode } from 'react'
-import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { App, Button, Dropdown, Segmented, Space, Spin } from 'antd'
+import { useMemo, useState, type ReactNode } from 'react'
+import { Navigate, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { logout } from '../services/auth'
 import type { ThemeMode } from '../types/admin'
-import type { AuthSession } from '../types/site'
+import type { AuthSession, AuthSessionUpdater } from '../types/site'
+import { canOpenAdminRoute } from '../utils/permissions'
 
 const routeTitles: Record<string, string> = {
   '/admin': '管理控制台',
@@ -38,6 +41,8 @@ const routeTitles: Record<string, string> = {
   '/admin/operations/hosts': '终端运维',
   '/admin/feedback': '反馈收件箱',
   '/admin/users': '账号管理',
+  '/admin/login-security': '账号安全',
+  '/admin/permissions': '权限管理',
   '/admin/api-keys': 'API Key',
   '/admin/copilot': 'Copilot 配置',
   '/admin/audit': '审计日志',
@@ -106,11 +111,6 @@ const route = {
           icon: <ApiOutlined />,
         },
         {
-          path: '/admin/users',
-          name: '账号管理',
-          icon: <TeamOutlined />,
-        },
-        {
           path: '/admin/copilot',
           name: 'Copilot 配置',
           icon: <RobotOutlined />,
@@ -124,6 +124,28 @@ const route = {
           path: '/admin/traffic',
           name: '访问统计',
           icon: <BarChartOutlined />,
+        },
+      ],
+    },
+    {
+      path: '/admin/access-control',
+      name: '用户与权限',
+      icon: <TeamOutlined />,
+      routes: [
+        {
+          path: '/admin/users',
+          name: '账号管理',
+          icon: <TeamOutlined />,
+        },
+        {
+          path: '/admin/login-security',
+          name: '账号安全',
+          icon: <LockOutlined />,
+        },
+        {
+          path: '/admin/permissions',
+          name: '权限管理',
+          icon: <SafetyCertificateOutlined />,
         },
       ],
     },
@@ -157,19 +179,40 @@ export function AdminLayout({
   setMode: (mode: ThemeMode) => void
   resolvedTheme: 'light' | 'dark'
   session: AuthSession | null
-  onSessionChanged: () => Promise<void>
+  onSessionChanged: AuthSessionUpdater
 }) {
   const { message } = App.useApp()
   const location = useLocation()
   const navigate = useNavigate()
   const [loggingOut, setLoggingOut] = useState(false)
   const title = routeTitles[location.pathname] ?? '管理控制台'
+  const visibleRoute = useMemo(() => ({
+    ...route,
+    routes: route.routes
+      .map((item) => {
+        if (!('routes' in item) || !item.routes) return item
+        const routes = item.routes.filter((child) => canOpenAdminRoute(session, child.path))
+        return { ...item, routes }
+      })
+      .filter((item) => {
+        if ('routes' in item && item.routes) return item.routes.length > 0
+        return canOpenAdminRoute(session, item.path)
+      }),
+  }), [session])
+
+  if (session === null) return <Spin tip="正在验证登录状态…" />
+  if (!session.authenticated) {
+    return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />
+  }
+  if (!session.can_access_admin || !canOpenAdminRoute(session, location.pathname)) {
+    return <Navigate to="/account?access=updated" replace />
+  }
 
   return (
     <ProLayout
       title="ColorVision"
       logo={<div className="pro-brand-mark">CV</div>}
-      route={route}
+      route={visibleRoute}
       location={{ pathname: location.pathname }}
       token={{
         header: {
@@ -202,15 +245,20 @@ export function AdminLayout({
           menu={{
             items: [
               { key: 'front', label: <a href="/">前台发布站</a>, icon: <AppstoreOutlined /> },
+              { key: 'account', label: '个人中心', icon: <UserOutlined /> },
               { type: 'divider' },
               { key: 'logout', label: '退出登录', icon: <LogoutOutlined />, disabled: loggingOut },
             ],
             onClick: async ({ key }) => {
+              if (key === 'account') {
+                navigate('/account')
+                return
+              }
               if (key !== 'logout') return
               setLoggingOut(true)
               try {
-                await logout()
-                await onSessionChanged()
+                const nextSession = await logout()
+                await onSessionChanged(nextSession)
                 navigate('/', { replace: true })
               } catch (error) {
                 message.error(error instanceof Error ? error.message : '退出失败')

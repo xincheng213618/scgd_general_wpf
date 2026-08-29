@@ -17,9 +17,12 @@ class SqliteJobRepository:
         try:
             for job in jobs:
                 db.execute(
-                    """INSERT OR IGNORE INTO scheduled_jobs
+                    """INSERT INTO scheduled_jobs
                        (id, name, job_type, enabled, interval_seconds, next_run_at, config, created_at)
-                       VALUES (?, ?, ?, 1, ?, ?, ?, ?)""",
+                       VALUES (?, ?, ?, 1, ?, ?, ?, ?)
+                       ON CONFLICT(id) DO UPDATE SET
+                           name = excluded.name,
+                           job_type = excluded.job_type""",
                     (
                         job["id"],
                         job["name"],

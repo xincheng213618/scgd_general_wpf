@@ -97,15 +97,32 @@ def _json_auth_error():
     return apply_basic_auth_challenge(response, "ColorVision Marketplace")
 
 
-def _has_cvws_publish_auth() -> bool:
+def _cvws_publish_auth_error():
     request_context = current_request_context()
+    required_scopes = ["release:publish"]
     decision = _ctx.auth_policy.authorize(
         request_context,
-        ["release:publish"],
+        required_scopes,
+        allow_user_session=True,
     )
     if decision.allowed:
         set_authenticated_request_context(request_context.with_actor(decision.principal))
-    return decision.allowed
+        return None
+    if decision.reason == "password_change_required":
+        return jsonify({
+            "error": "Password change required",
+            "code": "password_change_required",
+            "next": "/account?password_change=required",
+            "status": 403,
+        }), 403
+    if decision.forbidden:
+        return jsonify({
+            "error": "Insufficient scope",
+            "code": "insufficient_scope",
+            "required": required_scopes,
+            "status": 403,
+        }), 403
+    return _json_auth_error()
 
 
 @cvws_api.route("/api/tool/cvwindowsservice/latest-version")
@@ -175,8 +192,9 @@ def api_cvwindowsservice_download(version):
 
 @cvws_api.route("/api/tool/cvwindowsservice/publish", methods=["POST"])
 def api_cvwindowsservice_publish():
-    if not _has_cvws_publish_auth():
-        return _json_auth_error()
+    auth_error = _cvws_publish_auth_error()
+    if auth_error is not None:
+        return auth_error
 
     from cvwindowsservice_publish import (
         infer_version_from_filename,

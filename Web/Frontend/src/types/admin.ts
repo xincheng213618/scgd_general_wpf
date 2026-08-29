@@ -202,6 +202,8 @@ export interface DatabaseBackupResult {
   status: string
   backup_name: string
   backup_size_bytes: number
+  security_rows_deleted: number
+  security_accounts_invalidated: number
   backup_retention: {
     status: string
     keepCount: number
@@ -210,6 +212,9 @@ export interface DatabaseBackupResult {
     removedCount: number
     removedBytes: number
     preservedUnclassified: number
+    securityRowsDeleted: number
+    securityAccountsInvalidated: number
+    securitySnapshotsScrubbed: number
     errors: string[]
   }
 }
@@ -658,27 +663,335 @@ export interface AccountSettingsUpdateResponse extends AccountSettingsResponse {
 }
 
 export type UserRole = 'admin' | 'user'
+export type UserAccountOrigin = 'self_registered' | 'administrator_created' | 'legacy'
+export type UserAccountStatus = 'active' | 'inactive'
+export type UserPasswordState = 'pending' | 'ready'
+export type UserRecoveryState = 'pending' | 'none'
+export type UserSortField =
+  | 'username'
+  | 'display_name'
+  | 'email'
+  | 'role'
+  | 'account_origin'
+  | 'is_active'
+  | 'active_session_count'
+  | 'created_at'
+  | 'last_login_at'
+  | 'password_recovery_requested_at'
+export type UserSortOrder = 'asc' | 'desc'
 
 export interface UserAccount {
   id: number
   username: string
+  display_name: string
+  email: string
   role: UserRole
+  account_origin: UserAccountOrigin
   is_active: number | boolean
   is_current?: boolean
+  is_config_admin?: boolean
+  must_change_password: boolean
+  active_session_count: number
+  password_recovery_pending?: boolean
+  password_recovery_request_count?: number
+  password_recovery_requested_at?: string | null
   created_at?: string
   updated_at?: string | null
   last_login_at?: string | null
+  password_changed_at?: string | null
 }
 
 export interface CreateUserPayload {
   username: string
   password: string
   role: UserRole
+  display_name?: string
+  email?: string
+}
+
+export interface UserProfilePayload {
+  display_name: string
+  email: string
 }
 
 export interface UserPasswordResetResult extends UserAccount {
   sessions_invalidated: boolean
   current_session_preserved: boolean
+  password_recovery_requests_resolved: number
+  login_failure_sources_cleared: number
+}
+
+export interface UserPasswordChangeRequiredResult extends UserAccount {
+  sessions_invalidated: boolean
+  sessions_revoked: number
+  login_failure_sources_cleared: number
+}
+
+export interface UserStatusUpdateResult extends UserAccount {
+  sessions_revoked: number
+  password_recovery_requests_resolved: number
+  login_failure_sources_cleared: number
+}
+
+export interface UserSessionsRevokeResult {
+  status: 'revoked'
+  user_id: number
+  username: string
+  revoked: number
+}
+
+export interface UserDeleteResult {
+  status: 'deleted'
+  id: number
+  username: string
+  role: UserRole
+  account_origin: UserAccountOrigin
+  sessions_deleted: number
+  password_recovery_requests_deleted: number
+  login_failure_sources_cleared: number
+}
+
+export type UserBulkSecurityAction = 'force_logout' | 'require_password_change'
+
+export interface UserBulkSecurityResultItem {
+  user_id: number
+  username: string
+  status: 'succeeded' | 'failed'
+  sessions_revoked?: number
+  login_failure_sources_cleared?: number
+  code?: string
+  error?: string
+}
+
+export interface UserBulkSecurityResult {
+  action: UserBulkSecurityAction
+  requested: number
+  succeeded: number
+  failed: number
+  sessions_revoked: number
+  login_failure_sources_cleared: number
+  results: UserBulkSecurityResultItem[]
+}
+
+export interface UserAccountSummary {
+  total: number
+  active: number
+  inactive: number
+  admins: number
+  users: number
+  self_registered: number
+  administrator_created: number
+  legacy: number
+  pending_password_changes: number
+  pending_password_recovery: number
+}
+
+export interface UserAccountPage {
+  items: UserAccount[]
+  total: number
+  limit: number
+  offset: number
+  summary: UserAccountSummary
+}
+
+export interface UserDetailSession {
+  id: string
+  ip_address: string
+  user_agent: string
+  created_at: string
+  last_seen_at: string
+  is_current: boolean
+}
+
+export type UserDetailActivitySource = 'self' | 'administrator' | 'anonymous'
+
+export interface UserDetailActivityEntry {
+  id: number
+  action: string
+  source: UserDetailActivitySource
+  ip: string
+  user_agent: string
+  detail: string
+  created_at: string
+  security: boolean
+}
+
+export interface UserAccountDetails {
+  user: UserAccount
+  sessions: {
+    items: UserDetailSession[]
+    total: number
+  }
+  permissions: PermissionDefinition[]
+  password_recovery: {
+    request_count: number
+    first_requested_at: string
+    last_requested_at: string
+    last_ip: string
+    expires_at: string | null
+  } | null
+  activity: {
+    entries: UserDetailActivityEntry[]
+    total: number
+    limit: number
+    offset: number
+    summary: {
+      failed_logins: number
+      throttled_logins: number
+      security_events: number
+    }
+  }
+}
+
+export type LoginSecurityAccountType = 'registered' | 'config_admin' | 'unknown'
+export type LoginSecurityStatus = 'locked' | 'tracking'
+
+export interface LoginSecuritySource {
+  ip_address: string
+  failed_count: number
+  last_failed_at: string
+}
+
+export interface LoginSecurityEntry {
+  username: string
+  account_type: LoginSecurityAccountType
+  user_id: number | null
+  display_name: string
+  email: string
+  role: UserRole | null
+  is_active: boolean | null
+  failed_count: number
+  attempts_remaining: number
+  source_count: number
+  sources: LoginSecuritySource[]
+  last_failed_at: string
+  locked: boolean
+  locked_until: string | null
+  retry_after: number
+}
+
+export interface LoginSecuritySummary {
+  total: number
+  locked: number
+  tracking: number
+  sources: number
+}
+
+export interface LoginSecurityPage {
+  items: LoginSecurityEntry[]
+  total: number
+  limit: number
+  offset: number
+  summary: LoginSecuritySummary
+}
+
+export interface LoginSecurityListParams {
+  current?: number
+  pageSize?: number
+  query?: string
+  status?: LoginSecurityStatus
+}
+
+export interface LoginSecurityUnlockResult {
+  status: 'unlocked'
+  username: string
+  cleared_sources: number
+}
+
+export type RegistrationSecurityStatus = 'blocked' | 'tracking'
+
+export interface RegistrationSecurityEntry {
+  ip_address: string
+  attempt_count: number
+  attempt_limit: number
+  attempts_remaining: number
+  attempt_window_expires_at: string | null
+  success_count: number
+  success_limit: number
+  successes_remaining: number
+  success_window_expires_at: string | null
+  pending_count: number
+  last_attempt_at: string
+  blocked: boolean
+  reason: string
+  retry_after: number
+  blocked_until: string | null
+}
+
+export interface RegistrationSecuritySummary {
+  total: number
+  blocked: number
+  tracking: number
+  pending: number
+}
+
+export interface RegistrationSecurityPage {
+  items: RegistrationSecurityEntry[]
+  total: number
+  limit: number
+  offset: number
+  summary: RegistrationSecuritySummary
+}
+
+export interface RegistrationSecurityListParams {
+  current?: number
+  pageSize?: number
+  query?: string
+  status?: RegistrationSecurityStatus
+}
+
+export interface RegistrationSecurityClearResult {
+  status: 'cleared' | 'unchanged'
+  ip_address: string
+  cleared: boolean
+  pending_count: number
+}
+
+export interface UserListParams {
+  current?: number
+  pageSize?: number
+  query?: string
+  role?: UserRole
+  origin?: UserAccountOrigin
+  status?: UserAccountStatus
+  passwordState?: UserPasswordState
+  recoveryState?: UserRecoveryState
+  sortBy?: UserSortField
+  sortOrder?: UserSortOrder
+}
+
+export interface PermissionDefinition {
+  code: string
+  name: string
+  description: string
+  category: string
+  sort_order: number
+}
+
+export interface RolePermissionItem {
+  code: UserRole
+  name: string
+  description: string
+  is_system: boolean
+  editable: boolean
+  member_count: number
+  active_member_count: number
+  revision: string
+  permissions: string[]
+}
+
+export interface RolePermissionChange {
+  role: UserRole
+  added: string[]
+  removed: string[]
+  affected_active_members: number
+  revision: string
+}
+
+export interface PermissionMatrix {
+  permissions: PermissionDefinition[]
+  roles: RolePermissionItem[]
+  change?: RolePermissionChange
 }
 
 export type CopilotVendorType =

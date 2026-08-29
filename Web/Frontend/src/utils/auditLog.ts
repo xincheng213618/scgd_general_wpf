@@ -15,12 +15,28 @@ const actionDefinitions: Record<string, AuditActionMeta> = {
   auth_forbidden: { label: '权限不足', category: '安全', color: 'red', security: true },
   auth_unauthorized: { label: '未授权访问', category: '安全', color: 'red', security: true },
   login_failed: { label: '登录失败', category: '安全', color: 'volcano', security: true },
+  login_throttled: { label: '登录临时锁定', category: '安全', color: 'red', security: true },
+  login_throttle_unlock: { label: '解除登录限制', category: '安全', color: 'green', security: true },
+  registration_throttled: { label: '注册频率受限', category: '安全', color: 'red', security: true },
+  registration_throttle_clear: { label: '清除注册限制', category: '安全', color: 'green', security: true },
+  password_recovery_throttled: { label: '找回密码频率受限', category: '安全', color: 'red', security: true },
+  login_success: { label: '登录成功', category: '安全', color: 'green', security: false },
   user_register: { label: '用户自助注册', category: '账号', color: 'blue', security: false },
   user_create: { label: '创建用户', category: '账号', color: 'blue', security: false },
+  user_profile_update: { label: '更新个人资料', category: '账号', color: 'cyan', security: false },
   user_enable: { label: '启用用户', category: '账号', color: 'green', security: false },
   user_disable: { label: '禁用用户', category: '账号', color: 'gold', security: false },
+  user_delete: { label: '永久删除用户', category: '账号', color: 'red', security: true },
   user_role_update: { label: '修改用户角色', category: '账号', color: 'gold', security: false },
   user_password_reset: { label: '重置用户密码', category: '账号', color: 'gold', security: false },
+  user_password_change_required: { label: '要求用户改密', category: '安全', color: 'volcano', security: true },
+  user_password_recovery_request: { label: '申请找回密码', category: '安全', color: 'volcano', security: true },
+  user_password_change: { label: '修改自己的密码', category: '账号', color: 'gold', security: true },
+  user_session_revoke: { label: '注销登录会话', category: '安全', color: 'volcano', security: true },
+  user_sessions_revoke_others: { label: '注销其他会话', category: '安全', color: 'volcano', security: true },
+  user_sessions_force_revoke: { label: '管理员强制下线', category: '安全', color: 'red', security: true },
+  user_bulk_security_action: { label: '批量账号安全处置', category: '安全', color: 'red', security: true },
+  user_logout: { label: '退出登录', category: '安全', color: 'default', security: false },
   account_settings_update: { label: '修改账号策略', category: '设置', color: 'gold', security: false },
   retention_settings_update: { label: '修改保留策略', category: '设置', color: 'gold', security: false },
   api_key_create: { label: '创建 API Key', category: '密钥', color: 'blue', security: false },
@@ -53,6 +69,7 @@ const actionDefinitions: Record<string, AuditActionMeta> = {
 
 const actorLabels: Record<string, string> = {
   user: '用户',
+  user_batch: '用户批次',
   api_key: 'API Key',
   anonymous: '匿名请求',
   system: '系统',
@@ -65,6 +82,10 @@ const targetLabels: Record<string, string> = {
   api: '管理接口',
   admin_endpoint: '管理接口',
   user: '用户',
+  session: '登录会话',
+  login_throttle: '登录限制',
+  registration: '公开注册',
+  password_recovery: '密码找回',
   api_key: 'API Key',
   cache_entry: '缓存',
   configuration: '配置',
@@ -98,12 +119,32 @@ const detailLabels: Record<string, string> = {
   new_role: '新角色',
   status: '状态',
   sessions_invalidated: '已注销其他会话',
+  sessions_revoked: '已注销会话',
+  sessions_deleted: '已删除会话记录',
+  must_change_password: '登录后须改密',
+  failed_count: '失败次数',
+  retry_after: '等待秒数',
+  cleared_sources: '已清除来源',
+  attempts_remaining: '剩余尝试',
+  successes_remaining: '剩余注册',
+  ip_address: '来源地址',
+  pending_count: '处理中请求',
+  request_count: '申请次数',
+  recovery_requests_resolved: '已处理找回申请',
+  recovery_requests_deleted: '已删除找回记录',
+  added_permissions: '新增权限',
+  removed_permissions: '移除权限',
+  affected_active_members: '影响启用账号',
+  revision: '修订号',
+  cleared: '已清除',
+  source: '来源',
   hostId: '终端 ID',
   capabilityId: '能力',
   deviceCount: '设备数量',
 }
 
 const detailTranslations: Array<[RegExp, (match: RegExpMatchArray) => string]> = [
+  [/^Invalid credentials$/i, () => '凭据校验未通过'],
   [/^Path: (.+)$/i, (match) => `请求路径：${match[1]}`],
   [/^Insufficient scope\. Required: (.+)$/i, (match) => `权限不足，需要：${match[1]}`],
   [/^Deleted (\d+) expired entries$/i, (match) => `已删除 ${match[1]} 条过期缓存`],
@@ -121,7 +162,10 @@ function auditValueLabel(value: unknown): string {
   if (value === false || value === 'false') return '否'
   if (value === null || value === undefined || value === '') return '-'
   const text = typeof value === 'string' ? value : JSON.stringify(value)
-  return ({ success: '成功', failed: '失败', error: '失败', enabled: '启用', disabled: '禁用' } as Record<string, string>)[text] ?? text
+  return ({
+    success: '成功', failed: '失败', error: '失败', enabled: '启用', disabled: '禁用',
+    admin: '管理员', user: '普通用户', config: '服务配置',
+  } as Record<string, string>)[text] ?? text
 }
 
 export function auditActionMeta(action: string): AuditActionMeta {

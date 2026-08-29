@@ -5,12 +5,36 @@ export class AuthRequiredError extends Error {
   }
 }
 
+function payloadNumber(payload: unknown, key: string): number | null {
+  if (!payload || typeof payload !== 'object') return null
+  const value = (payload as Record<string, unknown>)[key]
+  const numberValue = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(numberValue) ? numberValue : null
+}
+
+export class ApiRequestError extends Error {
+  readonly status: number
+  readonly payload: unknown
+  readonly retryAfter: number | null
+  readonly attemptsRemaining: number | null
+
+  constructor(message: string, status: number, payload: unknown) {
+    super(message)
+    this.name = 'ApiRequestError'
+    this.status = status
+    this.payload = payload
+    this.retryAfter = payloadNumber(payload, 'retry_after')
+    this.attemptsRemaining = payloadNumber(payload, 'attempts_remaining')
+  }
+}
+
 let csrfToken = ''
 let csrfTokenRequest: Promise<string> | null = null
 let authRedirectStarted = false
 
 export const WEB_CLIENT_HEADER_NAME = 'X-ColorVision-Web'
 export const WEB_CLIENT_HEADER_VALUE = '1'
+export const AUTHORIZATION_STATE_STALE_EVENT = 'colorvision:authorization-state-stale'
 
 const webClientHeader = { [WEB_CLIENT_HEADER_NAME]: WEB_CLIENT_HEADER_VALUE }
 
@@ -30,6 +54,21 @@ function captureCsrfToken(payload: unknown) {
     const token = String((payload as { csrf_token?: unknown }).csrf_token || '')
     if (token) csrfToken = token
   }
+}
+
+function payloadCode(payload: unknown): string {
+  if (!payload || typeof payload !== 'object' || !('code' in payload)) return ''
+  return String((payload as { code?: unknown }).code || '')
+}
+
+export function authorizationStateNeedsRefresh(status: number, payload: unknown): boolean {
+  if (status !== 403) return false
+  return ['insufficient_scope', 'password_change_required'].includes(payloadCode(payload))
+}
+
+function notifyAuthorizationStateStale() {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new Event(AUTHORIZATION_STATE_STALE_EVENT))
 }
 
 export async function getCsrfToken() {
@@ -55,6 +94,9 @@ export async function parseResponse<T>(response: Response, options: ResponseOpti
   captureCsrfToken(payload)
 
   if (!response.ok) {
+    if (authorizationStateNeedsRefresh(response.status, payload)) {
+      notifyAuthorizationStateStale()
+    }
     if (response.status === 401 && options.redirectOnUnauthorized !== false) {
       redirectToLogin()
       throw new AuthRequiredError()
@@ -63,7 +105,7 @@ export async function parseResponse<T>(response: Response, options: ResponseOpti
       typeof payload === 'object' && payload && 'error' in payload
         ? String((payload as { error?: unknown }).error)
         : `Request failed with ${response.status}`
-    throw new Error(message)
+    throw new ApiRequestError(message, response.status, payload)
   }
 
   return payload as T
@@ -114,12 +156,18 @@ export async function putJson<T = unknown>(url: string, body?: unknown): Promise
   return parseResponse<T>(response)
 }
 
-export async function deleteJson<T = unknown>(url: string): Promise<T> {
+export async function deleteJson<T = unknown>(url: string, body?: unknown): Promise<T> {
   const token = await getCsrfToken()
   const response = await fetch(url, {
     method: 'DELETE',
     credentials: 'same-origin',
-    headers: { ...webClientHeader, Accept: 'application/json', 'X-CSRF-Token': token },
+    headers: {
+      ...webClientHeader,
+      Accept: 'application/json',
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+      'X-CSRF-Token': token,
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
   })
   return parseResponse<T>(response)
 }

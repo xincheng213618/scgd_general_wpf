@@ -4,8 +4,10 @@ import { Alert, App, Button, Card, Col, Drawer, Popconfirm, Row, Space, Statisti
 import { useRef, useState } from 'react'
 import { getJobRuns, listJobs, runJob, setJobEnabled } from '../services/admin'
 import type { JobRun, ScheduledJob } from '../types/admin'
+import type { AuthSession } from '../types/site'
 import { shortDate } from '../utils/format'
 import { formatJobDuration, formatJobInterval, jobStatusMeta, jobTypeLabels, summarizeJobs } from '../utils/jobOperations'
+import { getAdminOperationsCapabilities } from '../utils/permissions'
 
 function statusTag(status?: string) {
   if (!status) return <Tag>暂无</Tag>
@@ -64,7 +66,11 @@ const historyColumns: ProColumns<JobRun>[] = [
   },
 ]
 
-export function JobsPage() {
+interface JobsPageProps {
+  session: AuthSession | null
+}
+
+export function JobsPage({ session }: JobsPageProps) {
   const { message } = App.useApp()
   const actionRef = useRef<ActionType>(null)
   const historyActionRef = useRef<ActionType>(null)
@@ -72,6 +78,7 @@ export function JobsPage() {
   const [selectedJob, setSelectedJob] = useState<ScheduledJob | null>(null)
   const [runningJobId, setRunningJobId] = useState('')
   const [changingJobId, setChangingJobId] = useState('')
+  const { writeJobs } = getAdminOperationsCapabilities(session)
   const summary = summarizeJobs(jobs)
 
   const reload = async (jobId?: string) => {
@@ -198,19 +205,21 @@ export function JobsPage() {
     {
       title: '操作',
       valueType: 'option',
-      width: 270,
+      width: writeJobs ? 270 : 100,
       fixed: 'right',
       render: (_, record) => (
         <Space>
-          <Button
-            size="small"
-            icon={<PlayCircleOutlined />}
-            loading={runningJobId === record.id}
-            disabled={record.latest_run?.status === 'running'}
-            onClick={() => runSelectedJob(record)}
-          >
-            运行
-          </Button>
+          {writeJobs && (
+            <Button
+              size="small"
+              icon={<PlayCircleOutlined />}
+              loading={runningJobId === record.id}
+              disabled={record.latest_run?.status === 'running'}
+              onClick={() => runSelectedJob(record)}
+            >
+              运行
+            </Button>
+          )}
           <Button
             size="small"
             icon={<HistoryOutlined />}
@@ -218,15 +227,17 @@ export function JobsPage() {
           >
             历史
           </Button>
-          <Popconfirm
-            title={`确认${record.enabled ? '禁用' : '启用'}该任务？`}
-            description={record.enabled ? '禁用后不会再按计划自动执行，仍可手工运行。' : '启用后将按当前计划恢复自动执行。'}
-            onConfirm={() => changeJobEnabled(record)}
-          >
-            <Button size="small" loading={changingJobId === record.id}>
-              {record.enabled ? '禁用' : '启用'}
-            </Button>
-          </Popconfirm>
+          {writeJobs && (
+            <Popconfirm
+              title={`确认${record.enabled ? '禁用' : '启用'}该任务？`}
+              description={record.enabled ? '禁用后不会再按计划自动执行，仍可手工运行。' : '启用后将按当前计划恢复自动执行。'}
+              onConfirm={() => changeJobEnabled(record)}
+            >
+              <Button size="small" loading={changingJobId === record.id}>
+                {record.enabled ? '禁用' : '启用'}
+              </Button>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -234,6 +245,14 @@ export function JobsPage() {
 
   return (
     <Space direction="vertical" size={16} className="page-stack">
+      {!writeJobs && (
+        <Alert
+          type="info"
+          showIcon
+          message="当前为任务只读模式"
+          description="你可以查看任务状态和运行历史，但当前角色不能运行、启用或禁用任务。"
+        />
+      )}
       {(summary.failed > 0 || summary.interrupted > 0) && (
         <Alert
           type={summary.failed > 0 ? 'warning' : 'info'}
@@ -274,7 +293,7 @@ export function JobsPage() {
         headerTitle="任务调度"
         toolBarRender={() => [
           <Typography.Text type="secondary" key="single-flight">
-            同一任务只允许一个运行实例
+            {writeJobs ? '同一任务只允许一个运行实例' : '运行与启停操作需要“任务执行”权限'}
           </Typography.Text>,
         ]}
         scroll={{ x: 1550 }}

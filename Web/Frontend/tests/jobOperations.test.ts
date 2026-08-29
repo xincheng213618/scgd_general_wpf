@@ -30,6 +30,8 @@ test('job intervals use readable operational units', () => {
 
 test('database backup jobs have an operator-facing type label', () => {
   assert.equal(jobTypeLabels.database_backup, '数据库备份')
+  assert.equal(jobTypeLabels.security_cleanup, '账号安全清理')
+  assert.equal(jobTypeLabels.transfer_cleanup, '临时文件清理')
 })
 
 test('job durations stay readable from milliseconds through multi-day interruptions', () => {

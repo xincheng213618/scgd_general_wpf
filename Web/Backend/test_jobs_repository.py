@@ -48,6 +48,37 @@ class JobRepositoryTests(unittest.TestCase):
             {"total": 0, "success": 0, "error": 0, "interrupted": 0, "running": 0},
         )
 
+    def test_defaults_refresh_owned_metadata_without_resetting_runtime_state(self):
+        db = self.cache.get_db()
+        try:
+            db.execute(
+                """UPDATE scheduled_jobs
+                   SET name = 'Legacy name', job_type = 'legacy', enabled = 0,
+                       interval_seconds = 900, next_run_at = '2026-08-11T00:00:00+00:00',
+                       config = '{"custom":true}', updated_at = '2026-08-10T12:00:00+00:00'
+                   WHERE id = 'a-first'"""
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        refreshed = [{
+            **self.defaults[1],
+            "name": "Account Security Cleanup",
+            "job_type": "security_cleanup",
+        }]
+        self.jobs.ensure_defaults(refreshed, "2026-08-12T00:00:00+00:00")
+        job = self.jobs.get("a-first")
+
+        self.assertEqual(job["name"], "Account Security Cleanup")
+        self.assertEqual(job["job_type"], "security_cleanup")
+        self.assertEqual(job["enabled"], 0)
+        self.assertEqual(job["interval_seconds"], 900)
+        self.assertEqual(job["next_run_at"], "2026-08-11T00:00:00+00:00")
+        self.assertEqual(job["config"], '{"custom":true}')
+        self.assertEqual(job["created_at"], "2026-08-10T00:00:00+00:00")
+        self.assertEqual(job["updated_at"], "2026-08-10T12:00:00+00:00")
+
     def test_list_attaches_only_latest_run(self):
         first = self.jobs.start_run("a-first", "2026-08-10T01:00:00+00:00")
         self.jobs.complete_run(

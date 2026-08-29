@@ -12,6 +12,8 @@ export const jobTypeLabels: Record<string, string> = {
   index_check: '索引检查',
   startup_check: '启动检查',
   cache_cleanup: '缓存清理',
+  security_cleanup: '账号安全清理',
+  transfer_cleanup: '临时文件清理',
   analytics_retention: '访问统计保留',
   history_retention: '运行历史保留',
   data_retention: '管理数据保留',

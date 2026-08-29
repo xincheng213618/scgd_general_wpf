@@ -15,6 +15,7 @@ import {
   Tag,
   Typography,
 } from 'antd'
+import type { TabsProps } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -27,7 +28,7 @@ import {
   publishPluginPackage,
 } from '../services/site'
 import type { PublishIntegrityPluginIssue, PublishIntegrityReport } from '../types/admin'
-import type { CvwsContext, UploadContext } from '../types/site'
+import type { AuthSession, CvwsContext, UploadContext } from '../types/site'
 import { humanSize, shortDate } from '../utils/format'
 import {
   pluginIntegrityIssueHref,
@@ -35,6 +36,7 @@ import {
   publishIntegrityPluginIssues,
 } from '../utils/publishIntegrity'
 import { UploadProgress } from '../components/UploadProgress'
+import { canOpenAdminRoute, getAdminPublishCapabilities } from '../utils/permissions'
 
 const integrityStatusText = {
   ok: '发布资料齐全',
@@ -49,11 +51,18 @@ const integrityStatusType = {
 } as const
 
 interface PublishIntegrityPanelProps {
+  canPublishPlugins: boolean
   refreshToken: number
   onPreparePluginPublish: (issue: PublishIntegrityPluginIssue) => void
+  session: AuthSession | null
 }
 
-function PublishIntegrityPanel({ refreshToken, onPreparePluginPublish }: PublishIntegrityPanelProps) {
+function PublishIntegrityPanel({
+  canPublishPlugins,
+  refreshToken,
+  onPreparePluginPublish,
+  session,
+}: PublishIntegrityPanelProps) {
   const { message } = App.useApp()
   const [report, setReport] = useState<PublishIntegrityReport | null>(null)
   const [loading, setLoading] = useState(true)
@@ -115,7 +124,11 @@ function PublishIntegrityPanel({ refreshToken, onPreparePluginPublish }: Publish
             dataSource={report.checks}
             renderItem={(item) => {
               const pluginIssues = publishIntegrityPluginIssues(report, item.key)
-              const actions = item.status !== 'ok' && item.actionHref && pluginIssues.length === 0
+              const canOpenAction = !item.actionHref?.startsWith('/admin')
+                || (item.actionHref === '/admin/publish'
+                  ? canPublishPlugins
+                  : canOpenAdminRoute(session, item.actionHref))
+              const actions = item.status !== 'ok' && item.actionHref && pluginIssues.length === 0 && canOpenAction
                 ? [<Link to={item.actionHref} key="fix">处理</Link>]
                 : undefined
               return (
@@ -135,9 +148,11 @@ function PublishIntegrityPanel({ refreshToken, onPreparePluginPublish }: Publish
                             <Link to={pluginIntegrityIssueHref(issue)}>
                               <Tag color="gold">{pluginIntegrityIssueLabel(issue)}</Tag>
                             </Link>
-                            <Button type="link" size="small" onClick={() => onPreparePluginPublish(issue)}>
-                              补充发布资料
-                            </Button>
+                            {canPublishPlugins && (
+                              <Button type="link" size="small" onClick={() => onPreparePluginPublish(issue)}>
+                                补充发布资料
+                              </Button>
+                            )}
                           </Space>
                         ))}
                       </Space>
@@ -362,10 +377,20 @@ function CvwsPublishPanel() {
   )
 }
 
-export function PublishPage() {
+interface PublishPageProps {
+  session: AuthSession | null
+}
+
+export function PublishPage({ session }: PublishPageProps) {
   const [activeTab, setActiveTab] = useState('plugin')
   const [pluginDraft, setPluginDraft] = useState<PublishIntegrityPluginIssue | null>(null)
   const [integrityRefreshToken, setIntegrityRefreshToken] = useState(0)
+  const {
+    publishPlugins,
+    publishReleases,
+    readIntegrity,
+    transferFiles,
+  } = getAdminPublishCapabilities(session)
 
   const preparePluginPublish = (issue: PublishIntegrityPluginIssue) => {
     setPluginDraft({ ...issue })
@@ -375,31 +400,47 @@ export function PublishPage() {
     })
   }
 
+  const tabItems: NonNullable<TabsProps['items']> = []
+  if (publishPlugins) {
+    tabItems.push({
+      key: 'plugin',
+      label: '插件包发布',
+      children: (
+        <PluginPublishPanel
+          draft={pluginDraft}
+          onClearDraft={() => setPluginDraft(null)}
+          onPublished={() => setIntegrityRefreshToken((value) => value + 1)}
+        />
+      ),
+    })
+  }
+  if (publishReleases) {
+    tabItems.push({ key: 'cvws', label: '服务包发布', children: <CvwsPublishPanel /> })
+  }
+  if (transferFiles) {
+    tabItems.push({ key: 'transfer', label: '文件中转', children: <TransferPanel /> })
+  }
+  const visibleActiveTab = tabItems.some((item) => item.key === activeTab)
+    ? activeTab
+    : tabItems[0]?.key
+
   return (
     <Space direction="vertical" size={16} className="page-stack">
-      <PublishIntegrityPanel
-        refreshToken={integrityRefreshToken}
-        onPreparePluginPublish={preparePluginPublish}
-      />
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={[
-          {
-            key: 'plugin',
-            label: '插件包发布',
-            children: (
-              <PluginPublishPanel
-                draft={pluginDraft}
-                onClearDraft={() => setPluginDraft(null)}
-                onPublished={() => setIntegrityRefreshToken((value) => value + 1)}
-              />
-            ),
-          },
-          { key: 'cvws', label: '服务包发布', children: <CvwsPublishPanel /> },
-          { key: 'transfer', label: '文件中转', children: <TransferPanel /> },
-        ]}
-      />
+      {readIntegrity && (
+        <PublishIntegrityPanel
+          canPublishPlugins={publishPlugins}
+          refreshToken={integrityRefreshToken}
+          onPreparePluginPublish={preparePluginPublish}
+          session={session}
+        />
+      )}
+      {tabItems.length > 0 && (
+        <Tabs
+          activeKey={visibleActiveTab}
+          onChange={setActiveTab}
+          items={tabItems}
+        />
+      )}
     </Space>
   )
 }

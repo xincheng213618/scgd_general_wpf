@@ -64,7 +64,11 @@ def _has_transfer_auth() -> bool:
 
 def _has_admin_storage_auth() -> bool:
     request_context = current_request_context()
-    decision = _ctx.auth_policy.authorize(request_context, ["admin:*"])
+    decision = _ctx.auth_policy.authorize(
+        request_context,
+        ["files:manage"],
+        allow_user_session=True,
+    )
     if decision.allowed:
         set_authenticated_request_context(request_context.with_actor(decision.principal))
     return decision.allowed
