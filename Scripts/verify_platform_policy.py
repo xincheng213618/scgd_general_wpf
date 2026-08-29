@@ -18,12 +18,8 @@ HOST_SOLUTIONS = (
     Path("UI/UI.sln"),
 )
 HOST_SOLUTION_CONFIGURATIONS = frozenset({
-    "Debug|Any CPU",
     "Debug|x64",
-    "Debug|x86",
-    "Release|Any CPU",
     "Release|x64",
-    "Release|x86",
 })
 PLATFORM_POLICY_TARGETS = Path("ColorVision.PlatformPolicy.targets")
 PLATFORM_POLICY_IMPORTS = {
@@ -164,15 +160,19 @@ def validate_host_solution(path: Path) -> None:
     )
     if not section:
         raise PlatformPolicyError(f"{path} does not contain solution platform configurations.")
-    configurations = frozenset(
-        line.split("=", 1)[0].strip()
+    configuration_mappings = sorted(
+        tuple(part.strip() for part in line.split("=", 1))
         for line in section.group("body").splitlines()
         if "=" in line
     )
-    if configurations != HOST_SOLUTION_CONFIGURATIONS:
+    expected_configuration_mappings = sorted(
+        (configuration, configuration)
+        for configuration in HOST_SOLUTION_CONFIGURATIONS
+    )
+    if configuration_mappings != expected_configuration_mappings:
         raise PlatformPolicyError(
             f"{path} solution configuration aliases drifted: "
-            f"expected={sorted(HOST_SOLUTION_CONFIGURATIONS)}, actual={sorted(configurations)}."
+            f"expected={expected_configuration_mappings}, actual={configuration_mappings}."
         )
     projects = {
         match.group("guid").casefold(): match.group("project").replace("/", "\\").casefold()
@@ -182,49 +182,83 @@ def validate_host_solution(path: Path) -> None:
             flags=re.MULTILINE,
         )
     }
-    active_configurations: dict[tuple[str, str], str] = {}
-    for match in re.finditer(
-        r"(?P<guid>\{[^}]+\})\.(?P<alias>(?:Debug|Release)\|(?:Any CPU|x64|x86))\.ActiveCfg\s*=\s*(?P<actual>[^\r\n]+)",
+    project_section = re.search(
+        r"GlobalSection\(ProjectConfigurationPlatforms\)\s*=\s*postSolution(?P<body>.*?)EndGlobalSection",
         text,
+        flags=re.DOTALL,
+    )
+    if not project_section:
+        raise PlatformPolicyError(f"{path} does not contain project platform configurations.")
+    active_configurations: dict[tuple[str, str], str] = {}
+    build_configurations: dict[tuple[str, str], str] = {}
+    for match in re.finditer(
+        r"^\s*(?P<guid>\{[^}]+\})\.(?P<alias>[^.\r\n]+)\."
+        r"(?P<kind>[^=\r\n]+?)\s*=\s*(?P<actual>[^\r\n]+)",
+        project_section.group("body"),
+        flags=re.MULTILINE,
     ):
         guid = match.group("guid").casefold()
         alias = match.group("alias")
+        kind = match.group("kind")
         actual = match.group("actual").strip()
         project = projects.get(guid)
         if project is None:
             raise PlatformPolicyError(f"{path} maps unknown project {match.group('guid')}.")
-        if project.endswith(".csproj"):
-            expected_platform = "Any CPU" if project == str(FILEIO_PROJECT).replace("/", "\\").casefold() else "x64"
+        if alias not in HOST_SOLUTION_CONFIGURATIONS:
+            raise PlatformPolicyError(
+                f"{path} contains unsupported project configuration alias {alias} for {project}; "
+                f"expected only {sorted(HOST_SOLUTION_CONFIGURATIONS)}."
+            )
+        if kind not in {"ActiveCfg", "Build.0"}:
+            continue
+        if project == str(FILEIO_PROJECT).replace("/", "\\").casefold():
+            expected_platform = "Any CPU"
             expected = f"{alias.split('|', 1)[0]}|{expected_platform}"
             if actual != expected:
                 raise PlatformPolicyError(
                     f"{path} maps {project} alias {alias} to {actual}; expected {expected}."
                 )
-        active_configurations[(guid, alias)] = actual
-    managed_projects = {
+        elif project.endswith(".csproj"):
+            expected = f"{alias.split('|', 1)[0]}|x64"
+            if actual != expected:
+                raise PlatformPolicyError(
+                    f"{path} maps {project} alias {alias} to {actual}; expected {expected}."
+                )
+        elif not re.fullmatch(r"(?:Debug|Release)\|x64", actual):
+            raise PlatformPolicyError(
+                f"{path} maps {project} alias {alias} to {actual}; expected an x64 project configuration."
+            )
+        configurations = active_configurations if kind == "ActiveCfg" else build_configurations
+        key = (guid, alias)
+        if key in configurations:
+            raise PlatformPolicyError(
+                f"{path} contains duplicate {kind} mapping for {project} alias {alias}."
+            )
+        configurations[key] = actual
+    build_projects = {
         guid: project
         for guid, project in projects.items()
-        if project.endswith(".csproj")
+        if re.search(r"\.[^\\/]+proj$", project)
     }
-    missing_active_configurations = sorted(
-        f"{project} @ {alias}"
-        for guid, project in managed_projects.items()
+    missing_configurations = sorted(
+        f"{project} @ {alias} {kind}"
+        for guid, project in build_projects.items()
         for alias in HOST_SOLUTION_CONFIGURATIONS
-        if (guid, alias) not in active_configurations
-    )
-    if missing_active_configurations:
-        raise PlatformPolicyError(
-            f"{path} is missing managed ActiveCfg mappings: {missing_active_configurations}."
+        for kind, configurations in (
+            ("ActiveCfg", active_configurations),
+            ("Build.0", build_configurations),
         )
-    for match in re.finditer(
-        r"(?P<guid>\{[^}]+\})\.(?P<alias>(?:Debug|Release)\|(?:Any CPU|x64|x86))\.Build\.0\s*=\s*(?P<actual>[^\r\n]+)",
-        text,
-    ):
-        key = (match.group("guid").casefold(), match.group("alias"))
-        actual = match.group("actual").strip()
+        if (guid, alias) not in configurations
+    )
+    if missing_configurations:
+        raise PlatformPolicyError(
+            f"{path} is missing project x64 mappings: {missing_configurations}."
+        )
+    for key, actual in build_configurations.items():
         if active_configurations.get(key) != actual:
+            guid, alias = key
             raise PlatformPolicyError(
-                f"{path} Build.0 mapping {match.group('guid')} {match.group('alias')}={actual} "
+                f"{path} Build.0 mapping {guid} {alias}={actual} "
                 "does not match ActiveCfg."
             )
 
@@ -925,7 +959,7 @@ def main() -> int:
             f"{len(verified_members)} target frameworks."
         )
     print(f"Verified the x64 release policy across {len(checked)} project, solution, and policy files.")
-    print("Any CPU and x86 solution aliases map managed projects to x64, except the FileIO AnyCPU package.")
+    print("Host solutions expose only Debug|x64 and Release|x64; only FileIO maps them to Any CPU.")
     print("ARM64 remains unsupported until native, package, CI, installer, and device validation are complete.")
     return 0
 

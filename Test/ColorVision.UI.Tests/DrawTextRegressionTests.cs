@@ -142,14 +142,14 @@ public sealed class DrawTextRegressionTests
                 Assert.True(text.HandleDoubleClick(
                     fixture.Context,
                     new Point(bounds.Right - 1, bounds.Top + bounds.Height / 2)));
-                fixture.EditorOverlay.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+                DrainPendingEditorCallbacks(fixture.EditorOverlay.Dispatcher);
                 TextBox editor = Assert.IsType<TextBox>(Assert.Single(fixture.EditorOverlay.Children));
                 Assert.Equal(0, editor.SelectionLength);
                 Assert.InRange(editor.CaretIndex, 4, properties.Text.Length);
 
                 text.EndEdit(false);
                 text.BeginEdit(fixture.Context);
-                fixture.EditorOverlay.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+                DrainPendingEditorCallbacks(fixture.EditorOverlay.Dispatcher);
                 editor = Assert.IsType<TextBox>(Assert.Single(fixture.EditorOverlay.Children));
                 Assert.Equal(properties.Text.Length, editor.SelectionLength);
             }
@@ -974,7 +974,7 @@ public sealed class DrawTextRegressionTests
                 rotation.Freeze();
 
                 text.EndEdit(false);
-                fixture.EditorOverlay.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+                DrainPendingEditorCallbacks(fixture.EditorOverlay.Dispatcher);
 
                 Assert.False(text.IsEditing);
                 Assert.Empty(fixture.EditorOverlay.Children);
@@ -1398,6 +1398,13 @@ public sealed class DrawTextRegressionTests
         KeyboardFocusChangedEventArgs args = new(Keyboard.PrimaryDevice, Environment.TickCount, editor, destination);
         MethodInfo lostFocus = typeof(DVText).GetMethod("OnEditorLostKeyboardFocus", BindingFlags.Instance | BindingFlags.NonPublic)!;
         lostFocus.Invoke(text, [editor, args]);
+    }
+
+    private static void DrainPendingEditorCallbacks(Dispatcher dispatcher)
+    {
+        // DVText queues transform refreshes at Loaded and focus work at Input. Waiting for
+        // ContextIdle can be starved by the selection renderer's Render-priority timer.
+        dispatcher.Invoke(() => { }, DispatcherPriority.Input);
     }
 
     private static Color GetColor(Brush brush)

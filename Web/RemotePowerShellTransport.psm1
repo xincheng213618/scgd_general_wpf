@@ -38,8 +38,12 @@ $scriptBlock = [ScriptBlock]::Create($scriptText)
 & $scriptBlock
 '@
 
+    # Windows PowerShell 5.1 can consume the first character from redirected
+    # stdin while starting powershell.exe. A sacrificial blank line preserves
+    # the Base64 payload; the loader ignores it, and FromBase64String permits
+    # whitespace between Base64 characters.
     return [pscustomobject]@{
-        stdin_payload = (($payloadChunks + $script:RemotePayloadTerminator) -join "`n") + "`n"
+        stdin_payload = "`n" + (($payloadChunks + $script:RemotePayloadTerminator) -join "`n") + "`n"
         encoded_loader = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($loader))
     }
 }

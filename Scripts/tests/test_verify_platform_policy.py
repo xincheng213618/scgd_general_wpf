@@ -80,13 +80,52 @@ class PlatformPolicyTests(unittest.TestCase):
         with self.assertRaisesRegex(PlatformPolicyError, "unsupported ARM64"):
             validate_host_solution(solution)
 
-    def test_rejects_solution_aliases_that_do_not_route_managed_projects_to_policy_platforms(self) -> None:
+    def test_rejects_anycpu_and_x86_solution_aliases(self) -> None:
+        baseline = (REPO_ROOT / "build.sln").read_text(encoding="utf-8-sig")
+        marker = "\t\tDebug|x64 = Debug|x64\n"
+        self.assertIn(marker, baseline)
+        for platform in ("Any CPU", "x86"):
+            with self.subTest(platform=platform):
+                alias = f"\t\tDebug|{platform} = Debug|{platform}\n"
+                solution = self.root / f"solution-{platform.replace(' ', '-')}.sln"
+                solution.write_text(baseline.replace(marker, marker + alias, 1), encoding="utf-8")
+                with self.assertRaisesRegex(PlatformPolicyError, "solution configuration aliases drifted"):
+                    validate_host_solution(solution)
+
+    def test_rejects_conflicting_x64_solution_configuration_mappings(self) -> None:
+        baseline = (REPO_ROOT / "build.sln").read_text(encoding="utf-8-sig")
+        mapping = "\t\tDebug|x64 = Debug|x64\n"
+        self.assertIn(mapping, baseline)
+        mutations = (
+            ("wrong-target", "\t\tDebug|x64 = Debug|Any CPU\n"),
+            ("duplicate", mapping + "\t\tDebug|x64 = Debug|Any CPU\n"),
+        )
+        for name, replacement in mutations:
+            with self.subTest(name=name):
+                solution = self.root / f"solution-{name}.sln"
+                solution.write_text(baseline.replace(mapping, replacement, 1), encoding="utf-8")
+                with self.assertRaisesRegex(PlatformPolicyError, "solution configuration aliases drifted"):
+                    validate_host_solution(solution)
+
+    def test_rejects_anycpu_and_x86_project_configuration_aliases(self) -> None:
+        baseline = (REPO_ROOT / "build.sln").read_text(encoding="utf-8-sig")
+        old = "{AD038578-6456-48BF-9379-151DCBE9DBF5}.Release|x64.ActiveCfg = Release|x64"
+        self.assertIn(old, baseline)
+        for platform in ("Any CPU", "x86"):
+            with self.subTest(platform=platform):
+                new = old.replace("|x64.ActiveCfg", f"|{platform}.ActiveCfg")
+                solution = self.root / f"project-{platform.replace(' ', '-')}.sln"
+                solution.write_text(baseline.replace(old, new, 1), encoding="utf-8")
+                with self.assertRaisesRegex(PlatformPolicyError, "unsupported project configuration alias"):
+                    validate_host_solution(solution)
+
+    def test_rejects_x64_mappings_that_do_not_route_projects_to_policy_platforms(self) -> None:
         baseline = (REPO_ROOT / "build.sln").read_text(encoding="utf-8-sig")
         mutations = (
             (
-                "host-anycpu",
-                "{AD038578-6456-48BF-9379-151DCBE9DBF5}.Release|Any CPU.ActiveCfg = Release|x64",
-                "{AD038578-6456-48BF-9379-151DCBE9DBF5}.Release|Any CPU.ActiveCfg = Release|Any CPU",
+                "host-x64",
+                "{AD038578-6456-48BF-9379-151DCBE9DBF5}.Release|x64.ActiveCfg = Release|x64",
+                "{AD038578-6456-48BF-9379-151DCBE9DBF5}.Release|x64.ActiveCfg = Release|Any CPU",
             ),
             (
                 "fileio-x64",
@@ -102,18 +141,22 @@ class PlatformPolicyTests(unittest.TestCase):
                 with self.assertRaisesRegex(PlatformPolicyError, "maps"):
                     validate_host_solution(solution)
 
-    def test_rejects_solution_when_active_and_build_mapping_are_both_removed(self) -> None:
+    def test_rejects_solution_when_required_x64_project_mapping_is_removed(self) -> None:
         baseline = (REPO_ROOT / "build.sln").read_text(encoding="utf-8-sig")
-        mapping = "{AD038578-6456-48BF-9379-151DCBE9DBF5}.Release|Any CPU"
-        active = f"\t\t{mapping}.ActiveCfg = Release|x64\n"
-        build = f"\t\t{mapping}.Build.0 = Release|x64\n"
-        self.assertIn(active, baseline)
-        self.assertIn(build, baseline)
-        solution = self.root / "missing-managed-mapping.sln"
-        solution.write_text(baseline.replace(active, "", 1).replace(build, "", 1), encoding="utf-8")
-
-        with self.assertRaisesRegex(PlatformPolicyError, "missing managed ActiveCfg"):
-            validate_host_solution(solution)
+        cases = (
+            ("managed-active", "{AD038578-6456-48BF-9379-151DCBE9DBF5}", "ActiveCfg"),
+            ("managed-build", "{AD038578-6456-48BF-9379-151DCBE9DBF5}", "Build.0"),
+            ("native-active", "{AA343239-476E-43E3-BEE3-D3313C883341}", "ActiveCfg"),
+            ("native-build", "{AA343239-476E-43E3-BEE3-D3313C883341}", "Build.0"),
+        )
+        for name, guid, kind in cases:
+            with self.subTest(name=name):
+                mapping = f"\t\t{guid}.Release|x64.{kind} = Release|x64\n"
+                self.assertIn(mapping, baseline)
+                solution = self.root / f"missing-{name}.sln"
+                solution.write_text(baseline.replace(mapping, "", 1), encoding="utf-8")
+                with self.assertRaisesRegex(PlatformPolicyError, "missing project x64 mappings"):
+                    validate_host_solution(solution)
 
     def test_fileio_is_the_only_allowed_anycpu_role_declaration(self) -> None:
         project = self.root / "Other.csproj"
