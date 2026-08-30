@@ -2,10 +2,10 @@
 knowledge_id: "copilot.configuration"
 knowledge_type: "topic"
 status: "current"
-summary: "ColorVision内置Copilot的设置草稿、配置保存与运行态发布、模型选择和联网诊断；保存失败可能已落盘，Local MCP测试存在握手缺口。"
+summary: "ColorVision内置Copilot的设置草稿、配置保存与运行态发布、模型选择和联网诊断；保存失败可能已落盘，Local MCP测试核验会话握手与只读状态调用。"
 aliases: ["Copilot配置", "聊天配置", "模型设置", "Test Model", "Apply to Chat", "CopilotSettingsViewModel", "CopilotConfig", "推理模式保存失败", "MCP连接测试", "config.toml不生效"]
-code_paths: ["ColorVision/Copilot/Config", "ColorVision/Copilot/CopilotSettingsWindow.xaml", "ColorVision/Copilot/CopilotSettingsWindow.xaml.cs", "ColorVision/Copilot/CopilotSettingsViewModel.cs", "ColorVision/Copilot/CopilotSettingsViewModel.ProfileManagement.cs", "ColorVision/Copilot/CopilotSettingsViewModel.BackendSync.cs", "ColorVision/Copilot/CopilotSettingsViewModel.ExternalMcp.cs", "ColorVision/Copilot/CopilotSettingsViewModel.McpOperations.cs", "ColorVision/Copilot/CopilotSettingsViewModel.WebPageNetwork.cs", "ColorVision/Copilot/CopilotChatViewModel.ControlAndSettings.cs", "ColorVision/Copilot/CopilotChatViewModel.Composer.cs", "ColorVision/Copilot/CopilotChatViewModel.ConfigPersistence.cs", "ColorVision/Copilot/CopilotChatViewModel.ConversationCommands.cs", "ColorVision/Copilot/CopilotChatViewModel.Conversations.cs", "ColorVision/Copilot/CopilotChatViewModel.Lifecycle.cs", "ColorVision/Copilot/State/CopilotConversationSession.cs", "ColorVision/Copilot/State/CopilotChatStatePersistenceCoordinator.cs", "ColorVision/Copilot/CopilotModelConnectionDiagnostic.cs", "ColorVision/Copilot/Mcp/CopilotMcpRequestHandler.cs", "UI/ColorVision.UI/ConfigHandler.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs", "Test/ColorVision.Copilot.Tests/CopilotBackendSyncTransactionTests.cs", "Test/ColorVision.Copilot.Tests/CopilotChatConfigPersistenceTests.cs", "Test/ColorVision.Copilot.Tests/CopilotMcpClientConfigurationTests.cs", "Test/ColorVision.Copilot.Tests/CopilotProfileConfigTests.cs", "Test/ColorVision.Copilot.Tests/CopilotConfigWebPageNetworkTests.cs"]
+code_paths: ["ColorVision/Copilot/Config", "ColorVision/Copilot/CopilotSettingsWindow.xaml", "ColorVision/Copilot/CopilotSettingsWindow.xaml.cs", "ColorVision/Copilot/CopilotSettingsViewModel.cs", "ColorVision/Copilot/CopilotSettingsViewModel.ProfileManagement.cs", "ColorVision/Copilot/CopilotSettingsViewModel.BackendSync.cs", "ColorVision/Copilot/CopilotSettingsViewModel.ExternalMcp.cs", "ColorVision/Copilot/CopilotSettingsViewModel.McpOperations.cs", "ColorVision/Copilot/CopilotSettingsViewModel.WebPageNetwork.cs", "ColorVision/Copilot/CopilotChatViewModel.ControlAndSettings.cs", "ColorVision/Copilot/CopilotChatViewModel.Composer.cs", "ColorVision/Copilot/CopilotChatViewModel.ConfigPersistence.cs", "ColorVision/Copilot/CopilotChatViewModel.ConversationCommands.cs", "ColorVision/Copilot/CopilotChatViewModel.Conversations.cs", "ColorVision/Copilot/CopilotChatViewModel.Lifecycle.cs", "ColorVision/Copilot/State/CopilotConversationSession.cs", "ColorVision/Copilot/State/CopilotChatStatePersistenceCoordinator.cs", "ColorVision/Copilot/CopilotModelConnectionDiagnostic.cs", "ColorVision/Copilot/CopilotMcpConnectionDiagnostic.cs", "ColorVision/Copilot/Mcp/CopilotMcpRequestHandler.cs", "UI/ColorVision.UI/ConfigHandler.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs", "Test/ColorVision.Copilot.Tests/CopilotBackendSyncTransactionTests.cs", "Test/ColorVision.Copilot.Tests/CopilotChatConfigPersistenceTests.cs", "Test/ColorVision.Copilot.Tests/CopilotMcpClientConfigurationTests.cs", "Test/ColorVision.Copilot.Tests/CopilotMcpConnectionDiagnosticTests.cs", "Test/ColorVision.Copilot.Tests/CopilotModelConnectionDiagnosticLifecycleTests.cs", "Test/ColorVision.Copilot.Tests/CopilotProfileConfigTests.cs", "Test/ColorVision.Copilot.Tests/CopilotConfigWebPageNetworkTests.cs"]
 related: ["copilot.runtime", "copilot.interactions", "copilot.lifecycle", "copilot.extensions", "copilot.mcp-server", "copilot.view-model", "ui.configuration"]
 ---
 
@@ -63,7 +63,7 @@ related: ["copilot.runtime", "copilot.interactions", "copilot.lifecycle", "copil
 
 `/reasoning`（兼容 `/effort`）才会修改当前 Profile 的 `ReasoningMode`。只接受 `CopilotReasoningCapabilities` 为该 Profile 声明的级别，归一化后通过 `TryPersistConfigMutation` 克隆候选并使用上述三态提交；`NotPersisted` 保留原 Profile 并显示“推理模式未更改”，`PersistedButPublishFailed` 显示“已保存，但当前聊天界面未能刷新”。成功后重新绑定发布的 Profile，而不是原地修改旧对象；使用同一个 Profile 的后续请求会读取这个配置，不应描述成仅本会话风格。
 
-当前 `SelectReasoningMode` 在调用返回 `void` 的 setter 后仍无条件生成“已设置／保存到当前模型 Profile”的本地回显；它可能与 `PendingActionFeedbackText` 中的保存失败提示并存。这是调用层反馈缺口，不能把回显作为落盘证据。测试专用的无 `ConfigHandler` 构造路径只提交内存，即使内部复用 `PersistedAndPublished` 枚举也不代表写了磁盘。
+`SetSelectedProfileReasoningMode` 返回是否完成设置（或已是所选值）；`SelectReasoningMode` 只有成功时才回显“已设置／保持”，否则展示同一保存失败或刷新失败说明。已是所选值时不重复保存。测试专用的无 `ConfigHandler` 构造路径只提交内存，即使内部复用 `PersistedAndPublished` 枚举也不代表写了磁盘。
 
 `/personality` 则修改会话回答风格，不属于 Profile 或 `CopilotConfig` 的保存；交互入口见[本地交互](./copilot-local-interactions.md)。这三个命令不授权模型执行工具或更改审批策略。
 
@@ -87,16 +87,22 @@ related: ["copilot.runtime", "copilot.interactions", "copilot.lifecycle", "copil
 
 Test Model 的结果记录耗时、可显示字符和重试；“Connected”也可能带“没有可显示文本”或“响应提前结束”的提示。它没有验证答案必须精确等于 OK，更不能证明工具调用、图像输入、业务正确性或账户额度可用。窗口关闭会请求取消诊断，但已经发送的请求和供应商用量不能由取消撤回。
 
-Local MCP 测试当前有明确实现缺口：`TestMcpConnectionAsync` 直接发送 `tools/call get_server_status`，没有先 `initialize`，也不带 `Mcp-Session-Id`；`CopilotMcpRequestHandler` 对非初始化请求要求有效会话。按当前实现，即使监听和 token 正常也会遇到缺会话拒绝，不能把该失败直接诊断成端口或凭据错误。完整握手应按 Local MCP 主题核验；本页没有通过修改协议或运行产品来绕过此差异。
+诊断期间仍可切换和编辑 Profile；这些动作会使原诊断失效并请求取消。结果只允许回写到始终未切换、未编辑的原 Profile，切换后再切回或编辑后改回原值也不能沿用旧结果。成功与失败都在 UI 续体中复查 Profile 修订、取消和窗口寿命，避免已经完成的请求在取消或关窗后覆盖状态。
 
-后台同步使用 `CopilotBackendSyncTransaction` 分开构造“应持久化的列表”和“窗口显示列表”：同步同源托管 Profile，保留无关本地草稿，但不会把未保存的本地草稿一并写入配置。下载成功仍可能保存失败；已持久化后通知失败则保留已保存结果并提示刷新失败。Cancel 不能撤销这次同步，普通 Save 才会提交其余窗口草稿。后台连接与同步配置不是运行时加载 `config.toml` 的另一条路径。
+Local MCP 测试由 `CopilotMcpConnectionDiagnostic` 依次发送 `initialize`、`notifications/initialized` 和只读 `tools/call get_server_status`。初始化响应须匹配请求 ID、协议版本并返回有效 `Mcp-Session-Id`；后续请求携带该会话和协议头。只有通知得到确认、状态调用返回有效非错误结果时才显示 Connected。整条诊断共享 5 秒取消预算，JSON 响应有大小上限；HTTP、JSON-RPC 或工具错误均不报成功，远端错误正文不会直接回显，避免泄露 token 或会话 ID。此结果不验证其他工具权限、审批或业务执行。
+
+外部 MCP 刷新绑定开始时的草稿修订；编辑、清空或编辑后还原配置都会取消并使旧刷新失效。成功和失败都在 UI 续体复查修订、取消和窗口寿命，不能用旧服务列表覆盖当前配置，也不覆盖用户后来产生的其他设置提示。已完成的网络检查可能仍更新其服务的进程缓存／健康；取消不撤销这些已发生操作。诊断会逐个核查配置服务，范围和上限见[外部 MCP 工具发现](./copilot-agent-extensions.md#外部-mcp-工具发现)。
+
+后台同步使用 `CopilotBackendSyncTransaction` 分开构造“应持久化的列表”和“窗口显示列表”：同步同源托管 Profile，保留无关本地草稿，但不会把未保存的本地草稿一并写入配置。下载完成后、提交开始前再次检查窗口是否关闭；即使取消发生在下载任务完成与 UI 续体执行之间，也不再保存或发布结果。下载成功仍可能保存失败；已持久化后通知失败则保留已保存结果并提示刷新失败。Cancel 不能撤销已经提交的同步，普通 Save 才会提交其余窗口草稿。后台连接与同步配置不是运行时加载 `config.toml` 的另一条路径。
 
 ## 实现与验证入口
 
 - `CopilotSettingsViewModel.ProfileManagement.cs`、`CopilotSettingsWindow.xaml.cs`：按钮保存、Profile 草稿和模型诊断入口；`Config/CopilotConfig.cs`：规范化、候选发布、schema 与凭据边界。
 - `CopilotChatViewModel.ConfigPersistence.cs`、`Composer.cs`、`ConversationCommands.cs`：聊天中配置变更、三态反馈及命令回显；`State/CopilotConversationSession.cs`：只选择 Profile 的会话状态变化。
-- `CopilotModelConnectionDiagnostic.cs`、`CopilotSettingsViewModel.ExternalMcp.cs` / `McpOperations.cs` / `BackendSync.cs`：真实联网入口；`Config/CopilotBackendSyncTransaction.cs`：托管 Profile 合并与发布。
-- `CopilotConfigurationIsolationTests` 核对 ColorVision 配置不被外部 TOML 覆盖且仍发现指令；`CopilotBackendSyncTransactionTests` 覆盖锁文件保存失败、草稿隔离、未来 schema、凭据克隆、规范化列表和同步后通知失败；不代表模型或 MCP 实际连接成功。
-- `CopilotChatConfigPersistenceTests` 覆盖推理配置落盘失败、成功重绑定及无 handler 的内存模式；`CopilotMcpClientConfigurationTests` 覆盖配置与未来 schema；`CopilotProfileConfigTests`、`CopilotConfigWebPageNetworkTests` 覆盖能力声明重置与 Web 配置路由／校验。
+- `CopilotModelConnectionDiagnostic.cs`、`CopilotMcpConnectionDiagnostic.cs`、`CopilotSettingsViewModel.ExternalMcp.cs` / `McpOperations.cs` / `BackendSync.cs`：真实联网入口；`Config/CopilotBackendSyncTransaction.cs`：托管 Profile 合并与发布。
+- `CopilotConfigurationIsolationTests` 核对 ColorVision 配置不被外部 TOML 覆盖且仍发现指令；`CopilotBackendSyncTransactionTests` 覆盖锁文件保存失败、草稿隔离、未来 schema、凭据克隆、规范化列表、同步后通知失败，以及下载完成但 UI 续体尚未执行时关闭窗口的提交隔离；不代表模型或 MCP 实际连接成功。
+- `CopilotChatConfigPersistenceTests` 覆盖推理配置落盘失败、成功重绑定、命令的保存／刷新失败回显及无 handler 的内存模式；`CopilotMcpClientConfigurationTests` 覆盖配置与未来 schema；`CopilotProfileConfigTests`、`CopilotConfigWebPageNetworkTests` 覆盖能力声明重置与 Web 配置路由／校验。
+- `CopilotMcpConnectionDiagnosticTests` 通过受控 HTTP handler 对接实际本地 MCP request handler，覆盖握手顺序、每次诊断的会话隔离、认证与协议错误、有界响应及响应头到达后的正文读取取消，不启动真实监听。
+- `CopilotModelConnectionDiagnosticLifecycleTests` 用受控 HTTP 和 UI 续体驱动真实模型诊断路径，覆盖正常结果、切换／编辑后的失效、关窗／取消后已完成结果不回写，以及在途请求取消；不使用实际供应商或凭据。
 
-这些测试路径不是本次运行结果。设置窗口按钮的完整 WPF 交互、实际供应商连接、Local MCP 测试握手修复与真实后台同步仍需对应场景验证；不能用元数据／链接校验或某个单元测试通过替代。
+这些测试路径不是本次运行结果。设置窗口按钮的完整 WPF 交互、实际供应商连接、真实 HTTP 监听和后台同步仍需对应场景验证；不能用元数据／链接校验或某个单元测试通过替代。

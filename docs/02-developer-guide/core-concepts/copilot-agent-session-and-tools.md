@@ -5,7 +5,7 @@ status: "current"
 summary: "Copilot 会话检查点、任务呈现、重试和内置工具的状态恢复与安全边界。"
 aliases: ["Copilot 会话如何恢复","工具失败能否重试","诊断模式会自动读取日志吗","CopilotAgentSessionCheckpoint","CopilotAgentTaskEventJournal","GetRecentLog","CopilotRecentLogSupport"]
 code_paths: ["ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs","ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.cs","ColorVision/Copilot/State/","ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs","ColorVision/Copilot/Agent/CopilotQueuedFollowUpCoordinator.cs","ColorVision/Copilot/Agent/CopilotToolIntentPolicy.cs","ColorVision/Copilot/Agent/Tools/CopilotGetRecentLogTool.cs","ColorVision/Copilot/Capabilities/CopilotRecentLogSupport.cs","ColorVision/Copilot/Capabilities/CopilotAgentCapabilityServices.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs","Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs","Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatStateRecoveryAttachmentTests.cs","Test/ColorVision.Copilot.Tests/CopilotManagedAttachmentDeletionTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatViewModelProfileIsolationTests.cs"]
 related: ["copilot.runtime","copilot.tool-contracts","copilot.lifecycle","copilot.interactions"]
 ---
 
@@ -28,8 +28,17 @@ related: ["copilot.runtime","copilot.tool-contracts","copilot.lifecycle","copilo
 
 - follow-up 只能绑定当前活动的 Agent conversation；Chat 模式、其他 conversation、关闭中的 Host 和满队列全部 fail closed。普通调度入口仍拒绝同一 conversation 重复入队，只有专用 follow-up 入口允许。
 - `CopilotQueuedFollowUp` 保留提交时的 Profile、附件、活动文档、解决方案根和 Live Context，但不提前创建用户/助手消息。任务真正取得执行权时，才从刚完成的 conversation 重新捕获可见历史并写入本轮消息，避免把上一轮的未完成快照固化进下一轮。
+- 普通 follow-up 在图片准入或 UI 准备阶段取消／失败且尚未建立消息时，通过同一 recovery coordinator 把输入和附件恢复到源会话，保留更新的草稿；只有源会话仍被选中才同步输入框。UI 创建消息前再次检查取消，防止图片保存期间的取消仍产生新轮次。消息建立后的 Flush 失败继续走已有回滚，已执行的请求不按这条路径重放。自动目标续作不会把内部续作提示恢复成用户草稿；正常应用退出时保留尚未消费的恢复记录。
 - 输入区上方显示全局队列位置，并允许相邻上移、下移、删除或取消后移回输入框编辑；所有操作都复用 Host 的锁、run state 和变更事件，桌面宠物也在排序变化后重新聚合任务状态。
-- 可在运行中执行的本地命令可以立即分派；其他 Slash 命令可走 `IsLocalCommand` 专用队列，取得执行权后由宿主 handler 解析，不能去掉 `/` 当普通模型提示词。队列恢复、草稿和附件复用同一 coordinator；命令控制与位置变化见[交互契约](./copilot-local-interactions.md#诊断、设置与任务控制不是同一种命令)。
+- 可在运行中执行的本地命令可以立即分派；其他 Slash 命令可走 `IsLocalCommand` 专用队列，取得执行权后由宿主 handler 解析，不能去掉 `/` 当普通模型提示词。持久化等待结束后，在变更会话或执行命令前再次检查取消；已取消的命令不产生副作用，并通过同一 coordinator 恢复草稿和附件，选中会话的输入框同步恢复且保留更新的草稿。此检查不撤销已经开始执行的命令。命令控制与位置变化见[交互契约](./copilot-local-interactions.md#诊断、设置与任务控制不是同一种命令)。
+
+## 磁盘状态回退与附件保护
+
+`CopilotChatStateStore` 从旧 `.bak` 或 Recovery 快照恢复时，旧引用集可能遗漏仅由损坏的新状态引用的托管附件。两种回退都先创建持久化保护标记，再恢复主文件；附件清理不据旧快照删除未引用文件，保护会跨随后从 primary 加载的重启保留。全部现存托管文件重新被引用后，清理器才解除该标记。正常 Primary/Temporary 加载仍执行原有孤儿附件清理；未来 schema 的拒绝覆盖规则保持不变。
+
+保护标记写入失败时，本次加载仍保留附件，但不把旧状态提升成 primary。后续同步或异步保存会重试写标记，仍失败则报 `IOException` 并保留原恢复入口，避免自动保存后重启失去保护。`CopilotChatStateRecoveryAttachmentTests` 使用临时文件覆盖两种回退、跨重启、标记写失败及恢复保存；不代表损坏会话内容已经完整找回。
+
+批量清理在枚举文件或解除保护标记之前检查附件根目录；根本身是符号链接／重解析点，或无法完成检查时，直接跳过。枚举不静默忽略不可访问目录；任何枚举失败都会保留保护标记并跳过本次清理，不能把失败返回的空列表解释为“所有附件均已引用”。没有可用状态文件的首次加载也将枚举失败视为需要恢复保护。每个孤儿文件还须通过 `TryDeleteManagedAttachmentFile` 的根内路径和重解析点检查后才删除，不能仅依赖枚举器跳过子项链接。`CopilotManagedAttachmentDeletionTests` 覆盖链接根不删除外部文件、不解除保护标记，以及普通目录中保留引用文件并删除孤儿文件；这些检查不构成抵御并发文件系统替换的操作系统隔离。
 
 ## 会话分支与恢复隔离
 

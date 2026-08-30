@@ -432,7 +432,11 @@ namespace ColorVision.Copilot
             }
 
             var previousMode = CopilotReasoningCapabilities.GetEffectiveMode(profile);
-            SetSelectedProfileReasoningMode(option.Mode);
+            if (!SetSelectedProfileReasoningMode(option.Mode))
+            {
+                ShowLocalCommandResult(command, PendingActionFeedbackText);
+                return;
+            }
             var changeLabel = previousMode == option.Mode ? "保持" : "已设置";
             ShowLocalCommandResult(
                 command,

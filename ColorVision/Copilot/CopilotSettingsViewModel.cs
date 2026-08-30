@@ -23,7 +23,6 @@ namespace ColorVision.Copilot
 
     public sealed partial class CopilotSettingsViewModel : ViewModelBase, IDisposable
     {
-        private const int MaximumMcpStatusResponseBytes = 512 * 1024;
         private static readonly HttpClient McpHttpClient = CopilotMcpHttpTransport.CreateClient(TimeSpan.FromSeconds(5));
 
         private static readonly Regex SensitiveErrorRegex = new(
@@ -125,12 +124,14 @@ namespace ColorVision.Copilot
                 },
             });
 
-        private readonly CopilotModelConnectionDiagnostic _modelConnectionDiagnostic = new();
+        private readonly CopilotModelConnectionDiagnostic _modelConnectionDiagnostic;
         private readonly CopilotBackendSyncClient _backendSyncClient;
         private readonly ConfigHandler _configHandler;
         private readonly CopilotConfig _config;
         private readonly CancellationTokenSource _lifetimeCancellation = new();
         private CancellationTokenSource? _modelConnectionTestCancellation;
+        private string _modelConnectionTestNotice = string.Empty;
+        private long _selectedProfileConnectionRevision;
         private bool _isApplyingPreset;
         private bool _isReadyForUserChanges;
         private bool _isSavingSettings;
@@ -148,10 +149,14 @@ namespace ColorVision.Copilot
         internal CopilotSettingsViewModel(
             ConfigHandler configHandler,
             CopilotBackendSyncClient backendSyncClient,
-            CopilotChatState? initialState)
+            CopilotChatState? initialState,
+            CopilotModelConnectionDiagnostic? modelConnectionDiagnostic = null,
+            CopilotMcpToolProvider? externalMcpToolProvider = null)
         {
             _configHandler = configHandler ?? throw new ArgumentNullException(nameof(configHandler));
             _backendSyncClient = backendSyncClient ?? throw new ArgumentNullException(nameof(backendSyncClient));
+            _modelConnectionDiagnostic = modelConnectionDiagnostic ?? new CopilotModelConnectionDiagnostic();
+            _externalMcpToolProvider = externalMcpToolProvider ?? new CopilotMcpToolProvider();
             _config = _configHandler.GetRequiredService<CopilotConfig>();
             var config = _config;
             if (config.EnsureInitialized())
@@ -709,18 +714,6 @@ namespace ColorVision.Copilot
             McpStatusText = string.IsNullOrWhiteSpace(message)
                 ? "Stopped. Save settings to start the local MCP server."
                 : SanitizeError(message);
-        }
-
-        private static string ReadJsonRpcErrorMessage(JsonElement errorElement)
-        {
-            if (errorElement.ValueKind == JsonValueKind.Object
-                && errorElement.TryGetProperty("message", out var messageElement)
-                && messageElement.ValueKind == JsonValueKind.String)
-            {
-                return SanitizeError(messageElement.GetString());
-            }
-
-            return "JSON-RPC error.";
         }
 
         private static string SanitizeError(string? message)

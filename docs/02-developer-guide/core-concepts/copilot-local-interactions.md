@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "Copilot 命令目录、输入与引用、会话导航及消息/桌宠呈现；本地入口不等于无副作用。"
 aliases: ["Copilot 快捷键", "Copilot 输入框", "Slash 命令", "@关联", "公式显示", "桌宠活动", "CopilotLocalCommandCatalog", "CopilotPermissionCommand", "/permissions", "/context", "/queue", "/tasks", "/mention", "/multiline", "/follow-up"]
-code_paths: ["ColorVision/Copilot/CopilotLocalCommandCatalog.cs", "ColorVision/Copilot/CopilotLocalCommandAvailabilityPolicy.cs", "ColorVision/Copilot/CopilotChatViewModel.LocalCommandWorkflows.cs", "ColorVision/Copilot/CopilotChatViewModel.Composer.cs", "ColorVision/Copilot/CopilotChatViewModel.ComposerReferences.cs", "ColorVision/Copilot/CopilotChatPanel.Composer.cs", "ColorVision/Copilot/CopilotChatViewModel.DiagnosticsCommands.cs", "ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs", "ColorVision/Copilot/Presentation", "ColorVision/Copilot/State/CopilotComposerStash.cs", "ColorVision/Copilot/CopilotKeyboardShortcutHelp.cs", "ColorVision/Copilot/CopilotMarkdownMath.cs", "ColorVision/Copilot/CopilotMarkdownView.xaml.cs", "ColorVision/Copilot/CopilotComposerReferences.cs", "ColorVision/Copilot/CopilotMarkdownView.SpecialContent.cs", "ColorVision/FloatingBall/DesktopPetCopilotBridge.cs", "ColorVision/FloatingBall/DesktopPetCopilotActivityTracker.cs", "ColorVision/FloatingBallWindow.xaml.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotLocalCommandAvailabilityTests.cs", "Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs", "Test/ColorVision.Copilot.Tests/CopilotComposerPagingTests.cs", "Test/ColorVision.Copilot.Tests/CopilotCodexMentionsV2FeatureTests.cs", "Test/ColorVision.Copilot.Tests/CopilotChatViewModelProfileIsolationTests.cs", "Test/ColorVision.Copilot.Tests/DesktopPetCopilotActivityTrackerTests.cs"]
+code_paths: ["ColorVision/Copilot/CopilotLocalCommandCatalog.cs", "ColorVision/Copilot/CopilotLocalCommandAvailabilityPolicy.cs", "ColorVision/Copilot/CopilotChatViewModel.LocalCommandWorkflows.cs", "ColorVision/Copilot/CopilotChatViewModel.Composer.cs", "ColorVision/Copilot/CopilotChatViewModel.ComposerReferences.cs", "ColorVision/Copilot/CopilotChatViewModel.AttachmentCommands.cs", "ColorVision/Copilot/CopilotChatViewModel.AttachmentLifecycle.cs", "ColorVision/Copilot/CopilotChatPanel.Composer.cs", "ColorVision/Copilot/CopilotChatViewModel.DiagnosticsCommands.cs", "ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs", "ColorVision/Copilot/Presentation", "ColorVision/Copilot/State/CopilotComposerStash.cs", "ColorVision/Copilot/CopilotKeyboardShortcutHelp.cs", "ColorVision/Copilot/CopilotMarkdownMath.cs", "ColorVision/Copilot/CopilotMarkdownView.xaml.cs", "ColorVision/Copilot/CopilotComposerReferences.cs", "ColorVision/Copilot/CopilotMarkdownView.SpecialContent.cs", "ColorVision/FloatingBall/DesktopPetCopilotBridge.cs", "ColorVision/FloatingBall/DesktopPetCopilotActivityTracker.cs", "ColorVision/FloatingBallWindow.xaml.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotLocalCommandAvailabilityTests.cs", "Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs", "Test/ColorVision.Copilot.Tests/CopilotComposerPagingTests.cs", "Test/ColorVision.Copilot.Tests/CopilotCodexMentionsV2FeatureTests.cs", "Test/ColorVision.Copilot.Tests/CopilotChatViewModelProfileIsolationTests.cs", "Test/ColorVision.Copilot.Tests/DesktopPetCopilotActivityTrackerTests.cs", "Test/ColorVision.Copilot.Tests/CopilotMarkdownViewTests.cs"]
 related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "copilot.lifecycle", "copilot.session-tools", "copilot.execution", "copilot.tool-contracts"]
 ---
 
@@ -39,6 +39,8 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 `ConfiguredMentionsV2Enabled` 开启时统一目录可包含 Skill、模板、菜单和文件；关闭时保留文件候选，不应声称所有类型始终可选。模板类型/保存项的实际读取由共享能力 `InspectTemplateType` / `InspectSavedTemplate` 负责，见[工具契约](./copilot-agent-tool-contracts.md)；业务实时上下文见[模块扩展](./copilot-agent-extensions.md)。
 
 显式附件或上下文可能含用户原始数据；发送前检查选中的内容，凭据加密和局部脱敏不等于所有附件都已净化。
+
+剪贴板图片在后台编码为托管 PNG 后，须在原会话仍存在且操作未取消时才加入附件。取消或关闭发生在编码完成与 UI 续体执行之间时，也会清理本次尚未附加的图片；后台尚未结束则在完成后清理，失败继续被观察。清理使用已有根内路径与重解析点检查，不删除先前附件，也不改变草稿。`CopilotChatViewModelProfileIsolationTests` 用冻结的合成图片和受控 STA 续体覆盖正常附加、取消与关闭，不读取系统剪贴板。
 
 发送按键还取决于本地偏好：标准模式 Enter 提交、Shift+Enter 换行；`/multiline` 开启后 Enter 换行、Shift+Enter 提交。运行中 `/follow-up steer|queue` 选择默认提交是调整当前任务还是排到下一轮，Tab 使用另一种行为；Ctrl+Enter 的立即接管先登记下一轮，再请求取消当前轮，等待当前轮收尾后运行；调度失败不会先取消当前任务。补全弹层优先消费按键。任务暂停、取消和工具是否真实静止仍以[任务与恢复](./copilot-agent-session-and-tools.md)为准，不由按键返回证明。
 
@@ -84,7 +86,7 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 
 `/transcript expand|collapse` 只修改当前会话已有 `HasThinkingTrace` 消息的 `IsThinkingExpanded`；无参数时按是否有收起项选择全展开/全收起，非法参数不改变状态。实际变化才请求已有状态持久化，不创造或导出新的隐藏推理。`/compact-mode` 只改变消息间距，不压缩模型上下文；`/timestamps` 只控制时间展示。
 
-公式由 `CopilotMarkdownMath` 识别、`CopilotMarkdownView.SpecialContent` 使用 WpfMath 渲染：行内支持 `$...$` 与 `\(...\)`，独立/多行块支持 `$$...$$` 与 `\[...\]`。行内代码跳过行内公式识别，解析/渲染失败回退文本；块公式经过 trim/拼接，不保证逐字节还原。当前 `CopilotMarkdownView.xaml.cs` 先识别 display 公式再处理 `inCodeBlock`，所以代码围栏中独占一行的块公式仍可能被渲染，这是显示隔离缺口，不能承诺所有代码文本都原样显示。公式显示不是模型执行数学验证的证据。
+公式由 `CopilotMarkdownMath` 识别、`CopilotMarkdownView.SpecialContent` 使用 WpfMath 渲染：行内支持 `$...$` 与 `\(...\)`，独立/多行块支持 `$$...$$` 与 `\[...\]`。行内代码跳过行内公式识别，解析/渲染失败回退文本；块公式经过 trim/拼接，不保证逐字节还原。`CopilotMarkdownView.xaml.cs` 在三反引号围栏内优先收集代码，不进行块公式识别；其中已闭合或未闭合的公式分隔符都保留在代码正文及复制内容中，不吞掉结束围栏后的正文。围栏外公式仍按原路径渲染。公式显示不是模型执行数学验证的证据。
 
 桌宠启用 `EnableCopilotIntegration` 后，`DesktopPetCopilotBridge` 从 `CopilotAgentTaskHost` 和 `CopilotMcpConfirmationStore` 投影多会话活动，Tracker 最多保留16项，优先级为 `NeedsInput → Blocked → Ready → Running`。徽标显示活动数量；单击打开最高优先级，右键活动菜单展示有界列表。打开 Ready/Blocked 项后移除其待查看状态，再展示下一项；NeedsInput 不因打开页面就消除。取消排队项不会覆盖正在运行会话的导航目标。
 
@@ -92,4 +94,4 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 
 ## 验证范围
 
-元数据中的测试覆盖命令展示/执行分离、composer 状态、分页、mentions_v2 门控、部分 ViewModel 交互及桌宠优先级。测试路径存在不代表本次已运行；公式渲染、剪贴板/保存窗口、真实焦点和桌宠确认窗口仍需要对应 WPF 验证。修改命令时同时核对 Catalog、AvailabilityPolicy、ViewModel handler 和 Panel 键盘路由，不只更新一处帮助文案。
+元数据中的测试覆盖命令展示/执行分离、composer 状态、分页、mentions_v2 门控、部分 ViewModel 交互及桌宠优先级。`CopilotMarkdownViewTests` 在无窗口 STA 线程检查文档树中的代码正文、复制载荷与围栏后的段落／公式，覆盖两种块公式分隔符的单行、多行及未闭合内容。测试路径存在不代表本次已运行；公式实际字体布局、系统剪贴板/保存窗口、真实焦点和桌宠确认窗口仍需要对应 WPF 验证。修改命令时同时核对 Catalog、AvailabilityPolicy、ViewModel handler 和 Panel 键盘路由，不只更新一处帮助文案。

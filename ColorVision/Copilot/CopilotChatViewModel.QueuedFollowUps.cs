@@ -191,15 +191,28 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            CopilotAgentHostContextSnapshot admittedSubmissionContext;
+            CopilotPreparedHostedTurn? preparedTurn;
             try
             {
                 var admittedAttachments = await CopilotImageAttachmentAdmission.PersistAsync(
                     queuedFollowUp.SubmissionContext.Attachments,
                     _stateStore.AttachmentDirectoryPath,
                     hostedRun.CancellationToken).ConfigureAwait(false);
-                admittedSubmissionContext = queuedFollowUp.SubmissionContext.WithAttachments(
+                var admittedSubmissionContext = queuedFollowUp.SubmissionContext.WithAttachments(
                     admittedAttachments);
+                preparedTurn = CopilotUiDispatcher.Invoke(
+                    () =>
+                    {
+                        hostedRun.CancellationToken.ThrowIfCancellationRequested();
+                        return PrepareQueuedFollowUpTurn(queuedFollowUp, admittedSubmissionContext);
+                    },
+                    fallback: null as CopilotPreparedHostedTurn);
+                if (preparedTurn == null)
+                {
+                    if (queuedFollowUp.IsGoalBound)
+                        return;
+                    throw new InvalidOperationException("The queued Copilot follow-up could not be prepared on the UI thread.");
+                }
             }
             catch (CopilotImageAttachmentAdmissionException ex)
             {
@@ -207,17 +220,14 @@ namespace ColorVision.Copilot
                     RestoreQueuedFollowUpAfterImageAdmissionFailure(queuedFollowUp, ex));
                 return;
             }
-
-            var preparedTurn = CopilotUiDispatcher.Invoke(
-                () => PrepareQueuedFollowUpTurn(
-                    queuedFollowUp,
-                    admittedSubmissionContext),
-                fallback: null as CopilotPreparedHostedTurn);
-            if (preparedTurn == null)
+            catch
             {
-                if (queuedFollowUp.IsGoalBound)
-                    return;
-                throw new InvalidOperationException("The queued Copilot follow-up could not be prepared on the UI thread.");
+                CopilotUiDispatcher.Invoke(() =>
+                {
+                    RestoreUnpreparedQueuedFollowUpDraft(queuedFollowUp);
+                    PersistState(immediate: true);
+                });
+                throw;
             }
 
             try
@@ -269,7 +279,11 @@ namespace ColorVision.Copilot
             {
                 CopilotUiDispatcher.Invoke(() =>
                 {
-                    _followUpQueue.RestoreRecoveryToDraft(queuedFollowUp.RunId);
+                    if (_followUpQueue.RestoreRecoveryToDraft(queuedFollowUp.RunId)
+                        && string.Equals(SelectedConversation?.Id, queuedFollowUp.ConversationId, StringComparison.Ordinal))
+                    {
+                        SynchronizeSelectedDraftAfterQueuedRecovery();
+                    }
                     PersistState(immediate: true);
                 });
                 throw;
@@ -288,7 +302,11 @@ namespace ColorVision.Copilot
             {
                 CopilotUiDispatcher.Invoke(() =>
                 {
-                    _followUpQueue.RestoreRecoveryToDraft(queuedFollowUp.RunId);
+                    if (_followUpQueue.RestoreRecoveryToDraft(queuedFollowUp.RunId)
+                        && string.Equals(SelectedConversation?.Id, queuedFollowUp.ConversationId, StringComparison.Ordinal))
+                    {
+                        SynchronizeSelectedDraftAfterQueuedRecovery();
+                    }
                     PersistState(immediate: true);
                 });
                 throw;
@@ -308,6 +326,7 @@ namespace ColorVision.Copilot
             CopilotHostedAgentRun hostedRun,
             CopilotQueuedFollowUp queuedFollowUp)
         {
+            hostedRun.CancellationToken.ThrowIfCancellationRequested();
             var conversation = Conversations.FirstOrDefault(candidate => string.Equals(
                 candidate.Id,
                 queuedFollowUp.ConversationId,
@@ -476,13 +495,22 @@ namespace ColorVision.Copilot
                         "持续目标的图片附件未能通过准入或持久化，自动续作已暂停，避免静默丢失任务。");
                 }
             }
-            else if (_followUpQueue.RestoreRecoveryToDraft(queuedFollowUp.RunId))
+            else
             {
-                SynchronizeSelectedDraftAfterQueuedRecovery();
+                RestoreUnpreparedQueuedFollowUpDraft(queuedFollowUp);
             }
 
             ReportImageAttachmentAdmissionFailure(exception);
             PersistState(immediate: true);
+        }
+
+        private void RestoreUnpreparedQueuedFollowUpDraft(CopilotQueuedFollowUp queuedFollowUp)
+        {
+            if (_followUpQueue.RestoreRecoveryToDraft(queuedFollowUp.RunId)
+                && string.Equals(SelectedConversation?.Id, queuedFollowUp.ConversationId, StringComparison.Ordinal))
+            {
+                SynchronizeSelectedDraftAfterQueuedRecovery();
+            }
         }
 
         private CopilotPreparedHostedTurn? PrepareQueuedFollowUpTurn(

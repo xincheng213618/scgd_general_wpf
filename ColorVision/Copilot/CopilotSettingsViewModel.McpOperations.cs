@@ -125,59 +125,7 @@ namespace ColorVision.Copilot
             SetSettingsNotice("Testing MCP connection...");
             try
             {
-                using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", McpBearerToken.Trim());
-                var payload = JsonSerializer.Serialize(new
-                {
-                    jsonrpc = "2.0",
-                    id = 1,
-                    method = "tools/call",
-                    @params = new
-                    {
-                        name = "get_server_status",
-                        arguments = new { },
-                    },
-                });
-                request.Content = new StringContent(payload, Encoding.UTF8, "application/json");
-
-                using var response = await McpHttpClient.SendAsync(
-                    request,
-                    HttpCompletionOption.ResponseHeadersRead,
-                    _lifetimeCancellation.Token);
-                if (!response.IsSuccessStatusCode)
-                {
-                    McpConnectionTestText = $"Connection failed: HTTP {(int)response.StatusCode} {response.ReasonPhrase}.";
-                    SetSettingsNotice(SanitizeError(McpConnectionTestText));
-                    RefreshMcpStatusText();
-                    RefreshMcpDiagnostics();
-                    return;
-                }
-
-                var body = await CopilotBoundedHttpContentReader.ReadAsStringAsync(
-                    response.Content,
-                    MaximumMcpStatusResponseBytes,
-                    "MCP status response",
-                    _lifetimeCancellation.Token);
-                using var document = JsonDocument.Parse(body);
-                var root = document.RootElement;
-                if (root.TryGetProperty("error", out var errorElement))
-                {
-                    McpConnectionTestText = "Connection failed: " + ReadJsonRpcErrorMessage(errorElement);
-                    SetSettingsNotice(SanitizeError(McpConnectionTestText));
-                    RefreshMcpStatusText();
-                    RefreshMcpDiagnostics();
-                    return;
-                }
-
-                var result = root.GetProperty("result");
-                if (result.TryGetProperty("isError", out var isErrorElement) && isErrorElement.GetBoolean())
-                {
-                    McpConnectionTestText = "Connection failed: get_server_status returned an MCP error.";
-                    SetSettingsNotice(SanitizeError(McpConnectionTestText));
-                    RefreshMcpStatusText();
-                    RefreshMcpDiagnostics();
-                    return;
-                }
+                await CopilotMcpConnectionDiagnostic.TestAsync(McpHttpClient, endpoint, McpBearerToken, _lifetimeCancellation.Token);
 
                 McpConnectionTestText = "Connected.";
                 SetSettingsNotice("MCP connection test succeeded.");

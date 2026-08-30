@@ -47,6 +47,81 @@ public sealed class CopilotChatConfigPersistenceTests : IDisposable
     }
 
     [Fact]
+    public void ReasoningCommandSaveFailureDoesNotReportSuccess()
+    {
+        string configFilePath = CreateExistingConfigFile();
+        byte[] originalBytes = File.ReadAllBytes(configFilePath);
+        var config = CreateConfig(CreateProfile());
+        var configHandler = new ConfigHandler { ConfigFilePath = configFilePath, IsAutoSave = false };
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var viewModel = CreateViewModel(config, configHandler);
+
+        using (new FileStream(configFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            viewModel.InputText = "/reasoning high";
+            viewModel.SendCommand.Execute(null);
+        }
+
+        Assert.Contains("未更改", viewModel.LocalCommandResultText, StringComparison.Ordinal);
+        Assert.DoesNotContain("已设置", viewModel.LocalCommandResultText, StringComparison.Ordinal);
+        Assert.Equal(CopilotReasoningMode.Default, viewModel.SelectedProfile?.ReasoningMode);
+        Assert.Equal(originalBytes, File.ReadAllBytes(configFilePath));
+        AssertNoTemporaryFiles();
+    }
+
+    [Fact]
+    public void ReasoningCommandPublishFailureReportsThatSettingsWereSaved()
+    {
+        string configFilePath = CreateExistingConfigFile();
+        var config = CreateConfig(CreateProfile());
+        var configHandler = new ConfigHandler { ConfigFilePath = configFilePath, IsAutoSave = false };
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var viewModel = CreateViewModel(config, configHandler);
+        config.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(CopilotConfig.Profiles))
+                throw new InvalidOperationException("Profile notification failed.");
+        };
+
+        viewModel.InputText = "/reasoning high";
+        viewModel.SendCommand.Execute(null);
+
+        Assert.Contains("已保存", viewModel.LocalCommandResultText, StringComparison.Ordinal);
+        Assert.Contains("未能刷新", viewModel.LocalCommandResultText, StringComparison.Ordinal);
+        Assert.DoesNotContain("已设置", viewModel.LocalCommandResultText, StringComparison.Ordinal);
+        var persisted = JObject.Parse(File.ReadAllText(configFilePath));
+        Assert.Equal((int)CopilotReasoningMode.High,
+            (int)persisted[nameof(CopilotConfig)]![nameof(CopilotConfig.Profiles)]![0]![nameof(CopilotProfileConfig.ReasoningMode)]!);
+        AssertNoTemporaryFiles();
+    }
+
+    [Fact]
+    public void ReasoningCommandSuccessReportsAppliedModeAndUnchangedSelection()
+    {
+        string configFilePath = CreateExistingConfigFile();
+        var config = CreateConfig(CreateProfile());
+        var configHandler = new ConfigHandler { ConfigFilePath = configFilePath, IsAutoSave = false };
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var viewModel = CreateViewModel(config, configHandler);
+
+        viewModel.InputText = "/reasoning high";
+        viewModel.SendCommand.Execute(null);
+
+        Assert.Contains("已设置", viewModel.LocalCommandResultText, StringComparison.Ordinal);
+        Assert.Equal(CopilotReasoningMode.High, viewModel.SelectedProfile?.ReasoningMode);
+        byte[] savedBytes = File.ReadAllBytes(configFilePath);
+        using (new FileStream(configFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            viewModel.InputText = "/effort high";
+            viewModel.SendCommand.Execute(null);
+        }
+
+        Assert.Contains("保持", viewModel.LocalCommandResultText, StringComparison.Ordinal);
+        Assert.Equal(savedBytes, File.ReadAllBytes(configFilePath));
+        AssertNoTemporaryFiles();
+    }
+
+    [Fact]
     public void SkillPathOverrideSaveFailureLeavesLiveConfigAndDiskUnchanged()
     {
         string configFilePath = CreateExistingConfigFile();

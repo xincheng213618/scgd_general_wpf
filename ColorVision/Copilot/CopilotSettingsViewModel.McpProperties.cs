@@ -146,6 +146,7 @@ namespace ColorVision.Copilot
             {
                 if (SetProperty(ref _externalMcpServersText, value ?? string.Empty))
                 {
+                    InvalidateExternalMcpRefresh();
                     ValidateExternalMcpServers(updateNotice: _isReadyForUserChanges);
                     if (_isReadyForUserChanges)
                         MarkSettingsPending("External MCP server configuration changed. Click Apply or Save to use it in Copilot.");

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -153,6 +154,7 @@ namespace ColorVision.Copilot
         private static readonly TimeSpan DiscoveryResourceCleanupTimeout = TimeSpan.FromMilliseconds(500);
         private readonly CopilotMcpToolDiscoveryCache _discoveryCache;
         private readonly CopilotCapabilityCatalog _capabilityCatalog;
+        private readonly Func<HttpClient> _httpClientFactory;
 
         public CopilotMcpToolProvider()
             : this(CopilotMcpToolDiscoveryCache.Shared, CopilotCapabilityCatalog.Shared)
@@ -166,13 +168,26 @@ namespace ColorVision.Copilot
 
         internal CopilotMcpToolProvider(
             CopilotMcpToolDiscoveryCache discoveryCache,
-            CopilotCapabilityCatalog capabilityCatalog)
+            CopilotCapabilityCatalog capabilityCatalog,
+            Func<HttpClient>? httpClientFactory = null)
         {
             _discoveryCache = discoveryCache ?? throw new ArgumentNullException(nameof(discoveryCache));
             _capabilityCatalog = capabilityCatalog ?? throw new ArgumentNullException(nameof(capabilityCatalog));
+            _httpClientFactory = httpClientFactory ?? (() => CopilotMcpHttpTransport.CreateClient(Timeout.InfiniteTimeSpan));
         }
 
-        public async Task<CopilotExternalToolLease> DiscoverAsync(CopilotAgentRequest request, CancellationToken cancellationToken)
+        public Task<CopilotExternalToolLease> DiscoverAsync(CopilotAgentRequest request, CancellationToken cancellationToken)
+            => DiscoverCoreAsync(request, diagnosticOnly: false, cancellationToken);
+
+        // Settings diagnostics refresh every bounded server entry without publishing
+        // callable tools or retaining its clients beyond each server's discovery.
+        internal Task<CopilotExternalToolLease> RefreshDiscoveryAsync(CopilotAgentRequest request, CancellationToken cancellationToken)
+            => DiscoverCoreAsync(request, diagnosticOnly: true, cancellationToken);
+
+        private async Task<CopilotExternalToolLease> DiscoverCoreAsync(
+            CopilotAgentRequest request,
+            bool diagnosticOnly,
+            CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
 
@@ -180,7 +195,8 @@ namespace ColorVision.Copilot
             var diagnostics = new List<string>();
             var clients = new List<IAsyncDisposable>();
             var enabledServers = request.ExternalMcpServers.Where(server => server?.Enabled == true).Take(8).ToArray();
-            _capabilityCatalog.RetainExternalMcpServers(enabledServers);
+            if (!diagnosticOnly)
+                _capabilityCatalog.RetainExternalMcpServers(enabledServers);
             foreach (var server in enabledServers)
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -188,7 +204,7 @@ namespace ColorVision.Copilot
                     await DisposeDiscoveryResourcesAsync(clients).ConfigureAwait(false);
                     cancellationToken.ThrowIfCancellationRequested();
                 }
-                if (tools.Count >= MaximumToolsPerRequest)
+                if (!diagnosticOnly && tools.Count >= MaximumToolsPerRequest)
                     break;
                 McpClient? client = null;
                 HttpClientTransport? transport = null;
@@ -210,7 +226,7 @@ namespace ColorVision.Copilot
                         ConnectionTimeout = TimeSpan.FromSeconds(server.ConnectionTimeoutSeconds),
                         AdditionalHeaders = headers,
                     };
-                    var httpClient = CopilotMcpHttpTransport.CreateClient(Timeout.InfiniteTimeSpan);
+                    var httpClient = _httpClientFactory();
                     try
                     {
                         transport = new HttpClientTransport(transportOptions, httpClient, loggerFactory: null, ownsHttpClient: true);
@@ -237,7 +253,6 @@ namespace ColorVision.Copilot
                         _ = DisposeLateClientAsync(clientCreationTask);
                         throw;
                     }
-                    transport = null;
                     if (client.ServerCapabilities.Tools?.ListChanged == true)
                     {
                         try
@@ -263,7 +278,7 @@ namespace ColorVision.Copilot
                         }
                     }
                     CopilotMcpToolDiscoverySnapshot cachedDiscovery = null!;
-                    var usedCachedDiscovery = !request.ForceExternalMcpToolRefresh
+                    var usedCachedDiscovery = !diagnosticOnly && !request.ForceExternalMcpToolRefresh
                         && _discoveryCache.TryGet(server, token, out cachedDiscovery);
                     McpClientTool[] remoteTools;
                     int discoveredToolCount;
@@ -279,7 +294,7 @@ namespace ColorVision.Copilot
                     {
                         var discovery = await CopilotMcpToolDiscoveryPaginator.DiscoverAsync(
                             (requestParams, token) => client.ListToolsAsync(requestParams, token),
-                            cancellationToken: connectionTimeout.Token);
+                            cancellationToken: connectionTimeout.Token).ConfigureAwait(false);
                         discoveredToolCount = discovery.DiscoveredToolCount;
                         remoteTools = discovery.Tools.Select(tool => new McpClientTool(client, tool)).ToArray();
                         cacheUpdate = _discoveryCache.Store(
@@ -306,7 +321,7 @@ namespace ColorVision.Copilot
                                 $"MCP client {server.Name} skipped {discovery.RejectedToolCount} invalid or oversized tool definition(s).");
                         }
                     }
-                    var remaining = MaximumToolsPerRequest - tools.Count;
+                    var remaining = diagnosticOnly ? MaximumToolsPerServer : MaximumToolsPerRequest - tools.Count;
                     var allowedTools = remoteTools
                         .Select(tool => server.TryResolveToolAccessPolicy(tool.Name, out var accessPolicy)
                             ? new AllowedMcpTool(tool, accessPolicy)
@@ -330,8 +345,11 @@ namespace ColorVision.Copilot
                     // same definitions exposed to this turn. A rejected source must not
                     // leave callable adapters backed by a client that the finally block
                     // is about to dispose.
-                    _capabilityCatalog.PublishExternalMcp(server, compatibleAdapters);
-                    tools.AddRange(compatibleAdapters);
+                    if (!diagnosticOnly)
+                    {
+                        _capabilityCatalog.PublishExternalMcp(server, compatibleAdapters);
+                        tools.AddRange(compatibleAdapters);
+                    }
                     CopilotMcpClientHealthRegistry.RecordConnected(
                         server,
                         discoveredToolCount,
@@ -343,8 +361,13 @@ namespace ColorVision.Copilot
                     Volatile.Write(ref discoveryReady, 1);
                     if (Interlocked.Exchange(ref toolListChangeNotificationPending, 0) == 1)
                         CopilotMcpClientDiscoveryRegistry.NotifyToolListChanged(server, _discoveryCache);
-                    if (compatibleAdapters.Length > 0)
+                    if (!diagnosticOnly && compatibleAdapters.Length > 0)
                     {
+                        // The SDK client owns its session transport, but the outer
+                        // HttpClientTransport still owns the HttpClient wrapper.
+                        // Lease cleanup runs in reverse: client before outer transport.
+                        clients.Add(transport);
+                        transport = null;
                         clients.Add(client);
                         client = null;
                         if (toolListChangedRegistration != null)
@@ -361,7 +384,7 @@ namespace ColorVision.Copilot
                         diagnostics.Add($"MCP client {server.Name} cached the first {remoteTools.Length}/{discoveredToolCount} tool definition(s) within the safety limit.");
                     if (cacheUpdate == CopilotMcpDiscoveryCacheUpdateKind.Changed)
                         diagnostics.Add($"MCP client {server.Name} capability set changed · revision {capabilityRevision}.");
-                    if (tools.Count >= MaximumToolsPerRequest)
+                    if (!diagnosticOnly && tools.Count >= MaximumToolsPerRequest)
                     {
                         diagnostics.Add($"MCP client discovery reached the {MaximumToolsPerRequest}-tool request limit.");
                         break;
@@ -386,11 +409,11 @@ namespace ColorVision.Copilot
                 }
                 finally
                 {
-                    var failedServerResources = new List<IAsyncDisposable>(2);
+                    var failedServerResources = new List<IAsyncDisposable>(3);
+                    if (transport != null)
+                        failedServerResources.Add(transport);
                     if (client != null)
                         failedServerResources.Add(client);
-                    else if (transport != null)
-                        failedServerResources.Add(transport);
                     if (toolListChangedRegistration != null)
                         failedServerResources.Add(toolListChangedRegistration);
                     await DisposeDiscoveryResourcesAsync(failedServerResources).ConfigureAwait(false);

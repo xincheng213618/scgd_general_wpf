@@ -141,7 +141,8 @@ namespace ColorVision.Copilot
                 if (backupReadStatus == StateFileReadStatus.Valid)
                 {
                     LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.Backup);
-                    TryRestorePrimaryState(state);
+                    if (ProtectManagedAttachments())
+                        TryRestorePrimaryState(state);
                     return state;
                 }
 
@@ -155,11 +156,14 @@ namespace ColorVision.Copilot
 
                     PreserveUnreadableStateCandidate(BackupStateFilePath, "backup");
                     LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.RecoverySnapshot);
-                    TryRestorePrimaryState(state);
+                    if (ProtectManagedAttachments())
+                        TryRestorePrimaryState(state);
                     return state;
                 }
 
-                if (hadStateCandidate || EnumerateManagedAttachmentFiles(AttachmentDirectoryPath).Length > 0)
+                if (hadStateCandidate
+                    || !TryEnumerateManagedAttachmentFiles(AttachmentDirectoryPath, out var managedAttachments)
+                    || managedAttachments.Length > 0)
                 {
                     PreserveUnreadableStateCandidate(BackupStateFilePath, "backup");
                     LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.Unrecoverable);

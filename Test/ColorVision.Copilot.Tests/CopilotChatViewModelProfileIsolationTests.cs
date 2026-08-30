@@ -2,6 +2,10 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
+using System.Collections.Concurrent;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using ColorVision.Copilot;
 using ColorVision.Solution;
 using Newtonsoft.Json.Linq;
@@ -18,6 +22,73 @@ public sealed class CopilotChatViewModelProfileIsolationFixture
 public sealed class CopilotChatViewModelProfileIsolationTests
 {
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
+
+    [Theory]
+    [InlineData("cancel")]
+    [InlineData("dispose")]
+    [InlineData("complete")]
+    public void ClipboardImageCompletedBeforeUiContinuationIsKeptOnlyWhenAttached(string transition)
+    {
+        RunAttachmentTestOnSta(() =>
+        {
+            var root = Path.Combine(Path.GetTempPath(), "CopilotClipboardLifecycle-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(root);
+            var profile = CreateProfile("clipboard", "Clipboard", "test-model");
+            var conversation = CreateConversation(profile, "clipboard-conversation", "preserved draft");
+            var existingFile = Path.Combine(root, "existing.png");
+            File.WriteAllBytes(existingFile, [1, 2, 3]);
+            var existingAttachment = CopilotAttachmentItem.CreateImage(existingFile);
+            conversation.Attachments.Add(existingAttachment);
+            var state = new CopilotChatState { ActiveConversationId = conversation.Id, ActiveProfileId = profile.Id, Conversations = [conversation] };
+            var config = new CopilotConfig { SchemaVersion = CopilotConfig.CurrentSchemaVersion, McpBearerToken = "test-token", Profiles = [profile] };
+            using var solutionManagerScope = new IsolatedSolutionManagerScope();
+            using var viewModel = new CopilotChatViewModel(new CopilotChatService(), new InMemoryStateStore(state, root), config, new GatedFailingTurnRuntime(), new CopilotAgentTaskHost());
+            using var context = new PausedAttachmentSynchronizationContext();
+            var previousContext = SynchronizationContext.Current;
+            try
+            {
+                var pixels = new byte[512 * 512 * 4];
+                new Random(42).NextBytes(pixels);
+                var image = BitmapSource.Create(512, 512, 96, 96, PixelFormats.Bgra32, null, pixels, 512 * 4);
+                image.Freeze();
+                var saveMethod = typeof(CopilotChatViewModel).GetMethod("SaveClipboardImageAttachmentAsync", BindingFlags.Instance | BindingFlags.NonPublic)!;
+                SynchronizationContext.SetSynchronizationContext(context);
+                var operation = Assert.IsType<Task<bool>>(saveMethod.Invoke(viewModel, [image]), exactMatch: false);
+                Assert.True(context.CallbackPosted.Wait(TestTimeout), "The clipboard save continuation was not queued.");
+                Assert.False(operation.IsCompleted);
+                var savedFile = Assert.Single(Directory.GetFiles(root, "clipboard-*.png"));
+                Assert.Same(existingAttachment, Assert.Single(conversation.Attachments));
+
+                if (transition == "cancel")
+                    viewModel.PrimaryActionCommand.Execute(null);
+                else if (transition == "dispose")
+                    viewModel.Dispose();
+
+                context.RunPending();
+                Assert.True(operation.IsCompleted);
+                Assert.Equal(transition == "complete", operation.GetAwaiter().GetResult());
+                Assert.Equal(transition == "complete", File.Exists(savedFile));
+                Assert.True(File.Exists(existingFile));
+                Assert.Equal("preserved draft", conversation.DraftText);
+                Assert.False(viewModel.IsBusy);
+                if (transition == "complete")
+                {
+                    Assert.Equal(2, conversation.Attachments.Count);
+                    Assert.Contains(conversation.Attachments, attachment => attachment.Value == savedFile);
+                }
+                else
+                {
+                    Assert.Same(existingAttachment, Assert.Single(conversation.Attachments));
+                }
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+                viewModel.Dispose();
+                Directory.Delete(root, recursive: true);
+            }
+        });
+    }
 
     [Fact]
     public async Task BackgroundTurnCompletionDoesNotApplyProfileFromNewlySelectedConversation()
@@ -1284,6 +1355,278 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CancellingQueuedCommandBeforeDispatchPreservesGoalAndRestoresComposer(bool hasNewerDraft)
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "cancelled-queued-command-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var queuedAttachment = CopilotAttachmentItem.CreateContext("queued command attachment");
+        var newerAttachment = CopilotAttachmentItem.CreateContext("newer draft attachment");
+        conversation.Attachments.Add(queuedAttachment);
+        var runtime = new GatedFailingTurnRuntime();
+        var taskHost = new CopilotAgentTaskHost();
+        var activeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(conversation, config, runtime, taskHost);
+        var originalGoal = CopilotConversationGoal.Create("Keep the active goal", DateTimeOffset.UtcNow);
+        conversation.Goal = originalGoal;
+        var activeRun = taskHost.Start(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            async _ =>
+            {
+                activeStarted.TrySetResult();
+                await releaseActive.Task;
+            });
+        EventHandler<CopilotAgentTaskHostChangedEventArgs>? cancelOnStart = null;
+
+        try
+        {
+            await activeStarted.Task.WaitAsync(TestTimeout);
+            viewModel.InputText = "/goal clear";
+            Assert.True(viewModel.TryQueueCurrentRunFollowUp());
+            var queuedRun = Assert.Single(taskHost.QueuedRuns);
+            Assert.True(Assert.Single(viewModel.QueuedFollowUps).IsLocalCommand);
+            Assert.DoesNotContain(queuedAttachment, conversation.Attachments);
+            var cancellationAccepted = false;
+            cancelOnStart = (_, args) =>
+            {
+                if (args.Kind == CopilotAgentTaskHostChangeKind.Started && args.Run.Id == queuedRun.Id)
+                    cancellationAccepted = taskHost.RequestCancel(queuedRun.Id);
+            };
+            taskHost.Changed += cancelOnStart;
+            if (hasNewerDraft)
+            {
+                viewModel.InputText = "newer draft";
+                conversation.Attachments.Add(newerAttachment);
+            }
+
+            releaseActive.TrySetResult();
+            await activeRun.Completion.WaitAsync(TestTimeout);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                await queuedRun.Completion.WaitAsync(TestTimeout));
+
+            var expectedDraft = hasNewerDraft
+                ? "newer draft" + Environment.NewLine + Environment.NewLine + "/goal clear"
+                : "/goal clear";
+            Assert.True(cancellationAccepted);
+            Assert.Same(originalGoal, conversation.Goal);
+            Assert.Equal(expectedDraft, conversation.DraftText);
+            Assert.Equal(expectedDraft, viewModel.InputText);
+            Assert.Contains(conversation.Attachments, attachment => attachment.Id == queuedAttachment.Id);
+            if (hasNewerDraft)
+                Assert.Contains(newerAttachment, conversation.Attachments);
+            Assert.Equal(string.Empty, viewModel.LocalCommandResultTitle);
+            Assert.False(runtime.Entered.IsCompleted);
+            Assert.Empty(conversation.Messages);
+            Assert.Empty(viewModel.QueuedFollowUps);
+        }
+        finally
+        {
+            taskHost.Changed -= cancelOnStart;
+            releaseActive.TrySetResult();
+            viewModel.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task QueuedCommandPersistenceFailurePreservesGoalAndRestoresComposer()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "failed-queued-command-save-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var queuedAttachment = CopilotAttachmentItem.CreateContext("queued command attachment");
+        conversation.Attachments.Add(queuedAttachment);
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id,
+            ActiveProfileId = profile.Id,
+            Conversations = new ObservableCollection<CopilotConversationRecord> { conversation },
+        };
+        var failSaves = 0;
+        var saveEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseSave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stateStore = new InMemoryStateStore(state, saveSerializedAsync: async cancellationToken =>
+        {
+            if (Volatile.Read(ref failSaves) == 0)
+                return;
+            saveEntered.TrySetResult();
+            await releaseSave.Task.WaitAsync(cancellationToken);
+            throw new IOException("Expected queued command persistence failure.");
+        });
+        var runtime = new GatedFailingTurnRuntime();
+        var taskHost = new CopilotAgentTaskHost();
+        var releaseActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = new CopilotChatViewModel(new CopilotChatService(), stateStore, config, runtime, taskHost);
+        var originalGoal = CopilotConversationGoal.Create("Keep the active goal", DateTimeOffset.UtcNow);
+        conversation.Goal = originalGoal;
+        var activeRun = taskHost.Start(conversation.Id, CopilotAgentMode.Auto, _ => releaseActive.Task);
+        EventHandler<CopilotAgentTaskHostChangedEventArgs>? failSaveOnStart = null;
+
+        try
+        {
+            viewModel.InputText = "/goal clear";
+            Assert.True(viewModel.TryQueueCurrentRunFollowUp());
+            var queuedRun = Assert.Single(taskHost.QueuedRuns);
+            failSaveOnStart = (_, args) =>
+            {
+                if (args.Kind == CopilotAgentTaskHostChangeKind.Started && args.Run.Id == queuedRun.Id)
+                    Volatile.Write(ref failSaves, 1);
+            };
+            taskHost.Changed += failSaveOnStart;
+            viewModel.InputText = "newer draft";
+
+            releaseActive.TrySetResult();
+            await saveEntered.Task.WaitAsync(TestTimeout);
+            Assert.Same(originalGoal, conversation.Goal);
+            releaseSave.TrySetResult();
+            await activeRun.Completion.WaitAsync(TestTimeout);
+            await Assert.ThrowsAsync<IOException>(async () =>
+                await queuedRun.Completion.WaitAsync(TestTimeout));
+
+            var expectedDraft = "newer draft" + Environment.NewLine + Environment.NewLine + "/goal clear";
+            Assert.Same(originalGoal, conversation.Goal);
+            Assert.Equal(expectedDraft, conversation.DraftText);
+            Assert.Equal(expectedDraft, viewModel.InputText);
+            Assert.Contains(conversation.Attachments, attachment => attachment.Id == queuedAttachment.Id);
+            Assert.False(runtime.Entered.IsCompleted);
+            Assert.Empty(conversation.Messages);
+            Assert.Empty(viewModel.QueuedFollowUps);
+            Assert.Empty(state.QueuedFollowUpRecoveries);
+        }
+        finally
+        {
+            taskHost.Changed -= failSaveOnStart;
+            Volatile.Write(ref failSaves, 0);
+            releaseSave.TrySetResult();
+            releaseActive.TrySetResult();
+            viewModel.Dispose();
+        }
+    }
+
+    [Theory]
+    [InlineData("cancel-image", false)]
+    [InlineData("cancel-image", true)]
+    [InlineData("cancel-context", false)]
+    [InlineData("cancel-context", true)]
+    [InlineData("missing-image", false)]
+    [InlineData("missing-image", true)]
+    public async Task UnpreparedQueuedFollowUpFailureRestoresPromptAttachmentsAndNewerDraft(
+        string failureKind,
+        bool hasNewerDraft)
+    {
+        var root = Path.Combine(
+            Path.GetTempPath(),
+            nameof(UnpreparedQueuedFollowUpFailureRestoresPromptAttachmentsAndNewerDraft),
+            Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var sourcePath = Path.Combine(root, "source.png");
+        await File.WriteAllBytesAsync(
+            sourcePath,
+            Convert.FromBase64String(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="));
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        profile.SupportsImageInput = true;
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var queuedAttachment = failureKind == "cancel-context"
+            ? CopilotAttachmentItem.CreateContext("queued context")
+            : CopilotAttachmentItem.CreateImage(sourcePath, "queued image");
+        var newerAttachment = CopilotAttachmentItem.CreateContext("newer attachment");
+        conversation.Attachments.Add(queuedAttachment);
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id,
+            ActiveProfileId = profile.Id,
+            Conversations = [conversation],
+        };
+        var runtime = new GatedFailingTurnRuntime();
+        var taskHost = new CopilotAgentTaskHost();
+        var releaseActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var queuedCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = new CopilotChatViewModel(
+            new CopilotChatService(),
+            new InMemoryStateStore(state, Path.Combine(root, "attachments")),
+            CreateConfig(profile, "unprepared-queued-follow-up-test-token"),
+            runtime,
+            taskHost);
+        var activeRun = taskHost.Start(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            _ => releaseActive.Task);
+        EventHandler<CopilotAgentTaskHostChangedEventArgs>? observeQueuedRun = null;
+
+        try
+        {
+            viewModel.InputText = "inspect the queued attachment";
+            Assert.True(viewModel.TryQueueCurrentRunFollowUp());
+            var queuedRun = Assert.Single(taskHost.QueuedRuns);
+            Assert.False(Assert.Single(viewModel.QueuedFollowUps).IsLocalCommand);
+            Assert.Equal(queuedRun.Id, Assert.Single(state.QueuedFollowUpRecoveries).RunId);
+            Assert.Empty(conversation.Attachments);
+            Assert.Equal(string.Empty, viewModel.InputText);
+            var shouldCancel = failureKind != "missing-image";
+            var cancellationAccepted = false;
+            observeQueuedRun = (_, args) =>
+            {
+                if (args.Run.Id != queuedRun.Id)
+                    return;
+                if (args.Kind == CopilotAgentTaskHostChangeKind.Started && shouldCancel)
+                    cancellationAccepted = taskHost.RequestCancel(queuedRun.Id);
+                if (args.Kind == CopilotAgentTaskHostChangeKind.Completed)
+                    queuedCompleted.TrySetResult();
+            };
+            taskHost.Changed += observeQueuedRun;
+            if (hasNewerDraft)
+            {
+                viewModel.InputText = "newer draft";
+                conversation.Attachments.Add(newerAttachment);
+            }
+            if (!shouldCancel)
+                File.Delete(sourcePath);
+
+            releaseActive.TrySetResult();
+            await activeRun.Completion.WaitAsync(TestTimeout);
+            if (shouldCancel)
+            {
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                    await queuedRun.Completion.WaitAsync(TestTimeout));
+            }
+            else
+            {
+                await queuedRun.Completion.WaitAsync(TestTimeout);
+            }
+            await queuedCompleted.Task.WaitAsync(TestTimeout);
+
+            var expectedDraft = hasNewerDraft
+                ? "newer draft" + Environment.NewLine + Environment.NewLine + "inspect the queued attachment"
+                : "inspect the queued attachment";
+            Assert.Equal(shouldCancel, cancellationAccepted);
+            Assert.Equal(expectedDraft, conversation.DraftText);
+            Assert.Equal(expectedDraft, viewModel.InputText);
+            Assert.Single(conversation.Attachments, attachment => attachment.Id == queuedAttachment.Id);
+            if (hasNewerDraft)
+                Assert.Contains(newerAttachment, conversation.Attachments);
+            Assert.False(runtime.Entered.IsCompleted);
+            Assert.Empty(conversation.Messages);
+            Assert.Empty(state.QueuedFollowUpRecoveries);
+            Assert.Empty(viewModel.QueuedFollowUps);
+        }
+        finally
+        {
+            taskHost.Changed -= observeQueuedRun;
+            releaseActive.TrySetResult();
+            runtime.Release();
+            viewModel.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task QueuedImageIsCommittedToManagedStorageBeforeItsTurnStarts()
     {
@@ -1965,7 +2308,8 @@ public sealed class CopilotChatViewModelProfileIsolationTests
 
     private sealed class InMemoryStateStore(
         CopilotChatState state,
-        string attachmentDirectoryPath = "") : ICopilotChatStateStore
+        string attachmentDirectoryPath = "",
+        Func<CancellationToken, Task>? saveSerializedAsync = null) : ICopilotChatStateStore
     {
         public string AttachmentDirectoryPath { get; } = attachmentDirectoryPath;
 
@@ -1985,7 +2329,7 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         public Task SaveSerializedAsync(string serializedState, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return Task.CompletedTask;
+            return saveSerializedAsync?.Invoke(cancellationToken) ?? Task.CompletedTask;
         }
 
         public int CleanupOrphanedAttachments(CopilotChatState value) => 0;
@@ -2056,5 +2400,40 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             if (ReferenceEquals(InstanceField.GetValue(null), _testInstance))
                 InstanceField.SetValue(null, _previousInstance);
         }
+    }
+
+    private sealed class PausedAttachmentSynchronizationContext : SynchronizationContext, IDisposable
+    {
+        private readonly ConcurrentQueue<(SendOrPostCallback Callback, object? State)> _callbacks = new();
+        public ManualResetEventSlim CallbackPosted { get; } = new();
+
+        public override void Post(SendOrPostCallback callback, object? state)
+        {
+            _callbacks.Enqueue((callback, state));
+            CallbackPosted.Set();
+        }
+
+        public void RunPending()
+        {
+            while (_callbacks.TryDequeue(out var callback))
+                callback.Callback(callback.State);
+        }
+
+        public void Dispose() => CallbackPosted.Dispose();
+    }
+
+    private static void RunAttachmentTestOnSta(Action action)
+    {
+        Exception? failure = null;
+        var thread = new Thread(() =>
+        {
+            try { action(); }
+            catch (Exception exception) { failure = exception; }
+        }) { IsBackground = true };
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        Assert.True(thread.Join(TimeSpan.FromSeconds(20)), "The STA clipboard lifecycle test did not finish.");
+        if (failure != null)
+            ExceptionDispatchInfo.Capture(failure).Throw();
     }
 }

@@ -1,4 +1,5 @@
 using Newtonsoft.Json.Linq;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -53,6 +54,54 @@ public sealed class CopilotBackendSyncTransactionTests : IDisposable
         Assert.Same(originalRuntimeProfile, Assert.Single(liveConfig.Profiles));
         Assert.Equal("Saved local profile", originalRuntimeProfile.Name);
         Assert.Equal("local-secret", originalRuntimeProfile.ApiKey);
+        Assert.Equal(originalBytes, File.ReadAllBytes(configFilePath));
+        AssertNoTemporaryFiles();
+    }
+
+    [Fact]
+    public async Task ClosingAfterFetchCompletesBeforeUiContinuationDoesNotPublishOrSave()
+    {
+        string configFilePath = CreateExistingConfigFile();
+        var liveConfig = CreateLiveConfig(CreateLocalProfile("local-profile", "Saved local profile"));
+        var configHandler = CreateConfigHandler(configFilePath, liveConfig);
+        using var handler = new DeferredJsonHandler(JsonSerializer.Serialize(CreateBackendResponse()));
+        using var httpClient = new HttpClient(handler);
+        using var viewModel = CreateViewModel(configHandler, liveConfig, httpClient);
+        byte[] originalBytes = File.ReadAllBytes(configFilePath);
+        var originalDisplayProfile = Assert.Single(viewModel.Profiles);
+        var originalRuntimeProfile = Assert.Single(liveConfig.Profiles);
+        string originalActiveProfileId = viewModel.ActiveProfileId;
+        var context = new PausedSynchronizationContext();
+        var previousContext = SynchronizationContext.Current;
+        Task sync;
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(context);
+            sync = viewModel.SyncBackendConfigAsync();
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousContext);
+        }
+
+        handler.Release.TrySetResult();
+        await context.CallbackPosted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.False(sync.IsCompleted);
+        Assert.False(viewModel.HasAppliedChanges);
+
+        // The fetch succeeded; cancellation can no longer change its outcome.
+        // Mimic OnClosed disposing the VM before the queued continuation runs.
+        viewModel.Dispose();
+        context.RunPending();
+        await sync.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.False(viewModel.IsSyncingBackendConfig);
+        Assert.False(viewModel.HasAppliedChanges);
+        Assert.False(viewModel.HasUnsavedSettings);
+        Assert.Equal(originalActiveProfileId, viewModel.ActiveProfileId);
+        Assert.Same(originalDisplayProfile, viewModel.SelectedProfile);
+        Assert.Same(originalDisplayProfile, Assert.Single(viewModel.Profiles));
+        Assert.Same(originalRuntimeProfile, Assert.Single(liveConfig.Profiles));
         Assert.Equal(originalBytes, File.ReadAllBytes(configFilePath));
         AssertNoTemporaryFiles();
     }
@@ -524,6 +573,48 @@ public sealed class CopilotBackendSyncTransactionTests : IDisposable
     {
         if (Directory.Exists(_rootDirectory))
             Directory.Delete(_rootDirectory, recursive: true);
+    }
+
+    private sealed class PausedSynchronizationContext : SynchronizationContext
+    {
+        private readonly ConcurrentQueue<(SendOrPostCallback Callback, object? State)> _callbacks = new();
+        public TaskCompletionSource CallbackPosted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public override void Post(SendOrPostCallback callback, object? state)
+        {
+            _callbacks.Enqueue((callback, state));
+            CallbackPosted.TrySetResult();
+        }
+
+        public void RunPending()
+        {
+            var previousContext = Current;
+            try
+            {
+                SetSynchronizationContext(this);
+                while (_callbacks.TryDequeue(out var item))
+                    item.Callback(item.State);
+            }
+            finally
+            {
+                SetSynchronizationContext(previousContext);
+            }
+        }
+    }
+
+    private sealed class DeferredJsonHandler(string json) : HttpMessageHandler
+    {
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            await Release.Task.ConfigureAwait(false);
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json"),
+                RequestMessage = request,
+            };
+        }
     }
 
     private sealed class StaticJsonHandler(string json) : HttpMessageHandler

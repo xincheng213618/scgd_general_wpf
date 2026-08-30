@@ -199,6 +199,7 @@ namespace ColorVision.Copilot
                 if (ReferenceEquals(_selectedProfile, value))
                     return;
 
+                InvalidateSelectedProfileConnectionTest();
                 if (_selectedProfile != null)
                     _selectedProfile.PropertyChanged -= SelectedProfile_PropertyChanged;
 

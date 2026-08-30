@@ -18,7 +18,7 @@ Agent会话、工具契约、上下文、恢复和MCP边界。 返回[知识总�
   ColorVision Copilot 的 Agent Framework 执行层、宿主策略边界和按任务检索的专题路由。
 
 - [Copilot 设置、持久化与连接诊断](../../02-developer-guide/core-concepts/copilot-configuration.md) — `copilot.configuration`
-  ColorVision内置Copilot的设置草稿、配置保存与运行态发布、模型选择和联网诊断；保存失败可能已落盘，Local MCP测试存在握手缺口。
+  ColorVision内置Copilot的设置草稿、配置保存与运行态发布、模型选择和联网诊断；保存失败可能已落盘，Local MCP测试核验会话握手与只读状态调用。
 
 - [Copilot Agent 执行链](../../02-developer-guide/core-concepts/copilot-agent-execution.md) — `copilot.execution`
   Copilot 请求调度、工具筛选、审批、只读委派与执行证据闭环。

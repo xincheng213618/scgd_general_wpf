@@ -329,7 +329,7 @@ next: false
   区分现存模板主菜单、专用入口与通用算法配置中的模板编辑命令。
 
 - [Copilot 设置、持久化与连接诊断](../../02-developer-guide/core-concepts/copilot-configuration.md) — `copilot.configuration`
-  ColorVision内置Copilot的设置草稿、配置保存与运行态发布、模型选择和联网诊断；保存失败可能已落盘，Local MCP测试存在握手缺口。
+  ColorVision内置Copilot的设置草稿、配置保存与运行态发布、模型选择和联网诊断；保存失败可能已落盘，Local MCP测试核验会话握手与只读状态调用。
 
 - [自动更新](../../02-developer-guide/deployment/auto-update.md) — `delivery.update`
   主程序及插件更新、检查结果一次性消费、失败元数据回退、目录替换与启动恢复的实现和验收边界。

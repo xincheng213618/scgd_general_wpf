@@ -380,7 +380,7 @@ namespace ColorVision.Copilot
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
                 if (saveTask != null)
-                    ObserveBackgroundAttachmentTask(saveTask);
+                    CleanupCancelledClipboardImage(saveTask);
                 return false;
             }
             catch (Exception ex)
@@ -430,12 +430,19 @@ namespace ColorVision.Copilot
             return true;
         }
 
-        private static void ObserveBackgroundAttachmentTask(Task task)
+        private void CleanupCancelledClipboardImage(Task<string> task)
         {
+            var attachmentDirectoryPath = _stateStore.AttachmentDirectoryPath;
             _ = task.ContinueWith(
-                completed => _ = completed.Exception,
+                completed =>
+                {
+                    if (completed.IsCompletedSuccessfully)
+                        CopilotChatStateStore.TryDeleteManagedAttachmentFile(attachmentDirectoryPath, completed.Result);
+                    else
+                        _ = completed.Exception;
+                },
                 CancellationToken.None,
-                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                TaskContinuationOptions.ExecuteSynchronously,
                 TaskScheduler.Default);
         }
 

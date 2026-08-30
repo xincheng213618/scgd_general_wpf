@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "Copilot 任务生命周期、恢复预算、项目指令发现和 Skill 渐进加载的契约。"
 aliases: ["Copilot 如何加载 AGENTS.md","为什么不读取 config.toml","Skill 什么时候加载","CopilotAgentProjectInstructions","CopilotAgentSkillCatalog","/init","初始化项目指令","CopilotProjectInitialization"]
-code_paths: ["ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.cs","ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.Rules.cs","ColorVision/Copilot/Agent/CopilotAgentSkillCatalog.cs","ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs","ColorVision/Copilot/CopilotProjectInitialization.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentProjectInstructionsTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentSkillCatalogTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs"]
+code_paths: ["ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.cs","ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.Rules.cs","ColorVision/Copilot/Agent/CopilotAgentSkillCatalog.cs","ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs","ColorVision/Copilot/Agent/CopilotAgentTokenBudget.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.Loop.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.AgentStreamingLoop.cs","ColorVision/Copilot/CopilotChatMessage.cs","ColorVision/Copilot/CopilotProjectInitialization.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentProjectInstructionsTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentSkillCatalogTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs","Test/ColorVision.Copilot.Tests/CopilotTokenUsageMergeTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerCancellationTests.cs"]
 related: ["copilot.runtime","copilot.execution","copilot.extensions"]
 ---
 
@@ -40,9 +40,13 @@ Harness 正常结束但没有产生任何 `TextContent` 时，Runtime 不再把�
 
 `CopilotAgentRecoveryMode.Finalize` 为这种状态以及“Provider 在任务已完成后断流”的状态提供独立恢复协议。Runtime 在验证 profile、checkpoint 和最后一次 `RunStopped` 后直接进入 no-tools Provider 调用，不发现外部 MCP、不创建 Harness、不恢复 Todo、不打开审批；不匹配的 Finalize 请求会在工具发现之前拒绝，不能降级成普通 Agent 执行。再次空输出或超时时会刷新原 session 的 journal 与对话记忆并继续保留 checkpoint；成功后旧 session checkpoint 会退役，因为旁路生成的最终回答并不存在于旧 Framework session 中，后续轮次应从包含新答案的可见历史创建新 session。
 
-`CopilotTokenBudgetChatClient` 基于官方 `DelegatingChatClient` 中间件包装真实模型客户端，累计同一 Agent 请求内所有供应商调用的 usage。当已观测用量达到有效请求预算时，下一次供应商调用会被替换为确定性的结束响应，不会再次调用模型或重放工具。供应商不返回 usage 时使用字符数近似，并在诊断中标记 `includes estimates`。这个预算是跨调用循环闸门；单个供应商响应可能使最终统计略微超过阈值。
+`CopilotTokenBudgetChatClient` 基于官方 `DelegatingChatClient` 中间件包装真实模型客户端，累计同一 Agent 请求内所有供应商调用的 usage。当已观测用量达到有效请求预算时，中间件在下一次供应商调用前抛出受控的 `CopilotAgentTokenBudgetExceededException`，由 Runtime 转成确定性的结束提示，不会再次调用模型或重放工具。供应商不返回 usage 时使用字符数近似，并在诊断中标记 `includes estimates`。这个预算是跨调用循环闸门；单个供应商响应可能使最终统计略微超过阈值。
+
+同一次流式响应的 usage 更新通过 `CopilotTokenUsage.MergeProgress` 合并，各字段保留已观测最大值，总量还须覆盖合并后的输入与输出之和；后续片段省略或降低 total 不会让用量倒退、重新开放已耗尽的预算。不同供应商调用之间仍使用 `Add` 累加。`CopilotTokenUsageMergeTests` 覆盖不完整 usage、溢出饱和、缓存计数，以及通过 Framework 流式 usage 验证下一次调用在到达供应商前被拦截。
 
 总时长由与调用方取消令牌链接的运行级计时器约束。超时或业务工具越界都会返回结构化 `BudgetExhausted` 结果，并在可能时先完成任务账本和 Session 检查点；用户主动暂停或取消的语义优先于同时发生的超时。最终 Token、供应商调用、工具调用、pass 上限、已用时长、是否使用估算以及具体预算耗尽类型都会作为 `RuntimeDiagnostic` 和 `CopilotAgentBudgetSnapshot` 写入执行记录。
+
+无工具最终总结仍属于同一次运行，也使用同一取消和总时长结算路径。总结被 `RunControl` 暂停／取消或总时长超时打断时，不把已有工具记录、用量和预算重置为空；继续完成账本与检查点收尾，并将最终回答标为未完成。否则预算已发布后的空结果会违反 Turn 生命周期的单调性校验，把可解释的停止错误转成执行故障。未提供 `RunControl` 的集成调用仅取消 caller token 时，仍按原契约向调用方抛出 `OperationCanceledException`，不伪装为总时长耗尽。`CopilotFinalAnswerCancellationTests` 用受控 Provider 与取消源验证已发生工具调用、用量、预算、检查点和 Turn reducer 的一致性。
 
 ## 原生任务账本与 plan/execute
 
