@@ -4,6 +4,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import textwrap
 import zipfile
 from pathlib import Path
 from unittest import mock
@@ -26,6 +27,22 @@ def _elements(path: Path, local_name: str):
 
 def _values(path: Path, local_name: str):
     return [(element.text or "").strip() for element in _elements(path, local_name)]
+
+
+def _publish_workflow_steps() -> dict[str, str]:
+    return dict(re.findall(
+        r"^    - name: ([^\n]+)\n(.*?)(?=^    - name: |\Z)",
+        PUBLISH_WORKFLOW.read_text(encoding="utf-8"),
+        re.MULTILINE | re.DOTALL,
+    ))
+
+
+def _scoped_algorithms_preflight_source() -> str:
+    step = _publish_workflow_steps()["Verify scoped Algorithms release"]
+    source = re.search(r"        @'\n(.*?)        '@ \| python -", step, re.DOTALL)
+    if source is None:
+        raise AssertionError("The scoped Algorithms release must validate its package before publishing.")
+    return textwrap.dedent(source.group(1))
 
 
 def _run(*args: str, cwd: Path = REPO_ROOT) -> str:
@@ -191,7 +208,7 @@ class AlgorithmPackageContractTests(unittest.TestCase):
         self.assertIn("../colorvision.algorithms/colorvision.algorithms.csproj", references)
 
     def test_publish_workflow_orders_algorithms_before_image_editor(self) -> None:
-        workflow = PUBLISH_WORKFLOW.read_text(encoding="utf-8")
+        workflow = _publish_workflow_steps()["Publish to NuGet"]
         algorithms_push = "UI\\ColorVision.Algorithms\\bin\\x64\\Release\\*.nupkg"
         image_editor_push = "UI\\ColorVision.ImageEditor\\bin\\x64\\Release\\*.nupkg"
         self.assertIn(algorithms_push, workflow)
@@ -208,6 +225,83 @@ class AlgorithmPackageContractTests(unittest.TestCase):
         self.assertIn(preflight, workflow)
         self.assertLess(workflow.index(preflight), first_push)
         self.assertNotIn("--skip-duplicate", workflow)
+
+    def test_scoped_release_preserves_all_verification_and_the_default_package_batch(self) -> None:
+        workflow = PUBLISH_WORKFLOW.read_text(encoding="utf-8")
+        steps = _publish_workflow_steps()
+        scope = "startsWith(github.event.release.tag_name, 'algorithms-v')"
+        for name in ("Verify NuGet package versions are unused", "Publish to NuGet"):
+            self.assertIn(f"if: github.event_name == 'release' && !{scope}", steps[name])
+        for name in ("Verify scoped Algorithms release", "Publish scoped Algorithms package to NuGet"):
+            self.assertIn(f"if: github.event_name == 'release' && {scope}", steps[name])
+            for prerequisite in (
+                "Build solution with MSBuild", "Run Python tests", "Run UI tests",
+                "Run UI performance probes in an isolated process", "Run Copilot tests",
+                "Run Spectrum tests", "Run Conoscope tests", "Run ProjectARVRPro tests",
+                "Run ProjectKB tests", "Run ProjectLUX tests",
+            ):
+                self.assertNotIn("if:", steps[prerequisite])
+                self.assertLess(workflow.index(f"- name: {prerequisite}"), workflow.index(f"- name: {name}"))
+
+        batch = steps["Publish to NuGet"]
+        self.assertEqual(15, batch.count("dotnet nuget push"))
+        scoped = steps["Publish scoped Algorithms package to NuGet"]
+        self.assertEqual(1, scoped.count("dotnet nuget push"))
+        self.assertNotIn("*.nupkg", scoped)
+        self.assertIn("ALGORITHMS_PACKAGE: ${{ steps.algorithms_package.outputs.package_path }}", scoped)
+        self.assertIn("dotnet nuget push $env:ALGORITHMS_PACKAGE --api-key $env:NUGET_API_KEY", scoped)
+        self.assertIn("RELEASE_TAG: ${{ github.event.release.tag_name }}", steps["Verify scoped Algorithms release"])
+        self.assertNotIn("--api-key ${{", workflow)
+        self.assertLess(workflow.index("- name: Verify scoped Algorithms release"),
+                        workflow.index("- name: Publish scoped Algorithms package to NuGet"))
+
+    def test_scoped_release_validates_the_tag_and_exact_package_identity(self) -> None:
+        source = _scoped_algorithms_preflight_source()
+        cases = (
+            ("algorithms-v1.5.8", "ColorVision.Algorithms", "1.5.8", True),
+            ("algorithms-v1.5.8.1", "ColorVision.Algorithms", "1.5.8.1", True),
+            ("algorithms-v1.5.8-preview.1", "ColorVision.Algorithms", "1.5.8-preview.1", True),
+            ("algorithms-v1.5.8.0", "ColorVision.Algorithms", "1.5.8", False),
+            ("algorithms-v01.5.8", "ColorVision.Algorithms", "1.5.8", False),
+            ("algorithms-v../../other", "ColorVision.Algorithms", "1.5.8", False),
+            ("v1.5.8", "ColorVision.Algorithms", "1.5.8", False),
+            ("algorithms-v1.5.8", "ColorVision.ImageEditor", "1.5.8", False),
+            ("algorithms-v1.5.8", "ColorVision.Algorithms", "1.5.9", False),
+        )
+        for tag, package_id, version, valid in cases:
+            with self.subTest(tag=tag, package_id=package_id, version=version):
+                with tempfile.TemporaryDirectory(prefix="algorithms-release-scope-") as directory:
+                    output = Path(directory) / "github-output"
+                    identity = mock.Mock(package_id=package_id, version=version)
+                    with mock.patch.dict(os.environ, {"RELEASE_TAG": tag, "GITHUB_OUTPUT": str(output)}):
+                        with mock.patch("Scripts.verify_nuget_package_versions.read_package_identity", return_value=identity) as read:
+                            with mock.patch("Scripts.verify_nuget_package_versions.main", return_value=0) as preflight:
+                                if valid:
+                                    exec(compile(source, str(PUBLISH_WORKFLOW), "exec"), {})
+                                    expected = Path("UI/ColorVision.Algorithms/bin/x64/Release") / f"ColorVision.Algorithms.{version}.nupkg"
+                                    read.assert_called_once_with(expected)
+                                    preflight.assert_called_once_with([str(expected)])
+                                    self.assertEqual(f"package_path={expected.as_posix()}\n", output.read_text(encoding="utf-8"))
+                                else:
+                                    with self.assertRaises(ValueError):
+                                        exec(compile(source, str(PUBLISH_WORKFLOW), "exec"), {})
+                                    preflight.assert_not_called()
+                                    self.assertFalse(output.exists())
+
+    def test_scoped_release_never_exports_a_publish_path_when_version_preflight_fails(self) -> None:
+        source = _scoped_algorithms_preflight_source()
+        for result in (1, 2):
+            with self.subTest(preflight_exit_code=result):
+                with tempfile.TemporaryDirectory(prefix="algorithms-release-preflight-") as directory:
+                    output = Path(directory) / "github-output"
+                    identity = mock.Mock(package_id="ColorVision.Algorithms", version="1.5.8")
+                    with mock.patch.dict(os.environ, {"RELEASE_TAG": "algorithms-v1.5.8", "GITHUB_OUTPUT": str(output)}):
+                        with mock.patch("Scripts.verify_nuget_package_versions.read_package_identity", return_value=identity):
+                            with mock.patch("Scripts.verify_nuget_package_versions.main", return_value=result):
+                                with self.assertRaises(SystemExit) as raised:
+                                    exec(compile(source, str(PUBLISH_WORKFLOW), "exec"), {})
+                                self.assertEqual(result, raised.exception.code)
+                                self.assertFalse(output.exists())
 
     def test_solution_restore_uses_the_same_release_x64_dimensions_as_build(self) -> None:
         workflow = PUBLISH_WORKFLOW.read_text(encoding="utf-8")

@@ -1,6 +1,6 @@
 # UI DLL 发布
 
-本页说明 `UI/` 下 DLL/NuGet 包如何发布、替换和排障。对象是一组 UI 类库，不是单个包；发布记录只需保存范围、版本、资源抽检、消费方验证、烟测结果和回退包位置。
+本页说明 `UI/` 下 DLL/NuGet 包如何发布、替换和排障。默认发布对象是一组 UI 类库；`ColorVision.Algorithms` 也提供显式的单包 Release 入口。发布记录需保存范围、版本、资源抽检、消费方验证、烟测结果和回退包位置。
 
 ## 发布对象
 
@@ -20,7 +20,7 @@
 | --- | --- |
 | 窗口样式或 XAML 资源 | 对应 UI 项目和宿主窗口 |
 | `Common`、`Themes`、`UI` public 类型 | 所有上层 UI 项目、Engine、关键插件和项目包 |
-| `Algorithms` | 先生成并发布中立契约包，再生成依赖它的 `ImageEditor` 包；抽查依赖版本和双目标框架资产 |
+| `Algorithms` | 同批发布时，先生成并发布中立契约包，再发布依赖它的 `ImageEditor` 包；单包发布仍须验证双目标框架资产和消费方契约 |
 | `Core` 或 `ImageEditor` | native runtime、shader、colormap、CIE 数据、OpenCvSharp runtime |
 | `Database`、`SocketProtocol`、`Scheduler` | 数据库、Socket、调度器配置和历史库兼容性 |
 | `Solution` 或 `UI.Desktop` | 设置、市场、下载、工作区、编辑器、终端、WebView2 |
@@ -30,14 +30,14 @@
 ## 构建和包资源
 
 ```powershell
-dotnet restore .\ColorVision\ColorVision.csproj
-dotnet build ColorVision/ColorVision.csproj -c Release -p:Platform=x64
 dotnet build UI/<Project>/<Project>.csproj -c Release -p:Platform=x64
 ```
 
 多数 UI 项目设置了 `GeneratePackageOnBuild=True`，Release 构建会生成 `.nupkg` 和 `.snupkg`。实际包路径以构建日志和项目目标框架为准。
 
 普通 `master` / `develop` push 和 pull request 只构建、测试、验包，不发布 NuGet。发布只能由显式发布的 GitHub Release 触发，并且在第一项 `dotnet nuget push` 前使用 `Scripts/verify_nuget_package_versions.py` 检查本次全部 `.nupkg` 的 ID/版本是否未占用。任一版本已存在或远端查询失败都会终止整批发布；发布命令不使用 `--skip-duplicate`，因此不能把“上层包被跳过、下层新包已上传”的半发布当作成功。
+
+单独发布 `ColorVision.Algorithms` 时，创建并发布标签为 `algorithms-v<规范化 NuGet 版本>` 的 GitHub Release，例如 `algorithms-v1.5.8`（对应 `VersionPrefix=1.5.8.0` 生成的包版本）。这一入口仍先运行同一工作流的全部构建、Python 包契约、UI 和其他既有测试，再校验包内 ID/版本与标签完全一致，并对精确路径 `UI/ColorVision.Algorithms/bin/x64/Release/ColorVision.Algorithms.<版本>.nupkg` 执行版本占用预检和上传；不会发布 `ImageEditor` 或其他包。`algorithms-v` 前缀的无效标签会失败，不会回退为整批发布。其他 Release 标签继续走原有整批预检和发布，不能用单包入口绕过测试或覆盖已占用的版本。
 
 `Scripts/tests/test_algorithm_package_contract.py` 的“clean”含义是：所有托管输出、原生输出、包、consumer restore cache 都在测试临时目录生成。测试先通过 Visual Studio MSBuild 和 `Microsoft.VisualStudio.Component.VC.Tools.x86.x64` 工作负载把 `opencv_helper.dll` 构建到隔离目录，验证它是非空 PE，再把该精确路径传给 ImageEditor pack；不会读取仓库 `bin/`、`x64/Release` 或 `Native/opencv_helper/x64/Release` 中的残留 DLL。`ColorVision.Algorithms` 的双 TFM pack/consumer 本身仍是纯托管步骤。缺少 C++ 工作负载时该 clean package 测试应明确失败，不能用零字节或陈旧 DLL 跳过门禁。CI 先配置 VS MSBuild、构建 Release|x64 solution，再运行 Python 门禁；package-contract 仍自行重建隔离 native，以证明测试不依赖前一步恰好留下的文件。
 
@@ -61,7 +61,7 @@ dotnet build UI/<Project>/<Project>.csproj -c Release -p:Platform=x64
 | 图像包顺序 | `ColorVision.Algorithms` 必须先于依赖它的 `ColorVision.ImageEditor` 发布 |
 | 现场运行 | 最终看主程序输出目录和插件目录里的 DLL |
 | 强名称 | `ColorVision.snk` 存在时 `SignAssembly=True`，正式发布不要手动关闭 |
-| 版本 | UI 包共同继承 `UI/Directory.Build.props` 的 `VersionPrefix`；准备 GitHub Release 前必须显式设置未占用的新版本并重建整批包。包版本调整不要求改变强名 `AssemblyVersion`，除非另有明确的 ABI 策略。 |
+| 版本 | 多数 UI 包继承 `UI/Directory.Build.props` 的 `VersionPrefix`，`ColorVision.Themes` 在自己的 `.csproj` 中另有版本覆写；以各项目最终版本为准。整批 Release 前，所有待发布包的版本都必须未占用并完成重建；Algorithms 单包入口只要求该包的版本未占用，不要求提升其他包版本。包版本调整不要求改变强名 `AssemblyVersion`，除非另有明确的 ABI 策略。 |
 
 ```powershell
 rg -n "VersionPrefix|GeneratePackageOnBuild|PackageReadmeFile" UI -g "*.csproj"
