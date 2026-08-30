@@ -1348,6 +1348,24 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 启用插件 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceEnabled {
+            get {
+                return ResourceManager.GetString("MarketplaceEnabled", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 功能入口 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceFeatureActions {
+            get {
+                return ResourceManager.GetString("MarketplaceFeatureActions", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 有可用更新 的本地化字符串。
         /// </summary>
         public static string MarketplaceHasUpdateTooltip {
@@ -1411,6 +1429,15 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 更多操作 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceMoreActions {
+            get {
+                return ResourceManager.GetString("MarketplaceMoreActions", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 没有匹配的插件 的本地化字符串。
         /// </summary>
         public static string MarketplaceNoMatches {
@@ -1419,6 +1446,15 @@ namespace ColorVision.UI.Desktop.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 此插件没有可直接打开的功能或设置。 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceNoPluginActions {
+            get {
+                return ResourceManager.GetString("MarketplaceNoPluginActions", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 没有可更新的插件 的本地化字符串。
         /// </summary>
@@ -1483,6 +1519,15 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 插件设置 的本地化字符串。
+        /// </summary>
+        public static string MarketplacePluginSettings {
+            get {
+                return ResourceManager.GetString("MarketplacePluginSettings", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 项目地址 的本地化字符串。
         /// </summary>
         public static string MarketplaceProjectUrl {
@@ -1536,6 +1581,15 @@ namespace ColorVision.UI.Desktop.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 快捷方式 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceShortcuts {
+            get {
+                return ResourceManager.GetString("MarketplaceShortcuts", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 状态 的本地化字符串。
         /// </summary>
@@ -1608,6 +1662,15 @@ namespace ColorVision.UI.Desktop.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 插件市场 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceWindowTitle {
+            get {
+                return ResourceManager.GetString("MarketplaceWindowTitle", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 菜单管理器 的本地化字符串。
         /// </summary>

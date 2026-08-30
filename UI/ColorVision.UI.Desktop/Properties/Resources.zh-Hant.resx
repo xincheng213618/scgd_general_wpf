@@ -757,4 +757,11 @@
   <data name="Wizard_Progress" xml:space="preserve"><value>初始化進度</value></data>
   <data name="Wizard_Steps" xml:space="preserve"><value>設定步驟</value></data>
   <data name="Wizard_RequiredStepPrompt" xml:space="preserve"><value>請先完成此必需步驟後再繼續。</value></data>
+  <data name="MarketplaceWindowTitle" xml:space="preserve"><value>外掛市集</value></data>
+  <data name="MarketplaceMoreActions" xml:space="preserve"><value>更多操作</value></data>
+  <data name="MarketplaceEnabled" xml:space="preserve"><value>啟用外掛</value></data>
+  <data name="MarketplaceFeatureActions" xml:space="preserve"><value>功能入口</value></data>
+  <data name="MarketplaceShortcuts" xml:space="preserve"><value>捷徑</value></data>
+  <data name="MarketplacePluginSettings" xml:space="preserve"><value>外掛設定</value></data>
+  <data name="MarketplaceNoPluginActions" xml:space="preserve"><value>此外掛沒有可直接開啟的功能或設定。</value></data>
 </root>

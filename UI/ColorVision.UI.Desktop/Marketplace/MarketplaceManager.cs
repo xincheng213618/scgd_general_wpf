@@ -65,17 +65,26 @@ namespace ColorVision.UI.Desktop.Marketplace
             get => _selectedInstalledPlugin;
             set
             {
+                if (ReferenceEquals(_selectedInstalledPlugin, value))
+                    return;
+
                 _selectedInstalledPlugin = value;
                 OnPropertyChanged();
                 UpdateCurrentDetailContext();
+                OnPropertyChanged(nameof(HasCurrentSelection));
             }
         }
+
+        public bool HasCurrentSelection => IsMarketplaceTabActive ? Catalog.SelectedPlugin != null : SelectedInstalledPlugin != null;
 
         public object? CurrentDetailContext
         {
             get => _currentDetailContext;
             private set
             {
+                if (ReferenceEquals(_currentDetailContext, value))
+                    return;
+
                 _currentDetailContext = value;
                 OnPropertyChanged();
             }
@@ -86,9 +95,13 @@ namespace ColorVision.UI.Desktop.Marketplace
             get => _isMarketplaceTabActive;
             set
             {
+                if (_isMarketplaceTabActive == value)
+                    return;
+
                 _isMarketplaceTabActive = value;
                 OnPropertyChanged();
                 UpdateCurrentDetailContext();
+                OnPropertyChanged(nameof(HasCurrentSelection));
             }
         }
 
@@ -96,6 +109,11 @@ namespace ColorVision.UI.Desktop.Marketplace
         {
             log.Info(UI.Properties.Resources.CheckingForAdditionalProjects);
             Catalog = new MarketplaceCatalogViewModel(FindInstalledPlugin, SetMarketplaceDetailContext);
+            Catalog.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(MarketplaceCatalogViewModel.SelectedPlugin))
+                    OnPropertyChanged(nameof(HasCurrentSelection));
+            };
 
             foreach (var item in UI.Plugins.PluginLoader.Config.Plugins)
             {
@@ -121,7 +139,6 @@ namespace ColorVision.UI.Desktop.Marketplace
             RefreshVersionsCommand = new AsyncRelayCommand(_ => RunUserOperationAsync(token => RefreshVersionsAsync(token, forceRefresh: true)), logger: log);
             UpdateAllCommand = new AsyncRelayCommand(_ => RunUserOperationAsync(UpdateAllAsync), logger: log);
 
-            SelectedInstalledPlugin = Plugins.FirstOrDefault();
         }
 
         private async Task RunUserOperationAsync(Func<CancellationToken, Task> operation)

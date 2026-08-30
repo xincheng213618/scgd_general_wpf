@@ -846,4 +846,11 @@
   <data name="Wizard_Progress" xml:space="preserve"><value>Setup progress</value></data>
   <data name="Wizard_Steps" xml:space="preserve"><value>Setup steps</value></data>
   <data name="Wizard_RequiredStepPrompt" xml:space="preserve"><value>Complete this required step to continue.</value></data>
+  <data name="MarketplaceWindowTitle" xml:space="preserve"><value>Plugin marketplace</value></data>
+  <data name="MarketplaceMoreActions" xml:space="preserve"><value>More actions</value></data>
+  <data name="MarketplaceEnabled" xml:space="preserve"><value>Enable plugin</value></data>
+  <data name="MarketplaceFeatureActions" xml:space="preserve"><value>Features</value></data>
+  <data name="MarketplaceShortcuts" xml:space="preserve"><value>Shortcuts</value></data>
+  <data name="MarketplacePluginSettings" xml:space="preserve"><value>Plugin settings</value></data>
+  <data name="MarketplaceNoPluginActions" xml:space="preserve"><value>This plugin has no features or settings to open directly.</value></data>
 </root>

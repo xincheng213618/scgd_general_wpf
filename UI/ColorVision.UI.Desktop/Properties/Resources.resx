@@ -902,4 +902,11 @@
   <data name="Wizard_Progress" xml:space="preserve"><value>初始化进度</value></data>
   <data name="Wizard_Steps" xml:space="preserve"><value>配置步骤</value></data>
   <data name="Wizard_RequiredStepPrompt" xml:space="preserve"><value>请先完成此必需步骤后再继续。</value></data>
+  <data name="MarketplaceWindowTitle" xml:space="preserve"><value>插件市场</value></data>
+  <data name="MarketplaceMoreActions" xml:space="preserve"><value>更多操作</value></data>
+  <data name="MarketplaceEnabled" xml:space="preserve"><value>启用插件</value></data>
+  <data name="MarketplaceFeatureActions" xml:space="preserve"><value>功能入口</value></data>
+  <data name="MarketplaceShortcuts" xml:space="preserve"><value>快捷方式</value></data>
+  <data name="MarketplacePluginSettings" xml:space="preserve"><value>插件设置</value></data>
+  <data name="MarketplaceNoPluginActions" xml:space="preserve"><value>此插件没有可直接打开的功能或设置。</value></data>
 </root>
