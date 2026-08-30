@@ -2732,6 +2732,12 @@
             },
             {
               "text": {
+                "root": "CVWindowsService 服务包发布与选择"
+              },
+              "link": "/02-developer-guide/backend/cvwindowsservice"
+            },
+            {
+              "text": {
                 "root": "文件中转、覆盖与公开分享"
               },
               "link": "/02-developer-guide/backend/file-transfer"
@@ -2786,6 +2792,12 @@
                 "root": "Backend保留配置、数据库快照与隐私清理"
               },
               "link": "/02-developer-guide/backend/backup-retention"
+            },
+            {
+              "text": {
+                "root": "CVWindowsService 服务包发布与选择"
+              },
+              "link": "/02-developer-guide/backend/cvwindowsservice"
             }
           ]
         }

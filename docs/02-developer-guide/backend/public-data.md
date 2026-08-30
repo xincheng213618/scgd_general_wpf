@@ -11,7 +11,7 @@ related: ["delivery.backend", "delivery.plugin-catalog", "delivery.artifact-deli
 
 # 公共站点数据、分页与文件可见性
 
-`routes/pages.py` 提供JSON和下载入口，`MarketplaceDataService` 位于 `marketplace_services.py`，`page_contexts.py` 组织展示数据；React页面不是这些数据的事实源。本页负责非插件的公共查询和文件选择；[插件目录](./plugin-catalog.md)、[HTTP文件响应](./artifact-delivery.md)、[文件中转](./file-transfer.md)各有独立契约。
+`routes/pages.py` 提供JSON和下载入口，`MarketplaceDataService` 位于 `marketplace_services.py`，`page_contexts.py` 组织展示数据；React页面不是这些数据的事实源。本页负责非插件的公共查询和文件选择；[插件目录](./plugin-catalog.md)、[HTTP文件响应](./artifact-delivery.md)、[文件中转](./file-transfer.md)各有独立契约。[CVWindowsService服务包](./cvwindowsservice.md)的latest指针、独立releases缓存和按版本选包不属于通用tools列表。
 
 查询存在不表示无副作用：回退可以写SQLite缓存，home/updates回退还可能修复旧更新目录。启动、配置和数据库隔离前提见[Backend组成](./README.md)，不要为验证文档随意启动服务或向实际存储发“只读探针”。
 

@@ -288,6 +288,14 @@
     {"query":"后台Operations显示在线管理员能直接远程执行任意命令吗","expected_any":["delivery.backend-operations"],"include_planned":false},
     {"query":"中继任务queued或已收到回执是否说明电脑动作已完成","expected_any":["delivery.backend-operations"],"include_planned":false},
     {"query":"ops:relay能用Basic或网页登录替代吗手机签名中继是否同一凭据","expected_any":["delivery.backend-operations"],"include_planned":false},
-    {"query":"operations overview会暴露主机证书任务参数和诊断正文吗","expected_any":["delivery.backend-operations"],"include_planned":false}
+    {"query":"operations overview会暴露主机证书任务参数和诊断正文吗","expected_any":["delivery.backend-operations"],"include_planned":false},
+    {"query":"CVWindowsService发布201证明ZIP有效且能安装吗","expected_any":["delivery.cvwindowsservice"],"include_planned":false},
+    {"query":"CVWS省略set_latest字段会更新指针吗","expected_any":["delivery.cvwindowsservice"],"include_planned":false},
+    {"query":"choose_target_filename能保证并发上传绝不覆盖吗","expected_any":["delivery.cvwindowsservice"],"include_planned":false},
+    {"query":"CVWindowsService官方包名版本和手填version冲突会拒绝吗","expected_any":["delivery.cvwindowsservice"],"include_planned":false},
+    {"query":"CVWS按版本下载一定选择最新ZIP而不选RAR吗","expected_any":["delivery.cvwindowsservice"],"include_planned":false},
+    {"query":"CVWS_RELEASES_CACHE_KEY与context和工具索引是同一快照吗","expected_any":["delivery.cvwindowsservice"],"include_planned":false},
+    {"query":"CvwsPublishPanel服务包已发布但列表没更新是什么边界","expected_any":["delivery.cvwindowsservice"],"include_planned":false},
+    {"query":"CVWindowsService的latest-version有值但download返回404","expected_any":["delivery.cvwindowsservice"],"include_planned":false}
   ]
 }

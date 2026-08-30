@@ -269,6 +269,10 @@ related: ["governance.maintenance", "delivery.testing"]
 | Relay queued/delivered/accepted/completed能当exactly-once与不可回退状态机吗？ | queued是入库，delivered可重投，非终态合并accepted；普通回执可覆盖终态，TTL不自动停止桌面动作 |
 | Operations overview的脱敏和限量是否覆盖其它中继接口？ | activityLimit分别约束多个列表，summary全表且非统一快照；排除字段仅属于overview，legacy/signed其它响应不同 |
 | 固定MQTT重启、Flow取消、应用重启是否任意选择目标且完成语义相同？ | mosquitto固定并重查idle/service状态；Flow成功可仅为取消请求；重启accepted早于handoff和新进程最终回执 |
+| CVWS列表第一项、latestVersion、按版本下载是否永远同一包？ | 列表仅按版本排序，指针是未经存在性校验的文本；下载重新按同版本数字suffix选择且包含RAR |
+| CVWindowsService发布201保证有效ZIP，省略set_latest不改当前版吗？ | 服务端只校验名称/版本不打开ZIP；省略默认true，官方名和手填version可不一致 |
+| CVWS顺序重名生成新后缀能保证并发不覆盖和失败回滚吗？ | 检查与直接save不原子；包/指针/缓存/索引无整链事务，失败不证明存储未变 |
+| releases缓存、context和tools列表是同一时刻且同一来源吗？ | releases用latest+秒级目录mtime签名，context直接扫描，tools走独立索引；发布后刷新失败可保留旧视图 |
 
 另外用英文代码符号和同义中文说法重复部分问题，确认入口不是只识别一种固定问法。
 

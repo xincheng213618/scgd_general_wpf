@@ -2,7 +2,7 @@
 knowledge_id: "delivery.backend-jobs"
 knowledge_type: "topic"
 status: "current"
-summary: "Backend内置任务的注册、后台轮询、同步手动执行、SQLite单飞和启动恢复；任务返回、历史落盘与业务副作用不是同一成功边界。"
+summary: "Backend内置任务的后台轮询、同步手动执行、SQLite单飞和启动恢复；禁用/停止不取消运行中handler，任务返回不证明历史落盘或副作用回滚。"
 aliases: ["Backend调度", "Backend任务", "后台任务启停", "Scheduled Jobs", "SchedulerThread", "run_job_now", "scheduled_jobs", "job_runs", "SqliteJobRepository", "single-flight", "interrupted", "next_run_at", "job_history_retention", "startup_index_check", "plugin_index_check_interval_seconds"]
 code_paths: ["Web/Backend/services/scheduler.py", "Web/Backend/services/artifact_index.py", "Web/Backend/ports/jobs.py", "Web/Backend/db/repositories/jobs.py", "Web/Backend/db/schema_version.py", "Web/Backend/db_cache.py", "Web/Backend/routes/admin_api.py", "Web/Backend/app.py"]
 test_paths: ["Web/Backend/test_jobs_repository.py", "Web/Backend/test_schema_version.py", "Web/Backend/test_contracts.py", "Web/Backend/test_admin_data_retention.py"]

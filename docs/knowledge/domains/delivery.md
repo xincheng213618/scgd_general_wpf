@@ -42,7 +42,7 @@ next: false
   Backend公开反馈提交、文件目录收件箱、状态sidecar和受控附件响应；上传与管理校验不同，201、resolved及下载审计各有完成边界。
 
 - [Backend内置任务、执行记录与恢复](../../02-developer-guide/backend/jobs.md) — `delivery.backend-jobs`
-  Backend内置任务的注册、后台轮询、同步手动执行、SQLite单飞和启动恢复；任务返回、历史落盘与业务副作用不是同一成功边界。
+  Backend内置任务的后台轮询、同步手动执行、SQLite单飞和启动恢复；禁用/停止不取消运行中handler，任务返回不证明历史落盘或副作用回滚。
 
 - [访问统计、浏览器体验与性能观测](../../02-developer-guide/backend/observability.md) — `delivery.backend-observability`
   Backend HTTP访问、SPA体验与性能观测的统计口径、异步丢事件、每日HMAC关联边界、日界线和进程缓存；不等于真实人数或下载完成。
@@ -58,6 +58,9 @@ next: false
 
 - [Backend保留配置、数据库快照与隐私清理](../../02-developer-guide/backend/backup-retention.md) — `delivery.backend-retention`
   Backend六项在线保留配置、SQLite快照创建、隐私清理和轮换；原子配置替换不等于全链事务，备份存在也不证明所有清理或恢复安全。
+
+- [CVWindowsService 服务包发布与选择](../../02-developer-guide/backend/cvwindowsservice.md) — `delivery.cvwindowsservice`
+  CVWindowsService 服务包的发布、LATEST\_RELEASE、缓存与按版本选包；文件名通过不证明ZIP有效，发布不等于本机安装。
 
 - [文件中转、覆盖与公开分享](../../02-developer-guide/backend/file-transfer.md) — `delivery.file-transfer`
   Backend文件中转的整文件与断点上传、权限、覆盖、公开分享及到期删除；分享绑定文件名而非不可变上传版本。

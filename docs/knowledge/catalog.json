@@ -2039,7 +2039,8 @@
         "delivery.backend-records",
         "delivery.backend-feedback",
         "delivery.backend-copilot-sync",
-        "delivery.backend-operations"
+        "delivery.backend-operations",
+        "delivery.cvwindowsservice"
       ],
       "code_scopes": [
         "Web/Backend"
@@ -2049,7 +2050,7 @@
       "source": "docs/02-developer-guide/backend/README.md",
       "url": "/02-developer-guide/backend/README",
       "searchable": true,
-      "source_hash": "d0423890185011ec103b05fd846f404092cded25c63232861d55c94842754d43"
+      "source_hash": "98c87631d6f0a263aaf8bcf17138eb4febabac77c40bce986a6d3a954a379430"
     },
     {
       "knowledge_id": "delivery.backend-accounts",
@@ -2294,7 +2295,7 @@
       "knowledge_id": "delivery.backend-jobs",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Backend内置任务的注册、后台轮询、同步手动执行、SQLite单飞和启动恢复；任务返回、历史落盘与业务副作用不是同一成功边界。",
+      "summary": "Backend内置任务的后台轮询、同步手动执行、SQLite单飞和启动恢复；禁用/停止不取消运行中handler，任务返回不证明历史落盘或副作用回滚。",
       "aliases": [
         "Backend调度",
         "Backend任务",
@@ -2344,7 +2345,7 @@
       "source": "docs/02-developer-guide/backend/jobs.md",
       "url": "/02-developer-guide/backend/jobs",
       "searchable": true,
-      "source_hash": "83b009cb33aaf9f1d9e8e4802420ba6006c9df045c2f00676be6c5fc2f60f411"
+      "source_hash": "611c5a6a7746ecd045b753252e4b2989f774ceb9c9d8d5af28e4f459a6eeca27"
     },
     {
       "knowledge_id": "delivery.backend-observability",
@@ -2539,7 +2540,7 @@
       "source": "docs/02-developer-guide/backend/public-data.md",
       "url": "/02-developer-guide/backend/public-data",
       "searchable": true,
-      "source_hash": "4b3e1f7b5700f80212ac33bda08ca37201a98a994c9d05724153d35d61a52222"
+      "source_hash": "6b880203722f7d134e4205a2064b6fec2b3335a57684bca12df62e41a00da6a8"
     },
     {
       "knowledge_id": "delivery.backend-records",
@@ -2663,6 +2664,61 @@
       "url": "/02-developer-guide/backend/backup-retention",
       "searchable": true,
       "source_hash": "c5449b808a25882da9e0ebc89362169009e77056a98ae4dcc127125758d94917"
+    },
+    {
+      "knowledge_id": "delivery.cvwindowsservice",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "CVWindowsService 服务包的发布、LATEST_RELEASE、缓存与按版本选包；文件名通过不证明ZIP有效，发布不等于本机安装。",
+      "aliases": [
+        "CVWindowsService服务包发布",
+        "服务包最新版本",
+        "CVWS",
+        "CVWS_PACKAGE_RE",
+        "CVWS_RELEASES_CACHE_KEY",
+        "choose_target_filename",
+        "save_cvws_package",
+        "update_cvws_latest_release",
+        "build_cvws_page_context",
+        "CvwsPublishPanel",
+        "getCvwsContext",
+        "publishCvwsPackage"
+      ],
+      "code_paths": [
+        "Web/Backend/routes/cvws_api.py",
+        "Web/Backend/cvwindowsservice_publish.py",
+        "Web/Backend/services/storage_events.py",
+        "Web/Backend/storage_paths.py",
+        "Web/Backend/routes/artifact_delivery.py",
+        "Web/Backend/app_setup.py",
+        "Web/Backend/config_loader.py",
+        "Web/Frontend/src/pages/PublishPage.tsx",
+        "Web/Frontend/src/services/site.ts",
+        "Web/Frontend/src/types/site.ts",
+        "Web/Frontend/src/utils/permissions.ts"
+      ],
+      "test_paths": [
+        "Web/Backend/test_cvwindowsservice_publish.py",
+        "Web/Backend/test_cvws_web.py",
+        "Web/Backend/test_contracts.py"
+      ],
+      "related": [
+        "delivery.backend",
+        "delivery.backend-public-data",
+        "delivery.backend-auth",
+        "delivery.artifact-delivery",
+        "plugins.windows-service"
+      ],
+      "code_scopes": [
+        "Web/Backend",
+        "Web/Frontend"
+      ],
+      "domain": "delivery",
+      "title": "CVWindowsService 服务包发布与选择",
+      "source": "docs/02-developer-guide/backend/cvwindowsservice.md",
+      "url": "/02-developer-guide/backend/cvwindowsservice",
+      "searchable": true,
+      "source_hash": "0611565f1936e82815db4355a640ce30592f9c4850dfdabf160e2ec7f091b22f"
     },
     {
       "knowledge_id": "delivery.deployment",
@@ -4446,7 +4502,7 @@
       "source": "docs/knowledge/retrieval-checks.md",
       "url": "/knowledge/retrieval-checks",
       "searchable": true,
-      "source_hash": "712d5f035e868bba5f70e3acc9e8da67fab40800f6f1806e872a3f415726edce"
+      "source_hash": "f1814a47f481cf99934ab489e90a0370446c4467209ab27a9e4acb88fb93fdcc"
     },
     {
       "knowledge_id": "operations.acceptance",

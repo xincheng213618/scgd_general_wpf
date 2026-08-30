@@ -18,8 +18,9 @@ Authoritative documentation is split by responsibility:
 - [Copilot profile management, version proof, and sensitive configuration sync](../../docs/02-developer-guide/backend/copilot-sync.md) (`delivery.backend-copilot-sync`).
 - [Public feedback submission, inbox state, and diagnostic attachment delivery](../../docs/02-developer-guide/backend/feedback.md) (`delivery.backend-feedback`).
 - [Operations credentials, relay tasks, receipts, and read-only overview](../../docs/02-developer-guide/backend/operations-relay.md) (`delivery.backend-operations`).
+- [CVWindowsService publication, latest pointer, package selection, and cache](../../docs/02-developer-guide/backend/cvwindowsservice.md) (`delivery.cvwindowsservice`).
 
-This source-adjacent README retains local prerequisites, module entry points, and the separate CVWindowsService details not yet consolidated into a canonical topic. The responsibilities above each have one body of knowledge. Repository links require the matching full source checkout; they are not a claim that `docs/` ships with a separately copied backend.
+This source-adjacent README retains local prerequisites, module entry points, and operational warnings. The responsibilities above each have one body of knowledge. Repository links require the matching full source checkout; they are not a claim that `docs/` ships with a separately copied backend.
 
 ## Quick Start
 
@@ -247,13 +248,12 @@ It distinguishes indexed SQL paging from legacy fallback, page counts from
 whole-directory counts, and GET cache writes/storage repair from file serving.
 Do not infer no I/O or no writes from the HTTP method or a compact projection.
 
-`GET /api/tool/cvwindowsservice/releases` remains a separate tool release
-metadata path with signature-based caching, owned by `routes/cvws_api.py`.
-It is not the generic `/api/site/tools` listing. Its broader publish/download
-contract has not been consolidated into the public-data topic.
-`POST /api/tool/cvwindowsservice/publish` calls `on_storage_change` with
-`Tool/CVWindowsService` after saving, dispatching a tool_index refresh;
-this is not an atomic file/index completion guarantee.
+The [CVWindowsService contract](../../docs/02-developer-guide/backend/cvwindowsservice.md)
+owns its separate metadata cache, publish authorization, filename conflicts,
+latest pointer and download selection. Publishing exposes a package publicly;
+the backend does not validate ZIP contents or install services. Protect the
+artifact directory, check the chosen version/filename, and do not infer atomic
+file/index completion or Windows installation success from a 201 response.
 
 ## New Modules
 
