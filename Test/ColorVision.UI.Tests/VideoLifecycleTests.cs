@@ -225,7 +225,10 @@ public class VideoLifecycleTests
     {
         DispatcherFrame frame = new();
         Dispatcher.CurrentDispatcher.BeginInvoke(
-            DispatcherPriority.ContextIdle,
+            // Video callbacks are queued at Normal priority. A same-priority FIFO
+            // barrier drains them without waiting for ContextIdle, which can be
+            // starved by unrelated work left on the shared WPF dispatcher.
+            DispatcherPriority.Normal,
             new Action(() => frame.Continue = false));
         Dispatcher.PushFrame(frame);
     }
