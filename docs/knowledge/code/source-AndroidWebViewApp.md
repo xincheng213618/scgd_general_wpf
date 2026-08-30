@@ -6,7 +6,7 @@ prev: false
 next: false
 ---
 
-# Web 源码知识
+# AndroidWebViewApp 源码知识
 
 > 自动生成的源码目录。修改主题 Markdown 的 `code_paths` 后运行 `node docs/.vitepress/scripts/knowledge.mjs generate`；不要手工编辑。
 
@@ -14,13 +14,12 @@ next: false
 
 以下是已声明源码路径的关联，不是完整调用图或完整模块清单。跨模块主题可出现在多处；根目录概览只列在根目录项，不自动覆盖所有子模块。
 
-## Web/Backend {#module-5765622f4261636b656e64}
+## AndroidWebViewApp/ 根目录与跨模块关联 {#module-416e64726f696457656256696577417070}
 
 - [Android 运维伴侣](../../02-developer-guide/backend/android-operations.md) — `delivery.android-operations`
   Android原生运维入口、现场HTTPS与固定签名中继的职责边界；连接、可见证据和操作授权不能互相替代。
 
-- [插件市场后端](../../02-developer-guide/backend/README.md) — `delivery.backend`
-  插件市场Flask后端的文件制品、索引、认证与API边界，以及隔离存储的启动测试。
+## AndroidWebViewApp/app {#module-416e64726f6964576562566965774170702f617070}
 
-- [测试与验证](../../02-developer-guide/testing.md) — `delivery.testing`
-  按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。
+- [Android 运维伴侣](../../02-developer-guide/backend/android-operations.md) — `delivery.android-operations`
+  Android原生运维入口、现场HTTPS与固定签名中继的职责边界；连接、可见证据和操作授权不能互相替代。

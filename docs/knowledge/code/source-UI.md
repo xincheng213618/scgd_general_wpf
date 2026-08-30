@@ -28,13 +28,13 @@ next: false
 ## UI/ColorVision.Algorithms {#module-55492f436f6c6f72566973696f6e2e416c676f726974686d73}
 
 - [算法与模板知识入口](../../04-api-reference/algorithms/README.md) — `algorithms.index`
-  区分统一本地图像算法平台与 Engine 模板/MQTT 算法，并按任务定位专题。
+  区分统一 Runner、ImageEditor 直接 native 分析与 Engine 模板/MQTT 算法，并按任务定位专题。
 
 - [ROI](../../04-api-reference/algorithms/primitives/roi.md) — `algorithms.roi-routes`
   区分发光区定位、JSON 裁剪、SFR 找 ROI 与统一算法 ROI 数据模型。
 
 - [统一图像算法平台 V1](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) — `algorithms.platform`
-  统一图像算法 Catalog、Invocation、Runner、所有权与默认发布门禁；ONNX 当前仅设计、未实现。
+  统一图像算法Catalog、Invocation和Runner；普通像素预览、应用/取消、所有权与发布门禁；ONNX仅设计。
 
 - [Engine 结果展示链路](../../04-api-reference/engine-components/result-handoff-chain.md) — `engine.results`
   区分 Engine 历史结果 handler、项目业务结果和统一算法 overlay 的注册及生命周期。
@@ -100,6 +100,9 @@ next: false
 - [FindLightArea 发光区定位模板](../../04-api-reference/algorithms/templates/find-light-area.md) — `algorithms.find-light-area`
   区分远端 FindLightArea 模板与本地原生亮区检测 RobustV2；四角点不等于成功，须核对置信度、失败原因和各调用层的结果契约。
 
+- [ImageEditor 直接 native 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
+  ImageEditor直接native灯珠与P2分析：Ghost/旋转模板/双目标定、缺失计数与完成边界；区别Engine/MQTT模板和统一Runner。
+
 - [日志来源、历史读取与筛选](../../01-user-guide/interface/log-viewer.md) — `operations.logs`
   区分log4net输出、历史文件读取与UI筛选，说明刷新、截断和原生日志采集边界；没有显示不等于动作未发生。
 
@@ -140,8 +143,11 @@ next: false
 - [UI 知识入口](../../04-api-reference/ui-components/README.md) — `ui.index`
   按问题路由到 UI 模块、属性编辑契约、运行时发现与 DLL 发布证据。
 
+- [ImageEditor 直接 native 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
+  ImageEditor直接native灯珠与P2分析：Ghost/旋转模板/双目标定、缺失计数与完成边界；区别Engine/MQTT模板和统一Runner。
+
 - [统一图像算法平台 V1](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) — `algorithms.platform`
-  统一图像算法 Catalog、Invocation、Runner、所有权与默认发布门禁；ONNX 当前仅设计、未实现。
+  统一图像算法Catalog、Invocation和Runner；普通像素预览、应用/取消、所有权与发布门禁；ONNX仅设计。
 
 - [Copilot 扩展、MCP 与 Hook](../../02-developer-guide/core-concepts/copilot-agent-extensions.md) — `copilot.extensions`
   业务模块动态上下文、外部 MCP client 和 Hook 如何进入统一宿主权限与生命周期。
@@ -416,6 +422,9 @@ next: false
   按职责和依赖方向判断 UI DLL 的修改归属与消费方兼容风险。
 
 ## UI/ColorVision.UI.Desktop {#module-55492f436f6c6f72566973696f6e2e55492e4465736b746f70}
+
+- [Android 运维伴侣](../../02-developer-guide/backend/android-operations.md) — `delivery.android-operations`
+  Android原生运维入口、现场HTTPS与固定签名中继的职责边界；连接、可见证据和操作授权不能互相替代。
 
 - [自动更新](../../02-developer-guide/deployment/auto-update.md) — `delivery.update`
   主程序及插件更新、检查结果一次性消费、失败元数据回退、目录替换与启动恢复的实现和验收边界。

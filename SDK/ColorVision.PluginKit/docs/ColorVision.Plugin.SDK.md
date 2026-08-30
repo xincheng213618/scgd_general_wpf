@@ -2,6 +2,8 @@
 
 本文档给第三方插件作者使用。目标是让插件项目独立维护，只通过 NuGet 引用平台 SDK，最终交付 `.cvxp` 插件包。
 
+本说明保留可随 SDK 独立交付的项目与发布示例。仓库内当前实现契约见[PluginKit SDK 打包器](../../../docs/02-developer-guide/plugin-development/sdk-packaging.md)；它与仓库根 `Scripts/package_cvxp.py` 不是同一套打包器，尤其不能互换包身份、构建/上传开关与清理规则。
+
 ## 1. 插件工程要求
 
 - Windows WPF 插件目标框架使用 `net10.0-windows`。
@@ -43,6 +45,8 @@
 ## 2. manifest.json
 
 插件根目录必须包含 `manifest.json`。`id` 要稳定，后续更新、安装、卸载都以它为唯一标识；示例中的 `requires` 必须替换为插件真实支持的最低宿主版本。
+
+本 SDK 打包器不按 manifest `id` 独立确定包身份，也不自动同步 manifest `version`。下面示例刻意让项目名、DLL 名与 `id` 同为 `DemoPlugin`；维护者须核对 manifest 与实际编译产物一致，不能把打包成功当作 manifest 或兼容性已校验。
 
 ```json
 {
@@ -101,13 +105,13 @@ public sealed class DemoMenuProvider : IMenuItemProvider
 
 ## 4. 构建和本地安装
 
-外部插件可以在自己的仓库里构建：
+外部插件可以在自己的仓库里构建。下面命令写本地 `bin/obj`，可能还原依赖，不上传：
 
 ```powershell
 dotnet build .\DemoPlugin.csproj -c Debug -p:Platform=x64
 ```
 
-开发调试时，可将构建输出复制到 ColorVision 运行目录：
+开发调试时，取得覆盖目标安装目录的授权并核对占用后，可将构建输出复制到 ColorVision 运行目录。下面是会覆盖文件的开发示例，不是正式安装事务、回滚或热重载验证：
 
 ```powershell
 $pluginId = "DemoPlugin"
@@ -123,11 +127,13 @@ Copy-Item "$source\*" $target -Recurse -Force
 C:\Path\To\ColorVision\bin\x64\Debug\net10.0-windows\Plugins\DemoPlugin
 ```
 
-启动 ColorVision 后，插件菜单会出现在 `工具` 菜单下。
+重新启动 ColorVision 且插件与菜单 provider 成功加载后，示例菜单应出现在 `工具` 菜单下；文件复制完成本身不证明已经加载。
 
 ## 5. 用单个 cvplugin.exe 完成首次配置和后续发布
 
 最终对外建议只发一个 `cvplugin.exe`。
+
+已构建的单文件 exe 不要求使用者安装 Python；启用默认构建步骤需要对应 .NET SDK，自定义命令需要自己的工具链。直接运行源码需 Python 3.10+、`pefile`，上传还需 `requests`。构建、上传和执行配置中的 `buildCommand` 都需要对应授权；不要执行不可信配置或把上传凭据提交到公开仓库。
 
 使用方式：
 
@@ -138,28 +144,28 @@ C:\Path\To\ColorVision\bin\x64\Debug\net10.0-windows\Plugins\DemoPlugin
   - 打包源目录，默认是 `bin\x64\Release\net10.0-windows`。
   - 包输出目录，默认是当前目录下的 `packages`。
   - 是否在打包完成后上传，默认上传。
-  - 如果选择上传，是否在上传成功后保留本地 `.cvxp`，默认保留。
+  - 如果选择上传，是否在上传成功后保留本地 `.cvxp`，默认不保留。
   - 如果选择“不保留本地 `.cvxp`”，而输出目录原本不存在或原本为空，上传成功后这个空目录也会被自动删除。
-3. 确认后会在当前目录生成 `pluginkit.config.json`。
+3. 确认后会在当前目录生成 `pluginkit.config.json` 并退出，本次不继续发布。
 4. 后续再次双击 `cvplugin.exe`，它会自动读取当前目录的 `pluginkit.config.json`，并按配置执行构建、打包和上传。
 
 如果你在仓库里直接运行 `scripts/package_cvxp.py`，无参数时的行为和 `cvplugin.exe` 一致。
 
 ## 6. 仓库内调试入口
 
-仓库内不构建 `cvplugin.exe` 时，可以直接运行 `scripts/package_cvxp.py`。无参数行为与 exe 一致：没有 config 时先进入交互式配置，有 config 时直接执行。
+下面命令以 `SDK/ColorVision.PluginKit` 为当前目录；在 ColorVision 仓库根目录先执行 `Set-Location .\SDK\ColorVision.PluginKit`，不要误用根 `Scripts/package_cvxp.py`。无参数时没有 config 则先生成配置，有 config 则按配置构建/打包/上传，并非只读调试。
 
-需要自定义行为时，也可以直接调用：
+显式 `--config` 不启用无参数的 `auto_mode`：`buildEnabled` 不会自动触发构建，`uploadEnabled=false` 也不会阻止上传。下面命令明确构建、打包并上传包与 `LATEST_RELEASE`，须取得发布授权；只需构建时使用 `--build-only`（仍会写本地产物并可能执行自定义命令）。SDK 不支持根打包器的 `--validate-only`，也没有 `--no-upload` 参数。
 
 ```powershell
 python .\scripts\package_cvxp.py --config .\pluginkit.config.json --build
 ```
 
-包名格式为 `{PluginId}-{version}.cvxp`。压缩包内部顶层目录必须是插件 ID，例如 `DemoPlugin/manifest.json`、`DemoPlugin/DemoPlugin.dll`。
+SDK 实际生成 `{project_name}-{FileVersion}.cvxp`，包内顶层目录和上传路径 `Plugins/{project_name}` 也使用同一名字。推导优先级是显式 `--plugin-name` / 配置 `pluginName`、项目文件名；未提供这些时才尝试输出 manifest 的 `dllpath` 文件名、`.deps.json` 和 DLL。最后始终读取输出根目录 `<project_name>.dll`，不会按 manifest `id` 或嵌套 `dllpath` 独立选择主 DLL。示例使用 `DemoPlugin` 统一这些名字，得到 `DemoPlugin/manifest.json`、`DemoPlugin/DemoPlugin.dll`；不同命名方案不能从根打包器的能力推断 SDK 已支持。
 
 ## 7. 上传插件市场
 
-需要直接调用脚本时：
+取得发布授权后，可在本 SDK 目录直接调用脚本。下面会构建、覆盖本地包并向指定市场上传；占位凭据必须通过批准的方式提供，不能写入公开版本库：
 
 ```powershell
 $env:COLORVISION_UPLOAD_USERNAME = "your-user"
@@ -168,9 +174,9 @@ $env:COLORVISION_UPLOAD_PASSWORD = "your-password"
 python .\scripts\package_cvxp.py --config .\pluginkit.config.json --build --upload-url http://your-marketplace-host:9998
 ```
 
-如果后面你把 `package_cvxp.py` 打包成 exe，对外也只需要发这个 exe 和 `shared_files.json`。
+当前 `cvplugin.spec` 已把 `shared_files.json` 嵌入单文件 exe，无需额外分发该文件。只有包和 `LATEST_RELEASE` 都上传成功，且未要求保留包时，SDK 才删除本地 `.cvxp` 并按条件清理空输出目录；任一步上传失败会报错，不进入这一步成功清理。
 
-仓库内重新构建 `cvplugin.exe` 时，使用：
+在本 SDK 目录、已安装 PyInstaller 和所需 Python 依赖的环境重新构建 `cvplugin.exe` 时，使用下面命令；它写本地构建产物，不发布插件。`build.bat` 还会在缺少 PyInstaller 时尝试联网安装：
 
 ```powershell
 python -m PyInstaller --noconfirm --clean .\cvplugin.spec

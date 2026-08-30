@@ -345,7 +345,8 @@
       "related": [
         "algorithms.arvr",
         "algorithms.json-templates",
-        "engine.results"
+        "engine.results",
+        "algorithms.local-native-analysis"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine"
@@ -355,7 +356,7 @@
       "source": "docs/04-api-reference/algorithms/detectors/ghost-detection.md",
       "url": "/04-api-reference/algorithms/detectors/ghost-detection",
       "searchable": true,
-      "source_hash": "39bef47a10e8eb05a6cadc853997745a2b56fcdfb9065f879a8175e2e6e851cf"
+      "source_hash": "2d575e26ddcc8c5f23c06bce942deb6fbc0259a1d000c0c54cf7baad1b77b024"
     },
     {
       "knowledge_id": "algorithms.image-comparison",
@@ -557,7 +558,7 @@
       "knowledge_id": "algorithms.index",
       "knowledge_type": "index",
       "status": "current",
-      "summary": "区分统一本地图像算法平台与 Engine 模板/MQTT 算法，并按任务定位专题。",
+      "summary": "区分统一 Runner、ImageEditor 直接 native 分析与 Engine 模板/MQTT 算法，并按任务定位专题。",
       "aliases": [
         "算法代码在哪里",
         "ColorVision.Algorithms",
@@ -572,6 +573,7 @@
       "test_paths": [],
       "related": [
         "algorithms.platform",
+        "algorithms.local-native-analysis",
         "algorithms.template-overview",
         "engine.template-design",
         "algorithms.roi-routes",
@@ -587,7 +589,7 @@
       "source": "docs/04-api-reference/algorithms/README.md",
       "url": "/04-api-reference/algorithms/README",
       "searchable": true,
-      "source_hash": "041c6de31fa22fa08389888dc4cc3da2049f1197d25258b148c01ba846b06eab"
+      "source_hash": "9d42f2906b15a21ed7aac0112a8cee51ac277bb37467c7a1db6dd592478520c1"
     },
     {
       "knowledge_id": "algorithms.json-templates",
@@ -728,6 +730,72 @@
       "source_hash": "5f806afb2f341fd644b4cd409c7e60695b604ad3c44277d2258ce7a0efe6ca2a"
     },
     {
+      "knowledge_id": "algorithms.local-native-analysis",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "ImageEditor直接native灯珠与P2分析：Ghost/旋转模板/双目标定、缺失计数与完成边界；区别Engine/MQTT模板和统一Runner。",
+      "aliases": [
+        "FindLightBeads",
+        "M_FindLightBeads",
+        "FindLightBeadsConfig",
+        "BlackCenters",
+        "MissingCount",
+        "本地灯珠检测",
+        "直接native分析",
+        "P2",
+        "GhostLocalAnalysis",
+        "M_DetectGhosts",
+        "RotatedTemplateLocalAnalysis",
+        "M_MatchRotatedTemplate",
+        "StereoFusionDebugWindow",
+        "M_CalStereoBinocularFusion",
+        "P2JsonAnalysisWindow",
+        "本地Ghost检测",
+        "旋转模板本地匹配",
+        "双目标定融合"
+      ],
+      "code_paths": [
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/FindLightBeadsCM.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/README.md",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/P2",
+        "UI/ColorVision.ImageEditor/EditorTools/GraphicEditing/GraphicEditingWindow.xaml.cs",
+        "UI/ColorVision.ImageEditor/EditorToolFactory.cs",
+        "UI/ColorVision.ImageEditor/ImageView.xaml.cs",
+        "UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj",
+        "UI/ColorVision.Core/OpenCVMediaHelper.cs",
+        "UI/ColorVision.Core/HImageExtension.cs",
+        "Native/include/algorithm.h",
+        "Native/include/opencv_media_export.h",
+        "Native/include/custom_structs.h",
+        "Native/opencv_helper/algorithm.cpp",
+        "Native/opencv_helper/opencv_media_export.cpp",
+        "Native/opencv_helper/exports/p2_export.cpp"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/AlgorithmCircleOverlayRenderOptimizationTests.cs",
+        "Test/opencv_helper_test/test_p2_algorithms.cpp"
+      ],
+      "related": [
+        "algorithms.platform",
+        "ui.image-editor",
+        "engine.native-integration",
+        "algorithms.ghost",
+        "algorithms.led"
+      ],
+      "code_scopes": [
+        "Native/include",
+        "Native/opencv_helper",
+        "UI/ColorVision.Core",
+        "UI/ColorVision.ImageEditor"
+      ],
+      "domain": "algorithms",
+      "title": "ImageEditor 直接 native 分析",
+      "source": "docs/04-api-reference/algorithms/local-native-analysis.md",
+      "url": "/04-api-reference/algorithms/local-native-analysis",
+      "searchable": true,
+      "source_hash": "a2fd7d86a5b3f21dc005e8be4c2b77ea3bb745d89d795423b9d4d24ae65dd064"
+    },
+    {
       "knowledge_id": "algorithms.matching",
       "knowledge_type": "topic",
       "status": "current",
@@ -831,7 +899,7 @@
       "knowledge_id": "algorithms.platform",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "统一图像算法 Catalog、Invocation、Runner、所有权与默认发布门禁；ONNX 当前仅设计、未实现。",
+      "summary": "统一图像算法Catalog、Invocation和Runner；普通像素预览、应用/取消、所有权与发布门禁；ONNX仅设计。",
       "aliases": [
         "有哪些本地图像算法",
         "为什么算法有源码但菜单没有",
@@ -839,7 +907,19 @@
         "Microsoft.ML.OnnxRuntime",
         "AlgorithmRunner",
         "ImageAlgorithmPlatform",
-        "ExperimentalAlgorithmProviderGate"
+        "ExperimentalAlgorithmProviderGate",
+        "AlgorithmsContextMenu",
+        "ImageAlgorithmPreviewSession",
+        "ImageAlgorithmApplier",
+        "BasicAdjustmentWindow",
+        "WhiteBalanceWindow",
+        "ThresholdWindow",
+        "算法预览",
+        "应用与保存",
+        "基础调整",
+        "图像反相",
+        "白平衡",
+        "图像阈值"
       ],
       "code_paths": [
         "UI/ColorVision.Algorithms",
@@ -847,7 +927,13 @@
         "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs",
         "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmParameters.cs",
         "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPreviewSession.cs",
+        "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmApplier.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/README.md",
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmsContextMenu.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/BasicAdjustmentWindow.xaml.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/WhiteBalanceWindow.xaml.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/ThresholdWindow.xaml.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/InvertEditorTool.cs",
         "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageAlgorithms.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs"
       ],
@@ -860,7 +946,8 @@
       "related": [
         "algorithms.index",
         "algorithms.onnx",
-        "ui.index"
+        "ui.index",
+        "ui.image-editor"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine",
@@ -872,7 +959,7 @@
       "source": "docs/02-developer-guide/core-concepts/image-algorithm-platform-v1.md",
       "url": "/02-developer-guide/core-concepts/image-algorithm-platform-v1",
       "searchable": true,
-      "source_hash": "9c2b4e93926d967863a476c5691c48dc4a8b7e399fba9e3abcd1d909d7bf4872"
+      "source_hash": "82ff98e649121e1553214030539bd969dcbabeb52fb275755d42de2c619666d3"
     },
     {
       "knowledge_id": "algorithms.poi-routes",
@@ -1745,6 +1832,67 @@
       "url": "/02-developer-guide/core-concepts/copilot-view-model-architecture",
       "searchable": true,
       "source_hash": "553ba765a69d35edd075ea391bd5f20f942f28b4701f29432fe2a52e9aebd5b8"
+    },
+    {
+      "knowledge_id": "delivery.android-operations",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "Android原生运维入口、现场HTTPS与固定签名中继的职责边界；连接、可见证据和操作授权不能互相替代。",
+      "aliases": [
+        "AndroidWebViewApp",
+        "Android运维伴侣",
+        "现场运维",
+        "OperationsActivity",
+        "AppNavigationPolicy",
+        "OperationsTriagePresentation",
+        "OperationsRelayPolicy",
+        "OperationsPinnedTlsPolicy"
+      ],
+      "code_paths": [
+        "AndroidWebViewApp/README.md",
+        "AndroidWebViewApp/app/build.gradle",
+        "AndroidWebViewApp/app/src/main/AndroidManifest.xml",
+        "AndroidWebViewApp/app/src/main/res/xml/network_security_config.xml",
+        "AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/MainActivity.java",
+        "AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/AppNavigationPolicy.java",
+        "AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/OperationsActivity.java",
+        "AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/OperationsTriagePresentation.java",
+        "AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/OperationsRelayPolicy.java",
+        "AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/OperationsPinnedTlsPolicy.java",
+        "AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/OperationsWatchService.java",
+        "AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/OperationsWatchPolicy.java",
+        "AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/AndroidUpdateClient.java",
+        "AndroidWebViewApp/app/src/main/java/com/colorvision/xcviewer/AndroidUpdatePolicy.java",
+        "UI/ColorVision.UI.Desktop/Operations/OperationsSecureHostService.cs",
+        "UI/ColorVision.UI.Desktop/Operations/OperationsSecureApiRouter.cs",
+        "UI/ColorVision.UI.Desktop/Operations/OperationsRelayClientService.cs",
+        "Web/Backend/routes/operations_relay.py",
+        "Web/Backend/services/operations_device_relay.py"
+      ],
+      "test_paths": [
+        "AndroidWebViewApp/app/src/test/java/com/colorvision/xcviewer/AppNavigationPolicyTest.java",
+        "AndroidWebViewApp/app/src/test/java/com/colorvision/xcviewer/OperationsPinnedTlsPolicyTest.java",
+        "AndroidWebViewApp/app/src/test/java/com/colorvision/xcviewer/OperationsRelayPolicyTest.java",
+        "AndroidWebViewApp/app/src/test/java/com/colorvision/xcviewer/OperationsTriagePresentationTest.java",
+        "AndroidWebViewApp/app/src/test/java/com/colorvision/xcviewer/OperationsWatchPolicyTest.java",
+        "AndroidWebViewApp/app/src/test/java/com/colorvision/xcviewer/AndroidUpdatePolicyTest.java",
+        "Web/Backend/test_operations_relay.py"
+      ],
+      "related": [
+        "delivery.backend"
+      ],
+      "code_scopes": [
+        "AndroidWebViewApp",
+        "AndroidWebViewApp/app",
+        "UI/ColorVision.UI.Desktop",
+        "Web/Backend"
+      ],
+      "domain": "delivery",
+      "title": "Android 运维伴侣",
+      "source": "docs/02-developer-guide/backend/android-operations.md",
+      "url": "/02-developer-guide/backend/android-operations",
+      "searchable": true,
+      "source_hash": "1d6361c73c33e8ca90e45a8e63e19de56b0772682817899be8ac170e0d1f7898"
     },
     {
       "knowledge_id": "delivery.backend",
@@ -3433,7 +3581,7 @@
       "source": "docs/knowledge/retrieval-checks.md",
       "url": "/knowledge/retrieval-checks",
       "searchable": true,
-      "source_hash": "85d3cc42c63eed088442e08ddb75621e0900cf0cf59521f036500a56496ad772"
+      "source_hash": "3a32add5a12cd3dc18b7e73570c59c0fd0325a21326c1a7181f39b5b08d6ef83"
     },
     {
       "knowledge_id": "operations.acceptance",
@@ -4840,29 +4988,85 @@
       "source_hash": "9e2790ddfa99fb27f3f5c61217faf2005c5da28e21e99c0421b53959984dd9fe"
     },
     {
+      "knowledge_id": "plugins.sdk-packaging",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "独立PluginKit的project_name包身份、无参数与显式config发布差异、成功清理及单文件exe边界；不是根打包器的同契约镜像。",
+      "aliases": [
+        "ColorVision.PluginKit",
+        "cvplugin",
+        "cvplugin.exe",
+        "pluginkit.config.json",
+        "PluginKit SDK打包",
+        "auto_mode",
+        "keepPackageAfterUpload"
+      ],
+      "code_paths": [
+        "SDK/ColorVision.PluginKit/README.md",
+        "SDK/ColorVision.PluginKit/docs/ColorVision.Plugin.SDK.md",
+        "SDK/ColorVision.PluginKit/scripts/package_cvxp.py",
+        "SDK/ColorVision.PluginKit/cvplugin.spec",
+        "SDK/ColorVision.PluginKit/build.bat"
+      ],
+      "test_paths": [],
+      "related": [
+        "plugins.getting-started",
+        "delivery.scripts"
+      ],
+      "code_scopes": [
+        "SDK/ColorVision.PluginKit"
+      ],
+      "domain": "plugins",
+      "title": "PluginKit SDK 打包器",
+      "source": "docs/02-developer-guide/plugin-development/sdk-packaging.md",
+      "url": "/02-developer-guide/plugin-development/sdk-packaging",
+      "searchable": true,
+      "source_hash": "f3845fc62e762619a00f2d96c56a36bae23fe6278616eed9f088cdbfcd32401c"
+    },
+    {
       "knowledge_id": "plugins.spectrum",
-      "knowledge_type": "reference",
+      "knowledge_type": "topic",
       "status": "current",
       "summary": "Spectrum 的测量校正链、SQLite 结果和独立 ZIP 与 cvxp 双通道发布契约。",
       "aliases": [
         "Spectrum 如何校准和发布",
         "光谱测量结果不一致",
         "Spectrum",
-        "Spectrum.bat"
+        "Spectrum.bat",
+        "SpectrometerManager",
+        "SpectrumMeasurementResult",
+        "ViewResultManagerConfig",
+        "ViewResultSpectrum",
+        "SpectrumMeasurementProfile"
       ],
       "code_paths": [
+        "Plugins/Spectrum/README.md",
         "Plugins/Spectrum/Spectrum.csproj",
         "Plugins/Spectrum/manifest.json",
-        "Plugins/Spectrum",
+        "Plugins/Spectrum/App.xaml.cs",
+        "Plugins/Spectrum/MainWindow.xaml.cs",
+        "Plugins/Spectrum/SpectrometerManager.cs",
+        "Plugins/Spectrum/Calibration",
+        "Plugins/Spectrum/Configs",
+        "Plugins/Spectrum/Data",
+        "Plugins/Spectrum/Models/ViewResultSpectrum.cs",
+        "Plugins/Spectrum/SpectrumCsvExporter.cs",
+        "Plugins/Spectrum/DirectSpectrometer",
+        "Plugins/Spectrum/Job",
+        "Plugins/Spectrum/License",
+        "Plugins/Spectrum/Update",
         "Scripts/Spectrum.bat"
       ],
       "test_paths": [
         "Test/Spectrum.Tests/Spectrum.Tests.csproj",
+        "Test/Spectrum.Tests/ViewResultSpectrumTests.cs",
+        "Test/Spectrum.Tests/SpectrumArchitectureBoundaryTests.cs",
         "Scripts/tests/test_build_spectrum.py"
       ],
       "related": [
         "plugins.index",
-        "plugins.capabilities"
+        "plugins.capabilities",
+        "plugins.spectrum-socket"
       ],
       "code_scopes": [
         "Plugins/Spectrum",
@@ -4873,7 +5077,57 @@
       "source": "docs/04-api-reference/plugins/standard-plugins/spectrum.md",
       "url": "/04-api-reference/plugins/standard-plugins/spectrum",
       "searchable": true,
-      "source_hash": "6dda95b4895d7588f5dd26e610536f223cca1ff390418e20b7d65512189aa8cf"
+      "source_hash": "17b7ac082b1641867024b1a98b4411f61ccbb90dded3025f6e358b68c05e22d9"
+    },
+    {
+      "knowledge_id": "plugins.spectrum-socket",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "Spectrum 五个 Socket 业务指令的参数、结果字段、设备门禁与合作式取消；30/60 秒不保证原生操作按时停止。",
+      "aliases": [
+        "光谱仪远程连接和测量",
+        "Spectrum Socket 指令",
+        "SpectrumStatus",
+        "SpectrumConnect",
+        "SpectrumDarkCalibration",
+        "SpectrumAutoIntTime",
+        "SpectrumMeasure",
+        "SpectrumStatusSocketHandler",
+        "SpectrumConnectSocketHandler",
+        "SpectrumDarkCalibrationSocketHandler",
+        "SpectrumAutoIntTimeSocketHandler",
+        "SpectrumMeasureSocketHandler",
+        "Spectrum.Socket"
+      ],
+      "code_paths": [
+        "Plugins/Spectrum/Socket/README.md",
+        "Plugins/Spectrum/Socket/SpectrumStatusSocketHandler.cs",
+        "Plugins/Spectrum/Socket/SpectrumConnectSocketHandler.cs",
+        "Plugins/Spectrum/Socket/SpectrumDarkCalibrationSocketHandler.cs",
+        "Plugins/Spectrum/Socket/SpectrumAutoIntTimeSocketHandler.cs",
+        "Plugins/Spectrum/Socket/SpectrumMeasureSocketHandler.cs",
+        "Plugins/Spectrum/SpectrometerManager.cs",
+        "Plugins/Spectrum/Configs/ShutterController.cs",
+        "Plugins/Spectrum/Data/ViewResultManager.cs",
+        "Plugins/Spectrum/Models/ViewResultSpectrum.cs",
+        "Plugins/Spectrum/App.xaml",
+        "Plugins/Spectrum/App.xaml.cs",
+        "Plugins/Spectrum/MainWindow.xaml.cs"
+      ],
+      "test_paths": [],
+      "related": [
+        "plugins.spectrum",
+        "ui.socket-protocol"
+      ],
+      "code_scopes": [
+        "Plugins/Spectrum"
+      ],
+      "domain": "plugins",
+      "title": "Spectrum Socket 业务指令与完成边界",
+      "source": "docs/04-api-reference/plugins/standard-plugins/spectrum-socket.md",
+      "url": "/04-api-reference/plugins/standard-plugins/spectrum-socket",
+      "searchable": true,
+      "source_hash": "162ed5fa0767a69cdee432834645c5ceed764bc00946d3d5d67572c6b0393cdd"
     },
     {
       "knowledge_id": "plugins.system-monitor",

@@ -17,7 +17,7 @@ next: false
 ## Engine/ColorVision.Engine {#module-456e67696e652f436f6c6f72566973696f6e2e456e67696e65}
 
 - [算法与模板知识入口](../../04-api-reference/algorithms/README.md) — `algorithms.index`
-  区分统一本地图像算法平台与 Engine 模板/MQTT 算法，并按任务定位专题。
+  区分统一 Runner、ImageEditor 直接 native 分析与 Engine 模板/MQTT 算法，并按任务定位专题。
 
 - [ROI](../../04-api-reference/algorithms/primitives/roi.md) — `algorithms.roi-routes`
   区分发光区定位、JSON 裁剪、SFR 找 ROI 与统一算法 ROI 数据模型。
@@ -59,7 +59,7 @@ next: false
   说明 Matching 通用配置宿主、运行时模板文件、Flow 请求和 AOI 结果绘制。
 
 - [统一图像算法平台 V1](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) — `algorithms.platform`
-  统一图像算法 Catalog、Invocation、Runner、所有权与默认发布门禁；ONNX 当前仅设计、未实现。
+  统一图像算法Catalog、Invocation和Runner；普通像素预览、应用/取消、所有权与发布门禁；ONNX仅设计。
 
 - [POI](../../04-api-reference/algorithms/primitives/poi.md) — `algorithms.poi-routes`
   说明 POI 点位、伴生模板、文件模式与 Flow 和 JSON 算法的消费关系。

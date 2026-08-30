@@ -38,11 +38,14 @@ next: false
 - [数据所有者与存储定位](../../01-user-guide/data-management/README.md) — `operations.data`
   按设置JSON、Engine MySQL、模块SQLite和结果文件定位数据所有者；有记录、有图片、已导出和已备份不是同一状态。
 
-- [插件依赖与接入矩阵](../../04-api-reference/plugins/plugin-capability-matrix.md) — `plugins.capabilities`
-  横向定位现存插件的菜单、状态、数据库、设备与管理员权限边界。
-
 - [Spectrum 插件](../../04-api-reference/plugins/standard-plugins/spectrum.md) — `plugins.spectrum`
   Spectrum 的测量校正链、SQLite 结果和独立 ZIP 与 cvxp 双通道发布契约。
+
+- [Spectrum Socket 业务指令与完成边界](../../04-api-reference/plugins/standard-plugins/spectrum-socket.md) — `plugins.spectrum-socket`
+  Spectrum 五个 Socket 业务指令的参数、结果字段、设备门禁与合作式取消；30/60 秒不保证原生操作按时停止。
+
+- [插件依赖与接入矩阵](../../04-api-reference/plugins/plugin-capability-matrix.md) — `plugins.capabilities`
+  横向定位现存插件的菜单、状态、数据库、设备与管理员权限边界。
 
 ## Plugins/SystemMonitor {#module-506c7567696e732f53797374656d4d6f6e69746f72}
 

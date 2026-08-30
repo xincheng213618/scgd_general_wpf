@@ -20,6 +20,9 @@ next: false
 - [安装、构建与运行入口](../../00-getting-started/README.md) — `delivery.start`
   克隆代码后的源码问答、本地构建、安装和运行分流；只问Codex不需要先启动程序。
 
+- [Android 运维伴侣](../../02-developer-guide/backend/android-operations.md) — `delivery.android-operations`
+  Android原生运维入口、现场HTTPS与固定签名中继的职责边界；连接、可见证据和操作授权不能互相替代。
+
 - [插件市场后端](../../02-developer-guide/backend/README.md) — `delivery.backend`
   插件市场Flask后端的文件制品、索引、认证与API边界，以及隔离存储的启动测试。
 

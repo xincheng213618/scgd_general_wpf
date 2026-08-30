@@ -2,22 +2,23 @@
 knowledge_id: "algorithms.index"
 knowledge_type: "index"
 status: "current"
-summary: "区分统一本地图像算法平台与 Engine 模板/MQTT 算法，并按任务定位专题。"
+summary: "区分统一 Runner、ImageEditor 直接 native 分析与 Engine 模板/MQTT 算法，并按任务定位专题。"
 aliases: ["算法代码在哪里","ColorVision.Algorithms","TemplateControl","MQTTAlgorithm"]
 code_paths: ["UI/ColorVision.Algorithms/AlgorithmCatalog.cs","Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/MQTTAlgorithm.cs"]
 test_paths: []
-related: ["algorithms.platform","algorithms.template-overview","engine.template-design","algorithms.roi-routes","algorithms.poi-routes","engine.results"]
+related: ["algorithms.platform","algorithms.local-native-analysis","algorithms.template-overview","engine.template-design","algorithms.roi-routes","algorithms.poi-routes","engine.results"]
 ---
 
 # 算法与模板知识入口
 
-算法相关问题先区分两个入口：`UI/ColorVision.Algorithms/` 的中立算法契约，与 `Engine/ColorVision.Engine/Templates/` 的模板及服务接入。部分算法在本地计算，部分 `Algorithm*` 类只组装外部服务请求；不能仅凭类名判断执行位置。
+算法相关问题先区分三条执行链：`UI/ColorVision.Algorithms/` 的中立契约与统一 Runner、ImageEditor 中仍直接调用 native 的本地分析工具，以及 `Engine/ColorVision.Engine/Templates/` 的模板及服务接入。部分 `Algorithm*` 类只组装外部服务请求；本地菜单也不一定经过统一 Runtime，不能仅凭类名或目录判断执行位置和门禁。
 
 ## 按问题检索
 
 | 问题 | 主题 | 主要源码 |
 | --- | --- | --- |
 | 新算法如何定义输入、参数、结果、overlay 与执行入口 | [统一图像算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) | `UI/ColorVision.Algorithms/` |
+| FindLightBeads、GhostLocalAnalysis、旋转模板和双目调试实际走哪里 | [ImageEditor 本地 native 分析](./local-native-analysis.md) | `UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/` |
 | ONNX 应接在哪里，是否已经实现 | [ONNX 接入方案](../../02-developer-guide/core-concepts/onnx-inference-future-design.md) | 以该页状态和实际源码为准 |
 | 模板如何发现、持久化、编辑与搜索 | [注册与持久化](../../03-architecture/components/templates/design.md)、[编辑与创建宿主](./templates/template-management.md) | `Templates/TemplateControl.cs` |
 | 模板体系和算法服务如何衔接 | [接入概览](./overview.md)、[通用构件](./primitives/common-modules.md) | `Engine/ColorVision.Engine/Templates/` |
@@ -41,4 +42,4 @@ related: ["algorithms.platform","algorithms.template-overview","engine.template-
 
 ## 验证入口与缺口
 
-本页为两条算法体系的路由索引；验证随选中平台或模板主题，不把本地 provider 测试用于证明远端算法服务。
+本页为三条执行链的路由索引；验证随选中主题，不把统一 provider 测试用于证明旁路 native 工具或远端算法服务。

@@ -2,11 +2,11 @@
 knowledge_id: "algorithms.platform"
 knowledge_type: "topic"
 status: "current"
-summary: "统一图像算法 Catalog、Invocation、Runner、所有权与默认发布门禁；ONNX 当前仅设计、未实现。"
-aliases: ["有哪些本地图像算法","为什么算法有源码但菜单没有","ONNX 是否已经支持","Microsoft.ML.OnnxRuntime","AlgorithmRunner","ImageAlgorithmPlatform","ExperimentalAlgorithmProviderGate"]
-code_paths: ["UI/ColorVision.Algorithms/","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmParameters.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPreviewSession.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmsContextMenu.cs","UI/ColorVision.ImageEditor/BatchProcessing/BatchImageAlgorithms.cs","Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs"]
+summary: "统一图像算法Catalog、Invocation和Runner；普通像素预览、应用/取消、所有权与发布门禁；ONNX仅设计。"
+aliases: ["有哪些本地图像算法","为什么算法有源码但菜单没有","ONNX 是否已经支持","Microsoft.ML.OnnxRuntime","AlgorithmRunner","ImageAlgorithmPlatform","ExperimentalAlgorithmProviderGate","AlgorithmsContextMenu","ImageAlgorithmPreviewSession","ImageAlgorithmApplier","BasicAdjustmentWindow","WhiteBalanceWindow","ThresholdWindow","算法预览","应用与保存","基础调整","图像反相","白平衡","图像阈值"]
+code_paths: ["UI/ColorVision.Algorithms/","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmParameters.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPreviewSession.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmApplier.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/README.md","UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmsContextMenu.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/BasicAdjustmentWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/WhiteBalanceWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/ThresholdWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/InvertEditorTool.cs","UI/ColorVision.ImageEditor/BatchProcessing/BatchImageAlgorithms.cs","Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs","Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs","Test/ColorVision.Copilot.Tests/CopilotBatchImageProcessingTests.cs","Scripts/tests/test_algorithm_package_contract.py"]
-related: ["algorithms.index","algorithms.onnx","ui.index"]
+related: ["algorithms.index","algorithms.onnx","ui.index","ui.image-editor"]
 ---
 
 # 统一图像算法平台 V1
@@ -46,6 +46,23 @@ M0 只覆盖平台基础、现有普通 ImageEditor 算法和兼容适配。ROI 
 
 现有 `ImageFrameStore`/`ImageFrameLease` 已经测试了 revision 和延迟释放。ImageView 适配器继续通过该租约读取 source，并把 revision 与 `DocumentInstanceId`、`InvocationId` 一起交给专属 session；平台不维护第二套源帧生命周期。
 
+### ImageEditor 参数窗口、应用与取消
+
+`AlgorithmsContextMenu` 使用 `ImageProcessingContext`（矩形/分析适配器另需 `DrawEditorContext`），不是旧 README 中直接传 `ImageView` 的构造方式。`InvertEditorTool`、`BasicAdjustmentWindow` 等也接收处理上下文。反相等“直接应用”工具的 `Execute()` 当前是 `async void`，内部等待 `ImageAlgorithmApplier.ApplyAsync`；外部调用返回并不是算法完成的信号，不应照旧示例随后立即读取或导出结果。
+
+`BasicAdjustmentWindow`、`WhiteBalanceWindow` 和 `ThresholdWindow` 在构造时建立预览会话并发起计算；滑动变化使用各窗口独立的 50ms 防抖键。每次运行从会话的源图副本构造输入，不把上一次预览反复叠加为新输入。不同窗口、直接应用及其他分析会争用同一文档/revision 的调用所有权，旧会话不能提交或恢复掉后继结果。
+
+| 动作 | 当前效果与边界 |
+| --- | --- |
+| 基础调整关闭“预览” | 取消待触发的防抖回调并调用 `ShowOriginal()`；不取消已经在途的计算或其 invocation，较晚结果仍可能重新显示，因此不保证持续保持原图；不是关闭会话或重读源文件 |
+| 点击“应用” | 取消待触发回调，以当前参数重新执行一次，成功且仍是当前 invocation 才 `Commit()`；基础调整即使未勾预览也会执行应用 |
+| 成功提交 | 替换内存中的 `ViewBitmapSource`、清 `FunctionImage` 并推进一次 source revision；不写图像文件、不代表测量验收或可通过图元撤销恢复 |
+| 点击“取消”或窗口关闭 | 取消/释放该会话；只有仍拥有预览时才恢复宿主当前基准图，不应覆盖已换图、已提交或被其他调用取代的内容 |
+
+“应用后已保存原图”是错误推断。需要落盘时继续核对[图像编辑器输出](../../04-api-reference/ui-components/ColorVision.ImageEditor.md)的 source/rendered 格式、像素保真与覆盖边界。`ImageAlgorithmPlatformTests` 的预览有效性、同宿主会话、提交 revision 和换图/清空回归只覆盖各自契约，不替代所有真实参数窗口和驱动验收。
+
+参数的界面范围也不等于全部像素格式都能执行：`ThresholdWindow` 当前最大刻度固定为 `255`，使用标称范围而不是旧教程的按位深扩大到 `65535`；非 8-bit 中值滤波的大核会由 provider 拒绝，即使滑动条允许选择。白平衡菜单还检查当前 Channel 大于 1，Runner 仍另行校验实际格式。参数与输出以以下 Catalog 契约为准，不在 README 维护第二份数值表。
+
 ## M0 Catalog 能力矩阵
 
 格式缩写：`G8/G16/G32F` 分别表示 Gray8、Gray16、Gray32Float；`BGR8/BGR16/BGR32F` 表示 Bgr24、Bgr48、Bgr96Float；`BGRA8/BGRA16/BGRA32F` 表示 Bgra32、Bgra64、Bgra128Float。M0 的普通像素算法都以整幅图为输入，不声明 ROI；ROI 裁剪或 mask 不会被宿主静默应用。Batch 保存时的 TIFF/PNG/JPEG 等转换仍是输出策略。
@@ -73,13 +90,24 @@ M0 只覆盖平台基础、现有普通 ImageEditor 算法和兼容适配。ROI 
 
 `ColorVision.Algorithms` 是不依赖 WPF、OpenCvSharp、`HImage`、MQTT、STNode、`DeviceAlgorithm` 或 `MessageBox` 的公共契约项目：
 
-<ul><li><code>AlgorithmId</code> 和 <code>AlgorithmVersion</code> 是持久化身份；旧菜单名、Flow 名称和 STN 名称只能通过 alias/adapter 映射，不能成为 provider 类型名。</li><li><code>AlgorithmDescriptor</code> 描述逻辑能力；<code>AlgorithmProviderMetadata</code> 单独描述 CPU/native/GPU/remote 实现和执行平面。</li><li><code>IAlgorithmParameters</code> 给出 schema 版本和只读校验；<code>IAlgorithmParameterMigrator</code> 只允许显式、逐版本迁移。</li><li><code>AlgorithmInvocation</code> 可 JSON 往返，携带参数 schema、输入引用、ROI、preset 和调用 ID。</li><li><code>AlgorithmResult</code> 用 Image、Measurement、Table、Geometry、StructuredData 和 Overlay artifact 表达结果；核心 Overlay 只引用几何和样式，不包含 WPF drawing 对象。</li><li><code>AlgorithmRunner</code> 负责解析、版本/格式/ROI/参数验证、provider 可用性与选择、按资源类型调度、取消、诊断和转移输入的释放。</li></ul>
+- `AlgorithmId` 和 `AlgorithmVersion` 是持久化身份；旧菜单名、Flow 名称和 STN 名称只能通过 alias/adapter 映射，不能成为 provider 类型名。
+- `AlgorithmDescriptor` 描述逻辑能力；`AlgorithmProviderMetadata` 单独描述 CPU/native/GPU/remote 实现和执行平面。
+- `IAlgorithmParameters` 给出 schema 版本和只读校验；`IAlgorithmParameterMigrator` 只允许显式、逐版本迁移。
+- `AlgorithmInvocation` 可 JSON 往返，携带参数 schema、输入引用、ROI、preset 和调用 ID。
+- `AlgorithmResult` 用 Image、Measurement、Table、Geometry、StructuredData 和 Overlay artifact 表达结果；核心 Overlay 只引用几何和样式，不包含 WPF drawing 对象。
+- `AlgorithmRunner` 负责解析、版本/格式/ROI/参数验证、provider 可用性与选择、按资源类型调度、取消、诊断和转移输入的释放。
 
 像素坐标统一使用左上角原点。整数坐标表示像素中心；矩形是半开区间 `[x, x + width) × [y, y + height)`。物理坐标统一使用毫米，必须显式声明并通过图像 DPI/标定转换，核心结果不得暗中混用 WPF DIP。
 
 ## M0 执行与所有权规则
 
-<ol><li>Runner 把输入视为只读；provider 必须在独立输出上工作。</li><li><code>Borrowed</code> 输入由调用方释放；<code>Transferred</code> 输入无论成功、失败或取消都由 Runner 在结束时释放。</li><li>成功结果拥有其 Image artifact；使用者提交、导出或展示后释放整个 <code>AlgorithmResult</code>。</li><li>ImageView session 只在 document、source revision 和 invocation 三者仍匹配时显示或提交结果。新调用使旧调用过期；关闭、取消、切图和 source revision 改变都会阻止迟到结果。</li><li>Preview 不改变 source revision；Commit 原子替换 <code>ViewBitmapSource</code> 后只递增一次 revision；Cancel 不改变 source。</li><li>Batch 输出格式属于保存策略，不注册为图像算法。</li><li><code>Clear()</code>、<code>SetImageSource(...)</code> 和 <code>NotifySourcePixelsChanged()</code> 收口为同一文档变更边界：每次只推进一次 frame-store revision，取消/失效当前 preview 与 analysis，并拒绝旧 Invocation 提交、展示或打开窗口。非 WPF 的 <code>AlgorithmInvocationCoordinator</code> 按 <code>(DocumentInstanceId, SourceRevision)</code> 仲裁 preview 与 analysis；不同入口/owner 在同一 scope 中原子抢占并取消旧 run，不同文档或 revision 相互隔离，旧 claim 的完成、异常或释放不能清除后继；preview session 可在同 revision 被抢占后重新 claim，因此 PseudoColor 不会永久停在 <code>Superseded</code>。ImageView 的 <code>AlgorithmOverlayManager</code> 把 artifact、实际 WPF Visual、document、revision 和 registration token 作为一个所有权单元：原地提交清 transient 并把 persistent 关联到新 revision，换图/Clear/宿主释放清全部，窗口关闭只释放 transient，旧 session 不能删除同名后继。兼容的 <code>AlgorithmOverlays</code> façade 清理也同步移除其受管 Visual。</li></ol>
+1. Runner 把输入视为只读；provider 必须在独立输出上工作。
+2. `Borrowed` 输入由调用方释放；`Transferred` 输入无论成功、失败或取消都由 Runner 在结束时释放。
+3. 成功结果拥有其 Image artifact；使用者提交、导出或展示后释放整个 `AlgorithmResult`。
+4. ImageView session 只在 document、source revision 和 invocation 三者仍匹配时显示或提交结果。新调用使旧调用过期；关闭、取消、切图和 source revision 改变都会阻止迟到结果。
+5. Preview 不改变 source revision；Commit 原子替换 `ViewBitmapSource` 后只递增一次 revision；Cancel 不改变 source。
+6. Batch 输出格式属于保存策略，不注册为图像算法。
+7. `Clear()`、`SetImageSource(...)` 和 `NotifySourcePixelsChanged()` 收口为同一文档变更边界：每次只推进一次 frame-store revision，取消/失效当前 preview 与 analysis，并拒绝旧 Invocation 提交、展示或打开窗口。非 WPF 的 `AlgorithmInvocationCoordinator` 按 `(DocumentInstanceId, SourceRevision)` 仲裁 preview 与 analysis；不同入口/owner 在同一 scope 中原子抢占并取消旧 run，不同文档或 revision 相互隔离，旧 claim 的完成、异常或释放不能清除后继；preview session 可在同 revision 被抢占后重新 claim，因此 PseudoColor 不会永久停在 `Superseded`。ImageView 的 `AlgorithmOverlayManager` 把 artifact、实际 WPF Visual、document、revision 和 registration token 作为一个所有权单元：原地提交清 transient 并把 persistent 关联到新 revision，换图/Clear/宿主释放清全部，窗口关闭只释放 transient，旧 session 不能删除同名后继。兼容的 `AlgorithmOverlays` façade 清理也同步移除其受管 Visual。
 
 ## 执行平面与兼容层
 

@@ -1,12 +1,12 @@
 ---
 knowledge_id: "plugins.spectrum"
-knowledge_type: "reference"
+knowledge_type: "topic"
 status: "current"
 summary: "Spectrum 的测量校正链、SQLite 结果和独立 ZIP 与 cvxp 双通道发布契约。"
-aliases: ["Spectrum 如何校准和发布","光谱测量结果不一致","Spectrum","Spectrum.bat"]
-code_paths: ["Plugins/Spectrum/Spectrum.csproj","Plugins/Spectrum/manifest.json","Plugins/Spectrum/","Scripts/Spectrum.bat"]
-test_paths: ["Test/Spectrum.Tests/Spectrum.Tests.csproj","Scripts/tests/test_build_spectrum.py"]
-related: ["plugins.index","plugins.capabilities"]
+aliases: ["Spectrum 如何校准和发布","光谱测量结果不一致","Spectrum","Spectrum.bat","SpectrometerManager","SpectrumMeasurementResult","ViewResultManagerConfig","ViewResultSpectrum","SpectrumMeasurementProfile"]
+code_paths: ["Plugins/Spectrum/README.md","Plugins/Spectrum/Spectrum.csproj","Plugins/Spectrum/manifest.json","Plugins/Spectrum/App.xaml.cs","Plugins/Spectrum/MainWindow.xaml.cs","Plugins/Spectrum/SpectrometerManager.cs","Plugins/Spectrum/Calibration/","Plugins/Spectrum/Configs/","Plugins/Spectrum/Data/","Plugins/Spectrum/Models/ViewResultSpectrum.cs","Plugins/Spectrum/SpectrumCsvExporter.cs","Plugins/Spectrum/DirectSpectrometer/","Plugins/Spectrum/Job/","Plugins/Spectrum/License/","Plugins/Spectrum/Update/","Scripts/Spectrum.bat"]
+test_paths: ["Test/Spectrum.Tests/Spectrum.Tests.csproj","Test/Spectrum.Tests/ViewResultSpectrumTests.cs","Test/Spectrum.Tests/SpectrumArchitectureBoundaryTests.cs","Scripts/tests/test_build_spectrum.py"]
+related: ["plugins.index","plugins.capabilities","plugins.spectrum-socket"]
 ---
 
 # Spectrum 插件
@@ -26,7 +26,7 @@ related: ["plugins.index","plugins.capabilities"]
 | 测量超时或曲线不刷新 | 积分时间、同步频率模式、SDK 返回码、重试结果 |
 | 结果列表有数据但数据库没有 | `ViewResultManager`、SQLite 路径、写入异常 |
 | EQE 字段为 0 | SMU 配置、测量模式、EQE 回写 |
-| Socket 无响应 | Socket 服务、端口、JSON 模式、请求 framing 和 Manager 设备状态 |
+| Socket 无响应或请求结果难以判断 | [Spectrum Socket 业务契约](./spectrum-socket.md)及其公共传输层入口 |
 
 ## 运行链路
 
@@ -35,6 +35,10 @@ related: ["plugins.index","plugins.capabilities"]
 `IsConnected` 只表示通信已经建立。连接后按设备 SN 加载标定分组，只有配置路径、文件指纹和 native 已加载快照一致，且没有加载或持久化请求在途时，`IsCalibrationReady` 才为 `true`。测量入口会再次执行同一门禁，不能仅凭按钮状态或连接状态判断可测量。
 
 测量按配置执行暗场、自动积分、采集和 EQE 派生，然后把结果与测量画像放进同一数据库事务。Manager 返回 `SpectrumMeasurementResult`；MainWindow 只做异步 UI 投影，历史曲线在第一次查看时延迟生成。
+
+独立 WPF 入口是 `App.Application_Startup`，仍初始化配置、许可证和公共 Socket 模块，依赖匹配的 ColorVision 库、原生 DLL/驱动及标定资源；不是只复制一个可执行文件就能测量。独立更新在 `Update/SpectrumUpdateService.cs` 内维持自身责任边界，不应依赖主程序 ServiceHost 才能交付独立版。
+
+`MainWindow.PrepareForShutdownCoreAsync` 停止接收新测量、取消连续测量，等待在途测量结束（包括其保存路径），随后尝试断开光谱仪并关闭辅助设备。`CloseAuxiliaryDevicesAsync` 的 `12` 秒仅限制等待 `IsBusy` 消退的轮询，超时仍忙的设备会警告并跳过强制释放；后续非忙设备的关闭及前面的在途等待不受这个计时器限制。它不是窗口关闭的总截止时间，也不保证所有设备已经安全关闭。
 
 ## 设备、标定和测量
 
@@ -67,11 +71,13 @@ related: ["plugins.index","plugins.capabilities"]
 
 CSV 按调用时选中结果建立不可变快照，Normal/EQE 模式使用各自固定字段；波长列取实际网格并集，先输出全部绝对值列，再输出对应 `sp` 相对值列。排查“导出为空”时先确认已选中结果及其有效 `fSpect1/fSpect2/fInterval/fPL`，不要再按旧的可见列模型排查。
 
+保存前 `ViewResultSpectrum.NormalizeColorParam` 会规范化波长元数据并裁剪 `fPL`。有效起止波长和间隔下，点数按 `round((fSpect2 - fSpect1) / fInterval) + 1` 计算并限制在实际数组容量内；旧数据元信息无效时另有起点、间隔和最多 `4001` 点的初始回退规则，不能一律保存 native 数组全部容量。历史明细和曲线按需生成；`ViewResultManagerConfig.Count` 只限制内存显示集合，不删除 SQLite 历史记录，且 `Count <= 0` 不做该集合裁剪。
+
+两种耗时终点不同：结果列表的“结果就绪耗时”累计到结果构造和 EQE 计算完成；`SpectrumMeasurementProfile.TotalDurationMs` 再累计到结果行插入完成，不包含测量画像行插入、事务提交和异步 UI 投影。不要用任一数值代替请求端到端耗时。
+
 ## Socket 和调度
 
-Spectrum 提供 `SpectrumStatus`、`SpectrumConnect`、`SpectrumAutoIntTime`、`SpectrumDarkCalibration` 和 `SpectrumMeasure` 五个 JSON 入口。
-
-这些 handler 直接调用 `SpectrometerManager`，不要求 `MainWindow` 已打开；`SpectrumStatus` 仍会返回 `WindowOpen` 供诊断。handler 被编译出来不代表外部客户端一定能连上；还要确认 `ColorVision.SocketProtocol` 已启用、端口正确、协议模式是 JSON。连接响应会同时返回 `IsConnected`、`IsCalibrationReady` 和 `CalibrationStatus`；“连接成功但标定未就绪”不等于可以测量。
+五个 Socket handler 复用 Manager；准确的指令名、`Params`、返回字段、设备锁和 `30/60` 秒合作式取消边界仅在 [Spectrum Socket 业务契约](./spectrum-socket.md)维护。Spectrum 没有独立于 `ColorVision.SocketProtocol` 的另一套传输服务。
 
 调度入口在 `Job/`：`SpectrumMeasureJob` 定时执行光谱测量，`SpectrumDarkCalibrationJob` 定时执行暗场/校零。调度任务失败时先看设备、标定 readiness、快门和 Scheduler 执行历史，不要把窗口是否打开作为业务前置条件。
 
@@ -88,8 +94,8 @@ Spectrum 提供 `SpectrumStatus`、`SpectrumConnect`、`SpectrumAutoIntTime`、`
 | EQE 测量 | SMU 数据、EQE 字段和导出结果一致 |
 | 数据落库 | `Spectrum.db` 在同一事务中写入结果和测量画像；重置/删除不会发布数据库中已不存在的结果 |
 | 标定切换 | 快速切组、无效候选和取消不会让声明快照与 native 状态错配；失败能恢复上一组或明确锁住测量 |
-| Socket | 主窗口关闭时仍可查询、连接和测量；连接响应区分 `IsConnected` 与 `IsCalibrationReady`，校零强制要求快门 |
-| 调度 | 窗口关闭时测量或暗场任务仍能执行并留下历史；失败原因指向设备、标定或快门 |
+| Socket | 在宿主进程仍存活、服务启用且设备前提满足时验证无 Spectrum 窗口操作；区分连接与 readiness、忙与取消，校零要求快门 |
+| 调度 | 在进程及 Scheduler 仍运行且设备前提满足时验证无窗口调用和执行历史；窗口关闭导致的断开不能视为保持可测量 |
 | 双通道发布 | 插件 latest、独立 latest/latest-version、签名、下载大小和 SHA-256 全部通过专用脚本验收 |
 
 ## 本地构建与测试
@@ -100,6 +106,8 @@ Spectrum 提供 `SpectrumStatus`、`SpectrumConnect`、`SpectrumAutoIntTime`、`
 dotnet build .\Plugins\Spectrum\Spectrum.csproj -c Release -p:Platform=x64
 dotnet test .\Test\Spectrum.Tests\Spectrum.Tests.csproj -c Release -p:Platform=x64
 ```
+
+`ViewResultSpectrumTests` 覆盖有效点数、真实端点和旧元信息回退；`SpectrumArchitectureBoundaryTests` 检查 Manager 不反向引用指定窗口、对话框或同步 Application Dispatcher 的源码模式。程序集内另有标定、CSV 等测试；引用测试文件不表示测试已经通过，也不能代替原生设备、窗口关闭或 Socket 时序验证。
 
 ## 双通道发布（需明确发布授权）
 

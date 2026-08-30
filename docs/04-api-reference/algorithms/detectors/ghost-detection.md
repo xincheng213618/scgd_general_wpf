@@ -6,16 +6,16 @@ summary: "说明 ARVR Ghost 传统模板的参数、MQTT 事件、结果 DAO 和
 aliases: ["Ghost检测入口和结果在哪里","TemplateGhost","AlgorithmGhost","ViewHandleGhost"]
 code_paths: ["Engine/ColorVision.Engine/Templates/ARVR/Ghost/TemplateGhost.cs","Engine/ColorVision.Engine/Templates/ARVR/Ghost/GhostParam.cs","Engine/ColorVision.Engine/Templates/ARVR/Ghost/AlgorithmGhost.cs","Engine/ColorVision.Engine/Templates/ARVR/Ghost/ViewHandleGhost.cs"]
 test_paths: []
-related: ["algorithms.arvr","algorithms.json-templates","engine.results"]
+related: ["algorithms.arvr","algorithms.json-templates","engine.results","algorithms.local-native-analysis"]
 ---
 
 # Ghost Detection
 
-本页只描述当前仓库里真实存在的 Ghost 检测接入链，不再维护“独立 `ghost-detection` 算法 API”式旧稿。
+本页只描述 Engine 的 ARVR Ghost 传统模板接入链。ImageEditor 的 `GhostLocalAnalysis` / `M_DetectGhosts` 是另一条[本地 native 分析链](../local-native-analysis.md)，不能套用本页的 MQTT、参数和结果 DAO 契约。
 
 ## 先记住
 
-Ghost 检测不是独立公共算法包，而是 `ColorVision.Engine` 中 ARVR 模板族的一支。它由参数模板、通用显示算法配置、MQTT 命令、结果 DAO、图像叠加和 CSV 导出组成。
+这里的 Ghost 检测是 `ColorVision.Engine` 中 ARVR 模板族的一支，不是独立公共算法包。它由参数模板、通用显示算法配置、MQTT 命令、结果 DAO、图像叠加和 CSV 导出组成。
 
 ## 当前最关键的文件
 
@@ -25,7 +25,7 @@ Ghost 检测不是独立公共算法包，而是 `ColorVision.Engine` 中 ARVR �
 - `Engine/ColorVision.Engine/Templates/ARVR/Ghost/ViewHandleGhost.cs`
 - `Engine/ColorVision.Engine/Templates/ARVR/Ghost/AlgResultGhostDao.cs`
 
-如果只是想弄清 Ghost 当前如何配置、如何发送命令、如何显示结果，这几处已经覆盖主干。
+如果要弄清传统 Ghost 模板如何配置、如何发送命令、如何显示结果，这几处覆盖主干。
 
 ## 当前主链
 
@@ -47,7 +47,7 @@ Ghost 检测不是独立公共算法包，而是 `ColorVision.Engine` 中 ARVR �
 - 在左侧列表中展示 `LEDCenters`、`LEDBlobGray`、`GhostAverageGray`
 - 导出 CSV
 
-当前 Ghost 结果通过数据库结果模型、图像叠加和列表视图呈现，不是单次调用返回统一 JSON。
+本分支的 Ghost 结果通过数据库结果模型、图像叠加和列表视图呈现，不是单次调用返回统一 JSON。
 
 ## 当前几个最容易写错的点
 

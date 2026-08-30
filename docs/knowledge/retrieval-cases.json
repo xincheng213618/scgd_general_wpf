@@ -200,6 +200,20 @@
     {"query":"ConvertXYZ.CM_InitXYZ返回相机句柄吗","expected_any":["engine.native-bindings"],"include_planned":false},
     {"query":"IsUserLoggedIn能证明SessionToken仍有效吗","expected_any":["platform.rbac"],"include_planned":false},
     {"query":"RBAC自动登录失败会清掉LoginResult吗","expected_any":["platform.rbac"],"include_planned":false},
-    {"query":"RBAC退出登录就证明会话已经撤销了吗","expected_any":["platform.rbac"],"include_planned":false}
+    {"query":"RBAC退出登录就证明会话已经撤销了吗","expected_any":["platform.rbac"],"include_planned":false},
+    {"query":"BasicAdjustmentWindow取消会恢复原图吗","expected_any":["algorithms.platform"],"include_planned":false},
+    {"query":"ThresholdWindow处理Gray16时阈值上限是65535吗","expected_any":["algorithms.platform"],"include_planned":false},
+    {"query":"InvertEditorTool.Execute返回就完成了吗","expected_any":["algorithms.platform"],"include_planned":false},
+    {"query":"FindLightBeads的MissingCount等于BlackCenters数量吗","expected_any":["algorithms.local-native-analysis"],"include_planned":false},
+    {"query":"GhostLocalAnalysis会调用TemplateGhost的MQTT服务吗","expected_any":["algorithms.local-native-analysis"],"include_planned":false},
+    {"query":"StereoFusionDebugWindow默认标定可以直接测量距离吗","expected_any":["algorithms.local-native-analysis"],"include_planned":false},
+    {"query":"关闭P2JsonAnalysisWindow会停止native计算吗","expected_any":["algorithms.local-native-analysis"],"include_planned":false},
+    {"query":"SpectrumConnect的Params写错会拒绝请求吗","expected_any":["plugins.spectrum-socket"],"include_planned":false},
+    {"query":"SpectrumMeasure的Lv字段是数字吗","expected_any":["plugins.spectrum-socket"],"include_planned":false},
+    {"query":"SpectrumAutoIntTime超时会立即停止硬件吗","expected_any":["plugins.spectrum-socket"],"include_planned":false},
+    {"query":"AndroidWebViewApp排障支持哪些动作","expected_any":["delivery.android-operations"],"include_planned":false},
+    {"query":"cvplugin --config会遵循uploadEnabled关闭上传吗","expected_any":["plugins.sdk-packaging"],"include_planned":false},
+    {"query":"基础调整","expected_any":["algorithms.platform"],"include_planned":false},
+    {"query":"基础调整预览关闭后还会显示计算结果吗","expected_any":["algorithms.platform"],"include_planned":false}
   ]
 }

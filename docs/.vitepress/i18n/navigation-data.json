@@ -74,6 +74,18 @@
         },
         {
           "text": {
+            "root": "AndroidWebViewApp"
+          },
+          "link": "/knowledge/code/source-AndroidWebViewApp"
+        },
+        {
+          "text": {
+            "root": "SDK"
+          },
+          "link": "/knowledge/code/source-SDK"
+        },
+        {
+          "text": {
             "root": "src"
           },
           "link": "/knowledge/code/source-src"
@@ -749,6 +761,12 @@
             },
             {
               "text": {
+                "root": "ImageEditor 直接 native 分析"
+              },
+              "link": "/04-api-reference/algorithms/local-native-analysis"
+            },
+            {
+              "text": {
                 "root": "日志来源、历史读取与筛选"
               },
               "link": "/01-user-guide/interface/log-viewer"
@@ -836,6 +854,12 @@
                 "root": "UI 知识入口"
               },
               "link": "/04-api-reference/ui-components/README"
+            },
+            {
+              "text": {
+                "root": "ImageEditor 直接 native 分析"
+              },
+              "link": "/04-api-reference/algorithms/local-native-analysis"
             },
             {
               "text": {
@@ -1431,6 +1455,12 @@
           "link": "/knowledge/code/source-UI#module-55492f436f6c6f72566973696f6e2e55492e4465736b746f70",
           "collapsed": true,
           "items": [
+            {
+              "text": {
+                "root": "Android 运维伴侣"
+              },
+              "link": "/02-developer-guide/backend/android-operations"
+            },
             {
               "text": {
                 "root": "自动更新"
@@ -2135,6 +2165,12 @@
             },
             {
               "text": {
+                "root": "ImageEditor 直接 native 分析"
+              },
+              "link": "/04-api-reference/algorithms/local-native-analysis"
+            },
+            {
+              "text": {
                 "root": "景深融合：输入、执行与结果生命周期"
               },
               "link": "/04-api-reference/ui-components/image-fusion"
@@ -2174,6 +2210,12 @@
                 "root": "FindLightArea 发光区定位模板"
               },
               "link": "/04-api-reference/algorithms/templates/find-light-area"
+            },
+            {
+              "text": {
+                "root": "ImageEditor 直接 native 分析"
+              },
+              "link": "/04-api-reference/algorithms/local-native-analysis"
             },
             {
               "text": {
@@ -2267,15 +2309,21 @@
             },
             {
               "text": {
-                "root": "插件依赖与接入矩阵"
-              },
-              "link": "/04-api-reference/plugins/plugin-capability-matrix"
-            },
-            {
-              "text": {
                 "root": "Spectrum 插件"
               },
               "link": "/04-api-reference/plugins/standard-plugins/spectrum"
+            },
+            {
+              "text": {
+                "root": "Spectrum Socket 业务指令与完成边界"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/spectrum-socket"
+            },
+            {
+              "text": {
+                "root": "插件依赖与接入矩阵"
+              },
+              "link": "/04-api-reference/plugins/plugin-capability-matrix"
             }
           ]
         },
@@ -2483,6 +2531,12 @@
           "items": [
             {
               "text": {
+                "root": "Android 运维伴侣"
+              },
+              "link": "/02-developer-guide/backend/android-operations"
+            },
+            {
+              "text": {
                 "root": "插件市场后端"
               },
               "link": "/02-developer-guide/backend/README"
@@ -2537,6 +2591,12 @@
             },
             {
               "text": {
+                "root": "Spectrum 插件"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/spectrum"
+            },
+            {
+              "text": {
                 "root": "安装制品与运行输出"
               },
               "link": "/00-getting-started/installation"
@@ -2552,12 +2612,6 @@
                 "root": "UI DLL 发布"
               },
               "link": "/04-api-reference/ui-components/publishing"
-            },
-            {
-              "text": {
-                "root": "Spectrum 插件"
-              },
-              "link": "/04-api-reference/plugins/standard-plugins/spectrum"
             }
           ]
         },
@@ -2597,6 +2651,69 @@
                 "root": "测试与验证"
               },
               "link": "/02-developer-guide/testing"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "AndroidWebViewApp"
+      },
+      "link": "/knowledge/code/source-AndroidWebViewApp",
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "AndroidWebViewApp/ 根目录与跨模块关联"
+          },
+          "link": "/knowledge/code/source-AndroidWebViewApp#module-416e64726f696457656256696577417070",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "Android 运维伴侣"
+              },
+              "link": "/02-developer-guide/backend/android-operations"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "AndroidWebViewApp/app"
+          },
+          "link": "/knowledge/code/source-AndroidWebViewApp#module-416e64726f6964576562566965774170702f617070",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "Android 运维伴侣"
+              },
+              "link": "/02-developer-guide/backend/android-operations"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "SDK"
+      },
+      "link": "/knowledge/code/source-SDK",
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "SDK/ColorVision.PluginKit"
+          },
+          "link": "/knowledge/code/source-SDK#module-53444b2f436f6c6f72566973696f6e2e506c7567696e4b6974",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "PluginKit SDK 打包器"
+              },
+              "link": "/02-developer-guide/plugin-development/sdk-packaging"
             }
           ]
         }

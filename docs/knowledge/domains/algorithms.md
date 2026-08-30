@@ -15,7 +15,7 @@ next: false
 只读与当前问题相关的主题，再核对源码和测试。`规划`、`历史`不代表当前能力。
 
 - [算法与模板知识入口](../../04-api-reference/algorithms/README.md) — `algorithms.index`
-  区分统一本地图像算法平台与 Engine 模板/MQTT 算法，并按任务定位专题。
+  区分统一 Runner、ImageEditor 直接 native 分析与 Engine 模板/MQTT 算法，并按任务定位专题。
 
 - [ROI](../../04-api-reference/algorithms/primitives/roi.md) — `algorithms.roi-routes`
   区分发光区定位、JSON 裁剪、SFR 找 ROI 与统一算法 ROI 数据模型。
@@ -38,11 +38,14 @@ next: false
 - [ImageCropping 图像裁剪模板](../../04-api-reference/algorithms/templates/image-cropping-template.md) — `algorithms.image-cropping`
   区分强类型 ImageCropping 的持久参数、运行时四点 ROI、Flow 双输入和图像结果。
 
+- [ImageEditor 直接 native 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
+  ImageEditor直接native灯珠与P2分析：Ghost/旋转模板/双目标定、缺失计数与完成边界；区别Engine/MQTT模板和统一Runner。
+
 - [Matching 模板匹配](../../04-api-reference/algorithms/templates/matching-template.md) — `algorithms.matching`
   说明 Matching 通用配置宿主、运行时模板文件、Flow 请求和 AOI 结果绘制。
 
 - [统一图像算法平台 V1](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) — `algorithms.platform`
-  统一图像算法 Catalog、Invocation、Runner、所有权与默认发布门禁；ONNX 当前仅设计、未实现。
+  统一图像算法Catalog、Invocation和Runner；普通像素预览、应用/取消、所有权与发布门禁；ONNX仅设计。
 
 - [POI](../../04-api-reference/algorithms/primitives/poi.md) — `algorithms.poi-routes`
   说明 POI 点位、伴生模板、文件模式与 Flow 和 JSON 算法的消费关系。

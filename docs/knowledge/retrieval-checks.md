@@ -209,6 +209,18 @@ related: ["governance.maintenance", "delivery.testing"]
 | RC连接为true且设备在线，就能采集吗？ | 区分broker、共享连接标志、节点Token、服务Token、状态新鲜度与具体命令结果；设备状态缺项保留旧值 |
 | RC测试连接成功再取消/关窗，会恢复所有运行状态吗？ | 活配置与运行单例测试；无请求关联、旧回复主题仍可能被使用；取消只复制到当前对象，关窗不取消后台任务或补偿Token/订阅 |
 | RC窗口确定就保存成功，菜单中的注册中心配置都指向它吗？ | 窗口只排队ReRegist后关闭，无保存调用；全局持久化另行发生，默认打开入口未确认，不能靠类名/资源文本编造路径 |
+| BasicAdjustmentWindow 取消会恢复原图，应用会保存文件吗？ | 会话所有权、文档/revision 与当前基准图分别核对；成功应用只提交内存源像素，不写文件，不恢复掉后继提交；关闭预览只取消待触发防抖，在途结果仍可覆盖显示 |
+| ThresholdWindow 处理 Gray16 时阈值上限是65535吗？ | 当前固定0–255标称刻度，schema 2在provider内按位深转换，不能照搬旧教程 |
+| InvertEditorTool.Execute 返回就完成了吗？ | async void内部等待ApplyAsync，外部调用返回不是可等待的完成信号 |
+| FindLightBeads 的 MissingCount 等于 BlackCenters 数量吗？ | 预期与亮点差值、暗区候选数组各自计算；负行列数没有native业务校验，暗轮廓循环早返导致不完整 |
+| GhostLocalAnalysis 会调用 TemplateGhost 的 MQTT 服务吗？ | 本地P2 JSON导出与Engine传统模板/DAO是不同执行链；相同业务名称不代表相同参数和结果契约 |
+| StereoFusionDebugWindow 默认标定可以直接测距吗？ | 示例焦距/基线不用于测量，真实标定、图像尺寸/单位与质量指标须匹配，不把可显示三维值当验收 |
+| 关闭 P2JsonAnalysisWindow 会停止 native 并清掉全部叠加吗？ | 关闭只阻止后续显示；无native取消令牌，关闭自动清理后只追踪最新overlay，旧叠加可能残留 |
+| SpectrumConnect 的 Params 拼错会拒绝请求吗？ | 只有规范化后disconnect进入断开，其余含空值/拼错均尝试连接；不可把未知值当无副作用探针 |
+| SpectrumMeasure 的 Lv 是 JSON 数字吗？ | Lv/IP/Blue当前为字符串，IP带百分号而Blue不带，默认ToString还受文化影响 |
+| SpectrumAutoIntTime 超时会立即停止硬件吗？ | CTS是合作取消，不强制中断native；可能在30秒后仍更新IntTime并成功返回，测量/校零各自核对检查点与副作用 |
+| AndroidWebViewApp 排障仅支持四项动作吗？ | 当前presentation与执行switch支持11项；旧版本记录不是完整现状，服务端支持与客户端识别另行判断 |
+| cvplugin 显式 --config 会遵循 uploadEnabled=false 吗？ | SDK只有无参数已有配置进入auto_mode；显式配置不等价于关闭上传，构建/上传/清理与根打包器契约分开 |
 
 另外用英文代码符号和同义中文说法重复部分问题，确认入口不是只识别一种固定问法。
 
