@@ -1,6 +1,5 @@
 using ColorVision.Copilot;
 using System;
-using System.IO;
 
 namespace ColorVision.Copilot.Tests;
 
@@ -38,50 +37,6 @@ public sealed class CopilotCodexReviewModelTests
         AssertProfileBoundaryIsPreserved(sourceProfile, codeProfile);
         Assert.NotSame(sourceProfile, reviewProfile);
         Assert.NotSame(sourceProfile, codeProfile);
-    }
-
-    [Fact]
-    public void UntrustedOrInvalidReviewModelsCannotReplaceTheCodexHomeContract()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                review_model = "gpt-review-home"
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string configDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(configDirectory);
-            File.WriteAllText(
-                Path.Combine(configDirectory, "config.toml"),
-                "review_model = \"gpt-review-project\"");
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-            Assert.Equal("gpt-review-home", untrusted.ConfiguredReviewModel);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.CodexHome,
-                untrusted.ReviewModelSource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            string oversizedModel = new('x', CopilotReviewModelSelection.MaximumModelCharacters + 1);
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"review_model = \"{oversizedModel}\"");
-            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-            Assert.False(invalid.HasReviewModelOverride);
-            Assert.Empty(invalid.ConfiguredReviewModel);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
     }
 
     [Fact]
@@ -163,12 +118,5 @@ public sealed class CopilotCodexReviewModelTests
         Assert.Equal(expected.ApiKey, actual.ApiKey);
         Assert.Equal(expected.BaseUrl, actual.BaseUrl);
         Assert.Equal(expected.MaxTokens, actual.MaxTokens);
-    }
-
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-review-model-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
     }
 }

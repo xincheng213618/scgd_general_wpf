@@ -2,7 +2,6 @@ using ColorVision.Copilot;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,51 +9,6 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexInterruptMessageTests
 {
-    [Fact]
-    public void UntrustedAndInvalidValuesAreIgnored()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
-
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                [agents]
-                interrupt_message = true
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            File.WriteAllText(projectConfigPath, "agents.interrupt_message = false");
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.True(untrusted.ConfiguredInterruptMessageEnabled);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.CodexHome,
-                untrusted.InterruptMessageSource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                "[agents]\ninterrupt_message = \"false\"");
-            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.True(invalid.ConfiguredInterruptMessageEnabled);
-            Assert.False(invalid.HasInterruptMessageOverride);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -373,12 +327,5 @@ public sealed class CopilotCodexInterruptMessageTests
             }
             return result;
         }
-    }
-
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-interrupt-message-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
     }
 }

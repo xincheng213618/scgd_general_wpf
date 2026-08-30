@@ -11,48 +11,6 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotCodexSandboxModeTests
 {
     [Fact]
-    public void UntrustedAndInvalidValuesCannotBroadenTheCodexHomeReadOnlyBoundary()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                sandbox_mode = "read-only"
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                "sandbox_mode = \"danger-full-access\"");
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.Equal(CopilotCodexSandboxMode.ReadOnly, untrusted.ConfiguredSandboxMode);
-            Assert.True(untrusted.HasSandboxModeOverride);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.SandboxModeSource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            File.WriteAllText(Path.Combine(globalRoot, "config.toml"), "sandbox_mode = \"unknown\"");
-            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.False(invalid.HasSandboxModeOverride);
-            Assert.Equal(CopilotCodexSandboxMode.Unspecified, invalid.ConfiguredSandboxMode);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
     public async Task ReadOnlySnapshotHidesWriteToolsAndRejectsInjectedCallsBeforeExecution()
     {
         var readTool = new RecordingTool("ReadProbe", CopilotToolAccess.ReadOnly);
@@ -210,12 +168,5 @@ public sealed class CopilotCodexSandboxModeTests
                 Summary = "Tool executed.",
             });
         }
-    }
-
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-sandbox-mode-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
     }
 }

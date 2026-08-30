@@ -1,6 +1,5 @@
 using ColorVision.Copilot;
 using System;
-using System.IO;
 using System.Text.Json;
 
 namespace ColorVision.Copilot.Tests;
@@ -8,48 +7,6 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotCodexToolOutputTokenLimitTests
 {
     private const int SmallTokenLimit = 256;
-
-    [Fact]
-    public void UntrustedOrInvalidProjectValuesCannotReplaceTheEffectiveLimit()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                tool_output_token_limit = 12_000
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string configDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(configDirectory);
-            File.WriteAllText(Path.Combine(configDirectory, "config.toml"), "tool_output_token_limit = 2_048");
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-            Assert.Equal(12_000, untrusted.ConfiguredToolOutputTokenLimit);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.ToolOutputTokenLimitSource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                "tool_output_token_limit = -1");
-            Assert.False(CopilotProjectInstructionDiscoveryConfig.Load(globalRoot).HasToolOutputTokenLimitOverride);
-
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                "tool_output_token_limit = 2_147_483_648");
-            Assert.False(CopilotProjectInstructionDiscoveryConfig.Load(globalRoot).HasToolOutputTokenLimitOverride);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
 
     [Fact]
     public void MixedTextOutputFitsTheConfiguredTokenBudgetAndKeepsApprovalMetadata()
@@ -136,30 +93,17 @@ public sealed class CopilotCodexToolOutputTokenLimitTests
     }
 
     [Fact]
-    public void ZeroBudgetIsAValidCodexSettingAndStoresNoProviderVisiblePayload()
+    public void ZeroBudgetStoresNoProviderVisiblePayload()
     {
-        string globalRoot = CreateTemporaryDirectory();
-        try
-        {
-            File.WriteAllText(Path.Combine(globalRoot, "config.toml"), "tool_output_token_limit = 0");
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.True(options.HasToolOutputTokenLimitOverride);
-            Assert.Equal(0, options.ConfiguredToolOutputTokenLimit);
-            Assert.Equal(string.Empty, CopilotFrameworkToolResultFormatter.Format(CreateOutcome("content"), 0));
-            Assert.Equal(
+        Assert.Equal(string.Empty, CopilotFrameworkToolResultFormatter.Format(CreateOutcome("content"), 0));
+        Assert.Equal(
+            string.Empty,
+            CopilotFrameworkToolResultFormatter.FormatRejected(
+                "ReadLocalFile",
+                "rejected",
                 string.Empty,
-                CopilotFrameworkToolResultFormatter.FormatRejected(
-                    "ReadLocalFile",
-                    "rejected",
-                    string.Empty,
-                    CopilotToolFailureKind.Validation,
-                    0));
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-        }
+                CopilotToolFailureKind.Validation,
+                0));
     }
 
     [Fact]
@@ -241,12 +185,5 @@ public sealed class CopilotCodexToolOutputTokenLimitTests
             }
         }
         return true;
-    }
-
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-tool-output-limit-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
     }
 }

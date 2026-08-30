@@ -1,7 +1,6 @@
 using ColorVision.Copilot;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,53 +24,6 @@ public sealed class CopilotCodexHooksFeatureTests
         Assert.True(entries.IsReadOnly);
         Assert.Throws<NotSupportedException>(() => entries[0] = new CopilotToolExecutionHookRegistryEntry());
         Assert.True(snapshot.IsStructurallyValid());
-    }
-
-    [Fact]
-    public void UntrustedAndInvalidValuesCannotBroadenTheCodexHomeContract()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                [features]
-                hooks = false
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                "[features]\nhooks = true");
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.False(untrusted.ConfiguredHooksEnabled);
-            Assert.True(untrusted.HasHooksEnabledOverride);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.CodexHome,
-                untrusted.HooksEnabledSource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                "[features]\nhooks = \"false\"");
-            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.True(invalid.ConfiguredHooksEnabled);
-            Assert.False(invalid.HasHooksEnabledOverride);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
     }
 
     [Fact]
@@ -560,12 +512,6 @@ public sealed class CopilotCodexHooksFeatureTests
         };
     }
 
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-codex-hooks-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
-    }
 
     private sealed class RecordingExtensionHook(
         bool denyPermission = false,

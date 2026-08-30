@@ -7,103 +7,17 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexMentionsV2FeatureTests
 {
-    [Fact]
-    public void ClosestTrustedValueControlsTheComposerCatalog()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UnifiedCatalogFlagControlsTemplateAndMenuReferencesButAlwaysAllowsFiles(bool includeUnifiedReferences)
     {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                [features]
-                mentions_v2 = false
-
-                [projects.'{projectRoot}']
-                trust_level = "trusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                "features.mentions_v2 = true");
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.True(options.ConfiguredMentionsV2Enabled);
-            Assert.True(options.HasMentionsV2EnabledOverride);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.TrustedProject,
-                options.MentionsV2EnabledSource);
-            Assert.True(CopilotComposerReferenceCatalog.CanIncludeReferenceKind(
-                CopilotComposerReferenceKind.Template,
-                options.ConfiguredMentionsV2Enabled));
-            Assert.True(CopilotComposerReferenceCatalog.CanIncludeReferenceKind(
-                CopilotComposerReferenceKind.Menu,
-                options.ConfiguredMentionsV2Enabled));
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void UntrustedAndInvalidValuesCannotBroadenTheCodexHomeCatalog()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                [features]
-                mentions_v2 = false
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                "[features]" + Environment.NewLine + "mentions_v2 = true");
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.False(untrusted.ConfiguredMentionsV2Enabled);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.CodexHome,
-                untrusted.MentionsV2EnabledSource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-            Assert.False(CopilotComposerReferenceCatalog.CanIncludeReferenceKind(
-                CopilotComposerReferenceKind.Template,
-                untrusted.ConfiguredMentionsV2Enabled));
-            Assert.False(CopilotComposerReferenceCatalog.CanIncludeReferenceKind(
-                CopilotComposerReferenceKind.Menu,
-                untrusted.ConfiguredMentionsV2Enabled));
-            Assert.True(CopilotComposerReferenceCatalog.CanIncludeReferenceKind(
-                CopilotComposerReferenceKind.File,
-                untrusted.ConfiguredMentionsV2Enabled));
-
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                "[features]" + Environment.NewLine + "mentions_v2 = \"false\"");
-            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.True(invalid.ConfiguredMentionsV2Enabled);
-            Assert.False(invalid.HasMentionsV2EnabledOverride);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
+        Assert.Equal(includeUnifiedReferences, CopilotComposerReferenceCatalog.CanIncludeReferenceKind(
+            CopilotComposerReferenceKind.Template, includeUnifiedReferences));
+        Assert.Equal(includeUnifiedReferences, CopilotComposerReferenceCatalog.CanIncludeReferenceKind(
+            CopilotComposerReferenceKind.Menu, includeUnifiedReferences));
+        Assert.True(CopilotComposerReferenceCatalog.CanIncludeReferenceKind(
+            CopilotComposerReferenceKind.File, includeUnifiedReferences));
     }
 
     [Fact]

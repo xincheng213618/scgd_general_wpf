@@ -298,6 +298,15 @@ public sealed class CopilotConversationCompactionIntegrityTests
     }
 
     [Fact]
+    public void EmptyCompactPromptUsesTheDefaultBodyAndKeepsHostIntegrity()
+    {
+        var request = CopilotConversationCompactionPrompt.BuildRequest(null, string.Empty);
+
+        Assert.StartsWith("Create a continuation summary", request, StringComparison.Ordinal);
+        Assert.Contains("ColorVision host integrity requirements", request, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void PromptPlacesTerminalIntegrityAfterOptionalUserFocus()
     {
         var request = CopilotConversationCompactionPrompt.BuildRequest(

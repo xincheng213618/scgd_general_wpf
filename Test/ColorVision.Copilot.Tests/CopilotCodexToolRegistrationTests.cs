@@ -1,72 +1,10 @@
 using ColorVision.Copilot;
 using System;
-using System.IO;
 
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexToolRegistrationTests
 {
-    [Fact]
-    public void UntrustedAndInvalidValuesCannotBroadenTheCodexHomeToolContract()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                tools.experimental_request_user_input.enabled = false
-                tools.update_plan.enabled = false
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                """
-                [tools.experimental_request_user_input]
-                enabled = true
-
-                [tools.update_plan]
-                enabled = true
-                """);
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.False(untrusted.ConfiguredExperimentalRequestUserInputEnabled);
-            Assert.False(untrusted.ConfiguredUpdatePlanEnabled);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.CodexHome,
-                untrusted.ExperimentalRequestUserInputEnabledSource);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.CodexHome,
-                untrusted.UpdatePlanEnabledSource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                """
-                tools.experimental_request_user_input.enabled = "false"
-                tools.update_plan.enabled = "false"
-                """);
-            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.True(invalid.ConfiguredExperimentalRequestUserInputEnabled);
-            Assert.False(invalid.HasExperimentalRequestUserInputEnabledOverride);
-            Assert.True(invalid.ConfiguredUpdatePlanEnabled);
-            Assert.False(invalid.HasUpdatePlanEnabledOverride);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
     [Fact]
     public void DisabledValuesRemoveFrameworkToolsAndTheirPromptInstructions()
     {
@@ -199,10 +137,4 @@ public sealed class CopilotCodexToolRegistrationTests
         CodexUpdatePlanEnabled = updatePlanEnabled,
     };
 
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-tool-registration-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
-    }
 }

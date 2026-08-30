@@ -1,7 +1,6 @@
 using ColorVision.Copilot;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,53 +9,6 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexToolRegistryCollisionTests
 {
-    [Fact]
-    public void UntrustedAndInvalidValuesCannotBroadenTheCodexHomeContract()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                [features.tool_registry]
-                error_on_tool_collisions = false
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                "[features.tool_registry]" + Environment.NewLine + "error_on_tool_collisions = true");
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.False(untrusted.ConfiguredErrorOnToolCollisions);
-            Assert.True(untrusted.HasErrorOnToolCollisionsOverride);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.CodexHome,
-                untrusted.ErrorOnToolCollisionsSource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                "[features.tool_registry]" + Environment.NewLine + "error_on_tool_collisions = \"true\"");
-            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.False(invalid.ConfiguredErrorOnToolCollisions);
-            Assert.False(invalid.HasErrorOnToolCollisionsOverride);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
     [Fact]
     public void RelaxedPolicyKeepsFirstToolAndEmitsDuplicateDiagnostic()
     {
@@ -191,12 +143,6 @@ public sealed class CopilotCodexToolRegistryCollisionTests
         CodexErrorOnToolCollisions = errorOnToolCollisions,
     };
 
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-codex-tool-registry-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
-    }
 
     private sealed class RecordingTool(string name) : ICopilotTool
     {

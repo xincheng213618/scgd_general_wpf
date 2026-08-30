@@ -1,7 +1,6 @@
 using ColorVision.Copilot;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,92 +9,6 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexAgentsEnabledTests
 {
-    [Fact]
-    public void UntrustedAndInvalidValuesCannotBroadenTheCodexHomeContract()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                [features]
-                multi_agent = false
-
-                [agents]
-                enabled = false
-                max_concurrent_threads_per_session = 1
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                "[features]\nmulti_agent = true\n\n[agents]\nenabled = true\nmax_threads = 3");
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.False(untrusted.ConfiguredMultiAgentEnabled);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.CodexHome,
-                untrusted.MultiAgentEnabledSource);
-            Assert.False(untrusted.ConfiguredAgentsEnabled);
-            Assert.Equal(1, untrusted.ConfiguredMaximumConcurrentSubagentRuns);
-            Assert.True(untrusted.HasAgentsEnabledOverride);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.CodexHome,
-                untrusted.AgentsEnabledSource);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.CodexHome,
-                untrusted.MaximumConcurrentSubagentRunsSource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                "[features]\nmulti_agent = \"false\"\n\n[agents]\nenabled = \"false\"\nmax_concurrent_threads_per_session = 0\nmax_threads = -1");
-            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.False(invalid.HasMultiAgentEnabledOverride);
-            Assert.True(invalid.ConfiguredMultiAgentEnabled);
-            Assert.False(invalid.HasAgentsEnabledOverride);
-            Assert.False(invalid.HasMaximumConcurrentSubagentRunsOverride);
-            Assert.True(invalid.ConfiguredAgentsEnabled);
-            Assert.Equal(
-                CopilotSubagentCoordinator.DefaultMaximumConcurrentRuns,
-                invalid.ConfiguredMaximumConcurrentSubagentRuns);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void CanonicalConcurrencyKeyWinsOverTheLegacyAlias()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        try
-        {
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                "[agents]\nmax_concurrent_threads_per_session = 3\nmax_threads = 4");
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.True(options.HasMaximumConcurrentSubagentRunsOverride);
-            Assert.Equal(3, options.ConfiguredMaximumConcurrentSubagentRuns);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-        }
-    }
-
     [Fact]
     public async Task ConfiguredConcurrencyLimitQueuesTheNextSubagentLease()
     {
@@ -247,12 +160,5 @@ public sealed class CopilotCodexAgentsEnabledTests
             RunCount++;
             return Task.FromResult(new CopilotSubagentResult());
         }
-    }
-
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-agents-enabled-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
     }
 }

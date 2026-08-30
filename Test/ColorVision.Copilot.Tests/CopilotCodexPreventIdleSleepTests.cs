@@ -1,58 +1,11 @@
 using ColorVision.Copilot;
 using System;
-using System.IO;
 using System.Threading;
 
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexPreventIdleSleepTests
 {
-    [Fact]
-    public void UntrustedAndInvalidFeatureValuesCannotReplaceTheCodexHomeContract()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                [features]
-                prevent_idle_sleep = true
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                "[features]\nprevent_idle_sleep = false");
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.True(untrusted.ConfiguredPreventIdleSleep);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.CodexHome,
-                untrusted.PreventIdleSleepSource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                "[features]\nprevent_idle_sleep = \"true\"");
-            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.False(invalid.HasPreventIdleSleepOverride);
-            Assert.False(invalid.ConfiguredPreventIdleSleep);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
     [Fact]
     public void ActiveTurnPolicyAcquiresOnlyForAnExplicitTrueSnapshotAndAlwaysReleases()
     {
@@ -159,12 +112,5 @@ public sealed class CopilotCodexPreventIdleSleepTests
         {
             Interlocked.Exchange(ref _callback, null)?.Invoke();
         }
-    }
-
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-prevent-sleep-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
     }
 }

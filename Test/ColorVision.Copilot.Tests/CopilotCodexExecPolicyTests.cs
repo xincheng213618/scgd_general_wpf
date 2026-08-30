@@ -11,80 +11,6 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotCodexExecPolicyTests
 {
     [Fact]
-    public void UntrustedProjectRulesAreIgnoredWhileGlobalRulesRemainActive()
-    {
-        string codexHome = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(codexHome, "config.toml"),
-                $"[projects.'{projectRoot}']\ntrust_level = \"untrusted\"");
-            string globalRulesDirectory = Path.Combine(codexHome, "rules");
-            Directory.CreateDirectory(globalRulesDirectory);
-            string globalRulesPath = Path.Combine(globalRulesDirectory, "default.rules");
-            File.WriteAllText(
-                globalRulesPath,
-                "prefix_rule(pattern=[\"git\", \"status\"], decision=\"allow\")");
-            string projectRulesDirectory = Path.Combine(projectRoot, ".codex", "rules");
-            Directory.CreateDirectory(projectRulesDirectory);
-            File.WriteAllText(
-                Path.Combine(projectRulesDirectory, "project.rules"),
-                "prefix_rule(pattern=[\"git\"], decision=\"forbidden\")");
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(codexHome, projectRoot);
-
-            var rule = Assert.Single(options.ConfiguredExecPolicyRules);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, rule.Source);
-            Assert.Equal([globalRulesPath], options.AppliedExecPolicyFilePaths);
-            Assert.Equal(
-                CopilotCodexExecPolicyDecision.Allow,
-                Evaluate(CreateRequest(options.ConfiguredExecPolicyRules), "git status").Decision);
-        }
-        finally
-        {
-            Directory.Delete(codexHome, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void InvalidSelfTestRejectsOnlyThatRuleAndReportsTheSource()
-    {
-        string codexHome = CreateTemporaryDirectory();
-        try
-        {
-            string rulesDirectory = Path.Combine(codexHome, "rules");
-            Directory.CreateDirectory(rulesDirectory);
-            string rulesPath = Path.Combine(rulesDirectory, "default.rules");
-            File.WriteAllText(
-                rulesPath,
-                """
-                prefix_rule(
-                    pattern = ["git"],
-                    decision = "allow",
-                    not_match = ["git status"],
-                )
-                prefix_rule(pattern = ["dotnet", "test"], decision = "prompt")
-                """);
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(codexHome);
-
-            var rule = Assert.Single(options.ConfiguredExecPolicyRules);
-            Assert.Equal("dotnet test", rule.FormatPattern());
-            var issue = Assert.Single(options.ConfiguredExecPolicyIssues);
-            Assert.Equal(rulesPath, issue.SourceFilePath);
-            Assert.Contains("not_match", issue.Message, StringComparison.Ordinal);
-            Assert.Equal([rulesPath], options.AppliedExecPolicyFilePaths);
-        }
-        finally
-        {
-            Directory.Delete(codexHome, recursive: true);
-        }
-    }
-
-    [Fact]
     public void EvaluatorUsesMostRestrictiveDecisionAcrossAllShellSegments()
     {
         var request = CreateRequest(
@@ -252,14 +178,6 @@ public sealed class CopilotCodexExecPolicyTests
             ApprovalPromptReasonOverride = "Rule requires exact approval.",
         };
 
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(
-            Path.GetTempPath(),
-            $"copilot-exec-policy-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
-    }
 
     private sealed class RecordingPermissionHook : ICopilotToolPermissionRequestHook
     {

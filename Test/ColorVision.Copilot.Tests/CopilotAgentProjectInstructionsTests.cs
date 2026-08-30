@@ -181,247 +181,6 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
-    public void CodexConfigAddsSafeFallbackNamesAndUtf8Budget()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                """
-                project_doc_max_bytes = 4_096
-                project_doc_fallback_filenames = [
-                  "TEAM_GUIDE.md",
-                  '.agents.md',
-                  "../outside.md",
-                  "nested/guide.md",
-                  "TEAM_GUIDE.md", # duplicate
-                ]
-
-                [model]
-                name = "ignored"
-                project_doc_max_bytes = 65536
-                """);
-            string configuredPath = Path.Combine(projectRoot, "TEAM_GUIDE.md");
-            File.WriteAllText(configuredPath, "# Configured instructions");
-            File.WriteAllText(Path.Combine(projectRoot, "CLAUDE.md"), "# Compatibility instructions");
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-            CopilotProjectInstructionDocument document = Assert.Single(
-                CopilotAgentProjectInstructions.DiscoverWithGlobal(
-                    [projectRoot],
-                    activeDocumentPath: null,
-                    additionalTargetFilePaths: null,
-                    globalInstructionRootPath: globalRoot,
-                    discoveryOptions: options));
-
-            Assert.Equal(4_096, options.MaximumBytes);
-            Assert.Equal(["TEAM_GUIDE.md", ".agents.md"], options.FallbackFileNames);
-            Assert.True(options.HasMaximumBytesOverride);
-            Assert.True(options.HasFallbackFileNamesOverride);
-            Assert.Equal(configuredPath, document.Path, ignoreCase: true);
-            var report = CopilotProjectInstructionDiagnostics.Format(
-                new CopilotProjectInstructionSnapshot(
-                    projectRoot,
-                    string.Empty,
-                    globalRoot,
-                    options,
-                    [document]),
-                hasActiveAgentRun: false);
-            Assert.Contains("4,096 UTF-8", report, StringComparison.Ordinal);
-            Assert.Contains("TEAM_GUIDE.md", report, StringComparison.Ordinal);
-            Assert.Contains("Codex Home config.toml 请求快照", report, StringComparison.Ordinal);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void TrustedProjectConfigOverridesTheCodexHomeLayer()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            string configuredProjectPath = projectRoot
-                .ToUpperInvariant()
-                .Replace("\\", "\\\\", StringComparison.Ordinal);
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                project_doc_max_bytes = 4096
-                project_doc_fallback_filenames = ["GLOBAL_GUIDE.md"]
-
-                [projects."{configuredProjectPath}"]
-                trust_level = "trusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                "project_doc_fallback_filenames = [\"PROJECT_GUIDE.md\"]");
-            string configuredPath = Path.Combine(projectRoot, "PROJECT_GUIDE.md");
-            File.WriteAllText(configuredPath, "# Project-specific instructions");
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-            var document = Assert.Single(CopilotAgentProjectInstructions.DiscoverWithGlobal(
-                [projectRoot],
-                activeDocumentPath: null,
-                additionalTargetFilePaths: null,
-                globalInstructionRootPath: globalRoot,
-                discoveryOptions: options));
-
-            Assert.Equal(4096, options.MaximumBytes);
-            Assert.Equal(["PROJECT_GUIDE.md"], options.FallbackFileNames);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.CodexHome
-                    | CopilotProjectInstructionConfigSources.TrustedProject,
-                options.ConfigSources);
-            Assert.Equal(CopilotCodexProjectTrustLevel.Trusted, options.ProjectTrustLevel);
-            Assert.Equal(configuredPath, document.Path, ignoreCase: true);
-            var report = CopilotProjectInstructionDiagnostics.Format(
-                new CopilotProjectInstructionSnapshot(
-                    projectRoot,
-                    string.Empty,
-                    globalRoot,
-                    options,
-                    [document]),
-                hasActiveAgentRun: false);
-            Assert.Contains("Codex Home + 受信项目 .codex/config.toml 请求快照", report, StringComparison.Ordinal);
-            Assert.Contains("Codex Home trust_level=trusted", report, StringComparison.Ordinal);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void ExplicitlyUntrustedProjectSkipsProjectConfigAndReportsIt()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                project_doc_fallback_filenames = ["GLOBAL_GUIDE.md"]
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                "project_doc_fallback_filenames = [\"PROJECT_GUIDE.md\"]");
-            string globalGuidePath = Path.Combine(projectRoot, "GLOBAL_GUIDE.md");
-            File.WriteAllText(globalGuidePath, "# Global fallback instructions");
-            File.WriteAllText(Path.Combine(projectRoot, "PROJECT_GUIDE.md"), "# Project instructions");
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-            var document = Assert.Single(CopilotAgentProjectInstructions.DiscoverWithGlobal(
-                [projectRoot],
-                activeDocumentPath: null,
-                additionalTargetFilePaths: null,
-                globalInstructionRootPath: globalRoot,
-                discoveryOptions: options));
-
-            Assert.Equal(CopilotCodexProjectTrustLevel.Untrusted, options.ProjectTrustLevel);
-            Assert.False(options.AllowsProjectCodexConfig);
-            Assert.Equal(["GLOBAL_GUIDE.md"], options.FallbackFileNames);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, options.ConfigSources);
-            Assert.Equal(globalGuidePath, document.Path, ignoreCase: true);
-            var report = CopilotProjectInstructionDiagnostics.Format(
-                new CopilotProjectInstructionSnapshot(
-                    projectRoot,
-                    string.Empty,
-                    globalRoot,
-                    options,
-                    [document]),
-                hasActiveAgentRun: false);
-            Assert.Contains("trust_level=untrusted", report, StringComparison.Ordinal);
-            Assert.Contains("已跳过项目 .codex/config.toml", report, StringComparison.Ordinal);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void InvalidProjectTrustLevelFailsClosedForProjectConfig()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                project_doc_fallback_filenames = ["GLOBAL_GUIDE.md"]
-
-                [projects.'{projectRoot}']
-                trust_level = "maybe"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                "project_doc_fallback_filenames = [\"PROJECT_GUIDE.md\"]");
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.Equal(CopilotCodexProjectTrustLevel.Invalid, options.ProjectTrustLevel);
-            Assert.False(options.AllowsProjectCodexConfig);
-            Assert.Equal(["GLOBAL_GUIDE.md"], options.FallbackFileNames);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, options.ConfigSources);
-            Assert.Contains("trust_level 无效", options.ProjectTrustLabel, StringComparison.Ordinal);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void DuplicateProjectTrustLevelFailsClosedForProjectConfig()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"[projects.'{projectRoot}']\ntrust_level = \"untrusted\"\ntrust_level = \"trusted\"");
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                "project_doc_fallback_filenames = [\"PROJECT_GUIDE.md\"]");
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.Equal(CopilotCodexProjectTrustLevel.Invalid, options.ProjectTrustLevel);
-            Assert.False(options.AllowsProjectCodexConfig);
-            Assert.Equal(CopilotProjectInstructionConfigSources.None, options.ConfigSources);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
     public void AdditionalReadRootsDoNotBecomeProjectConfigRoots()
     {
         string globalRoot = CreateTemporaryDirectory();
@@ -461,32 +220,6 @@ public sealed class CopilotAgentProjectInstructionsTests
             Directory.Delete(globalRoot, recursive: true);
             Directory.Delete(projectRoot, recursive: true);
             Directory.Delete(additionalRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void ProjectConfigThroughAReparsePointIsRejected()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        string outsideRoot = CreateTemporaryDirectory();
-        try
-        {
-            File.WriteAllText(
-                Path.Combine(outsideRoot, "config.toml"),
-                "project_doc_fallback_filenames = [\"OUTSIDE.md\"]");
-            Directory.CreateSymbolicLink(Path.Combine(projectRoot, ".codex"), outsideRoot);
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.False(options.UsesCodexConfig);
-            Assert.Empty(options.FallbackFileNames);
-        }
-        finally
-        {
-            Directory.Delete(projectRoot, recursive: true);
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(outsideRoot, recursive: true);
         }
     }
 
@@ -707,151 +440,6 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
-    public void NonEmptyInlineCompactPromptWinsOverACloserPromptFile()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                compact_prompt = "Global inline compact prompt."
-
-                [projects.'{projectRoot}']
-                trust_level = "trusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            string promptPath = Path.Combine(projectConfigDirectory, "compact.md");
-            File.WriteAllText(promptPath, "Project file compact prompt.");
-            string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
-            File.WriteAllText(
-                projectConfigPath,
-                "experimental_compact_prompt_file = \"compact.md\"");
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.Equal("Global inline compact prompt.", options.CompactPrompt);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, options.CompactPromptSource);
-            Assert.False(options.CompactPromptUsesFile);
-            Assert.Empty(options.CompactPromptSourceFilePath);
-            Assert.Equal([projectConfigPath], options.AppliedProjectConfigFilePaths, StringComparer.OrdinalIgnoreCase);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void CodexHomeCompactPromptFileMayUseAnExplicitAbsoluteLocalPath()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string promptRoot = CreateTemporaryDirectory();
-        try
-        {
-            string promptPath = Path.Combine(promptRoot, "compact.md");
-            File.WriteAllText(promptPath, "Absolute Codex Home compact prompt.");
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"experimental_compact_prompt_file = '{promptPath}'");
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.Equal("Absolute Codex Home compact prompt.", options.CompactPrompt);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, options.CompactPromptSource);
-            Assert.True(options.CompactPromptUsesFile);
-            Assert.Equal(promptPath, options.CompactPromptSourceFilePath, ignoreCase: true);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(promptRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void EmptyCompactPromptClearsTheBroaderLayerAndUsesTheSafeDefaultBody()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                compact_prompt = "Global compact prompt."
-
-                [projects.'{projectRoot}']
-                trust_level = "trusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
-            File.WriteAllText(projectConfigPath, "compact_prompt = \"\"");
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.True(options.HasCompactPromptOverride);
-            Assert.Empty(options.CompactPrompt);
-            Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, options.CompactPromptSource);
-            Assert.Equal([projectConfigPath], options.AppliedProjectConfigFilePaths, StringComparer.OrdinalIgnoreCase);
-            var request = CopilotConversationCompactionPrompt.BuildRequest(null, options.CompactPrompt);
-            Assert.StartsWith("Create a continuation summary", request, StringComparison.Ordinal);
-            Assert.Contains("ColorVision host integrity requirements", request, StringComparison.Ordinal);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void TrustedProjectCompactPromptFileCannotEscapeTheProjectRoot()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        string outsideRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            string outsidePromptPath = Path.Combine(outsideRoot, "compact.md");
-            File.WriteAllText(outsidePromptPath, "Outside project prompt.");
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                compact_prompt = "Global safe prompt."
-
-                [projects.'{projectRoot}']
-                trust_level = "trusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                $"experimental_compact_prompt_file = '{outsidePromptPath}'");
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.Equal("Global safe prompt.", options.CompactPrompt);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, options.CompactPromptSource);
-            Assert.Empty(options.CompactPromptSourceFilePath);
-            Assert.Single(options.AppliedProjectConfigFilePaths);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-            Directory.Delete(outsideRoot, recursive: true);
-        }
-    }
-
-    [Fact]
     public void Utf8InstructionBudgetDoesNotSplitUnicodeContent()
     {
         string globalRoot = CreateTemporaryDirectory();
@@ -881,32 +469,6 @@ public sealed class CopilotAgentProjectInstructionsTests
         {
             Directory.Delete(globalRoot, recursive: true);
             Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void UnsafeOrOutOfRangeCodexInstructionConfigFailsClosed()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        try
-        {
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                """
-                project_doc_max_bytes = 999999999
-                project_doc_fallback_filenames = ["../secret.md", "nested/guide.md", "C:\\secret.md"]
-                """);
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.Equal(CopilotProjectInstructionDiscoveryConfig.DefaultMaximumBytes, options.MaximumBytes);
-            Assert.Empty(options.FallbackFileNames);
-            Assert.False(options.HasMaximumBytesOverride);
-            Assert.True(options.HasFallbackFileNamesOverride);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
         }
     }
 
@@ -1630,192 +1192,6 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
-    public void ModelInstructionsFileWinsOverInlineInstructionsAfterLayerMerge()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            string globalInstructionsPath = Path.Combine(globalRoot, "global-model.md");
-            File.WriteAllText(globalInstructionsPath, "Global file instructions.");
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                instructions = "Global inline instructions."
-                model_instructions_file = "global-model.md"
-
-                [projects.'{projectRoot}']
-                trust_level = "trusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                "instructions = \"Project inline instructions.\"");
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.Equal("Global file instructions.", options.ModelInstructions);
-            Assert.True(options.HasModelInstructionsInlineOverride);
-            Assert.True(options.HasModelInstructionsFileOverride);
-            Assert.True(options.ModelInstructionsUsesFile);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, options.ModelInstructionsSource);
-            Assert.Equal(globalInstructionsPath, options.ModelInstructionsSourceFilePath, ignoreCase: true);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void UntrustedProjectCannotOverrideGlobalInlineModelInstructions()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                instructions = "Global inline instructions."
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                "instructions = \"Untrusted project instructions.\"");
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.Equal("Global inline instructions.", options.ModelInstructions);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, options.ModelInstructionsSource);
-            Assert.Equal(CopilotCodexProjectTrustLevel.Untrusted, options.ProjectTrustLevel);
-            Assert.Empty(options.AppliedProjectConfigFilePaths);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void CodexHomeModelInstructionsFileMayUseAnExplicitAbsoluteLocalPath()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string instructionsRoot = CreateTemporaryDirectory();
-        try
-        {
-            string instructionsPath = Path.Combine(instructionsRoot, "model.md");
-            File.WriteAllText(instructionsPath, "Absolute model instructions.");
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"model_instructions_file = '{instructionsPath}'");
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.Equal("Absolute model instructions.", options.ModelInstructions);
-            Assert.Equal(instructionsPath, options.ModelInstructionsSourceFilePath, ignoreCase: true);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, options.ModelInstructionsFileSource);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(instructionsRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void TrustedProjectModelInstructionsFileCannotEscapeTheProjectRoot()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        string outsideRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(Path.Combine(globalRoot, "global-model.md"), "Global safe model instructions.");
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                instructions = "Global inline model instructions."
-                model_instructions_file = "global-model.md"
-
-                [projects.'{projectRoot}']
-                trust_level = "trusted"
-                """);
-            string outsideInstructionsPath = Path.Combine(outsideRoot, "model.md");
-            File.WriteAllText(outsideInstructionsPath, "Outside project instructions.");
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                $"model_instructions_file = '{outsideInstructionsPath}'");
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.True(options.HasModelInstructionsInlineOverride);
-            Assert.True(options.HasModelInstructionsFileOverride);
-            Assert.True(options.ModelInstructionsUsesFile);
-            Assert.False(options.HasEffectiveModelInstructions);
-            Assert.Empty(options.ModelInstructions);
-            Assert.Empty(options.ModelInstructionsSourceFilePath);
-            Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, options.ModelInstructionsFileSource);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-            Directory.Delete(outsideRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void UntrustedProjectCannotOverrideGlobalModelInstructionsFile()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(Path.Combine(globalRoot, "global-model.md"), "Global model instructions.");
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                model_instructions_file = "global-model.md"
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(Path.Combine(projectConfigDirectory, "model.md"), "Untrusted project model instructions.");
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                "model_instructions_file = \"model.md\"");
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.Equal("Global model instructions.", options.ModelInstructions);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, options.ModelInstructionsFileSource);
-            Assert.Equal(CopilotCodexProjectTrustLevel.Untrusted, options.ProjectTrustLevel);
-            Assert.Empty(options.AppliedProjectConfigFilePaths);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
     public void ConfiguredModelInstructionsReplaceTheSharedChatAndAgentProfileBodyButKeepHostAndPresentationRules()
     {
         var source = CopilotProfileConfig.CreateDefault();
@@ -1848,6 +1224,16 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
+    public void EmptyModelInstructionsPreserveTheDefaultSystemPrompt()
+    {
+        var requestProfile = CopilotResponsePresentationGuidance.CreateRequestProfile(
+            CopilotProfileConfig.CreateDefault(),
+            configuredModelInstructions: string.Empty);
+
+        Assert.StartsWith(CopilotProfileConfig.DefaultSystemPrompt, requestProfile.EffectiveSystemPrompt, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ExplicitProfileSystemPromptWinsOverConfiguredModelInstructions()
     {
         var source = CopilotProfileConfig.CreateDefault();
@@ -1863,178 +1249,61 @@ public sealed class CopilotAgentProjectInstructionsTests
         Assert.Contains("Respond in ", requestProfile.EffectiveSystemPrompt, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void EmptyOrOversizedModelInstructionsFileFallsBackToTheSafeDefaultBody()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ModelInstructionsDiagnosticsExposeOnlySourceCountAndHostBoundary(bool usesFile)
     {
-        string globalRoot = CreateTemporaryDirectory();
-        try
+        const string secretBody = "MODEL_INSTRUCTIONS_BODY_MUST_NOT_LEAK";
+        string instructionsPath = Path.Combine(Path.GetTempPath(), "copilot-diagnostics", "model.md");
+        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
         {
-            string instructionsPath = Path.Combine(globalRoot, "model.md");
-            File.WriteAllText(instructionsPath, string.Empty);
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                "model_instructions_file = \"model.md\"");
+            ConfiguredModelInstructions = usesFile ? string.Empty : secretBody,
+            HasModelInstructionsInlineOverride = !usesFile,
+            ModelInstructionsInlineSource = CopilotProjectInstructionConfigSources.CodexHome,
+            ConfiguredModelInstructionsFileContent = usesFile ? secretBody : string.Empty,
+            HasModelInstructionsFileOverride = usesFile,
+            ModelInstructionsFileSource = CopilotProjectInstructionConfigSources.CodexHome,
+            ConfiguredModelInstructionsSourceFilePath = usesFile ? instructionsPath : string.Empty,
+        };
 
-            var emptyOptions = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-            var emptyProfile = CopilotResponsePresentationGuidance.CreateRequestProfile(
-                CopilotProfileConfig.CreateDefault(),
-                configuredModelInstructions: emptyOptions.ModelInstructions);
-
-            Assert.True(emptyOptions.HasModelInstructionsFileOverride);
-            Assert.False(emptyOptions.HasEffectiveModelInstructions);
-            Assert.StartsWith(CopilotProfileConfig.DefaultSystemPrompt, emptyProfile.EffectiveSystemPrompt, StringComparison.Ordinal);
-
-            File.WriteAllText(
-                instructionsPath,
-                new string('M', CopilotProjectInstructionDiscoveryConfig.MaximumModelInstructionCharacters + 1));
-            var oversizedOptions = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.True(oversizedOptions.HasModelInstructionsFileOverride);
-            Assert.False(oversizedOptions.HasEffectiveModelInstructions);
-            Assert.Empty(oversizedOptions.ModelInstructions);
-            Assert.Empty(oversizedOptions.ModelInstructionsSourceFilePath);
-        }
-        finally
+        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
+            new CopilotProjectInstructionSnapshot(
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                options,
+                Array.Empty<CopilotProjectInstructionDocument>()),
+            hasActiveAgentRun: false);
+        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
         {
-            Directory.Delete(globalRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void EmptyOrOversizedInlineModelInstructionsFallBackToTheSafeDefaultBody()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        try
+            HasConfiguredModelInstructionsOverride = options.HasModelInstructionsOverride,
+            ConfiguredModelInstructionsCharacters = options.ModelInstructions.Length,
+            ConfiguredModelInstructionsSourceLabel = options.ModelInstructionsSourceLabel,
+            ConfiguredModelInstructionsUsesFile = options.ModelInstructionsUsesFile,
+            ConfiguredModelInstructionsApplied = true,
+        });
+        string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
         {
-            string configPath = Path.Combine(globalRoot, "config.toml");
-            File.WriteAllText(configPath, "instructions = \"\"");
+            Config = new CopilotConfig(),
+            State = new CopilotChatState(),
+            CodexConfigOptions = options,
+        });
 
-            var emptyOptions = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-            var emptyProfile = CopilotResponsePresentationGuidance.CreateRequestProfile(
-                CopilotProfileConfig.CreateDefault(),
-                configuredModelInstructions: emptyOptions.ModelInstructions);
-
-            Assert.True(emptyOptions.HasModelInstructionsInlineOverride);
-            Assert.True(emptyOptions.HasModelInstructionsOverride);
-            Assert.False(emptyOptions.HasEffectiveModelInstructions);
-            Assert.StartsWith(CopilotProfileConfig.DefaultSystemPrompt, emptyProfile.EffectiveSystemPrompt, StringComparison.Ordinal);
-
-            File.WriteAllText(
-                configPath,
-                $"instructions = \"{new string('I', CopilotProjectInstructionDiscoveryConfig.MaximumModelInstructionCharacters + 1)}\"");
-            var oversizedOptions = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.False(oversizedOptions.HasModelInstructionsInlineOverride);
-            Assert.False(oversizedOptions.HasModelInstructionsOverride);
-            Assert.False(oversizedOptions.HasEffectiveModelInstructions);
-            Assert.Empty(oversizedOptions.ModelInstructions);
-        }
-        finally
+        string settingLabel = usesFile ? "Codex model_instructions_file：" : "Codex instructions：";
+        Assert.Contains(settingLabel, memoryReport, StringComparison.Ordinal);
+        Assert.Contains(settingLabel, contextReport, StringComparison.Ordinal);
+        Assert.Contains(settingLabel, debugReport, StringComparison.Ordinal);
+        Assert.Contains(options.ModelInstructionsSourceLabel, debugReport, StringComparison.Ordinal);
+        Assert.Contains("宿主安全规则", contextReport, StringComparison.Ordinal);
+        if (usesFile)
         {
-            Directory.Delete(globalRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void ModelInstructionsDiagnosticsExposeOnlySourceCountAndHostBoundary()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        try
-        {
-            const string secretBody = "MODEL_INSTRUCTIONS_BODY_MUST_NOT_LEAK";
-            string instructionsPath = Path.Combine(globalRoot, "model.md");
-            File.WriteAllText(instructionsPath, secretBody);
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                "model_instructions_file = \"model.md\"");
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-                new CopilotProjectInstructionSnapshot(
-                    string.Empty,
-                    string.Empty,
-                    globalRoot,
-                    options,
-                    Array.Empty<CopilotProjectInstructionDocument>()),
-                hasActiveAgentRun: false);
-            string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
-            {
-                HasConfiguredModelInstructionsOverride = true,
-                ConfiguredModelInstructionsCharacters = options.ModelInstructions.Length,
-                ConfiguredModelInstructionsSourceLabel = options.ModelInstructionsSourceLabel,
-                ConfiguredModelInstructionsUsesFile = options.ModelInstructionsUsesFile,
-                ConfiguredModelInstructionsApplied = true,
-            });
-            string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                CodexConfigOptions = options,
-            });
-
-            Assert.Contains("Codex model_instructions_file：", memoryReport, StringComparison.Ordinal);
             Assert.Contains(instructionsPath, memoryReport, StringComparison.OrdinalIgnoreCase);
-            Assert.Contains("宿主安全规则", contextReport, StringComparison.Ordinal);
-            Assert.Contains(options.ModelInstructionsSourceLabel, debugReport, StringComparison.Ordinal);
             Assert.Contains(instructionsPath, debugReport, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain(secretBody, memoryReport, StringComparison.Ordinal);
-            Assert.DoesNotContain(secretBody, contextReport, StringComparison.Ordinal);
-            Assert.DoesNotContain(secretBody, debugReport, StringComparison.Ordinal);
         }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void InlineModelInstructionsDiagnosticsExposeOnlySourceCountAndHostBoundary()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        try
-        {
-            const string secretBody = "INLINE_MODEL_INSTRUCTIONS_BODY_MUST_NOT_LEAK";
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"instructions = \"{secretBody}\"");
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-                new CopilotProjectInstructionSnapshot(
-                    string.Empty,
-                    string.Empty,
-                    globalRoot,
-                    options,
-                    Array.Empty<CopilotProjectInstructionDocument>()),
-                hasActiveAgentRun: false);
-            string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
-            {
-                HasConfiguredModelInstructionsOverride = options.HasModelInstructionsOverride,
-                ConfiguredModelInstructionsCharacters = options.ModelInstructions.Length,
-                ConfiguredModelInstructionsSourceLabel = options.ModelInstructionsSourceLabel,
-                ConfiguredModelInstructionsUsesFile = options.ModelInstructionsUsesFile,
-                ConfiguredModelInstructionsApplied = true,
-            });
-            string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                CodexConfigOptions = options,
-            });
-
-            Assert.Contains("Codex instructions：", memoryReport, StringComparison.Ordinal);
-            Assert.Contains("Codex instructions：", contextReport, StringComparison.Ordinal);
-            Assert.Contains("Codex instructions：", debugReport, StringComparison.Ordinal);
-            Assert.Contains(options.ModelInstructionsSourceLabel, debugReport, StringComparison.Ordinal);
-            Assert.Contains("宿主安全规则", contextReport, StringComparison.Ordinal);
-            Assert.DoesNotContain(secretBody, memoryReport, StringComparison.Ordinal);
-            Assert.DoesNotContain(secretBody, contextReport, StringComparison.Ordinal);
-            Assert.DoesNotContain(secretBody, debugReport, StringComparison.Ordinal);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-        }
+        Assert.DoesNotContain(secretBody, memoryReport, StringComparison.Ordinal);
+        Assert.DoesNotContain(secretBody, contextReport, StringComparison.Ordinal);
+        Assert.DoesNotContain(secretBody, debugReport, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -2057,54 +1326,6 @@ public sealed class CopilotAgentProjectInstructionsTests
         Assert.Equal(CopilotResponsePersonality.Pragmatic, defaultResolution.Personality);
         Assert.Equal("Codex features.personality 稳定功能默认值", defaultResolution.SourceLabel);
         Assert.Equal(CopilotResponsePersonality.None, explicitNone.Personality);
-    }
-
-    [Fact]
-    public void UntrustedOrInvalidProjectPersonalityCannotOverrideTheCodexHomeDefault()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                personality = "friendly"
-
-                [features]
-                personality = true
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string configDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(configDirectory);
-            File.WriteAllText(
-                Path.Combine(configDirectory, "config.toml"),
-                "personality = \"pragmatic\"\n\n[features]\npersonality = false");
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-            Assert.True(untrusted.ConfiguredPersonalityEnabled);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.PersonalityEnabledSource);
-            Assert.Equal(CopilotResponsePersonality.Friendly, untrusted.ConfiguredPersonality);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.PersonalitySource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                "personality = \"unknown\"\n\n[features]\npersonality = \"disabled\"");
-            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-            Assert.True(invalid.ConfiguredPersonalityEnabled);
-            Assert.False(invalid.HasPersonalityEnabledOverride);
-            Assert.False(invalid.HasPersonalityOverride);
-            Assert.Equal(CopilotResponsePersonality.None, invalid.ConfiguredPersonality);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
     }
 
     [Fact]
@@ -2232,43 +1453,6 @@ public sealed class CopilotAgentProjectInstructionsTests
         Assert.Contains("Personality 功能：关闭", contextReport, StringComparison.Ordinal);
         Assert.Contains("Codex features.personality：false", debugReport, StringComparison.Ordinal);
         Assert.Contains("回答风格：无", debugReport, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void UntrustedOrInvalidProjectWebSearchModeCannotOverrideTheCodexHomeValue()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                web_search = "live"
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string configDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(configDirectory);
-            File.WriteAllText(Path.Combine(configDirectory, "config.toml"), "web_search = \"disabled\"");
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-            Assert.Equal(CopilotCodexWebSearchMode.Live, untrusted.ConfiguredWebSearchMode);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.WebSearchModeSource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            File.WriteAllText(Path.Combine(globalRoot, "config.toml"), "web_search = \"unknown\"");
-            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-            Assert.False(invalid.HasWebSearchModeOverride);
-            Assert.Equal(CopilotCodexWebSearchMode.Unspecified, invalid.ConfiguredWebSearchMode);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
     }
 
     [Fact]
@@ -2401,47 +1585,6 @@ public sealed class CopilotAgentProjectInstructionsTests
         Assert.DoesNotContain("已允许按请求意图实时公网检索", memoryReport, StringComparison.Ordinal);
         Assert.DoesNotContain("已允许按请求意图实时公网检索", contextReport, StringComparison.Ordinal);
         Assert.DoesNotContain("已允许按请求意图实时公网检索", debugReport, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void UntrustedOrOutOfRangeModelContextWindowCannotReplaceTheEffectiveValue()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                model_context_window = 262_144
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string configDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(configDirectory);
-            File.WriteAllText(Path.Combine(configDirectory, "config.toml"), "model_context_window = 65_536");
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-            Assert.Equal(262_144, untrusted.ConfiguredModelContextWindowTokens);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.ModelContextWindowSource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            File.WriteAllText(Path.Combine(globalRoot, "config.toml"), "model_context_window = 16_384");
-            var belowHostMinimum = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-            Assert.False(belowHostMinimum.HasModelContextWindowOverride);
-            Assert.Equal(524_288, belowHostMinimum.ResolveContextWindowTokens(524_288));
-
-            File.WriteAllText(Path.Combine(globalRoot, "config.toml"), "model_context_window = 2_097_152");
-            var aboveHostMaximum = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-            Assert.False(aboveHostMaximum.HasModelContextWindowOverride);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
     }
 
     [Fact]

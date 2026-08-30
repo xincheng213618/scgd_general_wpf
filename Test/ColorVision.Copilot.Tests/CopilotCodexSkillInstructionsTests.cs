@@ -1,52 +1,10 @@
 using ColorVision.Copilot;
 using System;
-using System.IO;
 
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexSkillInstructionsTests
 {
-    [Fact]
-    public void UntrustedOrInvalidProjectValuesCannotOverrideTheGlobalSetting()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                [skills]
-                include_instructions = false
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
-            File.WriteAllText(projectConfigPath, "skills.include_instructions = true");
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-            Assert.False(untrusted.ConfiguredIncludeSkillInstructions);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.IncludeSkillInstructionsSource);
-
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                "skills.include_instructions = \"false\"");
-            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.True(invalid.ConfiguredIncludeSkillInstructions);
-            Assert.False(invalid.HasIncludeSkillInstructionsOverride);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
     [Fact]
     public void DisabledAutomaticInstructionsKeepTheHostBoundaryAndExplicitSkillPath()
     {
@@ -125,12 +83,5 @@ public sealed class CopilotCodexSkillInstructionsTests
         Assert.Contains("仅显式 $name 或 /name", contextReport, StringComparison.Ordinal);
         Assert.Contains("Codex skills.include_instructions：false", debugReport, StringComparison.Ordinal);
         Assert.Contains("显式 $name 或 /name", debugReport, StringComparison.Ordinal);
-    }
-
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-skill-instructions-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
     }
 }

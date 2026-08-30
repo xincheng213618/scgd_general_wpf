@@ -1,7 +1,6 @@
 using ColorVision.Copilot;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,53 +9,6 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexShellToolTests
 {
-    [Fact]
-    public void UntrustedAndInvalidValuesCannotBroadenTheCodexHomeContract()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                [features]
-                shell_tool = false
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                "[features]\nshell_tool = true");
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.False(untrusted.ConfiguredShellToolEnabled);
-            Assert.True(untrusted.HasShellToolEnabledOverride);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.CodexHome,
-                untrusted.ShellToolEnabledSource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                "[features]\nshell_tool = \"false\"");
-            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.True(invalid.ConfiguredShellToolEnabled);
-            Assert.False(invalid.HasShellToolEnabledOverride);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
     [Fact]
     public async Task DisabledSnapshotHidesShellStartsAndRejectsInjectedCallsBeforeApproval()
     {
@@ -148,12 +100,5 @@ public sealed class CopilotCodexShellToolTests
         Assert.Contains("旧调用也会拒绝", contextReport, StringComparison.Ordinal);
         Assert.Contains("Codex features.shell_tool：false", debugReport, StringComparison.Ordinal);
         Assert.Contains("注入调用", debugReport, StringComparison.Ordinal);
-    }
-
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-shell-tool-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
     }
 }

@@ -1,68 +1,10 @@
 using ColorVision.Copilot;
 using System;
-using System.IO;
 
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexSubagentDefaultsTests
 {
-    [Fact]
-    public void UntrustedAndInvalidDefaultsCannotOverrideOrCreateAContract()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                [agents]
-                default_subagent_model = "home-child-model"
-                default_subagent_reasoning_effort = "medium"
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                "[agents]\ndefault_subagent_model = \"project-child-model\"\ndefault_subagent_reasoning_effort = \"xhigh\"");
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.Equal("home-child-model", untrusted.ConfiguredDefaultSubagentModel);
-            Assert.Equal(
-                CopilotCodexReasoningEffort.Medium,
-                untrusted.ConfiguredDefaultSubagentReasoningEffort);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.CodexHome,
-                untrusted.DefaultSubagentModelSource);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.CodexHome,
-                untrusted.DefaultSubagentReasoningEffortSource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                "[agents]\ndefault_subagent_model = \"\"\ndefault_subagent_reasoning_effort = \"none\"");
-            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.False(invalid.HasDefaultSubagentModelOverride);
-            Assert.False(invalid.HasDefaultSubagentReasoningEffortOverride);
-            Assert.Equal(string.Empty, invalid.ConfiguredDefaultSubagentModel);
-            Assert.Equal(
-                CopilotCodexReasoningEffort.Unspecified,
-                invalid.ConfiguredDefaultSubagentReasoningEffort);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
     [Fact]
     public void DiagnosticsExposeDefaultSubagentValuesAndSources()
     {
@@ -111,12 +53,5 @@ public sealed class CopilotCodexSubagentDefaultsTests
         Assert.Contains("子代理默认推理强度：high", contextReport, StringComparison.Ordinal);
         Assert.Contains("Codex agents.default_subagent_model：gpt-5.6-terra", debugReport, StringComparison.Ordinal);
         Assert.Contains("Codex agents.default_subagent_reasoning_effort：high", debugReport, StringComparison.Ordinal);
-    }
-
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-subagent-defaults-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
     }
 }

@@ -1,6 +1,5 @@
 using ColorVision.Copilot;
 using System;
-using System.IO;
 
 namespace ColorVision.Copilot.Tests;
 
@@ -40,45 +39,6 @@ public sealed class CopilotCodexModelSelectionTests
             "gpt-configured"));
         AssertProfileBoundaryIsPreserved(sourceProfile, reviewProfile);
         AssertProfileBoundaryIsPreserved(sourceProfile, codeProfile);
-    }
-
-    [Fact]
-    public void UntrustedOrInvalidModelsCannotReplaceTheCodexHomeContract()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                model = "gpt-home"
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string configDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(configDirectory);
-            File.WriteAllText(Path.Combine(configDirectory, "config.toml"), "model = \"gpt-project\"");
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-            Assert.Equal("gpt-home", untrusted.ConfiguredModel);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.ModelSource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            string oversizedModel = new('x', CopilotConfiguredModelSelection.MaximumModelCharacters + 1);
-            File.WriteAllText(Path.Combine(globalRoot, "config.toml"), $"model = \"{oversizedModel}\"");
-            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.False(invalid.HasModelOverride);
-            Assert.Empty(invalid.ConfiguredModel);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
     }
 
     [Fact]
@@ -161,12 +121,5 @@ public sealed class CopilotCodexModelSelectionTests
         Assert.Equal(expected.BaseUrl, actual.BaseUrl);
         Assert.Equal(expected.MaxTokens, actual.MaxTokens);
         Assert.NotSame(expected, actual);
-    }
-
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-model-selection-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
     }
 }

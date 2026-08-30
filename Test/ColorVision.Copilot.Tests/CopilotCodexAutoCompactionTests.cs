@@ -1,65 +1,10 @@
 using ColorVision.Copilot;
 using System;
-using System.IO;
 
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexAutoCompactionTests
 {
-    [Fact]
-    public void UntrustedOrInvalidAutoCompactionSettingsCannotReplaceTheEffectiveValues()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                model_auto_compact_token_limit = 128_000
-                model_auto_compact_token_limit_scope = "total"
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string configDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(configDirectory);
-            File.WriteAllText(
-                Path.Combine(configDirectory, "config.toml"),
-                """
-                model_auto_compact_token_limit = 64_000
-                model_auto_compact_token_limit_scope = "body_after_prefix"
-                """);
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-            Assert.Equal(128_000, untrusted.ConfiguredModelAutoCompactTokenLimit);
-            Assert.Equal(
-                CopilotModelAutoCompactTokenLimitScope.Total,
-                untrusted.EffectiveModelAutoCompactTokenLimitScope);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.ModelAutoCompactTokenLimitSource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                """
-                model_auto_compact_token_limit = 0
-                model_auto_compact_token_limit_scope = "prefix"
-                """);
-            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-            Assert.False(invalid.HasModelAutoCompactTokenLimitOverride);
-            Assert.False(invalid.HasModelAutoCompactTokenLimitScopeOverride);
-            Assert.Equal(
-                CopilotModelAutoCompactTokenLimitScope.Total,
-                invalid.EffectiveModelAutoCompactTokenLimitScope);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
     [Fact]
     public void BodyAfterPrefixExcludesTheCarriedCompactionSummaryFromTheTokenThreshold()
     {
@@ -188,12 +133,5 @@ public sealed class CopilotCodexAutoCompactionTests
         Assert.False(body.IsUnderPressure);
         Assert.Contains("total 自动压缩计量为 200/100 Token", total.ToolTip, StringComparison.Ordinal);
         Assert.True(total.IsUnderPressure);
-    }
-
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-auto-compact-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
     }
 }

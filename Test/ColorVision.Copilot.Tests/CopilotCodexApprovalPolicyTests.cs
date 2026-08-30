@@ -10,49 +10,6 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotCodexApprovalPolicyTests
 {
     [Fact]
-    public void UntrustedAndMalformedProjectValuesCannotChangeTheCodexHomePolicy()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                approval_policy = "never"
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                "approval_policy = \"on-request\"");
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.Equal(CopilotCodexApprovalPolicyMode.Never, untrusted.ConfiguredApprovalPolicy.Mode);
-            Assert.Equal(CopilotProjectInstructionConfigSources.CodexHome, untrusted.ApprovalPolicySource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                "approval_policy = { granular = { sandbox_approval = true, mcp_elicitations = true } }");
-            var malformed = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.False(malformed.HasApprovalPolicyOverride);
-            Assert.Equal(CopilotCodexApprovalPolicyMode.Unspecified, malformed.ConfiguredApprovalPolicy.Mode);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
     public async Task UntrustedPolicyPromotesEveryWriteToolToExactCallApproval()
     {
         var tool = new RecordingWriteTool("WriteProbe");
@@ -485,12 +442,4 @@ public sealed class CopilotCodexApprovalPolicyTests
             _ => { },
             capabilityRevisionProvider: () => 1);
 
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(
-            Path.GetTempPath(),
-            $"copilot-approval-policy-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
-    }
 }

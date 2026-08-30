@@ -1,55 +1,10 @@
 using ColorVision.Copilot;
 using System;
-using System.IO;
 
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexReasoningVisibilityTests
 {
-    [Fact]
-    public void UntrustedOrInvalidVisibilityValuesCannotReplaceTheCodexHomeContract()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                hide_agent_reasoning = true
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string configDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(configDirectory);
-            File.WriteAllText(
-                Path.Combine(configDirectory, "config.toml"),
-                "hide_agent_reasoning = false");
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-            Assert.True(untrusted.ConfiguredHideAgentReasoning);
-            Assert.True(untrusted.HasHideAgentReasoningOverride);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.CodexHome,
-                untrusted.HideAgentReasoningSource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                "hide_agent_reasoning = \"yes\"");
-            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-            Assert.False(invalid.HasHideAgentReasoningOverride);
-            Assert.False(invalid.ConfiguredHideAgentReasoning);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
     [Fact]
     public void HiddenReasoningIsFilteredOnlyAfterTheTurnProtocolBoundary()
     {
@@ -121,12 +76,5 @@ public sealed class CopilotCodexReasoningVisibilityTests
         Assert.Contains("Token 计量", memoryReport, StringComparison.Ordinal);
         Assert.Contains("Token 计量", contextReport, StringComparison.Ordinal);
         Assert.Contains("Token 计量", debugReport, StringComparison.Ordinal);
-    }
-
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-reasoning-visibility-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
     }
 }

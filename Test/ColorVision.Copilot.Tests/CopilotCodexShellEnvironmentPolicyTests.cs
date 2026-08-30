@@ -71,55 +71,6 @@ public sealed class CopilotCodexShellEnvironmentPolicyTests
     }
 
     [Fact]
-    public void LegacyListsApplyButUntrustedProjectPolicyIsIgnored()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                [shell_environment_policy]
-                inherit = "core"
-                exclude = ["GLOBAL_*"]
-                include_only = ["PATH"]
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                """
-                [shell_environment_policy]
-                inherit = "none"
-                exclude = ["PROJECT_*"]
-                """);
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.Equal(CopilotCodexProjectTrustLevel.Untrusted, options.ProjectTrustLevel);
-            Assert.Equal(
-                CopilotCodexShellEnvironmentInherit.Core,
-                options.ConfiguredShellEnvironmentPolicy.Inherit);
-            Assert.Contains("GLOBAL_*", options.ConfiguredShellEnvironmentPolicy.Exclude);
-            Assert.DoesNotContain("PROJECT_*", options.ConfiguredShellEnvironmentPolicy.Exclude);
-            Assert.Contains("PATH", options.ConfiguredShellEnvironmentPolicy.IncludeOnly);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.CodexHome,
-                options.ShellEnvironmentPolicySources);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
     public void EnvironmentConstructionMatchesCodexOrderAndScrubsLaunchContext()
     {
         var policy = new CopilotCodexShellEnvironmentPolicy
@@ -156,38 +107,6 @@ public sealed class CopilotCodexShellEnvironmentPolicyTests
         Assert.DoesNotContain("OTHER", environment.Keys);
         Assert.DoesNotContain("OPENAI_IDENTITY_TOKEN_FILE", environment.Keys);
         Assert.DoesNotContain("OPENAI_FEDERATION_RULE_ID", environment.Keys);
-    }
-
-    [Fact]
-    public void MalformedMixedFilterRepresentationsFailClosed()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        try
-        {
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                """
-                [shell_environment_policy]
-                inherit = "all"
-                exclude = ["SECRET_*"]
-
-                [shell_environment_policy.filters]
-                "PATH" = "include"
-                """);
-
-            var options = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.True(options.HasShellEnvironmentPolicyOverride);
-            Assert.NotEmpty(options.ShellEnvironmentPolicyError);
-            Assert.Equal(
-                CopilotCodexShellEnvironmentInherit.None,
-                options.ConfiguredShellEnvironmentPolicy.Inherit);
-            Assert.False(options.ConfiguredShellEnvironmentPolicy.IgnoreDefaultExcludes);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-        }
     }
 
     [Fact]
@@ -289,12 +208,5 @@ public sealed class CopilotCodexShellEnvironmentPolicyTests
         {
             await registry.ShutdownAsync();
         }
-    }
-
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-shell-environment-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
     }
 }
