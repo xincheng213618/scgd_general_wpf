@@ -310,6 +310,14 @@
     {"query":"SynchronizeInstalledServiceConfigs更新文件数证明配置键完整吗","expected_any":["engine.mysql-recovery"],"include_planned":false},
     {"query":"BuildMigrationDictionaryDependencyStatements失败会阻止重置吗","expected_any":["engine.mysql-recovery"],"include_planned":false},
     {"query":"MySqlRestoreProgressWindow关闭会取消SQL恢复吗","expected_any":["engine.mysql-recovery"],"include_planned":false},
-    {"query":"SensorTemplateMigrationSqlBuilder会直接沿用旧字典ID吗","expected_any":["engine.mysql-recovery"],"include_planned":false}
+    {"query":"SensorTemplateMigrationSqlBuilder会直接沿用旧字典ID吗","expected_any":["engine.mysql-recovery"],"include_planned":false},
+    {"query":"ImageAlgorithmPreviewSession 的预览应用与取消分别由谁处理？","expected_any":["algorithms.platform"],"include_planned":false},
+    {"query":"TrySaveAndPublish 返回后怎样区分文件保存和内存发布？","expected_any":["ui.configuration"],"include_planned":false},
+    {"query":"WizardManager 如何发现首次启动的配置步骤？","expected_any":["ui.wizards"],"include_planned":false},
+    {"query":"replace_role_permissions 会触发哪些账号权限变更边界？","expected_any":["delivery.backend-accounts"],"include_planned":false},
+    {"query":"persist_config_values 保存保留配置时具备什么原子性？","expected_any":["delivery.backend-retention"],"include_planned":false},
+    {"query":"只想了解 compact 的分页和缓存写入，公共站点应读哪份契约？","expected_any":["delivery.backend-public-data"],"include_planned":false},
+    {"query":"使用 ThemeManager.Current 切换主题时，选择与资源应用是什么关系？","expected_any":["ui.themes"],"include_planned":false},
+    {"query":"ColorVision.ImageEditor 接入自定义打开器后，像素载入和外部标注完成怎么区分？","expected_any":["ui.image-editor"],"include_planned":false}
   ]
 }

@@ -353,6 +353,141 @@ test('explicitly described owners outrank equally specific incidental source ref
   assert.equal(searchCatalog(catalog, 'StateStore.Save')[0].knowledge_id, 'ui.consumer')
 })
 
+test('bare code symbols outrank generic question text regardless of query casing', () => {
+  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const context = '保存配置失败后如何恢复原始内容并重新加载旧字典ID'
+  for (const symbol of ['StateStore', 'restoreDatabaseAsync', 'HImage', 'build_dependency_sql', 'MYSQL_PWD']) {
+    const catalog = { entries: [
+      { ...base, knowledge_id: 'ui.target', aliases: [symbol] },
+      ...Array.from({ length: 6 }, (_, index) => ({ ...base, knowledge_id: `ui.noise-${index}`, summary: context })),
+    ] }
+    for (const spelling of [symbol, symbol.toLowerCase(), symbol.toUpperCase()]) {
+      const ranked = searchCatalog(catalog, `${spelling}${context}`)
+      assert.equal(ranked[0].knowledge_id, 'ui.target', spelling)
+      assert.equal(ranked[0].match_kind, 'code-symbol')
+      assert.ok(ranked[0].score < ranked[1].score, 'code evidence must beat more generic lexical matches')
+    }
+  }
+})
+
+test('bare symbol boundaries and explicit names outrank incidental source-only evidence', () => {
+  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const context = '保存配置失败后如何恢复原始内容并重新加载'
+  const catalog = { entries: [
+    { ...base, knowledge_id: 'ui.longer', aliases: ['StateStoreBackup', 'OtherStateStore', 'StateStore_legacy'], summary: context },
+    { ...base, knowledge_id: 'ui.path', code_paths: ['src/StateStore.cs'], summary: context },
+    { ...base, knowledge_id: 'ui.target', aliases: ['StateStore'] },
+  ] }
+  assert.deepEqual(searchCatalog(catalog, `statestore${context}`).map((entry) => entry.knowledge_id), ['ui.target', 'ui.path', 'ui.longer'])
+  catalog.entries.pop()
+  const sourceOnly = searchCatalog(catalog, `statestore${context}`)
+  assert.equal(sourceOnly[0].knowledge_id, 'ui.path')
+  assert.equal(sourceOnly[0].match_kind, 'code-symbol')
+  assert.equal(sourceOnly[1].match_kind, 'text', 'a longer symbol is not complete code identity')
+})
+
+test('ordinary English words and short acronyms do not gain bare-symbol priority', () => {
+  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const context = '保存配置失败后如何恢复原始内容并重新加载'
+  for (const word of ['Save', 'backup', 'ID', 'SQL', 'XML', 'README']) {
+    const catalog = { entries: [
+      { ...base, knowledge_id: 'ui.word', aliases: [word] },
+      { ...base, knowledge_id: 'ui.context', summary: context },
+    ] }
+    const ranked = searchCatalog(catalog, `${word}${context}`)
+    assert.equal(ranked[0].knowledge_id, 'ui.context', word)
+    assert.ok(ranked.every((entry) => entry.match_kind === 'text'))
+  }
+})
+
+test('broad code-shaped technology names do not displace more specific known query words', () => {
+  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const catalog = { entries: [
+    { ...base, knowledge_id: 'ui.target', aliases: ['cvsln'], summary: '打开源目录生成缓存' },
+    ...Array.from({ length: 6 }, (_, index) => ({ ...base, knowledge_id: `ui.sqlite-${index}`, aliases: ['SQLite'] })),
+  ] }
+  const ranked = searchCatalog(catalog, '打开cvsln会在源目录生成SQLite缓存吗')
+  assert.equal(ranked[0].knowledge_id, 'ui.target')
+  assert.ok(ranked.every((entry) => entry.match_kind === 'text'), 'the broad token must remain lexical in this question')
+  assert.equal(searchCatalog(catalog, 'SQLite未登记的UnknownToken和123')[0].match_kind, 'code-symbol',
+    'unmatched words and numbers must not suppress known symbols')
+  const typed = { entries: [{ ...base, knowledge_id: 'ui.reader', aliases: ['XMLReader'] }] }
+  assert.equal(searchCatalog(typed, 'xmlreader如何使用')[0].match_kind, 'code-symbol', 'do not blacklist acronym-prefixed types')
+})
+
+test('rarer ordinary words only demote a code symbol when they locate a competing topic', () => {
+  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const context = '保存配置失败后如何恢复原始内容并重新加载'
+  for (const word of ['backup', 'Save', 'ID']) {
+    const catalog = { entries: [
+      { ...base, knowledge_id: 'ui.target', aliases: ['StateStore', word] },
+      { ...base, knowledge_id: 'ui.consumer', code_paths: ['src/StateStore.cs'] },
+      ...Array.from({ length: 6 }, (_, index) => ({ ...base, knowledge_id: `ui.noise-${index}`, summary: context })),
+    ] }
+    const ranked = searchCatalog(catalog, `StateStore ${word}${context}`)
+    assert.equal(ranked[0].knowledge_id, 'ui.target', word)
+    assert.equal(ranked[0].match_kind, 'code-symbol')
+  }
+})
+
+test('mixed-query disambiguation demotes broad symbols individually, not every code symbol', () => {
+  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const catalog = { entries: [
+    { ...base, knowledge_id: 'ui.type', aliases: ['StateStore'] },
+    { ...base, knowledge_id: 'ui.format', aliases: ['cvsln'], summary: '源目录生成缓存' },
+    ...Array.from({ length: 6 }, (_, index) => ({ ...base, knowledge_id: `ui.sqlite-${index}`, aliases: ['SQLite'] })),
+  ] }
+  const query = 'StateStore打开cvsln会在源目录生成SQLite缓存吗'
+  const ranked = searchCatalog(catalog, query)
+  assert.equal(ranked[0].knowledge_id, 'ui.type')
+  assert.equal(ranked[0].match_kind, 'code-symbol')
+  assert.ok(ranked.filter((entry) => entry.knowledge_id !== 'ui.type').every((entry) => entry.match_kind === 'text'))
+})
+
+test('bare symbols preserve whole-query and qualified-member precedence without splitting owners', () => {
+  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const query = 'StateStore.Save与BackupStore的保存范围'
+  const catalog = { entries: [
+    { ...base, knowledge_id: 'ui.bare', aliases: ['StateStore', 'BackupStore', 'Save'], summary: '保存范围' },
+    { ...base, knowledge_id: 'ui.owner', aliases: ['StateStore'] },
+    { ...base, knowledge_id: 'ui.member', aliases: ['StateStore.Save'] },
+  ] }
+  assert.equal(searchCatalog(catalog, query)[0].knowledge_id, 'ui.member')
+  catalog.entries.push({ ...base, knowledge_id: 'ui.phrase', aliases: [query] })
+  assert.equal(searchCatalog(catalog, query)[0].knowledge_id, 'ui.phrase')
+  const unknown = searchCatalog(catalog, 'Namespace.StateStore.Unknown')
+  assert.ok(unknown.length > 0)
+  assert.ok(unknown.every((entry) => entry.match_kind === 'owner-fallback'))
+  assert.deepEqual(searchCatalog(catalog, 'UnknownStore.Save'), [], 'do not split a qualified token into a bare member')
+})
+
+test('bare symbol evidence counts complete distinct symbols before named identities', () => {
+  const base = { title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const catalog = { entries: [
+    { ...base, knowledge_id: 'ui.one', aliases: ['StateStore', 'StateStore说明'] },
+    { ...base, knowledge_id: 'ui.both', summary: 'StateStore BackupStore' },
+  ] }
+  const once = searchCatalog(catalog, 'StateStore BackupStore含义')
+  assert.equal(once[0].knowledge_id, 'ui.both')
+  assert.deepEqual(searchCatalog(catalog, 'StateStore BackupStore BACKUPSTORE含义'), once)
+})
+
+test('bare symbol ranking retains status filters, result limits and deterministic ties', () => {
+  const base = { title: 'Fixture', status: 'current', aliases: ['StateStore'], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const catalog = { entries: [
+    { ...base, knowledge_id: 'ui.z' },
+    { ...base, knowledge_id: 'ui.a', aliases: ['statestore'] },
+    { ...base, knowledge_id: 'ui.future', status: 'planned' },
+    { ...base, knowledge_id: 'ui.history', status: 'historical' },
+    { ...base, knowledge_id: 'ui.hidden', searchable: false },
+    { ...base, knowledge_id: 'ui.noise', aliases: [], summary: '保存配置失败后如何恢复原始内容并重新加载' },
+  ] }
+  const query = 'STATESTORE保存配置失败后如何恢复原始内容并重新加载'
+  assert.deepEqual(searchCatalog(catalog, query).map((entry) => entry.knowledge_id), ['ui.a', 'ui.z', 'ui.noise'])
+  assert.deepEqual(searchCatalog(catalog, query, { all: true }).map((entry) => entry.knowledge_id), ['ui.a', 'ui.future', 'ui.history', 'ui.z', 'ui.noise'])
+  assert.deepEqual(searchCatalog(catalog, query, { limit: 1 }).map((entry) => entry.knowledge_id), ['ui.a'])
+})
+
 test('generation is deterministic and check detects changed, missing and extra generated data', async (t) => {
   const root = await fixture(t)
   await assert.rejects(generateKnowledge(root, true), /stale or missing/u)
@@ -412,7 +547,7 @@ test('reverse mappings include files, directories, document edits and deleted pa
   assert.throws(() => impactCatalog(catalog, '../escape'), /traversal/u)
 })
 
-test('search CLI is compact and labels owner fallback while impact retains source mappings', async (t) => {
+test('search CLI labels owner fallback and bare code symbols while impact retains source mappings', async (t) => {
   const root = await fixture(t)
   await fs.writeFile(path.join(root, 'docs/example.md'), markdown({ aliases: ['StateStore'], summary: 'State persistence.' }))
   await generateKnowledge(root)
@@ -425,6 +560,10 @@ test('search CLI is compact and labels owner fallback while impact retains sourc
   assert.match(output, /match: owner-fallback/u)
   assert.match(output, /does not verify the requested member/u)
   assert.doesNotMatch(output, /src\/example\.cs/u)
+  const bare = execFileSync(process.execPath, [scriptPath, 'search', 'statestore如何保存'], { encoding: 'utf8', cwd: root })
+  assert.match(bare, /\[current\] ui.fixture/u)
+  assert.match(bare, /match: code-symbol/u)
+  assert.doesNotMatch(bare, /src\/example\.cs/u)
   const impact = execFileSync(process.execPath, [scriptPath, 'impact', 'src/example.cs'], { encoding: 'utf8', cwd: root })
   assert.match(impact, /mapped: src\/example\.cs/u)
 })

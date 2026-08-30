@@ -394,16 +394,43 @@ export function searchCatalog(catalog, query, { all = false, limit = 12 } = {}) 
     full: searchSymbolPattern(symbol),
     owners: qualifiedSearchOwners(symbol).map(searchSymbolPattern),
   }))
-  return catalog.entries.filter((entry) => entry.searchable !== false && (all || entry.status === 'current')).map((entry) => {
+  const entries = catalog.entries.filter((entry) => entry.searchable !== false && (all || entry.status === 'current'))
+  // Infer code spelling from the catalog, not query casing: StateStore should
+  // rank identically when typed as statestore. Single words/acronyms such as
+  // Save, backup and ID remain lexical; camel/Pascal boundaries and snake_case
+  // supply the extra evidence. This is metadata matching, not source parsing.
+  const codeSymbols = new Set(entries.flatMap((entry) =>
+    [entry.title, ...entry.aliases, entry.summary, ...entry.code_paths, ...entry.test_paths]
+      .flatMap((value) => value.match(/[a-zA-Z_][a-zA-Z0-9_]*/gu) ?? [])
+      .filter((value) => /[a-z][A-Z]|[A-Z]{2}[a-z]|[a-zA-Z0-9]_[a-zA-Z0-9]/u.test(value))
+      .map((value) => value.toLocaleLowerCase())))
+  const searchEntries = entries.map((entry) => {
     const exact = [entry.knowledge_id, entry.title, ...entry.aliases].map((value) => value.toLocaleLowerCase())
     const description = [...exact, entry.summary].join('\n').toLocaleLowerCase()
     const fields = [description, entry.source, ...entry.code_paths, ...entry.test_paths].join('\n').toLocaleLowerCase()
+    return { entry, exact, description, fields }
+  })
+  // Keep qualified tokens intact: never turn UnknownStore.Save into Save.
+  const unqualified = [...new Set(symbols)].filter((symbol) => /^[a-z_][a-z0-9_]*$/u.test(symbol))
+    .map((symbol) => ({ value: symbol, full: searchSymbolPattern(symbol) }))
+    .map((symbol) => ({ ...symbol, frequency: searchEntries.filter(({ fields }) => symbol.full.test(fields)).length }))
+  // Shape alone cannot distinguish a type from a technology name. If a known
+  // plain query word is rarer (e.g. cvsln vs SQLite) and locates a competing
+  // topic, leave the broader code-shaped term lexical. A word only found in
+  // this symbol's topics is not counter-evidence, nor are unknowns/numbers.
+  const words = unqualified.filter((symbol) => !codeSymbols.has(symbol.value) && symbol.frequency > 0)
+  const bare = unqualified.filter((symbol) => codeSymbols.has(symbol.value) && !words.some((word) =>
+    word.frequency < symbol.frequency && searchEntries.some(({ fields }) => word.full.test(fields) && !symbol.full.test(fields))))
+  return searchEntries.map(({ entry, exact, description, fields }) => {
     const exactMatch = Number(exact.includes(normalized))
     let fullMatches = 0
     let namedFullMatches = 0
     let ownerMatches = 0
     let ownerSpecificity = 0
     let describedOwners = 0
+    let bareMatches = 0
+    let namedBareMatches = 0
+    let describedBareMatches = 0
     for (const symbol of qualified) {
       if (symbol.full.test(fields)) {
         fullMatches++
@@ -418,9 +445,17 @@ export function searchCatalog(catalog, query, { all = false, limit = 12 } = {}) 
         }
       }
     }
+    for (const symbol of bare) {
+      if (symbol.full.test(fields)) {
+        bareMatches++
+        if (exact.includes(symbol.value)) namedBareMatches++
+        if (symbol.full.test(description)) describedBareMatches++
+      }
+    }
     let score = exactMatch * 100 + ownerMatches * 5
     for (const term of terms) if (fields.includes(term)) score += tokens.includes(term) ? 10 : 1
-    return { entry, score, exactMatch, fullMatches, namedFullMatches, ownerMatches, ownerSpecificity, describedOwners }
+    return { entry, score, exactMatch, fullMatches, namedFullMatches, ownerMatches, ownerSpecificity, describedOwners,
+      bareMatches, namedBareMatches, describedBareMatches }
   }).filter((result) => result.score > 0)
     // score is the lexical tie-break, not the final rank. Preserve this order
     // when consuming results: named qualified symbols outrank equally complete
@@ -428,10 +463,11 @@ export function searchCatalog(catalog, query, { all = false, limit = 12 } = {}) 
     .sort((a, b) => b.exactMatch - a.exactMatch || b.fullMatches - a.fullMatches || b.namedFullMatches - a.namedFullMatches
       || b.ownerMatches - a.ownerMatches
       || b.ownerSpecificity - a.ownerSpecificity || b.describedOwners - a.describedOwners
+      || b.bareMatches - a.bareMatches || b.namedBareMatches - a.namedBareMatches || b.describedBareMatches - a.describedBareMatches
       || b.score - a.score || a.entry.knowledge_id.localeCompare(b.entry.knowledge_id, 'en'))
-    .slice(0, limit).map(({ entry, score, exactMatch, fullMatches, ownerMatches }) => ({
+    .slice(0, limit).map(({ entry, score, exactMatch, fullMatches, ownerMatches, bareMatches }) => ({
       ...entry, score,
-      match_kind: exactMatch ? 'exact' : fullMatches ? 'qualified-symbol' : ownerMatches ? 'owner-fallback' : 'text',
+      match_kind: exactMatch ? 'exact' : fullMatches ? 'qualified-symbol' : ownerMatches ? 'owner-fallback' : bareMatches ? 'code-symbol' : 'text',
     }))
 }
 
