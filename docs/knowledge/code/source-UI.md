@@ -228,8 +228,8 @@ next: false
 
 ## UI/ColorVision.Rbac {#module-55492f436f6c6f72566973696f6e2e52626163}
 
-- [RBAC 模块](../../03-architecture/security/rbac.md) — `platform.rbac`
-  RBAC用户、角色、会话、权限缓存和粗粒度授权的实际集成范围。
+- [RBAC：登录缓存、会话与权限边界](../../03-architecture/security/rbac.md) — `platform.rbac`
+  本地RBAC的登录缓存、会话校验和权限同步限制，以及自动登录失败、登出撤销和用户中心统计的实际边界。
 
 - [安全与权限控制](../../03-architecture/security/overview.md) — `platform.security`
   区分全局粗粒度权限和独立RBAC模块，不承诺不存在的统一业务授权边界。

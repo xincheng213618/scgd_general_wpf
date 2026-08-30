@@ -4,7 +4,7 @@ knowledge_type: "reference"
 status: "current"
 summary: "说明 ST WPF 节点画布、端口、类型目录及 STN 兼容边界。"
 aliases: ["Flow画布加载后节点丢失","ST.Library.UI","STNodeEditor","STNodeTypeRegistry","CVNodeContainer"]
-code_paths: ["Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/ST.Library.UI/NodeContainer/CVNodeContainer.cs"]
+code_paths: ["Engine/ST.Library.UI/README.md","Engine/ST.Library.UI/ST.Library.UI.csproj","Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/ST.Library.UI/NodeContainer/CVNodeContainer.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/STNodeEditorWpfTests.cs","Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs","Test/ColorVision.UI.Tests/STNodeTypeRegistryConcurrencyTests.cs"]
 related: ["flow.architecture","flow.runtime","flow.workspace"]
 ---

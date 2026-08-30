@@ -23,8 +23,8 @@ next: false
 - [扩展性开发](../../02-developer-guide/core-concepts/extensibility.md) — `platform.extensibility`
   菜单、插件、属性编辑器、算法模板和 Copilot 扩展的职责与源码入口。
 
-- [RBAC 模块](../../03-architecture/security/rbac.md) — `platform.rbac`
-  RBAC用户、角色、会话、权限缓存和粗粒度授权的实际集成范围。
+- [RBAC：登录缓存、会话与权限边界](../../03-architecture/security/rbac.md) — `platform.rbac`
+  本地RBAC的登录缓存、会话校验和权限同步限制，以及自动登录失败、登出撤销和用户中心统计的实际边界。
 
 - [架构运行时](../../03-architecture/overview/runtime.md) — `platform.runtime`
   启动分支、配置初始化、插件装载和恢复流程的运行时顺序。

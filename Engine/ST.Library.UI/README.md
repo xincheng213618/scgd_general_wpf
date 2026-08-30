@@ -49,3 +49,7 @@ Editor.Nodes.Add(node);
 dotnet build .\Engine\ST.Library.UI\ST.Library.UI.csproj -f net10.0-windows
 dotnet build .\Engine\FlowEngineLib\FlowEngineLib.csproj -f net10.0-windows
 ```
+
+## 知识入口
+
+[ST.Library.UI 契约](../../docs/04-api-reference/engine-components/ST.Library.UI.md)维护画布、类型注册、兼容边界与测试定位。此相对链接用于源码仓库；使用程序集时应核对匹配版本的源码，不能把另一版本的说明当作兼容保证。

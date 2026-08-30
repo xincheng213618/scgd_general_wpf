@@ -390,6 +390,7 @@ export function searchCatalog(catalog, query, { all = false, limit = 12 } = {}) 
   const fragments = [...normalized.matchAll(/[\p{Script=Han}]{2,}/gu)].flatMap(([run]) => Array.from({ length: run.length - 1 }, (_, index) => run.slice(index, index + 2)))
   const terms = [...new Set([...tokens, ...fragments])]
   const qualified = [...new Set(symbols)].filter((symbol) => /[a-z0-9_](?:\.|::|\/)[a-z0-9_]/u.test(symbol)).map((symbol) => ({
+    value: symbol,
     full: searchSymbolPattern(symbol),
     owners: qualifiedSearchOwners(symbol).map(searchSymbolPattern),
   }))
@@ -399,11 +400,15 @@ export function searchCatalog(catalog, query, { all = false, limit = 12 } = {}) 
     const fields = [description, entry.source, ...entry.code_paths, ...entry.test_paths].join('\n').toLocaleLowerCase()
     const exactMatch = Number(exact.includes(normalized))
     let fullMatches = 0
+    let namedFullMatches = 0
     let ownerMatches = 0
     let ownerSpecificity = 0
     let describedOwners = 0
     for (const symbol of qualified) {
-      if (symbol.full.test(fields)) fullMatches++
+      if (symbol.full.test(fields)) {
+        fullMatches++
+        if (exact.includes(symbol.value)) namedFullMatches++
+      }
       else {
         const ownerIndex = symbol.owners.findIndex((owner) => owner.test(fields))
         if (ownerIndex >= 0) {
@@ -415,11 +420,13 @@ export function searchCatalog(catalog, query, { all = false, limit = 12 } = {}) 
     }
     let score = exactMatch * 100 + ownerMatches * 5
     for (const term of terms) if (fields.includes(term)) score += tokens.includes(term) ? 10 : 1
-    return { entry, score, exactMatch, fullMatches, ownerMatches, ownerSpecificity, describedOwners }
+    return { entry, score, exactMatch, fullMatches, namedFullMatches, ownerMatches, ownerSpecificity, describedOwners }
   }).filter((result) => result.score > 0)
     // score is the lexical tie-break, not the final rank. Preserve this order
-    // when consuming results: exact/qualified/owner evidence takes precedence.
-    .sort((a, b) => b.exactMatch - a.exactMatch || b.fullMatches - a.fullMatches || b.ownerMatches - a.ownerMatches
+    // when consuming results: named qualified symbols outrank equally complete
+    // incidental path/prefix matches, without promoting owners over full members.
+    .sort((a, b) => b.exactMatch - a.exactMatch || b.fullMatches - a.fullMatches || b.namedFullMatches - a.namedFullMatches
+      || b.ownerMatches - a.ownerMatches
       || b.ownerSpecificity - a.ownerSpecificity || b.describedOwners - a.describedOwners
       || b.score - a.score || a.entry.knowledge_id.localeCompare(b.entry.knowledge_id, 'en'))
     .slice(0, limit).map(({ entry, score, exactMatch, fullMatches, ownerMatches }) => ({

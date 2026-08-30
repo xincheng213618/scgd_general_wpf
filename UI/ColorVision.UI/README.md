@@ -1,79 +1,20 @@
 # ColorVision.UI
 
-> 目标框架：.NET 8 / .NET 10 Windows（以 `ColorVision.UI.csproj` 为准）
+Windows WPF 宿主共用的壳层基础设施，提供配置、程序集发现、菜单、属性编辑、热键、产品搜索、语言和状态栏接入。它不是产品主程序，也不是所有 UI 模块的基础依赖；Common、Themes 和各业务模块有各自职责。目标框架、依赖与包设置以 [ColorVision.UI.csproj](./ColorVision.UI.csproj) 为准。
 
-## 功能定位
+当前模块责任及各能力的唯一说明见 [壳层责任与知识入口](../../docs/04-api-reference/ui-components/ColorVision.UI.md)（`ui.framework`），不在 README 另维护一份 API 清单。
 
-核心 UI 框架库，提供插件系统、属性编辑器、快捷键系统、菜单系统、多语言支持等基础服务。是所有 UI 模块的基础依赖。
+## 宿主与包接入边界
 
-## 主要功能
+- 引用包不等于执行宿主启动。插件需由宿主调用 `PluginLoader`，各扩展仍需进入程序集发现、实例化和对应消费者的装配流程；菜单声明也不替业务注册命令处理。
+- 插件加载不是只读扫描：可创建目录、保存插件配置并将 DLL 加载进当前进程。依赖预检有条件且不覆盖全部依赖，`manifest.requires` 不是启动装载器的准入门禁；禁用不卸载已加载程序集。完整边界见 [插件装载](../../docs/02-developer-guide/plugin-development/overview.md)。
+- 设置编辑、保存、重载，窗口/全局热键注册，以及语言切换重启是不同动作；不要把创建控件或界面可见当作持久化、权限检查或业务初始化成功。先从模块入口选择对应契约。
 
-### 插件系统 (Plugins/)
-- **PluginLoader** — 从 Plugins 目录自动扫描和加载插件
-- **PluginManifest** — 基于 manifest.json 的插件元数据
-- **PluginExtractor** — 插件包解压
-- **依赖检查** — 自动验证插件依赖的 ColorVision 版本
+README 随 NuGet 放在包根，`docs/` 不随此包保证交付。上述相对链接用于源码仓库；独立用包时，在[项目仓库](https://github.com/xincheng213618/scgd_general_wpf)按匹配版本读取主题和测试，不把当前分支当作旧包保证。
 
-### 属性编辑器 (PropertyEditor/)
-- **PropertyEditorHelper** — 属性编辑器工厂，根据类型自动选择编辑器
-- **BoolPropertiesEditor** / **EnumPropertiesEditor** / **TextboxPropertiesEditor** — 基础类型编辑器
-- **DictionaryEditor** / **ListEditor** — 集合类型编辑器
-- **PropertyTreeNode** — 属性树节点，支持层次化展示
+## 本地构建
 
-### 快捷键系统 (HotKey/)
-- **GlobalHotKeyManager** — 系统级全局快捷键
-- **WindowHotKeyManager** — 窗口级快捷键
-- **HotKeys / Hotkey** — 快捷键定义（名称 + 按键 + 回调）
-- **HotKeysSetting** — 编辑键位草稿，页面保存重新注册并更新配置内存，不直接写文件
-
-定义身份、冲突、重载范围和清理责任见[快捷键契约](../../docs/04-api-reference/ui-components/hotkeys.md)。
-
-### 产品搜索 (Serach/)
-
-`SearchControl` 汇合静态候选、动态 Flow 节点和外部搜索入口；不是仓库全文或 AI 知识检索。刷新、过滤、执行和配置关闭行为见[搜索契约](../../docs/04-api-reference/ui-components/search.md)。
-
-### 菜单系统 (Menus/)
-- **MenuManager** — 菜单管理器，扫描 IMenuItem 实现构建菜单树
-- **MenuItemBase** — 菜单项基类（Command 自动绑定 Execute()）
-- **GlobalMenuBase** — 全局菜单基类（TargetName = Global）
-- **MenuItemConstants** — 标准菜单 GUID（File/Edit/View/Tool/Help）
-- **MenuFile / MenuEdit** — 标准文件和编辑菜单（打开/保存/复制/粘贴等）
-
-### 多语言 (Languages/)
-
-`LanguageManager` 发现资源文化，并在用户确认后保存配置、重启应用；不是统一的窗口热翻译服务。当前模块保留简体中文中性资源、en 和 zh-Hant，实际候选仍取决于部署资源和系统文化。回退与副作用见[界面语言契约](../../docs/04-api-reference/ui-components/localization.md)。
-
-### 状态栏 (StatusBar/)
-
-`StatusBarManager` 组合全局 provider 与活动文档项目，`StatusBarControl` 呈现绑定文本、图标和弹层。缓存、刷新、隐藏与关闭责任见[状态栏契约](../../docs/04-api-reference/ui-components/status-bar.md)。
-
-### 日志 (LogImp/)
-- **WindowLog** — 日志查看窗口
-- **LogLoadState** — 日志加载状态
-
-### Shell 集成 (Shell/)
-- **JumpListManager** — Windows 跳转列表
-- **ArgumentParser** — 命令行参数解析
-- **TrayIconManager** — 系统托盘图标
-
-### 文件处理
-- **FileProcessorFactory** — 文件处理器工厂
-- **AssemblyHandler** — 程序集加载处理
-
-### 其他
-- **Environments** — 环境变量管理
-- **Adorners/** — 拖拽插入装饰器
-- **Json/** — JSON 工具
-- **Graphics/** — 图形工具
-- **Pages/** — 页面组件
-- **Sorts/** — 排序工具
-
-## 依赖关系
-
-- **引用**: ColorVision.Common, ColorVision.Themes, log4net, Newtonsoft.Json
-- **被引用**: ColorVision.Database, ColorVision.Scheduler, ColorVision.SocketProtocol, ColorVision.ImageEditor, ColorVision.UI.Desktop, ColorVision.Solution
-
-## 构建
+从 Windows 仓库根目录执行，需要对应 SDK/WPF 环境；还原可能联网，构建写入本地产物并按项目设置生成 NuGet/符号包，不启动宿主或上传发布。
 
 ```powershell
 dotnet build .\UI\ColorVision.UI\ColorVision.UI.csproj -p:Platform=x64

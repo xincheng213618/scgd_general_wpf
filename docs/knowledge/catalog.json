@@ -2567,9 +2567,11 @@
         "ConvertXYZ"
       ],
       "code_paths": [
+        "Engine/cvColorVision/README.md",
         "Engine/cvColorVision/Camera",
         "Engine/cvColorVision/Color/ConvertXYZ.cs",
         "Engine/cvColorVision/Devices/Display/CvOledDLL.cs",
+        "Engine/cvColorVision/Devices/Spectrometer/Spectrometer.cs",
         "Engine/cvColorVision/cvColorVision.csproj"
       ],
       "test_paths": [],
@@ -2586,7 +2588,7 @@
       "source": "docs/04-api-reference/engine-components/cvColorVision.md",
       "url": "/04-api-reference/engine-components/cvColorVision",
       "searchable": true,
-      "source_hash": "c0bc29fddc1e23446627e612a340b4c62f35779f073cf6bd98d646593eef9f9d"
+      "source_hash": "205a594ce82ae098701976ad28e6943017168158e76caacfe8574a422c3eaee8"
     },
     {
       "knowledge_id": "engine.native-integration",
@@ -2947,6 +2949,8 @@
         "CVNodeContainer"
       ],
       "code_paths": [
+        "Engine/ST.Library.UI/README.md",
+        "Engine/ST.Library.UI/ST.Library.UI.csproj",
         "Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs",
         "Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs",
         "Engine/ST.Library.UI/NodeContainer/CVNodeContainer.cs"
@@ -2969,7 +2973,7 @@
       "source": "docs/04-api-reference/engine-components/ST.Library.UI.md",
       "url": "/04-api-reference/engine-components/ST.Library.UI",
       "searchable": true,
-      "source_hash": "42ac5d7f210697187ea4dcb4336feb3edcc61ccbcab73dec56d204fa74800f02"
+      "source_hash": "05506332b0d9b40841dadb300780da40b068cf30a24bb70685884f8c5f36457b"
     },
     {
       "knowledge_id": "flow.headless",
@@ -3101,12 +3105,19 @@
       "aliases": [
         "流程节点结束为什么业务还没完成",
         "FlowEngineLib",
+        "FlowEngineAPI",
         "FlowEngineControl",
         "CVStartCFC",
         "FlowRuntimeHost"
       ],
       "code_paths": [
+        "Engine/FlowEngineLib/README.md",
+        "Engine/FlowEngineLib/FlowEngineLib.csproj",
+        "Engine/FlowEngineLib/FlowEngineAPI.cs",
         "Engine/FlowEngineLib/FlowEngineControl.cs",
+        "Engine/FlowEngineLib/FlowEngineEventArgs.cs",
+        "Engine/FlowEngineLib/Start/BaseStartNode.cs",
+        "Engine/FlowEngineLib/Base/CVBaseServerNode.cs",
         "Engine/FlowEngineLib/Base/CVStartCFC.cs",
         "Engine/FlowEngineLib/End/CVEndNode.cs",
         "Engine/FlowEngineLib/Runtime/FlowRuntimeHost.cs"
@@ -3133,7 +3144,7 @@
       "source": "docs/04-api-reference/engine-components/FlowEngineLib.md",
       "url": "/04-api-reference/engine-components/FlowEngineLib",
       "searchable": true,
-      "source_hash": "f377e807be38bbd903e346287bc93c52720ea7d20de07bbefeffe90f8f32f587"
+      "source_hash": "ce7138406d63c5ab60d9da481c01045a0f6e6b366b30f1513e5e7c4108e3c3ee"
     },
     {
       "knowledge_id": "flow.session",
@@ -3422,7 +3433,7 @@
       "source": "docs/knowledge/retrieval-checks.md",
       "url": "/knowledge/retrieval-checks",
       "searchable": true,
-      "source_hash": "72dcd96c70f2c23d1f86fdf6d78c19128782719fb96ef43488147466c1305cb9"
+      "source_hash": "85d3cc42c63eed088442e08ddb75621e0900cf0cf59521f036500a56496ad772"
     },
     {
       "knowledge_id": "operations.acceptance",
@@ -4402,30 +4413,64 @@
       "knowledge_id": "platform.rbac",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "RBAC用户、角色、会话、权限缓存和粗粒度授权的实际集成范围。",
+      "summary": "本地RBAC的登录缓存、会话校验和权限同步限制，以及自动登录失败、登出撤销和用户中心统计的实际边界。",
       "aliases": [
         "登录后没有权限",
         "RBAC",
+        "ColorVision.Rbac",
+        "RbacManager",
+        "IsUserLoggedIn",
+        "AuthService",
+        "SessionService",
         "PermissionChecker",
-        "SessionToken"
+        "SessionToken",
+        "LoginResultDto",
+        "自动登录失败",
+        "退出登录后权限",
+        "用户中心",
+        "UserCenterStatisticsService",
+        "ApplicationUsageTracker"
       ],
       "code_paths": [
+        "UI/ColorVision.Rbac/README.md",
+        "UI/ColorVision.Rbac/ColorVision.Rbac.csproj",
         "UI/ColorVision.Rbac/RbacManager.cs",
-        "UI/ColorVision.Rbac/Services/PermissionChecker.cs"
+        "UI/ColorVision.Rbac/RbacManagerConfig.cs",
+        "UI/ColorVision.Rbac/Loginwindow.xaml.cs",
+        "UI/ColorVision.Rbac/RbacManagerWindow.xaml.cs",
+        "UI/ColorVision.Rbac/RegisterWindow.xaml.cs",
+        "UI/ColorVision.Rbac/Services/Auth/AuthService.cs",
+        "UI/ColorVision.Rbac/Services/Auth/IAuthService.cs",
+        "UI/ColorVision.Rbac/Services/IUserService.cs",
+        "UI/ColorVision.Rbac/Services/SessionService.cs",
+        "UI/ColorVision.Rbac/Services/SessionCleanupService.cs",
+        "UI/ColorVision.Rbac/Services/PermissionChecker.cs",
+        "UI/ColorVision.Rbac/Services/UserCenterStatisticsService.cs",
+        "UI/ColorVision.Rbac/ApplicationUsageTracker.cs",
+        "UI/ColorVision.Rbac/Dtos/LoginResultDto.cs",
+        "UI/ColorVision.Rbac/Entity",
+        "UI/ColorVision.Rbac/Security/PasswordHashing.cs",
+        "ColorVision/BuiltInModules.cs",
+        "ColorVision/App.xaml.cs"
       ],
-      "test_paths": [],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/ModuleCatalogTests.cs"
+      ],
       "related": [
-        "platform.security"
+        "platform.security",
+        "ui.common",
+        "ui.configuration"
       ],
       "code_scopes": [
+        "ColorVision",
         "UI/ColorVision.Rbac"
       ],
       "domain": "platform",
-      "title": "RBAC 模块",
+      "title": "RBAC：登录缓存、会话与权限边界",
       "source": "docs/03-architecture/security/rbac.md",
       "url": "/03-architecture/security/rbac",
       "searchable": true,
-      "source_hash": "e0c080b8c3abc7374c81c9ef25dd587dda0b4473368f94be34c2241e7f93773a"
+      "source_hash": "c589a0e8a4b5190052b8fb61d68bb0582950b240136666f480c6d00b42c5bc06"
     },
     {
       "knowledge_id": "platform.runtime",
@@ -5639,6 +5684,7 @@
         "ConfigSettingManager"
       ],
       "code_paths": [
+        "UI/ColorVision.UI/README.md",
         "UI/ColorVision.UI/ColorVision.UI.csproj",
         "UI/ColorVision.UI/ConfigHandler.cs",
         "UI/ColorVision.UI/Plugins/PluginLoader.cs",
@@ -5673,7 +5719,7 @@
       "source": "docs/04-api-reference/ui-components/ColorVision.UI.md",
       "url": "/04-api-reference/ui-components/ColorVision.UI",
       "searchable": true,
-      "source_hash": "3bc30b509d780eab4ecebe6832f7f18ccdc7d4f9f7f5eedc43183a5d2b39e87d"
+      "source_hash": "99e7c63a8d7902125552469aed4a3483e6d7a57ab0b0ea878b9c7efd660dd035"
     },
     {
       "knowledge_id": "ui.hotkeys",
@@ -5882,6 +5928,7 @@
         "ThumbnailCache.db"
       ],
       "code_paths": [
+        "UI/ColorVision.ImageTools/README.md",
         "UI/ColorVision.ImageTools/ImageToolsModule.cs",
         "UI/ColorVision.ImageTools/ColorVision.ImageTools.csproj",
         "UI/ColorVision.ImageTools/MultiImageViewer/MultiImageViewer.xaml",
@@ -5890,6 +5937,7 @@
         "UI/ColorVision.ImageTools/MultiImageViewer/ImageFileInfo.cs",
         "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.cs",
         "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheEntry.cs",
+        "UI/ColorVision.Common/Interfaces/Assembly/ModuleCatalog.cs",
         "UI/ColorVision.Common/Interfaces/ThumbnailProviderFactory.cs",
         "Engine/ColorVision.Engine/Media/CVRawThumbnailProvider.cs",
         "ColorVision/BuiltInModules.cs"
@@ -5902,7 +5950,8 @@
         "ui.solution",
         "ui.image-editor",
         "ui.documents",
-        "ui.image-fusion"
+        "ui.image-fusion",
+        "plugins.model"
       ],
       "code_scopes": [
         "ColorVision",
@@ -5915,7 +5964,7 @@
       "source": "docs/04-api-reference/ui-components/ColorVision.ImageTools.md",
       "url": "/04-api-reference/ui-components/ColorVision.ImageTools",
       "searchable": true,
-      "source_hash": "c3f14a38b177f382a5baa7d4a5aa072b5beadc8b4772263b90a2f37cc95e2cce"
+      "source_hash": "07e555212cd3d1d4d73691f2a05296f149ba1b407b8b249078d5eaea6fa21420"
     },
     {
       "knowledge_id": "ui.index",

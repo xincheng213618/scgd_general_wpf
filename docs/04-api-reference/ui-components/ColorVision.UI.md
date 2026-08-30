@@ -4,7 +4,7 @@ knowledge_type: "index"
 status: "current"
 summary: "ColorVision.UI壳层责任入口：按配置、插件、菜单、热键、搜索、语言、状态栏、属性编辑和日志定位规范主题，业务行为仍归所属模块。"
 aliases: ["菜单和属性编辑器在哪个模块", "ColorVision.UI", "壳层基础设施", "ConfigSettingManager"]
-code_paths: ["UI/ColorVision.UI/ColorVision.UI.csproj", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI/Menus/MenuManager.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/LogImp", "UI/ColorVision.UI/HotKey", "UI/ColorVision.UI/Languages", "UI/ColorVision.UI/Serach", "UI/ColorVision.UI/StatusBar/StatusBarManager.cs"]
+code_paths: ["UI/ColorVision.UI/README.md", "UI/ColorVision.UI/ColorVision.UI.csproj", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI/Menus/MenuManager.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/LogImp", "UI/ColorVision.UI/HotKey", "UI/ColorVision.UI/Languages", "UI/ColorVision.UI/Serach", "UI/ColorVision.UI/StatusBar/StatusBarManager.cs"]
 test_paths: []
 related: ["ui.index", "ui.configuration", "plugins.model", "ui.property-grid", "ui.discovery", "ui.menus", "ui.hotkeys", "ui.search", "ui.localization", "ui.status-bar", "operations.logs", "ui.desktop"]
 ---
@@ -12,6 +12,8 @@ related: ["ui.index", "ui.configuration", "plugins.model", "ui.property-grid", "
 # ColorVision.UI 壳层责任与知识入口
 
 `UI/ColorVision.UI/` 是 WPF 宿主共用的壳层基础设施，不是所有 UI 功能的所有者。配置对象、程序集、扩展类型和可见控件分别有独立生命周期；界面入口出现不证明业务初始化或持久化成功。
+
+单纯引用此包不执行产品宿主的启动链。`PluginLoader` 需要调用，菜单、配置、状态栏等还需要各自消费者装配；例如标准 `MenuSave` 只提供 `ApplicationCommands.Save`，不替活动文档实现保存。插件依赖预检也不是无条件、完整的版本校验，`manifest.requires` 与 `.deps.json` 的实际作用见[装载契约](../../02-developer-guide/plugin-development/overview.md)，不要从 README 的功能名称推断自动初始化或隔离保证。
 
 ## 从责任找到规范主题
 

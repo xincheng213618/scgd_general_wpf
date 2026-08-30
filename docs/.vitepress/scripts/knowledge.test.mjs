@@ -232,6 +232,67 @@ test('full qualified evidence outranks owner context and exact whole-query alias
   assert.equal(searchCatalog(catalog, query)[0].knowledge_id, 'ui.phrase')
 })
 
+test('qualified symbol identity outranks incidental module paths and longer namespaces', () => {
+  const base = { knowledge_id: 'ui.fixture', title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const query = '引用ColorVision.UI会自动加载插件吗'
+  const context = '引用会自动加载插件吗'
+  const consumers = [
+    { ...base, knowledge_id: 'ui.tests', summary: context, test_paths: ['Test/ColorVision.UI.Tests/PluginTests.cs'] },
+    { ...base, knowledge_id: 'ui.desktop', summary: context, code_paths: ['UI/ColorVision.UI.Desktop/Startup.cs'] },
+    { ...base, knowledge_id: 'ui.namespace', summary: context, code_paths: ['src/Namespace.ColorVision.UI.More/Feature.cs'] },
+    { ...base, knowledge_id: 'ui.module-path', summary: context, code_paths: ['UI/ColorVision.UI/Runtime.cs'] },
+  ]
+  for (const identity of [{ aliases: ['ColorVision.UI'] }, { title: 'ColorVision.UI' }, { knowledge_id: 'colorvision.ui' }]) {
+    const owner = { ...base, knowledge_id: 'ui.owner', ...identity }
+    const catalog = { entries: [...consumers, owner] }
+    const ranked = searchCatalog(catalog, query)
+    assert.equal(ranked[0].knowledge_id, owner.knowledge_id, JSON.stringify(identity))
+    assert.ok(ranked[0].score < ranked[1].score, 'named symbol evidence must outrank lexical context')
+    assert.equal(ranked.length, consumers.length + 1, 'source-only matches must remain discoverable')
+    catalog.entries.push({ ...base, knowledge_id: 'ui.phrase', aliases: [query] })
+    assert.equal(searchCatalog(catalog, query)[0].knowledge_id, 'ui.phrase')
+  }
+})
+
+test('qualified symbol identity is deduplicated and preserves full-member precedence', () => {
+  const base = { knowledge_id: 'ui.fixture', title: 'Fixture', status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const catalog = { entries: [
+    { ...base, knowledge_id: 'ui.a', aliases: ['Module.One'] },
+    { ...base, knowledge_id: 'ui.z', aliases: ['Module.Two'] },
+  ] }
+  const once = searchCatalog(catalog, 'Module.One Module.Two含义')
+  assert.deepEqual(once.map((entry) => entry.knowledge_id), ['ui.a', 'ui.z'])
+  assert.deepEqual(searchCatalog(catalog, 'Module.One Module.Two Module.Two含义'), once)
+  catalog.entries.push({ ...base, knowledge_id: 'ui.both', summary: 'Module.One Module.Two' })
+  assert.equal(searchCatalog(catalog, 'Module.One Module.Two含义')[0].knowledge_id, 'ui.both',
+    'an exact named symbol must not outrank more complete qualified evidence')
+
+  const memberCatalog = { entries: [
+    { ...base, knowledge_id: 'ui.owner', aliases: ['Namespace.StateStore'], summary: '保存配置失败后如何恢复原始内容并重新加载' },
+    { ...base, knowledge_id: 'ui.member', summary: 'Namespace.StateStore.Save' },
+  ] }
+  assert.equal(searchCatalog(memberCatalog, 'Namespace.StateStore.Save保存配置失败后如何恢复原始内容并重新加载')[0].knowledge_id, 'ui.member')
+  const unknown = searchCatalog(memberCatalog, 'Namespace.StateStore.Unknown')
+  assert.ok(unknown.length > 0)
+  assert.ok(unknown.every((entry) => entry.match_kind === 'owner-fallback'), 'owner identity does not establish a requested member')
+})
+
+test('qualified symbol identity retains status filters, limits and deterministic ties', () => {
+  const base = { knowledge_id: 'ui.fixture', title: 'Fixture', status: 'current', aliases: ['Module.Core'], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const catalog = { entries: [
+    { ...base, knowledge_id: 'ui.z' },
+    { ...base, knowledge_id: 'ui.a', aliases: ['module.core'] },
+    { ...base, knowledge_id: 'ui.future', status: 'planned' },
+    { ...base, knowledge_id: 'ui.history', status: 'historical' },
+    { ...base, knowledge_id: 'ui.hidden', searchable: false },
+    { ...base, knowledge_id: 'ui.noise', aliases: [], summary: '引用会自动加载插件吗', code_paths: ['src/Module.Core.Runtime/Load.cs'] },
+  ] }
+  const query = '引用Module.Core会自动加载插件吗'
+  assert.deepEqual(searchCatalog(catalog, query).map((entry) => entry.knowledge_id), ['ui.a', 'ui.z', 'ui.noise'])
+  assert.deepEqual(searchCatalog(catalog, query, { all: true }).map((entry) => entry.knowledge_id), ['ui.a', 'ui.future', 'ui.history', 'ui.z', 'ui.noise'])
+  assert.deepEqual(searchCatalog(catalog, query, { limit: 1 }).map((entry) => entry.knowledge_id), ['ui.a'])
+})
+
 test('repository paths normalize Windows separators and preserve concrete trailing paths', async (t) => {
   const root = await fixture(t)
   const catalog = await buildCatalog(root)

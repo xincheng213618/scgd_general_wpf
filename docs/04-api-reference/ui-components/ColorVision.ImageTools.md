@@ -4,14 +4,16 @@ knowledge_type: "topic"
 status: "current"
 summary: "ImageTools内置注册、多图列表中的单张预览、刷新与SQLite缩略图缓存；重选不保证重载，关窗不清缓存，缓存关闭也不等于零数据库访问。"
 aliases: ["多图查看", "缩略图缓存", "ColorVision.ImageTools", "ImageToolsModule", "MultiImageViewer", "MultiImageViewerEditor", "MultiImageViewerConfig", "ImageFileInfo", "ThumbnailCacheManager", "ThumbnailCache.db"]
-code_paths: ["UI/ColorVision.ImageTools/ImageToolsModule.cs", "UI/ColorVision.ImageTools/ColorVision.ImageTools.csproj", "UI/ColorVision.ImageTools/MultiImageViewer/MultiImageViewer.xaml", "UI/ColorVision.ImageTools/MultiImageViewer/MultiImageViewer.xaml.cs", "UI/ColorVision.ImageTools/MultiImageViewer/MultiImageViewerConfig.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ImageFileInfo.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheEntry.cs", "UI/ColorVision.Common/Interfaces/ThumbnailProviderFactory.cs", "Engine/ColorVision.Engine/Media/CVRawThumbnailProvider.cs", "ColorVision/BuiltInModules.cs"]
+code_paths: ["UI/ColorVision.ImageTools/README.md", "UI/ColorVision.ImageTools/ImageToolsModule.cs", "UI/ColorVision.ImageTools/ColorVision.ImageTools.csproj", "UI/ColorVision.ImageTools/MultiImageViewer/MultiImageViewer.xaml", "UI/ColorVision.ImageTools/MultiImageViewer/MultiImageViewer.xaml.cs", "UI/ColorVision.ImageTools/MultiImageViewer/MultiImageViewerConfig.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ImageFileInfo.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheEntry.cs", "UI/ColorVision.Common/Interfaces/Assembly/ModuleCatalog.cs", "UI/ColorVision.Common/Interfaces/ThumbnailProviderFactory.cs", "Engine/ColorVision.Engine/Media/CVRawThumbnailProvider.cs", "ColorVision/BuiltInModules.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/ModuleCatalogTests.cs"]
-related: ["ui.index", "ui.solution", "ui.image-editor", "ui.documents", "ui.image-fusion"]
+related: ["ui.index", "ui.solution", "ui.image-editor", "ui.documents", "ui.image-fusion", "plugins.model"]
 ---
 
 # 多图查看、刷新与缩略图缓存
 
 `UI/ColorVision.ImageTools/` 通过 `ImageToolsModule.Register` 将程序集加入宿主的 `ModuleCatalog`，当前包含多图查看器和[景深融合](./image-fusion.md)两条独立能力。内部仍沿用 `ColorVision.Solution.MultiImageViewer` 等命名空间，不代表实现位于 Solution 项目。
+
+注册仅调用 `AddBuiltIn`，不创建窗口、不读目录或运行融合。应使用宿主相同的目录并在 `Seal()` 前注册；封存后的调用会抛异常，包括同一模块的重复注册。实际入口还需由消费者发现并装配；通用登记、程序集过滤及消费者缓存的完整边界见[模块装载与发现](../../02-developer-guide/plugin-development/overview.md)。
 
 多图查看器是“一个文件列表 + 一个 `ImageView`”，不是同时显示多张大图的比较器。当前列表采用默认单选，处理器只读取 `SelectedItem`；不要把融合窗口的多选文件列表语义套到这里。
 

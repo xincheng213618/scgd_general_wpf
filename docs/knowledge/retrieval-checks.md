@@ -33,6 +33,8 @@ related: ["governance.maintenance", "delivery.testing"]
 
 纯中文问题要另测。成员识别通过不能代替能力词覆盖；如果正文已有关键契约而元数据漏掉该能力，应补充真实概念或责任边界，不为单个问法硬编码排序。固定用例与独立抽样分别报告，加入回归后的问题不再算新的独立样本。
 
+带短模块名的混合问句还须区分“主题 ID/标题/别名精确声明该符号”与“源码/测试路径恰好含此前缀”。完整限定符命中数量相同时，明确的符号身份应优先于路径噪声；不能让 `Module.Core.Tests` 等引用淹没 `Module.Core` 自身主题。该规则不把所属类型回退提升为完整成员命中，也不证明问句中的 API 存在；整问句精确匹配、状态过滤、Windows 路径和多符号去重继续单独验证。
+
 ## 冷启动抽样条件
 
 在干净克隆或新上下文中，从仓库根入口开始。不提供答案所在文件，不使用维护者个人记忆、以前的聊天或未提交的本地知识。代码问答不需要构建；如果要验证首次构建，必须单独记录环境、依赖和实际执行结果。
@@ -67,6 +69,14 @@ related: ["governance.maintenance", "delivery.testing"]
 | ModelViewer3D 导出是否保留当前隐藏/隔离场景？ | 界面导出重新读取源文件，不使用当前显示场景；与模型实例导出 API 区分 |
 | Window3D 高度是否保留 RGB48 原始测量值？ | 先转 Bgra32，再双线性采样为 byte 灰度/alpha；可视化高度不是物理测量校准 |
 | UI 测试通过能说明所有性能测量均执行了吗？ | CI 分类分进程，部分 4K/8K 探针未 opt-in 会直接返回；核对实际环境与输出 |
+| 引用 ColorVision.UI 会自动加载插件吗？ | 引用包不等于调用宿主启动链；从壳层入口继续核对 PluginLoader 的条件性预检、发现和副作用 |
+| 引用 ColorVision.ImageEditor 会自动加载图片吗？ | 包依赖与打开器发现、实例化、实际打开/渲染链不同，不能从包名承诺图像已载入 |
+| ImageToolsModule.Register 会打开多图窗口吗？ | 只登记程序集，宿主负责装配；应在同一 ModuleCatalog 封存前注册 |
+| FlowEngineAPI.RunFlow 是当前接口吗？ | 先定位 FlowEngineAPI，再核对真实 StartNode/StopNode；owner 回退不证明所问成员存在 |
+| ConvertXYZ.CM_InitXYZ 返回相机句柄吗？ | 参数接收已有 IntPtr，返回 int；不能当作创建新句柄，也不能把所有 native 返回类型统一解释 |
+| IsUserLoggedIn 能证明 SessionToken 仍有效吗？ | 只检查缓存结构；会话撤销、过期和用户状态由令牌登录路径另行查询 |
+| RBAC 自动登录失败会清掉 LoginResult 吗？ | null 分支只清自动登录凭据，异常分支不统一清状态；不能误报本地缓存和权限已撤销 |
+| RBAC 退出登录就证明会话已经撤销了吗？ | 撤销异常被吞掉后仍可清本地状态，退出界面不证明数据库撤销成功 |
 | 更新检查 forceRefresh 会绕过所有缓存吗？ | 协调器进行中共享、startup 一次消费、主程序失败状态与市场旧结果回退分层核对 |
 | Copilot Save 失败后 Cancel 会撤销吗？ | NotPersisted、已落盘发布失败、刷新失败、先前 Apply/后台同步分别判断 |
 | Copilot Test Model 和 /doctor 一样吗？ | 真实供应商请求与本地已有健康快照不同；诊断不证明业务工具或账户额度 |

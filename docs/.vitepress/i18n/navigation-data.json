@@ -245,6 +245,12 @@
             },
             {
               "text": {
+                "root": "RBAC：登录缓存、会话与权限边界"
+              },
+              "link": "/03-architecture/security/rbac"
+            },
+            {
+              "text": {
                 "root": "架构运行时"
               },
               "link": "/03-architecture/overview/runtime"
@@ -1019,7 +1025,7 @@
           "items": [
             {
               "text": {
-                "root": "RBAC 模块"
+                "root": "RBAC：登录缓存、会话与权限边界"
               },
               "link": "/03-architecture/security/rbac"
             },
