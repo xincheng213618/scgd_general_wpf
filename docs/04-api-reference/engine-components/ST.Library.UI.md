@@ -1,3 +1,14 @@
+---
+knowledge_id: "flow.editor"
+knowledge_type: "reference"
+status: "current"
+summary: "说明 ST WPF 节点画布、端口、类型目录及 STN 兼容边界。"
+aliases: ["Flow画布加载后节点丢失","ST.Library.UI","STNodeEditor","STNodeTypeRegistry","CVNodeContainer"]
+code_paths: ["Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/ST.Library.UI/NodeContainer/CVNodeContainer.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/STNodeEditorWpfTests.cs","Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs","Test/ColorVision.UI.Tests/STNodeTypeRegistryConcurrencyTests.cs"]
+related: ["flow.architecture","flow.runtime","flow.workspace"]
+---
+
 # ST.Library.UI
 
 `Engine/ST.Library.UI/` 是 Flow 功能使用的 WPF 节点编辑器库，为流程画布、
@@ -33,16 +44,19 @@
 呈现到 WPF 位图，因此不需要重写现有业务节点，也不会改变 `.stn`、`.cvflow`
 的序列化格式。
 
-`ViewFlow.xaml` 和 `FlowEngineToolWindow.xaml` 直接声明
-`<st:STNodeEditor />`。旧的 WinForms 编辑器、属性输入窗体、预览窗体和
-`STNodeEditorHost` 已移除；`STNodeEditorPannel` 已替换为同名 WPF 组合控件。
+当前由 `FlowProcessing/Editor/FlowEditorCanvas.xaml` 声明 `<st:STNodeEditor />`，
+`ViewFlow` 组合 Canvas，`FlowEngineToolWindow` 再承载 standalone `ViewFlow`。
+主/独立窗口命令与文档目标由[工作区契约](../../01-user-guide/workflow/design.md)维护，
+不是 ST 库职责。旧的 WinForms 编辑器、属性输入窗体、预览窗体和
+`STNodeEditorHost` 已移除；`STNodeEditorPannel` 保留名称但已是 WPF 组合控件。
 
 ## 与 ColorVision 的关系
 
 | 上层 | 如何使用它 |
 | --- | --- |
 | `FlowEngineLib` | 继承 `STNode` 实现业务节点，使用 `STNodeOption` 做端口和数据传递 |
-| `ColorVision.Engine/Templates/Flow` | 在 WPF 流程编辑窗口中直接使用 `STNodeEditor`，提供右键菜单与命令 |
+| `ColorVision.Engine/FlowProcessing/Editor` | `FlowEditorCanvas` 承载 `STNodeEditor`，组合属性面板、右键菜单与编辑命令 |
+| `ColorVision.Engine/Templates/Flow` | 保存/读取画布序列化内容及流程包，不拥有 WPF 编辑窗口 |
 | 项目/插件节点 | 在上层节点程序集实现并注册，不应直接写进 `ST.Library.UI` |
 
 ## 检查
@@ -78,3 +92,9 @@
 | 属性描述 | `NodeEditor/STNodePropertyGrid.cs` |
 | 节点目录 | `NodeEditor/STNodeTreeView.cs` |
 | 画布加载 | `NodeContainer/CVNodeContainer.cs` |
+
+## 验证入口与缺口
+
+关联测试：`Test/ColorVision.UI.Tests/STNodeEditorWpfTests.cs`、`Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs`、`Test/ColorVision.UI.Tests/STNodeTypeRegistryConcurrencyTests.cs`。
+
+测试覆盖 WPF 控件、画布和类型注册契约；业务节点执行、真实外部程序集和旧流程语料需按变更补验。

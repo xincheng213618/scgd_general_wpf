@@ -1,3 +1,14 @@
+---
+knowledge_id: "algorithms.poi-template"
+knowledge_type: "reference"
+status: "current"
+summary: "说明 POI 主从表、伴生模板、复制导入、运行事件与结果类型映射。"
+aliases: ["POI复制会覆盖旧点位吗","TemplatePoi","PoiParam","FlowPackagePoiCodec","ViewHandleRealPOI"]
+code_paths: ["Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/AlgorithmPOI.cs","Engine/ColorVision.Engine/Templates/POI/BuildPoi/AlgorithmBuildPoi.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs","Test/ColorVision.UI.Tests/PoiPointModelTests.cs"]
+related: ["algorithms.index","algorithms.poi-routes","flow.templates","engine.results"]
+---
+
 # POI 模板
 
 POI 是“点集模板体系”，不是单个检测算法。维护时先分清：主 POI 点集、伴生模板、运行事件、BuildPOI 生成事件、结果 handler。
@@ -91,3 +102,9 @@ POI 也会被 `AlgorithmPoiAnalysis`、SFR ROI、OLED AOI、项目包等继续�
 | 生成点集 | `BuildPoi/AlgorithmBuildPoi.cs` |
 | 过滤/修正/输出/标定 | `POIFilters/`、`POIRevise/`、`POIOutput/`、`POIGenCali/` |
 | Flow 节点选择 | `Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs`、`Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/POINodeConfigurators.cs` |
+
+## 验证入口与缺口
+
+关联测试：`Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs`、`Test/ColorVision.UI.Tests/PoiPointModelTests.cs`。
+
+包编解码与点模型测试不替代现场数据库保存、MQTT POI 服务和各结果 handler 回放；修改 ID 或引用名时补充旧模板集成验证。

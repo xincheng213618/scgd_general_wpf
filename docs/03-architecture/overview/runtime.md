@@ -1,3 +1,14 @@
+---
+knowledge_id: "platform.runtime"
+knowledge_type: "topic"
+status: "current"
+summary: "启动分支、配置初始化、插件装载和恢复流程的运行时顺序。"
+aliases: ["启动链路","PluginLoader","App.xaml.cs","启动恢复"]
+code_paths: ["ColorVision/App.xaml.cs","ColorVision/Recovery","UI/ColorVision.UI/Plugins/PluginLoader.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs","Test/ColorVision.UI.Tests/StartupRecoveryPluginScannerTests.cs"]
+related: ["platform.architecture","delivery.update","ui.wizards","ui.localization","engine.rc-registration"]
+---
+
 # 架构运行时
 
 本页只描述当前代码里能看见的主程序运行时链路，不维护脱离实现的统一启动时序图。
@@ -8,17 +19,19 @@
 
 | 分支 | 行为 |
 | --- | --- |
-| 命令行文件处理 | `input`、`export` 等分支处理完成后直接返回 |
+| 命令行文件处理 | `export` 处理后结束该启动分支；`input` 仅在 `.cvraw` / `.cvcie` 被独立打开路由处理时提前返回，普通 PNG、JPEG、TIFF 不因 `input` 跳过正常启动 |
 | 正常桌面启动 | 初始化配置、日志、主题、语言、插件，再进入向导或启动窗口 |
 | 异常恢复 | 上次启动未完成时进入独立恢复窗口，可先更新主程序、跳过或禁用插件、回退插件，再决定是否继续 |
 
 ## 主程序启动链路
 
-从 `ColorVision/App.xaml.cs` 看，常见启动顺序是：处理更新包输入，创建本次启动记录，设置工作目录并预加载 DLL，初始化配置/日志/主题/语言，处理文件分支，执行单实例检查，必要时清理僵尸进程，按上次启动状态决定是否进入恢复窗口，初始化 WinForms 视觉样式，最后显示 `WizardWindow` 或 `StartWindow`。
+从 `ColorVision/App.xaml.cs` 看，常见启动顺序是：处理更新包输入，创建本次启动记录，设置工作目录并预加载 DLL，初始化配置/日志/主题/语言，处理文件分支，执行单实例检查（非调试且未允许多实例时，尝试关闭同会话、同安装路径的较早实例，不限于异常进程），按上次启动状态决定是否进入恢复窗口，初始化 WinForms 视觉样式，最后显示 `WizardWindow` 或 `StartWindow`。旧实例替换是产品启动行为，不是排障时终止进程的授权；启动副作用与验证前提见[主程序启动与最小图像验证](../../00-getting-started/first-steps.md)。
 
 这里最重要的不是记住所有步骤，而是知道启动并不总会直接进主窗口。
 
-启动记录按安装目录和启动尝试隔离，并记录进程、阶段及正在加载的插件。只有主窗口初始化完成、功能启动器执行成功、首次向导正常完成并重启、系统关机/注销或外部更新已经真实接管时才清理；多开进程不会互相覆盖记录。恢复窗口关闭或恢复准备失败时保留原故障阶段，供下次继续判断。
+启动记录按安装目录和启动尝试隔离，并记录进程、阶段及正在加载的插件。主窗口初始化完成、功能启动器执行成功、系统关机/注销或已有进程/更新接管等路径会清理相应记录；向导的退出清理分支实际只判断“本次显示过向导且当前内存 `WizardCompletionKey=true`”，不能据此认定新进程已成功启动。向导标记、保存和重启的区别见[向导完成契约](../../04-api-reference/ui-components/wizards.md)。多开进程不会互相覆盖记录；恢复窗口关闭或恢复准备失败时保留原故障阶段，供下次继续判断。
+
+启动时的语言配置读取可能回退到系统文化；运行中从设置选择语言则走确认、保存和重启，不是给所有窗口即时换字，详见[界面语言契约](../../04-api-reference/ui-components/localization.md)。
 
 ## 启动恢复
 
@@ -50,7 +63,7 @@
 | 对象 | 作用 | 失败时表现 |
 | --- | --- | --- |
 | `ServiceManager` | 数据库连接可用后加载服务树，组织 `TypeServices`、`TerminalServices`、`DeviceServices`、`GroupResources` | 设备树为空、设备控件未生成 |
-| `MQTTRCService` | 保持注册中心连接，查询服务令牌，更新服务状态并同步设备服务对象 | 流程跑不起来、设备在线但状态不更新 |
+| `MqttRCService` | 注册、查询服务令牌并同步设备服务对象；[RC 契约](../../04-api-reference/engine-components/rc-registration.md)区分连接、快照和设备就绪 | 流程跑不起来、设备在线但状态不更新 |
 | `TemplateControl` | 数据库连接可用后扫描已加载程序集中的 `IITemplateLoad`，调用 `Load()` 注册模板 | 模板不可见、模板不能编辑 |
 
 模板是否可见依赖两个前提：相关程序集已经加载，数据库连接已建立。
@@ -64,7 +77,7 @@ DisplayFlow/ViewFlow -> FlowExecutionSession -> FlowControl -> FlowEngineLib
     -> EngineExecutionCompleted -> FlowRunFinalizer -> RunFinalized
 ```
 
-`MQTTRCService` 为节点图提供设备/算法 service token。执行过程中持续更新当前节点、日志、批次和消息；图引擎完成后仍要等待后处理最终化。
+`MqttRCService` 为节点图提供设备/算法 service token。执行过程中持续更新当前节点、日志、批次和消息；图引擎完成后仍要等待后处理最终化。
 
 ## 常见失败点
 

@@ -1,0 +1,86 @@
+---
+knowledge_id: "ui.settings"
+knowledge_type: "topic"
+status: "current"
+summary: "设置窗口的发现缓存、侧栏搜索、活对象编辑和自定义页面生命周期；普通选项关窗不撤销，启动检查更新的勾选只表示至少一个更新开关开启。"
+aliases: ["设置窗口", "选项", "设置搜索", "自定义设置页", "启动检查更新", "SettingWindow", "SettingWindowController", "SettingRowFactory", "SettingMetadataResolver", "ConfigSettingManager", "IConfigSettingProvider", "ConfigSettingMetadata", "AggregatedBoolSetting", "MenuOptions"]
+code_paths: ["UI/ColorVision.UI.Desktop/Settings", "UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs", "UI/ColorVision.Common/Interfaces/ConfigSetting", "UI/ColorVision.UI/AssemblyHandler.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs", "Test/ColorVision.UI.Tests/ConfigServiceAdaptersTests.cs"]
+related: ["ui.desktop", "ui.configuration", "ui.property-grid", "ui.discovery", "ui.hotkeys", "ui.localization", "operations.exports", "delivery.update"]
+---
+
+# 设置窗口：发现、编辑与关闭契约
+
+`UI/ColorVision.UI.Desktop/Settings/` 负责把配置元数据呈现为侧栏分组和内容卡片；`UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs` 负责发现和缓存元数据。窗口不是配置事务，也不是所有业务配置的唯一入口。配置文件的写入、重载和对象替换归[配置持久化](./configuration.md)，具体编辑器的绑定方式归[属性编辑](./property-grid.md)。
+
+## 从打开到保存
+
+工具菜单“选项”及 `Ctrl+I` 进入 `MenuOptions.Execute`：先 `SettingWindow.ShowDialog()`，返回后无条件调用 `ConfigService.Instance.SaveConfigs()`，不检查 `DialogResult`。因此，从这个入口关闭窗口不能解释为取消修改或不保存。
+
+`SettingWindow` 自身只装配 controller，并转发搜索和分组选择；通用窗口没有“保存/取消”事务或回滚处理。`SettingRowFactory` 将原始 `metadata.Source` 交给 `PropertyEditorHelper.GenProperties`，没有先建立工作副本。编辑何时写回、是否触发额外行为取决于具体编辑器和属性 setter；自定义页面也可以有自己的保存、下载或系统操作。
+
+需要区分三个结果：控件显示新值、运行中的配置对象已修改、文件保存正常返回。关窗后的保存可能失败，窗口层没有撤销前面修改的补偿；直接构造 `SettingWindow` 的其它调用者也不会自动获得菜单的保存步骤。可替换 `IConfigService` 是否支持保存仍需查[适配器契约](./configuration.md)，能解析配置对象不代表支持 `SaveConfigs`。
+
+设置导入是另一条有写入副作用的链路，见[导入导出](../../01-user-guide/data-management/export-import.md)；不要把进入设置窗口当成只读检查的保证。
+
+自定义页不能套用普通属性行的提交规则。例如[快捷键页](./hotkeys.md)先编辑副本，其页面保存才重新注册并更新配置内存；未提交草稿不会因外层关窗保存而自动应用，已经应用的键位也不会被关窗撤销。
+
+[语言编辑器](./localization.md)又是不同边界：选择后立即请求确认，确认便保存配置并重启应用，不等普通选项窗口关闭；取消只处理该编辑器的文化属性，不是撤销所有选项。
+
+## 发现来源与两层缓存
+
+`ConfigSettingManager.GetAllSettings` 使用 `AssemblyHandler.GetAssemblies()` 的缓存/过滤程序集视图，不是扫描磁盘上所有 DLL。首次建立类型缓存时收集非抽象的 `IConfigSettingProvider` 与 `IConfig` 实现：
+
+| 来源 | 生成规则与失败边界 |
+| --- | --- |
+| `IConfigSettingProvider` | 无参构造 provider，追加其返回的元数据；构造或获取失败按类型记录日志并继续 |
+| `IConfig` + `[ConfigSetting]` | 只从带该特性的公共实例属性创建项；需要时通过 `ConfigService` 获取源对象，解析失败跳过该类型 |
+| 程序集类型读取 | `ReflectionTypeLoadException` 保留仍可取得的类型；其它程序集读取错误跳过该程序集 |
+
+两条来源不统一去重；同一个设置同时由 provider 和特性贡献，可能产生重复项。manager 返回已缓存的元数据列表，元数据中的 `Source` 是对象引用，不是每次渲染重新解析。
+
+`InvalidateCache()` **只清设置项缓存，不清 provider/config 类型缓存**。因此不能仅靠它发现后来加载插件的新设置类型；即使再次打开窗口，也仍要考虑 manager 的类型缓存和 `AssemblyHandler` 的上游缓存。它也不通知已打开的 controller 重新加载。当前窗口的搜索、切组只是使用已有 entries，不重新调用 manager。
+
+配置重载可能替换源实例，已有元数据、编辑器和自定义页面仍可能持有旧引用。失效设置项缓存与重建控件是不同动作；具体替换和订阅责任继续查[配置重载](./configuration.md)。
+
+## 侧栏、搜索与自定义页面
+
+`SettingWindowController` 在加载时把元数据变成 `SettingEntry`；缺少属性源、绑定名或对应属性的条目不能成为普通属性行。`SettingMetadataResolver` 负责标题、说明、导航分组、内容分区和搜索文本。
+
+| 行为 | 当前规则 |
+| --- | --- |
+| 导航 | `ListBox` 侧栏，不是 Tab；普通 Property 项按 `metadata.Group` 分组，缺省为 `Universal`。非 Property 项在有标题时用解析后的标题作为导航组名 |
+| 排序 | `Universal` 组在前，其它组按最小条目 Order、显示名；组内按分区顺序、元数据 Order。普通属性卡片先于非 Property 页面 |
+| 搜索 | 去掉查询首尾空白后，在预先建立的 `SearchText` 上做不区分大小写的整串包含匹配；不是分词、模糊匹配或全文搜索 |
+| 搜索范围 | 条目标题、说明、组/分区、绑定名、源类型、View 类型和属性显示元数据；不遍历自定义 View 内的控件文字，也不将 Class 展开的每个子属性作为独立导航搜索项 |
+| 选中组 | 筛选后优先保留原选中组；该组消失时选第一个可见组，内容随之重建 |
+
+`ConfigSettingType.TabItem` 的枚举名和 `ConfigSettingAttribute.Group` 注释仍保留旧 Tab 命名；当前呈现以 `SettingWindow.xaml` 与 controller 的侧栏实现为准，不能从旧名称推导实际控件结构。
+
+自定义内容由 `SettingRowFactory` 按条目懒创建。`ViewType` 必须可无参实例化为 `FrameworkElement`；factory 不自动把 `metadata.Source` 设为该 View 的 `DataContext`，自定义页自行负责绑定。
+
+`Class` 类型且 `Source` 为 `ViewModelBase` 时会展开 helper 认定可编辑的属性，可再附加 `ViewType`；不要求每个子属性都有 `[ConfigSetting]`。不要把该展开规则与 manager 的特性发现规则混为一谈。
+
+每个窗口条目缓存自己的自定义内容。切组或搜索时，普通属性行重新生成，自定义 View 从旧父容器分离后复用；创建失败、类型不符或缺少页面产生的提示内容也会缓存，切走再切回不会自动重试构造。controller 没有统一的页面销毁/退订协议，页面应自行处理资源与事件生命周期，不能把一次 `Unloaded` 当成最终释放。
+
+## “启动检查更新”是聚合开关
+
+controller 特判 Property 项的 `IsAutoUpdate`：源对象的运行时类型简单名称为 `AutoUpdateConfig` 或 `MarketplaceWindowConfig` 时，收起原始行并组合为“启动检查更新”。每类保留遇到的最后一项；有效目标只有一个时也能生成聚合行，不应假定两个配置一定都被发现。
+
+`AggregatedBoolSetting.IsChecked` 的 getter 使用 `Any`：**打勾只说明至少一个目标为 true，不证明主程序和插件自动更新都开启**。setter 依次将同一个值写入可写目标；不是事务，后面的写入异常不回滚前面的修改。它不订阅目标各自的变化，外部改值也不保证当前勾选立即刷新。
+
+聚合器不保存文件、不联网检查也不直接安装更新。实际启动检查、缓存和安装流程归[更新机制](../../02-developer-guide/deployment/auto-update.md)；界面勾选不能替代更新流程完成证据。
+
+## 源码定位与验证缺口
+
+| 要确认的问题 | 主要源码 |
+| --- | --- |
+| 选项菜单关闭后的保存 | `Settings/MenuOptions.cs` |
+| 窗口组成和事件转发 | `Settings/SettingWindow.xaml`、`SettingWindow.xaml.cs` |
+| 分组、搜索、聚合开关 | `Settings/SettingWindowController.cs`、`SettingMetadataResolver.cs`、`AggregatedBoolSetting.cs` |
+| 活对象编辑、自定义页面复用 | `Settings/SettingRowFactory.cs`、`SettingEntry.cs` |
+| 设置发现与失效范围 | `UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs` |
+
+上表省略前缀的 `Settings/` 路径均相对于 `UI/ColorVision.UI.Desktop/`。`PropertyEditorContractTests` 覆盖通用 helper 的绑定、只读属性、失败降级和实例复用，不覆盖整个设置窗口。`ConfigServiceAdaptersTests` 中名称含 `ConfigSettingManager_WorksWith...` 的用例只模拟对象解析，未构造 manager，不能作为设置发现或窗口集成测试。
+
+目前未发现设置 controller、搜索范围、聚合开关、关窗保存或配置重载重绑定的直接专项测试。文档检索与网站校验不填补这些运行时缺口；实际开窗、修改设置、导入和更新检查应在获授权的隔离环境中单独验证。

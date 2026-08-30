@@ -1,27 +1,17 @@
-# 属性编辑器
+---
+search: false
+outline: false
+redirect_from_deleted_page: true
+---
 
-ColorVision 使用基于元数据的属性编辑器统一展示和编辑对象属性。大多数模板、设备和配置对象都会通过同一套 PropertyGrid 机制暴露参数。
+<script setup>
+import { onMounted } from 'vue'
 
-## 你会看到什么
+onMounted(() => {
+  window.location.replace('../../04-api-reference/ui-components/property-grid')
+})
+</script>
 
-- 左侧或弹窗中的属性列表
-- 按分类分组的参数区域
-- 针对不同类型自动切换的编辑控件，例如文本、枚举、布尔值、颜色和文件路径
+# 内容已合并
 
-## 常见使用方式
-
-1. 在对象树、模板编辑器或设备配置界面选中一个对象。
-2. 在属性面板中查看分组后的参数。
-3. 修改值后，观察界面或对象状态是否即时更新。
-4. 如有重置或校验按钮，优先使用按钮而不是直接手工改底层配置文件。
-
-## 这套编辑器依赖什么
-
-- 属性上的 `Category`、`DisplayName`、`Description` 等元数据
-- 必要时使用自定义编辑器类型来决定控件样式
-- 部分复杂对象会在编辑器中展开为嵌套结构，而不是简单字符串
-
-## 说明
-
-- 本页只说明使用视角，不再承载 PropertyGrid 的实现细节。
-- 如果你要修改属性编辑器行为，建议从 `UI/ColorVision.UI/` 和 `Engine/ColorVision.Engine/Templates/` 里的现有元数据标注开始看代码。
+属性面板的可见行为、字段选择、修改与保存边界已合入 [PropertyGrid 属性编辑契约](../../04-api-reference/ui-components/property-grid.md)，与 `UI/ColorVision.UI/PropertyEditor/` 的实现和测试共同维护，不再区分使用手册与扩展说明。

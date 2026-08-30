@@ -1,16 +1,27 @@
+---
+knowledge_id: "algorithms.roi-routes"
+knowledge_type: "index"
+status: "current"
+summary: "区分发光区定位、JSON 裁剪、SFR 找 ROI 与统一算法 ROI 数据模型。"
+aliases: ["ROI到底对应哪个模块","TemplateRoi","TemplateImageROI","TemplateSFRFindROI","AlgorithmRoi"]
+code_paths: ["Engine/ColorVision.Engine/Templates/FindLightArea/TemplateRoi.cs","Engine/ColorVision.Engine/Templates/Jsons/ImageROI/TemplateImageROI.cs","Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI/TemplateSFRFindROI.cs","UI/ColorVision.Algorithms/AlgorithmImages.cs"]
+test_paths: []
+related: ["algorithms.index","algorithms.find-light-area","algorithms.image-cropping","algorithms.json-templates","algorithms.platform"]
+---
+
 # ROI
 
-本页只描述当前仓库里真实存在的 ROI 相关原语，不再维护“统一 ROI 模块设计图”式旧稿。
+本页路由 Engine 的 ROI 模板适配分支；中立区域与结果模型另见 [算法平台](../../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)。同名 ROI 不代表配置或坐标语义相同。
 
 ## 先看当前仓库里 ROI 实际分成哪几支
 
-按当前源码状态，ROI 并不是一个单独目录下的统一库，而是至少有三条相关分支：
+Engine 模板中的 ROI 至少有三条相关分支：
 
 1. 经典发光区定位模板，位于 `Templates/FindLightArea`
 2. 图像裁剪 JSON 模板，位于 `Templates/Jsons/ImageROI`
 3. ARVR 的 `SFR_FindROI` JSON 模板，位于 `Templates/Jsons/SFRFindROI`
 
-所以这页更像“ROI 入口地图”，而不是“全局 ROI 抽象类说明”。
+本地 Robust V2 发光区还有独立算法及适配路径，见 [FindLightArea](../templates/find-light-area.md)。上面三支不是仓库 ROI 能力的穷尽清单。
 
 ## 当前最关键的文件
 
@@ -56,9 +67,9 @@
 
 ## 当前几个最容易写错的点
 
-### ROI 不是统一基础库
+### 模板分支不等于全局 ROI 契约
 
-当前仓库里的 ROI 相关实现分散在经典参数模板和 JSON 模板两条路径中，没有一个统一的 `ROI` 根模块负责所有场景。
+本页的 Engine 适配实现分散在经典参数与 JSON 模板中；中立算法平台已存在，但不会自动让旧模板的参数、坐标和持久化格式变得互通。
 
 ### 经典 ROI 当前主要指发光区定位
 
@@ -72,10 +83,15 @@
 
 `AlgorithmSFRFindROI` 明确要求 `TemplatePoi`。在当前 ARVR 链里，ROI 和 POI 已经不是彻底分开的两个概念层。
 
-## 推荐阅读顺序
+## 按问题找源码
 
-1. `Engine/ColorVision.Engine/Templates/FindLightArea/TemplateRoi.cs`
-2. `Engine/ColorVision.Engine/Templates/FindLightArea/AlgorithmRoi.cs`
-3. `Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmConfiguration.cs`
-4. `Engine/ColorVision.Engine/Templates/Jsons/ImageROI/TemplateImageROI.cs`
-5. `Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI/TemplateSFRFindROI.cs`
+- 经典发光区参数或事件：`Templates/FindLightArea/TemplateRoi.cs`、`AlgorithmRoi.cs`。
+- 手动模板选择和编辑：`Services/Devices/Algorithm/DisplayAlgorithmConfiguration.cs`。
+- JSON 裁剪：`Templates/Jsons/ImageROI/TemplateImageROI.cs`。
+- ARVR 找 ROI 与 POI 联动：`Templates/Jsons/SFRFindROI/TemplateSFRFindROI.cs`、`AlgorithmSFRFindROI.cs`。
+
+以上简写相对 `Engine/ColorVision.Engine/`；只进入与问题对应的一支。
+
+## 验证入口与缺口
+
+不同 ROI 分支不是同一参数契约；先确认执行端，再使用发光区或对应算法平台测试，不能用一次 ROI 测试替代所有分支。

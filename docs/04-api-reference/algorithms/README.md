@@ -1,66 +1,44 @@
-# 算法与模板概览
+---
+knowledge_id: "algorithms.index"
+knowledge_type: "index"
+status: "current"
+summary: "区分统一本地图像算法平台与 Engine 模板/MQTT 算法，并按任务定位专题。"
+aliases: ["算法代码在哪里","ColorVision.Algorithms","TemplateControl","MQTTAlgorithm"]
+code_paths: ["UI/ColorVision.Algorithms/AlgorithmCatalog.cs","Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/MQTTAlgorithm.cs"]
+test_paths: []
+related: ["algorithms.platform","algorithms.template-overview","engine.template-design","algorithms.roi-routes","algorithms.poi-routes","engine.results"]
+---
 
-本章现在收束成“模板系统与算法接入链”的导读，不再继续维护把所有图像处理方法平铺成百科目录的旧写法。
+# 算法与模板知识入口
 
-## 这一章在讲什么
+算法相关问题先区分两个入口：`UI/ColorVision.Algorithms/` 的中立算法契约，与 `Engine/ColorVision.Engine/Templates/` 的模板及服务接入。部分算法在本地计算，部分 `Algorithm*` 类只组装外部服务请求；不能仅凭类名判断执行位置。
 
-这里的“算法”主要对应 `Engine/ColorVision.Engine/Templates/` 及其周边接入链，而不是仓库里所有底层图像处理代码的总表。当前重点包括：
+## 按问题检索
 
-- 模板如何被发现、加载、管理和编辑。
-- Flow 模板如何接入 `FlowEngineLib`。
-- JSON 模板如何通过专门编辑器进入系统。
-- ARVR、POI 等业务模板族怎样和算法服务对接。
+| 问题 | 主题 | 主要源码 |
+| --- | --- | --- |
+| 新算法如何定义输入、参数、结果、overlay 与执行入口 | [统一图像算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) | `UI/ColorVision.Algorithms/` |
+| ONNX 应接在哪里，是否已经实现 | [ONNX 接入方案](../../02-developer-guide/core-concepts/onnx-inference-future-design.md) | 以该页状态和实际源码为准 |
+| 模板如何发现、持久化、编辑与搜索 | [注册与持久化](../../03-architecture/components/templates/design.md)、[编辑与创建宿主](./templates/template-management.md) | `Templates/TemplateControl.cs` |
+| 模板体系和算法服务如何衔接 | [接入概览](./overview.md)、[通用构件](./primitives/common-modules.md) | `Engine/ColorVision.Engine/Templates/` |
+| Flow 选择模板并执行 | [Flow 接入](./templates/flow-engine.md)、[Engine 模板链](../engine-components/template-flow-chain.md) | `FlowProcessing/`、`Engine/FlowEngineLib/` |
+| 历史结果和统一 overlay 如何进入图像画布 | [结果链](../engine-components/result-handoff-chain.md) | `ResultHandleRegistry`、`AlgorithmOverlayManager` |
+| 模板菜单、属性面板、JSON 编辑器从哪里进入 | [菜单入口](./templates/template-menu-entries.md)、[JSON 模板](./templates/json-templates.md)、[PropertyGrid](../ui-components/property-grid.md) | `DisplayAlgorithmConfiguration.cs`、`Templates/Jsons/` |
 
-如果你要找的是 OpenCV 级别的底层处理函数，入口通常不在这一章，而更接近 `Engine/cvColorVision/`、`UI/ColorVision.Core/` 或原生 DLL 侧。
+## 按模板或业务关键词检索
 
-## 当前章节结构
-
-### 入口页
-
-- [算法系统概览](./overview.md)：当前实现链的整体说明，先看这页最省时间。
-
-### 专题目录
-
-- `templates/`：模板管理、流程模板、JSON 模板、POI/ARVR、FindLightArea、LED 检测、DataLoad、Matching、SysDictionary、FocusPoints、ImageCropping、模板菜单等专题页。
-- `detectors/`：少量缺陷/检测类专题，例如 [Ghost Detection](./detectors/ghost-detection.md)。
-- `primitives/`：少量基础构件说明，例如 [通用算法模块](./primitives/common-modules.md)、[ROI 原语](./primitives/roi.md)、[POI 原语](./primitives/poi.md)。
-
-这几个目录下仍保留一些历史页面，但本章首页不再把它们全部当成稳定入口平铺出来。
-
-## 常用模板入口
-
-| 你要维护 | 先看 |
+| 关键词 | 主题 |
 | --- | --- |
-| 模板发现、编辑、搜索和创建 | [模板管理](./templates/template-management.md)、[Templates API 参考](./templates/api-reference.md) |
-| Flow 流程模板和节点参数 | [流程引擎](./templates/flow-engine.md)、[Engine 模板与 Flow 链路](../engine-components/template-flow-chain.md) |
-| POI、ROI、发光区和关注点 | [POI 模板](./templates/poi-template.md)、[ROI 原语](./primitives/roi.md)、[FindLightArea 发光区定位模板](./templates/find-light-area.md)、[FocusPoints 关注点模板](./templates/focus-points-template.md) |
-| AR/VR、LED 和灯条检测 | [ARVR 模板](./templates/arvr-template.md)、[LED 检测模板](./templates/led-detection.md) |
-| 字典 | [SysDictionary 系统字典模板](./templates/sys-dictionary-template.md) |
-| 数据加载、匹配和裁剪 | [DataLoad 数据加载模板](./templates/data-load-template.md)、[Matching 模板匹配](./templates/matching-template.md)、[ImageCropping 图像裁剪模板](./templates/image-cropping-template.md) |
-| JSON 模板和模板菜单入口 | [JSON 模板](./templates/json-templates.md)、[模板菜单入口](./templates/template-menu-entries.md) |
+| POI、关注点数据 | [POI 模板](./templates/poi-template.md)、[POI 构件](./primitives/poi.md) |
+| ROI、发光区、FocusPoints | [ROI 路由](./primitives/roi.md)、[FindLightArea](./templates/find-light-area.md)、[FocusPoints](./templates/focus-points-template.md) |
+| AR/VR、Ghost、LED、灯条 | [ARVR](./templates/arvr-template.md)、[Ghost](./detectors/ghost-detection.md)、[LED](./templates/led-detection.md) |
+| 数据加载、Matching、四点裁剪 | [DataLoad](./templates/data-load-template.md)、[Matching](./templates/matching-template.md)、[ImageCropping](./templates/image-cropping-template.md) |
+| 系统字典 | [SysDictionary](./templates/sys-dictionary-template.md) |
 
-## 当前最值得先认识的代码锚点
+## 检索与判断边界
 
-从现状看，模板与算法链路最值得先认识的是这几类文件：
+模板族页面回答的是当前适配层与参数契约，不承诺外部算法服务或私有 native DLL 的内部实现。按页面的 `code_paths` 定位精确符号，再用 `test_paths` 和验证缺口判断结论强度。标为 `planned` 的方案不能当作现有功能；旧链接兼容页只负责跳转，不是第二份事实源。
 
-- `Templates/TemplateControl.cs`：模板发现与注册入口。
-- `Templates/TemplateEditorWindow.xaml.cs`：模板编辑窗口。
-- `Templates/Flow/TemplateFlow.cs`：流程模板持久化与导入导出入口；编辑器位于 `FlowProcessing/Editor/`，运行工作区位于 `FlowProcessing/Runtime/`。
-- `Templates/Jsons/ITemplateJson.cs`：JSON 模板的公共装载/导入导出逻辑。
-- `Templates/Jsons/EditTemplateJson.xaml(.cs)`：JSON 模板编辑控件，负责文本/属性两种编辑模式。
-- `Templates/POI/AlgorithmImp/AlgorithmPOI.cs`、`Templates/ARVR/*/Algorithm*.cs`：典型业务算法 UI 与消息组装入口。
+## 验证入口与缺口
 
-## 当前几个关键边界
-
-- 很多 `Algorithm*` 类本身不是最终计算核心，它们当前更多负责收集模板参数、文件路径、设备信息，再通过 MQTT/服务链发出执行请求。
-- `POI` 不是孤立专题，它在当前代码里仍然是多个算法族共享的上游模板和参数来源。
-- `Flow` 模板虽然表现形态不同，但它仍属于同一个 Templates 系统的一部分，不应和普通模板链完全割裂。
-- JSON 模板和传统强类型模板目前并存，阅读时不要默认系统只保留一种模板定义方式。
-
-## 推荐阅读顺序
-
-1. 先看 [算法系统概览](./overview.md)，建立运行时主链认知。
-2. 再对照上面的“常用模板入口”，按你要维护的模板族进入单页。
-3. 如果需要理解目录和注册入口，再看 [Templates 模块分析](../../03-architecture/components/templates/analysis.md)。
-4. 如果关注流程模板，再看 [FlowEngineLib 架构](../../03-architecture/components/engine/flow-engine.md)。
-5. 最后始终回到源码确认当前行为，避免按旧文档补出不存在的功能承诺。
+本页为两条算法体系的路由索引；验证随选中平台或模板主题，不把本地 provider 测试用于证明远端算法服务。

@@ -1,4 +1,22 @@
+---
+knowledge_id: "algorithms.contour-analysis"
+knowledge_type: "reference"
+status: "current"
+summary: "ContourAnalysis 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。"
+aliases: ["轮廓提取返回什么、为什么当前未开放","ContourAnalysis","ContourAnalysisAlgorithmProvider"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/ContourAnalysisAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ContourAnalysisV1Tests.cs","Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
+related: ["algorithms.platform","algorithms.index"]
+---
+
 # 轮廓提取 V1（M5.2）
+
+## 当前发布边界
+
+当前默认 `ImageAlgorithmPlatform.CreateDefaultProviders()` 把本页 provider 包装在 `ExperimentalAlgorithmProviderGate` 中：菜单和 Batch 可执行投影隐藏该能力，直接调用默认 Runner 也返回 `provider_unavailable`，详情包含 `algorithm_experimental`。本页后面的参数、结果与宿主接入描述属于保留实现及测试契约，不是产品已开放的承诺；不得在调用方另建执行旁路来绕过门禁。
+
+本页 `status: current` 表示它记录当前源码事实，不代表算法已发布。M 编号是历史增量标识；其他增量是否可用以 [统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单) 为准。`Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs` 验证默认拒绝行为，专题测试覆盖实现细节；解除门禁还需完成对应数值、最坏资源与生产规模验证。
+
 
 M5.2 是 Blob / 连通域之后的独立工业测量切片。仓库原有 `opencv_helper` 和若干设备模板内部使用过 `findContours`，但这些实现服务于专用算法，没有统一的参数、ROI、结构化结果或宿主契约。本阶段复用 OpenCvSharp 的轮廓能力，不修改专用 native ABI，也不包含亚像素边缘、直线或圆拟合。
 
@@ -41,7 +59,9 @@ Copilot 当前获批的批处理工具只接收图像输出。轮廓 descriptor 
 
 Geometry 的 `Confidence` 使用实心度（轮廓面积/凸包面积），它是确定性的几何质量量，不是分类概率。拒绝原因使用稳定代码，例如 `area_below_minimum`、`perimeter_above_maximum`、`point_count_below_minimum`、`circularity_below_minimum`、`solidity_below_minimum` 和 `touches_image_border`。
 
-## ImageView、Batch 与 Flow
+## 保留的 ImageView、Batch 与 Flow 适配（默认禁用）
+
+下述入口和结果窗代码保留用于验证；默认产品运行时仍受 Experimental 门禁阻止，不表示当前菜单可执行。
 
 ImageView 的“算法调用 → 轮廓提取”提供整图、矩形、圆和多边形入口。结果窗口显示完整 Table，可导出 CSV/JSON，并用统一 `ImageAlgorithmAnalysisSession` 和 invocation coordinator 遵守 document/revision/latest-wins；窗口关闭会释放 Result 和 transient Visual。
 

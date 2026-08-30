@@ -1,73 +1,90 @@
-# ColorVision.Themes
+---
+knowledge_id: "ui.themes"
+knowledge_type: "topic"
+status: "current"
+summary: "ThemeManager的主题选择、资源追加、系统跟随和窗口外观契约；选择不等于应用成功，预览不等于配置落盘。"
+aliases: ["主题切换为什么不生效","跟随系统但标题栏没变","强制主题重复资源字典","主题预览会自动保存吗","主题系统事件订阅释放","ColorVision.Themes","ThemeManager","ThemeManager.Current","Theme","ApplyTheme","ForceApplyTheme","ApplyThemeChanged","CurrentTheme","CurrentUITheme","CurrentThemeChanged","CurrentUIThemeChanged","ApplyCaption","ThemeConfig","ThemePropertiesEditor","AppsUseLightTheme"]
+code_paths: ["UI/ColorVision.Themes/README.md","UI/ColorVision.Themes/Theme.cs","UI/ColorVision.Themes/ThemeManager.cs","UI/ColorVision.Themes/ThemeManagerExtensions.cs","UI/ColorVision.Themes/Themes","UI/ColorVision.Themes/ColorVision.Themes.csproj","UI/ColorVision.UI/Themes/ThemeConfig.cs","UI/ColorVision.UI/Themes/ThemePropertiesEditor.cs","UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs","UI/ColorVision.UI/Extension/IIconExtension.cs","UI/ColorVision.UI/DisPlayManager.cs","ColorVision/App.xaml","ColorVision/App.xaml.cs","ColorVision/StartWindow.xaml.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ThemeSettingsTests.cs","Test/ColorVision.UI.Tests/ThemeSubscriptionLifecycleTests.cs","Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs"]
+related: ["ui.index","ui.property-grid","ui.configuration"]
+---
 
-`UI/ColorVision.Themes/` 是 WPF 主题资源和窗口外观支持库。它负责固定主题切换、资源字典注入、系统主题跟随、标题栏/图标联动和少量通用控件；不是任意自定义主题平台。
+# 主题选择、资源应用与窗口外观
 
-## 先查什么
+`ColorVision.Themes` 负责 WPF 主题资源与窗口外观；`ColorVision.UI` 中的 `ThemeConfig` / `ThemePropertiesEditor` 负责配置对象和选项编辑。主题选择、资源应用、标题栏更新、配置落盘是不同完成条件，不能用一次 `ApplyTheme` 返回统一代表。
 
-| 现象 | 第一检查点 |
+当前只有 `UseSystem`、`Light`、`Dark` 三种选择；`UseSystem` 是选择策略，不是第三套配色。没有 `Theme.Custom`、`ResourceDictionaryCustom`、`ThemeConfig.FollowSystem` 或运行时主题注册协议。资源列表虽然公开可改，仍须满足现有加载和事件边界。
+
+## 选择状态与实际资源
+
+`ThemeManager.Current` 是可替换的全局实例。`NormalizeTheme` 把不属于三种枚举的值归一为 `UseSystem`。
+
+| 状态/入口 | 当前行为 |
 | --- | --- |
-| 应用启动后主题没生效 | `Application.ApplyTheme` 调用时机、`ThemeManager.CurrentTheme` |
-| 某个主题切换时报资源找不到 | `Themes/*.xaml`、`.csproj` 资源打包配置 |
-| 标题栏颜色不跟随主题 | 是否调用 `Window.ApplyCaption` 或使用 `BaseWindow` |
-| `UseSystem` 不跟随 Windows | `AppsUseLightTheme`、`SystemUsesLightTheme`、系统事件监听 |
-| 图标或上传背景缺失 | `Assets/Image/`、`Assets/uploadbg.avif` 是否进入包/输出目录 |
-| 自定义主题接不上 | 当前没有 `Theme.Custom` 或运行时主题注册模型 |
+| `CurrentTheme` | 选择值，初始为 `Light`；字段先改变，再同步发出 `CurrentThemeChanged` |
+| `CurrentUITheme` | 资源应用状态，初始为 `Light`；字段改变才发出 `CurrentUIThemeChanged` |
+| `Application.ApplyTheme(theme)` | 归一化后，若选择未变立即返回；否则先设置选择/通知，再把 `UseSystem` 解析为缓存的 `AppsTheme`；实际主题未变时不加载字典 |
+| `Application.ForceApplyTheme(theme)` | 直接调用 `ApplyThemeChanged`，不改变 `CurrentTheme`，也不检查实际主题是否相同 |
+| `ApplyThemeChanged(UseSystem)` | 不读取系统、不加载任何字典，只把 `CurrentUITheme` 设置为 `UseSystem`；不是强制刷新系统配色的等价入口 |
 
-## 当前能力
+因此不能无条件把 `CurrentUITheme` 当成只有 Light/Dark 的枚举；强制入口可以写入 `UseSystem`。强制浅/深色应用后，原选择仍可能是 `UseSystem`，下次应用主题事件可再次覆盖它。
 
-| 能力 | 当前入口 | 说明 |
-| --- | --- | --- |
-| 主题枚举 | `Theme` | 仅有 `UseSystem`、`Light`、`Dark` |
-| 主题切换 | `ThemeManager` | 维护 `CurrentTheme`、`CurrentUITheme`，装载资源字典并触发变更事件 |
-| 应用入口 | `ThemeManagerExtensions` | `Application.ApplyTheme`、`Application.ForceApplyTheme` |
-| 窗口外观 | `Window.ApplyCaption`、`BaseWindow` | 更新 DWM 标题栏颜色和主题图标 |
-| 主题资源 | `Themes/Base.xaml`、`Dark.xaml`、`White.xaml` | 固定资源字典集合 |
-| 附带控件 | `Controls/`、`Converter/`、`Utilities/` | 主题库内复用控件、转换器和工具 |
+`ApplyThemeChanged(Light/Dark)` 按列表顺序加载对应 White/Dark 字典，再加载 Base 列表，逐项加入 `app.Resources.MergedDictionaries`。它不移除旧字典、不按 URI 去重；切换实际配色或重复强制应用会继续追加。相同主题的强制应用即使追加了字典，也不会再次触发 `CurrentUIThemeChanged`。资源生效还取决于控件的资源查找/绑定方式，不保证刷新所有已缓存的 Brush 或图像。
 
-## 主题链路
+管理器初始字段为 Light，不代表已注入资源：空白 WPF 宿主第一次 `ApplyTheme(Light)` 会直接返回；`ApplyTheme(UseSystem)` 解析为 Light 时也可能跳过注入。ColorVision 主程序由 `ColorVision/App.xaml` 预载浅色字典，`App.xaml.cs` 再应用配置选择。独立包宿主应先建立初始资源，例如在 UI 线程上一次性 `ForceApplyTheme(Light)` 后再 `ApplyTheme(UseSystem)`；不要把强制应用放进重复刷新循环。
 
-1. 上层 UI 或配置选择主题。
-2. `Application.ApplyTheme` 调到 `ThemeManager.Current.ApplyTheme`。
-3. 如果选择 `UseSystem`，先按 Windows 应用主题解析为浅色或深色。
-4. `ThemeManager` 把基础资源和目标主题资源加入 `Application.Resources.MergedDictionaries`。
-5. 更新 `CurrentTheme` / `CurrentUITheme` 并触发主题变更事件。
-6. 调过 `ApplyCaption` 的窗口同步更新标题栏颜色和图标。
+## 失败与通知不是事务
 
-## 系统主题跟随
+选择事件发生在资源加载前；资源全部追加后才设置 `CurrentUITheme`。这些调用没有回滚或逐订阅者异常隔离：
 
-`UseSystem` 依赖 Windows 事件和注册表值，不是框架层的实时同步服务。
+- `CurrentThemeChanged` 订阅者抛错时，选择字段已变，但本次资源应用可能尚未开始；再次用相同选择调用 `ApplyTheme` 会被短路。
+- 字典加载中途失败会保留此前已追加的字典及已改变的选择，实际主题字段可能仍是旧值。
+- `CurrentUIThemeChanged` 订阅者抛错时，字典和字段已经更新，后续订阅者可能未收到通知。
 
-| 项 | 当前实现 |
+方法没有统一的 UI Dispatcher 调度、成功结果对象或资源状态恢复。调用方应在合适的 WPF 线程处理异常；“选择已改变”“资源已注入”和“全部消费者已刷新”需要分别核对，不能因异常就宣称已回滚。
+
+## UseSystem 读取与订阅边界
+
+构造管理器时，`AppsTheme` / `SystemTheme` 分别读取当前用户注册表 `Software\Microsoft\Windows\CurrentVersion\Themes\Personalize` 下的 `AppsUseLightTheme` / `SystemUsesLightTheme`。值缺失按 Light，存在时直接转为整数并判断是否大于零；这里没有统一捕获读取异常或非整数值错误。
+
+构造后约 10 秒才订阅 `SystemEvents.UserPreferenceChanged` 和 `SystemParameters.StaticPropertyChanged`。任一回调都会重新读两值，没有按事件类别过滤；延迟结束时仅建立订阅，不主动重新采样，所以等待期间错过的变化不保证立即补齐。
+
+`AppsThemeChanged` 在选择为 `UseSystem` 时把事件参数交给实际主题应用；`SystemThemeChanged` 本身不驱动应用资源，例如启动窗口用它更新自己的图标。`AppsTheme` / `SystemTheme` setter 都是先发事件再更新缓存字段，订阅者应使用事件参数；订阅者抛错可能阻止缓存赋值。
+
+系统回调没有显式切换 UI 线程。管理器也没有 `Dispose` 或解除这两个静态事件的路径；反复创建/替换 `ThemeManager.Current` 不能当作安全重置。以上是当前实现边界，不是已证明无遗漏、无线程风险的系统主题同步服务。
+
+## ApplyCaption 与 BaseWindow 是不同生命周期
+
+`window.ApplyCaption(Icon: true)` 在下一次 `Loaded` 执行时取得 HWND，应用初始 `CurrentUITheme`，并建立后续订阅；正常完成后移除这次 Loaded 处理器，在 `Closed` 解除主题处理器。应在窗口首次加载前调用一次；它没有重复调用保护，也不会在已经 Loaded 时立即补执行。反复调用会建立多份处理器。
+
+图标优先读取窗口类型所在程序集目录的 `PackageIcon.png`，用 OnLoad 解码并冻结；读取失败且 `Icon=true` 时回退到主题库的默认图标。找到包图标时，即使 `Icon=false` 仍会赋值；这个参数只控制默认图标分支。默认图标为 `Assets/Image/ColorVision.ico`（非 Dark）或 `ColorVision1.ico`（Dark），不是任意窗口原图标的保留策略。
+
+关键限制：后续订阅是 `CurrentThemeChanged`，不是 `CurrentUIThemeChanged`。切换到 UseSystem 时它直接收到 UseSystem，按非深色处理；随后仅 Windows 应用主题变化，或仅强制应用资源，不会通知此处理器。因此当前不能承诺“跟随系统后标题栏/默认图标始终同步实际配色”。
+
+`SetWindowTitleBarColor` 先把 caption/border 色恢复为 DWM 默认，再分别调用旧/新沉浸式暗色属性：Dark 为 1，其余为 0。DWM 返回码被丢弃，没有返回实际生效状态或兼容性重试保证。包图标读取的 catch 不覆盖整个窗口初始化；资源加载、事件或原生调用异常不具备统一降级事务。
+
+`BaseWindow` 不自动调用 `ApplyCaption`：它提供默认样式、窗口命令和 HWND hook。启用 `IsBlurEnabled` 时在首次 Loaded 初始化背景效果，订阅的是 `CurrentUIThemeChanged`；关闭时解除主题订阅和 HWND hook。默认未启用模糊，属性在 Loaded 后改变也没有自动初始化回调。不要把继承 BaseWindow 当成标题栏跟随的替代保证。
+
+`ApplyCaption` 和 BaseWindow 解除主题订阅时都重新读取 `ThemeManager.Current`，未保存最初的发布者；窗口存活期间替换全局实例可能使旧订阅留下。这与启动窗口显式保存 `_subscribedThemeManager` 的实现不同。
+
+## ThemeConfig、即时预览与落盘
+
+`ThemeConfig` 位于 `UI/ColorVision.UI/Themes/`，虽然命名空间是 `ColorVision.Themes`，它不属于独立 Themes 包。`Instance` 从 `ConfigService` 取得对象；`Theme` 默认 UseSystem，setter 只做归一化、赋值和 PropertyChanged，不自己应用资源或写文件。`TransparentWindow` 也只是配置值，效果由具体窗口消费者决定。
+
+`ThemePropertiesEditor` 通过 [属性编辑器契约](./property-grid.md)提供三个预览卡。卡片是固定配色的示意图，UseSystem 为浅/深两半，不是当前窗口或系统状态的截图。选择不同卡片时先写入传入对象属性，再调用 `Application.Current?.ApplyTheme`；应用不存在时仍可能已改对象，资源应用失败也不撤销属性值。
+
+它没有候选副本、保存/取消事务，也不调用配置保存接口；预览即运行期外观修改，不保证关闭编辑页面会恢复。外部属性变化会同步选中状态，但属性 setter 本身不是主题应用入口。编辑器在 Unloaded 解除对象通知，未在再次 Loaded 时重新订阅。设置发现缓存还可能持有旧配置对象；配置重载后需按 [配置持久化与对象所有权](./configuration.md)重新取得/重建绑定。
+
+保存时机、退出自动保存、保存失败和重载对象替换均归配置服务，不由 Themes 库承诺。“预览已变色”不能证明设置已写盘，文件重载也不自动等于所有主题消费者已重新应用。
+
+## 包入口与验证范围
+
+`UI/ColorVision.Themes/ColorVision.Themes.csproj` 当前面向 `net8.0-windows7.0;net10.0-windows7.0`，引用 HandyControl，启用 NuGet/符号包生成并打包 README。目标框架后缀不是每个 DWM 属性在该 Windows 版本可用的保证。包使用/本地构建入口保留在源码旁 README；发布规则见 [UI DLL 发布](./publishing.md)。
+
+| 已有测试 | 实际断言范围 |
 | --- | --- |
-| 监听事件 | `SystemEvents.UserPreferenceChanged`、`SystemParameters.StaticPropertyChanged` |
-| 应用主题判断 | `Personalize\\AppsUseLightTheme` |
-| 系统主题判断 | `Personalize\\SystemUsesLightTheme` |
-| 标题栏 | 深色启用沉浸式暗色；浅色回到系统默认 |
+| `ThemeSettingsTests` | 仅支持 UseSystem/Light/Dark 的列表；历史枚举值 3、4 被 ThemeConfig 归一为 UseSystem |
+| `ThemeSubscriptionLifecycleTests` | `IIconExtension.SetIconResource`、`DisPlayManagerExtension.ApplyChangedSelectedColor` 的弱引用订阅不阻止目标 GC；不是 ApplyCaption 或全体窗口生命周期测试 |
+| `StartWindowThemeLifecycleTests` | 启动窗口关闭恢复 SystemTheme 订阅数，以及先解除启动日志 appender 后关闭的窗口可被 GC；不是全局系统事件解绑测试 |
 
-## 边界
-
-- 主题持久化和预览卡编辑器位于 `UI/ColorVision.UI/Themes/ThemeConfig.cs` 与 `ThemePropertiesEditor.cs`，不是本项目单独完成。
-- 旧文档提到的 `Theme.Custom`、`ThemeManager.ResourceDictionaryCustom`、`ThemeConfig.FollowSystem` 当前不存在。
-- 新增主题不是只加一个 XAML，还要改枚举、资源列表、标题栏逻辑、图标策略和包资源。
-
-## 新增或修改主题验收
-
-| 验收项 | 要查什么 |
-| --- | --- |
-| 目标框架 | `ColorVision.Themes.csproj` 的 `net8.0-windows7.0;net10.0-windows7.0` |
-| 包元数据 | `GeneratePackageOnBuild`、`PackageReadmeFile`、`README.md` |
-| 第三方依赖 | `HandyControl` 版本和宿主输出目录依赖一致 |
-| 资源字典 | 每个内置主题切换时都能加载对应 XAML |
-| 运行时切换 | 启动后和运行时调用 `ApplyTheme` / `ForceApplyTheme` 都能更新全局资源 |
-| 窗口外观 | 深色、浅色标题栏和窗口图标符合当前实现 |
-| 系统跟随 | Windows 主题变化后，`UseSystem` 能按注册表和系统事件更新 |
-| 包内资源 | `ColorVision.ico`、`ColorVision1.ico`、`uploadbg.avif` 不丢失 |
-
-## 关键文件
-
-| 任务 | 先看 |
-| --- | --- |
-| 理解主题切换 | `ThemeManager.cs`、`ThemeManagerExtensions.cs`、`Theme.cs` |
-| 理解配置接入 | `UI/ColorVision.UI/Themes/ThemeConfig.cs`、`ThemePropertiesEditor.cs` |
-| 检查主题资源 | `Themes/Base.xaml`、`Themes/Dark.xaml`、`Themes/White.xaml` |
-| 判断能否扩展主题 | 先查 `Theme` 枚举和 `ThemeManager`，当前没有开放注册模型 |
+测试引用不代表本次执行。当前这些测试不能证明资源追加/失败恢复、选择/实际事件顺序、UseSystem 延迟与线程、预览持久化、ApplyCaption 重复/已加载调用和 DWM 真机表现；修改这些契约需补相应针对性验证，不应把“需要验收”改写成“已经支持并验证”。

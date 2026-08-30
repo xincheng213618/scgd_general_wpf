@@ -1,3 +1,14 @@
+---
+knowledge_id: "copilot.lifecycle"
+knowledge_type: "topic"
+status: "current"
+summary: "Copilot 任务生命周期、恢复预算、项目指令发现和 Skill 渐进加载的契约。"
+aliases: ["Copilot 如何加载 AGENTS.md","为什么不读取 config.toml","Skill 什么时候加载","CopilotAgentProjectInstructions","CopilotAgentSkillCatalog","/init","初始化项目指令","CopilotProjectInitialization"]
+code_paths: ["ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.cs","ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.Rules.cs","ColorVision/Copilot/Agent/CopilotAgentSkillCatalog.cs","ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs","ColorVision/Copilot/CopilotProjectInitialization.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentProjectInstructionsTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentSkillCatalogTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs"]
+related: ["copilot.runtime","copilot.execution","copilot.extensions"]
+---
+
 # Copilot 生命周期、预算与 Skills
 
 每次工具调用都有稳定的 `CallId`、轮次、尝试次数/上限、运行时、工具名、读写级别、风险、审批模式、幂等性、并发模式、资源指纹、排队耗时、失败分类、是否允许重试、参数摘要、开始/结束时间、总耗时、超时、结果摘要和最终状态。状态包括 `Running`、`AwaitingApproval`、`Completed`、`Failed`、`TimedOut`、`Denied`、`Cancelled` 和 `Interrupted`。
@@ -50,7 +61,17 @@ Harness 的 `TodoProvider` 和 `AgentModeProvider` 现在作为标准运行时�
 
 非 Chat 模式按受信项目根到活动文档目录的顺序发现项目指令。受信项目根优先取当前解决方案目录；未打开解决方案时才回退到活动文档目录。每个目录先选择一个共享入口，依次尝试 `AGENTS.override.md`、`AGENTS.md`、`CLAUDE.md` 和 `.claude/CLAUDE.md`；后两者是面向 Claude Code 项目的兼容回退，不会在同目录已有 AGENTS 指令时重复注入。项目根的 `.claude/rules/**/*.md` 是共享入口之外的模块化规则；根共享文档之后按规则相对路径稳定排序，再加载同目录非空的 `CLAUDE.local.md` 个人叠加层。local 即使已经选择 AGENTS 入口也会生效，适合不应提交的本机测试数据或工作流偏好，仓库应把它加入 `.gitignore`。随后才加载活动文档链中的嵌套共享与 local 文档，因此越靠近活动文档的内容越晚出现。文档数量或字符预算不足时，选择阶段先保留活动文档链中最具体的文档；同一作用域按 local、共享或匹配路径的规则、无条件规则决定保留顺序，序列化时仍保持从外层到内层、共享到规则再到 local 的可解释顺序。
 
+### /init 创建项目指令
+
+`CopilotProjectInitialization` 将 `/init` 解释为有界的真实 Agent 请求，不是直接写模板文件。它先规范化现有工作区根，并调用共享指令发现逻辑检查 `AGENTS.override.md`、`AGENTS.md`、配置的 fallback 文件及 `CLAUDE.md` / `.claude/CLAUDE.md`；已有同名文件系统项（包括空文件）阻止初始化，避免覆盖或遮蔽旧指令。
+
+请求要求先读项目结构和必要文档，只以一次 `PreviewWorkspacePatchEnvelope` 提议根级 `AGENTS.md` 的单一 add，再将原 change set 交给 `ApplyWorkspacePatchEnvelope`。应用仍服从当前原生审批策略；请求来源声明或指令正文不提供授权。应用前还需复查共享指令候选和目标不存在，不能将竞态降格为覆盖。内容只保留证据支持的长期项目事实、架构边界、PowerShell 构建/测试入口与完成标准，不写凭据、个人绝对路径、生成清单或临时分支状态。本初始化任务不执行构建/测试；完成后仍需用户审阅生成的规则。
+
+### 搜索根不等于受信项目根
+
 显式本地文件和文件附件仍可增加只读搜索根，让 Agent 在用户要求时读取对应文件；它们不会自动成为受信项目根，因此相邻的 `AGENTS.md`、`CLAUDE.md`、`.claude/rules` 和 `.agents/skills` 不会进入模型上下文。这个分离与 Codex 只从受信项目层加载项目配置的边界，以及 Claude Code“附加目录授予文件访问、默认不加载 CLAUDE.md/rules”的行为一致。`/permissions` 会分别显示搜索根和受信项目根，便于确认来源。
+
+### 路径规则与指令预算
 
 rules 不含 `paths` frontmatter 时无条件适用于该受信项目根；存在 `paths` 时，只有活动文档、用户文本中的显式本地文件或文件附件在请求开始前已知、位于受信项目根内，且其根内相对路径匹配至少一个 glob 时才加载。支持 `*`、`?`、`**` 和 `{ts,tsx}` 一类花括号展开；单个规则最多 16 个模式，每个模式最多 256 个字符。绝对路径、父目录段、否定模式、控制字符、空段、重复或畸形 `paths` 会让该规则失败关闭，而不是意外变成全局规则。匹配使用 Windows 不区分大小写语义，frontmatter 只供宿主筛选，进入模型前会移除。ColorVision 当前在构造固定请求上下文时完成匹配，不会因为本轮工具稍后发现了一个此前未知文件而热注入新规则；后续新请求会按当时目标重新发现。
 
@@ -68,13 +89,21 @@ Harness 的 `AgentSkillsProvider` 作为标准能力启用，采用渐进式加�
 - 应用输出目录下的 `Copilot/Skills/<skill-name>/SKILL.md`，用于随 ColorVision 发布的内置技能。
 - 不默认扫描用户主目录或任意外部路径；符号链接和重解析点目录不会加入技能源。
 
+### Skill 候选与元数据预算
+
 为避免项目 Skill 持续增长后放大每次模型调用的 L1 元数据成本，运行时在 Framework 完成一次文件发现后对候选项去重，并根据当前请求与 `name`、`description` 的中英文相关性选择最多 16 个活跃 Skill。Skill 名称和说明的合计预算按独立 Agent 上下文窗口的 2% 换算（以 4 字符约等于 1 Token 做保守估算），并保留 8,000 字符硬上限；当前默认 1,048,576 Token 窗口因此使用 8,000 字符硬上限，如用户收紧窗口，Skill 预算也会同步下降。预算不足时先按剩余候选数公平缩短 description，仍然过多时才省略低排名 Skill；缩短只影响初始目录，真正加载时仍读取完整 `SKILL.md`。用户显式点名的 Skill 具有最高优先级，同一运行的发现结果会被缓存。运行诊断会显示候选数、启用数、缩短说明数、预算省略数，以及真正被 `load_skill` 或参考资料读取路径加载的 Skill 名称。这与 Codex 初始 Skills 列表的 2% / 8,000 字符规则保持一致，而不是把 8,000 当作每次都应该占满的目标。
 
+### Skill 使用统计和历史降级
+
 运行结束后，宿主只把“本轮被选择”、“本轮实际加载”和“连续入选但未加载”计数写入本地有界状态 `Copilot/State/skill-usage.json`。状态最多保留 128 个名称，单文件上限 1 MiB，损坏或超限时安全重建；不保存提示正文、Skill 内容或用户问题。连续至少 20 次被选择但未加载的 Skill 会自动降级为 explicit-only，不再占用后续请求的默认 Skill 元数据预算；这也能识别“历史上曾用过一次，但后来长期不再有效”的 Skill。用户在当前问题中以 `$skill-name` 或完整 Skill 名称直接点名时仍可加载；一次真实加载会把连续未加载计数清零，使该 Skill 重新参与隐式匹配，之后若再次连续低效仍会重新降级。Schema 1 的旧统计会保守迁移：从未加载的历史保留已有降级结论，无法推断连续性的已加载历史从零重新取样。独立 Agent 设置页显示选择次数、加载次数、加载率、连续未加载次数和当前历史降级状态。
+
+### 作者策略与用户覆盖
 
 Skill 作者也可以在同目录的 `agents/openai.yaml` 中设置 `policy.allow_implicit_invocation: false`，长期保持 explicit-only；用户直接点名时仍可使用。运行时只读取 Skill 目录内、不经过重解析点且不超过 32 KiB 的该策略文件。作者策略优先于历史统计，真实加载不会把作者声明改回隐式匹配。两类 explicit-only 都只是从默认上下文中移除，宿主不会自动删除 Skill 文件、执行脚本或扩大业务工具授权，因此清理是可逆且可审计的。
 
 用户还可以在独立 Agent 设置页为具体 Skill 配置覆盖状态。`Auto` 使用作者策略和连续未加载证据；`Name only` 只向模型公开名称，用一个不可见的单字符 description 满足 Agent Framework 的非空校验，原说明和完整正文都不会进入初始目录；`Explicit only` 只允许用户直接点名；`Off` 即使被点名也不加入模型目录。覆盖按 Skill 名称保存到 `CopilotConfig.AgentDefaults.SkillOverrides`，与模型 Profile 无关；选择 Auto 会移除持久化覆盖。Name-only 可以用极低元数据成本重新观察历史低效 Skill，作者声明的 explicit-only 仍具有更高优先级。所有状态都只改变可见性，不删除或修改 `SKILL.md`，与 [Codex 禁用但不删除 Skill](https://learn.chatgpt.com/docs/build-skills) 及 [Claude Code skillOverrides](https://code.claude.com/docs/en/slash-commands) 的原则一致。
+
+### Skill 内容不授予执行权限
 
 技能脚本发现与执行当前完全关闭。`load_skill` 和 `read_skill_resource` 是只读元数据操作，由 Framework 的只读规则自动批准，不在界面生成无意义的审批；技能内容本身不构成任何业务操作授权。所有 ColorVision 工具仍经过现有 Schema、风险级别、并发闸门、审计和写操作审批。
 

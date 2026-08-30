@@ -1,3 +1,14 @@
+---
+knowledge_id: "engine.camera-preview-plan"
+knowledge_type: "decision"
+status: "planned"
+summary: "记录待实施的设备级内存帧预览设计，不代表当前 ViewCamera 已支持无文件历史结果。"
+aliases: ["不保存文件能在设备视图预览吗","LocalCameraNode","LocalFlowFrame","SaveFiles"]
+code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowFrame.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs"]
+test_paths: []
+related: ["engine.index","engine.camera-preview-lifecycle-plan","engine.camera-preview-validation-plan"]
+---
+
 # 本地相机内存帧预览方案（待实施）
 
 ## 文档状态
@@ -14,8 +25,8 @@
 ```text
 MeasureResultImgModel.FileUrl
     -> ViewCamera.listView1_SelectionChanged
-    -> File.Exists(...)
-    -> ImageView.OpenImage(filePath)
+    -> ViewCamera.OpenImage(filePath)
+    -> 空路径清理，否则交给 ImageView.OpenImage(filePath)
 ```
 
 文件保存只负责持久化和历史重开；当前帧预览应直接消费内存，不应构造临时路径或写临时文件后再读回。
@@ -70,3 +81,7 @@ flowchart LR
 
 - [生命周期、显示模式与内存预算](./local-camera-memory-preview-runtime.md)
 - [实施阶段、验证要求与源码检查](./local-camera-memory-preview-validation.md)
+
+## 验证入口与缺口
+
+验证缺口：这是待实施设计，尚未登记该预览能力的验收测试；现有帧传递和局部显示 API 不能证明设备预览 Publisher 已实现。

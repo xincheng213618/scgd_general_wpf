@@ -1,7 +1,19 @@
+---
+knowledge_id: "copilot.view-model"
+knowledge_type: "topic"
+status: "current"
+summary: "CopilotChatViewModel 的状态所有权、请求边界、会话与输入状态拆分和测试入口。"
+aliases: ["CopilotChatViewModel 太大从哪里改","聊天状态属于哪个对象","CopilotConversationSession","CopilotComposerSession","ICopilotTurnRuntime"]
+code_paths: ["ColorVision/Copilot/CopilotChatViewModel.cs","ColorVision/Copilot/State/CopilotConversationSession.cs","ColorVision/Copilot/State/CopilotComposerSession.cs","ColorVision/Copilot/Runtime/ICopilotTurnRuntime.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotChatViewModelContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotConversationSessionTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs"]
+related: ["copilot.runtime","copilot.interactions","copilot.session-tools"]
+---
+
 # Copilot ViewModel 维护地图
 
-修改 Copilot 对话界面时，先找状态 owner，不要先翻完 31 个 `CopilotChatViewModel` partial。ViewModel 是 WPF facade；partial 只是文件组织方式，不能作为状态边界。
-## 阅读顺序
+修改 Copilot 对话界面时，先找状态 owner，不需要先遍历全部 `CopilotChatViewModel` partial。ViewModel 是 WPF facade；partial 只是文件组织方式，不能作为状态边界。
+
+## 问题到源码的定位顺序
 
 1. 在下表找到状态 owner。
 2. 查看对应 `CopilotChatViewModel.*.cs` 如何投影到 WPF。

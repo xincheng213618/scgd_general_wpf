@@ -1,39 +1,23 @@
-# 安装与首次使用
+---
+knowledge_id: "delivery.start"
+knowledge_type: "index"
+status: "current"
+summary: "克隆代码后的源码问答、本地构建、安装和运行分流；只问Codex不需要先启动程序。"
+aliases: ["安装入口","源码问答前提","构建还是运行","克隆仓库","拉取代码","Codex源码问答"]
+code_paths: ["ColorVision/ColorVision.csproj","Directory.Build.props"]
+test_paths: []
+related: ["delivery.prerequisites","operations.first-run","governance.knowledge"]
+---
 
-本章节只保留首次接触 ColorVision 时最需要的入口，避免和后续章节重复。
+# 安装、构建与运行入口
 
-## 建议阅读顺序
+按实际动作选择入口，不把理解代码、构建产物和运行应用串成必经流程。
 
-1. [什么是 ColorVision](./what-is-colorvision.md)
-2. [系统要求](./prerequisites.md)
-3. [安装指南](./installation.md)
-4. [首次运行](./first-steps.md)
-5. [快速上手](./quick-start.md)
+| 要完成的动作 | 入口与边界 |
+| --- | --- |
+| 对检出的源码提问、定位实现 | 从根 `AGENTS.md` 和[知识地图](../knowledge/index.md)定位主题及源码；不要求安装产品、构建网站或连接设备 |
+| 配置工具链、构建主程序 | [环境与构建前提](./prerequisites.md)；生成本地产物，不等于启动或发布 |
+| 部署安装包 | [安装指南](./installation.md)；安装会修改本机环境，先确认目标机器和权限 |
+| 启动应用、验证本地图片显示 | [主程序启动与最小图像验证](./first-steps.md)；启动可能写配置、连接服务和替换旧实例，先确认运行授权 |
 
-## 适用范围
-
-- 新用户想完成安装、启动和基础验证
-- 新同事想快速知道主程序、设备、流程和插件分别在哪里
-- 开发者想确认源码构建的最短路径
-
-## 你会在这里找到什么
-
-- 产品定位和典型使用场景
-- Windows 环境要求与安装前准备
-- 主程序首次启动后的基础操作路径
-- 从源码运行主程序的最小步骤
-
-## 从源码启动
-
-当前仓库以 Windows WPF 和 x64 为主，建议先完成依赖恢复，再构建主程序：
-
-```powershell
-dotnet restore .\ColorVision\ColorVision.csproj
-dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64
-dotnet run --project ColorVision/ColorVision.csproj
-```
-
-## 说明
-
-- 旧版入门页中与架构、安装器实现、发布脚本相关的长篇内容，已经收敛到对应章节，不再在这里重复维护。
-- 若文档与当前代码行为不一致，以源码和实际构建结果为准。
+产品范围见 [ColorVision 概览](./what-is-colorvision.md)。具体能力直接从知识地图进入对应源码主题；本页不另设一套完整阅读路线。

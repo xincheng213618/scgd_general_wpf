@@ -1,3 +1,14 @@
+---
+knowledge_id: "algorithms.ghost"
+knowledge_type: "topic"
+status: "current"
+summary: "说明 ARVR Ghost 传统模板的参数、MQTT 事件、结果 DAO 和叠图。"
+aliases: ["Ghost检测入口和结果在哪里","TemplateGhost","AlgorithmGhost","ViewHandleGhost"]
+code_paths: ["Engine/ColorVision.Engine/Templates/ARVR/Ghost/TemplateGhost.cs","Engine/ColorVision.Engine/Templates/ARVR/Ghost/GhostParam.cs","Engine/ColorVision.Engine/Templates/ARVR/Ghost/AlgorithmGhost.cs","Engine/ColorVision.Engine/Templates/ARVR/Ghost/ViewHandleGhost.cs"]
+test_paths: []
+related: ["algorithms.arvr","algorithms.json-templates","engine.results"]
+---
+
 # Ghost Detection
 
 本页只描述当前仓库里真实存在的 Ghost 检测接入链，不再维护“独立 `ghost-detection` 算法 API”式旧稿。
@@ -53,3 +64,7 @@ Ghost 检测不是独立公共算法包，而是 `ColorVision.Engine` 中 ARVR �
 2. `Engine/ColorVision.Engine/Templates/ARVR/Ghost/GhostParam.cs`
 3. `Engine/ColorVision.Engine/Templates/ARVR/Ghost/AlgorithmGhost.cs`
 4. `Engine/ColorVision.Engine/Templates/ARVR/Ghost/ViewHandleGhost.cs`
+
+## 验证入口与缺口
+
+验证缺口：未登记 Ghost 服务与结果 DAO 的专门自动化测试；需用已知图像、颜色和点阵参数核对真实请求、明细与叠图，不以页面示例作为通过证据。

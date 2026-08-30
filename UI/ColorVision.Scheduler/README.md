@@ -1,47 +1,13 @@
 # ColorVision.Scheduler
 
-> 目标框架：.NET 8 / .NET 10 Windows（以 `ColorVision.Scheduler.csproj` 为准）
+桌面侧 Quartz 调度组件：`QuartzSchedulerManager` 管理任务定义，JSON 保存调度意图，SQLite 保存执行历史；真正的设备与流程动作由各 `IJob` 实现负责。目标框架、依赖及版本以 [ColorVision.Scheduler.csproj](./ColorVision.Scheduler.csproj) 为准。
 
-## 功能定位
+当前行为、恢复、并发、结果和验证边界统一见[Quartz 任务定义、恢复与执行历史](../../docs/04-api-reference/ui-components/ColorVision.Scheduler.md)（`ui.scheduler`），本文件不维护第二份契约。
 
-基于 Quartz.NET 的任务调度系统，提供定时任务的创建、管理和监控功能。
+- 首次 `GetInstance()` 会加载定义、初始化历史库并开始异步恢复；窗口或状态栏也可能触发它。未获运行授权时不要把这些入口当作只读检查。
+- 暂停只限制后续触发，不终止已经开始的 Job；超时或取消是否结束真实设备操作，必须核对具体 Job，不能仅看列表状态。
 
-## 主要功能
-
-### 任务管理
-- **创建任务** (`CreateTask`) — 可视化创建定时任务（Cron 表达式、立即执行、延迟执行）
-- **任务配置** (`IJobConfig`) — 任务配置接口，支持自定义任务类型
-- **任务监控** — 实时查看任务执行状态和历史记录
-- **任务操作** — 编辑、暂停、继续、删除和立即执行
-
-### 数据持久化
-- `scheduler_tasks.json` 保存任务定义，并保留旧版多态类型元数据兼容
-- 使用 SqlSugar + SQLite 存储执行历史
-- 写入任务定义时采用同目录临时文件替换，并保留最近一次备份
-- 启动时恢复任务定义和历史统计
-
-### 增强功能
-- **任务优先级** — 1-10 级优先级
-- **执行统计** — 成功/失败次数、执行时间统计
-- **历史筛选** — 在数据库查询中统一完成结果筛选、分页和统计
-- **数据导出** — CSV、JSON 和报告导出
-- **右键菜单** — 编辑、暂停、继续、删除、立即执行
-
-## 文件清单
-
-| 文件 | 说明 |
-|------|------|
-| `CreateTask.xaml` + `.cs` | 创建任务窗口 |
-| `IJobConfig.cs` | 任务配置接口 |
-| `QuartzSchedulerManager.cs` | 调度器管理器 |
-| `TaskViewerWindow.xaml` + `.cs` | 任务查看窗口 |
-
-## 依赖关系
-
-- **引用**: ColorVision.Common, ColorVision.Themes, ColorVision.UI, Quartz 3.19.0, SqlSugarCore
-- **被引用**: ColorVision.UI.Desktop（通过菜单集成）
-
-## 构建
+从仓库根目录在 Windows 上构建：会还原依赖并写入输出，项目启用了 `GeneratePackageOnBuild`；这不是发布，也不代表运行验证。
 
 ```powershell
 dotnet build .\UI\ColorVision.Scheduler\ColorVision.Scheduler.csproj -p:Platform=x64

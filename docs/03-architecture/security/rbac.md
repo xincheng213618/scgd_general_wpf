@@ -1,3 +1,14 @@
+---
+knowledge_id: "platform.rbac"
+knowledge_type: "topic"
+status: "current"
+summary: "RBAC用户、角色、会话、权限缓存和粗粒度授权的实际集成范围。"
+aliases: ["登录后没有权限","RBAC","PermissionChecker","SessionToken"]
+code_paths: ["UI/ColorVision.Rbac/RbacManager.cs","UI/ColorVision.Rbac/Services/PermissionChecker.cs"]
+test_paths: []
+related: ["platform.security"]
+---
+
 # RBAC 模块
 
 RBAC 当前实现集中在独立项目 `UI/ColorVision.Rbac/`，并由 `ColorVision/BuiltInModules.cs` 注册到主程序。它负责本地用户、角色、权限、会话和审计，不是 Engine 层统一安全内核，也不是远程身份平台。

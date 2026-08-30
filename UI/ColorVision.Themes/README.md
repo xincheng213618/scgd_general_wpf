@@ -1,57 +1,32 @@
 # ColorVision.Themes
 
-> 目标框架：.NET 8 / .NET 10 Windows（以 `ColorVision.Themes.csproj` 为准）
+Windows WPF 主题资源与窗口外观支持包，附带基础控件和转换器。目标框架、依赖和包版本以 [ColorVision.Themes.csproj](./ColorVision.Themes.csproj) 为准。
 
-## 功能定位
+主题选择、资源注入、系统跟随、标题栏生命周期及配置边界的单一说明是 [主题选择、资源应用与窗口外观](../../docs/04-api-reference/ui-components/ColorVision.Themes.md)（`ui.themes`）。此相对链接面向源码仓库；从 NuGet 阅读时，请按包版本在项目源码中查看对应文档，不把当前分支契约直接套用到旧包。
 
-主题管理和样式系统，提供三种预设主题（系统/浅色/深色）、自定义控件、值转换器和窗口样式。
+## 包接入
 
-## 主要功能
+使用 `ColorVision.Themes` 命名空间。已有宿主初始化资源时，通过 `Application.ApplyTheme` 选择主题，在窗口首次 Loaded 前调用一次 `Window.ApplyCaption` 接入标题栏；二者的选择/实际状态及失败语义见权威主题。
 
-### 主题管理
-- **ThemeManager** — 主题切换核心类，支持运行时动态切换
-- **三种主题** — UseSystem / Light / Dark
-- **系统主题跟随** — 自动适配 Windows 系统主题
-- **标题栏颜色** — SetWindowTitleBarColor 匹配主题
-- **配置持久化** — 主题选择自动保存
+空白 WPF 宿主可以在 UI 线程启动阶段先建立资源，再选择跟随系统：
 
-### 主题资源
-| 资源文件 | 说明 |
-|----------|------|
-| `Base.xaml` | 基础共享样式 |
-| `Dark.xaml` | 深色主题 |
-| `White.xaml` | 浅色主题 |
-| `Menu.xaml` / `GroupBox.xaml` / `Icons.xaml` | 通用控件样式 |
+```csharp
+using ColorVision.Themes;
+using System.Windows;
 
-### 自定义控件
-- **MessageBox** — 主题化消息对话框
-- **ProgressRing** — 进度环
-- **LoadingOverlay** — 加载遮罩层
-- **UploadControl** — 文件上传（拖拽 + 文件选择）
-- **UploadWindow / UploadMsg** — 上传窗口和消息
+// 一次性初始化；不要放进反复刷新的事件处理器。
+Application.Current.ForceApplyTheme(Theme.Light);
+Application.Current.ApplyTheme(Theme.UseSystem);
+```
 
-### 值转换器
-| 转换器 | 用途 |
-|--------|------|
-| `BooleanToVisibilityReConverter` | 布尔 → 可见性（反向） |
-| `InverseBooleanConverter` | 布尔反向 |
-| `MemorySizeConverter` | 字节 → 可读大小 |
-| `EnumToVisibilityConverter` | 枚举 → 可见性 |
-| `IntToVisibilityConverter` | 整数 → 可见性 |
-| `WidthToBooleanConverter` | 宽度 → 布尔 |
+Themes 包本身不保存主题配置。`ThemeConfig` / `ThemePropertiesEditor` 是 ColorVision.UI 中的集成，不是只引用此包就具备的自动持久化能力。
 
-### 窗口样式
-- **BaseWindow** — 基础窗口样式
-- **WindowHelper** — 窗口帮助类
-- **WindowBlur** — 窗口模糊效果（DWM）
+## 本地构建
 
-## 依赖关系
-
-- **引用**: HandyControl 3.5.1
-- **被引用**: ColorVision.UI, ColorVision.Scheduler, ColorVision.ImageEditor
-
-## 构建
+从仓库根目录在 Windows PowerShell 执行；需要对应 SDK/WPF 构建环境，依赖未还原时可能联网。该命令写入本地产物，并按项目配置生成包，不安装、不上传或切换系统主题。
 
 ```powershell
 dotnet build .\UI\ColorVision.Themes\ColorVision.Themes.csproj -p:Platform=x64
 ```
+
+发布请使用仓库的 [UI DLL 发布契约](../../docs/04-api-reference/ui-components/publishing.md)，不要把本地包生成当成已发布。

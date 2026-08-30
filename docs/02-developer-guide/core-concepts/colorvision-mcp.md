@@ -1,3 +1,14 @@
+---
+knowledge_id: "copilot.mcp-server"
+knowledge_type: "reference"
+status: "current"
+summary: "ColorVision 入站本地 MCP 的 loopback 认证、会话、能力白名单与二次确认契约。"
+aliases: ["Codex 如何连接 ColorVision","MCP 工具能否执行流程","CopilotMcpServer","Mcp-Session-Id","confirm_action"]
+code_paths: ["ColorVision/Copilot/Mcp/CopilotMcpServer.cs","ColorVision/Copilot/Mcp/","ColorVision/Copilot/Capabilities/"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotMcpServerLifecycleTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpConfirmationDecisionTests.cs"]
+related: ["copilot.runtime","copilot.extensions"]
+---
+
 # ColorVision 本地 MCP
 
 ColorVision 本地 MCP 让 Codex 或其他 MCP 客户端在本机读取正在运行的 ColorVision 上下文，用于诊断、导航、日志查看、文档搜索和有限的低风险 UI 操作。它默认关闭，只绑定 loopback，并使用 bearer token 认证。本页是维护入口，源码以 `ColorVision/Copilot/Mcp/` 和 `ColorVision/Copilot/Capabilities/` 为准。

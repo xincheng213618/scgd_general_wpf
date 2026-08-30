@@ -1,3 +1,14 @@
+---
+knowledge_id: "flow.runtime"
+knowledge_type: "reference"
+status: "current"
+summary: "说明节点图加载、服务绑定、完成事件和隔离 RuntimeHost 的执行边界。"
+aliases: ["流程节点结束为什么业务还没完成","FlowEngineLib","FlowEngineControl","CVStartCFC","FlowRuntimeHost"]
+code_paths: ["Engine/FlowEngineLib/FlowEngineControl.cs","Engine/FlowEngineLib/Base/CVStartCFC.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/Runtime/FlowRuntimeHost.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/FlowEngineControlLifecycleTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeHostTests.cs"]
+related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","flow.session","flow.headless","flow.node-extension"]
+---
+
 # FlowEngineLib
 
 `Engine/FlowEngineLib/` 是节点图执行内核，不是完整的宿主工作流系统。模板持久化、版本和搜索位于 `ColorVision.Engine/Templates/Flow/`；编辑器、交互式/无界面执行、前后处理和诊断位于 `ColorVision.Engine/FlowProcessing/`，项目结果处理仍在 `Projects/*`。
@@ -13,7 +24,7 @@
 | 节点执行但流程不结束 | 是否连接 `CVEndNode`，是否走到 `CVStartCFC.FireFinished()` |
 | `Finished` 重复触发 | `clear()` 是否解绑旧 `BaseStartNode.Finished` |
 | 项目包收不到结果 | `FlowEngineControl.Finished` 到宿主 `FlowCompleted` 的桥接 |
-| UI 选择和节点参数不一致 | `FlowProcessing/Editor/NodeConfiguration/` 是否把参数写回节点 |
+| UI 选择和节点参数不一致 | 属性元数据、`FlowPropertyEditorRegistry` 与选择器绑定；专用补充面板再查 `NodeConfiguration/` |
 
 ## 控制面
 
@@ -53,26 +64,17 @@ flowchart TD
   End --> Finish["CVStartCFC.FireFinished()"]
   Finish --> StartEvent["BaseStartNode.Finished"]
   StartEvent --> EngineEvent["FlowEngineControl.Finished"]
-  EngineEvent --> Host["FlowControl.FlowCompleted / EngineExecutionCompleted"]
-  Host --> Finalizer["FlowRunFinalizer / PostProcess"]
-  Finalizer --> Finalized["RunFinalized"]
 ```
 
-“节点完成”不等于“流程图完成”。流程图必须进入 End 节点并触发 `Finished` 链；`EngineExecutionCompleted` 之后仍可能执行后处理，需要最终业务结果的调用方应等待 `RunFinalized`。
+“节点完成”不等于“流程图完成”。正常结束路径由 End 节点闭合上述 `Finished` 链；取消、超时和启动拒绝需读取所属运行器的终止状态。宿主可将此事件桥接为 `FlowControl.FlowCompleted` / `EngineExecutionCompleted`，但不会因此自动完成客户业务。
+
+共享会话的 `RunFinalized`、后处理失败策略及项目兼容链见[执行会话](../../01-user-guide/workflow/execution.md)；隔离运行的状态映射见[无界面执行](../algorithms/templates/flow-engine.md)。它们不是 FlowEngineLib 内核自动附带的业务阶段。
 
 ## 宿主边界
 
-FlowEngineLib 只知道节点图和引擎执行状态。主程序里的这些工作分布在模板层和 `FlowProcessing`：
+FlowEngineLib 只知道节点图和引擎执行状态，不拥有模板数据库、WPF 文档选择或业务批次。服务快照与节点必须在所属图代际内使用，不能让隔离 RuntimeHost 复用编辑器的可变节点。
 
-| 工作 | 入口 |
-| --- | --- |
-| 持久化 Base64 流程和 `.cvflow` 包 | `Templates/Flow/TemplateFlow.cs`、`Templates/Flow/FlowPackageHelper.cs` |
-| 显示和编辑流程 | `FlowProcessing/Runtime/ViewFlow.xaml.cs`、`FlowProcessing/Editor/FlowEditorCanvas.xaml.cs` |
-| 编排交互式执行和最终化 | `FlowProcessing/Runtime/FlowExecutionSession.cs`、`FlowRunExecutor.cs`、`FlowRunFinalizer.cs` |
-| 执行已保存流程或无界面流程 | `FlowProcessing/Runtime/FlowExecutionCoordinator.cs`、`FlowHeadlessExecutionService.cs` |
-| 给节点绑定设备/模板/参数 | `FlowProcessing/Editor/NodeConfiguration/` |
-
-如果问题是模板下拉、流程保存、项目结果解析，通常不在 FlowEngineLib 里修。
+模板下拉和属性配置归[工作区](../../01-user-guide/workflow/design.md)，流程保存和 `.cvflow` 归[模板持久化](./template-flow-chain.md)，完整跨模块所有权见[Flow 架构](../../03-architecture/components/engine/flow-engine.md)。不要在内核补项目判定、导出或宿主 UI 行为。
 
 ## 检查
 
@@ -92,4 +94,10 @@ FlowEngineLib 只知道节点图和引擎执行状态。主程序里的这些工
 
 - FlowEngineLib 不是完整 DSL 平台；它是节点执行内核。
 - 不要把项目判定写进节点内核。
-- 不要把服务绑定问题误判成节点执行问题，先看 `FlowProcessing/Editor/NodeConfiguration/` 和服务快照；也不要忽略会影响重复加载的 `loadedCanvas` 缓存。
+- 不要把服务绑定问题误判成节点执行问题，先看服务快照与 [PropertyGrid 契约](../ui-components/property-grid.md)；也不要忽略会影响重复加载的 `loadedCanvas` 缓存。
+
+## 验证入口与缺口
+
+关联测试：`Test/ColorVision.UI.Tests/FlowEngineControlLifecycleTests.cs`、`Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs`、`Test/ColorVision.UI.Tests/FlowRuntimeHostTests.cs`。
+
+执行内核测试不能替代宿主后处理或项目判定；需要最终业务状态时另外验证 RunFinalized 所属链。

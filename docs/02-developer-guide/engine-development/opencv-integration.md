@@ -1,3 +1,14 @@
+---
+knowledge_id: "engine.native-integration"
+knowledge_type: "guide"
+status: "current"
+summary: "说明 native ABI、HImage 所有权、首次 helper 构建与 CUDA 发布输入的验证边界。"
+aliases: ["新克隆构建为什么需要C++","OpenCVMediaHelper","opencv_helper.dll","opencv_cuda.dll","M_FindLuminousAreaV2"]
+code_paths: ["UI/ColorVision.Core/ColorVision.Core.csproj","UI/ColorVision.Core/OpenCVMediaHelper.cs","Native/opencv_helper/opencv_helper.vcxproj","Native/include/opencv_media_export.h","Engine/ColorVision.Engine/Media/CVRawOpen.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs","Scripts/tests/test_algorithm_package_contract.py","Test/opencv_helper_test"]
+related: ["engine.index","ui.core","engine.native-bindings","engine.file-io"]
+---
+
 # OpenCV 和 native 集成开发指南
 
 本页说明当前仓库里 OpenCV/native 能力的真实边界。Engine 侧有 `cvColorVision` 这种设备 SDK / 算法 DLL 绑定层，UI/Core 侧有 `opencv_helper.dll` / `opencv_cuda.dll` 的 P/Invoke 包装，文件打开链路还包含 `.cvraw` / `.cvcie` 解析和缩略图。
@@ -12,7 +23,15 @@
 | 测试工程 | `Test/opencv_helper_test/` | C++ 验证工程，覆盖经典 `M_FindLuminousArea` 和鲁棒 `M_FindLuminousAreaV2` |
 | 文档入口 | [cvColorVision](../../04-api-reference/engine-components/cvColorVision.md)、[ColorVision.Core](../../04-api-reference/ui-components/ColorVision.Core.md) | 模块边界和 DLL 发布注意事项 |
 
-## 什么时候改哪一层
+## 首次拉仓与 native 构建前提
+
+`UI/ColorVision.Core/ColorVision.Core.csproj` 按实际文件选择 `OpenCvHelperBinary`：解决方案构建使用 `$(SolutionDir)x64/Release/opencv_helper.dll`；单独构建优先 `Native/opencv_helper/x64/Release/opencv_helper.dll`，其次仓库 `x64/Release/opencv_helper.dll`。缺少 helper 时设置 `UseProjectReference=true`，加入 `Native/opencv_helper/opencv_helper.vcxproj`，并要求 Release/x64。
+
+这两个 helper 候选不是随 Git 跟踪的预编译输入；干净拉仓不能假设只需 .NET SDK。需要可用的 Visual Studio C++ 工具链及项目声明的 OpenCV/SDK 依赖，在 Visual Studio Developer PowerShell 中完成相应 native 构建，再构建托管项目；以 `Native/AGENTS.md` 和 vcxproj 为准，不通过关闭引用或遗漏 DLL 来让构建表面通过。
+
+CUDA 是另一条边界：当前 Core 无条件打包仓库跟踪的 `x64/Release/opencv_cuda.dll`。不执行 CUDA 路径不等于允许缺少这个构建/发布输入。
+
+## 修改落点
 
 | 需求 | 首选落点 |
 | --- | --- |
@@ -63,8 +82,8 @@
 ```powershell
 dotnet build UI/ColorVision.Core/ColorVision.Core.csproj -c Release -p:Platform=x64
 dotnet build Engine/cvColorVision/cvColorVision.csproj -c Release -p:Platform=x64
-msbuild Test/opencv_helper_test/opencv_helper_test.vcxproj /p:Configuration=Debug /p:Platform=x64
-Test/opencv_helper_test/build_test_find_luminous.bat
+msbuild .\Test\opencv_helper_test\opencv_helper_test.vcxproj /m:1 /nodeReuse:false /p:Configuration=Debug /p:Platform=x64
+.\Test\opencv_helper_test\build_test_find_luminous.bat
 ```
 
 如果当前机器没有 Visual Studio C++ 或 OpenCV native 依赖，至少要记录无法执行的原因，并在验证记录里说明由哪台构建机补验。
@@ -86,3 +105,9 @@ Test/opencv_helper_test/build_test_find_luminous.bat
 - [ColorVision.Core](../../04-api-reference/ui-components/ColorVision.Core.md)
 - [ColorVision.ShellExtension](../../04-api-reference/engine-components/ColorVision.ShellExtension.md)
 - [测试与验证](../testing.md)
+
+## 验证入口与缺口
+
+关联测试：`Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs`、`Scripts/tests/test_algorithm_package_contract.py`、`Test/opencv_helper_test`。
+
+真正的 native 与 clean package 检查需要 Visual Studio C++ 工具链和真实 DLL；静态文档检查不能证明 ABI、CUDA/GPU 或设备 SDK 运行成功。

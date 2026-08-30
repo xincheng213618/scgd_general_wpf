@@ -1,0 +1,82 @@
+---
+generated_knowledge_index: true
+search: false
+editLink: false
+prev: false
+next: false
+---
+
+# 仓库与知识基础设施 源码知识
+
+> 自动生成的源码目录。修改主题 Markdown 的 `code_paths` 后运行 `node docs/.vitepress/scripts/knowledge.mjs generate`；不要手工编辑。
+
+返回[知识总入口](../index.md)。只读与当前模块有关的主题，再核对其中的源码、测试和状态；`规划`、`历史`不代表当前能力。
+
+以下是已声明源码路径的关联，不是完整调用图或完整模块清单。跨模块主题可出现在多处；根目录概览只列在根目录项，不自动覆盖所有子模块。
+
+## 仓库根文件 {#module-2e}
+
+- [安装、构建与运行入口](../../00-getting-started/README.md) — `delivery.start`
+  克隆代码后的源码问答、本地构建、安装和运行分流；只问Codex不需要先启动程序。
+
+- [ColorVision 项目知识入口](../../index.md) — `governance.home`
+  ColorVision AI优先知识入口：按问题定位能力、代码、测试与维护约束。
+
+- [仓库知识使用约定](../../README.md) — `governance.knowledge`
+  说明仓库知识入口、按需检索、源码核对和文档与代码同步维护的共同规则。
+
+- [插件装配与模块知识入口](../../04-api-reference/plugins/README.md) — `plugins.index`
+  从插件程序集装载、产物安装和具体模块能力定位源码；同一责任不再分开发手册与使用手册。
+
+- [客户项目与对接示例入口](../../04-api-reference/projects/README.md) — `projects.index`
+  按客户业务代码、独立对接示例与构建发布边界定位 Projects 的权威主题。
+
+- [构建平台与制品边界](../../02-developer-guide/README.md) — `delivery.index`
+  定义宿主、插件、客户包和独立FileIO包的构建平台与制品边界，区分构建验证和远端发布。
+
+- [ColorVision.Engine 工程、资源与依赖](../../04-api-reference/engine-components/ColorVision.Engine.md) — `engine.host`
+  ColorVision.Engine工程的条件引用、NuGet/DLL依赖回退与资源打包；schema嵌入程序集，缺少输出散文件不等于漏包，也不保证脱离UI源码独立构建。
+
+- [插件产物、安装与交付](../../02-developer-guide/plugin-development/getting-started.md) — `plugins.getting-started`
+  插件构建产物、HostCopy、manifest包身份、安装替换和恢复契约；发布会上传，安装器返回不等于替换或重启后加载成功。
+
+- [系统要求](../../00-getting-started/prerequisites.md) — `delivery.prerequisites`
+  首次构建所需Windows x64、.NET与C++工具链，区分已有native DLL与干净克隆。
+
+- [知识维护规范](../maintenance.md) — `governance.maintenance`
+  定义AI与人共同维护知识的字段、事实责任、源码反向影响检查和验收流程。
+
+- [测试与验证](../../02-developer-guide/testing.md) — `delivery.testing`
+  按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。
+
+- [软件许可协议](../../05-resources/legal/software-agreement.md) — `platform.license`
+  保留软件许可协议原文供定位，不由AI重新解释或改写许可条款。
+
+## .github/workflows {#module-2e6769746875622f776f726b666c6f7773}
+
+- [UI DLL 发布](../../04-api-reference/ui-components/publishing.md) — `ui.publishing`
+  说明 UI NuGet 构建、版本占用预检、显式 Release 发布与包消费验证。
+
+## docs {#module-646f6373}
+
+- [仓库知识使用约定](../../README.md) — `governance.knowledge`
+  说明仓库知识入口、按需检索、源码核对和文档与代码同步维护的共同规则。
+
+- [知识维护规范](../maintenance.md) — `governance.maintenance`
+  定义AI与人共同维护知识的字段、事实责任、源码反向影响检查和验收流程。
+
+## docs/.vitepress {#module-646f63732f2e766974657072657373}
+
+- [仓库知识使用约定](../../README.md) — `governance.knowledge`
+  说明仓库知识入口、按需检索、源码核对和文档与代码同步维护的共同规则。
+
+- [知识维护规范](../maintenance.md) — `governance.maintenance`
+  定义AI与人共同维护知识的字段、事实责任、源码反向影响检查和验收流程。
+
+- [知识检索与问答验收](../retrieval-checks.md) — `governance.retrieval`
+  用固定检索问题和无个人记忆的源码问答抽样，验证知识入口能否定位正确模块、边界和测试。
+
+## docs/knowledge {#module-646f63732f6b6e6f776c65646765}
+
+- [知识检索与问答验收](../retrieval-checks.md) — `governance.retrieval`
+  用固定检索问题和无个人记忆的源码问答抽样，验证知识入口能否定位正确模块、边界和测试。

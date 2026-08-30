@@ -1,3 +1,14 @@
+---
+knowledge_id: "algorithms.image-registration"
+knowledge_type: "reference"
+status: "current"
+summary: "ImageRegistration 的输入、参数、结果、宿主接入与定向验证契约。"
+aliases: ["图像配准如何求变换和输出配准质量","ImageRegistration","ImageRegistrationAlgorithmProvider"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/ImageRegistrationAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ImageRegistrationV1Tests.cs"]
+related: ["algorithms.platform","algorithms.index"]
+---
+
 # 图像配准 V1（M8.1）
 
 ## 阶段边界与已有能力盘点

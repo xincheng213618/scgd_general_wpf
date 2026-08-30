@@ -1,112 +1,24 @@
 # ColorVision.Database
 
-> 目标框架：.NET 8 / .NET 10 Windows；UI 框架：WPF（以 `ColorVision.Database.csproj` 为准）
+数据库基础模块，提供表结构驱动的浏览器、实体驱动的通用查询、MySQL/DAO 基础，以及 SQLite 压缩正文和文件维护工具。它不拥有所有业务数据库，也不统一管理 Socket 服务、Flow 执行或连接生命周期。
 
-## 功能定位
+目标框架为 `net8.0-windows7.0;net10.0-windows7.0`，使用 WPF；依赖和版本以 `ColorVision.Database.csproj` 为准。本 README 是源码入口，完整契约只维护在仓库知识主题中。
 
-数据库访问层，提供统一的数据库操作接口和可视化管理工具。支持 MySQL 连接，并可通过 provider 扩展浏览其他 SQLite 文件，提供数据库优先的表浏览器、查询工具、连接管理等功能。
+## 按代码责任定位
 
-## 主要功能
+| 责任 | 实现入口 | 权威知识 |
+| --- | --- | --- |
+| 表结构驱动的分页、行级 CRUD、Provider 注册 | `DatabaseBrowserWindow`、`IDatabaseBrowserProvider`、`DatabaseBrowserProviderRegistry` | [数据库浏览与写入契约](../../docs/04-api-reference/ui-components/ColorVision.Database.md) |
+| 实体字段条件、查询、结果集合与会话 | `GenericQueryWindow`、`GenericQueryConditionSupport`、`GenericQuerySessionStore` | [通用查询与整表操作](../../docs/04-api-reference/ui-components/database-query.md) |
+| MySQL 配置、连接和 DAO | `MySqlControl`、`MySqlConnect`、`BaseTableDao`、`IEntity` | [连接和 DAO 边界](../../docs/04-api-reference/ui-components/ColorVision.Database.md) |
+| gzip 正文读写、旧 TEXT 迁移、备份及空间回收 | `GzipTextPayloadCodec`、`SqliteGzipTextPayloadStore`、`SqliteGzipTextMigration`、`SqliteFileMaintenance` | [SQLite 存储与维护](../../docs/04-api-reference/ui-components/sqlite-storage.md) |
+| 数据文件与业务所有者 | Socket、Engine、插件和项目各自的管理器 | [数据责任地图](../../docs/01-user-guide/data-management/README.md) |
 
-### 数据库浏览器 (DatabaseBrowserWindow)
-- **数据库优先** — 通过连接先查询库，再查询库里的表，不依赖 C# 实体
-- **可扩展数据源** — 默认注册 `MySQL`，其他 SQLite 文件可通过 provider 注册
-- **左侧树** — 按数据源、库、表展开，表节点显示估算记录数
-- **右侧表格** — `DataGrid` 直接绑定 `DataTable`，支持分页、搜索、排序、编辑、保存、删除
-- **通用 CRUD** — 通过 `IDatabaseBrowserProvider` 执行 Insert / Update / Delete，修改和删除要求表有主键
+不要互换这些入口的保证：查询窗口的 SQL 区在执行时更新，不是完整实时预览；其清空表/截断表不受筛选条件限制。SQLite 底层迁移不自动备份、停业务或恢复，逐批提交也不等于全库回滚。具体调用前先读所属契约和实际 owner。
 
-### 通用查询 (GenericQueryWindow)
-- **动态条件** — 按字段添加查询条件，支持 =、>、<、>=、<=、LIKE 操作符
-- **SQL 预览** — 实时显示生成的 SQL 语句
-- **结果统计** — 显示查询记录数和耗时
-- **表操作** — 支持清空表、截断表
+## 本地构建
 
-### 数据库连接管理
-- **MySQL 连接配置** (`MySqlConnect`) — 可视化连接参数设置
-- **连接状态监控** — 实时检测数据库连接状态
-- **MySQL 设置向导** (`MysqlWizardStep`) — 向导式配置流程
-
-### 数据访问
-- **泛型 DAO** (`BaseTableDao<T>`) — 基于 SqlSugar 的扩展方法（CRUD、分页、批量）
-- **实体接口** (`IEntity`) — 标准化实体定义（`int Id` 属性）
-- **实体基类** (`EntityBase` / `ViewEntity`) — 带 `[SugarColumn]` 主键映射的基类
-- **数据库浏览 Provider** (`IDatabaseBrowserProvider`) — 注册可浏览的数据源
-
-## 技术架构
-
-```
-ColorVision.Database/
-├── IEntity.cs                  # 实体接口及 EntityBase/ViewEntity
-├── BaseTableDao.cs             # 泛型 DAO + 扩展方法 (CRUD/分页/批量)
-├── DatabaseType.cs             # 数据库类型枚举
-├── IDatabaseBrowserProvider.cs # 数据库浏览器 Provider 接口
-├── DatabaseBrowserModels.cs    # 库/表/列/分页模型
-├── DatabaseBrowserWindow.xaml  # 数据库浏览器主窗口
-├── DatabaseRowEditWindow.xaml  # 通用新增行弹窗
-│
-├── GenericQueryWindow.xaml     # 高级查询窗口
-│
-├── MySqlControl.cs             # MySQL 连接管理 (单例)
-├── MySQLConfig.cs              # MySQL 配置 (IConfig)
-├── MySqlConnect.xaml           # 连接配置窗口
-├── MySqlSetting.cs             # 设置管理
-├── MysqlWizardStep.cs          # 配置向导步骤
-├── IMysqlCommand.cs            # SQL 命令接口
-└── ExportMySqlInitTables.cs    # 初始化表导出
-```
-
-## 使用方式
-
-### 注册数据库浏览 Provider
-```csharp
-DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
-    "sqlite.demo",
-    "SQLite Demo",
-    () => DemoDbManager.DbPath,
-    DemoDbManager.CreateDbClient));
-```
-
-### 使用数据库浏览器
-```csharp
-// 通过菜单打开（工具 → 数据库浏览器）
-// 或手动打开
-new DatabaseBrowserWindow().Show();
-```
-
-### 使用 DAO 扩展方法
-```csharp
-var dao = new BaseTableDao<UserEntity>();
-
-// 查询
-var all = dao.GetAll();
-var user = dao.GetById(1);
-var filtered = dao.GetAllByParam(new Dictionary<string, object> { { "Username", "admin" } });
-
-// 分页
-var (items, total) = dao.GetPaged(pageIndex: 1, pageSize: 20);
-
-// 保存（Id <= 0 插入，否则更新）
-dao.Save(user);
-
-// 删除
-dao.DeleteById(1);
-```
-
-### 使用高级查询
-```csharp
-var db = new SqlSugarClient(/* ... */);
-var results = new List<UserEntity>();
-var query = new GenericQuery<UserEntity>(db, results);
-var window = new GenericQueryWindow(query);
-window.Show();
-```
-
-## 依赖关系
-
-- **引用**: ColorVision.UI, SqlSugarCore 5.1.4.214, log4net 3.3.0, Newtonsoft.Json 13.0.4
-- **被引用**: ColorVision.SocketProtocol, ColorVision.Solution, ColorVision.UI.Desktop
-
-## 构建
+从仓库根目录执行，仅构建托管模块及其依赖，会生成本地输出；不连接业务库、不发布包，也不验证真实数据库操作。完整源码/检索验证入口见 `docs/AGENTS.md`。
 
 ```powershell
 dotnet build .\UI\ColorVision.Database\ColorVision.Database.csproj -f net10.0-windows7.0 -p:Platform=x64

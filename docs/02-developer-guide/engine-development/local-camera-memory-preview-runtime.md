@@ -1,4 +1,17 @@
+---
+knowledge_id: "engine.camera-preview-lifecycle-plan"
+knowledge_type: "decision"
+status: "planned"
+summary: "记录待实施预览的租约取得、latest-wins、RAW/CIE 模式和内存预算约束。"
+aliases: ["内存预览租约何时释放","LocalFlowFrameLease","Acquire","FullCie"]
+code_paths: ["Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowFrame.cs","Engine/FlowEngineLib/Base/CVStartCFC.cs","Engine/ColorVision.Engine/Media/CVRawOpen.cs","UI/ColorVision.ImageEditor/ImageView.xaml.cs"]
+test_paths: []
+related: ["engine.camera-preview-plan","engine.camera-preview-validation-plan"]
+---
+
 # 本地相机内存帧预览：生命周期与显示语义
+
+本页是待实施设计，描述拟采用的发布器、租约和显示约束；不表示当前产品已经实现这些生命周期。现有帧或显示 API 只能作为实施起点，不能作为功能完成证据。
 
 本文补充[方案总览](./local-camera-memory-preview.md)中的租约、显示模式和内存约束。
 
@@ -68,3 +81,7 @@ RAW 显示可以复用 `CameraLocalWindow.ShowImageInView(...)` 的像素格式�
 - 默认优先考虑 `Raw` 模式。
 - 新帧替换旧帧时主动清理旧的 `ImageView`/CIE 状态。
 - 性能验证同时观察 Private Bytes、Working Set 和帧处理时间。
+
+## 验证入口与缺口
+
+验证缺口：文中的 Publisher、预览队列和模式切换是目标契约，不是已经通过的运行时行为；实施时需新增租约释放、覆盖和跨设备隔离测试。

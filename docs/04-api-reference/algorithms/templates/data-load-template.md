@@ -1,3 +1,14 @@
+---
+knowledge_id: "algorithms.data-load"
+knowledge_type: "topic"
+status: "current"
+summary: "区分 DataLoad 模板与显式参数节点如何按设备、批次和 ZIndex 读取上游结果。"
+aliases: ["DataLoad是文件导入吗","TemplateDataLoad","AlgDataLoadNode","AlgDataLoadNode2"]
+code_paths: ["Engine/ColorVision.Engine/Templates/DataLoad/TemplateDataLoad.cs","Engine/ColorVision.Engine/Templates/DataLoad/DataLoadParam.cs","Engine/FlowEngineLib/Node/Algorithm/AlgDataLoadNode.cs","Engine/FlowEngineLib/Node/Algorithm/AlgDataLoadNode2.cs"]
+test_paths: []
+related: ["algorithms.index","flow.templates","flow.node-extension"]
+---
+
 # DataLoad 数据加载模板
 
 本页说明 `Engine/ColorVision.Engine/Templates/DataLoad/` 与 Flow 数据加载节点的关系。`DataLoad` 不是图像算法，也没有独立结果 handler；它负责把“从哪个设备、哪个批次、哪类结果、哪个 ZIndex 取数据”这些信息整理成模板或 Flow 请求参数。
@@ -84,3 +95,7 @@
 - 修改服务端 DataLoad 协议时，同步检查 `DataLoadData`、`DataLoadData2` 和 Flow 节点文档。
 - 如果要加文件导入能力，应新增明确的文件参数和失败提示，不要混在当前 DataLoad 模板里。
 - 验收时用真实批次确认加载结果和下游节点消费的是同一条数据。
+
+## 验证入口与缺口
+
+验证缺口：未登记 DataLoad 两条节点路径的专门自动化测试；需用可控批次验证设备、ResultType、SerialNumber 与 ZIndex 的实际请求和下游结果。

@@ -1,3 +1,14 @@
+---
+knowledge_id: "delivery.testing"
+knowledge_type: "reference"
+status: "current"
+summary: "按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。"
+aliases: ["怎么测试","验证命令","dotnet test","测试入口"]
+code_paths: ["Test","Scripts/tests","Web/Backend","package.json"]
+test_paths: ["Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj","Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj"]
+related: ["delivery.index","governance.retrieval"]
+---
+
 # 测试与验证
 
 本页把当前仓库里的测试入口按真实代码归类。维护代码时不要只记一个 `dotnet test`，因为当前测试分为 WPF/xUnit、native OpenCV helper、后端和文档站构建几条链。
@@ -12,7 +23,7 @@
 | 构建、发布和打包脚本测试 | `Scripts/tests/` | Python `unittest` | ABI、平台、安装器、更新包、插件包、后端客户端和发布编排的静态及合成制品门禁 | `python -m unittest discover -s Scripts/tests -p "test_*.py" -v` |
 | native OpenCV helper 验证 | `Test/opencv_helper_test/` | Visual C++、OpenCV、x64 | `opencv_helper` 侧函数，例如 `M_FindLuminousArea` | Visual Studio 2022 或 `msbuild opencv_helper_test.vcxproj` |
 | 插件市场后端测试 | `Web/Backend/` | Python/Flask | Marketplace API、release 记录、上传下载和存储行为 | `python test_app.py`、`python test_app_releases.py` |
-| 文档站验证 | `docs/` | VitePress | 导航、Markdown、搜索索引、静态页面生成 | `npm run docs:build` |
+| 知识与文档验证 | `docs/` | Node、VitePress | 元数据、源码/测试引用、检索路由、导航、网页搜索 | `npm run docs:check`、`npm run docs:build` |
 
 ## `ColorVision.UI.Tests`
 
@@ -22,6 +33,8 @@
 | --- | --- |
 | `ConfigServiceAdaptersTests.cs`、`ConfigHandlerPersistenceTests.cs`、`ThemeSettingsTests.cs` | 配置 adapter、配置持久化和主题设置 |
 | `PropertyEditorContractTests.cs`、`PropertyEditSessionTests.cs`、`ListEditorTests.cs` | PropertyGrid 契约、编辑会话和列表编辑器 |
+| `FindCrossResultOverlayTests.cs`、`AlgorithmResultOverlayTests.cs`、`AlgorithmOverlayManagerTests.cs` | 历史结果坐标、算法叠加内容、临时/持久Overlay生命周期；三者不是同一个职责 |
+| `ResultImagePresentationTests.cs` 与 `Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs` | 不同宿主/项目的图像呈现规则，按主题核对实际目标 |
 | `UniversalSortTests.cs`、`TreemapLayoutTests.cs` | 通用排序、Treemap 布局 |
 | `TerminalScreenBufferTests.cs`、`STNodeCopyPasteTests.cs` | 终端屏幕缓冲、Flow/STNode 复制粘贴 |
 | `LogEntryParserTests.cs`、`LogHistoryReaderTests.cs`、`LogSearchHelperTests.cs` | 日志解析、历史读取和搜索 |
@@ -75,8 +88,8 @@ dotnet test .\Test\Conoscope.Tests\Conoscope.Tests.csproj -p:Platform=x64
 | Flow 节点复制粘贴或 STNode 行为 | `STNodeCopyPasteTests`，再看 [模板与 Flow 链路](../04-api-reference/engine-components/template-flow-chain.md) |
 | native/OpenCV helper | `opencv_helper_test`，并确认 runtime DLL 输出 |
 | 插件市场后端 | `Web/Backend/test_app*.py` |
-| 打包脚本 | 实际运行目标 `package_plugin.bat` 或 `package_project.bat` 并检查制品与上传结果 |
-| 文档站 | `npm run docs:build`，必要时访问本地路由 |
+| 打包脚本 | 先跑 `Scripts/tests` 的相关合成制品测试与清单校验；wrapper会上传，仅在已授权发布时执行远端验收 |
+| 知识与文档 | `npm run docs:knowledge`、`npm run docs:check`；网页内容/导航改变时再 `npm run docs:build` |
 
 ## 验证记录
 
@@ -91,5 +104,7 @@ dotnet test .\Test\Conoscope.Tests\Conoscope.Tests.csproj -p:Platform=x64
 
 ## 维护规则
 
-- 新增测试项目或关键测试类时，同步本页、[项目结构总览](../05-resources/project-structure/README.md) 和侧边栏导航；不要把 `Test/**/bin`、`Test/**/obj` 当成源码证据。
+- 新增测试项目或关键测试类时，同步对应知识的 `test_paths` 和必要的验证说明，再生成目录；侧边栏自动派生，不手工维护。不要把 `Test/**/bin`、`Test/**/obj` 当成源码证据。
 - 修改 UI、Engine、插件或项目文档后，仍需运行 `npm run docs:build` 验证文档站。
+- 快速发布遵守根 `AGENTS.md` 的专用入口与范围，不因为本页列了测试就额外扩大发布流程。
+- 元数据/链接校验只证明引用和路由有效；模型是否理解正确仍需[冷启动问答抽样](../knowledge/retrieval-checks.md)，真实设备与正式交付各自验收。

@@ -7,9 +7,12 @@
     "doc": "docs"
   },
   "scripts": {
-    "docs:dev": "vitepress dev docs",
-    "docs:build": "vitepress build docs && node docs/.vitepress/scripts/generate-docs-index.mjs && npm run docs:validate:dist",
-    "docs:validate": "vitepress build docs && node docs/.vitepress/scripts/generate-docs-index.mjs && npm run docs:validate:dist",
+    "docs:knowledge": "node docs/.vitepress/scripts/knowledge.mjs generate",
+    "docs:check": "node --test docs/.vitepress/scripts/knowledge.test.mjs docs/.vitepress/scripts/readme-links.test.mjs && node docs/.vitepress/scripts/knowledge.mjs check",
+    "docs:check:html": "node --test docs/.vitepress/scripts/html-links.test.mjs",
+    "docs:dev": "node docs/.vitepress/scripts/knowledge.mjs check && vitepress dev docs",
+    "docs:build": "npm run docs:check && npm run docs:check:html && vitepress build docs && node docs/.vitepress/scripts/generate-docs-index.mjs && npm run docs:validate:dist",
+    "docs:validate": "npm run docs:build",
     "docs:validate:dist": "node docs/.vitepress/scripts/validate-docs.mjs",
     "docs:preview": "vitepress preview docs"
   },
@@ -22,6 +25,7 @@
   "author": "ColorVision Inc",
   "license": "ISC",
   "devDependencies": {
+    "@vue/compiler-dom": "^3.5.31",
     "markdown-it-mermaid": "^0.2.0",
     "mermaid": "^11.13.0",
     "vitepress": "^1.6.4",

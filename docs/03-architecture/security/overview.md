@@ -1,3 +1,14 @@
+---
+knowledge_id: "platform.security"
+knowledge_type: "topic"
+status: "current"
+summary: "区分全局粗粒度权限和独立RBAC模块，不承诺不存在的统一业务授权边界。"
+aliases: ["权限边界","安全架构","Authorization","PermissionMode"]
+code_paths: ["UI/ColorVision.Rbac","UI/ColorVision.Common"]
+test_paths: []
+related: ["platform.architecture","platform.rbac"]
+---
+
 # 安全与权限控制
 
 本章只描述当前仓库里已经落地的权限与会话实现，不再继续维护把 ColorVision 写成一套覆盖网络、数据、审计、认证全链路的通用安全白皮书。

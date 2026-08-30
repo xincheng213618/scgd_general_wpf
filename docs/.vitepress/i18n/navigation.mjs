@@ -2,6 +2,8 @@ import { createRequire } from 'node:module'
 import { getLocalizedText } from './locales.mjs'
 
 const require = createRequire(import.meta.url)
+// A checked-in projection of the same catalog used by offline AI retrieval.
+// Do not maintain a second, role-based navigation tree by hand.
 const {
   navItems,
   sidebarItems,

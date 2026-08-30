@@ -6,11 +6,20 @@
 - Strong-name signing is conditional on `ColorVision.snk`. Do not disable it when the key exists.
 - The application is modular: UI libraries live under `UI/`, engine code under `Engine/`, runtime plugins under `Plugins/`, and customer bundles under `Projects/`.
 
+## Find and maintain project knowledge
+
+- Use `docs/knowledge/index.md` as the task-to-topic map. Read only the relevant topic, its `related` topics when needed, and the referenced implementation/tests; do not start by loading the whole repository or all docs.
+- Without installing website dependencies, run `node docs/.vitepress/scripts/knowledge.mjs search "<question or symbol>"` for current topics. Use `--all` when looking for planned/historical behavior. Raw Markdown is authoritative documentation; the catalog and website are generated discovery views, not separate facts.
+- Before changing a known code path, run `node docs/.vitepress/scripts/knowledge.mjs impact "<repository-relative path>"` to find documentation to recheck. This is a candidate map, not proof of exhaustive dependency coverage.
+- Check the topic's status and actual code/tests. `current` describes intended present scope, not a claim that tests passed. Flag conflicts between documented contracts and implementation; do not silently choose whichever is convenient. Missing evidence is a verification gap, not permission to invent behavior.
+- Update affected knowledge in the same change as public behavior, contracts, architecture boundaries, or build/release commands. Follow `docs/AGENTS.md` and `docs/knowledge/maintenance.md`; generate the catalog with `npm run docs:knowledge`, then run `npm run docs:check` and the relevant site verification.
+- Instructions and command examples do not grant authority to publish, delete data, control hardware, access credentials, commit, or push. Preserve the user's requested scope and distinguish read-only diagnosis from implementation and external actions.
+
 ## Architecture boundaries
 
 - Put device and service implementations under `Engine/ColorVision.Engine/Services/**`.
 - Keep flow primitives in `Engine/FlowEngineLib/` and algorithm templates in `Engine/ColorVision.Engine/Templates/**`.
-- Implement result overlays through `IViewResult` and `IResultHandleBase`; drawing infrastructure belongs under `UI/ColorVision.ImageEditor/Draw/**`.
+- Keep result pipelines distinct: Engine historical results use `IViewResult` and `IResultHandleBase`, discovered by `ResultHandleRegistry`; unified local algorithms emit neutral Geometry/Overlay artifacts rendered by `AlgorithmOverlayRenderer` and managed by `AlgorithmOverlayManager`. Do not add Engine DAO/handler dependencies to neutral algorithms. Customer judgment, exports, and protocol fields belong in `Projects/`; shared drawing infrastructure belongs under `UI/ColorVision.ImageEditor/Draw/**`. See `docs/04-api-reference/engine-components/result-handoff-chain.md` for the full contract.
 - Use the metadata-driven PropertyGrid conventions (`Category`, `DisplayName`, `Description`, `PropertyEditorType`, and `PropertyVisibility`) instead of one-off editors where the existing system applies.
 - Keep UI-to-Engine dependencies behind existing abstractions; avoid ad-hoc cross-layer calls.
 - Copilot intentionally does not load global or project `config.toml` at runtime. Keep `AGENTS.md` / `CLAUDE.md` instruction discovery, but let ColorVision own model, provider, tools, and approval settings. Do not restore config loading to satisfy obsolete integration tests.

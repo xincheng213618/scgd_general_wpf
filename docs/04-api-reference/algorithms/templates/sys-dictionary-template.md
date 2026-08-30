@@ -1,3 +1,14 @@
+---
+knowledge_id: "algorithms.template-dictionary"
+knowledge_type: "reference"
+status: "current"
+summary: "说明保留的系统字典 DAO 与模板默认值、传感器和旧流程兼容依赖。"
+aliases: ["系统字典窗口没了还能删除表吗","TemplateDicId","SysDictionaryModModel","SensorTemplateDictionaryService"]
+code_paths: ["Engine/ColorVision.Engine/Dao/SysDictionaryModMasterDao.cs","Engine/ColorVision.Engine/Dao/SysDictionaryModDetaiModel.cs","Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Services/Devices/Sensor/Templates/SensorTemplateDictionaryService.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/SensorTemplateMigrationTests.cs","Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs"]
+related: ["algorithms.index","engine.template-design","algorithms.json-templates"]
+---
+
 # SysDictionary 系统字典兼容层
 
 系统字典不再提供算法、传感器或合规默认字典的通用维护窗口。相关数据库模型和读取链路继续保留，用于 JSON 模板默认参数、旧强类型模板、历史流程包和传感器运行时兼容。
@@ -51,3 +62,9 @@
 - 新算法参数继续使用 JSON 模板，不再新增通用字典明细编辑入口。
 - 修改旧模板字典数据应通过版本化数据库迁移或专用脚本完成，并验证历史模板和流程包。
 - 迁移现场数据库时，字典主档、明细和引用它们的模板记录必须保持 ID 一致。
+
+## 验证入口与缺口
+
+关联测试：`Test/ColorVision.UI.Tests/SensorTemplateMigrationTests.cs`、`Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs`。
+
+测试覆盖传感器迁移与流程包兼容的一部分；现场数据库迁移必须保留主从 ID 和旧模板引用，不把移除窗口理解为删除数据授权。

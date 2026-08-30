@@ -1,3 +1,14 @@
+---
+knowledge_id: "delivery.update"
+knowledge_type: "topic"
+status: "current"
+summary: "主程序及插件更新、检查结果一次性消费、失败元数据回退、目录替换与启动恢复的实现和验收边界。"
+aliases: ["自动更新","更新失败","插件回滚","重复检查更新","更新检查缓存","五分钟缓存","启动检查结果","PluginUpdater","CombinedUpdateCoordinator","UpdateCheckReuseState","LatestVersionCheckRequestCache","CanReuseUpdateCheckOptions","GetPluginUpdateMetadataAsync","ServerUnavailable","NoInternetConnection","forceRefresh"]
+code_paths: ["ColorVision/Update","ColorVision/Recovery","UI/ColorVision.UI/Plugins/PluginUpdater.cs","UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceClient.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceManager.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/PluginRecoveryBackupServiceTests.cs","Test/ColorVision.UI.Tests/ServiceHostUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/AutoUpdatePlanTests.cs"]
+related: ["delivery.deployment","delivery.scripts"]
+---
+
 # 自动更新
 
 本页说明 ColorVision 当前自动更新的工程入口。客户端实现位于 `ColorVision/Update/`，共享的更新进程协调与快照能力位于 `UI/ColorVision.UI/Update/`；安装器和更新包的实际发布流程以 [部署概览](./overview.md) 与 [构建与发布脚本](../scripts/README.md) 为准。
@@ -34,9 +45,9 @@ flowchart LR
 
 主程序增量包可能只包含某个插件的变更文件。组合更新会先以已安装插件目录建立完整临时副本，再叠加主程序增量片段；若同时下载了完整 `.cvxp`，则以该完整插件包为准。随后才执行备份和目录事务，不能把差异片段直接当成完整插件目录替换。
 
-客户端继续使用 `GET /api/app/latest-version`、`POST /api/plugins/batch-version-check` 和插件详情接口。主程序版本与插件批量版本并发查询，只有批量结果确认存在新版的插件才会并发读取详情并筛选兼容版本；不会再为全部插件逐个请求版本。插件详情请求对“连接成功但没有 HTTP 响应”的连接采用 2 秒单次超时，并以 300 ms、900 ms 间隔最多建立 3 次新请求。任一候选插件的详情在重试后仍未取得时，本轮主程序与插件更新计划整体延期，不把本应组合的更新拆成两次。最近一次成功的主程序版本、插件批量版本和插件详情在进程内保留 5 分钟，重复打开更新窗口直接复用；启动检查和手动窗口即使请求的检查范围不同，也会等待同一个正在进行的主程序版本请求，不会再次连接 `latest-version`。Marketplace 的显式“刷新”操作仍会强制重新查询。
+客户端使用 `GET /api/app/latest-version`、`POST /api/plugins/batch-version-check` 和插件更新元数据接口 `GET /api/plugins/{id}?view=update`。主程序版本与插件批量版本并发查询，插件管理器再按 `HasUpdate` 选择候选并读取元数据以筛选兼容版本。插件更新元数据请求采用 2 秒单次超时，并以 300 ms、900 ms 间隔最多建立 3 次新请求。任一候选插件的元数据在重试和可用旧结果回退后仍未取得时，本轮主程序与插件更新计划整体延期，不把本应组合的更新拆成两次。请求共享与旧结果回退的区别见本页“检查复用与元数据新鲜度”。
 
-更新窗口在“程序备份”旁提供“不使用系统代理”选项，默认开启。开启时使用独立的直连 `HttpClient`；取消勾选后，更新检查和 Marketplace 请求遵循 Windows 系统代理。修改从下一次请求生效。该选项只影响 HTTP 元数据与 Marketplace 请求，不改变 aria2 下载和程序快照行为。短暂网络故障时优先使用进程内最近一次成功结果；从未成功取得元数据时不会凭空生成更新计划。
+更新窗口在“程序备份”旁提供“不使用系统代理”选项，默认开启。开启时使用独立的直连 `HttpClient`；取消勾选后，更新检查和 Marketplace 请求遵循 Windows 系统代理。修改从下一次请求生效。该选项只影响 HTTP 元数据与 Marketplace 请求，不改变 aria2 下载和程序快照行为。
 
 更新提示显示 30 秒后会静默预下载主程序和插件包。退出时只自动应用已经完整缓存并通过校验的增量包；程序目录不可写时，必须由 `ColorVisionServiceHost` 在 3 秒内静默准备好目录权限，否则本次退出直接跳过，不弹 UAC、不阻塞关闭。主程序和插件分别判断包是否可用：任意一方未准备好不会阻止另一方更新。完整安装程序可以预下载和复用，但不会在退出时自动运行；后台启动检查仍会按当前主程序版本独立查询和预下载兼容插件，使已经准备好的插件可以在退出时单独更新。
 
@@ -49,6 +60,27 @@ flowchart LR
 主程序、插件和快照的外部批处理会向当前安装目录对应的 `%LocalAppData%\ColorVision\UpdateState\<安装标识>\update.log` 追加开始、成功或失败记录，便于定位静默更新没有生效的问题。主程序覆盖复制遇到杀毒扫描或文件句柄短暂占用时，每秒重试一次、最多重试 10 次；最终失败会把 `robocopy` 的文件明细和退出码写入同一日志。“发送反馈”的诊断项默认包含最近 7 天内各安装目录的更新日志，因此外部更新进程已经退出后仍能随反馈包回传。
 
 如果上次启动没有完成，主程序会先显示独立启动恢复窗口。该窗口自动检查主程序新版，也可重新安装当前完整版本；插件侧支持本次跳过、持久禁用和按已验证备份回退。更新或回退只有在外部进程真实接管后才清理启动失败记录，下载失败、恢复准备失败或仅打开快照窗口都不会丢失现场。更新前的旧进程清理是尽力而为：无法识别、权限不足或终止超时时记录警告，不能阻止外部更新程序继续启动。
+
+## 检查复用与元数据新鲜度
+
+当前没有“检查成功后五分钟内重复打开窗口直接用完成结果”的规则。`CombinedUpdateCoordinator` 的检查任务、HTTP 的最后成功响应和磁盘下载包是不同状态。
+
+| 层次 | 当前复用条件 |
+| --- | --- |
+| 组合检查任务 `SharedUpdateCheck` | 主程序/插件检查开关必须相同，且已包含请求需要的当前宿主插件范围；范围不兼容会另建检查 |
+| 尚在进行的组合检查 | 兼容范围可等待同一任务；交互请求一旦复用启动任务，就消耗它的启动结果消费资格 |
+| 已完成的启动检查 | 任务正常完成、结果尚未被交互请求消费且范围兼容时，只允许一个交互请求消费；不是每次打开都复用，也没有五分钟有效期 |
+| 已完成的交互检查，或已消费的启动检查 | 不再复用完成结果，后续调用发起新的检查；`Refresh` 请求也不消费已完成的启动结果 |
+| 主程序版本 HTTP 请求 | `LatestVersionCheckRequestCache` 只共享同 URL 的进行中请求；完成后新建请求。因此组合范围不同仍可能共享正在进行的主程序版本请求 |
+| 插件更新元数据 HTTP 请求 | 按服务地址与插件 ID 共享进行中请求；批量版本查询使用信号量串行执行，不等于复用一个已完成批量结果 |
+
+组合检查和上述共享 HTTP 请求用调用方的 `WaitAsync(cancellationToken)` 等待；关闭窗口可取消自己的等待，不会取消共享底层请求。启动结果的消费资格在选择复用任务时就改变，不以窗口成功显示或安装成功为条件；取消等待也不会恢复这个资格。
+
+`AutoUpdater` 仍在进程内保存同 URL 的最后成功版本和 ETag：后续请求可带 `If-None-Match`，服务器返回 304 时使用旧版本并报告 `Success`。断网、超时、HTTP 异常或无效载荷也可能返回旧版本，但仍携带 `NoInternetConnection` / `ServerUnavailable`；取得非空 `Version` 或 `Plan` 不代表检查成功。组合入口在无 Internet 时提前结束，最终状态非 `Success` 时会延期主程序与插件计划。交互入口仅对 `ServerUnavailable` 再检查一次，不对 `NoInternetConnection` 重试。
+
+`MarketplaceClient` 的批量版本、普通详情和更新元数据也保留最后成功响应，某些请求异常分支会回退这些旧对象；没有五分钟 TTL，返回值也不统一标记新鲜度。插件详情回退的缓存键只有插件 ID，批量回退按插件 ID 集合匹配，不保证切换服务地址后的缓存隔离。取到旧详情仍可能形成兼容更新候选，不能从非空结果或整轮检查完成推断每条插件元数据都刚从服务器取得。
+
+这些元数据 API 保留 `forceRefresh` 参数，但当前实现没有用它绕过进行中请求共享或禁用失败后的旧结果回退。Marketplace 显式刷新会重新进入查询链，不等于“完全禁用所有缓存”。磁盘中的安装包、`.cvx`、`.cvxp` 及程序快照另按包校验与恢复规则管理，不受上述检查结果消费次数控制。
 
 ## 相关位置
 
@@ -76,6 +108,12 @@ flowchart LR
 - 最终安装入口会重新校验全部 `.cvx`；插件市场、本地文件和最终暂存共用插件包可安装判断，带 `.aria2` 的下载中包、损坏包、空包和非 `.cvxp/.zip` 文件都会被拒绝。组合更新中的插件包统一按 `manifest.id` 暂存；第三方根目录包、官方包和主程序包内已有插件目录使用同一套覆盖规则。
 - 带清单的 `.cvxp` 必须表示一个完整插件目录；客户端会精确替换目标目录。只有主程序 `.cvx` 内的插件内容允许是差异片段，并必须先与已安装目录合成为完整事务源。
 - 更新脚本和解包中间文件位于暂存根目录，真正的覆盖复制源固定为其 `ColorVision/` 子目录；`update.bat`、`Packages/` 等辅助文件不会进入程序目录，复制成功或失败后都会删除整个暂存根目录。
-- 更新元数据请求失败时仅复用本进程最近一次成功结果；没有成功缓存时结束本次检查，不凭空生成更新计划。
+- 更新元数据回退必须同时核对状态与来源，不能把旧版本/详情当作本次网络检查成功；请求共享、启动消费与失败缓存的唯一说明在本页“检查复用与元数据新鲜度”。
 - 修改更新机制时，同步更新部署概览、构建脚本文档和 CHANGELOG。
 - 不新增本地-only 主安装包发布捷径。
+
+## 检查复用的验证入口与缺口
+
+`AutoUpdatePlanTests` 中的 `LatestVersionChecksReuseOnlyTheSameInFlightRequest` 验证请求对象只复用同 URL 的进行中任务；`FirstInteractiveCheckConsumesTheCompletedStartupResultOnlyOnce`、`InteractiveCheckSharesAnInFlightStartupRequestWithoutCachingItsResult`、`CompletedInteractiveCheckIsNeverReused` 验证消费状态；`UpdateCheckReuseRequiresTheSameScopeAndCompatiblePluginCoverage` 与 `InteractiveUpdateCheckRetriesOnlyTransientServerFailures` 验证范围及状态判定。这些是请求缓存/状态辅助器的直接测试，不等于真实窗口、HTTP 或安装流程已经验收。
+
+当前没有据此声明 ETag/304、超时后旧元数据、服务地址切换、取消窗口与共享请求并发、真实主程序/插件组合更新的端到端覆盖。验证这些行为需要隔离网络和安装环境；文档检查不授权发起更新、安装或发布。

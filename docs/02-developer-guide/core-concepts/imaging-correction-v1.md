@@ -1,3 +1,14 @@
+---
+knowledge_id: "algorithms.imaging-correction"
+knowledge_type: "reference"
+status: "current"
+summary: "ImagingCorrection 的输入、参数、结果、宿主接入与定向验证契约。"
+aliases: ["暗场、平场和坏点校正如何配置","ImagingCorrection","ImagingCorrectionAlgorithmProvider"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/ImagingCorrectionAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ImagingCorrectionV1Tests.cs"]
+related: ["algorithms.platform","algorithms.index"]
+---
+
 # 成像校正 V1（M9）
 
 ## 阶段边界与已有能力盘点

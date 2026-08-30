@@ -1,73 +1,56 @@
-# ColorVision.Engine
+---
+knowledge_id: "engine.host"
+knowledge_type: "topic"
+status: "current"
+summary: "ColorVision.Engine工程的条件引用、NuGet/DLL依赖回退与资源打包；schema嵌入程序集，缺少输出散文件不等于漏包，也不保证脱离UI源码独立构建。"
+aliases: ["Engine是不是本地算法库", "ColorVision.Engine", "ColorVision.Engine.csproj", "Engine工程依赖", "资源打包", "EmbeddedResource", "UIProjectPackageVersion"]
+code_paths: ["Engine/ColorVision.Engine/ColorVision.Engine.csproj", "Directory.Build.props"]
+test_paths: []
+related: ["engine.index", "engine.native-integration", "algorithms.json-templates", "delivery.prerequisites", "delivery.scripts"]
+---
 
-`Engine/ColorVision.Engine/` 是主程序的引擎宿主层，连接模板、设备服务、MQTT、Flow、结果展示和部分编辑 UI。它不是纯算法库，也不是所有算法都在本地执行的单体模块。
+# ColorVision.Engine 工程、资源与依赖
 
-## 先查什么
+`Engine/ColorVision.Engine/` 是连接设备、模板、MQTT、Flow、结果展示和编辑 UI 的宿主工程，不是纯本地算法库。本页回答依赖解析、构建前提和资源打包问题；运行契约直接从 [Engine 入口](./README.md) 进入负责该能力的主题，不把所有模块串成一条必然执行的启动链。
 
-| 现象 | 第一检查点 |
-| --- | --- |
-| 模板列表为空 | MySQL 连接、`TemplateInitializer`、`TemplateControl.GetInstance()`、程序集是否加载 |
-| 新模板类看不到 | 是否实现 `IITemplateLoad`，是否调用 `TemplateControl.AddITemplateInstance` |
-| JSON 模板保存失败 | `ITemplateJson<T>` 数据库读写、模板名重复、schema 是否发布 |
-| 设备资源没有变成服务对象 | `SysResourceModel.Type`、`ServiceTypes`、`DeviceServiceFactoryRegistry` |
-| 设备命令一直 Timeout | MQTT 主题、service token、`MqttRCService` 状态、`MsgRecord` |
-| Flow 节点没有服务 | `FlowEngineManager`、RC 服务列表、`FlowNodeManager.UpdateDevice`、工作区刷新状态 |
-| Flow 引擎结束但结果没回去 | 共享链查 `RunFinalized`；现有项目窗口再查自己的 `FlowCompleted` 最终化、`Processing` 和结果映射 |
-| overlay 不对 | `IResultHandleBase`、结果类型、ImageEditor 图元和坐标转换 |
-| 打包后图标/schema/工具缺失 | `ColorVision.Engine.csproj` 的 `Resource` / `None Update` |
+## 工程属性的来源
 
-## 当前能力
+`ColorVision.Engine.csproj` 启用 WPF、WindowsForms 和 unsafe，声明 `OutputType=WinExe`。目标框架从根 `Directory.Build.props` 继承，当前为 `net10.0-windows`、x64；签名也由根属性按 `ColorVision.snk` 是否存在决定，有密钥时不能为绕过构建问题禁用签名。
 
-| 能力 | 当前入口 | 说明 |
+工程有自己的 `VersionPrefix` 声明，不能直接把根目录的主程序版本当作 Engine 程序集版本。查询版本与依赖时读取当前工程和导入属性，不在本页维护另一份会过期的版本清单。`WinExe` 声明也不证明脱离 ColorVision 的配置、资源和其他项目后可以独立运行。
+
+## 条件引用不等于独立构建保证
+
+以下是本工程直接声明的依赖选择，完整运行环境还包含传递依赖：
+
+| 依赖组 | 源码存在时 | 源码不存在时 |
 | --- | --- | --- |
-| 模板注册 | `TemplateControl` | MySQL 可用后扫描 `IITemplateLoad` 并注册到 `ITemplateNames` |
-| JSON 模板 | `ITemplateJson<T>`、`EditTemplateJson` | 数据库读写、参数包装、文本/属性/注释视图编辑 |
-| Flow 编排 | `FlowProcessing/Runtime`、`FlowProcessing/Editor` | 将 Flow 模板、服务 token、交互式/无界面执行、节点编辑和最终化接到 `FlowEngineLib` |
-| 设备服务 | `DeviceService`、`DeviceServiceFactoryRegistry` | 树节点、菜单、配置导入导出、服务对象工厂 |
-| MQTT 运行时 | `MQTTServiceBase`、`MqttRCService` | 发布/订阅、消息记录、心跳、RC 注册和 token 缓存 |
-| 算法适配 | `AlgorithmPOI`、`AlgorithmMTF2` 等 | 打开模板编辑器、组装 MQTT 参数、调用设备服务 |
-| 结果展示 | `IViewResult`、`IResultHandleBase` | 连接历史结果、表格明细和 ImageEditor overlay |
+| `ColorVision.Database`、`ColorVision.SocketProtocol`、`ColorVision.ImageEditor`、`ColorVision.Scheduler`、`ColorVision.Solution`、`ColorVision.UI` | 引用 `UI/` 中对应 `.csproj` | 同名 NuGet 包，版本取 `UIProjectPackageVersion` |
+| `FlowEngineLib`、`ST.Library.UI` | 引用 `Engine/` 中对应 `.csproj` | 引用 `DLL/` 中同名 DLL，`Private=True` |
+| `ColorVision.UI.Desktop`、`ColorVision.FileIO`、`cvColorVision` | 无条件项目引用 | 本工程没有对应包或 DLL 回退分支 |
 
-## 运行链路
+选择条件检查的是项目文件是否存在，不是“源码编译失败后自动换成包”。因此删除 `UI/` 目录不能保证只依赖 NuGet 就能构建；DLL 回退也要求实际文件及兼容依赖存在。`UIProjectPackageVersion` 当前默认 `*`，若需可重现的包输入，应核验最终解析结果，不能仅凭这个属性宣称版本已锁定。
 
-1. `TemplateInitializer` 等初始化器等待数据库可用。
-2. `TemplateControl` 扫描程序集中的模板加载器并注册模板实例。
-3. 设备资源按 `ServiceTypes` 进入 `DeviceServiceFactoryRegistry` 创建服务对象。
-4. 设备/算法服务通过 `MQTTServiceBase` 发送命令，并用 `MsgRecord` 追踪状态。
-5. `MqttRCService` 维护注册中心连接和 service token。
-6. Flow 模板由 `FlowEngineManager` 和 `ViewFlow` 组成交互式工作区，`FlowExecutionCoordinator` 提供 UI 调度与无界面入口；底层节点图仍由 `FlowEngineLib` 执行。
-7. 结果由 handler 命中类型后交给 ImageEditor 或表格展示。
+本工程还显式引用 `OpenCvSharp4.runtime.win`。native helper 的首次构建、ABI 和运行 DLL 前提见 [OpenCV/native 集成](../../02-developer-guide/engine-development/opencv-integration.md)，不要把一次托管构建等同于完整的 native 运行验证。
 
-## 检查
+## 资源不是同一种输出文件
 
-| 验收项 | 要查什么 |
-| --- | --- |
-| 构建目标 | 主宿主 `net10.0-windows`、x64，Engine 依赖可解析 |
-| 模板初始化 | MySQL 连接后能扫描 `IITemplateLoad`，`ITemplateNames` 有真实模板项 |
-| JSON 模板 | 能读取、编辑、保存、删除，schema 文件随输出发布 |
-| 设备工厂 | Camera、PG、Spectrum、SMU、Sensor、Algorithm、Calibration 等类型能实例化 |
-| MQTT 命令链 | 发命令后 `MsgRecord` 有 Success/Fail/Timeout 状态 |
-| RC 服务链 | 注册中心连接后能刷新可用服务和 token |
-| Flow 桥接 | 流程模板能加载、编辑、保存、运行，并刷新服务节点 |
-| 结果展示 | 历史结果能打开，overlay、表格和结果类型匹配 |
-| 交付资源 | 图标、schema、工具 exe 等发布输出完整 |
+| 工程声明 | 当前资源 | 验证方式与边界 |
+| --- | --- | --- |
+| WPF `Resource` | `Assets/Image/` 中列出的图标、背景和 `Assets/png/PowerToy.png` | 检查 WPF 资源与实际使用路径，不要求在输出目录出现同名散文件；背景明确为 `CopyToOutputDirectory=Never` |
+| `EmbeddedResource` | `Templates/Jsons/**/*.schema.json` 与 `Templates/Jsons/Schemas/schema-index.json` | 检查程序集清单资源及 `LogicalName`，不是检查文件是否被复制到输出目录 |
+| 工具 EXE / 外部运行文件 | 本工程没有通用“工具 EXE 自动复制”声明 | 追踪实际所属项目或交付脚本，不能从上述资源项推断工具已打包 |
 
-## 边界
+Schema 的逻辑资源名使用 `Templates/Jsons/…` 前缀；索引固定为 `Templates/Jsons/Schemas/schema-index.json`。这两类 JSON 从 `None` 移除后作为嵌入资源编译。编辑器如何按 Code 查索引、何时回退磁盘、找不到时如何处理，统一见 [JSON 模板的 Schema 查找](../algorithms/templates/json-templates.md#schema-查找与发布边界)。
 
-- 很多算法类只是模板/参数/MQTT 的适配器，不是本地算法内核。
-- 模板系统依赖数据库和程序集扫描，不是完全本地静态模板集。
-- Flow 执行内核在 `FlowEngineLib`；`Templates/Flow/` 保留模板持久化、版本和搜索，编辑、选择、运行、前后处理与诊断位于 `FlowProcessing/`。
-- 设备实例化当前以 `DeviceServiceFactoryRegistry` 为中心，不建议继续写分散构造说明。
+## 最小验证与缺口
 
-## 关键文件
+纯源码问答先核对上述 `.csproj`、根属性及消费资源的代码，不需要启动产品。确实要验证工程构建时，先满足 [Windows/x64 环境前提](../../00-getting-started/prerequisites.md) 和 native 集成条件，再从仓库根目录执行：
 
-| 任务 | 先看 |
-| --- | --- |
-| 模板注册 | `Templates/TemplateControl.cs`、`Templates/Jsons/ITemplateJson.cs` |
-| JSON 编辑 | `Templates/Jsons/EditTemplateJson.xaml.cs` |
-| 设备服务 | `Services/DeviceService.cs`、`Services/Devices/DeviceServiceFactory.cs` |
-| MQTT/RC | `Services/Core/MQTTServiceBase.cs`、`Services/RC/MQTTRCService.cs` |
-| Flow 模板 | `Templates/Flow/TemplateFlow.cs`、`Templates/Flow/Versioning/` |
-| Flow 编辑 | `FlowProcessing/Editor/FlowEditorCanvas.xaml.cs`、`FlowProcessing/Editor/NodeConfiguration/` |
-| Flow 运行 | `FlowProcessing/Runtime/FlowEngineManager.cs`、`FlowProcessing/Runtime/ViewFlow.xaml.cs`、`FlowProcessing/Runtime/FlowExecutionCoordinator.cs` |
-| 算法适配 | `Templates/POI/AlgorithmImp/AlgorithmPOI.cs`、`Templates/Jsons/MTF2/AlgorithmMTF2.cs` |
+```powershell
+dotnet build .\Engine\ColorVision.Engine\ColorVision.Engine.csproj -c Release -p:Platform=x64
+```
+
+该命令会生成本地产物，隐式 restore 在缺少依赖时可能访问包源；不是发布命令，不应用于仅文档改动的验收。成功编译不能证明 schema 可被每个编辑器命中、图标可显示、MySQL/broker/设备可用或交付目录完整。
+
+本页没有声明覆盖这些工程与资源事实的自动化测试。Flow 最终化和设备配置的局部测试应留在对应主题，不能作为工程资源验收；资源变更需按实际构建产物与消费入口补验，外部设备和上传仍需单独授权。

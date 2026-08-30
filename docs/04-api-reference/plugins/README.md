@@ -1,49 +1,42 @@
-# 现有插件能力
+---
+knowledge_id: "plugins.index"
+knowledge_type: "index"
+status: "current"
+summary: "从插件程序集装载、产物安装和具体模块能力定位源码；同一责任不再分开发手册与使用手册。"
+aliases: ["当前有哪些通用插件", "插件功能在哪里", "新建插件", "插件不加载从哪里查", "Conoscope", "Spectrum", "SystemMonitor", "WindowsServicePlugin"]
+code_paths: ["Plugins", "UI/ColorVision.UI/Plugins/PluginLoader.cs", "Plugins/Directory.Build.props", "PluginProject.HostCopy.targets"]
+test_paths: []
+related: ["plugins.model", "plugins.getting-started", "plugins.capabilities", "plugins.conoscope", "plugins.spectrum", "plugins.system-monitor", "plugins.windows-service", "platform.extensibility"]
+---
 
-本章说明当前 `Plugins/` 目录里真实存在的通用插件。插件开发方法见 [插件开发](../../02-developer-guide/plugin-development/README.md)，客户项目包见 [项目说明](../../00-projects/README.md)。
+# 插件装配与模块知识入口
 
-## 当前插件
+`Plugins/` 保存通用插件源码，`UI/ColorVision.UI/Plugins/` 实现宿主的装载与产物管理，`Scripts/` 提供交付入口。插件扩展宿主能力，但不会因有 DLL 或 manifest 就自动具备菜单、隔离运行或热卸载能力。按当前问题进入一份规范主题，再核对其源码和验证边界。
 
-| 插件 | 源码目录 | manifest Id | 能力 | 文档 |
-| --- | --- | --- | --- | --- |
-| Conoscope | `Plugins/Conoscope/` | `Conoscope` | VAM/锥镜图像观察、关注点、色域和对比度分析 | [Conoscope](./standard-plugins/conoscope.md) |
-| Spectrum | `Plugins/Spectrum/` | `Spectrum` | 光谱仪连接、标定、测量、EQE、SQLite 结果 | [Spectrum](./standard-plugins/spectrum.md) |
-| SystemMonitor | `Plugins/SystemMonitor/` | `SystemMonitor` | 性能监控、状态栏、磁盘/网络/进程信息 | [SystemMonitor](./standard-plugins/system-monitor.md) |
-| WindowsServicePlugin | `Plugins/WindowsServicePlugin/` | `WindowsServicePlugin` | CVWindowsService 安装、注册、MySQL/MQTT 配置 | [WindowsServicePlugin](./standard-plugins/windows-service.md) |
+## 按代码责任定位
 
-## 装载模型
+| 问题 | 规范主题 | 所属实现 |
+| --- | --- | --- |
+| 应放在插件、Engine 服务、模板还是项目包 | [扩展责任边界](../../02-developer-guide/core-concepts/extensibility.md) | 已有抽象与各模块边界 |
+| manifest 已识别但加载失败；DLL 加载了却没菜单 | [插件装载与扩展发现](../../02-developer-guide/plugin-development/overview.md) | `PluginLoader`、`AssemblyHandler`、各 provider 消费者 |
+| 新项目产物、HostCopy、cvxp 安装替换或导出 | [插件产物与交付](../../02-developer-guide/plugin-development/getting-started.md) | `PluginProject.HostCopy.targets`、宿主产物管理与 `package_cvxp.py` |
+| 某个插件的设备、设置、窗口或数据库行为 | 下表中的独立模块主题 | `Plugins/<Name>/` |
+| 横向检查插件扩展点与外部依赖 | [插件依赖与接入矩阵](./plugin-capability-matrix.md) | 各插件菜单、状态、配置和 native 接入 |
+| 客户判定、MES 字段或项目专用流程 | [项目知识入口](../../04-api-reference/projects/README.md) | `Projects/`，不是通用插件宿主 |
 
-插件由 `UI/ColorVision.UI/Plugins/PluginLoader.cs` 装载：
+## 当前通用插件
 
-1. 扫描主程序输出目录下的 `Plugins/` 一级子目录。
-2. 优先读取 `manifest.json`。
-3. 根据 `dllpath` 找到插件 DLL。
-4. 检查 `.deps.json` 中的 `ColorVision.*` 依赖版本。
-5. 通过 `Assembly.LoadFrom(...)` 加载程序集。
-6. 如果没有 manifest，才尝试“目录名同名 DLL”的兼容加载。
+| 源码目录 / manifest ID | 能力责任 | 规范主题 |
+| --- | --- | --- |
+| `Plugins/Conoscope/` / `Conoscope` | VAM/锥镜图像观察与分析、关注点及观察相机 | [Conoscope](./standard-plugins/conoscope.md) |
+| `Plugins/Spectrum/` / `Spectrum` | 光谱仪连接、测量校正、EQE 和自身 SQLite 结果 | [Spectrum](./standard-plugins/spectrum.md) |
+| `Plugins/SystemMonitor/` / `SystemMonitor` | 性能采样、状态栏与监控窗口生命周期 | [SystemMonitor](./standard-plugins/system-monitor.md) |
+| `Plugins/WindowsServicePlugin/` / `WindowsServicePlugin` | CVWindowsService 安装配置及 MySQL/MQTT 管理 | [WindowsServicePlugin](./standard-plugins/windows-service.md) |
 
-推荐交付形态：
+这张表只列当前 `Plugins/` 中有项目和 manifest 的模块，不将历史插件或 `Projects/` 包复制为另一份插件清单。模块自己的 README 可以保留原语言；这里维护源码检索入口，不要求再写一份面向不同读者的正文。
 
-```text
-ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/<PluginName>/
-  <PluginName>.dll
-  manifest.json
-  README.md
-  CHANGELOG.md
-  PackageIcon.png        # 可选
-```
+## 修改与验证
 
-## 发布
+修改装载、依赖检查或包结构时，更新相应共用契约；修改某个插件的业务行为时，更新该模块主题。新增或移除模块后同步本入口与横向矩阵，再生成知识地图和网站导航，不手改另一棵菜单树。
 
-```powershell
-Scripts\package_plugin.bat Conoscope
-Scripts\Spectrum.bat --release-notes "Spectrum 本次变更说明"
-```
-
-`package_plugin.bat` 用于普通 `.cvxp` 插件并默认上传；Spectrum 正式发布必须走专用脚本，同时维护独立 ZIP 与 `.cvxp` 两个更新源。两者都不是本地-only 打包入口。
-
-## 维护要求
-
-- 新增插件时补 `Plugins/<Name>/README.md`、CHANGELOG、manifest 和本章插件页。
-- 修改入口、权限、native 依赖、数据库、注册表或 Socket 行为时，同步更新对应插件页。
-- 历史插件名不要写成当前能力；如果源码、项目文件和 manifest 不存在，就不出现在当前插件清单中。
+本地构建、运行插件和发布是不同动作。创建文档或诊断加载失败不授权启动设备、修改系统服务或上传包；普通插件、Spectrum 双通道、客户项目包和主程序的发布对象与入口见[产物契约](../../02-developer-guide/plugin-development/getting-started.md)及对应模块页。本入口不声明覆盖所有插件的统一运行测试。

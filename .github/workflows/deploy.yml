@@ -8,6 +8,11 @@ on:
       - develop
     paths:
       - 'docs/**'
+      - '**/AGENTS.md'
+      - 'README.md'
+      - '**/README.md'
+      - 'CONTRIBUTING.md'
+      - 'LICENSE.md'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/deploy.yml'
@@ -17,31 +22,59 @@ on:
     branches:
       - master
       - develop
-    paths:
-      - 'docs/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/deploy.yml'
   
   # Allow manual trigger
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+# Validation and build never receive deployment credentials.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
-  group: "pages"
+  group: pages-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'deploy' }}
   cancel-in-progress: false
 
 jobs:
+  # No site dependencies: a deleted/renamed source must not leave dangling
+  # knowledge mappings even when a pull request changes no Markdown.
+  knowledge-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      website_changed: ${{ steps.scope.outputs.website_changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check knowledge metadata, mappings, retrieval and README links
+        run: npm run docs:check
+
+      - name: Determine website build scope
+        id: scope
+        env:
+          KNOWLEDGE_EVENT_NAME: ${{ github.event_name }}
+          KNOWLEDGE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          KNOWLEDGE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node docs/.vitepress/scripts/knowledge-ci.mjs
+
   # Build job
   build:
+    needs: knowledge-check
+    if: needs['knowledge-check'].outputs.website_changed == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,13 +84,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
+        with:
+          enablement: false
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build and validate docs
         run: npm run docs:build
@@ -74,6 +109,9 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     needs: build
     steps:
       - name: Deploy to GitHub Pages

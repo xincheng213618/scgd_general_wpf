@@ -1,3 +1,14 @@
+---
+knowledge_id: "plugins.conoscope"
+knowledge_type: "reference"
+status: "current"
+summary: "Conoscope 的图像观察、VAM 分析、原生依赖、单插件构建与授权发布入口。"
+aliases: ["锥镜图像怎么看","Conoscope 依赖哪些 DLL","Conoscope"]
+code_paths: ["Plugins/Conoscope/Conoscope.csproj","Plugins/Conoscope/manifest.json","Plugins/Conoscope/"]
+test_paths: ["Test/Conoscope.Tests/Conoscope.Tests.csproj"]
+related: ["plugins.index","plugins.capabilities"]
+---
+
 # Conoscope 插件
 
 Conoscope 是 `Plugins/Conoscope/` 下的 VAM/锥镜分析插件，用于锥镜图像观察、关注点采样、综合色域计算、黑白对比度计算、预处理和结果导出。
@@ -42,14 +53,24 @@ Conoscope 是 `Plugins/Conoscope/` 下的 VAM/锥镜分析插件，用于锥镜�
 | 对比度分析 | 记录白场和黑场 -> 打开 `ContrastResultWindow` |
 | 结果导出 | 方位、极角或高级导出要包含关注点数据和结果字段 |
 
-## 构建与交付
+## 本地构建与测试
+
+以下命令只写本地编译/测试产物，不上传插件；MVS 硬件采集另需明确现场操作授权。
 
 ```powershell
 dotnet build .\Plugins\Conoscope\Conoscope.csproj -c Release -p:Platform=x64
-.\Scripts\package_plugin.bat Conoscope
+dotnet test .\Test\Conoscope.Tests\Conoscope.Tests.csproj -c Release -p:Platform=x64
 ```
 
 从 solution/MSBuild 构建且 `SolutionDir` 有效时，PostBuild 才把主 DLL 和静态元数据镜像到 `ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/Conoscope/`；直接构建项目时产物留在项目 `bin`。交付目录至少应包含 `Conoscope.dll`、`manifest.json`、`README.md`、`CHANGELOG.md`；需要观察相机时还要记录 MVS/native 依赖是否已验证。
+
+## 打包上传（需明确发布授权）
+
+只有用户明确要求发布 Conoscope 时执行。wrapper 会构建、上传并清理本地 `.cvxp`，不支持 `--no-upload`；本地编译通过不是远端发布证据。
+
+```powershell
+.\Scripts\package_plugin.bat Conoscope
+```
 
 ## 验收
 

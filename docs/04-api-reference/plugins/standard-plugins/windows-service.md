@@ -1,3 +1,14 @@
+---
+knowledge_id: "plugins.windows-service"
+knowledge_type: "reference"
+status: "current"
+summary: "WindowsServicePlugin 的服务安装、配置和管理员权限边界；不能把诊断请求当作系统修改授权。"
+aliases: ["MySQL MQTT 服务怎么安装","Windows 服务管理在哪里","WindowsServicePlugin","ServiceInstallViewModel"]
+code_paths: ["Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj","Plugins/WindowsServicePlugin/ServiceManager/","Plugins/WindowsServicePlugin/CVWinSMS/"]
+test_paths: []
+related: ["plugins.index","plugins.capabilities"]
+---
+
 # WindowsServicePlugin
 
 `Plugins/WindowsServicePlugin/` 是本机 ColorVision Windows 服务管理插件。它面向管理员现场操作：安装完整 `CVWindowsService` 包、注册/启停服务、同步 MySQL/MQTT/WinService 配置，并保留备份和回退线索。
@@ -47,7 +58,9 @@
 
 ## 安装链路
 
-推荐现场路径：
+以下步骤会停止/注册服务、覆盖服务文件，并可能执行 SQL；只有用户明确授权目标服务、目录和数据库的安装维护时才执行。普通状态诊断先只读，不自动升级到安装或重启。
+
+获授权后的现场路径：
 
 1. 以管理员身份启动 ColorVision。
 2. 从“应用与工具 > 内部工具”打开服务管理器，确认 `BaseLocation`，例如 `D:\CVService`。
@@ -68,12 +81,25 @@
 
 配置入口主要是 `ServiceManagerConfig`、`MySqlServiceConfig`、`MqttServiceConfig`。同步失败时应阻止继续带旧配置启动服务。
 
-## 构建
+## 本地构建
+
+下列命令仅编译插件并写本地产物，不安装服务、不执行 SQL、不上传插件包。
 
 ```powershell
 dotnet build Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj -c Release -p:Platform=x64
-Scripts\package_plugin.bat WindowsServicePlugin
 ```
+
+## 打包上传（需明确发布授权）
+
+只有用户明确要求发布 WindowsServicePlugin 时执行。wrapper 会构建、上传并清理本地 `.cvxp`，不支持 `--no-upload`；发布插件也不等于授权在本机安装服务。
+
+```powershell
+.\Scripts\package_plugin.bat WindowsServicePlugin
+```
+
+## 验证缺口
+
+本页尚未绑定覆盖完整 Windows 服务安装与数据库变更的自动化测试，因此 `test_paths` 留空。下表是待执行的验收标准；真实安装、回退和权限行为须在获授权的隔离测试机验证，不能把编译成功作为这些行为已验证的证据。
 
 ## 交付验收
 

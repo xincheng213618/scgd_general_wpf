@@ -1,4 +1,22 @@
+---
+knowledge_id: "algorithms.line-fit"
+knowledge_type: "reference"
+status: "current"
+summary: "LineFit 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。"
+aliases: ["如何拟合直线、为什么直线拟合默认不可执行","LineFit","LineFitAlgorithmProvider"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/LineFitAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/LineFitV1Tests.cs","Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
+related: ["algorithms.platform","algorithms.index"]
+---
+
 # 直线拟合 V1（M6.2）
+
+## 当前发布边界
+
+当前默认 `ImageAlgorithmPlatform.CreateDefaultProviders()` 把本页 provider 包装在 `ExperimentalAlgorithmProviderGate` 中：菜单和 Batch 可执行投影隐藏该能力，直接调用默认 Runner 也返回 `provider_unavailable`，详情包含 `algorithm_experimental`。本页后面的参数、结果与宿主接入描述属于保留实现及测试契约，不是产品已开放的承诺；不得在调用方另建执行旁路来绕过门禁。
+
+本页 `status: current` 表示它记录当前源码事实，不代表算法已发布。M 编号是历史增量标识；其他增量是否可用以 [统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单) 为准。`Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs` 验证默认拒绝行为，专题测试覆盖实现细节；解除门禁还需完成对应数值、最坏资源与生产规模验证。
+
 
 ## 阶段边界与已有能力盘点
 
@@ -30,7 +48,9 @@ M6.2 提供稳定 ID `colorvision.measurement.line-fit`。仓库此前的 Hough�
 
 重复点导致零方差时使用 `degenerate_point_distribution`；最终有效点不足使用 `insufficient_inliers`。两者仍保留逐点表、Geometry、Measurement 与 provenance，方便 ImageView、Batch、Flow 和测试统一处理。
 
-## 宿主接入
+## 保留的宿主适配（默认禁用）
+
+以下是保留实现和测试的接入契约，不改变默认菜单与 Runner 的 Experimental 拒绝状态。
 
 - ImageView：“算法调用 → 直线拟合...”选择点集、编辑统一参数、显示表格与 transient overlay，并可导出 CSV/JSON。关闭窗口、Clear、切图或 revision 改变均走统一 analysis session 与 overlay 生命周期。
 - Batch：使用 `BatchAlgorithmAnalysisProcessor` 和同一个 Invocation，输出结构化 JSON；它不是 Batch 图像格式转换菜单中的像素算法。

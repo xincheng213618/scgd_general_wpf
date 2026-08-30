@@ -1,3 +1,14 @@
+---
+knowledge_id: "plugins.spectrum"
+knowledge_type: "reference"
+status: "current"
+summary: "Spectrum 的测量校正链、SQLite 结果和独立 ZIP 与 cvxp 双通道发布契约。"
+aliases: ["Spectrum 如何校准和发布","光谱测量结果不一致","Spectrum","Spectrum.bat"]
+code_paths: ["Plugins/Spectrum/Spectrum.csproj","Plugins/Spectrum/manifest.json","Plugins/Spectrum/","Scripts/Spectrum.bat"]
+test_paths: ["Test/Spectrum.Tests/Spectrum.Tests.csproj","Scripts/tests/test_build_spectrum.py"]
+related: ["plugins.index","plugins.capabilities"]
+---
+
 # Spectrum 插件
 
 `Plugins/Spectrum/` 是光谱仪测量工作台插件。程序集版本以 `Spectrum.csproj` 为事实源，最低宿主版本读取同目录 `manifest.json`；发布脚本会校验并同步两者，不在说明页复制易漂移的版本号。
@@ -81,13 +92,20 @@ Spectrum 提供 `SpectrumStatus`、`SpectrumConnect`、`SpectrumAutoIntTime`、`
 | 调度 | 窗口关闭时测量或暗场任务仍能执行并留下历史；失败原因指向设备、标定或快门 |
 | 双通道发布 | 插件 latest、独立 latest/latest-version、签名、下载大小和 SHA-256 全部通过专用脚本验收 |
 
-## 构建、测试与发布
+## 本地构建与测试
 
-Spectrum 同时维护独立 ZIP 和 ColorVision `.cvxp` 更新源，构建、测试和正式发布分别使用：
+以下命令只写本地编译/测试产物，不发布更新源。设备连接、暗场、快门和测量烟测会影响真实设备，须另外确认现场授权。
 
 ```powershell
 dotnet build .\Plugins\Spectrum\Spectrum.csproj -c Release -p:Platform=x64
 dotnet test .\Test\Spectrum.Tests\Spectrum.Tests.csproj -c Release -p:Platform=x64
+```
+
+## 双通道发布（需明确发布授权）
+
+Spectrum 同时维护独立 ZIP 和 ColorVision `.cvxp` 更新源。只有用户明确要求发布 Spectrum 时运行下列命令；它会更新远端两个发布源，不是本地打包或测试命令。
+
+```powershell
 .\Scripts\Spectrum.bat --release-notes "本次变更说明"
 ```
 

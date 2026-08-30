@@ -382,6 +382,7 @@ FodyWeavers.xsd
 # Node.js / npm
 node_modules/
 package-lock.json
+!/package-lock.json
 !Web/Frontend/package-lock.json
 .npm
 .eslintcache

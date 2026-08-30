@@ -1,3 +1,14 @@
+---
+knowledge_id: "ui.core"
+knowledge_type: "reference"
+status: "current"
+summary: "定位 HImage 所有权、OpenCV/CUDA PInvoke、位图桥接与 native 发布输入。"
+aliases: ["原生图像调用缺少DLL","ColorVision.Core","HImage","OpenCVMediaHelper"]
+code_paths: ["UI/ColorVision.Core/HImage.cs","UI/ColorVision.Core/HImageExtension.cs","UI/ColorVision.Core/OpenCVMediaHelper.cs","UI/ColorVision.Core/OpenCVCuda.cs","UI/ColorVision.Core/ColorVision.Core.csproj"]
+test_paths: ["Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs","Test/ColorVision.UI.Tests/VideoFrameCopyTests.cs"]
+related: ["ui.index","engine.native-integration","ui.image-editor","ui.image-fusion"]
+---
+
 # ColorVision.Core
 
 `UI/ColorVision.Core/` 是原生图像和视频能力桥接层，负责 `HImage` 数据结构、P/Invoke、WPF 位图转换、伪彩色/增强/聚焦评价/fusion 等 native 入口。它不是高层图像处理框架。
@@ -49,13 +60,15 @@
 | --- | --- |
 | 目标框架 | `ColorVision.Core.csproj` 的 `net8.0-windows7.0;net10.0-windows7.0` |
 | native runtime | `opencv_helper.dll`、OpenCV runtime 是否进入 `runtimes/win-x64/native` 或最终输出目录 |
-| CUDA 可选包 | `opencv_cuda.dll` 存在时进入包；缺失时非 CUDA 路径不失败 |
+| CUDA 发布输入 | 当前 csproj 无条件包含 `x64/Release/opencv_cuda.dll`；运行时不选择 CUDA 与构建时可缺少 DLL 是两件事 |
 | P/Invoke | 不出现 `DllNotFoundException`、`EntryPointNotFoundException`、x86/x64 混用 |
 | 图像内存 | 批量转换后内存可释放，重复打开图像不持续增长 |
 | WPF 显示 | 尺寸、通道、位深、stride 和 `PixelFormat` 对齐 |
 | 上层回归 | 至少用 `ColorVision.ImageEditor` 打开、显示、伪彩或增强一张图像 |
 
 ## 不要再这样写
+
+首次拉仓若没有可复用的 `opencv_helper.dll`，Core 会加入 native C++ 项目引用；构建前提和 DLL 选择顺序见 [native 集成](../../02-developer-guide/engine-development/opencv-integration.md)。不能只因目标是 C# 项目就承诺安装 .NET SDK 后一定可构建。
 
 - 不要写 `HImage.Load(...)`、`HImage.ToBitmapSource()` 这类当前不存在的托管高层 API。
 - 不要把 `OpenCVCuda` 写成完整 CUDA 设备管理层；当前公开入口很少。
@@ -70,3 +83,11 @@
 | native 导出包装 | `OpenCVMediaHelper.cs`、`OpenCVCuda.cs` |
 | fusion 调用选择 | `ImageCompute.cs` |
 | 伪彩和日志边界 | `ColormapTypes.cs`、`NativeLogBridge.cs` |
+
+景深融合的 Auto/CPU/GPU 分流、窗口取消与计时、结果显示和保存边界见[景深融合契约](./image-fusion.md)。`UseCuda` 是选路开关，不是 native 部署健康检查或 GPU 失败后的 CPU 回退机制。
+
+## 验证入口与缺口
+
+关联测试：`Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs`、`Test/ColorVision.UI.Tests/VideoFrameCopyTests.cs`。
+
+native 测试依赖真实 DLL；测试入口存在不表示相机、CUDA 设备或全部导出 ABI 已在当前机器验证。

@@ -1,3 +1,14 @@
+---
+knowledge_id: "algorithms.geometric-transform"
+knowledge_type: "reference"
+status: "current"
+summary: "GeometricTransform 的输入、参数、结果、宿主接入与定向验证契约。"
+aliases: ["如何应用仿射透视矩阵并保持坐标和有效区语义","GeometricTransform","GeometricTransformAlgorithmProvider"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/GeometricTransformAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/GeometricTransformV1Tests.cs"]
+related: ["algorithms.platform","algorithms.index"]
+---
+
 # 几何变换 V1（M7）
 
 ## 阶段边界与已有能力盘点

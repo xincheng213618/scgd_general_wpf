@@ -1,3 +1,14 @@
+---
+knowledge_id: "ui.publishing"
+knowledge_type: "guide"
+status: "current"
+summary: "说明 UI NuGet 构建、版本占用预检、显式 Release 发布与包消费验证。"
+aliases: ["如何发布UI NuGet包","UIProjectPackageVersion","algorithms-v","verify_nuget_package_versions.py"]
+code_paths: [".github/workflows/dotnet.yml","UI/Directory.Build.props","Scripts/verify_nuget_package_versions.py","UI/ColorVision.Algorithms/ColorVision.Algorithms.csproj"]
+test_paths: ["Scripts/tests/test_verify_nuget_package_versions.py","Scripts/tests/test_algorithm_package_contract.py"]
+related: ["ui.index","ui.package-boundaries","algorithms.platform"]
+---
+
 # UI DLL 发布
 
 本页说明 `UI/` 下 DLL/NuGet 包如何发布、替换和排障。默认发布对象是一组 UI 类库；`ColorVision.Algorithms` 也提供显式的单包 Release 入口。发布记录需保存范围、版本、资源抽检、消费方验证、烟测结果和回退包位置。
@@ -93,3 +104,9 @@ Get-ChildItem ColorVision/bin/x64/Release/net10.0-windows -Recurse -Filter "open
 | 插件被跳过 | 主程序目录里的 `ColorVision.*.dll` 版本是否满足插件 `.deps.json` |
 | 外部机器不能用 | 是否漏 native runtime、.NET Desktop Runtime、强名称和引用版本是否一致 |
 | 只发布上层包后异常 | 底层依赖是否仍是旧版本，尤其 `Common`、`UI`、`ImageEditor`、`Database` |
+
+## 验证入口与缺口
+
+关联测试：`Scripts/tests/test_verify_nuget_package_versions.py`、`Scripts/tests/test_algorithm_package_contract.py`。
+
+包契约可本地检查，GitHub Release 和 NuGet 上传是外部写入；未收到发布授权时不得触发，也不能把静态文档核对写成包发布成功。

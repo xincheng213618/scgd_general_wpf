@@ -1,3 +1,14 @@
+---
+knowledge_id: "ui.package-boundaries"
+knowledge_type: "reference"
+status: "current"
+summary: "按职责和依赖方向判断 UI DLL 的修改归属与消费方兼容风险。"
+aliases: ["应该改哪个UI类库","ColorVision.Common","ColorVision.Core","ColorVision.ImageTools"]
+code_paths: ["UI/Directory.Build.props","UI/ColorVision.UI/ColorVision.UI.csproj","UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj","UI/ColorVision.Solution/ColorVision.Solution.csproj"]
+test_paths: ["Scripts/tests/test_algorithm_package_contract.py","Scripts/tests/test_verify_platform_policy.py"]
+related: ["ui.index","ui.publishing"]
+---
+
 # UI DLL 速查
 
 本页只做 DLL 边界速查：哪个包负责什么、修改时先看哪里、发布前要检查什么。每个 DLL 的细节已经放在单独模块页，不在这里重复展开。
@@ -92,3 +103,9 @@ flowchart TD
 | 依赖 | 不把宿主已有共享 DLL 重复塞进插件包或项目包 |
 | 运行时发现 | 菜单、设置、状态栏、ImageEditor 工具、Socket handler 是否能被发现 |
 | 冒烟 | 打开主程序，至少验证一个依赖该 DLL 的窗口或功能 |
+
+## 验证入口与缺口
+
+关联测试：`Scripts/tests/test_algorithm_package_contract.py`、`Scripts/tests/test_verify_platform_policy.py`。
+
+包契约与平台规则不覆盖所有 UI 行为；项目引用与目标框架以当前 csproj 为准，公开签名修改需验证实际消费者。

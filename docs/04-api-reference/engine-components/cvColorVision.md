@@ -1,3 +1,14 @@
+---
+knowledge_id: "engine.native-bindings"
+knowledge_type: "reference"
+status: "current"
+summary: "定位供应商 native DLL 的相机、光谱、XYZ、OLED、PG 与源表绑定契约。"
+aliases: ["设备SDK入口在哪里","cvColorVision","cvCameraCSLib","ConvertXYZ"]
+code_paths: ["Engine/cvColorVision/Camera","Engine/cvColorVision/Color/ConvertXYZ.cs","Engine/cvColorVision/Devices/Display/CvOledDLL.cs","Engine/cvColorVision/cvColorVision.csproj"]
+test_paths: []
+related: ["engine.index","engine.native-integration","ui.core"]
+---
+
 # cvColorVision
 
 `Engine/cvColorVision/` 是原生能力绑定层，通过 `DllImport` 暴露 `cvCamera.dll`、`cvOled.dll` 等底层接口给 C#。它不是纯托管视觉算法库，也不负责 WPF 界面、模板或工作流编排。
@@ -18,10 +29,10 @@
 | 能力 | 当前入口 | 说明 |
 | --- | --- | --- |
 | 相机/通用视觉 | `Camera/cvCameraCSLib.*.cs` | 相机打开关闭、预览、取帧、配置 JSON、自动曝光、ROI、采样、TIFF、对焦和多类检测函数 |
-| 色彩采样 | `ConvertXYZ.cs` | XYZ 缓冲初始化/释放，Circle/Rect/批量点位采样，xyz/uv/CCT/主波长导出 |
-| OLED 算法 | `CvOledDLL.cs` | `cvOled.dll` 参数加载、图片读入、像素查找、像素重建、摩尔纹滤波 |
-| 图卡 | `PG.cs` | PG 初始化、TCP/串口连接、Start/Stop/Reset、帧切换 |
-| 源表/电源 | `PassSx.cs` | 打开关闭、源模式、2/4 线、前后端口、电压电流、步进/扫描 |
+| 色彩采样 | `Color/ConvertXYZ.cs` | XYZ 缓冲初始化/释放，Circle/Rect/批量点位采样，xyz/uv/CCT/主波长导出 |
+| OLED 算法 | `Devices/Display/CvOledDLL.cs` | `cvOled.dll` 参数加载、图片读入、像素查找、像素重建、摩尔纹滤波 |
+| 图卡 | `Devices/PatternGenerator/PG.cs` | PG 初始化、TCP/串口连接、Start/Stop/Reset、帧切换 |
+| 源表/电源 | `Devices/PassSx/PassSx.cs` | 打开关闭、源模式、2/4 线、前后端口、电压电流、步进/扫描 |
 | 极薄入口 | `Algorithms.cs` 等 | 直接暴露少量底层函数 |
 | MQTT/设备 DTO | `MQTTMessageLib/`、`CVCommCore/` | 原生/设备链路相关消息和归档数据结构 |
 
@@ -39,6 +50,8 @@
 | 错误码 | 原生返回码能进入日志或上层异常，不被吞掉 |
 
 ## cvCamera.dll 许可证构建约定
+
+以下是外部源码仓库的交付约定，不是本仓库可单独证明的运行状态；未提供该外部源码与真实设备测试时，不应断言当前 DLL 的许可证分支已完成验证。
 
 本仓库 `DLL/scgd_internal_dll/cvCamera.dll` 默认保存公司内部使用版本：相机和光谱仪打开链路均不执行许可证验证。外部 `scgd_internal_dll` 源码仓库仅用于本地修改和构建，不在本仓库的交付流程中提交；确认产物后，只把 DLL 复制到本仓库并在这里提交。
 
@@ -76,8 +89,12 @@
 | 任务 | 先看 |
 | --- | --- |
 | 相机绑定面 | `Camera/cvCameraCSLib.Core.cs`、`Capture.cs`、`Configuration.cs`、`Discovery.cs`、`Calibration.cs`、`ImageProcessing.cs` |
-| XYZ 采样 | `ConvertXYZ.cs` |
-| OLED | `CvOledDLL.cs` |
-| 图卡 | `PG.cs` |
-| 源表/电源 | `PassSx.cs` |
+| XYZ 采样 | `Color/ConvertXYZ.cs` |
+| OLED | `Devices/Display/CvOledDLL.cs` |
+| 图卡 | `Devices/PatternGenerator/PG.cs` |
+| 源表/电源 | `Devices/PassSx/PassSx.cs` |
 | 光谱仪 | `Devices/Spectrometer/` |
+
+## 验证入口与缺口
+
+验证缺口：未登记能替代真实供应商 DLL 与硬件的完整自动化测试；外部源码和许可证构建说明不能由本仓库静态检查直接证明，交付需核对产物和设备路径。
