@@ -3,7 +3,6 @@ using ColorVision.UI;
 using ColorVision.UI.Menus;
 using Newtonsoft.Json;
 using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Globalization;
 using System.Net.Sockets;
 using System.Text;
@@ -40,23 +39,52 @@ namespace ColorVision.SocketProtocol
     public partial class SocketManagerWindow : Window
     {
         private readonly SocketManager _socketManager;
-        private ICollectionView? _messagesView;
+        private readonly ISocketDatabaseCleanupWindowLauncher? _cleanupWindowLauncher;
+        private ListCollectionView? _messagesView;
         private bool _isWindowInitialized;
 
-        public SocketManagerWindow()
+        public SocketManagerWindow() : this(SocketManager.GetInstance(), loadMessages: true)
         {
-            _socketManager = SocketManager.GetInstance();
+        }
+
+        internal SocketManagerWindow(SocketManager socketManager, bool loadMessages = false, ISocketDatabaseCleanupWindowLauncher? cleanupWindowLauncher = null)
+        {
+            ArgumentNullException.ThrowIfNull(socketManager);
+            _socketManager = socketManager;
+            _cleanupWindowLauncher = cleanupWindowLauncher;
+            // 绑定视图之前加载历史记录，避免初始查询触发实时消息的自动滚动。
+            if (loadMessages)
+                _socketManager.MessageManager.LoadAll(_socketManager.MessageManager.Config.Count);
             InitializeComponent();
             this.ApplyCaption();
+        }
+
+        private void DatabaseCleanupButton_Click(object sender, RoutedEventArgs e)
+        {
+            ISocketDatabaseCleanupWindowLauncher? launcher = _cleanupWindowLauncher;
+            if (launcher == null)
+            {
+                AssemblyHandler assemblies = AssemblyHandler.GetInstance();
+                assemblies.RefreshAssemblies();
+                launcher = assemblies.LoadImplementations<ISocketDatabaseCleanupWindowLauncher>().FirstOrDefault();
+            }
+
+            if (launcher == null)
+            {
+                MessageBox.Show(this, Properties.Resources.DatabaseCleanupUnavailable, Properties.Resources.SocketManagementWindow, MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            launcher.OpenWindow(this);
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = _socketManager;
-            // 加载最近的消息记录
-            _socketManager.MessageManager.LoadAll(_socketManager.MessageManager.Config.Count);
-            _messagesView = CollectionViewSource.GetDefaultView(_socketManager.MessageManager.Messages);
+            // 每个窗口独立筛选，避免改变其他窗口或数据库浏览器的默认视图。
+            _messagesView = new ListCollectionView(_socketManager.MessageManager.Messages);
             _messagesView.Filter = FilterMessage;
+            MessagesListView.ItemsSource = _messagesView;
             _socketManager.MessageManager.Messages.CollectionChanged += Messages_CollectionChanged;
             RefreshMessageView();
             _isWindowInitialized = true;
@@ -68,16 +96,7 @@ namespace ColorVision.SocketProtocol
         /// </summary>
         private void MessagesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (MessagesListView.SelectedItem is SocketMessage message)
-            {
-                DetailPanel.DataContext = message;
-                UpdateDetailContent(message);
-            }
-            else
-            {
-                DetailPanel.DataContext = null;
-                UpdateDetailContent(null);
-            }
+            UpdateDetailContent(MessagesListView.SelectedItem as SocketMessage);
         }
 
         private void Filter_Changed(object sender, RoutedEventArgs e)
@@ -86,6 +105,13 @@ namespace ColorVision.SocketProtocol
                 return;
 
             RefreshMessageView();
+        }
+
+        private void ClearFilterButton_Click(object sender, RoutedEventArgs e)
+        {
+            SearchTextBox.Clear();
+            DirectionFilterCombo.SelectedIndex = 0;
+            SearchTextBox.Focus();
         }
 
         private void PrettyPrintCheckBox_Changed(object sender, RoutedEventArgs e)
@@ -145,25 +171,35 @@ namespace ColorVision.SocketProtocol
 
         private void UpdateFilteredCount()
         {
-            if (FilteredCountTextBlock == null || TotalCountTextBlock == null)
+            if (MessageCountTextBlock == null)
                 return;
 
             var total = _socketManager.MessageManager.Messages.Count;
-            var filtered = _messagesView?.Cast<object>().Count() ?? total;
-            FilteredCountTextBlock.Text = $"{filtered} / {total}";
-            TotalCountTextBlock.Text = FormatResource(Properties.Resources.MessageCountFormat, total);
+            var filtered = _messagesView?.Count ?? total;
+            bool hasFilter = !string.IsNullOrWhiteSpace(SearchTextBox.Text) || DirectionFilterCombo.SelectedIndex > 0;
+            MessageCountTextBlock.Text = hasFilter
+                ? FormatResource(Properties.Resources.FilteredMessageCountFormat, filtered, total)
+                : FormatResource(Properties.Resources.MessageCountFormat, total);
+            ClearFilterButton.IsEnabled = !string.IsNullOrEmpty(SearchTextBox.Text) || DirectionFilterCombo.SelectedIndex > 0;
+            EmptyMessagesPanel.Visibility = filtered == 0 ? Visibility.Visible : Visibility.Collapsed;
+            EmptyMessagesTitleTextBlock.Text = total == 0 ? Properties.Resources.NoMessages : Properties.Resources.NoMatchingMessages;
+            EmptyMessagesHintTextBlock.Text = total == 0 ? Properties.Resources.NoMessagesHint : Properties.Resources.NoMatchingMessagesHint;
         }
 
         private void UpdateContentColumnWidth()
         {
-            if (ContentColumn == null || MessagesListView == null)
+            if (ContentColumn == null || MessagesListView?.View is not GridView gridView || MessagesListView.ActualWidth <= 0)
                 return;
 
+            double fixedColumnsWidth = gridView.Columns.Where(column => column != ContentColumn)
+                .Sum(column => double.IsNaN(column.Width) ? column.ActualWidth : column.Width);
             double availableWidth = MessagesListView.ActualWidth
-                - 100
-                - 140
-                - 42; // padding, row chrome, and scrollbar breathing room
-            ContentColumn.Width = Math.Max(260, availableWidth);
+                - fixedColumnsWidth
+                - MessagesListView.Padding.Left
+                - MessagesListView.Padding.Right
+                - SystemParameters.VerticalScrollBarWidth
+                - 12; // row chrome and scrollbar breathing room
+            ContentColumn.Width = Math.Max(140, availableWidth);
         }
 
         private static string FormatResource(string format, params object?[] args)
@@ -186,7 +222,8 @@ namespace ColorVision.SocketProtocol
                 {
                     Dispatcher.BeginInvoke(() =>
                     {
-                        MessagesListView.ScrollIntoView(message);
+                        if (_isWindowInitialized && _messagesView?.Contains(message) == true)
+                            MessagesListView.ScrollIntoView(message);
                     });
                     break;
                 }
@@ -198,6 +235,18 @@ namespace ColorVision.SocketProtocol
             if (DetailContentTextBox == null)
                 return;
 
+            DetailPanel.DataContext = message;
+            MessageMetadataPanel.Visibility = message == null ? Visibility.Collapsed : Visibility.Visible;
+            NoSelectionPanel.Visibility = message == null ? Visibility.Visible : Visibility.Collapsed;
+            EmptyContentPanel.Visibility = Visibility.Collapsed;
+            CopyDetailButton.IsEnabled = false;
+            CopyFormattedDetailButton.IsEnabled = false;
+            PrettyPrintCheckBox.IsEnabled = false;
+            DetailClientTextBlock.Text = DisplayMetadata(message?.ClientEndPoint);
+            DetailEventTextBlock.Text = DisplayMetadata(message?.EventName);
+            DetailMsgIdTextBlock.Text = DisplayMetadata(message?.MsgID);
+            DetailResponseCodeTextBlock.Text = DisplayMetadata(message?.ResponseCode?.ToString(CultureInfo.CurrentUICulture));
+
             if (message == null)
             {
                 DetailContentTextBox.Text = string.Empty;
@@ -207,14 +256,21 @@ namespace ColorVision.SocketProtocol
             try
             {
                 string? content = _socketManager.MessageManager.LoadContent(message);
-                DetailContentTextBox.Text = FormatContent(content, PrettyPrintCheckBox?.IsChecked == true);
+                bool hasContent = !string.IsNullOrWhiteSpace(content);
+                DetailContentTextBox.Text = FormatContent(content, PrettyPrintCheckBox.IsChecked == true);
+                EmptyContentPanel.Visibility = hasContent ? Visibility.Collapsed : Visibility.Visible;
+                CopyDetailButton.IsEnabled = hasContent;
+                CopyFormattedDetailButton.IsEnabled = hasContent;
+                PrettyPrintCheckBox.IsEnabled = hasContent;
             }
             catch (Exception ex)
             {
-                DetailContentTextBox.Text = $"消息正文读取失败：{ex.Message}";
+                DetailContentTextBox.Text = FormatResource(Properties.Resources.ContentLoadFailedFormat, ex.Message);
             }
             DetailContentTextBox.ScrollToHome();
         }
+
+        private static string DisplayMetadata(string? value) => string.IsNullOrWhiteSpace(value) ? "—" : value;
 
         private static string FormatContent(string? content, bool prettyPrint)
         {
@@ -240,11 +296,17 @@ namespace ColorVision.SocketProtocol
         /// </summary>
         private void CopyMessage_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is MenuItem menuItem && menuItem.Tag is SocketMessage message)
+            if (sender is FrameworkElement { Tag: SocketMessage message })
             {
                 if (TryLoadMessageContent(message, out string? content))
                     Common.Clipboard.SetText(content ?? string.Empty);
             }
+        }
+
+        private void CopyFormattedMessage_Click(object sender, RoutedEventArgs e)
+        {
+            if (GetCurrentMessage() is SocketMessage message && TryLoadMessageContent(message, out string? content))
+                Common.Clipboard.SetText(FormatContent(content, prettyPrint: true));
         }
 
         /// <summary>
@@ -333,7 +395,7 @@ namespace ColorVision.SocketProtocol
             {
                 content = null;
                 MessageBox.Show(
-                    $"消息正文读取失败：{ex.Message}",
+                    FormatResource(Properties.Resources.ContentLoadFailedFormat, ex.Message),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
@@ -403,9 +465,9 @@ namespace ColorVision.SocketProtocol
                 return;
             }
 
-            if (e.Key == Key.Escape && !string.IsNullOrEmpty(SearchTextBox.Text))
+            if (e.Key == Key.Escape && ClearFilterButton.IsEnabled)
             {
-                SearchTextBox.Clear();
+                ClearFilterButton_Click(sender, e);
                 e.Handled = true;
                 return;
             }
@@ -444,9 +506,15 @@ namespace ColorVision.SocketProtocol
         /// </summary>
         protected override void OnClosed(EventArgs e)
         {
+            _isWindowInitialized = false;
             _socketManager.MessageManager.Messages.CollectionChanged -= Messages_CollectionChanged;
+            MessagesListView.ItemsSource = null;
             if (_messagesView != null)
+            {
                 _messagesView.Filter = null;
+                _messagesView.DetachFromSourceCollection();
+            }
+            _messagesView = null;
             base.OnClosed(e);
         }
     }

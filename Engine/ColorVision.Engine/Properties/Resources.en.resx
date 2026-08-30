@@ -4945,4 +4945,23 @@ Please close camera or other programs using this serial port, or check device co
   <data name="CAD映射" xml:space="preserve"><value>CAD Mapping</value></data>
   <data name="CIE文件" xml:space="preserve"><value>CIE File</value></data>
   <data name="POI文件" xml:space="preserve"><value>POI File</value></data>
+  <data name="选择数据源后再操作，每次仅处理当前数据库。" xml:space="preserve"><value>Select a data source first. Each operation applies only to the current database.</value></data>
+  <data name="仅管理当前数据库，不显示或操作其他数据源。" xml:space="preserve"><value>Manage only the current database. Other data sources are not shown or affected.</value></data>
+  <data name="单库维护" xml:space="preserve"><value>Single Database Maintenance</value></data>
+  <data name="全局入口" xml:space="preserve"><value>Global Access</value></data>
+  <data name="数据源" xml:space="preserve"><value>Data Sources</value></data>
+  <data name="仅对右侧当前数据库执行操作。" xml:space="preserve"><value>Operations apply only to the current database shown on the right.</value></data>
+  <data name="当前数据库" xml:space="preserve"><value>Current Database</value></data>
+  <data name="可用数据表" xml:space="preserve"><value>Available Tables</value></data>
+  <data name="数据行数" xml:space="preserve"><value>Total Rows</value></data>
+  <data name="创建完整备份" xml:space="preserve"><value>Create Full Backup</value></data>
+  <data name="备份策略" xml:space="preserve"><value>Backup Policy</value></data>
+  <data name="历史数据清理" xml:space="preserve"><value>Historical Data Cleanup</value></data>
+  <data name="按保留月数清理当前数据库中的过期记录。" xml:space="preserve"><value>Remove expired records from the current database based on the retention period in months.</value></data>
+  <data name="所有清理操作都需要再次确认。" xml:space="preserve"><value>All cleanup operations require confirmation.</value></data>
+  <data name="危险操作" xml:space="preserve"><value>Danger Zone</value></data>
+  <data name="清空当前库的全部可清理表，无法直接撤销。" xml:space="preserve"><value>Empty all cleanable tables in the current database. This cannot be undone directly.</value></data>
+  <data name="清空当前库全部可清理表" xml:space="preserve"><value>Empty All Cleanable Tables in Current Database</value></data>
+  <data name="按表清理只处理勾选项；清理主表时需同时选择所有现存关联明细表。" xml:space="preserve"><value>Table cleanup affects only checked tables. To clean a main table, also select all existing related detail tables.</value></data>
+  <data name="未启用清理前备份。" xml:space="preserve"><value>Backup before cleanup is not enabled.</value></data>
 </root>

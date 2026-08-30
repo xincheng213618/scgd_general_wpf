@@ -934,6 +934,33 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 添加截图或文件，帮助我们了解问题。 的本地化字符串。
+        /// </summary>
+        public static string FeedbackAttachmentsHint {
+            get {
+                return ResourceManager.GetString("FeedbackAttachmentsHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 发送时会自动打包所选项目；也可先打包，离线复制。 的本地化字符串。
+        /// </summary>
+        public static string FeedbackDiagnosticsHint {
+            get {
+                return ResourceManager.GetString("FeedbackDiagnosticsHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已选择 {0} / {1} 项 的本地化字符串。
+        /// </summary>
+        public static string FeedbackDiagnosticsSummary {
+            get {
+                return ResourceManager.GetString("FeedbackDiagnosticsSummary", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 请输入反馈信息或添加附件 的本地化字符串。
         /// </summary>
         public static string FeedbackEmptyWarning {
@@ -952,6 +979,42 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 请补充操作步骤、实际现象和预期结果。 的本地化字符串。
+        /// </summary>
+        public static string FeedbackMessageHint {
+            get {
+                return ResourceManager.GetString("FeedbackMessageHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 问题描述 的本地化字符串。
+        /// </summary>
+        public static string FeedbackMessageLabel {
+            get {
+                return ResourceManager.GetString("FeedbackMessageLabel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 尚未添加附件 的本地化字符串。
+        /// </summary>
+        public static string FeedbackNoAttachments {
+            get {
+                return ResourceManager.GetString("FeedbackNoAttachments", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 诊断包已加入附件。修改诊断选项后，请移除旧包并重新打包。 的本地化字符串。
+        /// </summary>
+        public static string FeedbackPackageReadyHint {
+            get {
+                return ResourceManager.GetString("FeedbackPackageReadyHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 请描述您遇到的问题或建议... 的本地化字符串。
         /// </summary>
         public static string FeedbackPlaceholder {
@@ -969,6 +1032,15 @@ namespace ColorVision.UI.Desktop.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 移除附件 的本地化字符串。
+        /// </summary>
+        public static string FeedbackRemoveAttachment {
+            get {
+                return ResourceManager.GetString("FeedbackRemoveAttachment", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 反馈已发送成功，感谢您的反馈！ 的本地化字符串。
         /// </summary>

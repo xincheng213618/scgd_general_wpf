@@ -1,71 +1,10 @@
 using ColorVision.Copilot;
 using System;
-using System.IO;
 
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexPermissionsInstructionsTests
 {
-    [Fact]
-    public void ClosestTrustedValueIsFrozenIntoTheSubmittedRequest()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                include_permissions_instructions = true
-
-                [projects.'{projectRoot}']
-                trust_level = "trusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
-            File.WriteAllText(projectConfigPath, "include_permissions_instructions = false");
-
-            var submittedContext = new CopilotAgentHostContextSnapshot(
-                activeDocumentPath: null,
-                projectRoot,
-                attachments: null,
-                liveContext: null,
-                conversationHistory: null,
-                additionalReadRootPaths: null,
-                globalInstructionRootPath: globalRoot);
-            var submittedPlan = CopilotAgentRequestFactory.Prepare(
-                "Inspect the workspace permissions.",
-                CopilotAgentMode.Code,
-                submittedContext);
-            var submittedRequest = CopilotAgentRequestFactory.Create(
-                submittedPlan,
-                new CopilotAgentRequestBuildInput
-                {
-                    Profile = CopilotProfileConfig.CreateDefault(),
-                    AgentDefaults = new CopilotAgentDefaultsConfig(),
-                });
-            File.WriteAllText(projectConfigPath, "include_permissions_instructions = true");
-            var refreshed = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            var submitted = submittedContext.ProjectInstructionDiscoveryOptions;
-            Assert.False(submitted.ConfiguredIncludePermissionsInstructions);
-            Assert.True(submitted.HasIncludePermissionsInstructionsOverride);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.TrustedProject,
-                submitted.IncludePermissionsInstructionsSource);
-            Assert.False(submittedPlan.CodexIncludePermissionsInstructions);
-            Assert.False(submittedRequest.CodexIncludePermissionsInstructions);
-            Assert.True(refreshed.ConfiguredIncludePermissionsInstructions);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
     [Fact]
     public void DisabledSnapshotOmitsOnlyModelVisiblePermissionsGuidance()
     {
@@ -169,10 +108,4 @@ public sealed class CopilotCodexPermissionsInstructionsTests
         CodexIncludePermissionsInstructions = includePermissionsInstructions,
     };
 
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-permissions-instructions-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
-    }
 }

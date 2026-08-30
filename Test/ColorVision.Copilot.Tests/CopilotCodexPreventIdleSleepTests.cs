@@ -8,69 +8,6 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotCodexPreventIdleSleepTests
 {
     [Fact]
-    public void ClosestTrustedFeatureValueIsFrozenIntoTheSubmittedTurnSnapshot()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                [features]
-                prevent_idle_sleep = false
-
-                [projects.'{projectRoot}']
-                trust_level = "trusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
-            File.WriteAllText(projectConfigPath, "features.prevent_idle_sleep = true");
-
-            var submittedContext = new CopilotAgentHostContextSnapshot(
-                activeDocumentPath: null,
-                projectRoot,
-                attachments: null,
-                liveContext: null,
-                conversationHistory: null,
-                additionalReadRootPaths: null,
-                globalInstructionRootPath: globalRoot);
-            File.WriteAllText(projectConfigPath, "features.prevent_idle_sleep = false");
-            var submitted = submittedContext.ProjectInstructionDiscoveryOptions;
-            var refreshed = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-            var queuedFollowUp = new CopilotQueuedFollowUp(
-                "run-1",
-                "conversation-1",
-                "Conversation",
-                "Continue the work.",
-                CopilotAgentMode.Code,
-                CopilotProfileConfig.CreateDefault(),
-                submittedContext);
-            var executionContext = queuedFollowUp.CreateExecutionContext(
-                new CopilotConversationHistorySnapshot(
-                    [new CopilotRequestMessage("user", "Latest history")],
-                    [new CopilotRequestMessage("user", "Latest history")]));
-
-            Assert.True(submitted.ConfiguredPreventIdleSleep);
-            Assert.True(submitted.HasPreventIdleSleepOverride);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.TrustedProject,
-                submitted.PreventIdleSleepSource);
-            Assert.False(refreshed.ConfiguredPreventIdleSleep);
-            Assert.True(refreshed.HasPreventIdleSleepOverride);
-            Assert.True(executionContext.ProjectInstructionDiscoveryOptions.ConfiguredPreventIdleSleep);
-            Assert.Single(executionContext.ConversationHistory.ModelMessages);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
     public void UntrustedAndInvalidFeatureValuesCannotReplaceTheCodexHomeContract()
     {
         string globalRoot = CreateTemporaryDirectory();

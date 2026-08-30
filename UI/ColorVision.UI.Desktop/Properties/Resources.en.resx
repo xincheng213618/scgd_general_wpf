@@ -390,6 +390,30 @@
   <data name="SendFeedback" xml:space="preserve">
     <value>Send Feedback</value>
   </data>
+  <data name="FeedbackMessageLabel" xml:space="preserve">
+    <value>Problem description</value>
+  </data>
+  <data name="FeedbackMessageHint" xml:space="preserve">
+    <value>Include the steps, what happened, and what you expected.</value>
+  </data>
+  <data name="FeedbackAttachmentsHint" xml:space="preserve">
+    <value>Add screenshots or files to help us understand the issue.</value>
+  </data>
+  <data name="FeedbackNoAttachments" xml:space="preserve">
+    <value>No attachments added</value>
+  </data>
+  <data name="FeedbackDiagnosticsHint" xml:space="preserve">
+    <value>Selected items are packaged automatically when you send. You can also package them first to copy offline.</value>
+  </data>
+  <data name="FeedbackDiagnosticsSummary" xml:space="preserve">
+    <value>{0} of {1} items selected</value>
+  </data>
+  <data name="FeedbackRemoveAttachment" xml:space="preserve">
+    <value>Remove attachment</value>
+  </data>
+  <data name="FeedbackPackageReadyHint" xml:space="preserve">
+    <value>The diagnostic package is attached. If you change the diagnostic options, remove the old package and create a new one.</value>
+  </data>
   <data name="FeedbackPlaceholder" xml:space="preserve">
     <value>Describe the issue or suggestion...</value>
   </data>

@@ -1,6 +1,5 @@
 using ColorVision.Copilot;
 using System;
-using System.IO;
 
 namespace ColorVision.Copilot.Tests;
 
@@ -26,66 +25,6 @@ public sealed class CopilotCodexEnvironmentContextTests
             ((IList<string>)environment.SearchRoots)[0] = @"C:\mutated-search");
         Assert.Throws<NotSupportedException>(() =>
             ((IList<string>)environment.WritableRoots).Clear());
-    }
-
-    [Fact]
-    public void ClosestTrustedValueIsFrozenIntoTheSubmittedRequest()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                include_environment_context = true
-
-                [projects.'{projectRoot}']
-                trust_level = "trusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
-            File.WriteAllText(projectConfigPath, "include_environment_context = false");
-
-            var submittedContext = new CopilotAgentHostContextSnapshot(
-                activeDocumentPath: null,
-                projectRoot,
-                attachments: null,
-                liveContext: null,
-                conversationHistory: null,
-                additionalReadRootPaths: null,
-                globalInstructionRootPath: globalRoot);
-            var submittedPlan = CopilotAgentRequestFactory.Prepare(
-                "Inspect the current workspace.",
-                CopilotAgentMode.Code,
-                submittedContext);
-            var submittedRequest = CopilotAgentRequestFactory.Create(
-                submittedPlan,
-                new CopilotAgentRequestBuildInput
-                {
-                    Profile = CopilotProfileConfig.CreateDefault(),
-                    AgentDefaults = new CopilotAgentDefaultsConfig(),
-                });
-            File.WriteAllText(projectConfigPath, "include_environment_context = true");
-            var refreshed = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            var submitted = submittedContext.ProjectInstructionDiscoveryOptions;
-            Assert.False(submitted.ConfiguredIncludeEnvironmentContext);
-            Assert.True(submitted.HasIncludeEnvironmentContextOverride);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.TrustedProject,
-                submitted.IncludeEnvironmentContextSource);
-            Assert.False(submittedPlan.CodexIncludeEnvironmentContext);
-            Assert.False(submittedRequest.CodexIncludeEnvironmentContext);
-            Assert.True(refreshed.ConfiguredIncludeEnvironmentContext);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
     }
 
     [Fact]
@@ -241,10 +180,4 @@ public sealed class CopilotCodexEnvironmentContextTests
         Assert.True(enabledCompatibility.RequiresReplan);
     }
 
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-environment-context-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
-    }
 }

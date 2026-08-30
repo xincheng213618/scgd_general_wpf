@@ -316,4 +316,76 @@
   <data name="Socket_MessageTable" xml:space="preserve">
     <value>Socket Messages</value>
   </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Search events, clients, or content</value>
+  </data>
+  <data name="ResetFilters" xml:space="preserve">
+    <value>Reset filters</value>
+  </data>
+  <data name="NoMessages" xml:space="preserve">
+    <value>No messages yet</value>
+  </data>
+  <data name="NoMessagesHint" xml:space="preserve">
+    <value>Received and sent messages will appear here. You can also query message history.</value>
+  </data>
+  <data name="NoMatchingMessages" xml:space="preserve">
+    <value>No matching messages</value>
+  </data>
+  <data name="NoMatchingMessagesHint" xml:space="preserve">
+    <value>Change the search terms or message direction, or reset filters to see all records.</value>
+  </data>
+  <data name="SelectMessage" xml:space="preserve">
+    <value>Select a message to view details</value>
+  </data>
+  <data name="SelectMessageHint" xml:space="preserve">
+    <value>View the message body, client, and request details, with JSON formatting and copy options.</value>
+  </data>
+  <data name="NoMessageContent" xml:space="preserve">
+    <value>No message body to display</value>
+  </data>
+  <data name="NoMessageContentHint" xml:space="preserve">
+    <value>The message time, direction, and client details are still available above.</value>
+  </data>
+  <data name="NoContentPreview" xml:space="preserve">
+    <value>No content preview</value>
+  </data>
+  <data name="MessageId" xml:space="preserve">
+    <value>Message ID</value>
+  </data>
+  <data name="MessageBody" xml:space="preserve">
+    <value>Message body</value>
+  </data>
+  <data name="CopyRaw" xml:space="preserve">
+    <value>Copy raw</value>
+  </data>
+  <data name="ContentLoadFailedFormat" xml:space="preserve">
+    <value>Failed to load the message body: {0}</value>
+  </data>
+  <data name="FilteredMessageCountFormat" xml:space="preserve">
+    <value>{0} / {1} messages</value>
+  </data>
+  <data name="KeyboardShortcutsHint" xml:space="preserve">
+    <value>Ctrl+F Search · F5 Refresh · Ctrl+C Copy</value>
+  </data>
+  <data name="FirewallPrivate" xml:space="preserve">
+    <value>Firewall · Private</value>
+  </data>
+  <data name="FirewallPublic" xml:space="preserve">
+    <value>Firewall · Public</value>
+  </data>
+  <data name="AllowFirewall" xml:space="preserve">
+    <value>Allow</value>
+  </data>
+  <data name="AllowPrivateFirewallTooltip" xml:space="preserve">
+    <value>Create a private-network inbound allow rule for this application.</value>
+  </data>
+  <data name="AllowPublicFirewallTooltip" xml:space="preserve">
+    <value>Create a public-network inbound allow rule for this application.</value>
+  </data>
+  <data name="DatabaseCleanup" xml:space="preserve">
+    <value>Database cleanup</value>
+  </data>
+  <data name="DatabaseCleanupUnavailable" xml:space="preserve">
+    <value>The database cleanup component is not loaded. Open this window from the full ColorVision application.</value>
+  </data>
 </root>

@@ -316,4 +316,76 @@
   <data name="Socket_MessageTable" xml:space="preserve">
     <value>Socket Messages</value>
   </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>搜尋事件、用戶端或內容</value>
+  </data>
+  <data name="ResetFilters" xml:space="preserve">
+    <value>重設篩選</value>
+  </data>
+  <data name="NoMessages" xml:space="preserve">
+    <value>尚無訊息</value>
+  </data>
+  <data name="NoMessagesHint" xml:space="preserve">
+    <value>接收與傳送的訊息會顯示在這裡，也可以查詢歷史訊息。</value>
+  </data>
+  <data name="NoMatchingMessages" xml:space="preserve">
+    <value>沒有符合條件的訊息</value>
+  </data>
+  <data name="NoMatchingMessagesHint" xml:space="preserve">
+    <value>請調整關鍵字或收發方向，或重設篩選以查看全部記錄。</value>
+  </data>
+  <data name="SelectMessage" xml:space="preserve">
+    <value>選擇一則訊息以查看詳情</value>
+  </data>
+  <data name="SelectMessageHint" xml:space="preserve">
+    <value>查看訊息本文、用戶端與請求資訊，支援 JSON 格式化與複製。</value>
+  </data>
+  <data name="NoMessageContent" xml:space="preserve">
+    <value>沒有可顯示的訊息本文</value>
+  </data>
+  <data name="NoMessageContentHint" xml:space="preserve">
+    <value>仍可在上方查看訊息的時間、方向與用戶端資訊。</value>
+  </data>
+  <data name="NoContentPreview" xml:space="preserve">
+    <value>無內容預覽</value>
+  </data>
+  <data name="MessageId" xml:space="preserve">
+    <value>訊息 ID</value>
+  </data>
+  <data name="MessageBody" xml:space="preserve">
+    <value>訊息本文</value>
+  </data>
+  <data name="CopyRaw" xml:space="preserve">
+    <value>複製原文</value>
+  </data>
+  <data name="ContentLoadFailedFormat" xml:space="preserve">
+    <value>訊息本文讀取失敗：{0}</value>
+  </data>
+  <data name="FilteredMessageCountFormat" xml:space="preserve">
+    <value>{0} / {1} 則訊息</value>
+  </data>
+  <data name="KeyboardShortcutsHint" xml:space="preserve">
+    <value>Ctrl+F 搜尋 · F5 重新整理 · Ctrl+C 複製</value>
+  </data>
+  <data name="FirewallPrivate" xml:space="preserve">
+    <value>防火牆 · 私人</value>
+  </data>
+  <data name="FirewallPublic" xml:space="preserve">
+    <value>防火牆 · 公用</value>
+  </data>
+  <data name="AllowFirewall" xml:space="preserve">
+    <value>允許</value>
+  </data>
+  <data name="AllowPrivateFirewallTooltip" xml:space="preserve">
+    <value>為目前程式建立私人網路的輸入允許規則。</value>
+  </data>
+  <data name="AllowPublicFirewallTooltip" xml:space="preserve">
+    <value>為目前程式建立公用網路的輸入允許規則。</value>
+  </data>
+  <data name="DatabaseCleanup" xml:space="preserve">
+    <value>資料庫清理</value>
+  </data>
+  <data name="DatabaseCleanupUnavailable" xml:space="preserve">
+    <value>目前未載入資料庫清理元件，請從完整的 ColorVision 程式開啟此視窗。</value>
+  </data>
 </root>

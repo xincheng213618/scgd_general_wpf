@@ -3,7 +3,7 @@ using System.IO;
 namespace ColorVision.UI.Desktop.Diagnostics
 {
     /// <summary>
-    /// Adds recent WER dump files to the feedback diagnostics package.
+    /// Adds recent WER dump files to the feedback diagnostics package only when explicitly selected.
     /// </summary>
     public sealed class CrashDumpFileCollector : IFeedbackLogCollector
     {
@@ -14,6 +14,8 @@ namespace ColorVision.UI.Desktop.Diagnostics
         public string Description => "Recent Windows Error Reporting dump files";
 
         public int Order => 30;
+
+        public bool IsSelectedByDefault => false;
 
         public IEnumerable<(string EntryPath, string FilePath)> CollectFiles()
         {

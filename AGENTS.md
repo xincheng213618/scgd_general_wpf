@@ -13,6 +13,7 @@
 - Implement result overlays through `IViewResult` and `IResultHandleBase`; drawing infrastructure belongs under `UI/ColorVision.ImageEditor/Draw/**`.
 - Use the metadata-driven PropertyGrid conventions (`Category`, `DisplayName`, `Description`, `PropertyEditorType`, and `PropertyVisibility`) instead of one-off editors where the existing system applies.
 - Keep UI-to-Engine dependencies behind existing abstractions; avoid ad-hoc cross-layer calls.
+- Copilot intentionally does not load global or project `config.toml` at runtime. Keep `AGENTS.md` / `CLAUDE.md` instruction discovery, but let ColorVision own model, provider, tools, and approval settings. Do not restore config loading to satisfy obsolete integration tests.
 - When working in `Native/`, `Plugins/`, `Projects/`, `Web/`, or `docs/`, also read the nearest nested `AGENTS.md`. The closest file supplies the subsystem-specific rules.
 
 ## Build and verification

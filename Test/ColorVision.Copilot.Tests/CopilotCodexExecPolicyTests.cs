@@ -11,86 +11,6 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotCodexExecPolicyTests
 {
     [Fact]
-    public void GlobalAndTrustedProjectRulesAreDiscoveredAndFrozenIntoSubmittedTurn()
-    {
-        string codexHome = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(codexHome, "config.toml"),
-                $"[projects.'{projectRoot}']\ntrust_level = \"trusted\"");
-            string globalRulesDirectory = Path.Combine(codexHome, "rules");
-            Directory.CreateDirectory(globalRulesDirectory);
-            string globalRulesPath = Path.Combine(globalRulesDirectory, "default.rules");
-            File.WriteAllText(
-                globalRulesPath,
-                """
-                prefix_rule(
-                    pattern = ["git", ["status", "diff"]],
-                    decision = "allow",
-                    justification = "Read-only Git inspection",
-                    match = ["git status --short", ["git", "diff", "--stat"]],
-                    not_match = ["git log"],
-                )
-                """);
-            string projectRulesDirectory = Path.Combine(projectRoot, ".codex", "rules");
-            Directory.CreateDirectory(projectRulesDirectory);
-            string projectRulesPath = Path.Combine(projectRulesDirectory, "project.rules");
-            File.WriteAllText(
-                projectRulesPath,
-                """
-                prefix_rule(
-                    pattern = ["git", "reset", "--hard"],
-                    decision = "forbidden",
-                    justification = "Do not discard workspace changes",
-                )
-                """);
-
-            var hostContext = CreateHostContext(codexHome, projectRoot);
-            var plan = CopilotAgentRequestFactory.Prepare(
-                "Inspect Git status and preserve the workspace.",
-                CopilotAgentMode.Code,
-                hostContext);
-
-            var options = hostContext.ProjectInstructionDiscoveryOptions;
-            Assert.Equal(2, options.ConfiguredExecPolicyRules.Count);
-            Assert.Equal([globalRulesPath, projectRulesPath], options.AppliedExecPolicyFilePaths);
-            Assert.Empty(options.ConfiguredExecPolicyIssues);
-            Assert.Equal(
-                [CopilotProjectInstructionConfigSources.CodexHome, CopilotProjectInstructionConfigSources.TrustedProject],
-                options.ConfiguredExecPolicyRules.Select(rule => rule.Source));
-            Assert.Equal(2, plan.CodexExecPolicyRules.Count);
-
-            File.WriteAllText(
-                globalRulesPath,
-                "prefix_rule(pattern=[\"git\", \"status\"], decision=\"forbidden\")");
-            var request = CopilotAgentRequestFactory.Create(
-                plan,
-                new CopilotAgentRequestBuildInput
-                {
-                    Profile = CopilotProfileConfig.CreateDefault(),
-                    AgentDefaults = new CopilotAgentDefaultsConfig(),
-                });
-            var refreshed = CopilotProjectInstructionDiscoveryConfig.Load(codexHome, projectRoot);
-
-            Assert.Equal(2, request.CodexExecPolicyRules.Count);
-            Assert.Equal(
-                CopilotCodexExecPolicyDecision.Allow,
-                Evaluate(request, "git status --short").Decision);
-            Assert.Equal(
-                CopilotCodexExecPolicyDecision.Forbidden,
-                Evaluate(CreateRequest(refreshed.ConfiguredExecPolicyRules), "git status --short").Decision);
-        }
-        finally
-        {
-            Directory.Delete(codexHome, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
     public void UntrustedProjectRulesAreIgnoredWhileGlobalRulesRemainActive()
     {
         string codexHome = CreateTemporaryDirectory();
@@ -331,17 +251,6 @@ public sealed class CopilotCodexExecPolicyTests
             ApprovalPromptCategoryOverride = categoryOverride,
             ApprovalPromptReasonOverride = "Rule requires exact approval.",
         };
-
-    private static CopilotAgentHostContextSnapshot CreateHostContext(
-        string codexHome,
-        string projectRoot) => new(
-            activeDocumentPath: null,
-            projectRoot,
-            attachments: null,
-            liveContext: null,
-            conversationHistory: null,
-            additionalReadRootPaths: null,
-            globalInstructionRootPath: codexHome);
 
     private static string CreateTemporaryDirectory()
     {

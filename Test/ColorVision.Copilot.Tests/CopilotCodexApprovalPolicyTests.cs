@@ -10,87 +10,6 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotCodexApprovalPolicyTests
 {
     [Fact]
-    public void ClosestTrustedGranularPolicyIsParsedAndFrozenIntoTurnSnapshots()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                approval_policy = "untrusted"
-
-                [projects.'{projectRoot}']
-                trust_level = "trusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
-            File.WriteAllText(
-                projectConfigPath,
-                """
-                approval_policy = { granular = {
-                    sandbox_approval = false,
-                    rules = true,
-                    mcp_elicitations = true,
-                    request_permissions = true
-                } }
-                """);
-
-            var submittedContext = CreateHostContext(globalRoot, projectRoot);
-            var submittedPlan = CopilotAgentRequestFactory.Prepare(
-                "Edit the workspace and run its tests.",
-                CopilotAgentMode.Code,
-                submittedContext);
-            var submittedRequest = CopilotAgentRequestFactory.Create(
-                submittedPlan,
-                new CopilotAgentRequestBuildInput
-                {
-                    Profile = CopilotProfileConfig.CreateDefault(),
-                    AgentDefaults = new CopilotAgentDefaultsConfig(),
-                });
-
-            File.WriteAllText(projectConfigPath, "approval_policy = \"on-request\"");
-            var refreshedContext = CreateHostContext(globalRoot, projectRoot);
-            var queuedFollowUp = new CopilotQueuedFollowUp(
-                "run-1",
-                "conversation-1",
-                "Conversation",
-                "Continue.",
-                CopilotAgentMode.Code,
-                CopilotProfileConfig.CreateDefault(),
-                submittedContext);
-            var queuedContext = queuedFollowUp.CreateExecutionContext(
-                CopilotConversationHistorySnapshot.Empty);
-
-            var policy = submittedContext.ProjectInstructionDiscoveryOptions.ConfiguredApprovalPolicy;
-            Assert.True(submittedContext.ProjectInstructionDiscoveryOptions.HasApprovalPolicyOverride);
-            Assert.Equal(CopilotProjectInstructionConfigSources.TrustedProject, submittedContext.ProjectInstructionDiscoveryOptions.ApprovalPolicySource);
-            Assert.Equal(CopilotCodexApprovalPolicyMode.Granular, policy.Mode);
-            Assert.False(policy.SandboxApproval);
-            Assert.True(policy.Rules);
-            Assert.True(policy.McpElicitations);
-            Assert.True(policy.RequestPermissions);
-            Assert.False(policy.SkillApproval);
-            Assert.Same(policy, submittedPlan.CodexApprovalPolicy);
-            Assert.Same(policy, submittedRequest.CodexApprovalPolicy);
-            Assert.Equal(
-                CopilotCodexApprovalPolicyMode.OnRequest,
-                refreshedContext.ProjectInstructionDiscoveryOptions.ConfiguredApprovalPolicy.Mode);
-            Assert.Same(
-                policy,
-                queuedContext.ProjectInstructionDiscoveryOptions.ConfiguredApprovalPolicy);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
     public void UntrustedAndMalformedProjectValuesCannotChangeTheCodexHomePolicy()
     {
         string globalRoot = CreateTemporaryDirectory();
@@ -506,17 +425,6 @@ public sealed class CopilotCodexApprovalPolicyTests
             CopilotToolExecutionOutcome outcome,
             CancellationToken cancellationToken) => Task.CompletedTask;
     }
-
-    private static CopilotAgentHostContextSnapshot CreateHostContext(
-        string globalRoot,
-        string projectRoot) => new(
-            activeDocumentPath: null,
-            projectRoot,
-            attachments: null,
-            liveContext: null,
-            conversationHistory: null,
-            additionalReadRootPaths: null,
-            globalInstructionRootPath: globalRoot);
 
     private static CopilotAgentRequest CreateRequest(CopilotCodexApprovalPolicy policy) => new()
     {

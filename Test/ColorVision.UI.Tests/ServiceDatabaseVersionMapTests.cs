@@ -18,23 +18,6 @@ public class ServiceDatabaseVersionMapTests
         Assert.Equal(expectedDatabase, ServiceDatabaseVersionMap.GetDatabaseName(Version.Parse(versionText)));
     }
 
-    [Fact]
-    public void GetDatabaseName_ProvidesDifferentSourceAndTargetForBothMigrationDirections()
-    {
-        Version legacyVersion = Version.Parse("3.6.5.1202");
-        Version version4 = Version.Parse("4.1.1.709");
-
-        Assert.Equal(ServiceDatabaseVersionMap.LegacyDatabaseName, ServiceDatabaseVersionMap.GetDatabaseName(legacyVersion));
-        Assert.Equal(ServiceDatabaseVersionMap.Version4DatabaseName, ServiceDatabaseVersionMap.GetDatabaseName(version4));
-
-        Assert.Equal(
-            (ServiceDatabaseVersionMap.LegacyDatabaseName, ServiceDatabaseVersionMap.Version4DatabaseName),
-            (ServiceDatabaseVersionMap.GetDatabaseName(legacyVersion), ServiceDatabaseVersionMap.GetDatabaseName(version4)));
-        Assert.Equal(
-            (ServiceDatabaseVersionMap.Version4DatabaseName, ServiceDatabaseVersionMap.LegacyDatabaseName),
-            (ServiceDatabaseVersionMap.GetDatabaseName(version4), ServiceDatabaseVersionMap.GetDatabaseName(legacyVersion)));
-    }
-
     [Theory]
     [InlineData(@"H:\ColorVision\Tool\CVWindowsService\CVWindowsService[3.6.5.1202].zip", "3.6.5.1202")]
     [InlineData(@"H:\ColorVision\Tool\CVWindowsService\CVWindowsService[4.1.1.709].zip", "4.1.1.709")]

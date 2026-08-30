@@ -28,68 +28,6 @@ public sealed class CopilotCodexHooksFeatureTests
     }
 
     [Fact]
-    public void ClosestTrustedValueIsFrozenIntoTheSubmittedTurn()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                [features]
-                hooks = true
-
-                [projects.'{projectRoot}']
-                trust_level = "trusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
-            File.WriteAllText(projectConfigPath, "features.hooks = false");
-
-            var submittedContext = new CopilotAgentHostContextSnapshot(
-                activeDocumentPath: null,
-                projectRoot,
-                attachments: null,
-                liveContext: null,
-                conversationHistory: null,
-                additionalReadRootPaths: null,
-                globalInstructionRootPath: globalRoot);
-            var submittedPlan = CopilotAgentRequestFactory.Prepare(
-                "Inspect the workspace.",
-                CopilotAgentMode.Code,
-                submittedContext);
-            var submittedRequest = CopilotAgentRequestFactory.Create(
-                submittedPlan,
-                new CopilotAgentRequestBuildInput
-                {
-                    Profile = CopilotProfileConfig.CreateDefault(),
-                    AgentDefaults = new CopilotAgentDefaultsConfig(),
-                });
-
-            File.WriteAllText(projectConfigPath, "features.hooks = true");
-            var refreshed = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            var submitted = submittedContext.ProjectInstructionDiscoveryOptions;
-            Assert.False(submitted.ConfiguredHooksEnabled);
-            Assert.True(submitted.HasHooksEnabledOverride);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.TrustedProject,
-                submitted.HooksEnabledSource);
-            Assert.False(submittedPlan.CodexHooksEnabled);
-            Assert.False(submittedRequest.CodexHooksEnabled);
-            Assert.True(refreshed.ConfiguredHooksEnabled);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
     public void UntrustedAndInvalidValuesCannotBroadenTheCodexHomeContract()
     {
         string globalRoot = CreateTemporaryDirectory();

@@ -198,6 +198,7 @@ namespace ColorVision.UI.Desktop.Feedback
         {
             AttachmentsList.ItemsSource = _attachments;
             CollectorsList.ItemsSource = _collectorItems;
+            _attachments.CollectionChanged += (_, _) => UpdateDiagnosticSummary();
 
             // Discover all IFeedbackLogCollector implementations and show them in the list
             try
@@ -206,13 +207,29 @@ namespace ColorVision.UI.Desktop.Feedback
                 collectors.Sort((a, b) => a.Order.CompareTo(b.Order));
                 foreach (var collector in collectors)
                 {
-                    _collectorItems.Add(new CollectorItem(collector));
+                    var item = new CollectorItem(collector);
+                    item.PropertyChanged += (_, args) =>
+                    {
+                        if (args.PropertyName == nameof(CollectorItem.IsChecked))
+                            UpdateDiagnosticSummary();
+                    };
+                    _collectorItems.Add(item);
                 }
             }
             catch (Exception ex)
             {
                 log.Debug($"Failed to discover collectors: {ex.Message}");
             }
+
+            UpdateDiagnosticSummary();
+        }
+
+        private void UpdateDiagnosticSummary()
+        {
+            DiagnosticsSummaryText.Text = string.Format(Properties.Resources.FeedbackDiagnosticsSummary, _collectorItems.Count(item => item.IsChecked), _collectorItems.Count);
+            DiagnosticsHintText.Text = HasDiagnosticPackage()
+                ? Properties.Resources.FeedbackPackageReadyHint
+                : Properties.Resources.FeedbackDiagnosticsHint;
         }
 
         private void MessageTextBox_GotFocus(object sender, RoutedEventArgs e)

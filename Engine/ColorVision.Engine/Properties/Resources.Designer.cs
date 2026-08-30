@@ -5514,6 +5514,45 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 X 表示上下翻转，Y 表示左右镜像，XY 表示旋转 180°；不支持 90°/270°旋转。未选择校正模板时不会提前翻转 RAW，方向配置会保留到下游本地校正完成后再应用。 的本地化字符串。
+        /// </summary>
+        public static string Flow_LocalCamera_Notes {
+            get {
+                return ResourceManager.GetString("Flow_LocalCamera_Notes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 相机采集 RAW → 空间/普通校正 → 色度校正并生成 CIE（模板包含时）→ 图像翻转 → 保存文件。下游 POI 始终使用最终方向的图像坐标。 的本地化字符串。
+        /// </summary>
+        public static string Flow_LocalCamera_Processing {
+            get {
+                return ResourceManager.GetString("Flow_LocalCamera_Processing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 从本机物理相机采集一帧 RAW 图像，并按需在本地完成校正、图像翻转和文件保存。 的本地化字符串。
+        /// </summary>
+        public static string Flow_LocalCamera_Summary {
+            get {
+                return ResourceManager.GetString("Flow_LocalCamera_Summary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 1. 选择设备代码，直接配置曝光时间、增益和平均次数。
+        ///2. 需要校正时选择校正模板；不选择时只输出 RAW。
+        ///3. 按需要开启自动连接、自动曝光、保存文件和图像翻转。
+        ///4. 将 OUT 连接到后续本地校正、POI 或其他算法节点。 的本地化字符串。
+        /// </summary>
+        public static string Flow_LocalCamera_Usage {
+            get {
+                return ResourceManager.GetString("Flow_LocalCamera_Usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 全部归档指令已经发送 的本地化字符串。
         /// </summary>
         public static string Flow_MeasureBatch_AllArchiveCommandSent {
@@ -5762,6 +5801,105 @@ namespace ColorVision.Engine.Properties {
         public static string Flow_NodeExecutionDetails {
             get {
                 return ResourceManager.GetString("Flow_NodeExecutionDetails", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 配置 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_Configuration {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_Configuration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 说明 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_Documentation {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_Documentation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 如何使用 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_HowToUse {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_HowToUse", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 输入 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_Input {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_Input", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 该节点尚未提供用途说明。 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_NoDocumentation {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_NoDocumentation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 注意事项 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_Notes {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_Notes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 输出 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_Output {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_Output", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 端口 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_Ports {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_Ports", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 处理顺序 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_ProcessingOrder {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_ProcessingOrder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 参数说明 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_PropertyDescriptions {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_PropertyDescriptions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用途 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_Purpose {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_Purpose", resourceCulture);
             }
         }
         

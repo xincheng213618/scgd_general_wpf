@@ -11,65 +11,16 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotCodexInterruptMessageTests
 {
     [Fact]
-    public void ClosestTrustedValueIsFrozenWhileUntrustedAndInvalidValuesAreIgnored()
+    public void UntrustedAndInvalidValuesAreIgnored()
     {
         string globalRoot = CreateTemporaryDirectory();
         string projectRoot = CreateTemporaryDirectory();
         try
         {
             Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                [agents]
-                interrupt_message = true
-
-                [projects.'{projectRoot}']
-                trust_level = "trusted"
-                """);
             string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
             Directory.CreateDirectory(projectConfigDirectory);
             string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
-            File.WriteAllText(projectConfigPath, "agents.interrupt_message = false");
-
-            var submittedContext = new CopilotAgentHostContextSnapshot(
-                activeDocumentPath: null,
-                projectRoot,
-                attachments: null,
-                liveContext: null,
-                conversationHistory: null,
-                additionalReadRootPaths: null,
-                globalInstructionRootPath: globalRoot);
-            var submittedPlan = CopilotAgentRequestFactory.Prepare(
-                "Delegate a bounded workspace investigation.",
-                CopilotAgentMode.Auto,
-                submittedContext);
-            var submittedRequest = CopilotAgentRequestFactory.Create(
-                submittedPlan,
-                new CopilotAgentRequestBuildInput
-                {
-                    Profile = CopilotProfileConfig.CreateDefault(),
-                    AgentDefaults = new CopilotAgentDefaultsConfig(),
-                });
-            File.WriteAllText(projectConfigPath, "agents.interrupt_message = true");
-            var childRequest = CopilotSubagentRunner.CreateChildRequest(
-                submittedRequest,
-                CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId),
-                new CopilotSubagentRunRequest
-                {
-                    RunId = "interrupt-config-child",
-                    Task = "Inspect the bounded workspace evidence.",
-                    RequestTokenBudget = 16_384,
-                });
-
-            Assert.False(submittedContext.ProjectInstructionDiscoveryOptions.ConfiguredInterruptMessageEnabled);
-            Assert.True(submittedContext.ProjectInstructionDiscoveryOptions.HasInterruptMessageOverride);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.TrustedProject,
-                submittedContext.ProjectInstructionDiscoveryOptions.InterruptMessageSource);
-            Assert.False(submittedPlan.CodexInterruptMessageEnabled);
-            Assert.False(submittedRequest.CodexInterruptMessageEnabled);
-            Assert.False(childRequest.CodexInterruptMessageEnabled);
 
             File.WriteAllText(
                 Path.Combine(globalRoot, "config.toml"),

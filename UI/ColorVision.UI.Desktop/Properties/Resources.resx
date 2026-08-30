@@ -370,6 +370,30 @@
   <data name="SendFeedback" xml:space="preserve">
     <value>发送反馈</value>
   </data>
+  <data name="FeedbackMessageLabel" xml:space="preserve">
+    <value>问题描述</value>
+  </data>
+  <data name="FeedbackMessageHint" xml:space="preserve">
+    <value>请补充操作步骤、实际现象和预期结果。</value>
+  </data>
+  <data name="FeedbackAttachmentsHint" xml:space="preserve">
+    <value>添加截图或文件，帮助我们了解问题。</value>
+  </data>
+  <data name="FeedbackNoAttachments" xml:space="preserve">
+    <value>尚未添加附件</value>
+  </data>
+  <data name="FeedbackDiagnosticsHint" xml:space="preserve">
+    <value>发送时会自动打包所选项目；也可先打包，离线复制。</value>
+  </data>
+  <data name="FeedbackDiagnosticsSummary" xml:space="preserve">
+    <value>已选择 {0} / {1} 项</value>
+  </data>
+  <data name="FeedbackRemoveAttachment" xml:space="preserve">
+    <value>移除附件</value>
+  </data>
+  <data name="FeedbackPackageReadyHint" xml:space="preserve">
+    <value>诊断包已加入附件。修改诊断选项后，请移除旧包并重新打包。</value>
+  </data>
   <data name="FeedbackPlaceholder" xml:space="preserve">
     <value>请描述您遇到的问题或建议...</value>
   </data>

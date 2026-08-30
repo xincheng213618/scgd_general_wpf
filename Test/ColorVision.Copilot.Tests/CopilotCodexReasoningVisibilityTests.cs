@@ -7,58 +7,6 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotCodexReasoningVisibilityTests
 {
     [Fact]
-    public void ClosestTrustedVisibilityLayerIsFrozenIntoTheSubmittedTurnSnapshot()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                hide_agent_reasoning = true
-
-                [projects.'{projectRoot}']
-                trust_level = "trusted"
-                """);
-            string configDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(configDirectory);
-            string configPath = Path.Combine(configDirectory, "config.toml");
-            File.WriteAllText(configPath, "hide_agent_reasoning = true");
-
-            var submittedContext = new CopilotAgentHostContextSnapshot(
-                activeDocumentPath: null,
-                projectRoot,
-                attachments: null,
-                liveContext: null,
-                conversationHistory: null,
-                additionalReadRootPaths: null,
-                globalInstructionRootPath: globalRoot);
-            File.WriteAllText(configPath, "hide_agent_reasoning = false");
-            var refreshed = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-            var submitted = submittedContext.ProjectInstructionDiscoveryOptions;
-
-            Assert.True(submitted.ConfiguredHideAgentReasoning);
-            Assert.True(submitted.HasHideAgentReasoningOverride);
-            Assert.True(submitted.UsesCodexConfig);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.TrustedProject,
-                submitted.HideAgentReasoningSource);
-            Assert.Contains("hide_agent_reasoning", submitted.HideAgentReasoningSourceLabel, StringComparison.Ordinal);
-            Assert.False(refreshed.ConfiguredHideAgentReasoning);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.TrustedProject,
-                refreshed.HideAgentReasoningSource);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
     public void UntrustedOrInvalidVisibilityValuesCannotReplaceTheCodexHomeContract()
     {
         string globalRoot = CreateTemporaryDirectory();

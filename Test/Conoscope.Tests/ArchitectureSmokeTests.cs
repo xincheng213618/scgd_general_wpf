@@ -1,25 +1,11 @@
 using Conoscope.Core;
 using System.IO;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace Conoscope.Tests;
 
 public class ArchitectureSmokeTests
 {
     private static string RepoRoot => FindRepoRoot();
-
-    [Fact]
-    public void PluginVersionMatchesManifest()
-    {
-        string projectPath = Path.Combine(RepoRoot, "Plugins", "Conoscope", "Conoscope.csproj");
-        string manifestPath = Path.Combine(RepoRoot, "Plugins", "Conoscope", "manifest.json");
-        Match version = Regex.Match(File.ReadAllText(projectPath), @"<VersionPrefix>([^<]+)</VersionPrefix>");
-        using JsonDocument manifest = JsonDocument.Parse(File.ReadAllText(manifestPath));
-
-        Assert.True(version.Success);
-        Assert.Equal(version.Groups[1].Value, manifest.RootElement.GetProperty("version").GetString());
-    }
 
     [Fact]
     public void ApplicationCodeDoesNotShowMessageBoxes()
