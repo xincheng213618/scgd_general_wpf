@@ -318,6 +318,57 @@ public sealed class DatabaseCleanupWindowLayoutTests
         });
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RequestedThemeOverridesAmbientPaletteAndRestoresApplicationResources(bool dark)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            ResourceDictionary resources = Application.Current.Resources;
+            HashSet<object> originalKeys = resources.Keys.Cast<object>().ToHashSet();
+            string[] paletteKeys = ["GlobalBackground", "GlobalTextBrush", "SecondaryTextBrush"];
+            Dictionary<string, object> originalPalette = paletteKeys.Where(key => originalKeys.Contains(key))
+                .ToDictionary(key => key, key => resources[key]);
+            ResourceDictionary[] originalMergedDictionaries = resources.MergedDictionaries.ToArray();
+            resources["GlobalBackground"] = Brushes.White;
+            resources["GlobalTextBrush"] = Brushes.Black;
+            resources["SecondaryTextBrush"] = Brushes.Gray;
+            try
+            {
+                WithWindow([new FakeSelectionProvider()], true, (window, viewModel) =>
+                {
+                    CompleteWithDispatcher(viewModel.RefreshAllAsync());
+                    RefreshLayout(window, minimum: true);
+                    foreach (TextBlock text in VisualDescendants(Element<DataGrid>(window, "CleanupTablesGrid")).OfType<TextBlock>()
+                        .Where(text => !string.IsNullOrWhiteSpace(text.Text) && IsEffectivelyVisible(text)))
+                        AssertReadableForeground(window, text);
+
+                    Assert.Equal(dark ? Color.FromRgb(0x26, 0x26, 0x26) : Colors.White,
+                        Assert.IsType<SolidColorBrush>(window.FindResource("GlobalBackground")).Color);
+                    Assert.Equal(dark ? Color.FromRgb(0xC0, 0xC0, 0xC0) : Color.FromRgb(0x66, 0x66, 0x66),
+                        Assert.IsType<SolidColorBrush>(window.FindResource("SecondaryTextBrush")).Color);
+                }, dark: dark);
+
+                Assert.Same(Brushes.White, resources["GlobalBackground"]);
+                Assert.Same(Brushes.Black, resources["GlobalTextBrush"]);
+                Assert.Same(Brushes.Gray, resources["SecondaryTextBrush"]);
+                Assert.Equal(originalMergedDictionaries, resources.MergedDictionaries);
+                Assert.True(originalKeys.Union(paletteKeys).ToHashSet().SetEquals(resources.Keys.Cast<object>()));
+            }
+            finally
+            {
+                foreach (string key in paletteKeys)
+                {
+                    if (originalPalette.TryGetValue(key, out object? value))
+                        resources[key] = value;
+                    else
+                        resources.Remove(key);
+                }
+            }
+        });
+    }
+
     [Fact]
     public void RenderPreviewsOnlyWhenAnOutputDirectoryIsRequested()
     {
@@ -396,7 +447,9 @@ public sealed class DatabaseCleanupWindowLayoutTests
         {
             CultureInfo previousCulture = CultureInfo.CurrentCulture;
             CultureInfo previousUICulture = CultureInfo.CurrentUICulture;
+            ResourceDictionary resources = Application.Current.Resources;
             List<ResourceDictionary> addedDictionaries = [];
+            Dictionary<object, object> previousLocalResources = [];
             try
             {
                 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(cultureName);
@@ -410,15 +463,27 @@ public sealed class DatabaseCleanupWindowLayoutTests
                 })
                 {
                     ResourceDictionary dictionary = new() { Source = new Uri(source, UriKind.Relative) };
-                    Application.Current.Resources.MergedDictionaries.Add(dictionary);
+                    resources.MergedDictionaries.Add(dictionary);
                     addedDictionaries.Add(dictionary);
+                }
+                // Top-level test stubs take precedence over merged theme dictionaries. Temporarily
+                // remove only colliding local entries; merged-only values must not become local on restore.
+                foreach (object key in resources.Keys.Cast<object>().ToArray())
+                {
+                    if (addedDictionaries.Any(dictionary => dictionary.Contains(key)))
+                    {
+                        previousLocalResources.Add(key, resources[key]);
+                        resources.Remove(key);
+                    }
                 }
                 action();
             }
             finally
             {
                 for (int index = addedDictionaries.Count - 1; index >= 0; index--)
-                    Application.Current.Resources.MergedDictionaries.Remove(addedDictionaries[index]);
+                    resources.MergedDictionaries.Remove(addedDictionaries[index]);
+                foreach ((object key, object value) in previousLocalResources)
+                    resources[key] = value;
                 CultureInfo.CurrentCulture = previousCulture;
                 CultureInfo.CurrentUICulture = previousUICulture;
             }
@@ -520,7 +585,8 @@ public sealed class DatabaseCleanupWindowLayoutTests
         double first = Luminance(foreground.Color);
         double second = Luminance(background.Color);
         double contrast = (Math.Max(first, second) + 0.05) / (Math.Min(first, second) + 0.05);
-        Assert.True(contrast >= 4, $"'{text.Text}' must remain readable against the current theme; contrast was {contrast:0.##}.");
+        Assert.True(contrast >= 4,
+            $"'{text.Text}' must remain readable against the current theme; contrast was {contrast:0.##} (foreground {foreground.Color}, background {background.Color}).");
     }
 
     private static double Luminance(Color color)
