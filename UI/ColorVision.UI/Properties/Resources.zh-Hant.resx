@@ -478,4 +478,7 @@
   <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
     <value>啟用後，更新檢查與外掛市集請求會直接連線到公網服務；停用時使用 Windows 系統代理。變更會從下一次請求生效。</value>
   </data>
+  <data name="SettingsSectionAppearance" xml:space="preserve"><value>外觀與語言</value></data>
+  <data name="SettingsSectionUpdates" xml:space="preserve"><value>更新與網路</value></data>
+  <data name="SettingsSectionDiagnostics" xml:space="preserve"><value>日誌與診斷</value></data>
 </root>

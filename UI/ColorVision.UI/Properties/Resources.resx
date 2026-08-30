@@ -617,4 +617,7 @@
   <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
     <value>开启后，更新检查和插件市场请求将直接连接公网服务；关闭时使用 Windows 系统代理。修改后从下一次请求生效。</value>
   </data>
+  <data name="SettingsSectionAppearance" xml:space="preserve"><value>外观与语言</value></data>
+  <data name="SettingsSectionUpdates" xml:space="preserve"><value>更新与网络</value></data>
+  <data name="SettingsSectionDiagnostics" xml:space="preserve"><value>日志与诊断</value></data>
 </root>

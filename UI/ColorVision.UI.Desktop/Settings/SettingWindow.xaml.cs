@@ -9,9 +9,13 @@ namespace ColorVision.UI.Desktop.Settings
     public partial class SettingWindow
     {
         private SettingWindowController? _controller;
+        private readonly IEnumerable<ConfigSettingMetadata>? _settingsOverride;
 
-        public SettingWindow()
+        public SettingWindow() : this(null) { }
+
+        internal SettingWindow(IEnumerable<ConfigSettingMetadata>? settings)
         {
+            _settingsOverride = settings;
             InitializeComponent();
             this.ApplyCaption();
         }
@@ -19,12 +23,13 @@ namespace ColorVision.UI.Desktop.Settings
         private void Window_Initialized(object sender, EventArgs e)
         {
             _controller = new SettingWindowController(SearchTextBox, NavigationListBox, SettingsContentPanel, CurrentGroupTitle, CurrentGroupDescription);
-            _controller.LoadConfigSettings();
+            _controller.LoadConfigSettings(_settingsOverride);
         }
 
         private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             _controller?.RefreshNavigationAndContent();
+            SettingsScrollViewer?.ScrollToTop();
         }
 
         private void NavigationListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -32,6 +37,7 @@ namespace ColorVision.UI.Desktop.Settings
             if (NavigationListBox.SelectedItem is NavigationEntry navigationEntry)
             {
                 _controller?.SelectGroup(navigationEntry.Group);
+                SettingsScrollViewer.ScrollToTop();
             }
         }
     }

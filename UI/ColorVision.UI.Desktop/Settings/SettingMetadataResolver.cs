@@ -50,6 +50,9 @@ namespace ColorVision.UI.Desktop.Settings
             string? sectionName = NormalizeLegacySectionKey(sectionKey) switch
             {
                 ConfigSettingConstants.SectionBasic => SettingResources.SectionBasic,
+                ConfigSettingConstants.SectionAppearance => SettingResources.SectionAppearance,
+                ConfigSettingConstants.SectionUpdates => SettingResources.SectionUpdates,
+                ConfigSettingConstants.SectionDiagnostics => SettingResources.SectionDiagnostics,
                 ConfigSettingConstants.SectionSearch => SettingResources.SectionSearch,
                 ConfigSettingConstants.SectionFileArchive => SettingResources.SectionFileArchive,
                 ConfigSettingConstants.SectionAdvancedServices => SettingResources.SectionServices,
@@ -69,6 +72,9 @@ namespace ColorVision.UI.Desktop.Settings
             return NormalizeLegacySectionKey(sectionKey) switch
             {
                 ConfigSettingConstants.SectionBasic => 0,
+                ConfigSettingConstants.SectionAppearance => -10,
+                ConfigSettingConstants.SectionUpdates => 5,
+                ConfigSettingConstants.SectionDiagnostics => 70,
                 ConfigSettingConstants.SectionSearch => 10,
                 ConfigSettingConstants.SectionFileArchive => 20,
                 ConfigSettingConstants.SectionAdvancedServices => 80,

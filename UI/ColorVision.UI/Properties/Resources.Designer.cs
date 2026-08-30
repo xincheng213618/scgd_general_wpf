@@ -1546,6 +1546,33 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 外观与语言 的本地化字符串。
+        /// </summary>
+        public static string SettingsSectionAppearance {
+            get {
+                return ResourceManager.GetString("SettingsSectionAppearance", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 日志与诊断 的本地化字符串。
+        /// </summary>
+        public static string SettingsSectionDiagnostics {
+            get {
+                return ResourceManager.GetString("SettingsSectionDiagnostics", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 更新与网络 的本地化字符串。
+        /// </summary>
+        public static string SettingsSectionUpdates {
+            get {
+                return ResourceManager.GetString("SettingsSectionUpdates", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 主题 的本地化字符串。
         /// </summary>
         public static string Theme {

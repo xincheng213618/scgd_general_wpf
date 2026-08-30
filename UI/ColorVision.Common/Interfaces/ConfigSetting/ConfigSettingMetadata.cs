@@ -11,6 +11,9 @@ namespace ColorVision.UI
     {
         public const string Universal  = "Universal";
         public const string SectionBasic = "Basic";
+        public const string SectionAppearance = "Appearance";
+        public const string SectionUpdates = "Updates";
+        public const string SectionDiagnostics = "Diagnostics";
         public const string SectionSearch = "Search";
         public const string SectionFileArchive = "FileArchive";
         public const string SectionAdvancedServices = "Services";

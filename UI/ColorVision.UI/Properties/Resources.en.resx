@@ -578,4 +578,7 @@
   <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
     <value>When enabled, update checks and marketplace requests connect directly to the public service. When disabled, the Windows system proxy is used. Changes apply to the next request.</value>
   </data>
+  <data name="SettingsSectionAppearance" xml:space="preserve"><value>Appearance and language</value></data>
+  <data name="SettingsSectionUpdates" xml:space="preserve"><value>Updates and network</value></data>
+  <data name="SettingsSectionDiagnostics" xml:space="preserve"><value>Logging and diagnostics</value></data>
 </root>

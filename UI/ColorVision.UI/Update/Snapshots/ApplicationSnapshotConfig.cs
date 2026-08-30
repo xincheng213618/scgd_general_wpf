@@ -8,7 +8,7 @@ namespace ColorVision.Update
     {
         public static ApplicationSnapshotConfig Instance => ConfigService.Instance.GetRequiredService<ApplicationSnapshotConfig>();
 
-        [ConfigSetting(Order = 510, Section = ConfigSettingConstants.SectionBasic, Description = "CreateSnapshotBeforeUpdateDescription")]
+        [ConfigSetting(Order = 510, Section = ConfigSettingConstants.SectionUpdates, Description = "CreateSnapshotBeforeUpdateDescription")]
         [DisplayName("CreateSnapshotBeforeUpdate")]
         public bool CreateSnapshotBeforeUpdate
         {

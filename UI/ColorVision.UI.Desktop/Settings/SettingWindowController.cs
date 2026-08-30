@@ -33,12 +33,12 @@ namespace ColorVision.UI.Desktop.Settings
             _currentGroupDescription = currentGroupDescription;
         }
 
-        public void LoadConfigSettings()
+        public void LoadConfigSettings(IEnumerable<ConfigSettingMetadata>? settings = null)
         {
             _settingEntries.Clear();
             _settingsContentPanel.Children.Clear();
 
-            var sortedSettings = ConfigSettingManager.GetInstance().GetAllSettings();
+            var sortedSettings = settings ?? ConfigSettingManager.GetInstance().GetAllSettings();
             ConfigSettingMetadata? applicationUpdateSetting = null;
             ConfigSettingMetadata? pluginUpdateSetting = null;
 
@@ -152,7 +152,7 @@ namespace ColorVision.UI.Desktop.Settings
                 Group = ConfigSettingConstants.Universal,
                 Name = SettingResources.StartupCheckUpdates,
                 Description = SettingResources.StartupCheckUpdatesDescription,
-                Section = ConfigSettingConstants.SectionBasic,
+                Section = ConfigSettingConstants.SectionUpdates,
                 Type = ConfigSettingType.Property,
                 BindingName = nameof(AggregatedBoolSetting.IsChecked),
                 Source = source
@@ -289,6 +289,9 @@ namespace ColorVision.UI.Desktop.Settings
                 return "\uE713";
 
             string text = $"{group} {displayName}".ToLowerInvariant();
+            if (text.Contains("maintenance") || text.Contains("维护")) return "\uE74D";
+            if (text.Contains("dump") || text.Contains("转储")) return "\uE9D9";
+            if (text.Contains("remote") || text.Contains("局域网")) return "\uE968";
             if (text.Contains("mcp")) return "\uE968";
             if (text.Contains("communication") || text.Contains("protocol") || text.Contains("通信")) return "\uE968";
             if (text.Contains("hot") || text.Contains("key") || text.Contains("快捷")) return "\uE765";

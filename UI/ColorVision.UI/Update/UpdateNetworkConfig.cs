@@ -21,7 +21,7 @@ namespace ColorVision.Update
 
         public static UpdateNetworkConfig Instance => ConfigService.Instance.GetRequiredService<UpdateNetworkConfig>();
 
-        [ConfigSetting(Order = 520, Section = ConfigSettingConstants.SectionBasic, Description = "DisableSystemProxyForUpdatesDescription")]
+        [ConfigSetting(Order = 520, Section = ConfigSettingConstants.SectionUpdates, Description = "DisableSystemProxyForUpdatesDescription")]
         [DisplayName("DisableSystemProxyForUpdates")]
         public bool DisableSystemProxyForUpdates
         {

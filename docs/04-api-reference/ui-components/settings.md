@@ -45,6 +45,8 @@ related: ["ui.desktop", "ui.configuration", "ui.property-grid", "ui.discovery", 
 
 ## 侧栏、搜索与自定义页面
 
+常规页面按元数据分成带标题的卡片：主题与语言使用 `Appearance`，聚合启动更新、更新前快照和代理设置使用 `Updates`，日志级别使用 `Diagnostics`；其它设置继续沿用原分区。侧栏与属性编辑器能力保留，切换导航组或更新搜索会将内容滚动回顶部。通用行保留可换行说明，非布尔编辑器采用较紧凑的右侧宽度。
+
 `SettingWindowController` 在加载时把元数据变成 `SettingEntry`；缺少属性源、绑定名或对应属性的条目不能成为普通属性行。`SettingMetadataResolver` 负责标题、说明、导航分组、内容分区和搜索文本。
 
 | 行为 | 当前规则 |
