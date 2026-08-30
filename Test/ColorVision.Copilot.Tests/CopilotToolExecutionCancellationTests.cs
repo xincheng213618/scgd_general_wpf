@@ -237,10 +237,12 @@ public sealed class CopilotToolExecutionCancellationTests
         }
     }
 
-    [Fact]
-    public async Task SettledWriteCancellationIsNotMisclassifiedAsUnknownOutcome()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SettledWriteCancellationDoesNotProveThatNoSideEffectsOccurred(bool performPartialWrite)
     {
-        var tool = new SelfCancellingWriteTool();
+        var tool = new SelfCancellingWriteTool(performPartialWrite);
         var executor = new CopilotToolExecutor();
 
         var exception = await Assert.ThrowsAsync<CopilotToolExecutionCancellationException>(() =>
@@ -249,9 +251,11 @@ public sealed class CopilotToolExecutionCancellationTests
                 _ => { },
                 CancellationToken.None));
 
-        Assert.Equal(CopilotToolExecutionState.Cancelled, exception.Outcome.Execution.State);
-        Assert.Equal(CopilotToolFailureKind.Cancelled, exception.Outcome.Result.FailureKind);
-        Assert.NotEqual(CopilotToolFailureCode.OutcomeUnknown, exception.Outcome.Result.FailureCode);
+        Assert.Equal(performPartialWrite ? 1 : 0, tool.CompletedWrites);
+        Assert.Equal(CopilotToolExecutionState.Interrupted, exception.Outcome.Execution.State);
+        Assert.Equal(CopilotToolFailureKind.OutcomeUnknown, exception.Outcome.Result.FailureKind);
+        Assert.Equal(CopilotToolFailureCode.OutcomeUnknown, exception.Outcome.Result.FailureCode);
+        Assert.False(exception.Outcome.Execution.RetryEligible);
     }
 
     private static CopilotToolInvocation CreateInvocation(
@@ -366,8 +370,10 @@ public sealed class CopilotToolExecutionCancellationTests
         }
     }
 
-    private sealed class SelfCancellingWriteTool : ICopilotFrameworkApprovedTool
+    private sealed class SelfCancellingWriteTool(bool performPartialWrite) : ICopilotFrameworkApprovedTool
     {
+        public int CompletedWrites { get; private set; }
+
         public string Name => "SelfCancellingWriteTool";
 
         public string Description => "Cancels itself after the executor records that it started.";
@@ -387,7 +393,11 @@ public sealed class CopilotToolExecutionCancellationTests
         public Task<CopilotToolResult> ExecuteApprovedAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
-            CancellationToken cancellationToken) => Task.FromCanceled<CopilotToolResult>(
-                new CancellationToken(canceled: true));
+            CancellationToken cancellationToken)
+        {
+            if (performPartialWrite)
+                CompletedWrites++;
+            return Task.FromCanceled<CopilotToolResult>(new CancellationToken(canceled: true));
+        }
     }
 }

@@ -24,6 +24,8 @@ namespace ColorVision.Copilot
             {
                 Endpoint = NormalizeEndpoint(profile.BaseUrl),
                 Transport = new HttpClientPipelineTransport(httpClient),
+                // ColorVision owns bounded retries and accounts for every provider attempt.
+                RetryPolicy = new ClientRetryPolicy(0),
             };
             var credential = new ApiKeyCredential(profile.ApiKey);
             if (CopilotOpenAiRequestPolicy.UsesResponsesApi(profile))

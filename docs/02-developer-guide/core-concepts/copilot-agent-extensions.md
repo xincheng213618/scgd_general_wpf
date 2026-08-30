@@ -4,9 +4,9 @@ knowledge_type: "topic"
 status: "current"
 summary: "业务模块动态上下文、外部 MCP client 和 Hook 如何进入统一宿主权限与生命周期。"
 aliases: ["业务模块如何接入 Copilot","外部 MCP 如何授权","Hook 能否绕过审批","图像上下文包含像素吗","模板JSON上下文是否完整","CopilotAgentExtensionRegistry","ICopilotModuleTool","EditTemplateJson","AskCopilotAboutImage"]
-code_paths: ["UI/ColorVision.Common/Interfaces/Copilot/CopilotAgentExtensionRegistry.cs","ColorVision/Copilot/Agent/CopilotMcpToolProvider.cs","ColorVision/Copilot/Agent/CopilotToolExecution.Hooks.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowEngineManager.cs","Engine/ColorVision.Engine/FlowProcessing/Integration/FlowCopilotService.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Templates/Jsons/EditTemplateJson.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/AppCommand/ZoomEditorToolContextMenu.cs","UI/ColorVision.Common/Interfaces/Copilot/CopilotBusinessContextBuilder.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotMcpClientConfigurationTests.cs","Test/ColorVision.Copilot.Tests/CopilotExternalMcpRefreshTests.cs","Test/ColorVision.Copilot.Tests/CopilotToolExecutionHookIntegrityTests.cs"]
-related: ["copilot.runtime","copilot.mcp-server","platform.extensibility"]
+code_paths: ["UI/ColorVision.Common/Interfaces/Copilot/CopilotAgentExtensionRegistry.cs","ColorVision/Copilot/Agent/CopilotMcpToolProvider.cs","ColorVision/Copilot/Agent/CopilotToolExecution.Hooks.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowEngineManager.cs","Engine/ColorVision.Engine/FlowProcessing/Integration/FlowCopilotService.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Templates/Jsons/EditTemplateJson.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/AppCommand/ZoomEditorToolContextMenu.cs","UI/ColorVision.Common/Interfaces/Copilot/CopilotBusinessContextBuilder.cs","ColorVision/Copilot/Agent/CopilotMcpToolAdapter.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotMcpClientConfigurationTests.cs","Test/ColorVision.Copilot.Tests/CopilotExternalMcpRefreshTests.cs","Test/ColorVision.Copilot.Tests/CopilotToolExecutionHookIntegrityTests.cs","Test/ColorVision.Copilot.Tests/CopilotExternalMcpToolOutcomeTests.cs"]
+related: ["copilot.runtime","copilot.mcp-server","platform.extensibility","copilot.session-tools","copilot.tool-contracts"]
 ---
 
 # Copilot 扩展、MCP 与 Hook
@@ -46,9 +46,11 @@ Copilot 使用官方 `ModelContextProtocol.Core` SDK 连接显式配置的 Strea
 - 若服务通过 `ServerCapabilities.Tools.ListChanged` 声明支持工具列表变更，client lease 会注册 `notifications/tools/list_changed` 处理器；收到通知后立即使对应缓存失效，下一轮强制实时发现。处理器先于 client 释放，只在当前请求连接存续期间监听；TTL 和设置页 `Refresh Discovery` 仍是无活跃连接时的兜底。ColorVision 自带 MCP server 尚不能主动发送该通知，因此不会虚假声明此能力。
 - SDK 的 `McpClient` 只拥有会话 transport，不拥有外层 `HttpClientTransport`；provider 必须保留外层 HTTP 所有者，并在运行时 lease 或诊断／失败清理中按通知处理器、client、外层 transport 的顺序有界释放，最后关闭其 `HttpClient` 包装器。
 - 设置页 `Refresh Discovery` 通过 `CopilotMcpToolProvider.RefreshDiscoveryAsync` 强制绕过缓存，顺序核查最多 8 个启用服务，保留单服务连接超时、分页和定义大小限制。诊断不会因运行时已合并 64 个工具而漏查后续服务；它只更新缓存／健康并及时释放各连接，不发布可调用工具或裁剪运行时 capability catalog。Agent 的 `DiscoverAsync` 仍限制单服务 32、单请求 64 个外部工具。实时发现会比较有界能力签名、保留或递增服务能力 revision 并发出进程内变更事件；健康快照标明本轮使用 live 还是 cached discovery，并在通知已使缓存失效时显示需要实时刷新。`CopilotExternalMcpRefreshTests` 用真实 SDK/provider 与假 HTTP 核对诊断范围、上限、超时和运行时原有预算，不调用真实服务。
-- MCP JSON Schema 会完整传给模型；本地先验证顶层必填字段、未知字段和参数总长度，嵌套约束仍由远端 MCP 服务权威校验。
+- 进入运行时的 MCP JSON Schema 会传给模型；本地通过共享 `CopilotToolInputContractValidator` 递归验证支持的嵌套对象、数组及字段约束，并限制参数总长度。声明不支持约束的工具不会暴露；本地输入校验失败时不发送 `tools/call`。远端仍负责自己的权限与业务校验，本地 Schema 通过不证明远端操作可执行。共享规则见[输入校验与无效调用](./copilot-agent-tool-contracts.md#输入校验与无效调用)。
 - 工具发现会记录进程内健康快照，包括连接状态、发现数量和实际暴露数量；设置页只显示紧凑摘要，不把连接错误铺到主聊天区。
 - 单个服务不可用只产生运行时诊断，不会终止 Agent 请求；普通聊天界面隐藏这类基础设施噪声。
+
+写入或非幂等 MCP 调用进入 SDK 后，如果因传输错误、取消、响应损坏或结果解析失败而未取得可用的协议回复，适配器返回 `OutcomeUnknown` / `tool_outcome_unknown`，不能把本地请求结束理解为远端没有执行。结果只包含固定说明，不回显异常正文；模型输出与工具事件保留同一失败码，后续 checkpoint 禁止直接恢复工具任务，需重新规划并核对外部状态；无工具的 Finalize 仍可整理已有结果，详见[显式有界重试](./copilot-agent-session-and-tools.md#显式有界重试)。调用前已取消、未批准或本地参数无效时不会发送 `tools/call`；正常返回的 `CallToolResult`（含 `isError`）和有效 JSON-RPC 错误回复仍保留原有处理，不因失败本身被改判为未知。只读幂等工具也保留既有重试规则。`CopilotExternalMcpToolOutcomeTests` 通过正式 provider、SDK 与受控 HTTP 覆盖远端模拟写入后的丢包、坏 JSON、取消，以及审批、嵌套参数和明确拒绝对照；不调用真实远程设备。
 
 设置中的每行由名称、Streamable HTTP 地址、token 环境变量名、默认策略和工具白名单五段组成。下面只是配置格式示例，保存/发现/实际工具调用仍是分别授权的动作；不要把凭据值填进第三段：
 
