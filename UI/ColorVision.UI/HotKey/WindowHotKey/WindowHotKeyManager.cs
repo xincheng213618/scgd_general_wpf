@@ -29,8 +29,15 @@ namespace ColorVision.UI.HotKey.WindowHotKey
             {
                 registration.Dispose();
             }
+            foreach (var (hotkeys, registration) in Registrations)
+            {
+                if (!ReferenceEquals(hotkeys.Registration, registration)) continue;
+                hotkeys.Registration = null;
+                hotkeys.IsRegistered = false;
+            }
             Registrations.Clear();
             CallbackRegistrations.Clear();
+            if (control is Window window) window.Closed -= Window_Closed;
             Instances.Remove(control);
         }
 
@@ -61,7 +68,19 @@ namespace ColorVision.UI.HotKey.WindowHotKey
 
         public IHotkeyRegistration? RegisterHandle(HotKeys hotkeys)
         {
-            if (hotkeys.HotKeyHandler == null) return null;
+            return TryRegisterHandle(hotkeys).Registration;
+        }
+
+        internal HotkeyRegistrationAttempt TryRegisterHandle(HotKeys hotkeys)
+        {
+            if (hotkeys.HotKeyHandler == null) return new(null, "快捷键没有可执行的操作。");
+            if (Registrations.TryGetValue(hotkeys, out var existing))
+            {
+                if (WindowHotKey.Matches(existing, hotkeys.Hotkey, hotkeys.HotKeyHandler))
+                    return new(existing);
+                existing.Dispose();
+                Registrations.Remove(hotkeys);
+            }
 
             hotkeys.Control = control;
             var registration = WindowHotKey.Register(control, hotkeys.Hotkey, hotkeys.HotKeyHandler);
@@ -72,11 +91,17 @@ namespace ColorVision.UI.HotKey.WindowHotKey
                 Registrations[hotkeys] = registration;
             }
 
-            return registration;
+            return new(registration, registration == null && !hotkeys.Hotkey.IsEmpty ? "此控件内已经注册了相同快捷键。" : null);
         }
 
         public bool Register(Hotkey hotkey, HotKeyCallBackHanlder callBack)
         {
+            if (CallbackRegistrations.TryGetValue(callBack, out var existing))
+            {
+                if (WindowHotKey.Matches(existing, hotkey, callBack)) return true;
+                existing.Dispose();
+                CallbackRegistrations.Remove(callBack);
+            }
             var registration = WindowHotKey.Register(control, hotkey, callBack);
             if (registration == null)
                 return false;
@@ -86,9 +111,10 @@ namespace ColorVision.UI.HotKey.WindowHotKey
 
         public bool UnRegister(HotKeys hotkeys)
         {
-            if (Registrations.Remove(hotkeys, out var registration))
+            if (Registrations.TryGetValue(hotkeys, out var registration))
             {
                 registration.Dispose();
+                Registrations.Remove(hotkeys);
             }
             else
             {
@@ -101,9 +127,10 @@ namespace ColorVision.UI.HotKey.WindowHotKey
 
         public bool UnRegister(HotKeyCallBackHanlder callBack)
         {
-            if (CallbackRegistrations.Remove(callBack, out var registration))
+            if (CallbackRegistrations.TryGetValue(callBack, out var registration))
             {
                 registration.Dispose();
+                CallbackRegistrations.Remove(callBack);
             }
             return true;
         }

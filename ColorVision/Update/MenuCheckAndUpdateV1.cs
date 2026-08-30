@@ -7,7 +7,7 @@ namespace ColorVision.Update
 {
     public class MenuCheckAndUpdateV1 : MenuItemBase, IHotKey
     {
-        public HotKeys HotKeys => new HotKeys(Properties.Resources.CheckForUpdates, new Hotkey(Key.U, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new HotKeys(Properties.Resources.CheckForUpdates, new Hotkey(Key.U, ModifierKeys.Control), Execute) { Description = BuiltInHotkeyDescriptions.CheckUpdates };
 
         public override string OwnerGuid => MenuItemConstants.Help;
 

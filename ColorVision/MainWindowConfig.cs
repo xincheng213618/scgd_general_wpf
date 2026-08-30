@@ -116,7 +116,7 @@ namespace ColorVision
         public override string OwnerGuid => MenuItemConstants.View;
         public override string Header => Properties.Resources.MenuViewStatusBar;
 
-        public HotKeys HotKeys => new(Properties.Resources.MenuViewStatusBar, new Hotkey(Key.B, ModifierKeys.Control | ModifierKeys.Shift), Execute);
+        public HotKeys HotKeys => new(Properties.Resources.MenuViewStatusBar, new Hotkey(Key.B, ModifierKeys.Control | ModifierKeys.Shift), Execute) { Description = BuiltInHotkeyDescriptions.ToggleStatusBar };
 
         public override void Execute()
         {

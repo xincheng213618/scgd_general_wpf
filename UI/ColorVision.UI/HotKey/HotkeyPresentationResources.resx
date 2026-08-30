@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="CustomAction" xml:space="preserve"><value>自定义操作</value></data>
+  <data name="DescriptionUnavailable" xml:space="preserve"><value>此操作尚未提供详细说明。</value></data>
+  <data name="OtherCategory" xml:space="preserve"><value>其他操作</value></data>
+  <data name="UnknownSource" xml:space="preserve"><value>未提供来源</value></data>
+  <data name="OpenSettings" xml:space="preserve"><value>打开设置窗口，调整应用选项。</value></data>
+  <data name="OpenLog" xml:space="preserve"><value>打开日志窗口，查看和筛选应用日志。</value></data>
+  <data name="CheckUpdates" xml:space="preserve"><value>打开更新检查窗口，检查主程序与兼容插件更新。</value></data>
+  <data name="ToggleStatusBar" xml:space="preserve"><value>显示或隐藏主窗口底部状态栏。</value></data>
+</root>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="CustomAction" xml:space="preserve"><value>Custom action</value></data>
+  <data name="DescriptionUnavailable" xml:space="preserve"><value>No detailed description has been provided for this action.</value></data>
+  <data name="OtherCategory" xml:space="preserve"><value>Other actions</value></data>
+  <data name="UnknownSource" xml:space="preserve"><value>Source not provided</value></data>
+  <data name="OpenSettings" xml:space="preserve"><value>Open Settings to adjust application options.</value></data>
+  <data name="OpenLog" xml:space="preserve"><value>Open the log window to view and filter application logs.</value></data>
+  <data name="CheckUpdates" xml:space="preserve"><value>Open the update check window for the application and compatible plugins.</value></data>
+  <data name="ToggleStatusBar" xml:space="preserve"><value>Show or hide the status bar at the bottom of the main window.</value></data>
+</root>

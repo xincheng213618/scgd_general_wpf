@@ -5,7 +5,7 @@ status: "current"
 summary: "设置窗口的发现缓存、侧栏搜索、活对象编辑和自定义页面生命周期；普通选项关窗不撤销，启动检查更新的勾选只表示至少一个更新开关开启。"
 aliases: ["设置窗口", "选项", "设置搜索", "自定义设置页", "启动检查更新", "SettingWindow", "SettingWindowController", "SettingRowFactory", "SettingMetadataResolver", "ConfigSettingManager", "IConfigSettingProvider", "ConfigSettingMetadata", "AggregatedBoolSetting", "MenuOptions"]
 code_paths: ["UI/ColorVision.UI.Desktop/Settings", "UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs", "UI/ColorVision.Common/Interfaces/ConfigSetting", "UI/ColorVision.UI/AssemblyHandler.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs", "Test/ColorVision.UI.Tests/ConfigServiceAdaptersTests.cs", "Test/ColorVision.UI.Tests/StorageMaintenanceTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs", "Test/ColorVision.UI.Tests/ConfigServiceAdaptersTests.cs", "Test/ColorVision.UI.Tests/StorageMaintenanceTests.cs", "Test/ColorVision.UI.Tests/HotkeySettingsTests.cs"]
 related: ["ui.desktop", "ui.configuration", "ui.property-grid", "ui.discovery", "ui.hotkeys", "ui.localization", "operations.exports", "delivery.update", "ui.storage-maintenance"]
 ---
 
@@ -23,7 +23,7 @@ related: ["ui.desktop", "ui.configuration", "ui.property-grid", "ui.discovery", 
 
 设置导入是另一条有写入副作用的链路，见[导入导出](../../01-user-guide/data-management/export-import.md)；不要把进入设置窗口当成只读检查的保证。
 
-自定义页不能套用普通属性行的提交规则。例如[快捷键页](./hotkeys.md)先编辑副本，其页面保存才重新注册并更新配置内存；未提交草稿不会因外层关窗保存而自动应用，已经应用的键位也不会被关窗撤销。
+自定义页不能套用普通属性行的提交规则。例如[快捷键页](./hotkeys.md)使用可搜索的动作列表和单项编辑弹窗：弹窗候选是副本，确认后立即应用并保存；清除、单项恢复和确认全部恢复也各自提交。取消弹窗不应用候选，已成功应用的键位不能靠关闭设置窗口撤销；外层关窗保存不会自动提交未确认的快捷键草稿。
 
 [语言编辑器](./localization.md)又是不同边界：选择后立即请求确认，确认便保存配置并重启应用，不等普通选项窗口关闭；取消只处理该编辑器的文化属性，不是撤销所有选项。
 
@@ -48,6 +48,8 @@ related: ["ui.desktop", "ui.configuration", "ui.property-grid", "ui.discovery", 
 常规页面按元数据分成带标题的卡片：主题与语言使用 `Appearance`，聚合启动更新、更新前快照和代理设置使用 `Updates`，日志级别使用 `Diagnostics`；其它设置继续沿用原分区。侧栏与属性编辑器能力保留，切换导航组或更新搜索会将内容滚动回顶部。通用行保留可换行说明，非布尔编辑器采用较紧凑的右侧宽度。
 
 “存储与维护”通过独立 `IConfigSettingProvider` 页面接入，不在普通设置行上即时执行删除。扫描、确认、单项/选中项清理、数据与备份入口、选择性下次启动重置见[存储清理与设置重置](./storage-maintenance.md)。该页忙碌时的关闭拦截与卸载取消是页面自己的契约，不表示所有自定义设置页自动拥有相同协议。
+
+“快捷键”页内部另有动作搜索，匹配名称、说明、ID、分类、来源和键位文字；它与设置窗口侧栏搜索独立。侧栏不会自动递归查询快捷键列表的每个动作，详见[快捷键编辑](./hotkeys.md)。
 
 `SettingWindowController` 在加载时把元数据变成 `SettingEntry`；缺少属性源、绑定名或对应属性的条目不能成为普通属性行。`SettingMetadataResolver` 负责标题、说明、导航分组、内容分区和搜索文本。
 
@@ -88,3 +90,5 @@ controller 特判 Property 项的 `IsAutoUpdate`：源对象的运行时类型�
 上表省略前缀的 `Settings/` 路径均相对于 `UI/ColorVision.UI.Desktop/`。`PropertyEditorContractTests` 覆盖通用 helper 的绑定、只读属性、失败降级和实例复用，不覆盖整个设置窗口。`ConfigServiceAdaptersTests` 中名称含 `ConfigSettingManager_WorksWith...` 的用例只模拟对象解析，未构造 manager，不能作为设置发现或窗口集成测试。
 
 `StorageMaintenanceTests` 通过注入独立元数据构造真实设置窗口，覆盖分区标题、搜索、切组回顶和说明文本，并检查中英文、深浅主题与窄窗口下的维护控件布局。该入口不调用生产设置发现，也不操作真实配置或缓存；它不替代真实 provider 发现、关窗保存、配置重载重绑定或更新安装验证。文档检索与网站校验不填补这些运行时缺口；实际修改设置、导入和更新检查应在获授权的隔离环境中单独验证。
+
+`HotkeySettingsTests` 同样通过独立元数据把快捷键页装进真实设置框架，检查中英文、深浅主题和不同宽度下的列表布局、页内文本搜索与空状态；应用委托及键位数据是隔离替身，不调用生产配置或业务操作，具体覆盖与 Win32 验证边界见[快捷键契约](./hotkeys.md)。

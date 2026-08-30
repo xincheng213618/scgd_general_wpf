@@ -566,6 +566,12 @@
             },
             {
               "text": {
+                "root": "快捷键：发现、注册、编辑与释放"
+              },
+              "link": "/04-api-reference/ui-components/hotkeys"
+            },
+            {
+              "text": {
                 "root": "存储清理与选择性设置重置"
               },
               "link": "/04-api-reference/ui-components/storage-maintenance"

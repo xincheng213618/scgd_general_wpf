@@ -13,7 +13,7 @@ namespace ColorVision.UI.LogImp
         public override string InputGestureText => Hotkey.ToString();
 
         public static Hotkey Hotkey { get; set; } = new Hotkey(Key.L, ModifierKeys.Control);
-        public HotKeys HotKeys => new HotKeys(Properties.Resources.Log, Hotkey, Execute);
+        public HotKeys HotKeys => new HotKeys(Properties.Resources.Log, Hotkey, Execute) { Description = BuiltInHotkeyDescriptions.OpenLog };
         public override void Execute() => new WindowLog() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
     }
 }

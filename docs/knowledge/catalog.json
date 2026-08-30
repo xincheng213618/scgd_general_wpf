@@ -6896,7 +6896,7 @@
       "knowledge_id": "ui.hotkeys",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "快捷键的发现、身份、窗口/全局注册和设置草稿；页面保存先重注册并更新配置内存，不直接落盘，注册失败不自动回滚。",
+      "summary": "快捷键的发现、展示、窗口/全局注册与搜索编辑；单个操作只保留一组键位，确认后立即应用并保存，注册或持久化失败按结果执行补偿。",
       "aliases": [
         "快捷键",
         "热键",
@@ -6905,10 +6905,16 @@
         "窗口热键",
         "快捷键冲突",
         "快捷键保存",
+        "快捷键搜索",
         "热键注销",
         "HotkeyService",
         "HotKeyConfig",
         "HotKeysSetting",
+        "HotkeyEditWindow",
+        "HotkeySettingsViewModel",
+        "HotkeyPresentation",
+        "HotkeyApplyResult",
+        "HotkeyCaptureLease",
         "IHotkeyProvider",
         "IHotKey",
         "HotkeyDefinition",
@@ -6922,9 +6928,17 @@
         "UI/ColorVision.UI/HotKey",
         "UI/ColorVision.UI/AssemblyHandler.cs",
         "UI/ColorVision.UI.Desktop/Settings/MenuOptions.cs",
-        "ColorVision/MainWindow.xaml.cs"
+        "UI/ColorVision.UI/LogImp/Menus/MenuLog.cs",
+        "ColorVision/MainWindow.xaml.cs",
+        "ColorVision/MainWindowConfig.cs",
+        "ColorVision/Update/MenuCheckAndUpdateV1.cs"
       ],
-      "test_paths": [],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/HotkeyServiceTests.cs",
+        "Test/ColorVision.UI.Tests/HotkeySettingsTests.cs",
+        "Test/ColorVision.UI.Tests/HotkeyBackendTests.cs",
+        "Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs"
+      ],
       "related": [
         "ui.framework",
         "ui.menus",
@@ -6934,6 +6948,7 @@
       ],
       "code_scopes": [
         "ColorVision",
+        "ColorVision/Update",
         "UI/ColorVision.UI",
         "UI/ColorVision.UI.Desktop"
       ],
@@ -6942,7 +6957,7 @@
       "source": "docs/04-api-reference/ui-components/hotkeys.md",
       "url": "/04-api-reference/ui-components/hotkeys",
       "searchable": true,
-      "source_hash": "c2bc71de9acbad279cd1f850de914f7584bd49f75e3a1ee2632c767ca0ebb711"
+      "source_hash": "ad3ba1b43cee9545cf2c05585bbbeb91fa86951a4664ba49862445e46c75cbf6"
     },
     {
       "knowledge_id": "ui.image-editor",
@@ -7308,7 +7323,7 @@
       "knowledge_id": "ui.menus",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "菜单的插件 DLL 发现、类型缓存、父子树和管理提交；隐藏不禁用快捷键，应用成功提示不保证配置落盘，菜单入口不构成统一鉴权。",
+      "summary": "菜单的插件 DLL 发现、类型缓存、父子树和管理提交；IHotKey 提示随运行时键位更新，隐藏不禁用快捷键，应用成功提示不保证配置落盘，菜单入口不构成统一鉴权。",
       "aliases": [
         "菜单",
         "菜单管理",
@@ -7328,6 +7343,7 @@
         "OwnerGuid",
         "GuidId",
         "InputGestureText",
+        "HotkeyMenuGestureBinding",
         "MenuService",
         "MenuItemManagerService",
         "MenuItemManagerWindow",
@@ -7346,7 +7362,8 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/MenuDiscoveryExclusionTests.cs",
-        "Test/ColorVision.UI.Tests/MenuItemManagerServiceTests.cs"
+        "Test/ColorVision.UI.Tests/MenuItemManagerServiceTests.cs",
+        "Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs"
       ],
       "related": [
         "ui.framework",
@@ -7371,7 +7388,7 @@
       "source": "docs/04-api-reference/ui-components/menus.md",
       "url": "/04-api-reference/ui-components/menus",
       "searchable": true,
-      "source_hash": "adf9248be0951216608adf61caaea8d4a14cb06092467337740666d7d3c3d0fa"
+      "source_hash": "838f1aedf4df23806cc4ee5b0d17f1e68b32ed269c70affd22f93077c98e724e"
     },
     {
       "knowledge_id": "ui.package-boundaries",
@@ -7673,7 +7690,8 @@
       "test_paths": [
         "Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs",
         "Test/ColorVision.UI.Tests/ConfigServiceAdaptersTests.cs",
-        "Test/ColorVision.UI.Tests/StorageMaintenanceTests.cs"
+        "Test/ColorVision.UI.Tests/StorageMaintenanceTests.cs",
+        "Test/ColorVision.UI.Tests/HotkeySettingsTests.cs"
       ],
       "related": [
         "ui.desktop",
@@ -7696,7 +7714,7 @@
       "source": "docs/04-api-reference/ui-components/settings.md",
       "url": "/04-api-reference/ui-components/settings",
       "searchable": true,
-      "source_hash": "8be474f08639d5520371e04bea5ce0aaea80040115c47d9edc1e3a23073f6ebb"
+      "source_hash": "45a220f0850868f1fb929b0e74dcfdc7ac62808caf21378b1cb6ba0e561972f9"
     },
     {
       "knowledge_id": "ui.socket-protocol",

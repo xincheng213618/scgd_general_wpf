@@ -9,7 +9,8 @@ namespace ColorVision.UI.HotKey
         [JsonProperty("Name")]
         public string LegacyName { get; set; } = string.Empty;
 
-        public Hotkey Hotkey { get; set; } = Hotkey.None;
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public Hotkey Hotkey { get; set; } = new();
         public HotKeyKinds Kinds { get; set; } = HotKeyKinds.Windows;
 
         [JsonProperty("IsGlobal")]
@@ -20,7 +21,7 @@ namespace ColorVision.UI.HotKey
         }
 
     #pragma warning disable CA1822
-        public bool ShouldSerializeLegacyName() => false;
+        public bool ShouldSerializeLegacyName() => string.IsNullOrWhiteSpace(Id) && !string.IsNullOrWhiteSpace(LegacyName);
         public bool ShouldSerializeLegacyIsGlobal() => false;
     #pragma warning restore CA1822
 
@@ -29,7 +30,7 @@ namespace ColorVision.UI.HotKey
             return new HotkeySetting
             {
                 Id = hotKeys.Id,
-                Hotkey = hotKeys.Hotkey,
+                Hotkey = new Hotkey(hotKeys.Hotkey.Key, hotKeys.Hotkey.Modifiers),
                 Kinds = hotKeys.Kinds
             };
         }

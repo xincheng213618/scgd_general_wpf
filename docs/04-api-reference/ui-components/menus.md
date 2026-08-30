@@ -2,10 +2,10 @@
 knowledge_id: "ui.menus"
 knowledge_type: "topic"
 status: "current"
-summary: "菜单的插件 DLL 发现、类型缓存、父子树和管理提交；隐藏不禁用快捷键，应用成功提示不保证配置落盘，菜单入口不构成统一鉴权。"
-aliases: ["菜单", "菜单管理", "菜单发现", "菜单隐藏", "菜单父子关系", "菜单重建", "菜单权限", "快捷键提示", "MenuManager", "IMenuItem", "IMenuItemProvider", "MenuItemBase", "MenuItemAttribute", "MenuItemMetadata", "MenuItemScopeKey", "OwnerGuid", "GuidId", "InputGestureText", "MenuService", "MenuItemManagerService", "MenuItemManagerWindow", "MenuSearchProvider"]
+summary: "菜单的插件 DLL 发现、类型缓存、父子树和管理提交；IHotKey 提示随运行时键位更新，隐藏不禁用快捷键，应用成功提示不保证配置落盘，菜单入口不构成统一鉴权。"
+aliases: ["菜单", "菜单管理", "菜单发现", "菜单隐藏", "菜单父子关系", "菜单重建", "菜单权限", "快捷键提示", "MenuManager", "IMenuItem", "IMenuItemProvider", "MenuItemBase", "MenuItemAttribute", "MenuItemMetadata", "MenuItemScopeKey", "OwnerGuid", "GuidId", "InputGestureText", "HotkeyMenuGestureBinding", "MenuService", "MenuItemManagerService", "MenuItemManagerWindow", "MenuSearchProvider"]
 code_paths: ["UI/ColorVision.UI/Menus", "UI/ColorVision.Common/Interfaces/Menus", "UI/ColorVision.UI.Desktop/MenuItemManager", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.Common/MVVM/RelayCommand.cs", "UI/ColorVision.UI/Serach/MenuSearchProvider.cs", "UI/ColorVision.UI/Serach/SearchControl.xaml.cs", "UI/ColorVision.UI/HotKey/HotkeyService.cs", "ColorVision/MainWindow.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/MenuDiscoveryExclusionTests.cs", "Test/ColorVision.UI.Tests/MenuItemManagerServiceTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/MenuDiscoveryExclusionTests.cs", "Test/ColorVision.UI.Tests/MenuItemManagerServiceTests.cs", "Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs"]
 related: ["ui.framework", "ui.discovery", "ui.common", "ui.desktop", "ui.settings", "ui.configuration", "ui.hotkeys", "ui.search", "platform.security", "algorithms.template-menus"]
 ---
 
@@ -50,7 +50,7 @@ Desktop 编辑快照会对相同 ScopeKey 保留首个实时条目，与运行�
 
 manager 的 `FilteredGuids` 是旧式跨目标过滤，`ScopedFilteredItems` 是按目标过滤。被过滤父项的后代按有效 OwnerGuid 递归过滤，父项匹配考虑同目标和 Global；排序/父级覆盖分别来自有效覆盖表。
 
-这些过滤与 `IMenuItem.Visibility` 不同。`CreateMenuItem` 只是将 Header、Icon、InputGestureText、Command、Visibility 和 IsChecked 复制到控件，没有为这些显示字段建立通用更新绑定，也不会把控件勾选回写给源条目。`GetAllMenuItemsFiltered()` 只应用上述 ID 过滤，不等于“当前窗口可见且可执行的菜单”：它可以包含其它目标、Collapsed 条目或没有父项的孤儿，且不检查 `CanExecute`。
+这些过滤与 `IMenuItem.Visibility` 不同。`CreateMenuItem` 将 Header、Icon、Command、Visibility 和 IsChecked 复制到控件，没有为这些字段建立通用更新绑定，也不会把控件勾选回写给源条目。InputGestureText 通常也是复制值，只有 `IHotKey` 菜单通过专用适配跟随运行时组合，见下文。`GetAllMenuItemsFiltered()` 只应用上述 ID 过滤，不等于“当前窗口可见且可执行的菜单”：它可以包含其它目标、Collapsed 条目或没有父项的孤儿，且不检查 `CanExecute`。
 
 | 刷新入口 | 实际影响范围 |
 | --- | --- |
@@ -68,7 +68,16 @@ manager 的 `FilteredGuids` 是旧式跨目标过滤，`ScopedFilteredItems` 是
 
 `MenuSearchProvider` 使用 `GetAllMenuItemsFiltered` 建立搜索项，只额外要求 Header/Command 非空；它不按当前窗口 TargetName、Visibility 或 CanExecute 再过滤。搜索执行处也不统一检查 CanExecute，因此仅有 MenuItemBase 的 predicate 不能建立所有入口的鉴权保证。候选刷新、旧选中项和直接执行的完整边界归[产品搜索契约](./search.md)；菜单重建不主动更新已有搜索集合。
 
-`InputGestureText` 仅为显示文字，不注册 `Ctrl+X` 等快捷键。`HotkeyService` 独立发现 `IHotkeyProvider` / `IHotKey`，还接收显式注册；它不读取菜单隐藏覆盖。已注册快捷键可能仍调用原操作，是否能执行继续取决于该回调自己的检查和[热键注册状态](./hotkeys.md)。菜单管理窗口也没有快捷键编辑字段，不应为它虚构快捷键保存功能。
+`InputGestureText` 仅为显示文字，不注册 `Ctrl+X` 等快捷键。`HotkeyService` 独立发现 `IHotkeyProvider` / `IHotKey`，还接收显式注册；它不读取菜单隐藏覆盖。已注册快捷键可能仍调用原操作，是否能执行继续取决于该回调自己的检查和[热键注册状态](./hotkeys.md)。菜单管理窗口也没有快捷键编辑字段，编辑入口在独立的快捷键设置页。
+
+`MenuManager` 为实现 `IHotKey` 的现有菜单条目附加 `HotkeyMenuGestureBinding`：
+
+- 只读取该条目的 `HotKeys` 声明一次取得明确 ID；未提供 ID 的旧单动作 provider 按与热键发现相同的类型 FullName 规则匹配。不按 Header、Name 或菜单 GuidId 猜测，名称翻译、重名和菜单移动不改变关联。
+- 弱订阅 `HotkeyService.HotKeys` 的集合变化和匹配条目的 `Hotkey` 属性，显示当前运行时组合。菜单先创建、随后加载热键、定义替换、清除与恢复默认都会更新提示；没有匹配运行时项或组合已清除时留空，不回退为可能失效的默认键位。
+- 提示反映组合值，不以临时 `IsRegistered` 变化闪烁；它不是操作系统注册成功的指示灯。适配本身不重新发现 provider、不注册热键、不执行业务回调。声明读取失败只记录警告并留空，不阻止菜单创建。
+- 同时实现多动作 `IHotkeyProvider` 的条目必须在其 `IHotKey` 声明中给出明确动作 ID，适配不会枚举所有动作选一个。非 `IHotKey` 菜单保留原始 InputGestureText。
+
+订阅不把丢弃的 MenuItem 强引用留在运行时集合上，也不把子菜单弹出层的临时 Unloaded 当作永久解绑。此适配只属于 MenuManager 创建的控件，不改变 Common 层的 `ToMenuItem()` 扩展。
 
 `IRightMenuItemProvider` 则由 `MainWindow.InitRightMenuItemPanel` 单独装配右侧按钮，不经 MenuManager 树和隐藏覆盖；其它地方直接使用 `ToMenuItem()` 也不能自动获得 manager 的配置规则。
 
@@ -93,5 +102,7 @@ manager 的 `FilteredGuids` 是旧式跨目标过滤，`ScopedFilteredItems` 是
 `MenuItemManagerServiceTests` 覆盖草稿不暴露原覆盖对象、稀疏覆盖生成与 JSON 序列化、旧快照迁移、作用域区分/展开、父级循环与跨窗口限制、退役条目清理和暂缺插件覆盖保留。测试使用合成菜单，**没有调用 CommitEditingSnapshot，也没有验收真实窗口 Apply、保存失败或快捷键行为**。
 
 `MenuDiscoveryExclusionTests` 断言特定已删除类型不存在，以及两个保留类型能通过候选判定、MySQL 工具的 Owner/Order；不是完整 `LoadMenuForWindow` 集成测试。当前未发现类型晚加载、重复 ID 树、局部刷新、懒命令执行、搜索鉴权和菜单注册生命周期的直接专项覆盖。
+
+`HotkeyMenuBindingTests` 使用隔离的运行时集合、合成菜单和四个内置菜单的只读声明，覆盖原默认键保留、显式/旧类型 ID、先建菜单后加载热键、名称不参与匹配、清除/恢复、定义替换、普通菜单提示保留、重复附加、不可读声明、多动作 ID 要求与丢弃控件的弱引用生命周期。它不调用生产热键注册、配置保存或业务命令，不代表已验收真实 Win32 输入或完整菜单发现。
 
 修改发现/树构建看 `UI/ColorVision.UI/Menus/MenuManager.cs`；修改管理提交看 `UI/ColorVision.UI.Desktop/MenuItemManager/MenuItemManagerService.cs` 和窗口 Apply/Cancel；修改声明/命令看 `UI/ColorVision.Common/Interfaces/Menus/`。验证时分别证明候选进入、树显示、命令实际检查、运行时应用和文件保存，不通过执行真实业务菜单来默认“验收文档”。

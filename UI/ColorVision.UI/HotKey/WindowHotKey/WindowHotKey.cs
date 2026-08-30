@@ -7,6 +7,10 @@ namespace ColorVision.UI.HotKey.WindowHotKey
     {
         private static readonly Dictionary<Control, ControlHotkeyScope> Scopes = new();
 
+        internal static bool Matches(IHotkeyRegistration registration, Hotkey hotkey, HotKeyCallBackHanlder callback)
+            => registration is WindowHotkeyRegistration windowRegistration && windowRegistration.IsRegistered
+                && windowRegistration.Hotkey == hotkey && windowRegistration.Callback == callback;
+
 
         public static IHotkeyRegistration? Register(Control control,Hotkey hotkey, HotKeyCallBackHanlder callBack)
         {
@@ -112,6 +116,8 @@ namespace ColorVision.UI.HotKey.WindowHotKey
                 if (key == Key.System)
                     key = e.SystemKey;
 
+                if (HotkeyDispatchGate.ShouldSuppress(key, isKeyUp: true)) return;
+
                 if (modifiers == ModifierKeys.None && (key == Key.Delete || key == Key.Back || key == Key.Escape))
                     return;
 
@@ -121,6 +127,7 @@ namespace ColorVision.UI.HotKey.WindowHotKey
                 int virtualKey = ((int)modifiers << 8) + (int)key;
                 if (_registrations.TryGetValue(virtualKey, out var registration))
                 {
+                    e.Handled = true;
                     registration.Callback();
                 }
             }
@@ -132,7 +139,7 @@ namespace ColorVision.UI.HotKey.WindowHotKey
             {
                 Scope = scope;
                 VirtualKey = virtualKey;
-                Hotkey = hotkey;
+                Hotkey = new Hotkey(hotkey.Key, hotkey.Modifiers);
                 Callback = callback;
                 IsRegistered = true;
             }
