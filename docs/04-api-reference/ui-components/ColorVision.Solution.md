@@ -17,6 +17,8 @@ related: ["ui.index", "ui.documents", "operations.terminal", "operations.first-r
 
 ## 打开入口的区别
 
+主窗口的可配置“打开文件”默认 Ctrl+O，`CommandInitializer` 的 `ApplicationCommands.Open` 也接到同一文件选择入口；“打开文件夹工作区”默认 Ctrl+Shift+O。工作区列表改用无内建键位的 `SolutionWorkspaceCommands.OpenWorkspace`，在快捷键页显示“未分配”，不再占 Ctrl+O。键位与取消/恢复机制见[快捷键契约](./hotkeys.md)。
+
 | 入口 | 实际分流 | 不能混同的结果 |
 | --- | --- | --- |
 | `ResourceOpenService.Open` | 同步入口仅接受普通文件；先 `FileProcessorFactory.TryOpenFileAction`，未被处理才交给 EditorManager | 文件夹、项目、`.cvsln` 返回失败并要求异步入口；不是同步切换工作区 |

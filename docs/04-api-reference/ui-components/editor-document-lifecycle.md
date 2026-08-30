@@ -56,6 +56,8 @@ related: ["ui.solution", "ui.configuration", "ui.image-editor", "operations.term
 
 ## 保存与重新加载
 
+主窗口可配置的保存/另存为动作先沿当前焦点检查并执行 `ApplicationCommands.Save` / `SaveAs`，不是无条件保存后台文档。内容控件可以接管其命令（例如 Copilot 输入框处理草稿）；只有继续路由到主窗口时才使用下述活动文档入口。另存为不增加内容接口能力：当前图像与3D查看器可导出渲染图/截图，文本编辑器没有因此新增通用另存协议。
+
 主窗口 Save 命令由 `CommandInitializer` 接到活动文档：只有受管理内容同时 `CanSave=true`、`IsDirty=true` 时命令可用。直接调用 `TrySaveActiveDocument` 只检查 `CanSave`，并不额外要求脏状态；`TrySaveDocument(content)` 若找不到管理会话，则直接调用该内容的 `Save()`，也不会先检查 `CanSave`。
 
 受管理保存调用内容的 `Save()`；返回 false 或抛异常会返回失败并显示错误，返回 true 则刷新文件时间/长度快照和标题。服务不会自行清脏状态，不保证内容层的原子写入、备份、冲突检测或失败回滚。保存多个文档也不是统一事务。
@@ -63,6 +65,8 @@ related: ["ui.solution", "ui.configuration", "ui.image-editor", "operations.term
 Reload 要求受管理内容支持重载且 `File.Exists(ResourcePath)`。有未保存修改时询问是否放弃，拒绝则不调用 `ReloadFromDisk()`；接受后由内容实现替换，false 或异常按失败处理。它不是合并外部修改，也不是先自动保存再读。服务层的 true 只沿用内容返回值，不能代替对特定编辑器加载/渲染完成的判断。
 
 ## 关闭、资源重命名与释放
+
+主窗口用独立的 `MenuClose.CloseDocumentCommand` 关闭活动标签（默认 Ctrl+W / Ctrl+F4），CanClose=false 时不执行，也不回退到图像 `ApplicationCommands.Close` 的清空操作。独立窗口若没有声明这条文档命令，则通用关闭菜单按该窗口当前/记忆焦点保留原生 Close 路由；并非所有窗口都关闭标签。
 
 单个文档 Closing 时，非脏内容直接通过；脏内容提供保存、不保存、取消三种选择。选择保存必须让 `Save()` 成功，取消或保存失败会阻止关闭；不保存只是批准关闭，不会主动把内存内容恢复成磁盘版本。
 

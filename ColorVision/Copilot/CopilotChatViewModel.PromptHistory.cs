@@ -230,7 +230,7 @@ namespace ColorVision.Copilot
                 {
                     ShowComposerStashFeedback(
                         "已有暂存草稿",
-                        "现有暂存不会被覆盖。请先发送或移走当前输入，再在空输入框按 Ctrl+S 恢复。");
+                        "现有暂存不会被覆盖。请先发送或移走当前输入，再在空输入框按保存快捷键恢复。");
                     return true;
                 }
 
@@ -249,14 +249,14 @@ namespace ColorVision.Copilot
                 NotifyComposerStashChanged();
                 ShowComposerStashFeedback(
                     "草稿已暂存",
-                    $"已保存 {capturedStash.Text.Length:N0} 个字符和 {capturedStash.Attachments.Count:N0} 个附件；空输入框按 Ctrl+S 可恢复。");
+                    $"已保存 {capturedStash.Text.Length:N0} 个字符和 {capturedStash.Attachments.Count:N0} 个附件；空输入框按保存快捷键可恢复。");
                 return true;
             }
 
             var stash = conversation.ComposerStash;
             if (stash?.HasContent != true)
             {
-                ShowComposerStashFeedback("没有暂存草稿", "请先输入内容或添加附件，再按 Ctrl+S 暂存。");
+                ShowComposerStashFeedback("没有暂存草稿", "请先输入内容或添加附件，再按保存快捷键暂存。");
                 return true;
             }
 

@@ -50,6 +50,9 @@ namespace ColorVision.Copilot
             SizeChanged += CopilotChatPanel_SizeChanged;
             Unloaded += CopilotChatPanel_Unloaded;
             DataObject.AddPastingHandler(PromptTextBox, PromptTextBox_Pasting);
+            PromptTextBox.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save,
+                (_, e) => { SaveComposerDraft(); e.Handled = true; },
+                (_, e) => { e.CanExecute = DataContext is CopilotChatViewModel; e.Handled = true; }));
         }
 
         private void CopilotChatPanel_Loaded(object sender, RoutedEventArgs e)
@@ -159,7 +162,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            if (e.Key == Key.O && Keyboard.Modifiers == ModifierKeys.Control)
+            if (e.Key == Key.C && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
             {
                 if (DataContext is CopilotChatViewModel viewModel
                     && viewModel.CopyLatestResponseCommand.CanExecute(null))
@@ -170,7 +173,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            if (e.Key == Key.T && Keyboard.Modifiers == ModifierKeys.Control)
+            if (e.Key == Key.T && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Alt))
             {
                 if (DataContext is CopilotChatViewModel viewModel
                     && viewModel.ToggleAgentTaskPanelCommand.CanExecute(null))

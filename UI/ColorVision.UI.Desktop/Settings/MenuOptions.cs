@@ -27,8 +27,7 @@ namespace ColorVision.UI.Desktop.Settings
                 return text;
             }
         }
-        public override string? InputGestureText => "Ctrl + I";
-        public HotKeys HotKeys => new(Resources.MenuOptions, new Hotkey(Key.I, ModifierKeys.Control), Execute) { Description = BuiltInHotkeyDescriptions.OpenSettings };
+        public HotKeys HotKeys => new(Resources.MenuOptions, new Hotkey(Key.OemComma, ModifierKeys.Control), Execute) { Description = BuiltInHotkeyDescriptions.OpenSettings };
         public override void Execute()
         {
             new SettingWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();

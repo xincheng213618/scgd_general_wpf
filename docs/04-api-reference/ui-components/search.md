@@ -13,7 +13,7 @@ related: ["ui.framework", "ui.discovery", "ui.menus", "ui.common", "ui.configura
 
 `UI/ColorVision.UI/Serach/` 是实际目录拼写，负责 ColorVision 产品中的搜索框，不是本仓库供 Codex 使用的[知识检索](../../README.md)，也不是遍历仓库或磁盘文件内容的全文引擎。共享接口位于 `UI/ColorVision.Common/Interfaces/Serach/`，具体菜单、模板和工具由各模块贡献。
 
-`MainWindow` 用独立的 WPF CommandBinding 将 `Ctrl+F` 接到 `FocusSearchBox`；窄窗口折叠规则归[宿主装配](../../01-user-guide/interface/main-window.md)。聚焦、查询候选和执行结果是不同阶段；找到入口不证明其业务操作已获授权或成功。
+`MainWindow.Hotkeys.cs` 的 `MenuCommandSearch` 通过可配置动作将默认 `Ctrl+Shift+P` 接到功能搜索，`Ctrl+F` 留给当前编辑器的正文查找；窄窗口使用菜单下方的搜索行，折叠规则归[宿主装配](../../01-user-guide/interface/main-window.md)。聚焦、查询候选和执行结果是不同阶段；找到入口不证明其业务操作已获授权或成功。
 
 ## 候选从哪里来、何时刷新
 

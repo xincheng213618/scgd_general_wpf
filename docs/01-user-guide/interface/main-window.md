@@ -18,11 +18,12 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 | 现象或行为 | 当前实现与检查点 |
 | --- | --- |
 | 主窗口布局 | `ColorVision/MainWindow.xaml` 定义菜单/搜索区域、停靠区和状态栏；工作区内容由具体编辑器和扩展提供 |
-| 搜索框随窗口变窄消失 | `MainWindow.Window_Initialized` 中的大小变化处理在 `ActualWidth < 700` 时折叠 `SearchControl1`；先检查宽度，不要直接判断搜索模块未加载 |
-| 搜索框存在但找不到候选或执行不符合预期 | `Ctrl+F` 通过 WPF CommandBinding 聚焦；候选来源、缓存、类型开关和执行检查归[产品搜索](../../04-api-reference/ui-components/search.md)，不是宿主布局问题 |
+| 搜索框随窗口变窄消失 | `ActualWidth < 700` 时折叠顶部 `SearchControl1`；调用“搜索命令与功能”（默认 Ctrl+Shift+P）会展开菜单下方的 `CompactSearchControl`，Esc 收起，恢复宽窗口也会收起 |
+| 搜索框存在但找不到候选或执行不符合预期 | `MainWindow.Hotkeys.cs` 的可配置动作负责聚焦，Ctrl+F 保留给正文查找；候选来源、缓存、类型开关和执行检查归[产品搜索](../../04-api-reference/ui-components/search.md)，不是宿主布局问题 |
 | 菜单提示了组合键但按键无响应 | `LoadHotKeyFromAssembly()` 独立接入[快捷键注册](../../04-api-reference/ui-components/hotkeys.md)；提示文字不创建注册，先核对具体宿主与模式 |
 | 菜单不出现 | `MenuManager.LoadMenuForWindow(MenuItemConstants.MainWindowTarget, Menu1)` 为宿主装配菜单；按[菜单契约](../../04-api-reference/ui-components/menus.md)核对类型缓存、目标窗口、父子可达性和显示过滤，命令检查另行判断 |
 | 文档或面板位置不对 | 主窗口给 `WorkspaceManager` 设置布局对象，再挂接 `DockViewManagerHost`；文档分发和布局持久化属于 Solution 工作区 |
+| 关闭标签不应清空图像 | `MenuClose.CloseDocumentCommand` 只在活动 LayoutDocument 允许关闭时调用其 Close，沿用未保存确认；不把 ApplicationCommands.Close 的图像清空语义当作关标签 |
 | 状态栏缺项或显示旧状态 | 首次渲染后后台优先级调用 `StatusBarManager.Init`，活动文档变化转给 `OnActiveDocumentChanged`；按[状态栏契约](../../04-api-reference/ui-components/status-bar.md)分开查实例缓存、绑定值和文档快照，不把显示状态当成设备完成证明 |
 | 窗口已显示但某个模块未就绪 | `LoadIMainWindowInitialized` 按 `Order` 调用扩展初始化并记录启动阶段；主窗口出现不等于所有扩展完成初始化 |
 

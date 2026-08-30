@@ -198,8 +198,10 @@ public class HotkeyMultipleBindingTests
             try
             {
                 foreach (HotKeys entry in entries) Assert.Same(entry.Registration, manager.RegisterHandle(entry));
-                Assert.True(owner.RaiseKeyUp(Key.F23).Handled);
-                Assert.True(owner.RaiseKeyUp(Key.F24).Handled);
+                Assert.True(owner.RaiseKeyDown(Key.F23).Handled);
+                Assert.True(owner.RaiseKeyDown(Key.F24).Handled);
+                Assert.False(owner.RaiseKeyUp(Key.F23).Handled);
+                Assert.False(owner.RaiseKeyUp(Key.F24).Handled);
                 Assert.Equal(2, oldInvoked);
                 foreach (HotKeys entry in entries)
                 {
@@ -209,8 +211,8 @@ public class HotkeyMultipleBindingTests
                     Assert.NotSame(original, replacement);
                     Assert.False(original.IsRegistered);
                 }
-                Assert.False(owner.RaiseKeyUp(Key.F24).Handled);
-                Assert.True(owner.RaiseKeyUp(Key.F22).Handled);
+                Assert.False(owner.RaiseKeyDown(Key.F24).Handled);
+                Assert.True(owner.RaiseKeyDown(Key.F22).Handled);
                 Assert.Equal(3, oldInvoked);
                 foreach (HotKeys entry in entries)
                 {
@@ -219,8 +221,10 @@ public class HotkeyMultipleBindingTests
                     Assert.NotSame(original, Require(manager.TryRegisterHandle(entry)));
                     Assert.False(original.IsRegistered);
                 }
-                Assert.True(owner.RaiseKeyUp(Key.F23).Handled);
-                Assert.True(owner.RaiseKeyUp(Key.F22).Handled);
+                Assert.True(owner.RaiseKeyDown(Key.F23).Handled);
+                Assert.True(owner.RaiseKeyDown(Key.F22).Handled);
+                Assert.False(owner.RaiseKeyUp(Key.F23).Handled);
+                Assert.False(owner.RaiseKeyUp(Key.F22).Handled);
                 Assert.Equal(3, oldInvoked);
                 Assert.Equal(2, newInvoked);
                 owner.Close();
@@ -395,10 +399,14 @@ public class HotkeyMultipleBindingTests
             SendMessage(Handle, NativeHotkeys.WMHOTKEY, new IntPtr(id), parameters);
         }
 
-        public KeyEventArgs RaiseKeyUp(Key key)
+        public KeyEventArgs RaiseKeyDown(Key key) => RaiseKeyEvent(key, Keyboard.PreviewKeyDownEvent);
+
+        public KeyEventArgs RaiseKeyUp(Key key) => RaiseKeyEvent(key, Keyboard.PreviewKeyUpEvent);
+
+        private KeyEventArgs RaiseKeyEvent(Key key, RoutedEvent routedEvent)
         {
             HwndSource source = Assert.IsType<HwndSource>(HwndSource.FromHwnd(Handle));
-            KeyEventArgs arguments = new(Keyboard.PrimaryDevice, source, Environment.TickCount, key) { RoutedEvent = Keyboard.PreviewKeyUpEvent };
+            KeyEventArgs arguments = new(Keyboard.PrimaryDevice, source, Environment.TickCount, key) { RoutedEvent = routedEvent };
             Window.RaiseEvent(arguments);
             return arguments;
         }

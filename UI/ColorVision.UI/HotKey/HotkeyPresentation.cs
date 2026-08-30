@@ -130,4 +130,8 @@ public static class BuiltInHotkeyDescriptions
     public static string OpenLog => HotkeyPresentation.GetText("OpenLog");
     public static string CheckUpdates => HotkeyPresentation.GetText("CheckUpdates");
     public static string ToggleStatusBar => HotkeyPresentation.GetText("ToggleStatusBar");
+    public static string OpenAbout => HotkeyPresentation.GetText("OpenAbout");
+    public static string ResetLayout => HotkeyPresentation.GetText("ResetLayout");
+    public static string SearchCommandsName => HotkeyPresentation.GetText("SearchCommandsName");
+    public static string SearchCommands => HotkeyPresentation.GetText("SearchCommands");
 }

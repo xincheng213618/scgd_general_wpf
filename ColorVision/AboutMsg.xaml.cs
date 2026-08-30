@@ -121,17 +121,15 @@ namespace ColorVision
         }
     }
 
-    public class AboutMsgExport : MenuItemBase,IMenuItem
+    public class AboutMsgExport : MenuItemBase, IHotKey
     {
-        public HotKeys HotKeys => new HotKeys(Resources.About, new Hotkey(Key.F1, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(Resources.About, new Hotkey(), Execute) { Description = BuiltInHotkeyDescriptions.OpenAbout };
 
         public override string OwnerGuid => "Help";
         public override string GuidId => "AboutMsg";
 
         public override int Order => 100000;
         public override string Header => Resources.MenuAbout;
-
-        public override string InputGestureText => "Ctrl + F1";
 
         public override void Execute()
         {

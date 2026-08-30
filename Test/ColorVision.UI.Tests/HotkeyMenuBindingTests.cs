@@ -12,21 +12,28 @@ namespace ColorVision.UI.Tests;
 public sealed class HotkeyMenuBindingTests
 {
     [Theory]
-    [InlineData(typeof(ColorVision.UI.Desktop.Settings.MenuOptions), Key.I, ModifierKeys.Control)]
-    [InlineData(typeof(ColorVision.UI.LogImp.MenuLogWindow), Key.L, ModifierKeys.Control)]
-    [InlineData(typeof(ColorVision.Update.MenuCheckAndUpdateV1), Key.U, ModifierKeys.Control)]
-    [InlineData(typeof(ColorVision.ExportMenuViewStatusBar), Key.B, ModifierKeys.Control | ModifierKeys.Shift)]
+    [InlineData(typeof(ColorVision.UI.Desktop.Settings.MenuOptions), Key.OemComma, ModifierKeys.Control)]
+    [InlineData(typeof(ColorVision.UI.LogImp.MenuLogWindow), Key.None, ModifierKeys.None)]
+    [InlineData(typeof(ColorVision.Update.MenuCheckAndUpdateV1), Key.None, ModifierKeys.None)]
+    [InlineData(typeof(ColorVision.ExportMenuViewStatusBar), Key.None, ModifierKeys.None)]
+    [InlineData(typeof(ColorVision.AboutMsgExport), Key.None, ModifierKeys.None)]
+    [InlineData(typeof(ColorVision.Solution.Workspace.MenuResetLayout), Key.None, ModifierKeys.None)]
     public void BuiltInMenusKeepTheirDefaultDeclarationsAndFollowRuntimeOverrides(Type providerType, Key defaultKey, ModifierKeys defaultModifiers)
     {
         WpfTestHost.Invoke(() =>
         {
-            // These four providers have side-effect-free constructors/declarations; do not execute their callbacks.
+            // These providers have side-effect-free constructors/declarations; do not execute their callbacks.
             var source = Assert.IsAssignableFrom<IMenuItem>(Activator.CreateInstance(providerType));
             HotKeys declaration = Assert.IsAssignableFrom<IHotKey>(source).HotKeys;
             Assert.Equal(new Hotkey(defaultKey, defaultModifiers), declaration.DefaultHotkey);
             string id = string.IsNullOrWhiteSpace(declaration.Id) ? providerType.FullName! : declaration.Id;
             var runtime = Runtime(id, Key.F12);
             var menu = new MenuItem { InputGestureText = source.InputGestureText };
+            if (defaultKey == Key.None)
+            {
+                Assert.Empty(declaration.GetDefaultBindings());
+                Assert.True(string.IsNullOrEmpty(menu.InputGestureText));
+            }
 
             HotkeyMenuGestureBinding.Attach(menu, source, new ObservableCollection<HotKeys> { runtime });
 

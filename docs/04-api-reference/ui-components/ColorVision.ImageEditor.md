@@ -42,6 +42,8 @@ related: ["ui.discovery","ui.image-editor-context","ui.property-grid","engine.re
 
 ## 保存前分清输出语义
 
+主窗口可配置的“另存为”（默认 Ctrl+Shift+S）沿焦点调用 SaveAs。图像保留其渲染 PNG 输出语义；3D 查看器新增同一命令接线到截图入口，模型未就绪、加载或导出中不可用。没有将它改成保存原图/模型源文件；独立查看器原有快捷键仍保留。
+
 | 操作或 API | 实际输出 |
 | --- | --- |
 | 界面“另存为” / `Save` / `CaptureSnapshot` | `CaptureSnapshot` 在 UI 线程提交活动绘图编辑并产生 Pbgra32 渲染位图，“另存为”和 `Save` 将其编码为 PNG；不保留原图的高位深 |

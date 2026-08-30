@@ -119,7 +119,7 @@ public sealed class HotkeyBackendTests
                 Assert.NotSame(original, replacement);
                 Assert.False(original.IsRegistered);
             }
-            Assert.True(owner.RaiseKeyUp(owner.Window, Key.F23).Handled);
+            Assert.True(owner.RaiseKeyDown(owner.Window, Key.F23).Handled);
             Assert.Equal(0, oldInvoked);
             Assert.Equal(1, newInvoked);
 
@@ -132,8 +132,8 @@ public sealed class HotkeyBackendTests
                 Assert.NotSame(original, replacement);
                 Assert.False(original.IsRegistered);
             }
-            Assert.False(owner.RaiseKeyUp(owner.Window, Key.F23).Handled);
-            Assert.True(owner.RaiseKeyUp(owner.Window, Key.F24).Handled);
+            Assert.False(owner.RaiseKeyDown(owner.Window, Key.F23).Handled);
+            Assert.True(owner.RaiseKeyDown(owner.Window, Key.F24).Handled);
             Assert.Equal(2, newInvoked);
 
             owner.Close();
@@ -159,16 +159,93 @@ public sealed class HotkeyBackendTests
             using IHotkeyRegistration? duplicate = RoutedHotkeys.Register(parent, new(Key.F23, ModifierKeys.None), () => { });
             Assert.Null(duplicate);
 
-            Assert.True(owner.RaiseKeyUp(child, Key.F23).Handled);
+            Assert.True(owner.RaiseKeyDown(child, Key.F23).Handled);
             Assert.Equal(1, parentInvoked);
             Assert.Equal(0, childInvoked);
             parentRegistrations.Dispose();
-            Assert.True(owner.RaiseKeyUp(child, Key.F23).Handled);
+            Assert.True(owner.RaiseKeyDown(child, Key.F23).Handled);
             Assert.Equal(1, parentInvoked);
             Assert.Equal(1, childInvoked);
             childRegistrations.Dispose();
-            Assert.False(owner.RaiseKeyUp(child, Key.F23).Handled);
+            Assert.False(owner.RaiseKeyDown(child, Key.F23).Handled);
             Assert.Equal(1, childInvoked);
+        });
+    }
+
+    [Fact]
+    public void WindowDispatchesOnInitialKeyDownButNotOnRepeatOrKeyUp()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using KeyboardStateScope keyboard = new();
+            using HiddenWindow owner = new();
+            int invoked = 0;
+            using RegistrationSet registrations = RegisterWindowCombinations(owner.Window, Key.F23, () => invoked++);
+
+            Assert.False(owner.RaiseKeyUp(owner.Window, Key.F23).Handled);
+            Assert.Equal(0, invoked);
+            Assert.True(owner.RaiseKeyDown(owner.Window, Key.F23).Handled);
+            Assert.Equal(1, invoked);
+            for (int index = 0; index < 3; index++)
+                Assert.True(owner.RaiseKeyDown(owner.Window, Key.F23, isRepeat: true).Handled);
+            Assert.False(owner.RaiseKeyUp(owner.Window, Key.F23).Handled);
+            Assert.Equal(1, invoked);
+
+            Assert.True(owner.RaiseKeyDown(owner.Window, Key.F23).Handled);
+            Assert.Equal(2, invoked);
+        });
+    }
+
+    [Fact]
+    public void WindowConsumesPreviewKeyDownBeforeTheSameWpfInputBindingCanExecuteAgain()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using KeyboardStateScope keyboard = new();
+            using HiddenWindow owner = new();
+            Button child = new();
+            owner.Window.Content = child;
+            RoutedCommand command = new();
+            int commandInvoked = 0;
+            int shortcutInvoked = 0;
+            owner.Window.CommandBindings.Add(new CommandBinding(command, (_, _) => commandInvoked++, (_, e) => e.CanExecute = true));
+            foreach (ModifierKeys modifiers in AllModifiers())
+                owner.Window.InputBindings.Add(new KeyBinding(command, new KeyGesture(Key.F23, modifiers)) { CommandTarget = owner.Window });
+
+            // The baseline proves that this hidden host exercises WPF's real command route.
+            owner.RaiseKeyDownAndBubble(child, Key.F23);
+            Assert.Equal(1, commandInvoked);
+            using RegistrationSet registrations = RegisterWindowCombinations(owner.Window, Key.F23, () =>
+            {
+                shortcutInvoked++;
+                if (command.CanExecute(null, owner.Window))
+                    command.Execute(null, owner.Window);
+            });
+
+            Assert.True(owner.RaiseKeyDownAndBubble(child, Key.F23).Handled);
+            Assert.False(owner.RaiseKeyUp(child, Key.F23).Handled);
+            Assert.Equal(1, shortcutInvoked);
+            Assert.Equal(2, commandInvoked);
+            Assert.True(owner.RaiseKeyDownAndBubble(child, Key.F23, isRepeat: true).Handled);
+            Assert.Equal(1, shortcutInvoked);
+            Assert.Equal(2, commandInvoked);
+
+            HotkeyService captureService = CreateIsolatedService();
+            using (HotkeyCaptureLease lease = captureService.BeginCapture())
+            {
+                keyboard.SetDown(Key.F23, true);
+            }
+            Assert.True(HotkeyDispatchGate.HasPendingKeyRelease);
+            Assert.True(owner.RaiseKeyDownAndBubble(child, Key.F23, isRepeat: true).Handled);
+            Assert.Equal(1, shortcutInvoked);
+            Assert.Equal(2, commandInvoked);
+            keyboard.SetDown(Key.F23, false);
+            owner.RaiseKeyUp(child, Key.F23);
+            Assert.False(HotkeyDispatchGate.HasPendingKeyRelease);
+
+            registrations.Dispose();
+            owner.RaiseKeyDownAndBubble(child, Key.F23);
+            Assert.Equal(3, commandInvoked);
         });
     }
 
@@ -197,6 +274,7 @@ public sealed class HotkeyBackendTests
                 Assert.False(entry.IsRegistered);
                 owner.SendHotkey(original);
                 owner.SendHotkey(direct);
+                Assert.False(owner.RaiseKeyDown(owner.Window, Key.F24).Handled);
                 Assert.False(owner.RaiseKeyUp(owner.Window, Key.F24).Handled);
                 Assert.Equal(0, managedInvoked);
                 Assert.Equal(0, directInvoked);
@@ -214,7 +292,8 @@ public sealed class HotkeyBackendTests
                 using (conflict.Registration) Assert.Null(conflict.Registration);
                 owner.SendHotkey(entry.Registration!);
                 owner.SendHotkey(direct);
-                Assert.True(owner.RaiseKeyUp(owner.Window, Key.F24).Handled);
+                Assert.True(owner.RaiseKeyDown(owner.Window, Key.F24).Handled);
+                Assert.False(owner.RaiseKeyUp(owner.Window, Key.F24).Handled);
                 Assert.Equal(1, managedInvoked);
                 Assert.Equal(1, directInvoked);
                 Assert.Equal(1, windowInvoked);
@@ -258,7 +337,7 @@ public sealed class HotkeyBackendTests
     }
 
     [Fact]
-    public void HeldKeyAfterCaptureSuppressesNativeMessageAndConsumesTheFirstWindowKeyUp()
+    public void HeldKeyAfterCaptureSuppressesDispatchUntilEvenAHandledKeyUpReleasesTheGate()
     {
         WpfTestHost.Invoke(() =>
         {
@@ -267,6 +346,7 @@ public sealed class HotkeyBackendTests
             int nativeInvoked = 0;
             int windowInvoked = 0;
             using IHotkeyRegistration global = RequireNativeRegistration(owner, Key.F23, () => nativeInvoked++);
+            owner.Window.PreviewKeyUp += (_, e) => e.Handled = true;
             using RegistrationSet local = RegisterWindowCombinations(owner.Window, Key.F23, () => windowInvoked++);
             HotkeyService service = CreateIsolatedService();
             using HotkeyCaptureLease lease = service.BeginCapture();
@@ -276,12 +356,17 @@ public sealed class HotkeyBackendTests
             Assert.True(HotkeyDispatchGate.HasPendingKeyRelease);
 
             owner.SendHotkey(global);
+            Assert.True(owner.RaiseKeyDownAndBubble(owner.Window, Key.F23).Handled);
+            Assert.True(owner.RaiseKeyDownAndBubble(owner.Window, Key.F23, isRepeat: true).Handled);
             Assert.Equal(0, nativeInvoked);
+            Assert.Equal(0, windowInvoked);
             keyboard.SetDown(Key.F23, false);
-            Assert.False(owner.RaiseKeyUp(owner.Window, Key.F23).Handled);
+            Assert.True(owner.RaiseKeyUp(owner.Window, Key.F23).Handled);
             Assert.Equal(0, windowInvoked);
             Assert.False(HotkeyDispatchGate.HasPendingKeyRelease);
             Assert.True(owner.RaiseKeyUp(owner.Window, Key.F23).Handled);
+            Assert.Equal(0, windowInvoked);
+            Assert.True(owner.RaiseKeyDown(owner.Window, Key.F23).Handled);
             owner.SendHotkey(global);
             Assert.Equal(1, windowInvoked);
             Assert.Equal(1, nativeInvoked);
@@ -436,11 +521,28 @@ public sealed class HotkeyBackendTests
             SendMessage(Handle, NativeHotkeys.WMHOTKEY, new IntPtr(registrationId), parameters);
         }
 
+        public KeyEventArgs RaiseKeyDown(UIElement target, Key key, bool isRepeat = false)
+            => RaiseKeyEvent(target, key, Keyboard.PreviewKeyDownEvent, isRepeat);
+
+        public KeyEventArgs RaiseKeyDownAndBubble(UIElement target, Key key, bool isRepeat = false)
+        {
+            KeyEventArgs arguments = RaiseKeyDown(target, key, isRepeat);
+            // WPF shares the handled state between the tunnelling and bubbling pair.
+            arguments.RoutedEvent = Keyboard.KeyDownEvent;
+            target.RaiseEvent(arguments);
+            return arguments;
+        }
+
         public KeyEventArgs RaiseKeyUp(UIElement target, Key key)
+            => RaiseKeyEvent(target, key, Keyboard.PreviewKeyUpEvent);
+
+        private KeyEventArgs RaiseKeyEvent(UIElement target, Key key, RoutedEvent routedEvent, bool isRepeat = false)
         {
             Assert.False(_closed);
             HwndSource source = Assert.IsType<HwndSource>(HwndSource.FromHwnd(Handle));
-            KeyEventArgs arguments = new(Keyboard.PrimaryDevice, source, Environment.TickCount, key) { RoutedEvent = Keyboard.PreviewKeyUpEvent };
+            KeyEventArgs arguments = new(Keyboard.PrimaryDevice, source, Environment.TickCount, key) { RoutedEvent = routedEvent };
+            if (isRepeat)
+                typeof(KeyEventArgs).GetMethod("SetRepeat", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(arguments, [true]);
             target.RaiseEvent(arguments);
             return arguments;
         }

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Category" xml:space="preserve"><value>文件与工作区</value></data>
+  <data name="OpenFile" xml:space="preserve"><value>打开文件</value></data>
+  <data name="OpenFileDescription" xml:space="preserve"><value>选择文件，并使用对应编辑器打开。</value></data>
+  <data name="OpenWorkspace" xml:space="preserve"><value>打开工作区列表</value></data>
+  <data name="OpenWorkspaceDescription" xml:space="preserve"><value>查看最近的工作区并选择要打开的项目或解决方案。</value></data>
+  <data name="OpenFolder" xml:space="preserve"><value>打开文件夹工作区</value></data>
+  <data name="OpenFolderDescription" xml:space="preserve"><value>选择文件夹作为工作区；切换前保留现有的保存与取消确认。</value></data>
+  <data name="Save" xml:space="preserve"><value>保存当前文档</value></data>
+  <data name="SaveDescription" xml:space="preserve"><value>保存当前文档的修改；仅在当前编辑器允许保存时执行。</value></data>
+  <data name="SaveAs" xml:space="preserve"><value>另存为</value></data>
+  <data name="SaveAsDescription" xml:space="preserve"><value>在支持此命令的当前编辑器中打开另存为对话框；图像编辑器导出当前渲染图。</value></data>
+  <data name="CloseDocument" xml:space="preserve"><value>关闭当前标签页</value></data>
+  <data name="CloseDocumentDescription" xml:space="preserve"><value>关闭当前文档标签页；有未保存修改时按编辑器的关闭流程确认。</value></data>
+</root>

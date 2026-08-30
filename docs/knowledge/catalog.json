@@ -1589,7 +1589,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-local-interactions.md",
       "url": "/02-developer-guide/core-concepts/copilot-local-interactions",
       "searchable": true,
-      "source_hash": "1f8dcdfaf282fa0f7920f3027fb89c77e4477d11363424bb1036bb6ee73aecf0"
+      "source_hash": "3396fb486045de1f04412393d114210016e46d67b8cf3cc376ff0041d449798e"
     },
     {
       "knowledge_id": "copilot.lifecycle",
@@ -5213,7 +5213,7 @@
       "source": "docs/01-user-guide/interface/main-window.md",
       "url": "/01-user-guide/interface/main-window",
       "searchable": true,
-      "source_hash": "914b82a17453196fb345201640d8e10428c7746ce43483a009d5023f3bc46f88"
+      "source_hash": "63ff0a80a45cbe0cc3d21c45f5487e16f64f4170931cbffcc61972d0a5e36aba"
     },
     {
       "knowledge_id": "operations.motor",
@@ -7041,7 +7041,7 @@
       "source": "docs/04-api-reference/ui-components/editor-document-lifecycle.md",
       "url": "/04-api-reference/ui-components/editor-document-lifecycle",
       "searchable": true,
-      "source_hash": "11757aa5f8a011bfdf023ece65ec9ac802dc4461892bb64008706fd794db6103"
+      "source_hash": "e165aa8aad2e5a41c834dfd1b05cfaf713008ce696dc166dcfebba8da062bdc8"
     },
     {
       "knowledge_id": "ui.framework",
@@ -7127,11 +7127,18 @@
       "code_paths": [
         "UI/ColorVision.UI/HotKey",
         "UI/ColorVision.UI/AssemblyHandler.cs",
+        "UI/ColorVision.UI/FileProcessorFactory.cs",
+        "UI/ColorVision.UI/Menus/Base/File",
         "UI/ColorVision.UI.Desktop/Settings/MenuOptions.cs",
         "UI/ColorVision.UI/LogImp/Menus/MenuLog.cs",
+        "UI/ColorVision.Solution/OpenSolutionWindow.xaml.cs",
+        "UI/ColorVision.Solution/CommandInitializer.cs",
+        "UI/ColorVision.Solution/SolutionMenuItems.cs",
         "ColorVision/MainWindow.xaml.cs",
+        "ColorVision/MainWindow.Hotkeys.cs",
         "ColorVision/MainWindowConfig.cs",
-        "ColorVision/Update/MenuCheckAndUpdateV1.cs"
+        "ColorVision/Update/MenuCheckAndUpdateV1.cs",
+        "ColorVision/AboutMsg.xaml.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/HotkeyServiceTests.cs",
@@ -7139,7 +7146,11 @@
         "Test/ColorVision.UI.Tests/HotkeyBackendTests.cs",
         "Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs",
         "Test/ColorVision.UI.Tests/HotkeyMultipleBindingTests.cs",
-        "Test/ColorVision.UI.Tests/HotkeyMultiBindingServiceTests.cs"
+        "Test/ColorVision.UI.Tests/HotkeyMultiBindingServiceTests.cs",
+        "Test/ColorVision.UI.Tests/BuiltInShortcutDefaultsTests.cs",
+        "Test/ColorVision.UI.Tests/FileHotkeyDefaultsTests.cs",
+        "Test/ColorVision.UI.Tests/RoutedCommandHotkeyGuardTests.cs",
+        "Test/ColorVision.UI.Tests/ApplicationHotkeyIntegrationTests.cs"
       ],
       "related": [
         "ui.framework",
@@ -7151,6 +7162,7 @@
       "code_scopes": [
         "ColorVision",
         "ColorVision/Update",
+        "UI/ColorVision.Solution",
         "UI/ColorVision.UI",
         "UI/ColorVision.UI.Desktop"
       ],
@@ -7159,7 +7171,7 @@
       "source": "docs/04-api-reference/ui-components/hotkeys.md",
       "url": "/04-api-reference/ui-components/hotkeys",
       "searchable": true,
-      "source_hash": "01aff1cc5415b59f68e98b0ff9f1db571a7194dc8eaee0a90c8ac3acdbf4c41c"
+      "source_hash": "bdbf5ff69d13b0e7c1c9f4fc39d71f236708e5d4896eb53b2aeb042a6310e41e"
     },
     {
       "knowledge_id": "ui.image-editor",
@@ -7243,7 +7255,7 @@
       "source": "docs/04-api-reference/ui-components/ColorVision.ImageEditor.md",
       "url": "/04-api-reference/ui-components/ColorVision.ImageEditor",
       "searchable": true,
-      "source_hash": "5d1861f2c30ee38f29895b1bdcad6d5f4b23486aba2d90f4f77e1bf0c0e1507f"
+      "source_hash": "8525ac0b5a513e9ba77fb57f2d7548366514218d9db219944c0087cf3829fc57"
     },
     {
       "knowledge_id": "ui.image-editor-context",
@@ -7860,7 +7872,7 @@
       "source": "docs/04-api-reference/ui-components/search.md",
       "url": "/04-api-reference/ui-components/search",
       "searchable": true,
-      "source_hash": "214013387cfee0e9b9bdf572bc346db865eab95ebc9068d30cee909bf362ccb4"
+      "source_hash": "6cd442720a6a66390543cb161c5692722e9fb53870f301d922d0c68381f286ae"
     },
     {
       "knowledge_id": "ui.settings",
@@ -8050,7 +8062,7 @@
       "source": "docs/04-api-reference/ui-components/ColorVision.Solution.md",
       "url": "/04-api-reference/ui-components/ColorVision.Solution",
       "searchable": true,
-      "source_hash": "14d0dc6c863e8693e69b55f423f5c2789cc7af8f45d1890d7786820867b3c9d3"
+      "source_hash": "a96d84d72355135ef9d426caa750f9de49c2b48ba0517754d8456ed32bd24d7c"
     },
     {
       "knowledge_id": "ui.sqlite-storage",

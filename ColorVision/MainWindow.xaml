@@ -66,6 +66,7 @@
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
         <Border Grid.Row="0" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" WindowChrome.IsHitTestVisibleInChrome="True">
+            <StackPanel>
             <DockPanel LastChildFill="False">
                 <StackPanel x:Name="RightMenuItemPanel" DockPanel.Dock="Right" Orientation="Horizontal" />
 
@@ -79,6 +80,10 @@
                         Visibility="Collapsed" />
 
             </DockPanel>
+            <search:SearchControl x:Name="CompactSearchControl" Margin="10,4" MaxWidth="480"
+                                  HorizontalAlignment="Stretch" Visibility="Collapsed"
+                                  PreviewKeyDown="CompactSearchControl_PreviewKeyDown" />
+            </StackPanel>
         </Border>
 
         <xcad:DockingManager x:Name="DockingManager1" Grid.Row="1" Margin="-6,-6" Padding="0" Background="Transparent" BorderThickness="0" DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}">

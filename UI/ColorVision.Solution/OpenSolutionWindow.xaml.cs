@@ -4,6 +4,7 @@ using ColorVision.Solution.Mru;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Menus.Base;
 using ColorVision.UI.Menus.Base.File;
+using ColorVision.UI.HotKey;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
@@ -13,7 +14,7 @@ using System.Windows.Input;
 namespace ColorVision.Solution
 {
 
-    public class MenuOpenSolution : MenuItemFileBase
+    public class MenuOpenSolution : MenuItemFileBase, IHotKey
     {
         public override string OwnerGuid => nameof(MenuOpen);
 
@@ -22,11 +23,16 @@ namespace ColorVision.Solution
         public override int Order => 1;
 
         public override string Header => ColorVision.UI.Properties.Resources.ProjectSolution_P;
-        public override string InputGestureText => "Ctrl+O";
-        public override ICommand Command => ApplicationCommands.Open;
+        public override ICommand Command => SolutionWorkspaceCommands.OpenWorkspace;
+        public HotKeys HotKeys => new(FileHotkeyText.OpenWorkspace, Hotkey.None, Execute)
+        {
+            Description = FileHotkeyText.OpenWorkspaceDescription,
+            Category = FileHotkeyText.Category
+        };
+        public override void Execute() => SolutionManager.OpenSolutionWindow();
     }
 
-    public class MenuOpenFolder : MenuItemFileBase
+    public class MenuOpenFolder : MenuItemFileBase, IHotKey
     {
         public override string OwnerGuid => nameof(MenuOpen);
 
@@ -36,6 +42,13 @@ namespace ColorVision.Solution
 
         public override string Header => ColorVision.UI.Properties.Resources.OpenFolder;
         public override ICommand Command => SolutionWorkspaceCommands.OpenFolder;
+        public override string InputGestureText => "Ctrl+Shift+O";
+        public HotKeys HotKeys => new(FileHotkeyText.OpenFolder, new Hotkey(Key.O, ModifierKeys.Control | ModifierKeys.Shift), Execute)
+        {
+            Description = FileHotkeyText.OpenFolderDescription,
+            Category = FileHotkeyText.Category
+        };
+        public override void Execute() => _ = SolutionManager.OpenFolderDialogAsync();
     }
 
     /// <summary>

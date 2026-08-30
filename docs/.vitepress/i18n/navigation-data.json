@@ -1244,6 +1244,12 @@
             },
             {
               "text": {
+                "root": "快捷键：发现、注册、编辑与释放"
+              },
+              "link": "/04-api-reference/ui-components/hotkeys"
+            },
+            {
+              "text": {
                 "root": "资源打开与单工作区切换"
               },
               "link": "/04-api-reference/ui-components/ColorVision.Solution"

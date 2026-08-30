@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "快捷键的发现、多组绑定、窗口/全局注册与搜索编辑；同一操作共享作用域，未分配操作保留展示，确认后立即保存，注册或持久化失败按结果补偿。"
 aliases: ["快捷键", "热键", "组合键", "全局热键", "窗口热键", "快捷键冲突", "快捷键保存", "快捷键搜索", "热键注销", "HotkeyService", "HotKeyConfig", "HotKeysSetting", "HotkeyEditWindow", "HotkeySettingsViewModel", "HotkeyPresentation", "HotkeyApplyResult", "HotkeyCaptureLease", "IHotkeyProvider", "IHotKey", "HotkeyDefinition", "HotKeys", "WindowHotKeyManager", "GlobalHotKeyManager", "IHotkeyRegistration", "HoyKeyControl"]
-code_paths: ["UI/ColorVision.UI/HotKey", "UI/ColorVision.UI/AssemblyHandler.cs", "UI/ColorVision.UI.Desktop/Settings/MenuOptions.cs", "UI/ColorVision.UI/LogImp/Menus/MenuLog.cs", "ColorVision/MainWindow.xaml.cs", "ColorVision/MainWindowConfig.cs", "ColorVision/Update/MenuCheckAndUpdateV1.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/HotkeyServiceTests.cs", "Test/ColorVision.UI.Tests/HotkeySettingsTests.cs", "Test/ColorVision.UI.Tests/HotkeyBackendTests.cs", "Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs", "Test/ColorVision.UI.Tests/HotkeyMultipleBindingTests.cs", "Test/ColorVision.UI.Tests/HotkeyMultiBindingServiceTests.cs"]
+code_paths: ["UI/ColorVision.UI/HotKey", "UI/ColorVision.UI/AssemblyHandler.cs", "UI/ColorVision.UI/FileProcessorFactory.cs", "UI/ColorVision.UI/Menus/Base/File", "UI/ColorVision.UI.Desktop/Settings/MenuOptions.cs", "UI/ColorVision.UI/LogImp/Menus/MenuLog.cs", "UI/ColorVision.Solution/OpenSolutionWindow.xaml.cs", "UI/ColorVision.Solution/CommandInitializer.cs", "UI/ColorVision.Solution/SolutionMenuItems.cs", "ColorVision/MainWindow.xaml.cs", "ColorVision/MainWindow.Hotkeys.cs", "ColorVision/MainWindowConfig.cs", "ColorVision/Update/MenuCheckAndUpdateV1.cs", "ColorVision/AboutMsg.xaml.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/HotkeyServiceTests.cs", "Test/ColorVision.UI.Tests/HotkeySettingsTests.cs", "Test/ColorVision.UI.Tests/HotkeyBackendTests.cs", "Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs", "Test/ColorVision.UI.Tests/HotkeyMultipleBindingTests.cs", "Test/ColorVision.UI.Tests/HotkeyMultiBindingServiceTests.cs", "Test/ColorVision.UI.Tests/BuiltInShortcutDefaultsTests.cs", "Test/ColorVision.UI.Tests/FileHotkeyDefaultsTests.cs", "Test/ColorVision.UI.Tests/RoutedCommandHotkeyGuardTests.cs", "Test/ColorVision.UI.Tests/ApplicationHotkeyIntegrationTests.cs"]
 related: ["ui.framework", "ui.menus", "ui.settings", "ui.configuration", "ui.common"]
 ---
 
@@ -40,13 +40,35 @@ related: ["ui.framework", "ui.menus", "ui.settings", "ui.configuration", "ui.com
 - 说明和分类优先使用动作明确提供的值，再读取相应 `DescriptionAttribute` / `CategoryAttribute`；标准菜单所属 File/Edit/View/Tool/Help 可提供分类。多动作 `IHotkeyProvider` 的类说明不会套给它的每个动作。
 - 特性值可通过贡献程序集已有 `Properties.Resources` 解析；Source 缺省使用实际贡献程序集名称。未知动作使用“自定义操作”“此操作尚未提供详细说明”等明确的空缺提示，不按类型名编造业务用途。
 
-当前为四个实际 `IHotKey` 动作补充中英文说明：选项 `Ctrl+I`、日志 `Ctrl+L`、检查更新 `Ctrl+U`、显示/隐藏状态栏 `Ctrl+Shift+B`。具体描述来自对应 provider；展示层不依赖 Engine，也不调用这些业务动作。仅有 `HotKeys` 属性而没有实现发现接口的菜单，不会因此新增注册。
+内置操作提供中英文说明，具体描述来自对应 provider；展示层不依赖 Engine，也不调用业务动作。仅有 `HotKeys` 属性而没有实现发现接口的菜单，不会因此新增注册。
+
+## 内置默认键与上下文
+
+默认键按常用桌面操作语义安排，不以旧分配为兼容目标；已有明确保存的个人覆盖仍保留，可通过设置中的“全部重置为默认值”采用新默认，不在升级时改写用户配置。
+
+| 操作 | 默认组合 | 边界 |
+| --- | --- | --- |
+| 打开文件 | Ctrl+O | `MenuFileOpen` 选择文件并走统一资源打开路由，不再打开工作区列表 |
+| 打开文件夹工作区 | Ctrl+Shift+O | 复用文件夹选择与工作区切换的保存/取消流程 |
+| 保存当前文档 | Ctrl+S | 沿焦点路由 `ApplicationCommands.Save`，先检查 CanExecute；Copilot 输入框承接其草稿操作 |
+| 另存为 | Ctrl+Shift+S | 仅执行当前编辑器支持的 SaveAs；图像/3D 是渲染图或截图，不是通用原文件另存 |
+| 关闭当前标签页 | Ctrl+W、Ctrl+F4 | 主窗口独立关闭文档命令，保留未保存确认，不调用图像清空 |
+| 设置 | Ctrl+, | 打开选项，不占用文本斜体的 Ctrl+I |
+| 搜索命令与功能 | Ctrl+Shift+P | 聚焦菜单、工具和模板搜索；Ctrl+F 留给正文/会话查找 |
+
+打开工作区列表、日志窗口、检查更新、状态栏、关于和重置布局均可配置但默认未分配。关于不是帮助文档，因此不拿 F1 代替帮助；布局重置可能移除文件标签，说明要求先保存。没有为设备运行、数据库清理、消息重发等风险操作新增默认键。
+
+剪切/复制/粘贴、撤销、全选、正文查找、树内 F2、图像 F11 等仍由对应控件处理，未全部迁入全应用配置。Copilot 原来占用 Ctrl+O 的复制回答改为面板内 Ctrl+Shift+C，任务面板改为 Ctrl+Alt+T；其余上下文见 [Copilot 交互](../../02-developer-guide/core-concepts/copilot-local-interactions.md)。
+
+`RoutedCommandHotkeyGuard` 只附着主窗口，记录被接管的原生命令键和已发现操作的默认组。清空/改键后，它阻止这些默认键继续落到原生命令或编辑器硬编码处理；若组合被任何当前有效应用内动作复用，则放行给热键后端。不依赖事件订阅先后；不清空 WPF 全局 InputGestures，因此独立编辑器窗口保留原生行为。捕获关闭后尚未释放的键也会被拦截，防止尾部重复执行；录入期间不抢录制控件的输入。
+
+这些选择遵循 [Windows 快捷键指南](https://learn.microsoft.com/en-us/windows/apps/develop/input/keyboard-accelerators)中常用操作优先、菜单可发现和控件范围明确的原则；具体新增组合是产品设计决定，不是全部由系统强制规定。
 
 ## 窗口级与全局级是两种机制
 
 | 模式 | 实际注册和触发 | 失败与限制 |
 | --- | --- | --- |
-| Windows | 按 Control 建立 scope，订阅 `PreviewKeyUp`；按松键时的 Key/Modifiers 查找，命中置 `e.Handled` 后调用回调 | 同一 scope 的相同组合返回 null；不是 KeyDown，也不是 WPF ICommand 的 CanExecute 门禁 |
+| Windows | 按 Control 建立 scope，首次 `PreviewKeyDown` 命中后置 `e.Handled` 并调用回调；重复按下只消费，KeyUp 仅维护录入门禁 | 同一 scope 的相同组合返回 null；底层本身不提供 WPF ICommand 的 CanExecute 门禁，文件动作回调显式检查命令 |
 | Global | 取得窗口 HWND/HwndSource，安装消息 hook，调用带 `MOD_NOREPEAT` 的 Win32 `RegisterHotKey`，在 `WM_HOTKEY` 中按注册 ID 调回调 | Key.None、找不到 HwndSource、ID 冲突或 Win32 注册失败都可能失败；系统拒绝注册时返回 Win32 错误，不自动换键或回退 Windows 模式 |
 
 窗口级处理会识别 Alt 的 SystemKey 和 Win 修饰键；忽略纯修饰键及无修饰的 Delete/Back/Escape。设置应用会检查父子控件冲突，但直接使用底层注册并不自动经过该校验。两种底层回调都同步调用委托，没有在此处捕获业务异常或等待异步任务。
@@ -128,5 +150,7 @@ manager 的 Closed 路径释放所记录句柄，清空条目的 `Registration` 
 `Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs` 验证稳定 ID 匹配、后加载、编辑/清除/恢复、条目替换与弱订阅回收，不注册热键或执行菜单业务。这些测试入口不等于已运行通过，也不替代真实物理键盘、各输入法/布局及真实业务操作的人工验收。
 
 `HotkeyMultipleBindingTests` 覆盖模型值隔离、JSON 往返、多组注册/失败回收与关闭释放，包括自有隐藏窗口上的真实后端测试。`HotkeyMultiBindingServiceTests` 覆盖完整列表的增删改、无配置默认值、无默认操作、明确清空后重新加载、逐组冲突与失败补偿；`HotkeySettingsTests` 补充多组编辑弹窗、删除最后一组、筛选/搜索、重置完整默认列表和未分配行的 UI 状态。
+
+`BuiltInShortcutDefaultsTests` / `FileHotkeyDefaultsTests` 检查默认值、说明、命令边界和菜单联动；`RoutedCommandHotkeyGuardTests` 用自有隐藏宿主验证原生命令不穿透、改键/恢复、窗口隔离及捕获尾键。`ApplicationHotkeyIntegrationTests` 检查功能搜索与 Copilot 命令接线，不启动生产主窗口或设备。
 
 按键可能执行文件、配置或设备操作，运行时验证应使用获授权的隔离宿主和无害回调。文档检索与站点检查不证明真实 provider 完整发现、操作系统注册成功或业务回调完成。

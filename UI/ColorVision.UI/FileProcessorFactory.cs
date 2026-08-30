@@ -1,15 +1,17 @@
 ﻿using ColorVision.UI.Menus;
 using ColorVision.UI.Menus.Base.File;
+using ColorVision.UI.HotKey;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.UI
 {
-    public class MenuFileOpen : MenuItemBase
+    public class MenuFileOpen : MenuItemBase, IHotKey
     {
         public override int Order => 1;
 
@@ -18,6 +20,12 @@ namespace ColorVision.UI
         public override string OwnerGuid => nameof(MenuOpen);
 
         public override string GuidId => nameof(MenuFileOpen);
+        public override string InputGestureText => "Ctrl+O";
+        public HotKeys HotKeys => new(FileHotkeyText.OpenFile, new Hotkey(Key.O, ModifierKeys.Control), Execute)
+        {
+            Description = FileHotkeyText.OpenFileDescription,
+            Category = FileHotkeyText.Category
+        };
         public override object? Icon
         {
             get
