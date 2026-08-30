@@ -11,6 +11,8 @@ related: ["ui.database", "ui.database-query", "engine.database-maintenance", "en
 
 # 数据所有者与存储定位
 
+设置中的[存储与维护](../../04-api-reference/ui-components/storage-maintenance.md)集中提供历史日志、明确临时产物和可重建缓存的手动清理，以及独立的数据维护、备份与选择性设置重置入口。它不是“总数据库”或全盘垃圾扫描器，以下数据所有者边界仍然适用。
+
 ColorVision 没有一个覆盖软件设置、设备资源、流程模板、消息记录、业务结果和图片的“总数据库”。先确认对象由谁写入、谁读取，再选择查询、导出或备份入口。`UI/ColorVision.Database` 提供通用基础和浏览器，不拥有所有模块的数据。
 
 ## 从对象找到实现

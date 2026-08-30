@@ -1,4 +1,6 @@
 using SqlSugar;
+using Microsoft.Data.Sqlite;
+using System.IO;
 
 namespace ColorVision.UI.Desktop.Download
 {
@@ -26,6 +28,36 @@ namespace ColorVision.UI.Desktop.Download
         {
             using var db = CreateDbClient(_dbPath);
             db.CodeFirst.InitTables<DownloadEntry>();
+        }
+
+        internal static bool IsPathProtectedFromCleanup(string dbPath, string filePath)
+        {
+            try
+            {
+                if ((File.GetAttributes(dbPath) & FileAttributes.ReparsePoint) != 0)
+                    return true;
+            }
+            catch (FileNotFoundException) { return false; }
+            catch (DirectoryNotFoundException) { return false; }
+            // Do not create a database, migrate its schema, or instantiate the download daemon during a scan.
+            using var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+            {
+                DataSource = dbPath,
+                Mode = SqliteOpenMode.ReadOnly,
+                Pooling = false,
+                DefaultTimeout = 1,
+            }.ToString());
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT SavePath FROM DownloadEntry WHERE Status IN (0, 1, 3, 4)";
+            using var reader = command.ExecuteReader();
+            string normalizedPath = Path.GetFullPath(filePath);
+            while (reader.Read())
+            {
+                if (!reader.IsDBNull(0) && string.Equals(Path.GetFullPath(reader.GetString(0)), normalizedPath, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
         }
 
         public List<DownloadEntry> GetIncompleteEntries()

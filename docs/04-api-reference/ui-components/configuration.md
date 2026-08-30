@@ -113,6 +113,8 @@ related: ["ui.framework","ui.settings","ui.wizards","ui.menus","ui.property-grid
 
 ## 备份、损坏文件与导入范围
 
+主程序另行注册非关键配置节白名单，提供 `ConfigMaintenanceResetService` 选择性维护重置：只记录计划，在下一次配置 `Load`、正常加载与实例化之前处理，完整原文件备份成功后才提交。它不使用 `LoadDefaultConfigs` 的旧备份回退，也不在运行中替换对象。独立备份、启动准入、取消、崩溃幂等与部分失败语义由[存储清理与设置重置](./storage-maintenance.md)定义，不能将它与下面的滚动 `BackupConfigs` 混为一谈。
+
 `BackupConfigs` 使用 `<ConfigDIFileName>Backup_yyyyMMdd_HHmmss.json`，通过 `SaveConfigs(backupPath)` 保存当前已实例化快照；它不是直接复制主文件。清理目标是按文件名倒序保留最多 10 个匹配备份文件，并不先筛出有效 JSON。备份和清理异常分别记日志，调用方拿不到可靠的布尔成功结果。
 
 普通加载在文件缺失或 `TryReadConfigFile` 返回失败时，按备份文件名倒序寻找可解析的 JSON，跳过坏备份；找到后写回主 `ConfigFilePath` 并替换内存。取得文件锁等更早的异常仍会向外抛出，不保证进入回退。没有可用备份，或恢复尝试异常时，回退为空 `jsonObject` 并扫描当前程序集默认构造配置；这条默认回退不同于正常加载后的延迟实例化，类型扫描/构造失败会被跳过。

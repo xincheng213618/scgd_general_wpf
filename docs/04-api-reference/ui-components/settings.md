@@ -5,8 +5,8 @@ status: "current"
 summary: "设置窗口的发现缓存、侧栏搜索、活对象编辑和自定义页面生命周期；普通选项关窗不撤销，启动检查更新的勾选只表示至少一个更新开关开启。"
 aliases: ["设置窗口", "选项", "设置搜索", "自定义设置页", "启动检查更新", "SettingWindow", "SettingWindowController", "SettingRowFactory", "SettingMetadataResolver", "ConfigSettingManager", "IConfigSettingProvider", "ConfigSettingMetadata", "AggregatedBoolSetting", "MenuOptions"]
 code_paths: ["UI/ColorVision.UI.Desktop/Settings", "UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs", "UI/ColorVision.Common/Interfaces/ConfigSetting", "UI/ColorVision.UI/AssemblyHandler.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs", "Test/ColorVision.UI.Tests/ConfigServiceAdaptersTests.cs"]
-related: ["ui.desktop", "ui.configuration", "ui.property-grid", "ui.discovery", "ui.hotkeys", "ui.localization", "operations.exports", "delivery.update"]
+test_paths: ["Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs", "Test/ColorVision.UI.Tests/ConfigServiceAdaptersTests.cs", "Test/ColorVision.UI.Tests/StorageMaintenanceTests.cs"]
+related: ["ui.desktop", "ui.configuration", "ui.property-grid", "ui.discovery", "ui.hotkeys", "ui.localization", "operations.exports", "delivery.update", "ui.storage-maintenance"]
 ---
 
 # 设置窗口：发现、编辑与关闭契约
@@ -47,6 +47,8 @@ related: ["ui.desktop", "ui.configuration", "ui.property-grid", "ui.discovery", 
 
 常规页面按元数据分成带标题的卡片：主题与语言使用 `Appearance`，聚合启动更新、更新前快照和代理设置使用 `Updates`，日志级别使用 `Diagnostics`；其它设置继续沿用原分区。侧栏与属性编辑器能力保留，切换导航组或更新搜索会将内容滚动回顶部。通用行保留可换行说明，非布尔编辑器采用较紧凑的右侧宽度。
 
+“存储与维护”通过独立 `IConfigSettingProvider` 页面接入，不在普通设置行上即时执行删除。扫描、确认、单项/选中项清理、数据与备份入口、选择性下次启动重置见[存储清理与设置重置](./storage-maintenance.md)。该页忙碌时的关闭拦截与卸载取消是页面自己的契约，不表示所有自定义设置页自动拥有相同协议。
+
 `SettingWindowController` 在加载时把元数据变成 `SettingEntry`；缺少属性源、绑定名或对应属性的条目不能成为普通属性行。`SettingMetadataResolver` 负责标题、说明、导航分组、内容分区和搜索文本。
 
 | 行为 | 当前规则 |
@@ -85,4 +87,4 @@ controller 特判 Property 项的 `IsAutoUpdate`：源对象的运行时类型�
 
 上表省略前缀的 `Settings/` 路径均相对于 `UI/ColorVision.UI.Desktop/`。`PropertyEditorContractTests` 覆盖通用 helper 的绑定、只读属性、失败降级和实例复用，不覆盖整个设置窗口。`ConfigServiceAdaptersTests` 中名称含 `ConfigSettingManager_WorksWith...` 的用例只模拟对象解析，未构造 manager，不能作为设置发现或窗口集成测试。
 
-目前未发现设置 controller、搜索范围、聚合开关、关窗保存或配置重载重绑定的直接专项测试。文档检索与网站校验不填补这些运行时缺口；实际开窗、修改设置、导入和更新检查应在获授权的隔离环境中单独验证。
+`StorageMaintenanceTests` 通过注入独立元数据构造真实设置窗口，覆盖分区标题、搜索、切组回顶和说明文本，并检查中英文、深浅主题与窄窗口下的维护控件布局。该入口不调用生产设置发现，也不操作真实配置或缓存；它不替代真实 provider 发现、关窗保存、配置重载重绑定或更新安装验证。文档检索与网站校验不填补这些运行时缺口；实际修改设置、导入和更新检查应在获授权的隔离环境中单独验证。

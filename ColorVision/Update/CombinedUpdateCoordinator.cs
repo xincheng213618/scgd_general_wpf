@@ -79,6 +79,18 @@ namespace ColorVision.Update
 
         public static bool HasPendingStartupUpdate => HasUpdates(_pendingStartupApplicationPlan, _pendingStartupPluginPlan);
 
+        /// <summary>Read-only guard for cleanup; even completed prefetch packages may still be needed on exit.</summary>
+        public static bool HasPackageMaintenanceProtection
+        {
+            get
+            {
+                lock (_prefetchLock)
+                {
+                    return HasPendingStartupUpdate || _locker.CurrentCount == 0 || _prefetchTask is { IsCompleted: false };
+                }
+            }
+        }
+
         public static async Task StartInteractiveAsync(CancellationToken cancellationToken = default)
         {
             bool lockTaken = false;

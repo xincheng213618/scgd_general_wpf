@@ -59,6 +59,28 @@ namespace ColorVision.UI.Desktop.Download
         public static string DirectoryPath { get; set; } = Environments.DirDownloads;
         public static string DbPath { get; set; } = Path.Combine(DirectoryPath, "Downloads.db");
 
+        /// <summary>Protects resumable work without constructing a manager, loading its UI page, or starting network work.</summary>
+        public static bool IsPathProtectedFromCleanup(string filePath)
+        {
+            try
+            {
+                if (File.Exists(filePath + ".aria2"))
+                    return true;
+                string normalizedPath = Path.GetFullPath(filePath);
+                Aria2cDownloadManager? instance = Volatile.Read(ref _instance);
+                if (instance != null && instance._activeTasks.Values.Concat(instance._localCopyTasks.Values).Any(task =>
+                    task.Status is not (DownloadStatus.Completed or DownloadStatus.FileDeleted) &&
+                    string.Equals(Path.GetFullPath(task.SavePath), normalizedPath, StringComparison.OrdinalIgnoreCase)))
+                    return true;
+                return DownloadTaskStore.IsPathProtectedFromCleanup(DbPath, normalizedPath);
+            }
+            catch
+            {
+                // A busy, unreadable, or unfamiliar task store is not evidence that its files are disposable.
+                return true;
+            }
+        }
+
         public ObservableCollection<DownloadTask> Tasks { get; } = new();
         private readonly ConcurrentDictionary<int, DownloadTask> _activeTasks = new();
         private readonly ConcurrentDictionary<int, DownloadTask> _localCopyTasks = new();

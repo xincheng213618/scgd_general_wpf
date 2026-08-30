@@ -11,7 +11,7 @@ namespace ColorVision.Solution.MultiImageViewer
     /// <summary>
     /// 缩略图缓存管理器 - 使用SQLite存储缩略图
     /// </summary>
-    public class ThumbnailCacheManager : IDisposable
+    public partial class ThumbnailCacheManager : IDisposable
     {
         private static ThumbnailCacheManager? _instance;
         private static readonly object _locker = new();
@@ -57,6 +57,7 @@ namespace ColorVision.Solution.MultiImageViewer
                     IsAutoCloseConnection = true
                 });
                 _db.CodeFirst.InitTables<ThumbnailCacheEntry>();
+                _cacheWriteVersion++;
             }
             catch (Exception ex)
             {
@@ -75,6 +76,13 @@ namespace ColorVision.Solution.MultiImageViewer
             if (!File.Exists(filePath))
                 return null;
 
+            long generation;
+            lock (_locker)
+            {
+                if (_disposed) return null;
+                generation = _cacheMaintenanceGeneration;
+            }
+
             try
             {
                 var fileInfo = new FileInfo(filePath);
@@ -83,14 +91,17 @@ namespace ColorVision.Solution.MultiImageViewer
                 // 查找缓存
                 var cached = await Task.Run(() =>
                 {
-
-                    using var db = new SqlSugarClient(new ConnectionConfig
+                    lock (_locker)
                     {
-                        ConnectionString = $"Data Source={SqliteDbPath}",
-                        DbType = DbType.Sqlite,
-                        IsAutoCloseConnection = true
-                    });
-                    return db.Queryable<ThumbnailCacheEntry>().First(x => x.FilePath == filePath);
+                        if (_disposed || generation != _cacheMaintenanceGeneration) return null;
+                        using var db = new SqlSugarClient(new ConnectionConfig
+                        {
+                            ConnectionString = $"Data Source={SqliteDbPath}",
+                            DbType = DbType.Sqlite,
+                            IsAutoCloseConnection = true
+                        });
+                        return db.Queryable<ThumbnailCacheEntry>().First(x => x.FilePath == filePath);
+                    }
                 });
 
 
@@ -110,7 +121,7 @@ namespace ColorVision.Solution.MultiImageViewer
                 var thumbnailBytes = await EncodeThumbnailAsync(thumbnail);
                 if (thumbnailBytes != null)
                 {
-                    await SaveToCacheAsync(filePath, fileInfo, thumbnailBytes, thumbnail, originalWidth, originalHeight);
+                    await SaveToCacheAsync(filePath, fileInfo, thumbnailBytes, thumbnail, originalWidth, originalHeight, generation);
                 }
 
                 return thumbnail;
@@ -127,17 +138,18 @@ namespace ColorVision.Solution.MultiImageViewer
         /// </summary>
         public ThumbnailCacheEntry? GetCachedInfo(string filePath)
         {
-            if (_db == null || _disposed) return null;
-
-            try
+            lock (_locker)
             {
-                return _db.Queryable<ThumbnailCacheEntry>()
-                          .First(x => x.FilePath == filePath);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"GetCachedInfo Error: {ex.Message}");
-                return null;
+                if (_db == null || _disposed) return null;
+                try
+                {
+                    return _db.Queryable<ThumbnailCacheEntry>().First(x => x.FilePath == filePath);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"GetCachedInfo Error: {ex.Message}");
+                    return null;
+                }
             }
         }
 
@@ -272,7 +284,7 @@ namespace ColorVision.Solution.MultiImageViewer
         }
 
         private async Task SaveToCacheAsync(string filePath, FileInfo fileInfo, byte[] thumbnailData,
-            BitmapSource thumbnail, int originalWidth, int originalHeight)
+            BitmapSource thumbnail, int originalWidth, int originalHeight, long generation)
         {
             await Task.Run(() =>
             {
@@ -291,20 +303,19 @@ namespace ColorVision.Solution.MultiImageViewer
                         CreateDate = DateTime.Now
                     };
 
-                    using var db = new SqlSugarClient(new ConnectionConfig
+                    lock (_locker)
                     {
-                        ConnectionString = $"Data Source={SqliteDbPath}",
-                        DbType = DbType.Sqlite,
-                        IsAutoCloseConnection = true
-                    });
-                    var updateCount = db.Updateable(entry)
-                        .Where(x => x.FilePath == filePath)
-                        .ExecuteCommand();
-
-                    // 如果更新没有影响任何行，则插入新记录
-                    if (updateCount == 0)
-                    {
-                        db?.Insertable(entry).ExecuteCommand();
+                        if (_disposed || generation != _cacheMaintenanceGeneration) return;
+                        using var db = new SqlSugarClient(new ConnectionConfig
+                        {
+                            ConnectionString = $"Data Source={SqliteDbPath}",
+                            DbType = DbType.Sqlite,
+                            IsAutoCloseConnection = true
+                        });
+                        var updateCount = db.Updateable(entry).Where(x => x.FilePath == filePath).ExecuteCommand();
+                        if (updateCount == 0)
+                            db.Insertable(entry).ExecuteCommand();
+                        _cacheWriteVersion++;
                     }
                 }
                 catch (Exception ex)
@@ -338,17 +349,19 @@ namespace ColorVision.Solution.MultiImageViewer
         /// </summary>
         public int GetCacheCount()
         {
-            if (_disposed) return 0;
-
-            try
+            lock (_locker)
             {
-                return _db?.Queryable<ThumbnailCacheEntry>().Count() ?? 0;
+                if (_disposed) return 0;
+                try
+                {
+                    return _db?.Queryable<ThumbnailCacheEntry>().Count() ?? 0;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"GetCacheCount Error: {ex.Message}");
+                }
+                return 0;
             }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"GetCacheCount Error: {ex.Message}");
-            }
-            return 0;
         }
 
         /// <summary>
@@ -356,18 +369,12 @@ namespace ColorVision.Solution.MultiImageViewer
         /// </summary>
         public void ClearCache()
         {
-            if (_disposed) return;
-
-            try
+            lock (_locker)
             {
-                _db?.Deleteable<ThumbnailCacheEntry>().ExecuteCommand();
-
-                // 执行SQLite的VACUUM来释放空间
-                _db?.Ado.ExecuteCommand("VACUUM");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"ClearCache Error: {ex.Message}");
+                if (_disposed) return;
+                ThumbnailCacheMaintenanceResult result = ClearCacheForMaintenance(ScanCacheForMaintenance());
+                if (!result.Succeeded)
+                    System.Diagnostics.Debug.WriteLine($"ClearCache Error: {result.Message}");
             }
         }
 
@@ -376,17 +383,19 @@ namespace ColorVision.Solution.MultiImageViewer
         /// </summary>
         public void RemoveCache(string filePath)
         {
-            if (_disposed) return;
-
-            try
+            lock (_locker)
             {
-                _db?.Deleteable<ThumbnailCacheEntry>()
-                    .Where(x => x.FilePath == filePath)
-                    .ExecuteCommand();
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"RemoveCache Error: {ex.Message}");
+                if (_disposed) return;
+                try
+                {
+                    _cacheMaintenanceGeneration++;
+                    if (_db?.Deleteable<ThumbnailCacheEntry>().Where(x => x.FilePath == filePath).ExecuteCommand() > 0)
+                        _cacheWriteVersion++;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"RemoveCache Error: {ex.Message}");
+                }
             }
         }
 
@@ -396,6 +405,7 @@ namespace ColorVision.Solution.MultiImageViewer
             {
                 if (_disposed) return;
                 _disposed = true;
+                _cacheMaintenanceGeneration++;
                 _db?.Dispose();
                 _db = null;
                 _instance = null;

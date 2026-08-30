@@ -3098,7 +3098,7 @@
       "source": "docs/02-developer-guide/deployment/auto-update.md",
       "url": "/02-developer-guide/deployment/auto-update",
       "searchable": true,
-      "source_hash": "f9c7793fae896b33c53faa8f2de3e980fee1df13d55bffe21120f4952f90f9fa"
+      "source_hash": "fc181014f89360c598254c86c88b83455c94536ce353ca9f47eb7db9b2d29de8"
     },
     {
       "knowledge_id": "engine.camera-preview-lifecycle-plan",
@@ -4683,7 +4683,7 @@
       "source": "docs/01-user-guide/data-management/README.md",
       "url": "/01-user-guide/data-management/README",
       "searchable": true,
-      "source_hash": "73c495c3e4540c41d7be0d18d2499a177b67385eb5fc0e785a9e644d5baa347b"
+      "source_hash": "672cc1579a9f5d9f06b2b9bac3eec0f9fc4d5dbddab6165c7b8f6a3191a10dae"
     },
     {
       "knowledge_id": "operations.device-configuration",
@@ -6481,7 +6481,7 @@
       "source": "docs/04-api-reference/ui-components/configuration.md",
       "url": "/04-api-reference/ui-components/configuration",
       "searchable": true,
-      "source_hash": "96cecf6edae403f3b5b517b47fe30c56d764d2910559463f708609f7e196312a"
+      "source_hash": "4107a489aa61e60b17514b08f5051792e0f6691213d18f270e82ae22ee724df9"
     },
     {
       "knowledge_id": "ui.control-catalog",
@@ -7177,7 +7177,8 @@
         "ColorVision/BuiltInModules.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/ModuleCatalogTests.cs"
+        "Test/ColorVision.UI.Tests/ModuleCatalogTests.cs",
+        "Test/ColorVision.UI.Tests/ThumbnailCacheMaintenanceTests.cs"
       ],
       "related": [
         "ui.index",
@@ -7198,7 +7199,7 @@
       "source": "docs/04-api-reference/ui-components/ColorVision.ImageTools.md",
       "url": "/04-api-reference/ui-components/ColorVision.ImageTools",
       "searchable": true,
-      "source_hash": "07e555212cd3d1d4d73691f2a05296f149ba1b407b8b249078d5eaea6fa21420"
+      "source_hash": "3087873c51be7df2386617c3f6307ee5e4f2c5fef47df2b29d793630e1f77ee8"
     },
     {
       "knowledge_id": "ui.index",
@@ -7671,7 +7672,8 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs",
-        "Test/ColorVision.UI.Tests/ConfigServiceAdaptersTests.cs"
+        "Test/ColorVision.UI.Tests/ConfigServiceAdaptersTests.cs",
+        "Test/ColorVision.UI.Tests/StorageMaintenanceTests.cs"
       ],
       "related": [
         "ui.desktop",
@@ -7681,7 +7683,8 @@
         "ui.hotkeys",
         "ui.localization",
         "operations.exports",
-        "delivery.update"
+        "delivery.update",
+        "ui.storage-maintenance"
       ],
       "code_scopes": [
         "UI/ColorVision.Common",
@@ -7693,7 +7696,7 @@
       "source": "docs/04-api-reference/ui-components/settings.md",
       "url": "/04-api-reference/ui-components/settings",
       "searchable": true,
-      "source_hash": "3c503f8e3824c5993793047b4203a384c1e726da81104cdedac8f10c3df38f22"
+      "source_hash": "8be474f08639d5520371e04bea5ce0aaea80040115c47d9edc1e3a23073f6ebb"
     },
     {
       "knowledge_id": "ui.socket-protocol",
@@ -7958,6 +7961,69 @@
       "url": "/04-api-reference/ui-components/status-bar",
       "searchable": true,
       "source_hash": "0df3f13abbe7bdc0d0c539ac8ec35e0453902f9a08efbd31614c5c821c26af34"
+    },
+    {
+      "knowledge_id": "ui.storage-maintenance",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "设置中的存储清理与选择性启动重置：先确认白名单扫描清单，保护活跃任务和业务数据；删除不回滚，重置先独立备份再在启动时应用。",
+      "aliases": [
+        "存储与维护",
+        "存储与重置",
+        "清理日志",
+        "运行垃圾",
+        "工作垃圾",
+        "清理缓存",
+        "重置设置",
+        "StorageMaintenanceCatalog",
+        "StorageMaintenanceControl",
+        "MaintenanceFileCleanup",
+        "ConfigMaintenanceResetService",
+        "ThumbnailCacheMaintenanceSnapshot",
+        "HasPackageMaintenanceProtection",
+        "HasActiveUpdateForCleanup"
+      ],
+      "code_paths": [
+        "ColorVision/Settings/Maintenance",
+        "ColorVision/App.xaml.cs",
+        "ColorVision/Update/CombinedUpdateCoordinator.cs",
+        "UI/ColorVision.UI/Maintenance",
+        "UI/ColorVision.UI/ConfigMaintenanceResetService.cs",
+        "UI/ColorVision.UI/ConfigHandler.cs",
+        "UI/ColorVision.UI/Update/ExitUpdateHandoff.cs",
+        "UI/ColorVision.UI.Desktop/Download/Aria2cDownloadManager.cs",
+        "UI/ColorVision.UI.Desktop/Download/Infrastructure/DownloadTaskStore.cs",
+        "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.cs",
+        "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.Maintenance.cs"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/MaintenanceFileCleanupTests.cs",
+        "Test/ColorVision.UI.Tests/StorageMaintenanceCatalogTests.cs",
+        "Test/ColorVision.UI.Tests/StorageMaintenanceTests.cs",
+        "Test/ColorVision.UI.Tests/ThumbnailCacheMaintenanceTests.cs",
+        "Test/ColorVision.UI.Tests/ConfigMaintenanceResetTests.cs"
+      ],
+      "related": [
+        "ui.settings",
+        "ui.configuration",
+        "operations.logs",
+        "delivery.update",
+        "engine.database-maintenance"
+      ],
+      "code_scopes": [
+        "ColorVision",
+        "ColorVision/Settings",
+        "ColorVision/Update",
+        "UI/ColorVision.ImageTools",
+        "UI/ColorVision.UI",
+        "UI/ColorVision.UI.Desktop"
+      ],
+      "domain": "ui",
+      "title": "存储清理与选择性设置重置",
+      "source": "docs/04-api-reference/ui-components/storage-maintenance.md",
+      "url": "/04-api-reference/ui-components/storage-maintenance",
+      "searchable": true,
+      "source_hash": "95b9510c4c381b73affb17a9ba713d7147f78befba86b0bc0a773596115c5c26"
     },
     {
       "knowledge_id": "ui.themes",

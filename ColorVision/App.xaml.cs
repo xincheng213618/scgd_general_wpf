@@ -145,6 +145,7 @@ namespace ColorVision
             // UI is shown later, after the minimum theme/language services are available.
             bool startupWasHealthy = StartupRegistryChecker.CheckAndSet();
 
+            ConfigHandler.ConfigureMaintenanceResetSections(Settings.Maintenance.StorageMaintenanceControl.ResetSectionNames, Settings.Maintenance.MaintenanceStartupGuard.CanApplyReset);
             _moduleCatalog = new ModuleCatalog(AssemblyHandler.GetInstance());
             BuiltInModules.Register(_moduleCatalog);
             ConfigHandler configHandler = ConfigHandler.GetInstance();

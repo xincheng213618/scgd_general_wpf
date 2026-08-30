@@ -335,6 +335,12 @@
             },
             {
               "text": {
+                "root": "存储清理与选择性设置重置"
+              },
+              "link": "/04-api-reference/ui-components/storage-maintenance"
+            },
+            {
+              "text": {
                 "root": "主题选择、资源应用与窗口外观"
               },
               "link": "/04-api-reference/ui-components/ColorVision.Themes"
@@ -520,6 +526,21 @@
         },
         {
           "text": {
+            "root": "ColorVision/Settings"
+          },
+          "link": "/knowledge/code/source-ColorVision#module-436f6c6f72566973696f6e2f53657474696e6773",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "存储清理与选择性设置重置"
+              },
+              "link": "/04-api-reference/ui-components/storage-maintenance"
+            }
+          ]
+        },
+        {
+          "text": {
             "root": "ColorVision/Update"
           },
           "link": "/knowledge/code/source-ColorVision#module-436f6c6f72566973696f6e2f557064617465",
@@ -542,6 +563,12 @@
                 "root": "Explorer 缩略图读取与 COM 注册"
               },
               "link": "/04-api-reference/engine-components/ColorVision.ShellExtension"
+            },
+            {
+              "text": {
+                "root": "存储清理与选择性设置重置"
+              },
+              "link": "/04-api-reference/ui-components/storage-maintenance"
             },
             {
               "text": {
@@ -1049,6 +1076,12 @@
                 "root": "多图查看、刷新与缩略图缓存"
               },
               "link": "/04-api-reference/ui-components/ColorVision.ImageTools"
+            },
+            {
+              "text": {
+                "root": "存储清理与选择性设置重置"
+              },
+              "link": "/04-api-reference/ui-components/storage-maintenance"
             }
           ]
         },
@@ -1436,6 +1469,12 @@
             },
             {
               "text": {
+                "root": "存储清理与选择性设置重置"
+              },
+              "link": "/04-api-reference/ui-components/storage-maintenance"
+            },
+            {
+              "text": {
                 "root": "主题选择、资源应用与窗口外观"
               },
               "link": "/04-api-reference/ui-components/ColorVision.Themes"
@@ -1532,6 +1571,12 @@
                 "root": "设置窗口：发现、编辑与关闭契约"
               },
               "link": "/04-api-reference/ui-components/settings"
+            },
+            {
+              "text": {
+                "root": "存储清理与选择性设置重置"
+              },
+              "link": "/04-api-reference/ui-components/storage-maintenance"
             },
             {
               "text": {
