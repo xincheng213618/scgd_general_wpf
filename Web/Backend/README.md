@@ -10,38 +10,12 @@ Authoritative documentation is split by responsibility:
 - [Web accounts, roles, passwords, and sessions](../../docs/02-developer-guide/backend/accounts.md) (`delivery.backend-accounts`).
 - [HTTP credentials, API keys, and browser CSRF](../../docs/02-developer-guide/backend/authentication.md) (`delivery.backend-auth`).
 - [HTTP artifacts, completion counts, cache, HEAD, and compression](../../docs/02-developer-guide/backend/artifact-delivery.md) (`delivery.artifact-delivery`).
+- [Public site projections, archives, Android metadata, and storage browsing](../../docs/02-developer-guide/backend/public-data.md) (`delivery.backend-public-data`).
+- [HTTP/SPA analytics, privacy boundaries, and performance diagnostics](../../docs/02-developer-guide/backend/observability.md) (`delivery.backend-observability`).
+- [Built-in jobs, synchronous execution, single-flight, and recovery](../../docs/02-developer-guide/backend/jobs.md) (`delivery.backend-jobs`).
+- [Live retention settings, database snapshots, cleanup, and rotation](../../docs/02-developer-guide/backend/backup-retention.md) (`delivery.backend-retention`).
 
-This source-adjacent README retains local prerequisites and the public-site, analytics, scheduler, and remaining management contracts not yet moved to those topics. Account, authentication, plugin-read-model, and artifact-response details have one canonical body above. Repository links require the matching full source checkout; they are not a claim that `docs/` ships with a separately copied backend.
-
-## Architecture
-
-### Plugin read models
-
-The [plugin catalog topic](../../docs/02-developer-guide/backend/plugin-catalog.md)
-owns `plugin_index`, `package_index`, disk/cache fallback, projection parameters,
-hash pending state, full/targeted refresh, and the process-local version map.
-GET fallback does not rebuild the index; compact reduces the response after
-full detail loading. A refresh reporting ready may still contain per-plugin
-errors, and publishing a file does not guarantee that its index refresh succeeded.
-
-### Compact Public Read Models
-
-The React client uses bounded projections while the default responses remain
-unchanged for legacy consumers:
-
-| Endpoint | Compact contract |
-|----------|------------------|
-| `GET /api/site/home?view=compact` | Home-only release counters, previews, update/tool summaries, recent changes, and docs |
-| `GET /api/site/changelog?view=compact&page=1&page_size=20` | Latest version plus one bounded rendered changelog page; 5–50 releases per page |
-| `GET /api/site/releases?view=compact&page=1&page_size=100&android_page=1&android_page_size=100` | Independently paged Windows and Android archives |
-| `GET /api/android/update` | Latest fixed-source Android APK metadata with size, SHA-256, and a bounded download URL |
-
-Windows filters (`major_minor`, `branch`, `kind`, and `era`) apply before exact
-counts and pagination. `page_size` and `android_page_size` accept `20..200`.
-Each returned group reports its full filtered `visible_count` and the current
-slice's `page_item_count`; no group repeats an owning `items` collection.
-Plugin list, full/compact/update detail, archive pagination, and compatibility
-limits are documented in the canonical plugin topic above.
+This source-adjacent README retains local prerequisites and the remaining Copilot, Operations, feedback, deployment-history, audit-query, and separate CVWindowsService details not yet moved to canonical topics. The responsibilities above each have one body of knowledge. Repository links require the matching full source checkout; they are not a claim that `docs/` ships with a separately copied backend.
 
 ## Quick Start
 
@@ -128,8 +102,6 @@ do not copy a Session permission into a key-creation request.
 | GET | `/api/admin/cache/status` | Database and cache status |
 | POST | `/api/admin/cache/cleanup` | Delete expired cache entries |
 | GET | `/api/admin/index/status` | Compact per-index status, counts, timing, and errors |
-| GET | `/api/admin/backup/db` | List recognized scheduled and administrator-created snapshots without server paths |
-| POST | `/api/admin/backup/db` | Create and privacy-scrub a retained database snapshot |
 
 ### Plugin Index
 
@@ -138,34 +110,18 @@ do not copy a Session permission into a key-creation request.
 | POST | `/api/admin/index/plugins/refresh` | Refresh all plugin indexes |
 | POST | `/api/admin/index/plugins/<id>/refresh` | Refresh single plugin index |
 
-### Jobs
+### Scheduled maintenance and retention
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/admin/jobs` | List scheduled jobs with latest run and status totals |
-| GET | `/api/admin/jobs/<id>/runs` | Paginated run history, optionally filtered by status |
-| POST | `/api/admin/jobs/<id>/run` | Run job immediately; concurrent duplicate runs return `409` |
-| POST | `/api/admin/jobs/<id>/enable` | Enable job |
-| POST | `/api/admin/jobs/<id>/disable` | Disable job |
+The [job contract](../../docs/02-developer-guide/backend/jobs.md) owns definitions,
+initial intervals, thread startup, synchronous manual runs, enable/disable,
+single-flight, recovery, and execution history. The [retention contract](../../docs/02-developer-guide/backend/backup-retention.md)
+owns the six live settings and database snapshot creation, privacy cleanup, and
+rotation; keep endpoint/limit tables and failure semantics in those topics.
 
-Only one `running` row is allowed per job. When the service starts, unfinished
-rows left by a previous process are marked `interrupted` before the startup
-check runs, so history remains truthful and a crashed run cannot block the job
-forever.
-
-### Operational Retention Settings
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/admin/settings/retention` | Read the six allowlisted effective retention values and their limits |
-| PUT | `/api/admin/settings/retention` | Atomically replace all six values and apply them to the running service |
-
-The contract intentionally excludes credentials, secrets, storage paths,
-listener settings, and Copilot configuration. A write preserves every existing
-unexposed JSON key, replaces `config.json` atomically, then updates the live
-configuration only after the file is durable. Reducing a value may delete old
-artifacts or records when the corresponding publish or scheduled cleanup next
-runs; the administrator UI confirms the exact changes before saving.
+Running a job may delete records or files. Disabling it does not cancel an
+in-flight handler. A successful HTTP response or a snapshot filename does not
+prove every phase, history write, or old-file cleanup succeeded. Confirm the
+actual database/configuration and recovery arrangements before maintenance.
 
 ### Accounts and API keys
 
@@ -211,10 +167,9 @@ minutes are rejected before model provider credentials are returned.
 |--------|----------|-------------|
 | GET | `/api/admin/audit-log?action=&actor=&target=&since=&until=&limit=&offset=` | View audit log with an exact filtered `total` |
 
-Audit rows are retained for 365 days by default. The daily
-`admin_data_retention` job applies the cutoff to the live database and every
-recognized database snapshot, so a backup cannot bypass
-the audit retention contract.
+Audit cutoff, recognized snapshots, partial failures, and rotation are defined
+in the [retention contract](../../docs/02-developer-guide/backend/backup-retention.md).
+Do not assume an unrecognized copy or a failed cleanup has applied that policy.
 Pagination accepts `limit` from 1 through 500 and a non-negative `offset`;
 invalid values return HTTP 400 instead of becoming an unbounded SQLite query.
 The administrator viewer localizes known event, actor, target, and detail
@@ -267,112 +222,22 @@ client receives them. Legacy operator task creation remains on the separate
 `ops:operator` API-key contract, while paired devices use the signed Relay
 endpoint; the administrator page itself cannot dispatch work.
 
-### Stats
+### Observability and database maintenance
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/admin/stats/overview` | Download, index, and today's traffic summary |
-| GET | `/api/admin/stats/traffic?days=30&limit=10` | HTTP traffic plus separately labeled SPA page views, Core Web Vitals, top pages, and recorder health |
-| GET | `/api/admin/perf/summary` | Process-local slow requests plus recent slow or failed scheduler runs |
+The canonical [observability topic](../../docs/02-developer-guide/backend/observability.md)
+owns HTTP/SPA/visitor-day definitions, endpoint parameters, response-size and
+timing boundaries, asynchronous queue failures, daily HMAC limits, reporting
+calendar metadata, performance samples, and analytics configuration.
 
-React sends `POST /api/v1/analytics/events` with either an exact `page_view`
-or `web_vital` payload. Cross-origin browser writes are rejected; the endpoint
-caps the body at 4 KiB, maps known paths to fixed templates such as
-`/plugins/:pluginId` and `/browse/*`, and rejects extra fields. Browser bots are
-ignored. Accepted events enter the same bounded asynchronous writer used by
-HTTP access analytics, so telemetry never performs a SQLite transaction on the
-request thread.
+HTTP access, SPA events, plugin completion counts, and slow-request logs have
+different data and privacy boundaries. Daily keys are not a guarantee of
+untraceable people; a 202 event response is not a persistence receipt.
 
-`days` accepts `1..365`; `limit` accepts `1..100`. Rates and client shares are
-percentages in the range `0..100`. Response volume is based only on the existing
-HTTP `Content-Length` header. A missing or invalid header is counted as zero, so
-analytics never buffers or consumes streamed/file responses. `HEAD`, 1xx, 204,
-205, and 304 responses are also counted as zero because they do not transfer a
-response body. Schema migration v6 removes the previously declared `HEAD` bytes
-from both route and daily historical aggregates. Schema migration v7 adds exact
-4xx and 5xx counters for new requests. The compatible `errorResponses` total is
-retained; older errors that cannot be separated reliably are returned through
-`unclassifiedErrorResponses` instead of being guessed into either category.
-Schema migration v8 records when the reporting calendar changes from the old
-UTC boundary. New traffic and `downloadsToday` use the configured reporting
-offset; existing daily aggregates remain unchanged and are exposed through the
-summary's legacy-calendar metadata instead of being guessed into adjacent days.
-
-The performance summary is intentionally a lightweight diagnostic companion to
-the aggregate traffic report, not a second analytics store. Slow requests are
-sanitized to method, route path, status, duration, and UTC occurrence time, then
-kept in a bounded 100-entry process-local buffer. The response exposes the
-active threshold, process start time, and buffer usage; the buffer resets
-whenever the Web process restarts. Slow scheduler runs remain sourced from the
-existing job history.
-
-`summary.uniqueVisitorDays` is the sum of each day's unique visitors (visitor-days),
-not a cross-day unique-person count, because the privacy identifier rotates every
-configured reporting day. `today.uniqueVisitors` and each `daily[].uniqueVisitors` remain true
-within-day unique counts. Client aggregates therefore expose
-`clients[].uniqueVisitorDays`; the API deliberately does not publish a misleading
-multi-day `uniqueVisitors` field.
-
-#### Access Analytics Privacy and Retention
-
-Access analytics stores daily aggregate counters rather than request logs. Route
-statistics use the Flask route template (for example `/api/plugins/<plugin_id>`),
-not the raw URL. Query strings and referrer paths are never accepted by the event
-boundary. User-agent strings are reduced in memory to `desktop`, `mobile`,
-`tablet`, `bot`, or `other`, and are not stored verbatim. A visitor is represented
-by a daily HMAC derived from the configured application secret and remote address;
-the raw address is never persisted, and identifiers cannot be linked across days.
-SPA page views reuse that daily unlinkable identifier but store it only in a
-route/day uniqueness table. Web Vitals store the metric name, bounded numeric
-value, quality bucket, fixed route template, and day; metric IDs, DOM targets,
-full URLs, queries, referrers, raw addresses, and full user agents are not
-accepted or persisted. The same retention job scrubs HTTP, page-view, and Web
-Vital tables in both the live database and recognized snapshots.
-
-Health/readiness probes, static assets, media, favicon/brand assets, and the stats
-or performance-observability endpoints themselves are excluded. Production
-requests enqueue sanitized events into a bounded in-memory queue and a background
-worker writes grouped SQLite
-transactions. Queue saturation or write failures drop only the analytics event;
-they do not delay or fail the HTTP response. Recorder state is returned as
-`pending`, `dropped`, `lastError`, `lastFlushAt`, and `capacity`.
-
-Configuration defaults:
-
-| Key | Default | Meaning |
-|-----|---------|---------|
-| `app_release_keep_count` | `5` | Newest main application release packages retained after publishing |
-| `plugin_package_keep_count` | `3` | Newest package versions retained per plugin after publishing |
-| `access_analytics_enabled` | `true` | Enable request aggregation |
-| `access_analytics_queue_size` | `4096` | Maximum queued events before non-blocking drops |
-| `access_analytics_batch_size` | `128` | Maximum events grouped per writer pass |
-| `access_analytics_flush_interval_seconds` | `0.5` | Writer wait/flush interval |
-| `access_analytics_retention_days` | `90` | Reporting-calendar days retained by the scheduled cleanup |
-| `reporting_utc_offset_minutes` | `480` | Fixed UTC offset used by daily dashboard metrics (`UTC+08:00`) |
-| `job_run_retention_days` | `30` | Completed scheduler runs retained; each job's latest run and running rows are always kept |
-| `audit_log_retention_days` | `365` | Administrator audit rows retained in the live database and recognized snapshots |
-| `admin_db_backup_keep_count` | `10` | Newest recognized scheduled or administrator-created database snapshots retained; minimum 2 |
-
-The daily `database_backup` task creates a transactionally consistent SQLite
-snapshot and applies the same privacy cleanup and rotation contract used by the
-administrator backup action. The same scheduled retention pass also removes expired access rows and
-all browser sessions, login/registration limit sources, and password-recovery
-workflow rows from recognized `marketplace_backup_YYYYMMDD_HHMMSS.db`
-snapshots. User password hashes, profiles, roles, and permissions remain in the
-restorable snapshot, while its authentication version is advanced once so even
-a legacy signed browser cookie cannot survive a restore. A newly created database backup is scrubbed and
-integrity-checked before it is reported as successful, so a restored snapshot
-cannot reactivate a copied browser session or bypass visitor retention.
-
-`GET /api/admin/backup/db` lists only recognized snapshot names, UTC creation
-times, and sizes. Neither it nor `POST /api/admin/backup/db` returns filesystem
-paths. The create endpoint also applies the audit cutoff and immediately
-rotates exact `marketplace_backup_YYYYMMDD_HHMMSS.db` files. The backup created
-by the current request is explicitly protected. Non-matching names, symbolic
-links, paths outside the database directory, and snapshots that fail audit
-cleanup are never removed automatically. The response includes a
-`backup_retention` result with the retained limit, removal count and byte count,
-and any rotation errors.
+Database snapshot creation, normal response fields, retention counts,
+transient-account-state removal, and failure handling belong to the
+[backup/retention topic](../../docs/02-developer-guide/backend/backup-retention.md).
+A scrubbed database is not a backup of artifacts or configuration, does not
+revoke every kind of credential, and does not replace a recovery exercise.
 
 ## Admin Pages
 
@@ -396,29 +261,6 @@ for request fields, one-time plaintext responses, scope/expiry validation,
 last-used persistence, and rotation failure boundaries. Key creation and package
 publication are state-changing operations, not setup probes.
 
-## Scheduled Jobs
-
-| Job | Interval | Description |
-|-----|----------|-------------|
-| `plugin_index_check` | 5 min | Signature/state check; current refresh is full-plugin, not changed-plugin-only; see the canonical plugin topic |
-| `release_index_check` | 10 min | Compare release artifacts signature; refresh only if changed |
-| `update_index_check` | 10 min | Compare Update directory signature; refresh only if changed |
-| `tool_index_check` | 10 min | Compare Tool directory signature; refresh only if changed |
-| `cache_cleanup` | 1 hour | Delete expired cache entries |
-| `password_recovery_cleanup` | 1 hour | Expire idle sessions and bound login, registration, and password-recovery security state |
-| `transfer_file_cleanup` | 1 hour | Delete anonymous transfer files and share links after their 24-hour lifetime |
-| `access_analytics_retention` | 1 day | Delete access aggregates older than the configured retention window |
-| `job_history_retention` | 1 day | Delete completed job runs older than the configured retention window while preserving current state |
-| `admin_data_retention` | 1 day | Delete expired audit rows, scrub transient account-security state from snapshots, then bound recognized DB backups |
-| `startup_index_check` | Once | Ensure all indexes are populated on startup |
-
-The scheduler starts automatically when `scheduler_enabled` is true (default). In debug mode, it only starts in the Flask reloader child process to avoid duplicate threads. Set `scheduler_enabled: false` in config.json to disable.
-
-Intervals above are initial defaults; persisted job settings determine the live schedule.
-Plugin startup, signature/state skip conditions, pre-scan signature persistence,
-and refresh errors are defined in the canonical plugin topic. A job success
-label alone is not proof that every index entry is current.
-
 ## Deployment Notes
 
 The following actions can initialize or modify the selected Backend database,
@@ -430,7 +272,7 @@ for the non-isolating `--storage` boundary.
 2. **Manual file changes**: If you manually modify storage directories, either:
    - Wait for the periodic scheduler check, or
    - Call `POST /api/admin/index/refresh-all`
-3. **Database backup**: `POST /api/admin/backup/db` creates, privacy-scrubs, integrity-checks, and rotates a timestamped backup of `marketplace.db`.
+3. **Database backup**: See the [backup/retention contract](../../docs/02-developer-guide/backend/backup-retention.md) before calling `POST /api/admin/backup/db`; creation can also clean live audit data and modify or rotate existing snapshots.
 4. **API Key security**: Keys are shown only once at creation. Revoke and rotate if compromised. Scopes are validated against a whitelist at creation time; expiry timestamps are normalized to UTC, and expired or malformed legacy records fail closed.
 5. **Config**: Use `/admin/settings` for the account-access policy and six safe live retention policies. Edit `config.json` directly for protected or restart-bound values such as `storage_path`, `upload_auth`, `secret_key`, and scheduler settings.
 
@@ -464,46 +306,21 @@ update storage, reconcile transfer metadata, or trigger expiry cleanup.
 Do not use it as a blanket no-write probe. Existing response cache headers are
 not overwritten by the generic sensitive-API `no-store` fallback.
 
-## Disk Scan Points
+## Public reads and separate tool releases
 
-The following are navigation hints, not an exhaustive no-I/O guarantee.
-Plugin index hits, missing-row fallback, request-local caching, and version-map
-staleness are defined in the canonical plugin topic.
+[Public data](../../docs/02-developer-guide/backend/public-data.md) owns home,
+Windows/Android archives, changelog, update/tool pages, and browse filtering.
+It distinguishes indexed SQL paging from legacy fallback, page counts from
+whole-directory counts, and GET cache writes/storage repair from file serving.
+Do not infer no I/O or no writes from the HTTP method or a compact projection.
 
-### Index-backed and cached reads
-
-- `GET /api/plugins` / `GET /api/plugins/<id>` — see the canonical plugin read-model contract
-- `GET /api/site/releases` — reads from `release_index` via `scan_app_release_artifacts`
-- `GET /api/site/updates` — reads from `update_index`
-- `GET /api/site/tools` — reads from `tool_index`
-- `GET /api/site/home` — reads from `release_index`, `update_index`, `tool_index` for previews
-- `GET /api/tool/cvwindowsservice/releases` — cached with signature-based invalidation
-
-### Live file access and related probes
-
-- `GET /api/site/browse/<path>?q=<name>&type=all|directory|file&limit=200&offset=0` — reads and filters one live directory before pagination (no recursion). Anonymous callers only see published application, History, Plugins, Spectrum, Update, and Tool artifacts; authenticated administrators retain full storage access.
-- `GET /plugins/<id>/icon` — reads icon file for ETag/Last-Modified headers
-- `GET /download/<path>` — serves public artifacts directly from disk. Operational storage requires administrator authentication, while Transfer keeps its separate file-transfer authorization policy.
-- `GET /api/app/changelog` — reads `CHANGELOG.md` (single file read)
-- `GET /api/app/latest-version` — reads in-memory `LATEST_RELEASE` cache (warmed at startup, refreshed on upload)
-- `GET /api/android/update` — reads the latest indexed root APK and caches its SHA-256 by path, size, and modification time
-- `GET /api/health` — reports process metadata; it does not probe storage or database readiness.
-- `GET /api/ready` — may create storage/Plugins directories, checks writability and a database `SELECT 1`, and requires nonempty upload credentials. Index status is informational, not a readiness gate; see the canonical startup/readiness contract.
-
-### Scheduler signature checks
-
-- `release_index_check` — two-level History walk (major/branch/file), no deep rglob
-- `update_index_check` — single `Update/` directory listing
-- `tool_index_check` — single `Tool/` directory listing
-- `plugin_index_check` — `plugin_catalog_signature()` over Plugins directory
-
-### Upload/publish refresh dispatch
-
-These are refresh entry points, not atomic file/index completion guarantees.
-
-- `POST /api/packages/publish` → best-effort `refresh_plugin_index` for that plugin
-- `PUT /upload/<path>` → refreshes `release_index`, `update_index`, or `tool_index` based on path
-- `POST /api/tool/cvwindowsservice/publish` → refreshes `tool_index`
+`GET /api/tool/cvwindowsservice/releases` remains a separate tool release
+metadata path with signature-based caching, owned by `routes/cvws_api.py`.
+It is not the generic `/api/site/tools` listing. Its broader publish/download
+contract has not been consolidated into the public-data topic.
+`POST /api/tool/cvwindowsservice/publish` calls `on_storage_change` with
+`Tool/CVWindowsService` after saving, dispatching a tool_index refresh;
+this is not an atomic file/index completion guarantee.
 
 ## New Modules
 
@@ -532,8 +349,7 @@ These are refresh entry points, not atomic file/index completion guarantees.
   "port": 9998,
   "secret_key": "change-this-in-production",
   "upload_auth": {"username": "admin", "password": "admin"},
-  "scheduler_enabled": true,
-  "plugin_index_check_interval_seconds": 300
+  "scheduler_enabled": true
 }
 ```
 

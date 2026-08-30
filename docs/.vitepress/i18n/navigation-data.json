@@ -2585,6 +2585,30 @@
             },
             {
               "text": {
+                "root": "Backend内置任务、执行记录与恢复"
+              },
+              "link": "/02-developer-guide/backend/jobs"
+            },
+            {
+              "text": {
+                "root": "访问统计、浏览器体验与性能观测"
+              },
+              "link": "/02-developer-guide/backend/observability"
+            },
+            {
+              "text": {
+                "root": "公共站点数据、分页与文件可见性"
+              },
+              "link": "/02-developer-guide/backend/public-data"
+            },
+            {
+              "text": {
+                "root": "Backend保留配置、数据库快照与隐私清理"
+              },
+              "link": "/02-developer-guide/backend/backup-retention"
+            },
+            {
+              "text": {
                 "root": "文件中转、覆盖与公开分享"
               },
               "link": "/02-developer-guide/backend/file-transfer"
@@ -2600,6 +2624,27 @@
                 "root": "测试与验证"
               },
               "link": "/02-developer-guide/testing"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Web/Frontend"
+          },
+          "link": "/knowledge/code/source-Web#module-5765622f46726f6e74656e64",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "访问统计、浏览器体验与性能观测"
+              },
+              "link": "/02-developer-guide/backend/observability"
+            },
+            {
+              "text": {
+                "root": "Backend保留配置、数据库快照与隐私清理"
+              },
+              "link": "/02-developer-guide/backend/backup-retention"
             }
           ]
         }

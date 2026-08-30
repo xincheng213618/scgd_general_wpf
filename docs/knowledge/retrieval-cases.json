@@ -250,6 +250,26 @@
     {"query":"API Key轮换失败会恢复旧key并续期90天吗","expected_any":["delivery.backend-auth"],"include_planned":false},
     {"query":"X-ColorVision-Web会让后端强制校验CSRF token吗","expected_any":["delivery.backend-auth"],"include_planned":false},
     {"query":"Session的users:manage权限和API Key同名scope是一回事吗","expected_any":["delivery.backend-auth"],"include_planned":false},
-    {"query":"后端修改密码接口失败证明数据库密码没变吗","expected_any":["delivery.backend-accounts"],"include_planned":false}
+    {"query":"后端修改密码接口失败证明数据库密码没变吗","expected_any":["delivery.backend-accounts"],"include_planned":false},
+    {"query":"只给api/site/changelog加view=compact会自动分页吗","expected_any":["delivery.backend-public-data"],"include_planned":false},
+    {"query":"首页update_summary和tool_summary都是全部目录统计吗","expected_any":["delivery.backend-public-data"],"include_planned":false},
+    {"query":"build_android_update_manifest返回available false代表没有任何APK吗","expected_any":["delivery.backend-public-data"],"include_planned":false},
+    {"query":"GET api/site/updates会移动旧更新目录吗","expected_any":["delivery.backend-public-data"],"include_planned":false},
+    {"query":"browse的available_count和total_count为何不同","expected_any":["delivery.backend-public-data"],"include_planned":false},
+    {"query":"发行归档compact和插件compact都是全量读取吗","expected_any":["delivery.backend-public-data"],"include_planned":false},
+    {"query":"is_public_storage_path会逐个验证文件发布状态吗","expected_any":["delivery.backend-public-data"],"include_planned":false},
+    {"query":"access_analytics_enabled关闭后SPA事件一定停止吗","expected_any":["delivery.backend-observability"],"include_planned":false},
+    {"query":"analytics events返回recorded true保证SQLite写入成功吗","expected_any":["delivery.backend-observability"],"include_planned":false},
+    {"query":"uniqueVisitorDays是不是跨天独立人数","expected_any":["delivery.backend-observability"],"include_planned":false},
+    {"query":"慢请求日志和HTTP访问聚合都只记录路由模板吗","expected_any":["delivery.backend-observability"],"include_planned":false},
+    {"query":"性能perf summary能查看days范围内所有慢任务吗","expected_any":["delivery.backend-observability"],"include_planned":false},
+    {"query":"run_job_now返回success证明job_runs历史已更新吗","expected_any":["delivery.backend-jobs"],"include_planned":false},
+    {"query":"禁用Backend任务会停止正在运行的handler吗","expected_any":["delivery.backend-jobs"],"include_planned":false},
+    {"query":"SchedulerThread恢复interrupted是从上次进度续跑吗","expected_any":["delivery.backend-jobs"],"include_planned":false},
+    {"query":"create_database_backup失败会回滚已清理的旧快照吗","expected_any":["delivery.backend-retention"],"include_planned":false},
+    {"query":"marketplace_backup恢复后所有cookie和API key都失效吗","expected_any":["delivery.backend-retention"],"include_planned":false},
+    {"query":"PUT retention是部分修改且立即删除所有过期数据吗","expected_any":["delivery.backend-retention"],"include_planned":false},
+    {"query":"admin_db_backup_keep_count为何仍超过保留数量","expected_any":["delivery.backend-retention"],"include_planned":false},
+    {"query":"plugin_index_check_interval_seconds为何不改变Backend检查周期","expected_any":["delivery.backend-jobs"],"include_planned":false}
   ]
 }

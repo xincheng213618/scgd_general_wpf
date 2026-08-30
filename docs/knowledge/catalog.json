@@ -2003,7 +2003,11 @@
         "delivery.plugin-catalog",
         "delivery.backend-accounts",
         "delivery.backend-auth",
-        "delivery.artifact-delivery"
+        "delivery.artifact-delivery",
+        "delivery.backend-public-data",
+        "delivery.backend-observability",
+        "delivery.backend-jobs",
+        "delivery.backend-retention"
       ],
       "code_scopes": [
         "Web/Backend"
@@ -2013,7 +2017,7 @@
       "source": "docs/02-developer-guide/backend/README.md",
       "url": "/02-developer-guide/backend/README",
       "searchable": true,
-      "source_hash": "851cc5abe696e674d1940c6c22e28205c39364aa0960f36f8a2e9274c284bebb"
+      "source_hash": "9b6a21a1719b6e70f8014fe9b0ea8ca707533c05e26e8c5118be23faeb42b3cc"
     },
     {
       "knowledge_id": "delivery.backend-accounts",
@@ -2135,6 +2139,248 @@
       "url": "/02-developer-guide/backend/authentication",
       "searchable": true,
       "source_hash": "3c003173a4a24e36f1a12bbc512f35b793e6e63b65da3fa38196e100597f687b"
+    },
+    {
+      "knowledge_id": "delivery.backend-jobs",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "Backend内置任务的注册、后台轮询、同步手动执行、SQLite单飞和启动恢复；任务返回、历史落盘与业务副作用不是同一成功边界。",
+      "aliases": [
+        "Backend调度",
+        "Backend任务",
+        "后台任务启停",
+        "Scheduled Jobs",
+        "SchedulerThread",
+        "run_job_now",
+        "scheduled_jobs",
+        "job_runs",
+        "SqliteJobRepository",
+        "single-flight",
+        "interrupted",
+        "next_run_at",
+        "job_history_retention",
+        "startup_index_check",
+        "plugin_index_check_interval_seconds"
+      ],
+      "code_paths": [
+        "Web/Backend/services/scheduler.py",
+        "Web/Backend/services/artifact_index.py",
+        "Web/Backend/ports/jobs.py",
+        "Web/Backend/db/repositories/jobs.py",
+        "Web/Backend/db/schema_version.py",
+        "Web/Backend/db_cache.py",
+        "Web/Backend/routes/admin_api.py",
+        "Web/Backend/app.py"
+      ],
+      "test_paths": [
+        "Web/Backend/test_jobs_repository.py",
+        "Web/Backend/test_schema_version.py",
+        "Web/Backend/test_contracts.py",
+        "Web/Backend/test_admin_data_retention.py"
+      ],
+      "related": [
+        "delivery.backend",
+        "delivery.backend-auth",
+        "delivery.backend-retention",
+        "delivery.plugin-catalog",
+        "delivery.backend-observability",
+        "delivery.file-transfer"
+      ],
+      "code_scopes": [
+        "Web/Backend"
+      ],
+      "domain": "delivery",
+      "title": "Backend内置任务、执行记录与恢复",
+      "source": "docs/02-developer-guide/backend/jobs.md",
+      "url": "/02-developer-guide/backend/jobs",
+      "searchable": true,
+      "source_hash": "83b009cb33aaf9f1d9e8e4802420ba6006c9df045c2f00676be6c5fc2f60f411"
+    },
+    {
+      "knowledge_id": "delivery.backend-observability",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "Backend HTTP访问、SPA体验与性能观测的统计口径、异步丢事件、每日HMAC关联边界、日界线和进程缓存；不等于真实人数或下载完成。",
+      "aliases": [
+        "访问统计",
+        "性能观测",
+        "Access Analytics",
+        "Statistics",
+        "AccessAnalyticsRecorder",
+        "SqliteAccessTrafficQuery",
+        "build_access_event",
+        "build_web_experience_event",
+        "daily_visitor_key",
+        "uniqueVisitorDays",
+        "errorDiagnostics",
+        "reporting_utc_offset_minutes",
+        "access_analytics_enabled",
+        "record_slow_request",
+        "build_performance_summary",
+        "slow_requests",
+        "stats/traffic",
+        "perf/summary",
+        "api/v1/analytics/events"
+      ],
+      "code_paths": [
+        "Web/Backend/services/access_analytics.py",
+        "Web/Backend/services/performance_observability.py",
+        "Web/Backend/app_setup.py",
+        "Web/Backend/context.py",
+        "Web/Backend/routes/public_api.py",
+        "Web/Backend/routes/admin_api.py",
+        "Web/Backend/config_loader.py",
+        "Web/Backend/db/schema_version.py",
+        "Web/Backend/db/repositories/jobs.py",
+        "Web/Backend/services/scheduler.py",
+        "Web/Frontend/src/pages/TrafficPage.tsx",
+        "Web/Frontend/src/services/admin.ts"
+      ],
+      "test_paths": [
+        "Web/Backend/test_access_analytics.py",
+        "Web/Backend/test_performance_observability.py",
+        "Web/Backend/test_schema_version.py",
+        "Web/Backend/test_contracts.py"
+      ],
+      "related": [
+        "delivery.backend",
+        "delivery.artifact-delivery",
+        "delivery.backend-auth"
+      ],
+      "code_scopes": [
+        "Web/Backend",
+        "Web/Frontend"
+      ],
+      "domain": "delivery",
+      "title": "访问统计、浏览器体验与性能观测",
+      "source": "docs/02-developer-guide/backend/observability.md",
+      "url": "/02-developer-guide/backend/observability",
+      "searchable": true,
+      "source_hash": "362110c05de5ec44a9069886986ba987259456fa4e3efbbe04af305bb9051076"
+    },
+    {
+      "knowledge_id": "delivery.backend-public-data",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "公共站点首页、发行归档、日志、工具、Android更新和目录浏览的读模型；compact路径不同，GET可写缓存或修复旧更新目录。",
+      "aliases": [
+        "公共站点读模型",
+        "首页汇总",
+        "发行归档分页",
+        "changelog分页",
+        "Android更新清单",
+        "文件浏览",
+        "api/site/home",
+        "api/site/releases",
+        "api/site/changelog",
+        "api/site/browse",
+        "get_compact_releases_from_index",
+        "get_compact_home_releases_from_index",
+        "build_index_page_context",
+        "paginate_changelog_markdown",
+        "build_android_update_manifest",
+        "select_latest_android_release",
+        "is_public_storage_path",
+        "available_count"
+      ],
+      "code_paths": [
+        "Web/Backend/routes/pages.py",
+        "Web/Backend/marketplace_services.py",
+        "Web/Backend/page_contexts.py",
+        "Web/Backend/services/artifact_index.py",
+        "Web/Backend/services/storage_events.py",
+        "Web/Backend/app_releases.py",
+        "Web/Backend/app_changelog.py",
+        "Web/Backend/storage_browser.py",
+        "Web/Backend/services/public_storage.py",
+        "Web/Backend/services/android_update.py",
+        "Web/Backend/services/app_latest_version_cache.py",
+        "Web/Backend/update_retention.py",
+        "Web/Backend/services/spectrum_release.py",
+        "Web/Backend/services/docs_site.py"
+      ],
+      "test_paths": [
+        "Web/Backend/test_app.py",
+        "Web/Backend/test_artifact_index.py",
+        "Web/Backend/test_page_contexts.py",
+        "Web/Backend/test_app_releases.py"
+      ],
+      "related": [
+        "delivery.backend",
+        "delivery.plugin-catalog",
+        "delivery.artifact-delivery",
+        "delivery.file-transfer",
+        "delivery.backend-auth"
+      ],
+      "code_scopes": [
+        "Web/Backend"
+      ],
+      "domain": "delivery",
+      "title": "公共站点数据、分页与文件可见性",
+      "source": "docs/02-developer-guide/backend/public-data.md",
+      "url": "/02-developer-guide/backend/public-data",
+      "searchable": true,
+      "source_hash": "4b3e1f7b5700f80212ac33bda08ca37201a98a994c9d05724153d35d61a52222"
+    },
+    {
+      "knowledge_id": "delivery.backend-retention",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "Backend六项在线保留配置、SQLite快照创建、隐私清理和轮换；原子配置替换不等于全链事务，备份存在也不证明所有清理或恢复安全。",
+      "aliases": [
+        "运维保留策略",
+        "Operational Retention Settings",
+        "数据库备份",
+        "create_database_backup",
+        "database_backup",
+        "run_admin_data_retention",
+        "admin_data_retention",
+        "marketplace_backup",
+        "backup_security_scrub",
+        "admin_db_backup_keep_count",
+        "audit_log_retention_days",
+        "OPERATIONAL_RETENTION_SETTINGS",
+        "persist_config_values"
+      ],
+      "code_paths": [
+        "Web/Backend/services/database_backup.py",
+        "Web/Backend/services/admin_data_retention.py",
+        "Web/Backend/services/account_security_cleanup.py",
+        "Web/Backend/services/operational_settings.py",
+        "Web/Backend/services/config_persistence.py",
+        "Web/Backend/services/access_analytics.py",
+        "Web/Backend/services/scheduler.py",
+        "Web/Backend/db_cache.py",
+        "Web/Backend/routes/admin_api.py",
+        "Web/Backend/marketplace_services.py",
+        "Web/Frontend/src/pages/SettingsPage.tsx"
+      ],
+      "test_paths": [
+        "Web/Backend/test_operational_settings.py",
+        "Web/Backend/test_admin_data_retention.py",
+        "Web/Backend/test_db_cache.py",
+        "Web/Backend/test_account_security_cleanup.py",
+        "Web/Backend/test_access_analytics.py",
+        "Web/Backend/test_contracts.py"
+      ],
+      "related": [
+        "delivery.backend",
+        "delivery.backend-jobs",
+        "delivery.backend-accounts",
+        "delivery.backend-auth",
+        "delivery.plugin-catalog",
+        "delivery.backend-observability"
+      ],
+      "code_scopes": [
+        "Web/Backend",
+        "Web/Frontend"
+      ],
+      "domain": "delivery",
+      "title": "Backend保留配置、数据库快照与隐私清理",
+      "source": "docs/02-developer-guide/backend/backup-retention.md",
+      "url": "/02-developer-guide/backend/backup-retention",
+      "searchable": true,
+      "source_hash": "c5449b808a25882da9e0ebc89362169009e77056a98ae4dcc127125758d94917"
     },
     {
       "knowledge_id": "delivery.deployment",
@@ -3918,7 +4164,7 @@
       "source": "docs/knowledge/retrieval-checks.md",
       "url": "/knowledge/retrieval-checks",
       "searchable": true,
-      "source_hash": "97d80d761f241512d04a80e1b6d5af7d61810bc9820e57b38f36bbf5c53cf2ed"
+      "source_hash": "8bc675b08c2f9db716e3d3452233ee45f553e91900ae099f5a6382495d919160"
     },
     {
       "knowledge_id": "operations.acceptance",

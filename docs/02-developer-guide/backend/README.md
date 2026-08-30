@@ -6,12 +6,12 @@ summary: "Flask后端的组成、配置、制品与数据库路径、认证和�
 aliases: ["插件市场后端","上传401","Flask","marketplace.db","api/ready","create_app_and_context","RuntimeOverrides","AuthPolicy","Session权限","角色权限"]
 code_paths: ["Web/Backend/app.py","Web/Backend/app_setup.py","Web/Backend/cli.py","Web/Backend/config_loader.py","Web/Backend/runtime_health.py","Web/Backend/routes/health_api.py","Web/Backend/routes/auth_adapters.py","Web/Backend/services/auth_policy.py","Web/Backend/services/auth_middleware.py","Web/Backend/services/permission_service.py","Web/Backend/marketplace_api_routes.py","Web/Backend/services/marketplace_api.py","Web/Backend/services/scheduler.py","Web/Backend/services/storage_events.py"]
 test_paths: ["Web/Backend/test_app.py","Web/Backend/test_app_releases.py","Web/Backend/test_upload_services.py","Web/Backend/test_config_loader.py","Web/Backend/test_auth_policy.py"]
-related: ["delivery.scripts","plugins.index","delivery.file-transfer","delivery.plugin-catalog","delivery.backend-accounts","delivery.backend-auth","delivery.artifact-delivery"]
+related: ["delivery.scripts","plugins.index","delivery.file-transfer","delivery.plugin-catalog","delivery.backend-accounts","delivery.backend-auth","delivery.artifact-delivery","delivery.backend-public-data","delivery.backend-observability","delivery.backend-jobs","delivery.backend-retention"]
 ---
 
 # 插件市场后端
 
-`Web/Backend/` 是插件市场、更新包分发和后台管理门户的 Flask 服务。本页负责组成、配置/路径、启动副作用与健康检查。代码边界的唯一正文分别是[插件目录与索引](./plugin-catalog.md)、[账号与Session生命周期](./accounts.md)、[HTTP认证/API key/CSRF](./authentication.md)、[HTTP制品交付](./artifact-delivery.md)和[文件中转](./file-transfer.md)。`Web/Backend/README.md` 保留模块运行前提以及尚未迁入主题的公共站点投影、分析统计、调度及其它管理细节，不能用本页的入口表代替这些规则。
+`Web/Backend/` 是插件市场、更新包分发和后台管理门户的 Flask 服务。本页负责组成、配置/路径、启动副作用与健康检查。查询与交付分别见[插件目录与索引](./plugin-catalog.md)、[公共站点读模型](./public-data.md)、[HTTP制品交付](./artifact-delivery.md)和[文件中转](./file-transfer.md)；身份见[账号生命周期](./accounts.md)与[HTTP认证/API key/CSRF](./authentication.md)；运行维护见[内置任务](./jobs.md)、[备份与保留](./backup-retention.md)、[访问及性能观测](./observability.md)。`Web/Backend/README.md` 保留模块运行前提以及尚未迁入主题的Copilot、Operations、反馈、部署历史、审计查询和独立CVWindowsService细节，不能用本页入口表代替这些规则。
 
 ## 代码责任
 

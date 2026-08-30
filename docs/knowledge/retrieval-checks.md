@@ -243,6 +243,18 @@ related: ["governance.maintenance", "delivery.testing"]
 | API Key轮换会续期，失败可继续用旧key吗？ | 先提交旧key撤销再按原expiry创建，无整体回滚或自动续期；HTTP默认90天不代表rotate重新计时 |
 | X-ColorVision-Web证明已校验CSRF，带Authorization必须认证成功才免token吗？ | marker影响401挑战，CSRF由Origin/Fetch等分支判断；非空Authorization先免token，认证层可能先接受已有Session；不把现状当更强防护 |
 | 账号密码操作失败就表示数据没改变吗？ | 密码/版本提交与后续session撤销/恢复、恢复申请结案分开，不能用错误响应推断整链回滚 |
+| 公共站点的compact都只读一页吗，changelog默认compact就分页吗？ | 发行ready快路径SQL分页，fallback完整模型再投影；日志需出现page参数才分段且仍读全文，与插件compact路径不同 |
+| 首页update/tool的summary是完整统计，GET不会改目录吗？ | update索引路径按前8项汇总，磁盘回退按全部规范包元数据汇总，tool为预览；回退可先修复旧Update目录，不是跨来源快照 |
+| Android available=false证明无APK，sha256每次重新核算吗？ | 先选最高current候选再验证固定文件，失效不试次新；hash按路径/size/mtime缓存，GET可计算全文并写缓存，不证明签名/安装 |
+| browse限量扫描、total_count等于本页条数，公开目录等于逐文件审核吗？ | 完整枚举当前层后过滤分页；available/total/summary各有范围；公开性按路径前缀而非发布状态判断 |
+| uniqueVisitorDays是跨天人数，每日HMAC绝对不可关联吗？ | 每日地址key去重之和，不是人/设备数；同日HTTP/SPA共享key，持有secret与候选IP可重算；不覆盖审计/代理/慢日志 |
+| analytics返回202 recorded=true、flush成功就证明不丢，关闭开关就全部停止吗？ | HTTP忽略入队拒绝但SPA返回503；入队后可丢，flush只等pending归零；开关只管HTTP聚合，不管SPA/慢请求 |
+| 性能和流量面板范围一致且都隐去具体路径吗？ | 慢请求保留request.path，性能先取最近20任务再筛慢/失败；不按traffic days过滤，页面失败可保留旧结果 |
+| Backend手动run只是入队，禁用就取消，success保证历史落盘吗？ | 手动同步执行且可运行disabled任务；disable/stop不取消在途handler；complete_run可吞提交错误，需区分业务status与历史状态 |
+| SchedulerThread单飞能安全协调多进程，interrupted代表可无条件续跑吗？ | 唯一索引只约束同库同job的running行；启动恢复无owner/租约并改全部running，不续进度也不回滚原副作用 |
+| 六项retention是PATCH且保存就立即清理吗？ | 必须全量六键int；配置replace后更新live，没有客户端revision或跨进程同步，实际删除由后续消费者触发 |
+| 新快照文件出现或backup成功就证明所有旧快照处理成功吗？ | 先可见再清理；新快照失败尝试删除，但在线/旧快照已提交部分不回滚；旧错误和保护集可使数量超上限 |
+| 恢复marketplace_backup会撤销所有cookie/key并安全擦除数据吗？ | scrub针对快照5表和数据库账号auth_version，不覆盖配置管理员cookie/API key/外部配置；SQL删除/quick_check不是安全擦除或业务恢复验收 |
 
 另外用英文代码符号和同义中文说法重复部分问题，确认入口不是只识别一种固定问法。
 
