@@ -124,65 +124,11 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
-        ///   查找类似 一次添加所有可用字段 的本地化字符串。
-        /// </summary>
-        public static string DB_AddAllTooltip {
-            get {
-                return ResourceManager.GetString("DB_AddAllTooltip", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 添加条件 的本地化字符串。
-        /// </summary>
-        public static string DB_AddCondition {
-            get {
-                return ResourceManager.GetString("DB_AddCondition", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 添加筛选字段 的本地化字符串。
-        /// </summary>
-        public static string DB_AddFilterField {
-            get {
-                return ResourceManager.GetString("DB_AddFilterField", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 添加选中字段到查询条件 的本地化字符串。
-        /// </summary>
-        public static string DB_AddTooltip {
-            get {
-                return ResourceManager.GetString("DB_AddTooltip", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 高级查询 的本地化字符串。
         /// </summary>
         public static string DB_AdvancedQuery {
             get {
                 return ResourceManager.GetString("DB_AdvancedQuery", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 以下条件需要全部满足 的本地化字符串。
-        /// </summary>
-        public static string DB_AllConditionsMustMatch {
-            get {
-                return ResourceManager.GetString("DB_AllConditionsMustMatch", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 应用筛选 的本地化字符串。
-        /// </summary>
-        public static string DB_ApplyFilter {
-            get {
-                return ResourceManager.GetString("DB_ApplyFilter", resourceCulture);
             }
         }
         
@@ -529,33 +475,6 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
-        ///   查找类似 筛选条件 的本地化字符串。
-        /// </summary>
-        public static string DB_FilterConditions {
-            get {
-                return ResourceManager.GetString("DB_FilterConditions", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 添加一个或多个条件，应用后将在当前结果表中显示匹配记录。 的本地化字符串。
-        /// </summary>
-        public static string DB_FilterDataDescription {
-            get {
-                return ResourceManager.GetString("DB_FilterDataDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 筛选数据 的本地化字符串。
-        /// </summary>
-        public static string DB_FilterDataTitle {
-            get {
-                return ResourceManager.GetString("DB_FilterDataTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 字段 的本地化字符串。
         /// </summary>
         public static string DB_FilterFieldColumn {
@@ -700,24 +619,6 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
-        ///   查找类似 Mysql配置 的本地化字符串。
-        /// </summary>
-        public static string DB_MysqlConfig {
-            get {
-                return ResourceManager.GetString("DB_MysqlConfig", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 用户可以在这里配置数据库的连接 的本地化字符串。
-        /// </summary>
-        public static string DB_MysqlConfigDesc {
-            get {
-                return ResourceManager.GetString("DB_MysqlConfigDesc", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 新增 的本地化字符串。
         /// </summary>
         public static string DB_New {
@@ -768,15 +669,6 @@ namespace ColorVision.Database.Properties {
         public static string DB_NoFilterConditions {
             get {
                 return ResourceManager.GetString("DB_NoFilterConditions", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 不添加条件时，将按下方设置返回最近的数据。也可以从上方选择字段开始筛选。 的本地化字符串。
-        /// </summary>
-        public static string DB_NoFilterConditionsDescription {
-            get {
-                return ResourceManager.GetString("DB_NoFilterConditionsDescription", resourceCulture);
             }
         }
         
@@ -1042,33 +934,6 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
-        ///   查找类似 重置 的本地化字符串。
-        /// </summary>
-        public static string DB_Reset {
-            get {
-                return ResourceManager.GetString("DB_Reset", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 已重置所有查询条件 的本地化字符串。
-        /// </summary>
-        public static string DB_ResetDone {
-            get {
-                return ResourceManager.GetString("DB_ResetDone", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 清除所有查询条件 的本地化字符串。
-        /// </summary>
-        public static string DB_ResetTooltip {
-            get {
-                return ResourceManager.GetString("DB_ResetTooltip", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 条 的本地化字符串。
         /// </summary>
         public static string DB_ResultUnit {
@@ -1177,15 +1042,6 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
-        ///   查找类似 SQL 预览 的本地化字符串。
-        /// </summary>
-        public static string DB_SqlPreview {
-            get {
-                return ResourceManager.GetString("DB_SqlPreview", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 成功 的本地化字符串。
         /// </summary>
         public static string DB_Success {
@@ -1281,15 +1137,6 @@ namespace ColorVision.Database.Properties {
         public static string MenuEntityBrowser {
             get {
                 return ResourceManager.GetString("MenuEntityBrowser", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 MySQL 的本地化字符串。
-        /// </summary>
-        public static string MenuMySql {
-            get {
-                return ResourceManager.GetString("MenuMySql", resourceCulture);
             }
         }
         

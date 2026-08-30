@@ -79,15 +79,6 @@ namespace ColorVision.ImageEditor.Properties {
         }
 
         /// <summary>
-        ///   查找类似 调整伽马值 的本地化字符串。
-        /// </summary>
-        public static string Algorithm_AdjustGamma {
-            get {
-                return ResourceManager.GetString("Algorithm_AdjustGamma", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   查找类似 调整阈值 的本地化字符串。
         /// </summary>
         public static string Algorithm_AdjustThreshold {
@@ -192,15 +183,6 @@ namespace ColorVision.ImageEditor.Properties {
         public static string Algorithm_FilterCategory {
             get {
                 return ResourceManager.GetString("Algorithm_FilterCategory", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 伽马校正 的本地化字符串。
-        /// </summary>
-        public static string Algorithm_GammaCorrectionTitle {
-            get {
-                return ResourceManager.GetString("Algorithm_GammaCorrectionTitle", resourceCulture);
             }
         }
 
@@ -655,15 +637,6 @@ namespace ColorVision.ImageEditor.Properties {
         }
 
         /// <summary>
-        ///   查找类似 跟随缩放 的本地化字符串。
-        /// </summary>
-        public static string Draw_FollowZoom {
-            get {
-                return ResourceManager.GetString("Draw_FollowZoom", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   查找类似 字号 的本地化字符串。
         /// </summary>
         public static string Draw_FontSize {
@@ -826,15 +799,6 @@ namespace ColorVision.ImageEditor.Properties {
         }
 
         /// <summary>
-        ///   查找类似 伽马校正 的本地化字符串。
-        /// </summary>
-        public static string GammaCorrection {
-            get {
-                return ResourceManager.GetString("GammaCorrection", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   查找类似 高斯模糊 的本地化字符串。
         /// </summary>
         public static string GaussianBlur {
@@ -975,15 +939,6 @@ namespace ColorVision.ImageEditor.Properties {
         public static string Graphic_Height {
             get {
                 return ResourceManager.GetString("Graphic_Height", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 图像设置 的本地化字符串。
-        /// </summary>
-        public static string Graphic_ImageViewSettings {
-            get {
-                return ResourceManager.GetString("Graphic_ImageViewSettings", resourceCulture);
             }
         }
 
@@ -1308,33 +1263,6 @@ namespace ColorVision.ImageEditor.Properties {
         public static string ImageView_Scope_ViewState {
             get {
                 return ResourceManager.GetString("ImageView_Scope_ViewState", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 由当前文件和像素内容决定，切换图像后会整体刷新。 的本地化字符串。
-        /// </summary>
-        public static string ImageView_ScopeDesc_ImageMetadata {
-            get {
-                return ResourceManager.GetString("ImageView_ScopeDesc_ImageMetadata", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 只在特定打开器工作流里有意义的运行态信息。 的本地化字符串。
-        /// </summary>
-        public static string ImageView_ScopeDesc_OpenerRuntime {
-            get {
-                return ResourceManager.GetString("ImageView_ScopeDesc_OpenerRuntime", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 只作用于当前 ImageView 的临时状态，不会写回全局默认值。 的本地化字符串。
-        /// </summary>
-        public static string ImageView_ScopeDesc_ViewState {
-            get {
-                return ResourceManager.GetString("ImageView_ScopeDesc_ViewState", resourceCulture);
             }
         }
 
@@ -1744,15 +1672,6 @@ namespace ColorVision.ImageEditor.Properties {
         }
 
         /// <summary>
-        ///   查找类似 通用 的本地化字符串。
-        /// </summary>
-        public static string Settings_GroupGeneral {
-            get {
-                return ResourceManager.GetString("Settings_GroupGeneral", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   查找类似 加载器 的本地化字符串。
         /// </summary>
         public static string Settings_GroupLoader {
@@ -1983,15 +1902,6 @@ namespace ColorVision.ImageEditor.Properties {
         public static string ThreeD_BottomViewToolTip {
             get {
                 return ResourceManager.GetString("ThreeD_BottomViewToolTip", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 相机 的本地化字符串。
-        /// </summary>
-        public static string ThreeD_Camera {
-            get {
-                return ResourceManager.GetString("ThreeD_Camera", resourceCulture);
             }
         }
 
@@ -2581,15 +2491,6 @@ namespace ColorVision.ImageEditor.Properties {
         }
 
         /// <summary>
-        ///   查找类似 模型结构 的本地化字符串。
-        /// </summary>
-        public static string ThreeD_ModelStructure {
-            get {
-                return ResourceManager.GetString("ThreeD_ModelStructure", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   查找类似 3D模型查看器 的本地化字符串。
         /// </summary>
         public static string ThreeD_ModelViewer {
@@ -2701,15 +2602,6 @@ namespace ColorVision.ImageEditor.Properties {
         }
 
         /// <summary>
-        ///   查找类似 打开模型文件 的本地化字符串。
-        /// </summary>
-        public static string ThreeD_OpenModelToolTip {
-            get {
-                return ResourceManager.GetString("ThreeD_OpenModelToolTip", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   查找类似 正交投影 的本地化字符串。
         /// </summary>
         public static string ThreeD_Orthographic {
@@ -2737,24 +2629,6 @@ namespace ColorVision.ImageEditor.Properties {
         }
 
         /// <summary>
-        ///   查找类似 预设视角 的本地化字符串。
-        /// </summary>
-        public static string ThreeD_PresetViews {
-            get {
-                return ResourceManager.GetString("ThreeD_PresetViews", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 投影 的本地化字符串。
-        /// </summary>
-        public static string ThreeD_Projection {
-            get {
-                return ResourceManager.GetString("ThreeD_Projection", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   查找类似 伪彩色 的本地化字符串。
         /// </summary>
         public static string ThreeD_PseudoColor {
@@ -2769,15 +2643,6 @@ namespace ColorVision.ImageEditor.Properties {
         public static string ThreeD_Reload {
             get {
                 return ResourceManager.GetString("ThreeD_Reload", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 渲染 的本地化字符串。
-        /// </summary>
-        public static string ThreeD_Rendering {
-            get {
-                return ResourceManager.GetString("ThreeD_Rendering", resourceCulture);
             }
         }
 
@@ -2814,15 +2679,6 @@ namespace ColorVision.ImageEditor.Properties {
         public static string ThreeD_Resolution {
             get {
                 return ResourceManager.GetString("ThreeD_Resolution", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 恢复全部 的本地化字符串。
-        /// </summary>
-        public static string ThreeD_RestoreAll {
-            get {
-                return ResourceManager.GetString("ThreeD_RestoreAll", resourceCulture);
             }
         }
 
@@ -2935,15 +2791,6 @@ namespace ColorVision.ImageEditor.Properties {
         }
 
         /// <summary>
-        ///   查找类似 显示材质 的本地化字符串。
-        /// </summary>
-        public static string ThreeD_ShowMaterial {
-            get {
-                return ResourceManager.GetString("ThreeD_ShowMaterial", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   查找类似 已显示全部对象。 的本地化字符串。
         /// </summary>
         public static string ThreeD_ShownAll {
@@ -2962,15 +2809,6 @@ namespace ColorVision.ImageEditor.Properties {
         }
 
         /// <summary>
-        ///   查找类似 显示贴图 的本地化字符串。
-        /// </summary>
-        public static string ThreeD_ShowTexture {
-            get {
-                return ResourceManager.GetString("ThreeD_ShowTexture", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   查找类似 实体 的本地化字符串。
         /// </summary>
         public static string ThreeD_Solid {
@@ -2985,15 +2823,6 @@ namespace ColorVision.ImageEditor.Properties {
         public static string ThreeD_StatusModel {
             get {
                 return ResourceManager.GetString("ThreeD_StatusModel", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 支持 OBJ 与 STL 的本地化字符串。
-        /// </summary>
-        public static string ThreeD_SupportedFormatsHint {
-            get {
-                return ResourceManager.GetString("ThreeD_SupportedFormatsHint", resourceCulture);
             }
         }
 
@@ -3102,15 +2931,6 @@ namespace ColorVision.ImageEditor.Properties {
         public static string ThreeD_View3D {
             get {
                 return ResourceManager.GetString("ThreeD_View3D", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 线框模式 的本地化字符串。
-        /// </summary>
-        public static string ThreeD_Wireframe {
-            get {
-                return ResourceManager.GetString("ThreeD_Wireframe", resourceCulture);
             }
         }
 

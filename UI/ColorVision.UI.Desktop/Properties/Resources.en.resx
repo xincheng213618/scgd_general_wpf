@@ -120,12 +120,6 @@
   <data name="Search" xml:space="preserve">
     <value>Search</value>
   </data>
-  <data name="ConfigurationManagement" xml:space="preserve">
-    <value>Configuration Management Window</value>
-  </data>
-  <data name="SaveConfiguration" xml:space="preserve">
-    <value>Save configuration</value>
-  </data>
   <data name="OpenConfigFolder" xml:space="preserve">
     <value>Open Configuration Folder</value>
   </data>
@@ -161,9 +155,6 @@
   <data name="Restart" xml:space="preserve">
     <value>Restart</value>
   </data>
-  <data name="UpdateAll" xml:space="preserve">
-    <value>Update All</value>
-  </data>
   <data name="PluginManagerWindow" xml:space="preserve">
     <value>Plugin Manager Window</value>
   </data>
@@ -192,8 +183,6 @@
     <value>Update</value>
   </data>  <data name="Reset" xml:space="preserve">
     <value>Reset</value>
-  </data>  <data name="ProjectNotFound" xml:space="preserve">
-    <value>Project {0} not found</value>
   </data>  <data name="Options" xml:space="preserve">
     <value>Options</value>
   </data>  <data name="OpenFolder" xml:space="preserve">
@@ -482,15 +471,6 @@
   <data name="MenuTimedButtonOperationStats" xml:space="preserve">
     <value>Button Timing Statistics</value>
   </data>
-  <data name="ConfigManager_Columns" xml:space="preserve"><value>Columns:</value></data>
-  <data name="ConfigManager_Assembly" xml:space="preserve"><value>Assembly</value></data>
-  <data name="ConfigManager_ConfigList" xml:space="preserve"><value>Config List</value></data>
-  <data name="ConfigManager_SelectConfig" xml:space="preserve"><value>Select a config to view details</value></data>
-  <data name="ConfigManager_Summary" xml:space="preserve"><value>{0} assemblies, {1} config types</value></data>
-  <data name="ConfigManager_ConfigPrefix" xml:space="preserve"><value>Config: {0}</value></data>
-  <data name="ConfigManager_CurrentSelection" xml:space="preserve"><value>Current: {0}</value></data>
-  <data name="ConfigManager_LoadFailed" xml:space="preserve"><value>Failed to load config properties</value></data>
-  <data name="ConfigManager_SaveSuccess" xml:space="preserve"><value>Saved successfully</value></data>
   <data name="ConfigManager_Prompt" xml:space="preserve"><value>Prompt</value></data>
   <data name="Wizard_Configure" xml:space="preserve"><value>Configure</value></data>
   <data name="CustomApp_AddTitle" xml:space="preserve"><value>Add Custom Application</value></data>
@@ -520,7 +500,6 @@
   <data name="CustomApp_ConfirmDelete" xml:space="preserve"><value>Are you sure you want to delete custom application "{0}"?</value></data>
   <data name="CustomApp_ConfirmDeleteTitle" xml:space="preserve"><value>Confirm Delete</value></data>
   <data name="CustomApp_AddScriptTitle" xml:space="preserve"><value>Add Quick Script</value></data>
-  <data name="CustomApp_LocalApps" xml:space="preserve"><value>Local Apps</value></data>
   <data name="CustomApp_QuickActions" xml:space="preserve"><value>Quick Actions</value></data>
   <data name="CustomApp_ExeFilter" xml:space="preserve"><value>Executable (*.exe)|*.exe|Batch (*.bat;*.cmd)|*.bat;*.cmd|All Files (*.*)|*.*</value></data>
   <data name="Stats_Title" xml:space="preserve"><value>Button Timing Stats</value></data>
@@ -597,9 +576,6 @@
   </data>
   <data name="MarketplaceDetailInfoHeader" xml:space="preserve">
     <value>Details</value>
-  </data>
-  <data name="MarketplaceDependentsHeader" xml:space="preserve">
-    <value>Dependencies</value>
   </data>
   <data name="MarketplaceOpenProjectUrl" xml:space="preserve">
     <value>Open Project URL</value>
@@ -684,9 +660,6 @@
   </data>
   <data name="MarketplaceBulkUpdateTitle" xml:space="preserve">
     <value>Bulk Update</value>
-  </data>
-  <data name="MarketplacePackageColumn" xml:space="preserve">
-    <value>Package</value>
   </data>
   <data name="MarketplaceHasUpdateTooltip" xml:space="preserve">
     <value>Update available</value>

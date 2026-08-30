@@ -916,9 +916,6 @@
   <data name="自动/自适应" xml:space="preserve">
     <value>Auto/Adapt</value>
   </data>
-  <data name="Token" xml:space="preserve">
-    <value>Token</value>
-  </data>
   <data name="Port" xml:space="preserve">
     <value>Port</value>
   </data>

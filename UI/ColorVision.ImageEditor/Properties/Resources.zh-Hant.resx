@@ -151,9 +151,6 @@
   <data name="WhiteBalanceAdjustment" xml:space="preserve">
     <value>白平衡調整</value>
   </data>
-  <data name="GammaCorrection" xml:space="preserve">
-    <value>伽瑪校正</value>
-  </data>
   <data name="LuminanceContrastAdjustment" xml:space="preserve">
     <value>基礎調整...</value>
   </data>
@@ -219,9 +216,6 @@
   </data>
   <data name="Draw_DefaultColor" xml:space="preserve">
     <value>預設顏色</value>
-  </data>
-  <data name="Draw_FollowZoom" xml:space="preserve">
-    <value>跟隨縮放</value>
   </data>
   <data name="Draw_HighlighterMode" xml:space="preserve">
     <value>螢光筆模式</value>
@@ -364,15 +358,6 @@
   <data name="ImageView_Scope_OpenerRuntime" xml:space="preserve">
     <value>開啟器執行期</value>
   </data>
-  <data name="ImageView_ScopeDesc_ImageMetadata" xml:space="preserve">
-    <value>由目前檔案和像素內容決定，切換影像後會整體重新整理。</value>
-  </data>
-  <data name="ImageView_ScopeDesc_ViewState" xml:space="preserve">
-    <value>僅作用於目前 ImageView 的暫時狀態，不會寫回全域預設值。</value>
-  </data>
-  <data name="ImageView_ScopeDesc_OpenerRuntime" xml:space="preserve">
-    <value>只在特定開啟器工作流程裡有意義的執行期資訊。</value>
-  </data>
   <data name="Cie_Title" xml:space="preserve">
     <value>CIE 色度圖</value>
   </data>
@@ -442,9 +427,6 @@
   <data name="Settings_EntryCount" xml:space="preserve">
     <value>{0} items</value>
   </data>
-  <data name="Settings_GroupGeneral" xml:space="preserve">
-    <value>General</value>
-  </data>
   <data name="Settings_GroupDisplay" xml:space="preserve">
     <value>Display</value>
   </data>
@@ -488,23 +470,14 @@
   <data name="ThreeD_ModelViewer" xml:space="preserve">
     <value>3D模型查看器</value>
   </data>
-  <data name="ThreeD_ModelStructure" xml:space="preserve">
-    <value>模型結構</value>
-  </data>
   <data name="ThreeD_IsolateSelected" xml:space="preserve">
     <value>隔離選中</value>
-  </data>
-  <data name="ThreeD_RestoreAll" xml:space="preserve">
-    <value>恢復全部</value>
   </data>
   <data name="ThreeD_File" xml:space="preserve">
     <value>文件</value>
   </data>
   <data name="ThreeD_OpenModel" xml:space="preserve">
     <value>打開模型</value>
-  </data>
-  <data name="ThreeD_OpenModelToolTip" xml:space="preserve">
-    <value>打開模型文件</value>
   </data>
   <data name="ThreeD_CameraPosition" xml:space="preserve">
     <value>相機位置</value>
@@ -535,9 +508,6 @@
   </data>
   <data name="ThreeD_LookDownToolTip" xml:space="preserve">
     <value>下看 (C)</value>
-  </data>
-  <data name="ThreeD_PresetViews" xml:space="preserve">
-    <value>預設視角</value>
   </data>
   <data name="ThreeD_Front" xml:space="preserve">
     <value>前</value>
@@ -578,26 +548,11 @@
   <data name="ThreeD_IsoViewToolTip" xml:space="preserve">
     <value>等軸視圖</value>
   </data>
-  <data name="ThreeD_Projection" xml:space="preserve">
-    <value>投影</value>
-  </data>
   <data name="ThreeD_Orthographic" xml:space="preserve">
     <value>正交投影</value>
   </data>
   <data name="ThreeD_Perspective" xml:space="preserve">
     <value>透視</value>
-  </data>
-  <data name="ThreeD_Rendering" xml:space="preserve">
-    <value>渲染</value>
-  </data>
-  <data name="ThreeD_Wireframe" xml:space="preserve">
-    <value>線框模式</value>
-  </data>
-  <data name="ThreeD_ShowTexture" xml:space="preserve">
-    <value>顯示貼圖</value>
-  </data>
-  <data name="ThreeD_ShowMaterial" xml:space="preserve">
-    <value>顯示材質</value>
   </data>
   <data name="ThreeD_ResetView" xml:space="preserve">
     <value>重置視角</value>
@@ -613,9 +568,6 @@
   </data>
   <data name="ThreeD_View" xml:space="preserve">
     <value>視圖</value>
-  </data>
-  <data name="ThreeD_Camera" xml:space="preserve">
-    <value>相機</value>
   </data>
   <data name="ThreeD_View3D" xml:space="preserve">
     <value>3D視圖</value>
@@ -746,9 +698,6 @@
   <data name="Graphic_ClearAll" xml:space="preserve">
     <value>清除</value>
   </data>
-  <data name="Graphic_ImageViewSettings" xml:space="preserve">
-    <value>圖像設置</value>
-  </data>
   <data name="Graphic_CountMin1" xml:space="preserve">
     <value>繪製的個數不能小於1</value>
   </data>
@@ -865,12 +814,6 @@
   </data>
   <data name="Algorithm_MedianBlurTitle" xml:space="preserve">
     <value>中值濾波</value>
-  </data>
-  <data name="Algorithm_GammaCorrectionTitle" xml:space="preserve">
-    <value>伽馬校正</value>
-  </data>
-  <data name="Algorithm_AdjustGamma" xml:space="preserve">
-    <value>調整伽馬值</value>
   </data>
   <data name="Algorithm_GammaValue" xml:space="preserve">
     <value>伽馬值</value>
@@ -1078,9 +1021,6 @@
   </data>
   <data name="ThreeD_StatusModel" xml:space="preserve">
     <value>3D 模型</value>
-  </data>
-  <data name="ThreeD_SupportedFormatsHint" xml:space="preserve">
-    <value>支援 OBJ 與 STL</value>
   </data>
   <data name="ThreeD_TexturedMaterial" xml:space="preserve">
     <value>紋理材質</value>

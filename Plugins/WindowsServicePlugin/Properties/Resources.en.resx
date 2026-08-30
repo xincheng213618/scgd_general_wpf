@@ -135,9 +135,6 @@
   <data name="ManagementService" xml:space="preserve">
     <value>Management Services</value>
   </data>
-  <data name="ReplaceServiceCfg" xml:space="preserve">
-    <value>Replace service CFG</value>
-  </data>
   <data name="ServiceManager" xml:space="preserve">
     <value>Service Manager</value>
   </data>
@@ -146,12 +143,6 @@
   </data>
   <data name="CVWinSMSPathDescription" xml:space="preserve">
     <value>Executable path for the CVWinSMS service tool.</value>
-  </data>
-  <data name="CVWinSMSIsAutoUpdate" xml:space="preserve">
-    <value>CVWinSMS auto update</value>
-  </data>
-  <data name="CVWinSMSIsAutoUpdateDescription" xml:space="preserve">
-    <value>Allows the CVWinSMS service tool to detect and apply updates automatically.</value>
   </data>
   <data name="ServiceManagerBaseLocation" xml:space="preserve">
     <value>Service installation root</value>
@@ -431,9 +422,6 @@
   </data>
   <data name="SelectVc2013InstallerDialog" xml:space="preserve">
     <value>Select VC++ 2013 x64 runtime installer</value>
-  </data>
-  <data name="InstallErrorCaption" xml:space="preserve">
-    <value>Error</value>
   </data>
   <data name="CVWindowsService" xml:space="preserve">
     <value>CVWindowsService</value>

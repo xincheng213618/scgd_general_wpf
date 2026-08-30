@@ -163,12 +163,6 @@
   <data name="PermissionMode" xml:space="preserve">
     <value>权限模式</value>
   </data>
-  <data name="LoginTime" xml:space="preserve">
-    <value>登录时间</value>
-  </data>
-  <data name="UserManagementSystem" xml:space="preserve">
-    <value>用户管理系统</value>
-  </data>
   <data name="EditInfo" xml:space="preserve">
     <value>编辑信息</value>
   </data>
@@ -176,8 +170,6 @@
     <value>用户管理</value>
   </data>  <data name="LoginOrSwitch" xml:space="preserve">
     <value>登录/切换</value>
-  </data>  <data name="WelcomeBack" xml:space="preserve">
-    <value>欢迎回来</value>
   </data>
   <data name="RememberLoginStatus7Days" xml:space="preserve">
     <value>记住登录状态（7天内自动登录）</value>
@@ -206,12 +198,7 @@
   <data name="MenuResetLayout" xml:space="preserve">
     <value>重置窗口布局</value>
   </data>
-  <data name="LayoutNotFoundMessage" xml:space="preserve">
-    <value>未找到已保存的窗口布局。</value>
-  </data>
-  <data name="LayoutNotFoundTitle" xml:space="preserve">
-    <value>应用窗口布局</value>
-  </data><data name="MultiImageViewer" xml:space="preserve"><value>多图浏览器</value></data>
+  <data name="MultiImageViewer" xml:space="preserve"><value>多图浏览器</value></data>
   <data name="Sol_MivCfg_ShowFileList" xml:space="preserve"><value>显示文件列表</value></data>
   <data name="Sol_MivCfg_View" xml:space="preserve"><value>视图</value></data>
   <data name="Sol_MivCfg_ListHeight" xml:space="preserve"><value>列表高度</value></data>

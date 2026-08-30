@@ -151,9 +151,6 @@
   <data name="WhiteBalanceAdjustment" xml:space="preserve">
     <value>白平衡调整</value>
   </data>
-  <data name="GammaCorrection" xml:space="preserve">
-    <value>伽马校正</value>
-  </data>
   <data name="LuminanceContrastAdjustment" xml:space="preserve">
     <value>基础调整...</value>
   </data>
@@ -214,9 +211,6 @@
   <data name="Settings_EntryCount" xml:space="preserve">
     <value>{0} 项</value>
   </data>
-  <data name="Settings_GroupGeneral" xml:space="preserve">
-    <value>通用</value>
-  </data>
   <data name="Settings_GroupDisplay" xml:space="preserve">
     <value>显示</value>
   </data>
@@ -253,23 +247,14 @@
   <data name="ThreeD_ModelViewer" xml:space="preserve">
     <value>3D模型查看器</value>
   </data>
-  <data name="ThreeD_ModelStructure" xml:space="preserve">
-    <value>模型结构</value>
-  </data>
   <data name="ThreeD_IsolateSelected" xml:space="preserve">
     <value>隔离选中</value>
-  </data>
-  <data name="ThreeD_RestoreAll" xml:space="preserve">
-    <value>恢复全部</value>
   </data>
   <data name="ThreeD_File" xml:space="preserve">
     <value>文件</value>
   </data>
   <data name="ThreeD_OpenModel" xml:space="preserve">
     <value>打开模型</value>
-  </data>
-  <data name="ThreeD_OpenModelToolTip" xml:space="preserve">
-    <value>打开模型文件</value>
   </data>
   <data name="ThreeD_CameraPosition" xml:space="preserve">
     <value>相机位置</value>
@@ -300,9 +285,6 @@
   </data>
   <data name="ThreeD_LookDownToolTip" xml:space="preserve">
     <value>下看 (C)</value>
-  </data>
-  <data name="ThreeD_PresetViews" xml:space="preserve">
-    <value>预设视角</value>
   </data>
   <data name="ThreeD_Front" xml:space="preserve">
     <value>前</value>
@@ -343,26 +325,11 @@
   <data name="ThreeD_IsoViewToolTip" xml:space="preserve">
     <value>等轴视图</value>
   </data>
-  <data name="ThreeD_Projection" xml:space="preserve">
-    <value>投影</value>
-  </data>
   <data name="ThreeD_Orthographic" xml:space="preserve">
     <value>正交投影</value>
   </data>
   <data name="ThreeD_Perspective" xml:space="preserve">
     <value>透视</value>
-  </data>
-  <data name="ThreeD_Rendering" xml:space="preserve">
-    <value>渲染</value>
-  </data>
-  <data name="ThreeD_Wireframe" xml:space="preserve">
-    <value>线框模式</value>
-  </data>
-  <data name="ThreeD_ShowTexture" xml:space="preserve">
-    <value>显示贴图</value>
-  </data>
-  <data name="ThreeD_ShowMaterial" xml:space="preserve">
-    <value>显示材质</value>
   </data>
   <data name="ThreeD_ResetView" xml:space="preserve">
     <value>重置视角</value>
@@ -378,9 +345,6 @@
   </data>
   <data name="ThreeD_View" xml:space="preserve">
     <value>视图</value>
-  </data>
-  <data name="ThreeD_Camera" xml:space="preserve">
-    <value>相机</value>
   </data>
   <data name="ThreeD_View3D" xml:space="preserve">
     <value>3D视图</value>
@@ -511,9 +475,6 @@
   <data name="Graphic_ClearAll" xml:space="preserve">
     <value>清除</value>
   </data>
-  <data name="Graphic_ImageViewSettings" xml:space="preserve">
-    <value>图像设置</value>
-  </data>
   <data name="Graphic_CountMin1" xml:space="preserve">
     <value>绘制的个数不能小于1</value>
   </data>
@@ -631,12 +592,6 @@
   <data name="Algorithm_MedianBlurTitle" xml:space="preserve">
     <value>中值滤波</value>
   </data>
-  <data name="Algorithm_GammaCorrectionTitle" xml:space="preserve">
-    <value>伽马校正</value>
-  </data>
-  <data name="Algorithm_AdjustGamma" xml:space="preserve">
-    <value>调整伽马值</value>
-  </data>
   <data name="Algorithm_GammaValue" xml:space="preserve">
     <value>伽马值</value>
   </data>
@@ -724,15 +679,6 @@
   <data name="ImageView_Scope_OpenerRuntime" xml:space="preserve">
     <value>打开器运行态</value>
   </data>
-  <data name="ImageView_ScopeDesc_ImageMetadata" xml:space="preserve">
-    <value>由当前文件和像素内容决定，切换图像后会整体刷新。</value>
-  </data>
-  <data name="ImageView_ScopeDesc_ViewState" xml:space="preserve">
-    <value>只作用于当前 ImageView 的临时状态，不会写回全局默认值。</value>
-  </data>
-  <data name="ImageView_ScopeDesc_OpenerRuntime" xml:space="preserve">
-    <value>只在特定打开器工作流里有意义的运行态信息。</value>
-  </data>
   <data name="Cie_Title" xml:space="preserve">
     <value>CIE 色度图</value>
   </data>
@@ -801,9 +747,6 @@
   </data>
   <data name="Draw_DefaultColor" xml:space="preserve">
     <value>默认颜色</value>
-  </data>
-  <data name="Draw_FollowZoom" xml:space="preserve">
-    <value>跟随缩放</value>
   </data>
   <data name="Draw_HighlighterMode" xml:space="preserve">
     <value>荧光笔模式</value>
@@ -1078,9 +1021,6 @@
   </data>
   <data name="ThreeD_StatusModel" xml:space="preserve">
     <value>3D 模型</value>
-  </data>
-  <data name="ThreeD_SupportedFormatsHint" xml:space="preserve">
-    <value>支持 OBJ 与 STL</value>
   </data>
   <data name="ThreeD_TexturedMaterial" xml:space="preserve">
     <value>纹理材质</value>

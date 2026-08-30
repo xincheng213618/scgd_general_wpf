@@ -200,9 +200,6 @@
   <data name="Enabled" xml:space="preserve">
     <value>已启用</value>
   </data>
-  <data name="EnabledStatus" xml:space="preserve">
-    <value>启用状态</value>
-  </data>
   <data name="FilterAll" xml:space="preserve">
     <value>全部</value>
   </data>
@@ -229,9 +226,6 @@
   </data>
   <data name="OpenListenAddressFailedFormat" xml:space="preserve">
     <value>打开 {0} 失败: {1}</value>
-  </data>
-  <data name="OpenStatus" xml:space="preserve">
-    <value>服务打开</value>
   </data>
   <data name="PrettyPrintView" xml:space="preserve">
     <value>格式化查看</value>

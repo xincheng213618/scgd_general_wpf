@@ -60,13 +60,5 @@ namespace ProjectLUX.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 确定 的本地化字符串。
-        /// </summary>
-        public static string OK {
-            get {
-                return ResourceManager.GetString("OK", resourceCulture);
-            }
-        }
     }
 }

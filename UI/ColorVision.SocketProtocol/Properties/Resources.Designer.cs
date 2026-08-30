@@ -259,15 +259,6 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
-        ///   查找类似 启用状态 的本地化字符串。
-        /// </summary>
-        public static string EnabledStatus {
-            get {
-                return ResourceManager.GetString("EnabledStatus", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 事件名 的本地化字符串。
         /// </summary>
         public static string EventName {
@@ -534,15 +525,6 @@ namespace ColorVision.SocketProtocol.Properties {
         public static string OpenListenAddressFailedFormat {
             get {
                 return ResourceManager.GetString("OpenListenAddressFailedFormat", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 服务打开 的本地化字符串。
-        /// </summary>
-        public static string OpenStatus {
-            get {
-                return ResourceManager.GetString("OpenStatus", resourceCulture);
             }
         }
         

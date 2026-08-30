@@ -163,8 +163,6 @@
     <value>取消</value>
   </data>  <data name="Query" xml:space="preserve">
     <value>查詢</value>
-  </data>  <data name="MenuMySql" xml:space="preserve">
-    <value>MySQL</value>
   </data>
   <data name="MenuEntityBrowser" xml:space="preserve">
     <value>資料庫瀏覽器</value>
@@ -304,23 +302,8 @@
   <data name="DB_Add" xml:space="preserve">
     <value>+ 新增</value>
   </data>
-  <data name="DB_AddTooltip" xml:space="preserve">
-    <value>新增選取欄位到查詢條件</value>
-  </data>
   <data name="DB_AddAll" xml:space="preserve">
     <value>全部新增</value>
-  </data>
-  <data name="DB_AddAllTooltip" xml:space="preserve">
-    <value>一次新增所有可用欄位</value>
-  </data>
-  <data name="DB_Reset" xml:space="preserve">
-    <value>重設</value>
-  </data>
-  <data name="DB_ResetTooltip" xml:space="preserve">
-    <value>清除所有查詢條件</value>
-  </data>
-  <data name="DB_SqlPreview" xml:space="preserve">
-    <value>SQL 預覽</value>
   </data>
   <data name="DB_QueryCount" xml:space="preserve">
     <value>查詢數量</value>
@@ -330,15 +313,6 @@
   </data>
   <data name="DB_RemoveCondition" xml:space="preserve">
     <value>移除此條件</value>
-  </data>
-  <data name="DB_ResetDone" xml:space="preserve">
-    <value>已重設所有查詢條件</value>
-  </data>
-  <data name="DB_MysqlConfig" xml:space="preserve">
-    <value>Mysql配置</value>
-  </data>
-  <data name="DB_MysqlConfigDesc" xml:space="preserve">
-    <value>使用者可以在這裡配置資料庫的連線</value>
   </data>
   <data name="DB_DbNameEmpty" xml:space="preserve">
     <value>資料庫名稱不能為空</value>
@@ -394,29 +368,11 @@
   <data name="DB_EditRow" xml:space="preserve">
     <value>編輯行</value>
   </data>
-  <data name="DB_FilterDataTitle" xml:space="preserve">
-    <value>篩選資料</value>
-  </data>
-  <data name="DB_FilterDataDescription" xml:space="preserve">
-    <value>新增一個或多個條件，套用後將在目前結果表中顯示符合的記錄。</value>
-  </data>
-  <data name="DB_AddFilterField" xml:space="preserve">
-    <value>新增篩選欄位</value>
-  </data>
   <data name="DB_SelectFilterField" xml:space="preserve">
     <value>選擇篩選欄位</value>
   </data>
-  <data name="DB_AddCondition" xml:space="preserve">
-    <value>新增條件</value>
-  </data>
   <data name="DB_ClearConditions" xml:space="preserve">
     <value>清除條件</value>
-  </data>
-  <data name="DB_FilterConditions" xml:space="preserve">
-    <value>篩選條件</value>
-  </data>
-  <data name="DB_AllConditionsMustMatch" xml:space="preserve">
-    <value>以下條件需要全部符合</value>
   </data>
   <data name="DB_FilterFieldColumn" xml:space="preserve">
     <value>欄位</value>
@@ -429,9 +385,6 @@
   </data>
   <data name="DB_NoFilterConditions" xml:space="preserve">
     <value>尚未新增篩選條件</value>
-  </data>
-  <data name="DB_NoFilterConditionsDescription" xml:space="preserve">
-    <value>不新增條件時，將依照下方設定傳回最近的資料。也可以從上方選擇欄位開始篩選。</value>
   </data>
   <data name="DB_MaxResults" xml:space="preserve">
     <value>最多傳回</value>
@@ -447,9 +400,6 @@
   </data>
   <data name="DB_OldestFirst" xml:space="preserve">
     <value>最早優先</value>
-  </data>
-  <data name="DB_ApplyFilter" xml:space="preserve">
-    <value>套用篩選</value>
   </data>
   <data name="DB_MaxResultsRange" xml:space="preserve">
     <value>最多傳回數量必須是 1 到 10000 之間的整數。</value>

@@ -151,9 +151,6 @@
   <data name="WhiteBalanceAdjustment" xml:space="preserve">
     <value>White balance adjustment</value>
   </data>
-  <data name="GammaCorrection" xml:space="preserve">
-    <value>Gamma correction</value>
-  </data>
   <data name="LuminanceContrastAdjustment" xml:space="preserve">
     <value>Basic adjustment...</value>
   </data>
@@ -213,9 +210,6 @@
   </data>
   <data name="Settings_EntryCount" xml:space="preserve">
     <value>{0} items</value>
-  </data>
-  <data name="Settings_GroupGeneral" xml:space="preserve">
-    <value>General</value>
   </data>
   <data name="Settings_GroupDisplay" xml:space="preserve">
     <value>Display</value>
@@ -325,15 +319,6 @@
   <data name="ImageView_Scope_OpenerRuntime" xml:space="preserve">
     <value>Opener Runtime</value>
   </data>
-  <data name="ImageView_ScopeDesc_ImageMetadata" xml:space="preserve">
-    <value>Determined by the current file and pixel content; fully refreshed when switching images.</value>
-  </data>
-  <data name="ImageView_ScopeDesc_ViewState" xml:space="preserve">
-    <value>Temporary state for the current ImageView; not written back to global defaults.</value>
-  </data>
-  <data name="ImageView_ScopeDesc_OpenerRuntime" xml:space="preserve">
-    <value>Runtime information meaningful only in specific opener workflows.</value>
-  </data>
   <data name="Cie_Title" xml:space="preserve">
     <value>CIE Chromaticity Diagram</value>
   </data>
@@ -402,9 +387,6 @@
   </data>
   <data name="Draw_DefaultColor" xml:space="preserve">
     <value>Default Color</value>
-  </data>
-  <data name="Draw_FollowZoom" xml:space="preserve">
-    <value>Follow Zoom</value>
   </data>
   <data name="Draw_HighlighterMode" xml:space="preserve">
     <value>Highlighter Mode</value>
@@ -481,23 +463,14 @@
   <data name="ThreeD_ModelViewer" xml:space="preserve">
     <value>3D Model Viewer</value>
   </data>
-  <data name="ThreeD_ModelStructure" xml:space="preserve">
-    <value>Model Structure</value>
-  </data>
   <data name="ThreeD_IsolateSelected" xml:space="preserve">
     <value>Isolate Selected</value>
-  </data>
-  <data name="ThreeD_RestoreAll" xml:space="preserve">
-    <value>Restore All</value>
   </data>
   <data name="ThreeD_File" xml:space="preserve">
     <value>File</value>
   </data>
   <data name="ThreeD_OpenModel" xml:space="preserve">
     <value>Open Model</value>
-  </data>
-  <data name="ThreeD_OpenModelToolTip" xml:space="preserve">
-    <value>Open model file</value>
   </data>
   <data name="ThreeD_CameraPosition" xml:space="preserve">
     <value>Camera Position</value>
@@ -528,9 +501,6 @@
   </data>
   <data name="ThreeD_LookDownToolTip" xml:space="preserve">
     <value>Look Down (C)</value>
-  </data>
-  <data name="ThreeD_PresetViews" xml:space="preserve">
-    <value>Preset Views</value>
   </data>
   <data name="ThreeD_Front" xml:space="preserve">
     <value>Front</value>
@@ -571,26 +541,11 @@
   <data name="ThreeD_IsoViewToolTip" xml:space="preserve">
     <value>Isometric View</value>
   </data>
-  <data name="ThreeD_Projection" xml:space="preserve">
-    <value>Projection</value>
-  </data>
   <data name="ThreeD_Orthographic" xml:space="preserve">
     <value>Orthographic</value>
   </data>
   <data name="ThreeD_Perspective" xml:space="preserve">
     <value>Perspective</value>
-  </data>
-  <data name="ThreeD_Rendering" xml:space="preserve">
-    <value>Rendering</value>
-  </data>
-  <data name="ThreeD_Wireframe" xml:space="preserve">
-    <value>Wireframe</value>
-  </data>
-  <data name="ThreeD_ShowTexture" xml:space="preserve">
-    <value>Show Texture</value>
-  </data>
-  <data name="ThreeD_ShowMaterial" xml:space="preserve">
-    <value>Show Material</value>
   </data>
   <data name="ThreeD_ResetView" xml:space="preserve">
     <value>Reset View</value>
@@ -606,9 +561,6 @@
   </data>
   <data name="ThreeD_View" xml:space="preserve">
     <value>View</value>
-  </data>
-  <data name="ThreeD_Camera" xml:space="preserve">
-    <value>Camera</value>
   </data>
   <data name="ThreeD_View3D" xml:space="preserve">
     <value>3D View</value>
@@ -739,9 +691,6 @@
   <data name="Graphic_ClearAll" xml:space="preserve">
     <value>Clear</value>
   </data>
-  <data name="Graphic_ImageViewSettings" xml:space="preserve">
-    <value>Image Settings</value>
-  </data>
   <data name="Graphic_CountMin1" xml:space="preserve">
     <value>Draw count cannot be less than 1</value>
   </data>
@@ -858,12 +807,6 @@
   </data>
   <data name="Algorithm_MedianBlurTitle" xml:space="preserve">
     <value>Median Blur</value>
-  </data>
-  <data name="Algorithm_GammaCorrectionTitle" xml:space="preserve">
-    <value>Gamma Correction</value>
-  </data>
-  <data name="Algorithm_AdjustGamma" xml:space="preserve">
-    <value>Adjust Gamma Value</value>
   </data>
   <data name="Algorithm_GammaValue" xml:space="preserve">
     <value>Gamma Value</value>
@@ -1078,9 +1021,6 @@ Double-click object: Focus</value>
   </data>
   <data name="ThreeD_StatusModel" xml:space="preserve">
     <value>3D Model</value>
-  </data>
-  <data name="ThreeD_SupportedFormatsHint" xml:space="preserve">
-    <value>Supports OBJ and STL</value>
   </data>
   <data name="ThreeD_TexturedMaterial" xml:space="preserve">
     <value>Textured</value>

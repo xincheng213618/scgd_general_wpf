@@ -198,17 +198,8 @@
   <data name="Sched_Error" xml:space="preserve">
     <value>错误</value>
   </data>
-  <data name="Sched_Prompt" xml:space="preserve">
-    <value>提示</value>
-  </data>
   <data name="Sched_ConfirmDelete" xml:space="preserve">
     <value>确认删除</value>
-  </data>
-  <data name="Sched_Success" xml:space="preserve">
-    <value>成功</value>
-  </data>
-  <data name="Sched_PartialSuccess" xml:space="preserve">
-    <value>部分成功</value>
   </data>
   <data name="Sched_ExportSuccess" xml:space="preserve">
     <value>导出成功</value>
@@ -294,9 +285,6 @@
   <data name="Sched_ClearDone" xml:space="preserve">
     <value>清理完成</value>
   </data>
-  <data name="Sched_Task" xml:space="preserve">
-    <value>任务</value>
-  </data>
   <data name="Sched_TaskType" xml:space="preserve">
     <value>任务类型</value>
   </data>
@@ -368,9 +356,6 @@
   </data>
   <data name="Sched_NotInit" xml:space="preserve">
     <value>调度器未初始化</value>
-  </data>
-  <data name="Sched_CreateTriggerFailed" xml:space="preserve">
-    <value>创建触发器失败</value>
   </data>
   <data name="Sched_CreateTaskFailed" xml:space="preserve">
     <value>创建任务失败: {0}</value>

@@ -415,9 +415,6 @@
   <data name="AutoExploreTemplate" xml:space="preserve">
     <value>自動曝光模板</value>
   </data>
-  <data name="EditThirdPartyAlgorithmTemplate" xml:space="preserve">
-    <value>編輯第三方演算法模板</value>
-  </data>
 
 
 
@@ -581,9 +578,6 @@
     <value>POI修正標定參數模板設定</value>
   </data>
 
-  <data name="LightBarDetectionV2" xml:space="preserve">
-    <value>燈條檢測V2</value>
-  </data>
 
   
 
@@ -632,9 +626,6 @@
   </data>
   <data name="DataLoad" xml:space="preserve">
     <value>資料載入</value>
-  </data>
-  <data name="AADetect" xml:space="preserve">
-    <value>發光區檢測</value>
   </data>
   <data name="StereoFusion" xml:space="preserve">
     <value>雙目融合</value>
@@ -1056,12 +1047,6 @@
     <value>數量</value>
   </data>
 
-  <data name="FindActiveArea" xml:space="preserve">
-    <value>偵測發光區</value>
-  </data>
-  <data name="FillArea" xml:space="preserve">
-    <value>填充區域</value>
-  </data>
   <data name="Width" xml:space="preserve">
     <value>寬度</value>
   </data>
@@ -1340,13 +1325,7 @@
   <data name="DistortionEvaluationTemplateManagement" xml:space="preserve">
     <value>畸變評價模板管理</value>
   </data>
-  <data name="FOVTemplateManagement" xml:space="preserve">
-    <value>FOV範本管理</value>
-  </data>
 
-  <data name="MTFTemplateManagement" xml:space="preserve">
-    <value>MTF範本管理</value>
-  </data>
 
   
   <data name="DataLoadTemplateManagement" xml:space="preserve">
@@ -2062,12 +2041,6 @@
   </data>
   <data name="Engine_Msg_BackupSuccess" xml:space="preserve">
     <value>Backup successful</value>
-  </data>
-  <data name="Engine_Msg_RestoreSuccessRestarting" xml:space="preserve">
-    <value>Restore successful, restarting service</value>
-  </data>
-  <data name="Engine_Msg_ServiceRestartSuccess" xml:space="preserve">
-    <value>Service restart successful, restarting software</value>
   </data>
   <data name="Engine_Msg_ServiceRestartFailed" xml:space="preserve">
     <value>Service restart failed</value>
@@ -3009,7 +2982,6 @@
   <data name="Camera_HkRoiAlignmentWarning" xml:space="preserve"><value>HK 相機 ROI 的寬高必須以 {0} 像素為步進設定。&#xD;&#xA;&#xD;&#xA;目前 ROI：Width={1}, Height={2}&#xD;&#xA;不符合項目：{3}&#xD;&#xA;&#xD;&#xA;儲存前請將上述值調整為 {0} 的倍數。</value></data>
   <data name="Calibration_PackageFileNotFound" xml:space="preserve"><value>校正套件中找不到檔案：{0}&#xD;&#xA;{1}</value></data>
   <data name="Statistics" xml:space="preserve"><value>統計資訊</value></data>
-  <data name="MtfStatisticsCsvHeader" xml:space="preserve"><value>屬性,最大值,最大值所在名稱,最小值,最小值所在名稱,平均值,變異數,均勻性</value></data>
 
   <data name="CreateToPOI" xml:space="preserve">
     <value>建立為POI</value>

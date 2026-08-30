@@ -227,12 +227,7 @@
   </data>  <data name="LogLevelDescription" xml:space="preserve">
     <value>控制应用写入日志的详细程度。</value>
   </data>
-  <data name="MarketplaceServiceBaseUrl" xml:space="preserve">
-    <value>插件市场服务地址</value>
-  </data>
-  <data name="MarketplaceServiceBaseUrlDescription" xml:space="preserve">
-    <value>插件市场、更新检查和在线包接口使用的服务地址。</value>
-  </data>  <data name="Search" xml:space="preserve">
+  <data name="Search" xml:space="preserve">
     <value>搜索</value>
   </data>
   <data name="SearchSettingsTitle" xml:space="preserve">
@@ -294,8 +289,6 @@
     <value>更新Log4Net 日志级别：</value>
   </data>  <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>正在检索是否存在附加项目</value>
-  </data>  <data name="ProjectNotFound" xml:space="preserve">
-    <value>找不到项目{0}</value>
   </data>
   <data name="FoundProjectDownloadConfirm" xml:space="preserve">
     <value>找到项目{0}，{1}，是否下载</value>
@@ -377,38 +370,11 @@
   <data name="RemStagePointsToTemp" xml:space="preserve">
     <value>rem STAGE 指向临时目录中解压出的 ColorVision 内容根</value>
   </data>
-  <data name="EchoBackingUpCurrentVersion" xml:space="preserve">
-    <value>echo 正在备份当前版本...</value>
-  </data>
-  <data name="EchoTargetDirNotExist" xml:space="preserve">
-    <value>  echo 目标目录不存在，跳过备份。</value>
-  </data>
-  <data name="EchoBackupTo" xml:space="preserve">
-    <value>  echo 备份到：%BKDIR%</value>
-  </data>
-  <data name="EchoBackupComplete" xml:space="preserve">
-    <value>  echo 备份完成。</value>
-  </data>
-  <data name="RemRobocopySuccess" xml:space="preserve">
-    <value>  rem Robocopy 0-7 视为成功</value>
-  </data>
-  <data name="EchoRobocopyFailed" xml:space="preserve">
-    <value>     echo Robocopy 失败，错误码 !RC! ，尝试使用 XCOPY 回退...</value>
-  </data>
-  <data name="EchoRobocopyNotFound" xml:space="preserve">
-    <value>  echo 未找到 Robocopy，回退到 XCOPY...</value>
-  </data>
   <data name="EchoUsingXCOPY" xml:space="preserve">
     <value>echo 使用 XCOPY 回退复制...</value>
   </data>
-  <data name="EchoXCOPYFailed" xml:space="preserve">
-    <value>  echo XCOPY 复制失败，更新中止。</value>
-  </data>
   <data name="EchoCopyComplete" xml:space="preserve">
     <value>echo 复制完成。</value>
-  </data>
-  <data name="EchoRestartingProgram" xml:space="preserve">
-    <value>echo 正在重新启动程序...</value>
   </data>
   <data name="EchoSchedulingCleanup" xml:space="preserve">
     <value>echo 安排延迟清理临时目录与脚本...</value>
@@ -443,9 +409,6 @@
   </data>
   <data name="Theme" xml:space="preserve">
     <value>主题</value>
-  </data>
-  <data name="ThemeDescription" xml:space="preserve">
-    <value>选择应用界面的颜色主题。</value>
   </data>
   <data name="SearchEngine" xml:space="preserve">
     <value>搜索引擎</value>
@@ -603,44 +566,11 @@
   <data name="TimedOp_Warmup" xml:space="preserve">
     <value>预热:</value>
   </data>
-  <data name="TimedOp_NoStableSamples" xml:space="preserve">
-    <value>稳定样本暂无记录。</value>
-  </data>
-  <data name="TimedOp_WarmupNote" xml:space="preserve">
-    <value>本次软件启动的首轮样本按预热处理，不参与平均。</value>
-  </data>
   <data name="TimedOp_Last" xml:space="preserve">
     <value>上次:</value>
   </data>
   <data name="TimedOp_Average" xml:space="preserve">
     <value>平均:</value>
-  </data>
-  <data name="TimedOp_Fastest" xml:space="preserve">
-    <value>最快:</value>
-  </data>
-  <data name="TimedOp_Slowest" xml:space="preserve">
-    <value>最慢:</value>
-  </data>
-  <data name="TimedOp_StableSamples" xml:space="preserve">
-    <value>稳定样本:</value>
-  </data>
-  <data name="TimedOp_RightClickHint" xml:space="preserve">
-    <value>右键按钮可打开统计窗口。</value>
-  </data>
-  <data name="TimedOp_FewSamples" xml:space="preserve">
-    <value>稳定样本仍然较少，继续执行后会更准确。</value>
-  </data>
-  <data name="TimedOp_StatsRecorded" xml:space="preserve">
-    <value>耗时统计已记录。</value>
-  </data>
-  <data name="TimedOp_CloseToAverage" xml:space="preserve">
-    <value>本次与历史平均接近。</value>
-  </data>
-  <data name="TimedOp_FasterThanAverage" xml:space="preserve">
-    <value>本次比历史平均快 {0}。</value>
-  </data>
-  <data name="TimedOp_SlowerThanAverage" xml:space="preserve">
-    <value>本次比历史平均慢 {0}。</value>
   </data>
   <data name="ListEditor_ListCount" xml:space="preserve">
     <value>[列表: {0} 项]</value>

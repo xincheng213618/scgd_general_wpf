@@ -218,17 +218,8 @@
   <data name="Sched_Error" xml:space="preserve">
     <value>Error</value>
   </data>
-  <data name="Sched_Prompt" xml:space="preserve">
-    <value>Prompt</value>
-  </data>
   <data name="Sched_ConfirmDelete" xml:space="preserve">
     <value>Confirm Delete</value>
-  </data>
-  <data name="Sched_Success" xml:space="preserve">
-    <value>Success</value>
-  </data>
-  <data name="Sched_PartialSuccess" xml:space="preserve">
-    <value>Partial Success</value>
   </data>
   <data name="Sched_ExportSuccess" xml:space="preserve">
     <value>Export successful</value>
@@ -338,9 +329,6 @@
   <data name="Sched_ClearDone" xml:space="preserve">
     <value>Clear completed</value>
   </data>
-  <data name="Sched_Task" xml:space="preserve">
-    <value>Task</value>
-  </data>
   <data name="Sched_RepeatCount" xml:space="preserve">
     <value>Repeat Count</value>
   </data>
@@ -388,9 +376,6 @@
   </data>
   <data name="Sched_NotInit" xml:space="preserve">
     <value>Scheduler not initialized</value>
-  </data>
-  <data name="Sched_CreateTriggerFailed" xml:space="preserve">
-    <value>Failed to create trigger</value>
   </data>
   <data name="Sched_CreateTaskFailed" xml:space="preserve">
     <value>Failed to create task: {0}</value>

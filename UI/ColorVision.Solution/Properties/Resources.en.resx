@@ -182,12 +182,6 @@
   <data name="PermissionMode" xml:space="preserve">
     <value>Permission mode</value>
   </data>
-  <data name="LoginTime" xml:space="preserve">
-    <value>Login time</value>
-  </data>
-  <data name="UserManagementSystem" xml:space="preserve">
-    <value>User Management System</value>
-  </data>
   <data name="EditInfo" xml:space="preserve">
     <value>Editing</value>
   </data>
@@ -195,8 +189,6 @@
     <value>User Management</value>
   </data>  <data name="LoginOrSwitch" xml:space="preserve">
     <value>Login/Switch</value>
-  </data>  <data name="WelcomeBack" xml:space="preserve">
-    <value>Welcome back</value>
   </data>
   <data name="RememberLoginStatus7Days" xml:space="preserve">
     <value>Remember login status (automatic login within 7 days)</value>
@@ -225,12 +217,7 @@
   <data name="MenuResetLayout" xml:space="preserve">
     <value>Reset Window Layout</value>
   </data>
-  <data name="LayoutNotFoundMessage" xml:space="preserve">
-    <value>Saved window layout was not found.</value>
-  </data>
-  <data name="LayoutNotFoundTitle" xml:space="preserve">
-    <value>Apply Window Layout</value>
-  </data><data name="MultiImageViewer" xml:space="preserve"><value>Multi-Image Viewer</value></data>
+  <data name="MultiImageViewer" xml:space="preserve"><value>Multi-Image Viewer</value></data>
   <data name="Sol_MivCfg_ShowFileList" xml:space="preserve"><value>Show File List</value></data>
   <data name="Sol_MivCfg_View" xml:space="preserve"><value>View</value></data>
   <data name="Sol_MivCfg_ListHeight" xml:space="preserve"><value>List Height</value></data>

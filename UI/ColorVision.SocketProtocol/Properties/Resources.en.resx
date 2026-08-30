@@ -220,9 +220,6 @@
   <data name="Enabled" xml:space="preserve">
     <value>Enabled</value>
   </data>
-  <data name="EnabledStatus" xml:space="preserve">
-    <value>Enabled status</value>
-  </data>
   <data name="FilterAll" xml:space="preserve">
     <value>All</value>
   </data>
@@ -249,9 +246,6 @@
   </data>
   <data name="OpenListenAddressFailedFormat" xml:space="preserve">
     <value>Failed to open {0}: {1}</value>
-  </data>
-  <data name="OpenStatus" xml:space="preserve">
-    <value>Service open</value>
   </data>
   <data name="PrettyPrintView" xml:space="preserve">
     <value>Pretty print</value>
