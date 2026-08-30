@@ -390,7 +390,8 @@ namespace ColorVision.Copilot
                 if (!IsCurrentProfile() || cancellation.IsCancellationRequested)
                     return;
                 SelectedProfileConnectionTestText = result.FormatStatus();
-                SetSettingsNotice($"Model test succeeded for {profileLabel}. {SelectedProfileConnectionTestText}");
+                if (string.Equals(SettingsStatusText, _modelConnectionTestNotice, StringComparison.Ordinal))
+                    SetSettingsNotice($"Model test succeeded for {profileLabel}. {SelectedProfileConnectionTestText}");
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
@@ -400,14 +401,16 @@ namespace ColorVision.Copilot
                 if (!IsCurrentProfile() || cancellation.IsCancellationRequested)
                     return;
                 SelectedProfileConnectionTestText = FormatModelConnectionDiagnosticFailure(exception);
-                SetSettingsNotice(SelectedProfileConnectionTestText);
+                if (string.Equals(SettingsStatusText, _modelConnectionTestNotice, StringComparison.Ordinal))
+                    SetSettingsNotice(SelectedProfileConnectionTestText);
             }
             catch (Exception ex)
             {
                 if (!IsCurrentProfile() || cancellation.IsCancellationRequested)
                     return;
                 SelectedProfileConnectionTestText = "Connection failed: " + SanitizeError(ex.Message);
-                SetSettingsNotice(SanitizeError(SelectedProfileConnectionTestText));
+                if (string.Equals(SettingsStatusText, _modelConnectionTestNotice, StringComparison.Ordinal))
+                    SetSettingsNotice(SanitizeError(SelectedProfileConnectionTestText));
             }
             finally
             {

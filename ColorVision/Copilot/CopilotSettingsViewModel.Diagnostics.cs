@@ -24,7 +24,7 @@ namespace ColorVision.Copilot
     {
         private void RefreshMcpDiagnostics()
         {
-            RefreshExternalMcpClientsStatus(_config.ExternalMcpServers);
+            ValidateExternalMcpServers(updateNotice: false);
             var entries = CopilotMcpAuditLogger.GetRecentEntries(20);
             var failureCount = entries.Count(CopilotMcpAuditLogger.IsRealFailureEntry);
             var approvalFlowCount = entries.Count(CopilotMcpAuditLogger.IsApprovalFlowEntry);

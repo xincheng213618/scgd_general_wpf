@@ -1358,6 +1358,7 @@
         "ColorVision/Copilot/CopilotSettingsViewModel.ProfileManagement.cs",
         "ColorVision/Copilot/CopilotSettingsViewModel.BackendSync.cs",
         "ColorVision/Copilot/CopilotSettingsViewModel.ExternalMcp.cs",
+        "ColorVision/Copilot/CopilotSettingsViewModel.Diagnostics.cs",
         "ColorVision/Copilot/CopilotSettingsViewModel.McpOperations.cs",
         "ColorVision/Copilot/CopilotSettingsViewModel.WebPageNetwork.cs",
         "ColorVision/Copilot/CopilotChatViewModel.ControlAndSettings.cs",
@@ -1380,6 +1381,7 @@
         "Test/ColorVision.Copilot.Tests/CopilotMcpClientConfigurationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotMcpConnectionDiagnosticTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotLocalMcpDiagnosticLifecycleTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotExternalMcpDiagnosticDraftTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotModelConnectionDiagnosticLifecycleTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotProfileConfigTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotConfigWebPageNetworkTests.cs"
@@ -1402,7 +1404,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-configuration.md",
       "url": "/02-developer-guide/core-concepts/copilot-configuration",
       "searchable": true,
-      "source_hash": "8b153301d6122cb3626843c653db3eeda4f6c8e51d93e81dfbd59c55bad8cc16"
+      "source_hash": "1c8260a0ba5ed421540a596bc9e9652184a2c8b42e1b63cd3ad42a2a24b3cf41"
     },
     {
       "knowledge_id": "copilot.execution",

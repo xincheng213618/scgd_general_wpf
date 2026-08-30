@@ -40,11 +40,59 @@ public sealed class CopilotModelConnectionDiagnosticLifecycleTests : IDisposable
             Assert.Contains("2 displayable characters", viewModel.SelectedProfileConnectionTestText, StringComparison.Ordinal);
             Assert.Contains("Model test succeeded for Profile A.", viewModel.SettingsStatusText, StringComparison.Ordinal);
         }
+        else
+        {
+            Assert.Equal(viewModel.SelectedProfileConnectionTestText, viewModel.SettingsStatusText);
+        }
         Assert.Equal(1, handler.RequestCount);
         using var payload = JsonDocument.Parse(handler.RequestBody);
         Assert.Equal("test-model-a", payload.RootElement.GetProperty("model").GetString());
         Assert.Equal(128, payload.RootElement.GetProperty("max_tokens").GetInt32());
         Assert.Equal(0, payload.RootElement.GetProperty("temperature").GetDouble());
+        Assert.Empty(Directory.EnumerateFiles(_rootDirectory));
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    public async Task DiagnosticResultPreservesNewerSettingsNotice(bool succeeds, bool invalidPort)
+    {
+        using var handler = new DeferredModelHandler(succeeds);
+        using var client = new HttpClient(handler);
+        using var viewModel = CreateViewModel(client);
+        var profile = viewModel.SelectedProfile;
+        var context = new PausedSynchronizationContext();
+        var diagnostic = StartDiagnostic(viewModel, context);
+
+        handler.Release.TrySetResult();
+        await context.CallbackPosted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.False(diagnostic.IsCompleted);
+        if (invalidPort)
+        {
+            viewModel.McpPortText = "invalid-port";
+            Assert.False(viewModel.Save());
+            Assert.False(viewModel.CanSaveSettings);
+        }
+        else
+        {
+            viewModel.BackendSyncUrl = "https://changed.example.test/configuration";
+            Assert.True(viewModel.HasUnsavedSettings);
+        }
+        var notice = viewModel.SettingsStatusText;
+        Assert.DoesNotContain("Testing Profile A", notice, StringComparison.Ordinal);
+
+        context.RunPending();
+        await diagnostic.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Same(profile, viewModel.SelectedProfile);
+        Assert.StartsWith(succeeds ? "Connected in " : "Connection failed in ", viewModel.SelectedProfileConnectionTestText, StringComparison.Ordinal);
+        Assert.Equal(notice, viewModel.SettingsStatusText);
+        Assert.False(viewModel.IsTestingSelectedProfileConnection);
+        Assert.False(viewModel.HasAppliedChanges);
+        Assert.False(handler.RequestWasCancelled);
+        Assert.Equal(1, handler.RequestCount);
         Assert.Empty(Directory.EnumerateFiles(_rootDirectory));
     }
 
