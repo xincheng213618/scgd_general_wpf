@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "Copilot 请求调度、工具筛选、审批、只读委派与执行证据闭环。"
 aliases: ["为什么 Copilot 没调用工具","子 Agent 有哪些权限","CopilotAgentTaskHost","CopilotToolRegistry","CopilotAgentExecutionContract"]
-code_paths: ["ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs","ColorVision/Copilot/Agent/CopilotToolRegistry.cs","ColorVision/Copilot/Agent/CopilotAgentExecutionContract.cs","ColorVision/Copilot/Agent/CopilotToolExecution.cs","ColorVision/Copilot/Agent/CopilotAgentAccessModels.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.ApprovalRouting.cs","ColorVision/Copilot/Presentation/CopilotHostedTurnCompletion.cs","ColorVision/Copilot/CopilotConversationUsageDiagnostics.cs","ColorVision/Copilot/CopilotConversationStatistics.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentTaskHostQueueDispatchTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentExecutionContractRetryTests.cs","Test/ColorVision.Copilot.Tests/CopilotCodexApprovalsReviewerTests.cs"]
+code_paths: ["ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs","ColorVision/Copilot/Agent/CopilotProviderRetryChatClient.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.AgentStreamingLoop.cs","ColorVision/Copilot/Agent/CopilotToolRegistry.cs","ColorVision/Copilot/Agent/CopilotAgentExecutionContract.cs","ColorVision/Copilot/Agent/CopilotToolExecution.cs","ColorVision/Copilot/Agent/CopilotAgentAccessModels.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.ApprovalRouting.cs","ColorVision/Copilot/Presentation/CopilotHostedTurnCompletion.cs","ColorVision/Copilot/CopilotConversationUsageDiagnostics.cs","ColorVision/Copilot/CopilotConversationStatistics.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentTaskHostQueueDispatchTests.cs","Test/ColorVision.Copilot.Tests/CopilotAnthropicProviderFailureTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentExecutionContractRetryTests.cs","Test/ColorVision.Copilot.Tests/CopilotCodexApprovalsReviewerTests.cs"]
 related: ["copilot.runtime","copilot.tool-contracts","copilot.lifecycle","copilot.interactions","copilot.session-tools"]
 ---
 
@@ -46,6 +46,8 @@ CopilotToolRegistry
 ## 运行时选择与临时授权
 
 `CopilotAgentRuntimeRouter` 将配置完整的 OpenAI-compatible 和 Anthropic-compatible Profile 送入 Agent Framework。运行时不会在失败后自动切换执行器，也不会重放已经产生文本或工具调用的请求，避免写操作被重复执行。模型设置不暴露运行时开关。输入框的访问状态通过同一个可变 `CopilotAgentAccessContext` 进入 `CopilotTurnRequest`、`CopilotAgentRequest` 和正在运行的 Framework Session，但不会写入会话状态。
+
+Anthropic 官方适配器的 `AnthropicSseException` 进入同一供应商错误处理边界。尚未输出内容或工具调用时，只有 SDK 明确分类的 `overloaded_error`、`rate_limit_error`、`api_error` 和 `timeout_error` 可按现有次数／退避限制重试；认证、请求及未知错误不自动重试。SSE 错误不是 HTTP 错误状态，重试诊断保留固定错误类型，不伪造 429 等状态码。已经产生正文或工具执行记录后，任何该类 SSE 中断都保留进展，以 `ProviderFailure` 完成账本与检查点收尾，不重发已产生内容的调用。`CopilotAnthropicProviderFailureTests` 使用安装版本的正式适配器和受控 SSE，覆盖错误分类、正文后不重发、实际工具完成后的恢复，以及严格 Turn 终态；失败流未由适配器发布正式 usage 时仍按预算估算处理，不把底层 `message_start` 字段冒充已返回的完整用量。
 
 内部兼容枚举名 `FullAccess` 表示最长 15 分钟、绑定 conversation、task 和当前 workspace 的临时授权，不是任意工具免审。`CanAutoApprove` 的直接批准分支目前只允许声明 `AllowsTemporaryFullAccess` 的 `ApplyWorkspacePatchEnvelope` 与 `RollbackWorkspacePatchEnvelope`，并复核可写范围；其他受保护工具可以在 `CanAutoReview` 条件成立时交独立权限审查器逐次复核，因此不能写成“Shell、模板、Flow、菜单和数据库一律每次人工确认”。临时任务复核与显式 `approvals_reviewer=auto_review` 的条件、未批准后的不同处理，以及 `/approve` 精确重试边界统一见[原生审批、自动复核与参数快照](./copilot-agent-tool-contracts.md#原生审批与参数快照)。`ConfirmProtectedActions` 也不等于禁止显式配置的自动复核。
 

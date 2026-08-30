@@ -87,7 +87,7 @@ namespace ColorVision.Copilot
             var cancelledCount = 0;
             foreach (var runId in runIds)
             {
-                if (_taskHost.RequestCancel(runId))
+                if (_taskHost.RequestCancelQueued(runId))
                     cancelledCount++;
             }
             return cancelledCount;
@@ -103,7 +103,7 @@ namespace ColorVision.Copilot
             var cancelledCount = 0;
             foreach (var runId in runIds)
             {
-                if (_taskHost.RequestCancel(runId))
+                if (_taskHost.RequestCancelQueued(runId))
                     cancelledCount++;
             }
             return cancelledCount;
@@ -292,7 +292,7 @@ namespace ColorVision.Copilot
 
         public bool TryStart(string runId) => _taskHost.TryStartQueuedRun(runId);
 
-        public bool RequestCancel(string runId) => _taskHost.RequestCancel(runId);
+        public bool RequestCancelQueued(string runId) => _taskHost.RequestCancelQueued(runId);
 
         public int GetQueuePosition(string runId) => _taskHost.GetQueuePosition(runId);
 

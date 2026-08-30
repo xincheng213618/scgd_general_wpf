@@ -623,6 +623,7 @@ namespace ColorVision.Copilot
         {
             if (queuedFollowUp == null
                 || queuedFollowUp.IsGoalBound
+                || _followUpQueue.GetQueuePosition(queuedFollowUp.RunId) == 0
                 || IsEditingMessage
                 || !IsInputEmpty)
             {
@@ -665,7 +666,7 @@ namespace ColorVision.Copilot
             InputText = composerState.Text;
             SetPendingAgentSkillReference(composerState.AgentSkillReference);
             UpdateAttachmentsState(conversation);
-            if (!_followUpQueue.RequestCancel(queuedFollowUp.RunId))
+            if (!_followUpQueue.RequestCancelQueued(queuedFollowUp.RunId))
             {
                 conversation.Attachments.Clear();
                 SetPendingRequestModeOverride(previousMode);
@@ -709,7 +710,7 @@ namespace ColorVision.Copilot
             out bool pausedGoal)
         {
             pausedGoal = false;
-            if (queuedFollowUp == null || !_followUpQueue.RequestCancel(queuedFollowUp.RunId))
+            if (queuedFollowUp == null || !_followUpQueue.RequestCancelQueued(queuedFollowUp.RunId))
                 return false;
 
             if (!queuedFollowUp.IsGoalBound)

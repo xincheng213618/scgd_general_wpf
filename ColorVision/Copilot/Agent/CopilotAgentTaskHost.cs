@@ -625,13 +625,18 @@ namespace ColorVision.Copilot
             return true;
         }
 
-        public bool RequestCancel(string? runId = null)
+        public bool RequestCancel(string? runId = null) => RequestCancelCore(runId, queuedOnly: false);
+
+        // A queue item may have started while its confirmation dialog or UI notification was pending.
+        public bool RequestCancelQueued(string runId) => RequestCancelCore(runId, queuedOnly: true);
+
+        private bool RequestCancelCore(string? runId, bool queuedOnly)
         {
             CopilotHostedAgentRun? run;
             var wasQueued = false;
             lock (_gate)
             {
-                run = MatchRun(_activeWorkItem?.Run, runId) ? _activeWorkItem?.Run : null;
+                run = !queuedOnly && MatchRun(_activeWorkItem?.Run, runId) ? _activeWorkItem?.Run : null;
                 if (run == null && !string.IsNullOrWhiteSpace(runId))
                 {
                     var node = _queuedWorkItems.First;

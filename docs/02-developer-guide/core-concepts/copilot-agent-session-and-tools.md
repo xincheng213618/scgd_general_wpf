@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "Copilot 会话检查点、任务呈现、重试和内置工具的状态恢复与安全边界。"
 aliases: ["Copilot 会话如何恢复","工具失败能否重试","诊断模式会自动读取日志吗","CopilotAgentSessionCheckpoint","CopilotAgentTaskEventJournal","GetRecentLog","CopilotRecentLogSupport"]
-code_paths: ["ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs","ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.cs","ColorVision/Copilot/State/","ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs","ColorVision/Copilot/Agent/CopilotQueuedFollowUpCoordinator.cs","ColorVision/Copilot/Agent/CopilotToolIntentPolicy.cs","ColorVision/Copilot/Agent/Tools/CopilotGetRecentLogTool.cs","ColorVision/Copilot/Capabilities/CopilotRecentLogSupport.cs","ColorVision/Copilot/Capabilities/CopilotAgentCapabilityServices.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs","Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatStateRecoveryAttachmentTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatStateProfileReconciliationTests.cs","Test/ColorVision.Copilot.Tests/CopilotManagedAttachmentDeletionTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatViewModelProfileIsolationTests.cs"]
+code_paths: ["ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs","ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.cs","ColorVision/Copilot/State/","ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs","ColorVision/Copilot/Agent/CopilotQueuedFollowUpCoordinator.cs","ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs","ColorVision/Copilot/Agent/CopilotToolIntentPolicy.cs","ColorVision/Copilot/Agent/Tools/CopilotGetRecentLogTool.cs","ColorVision/Copilot/Capabilities/CopilotRecentLogSupport.cs","ColorVision/Copilot/Capabilities/CopilotAgentCapabilityServices.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs","Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatStateRecoveryAttachmentTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatStateProfileReconciliationTests.cs","Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotManagedAttachmentDeletionTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatViewModelProfileIsolationTests.cs"]
 related: ["copilot.runtime","copilot.tool-contracts","copilot.lifecycle","copilot.interactions"]
 ---
 
@@ -30,6 +30,7 @@ related: ["copilot.runtime","copilot.tool-contracts","copilot.lifecycle","copilo
 - `CopilotQueuedFollowUp` 保留提交时的 Profile、附件、活动文档、解决方案根和 Live Context，但不提前创建用户/助手消息。任务真正取得执行权时，才从刚完成的 conversation 重新捕获可见历史并写入本轮消息，避免把上一轮的未完成快照固化进下一轮。
 - 普通 follow-up 在图片准入或 UI 准备阶段取消／失败且尚未建立消息时，通过同一 recovery coordinator 把输入和附件恢复到源会话，保留更新的草稿；只有源会话仍被选中才同步输入框。UI 创建消息前再次检查取消，防止图片保存期间的取消仍产生新轮次。消息建立后的 Flush 失败继续走已有回滚，已执行的请求不按这条路径重放。自动目标续作不会把内部续作提示恢复成用户草稿；正常应用退出时保留尚未消费的恢复记录。
 - 输入区上方显示全局队列位置，并允许相邻上移、下移、删除或取消后移回输入框编辑；所有操作都复用 Host 的锁、run state 和变更事件，桌面宠物也在排序变化后重新聚合任务状态。
+- 队列删除、移回输入框编辑及目标队列清理使用 `RequestCancelQueued`，在 Host 锁内仅移除仍在等待的项。确认框或 UI 通知延迟期间已经取得活动槽的请求不能被旧队列对象取消，也不能因此清除其恢复记录或暂停目标；明确的任务停止仍走支持活动请求的 `RequestCancel`。`CopilotQueuedFollowUpCancellationTests` 用真实 Host 的受控晋升验证旧对象、正常队列删除／编辑、目标清理及显式停止，不操作确认弹窗。
 - 可在运行中执行的本地命令可以立即分派；其他 Slash 命令可走 `IsLocalCommand` 专用队列，取得执行权后由宿主 handler 解析，不能去掉 `/` 当普通模型提示词。持久化等待结束后，在变更会话或执行命令前再次检查取消；已取消的命令不产生副作用，并通过同一 coordinator 恢复草稿和附件，选中会话的输入框同步恢复且保留更新的草稿。此检查不撤销已经开始执行的命令。命令控制与位置变化见[交互契约](./copilot-local-interactions.md#诊断、设置与任务控制不是同一种命令)。
 
 ## 磁盘状态回退与附件保护

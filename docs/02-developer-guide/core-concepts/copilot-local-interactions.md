@@ -80,7 +80,7 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 - `/settings` 打开配置；`/model`、`/reasoning`（`/effort`）选择现有 Profile/受支持级别，不另建一套配置。落盘与运行态发布失败要分开判断，见[配置契约](./copilot-configuration.md)。`/personality` 是当前会话后续回答的沟通风格，不修改工具权限。
 - `/permissions` 打开同一盾牌菜单，`status` 展示范围/能力/审批策略；`ask|auto` 修改任务绑定的访问状态。`/approve` 包含原生待确认动作和自动审查拒绝后的精确重试入口，具体授权、过期和复核边界见[执行链](./copilot-agent-execution.md)。
 - 裸 `/tasks` 查看活动/队列和可恢复项；`stop N`、`resume N`、`dismiss N` 分别进入停止、恢复、放弃路径。stop/dismiss 有原生确认，resume 重新评估 checkpoint/能力兼容后才提交；Ctrl+T 只是折叠同一任务列表，不做这些操作。
-- 裸 `/queue` 查看当前会话条目，编号是当时的全局队列位置，不是稳定ID。当前实现还有 `send|edit|up|down|delete N` 和 `clear`：send 提升下一项并请求停止当前任务；edit 取消排队并恢复输入/附件但不发送；delete 取消且可能暂停绑定目标；clear 经确认只清当前会话等待项。编号在命令执行时按当前队列重新解析，稍早看到的同一编号可能已对应同会话另一项，不能把数字当稳定身份。解析到对象后才由 Host 状态复查拒绝已开始或已离队对象。
+- 裸 `/queue` 查看当前会话条目，编号是当时的全局队列位置，不是稳定ID。当前实现还有 `send|edit|up|down|delete N` 和 `clear`：send 提升下一项并请求停止当前任务；edit 取消排队并恢复输入/附件但不发送；delete 取消且可能暂停绑定目标；clear 经确认只清当前会话等待项。编号在命令执行时按当前队列重新解析，稍早看到的同一编号可能已对应同会话另一项，不能把数字当稳定身份。解析到对象后才由 Host 状态复查拒绝已开始或已离队对象；清空确认期间开始执行的项会被跳过，不把清理等待项变成停止当前任务，原子取消边界见[后续队列](./copilot-agent-session-and-tools.md#任务-ui、停止原因、运行中-steering-与后续队列)。
 - `/ps` 是 Copilot 后台命令登记表入口，stop 需确认；不是系统所有进程列表。`/agents` 的只读目录与 steer/stop 等控制子命令也须区分，不可整体标成只读。
 - `/init`、`/review`、`/verify`、`/plan`、`/compact` 和 Skill 可能进入真实模型/工具流程；`/rollback N` 会创建精确文件回滚审批。它们不能因为以 Slash 开头就绕过范围、预算、确认或执行证据。项目指令与 Skills 见[生命周期](./copilot-agent-lifecycle.md)，文件修改见[任务与内置工具](./copilot-agent-session-and-tools.md)。
 

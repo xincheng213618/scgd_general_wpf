@@ -1,3 +1,5 @@
+using Anthropic.Exceptions;
+using Anthropic.Models;
 using Microsoft.Extensions.AI;
 using System;
 using System.Collections.Generic;
@@ -246,7 +248,8 @@ namespace ColorVision.Copilot
             if (exception == null || cancellationToken.IsCancellationRequested)
                 return false;
 
-            return EnumerateExceptionChain(exception).Any(candidate => candidate is ClientResultException
+            return EnumerateExceptionChain(exception).Any(candidate => candidate is AnthropicSseException
+                or ClientResultException
                 or HttpRequestException
                 or TimeoutException
                 or IOException
@@ -353,6 +356,19 @@ namespace ColorVision.Copilot
             var candidates = EnumerateExceptionChain(exception).ToArray();
             foreach (var candidate in candidates)
             {
+                if (candidate is AnthropicSseException sseException)
+                {
+                    failureKind = sseException.ErrorType switch
+                    {
+                        ErrorType.OverloadedError => "overloaded_error",
+                        ErrorType.RateLimitError => "rate_limit_error",
+                        ErrorType.ApiError => "api_error",
+                        ErrorType.TimeoutError => "timeout_error",
+                        _ => string.Empty,
+                    };
+                    return failureKind.Length > 0;
+                }
+
                 if (candidate is ClientResultException { Status: > 0 } clientResultException)
                 {
                     statusCode = clientResultException.Status;
