@@ -273,6 +273,9 @@ related: ["governance.maintenance", "delivery.testing"]
 | CVWindowsService发布201保证有效ZIP，省略set_latest不改当前版吗？ | 服务端只校验名称/版本不打开ZIP；省略默认true，官方名和手填version可不一致 |
 | CVWS顺序重名生成新后缀能保证并发不覆盖和失败回滚吗？ | 检查与直接save不原子；包/指针/缓存/索引无整链事务，失败不证明存储未变 |
 | releases缓存、context和tools列表是同一时刻且同一来源吗？ | releases用latest+秒级目录mtime签名，context直接扫描，tools走独立索引；发布后刷新失败可保留旧视图 |
+| 服务管理器只访问配置的服务器，同版本缓存也会校验hash吗？ | 元数据先配置源再默认源，返回可用候选后不为实际下载失败继续试源；本地按版本/ZIP顶层结构复用而非hash或后缀证明 |
+| 完整服务包校验通过和安装完成日志保证可回滚、服务全部启动吗？ | 顶层目录识别不验证全部exe/CommonDll；备份/注册/启动部分失败可仅记录，归档服务补偿不是整链回滚 |
+| WindowsServicePlugin只有新服务管理窗口，InstallTool已移除吗？ | 旧MenuItem与主窗initializer仍编译发现，使用另一套InstallTool下载/启动路径；不能混同CVWS API或宣称已移除 |
 
 另外用英文代码符号和同义中文说法重复部分问题，确认入口不是只识别一种固定问法。
 

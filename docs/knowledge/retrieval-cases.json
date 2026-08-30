@@ -296,6 +296,12 @@
     {"query":"CVWS按版本下载一定选择最新ZIP而不选RAR吗","expected_any":["delivery.cvwindowsservice"],"include_planned":false},
     {"query":"CVWS_RELEASES_CACHE_KEY与context和工具索引是同一快照吗","expected_any":["delivery.cvwindowsservice"],"include_planned":false},
     {"query":"CvwsPublishPanel服务包已发布但列表没更新是什么边界","expected_any":["delivery.cvwindowsservice"],"include_planned":false},
-    {"query":"CVWindowsService的latest-version有值但download返回404","expected_any":["delivery.cvwindowsservice"],"include_planned":false}
+    {"query":"CVWindowsService的latest-version有值但download返回404","expected_any":["delivery.cvwindowsservice"],"include_planned":false},
+    {"query":"ServiceInstallViewModel在线下载会回退其它服务器吗","expected_any":["plugins.windows-service"],"include_planned":false},
+    {"query":"WindowsServicePlugin同版本本地缓存会核验hash和最新后缀吗","expected_any":["plugins.windows-service"],"include_planned":false},
+    {"query":"ServiceDatabaseVersionMap如何选择color_vision和color_vision_4xx","expected_any":["plugins.windows-service"],"include_planned":false},
+    {"query":"WindowsServicePlugin安装完成保证备份和所有服务启动成功吗","expected_any":["plugins.windows-service"],"include_planned":false},
+    {"query":"InstallTool和CVWinSMS旧管理工具入口真的删除了吗","expected_any":["plugins.windows-service"],"include_planned":false},
+    {"query":"IsFullServicePackageZip通过就代表CommonDll和服务exe都有效吗","expected_any":["plugins.windows-service"],"include_planned":false}
   ]
 }

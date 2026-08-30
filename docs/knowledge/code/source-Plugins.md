@@ -22,6 +22,9 @@ next: false
 - [插件产物、安装与交付](../../02-developer-guide/plugin-development/getting-started.md) — `plugins.getting-started`
   插件构建产物、HostCopy、manifest包身份、安装替换和恢复契约；发布会上传，安装器返回不等于替换或重启后加载成功。
 
+- [WindowsServicePlugin：选包、本机安装与恢复](../../04-api-reference/plugins/standard-plugins/windows-service.md) — `plugins.windows-service`
+  WindowsServicePlugin的在线选包与缓存、本机完整安装、数据库版本切换和恢复边界；下载、日志完成、备份与实际服务状态不能互相替代。
+
 ## Plugins/Conoscope {#module-506c7567696e732f436f6e6f73636f7065}
 
 - [CV 文件读取、通道与写回契约](../../04-api-reference/engine-components/ColorVision.FileIO.md) — `engine.file-io`
@@ -63,8 +66,8 @@ next: false
 
 ## Plugins/WindowsServicePlugin {#module-506c7567696e732f57696e646f777353657276696365506c7567696e}
 
+- [WindowsServicePlugin：选包、本机安装与恢复](../../04-api-reference/plugins/standard-plugins/windows-service.md) — `plugins.windows-service`
+  WindowsServicePlugin的在线选包与缓存、本机完整安装、数据库版本切换和恢复边界；下载、日志完成、备份与实际服务状态不能互相替代。
+
 - [插件依赖与接入矩阵](../../04-api-reference/plugins/plugin-capability-matrix.md) — `plugins.capabilities`
   横向定位现存插件的菜单、状态、数据库、设备与管理员权限边界。
-
-- [WindowsServicePlugin](../../04-api-reference/plugins/standard-plugins/windows-service.md) — `plugins.windows-service`
-  WindowsServicePlugin 的服务安装、配置和管理员权限边界；不能把诊断请求当作系统修改授权。

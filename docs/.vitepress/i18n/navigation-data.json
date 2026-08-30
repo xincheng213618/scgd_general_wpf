@@ -287,6 +287,12 @@
             },
             {
               "text": {
+                "root": "WindowsServicePlugin：选包、本机安装与恢复"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/windows-service"
+            },
+            {
+              "text": {
                 "root": "编辑器选择、文档生命周期与停靠布局"
               },
               "link": "/04-api-reference/ui-components/editor-document-lifecycle"
@@ -1406,6 +1412,12 @@
             },
             {
               "text": {
+                "root": "WindowsServicePlugin：选包、本机安装与恢复"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/windows-service"
+            },
+            {
+              "text": {
                 "root": "共享接口、属性通知与粗粒度权限"
               },
               "link": "/04-api-reference/ui-components/ColorVision.Common"
@@ -1919,6 +1931,12 @@
             },
             {
               "text": {
+                "root": "WindowsServicePlugin：选包、本机安装与恢复"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/windows-service"
+            },
+            {
+              "text": {
                 "root": "通用查询、条件会话与整表操作"
               },
               "link": "/04-api-reference/ui-components/database-query"
@@ -2372,6 +2390,12 @@
                 "root": "插件产物、安装与交付"
               },
               "link": "/02-developer-guide/plugin-development/getting-started"
+            },
+            {
+              "text": {
+                "root": "WindowsServicePlugin：选包、本机安装与恢复"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/windows-service"
             }
           ]
         },
@@ -2477,15 +2501,15 @@
           "items": [
             {
               "text": {
-                "root": "插件依赖与接入矩阵"
+                "root": "WindowsServicePlugin：选包、本机安装与恢复"
               },
-              "link": "/04-api-reference/plugins/plugin-capability-matrix"
+              "link": "/04-api-reference/plugins/standard-plugins/windows-service"
             },
             {
               "text": {
-                "root": "WindowsServicePlugin"
+                "root": "插件依赖与接入矩阵"
               },
-              "link": "/04-api-reference/plugins/standard-plugins/windows-service"
+              "link": "/04-api-reference/plugins/plugin-capability-matrix"
             }
           ]
         }

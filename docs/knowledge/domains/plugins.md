@@ -35,11 +35,11 @@ next: false
 - [Spectrum Socket 业务指令与完成边界](../../04-api-reference/plugins/standard-plugins/spectrum-socket.md) — `plugins.spectrum-socket`
   Spectrum 五个 Socket 业务指令的参数、结果字段、设备门禁与合作式取消；30/60 秒不保证原生操作按时停止。
 
+- [WindowsServicePlugin：选包、本机安装与恢复](../../04-api-reference/plugins/standard-plugins/windows-service.md) — `plugins.windows-service`
+  WindowsServicePlugin的在线选包与缓存、本机完整安装、数据库版本切换和恢复边界；下载、日志完成、备份与实际服务状态不能互相替代。
+
 - [插件依赖与接入矩阵](../../04-api-reference/plugins/plugin-capability-matrix.md) — `plugins.capabilities`
   横向定位现存插件的菜单、状态、数据库、设备与管理员权限边界。
 
 - [SystemMonitor 插件](../../04-api-reference/plugins/standard-plugins/system-monitor.md) — `plugins.system-monitor`
   SystemMonitor 的性能采样、状态栏、窗口生命周期与停止采样边界。
-
-- [WindowsServicePlugin](../../04-api-reference/plugins/standard-plugins/windows-service.md) — `plugins.windows-service`
-  WindowsServicePlugin 的服务安装、配置和管理员权限边界；不能把诊断请求当作系统修改授权。
