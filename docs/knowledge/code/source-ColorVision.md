@@ -163,6 +163,11 @@ next: false
 - [存储清理与选择性设置重置](../../04-api-reference/ui-components/storage-maintenance.md) — `ui.storage-maintenance`
   设置中的存储清理与选择性启动重置：先确认白名单扫描清单，保护活跃任务和业务数据；删除不回滚，重置先独立备份再在启动时应用。
 
+## ColorVision/Themes {#module-436f6c6f72566973696f6e2f5468656d6573}
+
+- [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
+  主窗口如何挂接菜单、搜索、状态栏和工作区，以及入口缺失时应核对的代码边界。
+
 ## ColorVision/Update {#module-436f6c6f72566973696f6e2f557064617465}
 
 - [桌面交付制品与责任路由](../../02-developer-guide/deployment/overview.md) — `delivery.deployment`

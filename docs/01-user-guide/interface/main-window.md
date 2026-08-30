@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "主窗口如何挂接菜单、搜索、状态栏和工作区，以及入口缺失时应核对的代码边界。"
 aliases: ["主窗口","菜单不见了","搜索框消失","工作区","MainWindow"]
-code_paths: ["ColorVision/MainWindow.xaml","ColorVision/MainWindow.xaml.cs","UI/ColorVision.UI/Menus","UI/ColorVision.Solution/Workspace"]
-test_paths: ["Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs"]
+code_paths: ["ColorVision/MainWindow.xaml","ColorVision/MainWindow.xaml.cs","ColorVision/Themes/AvalonDockTheme.cs","ColorVision/Themes/AvalonDockGripTemplates.xaml","UI/ColorVision.UI/Menus","UI/ColorVision.Solution/Workspace"]
+test_paths: ["Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs","Test/ColorVision.UI.Tests/AvalonDockThemeBindingTests.cs"]
 related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui.solution","platform.runtime","operations.index"]
 ---
 
@@ -28,6 +28,10 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 
 ## 故障定位顺序
 
+主窗口通过 `AvalonDockTheme` 应用 VS2013 深/浅色字典，并为停靠标题、浮动窗口标题覆盖两份握柄模板。AvalonDock 4.74.1 原模板把 `GeometryDrawing.Brush` 绑定到隐藏矩形的 `Fill`，绘图对象在缺少 WPF 继承上下文时无法解析 `ElementName`，会产生 XAML 绑定失败。覆盖模板直接给握柄矩形应用主题画刷，以不含绑定的平铺几何作为透明度蒙版；原有激活/未激活配色、拖拽、标题按钮和菜单仍保留。修正在 Theme 字典内，使独立加载主题的浮动窗口也使用同一版本，而不是在 Loaded 后修补或关闭绑定诊断。
+
+覆盖模板来源和许可证在 `ColorVision/Themes/` 中保留。升级 AvalonDock 时，应与新版本的这两份模板核对，避免遗漏上游交互变化。
+
 1. 记录功能名、窗口宽度、当前文档和本次启动时间；确认是入口缺失，还是入口存在但命令失败。
 2. 入口缺失按[UI 发现链](../../04-api-reference/ui-components/ui-runtime-handoff.md)核对程序集和扩展；程序集在磁盘上存在不等于已加载。
 3. 文件树与工作区切换查[资源路由](../../04-api-reference/ui-components/ColorVision.Solution.md)，文档保存/关闭和布局查[文档生命周期](../../04-api-reference/ui-components/editor-document-lifecycle.md)；不要把设备控制逻辑写入主窗口来解决显示问题。
@@ -35,4 +39,4 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 
 ## 验证范围
 
-关联的 `StartupFileOpenPolicyTests` 覆盖启动文件打开策略，不覆盖所有菜单、状态栏、窗口布局或插件初始化。对宿主交互的修改仍需在获准启动应用的环境中检查目标入口、窄窗口、文档切换和日志；只读文档核对不能记为这些交互已通过。
+关联的 `StartupFileOpenPolicyTests` 覆盖启动文件打开策略；`AvalonDockThemeBindingTests` 检查停靠/浮动标题的深浅色、激活状态、主题替换和绘图绑定诊断。这些测试不覆盖所有菜单、状态栏、窗口布局或插件初始化，也不证明真实拖拽和浮动窗口最大化已通过。对宿主交互的修改仍需在获准启动应用的环境中检查目标入口、窄窗口、文档切换和日志；只读文档核对不能记为这些交互已通过。

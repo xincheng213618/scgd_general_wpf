@@ -3,9 +3,9 @@ knowledge_id: "ui.themes"
 knowledge_type: "topic"
 status: "current"
 summary: "ThemeManager的主题选择、资源追加、系统跟随和窗口外观契约；选择不等于应用成功，预览不等于配置落盘。"
-aliases: ["主题切换为什么不生效","跟随系统但标题栏没变","强制主题重复资源字典","主题预览会自动保存吗","主题系统事件订阅释放","ColorVision.Themes","ThemeManager","ThemeManager.Current","Theme","ApplyTheme","ForceApplyTheme","ApplyThemeChanged","CurrentTheme","CurrentUITheme","CurrentThemeChanged","CurrentUIThemeChanged","ApplyCaption","ThemeConfig","ThemePropertiesEditor","AppsUseLightTheme"]
+aliases: ["主题切换为什么不生效","跟随系统但标题栏没变","强制主题重复资源字典","主题预览会自动保存吗","主题系统事件订阅释放","XAML绑定失败","ComboBoxItem","GridViewColumnHeader","ColorVision.Themes","ThemeManager","ThemeManager.Current","Theme","ApplyTheme","ForceApplyTheme","ApplyThemeChanged","CurrentTheme","CurrentUITheme","CurrentThemeChanged","CurrentUIThemeChanged","ApplyCaption","ThemeConfig","ThemePropertiesEditor","AppsUseLightTheme"]
 code_paths: ["UI/ColorVision.Themes/README.md","UI/ColorVision.Themes/Theme.cs","UI/ColorVision.Themes/ThemeManager.cs","UI/ColorVision.Themes/ThemeManagerExtensions.cs","UI/ColorVision.Themes/Themes","UI/ColorVision.Themes/ColorVision.Themes.csproj","UI/ColorVision.UI/Themes/ThemeConfig.cs","UI/ColorVision.UI/Themes/ThemePropertiesEditor.cs","UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs","UI/ColorVision.UI/Extension/IIconExtension.cs","UI/ColorVision.UI/DisPlayManager.cs","ColorVision/App.xaml","ColorVision/App.xaml.cs","ColorVision/StartWindow.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ThemeSettingsTests.cs","Test/ColorVision.UI.Tests/ThemeSubscriptionLifecycleTests.cs","Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ThemeSettingsTests.cs","Test/ColorVision.UI.Tests/ThemeSubscriptionLifecycleTests.cs","Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs","Test/ColorVision.UI.Tests/GridViewColumnHeaderBindingTests.cs","Test/ColorVision.UI.Tests/ComboBoxItemBindingTests.cs"]
 related: ["ui.index","ui.property-grid","ui.configuration"]
 ---
 
@@ -76,6 +76,18 @@ related: ["ui.index","ui.property-grid","ui.configuration"]
 它没有候选副本、保存/取消事务，也不调用配置保存接口；预览即运行期外观修改，不保证关闭编辑页面会恢复。外部属性变化会同步选中状态，但属性 setter 本身不是主题应用入口。编辑器在 Unloaded 解除对象通知，未在再次 Loaded 时重新订阅。设置发现缓存还可能持有旧配置对象；配置重载后需按 [配置持久化与对象所有权](./configuration.md)重新取得/重建绑定。
 
 保存时机、退出自动保存、保存失败和重载对象替换均归配置服务，不由 Themes 库承诺。“预览已变色”不能证明设置已写盘，文件重载也不自动等于所有主题消费者已重新应用。
+
+## 公共样式的绑定诊断
+
+`ComboBoxItem` 的 WPF 默认对齐绑定会查找祖先 `ItemsControl`；尚未挂载或已回收的下拉项没有这个祖先。`Themes/Base.xaml` 为默认和 Small 下拉项提供 Left/Center 默认值，仅在 `IsVisible=true` 时建立祖先对齐绑定；可见项仍实时跟随父控件的水平、垂直对齐，关闭弹出层或脱离树时解除绑定。标准/HandyControl 默认 ComboBox，以及 `ComboBox.Small`、`ComboBoxExtend.Small`、`ComboBoxPlus.Small` 和项目 `ComboBoxBaseStyle` 均使用这些容器样式，保留原模板和紧凑尺寸；另行提供 `ItemContainerStyle` 的消费者仍负责自己的绑定。
+
+`ComboBoxItemBindingTests` 用真实主题检查未挂载下拉项的绑定诊断、弹出层中对齐的动态继承，以及关闭/刷新后的容器解绑。不能通过全局关闭 WPF 绑定诊断代替修复样式。
+
+Visual Studio 的 XAML 绑定失败列表会按控件实例累计同一个样式错误；次数多不代表有同等数量的独立故障。应核对目标控件、目标属性和绑定来源，不能通过关闭 WPF 绑定诊断来处理。
+
+HandyControl 3.5.1 的隐式 `GridViewColumnHeader` 样式把 `MinHeight` 绑定到祖先 `ListView` 的 `GridViewAttach.ColumnHeaderHeight`。尚未连接到列表或用于浮动显示的列头找不到这个祖先时，会出现 `Path=(0)`、目标属性 `MinHeight (Double)` 的错误。仓库没有使用该附加属性定制列头高度；`Themes/Base.xaml` 因此保留 HandyControl 的隐式列头样式并仅覆盖 `MinHeight=0`，与附加属性原默认值一致，由内容和现有 Padding 决定实际高度。字号继承、列头模板和调整列宽的 `PART_HeaderGripper` 保持不变；以后需要固定列头高度的消费者应明确设置列头样式的 `Height` / `MinHeight`，不要依赖此祖先绑定。
+
+`GridViewColumnHeaderBindingTests` 在真实主题字典下检查未连接到列表的列头，以及默认/`GridViewColumnHeaderBase` 两类列表列头：捕获实际 WPF 绑定诊断，并核对字号继承和列宽调整模板。它不替代用户窗口中鼠标拖动、排序和主题切换的人工检查。
 
 ## 包入口与验证范围
 

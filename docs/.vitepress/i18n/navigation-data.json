@@ -541,6 +541,21 @@
         },
         {
           "text": {
+            "root": "ColorVision/Themes"
+          },
+          "link": "/knowledge/code/source-ColorVision#module-436f6c6f72566973696f6e2f5468656d6573",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "主窗口与入口装配"
+              },
+              "link": "/01-user-guide/interface/main-window"
+            }
+          ]
+        },
+        {
+          "text": {
             "root": "ColorVision/Update"
           },
           "link": "/knowledge/code/source-ColorVision#module-436f6c6f72566973696f6e2f557064617465",

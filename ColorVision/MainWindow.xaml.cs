@@ -141,10 +141,7 @@ namespace ColorVision
             {
                 // 先设置为 null 以强制 AvalonDock 重新加载资源
                 DockingManager1.Theme = null;
-                if (theme == Theme.Dark)
-                    DockingManager1.Theme = new AvalonDock.Themes.Vs2013DarkTheme();
-                else
-                    DockingManager1.Theme = new AvalonDock.Themes.Vs2013LightTheme();
+                DockingManager1.Theme = new AvalonDockTheme(theme == Theme.Dark);
             }
             ThemeManager.Current.CurrentUIThemeChanged += ApplyAvalonDockTheme;
 

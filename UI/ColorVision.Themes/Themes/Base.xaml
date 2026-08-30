@@ -1,5 +1,6 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:hc="https://handyorg.github.io/handycontrol"
                     xmlns:converter ="clr-namespace:ColorVision.Themes.Converter"
                     x:Class="ColorVision.Themes.BaseEvent"
                     >
@@ -147,6 +148,45 @@
 
     <Style x:Key="TextBoxBaseStyle" TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBoxBaseBaseStyle}"/>
 
+    <!-- A closed popup or recycled item has no visual ItemsControl ancestor. -->
+    <Style x:Key="ComboBoxItemBaseStyle" TargetType="{x:Type ComboBoxItem}" BasedOn="{StaticResource ComboBoxItemBaseStyle}">
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Style.Triggers>
+            <Trigger Property="IsVisible" Value="True">
+                <Setter Property="HorizontalContentAlignment" Value="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
+                <Setter Property="VerticalContentAlignment" Value="{Binding VerticalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="ComboBoxItem.Small" TargetType="{x:Type ComboBoxItem}" BasedOn="{StaticResource ComboBoxItemBaseStyle}">
+        <Setter Property="Padding" Value="6,0"/>
+        <Setter Property="MinHeight" Value="20"/>
+    </Style>
+
+    <Style TargetType="{x:Type ComboBoxItem}" BasedOn="{StaticResource ComboBoxItemBaseStyle}"/>
+
+    <Style TargetType="{x:Type ComboBox}" BasedOn="{StaticResource {x:Type ComboBox}}">
+        <Setter Property="ItemContainerStyle" Value="{StaticResource ComboBoxItemBaseStyle}"/>
+    </Style>
+
+    <Style TargetType="{x:Type hc:ComboBox}" BasedOn="{StaticResource {x:Type hc:ComboBox}}">
+        <Setter Property="ItemContainerStyle" Value="{StaticResource ComboBoxItemBaseStyle}"/>
+    </Style>
+
+    <Style x:Key="ComboBox.Small" TargetType="{x:Type ComboBox}" BasedOn="{StaticResource ComboBox.Small}">
+        <Setter Property="ItemContainerStyle" Value="{StaticResource ComboBoxItem.Small}"/>
+    </Style>
+
+    <Style x:Key="ComboBoxExtend.Small" TargetType="{x:Type ComboBox}" BasedOn="{StaticResource ComboBoxExtend.Small}">
+        <Setter Property="ItemContainerStyle" Value="{StaticResource ComboBoxItem.Small}"/>
+    </Style>
+
+    <Style x:Key="ComboBoxPlus.Small" TargetType="{x:Type hc:ComboBox}" BasedOn="{StaticResource ComboBoxPlus.Small}">
+        <Setter Property="ItemContainerStyle" Value="{StaticResource ComboBoxItem.Small}"/>
+    </Style>
+
     <Style x:Key="ComboBoxBaseStyle" TargetType="{x:Type ComboBox}" BasedOn="{StaticResource ComboBox.Small}">
         <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
@@ -239,6 +279,11 @@
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+    </Style>
+
+    <!-- HandyControl's default MinHeight looks for a ListView even for detached/floating headers. -->
+    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource {x:Type GridViewColumnHeader}}">
+        <Setter Property="MinHeight" Value="0"/>
     </Style>
 
     <Style x:Key="GridViewColumnHeaderBase" TargetType="{x:Type GridViewColumnHeader}">

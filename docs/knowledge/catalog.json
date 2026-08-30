@@ -5041,11 +5041,14 @@
       "code_paths": [
         "ColorVision/MainWindow.xaml",
         "ColorVision/MainWindow.xaml.cs",
+        "ColorVision/Themes/AvalonDockTheme.cs",
+        "ColorVision/Themes/AvalonDockGripTemplates.xaml",
         "UI/ColorVision.UI/Menus",
         "UI/ColorVision.Solution/Workspace"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs"
+        "Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs",
+        "Test/ColorVision.UI.Tests/AvalonDockThemeBindingTests.cs"
       ],
       "related": [
         "ui.discovery",
@@ -5059,6 +5062,7 @@
       ],
       "code_scopes": [
         "ColorVision",
+        "ColorVision/Themes",
         "UI/ColorVision.Solution",
         "UI/ColorVision.UI"
       ],
@@ -5067,7 +5071,7 @@
       "source": "docs/01-user-guide/interface/main-window.md",
       "url": "/01-user-guide/interface/main-window",
       "searchable": true,
-      "source_hash": "dac9ad7d13d2373acb217998a5814dfa57527b49b18eaed42833ead653515985"
+      "source_hash": "914b82a17453196fb345201640d8e10428c7746ce43483a009d5023f3bc46f88"
     },
     {
       "knowledge_id": "operations.motor",
@@ -8054,6 +8058,9 @@
         "强制主题重复资源字典",
         "主题预览会自动保存吗",
         "主题系统事件订阅释放",
+        "XAML绑定失败",
+        "ComboBoxItem",
+        "GridViewColumnHeader",
         "ColorVision.Themes",
         "ThemeManager",
         "ThemeManager.Current",
@@ -8089,7 +8096,9 @@
       "test_paths": [
         "Test/ColorVision.UI.Tests/ThemeSettingsTests.cs",
         "Test/ColorVision.UI.Tests/ThemeSubscriptionLifecycleTests.cs",
-        "Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs"
+        "Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs",
+        "Test/ColorVision.UI.Tests/GridViewColumnHeaderBindingTests.cs",
+        "Test/ColorVision.UI.Tests/ComboBoxItemBindingTests.cs"
       ],
       "related": [
         "ui.index",
@@ -8106,7 +8115,7 @@
       "source": "docs/04-api-reference/ui-components/ColorVision.Themes.md",
       "url": "/04-api-reference/ui-components/ColorVision.Themes",
       "searchable": true,
-      "source_hash": "48776200e38b8354ec6bc66eff8d51940e45a59472245d578e7502f476fe1ee7"
+      "source_hash": "fb8b5f0b62a948f1c9014f65c62558d43b3283c81866d1743cb1ce2f01062602"
     },
     {
       "knowledge_id": "ui.wizards",
