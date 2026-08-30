@@ -285,6 +285,40 @@ public sealed class DatabaseCleanupWindowLayoutTests
     }
 
     [Fact]
+    public void LayoutRefreshCompletesWhileBackgroundWorkRemainsQueued()
+    {
+        WithWindow([new FakeSelectionProvider()], true, (window, viewModel) =>
+        {
+            CompleteWithDispatcher(viewModel.RefreshAllAsync());
+            int backgroundTicks = 0;
+            bool timedOut = false;
+            DispatcherTimer backgroundTimer = new(DispatcherPriority.Background, window.Dispatcher) { Interval = TimeSpan.Zero };
+            backgroundTimer.Tick += (_, _) => backgroundTicks++;
+            DispatcherTimer timeout = new(DispatcherPriority.Send, window.Dispatcher) { Interval = TimeSpan.FromSeconds(5) };
+            timeout.Tick += (_, _) =>
+            {
+                timedOut = true;
+                backgroundTimer.Stop();
+                timeout.Stop();
+            };
+            backgroundTimer.Start();
+            timeout.Start();
+            try
+            {
+                RefreshLayout(window, minimum: true);
+                Assert.False(timedOut, "Layout refresh must not wait for unrelated dispatcher work to become idle.");
+                Assert.True(backgroundTicks > 0, "The layout barrier must run alongside queued Background-priority work.");
+                AssertAllTableHeadersFit(Element<DataGrid>(window, "CleanupTablesGrid"));
+            }
+            finally
+            {
+                backgroundTimer.Stop();
+                timeout.Stop();
+            }
+        });
+    }
+
+    [Fact]
     public void RenderPreviewsOnlyWhenAnOutputDirectoryIsRequested()
     {
         string? outputDirectory = Environment.GetEnvironmentVariable("COLORVISION_CLEANUP_PREVIEW_DIRECTORY");
@@ -417,7 +451,9 @@ public sealed class DatabaseCleanupWindowLayoutTests
 
     private static Grid RefreshLayout(DatabaseCleanupWindow window, bool minimum = false)
     {
-        window.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+        // DataGrid viewport updates run at Loaded and command requery runs at Background.
+        // A Background FIFO barrier drains both without waiting for unrelated timers to reach ContextIdle.
+        window.Dispatcher.Invoke(() => { }, DispatcherPriority.Background);
         Grid root = Assert.IsType<Grid>(window.Content);
         Size size = new(minimum ? window.MinWidth : window.Width, (minimum ? window.MinHeight : window.Height) - 40);
         // DataGrid defers star-column sizing when its ScrollViewer viewport changes. Drain after
@@ -427,7 +463,7 @@ public sealed class DatabaseCleanupWindowLayoutTests
             root.Measure(size);
             root.Arrange(new Rect(size));
             root.UpdateLayout();
-            window.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+            window.Dispatcher.Invoke(() => { }, DispatcherPriority.Background);
         }
         root.UpdateLayout();
         return root;
