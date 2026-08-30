@@ -878,6 +878,12 @@
             },
             {
               "text": {
+                "root": "MySQL SQL 恢复、重置与资源保留"
+              },
+              "link": "/04-api-reference/engine-components/mysql-recovery"
+            },
+            {
+              "text": {
                 "root": "数据库 Provider、表浏览与写入契约"
               },
               "link": "/04-api-reference/ui-components/ColorVision.Database"
@@ -1346,6 +1352,12 @@
             },
             {
               "text": {
+                "root": "MySQL SQL 恢复、重置与资源保留"
+              },
+              "link": "/04-api-reference/engine-components/mysql-recovery"
+            },
+            {
+              "text": {
                 "root": "Explorer 缩略图读取与 COM 注册"
               },
               "link": "/04-api-reference/engine-components/ColorVision.ShellExtension"
@@ -1808,6 +1820,12 @@
                 "root": "MySQL 结果清理、备份与失败边界"
               },
               "link": "/04-api-reference/engine-components/mysql-maintenance"
+            },
+            {
+              "text": {
+                "root": "MySQL SQL 恢复、重置与资源保留"
+              },
+              "link": "/04-api-reference/engine-components/mysql-recovery"
             },
             {
               "text": {

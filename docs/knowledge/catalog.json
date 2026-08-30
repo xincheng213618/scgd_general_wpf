@@ -3501,7 +3501,7 @@
       "source": "docs/04-api-reference/engine-components/README.md",
       "url": "/04-api-reference/engine-components/README",
       "searchable": true,
-      "source_hash": "076859e6ae424b9fe3c52b7ae81eddcc1ac147f01396bc80be31e12a8d803bac"
+      "source_hash": "b71d3bc57573088885d37ffd26e0f6aad8d32a73a86fee1df60738574b1b02df"
     },
     {
       "knowledge_id": "engine.mqtt",
@@ -3583,6 +3583,7 @@
       ],
       "related": [
         "engine.database-maintenance",
+        "engine.mysql-recovery",
         "engine.results",
         "ui.database",
         "ui.sqlite-storage",
@@ -3597,7 +3598,69 @@
       "source": "docs/04-api-reference/engine-components/mysql-maintenance.md",
       "url": "/04-api-reference/engine-components/mysql-maintenance",
       "searchable": true,
-      "source_hash": "e180d9146f53aa68950a675c39a85d545c0a45a9a748ee73d399a1fe174e5bd3"
+      "source_hash": "1dfc63d107dbbb5f764f3b24eb4f6936e748b5bb5ce35fff0d170d2c1542a5d6"
+    },
+    {
+      "knowledge_id": "engine.mysql-recovery",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "MySQL手动SQL恢复、数据库重置与资源保留：导入后才同步配置和重启注册中心，失败不回滚；迁移备份不含结果，配置更新计数不证明键完整。",
+      "aliases": [
+        "MySQL数据库恢复",
+        "加载SQL备份",
+        "数据库重置",
+        "资源迁移备份",
+        "恢复失败但数据已改变",
+        "恢复后重启",
+        "Sensor字典ID重映射",
+        "MySqlDatabaseMaintenanceService",
+        "RestoreAndRestartAsync",
+        "RestoreSqlFileAsync",
+        "RestoreMysql",
+        "ResetDatabaseFromSqlFileAsync",
+        "SynchronizeInstalledServiceConfigs",
+        "UpdateConfigFile",
+        "MigrationBackupTableNames",
+        "BuildMigrationDictionaryDependencyStatements",
+        "SensorTemplateMigrationSqlBuilder",
+        "MySqlRestoreProgressWindow"
+      ],
+      "code_paths": [
+        "Engine/ColorVision.Engine/Mysql/MySqlDatabaseMaintenanceService.cs",
+        "Engine/ColorVision.Engine/Mysql/MySqlLocalServicesManager.cs",
+        "Engine/ColorVision.Engine/Mysql/MySqlRestoreProgressWindow.xaml",
+        "Engine/ColorVision.Engine/Mysql/MySqlRestoreProgressWindow.xaml.cs",
+        "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml",
+        "Engine/ColorVision.Engine/Mysql/SensorTemplateMigrationSqlBuilder.cs",
+        "Engine/ColorVision.Engine/Services/RC/RCInitializer.cs",
+        "UI/ColorVision.Database/MySqlControl.cs",
+        "UI/ColorVision.Database/MySqlSetting.cs",
+        "UI/ColorVision.Database/MySqlProtocolDefaults.cs",
+        "UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/MySqlBackupRestoreSafetyTests.cs",
+        "Test/ColorVision.UI.Tests/MySqlMigrationBackupTableTests.cs",
+        "Test/ColorVision.UI.Tests/SensorTemplateMigrationTests.cs"
+      ],
+      "related": [
+        "engine.mysql-maintenance",
+        "engine.database-maintenance",
+        "plugins.windows-service",
+        "operations.data",
+        "engine.template-design"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine",
+        "UI/ColorVision.Database",
+        "UI/ColorVision.UI"
+      ],
+      "domain": "engine",
+      "title": "MySQL SQL 恢复、重置与资源保留",
+      "source": "docs/04-api-reference/engine-components/mysql-recovery.md",
+      "url": "/04-api-reference/engine-components/mysql-recovery",
+      "searchable": true,
+      "source_hash": "0d747f7488ef7ab63c444b95c6e07e820a87f69e5c5cdc1f1ab96f625557af1c"
     },
     {
       "knowledge_id": "engine.native-bindings",
@@ -4507,7 +4570,7 @@
       "source": "docs/knowledge/retrieval-checks.md",
       "url": "/knowledge/retrieval-checks",
       "searchable": true,
-      "source_hash": "9226153030d6b9daac46ca7206f746d50fcfd7f4570a9338c41750285e3b16b8"
+      "source_hash": "a5be5c3dac550ae7ffbc95cc94f8a2f1f86050e3a7c35b9bb64ee099205abb9f"
     },
     {
       "knowledge_id": "operations.acceptance",
@@ -4723,6 +4786,7 @@
         "ui.database-query",
         "engine.database-maintenance",
         "engine.mysql-maintenance",
+        "engine.mysql-recovery",
         "ui.sqlite-storage",
         "ui.configuration",
         "operations.exports",
@@ -4746,7 +4810,7 @@
       "source": "docs/01-user-guide/data-management/README.md",
       "url": "/01-user-guide/data-management/README",
       "searchable": true,
-      "source_hash": "672cc1579a9f5d9f06b2b9bac3eec0f9fc4d5dbddab6165c7b8f6a3191a10dae"
+      "source_hash": "690787e3c0154400aa095239361ce71fcbb0e16c675913bc6cd0498b6ce0cd1a"
     },
     {
       "knowledge_id": "operations.device-configuration",
@@ -6190,6 +6254,7 @@
         "Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallWindow.xaml.cs",
         "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerConfig.cs",
         "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerViewModel.Config.cs",
+        "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerViewModel.MySql.cs",
         "Plugins/WindowsServicePlugin/ServiceManager/ServiceHostWindowsServiceController.cs",
         "Plugins/WindowsServicePlugin/ServiceManager/ServiceDatabaseVersionMap.cs",
         "Plugins/WindowsServicePlugin/ServiceManager/Mysql/MySqlServiceManager.cs",
@@ -6213,6 +6278,7 @@
         "plugins.index",
         "plugins.getting-started",
         "delivery.cvwindowsservice",
+        "engine.mysql-recovery",
         "ui.menus",
         "ui.wizards"
       ],
@@ -6228,7 +6294,7 @@
       "source": "docs/04-api-reference/plugins/standard-plugins/windows-service.md",
       "url": "/04-api-reference/plugins/standard-plugins/windows-service",
       "searchable": true,
-      "source_hash": "3afa8543731624b8e68fdf8d1696e3f5fe19b4093a93e1652346f05006334bd2"
+      "source_hash": "af4bdbbbb63886317f0cc3c583deb8467a1ba7c945358cae3b95f975d03c4096"
     },
     {
       "knowledge_id": "projects.arvr-pro",

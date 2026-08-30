@@ -6,7 +6,7 @@ summary: "MySQL 批次与结果表的历史删除、整表截断和SQL备份；�
 aliases: ["MySQL结果清理", "删除批次", "历史结果清理", "结果表备份", "完整SQL备份", "清理事务回滚", "主从表清理", "清理管理员权限", "MySqlResultCleanupProvider", "CleanupHistory", "CleanupTables", "FindUnknownDetailTables", "ValidateCleanupTableNames", "MySqlLocalServicesManager", "BackupAllMysql", "mysqldump", "FOREIGN_KEY_CHECKS", "t_scgd_algorithm_result_master", "t_scgd_measure_batch"]
 code_paths: ["Engine/ColorVision.Engine/Mysql/MySqlResultCleanupProvider.cs", "Engine/ColorVision.Engine/Mysql/MySqlLocalServicesManager.cs", "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml", "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml.cs", "Engine/ColorVision.Engine/Mysql/DatabaseCleanupWindowViewModel.cs", "UI/ColorVision.Database/MySqlControl.cs", "UI/ColorVision.Database/MySqlSetting.cs", "UI/ColorVision.Database/MySqlProtocolDefaults.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/DatabaseCleanupWindowTests.cs", "Test/ColorVision.UI.Tests/MySqlBackupRestoreSafetyTests.cs"]
-related: ["engine.database-maintenance", "engine.results", "ui.database", "ui.sqlite-storage", "operations.data"]
+related: ["engine.database-maintenance", "engine.mysql-recovery", "engine.results", "ui.database", "ui.sqlite-storage", "operations.data"]
 ---
 
 # MySQL 结果清理、备份与失败边界
@@ -28,7 +28,7 @@ provider 的 `CleanupTableDefinitions` 是结果清理白名单，核心分为�
 
 具体登记表以该数组为准，不因为新表具有相同前缀就自动允许清空。结果清理不是数据库重置；资源、模板和配置类表不在这组清理白名单中。表内图片路径也不代表其外部文件会随清理一起删除或随备份进入 SQL。
 
-`MySqlDatabaseMaintenanceService` 负责 SQL 重置/恢复及服务配置同步，不能因名称含 Maintenance 就把它当成本页清理实现。`MySqlLocalServicesManager` 还留有旧 `CleanupHistoryCommand` / `CleanupAllResultTablesCommand` 实现；当前窗口按钮不绑定这些旧清理命令，不能将旧链的确认、表发现或失败行为套到新 provider。
+`MySqlDatabaseMaintenanceService` 的 [SQL恢复、重置与资源保留](./mysql-recovery.md)是另一条契约，不能因名称含 Maintenance 就把它当成本页清理实现。`MySqlLocalServicesManager` 还留有旧 `CleanupHistoryCommand` / `CleanupAllResultTablesCommand` 实现；当前窗口按钮不绑定这些旧清理命令，不能将旧链的确认、表发现或失败行为套到新 provider。
 
 ## 统计不是清理预览，连接也未冻结
 
@@ -77,7 +77,7 @@ client 和 schema 查询都从当前 `MySqlSetting.Instance.MySqlConfig` 取配�
 
 `BackupMysqlResource` 是另一种资源迁移备份，表清单和 `--replace`/依赖补充不同，不应拿它代替清理前完整结果备份。组合清理失败不自动调用恢复；MySQL provider 也没有像 Socket/Flow 包装那样把已生成备份路径追加进异常。文件可能已经生成，但宿主没有收到正常组合结果时，不保证失败弹窗列出它，需单独核对备份目录/列表。
 
-手动 `RestoreMysql` 会执行指定 SQL，不是撤销按钮；底层只校验 `.sql` 扩展名、文件存在与非空，不验证脚本只操作某张表或禁止 `USE`、DDL 等内容。真实恢复还可能影响服务和应用生命周期，须独立授权并核对实际高层入口；不能在清理异常后自行触发恢复。
+手动SQL恢复不是撤销按钮；底层导入与桌面“导入→配置同步→注册中心重启”的完成条件不同，详见 [MySQL恢复契约](./mysql-recovery.md)。恢复须独立授权，不能在清理异常后自行触发。
 
 ## 外部工具与错误边界
 

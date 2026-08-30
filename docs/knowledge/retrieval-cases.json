@@ -302,6 +302,14 @@
     {"query":"ServiceDatabaseVersionMap如何选择color_vision和color_vision_4xx","expected_any":["plugins.windows-service"],"include_planned":false},
     {"query":"WindowsServicePlugin安装完成保证备份和所有服务启动成功吗","expected_any":["plugins.windows-service"],"include_planned":false},
     {"query":"InstallTool和CVWinSMS旧管理工具入口真的删除了吗","expected_any":["plugins.windows-service"],"include_planned":false},
-    {"query":"IsFullServicePackageZip通过就代表CommonDll和服务exe都有效吗","expected_any":["plugins.windows-service"],"include_planned":false}
+    {"query":"IsFullServicePackageZip通过就代表CommonDll和服务exe都有效吗","expected_any":["plugins.windows-service"],"include_planned":false},
+    {"query":"MySQL恢复失败但数据库数据已改变是怎么回事","expected_any":["engine.mysql-recovery"],"include_planned":false},
+    {"query":"RestoreAndRestartAsync会先备份并停止业务服务吗","expected_any":["engine.mysql-recovery"],"include_planned":false},
+    {"query":"ResetDatabaseFromSqlFileAsync返回false会撤销SQL吗","expected_any":["engine.mysql-recovery"],"include_planned":false},
+    {"query":"MigrationBackupTableNames包含测量结果和批次吗","expected_any":["engine.mysql-recovery"],"include_planned":false},
+    {"query":"SynchronizeInstalledServiceConfigs更新文件数证明配置键完整吗","expected_any":["engine.mysql-recovery"],"include_planned":false},
+    {"query":"BuildMigrationDictionaryDependencyStatements失败会阻止重置吗","expected_any":["engine.mysql-recovery"],"include_planned":false},
+    {"query":"MySqlRestoreProgressWindow关闭会取消SQL恢复吗","expected_any":["engine.mysql-recovery"],"include_planned":false},
+    {"query":"SensorTemplateMigrationSqlBuilder会直接沿用旧字典ID吗","expected_any":["engine.mysql-recovery"],"include_planned":false}
   ]
 }

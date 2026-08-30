@@ -6,7 +6,7 @@ summary: "按设置JSON、Engine MySQL、模块SQLite和结果文件定位数据
 aliases: ["数据管理", "数据在哪里", "数据库文件位置", "备份包含哪些数据", "ConfigFilePath", "SqliteDbPath", "MsgRecords.db", "FlowNodeRecords.db", "SocketMessages.db", "Spectrum.db", "ProjectARVRPro.db", "数据没保存"]
 code_paths: ["UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.Database/MySqlControl.cs", "UI/ColorVision.Database/DatabaseBrowserProviderRegistry.cs", "Engine/ColorVision.Engine/Dao/SysResourceModel.cs", "Engine/ColorVision.Engine/Dao/AlgResultMasterDao.cs", "Engine/ColorVision.Engine/Messages/MessagesListManager.cs", "Engine/ColorVision.Engine/Messages/MsgRecordManagerConfig.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeRecordDataBaseHelper.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeRecordConfig.cs", "UI/ColorVision.SocketProtocol/SocketMessageManager.cs", "Plugins/Spectrum/Data/ViewResultManager.cs", "Projects/ProjectARVRPro/ViewResultManager.cs"]
 test_paths: []
-related: ["ui.database", "ui.database-query", "engine.database-maintenance", "engine.mysql-maintenance", "ui.sqlite-storage", "ui.configuration", "operations.exports", "operations.device-configuration", "engine.results", "flow.templates", "ui.socket-protocol", "plugins.spectrum", "projects.arvr-pro"]
+related: ["ui.database", "ui.database-query", "engine.database-maintenance", "engine.mysql-maintenance", "engine.mysql-recovery", "ui.sqlite-storage", "ui.configuration", "operations.exports", "operations.device-configuration", "engine.results", "flow.templates", "ui.socket-protocol", "plugins.spectrum", "projects.arvr-pro"]
 ---
 
 # 数据所有者与存储定位
@@ -71,5 +71,7 @@ MQTT/Flow 的 `SqliteDbPath` 是 `DirectoryPath` 加固定文件名的只读属�
 业务页面的[通用查询窗口](../../04-api-reference/ui-components/database-query.md)按实体构造条件并替换调用方结果集合；它不是数据库浏览器，SQL 预览、会话保存和整表操作须分别核对，不能把“当前只显示这些行”当成删除范围。
 
 另一个[数据库维护窗口](../../04-api-reference/engine-components/database-maintenance.md)以 provider 组织表统计、按月清理、备份和迁移；统计不是删除预览，关闭不取消后台维护。MySQL 的结果表白名单、历史删除与整表截断、SQL 备份及部分失败边界见 [MySQL 结果维护](../../04-api-reference/engine-components/mysql-maintenance.md)。
+
+需要加载SQL备份、重置数据库或确认服务切库时，进入 [MySQL恢复与资源保留](../../04-api-reference/engine-components/mysql-recovery.md)：恢复失败可能发生在导入之后，资源迁移备份不包含历史结果，不能替代完整备份与验收。
 
 本页是跨模块定位入口，未声明覆盖上述所有存储、迁移和断电恢复的统一测试。对应主题引用的局部测试也不证明跨 MySQL、SQLite、文件和外部协议存在一个共同事务。
