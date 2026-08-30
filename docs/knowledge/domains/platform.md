@@ -32,6 +32,9 @@ next: false
 - [安全与权限控制](../../03-architecture/security/overview.md) — `platform.security`
   区分全局粗粒度权限和独立RBAC模块，不承诺不存在的统一业务授权边界。
 
+- [ColorVisionServiceHost：本机权限代理与生命周期](../../03-architecture/components/service-host.md) — `platform.service-host`
+  ColorVisionServiceHost本机权限代理的身份、票据与就绪：客户端超时不取消命令，服务停止超过两分钟仍等待排空，服务启动成功日志不证明后台清理和启动完整性检查完成。
+
 - [系统职责与跨模块边界](../../03-architecture/overview/system-overview.md) — `platform.system`
   宿主、UI、Engine、插件与项目的职责及调用边界：UI操作不必经过Engine，程序集依赖不是统一执行顺序，构建产物不等于交付制品。
 

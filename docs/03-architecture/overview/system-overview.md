@@ -6,7 +6,7 @@ summary: "宿主、UI、Engine、插件与项目的职责及调用边界：UI操
 aliases: ["系统架构", "分层", "代码结构", "项目结构", "仓库地图", "哪里改", "模块对应", "源码参考", "API参考", "模块入口", "调用链", "组件交互", "跨模块", "UI调用边界"]
 code_paths: ["ColorVision/ColorVision.csproj", "ColorVision/App.xaml.cs", "Engine/ColorVision.Engine/ColorVision.Engine.csproj", "UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPreviewSession.cs", "UI/ColorVision.Algorithms/ColorVision.Algorithms.csproj", "UI/ColorVision.UI/Plugins/PluginLoader.cs"]
 test_paths: []
-related: ["platform.architecture", "platform.runtime", "algorithms.platform", "engine.index", "flow.architecture", "plugins.model", "projects.index", "delivery.deployment"]
+related: ["platform.architecture", "platform.runtime", "platform.service-host", "algorithms.platform", "engine.index", "flow.architecture", "plugins.model", "projects.index", "delivery.deployment"]
 ---
 
 # 系统职责与跨模块边界
@@ -24,6 +24,7 @@ ColorVision 是由桌面宿主、共享类库、Engine、插件和客户项目�
 | 要判断的边界 | 当前事实与不能推出的结论 | 权威主题 |
 | --- | --- | --- |
 | 宿主启动与业务功能 | `ColorVision/App.xaml.cs` 处理启动分支、恢复选择和模块装载；是否装载插件取决于当前启动路径，不是每次业务操作后的最后一步 | [启动运行时](./runtime.md)、[插件装载](../../02-developer-guide/plugin-development/overview.md) |
+| 桌面与本机权限代理 | `ColorVisionServiceHost` 通过本机pipe处理维护请求；调用身份、票据、服务就绪和业务完成是不同边界，超时不取消已接纳命令 | [权限代理与生命周期](../components/service-host.md) |
 | 共享 UI 与本地图像算法 | ImageEditor 可以直接调用自己的算法 runtime；UI 目录下的行为并不全部下发 Engine，算法 provider 仍有发布和依赖门禁 | [统一算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)、[ImageEditor](../../04-api-reference/ui-components/ColorVision.ImageEditor.md) |
 | Engine 业务宿主与算法实现 | Engine 负责设备、模板、消息及相应业务适配，但不是所有本地算法的内核；历史结果 handler 与中立算法结果不能混成一套注册机制 | [Engine 入口](../../04-api-reference/engine-components/README.md)、[结果交接](../../04-api-reference/engine-components/result-handoff-chain.md) |
 | Flow 执行与业务最终化 | 画布、模板持久化、节点图内核、共享业务会话与隔离执行各有 owner；不能把共享会话的前后处理和 RC 前提套给所有 Flow 路径 | [Flow 架构](../components/engine/flow-engine.md) |

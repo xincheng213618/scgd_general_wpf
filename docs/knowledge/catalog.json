@@ -3163,7 +3163,8 @@
       ],
       "related": [
         "delivery.deployment",
-        "delivery.scripts"
+        "delivery.scripts",
+        "platform.service-host"
       ],
       "code_scopes": [
         "ColorVision/Recovery",
@@ -3176,7 +3177,7 @@
       "source": "docs/02-developer-guide/deployment/auto-update.md",
       "url": "/02-developer-guide/deployment/auto-update",
       "searchable": true,
-      "source_hash": "fc181014f89360c598254c86c88b83455c94536ce353ca9f47eb7db9b2d29de8"
+      "source_hash": "0a51b50a337b2be6973da2827d6ee1779bd83a46fed9fcffd270e2d5210c837d"
     },
     {
       "knowledge_id": "engine.camera-preview-lifecycle-plan",
@@ -3662,6 +3663,7 @@
         "engine.mysql-maintenance",
         "engine.database-maintenance",
         "plugins.windows-service",
+        "platform.service-host",
         "operations.data",
         "engine.template-design"
       ],
@@ -3675,7 +3677,7 @@
       "source": "docs/04-api-reference/engine-components/mysql-recovery.md",
       "url": "/04-api-reference/engine-components/mysql-recovery",
       "searchable": true,
-      "source_hash": "0d747f7488ef7ab63c444b95c6e07e820a87f69e5c5cdc1f1ab96f625557af1c"
+      "source_hash": "421d7aa73dc8af065713b49f0c046b17681f114309bf45ef9bcacddab82c44f9"
     },
     {
       "knowledge_id": "engine.native-bindings",
@@ -3928,6 +3930,7 @@
       "related": [
         "engine.index",
         "engine.file-io",
+        "platform.service-host",
         "delivery.update"
       ],
       "code_scopes": [
@@ -3943,7 +3946,7 @@
       "source": "docs/04-api-reference/engine-components/ColorVision.ShellExtension.md",
       "url": "/04-api-reference/engine-components/ColorVision.ShellExtension",
       "searchable": true,
-      "source_hash": "8460ee8037fa590554ec9789a237dd557b1fda6a794a78b20945daa4097bff18"
+      "source_hash": "906ead35ca1b405724c4f293573159149e92fa9ed78ccb4fadcf06b427cc8071"
     },
     {
       "knowledge_id": "engine.template-design",
@@ -5700,6 +5703,69 @@
       "source_hash": "8f7a2daf22e4b7b3a25cc6996de661ed34a56ae7d8fb043eca8b2bc4ca124146"
     },
     {
+      "knowledge_id": "platform.service-host",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "ColorVisionServiceHost本机权限代理的身份、票据与就绪：客户端超时不取消命令，服务停止超过两分钟仍等待排空，服务启动成功日志不证明后台清理和启动完整性检查完成。",
+      "aliases": [
+        "ColorVisionServiceHost",
+        "后台权限代理",
+        "本机特权服务",
+        "服务宿主",
+        "命名管道",
+        "SCM停止预算",
+        "broker ticket",
+        "ServiceHostProtocol",
+        "ColorVisionServiceHostClient",
+        "IColorVisionServiceHostClient",
+        "ServiceHostPipeClient",
+        "ServiceHostCallerIdentity",
+        "ServiceHostBrokerTicketService",
+        "ServiceHostCommandHandler",
+        "ServiceHostPipeServer",
+        "ColorVisionServiceHostService",
+        "ColorVisionServiceHostManager",
+        "ServiceHostStatus",
+        "ServiceHostRuntimeIntegrityChecker",
+        "ServiceHostStartupUpdateChecker",
+        "ServiceHostManagerWindow",
+        "ColorVisionServiceHostWizardStep",
+        "Program.BeginConsoleShutdown"
+      ],
+      "code_paths": [
+        "src/ColorVisionServiceHost",
+        "UI/ColorVision.UI/ServiceHost/ServiceHostProtocol.cs",
+        "UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs",
+        "ColorVision/ServiceHost"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/ServiceHostStatusTests.cs",
+        "Test/ColorVision.UI.Tests/ServiceHostBrokerTicketTests.cs",
+        "Test/ColorVision.UI.Tests/ServiceHostPipeServerTests.cs",
+        "Test/ColorVision.UI.Tests/ColorVisionServiceHostServiceLifecycleTests.cs",
+        "Test/ColorVision.UI.Tests/ServiceHostStartupStatusTests.cs",
+        "Test/ColorVision.UI.Tests/ServiceHostApplicationUpdateAccessTests.cs"
+      ],
+      "related": [
+        "platform.system",
+        "delivery.update",
+        "plugins.windows-service",
+        "engine.shell-extension",
+        "engine.mysql-recovery"
+      ],
+      "code_scopes": [
+        "ColorVision/ServiceHost",
+        "UI/ColorVision.UI",
+        "src/ColorVisionServiceHost"
+      ],
+      "domain": "platform",
+      "title": "ColorVisionServiceHost：本机权限代理与生命周期",
+      "source": "docs/03-architecture/components/service-host.md",
+      "url": "/03-architecture/components/service-host",
+      "searchable": true,
+      "source_hash": "3111ff0a07ab6a4f7ef43d600d41b7f2eed2a8ed2963c301fed7938342865abe"
+    },
+    {
       "knowledge_id": "platform.system",
       "knowledge_type": "topic",
       "status": "current",
@@ -5733,6 +5799,7 @@
       "related": [
         "platform.architecture",
         "platform.runtime",
+        "platform.service-host",
         "algorithms.platform",
         "engine.index",
         "flow.architecture",
@@ -5752,7 +5819,7 @@
       "source": "docs/03-architecture/overview/system-overview.md",
       "url": "/03-architecture/overview/system-overview",
       "searchable": true,
-      "source_hash": "022ea07b8fe3362fdac1d57f290669d87b7a5b9e8d020dcd11fa6a8663071699"
+      "source_hash": "8c5d07fdedf91d09a26a058b55c83e545e25337b489dda4ebb7f8cad497df2de"
     },
     {
       "knowledge_id": "plugins.capabilities",
@@ -6293,6 +6360,7 @@
         "plugins.index",
         "plugins.getting-started",
         "delivery.cvwindowsservice",
+        "platform.service-host",
         "engine.mysql-recovery",
         "ui.menus",
         "ui.wizards"
@@ -6309,7 +6377,7 @@
       "source": "docs/04-api-reference/plugins/standard-plugins/windows-service.md",
       "url": "/04-api-reference/plugins/standard-plugins/windows-service",
       "searchable": true,
-      "source_hash": "af4bdbbbb63886317f0cc3c583deb8467a1ba7c945358cae3b95f975d03c4096"
+      "source_hash": "54b1d80fd21249bc9dc9614bb7dbb9fd76cb6b77ad72067ae878ed761b697542"
     },
     {
       "knowledge_id": "projects.arvr-pro",

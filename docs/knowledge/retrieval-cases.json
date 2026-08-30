@@ -318,6 +318,16 @@
     {"query":"persist_config_values 保存保留配置时具备什么原子性？","expected_any":["delivery.backend-retention"],"include_planned":false},
     {"query":"只想了解 compact 的分页和缓存写入，公共站点应读哪份契约？","expected_any":["delivery.backend-public-data"],"include_planned":false},
     {"query":"使用 ThemeManager.Current 切换主题时，选择与资源应用是什么关系？","expected_any":["ui.themes"],"include_planned":false},
-    {"query":"ColorVision.ImageEditor 接入自定义打开器后，像素载入和外部标注完成怎么区分？","expected_any":["ui.image-editor"],"include_planned":false}
+    {"query":"ColorVision.ImageEditor 接入自定义打开器后，像素载入和外部标注完成怎么区分？","expected_any":["ui.image-editor"],"include_planned":false},
+    {"query":"服务一直显示正在停止，已经超过两分钟，是不是应该已经自动终止并可以覆盖程序文件了？","expected_any":["platform.service-host"],"include_planned":false},
+    {"query":"日志已经出现服务启动成功，这是否说明后台清理和启动完整性检查都完成了？","expected_any":["platform.service-host"],"include_planned":false},
+    {"query":"ServiceHostPipeServer.StopAsync 和 RunAsync 返回的任务有什么关系，停止后还能用同一个实例重新启动吗？","expected_any":["platform.service-host"],"include_planned":false},
+    {"query":"Program.BeginConsoleShutdown 取消后会中断已经接纳的命令吗，它和服务模式的退出流程是否一样？","expected_any":["platform.service-host"],"include_planned":false},
+    {"query":"客户端请求超时没收到结果，我能认定特权操作没执行并立刻重发吗？服务端到底在哪个边界停止执行？","expected_any":["platform.service-host"],"include_planned":false},
+    {"query":"命名管道测试和服务生命周期测试都通过，是否已经验证了安装后 LocalSystem 服务的真实授权、SCM 停止，以及更新文件替换顺序？","expected_any":["platform.service-host"],"include_planned":false},
+    {"query":"ServiceHostCallerIdentity是否验证发布者签名","expected_any":["platform.service-host"],"include_planned":false},
+    {"query":"ServiceHostStatus.IsReadyForPackagedVersion需要安装包存在吗","expected_any":["platform.service-host"],"include_planned":false},
+    {"query":"ServiceHostBrokerTicketService票据锁定Data参数吗","expected_any":["platform.service-host"],"include_planned":false},
+    {"query":"ServiceHostPipeClient的send与桌面客户端命令和超时规则相同吗","expected_any":["platform.service-host"],"include_planned":false}
   ]
 }

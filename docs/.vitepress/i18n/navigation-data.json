@@ -527,6 +527,12 @@
                 "root": "Explorer 缩略图读取与 COM 注册"
               },
               "link": "/04-api-reference/engine-components/ColorVision.ShellExtension"
+            },
+            {
+              "text": {
+                "root": "ColorVisionServiceHost：本机权限代理与生命周期"
+              },
+              "link": "/03-architecture/components/service-host"
             }
           ]
         },
@@ -1409,6 +1415,12 @@
                 "root": "架构运行时"
               },
               "link": "/03-architecture/overview/runtime"
+            },
+            {
+              "text": {
+                "root": "ColorVisionServiceHost：本机权限代理与生命周期"
+              },
+              "link": "/03-architecture/components/service-host"
             },
             {
               "text": {
@@ -3044,6 +3056,12 @@
                 "root": "Explorer 缩略图读取与 COM 注册"
               },
               "link": "/04-api-reference/engine-components/ColorVision.ShellExtension"
+            },
+            {
+              "text": {
+                "root": "ColorVisionServiceHost：本机权限代理与生命周期"
+              },
+              "link": "/03-architecture/components/service-host"
             }
           ]
         },

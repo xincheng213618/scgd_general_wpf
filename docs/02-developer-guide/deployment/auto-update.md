@@ -6,7 +6,7 @@ summary: "主程序及插件更新、检查结果一次性消费、失败元数�
 aliases: ["自动更新","更新失败","插件回滚","重复检查更新","更新检查缓存","五分钟缓存","启动检查结果","PluginUpdater","CombinedUpdateCoordinator","UpdateCheckReuseState","LatestVersionCheckRequestCache","CanReuseUpdateCheckOptions","GetPluginUpdateMetadataAsync","ServerUnavailable","NoInternetConnection","forceRefresh"]
 code_paths: ["ColorVision/Update","ColorVision/Recovery","UI/ColorVision.UI/Plugins/PluginUpdater.cs","UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceClient.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceManager.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/PluginRecoveryBackupServiceTests.cs","Test/ColorVision.UI.Tests/ServiceHostUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/AutoUpdatePlanTests.cs"]
-related: ["delivery.deployment","delivery.scripts"]
+related: ["delivery.deployment","delivery.scripts","platform.service-host"]
 ---
 
 # 自动更新
@@ -51,7 +51,7 @@ flowchart LR
 
 更新提示显示 30 秒后会静默预下载主程序和插件包。退出时只自动应用已经完整缓存并通过校验的增量包；程序目录不可写时，必须由 `ColorVisionServiceHost` 在 3 秒内静默准备好目录权限，否则本次退出直接跳过，不弹 UAC、不阻塞关闭。主程序和插件分别判断包是否可用：任意一方未准备好不会阻止另一方更新。完整安装程序可以预下载和复用，但不会在退出时自动运行；后台启动检查仍会按当前主程序版本独立查询和预下载兼容插件，使已经准备好的插件可以在退出时单独更新。
 
-权限准备按最短路径执行：便携版、非系统盘或其他本来可写的程序目录直接更新，不调用特权服务；只有目录不可写时才请求 `ColorVisionServiceHost`，用户主动更新时服务仍不可用才使用 UAC 兜底。
+权限准备按最短路径执行：便携版、非系统盘或其他本来可写的程序目录直接更新，不调用特权服务；只有目录不可写时才请求 `ColorVisionServiceHost`，用户主动更新时服务仍不可用才使用 UAC 兜底。代理调用身份、免票据命令的副作用和超时不取消执行的边界，统一见[本机权限代理](../../03-architecture/components/service-host.md)。
 
 下载完成的安装包、增量包和插件包保留在各自的更新缓存中，供后续重装、还原或复用；更新结束时只删除 `%TEMP%` 下本次生成的解压和拼装目录。缓存除了检查文件结构，还会核对包内 `ColorVision.exe` 或完整安装程序的目标版本，避免同名旧包被当成新版本使用。校验失败或暂时无法读取的缓存包不会直接删除，而是移入同级 `Recovery` 目录并重新下载。无法读取的普通程序快照保留原位；手动重建默认快照时，旧文件会先保留到 `Recovery`。
 

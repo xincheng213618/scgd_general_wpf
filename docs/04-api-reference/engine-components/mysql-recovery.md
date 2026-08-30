@@ -6,7 +6,7 @@ summary: "MySQL手动SQL恢复、数据库重置与资源保留：导入后才�
 aliases: ["MySQL数据库恢复", "加载SQL备份", "数据库重置", "资源迁移备份", "恢复失败但数据已改变", "恢复后重启", "Sensor字典ID重映射", "MySqlDatabaseMaintenanceService", "RestoreAndRestartAsync", "RestoreSqlFileAsync", "RestoreMysql", "ResetDatabaseFromSqlFileAsync", "SynchronizeInstalledServiceConfigs", "UpdateConfigFile", "MigrationBackupTableNames", "BuildMigrationDictionaryDependencyStatements", "SensorTemplateMigrationSqlBuilder", "MySqlRestoreProgressWindow"]
 code_paths: ["Engine/ColorVision.Engine/Mysql/MySqlDatabaseMaintenanceService.cs", "Engine/ColorVision.Engine/Mysql/MySqlLocalServicesManager.cs", "Engine/ColorVision.Engine/Mysql/MySqlRestoreProgressWindow.xaml", "Engine/ColorVision.Engine/Mysql/MySqlRestoreProgressWindow.xaml.cs", "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml", "Engine/ColorVision.Engine/Mysql/SensorTemplateMigrationSqlBuilder.cs", "Engine/ColorVision.Engine/Services/RC/RCInitializer.cs", "UI/ColorVision.Database/MySqlControl.cs", "UI/ColorVision.Database/MySqlSetting.cs", "UI/ColorVision.Database/MySqlProtocolDefaults.cs", "UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/MySqlBackupRestoreSafetyTests.cs", "Test/ColorVision.UI.Tests/MySqlMigrationBackupTableTests.cs", "Test/ColorVision.UI.Tests/SensorTemplateMigrationTests.cs"]
-related: ["engine.mysql-maintenance", "engine.database-maintenance", "plugins.windows-service", "operations.data", "engine.template-design"]
+related: ["engine.mysql-maintenance", "engine.database-maintenance", "plugins.windows-service", "platform.service-host", "operations.data", "engine.template-design"]
 ---
 
 # MySQL SQL 恢复、重置与资源保留
@@ -28,7 +28,7 @@ related: ["engine.mysql-maintenance", "engine.database-maintenance", "plugins.wi
 
 ## 手动恢复的阶段与完成含义
 
-`RestoreAndRestartAsync` 首先非阻塞尝试进入进程内维护门，已有其它维护任务时提示并返回；同调用链允许嵌套。取得门后打开进度窗口，执行 SQL，然后同步配置；同步返回的文件数为0时抛错，提示“数据库已导入，但已停止服务重启”。只有配置同步通过才调用 ServiceHost 重启固定的 `RegistrationCenterService`（服务超时60秒、请求等待90秒）。
+`RestoreAndRestartAsync` 首先非阻塞尝试进入进程内维护门，已有其它维护任务时提示并返回；同调用链允许嵌套。取得门后打开进度窗口，执行 SQL，然后同步配置；同步返回的文件数为0时抛错，提示“数据库已导入，但已停止服务重启”。只有配置同步通过才调用 ServiceHost 重启固定的 `RegistrationCenterService`（服务超时60秒、请求等待90秒）。请求等待超时不代表代理动作取消，见[本机权限代理](../../03-architecture/components/service-host.md)。
 
 这个顺序没有导入前自动完整备份、停止采集/流程或停服务步骤，也没有额外“确认后再导入”的弹窗。管理器维护门只约束使用该门的进程内动作，不阻止其它 DAO、直接 SQL 或外部进程写入；门的机制与完整备份边界见[结果维护](./mysql-maintenance.md)。底层恢复和重置接口不会自动加入该门。
 
