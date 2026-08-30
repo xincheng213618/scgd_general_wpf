@@ -14,8 +14,12 @@ Authoritative documentation is split by responsibility:
 - [HTTP/SPA analytics, privacy boundaries, and performance diagnostics](../../docs/02-developer-guide/backend/observability.md) (`delivery.backend-observability`).
 - [Built-in jobs, synchronous execution, single-flight, and recovery](../../docs/02-developer-guide/backend/jobs.md) (`delivery.backend-jobs`).
 - [Live retention settings, database snapshots, cleanup, and rotation](../../docs/02-developer-guide/backend/backup-retention.md) (`delivery.backend-retention`).
+- [Audit and NAS deployment records, queries, and evidence limits](../../docs/02-developer-guide/backend/management-records.md) (`delivery.backend-records`).
+- [Copilot profile management, version proof, and sensitive configuration sync](../../docs/02-developer-guide/backend/copilot-sync.md) (`delivery.backend-copilot-sync`).
+- [Public feedback submission, inbox state, and diagnostic attachment delivery](../../docs/02-developer-guide/backend/feedback.md) (`delivery.backend-feedback`).
+- [Operations credentials, relay tasks, receipts, and read-only overview](../../docs/02-developer-guide/backend/operations-relay.md) (`delivery.backend-operations`).
 
-This source-adjacent README retains local prerequisites and the remaining Copilot, Operations, feedback, deployment-history, audit-query, and separate CVWindowsService details not yet moved to canonical topics. The responsibilities above each have one body of knowledge. Repository links require the matching full source checkout; they are not a claim that `docs/` ships with a separately copied backend.
+This source-adjacent README retains local prerequisites, module entry points, and the separate CVWindowsService details not yet consolidated into a canonical topic. The responsibilities above each have one body of knowledge. Repository links require the matching full source checkout; they are not a claim that `docs/` ships with a separately copied backend.
 
 ## Quick Start
 
@@ -60,34 +64,12 @@ That topic owns credential precedence, live Session permissions versus issuable
 key scopes, key lifecycle, browser 401/403, and CSRF. Authentication alone is
 not a full-access grant, and protocols may restrict accepted credential methods.
 
-Legacy API-key Operations relay uses two dedicated scopes and does not accept Basic/session auth:
-
-- `ops:relay` — desktop outbound heartbeat, task polling, receipts, and bounded support events.
-- `ops:operator` — list hosts and create catalog-bound tasks. Privileged ServiceHost commands are not valid relay tasks.
-
-Creating a relay key writes the Backend database and grants relay access; do so
-only for an authorized deployment with the configuration/database selected.
-Create a desktop relay key with `python app.py --create-api-key colorvision-relay --scopes ops:relay`, then set
-`COLORVISION_OPERATIONS_RELAY_URL` (HTTPS, or loopback HTTP for development only) and
-`COLORVISION_OPERATIONS_RELAY_KEY` in the ColorVision process environment. The desktop initiates every Web connection;
-no inbound port or arbitrary command channel is opened. Current desktop builds
-use the signed device relay by default: the host sync and task/receipt exchange
-are authenticated by the desktop Operations certificate, while task requests
-from approved devices retain their P-256 signature for a second verification
-on the desktop. Device tasks are limited to empty-payload show/minimize actions
-for the current ColorVision main window, an empty-payload recovery of the current
-configured message connection and subscriptions, an empty-payload cancellation
-request for the active primary flow, an empty-payload restart of the current
-ColorVision application, an empty-payload restart of the fixed local Mosquitto
-service, and a bounded diagnostic request. The Mosquitto target is injected by
-the desktop after it rechecks an idle flow and applicable service state; devices
-cannot submit a service name or maintenance parameters. Application restart
-uses a signed accepted receipt before shutdown and a final signed receipt from
-the replacement process after persistent handoff; window handles, titles,
-process or program selectors, flow or node selectors, endpoints, topics,
-credentials, paths, arguments, commands, scripts, and arbitrary payload fields
-are rejected.
-The API-key relay remains available for compatible deployments.
+Operations has separate [Bearer and device-signed relay contracts](../../docs/02-developer-guide/backend/operations-relay.md).
+That topic owns legacy environment/key setup, desktop channel selection,
+capability/payload limits, signature verification, task delivery, and receipts.
+Creating keys or submitting tasks grants access or requests real computer
+actions; do neither as a documentation or connection probe. The read-only
+administrator overview does not provide a task-dispatch authorization.
 
 ### Endpoint authorization
 
@@ -140,87 +122,38 @@ security-management response means no database state changed.
 
 ### Copilot Desktop Sync
 
-`GET /api/copilot/config` accepts the existing Bearer key with
-`copilot:config:read` for compatibility. The desktop settings UI uses signed
-device proof instead: application version, hardware fingerprint, OS version,
-architecture, timestamp, and nonce are authenticated with the installed
-ColorVision version key. The version key itself is not sent.
+The [Copilot Backend contract](../../docs/02-developer-guide/backend/copilot-sync.md)
+owns Profile CRUD, `copilot_sync.version_keys`, independent Bearer/proof
+authorization, AES-GCM storage, response revision, and key-rotation limits.
+Sync delivers provider secrets for every enabled Profile. Shared version proof
+is not a per-device private identity, and its nonce is not replay-deduplicated.
+Protect the transport and accepted release keys; changing `secret_key` also
+affects decryption of stored provider keys. A sync response does not prove the
+desktop has saved or applied it.
 
-Configure the server with the same release keys used by supported desktop
-installations:
+### Audit and deployment records
 
-```json
-{
-  "copilot_sync": {
-    "version_keys": ["replace-with-the-desktop-version-key"]
-  }
-}
-```
-
-Up to 16 keys may be active during version-key rotation. Missing configuration,
-invalid signatures, unsupported device metadata, and proofs older than five
-minutes are rejected before model provider credentials are returned.
-
-### Audit Log
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/admin/audit-log?action=&actor=&target=&since=&until=&limit=&offset=` | View audit log with an exact filtered `total` |
-
-Audit cutoff, recognized snapshots, partial failures, and rotation are defined
-in the [retention contract](../../docs/02-developer-guide/backend/backup-retention.md).
-Do not assume an unrecognized copy or a failed cleanup has applied that policy.
-Pagination accepts `limit` from 1 through 500 and a non-negative `offset`;
-invalid values return HTTP 400 instead of becoming an unbounded SQLite query.
-The administrator viewer localizes known event, actor, target, and detail
-contracts while preserving raw action codes. Source IP and user-agent data are
-available only in the authenticated event drawer for incident investigation.
-
-### Deployment History
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/admin/deployments?status=&source=&commit=&limit=&offset=` | View sanitized, latest-first NAS deployment history |
-
-The response includes exact filtered totals plus aggregate status/source and
-malformed-record counts. It intentionally omits server names, absolute paths,
-runtime log paths, and raw errors; failed records expose only a coarse failure
-category. The deployment writer keeps 500 valid records by default.
+The [management-records topic](../../docs/02-developer-guide/backend/management-records.md)
+owns the two stores, query parameters, exact/aggregate counts, frontend
+presentation, projection limits, and deployment-history writer retention.
+An empty audit response can mean a query failure. Audit fields already reach
+the browser in the list response; the drawer is not a second authorization
+boundary. Deployment history is recorded evidence, not a live service probe.
 
 ### Feedback Inbox
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/admin/feedback?status=&query=&limit=&offset=` | List feedback with aggregate status and attachment totals |
-| GET | `/api/admin/feedback/<id>` | Read one feedback submission and its attachment inventory |
-| GET | `/api/admin/feedback/<id>/attachments/<name>` | Download a direct diagnostic attachment |
-| PUT | `/api/admin/feedback/<id>/status` | Move feedback between `new`, `in_progress`, and `resolved` |
-
-Feedback remains filesystem-authoritative under the existing `Feedback`
-storage directory. The inbox preserves legacy directories with missing or
-malformed metadata, displays their attachment inventory, and never rewrites
-the submitted `feedback.json`. Administrator workflow state is persisted in a
-separate atomic `.admin.json` sidecar. Attachment delivery rejects traversal,
-metadata/state files, symbolic links, and non-direct files. Downloads and
-status changes are recorded in the administrator audit log.
+The [feedback contract](../../docs/02-developer-guide/backend/feedback.md) owns
+public form submission, filesystem inventory, filters, `.admin.json` state,
+attachment path checks, and audit timing. Upload validation is not the same as
+management attachment validation. Treat attachments as untrusted diagnostics;
+resolved does not delete them, and a download audit is not a completion receipt.
 
 ### Operations Overview
 
-`GET /api/admin/operations/overview?hostLimit=100&activityLimit=100` powers the
-read-only `/admin/operations/hosts` page. It reports exact host/task/session
-summary counts, signed host-identity and paired-device status, a bounded host
-list, task origin and lifecycle state, receipt counts, and support-session
-state. A heartbeat is treated as online for 90
-seconds, matching the desktop Relay's 20-second polling cadence without hiding
-short network interruptions.
-
-The endpoint deliberately returns neither host certificates, device public
-keys, request signatures/nonces/bodies, task payloads, receipt evidence,
-support message bodies, nor arbitrary snapshot keys. Desktop heartbeats are
-projected back onto the fixed `OperationsSafeSnapshot` fields before the React
-client receives them. Legacy operator task creation remains on the separate
-`ops:operator` API-key contract, while paired devices use the signed Relay
-endpoint; the administrator page itself cannot dispatch work.
+See the [Operations overview contract](../../docs/02-developer-guide/backend/operations-relay.md)
+for whole-table versus bounded-list counts, online/identity status, and field
+projection. Online is a recent heartbeat indication, not action readiness;
+overview privacy exclusions do not apply to every relay endpoint or its database.
 
 ### Observability and database maintenance
 
@@ -376,7 +309,7 @@ Compatibility entry points (current detailed behavior is defined by the linked t
 - `GET /api/health` — Health check
 - `GET /api/ready` — Readiness check
 - `GET /api/stats` — Download statistics
-- `POST /api/feedback` — Submit feedback
+- `POST /api/feedback` — [Public feedback submission](../../docs/02-developer-guide/backend/feedback.md)
 
 Default plugin detail retains its full projection; compact/update have distinct
 field and pagination contracts. See the canonical plugin topic before relying

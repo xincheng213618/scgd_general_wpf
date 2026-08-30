@@ -2024,7 +2024,11 @@
         "delivery.backend-public-data",
         "delivery.backend-observability",
         "delivery.backend-jobs",
-        "delivery.backend-retention"
+        "delivery.backend-retention",
+        "delivery.backend-records",
+        "delivery.backend-feedback",
+        "delivery.backend-copilot-sync",
+        "delivery.backend-operations"
       ],
       "code_scopes": [
         "Web/Backend"
@@ -2034,7 +2038,7 @@
       "source": "docs/02-developer-guide/backend/README.md",
       "url": "/02-developer-guide/backend/README",
       "searchable": true,
-      "source_hash": "9b6a21a1719b6e70f8014fe9b0ea8ca707533c05e26e8c5118be23faeb42b3cc"
+      "source_hash": "d0423890185011ec103b05fd846f404092cded25c63232861d55c94842754d43"
     },
     {
       "knowledge_id": "delivery.backend-accounts",
@@ -2158,6 +2162,124 @@
       "source_hash": "3c003173a4a24e36f1a12bbc512f35b793e6e63b65da3fa38196e100597f687b"
     },
     {
+      "knowledge_id": "delivery.backend-copilot-sync",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "Backend Copilot配置管理、AES-GCM密钥存储与全量同步；版本HMAC不是独立设备身份，nonce不去重，成功读取会交付provider秘密。",
+      "aliases": [
+        "Copilot Desktop Sync",
+        "Copilot后台同步",
+        "CopilotConfigService",
+        "CopilotProfileInput",
+        "CopilotConfigPage",
+        "verify_copilot_device",
+        "CopilotDeviceIdentity",
+        "copilot_sync",
+        "version_keys",
+        "copilot:config:read",
+        "copilot:manage",
+        "X-ColorVision-Signature",
+        "X-ColorVision-Nonce",
+        "defaultProfileId",
+        "hasApiKey",
+        "api_key_encrypted"
+      ],
+      "code_paths": [
+        "Web/Backend/routes/copilot_config_api.py",
+        "Web/Backend/services/copilot_config_service.py",
+        "Web/Backend/services/copilot_device_auth.py",
+        "Web/Backend/routes/admin_api.py",
+        "Web/Backend/services/api_key_service.py",
+        "Web/Backend/services/permission_service.py",
+        "Web/Backend/app_setup.py",
+        "Web/Backend/db/schema_version.py",
+        "Web/Backend/db_cache.py",
+        "Web/Frontend/src/pages/CopilotConfigPage.tsx",
+        "Web/Frontend/src/services/admin.ts",
+        "Web/Frontend/src/types/admin.ts"
+      ],
+      "test_paths": [
+        "Web/Backend/test_copilot_config_api.py"
+      ],
+      "related": [
+        "delivery.backend",
+        "delivery.backend-auth",
+        "copilot.configuration"
+      ],
+      "code_scopes": [
+        "Web/Backend",
+        "Web/Frontend"
+      ],
+      "domain": "delivery",
+      "title": "Backend Copilot配置管理与敏感配置交付",
+      "source": "docs/02-developer-guide/backend/copilot-sync.md",
+      "url": "/02-developer-guide/backend/copilot-sync",
+      "searchable": true,
+      "source_hash": "41628ac445a06dd68a38ec36747a231fedb105243634ad3a60bad63840244e0d"
+    },
+    {
+      "knowledge_id": "delivery.backend-feedback",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "Backend公开反馈提交、文件目录收件箱、状态sidecar和受控附件响应；上传与管理校验不同，201、resolved及下载审计各有完成边界。",
+      "aliases": [
+        "反馈收件箱",
+        "Feedback Inbox",
+        "反馈上传",
+        "save_feedback",
+        "FeedbackSaveResult",
+        "FeedbackValidationError",
+        "feedback_admin",
+        "query_feedback",
+        "resolve_feedback_attachment",
+        "update_feedback_status",
+        "feedback_attachment_download",
+        "feedback.json",
+        ".admin.json",
+        "feedback:manage",
+        "FeedbackPage"
+      ],
+      "code_paths": [
+        "Web/Backend/feedback_service.py",
+        "Web/Backend/services/feedback_admin.py",
+        "Web/Backend/routes/public_api.py",
+        "Web/Backend/routes/admin_api.py",
+        "Web/Backend/storage_paths.py",
+        "Web/Backend/config_loader.py",
+        "Web/Backend/app_setup.py",
+        "Web/Backend/app.py",
+        "Web/Backend/context.py",
+        "Web/Backend/download_stats.py",
+        "Web/Backend/db_cache.py",
+        "Web/Backend/services/http_method_safety.py",
+        "Web/Frontend/src/pages/FeedbackPage.tsx",
+        "Web/Frontend/src/services/admin.ts",
+        "Web/Frontend/src/utils/feedback.ts"
+      ],
+      "test_paths": [
+        "Web/Backend/test_app.py",
+        "Web/Backend/test_feedback_admin.py",
+        "Web/Backend/test_contracts.py",
+        "Web/Frontend/tests/feedback.test.ts"
+      ],
+      "related": [
+        "delivery.backend",
+        "delivery.backend-auth",
+        "delivery.artifact-delivery",
+        "ui.desktop"
+      ],
+      "code_scopes": [
+        "Web/Backend",
+        "Web/Frontend"
+      ],
+      "domain": "delivery",
+      "title": "Backend反馈提交、处理状态与附件访问",
+      "source": "docs/02-developer-guide/backend/feedback.md",
+      "url": "/02-developer-guide/backend/feedback",
+      "searchable": true,
+      "source_hash": "b2331e2bd8f20e32070fd3d10a872dd11ff1b8da9650998bf179ee73b6f0a796"
+    },
+    {
       "knowledge_id": "delivery.backend-jobs",
       "knowledge_type": "topic",
       "status": "current",
@@ -2276,6 +2398,75 @@
       "source_hash": "362110c05de5ec44a9069886986ba987259456fa4e3efbbe04af305bb9051076"
     },
     {
+      "knowledge_id": "delivery.backend-operations",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "Backend Operations 的 Bearer 与设备签名中继、任务回执和管理员只读投影；在线、排队、验签与真实动作完成各有边界。",
+      "aliases": [
+        "Operations中继",
+        "运维后台",
+        "设备签名中继",
+        "operations_overview",
+        "OperationsDeviceRelayService",
+        "OperationsRelayContext",
+        "OperationsAdminQuery",
+        "SqliteOperationsAdminQuery",
+        "OperationsSupportStore",
+        "SqliteOperationsSupportStore",
+        "OperationsSafeSnapshot",
+        "ops:relay",
+        "ops:operator",
+        "operations:manage",
+        "COLORVISION_OPERATIONS_RELAY_URL",
+        "COLORVISION_OPERATIONS_RELAY_KEY",
+        "signedRelayReady",
+        "awaiting_local_consent"
+      ],
+      "code_paths": [
+        "Web/Backend/routes/operations_relay.py",
+        "Web/Backend/services/operations_device_relay.py",
+        "Web/Backend/routes/admin_api.py",
+        "Web/Backend/ports/operations_admin.py",
+        "Web/Backend/ports/operations_support.py",
+        "Web/Backend/db/repositories/operations_admin.py",
+        "Web/Backend/db/repositories/operations_support.py",
+        "Web/Backend/app_setup.py",
+        "Web/Backend/cli.py",
+        "UI/ColorVision.UI.Desktop/Operations/OperationsRelayClientService.cs",
+        "UI/ColorVision.UI.Desktop/Operations/OperationsRelayProtocol.cs",
+        "UI/ColorVision.UI.Desktop/Operations/OperationsSafeSnapshot.cs",
+        "UI/ColorVision.UI.Desktop/Operations/OperationsDesktopActionService.cs",
+        "UI/ColorVision.UI.Desktop/Operations/OperationsApplicationRestart.cs",
+        "Engine/ColorVision.Engine/Services/Operations/ServiceHostOperationsMqttRestartController.cs",
+        "Engine/ColorVision.Engine/Services/Operations/EngineOperationsMessageChannelHealthProvider.cs",
+        "Engine/ColorVision.Engine/Services/Operations/FlowOperationsRuntimeStatusProvider.cs",
+        "ColorVision/App.xaml.cs"
+      ],
+      "test_paths": [
+        "Web/Backend/test_operations_relay.py",
+        "Web/Backend/test_operations_admin.py",
+        "Web/Backend/test_operations_support_store.py",
+        "Test/ColorVision.UI.Tests/OperationsRelayProtocolTests.cs"
+      ],
+      "related": [
+        "delivery.backend",
+        "delivery.backend-auth",
+        "delivery.android-operations"
+      ],
+      "code_scopes": [
+        "ColorVision",
+        "Engine/ColorVision.Engine",
+        "UI/ColorVision.UI.Desktop",
+        "Web/Backend"
+      ],
+      "domain": "delivery",
+      "title": "Backend Operations 中继与只读概览",
+      "source": "docs/02-developer-guide/backend/operations-relay.md",
+      "url": "/02-developer-guide/backend/operations-relay",
+      "searchable": true,
+      "source_hash": "512f6bb9a5b740bb09c6a9aa72ed0b83f43fbb092bb56b5a01a26c704af1a884"
+    },
+    {
       "knowledge_id": "delivery.backend-public-data",
       "knowledge_type": "topic",
       "status": "current",
@@ -2338,6 +2529,69 @@
       "url": "/02-developer-guide/backend/public-data",
       "searchable": true,
       "source_hash": "4b3e1f7b5700f80212ac33bda08ca37201a98a994c9d05724153d35d61a52222"
+    },
+    {
+      "knowledge_id": "delivery.backend-records",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "Backend审计与NAS部署历史的来源、筛选total与summary统计、展示脱敏和保留边界；空审计可能是查询失败，历史成功不证明当前服务或完整恢复。",
+      "aliases": [
+        "管理记录",
+        "审计日志",
+        "部署历史",
+        "部署历史筛选",
+        "AuditPage",
+        "DeploymentHistoryPage",
+        "get_audit_log_page",
+        "query_deployment_history",
+        "Write-WebDeploymentHistory",
+        "api/admin/audit-log",
+        "api/admin/deployments",
+        "web-deploy-history.jsonl",
+        "malformed_records",
+        "history_retention",
+        "summary.records",
+        "summary.statuses",
+        "summary.sources"
+      ],
+      "code_paths": [
+        "Web/Backend/routes/admin_api.py",
+        "Web/Backend/db_cache.py",
+        "Web/Backend/services/deployment_history.py",
+        "Web/DeploymentHistory.psm1",
+        "Web/Deploy-Nas.ps1",
+        "Web/Frontend/src/services/admin.ts",
+        "Web/Frontend/src/pages/AuditPage.tsx",
+        "Web/Frontend/src/pages/DeploymentHistoryPage.tsx",
+        "Web/Frontend/src/utils/auditLog.ts",
+        "Web/Frontend/src/utils/deploymentHistory.ts"
+      ],
+      "test_paths": [
+        "Web/Backend/test_db_cache.py",
+        "Web/Backend/test_contracts.py",
+        "Web/Backend/test_deployment_history.py",
+        "Web/Test-DeploymentHistory.ps1",
+        "Web/Frontend/tests/auditLog.test.ts",
+        "Web/Frontend/tests/deploymentHistory.test.ts"
+      ],
+      "related": [
+        "delivery.backend",
+        "delivery.backend-auth",
+        "delivery.backend-retention",
+        "delivery.backend-jobs",
+        "delivery.backend-observability"
+      ],
+      "code_scopes": [
+        "Web",
+        "Web/Backend",
+        "Web/Frontend"
+      ],
+      "domain": "delivery",
+      "title": "审计与部署记录：来源、查询与证据边界",
+      "source": "docs/02-developer-guide/backend/management-records.md",
+      "url": "/02-developer-guide/backend/management-records",
+      "searchable": true,
+      "source_hash": "f58027cac8a67fde38b86df7dec7746b4607350637b4ec246c74562cb119a3e8"
     },
     {
       "knowledge_id": "delivery.backend-retention",
@@ -4181,7 +4435,7 @@
       "source": "docs/knowledge/retrieval-checks.md",
       "url": "/knowledge/retrieval-checks",
       "searchable": true,
-      "source_hash": "8bc675b08c2f9db716e3d3452233ee45f553e91900ae099f5a6382495d919160"
+      "source_hash": "712d5f035e868bba5f70e3acc9e8da67fab40800f6f1806e872a3f415726edce"
     },
     {
       "knowledge_id": "operations.acceptance",

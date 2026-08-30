@@ -432,6 +432,9 @@ next: false
 - [Android 运维伴侣](../../02-developer-guide/backend/android-operations.md) — `delivery.android-operations`
   Android原生运维入口、现场HTTPS与固定签名中继的职责边界；连接、可见证据和操作授权不能互相替代。
 
+- [Backend Operations 中继与只读概览](../../02-developer-guide/backend/operations-relay.md) — `delivery.backend-operations`
+  Backend Operations 的 Bearer 与设备签名中继、任务回执和管理员只读投影；在线、排队、验签与真实动作完成各有边界。
+
 - [自动更新](../../02-developer-guide/deployment/auto-update.md) — `delivery.update`
   主程序及插件更新、检查结果一次性消费、失败元数据回退、目录替换与启动恢复的实现和验收边界。
 

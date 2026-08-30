@@ -239,6 +239,12 @@
             },
             {
               "text": {
+                "root": "Backend Operations 中继与只读概览"
+              },
+              "link": "/02-developer-guide/backend/operations-relay"
+            },
+            {
+              "text": {
                 "root": "跨模块运行问题定位"
               },
               "link": "/01-user-guide/README"
@@ -1475,6 +1481,12 @@
             },
             {
               "text": {
+                "root": "Backend Operations 中继与只读概览"
+              },
+              "link": "/02-developer-guide/backend/operations-relay"
+            },
+            {
+              "text": {
                 "root": "自动更新"
               },
               "link": "/02-developer-guide/deployment/auto-update"
@@ -1682,6 +1694,12 @@
                 "root": "Copilot 工具契约"
               },
               "link": "/02-developer-guide/core-concepts/copilot-agent-tool-contracts"
+            },
+            {
+              "text": {
+                "root": "Backend Operations 中继与只读概览"
+              },
+              "link": "/02-developer-guide/backend/operations-relay"
             },
             {
               "text": {
@@ -2548,6 +2566,21 @@
       "items": [
         {
           "text": {
+            "root": "Web/ 根目录与跨模块关联"
+          },
+          "link": "/knowledge/code/source-Web#module-576562",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "审计与部署记录：来源、查询与证据边界"
+              },
+              "link": "/02-developer-guide/backend/management-records"
+            }
+          ]
+        },
+        {
+          "text": {
             "root": "Web/Backend"
           },
           "link": "/knowledge/code/source-Web#module-5765622f4261636b656e64",
@@ -2585,6 +2618,18 @@
             },
             {
               "text": {
+                "root": "Backend Copilot配置管理与敏感配置交付"
+              },
+              "link": "/02-developer-guide/backend/copilot-sync"
+            },
+            {
+              "text": {
+                "root": "Backend反馈提交、处理状态与附件访问"
+              },
+              "link": "/02-developer-guide/backend/feedback"
+            },
+            {
+              "text": {
                 "root": "Backend内置任务、执行记录与恢复"
               },
               "link": "/02-developer-guide/backend/jobs"
@@ -2597,9 +2642,21 @@
             },
             {
               "text": {
+                "root": "Backend Operations 中继与只读概览"
+              },
+              "link": "/02-developer-guide/backend/operations-relay"
+            },
+            {
+              "text": {
                 "root": "公共站点数据、分页与文件可见性"
               },
               "link": "/02-developer-guide/backend/public-data"
+            },
+            {
+              "text": {
+                "root": "审计与部署记录：来源、查询与证据边界"
+              },
+              "link": "/02-developer-guide/backend/management-records"
             },
             {
               "text": {
@@ -2636,9 +2693,27 @@
           "items": [
             {
               "text": {
+                "root": "Backend Copilot配置管理与敏感配置交付"
+              },
+              "link": "/02-developer-guide/backend/copilot-sync"
+            },
+            {
+              "text": {
+                "root": "Backend反馈提交、处理状态与附件访问"
+              },
+              "link": "/02-developer-guide/backend/feedback"
+            },
+            {
+              "text": {
                 "root": "访问统计、浏览器体验与性能观测"
               },
               "link": "/02-developer-guide/backend/observability"
+            },
+            {
+              "text": {
+                "root": "审计与部署记录：来源、查询与证据边界"
+              },
+              "link": "/02-developer-guide/backend/management-records"
             },
             {
               "text": {

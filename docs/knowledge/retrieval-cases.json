@@ -270,6 +270,24 @@
     {"query":"marketplace_backup恢复后所有cookie和API key都失效吗","expected_any":["delivery.backend-retention"],"include_planned":false},
     {"query":"PUT retention是部分修改且立即删除所有过期数据吗","expected_any":["delivery.backend-retention"],"include_planned":false},
     {"query":"admin_db_backup_keep_count为何仍超过保留数量","expected_any":["delivery.backend-retention"],"include_planned":false},
-    {"query":"plugin_index_check_interval_seconds为何不改变Backend检查周期","expected_any":["delivery.backend-jobs"],"include_planned":false}
+    {"query":"plugin_index_check_interval_seconds为何不改变Backend检查周期","expected_any":["delivery.backend-jobs"],"include_planned":false},
+    {"query":"get_audit_log_page返回空200证明没有审计事件吗","expected_any":["delivery.backend-records"],"include_planned":false},
+    {"query":"AuditPage打开抽屉之前服务端不会发送来源IP吗","expected_any":["delivery.backend-records"],"include_planned":false},
+    {"query":"部署历史summary和total都随status筛选变化吗","expected_any":["delivery.backend-records"],"include_planned":false},
+    {"query":"web-deploy-history.jsonl的sequence是永久事件ID吗","expected_any":["delivery.backend-records"],"include_planned":false},
+    {"query":"Write-WebDeploymentHistory会跳过畸形旧记录继续追加吗","expected_any":["delivery.backend-records"],"include_planned":false},
+    {"query":"DeploymentHistoryPage显示验证通过证明测试已跑且服务现在健康吗","expected_any":["delivery.backend-records"],"include_planned":false},
+    {"query":"Copilot后台同步的nonce和硬件指纹会阻止重复proof吗","expected_any":["delivery.backend-copilot-sync"],"include_planned":false},
+    {"query":"Copilot Desktop Sync同时带坏Bearer和有效device proof会回退吗","expected_any":["delivery.backend-copilot-sync"],"include_planned":false},
+    {"query":"hasApiKey为true更换Web secret_key后为什么同步失败","expected_any":["delivery.backend-copilot-sync"],"include_planned":false},
+    {"query":"CopilotProfileInput新增停用默认项后revision未变默认也未变吗","expected_any":["delivery.backend-copilot-sync"],"include_planned":false},
+    {"query":"公开反馈上传.admin.json会被拒绝吗201说明全部附件已保存吗","expected_any":["delivery.backend-feedback"],"include_planned":false},
+    {"query":"反馈收件箱选择全部为什么400搜索覆盖完整问题描述吗","expected_any":["delivery.backend-feedback"],"include_planned":false},
+    {"query":"反馈标成resolved会修改feedback.json或删除诊断附件吗","expected_any":["delivery.backend-feedback"],"include_planned":false},
+    {"query":"feedback_attachment_download审计能证明完成下载吗HEAD也会记吗","expected_any":["delivery.backend-feedback"],"include_planned":false},
+    {"query":"后台Operations显示在线管理员能直接远程执行任意命令吗","expected_any":["delivery.backend-operations"],"include_planned":false},
+    {"query":"中继任务queued或已收到回执是否说明电脑动作已完成","expected_any":["delivery.backend-operations"],"include_planned":false},
+    {"query":"ops:relay能用Basic或网页登录替代吗手机签名中继是否同一凭据","expected_any":["delivery.backend-operations"],"include_planned":false},
+    {"query":"operations overview会暴露主机证书任务参数和诊断正文吗","expected_any":["delivery.backend-operations"],"include_planned":false}
   ]
 }

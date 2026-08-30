@@ -255,6 +255,20 @@ related: ["governance.maintenance", "delivery.testing"]
 | 六项retention是PATCH且保存就立即清理吗？ | 必须全量六键int；配置replace后更新live，没有客户端revision或跨进程同步，实际删除由后续消费者触发 |
 | 新快照文件出现或backup成功就证明所有旧快照处理成功吗？ | 先可见再清理；新快照失败尝试删除，但在线/旧快照已提交部分不回滚；旧错误和保护集可使数量超上限 |
 | 恢复marketplace_backup会撤销所有cookie/key并安全擦除数据吗？ | scrub针对快照5表和数据库账号auth_version，不覆盖配置管理员cookie/API key/外部配置；SQL删除/quick_check不是安全擦除或业务恢复验收 |
+| 审计空200证明无事件，打开Drawer前IP还在服务端吗？ | get_audit_log_page异常返回空；正常COUNT/页处于同次读事务；列表已返回IP/UA，抽屉不是二次授权 |
+| 部署历史total/summary都随筛选变化，sequence永久稳定吗？ | 全文读完后分页，summary取筛选前有效对象；sequence是当前物理行号，保留裁剪可重新编号 |
+| 部署历史能跳过坏行继续追加，绿色提示证明现在服务健康吗？ | reader跳过坏行但writer拒绝改写，写失败只warning；页面只解释历史字段，不重跑测试或健康检查 |
+| 部署投影能清除任意字段中混入的路径和秘密吗？ | 仅选字段、裁backup名、分类error/recovery；允许字段值不保证通用脱敏，不能作为任意JSON发布器 |
+| Copilot同步有nonce/硬件指纹就具备单机身份与防重放吗？ | 共享版本HMAC、格式检查和双向300秒窗口，nonce不存储；不能与Operations配对签名协议混用 |
+| 坏Bearer同时带有效Copilot proof会回退，管理员cookie能同步吗？ | 精确Bearer前缀优先且失败不回退；其它进入proof，不独立接受Session/Basic；合法请求取全部启用Profile秘密 |
+| hasApiKey/revision证明解密有效、默认未变、桌面已保存吗？ | hasApiKey只看密文；secret变更或坏启用行可令全量解密失败；默认标记可变而revision未变，客户端保存另有边界 |
+| 公开反馈上传和管理附件是否共用保留名/路径防护，201保证全部落盘吗？ | 两条校验不同，上传未拒绝feedback.json/.admin.json；先附件后metadata，净化空名可跳过且无整链事务 |
+| 反馈全部筛选与完整描述搜索可用，resolved会删除诊断附件吗？ | all前后端不匹配返回400，全量省略status；搜索只有预览160字符等字段；resolved只写sidecar状态 |
+| feedback_attachment_download审计就是附件下载完成证据吗？ | 在send_file前写，HEAD/条件响应/中断也可能有记录；审计失败不阻止发送，不套插件完成迭代计数 |
+| Operations后台在线或signedRelayReady就能授权电脑动作吗？ | 90秒心跳/身份行存在只是投影；admin只读，legacy key与设备签名各有准入和本机执行门禁 |
+| Relay queued/delivered/accepted/completed能当exactly-once与不可回退状态机吗？ | queued是入库，delivered可重投，非终态合并accepted；普通回执可覆盖终态，TTL不自动停止桌面动作 |
+| Operations overview的脱敏和限量是否覆盖其它中继接口？ | activityLimit分别约束多个列表，summary全表且非统一快照；排除字段仅属于overview，legacy/signed其它响应不同 |
+| 固定MQTT重启、Flow取消、应用重启是否任意选择目标且完成语义相同？ | mosquitto固定并重查idle/service状态；Flow成功可仅为取消请求；重启accepted早于handoff和新进程最终回执 |
 
 另外用英文代码符号和同义中文说法重复部分问题，确认入口不是只识别一种固定问法。
 
