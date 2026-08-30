@@ -22,6 +22,23 @@ namespace ColorVision.Copilot
 {
     public sealed partial class CopilotSettingsViewModel
     {
+        private const string McpConnectionTestingNotice = "Testing MCP connection...";
+        private readonly HttpClient _mcpConnectionHttpClient;
+        private CancellationTokenSource? _mcpConnectionTestCancellation;
+        private long _mcpConnectionSettingsRevision;
+
+        private void InvalidateMcpConnectionTest()
+        {
+            _mcpConnectionSettingsRevision++;
+            if (_mcpConnectionTestCancellation == null)
+                return;
+
+            McpConnectionTestText = string.Empty;
+            if (string.Equals(SettingsStatusText, McpConnectionTestingNotice, StringComparison.Ordinal))
+                SetSettingsNotice("MCP settings changed. Run a new connection test for the current values.");
+            _mcpConnectionTestCancellation.Cancel();
+        }
+
         private void RegenerateMcpToken()
         {
             var result = MessageBox.Show(
@@ -120,30 +137,45 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            var revision = _mcpConnectionSettingsRevision;
+            var bearerToken = McpBearerToken;
+            using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCancellation.Token);
+            _mcpConnectionTestCancellation = cancellation;
+            bool CanPublishResult() => !_disposed
+                && !cancellation.IsCancellationRequested
+                && revision == _mcpConnectionSettingsRevision;
+
             IsTestingMcpConnection = true;
             McpConnectionTestText = "Testing connection...";
-            SetSettingsNotice("Testing MCP connection...");
+            SetSettingsNotice(McpConnectionTestingNotice);
             try
             {
-                await CopilotMcpConnectionDiagnostic.TestAsync(McpHttpClient, endpoint, McpBearerToken, _lifetimeCancellation.Token);
+                await CopilotMcpConnectionDiagnostic.TestAsync(_mcpConnectionHttpClient, endpoint, bearerToken, cancellation.Token);
 
+                if (!CanPublishResult())
+                    return;
                 McpConnectionTestText = "Connected.";
-                SetSettingsNotice("MCP connection test succeeded.");
+                if (string.Equals(SettingsStatusText, McpConnectionTestingNotice, StringComparison.Ordinal))
+                    SetSettingsNotice("MCP connection test succeeded.");
                 RefreshMcpStatusText();
                 RefreshMcpDiagnostics();
             }
-            catch (OperationCanceledException) when (_disposed)
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
             }
             catch (Exception ex)
             {
+                if (!CanPublishResult())
+                    return;
                 McpConnectionTestText = "Connection failed: " + SanitizeError(ex.Message);
-                SetSettingsNotice(SanitizeError(McpConnectionTestText));
+                if (string.Equals(SettingsStatusText, McpConnectionTestingNotice, StringComparison.Ordinal))
+                    SetSettingsNotice(SanitizeError(McpConnectionTestText));
                 RefreshMcpStatusText();
                 RefreshMcpDiagnostics();
             }
             finally
             {
+                _mcpConnectionTestCancellation = null;
                 IsTestingMcpConnection = false;
             }
         }

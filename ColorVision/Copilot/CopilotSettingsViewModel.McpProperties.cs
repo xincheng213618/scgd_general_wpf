@@ -13,7 +13,10 @@ namespace ColorVision.Copilot
             set
             {
                 if (SetProperty(ref _mcpEnabled, value))
+                {
+                    InvalidateMcpConnectionTest();
                     MarkMcpSettingsPending();
+                }
             }
         }
         private bool _mcpEnabled;
@@ -36,6 +39,7 @@ namespace ColorVision.Copilot
             {
                 if (SetProperty(ref _mcpPort, value))
                 {
+                    InvalidateMcpConnectionTest();
                     SyncMcpPortTextFromValue(value);
                     McpEndpoint = BuildMcpEndpoint();
                     MarkMcpSettingsPending();
@@ -50,7 +54,10 @@ namespace ColorVision.Copilot
             set
             {
                 if (SetProperty(ref _mcpPortText, value ?? string.Empty))
+                {
+                    InvalidateMcpConnectionTest();
                     ApplyMcpPortText(updateNotice: true);
+                }
             }
         }
         private string _mcpPortText = CopilotConfig.DefaultMcpPort.ToString(CultureInfo.InvariantCulture);
@@ -98,6 +105,7 @@ namespace ColorVision.Copilot
             {
                 if (SetProperty(ref _mcpBearerToken, value ?? string.Empty))
                 {
+                    InvalidateMcpConnectionTest();
                     OnPropertyChanged(nameof(McpTokenEnvironmentCommandText));
                     OnPropertyChanged(nameof(McpBearerTokenDisplayText));
                     MarkMcpSettingsPending();

@@ -23,6 +23,83 @@ public sealed class CopilotChatViewModelProfileIsolationTests
 {
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
 
+    [Fact]
+    public void ClipboardImageCanCreateMultipleMissingStorageDirectories()
+    {
+        RunAttachmentTestOnSta(() =>
+        {
+            var root = Directory.CreateTempSubdirectory("CopilotClipboardStorage-").FullName;
+            var storePath = Path.Combine(root, "new-parent", "nested", "attachments");
+            var profile = CreateProfile("clipboard", "Clipboard", "test-model");
+            var conversation = CreateConversation(profile, "clipboard-conversation", "preserved draft");
+            var state = new CopilotChatState { ActiveConversationId = conversation.Id, ActiveProfileId = profile.Id, Conversations = [conversation] };
+            var config = new CopilotConfig { SchemaVersion = CopilotConfig.CurrentSchemaVersion, McpBearerToken = "test-token", Profiles = [profile] };
+            using var solutionManagerScope = new IsolatedSolutionManagerScope();
+            using var viewModel = new CopilotChatViewModel(new CopilotChatService(), new InMemoryStateStore(state, storePath), config, new GatedFailingTurnRuntime(), new CopilotAgentTaskHost());
+            try
+            {
+                var image = BitmapSource.Create(4, 3, 96, 96, PixelFormats.Bgra32, null, new byte[4 * 3 * 4], 4 * 4);
+                image.Freeze();
+                var saveMethod = typeof(CopilotChatViewModel).GetMethod("SaveClipboardImage", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+                var savedPath = Assert.IsType<string>(saveMethod.Invoke(viewModel, [image, CancellationToken.None]));
+
+                Assert.Equal(storePath, Path.GetDirectoryName(savedPath));
+                Assert.Equal(savedPath, Assert.Single(Directory.GetFiles(storePath, "clipboard-*.png")));
+                var savedImage = BitmapFrame.Create(new Uri(savedPath), BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+                Assert.Equal(4, savedImage.PixelWidth);
+                Assert.Equal(3, savedImage.PixelHeight);
+                Assert.Equal("preserved draft", conversation.DraftText);
+            }
+            finally
+            {
+                viewModel.Dispose();
+                Directory.Delete(root, recursive: true);
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ClipboardImageCannotBeStoredThroughLinkedDirectory(bool linkedAncestor)
+    {
+        RunAttachmentTestOnSta(() =>
+        {
+            var root = Directory.CreateTempSubdirectory("CopilotClipboardStorage-").FullName;
+            var outside = Directory.CreateDirectory(Path.Combine(root, "outside")).FullName;
+            var linkedPath = Path.Combine(root, "linked");
+            var storePath = linkedAncestor ? Path.Combine(linkedPath, "new-store") : linkedPath;
+            Directory.CreateSymbolicLink(linkedPath, outside);
+            var profile = CreateProfile("clipboard", "Clipboard", "test-model");
+            var conversation = CreateConversation(profile, "clipboard-conversation", "preserved draft");
+            var state = new CopilotChatState { ActiveConversationId = conversation.Id, ActiveProfileId = profile.Id, Conversations = [conversation] };
+            var config = new CopilotConfig { SchemaVersion = CopilotConfig.CurrentSchemaVersion, McpBearerToken = "test-token", Profiles = [profile] };
+            using var solutionManagerScope = new IsolatedSolutionManagerScope();
+            using var viewModel = new CopilotChatViewModel(new CopilotChatService(), new InMemoryStateStore(state, storePath), config, new GatedFailingTurnRuntime(), new CopilotAgentTaskHost());
+            try
+            {
+                var image = BitmapSource.Create(4, 3, 96, 96, PixelFormats.Bgra32, null, new byte[4 * 3 * 4], 4 * 4);
+                image.Freeze();
+                var saveMethod = typeof(CopilotChatViewModel).GetMethod("SaveClipboardImage", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+                var error = Assert.Throws<TargetInvocationException>(() =>
+                    saveMethod.Invoke(viewModel, [image, CancellationToken.None]));
+
+                Assert.IsType<InvalidOperationException>(error.InnerException);
+                Assert.Empty(Directory.EnumerateFileSystemEntries(outside));
+                Assert.Empty(conversation.Attachments);
+                Assert.Equal("preserved draft", conversation.DraftText);
+            }
+            finally
+            {
+                viewModel.Dispose();
+                Directory.Delete(linkedPath, recursive: false);
+                Directory.Delete(root, recursive: true);
+            }
+        });
+    }
+
     [Theory]
     [InlineData("cancel")]
     [InlineData("dispose")]

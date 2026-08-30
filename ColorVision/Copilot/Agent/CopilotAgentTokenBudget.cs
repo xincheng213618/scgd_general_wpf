@@ -337,7 +337,7 @@ namespace ColorVision.Copilot
             var providerDurationMs = ToMilliseconds(providerStopwatch.Elapsed);
             RecordProviderFirstResponse(providerDurationMs);
             RecordProviderCallDuration(providerDurationMs);
-            var usage = ExtractUsage(response.Messages.SelectMany(message => message.Contents));
+            var usage = ExtractResponseUsage(response);
             CommitUsage(usage, EstimateTokens(materializedMessages, options, EstimateMessageWeight(response.Messages)));
             return response;
         }

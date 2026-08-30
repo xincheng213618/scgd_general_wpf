@@ -1379,6 +1379,7 @@
         "Test/ColorVision.Copilot.Tests/CopilotChatConfigPersistenceTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotMcpClientConfigurationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotMcpConnectionDiagnosticTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotLocalMcpDiagnosticLifecycleTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotModelConnectionDiagnosticLifecycleTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotProfileConfigTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotConfigWebPageNetworkTests.cs"
@@ -1401,7 +1402,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-configuration.md",
       "url": "/02-developer-guide/core-concepts/copilot-configuration",
       "searchable": true,
-      "source_hash": "a022558d4fe2c4f715c85538c9d16497399e89b48aba3517bb4ddc5db6808b35"
+      "source_hash": "8b153301d6122cb3626843c653db3eeda4f6c8e51d93e81dfbd59c55bad8cc16"
     },
     {
       "knowledge_id": "copilot.execution",
@@ -1528,6 +1529,7 @@
         "ColorVision/Copilot/CopilotChatViewModel.ComposerReferences.cs",
         "ColorVision/Copilot/CopilotChatViewModel.AttachmentCommands.cs",
         "ColorVision/Copilot/CopilotChatViewModel.AttachmentLifecycle.cs",
+        "ColorVision/Copilot/Context/CopilotImageAttachmentAdmission.cs",
         "ColorVision/Copilot/CopilotChatPanel.Composer.cs",
         "ColorVision/Copilot/CopilotChatViewModel.DiagnosticsCommands.cs",
         "ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs",
@@ -1549,7 +1551,9 @@
         "Test/ColorVision.Copilot.Tests/CopilotCodexMentionsV2FeatureTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatViewModelProfileIsolationTests.cs",
         "Test/ColorVision.Copilot.Tests/DesktopPetCopilotActivityTrackerTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotMarkdownViewTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotMarkdownViewTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotImageAttachmentAdmissionTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotAttachmentPathTests.cs"
       ],
       "related": [
         "copilot.runtime",
@@ -1570,7 +1574,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-local-interactions.md",
       "url": "/02-developer-guide/core-concepts/copilot-local-interactions",
       "searchable": true,
-      "source_hash": "ac225c8fd076ecc545bcf0cd571dbefd6a3a750c3f5b78d3abd9bc1aa9b07f6d"
+      "source_hash": "069cd493f605834c8459adf77b5edb69a362a50d897f79d2dac8fce61fa3a2a1"
     },
     {
       "knowledge_id": "copilot.lifecycle",
@@ -1593,6 +1597,9 @@
         "ColorVision/Copilot/Agent/CopilotAgentSkillCatalog.cs",
         "ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs",
         "ColorVision/Copilot/Agent/CopilotAgentTokenBudget.cs",
+        "ColorVision/Copilot/Agent/CopilotAgentTokenBudget.Estimation.cs",
+        "ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.FinalAnswerRecovery.cs",
+        "ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.Recovery.cs",
         "ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.Loop.cs",
         "ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.AgentStreamingLoop.cs",
         "ColorVision/Copilot/CopilotChatMessage.cs",
@@ -1603,6 +1610,7 @@
         "Test/ColorVision.Copilot.Tests/CopilotAgentSkillCatalogTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotTokenUsageMergeTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotNonStreamingUsageTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotFinalAnswerCancellationTests.cs"
       ],
       "related": [
@@ -1618,7 +1626,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-agent-lifecycle.md",
       "url": "/02-developer-guide/core-concepts/copilot-agent-lifecycle",
       "searchable": true,
-      "source_hash": "fab5511ed1ab765e035b28c36b9901d3efbec78612c8de45f03688f2901c4830"
+      "source_hash": "fdb4c1112284cfbe998182eb0f1ccb3743b34633449ea8844330dea757af05fe"
     },
     {
       "knowledge_id": "copilot.mcp-server",
@@ -1726,6 +1734,7 @@
         "Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatStateRecoveryAttachmentTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotChatStateProfileReconciliationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotManagedAttachmentDeletionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatViewModelProfileIsolationTests.cs"
       ],
@@ -1743,7 +1752,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-agent-session-and-tools.md",
       "url": "/02-developer-guide/core-concepts/copilot-agent-session-and-tools",
       "searchable": true,
-      "source_hash": "7a4f06c45005c89038956272d78e36b54582398ad292e5e5daa0561fb2e64697"
+      "source_hash": "8c8a10a4d07bd3470177059c8287532ec05a30048ed09d5724c2992b5e99badb"
     },
     {
       "knowledge_id": "copilot.tool-contracts",

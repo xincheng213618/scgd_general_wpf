@@ -151,12 +151,14 @@ namespace ColorVision.Copilot
             CopilotBackendSyncClient backendSyncClient,
             CopilotChatState? initialState,
             CopilotModelConnectionDiagnostic? modelConnectionDiagnostic = null,
-            CopilotMcpToolProvider? externalMcpToolProvider = null)
+            CopilotMcpToolProvider? externalMcpToolProvider = null,
+            HttpClient? mcpHttpClient = null)
         {
             _configHandler = configHandler ?? throw new ArgumentNullException(nameof(configHandler));
             _backendSyncClient = backendSyncClient ?? throw new ArgumentNullException(nameof(backendSyncClient));
             _modelConnectionDiagnostic = modelConnectionDiagnostic ?? new CopilotModelConnectionDiagnostic();
             _externalMcpToolProvider = externalMcpToolProvider ?? new CopilotMcpToolProvider();
+            _mcpConnectionHttpClient = mcpHttpClient ?? McpHttpClient;
             _config = _configHandler.GetRequiredService<CopilotConfig>();
             var config = _config;
             if (config.EnsureInitialized())

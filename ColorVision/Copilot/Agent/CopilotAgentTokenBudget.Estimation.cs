@@ -12,23 +12,34 @@ namespace ColorVision.Copilot
 {
     internal sealed partial class CopilotTokenBudgetChatClient : DelegatingChatClient
     {
+        internal static CopilotTokenUsage ExtractResponseUsage(ChatResponse response)
+        {
+            ArgumentNullException.ThrowIfNull(response);
+            var usage = ExtractUsage(response.Messages.SelectMany(message => message.Contents));
+            return response.Usage is { } details
+                ? usage.MergeProgress(ToTokenUsage(details))
+                : usage;
+        }
+
         private static CopilotTokenUsage ExtractUsage(IEnumerable<AIContent>? contents)
         {
             var usage = CopilotTokenUsage.Empty;
             foreach (var usageContent in contents?.OfType<UsageContent>() ?? Enumerable.Empty<UsageContent>())
-            {
-                var details = usageContent.Details;
-                static int ToInt(long? value) => value.HasValue ? (int)Math.Clamp(value.Value, 0, int.MaxValue) : 0;
-                usage = usage.MergeProgress(new CopilotTokenUsage(
-                    ToInt(details.InputTokenCount),
-                    ToInt(details.OutputTokenCount),
-                    ToInt(details.TotalTokenCount),
-                    details.CachedInputTokenCount.HasValue
-                        ? ToInt(details.CachedInputTokenCount)
-                        : null));
-            }
+                usage = usage.MergeProgress(ToTokenUsage(usageContent.Details));
 
             return usage;
+        }
+
+        private static CopilotTokenUsage ToTokenUsage(UsageDetails details)
+        {
+            static int ToInt(long? value) => value.HasValue ? (int)Math.Clamp(value.Value, 0, int.MaxValue) : 0;
+            return new CopilotTokenUsage(
+                ToInt(details.InputTokenCount),
+                ToInt(details.OutputTokenCount),
+                ToInt(details.TotalTokenCount),
+                details.CachedInputTokenCount.HasValue
+                    ? ToInt(details.CachedInputTokenCount)
+                    : null);
         }
 
         private static int AddClamped(int left, int right)

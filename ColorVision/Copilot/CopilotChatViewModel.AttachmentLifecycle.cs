@@ -106,10 +106,10 @@ namespace ColorVision.Copilot
         private string SaveClipboardImage(BitmapSource image, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            Directory.CreateDirectory(_stateStore.AttachmentDirectoryPath);
+            var attachmentRoot = CopilotImageAttachmentAdmission.PrepareStorageDirectory(_stateStore.AttachmentDirectoryPath);
 
             var filePath = Path.Combine(
-                _stateStore.AttachmentDirectoryPath,
+                attachmentRoot,
                 $"clipboard-{DateTime.Now:yyyyMMdd-HHmmssfff}-{Guid.NewGuid():N}.png");
 
             var encoder = new PngBitmapEncoder();
