@@ -2729,6 +2729,12 @@
                 "root": "UI DLL 发布"
               },
               "link": "/04-api-reference/ui-components/publishing"
+            },
+            {
+              "text": {
+                "root": "测试与验证"
+              },
+              "link": "/02-developer-guide/testing"
             }
           ]
         },

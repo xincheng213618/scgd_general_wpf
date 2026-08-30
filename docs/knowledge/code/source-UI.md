@@ -113,7 +113,7 @@ next: false
   说明 native ABI、HImage 所有权、首次 helper 构建与 CUDA 发布输入的验证边界。
 
 - [ColorVision.Core](../../04-api-reference/ui-components/ColorVision.Core.md) — `ui.core`
-  定位 HImage 所有权、OpenCV/CUDA PInvoke、位图桥接与 native 发布输入。
+  定位 HImage 所有权、OpenCV/CUDA PInvoke、ImageCompute 融合分流、位图桥接与默认关闭的原生日志。
 
 ## UI/ColorVision.Database {#module-55492f436f6c6f72566973696f6e2e4461746162617365}
 
@@ -156,7 +156,7 @@ next: false
   排查程序集加载后菜单、设置、PropertyGrid、工具和服务扩展的发现链。
 
 - [ColorVision.ImageEditor：打开、绘制与输出](../../04-api-reference/ui-components/ColorVision.ImageEditor.md) — `ui.image-editor`
-  图像和视频打开、绘图撤销、叠加层及快照输出的可见行为与限制，区分渲染图和当前源像素。
+  图像/视频打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。
 
 - [状态栏：发现、刷新与宿主生命周期](../../04-api-reference/ui-components/status-bar.md) — `ui.status-bar`
   状态栏的插件发现、活动文档通知、绑定更新、控件重建和关闭生命周期；刷新不保证发现新provider，隐藏不等于保存偏好或停止采样。
@@ -448,4 +448,4 @@ next: false
   按设置、流程、图像和项目结果定位导入导出实现，说明配置覆盖、文件验收与迁移边界。
 
 - [ColorVision.UI.Desktop](../../04-api-reference/ui-components/ColorVision.UI.Desktop.md) — `ui.desktop`
-  定位设置、市场下载、第三方工具、反馈和特权崩溃诊断的边界。
+  桌面辅助壳层而非产品主入口：定位设置、市场下载、第三方工具、反馈和特权崩溃诊断。

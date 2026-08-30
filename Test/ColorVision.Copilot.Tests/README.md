@@ -2,13 +2,15 @@
 
 `ColorVision.Copilot.Tests` 是 Copilot、ColorVision 配置、项目指令、Agent、MCP、审批、Hook、Skill、会话恢复和工作区安全边界的独立 xUnit 测试项目。它不与普通 UI 回归共用测试程序集。
 
-测试需在 Windows 上运行，仓库默认使用 x64。请从仓库根目录执行：
+测试需在 Windows 上运行，仓库默认使用 x64；独立测试程序集仍引用宿主与共享模块，首次构建前提见[环境与 native 依赖](../../docs/00-getting-started/prerequisites.md)。请从仓库根目录执行：
 
 ```powershell
 dotnet test .\Test\ColorVision.Copilot.Tests\ColorVision.Copilot.Tests.csproj -p:Platform=x64
 ```
 
 新增 Copilot 回归时放入本项目；普通 WPF/UI 基础设施测试继续放在 `ColorVision.UI.Tests`。
+
+跨项目验证选择见[测试与验证](../../docs/02-developer-guide/testing.md)，配置和指令来源见[Copilot 配置契约](../../docs/02-developer-guide/core-concepts/copilot-configuration.md)。
 
 ## 测试维护边界
 

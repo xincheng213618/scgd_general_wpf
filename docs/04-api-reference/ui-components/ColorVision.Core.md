@@ -2,16 +2,18 @@
 knowledge_id: "ui.core"
 knowledge_type: "reference"
 status: "current"
-summary: "定位 HImage 所有权、OpenCV/CUDA PInvoke、位图桥接与 native 发布输入。"
-aliases: ["原生图像调用缺少DLL","ColorVision.Core","HImage","OpenCVMediaHelper"]
-code_paths: ["UI/ColorVision.Core/HImage.cs","UI/ColorVision.Core/HImageExtension.cs","UI/ColorVision.Core/OpenCVMediaHelper.cs","UI/ColorVision.Core/OpenCVCuda.cs","UI/ColorVision.Core/ColorVision.Core.csproj"]
-test_paths: ["Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs","Test/ColorVision.UI.Tests/VideoFrameCopyTests.cs"]
+summary: "定位 HImage 所有权、OpenCV/CUDA PInvoke、ImageCompute 融合分流、位图桥接与默认关闭的原生日志。"
+aliases: ["原生图像调用缺少DLL","ColorVision.Core","HImage","OpenCVMediaHelper","ImageCompute","NativeLogBridge","原生日志初始化"]
+code_paths: ["UI/ColorVision.Core/HImage.cs","UI/ColorVision.Core/HImageExtension.cs","UI/ColorVision.Core/OpenCVMediaHelper.cs","UI/ColorVision.Core/OpenCVCuda.cs","UI/ColorVision.Core/ImageCompute.cs","UI/ColorVision.Core/NativeLogBridge.cs","UI/ColorVision.Core/ColorVision.Core.csproj","UI/ColorVision.Core/README.md"]
+test_paths: ["Test/ColorVision.UI.Tests/HImageAbiTests.cs","Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs","Test/ColorVision.UI.Tests/NativeLogBridgeTests.cs","Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs","Test/ColorVision.UI.Tests/VideoFrameCopyTests.cs"]
 related: ["ui.index","engine.native-integration","ui.image-editor","ui.image-fusion"]
 ---
 
 # ColorVision.Core
 
 `UI/ColorVision.Core/` 是原生图像和视频能力桥接层，负责 `HImage` 数据结构、P/Invoke、WPF 位图转换、伪彩色/增强/聚焦评价/fusion 等 native 入口。它不是高层图像处理框架。
+
+`HImage` 是声明了 ABI 布局的 `struct`，不是托管 OpenCV `Mat` 类；复制结构体不会转移其非托管缓冲区所有权。`ImageCompute` 当前只提供 `UseCuda` 与 `Fusion()` 分流，不提供独立的直方图、统计或滤波托管 API；其它 native 能力应核对具体 P/Invoke 声明。
 
 ## 先查什么
 
@@ -43,6 +45,12 @@ related: ["ui.index","engine.native-integration","ui.image-editor","ui.image-fus
 2. native DLL 返回 `HImage` 或写入输出参数。
 3. `HImageExtension` 把图像缓冲区转为 WPF 可显示的 `WriteableBitmap`。
 4. `ColorVision.ImageEditor` 等上层模块继续做交互、绘制和显示。
+
+## 原生日志初始化边界
+
+`NativeLogBridge` 的日志捕获默认关闭，`InitializeWithResult()` 的 `enableLogs` 和 `enableNativeSink` 默认都是 `false`；仅订阅 `LogReceived` 不会初始化来源或启用捕获。初始化会尝试加载 helper，并尝试接入已加载的 CUDA 来源；未接入的 CUDA 在捕获已启用时可由后续托管 CUDA 调用尝试接入。
+
+`IsInitialized` 表示已走过初始化，不证明 DLL/日志 ABI 可用，也不等于 `IsEnabled`。诊断时分别核对 `LastInitializationResult` 的 `HelperAvailable`、`CudaAvailable`、`Diagnostics` 及捕获开关；有一个来源可用不表示两者都可用。初始化可能加载 native DLL，不能仅为文档验证运行它。
 
 ## 使用边界
 
@@ -88,6 +96,6 @@ related: ["ui.index","engine.native-integration","ui.image-editor","ui.image-fus
 
 ## 验证入口与缺口
 
-关联测试：`Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs`、`Test/ColorVision.UI.Tests/VideoFrameCopyTests.cs`。
+关联测试：`HImageAbiTests.cs` 与 `HImageExtensionCopyTests.cs` 检查结构布局和位图拷贝；`NativeLogBridgeTests.cs` 检查默认参数、回调隔离及 helper 日志回传，后者包含真实 DLL 调用。另有 `LuminousAreaNativeInteropTests.cs`、`VideoFrameCopyTests.cs`，均位于 `Test/ColorVision.UI.Tests/`。
 
 native 测试依赖真实 DLL；测试入口存在不表示相机、CUDA 设备或全部导出 ABI 已在当前机器验证。

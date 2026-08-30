@@ -3,10 +3,10 @@ knowledge_id: "delivery.testing"
 knowledge_type: "reference"
 status: "current"
 summary: "按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。"
-aliases: ["怎么测试","验证命令","dotnet test","测试入口"]
-code_paths: ["Test","Scripts/tests","Web/Backend","package.json"]
-test_paths: ["Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj","Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj"]
-related: ["delivery.index","governance.retrieval"]
+aliases: ["怎么测试","验证命令","dotnet test","测试入口","PerformanceProbe","COLORVISION_IMAGE_ALGORITHM_PERF"]
+code_paths: ["Test","Scripts/tests","Web/Backend","package.json",".github/workflows/dotnet.yml"]
+test_paths: ["Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj","Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj","Test/ColorVision.UI.Tests/ImageAlgorithmPerformanceGateTests.cs","Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs"]
+related: ["delivery.index","delivery.prerequisites","governance.retrieval","copilot.configuration"]
 ---
 
 # 测试与验证
@@ -17,7 +17,7 @@ related: ["delivery.index","governance.retrieval"]
 
 | 测试区域 | 目录 | 技术栈 | 主要验证内容 | 运行入口 |
 | --- | --- | --- | --- | --- |
-| Copilot 与 Agent 测试 | `Test/ColorVision.Copilot.Tests/` | xUnit、`net10.0-windows`、WPF | Copilot、Codex 配置、Agent、MCP、审批、Hook、Skill、会话恢复与工作区安全边界 | `dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64` |
+| Copilot 与 Agent 测试 | `Test/ColorVision.Copilot.Tests/` | xUnit、`net10.0-windows`、WPF | Copilot、ColorVision 配置与外部 TOML 隔离、Agent、MCP、审批、Hook、Skill、会话恢复与工作区安全边界 | `dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64` |
 | UI 与主程序逻辑测试 | `Test/ColorVision.UI.Tests/` | xUnit、`net10.0-windows`、WPF | UI 基础设施、日志、Marketplace、PropertyGrid、终端缓冲、STNode、排序和编辑器辅助逻辑 | `dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64` |
 | Spectrum、Conoscope 与客户项目测试 | `Test/Spectrum.Tests/`、`Test/Conoscope.Tests/`、`Test/ProjectARVRPro.Tests/`、`Test/ProjectKB.Tests/`、`Test/ProjectLUX.Tests/` | xUnit、`net10.0-windows`、WPF | 光谱、Conoscope 和三个客户项目的可脱离设备运行的领域回归 | 分别对目标 `.csproj` 执行 `dotnet test -c Release -p:Platform=x64` |
 | 构建、发布和打包脚本测试 | `Scripts/tests/` | Python `unittest` | ABI、平台、安装器、更新包、插件包、后端客户端和发布编排的静态及合成制品门禁 | `python -m unittest discover -s Scripts/tests -p "test_*.py" -v` |
@@ -46,7 +46,20 @@ dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=
 dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64 --filter "FullyQualifiedName~MarketplacePackageDownloadServiceTests"
 ```
 
-如果测试在非 Windows 环境失败，先确认是不是 WPF/Windows Desktop Runtime 限制。这个项目不是跨平台测试项目。
+如果测试在非 Windows 环境失败，先确认是不是 WPF/Windows Desktop Runtime 限制。这个项目不是跨平台测试项目。UI 与 Copilot 虽分成两个测试程序集，但都引用宿主与共享模块，不是无宿主依赖的纯单元测试包；首次构建仍受[环境与 native 前提](../00-getting-started/prerequisites.md)约束。
+
+### 普通回归与性能探针
+
+当前 `.github/workflows/dotnet.yml` 将 UI 普通回归与 `Category=PerformanceProbe` 分两次 `dotnet test` 启动，后者独立进程运行。无筛选的命令仍有效，但会把两个分类放进同一次运行，不能称为 CI 普通回归那一步的等价命令。只复现分类选择时，从仓库根目录运行：
+
+```powershell
+dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --filter "Category!=PerformanceProbe"
+dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --filter "Category=PerformanceProbe"
+```
+
+这些命令会构建/运行测试并写入本地产物，不等同于纯文档校验。`ImageAlgorithmPerformanceGateTests` 中调用 `Enabled()` 的 4K/8K 探针，仅在 `COLORVISION_IMAGE_ALGORITHM_PERF=1` 时执行测量，否则记录说明后直接返回；不是这个分类里的所有测试都受同一个开关控制。测试整体通过不能证明所有大型性能测量已经执行，记录时需核对筛选、环境变量与实际输出。
+
+两个测试项目的 `AssemblyInfo.cs` 都禁用测试集合并行，原因是进程级注册器、状态和 WPF 服务共享。`UseWPF=true` 不会让所有测试线程自动成为 STA；需要 WPF 线程的个案按既有 `WpfTestHost` 等执行入口处理，不为提速取消这些边界。
 
 ## `ColorVision.Copilot.Tests`
 
@@ -56,6 +69,8 @@ dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64 --filter "FullyQualifiedN
 dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64
 dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64 --filter "FullyQualifiedName~CopilotMcp"
 ```
+
+Copilot 的配置契约见[配置与指令来源](./core-concepts/copilot-configuration.md)：模型、供应商、工具与审批由 ColorVision 管理，不加载全局或项目 `config.toml`。`CopilotConfigurationIsolationTests` 验证外部 TOML 不覆盖应用设置且项目指令仍可发现；这是当前负向隔离覆盖，不应当作过期加载测试删除。
 
 ## Spectrum 与 Conoscope
 

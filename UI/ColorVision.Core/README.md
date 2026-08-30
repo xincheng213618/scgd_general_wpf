@@ -1,51 +1,18 @@
 # ColorVision.Core
 
-> 目标框架：.NET 8 / .NET 10 Windows；运行时资产仅提供 x64（以 `ColorVision.Core.csproj` 为准）
+ColorVision 的原生图像/视频互操作与 WPF 位图桥接层，不是高层图像编辑框架。`HImage` 是包含非托管指针的值类型；`OpenCVMediaHelper` 和 `OpenCVCuda` 提供 native 调用，`ImageCompute` 当前负责 Fusion 的 CPU/CUDA 分流。
 
-## 功能定位
+## 包与运行前提
 
-OpenCV 4.14 的 .NET 互操作层，提供高性能图像处理算法调用接口。通过 P/Invoke 调用原生 C++ DLL，封装为易用的 C# API。
+- 当前目标为 `net8.0-windows7.0;net10.0-windows7.0`，原生运行资产仅提供 Windows x64；准确输入及版本以 `ColorVision.Core.csproj` 为准。
+- `opencv_helper.dll`、OpenCV runtime 与所调用的 CUDA 依赖须能被宿主加载；托管程序集可引用不等于原生入口可用。
+- 仓库构建会按条件复用 helper DLL，缺失时加入 C++ 项目引用，不能承诺只装 .NET SDK 就可首次构建。当前打包输入仍无条件包含 `opencv_cuda.dll`；运行时不选 CUDA 不代表构建时可缺少它。
+- 使用 `HImage` 时明确缓冲区所有权、分配/释放约定及 WPF 线程边界。`NativeLogBridge` 默认不启用日志捕获，订阅事件不等于原生来源已就绪。
 
-## 主要功能
+## 源码知识入口
 
-### 图像处理核心
-- **HImage** — 基于 OpenCV Mat 的图像封装类，支持高位深（RGB48）图像
-- **HImageExtension** — HImage 扩展方法（格式转换、缩放、裁剪等）
-- **ImageCompute** — 图像计算（直方图、统计、滤波等）
+- [Core 互操作契约](../../docs/04-api-reference/ui-components/ColorVision.Core.md)：数据结构、调用边界、原生日志与验证入口。
+- [原生集成与构建前提](../../docs/02-developer-guide/engine-development/opencv-integration.md)：DLL 选择、native 工具链与部署边界。
+- [景深融合](../../docs/04-api-reference/ui-components/image-fusion.md)：Auto/CPU/GPU 分流和调用失败语义。
 
-### 视频媒体
-- **OpenCVMediaHelper** — C++/C# 视频解码桥接（FFmpeg + OpenCV）
-- **NativeLogBridge** — 可选的 C++ 原生日志回调/事件桥（默认关闭，按需启用）
-
-### CUDA 加速
-- **OpenCVCuda** — CUDA 设备检测和 GPU 加速接口
-- **nvcuda** — NVIDIA CUDA P/Invoke 定义
-
-### 色彩映射
-- **ColormapTypes** — OpenCV 伪彩色映射类型定义
-
-## 文件清单
-
-| 文件 | 说明 |
-|------|------|
-| `HImage.cs` | 图像封装类 |
-| `HImageExtension.cs` | 图像扩展方法 |
-| `ImageCompute.cs` | 图像计算 |
-| `OpenCVMediaHelper.cs` | 视频解码桥接 |
-| `OpenCVCuda.cs` | CUDA 接口 |
-| `nvcuda.cs` | CUDA P/Invoke |
-| `ColormapTypes.cs` | 色彩映射类型 |
-| `NativeLogBridge.cs` | 原生日志回调、级别与动态开关桥接 |
-
-## 依赖关系
-
-- **无项目依赖**，直接引用原生 OpenCV DLL
-- **被引用**: ColorVision.ImageEditor
-
-## 构建
-
-```powershell
-dotnet build .\UI\ColorVision.Core\ColorVision.Core.csproj -p:Platform=x64
-```
-
-> 注意: 仅支持 x64 平台，需要 OpenCV 4.14 原生 DLL
+本 README 会作为 NuGet 包说明打包到包根目录；上述相对链接用于源码仓库，包内不保证包含 `docs/`。需要完整契约时读取与包版本匹配的源码，不把另一版本的文档当成当前包的保证。

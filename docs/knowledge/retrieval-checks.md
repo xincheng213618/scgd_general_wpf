@@ -61,6 +61,12 @@ related: ["governance.maintenance", "delivery.testing"]
 | ProjectKB 独立启动就不需要 Engine 吗？ | WinExe 入口仍显式加载 Engine 并执行初始化器，不等于免依赖独立交付 |
 | KB CSV 有 ColorDifference 就代表已测色差吗？ | 新行的色差/杂光列为空占位；Lv/Lc 仅切换动态键列，历史行另行核对 |
 | KB 测试值等于 Recipe 上下限会失败吗？ | Enable* 门禁、包含等号的边界、百分数换算与原始/修正值的区别 |
+| ColorVision.UI.Desktop 是产品主入口吗？ | WinExe 声明不等于完整启动链；该项目 App 实现为空、主窗口为空布局，产品宿主在 ColorVision |
+| ImageCompute 有直方图计算 API 吗？ | 当前仅 UseCuda/Fusion 分流，不能从模块名推断任意图像算法 API |
+| NativeLogBridge.IsInitialized 为 true 就开始采集了吗？ | 初始化、来源/ABI可用性与捕获开关分别判断，默认不开日志 |
+| ModelViewer3D 导出是否保留当前隐藏/隔离场景？ | 界面导出重新读取源文件，不使用当前显示场景；与模型实例导出 API 区分 |
+| Window3D 高度是否保留 RGB48 原始测量值？ | 先转 Bgra32，再双线性采样为 byte 灰度/alpha；可视化高度不是物理测量校准 |
+| UI 测试通过能说明所有性能测量均执行了吗？ | CI 分类分进程，部分 4K/8K 探针未 opt-in 会直接返回；核对实际环境与输出 |
 | 更新检查 forceRefresh 会绕过所有缓存吗？ | 协调器进行中共享、startup 一次消费、主程序失败状态与市场旧结果回退分层核对 |
 | Copilot Save 失败后 Cancel 会撤销吗？ | NotPersisted、已落盘发布失败、刷新失败、先前 Apply/后台同步分别判断 |
 | Copilot Test Model 和 /doctor 一样吗？ | 真实供应商请求与本地已有健康快照不同；诊断不证明业务工具或账户额度 |

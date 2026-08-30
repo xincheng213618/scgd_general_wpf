@@ -45,7 +45,7 @@ next: false
   快捷键的发现、身份、窗口/全局注册和设置草稿；页面保存先重注册并更新配置内存，不直接落盘，注册失败不自动回滚。
 
 - [ColorVision.ImageEditor：打开、绘制与输出](../../04-api-reference/ui-components/ColorVision.ImageEditor.md) — `ui.image-editor`
-  图像和视频打开、绘图撤销、叠加层及快照输出的可见行为与限制，区分渲染图和当前源像素。
+  图像/视频打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。
 
 - [景深融合：输入、执行与结果生命周期](../../04-api-reference/ui-components/image-fusion.md) — `ui.image-fusion`
   景深融合的CPU/CUDA调用、HImage显示和计时；自动模式不做失败回退，关窗不取消计算，GPU少量图片存在未修复的越界风险。
@@ -93,10 +93,10 @@ next: false
   说明 UI NuGet 构建、版本占用预检、显式 Release 发布与包消费验证。
 
 - [ColorVision.Core](../../04-api-reference/ui-components/ColorVision.Core.md) — `ui.core`
-  定位 HImage 所有权、OpenCV/CUDA PInvoke、位图桥接与 native 发布输入。
+  定位 HImage 所有权、OpenCV/CUDA PInvoke、ImageCompute 融合分流、位图桥接与默认关闭的原生日志。
 
 - [ColorVision.UI.Desktop](../../04-api-reference/ui-components/ColorVision.UI.Desktop.md) — `ui.desktop`
-  定位设置、市场下载、第三方工具、反馈和特权崩溃诊断的边界。
+  桌面辅助壳层而非产品主入口：定位设置、市场下载、第三方工具、反馈和特权崩溃诊断。
 
 - [UI DLL 速查](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
   按职责和依赖方向判断 UI DLL 的修改归属与消费方兼容风险。

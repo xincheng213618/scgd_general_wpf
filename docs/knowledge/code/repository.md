@@ -57,6 +57,9 @@ next: false
 - [UI DLL 发布](../../04-api-reference/ui-components/publishing.md) — `ui.publishing`
   说明 UI NuGet 构建、版本占用预检、显式 Release 发布与包消费验证。
 
+- [测试与验证](../../02-developer-guide/testing.md) — `delivery.testing`
+  按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。
+
 ## docs {#module-646f6373}
 
 - [仓库知识使用约定](../../README.md) — `governance.knowledge`

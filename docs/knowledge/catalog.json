@@ -2029,24 +2029,32 @@
         "怎么测试",
         "验证命令",
         "dotnet test",
-        "测试入口"
+        "测试入口",
+        "PerformanceProbe",
+        "COLORVISION_IMAGE_ALGORITHM_PERF"
       ],
       "code_paths": [
         "Test",
         "Scripts/tests",
         "Web/Backend",
-        "package.json"
+        "package.json",
+        ".github/workflows/dotnet.yml"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj",
-        "Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj"
+        "Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj",
+        "Test/ColorVision.UI.Tests/ImageAlgorithmPerformanceGateTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs"
       ],
       "related": [
         "delivery.index",
-        "governance.retrieval"
+        "delivery.prerequisites",
+        "governance.retrieval",
+        "copilot.configuration"
       ],
       "code_scopes": [
         ".",
+        ".github/workflows",
         "Scripts/tests",
         "Test",
         "Web/Backend"
@@ -2056,7 +2064,7 @@
       "source": "docs/02-developer-guide/testing.md",
       "url": "/02-developer-guide/testing",
       "searchable": true,
-      "source_hash": "2d76e50a3cc2a8fa9e899768cfaf20c9da3d399c7ace18040c4eb9875fc2ab59"
+      "source_hash": "84a2a333d6e4e74fec02730abccfc9012dc637c1883d896e581da726439833c0"
     },
     {
       "knowledge_id": "delivery.update",
@@ -3414,7 +3422,7 @@
       "source": "docs/knowledge/retrieval-checks.md",
       "url": "/knowledge/retrieval-checks",
       "searchable": true,
-      "source_hash": "379994c28755b87aeb9c5e8c36a0502b5bdfc48792a1c571d99d9747b5beac7c"
+      "source_hash": "72dcd96c70f2c23d1f86fdf6d78c19128782719fb96ef43488147466c1305cb9"
     },
     {
       "knowledge_id": "operations.acceptance",
@@ -5306,21 +5314,30 @@
       "knowledge_id": "ui.core",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "定位 HImage 所有权、OpenCV/CUDA PInvoke、位图桥接与 native 发布输入。",
+      "summary": "定位 HImage 所有权、OpenCV/CUDA PInvoke、ImageCompute 融合分流、位图桥接与默认关闭的原生日志。",
       "aliases": [
         "原生图像调用缺少DLL",
         "ColorVision.Core",
         "HImage",
-        "OpenCVMediaHelper"
+        "OpenCVMediaHelper",
+        "ImageCompute",
+        "NativeLogBridge",
+        "原生日志初始化"
       ],
       "code_paths": [
         "UI/ColorVision.Core/HImage.cs",
         "UI/ColorVision.Core/HImageExtension.cs",
         "UI/ColorVision.Core/OpenCVMediaHelper.cs",
         "UI/ColorVision.Core/OpenCVCuda.cs",
-        "UI/ColorVision.Core/ColorVision.Core.csproj"
+        "UI/ColorVision.Core/ImageCompute.cs",
+        "UI/ColorVision.Core/NativeLogBridge.cs",
+        "UI/ColorVision.Core/ColorVision.Core.csproj",
+        "UI/ColorVision.Core/README.md"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/HImageAbiTests.cs",
+        "Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs",
+        "Test/ColorVision.UI.Tests/NativeLogBridgeTests.cs",
         "Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs",
         "Test/ColorVision.UI.Tests/VideoFrameCopyTests.cs"
       ],
@@ -5338,7 +5355,7 @@
       "source": "docs/04-api-reference/ui-components/ColorVision.Core.md",
       "url": "/04-api-reference/ui-components/ColorVision.Core",
       "searchable": true,
-      "source_hash": "97a76c0de9da6b53441dd965c33b3d8b2f8742036d7a92d9cabd82a20bb8185e"
+      "source_hash": "c7a47d309afa7993c24d8fbd3936667c7d0bb494a8b65ec1dacea1dc9d6515fe"
     },
     {
       "knowledge_id": "ui.database",
@@ -5448,7 +5465,7 @@
       "knowledge_id": "ui.desktop",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "定位设置、市场下载、第三方工具、反馈和特权崩溃诊断的边界。",
+      "summary": "桌面辅助壳层而非产品主入口：定位设置、市场下载、第三方工具、反馈和特权崩溃诊断。",
       "aliases": [
         "设置窗口和插件市场在哪里",
         "ColorVision.UI.Desktop",
@@ -5456,12 +5473,19 @@
         "MarketplacePackageDownloadService"
       ],
       "code_paths": [
+        "UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj",
+        "UI/ColorVision.UI.Desktop/App.xaml",
+        "UI/ColorVision.UI.Desktop/App.xaml.cs",
+        "UI/ColorVision.UI.Desktop/MainWindow.xaml",
+        "UI/ColorVision.UI.Desktop/MainWindow.xaml.cs",
         "UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml.cs",
         "UI/ColorVision.UI.Desktop/Marketplace",
         "UI/ColorVision.UI.Desktop/Download",
         "UI/ColorVision.UI.Desktop/Wizards",
+        "UI/ColorVision.UI.Desktop/ThirdPartyApps",
         "UI/ColorVision.UI.Desktop/Diagnostics",
-        "UI/ColorVision.UI.Desktop/Feedback"
+        "UI/ColorVision.UI.Desktop/Feedback",
+        "UI/ColorVision.UI.Desktop/README.md"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/MarketplacePackageDownloadServiceTests.cs",
@@ -5476,7 +5500,8 @@
         "ui.menus",
         "ui.configuration",
         "ui.database",
-        "plugins.getting-started"
+        "plugins.getting-started",
+        "platform.runtime"
       ],
       "code_scopes": [
         "UI/ColorVision.UI.Desktop"
@@ -5486,7 +5511,7 @@
       "source": "docs/04-api-reference/ui-components/ColorVision.UI.Desktop.md",
       "url": "/04-api-reference/ui-components/ColorVision.UI.Desktop",
       "searchable": true,
-      "source_hash": "f1ade1299cc87304e94e167f06158417fa542056104002a1da60ab61e1720202"
+      "source_hash": "a04fbc9984ecf847a03901da13a449e8f82bfa1ae86137b3213c3d622f79df85"
     },
     {
       "knowledge_id": "ui.discovery",
@@ -5706,7 +5731,7 @@
       "knowledge_id": "ui.image-editor",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "图像和视频打开、绘图撤销、叠加层及快照输出的可见行为与限制，区分渲染图和当前源像素。",
+      "summary": "图像/视频打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。",
       "aliases": [
         "打开图像",
         "看图",
@@ -5723,7 +5748,14 @@
         "TIFF",
         "Gray32Float",
         "ImageViewSnapshot",
-        "AlgorithmOverlayManager"
+        "AlgorithmOverlayManager",
+        "3D高度图",
+        "3D模型查看器",
+        "ModelViewer3D",
+        "ModelViewer3DControl",
+        "ModelViewer3DModel",
+        "Window3D",
+        "HeightMapPixelSampler"
       ],
       "code_paths": [
         "UI/ColorVision.ImageEditor/ImageView.xaml.cs",
@@ -5738,7 +5770,9 @@
         "UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs",
         "UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs",
         "UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj",
-        "Engine/ColorVision.Engine/Media/CVRawOpen.cs"
+        "Engine/ColorVision.Engine/Media/CVRawOpen.cs",
+        "UI/ColorVision.ImageEditor/README.md",
+        "UI/ColorVision.ImageEditor/EditorTools/ThreeD"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs",
@@ -5747,7 +5781,10 @@
         "Test/ColorVision.UI.Tests/EraseManagerUndoTests.cs",
         "Test/ColorVision.UI.Tests/DrawShapeCompatibilityTests.cs",
         "Test/ColorVision.UI.Tests/EditorToolFactoryLifecycleTests.cs",
-        "Test/ColorVision.UI.Tests/VideoLifecycleTests.cs"
+        "Test/ColorVision.UI.Tests/VideoLifecycleTests.cs",
+        "Test/ColorVision.UI.Tests/HeightMapPixelSamplerTests.cs",
+        "Test/ColorVision.UI.Tests/ModelViewer3DStateTests.cs",
+        "Test/ColorVision.UI.Tests/ModelViewer3DModelTests.cs"
       ],
       "related": [
         "ui.discovery",
@@ -5766,7 +5803,7 @@
       "source": "docs/04-api-reference/ui-components/ColorVision.ImageEditor.md",
       "url": "/04-api-reference/ui-components/ColorVision.ImageEditor",
       "searchable": true,
-      "source_hash": "dd6c9277575fd5c662ade59a73f981b50a49d78b81f3458be1c2f1f2efee145b"
+      "source_hash": "bdbf5325e2d9115ed2b5b0fecdc20e563065a3873724ed1cdb6677bc7123d075"
     },
     {
       "knowledge_id": "ui.image-fusion",
