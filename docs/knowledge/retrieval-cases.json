@@ -214,6 +214,27 @@
     {"query":"AndroidWebViewApp排障支持哪些动作","expected_any":["delivery.android-operations"],"include_planned":false},
     {"query":"cvplugin --config会遵循uploadEnabled关闭上传吗","expected_any":["plugins.sdk-packaging"],"include_planned":false},
     {"query":"基础调整","expected_any":["algorithms.platform"],"include_planned":false},
-    {"query":"基础调整预览关闭后还会显示计算结果吗","expected_any":["algorithms.platform"],"include_planned":false}
+    {"query":"基础调整预览关闭后还会显示计算结果吗","expected_any":["algorithms.platform"],"include_planned":false},
+    {"query":"IEditorToolFactory.RefreshToolBars会发现新加载的打开器吗","expected_any":["ui.image-editor-context"],"include_planned":false},
+    {"query":"ImageViewConfig.SetViewState和SetImageMetadata的同名键会隔离吗","expected_any":["ui.image-editor-context"],"include_planned":false},
+    {"query":"ImageViewConfig.ClearProperties只清除图像元数据吗","expected_any":["ui.image-editor-context"],"include_planned":false},
+    {"query":"BeginSelectAsync选取的ROI可以在换图后继续使用吗","expected_any":["ui.image-editor-context"],"include_planned":false},
+    {"query":"EnableEditorImageServices为false是否不会推进ImageRevision","expected_any":["ui.image-editor-context"],"include_planned":false},
+    {"query":"临时ROI选区坐标就是原始像素坐标吗","expected_any":["ui.image-editor-context"],"include_planned":false},
+    {"query":"ConoscopeCaptureWorkflow.CaptureCameraAsync成功就显示XYZ了吗","expected_any":["plugins.conoscope"],"include_planned":false},
+    {"query":"ConoscopeDocument.OpenAsync总是Y通道先显示吗","expected_any":["plugins.conoscope"],"include_planned":false},
+    {"query":"MeasurementCaptureAlignment会检查关注点物理位置一致吗","expected_any":["plugins.conoscope"],"include_planned":false},
+    {"query":"ConoscopeConfigWindow返回成功就是落盘成功吗","expected_any":["plugins.conoscope"],"include_planned":false},
+    {"query":"Flask后端用临时--storage就隔离marketplace.db了吗","expected_any":["delivery.backend"],"include_planned":false},
+    {"query":"api/ready是完全只读的探针吗","expected_any":["delivery.backend"],"include_planned":false},
+    {"query":"AuthPolicy中用户Session登录就全权访问了吗","expected_any":["delivery.backend"],"include_planned":false},
+    {"query":"文件中转同名覆盖后旧分享链接能读到新内容吗","expected_any":["delivery.file-transfer"],"include_planned":false},
+    {"query":"stream_transfer_upload覆盖匿名文件会清掉旧过期时间吗","expected_any":["delivery.file-transfer"],"include_planned":false},
+    {"query":"匿名上传的X-Transfer-Client可以管理所有断点会话吗","expected_any":["delivery.file-transfer"],"include_planned":false},
+    {"query":"M_CalibrationExecuteToV1","expected_any":["engine.native-integration"],"include_planned":false},
+    {"query":"M_CalculatePoiBatchV2","expected_any":["engine.native-integration"],"include_planned":false},
+    {"query":"HImage的Pack和isDispose释放约定","expected_any":["engine.native-integration"],"include_planned":false},
+    {"query":"M_VideoSeek返回0意味着目标帧已经显示了吗","expected_any":["engine.native-integration"],"include_planned":false},
+    {"query":"YoloWpfDemo.Commands.md","expected_any":["plugins.sdk-packaging"],"include_planned":false}
   ]
 }

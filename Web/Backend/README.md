@@ -2,6 +2,13 @@
 
 Flask-based backend serving the ColorVision plugin marketplace, update distribution, and internal management portal.
 
+Authoritative documentation is split by responsibility:
+
+- [Backend composition, configuration, authentication boundary, and health/readiness](../../docs/02-developer-guide/backend/README.md) (`delivery.backend`).
+- [File transfer, overwrite, public sharing, and expiry](../../docs/02-developer-guide/backend/file-transfer.md) (`delivery.file-transfer`).
+
+This source-adjacent README retains the detailed account/admin, public read-model, browser-security, analytics, scheduler, and artifact-delivery contracts not moved to those topics. Repository links require the matching full source checkout; they are not a claim that `docs/` ships with a separately copied backend.
+
 ## Architecture
 
 ### Index Model
@@ -59,11 +66,22 @@ desktop `view=update` contracts remain unchanged for existing clients.
 
 ## Quick Start
 
+Run from `Web/Backend/`. Dependency installation accesses the network. Importing
+`app` already composes services and initializes the backend-local
+`marketplace.db`; CLI options are parsed afterward. `--storage` changes only
+the artifact root, not `config.json` or that database, so a temporary artifact
+directory is **not a fully isolated test environment**. Startup may also write
+logs, run scheduled jobs, and listen on the configured address. Prepare an
+independent backend/config/database for isolated testing, and confirm authority
+before starting it. Default production credentials/settings are rejected by the
+CLI; debug only relaxes that startup check. See the configuration topic above
+for the exact boundary.
+
 ```powershell
 python -m pip install -r .\requirements.txt
 python .\app.py                       # uses config.json
 $storage = Join-Path $env:TEMP 'ColorVisionBackend'
-python .\app.py --storage $storage    # override storage path
+python .\app.py --storage $storage    # artifact root only; backend config/database are unchanged
 python .\app.py --port 8080           # override port
 python .\app.py --debug               # debug mode
 ```
@@ -88,7 +106,13 @@ can recover expired sessions without opening the browser's Basic Auth dialog.
 Headerless native clients keep the Basic challenge, while protected browser
 navigations redirect to `/login` with an internal `next` path.
 
-Session and Basic Auth always have full access. Bearer API Key access is controlled by per-endpoint scopes:
+Ordinary user sessions are authorized against their live role permissions when
+the endpoint opts into user-session authentication; login is not an unconditional
+full-access grant. Configured Basic credentials have administrator identity in
+the common policy when Basic is allowed. Bearer keys require endpoint scopes,
+and restricted password-change sessions do not bypass the policy. Protocols may
+restrict accepted authentication methods; see the shared boundary in
+[Backend composition](../../docs/02-developer-guide/backend/README.md).
 
 Legacy API-key Operations relay uses two dedicated scopes and does not accept Basic/session auth:
 
@@ -154,7 +178,7 @@ continuous SQLite writes.
 | User account management | `admin:*` |
 | API Key management | `admin:*` |
 
-`admin:*` grants access to all endpoints. Session and Basic Auth (validated against `upload_auth` config) always have full access.
+`admin:*` satisfies the common policy's scope requirements; it does not override an endpoint that disallows that authentication method. Ordinary user sessions still use the live role matrix, while configured Basic credentials are checked against `upload_auth` on endpoints that accept Basic.
 
 ### Cache Management
 
@@ -656,54 +680,20 @@ Signature-based check: each index check computes a directory signature and compa
 
 ### Large File Transfer
 
-The protected transfer area is configured by `transfer_upload_dir` (default: `Transfer`, relative to `storage_path`). It is intentionally limited to files directly inside that folder; subdirectories and path traversal are rejected.
+The canonical [file-transfer contract](../../docs/02-developer-guide/backend/file-transfer.md)
+covers whole-file and resumable endpoints, `file:transfer` authorization,
+anonymous-session ownership, chunk/offset limits, public sharing, overwrite,
+expiry, and cleanup. Keep those rules there rather than maintaining a second
+endpoint/configuration table here.
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/transfer/files` | List transfer files |
-| PUT/POST | `/api/transfer/files/<filename>` | Stream-upload a file without the package upload size limit |
-| POST | `/api/transfer/uploads` | Create or recover a resumable upload session from file metadata and fingerprint |
-| GET | `/api/transfer/uploads/<upload_id>` | Read the server-confirmed resumable offset |
-| PATCH | `/api/transfer/uploads/<upload_id>` | Append one chunk at the required `Upload-Offset` |
-| GET | `/api/transfer/shares/<token>` | Read public metadata for one unguessable file share |
-| GET | `/api/transfer/shares/<token>/download` | Download the exact file addressed by a share token |
-| GET | `/api/transfer/files/<filename>` | Download a transfer file |
-| DELETE | `/api/transfer/files/<filename>` | Delete a transfer file |
-
-The React UI exposes resumable uploads at `/transfer` and in the publish
-workspace. It sends 8 MB chunks and recovers the confirmed offset after a lost
-response, cancellation, page refresh, or server restart. Incomplete sessions
-are retained for seven days; completed session receipts are retained for one
-day. The original whole-file PUT/POST contract remains available for scripts.
-
-Anonymous upload is disabled by default. To expose an upload-only public page,
-set the following values in `config.json` and restart the service:
-
-```json
-"anonymous_transfer_upload_enabled": true,
-"anonymous_transfer_max_bytes": 2147483648
-```
-
-Guests may only create, inspect, and append their own resumable session, bound
-to a persistent browser client ID. They cannot list, download, delete, or
-overwrite transfer files. A completed guest upload receives an unguessable
-per-file sharing page and is automatically deleted with that link after 24
-hours. Signed-in uploads also receive per-file sharing pages but do not expire.
-The whole-file PUT/POST endpoint remains protected. Expired guest files are
-removed by an hourly scheduler job and opportunistically during transfer API
-traffic.
-
-API authentication
-accepts web session, Basic Auth using `upload_auth`, or Bearer API key with
-`file:transfer` (or `admin:*`).
-
-```powershell
-curl.exe -u admin:password -T ".\big-file.zip" http://localhost:9998/api/transfer/files/big-file.zip
-curl.exe -u admin:password -O http://localhost:9998/api/transfer/files/big-file.zip
-curl.exe -u admin:password -X DELETE http://localhost:9998/api/transfer/files/big-file.zip
-```
-
-If deployed behind a reverse proxy, configure that proxy to allow large request bodies as well.
+Operational prerequisites still apply when using this backend alone: confirm
+the configured transfer directory and reverse-proxy body/timeout limits before
+uploading. Authorized uploads can overwrite same-name files; existing share
+tokens can then expose the replacement content. Whole-file PUT/POST may retain
+an existing temporary share's expiry, so a successful signed-in upload is not
+an unconditional promise of permanent retention. Upload, share, and delete
+actions require separate authorization; a documentation example is not consent
+to perform them.
 
 ### Response Security and HEAD Semantics
 
@@ -713,10 +703,12 @@ allows its generated inline bootstrap scripts. Authentication, admin, transfer,
 and operations APIs default to `Cache-Control: no-store`. Session cookies are
 HttpOnly with `SameSite=Lax`.
 
-`HEAD` requests are read-only: they never submit a login, delete a transfer
-file, create or deliver an operations task, or increment plugin download
-statistics. File routes still return the same status and representation headers
-as `GET`, without a response body.
+`HEAD` does not submit a login, enter the ordinary transfer-file DELETE branch,
+create or deliver an operations task, or increment plugin download statistics.
+File routes return representation headers without a response body. This is not
+a blanket zero-side-effect guarantee: readiness can create directories, and
+file-transfer listing/share/status handlers can perform metadata reconciliation
+or expiry cleanup; see the canonical topics above.
 
 Plugin, application, update, tool, transfer, generic storage, and legacy file
 URLs share one artifact delivery boundary. It consistently supports validators
@@ -757,7 +749,8 @@ When indexes are populated, most API requests read from SQLite instead of scanni
 - `GET /api/app/changelog` — reads `CHANGELOG.md` (single file read)
 - `GET /api/app/latest-version` — reads in-memory `LATEST_RELEASE` cache (warmed at startup, refreshed on upload)
 - `GET /api/android/update` — reads the latest indexed root APK and caches its SHA-256 by path, size, and modification time
-- `GET /api/health`, `GET /api/ready` — filesystem probes for liveness
+- `GET /api/health` — reports process metadata; it does not probe storage or database readiness.
+- `GET /api/ready` — may create storage/Plugins directories, checks writability and a database `SELECT 1`, and requires nonempty upload credentials. Index status is informational, not a readiness gate; see the canonical startup/readiness contract.
 
 ### Scheduler signature checks (lightweight)
 - `release_index_check` — two-level History walk (major/branch/file), no deep rglob
@@ -774,7 +767,8 @@ When indexes are populated, most API requests read from SQLite instead of scanni
 
 | Module | Purpose |
 |--------|---------|
-| `services/auth_middleware.py` | Authentication decorators (Bearer, Basic, session) — single source of truth |
+| `routes/auth_adapters.py` / `services/auth_policy.py` / `services/permission_service.py` | Flask authentication adapters, common credential/scope policy, and live role permissions |
+| `services/auth_middleware.py` | Deprecated import compatibility shim; not a separate authentication implementation |
 | `services/storage_events.py` | Post-upload/publish index refresh dispatcher |
 | `cli.py` | CLI argument parsing and command execution |
 | `db/schema_version.py` | Schema version tracking and migrations |

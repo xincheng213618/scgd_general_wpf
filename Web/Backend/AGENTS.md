@@ -5,6 +5,7 @@ This file adds to the repository-root `AGENTS.md` for the Flask service under `W
 - Preserve the existing public, admin, API, authentication, artifact-index, and release-metadata contracts. Treat the filesystem artifacts as authoritative where the current code does, with SQLite as an index/cache rather than an invented replacement source of truth.
 - Put HTTP routes in `routes/`, authentication/index/storage behavior in `services/`, database migrations in `db/`, and application composition in `app_setup.py` unless the existing architecture provides a more specific owner.
 - Do not introduce production credentials or new deployment-only paths in tracked configuration. Use explicit overrides, temporary paths, and secret-free test data.
+- Dependency installation accesses the network. Importing `app` already composes the application and initializes database/schema/cache state; starting it can also write logs, run background jobs, and listen on a network interface. `--storage` overrides artifact storage only, not `config.json`, accounts, or the Backend `marketplace.db`; a temporary storage directory is not an isolated test environment.
 - Run backend commands from `Web/Backend/`:
 
 ```powershell

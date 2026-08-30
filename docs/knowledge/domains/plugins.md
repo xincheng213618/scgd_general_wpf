@@ -17,6 +17,9 @@ next: false
 - [插件装配与模块知识入口](../../04-api-reference/plugins/README.md) — `plugins.index`
   从插件程序集装载、产物安装和具体模块能力定位源码；同一责任不再分开发手册与使用手册。
 
+- [Conoscope 图像、采集与分析](../../04-api-reference/plugins/standard-plugins/conoscope.md) — `plugins.conoscope`
+  Conoscope 的采集、CVCIE 首屏/XYZ 就绪、Mat 与分析快照契约；按钮成功不代表文档加载完成，联合灰尘预处理不走 Y-first。
+
 - [插件产物、安装与交付](../../02-developer-guide/plugin-development/getting-started.md) — `plugins.getting-started`
   插件构建产物、HostCopy、manifest包身份、安装替换和恢复契约；发布会上传，安装器返回不等于替换或重启后加载成功。
 
@@ -34,9 +37,6 @@ next: false
 
 - [插件依赖与接入矩阵](../../04-api-reference/plugins/plugin-capability-matrix.md) — `plugins.capabilities`
   横向定位现存插件的菜单、状态、数据库、设备与管理员权限边界。
-
-- [Conoscope 插件](../../04-api-reference/plugins/standard-plugins/conoscope.md) — `plugins.conoscope`
-  Conoscope 的图像观察、VAM 分析、原生依赖、单插件构建与授权发布入口。
 
 - [SystemMonitor 插件](../../04-api-reference/plugins/standard-plugins/system-monitor.md) — `plugins.system-monitor`
   SystemMonitor 的性能采样、状态栏、窗口生命周期与停止采样边界。

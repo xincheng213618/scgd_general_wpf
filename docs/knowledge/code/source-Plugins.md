@@ -27,11 +27,11 @@ next: false
 - [CV 文件读取、通道与写回契约](../../04-api-reference/engine-components/ColorVision.FileIO.md) — `engine.file-io`
   CVRAW/CVCIE 二进制读取、关联源文件与内嵌通道的区别，以及版本写回、长度校验和失败边界。
 
+- [Conoscope 图像、采集与分析](../../04-api-reference/plugins/standard-plugins/conoscope.md) — `plugins.conoscope`
+  Conoscope 的采集、CVCIE 首屏/XYZ 就绪、Mat 与分析快照契约；按钮成功不代表文档加载完成，联合灰尘预处理不走 Y-first。
+
 - [插件依赖与接入矩阵](../../04-api-reference/plugins/plugin-capability-matrix.md) — `plugins.capabilities`
   横向定位现存插件的菜单、状态、数据库、设备与管理员权限边界。
-
-- [Conoscope 插件](../../04-api-reference/plugins/standard-plugins/conoscope.md) — `plugins.conoscope`
-  Conoscope 的图像观察、VAM 分析、原生依赖、单插件构建与授权发布入口。
 
 ## Plugins/Spectrum {#module-506c7567696e732f537065637472756d}
 

@@ -37,6 +37,9 @@ next: false
 - [构建与发布脚本](../../02-developer-guide/scripts/README.md) — `delivery.scripts`
   主程序、插件和项目包的正式发布入口、只读校验与上传清理副作用。
 
+- [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
+  native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
+
 - [UI DLL 发布](../../04-api-reference/ui-components/publishing.md) — `ui.publishing`
   说明 UI NuGet 构建、版本占用预检、显式 Release 发布与包消费验证。
 

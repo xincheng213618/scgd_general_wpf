@@ -1898,28 +1898,46 @@
       "knowledge_id": "delivery.backend",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "插件市场Flask后端的文件制品、索引、认证与API边界，以及隔离存储的启动测试。",
+      "summary": "Flask后端的组成、配置、制品与数据库路径、认证和探测边界；--storage不隔离配置或SQLite。",
       "aliases": [
         "插件市场后端",
         "上传401",
         "Flask",
         "marketplace.db",
-        "api/ready"
+        "api/ready",
+        "create_app_and_context",
+        "RuntimeOverrides",
+        "AuthPolicy",
+        "Session权限",
+        "角色权限"
       ],
       "code_paths": [
         "Web/Backend/app.py",
         "Web/Backend/app_setup.py",
-        "Web/Backend/routes",
-        "Web/Backend/services"
+        "Web/Backend/cli.py",
+        "Web/Backend/config_loader.py",
+        "Web/Backend/runtime_health.py",
+        "Web/Backend/routes/health_api.py",
+        "Web/Backend/routes/auth_adapters.py",
+        "Web/Backend/services/auth_policy.py",
+        "Web/Backend/services/auth_middleware.py",
+        "Web/Backend/services/permission_service.py",
+        "Web/Backend/marketplace_api_routes.py",
+        "Web/Backend/services/marketplace_api.py",
+        "Web/Backend/services/scheduler.py",
+        "Web/Backend/services/storage_events.py"
       ],
       "test_paths": [
         "Web/Backend/test_app.py",
         "Web/Backend/test_app_releases.py",
-        "Web/Backend/test_upload_services.py"
+        "Web/Backend/test_upload_services.py",
+        "Web/Backend/test_config_loader.py",
+        "Web/Backend/test_auth_policy.py"
       ],
       "related": [
         "delivery.scripts",
-        "plugins.index"
+        "plugins.index",
+        "delivery.file-transfer"
       ],
       "code_scopes": [
         "Web/Backend"
@@ -1929,7 +1947,7 @@
       "source": "docs/02-developer-guide/backend/README.md",
       "url": "/02-developer-guide/backend/README",
       "searchable": true,
-      "source_hash": "cdf14ff085f5152114a9bf2eac658e6a2a8ea992a55ecfd3e153775186baaeba"
+      "source_hash": "f3a7dd5e543ae7e15053a7f73610e94f962393fde223987cc3f97fd235daab66"
     },
     {
       "knowledge_id": "delivery.deployment",
@@ -1982,6 +2000,52 @@
       "url": "/02-developer-guide/deployment/overview",
       "searchable": true,
       "source_hash": "d4fb111ab5221439d34b9bc3b1293d216c8898e7024bcac1d5839fdde6dda956"
+    },
+    {
+      "knowledge_id": "delivery.file-transfer",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "Backend文件中转的整文件与断点上传、权限、覆盖、公开分享及到期删除；分享绑定文件名而非不可变上传版本。",
+      "aliases": [
+        "文件中转",
+        "Transfer",
+        "file:transfer",
+        "Upload-Offset",
+        "X-Transfer-Client",
+        "stream_transfer_upload",
+        "create_or_resume_transfer_upload",
+        "get_or_create_transfer_share",
+        "断点续传",
+        "匿名上传",
+        "文件分享过期"
+      ],
+      "code_paths": [
+        "Web/Backend/routes/transfer.py",
+        "Web/Backend/transfer_files.py",
+        "Web/Backend/app_setup.py",
+        "Web/Backend/config_loader.py",
+        "Web/Backend/services/auth_policy.py",
+        "Web/Backend/services/permission_service.py",
+        "Web/Backend/services/scheduler.py",
+        "Web/Backend/services/artifact_delivery.py",
+        "Web/Backend/routes/artifact_delivery.py"
+      ],
+      "test_paths": [
+        "Web/Backend/test_transfer_files.py",
+        "Web/Backend/test_auth_policy.py"
+      ],
+      "related": [
+        "delivery.backend"
+      ],
+      "code_scopes": [
+        "Web/Backend"
+      ],
+      "domain": "delivery",
+      "title": "文件中转、覆盖与公开分享",
+      "source": "docs/02-developer-guide/backend/file-transfer.md",
+      "url": "/02-developer-guide/backend/file-transfer",
+      "searchable": true,
+      "source_hash": "de110504a81c7b6700f12a7491b4ebb59489f093de05f964f37a18187df9fa07"
     },
     {
       "knowledge_id": "delivery.index",
@@ -2742,36 +2806,66 @@
       "knowledge_id": "engine.native-integration",
       "knowledge_type": "guide",
       "status": "current",
-      "summary": "说明 native ABI、HImage 所有权、首次 helper 构建与 CUDA 发布输入的验证边界。",
+      "summary": "native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。",
       "aliases": [
         "新克隆构建为什么需要C++",
         "OpenCVMediaHelper",
         "opencv_helper.dll",
         "opencv_cuda.dll",
-        "M_FindLuminousAreaV2"
+        "HImage",
+        "isDispose",
+        "HImage.Dispose",
+        "M_FindLuminousAreaV2",
+        "M_CalibrationExecuteToV1",
+        "M_CalibrationGetLastError",
+        "M_CalibrationCacheReleaseV1",
+        "M_CalculatePoiBatchV2",
+        "M_VideoSeek",
+        "M_VideoPlay",
+        "M_VideoClose",
+        "opencv_helper API"
       ],
       "code_paths": [
+        "Native/README.md",
+        "Native/opencv_helper/API_Documentation.md",
         "UI/ColorVision.Core/ColorVision.Core.csproj",
         "UI/ColorVision.Core/OpenCVMediaHelper.cs",
+        "UI/ColorVision.Core/OpenCVCuda.cs",
+        "UI/ColorVision.Core/HImage.cs",
         "Native/opencv_helper/opencv_helper.vcxproj",
         "Native/include/opencv_media_export.h",
+        "Native/include/custom_structs.h",
+        "Native/include/video_export.h",
+        "Native/include/cuda_export.h",
+        "Native/opencv_helper/opencv_media_export.cpp",
+        "Native/opencv_helper/video_export.cpp",
+        "Native/opencv_helper/exports/calibration_export.cpp",
+        "Native/opencv_helper/exports/poi_export.cpp",
+        "Native/opencv_helper/exports/sfr_export.cpp",
+        "Native/opencv_cuda/opencv_cuda.vcxproj",
+        "Scripts/verify_native_contracts.py",
         "Engine/ColorVision.Engine/Media/CVRawOpen.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs",
         "Scripts/tests/test_algorithm_package_contract.py",
+        "Scripts/tests/test_verify_native_contracts.py",
         "Test/opencv_helper_test"
       ],
       "related": [
         "engine.index",
         "ui.core",
         "engine.native-bindings",
-        "engine.file-io"
+        "engine.file-io",
+        "algorithms.local-native-analysis"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine",
+        "Native",
         "Native/include",
+        "Native/opencv_cuda",
         "Native/opencv_helper",
+        "Scripts",
         "UI/ColorVision.Core"
       ],
       "domain": "engine",
@@ -2779,7 +2873,7 @@
       "source": "docs/02-developer-guide/engine-development/opencv-integration.md",
       "url": "/02-developer-guide/engine-development/opencv-integration",
       "searchable": true,
-      "source_hash": "138f010db79155e44b94dd1a64994d0df63e326c4e572026fff8fc9b35d59ae4"
+      "source_hash": "417e08871f1fb86aaa46b16fba1495de822099de48fe3a72a396724ed606019c"
     },
     {
       "knowledge_id": "engine.rc-registration",
@@ -3581,7 +3675,7 @@
       "source": "docs/knowledge/retrieval-checks.md",
       "url": "/knowledge/retrieval-checks",
       "searchable": true,
-      "source_hash": "3a32add5a12cd3dc18b7e73570c59c0fd0325a21326c1a7181f39b5b08d6ef83"
+      "source_hash": "913dade4ee19cefd2b747989a39ee6a9548b533d9b383177af2cde6a0a97e4b5"
     },
     {
       "knowledge_id": "operations.acceptance",
@@ -4793,35 +4887,88 @@
     },
     {
       "knowledge_id": "plugins.conoscope",
-      "knowledge_type": "reference",
+      "knowledge_type": "topic",
       "status": "current",
-      "summary": "Conoscope 的图像观察、VAM 分析、原生依赖、单插件构建与授权发布入口。",
+      "summary": "Conoscope 的采集、CVCIE 首屏/XYZ 就绪、Mat 与分析快照契约；按钮成功不代表文档加载完成，联合灰尘预处理不走 Y-first。",
       "aliases": [
         "锥镜图像怎么看",
         "Conoscope 依赖哪些 DLL",
-        "Conoscope"
+        "锥镜采集完成没有图像",
+        "Conoscope",
+        "VAM",
+        "ConoscopeCaptureWorkflow",
+        "ConoscopeFlowCaptureResult",
+        "ConoscopeCameraCaptureResult",
+        "ConoscopeDocument",
+        "ConoscopeDocumentChangeKind",
+        "ConoscopeView",
+        "ConoscopeViewState",
+        "ConoscopeImageHost",
+        "ConoscopeAnalysisSession",
+        "MeasurementCaptureAlignment",
+        "ConoscopeConfigWindow",
+        "ConoscopeGlobalReferenceStore",
+        "FocusPoiTemplateRepository",
+        "CONOSCOPE_REAL_SAMPLE"
       ],
       "code_paths": [
+        "Plugins/Conoscope/README.md",
+        "Plugins/Conoscope/Docs/ARCHITECTURE.md",
         "Plugins/Conoscope/Conoscope.csproj",
         "Plugins/Conoscope/manifest.json",
-        "Plugins/Conoscope"
+        "Plugins/Conoscope/Core/ConoscopeModuleService.cs",
+        "Plugins/Conoscope/ConoscopeWindow.xaml",
+        "Plugins/Conoscope/ConoscopeWindow.xaml.cs",
+        "Plugins/Conoscope/Application/Capture/ConoscopeCaptureWorkflow.cs",
+        "Plugins/Conoscope/ConoscopeDocument.cs",
+        "Plugins/Conoscope/ConoscopeView.xaml.cs",
+        "Plugins/Conoscope/ConoscopeImageHost.xaml.cs",
+        "Plugins/Conoscope/Application/Preprocess/ConoscopePreprocessPipeline.cs",
+        "Plugins/Conoscope/Processing/Preprocess",
+        "Plugins/Conoscope/Application/Analysis/ConoscopeAnalysisSession.cs",
+        "Plugins/Conoscope/Application/Analysis/FocusPointMeasurementService.cs",
+        "Plugins/Conoscope/Analysis/MeasurementCaptureModels.cs",
+        "Plugins/Conoscope/Analysis/AnalysisResultCsvExporter.cs",
+        "Plugins/Conoscope/Application/FocusPoiTemplateRepository.cs",
+        "Plugins/Conoscope/Core/ConoscopeConfig.cs",
+        "Plugins/Conoscope/Core/ConoscopeConfigWindow.xaml.cs",
+        "Plugins/Conoscope/ConoscopePreprocessSettingsControl.xaml",
+        "Plugins/Conoscope/Core/ConoscopeGlobalReferenceStore.cs",
+        "Plugins/Conoscope/Core/ConoscopeReferenceMatSerializer.cs",
+        "Plugins/Conoscope/Core/ConoscopeExportService.cs",
+        "Plugins/Conoscope/MVS",
+        "PluginProject.HostCopy.targets"
       ],
       "test_paths": [
-        "Test/Conoscope.Tests/Conoscope.Tests.csproj"
+        "Test/Conoscope.Tests/Conoscope.Tests.csproj",
+        "Test/Conoscope.Tests/ConoscopeDocumentTests.cs",
+        "Test/Conoscope.Tests/CvcieChannelReaderTests.cs",
+        "Test/Conoscope.Tests/ConoscopeViewBoundaryTests.cs",
+        "Test/Conoscope.Tests/ConoscopeAnalysisSessionTests.cs",
+        "Test/Conoscope.Tests/ConoscopeColorimetryTests.cs",
+        "Test/Conoscope.Tests/MvsCaptureSessionTests.cs",
+        "Test/Conoscope.Tests/ArchitectureSmokeTests.cs",
+        "Test/Conoscope.Tests/AdvancedExportSettingsTests.cs"
       ],
       "related": [
         "plugins.index",
-        "plugins.capabilities"
+        "plugins.capabilities",
+        "engine.file-io",
+        "flow.session",
+        "operations.camera",
+        "ui.configuration",
+        "plugins.getting-started"
       ],
       "code_scopes": [
+        ".",
         "Plugins/Conoscope"
       ],
       "domain": "plugins",
-      "title": "Conoscope 插件",
+      "title": "Conoscope 图像、采集与分析",
       "source": "docs/04-api-reference/plugins/standard-plugins/conoscope.md",
       "url": "/04-api-reference/plugins/standard-plugins/conoscope",
       "searchable": true,
-      "source_hash": "3efa40d914dbd2c71b072b0005346f738e1efc40721fdf3a9ef537f546355930"
+      "source_hash": "75ac2d5fe34acefb4955e1da5fe07009cffedf7def703095ae7b46ad6e051ac0"
     },
     {
       "knowledge_id": "plugins.getting-started",
@@ -5004,6 +5151,7 @@
       "code_paths": [
         "SDK/ColorVision.PluginKit/README.md",
         "SDK/ColorVision.PluginKit/docs/ColorVision.Plugin.SDK.md",
+        "SDK/ColorVision.PluginKit/examples/YoloWpfDemo.Commands.md",
         "SDK/ColorVision.PluginKit/scripts/package_cvxp.py",
         "SDK/ColorVision.PluginKit/cvplugin.spec",
         "SDK/ColorVision.PluginKit/build.bat"
@@ -5021,7 +5169,7 @@
       "source": "docs/02-developer-guide/plugin-development/sdk-packaging.md",
       "url": "/02-developer-guide/plugin-development/sdk-packaging",
       "searchable": true,
-      "source_hash": "f3845fc62e762619a00f2d96c56a36bae23fe6278616eed9f088cdbfcd32401c"
+      "source_hash": "ec18af7f8a2db0ede84acce2e06c303ab912934f737de29910cdba0a6e435dbb"
     },
     {
       "knowledge_id": "plugins.spectrum",
@@ -5858,7 +6006,7 @@
       "source": "docs/04-api-reference/ui-components/ui-runtime-handoff.md",
       "url": "/04-api-reference/ui-components/ui-runtime-handoff",
       "searchable": true,
-      "source_hash": "ac49bc827f71593990b473f47283f31eba731b49954fe87d5eeded15502a691c"
+      "source_hash": "b9d3d46fedb97dcc547bc06e482a9bdd1a10c0370da5e7738c633ffbfbccce5b"
     },
     {
       "knowledge_id": "ui.documents",
@@ -6040,6 +6188,8 @@
         "撤销标注",
         "保存原图还是截图",
         "图像叠加层为什么没有显示",
+        "像素数字显示",
+        "PixelValueOverlay",
         "ColorVision.ImageEditor",
         "ImageView",
         "OpenImage",
@@ -6072,7 +6222,9 @@
         "UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj",
         "Engine/ColorVision.Engine/Media/CVRawOpen.cs",
         "UI/ColorVision.ImageEditor/README.md",
-        "UI/ColorVision.ImageEditor/EditorTools/ThreeD"
+        "UI/ColorVision.ImageEditor/EditorTools/ThreeD",
+        "UI/ColorVision.ImageEditor/PixelValueOverlay.cs",
+        "UI/ColorVision.ImageEditor/Settings/DefaultImageViewDisplayConfig.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs",
@@ -6088,9 +6240,11 @@
       ],
       "related": [
         "ui.discovery",
+        "ui.image-editor-context",
         "ui.property-grid",
         "engine.results",
         "algorithms.platform",
+        "algorithms.local-native-analysis",
         "operations.first-run",
         "ui.publishing"
       ],
@@ -6103,7 +6257,64 @@
       "source": "docs/04-api-reference/ui-components/ColorVision.ImageEditor.md",
       "url": "/04-api-reference/ui-components/ColorVision.ImageEditor",
       "searchable": true,
-      "source_hash": "bdbf5325e2d9115ed2b5b0fecdc20e563065a3873724ed1cdb6677bc7123d075"
+      "source_hash": "5d1861f2c30ee38f29895b1bdcad6d5f4b23486aba2d90f4f77e1bf0c0e1507f"
+    },
+    {
+      "knowledge_id": "ui.image-editor-context",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "ImageEditor 的状态归属、扩展构造、工具刷新与临时 ROI 有效期；区分配置分类、图像版本和真实像素坐标。",
+      "aliases": [
+        "图像编辑器上下文",
+        "工具栏刷新",
+        "配置作用域",
+        "临时ROI",
+        "临时选区",
+        "选区坐标",
+        "EditorContext",
+        "ImageProcessingContext",
+        "ImageViewConfig",
+        "ImageViewPropertyScope",
+        "IEditorToolFactory",
+        "BeginSelectAsync",
+        "TransientRoiSelectionSession",
+        "ImageSelectionScope",
+        "EnableEditorImageServices"
+      ],
+      "code_paths": [
+        "UI/ColorVision.ImageEditor/ARCHITECTURE.md",
+        "UI/ColorVision.ImageEditor/EditorContext.cs",
+        "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs",
+        "UI/ColorVision.ImageEditor/ImageViewConfig.cs",
+        "UI/ColorVision.ImageEditor/ImageViewPropertyMetadata.cs",
+        "UI/ColorVision.ImageEditor/EditorToolFactory.cs",
+        "UI/ColorVision.ImageEditor/ImageView.xaml.cs",
+        "UI/ColorVision.ImageEditor/TransientRoiSelectionSession.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/PseudoColor",
+        "UI/ColorVision.UI/AssemblyHandler.cs"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/EditorToolFactoryLifecycleTests.cs",
+        "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs"
+      ],
+      "related": [
+        "ui.image-editor",
+        "ui.discovery",
+        "ui.configuration",
+        "algorithms.platform",
+        "algorithms.roi-routes",
+        "algorithms.local-native-analysis"
+      ],
+      "code_scopes": [
+        "UI/ColorVision.ImageEditor",
+        "UI/ColorVision.UI"
+      ],
+      "domain": "ui",
+      "title": "ImageEditor：上下文、工具装配与临时选区",
+      "source": "docs/04-api-reference/ui-components/image-editor-context.md",
+      "url": "/04-api-reference/ui-components/image-editor-context",
+      "searchable": true,
+      "source_hash": "a43ce72163a9668cde1ddfb18fbb4f82ade48d077c89a0d92a70513f2180e475"
     },
     {
       "knowledge_id": "ui.image-fusion",

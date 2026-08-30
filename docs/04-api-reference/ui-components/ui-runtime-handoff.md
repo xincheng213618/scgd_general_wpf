@@ -27,7 +27,7 @@ related: ["ui.index","ui.configuration","ui.settings","ui.wizards","ui.menus","u
 | 向导步骤缺失或卡住 | 发现失败、Order、CanContinue、Refresh/Apply 和 initializer 时序 | [向导执行契约](./wizards.md) |
 | PropertyGrid 显示不对 | 可见性、元数据 provider、属性标注、类型注册、只读状态 | [PropertyGrid 契约](./property-grid.md) |
 | 状态栏项缺失或陈旧 | provider 缓存、TargetName、Source 绑定与活动文档通知分别核对 | [状态栏发现与刷新](./status-bar.md) |
-| 图片工具栏少按钮 | ImageEditor 工具是否被工厂发现 | [ColorVision.ImageEditor](./ColorVision.ImageEditor.md) |
+| 图片工具栏少按钮 | 工具构造约束、发现集合和 opener 覆盖；刷新不等于重扫 | [编辑器上下文与工具装配](./image-editor-context.md) |
 | Socket 有连接但业务不跑 | 消息历史、协议模式、`EventName`、handler 程序集 | [ColorVision.SocketProtocol](./ColorVision.SocketProtocol.md) |
 | 调度任务不执行 | Quartz 是否启动，任务配置和历史库是否正常 | [UI 组件目录](./control-catalog.md) |
 | Solution 文件打不开 | 先区分工作区路由、文件 action 与编辑器选择，再核对注册、文件锁和权限 | [资源路由](./ColorVision.Solution.md)、[编辑器与文档](./editor-document-lifecycle.md) |

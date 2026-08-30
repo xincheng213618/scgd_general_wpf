@@ -182,7 +182,7 @@ next: false
   说明 Engine MQTT 连接、设备请求、MsgID 关联、超时和订阅恢复。
 
 - [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
-  说明 native ABI、HImage 所有权、首次 helper 构建与 CUDA 发布输入的验证边界。
+  native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
 
 - [现场操作验收清单](../../01-user-guide/field-operation-acceptance.md) — `operations.acceptance`
   记录设备、流程、数据和外部系统的现场验收证据，区分自动化测试与真机结果。

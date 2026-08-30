@@ -899,6 +899,12 @@
             },
             {
               "text": {
+                "root": "ImageEditor：上下文、工具装配与临时选区"
+              },
+              "link": "/04-api-reference/ui-components/image-editor-context"
+            },
+            {
+              "text": {
                 "root": "状态栏：发现、刷新与宿主生命周期"
               },
               "link": "/04-api-reference/ui-components/status-bar"
@@ -1367,6 +1373,12 @@
                 "root": "快捷键：发现、注册、编辑与释放"
               },
               "link": "/04-api-reference/ui-components/hotkeys"
+            },
+            {
+              "text": {
+                "root": "ImageEditor：上下文、工具装配与临时选区"
+              },
+              "link": "/04-api-reference/ui-components/image-editor-context"
             },
             {
               "text": {
@@ -2147,6 +2159,12 @@
                 "root": "系统要求"
               },
               "link": "/00-getting-started/prerequisites"
+            },
+            {
+              "text": {
+                "root": "OpenCV 和 native 集成开发指南"
+              },
+              "link": "/02-developer-guide/engine-development/opencv-integration"
             }
           ]
         },
@@ -2195,6 +2213,12 @@
                 "root": "景深融合：输入、执行与结果生命周期"
               },
               "link": "/04-api-reference/ui-components/image-fusion"
+            },
+            {
+              "text": {
+                "root": "OpenCV 和 native 集成开发指南"
+              },
+              "link": "/02-developer-guide/engine-development/opencv-integration"
             }
           ]
         },
@@ -2282,15 +2306,15 @@
             },
             {
               "text": {
-                "root": "插件依赖与接入矩阵"
+                "root": "Conoscope 图像、采集与分析"
               },
-              "link": "/04-api-reference/plugins/plugin-capability-matrix"
+              "link": "/04-api-reference/plugins/standard-plugins/conoscope"
             },
             {
               "text": {
-                "root": "Conoscope 插件"
+                "root": "插件依赖与接入矩阵"
               },
-              "link": "/04-api-reference/plugins/standard-plugins/conoscope"
+              "link": "/04-api-reference/plugins/plugin-capability-matrix"
             }
           ]
         },
@@ -2543,6 +2567,12 @@
             },
             {
               "text": {
+                "root": "文件中转、覆盖与公开分享"
+              },
+              "link": "/02-developer-guide/backend/file-transfer"
+            },
+            {
+              "text": {
                 "root": "测试与验证"
               },
               "link": "/02-developer-guide/testing"
@@ -2606,6 +2636,12 @@
                 "root": "构建与发布脚本"
               },
               "link": "/02-developer-guide/scripts/README"
+            },
+            {
+              "text": {
+                "root": "OpenCV 和 native 集成开发指南"
+              },
+              "link": "/02-developer-guide/engine-development/opencv-integration"
             },
             {
               "text": {
@@ -2807,6 +2843,12 @@
                 "root": "ColorVision.Engine 工程、资源与依赖"
               },
               "link": "/04-api-reference/engine-components/ColorVision.Engine"
+            },
+            {
+              "text": {
+                "root": "Conoscope 图像、采集与分析"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/conoscope"
             },
             {
               "text": {

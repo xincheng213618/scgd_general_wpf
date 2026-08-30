@@ -4,7 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "独立PluginKit的project_name包身份、无参数与显式config发布差异、成功清理及单文件exe边界；不是根打包器的同契约镜像。"
 aliases: ["ColorVision.PluginKit","cvplugin","cvplugin.exe","pluginkit.config.json","PluginKit SDK打包","auto_mode","keepPackageAfterUpload"]
-code_paths: ["SDK/ColorVision.PluginKit/README.md","SDK/ColorVision.PluginKit/docs/ColorVision.Plugin.SDK.md","SDK/ColorVision.PluginKit/scripts/package_cvxp.py","SDK/ColorVision.PluginKit/cvplugin.spec","SDK/ColorVision.PluginKit/build.bat"]
+code_paths: ["SDK/ColorVision.PluginKit/README.md","SDK/ColorVision.PluginKit/docs/ColorVision.Plugin.SDK.md","SDK/ColorVision.PluginKit/examples/YoloWpfDemo.Commands.md","SDK/ColorVision.PluginKit/scripts/package_cvxp.py","SDK/ColorVision.PluginKit/cvplugin.spec","SDK/ColorVision.PluginKit/build.bat"]
 test_paths: []
 related: ["plugins.getting-started","delivery.scripts"]
 ---
@@ -46,6 +46,8 @@ SDK 不以 manifest `id` 独立决定这些值，也不按嵌套 `dllpath` 定�
 `should_build = args.build or args.build_only or (auto_mode and config_build_enabled)`；`should_upload = not auto_mode or config_upload_enabled`。SDK 没有 `--validate-only` 和 `--no-upload` 参数，不能把根脚本的静态验证示例移来运行。上述差异是当前实现限制，不是推荐的安全默认设计。
 
 无参数已有配置的构建可能执行 `buildCommand`：`run_custom_build_command` 使用 shell 执行配置文本。配置还可保存上传地址和凭据，因此只执行可信配置；文档检索不授权执行任意命令或发布。仓库内使用 SDK 脚本时须明确 `SDK/ColorVision.PluginKit` 的路径，避免在 Windows 下把根 `Scripts/` 当成 SDK `scripts/`。
+
+上传地址与凭据优先取非空显式参数，其次非空配置值，再读取环境变量；只有环境变量未定义时才取脚本默认值，显式空环境值不会继续回退。设置 `COLORVISION_UPLOAD_USERNAME` / `COLORVISION_UPLOAD_PASSWORD` 不会覆盖配置中的非空同名值；执行前核对实际配置与目标，不能把演示环境变量当作安全切换账户。`examples/YoloWpfDemo.Commands.md` 的无参数命令均依赖明确的插件工作目录，重新构建 exe 后停留在 SDK 目录不能直接假定仍会读取插件配置。
 
 ## 上传与成功清理
 

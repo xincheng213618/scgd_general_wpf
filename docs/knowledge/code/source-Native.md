@@ -19,6 +19,9 @@ next: false
 - [系统要求](../../00-getting-started/prerequisites.md) — `delivery.prerequisites`
   首次构建所需Windows x64、.NET与C++工具链，区分已有native DLL与干净克隆。
 
+- [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
+  native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
+
 ## Native/include {#module-4e61746976652f696e636c756465}
 
 - [FindLightArea 发光区定位模板](../../04-api-reference/algorithms/templates/find-light-area.md) — `algorithms.find-light-area`
@@ -31,12 +34,15 @@ next: false
   景深融合的CPU/CUDA调用、HImage显示和计时；自动模式不做失败回退，关窗不取消计算，GPU少量图片存在未修复的越界风险。
 
 - [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
-  说明 native ABI、HImage 所有权、首次 helper 构建与 CUDA 发布输入的验证边界。
+  native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
 
 ## Native/opencv\_cuda {#module-4e61746976652f6f70656e63765f63756461}
 
 - [景深融合：输入、执行与结果生命周期](../../04-api-reference/ui-components/image-fusion.md) — `ui.image-fusion`
   景深融合的CPU/CUDA调用、HImage显示和计时；自动模式不做失败回退，关窗不取消计算，GPU少量图片存在未修复的越界风险。
+
+- [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
+  native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
 
 ## Native/opencv\_helper {#module-4e61746976652f6f70656e63765f68656c706572}
 
@@ -53,4 +59,4 @@ next: false
   首次构建所需Windows x64、.NET与C++工具链，区分已有native DLL与干净克隆。
 
 - [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
-  说明 native ABI、HImage 所有权、首次 helper 构建与 CUDA 发布输入的验证边界。
+  native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。

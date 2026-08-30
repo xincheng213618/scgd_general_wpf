@@ -51,7 +51,7 @@ next: false
   说明 Engine MQTT 连接、设备请求、MsgID 关联、超时和订阅恢复。
 
 - [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
-  说明 native ABI、HImage 所有权、首次 helper 构建与 CUDA 发布输入的验证边界。
+  native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
 
 - [cvColorVision](../../04-api-reference/engine-components/cvColorVision.md) — `engine.native-bindings`
   定位供应商 native DLL 的相机、光谱、XYZ、OLED、PG 与源表绑定契约。

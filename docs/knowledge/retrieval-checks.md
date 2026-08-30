@@ -222,6 +222,19 @@ related: ["governance.maintenance", "delivery.testing"]
 | AndroidWebViewApp 排障仅支持四项动作吗？ | 当前presentation与执行switch支持11项；旧版本记录不是完整现状，服务端支持与客户端识别另行判断 |
 | cvplugin 显式 --config 会遵循 uploadEnabled=false 吗？ | SDK只有无参数已有配置进入auto_mode；显式配置不等价于关闭上传，构建/上传/清理与根打包器契约分开 |
 
+| RefreshToolBars 会发现新加载的打开器吗？ | 只重新装配已有工具集合，类型缓存、构造实例和重建工具栏是不同阶段；上下文参数只认六种精确类型 |
+| ImageViewConfig 的同名键按 scope 隔离吗，ClearProperties 只清元数据吗？ | 共用字符串字典，同名覆盖值及分类；清所有属性而不清 Configs；ClearCommand 本身只通知 |
+| 关闭 EnableEditorImageServices 会保留旧图和版本吗？ | SetImageSource 仍推进文档版本、清旧源和通知，格式拒绝也不是无副作用 |
+| 临时 ROI 换图后还能使用吗，坐标就是源像素吗？ | 成功结果带不可变 source scope，后续获取输入须再次核验；画布坐标不自动换算/裁剪，过小拖拽继续等待 |
+| Conoscope 采集成功或 OpenAsync 返回就显示完整 XYZ 吗？ | Flow/消息、文件发现、文档提交和渲染分层；联合灰尘预处理等 XYZ 后才首屏，失败可被捕获，不能等一个必发的 Deferred 事件 |
+| Conoscope 设置保存、关注点对齐是否都是原子且位置一致？ | Save丢弃失败状态；模板明细事务不含先前主表保存；Key交集/单点广播/等数按序均不验证物理位置 |
+| Backend 临时 --storage、--help 和 api/ready 都可当只读隔离探针吗？ | 制品路径不隔离配置/SQLite，模块组成早于CLI解析，ready可能mkdir；health和ready不证明业务成功 |
+| 中转同名覆盖会撤销旧分享，登录整文件上传就永久保留吗？ | 分享绑定文件名且复用token，旧链接可读新内容；整文件覆盖可能沿用临时expiry，响应中的null不证明元数据清除 |
+| 匿名上传客户端ID就是有账号认证的全局管理权限吗？ | UUID只用于会话连续性，匿名仅操作本人断点会话；共享文件权限、会话owner与公开token访问分层 |
+| HImage 可用 Pack1，所有 native 返回0/负数通用解释吗？ | Pack8/I1与反向命名的释放标志；各函数族成功/错误约定不同，JSON/校准/视频EOF不能套全局表 |
+| M_VideoSeek 返回0或关闭返回就表示所有帧/回调结束吗？ | seek投递、latest-frame单槽、回调结构借用与像素所有权分开；回调内关闭可能detach，不承诺任意并发关闭安全 |
+| SDK 示例无参数执行总是只生成配置吗？ | 取决于当前目录是否已有配置；可能构建上传，环境凭证是回退而非覆盖，示例不是发布授权 |
+
 另外用英文代码符号和同义中文说法重复部分问题，确认入口不是只识别一种固定问法。
 
 ## 记录与失败处理

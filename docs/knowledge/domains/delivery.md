@@ -24,7 +24,10 @@ next: false
   Android原生运维入口、现场HTTPS与固定签名中继的职责边界；连接、可见证据和操作授权不能互相替代。
 
 - [插件市场后端](../../02-developer-guide/backend/README.md) — `delivery.backend`
-  插件市场Flask后端的文件制品、索引、认证与API边界，以及隔离存储的启动测试。
+  Flask后端的组成、配置、制品与数据库路径、认证和探测边界；--storage不隔离配置或SQLite。
+
+- [文件中转、覆盖与公开分享](../../02-developer-guide/backend/file-transfer.md) — `delivery.file-transfer`
+  Backend文件中转的整文件与断点上传、权限、覆盖、公开分享及到期删除；分享绑定文件名而非不可变上传版本。
 
 - [构建平台与制品边界](../../02-developer-guide/README.md) — `delivery.index`
   定义宿主、插件、客户包和独立FileIO包的构建平台与制品边界，区分构建验证和远端发布。

@@ -3,10 +3,10 @@ knowledge_id: "ui.image-editor"
 knowledge_type: "topic"
 status: "current"
 summary: "图像/视频打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。"
-aliases: ["打开图像","看图","视频模式","标注","撤销标注","保存原图还是截图","图像叠加层为什么没有显示","ColorVision.ImageEditor","ImageView","OpenImage","ImageSourceLoaded","ExternalRenderCompleted","TIFF","Gray32Float","ImageViewSnapshot","AlgorithmOverlayManager","3D高度图","3D模型查看器","ModelViewer3D","ModelViewer3DControl","ModelViewer3DModel","Window3D","HeightMapPixelSampler"]
-code_paths: ["UI/ColorVision.ImageEditor/ImageView.xaml.cs","UI/ColorVision.ImageEditor/ImageViewLifecycleEventArgs.cs","UI/ColorVision.ImageEditor/ImageView.Snapshot.cs","UI/ColorVision.ImageEditor/EditorContext.cs","UI/ColorVision.ImageEditor/EditorToolFactory.cs","UI/ColorVision.ImageEditor/DrawCanvas.cs","UI/ColorVision.ImageEditor/Draw/Annotations/AnnotationMapper.cs","UI/ColorVision.ImageEditor/Tif","UI/ColorVision.ImageEditor/Video/VideoOpen.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs","UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj","Engine/ColorVision.Engine/Media/CVRawOpen.cs","UI/ColorVision.ImageEditor/README.md","UI/ColorVision.ImageEditor/EditorTools/ThreeD"]
+aliases: ["打开图像","看图","视频模式","标注","撤销标注","保存原图还是截图","图像叠加层为什么没有显示","像素数字显示","PixelValueOverlay","ColorVision.ImageEditor","ImageView","OpenImage","ImageSourceLoaded","ExternalRenderCompleted","TIFF","Gray32Float","ImageViewSnapshot","AlgorithmOverlayManager","3D高度图","3D模型查看器","ModelViewer3D","ModelViewer3DControl","ModelViewer3DModel","Window3D","HeightMapPixelSampler"]
+code_paths: ["UI/ColorVision.ImageEditor/ImageView.xaml.cs","UI/ColorVision.ImageEditor/ImageViewLifecycleEventArgs.cs","UI/ColorVision.ImageEditor/ImageView.Snapshot.cs","UI/ColorVision.ImageEditor/EditorContext.cs","UI/ColorVision.ImageEditor/EditorToolFactory.cs","UI/ColorVision.ImageEditor/DrawCanvas.cs","UI/ColorVision.ImageEditor/Draw/Annotations/AnnotationMapper.cs","UI/ColorVision.ImageEditor/Tif","UI/ColorVision.ImageEditor/Video/VideoOpen.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs","UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj","Engine/ColorVision.Engine/Media/CVRawOpen.cs","UI/ColorVision.ImageEditor/README.md","UI/ColorVision.ImageEditor/EditorTools/ThreeD","UI/ColorVision.ImageEditor/PixelValueOverlay.cs","UI/ColorVision.ImageEditor/Settings/DefaultImageViewDisplayConfig.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs","Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs","Test/ColorVision.UI.Tests/ImageViewSnapshotSaveTests.cs","Test/ColorVision.UI.Tests/EraseManagerUndoTests.cs","Test/ColorVision.UI.Tests/DrawShapeCompatibilityTests.cs","Test/ColorVision.UI.Tests/EditorToolFactoryLifecycleTests.cs","Test/ColorVision.UI.Tests/VideoLifecycleTests.cs","Test/ColorVision.UI.Tests/HeightMapPixelSamplerTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DStateTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DModelTests.cs"]
-related: ["ui.discovery","ui.property-grid","engine.results","algorithms.platform","operations.first-run","ui.publishing"]
+related: ["ui.discovery","ui.image-editor-context","ui.property-grid","engine.results","algorithms.platform","algorithms.local-native-analysis","operations.first-run","ui.publishing"]
 ---
 
 # ColorVision.ImageEditor：打开、绘制与输出
@@ -59,7 +59,7 @@ related: ["ui.discovery","ui.property-grid","engine.results","algorithms.platfor
 
 普通注释、Engine 历史结果图元和统一算法 overlay 不是同一种持久数据。统一算法由 `AlgorithmOverlayRenderer` 生成图元，`AlgorithmOverlayManager` 将图元与 artifact 一起绑定文档、source revision 和注册 token。transient 随会话释放或源像素提交清理；persistent 可以跨会话释放和源像素提交保留，但换图/清理仍会移除，名称中的 persistent 不代表已经保存到磁盘。完整替换、过期会话和历史 handler 契约以[结果展示链](../engine-components/result-handoff-chain.md)为准。
 
-算法菜单由当前 Runtime 能力和 provider 可用性决定；有 Descriptor 或源码不等于默认可执行。查询 Blob、轮廓、亚像素边缘、拟合、FFT、摩尔纹等能力时，先核对[统一算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)的发布门禁，再读对应专题的输入约束与预览/提交/导出边界。不能依据实现文件存在就构造一个产品菜单，也不能假设关闭算法窗口必然恢复原图。
+统一算法菜单由当前 Runtime 能力和 provider 可用性决定；有 Descriptor 或源码不等于默认可执行。查询 Blob、轮廓、亚像素边缘、拟合、FFT、摩尔纹等能力时，先核对[统一算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)的发布门禁，再读对应专题的输入约束与预览/提交/导出边界。[本地 Native 分析](../algorithms/local-native-analysis.md)等直接入口不自动受这套门禁控制。工具构造、刷新与临时 ROI 见[编辑器上下文](./image-editor-context.md)。不能依据实现文件存在就构造一个产品菜单，也不能假设关闭算法窗口必然恢复原图。
 
 ## 视频模式
 
@@ -88,6 +88,7 @@ related: ["ui.discovery","ui.property-grid","engine.results","algorithms.platfor
 | 标注或结果偏移、换图后残留 | 图像坐标空间、裁剪/旋转、画布缩放；再按注释、历史 handler 或统一 overlay 分流，避免混用清理机制 |
 | 保存缺标注、位深变化或只生成一个文件 | 捕获是否成功、使用哪种输出分支、外部渲染是否完成、源像素格式和双输出异常 |
 | 伪彩/滤镜、CIE 或 3D 显示异常 | 当前输入类型及工具配置，再查 shader、colormap、CIE 数据/图片资源或 3D 依赖；视觉效果不构成测量正确性证明 |
+| 放大后没有像素数字 | `PixelValueOverlay.TryGetRenderState` 要求有效且支持的位图格式、画布采用 `NearestNeighbor`、单像素显示宽高达到 `PixelValueOverlayMinPixelCellSize`、可见区域非空且像素数不超过 `PixelValueOverlayMaxVisiblePixelCount`；仅放大不保证满足全部条件，阈值归 `DefaultImageViewDisplayConfig` |
 | 关闭视频后仍占资源 | `Config.Cleared → CloseVideo` 是否执行、旧回调是否被会话句柄拒绝，不用反复启动播放器代替定位 |
 
 发布资源与依赖以 `ColorVision.ImageEditor.csproj` 和[UI 模块交付](./publishing.md)为准；本页不另列一份发布流程，也不把 DLL 存在当作工具或 native 功能通过。
