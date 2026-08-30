@@ -6,41 +6,23 @@ Authoritative documentation is split by responsibility:
 
 - [Backend composition, configuration, authentication boundary, and health/readiness](../../docs/02-developer-guide/backend/README.md) (`delivery.backend`).
 - [File transfer, overwrite, public sharing, and expiry](../../docs/02-developer-guide/backend/file-transfer.md) (`delivery.file-transfer`).
+- [Plugin catalog, response projections, index refresh, and version cache](../../docs/02-developer-guide/backend/plugin-catalog.md) (`delivery.plugin-catalog`).
+- [Web accounts, roles, passwords, and sessions](../../docs/02-developer-guide/backend/accounts.md) (`delivery.backend-accounts`).
+- [HTTP credentials, API keys, and browser CSRF](../../docs/02-developer-guide/backend/authentication.md) (`delivery.backend-auth`).
+- [HTTP artifacts, completion counts, cache, HEAD, and compression](../../docs/02-developer-guide/backend/artifact-delivery.md) (`delivery.artifact-delivery`).
 
-This source-adjacent README retains the detailed account/admin, public read-model, browser-security, analytics, scheduler, and artifact-delivery contracts not moved to those topics. Repository links require the matching full source checkout; they are not a claim that `docs/` ships with a separately copied backend.
+This source-adjacent README retains local prerequisites and the public-site, analytics, scheduler, and remaining management contracts not yet moved to those topics. Account, authentication, plugin-read-model, and artifact-response details have one canonical body above. Repository links require the matching full source checkout; they are not a claim that `docs/` ships with a separately copied backend.
 
 ## Architecture
 
-### Index Model
+### Plugin read models
 
-The backend uses a **SQLite index** to serve plugin catalog requests without scanning the file system on every call.
-
-**Tables:**
-- `plugin_index` — Persistent read-model for the plugin catalog
-- `package_index` — Persistent read-model for plugin package versions
-- `index_state` — Tracks refresh status per scope (plugins/releases/tools)
-- `cache_entry` — Key-value cache with TTL and signature-based invalidation
-- `download_log` — Download statistics
-- `users` — Admin/operator/viewer accounts
-- `api_keys` — API Key lifecycle management (only hash stored)
-- `audit_log` — All admin operations
-- `scheduled_jobs` / `job_runs` — Job scheduling and execution history
-- `web_page_daily` / `web_vital_daily` — Aggregate-only SPA page views and Core Web Vitals
-
-### Three Sync Triggers
-
-1. **Startup** — If `plugin_index` is empty, a background refresh populates it. If populated, only a lightweight signature check runs.
-2. **Publish** — After `/api/packages/publish` or `/upload`, the specific plugin's index entry is refreshed immediately.
-3. **Periodic** — A background job (`plugin_index_check`) runs every 5 minutes, compares the Plugins directory signature against the stored signature, and triggers a targeted refresh if changes are detected.
-
-### Request Flow
-
-```
-GET /api/plugins
-  → Check plugin_index table (fast, no disk scan)
-  → If empty: fallback to disk scan + write to index
-  → Return results
-```
+The [plugin catalog topic](../../docs/02-developer-guide/backend/plugin-catalog.md)
+owns `plugin_index`, `package_index`, disk/cache fallback, projection parameters,
+hash pending state, full/targeted refresh, and the process-local version map.
+GET fallback does not rebuild the index; compact reduces the response after
+full detail loading. A refresh reporting ready may still contain per-plugin
+errors, and publishing a file does not guarantee that its index refresh succeeded.
 
 ### Compact Public Read Models
 
@@ -53,16 +35,13 @@ unchanged for legacy consumers:
 | `GET /api/site/changelog?view=compact&page=1&page_size=20` | Latest version plus one bounded rendered changelog page; 5–50 releases per page |
 | `GET /api/site/releases?view=compact&page=1&page_size=100&android_page=1&android_page_size=100` | Independently paged Windows and Android archives |
 | `GET /api/android/update` | Latest fixed-source Android APK metadata with size, SHA-256, and a bounded download URL |
-| `GET /api/plugins?Page=1&PageSize=20` | Paged plugin summaries plus the complete category filter list, so the web page needs one catalog request |
-| `GET /api/plugins/<id>?view=compact&archive_page=1&archive_page_size=20` | Web detail metadata and rendered docs plus one bounded, order-preserving History page; raw Markdown is omitted |
-| `GET /api/plugins/<id>?view=update` | Desktop update metadata without README or per-version changelog duplication |
 
 Windows filters (`major_minor`, `branch`, `kind`, and `era`) apply before exact
 counts and pagination. `page_size` and `android_page_size` accept `20..200`.
 Each returned group reports its full filtered `visible_count` and the current
 slice's `page_item_count`; no group repeats an owning `items` collection.
-Plugin detail archive pages accept 5–100 items. The default full detail and
-desktop `view=update` contracts remain unchanged for existing clients.
+Plugin list, full/compact/update detail, archive pagination, and compatibility
+limits are documented in the canonical plugin topic above.
 
 ## Quick Start
 
@@ -88,6 +67,10 @@ python .\app.py --debug               # debug mode
 
 ### Index Management
 
+These commands initialize the Backend and rewrite its database index/cache.
+Confirm the actual config, database, and artifact roots first; they are not
+read-only probes and `--storage` does not isolate the database.
+
 ```powershell
 # Refresh the full plugin index
 python .\app.py --refresh-index
@@ -98,27 +81,18 @@ python .\app.py --refresh-plugin-index MyPlugin
 
 ## Admin API
 
-All admin endpoints require authentication (session login or Basic Auth or Bearer API Key).
-
-Browser-originated API requests carry `X-ColorVision-Web: 1` and intentionally
-receive a plain `401` without a `WWW-Authenticate` challenge so the React client
-can recover expired sessions without opening the browser's Basic Auth dialog.
-Headerless native clients keep the Basic challenge, while protected browser
-navigations redirect to `/login` with an internal `next` path.
-
-Ordinary user sessions are authorized against their live role permissions when
-the endpoint opts into user-session authentication; login is not an unconditional
-full-access grant. Configured Basic credentials have administrator identity in
-the common policy when Basic is allowed. Bearer keys require endpoint scopes,
-and restricted password-change sessions do not bypass the policy. Protocols may
-restrict accepted authentication methods; see the shared boundary in
-[Backend composition](../../docs/02-developer-guide/backend/README.md).
+Management endpoints apply the [HTTP authentication contract](../../docs/02-developer-guide/backend/authentication.md).
+That topic owns credential precedence, live Session permissions versus issuable
+key scopes, key lifecycle, browser 401/403, and CSRF. Authentication alone is
+not a full-access grant, and protocols may restrict accepted credential methods.
 
 Legacy API-key Operations relay uses two dedicated scopes and does not accept Basic/session auth:
 
 - `ops:relay` — desktop outbound heartbeat, task polling, receipts, and bounded support events.
 - `ops:operator` — list hosts and create catalog-bound tasks. Privileged ServiceHost commands are not valid relay tasks.
 
+Creating a relay key writes the Backend database and grants relay access; do so
+only for an authorized deployment with the configuration/database selected.
 Create a desktop relay key with `python app.py --create-api-key colorvision-relay --scopes ops:relay`, then set
 `COLORVISION_OPERATIONS_RELAY_URL` (HTTPS, or loopback HTTP for development only) and
 `COLORVISION_OPERATIONS_RELAY_KEY` in the ColorVision process environment. The desktop initiates every Web connection;
@@ -141,44 +115,11 @@ credentials, paths, arguments, commands, scripts, and arbitrary payload fields
 are rejected.
 The API-key relay remains available for compatible deployments.
 
-Successful Bearer authentication still checks the active flag, expiry, secret,
-and scopes on every request. Only advisory `last_used_at` persistence is
-coalesced to at most once per key per minute to avoid turning polling reads into
-continuous SQLite writes.
+### Endpoint authorization
 
-### Endpoint Scopes
-
-| Endpoint | Required Scope |
-|----------|---------------|
-| GET `/api/admin/cache/status` | `cache:read` |
-| POST `/api/admin/cache/cleanup` | `cache:refresh` |
-| POST `/api/admin/index/plugins/refresh` | `cache:refresh` |
-| POST `/api/admin/index/plugins/<id>/refresh` | `cache:refresh` |
-| POST `/api/admin/index/releases/refresh` | `cache:refresh` |
-| POST `/api/admin/index/updates/refresh` | `cache:refresh` |
-| POST `/api/admin/index/tools/refresh` | `cache:refresh` |
-| POST `/api/admin/index/refresh-all` | `cache:refresh` |
-| GET `/api/admin/index/status` | `cache:read` |
-| GET `/api/admin/backup/db` | `admin:*` |
-| POST `/api/admin/backup/db` | `admin:*` |
-| GET `/api/admin/jobs` | `jobs:read` |
-| GET `/api/admin/jobs/<id>/runs` | `jobs:read` |
-| POST `/api/admin/jobs/<id>/run` | `jobs:write` |
-| GET `/api/admin/operations/overview` | `admin:*` |
-| POST `/api/admin/jobs/<id>/enable` | `jobs:write` |
-| POST `/api/admin/jobs/<id>/disable` | `jobs:write` |
-| GET `/api/admin/stats/overview` | `stats:read` |
-| GET `/api/admin/stats/traffic` | `stats:read` |
-| GET `/api/admin/audit-log` | `admin:*` |
-| GET `/api/admin/deployments` | `admin:*` |
-| GET `/api/admin/settings/retention` | `admin:*` |
-| PUT `/api/admin/settings/retention` | `admin:*` |
-| GET `/api/admin/settings/accounts` | `admin:*` |
-| PUT `/api/admin/settings/accounts` | `admin:*` |
-| User account management | `admin:*` |
-| API Key management | `admin:*` |
-
-`admin:*` satisfies the common policy's scope requirements; it does not override an endpoint that disallows that authentication method. Ordinary user sessions still use the live role matrix, while configured Basic credentials are checked against `upload_auth` on endpoints that accept Basic.
+Use the canonical [endpoint permission and key-scope boundary](../../docs/02-developer-guide/backend/authentication.md#端点permission不等于api-key可申请scope).
+In particular, the live role-permission catalog is not the API-key scope catalog;
+do not copy a Session permission into a key-creation request.
 
 ### Cache Management
 
@@ -226,175 +167,20 @@ configuration only after the file is durable. Reducing a value may delete old
 artifacts or records when the corresponding publish or scheduled cleanup next
 runs; the administrator UI confirms the exact changes before saving.
 
-### Account Access Settings
+### Accounts and API keys
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/admin/settings/accounts` | Read whether public self-registration is enabled |
-| PUT | `/api/admin/settings/accounts` | Atomically update the registration policy and apply it immediately |
+The canonical [account lifecycle](../../docs/02-developer-guide/backend/accounts.md)
+owns registration defaults and rate limits, profile/query endpoints, role
+revisions, password recovery, session revocation, config-admin exceptions,
+bulk results, deletion safeguards, and partial-success behavior.
+The canonical [authentication topic](../../docs/02-developer-guide/backend/authentication.md)
+owns key CRUD/usage, scope selection, expiry, and non-atomic rotation.
 
-Public registration fails closed and is disabled by default. When disabled,
-the login UI hides the registration entry and `POST /api/auth/register`
-returns `403`; existing accounts and administrator-created accounts are not
-affected. Enabling the policy permits any visitor who can reach the site to
-create a regular `user` account, never an administrator account.
-Public signup is velocity-limited per source address: at most 20 attempts per
-10 minutes and 5 successful accounts per hour. The counters and concurrent
-reservations are stored in SQLite, survive restarts, and return `429` with a
-`Retry-After` header when a limit is active. Administrator-created accounts do
-not consume the public-signup quota.
-
-Password recovery uses an administrator-assisted workflow because the service
-does not have an outbound mail dependency. `POST /api/auth/password-recovery`
-always returns the same `202` response for existing, missing, inactive, and
-configuration-managed accounts. Matching database accounts receive one
-coalesced pending request, visible in user management; resetting the account
-password resolves it and still requires the user to replace the temporary
-password at next login.
-
-### API Keys
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/admin/api-keys` | List API keys |
-| GET | `/api/admin/api-keys/scopes` | List the authoritative scope catalog and default scopes |
-| POST | `/api/admin/api-keys` | Create new key (returns plaintext once) |
-| POST | `/api/admin/api-keys/<id>/revoke` | Revoke key |
-| POST | `/api/admin/api-keys/<id>/rotate` | Rotate key (revoke old, create new) |
-| GET | `/api/admin/api-keys/<id>/usage` | Get public key metadata and recent audited writes |
-
-`expires_at` must be a future ISO 8601 timestamp. The service normalizes it to
-UTC; omitting it from the HTTP create request applies the default 90-day
-expiry. List and usage responses include the effective `status` (`active`,
-`expired`, `revoked`, or `invalid_expiry`) plus `last_used_at`. Descriptions are
-stored independently from names and survive key rotation. The scope catalog is
-the single source of truth for the admin UI and includes human-readable labels,
-categories, and least-privilege guidance.
-
-The usage response includes recent audited management writes attributed to the
-key prefix, but deliberately excludes request IP addresses and user agents. It
-is not a request counter: authenticated reads only update `last_used_at`, at
-most once per minute. Legacy records with an invalid expiry fail closed and
-cannot authenticate.
-
-### User Accounts
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/admin/users` | List accounts; supports `q`, `role`, `origin`, `status`, `password_state`, `recovery_state`, allowlisted `sort_by`/`sort_order`, `limit`, and `offset` |
-| GET | `/api/admin/users/<id>/details` | Inspect one account's profile, pending recovery request, effective permissions, active sessions, and paged recent activity |
-| POST | `/api/admin/users` | Create a `user` or `admin` account |
-| DELETE | `/api/admin/users/<id>` | Permanently delete a disabled database account after confirming its current username |
-| PUT | `/api/admin/users/<id>/profile` | Update an account's display name and email |
-| PUT | `/api/admin/users/<id>/role` | Change an account role and revoke its existing sessions |
-| POST | `/api/admin/users/<id>/password` | Reset a password, resolve pending recovery, revoke existing sessions, and require the account to replace the temporary password at next login |
-| POST | `/api/admin/users/<id>/password-change-required` | Keep the current password but revoke sessions and require the account to replace it at next login |
-| POST | `/api/admin/users/<id>/sessions/revoke` | Force the account's valid browser sessions offline without disabling it |
-| POST | `/api/admin/users/bulk-security` | Force logout or require a password change for up to 100 selected accounts with per-account outcomes |
-| POST | `/api/admin/users/<id>/enable` | Re-enable an account and revoke its previous sessions |
-| POST | `/api/admin/users/<id>/disable` | Disable an account, revoke sessions, resolve pending recovery, and clear login-failure state |
-| GET | `/api/admin/login-security` | List active login-failure windows and source addresses |
-| POST | `/api/admin/login-security/unlock` | Clear one username's login-failure window |
-| GET | `/api/admin/registration-security` | List live public-registration counters by source address |
-| POST | `/api/admin/registration-security/clear` | Clear one source's completed registration counters while preserving in-flight reservations |
-| GET | `/api/admin/permissions` | List the role/permission matrix with active and total database-account counts per role |
-| PUT | `/api/admin/roles/<role>/permissions` | Replace an editable role's permissions, optionally rejecting stale `expected_revision` values |
-| GET | `/api/account` | Read the signed-in user's own profile plus effective permission codes and display metadata |
-| PUT | `/api/account` | Update the signed-in user's display name and email |
-| POST | `/api/auth/password-recovery` | Submit a privacy-preserving administrator-assisted password recovery request |
-| PUT | `/api/account/password` | Change the signed-in database user's password |
-| GET | `/api/account/sessions` | List the signed-in user's active browser sessions |
-| DELETE | `/api/account/sessions/<id>` | Revoke one other browser session |
-| DELETE | `/api/account/sessions/others` | Revoke every session except the current browser |
-| GET | `/api/account/activity` | Read the current account's privacy-scoped activity timeline |
-
-The current session account cannot be disabled or assigned a different role,
-forced offline or deleted from user management, and the last active administrator cannot
-be disabled or demoted. User list responses include the number of non-revoked,
-authentication-version-matched browser sessions for each account. When an
-administrator resets their own password, the current browser session is updated
-to the new authentication version while all other sessions are revoked. Accounts
-created by an administrator and accounts whose password is reset by another
-administrator receive a temporary-password marker. Their browser session is
-restricted to their own profile, session/activity reads, logout, and password
-change until they replace that password; effective permissions and admin access
-are restored immediately afterward. Self-registration and an administrator
-changing their own password do not set this marker. Administrators can also set
-the marker without learning or replacing the current password; this expires all
-active sessions, after which the user signs in with the existing password and
-must immediately choose a new one.
-
-The configured `upload_auth` administrator remains authoritative and is never
-copied into the user table during startup. Its username is reserved from public
-or administrator-created registration. If an older installation already has a
-same-name database shadow record, the record is labelled as the configuration
-administrator and cannot be edited, disabled, demoted, password-reset, or
-forced into the database-account password-change flow from user management;
-only the current configuration credential can start a new
-browser session for that username.
-
-Permanent deletion is intentionally a two-stage operation. An administrator
-must disable the database account first, then confirm the account's current
-username in the delete request. Deletion removes the profile, password hash,
-session history, password-recovery records, and matching login-failure sources;
-administrator audit records remain available as historical evidence. The
-configured administrator and the current browser account cannot be deleted.
-
-The account-security page combines login protection with public-registration
-protection. Registration source rows distinguish blocked and tracking states,
-show both attempt and successful-account windows, refresh when a window expires,
-and can be cleared manually. A clear is concurrency-safe: existing counters are
-removed, but any request already holding a registration reservation remains
-accounted for when it completes. Manual clears are written to the audit log.
-
-New database-account passwords are validated consistently across public
-registration, administrator creation/reset, and self-service password changes.
-They must contain 15–128 Unicode characters; spaces and passphrases are allowed,
-and no character-class composition rule is imposed. This policy applies only
-when a password is newly set: existing password hashes and the configured
-`upload_auth` administrator credential remain valid and are not migrated.
-
-Administrator-assisted password-recovery requests remain pending for seven
-days after the most recent recorded submission. Expired requests are retained
-as system-resolved history for audit purposes, disappear from pending-account
-filters and totals, and no longer prevent the account from submitting a fresh
-request. The account-details drawer shows the effective expiration time.
-
-Account security transitions settle related state together. Disabling an
-account revokes its sessions, resolves any pending recovery request as
-`account_disabled`, and clears persisted login-failure sources. Re-enabling also
-clears failures accumulated while the account was inactive without reviving old
-sessions. Administrator password resets and both single-account and bulk
-"require password change" actions clear the same login-failure state, so an
-administrator-assisted recovery cannot leave the user blocked by an earlier
-throttle window. API responses and audit details report the affected counts.
-
-Database accounts persist `password_changed_at`. New registrations initialize
-it with account creation, administrator resets and self-service changes advance
-it, while a "require password change" marker alone does not pretend the secret
-was replaced. Existing installations backfill the value from account creation
-during schema v26. Personal and administrator account details show the value in
-the same localized time format as login and session activity.
-
-`GET /api/auth/session` includes `public_registration_enabled` so the public
-navigation and login page reflect the server-enforced policy. The value is a
-capability hint only; the registration endpoint rechecks the live setting for
-every request.
-
-Public registration is enabled in the shipped default configuration. New
-accounts retain the `user` role but are initially granted the same function
-permissions as the existing administrator. The grants are stored in SQLite in
-`roles`, `permissions`, and `role_permissions`; they can be reduced later from
-the permissions page without changing the configured administrator contract.
-Session payloads expose `can_access_admin` and the effective permission codes,
-while every protected backend endpoint remains the authoritative enforcement
-point. The administrator role is fixed at full access.
-
-Role-permission updates return an authoritative change summary containing the
-added and removed codes, the number of active accounts immediately affected,
-and the new revision. The same fields are persisted in the audit log, while
-registered-user requests read the live role matrix so an existing session
-cannot continue using a removed permission.
+When running this backend separately, configure the registration policy
+explicitly, protect `upload_auth` and `secret_key`, and retain recovery access.
+Never assume ordinary users are initially read-only, that changing the
+configured administrator password revokes its old cookies, or that a failed
+security-management response means no database state changed.
 
 ### Copilot Desktop Sync
 
@@ -605,54 +391,16 @@ and any rotation errors.
 
 ## API Key Authentication
 
-### Creating a Key
-
-```powershell
-curl.exe -X POST http://localhost:9998/api/admin/api-keys `
-  -u admin:password `
-  -H "Content-Type: application/json" `
-  -d '{"name": "CI Pipeline", "scopes": "plugin:publish,release:publish"}'
-```
-
-The response includes the full key (shown only once):
-```json
-{
-  "id": 1,
-  "name": "CI Pipeline",
-  "key": "cvmp_a1b2c3d4_e5f6g7h8i9j0...",
-  "key_prefix": "a1b2c3d4",
-  "scopes": "plugin:publish,release:publish"
-}
-```
-
-### Using a Key
-
-```powershell
-curl.exe -X POST http://localhost:9998/api/packages/publish `
-  -H "Authorization: Bearer cvmp_a1b2c3d4_e5f6g7h8i9j0..." `
-  -F "PluginId=MyPlugin" `
-  -F "Version=1.0.0" `
-  -F "package=@.\MyPlugin-1.0.0.cvxp"
-```
-
-### Available Scopes
-
-- `plugin:read` — Read plugin catalog
-- `plugin:publish` — Publish plugin packages
-- `release:publish` — Publish application releases
-- `file:transfer` — Upload, download, list, and delete transfer files
-- `cache:read` — Read cache status
-- `cache:refresh` — Refresh caches
-- `stats:read` — Read statistics
-- `jobs:read` — Read job status
-- `jobs:write` — Run/enable/disable jobs
-- `admin:*` — Full admin access
+See the [canonical API-key contract](../../docs/02-developer-guide/backend/authentication.md)
+for request fields, one-time plaintext responses, scope/expiry validation,
+last-used persistence, and rotation failure boundaries. Key creation and package
+publication are state-changing operations, not setup probes.
 
 ## Scheduled Jobs
 
 | Job | Interval | Description |
 |-----|----------|-------------|
-| `plugin_index_check` | 5 min | Compare Plugins directory signature with stored signature; refresh only if changed |
+| `plugin_index_check` | 5 min | Signature/state check; current refresh is full-plugin, not changed-plugin-only; see the canonical plugin topic |
 | `release_index_check` | 10 min | Compare release artifacts signature; refresh only if changed |
 | `update_index_check` | 10 min | Compare Update directory signature; refresh only if changed |
 | `tool_index_check` | 10 min | Compare Tool directory signature; refresh only if changed |
@@ -666,9 +414,17 @@ curl.exe -X POST http://localhost:9998/api/packages/publish `
 
 The scheduler starts automatically when `scheduler_enabled` is true (default). In debug mode, it only starts in the Flask reloader child process to avoid duplicate threads. Set `scheduler_enabled: false` in config.json to disable.
 
-Signature-based check: each index check computes a directory signature and compares it with the stored signature in `index_state`. If they match, no refresh is triggered. The signature is updated after each successful refresh.
+Intervals above are initial defaults; persisted job settings determine the live schedule.
+Plugin startup, signature/state skip conditions, pre-scan signature persistence,
+and refresh errors are defined in the canonical plugin topic. A job success
+label alone is not proof that every index entry is current.
 
 ## Deployment Notes
+
+The following actions can initialize or modify the selected Backend database,
+configuration, and artifact state; backups/retention may also remove retained
+files. Confirm the target and authority before running them. See Quick Start
+for the non-isolating `--storage` boundary.
 
 1. **First deploy**: Run `python app.py --refresh-all-indexes` to populate all indexes (plugins, releases, updates, tools).
 2. **Manual file changes**: If you manually modify storage directories, either:
@@ -697,52 +453,34 @@ to perform them.
 
 ### Response Security and HEAD Semantics
 
-All responses carry a same-origin browser security baseline. React routes use a
-strict same-origin script policy; the VitePress documentation path separately
-allows its generated inline bootstrap scripts. Authentication, admin, transfer,
-and operations APIs default to `Cache-Control: no-store`. Session cookies are
-HttpOnly with `SameSite=Lax`.
+The canonical [artifact-response topic](../../docs/02-developer-guide/backend/artifact-delivery.md)
+owns the response security baseline, Range/ETag/cache behavior, server-iteration
+completion counts, HEAD preparation side effects, and buffered JSON gzip.
+The [authentication topic](../../docs/02-developer-guide/backend/authentication.md)
+owns cookies, CSRF branch conditions, 401/403, and POST logout.
 
-`HEAD` does not submit a login, enter the ordinary transfer-file DELETE branch,
-create or deliver an operations task, or increment plugin download statistics.
-File routes return representation headers without a response body. This is not
-a blanket zero-side-effect guarantee: readiness can create directories, and
-file-transfer listing/share/status handlers can perform metadata reconciliation
-or expiry cleanup; see the canonical topics above.
-
-Plugin, application, update, tool, transfer, generic storage, and legacy file
-URLs share one artifact delivery boundary. It consistently supports validators
-and byte ranges and adds `Accept-Ranges: bytes` plus
-`X-Content-Type-Options: nosniff`. Plugin download statistics are written only
-after the complete body has been iterated. Conditional responses, partial
-ranges, and interrupted transfers do not increment the counter; `bytes=0-`
-counts when it delivers the complete representation.
-
-Logout state changes use POST. The legacy `GET /logout` URL only redirects to
-the public site and does not clear the session. Disabled database-backed users
-are rejected on their next authenticated page or API request.
-
-Browser-originated state-changing requests enforce a same-origin CSRF boundary.
-Session-authenticated writes additionally require the per-session
-`X-CSRF-Token` returned by `GET /api/auth/session`; the token rotates on login
-and logout. Headerless native clients and explicit Basic/Bearer API clients keep
-their existing contracts, while browser requests with a foreign `Origin` or
-cross-site Fetch Metadata are rejected before route execution.
+HEAD does not increment plugin completion statistics, but can still repair old
+update storage, reconcile transfer metadata, or trigger expiry cleanup.
+Do not use it as a blanket no-write probe. Existing response cache headers are
+not overwritten by the generic sensitive-API `no-store` fallback.
 
 ## Disk Scan Points
 
-When indexes are populated, most API requests read from SQLite instead of scanning disk. The following are the remaining real-time disk access points:
+The following are navigation hints, not an exhaustive no-I/O guarantee.
+Plugin index hits, missing-row fallback, request-local caching, and version-map
+staleness are defined in the canonical plugin topic.
 
-### Index-populated (no disk scan)
-- `GET /api/plugins` — reads from `plugin_index` table
-- `GET /api/plugins/<id>` — reads from `plugin_index` + `package_index`
+### Index-backed and cached reads
+
+- `GET /api/plugins` / `GET /api/plugins/<id>` — see the canonical plugin read-model contract
 - `GET /api/site/releases` — reads from `release_index` via `scan_app_release_artifacts`
 - `GET /api/site/updates` — reads from `update_index`
 - `GET /api/site/tools` — reads from `tool_index`
 - `GET /api/site/home` — reads from `release_index`, `update_index`, `tool_index` for previews
 - `GET /api/tool/cvwindowsservice/releases` — cached with signature-based invalidation
 
-### Real-time disk access (by design)
+### Live file access and related probes
+
 - `GET /api/site/browse/<path>?q=<name>&type=all|directory|file&limit=200&offset=0` — reads and filters one live directory before pagination (no recursion). Anonymous callers only see published application, History, Plugins, Spectrum, Update, and Tool artifacts; authenticated administrators retain full storage access.
 - `GET /plugins/<id>/icon` — reads icon file for ETag/Last-Modified headers
 - `GET /download/<path>` — serves public artifacts directly from disk. Operational storage requires administrator authentication, while Transfer keeps its separate file-transfer authorization policy.
@@ -752,14 +490,18 @@ When indexes are populated, most API requests read from SQLite instead of scanni
 - `GET /api/health` — reports process metadata; it does not probe storage or database readiness.
 - `GET /api/ready` — may create storage/Plugins directories, checks writability and a database `SELECT 1`, and requires nonempty upload credentials. Index status is informational, not a readiness gate; see the canonical startup/readiness contract.
 
-### Scheduler signature checks (lightweight)
+### Scheduler signature checks
+
 - `release_index_check` — two-level History walk (major/branch/file), no deep rglob
 - `update_index_check` — single `Update/` directory listing
 - `tool_index_check` — single `Tool/` directory listing
 - `plugin_index_check` — `plugin_catalog_signature()` over Plugins directory
 
-### Upload/publish (triggers index refresh)
-- `POST /api/packages/publish` → `refresh_plugin_index` for that plugin
+### Upload/publish refresh dispatch
+
+These are refresh entry points, not atomic file/index completion guarantees.
+
+- `POST /api/packages/publish` → best-effort `refresh_plugin_index` for that plugin
 - `PUT /upload/<path>` → refreshes `release_index`, `update_index`, or `tool_index` based on path
 - `POST /api/tool/cvwindowsservice/publish` → refreshes `tool_index`
 
@@ -797,15 +539,20 @@ When indexes are populated, most API requests read from SQLite instead of scanni
 
 ## Testing
 
+Inspect each test's config/database isolation before execution. Importing
+`app` itself initializes Backend state; a temporary artifact root alone is
+insufficient isolation. Documentation-only changes do not require starting it.
+
 ```powershell
 python -m unittest discover -p "test_*.py"
 ```
 
 ## Existing API Compatibility
 
-All existing API endpoints remain unchanged:
+Compatibility entry points (current detailed behavior is defined by the linked topics, not a blanket compatibility guarantee):
+
 - `GET /api/plugins` — Search plugins (now reads from SQLite index, falls back to disk scan if index is empty)
-- `GET /api/plugins/<id>` — Plugin detail (reads from index; fileHash computed on-demand if missing)
+- `GET /api/plugins/<id>` — Plugin detail (indexed missing hashes report `hashPending`; fallback may read/hash files)
 - `GET /api/plugins/<id>/latest-version` — Latest version
 - `GET /api/packages/<id>/<version>` — Download package
 - `POST /api/packages/publish` — Publish (now also supports Bearer auth with `plugin:publish` scope)
@@ -815,4 +562,6 @@ All existing API endpoints remain unchanged:
 - `GET /api/stats` — Download statistics
 - `POST /api/feedback` — Submit feedback
 
-The `/api/plugins/<id>` response structure is fully compatible with the old API: `latestVersion`, `requiresVersion`, `versions` (with `fileHash`), `archivedVersions`, `readme`, `changelog`, `iconUrl`, `totalDownloads`, etc.
+Default plugin detail retains its full projection; compact/update have distinct
+field and pagination contracts. See the canonical plugin topic before relying
+on raw Markdown, per-version fields, hash availability, or history bounds.

@@ -1895,6 +1895,68 @@
       "source_hash": "1d6361c73c33e8ca90e45a8e63e19de56b0772682817899be8ac170e0d1f7898"
     },
     {
+      "knowledge_id": "delivery.artifact-delivery",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "Backend HTTP制品交付的Range、完成事件、下载计数、Cache-Control/ETag、HEAD副作用与JSON gzip边界；服务端迭代完成不证明客户端落盘。",
+      "aliases": [
+        "HTTP制品下载",
+        "下载完成计数",
+        "Range",
+        "Content-Range",
+        "HEAD下载",
+        "ETag",
+        "Cache-Control",
+        "no-store",
+        "gzip",
+        "Accept-Encoding",
+        "ArtifactDeliverySpec",
+        "ArtifactDeliveryService",
+        "ArtifactDownloadEvent",
+        "deliver_artifact",
+        "_CompletionTrackingIterator",
+        "_completed_representation_bytes",
+        "record_download",
+        "repair_update_storage_layout",
+        "register_response_compression"
+      ],
+      "code_paths": [
+        "Web/Backend/services/artifact_delivery.py",
+        "Web/Backend/routes/artifact_delivery.py",
+        "Web/Backend/marketplace_api_routes.py",
+        "Web/Backend/services/marketplace_api.py",
+        "Web/Backend/marketplace_services.py",
+        "Web/Backend/download_stats.py",
+        "Web/Backend/routes/pages.py",
+        "Web/Backend/update_retention.py",
+        "Web/Backend/services/http_security.py",
+        "Web/Backend/services/http_compression.py",
+        "Web/Backend/app.py",
+        "Web/Backend/app_setup.py",
+        "Web/Backend/services/access_analytics.py"
+      ],
+      "test_paths": [
+        "Web/Backend/test_artifact_delivery.py",
+        "Web/Backend/test_http_security.py",
+        "Web/Backend/test_http_compression.py",
+        "Web/Backend/test_app.py"
+      ],
+      "related": [
+        "delivery.backend",
+        "delivery.file-transfer",
+        "delivery.plugin-catalog"
+      ],
+      "code_scopes": [
+        "Web/Backend"
+      ],
+      "domain": "delivery",
+      "title": "HTTP 制品交付、完成计数与响应策略",
+      "source": "docs/02-developer-guide/backend/artifact-delivery.md",
+      "url": "/02-developer-guide/backend/artifact-delivery",
+      "searchable": true,
+      "source_hash": "4001f186e2ffee411077db17f68653b163c9d458b87182ad8e6985e04dc6e296"
+    },
+    {
       "knowledge_id": "delivery.backend",
       "knowledge_type": "topic",
       "status": "current",
@@ -1937,7 +1999,11 @@
       "related": [
         "delivery.scripts",
         "plugins.index",
-        "delivery.file-transfer"
+        "delivery.file-transfer",
+        "delivery.plugin-catalog",
+        "delivery.backend-accounts",
+        "delivery.backend-auth",
+        "delivery.artifact-delivery"
       ],
       "code_scopes": [
         "Web/Backend"
@@ -1947,7 +2013,128 @@
       "source": "docs/02-developer-guide/backend/README.md",
       "url": "/02-developer-guide/backend/README",
       "searchable": true,
-      "source_hash": "f3a7dd5e543ae7e15053a7f73610e94f962393fde223987cc3f97fd235daab66"
+      "source_hash": "851cc5abe696e674d1940c6c22e28205c39364aa0960f36f8a2e9274c284bebb"
+    },
+    {
+      "knowledge_id": "delivery.backend-accounts",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "Backend注册、角色权限、改密与找回、数据库Session撤销；配置管理员不走auth_version，跨服务安全操作可能部分成功。",
+      "aliases": [
+        "Web账号",
+        "公开注册",
+        "public_registration_enabled",
+        "auth_version",
+        "must_change_password",
+        "配置管理员",
+        "强制改密",
+        "密码找回",
+        "user_sessions",
+        "角色权限",
+        "replace_role_permissions",
+        "force_logout",
+        "password_changed_at"
+      ],
+      "code_paths": [
+        "Web/Backend/routes/public_pages.py",
+        "Web/Backend/routes/admin_api.py",
+        "Web/Backend/services/auth_service.py",
+        "Web/Backend/services/session_service.py",
+        "Web/Backend/services/permission_service.py",
+        "Web/Backend/services/account_settings.py",
+        "Web/Backend/services/config_persistence.py",
+        "Web/Backend/services/login_throttle_service.py",
+        "Web/Backend/services/registration_rate_limit_service.py",
+        "Web/Backend/services/password_recovery_service.py",
+        "Web/Backend/services/account_activity_service.py",
+        "Web/Backend/services/account_security_cleanup.py",
+        "Web/Backend/config_loader.py",
+        "Web/Backend/db/schema_version.py",
+        "Web/Backend/db_cache.py"
+      ],
+      "test_paths": [
+        "Web/Backend/test_contracts.py",
+        "Web/Backend/test_auth_service.py",
+        "Web/Backend/test_auth_policy.py",
+        "Web/Backend/test_account_settings.py",
+        "Web/Backend/test_login_throttle_service.py",
+        "Web/Backend/test_registration_rate_limit_service.py",
+        "Web/Backend/test_password_recovery_service.py",
+        "Web/Backend/test_account_security_cleanup.py",
+        "Web/Backend/test_schema_version.py"
+      ],
+      "related": [
+        "delivery.backend",
+        "delivery.backend-auth"
+      ],
+      "code_scopes": [
+        "Web/Backend"
+      ],
+      "domain": "delivery",
+      "title": "Web账号、角色与会话生命周期",
+      "source": "docs/02-developer-guide/backend/accounts.md",
+      "url": "/02-developer-guide/backend/accounts",
+      "searchable": true,
+      "source_hash": "1b66beadc4b8cf6eb01acc1920f2894fdc8b4c38032fb6bdf5680d8dbca5abe2"
+    },
+    {
+      "knowledge_id": "delivery.backend-auth",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "Backend HTTP凭据优先级、Session权限与API key scopes、key轮换失败副作用和浏览器CSRF；认证成功不等于端点授权或全流程完成。",
+      "aliases": [
+        "AuthPolicy",
+        "Session权限",
+        "Bearer",
+        "Basic Auth",
+        "API key",
+        "api_keys:manage",
+        "ENDPOINT_SCOPES",
+        "X-CSRF-Token",
+        "CSRF",
+        "Origin",
+        "Sec-Fetch-Site",
+        "WWW-Authenticate",
+        "rotate_api_key",
+        "last_used_at",
+        "POST logout"
+      ],
+      "code_paths": [
+        "Web/Backend/services/auth_policy.py",
+        "Web/Backend/routes/auth_adapters.py",
+        "Web/Backend/routes/request_context.py",
+        "Web/Backend/services/request_context.py",
+        "Web/Backend/routes/browser_auth.py",
+        "Web/Backend/routes/admin_api.py",
+        "Web/Backend/routes/public_pages.py",
+        "Web/Backend/services/api_key_service.py",
+        "Web/Backend/services/permission_service.py",
+        "Web/Backend/services/csrf_protection.py",
+        "Web/Backend/app.py",
+        "Web/Backend/app_setup.py"
+      ],
+      "test_paths": [
+        "Web/Backend/test_auth_policy.py",
+        "Web/Backend/test_browser_auth.py",
+        "Web/Backend/test_csrf_protection.py",
+        "Web/Backend/test_contracts.py",
+        "Web/Backend/test_plugin_index.py",
+        "Web/Backend/test_access_analytics.py"
+      ],
+      "related": [
+        "delivery.backend",
+        "delivery.backend-accounts",
+        "delivery.file-transfer"
+      ],
+      "code_scopes": [
+        "Web/Backend"
+      ],
+      "domain": "delivery",
+      "title": "HTTP认证、API key与浏览器CSRF",
+      "source": "docs/02-developer-guide/backend/authentication.md",
+      "url": "/02-developer-guide/backend/authentication",
+      "searchable": true,
+      "source_hash": "3c003173a4a24e36f1a12bbc512f35b793e6e63b65da3fa38196e100597f687b"
     },
     {
       "knowledge_id": "delivery.deployment",
@@ -2122,6 +2309,62 @@
       "url": "/00-getting-started/installation",
       "searchable": true,
       "source_hash": "75dc022fd10ea0dfbd31686df7dd3c709c8a997ca105547825e542372765d699"
+    },
+    {
+      "knowledge_id": "delivery.plugin-catalog",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "插件市场列表、详情投影、索引刷新与版本缓存；compact不代表按页读取源码数据，ready不证明全量刷新无错误。",
+      "aliases": [
+        "插件市场索引",
+        "插件目录",
+        "插件详情",
+        "历史包分页",
+        "hashPending",
+        "plugin_index",
+        "package_index",
+        "MarketplaceCatalogService",
+        "MarketplaceDataService",
+        "refresh_plugin_index",
+        "refresh_all_plugin_index",
+        "plugin_catalog_signature",
+        "get_plugin_latest_versions_cached",
+        "view=compact",
+        "view=update"
+      ],
+      "code_paths": [
+        "Web/Backend/marketplace_api_routes.py",
+        "Web/Backend/services/marketplace_api.py",
+        "Web/Backend/marketplace_services.py",
+        "Web/Backend/services/plugin_index.py",
+        "Web/Backend/plugin_marketplace.py",
+        "Web/Backend/catalog_view_models.py",
+        "Web/Backend/plugin_queries.py",
+        "Web/Backend/services/app_latest_version_cache.py",
+        "Web/Backend/services/storage_events.py",
+        "Web/Backend/services/scheduler.py",
+        "Web/Backend/db/repositories/index_state.py"
+      ],
+      "test_paths": [
+        "Web/Backend/test_app.py",
+        "Web/Backend/test_plugin_index.py",
+        "Web/Backend/test_app_latest_version_cache.py"
+      ],
+      "related": [
+        "delivery.backend",
+        "delivery.artifact-delivery",
+        "plugins.model",
+        "plugins.getting-started"
+      ],
+      "code_scopes": [
+        "Web/Backend"
+      ],
+      "domain": "delivery",
+      "title": "插件目录、详情投影与索引刷新",
+      "source": "docs/02-developer-guide/backend/plugin-catalog.md",
+      "url": "/02-developer-guide/backend/plugin-catalog",
+      "searchable": true,
+      "source_hash": "8c18b0f4ad6fea174f0c3d0d8701b776d2e2f8f2e395379f148f0cb22f8c7d8f"
     },
     {
       "knowledge_id": "delivery.prerequisites",
@@ -3675,7 +3918,7 @@
       "source": "docs/knowledge/retrieval-checks.md",
       "url": "/knowledge/retrieval-checks",
       "searchable": true,
-      "source_hash": "913dade4ee19cefd2b747989a39ee6a9548b533d9b383177af2cde6a0a97e4b5"
+      "source_hash": "97d80d761f241512d04a80e1b6d5af7d61810bc9820e57b38f36bbf5c53cf2ed"
     },
     {
       "knowledge_id": "operations.acceptance",

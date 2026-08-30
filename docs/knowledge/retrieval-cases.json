@@ -235,6 +235,21 @@
     {"query":"M_CalculatePoiBatchV2","expected_any":["engine.native-integration"],"include_planned":false},
     {"query":"HImage的Pack和isDispose释放约定","expected_any":["engine.native-integration"],"include_planned":false},
     {"query":"M_VideoSeek返回0意味着目标帧已经显示了吗","expected_any":["engine.native-integration"],"include_planned":false},
-    {"query":"YoloWpfDemo.Commands.md","expected_any":["plugins.sdk-packaging"],"include_planned":false}
+    {"query":"YoloWpfDemo.Commands.md","expected_any":["plugins.sdk-packaging"],"include_planned":false},
+    {"query":"MarketplaceCatalogService.detail的compact会避免读取全部历史包吗","expected_any":["delivery.plugin-catalog"],"include_planned":false},
+    {"query":"插件市场索引为空时GET列表会自动重建plugin_index吗","expected_any":["delivery.plugin-catalog"],"include_planned":false},
+    {"query":"refresh_all_plugin_index返回ready代表全部插件都刷新成功吗","expected_any":["delivery.plugin-catalog"],"include_planned":false},
+    {"query":"get_plugin_latest_versions_cached找不到单个插件时会回退磁盘吗","expected_any":["delivery.plugin-catalog"],"include_planned":false},
+    {"query":"hashPending会在下次详情GET自动补算吗","expected_any":["delivery.plugin-catalog"],"include_planned":false},
+    {"query":"HEAD增量更新下载地址能当无副作用探针吗","expected_any":["delivery.artifact-delivery"],"include_planned":false},
+    {"query":"插件下载200后客户端中断时下载次数何时增加","expected_any":["delivery.artifact-delivery"],"include_planned":false},
+    {"query":"敏感文件响应一定no-store且ETag就是内容校验值吗","expected_any":["delivery.artifact-delivery"],"include_planned":false},
+    {"query":"客户端接受gzip为何APK和带ETag的JSON没压缩","expected_any":["delivery.artifact-delivery"],"include_planned":false},
+    {"query":"后端配置没写public_registration_enabled默认允许注册吗","expected_any":["delivery.backend-accounts"],"include_planned":false},
+    {"query":"修改upload_auth密码会撤销已有管理员浏览器会话吗","expected_any":["delivery.backend-accounts"],"include_planned":false},
+    {"query":"API Key轮换失败会恢复旧key并续期90天吗","expected_any":["delivery.backend-auth"],"include_planned":false},
+    {"query":"X-ColorVision-Web会让后端强制校验CSRF token吗","expected_any":["delivery.backend-auth"],"include_planned":false},
+    {"query":"Session的users:manage权限和API Key同名scope是一回事吗","expected_any":["delivery.backend-auth"],"include_planned":false},
+    {"query":"后端修改密码接口失败证明数据库密码没变吗","expected_any":["delivery.backend-accounts"],"include_planned":false}
   ]
 }

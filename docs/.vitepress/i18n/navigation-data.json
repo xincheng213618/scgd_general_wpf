@@ -2561,15 +2561,39 @@
             },
             {
               "text": {
+                "root": "HTTP 制品交付、完成计数与响应策略"
+              },
+              "link": "/02-developer-guide/backend/artifact-delivery"
+            },
+            {
+              "text": {
                 "root": "插件市场后端"
               },
               "link": "/02-developer-guide/backend/README"
             },
             {
               "text": {
+                "root": "Web账号、角色与会话生命周期"
+              },
+              "link": "/02-developer-guide/backend/accounts"
+            },
+            {
+              "text": {
+                "root": "HTTP认证、API key与浏览器CSRF"
+              },
+              "link": "/02-developer-guide/backend/authentication"
+            },
+            {
+              "text": {
                 "root": "文件中转、覆盖与公开分享"
               },
               "link": "/02-developer-guide/backend/file-transfer"
+            },
+            {
+              "text": {
+                "root": "插件目录、详情投影与索引刷新"
+              },
+              "link": "/02-developer-guide/backend/plugin-catalog"
             },
             {
               "text": {

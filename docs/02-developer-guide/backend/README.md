@@ -6,12 +6,12 @@ summary: "Flask后端的组成、配置、制品与数据库路径、认证和�
 aliases: ["插件市场后端","上传401","Flask","marketplace.db","api/ready","create_app_and_context","RuntimeOverrides","AuthPolicy","Session权限","角色权限"]
 code_paths: ["Web/Backend/app.py","Web/Backend/app_setup.py","Web/Backend/cli.py","Web/Backend/config_loader.py","Web/Backend/runtime_health.py","Web/Backend/routes/health_api.py","Web/Backend/routes/auth_adapters.py","Web/Backend/services/auth_policy.py","Web/Backend/services/auth_middleware.py","Web/Backend/services/permission_service.py","Web/Backend/marketplace_api_routes.py","Web/Backend/services/marketplace_api.py","Web/Backend/services/scheduler.py","Web/Backend/services/storage_events.py"]
 test_paths: ["Web/Backend/test_app.py","Web/Backend/test_app_releases.py","Web/Backend/test_upload_services.py","Web/Backend/test_config_loader.py","Web/Backend/test_auth_policy.py"]
-related: ["delivery.scripts","plugins.index","delivery.file-transfer"]
+related: ["delivery.scripts","plugins.index","delivery.file-transfer","delivery.plugin-catalog","delivery.backend-accounts","delivery.backend-auth","delivery.artifact-delivery"]
 ---
 
 # 插件市场后端
 
-`Web/Backend/` 是插件市场、更新包分发和后台管理门户的 Flask 服务。本页负责组成、配置/路径、启动副作用、共用认证与健康检查；文件中转的访问控制、覆盖、公开分享和到期删除统一见[文件中转](./file-transfer.md)。`Web/Backend/README.md` 继续维护尚未迁入本页的账号管理、CSRF、分析统计、下载计数及详细管理接口契约，不能用本页的入口表代替这些规则。
+`Web/Backend/` 是插件市场、更新包分发和后台管理门户的 Flask 服务。本页负责组成、配置/路径、启动副作用与健康检查。代码边界的唯一正文分别是[插件目录与索引](./plugin-catalog.md)、[账号与Session生命周期](./accounts.md)、[HTTP认证/API key/CSRF](./authentication.md)、[HTTP制品交付](./artifact-delivery.md)和[文件中转](./file-transfer.md)。`Web/Backend/README.md` 保留模块运行前提以及尚未迁入主题的公共站点投影、分析统计、调度及其它管理细节，不能用本页的入口表代替这些规则。
 
 ## 代码责任
 
@@ -72,7 +72,7 @@ CLI 在非 debug 模式发现默认 session 密钥、默认或空上传凭证等
 
 `AuthPolicy.authorize` 区分管理员 Session、普通用户 Session、配置中的 Basic 凭证和 Bearer API key。普通用户 Session 只有在端点允许 `allow_user_session` 时参与授权，并实时读取角色权限；缺少要求的 scope 会拒绝。默认角色初始拥有较广权限，不代表今后不可撤销，也不能把“已登录”当成任意端点可访问。
 
-市场上传装饰器要求 `plugin:publish`；Transfer 独立要求 `file:transfer`；配置 Basic 凭证在允许 Basic 的共用策略路径中取得管理员身份，Bearer 仍检查端点 scope 或 `admin:*`。端点可以限制认证方式，不能把共用策略推广为所有协议都接受 Session/Basic/Bearer。需要改密码的 Session 也不会凭登录状态绕过该限制；显式 Basic/Bearer 的处理仍以具体端点为准。账号、权限管理和浏览器 CSRF 的完整 HTTP 契约继续以源码旁 Backend README 对应章节为入口。
+市场上传装饰器要求 `plugin:publish`；Transfer 独立要求 `file:transfer`；配置 Basic 凭证在允许 Basic 的共用策略路径中取得管理员身份，Bearer 仍检查端点 scope 或 `admin:*`。端点可以限制认证方式，不能把共用策略推广为所有协议都接受 Session/Basic/Bearer。需要改密码的 Session 也不会凭登录状态绕过该限制；显式 Basic/Bearer 的处理仍以具体端点为准。凭据优先级、角色permission与可申请key scope的区别、CSRF分支及401/403详见[HTTP认证](./authentication.md)，账号状态和配置管理员例外见[账号生命周期](./accounts.md)。
 
 ## health 与 ready 的不同副作用
 
@@ -113,7 +113,7 @@ CLI 在非 debug 模式发现默认 session 密钥、默认或空上传凭证等
 | 后台管理 | `/admin` |
 | 大文件传输 | [文件中转](./file-transfer.md)的整文件/断点上传及分享链，不负责发布插件 |
 | 后台索引检查 | 主入口启动调度器后由相应 job 执行；不能把任意模块导入视为后台刷新完成 |
-| 发布刷新 | 插件发布、`/upload/...` 或目录签名变化后刷新对应索引 |
+| 发布刷新 | storage event派发索引刷新；插件发布后刷新可best-effort失败，周期插件检查可触发全量刷新，详见[插件索引](./plugin-catalog.md) |
 
 首次部署或大量手工改文件后，可在确认目标制品目录和实际 Backend 数据库后运行 `python app.py --storage <目标目录> --refresh-all-indexes`；该操作会改写当前 Backend 数据库内的索引，不会因为 `--storage` 自动创建一套隔离索引库，不能作为默认只读排查步骤。
 

@@ -221,7 +221,6 @@ related: ["governance.maintenance", "delivery.testing"]
 | SpectrumAutoIntTime 超时会立即停止硬件吗？ | CTS是合作取消，不强制中断native；可能在30秒后仍更新IntTime并成功返回，测量/校零各自核对检查点与副作用 |
 | AndroidWebViewApp 排障仅支持四项动作吗？ | 当前presentation与执行switch支持11项；旧版本记录不是完整现状，服务端支持与客户端识别另行判断 |
 | cvplugin 显式 --config 会遵循 uploadEnabled=false 吗？ | SDK只有无参数已有配置进入auto_mode；显式配置不等价于关闭上传，构建/上传/清理与根打包器契约分开 |
-
 | RefreshToolBars 会发现新加载的打开器吗？ | 只重新装配已有工具集合，类型缓存、构造实例和重建工具栏是不同阶段；上下文参数只认六种精确类型 |
 | ImageViewConfig 的同名键按 scope 隔离吗，ClearProperties 只清元数据吗？ | 共用字符串字典，同名覆盖值及分类；清所有属性而不清 Configs；ClearCommand 本身只通知 |
 | 关闭 EnableEditorImageServices 会保留旧图和版本吗？ | SetImageSource 仍推进文档版本、清旧源和通知，格式拒绝也不是无副作用 |
@@ -234,6 +233,16 @@ related: ["governance.maintenance", "delivery.testing"]
 | HImage 可用 Pack1，所有 native 返回0/负数通用解释吗？ | Pack8/I1与反向命名的释放标志；各函数族成功/错误约定不同，JSON/校准/视频EOF不能套全局表 |
 | M_VideoSeek 返回0或关闭返回就表示所有帧/回调结束吗？ | seek投递、latest-frame单槽、回调结构借用与像素所有权分开；回调内关闭可能detach，不承诺任意并发关闭安全 |
 | SDK 示例无参数执行总是只生成配置吗？ | 取决于当前目录是否已有配置；可能构建上传，环境凭证是回退而非覆盖，示例不是发布授权 |
+| 插件索引为空时GET会自动修好索引，compact只读取一页吗？ | fallback写缓存而非plugin_index，详情先完整取数据再投影；compact只分页历史包，仍包含全部当前包和HTML |
+| 索引全量刷新ready意味着全成功吗，hashPending会由GET补算吗？ | ready可含errors，逐插件事务非一致快照；签名保留扫描前值，GET命中索引时不补hash，版本map的单ID缺项也不自动回退磁盘 |
+| 插件下载返回200和完整Range就表示客户端收妥并可靠计数吗？ | 必须服务端iterator结束且yield字节精确相等，只有挂回调的路由计数；并非客户端落盘确认，写库失败可被吞掉 |
+| HEAD增量下载是只读探针，敏感文件一定no-store吗？ | route可修复/移动/删除更新存储；响应保护只setdefault，不覆盖已有缓存头，ETag不自动等于内容hash |
+| 接受gzip是否压缩所有下载，HEAD是否不耗压缩计算？ | 仅合格200缓冲JSON，跳过文件/流/ETag/Range等；HEAD仍可执行body与gzip计算 |
+| 注册缺省值为何看起来相反，改upload_auth密码会撤销旧cookie吗？ | DEFAULT_CONFIG的True与边界缺失/非法False不同；config管理员无DB session/auth_version路径，不能假定旧cookie随凭据变更撤销 |
+| Session细粒度权限能直接作为API Key scope创建吗？ | 角色permission目录与可发key scope目录不同，端点鉴权另检查认证方式及实时权限；不能统一写admin:* |
+| API Key轮换会续期，失败可继续用旧key吗？ | 先提交旧key撤销再按原expiry创建，无整体回滚或自动续期；HTTP默认90天不代表rotate重新计时 |
+| X-ColorVision-Web证明已校验CSRF，带Authorization必须认证成功才免token吗？ | marker影响401挑战，CSRF由Origin/Fetch等分支判断；非空Authorization先免token，认证层可能先接受已有Session；不把现状当更强防护 |
+| 账号密码操作失败就表示数据没改变吗？ | 密码/版本提交与后续session撤销/恢复、恢复申请结案分开，不能用错误响应推断整链回滚 |
 
 另外用英文代码符号和同义中文说法重复部分问题，确认入口不是只识别一种固定问法。
 
