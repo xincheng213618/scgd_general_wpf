@@ -12,19 +12,23 @@ public partial class HotkeyEditWindow : Window
     private Hotkey _candidate;
     private bool _captureFailed;
     private bool _captureStarted;
+    private readonly int? _bindingIndex;
 
-    public HotkeyEditWindow(HotkeySettingsViewModel model, HotkeySettingsRow row)
+    public HotkeyEditWindow(HotkeySettingsViewModel model, HotkeySettingsRow row, int? bindingIndex = 0)
     {
         _model = model;
         _row = row;
-        _candidate = new Hotkey(row.Value.Hotkey.Key, row.Value.Hotkey.Modifiers);
+        _bindingIndex = row.IsAssigned ? bindingIndex : null;
+        Hotkey key = _bindingIndex is int index ? row.Bindings[index].Key : new Hotkey();
+        _candidate = new Hotkey(key.Key, key.Modifiers);
         InitializeComponent();
         this.ApplyCaption();
         DataContext = row;
         GlobalCheckBox.IsChecked = row.Value.IsGlobal;
         GlobalCheckBox.Checked += (_, _) => UpdateCandidate();
         GlobalCheckBox.Unchecked += (_, _) => UpdateCandidate();
-        DefaultText.Text = string.Format(HotkeyEditorText.Default, HotkeyInput.Format(row.Value.DefaultHotkey));
+        DefaultText.Text = row.DefaultShortcut;
+        Title = _bindingIndex == null ? HotkeyEditorText.Add : HotkeyEditorText.EditTitle;
         UpdateCandidate();
         Loaded += (_, _) => { StartCapture(); CaptureBox.Focus(); };
         Closed += (_, _) => EndCapture();
@@ -87,7 +91,8 @@ public partial class HotkeyEditWindow : Window
     {
         CaptureBox.Text = HotkeyInput.Format(_candidate);
         if (_captureFailed) return;
-        string? error = _model.Validate(_row.Value.Id, _candidate, GlobalCheckBox.IsChecked == true ? HotKeyKinds.Global : HotKeyKinds.Windows);
+        string? error = _model.ValidateBinding(_row, _bindingIndex, _candidate, GlobalCheckBox.IsChecked == true ? HotKeyKinds.Global : HotKeyKinds.Windows);
+        if (_bindingIndex == null && _candidate.IsEmpty) error = HotkeyEditorText.RecordHelp;
         ErrorText.Text = error ?? string.Empty;
         ErrorText.Visibility = error == null ? Visibility.Collapsed : Visibility.Visible;
         SaveButton.IsEnabled = error == null;
@@ -123,7 +128,7 @@ public partial class HotkeyEditWindow : Window
     {
         if (_captureFailed || !SaveButton.IsEnabled || !_captureStarted) return;
         if (!EndCapture()) { SaveButton.IsEnabled = false; return; }
-        if (_model.Save(_row, _candidate, GlobalCheckBox.IsChecked == true ? HotKeyKinds.Global : HotKeyKinds.Windows))
+        if (_model.SaveBinding(_row, _bindingIndex, _candidate, GlobalCheckBox.IsChecked == true ? HotKeyKinds.Global : HotKeyKinds.Windows))
         {
             Close();
             return;

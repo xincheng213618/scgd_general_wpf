@@ -27,7 +27,8 @@ namespace ColorVision.UI.HotKey.WindowHotKey
         {
             foreach (var registration in Registrations.Values.Concat(CallbackRegistrations.Values).Distinct().ToList())
             {
-                registration.Dispose();
+                try { registration.Dispose(); }
+                catch (Exception exception) { System.Diagnostics.Trace.TraceWarning(exception.Message); }
             }
             foreach (var (hotkeys, registration) in Registrations)
             {
@@ -74,16 +75,22 @@ namespace ColorVision.UI.HotKey.WindowHotKey
         internal HotkeyRegistrationAttempt TryRegisterHandle(HotKeys hotkeys)
         {
             if (hotkeys.HotKeyHandler == null) return new(null, "快捷键没有可执行的操作。");
+            IReadOnlyList<Hotkey> bindings = hotkeys.GetBindings();
             if (Registrations.TryGetValue(hotkeys, out var existing))
             {
-                if (WindowHotKey.Matches(existing, hotkeys.Hotkey, hotkeys.HotKeyHandler))
+                if (HotkeyRegistrationGroup.Matches(existing, bindings, hotkeys.HotKeyHandler, WindowHotKey.Matches))
                     return new(existing);
                 existing.Dispose();
                 Registrations.Remove(hotkeys);
             }
 
             hotkeys.Control = control;
-            var registration = WindowHotKey.Register(control, hotkeys.Hotkey, hotkeys.HotKeyHandler);
+            HotkeyRegistrationAttempt attempt = HotkeyRegistrationGroup.TryRegister(bindings, hotkeys.HotKeyHandler, (binding, callback) =>
+            {
+                var single = WindowHotKey.Register(control, binding, callback);
+                return new(single, single == null ? "此控件内已经注册了相同快捷键。" : null);
+            });
+            var registration = attempt.Registration;
             hotkeys.Registration = registration;
             hotkeys.IsRegistered = registration?.IsRegistered == true;
             if (registration != null)
@@ -91,7 +98,7 @@ namespace ColorVision.UI.HotKey.WindowHotKey
                 Registrations[hotkeys] = registration;
             }
 
-            return new(registration, registration == null && !hotkeys.Hotkey.IsEmpty ? "此控件内已经注册了相同快捷键。" : null);
+            return attempt;
         }
 
         public bool Register(Hotkey hotkey, HotKeyCallBackHanlder callBack)

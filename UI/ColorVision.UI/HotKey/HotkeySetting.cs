@@ -11,6 +11,24 @@ namespace ColorVision.UI.HotKey
 
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public Hotkey Hotkey { get; set; } = new();
+
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public List<Hotkey> AdditionalHotkeys
+        {
+            get => _additionalHotkeys;
+            set => _additionalHotkeys = HotkeyBindingCollection.Copy(value);
+        }
+        private List<Hotkey> _additionalHotkeys = new();
+
+        public IReadOnlyList<Hotkey> GetBindings() => HotkeyBindingCollection.Collect(Hotkey, AdditionalHotkeys);
+
+        public void SetBindings(IEnumerable<Hotkey> bindings)
+        {
+            List<Hotkey> copy = HotkeyBindingCollection.Copy(bindings);
+            Hotkey = copy.Count > 0 ? copy[0] : new Hotkey();
+            AdditionalHotkeys = copy.Skip(1).ToList();
+        }
+
         public HotKeyKinds Kinds { get; set; } = HotKeyKinds.Windows;
 
         [JsonProperty("IsGlobal")]
@@ -31,6 +49,7 @@ namespace ColorVision.UI.HotKey
             {
                 Id = hotKeys.Id,
                 Hotkey = new Hotkey(hotKeys.Hotkey.Key, hotKeys.Hotkey.Modifiers),
+                AdditionalHotkeys = hotKeys.AdditionalHotkeys,
                 Kinds = hotKeys.Kinds
             };
         }

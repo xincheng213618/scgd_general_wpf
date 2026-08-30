@@ -24,6 +24,14 @@ namespace ColorVision.UI.HotKey
         [JsonIgnore]
         public string Source { get; set; } = string.Empty;
         public Hotkey DefaultHotkey { get; }
+
+        public List<Hotkey> AdditionalDefaultHotkeys
+        {
+            get => _additionalDefaultHotkeys;
+            set => _additionalDefaultHotkeys = HotkeyBindingCollection.Copy(value);
+        }
+        private List<Hotkey> _additionalDefaultHotkeys = new();
+
         public HotKeyKinds DefaultKinds { get; }
         public HotKeyCallBackHanlder Handler { get; }
 
@@ -36,6 +44,8 @@ namespace ColorVision.UI.HotKey
                 Description = Description,
                 Category = Category,
                 Source = Source,
+                AdditionalHotkeys = AdditionalDefaultHotkeys,
+                DefaultAdditionalHotkeys = AdditionalDefaultHotkeys,
                 DefaultKinds = DefaultKinds,
                 Kinds = DefaultKinds
             };

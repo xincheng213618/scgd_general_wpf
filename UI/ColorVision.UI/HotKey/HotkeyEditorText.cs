@@ -44,4 +44,12 @@ public static class HotkeyEditorText
     public static string KeyboardHint => Get(nameof(KeyboardHint));
     public static string CaptureLabel => Get(nameof(CaptureLabel));
     public static string SavedHelp => Get(nameof(SavedHelp));
+    public static string Add => Get(nameof(Add));
+    public static string Duplicate => Get(nameof(Duplicate));
+    public static string ClearSearch => Get(nameof(ClearSearch));
+    public static string ClearFilters => Get(nameof(ClearFilters));
+    public static string Filter => Get(nameof(Filter));
+    public static string All => Get(nameof(All));
+    public static string NoActions => Get(nameof(NoActions));
+    public static string NoActionsHelp => Get(nameof(NoActionsHelp));
 }

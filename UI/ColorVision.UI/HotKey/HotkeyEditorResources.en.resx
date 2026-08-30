@@ -16,16 +16,16 @@
   <data name="Modified" xml:space="preserve"><value>Modified</value></data>
   <data name="Empty" xml:space="preserve"><value>No matching shortcuts</value></data>
   <data name="EmptyHelp" xml:space="preserve"><value>Try an action name or a shortcut, such as Ctrl+I.</value></data>
-  <data name="Count" xml:space="preserve"><value>{0} actions · {1} customized</value></data>
-  <data name="SearchCount" xml:space="preserve"><value>{0} matching actions</value></data>
+  <data name="Count" xml:space="preserve"><value>{0} actions · {1} modified · {2} unassigned</value></data>
+  <data name="SearchCount" xml:space="preserve"><value>{0} of {1} actions</value></data>
   <data name="Saved" xml:space="preserve"><value>Shortcut saved</value></data>
   <data name="ResetConfirm" xml:space="preserve"><value>Restore the shortcuts and global mode of all loaded actions to their defaults? Other settings will not change.</value></data>
   <data name="ResetTitle" xml:space="preserve"><value>Restore default shortcuts</value></data>
   <data name="EditTitle" xml:space="preserve"><value>Edit shortcut</value></data>
   <data name="Record" xml:space="preserve"><value>Press a new shortcut</value></data>
-  <data name="RecordHelp" xml:space="preserve"><value>Select the field to record. Each action has one shortcut binding. Tab moves focus; Esc cancels.</value></data>
+  <data name="RecordHelp" xml:space="preserve"><value>Select the field and press a combination. Each binding triggers this action. Tab moves focus; Esc cancels.</value></data>
   <data name="GlobalOption" xml:space="preserve"><value>Global shortcut</value></data>
-  <data name="GlobalHelp" xml:space="preserve"><value>Allow this action to run while the app is in the background.</value></data>
+  <data name="GlobalHelp" xml:space="preserve"><value>This applies to all bindings for this action. Allow them to work while the app is in the background.</value></data>
   <data name="Default" xml:space="preserve"><value>Default: {0}</value></data>
   <data name="Apply" xml:space="preserve"><value>Save</value></data>
   <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
@@ -41,4 +41,12 @@
   <data name="KeyboardHint" xml:space="preserve"><value>You can search combinations such as Ctrl+Shift+B.</value></data>
   <data name="CaptureLabel" xml:space="preserve"><value>Shortcut combination</value></data>
   <data name="SavedHelp" xml:space="preserve"><value>Changes are applied; no additional save is needed.</value></data>
+  <data name="Add" xml:space="preserve"><value>Add shortcut</value></data>
+  <data name="Duplicate" xml:space="preserve"><value>This action already has that shortcut. Choose another combination.</value></data>
+  <data name="ClearSearch" xml:space="preserve"><value>Clear search</value></data>
+  <data name="ClearFilters" xml:space="preserve"><value>Clear search and filters</value></data>
+  <data name="Filter" xml:space="preserve"><value>Filter shortcut status</value></data>
+  <data name="All" xml:space="preserve"><value>All actions</value></data>
+  <data name="NoActions" xml:space="preserve"><value>No configurable actions</value></data>
+  <data name="NoActionsHelp" xml:space="preserve"><value>No shortcut actions are currently loaded.</value></data>
 </root>

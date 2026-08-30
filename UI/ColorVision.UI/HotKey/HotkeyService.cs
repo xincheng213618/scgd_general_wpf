@@ -125,7 +125,7 @@ namespace ColorVision.UI.HotKey
 
         public void SetDefault()
         {
-            ApplySettings(HotKeys.Select(hotKeys => new HotkeySetting { Id = hotKeys.Id, Hotkey = CloneHotkey(hotKeys.DefaultHotkey), Kinds = hotKeys.DefaultKinds }).ToList());
+            ApplySettings(CreateDefaultEditableHotKeys().Select(HotkeySetting.FromHotKeys).ToList());
         }
 
         public void ReloadSettings()
@@ -150,7 +150,7 @@ namespace ColorVision.UI.HotKey
             foreach (var hotKeys in editableHotKeys)
             {
                 hotKeys.Kinds = hotKeys.DefaultKinds;
-                hotKeys.Hotkey = CloneHotkey(hotKeys.DefaultHotkey);
+                hotKeys.SetBindings(hotKeys.GetDefaultBindings());
             }
 
             return editableHotKeys;
@@ -161,7 +161,12 @@ namespace ColorVision.UI.HotKey
             // Legacy callers may pass the full saved list, including absent plugins and Name-only entries.
             var known = settings.Select(setting => (Setting: setting, Runtime: Find(HotKeys, _hotkeysById, setting)))
                 .Where(item => item.Runtime != null)
-                .Select(item => new HotkeySetting { Id = item.Runtime!.Id, Hotkey = CloneHotkey(item.Setting.Hotkey), Kinds = item.Setting.Kinds }).ToList();
+                .Select(item =>
+                {
+                    HotkeySetting setting = CloneSetting(item.Setting);
+                    setting.Id = item.Runtime!.Id;
+                    return setting;
+                }).ToList();
             LastApplyResult = ApplyCore(known, save: false);
             if (!LastApplyResult.Success) Log.Warn(LastApplyResult.Message);
         }
@@ -268,7 +273,7 @@ namespace ColorVision.UI.HotKey
                             // Do not publish the new action until its old registration is released.
                             Unregister(existing);
                             CopyDefinition(existing, hotKeys);
-                            existing.Hotkey = CloneHotkey(hotKeys.Hotkey);
+                            existing.SetBindings(hotKeys.GetBindings());
                             existing.Kinds = hotKeys.Kinds;
                             runtime = existing;
                         }
@@ -282,7 +287,7 @@ namespace ColorVision.UI.HotKey
                         runtime.Control = owner;
                         _hostWindow ??= owner as Window;
                         HotkeyRegistrationAttempt attempt = TryRegister(runtime);
-                        if (runtime.Hotkey.IsEmpty || attempt.Registration?.IsRegistered == true)
+                        if (runtime.GetBindings().Count == 0 || attempt.Registration?.IsRegistered == true)
                         {
                             LastApplyResult = new();
                             return runtime.IsRegistered;
@@ -328,7 +333,7 @@ namespace ColorVision.UI.HotKey
             target.Category = source.Category;
             target.Source = source.Source;
             target.HotKeyHandler = source.HotKeyHandler ?? target.HotKeyHandler;
-            target.DefaultHotkey = CloneHotkey(source.DefaultHotkey);
+            target.SetDefaultBindings(source.GetDefaultBindings());
             target.DefaultKinds = source.DefaultKinds;
         }
 
@@ -344,7 +349,7 @@ namespace ColorVision.UI.HotKey
                 HotKeys? hotKeys = Find(hotKeysList, hotKeysById, setting);
                 if (hotKeys == null) continue;
 
-                hotKeys.Hotkey = CloneHotkey(setting.Hotkey);
+                hotKeys.SetBindings(setting.GetBindings());
                 hotKeys.Kinds = setting.Kinds;
             }
         }
@@ -389,8 +394,10 @@ namespace ColorVision.UI.HotKey
                 Category = source.Category,
                 Source = source.Source,
                 Hotkey = CloneHotkey(source.Hotkey),
+                AdditionalHotkeys = CloneBindings(source.AdditionalHotkeys),
                 Kinds = source.Kinds,
                 DefaultHotkey = CloneHotkey(source.DefaultHotkey),
+                DefaultAdditionalHotkeys = CloneBindings(source.DefaultAdditionalHotkeys),
                 DefaultKinds = source.DefaultKinds,
                 IsRegistered = source.IsRegistered
             };
@@ -398,12 +405,14 @@ namespace ColorVision.UI.HotKey
 
         private static Hotkey CloneHotkey(Hotkey? hotkey)
         {
-            return hotkey == null ? Hotkey.None : new Hotkey(hotkey.Key, hotkey.Modifiers);
+            return hotkey == null ? new() : new Hotkey(hotkey.Key, hotkey.Modifiers);
         }
+
+        private static List<Hotkey> CloneBindings(IEnumerable<Hotkey> bindings) => bindings.Select(CloneHotkey).ToList();
 
         private HotkeyRegistrationAttempt TryRegister(HotKeys hotKeys)
         {
-            if (hotKeys.Hotkey.IsEmpty)
+            if (hotKeys.GetBindings().Count == 0)
             {
                 hotKeys.Registration = null;
                 hotKeys.IsRegistered = false;
@@ -464,8 +473,8 @@ namespace ColorVision.UI.HotKey
                     foreach (HotkeySetting setting in requested)
                     {
                         HotKeys runtime = _hotkeysById[setting.Id];
-                        if (runtime.Hotkey != setting.Hotkey || runtime.Kinds != setting.Kinds
-                            || (!setting.Hotkey.IsEmpty && runtime.Registration?.IsRegistered != true))
+                        if (!runtime.GetBindings().SequenceEqual(setting.GetBindings()) || runtime.Kinds != setting.Kinds
+                            || (setting.GetBindings().Count > 0 && runtime.Registration?.IsRegistered != true))
                             oldRuntime.Add(Snapshot(runtime));
                     }
 
@@ -474,10 +483,10 @@ namespace ColorVision.UI.HotKey
                     foreach (RuntimeSnapshot snapshot in oldRuntime)
                     {
                         HotkeySetting setting = requested.First(item => string.Equals(item.Id, snapshot.Entry.Id, StringComparison.OrdinalIgnoreCase));
-                        snapshot.Entry.Hotkey = CloneHotkey(setting.Hotkey);
+                        snapshot.Entry.SetBindings(setting.GetBindings());
                         snapshot.Entry.Kinds = setting.Kinds;
                         HotkeyRegistrationAttempt attempt = TryRegister(snapshot.Entry);
-                        if (!setting.Hotkey.IsEmpty && attempt.Registration?.IsRegistered != true)
+                        if (setting.GetBindings().Count > 0 && attempt.Registration?.IsRegistered != true)
                             errors.Add(new(setting.Id, attempt.Error ?? "快捷键注册失败。"));
                     }
                     if (errors.Count > 0) return new(errors, RestoreRuntime(oldRuntime));
@@ -549,33 +558,49 @@ namespace ColorVision.UI.HotKey
             {
                 HotkeySetting? setting = requested.FirstOrDefault(item => string.Equals(item.Id, runtime.Id, StringComparison.OrdinalIgnoreCase));
                 return (Runtime: runtime, Setting: setting ?? HotkeySetting.FromHotKeys(runtime));
-            }).Where(item => !item.Setting.Hotkey.IsEmpty).ToList();
+            }).SelectMany(item => item.Setting.GetBindings().Select(binding => (item.Runtime, item.Setting, Binding: binding))).ToList();
             for (int first = 0; first < proposed.Count; first++)
             {
                 for (int second = first + 1; second < proposed.Count; second++)
                 {
                     var left = proposed[first];
                     var right = proposed[second];
-                    if (left.Setting.Hotkey != right.Setting.Hotkey || (!ids.Contains(left.Runtime.Id) && !ids.Contains(right.Runtime.Id))) continue;
+                    if (ReferenceEquals(left.Runtime, right.Runtime) || left.Binding != right.Binding
+                        || (!ids.Contains(left.Runtime.Id) && !ids.Contains(right.Runtime.Id))) continue;
                     Control? leftOwner = left.Runtime.Control ?? _hostWindow;
                     Control? rightOwner = right.Runtime.Control ?? _hostWindow;
                     if (left.Setting.Kinds == HotKeyKinds.Global || right.Setting.Kinds == HotKeyKinds.Global
                         || ReferenceEquals(leftOwner, rightOwner)
-                        || (leftOwner != null && rightOwner != null && (leftOwner.IsAncestorOf(rightOwner) || rightOwner.IsAncestorOf(leftOwner))))
+                        || (leftOwner != null && rightOwner != null && (IsScopeAncestor(leftOwner, rightOwner) || IsScopeAncestor(rightOwner, leftOwner))))
                     {
                         var edited = ids.Contains(left.Runtime.Id) ? left : right;
                         var conflict = ids.Contains(left.Runtime.Id) ? right : left;
-                        errors.Add(new(edited.Runtime.Id, $"{edited.Setting.Hotkey} 与“{conflict.Runtime.Name}”冲突。"));
+                        errors.Add(new(edited.Runtime.Id, $"{edited.Binding} 与“{conflict.Runtime.Name}”冲突。"));
                     }
                 }
             }
             return requested;
         }
 
+        private static bool IsScopeAncestor(Control ancestor, Control descendant)
+        {
+            if (ancestor.IsAncestorOf(descendant)) return true;
+            // Content is logically attached before templates create its visual route. Treat it
+            // as an overlapping scope now, rather than allowing a conflict until first layout.
+            for (DependencyObject? parent = LogicalTreeHelper.GetParent(descendant); parent != null; parent = LogicalTreeHelper.GetParent(parent))
+                if (ReferenceEquals(parent, ancestor)) return true;
+            return false;
+        }
+
         private static string? ValidateCombination(HotkeySetting setting)
         {
             if (!Enum.IsDefined(setting.Kinds) || setting.Hotkey == null) return "快捷键类型或组合无效。";
-            return HotkeyInput.IsValid(setting.Hotkey) ? null : "无效的按键组合；普通字符键需搭配 Ctrl、Alt 或 Win，不能只使用修饰键。";
+            if (!HotkeyInput.IsValid(setting.Hotkey) || setting.AdditionalHotkeys.Any(binding => binding == null || binding.IsEmpty || !HotkeyInput.IsValid(binding)))
+                return "无效的按键组合；普通字符键需搭配 Ctrl、Alt 或 Win，不能只使用修饰键。";
+            var bindings = new HashSet<Hotkey>();
+            foreach (Hotkey binding in setting.GetBindings())
+                if (!bindings.Add(binding)) return $"同一操作包含重复的快捷键 {binding}。";
+            return null;
         }
 
         private HotKeyConfig BuildCandidateConfiguration(IReadOnlyList<HotkeySetting> requested)
@@ -596,6 +621,7 @@ namespace ColorVision.UI.HotKey
             Id = setting.Id,
             LegacyName = setting.LegacyName,
             Hotkey = CloneHotkey(setting.Hotkey),
+            AdditionalHotkeys = CloneBindings(setting.AdditionalHotkeys),
             Kinds = setting.Kinds
         };
 
@@ -614,7 +640,7 @@ namespace ColorVision.UI.HotKey
             return new(status, error);
         }
 
-        private static RuntimeSnapshot Snapshot(HotKeys entry) => new(entry, CloneHotkey(entry.Hotkey), entry.Kinds, entry.Control, entry.Registration?.IsRegistered == true);
+        private static RuntimeSnapshot Snapshot(HotKeys entry) => new(entry, CloneBindings(entry.GetBindings()), entry.Kinds, entry.Control, entry.Registration?.IsRegistered == true);
 
         private List<HotkeyOperationError> RestoreRuntime(IReadOnlyList<RuntimeSnapshot> snapshots)
         {
@@ -622,7 +648,7 @@ namespace ColorVision.UI.HotKey
             var blocked = new HashSet<HotKeys>();
             foreach (RuntimeSnapshot snapshot in snapshots)
             {
-                if (snapshot.Entry.Registration?.IsRegistered == true && snapshot.Entry.Hotkey == snapshot.Hotkey
+                if (snapshot.Entry.Registration?.IsRegistered == true && snapshot.Entry.GetBindings().SequenceEqual(snapshot.Bindings)
                     && snapshot.Entry.Kinds == snapshot.Kinds && ReferenceEquals(snapshot.Entry.Control, snapshot.Owner)) continue;
                 try { Unregister(snapshot.Entry); }
                 catch (Exception exception)
@@ -631,7 +657,7 @@ namespace ColorVision.UI.HotKey
                     blocked.Add(snapshot.Entry);
                     continue;
                 }
-                snapshot.Entry.Hotkey = CloneHotkey(snapshot.Hotkey);
+                snapshot.Entry.SetBindings(snapshot.Bindings);
                 snapshot.Entry.Kinds = snapshot.Kinds;
                 snapshot.Entry.Control = snapshot.Owner;
             }
@@ -694,7 +720,7 @@ namespace ColorVision.UI.HotKey
             }
         }
 
-        private sealed record RuntimeSnapshot(HotKeys Entry, Hotkey Hotkey, HotKeyKinds Kinds, Control? Owner, bool WasRegistered);
+        private sealed record RuntimeSnapshot(HotKeys Entry, IReadOnlyList<Hotkey> Bindings, HotKeyKinds Kinds, Control? Owner, bool WasRegistered);
 
         private IEnumerable<HotkeyDefinition> DiscoverDefinitions()
         {
@@ -728,9 +754,12 @@ namespace ColorVision.UI.HotKey
                     HotKeys hotKeys = legacyProvider.HotKeys;
                     if (hotKeys.HotKeyHandler == null) return definitions;
                     string id = string.IsNullOrWhiteSpace(hotKeys.Id) ? CreateLegacyProviderId(type) : hotKeys.Id;
-                    Hotkey defaultHotkey = hotKeys.DefaultHotkey.IsEmpty ? hotKeys.Hotkey : hotKeys.DefaultHotkey;
+                    IReadOnlyList<Hotkey> defaultBindings = hotKeys.GetDefaultBindings();
+                    if (defaultBindings.Count == 0) defaultBindings = hotKeys.GetBindings();
+                    Hotkey defaultHotkey = defaultBindings.FirstOrDefault() ?? new();
                     definitions.Add(HotkeyPresentation.Enrich(new HotkeyDefinition(id, hotKeys.Name, defaultHotkey, hotKeys.HotKeyHandler, hotKeys.Kinds)
                     {
+                        AdditionalDefaultHotkeys = CloneBindings(defaultBindings.Skip(1)),
                         DisplayName = hotKeys.DisplayName,
                         Description = hotKeys.Description,
                         Category = hotKeys.Category,

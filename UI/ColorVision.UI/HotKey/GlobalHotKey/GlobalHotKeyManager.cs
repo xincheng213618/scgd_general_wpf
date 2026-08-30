@@ -72,14 +72,16 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
         {
             if (hotKeys == null || hotKeys.Kinds != HotKeyKinds.Global || hotKeys.HotKeyHandler == null)
                 return new(null, "全局快捷键类型或操作无效。");
+            IReadOnlyList<Hotkey> bindings = hotKeys.GetBindings();
             if (Registrations.TryGetValue(hotKeys, out var existing))
             {
-                if (GlobalHotKey.Matches(existing, hotKeys.Hotkey, hotKeys.HotKeyHandler)) return new(existing);
+                if (HotkeyRegistrationGroup.Matches(existing, bindings, hotKeys.HotKeyHandler, GlobalHotKey.Matches)) return new(existing);
                 existing.Dispose();
                 Registrations.Remove(hotKeys);
             }
 
-            HotkeyRegistrationAttempt attempt = GlobalHotKey.TryRegister(WindowHandle, hotKeys.Hotkey.Modifiers, hotKeys.Hotkey.Key, hotKeys.HotKeyHandler);
+            HotkeyRegistrationAttempt attempt = HotkeyRegistrationGroup.TryRegister(bindings, hotKeys.HotKeyHandler,
+                (binding, callback) => GlobalHotKey.TryRegister(WindowHandle, binding.Modifiers, binding.Key, callback));
             var registration = attempt.Registration;
             hotKeys.Registration = registration;
             hotKeys.IsRegistered = registration?.IsRegistered == true;

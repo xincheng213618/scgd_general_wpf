@@ -427,6 +427,45 @@ final result: passed (scoped WPF design and isolated interaction verification)
 
 ---
 
+# Keyboard shortcuts: multiple bindings — 2026-08-31
+
+## Evidence and scope
+
+- Source: `C:\Users\17917\AppData\Local\Temp\codex-clipboard-74a965e3-a1bf-4772-abf3-2929801ab8f5.png`, 1628 × 1776 pixels. The reference clarifies multiple bindings per action, not multi-row selection.
+- Latest full WPF capture: `C:\Users\17917\Desktop\scgd_general_wpf\artifacts\hotkeys-multiple-preview\hotkeys-dark-zh-CN-1180.png`. Light/English and 980-DIP captures, plus `-detail.png` and `-editor.png`, are in the same directory.
+- Minimum-width evidence: `hotkeys-compact-en-US-420.png` and `hotkeys-compact-zh-CN-420.png` in that directory.
+- Full views use 1180 × 760 / 980 × 760 DIPs at 96 DPI; compact views use 420 DIPs. This is a native WPF settings enhancement, not a web clone. The source and full/focused captures were opened in the same comparison input; comparisons use action-column hierarchy and desktop density, not a claim of identical source pixels or Codex content.
+- Representative isolated data includes a two-binding action, a single-binding action, an unassigned action and a global action. No production configuration or business action is loaded/executed. No browser console applies to these WPF renders.
+
+## Fidelity and interaction review
+
+- Typography: retains ColorVision's 14-DIP semibold action names and 12-DIP descriptions/key labels. Descriptions wrap; both languages remain readable. Names and descriptions are provider-supplied, read-only metadata.
+- Layout: each action has an ordered binding stack with per-binding edit/delete and an explicit add action. Unassigned is plain clickable text, not a false key pill; it has no delete button. Reset restores the complete default list. The existing native navigation, title and theme spacing are retained intentionally.
+- Colors/tokens: existing dark/light brushes and secondary state text are retained. Clear keyboard focus and native controls remain available; no new raster asset, custom illustration or decorative gradient is needed.
+- Assets/icons: standard Segoe Fluent/MDL2 edit/delete/reset/search icons are reused; there are no generated or fabricated visual assets.
+- Copy/content: distinguishes unassigned actions from no loaded actions and no search results. “Add shortcut,” modified/global state, filter counts and default-value tooltips describe their actual behavior. Scope help states that global mode applies to all bindings of the action.
+- Search matches all bindings, descriptions and multiple terms; all/unassigned/modified filtering, search clearing and empty-state recovery work. Mouse-side-button bindings and key sequences are outside this keyboard-only change; no historical migration flow was added.
+
+## Findings and comparison history
+
+1. P2: the first compact 420-DIP capture showed a long four-modifier binding crowding out the edit icon. An unbounded horizontal stack let edit overlap delete despite both remaining inside page bounds.
+2. Fix: replace that stack with constrained key/edit columns; the key label ellipsizes while its complete combination remains in the tooltip and editor. Keep deletion in its own column.
+3. Post-fix comparison: the recaptured compact view shows separate key, edit and delete targets. Regression assertions now check both page containment and pairwise non-overlap. Full-width captures retain adjacent edit icons and the reference's ordered multi-binding layout.
+4. No remaining actionable P0/P1/P2 visual issue in the tested states. No P3 follow-up is required for this scope.
+
+## Verification
+
+- Final run: 219 relevant tests passed, zero failed/skipped, including model/backend/service/UI/menu/configuration regression coverage. It also rebuilt application project references in isolated output.
+- UI builds passed for net8.0-windows7.0 and net10.0-windows7.0. Warnings remain; no claim of warning-free builds.
+- Tests cover adding/editing/removing individual bindings, deletion of the final binding, empty defaults, search/filter transitions, full reset, persisted value round trips, duplicate/ancestor/global conflicts, rollback and registration-group cleanup. Real Win32 checks use hidden test-owned HWNDs and harmless counters with temporary registrations disposed afterward.
+- The first new service run exposed a logical-ancestor conflict gap; the service now checks logical and visual ancestry, with both routes verified without showing windows.
+- `npm run docs:knowledge` and complete `npm run docs:build` passed, including 303 retrieval cases, 74 tooling tests, 256 Markdown files and 16879 local fragment links.
+- Physical keyboard layouts/IME and live business actions were not manually exercised. Existing running instances and field configuration were not changed.
+
+final result: passed
+
+---
+
 # Public brand icon and favicon QA
 
 - Source visual truth:

@@ -2,10 +2,10 @@
 knowledge_id: "ui.hotkeys"
 knowledge_type: "topic"
 status: "current"
-summary: "快捷键的发现、展示、窗口/全局注册与搜索编辑；单个操作只保留一组键位，确认后立即应用并保存，注册或持久化失败按结果执行补偿。"
+summary: "快捷键的发现、多组绑定、窗口/全局注册与搜索编辑；同一操作共享作用域，未分配操作保留展示，确认后立即保存，注册或持久化失败按结果补偿。"
 aliases: ["快捷键", "热键", "组合键", "全局热键", "窗口热键", "快捷键冲突", "快捷键保存", "快捷键搜索", "热键注销", "HotkeyService", "HotKeyConfig", "HotKeysSetting", "HotkeyEditWindow", "HotkeySettingsViewModel", "HotkeyPresentation", "HotkeyApplyResult", "HotkeyCaptureLease", "IHotkeyProvider", "IHotKey", "HotkeyDefinition", "HotKeys", "WindowHotKeyManager", "GlobalHotKeyManager", "IHotkeyRegistration", "HoyKeyControl"]
 code_paths: ["UI/ColorVision.UI/HotKey", "UI/ColorVision.UI/AssemblyHandler.cs", "UI/ColorVision.UI.Desktop/Settings/MenuOptions.cs", "UI/ColorVision.UI/LogImp/Menus/MenuLog.cs", "ColorVision/MainWindow.xaml.cs", "ColorVision/MainWindowConfig.cs", "ColorVision/Update/MenuCheckAndUpdateV1.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/HotkeyServiceTests.cs", "Test/ColorVision.UI.Tests/HotkeySettingsTests.cs", "Test/ColorVision.UI.Tests/HotkeyBackendTests.cs", "Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/HotkeyServiceTests.cs", "Test/ColorVision.UI.Tests/HotkeySettingsTests.cs", "Test/ColorVision.UI.Tests/HotkeyBackendTests.cs", "Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs", "Test/ColorVision.UI.Tests/HotkeyMultipleBindingTests.cs", "Test/ColorVision.UI.Tests/HotkeyMultiBindingServiceTests.cs"]
 related: ["ui.framework", "ui.menus", "ui.settings", "ui.configuration", "ui.common"]
 ---
 
@@ -51,20 +51,25 @@ related: ["ui.framework", "ui.menus", "ui.settings", "ui.configuration", "ui.com
 
 窗口级处理会识别 Alt 的 SystemKey 和 Win 修饰键；忽略纯修饰键及无修饰的 Delete/Back/Escape。设置应用会检查父子控件冲突，但直接使用底层注册并不自动经过该校验。两种底层回调都同步调用委托，没有在此处捕获业务异常或等待异步任务。
 
+作用域冲突同时检查视觉祖先和逻辑祖先。内容控件尚未生成模板视觉树时，已经建立的逻辑父子关系仍参与校验；独立控件可以使用相同组合。
+
 服务将句柄状态复制到 `HotKeys.IsRegistered`，单次 `AddHotKeys` 返回该次注册状态，空键返回 false 不表示定义添加失败。同 ID 显式替换失败时尝试恢复原定义、回调、宿主、键位及原先的注册状态，原错误与恢复错误通过 `LastApplyResult` 区分；它不保存配置。`RegisterAll()` 跳过仍已注册的条目；`ApplySettings` / `ReloadSettings` 通过应用流程修改运行时，并将结果保存在 `LastApplyResult`，同样不写配置文件。发现加载和底层 manager 不能套用设置保存事务的补偿语义。
 
 `IsRegistered=false` 也可能是空键、无回调、无宿主等情形，不唯一表示冲突。设置页显示 `HotkeyApplyResult` 的具体应用/恢复错误，不从这个布尔值猜测原因。旧 `HoyKeyControl` 仍是独立的行编辑控件，不是新设置页的录制弹窗。
 
-## 设置页：搜索列表与单项编辑
+## 设置页：多组绑定、搜索与未分配
 
 `HotKeyConfigProvider` 将 `HotKeysSetting` 放入[设置窗口](./settings.md)。页面由 `HotkeySettingsViewModel` 包装 `CreateEditableHotKeys(false)` 的运行时副本，不遵循普通属性行直接编辑活配置的规则：
 
-1. 每行展示动作名称、说明、当前键位，以及编辑/清除按钮；偏离默认键位或作用域时显示单项恢复按钮。分类、来源和稳定 ID 放在详情提示中，全局绑定另有标记。
-2. 页内搜索匹配名称、说明、键位文字、分类、来源与 ID，忽略空白和 `+`，不区分大小写。它是文本搜索，不是“按下一个键即可筛选”的录制搜索，也不重新发现插件。
-3. 编辑按钮打开 `HotkeyEditWindow`。按键候选与全局开关只保存在弹窗草稿；确认后调用 `ApplyAndSaveSettings`，成功即应用并保存，不再有整页“加载/保存”步骤。取消、Esc 或关闭弹窗不提交候选值。
-4. 清除将该操作设为 `Hotkey.None`，保留当前作用域；单项恢复同时还原该操作的默认键位与作用域。全部恢复需二次确认，只提交当前已加载动作，不修改其它设置。
+1. 每行左侧展示动作名称和只读用途说明，右侧按顺序列出全部键位；每组都有独立编辑、删除入口，键位标签也可点击编辑。“添加快捷键”追加组合，不覆盖已有组合。分类、来源和稳定 ID 放在详情提示中，全局和已修改状态另有标记。
+2. 没有绑定的已加载操作仍显示在列表中，以可点击的“未分配”文字进入添加，不显示不存在的删除按钮。没有默认键位也不影响操作被发现或搜索；删掉最后一组后保留操作。没有已加载操作和搜索无结果使用不同空态。
+3. 页内搜索匹配名称、说明、全部绑定、分类、来源、ID 和状态文字，不区分大小写；忽略组合键中的空白与 `+`，多个词分别匹配。可筛选全部/未分配/已修改，显示结果数量，支持清空搜索和清除筛选。它是文本搜索，不是录制搜索，也不重新发现插件。
+4. 编辑按钮打开 `HotkeyEditWindow`。按键候选与全局开关只保存在弹窗草稿；确认后提交该操作的完整绑定列表到 `ApplyAndSaveSettings`，成功即应用并保存。编辑或删除一组不影响其它组合；取消、Esc 或关闭弹窗不提交。新增时必须录入有效组合，不能提交空候选。
+5. 单项恢复同时还原该操作的全部默认键位与作用域；全部恢复需二次确认，作用于全部已加载操作，不受当前搜索/筛选范围影响，不修改其它设置。搜索条件保留；恢复后结果随实际状态更新。
 
-当前每个操作只有一组 `Key + Modifiers`，可使用 Ctrl/Alt/Shift/Win 组合，但不支持同一动作的多组备用绑定、连续按键序列或鼠标绑定。页面没有独立帮助弹窗；具体操作说明直接显示在列表和编辑弹窗中。
+每个操作支持多组 `Key + Modifiers`，每组都能触发相同动作，可使用 Ctrl/Alt/Shift/Win 组合。同一操作共享一个 `Kinds`（应用内/全局），编辑弹窗明确说明全局开关影响其全部绑定；不支持逐组不同作用域、连续按键序列或鼠标绑定。页面没有独立帮助弹窗；“注释”是提供者声明的操作说明，不是用户可编辑备注。
+
+`HotKeys` / `HotkeySetting` 的 `Hotkey` 保留第一组，`AdditionalHotkeys` 保存后续组；调用 `GetBindings()` / `SetBindings()` 取得或替换有序完整列表。默认值由 `DefaultHotkey` / `DefaultAdditionalHotkeys` 及相应 Get/Set 方法提供，`HotkeyDefinition.AdditionalDefaultHotkeys` 声明附加默认组。集合为空代表明确未分配；首次没有配置覆盖时使用提供者默认值，已保存的空绑定载入后不会擅自恢复默认。本次不新增历史配置迁移流程。
 
 已经成功应用的修改不能靠关闭设置窗口撤销。外层 `MenuOptions` 关闭后仍执行其普通配置保存流程，文件结果按[配置持久化](./configuration.md)核验。直接调用旧 `HotkeyService.SaveSettings()` 仍只更新配置内存，不能用方法名推断已经落盘。
 
@@ -72,12 +77,12 @@ related: ["ui.framework", "ui.menus", "ui.settings", "ui.configuration", "ui.com
 
 编辑器与服务共同使用 `HotkeyInput.IsValid`：接受 F1–F24、方向键等非字符按键及有效组合；纯修饰键、输入法占位键、无修饰 Enter/Space/Tab/Delete/Back/Escape，以及无修饰或仅 Shift 的普通字符键不能作为新录入值。Tab/Shift+Tab 仍用于焦点导航，Esc 取消，清空通过明确的清除按钮完成。录入框关闭 IME 文本输入；无效候选仍展示并保持禁止保存，切换作用域不会偷偷恢复旧候选。校验异常显示为错误，不向 WPF 事件冒泡。页面对其它已加载动作的重复键位给出动作名称提示，不自动清掉对方绑定。
 
-`ApplyAndSaveSettings` 在动注册句柄之前校验 ID、重复 ID、作用域、主键/修饰键和运行时组合冲突；公开的 `ValidateSettings` 可单独执行相同的只读校验，包括录入期间。Global 与同组合冲突；Windows 绑定按相同或祖先/子控件的作用域检测。通过后只注销并替换有变更或需要重新注册的条目，未修改且有效的注册保留。组合有效不保证 Win32 注册成功，外部占用仍需在实际注册时检查。
+`ApplyAndSaveSettings` 在动注册句柄之前校验 ID、重复 ID、作用域、每组主键/修饰键、同一操作内的重复组合和运行时组合冲突；附加列表中的空组无效，不静默丢弃或去重。公开的 `ValidateSettings` 可单独执行相同的只读校验，包括录入期间。Global 与同组合冲突；Windows 绑定按相同或祖先/子控件的作用域检测，任意附加组也参与检查。通过后只注销并替换有变更或需要重新注册的操作，未修改且有效的注册保留。组合有效不保证 Win32 注册成功，外部占用仍需在实际注册时检查。
 
 | 结果 | 当前补偿边界 |
 | --- | --- |
 | 校验失败 | 不注销旧句柄、不写配置 |
-| 新组合注册失败 | 释放本次新注册，恢复本次变更条目的原键位、作用域与原先已注册的句柄状态；恢复失败单列 `RestoreErrors` |
+| 新组合注册失败 | 释放本次新注册，恢复本次变更操作的完整原绑定列表、作用域与原先已注册的句柄状态；恢复失败单列 `RestoreErrors` |
 | 配置未落盘 `NotPersisted` | 恢复本次运行时变更；原文件与配置内存未发布新值 |
 | 落盘且发布成功 `PersistedAndPublished` | 返回成功，页面从实际运行时刷新 |
 | 已落盘但发布失败 `PersistedButPublishFailed` | 先尝试将旧配置写回；旧文件恢复后才恢复旧运行时。若补偿未落盘，保留新运行时以匹配已写的新文件，尝试发布新内存，并报告恢复错误 |
@@ -104,6 +109,8 @@ manager 的 Closed 路径释放所记录句柄，清空条目的 `Registration` 
 
 首次全局注册失败会回收空 scope 和 hook，不注销未成功注册的 ID。manager 只有在有效组合和回调都未变化时才复用现有句柄；组合或回调变化时先释放旧句柄再注册，不直接覆盖遗留句柄。窗口级注册也持有独立键位快照，不受调用方修改原始 Hotkey 对象影响。manager 的替换不等于设置事务，直接调用失败后不会自动执行配置与旧键位补偿，应按需要使用服务的应用接口。
 
+多组注册由一个 `HotkeyRegistrationGroup` 归属该操作，按完整有序列表及回调判断复用。任意一组失败会回收本次已注册组，不以部分成功上报成功；释放时尝试全部子句柄，失败保留所有权供重试。未完成注册或已开始释放的组不再派发业务回调。窗口关闭、设置恢复和捕获暂停都处理完整组，而不是只处理第一项。
+
 ## 源码定位与验证
 
 - 定义发现、ID 匹配、宿主与应用补偿：`HotkeyService.cs`、`HotkeyDefinition.cs`、`HotkeySetting.cs`、`HotkeyApplyResult.cs`。
@@ -119,5 +126,7 @@ manager 的 Closed 路径释放所记录句柄，清空条目的 `Registration` 
 `Test/ColorVision.UI.Tests/HotkeyBackendTests.cs` 在测试进程自己的不可见 HWND 上真实注册临时 `Ctrl+Alt+Shift+F23/F24`，使用无害计数回调验证占用、释放重申、捕获恢复及恢复冲突，结束时释放所有注册。只向自有隐藏 HWND 发送 `WM_HOTKEY`，不注入桌面键盘事件；窗口路由使用独立控件，尾键与真实 DispatcherTimer 检查通过隔离的内部读键委托模拟按住/释放。初始组合已被外部占用时明确失败，不抢占它。
 
 `Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs` 验证稳定 ID 匹配、后加载、编辑/清除/恢复、条目替换与弱订阅回收，不注册热键或执行菜单业务。这些测试入口不等于已运行通过，也不替代真实物理键盘、各输入法/布局及真实业务操作的人工验收。
+
+`HotkeyMultipleBindingTests` 覆盖模型值隔离、JSON 往返、多组注册/失败回收与关闭释放，包括自有隐藏窗口上的真实后端测试。`HotkeyMultiBindingServiceTests` 覆盖完整列表的增删改、无配置默认值、无默认操作、明确清空后重新加载、逐组冲突与失败补偿；`HotkeySettingsTests` 补充多组编辑弹窗、删除最后一组、筛选/搜索、重置完整默认列表和未分配行的 UI 状态。
 
 按键可能执行文件、配置或设备操作，运行时验证应使用获授权的隔离宿主和无害回调。文档检索与站点检查不证明真实 provider 完整发现、操作系统注册成功或业务回调完成。

@@ -34,6 +34,12 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
         </Style>
+        <Style x:Key="TextAction" TargetType="Button" BasedOn="{StaticResource ActionButton}">
+            <Setter Property="Width" Value="Auto"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
     </UserControl.Resources>
     <StackPanel>
         <Grid Margin="0,0,0,22">
@@ -45,7 +51,7 @@
         </Grid>
         <Border CornerRadius="18" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource GlobalBorderBrush}" BorderThickness="1" Padding="12,2">
             <Grid>
-                <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                 <TextBlock Text="&#xE721;" Style="{StaticResource Icon}" Foreground="{DynamicResource SecondaryTextBrush}"/>
                 <TextBox x:Name="SearchBox" Grid.Column="1" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" Background="Transparent"
                          BorderThickness="0" MinHeight="34" Padding="8,6" VerticalContentAlignment="Center"
@@ -56,9 +62,21 @@
                         <Style.Triggers><DataTrigger Binding="{Binding Search}" Value=""><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers>
                     </Style></TextBlock.Style>
                 </TextBlock>
+                <Button Grid.Column="2" Style="{StaticResource ActionButton}" Visibility="{Binding HasSearch, Converter={StaticResource BoolVisibility}}"
+                        Click="ClearSearch_Click" ToolTip="{x:Static local:HotkeyEditorText.ClearSearch}" AutomationProperties.Name="{x:Static local:HotkeyEditorText.ClearSearch}">
+                    <TextBlock Text="&#xE711;" Style="{StaticResource Icon}"/>
+                </Button>
             </Grid>
         </Border>
-        <TextBlock Text="{Binding Summary}" FontSize="12" Margin="2,12,0,12" Foreground="{DynamicResource SecondaryTextBrush}"/>
+        <Grid Margin="2,12,0,12">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <TextBlock Text="{Binding Summary}" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,12,0" Foreground="{DynamicResource SecondaryTextBrush}"/>
+            <ComboBox x:Name="StateFilter" Grid.Column="1" SelectedIndex="{Binding FilterIndex}" MinWidth="112" MinHeight="32" AutomationProperties.Name="{x:Static local:HotkeyEditorText.Filter}">
+                <ComboBoxItem Content="{x:Static local:HotkeyEditorText.All}"/>
+                <ComboBoxItem Content="{x:Static local:HotkeyEditorText.Unassigned}"/>
+                <ComboBoxItem Content="{x:Static local:HotkeyEditorText.Modified}"/>
+            </ComboBox>
+        </Grid>
         <Border Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" CornerRadius="12">
             <Grid>
                 <ItemsControl x:Name="ShortcutList" ItemsSource="{Binding Rows}" Margin="18,2" Grid.IsSharedSizeScope="True">
@@ -66,44 +84,67 @@
                         <DataTemplate>
                             <Border BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="0,0,0,1" Padding="0,17">
                                 <Grid>
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto" SharedSizeGroup="ShortcutColumn"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*" MinWidth="215"/></Grid.ColumnDefinitions>
                                     <StackPanel Margin="0,0,16,0" VerticalAlignment="Center" ToolTip="{Binding Details}">
                                         <TextBlock Text="{Binding Name}" Foreground="{DynamicResource GlobalTextBrush}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"/>
                                         <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,5,0,0" TextWrapping="Wrap"/>
-                                    </StackPanel>
-                                    <Grid Grid.Column="1" VerticalAlignment="Center" MinWidth="130">
-                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                        <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center">
-                                            <Border CornerRadius="11" Background="{DynamicResource SecondaryRegionBrush}" Padding="9,3" HorizontalAlignment="Left">
-                                                <TextBlock Text="{Binding Shortcut}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"/>
-                                            </Border>
-                                            <TextBlock Text="{x:Static local:HotkeyEditorText.Global}" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" Margin="8,4,0,0"
+                                        <WrapPanel Margin="0,5,0,0">
+                                            <TextBlock Text="{x:Static local:HotkeyEditorText.Modified}" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" Margin="0,0,12,0"
+                                                       ToolTip="{Binding DefaultShortcut}" Visibility="{Binding IsModified, Converter={StaticResource BoolVisibility}}"/>
+                                            <TextBlock Text="{x:Static local:HotkeyEditorText.Global}" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11"
                                                        Visibility="{Binding IsGlobal, Converter={StaticResource BoolVisibility}}"/>
-                                        </StackPanel>
-                                        <Button Grid.Column="1" Style="{StaticResource ActionButton}" Click="Edit_Click" ToolTip="{x:Static local:HotkeyEditorText.Edit}" AutomationProperties.Name="{x:Static local:HotkeyEditorText.Edit}">
-                                            <TextBlock Text="&#xE70F;" Style="{StaticResource Icon}"/>
-                                        </Button>
-                                    </Grid>
-                                    <Border Grid.Column="2" Width="72" Margin="16,0,0,0" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="36"/><ColumnDefinition Width="36"/></Grid.ColumnDefinitions>
-                                            <Button Style="{StaticResource ActionButton}" Click="Reset_Click" ToolTip="{x:Static local:HotkeyEditorText.Reset}" AutomationProperties.Name="{x:Static local:HotkeyEditorText.Reset}">
-                                                <Button.Visibility><Binding Path="IsModified" Converter="{StaticResource BoolVisibility}"/></Button.Visibility>
+                                        </WrapPanel>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <ItemsControl ItemsSource="{Binding Bindings}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid MinHeight="36">
+                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="36"/></Grid.ColumnDefinitions>
+                                                        <Grid VerticalAlignment="Center" HorizontalAlignment="Left">
+                                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="36"/></Grid.ColumnDefinitions>
+                                                            <Button Style="{StaticResource TextAction}" Click="Edit_Click" ToolTip="{Binding EditLabel}" AutomationProperties.Name="{Binding EditLabel}">
+                                                                <Border CornerRadius="11" Background="{DynamicResource SecondaryRegionBrush}" Padding="9,3">
+                                                                    <TextBlock Text="{Binding Shortcut}" FontSize="12" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                                                </Border>
+                                                            </Button>
+                                                            <Button Grid.Column="1" Style="{StaticResource ActionButton}" Click="Edit_Click" ToolTip="{Binding EditLabel}" AutomationProperties.Name="{Binding EditLabel}">
+                                                                <TextBlock Text="&#xE70F;" Style="{StaticResource Icon}"/>
+                                                            </Button>
+                                                        </Grid>
+                                                        <Button Grid.Column="1" Style="{StaticResource ActionButton}" Click="Clear_Click" ToolTip="{Binding ClearLabel}" AutomationProperties.Name="{Binding ClearLabel}">
+                                                            <TextBlock Text="&#xE74D;" Style="{StaticResource Icon}"/>
+                                                        </Button>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <Grid MinHeight="32">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="36"/></Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <Button Style="{StaticResource TextAction}" Click="Add_Click" ToolTip="{x:Static local:HotkeyEditorText.Add}" AutomationProperties.Name="{x:Static local:HotkeyEditorText.Add}"
+                                                        Visibility="{Binding IsUnassigned, Converter={StaticResource BoolVisibility}}">
+                                                    <StackPanel Orientation="Horizontal"><TextBlock Text="{x:Static local:HotkeyEditorText.Unassigned}" VerticalAlignment="Center"/><TextBlock Text="&#xE70F;" Style="{StaticResource Icon}" Margin="10,0,0,0"/></StackPanel>
+                                                </Button>
+                                                <Button Style="{StaticResource TextAction}" Click="Add_Click" Content="{x:Static local:HotkeyEditorText.Add}" FontSize="12"
+                                                        Visibility="{Binding IsAssigned, Converter={StaticResource BoolVisibility}}"/>
+                                            </StackPanel>
+                                            <Button Grid.Column="1" Style="{StaticResource ActionButton}" Click="Reset_Click" ToolTip="{Binding DefaultShortcut}" AutomationProperties.Name="{x:Static local:HotkeyEditorText.Reset}"
+                                                    Visibility="{Binding IsModified, Converter={StaticResource BoolVisibility}}">
                                                 <TextBlock Text="&#xE72C;" Style="{StaticResource Icon}"/>
                                             </Button>
-                                            <Button Grid.Column="1" Style="{StaticResource ActionButton}" Click="Clear_Click" IsEnabled="{Binding IsAssigned}" ToolTip="{x:Static local:HotkeyEditorText.Clear}" AutomationProperties.Name="{x:Static local:HotkeyEditorText.Clear}">
-                                                <TextBlock Text="&#xE74D;" Style="{StaticResource Icon}"/>
-                                            </Button>
                                         </Grid>
-                                    </Border>
+                                    </StackPanel>
                                 </Grid>
                             </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
                 <StackPanel Margin="24,36" HorizontalAlignment="Center" Visibility="{Binding IsEmpty, Converter={StaticResource BoolVisibility}}">
-                    <TextBlock Text="{x:Static local:HotkeyEditorText.Empty}" Foreground="{DynamicResource GlobalTextBrush}" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                    <TextBlock Text="{x:Static local:HotkeyEditorText.EmptyHelp}" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,8,0,0" TextWrapping="Wrap" TextAlignment="Center"/>
+                    <TextBlock Text="{Binding EmptyTitle}" Foreground="{DynamicResource GlobalTextBrush}" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding EmptyHelp}" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,8,0,0" TextWrapping="Wrap" TextAlignment="Center"/>
+                    <Button Content="{x:Static local:HotkeyEditorText.ClearFilters}" Click="ClearFilters_Click" Margin="0,14,0,0" Padding="10,5" MinHeight="32" HorizontalAlignment="Center"
+                            Visibility="{Binding HasFilter, Converter={StaticResource BoolVisibility}}"/>
                 </StackPanel>
             </Grid>
         </Border>

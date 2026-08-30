@@ -50,6 +50,135 @@ public sealed class HotkeySettingsTests
     }
 
     [Fact]
+    public void MultipleBindingsCanBeAddedEditedAndIndependentlyRemoved()
+    {
+        Fixture fixture = new();
+        Assert.True(fixture.Model.SaveBinding(fixture.Model.Rows[0], null, new(Key.O, ModifierKeys.Control | ModifierKeys.Shift), HotKeyKinds.Windows));
+        Assert.Equal(2, fixture.Model.Rows[0].Bindings.Count);
+        Assert.Equal(2, fixture.Applied.Last().Single().GetBindings().Count);
+        Assert.True(fixture.Model.SaveBinding(fixture.Model.Rows[0], 1, new(Key.P, ModifierKeys.Control), HotKeyKinds.Windows));
+        Assert.Equal(new[] { Key.I, Key.P }, fixture.Values[0].GetBindings().Select(key => key.Key));
+        Assert.True(fixture.Model.RemoveBinding(fixture.Model.Rows[0].Bindings[0]));
+        Assert.Equal(Key.P, Assert.Single(fixture.Model.Rows[0].Bindings).Key.Key);
+        Assert.True(fixture.Model.RemoveBinding(fixture.Model.Rows[0].Bindings[0]));
+        Assert.True(fixture.Model.Rows[0].IsUnassigned);
+        Assert.Equal(HotkeyEditorText.Unassigned, fixture.Model.Rows[0].Shortcut);
+        Assert.Equal(4, fixture.Model.Rows.Count);
+        Assert.Equal(Key.L, fixture.Values[1].Hotkey.Key);
+    }
+
+    [Fact]
+    public void DuplicateAndOtherActionsAlternateBindingConflictBeforeSaving()
+    {
+        Fixture fixture = new();
+        fixture.Values[1].AdditionalHotkeys = [new(Key.P, ModifierKeys.Control)];
+        fixture.Model.Refresh();
+        Assert.False(fixture.Model.SaveBinding(fixture.Model.Rows[0], null, new(Key.I, ModifierKeys.Control), HotKeyKinds.Windows));
+        Assert.Equal(HotkeyEditorText.Duplicate, fixture.Model.Status);
+        Assert.False(fixture.Model.SaveBinding(fixture.Model.Rows[0], null, new(Key.P, ModifierKeys.Control), HotKeyKinds.Windows));
+        Assert.Contains("日志", fixture.Model.Status);
+        Assert.Empty(fixture.Applied);
+    }
+
+    [Fact]
+    public void SearchFindsAlternateBindingsDescriptionsAndStatesAndCanClearFilters()
+    {
+        Fixture fixture = new();
+        fixture.Values[0].AdditionalHotkeys = [new(Key.O, ModifierKeys.Control | ModifierKeys.Shift)];
+        fixture.Values[2].SetBindings([]);
+        fixture.Model.Refresh();
+        foreach (string query in new[] { "Ctrl + Shift + O", "偏好 设置", "options CtrlShiftO", "已修改 设置" })
+        {
+            fixture.Model.Search = query;
+            Assert.Equal("options", Assert.Single(fixture.Model.Rows).Value.Id);
+        }
+        fixture.Model.Search = HotkeyEditorText.Unassigned;
+        Assert.Equal("update", Assert.Single(fixture.Model.Rows).Value.Id);
+        fixture.Model.ClearFilters();
+        fixture.Model.FilterIndex = 1;
+        Assert.Equal("update", Assert.Single(fixture.Model.Rows).Value.Id);
+        fixture.Model.FilterIndex = 2;
+        Assert.Equal(2, fixture.Model.Rows.Count);
+        fixture.Model.Search = "not-present";
+        Assert.True(fixture.Model.IsEmpty);
+        fixture.Model.ClearFilters();
+        Assert.False(fixture.Model.HasFilter);
+        Assert.Equal(4, fixture.Model.Rows.Count);
+        Assert.Empty(fixture.Applied);
+    }
+
+    [Fact]
+    public void ResetRestoresEveryDefaultBindingAndKeepsSearch()
+    {
+        Fixture fixture = new();
+        fixture.Values[0].DefaultAdditionalHotkeys = [new(Key.O, ModifierKeys.Control | ModifierKeys.Shift)];
+        fixture.Values[0].SetBindings([new(Key.P, ModifierKeys.Control)]);
+        fixture.Model.Refresh();
+        fixture.Model.Search = "设置";
+        Assert.True(fixture.Model.Reset(Assert.Single(fixture.Model.Rows)));
+        Assert.Equal("设置", fixture.Model.Search);
+        Assert.Equal(new[] { Key.I, Key.O }, Assert.Single(fixture.Model.Rows).Bindings.Select(binding => binding.Key.Key));
+        Assert.False(fixture.Model.Rows[0].IsModified);
+        Assert.True(fixture.Model.Clear(fixture.Model.Rows[0]));
+        Assert.True(fixture.Model.ResetAll());
+        Assert.Equal(2, fixture.Values[0].GetBindings().Count);
+        Assert.Equal(4, fixture.Applied.Last().Count);
+    }
+
+    [Fact]
+    public void NeverAssignedActionRemainsVisibleAndResetRestoresItsEmptyDefault()
+    {
+        Fixture fixture = new();
+        fixture.Values[0].SetBindings([]);
+        fixture.Values[0].SetDefaultBindings([]);
+        fixture.Model.Refresh();
+        Assert.True(fixture.Model.Rows[0].IsUnassigned);
+        Assert.False(fixture.Model.Rows[0].IsModified);
+        Assert.True(fixture.Model.SaveBinding(fixture.Model.Rows[0], null, new(Key.P, ModifierKeys.Control), HotKeyKinds.Windows));
+        Assert.True(fixture.Model.Reset(fixture.Model.Rows[0]));
+        Assert.True(fixture.Model.Rows[0].IsUnassigned);
+        Assert.False(fixture.Model.Rows[0].IsModified);
+        Assert.Equal(4, fixture.Model.Rows.Count);
+        HotkeySettingsViewModel empty = new(() => [], () => [], _ => throw new InvalidOperationException("must not save"));
+        Assert.True(empty.IsEmpty);
+        Assert.Equal(HotkeyEditorText.NoActions, empty.EmptyTitle);
+    }
+
+    [Fact]
+    public void AddingInDialogStartsUnassignedAndEditingSecondBindingPreservesFirst()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            Fixture fixture = new();
+            HotkeyEditWindow add = new(fixture.Model, fixture.Model.Rows[0], null);
+            add.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
+            Assert.Equal(HotkeyEditorText.Unassigned, ((TextBox)add.FindName("CaptureBox")).Text);
+            Assert.False(((Button)add.FindName("SaveButton")).IsEnabled);
+            add.HandleKeyInput(Key.O, ModifierKeys.Control | ModifierKeys.Shift, true);
+            ((Button)add.FindName("SaveButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Assert.Equal(new[] { Key.I, Key.O }, fixture.Values[0].GetBindings().Select(key => key.Key));
+            HotkeyEditWindow edit = new(fixture.Model, fixture.Model.Rows[0], 1);
+            edit.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
+            Assert.Equal("Ctrl+Shift+O", ((TextBox)edit.FindName("CaptureBox")).Text);
+            edit.HandleKeyInput(Key.P, ModifierKeys.Control, true);
+            ((Button)edit.FindName("SaveButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Assert.Equal(new[] { Key.I, Key.P }, fixture.Values[0].GetBindings().Select(key => key.Key));
+        });
+    }
+
+    [Fact]
+    public void FailedMultipleBindingSaveKeepsTheDisplayedBindings()
+    {
+        Fixture fixture = new();
+        fixture.Values[0].AdditionalHotkeys = [new(Key.O, ModifierKeys.Control | ModifierKeys.Shift)];
+        fixture.Model.Refresh();
+        fixture.Fail = true;
+        Assert.False(fixture.Model.RemoveBinding(fixture.Model.Rows[0].Bindings[0]));
+        Assert.Equal(new[] { Key.I, Key.O }, fixture.Model.Rows[0].Bindings.Select(binding => binding.Key.Key));
+        Assert.True(fixture.Model.IsError);
+    }
+
+    [Fact]
     public void ConflictIsShownBeforeApplyingAndFailureKeepsOriginalValue()
     {
         Fixture fixture = new();
@@ -281,6 +410,9 @@ public sealed class HotkeySettingsTests
     {
         WithSettings(width, dark, culture, (window, host, page, fixture) =>
         {
+            fixture.Values[0].AdditionalHotkeys = [new(Key.O, ModifierKeys.Control | ModifierKeys.Shift)];
+            page.ViewModel.Refresh();
+            Layout(host, width);
             Assert.Equal(4, page.ViewModel.Rows.Count);
             Assert.True(page.ActualWidth >= 420);
             foreach (TextBlock text in Descendants(page).OfType<TextBlock>().Where(IsVisible)) AssertTextFits(text);
@@ -322,6 +454,90 @@ public sealed class HotkeySettingsTests
             Assert.True(page.ViewModel.IsEmpty);
             Assert.Contains(Descendants(page).OfType<TextBlock>(), text => text.Text == HotkeyEditorText.Empty && IsVisible(text));
             Assert.Empty(fixture.Applied);
+        });
+    }
+
+    [Fact]
+    public void UnassignedUiHasAddButNoDeleteAndFiltersAreInteractive()
+    {
+        WithSettings(980, true, "zh-CN", (_, host, page, fixture) =>
+        {
+            HotkeySettingsRow unassigned = page.ViewModel.Rows.Single(row => row.IsUnassigned);
+            Assert.Contains(Descendants(page).OfType<Button>(), button => IsVisible(button)
+                && ReferenceEquals(button.DataContext, unassigned)
+                && System.Windows.Automation.AutomationProperties.GetName(button) == HotkeyEditorText.Add);
+            Assert.DoesNotContain(Descendants(page).OfType<Button>(), button => IsVisible(button)
+                && button.DataContext is HotkeySettingsBindingRow binding && ReferenceEquals(binding.Owner, unassigned));
+            ((ComboBox)page.FindName("StateFilter")).SelectedIndex = 1;
+            Layout(host, 980);
+            Assert.True(Assert.Single(page.ViewModel.Rows).IsUnassigned);
+            TextBox search = (TextBox)page.FindName("SearchBox");
+            search.Text = "no-match";
+            Layout(host, 980);
+            Assert.True(page.ViewModel.IsEmpty);
+            Button clearFilters = Descendants(page).OfType<Button>().Single(button => IsVisible(button) && Equals(button.Content, HotkeyEditorText.ClearFilters));
+            clearFilters.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Layout(host, 980);
+            Assert.Equal(4, page.ViewModel.Rows.Count);
+            Assert.False(page.ViewModel.HasFilter);
+            Assert.Empty(fixture.Applied);
+        });
+    }
+
+    [Fact]
+    public void DeletingLastBindingShowsUnassignedAndAddingItLeavesThatFilter()
+    {
+        WithSettings(980, true, "zh-CN", (_, host, page, fixture) =>
+        {
+            HotkeySettingsBindingRow binding = page.ViewModel.Rows[0].Bindings.Single();
+            Button delete = Descendants(page).OfType<Button>().Single(button => IsVisible(button)
+                && System.Windows.Automation.AutomationProperties.GetName(button) == binding.ClearLabel);
+            delete.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Layout(host, 980);
+            HotkeySettingsRow cleared = page.ViewModel.Rows.Single(row => row.Value.Id == "options");
+            Assert.True(cleared.IsUnassigned);
+            Assert.Contains(Descendants(page).OfType<Button>(), button => IsVisible(button) && ReferenceEquals(button.DataContext, cleared)
+                && System.Windows.Automation.AutomationProperties.GetName(button) == HotkeyEditorText.Add);
+            ((ComboBox)page.FindName("StateFilter")).SelectedIndex = 1;
+            Layout(host, 980);
+            Assert.Contains(page.ViewModel.Rows, row => row.Value.Id == "options");
+            Assert.True(page.ViewModel.SaveBinding(cleared, null, new(Key.P, ModifierKeys.Control), HotKeyKinds.Windows));
+            Layout(host, 980);
+            Assert.DoesNotContain(page.ViewModel.Rows, row => row.Value.Id == "options");
+            Assert.True(page.ViewModel.HasStatus);
+            Assert.Equal(HotkeyEditorText.Saved, page.ViewModel.Status);
+        });
+    }
+
+    [Theory]
+    [InlineData("zh-CN")]
+    [InlineData("en-US")]
+    public void LongBindingsStayUsableAtMinimumPageWidth(string culture)
+    {
+        WithSettings(980, true, culture, (_, host, page, fixture) =>
+        {
+            fixture.Values[0].AdditionalHotkeys = [new(Key.F24, ModifierKeys.Control | ModifierKeys.Alt | ModifierKeys.Shift | ModifierKeys.Windows)];
+            page.ViewModel.Refresh();
+            HotKeysSetting compact = new(page.ViewModel);
+            compact.Measure(new Size(420, double.PositiveInfinity));
+            compact.Arrange(new Rect(0, 0, 420, compact.DesiredSize.Height));
+            compact.UpdateLayout();
+            Assert.Equal(420, compact.ActualWidth);
+            string? directory = Environment.GetEnvironmentVariable("COLORVISION_HOTKEY_PREVIEW_DIRECTORY");
+            if (!string.IsNullOrEmpty(directory)) Render(compact, Path.Combine(directory, $"hotkeys-compact-{culture}-420.png"));
+            foreach (Button button in Descendants(compact).OfType<Button>().Where(IsVisible))
+            {
+                Rect bounds = button.TransformToAncestor(compact).TransformBounds(new Rect(button.RenderSize));
+                Assert.True(bounds.Right <= 421, $"Button overflows at minimum width: {button.Content} {button.ToolTip}, {bounds}");
+            }
+            foreach (HotkeySettingsBindingRow binding in page.ViewModel.Rows.SelectMany(row => row.Bindings))
+            {
+                Rect[] buttons = Descendants(compact).OfType<Button>().Where(button => IsVisible(button) && ReferenceEquals(button.DataContext, binding))
+                    .Select(button => button.TransformToAncestor(compact).TransformBounds(new Rect(button.RenderSize))).OrderBy(rect => rect.Left).ToArray();
+                Assert.Equal(3, buttons.Length);
+                Assert.True(buttons[0].Right <= buttons[1].Left + 1, $"Key overlaps edit: {binding.Shortcut}");
+                Assert.True(buttons[1].Right <= buttons[2].Left + 1, $"Edit overlaps delete: {binding.Shortcut}");
+            }
         });
     }
 
@@ -469,7 +685,7 @@ public sealed class HotkeySettingsTests
                 KeyValue("update", english ? "Check for updates" : "检查更新", english ? "Check for application updates." : "检查是否有可用的新版本。", Key.U),
                 KeyValue("status", english ? "Status bar" : "状态栏", english ? "Show or hide the main window status bar." : "显示或隐藏主窗口底部的状态栏。", Key.B, ModifierKeys.Control | ModifierKeys.Shift)
             ];
-            Model = new(() => Values.Select(Clone).ToList(), () => Values.Select(value => { HotKeys copy = Clone(value); copy.Hotkey = copy.DefaultHotkey; copy.Kinds = copy.DefaultKinds; return copy; }).ToList(), settings =>
+            Model = new(() => Values.Select(Clone).ToList(), () => Values.Select(value => { HotKeys copy = Clone(value); copy.SetBindings(copy.GetDefaultBindings()); copy.Kinds = copy.DefaultKinds; return copy; }).ToList(), settings =>
             {
                 List<HotkeySetting> changes = settings.ToList();
                 Applied.Add(changes);
@@ -477,7 +693,7 @@ public sealed class HotkeySettingsTests
                 foreach (HotkeySetting setting in changes)
                 {
                     HotKeys value = Values.Single(key => key.Id == setting.Id);
-                    value.Hotkey = setting.Hotkey;
+                    value.SetBindings(setting.GetBindings());
                     value.Kinds = setting.Kinds;
                 }
                 return new HotkeyApplyResult();
@@ -489,6 +705,7 @@ public sealed class HotkeySettingsTests
         {
             Id = key.Id, Name = key.Name, Description = key.Description, Category = key.Category, Source = key.Source,
             Hotkey = new(key.Hotkey.Key, key.Hotkey.Modifiers), DefaultHotkey = new(key.DefaultHotkey.Key, key.DefaultHotkey.Modifiers),
+            AdditionalHotkeys = key.AdditionalHotkeys, DefaultAdditionalHotkeys = key.DefaultAdditionalHotkeys,
             Kinds = key.Kinds, DefaultKinds = key.DefaultKinds
         };
     }

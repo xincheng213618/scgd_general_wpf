@@ -73,7 +73,7 @@ manager 的 `FilteredGuids` 是旧式跨目标过滤，`ScopedFilteredItems` 是
 `MenuManager` 为实现 `IHotKey` 的现有菜单条目附加 `HotkeyMenuGestureBinding`：
 
 - 只读取该条目的 `HotKeys` 声明一次取得明确 ID；未提供 ID 的旧单动作 provider 按与热键发现相同的类型 FullName 规则匹配。不按 Header、Name 或菜单 GuidId 猜测，名称翻译、重名和菜单移动不改变关联。
-- 弱订阅 `HotkeyService.HotKeys` 的集合变化和匹配条目的 `Hotkey` 属性，显示当前运行时组合。菜单先创建、随后加载热键、定义替换、清除与恢复默认都会更新提示；没有匹配运行时项或组合已清除时留空，不回退为可能失效的默认键位。
+- 弱订阅 `HotkeyService.HotKeys` 的集合变化和匹配条目的 `Hotkey` / `AdditionalHotkeys` 属性，按顺序以 ` / ` 连接显示全部运行时组合。菜单先创建、随后加载热键、编辑附加组、删除首组、定义替换、清除与恢复默认都会更新提示；没有匹配运行时项或组合已全部清除时留空，不回退为可能失效的默认键位。
 - 提示反映组合值，不以临时 `IsRegistered` 变化闪烁；它不是操作系统注册成功的指示灯。适配本身不重新发现 provider、不注册热键、不执行业务回调。声明读取失败只记录警告并留空，不阻止菜单创建。
 - 同时实现多动作 `IHotkeyProvider` 的条目必须在其 `IHotKey` 声明中给出明确动作 ID，适配不会枚举所有动作选一个。非 `IHotKey` 菜单保留原始 InputGestureText。
 

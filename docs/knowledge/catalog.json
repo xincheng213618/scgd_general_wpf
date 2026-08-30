@@ -7081,7 +7081,7 @@
       "knowledge_id": "ui.hotkeys",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "快捷键的发现、展示、窗口/全局注册与搜索编辑；单个操作只保留一组键位，确认后立即应用并保存，注册或持久化失败按结果执行补偿。",
+      "summary": "快捷键的发现、多组绑定、窗口/全局注册与搜索编辑；同一操作共享作用域，未分配操作保留展示，确认后立即保存，注册或持久化失败按结果补偿。",
       "aliases": [
         "快捷键",
         "热键",
@@ -7122,7 +7122,9 @@
         "Test/ColorVision.UI.Tests/HotkeyServiceTests.cs",
         "Test/ColorVision.UI.Tests/HotkeySettingsTests.cs",
         "Test/ColorVision.UI.Tests/HotkeyBackendTests.cs",
-        "Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs"
+        "Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs",
+        "Test/ColorVision.UI.Tests/HotkeyMultipleBindingTests.cs",
+        "Test/ColorVision.UI.Tests/HotkeyMultiBindingServiceTests.cs"
       ],
       "related": [
         "ui.framework",
@@ -7142,7 +7144,7 @@
       "source": "docs/04-api-reference/ui-components/hotkeys.md",
       "url": "/04-api-reference/ui-components/hotkeys",
       "searchable": true,
-      "source_hash": "ad3ba1b43cee9545cf2c05585bbbeb91fa86951a4664ba49862445e46c75cbf6"
+      "source_hash": "01aff1cc5415b59f68e98b0ff9f1db571a7194dc8eaee0a90c8ac3acdbf4c41c"
     },
     {
       "knowledge_id": "ui.image-editor",
@@ -7573,7 +7575,7 @@
       "source": "docs/04-api-reference/ui-components/menus.md",
       "url": "/04-api-reference/ui-components/menus",
       "searchable": true,
-      "source_hash": "838f1aedf4df23806cc4ee5b0d17f1e68b32ed269c70affd22f93077c98e724e"
+      "source_hash": "5f8840a5d0e7eb7113ed2c1aae28c6f3fafef3bcd26b2dfbc2ae63e5673c0ea8"
     },
     {
       "knowledge_id": "ui.package-boundaries",

@@ -63,6 +63,14 @@ namespace ColorVision.UI.HotKey
         public Hotkey DefaultHotkey { get; set; } = new();
 
         [JsonIgnore]
+        public List<Hotkey> DefaultAdditionalHotkeys
+        {
+            get => _defaultAdditionalHotkeys;
+            set => _defaultAdditionalHotkeys = HotkeyBindingCollection.Copy(value);
+        }
+        private List<Hotkey> _defaultAdditionalHotkeys = new();
+
+        [JsonIgnore]
         public HotKeyKinds DefaultKinds { get; set; } = HotKeyKinds.Windows;
 
         [JsonIgnore]
@@ -79,6 +87,37 @@ namespace ColorVision.UI.HotKey
             }
         }
         private Hotkey _Hotkey = new Hotkey() { Key = Key.None, Modifiers = ModifierKeys.None };
+
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public List<Hotkey> AdditionalHotkeys
+        {
+            get => _additionalHotkeys;
+            set
+            {
+                _additionalHotkeys = HotkeyBindingCollection.Copy(value);
+                NotifyPropertyChanged();
+            }
+        }
+        private List<Hotkey> _additionalHotkeys = new();
+
+        public IReadOnlyList<Hotkey> GetBindings() => HotkeyBindingCollection.Collect(Hotkey, AdditionalHotkeys);
+
+        public void SetBindings(IEnumerable<Hotkey> bindings)
+        {
+            List<Hotkey> copy = HotkeyBindingCollection.Copy(bindings);
+            Hotkey = copy.Count > 0 ? copy[0] : new Hotkey();
+            AdditionalHotkeys = copy.Skip(1).ToList();
+        }
+
+        public IReadOnlyList<Hotkey> GetDefaultBindings() => HotkeyBindingCollection.Collect(DefaultHotkey, DefaultAdditionalHotkeys);
+
+        public void SetDefaultBindings(IEnumerable<Hotkey> bindings)
+        {
+            List<Hotkey> copy = HotkeyBindingCollection.Copy(bindings);
+            DefaultHotkey = copy.Count > 0 ? copy[0] : new Hotkey();
+            DefaultAdditionalHotkeys = copy.Skip(1).ToList();
+        }
+
         public HotKeyKinds Kinds
         {
             get => _Kinds; set

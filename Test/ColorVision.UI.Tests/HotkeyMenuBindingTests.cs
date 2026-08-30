@@ -111,6 +111,100 @@ public sealed class HotkeyMenuBindingTests
     }
 
     [Fact]
+    public void MultipleBindingsShowInOrderAndAdditionalBindingEditsRefreshTheHint()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var source = new ExplicitHotkeyMenu();
+            var runtime = Runtime("menu.action", Key.P);
+            runtime.AdditionalHotkeys = [new(Key.J, ModifierKeys.Control | ModifierKeys.Shift), new(Key.F5, ModifierKeys.Alt)];
+            var menu = new MenuItem();
+            HotkeyMenuGestureBinding.Attach(menu, source, new ObservableCollection<HotKeys> { runtime });
+
+            Assert.Equal("Ctrl+P / Ctrl+Shift+J / Alt+F5", menu.InputGestureText);
+            runtime.AdditionalHotkeys = [new(Key.O, ModifierKeys.Control | ModifierKeys.Shift)];
+            Assert.Equal("Ctrl+P / Ctrl+Shift+O", menu.InputGestureText);
+            runtime.Hotkey = new(Key.I, ModifierKeys.Control);
+            Assert.Equal("Ctrl+I / Ctrl+Shift+O", menu.InputGestureText);
+            Assert.Equal(1, source.DeclarationReads);
+            Assert.Equal(0, source.Executions);
+            Assert.False(runtime.IsRegistered);
+            Assert.Null(runtime.Control);
+        });
+    }
+
+    [Fact]
+    public void RemovingFirstOrAdditionalBindingAndClearingAllRefreshTheHint()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var runtime = Runtime("menu.action", Key.P);
+            runtime.AdditionalHotkeys = [new(Key.J, ModifierKeys.Control | ModifierKeys.Shift), new(Key.F5, ModifierKeys.Alt)];
+            var menu = new MenuItem();
+            HotkeyMenuGestureBinding.Attach(menu, new ExplicitHotkeyMenu(), new ObservableCollection<HotKeys> { runtime });
+
+            runtime.SetBindings(runtime.GetBindings().Skip(1));
+            Assert.Equal("Ctrl+Shift+J / Alt+F5", menu.InputGestureText);
+            runtime.AdditionalHotkeys = [];
+            Assert.Equal("Ctrl+Shift+J", menu.InputGestureText);
+            runtime.SetBindings([]);
+            Assert.Equal(string.Empty, menu.InputGestureText);
+            runtime.SetBindings([new(Key.I, ModifierKeys.Control), new(Key.O, ModifierKeys.Control | ModifierKeys.Shift)]);
+            Assert.Equal("Ctrl+I / Ctrl+Shift+O", menu.InputGestureText);
+        });
+    }
+
+    [Fact]
+    public void ReplacementAndRemovalDetachBothPrimaryAndAdditionalBindingChanges()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var original = Runtime("menu.action", Key.P);
+            original.AdditionalHotkeys = [new(Key.F5, ModifierKeys.Alt)];
+            var hotkeys = new ObservableCollection<HotKeys> { original };
+            var menu = new MenuItem();
+            HotkeyMenuGestureBinding.Attach(menu, new ExplicitHotkeyMenu(), hotkeys);
+
+            var replacement = Runtime("menu.action", Key.R);
+            replacement.AdditionalHotkeys = [new(Key.F6, ModifierKeys.Alt)];
+            hotkeys[0] = replacement;
+            Assert.Equal("Ctrl+R / Alt+F6", menu.InputGestureText);
+            original.Hotkey = new(Key.X, ModifierKeys.Alt);
+            original.AdditionalHotkeys = [new(Key.F7, ModifierKeys.Windows)];
+            Assert.Equal("Ctrl+R / Alt+F6", menu.InputGestureText);
+            replacement.AdditionalHotkeys = [new(Key.F8, ModifierKeys.Windows)];
+            Assert.Equal("Ctrl+R / Win+F8", menu.InputGestureText);
+
+            hotkeys.Clear();
+            replacement.SetBindings([new(Key.Y, ModifierKeys.Alt), new(Key.F9, ModifierKeys.Control)]);
+            Assert.Equal(string.Empty, menu.InputGestureText);
+        });
+    }
+
+    [Fact]
+    public void ReattachingDetachesAdditionalBindingUpdatesFromPreviousEntry()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var first = Runtime("menu.action", Key.P);
+            first.AdditionalHotkeys = [new(Key.F5, ModifierKeys.Alt)];
+            var second = Runtime("menu.other", Key.O);
+            second.AdditionalHotkeys = [new(Key.F6, ModifierKeys.Alt)];
+            var hotkeys = new ObservableCollection<HotKeys> { first, second };
+            var menu = new MenuItem();
+            HotkeyMenuGestureBinding.Attach(menu, new ExplicitHotkeyMenu(), hotkeys);
+            var otherSource = new ExplicitHotkeyMenu();
+            otherSource.Declaration.Id = "menu.other";
+            HotkeyMenuGestureBinding.Attach(menu, otherSource, hotkeys);
+
+            first.AdditionalHotkeys = [new(Key.F7, ModifierKeys.Windows)];
+            Assert.Equal("Ctrl+O / Alt+F6", menu.InputGestureText);
+            second.AdditionalHotkeys = [new(Key.F8, ModifierKeys.Windows)];
+            Assert.Equal("Ctrl+O / Win+F8", menu.InputGestureText);
+        });
+    }
+
+    [Fact]
     public void OrdinaryMenuKeepsItsDeclaredGesture()
     {
         WpfTestHost.Invoke(() =>
@@ -201,6 +295,61 @@ public sealed class HotkeyMenuBindingTests
             hotkeys.Clear();
             GC.KeepAlive(hotkeys);
         });
+    }
+
+    [Fact]
+    public void MultipleBindingSubscriptionDoesNotKeepDiscardedMenuAlive()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var runtime = Runtime("menu.action", Key.P);
+            runtime.AdditionalHotkeys = [new(Key.F5, ModifierKeys.Alt), new(Key.F6, ModifierKeys.Windows)];
+            var hotkeys = new ObservableCollection<HotKeys> { runtime };
+            WeakReference menu = CreateDiscardedMenu(hotkeys);
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.False(menu.IsAlive);
+            runtime.AdditionalHotkeys = [new(Key.F7, ModifierKeys.Control)];
+            runtime.Hotkey = new(Key.L, ModifierKeys.Control);
+            hotkeys.Clear();
+            GC.KeepAlive(hotkeys);
+        });
+    }
+
+    [Fact]
+    public void LiveMenuDoesNotKeepReplacedMultipleBindingEntryAlive()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var hotkeys = new ObservableCollection<HotKeys>();
+            var menu = new MenuItem();
+            WeakReference original = CreateReplacedRuntime(menu, hotkeys);
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.False(original.IsAlive);
+            Assert.Equal("Ctrl+R / Alt+F6", menu.InputGestureText);
+            hotkeys[0].AdditionalHotkeys = [new(Key.F7, ModifierKeys.Windows)];
+            Assert.Equal("Ctrl+R / Win+F7", menu.InputGestureText);
+            GC.KeepAlive(menu);
+            GC.KeepAlive(hotkeys);
+        });
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference CreateReplacedRuntime(MenuItem menu, ObservableCollection<HotKeys> hotkeys)
+    {
+        var original = Runtime("menu.action", Key.P);
+        original.AdditionalHotkeys = [new(Key.F5, ModifierKeys.Alt)];
+        hotkeys.Add(original);
+        HotkeyMenuGestureBinding.Attach(menu, new ExplicitHotkeyMenu(), hotkeys);
+        var replacement = Runtime("menu.action", Key.R);
+        replacement.AdditionalHotkeys = [new(Key.F6, ModifierKeys.Alt)];
+        hotkeys[0] = replacement;
+        return new WeakReference(original);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

@@ -9,7 +9,7 @@ using System.Windows.Threading;
 
 namespace ColorVision.UI.Menus;
 
-/// <summary>Mirrors a contributed hotkey's current combination without registering or invoking it.</summary>
+/// <summary>Mirrors a contributed action's current combinations without registering or invoking them.</summary>
 internal static class HotkeyMenuGestureBinding
 {
     private static readonly ILog Log = LogManager.GetLogger(typeof(HotkeyMenuGestureBinding));
@@ -87,11 +87,19 @@ internal static class HotkeyMenuGestureBinding
             HotKeys? current = _hotkeys.FirstOrDefault(item => string.Equals(item.Id, _id, StringComparison.OrdinalIgnoreCase));
             if (!ReferenceEquals(_current, current))
             {
-                if (_current != null) PropertyChangedEventManager.RemoveHandler(_current, OnHotkeyChanged, nameof(HotKeys.Hotkey));
+                if (_current != null)
+                {
+                    PropertyChangedEventManager.RemoveHandler(_current, OnHotkeyChanged, nameof(HotKeys.Hotkey));
+                    PropertyChangedEventManager.RemoveHandler(_current, OnHotkeyChanged, nameof(HotKeys.AdditionalHotkeys));
+                }
                 _current = current;
-                if (_current != null) PropertyChangedEventManager.AddHandler(_current, OnHotkeyChanged, nameof(HotKeys.Hotkey));
+                if (_current != null)
+                {
+                    PropertyChangedEventManager.AddHandler(_current, OnHotkeyChanged, nameof(HotKeys.Hotkey));
+                    PropertyChangedEventManager.AddHandler(_current, OnHotkeyChanged, nameof(HotKeys.AdditionalHotkeys));
+                }
             }
-            menuItem.InputGestureText = _current == null || _current.Hotkey.IsEmpty ? string.Empty : HotkeyInput.Format(_current.Hotkey);
+            menuItem.InputGestureText = _current == null ? string.Empty : string.Join(" / ", _current.GetBindings().Select(HotkeyInput.Format));
         }
 
         public void Dispose()
@@ -99,7 +107,11 @@ internal static class HotkeyMenuGestureBinding
             if (_disposed) return;
             _disposed = true;
             CollectionChangedEventManager.RemoveHandler(_hotkeys, OnCollectionChanged);
-            if (_current != null) PropertyChangedEventManager.RemoveHandler(_current, OnHotkeyChanged, nameof(HotKeys.Hotkey));
+            if (_current != null)
+            {
+                PropertyChangedEventManager.RemoveHandler(_current, OnHotkeyChanged, nameof(HotKeys.Hotkey));
+                PropertyChangedEventManager.RemoveHandler(_current, OnHotkeyChanged, nameof(HotKeys.AdditionalHotkeys));
+            }
             _current = null;
         }
     }
