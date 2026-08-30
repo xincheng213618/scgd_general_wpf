@@ -42,6 +42,7 @@ namespace ColorVision.Copilot
             var isDirectSubmission = directPrompt != null;
             var queuedCommandExecution = _queuedLocalCommandExecution;
             var composerCapture = isDirectSubmission ? null : _composerSession.Capture();
+            var recoveryRequest = isDirectSubmission ? null : CapturePendingAgentRecoveryRequest(composerCapture!);
             var prompt = (directPrompt ?? composerCapture!.Text).Trim();
             var modelPrompt = (directRequestContent ?? prompt).Trim();
             if (string.IsNullOrWhiteSpace(prompt))
@@ -146,7 +147,6 @@ namespace ColorVision.Copilot
 
             conversation.ProfileId = requestProfile.Id;
             conversation.ProfileDisplayName = requestProfile.DisplayLabel;
-            var recoveryRequest = isDirectSubmission ? null : CapturePendingAgentRecoveryRequest();
             var workspaceReviewTarget = isDirectSubmission
                 ? null
                 : composerCapture?.WorkspaceReviewTarget;

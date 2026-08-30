@@ -4,6 +4,72 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotHostedTurnCompletionTests
 {
+    [Theory]
+    [InlineData(CopilotAgentMode.Chat, true)]
+    [InlineData(CopilotAgentMode.Auto, true)]
+    [InlineData(CopilotAgentMode.Chat, false)]
+    [InlineData(CopilotAgentMode.Auto, false)]
+    public void InterruptedTurnRetainsOnlyItsReportedProviderUsage(CopilotAgentMode mode, bool failed)
+    {
+        var conversation = CreateConversation(CreateOpenCheckpoint());
+        conversation.SetLastUsage(new CopilotTokenUsage(900, 90, 990, 400));
+        var assistant = CreateAssistant(mode);
+        assistant.Content = "Partial answer";
+        var usage = new CopilotTokenUsage(120, 30, 150, 80);
+        assistant.SetReportedUsage(usage);
+
+        if (failed)
+            CopilotHostedTurnCompletion.CompleteFailure(conversation, assistant, "provider failed");
+        else
+            CopilotHostedTurnCompletion.CompleteCancellation(conversation, assistant, CopilotAgentControlIntent.Cancel);
+
+        Assert.Equal(usage, assistant.ReportedUsage);
+        Assert.Equal(usage, conversation.LastUsage);
+        Assert.True(assistant.WasResponseInterrupted);
+        Assert.Contains("Partial answer", assistant.Content, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(CopilotAgentControlIntent.Pause)]
+    [InlineData(CopilotAgentControlIntent.None)]
+    public void NonCancelInterruptionAlsoRetainsReportedProviderUsage(CopilotAgentControlIntent intent)
+    {
+        var conversation = CreateConversation(CreateOpenCheckpoint());
+        var assistant = CreateAssistant(CopilotAgentMode.Auto);
+        var usage = new CopilotTokenUsage(120, 0, 120, 0);
+        assistant.SetReportedUsage(usage);
+
+        CopilotHostedTurnCompletion.CompleteCancellation(conversation, assistant, intent);
+
+        Assert.Equal(usage, assistant.ReportedUsage);
+        Assert.Equal(usage, conversation.LastUsage);
+    }
+
+    [Theory]
+    [InlineData(CopilotAgentMode.Chat, true)]
+    [InlineData(CopilotAgentMode.Auto, true)]
+    [InlineData(CopilotAgentMode.Chat, false)]
+    [InlineData(CopilotAgentMode.Auto, false)]
+    public void InterruptedTurnWithoutReportedUsageDoesNotReusePriorUsageOrEstimatedBudget(CopilotAgentMode mode, bool failed)
+    {
+        var conversation = CreateConversation(CreateOpenCheckpoint());
+        conversation.SetLastUsage(new CopilotTokenUsage(900, 90, 990, 400));
+        var assistant = CreateAssistant(mode);
+        assistant.AgentRunBudget = new CopilotAgentBudgetSnapshot
+        {
+            ConsumedTokens = 5_000,
+            UsedEstimatedUsage = true,
+        };
+
+        if (failed)
+            CopilotHostedTurnCompletion.CompleteFailure(conversation, assistant, "provider failed");
+        else
+            CopilotHostedTurnCompletion.CompleteCancellation(conversation, assistant, CopilotAgentControlIntent.Cancel);
+
+        Assert.Equal(CopilotTokenUsage.Empty, assistant.ReportedUsage);
+        Assert.Equal(CopilotTokenUsage.Empty, conversation.LastUsage);
+    }
+
     [Fact]
     public void CancellingChatDoesNotDiscardRetainedAgentCheckpoint()
     {

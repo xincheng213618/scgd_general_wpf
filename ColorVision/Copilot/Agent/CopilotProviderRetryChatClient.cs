@@ -4,6 +4,7 @@ using Microsoft.Extensions.AI;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -248,7 +249,8 @@ namespace ColorVision.Copilot
             if (exception == null || cancellationToken.IsCancellationRequested)
                 return false;
 
-            return EnumerateExceptionChain(exception).Any(candidate => candidate is AnthropicSseException
+            return EnumerateExceptionChain(exception).Any(candidate => candidate is AnthropicApiException
+                or AnthropicSseException
                 or ClientResultException
                 or HttpRequestException
                 or TimeoutException
@@ -270,10 +272,19 @@ namespace ColorVision.Copilot
                 CopilotProviderRequestId.Find(exception));
         }
 
-        internal static void PreserveRetryAfter(HttpResponseMessage response, Exception exception)
+        internal static void PreserveRetryAfter(HttpResponseMessage response, Exception exception, bool includeMilliseconds = false)
         {
             ArgumentNullException.ThrowIfNull(response);
             ArgumentNullException.ThrowIfNull(exception);
+            if (includeMilliseconds
+                && response.Headers.TryGetValues("Retry-After-Ms", out var millisecondValues)
+                && double.TryParse(millisecondValues.FirstOrDefault(), NumberStyles.Float, CultureInfo.InvariantCulture, out var milliseconds)
+                && double.IsFinite(milliseconds)
+                && milliseconds >= 0)
+            {
+                exception.Data[RetryAfterDataKey] = TimeSpan.FromMilliseconds(Math.Min(MaximumServerRetryDelay.TotalMilliseconds, milliseconds));
+                return;
+            }
             if (!response.Headers.TryGetValues("Retry-After", out var values))
                 return;
 
@@ -356,6 +367,13 @@ namespace ColorVision.Copilot
             var candidates = EnumerateExceptionChain(exception).ToArray();
             foreach (var candidate in candidates)
             {
+                if (candidate is AnthropicApiException apiException)
+                {
+                    statusCode = (int)apiException.StatusCode;
+                    failureKind = "HTTP " + statusCode.Value;
+                    return IsTransientStatusCode(statusCode.Value);
+                }
+
                 if (candidate is AnthropicSseException sseException)
                 {
                     failureKind = sseException.ErrorType switch

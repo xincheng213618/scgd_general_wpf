@@ -34,6 +34,9 @@ namespace ColorVision.Copilot
                     ApiKey = profile.ApiKey,
                     BaseUrl = profile.BaseUrl.Trim().TrimEnd('/'),
                     HttpClient = CopilotProviderHttpTransport.CreateClient(profile.Id),
+                    Handlers = [new CopilotAnthropicHttpErrorHandler(profile.ApiKey)],
+                    // ColorVision owns bounded retries and accounts for every provider attempt.
+                    MaxRetries = 0,
                 });
                 return anthropicClient.AsIChatClient(profile.Model, profile.MaxTokens);
             }

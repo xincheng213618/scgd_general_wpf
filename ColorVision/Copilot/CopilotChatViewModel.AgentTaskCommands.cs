@@ -72,9 +72,10 @@ namespace ColorVision.Copilot
             if (!decision.IsAvailable)
                 return false;
 
-            _pendingAgentRecoveryRequest = decision.Request;
             SetPendingRequestModeOverride(CopilotAgentMode.Auto);
             InputText = decision.UserMessage;
+            _pendingAgentRecoveryRequest = new PendingAgentRecoveryRequest(
+                conversation.Id, decision.UserMessage, decision.Request!);
             RunUiOperation(SendAsync, "继续 Agent 任务");
             return true;
         }
@@ -517,14 +518,28 @@ namespace ColorVision.Copilot
             return true;
         }
 
-        private CopilotAgentRecoveryRequest? CapturePendingAgentRecoveryRequest()
+        private sealed record PendingAgentRecoveryRequest(
+            string ConversationId,
+            string Prompt,
+            CopilotAgentRecoveryRequest Request);
+
+        private CopilotAgentRecoveryRequest? CapturePendingAgentRecoveryRequest(CopilotComposerCaptureSnapshot composer)
         {
-            return _pendingAgentRecoveryRequest;
+            var pending = _pendingAgentRecoveryRequest;
+            if (pending != null
+                && string.Equals(pending.ConversationId, composer.ConversationId, StringComparison.Ordinal)
+                && string.Equals(pending.Prompt, composer.Text, StringComparison.Ordinal))
+            {
+                return pending.Request;
+            }
+
+            _pendingAgentRecoveryRequest = null;
+            return null;
         }
 
         private void CommitPendingAgentRecoveryRequest(CopilotAgentRecoveryRequest? captured)
         {
-            if (ReferenceEquals(_pendingAgentRecoveryRequest, captured))
+            if (ReferenceEquals(_pendingAgentRecoveryRequest?.Request, captured))
                 _pendingAgentRecoveryRequest = null;
         }
     }

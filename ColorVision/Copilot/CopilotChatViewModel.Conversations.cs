@@ -382,6 +382,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            _pendingAgentRecoveryRequest = null;
             _promptHistoryNavigator.Reset();
             DismissLocalCommandResult();
             if (selectedConversation != null)

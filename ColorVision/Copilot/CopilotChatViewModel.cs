@@ -63,7 +63,7 @@ namespace ColorVision.Copilot
         private CopilotNonBlockingCancellationSource? _composerReferenceRefreshCts;
         private CopilotLiveContext? _currentLiveContext;
         private CopilotChatState _state = new();
-        private CopilotAgentRecoveryRequest? _pendingAgentRecoveryRequest;
+        private PendingAgentRecoveryRequest? _pendingAgentRecoveryRequest;
         private string _activeDocumentPath = string.Empty;
         private CopilotProjectInstructionDiscoveryOptions _currentCodexConfigOptions =
             CopilotProjectInstructionDiscoveryConfig.CreateDefault();

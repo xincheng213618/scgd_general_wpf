@@ -1422,6 +1422,11 @@
         "ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs",
         "ColorVision/Copilot/Agent/CopilotProviderRetryChatClient.cs",
         "ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.AgentStreamingLoop.cs",
+        "ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.FrameworkSupport.cs",
+        "ColorVision/Copilot/Agent/CopilotAnthropicHttpErrorHandler.cs",
+        "ColorVision/Copilot/Agent/CopilotContextWindowRecoveryChatClient.cs",
+        "ColorVision/Copilot/CopilotChatService.Streaming.cs",
+        "ColorVision/Copilot/CopilotChatService.RequestPipeline.cs",
         "ColorVision/Copilot/Agent/CopilotToolRegistry.cs",
         "ColorVision/Copilot/Agent/CopilotAgentExecutionContract.cs",
         "ColorVision/Copilot/Agent/CopilotToolExecution.cs",
@@ -1434,6 +1439,11 @@
       "test_paths": [
         "Test/ColorVision.Copilot.Tests/CopilotAgentTaskHostQueueDispatchTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAnthropicProviderFailureTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotAnthropicHttpFailureTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotAnthropicHttpErrorBoundaryTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotHostedTurnCompletionTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotHostedTurnUsageTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotProviderPayloadErrorTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAgentExecutionContractRetryTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotCodexApprovalsReviewerTests.cs"
       ],
@@ -1452,7 +1462,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-agent-execution.md",
       "url": "/02-developer-guide/core-concepts/copilot-agent-execution",
       "searchable": true,
-      "source_hash": "720f06aabe041d69fc5f610892c90b31067e2773f93ab9b2d31a26fd245d50be"
+      "source_hash": "177741462e4d6fe981d7a64f0784101ee2424eb6cc653faf7fb087d0518f8d99"
     },
     {
       "knowledge_id": "copilot.extensions",
@@ -1728,6 +1738,10 @@
         "ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.cs",
         "ColorVision/Copilot/State",
         "ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.AgentTaskCommands.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.Conversations.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.TurnExecution.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.Permissions.cs",
         "ColorVision/Copilot/Agent/CopilotQueuedFollowUpCoordinator.cs",
         "ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs",
         "ColorVision/Copilot/Agent/CopilotToolIntentPolicy.cs",
@@ -1742,6 +1756,7 @@
         "Test/ColorVision.Copilot.Tests/CopilotChatStateRecoveryAttachmentTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatStateProfileReconciliationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpCancellationTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotPendingRecoveryConversationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotManagedAttachmentDeletionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatViewModelProfileIsolationTests.cs"
       ],
@@ -1759,7 +1774,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-agent-session-and-tools.md",
       "url": "/02-developer-guide/core-concepts/copilot-agent-session-and-tools",
       "searchable": true,
-      "source_hash": "05f30a87b0689aeba5294e17df05e7f6b06daaf9c95ee460ab32f59c66c4bc3f"
+      "source_hash": "ba7b841cc5a8cd09ef04e305c87b3a01bd66d2973bfff20ae00614ac215e5600"
     },
     {
       "knowledge_id": "copilot.tool-contracts",

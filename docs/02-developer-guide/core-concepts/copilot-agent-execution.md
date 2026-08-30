@@ -4,14 +4,14 @@ knowledge_type: "topic"
 status: "current"
 summary: "Copilot 请求调度、工具筛选、审批、只读委派与执行证据闭环。"
 aliases: ["为什么 Copilot 没调用工具","子 Agent 有哪些权限","CopilotAgentTaskHost","CopilotToolRegistry","CopilotAgentExecutionContract"]
-code_paths: ["ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs","ColorVision/Copilot/Agent/CopilotProviderRetryChatClient.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.AgentStreamingLoop.cs","ColorVision/Copilot/Agent/CopilotToolRegistry.cs","ColorVision/Copilot/Agent/CopilotAgentExecutionContract.cs","ColorVision/Copilot/Agent/CopilotToolExecution.cs","ColorVision/Copilot/Agent/CopilotAgentAccessModels.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.ApprovalRouting.cs","ColorVision/Copilot/Presentation/CopilotHostedTurnCompletion.cs","ColorVision/Copilot/CopilotConversationUsageDiagnostics.cs","ColorVision/Copilot/CopilotConversationStatistics.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentTaskHostQueueDispatchTests.cs","Test/ColorVision.Copilot.Tests/CopilotAnthropicProviderFailureTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentExecutionContractRetryTests.cs","Test/ColorVision.Copilot.Tests/CopilotCodexApprovalsReviewerTests.cs"]
+code_paths: ["ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs","ColorVision/Copilot/Agent/CopilotProviderRetryChatClient.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.AgentStreamingLoop.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.FrameworkSupport.cs","ColorVision/Copilot/Agent/CopilotAnthropicHttpErrorHandler.cs","ColorVision/Copilot/Agent/CopilotContextWindowRecoveryChatClient.cs","ColorVision/Copilot/CopilotChatService.Streaming.cs","ColorVision/Copilot/CopilotChatService.RequestPipeline.cs","ColorVision/Copilot/Agent/CopilotToolRegistry.cs","ColorVision/Copilot/Agent/CopilotAgentExecutionContract.cs","ColorVision/Copilot/Agent/CopilotToolExecution.cs","ColorVision/Copilot/Agent/CopilotAgentAccessModels.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.ApprovalRouting.cs","ColorVision/Copilot/Presentation/CopilotHostedTurnCompletion.cs","ColorVision/Copilot/CopilotConversationUsageDiagnostics.cs","ColorVision/Copilot/CopilotConversationStatistics.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentTaskHostQueueDispatchTests.cs","Test/ColorVision.Copilot.Tests/CopilotAnthropicProviderFailureTests.cs","Test/ColorVision.Copilot.Tests/CopilotAnthropicHttpFailureTests.cs","Test/ColorVision.Copilot.Tests/CopilotAnthropicHttpErrorBoundaryTests.cs","Test/ColorVision.Copilot.Tests/CopilotHostedTurnCompletionTests.cs","Test/ColorVision.Copilot.Tests/CopilotHostedTurnUsageTests.cs","Test/ColorVision.Copilot.Tests/CopilotProviderPayloadErrorTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentExecutionContractRetryTests.cs","Test/ColorVision.Copilot.Tests/CopilotCodexApprovalsReviewerTests.cs"]
 related: ["copilot.runtime","copilot.tool-contracts","copilot.lifecycle","copilot.interactions","copilot.session-tools"]
 ---
 
 # Copilot Agent 执行链
 
-本页只描述 Agent 运行链、工具筛选和执行契约。会话回顾、计划定位、活动展开、任务面板和输入快捷键见 [Copilot 本地交互与快捷键](./copilot-local-interactions.md)。
+本页描述 Agent 运行链、工具筛选和执行契约，以及与普通 Chat 共用的回答终态边界。会话回顾、计划定位、活动展开、任务面板和输入快捷键见 [Copilot 本地交互与快捷键](./copilot-local-interactions.md)。
 
 ```text
 CopilotToolRegistry
@@ -52,6 +52,12 @@ Anthropic 官方适配器的 `AnthropicSseException` 进入同一供应商错误
 内部兼容枚举名 `FullAccess` 表示最长 15 分钟、绑定 conversation、task 和当前 workspace 的临时授权，不是任意工具免审。`CanAutoApprove` 的直接批准分支目前只允许声明 `AllowsTemporaryFullAccess` 的 `ApplyWorkspacePatchEnvelope` 与 `RollbackWorkspacePatchEnvelope`，并复核可写范围；其他受保护工具可以在 `CanAutoReview` 条件成立时交独立权限审查器逐次复核，因此不能写成“Shell、模板、Flow、菜单和数据库一律每次人工确认”。临时任务复核与显式 `approvals_reviewer=auto_review` 的条件、未批准后的不同处理，以及 `/approve` 精确重试边界统一见[原生审批、自动复核与参数快照](./copilot-agent-tool-contracts.md#原生审批与参数快照)。`ConfirmProtectedActions` 也不等于禁止显式配置的自动复核。
 
 临时授权不会扩大 Review 模式、工具 Schema、意图策略、工作区范围、执行契约、并发闸门、超时或审计边界，也不会追溯批准已经等待的 Framework Action。任务结束、失败、取消、超时、工作区变化或应用重启都会撤销临时 grant，新会话和 conversation branch 也不会继承；显式复核者配置不是这份短期 grant，不能混用其生命周期。
+
+### Anthropic HTTP 失败边界
+
+Anthropic 非成功 HTTP 响应同样进入供应商错误收尾。生产适配器关闭 SDK 内部重试，由 ColorVision 按当前请求尚未输出内容的边界、最多三次尝试和预算统一处理；每次 HTTP 尝试进入 Provider 调用统计，避免 SDK 与宿主重试次数相乘。408、429 和 5xx 可有限重试，认证等其他状态不自动重试。已完成工具后的下一次模型调用失败时，主循环以 `ProviderFailure` 保存工具事实、已报告用量与检查点，不重放已完成工具。
+
+`CopilotAnthropicHttpErrorHandler` 只处理失败响应：错误正文最多读取 256 KiB，脱敏后交 SDK 的类型化异常工厂；超限或正文读取 I/O 失败仍保留原 HTTP 状态，不把 401 改判为可重试的网络错误。响应头的请求 ID 与退避时间绑定同一次请求，`Retry-After-Ms` 优先、无效时回退 `Retry-After`，服务端等待时间最多两分钟且不短于本地退避。成功响应原样交给 SDK，错误响应在抛出前释放。上下文窗口分类同时检查类型化 HTTP 状态，401 即使带有长度超限文字也不能触发压缩重发；400/413 的合法上下文错误仍可被识别。`CopilotAnthropicHttpFailureTests` 使用本机回环服务核验正式生产适配器，`CopilotAnthropicHttpErrorBoundaryTests` 补充响应所有权、并发头隔离、脱敏、长度和状态边界；均不调用真实供应商账户。
 
 ## 多会话活动投影
 
@@ -105,9 +111,13 @@ Anthropic 官方适配器的 `AnthropicSseException` 进入同一供应商错误
 
 ## 回答终态与模型可见的中断证据
 
+普通 Chat 对 OpenAI-compatible 与 Anthropic-compatible 的每个非空 SSE `data` 事件验证 JSON 语法（`[DONE]` 结束标记除外）。损坏的 JSON 立即形成不可自动重试的 `invalid_response_format`，保留已发布的正文和用量，不再跳过坏事件并靠后续结束标记宣称回答完整。HTTP 成功状态中的非流式 JSON 正文语法损坏也使用相同错误；诊断只保留固定说明与脱敏请求 ID，不包含原始载荷或解析器异常正文。合法的未知 JSON 事件、注释心跳、多行 `data` 仍兼容。`CopilotProviderPayloadErrorTests` 覆盖两类供应商的损坏事件、进展保留、无重放和协议扩展对照。
+
 `CopilotChatMessage.ModelContent` 为所有未完整结束的 assistant 轮次附加固定 `<assistant_response_interrupted>` 标记：流式截断、已有部分正文的 Chat/Agent 取消、无正文失败、暂停，以及排队轮次在调用模型和工具前取消都会形成模型可见的终结边界；显示正文、用户可见错误和 `ResponseInterruptionDetail` 不会作为该标记的一部分重新注入。这样下一次请求既能保留已完成工作，也不会把悬空用户消息当成仍待执行的授权或把未完成步骤当作成功；新尝试开始时会清除旧标记。Agent Framework 正常返回但 `AgentStopReason` 不是 `Completed` 时不伪装成传输中断，而是在 `ModelContent` 追加独立的 `<agent_turn_incomplete stop_reason="...">` 标记；`AwaitingUser`、`ApprovalDenied`、`BudgetExhausted`、`TaskPassLimit`、`Blocked`、`Paused`、`Cancelled`、`IncompleteOutput`、`ProviderFailure` 和 `Interrupted` 都保留结构化枚举值，UI、正文与 `/copy` 语义不变。只有 `IsResponseContentTruncated` 代表真实回答正文不完整，即使 Agent stop reason 为 `Completed` 也会转入回答中断边界。Agent 主循环统一复用 Chat 的 Provider 终态分类：`Length` 可执行一次禁用业务工具的有界收尾，只有收尾完整时才用新正文替换原部分回答；`ContentFilter` 不自动重试，避免把策略停止当成可绕过的瞬时错误；`ToolCalls` 或未知的明确终态可进入同一有界收尾，但不能直接证明完成。最终仍为长度上限、内容过滤、工具请求或未知终态的主循环或收尾结果会保留允许正文并落为专用 Provider blocker，不再进入窄证据改写或来源附录。缺失终态继续按 Framework 的兼容语义处理，不把旧 Provider 的自然结束误判为失败。`CopilotHostedTurnCompletion.PrepareTerminalEvidence` 在持续目标评估前关闭缺失终态的工具 trace 并提交该截断标记；`CopilotGoalContinuationPolicy` 将 `Completed` 加回答中断解析为不完整输出，跳过独立完成评估并暂停目标，同时保留原始 Agent stop reason 供任务审计。该组合还进入已有的 `Finalize` 恢复通道：`CopilotAgentRecoveryRequest` 只有在 stop reason 为 `Completed` 且携带可信的上一回答中断状态时才接受该形态，运行时继续复用禁用全部工具的 final-answer-only 路径；只有带可显示正文且 Provider 未报告明确的非成功终态才退休旧 checkpoint。否则允许返回的部分正文会保留，写入对应 Provider blocker，并以 `IncompleteOutput` 刷新 checkpoint，供下一次继续使用“重试最终回答”；`CopilotAgentTaskIndex` 将它显示为“等待最终回答”，而不是把任务重新排入执行。
 
 ## 用量观察与分支去重
+
+异常、取消或暂停收尾使用当前 Assistant 已经接收的 Provider usage，保留输入、输出和缓存用量。没有已报告用量时清除该轮与 `conversation.LastUsage`，不继承上一轮数据，也不从 Agent 的估算预算推算账单。`CopilotHostedTurnUsageTests` 经真实 ViewModel 的请求调度、用量事件和失败／取消路径验证这一边界。
 
 `CopilotHostedTurnCompletion` 保存真实 Provider 返回用量与独立的回答终态，不能因回答被标为中断就抹去已报告的消耗，也不能从 Agent 的估算预算制造 Provider 账单。`CopilotConversationUsageDiagnostics.Capture` 聚合已结束回答的 `ReportedUsage`，并单独加入 `CompactionUsage` 和 `TitleGenerationUsage`；活动、已跟踪、未报告和中断回答分别计数。Agent 时延、工具调用、委派与重试指标来自本地任务快照，不是同一口径的账户用量。
 
