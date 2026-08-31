@@ -107,6 +107,9 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(resolveAddressesAsync);
             ArgumentNullException.ThrowIfNull(createHttpHandler);
             ArgumentNullException.ThrowIfNull(getConfiguredPref64Prefixes);
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            deadline.CancelAfter(TimeSpan.FromSeconds(20));
+            cancellationToken = deadline.Token;
             var currentUri = NormalizeAndValidateWebPageUri(url);
             for (var redirectCount = 0; ; redirectCount++)
             {
@@ -956,7 +959,7 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(handler);
             var client = new HttpClient(handler, disposeHandler: true)
             {
-                Timeout = TimeSpan.FromSeconds(20),
+                Timeout = Timeout.InfiniteTimeSpan,
             };
             client.DefaultRequestHeaders.UserAgent.ParseAdd("ColorVision-Copilot-Agent/1.0");
             return client;

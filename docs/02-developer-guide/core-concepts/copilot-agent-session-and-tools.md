@@ -56,6 +56,8 @@ related: ["copilot.runtime","copilot.tool-contracts","copilot.lifecycle","copilo
 
 ## AgentSession 会话检查点
 
+编辑消息后发送的异步失效规则见[草稿编辑与历史恢复](./copilot-local-interactions.md#草稿编辑与历史恢复)：编辑已取消或被后来的操作替代时，旧发送不能清除当前 checkpoint。
+
 消息重试在异步图片准入后重新验证原会话的最新 user / assistant 对象：原轮次被编辑替换、会话新增轮次、原会话正在编辑，或新状态已具备结构化恢复时，旧重试直接退出，不删除回答、不清除 checkpoint，也不再次调用 Runtime。复查使用原请求捕获的 Profile 和配置，不从新选中会话取值；单纯切换会话或编辑其他会话不取消仍有效的原重试。`CopilotRetrySourceLifetimeTests` 通过真实图片保存和受控 UI 续体覆盖替换请求完成后、同消息新增 checkpoint、编辑以及会话切换的边界。
 
 Runtime 使用 Harness 的 `ChatHistoryProvider.InvokedAsync` 正式持久化边界：首次创建 Session 时先保存一个安全点，此后每次成功的真实模型调用写入历史后，都通过 `SerializeSessionAsync` 增量序列化 `AgentSession`，连同最新 todo ledger、evidence 和 journal 原子保存到对应 `CopilotConversationRecord`。包装器内部仍委托 `InMemoryChatHistoryProvider`，并使用与 Harness 相同的 context-window compaction reducer，不维护第二份聊天历史。正常结束时再写入带最终 stop reason 的检查点。应用重启或重新创建 Runtime 后，下一轮使用 `DeserializeSessionAsync` 恢复框架内部历史；运行时将 checkpoint 的有界 conversation memory 与 UI 可见历史做有序对齐，只把 checkpoint 之后尚未持久化的可见消息插入当前用户消息之前，既避免重复整段历史，也覆盖异常退出、旧状态迁移或增量保存滞后造成的上下文缺口。对话记忆与可执行 Session 分开保存：Profile、能力或请求工具变化导致 Session 重建时恢复有界语义上下文，而 todo、历史工具调用和审批继续作废。该扩展点的调用顺序见官方 [Harness 文档](https://learn.microsoft.com/en-us/agent-framework/agents/harness)。

@@ -141,7 +141,18 @@ public sealed class CopilotSteeringCancellationRecoveryTests
 
         public async Task<CopilotHostedAgentRun> StartAndSteerAsync()
         {
-            ViewModel.QueueExternalPrompt("Begin a bounded fixture task.", startNewConversation: false, sendNow: true, mode: CopilotAgentMode.Auto);
+            var previousContext = SynchronizationContext.Current;
+            try
+            {
+                // This headless fixture uses the direct event consumer; xUnit's
+                // concurrent context is not a serial WPF UI dispatcher.
+                SynchronizationContext.SetSynchronizationContext(null);
+                ViewModel.QueueExternalPrompt("Begin a bounded fixture task.", startNewConversation: false, sendNow: true, mode: CopilotAgentMode.Auto);
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+            }
             await Runtime.Entered.WaitAsync(TestTimeout);
             await WaitUntilAsync(() => Host.ActiveRun?.CanRequestPause == true);
             var run = Assert.IsType<CopilotHostedAgentRun>(Host.ActiveRun);

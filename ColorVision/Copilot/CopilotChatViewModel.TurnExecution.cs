@@ -95,6 +95,13 @@ namespace ColorVision.Copilot
                 CancelMessageEdit();
                 return;
             }
+            // Cancelling and reopening the same message starts a different edit session.
+            var messageEditSnapshot = isReplacingTurn ? _composerDraftBeforeMessageEdit : null;
+            bool IsCapturedMessageEditCurrent() => !isReplacingTurn
+                || (messageEditSnapshot != null
+                    && ReferenceEquals(messageEditSnapshot, _composerDraftBeforeMessageEdit)
+                    && IsLatestTurnPair(conversation, replacedUserMessage, replacedAssistantMessage)
+                    && conversation.Messages.IndexOf(replacedUserMessage) == replacedUserIndex);
 
             var turnSnapshot = queuedFollowUp != null
                 ? queuedFollowUp.SubmissionContext
@@ -134,7 +141,8 @@ namespace ColorVision.Copilot
             }
             var admittedAttachments = await TryPersistImageAttachmentsAsync(turnSnapshot.Attachments);
             if (admittedAttachments == null
-                || !CanContinueConversationRequestPreparation(conversation, requestMode))
+                || !CanContinueConversationRequestPreparation(conversation, requestMode)
+                || !IsCapturedMessageEditCurrent())
                 return;
             turnSnapshot = turnSnapshot.WithAttachments(admittedAttachments);
             var automaticCompaction = await TryAutoCompactConversationAsync(
@@ -144,7 +152,8 @@ namespace ColorVision.Copilot
                 turnSnapshot.ProjectInstructionDiscoveryOptions,
                 agentDefaultsSnapshot);
             if (automaticCompaction == CopilotAutomaticCompactionOutcome.Failed
-                || !CanContinueConversationRequestPreparation(conversation, requestMode))
+                || !CanContinueConversationRequestPreparation(conversation, requestMode)
+                || !IsCapturedMessageEditCurrent())
                 return;
             if (automaticCompaction == CopilotAutomaticCompactionOutcome.Applied)
             {

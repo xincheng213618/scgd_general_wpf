@@ -1561,6 +1561,9 @@
         "ColorVision/Copilot/CopilotChatViewModel.Composer.cs",
         "ColorVision/Copilot/CopilotChatViewModel.ComposerReferences.cs",
         "ColorVision/Copilot/CopilotChatViewModel.AttachmentCommands.cs",
+        "ColorVision/Copilot/Agent/CopilotWebPageToolSupport.cs",
+        "ColorVision/Copilot/Capabilities/CopilotBoundedHttpContentReader.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.TurnExecution.cs",
         "ColorVision/Copilot/CopilotChatViewModel.AttachmentLifecycle.cs",
         "ColorVision/Copilot/Context/CopilotImageAttachmentAdmission.cs",
         "ColorVision/Copilot/CopilotChatPanel.Composer.cs",
@@ -1596,6 +1599,8 @@
         "Test/ColorVision.Copilot.Tests/CopilotAttachmentPathTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotConversationDeletionPersistenceTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotRequestAdmissionLifetimeTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotMessageEditAdmissionTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotWebPageDeadlineTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotImagePayloadValidationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotImageInputBudgetTests.cs"
       ],
@@ -1618,7 +1623,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-local-interactions.md",
       "url": "/02-developer-guide/core-concepts/copilot-local-interactions",
       "searchable": true,
-      "source_hash": "88db518fdf0cb2c6ee7304dc09768e237401ab69f9f7ec0bdab5dd653a1df9c4"
+      "source_hash": "11aa95278ff7bdcd75aef5eabc49759ca9f592db7637857918960caa4515212c"
     },
     {
       "knowledge_id": "copilot.lifecycle",
@@ -1819,7 +1824,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-agent-session-and-tools.md",
       "url": "/02-developer-guide/core-concepts/copilot-agent-session-and-tools",
       "searchable": true,
-      "source_hash": "6a502d1adeeba742e544b42fc3291229aaf3f5ebecfbf102a16b9820cfea0468"
+      "source_hash": "04994727356e1007d59206977c7d0a89076129cef6158c79161e8ce7964df97c"
     },
     {
       "knowledge_id": "copilot.tool-contracts",
