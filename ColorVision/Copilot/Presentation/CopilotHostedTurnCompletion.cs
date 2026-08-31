@@ -41,11 +41,8 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(assistantMessage);
 
             CompleteThinking(assistantMessage);
-            assistantMessage.CompleteActiveAgentTraces(
-                CopilotToolExecutionState.Cancelled,
-                CopilotToolFailureKind.Cancelled,
-                "tool_execution_cancelled",
-                "The tool call was cancelled with the hosted Agent turn.");
+            assistantMessage.CompleteActiveAgentTracesAfterUnexpectedTurnEnd(
+                "The hosted Agent turn stopped");
             if (assistantMessage.RequestMode != CopilotAgentMode.Chat)
             {
                 var stopReason = controlIntent switch

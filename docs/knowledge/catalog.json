@@ -1476,7 +1476,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-agent-execution.md",
       "url": "/02-developer-guide/core-concepts/copilot-agent-execution",
       "searchable": true,
-      "source_hash": "4eb9c32c2302d2a73c75e4f106d6468e53d059a78d125fd02985437cde5bd7c6"
+      "source_hash": "e7b0e43db0f4318dd5beb0922267226073407ccbce7dd0437a9bb7c31918c21e"
     },
     {
       "knowledge_id": "copilot.extensions",
@@ -1766,6 +1766,7 @@
       "code_paths": [
         "ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs",
         "ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.cs",
+        "ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.Builder.cs",
         "ColorVision/Copilot/State",
         "ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs",
         "ColorVision/Copilot/CopilotChatViewModel.AgentTaskCommands.cs",
@@ -1786,6 +1787,8 @@
       "test_paths": [
         "Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotCancelledToolJournalTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotRetrySourceLifetimeTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatStateRecoveryAttachmentTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatStateProfileReconciliationTests.cs",
@@ -1813,7 +1816,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-agent-session-and-tools.md",
       "url": "/02-developer-guide/core-concepts/copilot-agent-session-and-tools",
       "searchable": true,
-      "source_hash": "90fb499065c51f5287ea995597fb5c59acfb67ca59db71fd5463c0f86209738d"
+      "source_hash": "cda5d1029f79a0db4867bb554dca2c0404d99201715b9b0050f52e20d8840047"
     },
     {
       "knowledge_id": "copilot.tool-contracts",

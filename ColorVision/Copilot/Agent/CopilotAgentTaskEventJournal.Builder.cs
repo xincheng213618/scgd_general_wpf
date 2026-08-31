@@ -438,7 +438,7 @@ namespace ColorVision.Copilot
                 }
                 CloseDanglingApprovals();
                 CloseUnstartedProviderToolCalls(reason);
-                CloseDanglingToolExecutions(reason);
+                CloseDanglingToolExecutions();
                 CloseDanglingUserQuestions(reason);
                 Append(CopilotAgentTaskEventType.RunStopped, RunId, reason.ToString(), $"Agent run stopped with reason {reason}.");
             }
@@ -606,7 +606,7 @@ namespace ColorVision.Copilot
             }
         }
 
-        private void CloseDanglingToolExecutions(CopilotAgentStopReason stopReason)
+        private void CloseDanglingToolExecutions()
         {
             var latestStarts = _events
                 .Where(item => item.Type == CopilotAgentTaskEventType.ToolStarted
@@ -622,25 +622,15 @@ namespace ColorVision.Copilot
             if (latestStarts.Length == 0)
                 return;
 
-            var cancelled = stopReason == CopilotAgentStopReason.Cancelled;
-            var state = cancelled
-                ? CopilotToolExecutionState.Cancelled.ToString()
-                : CopilotToolExecutionState.Interrupted.ToString();
-            var failureCode = cancelled
-                ? "tool_execution_cancelled"
-                : CopilotToolFailureCode.OutcomeUnknown;
-            var summary = cancelled
-                ? "Tool execution was cancelled before a terminal result was recorded."
-                : "Tool execution started but was interrupted before a terminal result was recorded; its external outcome is unknown.";
             foreach (var start in latestStarts)
             {
                 Append(
                     CopilotAgentTaskEventType.ToolCompleted,
                     start.SubjectId,
-                    state,
-                    summary,
+                    CopilotToolExecutionState.Interrupted.ToString(),
+                    "Tool execution started but was interrupted before a terminal result was recorded; its external outcome is unknown.",
                     start.ToolName,
-                    failureCode: failureCode);
+                    failureCode: CopilotToolFailureCode.OutcomeUnknown);
             }
         }
 

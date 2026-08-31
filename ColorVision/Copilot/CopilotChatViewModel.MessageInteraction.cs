@@ -540,7 +540,18 @@ namespace ColorVision.Copilot
                 return;
             var admittedAttachments = await TryPersistImageAttachmentsAsync(turnSnapshot.Attachments);
             if (admittedAttachments == null
-                || !CanContinueConversationRequestPreparation(conversation, userMessage.RequestMode))
+                || !CanContinueConversationRequestPreparation(conversation, userMessage.RequestMode)
+                || !IsLatestTurnPair(conversation, userMessage, assistantMessage)
+                || string.Equals(_editingConversationId, conversation.Id, StringComparison.Ordinal)
+                || CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
+                    conversation,
+                    assistantMessage,
+                    requestProfile,
+                    CopilotCapabilityCatalog.Shared.GetSnapshot(
+                        turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredPluginsEnabled),
+                    CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
+                        turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredHooksEnabled,
+                        turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredPluginsEnabled)))
                 return;
             turnSnapshot = turnSnapshot.WithAttachments(admittedAttachments);
 
@@ -629,6 +640,17 @@ namespace ColorVision.Copilot
                 refreshExternalContext,
                 isAutomaticGoalContinuation: false);
             await ExecuteHostedPreparedTurnAsync(hostedRun, preparedTurn);
+        }
+
+        private static bool IsLatestTurnPair(
+            CopilotConversationRecord conversation,
+            CopilotChatMessage userMessage,
+            CopilotChatMessage? assistantMessage)
+        {
+            var userIndex = conversation.Messages.Count - (assistantMessage == null ? 1 : 2);
+            return userIndex >= 0
+                && ReferenceEquals(conversation.Messages[userIndex], userMessage)
+                && (assistantMessage == null || ReferenceEquals(conversation.Messages[userIndex + 1], assistantMessage));
         }
 
         private bool TryResolveLatestTurn(CopilotChatMessage? message, out CopilotConversationRecord conversation, out CopilotChatMessage userMessage, out CopilotChatMessage? assistantMessage)

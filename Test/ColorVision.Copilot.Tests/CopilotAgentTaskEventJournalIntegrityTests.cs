@@ -1013,7 +1013,7 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
-    public void CancelledStopClosesDanglingToolAsCancelled()
+    public void CancelledStopClosesDanglingToolAsOutcomeUnknown()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();
         journal.RecordRunStarted();
@@ -1027,8 +1027,8 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
         AssertSyntheticTerminal(
             terminal,
             "cancelled-call",
-            CopilotToolExecutionState.Cancelled,
-            "tool_execution_cancelled");
+            CopilotToolExecutionState.Interrupted,
+            CopilotToolFailureCode.OutcomeUnknown);
     }
 
     [Fact]

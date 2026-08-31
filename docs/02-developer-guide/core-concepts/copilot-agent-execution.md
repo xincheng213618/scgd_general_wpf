@@ -55,6 +55,8 @@ Anthropic 官方适配器的 `AnthropicSseException` 进入同一供应商错误
 
 ### 流清理与原始失败
 
+停止请求不能证明工具已经停止。取消等待宽限结束后，若工具只有 `Running` / `ToolStarted` 而没有权威终态，`CopilotHostedTurnCompletion` 与任务 journal 的收尾均记录 `Interrupted` / `tool_outcome_unknown`；不能根据本轮 `Cancelled` 状态推导工具也已取消。尚未开始的调用和仍待审批的调用继续单独标记，已有权威成功、失败或取消结果不被覆盖。`CopilotHostedTurnCompletionTests` 用仍未结束的受控 producer 验证取消、暂停及中断的呈现，journal 与 checkpoint 的恢复边界见[任务与工具结果](./copilot-agent-session-and-tools.md#显式有界重试)。
+
 `CopilotCancellationGuardChatClient` 在流读取失败或取消后保留原异常，清理阶段的次要异常不能改变 HTTP 分类、请求 ID 或重试资格；同步抛出的读取错误和两次更新之间的取消也遵循这一规则。没有先前失败时，清理自身的异常仍向上传播，不能伪装成成功。宿主给清理过程单独设置等待预算：真正超过预算时分离并观察后续清理，清理自身抛出的 `TimeoutException` 不冒充宿主超时。尚未结束的读取先被观察，完成后才释放枚举器，避免并发调用 `MoveNextAsync` 和 `DisposeAsync`。`CopilotProviderStreamCleanupTests` 与 `CopilotProviderStreamCleanupTimeoutTests` 用受控异步枚举器核验原错误优先、取消、延迟清理和清理超时来源；不声称第三方 SDK 内部任意同步阻塞都可被抢占。
 
 ### OpenAI HTTP 重试预算
