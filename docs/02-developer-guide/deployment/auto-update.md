@@ -4,9 +4,9 @@ knowledge_type: "topic"
 status: "current"
 summary: "主程序及插件更新、检查结果一次性消费、失败元数据回退、目录替换与启动恢复的实现和验收边界。"
 aliases: ["自动更新","更新失败","插件回滚","重复检查更新","更新检查缓存","五分钟缓存","启动检查结果","PluginUpdater","CombinedUpdateCoordinator","UpdateCheckReuseState","LatestVersionCheckRequestCache","CanReuseUpdateCheckOptions","GetPluginUpdateMetadataAsync","ServerUnavailable","NoInternetConnection","forceRefresh"]
-code_paths: ["ColorVision/Update","ColorVision/Recovery","UI/ColorVision.UI/Plugins/PluginUpdater.cs","UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceClient.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceManager.cs"]
+code_paths: ["ColorVision/Update","ColorVision/Recovery","UI/ColorVision.UI/ServiceHost/ApplicationUpdatePrivilegeBroker.cs","UI/ColorVision.UI/Plugins/PluginUpdater.cs","UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceClient.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceManager.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/PluginRecoveryBackupServiceTests.cs","Test/ColorVision.UI.Tests/ServiceHostUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/AutoUpdatePlanTests.cs"]
-related: ["delivery.deployment","delivery.scripts","platform.service-host"]
+related: ["delivery.deployment","delivery.scripts","platform.service-host","delivery.update-scan-protection","platform.startup-integrity"]
 ---
 
 # 自动更新
@@ -49,9 +49,11 @@ flowchart LR
 
 更新窗口在“程序备份”旁提供“不使用系统代理”选项，默认开启。开启时使用独立的直连 `HttpClient`；取消勾选后，更新检查和 Marketplace 请求遵循 Windows 系统代理。修改从下一次请求生效。该选项只影响 HTTP 元数据与 Marketplace 请求，不改变 aria2 下载和程序快照行为。
 
-更新提示显示 30 秒后会静默预下载主程序和插件包。退出时只自动应用已经完整缓存并通过校验的增量包；程序目录不可写时，必须由 `ColorVisionServiceHost` 在 3 秒内静默准备好目录权限，否则本次退出直接跳过，不弹 UAC、不阻塞关闭。主程序和插件分别判断包是否可用：任意一方未准备好不会阻止另一方更新。完整安装程序可以预下载和复用，但不会在退出时自动运行；后台启动检查仍会按当前主程序版本独立查询和预下载兼容插件，使已经准备好的插件可以在退出时单独更新。
+更新提示显示 30 秒后会静默预下载主程序和插件包。退出时只自动应用已经完整缓存并通过校验的增量包；程序目录不可写时，必须由 `ColorVisionServiceHost` 在 3 秒内静默准备好目录权限，否则本次退出直接跳过，不弹 UAC。这3秒只约束权限准备请求，不是全部退出更新准备阶段的耗时上限。主程序和插件分别判断包是否可用：任意一方未准备好不会阻止另一方更新。完整安装程序可以预下载和复用，但不会在退出时自动运行；后台启动检查仍会按当前主程序版本独立查询和预下载兼容插件，使已经准备好的插件可以在退出时单独更新。
 
-权限准备按最短路径执行：便携版、非系统盘或其他本来可写的程序目录直接更新，不调用特权服务；只有目录不可写时才请求 `ColorVisionServiceHost`，用户主动更新时服务仍不可用才使用 UAC 兜底。代理调用身份、免票据命令的副作用和超时不取消执行的边界，统一见[本机权限代理](../../03-architecture/components/service-host.md)。
+`ApplicationUpdatePrivilegeBroker` 按实际写权限判断，不按“便携版”或盘符直接放行：目录可写时跳过代理的权限准备接口；但传入了暂存ServiceHost包目录时，仍会尝试代理自更新，失败不阻断主程序更新。目录不可写才请求代理准备权限，用户主动更新且该路径不可用时才使用 UAC 兜底。代理调用身份、免票据命令的副作用和超时不取消执行的边界，统一见[本机权限代理](../../03-architecture/components/service-host.md)。
+
+增量/组合更新另有可选的[扫描保护](./update-scan-protection.md)，会经ServiceHost临时修改Defender排除项，与目录是否可写无关；启用失败不阻断更新。ID交接、首次主窗口渲染后的完成请求、过期重试和停止不保证撤销的规则集中在该主题，不以更新完成日志代替安全设置恢复。
 
 下载完成的安装包、增量包和插件包保留在各自的更新缓存中，供后续重装、还原或复用；更新结束时只删除 `%TEMP%` 下本次生成的解压和拼装目录。缓存除了检查文件结构，还会核对包内 `ColorVision.exe` 或完整安装程序的目标版本，避免同名旧包被当成新版本使用。校验失败或暂时无法读取的缓存包不会直接删除，而是移入同级 `Recovery` 目录并重新下载。无法读取的普通程序快照保留原位；手动重建默认快照时，旧文件会先保留到 `Recovery`。
 
@@ -62,6 +64,8 @@ flowchart LR
 主程序、插件和快照的外部批处理会向当前安装目录对应的 `%LocalAppData%\ColorVision\UpdateState\<安装标识>\update.log` 追加开始、成功或失败记录，便于定位静默更新没有生效的问题。主程序覆盖复制遇到杀毒扫描或文件句柄短暂占用时，每秒重试一次、最多重试 10 次；最终失败会把 `robocopy` 的文件明细和退出码写入同一日志。“发送反馈”的诊断项默认包含最近 7 天内各安装目录的更新日志，因此外部更新进程已经退出后仍能随反馈包回传。
 
 如果上次启动没有完成，主程序会先显示独立启动恢复窗口。该窗口自动检查主程序新版，也可重新安装当前完整版本；插件侧支持本次跳过、持久禁用和按已验证备份回退。更新或回退只有在外部进程真实接管后才清理启动失败记录，下载失败、恢复准备失败或仅打开快照窗口都不会丢失现场。更新前的旧进程清理是尽力而为：无法识别、权限不足或终止超时时记录警告，不能阻止外部更新程序继续启动。
+
+启动失败的主程序原生提示与后台缺文件告警不是这个恢复窗口；它们的依赖识别、终态抑制和有限观察范围见[启动失败上报](../../03-architecture/components/startup-integrity.md)。提示存在或缺失都不直接证明更新包正确、Defender已恢复或安装器修复成功。
 
 ## 检查复用与元数据新鲜度
 

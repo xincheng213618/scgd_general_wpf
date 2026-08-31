@@ -3162,6 +3162,7 @@
       "code_paths": [
         "ColorVision/Update",
         "ColorVision/Recovery",
+        "UI/ColorVision.UI/ServiceHost/ApplicationUpdatePrivilegeBroker.cs",
         "UI/ColorVision.UI/Plugins/PluginUpdater.cs",
         "UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs",
         "UI/ColorVision.UI.Desktop/Marketplace/MarketplaceClient.cs",
@@ -3175,7 +3176,9 @@
       "related": [
         "delivery.deployment",
         "delivery.scripts",
-        "platform.service-host"
+        "platform.service-host",
+        "delivery.update-scan-protection",
+        "platform.startup-integrity"
       ],
       "code_scopes": [
         "ColorVision/Recovery",
@@ -3188,7 +3191,56 @@
       "source": "docs/02-developer-guide/deployment/auto-update.md",
       "url": "/02-developer-guide/deployment/auto-update",
       "searchable": true,
-      "source_hash": "0a51b50a337b2be6973da2827d6ee1779bd83a46fed9fcffd270e2d5210c837d"
+      "source_hash": "35364e5ce2e8b7ea96a44aa44afbd0e5f4f16a27d1679b884c99168a20e0db3e"
+    },
+    {
+      "knowledge_id": "delivery.update-scan-protection",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "ServiceHost提供的主程序增量更新临时Defender排除项、目录准入和清理所有权；启用失败不阻断更新，服务停止或保护超时不保证排除项立即恢复。",
+      "aliases": [
+        "更新扫描保护",
+        "临时Defender排除项",
+        "排除项恢复",
+        "扫描保护超时清理",
+        "ApplicationUpdateScanProtection",
+        "ApplicationUpdateScanProtectionService",
+        "PowerShellDefenderExclusionManager",
+        "IDefenderExclusionManager",
+        "ApplicationUpdateScanProtectionPaths",
+        "ApplicationUpdateScanProtectionState",
+        "COLORVISION_UPDATE_SCAN_PROTECTION_ID"
+      ],
+      "code_paths": [
+        "UI/ColorVision.UI/Update/ApplicationUpdateScanProtection.cs",
+        "ColorVision/Update/AutoUpdater.cs",
+        "ColorVision/MainWindow.xaml.cs",
+        "UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs",
+        "src/ColorVisionServiceHost/ApplicationUpdateScanProtectionService.cs",
+        "src/ColorVisionServiceHost/ServiceHostCommandHandler.cs",
+        "src/ColorVisionServiceHost/ColorVisionServiceHostService.cs"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/ApplicationUpdateScanProtectionTests.cs",
+        "Test/ColorVision.UI.Tests/UpdaterBatchExecutionTests.cs",
+        "Test/ColorVision.UI.Tests/ColorVisionServiceHostServiceLifecycleTests.cs"
+      ],
+      "related": [
+        "delivery.update",
+        "platform.service-host"
+      ],
+      "code_scopes": [
+        "ColorVision",
+        "ColorVision/Update",
+        "UI/ColorVision.UI",
+        "src/ColorVisionServiceHost"
+      ],
+      "domain": "delivery",
+      "title": "更新扫描保护：临时排除项与清理所有权",
+      "source": "docs/02-developer-guide/deployment/update-scan-protection.md",
+      "url": "/02-developer-guide/deployment/update-scan-protection",
+      "searchable": true,
+      "source_hash": "e03f1df3cc1966b9e33fed822fe96c76e77fde71e06f569ff1630eb34a2a7fd5"
     },
     {
       "knowledge_id": "engine.camera-preview-lifecycle-plan",
@@ -5665,6 +5717,7 @@
       ],
       "related": [
         "platform.architecture",
+        "platform.startup-integrity",
         "delivery.update",
         "ui.wizards",
         "ui.localization",
@@ -5680,7 +5733,7 @@
       "source": "docs/03-architecture/overview/runtime.md",
       "url": "/03-architecture/overview/runtime",
       "searchable": true,
-      "source_hash": "e302a243ccb2ab935995e2176e26b07e7efc46241fe178c432678cc33d70a816"
+      "source_hash": "43cd96f08a55e7d1934d669b640e91a4d02d5e36be730158e9c666477214f8e8"
     },
     {
       "knowledge_id": "platform.security",
@@ -5759,7 +5812,9 @@
       ],
       "related": [
         "platform.system",
+        "platform.startup-integrity",
         "delivery.update",
+        "delivery.update-scan-protection",
         "plugins.windows-service",
         "engine.shell-extension",
         "engine.mysql-recovery"
@@ -5774,7 +5829,61 @@
       "source": "docs/03-architecture/components/service-host.md",
       "url": "/03-architecture/components/service-host",
       "searchable": true,
-      "source_hash": "3111ff0a07ab6a4f7ef43d600d41b7f2eed2a8ed2963c301fed7938342865abe"
+      "source_hash": "5f5e79bd4b8ec830072cbebaaaa0a189ccb5735f8a8bec97724ef5cc14e9947c"
+    },
+    {
+      "knowledge_id": "platform.startup-integrity",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "主程序启动失败识别、状态上报和后台缺依赖告警；十秒观察不强杀进程，已处理终态抑制重复弹窗，无告警不证明安装完整。",
+      "aliases": [
+        "启动缺文件告警",
+        "无法启动",
+        "启动失败弹窗",
+        "启动依赖缺失",
+        "十秒启动观察",
+        "启动告警抑制",
+        "StartupFailureGuard",
+        "StartupFailurePresentation",
+        "StartupRegistryChecker",
+        "ApplicationStartupIntegrityMonitor",
+        "ApplicationStartupStatusHub",
+        "ApplicationStartupStatusReport",
+        "ApplicationRuntimeDependencyInspector",
+        "InstalledColorVisionLocator",
+        "WmiColorVisionProcessStartSource",
+        "application-startup-status",
+        "failed-handled"
+      ],
+      "code_paths": [
+        "ColorVision/StartupFailureGuard.cs",
+        "ColorVision/ProgramTimer.cs",
+        "ColorVision/App.xaml.cs",
+        "ColorVision/MainWindow.xaml.cs",
+        "src/ColorVisionServiceHost/ApplicationStartupIntegrityMonitor.cs",
+        "src/ColorVisionServiceHost/ServiceHostCommandHandler.cs",
+        "src/ColorVisionServiceHost/ColorVisionServiceHostService.cs",
+        "src/ColorVisionServiceHost/Program.cs"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/ApplicationStartupIntegrityMonitorTests.cs",
+        "Test/ColorVision.UI.Tests/ServiceHostStartupStatusTests.cs"
+      ],
+      "related": [
+        "platform.runtime",
+        "platform.service-host",
+        "delivery.update"
+      ],
+      "code_scopes": [
+        "ColorVision",
+        "src/ColorVisionServiceHost"
+      ],
+      "domain": "platform",
+      "title": "启动失败上报与缺依赖告警",
+      "source": "docs/03-architecture/components/startup-integrity.md",
+      "url": "/03-architecture/components/startup-integrity",
+      "searchable": true,
+      "source_hash": "d2bdcf6d27143e7dea2e9f5fd1e19eb1403e1036a6a8f2baad64ee428a430e2f"
     },
     {
       "knowledge_id": "platform.system",

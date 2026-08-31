@@ -245,6 +245,12 @@
             },
             {
               "text": {
+                "root": "更新扫描保护：临时排除项与清理所有权"
+              },
+              "link": "/02-developer-guide/deployment/update-scan-protection"
+            },
+            {
+              "text": {
                 "root": "跨模块运行问题定位"
               },
               "link": "/01-user-guide/README"
@@ -272,6 +278,12 @@
                 "root": "架构运行时"
               },
               "link": "/03-architecture/overview/runtime"
+            },
+            {
+              "text": {
+                "root": "启动失败上报与缺依赖告警"
+              },
+              "link": "/03-architecture/components/startup-integrity"
             },
             {
               "text": {
@@ -584,6 +596,12 @@
                 "root": "自动更新"
               },
               "link": "/02-developer-guide/deployment/auto-update"
+            },
+            {
+              "text": {
+                "root": "更新扫描保护：临时排除项与清理所有权"
+              },
+              "link": "/02-developer-guide/deployment/update-scan-protection"
             },
             {
               "text": {
@@ -1355,6 +1373,12 @@
                 "root": "自动更新"
               },
               "link": "/02-developer-guide/deployment/auto-update"
+            },
+            {
+              "text": {
+                "root": "更新扫描保护：临时排除项与清理所有权"
+              },
+              "link": "/02-developer-guide/deployment/update-scan-protection"
             },
             {
               "text": {
@@ -3053,6 +3077,12 @@
           "items": [
             {
               "text": {
+                "root": "更新扫描保护：临时排除项与清理所有权"
+              },
+              "link": "/02-developer-guide/deployment/update-scan-protection"
+            },
+            {
+              "text": {
                 "root": "Explorer 缩略图读取与 COM 注册"
               },
               "link": "/04-api-reference/engine-components/ColorVision.ShellExtension"
@@ -3062,6 +3092,12 @@
                 "root": "ColorVisionServiceHost：本机权限代理与生命周期"
               },
               "link": "/03-architecture/components/service-host"
+            },
+            {
+              "text": {
+                "root": "启动失败上报与缺依赖告警"
+              },
+              "link": "/03-architecture/components/startup-integrity"
             }
           ]
         },

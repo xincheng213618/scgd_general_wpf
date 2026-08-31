@@ -328,6 +328,14 @@
     {"query":"ServiceHostCallerIdentity是否验证发布者签名","expected_any":["platform.service-host"],"include_planned":false},
     {"query":"ServiceHostStatus.IsReadyForPackagedVersion需要安装包存在吗","expected_any":["platform.service-host"],"include_planned":false},
     {"query":"ServiceHostBrokerTicketService票据锁定Data参数吗","expected_any":["platform.service-host"],"include_planned":false},
-    {"query":"ServiceHostPipeClient的send与桌面客户端命令和超时规则相同吗","expected_any":["platform.service-host"],"include_planned":false}
+    {"query":"ServiceHostPipeClient的send与桌面客户端命令和超时规则相同吗","expected_any":["platform.service-host"],"include_planned":false},
+    {"query":"主程序更新失败或用户取消后，ServiceHost加的Defender排除项谁负责撤掉，会不会误删原来已有的排除项？","expected_any":["delivery.update-scan-protection"],"include_planned":false},
+    {"query":"拿到扫描保护票据后，任意目录和同用户其他进程能开始或结束这次保护吗？","expected_any":["delivery.update-scan-protection"],"include_planned":false},
+    {"query":"ServiceHost重启/停止或保护超时后排除项一定恢复吗，哪些失败只记录、哪些会返回失败？","expected_any":["delivery.update-scan-protection"],"include_planned":false},
+    {"query":"程序启动十秒后还没进入主界面，后台会不会判定失败、弹缺文件提示并强制结束它？","expected_any":["platform.startup-integrity"],"include_planned":false},
+    {"query":"程序自己已经报过启动失败，为什么后台有时不再弹“无法启动”？这个抑制是按固定时间节流的吗？","expected_any":["platform.startup-integrity"],"include_planned":false},
+    {"query":"直接从源码运行或看到服务启动成功但没收到缺文件告警，能说明运行依赖已经完整了吗？","expected_any":["platform.startup-integrity"],"include_planned":false},
+    {"query":"ApplicationRuntimeDependencyInspector.FindMissingDependencies会检查DLL版本和hash吗","expected_any":["platform.startup-integrity"],"include_planned":false},
+    {"query":"ApplicationUpdatePrivilegeBroker在目录可写时就完全不调用ServiceHost吗","expected_any":["delivery.update"],"include_planned":false}
   ]
 }

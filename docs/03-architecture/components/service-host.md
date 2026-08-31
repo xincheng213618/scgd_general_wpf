@@ -6,7 +6,7 @@ summary: "ColorVisionServiceHost本机权限代理的身份、票据与就绪：
 aliases: ["ColorVisionServiceHost", "后台权限代理", "本机特权服务", "服务宿主", "命名管道", "SCM停止预算", "broker ticket", "ServiceHostProtocol", "ColorVisionServiceHostClient", "IColorVisionServiceHostClient", "ServiceHostPipeClient", "ServiceHostCallerIdentity", "ServiceHostBrokerTicketService", "ServiceHostCommandHandler", "ServiceHostPipeServer", "ColorVisionServiceHostService", "ColorVisionServiceHostManager", "ServiceHostStatus", "ServiceHostRuntimeIntegrityChecker", "ServiceHostStartupUpdateChecker", "ServiceHostManagerWindow", "ColorVisionServiceHostWizardStep", "Program.BeginConsoleShutdown"]
 code_paths: ["src/ColorVisionServiceHost", "UI/ColorVision.UI/ServiceHost/ServiceHostProtocol.cs", "UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs", "ColorVision/ServiceHost"]
 test_paths: ["Test/ColorVision.UI.Tests/ServiceHostStatusTests.cs", "Test/ColorVision.UI.Tests/ServiceHostBrokerTicketTests.cs", "Test/ColorVision.UI.Tests/ServiceHostPipeServerTests.cs", "Test/ColorVision.UI.Tests/ColorVisionServiceHostServiceLifecycleTests.cs", "Test/ColorVision.UI.Tests/ServiceHostStartupStatusTests.cs", "Test/ColorVision.UI.Tests/ServiceHostApplicationUpdateAccessTests.cs"]
-related: ["platform.system", "delivery.update", "plugins.windows-service", "engine.shell-extension", "engine.mysql-recovery"]
+related: ["platform.system", "platform.startup-integrity", "delivery.update", "delivery.update-scan-protection", "plugins.windows-service", "engine.shell-extension", "engine.mysql-recovery"]
 ---
 
 # ColorVisionServiceHost：本机权限代理与生命周期
@@ -64,7 +64,7 @@ related: ["platform.system", "delivery.update", "plugins.windows-service", "engi
 
 SCM `OnStop` 的两分钟是正常耗时预算，不是强杀或提前报告Stopped的截止点。超预算只记录并继续等待，通过wait hint报告进度；组件停止失败时仍等待其它组件并尝试释放资源。单个handler异常不自动使整个pipe server故障，不能把一条失败请求等同于服务已停止。
 
-SCM启动会启动更新扫描保护 `ApplicationUpdateScanProtectionService`、启动完整性监视器 `ApplicationStartupIntegrityMonitor` 和pipe；后台启动任务完成不是“Service started”日志的前提。控制台 `--run` 没有启动SCM路径中的完整性监视器，两种启动方式不完全等价。控制台停止入口 `Program.BeginConsoleShutdown` 取消pipe token并请求扫描保护停止；控制台finally另行等待pipe和扫描保护的停止任务，再Dispose，不取消已接纳命令。后台组件具体策略不由本页的pipe生命周期保证覆盖。
+SCM启动会启动更新扫描保护 `ApplicationUpdateScanProtectionService`、启动完整性监视器 `ApplicationStartupIntegrityMonitor` 和pipe；后台启动任务完成不是“Service started”日志的前提。控制台 `--run` 没有启动SCM路径中的完整性监视器，两种启动方式不完全等价。控制台停止入口 `Program.BeginConsoleShutdown` 取消pipe token并请求扫描保护停止；控制台finally另行等待pipe和扫描保护的停止任务，再Dispose，不取消已接纳命令。后台组件分别见[临时扫描排除与清理](../../02-developer-guide/deployment/update-scan-protection.md)和[启动失败上报与缺依赖告警](./startup-integrity.md)，pipe停止完成不等于排除项已全部撤销或主程序健康。
 
 ## 包、运行实例与就绪判定
 
