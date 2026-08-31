@@ -24,7 +24,7 @@ namespace ColorVision.Solution
 
         public override string Header => ColorVision.UI.Properties.Resources.ProjectSolution_P;
         public override ICommand Command => SolutionWorkspaceCommands.OpenWorkspace;
-        public HotKeys HotKeys => new(FileHotkeyText.OpenWorkspace, Hotkey.None, Execute)
+        public HotKeys HotKeys => new(FileHotkeyText.OpenWorkspace, new Hotkey(Key.O, ModifierKeys.Control | ModifierKeys.Alt), Execute)
         {
             Description = FileHotkeyText.OpenWorkspaceDescription,
             Category = FileHotkeyText.Category

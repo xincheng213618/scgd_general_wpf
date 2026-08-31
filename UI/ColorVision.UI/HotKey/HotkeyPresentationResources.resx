@@ -13,7 +13,8 @@
   <data name="CheckUpdates" xml:space="preserve"><value>打开更新检查窗口，检查主程序与兼容插件更新。</value></data>
   <data name="ToggleStatusBar" xml:space="preserve"><value>显示或隐藏主窗口底部状态栏。</value></data>
   <data name="OpenAbout" xml:space="preserve"><value>打开关于窗口，查看应用版本和系统信息。</value></data>
-  <data name="ResetLayout" xml:space="preserve"><value>恢复默认停靠布局，可能移除已打开的文件标签；请先保存文档。</value></data>
+  <data name="ResetLayout" xml:space="preserve"><value>确认后恢复默认停靠布局，可能移除已打开的文件标签；请先保存文档。</value></data>
+  <data name="ResetLayoutConfirmation" xml:space="preserve"><value>重置窗口布局可能关闭已打开的文件标签，未保存的修改可能丢失。请先保存文档。是否继续重置？</value></data>
   <data name="SearchCommandsName" xml:space="preserve"><value>搜索命令与功能</value></data>
   <data name="SearchCommands" xml:space="preserve"><value>搜索应用中的菜单、工具和模板，不查找文档正文。</value></data>
   <data name="SearchEntryPlaceholder" xml:space="preserve"><value>搜索功能…</value></data>

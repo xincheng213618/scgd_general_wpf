@@ -5,7 +5,7 @@ status: "current"
 summary: "ViewFlow 与 FlowEditorCanvas 的编辑命令、文档目标、工作区隔离及未保存画布的执行边界。"
 aliases: ["流程设计","拖节点","节点参数","保存流程","ViewFlow","FlowEditorCanvas","ActiveFlowParam","FlowTemplateWorkspaceController"]
 code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowTemplateWorkspaceController.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEngineToolWindow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorOperations.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FlowTemplateWorkspaceControllerTests.cs","Test/ColorVision.UI.Tests/ViewFlowDocumentBehaviorTests.cs","Test/ColorVision.UI.Tests/STNodeCopyPasteTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/FlowTemplateWorkspaceControllerTests.cs","Test/ColorVision.UI.Tests/ViewFlowDocumentBehaviorTests.cs","Test/ColorVision.UI.Tests/FlowLocalShortcutTests.cs","Test/ColorVision.UI.Tests/STNodeCopyPasteTests.cs"]
 related: ["flow.architecture","flow.editor","flow.templates","flow.session","flow.headless","ui.property-grid"]
 ---
 
@@ -38,7 +38,7 @@ related: ["flow.architecture","flow.editor","flow.templates","flow.session","flo
 | 添加节点、连接端口、拖动和命名 | `FlowEditorCanvas` 承载 `STNodeEditor`；节点目录与端口兼容由 ST 库负责 |
 | 节点参数 | 属性标注接入统一 PropertyGrid；设备 Code、模板选择与输入字段须分别确认，连线成功不代表参数正确 |
 | 撤销/重做、复制/粘贴、删除 | Canvas 转发编辑命令到 ST 控件的历史栈；撤销不等于撤销已经写入数据库或外部系统的动作 |
-| 自动布局 | `ViewFlow.AutoAlignment` 调用布局服务整理节点位置 |
+| 自动布局 | `ViewFlow.AutoAlignment` 调用布局服务整理节点位置；画布局部快捷键仅精确匹配 Ctrl+L，不接受额外 Alt/Shift/Win，避免误接管日志的 Ctrl+Alt+L |
 | 自动适配 | `AutoSizeCommand` 调用 `FitToViewport` 调整视口，不是保存操作 |
 | 导入模块 | `ImportModule` 选择已有流程模板的画布，交给 `FlowEditorOperations.ImportCanvasAsModule` 加入当前图；随后仍需检查参数并保存当前文档 |
 
@@ -69,3 +69,5 @@ UI 手动运行读取当前画布，可执行尚未保存的编辑；共享 Quar
 | 图能运行但参数不对 | 节点属性、设备/模板绑定及输入来源；再进入[执行诊断](./execution.md) |
 
 `FlowTemplateWorkspaceControllerTests` 覆盖选择、起点、刷新门禁与快照身份；`ViewFlowDocumentBehaviorTests` 覆盖命令分流与修改文档替换决定；`STNodeCopyPasteTests` 实际覆盖节点保存/加载、类型重定位和损坏画布不替换旧图，不能仅凭文件名声称模块导入 UI 已验证。这些测试不证明完整 WPF 保存交互或真实 MySQL 已验收。需要相应验证时，检查新增节点/参数保存重开、模块插入、快速 A→B 选择、坏模板失败恢复、独立窗口不污染主窗口，以及取消/保存失败不丢文档。
+
+`FlowLocalShortcutTests` 只测试自动排列的纯键位判断，覆盖修饰键组合和非目标主键；不构造 `ViewFlow`、不移动节点，也不代替真实键盘与排列结果验收。

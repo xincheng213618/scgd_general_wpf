@@ -16,7 +16,7 @@ public sealed class FileHotkeyDefaultsTests
     [Theory]
     [InlineData(typeof(MenuFileOpen), Key.O, ModifierKeys.Control)]
     [InlineData(typeof(MenuOpenFolder), Key.O, ModifierKeys.Control | ModifierKeys.Shift)]
-    [InlineData(typeof(MenuOpenSolution), Key.None, ModifierKeys.None)]
+    [InlineData(typeof(MenuOpenSolution), Key.O, ModifierKeys.Control | ModifierKeys.Alt)]
     [InlineData(typeof(MenuSave), Key.S, ModifierKeys.Control)]
     [InlineData(typeof(MenuSaveAs), Key.S, ModifierKeys.Control | ModifierKeys.Shift)]
     [InlineData(typeof(MenuClose), Key.W, ModifierKeys.Control)]
@@ -55,7 +55,7 @@ public sealed class FileHotkeyDefaultsTests
         Assert.Same(SolutionWorkspaceCommands.OpenFolder, new MenuOpenFolder().Command);
         Assert.Empty(SolutionWorkspaceCommands.OpenWorkspace.InputGestures);
         Assert.Empty(SolutionWorkspaceCommands.OpenFolder.InputGestures);
-        Assert.Empty(new MenuOpenSolution().HotKeys.GetBindings());
+        Assert.Equal(new Hotkey(Key.O, ModifierKeys.Control | ModifierKeys.Alt), Assert.Single(new MenuOpenSolution().HotKeys.GetBindings()));
     }
 
     [Fact]

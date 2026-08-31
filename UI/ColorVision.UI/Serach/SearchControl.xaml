@@ -37,7 +37,7 @@
         </Style>
         <Style TargetType="ListBoxItem" x:Key="ResultItem">
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="Padding" Value="10,8"/>
             <Setter Property="Margin" Value="4,1"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="ToolTip" Value="{Binding Details}"/>
@@ -62,22 +62,13 @@
             </Setter>
         </Style>
     </UserControl.Resources>
-    <Border x:Name="PaletteRoot" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource GlobalBorderBrush}"
-            BorderThickness="1" CornerRadius="12" Padding="12">
+    <Border x:Name="PaletteRoot" Background="{DynamicResource GlobalBackground}" Padding="16">
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <Grid Margin="4,0,0,8">
-                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                <TextBlock Text="{x:Static local:SearchPaletteText.Title}" FontWeight="SemiBold" FontSize="16" VerticalAlignment="Center"/>
-                <Button Grid.Column="1" Style="{StaticResource PaletteButton}" Click="Close_Click"
-                        ToolTip="{x:Static local:SearchPaletteText.Close}" AutomationProperties.Name="{x:Static local:SearchPaletteText.Close}">
-                    <TextBlock Text="&#xE711;" Style="{StaticResource PaletteIcon}" FontSize="12"/>
-                </Button>
-            </Grid>
-            <Border Grid.Row="1" Background="{DynamicResource RegionBrush}" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1" CornerRadius="7" Padding="10,3">
+            <Border Background="{DynamicResource RegionBrush}" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1" CornerRadius="6" Padding="10,3">
                 <Grid>
                     <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                     <TextBlock Text="&#xE721;" Style="{StaticResource PaletteIcon}" Foreground="{DynamicResource SecondaryTextBrush}"/>
@@ -98,7 +89,7 @@
                     </Button>
                 </Grid>
             </Border>
-            <Grid Grid.Row="2" Margin="4,10,4,8">
+            <Grid Grid.Row="1" Margin="4,10,4,8">
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                 <TextBlock Text="{Binding Summary}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"
                            VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" AutomationProperties.LiveSetting="Polite"/>
@@ -106,9 +97,9 @@
                           ItemsSource="{Binding Categories}" DisplayMemberPath="Label" SelectedItem="{Binding Category}"
                           AutomationProperties.Name="{x:Static local:SearchPaletteText.Filter}"/>
             </Grid>
-            <Grid Grid.Row="3">
+            <Grid Grid.Row="2">
                 <ListBox x:Name="ListViewSearch" ItemsSource="{Binding Results}" SelectedItem="{Binding Selected}"
-                         Background="Transparent" Foreground="{DynamicResource GlobalTextBrush}" BorderThickness="0" MaxHeight="380"
+                         Background="Transparent" Foreground="{DynamicResource GlobalTextBrush}" BorderThickness="0"
                          HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          ScrollViewer.VerticalScrollBarVisibility="Auto" VirtualizingPanel.IsVirtualizing="True"
                          VirtualizingPanel.VirtualizationMode="Recycling" ItemContainerStyle="{StaticResource ResultItem}"
@@ -142,9 +133,9 @@
                 </StackPanel>
                 <ProgressBar Height="2" IsIndeterminate="True" VerticalAlignment="Top" Visibility="{Binding IsSearching, Converter={StaticResource BoolVisibility}}"/>
             </Grid>
-            <TextBlock Grid.Row="4" Text="{Binding Status}" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" Margin="4,8"
+            <TextBlock Grid.Row="3" Text="{Binding Status}" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" Margin="4,8"
                        Visibility="{Binding HasStatus, Converter={StaticResource BoolVisibility}}" AutomationProperties.LiveSetting="Polite"/>
-            <Border Grid.Row="5" BorderBrush="{DynamicResource GlobalBorderBrush}" BorderThickness="0,1,0,0" Padding="4,8,0,0" Margin="0,8,0,0">
+            <Border Grid.Row="4" BorderBrush="{DynamicResource GlobalBorderBrush}" BorderThickness="0,1,0,0" Padding="4,8,0,0" Margin="0,8,0,0">
                 <Grid>
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static local:SearchPaletteText.KeyboardHint}" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" TextWrapping="Wrap"/>

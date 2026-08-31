@@ -847,12 +847,15 @@ namespace ColorVision.Engine.FlowProcessing
             }
         }
 
+        internal static bool IsAutoAlignmentShortcut(Key key, ModifierKeys modifiers)
+            => key == Key.L && modifiers == ModifierKeys.Control;
+
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = this;
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
-                if (e.Key == Key.L && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                if (IsAutoAlignmentShortcut(e.Key, Keyboard.Modifiers))
                 {
                     AutoAlignment();
                     e.Handled = true;

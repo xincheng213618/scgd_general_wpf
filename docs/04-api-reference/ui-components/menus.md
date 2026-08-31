@@ -66,9 +66,9 @@ manager 的 `FilteredGuids` 是旧式跨目标过滤，`ScopedFilteredItems` 是
 
 懒 adapter 的 Command 使用默认可执行的 RelayCommand；每次执行重新构造目标类，再反射调用公共或非公共的无参 `Execute()`。它不自动解析目标类的 ICommand 属性，也不添加 AccessControl/CanExecute 检查；构造失败、缺少方法或同步反射调用异常会记录警告。反射返回值被忽略，返回 Task 时既不等待，也不观察其后续异步失败，因此菜单点击或返回不能作为异步业务完成信号。实现 `IMenuItem` 的类型优先走直接路径，不会因再加 `[MenuItem]` 自动变成懒加载。
 
-`MenuSearchProvider` 从 `GetAllMenuItemsFiltered` 再选取 `TargetName=MainWindow/Global`、自身 `Visibility=Visible`、Header/Command 非空的条目，排除 `OwnerGuid=Menu` 的顶层分组；它不是任意窗口菜单的统一入口，也没有重建菜单树来证明每个候选的父项实际可见。单项元数据读取失败记录警告并继续。结果保留原 ICommand，新增说明、别名和 `CategoryKey=Commands`；菜单身份包含 TargetName/GuidId，已有 `IHotKey` 动作则按稳定 ActionId 关联当前键位，不通过显示名称猜测。
+`MenuSearchProvider` 从 `GetAllMenuItemsFiltered` 再选取 `TargetName=MainWindow/Global`、自身 `Visibility=Visible`、Header/Command 非空的条目，排除 `OwnerGuid=Menu` 的顶层分组；它不是任意窗口菜单的统一入口，也没有重建菜单树来证明每个候选的父项实际可见。单项元数据读取失败记录警告并继续。结果通常保留原 ICommand，新增说明、别名和 `CategoryKey=Commands`；`MenuClose` 例外使用已有 `CloseDocumentCommand`，不再经依赖活动窗口的菜单适配器。菜单身份包含 TargetName/GuidId，已有 `IHotKey` 动作则按稳定 ActionId 关联当前键位，不通过显示名称猜测。
 
-搜索界面对不可执行结果给出不可用状态，并在真正派发前检查 `CanExecute`；RoutedCommand 保留原内容目标，不因搜索框获得焦点而改为在搜索框上保存。候选刷新、焦点恢复、目标失效和同步异常边界归[产品搜索契约](./search.md)。这些检查只覆盖搜索执行通道，不改变 RelayCommand 的直接调用或懒 adapter 的默认可执行行为，仍不能把 MenuItemBase 的 predicate 当成所有入口的统一业务鉴权。菜单重建也不主动更新一个已经显示的搜索结果快照。
+搜索界面对不可执行结果给出不可用状态，并在真正派发前检查 `CanExecute`；RoutedCommand 使用原业务宿主中的明确内容目标，不因独立搜索窗口变为活动窗口而改为保存搜索框或关闭搜索宿主。原内容隐藏或活动文档已切换时拒绝旧路由结果，关闭搜索后仍复核目标。候选刷新、焦点恢复、目标失效和同步异常边界归[产品搜索契约](./search.md)。这些检查只覆盖搜索执行通道，不改变 RelayCommand 的直接调用或懒 adapter 的默认可执行行为，仍不能把 MenuItemBase 的 predicate 当成所有入口的统一业务鉴权。菜单重建也不主动更新一个已经显示的搜索结果快照。
 
 `InputGestureText` 仅为显示文字，不注册 `Ctrl+X` 等快捷键。`HotkeyService` 独立发现 `IHotkeyProvider` / `IHotKey`，还接收显式注册；它不读取菜单隐藏覆盖。已注册快捷键可能仍调用原操作，是否能执行继续取决于该回调自己的检查和[热键注册状态](./hotkeys.md)。菜单管理窗口也没有快捷键编辑字段，编辑入口在独立的快捷键设置页。
 
@@ -107,6 +107,6 @@ manager 的 `FilteredGuids` 是旧式跨目标过滤，`ScopedFilteredItems` 是
 
 `HotkeyMenuBindingTests` 使用隔离的运行时集合、合成菜单和四个内置菜单的只读声明，覆盖原默认键保留、显式/旧类型 ID、先建菜单后加载热键、名称不参与匹配、清除/恢复、定义替换、普通菜单提示保留、重复附加、不可读声明、多动作 ID 要求与丢弃控件的弱引用生命周期。它不调用生产热键注册、配置保存或业务命令，不代表已验收真实 Win32 输入或完整菜单发现。
 
-`SearchManagerTests` 的合成菜单用例覆盖搜索元数据的稳定 ActionId、说明、保留 RoutedCommand，以及排除其它目标和 Collapsed 条目；`SearchPaletteTests` 用无害命令验证拒绝执行、原始路由目标与关闭后的可执行性复核。它们不等于真实角色/设备权限验收，不执行生产菜单，也不证明所有插件的 CanExecute 实现正确。测试引用不是已运行通过的声明。
+`SearchManagerTests` 的隔离菜单用例覆盖搜索元数据的稳定 ActionId、说明、保留 RoutedCommand、`MenuClose` 的明确文档路由，以及排除其它目标和 Collapsed 条目；`SearchPaletteTests` 用无害命令验证拒绝执行、原始路由目标、文档切换与关闭后的可执行性复核。它们不等于真实角色/设备权限验收，不执行生产菜单业务，也不证明所有插件的 CanExecute 实现正确。测试引用不是已运行通过的声明。
 
 修改发现/树构建看 `UI/ColorVision.UI/Menus/MenuManager.cs`；修改管理提交看 `UI/ColorVision.UI.Desktop/MenuItemManager/MenuItemManagerService.cs` 和窗口 Apply/Cancel；修改声明/命令看 `UI/ColorVision.Common/Interfaces/Menus/`。验证时分别证明候选进入、树显示、命令实际检查、运行时应用和文件保存，不通过执行真实业务菜单来默认“验收文档”。

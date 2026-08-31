@@ -78,8 +78,8 @@ public sealed class ApplicationHotkeyIntegrationTests
         var actions = providers.Select(provider => provider.HotKeys).ToArray();
         var bindings = actions.SelectMany(action => action.GetDefaultBindings()).ToArray();
         Assert.Equal(14, actions.Length);
-        Assert.Equal(6, actions.Count(action => action.GetDefaultBindings().Count == 0));
-        Assert.Equal(9, bindings.Length);
+        Assert.Equal(3, actions.Count(action => action.GetDefaultBindings().Count == 0));
+        Assert.Equal(12, bindings.Length);
         Assert.Equal(bindings.Length, bindings.Distinct().Count());
         Assert.All(actions, action => Assert.Equal(HotKeyKinds.Windows, action.Kinds));
         Assert.DoesNotContain(bindings, binding => binding.Key is Key.F5 or Key.Delete or Key.Escape);

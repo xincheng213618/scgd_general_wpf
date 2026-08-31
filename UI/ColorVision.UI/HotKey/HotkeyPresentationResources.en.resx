@@ -13,7 +13,8 @@
   <data name="CheckUpdates" xml:space="preserve"><value>Open the update check window for the application and compatible plugins.</value></data>
   <data name="ToggleStatusBar" xml:space="preserve"><value>Show or hide the status bar at the bottom of the main window.</value></data>
   <data name="OpenAbout" xml:space="preserve"><value>Open About to view the application version and system information.</value></data>
-  <data name="ResetLayout" xml:space="preserve"><value>Restore the default dock layout, which may remove open file tabs; save documents first.</value></data>
+  <data name="ResetLayout" xml:space="preserve"><value>Restore the default dock layout after confirmation, which may remove open file tabs; save documents first.</value></data>
+  <data name="ResetLayoutConfirmation" xml:space="preserve"><value>Resetting the window layout may close open file tabs and discard unsaved changes. Save your documents first. Continue resetting?</value></data>
   <data name="SearchCommandsName" xml:space="preserve"><value>Search commands and features</value></data>
   <data name="SearchCommands" xml:space="preserve"><value>Search application menus, tools and templates, not document text.</value></data>
   <data name="SearchEntryPlaceholder" xml:space="preserve"><value>Search features…</value></data>

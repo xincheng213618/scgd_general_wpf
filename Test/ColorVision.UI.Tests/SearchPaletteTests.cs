@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.UI.Menus.Base.File;
 using ColorVision.UI.Serach;
 using System.Globalization;
 using System.IO;
@@ -223,6 +224,205 @@ public sealed class SearchPaletteTests
             Complete(control.Model.PendingSearch);
             Assert.False(control.SubmitSelection());
             Assert.Equal(0, calls);
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ChangedDocumentContextRejectsOldRoutedResultsBeforeAndAfterClose(bool changeOnClose)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            bool sameDocument = true;
+            int calls = 0;
+            var original = new TextBox { DataContext = new object() };
+            var command = new RoutedCommand();
+            original.CommandBindings.Add(new(command, (_, _) => calls++, (_, e) => { e.CanExecute = true; e.Handled = true; }));
+            var control = new SearchControl((_, _, _) => Task.FromResult(Response(Hit("Save", command))));
+            if (changeOnClose) control.Closed += (_, _) => sameDocument = false;
+            control.Open(original, isCommandContextCurrent: () => sameDocument);
+            Complete(control.Model.PendingSearch);
+            if (!changeOnClose) sameDocument = false;
+            Assert.False(control.SubmitSelection());
+            Assert.Equal(0, calls);
+            control.Close();
+        });
+    }
+
+    [Fact]
+    public void NullTargetCloseDocumentUsesBusinessOwnerForAvailabilityAndExecution()
+    {
+        WithSearchCommandOwner(owner =>
+        {
+            int calls = 0;
+            var events = new List<string>();
+            owner.CommandBindings.Add(new(MenuClose.CloseDocumentCommand,
+                (_, e) => { calls++; events.Add("execute"); e.Handled = true; },
+                (_, e) => { e.CanExecute = true; e.Handled = true; }));
+            var control = new SearchControl((_, _, _) => Task.FromResult(Response(Hit("Close document", MenuClose.CloseDocumentCommand))),
+                _ => events.Add("recent"));
+            control.Closed += (_, _) => events.Add("close");
+            control.Open(null, owner, () => true);
+            Complete(control.Model.PendingSearch);
+            Assert.True(Assert.Single(control.Model.Results).IsAvailable);
+            Assert.True(control.SubmitSelection());
+            Assert.Equal(1, calls);
+            Assert.Equal(new[] { "close", "execute", "recent" }, events);
+            Assert.False(control.SubmitSelection());
+        });
+    }
+
+    [Fact]
+    public void NullTargetDoesNotFallbackToBusinessOwnerForOtherRoutedCommands()
+    {
+        WithSearchCommandOwner(owner =>
+        {
+            int calls = 0;
+            var command = new RoutedCommand();
+            owner.CommandBindings.Add(new(command, (_, e) => { calls++; e.Handled = true; },
+                (_, e) => { e.CanExecute = true; e.Handled = true; }));
+            Assert.True(command.CanExecute(null, owner));
+            var control = new SearchControl((_, _, _) => Task.FromResult(Response(Hit("Save", command))));
+            control.Open(null, owner, () => true);
+            Complete(control.Model.PendingSearch);
+            Assert.False(Assert.Single(control.Model.Results).IsAvailable);
+            Assert.False(control.SubmitSelection());
+            Assert.Equal(0, calls);
+            control.Close();
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NullTargetCloseDocumentRejectsChangedContextBeforeAndAfterClose(bool changeOnClose)
+    {
+        WithSearchCommandOwner(owner =>
+        {
+            bool sameDocument = true;
+            int calls = 0;
+            owner.CommandBindings.Add(new(MenuClose.CloseDocumentCommand, (_, e) => { calls++; e.Handled = true; },
+                (_, e) => { e.CanExecute = true; e.Handled = true; }));
+            var control = new SearchControl((_, _, _) => Task.FromResult(Response(Hit("Close document", MenuClose.CloseDocumentCommand))));
+            if (changeOnClose) control.Closed += (_, _) => sameDocument = false;
+            control.Open(null, owner, () => sameDocument);
+            Complete(control.Model.PendingSearch);
+            Assert.True(Assert.Single(control.Model.Results).IsAvailable);
+            if (!changeOnClose) sameDocument = false;
+            Assert.False(control.SubmitSelection());
+            Assert.Equal(0, calls);
+            Assert.Equal(!changeOnClose, control.Model.IsOpen);
+            control.Close();
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NullTargetCloseDocumentRejectsClosedBusinessOwnerBeforeAndAfterClose(bool closeOwnerOnClose)
+    {
+        WithSearchCommandOwner(owner =>
+        {
+            int calls = 0;
+            owner.CommandBindings.Add(new(MenuClose.CloseDocumentCommand, (_, e) => { calls++; e.Handled = true; },
+                (_, e) => { e.CanExecute = true; e.Handled = true; }));
+            var control = new SearchControl((_, _, _) => Task.FromResult(Response(Hit("Close document", MenuClose.CloseDocumentCommand))));
+            if (closeOwnerOnClose) control.Closed += (_, _) => owner.Close();
+            control.Open(null, owner, () => true);
+            Complete(control.Model.PendingSearch);
+            Assert.True(Assert.Single(control.Model.Results).IsAvailable);
+            if (!closeOwnerOnClose) owner.Close();
+            Assert.False(control.SubmitSelection());
+            Assert.Equal(0, calls);
+            control.Close();
+        });
+    }
+
+    [Fact]
+    public void ChangedDocumentContextDoesNotDisableUnrelatedApplicationCommands()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            int calls = 0;
+            var control = new SearchControl((_, _, _) => Task.FromResult(Response(Hit("Options", new RelayCommand(_ => calls++)))));
+            control.Open(null, isCommandContextCurrent: () => false);
+            Complete(control.Model.PendingSearch);
+            Assert.True(control.SubmitSelection());
+            Assert.Equal(1, calls);
+        });
+    }
+
+    [Fact]
+    public void NullTargetKeepsBusinessOwnerInsteadOfTheSearchWindow()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var owner = new Window { Width = 600, Height = 400, Left = -10000, Top = -10000,
+                ShowInTaskbar = false, ShowActivated = false, Opacity = 0, WindowStyle = WindowStyle.None };
+            var searchWindow = new Window();
+            var control = new SearchControl((_, _, _) => Task.FromResult(Response(Hit("Options"))));
+            try
+            {
+                owner.Show();
+                searchWindow.Owner = owner;
+                searchWindow.Content = control;
+                control.Open(null);
+                Complete(control.Model.PendingSearch);
+                Assert.Same(owner, typeof(SearchControl).GetField("_targetWindow", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(control));
+            }
+            finally
+            {
+                control.Close();
+                searchWindow.Content = null;
+                searchWindow.Close();
+                owner.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void WindowContentDoesNotRepeatTheNativeCaptionOrLimitResultHeight()
+    {
+        WithPalette(false, "zh-CN", 720, control =>
+        {
+            Border root = Assert.IsType<Border>(control.FindName("PaletteRoot"));
+            Assert.Equal(new CornerRadius(0), root.CornerRadius);
+            Assert.Equal(new Thickness(0), root.BorderThickness);
+            Assert.DoesNotContain(Descendants(control).OfType<TextBlock>(), text => text.Text == SearchPaletteText.Title);
+            Assert.Equal(double.PositiveInfinity, Assert.IsType<ListBox>(control.FindName("ListViewSearch")).MaxHeight);
+        });
+    }
+
+    [Fact]
+    public void HiddenOriginalContentCannotReceiveARoutedResultFromTheIndependentWindow()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            int calls = 0;
+            var target = new TextBox { DataContext = new object() };
+            var command = new RoutedCommand();
+            target.CommandBindings.Add(new(command, (_, _) => calls++, (_, e) => { e.CanExecute = true; e.Handled = true; }));
+            var owner = new Window { Content = target, Width = 600, Height = 400, Left = -10000, Top = -10000,
+                ShowInTaskbar = false, ShowActivated = false, Opacity = 0, WindowStyle = WindowStyle.None };
+            var control = new SearchControl((_, _, _) => Task.FromResult(Response(Hit("Save", command))));
+            try
+            {
+                owner.Show();
+                owner.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                Assert.True(target.IsLoaded && target.IsVisible);
+                control.Open(target, owner);
+                Complete(control.Model.PendingSearch);
+                target.Visibility = Visibility.Collapsed;
+                Assert.True(target.IsLoaded);
+                Assert.False(control.SubmitSelection());
+                Assert.Equal(0, calls);
+            }
+            finally
+            {
+                control.Close();
+                owner.Close();
+            }
         });
     }
 
@@ -486,6 +686,26 @@ public sealed class SearchPaletteTests
         encoder.Frames.Add(BitmapFrame.Create(bitmap));
         using FileStream output = new(path, FileMode.Create, FileAccess.Write, FileShare.None);
         encoder.Save(output);
+    }
+
+    private static void WithSearchCommandOwner(Action<Window> action)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var owner = new Window { DataContext = new object(), Width = 600, Height = 400, Left = -10000, Top = -10000,
+                ShowInTaskbar = false, ShowActivated = false, Opacity = 0, WindowStyle = WindowStyle.None };
+            try
+            {
+                owner.Show();
+                owner.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                Assert.True(owner.IsLoaded && owner.IsVisible);
+                action(owner);
+            }
+            finally
+            {
+                if (owner.IsVisible) owner.Close();
+            }
+        });
     }
 
     private static SearchResultItem Hit(string title, ICommand? command = null, string category = "Commands", string description = "Description", string shortcut = "")

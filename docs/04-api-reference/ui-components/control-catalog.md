@@ -19,7 +19,7 @@ related: ["ui.index","ui.property-grid","ui.settings","ui.wizards","ui.menus","u
 | --- | --- | --- |
 | MVVM、命令、共享接口 | `UI/ColorVision.Common/` | [ColorVision.Common](./ColorVision.Common.md) |
 | 菜单、热键、状态栏、搜索 | `UI/ColorVision.UI/` | [ColorVision.UI](./ColorVision.UI.md) |
-| 功能搜索浮层、结果排序、执行目标 | `UI/ColorVision.UI/Serach/` | [产品搜索](./search.md)；宿主入口由 `ColorVision/MainWindow.Hotkeys.cs` 装配 |
+| 功能搜索窗口、结果排序、执行目标 | `UI/ColorVision.UI/Serach/` | [产品搜索](./search.md)；宿主入口由 `ColorVision/MainWindow.Hotkeys.cs` 装配 |
 | 设置窗口、市场、下载、向导 | `UI/ColorVision.UI.Desktop/` | [桌面总览](./ColorVision.UI.Desktop.md)、[设置](./settings.md)、[向导](./wizards.md) |
 | 主题、窗口外观、通用控件 | `UI/ColorVision.Themes/` | [ColorVision.Themes](./ColorVision.Themes.md) |
 | PropertyGrid 和自定义编辑器 | `UI/ColorVision.UI/PropertyEditor/` | [PropertyGrid 契约](./property-grid.md) |
@@ -60,7 +60,7 @@ related: ["ui.index","ui.property-grid","ui.settings","ui.wizards","ui.menus","u
 | 目标 | 入口 |
 | --- | --- |
 | 设置 | `UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml` |
-| 功能搜索浮层 | `UI/ColorVision.UI/Serach/SearchControl.xaml`，由主窗口附着宿主显示，不是独立业务窗口 |
+| 功能搜索窗口 | `UI/ColorVision.UI/Serach/SearchWindow.xaml` 为标准非模态 Owner 窗口，承载同目录 `SearchControl.xaml`；可拖动缩放，不单独显示任务栏项 |
 | 插件市场 | `UI/ColorVision.UI.Desktop/Marketplace/MarketplaceWindow.xaml` |
 | 下载器 | `UI/ColorVision.UI.Desktop/Download/DownloadWindow.xaml` |
 | 菜单管理 | `UI/ColorVision.UI.Desktop/MenuItemManager/MenuItemManagerWindow.xaml` |

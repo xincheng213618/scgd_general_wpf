@@ -13,11 +13,11 @@ public sealed class HotkeyMenuBindingTests
 {
     [Theory]
     [InlineData(typeof(ColorVision.UI.Desktop.Settings.MenuOptions), Key.OemComma, ModifierKeys.Control)]
-    [InlineData(typeof(ColorVision.UI.LogImp.MenuLogWindow), Key.None, ModifierKeys.None)]
+    [InlineData(typeof(ColorVision.UI.LogImp.MenuLogWindow), Key.L, ModifierKeys.Control | ModifierKeys.Alt)]
     [InlineData(typeof(ColorVision.Update.MenuCheckAndUpdateV1), Key.None, ModifierKeys.None)]
     [InlineData(typeof(ColorVision.ExportMenuViewStatusBar), Key.None, ModifierKeys.None)]
     [InlineData(typeof(ColorVision.AboutMsgExport), Key.None, ModifierKeys.None)]
-    [InlineData(typeof(ColorVision.Solution.Workspace.MenuResetLayout), Key.None, ModifierKeys.None)]
+    [InlineData(typeof(ColorVision.Solution.Workspace.MenuResetLayout), Key.R, ModifierKeys.Control | ModifierKeys.Alt | ModifierKeys.Shift)]
     public void BuiltInMenusKeepTheirDefaultDeclarationsAndFollowRuntimeOverrides(Type providerType, Key defaultKey, ModifierKeys defaultModifiers)
     {
         WpfTestHost.Invoke(() =>

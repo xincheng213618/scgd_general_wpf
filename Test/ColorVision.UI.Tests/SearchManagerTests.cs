@@ -200,6 +200,25 @@ public sealed class SearchManagerTests
         });
     }
 
+    [Fact]
+    public void CloseSearchResultUsesTheDocumentRouteInsteadOfTheActiveWindowAdapter()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var menu = new ColorVision.UI.Menus.Base.File.MenuClose();
+            SearchMeta result = Assert.IsType<SearchMeta>(MenuSearchProvider.CreateSearchItem(menu));
+            Assert.Same(ColorVision.UI.Menus.Base.File.MenuClose.CloseDocumentCommand, result.Command);
+            Assert.NotSame(menu.Command, result.Command);
+            var owner = new Window();
+            int calls = 0;
+            owner.CommandBindings.Add(new(ColorVision.UI.Menus.Base.File.MenuClose.CloseDocumentCommand,
+                (_, _) => calls++, (_, e) => { e.CanExecute = true; e.Handled = true; }));
+            Assert.False(owner.IsActive);
+            Assert.True(SearchCommandExecutor.TryExecute(result.Command, null, owner));
+            Assert.Equal(1, calls);
+        });
+    }
+
     private static SearchManager Create(object[] providers, SearchConfig? config = null, HotKeys[]? hotkeys = null)
         => new(() => [typeof(SearchManagerTests).Assembly], _ => providers.Select(provider => provider.GetType()),
             () => config ?? Config(), () => hotkeys ?? [], type => providers.First(provider => provider.GetType() == type));

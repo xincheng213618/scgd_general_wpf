@@ -43,6 +43,39 @@ public sealed class ContextualFindRouterTests
     }
 
     [Fact]
+    public void SearchCloseDoesNotRestoreAnOldTargetAfterTheOwnerFocusChanged()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            // Set only logical focus: keyboard-focusable controls can activate a
+            // shown WPF window even when it was created with ShowActivated=false.
+            var first = new Button { Focusable = false };
+            var second = new Button { Focusable = false };
+            var root = new Grid();
+            root.Children.Add(first);
+            root.Children.Add(second);
+            var owner = new Window
+            {
+                Content = root, Width = 300, Height = 200, Left = -10000, Top = -10000,
+                ShowInTaskbar = false, ShowActivated = false, Opacity = 0
+            };
+            try
+            {
+                owner.Show();
+                FocusManager.SetFocusedElement(owner, first);
+                Assert.True(MainWindow.IsSearchReturnFocusCurrent(owner, first));
+                FocusManager.SetFocusedElement(owner, second);
+                Assert.False(MainWindow.IsSearchReturnFocusCurrent(owner, first));
+                Assert.True(MainWindow.IsSearchReturnFocusCurrent(owner, second));
+                root.Children.Remove(second);
+                Assert.False(MainWindow.IsSearchReturnFocusCurrent(owner, second));
+                Assert.False(owner.IsActive);
+            }
+            finally { owner.Content = null; owner.Close(); }
+        });
+    }
+
+    [Fact]
     public void StandardFindWinsOverAttachedFallbackAndRunsOnce()
     {
         WpfTestHost.Invoke(() =>

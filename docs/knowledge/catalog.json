@@ -4605,6 +4605,7 @@
       "test_paths": [
         "Test/ColorVision.UI.Tests/FlowTemplateWorkspaceControllerTests.cs",
         "Test/ColorVision.UI.Tests/ViewFlowDocumentBehaviorTests.cs",
+        "Test/ColorVision.UI.Tests/FlowLocalShortcutTests.cs",
         "Test/ColorVision.UI.Tests/STNodeCopyPasteTests.cs"
       ],
       "related": [
@@ -4623,7 +4624,7 @@
       "source": "docs/01-user-guide/workflow/design.md",
       "url": "/01-user-guide/workflow/design",
       "searchable": true,
-      "source_hash": "e8fe4bcc475fd946903966bbe609ffc9bbd85301ed02796f0ecaeade361b2491"
+      "source_hash": "ae34e81e34ff2b8599808b0e262213030ecfd3e439de930fa976811d4a066696"
     },
     {
       "knowledge_id": "governance.home",
@@ -5361,7 +5362,7 @@
       "source": "docs/01-user-guide/interface/log-viewer.md",
       "url": "/01-user-guide/interface/log-viewer",
       "searchable": true,
-      "source_hash": "b52c26fa5bca4a19658d9bdb909ba9daecf2c0c8f33476300de228c302b1f66f"
+      "source_hash": "2fbec9ab1624279c4fc0af2abd681623a3531c6ed12e09c24174e49052a2297a"
     },
     {
       "knowledge_id": "operations.main-window",
@@ -5383,7 +5384,9 @@
         "ColorVision/Themes/AvalonDockGripTemplates.xaml",
         "UI/ColorVision.UI/Menus",
         "UI/ColorVision.UI/Serach/ContextualFindRouter.cs",
-        "UI/ColorVision.UI/Serach/SearchPopupHotkeyBridge.cs",
+        "UI/ColorVision.UI/Serach/SearchWindow.xaml",
+        "UI/ColorVision.UI/Serach/SearchWindow.xaml.cs",
+        "UI/ColorVision.UI/Serach/SearchWindowHotkeyBridge.cs",
         "UI/ColorVision.Solution/Workspace"
       ],
       "test_paths": [
@@ -5391,8 +5394,8 @@
         "Test/ColorVision.UI.Tests/AvalonDockThemeBindingTests.cs",
         "Test/ColorVision.UI.Tests/MainWindowSearchShellTests.cs",
         "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs",
-        "Test/ColorVision.UI.Tests/SearchPopupHotkeyBridgeTests.cs",
-        "Test/ColorVision.UI.Tests/SearchPopupAirspaceTests.cs"
+        "Test/ColorVision.UI.Tests/SearchWindowHotkeyBridgeTests.cs",
+        "Test/ColorVision.UI.Tests/SearchWindowHostTests.cs"
       ],
       "related": [
         "ui.discovery",
@@ -5415,7 +5418,7 @@
       "source": "docs/01-user-guide/interface/main-window.md",
       "url": "/01-user-guide/interface/main-window",
       "searchable": true,
-      "source_hash": "cb075f800d7a6151e4974c833acccad6679dbd898efe2c8ae30a05291d5e4906"
+      "source_hash": "7d89cdb9173a08e07e69fce5d7b08b0fbed9f87c373db802d28dd6d2b26ef37b"
     },
     {
       "knowledge_id": "operations.motor",
@@ -7048,7 +7051,7 @@
       "source": "docs/04-api-reference/ui-components/control-catalog.md",
       "url": "/04-api-reference/ui-components/control-catalog",
       "searchable": true,
-      "source_hash": "7d764481a6b2529bcf2dae8f9c95ed98d94df78ce28e6c47a4000d38250ed4d2"
+      "source_hash": "1e3c77e13f51ed3f0d882c4604bbb9ee75a5bea2e38385111a211145a9c5e87b"
     },
     {
       "knowledge_id": "ui.core",
@@ -7348,7 +7351,8 @@
         "UI/ColorVision.UI/Environments.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/DockContentRegistrationTests.cs"
+        "Test/ColorVision.UI.Tests/DockContentRegistrationTests.cs",
+        "Test/ColorVision.UI.Tests/BuiltInShortcutDefaultsTests.cs"
       ],
       "related": [
         "ui.solution",
@@ -7366,7 +7370,7 @@
       "source": "docs/04-api-reference/ui-components/editor-document-lifecycle.md",
       "url": "/04-api-reference/ui-components/editor-document-lifecycle",
       "searchable": true,
-      "source_hash": "e165aa8aad2e5a41c834dfd1b05cfaf713008ce696dc166dcfebba8da062bdc8"
+      "source_hash": "59663cf06e8053841b8518057cbd224451d44b1e7d493af813e845de3c0e9b01"
     },
     {
       "knowledge_id": "ui.framework",
@@ -7459,6 +7463,7 @@
         "UI/ColorVision.Solution/OpenSolutionWindow.xaml.cs",
         "UI/ColorVision.Solution/CommandInitializer.cs",
         "UI/ColorVision.Solution/SolutionMenuItems.cs",
+        "UI/ColorVision.Solution/Workspace/LayoutMenuItems.cs",
         "ColorVision/MainWindow.xaml.cs",
         "ColorVision/MainWindow.Hotkeys.cs",
         "ColorVision/MainWindowConfig.cs",
@@ -7473,11 +7478,12 @@
         "Test/ColorVision.UI.Tests/HotkeyMultipleBindingTests.cs",
         "Test/ColorVision.UI.Tests/HotkeyMultiBindingServiceTests.cs",
         "Test/ColorVision.UI.Tests/BuiltInShortcutDefaultsTests.cs",
+        "Test/ColorVision.UI.Tests/BuiltInShortcutUpgradeTests.cs",
         "Test/ColorVision.UI.Tests/FileHotkeyDefaultsTests.cs",
         "Test/ColorVision.UI.Tests/RoutedCommandHotkeyGuardTests.cs",
         "Test/ColorVision.UI.Tests/ApplicationHotkeyIntegrationTests.cs",
         "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs",
-        "Test/ColorVision.UI.Tests/SearchPopupHotkeyBridgeTests.cs"
+        "Test/ColorVision.UI.Tests/SearchWindowHotkeyBridgeTests.cs"
       ],
       "related": [
         "ui.framework",
@@ -7498,7 +7504,7 @@
       "source": "docs/04-api-reference/ui-components/hotkeys.md",
       "url": "/04-api-reference/ui-components/hotkeys",
       "searchable": true,
-      "source_hash": "2a3f9bf161442c2451c3f3473f0c7effcaf35a2c25c898a7d31992d8ddc5c4f7"
+      "source_hash": "7093646d5378906bf8b68dc3e0dea747b3743815c1d0cc5e1714dc80cf79ebac"
     },
     {
       "knowledge_id": "ui.image-editor",
@@ -7977,7 +7983,7 @@
       "source": "docs/04-api-reference/ui-components/menus.md",
       "url": "/04-api-reference/ui-components/menus",
       "searchable": true,
-      "source_hash": "f0122ebfefdf8015ef4d5ab39b36f7c84662cc83c02aa28bfed5878d733693ba"
+      "source_hash": "0e5b1d710c4beea57702c6e0d2abb6b1e1a2be1e088ed0ca83d88f8d487a7093"
     },
     {
       "knowledge_id": "ui.package-boundaries",
@@ -8186,6 +8192,7 @@
         "搜索框",
         "命令面板",
         "应用搜索",
+        "独立搜索窗口",
         "关键词匹配",
         "搜索缓存",
         "候选目录刷新",
@@ -8198,6 +8205,7 @@
         "Everything",
         "Ctrl+F",
         "Ctrl+Shift+P",
+        "SearchWindow",
         "SearchControl",
         "SearchManager",
         "SearchQuery",
@@ -8205,7 +8213,7 @@
         "SearchPaletteViewModel",
         "SearchCommandExecutor",
         "ContextualFindRouter",
-        "SearchPopupHotkeyBridge",
+        "SearchWindowHotkeyBridge",
         "SearchConfig",
         "SearchSettingsWindow",
         "ISearch",
@@ -8245,6 +8253,8 @@
         "Test/ColorVision.UI.Tests/SearchPaletteTests.cs",
         "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs",
         "Test/ColorVision.UI.Tests/MainWindowSearchShellTests.cs",
+        "Test/ColorVision.UI.Tests/SearchWindowHotkeyBridgeTests.cs",
+        "Test/ColorVision.UI.Tests/SearchWindowHostTests.cs",
         "Test/ColorVision.UI.Tests/SettingSearchProviderTests.cs",
         "Test/ColorVision.UI.Tests/TemplateSearchProviderTests.cs",
         "Test/ColorVision.UI.Tests/WpfResourceEmbeddingTests.cs",
@@ -8275,7 +8285,7 @@
       "source": "docs/04-api-reference/ui-components/search.md",
       "url": "/04-api-reference/ui-components/search",
       "searchable": true,
-      "source_hash": "3505f56f04a996d91003ce23dc6648160f91664238fc56d0c2c1d2daaeebfd0d"
+      "source_hash": "87233efa1ddf0d3fbb7c0c25ee58aff59a3958a8a6d9b3c47f0d05726780aeb4"
     },
     {
       "knowledge_id": "ui.settings",

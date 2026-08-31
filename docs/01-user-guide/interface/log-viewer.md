@@ -17,7 +17,7 @@ related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 
 | 入口 | 数据来源与边界 |
 | --- | --- |
-| `WindowLog`，帮助菜单的日志窗口（快捷键可配置，默认未分配） | 给 log4net 根 logger 附加 `LogViewerAppender` 接收新事件，并在初始化时读取当前文件历史；每次菜单执行创建新窗口 |
+| `WindowLog`，帮助菜单的日志窗口（快捷键可配置，默认 Ctrl+Alt+L） | 给 log4net 根 logger 附加 `LogViewerAppender` 接收新事件，并在初始化时读取当前文件历史；每次菜单执行创建新窗口 |
 | `LogOutput`，主窗口等嵌入式面板 | 同样接收 log4net 新事件，本身不加载文件历史；`ModuleLogViewerBinder` 的模块面板只接受指定 logger 名或其点分隔子名称 |
 | `WindowLogLocal` / `LogLocalOutput` | 读取调用方指定的外部文件，不接收 log4net 事件；编码可由调用方指定，默认 `Encoding.Default` |
 | `NativeLogWindow` | 独立的 `NativeLogBridge` 回调与采集会话，不是从托管日志文件读回 native 历史 |

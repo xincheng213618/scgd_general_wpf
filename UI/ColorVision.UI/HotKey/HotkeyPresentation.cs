@@ -132,6 +132,7 @@ public static class BuiltInHotkeyDescriptions
     public static string ToggleStatusBar => HotkeyPresentation.GetText("ToggleStatusBar");
     public static string OpenAbout => HotkeyPresentation.GetText("OpenAbout");
     public static string ResetLayout => HotkeyPresentation.GetText("ResetLayout");
+    public static string ResetLayoutConfirmation => HotkeyPresentation.GetText("ResetLayoutConfirmation");
     public static string SearchCommandsName => HotkeyPresentation.GetText("SearchCommandsName");
     public static string SearchCommands => HotkeyPresentation.GetText("SearchCommands");
     public static string SearchEntryPlaceholder => HotkeyPresentation.GetText("SearchEntryPlaceholder");

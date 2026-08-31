@@ -1,3 +1,4 @@
+using ColorVision.UI.Menus.Base.File;
 using log4net;
 using System.Globalization;
 using System.Windows;
@@ -17,6 +18,9 @@ public partial class SearchControl : UserControl
     private object? _targetDataContext;
     private Window? _targetWindow;
     private bool _targetWasLoaded;
+    private bool _targetWasVisible;
+    private bool _ownerWasVisible;
+    private Func<bool>? _isCommandContextCurrent;
     private bool _isComposing;
     private int _compositionVersion;
 
@@ -28,7 +32,7 @@ public partial class SearchControl : UserControl
         InitializeComponent();
         _recordUsed = recordUsed ?? (_ => { });
         _refreshCatalog = refreshCatalog ?? (() => { });
-        _model = new SearchPaletteViewModel(query, item => SearchCommandExecutor.CanExecute(item.Source.Command, this, _commandTarget));
+        _model = new SearchPaletteViewModel(query, item => SearchCommandExecutor.CanExecute(item.Source.Command, this, ResolveCommandTarget(item.Source.Command)));
         PaletteRoot.DataContext = _model;
         TextCompositionManager.AddPreviewTextInputStartHandler(Searchbox, CompositionStarted);
         TextCompositionManager.AddPreviewTextInputHandler(Searchbox, CompositionCompleted);
@@ -38,14 +42,18 @@ public partial class SearchControl : UserControl
     public event EventHandler? Closed;
     internal SearchPaletteViewModel Model => _model;
 
-    public void Open(IInputElement? commandTarget)
+    public void Open(IInputElement? commandTarget, Window? commandOwner = null, Func<bool>? isCommandContextCurrent = null)
     {
         if (_model.IsOpen) { FocusSearchBox(); return; }
         _commandTarget = commandTarget;
         _targetDataContext = GetTargetDataContext(commandTarget);
-        _targetWindow = (commandTarget is DependencyObject dependency ? Window.GetWindow(dependency) : null)
-            ?? Window.GetWindow(this) ?? Application.Current?.MainWindow;
+        Window? searchWindow = Window.GetWindow(this);
+        _targetWindow = commandOwner ?? (commandTarget is DependencyObject dependency ? Window.GetWindow(dependency) : null)
+            ?? searchWindow?.Owner ?? searchWindow ?? Application.Current?.MainWindow;
         _targetWasLoaded = commandTarget is FrameworkElement { IsLoaded: true } or FrameworkContentElement { IsLoaded: true };
+        _targetWasVisible = commandTarget is UIElement { IsVisible: true };
+        _ownerWasVisible = _targetWindow?.IsVisible == true;
+        _isCommandContextCurrent = isCommandContextCurrent;
         _isComposing = false;
         _compositionVersion++;
         _refreshCatalog();
@@ -63,6 +71,7 @@ public partial class SearchControl : UserControl
         _commandTarget = null;
         _targetDataContext = null;
         _targetWindow = null;
+        _isCommandContextCurrent = null;
     }
 
     public void FocusSearchBox()
@@ -70,7 +79,7 @@ public partial class SearchControl : UserControl
         Searchbox.Focus();
         Dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() =>
         {
-            if (_model.IsOpen && IsVisible) Searchbox.Focus();
+            if (_model.IsOpen && IsVisible && Window.GetWindow(this) is not { IsActive: false }) Searchbox.Focus();
         }));
     }
 
@@ -120,11 +129,18 @@ public partial class SearchControl : UserControl
     {
         if (_isComposing || !_model.TryGetSelection(out SearchPaletteEntry? entry)) return false;
         ICommand? command = entry!.Result.Source.Command;
-        IInputElement? target = _commandTarget;
+        IInputElement? target = ResolveCommandTarget(command);
+        bool useOwnerTarget = _commandTarget == null && target != null;
         object? originalDataContext = _targetDataContext;
         Window? originalWindow = _targetWindow;
         bool originallyLoaded = _targetWasLoaded;
-        bool TargetIsValid() => IsOriginalTargetValid(target, originalDataContext, originalWindow, originallyLoaded);
+        bool originallyVisible = _targetWasVisible;
+        bool ownerWasVisible = _ownerWasVisible;
+        Func<bool>? isContextCurrent = _isCommandContextCurrent;
+        bool OwnerIsValid() => !ownerWasVisible || originalWindow is { IsLoaded: true, IsVisible: true };
+        bool TargetIsValid() => OwnerIsValid() && (isContextCurrent?.Invoke() ?? true)
+            && (useOwnerTarget || IsOriginalTargetValid(target, originalDataContext, originalWindow, originallyLoaded, originallyVisible));
+        if (!OwnerIsValid()) return false;
         if (command is RoutedCommand && !TargetIsValid())
         {
             _model.SetStatus(SearchPaletteText.Get("TargetUnavailable"));
@@ -139,7 +155,7 @@ public partial class SearchControl : UserControl
         Close();
         try
         {
-            if (!SearchCommandExecutor.TryExecute(command, this, target, command is RoutedCommand ? TargetIsValid : null)) return false;
+            if (!SearchCommandExecutor.TryExecute(command, this, target, command is RoutedCommand ? TargetIsValid : OwnerIsValid)) return false;
             _recordUsed(entry.Result.StableId);
             return true;
         }
@@ -152,11 +168,19 @@ public partial class SearchControl : UserControl
         }
     }
 
-    private static bool IsOriginalTargetValid(IInputElement? target, object? dataContext, Window? owner, bool originallyLoaded)
+    private IInputElement? ResolveCommandTarget(ICommand? command)
+    {
+        // Closing the active document is explicitly owned by the document host and
+        // does not require editor keyboard focus. Other routed commands still do.
+        return _commandTarget ?? (ReferenceEquals(command, MenuClose.CloseDocumentCommand) ? _targetWindow : null);
+    }
+
+    private static bool IsOriginalTargetValid(IInputElement? target, object? dataContext, Window? owner, bool originallyLoaded, bool originallyVisible)
     {
         if (target == null) return false;
         bool loaded = target is FrameworkElement { IsLoaded: true } or FrameworkContentElement { IsLoaded: true };
         return (!originallyLoaded || (loaded && target is DependencyObject dependency && Window.GetWindow(dependency) == owner))
+            && (!originallyVisible || target is UIElement { IsVisible: true })
             && ReferenceEquals(GetTargetDataContext(target), dataContext);
     }
 
@@ -181,7 +205,6 @@ public partial class SearchControl : UserControl
         if (ListViewSearch.SelectedItem != null) ListViewSearch.ScrollIntoView(ListViewSearch.SelectedItem);
     }
 
-    private void Close_Click(object sender, RoutedEventArgs e) => Close();
     private void Clear_Click(object sender, RoutedEventArgs e) { _model.SearchText = string.Empty; FocusSearchBox(); }
 
     private void Settings_Click(object sender, RoutedEventArgs e)

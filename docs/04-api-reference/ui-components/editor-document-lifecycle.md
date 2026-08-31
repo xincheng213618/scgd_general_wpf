@@ -5,7 +5,7 @@ status: "current"
 summary: "编辑器注册与选择、按路径和编辑器区分文档、保存重载关闭及外部变更；停靠布局不恢复未注册文件标签，重置也不预审脏文档。"
 aliases: ["EditorManager", "EditorDescriptor", "EditorDocumentService", "IEditorDocumentContent", "IReloadableEditorDocumentContent", "IResourcePathAwareDocumentContent", "DockLayoutManager", "WorkspaceManager", "TryCloseAllDocuments", "NotifyResourceRenamed", "ResetLayout", "DefaultEditorUpdated", "默认编辑器", "重复打开文件", "保存文档", "重新加载文件", "文件被外部修改", "重置窗口布局", "停靠布局恢复"]
 code_paths: ["UI/ColorVision.Solution/Editor/EditorManager.cs", "UI/ColorVision.Solution/Editor/EditorDescriptor.cs", "UI/ColorVision.Solution/Editor/IEditor.cs", "UI/ColorVision.Solution/Editor/EditorForExtensionAttribute.cs", "UI/ColorVision.Solution/Editor/GenericEditorAttribute.cs", "UI/ColorVision.Solution/Editor/TextEditor.cs", "UI/ColorVision.Solution/Editor/ImageEditor.cs", "UI/ColorVision.Solution/Editor/SystemEditor.cs", "UI/ColorVision.Solution/Workspace/EditorDocumentService.cs", "UI/ColorVision.Solution/Workspace/IEditorDocumentContent.cs", "UI/ColorVision.Solution/Workspace/DockLayoutManager.cs", "UI/ColorVision.Solution/Workspace/WorkspaceManager.cs", "UI/ColorVision.Solution/Workspace/LayoutMenuItems.cs", "UI/ColorVision.Solution/CommandInitializer.cs", "ColorVision/MainWindow.xaml.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI/Environments.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/DockContentRegistrationTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/DockContentRegistrationTests.cs", "Test/ColorVision.UI.Tests/BuiltInShortcutDefaultsTests.cs"]
 related: ["ui.solution", "ui.configuration", "ui.image-editor", "operations.terminal"]
 ---
 
@@ -106,7 +106,7 @@ Reload 要求受管理内容支持重载且 `File.Exists(ResourcePath)`。有未
 
 `LoadLayout()` 文件不存在或异常时返回 false。序列化回调只按注册 ContentId 绑定内容，其余项取消，包括未注册的动态编辑器标签；不会从 XML 中的路径重新调用编辑器。成功后刷新注册标题，替换 `WorkspaceManager` 的布局/文档窗格引用，必要时补建文档窗格，并清除 DockView 缓存。方法自身失败时不保证回滚反序列化的中间状态；主窗口调用方在 false 后执行 `ResetLayout()`。
 
-`ResetLayout()` 先删除现有布局文件，再按面板默认位置和 `IsDefaultVisible`、已注册文档重建布局，最后清 DockView 缓存并调用 `ShowAllViews()`。它不保留未注册动态编辑器标签，也没有调用文档保存、关闭预审或逐项 Close；重置菜单直接调用它。因而不能把重置描述为保护未保存内容、触发编辑器释放或仅改变窗口位置的动作。失败捕获后只记警告，不恢复已删除的 XML 或之前的布局，也不立即另存新布局。
+`ResetLayout()` 先删除现有布局文件，再按面板默认位置和 `IsDefaultVisible`、已注册文档重建布局，最后清 DockView 缓存并调用 `ShowAllViews()`。它不保留未注册动态编辑器标签，也没有调用文档保存、关闭预审或逐项 Close。重置菜单及其默认 Ctrl+Alt+Shift+R 快捷键先弹出警告，默认选择“否”；只有用户确认后才调用它，启动失败恢复的直接调用不经过该提示。确认不等于自动保存或逐文档关闭授权，仍须先保存文档，不能把重置描述为保护未保存内容、触发编辑器释放或仅改变窗口位置的动作。失败捕获后只记警告，不恢复已删除的 XML 或之前的布局，也不立即另存新布局。
 
 面板的 Hide/Show 与文档关闭不同。`TogglePanel` 隐藏/显示已有面板；`ShowPanel` 还会激活面板。面板已从布局移除时，两者可从注册表重新加入；不代表创建全新内容实例或重启终端进程。`IsPanelVisible` 只检查是否找到面板且未隐藏，不保证该页签当前激活或内容已构造。
 
@@ -115,5 +115,7 @@ Reload 要求受管理内容支持重载且 `File.Exists(ResourcePath)`。有未
 ## 证据与验证缺口
 
 `Test/ColorVision.UI.Tests/DockContentRegistrationTests.cs` 当前覆盖工厂延迟与单次创建、空结果拒绝、显式物化、已有内容直接恢复，以及 `ShowPanel` 首次构造/物化复用。它没有覆盖主窗口布局 XML 的保存恢复、带脏文档重置、默认编辑器配置落盘失败、文档关闭取消、外部文件事件或路径更新失败，不能从这份测试推断完整生命周期已验证。
+
+`BuiltInShortcutDefaultsTests` 用注入的确认和重置回调检查菜单/快捷键取消后不执行、确认后仅执行一次；不重建真实布局或写入用户布局文件，也不证明未保存文档已被自动保护。
 
 本主题依据源码与这些测试定义核对，不记录本轮未执行的测试为通过。后续改动应围绕受影响的选择、保存/取消、外部变更或布局恢复分支取得针对性证据；启动产品、写布局/配置、保存编辑内容及调用资源操作仍需要任务授权，不是只读查阅文档的必要步骤。

@@ -6,10 +6,8 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:input="clr-namespace:System.Windows.Input;assembly=netstandard"
         xmlns:local="clr-namespace:ColorVision"
-        xmlns:hotkeys="clr-namespace:ColorVision.UI.HotKey;assembly=ColorVision.UI"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:ColorVision.Properties"
-        xmlns:search="clr-namespace:ColorVision.UI.Serach;assembly=ColorVision.UI"
         xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindowConfig}"
@@ -71,19 +69,6 @@
                 <StackPanel x:Name="RightMenuItemPanel" DockPanel.Dock="Right" Orientation="Horizontal" />
 
                 <Menu x:Name="Menu1" Padding="2" HorizontalAlignment="Left" Background="Transparent" />
-                <Button x:Name="SearchEntryButton" Width="260" Height="28" Margin="10,1" Padding="10,0"
-                        HorizontalAlignment="Left" VerticalAlignment="Center" HorizontalContentAlignment="Stretch"
-                        Background="{DynamicResource GlobalBorderBrush1}" Foreground="{DynamicResource GlobalTextBrush}"
-                        BorderBrush="{DynamicResource BorderBrush}" Cursor="Hand"
-                        AutomationProperties.Name="{x:Static hotkeys:BuiltInHotkeyDescriptions.SearchCommandsName}"
-                        Click="SearchEntryButton_Click" PreviewMouseLeftButtonDown="SearchEntryButton_PreviewMouseLeftButtonDown">
-                    <Grid>
-                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE721;" VerticalAlignment="Center" Margin="0,0,8,0" />
-                        <TextBlock Grid.Column="1" Text="{x:Static hotkeys:BuiltInHotkeyDescriptions.SearchEntryPlaceholder}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Opacity="0.75" />
-                        <TextBlock x:Name="SearchEntryGestureText" Grid.Column="2" FontSize="10" MaxWidth="140" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Opacity="0.6" Margin="8,0,0,0" />
-                    </Grid>
-                </Button>
                 <Button x:Name="UpdateNotificationButton"
                         Click="UpdateNotificationButton_Click"
                         Content="{x:Static properties:Resources.UpdatePreviewFoundUpdatesHeading}"
@@ -124,14 +109,6 @@
             </xcad:LayoutRoot>
         </xcad:DockingManager>
         <Grid x:Name="StatusBarGrid" Grid.Row="2" Visibility="{Binding IsOpenStatusBar, Converter={StaticResource bool2VisibilityConverter}}" />
-
-        <!-- Popup owns a non-activating HWND, so the palette also covers native/WebView2 editors. -->
-        <Popup x:Name="CommandSearchPopup" PlacementTarget="{Binding ElementName=Root}" Placement="Custom"
-               AllowsTransparency="True" StaysOpen="False" PopupAnimation="None" Focusable="False"
-               Opened="CommandSearchPopup_Opened" Closed="CommandSearchPopup_Closed">
-            <search:SearchControl x:Name="CommandSearchControl" MaxWidth="720"
-                                  HorizontalAlignment="Stretch" VerticalAlignment="Top" Closed="CommandSearchControl_Closed" />
-        </Popup>
 
     </Grid>
 </Window>

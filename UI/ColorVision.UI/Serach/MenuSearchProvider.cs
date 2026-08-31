@@ -1,5 +1,6 @@
 ﻿using ColorVision.UI.Menus;
 using ColorVision.UI.HotKey;
+using ColorVision.UI.Menus.Base.File;
 using log4net;
 using System.Windows;
 
@@ -55,7 +56,9 @@ namespace ColorVision.UI.Serach
                 CategoryKey = "Commands",
                 Aliases = [info.Name, info.Category, item.GuidId ?? string.Empty],
                 ActionId = actionId,
-                Command = item.Command,
+                // MenuClose's menu/hotkey adapter follows the active window. Search
+                // owns a separate window, so use the document host's explicit route.
+                Command = item is MenuClose ? MenuClose.CloseDocumentCommand : item.Command,
             };
         }
     }

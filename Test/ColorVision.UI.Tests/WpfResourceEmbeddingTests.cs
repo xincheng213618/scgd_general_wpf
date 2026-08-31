@@ -14,6 +14,12 @@ public class WpfResourceEmbeddingTests
         Assert.True(ContainsCompiledXaml(typeof(SearchControl).Assembly, "serach/searchcontrol.baml"));
     }
 
+    [Fact]
+    public void SearchWindow_CompiledXamlIsEmbedded()
+    {
+        Assert.True(ContainsCompiledXaml(typeof(SearchWindow).Assembly, "serach/searchwindow.baml"));
+    }
+
     private static bool ContainsCompiledXaml(Assembly assembly, string resourceKey)
     {
         foreach (string resourceName in assembly.GetManifestResourceNames().Where(name => name.EndsWith(".g.resources", StringComparison.Ordinal)))
