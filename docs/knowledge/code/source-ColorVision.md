@@ -165,6 +165,9 @@ next: false
 - [架构运行时](../../03-architecture/overview/runtime.md) — `platform.runtime`
   启动分支、配置初始化、插件装载和恢复流程的运行时顺序。
 
+- [应用搜索：入口、候选与执行](../../04-api-reference/ui-components/search.md) — `ui.search`
+  主窗口搜索框的关键词匹配、候选来源、缓存刷新与安全执行；重新打开读取插件候选列表，重复输入不扫描磁盘文件列表，旧动态来源仍同步。
+
 ## ColorVision/ServiceHost {#module-436f6c6f72566973696f6e2f53657276696365486f7374}
 
 - [Explorer 缩略图读取与 COM 注册](../../04-api-reference/engine-components/ColorVision.ShellExtension.md) — `engine.shell-extension`

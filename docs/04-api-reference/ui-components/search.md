@@ -4,14 +4,14 @@ knowledge_type: "topic"
 status: "current"
 summary: "主窗口搜索框的关键词匹配、候选来源、缓存刷新与安全执行；重新打开读取插件候选列表，重复输入不扫描磁盘文件列表，旧动态来源仍同步。"
 aliases: ["搜索框", "命令面板", "应用搜索", "独立搜索窗口", "关键词匹配", "搜索缓存", "候选目录刷新", "搜索候选", "搜索结果", "搜索刷新", "动态搜索", "网页搜索", "浏览器搜索", "Everything", "Ctrl+F", "Ctrl+Shift+P", "SearchWindow", "SearchControl", "SearchManager", "SearchQuery", "SearchResultItem", "SearchPaletteViewModel", "SearchCommandExecutor", "ContextualFindRouter", "SearchWindowHotkeyBridge", "SearchConfig", "SearchSettingsWindow", "ISearch", "ISearchMetadata", "ISearchProvider", "IDynamicSearchProvider", "IAsyncSearchProvider", "SearchMeta", "SearchType", "MenuSearchProvider", "SettingSearchProvider", "TemplateSearchProvider", "ThirdPartyAppSearchProvider", "FlowNodeDynamicSearchProvider", "EnableTemplateIndex", "EnableBrowserSearch"]
-code_paths: ["UI/ColorVision.UI/Serach", "UI/ColorVision.Common/Interfaces/Serach", "UI/ColorVision.UI/AssemblyHandler.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI.Desktop/Settings/SettingSearchProvider.cs", "UI/ColorVision.UI.Desktop/Settings/SettingEntryCatalog.cs", "UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml.cs", "UI/ColorVision.UI.Desktop/ThirdPartyApps/ThirdPartyAppSearchProvider.cs", "Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs", "Engine/ColorVision.Engine/Templates/Flow/Search/FlowNodeDynamicSearchProvider.cs", "Engine/ColorVision.Engine/Templates/Flow/Search/SqliteFlowNodeSearchIndex.cs", "Engine/ColorVision.Engine/Templates/Flow/Versioning/FlowCatalogService.cs", "ColorVision/MainWindow.xaml", "ColorVision/MainWindow.Hotkeys.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/SearchQueryTests.cs", "Test/ColorVision.UI.Tests/SearchManagerTests.cs", "Test/ColorVision.UI.Tests/SearchPaletteTests.cs", "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs", "Test/ColorVision.UI.Tests/MainWindowSearchShellTests.cs", "Test/ColorVision.UI.Tests/SearchWindowHotkeyBridgeTests.cs", "Test/ColorVision.UI.Tests/SearchWindowHostTests.cs", "Test/ColorVision.UI.Tests/SettingSearchProviderTests.cs", "Test/ColorVision.UI.Tests/TemplateSearchProviderTests.cs", "Test/ColorVision.UI.Tests/WpfResourceEmbeddingTests.cs", "Test/ColorVision.UI.Tests/FlowSafeSearchSidecarTests.cs", "Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs"]
-related: ["ui.framework", "ui.discovery", "ui.menus", "ui.hotkeys", "ui.settings", "ui.common", "ui.configuration", "operations.main-window", "flow.templates", "governance.knowledge"]
+code_paths: ["UI/ColorVision.UI/Serach", "UI/ColorVision.Common/Interfaces/Serach", "UI/ColorVision.UI/AssemblyHandler.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI.Desktop/Settings/SettingSearchProvider.cs", "UI/ColorVision.UI.Desktop/Settings/SettingEntryCatalog.cs", "UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml.cs", "UI/ColorVision.UI.Desktop/ThirdPartyApps/ThirdPartyAppSearchProvider.cs", "Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs", "Engine/ColorVision.Engine/Templates/Flow/Search/FlowNodeDynamicSearchProvider.cs", "Engine/ColorVision.Engine/Templates/Flow/Search/SqliteFlowNodeSearchIndex.cs", "Engine/ColorVision.Engine/Templates/Flow/Versioning/FlowCatalogService.cs", "ColorVision/MainWindow.xaml", "ColorVision/MainWindow.Hotkeys.cs", "ColorVision/Recovery/StartupMaintenanceSearchProvider.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/SearchQueryTests.cs", "Test/ColorVision.UI.Tests/SearchManagerTests.cs", "Test/ColorVision.UI.Tests/SearchPaletteTests.cs", "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs", "Test/ColorVision.UI.Tests/MainWindowSearchShellTests.cs", "Test/ColorVision.UI.Tests/SearchWindowHotkeyBridgeTests.cs", "Test/ColorVision.UI.Tests/SearchWindowHostTests.cs", "Test/ColorVision.UI.Tests/SettingSearchProviderTests.cs", "Test/ColorVision.UI.Tests/TemplateSearchProviderTests.cs", "Test/ColorVision.UI.Tests/WpfResourceEmbeddingTests.cs", "Test/ColorVision.UI.Tests/FlowSafeSearchSidecarTests.cs", "Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs", "Test/ColorVision.UI.Tests/StartupMaintenanceSearchTests.cs", "Test/ColorVision.UI.Tests/StartupMaintenanceSearchHostTests.cs"]
+related: ["ui.framework", "ui.discovery", "ui.menus", "ui.hotkeys", "ui.settings", "ui.common", "ui.configuration", "operations.main-window", "flow.templates", "governance.knowledge", "platform.runtime", "ui.wizards"]
 ---
 
 # 应用搜索：入口、候选与执行
 
-`UI/ColorVision.UI/Serach/` 是实际目录拼写。它提供 ColorVision 主窗口中的功能快速入口，可找菜单命令、设置、模板、工具和流程节点；不是仓库[知识检索](../../README.md)，也不遍历磁盘文件正文。工作区文件搜索、日志全文与历史检测结果尚未统一接入这个面板。
+`UI/ColorVision.UI/Serach/` 是实际目录拼写。它提供 ColorVision 主窗口中的功能快速入口，可找菜单命令、设置、模板、工具、流程节点，以及初始化向导和故障恢复入口；不是仓库[知识检索](../../README.md)，也不遍历磁盘文件正文。工作区文件搜索、日志全文与历史检测结果尚未统一接入这个面板。
 
 ## 入口与局部查找
 
@@ -37,6 +37,7 @@ related: ["ui.framework", "ui.discovery", "ui.menus", "ui.hotkeys", "ui.settings
 输入框最多接受 256 个字符。结果显示名称、说明、分类和已有的快捷键，标题内直接高亮匹配文字，不把提供者文字解释为标记。没有快捷键的功能仍能搜索。分类使用稳定键 `Commands`、`Settings`、`Templates`、`FlowNodes`、`Tools`、`External`，显示名通过资源本地化。
 
 - 上下键选择、Enter 执行，鼠标单击结果也可执行；重复 Enter 不重复提交。Esc 或标准标题栏关闭按钮关闭搜索窗口，点击窗口外部不会关闭。类型下拉框与底部按钮保留原生键盘操作。
+- 输入提示只在实际文本框为空且未获得键盘焦点时显示；聚焦后即隐藏，避免中文输入法组词尚未提交到搜索绑定时与提示文字重叠。输入法组合期间仍由输入法处理选词、Enter 和 Esc，不提前执行搜索结果。
 - 空输入返回已有静态目录中的常用/最近入口，不查询动态来源、不添加外部启动项。会话最近只记成功返回的动作 ID，最多 10 项，不存查询文字、不持久化；不会把失效或不匹配项重新补进结果。
 - 非空输入默认 120 ms 防抖。开始新查询立即清空旧结果及选择接纳状态；查询版本与取消令牌共同阻止旧请求晚返回覆盖新结果，关闭也会失效所有待接纳结果。
 - 加载、无结果、部分来源失败和查询失败有不同状态。不可执行项可展示为弱化状态，但不允许提交；选择默认落在第一项可执行结果。
@@ -60,6 +61,7 @@ related: ["ui.framework", "ui.discovery", "ui.menus", "ui.hotkeys", "ui.settings
 | 来源 | 当前范围与执行 |
 | --- | --- |
 | `MenuSearchProvider` | 取菜单 ID 过滤后的主窗口/Global 可见、非顶层条目；读取热键展示元数据，通常保留原 ICommand，包括 RoutedCommand。`MenuClose` 明确改用已有 `CloseDocumentCommand`，不依赖当前活动搜索窗口。隐藏过滤不是业务权限保证 |
+| `StartupMaintenanceSearchProvider` | 主程序集提供的搜索专用静态目录，贡献“初始化向导”和“故障恢复”，不恢复已移除菜单、不注册快捷键。名称、说明与中英文别名可检索；显示为高级维护，类型筛选仍属于 `Commands`，受 `EnableMenuIndex` 控制 |
 | `SettingSearchProvider` | 从 `SettingEntryCatalog` 的页/行元数据构建目录，不读取配置属性值或构造自定义页面；选中后打开/激活设置窗口并定位稳定设置 ID，不直接修改设置 |
 | `TemplateSearchProvider` | 枚举已注册模板的名称，身份包含注册键与名称；执行时重新解析当前注册并检查名称仍存在，然后打开模板入口 |
 | `ThirdPartyAppSearchProvider` | 刷新工具目录，取已授权、已安装、名称非空的工具；使用已有 `DoubleClickCommand`，安装与业务权限仍由工具模块负责 |
@@ -80,6 +82,10 @@ Flow 首次查询仍可能延迟初始化 `FlowCatalogProvider.Shared`，在应�
 
 ## 提交、焦点与外部副作用
 
+初始化向导与故障恢复不通过枚举所有 `Window` 自动发现。`ColorVision/Recovery/StartupMaintenanceSearchProvider.cs` 只提供元数据与延迟执行委托：创建提供者、枚举候选和检查 `CanExecute` 都不构造维护窗口、不读取配置值、不检查更新或重启。搜索“向导／初始化／setup／wizard”或“恢复／修复／安全启动／recovery／repair”即可定位对应条目；稳定 ID 不随界面语言改变，也不依赖已删除的菜单关联。
+
+选中维护条目后检查宿主和管理员权限，直接在当前实例中以主窗口为 Owner 打开对应对话框，不弹重启确认，也不关闭工作区。运行期向导不执行首次初始化链，完成只关闭子窗口；恢复窗口返回也不退出应用。只有随后明确选择安全启动、临时跳过插件等动作时才走保存、取消与重启确认，具体边界见[架构运行时](../../03-architecture/overview/runtime.md)。搜索可见不是操作获准；打开向导不清空设置，打开恢复不自动修复。
+
 `SearchControl.Open(commandTarget, commandOwner, isCommandContextCurrent)` 接收原内容目标、明确的业务宿主与可选上下文检查；独立窗口将自己的 `Owner` 作为业务宿主传入，不把搜索窗口误当成命令所属窗口。`SubmitSelection` 仅接纳当前已完成查询中的选中项，输入法组合期间不提交。所有命令执行前检查原宿主仍有效；RoutedCommand 还检查原目标未卸载、仍在原窗口、原先可见的内容未隐藏且 DataContext 未替换，并通过宿主回调确认活动文档未改变。文档切换只拒绝旧 RoutedCommand，不禁用无关的普通应用命令。不能据此检测一切业务对象内部变化，各 provider 仍需复核自己的有效性。
 
 仅 `CloseDocumentCommand` 在没有原内容焦点时允许使用明确的业务宿主作为后备路由，仍检查原宿主和活动文档上下文，并在关闭搜索窗口后再次复核。其它 RoutedCommand 没有内容目标时保持不可执行，不退回新焦点或任意活动窗口。
@@ -99,10 +105,13 @@ Flow 首次查询仍可能延迟初始化 `FlowCatalogProvider.Shared`，在应�
 
 - `SearchQueryTests`：字段匹配、排序、分类、跨来源去重、配额、最近权重与稳定后备身份。
 - `SearchManagerTests`：缓存及同数量程序集替换、构造/枚举故障隔离、部分类型加载、空查询、异步优先/取消、旧来源线程归属、开关/限额、菜单元数据、关闭文档的明确路由与外部参数；使用隔离来源与无害/不可执行业务替身。
-- `SearchPaletteTests`：旧选择失效、晚响应、关闭/重开、错误状态、命令门禁、业务宿主与原焦点、切换/隐藏原内容、IME 组合保护、标题高亮，以及中英文深浅色窄宽布局。显式设置 `COLORVISION_SEARCH_PREVIEW_DIRECTORY` 可输出隔离预览 PNG，不启动生产设备。
+- `SearchPaletteTests`：旧选择失效、晚响应、关闭/重开、错误状态、命令门禁、业务宿主与原焦点、切换/隐藏原内容、IME 组合保护、空文本与焦点状态下的输入提示显隐、标题高亮，以及中英文深浅色窄宽布局。输入提示回归模拟 WPF 焦点属性与组合事件，不代替物理输入法验收。显式设置 `COLORVISION_SEARCH_PREVIEW_DIRECTORY` 可输出隔离预览 PNG，不启动生产设备。
 - `ContextualFindRouterTests`、`MainWindowSearchShellTests`：局部 Find 归属、编辑器/聊天适配、菜单焦点、独立窗口标记及宿主接线；不是生产主窗口的硬件验收。
 - `SearchWindowHotkeyBridgeTests`、`SearchWindowHostTests`：独立搜索窗口的当前组合转接、活动状态和捕获门禁，以及标准可缩放非模态 Owner 窗口、移动宿主不关闭、单独关闭后重开和 Owner 关闭联动。会话测试注入合成查询，检查关闭取消和窗口关闭后才执行结果，不运行真实查询来源或生产主窗口。
 - `SettingSearchProviderTests`、`TemplateSearchProviderTests`：元数据建索引不读配置值/构造页面、稳定设置身份与定位，以及模板同名去重边界、移除后不执行旧目标。
+- `StartupMaintenanceSearchTests`：真实维护提供者的隔离发现、关键词和类型过滤、中英文本地化、稳定身份、外部入口排序，以及只在执行时分派维护意图；委托替身不重启产品或修改配置。
+- `StartupMaintenanceSearchHostTests`：真实搜索控件输入“向导／恢复”后的绑定、查询和结果行展示；可用 `COLORVISION_MAINTENANCE_SEARCH_PREVIEW_DIRECTORY` 输出隔离预览，不构造生产主窗口或执行维护。
+- `StartupMaintenanceWindowTests`：合成窗口验证 Owner、居中、关闭子窗口不影响主窗口，以及只有临时跳过插件动作映射到重启；真实向导和恢复行为另由隔离窗口测试覆盖。
 - `FlowSafeSearchSidecarTests`、`FlowCatalogServiceTests`：侧车安全投影和版本索引；不等同于真实流程窗口定位验收。`WpfResourceEmbeddingTests` 只补充 BAML 嵌入检查。
 
 上述测试文件是可运行验证入口，不是本页声称已通过的结果。物理键盘、各输入法和键盘布局、窗口拖动、多显示器缩放与真实业务操作仍需在明确授权的隔离环境验收；不通过设备运行、删除数据或启动浏览器来顺带测试文档。

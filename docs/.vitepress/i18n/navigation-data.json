@@ -530,6 +530,12 @@
                 "root": "架构运行时"
               },
               "link": "/03-architecture/overview/runtime"
+            },
+            {
+              "text": {
+                "root": "应用搜索：入口、候选与执行"
+              },
+              "link": "/04-api-reference/ui-components/search"
             }
           ]
         },

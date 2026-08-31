@@ -124,7 +124,13 @@ namespace ColorVision
 
             parser.AddArgument("debug", true, "d");
             parser.AddArgument("restart", true, "r");
+            parser.AddArgument(StartupMaintenanceController.ArgumentName);
+            parser.AddArgument(StartupMaintenanceController.SkipPluginsArgumentName);
             parser.Parse();
+            StartupMaintenanceMode? maintenanceMode = StartupMaintenanceController.ParseMode(parser.GetValue(StartupMaintenanceController.ArgumentName));
+            IReadOnlyList<string> requestedSkipPluginKeys = StartupMaintenanceController.ParseSkippedPluginKeys(parser.GetValue(StartupMaintenanceController.SkipPluginsArgumentName));
+            if (maintenanceMode == StartupMaintenanceMode.SkipSelectedPlugins && requestedSkipPluginKeys.Count == 0)
+                maintenanceMode = StartupMaintenanceMode.Recovery; // Invalid selection asks again instead of silently loading every plugin.
 
             IsDebug = Debugger.IsAttached || parser.GetFlag("debug");
 
@@ -309,24 +315,27 @@ namespace ColorVision
 
             log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");
 
-            bool shouldLoadPlugins = true;
-            bool shouldShowSetupWizard = false;
-            IReadOnlyList<string> skipOncePluginKeys = Array.Empty<string>();
+            bool shouldLoadPlugins = maintenanceMode != StartupMaintenanceMode.SafeStart;
+            bool shouldShowSetupWizard = maintenanceMode == StartupMaintenanceMode.SetupWizard;
+            IReadOnlyList<string> skipOncePluginKeys = maintenanceMode == StartupMaintenanceMode.SkipSelectedPlugins
+                ? requestedSkipPluginKeys : Array.Empty<string>();
 
-            if (!startupWasHealthy)
+            if (StartupMaintenanceController.ShouldShowRecovery(maintenanceMode, startupWasHealthy))
             {
-                StartupRecoveryResult recoveryResult = ShowStartupRecoveryWindow();
+                StartupRecoveryResult recoveryResult = ShowStartupRecoveryWindow(maintenanceMode == StartupMaintenanceMode.Recovery);
                 if (Dispatcher.HasShutdownStarted
                     || Dispatcher.HasShutdownFinished
                     || recoveryResult.Action == StartupRecoveryAction.Exit)
                 {
+                    if (StartupMaintenanceController.ShouldCompleteCancelledRecovery(maintenanceMode, startupWasHealthy))
+                        StartupRegistryChecker.CompleteForRecoveryRestart();
                     if (!Dispatcher.HasShutdownStarted && !Dispatcher.HasShutdownFinished)
                         Shutdown();
                     return;
                 }
 
                 shouldLoadPlugins = recoveryResult.Action != StartupRecoveryAction.SkipAllOnce;
-                shouldShowSetupWizard = recoveryResult.Action == StartupRecoveryAction.RunSetupWizard;
+                shouldShowSetupWizard |= recoveryResult.Action == StartupRecoveryAction.RunSetupWizard;
                 skipOncePluginKeys = recoveryResult.SelectedPluginKeys;
             }
 
@@ -375,7 +384,7 @@ namespace ColorVision
             }
         }
 
-        private StartupRecoveryResult ShowStartupRecoveryWindow()
+        private StartupRecoveryResult ShowStartupRecoveryWindow(bool manualRequest)
         {
             System.Windows.ShutdownMode previousShutdownMode = ShutdownMode;
             Window? previousMainWindow = MainWindow;
@@ -383,7 +392,7 @@ namespace ColorVision
 
             try
             {
-                using StartupRecoveryWindow recoveryWindow = new(StartupRegistryChecker.PreviousFailure);
+                using StartupRecoveryWindow recoveryWindow = new(StartupRegistryChecker.PreviousFailure, manualRequest);
                 recoveryWindow.ShowDialog();
                 return recoveryWindow.Result;
             }
@@ -576,7 +585,11 @@ namespace ColorVision
                                     log.Warn("Socket shutdown did not fully complete within the application exit budget.");
                                 return completed;
                             },
-                            () => _ = Update.CombinedUpdateCoordinator.TryApplyPrefetchedUpdateOnExit(),
+                            () =>
+                            {
+                                if (ShouldApplyPrefetchedUpdateOnExit(_maintenanceExitRequested))
+                                    _ = Update.CombinedUpdateCoordinator.TryApplyPrefetchedUpdateOnExit();
+                            },
                             reportCleanupFailure);
 
                         if (handoffState == null)

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Category" xml:space="preserve"><value>Advanced maintenance</value></data>
+  <data name="WizardTitle" xml:space="preserve"><value>Setup wizard</value></data>
+  <data name="WizardDescription" xml:space="preserve"><value>Open the setup wizard to view or adjust configuration without automatically clearing existing settings. Administrator permission required.</value></data>
+  <data name="RecoveryTitle" xml:space="preserve"><value>Startup recovery</value></data>
+  <data name="RecoveryDescription" xml:space="preserve"><value>Open recovery to view diagnostics and recovery options. A restart prompt appears only for actions that require it. Administrator permission required.</value></data>
+  <data name="ConfirmPluginRestart" xml:space="preserve"><value>Loaded plugins cannot be skipped while the app is running. Restart ColorVision with your selection?
+
+The selected plugins will be skipped for this startup only; permanent enabled states stay unchanged. You will still be prompted to save unsaved documents. Cancelling closure cancels the restart.</value></data>
+  <data name="AdminRequired" xml:space="preserve"><value>Administrator permission is required for this maintenance operation.</value></data>
+  <data name="OperationCancelled" xml:space="preserve"><value>The operation was cancelled. Save your unfinished work before trying again.</value></data>
+  <data name="FlowBusy" xml:space="preserve"><value>A flow is running or its state is unavailable. Finish running tasks before performing this action.</value></data>
+  <data name="TaskBusy" xml:space="preserve"><value>The app has running tasks. Finish them before performing this action.</value></data>
+  <data name="UpdateBusy" xml:space="preserve"><value>An update is being prepared or applied. Wait for it to finish before performing this action.</value></data>
+  <data name="ApplicationUnavailable" xml:space="preserve"><value>This maintenance action is unavailable. Return to the main window and try again.</value></data>
+  <data name="RestartFailed" xml:space="preserve"><value>Unable to enter maintenance: {0}</value></data>
+  <data name="RestartFailedAfterClose" xml:space="preserve"><value>The app windows closed, but the maintenance process could not start: {0}
+
+Please reopen ColorVision and try again.</value></data>
+  <data name="ManualRecoveryHeadline" xml:space="preserve"><value>ColorVision maintenance and recovery</value></data>
+  <data name="ManualRecoveryExplanation" xml:space="preserve"><value>You opened recovery mode manually. Choose a diagnostic or recovery action, or start normally to return to the app.</value></data>
+  <data name="RuntimeRecoverySubtitle" xml:space="preserve"><value>Diagnostics and recovery options</value></data>
+  <data name="RuntimeRecoveryExplanation" xml:space="preserve"><value>The app is still running. Viewing logs or recovery options does not restart it. Safe startup, repair and rollback actions prompt when selected.</value></data>
+  <data name="RuntimeNormalAction" xml:space="preserve"><value>Return to app</value></data>
+  <data name="RuntimeExitAction" xml:space="preserve"><value>Close window</value></data>
+  <data name="RuntimeSafeStartAction" xml:space="preserve"><value>Restart in safe mode</value></data>
+  <data name="RuntimeSkipAllAction" xml:space="preserve"><value>Restart and skip all</value></data>
+  <data name="RuntimeSkipSelectedAction" xml:space="preserve"><value>Restart and skip selected</value></data>
+  <data name="RuntimeDisableSelectedAction" xml:space="preserve"><value>Disable selected</value></data>
+  <data name="RuntimePluginSelectionHint" xml:space="preserve"><value>Loaded plugins keep running. Skipping plugins requires a restart; permanent disabling takes effect at the next startup.</value></data>
+  <data name="RuntimePluginsDisabled" xml:space="preserve"><value>The selected plugins are disabled for the next startup. Already loaded plugins will keep running.</value></data>
+</root>

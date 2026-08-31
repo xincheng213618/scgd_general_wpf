@@ -6,6 +6,7 @@ using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -206,6 +207,99 @@ public sealed class SearchPaletteTests
             Assert.False(control.SubmitSelection());
             Assert.Equal(0, calls);
             control.Close();
+        });
+    }
+
+    [Theory]
+    [InlineData(false, "zh-CN")]
+    [InlineData(true, "zh-CN")]
+    [InlineData(false, "en-US")]
+    public void PlaceholderTracksInputAndFocusThroughClearAndReopen(bool dark, string culture)
+    {
+        WithPalette(dark, culture, 720, control =>
+        {
+            var input = Assert.IsType<TextBox>(control.FindName("Searchbox"));
+            var placeholder = Assert.IsType<TextBlock>(control.FindName("SearchPlaceholder"));
+            Assert.Equal(string.Empty, input.Text);
+            Assert.Equal(Visibility.Visible, placeholder.Visibility);
+            Assert.Equal(SearchPaletteText.Placeholder, System.Windows.Automation.AutomationProperties.GetName(input));
+
+            SetInputFocusState(input, true);
+            Assert.Equal(string.Empty, control.Model.SearchText);
+            Assert.Equal(Visibility.Collapsed, placeholder.Visibility);
+
+            input.SetCurrentValue(TextBox.TextProperty, "搜索");
+            Complete(control.Model.PendingSearch);
+            Assert.Equal("搜索", control.Model.SearchText);
+            Assert.Equal(Visibility.Collapsed, placeholder.Visibility);
+            SetInputFocusState(input, false);
+            Assert.Equal(Visibility.Collapsed, placeholder.Visibility);
+
+            control.Model.SearchText = string.Empty;
+            Complete(control.Model.PendingSearch);
+            Assert.Equal(string.Empty, input.Text);
+            Assert.Equal(Visibility.Visible, placeholder.Visibility);
+
+            SetInputFocusState(input, true);
+            input.SetCurrentValue(TextBox.TextProperty, "再次搜索");
+            Button clear = Assert.Single(Descendants(control).OfType<Button>().Where(button =>
+                System.Windows.Automation.AutomationProperties.GetName(button) == SearchPaletteText.Clear));
+            clear.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Complete(control.Model.PendingSearch);
+            Assert.Equal(string.Empty, input.Text);
+            Assert.Equal(string.Empty, control.Model.SearchText);
+            Assert.Equal(Visibility.Collapsed, placeholder.Visibility);
+
+            input.SetCurrentValue(TextBox.TextProperty, "旧查询");
+            control.Close();
+            control.Open(null);
+            Complete(control.Model.PendingSearch);
+            Assert.Equal(string.Empty, input.Text);
+            Assert.Equal(Visibility.Collapsed, placeholder.Visibility);
+            SetInputFocusState(input, false);
+            Assert.Equal(Visibility.Visible, placeholder.Visibility);
+        });
+    }
+
+    [Theory]
+    [InlineData(Key.Enter)]
+    [InlineData(Key.Escape)]
+    public void ImePreeditHidesPlaceholderWithoutSubmittingOrClosing(Key key)
+    {
+        WithPalette(false, "zh-CN", 720, control =>
+        {
+            var input = Assert.IsType<TextBox>(control.FindName("Searchbox"));
+            var placeholder = Assert.IsType<TextBlock>(control.FindName("SearchPlaceholder"));
+            int closed = 0;
+            control.Closed += (_, _) => closed++;
+            SearchPaletteEntry? originalSelection = control.Model.Selected;
+
+            SetInputFocusState(input, true);
+            InvokePrivate(control, "CompositionStarted", input, null);
+            Assert.Equal(string.Empty, input.Text);
+            Assert.Equal(Visibility.Collapsed, placeholder.Visibility);
+
+            SetUncommittedInput(control, input, "搜索");
+            Assert.Equal(string.Empty, control.Model.SearchText);
+            Assert.Equal(Visibility.Collapsed, placeholder.Visibility);
+            var keyEvent = new KeyEventArgs(Keyboard.PrimaryDevice, new IsolatedInputSource(), 0, key);
+            InvokePrivate(control, "Palette_PreviewKeyDown", input, keyEvent);
+            Assert.False(keyEvent.Handled);
+            Assert.True(control.Model.IsOpen);
+            Assert.Same(originalSelection, control.Model.Selected);
+            Assert.False(control.SubmitSelection());
+            Assert.Equal(0, closed);
+
+            // Even with delayed source updates, actual nonempty input must hide the hint on blur.
+            SetInputFocusState(input, false);
+            Assert.Equal("搜索", input.Text);
+            Assert.Equal(string.Empty, control.Model.SearchText);
+            Assert.Equal(Visibility.Collapsed, placeholder.Visibility);
+            input.GetBindingExpression(TextBox.TextProperty)!.UpdateSource();
+            InvokePrivate(control, "CompositionCompleted", input, null);
+            Complete(control.Model.PendingSearch);
+            Assert.Equal("搜索", control.Model.SearchText);
+            Assert.Equal(Visibility.Collapsed, placeholder.Visibility);
         });
     }
 
@@ -502,8 +596,47 @@ public sealed class SearchPaletteTests
             WithPalette(dark, culture, width, control =>
             {
                 RenderPalette(control, width, Path.Combine(directory, $"search-{(dark ? "dark" : "light")}-{culture}-{width}.png"));
+                if (culture == "zh-CN")
+                {
+                    var input = Assert.IsType<TextBox>(control.FindName("Searchbox"));
+                    SetInputFocusState(input, true);
+                    InvokePrivate(control, "CompositionStarted", input, null);
+                    SetUncommittedInput(control, input, "搜索");
+                    Assert.Equal(Visibility.Collapsed, Assert.IsType<TextBlock>(control.FindName("SearchPlaceholder")).Visibility);
+                    RenderPalette(control, width, Path.Combine(directory, $"search-input-focused-{(dark ? "dark" : "light")}-{culture}.png"));
+                }
             });
         }
+    }
+
+    private static void SetInputFocusState(TextBox input, bool focused)
+    {
+        // Exercise the real XAML dependency-property binding without activating a window
+        // or changing the user's keyboard focus. This is not a native IME end-to-end test.
+        var key = Assert.IsType<DependencyPropertyKey>(typeof(UIElement)
+            .GetField("IsKeyboardFocusWithinPropertyKey", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null));
+        input.SetValue(key, focused);
+        input.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+    }
+
+    private static void SetUncommittedInput(SearchControl control, TextBox input, string text)
+    {
+        // IME pre-edit may be visible before WPF commits Text back to the search model.
+        input.SetBinding(TextBox.TextProperty, new Binding(nameof(SearchPaletteViewModel.SearchText))
+        {
+            Source = control.Model,
+            Mode = BindingMode.TwoWay,
+            UpdateSourceTrigger = UpdateSourceTrigger.Explicit
+        });
+        input.SetCurrentValue(TextBox.TextProperty, text);
+        input.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+    }
+
+    private sealed class IsolatedInputSource : PresentationSource
+    {
+        public override Visual RootVisual { get; set; } = new DrawingVisual();
+        public override bool IsDisposed => false;
+        protected override CompositionTarget GetCompositionTargetCore() => null!;
     }
 
     private static void WithPalette(bool dark, string culture, int width, Action<SearchControl> action, int maxHeight = 620, bool withStatus = false)

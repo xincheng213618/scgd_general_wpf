@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Category" xml:space="preserve"><value>高级维护</value></data>
+  <data name="WizardTitle" xml:space="preserve"><value>初始化向导</value></data>
+  <data name="WizardDescription" xml:space="preserve"><value>打开初始化向导，查看或调整应用配置；不会自动清空现有设置。需要管理员权限。</value></data>
+  <data name="RecoveryTitle" xml:space="preserve"><value>故障恢复</value></data>
+  <data name="RecoveryDescription" xml:space="preserve"><value>打开故障恢复窗口，查看诊断与恢复选项；仅执行需要重启的操作时才提示。需要管理员权限。</value></data>
+  <data name="ConfirmPluginRestart" xml:space="preserve"><value>已加载的插件无法在运行中跳过。按刚才的选择重启 ColorVision？
+
+本次启动将跳过所选插件；不会修改永久启用状态。未保存文档仍会询问是否保存，取消关闭将取消本次重启。</value></data>
+  <data name="AdminRequired" xml:space="preserve"><value>此维护操作需要管理员权限。</value></data>
+  <data name="OperationCancelled" xml:space="preserve"><value>已取消操作。请先保存未完成的工作后重试。</value></data>
+  <data name="FlowBusy" xml:space="preserve"><value>流程仍在运行或无法确认运行状态，请结束任务后再执行此操作。</value></data>
+  <data name="TaskBusy" xml:space="preserve"><value>应用仍有运行中的任务，请结束任务后再执行此操作。</value></data>
+  <data name="UpdateBusy" xml:space="preserve"><value>应用正在准备或执行更新，请等待更新结束后再执行此操作。</value></data>
+  <data name="ApplicationUnavailable" xml:space="preserve"><value>当前无法执行维护操作，请返回主窗口后重试。</value></data>
+  <data name="RestartFailed" xml:space="preserve"><value>无法进入维护流程：{0}</value></data>
+  <data name="RestartFailedAfterClose" xml:space="preserve"><value>应用窗口已关闭，但维护进程未能启动：{0}
+
+请重新打开 ColorVision 后重试。</value></data>
+  <data name="ManualRecoveryHeadline" xml:space="preserve"><value>ColorVision 维护与恢复</value></data>
+  <data name="ManualRecoveryExplanation" xml:space="preserve"><value>你已主动进入恢复模式。请选择需要的诊断或恢复操作，也可正常启动返回应用。</value></data>
+  <data name="RuntimeRecoverySubtitle" xml:space="preserve"><value>查看诊断与恢复选项</value></data>
+  <data name="RuntimeRecoveryExplanation" xml:space="preserve"><value>应用仍在运行。查看日志或恢复选项无需重启；安全启动、修复和回退等操作会在执行时提示。</value></data>
+  <data name="RuntimeNormalAction" xml:space="preserve"><value>返回应用</value></data>
+  <data name="RuntimeExitAction" xml:space="preserve"><value>关闭窗口</value></data>
+  <data name="RuntimeSafeStartAction" xml:space="preserve"><value>重启并安全启动</value></data>
+  <data name="RuntimeSkipAllAction" xml:space="preserve"><value>重启并跳过全部</value></data>
+  <data name="RuntimeSkipSelectedAction" xml:space="preserve"><value>重启并跳过所选</value></data>
+  <data name="RuntimeDisableSelectedAction" xml:space="preserve"><value>永久禁用所选</value></data>
+  <data name="RuntimePluginSelectionHint" xml:space="preserve"><value>已加载插件会继续运行。临时跳过需要重启；永久禁用将在下次启动时生效。</value></data>
+  <data name="RuntimePluginsDisabled" xml:space="preserve"><value>所选插件已禁用，将在下次启动时生效；当前已加载的插件仍会继续运行。</value></data>
+</root>

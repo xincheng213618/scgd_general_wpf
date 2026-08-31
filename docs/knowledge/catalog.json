@@ -3233,7 +3233,7 @@
       "source": "docs/02-developer-guide/deployment/auto-update.md",
       "url": "/02-developer-guide/deployment/auto-update",
       "searchable": true,
-      "source_hash": "35364e5ce2e8b7ea96a44aa44afbd0e5f4f16a27d1679b884c99168a20e0db3e"
+      "source_hash": "dfd6435b1dc1b5abca21efc50be7b02936b302e411aa18601135775c66832680"
     },
     {
       "knowledge_id": "delivery.update-scan-protection",
@@ -5858,12 +5858,18 @@
       ],
       "code_paths": [
         "ColorVision/App.xaml.cs",
+        "ColorVision/App.StartupMaintenance.cs",
         "ColorVision/Recovery",
         "UI/ColorVision.UI/Plugins/PluginLoader.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs",
-        "Test/ColorVision.UI.Tests/StartupRecoveryPluginScannerTests.cs"
+        "Test/ColorVision.UI.Tests/StartupRecoveryPluginScannerTests.cs",
+        "Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs",
+        "Test/ColorVision.UI.Tests/StartupMaintenanceWindowTests.cs",
+        "Test/ColorVision.UI.Tests/WizardWindowRuntimeTests.cs",
+        "Test/ColorVision.UI.Tests/StartupRecoveryWindowRuntimeTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotBackgroundShellMaintenanceGuardTests.cs"
       ],
       "related": [
         "platform.architecture",
@@ -5871,7 +5877,8 @@
         "delivery.update",
         "ui.wizards",
         "ui.localization",
-        "engine.rc-registration"
+        "engine.rc-registration",
+        "ui.search"
       ],
       "code_scopes": [
         "ColorVision",
@@ -5883,7 +5890,7 @@
       "source": "docs/03-architecture/overview/runtime.md",
       "url": "/03-architecture/overview/runtime",
       "searchable": true,
-      "source_hash": "43cd96f08a55e7d1934d669b640e91a4d02d5e36be730158e9c666477214f8e8"
+      "source_hash": "5aac441d7bb21c322d681bfa956513eedf28ef95abba5604bc79c4ba32860b3e"
     },
     {
       "knowledge_id": "platform.security",
@@ -8256,7 +8263,8 @@
         "Engine/ColorVision.Engine/Templates/Flow/Search/SqliteFlowNodeSearchIndex.cs",
         "Engine/ColorVision.Engine/Templates/Flow/Versioning/FlowCatalogService.cs",
         "ColorVision/MainWindow.xaml",
-        "ColorVision/MainWindow.Hotkeys.cs"
+        "ColorVision/MainWindow.Hotkeys.cs",
+        "ColorVision/Recovery/StartupMaintenanceSearchProvider.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/SearchQueryTests.cs",
@@ -8270,7 +8278,9 @@
         "Test/ColorVision.UI.Tests/TemplateSearchProviderTests.cs",
         "Test/ColorVision.UI.Tests/WpfResourceEmbeddingTests.cs",
         "Test/ColorVision.UI.Tests/FlowSafeSearchSidecarTests.cs",
-        "Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs"
+        "Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs",
+        "Test/ColorVision.UI.Tests/StartupMaintenanceSearchTests.cs",
+        "Test/ColorVision.UI.Tests/StartupMaintenanceSearchHostTests.cs"
       ],
       "related": [
         "ui.framework",
@@ -8282,10 +8292,13 @@
         "ui.configuration",
         "operations.main-window",
         "flow.templates",
-        "governance.knowledge"
+        "governance.knowledge",
+        "platform.runtime",
+        "ui.wizards"
       ],
       "code_scopes": [
         "ColorVision",
+        "ColorVision/Recovery",
         "Engine/ColorVision.Engine",
         "UI/ColorVision.Common",
         "UI/ColorVision.UI",
@@ -8296,7 +8309,7 @@
       "source": "docs/04-api-reference/ui-components/search.md",
       "url": "/04-api-reference/ui-components/search",
       "searchable": true,
-      "source_hash": "87233efa1ddf0d3fbb7c0c25ee58aff59a3958a8a6d9b3c47f0d05726780aeb4"
+      "source_hash": "5cd12528a8f892a9eb86cb255980038b787bb62f9acc9cee6a2af1f537391a8f"
     },
     {
       "knowledge_id": "ui.settings",
@@ -8790,7 +8803,9 @@
         "ColorVision/Wizards/RecommendedSoftwareWizardStep.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/RecommendedSoftwareWizardStepTests.cs"
+        "Test/ColorVision.UI.Tests/RecommendedSoftwareWizardStepTests.cs",
+        "Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs",
+        "Test/ColorVision.UI.Tests/WizardWindowRuntimeTests.cs"
       ],
       "related": [
         "ui.desktop",
@@ -8811,7 +8826,7 @@
       "source": "docs/04-api-reference/ui-components/wizards.md",
       "url": "/04-api-reference/ui-components/wizards",
       "searchable": true,
-      "source_hash": "1620dac0827bcb7b73c187a21cef6b6015a0ed2458063b208d4cb13b370ad3a2"
+      "source_hash": "e512accca02e6f372becbf3c41ec278abb249c2cbd3b5e007abd1c2809698d46"
     }
   ]
 }

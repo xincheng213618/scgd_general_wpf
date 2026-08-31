@@ -5,7 +5,7 @@ status: "current"
 summary: "配置向导的步骤发现、初始化时序、前进应用和完成标记；关闭不回滚，完成标记不证明组件健康或重启成功。"
 aliases: ["设置向导", "首次启动向导", "向导步骤", "向导初始化", "向导完成", "WizardWindow", "WizardManager", "WizardWindowConfig", "WizardCompletionKey", "IWizardStep", "WizardStepBase", "IWizardInitializer", "RunsBeforeInitializers", "RequestSkipWizard"]
 code_paths: ["UI/ColorVision.UI.Desktop/Wizards/WizardWindow.xaml", "UI/ColorVision.UI.Desktop/Wizards/WizardWindow.xaml.cs", "UI/ColorVision.UI.Desktop/Wizards/WizardWindowConfig.cs", "UI/ColorVision.Common/Interfaces/IWizardStep.cs", "UI/ColorVision.Common/Interfaces/Window/WindowConfig.cs", "UI/ColorVision.UI/AssemblyHandler.cs", "ColorVision/App.xaml.cs", "ColorVision/Wizards/RecommendedSoftwareWizardStep.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/RecommendedSoftwareWizardStepTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/RecommendedSoftwareWizardStepTests.cs","Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs","Test/ColorVision.UI.Tests/WizardWindowRuntimeTests.cs"]
 related: ["ui.desktop", "operations.first-run", "platform.runtime", "ui.configuration", "ui.discovery"]
 ---
 
@@ -13,7 +13,9 @@ related: ["ui.desktop", "operations.first-run", "platform.runtime", "ui.configur
 
 `UI/ColorVision.UI.Desktop/Wizards/` 负责通用向导窗口；`IWizardStep` 和 `IWizardInitializer` 定义在 `ColorVision.Common`，具体步骤由主程序或插件提供。向导是有副作用的配置流程，不是只读说明页；它也不是[设置窗口](./settings.md)的另一个外观。
 
-`ColorVision/App.xaml.cs` 在恢复选择要求重新配置，或 `WizardCompletionKey` 为 false 时显示非模态 `WizardWindow`，否则进入 `StartWindow`。完整启动和恢复分流见[主程序运行时](../../03-architecture/overview/runtime.md)与[首次启动](../../00-getting-started/first-steps.md)。
+`ColorVision/App.xaml.cs` 在一次性维护参数要求进入向导、恢复选择要求重新配置，或 `WizardCompletionKey` 为 false 时显示非模态 `WizardWindow`，否则进入 `StartWindow`。完整启动和恢复分流见[主程序运行时](../../03-architecture/overview/runtime.md)与[首次启动](../../00-getting-started/first-steps.md)。
+
+运行中可通过[应用搜索](./search.md)查找“初始化向导／向导／setup”。这是搜索专用高级维护入口，不恢复普通菜单，也没有默认快捷键。检查管理员权限后直接以主窗口为 Owner 打开 `new WizardWindow(runInitializers: false)` 对话框，不确认或重启；入口不把 `WizardCompletionKey` 改为 false，也不清空现有配置。运行期维护动作与启动交接见[运行时维护入口](../../03-architecture/overview/runtime.md#搜索中的维护入口)。
 
 ## 发现、排序与初始化
 
@@ -23,7 +25,9 @@ related: ["ui.desktop", "operations.first-run", "platform.runtime", "ui.configur
 
 `IWizardStep` **没有 `IsVisible` 或统一的隐藏/跳过属性**，manager 也不按可见性筛选。不要把其它菜单或属性编辑器的可见性规则套到向导，或推断“不可见步骤会连同启动初始化一起跳过”。
 
-`IWizardInitializer` 是独立的同步链，不是 `StartWindow` 执行的 `IInitializer` 链：
+原无参构造保持启动行为；显式 `runInitializers: false` 仍发现并构造步骤和 initializer 对象、刷新和应用步骤，但不执行 `IWizardInitializer.Initialize` 链。它不是“只读查看”模式，步骤自己仍可能修改配置或安装软件。
+
+默认构造下，`IWizardInitializer` 是独立的同步链，不是 `StartWindow` 执行的 `IInitializer` 链：
 
 | 条件 | 窗口何时执行向导 initializer |
 | --- | --- |
@@ -84,4 +88,4 @@ related: ["ui.desktop", "operations.first-run", "platform.runtime", "ui.configur
 
 `RecommendedSoftwareWizardStepTests` 只有三个假服务用例：缺失软件默认选中、全部取消选择时不安装也可完成、按 Everything/WinRAR 顺序调用安装服务。它们没有真实安装，也不覆盖通用向导导航、保存或重启。
 
-目前未发现 `WizardManager` / `WizardWindow` 的发现失败、先行步骤排序、跳过、关闭、保存失败和重启交接专项测试。底层配置持久化测试不能替代这些集成检查；文档校验也不能证明向导在真实环境中无副作用。需要运行时验证时，另行取得安装、配置写入或服务操作所需的授权。
+`WizardWindowRuntimeTests` 使用隔离发现、假步骤与临时配置，覆盖原构造的 initializer 时序、运行期跳过 initializer、Refresh/Apply、Apply 失败不前进、普通关闭不改完成标记，以及非主窗口完成只关窗。发现失败、真实保存失败和启动主窗口重启交接仍未覆盖；底层配置测试和文档校验不能替代这些集成检查。需要实际安装、配置写入或服务操作时仍须单独确认授权。

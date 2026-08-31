@@ -81,7 +81,7 @@
                     <TextBlock Margin="0,5,0,0"
                                FontSize="13"
                                Foreground="{DynamicResource UpdateDialog.TextSecondary}"
-                               Text="ColorVision 上次未能正常启动" />
+                               Text="{Binding RecoverySubtitle}" />
                 </StackPanel>
                 <TextBlock Grid.Column="1"
                            Margin="24,4,0,0"
@@ -321,13 +321,9 @@
                             <TextBlock VerticalAlignment="Center"
                                        FontSize="12"
                                        Foreground="{DynamicResource UpdateDialog.TextSecondary}"
-                                       Text="选择插件后，可临时跳过、永久禁用或恢复备份。" />
+                                       Text="{Binding PluginSelectionHint}"
+                                       TextWrapping="Wrap" />
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                <TextBlock Margin="0,0,8,0"
-                                           VerticalAlignment="Center"
-                                           FontSize="12"
-                                           Foreground="{DynamicResource UpdateDialog.TextSecondary}"
-                                           Text="{Binding OperationStatusText}" />
                                 <Button Click="RefreshPlugins_Click"
                                         Content="重新扫描"
                                         IsEnabled="{Binding CanRefreshPlugins}"
@@ -468,16 +464,16 @@
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Button Margin="0,0,8,0"
                                         Click="SkipAll_Click"
-                                        Content="不加载全部插件"
+                                        Content="{Binding SkipAllActionText}"
                                         IsEnabled="{Binding CanContinueStartup}"
                                         Style="{StaticResource RecoveryCompactButtonStyle}" />
                                 <Button Margin="0,0,8,0"
                                         Click="DisableSelected_Click"
-                                        Content="永久禁用所选"
+                                        Content="{Binding DisableSelectedActionText}"
                                         IsEnabled="{Binding CanUseSelection}"
                                         Style="{StaticResource RecoveryCompactButtonStyle}" />
                                 <Button Click="SkipSelected_Click"
-                                        Content="本次跳过所选"
+                                        Content="{Binding SkipSelectedActionText}"
                                         IsEnabled="{Binding CanUseSelection}"
                                         Style="{StaticResource RecoveryCompactButtonStyle}" />
                             </StackPanel>
@@ -556,14 +552,26 @@
                     BorderBrush="{DynamicResource UpdateDialog.WeakBorder}"
                     BorderThickness="0,1,0,0">
                 <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
                     <Button HorizontalAlignment="Left"
                             Click="Exit_Click"
-                            Content="退出 ColorVision"
+                            Content="{Binding ExitActionText}"
                             IsEnabled="{Binding CanContinueStartup}"
                             Style="{StaticResource RecoverySecondaryActionButtonStyle}" />
-                    <Button HorizontalAlignment="Right"
+                    <TextBlock Grid.Column="1"
+                               Margin="16,0"
+                               VerticalAlignment="Center"
+                               FontSize="12"
+                               Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                               Text="{Binding OperationStatusText}"
+                               TextWrapping="Wrap" />
+                    <Button Grid.Column="2" HorizontalAlignment="Right"
                             Click="NormalStart_Click"
-                            Content="正常启动"
+                            Content="{Binding NormalActionText}"
                             IsEnabled="{Binding CanContinueStartup}"
                             Style="{StaticResource RecoverySecondaryActionButtonStyle}" />
                 </Grid>

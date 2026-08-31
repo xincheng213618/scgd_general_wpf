@@ -4,9 +4,9 @@ knowledge_type: "topic"
 status: "current"
 summary: "启动分支、配置初始化、插件装载和恢复流程的运行时顺序。"
 aliases: ["启动链路","PluginLoader","App.xaml.cs","启动恢复"]
-code_paths: ["ColorVision/App.xaml.cs","ColorVision/Recovery","UI/ColorVision.UI/Plugins/PluginLoader.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs","Test/ColorVision.UI.Tests/StartupRecoveryPluginScannerTests.cs"]
-related: ["platform.architecture","platform.startup-integrity","delivery.update","ui.wizards","ui.localization","engine.rc-registration"]
+code_paths: ["ColorVision/App.xaml.cs","ColorVision/App.StartupMaintenance.cs","ColorVision/Recovery","UI/ColorVision.UI/Plugins/PluginLoader.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs","Test/ColorVision.UI.Tests/StartupRecoveryPluginScannerTests.cs","Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs","Test/ColorVision.UI.Tests/StartupMaintenanceWindowTests.cs","Test/ColorVision.UI.Tests/WizardWindowRuntimeTests.cs","Test/ColorVision.UI.Tests/StartupRecoveryWindowRuntimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotBackgroundShellMaintenanceGuardTests.cs"]
+related: ["platform.architecture","platform.startup-integrity","delivery.update","ui.wizards","ui.localization","engine.rc-registration","ui.search"]
 ---
 
 # 架构运行时
@@ -47,6 +47,22 @@ related: ["platform.architecture","platform.startup-integrity","delivery.update"
 | 禁用选中并启动 | 持久保存禁用状态；旧式无清单插件也按目录名识别 |
 | 插件回退 | 仅在存在同安装目录、校验通过的更新前备份时可用；外部进程精确替换该插件目录后重启 |
 | 其他恢复 | 打开程序快照、主日志和更新日志；仅浏览这些入口不会清除故障现场 |
+
+## 搜索中的维护入口
+
+`ColorVision/Recovery/StartupMaintenanceSearchProvider.cs` 提供“初始化向导”和“故障恢复”的搜索目录，不依赖菜单注册。搜索只读取名称、说明和别名；选中后检查宿主与管理员权限，以主窗口为 Owner 居中直接打开对话框，不弹重启确认、不关闭主窗口，也不要求先结束运行任务。向导使用 `runInitializers: false`，不重复执行首次初始化链；步骤自身的刷新、配置和安装行为仍保留。
+
+运行期恢复窗口的“关闭窗口／返回应用”只关闭对话框，“初始化向导”直接打开向导；永久禁用保存后留在窗口，明确下次启动生效，不尝试卸载已加载插件。只有“重启并安全启动／重启并跳过所选”等启动阶段动作才检查活跃任务、更新保护并显示默认否的重启确认，沿正常文档保存和窗口关闭路径处理，取消就不启动新进程。
+
+这些临时跳过动作通过一次性 `--startup-maintenance safe-start` / `skip-plugins` 和 JSON 数组形式的 `--startup-skip-plugins` 传递选择，入口类在 App、配置加载和单实例处理之前消费 `--wait-for-process` 等待原进程退出；用户无需重启后重复选择。解析失败或空列表的 `skip-plugins` 请求回到启动恢复页，不静默加载全部插件；非空键仍按插件加载器的精确匹配规则处理。旧 `setup` / `recovery` 参数保留兼容。入口不修改向导完成标记或多实例设置，也不制造启动失败记录；维护退出不会附带应用预取更新，取消且仍有窗口时不影响之后普通退出的更新行为。
+
+只有所有窗口同意关闭后才启动子进程。此前的取消、权限/任务状态变化或配置保存异常会阻止启动；如果窗口已全部关闭而创建子进程失败，会提示手动重新打开并正常退出旧实例，不遗留无窗口进程继续占用单实例锁。
+
+运行期执行更新、完整修复、插件回退或快照还原前，额外复核任务/更新状态，并在业务启动前完成主文档保存或取消确认及独立编辑窗口的正常关闭；主窗口和当前维护对话框的 Owner 链保持打开。取消或保存失败不会开始恢复业务。仅浏览日志、快照列表和恢复选项不会做这套收尾。
+
+启动时发生真实故障仍在插件加载前打开恢复窗口，不被临时跳过参数绕过。运行期与健康状态下主动进入时显示维护说明，不声称“上次启动失败”；旧命令行 `recovery` 取消仅清理健康的这次启动尝试，真实故障记录仍按原规则保留。向导自身的安装、保存和完成语义见[配置向导](../../04-api-reference/ui-components/wizards.md)，不是恢复默认值功能。
+
+搜索可见不意味着鉴权通过；这些命令行参数只是本机显式启动意图，不是远程维护授权或新进程健康凭据。纯委托测试可以验证取消、失败与执行顺序，但不能证明实际进程成功重启或设备状态健康。
 
 ## 插件加载
 
@@ -90,6 +106,8 @@ DisplayFlow/ViewFlow -> FlowExecutionSession -> FlowControl -> FlowEngineLib
 | 执行 | 流程模板是否选中，起始节点是否存在，设备状态是否已同步为可执行 |
 
 ## 代码入口
+
+`StartupMaintenanceLifecycleTests` 覆盖一次性参数解析、恢复分支、确认和关窗取消、保存失败及关窗后的失败收尾；`StartupMaintenanceWindowTests` 验证合成 Owner/子窗口打开关闭与动作分流，`WizardWindowRuntimeTests` 和 `StartupRecoveryWindowRuntimeTests` 验证隔离向导及恢复窗口行为。`CopilotBackgroundShellMaintenanceGuardTests` 以延迟进程替身覆盖预留启动、运行和完成状态，确认门禁不读取输出。这些测试不启动真实维护进程、设备或更新还原，不能代替安装环境下的完整恢复验收。
 
 | 主题 | 入口 |
 | --- | --- |

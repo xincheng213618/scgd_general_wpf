@@ -1,5 +1,6 @@
 #pragma warning disable CA1822
 using ColorVision.Common.Utilities;
+using ColorVision.Recovery;
 using ColorVision.Themes;
 using ColorVision.UI;
 using System;
@@ -23,6 +24,12 @@ namespace ColorVision.Update
         private string _statusText = string.Empty;
 
         public event PropertyChangedEventHandler? PropertyChanged;
+
+        internal bool IsRunningApplication { get; set; }
+
+        internal Action? ValidateRuntimeOperation { get; set; }
+
+        internal Action<Window>? PrepareRuntimeOperation { get; set; }
 
         public ObservableCollection<ApplicationSnapshotInfo> Snapshots { get; } = new();
 
@@ -181,17 +188,60 @@ namespace ColorVision.Update
         private async void RestoreSnapshot_Click(object sender, RoutedEventArgs e)
         {
             ApplicationSnapshotInfo? selectedSnapshot = SelectedSnapshot;
-            if (selectedSnapshot == null)
+            if (selectedSnapshot == null || IsBusy || !TryValidateRuntimeOperation())
                 return;
 
             string message = $"将退出 ColorVision 并还原到 {selectedSnapshot.FileName}。确定继续？";
             if (MessageBox.Show(this, message, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 return;
 
-            await RunBusyAsync("正在准备还原...", async () =>
+            await RestoreConfirmedSnapshotAsync(selectedSnapshot,
+                snapshot => _snapshotService.RestoreSnapshotAsync(snapshot)).ConfigureAwait(true);
+        }
+
+        internal Task RestoreConfirmedSnapshotAsync(ApplicationSnapshotInfo snapshot, Func<ApplicationSnapshotInfo, Task> restore)
+        {
+            if (IsBusy || !TryValidateRuntimeOperation())
+                return Task.CompletedTask;
+
+            if (IsRunningApplication)
             {
-                await _snapshotService.RestoreSnapshotAsync(selectedSnapshot).ConfigureAwait(true);
-            }).ConfigureAwait(true);
+                try
+                {
+                    if (PrepareRuntimeOperation == null)
+                        throw new InvalidOperationException(StartupMaintenanceText.Get("ApplicationUnavailable"));
+                    PrepareRuntimeOperation(this);
+                }
+                catch (Exception ex)
+                {
+                    StatusText = ex.GetBaseException().Message;
+                    return Task.CompletedTask;
+                }
+
+                if (!TryValidateRuntimeOperation())
+                    return Task.CompletedTask;
+            }
+
+            return RunBusyAsync("正在准备还原...", () => restore(snapshot));
+        }
+
+        private bool TryValidateRuntimeOperation()
+        {
+            if (!IsRunningApplication)
+                return true;
+
+            try
+            {
+                if (ValidateRuntimeOperation == null)
+                    throw new InvalidOperationException(StartupMaintenanceText.Get("ApplicationUnavailable"));
+                ValidateRuntimeOperation();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                StatusText = ex.GetBaseException().Message;
+                return false;
+            }
         }
 
         private void OpenFolder_Click(object sender, RoutedEventArgs e)

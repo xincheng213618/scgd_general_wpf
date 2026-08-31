@@ -76,10 +76,19 @@
                              Background="Transparent" BorderThickness="0" Padding="8,8" FontSize="15" MinHeight="38"
                              VerticalContentAlignment="Center" MaxLength="256"
                              AutomationProperties.Name="{x:Static local:SearchPaletteText.Placeholder}"/>
-                    <TextBlock Grid.Column="1" Text="{x:Static local:SearchPaletteText.Placeholder}" Margin="10,0,0,0"
+                    <TextBlock x:Name="SearchPlaceholder" Grid.Column="1" Text="{x:Static local:SearchPaletteText.Placeholder}" Margin="10,0,0,0"
                                TextTrimming="CharacterEllipsis" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" IsHitTestVisible="False">
                         <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/>
-                            <Style.Triggers><DataTrigger Binding="{Binding SearchText}" Value=""><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers>
+                            <Style.Triggers>
+                                <!-- IME pre-edit text may be visible before the search binding commits. -->
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding Text, ElementName=Searchbox}" Value=""/>
+                                        <Condition Binding="{Binding IsKeyboardFocusWithin, ElementName=Searchbox}" Value="False"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </MultiDataTrigger>
+                            </Style.Triggers>
                         </Style></TextBlock.Style>
                     </TextBlock>
                     <Button Grid.Column="2" Style="{StaticResource PaletteButton}" Click="Clear_Click"
