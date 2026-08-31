@@ -20,6 +20,109 @@ public sealed class CopilotRequestAdmissionLifetimeTests
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
 
     [Theory]
+    [InlineData("source")]
+    [InlineData("title")]
+    [InlineData("new-source")]
+    [InlineData("unchanged")]
+    public void RefreshingContextDuringImageAdmissionPreservesTheNewDraftAttachment(string update)
+    {
+        RunOnSta(() =>
+        {
+            var root = Directory.CreateTempSubdirectory("CopilotAdmissionLifetime-").FullName;
+            var sourcePath = Path.Combine(root, "source.png");
+            var storePath = Path.Combine(root, "attachments");
+            CreateImage(sourcePath);
+            var profile = new CopilotProfileConfig
+            {
+                Id = "context-admission-profile", Name = "Context admission",
+                VendorType = CopilotVendorType.Custom, ProviderType = CopilotProviderType.OpenAICompatible,
+                ApiKey = "context-admission-test-key", BaseUrl = "https://unit.test/v1",
+                Model = "context-admission-model", SupportsImageInput = true,
+            };
+            const string prompt = "Inspect the captured image and measurement.";
+            var conversation = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
+            conversation.Attachments.Add(CopilotAttachmentItem.CreateImage(sourcePath));
+            var state = new CopilotChatState
+            {
+                ActiveConversationId = conversation.Id, ActiveProfileId = profile.Id,
+                Conversations = [conversation],
+            };
+            var config = new CopilotConfig
+            {
+                SchemaVersion = CopilotConfig.CurrentSchemaVersion,
+                McpBearerToken = "context-admission-test-token", Profiles = [profile],
+            };
+            using var solutionScope = new IsolatedSolutionManagerScope();
+            var runtime = new RecordingTurnRuntime();
+            using var viewModel = new CopilotChatViewModel(new CopilotChatService(),
+                new InMemoryStateStore(state, storePath), config, runtime, new CopilotAgentTaskHost());
+            var sourceId = update == "title" ? null : "measurement-context";
+            var queued = viewModel.QueueExternalPrompt(prompt, startNewConversation: false,
+                mode: CopilotAgentMode.Chat, contextAttachmentTitle: "Measurement snapshot",
+                contextAttachmentSourceId: sourceId,
+                contextAttachmentItems: [new CopilotContextItem { Title = "Measurement", Content = "Original measured result" }]);
+            Assert.True(queued.Accepted);
+            using var context = new PausedAdmissionSynchronizationContext();
+            var previousContext = SynchronizationContext.Current;
+            Task? operation = null;
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(context);
+                operation = InvokeTask(viewModel, "SendAsync", [], Type.EmptyTypes);
+                Assert.True(context.WaitForCallback(TestTimeout));
+                Assert.False(operation.IsCompleted);
+                Assert.False(viewModel.IsBusy);
+                Assert.Single(Directory.GetFiles(storePath, "image-*.png"));
+                Assert.Empty(runtime.Requests);
+
+                if (update != "unchanged")
+                {
+                    queued = viewModel.QueueExternalPrompt(prompt, startNewConversation: false,
+                        mode: CopilotAgentMode.Chat, contextAttachmentTitle: "Measurement snapshot",
+                        contextAttachmentSourceId: update == "new-source" ? "other-measurement-context" : sourceId,
+                        contextAttachmentItems: [new CopilotContextItem { Title = "Measurement", Content = "New measured result" }]);
+                    Assert.True(queued.Accepted);
+                    Assert.Equal(prompt, viewModel.InputText);
+                }
+
+                context.Complete(operation);
+                operation.GetAwaiter().GetResult();
+
+                var request = Assert.Single(runtime.Requests);
+                var sentContext = Assert.Single(request.HostContext.Attachments, item => item.Type == CopilotAttachmentType.Context);
+                Assert.Contains("Original measured result", sentContext.Value, StringComparison.Ordinal);
+                Assert.DoesNotContain("New measured result", sentContext.Value, StringComparison.Ordinal);
+                var sentMessage = Assert.Single(conversation.Messages, message => message.IsUser);
+                Assert.Equal(sentContext.Value, Assert.Single(sentMessage.Attachments, item => item.Type == CopilotAttachmentType.Context).Value);
+                Assert.Empty(viewModel.InputText);
+                if (update == "unchanged")
+                {
+                    Assert.Empty(conversation.Attachments);
+                }
+                else
+                {
+                    var retained = Assert.Single(conversation.Attachments);
+                    Assert.Equal(CopilotAttachmentType.Context, retained.Type);
+                    Assert.Contains("New measured result", retained.Value, StringComparison.Ordinal);
+                    Assert.DoesNotContain("Original measured result", retained.Value, StringComparison.Ordinal);
+                }
+            }
+            finally
+            {
+                if (operation is { IsCompleted: false })
+                    context.Complete(operation);
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+                viewModel.Dispose();
+                var fullRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
+                var tempRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath()));
+                Assert.True(string.Equals(Path.GetDirectoryName(fullRoot), tempRoot, StringComparison.OrdinalIgnoreCase)
+                    && Path.GetFileName(fullRoot).StartsWith("CopilotAdmissionLifetime-", StringComparison.Ordinal));
+                Directory.Delete(fullRoot, recursive: true);
+            }
+        });
+    }
+
+    [Theory]
     [InlineData("unchanged")]
     [InlineData("switch")]
     [InlineData("switch-profile")]

@@ -565,6 +565,16 @@ namespace ColorVision.Copilot
         {
             preparedTurn.Conversation.Messages.Remove(preparedTurn.AssistantMessage);
             preparedTurn.Conversation.Messages.Remove(preparedTurn.UserMessage);
+            var goal = preparedTurn.Conversation.Goal;
+            if (queuedFollowUp.IsGoalBound
+                && goal?.IsActive == true
+                && string.Equals(goal.Id, queuedFollowUp.GoalId, StringComparison.Ordinal))
+            {
+                preparedTurn.Conversation.Goal = goal.WithState(
+                    CopilotConversationGoalState.Paused,
+                    DateTimeOffset.UtcNow,
+                    "持续目标的排队请求未能保存，目标已暂停；本轮未调用模型或工具。");
+            }
             _followUpQueue.RestoreRecoveryToDraft(queuedFollowUp.RunId);
             UpdateConversationMetadata(preparedTurn.Conversation, touch: true);
 
@@ -774,7 +784,8 @@ namespace ColorVision.Copilot
                     && (conversation.Goal?.IsActive != true
                         || !string.Equals(conversation.Goal.Id, record.GoalId, StringComparison.Ordinal)))
                 {
-                    _followUpQueue.RemoveRecovery(runId);
+                    if (_followUpQueue.RestoreRecoveryToDraft(runId))
+                        restoredDraftCount++;
                     continue;
                 }
 

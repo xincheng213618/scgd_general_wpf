@@ -83,10 +83,7 @@ namespace ColorVision.Copilot
             if (existingAttachment != null)
             {
                 var attachment = CopilotAttachmentItem.CreateContext(content, normalizedTitle, attachmentSourceId);
-                existingAttachment.Title = attachment.Title;
-                existingAttachment.Value = attachment.Value;
-                existingAttachment.Source = attachment.Source;
-                existingAttachment.CreatedAt = attachment.CreatedAt;
+                conversation.Attachments[conversation.Attachments.IndexOf(existingAttachment)] = attachment;
             }
             else
             {

@@ -420,29 +420,37 @@ namespace ColorVision.Copilot
             CopilotAgentSessionCheckpoint? checkpoint,
             bool discard)
         {
-            var deliveredBatch = hostedRun.TakeDeliveredSteeringAwaitingCheckpoint();
-            if (deliveredBatch.Messages.Count == 0)
-                return;
-            if (discard
-                || CopilotSteeringRecovery.AreNewMessagesIncludedInCheckpoint(
-                    deliveredBatch.BaselineCheckpoint,
-                    checkpoint,
-                    deliveredBatch.Messages))
+            CopilotUiDispatcher.Invoke(() =>
             {
-                CopilotSteeringRecovery.RemovePending(conversation, deliveredBatch.Messages);
-                return;
-            }
+                var deliveredBatch = hostedRun.TakeDeliveredSteeringAwaitingCheckpoint();
+                if (deliveredBatch.Messages.Count > 0
+                    && (discard
+                        || CopilotSteeringRecovery.AreNewMessagesIncludedInCheckpoint(
+                            deliveredBatch.BaselineCheckpoint,
+                            checkpoint,
+                            deliveredBatch.Messages)))
+                {
+                    CopilotSteeringRecovery.RemovePending(conversation, deliveredBatch.Messages);
+                }
 
-            if (!CopilotSteeringRecovery.RestorePendingMessagesToDraft(
-                conversation,
-                deliveredBatch.Messages))
-                return;
+                // The cancellation deadline can close the stream before runtime recovery
+                // events arrive. Remaining records are unconfirmed, not proof of non-execution.
+                if (conversation.PendingSteeringRecoveries == null || conversation.PendingSteeringRecoveries.Count == 0)
+                    return;
+                var pendingMessages = conversation.PendingSteeringRecoveries
+                    .Where(record => record != null
+                        && string.Equals(record.TaskId, hostedRun.Id, StringComparison.Ordinal))
+                    .Select(record => new CopilotSteeringMessageSnapshot(record.MessageId, record.Text))
+                    .ToArray();
+                if (!CopilotSteeringRecovery.RestorePendingMessagesToDraft(conversation, pendingMessages))
+                    return;
 
-            if (ReferenceEquals(conversation, SelectedConversation))
-                InputText = conversation.DraftText;
-            RefreshCompactHistoryConversations();
-            if (HasConversationSearchQuery)
-                RefreshFilteredConversations();
+                if (ReferenceEquals(conversation, SelectedConversation))
+                    InputText = conversation.DraftText;
+                RefreshCompactHistoryConversations();
+                if (HasConversationSearchQuery)
+                    RefreshFilteredConversations();
+            });
         }
 
         private bool CommitAgentRunStateAndResolveSteering(

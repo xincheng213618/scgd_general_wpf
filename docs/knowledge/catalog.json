@@ -1618,7 +1618,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-local-interactions.md",
       "url": "/02-developer-guide/core-concepts/copilot-local-interactions",
       "searchable": true,
-      "source_hash": "28e03c7e3bc89aad50433555d42e59cef995898b7b8089dd5d6df0192a73fc90"
+      "source_hash": "88db518fdf0cb2c6ee7304dc09768e237401ab69f9f7ec0bdab5dd653a1df9c4"
     },
     {
       "knowledge_id": "copilot.lifecycle",
@@ -1772,6 +1772,7 @@
         "ColorVision/Copilot/CopilotChatViewModel.AgentTaskCommands.cs",
         "ColorVision/Copilot/CopilotChatViewModel.Conversations.cs",
         "ColorVision/Copilot/CopilotChatViewModel.TurnExecution.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.TurnEvents.cs",
         "ColorVision/Copilot/CopilotChatViewModel.Permissions.cs",
         "ColorVision/Copilot/Agent/CopilotQueuedFollowUpCoordinator.cs",
         "ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs",
@@ -1793,6 +1794,8 @@
         "Test/ColorVision.Copilot.Tests/CopilotChatStateRecoveryAttachmentTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatStateProfileReconciliationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpCancellationTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotSteeringCancellationRecoveryTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotGoalQueueRecoveryTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotPendingRecoveryConversationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotManagedAttachmentDeletionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatViewModelProfileIsolationTests.cs",
@@ -1816,7 +1819,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-agent-session-and-tools.md",
       "url": "/02-developer-guide/core-concepts/copilot-agent-session-and-tools",
       "searchable": true,
-      "source_hash": "cda5d1029f79a0db4867bb554dca2c0404d99201715b9b0050f52e20d8840047"
+      "source_hash": "6a502d1adeeba742e544b42fc3291229aaf3f5ebecfbf102a16b9820cfea0468"
     },
     {
       "knowledge_id": "copilot.tool-contracts",
@@ -1883,7 +1886,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-agent-tool-contracts.md",
       "url": "/02-developer-guide/core-concepts/copilot-agent-tool-contracts",
       "searchable": true,
-      "source_hash": "b1fa7fe689c58c94077041b7ed18b014d9215d5b0919e221366dad86d61c60ab"
+      "source_hash": "3e777dc3bcfdc24f08fc69125ad249d3fe2e93bd4c48146a851147d74ec728be"
     },
     {
       "knowledge_id": "copilot.view-model",
