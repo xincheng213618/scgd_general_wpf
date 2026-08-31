@@ -6,7 +6,7 @@ summary: "定位 HImage 所有权、OpenCV/CUDA PInvoke、ImageCompute 融合分
 aliases: ["原生图像调用缺少DLL","ColorVision.Core","HImage","OpenCVMediaHelper","ImageCompute","NativeLogBridge","原生日志初始化"]
 code_paths: ["UI/ColorVision.Core/HImage.cs","UI/ColorVision.Core/HImageExtension.cs","UI/ColorVision.Core/OpenCVMediaHelper.cs","UI/ColorVision.Core/OpenCVCuda.cs","UI/ColorVision.Core/ImageCompute.cs","UI/ColorVision.Core/NativeLogBridge.cs","UI/ColorVision.Core/ColorVision.Core.csproj","UI/ColorVision.Core/README.md"]
 test_paths: ["Test/ColorVision.UI.Tests/HImageAbiTests.cs","Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs","Test/ColorVision.UI.Tests/NativeLogBridgeTests.cs","Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs","Test/ColorVision.UI.Tests/VideoFrameCopyTests.cs"]
-related: ["ui.index","engine.native-integration","ui.image-editor","ui.image-fusion"]
+related: ["ui.index","engine.native-integration","ui.image-editor","ui.image-fusion","ui.image-frames"]
 ---
 
 # ColorVision.Core
@@ -14,6 +14,8 @@ related: ["ui.index","engine.native-integration","ui.image-editor","ui.image-fus
 `UI/ColorVision.Core/` 是原生图像和视频能力桥接层，负责 `HImage` 数据结构、P/Invoke、WPF 位图转换、伪彩色/增强/聚焦评价/fusion 等 native 入口。它不是高层图像处理框架。
 
 `HImage` 是声明了 ABI 布局的 `struct`，不是托管 OpenCV `Mat` 类；复制结构体不会转移其非托管缓冲区所有权。`ImageCompute` 当前只提供 `UseCuda` 与 `Fusion()` 分流，不提供独立的直方图、统计或滤波托管 API；其它 native 能力应核对具体 P/Invoke 声明。
+
+`SourceImageFrame` / `ImageFrameStore` / `ImageFrameLease` 的引用计数、延迟释放、位图借用与复制、revision 失效及对应测试统一见[源图像帧契约](./image-frame-lifetime.md)。这里由托管代码管理非托管像素缓冲的生命周期，不等于 native ABI 验收或完整算法会话仲裁。
 
 ## 先查什么
 
@@ -32,6 +34,7 @@ related: ["ui.index","engine.native-integration","ui.image-editor","ui.image-fus
 | 能力 | 当前入口 | 说明 |
 | --- | --- | --- |
 | 图像缓冲区 | `HImage.cs` | 承载 rows、cols、channels、depth、stride、`pData`，包含非托管内存释放 |
+| 源帧与读者租约 | `SourceImageFrame.cs` | 当前帧缓存、revision 与最后读者退出后的释放；具体契约见源图像帧主题 |
 | WPF 显示桥接 | `HImageExtension.cs` | 推导 `PixelFormat`，把 `HImage` 拷贝到 `WriteableBitmap` |
 | native 导出面 | `OpenCVMediaHelper.cs` | 包装 `opencv_helper.dll` 的伪彩、增强、滤波、阈值、SFR、聚焦评价、视频等入口 |
 | CUDA 入口 | `OpenCVCuda.cs` | 主要是 `CM_Fusion`、`CM_Fusion_Async`、`CM_Fusion_Batch` |

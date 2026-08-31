@@ -959,7 +959,7 @@
       "source": "docs/02-developer-guide/core-concepts/image-algorithm-platform-v1.md",
       "url": "/02-developer-guide/core-concepts/image-algorithm-platform-v1",
       "searchable": true,
-      "source_hash": "82ff98e649121e1553214030539bd969dcbabeb52fb275755d42de2c619666d3"
+      "source_hash": "5ef44f47c26a1a37b2639a167d7a5da31d47d8aee41e84ffec5e01f9e8eec700"
     },
     {
       "knowledge_id": "algorithms.poi-routes",
@@ -3829,6 +3829,7 @@
         "isDispose",
         "HImage.Dispose",
         "M_FindLuminousAreaV2",
+        "M_CalArtculation",
         "M_CalibrationExecuteToV1",
         "M_CalibrationGetLastError",
         "M_CalibrationCacheReleaseV1",
@@ -3868,6 +3869,7 @@
       "related": [
         "engine.index",
         "ui.core",
+        "ui.image-frames",
         "engine.native-bindings",
         "engine.file-io",
         "algorithms.local-native-analysis"
@@ -3886,7 +3888,7 @@
       "source": "docs/02-developer-guide/engine-development/opencv-integration.md",
       "url": "/02-developer-guide/engine-development/opencv-integration",
       "searchable": true,
-      "source_hash": "417e08871f1fb86aaa46b16fba1495de822099de48fe3a72a396724ed606019c"
+      "source_hash": "4e9b7552a6c9e8aff50e9e85b2685675f13624630d1bb6e6ea20793f36aa1d93"
     },
     {
       "knowledge_id": "engine.rc-registration",
@@ -7083,7 +7085,8 @@
         "ui.index",
         "engine.native-integration",
         "ui.image-editor",
-        "ui.image-fusion"
+        "ui.image-fusion",
+        "ui.image-frames"
       ],
       "code_scopes": [
         "UI/ColorVision.Core"
@@ -7093,7 +7096,7 @@
       "source": "docs/04-api-reference/ui-components/ColorVision.Core.md",
       "url": "/04-api-reference/ui-components/ColorVision.Core",
       "searchable": true,
-      "source_hash": "c7a47d309afa7993c24d8fbd3936667c7d0bb494a8b65ec1dacea1dc9d6515fe"
+      "source_hash": "e72292cab1d6ba23f18144d26c1e9e7d46038827145186ea54e216de6df74628"
     },
     {
       "knowledge_id": "ui.database",
@@ -7637,6 +7640,52 @@
       "url": "/04-api-reference/ui-components/image-editor-context",
       "searchable": true,
       "source_hash": "a43ce72163a9668cde1ddfb18fbb4f82ade48d077c89a0d92a70513f2180e475"
+    },
+    {
+      "knowledge_id": "ui.image-frames",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "位图读取时借用原图内存与复制像素的区别、租约释放责任和缓存版本；原图修改须显式失效，复制HImage不延长租约。",
+      "aliases": [
+        "图像帧租约",
+        "图像内存所有权",
+        "像素缓存失效",
+        "借用图像",
+        "复制图像",
+        "SourceImageFrame",
+        "ImageFrameStore",
+        "ImageFrameLease",
+        "HImageExtension",
+        "ForHImage",
+        "ToHImage",
+        "NotifySourcePixelsChanged"
+      ],
+      "code_paths": [
+        "UI/ColorVision.Core/SourceImageFrame.cs",
+        "UI/ColorVision.Core/HImage.cs",
+        "UI/ColorVision.Core/HImageExtension.cs",
+        "UI/ColorVision.ImageEditor/ImageView.xaml.cs"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/ImageFrameOwnerTests.cs",
+        "Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs"
+      ],
+      "related": [
+        "ui.core",
+        "ui.image-editor",
+        "engine.native-integration",
+        "algorithms.platform"
+      ],
+      "code_scopes": [
+        "UI/ColorVision.Core",
+        "UI/ColorVision.ImageEditor"
+      ],
+      "domain": "ui",
+      "title": "源图像帧：租约、位图复制与缓存失效",
+      "source": "docs/04-api-reference/ui-components/image-frame-lifetime.md",
+      "url": "/04-api-reference/ui-components/image-frame-lifetime",
+      "searchable": true,
+      "source_hash": "5654b7169432bcc5045c5b82afa6d0fe4597edf5484d6b509388e1e02d94ba85"
     },
     {
       "knowledge_id": "ui.image-fusion",

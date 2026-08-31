@@ -39,9 +39,9 @@ Image data structure used for passing images between C# and C++.
 struct HImage {
     int rows;           // Image height
     int cols;           // Image width
-    int channels;       // Number of channels (1, 3, or 4)
-    int depth;          // Bit depth (8, 16, 32)
-    int stride;         // Bytes per row
+    int channels;       // Shared conversion: 1..CV_CN_MAX; algorithms may restrict this
+    int depth;          // 8=CV_8U, 16=CV_16U, 32=CV_32F, 64=CV_64F
+    int stride;         // Bytes per row; 0 means tightly packed, negative is invalid
     bool isDispose = false; // true: borrowed buffer; managed Dispose must not free it
     unsigned char* pData;  // Pointer to pixel data
 };
@@ -673,6 +673,11 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 - `roi` - Region of interest (width/height=0 for full image)
 
 **Returns:** Raw pixel-unit focus measure value (higher = sharper). The value is not normalized to `0..1`.
+
+Input-preparation failure, a non-finite result, or an exception caught by
+`GuardDoubleExportImpl` returns `-1.0`. Exclude this failure sentinel before
+comparing scores. Zero can be a valid score; some undersized-image branches also
+return `0`, so zero alone is not a failure indicator.
 
 There is no single industry-standard numeric scale or threshold for these general-purpose focus measures. Values depend on the selected algorithm, bit depth, exposure, ROI, demosaicing/preprocessing, and target content. Use the SFR/MTF APIs when a calibrated optical-resolution measurement is required.
 

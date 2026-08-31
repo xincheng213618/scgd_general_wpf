@@ -3,10 +3,10 @@ knowledge_id: "engine.native-integration"
 knowledge_type: "guide"
 status: "current"
 summary: "native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。"
-aliases: ["新克隆构建为什么需要C++","OpenCVMediaHelper","opencv_helper.dll","opencv_cuda.dll","HImage","isDispose","HImage.Dispose","M_FindLuminousAreaV2","M_CalibrationExecuteToV1","M_CalibrationGetLastError","M_CalibrationCacheReleaseV1","M_CalculatePoiBatchV2","M_VideoSeek","M_VideoPlay","M_VideoClose","opencv_helper API"]
+aliases: ["新克隆构建为什么需要C++","OpenCVMediaHelper","opencv_helper.dll","opencv_cuda.dll","HImage","isDispose","HImage.Dispose","M_FindLuminousAreaV2","M_CalArtculation","M_CalibrationExecuteToV1","M_CalibrationGetLastError","M_CalibrationCacheReleaseV1","M_CalculatePoiBatchV2","M_VideoSeek","M_VideoPlay","M_VideoClose","opencv_helper API"]
 code_paths: ["Native/README.md","Native/opencv_helper/API_Documentation.md","UI/ColorVision.Core/ColorVision.Core.csproj","UI/ColorVision.Core/OpenCVMediaHelper.cs","UI/ColorVision.Core/OpenCVCuda.cs","UI/ColorVision.Core/HImage.cs","Native/opencv_helper/opencv_helper.vcxproj","Native/include/opencv_media_export.h","Native/include/custom_structs.h","Native/include/video_export.h","Native/include/cuda_export.h","Native/opencv_helper/opencv_media_export.cpp","Native/opencv_helper/video_export.cpp","Native/opencv_helper/exports/calibration_export.cpp","Native/opencv_helper/exports/poi_export.cpp","Native/opencv_helper/exports/sfr_export.cpp","Native/opencv_cuda/opencv_cuda.vcxproj","Scripts/verify_native_contracts.py","Engine/ColorVision.Engine/Media/CVRawOpen.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs","Scripts/tests/test_algorithm_package_contract.py","Scripts/tests/test_verify_native_contracts.py","Test/opencv_helper_test"]
-related: ["engine.index","ui.core","engine.native-bindings","engine.file-io","algorithms.local-native-analysis"]
+related: ["engine.index","ui.core","ui.image-frames","engine.native-bindings","engine.file-io","algorithms.local-native-analysis"]
 ---
 
 # OpenCV 和 native 集成开发指南
@@ -58,7 +58,13 @@ CUDA 是另一条边界：当前 Core 无条件打包仓库跟踪的 `x64/Releas
 
 当前 `Native/include/custom_structs.h` 使用 `pack(push, 8)`，`UI/ColorVision.Core/HImage.cs` 使用 `Pack = 8` 和 `[MarshalAs(UnmanagedType.I1)]`。x64 结构大小32字节，`isDispose` 偏移20、`pData` 偏移24；原生静态断言覆盖标准布局、1字节bool和各字段偏移。不要从旧示例恢复 `Pack=1` 或省略bool封送约束。
 
+公共转换层 `HImageToMatView` 将 depth 8/16/32/64 分别解释为 `CV_8U` / `CV_16U` / `CV_32F` / `CV_64F`，接受 `1..CV_CN_MAX` 通道；32/64表示浮点而非整数。这是转换层支持范围，不保证每个算法接受全部格式组合。
+
+输入 rows/cols 须为正且 `pData` 非空。`stride=0` 按 `rowBytes=cols*channels*(depth/8)` 紧密排列，正 stride 须至少为 rowBytes，负值无效。该函数创建共享像素视图，不复制缓冲；元数据和溢出检查不验证实际分配容量。调用者仍须保证从 `pData` 起至少有 `(rows-1)*step+rowBytes` 可访问字节（step 为正 stride，否则取 rowBytes），并保持原缓冲有效。
+
 名字 `isDispose` 容易误读：`Dispose()` 仅在指针非空且 `isDispose=false` 时调用 `FreeCoTaskMem`；true表示此处不释放的借用缓冲，原持有者须保证调用期间有效。结构复制不会复制像素或创建第二份所有权，不能对两个拥有型副本各释放一次。输出从分配到拷贝/消费完成应放在 `try/finally` 生命周期内，既不能只在成功分支释放，也不能在 `Dispose()` 后再次手工释放同一指针。
+
+托管租约、位图复制和缓存失效见[图像帧生命周期](../../04-api-reference/ui-components/image-frame-lifetime.md)，本页不复制其托管持有与释放契约。
 
 ### 返回值必须按函数族解释
 
@@ -67,7 +73,7 @@ CUDA 是另一条边界：当前 Core 无条件打包仓库跟踪的 `x64/Releas
 | 常见图像处理 | 多数以0成功；`opencv_media_export.cpp` 的 `GuardIntExportImpl` / `GuardHImageExportImpl` 传播函数结果，并将JSON/OpenCV/标准/未知异常映射到−4/−5/−6/−7，不能只处理−1 |
 | 校准 Context | `exports/calibration_export.cpp` 的变更/执行用 `M_CALIBRATION_OK=1`；`M_CalibrationGetLastError` 返回含终止符的所需UTF-8字节数，`M_CalibrationGetItemCount` 返回数量，不能统一按1判断全部查询 |
 | POI batch | `exports/poi_export.cpp` 用 `M_POI_OK=1`；`M_CalculatePoiBatchV2` 在借用CIE输入上计算并写调用者输出数组，不转交整图内存 |
-| JSON检测 / 焦点评分 | 正JSON长度只证明分配了结果，还须解析业务成功/拒绝；焦点返回原始评分，不能套0成功或归一化阈值 |
+| JSON检测 / 焦点评分 | 正JSON长度只证明分配了结果，还须解析业务成功/拒绝；`M_CalArtculation` 返回原始评分，输入准备失败、非有限结果或 guard 捕获异常返回 `-1.0`，须先排除此失败哨兵。0可为有效分数，不能套0成功或归一化阈值 |
 | 视频 | open返回正handle，position返回帧号；手动read透传 `MatToHImage` 转换/分配失败，−3既可表示已到末尾也可为分配失败；视频guard又将OpenCV/标准/未知异常映射到−2/−3/−4，代码不能唯一说明失败原因 |
 | SFR | `exports/sfr_export.cpp` 使用自身参数/图像/计算及异常码，不套common export表 |
 

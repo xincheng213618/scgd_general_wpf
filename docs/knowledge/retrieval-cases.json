@@ -360,6 +360,13 @@
     {"query":"把本地设备删掉以后，它已经创建的通信对象和显示项也会一起消失吗，后面还有可能收到它的事件吗？","expected_any":["operations.device-configuration"],"include_planned":false},
     {"query":"我拿到设备对象里的配置直接改几个字段但不保存，会不会立刻影响运行中的收发设置，还是只有保存后才生效？","expected_any":["operations.device-configuration"],"include_planned":false},
     {"query":"LastGenControl.Clear会清空调用者传入的集合吗","expected_any":["engine.devices"],"include_planned":false},
-    {"query":"DeviceService.Delete调用Dispose保证解绑MQTT和移除旧显示页吗","expected_any":["operations.device-configuration"],"include_planned":false}
+    {"query":"DeviceService.Delete调用Dispose保证解绑MQTT和移除旧显示页吗","expected_any":["operations.device-configuration"],"include_planned":false},
+    {"query":"拿到一份图像像素后，如果原图被释放了，这份像素还能继续读吗，谁负责最后释放底层内存？","expected_any":["ui.image-frames"],"include_planned":false},
+    {"query":"我只是想读取一帧，应该借用原来的内存还是复制一份？两种方式在原图后来修改时有什么区别？","expected_any":["ui.image-frames"],"include_planned":false},
+    {"query":"同一张图在原来的内存地址上改了像素，已有的处理缓存会自动失效吗，怎样判断拿到的是哪一版数据？","expected_any":["ui.image-frames"],"include_planned":false},
+    {"query":"对已经释放过的像素租约再次读取或再释放一次，会是什么结果？释放租约会不会把原图也释放掉？","expected_any":["ui.image-frames"],"include_planned":false},
+    {"query":"HImageExtension.UpdateWriteableBitmapAsync返回false会释放输入吗","expected_any":["ui.image-frames"],"include_planned":false},
+    {"query":"ImageFrameLease.Image可以在租约Dispose后继续使用吗","expected_any":["ui.image-frames"],"include_planned":false},
+    {"query":"M_CalArtculation返回0是失败还是有效评分","expected_any":["engine.native-integration"],"include_planned":false}
   ]
 }

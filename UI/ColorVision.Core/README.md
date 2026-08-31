@@ -13,6 +13,7 @@ ColorVision 的原生图像/视频互操作与 WPF 位图桥接层，不是高�
 
 - [Core 互操作契约](../../docs/04-api-reference/ui-components/ColorVision.Core.md)：数据结构、调用边界、原生日志与验证入口。
 - [原生集成与构建前提](../../docs/02-developer-guide/engine-development/opencv-integration.md)：DLL 选择、native 工具链与部署边界。
+- [源图像帧与内存生命周期](../../docs/04-api-reference/ui-components/image-frame-lifetime.md)：借用/复制、租约释放、revision 失效与位图转换的输入释放责任。
 - [景深融合](../../docs/04-api-reference/ui-components/image-fusion.md)：Auto/CPU/GPU 分流和调用失败语义。
 
 本 README 会作为 NuGet 包说明打包到包根目录；上述相对链接用于源码仓库，包内不保证包含 `docs/`。需要完整契约时读取与包版本匹配的源码，不把另一版本的文档当成当前包的保证。

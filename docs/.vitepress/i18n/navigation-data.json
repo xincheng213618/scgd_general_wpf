@@ -863,6 +863,12 @@
             },
             {
               "text": {
+                "root": "源图像帧：租约、位图复制与缓存失效"
+              },
+              "link": "/04-api-reference/ui-components/image-frame-lifetime"
+            },
+            {
+              "text": {
                 "root": "景深融合：输入、执行与结果生命周期"
               },
               "link": "/04-api-reference/ui-components/image-fusion"
@@ -998,6 +1004,12 @@
                 "root": "ImageEditor：上下文、工具装配与临时选区"
               },
               "link": "/04-api-reference/ui-components/image-editor-context"
+            },
+            {
+              "text": {
+                "root": "源图像帧：租约、位图复制与缓存失效"
+              },
+              "link": "/04-api-reference/ui-components/image-frame-lifetime"
             },
             {
               "text": {

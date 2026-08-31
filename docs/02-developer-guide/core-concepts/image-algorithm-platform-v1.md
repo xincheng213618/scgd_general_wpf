@@ -44,7 +44,7 @@ M0 只覆盖平台基础、现有普通 ImageEditor 算法和兼容适配。ROI 
 
 以上路径相对 `UI/ColorVision.ImageEditor/`。`Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs` 的 `EightBitBatchAndRunnerUseIdenticalCannyParametersAndPixels` 对照 Batch 与 Runner 的参数和像素；测试存在不表示本次已经运行。RemoveMoire 的 native 依赖和允许的宿主入口仍以下方能力矩阵及前述发布门禁为准。
 
-现有 `ImageFrameStore`/`ImageFrameLease` 已经测试了 revision 和延迟释放。ImageView 适配器继续通过该租约读取 source，并把 revision 与 `DocumentInstanceId`、`InvocationId` 一起交给专属 session；平台不维护第二套源帧生命周期。
+ImageView 适配器通过 `ImageFrameStore`/`ImageFrameLease` 读取 source，并把 revision 与 `DocumentInstanceId`、`InvocationId` 一起交给专属 session；平台不维护第二套源帧生命周期。租约、位图复制与显式失效的实现及测试范围见[源图像帧契约](../../04-api-reference/ui-components/image-frame-lifetime.md)，不把内存仍有效当作结果仍可发布。
 
 ### ImageEditor 参数窗口、应用与取消
 
