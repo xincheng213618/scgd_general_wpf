@@ -335,7 +335,7 @@ namespace ColorVision.Copilot
                 composerCapture.RequestMode,
                 composerCapture.WorkspaceReviewTarget,
                 composerCapture.AgentSkillReference,
-                conversation.Attachments.Select(attachment => attachment.CreateSnapshot()).ToArray());
+                conversation.Attachments.Select(attachment => attachment.CreateSnapshot()).ToList());
             var messageAttachments = (userMessage.AttachmentSnapshotCaptured
                     ? userMessage.Attachments
                     : conversation.Attachments)

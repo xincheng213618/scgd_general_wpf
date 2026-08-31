@@ -135,18 +135,24 @@ namespace ColorVision.Copilot
                 var editStillOwnsRemoval = messageEditSnapshot == null
                     || (ReferenceEquals(messageEditSnapshot, _composerDraftBeforeMessageEdit)
                         && string.Equals(_editingConversationId, conversation.Id, StringComparison.Ordinal));
+                // An edit started while this ordinary draft removal was saving.
+                // Restore its backup without adding the attachment to the edited turn.
+                IList<CopilotAttachmentItem> rollbackAttachments = messageEditSnapshot == null
+                    && _composerDraftBeforeMessageEdit is { } draftBeforeEdit
+                    && string.Equals(draftBeforeEdit.ConversationId, conversation.Id, StringComparison.Ordinal)
+                        ? draftBeforeEdit.Attachments
+                        : conversation.Attachments;
                 var contextWasReplaced = messageEditSnapshot == null
-                    && !string.Equals(_editingConversationId, conversation.Id, StringComparison.Ordinal)
                     && attachment.Type == CopilotAttachmentType.Context
-                    && FindExternalContextAttachment(conversation, attachment.Title, attachment.Source) != null;
+                    && FindExternalContextAttachment(rollbackAttachments, attachment.Title, attachment.Source) != null;
 
                 // A concurrent conversation deletion may only have detached this
                 // object while its own save is pending. Restore the captured owner
                 // so that a failed deletion can put the complete draft back.
-                if (editStillOwnsRemoval && !contextWasReplaced && !conversation.Attachments.Contains(attachment))
+                if (editStillOwnsRemoval && !contextWasReplaced && !rollbackAttachments.Contains(attachment))
                 {
-                    conversation.Attachments.Insert(Math.Min(attachmentIndex, conversation.Attachments.Count), attachment);
-                    if (Conversations.Contains(conversation))
+                    rollbackAttachments.Insert(Math.Min(attachmentIndex, rollbackAttachments.Count), attachment);
+                    if (ReferenceEquals(rollbackAttachments, conversation.Attachments) && Conversations.Contains(conversation))
                         UpdateAttachmentsState(conversation);
                 }
                 throw;

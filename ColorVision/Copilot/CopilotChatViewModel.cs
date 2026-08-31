@@ -409,7 +409,7 @@ namespace ColorVision.Copilot
             CopilotAgentMode RequestMode,
             CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget,
             CopilotAgentSkillReference? AgentSkillReference,
-            IReadOnlyList<CopilotAttachmentItem> Attachments);
+            List<CopilotAttachmentItem> Attachments);
 
         private sealed record CopilotGoalEvaluationContext(
             CopilotConversationGoal Goal,

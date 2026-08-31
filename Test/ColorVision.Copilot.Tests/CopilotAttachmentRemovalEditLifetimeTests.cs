@@ -85,6 +85,90 @@ public sealed class CopilotAttachmentRemovalEditLifetimeTests
     }
 
     [Theory]
+    [InlineData("failure")]
+    [InlineData("success")]
+    [InlineData("cancel-before-failure")]
+    [InlineData("failure-delete-shared")]
+    public async Task OrdinaryDraftRemovalKeepsItsRecoverySeparateFromAnEditStartedWhileSaving(string outcome)
+    {
+        await using var fixture = new Fixture();
+        var draftImagePath = Path.Combine(fixture.Store.AttachmentDirectoryPath, "ordinary-draft.png");
+        File.WriteAllBytes(draftImagePath, fixture.ImageBytes);
+        var draftImage = CopilotAttachmentItem.CreateImage(draftImagePath);
+        fixture.Target.Attachments.Add(draftImage);
+        if (outcome == "failure-delete-shared")
+            fixture.Other.Attachments.Add(draftImage.CreateSnapshot());
+        Assert.Equal(string.Empty, fixture.ViewModel.InputText);
+        Assert.NotEqual(fixture.ImagePath, draftImagePath);
+        await fixture.FlushAsync();
+        var gate = fixture.Store.BlockSaves();
+
+        var removing = fixture.RemoveAsync(draftImage);
+        await gate.Entered.WaitAsync(TestTimeout);
+        Assert.Empty(fixture.Target.Attachments);
+        Assert.False(removing.IsCompleted);
+        fixture.BeginEdit();
+        var editAttachments = fixture.Target.Attachments.ToArray();
+        Assert.Single(editAttachments, item => item.Value == fixture.ImagePath);
+        Assert.DoesNotContain(editAttachments, item => item.Value == draftImagePath);
+        var cancelledBeforeFailure = outcome == "cancel-before-failure";
+        if (cancelledBeforeFailure)
+        {
+            Assert.True(fixture.ViewModel.CancelMessageEditCommand.CanExecute(null));
+            fixture.ViewModel.CancelMessageEditCommand.Execute(null);
+            Assert.Empty(fixture.Target.Attachments);
+        }
+
+        var succeeded = outcome == "success";
+        gate.Release(succeed: succeeded);
+        var failure = await Record.ExceptionAsync(() => removing.WaitAsync(TestTimeout));
+        if (succeeded)
+            Assert.Null(failure);
+        else
+            Assert.IsType<IOException>(failure);
+
+        if (!cancelledBeforeFailure)
+        {
+            Assert.True(fixture.ViewModel.IsEditingMessage);
+            Assert.Equal(fixture.OriginalUser.Content, fixture.ViewModel.InputText);
+            Assert.Equal(editAttachments, fixture.Target.Attachments.ToArray());
+            Assert.DoesNotContain(fixture.Target.Attachments, item => item.Value == draftImagePath);
+            if (outcome == "failure-delete-shared")
+            {
+                fixture.Store.ReleasePendingSave();
+                await fixture.FlushAsync();
+                Assert.True(fixture.ViewModel.DeleteConversationCommand.CanExecute(fixture.Other));
+                Assert.True(await fixture.DeleteConfirmedAsync(fixture.Other).WaitAsync(TestTimeout));
+                Assert.DoesNotContain(fixture.Other, fixture.ViewModel.Conversations);
+                Assert.True(fixture.ViewModel.IsEditingMessage);
+                Assert.Equal(editAttachments, fixture.Target.Attachments.ToArray());
+                Assert.True(File.Exists(draftImagePath));
+            }
+            Assert.True(fixture.ViewModel.CancelMessageEditCommand.CanExecute(null));
+            fixture.ViewModel.CancelMessageEditCommand.Execute(null);
+        }
+
+        Assert.False(fixture.ViewModel.IsEditingMessage);
+        Assert.Equal(string.Empty, fixture.ViewModel.InputText);
+        if (succeeded)
+        {
+            Assert.Empty(fixture.Target.Attachments);
+            Assert.False(File.Exists(draftImagePath));
+        }
+        else
+        {
+            var restored = Assert.Single(fixture.Target.Attachments);
+            Assert.Equal(draftImage.Id, restored.Id);
+            Assert.Equal(draftImagePath, restored.Value);
+            Assert.Equal(fixture.ImageBytes, File.ReadAllBytes(draftImagePath));
+        }
+        Assert.Equal(fixture.ImageBytes, File.ReadAllBytes(fixture.ImagePath));
+        Assert.Single(fixture.OriginalUser.Attachments, item => item.Value == fixture.ImagePath);
+        Assert.DoesNotContain(fixture.OriginalUser.Attachments, item => item.Value == draftImagePath);
+        Assert.Equal(2, fixture.Target.Messages.Count);
+    }
+
+    [Theory]
     [InlineData("same-source")]
     [InlineData("same-title")]
     [InlineData("different-source")]
@@ -239,6 +323,15 @@ public sealed class CopilotAttachmentRemovalEditLifetimeTests
             var operation = InvokeTask("RemoveAttachment", attachment);
             _operations.Add(operation);
             return operation;
+        }
+
+        public async Task<bool> DeleteConfirmedAsync(CopilotConversationRecord conversation)
+        {
+            var operation = InvokeTask("DeleteConfirmedConversationAsync", conversation);
+            _operations.Add(operation);
+            await operation;
+            var result = operation.GetType().GetProperty("Result")!.GetValue(operation)!;
+            return (bool)result.GetType().GetProperty("Deleted")!.GetValue(result)!;
         }
 
         private Task InvokeTask(string name, params object?[] arguments) =>

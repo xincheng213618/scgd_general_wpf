@@ -1625,7 +1625,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-local-interactions.md",
       "url": "/02-developer-guide/core-concepts/copilot-local-interactions",
       "searchable": true,
-      "source_hash": "2f3763cbba7a81903a26fde3416776059debc205e28d3eac59b9d84df9a9bd57"
+      "source_hash": "1d3455e6ca6433a49f13b73a54a47058eac3a376fe906766da268cd2ea28919b"
     },
     {
       "knowledge_id": "copilot.lifecycle",
@@ -1916,7 +1916,8 @@
       "test_paths": [
         "Test/ColorVision.Copilot.Tests/CopilotChatViewModelContractTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotConversationSessionTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotAttachmentRemovalEditLifetimeTests.cs"
       ],
       "related": [
         "copilot.runtime",
@@ -1931,7 +1932,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-view-model-architecture.md",
       "url": "/02-developer-guide/core-concepts/copilot-view-model-architecture",
       "searchable": true,
-      "source_hash": "553ba765a69d35edd075ea391bd5f20f942f28b4701f29432fe2a52e9aebd5b8"
+      "source_hash": "28e1c0294d74e8c715d2837593d8c9328ea3d5f2f1c17697c172965d0312e380"
     },
     {
       "knowledge_id": "delivery.android-operations",

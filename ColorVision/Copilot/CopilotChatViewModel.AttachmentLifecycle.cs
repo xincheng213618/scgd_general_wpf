@@ -68,7 +68,7 @@ namespace ColorVision.Copilot
                 ? contextItems.FirstOrDefault(item => !string.IsNullOrWhiteSpace(item.Title))?.Title ?? "Attached Context"
                 : attachmentTitle.Trim();
 
-            var existingAttachment = FindExternalContextAttachment(conversation, normalizedTitle, attachmentSourceId);
+            var existingAttachment = FindExternalContextAttachment(conversation.Attachments, normalizedTitle, attachmentSourceId);
 
             if (existingAttachment != null)
             {
@@ -88,9 +88,9 @@ namespace ColorVision.Copilot
         }
 
         private static CopilotAttachmentItem? FindExternalContextAttachment(
-            CopilotConversationRecord conversation,
+            IEnumerable<CopilotAttachmentItem> attachments,
             string title,
-            string? sourceId) => conversation.Attachments.FirstOrDefault(item => item.Type == CopilotAttachmentType.Context
+            string? sourceId) => attachments.FirstOrDefault(item => item.Type == CopilotAttachmentType.Context
                 && (!string.IsNullOrWhiteSpace(sourceId)
                     ? string.Equals(item.Source, sourceId, StringComparison.Ordinal)
                     : string.Equals(item.Title, title, StringComparison.Ordinal)));
@@ -174,6 +174,7 @@ namespace ColorVision.Copilot
             if (Conversations
                 .SelectMany(conversation => conversation.EnumerateReferencedAttachments())
                 .Concat(_followUpQueue.EnumerateReferencedAttachments())
+                .Concat(_composerDraftBeforeMessageEdit?.Attachments ?? Enumerable.Empty<CopilotAttachmentItem>())
                 .Any(candidate => candidate.IsStoredImageFile
                     && string.Equals(candidate.Value, attachment.Value, StringComparison.OrdinalIgnoreCase)))
             {
