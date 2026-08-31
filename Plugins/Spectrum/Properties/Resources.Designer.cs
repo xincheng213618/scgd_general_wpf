@@ -196,15 +196,6 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
-        ///   查找类似 关闭源表输出 的本地化字符串。
-        /// </summary>
-        public static string CloseSourceMeterOutput {
-            get {
-                return ResourceManager.GetString("CloseSourceMeterOutput", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 连接 的本地化字符串。
         /// </summary>
         public static string Connect {
@@ -444,15 +435,6 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
-        ///   查找类似 退出 的本地化字符串。
-        /// </summary>
-        public static string Exit {
-            get {
-                return ResourceManager.GetString("Exit", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 滤色轮 的本地化字符串。
         /// </summary>
         public static string FilterWheel {
@@ -611,15 +593,6 @@ namespace Spectrum.Properties {
         public static string Manage {
             get {
                 return ResourceManager.GetString("Manage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 点亮并读取源表 的本地化字符串。
-        /// </summary>
-        public static string MeasureAndReadSourceMeter {
-            get {
-                return ResourceManager.GetString("MeasureAndReadSourceMeter", resourceCulture);
             }
         }
         
@@ -795,24 +768,6 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
-        ///   查找类似 刷新 的本地化字符串。
-        /// </summary>
-        public static string Reload {
-            get {
-                return ResourceManager.GetString("Reload", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 从数据库重新加载数据 的本地化字符串。
-        /// </summary>
-        public static string ReloadDataTooltip {
-            get {
-                return ResourceManager.GetString("ReloadDataTooltip", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 预计剩余: 的本地化字符串。
         /// </summary>
         public static string Remaining {
@@ -953,24 +908,6 @@ namespace Spectrum.Properties {
         public static string SourceValueVoltage {
             get {
                 return ResourceManager.GetString("SourceValueVoltage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 SP100 设置失败: {0} 的本地化字符串。
-        /// </summary>
-        public static string SP100SetFailed {
-            get {
-                return ResourceManager.GetString("SP100SetFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 SP100 设置成功 的本地化字符串。
-        /// </summary>
-        public static string SP100SetSuccess {
-            get {
-                return ResourceManager.GetString("SP100SetSuccess", resourceCulture);
             }
         }
         
@@ -1182,29 +1119,11 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
-        ///   查找类似 平均次数(1-100): 的本地化字符串。
-        /// </summary>
-        public static string 平均次数1100 {
-            get {
-                return ResourceManager.GetString("平均次数1100", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 序号 的本地化字符串。
         /// </summary>
         public static string 序号 {
             get {
                 return ResourceManager.GetString("序号", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 开始校零 的本地化字符串。
-        /// </summary>
-        public static string 开始校零 {
-            get {
-                return ResourceManager.GetString("开始校零", resourceCulture);
             }
         }
         
@@ -1317,15 +1236,6 @@ namespace Spectrum.Properties {
         }
         
         /// <summary>
-        ///   查找类似 结束 的本地化字符串。
-        /// </summary>
-        public static string 结束 {
-            get {
-                return ResourceManager.GetString("结束", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 自动积分 的本地化字符串。
         /// </summary>
         public static string 自动积分 {
@@ -1403,15 +1313,6 @@ namespace Spectrum.Properties {
         public static string 蓝光 {
             get {
                 return ResourceManager.GetString("蓝光", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 起始 的本地化字符串。
-        /// </summary>
-        public static string 起始 {
-            get {
-                return ResourceManager.GetString("起始", resourceCulture);
             }
         }
         

@@ -295,7 +295,7 @@ namespace ColorVision.Copilot
             if (outcomeUnknown)
             {
                 var boundary = wasCancelled
-                    ? "caller cancellation"
+                    ? "cancellation"
                     : $"its {FormatTimeout(timeout)} execution timeout";
                 return Failure(
                     invocation.Tool.Name,

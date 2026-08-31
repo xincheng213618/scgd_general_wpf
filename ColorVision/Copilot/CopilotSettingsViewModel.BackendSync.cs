@@ -24,6 +24,10 @@ namespace ColorVision.Copilot
                 var response = await _backendSyncClient.FetchAsync(
                     syncBaseUrl,
                     _lifetimeCancellation.Token);
+                // Closing the window can cancel after FetchAsync has already completed,
+                // while this UI continuation is still waiting to run.
+                if (_disposed)
+                    return;
 
                 var previousSelectedId = SelectedProfile?.Id ?? string.Empty;
                 var config = _config;

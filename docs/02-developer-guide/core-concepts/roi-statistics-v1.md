@@ -1,3 +1,14 @@
+---
+knowledge_id: "algorithms.roi-statistics"
+knowledge_type: "reference"
+status: "current"
+summary: "RoiStatistics 的输入、参数、结果、宿主接入与定向验证契约。"
+aliases: ["ROI 统计如何计算灰度直方图和坏点候选","RoiStatistics","RoiStatisticsAlgorithmProvider"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/RoiStatisticsAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/RoiStatisticsV1Tests.cs"]
+related: ["algorithms.platform","algorithms.index"]
+---
+
 # ROI 统计 V1（M1）
 
 M1 在统一图像算法平台上提供可执行、可展示和可导出的矩形、圆形与多边形 ROI 统计。它不包含灰度/颜色剖面；剖面属于 M2，不能复用本页接口假装已经实现。
@@ -69,4 +80,4 @@ JSON 保留算法 ID/版本、诊断和全部结构化 artifact；CSV bundle 先
 
 定向测试覆盖矩形/圆/多边形、物理/DPI 坐标、G8/G16/G32F/BGR、NaN/Infinity、饱和、percentile、直方图、坏点、结构化失败、输入只读、取消/释放、Batch/Flow 一致性、导出拒绝覆盖、ImageView latest-wins、revision 失效和 overlay 释放。
 
-M1 没有把剖面混入 ROI 统计；剖面随后在 [M2 独立里程碑](./image-profile-v1.md) 通过自己的契约与门禁。最终构建、全量测试和 native 依赖缺口记录以本次任务的各阶段验收报告为准。
+ROI 统计与[图像剖面](./image-profile-v1.md)保持独立契约和定向门禁，不能用其中一项通过代替另一项验证。构建、公共平台回归和 native 依赖检查遵守[平台验收门禁](./image-algorithm-platform-v1.md#m0-验收门禁)，报告当次实际运行结果及缺口。

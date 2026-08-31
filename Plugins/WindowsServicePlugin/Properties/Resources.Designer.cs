@@ -187,24 +187,6 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
-        ///   查找类似 CVWinSMS 自动更新 的本地化字符串。
-        /// </summary>
-        public static string CVWinSMSIsAutoUpdate {
-            get {
-                return ResourceManager.GetString("CVWinSMSIsAutoUpdate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 允许 CVWinSMS 服务工具自动检测并应用更新。 的本地化字符串。
-        /// </summary>
-        public static string CVWinSMSIsAutoUpdateDescription {
-            get {
-                return ResourceManager.GetString("CVWinSMSIsAutoUpdateDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 CVWinSMS 路径 的本地化字符串。
         /// </summary>
         public static string CVWinSMSPath {
@@ -291,15 +273,6 @@ namespace WindowsServicePlugin.Properties {
         public static string Install {
             get {
                 return ResourceManager.GetString("Install", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 错误 的本地化字符串。
-        /// </summary>
-        public static string InstallErrorCaption {
-            get {
-                return ResourceManager.GetString("InstallErrorCaption", resourceCulture);
             }
         }
         
@@ -534,15 +507,6 @@ namespace WindowsServicePlugin.Properties {
         public static string RegistrationCenterServiceDisplayName {
             get {
                 return ResourceManager.GetString("RegistrationCenterServiceDisplayName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 替换服务的CFG 的本地化字符串。
-        /// </summary>
-        public static string ReplaceServiceCfg {
-            get {
-                return ResourceManager.GetString("ReplaceServiceCfg", resourceCulture);
             }
         }
         

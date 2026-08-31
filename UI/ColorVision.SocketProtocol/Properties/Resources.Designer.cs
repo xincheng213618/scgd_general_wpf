@@ -70,6 +70,33 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
+        ///   查找类似 放行 的本地化字符串。
+        /// </summary>
+        public static string AllowFirewall {
+            get {
+                return ResourceManager.GetString("AllowFirewall", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 为当前程序创建专用网络入站允许规则。 的本地化字符串。
+        /// </summary>
+        public static string AllowPrivateFirewallTooltip {
+            get {
+                return ResourceManager.GetString("AllowPrivateFirewallTooltip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 为当前程序创建公用网络入站允许规则。 的本地化字符串。
+        /// </summary>
+        public static string AllowPublicFirewallTooltip {
+            get {
+                return ResourceManager.GetString("AllowPublicFirewallTooltip", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 自动滚动 的本地化字符串。
         /// </summary>
         public static string AutoScroll {
@@ -142,6 +169,15 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
+        ///   查找类似 消息正文读取失败：{0} 的本地化字符串。
+        /// </summary>
+        public static string ContentLoadFailedFormat {
+            get {
+                return ResourceManager.GetString("ContentLoadFailedFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 复制 的本地化字符串。
         /// </summary>
         public static string Copy {
@@ -159,6 +195,33 @@ namespace ColorVision.SocketProtocol.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 复制原文 的本地化字符串。
+        /// </summary>
+        public static string CopyRaw {
+            get {
+                return ResourceManager.GetString("CopyRaw", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 数据库清理 的本地化字符串。
+        /// </summary>
+        public static string DatabaseCleanup {
+            get {
+                return ResourceManager.GetString("DatabaseCleanup", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 当前未加载数据库清理组件，请从完整 ColorVision 程序打开此窗口。 的本地化字符串。
+        /// </summary>
+        public static string DatabaseCleanupUnavailable {
+            get {
+                return ResourceManager.GetString("DatabaseCleanupUnavailable", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 删除 的本地化字符串。
         /// </summary>
@@ -196,15 +259,6 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
-        ///   查找类似 启用状态 的本地化字符串。
-        /// </summary>
-        public static string EnabledStatus {
-            get {
-                return ResourceManager.GetString("EnabledStatus", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 事件名 的本地化字符串。
         /// </summary>
         public static string EventName {
@@ -223,6 +277,15 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
+        ///   查找类似 {0} / {1} 条消息 的本地化字符串。
+        /// </summary>
+        public static string FilteredMessageCountFormat {
+            get {
+                return ResourceManager.GetString("FilteredMessageCountFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 接收 的本地化字符串。
         /// </summary>
         public static string FilterReceived {
@@ -240,6 +303,24 @@ namespace ColorVision.SocketProtocol.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 防火墙 · 专用 的本地化字符串。
+        /// </summary>
+        public static string FirewallPrivate {
+            get {
+                return ResourceManager.GetString("FirewallPrivate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 防火墙 · 公用 的本地化字符串。
+        /// </summary>
+        public static string FirewallPublic {
+            get {
+                return ResourceManager.GetString("FirewallPublic", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 IP地址 的本地化字符串。
         /// </summary>
@@ -277,6 +358,15 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
+        ///   查找类似 Ctrl+F 搜索 · F5 刷新 · Ctrl+C 复制 的本地化字符串。
+        /// </summary>
+        public static string KeyboardShortcutsHint {
+            get {
+                return ResourceManager.GetString("KeyboardShortcutsHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 监听地址 的本地化字符串。
         /// </summary>
         public static string ListenAddress {
@@ -285,6 +375,15 @@ namespace ColorVision.SocketProtocol.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 消息正文 的本地化字符串。
+        /// </summary>
+        public static string MessageBody {
+            get {
+                return ResourceManager.GetString("MessageBody", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 {0} 条消息 的本地化字符串。
         /// </summary>
@@ -304,6 +403,15 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
+        ///   查找类似 消息 ID 的本地化字符串。
+        /// </summary>
+        public static string MessageId {
+            get {
+                return ResourceManager.GetString("MessageId", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 消息日志 的本地化字符串。
         /// </summary>
         public static string MessageLog {
@@ -322,6 +430,15 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
+        ///   查找类似 无内容预览 的本地化字符串。
+        /// </summary>
+        public static string NoContentPreview {
+            get {
+                return ResourceManager.GetString("NoContentPreview", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 无 的本地化字符串。
         /// </summary>
         public static string NoError {
@@ -330,6 +447,60 @@ namespace ColorVision.SocketProtocol.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 没有匹配的消息 的本地化字符串。
+        /// </summary>
+        public static string NoMatchingMessages {
+            get {
+                return ResourceManager.GetString("NoMatchingMessages", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 请调整关键词或收发方向，或重置筛选查看全部记录。 的本地化字符串。
+        /// </summary>
+        public static string NoMatchingMessagesHint {
+            get {
+                return ResourceManager.GetString("NoMatchingMessagesHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 没有可显示的消息正文 的本地化字符串。
+        /// </summary>
+        public static string NoMessageContent {
+            get {
+                return ResourceManager.GetString("NoMessageContent", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 消息的时间、方向和客户端信息仍可在上方查看。 的本地化字符串。
+        /// </summary>
+        public static string NoMessageContentHint {
+            get {
+                return ResourceManager.GetString("NoMessageContentHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 暂无消息 的本地化字符串。
+        /// </summary>
+        public static string NoMessages {
+            get {
+                return ResourceManager.GetString("NoMessages", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 接收到的消息和发送记录会显示在这里，也可以查询历史消息。 的本地化字符串。
+        /// </summary>
+        public static string NoMessagesHint {
+            get {
+                return ResourceManager.GetString("NoMessagesHint", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 打开数据库 的本地化字符串。
         /// </summary>
@@ -354,15 +525,6 @@ namespace ColorVision.SocketProtocol.Properties {
         public static string OpenListenAddressFailedFormat {
             get {
                 return ResourceManager.GetString("OpenListenAddressFailedFormat", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 服务打开 的本地化字符串。
-        /// </summary>
-        public static string OpenStatus {
-            get {
-                return ResourceManager.GetString("OpenStatus", resourceCulture);
             }
         }
         
@@ -421,6 +583,15 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
+        ///   查找类似 重置筛选 的本地化字符串。
+        /// </summary>
+        public static string ResetFilters {
+            get {
+                return ResourceManager.GetString("ResetFilters", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 响应码: 的本地化字符串。
         /// </summary>
         public static string ResponseCode {
@@ -439,6 +610,15 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
+        ///   查找类似 搜索事件、客户端或内容 的本地化字符串。
+        /// </summary>
+        public static string SearchPlaceholder {
+            get {
+                return ResourceManager.GetString("SearchPlaceholder", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 按客户端、事件名、MsgID、响应码或内容过滤 的本地化字符串。
         /// </summary>
         public static string SearchTooltip {
@@ -447,6 +627,24 @@ namespace ColorVision.SocketProtocol.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 选择一条消息查看详情 的本地化字符串。
+        /// </summary>
+        public static string SelectMessage {
+            get {
+                return ResourceManager.GetString("SelectMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 查看消息正文、客户端与请求信息，支持 JSON 格式化和复制。 的本地化字符串。
+        /// </summary>
+        public static string SelectMessageHint {
+            get {
+                return ResourceManager.GetString("SelectMessageHint", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 端口 的本地化字符串。
         /// </summary>

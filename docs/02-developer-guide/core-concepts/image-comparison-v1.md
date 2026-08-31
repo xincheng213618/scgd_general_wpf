@@ -1,3 +1,14 @@
+---
+knowledge_id: "algorithms.image-comparison"
+knowledge_type: "reference"
+status: "current"
+summary: "ImageComparison 的输入、参数、结果、宿主接入与定向验证契约。"
+aliases: ["如何比较两幅图像并读取误差与差异结果","ImageComparison","ImageComparisonAlgorithmProvider"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/ImageComparisonAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ImageComparisonV1Tests.cs"]
+related: ["algorithms.platform","algorithms.index"]
+---
+
 # 图像比较基础 V1（M3）
 
 M3 提供可实际使用的双输入基础比较，稳定算法 ID 为 `colorvision.analysis.image-comparison`。M3 首次发布时行为版本和参数 schema 均为 V1；[M4](./image-comparison-advanced-v1.md) 已在同一身份上把行为版本升级到 1.1、schema 升级到 2，并为旧 schema 提供显式迁移。本页保留 M3 的兼容基线。

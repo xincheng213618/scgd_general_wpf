@@ -532,27 +532,37 @@ namespace ColorVision.Copilot
                     && !outputContentFiltered
                     && (!hasModelFinalAnswer || toolBudgetForcedFinalization))
                 {
-                    var recoveredFinalAnswer = await RecoverFinalAnswerAsync(
-                        request,
-                        emit,
-                        bridge,
-                        todoProvider,
-                        modeProvider,
-                        session,
-                        sessionResumed,
-                        contextRecoveryChatClient,
-                        cancellationToken,
-                        toolBudgetForcedFinalization,
-                        answerText.Length > 0,
-                        usage,
-                        outputLengthLimitReached,
-                        outputContentFiltered,
-                        outputFinishReasonIncomplete);
-                    usage = recoveredFinalAnswer.Usage;
-                    outputLengthLimitReached = recoveredFinalAnswer.OutputLengthLimitReached;
-                    outputContentFiltered = recoveredFinalAnswer.OutputContentFiltered;
-                    outputFinishReasonIncomplete = recoveredFinalAnswer.OutputFinishReasonIncomplete;
-                    hasModelFinalAnswer = recoveredFinalAnswer.HasModelFinalAnswer;
+                    try
+                    {
+                        var recoveredFinalAnswer = await RecoverFinalAnswerAsync(
+                            request,
+                            emit,
+                            bridge,
+                            todoProvider,
+                            modeProvider,
+                            session,
+                            sessionResumed,
+                            contextRecoveryChatClient,
+                            cancellationToken,
+                            toolBudgetForcedFinalization,
+                            answerText.Length > 0,
+                            usage,
+                            outputLengthLimitReached,
+                            outputContentFiltered,
+                            outputFinishReasonIncomplete);
+                        usage = recoveredFinalAnswer.Usage;
+                        outputLengthLimitReached = recoveredFinalAnswer.OutputLengthLimitReached;
+                        outputContentFiltered = recoveredFinalAnswer.OutputContentFiltered;
+                        outputFinishReasonIncomplete = recoveredFinalAnswer.OutputFinishReasonIncomplete;
+                        hasModelFinalAnswer = recoveredFinalAnswer.HasModelFinalAnswer;
+                    }
+                    catch (OperationCanceledException) when (request.RunControl?.Intent is CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel
+                        || (timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested))
+                    {
+                        (controlIntent, timeBudgetExhausted) = HandleRunCancellation(
+                            request, timeBudgetCancellation, callerCancellationToken, stopwatch, taskEventJournalBuilder, emit);
+                        hasModelFinalAnswer = false;
+                    }
                 }
                 hasModelFinalAnswer = ApplyFinalAnswerQualityGates(
                     request,

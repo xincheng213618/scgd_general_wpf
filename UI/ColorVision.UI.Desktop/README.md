@@ -1,63 +1,16 @@
 # ColorVision.UI.Desktop
 
-> 目标框架：.NET 10 Windows；输出类型：WinExe（以 `ColorVision.UI.Desktop.csproj` 为准）
+这是 ColorVision 的桌面辅助壳层，提供设置、向导、菜单管理、插件市场、下载、第三方工具与诊断窗口；不是产品主程序。产品启动与主窗口位于仓库的 `ColorVision/`。
 
-## 功能定位
+## 包与运行前提
 
-桌面应用程序入口模块，提供主窗口、设置管理、配置向导、菜单定制和第三方应用集成。
+- 目标框架、直接项目引用与包依赖以 `ColorVision.UI.Desktop.csproj` 为准；当前为 Windows/WPF 项目。
+- 项目虽声明 `WinExe`，但本地 `App.xaml.cs` 没有产品启动逻辑，`MainWindow.xaml` 只有空布局。不能用运行这个项目代替主程序验收。
+- 市场 Markdown 呈现使用 WebView2；CSS 是样式资源，缺失时仍渲染，但不加载该 CSS。使用 aria2 下载时须能从输出位置或 PATH 找到 `aria2c`。构建成功不证明联网下载、安装替换或插件装载成功。
+- 系统工具、安装更新、注册表写入、网络配置和反馈上传可能改变本机或外部状态，须按具体任务授权操作。
 
-## 主要功能
+## 源码知识入口
 
-### 应用入口 (App.xaml.cs)
-- 全局异常捕获、单实例检查、启动参数处理
-- 首次运行显示配置向导
+[桌面辅助壳层主题](../../docs/04-api-reference/ui-components/ColorVision.UI.Desktop.md)维护各功能责任、源码与测试定位，并分流到设置、向导、菜单等独立契约。这里不再复制窗口清单、启动步骤或另一套使用手册。
 
-### 主窗口 (MainWindow.xaml)
-- 基于 AvalonDock 的停靠面板布局
-- 文档视图 + 面板视图管理
-- 动态菜单加载（MenuManager）
-
-### 设置管理 (Settings/)
-- **SettingWindow** — 统一设置窗口，自动发现 IConfigSettingProvider
-- 支持 TabItem / Class / Property 三种设置类型
-
-### 配置向导 (Wizards/)
-- **WizardWindow** — 分步骤初始化向导
-- **WizardManager** — 自动发现 IWizardStep 实现
-- **WizardWindowConfig** — 向导完成状态持久化
-
-### 菜单管理 (MenuItemManager/)
-- **MenuItemManagerWindow** — 可视化菜单结构编辑，从“应用与工具 / 内部工具”进入
-- **MenuItemManagerConfig** — 仅持久化按窗口作用域区分的菜单覆盖项
-
-### 应用与工具 (ThirdPartyApps/)
-- **ThirdPartyAppsWindow** — 统一承载内部、系统、外部和自定义工具
-- **SystemAppProvider** — Windows 系统工具集合
-
-### 其他
-- **ShortcutCreator** — 创建 .lnk 快捷方式
-- **SystemInitializer** — CUDA 初始化 + 系统信息记录
-
-## 文件清单
-
-| 文件 | 说明 |
-|------|------|
-| `App.xaml.cs` | 应用入口 |
-| `MainWindow.xaml.cs` | 主窗口 |
-| `ShortcutCreator.cs` | 快捷方式创建 |
-| `WizardWindow.xaml.cs` | 配置向导窗口 |
-| `WizardWindowConfig.cs` | 向导配置 |
-| `SystemAppProvider.cs` | 系统应用提供者 |
-| `MenuItemManagerConfig.cs` | 菜单管理配置 |
-
-## 依赖关系
-
-- **引用**: ColorVision.UI, ColorVision.Database, Markdig.Signed, Microsoft.Web.WebView2
-- **被引用**: ColorVision.Solution
-
-## 构建
-
-```powershell
-dotnet build .\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj -p:Platform=x64
-dotnet run --project .\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj -p:Platform=x64
-```
+本 README 作为 NuGet 包说明打包到包根目录。上面的相对链接只在源码仓库中有效；包使用者应在与包版本匹配的源码中读取对应主题，不能将当前网站或另一分支当成该包的行为保证。

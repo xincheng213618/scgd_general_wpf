@@ -8,6 +8,110 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotProviderPayloadErrorTests
 {
+    [Theory]
+    [InlineData(CopilotProviderType.OpenAICompatible, false)]
+    [InlineData(CopilotProviderType.OpenAICompatible, true)]
+    [InlineData(CopilotProviderType.AnthropicCompatible, false)]
+    [InlineData(CopilotProviderType.AnthropicCompatible, true)]
+    public async Task MalformedStreamEventFailsWithoutReplayingOrDiscardingProgress(
+        CopilotProviderType providerType,
+        bool hasProgress)
+    {
+        var progress = providerType == CopilotProviderType.OpenAICompatible
+            ? "data: {\"choices\":[{\"delta\":{\"content\":\"Partial.\"}}],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":4}}\n\n"
+            : "data: {\"type\":\"message_start\",\"message\":{\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}\n\n"
+                + "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Partial.\"}}\n\n"
+                + "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":4}}\n\n";
+        var completed = providerType == CopilotProviderType.OpenAICompatible
+            ? CreateCompletedOpenAiStream("Later.")
+            : CreateCompletedAnthropicStream("Later.");
+        using var handler = new SequentialHandler(_ => CreateStreamingResponse(
+            (hasProgress ? progress : string.Empty)
+            + "data: {\"secret\":\"test-key\",broken}\n\n"
+            + completed,
+            "req_test-key_malformed"));
+        using var httpClient = new HttpClient(handler);
+        var service = CreateService(httpClient, maximumAttempts: 3);
+        var deltas = new List<CopilotStreamDelta>();
+        var usageUpdates = new List<CopilotTokenUsage>();
+        var retries = new List<CopilotProviderRetryInfo>();
+
+        var failure = await Assert.ThrowsAsync<CopilotProviderPayloadException>(
+            () => service.StreamReplyAsync(
+                CreateProfile(providerType),
+                [new CopilotRequestMessage("user", "Do not silently skip damaged output.")],
+                deltas.Add,
+                retries.Add,
+                usageUpdates.Add,
+                CancellationToken.None));
+
+        Assert.Equal(1, handler.CallCount);
+        Assert.Equal(hasProgress ? "Partial." : string.Empty, string.Concat(deltas.Select(delta => delta.Content)));
+        if (hasProgress)
+            Assert.Equal(14, usageUpdates.Last().TotalTokens);
+        else
+            Assert.Empty(usageUpdates);
+        Assert.Equal("invalid_response_format", failure.ErrorCode);
+        Assert.False(failure.IsTransient);
+        Assert.Equal("req_redacted_malformed", failure.RequestId);
+        Assert.DoesNotContain("test-key", failure.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret", failure.Message, StringComparison.Ordinal);
+        Assert.Empty(retries);
+    }
+
+    [Theory]
+    [InlineData(CopilotProviderType.OpenAICompatible)]
+    [InlineData(CopilotProviderType.AnthropicCompatible)]
+    public async Task MalformedSuccessfulJsonIsReportedAsAProtocolFailure(CopilotProviderType providerType)
+    {
+        using var handler = new SequentialHandler(_ => CreateJsonResponse(
+            "{\"secret\":\"test-key\",broken}", "req_invalid_json"));
+        using var httpClient = new HttpClient(handler);
+        var service = CreateService(httpClient, maximumAttempts: 3);
+
+        var failure = await Assert.ThrowsAsync<CopilotProviderPayloadException>(
+            () => service.StreamReplyAsync(
+                CreateProfile(providerType),
+                [new CopilotRequestMessage("user", "Report damaged JSON accurately.")],
+                _ => { },
+                CancellationToken.None));
+
+        Assert.Equal(1, handler.CallCount);
+        Assert.Equal("invalid_response_format", failure.ErrorCode);
+        Assert.False(failure.IsTransient);
+        Assert.Equal("req_invalid_json", failure.RequestId);
+        Assert.DoesNotContain("no displayable text", failure.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("test-key", failure.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret", failure.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(CopilotProviderType.OpenAICompatible)]
+    [InlineData(CopilotProviderType.AnthropicCompatible)]
+    public async Task ValidUnknownEventsCommentsAndMultilineDataRemainSupported(CopilotProviderType providerType)
+    {
+        var completed = providerType == CopilotProviderType.OpenAICompatible
+            ? CreateCompletedOpenAiStream("Done.")
+            : CreateCompletedAnthropicStream("Done.");
+        using var handler = new SequentialHandler(_ => CreateStreamingResponse(
+            ": keep-alive\n\nevent: ping\ndata: {\"type\":\"ping\"}\n\n"
+            + "event: extension\ndata: {\"type\":\"future_event\",\n"
+            + "data: \"metadata\":true}\n\n"
+            + completed));
+        using var httpClient = new HttpClient(handler);
+        var service = CreateService(httpClient, maximumAttempts: 1);
+        var deltas = new List<CopilotStreamDelta>();
+
+        await service.StreamReplyAsync(
+            CreateProfile(providerType),
+            [new CopilotRequestMessage("user", "Allow protocol extensions and keep-alives.")],
+            deltas.Add,
+            CancellationToken.None);
+
+        Assert.Equal("Done.", string.Concat(deltas.Select(delta => delta.Content)));
+        Assert.Equal(1, handler.CallCount);
+    }
+
     [Fact]
     public async Task StreamingUsageUpdatesArePublishedBeforeTheResultCompletes()
     {

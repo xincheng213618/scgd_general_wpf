@@ -8,7 +8,6 @@
         xmlns:local="clr-namespace:ColorVision"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:ColorVision.Properties"
-        xmlns:search="clr-namespace:ColorVision.UI.Serach;assembly=ColorVision.UI"
         xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindowConfig}"
@@ -70,7 +69,6 @@
                 <StackPanel x:Name="RightMenuItemPanel" DockPanel.Dock="Right" Orientation="Horizontal" />
 
                 <Menu x:Name="Menu1" Padding="2" HorizontalAlignment="Left" Background="Transparent" />
-                <search:SearchControl x:Name="SearchControl1" Width="210" Margin="10,1" HorizontalAlignment="Left" VerticalAlignment="Center" />
                 <Button x:Name="UpdateNotificationButton"
                         Click="UpdateNotificationButton_Click"
                         Content="{x:Static properties:Resources.UpdatePreviewFoundUpdatesHeading}"

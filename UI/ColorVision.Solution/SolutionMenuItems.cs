@@ -8,6 +8,11 @@ namespace ColorVision.Solution
 {
     public static class SolutionWorkspaceCommands
     {
+        public static RoutedUICommand OpenWorkspace { get; } = new(
+            "打开工作区",
+            nameof(OpenWorkspace),
+            typeof(SolutionWorkspaceCommands));
+
         public static RoutedUICommand OpenFolder { get; } = new(
             "打开文件夹",
             nameof(OpenFolder),

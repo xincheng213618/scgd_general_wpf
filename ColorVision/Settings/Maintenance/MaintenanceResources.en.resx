@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Storage and maintenance</value></data>
+  <data name="Description" xml:space="preserve"><value>Clean logs, temporary files and rebuildable caches. Manage history, backups and settings resets separately.</value></data>
+  <data name="Space" xml:space="preserve"><value>Free up space</value></data>
+  <data name="Protected" xml:space="preserve"><value>Original images, results, flow templates, device settings and licences are excluded.</value></data>
+  <data name="Scan" xml:space="preserve"><value>Scan storage</value></data>
+  <data name="CleanSelected" xml:space="preserve"><value>Clean selected</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Details" xml:space="preserve"><value>View files</value></data>
+  <data name="Clean" xml:space="preserve"><value>Clean</value></data>
+  <data name="NotScanned" xml:space="preserve"><value>Not scanned</value></data>
+  <data name="ScanFirst" xml:space="preserve"><value>Scan first, then review the files to clean.</value></data>
+  <data name="Keep" xml:space="preserve"><value>Keep the last</value></data>
+  <data name="Days" xml:space="preserve"><value>days</value></data>
+  <data name="Files" xml:space="preserve"><value>items</value></data>
+  <data name="Logs" xml:space="preserve"><value>Application logs</value></data>
+  <data name="LogsDescription" xml:space="preserve"><value>Only historical application logs; active log files are kept.</value></data>
+  <data name="Temporary" xml:space="preserve"><value>Temporary work files</value></data>
+  <data name="TemporaryDescription" xml:space="preserve"><value>Expired update staging files, diagnostic archives and feedback screenshots; excludes other apps.</value></data>
+  <data name="Packages" xml:space="preserve"><value>Download and update cache</value></data>
+  <data name="PackagesDescription" xml:space="preserve"><value>Old application and plugin packages; pending updates and resumable downloads are kept.</value></data>
+  <data name="Cie" xml:space="preserve"><value>Drawing cache</value></data>
+  <data name="CieDescription" xml:space="preserve"><value>Rebuildable CIE backgrounds, not calibration files or business images.</value></data>
+  <data name="Thumbnails" xml:space="preserve"><value>Thumbnail cache</value></data>
+  <data name="ThumbnailsDescription" xml:space="preserve"><value>Clears thumbnail previews and their index. Rebuilt when images are browsed again.</value></data>
+  <data name="Scanning" xml:space="preserve"><value>Scanning…</value></data>
+  <data name="Cleaning" xml:space="preserve"><value>Cleaning…</value></data>
+  <data name="ScanComplete" xml:space="preserve"><value>Scan complete. Select categories and review their file lists.</value></data>
+  <data name="Result" xml:space="preserve"><value>Freed {0}; deleted {1}, skipped {2}, failed {3}.</value></data>
+  <data name="Cancelled" xml:space="preserve"><value>Cancelled. Files already deleted are not restored.</value></data>
+  <data name="ConfirmClean" xml:space="preserve"><value>Permanently delete {0} scanned items, approximately {1}? Files in use or changed after scanning will be skipped.</value></data>
+  <data name="History" xml:space="preserve"><value>Data and backups</value></data>
+  <data name="Database" xml:space="preserve"><value>Historical data</value></data>
+  <data name="DatabaseDescription" xml:space="preserve"><value>Choose the data source, retention and backup separately; never included in storage cleanup.</value></data>
+  <data name="Manage" xml:space="preserve"><value>Manage</value></data>
+  <data name="Snapshots" xml:space="preserve"><value>Application snapshots</value></data>
+  <data name="SnapshotsDescription" xml:space="preserve"><value>View, create and manage application recovery snapshots; excluded from cache cleanup.</value></data>
+  <data name="ConfigBackup" xml:space="preserve"><value>Configuration recovery point</value></data>
+  <data name="ConfigBackupDescription" xml:space="preserve"><value>Back up the entire settings file, including sections not loaded in this session.</value></data>
+  <data name="CreateBackup" xml:space="preserve"><value>Create backup</value></data>
+  <data name="OpenFolder" xml:space="preserve"><value>Open folder</value></data>
+  <data name="Reset" xml:space="preserve"><value>Reset and recovery</value></data>
+  <data name="ResetDescription" xml:space="preserve"><value>Reset only the selected app settings at the next startup, after a successful backup. Device settings, database connections, licences and business data are preserved.</value></data>
+  <data name="Appearance" xml:space="preserve"><value>Theme and language</value></data>
+  <data name="Window" xml:space="preserve"><value>Main window preferences</value></data>
+  <data name="Hotkeys" xml:space="preserve"><value>Keyboard shortcuts</value></data>
+  <data name="Search" xml:space="preserve"><value>Search preferences</value></data>
+  <data name="Viewer" xml:space="preserve"><value>Image viewer preferences</value></data>
+  <data name="ScheduleReset" xml:space="preserve"><value>Schedule reset</value></data>
+  <data name="CancelReset" xml:space="preserve"><value>Cancel pending reset</value></data>
+  <data name="ResetConfirm" xml:space="preserve"><value>Reset: {0}. You can cancel before closing. Save your work and restart normally. Schedule this reset?</value></data>
+  <data name="ResetScheduled" xml:space="preserve"><value>Reset scheduled for the next startup. Save your work, then restart normally.</value></data>
+  <data name="ResetCancelled" xml:space="preserve"><value>Pending settings reset cancelled.</value></data>
+  <data name="BackupCreated" xml:space="preserve"><value>Complete configuration backup created: {0}</value></data>
+  <data name="AdminRequired" xml:space="preserve"><value>This action requires an application administrator.</value></data>
+  <data name="SelectReset" xml:space="preserve"><value>Select at least one setting to reset.</value></data>
+  <data name="FilePath" xml:space="preserve"><value>File path</value></data>
+  <data name="Size" xml:space="preserve"><value>Size</value></data>
+  <data name="Modified" xml:space="preserve"><value>Last modified</value></data>
+  <data name="Warnings" xml:space="preserve"><value>Scan and cleanup details</value></data>
+  <data name="ViewWarnings" xml:space="preserve"><value>View details</value></data>
+  <data name="NoFiles" xml:space="preserve"><value>No files match the current cleanup rules.</value></data>
+  <data name="Close" xml:space="preserve"><value>Close</value></data>
+  <data name="BusyClose" xml:space="preserve"><value>Cleanup is still running. Cancel it or wait for completion before closing Settings.</value></data>
+  <data name="ScanChanged" xml:space="preserve"><value>Retention changed. Scan again.</value></data>
+  <data name="Pending" xml:space="preserve"><value>Pending reset at next startup: {0}</value></data>
+  <data name="CacheUnavailable" xml:space="preserve"><value>The cache does not exist or has no removable entries.</value></data>
+  <data name="Failed" xml:space="preserve"><value>Operation did not complete: {0}</value></data>
+  <data name="ThumbnailList" xml:space="preserve"><value>Thumbnails are cleared through the cache manager. Original images are never deleted.</value></data>
+  <data name="StoppedForSafety" xml:space="preserve"><value>This category is protected while related tasks are active.</value></data>
+  <data name="FlowBusy" xml:space="preserve"><value>Stop inspection or acquisition and confirm no other writers are using the database before maintenance.</value></data>
+  <data name="ResetApplied" xml:space="preserve"><value>Settings reset applied. Full configuration backup: {0}</value></data>
+  <data name="Reclaimable" xml:space="preserve"><value>Estimated space from selected items</value></data>
+  <data name="ResetDeferred" xml:space="preserve"><value>Reset was deferred because another ColorVision instance is running. Save your work, close all instances, then start again.</value></data>
+  <data name="UpdateTemporaryProtected" xml:space="preserve"><value>Temporary update files are protected while an update is running or awaiting installation.</value></data>
+  <data name="FeedbackProtected" xml:space="preserve"><value>The feedback window is using diagnostic packages and screenshots. These attachments are protected.</value></data>
+  <data name="UpdatePackagesProtected" xml:space="preserve"><value>All installer packages are protected while an update is running or awaiting installation.</value></data>
+  <data name="ResetStartupFailed" xml:space="preserve"><value>The last startup could not finish the reset: {0}. You can cancel the plan and inspect the configuration and backup.</value></data>
+</root>

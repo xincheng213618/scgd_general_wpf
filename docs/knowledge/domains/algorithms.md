@@ -1,0 +1,123 @@
+---
+generated_knowledge_index: true
+search: false
+editLink: false
+prev: false
+next: false
+---
+
+# 算法与模板
+
+> 自动生成的领域目录。修改主题 Markdown 元数据后运行 `node docs/.vitepress/scripts/knowledge.mjs generate`；不要手工编辑。
+
+算法平台、传统模板、计算适配和规划中的能力。 返回[知识总入口](../index.md)。
+
+只读与当前问题相关的主题，再核对源码和测试。`规划`、`历史`不代表当前能力。
+
+- [算法与模板知识入口](../../04-api-reference/algorithms/README.md) — `algorithms.index`
+  区分统一 Runner、ImageEditor 直接 native 分析与 Engine 模板/MQTT 算法，并按任务定位专题。
+
+- [ROI](../../04-api-reference/algorithms/primitives/roi.md) — `algorithms.roi-routes`
+  区分发光区定位、JSON 裁剪、SFR 找 ROI 与统一算法 ROI 数据模型。
+
+- [Engine 模板共享构件](../../04-api-reference/algorithms/primitives/common-modules.md) — `algorithms.template-primitives`
+  路由 Engine 模板中的 ROI、POI、Matching 共享构件并区分统一算法平台。
+
+- [DataLoad 数据加载模板](../../04-api-reference/algorithms/templates/data-load-template.md) — `algorithms.data-load`
+  区分 DataLoad 模板与显式参数节点如何按设备、批次和 ZIndex 读取上游结果。
+
+- [FindLightArea 发光区定位模板](../../04-api-reference/algorithms/templates/find-light-area.md) — `algorithms.find-light-area`
+  区分远端 FindLightArea 模板与本地原生亮区检测 RobustV2；四角点不等于成功，须核对置信度、失败原因和各调用层的结果契约。
+
+- [FocusPoints 关注点模板](../../04-api-reference/algorithms/templates/focus-points-template.md) — `algorithms.focus-points`
+  说明 FocusPoints 传统模板参数、通用手动宿主与 Flow 发光区检测请求。
+
+- [Ghost Detection](../../04-api-reference/algorithms/detectors/ghost-detection.md) — `algorithms.ghost`
+  说明 ARVR Ghost 传统模板的参数、MQTT 事件、结果 DAO 和叠图。
+
+- [ImageCropping 图像裁剪模板](../../04-api-reference/algorithms/templates/image-cropping-template.md) — `algorithms.image-cropping`
+  区分强类型 ImageCropping 的持久参数、运行时四点 ROI、Flow 双输入和图像结果。
+
+- [ImageEditor 直接 native 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
+  ImageEditor直接native灯珠与P2分析：Ghost/旋转模板/双目标定、缺失计数与完成边界；区别Engine/MQTT模板和统一Runner。
+
+- [Matching 模板匹配](../../04-api-reference/algorithms/templates/matching-template.md) — `algorithms.matching`
+  说明 Matching 通用配置宿主、运行时模板文件、Flow 请求和 AOI 结果绘制。
+
+- [统一图像算法平台 V1](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) — `algorithms.platform`
+  统一图像算法Catalog、Invocation和Runner；普通像素预览、应用/取消、所有权与发布门禁；ONNX仅设计。
+
+- [POI](../../04-api-reference/algorithms/primitives/poi.md) — `algorithms.poi-routes`
+  说明 POI 点位、伴生模板、文件模式与 Flow 和 JSON 算法的消费关系。
+
+- [模板编辑与创建宿主](../../04-api-reference/algorithms/templates/template-management.md) — `algorithms.template-management`
+  TemplateEditorWindow与TemplateCreateView的共享参数、创建来源、预览、索引和关闭语义；关闭不是通用回滚，筛选后的操作目标需单独核对。
+
+- [模板编辑入口与菜单契约](../../04-api-reference/algorithms/templates/template-menu-entries.md) — `algorithms.template-menus`
+  区分现存模板主菜单、专用入口与通用算法配置中的模板编辑命令。
+
+- [算法与模板接入概览](../../04-api-reference/algorithms/overview.md) — `algorithms.template-overview`
+  说明 Engine 模板发现、手动算法宿主、MQTT 请求和 Flow 接入链。
+
+- [ARVR 模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
+  对照 ARVR 模板族、手动请求、Flow 算子和结果 handler 的版本边界。
+
+- [Blob / 连通域 V1（M5.1）](../../02-developer-guide/core-concepts/blob-analysis-v1.md) — `algorithms.blob-analysis`
+  BlobAnalysis 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
+
+- [圆拟合 V1（M6.3）](../../02-developer-guide/core-concepts/circle-fit-v1.md) — `algorithms.circle-fit`
+  CircleFit 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
+
+- [轮廓提取 V1（M5.2）](../../02-developer-guide/core-concepts/contour-analysis-v1.md) — `algorithms.contour-analysis`
+  ContourAnalysis 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
+
+- [FFT / 频域分析 V1（M10）](../../02-developer-guide/core-concepts/frequency-spectrum-v1.md) — `algorithms.frequency-spectrum`
+  FrequencySpectrum 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
+
+- [几何变换 V1（M7）](../../02-developer-guide/core-concepts/geometric-transform-v1.md) — `algorithms.geometric-transform`
+  GeometricTransform 的输入、参数、结果、宿主接入与定向验证契约。
+
+- [图像比较基础 V1（M3）](../../02-developer-guide/core-concepts/image-comparison-v1.md) — `algorithms.image-comparison`
+  ImageComparison 的输入、参数、结果、宿主接入与定向验证契约。
+
+- [图像比较高级 V1（M4）](../../02-developer-guide/core-concepts/image-comparison-advanced-v1.md) — `algorithms.image-comparison-advanced`
+  ImageComparison 的输入、参数、结果、宿主接入与定向验证契约。
+
+- [灰度与颜色剖面 V1（M2）](../../02-developer-guide/core-concepts/image-profile-v1.md) — `algorithms.image-profile`
+  ImageProfile 的输入、参数、结果、宿主接入与定向验证契约。
+
+- [图像配准 V1（M8.1）](../../02-developer-guide/core-concepts/image-registration-v1.md) — `algorithms.image-registration`
+  ImageRegistration 的输入、参数、结果、宿主接入与定向验证契约。
+
+- [成像校正 V1（M9）](../../02-developer-guide/core-concepts/imaging-correction-v1.md) — `algorithms.imaging-correction`
+  ImagingCorrection 的输入、参数、结果、宿主接入与定向验证契约。
+
+- [JSON 模板](../../04-api-reference/algorithms/templates/json-templates.md) — `algorithms.json-templates`
+  JSON模板数据库存储、编辑器与结果版本匹配；Schema优先读取程序集嵌入资源，再回退磁盘索引，不要求输出目录有散文件。
+
+- [LED 检测模板](../../04-api-reference/algorithms/templates/led-detection.md) — `algorithms.led`
+  区分灯条、灯珠强类型与 JSON V2 模板、事件、POI 输入和结果限制。
+
+- [镜头畸变校正 V1（M8.2）](../../02-developer-guide/core-concepts/lens-distortion-correction-v1.md) — `algorithms.lens-distortion-correction`
+  LensDistortionCorrection 的输入、参数、结果、宿主接入与定向验证契约。
+
+- [直线拟合 V1（M6.2）](../../02-developer-guide/core-concepts/line-fit-v1.md) — `algorithms.line-fit`
+  LineFit 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
+
+- [摩尔纹分析 V1（M11）](../../02-developer-guide/core-concepts/moire-analysis-v1.md) — `algorithms.moire-analysis`
+  MoireAnalysis 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
+
+- [POI 模板](../../04-api-reference/algorithms/templates/poi-template.md) — `algorithms.poi-template`
+  说明 POI 主从表、伴生模板、复制导入、运行事件与结果类型映射。
+
+- [ROI 统计 V1（M1）](../../02-developer-guide/core-concepts/roi-statistics-v1.md) — `algorithms.roi-statistics`
+  RoiStatistics 的输入、参数、结果、宿主接入与定向验证契约。
+
+- [亚像素边缘 V1（M6.1）](../../02-developer-guide/core-concepts/subpixel-edge-v1.md) — `algorithms.subpixel-edge`
+  SubpixelEdge 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
+
+- [SysDictionary 系统字典兼容层](../../04-api-reference/algorithms/templates/sys-dictionary-template.md) — `algorithms.template-dictionary`
+  说明保留的系统字典 DAO 与模板默认值、传感器和旧流程兼容依赖。
+
+- [ONNX / AI 推理接入设计（Deferred） \[规划\]](../../02-developer-guide/core-concepts/onnx-inference-future-design.md) — `algorithms.onnx`
+  尚未实现的 ONNX 接入设计：保持基础产品无 ONNX 运行时，新增 adapter 前须明确模型与验收门禁。

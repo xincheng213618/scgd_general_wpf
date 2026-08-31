@@ -163,8 +163,6 @@
     <value>Cancel</value>
   </data>  <data name="Query" xml:space="preserve">
     <value>Query</value>
-  </data>  <data name="MenuMySql" xml:space="preserve">
-    <value>MySQL</value>
   </data>
   <data name="MenuEntityBrowser" xml:space="preserve">
     <value>Database Browser</value>
@@ -304,23 +302,8 @@
   <data name="DB_Add" xml:space="preserve">
     <value>+ Add</value>
   </data>
-  <data name="DB_AddTooltip" xml:space="preserve">
-    <value>Add selected field to query conditions</value>
-  </data>
   <data name="DB_AddAll" xml:space="preserve">
     <value>Add All</value>
-  </data>
-  <data name="DB_AddAllTooltip" xml:space="preserve">
-    <value>Add all available fields at once</value>
-  </data>
-  <data name="DB_Reset" xml:space="preserve">
-    <value>Reset</value>
-  </data>
-  <data name="DB_ResetTooltip" xml:space="preserve">
-    <value>Clear all query conditions</value>
-  </data>
-  <data name="DB_SqlPreview" xml:space="preserve">
-    <value>SQL Preview</value>
   </data>
   <data name="DB_QueryCount" xml:space="preserve">
     <value>Query Count</value>
@@ -330,15 +313,6 @@
   </data>
   <data name="DB_RemoveCondition" xml:space="preserve">
     <value>Remove this condition</value>
-  </data>
-  <data name="DB_ResetDone" xml:space="preserve">
-    <value>All query conditions have been reset</value>
-  </data>
-  <data name="DB_MysqlConfig" xml:space="preserve">
-    <value>MySQL Configuration</value>
-  </data>
-  <data name="DB_MysqlConfigDesc" xml:space="preserve">
-    <value>Configure database connection here</value>
   </data>
   <data name="DB_DbNameEmpty" xml:space="preserve">
     <value>Database name cannot be empty</value>
@@ -394,29 +368,11 @@
   <data name="DB_EditRow" xml:space="preserve">
     <value>Edit Row</value>
   </data>
-  <data name="DB_FilterDataTitle" xml:space="preserve">
-    <value>Filter Data</value>
-  </data>
-  <data name="DB_FilterDataDescription" xml:space="preserve">
-    <value>Add one or more conditions. Matching records will appear in the current results table after you apply the filter.</value>
-  </data>
-  <data name="DB_AddFilterField" xml:space="preserve">
-    <value>Add filter field</value>
-  </data>
   <data name="DB_SelectFilterField" xml:space="preserve">
     <value>Select a filter field</value>
   </data>
-  <data name="DB_AddCondition" xml:space="preserve">
-    <value>Add Condition</value>
-  </data>
   <data name="DB_ClearConditions" xml:space="preserve">
     <value>Clear Conditions</value>
-  </data>
-  <data name="DB_FilterConditions" xml:space="preserve">
-    <value>Filter Conditions</value>
-  </data>
-  <data name="DB_AllConditionsMustMatch" xml:space="preserve">
-    <value>All of the following conditions must match</value>
   </data>
   <data name="DB_FilterFieldColumn" xml:space="preserve">
     <value>Field</value>
@@ -429,9 +385,6 @@
   </data>
   <data name="DB_NoFilterConditions" xml:space="preserve">
     <value>No filter conditions yet</value>
-  </data>
-  <data name="DB_NoFilterConditionsDescription" xml:space="preserve">
-    <value>Without conditions, the most recent records are returned using the settings below. Select a field above to start filtering.</value>
   </data>
   <data name="DB_MaxResults" xml:space="preserve">
     <value>Maximum results</value>
@@ -447,9 +400,6 @@
   </data>
   <data name="DB_OldestFirst" xml:space="preserve">
     <value>Oldest first</value>
-  </data>
-  <data name="DB_ApplyFilter" xml:space="preserve">
-    <value>Apply Filter</value>
   </data>
   <data name="DB_MaxResultsRange" xml:space="preserve">
     <value>Maximum results must be an integer from 1 to 10000.</value>

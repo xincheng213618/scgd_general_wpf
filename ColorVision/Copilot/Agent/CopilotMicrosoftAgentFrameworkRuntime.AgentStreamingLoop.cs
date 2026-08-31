@@ -214,20 +214,8 @@ namespace ColorVision.Copilot
             catch (OperationCanceledException) when (request.RunControl?.Intent is CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel
                 || (timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested))
             {
-                var requestedControl = request.RunControl?.Intent ?? CopilotAgentControlIntent.None;
-                if (requestedControl is CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel)
-                {
-                    controlIntent = requestedControl;
-                    taskEventJournalBuilder.RecordControl(controlIntent);
-                    emit(CopilotAgentEvent.RuntimeDiagnostic(controlIntent == CopilotAgentControlIntent.Pause
-                        ? "Agent pause requested; preserving the current task session checkpoint."
-                        : "Agent cancellation requested; the new task session checkpoint will be discarded."));
-                }
-                else
-                {
-                    timeBudgetExhausted = timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested;
-                    emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent total-time budget exhausted after {FormatDuration(stopwatch.Elapsed)}; finalizing the current task checkpoint."));
-                }
+                (controlIntent, timeBudgetExhausted) = HandleRunCancellation(
+                    request, timeBudgetCancellation, callerCancellationToken, stopwatch, taskEventJournalBuilder, emit);
             }
             catch (CopilotAgentTokenBudgetExceededException ex)
             {
@@ -269,8 +257,9 @@ namespace ColorVision.Copilot
                 }
                 else
                 {
-                    emit(CopilotAgentEvent.RuntimeDiagnostic(
-                        "The provider stream was interrupted after material Agent progress. The current Harness session will be checkpointed without replaying tools."));
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(CopilotProviderRequestId.AppendToMessage(
+                        "The provider stream was interrupted after material Agent progress. The current Harness session will be checkpointed without replaying tools.",
+                        CopilotProviderRequestId.Find(ex))));
                 }
                 if (answerText.Length == 0)
                 {
@@ -306,6 +295,29 @@ namespace ColorVision.Copilot
                 postToolStopRequested,
                 providerFinishReason,
                 automaticReviewCircuitBreakerSnapshot);
+        }
+
+        private static (CopilotAgentControlIntent ControlIntent, bool TimeBudgetExhausted) HandleRunCancellation(
+            CopilotAgentRequest request,
+            CancellationTokenSource timeBudgetCancellation,
+            CancellationToken callerCancellationToken,
+            Stopwatch stopwatch,
+            CopilotAgentTaskEventJournalBuilder taskEventJournalBuilder,
+            Action<CopilotAgentEvent> emit)
+        {
+            var controlIntent = request.RunControl?.Intent ?? CopilotAgentControlIntent.None;
+            if (controlIntent is CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel)
+            {
+                taskEventJournalBuilder.RecordControl(controlIntent);
+                emit(CopilotAgentEvent.RuntimeDiagnostic(controlIntent == CopilotAgentControlIntent.Pause
+                    ? "Agent pause requested; preserving the current task session checkpoint."
+                    : "Agent cancellation requested; the new task session checkpoint will be discarded."));
+                return (controlIntent, false);
+            }
+
+            var timeBudgetExhausted = timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested;
+            emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent total-time budget exhausted after {FormatDuration(stopwatch.Elapsed)}; finalizing the current task checkpoint."));
+            return (CopilotAgentControlIntent.None, timeBudgetExhausted);
         }
     }
 }

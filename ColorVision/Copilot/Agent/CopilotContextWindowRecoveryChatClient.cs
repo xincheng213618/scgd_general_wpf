@@ -1,4 +1,5 @@
 #pragma warning disable MAAI001
+using Anthropic.Exceptions;
 using Microsoft.Agents.AI.Compaction;
 using Microsoft.Extensions.AI;
 using System;
@@ -110,6 +111,8 @@ namespace ColorVision.Copilot
         {
             foreach (var exception in exceptions)
             {
+                if (exception is AnthropicApiException apiException)
+                    return (int)apiException.StatusCode;
                 if (exception is ClientResultException { Status: > 0 } clientResultException)
                     return clientResultException.Status;
                 if (exception is HttpRequestException { StatusCode: not null } httpRequestException)
@@ -159,6 +162,7 @@ namespace ColorVision.Copilot
                 }
                 catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out var failureKind))
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (recovery != null)
                         throw CreateExhaustedException(recovery, exception);
 
@@ -185,6 +189,7 @@ namespace ColorVision.Copilot
                 }
                 catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out var failureKind))
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (recovery != null)
                         throw CreateExhaustedException(recovery, exception);
 

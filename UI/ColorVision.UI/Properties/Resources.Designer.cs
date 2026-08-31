@@ -421,65 +421,11 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 echo 正在备份当前版本... 的本地化字符串。
-        /// </summary>
-        public static string EchoBackingUpCurrentVersion {
-            get {
-                return ResourceManager.GetString("EchoBackingUpCurrentVersion", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似   echo 备份完成。 的本地化字符串。
-        /// </summary>
-        public static string EchoBackupComplete {
-            get {
-                return ResourceManager.GetString("EchoBackupComplete", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似   echo 备份到：%BKDIR% 的本地化字符串。
-        /// </summary>
-        public static string EchoBackupTo {
-            get {
-                return ResourceManager.GetString("EchoBackupTo", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 echo 复制完成。 的本地化字符串。
         /// </summary>
         public static string EchoCopyComplete {
             get {
                 return ResourceManager.GetString("EchoCopyComplete", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 echo 正在重新启动程序... 的本地化字符串。
-        /// </summary>
-        public static string EchoRestartingProgram {
-            get {
-                return ResourceManager.GetString("EchoRestartingProgram", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似      echo Robocopy 失败，错误码 !RC! ，尝试使用 XCOPY 回退... 的本地化字符串。
-        /// </summary>
-        public static string EchoRobocopyFailed {
-            get {
-                return ResourceManager.GetString("EchoRobocopyFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似   echo 未找到 Robocopy，回退到 XCOPY... 的本地化字符串。
-        /// </summary>
-        public static string EchoRobocopyNotFound {
-            get {
-                return ResourceManager.GetString("EchoRobocopyNotFound", resourceCulture);
             }
         }
         
@@ -498,15 +444,6 @@ namespace ColorVision.UI.Properties {
         public static string EchoStartCopyingFiles {
             get {
                 return ResourceManager.GetString("EchoStartCopyingFiles", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似   echo 目标目录不存在，跳过备份。 的本地化字符串。
-        /// </summary>
-        public static string EchoTargetDirNotExist {
-            get {
-                return ResourceManager.GetString("EchoTargetDirNotExist", resourceCulture);
             }
         }
         
@@ -534,15 +471,6 @@ namespace ColorVision.UI.Properties {
         public static string EchoUsingXCOPY {
             get {
                 return ResourceManager.GetString("EchoUsingXCOPY", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似   echo XCOPY 复制失败，更新中止。 的本地化字符串。
-        /// </summary>
-        public static string EchoXCOPYFailed {
-            get {
-                return ResourceManager.GetString("EchoXCOPYFailed", resourceCulture);
             }
         }
         
@@ -997,24 +925,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 插件市场服务地址 的本地化字符串。
-        /// </summary>
-        public static string MarketplaceServiceBaseUrl {
-            get {
-                return ResourceManager.GetString("MarketplaceServiceBaseUrl", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 插件市场、更新检查和在线包接口使用的服务地址。 的本地化字符串。
-        /// </summary>
-        public static string MarketplaceServiceBaseUrlDescription {
-            get {
-                return ResourceManager.GetString("MarketplaceServiceBaseUrlDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 关闭(_C) 的本地化字符串。
         /// </summary>
         public static string MenuClose {
@@ -1294,15 +1204,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 找不到项目{0} 的本地化字符串。
-        /// </summary>
-        public static string ProjectNotFound {
-            get {
-                return ResourceManager.GetString("ProjectNotFound", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 项目/解决方案(_P)... 的本地化字符串。
         /// </summary>
         public static string ProjectSolution_P {
@@ -1434,15 +1335,6 @@ namespace ColorVision.UI.Properties {
         public static string PropertyEditorWindow {
             get {
                 return ResourceManager.GetString("PropertyEditorWindow", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似   rem Robocopy 0-7 视为成功 的本地化字符串。
-        /// </summary>
-        public static string RemRobocopySuccess {
-            get {
-                return ResourceManager.GetString("RemRobocopySuccess", resourceCulture);
             }
         }
         
@@ -1654,6 +1546,33 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 外观与语言 的本地化字符串。
+        /// </summary>
+        public static string SettingsSectionAppearance {
+            get {
+                return ResourceManager.GetString("SettingsSectionAppearance", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 日志与诊断 的本地化字符串。
+        /// </summary>
+        public static string SettingsSectionDiagnostics {
+            get {
+                return ResourceManager.GetString("SettingsSectionDiagnostics", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 更新与网络 的本地化字符串。
+        /// </summary>
+        public static string SettingsSectionUpdates {
+            get {
+                return ResourceManager.GetString("SettingsSectionUpdates", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 主题 的本地化字符串。
         /// </summary>
         public static string Theme {
@@ -1663,56 +1582,11 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 选择应用界面的颜色主题。 的本地化字符串。
-        /// </summary>
-        public static string ThemeDescription {
-            get {
-                return ResourceManager.GetString("ThemeDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 平均: 的本地化字符串。
         /// </summary>
         public static string TimedOp_Average {
             get {
                 return ResourceManager.GetString("TimedOp_Average", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 本次与历史平均接近。 的本地化字符串。
-        /// </summary>
-        public static string TimedOp_CloseToAverage {
-            get {
-                return ResourceManager.GetString("TimedOp_CloseToAverage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 本次比历史平均快 {0}。 的本地化字符串。
-        /// </summary>
-        public static string TimedOp_FasterThanAverage {
-            get {
-                return ResourceManager.GetString("TimedOp_FasterThanAverage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 最快: 的本地化字符串。
-        /// </summary>
-        public static string TimedOp_Fastest {
-            get {
-                return ResourceManager.GetString("TimedOp_Fastest", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 稳定样本仍然较少，继续执行后会更准确。 的本地化字符串。
-        /// </summary>
-        public static string TimedOp_FewSamples {
-            get {
-                return ResourceManager.GetString("TimedOp_FewSamples", resourceCulture);
             }
         }
         
@@ -1735,60 +1609,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 稳定样本暂无记录。 的本地化字符串。
-        /// </summary>
-        public static string TimedOp_NoStableSamples {
-            get {
-                return ResourceManager.GetString("TimedOp_NoStableSamples", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 右键按钮可打开统计窗口。 的本地化字符串。
-        /// </summary>
-        public static string TimedOp_RightClickHint {
-            get {
-                return ResourceManager.GetString("TimedOp_RightClickHint", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 本次比历史平均慢 {0}。 的本地化字符串。
-        /// </summary>
-        public static string TimedOp_SlowerThanAverage {
-            get {
-                return ResourceManager.GetString("TimedOp_SlowerThanAverage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 最慢: 的本地化字符串。
-        /// </summary>
-        public static string TimedOp_Slowest {
-            get {
-                return ResourceManager.GetString("TimedOp_Slowest", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 稳定样本: 的本地化字符串。
-        /// </summary>
-        public static string TimedOp_StableSamples {
-            get {
-                return ResourceManager.GetString("TimedOp_StableSamples", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 耗时统计已记录。 的本地化字符串。
-        /// </summary>
-        public static string TimedOp_StatsRecorded {
-            get {
-                return ResourceManager.GetString("TimedOp_StatsRecorded", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 查看耗时统计 的本地化字符串。
         /// </summary>
         public static string TimedOp_ViewStats {
@@ -1803,15 +1623,6 @@ namespace ColorVision.UI.Properties {
         public static string TimedOp_Warmup {
             get {
                 return ResourceManager.GetString("TimedOp_Warmup", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 本次软件启动的首轮样本按预热处理，不参与平均。 的本地化字符串。
-        /// </summary>
-        public static string TimedOp_WarmupNote {
-            get {
-                return ResourceManager.GetString("TimedOp_WarmupNote", resourceCulture);
             }
         }
         

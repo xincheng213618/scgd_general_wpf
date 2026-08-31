@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -99,10 +100,34 @@ namespace ColorVision.Copilot
 
         private async Task<CopilotToolResult> InvokeRemoteAsync(CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {
-            var result = await _remoteTool.CallAsync(
-                toolInput.Arguments,
-                options: CreateRequestOptionsForCurrentInvocation(),
-                cancellationToken: cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            CallToolResult result;
+            try
+            {
+                result = await _remoteTool.CallAsync(
+                    toolInput.Arguments,
+                    options: CreateRequestOptionsForCurrentInvocation(),
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
+                if (result.Content is null)
+                    throw new JsonException("The MCP tool response did not contain a valid content collection.");
+            }
+            catch (Exception exception) when (
+                (Access == CopilotToolAccess.Write || Idempotency != CopilotToolIdempotency.Idempotent)
+                && (exception is IOException or HttpRequestException or OperationCanceledException or JsonException
+                    || exception is McpException and not McpProtocolException))
+            {
+                // Without a usable protocol response, local completion does not
+                // establish whether the server completed the operation.
+                return new CopilotToolResult
+                {
+                    ToolName = Name,
+                    Success = false,
+                    Summary = $"External MCP tool {_server.Name}/{_remoteTool.ProtocolTool.Name} ended without a confirmed result.",
+                    ErrorMessage = "The operation may still be completing or may already have completed. Verify the current external state before retrying.",
+                    FailureKind = CopilotToolFailureKind.OutcomeUnknown,
+                    FailureCode = CopilotToolFailureCode.OutcomeUnknown,
+                };
+            }
             var content = BuildResultContent(result);
             var isError = result.IsError == true;
             return new CopilotToolResult

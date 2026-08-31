@@ -111,7 +111,7 @@ namespace ColorVision.Copilot
         public string AgentTaskPanelToggleGlyph => IsAgentTaskPanelExpanded ? "▾" : "▸";
 
         public string AgentTaskPanelToolTip =>
-            $"{(IsAgentTaskPanelExpanded ? "收起" : "展开")} Agent 任务（Ctrl+T）";
+            $"{(IsAgentTaskPanelExpanded ? "收起" : "展开")} Agent 任务（Ctrl+Alt+T）";
 
         public bool ShowMessageTimestamps => _state.ShowMessageTimestamps;
 
@@ -134,8 +134,8 @@ namespace ColorVision.Copilot
             $"{ComposerSubmitShortcutLabel} {DefaultFollowUpActionLabel} · Tab {AlternateFollowUpActionLabel} · Ctrl+Enter 立即接管";
 
         public string ComposerInputToolTip => UseMultilineComposer
-            ? "多行模式：Enter 换行，Shift+Enter 发送；Agent 运行中 Ctrl+Enter 取消当前轮并立即执行输入；↑/↓ 浏览请求历史；补全列表中可用 → 接受；Ctrl+R 搜索历史；Ctrl+S 暂存或恢复草稿；Ctrl+E 展开编辑"
-            : "标准模式：Enter 发送，Shift+Enter 换行；Agent 运行中 Ctrl+Enter 取消当前轮并立即执行输入；↑/↓ 浏览请求历史；补全列表中可用 → 接受；Ctrl+R 搜索历史；Ctrl+S 暂存或恢复草稿；Ctrl+E 展开编辑";
+            ? "多行模式：Enter 换行，Shift+Enter 发送；Agent 运行中 Ctrl+Enter 取消当前轮并立即执行输入；↑/↓ 浏览请求历史；补全列表中可用 → 接受；Ctrl+R 搜索历史；保存快捷键暂存或恢复草稿；Ctrl+E 展开编辑"
+            : "标准模式：Enter 发送，Shift+Enter 换行；Agent 运行中 Ctrl+Enter 取消当前轮并立即执行输入；↑/↓ 浏览请求历史；补全列表中可用 → 接受；Ctrl+R 搜索历史；保存快捷键暂存或恢复草稿；Ctrl+E 展开编辑";
 
         public Thickness MessageListPadding =>
             CopilotCompactMessageLayout.Resolve(UseCompactMessageLayout).MessageListPadding;
@@ -232,9 +232,9 @@ namespace ColorVision.Copilot
             {
                 var stash = SelectedConversation?.ComposerStash;
                 if (stash?.HasContent != true)
-                    return "按 Ctrl+S 暂存当前输入、附件和请求模式";
+                    return "按保存快捷键暂存当前输入、附件和请求模式（默认 Ctrl+S，可在选项中修改）";
 
-                return $"恢复暂存草稿（Ctrl+S）"
+                return $"恢复暂存草稿（保存快捷键）"
                     + Environment.NewLine
                     + $"{stash.Text.Length:N0} 个字符 · {stash.Attachments.Count:N0} 个附件 · {FormatComposerRequestMode(stash.RequestMode)}模式";
             }

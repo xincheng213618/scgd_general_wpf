@@ -117,9 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Exit" xml:space="preserve">
-    <value>Exit</value>
-  </data>
   <data name="停止" xml:space="preserve">
     <value>Stop</value>
   </data>
@@ -206,21 +203,10 @@
   </data>
   <data name="连接成功" xml:space="preserve">
     <value>connection succeeded</value>
-  </data>  <data name="起始" xml:space="preserve">
-    <value>Starting</value>
-  </data>
-  <data name="结束" xml:space="preserve">
-    <value>Finish</value>
-  </data>
-  <data name="步长" xml:space="preserve">
+  </data>    <data name="步长" xml:space="preserve">
     <value>Step Length</value>
   </data>
-  <data name="平均次数1100" xml:space="preserve">
-    <value>Average times (1-100):</value>
-  </data>
-  <data name="开始校零" xml:space="preserve">
-    <value>Start zeroing</value>
-  </data>  <data name="积分时间上限Ms" xml:space="preserve">
+  <data name="积分时间上限Ms" xml:space="preserve">
     <value>Integration time limit (ms):</value>
   </data>
   <data name="自动积分时间起始" xml:space="preserve">
@@ -261,7 +247,6 @@
   <data name="SpectrumChart" xml:space="preserve"><value>Spectrum Chart</value></data>
   <data name="AbsoluteSpectrum" xml:space="preserve"><value>Absolute Spectrum</value></data>
   <data name="GenericQuery" xml:space="preserve"><value>Generic Query</value></data>
-  <data name="Reload" xml:space="preserve"><value>Reload</value></data>
   <data name="ClearRecords" xml:space="preserve"><value>Clear Records</value></data>
   <data name="ResetDatabase" xml:space="preserve"><value>Reset Database</value></data>
   <data name="LoadCount" xml:space="preserve"><value>Load Count:</value></data>
@@ -287,7 +272,6 @@
   <data name="CloseOutput" xml:space="preserve"><value>Close Output</value></data>
   <data name="ToggleSpectrumTypeTooltip" xml:space="preserve"><value>Switch Between Relative and Absolute Spectrum</value></data>
   <data name="QueryDataTooltip" xml:space="preserve"><value>Query Data</value></data>
-  <data name="ReloadDataTooltip" xml:space="preserve"><value>Reload Data from Database</value></data>
   <data name="DeleteAllRecordsTooltip" xml:space="preserve"><value>Delete All Records from the Database</value></data>
   <data name="ResetDatabaseTooltip" xml:space="preserve"><value>Delete the Database File and Recreate It</value></data>
   <data name="LoadCountTooltip" xml:space="preserve"><value>Default number of records to load (-1 for all)</value></data>
@@ -308,15 +292,11 @@
   <data name="AdaptiveAutoDarkSuccess" xml:space="preserve"><value>Adaptive zero calibration succeeded</value></data>
   <data name="AdaptiveAutoDarkFailed" xml:space="preserve"><value>Adaptive zero calibration failed: {0}</value></data>
   <data name="ContinuousTestCompletedWithFailureCount" xml:space="preserve"><value>Continuous test completed, {0} failures</value></data>
-  <data name="SP100SetSuccess" xml:space="preserve"><value>SP100 settings applied successfully</value></data>
-  <data name="SP100SetFailed" xml:space="preserve"><value>SP100 settings failed: {0}</value></data>
   <data name="ConnectionFailedWithDeviceDetected" xml:space="preserve"><value>Connection failed: {0}&#xA;&#xA;Detected device: {1}&#xA;The connection failure may be caused by a license issue.&#xA;&#xA;Open the license manager?</value></data>
   <data name="ConnectionFailedLicenseCheckTitle" xml:space="preserve"><value>Connection Failed - License Check</value></data>
   <data name="ConnectionFailedWithError" xml:space="preserve"><value>Connection failed: {0}</value></data>
   <data name="ConnectSourceMeter" xml:space="preserve"><value>Connect Source Meter</value></data>
   <data name="DisconnectSourceMeter" xml:space="preserve"><value>Disconnect Source Meter</value></data>
-  <data name="MeasureAndReadSourceMeter" xml:space="preserve"><value>Turn On and Read Source Meter</value></data>
-  <data name="CloseSourceMeterOutput" xml:space="preserve"><value>Close Source Meter Output</value></data>
   <data name="SelectDataToRecalculate" xml:space="preserve"><value>Please select data to recalculate first</value></data>
   <data name="ConnectionFailedTitle" xml:space="preserve"><value>Connection Failed</value></data>
   <data name="DisconnectionFailedTitle" xml:space="preserve"><value>Disconnect Failed</value></data>

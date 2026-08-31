@@ -1,82 +1,14 @@
 # ColorVision.Common
 
-> 目标框架：.NET 8 / .NET 10 Windows（以 `ColorVision.Common.csproj` 为准）
+ColorVision 的 Windows 共享基础库，包含 MVVM、扩展接口与服务访问入口、模块登记、粗粒度权限，以及第三方工具和 Win32 辅助。目标框架、WPF/WinForms 与 NuGet 包设置以 [ColorVision.Common.csproj](./ColorVision.Common.csproj) 为准。
 
-## 功能定位
+NuGet 包外的完整源码与知识库位于[项目仓库](https://github.com/xincheng213618/scgd_general_wpf)；以下相对链接用于仓库内阅读。
 
-ColorVision 系统的通用基础框架库，提供 MVVM 架构、接口定义、命令系统、工具类和基础服务。作为最底层库，被所有上层模块依赖。
+当前行为与限制统一维护在[共享接口、属性通知与粗粒度权限](../../docs/04-api-reference/ui-components/ColorVision.Common.md)。尤其注意：属性通知和命令不会自动切换线程，`Execute` 不替调用方检查 `CanExecute`；全局权限模式不等于 RBAC 登录或权限码检查。此处不再维护第二份 API 能力清单，也不承诺完整 SDK/二进制兼容。
 
-## 主要功能
+## 本地构建
 
-### MVVM 架构
-- **ViewModelBase** — INotifyPropertyChanged 基类，支持 `SetProperty` / `OnPropertyChanged`
-- **RelayCommand / RelayCommand\<T\>** — 带参数的命令实现
-- **ActionCommand** — 支持 Action 命令 + Undo/Redo
-
-### 接口定义
-| 接口 | 用途 |
-|------|------|
-| `IMenuItem` / `IMenuItemProvider` | 菜单系统 |
-| `IPlugin` / `IPluginBase` | 插件系统 |
-| `IConfig` / `IConfigSettingProvider` | 配置管理 |
-| `IView` / `IViewManager` | 视图管理 |
-| `IStatusBarProvider` / `IStatusBarProviderUpdatable` | 状态栏 |
-| `ISearch` / `ISearchProvider` | 搜索功能 |
-| `IInitializer` / `InitializerBase` | 初始化系统 |
-| `IWizardStep` | 向导步骤 |
-| `IFileProcessor` | 文件处理 |
-| `IThumbnailProvider` | 缩略图 |
-| `IDockPanelProvider` | 停靠面板 |
-| `IFeatureLauncher` | 功能启动器 |
-| `IFeedbackLogCollector` | 反馈日志 |
-| `IThirdPartyAppProvider` | 第三方应用 |
-
-### 权限管理
-- **AccessControl** — 访问控制
-- **RequiresPermissionAttribute** — `[RequiresPermission(PermissionMode.Administrator)]`
-- **PermissionMode** — None / User / Administrator
-
-### 工具类
-| 工具 | 用途 |
-|------|------|
-| `FileUtils` | 文件操作（EnsureDirectory、SafeDelete、GetFileSizeText） |
-| `ImageUtils` | 图像处理 |
-| `Cryptography` | MD5/SHA256/AES 加密 |
-| `RegexUtils` / `RegUtils` | 正则/注册表 |
-| `WindowHelpers` / `WindowUtils` | 窗口操作 |
-| `CollectionUtils` / `DictionaryUtils` / `StringUtils` / `EnumUtils` | 集合/字典/字符串/枚举 |
-| `DebounceTimer` / `TaskConflator` | 异步工具（防抖、任务合并） |
-| `PlatformHelper` | 平台检测 |
-| `CsvWriter` | CSV 写入 |
-| `MemorySize` | 内存大小计算 |
-
-### 原生方法
-- **User32** / **Dwmapi** / **Shlwapi** — Win32 API 封装
-- **Clipboard** / **Keyboard** — 剪贴板/键盘操作
-- **ShellFileOperations** — Shell 文件操作
-- **Win32DeviceMgmt** — 设备管理
-
-### 配置服务
-- **ConfigService** — 配置实例管理（`GetRequiredService<T>()`）
-- **WindowConfig** — 窗口配置基类
-- **ConfigSettingType** — Property / Class / TabItem
-
-### 其他
-- **MenuItemBase** — 菜单项基类（`GlobalMenuBase` 继承自它）
-- **ViewGridManager** — 视图网格管理
-- **View** — 视图基类
-- **StatusBarMeta** / **StatusBarAlignment** / **StatusBarType** — 状态栏元数据
-- **SearchBase** / **SearchMeta** / **SearchType** — 搜索基类
-- **ThirdPartyAppManager** — 第三方应用管理
-- **DebounceTimer** — 防抖定时器
-- **TaskConflator** — 任务合并器
-
-## 依赖关系
-
-- **无外部依赖**，仅依赖 .NET 基础库
-- **被引用**: ColorVision.UI、ColorVision.Themes、ColorVision.ImageEditor、ColorVision.Scheduler 等所有 UI 模块
-
-## 构建
+在 Windows 仓库根目录执行，需要匹配的 .NET SDK 与可还原依赖；还原可能联网，构建会产生输出，项目启用 `GeneratePackageOnBuild`。这是本地构建入口，不是启动程序、运行外部工具或上传发布。
 
 ```powershell
 dotnet build .\UI\ColorVision.Common\ColorVision.Common.csproj -p:Platform=x64

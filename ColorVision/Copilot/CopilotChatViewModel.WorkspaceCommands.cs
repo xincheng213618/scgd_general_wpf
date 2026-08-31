@@ -89,7 +89,8 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
+            var turnSnapshot = _queuedLocalCommandExecution?.QueuedFollowUp.SubmissionContext
+                ?? CaptureHostedTurnSnapshot(Attachments);
             var plan = CopilotProjectInitialization.Create(
                 turnSnapshot.SolutionDirectoryPath,
                 turnSnapshot.ProjectInstructionDiscoveryOptions);
@@ -453,11 +454,13 @@ namespace ColorVision.Copilot
             string focusInstructions,
             bool includeFocusInResult = true,
             CopilotAgentDefaultsConfig? agentDefaults = null,
-            CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null)
+            CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null,
+            CopilotConversationRecord? targetConversation = null,
+            CopilotProfileConfig? requestProfile = null)
         {
             agentDefaults ??= _config.AgentDefaults;
-            var conversation = SelectedConversation;
-            var profile = SelectedProfile;
+            var conversation = targetConversation ?? SelectedConversation;
+            var profile = requestProfile ?? SelectedProfile;
             if (IsBusy || _isCompactingConversation)
             {
                 ShowLocalCommandResult(command, "当前有请求正在执行，请完成或停止后再压缩上下文。");
@@ -468,14 +471,17 @@ namespace ColorVision.Copilot
                 ShowLocalCommandResult(command, "请先选择并配置可用模型。");
                 return false;
             }
+            var compactionConfig = codexConfigOptions
+                ?? CaptureHostedTurnSnapshot(
+                    conversation, attachmentOverride: conversation.Attachments).ProjectInstructionDiscoveryOptions;
             if (CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
                 conversation,
-                CreateCurrentConversationRequestProfile(profile, conversation),
+                requestProfile ?? CreateCurrentConversationRequestProfile(profile, conversation),
                 CopilotCapabilityCatalog.Shared.GetSnapshot(
-                    _currentCodexConfigOptions.ConfiguredPluginsEnabled),
+                    compactionConfig.ConfiguredPluginsEnabled),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                    _currentCodexConfigOptions.ConfiguredHooksEnabled,
-                    _currentCodexConfigOptions.ConfiguredPluginsEnabled)))
+                    compactionConfig.ConfiguredHooksEnabled,
+                    compactionConfig.ConfiguredPluginsEnabled)))
             {
                 var latestAssistant = conversation.Messages.LastOrDefault(message => message != null && !message.IsUser);
                 var isFinalAnswerRecovery = latestAssistant?.HasRecoverableFinalAnswer == true;
@@ -486,10 +492,6 @@ namespace ColorVision.Copilot
                         : $"当前会话还有可安全继续的 Agent 任务。请先使用“{latestAssistant?.AgentRecoveryActionLabel ?? "继续任务"}”处理它，或在任务列表中明确放弃它，再压缩上下文；本次压缩未开始，checkpoint 已保留。");
                 return false;
             }
-
-            var compactionConfig = codexConfigOptions
-                ?? CaptureHostedTurnSnapshot(
-                    conversation.Attachments).ProjectInstructionDiscoveryOptions;
 
             var sourceMessages = conversation.Messages
                 .Where(message => !string.IsNullOrWhiteSpace(message.ModelContent))
@@ -660,7 +662,9 @@ namespace ColorVision.Copilot
                     agentDefaults.AutoCompactInstructions),
                 includeFocusInResult: false,
                 agentDefaults,
-                codexConfigOptions);
+                codexConfigOptions,
+                targetConversation: conversation,
+                requestProfile: requestProfile);
             var applied = !ReferenceEquals(previousCompaction, conversation.Compaction)
                 && conversation.Compaction?.IsStructurallyValid() == true;
             if (!applied)

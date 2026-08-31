@@ -21,6 +21,16 @@ namespace ColorVision.Copilot
 {
     public sealed partial class CopilotSettingsViewModel : ViewModelBase, IDisposable
     {
+        private readonly CopilotMcpToolProvider _externalMcpToolProvider;
+        private CancellationTokenSource? _externalMcpRefreshCancellation;
+        private long _externalMcpSettingsRevision;
+
+        private void InvalidateExternalMcpRefresh()
+        {
+            _externalMcpSettingsRevision++;
+            _externalMcpRefreshCancellation?.Cancel();
+        }
+
         private bool ValidateExternalMcpServers(bool updateNotice)
         {
             if (CopilotMcpClientConfigurationText.TryParse(ExternalMcpServersText, out var servers, out var error))
@@ -141,7 +151,7 @@ namespace ColorVision.Copilot
             }
         }
 
-        private async Task RefreshExternalMcpClientsAsync()
+        internal async Task RefreshExternalMcpClientsAsync()
         {
             if (_disposed || IsRefreshingExternalMcpClients)
                 return;
@@ -159,34 +169,48 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            var revision = _externalMcpSettingsRevision;
+            var previousNotice = SettingsStatusText;
+            using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCancellation.Token);
+            _externalMcpRefreshCancellation = cancellation;
+            bool CanPublishResult() => !_disposed
+                && !cancellation.IsCancellationRequested
+                && revision == _externalMcpSettingsRevision;
+
             IsRefreshingExternalMcpClients = true;
             ExternalMcpClientsStatusText = "Refreshing external MCP discovery...";
             try
             {
-                var provider = new CopilotMcpToolProvider();
-                await using var lease = await provider.DiscoverAsync(new CopilotAgentRequest
+                await using var lease = await _externalMcpToolProvider.RefreshDiscoveryAsync(new CopilotAgentRequest
                 {
                     ExternalMcpServers = servers.Select(server => server.Clone()).ToArray(),
                     ForceExternalMcpToolRefresh = true,
-                }, _lifetimeCancellation.Token);
+                }, cancellation.Token);
 
+                if (!CanPublishResult())
+                    return;
                 RefreshExternalMcpClientsStatus(servers);
                 var connectedCount = servers.Count(server =>
                     CopilotMcpClientHealthRegistry.TryGetSnapshot(server, out var health)
                     && health.State == CopilotMcpClientHealthState.Connected);
-                SetSettingsNotice($"External MCP discovery refreshed: {connectedCount}/{servers.Count} server(s) connected.");
+                if (string.Equals(SettingsStatusText, previousNotice, StringComparison.Ordinal))
+                    SetSettingsNotice($"External MCP discovery refreshed: {connectedCount}/{servers.Count} server(s) connected.");
             }
-            catch (OperationCanceledException) when (_disposed)
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
             }
             catch (Exception ex)
             {
+                if (!CanPublishResult())
+                    return;
                 var message = CopilotMcpAuditLogger.RedactText(ex.Message);
                 ExternalMcpClientsStatusText = "External MCP discovery refresh failed.";
-                SetSettingsNotice(message);
+                if (string.Equals(SettingsStatusText, previousNotice, StringComparison.Ordinal))
+                    SetSettingsNotice(message);
             }
             finally
             {
+                _externalMcpRefreshCancellation = null;
                 IsRefreshingExternalMcpClients = false;
             }
         }

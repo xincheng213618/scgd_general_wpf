@@ -1,8 +1,26 @@
+---
+knowledge_id: "algorithms.moire-analysis"
+knowledge_type: "reference"
+status: "current"
+summary: "MoireAnalysis 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。"
+aliases: ["摩尔纹分析与 RemoveMoire 有什么区别","MoireAnalysis","MoireAnalysisAlgorithmProvider"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/MoireAnalysisAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/MoireAnalysisV1Tests.cs","Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
+related: ["algorithms.platform","algorithms.index"]
+---
+
 # 摩尔纹分析 V1（M11）
+
+## 当前发布边界
+
+当前默认 `ImageAlgorithmPlatform.CreateDefaultProviders()` 把本页 provider 包装在 `ExperimentalAlgorithmProviderGate` 中：菜单和 Batch 可执行投影隐藏该能力，直接调用默认 Runner 也返回 `provider_unavailable`，详情包含 `algorithm_experimental`。本页后面的参数、结果与宿主接入描述属于保留实现及测试契约，不是产品已开放的承诺；不得在调用方另建执行旁路来绕过门禁。
+
+本页 `status: current` 表示它记录当前源码事实，不代表算法已发布。M 编号是历史增量标识；其他增量是否可用以 [统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单) 为准。`Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs` 验证默认拒绝行为，专题测试覆盖实现细节；解除门禁还需完成对应数值、最坏资源与生产规模验证。
+
 
 ## 阶段边界与既有能力
 
-M11 提供稳定 ID `colorvision.frequency.moire-analysis`，复用 [M10 FFT / 频域分析](./frequency-spectrum-v1.md) 已验证的亮度、窗函数、二维 DFT、带符号频率坐标、实数共轭规范化和峰值检测规则，在此基础上加入窄带周期证据评分、同半径背景解释、共轭 notch 建议、可选对称 notch 滤波和频域证据热力图。结果接入统一 Catalog、Invocation、Runner、Result、ImageView analysis session、Batch 与本地 Flow。
+M11 保留实现使用稳定 ID `colorvision.frequency.moire-analysis`，复用 [FFT / 频域分析](./frequency-spectrum-v1.md) 的亮度、窗函数、二维 DFT、带符号频率坐标、实数共轭规范化和峰值检测规则，在此基础上加入窄带周期证据评分、同半径背景解释、共轭 notch 建议、可选对称 notch 滤波和频域证据热力图。源码包含 Catalog、Invocation、Runner、Result、ImageView、Batch 与本地 Flow 适配，但默认产品发布门禁尚未解除。
 
 仓库原有 `RemoveMoire`/`M_RemoveMoire` 是 Gaussian blur、pyrDown/pyrUp 和锐化组合的兼容图像处理路径。它保留原稳定 ID、默认值、ABI 和批处理边界；M11 不把它改名，也不把其输出伪装成频谱测量。M11 的 score 只表示符合本契约的周期频谱证据，不证明摩尔纹的显示、传感器、采样或光学成因。ONNX/AI 已延期，只在平台文档中保留未来接入设计，本阶段不引入模型运行时。
 
@@ -53,7 +71,9 @@ M10 先返回实数输入共轭对的规范半平面代表。M11 再按同一半
 
 频谱和热力图只承担显示；可复现的数值保留在 Measurement、Table 与 StructuredData。M11 不产生 WPF Visual 或核心层 overlay。
 
-## 宿主、所有权与导出
+## 保留的宿主、所有权与导出（默认禁用）
+
+本节描述保留实现及测试场景；默认菜单与 Runner 不开放摩尔纹分析，不能与条件启用的旧 `RemoveMoire` 混淆。
 
 - ImageView：“算法 → 摩尔纹分析...”打开事务参数窗口，经统一 analysis session 执行；Clear、切图、revision 变化或同 revision 更新 Invocation 会淘汰旧结果。结果窗口显示频谱、热力图、可选滤波亮度和建议表，可保存滤波 TIFF 或导出 CSV/JSON；关闭窗口释放 Result。
 - Batch：`BatchAlgorithmAnalysisProcessor` 执行同一 Invocation/Runner 并导出结构化证据；算法没有 Batch 图像格式转换策略。

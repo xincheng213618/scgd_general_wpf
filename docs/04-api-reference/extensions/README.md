@@ -1,28 +1,29 @@
-# 扩展点概览
+---
+knowledge_id: "platform.extensions"
+knowledge_type: "index"
+status: "current"
+summary: "按 Flow 节点、属性编辑器、模板、设备和插件问题定位可复用扩展契约。"
+aliases: ["扩展功能应该实现哪个接口","IPropertyEditor","CVBaseServerNode","ITemplate"]
+code_paths: ["Engine/FlowEngineLib/Base/CVBaseServerNode.cs","UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs","Engine/ColorVision.Engine/Templates/ITemplate.cs"]
+test_paths: []
+related: ["flow.node-extension","ui.property-grid","engine.devices","engine.template-design"]
+---
 
-本章只保留当前能直接和代码对上的扩展点专题，不再维护“所有扩展机制一览”的旧式总表。
+# 扩展任务入口
 
-## 当前覆盖范围
+按要扩展的能力定位唯一契约页；目录位置只是现有 URL，不代表必须按插件、模板、服务的章节顺序阅读。
 
-目前这一分支只收束了一类稳定专题：
+| 要扩展的能力 | 契约与源码入口 |
+| --- | --- |
+| 属性编辑器、条件可见性、事务编辑 | [PropertyGrid 契约](../ui-components/property-grid.md)：`IPropertyEditor.GenProperties`、`PropertyEditorRegistry` |
+| Flow 公共节点或 Engine 本地节点 | [Flow 节点扩展](./flow-node.md)、[节点路由](../flow_nodes_summary.md)：`STNode`、`FlowNodePropertyEditorAttribute` |
+| 设备类型与服务工厂 | [设备装配与扩展契约](../engine-components/device-service-chain.md)：`DeviceServiceFactoryRegistry` |
+| 强类型、JSON 或 Flow 模板 | [模板核心契约](../../03-architecture/components/templates/design.md)：`ITemplate`、`ITemplateJson` 与各分支边界 |
+| 中立图像算法与 overlay | [算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)：`UI/ColorVision.Algorithms/` |
+| 运行时插件、菜单和部署 | [插件能力](../plugins/README.md)、[插件开发](../../02-developer-guide/plugin-development/overview.md)、[UI 发现](../ui-components/ui-runtime-handoff.md) |
 
-- [FlowEngineLib 节点扩展](./flow-node.md)
+扩展前检查目标宿主的发现方式、对象生命周期和失败行为。接口存在不表示实现自动注册；专题中的测试入口只覆盖相应契约，不能替代插件加载、设备或实际窗口验证。
 
-这意味着当前 `extensions/` 不是完整扩展百科，而是一个很窄的“已整理扩展点入口”。
+## 验证入口与缺口
 
-## 先把边界分清
-
-- 插件发现、装载和部署不属于这里，应该去看 [现有插件能力](../plugins/README.md) 和 [插件开发概览](../../02-developer-guide/plugin-development/overview.md)。
-- 算法模板和流程模板不属于这里，应该去看 [算法与模板概览](../algorithms/README.md)。
-- 运行时模块之间的依赖关系，也不在这里展开，应该回到 [架构设计](../../03-architecture/README.md)。
-
-## 怎么使用这一章
-
-1. 先确认你要扩的是“Flow 节点”还是“插件/模板/服务”。
-2. 如果是 Flow 节点，再进入 [FlowEngineLib 节点扩展](./flow-node.md)。
-3. 如果问题更偏运行时执行链，再结合 [FlowEngineLib 架构](../../03-architecture/components/engine/flow-engine.md) 一起读。
-
-## 为什么这里只有一页
-
-- 当前仓库里真正被文档收束成稳定专题的扩展点并不多。
-- 与其继续维护一个表面完整、实际很快过期的扩展目录，不如只保留和代码能直接核对的入口。
+路由页不代表所有扩展共用同一生命周期；各扩展必须使用自己的源码、测试和外部依赖边界。

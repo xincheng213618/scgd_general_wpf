@@ -41,11 +41,8 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(assistantMessage);
 
             CompleteThinking(assistantMessage);
-            assistantMessage.CompleteActiveAgentTraces(
-                CopilotToolExecutionState.Cancelled,
-                CopilotToolFailureKind.Cancelled,
-                "tool_execution_cancelled",
-                "The tool call was cancelled with the hosted Agent turn.");
+            assistantMessage.CompleteActiveAgentTracesAfterUnexpectedTurnEnd(
+                "The hosted Agent turn stopped");
             if (assistantMessage.RequestMode != CopilotAgentMode.Chat)
             {
                 var stopReason = controlIntent switch
@@ -67,8 +64,7 @@ namespace ColorVision.Copilot
                 : assistantMessage.RequestMode == CopilotAgentMode.Chat
                     ? "当前回答已停止。"
                     : "Agent 任务已取消；本轮新 checkpoint 已丢弃。");
-            assistantMessage.ClearReportedUsage();
-            conversation.ClearLastUsage();
+            SetUsage(conversation, assistantMessage, assistantMessage.ReportedUsage);
         }
 
         public static void CompleteFailure(
@@ -97,8 +93,7 @@ namespace ColorVision.Copilot
                 : $"回复生成过程中发生错误；本轮没有生成完整回答。错误：{normalizedError}");
             if (!hadVisibleContent)
                 CopilotAssistantMessagePresenter.SetFallbackContent(assistantMessage, $"请求失败：{normalizedError}");
-            assistantMessage.ClearReportedUsage();
-            conversation.ClearLastUsage();
+            SetUsage(conversation, assistantMessage, assistantMessage.ReportedUsage);
         }
 
         public static void CompleteBeforeStartCancellation(CopilotChatMessage assistantMessage)

@@ -11,8 +11,8 @@ namespace ColorVision.UI.HotKey
             return new List<ConfigSettingMetadata> {
                             new ConfigSettingMetadata
                             {
-                                Name = Resources.HotKeys,
-                                Description = Resources.HotKeys,
+                                Name = HotkeyEditorText.Title,
+                                Description = string.Empty, // The custom page owns its description and reset toolbar.
                                 Type = ConfigSettingType.TabItem,
                                 Source = HotKeyConfig.Instance,
                                 ViewType = typeof(HotKeysSetting)

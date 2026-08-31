@@ -70,9 +70,9 @@ namespace ColorVision.Copilot
 
             var inputTokens = other.InputTokens > 0 ? Math.Max(InputTokens, other.InputTokens) : InputTokens;
             var outputTokens = other.OutputTokens > 0 ? Math.Max(OutputTokens, other.OutputTokens) : OutputTokens;
-            var totalTokens = other.TotalTokens > 0
-                ? Math.Max(EffectiveTotalTokens, other.TotalTokens)
-                : AddClamped(inputTokens, outputTokens);
+            var totalTokens = Math.Max(
+                Math.Max(EffectiveTotalTokens, other.EffectiveTotalTokens),
+                AddClamped(inputTokens, outputTokens));
             var cachedInputTokens = other.CachedInputTokens.HasValue
                 ? Math.Max(EffectiveCachedInputTokens, other.EffectiveCachedInputTokens)
                 : CachedInputTokens;

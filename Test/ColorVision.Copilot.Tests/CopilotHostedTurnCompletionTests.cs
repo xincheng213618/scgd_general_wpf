@@ -4,6 +4,199 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotHostedTurnCompletionTests
 {
+    [Theory]
+    [InlineData(CopilotAgentControlIntent.Cancel)]
+    [InlineData(CopilotAgentControlIntent.Pause)]
+    [InlineData(CopilotAgentControlIntent.None)]
+    public async Task CancellationDeadlineDoesNotInventATerminalResultForAStillRunningTool(CopilotAgentControlIntent intent)
+    {
+        using var cancellation = new CancellationTokenSource();
+        var releaseProducer = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var producerFinished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var conversation = CreateConversation(CreateOpenCheckpoint());
+        var assistant = CreateAssistant(CopilotAgentMode.Auto);
+        var execution = new CopilotToolExecutionInfo
+        {
+            CallId = "pending-operation",
+            ToolName = "FixtureOperation",
+            Access = CopilotToolAccess.Write,
+            State = CopilotToolExecutionState.Running,
+            StartedAtUtc = DateTimeOffset.UtcNow,
+        };
+        var terminalEvents = new List<CopilotTurnCompletedEvent>();
+        var stream = CopilotTurnEventStream.RunAsync("cancellation-evidence", CopilotAgentMode.Auto,
+            async (sink, producerToken) =>
+            {
+                try
+                {
+                    sink.OnAgentEvent(CopilotAgentEvent.ToolStarted(execution));
+                    // No real tool or external side effect: this gate represents an
+                    // operation whose authoritative result has not arrived at shutdown.
+                    await releaseProducer.Task;
+                    throw new OperationCanceledException(producerToken);
+                }
+                finally
+                {
+                    producerFinished.TrySetResult();
+                }
+            }, cancellation.Token, producerShutdownTimeout: TimeSpan.FromMilliseconds(50));
+        try
+        {
+            var enumeration = ConsumeAsync();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => enumeration.WaitAsync(TimeSpan.FromSeconds(5)));
+            Assert.False(producerFinished.Task.IsCompleted);
+            Assert.Equal(CopilotTurnStatus.Interrupted, Assert.Single(terminalEvents).Status);
+            Assert.Equal(CopilotToolExecutionState.Running, Assert.Single(assistant.AgentTraceEntries).State);
+
+            CopilotHostedTurnCompletion.CompleteCancellation(conversation, assistant, intent);
+
+            var trace = Assert.Single(assistant.AgentTraceEntries);
+            Assert.Equal(CopilotToolExecutionState.Interrupted, trace.State);
+            Assert.Equal(CopilotToolFailureCode.OutcomeUnknown, trace.FailureCode);
+            Assert.False(trace.RetryEligible);
+            Assert.Contains("external outcome is unknown", trace.ErrorMessage, StringComparison.Ordinal);
+            Assert.NotNull(trace.CompletedAtUtc);
+            Assert.True(assistant.WasResponseInterrupted);
+        }
+        finally
+        {
+            releaseProducer.TrySetResult();
+            await producerFinished.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+
+        async Task ConsumeAsync()
+        {
+            await foreach (var turnEvent in stream)
+            {
+                if (turnEvent is CopilotTurnAgentEvent agent)
+                {
+                    CopilotAssistantMessagePresenter.ApplyAgentEvent(assistant, agent.Event);
+                    cancellation.Cancel();
+                }
+                else if (turnEvent is CopilotTurnCompletedEvent terminal)
+                    terminalEvents.Add(terminal);
+            }
+        }
+    }
+
+    [Fact]
+    public void CancellationDistinguishesUnstartedAndUnapprovedCalls()
+    {
+        var conversation = CreateConversation(CreateOpenCheckpoint());
+        var assistant = CreateAssistant(CopilotAgentMode.Auto);
+        assistant.AgentTraceEntries.Add(new CopilotAgentTraceEntry
+        {
+            CallId = "queued",
+            ToolName = "QueuedOperation",
+            State = CopilotToolExecutionState.Pending,
+        });
+        assistant.AgentTraceEntries.Add(new CopilotAgentTraceEntry
+        {
+            CallId = "unapproved",
+            ToolName = "ApprovalOperation",
+            State = CopilotToolExecutionState.AwaitingApproval,
+        });
+
+        CopilotHostedTurnCompletion.CompleteCancellation(conversation, assistant, CopilotAgentControlIntent.Cancel);
+
+        Assert.Equal(CopilotToolFailureCode.NotStarted, assistant.AgentTraceEntries[0].FailureCode);
+        Assert.Equal(CopilotToolFailureCode.ApprovalInterrupted, assistant.AgentTraceEntries[1].FailureCode);
+        Assert.DoesNotContain(assistant.AgentTraceEntries, trace => trace.FailureCode == CopilotToolFailureCode.OutcomeUnknown);
+    }
+
+    [Theory]
+    [InlineData(CopilotToolExecutionState.Completed)]
+    [InlineData(CopilotToolExecutionState.Failed)]
+    [InlineData(CopilotToolExecutionState.Cancelled)]
+    public void CancellationPreservesAuthoritativeToolResults(CopilotToolExecutionState terminalState)
+    {
+        var conversation = CreateConversation(CreateOpenCheckpoint());
+        var assistant = CreateAssistant(CopilotAgentMode.Auto);
+        var trace = new CopilotAgentTraceEntry
+        {
+            CallId = "settled-operation",
+            ToolName = "SettledOperation",
+            State = terminalState,
+            CompletedAtUtc = DateTimeOffset.UtcNow.AddMinutes(-1),
+            ErrorMessage = "Existing result detail",
+        };
+        assistant.AgentTraceEntries.Add(trace);
+        var originalCompletedAt = trace.CompletedAtUtc;
+
+        CopilotHostedTurnCompletion.CompleteCancellation(conversation, assistant, CopilotAgentControlIntent.Cancel);
+
+        Assert.Equal(terminalState, trace.State);
+        Assert.Equal(originalCompletedAt, trace.CompletedAtUtc);
+        Assert.Equal(string.Empty, trace.FailureCode);
+        Assert.Equal("Existing result detail", trace.ErrorMessage);
+    }
+
+    [Theory]
+    [InlineData(CopilotAgentMode.Chat, true)]
+    [InlineData(CopilotAgentMode.Auto, true)]
+    [InlineData(CopilotAgentMode.Chat, false)]
+    [InlineData(CopilotAgentMode.Auto, false)]
+    public void InterruptedTurnRetainsOnlyItsReportedProviderUsage(CopilotAgentMode mode, bool failed)
+    {
+        var conversation = CreateConversation(CreateOpenCheckpoint());
+        conversation.SetLastUsage(new CopilotTokenUsage(900, 90, 990, 400));
+        var assistant = CreateAssistant(mode);
+        assistant.Content = "Partial answer";
+        var usage = new CopilotTokenUsage(120, 30, 150, 80);
+        assistant.SetReportedUsage(usage);
+
+        if (failed)
+            CopilotHostedTurnCompletion.CompleteFailure(conversation, assistant, "provider failed");
+        else
+            CopilotHostedTurnCompletion.CompleteCancellation(conversation, assistant, CopilotAgentControlIntent.Cancel);
+
+        Assert.Equal(usage, assistant.ReportedUsage);
+        Assert.Equal(usage, conversation.LastUsage);
+        Assert.True(assistant.WasResponseInterrupted);
+        Assert.Contains("Partial answer", assistant.Content, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(CopilotAgentControlIntent.Pause)]
+    [InlineData(CopilotAgentControlIntent.None)]
+    public void NonCancelInterruptionAlsoRetainsReportedProviderUsage(CopilotAgentControlIntent intent)
+    {
+        var conversation = CreateConversation(CreateOpenCheckpoint());
+        var assistant = CreateAssistant(CopilotAgentMode.Auto);
+        var usage = new CopilotTokenUsage(120, 0, 120, 0);
+        assistant.SetReportedUsage(usage);
+
+        CopilotHostedTurnCompletion.CompleteCancellation(conversation, assistant, intent);
+
+        Assert.Equal(usage, assistant.ReportedUsage);
+        Assert.Equal(usage, conversation.LastUsage);
+    }
+
+    [Theory]
+    [InlineData(CopilotAgentMode.Chat, true)]
+    [InlineData(CopilotAgentMode.Auto, true)]
+    [InlineData(CopilotAgentMode.Chat, false)]
+    [InlineData(CopilotAgentMode.Auto, false)]
+    public void InterruptedTurnWithoutReportedUsageDoesNotReusePriorUsageOrEstimatedBudget(CopilotAgentMode mode, bool failed)
+    {
+        var conversation = CreateConversation(CreateOpenCheckpoint());
+        conversation.SetLastUsage(new CopilotTokenUsage(900, 90, 990, 400));
+        var assistant = CreateAssistant(mode);
+        assistant.AgentRunBudget = new CopilotAgentBudgetSnapshot
+        {
+            ConsumedTokens = 5_000,
+            UsedEstimatedUsage = true,
+        };
+
+        if (failed)
+            CopilotHostedTurnCompletion.CompleteFailure(conversation, assistant, "provider failed");
+        else
+            CopilotHostedTurnCompletion.CompleteCancellation(conversation, assistant, CopilotAgentControlIntent.Cancel);
+
+        Assert.Equal(CopilotTokenUsage.Empty, assistant.ReportedUsage);
+        Assert.Equal(CopilotTokenUsage.Empty, conversation.LastUsage);
+    }
+
     [Fact]
     public void CancellingChatDoesNotDiscardRetainedAgentCheckpoint()
     {

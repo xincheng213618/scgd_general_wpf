@@ -1,3 +1,14 @@
+---
+knowledge_id: "algorithms.find-light-area"
+knowledge_type: "topic"
+status: "current"
+summary: "区分远端 FindLightArea 模板与本地原生亮区检测 RobustV2；四角点不等于成功，须核对置信度、失败原因和各调用层的结果契约。"
+aliases: ["本地发光区定位V2为什么拒绝","原生亮区四角点置信度","发光区检测失败原因","cvnative::luminous","FindLuminousAreaV2Result","hasCorners","LocalFindLuminousAreaNode","M_FindLuminousAreaV2","TemplateRoi","RobustV2"]
+code_paths: ["Engine/ColorVision.Engine/Templates/FindLightArea","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs","UI/ColorVision.Core/LuminousAreaDetection.cs","Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.h","Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.cpp","Native/include/opencv_media_export.h","Native/opencv_helper/opencv_media_export.cpp"]
+test_paths: ["Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs","Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs","Test/ColorVision.UI.Tests/FindLuminousAreaManualResultTests.cs","Test/opencv_helper_test"]
+related: ["algorithms.index","algorithms.roi-routes","engine.native-integration","engine.results"]
+---
+
 # FindLightArea 发光区定位模板
 
 本页说明发光区定位的两条真实处理链路：`Engine/ColorVision.Engine/Templates/FindLightArea/` 是“模板参数 -> 图像输入 -> MQTT 算法请求 -> 发光区点位结果 -> 图像凸包覆盖层”的远端业务模板；`LocalFindLuminousAreaNode` 和 ImageEditor/POI 共用的 `RobustV2` 则是零模板、可离线执行的本地四边形定位。两者使用同一结果明细表，但参数和执行端不同。
@@ -38,7 +49,15 @@
 
 V2 不要求用户维护阈值模板。默认配置会先把 8/16 位 RAW 或 32 位浮点亮度图归一化，在多尺度、多阈值候选中寻找可能的凸四边形；随后沿四条粗边布置一维卡尺，保留多个边缘候选，并通过 RANSAC 和稳健加权拟合剔除暗角、漏光、局部遮挡和内部伪边。四条拟合直线的交点按 `LT、RT、RB、LB` 输出。
 
-这套流程与工业视觉的“粗定位 + 卡尺测边 + 鲁棒几何拟合”一致。只要仍有足够的独立几何证据，算法会优先返回外轮廓，并用较低置信度和警告标记遮挡、裁边或多候选；只有无有效信号、没有候选、证据不足以唯一确定四边形、角点/几何关系不稳定或整体置信度不足时才拒绝。调用方必须同时检查 native 返回值、JSON `Success`、四角点数量、`Confidence` 和 `Warnings`。
+这套流程采用“粗定位 + 卡尺测边 + 鲁棒几何拟合”，尝试从独立几何证据推断外轮廓，并用置信度和警告标记遮挡、裁边或多候选。无有效信号、没有候选、逐边证据不足、角点/几何关系不稳定或整体置信度不足时可能拒绝；不能把生成了四角点当成检测成功，也不能仅凭叠图判断业务可接受。
+
+| 调用层 | 成功与结果边界 |
+| --- | --- |
+| C++ `cvnative::luminous::FindLuminousAreaV2` | 返回 `FindLuminousAreaV2Result`，检查 `success` 和 `hasCorners`。`corners` 本身是固定四元素数组，默认零坐标也占四项；数量不是成功依据。`LowConfidence` 等拒绝仍可能保留诊断角点、`confidence`、`failureReason` 和 `warnings` |
+| ABI `M_FindLuminousAreaV2` | 正返回值表示产生 JSON，不表示 JSON `Success=true`；`Corners` 只在 C++ `hasCorners` 为真时填充。仍须核对 `Success`、`Confidence`、`FailureReason` 和 `Warnings`，结果指针按 `FreeResult` 责任释放；调用/参数错误与算法拒绝不同 |
+| 托管 `LuminousAreaNative.DetectV2` | 解析 JSON、校验成功结果几何、还原 ROI 坐标，再按调用门限执行置信度判定。`HasValidCorners` 要求 `Success` 且角点几何有效；托管层同样不会因角点存在而把失败改为成功 |
+
+ABI 与托管内存所有权的完整约定见 [OpenCV 和 native 集成](../../../02-developer-guide/engine-development/opencv-integration.md)。直接 C++ 调用、跨 ABI 调用与托管最终结果不是同一返回类型，不应套用同一套“返回码加角点数量”的判据。
 
 ### 默认使用方式
 
@@ -80,7 +99,7 @@ ImageEditor 和 POI 的旧配置缺少 `Algorithm` 字段时会自动采用 `Rob
 | 结果页无点位 | 结果类型是否是 `LightArea` 或 `FindLightArea`，`t_scgd_algorithm_result_detail_light_area.pid` 是否对应主结果。 |
 | 覆盖层形状异常 | 先看 `Threshold`、`Times`、`SmoothSize` 和输入图像，再看 `GrahamScan` 凸包输入点。 |
 | V2 提示逐边证据不足 | 查看 `SideQuality` 中对应边的覆盖率、内点比例、边缘对比度、拟合残差和最大缺口；优先检查暗角、漏光或遮挡，不要先降低总置信度。 |
-| V2 提示多个相近候选 | 算法仍会返回排序最优的候选并附加 `AmbiguousCandidates` / `MultipleComparableCandidates`；若业务必须唯一定位，可缩小 `SearchRegion` 或消除画面中的第二个相似发光面。 |
+| V2 提示多个相近候选 | 算法选择排序最优的候选，相近候选满足歧义条件时附加 `AmbiguousCandidates` / `MultipleComparableCandidates` 并降低置信度；降分后低于门限仍返回 `Success=false / LowConfidence`，并非保证接受最佳候选。若业务必须唯一定位，可缩小 `SearchRegion` 或消除画面中的第二个相似发光面。 |
 | V2 在本地节点找不到图像 | 连接本地取图/校正节点，或配置有效文件；同时确认图像方向变换已经完成。 |
 
 ## 检查清单
@@ -91,3 +110,9 @@ ImageEditor 和 POI 的旧配置缺少 `Algorithm` 字段时会自动采用 `Rob
 - 若要把发光区结果交给项目包使用，项目文档必须说明读取的是点位、凸包还是原始图像区域。
 - 修改 V2 时至少覆盖透视、较大旋转、16 位输入、暗角、漏光、饱和、噪声、局部遮挡、边界裁切和多候选；成功样本要校验角点误差，失败样本要校验拒绝原因。
 - 现场验收要保留带预期结果的真实样本集并做批量回放，不能只凭单张叠图或“算法有返回值”判断通过。
+
+## 验证入口与缺口
+
+关联测试：`Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs`、`Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs`、`Test/ColorVision.UI.Tests/FindLuminousAreaManualResultTests.cs`、`Test/opencv_helper_test`。
+
+托管契约、真实 native 与远端模板是不同层；需记录 native 是否实际加载、真实样本角点误差与事务落库结果，不以 native 返回正数代表定位成功。

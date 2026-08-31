@@ -100,12 +100,6 @@
   <data name="Search" xml:space="preserve">
     <value>搜索</value>
   </data>
-  <data name="ConfigurationManagement" xml:space="preserve">
-    <value>配置管理窗口</value>
-  </data>
-  <data name="SaveConfiguration" xml:space="preserve">
-    <value>保存配置</value>
-  </data>
   <data name="OpenConfigFolder" xml:space="preserve">
     <value>打开配置文件夹</value>
   </data>
@@ -141,9 +135,6 @@
   <data name="Restart" xml:space="preserve">
     <value>重启</value>
   </data>
-  <data name="UpdateAll" xml:space="preserve">
-    <value>一键更新</value>
-  </data>
   <data name="PluginManagerWindow" xml:space="preserve">
     <value>插件管理器窗口</value>
   </data>
@@ -172,8 +163,6 @@
     <value>更新</value>
   </data>  <data name="Reset" xml:space="preserve">
     <value>重置</value>
-  </data>  <data name="ProjectNotFound" xml:space="preserve">
-    <value>找不到项目{0}</value>
   </data>  <data name="Options" xml:space="preserve">
     <value>选项</value>
   </data>  <data name="OpenFolder" xml:space="preserve">
@@ -370,6 +359,30 @@
   <data name="SendFeedback" xml:space="preserve">
     <value>发送反馈</value>
   </data>
+  <data name="FeedbackMessageLabel" xml:space="preserve">
+    <value>问题描述</value>
+  </data>
+  <data name="FeedbackMessageHint" xml:space="preserve">
+    <value>请补充操作步骤、实际现象和预期结果。</value>
+  </data>
+  <data name="FeedbackAttachmentsHint" xml:space="preserve">
+    <value>添加截图或文件，帮助我们了解问题。</value>
+  </data>
+  <data name="FeedbackNoAttachments" xml:space="preserve">
+    <value>尚未添加附件</value>
+  </data>
+  <data name="FeedbackDiagnosticsHint" xml:space="preserve">
+    <value>发送时会自动打包所选项目；也可先打包，离线复制。</value>
+  </data>
+  <data name="FeedbackDiagnosticsSummary" xml:space="preserve">
+    <value>已选择 {0} / {1} 项</value>
+  </data>
+  <data name="FeedbackRemoveAttachment" xml:space="preserve">
+    <value>移除附件</value>
+  </data>
+  <data name="FeedbackPackageReadyHint" xml:space="preserve">
+    <value>诊断包已加入附件。修改诊断选项后，请移除旧包并重新打包。</value>
+  </data>
   <data name="FeedbackPlaceholder" xml:space="preserve">
     <value>请描述您遇到的问题或建议...</value>
   </data>
@@ -463,9 +476,6 @@
   <data name="MarketplaceDetailInfoHeader" xml:space="preserve">
     <value>详情</value>
   </data>
-  <data name="MarketplaceDependentsHeader" xml:space="preserve">
-    <value>依赖</value>
-  </data>
   <data name="MarketplaceOpenProjectUrl" xml:space="preserve">
     <value>打开链接</value>
   </data>
@@ -553,9 +563,6 @@
   <data name="MarketplaceBulkUpdatePackageDownloadFailed" xml:space="preserve">
     <value>插件包未全部下载成功，已取消本次批量更新。</value>
   </data>
-  <data name="MarketplacePackageColumn" xml:space="preserve">
-    <value>包</value>
-  </data>
   <data name="MarketplaceHasUpdateTooltip" xml:space="preserve">
     <value>有可用更新</value>
   </data>
@@ -573,18 +580,6 @@
   </data>
   <data name="MenuTimedButtonOperationStats" xml:space="preserve">
     <value>按钮耗时统计</value>
-  </data>
-  <data name="ConfigManager_Columns" xml:space="preserve">
-    <value>列数:</value>
-  </data>
-  <data name="ConfigManager_Assembly" xml:space="preserve">
-    <value>程序集</value>
-  </data>
-  <data name="ConfigManager_ConfigList" xml:space="preserve">
-    <value>配置列表</value>
-  </data>
-  <data name="ConfigManager_SelectConfig" xml:space="preserve">
-    <value>选择一个配置查看详情</value>
   </data>
   <data name="Wizard_Configure" xml:space="preserve">
     <value>配置</value>
@@ -682,11 +677,6 @@
   <data name="Stats_LastCompleted" xml:space="preserve">
     <value>最近完成</value>
   </data>
-  <data name="ConfigManager_Summary" xml:space="preserve"><value>共计 {0} 个程序集，{1} 个配置类型</value></data>
-  <data name="ConfigManager_ConfigPrefix" xml:space="preserve"><value>配置: {0}</value></data>
-  <data name="ConfigManager_CurrentSelection" xml:space="preserve"><value>当前选择: {0}</value></data>
-  <data name="ConfigManager_LoadFailed" xml:space="preserve"><value>无法加载配置属性</value></data>
-  <data name="ConfigManager_SaveSuccess" xml:space="preserve"><value>保存成功</value></data>
   <data name="ConfigManager_Prompt" xml:space="preserve"><value>提示</value></data>
   <data name="CustomApp_EditTitle" xml:space="preserve"><value>编辑自定义应用</value></data>
   <data name="CustomApp_Command" xml:space="preserve"><value>命令</value></data>
@@ -704,7 +694,6 @@
   <data name="CustomApp_ConfirmDelete" xml:space="preserve"><value>确定要删除自定义应用 "{0}" 吗？</value></data>
   <data name="CustomApp_ConfirmDeleteTitle" xml:space="preserve"><value>确认删除</value></data>
   <data name="CustomApp_AddScriptTitle" xml:space="preserve"><value>添加快捷脚本</value></data>
-  <data name="CustomApp_LocalApps" xml:space="preserve"><value>本机应用</value></data>
   <data name="CustomApp_ExeFilter" xml:space="preserve"><value>可执行文件 (*.exe)|*.exe|批处理文件 (*.bat;*.cmd)|*.bat;*.cmd|所有文件 (*.*)|*.*</value></data>
   <data name="Stats_Summary" xml:space="preserve"><value>共 {0} 个操作，当前显示 {1} 条，稳定样本 {2}，预热样本 {3}</value></data>
   <data name="Stats_CsvFilter" xml:space="preserve"><value>CSV 文件|*.csv</value></data>
@@ -878,4 +867,11 @@
   <data name="Wizard_Progress" xml:space="preserve"><value>初始化进度</value></data>
   <data name="Wizard_Steps" xml:space="preserve"><value>配置步骤</value></data>
   <data name="Wizard_RequiredStepPrompt" xml:space="preserve"><value>请先完成此必需步骤后再继续。</value></data>
+  <data name="MarketplaceWindowTitle" xml:space="preserve"><value>插件市场</value></data>
+  <data name="MarketplaceMoreActions" xml:space="preserve"><value>更多操作</value></data>
+  <data name="MarketplaceEnabled" xml:space="preserve"><value>启用插件</value></data>
+  <data name="MarketplaceFeatureActions" xml:space="preserve"><value>功能入口</value></data>
+  <data name="MarketplaceShortcuts" xml:space="preserve"><value>快捷方式</value></data>
+  <data name="MarketplacePluginSettings" xml:space="preserve"><value>插件设置</value></data>
+  <data name="MarketplaceNoPluginActions" xml:space="preserve"><value>此插件没有可直接打开的功能或设置。</value></data>
 </root>

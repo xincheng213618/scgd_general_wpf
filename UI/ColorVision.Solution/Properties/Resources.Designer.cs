@@ -214,24 +214,6 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
-        ///   查找类似 未找到已保存的窗口布局。 的本地化字符串。
-        /// </summary>
-        public static string LayoutNotFoundMessage {
-            get {
-                return ResourceManager.GetString("LayoutNotFoundMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 应用窗口布局 的本地化字符串。
-        /// </summary>
-        public static string LayoutNotFoundTitle {
-            get {
-                return ResourceManager.GetString("LayoutNotFoundTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 行 的本地化字符串。
         /// </summary>
         public static string Line {
@@ -246,15 +228,6 @@ namespace ColorVision.Solution.Properties {
         public static string LoginOrSwitch {
             get {
                 return ResourceManager.GetString("LoginOrSwitch", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 登录时间 的本地化字符串。
-        /// </summary>
-        public static string LoginTime {
-            get {
-                return ResourceManager.GetString("LoginTime", resourceCulture);
             }
         }
         
@@ -2563,15 +2536,6 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
-        ///   查找类似 用户管理系统 的本地化字符串。
-        /// </summary>
-        public static string UserManagementSystem {
-            get {
-                return ResourceManager.GetString("UserManagementSystem", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 用户名: 的本地化字符串。
         /// </summary>
         public static string UserName {
@@ -2580,13 +2544,5 @@ namespace ColorVision.Solution.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 欢迎回来 的本地化字符串。
-        /// </summary>
-        public static string WelcomeBack {
-            get {
-                return ResourceManager.GetString("WelcomeBack", resourceCulture);
-            }
-        }
     }
 }

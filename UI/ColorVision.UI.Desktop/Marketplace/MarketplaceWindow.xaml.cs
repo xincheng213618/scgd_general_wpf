@@ -1,8 +1,8 @@
 ﻿#pragma warning disable CA1001,CA1822,CA1863
 using ColorVision.Common.MVVM;
 using ColorVision.Themes;
+using ColorVision.Themes.Controls;
 using ColorVision.UI.Desktop.NativeMethods;
-using ColorVision.UI.Extension;
 using ColorVision.UI.Marketplace;
 using ColorVision.UI.Menus;
 using log4net;
@@ -13,6 +13,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Threading;
 using DesktopResources = ColorVision.UI.Desktop.Properties.Resources;
 
 namespace ColorVision.UI.Desktop.Marketplace
@@ -37,14 +40,31 @@ namespace ColorVision.UI.Desktop.Marketplace
         private CancellationTokenSource? _selectionCancellation;
         private CancellationTokenSource? _refreshCancellation;
         private CancellationTokenSource? _detailRefreshCancellation;
+        private PluginInfoVM? _installedDetailPlugin;
+        private Rect _compactBounds = Rect.Empty;
+        private double _catalogColumnWidth;
+        private double _catalogWindowChrome = 48;
+        private readonly double _compactMinWidth;
+        private double _expandedLeft;
+        private bool _normalWindowExpanded;
+        private bool _isChangingWindowBounds;
 
         public MarketplaceWindow()
         {
             InitializeComponent();
+            _compactMinWidth = MinWidth;
             this.ApplyCaption();
-            this.SizeChanged += (s, e) => MarketplaceWindowConfig.Instance.SetConfig(this);
+            SizeChanged += Window_BoundsChanged;
+            LocationChanged += Window_BoundsChanged;
+            Loaded += (_, _) =>
+            {
+                RememberCompactBounds();
+                UpdateDetailPane();
+            };
+            StateChanged += (_, _) => Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(UpdateDetailPane));
             Closed += (_, _) =>
             {
+                SaveCompactWindowConfig();
                 if (_manager != null)
                 {
                     _manager.PropertyChanged -= Manager_PropertyChanged;
@@ -61,20 +81,171 @@ namespace ColorVision.UI.Desktop.Marketplace
         private void Window_Initialized(object sender, System.EventArgs e)
         {
             _manager = MarketplaceManager.GetInstance();
+            _manager.SelectedInstalledPlugin = null;
+            _manager.Catalog.SelectedPlugin = null;
+            _manager.IsMarketplaceTabActive = false;
             DataContext = _manager;
             _manager.PropertyChanged += Manager_PropertyChanged;
-
-            if (_manager.SelectedInstalledPlugin == null)
-            {
-                _manager.SelectedInstalledPlugin = _manager.Plugins.FirstOrDefault();
-            }
 
             _ = RefreshInstalledVersionsOnOpenAsync(_windowCancellation!.Token);
 
             this.CommandBindings.Add(new CommandBinding(
                 ApplicationCommands.Delete,
                 (s, args) => _manager.SelectedInstalledPlugin?.Delete(),
-                (s, args) => args.CanExecute = _manager.SelectedInstalledPlugin != null));
+                (s, args) => args.CanExecute = !_manager.IsMarketplaceTabActive && _manager.SelectedInstalledPlugin != null));
+        }
+
+        private void Window_BoundsChanged(object? sender, EventArgs e)
+        {
+            if (!IsLoaded || _isChangingWindowBounds)
+                return;
+
+            if (WindowState == WindowState.Normal && !_normalWindowExpanded)
+                RememberCompactBounds();
+
+            if (WindowState == WindowState.Normal && _normalWindowExpanded)
+                MinWidth = GetExpandedMinWidth(GetCurrentWorkingArea());
+            UpdateDetailColumns(_manager?.HasCurrentSelection == true);
+            SaveCompactWindowConfig();
+        }
+
+        private void RememberCompactBounds()
+        {
+            if (WindowState != WindowState.Normal)
+            {
+                if (_compactBounds.IsEmpty && !RestoreBounds.IsEmpty)
+                    _compactBounds = RestoreBounds;
+                return;
+            }
+
+            _compactBounds = new Rect(Left, Top, Width, Height);
+            if (DetailColumn.Width.IsAbsolute && DetailColumn.Width.Value == 0)
+            {
+                _catalogColumnWidth = CatalogColumn.ActualWidth > 0 ? CatalogColumn.ActualWidth : Math.Max(0, Width - 48);
+                _catalogWindowChrome = Math.Max(0, Width - _catalogColumnWidth);
+            }
+        }
+
+        private Rect GetCurrentWorkingArea()
+        {
+            var screen = System.Windows.Forms.Screen.FromHandle(new WindowInteropHelper(this).Handle);
+            Rect pixelBounds = this.GetWindowRectInPixel();
+            DpiScale dpi = VisualTreeHelper.GetDpi(this);
+            // Convert the monitor's pixel offsets relative to this window, keeping mixed-DPI desktop origins intact.
+            return new Rect(
+                Left + (screen.WorkingArea.Left - pixelBounds.Left) / dpi.DpiScaleX,
+                Top + (screen.WorkingArea.Top - pixelBounds.Top) / dpi.DpiScaleY,
+                screen.WorkingArea.Width / dpi.DpiScaleX,
+                screen.WorkingArea.Height / dpi.DpiScaleY);
+        }
+
+        private static Rect CalculateExpandedBounds(Rect compactBounds, Rect workingArea)
+        {
+            double width = Math.Min(compactBounds.Width + 660, workingArea.Width);
+            double left = Math.Clamp(compactBounds.Left, workingArea.Left, Math.Max(workingArea.Left, workingArea.Right - width));
+            return new Rect(left, compactBounds.Top, width, compactBounds.Height);
+        }
+
+        private double GetExpandedMinWidth(Rect workingArea)
+        {
+            return Math.Min(workingArea.Width, _catalogWindowChrome + Math.Min(_catalogColumnWidth, 380) + 400);
+        }
+
+        private void UpdateDetailColumns(bool showDetails)
+        {
+            double availableWidth = Math.Max(0, ActualWidth - _catalogWindowChrome);
+            double preferredCatalogWidth = _catalogColumnWidth > 0 ? _catalogColumnWidth : Math.Max(0, Width - 48);
+            double catalogWidth = Math.Min(preferredCatalogWidth, Math.Max(320, availableWidth - 400));
+            catalogWidth = Math.Min(catalogWidth, availableWidth * 0.55);
+            CatalogColumn.Width = showDetails ? new GridLength(catalogWidth) : new GridLength(1, GridUnitType.Star);
+            DetailColumn.Width = showDetails ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+            BorderContent.Visibility = showDetails ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void UpdateDetailPane()
+        {
+            if (!IsLoaded || _windowCancellation == null)
+                return;
+
+            bool showDetails = _manager?.HasCurrentSelection == true;
+            if (WindowState == WindowState.Normal && showDetails != _normalWindowExpanded)
+            {
+                _isChangingWindowBounds = true;
+                try
+                {
+                    if (showDetails)
+                    {
+                        RememberCompactBounds();
+                        Rect workingArea = GetCurrentWorkingArea();
+                        Rect expandedBounds = CalculateExpandedBounds(_compactBounds, workingArea);
+                        _normalWindowExpanded = true;
+                        _expandedLeft = expandedBounds.Left;
+                        MinWidth = GetExpandedMinWidth(workingArea);
+                        Width = expandedBounds.Width;
+                        Left = expandedBounds.Left;
+                    }
+                    else
+                    {
+                        Rect workingArea = GetCurrentWorkingArea();
+                        double width = Math.Min(_compactBounds.Width, workingArea.Width);
+                        double left = _compactBounds.Left + (Left - _expandedLeft);
+                        left = Math.Clamp(left, workingArea.Left, Math.Max(workingArea.Left, workingArea.Right - width));
+                        MinWidth = Math.Min(_compactMinWidth, workingArea.Width);
+                        Width = width;
+                        Left = left;
+                        _normalWindowExpanded = false;
+                        _compactBounds = new Rect(left, Top, width, Height);
+                    }
+                }
+                finally
+                {
+                    _isChangingWindowBounds = false;
+                }
+            }
+
+            UpdateDetailColumns(showDetails);
+            SaveCompactWindowConfig();
+        }
+
+        private void MoreButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button { ContextMenu: { } menu } button)
+            {
+                menu.DataContext = button.DataContext;
+                menu.PlacementTarget = button;
+                menu.Placement = PlacementMode.Bottom;
+                menu.IsOpen = true;
+            }
+        }
+
+        private void SaveCompactWindowConfig()
+        {
+            if (!IsLoaded || _compactBounds.IsEmpty)
+                return;
+
+            MarketplaceWindowConfig config = MarketplaceWindowConfig.Instance;
+            config.SetConfig(this);
+            // SizeChanged can arrive after a programmed resize; always persist the logical list-only width.
+            config.Width = _compactBounds.Width;
+            double normalLeft = WindowState == WindowState.Normal ? Left : RestoreBounds.Left;
+            config.Left = _normalWindowExpanded ? _compactBounds.Left + (normalLeft - _expandedLeft) : _compactBounds.Left;
+        }
+
+        private void CloseDetailButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_manager == null)
+                return;
+
+            if (_manager.IsMarketplaceTabActive)
+            {
+                _manager.Catalog.SelectedPlugin = null;
+                ListViewMarketplace.Focus();
+            }
+            else
+            {
+                _manager.SelectedInstalledPlugin = null;
+                ListViewPlugins.Focus();
+            }
         }
 
         private async Task RefreshInstalledVersionsOnOpenAsync(CancellationToken cancellationToken)
@@ -111,9 +282,6 @@ namespace ColorVision.UI.Desktop.Marketplace
                 {
                     await _manager.EnsureMarketplaceCatalogLoadedAsync(cancellationToken);
                 }
-
-                cancellationToken.ThrowIfCancellationRequested();
-                await RefreshCurrentDetailAsync(cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -179,6 +347,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             CancellationTokenSource operationCancellation = CreateLinkedOperationCancellation(ref _detailRefreshCancellation, cancellationToken);
             try
             {
+                UpdateDetailPane();
                 object? detailContext = _manager?.CurrentDetailContext;
                 await RefreshSelectedDetailAsync(detailContext, operationCancellation.Token);
             }
@@ -207,7 +376,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                     SetDetailPanelMode(DetailPanelMode.None);
                     MarketplaceDetailScrollViewer.DataContext = null;
                     DetailInfo.Children.Clear();
-                    DependentsListView.ItemsSource = null;
+                    _installedDetailPlugin = null;
                     break;
             }
         }
@@ -216,17 +385,12 @@ namespace ColorVision.UI.Desktop.Marketplace
         {
             if (TabControl1.SelectedIndex == 0)
             {
-                await RenderMarkdownAsync(webViewReadMe, context.Readme, DesktopResources.MarketplaceReadmeEmpty, cancellationToken);
+                await RenderMarkdownAsync(webViewMarkdown, context.Readme, DesktopResources.MarketplaceReadmeEmpty, cancellationToken);
             }
 
             if (TabControl1.SelectedIndex == 1)
             {
-                await RenderMarkdownAsync(webViewChangeLog, context.ChangeLog, DesktopResources.MarketplaceChangelogEmpty, cancellationToken);
-            }
-
-            if (TabControl1.SelectedIndex == 3)
-            {
-                DependentsListView.ItemsSource = null;
+                await RenderMarkdownAsync(webViewMarkdown, context.ChangeLog, DesktopResources.MarketplaceChangelogEmpty, cancellationToken);
             }
         }
 
@@ -234,134 +398,176 @@ namespace ColorVision.UI.Desktop.Marketplace
         {
             if (TabControl1.SelectedIndex == 0)
             {
-                await RenderMarkdownAsync(webViewReadMe, pluginInfoVM.PluginInfo?.README, DesktopResources.MarketplaceReadmeEmpty, cancellationToken);
+                await RenderMarkdownAsync(webViewMarkdown, pluginInfoVM.PluginInfo?.README, DesktopResources.MarketplaceReadmeEmpty, cancellationToken);
             }
 
             if (TabControl1.SelectedIndex == 1)
             {
-                await RenderMarkdownAsync(webViewChangeLog, pluginInfoVM.PluginInfo?.ChangeLog, DesktopResources.MarketplaceChangelogEmpty, cancellationToken);
+                await RenderMarkdownAsync(webViewMarkdown, pluginInfoVM.PluginInfo?.ChangeLog, DesktopResources.MarketplaceChangelogEmpty, cancellationToken);
             }
 
-            if (TabControl1.SelectedIndex == 2)
+            if (TabControl1.SelectedIndex == 2 && !ReferenceEquals(_installedDetailPlugin, pluginInfoVM))
             {
                 InitDetailInfo(pluginInfoVM);
+                _installedDetailPlugin = pluginInfoVM;
             }
 
-            if (TabControl1.SelectedIndex == 3)
-            {
-                DependentsListView.ItemsSource = null;
-                if (pluginInfoVM.PluginInfo?.DepsJson != null)
-                {
-                    var target = pluginInfoVM.PluginInfo.DepsJson.Targets.Values.First();
-                    if (target != null)
-                    {
-                        var mainPackage = target.Values.FirstOrDefault();
-                        var dependencies = mainPackage?.Dependencies;
-                        DependentsListView.ItemsSource = dependencies;
-                    }
-                }
-            }
         }
 
         private void InitDetailInfo(PluginInfoVM pluginInfoVM)
         {
             DetailInfo.Children.Clear();
 
-            if (pluginInfoVM.PluginInfo.Assembly != null)
+            Button CreateActionButton(string icon, string title, string? description, ICommand? command, string? toolTip = null)
             {
-                void GenIMenuItem(StackPanel stackPanel,Assembly assembly)
+                var content = new Grid();
+                content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(36) });
+                content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) });
+
+                var iconText = new TextBlock
                 {
-                    UniformGrid uniformGrid = new UniformGrid() { Margin = new Thickness(5) };
-                    uniformGrid.SizeChanged += (_, __) => uniformGrid.AutoUpdateLayout();
-                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract && t.GetConstructor(Type.EmptyTypes) != null))
+                    Text = icon,
+                    FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
+                    FontSize = 18,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                iconText.SetResourceReference(TextBlock.ForegroundProperty, "Marketplace.Accent");
+                content.Children.Add(iconText);
+
+                var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
+                text.Children.Add(new TextBlock { Text = title, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis });
+                if (!string.IsNullOrWhiteSpace(description))
+                {
+                    var subtitle = new TextBlock { Text = description, FontSize = 12, Margin = new Thickness(0, 4, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
+                    subtitle.SetResourceReference(TextBlock.ForegroundProperty, "Marketplace.TextSecondary");
+                    text.Children.Add(subtitle);
+                }
+                Grid.SetColumn(text, 1);
+                content.Children.Add(text);
+
+                var chevron = new TextBlock
+                {
+                    Text = "\uE76C",
+                    FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
+                    FontSize = 12,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                chevron.SetResourceReference(TextBlock.ForegroundProperty, "Marketplace.TextSecondary");
+                Grid.SetColumn(chevron, 2);
+                content.Children.Add(chevron);
+
+                var button = new Button
+                {
+                    Content = content,
+                    Command = command,
+                    ToolTip = toolTip ?? title,
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                    Margin = new Thickness(0, 0, 0, 8)
+                };
+                System.Windows.Automation.AutomationProperties.SetName(button, title);
+                button.SetResourceReference(StyleProperty, "MarketplaceDetailActionButtonStyle");
+                return button;
+            }
+
+            void AddSection(string title, StackPanel actions)
+            {
+                if (actions.Children.Count == 0)
+                    return;
+
+                DetailInfo.Children.Add(new TextBlock
+                {
+                    Text = title,
+                    FontSize = 14,
+                    FontWeight = FontWeights.SemiBold,
+                    Margin = new Thickness(0, DetailInfo.Children.Count == 0 ? 0 : 16, 0, 12)
+                });
+                DetailInfo.Children.Add(actions);
+            }
+
+            if (pluginInfoVM.PluginInfo.Assembly is Assembly assembly)
+            {
+                Type[] types = assembly.GetTypes();
+                var features = new StackPanel();
+                foreach (Type type in types.Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract && t.GetConstructor(Type.EmptyTypes) != null))
+                {
+                    try
                     {
-                        try
+                        if (Activator.CreateInstance(type) is IMenuItem menuItem)
                         {
-                            if (Activator.CreateInstance(type) is IMenuItem menuItems)
-                            {
-                                var button = new Button
-                                {
-                                    Style = PropertyEditorHelper.ButtonCommandStyle,
-                                    Content = menuItems.Header,
-                                    Command = menuItems.Command
-                                };
-                                uniformGrid.Children.Add(button);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Warn($"Create plugin IMenuItem failed: {type.FullName}: {ex.Message}");
+                            string title = string.IsNullOrWhiteSpace(menuItem.Header) ? type.Name : menuItem.Header;
+                            string? description = type.GetCustomAttribute<DescriptionAttribute>()?.Description ?? menuItem.InputGestureText;
+                            features.Children.Add(CreateActionButton("\uE8A5", title, description, menuItem.Command));
                         }
                     }
-                    stackPanel.Children.Add(uniformGrid);
-                }
-                void GenIConfig(StackPanel stackPanel, Assembly assembly)
-                {
-                    UniformGrid uniformGrid = new UniformGrid() { Margin = new Thickness(5) };
-                    uniformGrid.SizeChanged += (_, __) => uniformGrid.AutoUpdateLayout();
-                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IConfig).IsAssignableFrom(t) && !t.IsAbstract))
+                    catch (Exception ex)
                     {
-                        IConfig config = ConfigHandler.GetInstance().GetRequiredService(type);
-
-                        RelayCommand relayCommand = new RelayCommand(a =>
-                        {
-                            new PropertyEditorWindow(config).Show();
-                        });
-
-                        var textBox = new TextBlock
-                        {
-                            Text = string.Join("\u200B", type.Name.ToCharArray()) ,
-                            TextWrapping = TextWrapping.WrapWithOverflow,
-                            TextTrimming = TextTrimming.CharacterEllipsis
-                        };
-                        var button = new Button
-                        {
-                            Style = PropertyEditorHelper.ButtonCommandStyle,
-                            Content = textBox,
-                            Command = relayCommand,
-                            ToolTip = string.Format(Properties.Resources.Marketplace_OpenConfig, type.Name)
-                        };
-                        uniformGrid.Children.Add(button);
+                        log.Warn($"Create plugin IMenuItem failed: {type.FullName}: {ex.Message}");
                     }
-                    stackPanel.Children.Add(uniformGrid);
                 }
+                AddSection(DesktopResources.MarketplaceFeatureActions, features);
 
-                void GenIFeatureLauncher(StackPanel stackPanel, Assembly assembly)
+                var shortcuts = new StackPanel();
+                foreach (Type type in types.Where(t => typeof(IFeatureLauncher).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    UniformGrid uniformGrid = new UniformGrid() { Margin = new Thickness(5) };
-                    uniformGrid.SizeChanged += (_, __) => uniformGrid.AutoUpdateLayout();
-                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IFeatureLauncher).IsAssignableFrom(t) && !t.IsAbstract))
+                    try
                     {
-                        if (Activator.CreateInstance(type) is IFeatureLauncher menuItems)
+                        if (Activator.CreateInstance(type) is IFeatureLauncher feature)
                         {
-                            RelayCommand relayCommand = new RelayCommand(a =>
+                            var command = new RelayCommand(_ =>
                             {
-                                string GetExecutablePath = Environments.GetExecutablePath();
-                                string shortcutName = menuItems.Header;
+                                string executablePath = Environments.GetExecutablePath();
+                                string? shortcutName = feature.Header;
                                 string shortcutPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-
                                 string arguments = $"-feature {shortcutName}";
                                 if (shortcutName != null)
-                                   ShortcutCreator.CreateShortcut(shortcutName, shortcutPath, GetExecutablePath, arguments);
+                                    ShortcutCreator.CreateShortcut(shortcutName, shortcutPath, executablePath, arguments);
                             });
-
-                            var button = new Button
-                            {
-                                Style = PropertyEditorHelper.ButtonCommandStyle,
-                                Content = Properties.Resources.Marketplace_CreateShortcut,
-                                Command = relayCommand
-                            };
-                            uniformGrid.Children.Add(button);
+                            string title = string.IsNullOrWhiteSpace(feature.Header) ? type.Name : feature.Header;
+                            shortcuts.Children.Add(CreateActionButton("\uE8A7", title, DesktopResources.Marketplace_CreateShortcut, command, feature.Description));
                         }
                     }
-                    stackPanel.Children.Add(uniformGrid);
+                    catch (Exception ex)
+                    {
+                        log.Warn($"Create plugin IFeatureLauncher failed: {type.FullName}: {ex.Message}");
+                    }
                 }
+                AddSection(DesktopResources.MarketplaceShortcuts, shortcuts);
 
+                var settings = new StackPanel();
+                foreach (Type type in types.Where(t => typeof(IConfig).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    try
+                    {
+                        IConfig config = ConfigHandler.GetInstance().GetRequiredService(type);
+                        var command = new RelayCommand(_ => new PropertyEditorWindow(config).Show());
+                        string? displayName = type.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName;
+                        string title = string.IsNullOrWhiteSpace(displayName) ? type.Name : displayName;
+                        string? description = title != type.Name ? type.Name : type.GetCustomAttribute<DescriptionAttribute>()?.Description;
+                        settings.Children.Add(CreateActionButton("\uE713", title, description, command, string.Format(DesktopResources.Marketplace_OpenConfig, type.Name)));
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Warn($"Create plugin IConfig failed: {type.FullName}: {ex.Message}");
+                    }
+                }
+                AddSection(DesktopResources.MarketplacePluginSettings, settings);
+            }
 
-                GenIMenuItem(DetailInfo, pluginInfoVM.PluginInfo.Assembly);
-                GenIFeatureLauncher(DetailInfo, pluginInfoVM.PluginInfo.Assembly);
-                GenIConfig(DetailInfo, pluginInfoVM.PluginInfo.Assembly);
-
+            if (DetailInfo.Children.Count == 0)
+            {
+                var emptyState = new TextBlock
+                {
+                    Text = DesktopResources.MarketplaceNoPluginActions,
+                    Margin = new Thickness(24, 40, 24, 40),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    TextAlignment = TextAlignment.Center,
+                    TextWrapping = TextWrapping.Wrap
+                };
+                emptyState.SetResourceReference(TextBlock.ForegroundProperty, "Marketplace.TextSecondary");
+                DetailInfo.Children.Add(emptyState);
             }
         }
 
@@ -385,6 +591,12 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         private async void Manager_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
+            if (e.PropertyName == nameof(MarketplaceManager.HasCurrentSelection))
+            {
+                UpdateDetailPane();
+                return;
+            }
+
             if (e.PropertyName != nameof(MarketplaceManager.CurrentDetailContext))
                 return;
 
@@ -404,8 +616,10 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         private void SetDetailPanelMode(DetailPanelMode mode)
         {
-            InstalledDetailScrollViewer.Visibility = mode == DetailPanelMode.Installed ? Visibility.Visible : Visibility.Collapsed;
-            MarketplaceDetailScrollViewer.Visibility = mode == DetailPanelMode.Marketplace ? Visibility.Visible : Visibility.Collapsed;
+            bool showActions = TabControl1.SelectedIndex == 2;
+            webViewMarkdown.Visibility = mode != DetailPanelMode.None && !showActions ? Visibility.Visible : Visibility.Hidden;
+            InstalledDetailScrollViewer.Visibility = mode == DetailPanelMode.Installed && showActions ? Visibility.Visible : Visibility.Collapsed;
+            MarketplaceDetailScrollViewer.Visibility = mode == DetailPanelMode.Marketplace && showActions ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private CancellationTokenSource CreateLinkedOperationCancellation(ref CancellationTokenSource? operationCancellation, CancellationToken cancellationToken = default)

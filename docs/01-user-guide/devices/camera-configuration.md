@@ -1,67 +1,61 @@
-# 相机参数配置
+---
+knowledge_id: "operations.camera-configuration"
+knowledge_type: "topic"
+status: "current"
+summary: "区分物理配置、逻辑服务、显示参数与CameraRunParam，说明同步覆盖、ROI约束、保存重启和路径移动副作用。"
+aliases: ["曝光","增益","相机参数","相机配置被覆盖","ROI","三通道曝光","ConfigCamera","ConfigPhyCamera","DisplayCameraConfig","CameraRunParam","ApplyTo","IsExpThree","LocalVideoRoi"]
+code_paths: ["Engine/ColorVision.Engine/Services/Devices/Camera/Configs/ConfigCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/EditCamera.xaml","Engine/ColorVision.Engine/Services/Devices/Camera/EditCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Templates/CameraRunParam/CameraRunParam.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/PhyCameraCfg.cs","Engine/ColorVision.Engine/Services/PhyCameras/EditConfigPhyCamera.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CameraRunParamTests.cs"]
+related: ["operations.camera","operations.physical-camera","operations.device-configuration"]
+---
 
-本页讲“相机服务配置页”里通常要改什么。这里调整的是逻辑相机服务参数，其中一部分默认值会来自绑定的物理相机。
+# 相机参数来源、同步与保存
 
-## 常见配置内容
+“相机配置”不是一份统一状态。排查参数未生效时，先确定执行的是远程手动采集、本地视频还是流程节点，再找该入口实际读取的对象；不要通过重启来代替参数归属检查。执行与完成判据见[相机服务](./camera.md)。
 
-### 绑定信息
+## 参数放在哪一层
 
-- 当前服务实例名称
-- 绑定的物理相机或 CameraCode
-- 当前项目里真正被调用的是哪一台相机服务
+| 对象 / 源码入口 | 负责的状态 |
+| --- | --- |
+| `ConfigPhyCamera` | 物理型号、模式、通道/位深、CFW、电机、曝光/增益默认值与范围；`CameraCfg` 另含传感器 ROI、温控等物理参数 |
+| `ConfigCamera` | 逻辑服务的 `CameraCode` / `CameraID`、采集模式、通道/位深、自动曝光开关与范围、ND/CFW、电机/对焦、文件缓存和保存选项 |
+| `DisplayCameraConfig`（`DisplayCamera.xaml.cs`） | 按逻辑设备 `Config.Code` 获取；手动采集的曝光、增益、平均次数、翻转和模板选择，以及本地视频 ROI/显示偏好；饱和度字段也在这里，不在 `ConfigCamera` |
+| `CameraRunParam` | 参数模板里的曝光、增益、平均次数、焦点/光圈等；不是显示参数的别名 |
+| `LocalCameraNode` | 用节点自身的 `ExpTime`、`Gain`、`AvgCount` 构造 `CameraRunParam`；不自动沿用手动面板曝光 |
+| `DeviceCamera.RealtimeCameraConfig` | 返回共享的 `DefaultRealtimeCameraConfig.Current`；不是每台相机独立克隆的配置 |
 
-### 采集参数
+## 物理配置怎样覆盖服务
 
-- 通道和位深
-- 拍摄模式
-- 曝光、增益、饱和度
-- 自动曝光开关和相关参数
+`ConfigPhyCamera.ApplyTo(ConfigCamera)` 复制通道、CFW、电机、模式、型号、采集模式、位深和曝光上下限；可控制是否覆盖 `CameraID` / `CameraType`。它不是全对象替换：不会复制物理 `CameraCfg`、文件服务配置或显示端当前曝光/增益。
 
-### 扩展参数
+`EditCamera` 编辑逻辑配置的克隆；选择物理相机或点“应用设置”时，对该克隆调用 `ApplyTo(includeCameraId: false, includeCameraType: false)`。提交按钮在 `EditCamera.xaml` 同时绑定 `Click` 和 `SaveCommand`：把克隆复制回服务，再进入 `DeviceCamera.Save()`，此时按 `CameraCode` 重新关联并完整 `ApplyTo`，随后执行[数据库保存与服务重启](./configuration.md)。不能只看到对话框的 `CopyTo` 就判定提交不持久化。
 
-- 视频相关配置
-- 文件缓存和保存格式
-- 电机、CFW、自动对焦等从属配置
+当物理相机执行 `SaveConfig()` 时，`ConfigChanged` 会触发绑定设备的 `DeviceCamera.PhyCameraConfigChanged`：再次 `ApplyTo`，将显示端 `Gain` 重置为 `GainDefault`，将 `ExpTime` 和 R/G/B 三项都重置为 `ExpDefalut`，然后 `Save()`。所以“刚调好的曝光被改回”应先检查物理配置保存和绑定事件，不应立即判成 UI 没保存。
 
-## 建议调整顺序
+## 曝光、通道与模板的区别
 
-1. 先绑定正确的物理相机。
-2. 让服务同步一轮基础参数。
-3. 再调整曝光、增益、通道和模式。
-4. 保存后用实时图像或流程跑一次验证。
-5. 需要高级调优时，再进入模板或校准页。
+`ConfigCamera.IsExpThree` 的条件是 `TakeImageMode != Live && CameraMode == CV_MODE`；`IsChannelThree` 则只检查 `Channel == Three`。三通道图像不自动意味着发送三份曝光，Live 模式也不走这一三曝光分支。
 
-## 哪些参数最容易互相影响
+远程手动采集根据 `IsExpThree` 发送显示端 `[ExpTimeR, ExpTimeG, ExpTimeB]` 或 `[ExpTime]`，并读取所选校准、自动曝光、HDR 模板。自动曝光返回还可更新显示曝光/饱和度和 `Config.NDPort`，因此这些值可能被成功响应改写。
 
-- 相机模式和通道
-- 位深与采集模式
-- 曝光时间和增益
-- 自动曝光与手动曝光参数
-- 物理相机默认值与当前服务显示配置
+`CameraRunParam.SetAllExposure(value)` 同时写四个曝光字段；`LocalCameraNode.BuildCameraParameters()` 用它构造节点参数，并拒绝非有限/非正曝光、非有限/负增益以及小于 1 的平均次数。这是该节点的检查，不能扩展成所有配置入口都有同样数值校验。改参数模板、显示面板和节点字段是三件不同的事。
 
-如果某次修改之后画面明显异常，优先检查这几组是否一起变了，而不是只盯着单个参数。
+## 两种 ROI 与物理保存约束
 
-## 常见问题
+物理 ROI 是 `ConfigPhyCamera.CameraCfg` 的 `PointX / PointY / Width / Height`（经 `PhyCameraCfg.ROI` 编辑）；`DisplayCameraConfig.LocalVideoRoi` 则用于实时分析/画面 ROI，由 `ApplyLocalVideoRoiToRealtimeConfig` 传给实时配置，不等于修改传感器采集 ROI。
 
-### 参数改了没有效果
+`EditConfigPhyCamera` 使用配置克隆和独立的 CFW 编辑副本。确认时，对 `HK_USB / HK_CARD / HK_FG_CARD` 检查物理 ROI 宽高是否按 `PhyCameraCfg.HkRoiAlignment`（32）对齐，失败则停留在配置窗口。此检查不包含所有型号/坐标合法性，也不应宣称每个保存入口都执行了它。
 
-- 确认改的是当前正在使用的那台相机服务
-- 保存后重新打开视图或重启服务
-- 检查是否被物理相机同步配置覆盖
+物理窗口按相机模式约束可选通道；切换模式可能同时改 `CFW.IsUseCFW`。`PhyCamera.SaveConfig()` 保存前还会规范化 CFW：不启用时清空 `ChannelCfgs` 并关闭 `IsCOM`；绑定独立 ND 设备时清空串口名，否则清空 ND 绑定代码。这些不是只影响显示的开关。
 
-### 曝光或通道设置不合理
+## 改数据路径与保存的副作用
 
-- 先确认当前相机模式支持哪些通道
-- 三通道和单通道参数不要混用
-- 出现过曝或噪点时，优先回调曝光和增益
+物理窗口确认时，`HandleFileServerPathChanged` 比较旧/新 `FileBasePath`，创建目标相机目录；若旧目录存在且同意弹窗，实际调用 `ShellFileOperations.Move(sourceDir, newBasePath)`。即使界面文案提到复制，实现仍是**移动原目录**，不是保留原路径的备份；之后才复制配置回物理对象并由调用方保存。
 
-### 保存后流程结果仍异常
+修改/提交相机配置前应确认目标设备、会影响的服务、文件目录与授权；路径迁移尤其需要确认可移动的确切目录和数据保全方案。窗口关闭、配置写入、后台服务重启请求、硬件采用新参数是不同阶段，不能用一次“保存”提示证明全部生效。
 
-- 用实时画面先验证采图是否正常
-- 再检查流程里的模板参数是否仍是旧值
-- 必要时联动检查校准和自动曝光模板
+## 验证与排障入口
 
-## 说明
+参数不一致时，按“当前入口 → 逻辑设备与物理绑定 → 本次读取的配置对象 → `ApplyTo`/回调覆盖 → 实际请求参数”核对；物理导入可能重置配置的独立风险见[物理相机管理](./camera-management.md)。
 
-- 本页只保留配置和排查视角，不再继续维护基于源码逐段展开的分析稿。
-- 相关实现主要位于 `Engine/ColorVision.Engine/Services/Devices/Camera/`。
+`CameraRunParamTests` 覆盖 `SetAllExposure` 和自定义编辑器一次更新全部曝光字段，不覆盖物理配置同步、数据库/服务重启、路径移动或硬件参数生效。这些路径尚需专门测试与授权环境验收，不应以测试文件存在宣称已验证。

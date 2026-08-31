@@ -180,7 +180,7 @@ namespace ColorVision.Copilot
                 if (_isCompactingConversation)
                     return "停止上下文压缩";
                 if (_isEndingConversation)
-                    return "正在结束会话并运行 SessionEnd Hook";
+                    return "正在保存会话变更，请稍候";
                 if (_fileAttachmentCts != null)
                     return "停止处理附件";
                 if (_webPageAttachmentCts != null)
@@ -434,8 +434,8 @@ namespace ColorVision.Copilot
             $"历史请求 · {PromptHistorySearchScopeLabel} · {PromptHistorySearchResults.Count:N0}";
 
         public string PromptHistorySearchStatusText => HasPromptHistorySearchResults
-            ? "继续输入可筛选；Ctrl+S 切换范围，选中后只恢复到输入框，不会自动发送。"
-            : "没有匹配的可见历史请求；Ctrl+S 可切换范围，或按 Esc 关闭。";
+            ? "继续输入可筛选；保存快捷键切换范围，选中后只恢复到输入框，不会自动发送。"
+            : "没有匹配的可见历史请求；保存快捷键可切换范围，或按 Esc 关闭。";
 
         public string PromptHistorySearchScopeLabel =>
             _promptHistorySearchScope == CopilotPromptHistorySearchScope.AllConversations

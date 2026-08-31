@@ -57,6 +57,11 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
         public ModelViewer3DControl()
         {
             InitializeComponent();
+            // Participate in the configurable application Save As action while preserving
+            // the standalone viewer's existing snapshot shortcut and output semantics.
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs,
+                (sender, e) => { Screenshot_Click(sender, e); e.Handled = true; },
+                (_, e) => { e.CanExecute = currentModel != null && !isExporting && session.LoadState != ModelViewerLoadState.Loading; e.Handled = true; }));
             Viewport.RenderExceptionOccurred += Viewport_RenderExceptionOccurred;
 
             ModelViewer3DConfig? config = TryGetConfig();

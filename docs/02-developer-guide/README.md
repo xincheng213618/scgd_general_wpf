@@ -1,55 +1,27 @@
-# 开发手册
+---
+knowledge_id: "delivery.index"
+knowledge_type: "topic"
+status: "current"
+summary: "定义宿主、插件、客户包和独立FileIO包的构建平台与制品边界，区分构建验证和远端发布。"
+aliases: ["开发入口","改代码","交付","x64","AnyCPU","ARM64","平台支持"]
+code_paths: ["Directory.Build.props","build.sln","Scripts/release.bat","Scripts/verify_platform_policy.py"]
+test_paths: ["Scripts/tests/test_verify_platform_policy.py"]
+related: ["platform.system","delivery.prerequisites","delivery.testing","delivery.scripts"]
+---
 
-本章节回答“怎么改代码、怎么构建、怎么测试、怎么交付”。根目录 `README.md` 是仓库第一入口；这里保留开发专题和更细的模块入口。
+# 构建平台与制品边界
 
-## 按任务进入
+这是共享构建策略的知识主题，不是按开发者身份编排的手册首页。具体模块从[源码知识地图](../knowledge/index.md)定位；本页只规定哪些平台与制品组合成立，避免一次修改把宿主、原生依赖和独立包的边界混在一起。
 
-| 任务 | 入口 |
+## 先区分动作和制品
+
+| 当前任务 | 权威入口与边界 |
 | --- | --- |
-| 选择构建、测试和验收命令 | [测试与验证](./testing.md) |
-| 构建安装包、更新包或发布包 | [部署概览](./deployment/overview.md)、[构建与发布脚本](./scripts/README.md) |
-| 新增或维护插件 | [插件开发](./plugin-development/README.md)、[现有插件能力](../04-api-reference/plugins/README.md) |
-| 维护客户项目包 | [项目说明](../00-projects/README.md)、[项目包总览](../04-api-reference/projects/README.md) |
-| 修改 Engine、设备、模板或 Flow | [Engine 开发](./engine-development/README.md)、[Engine 组件](../04-api-reference/engine-components/README.md) |
-| 修改 UI 类库、菜单、设置或图像编辑器 | [UI 组件](../04-api-reference/ui-components/README.md) |
-| 新增或迁移本地图像算法、评估未来 ONNX / AI 推理接入 | [统一图像算法平台 V1](./core-concepts/image-algorithm-platform-v1.md)、[ONNX / AI 推理接入设计（Deferred）](./core-concepts/onnx-inference-future-design.md) |
-| 使用或维护 ROI 统计、剖面、图像比较、工业测量、几何/成像/频域分析 | [ROI 统计 V1（M1）](./core-concepts/roi-statistics-v1.md)、[灰度与颜色剖面 V1（M2）](./core-concepts/image-profile-v1.md)、[图像比较基础 V1（M3）](./core-concepts/image-comparison-v1.md)、[图像比较高级 V1（M4）](./core-concepts/image-comparison-advanced-v1.md)、[Blob / 连通域 V1（M5.1）](./core-concepts/blob-analysis-v1.md)、[轮廓提取 V1（M5.2）](./core-concepts/contour-analysis-v1.md)、[亚像素边缘 V1（M6.1）](./core-concepts/subpixel-edge-v1.md)、[直线拟合 V1（M6.2）](./core-concepts/line-fit-v1.md)、[圆拟合 V1（M6.3）](./core-concepts/circle-fit-v1.md)、[几何变换 V1（M7）](./core-concepts/geometric-transform-v1.md)、[图像配准 V1（M8.1）](./core-concepts/image-registration-v1.md)、[镜头畸变校正 V1（M8.2）](./core-concepts/lens-distortion-correction-v1.md)、[成像校正 V1（M9）](./core-concepts/imaging-correction-v1.md)、[FFT / 频域分析 V1（M10）](./core-concepts/frequency-spectrum-v1.md)、[摩尔纹分析 V1（M11）](./core-concepts/moire-analysis-v1.md) |
-| 新增 Flow 节点或扩展点 | [扩展点](../04-api-reference/extensions/README.md)、[Flow 节点扩展](../04-api-reference/extensions/flow-node.md) |
-| 维护插件市场后端 | [插件市场后端](./backend/README.md) |
-| 维护 Copilot Agent 或工具执行链 | [Copilot Agent Runtime](./core-concepts/copilot-agent-runtime.md) |
-| 维护 Copilot 对话 UI 或状态 | [Copilot ViewModel 维护地图](./core-concepts/copilot-view-model-architecture.md) |
-| 维护本地 MCP 集成 | [ColorVision MCP](./core-concepts/colorvision-mcp.md) |
-
-## 开发前确认
-
-- 当前主线是 Windows WPF，目标框架以 `net10.0-windows` 为主。
-- ColorVision 桌面宿主运行时、官方插件和客户项目交付包当前仅支持 x64。
-- 根目录存在 `ColorVision.snk` 时构建会启用强名称签名。
-- 插件和项目包运行时进入主程序输出目录的 `Plugins/<Name>/`。
-- 修改公开行为时，同步更新对应 README 或 `docs/` 页面。
-- 修改打包/发布逻辑时，优先更新脚本文档和根目录贡献说明。
-
-## 常用命令
-
-```powershell
-dotnet restore .\ColorVision\ColorVision.csproj
-dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64
-dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64
-dotnet test Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj -c Release -p:Platform=x64
-npm run docs:build
-npm run docs:validate:dist
-```
-
-完整 `build.sln` 包含 native 项目，应在 Visual Studio Developer PowerShell 中使用 `dotnet restore .\build.sln` 后执行 `msbuild .\build.sln /m /p:Configuration=Release /p:Platform=x64`。
-
-发布命令会改变远端状态，普通插件/项目包、Spectrum 双通道和主程序分别使用：
-
-```powershell
-Scripts\package_plugin.bat Conoscope
-Scripts\package_project.bat ProjectLUX
-Scripts\Spectrum.bat --release-notes "本次变更说明"
-Scripts\release.bat
-```
+| 理解或修改源码 | 先定位实际模块及其测试；不要求安装设备驱动、启动主程序或发布 |
+| 首次准备构建 | [环境与依赖](../00-getting-started/prerequisites.md)核对 native helper、C++ 工具链、x64 与签名条件 |
+| 选择验证范围 | [测试与验证](./testing.md)给出最小检查及覆盖缺口；文档检查不能替代产品测试 |
+| 构建或发布交付包 | [脚本契约](./scripts/README.md)定义入口和副作用；打包 wrapper 可能上传，不能作为默认本地构建 |
+| 修改公开行为或平台策略 | 同步对应主题与代码映射，按[维护规范](../knowledge/maintenance.md)复核；不要另写一份面向不同角色的说明 |
 
 ## 平台支持策略
 
@@ -75,19 +47,8 @@ python Scripts\verify_platform_policy.py
 3. 增加 ARM64 solution 配置和 CI 交叉编译，并在 Windows ARM64 设备上验证启动、插件加载、图像算法、设备通信和更新回滚。
 4. 生成独立 ARM64 安装器与更新源，验证安装、升级、卸载和包签名后，才能把 ARM64 列为受支持平台。
 
-## 目录说明
+## 证据与变更规则
 
-| 目录 | 内容 |
-| --- | --- |
-| `core-concepts/` | 扩展性、MCP/Copilot 等核心概念 |
-| `engine-development/` | Engine、服务、模板、MQTT、OpenCV 接入 |
-| `plugin-development/` | 插件接口、manifest、生命周期、打包 |
-| `deployment/` | 安装器、自动更新和交付路径 |
-| `scripts/` | 构建、打包、上传、发布脚本 |
-| `backend/` | 插件市场后端 |
+`Directory.Build.props`、各项目文件和 solution 映射共同决定实际平台策略。`Scripts/verify_platform_policy.py` 及其测试用于检查策略；测试文件存在不代表已在本轮运行，也不证明真机驱动、安装升级和设备行为。
 
-## 维护原则
-
-- 开发文档写“怎么做”和“在哪里改”，不堆历史会议材料。
-- 细节能回到源码、项目文件、manifest、脚本或测试命令。
-- 一次性记录和临时计划不作为长期文档保留；需要时从 Git 历史或发布记录找回。
+普通构建与检查不授权签名上传、发布、提交或推送。发布执行规则仍以根 `AGENTS.md` 和[脚本契约](./scripts/README.md)为准，不在本页复制另一套命令清单。

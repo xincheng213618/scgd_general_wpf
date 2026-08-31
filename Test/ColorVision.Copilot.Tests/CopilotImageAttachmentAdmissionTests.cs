@@ -6,6 +6,71 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotImageAttachmentAdmissionTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LinkedStorageDirectoryIsRejectedBeforeCreatingFiles(bool linkedAncestor)
+    {
+        var root = CreateTemporaryDirectory();
+        var outside = Directory.CreateDirectory(Path.Combine(root, "outside")).FullName;
+        var linkedPath = Path.Combine(root, "linked");
+        var storePath = linkedAncestor ? Path.Combine(linkedPath, "new-store") : linkedPath;
+        var sourcePath = Path.Combine(root, "source.png");
+        await File.WriteAllBytesAsync(sourcePath, CreatePng());
+        Directory.CreateSymbolicLink(linkedPath, outside);
+        try
+        {
+            var error = await Assert.ThrowsAsync<CopilotImageAttachmentAdmissionException>(() =>
+                CopilotImageAttachmentAdmission.PersistAsync(
+                    [CopilotAttachmentItem.CreateImage(sourcePath)], storePath, CancellationToken.None));
+
+            Assert.Equal(CopilotImageAttachmentAdmissionFailureKind.Storage, error.FailureKind);
+            Assert.Empty(Directory.EnumerateFileSystemEntries(outside));
+        }
+        finally
+        {
+            Directory.Delete(linkedPath, recursive: false);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ExistingLinkedContentAddressIsRejectedEvenWhenItsBytesMatch()
+    {
+        var root = CreateTemporaryDirectory();
+        var storePath = Path.Combine(root, "store");
+        var sourcePath = Path.Combine(root, "source.png");
+        await File.WriteAllBytesAsync(sourcePath, CreatePng());
+        string? storedPath = null;
+        try
+        {
+            var admitted = await CopilotImageAttachmentAdmission.PersistAsync(
+                [CopilotAttachmentItem.CreateImage(sourcePath)], storePath, CancellationToken.None);
+            storedPath = Assert.Single(admitted).Value;
+            var outsideFile = Path.Combine(root, "outside.png");
+            File.Copy(storedPath, outsideFile);
+            var originalBytes = await File.ReadAllBytesAsync(outsideFile);
+            File.Delete(storedPath);
+            File.CreateSymbolicLink(storedPath, outsideFile);
+
+            var error = await Assert.ThrowsAsync<CopilotImageAttachmentAdmissionException>(() =>
+                CopilotImageAttachmentAdmission.PersistAsync(
+                    [CopilotAttachmentItem.CreateImage(sourcePath)], storePath, CancellationToken.None));
+
+            Assert.Equal(CopilotImageAttachmentAdmissionFailureKind.Storage, error.FailureKind);
+            Assert.Equal(originalBytes, await File.ReadAllBytesAsync(outsideFile));
+            Assert.True((File.GetAttributes(storedPath) & FileAttributes.ReparsePoint) != 0);
+            Assert.Single(Directory.GetFiles(storePath));
+        }
+        finally
+        {
+            if (storedPath != null && File.Exists(storedPath)
+                && (File.GetAttributes(storedPath) & FileAttributes.ReparsePoint) != 0)
+                File.Delete(storedPath);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task InvalidBatchStartsNoManagedWrites()
     {
@@ -38,12 +103,14 @@ public sealed class CopilotImageAttachmentAdmissionTests
         }
     }
 
-    [Fact]
-    public async Task AcceptedImagesBecomeStableContentAddressedAttachments()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AcceptedImagesBecomeStableContentAddressedAttachments(bool nestedNewDirectories)
     {
         var root = CreateTemporaryDirectory();
         var sourcePath = Path.Combine(root, "source.png");
-        var storePath = Path.Combine(root, "store");
+        var storePath = nestedNewDirectories ? Path.Combine(root, "new-parent", "nested", "store") : Path.Combine(root, "store");
         await File.WriteAllBytesAsync(sourcePath, CreatePng());
         var source = CopilotAttachmentItem.CreateImage(sourcePath, "Evidence");
         var context = CopilotAttachmentItem.CreateContext("stable context");

@@ -1,4 +1,22 @@
+---
+knowledge_id: "algorithms.circle-fit"
+knowledge_type: "reference"
+status: "current"
+summary: "CircleFit 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。"
+aliases: ["如何拟合圆、为什么圆拟合默认不可执行","CircleFit","CircleFitAlgorithmProvider"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/CircleFitAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CircleFitV1Tests.cs","Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
+related: ["algorithms.platform","algorithms.index"]
+---
+
 # 圆拟合 V1（M6.3）
+
+## 当前发布边界
+
+当前默认 `ImageAlgorithmPlatform.CreateDefaultProviders()` 把本页 provider 包装在 `ExperimentalAlgorithmProviderGate` 中：菜单和 Batch 可执行投影隐藏该能力，直接调用默认 Runner 也返回 `provider_unavailable`，详情包含 `algorithm_experimental`。本页后面的参数、结果与宿主接入描述属于保留实现及测试契约，不是产品已开放的承诺；不得在调用方另建执行旁路来绕过门禁。
+
+本页 `status: current` 表示它记录当前源码事实，不代表算法已发布。M 编号是历史增量标识；其他增量是否可用以 [统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单) 为准。`Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs` 验证默认拒绝行为，专题测试覆盖实现细节；解除门禁还需完成对应数值、最坏资源与生产规模验证。
+
 
 ## 阶段边界与已有能力盘点
 
@@ -29,7 +47,9 @@ M6.3 提供稳定 ID `colorvision.measurement.circle-fit`。仓库既有 Hough �
 
 共线或重复点使用 `degenerate_point_distribution`；有效点不足、半径或角覆盖未通过时分别使用稳定拒绝原因。拒绝结果仍包含 Measurement、逐点 Table、Geometry 和 provenance，供各宿主统一处理。
 
-## 宿主接入
+## 保留的宿主适配（默认禁用）
+
+本节是保留代码和测试的接入契约；默认产品菜单与 Runner 仍由 Experimental 门禁拒绝执行。
 
 - ImageView：“算法调用 → 圆拟合...”选择点集、编辑统一参数、显示表格与 transient overlay，并导出 CSV/JSON。关闭窗口、Clear、切图或 revision 改变均复用统一 analysis session 与 overlay 生命周期。
 - Batch：`BatchAlgorithmAnalysisProcessor` 接受同一个 Invocation 并输出结构化 JSON；它不属于 Batch 图像格式转换菜单中的像素算法。
@@ -40,4 +60,4 @@ M6.3 提供稳定 ID `colorvision.measurement.circle-fit`。仓库既有 Hough �
 
 `CircleFitV1Tests` 覆盖九种规范图像格式、带离群点的稳健数值 golden、Physical/DPI、最小二乘、共线/不足/半径/角覆盖拒绝、资源上限、取消、输入只读、所有权释放、Batch/Flow 一致性，以及 ImageView 表格、圆形 WPF Visual 和回收。计算上限由共识候选/距离评估预算限定，后续 IRLS 为 `O(iterations × points)`，结果内存为 `O(points)`。
 
-V1 不从像素自动检测圆、不拟合椭圆或多个圆，也不输出统计协方差。仿射、透视和单应性属于 M7，保持下一独立阶段。
+V1 不从像素自动检测圆、不拟合椭圆或多个圆，也不输出统计协方差。仿射、透视和单应性属于 [几何变换](./geometric-transform-v1.md) 的独立契约，不由圆拟合隐式提供。

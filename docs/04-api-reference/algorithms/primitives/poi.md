@@ -1,3 +1,14 @@
+---
+knowledge_id: "algorithms.poi-routes"
+knowledge_type: "topic"
+status: "current"
+summary: "说明 POI 点位、伴生模板、文件模式与 Flow 和 JSON 算法的消费关系。"
+aliases: ["POI点集由谁生成和消费","PoiPoint","PoiParam","AlgorithmPoi","AlgorithmBuildPoi"]
+code_paths: ["Engine/ColorVision.Engine/Templates/POI/PoiPoint.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/AlgorithmPOI.cs","Engine/ColorVision.Engine/Templates/POI/BuildPoi/AlgorithmBuildPoi.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/PoiPointModelTests.cs","Test/ColorVision.UI.Tests/PoiLayoutGeometryTests.cs"]
+related: ["algorithms.index","algorithms.poi-template","flow.templates"]
+---
+
 # POI
 
 POI 在当前系统里是一套共享点位原语，不是单个“检测算法”。它保存点集和模板配置，被布点、过滤、修正、分析、AOI、SFR 和 Flow 节点共同消费。
@@ -84,3 +95,9 @@ Flow 节点里的常规 POI 字段由节点属性指定 PropertyEditor，并通�
 | `Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI/AlgorithmSFRFindROI.cs` | SFR ROI 查找 |
 | `Engine/ColorVision.Engine/Templates/Jsons/OLEDAOI/AlgorithmOLEDAOI.cs` | OLED AOI |
 | `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/POINodeConfigurators.cs` | `BuildPOINode` 的多模板补充面板 |
+
+## 验证入口与缺口
+
+关联测试：`Test/ColorVision.UI.Tests/PoiPointModelTests.cs`、`Test/ColorVision.UI.Tests/PoiLayoutGeometryTests.cs`。
+
+点模型和几何测试不覆盖数据库整批保存或远端 POI 请求；旧模板、文件模式及服务侧协议需另外回放。

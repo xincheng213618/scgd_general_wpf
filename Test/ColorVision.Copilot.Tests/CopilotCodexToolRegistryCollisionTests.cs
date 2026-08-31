@@ -1,7 +1,6 @@
 using ColorVision.Copilot;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,122 +9,6 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexToolRegistryCollisionTests
 {
-    [Fact]
-    public void ClosestTrustedValueIsFrozenAcrossContextPlanRequestAndQueuedFollowUp()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                [features.tool_registry]
-                error_on_tool_collisions = false
-
-                [projects.'{projectRoot}']
-                trust_level = "trusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
-            File.WriteAllText(
-                projectConfigPath,
-                "[features.tool_registry]" + Environment.NewLine + "error_on_tool_collisions = true");
-
-            var submittedContext = CreateHostContext(globalRoot, projectRoot);
-            var submittedPlan = CopilotAgentRequestFactory.Prepare(
-                "Inspect the active tool surface.",
-                CopilotAgentMode.Code,
-                submittedContext);
-            var submittedRequest = CopilotAgentRequestFactory.Create(
-                submittedPlan,
-                new CopilotAgentRequestBuildInput
-                {
-                    Profile = CopilotProfileConfig.CreateDefault(),
-                    AgentDefaults = new CopilotAgentDefaultsConfig(),
-                });
-            File.WriteAllText(
-                projectConfigPath,
-                "[features.tool_registry]" + Environment.NewLine + "error_on_tool_collisions = false");
-            var refreshed = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-            var queuedFollowUp = new CopilotQueuedFollowUp(
-                "run-1",
-                "conversation-1",
-                "Conversation",
-                "Continue inspecting the tool surface.",
-                CopilotAgentMode.Code,
-                CopilotProfileConfig.CreateDefault(),
-                submittedContext);
-            var queuedContext = queuedFollowUp.CreateExecutionContext(
-                CopilotConversationHistorySnapshot.Empty);
-            var options = submittedContext.ProjectInstructionDiscoveryOptions;
-
-            Assert.True(options.ConfiguredErrorOnToolCollisions);
-            Assert.True(options.HasErrorOnToolCollisionsOverride);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.TrustedProject,
-                options.ErrorOnToolCollisionsSource);
-            Assert.True(submittedPlan.CodexErrorOnToolCollisions);
-            Assert.True(submittedRequest.CodexErrorOnToolCollisions);
-            Assert.True(queuedContext.ProjectInstructionDiscoveryOptions.ConfiguredErrorOnToolCollisions);
-            Assert.False(refreshed.ConfiguredErrorOnToolCollisions);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void UntrustedAndInvalidValuesCannotBroadenTheCodexHomeContract()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                [features.tool_registry]
-                error_on_tool_collisions = false
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                "[features.tool_registry]" + Environment.NewLine + "error_on_tool_collisions = true");
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.False(untrusted.ConfiguredErrorOnToolCollisions);
-            Assert.True(untrusted.HasErrorOnToolCollisionsOverride);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.CodexHome,
-                untrusted.ErrorOnToolCollisionsSource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                "[features.tool_registry]" + Environment.NewLine + "error_on_tool_collisions = \"true\"");
-            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.False(invalid.ConfiguredErrorOnToolCollisions);
-            Assert.False(invalid.HasErrorOnToolCollisionsOverride);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
     [Fact]
     public void RelaxedPolicyKeepsFirstToolAndEmitsDuplicateDiagnostic()
     {
@@ -249,17 +132,6 @@ public sealed class CopilotCodexToolRegistryCollisionTests
         Assert.Contains(options.ErrorOnToolCollisionsSourceLabel, debugReport, StringComparison.Ordinal);
     }
 
-    private static CopilotAgentHostContextSnapshot CreateHostContext(
-        string globalRoot,
-        string projectRoot) => new(
-        activeDocumentPath: null,
-        projectRoot,
-        attachments: null,
-        liveContext: null,
-        conversationHistory: null,
-        additionalReadRootPaths: null,
-        globalInstructionRootPath: globalRoot);
-
     private static CopilotAgentRequest CreateAgentRequest(bool errorOnToolCollisions) => new()
     {
         Profile = CopilotProfileConfig.CreateDefault(),
@@ -271,12 +143,6 @@ public sealed class CopilotCodexToolRegistryCollisionTests
         CodexErrorOnToolCollisions = errorOnToolCollisions,
     };
 
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-codex-tool-registry-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
-    }
 
     private sealed class RecordingTool(string name) : ICopilotTool
     {

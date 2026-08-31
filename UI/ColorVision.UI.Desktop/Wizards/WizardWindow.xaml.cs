@@ -60,7 +60,13 @@ namespace ColorVision.UI.Desktop.Wizards
         private bool _isTransitioning;
 
         public WizardWindow()
+            : this(runInitializers: true)
         {
+        }
+
+        public WizardWindow(bool runInitializers)
+        {
+            _initializersRun = !runInitializers;
             InitializeComponent();
             this.ApplyCaption();
             WindowConfig.SetWindow(this);
@@ -76,7 +82,7 @@ namespace ColorVision.UI.Desktop.Wizards
             {
                 try
                 {
-                    if (!_wizardSteps.Any(step => step.RunsBeforeInitializers))
+                    if (!_initializersRun && !_wizardSteps.Any(step => step.RunsBeforeInitializers))
                     {
                         _initializersRun = true;
                         if (RunInitializers())

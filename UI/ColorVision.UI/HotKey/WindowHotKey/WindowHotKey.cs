@@ -7,6 +7,10 @@ namespace ColorVision.UI.HotKey.WindowHotKey
     {
         private static readonly Dictionary<Control, ControlHotkeyScope> Scopes = new();
 
+        internal static bool Matches(IHotkeyRegistration registration, Hotkey hotkey, HotKeyCallBackHanlder callback)
+            => registration is WindowHotkeyRegistration windowRegistration && windowRegistration.IsRegistered
+                && windowRegistration.Hotkey == hotkey && windowRegistration.Callback == callback;
+
 
         public static IHotkeyRegistration? Register(Control control,Hotkey hotkey, HotKeyCallBackHanlder callBack)
         {
@@ -68,14 +72,17 @@ namespace ColorVision.UI.HotKey.WindowHotKey
         {
             private readonly Dictionary<int, WindowHotkeyRegistration> _registrations = new();
             private readonly Action<Control> _removeScope;
+            private readonly KeyEventHandler _keyDownHandler;
             private readonly KeyEventHandler _keyUpHandler;
 
             public ControlHotkeyScope(Control control, Action<Control> removeScope)
             {
                 Control = control;
                 _removeScope = removeScope;
+                _keyDownHandler = OnPreviewKeyDown;
                 _keyUpHandler = OnPreviewKeyUp;
-                Control.PreviewKeyUp += _keyUpHandler;
+                Control.PreviewKeyDown += _keyDownHandler;
+                Control.AddHandler(Keyboard.PreviewKeyUpEvent, _keyUpHandler, handledEventsToo: true);
             }
 
             public Control Control { get; }
@@ -92,7 +99,8 @@ namespace ColorVision.UI.HotKey.WindowHotKey
                 _registrations.Remove(registration.VirtualKey);
                 if (_registrations.Count == 0)
                 {
-                    Control.PreviewKeyUp -= _keyUpHandler;
+                    Control.PreviewKeyDown -= _keyDownHandler;
+                    Control.RemoveHandler(Keyboard.PreviewKeyUpEvent, _keyUpHandler);
                     _removeScope(Control);
                 }
             }
@@ -103,6 +111,13 @@ namespace ColorVision.UI.HotKey.WindowHotKey
             }
 
             private void OnPreviewKeyUp(object sender, KeyEventArgs e)
+            {
+                // Releasing a gesture recorded by the editor only clears its capture gate.
+                // Business dispatch belongs to PreviewKeyDown, before WPF command routing.
+                HotkeyDispatchGate.ShouldSuppress(e.Key == Key.System ? e.SystemKey : e.Key, isKeyUp: true);
+            }
+
+            private void OnPreviewKeyDown(object sender, KeyEventArgs e)
             {
                 ModifierKeys modifiers = Keyboard.Modifiers;
                 if (Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin))
@@ -121,7 +136,17 @@ namespace ColorVision.UI.HotKey.WindowHotKey
                 int virtualKey = ((int)modifiers << 8) + (int)key;
                 if (_registrations.TryGetValue(virtualKey, out var registration))
                 {
-                    registration.Callback();
+                    if (HotkeyDispatchGate.ShouldSuppress(key))
+                    {
+                        // Let the recorder see input while open. After it closes, consume
+                        // the held gesture so a native command cannot receive its repeats.
+                        if (!HotkeyDispatchGate.IsSuspended)
+                            e.Handled = true;
+                        return;
+                    }
+                    e.Handled = true;
+                    if (!e.IsRepeat)
+                        registration.Callback();
                 }
             }
         }
@@ -132,7 +157,7 @@ namespace ColorVision.UI.HotKey.WindowHotKey
             {
                 Scope = scope;
                 VirtualKey = virtualKey;
-                Hotkey = hotkey;
+                Hotkey = new Hotkey(hotkey.Key, hotkey.Modifiers);
                 Callback = callback;
                 IsRegistered = true;
             }

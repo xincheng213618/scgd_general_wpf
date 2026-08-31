@@ -1,6 +1,19 @@
+---
+knowledge_id: "engine.mqtt"
+knowledge_type: "guide"
+status: "current"
+summary: "说明 Engine MQTT 连接、设备请求、MsgID 关联、超时和订阅恢复。"
+aliases: ["MQTT请求发出为什么没有结果","MQTTControl","MQTTServiceBase","MsgRecord","MQTTClientPool"]
+code_paths: ["Engine/ColorVision.Engine/MQTT/MQTTControl.cs","Engine/ColorVision.Engine/MQTT/MQTTSetting.cs","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","Engine/FlowEngineLib/MQTTClientPool.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/MQTTClientPoolTests.cs"]
+related: ["engine.index","engine.devices","engine.rc-registration","flow.runtime"]
+---
+
 # Engine MQTT 消息处理指南
 
 本页说明 Engine 层 MQTT 的真实收发模型。当前主线不是“每个模块自己建客户端”，而是 `MQTTControl` 管连接、订阅和消息追踪，设备服务通过 `MQTTServiceBase` / `MQTTDeviceService<T>` 发送命令并等待返回。
+
+注册中心使用同一传输连接，但 RC 节点令牌、服务目录、早到快照和连接测试另有契约，见[RC 注册与状态同步](../../04-api-reference/engine-components/rc-registration.md)。MQTT 连接成功不等于 RC 注册成功，更不等于设备可执行。
 
 ## 当前 MQTT 分层
 
@@ -83,3 +96,9 @@ public MsgRecord DoSomething(string value)
 - [Engine 组件总览](../../04-api-reference/engine-components/README.md)
 - [FlowEngineLib](../../04-api-reference/engine-components/FlowEngineLib.md)
 - [测试与验证](../testing.md)
+
+## 验证入口与缺口
+
+关联测试：`Test/ColorVision.UI.Tests/MQTTClientPoolTests.cs`。
+
+MQTTClientPoolTests 只覆盖 Flow 客户端池引用和连接身份，不覆盖 broker 重连、设备 MsgRecord 或端到端响应；需使用测试 broker 和设备模拟验证。

@@ -1,54 +1,39 @@
-# 部署概览
+---
+knowledge_id: "delivery.deployment"
+knowledge_type: "index"
+status: "current"
+summary: "按源码输出、完整安装器、主程序更新包及插件项目包定位交付责任；安装、更新与启动恢复各有完成边界，旧ColorVisionSetup不是当前入口。"
+aliases: ["部署","交付制品","安装器","完整安装包","源码构建输出","增量更新包","项目包交付","启动恢复入口","Advanced Installer","ColorVision.aip","ColorVisionSetup","CombinedUpdateCoordinator","StartupRecoveryWindow"]
+code_paths: ["ColorVision/ColorVision.csproj","Scripts/release.bat","Scripts/build.py","ColorVision/Update/CombinedUpdateCoordinator.cs","ColorVision/Recovery/StartupRecoveryWindow.xaml.cs","src/ColorVisionSetup"]
+test_paths: []
+related: ["delivery.installation","delivery.prerequisites","delivery.update","delivery.scripts","plugins.getting-started","operations.first-run","delivery.backend"]
+---
 
-本页只保留当前仓库仍在使用的部署入口，重点覆盖 Windows 桌面应用、安装器和更新机制。
+# 桌面交付制品与责任路由
 
-## 当前部署对象
+本页回答“这次拿到或准备生成的是什么制品，后续由哪条实现负责”。源码输出、完整安装包、在线更新差异包和插件包不是可互换的交付物；安装完成、更新进程接管和主程序健康启动也不是同一个结果。
 
-- `ColorVision/`：主程序本体，当前客户端更新实现位于 `ColorVision/Update/`
-- `Scripts/`：构建、打包、发布辅助脚本
-- 仓库外的 Advanced Installer `ColorVision.aip`：由 `Scripts\release.bat` 发布链调用，生成完整安装包
-- `Plugins/`：运行时加载的插件目录
+## 按制品和状态定位
 
-`src/ColorVisionSetup/` 是历史保留的安装/更新程序源码，未接入当前 `build.sln`、外部 `ColorVision.aip` 或 `Scripts\release.bat` 发布链，不是当前部署入口。当前实现与发布方式分别见 [自动更新系统](./auto-update.md) 和 [构建与发布脚本](../scripts/README.md)。
+| 要处理的对象 | 权威主题 | 实现责任 |
+| --- | --- | --- |
+| 本地源码构建输出 | [环境与构建前提](../../00-getting-started/prerequisites.md) | 项目引用、native/x64 和输出复制规则；编译命令不在部署索引重复维护 |
+| 完整桌面安装包与目标安装目录 | [安装制品与运行输出](../../00-getting-started/installation.md) | 首次安装、目录权限、依赖与配置检查；完整安装工程边界见本页下一节 |
+| 主程序、插件或项目包的发布制品 | [构建与发布脚本](../scripts/README.md) | `Scripts/release.bat` 及对应包脚本的构建、签名、上传与成功判定；发布入口会产生外部写入，不是文档验证命令 |
+| 现有主程序安装的在线更新 | [更新与恢复](./auto-update.md) | `CombinedUpdateCoordinator` 协调主程序/插件计划，下载缓存、包校验和外部更新执行由该主题维护 |
+| 插件与项目包 `.cvxp` | [插件产物、安装与交付](../plugin-development/getting-started.md) | HostCopy、manifest 身份、宿主共享依赖和安装交接；包上传仍归发布脚本 |
+| 安装后的启动或未完成启动 | [启动与最小运行验证](../../00-getting-started/first-steps.md)、[更新与恢复](./auto-update.md) | 普通启动初始化与 `StartupRecoveryWindow` 的修复/插件处置分别核对；恢复窗口出现不等于问题已修复 |
 
-## 当前推荐路径
+网络请求复用、重试、增量复制、程序快照、插件备份和恢复交接的完整契约只在各自主题维护，不从“部署”一词推定这些阶段已经成功。客户项目的专用配置、资源与版本约束应回到对应项目包核对，不能把通用安装器当作所有项目的完整交付清单。
 
-### 开发或测试环境
+## 外部安装工程与历史源码
 
-直接从源码构建并运行主程序：
+当前主程序发布 wrapper 调用 `Scripts/build.py`；后者以 `build.sln` 为解决方案，并指定仓库外的 Advanced Installer `ColorVision.aip`。拉取仓库并不同时取得该安装工程；要改安装组件、权限或文件清单，必须核对实际使用的外部工程与交付包，不能仅由托管项目编译成功推断。
 
-```powershell
-dotnet restore .\ColorVision\ColorVision.csproj
-dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64
-dotnet run --project ColorVision/ColorVision.csproj
-```
+`src/ColorVisionSetup/` 保留历史安装/更新程序源码，未被当前 `build.sln` 与 `Scripts/release.bat` 的主程序发布链引用，不作为新的安装器或更新入口。当前客户端更新位于 `ColorVision/Update/`，启动恢复位于 `ColorVision/Recovery/`；不要从旧目录仍存在推断其仍参与交付。
 
-### 交付环境
+[Web 后端部署](../backend/README.md)是独立责任链。Docker、云服务或集群方式不因后端存在就成为 Windows WPF 桌面程序的默认交付方式。
 
-- 使用安装器交付完整桌面程序
-- 按需携带插件目录和运行时依赖
-- 若涉及在线更新，查看 [自动更新系统](./auto-update.md)
-- 启动检查与手动检查并发访问主程序版本接口时共享进行中的请求，部署侧无需为同一客户端的重复探测预留额外连接
-- 插件详情连接在 2 秒无 HTTP 响应后通过新连接重试；候选插件元数据仍不完整时，主程序与插件更新整轮延期，避免组合更新被拆开
-- 主程序增量复制对短暂文件占用最多重试 10 次，最终失败的文件与退出码记录在安装目录对应的更新状态日志中，并由“发送反馈”默认收集最近 7 天记录
-- 带清单插件更新前会创建按安装目录隔离的校验备份，并以完整目录事务替换；旧式无清单包仍使用兼容覆盖路径
-- 上次启动未完成时会进入独立恢复窗口，用户可先更新/修复主程序，或跳过、禁用、回退插件
+## 验证边界
 
-## 部署前确认项
-
-- 目标环境为 Windows
-- 主应用按 x64 构建
-- 运行时依赖和本地 DLL 已正确随包输出
-- 需要的配置文件已复制到输出目录
-
-## 配套文档
-
-- [安装与首次使用](../../00-getting-started/README.md)
-- [系统要求](../../00-getting-started/prerequisites.md)
-- [自动更新系统](./auto-update.md)
-- [构建与发布脚本](../scripts/README.md)
-
-## 说明
-
-- 旧的 Docker、云部署、生产集群等说明不再作为默认部署路径。
-- 如果某个项目有特殊交付方式，应在对应项目目录或项目文档中单独维护，而不是继续堆在通用部署页里。
+测试入口和最小验证方法随具体制品主题维护；本索引不声明完整安装器、远端发布或启动恢复的端到端自动化覆盖。文档和路径检查不能代替目标环境验收，也不授权启动应用、连接设备、安装/回退或执行发布。

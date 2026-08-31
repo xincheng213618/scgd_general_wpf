@@ -22,6 +22,23 @@ namespace ColorVision.Copilot
 {
     public sealed partial class CopilotSettingsViewModel
     {
+        private const string McpConnectionTestingNotice = "Testing MCP connection...";
+        private readonly HttpClient _mcpConnectionHttpClient;
+        private CancellationTokenSource? _mcpConnectionTestCancellation;
+        private long _mcpConnectionSettingsRevision;
+
+        private void InvalidateMcpConnectionTest()
+        {
+            _mcpConnectionSettingsRevision++;
+            if (_mcpConnectionTestCancellation == null)
+                return;
+
+            McpConnectionTestText = string.Empty;
+            if (string.Equals(SettingsStatusText, McpConnectionTestingNotice, StringComparison.Ordinal))
+                SetSettingsNotice("MCP settings changed. Run a new connection test for the current values.");
+            _mcpConnectionTestCancellation.Cancel();
+        }
+
         private void RegenerateMcpToken()
         {
             var result = MessageBox.Show(
@@ -120,82 +137,45 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            var revision = _mcpConnectionSettingsRevision;
+            var bearerToken = McpBearerToken;
+            using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCancellation.Token);
+            _mcpConnectionTestCancellation = cancellation;
+            bool CanPublishResult() => !_disposed
+                && !cancellation.IsCancellationRequested
+                && revision == _mcpConnectionSettingsRevision;
+
             IsTestingMcpConnection = true;
             McpConnectionTestText = "Testing connection...";
-            SetSettingsNotice("Testing MCP connection...");
+            SetSettingsNotice(McpConnectionTestingNotice);
             try
             {
-                using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", McpBearerToken.Trim());
-                var payload = JsonSerializer.Serialize(new
-                {
-                    jsonrpc = "2.0",
-                    id = 1,
-                    method = "tools/call",
-                    @params = new
-                    {
-                        name = "get_server_status",
-                        arguments = new { },
-                    },
-                });
-                request.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+                await CopilotMcpConnectionDiagnostic.TestAsync(_mcpConnectionHttpClient, endpoint, bearerToken, cancellation.Token);
 
-                using var response = await McpHttpClient.SendAsync(
-                    request,
-                    HttpCompletionOption.ResponseHeadersRead,
-                    _lifetimeCancellation.Token);
-                if (!response.IsSuccessStatusCode)
-                {
-                    McpConnectionTestText = $"Connection failed: HTTP {(int)response.StatusCode} {response.ReasonPhrase}.";
-                    SetSettingsNotice(SanitizeError(McpConnectionTestText));
-                    RefreshMcpStatusText();
-                    RefreshMcpDiagnostics();
+                if (!CanPublishResult())
                     return;
-                }
-
-                var body = await CopilotBoundedHttpContentReader.ReadAsStringAsync(
-                    response.Content,
-                    MaximumMcpStatusResponseBytes,
-                    "MCP status response",
-                    _lifetimeCancellation.Token);
-                using var document = JsonDocument.Parse(body);
-                var root = document.RootElement;
-                if (root.TryGetProperty("error", out var errorElement))
-                {
-                    McpConnectionTestText = "Connection failed: " + ReadJsonRpcErrorMessage(errorElement);
-                    SetSettingsNotice(SanitizeError(McpConnectionTestText));
-                    RefreshMcpStatusText();
-                    RefreshMcpDiagnostics();
-                    return;
-                }
-
-                var result = root.GetProperty("result");
-                if (result.TryGetProperty("isError", out var isErrorElement) && isErrorElement.GetBoolean())
-                {
-                    McpConnectionTestText = "Connection failed: get_server_status returned an MCP error.";
-                    SetSettingsNotice(SanitizeError(McpConnectionTestText));
-                    RefreshMcpStatusText();
-                    RefreshMcpDiagnostics();
-                    return;
-                }
-
                 McpConnectionTestText = "Connected.";
-                SetSettingsNotice("MCP connection test succeeded.");
+                if (string.Equals(SettingsStatusText, McpConnectionTestingNotice, StringComparison.Ordinal))
+                    SetSettingsNotice("MCP connection test succeeded.");
                 RefreshMcpStatusText();
                 RefreshMcpDiagnostics();
             }
-            catch (OperationCanceledException) when (_disposed)
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
             }
             catch (Exception ex)
             {
+                if (!CanPublishResult())
+                    return;
                 McpConnectionTestText = "Connection failed: " + SanitizeError(ex.Message);
-                SetSettingsNotice(SanitizeError(McpConnectionTestText));
+                if (string.Equals(SettingsStatusText, McpConnectionTestingNotice, StringComparison.Ordinal))
+                    SetSettingsNotice(SanitizeError(McpConnectionTestText));
                 RefreshMcpStatusText();
                 RefreshMcpDiagnostics();
             }
             finally
             {
+                _mcpConnectionTestCancellation = null;
                 IsTestingMcpConnection = false;
             }
         }

@@ -20,24 +20,31 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(profile);
             ArgumentNullException.ThrowIfNull(httpClient);
 
+            var apiKey = profile.ApiKey;
             var options = new OpenAIClientOptions
             {
                 Endpoint = NormalizeEndpoint(profile.BaseUrl),
                 Transport = new HttpClientPipelineTransport(httpClient),
+                // ColorVision owns bounded retries and accounts for every provider attempt.
+                RetryPolicy = new ClientRetryPolicy(0),
             };
-            var credential = new ApiKeyCredential(profile.ApiKey);
+            var credential = new ApiKeyCredential(apiKey);
+            IChatClient chatClient;
             if (CopilotOpenAiRequestPolicy.UsesResponsesApi(profile))
             {
                 var client = new OpenAIClient(credential, options)
                     .GetResponsesClient();
-                return new CopilotStatelessResponsesHistoryChatClient(
+                chatClient = new CopilotStatelessResponsesHistoryChatClient(
                     client.AsIChatClientWithStoredOutputDisabled(
                         profile.Model,
                         includeReasoningEncryptedContent: true));
             }
+            else
+            {
+                chatClient = new ChatClient(profile.Model, credential, options).AsIChatClient();
+            }
 
-            return new ChatClient(profile.Model, credential, options)
-                .AsIChatClient();
+            return new CopilotOpenAiRequestIdChatClient(chatClient, apiKey);
         }
 
         internal static Uri NormalizeEndpoint(string baseUrl)

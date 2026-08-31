@@ -98,6 +98,56 @@ namespace ColorVision.Update
             return IsUpdateActive(programDirectory, stateRootOverride: null);
         }
 
+        /// <summary>Checks all installations without clearing markers or requesting a reopen. Unknown state stays protected.</summary>
+        public static bool HasActiveUpdateForCleanup(string? stateRootOverride = null)
+        {
+            string stateRoot = stateRootOverride ?? Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ColorVision", "UpdateState");
+            try
+            {
+                try
+                {
+                    if ((File.GetAttributes(stateRoot) & FileAttributes.ReparsePoint) != 0)
+                        return true;
+                }
+                catch (FileNotFoundException) { return false; }
+                catch (DirectoryNotFoundException) { return false; }
+                foreach (string directory in Directory.EnumerateDirectories(stateRoot))
+                {
+                    if ((File.GetAttributes(directory) & FileAttributes.ReparsePoint) != 0)
+                        return true;
+                    string markerPath = Path.Combine(directory, "update.pending");
+                    try
+                    {
+                        if ((File.GetAttributes(markerPath) & FileAttributes.ReparsePoint) != 0)
+                            return true;
+                    }
+                    catch (FileNotFoundException) { continue; }
+                    catch (DirectoryNotFoundException) { continue; }
+                    string[] lines = File.ReadAllLines(markerPath);
+                    if (lines.Length < 3 || !int.TryParse(lines[2], out int processId))
+                        return true;
+                    if (processId > 0)
+                    {
+                        try
+                        {
+                            using Process process = Process.GetProcessById(processId);
+                            if (!process.HasExited)
+                                return true;
+                        }
+                        catch (ArgumentException) { }
+                    }
+                    if (processId <= 0 && DateTime.UtcNow - File.GetLastWriteTimeUtc(markerPath) <= MaximumPreparationAge)
+                        return true;
+                }
+                return false;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
         internal static bool IsUpdateActive(string programDirectory, string? stateRootOverride)
         {
             (string markerPath, string reopenRequestPath) = GetStatePaths(programDirectory, stateRootOverride);

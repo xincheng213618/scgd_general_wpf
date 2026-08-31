@@ -1,6 +1,4 @@
 using ColorVision.UI.Properties;
-using log4net;
-using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -8,11 +6,6 @@ namespace ColorVision.UI.Desktop.Settings
 {
     internal sealed class SettingWindowController
     {
-        private static readonly ILog Log = LogManager.GetLogger(typeof(SettingWindowController));
-        private const string AutoUpdateBindingName = "IsAutoUpdate";
-        private const string ApplicationAutoUpdateConfigTypeName = "AutoUpdateConfig";
-        private const string PluginAutoUpdateConfigTypeName = "MarketplaceWindowConfig";
-
         private readonly TextBox _searchTextBox;
         private readonly ListBox _navigationListBox;
         private readonly StackPanel _settingsContentPanel;
@@ -33,38 +26,12 @@ namespace ColorVision.UI.Desktop.Settings
             _currentGroupDescription = currentGroupDescription;
         }
 
-        public void LoadConfigSettings()
+        public void LoadConfigSettings(IEnumerable<ConfigSettingMetadata>? settings = null)
         {
             _settingEntries.Clear();
             _settingsContentPanel.Children.Clear();
 
-            var sortedSettings = ConfigSettingManager.GetInstance().GetAllSettings();
-            ConfigSettingMetadata? applicationUpdateSetting = null;
-            ConfigSettingMetadata? pluginUpdateSetting = null;
-
-            foreach (var item in sortedSettings)
-            {
-                try
-                {
-                    switch (GetUpdateSettingKind(item))
-                    {
-                        case UpdateSettingKind.Application:
-                            applicationUpdateSetting = item;
-                            continue;
-                        case UpdateSettingKind.Plugin:
-                            pluginUpdateSetting = item;
-                            continue;
-                    }
-
-                    AddSettingEntry(item);
-                }
-                catch (Exception ex)
-                {
-                    Log.Warn($"Failed to add setting: {item.Name ?? item.BindingName}: {ex.Message}");
-                }
-            }
-
-            AddStartupUpdateSetting(applicationUpdateSetting, pluginUpdateSetting);
+            _settingEntries.AddRange(SettingEntryCatalog.Create(settings ?? ConfigSettingManager.GetInstance().GetAllSettings()));
 
             RefreshNavigationAndContent();
         }
@@ -111,87 +78,14 @@ namespace ColorVision.UI.Desktop.Settings
             RenderSelectedGroup();
         }
 
-        private void AddSettingEntry(ConfigSettingMetadata configSetting)
+        public FrameworkElement? NavigateToSetting(string id)
         {
-            PropertyInfo? propertyInfo = null;
-            if (configSetting.Type == ConfigSettingType.Property)
-            {
-                if (configSetting.Source == null || string.IsNullOrWhiteSpace(configSetting.BindingName)) return;
-
-                propertyInfo = configSetting.Source.GetType().GetProperty(configSetting.BindingName);
-                if (propertyInfo == null)
-                {
-                    Log.Warn($"Setting property not found: {configSetting.Source.GetType().Name}.{configSetting.BindingName}");
-                    return;
-                }
-            }
-
-            _settingEntries.Add(SettingMetadataResolver.CreateEntry(configSetting, propertyInfo));
-        }
-
-        private void AddStartupUpdateSetting(ConfigSettingMetadata? applicationUpdateSetting, ConfigSettingMetadata? pluginUpdateSetting)
-        {
-            var targets = new List<AggregatedBoolSettingTarget>();
-            AddAggregatedTarget(targets, applicationUpdateSetting);
-            AddAggregatedTarget(targets, pluginUpdateSetting);
-
-            if (targets.Count == 0) return;
-
-            var source = new AggregatedBoolSetting(targets);
-            var propertyInfo = typeof(AggregatedBoolSetting).GetProperty(nameof(AggregatedBoolSetting.IsChecked));
-            if (propertyInfo == null) return;
-
-            var orderValues = new[] { applicationUpdateSetting?.Order, pluginUpdateSetting?.Order }
-                .Where(order => order.HasValue)
-                .Select(order => order!.Value)
-                .ToList();
-
-            var metadata = new ConfigSettingMetadata
-            {
-                Order = orderValues.Count == 0 ? 500 : orderValues.Min(),
-                Group = ConfigSettingConstants.Universal,
-                Name = SettingResources.StartupCheckUpdates,
-                Description = SettingResources.StartupCheckUpdatesDescription,
-                Section = ConfigSettingConstants.SectionBasic,
-                Type = ConfigSettingType.Property,
-                BindingName = nameof(AggregatedBoolSetting.IsChecked),
-                Source = source
-            };
-
-            var entry = SettingMetadataResolver.CreateEntry(metadata, propertyInfo);
-            entry.SearchText = string.Join(" ", entry.SearchText, SettingResources.StartupCheckUpdatesSearchAliases,
-                "CheckUpdatesOnStartup CheckPluginUpdates AutoUpdateConfig MarketplaceWindowConfig IsAutoUpdate application plugin theme update startup detect").ToLowerInvariant();
-            _settingEntries.Add(entry);
-        }
-
-        private static void AddAggregatedTarget(List<AggregatedBoolSettingTarget> targets, ConfigSettingMetadata? setting)
-        {
-            if (setting?.Source == null || string.IsNullOrWhiteSpace(setting.BindingName)) return;
-
-            var propertyInfo = setting.Source.GetType().GetProperty(setting.BindingName, BindingFlags.Public | BindingFlags.Instance);
-            if (propertyInfo == null || propertyInfo.PropertyType != typeof(bool)) return;
-
-            targets.Add(new AggregatedBoolSettingTarget(setting.Source, propertyInfo));
-        }
-
-        private static UpdateSettingKind GetUpdateSettingKind(ConfigSettingMetadata setting)
-        {
-            if (setting.Type != ConfigSettingType.Property) return UpdateSettingKind.None;
-            if (!string.Equals(setting.BindingName, AutoUpdateBindingName, StringComparison.Ordinal)) return UpdateSettingKind.None;
-            if (setting.Source == null) return UpdateSettingKind.None;
-
-            string sourceTypeName = setting.Source.GetType().Name;
-            if (string.Equals(sourceTypeName, ApplicationAutoUpdateConfigTypeName, StringComparison.Ordinal)) return UpdateSettingKind.Application;
-            if (string.Equals(sourceTypeName, PluginAutoUpdateConfigTypeName, StringComparison.Ordinal)) return UpdateSettingKind.Plugin;
-
-            return UpdateSettingKind.None;
-        }
-
-        private enum UpdateSettingKind
-        {
-            None,
-            Application,
-            Plugin
+            SettingEntry? entry = _settingEntries.FirstOrDefault(item => item.Id == id);
+            if (entry == null) return null;
+            _searchTextBox.Clear();
+            _selectedGroup = entry.Group;
+            RefreshNavigationAndContent();
+            return entry.RenderedElement;
         }
 
         private IEnumerable<SettingEntry> GetVisibleEntries()
@@ -209,6 +103,7 @@ namespace ColorVision.UI.Desktop.Settings
         private void RenderSelectedGroup()
         {
             _settingsContentPanel.Children.Clear();
+            foreach (SettingEntry entry in _settingEntries) entry.RenderedElement = null;
 
             if (string.IsNullOrWhiteSpace(_selectedGroup))
             {
@@ -258,6 +153,8 @@ namespace ColorVision.UI.Desktop.Settings
             for (int index = 0; index < customEntries.Count; index++)
             {
                 var customPage = SettingRowFactory.CreateCustomPage(customEntries[index], showTitle: customEntries.Count > 1);
+                customEntries[index].RenderedElement = customPage;
+                customPage.Tag = customEntries[index].Id;
                 if (index > 0)
                 {
                     customPage.Margin = new Thickness(0, 12, 0, 0);
@@ -289,6 +186,9 @@ namespace ColorVision.UI.Desktop.Settings
                 return "\uE713";
 
             string text = $"{group} {displayName}".ToLowerInvariant();
+            if (text.Contains("maintenance") || text.Contains("维护")) return "\uE74D";
+            if (text.Contains("dump") || text.Contains("转储")) return "\uE9D9";
+            if (text.Contains("remote") || text.Contains("局域网")) return "\uE968";
             if (text.Contains("mcp")) return "\uE968";
             if (text.Contains("communication") || text.Contains("protocol") || text.Contains("通信")) return "\uE968";
             if (text.Contains("hot") || text.Contains("key") || text.Contains("快捷")) return "\uE765";

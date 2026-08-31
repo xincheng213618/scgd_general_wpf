@@ -30,6 +30,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         private bool _isLoadingDetail;
         private bool _hasError;
         private bool _isOffline;
+        private bool _isReplacingCatalogItems;
         private string _statusText = string.Empty;
         private int _totalCount;
         private bool _isDisposed;
@@ -56,6 +57,12 @@ namespace ColorVision.UI.Desktop.Marketplace
             get => _selectedPlugin;
             set
             {
+                if (_isReplacingCatalogItems && value == null)
+                    return;
+
+                if (ReferenceEquals(_selectedPlugin, value))
+                    return;
+
                 _selectedPlugin = value;
                 OnPropertyChanged();
                 _ = LoadSelectedDetailAsync(value);
@@ -67,6 +74,9 @@ namespace ColorVision.UI.Desktop.Marketplace
             get => _selectedDetailContext;
             private set
             {
+                if (ReferenceEquals(_selectedDetailContext, value))
+                    return;
+
                 _selectedDetailContext = value;
                 OnPropertyChanged();
                 _detailChanged(value);
@@ -144,7 +154,6 @@ namespace ColorVision.UI.Desktop.Marketplace
             if (_isInitialized)
                 return;
 
-            _isInitialized = true;
             await RefreshAsync(forceReload: true, cancellationToken);
         }
 
@@ -158,8 +167,9 @@ namespace ColorVision.UI.Desktop.Marketplace
             ObjectDisposedException.ThrowIf(_isDisposed, this);
 
             CancelAndDispose(ref _loadPageCancellation);
-            _loadPageCancellation = CancellationTokenSource.CreateLinkedTokenSource(externalCancellationToken);
-            CancellationToken cancellationToken = _loadPageCancellation.Token;
+            var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(externalCancellationToken);
+            _loadPageCancellation = operationCancellation;
+            CancellationToken cancellationToken = operationCancellation.Token;
 
             IsLoading = true;
             HasError = false;
@@ -182,39 +192,67 @@ namespace ColorVision.UI.Desktop.Marketplace
                 MarketplaceSearchResult result = await _client.SearchPluginsAsync(request, cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
 
-                ReplaceCollection(MarketplacePlugins, result.Items);
-                ReplaceCollection(PackageSuggestions, result.Items.Select(item => item.PluginId).Where(item => !string.IsNullOrWhiteSpace(item)));
+                string? selectedPluginId = SelectedPlugin?.PluginId;
+                _isReplacingCatalogItems = true;
+                try
+                {
+                    ReplaceCollection(MarketplacePlugins, result.Items);
+                    ReplaceCollection(PackageSuggestions, result.Items.Select(item => item.PluginId).Where(item => !string.IsNullOrWhiteSpace(item)));
+                }
+                finally
+                {
+                    _isReplacingCatalogItems = false;
+                }
 
                 TotalCount = result.TotalCount;
                 StatusText = string.Format(null, MarketplacePluginCountFormat, result.TotalCount);
 
-                string? selectedPluginId = SelectedPlugin?.PluginId;
-                MarketplacePluginSummary? nextSelection = result.Items.FirstOrDefault(item => string.Equals(item.PluginId, selectedPluginId, StringComparison.OrdinalIgnoreCase))
-                    ?? result.Items.FirstOrDefault();
-                SelectedPlugin = nextSelection;
+                MarketplacePluginSummary? nextSelection = selectedPluginId == null ? null
+                    : result.Items.FirstOrDefault(item => string.Equals(item.PluginId, selectedPluginId, StringComparison.OrdinalIgnoreCase));
+                if (ReferenceEquals(SelectedPlugin, nextSelection))
+                {
+                    OnPropertyChanged(nameof(SelectedPlugin));
+                    if (nextSelection != null)
+                        _ = LoadSelectedDetailAsync(nextSelection);
+                }
+                else
+                    SelectedPlugin = nextSelection;
 
                 if (nextSelection == null)
                 {
                     SelectedDetailContext = null;
                 }
+                _isInitialized = true;
             }
             catch (OperationCanceledException)
             {
+                if (ReferenceEquals(_loadPageCancellation, operationCancellation))
+                    _isInitialized = false;
             }
             catch (Exception ex)
             {
+                if (cancellationToken.IsCancellationRequested || !ReferenceEquals(_loadPageCancellation, operationCancellation))
+                    return;
+
                 log.Debug($"LoadCatalogAsync failed: {ex.Message}");
+                _isInitialized = false;
                 HasError = true;
                 IsOffline = ex is HttpRequestException || ex is TaskCanceledException;
                 ReplaceCollection(MarketplacePlugins, Array.Empty<MarketplacePluginSummary>());
                 ReplaceCollection(PackageSuggestions, Array.Empty<string>());
                 TotalCount = 0;
+                SelectedPlugin = null;
                 SelectedDetailContext = null;
                 StatusText = Resources.MarketplaceLoadFailed;
             }
             finally
             {
-                IsLoading = false;
+                if (ReferenceEquals(_loadPageCancellation, operationCancellation))
+                {
+                    IsLoading = false;
+                    _loadPageCancellation = null;
+                    operationCancellation.Dispose();
+                }
             }
         }
 
@@ -224,15 +262,16 @@ namespace ColorVision.UI.Desktop.Marketplace
                 return;
 
             CancelAndDispose(ref _loadDetailCancellation);
-            _loadDetailCancellation = new CancellationTokenSource();
-            CancellationToken cancellationToken = _loadDetailCancellation.Token;
-
             if (summary == null)
             {
+                IsLoadingDetail = false;
                 SelectedDetailContext = null;
                 return;
             }
 
+            var operationCancellation = new CancellationTokenSource();
+            _loadDetailCancellation = operationCancellation;
+            CancellationToken cancellationToken = operationCancellation.Token;
             try
             {
                 IsLoadingDetail = true;
@@ -256,11 +295,17 @@ namespace ColorVision.UI.Desktop.Marketplace
             catch (Exception ex)
             {
                 log.Debug($"LoadSelectedDetailAsync failed for {summary.PluginId}: {ex.Message}");
-                SelectedDetailContext = null;
+                if (!cancellationToken.IsCancellationRequested)
+                    SelectedDetailContext = null;
             }
             finally
             {
-                IsLoadingDetail = false;
+                if (ReferenceEquals(_loadDetailCancellation, operationCancellation))
+                {
+                    IsLoadingDetail = false;
+                    _loadDetailCancellation = null;
+                    operationCancellation.Dispose();
+                }
             }
         }
 

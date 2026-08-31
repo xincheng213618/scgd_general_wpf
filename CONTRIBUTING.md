@@ -7,7 +7,7 @@
 1. 从当前集成分支创建工作分支。
 2. 每个变更只解决一个明确问题。
 3. 不要把无关重构和行为修改混在一起。
-4. 当公开行为、构建步骤、发布步骤、插件打包或项目交付行为变化时，同步更新对应 README 或 `docs/` 页面。
+4. 当公开行为、构建步骤、发布步骤、插件打包或项目交付行为变化时，用 `knowledge.mjs impact <源码路径>` 找到候选主题，并在同一变更中更新对应知识和验证入口；没有候选不等于无需更新。
 5. 提交 PR 前运行与变更相关的验证命令。
 
 ## 构建与测试
@@ -33,10 +33,10 @@ dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:
 dotnet test Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj -c Release -p:Platform=x64
 ```
 
-文档站构建：
+文档站构建（Node.js 22+；安装依赖会联网，本地构建不会发布）：
 
 ```powershell
-npm install
+npm ci
 npm run docs:build
 ```
 
@@ -70,22 +70,18 @@ python -m unittest discover -s .\Scripts\tests -p "test_*.py" -v
 
 ## 文档规则
 
-文档按标准 Git 工程入口组织：
+文档是供AI按需读取的项目知识，网站是派生视图。维护规则以 [docs/AGENTS.md](docs/AGENTS.md) 和[知识维护规范](docs/knowledge/maintenance.md)为准。
 
 - 根目录 `README.md` 是仓库第一入口。
 - `CONTRIBUTING.md` 说明贡献和验证规则。
 - `CHANGELOG.md` 记录版本历史。
 - `LICENSE.md` 指向许可协议。
-- `docs/` 承载用户、开发、交付、项目、插件和源码参考材料。
+- `docs/` 按能力和任务组织知识，每个活动主题声明稳定ID、摘要、状态、源码、测试与相关主题。
+- `docs/knowledge/index.md`、`catalog.json` 和站点导航从元数据生成，不手工维护第二份事实。
 
 简体中文是当前维护中的文档语言。
 
-修改文档导航时，请同步检查：
-
-- `docs/index.md`
-- `docs/README.md`
-- `docs/.vitepress/i18n/navigation-data.json`
-- 受影响章节的 README
+更新后运行 `npm run docs:knowledge`、`npm run docs:check`，涉及网页时运行 `npm run docs:build`。正文按完整语义组织，不按固定行数拆分。测试引用仅表示定位，不得伪造已验证结果；未来设计和默认关闭的实验能力必须明确标注。
 
 删掉或合并旧页面时，不要让旧地址直接 404。若旧地址可能来自导航、搜索、外部书签或历史链接，请保留一个带 `redirect_from_deleted_page: true` 和 `search: false` 的兼容页，并跳转到新的正式页面。导航和正文入口应指向正式页面，不要指向兼容页。
 
@@ -96,14 +92,14 @@ python -m unittest discover -s .\Scripts\tests -p "test_*.py" -v
 插件变更：
 
 - 保持 `manifest.json`、插件 README、CHANGELOG、构建复制规则和 `.cvxp` 打包行为一致。
-- 打包行为变化时运行 `Scripts\package_plugin.bat <PluginName>`。
-- 视情况更新 [插件开发](docs/02-developer-guide/plugin-development/README.md) 或 [现有插件能力](docs/04-api-reference/plugins/README.md)。
+- 打包行为变化时先运行相关脚本测试和不上传的清单校验；`Scripts\package_plugin.bat <PluginName>` 会上传，只在任务明确授权发布/远端验收时执行。
+- 按改动责任更新[插件装配与模块知识](docs/04-api-reference/plugins/README.md)所指向的规范主题；不再分别维护开发手册与使用手册。
 
 客户项目变更：
 
 - 保持项目 README、CHANGELOG、manifest/配置、流程组、协议字段和结果导出文档一致。
-- 交付打包变化时运行 `Scripts\package_project.bat <ProjectName>`。
-- 更新 [项目说明](docs/00-projects/README.md) 和受影响项目页。
+- 交付打包变化时先验证脚本与清单；`Scripts\package_project.bat <ProjectName>` 会上传，执行前必须有任务范围内的发布授权。
+- 更新 [项目说明](docs/04-api-reference/projects/README.md) 和受影响项目页。
 
 ## 发布规则
 
@@ -121,6 +117,6 @@ Scripts\release.bat
 
 - 变更聚焦在一个目的上。
 - 运行了与变更相关的构建/测试命令，或说明无法运行。
-- 文档已更新，或确认无需更新。
+- 受影响知识已核对和更新，或说明无需变更的依据；派生目录已同步，知识检查通过。
 - 插件/项目包的 manifest、README、CHANGELOG 在运行时打包行为变化时已同步。
-- 没有提交生成产物、本地密钥、机器私有配置或无关格式化变更。
+- 没有提交编译输出、网站 `dist`、本地密钥、机器私有配置或无关格式化变更；知识地图、领域索引和catalog属于必须同步提交的派生资料。

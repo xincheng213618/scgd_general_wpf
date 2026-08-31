@@ -919,9 +919,6 @@
   <data name="自动/自适应" xml:space="preserve">
     <value>自动/自适应</value>
   </data>
-  <data name="Token" xml:space="preserve">
-    <value>令牌</value>
-  </data>
   <data name="Port" xml:space="preserve">
     <value>端口</value>
   </data>

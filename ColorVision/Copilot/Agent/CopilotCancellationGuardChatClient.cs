@@ -67,7 +67,7 @@ namespace ColorVision.Copilot
             private readonly TimeSpan _disposalTimeout;
             private IAsyncEnumerator<ChatResponseUpdate>? _enumerator;
             private Task<bool>? _pendingMove;
-            private bool _cancellationInterrupted;
+            private bool _moveFailed;
 
             public CancellationGuardEnumerator(
                 IAsyncEnumerator<ChatResponseUpdate> enumerator,
@@ -84,24 +84,26 @@ namespace ColorVision.Copilot
             [DebuggerNonUserCode]
             public async ValueTask<bool> MoveNextAsync(CancellationToken cancellationToken)
             {
-                cancellationToken.ThrowIfCancellationRequested();
                 var enumerator = _enumerator
                     ?? throw new ObjectDisposedException(nameof(CancellationGuardEnumerator));
-                var pendingMove = enumerator.MoveNextAsync().AsTask();
-                _pendingMove = pendingMove;
+                Task<bool>? pendingMove = null;
                 try
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    pendingMove = enumerator.MoveNextAsync().AsTask();
+                    _pendingMove = pendingMove;
                     return await pendingMove.WaitAsync(cancellationToken).ConfigureAwait(false);
                 }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                catch
                 {
-                    _cancellationInterrupted = true;
+                    // Cleanup must not replace the error that determines retry and recovery.
+                    _moveFailed = true;
                     CopilotCancellationBoundary.ObserveLateFault(pendingMove);
                     throw;
                 }
                 finally
                 {
-                    if (pendingMove.IsCompleted)
+                    if (pendingMove?.IsCompleted == true)
                         _pendingMove = null;
                 }
             }
@@ -123,7 +125,7 @@ namespace ColorVision.Copilot
                 return new ValueTask(DisposeBoundedAsync(
                     enumerator,
                     _disposalTimeout,
-                    suppressFailure: _cancellationInterrupted));
+                    suppressFailure: _moveFailed));
             }
 
             private static async Task DisposeAfterMoveCompletesAsync(
@@ -158,16 +160,18 @@ namespace ColorVision.Copilot
                 catch (Exception ex) when (suppressFailure)
                 {
                     Trace.TraceWarning(
-                        "Copilot provider stream disposal failed after cancellation: {0}",
-                        CopilotUserFacingErrorFormatter.Sanitize(ex.Message));
+                        "Copilot provider stream disposal failed after an interrupted operation: {0}",
+                        ex.GetType().Name);
                     return;
                 }
 
+                using var timeoutCancellation = new CancellationTokenSource(disposalTimeout);
                 try
                 {
-                    await disposeTask.WaitAsync(disposalTimeout).ConfigureAwait(false);
+                    await disposeTask.WaitAsync(timeoutCancellation.Token).ConfigureAwait(false);
                 }
-                catch (TimeoutException)
+                catch (OperationCanceledException ex) when (
+                    timeoutCancellation.IsCancellationRequested && ex.CancellationToken == timeoutCancellation.Token)
                 {
                     CopilotCancellationBoundary.ObserveLateFault(disposeTask);
                     Trace.TraceWarning(
@@ -177,8 +181,8 @@ namespace ColorVision.Copilot
                 catch (Exception ex) when (suppressFailure)
                 {
                     Trace.TraceWarning(
-                        "Copilot provider stream disposal failed after cancellation: {0}",
-                        CopilotUserFacingErrorFormatter.Sanitize(ex.Message));
+                        "Copilot provider stream disposal failed after an interrupted operation: {0}",
+                        ex.GetType().Name);
                 }
             }
         }

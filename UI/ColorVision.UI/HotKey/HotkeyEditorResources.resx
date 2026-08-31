@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Title" xml:space="preserve"><value>键盘快捷键</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>查找、修改或清除快捷键。更改确认后立即保存。</value></data>
+  <data name="Search" xml:space="preserve"><value>搜索操作或快捷键</value></data>
+  <data name="ResetAll" xml:space="preserve"><value>全部恢复默认</value></data>
+  <data name="Reset" xml:space="preserve"><value>恢复默认</value></data>
+  <data name="Edit" xml:space="preserve"><value>编辑快捷键</value></data>
+  <data name="Clear" xml:space="preserve"><value>清除快捷键</value></data>
+  <data name="Unassigned" xml:space="preserve"><value>未分配</value></data>
+  <data name="Global" xml:space="preserve"><value>全局</value></data>
+  <data name="Modified" xml:space="preserve"><value>已修改</value></data>
+  <data name="Empty" xml:space="preserve"><value>没有匹配的快捷键</value></data>
+  <data name="EmptyHelp" xml:space="preserve"><value>试试操作名称或组合键，例如 Ctrl+I。</value></data>
+  <data name="Count" xml:space="preserve"><value>{0} 项操作 · {1} 项已修改 · {2} 项未分配</value></data>
+  <data name="SearchCount" xml:space="preserve"><value>找到 {0} / {1} 项操作</value></data>
+  <data name="Saved" xml:space="preserve"><value>快捷键已保存</value></data>
+  <data name="ResetConfirm" xml:space="preserve"><value>将所有已加载操作的快捷键和全局模式恢复为默认值？此操作不会重置其他设置。</value></data>
+  <data name="ResetTitle" xml:space="preserve"><value>恢复默认快捷键</value></data>
+  <data name="EditTitle" xml:space="preserve"><value>编辑快捷键</value></data>
+  <data name="Record" xml:space="preserve"><value>按下新的组合键</value></data>
+  <data name="RecordHelp" xml:space="preserve"><value>点击输入框并按下组合键。每组绑定都能触发此操作。Tab 切换焦点，Esc 取消。</value></data>
+  <data name="GlobalOption" xml:space="preserve"><value>全局生效</value></data>
+  <data name="GlobalHelp" xml:space="preserve"><value>此设置作用于该操作的全部快捷键。开启后，应用在后台时也可以触发。</value></data>
+  <data name="Default" xml:space="preserve"><value>默认：{0}</value></data>
+  <data name="Apply" xml:space="preserve"><value>保存</value></data>
+  <data name="Cancel" xml:space="preserve"><value>取消</value></data>
+  <data name="Invalid" xml:space="preserve"><value>字符键需搭配 Ctrl、Alt 或 Win；功能键和导航键可单独使用。</value></data>
+  <data name="Conflict" xml:space="preserve"><value>此组合键已分配给“{0}”，请换一个组合键或先清除原绑定。</value></data>
+  <data name="Error" xml:space="preserve"><value>未能应用快捷键</value></data>
+  <data name="NoChange" xml:space="preserve"><value>快捷键未发生变化</value></data>
+  <data name="CaptureError" xml:space="preserve"><value>快捷键恢复失败，请检查：{0}</value></data>
+  <data name="ScopeWindow" xml:space="preserve"><value>仅应用内生效</value></data>
+  <data name="ScopeGlobal" xml:space="preserve"><value>应用在后台也生效</value></data>
+  <data name="ClearValue" xml:space="preserve"><value>清空</value></data>
+  <data name="ChangedHelp" xml:space="preserve"><value>右侧恢复按钮仅重置这一项。</value></data>
+  <data name="KeyboardHint" xml:space="preserve"><value>组合键支持搜索，例如 Ctrl+Shift+B。</value></data>
+  <data name="CaptureLabel" xml:space="preserve"><value>快捷键组合</value></data>
+  <data name="SavedHelp" xml:space="preserve"><value>更改已应用，无需另外保存。</value></data>
+  <data name="Add" xml:space="preserve"><value>添加快捷键</value></data>
+  <data name="Duplicate" xml:space="preserve"><value>此操作已经有相同的快捷键，请使用其他组合。</value></data>
+  <data name="ClearSearch" xml:space="preserve"><value>清空搜索</value></data>
+  <data name="ClearFilters" xml:space="preserve"><value>清除搜索和筛选</value></data>
+  <data name="Filter" xml:space="preserve"><value>筛选快捷键状态</value></data>
+  <data name="All" xml:space="preserve"><value>全部操作</value></data>
+  <data name="NoActions" xml:space="preserve"><value>暂无可配置的操作</value></data>
+  <data name="NoActionsHelp" xml:space="preserve"><value>当前没有已加载的快捷键操作。</value></data>
+</root>

@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module'
+import { domainDefinitions } from '../scripts/knowledge.mjs'
 
 // Shared helpers for the Chinese-only docs site and generated search artifacts.
 
@@ -16,14 +17,8 @@ export const lastUpdatedFormatOptions = {
 export const localeDefinitions = require('./locale-definitions.json')
 
 const sectionBlueprints = [
-  { key: defaultSectionKey, title: { root: '首页与入口' }, link: '/' },
-  { key: '00-projects', title: { root: '项目说明' }, link: '/00-projects/README' },
-  { key: '01-user-guide', title: { root: '使用手册' }, link: '/01-user-guide/README' },
-  { key: '00-getting-started', title: { root: '使用手册：安装与首次使用' }, link: '/00-getting-started/README' },
-  { key: '02-developer-guide', title: { root: '开发手册' }, link: '/02-developer-guide/README' },
-  { key: '03-architecture', title: { root: '开发手册：架构设计' }, link: '/03-architecture/README' },
-  { key: '04-api-reference', title: { root: '模块参考' }, link: '/04-api-reference/README' },
-  { key: '05-resources', title: { root: '附录与资源' }, link: '/05-resources/README' },
+  { key: defaultSectionKey, title: { root: '知识入口' }, link: '/' },
+  ...domainDefinitions.map(({ key, title }) => ({ key, title: { root: title }, link: `/knowledge/domains/${key}` })),
 ]
 
 export const localeOrder = Object.keys(localeDefinitions)

@@ -1,4 +1,5 @@
 using ColorVision.UI.Desktop.Diagnostics;
+using ColorVision.UI.Desktop.Feedback;
 using ColorVision.UI.Desktop.Feedback.Collectors;
 using ColorVision.UI.Plugins;
 using ColorVisionServiceHost;
@@ -168,6 +169,20 @@ namespace ColorVision.UI.Tests
         {
             Assert.IsAssignableFrom<IFeedbackLogCollector>(new CrashDumpFileCollector());
             Assert.IsAssignableFrom<IFeedbackLogCollector>(new WindowsEventLogCollector());
+        }
+
+        [Fact]
+        public void CrashDumpCollectorRequiresExplicitSelection()
+        {
+            IFeedbackLogCollector collector = new CrashDumpFileCollector();
+            var item = new CollectorItem(collector);
+
+            Assert.False(collector.IsSelectedByDefault);
+            Assert.False(item.IsChecked);
+
+            item.IsChecked = true;
+
+            Assert.True(item.IsChecked);
         }
 
         [Theory]

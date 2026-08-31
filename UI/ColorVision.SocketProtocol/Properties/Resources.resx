@@ -200,9 +200,6 @@
   <data name="Enabled" xml:space="preserve">
     <value>已启用</value>
   </data>
-  <data name="EnabledStatus" xml:space="preserve">
-    <value>启用状态</value>
-  </data>
   <data name="FilterAll" xml:space="preserve">
     <value>全部</value>
   </data>
@@ -229,9 +226,6 @@
   </data>
   <data name="OpenListenAddressFailedFormat" xml:space="preserve">
     <value>打开 {0} 失败: {1}</value>
-  </data>
-  <data name="OpenStatus" xml:space="preserve">
-    <value>服务打开</value>
   </data>
   <data name="PrettyPrintView" xml:space="preserve">
     <value>格式化查看</value>
@@ -295,5 +289,77 @@
   </data>
   <data name="Socket_MessageTable" xml:space="preserve">
     <value>Socket 消息</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>搜索事件、客户端或内容</value>
+  </data>
+  <data name="ResetFilters" xml:space="preserve">
+    <value>重置筛选</value>
+  </data>
+  <data name="NoMessages" xml:space="preserve">
+    <value>暂无消息</value>
+  </data>
+  <data name="NoMessagesHint" xml:space="preserve">
+    <value>接收到的消息和发送记录会显示在这里，也可以查询历史消息。</value>
+  </data>
+  <data name="NoMatchingMessages" xml:space="preserve">
+    <value>没有匹配的消息</value>
+  </data>
+  <data name="NoMatchingMessagesHint" xml:space="preserve">
+    <value>请调整关键词或收发方向，或重置筛选查看全部记录。</value>
+  </data>
+  <data name="SelectMessage" xml:space="preserve">
+    <value>选择一条消息查看详情</value>
+  </data>
+  <data name="SelectMessageHint" xml:space="preserve">
+    <value>查看消息正文、客户端与请求信息，支持 JSON 格式化和复制。</value>
+  </data>
+  <data name="NoMessageContent" xml:space="preserve">
+    <value>没有可显示的消息正文</value>
+  </data>
+  <data name="NoMessageContentHint" xml:space="preserve">
+    <value>消息的时间、方向和客户端信息仍可在上方查看。</value>
+  </data>
+  <data name="NoContentPreview" xml:space="preserve">
+    <value>无内容预览</value>
+  </data>
+  <data name="MessageId" xml:space="preserve">
+    <value>消息 ID</value>
+  </data>
+  <data name="MessageBody" xml:space="preserve">
+    <value>消息正文</value>
+  </data>
+  <data name="CopyRaw" xml:space="preserve">
+    <value>复制原文</value>
+  </data>
+  <data name="ContentLoadFailedFormat" xml:space="preserve">
+    <value>消息正文读取失败：{0}</value>
+  </data>
+  <data name="FilteredMessageCountFormat" xml:space="preserve">
+    <value>{0} / {1} 条消息</value>
+  </data>
+  <data name="KeyboardShortcutsHint" xml:space="preserve">
+    <value>Ctrl+F 搜索 · F5 刷新 · Ctrl+C 复制</value>
+  </data>
+  <data name="FirewallPrivate" xml:space="preserve">
+    <value>防火墙 · 专用</value>
+  </data>
+  <data name="FirewallPublic" xml:space="preserve">
+    <value>防火墙 · 公用</value>
+  </data>
+  <data name="AllowFirewall" xml:space="preserve">
+    <value>放行</value>
+  </data>
+  <data name="AllowPrivateFirewallTooltip" xml:space="preserve">
+    <value>为当前程序创建专用网络入站允许规则。</value>
+  </data>
+  <data name="AllowPublicFirewallTooltip" xml:space="preserve">
+    <value>为当前程序创建公用网络入站允许规则。</value>
+  </data>
+  <data name="DatabaseCleanup" xml:space="preserve">
+    <value>数据库清理</value>
+  </data>
+  <data name="DatabaseCleanupUnavailable" xml:space="preserve">
+    <value>当前未加载数据库清理组件，请从完整 ColorVision 程序打开此窗口。</value>
   </data>
 </root>

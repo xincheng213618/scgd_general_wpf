@@ -268,15 +268,6 @@ namespace ColorVision.Scheduler.Properties {
         }
         
         /// <summary>
-        ///   查找类似 创建触发器失败 的本地化字符串。
-        /// </summary>
-        public static string Sched_CreateTriggerFailed {
-            get {
-                return ResourceManager.GetString("Sched_CreateTriggerFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Cron表达式不能为空 的本地化字符串。
         /// </summary>
         public static string Sched_CronEmpty {
@@ -674,15 +665,6 @@ namespace ColorVision.Scheduler.Properties {
         }
         
         /// <summary>
-        ///   查找类似 部分成功 的本地化字符串。
-        /// </summary>
-        public static string Sched_PartialSuccess {
-            get {
-                return ResourceManager.GetString("Sched_PartialSuccess", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 暂停任务 的本地化字符串。
         /// </summary>
         public static string Sched_PauseTask {
@@ -724,15 +706,6 @@ namespace ColorVision.Scheduler.Properties {
         public static string Sched_PriorityTooltip {
             get {
                 return ResourceManager.GetString("Sched_PriorityTooltip", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 提示 的本地化字符串。
-        /// </summary>
-        public static string Sched_Prompt {
-            get {
-                return ResourceManager.GetString("Sched_Prompt", resourceCulture);
             }
         }
         
@@ -854,15 +827,6 @@ namespace ColorVision.Scheduler.Properties {
         }
         
         /// <summary>
-        ///   查找类似 成功 的本地化字符串。
-        /// </summary>
-        public static string Sched_Success {
-            get {
-                return ResourceManager.GetString("Sched_Success", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 成功:  的本地化字符串。
         /// </summary>
         public static string Sched_SuccessCount {
@@ -886,15 +850,6 @@ namespace ColorVision.Scheduler.Properties {
         public static string Sched_SuccessFilter {
             get {
                 return ResourceManager.GetString("Sched_SuccessFilter", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 任务 的本地化字符串。
-        /// </summary>
-        public static string Sched_Task {
-            get {
-                return ResourceManager.GetString("Sched_Task", resourceCulture);
             }
         }
         

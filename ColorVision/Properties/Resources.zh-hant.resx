@@ -150,14 +150,8 @@
   <data name="LaunchSuccess" xml:space="preserve">
     <value>啟動成功</value>
   </data>
-  <data name="CurrentVersionIsUpToDate" xml:space="preserve">
-    <value>目前版本已經是最新版本</value>
-  </data>
   <data name="ConfirmUpdate" xml:space="preserve">
     <value>是否更新</value>
-  </data>
-  <data name="NewVersionFound" xml:space="preserve">
-    <value>發現新版本</value>
   </data>
 
 
@@ -197,9 +191,6 @@
   <data name="Bit" xml:space="preserve">
     <value>位元</value>
   </data>
-  <data name="ReleaseDate" xml:space="preserve">
-    <value>發佈日期</value>
-  </data>
   <data name="Delete" xml:space="preserve">
     <value>刪除</value>
   </data>
@@ -218,19 +209,11 @@
     <value>本地下載</value>
   </data>
 
-  <data name="SoftwareVersionIdentical" xml:space="preserve">
-    <value>軟體版本相同</value>
-  </data>
 
   <data name="FullScreen" xml:space="preserve">
     <value>全螢幕</value>
   </data>
-  <data name="TerminateUnresponsiveProcess" xml:space="preserve">
-    <value>終止未回應的進程</value>
-  </data>
-  <data name="ClickYesToUpdateNow" xml:space="preserve">
-    <value>點選是立即更新，點選否跳過該版本，點選取消稍後提醒</value>
-  </data>  <data name="UpdatePreviewCheckingHeading" xml:space="preserve">
+    <data name="UpdatePreviewCheckingHeading" xml:space="preserve">
     <value>正在檢查更新</value>
   </data>
   <data name="UpdatePreviewCheckingSummary" xml:space="preserve">
@@ -333,9 +316,6 @@
     <value>宿主要求：{0}</value>
   </data>
 
-  <data name="UpdatePreviewHostVersionLabel" xml:space="preserve">
-    <value>主程式版本</value>
-  </data>
   <data name="UpdatePreviewSkippedIncompatibleUpdatesFormat" xml:space="preserve">
     <value>以下更新因相容性要求未顯示：{0}</value>
   </data>
@@ -378,9 +358,6 @@
   <data name="CopilotExpandConversationList" xml:space="preserve">
     <value>展開會話列表</value>
   </data>
-  <data name="CopilotConfigureCopilot" xml:space="preserve">
-    <value>配置 Copilot</value>
-  </data>
   <data name="Copy" xml:space="preserve">
     <value>複製</value>
   </data>
@@ -390,17 +367,8 @@
   <data name="CopilotRetry" xml:space="preserve">
     <value>重試</value>
   </data>
-  <data name="CopilotRegenerateAnswer" xml:space="preserve">
-    <value>重新生成當前回答</value>
-  </data>
   <data name="Refresh" xml:space="preserve">
     <value>重新整理</value>
-  </data>
-  <data name="CopilotRefreshWebContext" xml:space="preserve">
-    <value>重新抓取網頁上下文並生成回答</value>
-  </data>
-  <data name="CopilotCurrentWindowContext" xml:space="preserve">
-    <value>當前視窗上下文</value>
   </data>
 
   <data name="CopilotPasteImage" xml:space="preserve">
@@ -444,18 +412,6 @@
   <data name="CopilotModel" xml:space="preserve">
     <value>模型</value>
   </data>
-  <data name="CopilotMaxToken" xml:space="preserve">
-    <value>最大 Token</value>
-  </data>
-  <data name="CopilotTemperature" xml:space="preserve">
-    <value>溫度</value>
-  </data>
-  <data name="CopilotToolRounds" xml:space="preserve">
-    <value>工具輪次</value>
-  </data>
-  <data name="CopilotSystemPrompt" xml:space="preserve">
-    <value>自訂提示詞</value>
-  </data>
 
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>
@@ -475,9 +431,6 @@
   <data name="Open" xml:space="preserve">
     <value>開啟</value>
   </data>
-  <data name="OpenWithSystemDefault" xml:space="preserve">
-    <value>系統預設開啟</value>
-  </data>
   <data name="DesktopPetSendTestReminder" xml:space="preserve">
     <value>發送測試提醒</value>
   </data>
@@ -489,9 +442,6 @@
   </data>
   <data name="DesktopPetShowMainWindow" xml:space="preserve">
     <value>顯示主窗口</value>
-  </data>
-  <data name="DesktopPetSettings" xml:space="preserve">
-    <value>桌寵設置</value>
   </data>
   <data name="DesktopPetAlwaysOnTop" xml:space="preserve">
     <value>始終置頂</value>
@@ -568,9 +518,6 @@
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>不支持的文件格式</value>
   </data>
-  <data name="PluginLoadFailedPrompt" xml:space="preserve">
-    <value>檢測到軟件上次沒有成功打開，是否禁用插件</value>
-  </data>
 
 
 
@@ -599,12 +546,6 @@
 
 
 
-  <data name="CannotFindUpdateRecord" xml:space="preserve">
-    <value>無法找到更新記錄</value>
-  </data>
-  <data name="ReadUpdateRecordFailed" xml:space="preserve">
-    <value>讀取更新記錄失敗: {0}</value>
-  </data>
   <data name="ShellExtensionNotFound" xml:space="preserve">
     <value>未找到 Shell Extension:\n{0}</value>
   </data>
@@ -646,12 +587,6 @@
 
 
 
-  <data name="CopilotUpdateSnapshot" xml:space="preserve">
-    <value>更新快照</value>
-  </data>
-  <data name="CopilotAttachToQuestion" xml:space="preserve">
-    <value>附加到提問</value>
-  </data>
   <data name="CopilotSelectHistoryOrNew" xml:space="preserve">
     <value>從右側選擇歷史會話，或點擊 + 新建會話。</value>
   </data>
@@ -663,9 +598,6 @@
   </data>
   <data name="CopilotSend" xml:space="preserve">
     <value>發送</value>
-  </data>
-  <data name="CopilotExecuteAgent" xml:space="preserve">
-    <value>執行 Agent</value>
   </data>
 
 

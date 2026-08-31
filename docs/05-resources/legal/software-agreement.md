@@ -1,4 +1,15 @@
-**软件许可协议**
+---
+knowledge_id: "platform.license"
+knowledge_type: "reference"
+status: "current"
+summary: "保留软件许可协议原文供定位，不由AI重新解释或改写许可条款。"
+aliases: ["软件许可协议","许可入口","license"]
+code_paths: ["LICENSE.md"]
+test_paths: []
+related: ["governance.knowledge"]
+---
+
+# 软件许可协议
 
 **重要事项：**
 

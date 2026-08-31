@@ -282,7 +282,11 @@ namespace ColorVision.Copilot
 
         private void SelectedProfile_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (_isApplyingPreset || sender is not CopilotProfileConfig profile)
+            if (sender is not CopilotProfileConfig profile)
+                return;
+
+            InvalidateSelectedProfileConnectionTest();
+            if (_isApplyingPreset)
                 return;
 
             if (e.PropertyName == nameof(CopilotProfileConfig.VendorType))
@@ -305,7 +309,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(CanTestSelectedProfile));
             CommandManager.InvalidateRequerySuggested();
 
-            if (IsTestingSelectedProfileConnection)
+            if (IsTestingSelectedProfileConnection && _modelConnectionTestCancellation?.IsCancellationRequested != true)
                 return;
 
             SelectedProfileConnectionTestText = SelectedProfile?.IsConfigured == true
@@ -313,6 +317,18 @@ namespace ColorVision.Copilot
                     ? "Test sends one short request using the selected profile."
                     : configuredMessage
                 : "Complete API key, endpoint, and model before testing.";
+        }
+
+        private void InvalidateSelectedProfileConnectionTest()
+        {
+            _selectedProfileConnectionRevision++;
+            var cancellation = _modelConnectionTestCancellation;
+            if (cancellation == null)
+                return;
+
+            if (string.Equals(SettingsStatusText, _modelConnectionTestNotice, StringComparison.Ordinal))
+                SetSettingsNotice("Model profile changed. Run a new connection test for the current values.");
+            cancellation.Cancel();
         }
 
         private void ToggleSelectedProfileConnectionTest()
@@ -323,16 +339,17 @@ namespace ColorVision.Copilot
                 if (cancellation == null || cancellation.IsCancellationRequested)
                     return;
 
-                cancellation.Cancel();
                 SelectedProfileConnectionTestText = "Cancelling model connection test...";
-                SetSettingsNotice(SelectedProfileConnectionTestText);
+                _modelConnectionTestNotice = SelectedProfileConnectionTestText;
+                SetSettingsNotice(_modelConnectionTestNotice);
+                cancellation.Cancel();
                 return;
             }
 
             RunUiOperation(TestSelectedProfileConnectionAsync, "测试模型连接");
         }
 
-        private async Task TestSelectedProfileConnectionAsync()
+        internal async Task TestSelectedProfileConnectionAsync()
         {
             if (_disposed || IsTestingSelectedProfileConnection)
                 return;
@@ -355,41 +372,66 @@ namespace ColorVision.Copilot
 
             using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(
                 _lifetimeCancellation.Token);
+            var profileRevision = _selectedProfileConnectionRevision;
+            var profileLabel = sourceProfile.DisplayLabel;
+            bool IsCurrentProfile() => !_disposed
+                && ReferenceEquals(SelectedProfile, sourceProfile)
+                && _selectedProfileConnectionRevision == profileRevision;
             _modelConnectionTestCancellation = cancellation;
+            _modelConnectionTestNotice = $"Testing {profileLabel}...";
             IsTestingSelectedProfileConnection = true;
             SelectedProfileConnectionTestText = "Testing model connection...";
-            SetSettingsNotice($"Testing {sourceProfile.DisplayLabel}...");
+            SetSettingsNotice(_modelConnectionTestNotice);
             try
             {
                 var result = await _modelConnectionDiagnostic.TestAsync(
                     sourceProfile,
                     cancellation.Token);
+                if (!IsCurrentProfile() || cancellation.IsCancellationRequested)
+                    return;
                 SelectedProfileConnectionTestText = result.FormatStatus();
-                SetSettingsNotice($"Model test succeeded for {sourceProfile.DisplayLabel}. {SelectedProfileConnectionTestText}");
+                if (string.Equals(SettingsStatusText, _modelConnectionTestNotice, StringComparison.Ordinal))
+                    SetSettingsNotice($"Model test succeeded for {profileLabel}. {SelectedProfileConnectionTestText}");
             }
-            catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
-            }
-            catch (OperationCanceledException)
-            {
-                SelectedProfileConnectionTestText = "Connection test cancelled.";
-                SetSettingsNotice(SelectedProfileConnectionTestText);
             }
             catch (CopilotModelConnectionDiagnosticException exception)
             {
+                if (!IsCurrentProfile() || cancellation.IsCancellationRequested)
+                    return;
                 SelectedProfileConnectionTestText = FormatModelConnectionDiagnosticFailure(exception);
-                SetSettingsNotice(SelectedProfileConnectionTestText);
+                if (string.Equals(SettingsStatusText, _modelConnectionTestNotice, StringComparison.Ordinal))
+                    SetSettingsNotice(SelectedProfileConnectionTestText);
             }
             catch (Exception ex)
             {
+                if (!IsCurrentProfile() || cancellation.IsCancellationRequested)
+                    return;
                 SelectedProfileConnectionTestText = "Connection failed: " + SanitizeError(ex.Message);
-                SetSettingsNotice(SanitizeError(SelectedProfileConnectionTestText));
+                if (string.Equals(SettingsStatusText, _modelConnectionTestNotice, StringComparison.Ordinal))
+                    SetSettingsNotice(SanitizeError(SelectedProfileConnectionTestText));
             }
             finally
             {
+                var ownsSettingsNotice = ReferenceEquals(_modelConnectionTestCancellation, cancellation)
+                    && string.Equals(SettingsStatusText, _modelConnectionTestNotice, StringComparison.Ordinal);
                 if (ReferenceEquals(_modelConnectionTestCancellation, cancellation))
+                {
                     _modelConnectionTestCancellation = null;
+                    _modelConnectionTestNotice = string.Empty;
+                }
                 IsTestingSelectedProfileConnection = false;
+                if (IsCurrentProfile() && cancellation.IsCancellationRequested)
+                {
+                    SelectedProfileConnectionTestText = "Connection test cancelled.";
+                    if (ownsSettingsNotice)
+                        SetSettingsNotice(SelectedProfileConnectionTestText);
+                }
+                else if (!_disposed && !IsCurrentProfile())
+                {
+                    RefreshSelectedProfileTestState("Profile details changed. Test uses the current unsaved values.");
+                }
             }
         }
 

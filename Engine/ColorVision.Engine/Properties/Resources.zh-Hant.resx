@@ -415,9 +415,6 @@
   <data name="AutoExploreTemplate" xml:space="preserve">
     <value>自動曝光模板</value>
   </data>
-  <data name="EditThirdPartyAlgorithmTemplate" xml:space="preserve">
-    <value>編輯第三方演算法模板</value>
-  </data>
 
 
 
@@ -581,9 +578,6 @@
     <value>POI修正標定參數模板設定</value>
   </data>
 
-  <data name="LightBarDetectionV2" xml:space="preserve">
-    <value>燈條檢測V2</value>
-  </data>
 
   
 
@@ -632,9 +626,6 @@
   </data>
   <data name="DataLoad" xml:space="preserve">
     <value>資料載入</value>
-  </data>
-  <data name="AADetect" xml:space="preserve">
-    <value>發光區檢測</value>
   </data>
   <data name="StereoFusion" xml:space="preserve">
     <value>雙目融合</value>
@@ -1056,12 +1047,6 @@
     <value>數量</value>
   </data>
 
-  <data name="FindActiveArea" xml:space="preserve">
-    <value>偵測發光區</value>
-  </data>
-  <data name="FillArea" xml:space="preserve">
-    <value>填充區域</value>
-  </data>
   <data name="Width" xml:space="preserve">
     <value>寬度</value>
   </data>
@@ -1340,13 +1325,7 @@
   <data name="DistortionEvaluationTemplateManagement" xml:space="preserve">
     <value>畸變評價模板管理</value>
   </data>
-  <data name="FOVTemplateManagement" xml:space="preserve">
-    <value>FOV範本管理</value>
-  </data>
 
-  <data name="MTFTemplateManagement" xml:space="preserve">
-    <value>MTF範本管理</value>
-  </data>
 
   
   <data name="DataLoadTemplateManagement" xml:space="preserve">
@@ -2062,12 +2041,6 @@
   </data>
   <data name="Engine_Msg_BackupSuccess" xml:space="preserve">
     <value>Backup successful</value>
-  </data>
-  <data name="Engine_Msg_RestoreSuccessRestarting" xml:space="preserve">
-    <value>Restore successful, restarting service</value>
-  </data>
-  <data name="Engine_Msg_ServiceRestartSuccess" xml:space="preserve">
-    <value>Service restart successful, restarting software</value>
   </data>
   <data name="Engine_Msg_ServiceRestartFailed" xml:space="preserve">
     <value>Service restart failed</value>
@@ -3009,7 +2982,6 @@
   <data name="Camera_HkRoiAlignmentWarning" xml:space="preserve"><value>HK 相機 ROI 的寬高必須以 {0} 像素為步進設定。&#xD;&#xA;&#xD;&#xA;目前 ROI：Width={1}, Height={2}&#xD;&#xA;不符合項目：{3}&#xD;&#xA;&#xD;&#xA;儲存前請將上述值調整為 {0} 的倍數。</value></data>
   <data name="Calibration_PackageFileNotFound" xml:space="preserve"><value>校正套件中找不到檔案：{0}&#xD;&#xA;{1}</value></data>
   <data name="Statistics" xml:space="preserve"><value>統計資訊</value></data>
-  <data name="MtfStatisticsCsvHeader" xml:space="preserve"><value>屬性,最大值,最大值所在名稱,最小值,最小值所在名稱,平均值,變異數,均勻性</value></data>
 
   <data name="CreateToPOI" xml:space="preserve">
     <value>建立為POI</value>
@@ -3064,4 +3036,27 @@
   <data name="CloneCalibrationTemplatesFailure" xml:space="preserve">
     <value>複製校正模板失敗：{0}</value>
   </data>
+  <data name="选择数据源后再操作，每次仅处理当前数据库。" xml:space="preserve"><value>請先選擇資料來源，每次操作僅處理目前的資料庫。</value></data>
+  <data name="仅管理当前数据库，不显示或操作其他数据源。" xml:space="preserve"><value>僅管理目前的資料庫，不顯示或操作其他資料來源。</value></data>
+  <data name="单库维护" xml:space="preserve"><value>單一資料庫維護</value></data>
+  <data name="全局入口" xml:space="preserve"><value>全域入口</value></data>
+  <data name="数据源" xml:space="preserve"><value>資料來源</value></data>
+  <data name="仅对右侧当前数据库执行操作。" xml:space="preserve"><value>僅對右側目前的資料庫執行操作。</value></data>
+  <data name="当前数据库" xml:space="preserve"><value>目前資料庫</value></data>
+  <data name="可用数据表" xml:space="preserve"><value>可用資料表</value></data>
+  <data name="数据行数" xml:space="preserve"><value>資料列數</value></data>
+  <data name="创建完整备份" xml:space="preserve"><value>建立完整備份</value></data>
+  <data name="备份策略" xml:space="preserve"><value>備份策略</value></data>
+  <data name="历史数据清理" xml:space="preserve"><value>歷史資料清理</value></data>
+  <data name="按保留月数清理当前数据库中的过期记录。" xml:space="preserve"><value>依保留月數清理目前資料庫中的過期記錄。</value></data>
+  <data name="所有清理操作都需要再次确认。" xml:space="preserve"><value>所有清理操作都需要再次確認。</value></data>
+  <data name="危险操作" xml:space="preserve"><value>危險操作</value></data>
+  <data name="清空当前库的全部可清理表，无法直接撤销。" xml:space="preserve"><value>清空目前資料庫的所有可清理資料表，無法直接復原。</value></data>
+  <data name="清空当前库全部可清理表" xml:space="preserve"><value>清空目前資料庫所有可清理資料表</value></data>
+  <data name="按表清理只处理勾选项；清理主表时需同时选择所有现存关联明细表。" xml:space="preserve"><value>按表清理僅處理勾選項目；清理主表時，需同時選擇所有現存的關聯明細表。</value></data>
+  <data name="本次操作不会自动创建备份。" xml:space="preserve"><value>本次操作不會自動建立備份。</value></data>
+  <data name="操作前会先创建完整备份；备份失败时不会继续。" xml:space="preserve"><value>操作前會先建立完整備份；備份失敗時不會繼續。</value></data>
+  <data name="当前没有找到可清理数据表。" xml:space="preserve"><value>目前找不到可清理的資料表。</value></data>
+  <data name="当前数据源不支持自动备份，请确认已有可恢复副本。" xml:space="preserve"><value>目前的資料來源不支援自動備份，請確認已有可還原的副本。</value></data>
+  <data name="未启用清理前备份。" xml:space="preserve"><value>未啟用清理前備份。</value></data>
 </root>

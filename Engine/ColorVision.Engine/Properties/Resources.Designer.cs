@@ -70,15 +70,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 发光区检测 的本地化字符串。
-        /// </summary>
-        public static string AADetect {
-            get {
-                return ResourceManager.GetString("AADetect", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 发光区检测模板管理 的本地化字符串。
         /// </summary>
         public static string AADetectTemplateManagement {
@@ -3624,15 +3615,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 编辑第三方算法模板 的本地化字符串。
-        /// </summary>
-        public static string EditThirdPartyAlgorithmTemplate {
-            get {
-                return ResourceManager.GetString("EditThirdPartyAlgorithmTemplate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 电流(mA) 的本地化字符串。
         /// </summary>
         public static string ElectricCurrent {
@@ -4083,15 +4065,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 还原成功,正在重启服务 的本地化字符串。
-        /// </summary>
-        public static string Engine_Msg_RestoreSuccessRestarting {
-            get {
-                return ResourceManager.GetString("Engine_Msg_RestoreSuccessRestarting", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 当前结果只有 Y，没有色坐标，无法显示到 CIE 图。 的本地化字符串。
         /// </summary>
         public static string Engine_Msg_ResultOnlyYNoColorCoords {
@@ -4133,15 +4106,6 @@ namespace ColorVision.Engine.Properties {
         public static string Engine_Msg_ServiceRestartFailed {
             get {
                 return ResourceManager.GetString("Engine_Msg_ServiceRestartFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 服务重启成功，重启软件 的本地化字符串。
-        /// </summary>
-        public static string Engine_Msg_ServiceRestartSuccess {
-            get {
-                return ResourceManager.GetString("Engine_Msg_ServiceRestartSuccess", resourceCulture);
             }
         }
         
@@ -5082,15 +5046,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 填充区域 的本地化字符串。
-        /// </summary>
-        public static string FillArea {
-            get {
-                return ResourceManager.GetString("FillArea", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 筛选 的本地化字符串。
         /// </summary>
         public static string Filter {
@@ -5258,15 +5213,6 @@ namespace ColorVision.Engine.Properties {
         public static string FindAaRegionTemplateManagement {
             get {
                 return ResourceManager.GetString("FindAaRegionTemplateManagement", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 检测发光区 的本地化字符串。
-        /// </summary>
-        public static string FindActiveArea {
-            get {
-                return ResourceManager.GetString("FindActiveArea", resourceCulture);
             }
         }
         
@@ -5510,6 +5456,45 @@ namespace ColorVision.Engine.Properties {
         public static string Flow_LastExecutionLabel {
             get {
                 return ResourceManager.GetString("Flow_LastExecutionLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 X 表示上下翻转，Y 表示左右镜像，XY 表示旋转 180°；不支持 90°/270°旋转。未选择校正模板时不会提前翻转 RAW，方向配置会保留到下游本地校正完成后再应用。 的本地化字符串。
+        /// </summary>
+        public static string Flow_LocalCamera_Notes {
+            get {
+                return ResourceManager.GetString("Flow_LocalCamera_Notes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 相机采集 RAW → 空间/普通校正 → 色度校正并生成 CIE（模板包含时）→ 图像翻转 → 保存文件。下游 POI 始终使用最终方向的图像坐标。 的本地化字符串。
+        /// </summary>
+        public static string Flow_LocalCamera_Processing {
+            get {
+                return ResourceManager.GetString("Flow_LocalCamera_Processing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 从本机物理相机采集一帧 RAW 图像，并按需在本地完成校正、图像翻转和文件保存。 的本地化字符串。
+        /// </summary>
+        public static string Flow_LocalCamera_Summary {
+            get {
+                return ResourceManager.GetString("Flow_LocalCamera_Summary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 1. 选择设备代码，直接配置曝光时间、增益和平均次数。
+        ///2. 需要校正时选择校正模板；不选择时只输出 RAW。
+        ///3. 按需要开启自动连接、自动曝光、保存文件和图像翻转。
+        ///4. 将 OUT 连接到后续本地校正、POI 或其他算法节点。 的本地化字符串。
+        /// </summary>
+        public static string Flow_LocalCamera_Usage {
+            get {
+                return ResourceManager.GetString("Flow_LocalCamera_Usage", resourceCulture);
             }
         }
         
@@ -5762,6 +5747,105 @@ namespace ColorVision.Engine.Properties {
         public static string Flow_NodeExecutionDetails {
             get {
                 return ResourceManager.GetString("Flow_NodeExecutionDetails", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 配置 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_Configuration {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_Configuration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 说明 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_Documentation {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_Documentation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 如何使用 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_HowToUse {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_HowToUse", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 输入 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_Input {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_Input", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 该节点尚未提供用途说明。 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_NoDocumentation {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_NoDocumentation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 注意事项 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_Notes {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_Notes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 输出 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_Output {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_Output", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 端口 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_Ports {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_Ports", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 处理顺序 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_ProcessingOrder {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_ProcessingOrder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 参数说明 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_PropertyDescriptions {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_PropertyDescriptions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用途 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeInspector_Purpose {
+            get {
+                return ResourceManager.GetString("Flow_NodeInspector_Purpose", resourceCulture);
             }
         }
         
@@ -6243,15 +6327,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 FOV模板管理 的本地化字符串。
-        /// </summary>
-        public static string FOVTemplateManagement {
-            get {
-                return ResourceManager.GetString("FOVTemplateManagement", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 界面展示名称 的本地化字符串。
         /// </summary>
         public static string FrameDisplayName {
@@ -6419,15 +6494,6 @@ namespace ColorVision.Engine.Properties {
         public static string GhostGrayscale {
             get {
                 return ResourceManager.GetString("GhostGrayscale", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 鬼影2.0 的本地化字符串。
-        /// </summary>
-        public static string GhostingDetection2_0 {
-            get {
-                return ResourceManager.GetString("GhostingDetection2_0", resourceCulture);
             }
         }
         
@@ -7440,15 +7506,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 灯条检测V2 的本地化字符串。
-        /// </summary>
-        public static string LightBarDetectionV2 {
-            get {
-                return ResourceManager.GetString("LightBarDetectionV2", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 结束值 的本地化字符串。
         /// </summary>
         public static string LimitEnd {
@@ -8093,24 +8150,6 @@ namespace ColorVision.Engine.Properties {
         public static string MtfAtFreqQuery {
             get {
                 return ResourceManager.GetString("MtfAtFreqQuery", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 属性,最大值,最大值所在名称,最小值,最小值所在名称,平均值,方差,均匀性 的本地化字符串。
-        /// </summary>
-        public static string MtfStatisticsCsvHeader {
-            get {
-                return ResourceManager.GetString("MtfStatisticsCsvHeader", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 MTF模板管理 的本地化字符串。
-        /// </summary>
-        public static string MTFTemplateManagement {
-            get {
-                return ResourceManager.GetString("MTFTemplateManagement", resourceCulture);
             }
         }
         

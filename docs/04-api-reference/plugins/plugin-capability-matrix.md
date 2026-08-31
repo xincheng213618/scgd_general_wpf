@@ -1,8 +1,19 @@
-# 插件横向速查
+---
+knowledge_id: "plugins.capabilities"
+knowledge_type: "reference"
+status: "current"
+summary: "横向定位现存插件的菜单、状态、数据库、设备与管理员权限边界。"
+aliases: ["哪个插件负责系统监控","哪些插件会操作设备或服务","Conoscope","Spectrum","SystemMonitor","WindowsServicePlugin"]
+code_paths: ["Plugins/Conoscope/","Plugins/Spectrum/","Plugins/SystemMonitor/","Plugins/WindowsServicePlugin/"]
+test_paths: ["Test/Conoscope.Tests/Conoscope.Tests.csproj","Test/Spectrum.Tests/Spectrum.Tests.csproj","Test/ColorVision.UI.Tests/SystemMonitorLifecycleTests.cs"]
+related: ["plugins.index","plugins.model","plugins.getting-started","plugins.conoscope","plugins.spectrum","plugins.system-monitor","plugins.windows-service"]
+---
 
-本页只给维护人员做横向排查，不作为普通读者的入口。第一次找插件请先看 [现有插件能力说明](./README.md)，再进入具体插件页；只有需要比较菜单、状态栏、设置页、Socket、数据库、注册表、管理员权限或 native 依赖时，再回到本页。
+# 插件依赖与接入矩阵
 
-本页按“日常维护、现场排查、发版验收”的视角整理当前 `Plugins/` 下真实存在的插件。单插件的业务细节仍放在各自页面；这里重点回答：
+按菜单、状态栏、设置页、Socket、数据库、注册表、管理员权限或 native 依赖定位插件时检索本页。确定模块后转到 [现有插件能力](./README.md) 中的单插件页，并核对实际代码与测试；不需要先通读其余插件。
+
+本页比较当前 `Plugins/` 的接入点和外部边界，单插件业务契约由各自主题维护。这里重点回答：
 
 - 插件从哪里进入宿主。
 - 它依赖哪些 UI/Engine 模块。
@@ -19,14 +30,9 @@
 | Conoscope | `Plugins/Conoscope/` | DLL `FileVersion` / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Conoscope/Conoscope.csproj)；[manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Conoscope/manifest.json) 为同步副本 | Tool 菜单 `VAM`，ImageEditor 右键打开 | 锥镜/VAM 图像观察、关注点、参考轴、预处理、色域和对比度分析、MVS 观察相机 | MVS 依赖海康 `MvCameraControl.dll`；关注点逻辑是插件本地实现 |
 | Spectrum | `Plugins/Spectrum/` | DLL `FileVersion` / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Spectrum/Spectrum.csproj)；[manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Spectrum/manifest.json) 为同步副本 | Tool 菜单光谱窗口，Spectrum 窗口级菜单/状态栏，Socket JSON 指令 | 光谱仪连接、标定分组、测量、EQE、CIE、SQLite 结果、许可证、Socket 远程控制 | 依赖光谱仪 native DLL、OpenCV、串口、许可证；连接状态与标定可测量状态必须分开判断 |
 | SystemMonitor | `Plugins/SystemMonitor/` | [manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/SystemMonitor/manifest.json) / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/SystemMonitor/SystemMonitor.csproj) | Tool 菜单，设置页，主程序状态栏 | CPU/RAM/磁盘/网络/进程/GPU/缓存监控和状态栏投影 | 性能计数器可能初始化失败并降级；监控单例位于 `ColorVision.UI.Configs` 命名空间 |
-| WindowsServicePlugin | `Plugins/WindowsServicePlugin/` | [manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/WindowsServicePlugin/manifest.json) / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj) | “应用与工具 > 内部工具”中的管理员工具，向导入口 | CVWindowsService 安装/注册/启动停止、MySQL/MQTT 安装配置、服务目录和配置同步 | 会改 Windows 服务、MySQL、MQTT 和本机文件；需要管理员权限；不支持增量服务包 |
+| WindowsServicePlugin | `Plugins/WindowsServicePlugin/` | [manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/WindowsServicePlugin/manifest.json) / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj) | 管理员应用提供器、安装向导；另有旧 `InstallTool` 菜单类型和主窗初始化器 | 本机服务管理、在线选包、完整包安装与数据库迁移；旧工具链另行存在 | 会改服务、数据库、进程和文件；新完整安装链不支持增量，下载与完成边界见[插件主题](./standard-plugins/windows-service.md) |
 
-发布版本来自主 DLL `FileVersion`（通常由 `.csproj VersionPrefix` 生成）；`manifest` 负责发布身份、DLL 路径、最低宿主要求，并由打包器同步版本。交付时要同时确认：
-
-- 插件管理器或市场展示用的 manifest 版本和最低宿主要求。
-- `.csproj VersionPrefix`、DLL 文件版本和程序集版本。
-- `.cvxp` 文件名中由 `Scripts/package_cvxp.py` 读取到的 DLL `FileVersion`。
-- `CHANGELOG.md` 是否对应这次实际 DLL。
+表中的版本来源用于定位，不代表已经验证交付一致性。DLL `FileVersion`、包名、manifest 同步与安装门禁见[插件产物与交付](../../02-developer-guide/plugin-development/getting-started.md)；启动装载的实际依赖检查见[装载与扩展发现](../../02-developer-guide/plugin-development/overview.md)。不能从 manifest 的 `requires` 字段推断启动加载器已经执行该检查。
 
 ## 入口和扩展点矩阵
 
@@ -35,7 +41,7 @@
 | Conoscope | `MenuConoscopeWindow` -> Tool / `VAM` | `ConoscopeWindow` Ribbon、View 菜单、`MenuMVSVideo` | 每标签页 `ConoscopeViewState` + `ConoscopeDocument`；全局 `ConoscopeConfig` / ReferenceStore | `ConoscopeConfigWindow`（含预处理页） | 无 | `ConoscopeImageViewContextMenu` 接入 ImageEditor 右键菜单 |
 | Spectrum | `MenuSpectrumWindow` -> Tool | `LoadMenuForWindow("Spectrum", menu)`，包含帮助、布局、许可证、原生日志等菜单 | `SpectrumStatusBarProvider`，目标窗口 `Spectrum` | 多个 `ConfigService` 配置对象 | 5 个 `ISocketJsonHandler` | Quartz 任务、SQLite 结果、许可证同步 |
 | SystemMonitor | `SystemMonitorProvider` -> Tool | 无独立复杂菜单 | `SystemMonitorIStatusBarProvider` | `IConfigSettingProvider` | 无 | `SystemMonitorControl` 同时用于设置页和窗口 |
-| WindowsServicePlugin | `ServiceManagerAppProvider` -> 应用与工具 / 内部工具（管理员） | 服务管理窗口内部命令 | 无 | `ServiceManagerConfig`、`MySqlServiceConfig`、`MqttServiceConfig` | 无 | `InstallServiceManager` 作为向导步骤入口 |
+| WindowsServicePlugin | `ServiceManagerAppProvider` -> 应用与工具 / 内部工具（管理员）；旧 `InstallTool` 声明 `OwnerGuid=ServiceLog` | 服务管理窗口内部命令 | 无 | `ServiceManagerConfig`、`MySqlServiceConfig`、`MqttServiceConfig`、`CVWinSMSConfig` | 无 | `InstallServiceManager` 向导入口；`InstallTool : IMainWindowInitialized` |
 
 ## 外部依赖和运行时边界
 
@@ -46,24 +52,18 @@
 | SystemMonitor | Windows 性能计数器、CUDA 信息、网络接口 | 应用缓存和日志目录统计 | 清理缓存取决于目标目录权限 | 性能计数器初始化、配置开关、状态栏 provider 是否刷新 |
 | WindowsServicePlugin | Windows 服务、MySQL、MQTT、服务包 ZIP | `BaseLocation`、`cfg/*.config`、MySQL ZIP、MQTT installer、服务数据库 SQL、备份目录 | 大部分操作需要管理员模式 | 服务状态、BaseLocation、安装包结构、MySQL/MQTT 状态、CFG 同步日志 |
 
-## 构建和打包矩阵
+## 本地构建与授权发布矩阵
 
-| 插件 | 构建命令 | 打包命令 | 宿主镜像（条件） | 必带文件 |
+“构建”列只编译并可能按 HostCopy 条件同步本地产物；“发布上传”列会更新远端包并按脚本规则清理本地包，仅在用户明确要求发布该插件时运行。普通 wrapper 不支持 `--no-upload`，不可作为只读或本地-only 校验步骤。
+
+| 插件 | 构建命令 | 发布上传命令（需授权） | 宿主镜像（条件） | 必带文件 |
 | --- | --- | --- | --- | --- |
 | Conoscope | `dotnet build Plugins/Conoscope/Conoscope.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat Conoscope` | solution/MSBuild 且 `SolutionDir` 有效时复制到宿主 `Plugins/Conoscope/` | `Conoscope.dll`、manifest、README、CHANGELOG；使用观察相机时再带 MVS/native 依赖 |
 | Spectrum | `dotnet build Plugins/Spectrum/Spectrum.csproj -c Release -p:Platform=x64` | 正式发布：`Scripts\Spectrum.bat --release-notes "..."` | 无 HostCopy；专用脚本从项目输出打包 | `Spectrum.dll`、manifest、README、CHANGELOG、`Magiude.dat`、`WavaLength.dat`、光谱仪 native DLL；另生成独立 ZIP |
 | SystemMonitor | `dotnet build Plugins/SystemMonitor/SystemMonitor.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat SystemMonitor` | solution/MSBuild 且 `SolutionDir` 有效时复制到宿主 `Plugins/SystemMonitor/` | `SystemMonitor.dll`、manifest、README、CHANGELOG |
 | WindowsServicePlugin | `dotnet build Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat WindowsServicePlugin` | solution/MSBuild 且 `SolutionDir` 有效时复制到宿主 `Plugins/WindowsServicePlugin/` | `WindowsServicePlugin.dll`、manifest、README、CHANGELOG |
 
-通用 `.cvxp` 打包逻辑在 `Scripts/package_cvxp.py`：
-
-1. 可选执行 `dotnet build`。
-2. 从插件输出目录收集文件。
-3. 用 `Scripts/shared_files.json` 剔除宿主已共享文件。
-4. 把插件根目录的 `README.md`、`CHANGELOG.md`、`manifest.json`、`PackageIcon.png` 放进包。
-5. 读取主 DLL 的 `FileVersion`，生成 `<PluginName>-<FileVersion>.cvxp`。
-
-因此只改 manifest 不会改变 `.cvxp` 文件名；只改 `.csproj VersionPrefix` 但不检查输出 DLL，也不能证明市场包版本正确。
+通用打包、HostCopy 条件、共享依赖剔除和安装替换统一维护在[插件产物契约](../../02-developer-guide/plugin-development/getting-started.md)。本表只保留各插件的差异，不复制另一份打包流程；具体文件是否必需还要按启用能力和对应模块页核验。
 
 ## 发布后烟测矩阵
 

@@ -42,7 +42,18 @@ namespace ColorVision.UI.Desktop.Settings
             }
 
             card.Child = stackPanel;
-            return card;
+            var section = new StackPanel();
+            var heading = new TextBlock
+            {
+                Text = sectionName,
+                FontSize = 13,
+                FontWeight = FontWeights.SemiBold,
+                Margin = new Thickness(2, 4, 0, 10)
+            };
+            heading.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+            section.Children.Add(heading);
+            section.Children.Add(card);
+            return new Border { Child = section };
         }
 
         public static FrameworkElement CreateCustomPage(SettingEntry entry, bool showTitle)
@@ -91,6 +102,8 @@ namespace ColorVision.UI.Desktop.Settings
             if (entry.PropertyInfo != null && entry.Metadata.Source != null)
                 PropertyEditorHelper.ApplyVisibilityBinding(row, entry.PropertyInfo, entry.Metadata.Source);
 
+            row.Tag = entry.Id;
+            entry.RenderedElement = row;
             return row;
         }
 
@@ -112,8 +125,8 @@ namespace ColorVision.UI.Desktop.Settings
             bool useCompactEditor = UsesCompactInlineEditor(entry);
             var editorHost = new Border
             {
-                Width = useCompactEditor ? double.NaN : 288,
-                MinWidth = useCompactEditor ? 0 : 228,
+                Width = useCompactEditor ? double.NaN : 220,
+                MinWidth = useCompactEditor ? 0 : 180,
                 HorizontalAlignment = HorizontalAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Center,
                 Child = CreatePropertyEditor(entry)
@@ -172,7 +185,7 @@ namespace ColorVision.UI.Desktop.Settings
                     Text = entry.Description,
                     Margin = new Thickness(0, 4, 0, 0),
                     FontSize = 12.5,
-                    Opacity = 0.68,
+                    Opacity = 0.76,
                     TextWrapping = TextWrapping.Wrap
                 };
                 description.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
@@ -186,7 +199,7 @@ namespace ColorVision.UI.Desktop.Settings
         {
             var border = new Border
             {
-                Padding = new Thickness(24, 10, 24, 10),
+                Padding = new Thickness(18, 10, 18, 10),
                 BorderThickness = new Thickness(0, 0, 0, isLast ? 0 : 1),
                 Child = child,
                 HorizontalAlignment = HorizontalAlignment.Stretch

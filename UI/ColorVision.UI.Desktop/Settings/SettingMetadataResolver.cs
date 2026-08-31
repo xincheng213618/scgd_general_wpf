@@ -21,6 +21,7 @@ namespace ColorVision.UI.Desktop.Settings
 
             return new SettingEntry
             {
+                Id = GetStableId(metadata),
                 Metadata = metadata,
                 PropertyInfo = propertyInfo,
                 Group = group,
@@ -32,6 +33,19 @@ namespace ColorVision.UI.Desktop.Settings
                 Description = description,
                 SearchText = searchText
             };
+        }
+
+        private static string GetStableId(ConfigSettingMetadata metadata)
+        {
+            Type? sourceType = metadata.Source?.GetType();
+            string source = sourceType == null ? string.Empty : $"{sourceType.Assembly.GetName().Name}:{sourceType.FullName}";
+            string view = metadata.ViewType == null ? string.Empty : $"{metadata.ViewType.Assembly.GetName().Name}:{metadata.ViewType.FullName}";
+            string identity = metadata.Type == ConfigSettingType.Property
+                ? $"{source}:{metadata.BindingName}"
+                : $"{source}:{view}:{metadata.Group}";
+            if (source.Length == 0 && view.Length == 0)
+                identity += $":{metadata.Name}";
+            return $"setting:{metadata.Type}:{identity}";
         }
 
         public static string ResolveGroupDisplayName(string group)
@@ -50,6 +64,9 @@ namespace ColorVision.UI.Desktop.Settings
             string? sectionName = NormalizeLegacySectionKey(sectionKey) switch
             {
                 ConfigSettingConstants.SectionBasic => SettingResources.SectionBasic,
+                ConfigSettingConstants.SectionAppearance => SettingResources.SectionAppearance,
+                ConfigSettingConstants.SectionUpdates => SettingResources.SectionUpdates,
+                ConfigSettingConstants.SectionDiagnostics => SettingResources.SectionDiagnostics,
                 ConfigSettingConstants.SectionSearch => SettingResources.SectionSearch,
                 ConfigSettingConstants.SectionFileArchive => SettingResources.SectionFileArchive,
                 ConfigSettingConstants.SectionAdvancedServices => SettingResources.SectionServices,
@@ -69,6 +86,9 @@ namespace ColorVision.UI.Desktop.Settings
             return NormalizeLegacySectionKey(sectionKey) switch
             {
                 ConfigSettingConstants.SectionBasic => 0,
+                ConfigSettingConstants.SectionAppearance => -10,
+                ConfigSettingConstants.SectionUpdates => 5,
+                ConfigSettingConstants.SectionDiagnostics => 70,
                 ConfigSettingConstants.SectionSearch => 10,
                 ConfigSettingConstants.SectionFileArchive => 20,
                 ConfigSettingConstants.SectionAdvancedServices => 80,

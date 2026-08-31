@@ -1,3 +1,14 @@
+---
+knowledge_id: "flow.conversion-calibration"
+knowledge_type: "reference"
+status: "current"
+summary: "定位 Flow 数据转换、图像转换、单双输入校准及属性选择器。"
+aliases: ["找不到图像转换或校准模板","AlgDataConvertNode","Calibration2InNode","FlowCalibrationTemplateEditor"]
+code_paths: ["Engine/FlowEngineLib/Node/Algorithm/AlgDataConvertNode.cs","Engine/FlowEngineLib/Algorithm/CalibrationNode.cs","Engine/FlowEngineLib/Node/OLED/Calibration2InNode.cs","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs"]
+related: ["flow.index","flow.templates","ui.property-grid"]
+---
+
 # Flow 转换与校准节点
 
 当前没有 `Templates/FileConvert/`、`ImageTransform/`、`Calibration/` 这三个强类型模板目录。相关能力分散在 `FlowEngineLib` 节点、Engine 属性编辑器注册和校准设备服务里；`Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/` 只保留节点类型级补充面板，当前没有 `CalibrationNodeConfigurator`。
@@ -74,3 +85,9 @@
 - 新增校准字段时，检查 `CalibrationData`、`CalibrationNode`、`Calibration2InNode` 和属性编辑器注册。
 - 修改 `PhyCamera` 关系时，回归校准模板选择器。
 - 新需求走当前 JSON V2 或强类型模板规范，不恢复已移除的 Deprecated 链。
+
+## 验证入口与缺口
+
+关联测试：`Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs`。
+
+CameraNodeTemplateMappingTests 只覆盖相机相关模板编辑器映射；转换与校准服务协议、POI MasterId 和结果文件仍需独立集成验证。

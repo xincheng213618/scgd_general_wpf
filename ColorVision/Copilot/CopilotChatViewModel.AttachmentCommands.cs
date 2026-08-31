@@ -216,6 +216,15 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            await AttachWebPageAsync(conversation, url, LoadWebPageContentAsync);
+        }
+
+        internal async Task AttachWebPageAsync(
+            CopilotConversationRecord conversation,
+            string url,
+            Func<string, CancellationToken, Task<CopilotFetchedWebPageContent>> loadPageAsync)
+        {
+            var messageEditSnapshot = _composerDraftBeforeMessageEdit;
             var existingAttachment = conversation.Attachments.FirstOrDefault(item => item.Type == CopilotAttachmentType.WebPage && string.Equals(item.Source, url, StringComparison.OrdinalIgnoreCase));
             if (existingAttachment == null && !TryEnsureAttachmentCapacity(conversation, CopilotAttachmentType.WebPage))
                 return;
@@ -226,19 +235,20 @@ namespace ColorVision.Copilot
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
-                var webPage = await LoadWebPageContentAsync(url, cancellation.Token);
+                var webPage = await loadPageAsync(url, cancellation.Token);
                 cancellation.Token.ThrowIfCancellationRequested();
-                if (Volatile.Read(ref _disposeState) == 1 || !Conversations.Contains(conversation))
+                if (Volatile.Read(ref _disposeState) == 1 || !Conversations.Contains(conversation)
+                    || !ReferenceEquals(messageEditSnapshot, _composerDraftBeforeMessageEdit))
                     return;
 
                 var attachment = CopilotAttachmentItem.CreateWebPage(url, webPage.Title, BuildStoredWebPageContent(webPage));
 
                 if (existingAttachment != null)
                 {
-                    existingAttachment.Title = attachment.Title;
-                    existingAttachment.Value = attachment.Value;
-                    existingAttachment.Source = attachment.Source;
-                    existingAttachment.CreatedAt = attachment.CreatedAt;
+                    var attachmentIndex = conversation.Attachments.IndexOf(existingAttachment);
+                    if (attachmentIndex < 0)
+                        return;
+                    conversation.Attachments[attachmentIndex] = attachment;
                 }
                 else
                 {
@@ -380,7 +390,7 @@ namespace ColorVision.Copilot
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
                 if (saveTask != null)
-                    ObserveBackgroundAttachmentTask(saveTask);
+                    CleanupCancelledClipboardImage(saveTask);
                 return false;
             }
             catch (Exception ex)
@@ -430,12 +440,19 @@ namespace ColorVision.Copilot
             return true;
         }
 
-        private static void ObserveBackgroundAttachmentTask(Task task)
+        private void CleanupCancelledClipboardImage(Task<string> task)
         {
+            var attachmentDirectoryPath = _stateStore.AttachmentDirectoryPath;
             _ = task.ContinueWith(
-                completed => _ = completed.Exception,
+                completed =>
+                {
+                    if (completed.IsCompletedSuccessfully)
+                        CopilotChatStateStore.TryDeleteManagedAttachmentFile(attachmentDirectoryPath, completed.Result);
+                    else
+                        _ = completed.Exception;
+                },
                 CancellationToken.None,
-                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                TaskContinuationOptions.ExecuteSynchronously,
                 TaskScheduler.Default);
         }
 

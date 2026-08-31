@@ -103,8 +103,7 @@ namespace ColorVision.Copilot
                     messages,
                     BuildFinalAnswerOptions(request),
                     cancellationToken);
-                foreach (var usageContent in response.Messages.SelectMany(message => message.Contents).OfType<UsageContent>())
-                    usage = usage.Add(ToCopilotUsage(usageContent.Details));
+                usage = usage.Add(CopilotTokenBudgetChatClient.ExtractResponseUsage(response));
                 finalAnswer = ExtractFinalAnswerText(response);
                 outputLengthLimited = IsLengthLimitedOutput(response.FinishReason);
                 outputContentFiltered = IsContentFilteredOutput(response.FinishReason);

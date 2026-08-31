@@ -1,6 +1,17 @@
+---
+knowledge_id: "projects.capabilities"
+knowledge_type: "reference"
+status: "current"
+summary: "按协议、外部触发、结果出口与最小验证路径比较 ARVRPro、KB、LUX 和 IntegrationDemo。"
+aliases: ["哪个项目使用 Modbus","哪些项目输出 MES 或 Socket","ProjectARVRPro","ProjectKB","ProjectLUX","ProjectARVRPro.IntegrationDemo"]
+code_paths: ["Projects/ProjectARVRPro/","Projects/ProjectARVRPro.IntegrationDemo/","Projects/ProjectKB/","Projects/ProjectLUX/"]
+test_paths: ["Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj","Test/ProjectKB.Tests/ProjectKB.Tests.csproj","Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj"]
+related: ["projects.index","projects.arvr-pro","projects.arvr-pro-demo","projects.kb","projects.lux"]
+---
+
 # 项目横向速查
 
-本页给维护人员做横向排查，不作为普通读者入口。第一次找客户项目请先看 [项目说明](../../00-projects/README.md) 和 [项目包总览](./README.md)，再进入具体项目页；只有需要比较协议、触发方式、结果出口、流程组织或发版验收时，再回到本页。
+需要按协议、触发方式、结果出口或流程组织定位项目时检索本页；确定项目后转到具体项目页，并核对其 `code_paths` 和 `test_paths`。业务归属、项目包与独立示例边界见[客户项目与对接示例入口](./README.md)。
 
 它回答三个问题：这个项目解决什么现场问题，外部系统怎么触发，结果最终交给谁。
 
@@ -56,9 +67,11 @@
 | `ProjectKB` | Modbus 写 `1` 能触发流程，结束写回 `0`，CSV/summary/MES 输出符合当前配置 |
 | `ProjectLUX` | 发送一个 `T00XX,SN;`，能匹配当前组的 `SocketCode`，生成对应 CSV/SQLite 结果 |
 
-## 打包
+## 构建与发布授权
 
-构建和打包命令：`dotnet build Projects/<Project>/<Project>.csproj -c Release -p:Platform=x64`，再运行 `Scripts\package_project.bat <Project>`。
+本地构建使用 `dotnet build Projects/<Project>/<Project>.csproj -c Release -p:Platform=x64`，只产生本地编译输出。不要自动接着运行上传命令。
+
+只有用户明确要求发布指定项目时才执行 `Scripts\package_project.bat <Project>`；它会构建、上传并清理本地 `.cvxp`，不支持 `--no-upload`。协议排障、测试或构建请求不授权上传；Modbus、MES、Socket 等真实现场烟测也要先确认操作范围。
 
 交付时额外确认：ARVR 系列看 Socket、切图、CSV/Legacy；KB 看 `FunTestDll.dll`、Modbus 和 MES；LUX 看 `SocketCode`、Recipe/Fix 和输出目录。`ProjectARVRPro.IntegrationDemo` 不是插件包，发布给客户时走 `dotnet publish`。
 

@@ -188,12 +188,7 @@
   </data>  <data name="LogLevelDescription" xml:space="preserve">
     <value>Controls how much detail the application writes to logs.</value>
   </data>
-  <data name="MarketplaceServiceBaseUrl" xml:space="preserve">
-    <value>Marketplace service URL</value>
-  </data>
-  <data name="MarketplaceServiceBaseUrlDescription" xml:space="preserve">
-    <value>Service URL used by the marketplace, update checks, and online package APIs.</value>
-  </data>  <data name="Search" xml:space="preserve">
+  <data name="Search" xml:space="preserve">
     <value>Search</value>
   </data>
   <data name="SearchSettingsTitle" xml:space="preserve">
@@ -255,8 +250,6 @@
     <value>Updating Log4Net log level:</value>
   </data>  <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>Checking for additional projects</value>
-  </data>  <data name="ProjectNotFound" xml:space="preserve">
-    <value>Project {0} not found</value>
   </data>
   <data name="FoundProjectDownloadConfirm" xml:space="preserve">
     <value>Found project {0}, {1}, download?</value>
@@ -338,38 +331,11 @@
   <data name="RemStagePointsToTemp" xml:space="preserve">
     <value>rem STAGE points to the ColorVision content root in the temporary directory</value>
   </data>
-  <data name="EchoBackingUpCurrentVersion" xml:space="preserve">
-    <value>echo Backing up current version...</value>
-  </data>
-  <data name="EchoTargetDirNotExist" xml:space="preserve">
-    <value>  echo Target directory does not exist, skipping backup.</value>
-  </data>
-  <data name="EchoBackupTo" xml:space="preserve">
-    <value>  echo Backup to: %BKDIR%</value>
-  </data>
-  <data name="EchoBackupComplete" xml:space="preserve">
-    <value>  echo Backup complete.</value>
-  </data>
-  <data name="RemRobocopySuccess" xml:space="preserve">
-    <value>  rem Robocopy 0-7 considered success</value>
-  </data>
-  <data name="EchoRobocopyFailed" xml:space="preserve">
-    <value>     echo Robocopy failed, error code !RC!, trying XCOPY fallback...</value>
-  </data>
-  <data name="EchoRobocopyNotFound" xml:space="preserve">
-    <value>  echo Robocopy not found, falling back to XCOPY...</value>
-  </data>
   <data name="EchoUsingXCOPY" xml:space="preserve">
     <value>echo Using XCOPY fallback copy...</value>
   </data>
-  <data name="EchoXCOPYFailed" xml:space="preserve">
-    <value>  echo XCOPY copy failed, update aborted.</value>
-  </data>
   <data name="EchoCopyComplete" xml:space="preserve">
     <value>echo Copy complete.</value>
-  </data>
-  <data name="EchoRestartingProgram" xml:space="preserve">
-    <value>echo Restarting program...</value>
   </data>
   <data name="EchoSchedulingCleanup" xml:space="preserve">
     <value>echo Scheduling delayed cleanup of temporary directory and script...</value>
@@ -404,9 +370,6 @@
   </data>
   <data name="Theme" xml:space="preserve">
     <value>Theme</value>
-  </data>
-  <data name="ThemeDescription" xml:space="preserve">
-    <value>Select the color theme for the application interface.</value>
   </data>
   <data name="SearchEngine" xml:space="preserve">
     <value>Search Engine</value>
@@ -564,44 +527,11 @@
   <data name="TimedOp_Warmup" xml:space="preserve">
     <value>Warmup:</value>
   </data>
-  <data name="TimedOp_NoStableSamples" xml:space="preserve">
-    <value>No stable samples recorded yet.</value>
-  </data>
-  <data name="TimedOp_WarmupNote" xml:space="preserve">
-    <value>First-run samples after startup are treated as warmup and excluded from averaging.</value>
-  </data>
   <data name="TimedOp_Last" xml:space="preserve">
     <value>Last:</value>
   </data>
   <data name="TimedOp_Average" xml:space="preserve">
     <value>Average:</value>
-  </data>
-  <data name="TimedOp_Fastest" xml:space="preserve">
-    <value>Fastest:</value>
-  </data>
-  <data name="TimedOp_Slowest" xml:space="preserve">
-    <value>Slowest:</value>
-  </data>
-  <data name="TimedOp_StableSamples" xml:space="preserve">
-    <value>Stable samples:</value>
-  </data>
-  <data name="TimedOp_RightClickHint" xml:space="preserve">
-    <value>Right-click the button to open stats window.</value>
-  </data>
-  <data name="TimedOp_FewSamples" xml:space="preserve">
-    <value>Stable samples still few; continuing will improve accuracy.</value>
-  </data>
-  <data name="TimedOp_StatsRecorded" xml:space="preserve">
-    <value>Timing stats recorded.</value>
-  </data>
-  <data name="TimedOp_CloseToAverage" xml:space="preserve">
-    <value>Close to historical average.</value>
-  </data>
-  <data name="TimedOp_FasterThanAverage" xml:space="preserve">
-    <value>{0} faster than historical average.</value>
-  </data>
-  <data name="TimedOp_SlowerThanAverage" xml:space="preserve">
-    <value>{0} slower than historical average.</value>
   </data>
   <data name="ListEditor_ListCount" xml:space="preserve">
     <value>[List: {0} items]</value>
@@ -648,4 +578,7 @@
   <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
     <value>When enabled, update checks and marketplace requests connect directly to the public service. When disabled, the Windows system proxy is used. Changes apply to the next request.</value>
   </data>
+  <data name="SettingsSectionAppearance" xml:space="preserve"><value>Appearance and language</value></data>
+  <data name="SettingsSectionUpdates" xml:space="preserve"><value>Updates and network</value></data>
+  <data name="SettingsSectionDiagnostics" xml:space="preserve"><value>Logging and diagnostics</value></data>
 </root>

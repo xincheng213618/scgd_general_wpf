@@ -16,6 +16,20 @@ namespace ColorVision.Copilot
             EnsureDirectory();
 
             var attachmentRoot = Path.GetFullPath(AttachmentDirectoryPath);
+            try
+            {
+                if (ContainsReparsePoint(attachmentRoot, attachmentRoot))
+                {
+                    Trace.TraceWarning("Copilot orphan attachment cleanup skipped because the attachment root is a reparse point.");
+                    return 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning($"Copilot could not validate the attachment cleanup root: {ex.Message}");
+                return 0;
+            }
+
             var referencedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var attachment in (state.Conversations ?? new System.Collections.ObjectModel.ObservableCollection<CopilotConversationRecord>())
                 .Where(conversation => conversation != null)
@@ -39,7 +53,8 @@ namespace ColorVision.Copilot
                 }
             }
 
-            var managedFiles = EnumerateManagedAttachmentFiles(attachmentRoot);
+            if (!TryEnumerateManagedAttachmentFiles(attachmentRoot, out var managedFiles))
+                return 0;
             if (IsManagedAttachmentCleanupProtected || LastLoadStatus.RequiresRecoveryProtection)
             {
                 if (managedFiles.Any(filePath => !referencedPaths.Contains(Path.GetFullPath(filePath))))
@@ -57,20 +72,14 @@ namespace ColorVision.Copilot
                 if (referencedPaths.Contains(Path.GetFullPath(filePath)))
                     continue;
 
-                try
-                {
-                    File.Delete(filePath);
+                if (TryDeleteManagedAttachmentFile(attachmentRoot, filePath))
                     deletedCount++;
-                }
-                catch
-                {
-                }
             }
 
             return deletedCount;
         }
 
-        private void ProtectManagedAttachments()
+        private bool ProtectManagedAttachments()
         {
             try
             {
@@ -79,28 +88,32 @@ namespace ColorVision.Copilot
                     $"Copilot state recovery protection created at {DateTimeOffset.UtcNow:O}.{Environment.NewLine}"
                     + "Unreferenced managed attachments must not be deleted until their state can be recovered or they are explicitly reattached.",
                     new UTF8Encoding(false));
+                return true;
             }
             catch (Exception ex)
             {
                 Trace.TraceWarning($"Copilot could not create attachment recovery protection: {ex.Message}");
+                return false;
             }
         }
 
-        private static string[] EnumerateManagedAttachmentFiles(string attachmentRoot)
+        private static bool TryEnumerateManagedAttachmentFiles(string attachmentRoot, out string[] files)
         {
             try
             {
-                return Directory.GetFiles(attachmentRoot, "*", new EnumerationOptions
+                files = Directory.GetFiles(attachmentRoot, "*", new EnumerationOptions
                 {
                     RecurseSubdirectories = true,
-                    IgnoreInaccessible = true,
+                    IgnoreInaccessible = false,
                     AttributesToSkip = FileAttributes.ReparsePoint,
                 });
+                return true;
             }
             catch (Exception ex)
             {
                 Trace.TraceWarning($"Copilot could not enumerate managed attachments: {ex.Message}");
-                return [];
+                files = [];
+                return false;
             }
         }
 

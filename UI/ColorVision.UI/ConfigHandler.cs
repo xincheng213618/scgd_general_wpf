@@ -34,6 +34,9 @@ namespace ColorVision.UI
         private static readonly ILog log = LogManager.GetLogger(typeof(ConfigHandler));
         private static ConfigHandler? _instance;
         private static readonly object _locker = new();
+        private static string[] _maintenanceResetSections = [];
+        private static Func<bool>? _maintenanceResetStartupAdmission;
+        private static bool _maintenanceResetPolicyFrozen;
         private readonly object _saveStateLock = new();
         private readonly AsyncLocal<bool> _savePublicationScope = new();
         private long _saveTransactionVersion;
@@ -68,6 +71,30 @@ namespace ColorVision.UI
 
         public string? ConfigDIFileName { get; set; }
 
+        public ConfigMaintenanceResetResult? LastMaintenanceResetResult { get; private set; }
+
+        /// <summary>Registers the reset allowlist and optional read-only startup admission before configuration startup.</summary>
+        public static void ConfigureMaintenanceResetSections(IEnumerable<string> sectionNames, Func<bool>? startupAdmission = null)
+        {
+            var sections = ConfigMaintenanceResetService.ValidateSectionNames(sectionNames);
+            lock (_locker)
+            {
+                if (_maintenanceResetPolicyFrozen || _instance != null)
+                    throw new InvalidOperationException("Maintenance reset sections must be registered before configuration startup.");
+                _maintenanceResetSections = sections;
+                _maintenanceResetStartupAdmission = startupAdmission;
+            }
+        }
+
+        public ConfigMaintenanceResetService CreateMaintenanceResetService()
+        {
+            lock (_locker)
+            {
+                _maintenanceResetPolicyFrozen = true;
+                return new ConfigMaintenanceResetService(ConfigFilePath, _maintenanceResetSections);
+            }
+        }
+
         public ConfigHandler()
         {
         }
@@ -78,6 +105,11 @@ namespace ColorVision.UI
             InitDateTime = DateTime.Now;
 
             InitializePaths();
+            LastMaintenanceResetResult = CreateMaintenanceResetService().ApplyPending(_maintenanceResetStartupAdmission);
+            if (!LastMaintenanceResetResult.Succeeded)
+                log.Error($"Pending configuration reset was not completed: {LastMaintenanceResetResult.ErrorMessage}");
+            else if (LastMaintenanceResetResult.Status == ConfigMaintenanceResetStatus.Deferred)
+                log.Warn($"Pending configuration reset was deferred: {LastMaintenanceResetResult.ErrorMessage}");
             LoadConfigs(ConfigFilePath);
             ScheduleBackup();
 
@@ -329,7 +361,7 @@ namespace ColorVision.UI
             }
         }
 
-        private static SaveFileLockLease AcquireSaveFileLock(string fullPath)
+        internal static IDisposable AcquireSaveFileLock(string fullPath)
         {
             string canonicalPath = Path.GetFullPath(fullPath).ToUpperInvariant();
             string pathHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonicalPath)));
@@ -496,7 +528,7 @@ namespace ColorVision.UI
             }
         }
 
-        private static void WriteConfigFile(string fileName, JObject jObject)
+        internal static void WriteConfigFile(string fileName, JObject jObject)
         {
             string fullPath = Path.GetFullPath(fileName);
             string directory = Path.GetDirectoryName(fullPath)

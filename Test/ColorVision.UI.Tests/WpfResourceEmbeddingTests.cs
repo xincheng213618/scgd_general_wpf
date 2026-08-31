@@ -1,4 +1,3 @@
-using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.UI.Serach;
 using System.Collections;
 using System.IO;
@@ -16,11 +15,9 @@ public class WpfResourceEmbeddingTests
     }
 
     [Fact]
-    public void CameraRunParamEditor_CompiledXamlIsEmbedded()
+    public void SearchWindow_CompiledXamlIsEmbedded()
     {
-        Assert.True(ContainsCompiledXaml(
-            typeof(CameraRunParamEditor).Assembly,
-            "services/devices/camera/templates/camerarunparam/camerarunparameditor.baml"));
+        Assert.True(ContainsCompiledXaml(typeof(SearchWindow).Assembly, "serach/searchwindow.baml"));
     }
 
     private static bool ContainsCompiledXaml(Assembly assembly, string resourceKey)

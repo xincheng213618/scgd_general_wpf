@@ -1,3 +1,14 @@
+---
+knowledge_id: "copilot.mcp-server"
+knowledge_type: "reference"
+status: "current"
+summary: "ColorVision 入站本地 MCP 的 loopback 认证、会话、能力白名单与二次确认契约。"
+aliases: ["Codex 如何连接 ColorVision","MCP 工具能否执行流程","CopilotMcpServer","Mcp-Session-Id","confirm_action"]
+code_paths: ["ColorVision/Copilot/Mcp/CopilotMcpServer.cs","ColorVision/Copilot/Mcp/","ColorVision/Copilot/Capabilities/"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotMcpServerLifecycleTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpConfirmationDecisionTests.cs"]
+related: ["copilot.runtime","copilot.extensions","copilot.configuration"]
+---
+
 # ColorVision 本地 MCP
 
 ColorVision 本地 MCP 让 Codex 或其他 MCP 客户端在本机读取正在运行的 ColorVision 上下文，用于诊断、导航、日志查看、文档搜索和有限的低风险 UI 操作。它默认关闭，只绑定 loopback，并使用 bearer token 认证。本页是维护入口，源码以 `ColorVision/Copilot/Mcp/` 和 `ColorVision/Copilot/Capabilities/` 为准。
@@ -31,6 +42,8 @@ bearer_token_env_var = "COLORVISION_MCP_TOKEN"
 ```
 修改 Codex 配置或环境变量后，需要重启 Codex 会话。
 服务使用 Streamable HTTP 会话语义：客户端先发送单独的 `initialize` 请求，从响应头取得随机的 `Mcp-Session-Id`，随后在 `notifications/initialized`、工具和资源请求中携带该头。成熟 MCP 客户端会自动处理该握手。会话只保存在 ColorVision 进程内，绑定创建它的网络来源，空闲 30 分钟、服务停止/重启或 bearer token 变化后失效；客户端收到缺少会话的 `400` 或会话失效的 `404` 时应重新初始化。原始 session ID 不进入审批 UI、普通审计或日志。
+
+设置页的 Test Connection 同样先建立独立会话，再调用只读 `get_server_status`；只有握手和状态结果都通过校验才报告连接成功。它使用当前草稿端口与 token，不自动保存设置或启用 server。诊断预算、错误反馈和测试边界见[配置与连接诊断](./copilot-configuration.md#诊断、发现与同步的副作用)。
 
 ## 调用顺序
 

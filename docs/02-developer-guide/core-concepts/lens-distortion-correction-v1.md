@@ -1,3 +1,14 @@
+---
+knowledge_id: "algorithms.lens-distortion-correction"
+knowledge_type: "reference"
+status: "current"
+summary: "LensDistortionCorrection 的输入、参数、结果、宿主接入与定向验证契约。"
+aliases: ["镜头畸变如何校正以及标定参数怎么保存","LensDistortionCorrection","LensDistortionCorrectionAlgorithmProvider"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/LensDistortionCorrectionAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/LensDistortionCorrectionV1Tests.cs"]
+related: ["algorithms.platform","algorithms.index"]
+---
+
 # 镜头畸变校正 V1（M8.2）
 
 ## 阶段边界与已有能力盘点

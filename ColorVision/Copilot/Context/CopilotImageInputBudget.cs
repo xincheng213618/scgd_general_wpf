@@ -38,17 +38,6 @@ namespace ColorVision.Copilot
             var sourceWidth = codec.Info.Width;
             var sourceHeight = codec.Info.Height;
             var (preparedWidth, preparedHeight) = ResolvePreparedDimensions(sourceWidth, sourceHeight);
-            if (sourceWidth == preparedWidth && sourceHeight == preparedHeight)
-            {
-                return new CopilotPreparedImageInput(
-                    bytes,
-                    mediaType,
-                    sourceWidth,
-                    sourceHeight,
-                    preparedWidth,
-                    preparedHeight);
-            }
-
             var desiredScale = Math.Min(
                 preparedWidth / (double)sourceWidth,
                 preparedHeight / (double)sourceHeight);
@@ -70,11 +59,25 @@ namespace ColorVision.Copilot
                 codecSize.Height,
                 SKColorType.Bgra8888,
                 SKAlphaType.Premul);
-            using var decoded = SKBitmap.Decode(codec, decodeInfo);
-            if (decoded == null)
+            using var decoded = new SKBitmap(decodeInfo);
+            var pixels = decoded.GetPixels();
+            // SKBitmap.Decode accepts incomplete input. Require a complete first-frame
+            // decode before either preserving the source bytes or resizing its pixels.
+            if (pixels == IntPtr.Zero || codec.GetPixels(decodeInfo, pixels) != SKCodecResult.Success)
                 throw new InvalidOperationException($"图片“{label}”无法在安全尺寸内解码，请先转换或缩小图片。");
 
             cancellationToken.ThrowIfCancellationRequested();
+            if (sourceWidth == preparedWidth && sourceHeight == preparedHeight)
+            {
+                return new CopilotPreparedImageInput(
+                    bytes,
+                    mediaType,
+                    sourceWidth,
+                    sourceHeight,
+                    preparedWidth,
+                    preparedHeight);
+            }
+
             using var resized = decoded.Resize(
                 new SKImageInfo(preparedWidth, preparedHeight, SKColorType.Bgra8888, SKAlphaType.Premul),
                 SKFilterQuality.High);

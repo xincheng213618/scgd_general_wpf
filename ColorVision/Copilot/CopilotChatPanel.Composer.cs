@@ -40,18 +40,20 @@ namespace ColorVision.Copilot
             SendWindowsVoiceTypingShortcut();
         }
 
-        private async void PromptTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        private void SaveComposerDraft()
         {
-            if (DataContext is CopilotChatViewModel historyScopeViewModel
-                && historyScopeViewModel.IsPromptHistorySearchOpen
-                && e.Key == Key.S
-                && Keyboard.Modifiers == ModifierKeys.Control)
+            if (DataContext is not CopilotChatViewModel viewModel) return;
+            if (viewModel.IsPromptHistorySearchOpen)
             {
-                historyScopeViewModel.TryTogglePromptHistorySearchScope();
-                e.Handled = true;
+                viewModel.TryTogglePromptHistorySearchScope();
                 return;
             }
+            if (viewModel.TryToggleComposerStash(PromptTextBox.CaretIndex, out var restoredCaretIndex))
+                ApplyPromptCaret(restoredCaretIndex);
+        }
 
+        private async void PromptTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
             if (DataContext is CopilotChatViewModel promptHistoryViewModel
                 && promptHistoryViewModel.IsPromptHistorySearchOpen
                 && Keyboard.Modifiers == ModifierKeys.None)
@@ -97,20 +99,6 @@ namespace ColorVision.Copilot
                     MovePromptCaretToEnd();
                     e.Handled = true;
                 }
-                return;
-            }
-
-            if (e.Key == Key.S
-                && Keyboard.Modifiers == ModifierKeys.Control
-                && DataContext is CopilotChatViewModel stashViewModel)
-            {
-                if (stashViewModel.TryToggleComposerStash(
-                    PromptTextBox.CaretIndex,
-                    out var restoredCaretIndex))
-                {
-                    ApplyPromptCaret(restoredCaretIndex);
-                }
-                e.Handled = true;
                 return;
             }
 

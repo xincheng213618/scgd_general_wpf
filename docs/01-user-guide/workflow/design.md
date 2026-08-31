@@ -1,89 +1,73 @@
-# 流程设计
+---
+knowledge_id: "flow.workspace"
+knowledge_type: "topic"
+status: "current"
+summary: "ViewFlow 与 FlowEditorCanvas 的编辑命令、文档目标、工作区隔离及未保存画布的执行边界。"
+aliases: ["流程设计","拖节点","节点参数","保存流程","ViewFlow","FlowEditorCanvas","ActiveFlowParam","FlowTemplateWorkspaceController"]
+code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowTemplateWorkspaceController.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEngineToolWindow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorOperations.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/FlowTemplateWorkspaceControllerTests.cs","Test/ColorVision.UI.Tests/ViewFlowDocumentBehaviorTests.cs","Test/ColorVision.UI.Tests/FlowLocalShortcutTests.cs","Test/ColorVision.UI.Tests/STNodeCopyPasteTests.cs"]
+related: ["flow.architecture","flow.editor","flow.templates","flow.session","flow.headless","ui.property-grid"]
+---
 
-流程设计页的重点不是抽象地介绍“什么是可视化编辑器”，而是帮助你把一条流程建出来、保存下来，并且在改乱之后还能快速回到可运行状态。
+# Flow 编辑工作区与文档命令
 
-## 当前设计器里能直接做什么
+`ViewFlow` 组合 `FlowEditorCanvas`、模板工作区和执行会话；`FlowEngineToolWindow` 只是独立窗口宿主，复用同一个 `ViewFlow`。底层节点、端口和画布输入属于 [ST.Library.UI](../../04-api-reference/engine-components/ST.Library.UI.md)，数据库和包格式属于[模板持久化](../../04-api-reference/engine-components/template-flow-chain.md)。
 
-从当前实现看，流程设计器至少支持这些常见动作：
+编辑、导入模块和布局改变当前文档；保存或删除数据库模板会改持久数据，导入流程包还可能创建关联模板。切换文档可能触发保存提示或结束当前运行。必须确认目标文档、备份和已授权动作，不能用实际运行设备来代替只读排查。
 
-- 新建流程
-- 打开已有流程模板
-- 保存流程
-- 删除流程
-- 导入流程
-- 导出流程
-- 导入模块
-- 自动布局
-- 自动适配画布
-- 撤销和重做
-- 通过属性面板编辑节点相关内容
+## 相同按钮不代表相同保存目标
 
-## 常见设计顺序
+主窗口和独立窗口共用工具栏，命令内部按宿主模式分流：
 
-1. 先新建或打开一条流程。
-2. 把需要的节点放到画布里。
-3. 连接节点关系，并在属性面板里补齐关键参数。
-4. 先保存一次，再做自动布局或细调位置。
-5. 改动较大后，再保存一次并进入 [流程执行与调试](./execution.md) 做验证。
+| 命令 | 主程序模板工作区 | 独立窗口 |
+| --- | --- | --- |
+| 新建 | `NewFlow` 创建模板 | `NewDocument` 新建本地文档 |
+| 导入/打开 | `ImportFlow` 经 `TemplateFlow` 导入并创建流程模板 | `OpenDocument` / `OpenStandaloneFile` 打开 `.stn` 或读取 `.cvflow` 画布 |
+| 保存 | `TrySave` 校验画布后写入当前已加载模板 | `SaveStandaloneDocument`：本地文件写回文件；明确以可保存模板模式打开的 `FlowParam` 才写数据库 |
+| 导出 | `ExportFlow` 导出当前已加载模板 | 调用 `SaveStandaloneDocument`，不能据按钮名称推断一定导出完整 `.cvflow` 包 |
+| 删除 | 对当前已加载模板确认后删除 | 模板删除命令不可用 |
 
-## 设计时最常用的几个动作
+`TrySave` / `SaveStandaloneDocument` 都先通过 `FlowValidator.Validate` 并取得非空画布数据。数据库保存携带窗口自己的 `FlowTemplateSaveCondition(_documentLoadedContentHash)`；失败会恢复内存中的旧 `DataBase64`，成功后才更新文档基线并 `MarkSaved`。数据库并发保存及包兼容的权威事实见[模板持久化](../../04-api-reference/engine-components/template-flow-chain.md)。
 
-### 新建、打开和保存
+打开本地 `.stn` 后保存只写回该文件，不更新数据库模板。打开 `.cvflow` 作为独立文档时读取包内画布，不等于执行主程序的完整模板导入流程；首次保存可落成 `.stn`。不要把“独立窗口”直接等同于“永不写数据库”：`FlowEngineToolWindow(FlowParam)` 使用允许模板保存的打开模式。
 
-流程设计最容易出问题的不是“不会拖节点”，而是改了很久却没有保存到正确模板。设计时优先先确认当前编辑的是哪条流程，再做保存。
+## 画布编辑能力
 
-### 自动布局和自动适配
+| 能力 | 实现落点与约束 |
+| --- | --- |
+| 添加节点、连接端口、拖动和命名 | `FlowEditorCanvas` 承载 `STNodeEditor`；节点目录与端口兼容由 ST 库负责 |
+| 节点参数 | 属性标注接入统一 PropertyGrid；设备 Code、模板选择与输入字段须分别确认，连线成功不代表参数正确 |
+| 撤销/重做、复制/粘贴、删除 | Canvas 转发编辑命令到 ST 控件的历史栈；撤销不等于撤销已经写入数据库或外部系统的动作 |
+| 自动布局 | `ViewFlow.AutoAlignment` 调用布局服务整理节点位置；画布局部快捷键仅精确匹配 Ctrl+L，不接受额外 Alt/Shift/Win，避免误接管日志的 Ctrl+Alt+L |
+| 自动适配 | `AutoSizeCommand` 调用 `FitToViewport` 调整视口，不是保存操作 |
+| 导入模块 | `ImportModule` 选择已有流程模板的画布，交给 `FlowEditorOperations.ImportCanvasAsModule` 加入当前图；随后仍需检查参数并保存当前文档 |
 
-当节点越来越多、画布越来越乱时，先用自动布局和自动适配把结构拉回可读状态，再继续调参数，通常比纯手工拖动稳得多。
+普通设备/模板字段使用 `FlowNodePropertyEditorAttribute` 或 `PropertyEditorTypeAttribute`；多模板族、随算法类型变化的补充面板归 `Editor/NodeConfiguration/`。选择顺序、缓存和降级规则只在 [PropertyGrid 契约](../../04-api-reference/ui-components/property-grid.md)维护。
 
-### 撤销和重做
+## 选择、加载与多窗口隔离
 
-当前实现里有明确的撤销和重做栈。做大改动时，不要怕先试；但试完发现方向不对，要尽快撤回，而不是在错误状态上继续补。
+`FlowTemplateWorkspaceController` 区分 requested template 和已加载的 `ActiveFlowParam`。请求选择还在加载时，保存、删除和导出必须针对当前画布的 active 模板，不能把画布写进刚选中但尚未加载的模板；历史查询可以跟随 requested 选择。
 
-### 导入、导出和模块复用
+刷新使用 generation 和 latest-wins 门禁串行加载，旧请求不能覆盖新选择。加载失败会尝试恢复前一画布与选择；失败的新请求不能冒用旧模板快照继续执行。独立窗口使用自己的工作区/服务节点集合，不写主程序的全局模板选择和全局节点集合。
 
-如果你不是从零开始搭流程，优先先看有没有可复用的流程或模块。导入现成内容后再做小改，通常比完全手工重建更快，也更不容易漏参数。
+独立窗口的文档替换/关闭经过 `ConfirmDocumentReplacement`；保存、丢弃和取消是不同决定。取消替换应保留当前文档，保存失败不能被当成已同意丢弃。
 
-## 设计时要特别注意什么
+## 当前画布与已保存版本
 
-### 交互运行和已保存版本要分清
+UI 手动运行读取当前画布，可执行尚未保存的编辑；共享 Quartz `FlowJob` 经单例 `FlowEngineManager.View` 的主工作区运行并等待最终化，不是运行当前激活的任意独立窗口。`HeadlessFlowJob` / `RunSavedFlowHeadlessAsync` 按 `FlowKey` 取模板集合中的 `DataBase64`，不读取当前未保存画布。不能笼统声称“所有 Quartz 都只运行已保存版本”。
 
-UI 手动运行会取得当前画布快照，可以验证尚未保存的修改；关闭重开、Quartz 和无界面运行只使用最后保存的版本。发布或启用调度前必须保存，并确认 FlowKey 对应正确模板。
+因此启用读取已保存模板的入口前，应保存并确认 `FlowKey`、起始节点和实际版本；无界面请求创建后的字节副本不再随继续编辑变化。执行完成判据见[执行会话](./execution.md)，无界面边界见[隔离执行](../../04-api-reference/algorithms/templates/flow-engine.md)。
 
-### 选中的流程模板要和编辑目标一致
+## 故障定位与验证
 
-当前实现会维护当前选中的流程模板。如果选中对象和你以为的不一致，后面保存、删除、导出都会落到错误对象上。
+| 现象 | 第一检查点 |
+| --- | --- |
+| 选中模板但画布为空 | requested/active 是否一致、模板是否有 `DataBase64`、加载是否失败；新空模板不能当作已完成流程 |
+| 保存后重开没有变化 | 文件文档还是数据库模板、保存返回值、窗口内容 hash、最终持久化对象 |
+| 改了画布但调度像没变 | 区分 `FlowJob` 与 `HeadlessFlowJob`，核对当前画布和已保存版本 |
+| 快速切模板显示错对象 | generation、latest-wins 和失败恢复，不只看下拉框文字 |
+| 图能运行但参数不对 | 节点属性、设备/模板绑定及输入来源；再进入[执行诊断](./execution.md) |
 
-### 参数优先在属性面板里确认
+`FlowTemplateWorkspaceControllerTests` 覆盖选择、起点、刷新门禁与快照身份；`ViewFlowDocumentBehaviorTests` 覆盖命令分流与修改文档替换决定；`STNodeCopyPasteTests` 实际覆盖节点保存/加载、类型重定位和损坏画布不替换旧图，不能仅凭文件名声称模块导入 UI 已验证。这些测试不证明完整 WPF 保存交互或真实 MySQL 已验收。需要相应验证时，检查新增节点/参数保存重开、模块插入、快速 A→B 选择、坏模板失败恢复、独立窗口不污染主窗口，以及取消/保存失败不丢文档。
 
-节点连好以后，不要直接假设参数也对了。很多问题不是流程结构错，而是节点参数仍然沿用了旧模板值。
-
-## 常见问题
-
-### 流程能打开，但画布是空的
-
-- 先确认当前选中的模板是不是正确的
-- 再确认该模板是否真的已有流程数据
-- 如果模板本身还没有内容，先创建对应流程再继续
-
-### 改了流程，但执行结果像没变
-
-- 先确认入口：UI 手动运行读取当前画布，调度/无界面运行读取已保存版本
-- 再确认执行页选中的是不是同一条流程模板
-- 如果导入过模块或流程，检查是不是改错了对象
-
-### 画布太乱，已经看不清关系
-
-- 先用自动布局或自动适配
-- 再把关键节点重新命名或重新组织
-- 不要在看不清结构的状态下直接进入执行排障
-
-### 不确定问题在设计还是执行
-
-- 如果连节点关系和参数都还没确认，先留在设计页整理
-- 如果结构已经稳定，再去 [流程执行与调试](./execution.md) 定位运行时问题
-
-## 说明
-
-- 本页只保留流程设计的使用入口，不再继续维护泛化的流程编辑器介绍。
-- 模板创建、导入、导出和持久化仍位于 `Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs`；设计工作区由 `Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs` 编排，画布、属性面板和自动布局位于 `Engine/ColorVision.Engine/FlowProcessing/Editor/`。
+`FlowLocalShortcutTests` 只测试自动排列的纯键位判断，覆盖修饰键组合和非目标主键；不构造 `ViewFlow`、不移动节点，也不代替真实键盘与排列结果验收。

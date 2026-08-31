@@ -1,259 +1,29 @@
 # ColorVision.FileIO
 
-> 目标框架：.NET Framework 4.6.1、.NET 6、.NET 8 和 .NET 10；AnyCPU（以 `ColorVision.FileIO.csproj` 为准）
+ColorVision 专有二进制图像格式的纯托管读写库。目标框架为 .NET Framework 4.6.1、.NET 6、.NET 8 和 .NET 10，平台 AnyCPU；以本目录 `ColorVision.FileIO.csproj` 为准。
 
-## 🎯 功能定位
+## 源码入口
 
-ColorVision.FileIO 是 ColorVision 系统的专用文件IO处理模块，负责ColorVision专有格式文件的读写操作。为整个系统提供统一的文件访问接口，支持多种图像格式和数据格式的读写。
+- `CVFileUtil.cs`：`CVCIE` 魔数、版本 header、payload、通道读取和写回。
+- `CVCIEFile.cs`：尺寸、曝光、源文件名和 Data 载体，以及 `CVType`。
 
-## 主要功能点
+本库没有 `CVRawFile`、`FileValidator`、通用 JSON/YAML 处理器、压缩/批量框架或异步 `LoadAsync` / `SaveAsync` API。标准图片解码和显示转换由消费方承担。
 
-### CVRaw 文件处理
-- **原始图像格式** - ColorVision 原始图像格式的读写
-- **元数据管理** - 图像元数据的存储和读取
-- **数据压缩** - 支持数据压缩存储
+## 先选对读取语义
 
-### CVCIE 文件处理
-- **CIE色彩数据** - ColorVision CIE 色彩数据格式的读写
-- **光谱数据** - 光谱数据的存储和读取
-- **测量结果** - 测量结果的文件存储
+- `CVFileUtil.Read` 读取当前文件的内嵌 payload。
+- `ReadCVCIE` 可能优先读取 `SrcFileName` 指向的关联源文件，不保证返回内嵌 XYZ。
+- `ReadCIEFileChannel` 同步读取一个零基通道平面，不跟随关联源文件；Data 只有一个通道，但 Channels/Exp 保留原 header。在检查点观察到取消时抛出 `OperationCanceledException`；header 失败可能先返回 false，详见完整契约。
+- `CVCIEFile.Dispose` 清除自身 Data/Exp 引用，不关闭消费方对象或强制回收其持有的数组。
 
-### 文件格式验证
-- **MagicHeader验证** - 文件头格式验证
-- **完整性检查** - 文件完整性验证
-- **版本兼容** - 多版本文件格式兼容
+`WriteCIEFile` 返回成功不等于格式验证成功：路径重载直接覆盖目标，没有原子替换/回滚；当前 v3 writer 未写 reader 所需的 NDPort。不要将单通道读取结果当作完整多通道文件直接写回。
 
-### 批量文件操作
-- **批量读写** - 支持大批量文件的高效处理
-- **异步IO** - 支持异步文件读写，避免界面阻塞
-- **进度报告** - 批量操作进度反馈
+完整布局、失败语义、消费方与测试只维护在仓库的[CV 文件契约](../../docs/04-api-reference/engine-components/ColorVision.FileIO.md)中。该链接用于源码仓库；从 NuGet 单独取得此包时，请查对应源码版本的主题和测试，不将最新分支当作已安装版本保证。
 
-### 图像格式支持
-- **标准格式** - BMP、PNG、JPEG、TIFF
-- **原始格式** - CVRaw、CVCIE
-- **数据格式** - CSV、JSON、YAML
+## 本地构建
 
-## 技术架构
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   ColorVision.FileIO                          │
-│                                                              │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐      │
-│  │   CVRaw     │    │   CVCIE     │    │   Image     │      │
-│  │   Handler   │    │   Handler   │    │   Handler   │      │
-│  │             │    │             │    │             │      │
-│  │ • 原始图像  │    │ • CIE数据   │    │ • 标准格式  │      │
-│  │ • 元数据    │    │ • 光谱数据  │    │ • 格式转换  │      │
-│  │ • 压缩存储  │    │ • 测量结果  │    │ • 批量处理  │      │
-│  └─────────────┘    └─────────────┘    └─────────────┘      │
-│                                                              │
-│  ┌─────────────┐    ┌─────────────┐                          │
-│  │   File      │    │   Async     │                          │
-│  │   Validator │    │    IO       │                          │
-│  │             │    │             │                          │
-│  │ • 格式验证  │    │ • 异步读写  │                          │
-│  │ • 完整性    │    │ • 进度报告  │                          │
-│  │ • 版本兼容  │    │ • 取消操作  │                          │
-│  └─────────────┘    └─────────────┘                          │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## 使用方式
-
-### 引用方式
-
-```xml
-<ProjectReference Include="..\ColorVision.FileIO\ColorVision.FileIO.csproj" />
-```
-
-### CVRaw 文件读写
-
-```csharp
-using ColorVision.FileIO;
-
-// 读取 CVRaw 文件
-var cvRaw = new CVRawFile();
-cvRaw.Load("path/to/file.cvraw");
-
-// 获取图像数据
-byte[] imageData = cvRaw.GetImageData();
-int width = cvRaw.Width;
-int height = cvRaw.Height;
-int channels = cvRaw.Channels;
-
-// 保存 CVRaw 文件
-cvRaw.Save("path/to/output.cvraw");
-```
-
-### CVCIE 文件读写
-
-```csharp
-using ColorVision.FileIO;
-
-// 读取 CVCIE 文件
-var cvCie = new CVCIEFile();
-cvCie.Load("path/to/file.cvcie");
-
-// 获取 CIE 数据
-var cieData = cvCie.GetCIEData();
-double x = cieData.X;
-double y = cieData.Y;
-double z = cieData.Z;
-
-// 保存 CVCIE 文件
-cvCie.Save("path/to/output.cvcie");
-```
-
-### 异步文件操作
-
-```csharp
-using ColorVision.FileIO;
-
-// 异步读取文件
-var cvRaw = new CVRawFile();
-await cvRaw.LoadAsync("path/to/file.cvraw", progress => {
-    Console.WriteLine($"加载进度: {progress}%");
-});
-
-// 异步保存文件
-await cvRaw.SaveAsync("path/to/output.cvraw", progress => {
-    Console.WriteLine($"保存进度: {progress}%");
-});
-```
-
-## 主要组件
-
-### CVRawFile
-原始图像文件处理类。
-
-```csharp
-public class CVRawFile
-{
-    // 图像属性
-    public int Width { get; }
-    public int Height { get; }
-    public int Channels { get; }
-    public int BitDepth { get; }
-    
-    // 元数据
-    public Dictionary<string, object> Metadata { get; }
-    
-    // 加载/保存
-    public void Load(string filePath);
-    public void Save(string filePath);
-    public Task LoadAsync(string filePath, Action<int> progressCallback);
-    public Task SaveAsync(string filePath, Action<int> progressCallback);
-    
-    // 数据操作
-    public byte[] GetImageData();
-    public void SetImageData(byte[] data);
-}
-```
-
-### CVCIEFile
-CIE色彩数据文件处理类。
-
-```csharp
-public class CVCIEFile
-{
-    // CIE 数据
-    public CIEData Data { get; }
-    
-    // 测量信息
-    public MeasurementInfo Info { get; }
-    
-    // 加载/保存
-    public void Load(string filePath);
-    public void Save(string filePath);
-    
-    // 数据操作
-    public CIEData GetCIEData();
-    public SpectrumData GetSpectrumData();
-}
-```
-
-### FileValidator
-文件验证类。
-
-```csharp
-public static class FileValidator
-{
-    // 验证文件格式
-    public static bool ValidateCVRaw(string filePath);
-    public static bool ValidateCVCIE(string filePath);
-    
-    // 获取文件信息
-    public static FileInfo GetFileInfo(string filePath);
-    
-    // 检查版本兼容性
-    public static bool CheckVersionCompatibility(string filePath, Version targetVersion);
-}
-```
-
-## 目录说明
-
-- `CVRaw/` - CVRaw文件格式处理
-- `CVCIE/` - CVCIE文件格式处理
-- `Image/` - 标准图像格式处理
-- `Validator/` - 文件验证
-- `Async/` - 异步IO操作
-
-## 开发调试
+从仓库根目录执行；仅构建本地库，不发布 NuGet：
 
 ```powershell
-# 构建项目
 dotnet build .\Engine\ColorVision.FileIO\ColorVision.FileIO.csproj -p:Platform=AnyCPU
 ```
-
-## 最佳实践
-
-### 1. 文件读写异常处理
-```csharp
-try
-{
-    var cvRaw = new CVRawFile();
-    cvRaw.Load(filePath);
-}
-catch (FileNotFoundException ex)
-{
-    Log.Error($"文件未找到: {filePath}", ex);
-}
-catch (InvalidDataException ex)
-{
-    Log.Error($"文件格式无效: {filePath}", ex);
-}
-catch (OutOfMemoryException ex)
-{
-    Log.Error($"内存不足，无法加载文件: {filePath}", ex);
-}
-```
-
-### 2. 异步操作使用
-```csharp
-// 对于大文件，使用异步操作避免阻塞UI
-await cvRaw.LoadAsync(filePath, progress => {
-    ProgressBar.Value = progress;
-});
-```
-
-### 3. 资源释放
-```csharp
-// 使用 using 语句确保资源释放
-using (var cvRaw = new CVRawFile())
-{
-    cvRaw.Load(filePath);
-    // 处理数据
-}
-```
-
-## 相关文档链接
-
-- [详细技术文档](../../docs/04-api-reference/engine-components/ColorVision.FileIO.md)
-- [文件格式说明](../../docs/05-resources/data-storage.md)
-- [ColorVision.Engine README](../ColorVision.Engine/README.md)
-
-## 维护者
-
-ColorVision 数据团队

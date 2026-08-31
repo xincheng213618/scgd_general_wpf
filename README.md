@@ -4,148 +4,61 @@
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://learn.microsoft.com/windows/)
 [![UI](https://img.shields.io/badge/UI-WPF-blue.svg)](https://learn.microsoft.com/dotnet/desktop/wpf/)
 
-ColorVision 是一个 Windows WPF 视觉检测平台，面向光电检测、设备集成、可视化流程执行、图像分析、插件扩展和客户项目交付。
+ColorVision 是一个 Windows WPF 视觉检测平台，包含设备集成、可视化流程、图像分析、插件扩展和客户项目交付。
 
-维护中的完整文档以简体中文为准：
+项目知识与代码一起维护，优先供 AI 按需检索、核对实现；网页展示同一份 Markdown，不另维护面向不同人群的手册。
 
-- [在线文档](https://xincheng213618.github.io/scgd_general_wpf/)
-- [本地文档入口](docs/index.md)
+## 用 AI 理解和维护仓库
+
+拉取仓库后，在此目录打开 Codex 并直接提出问题。[AGENTS.md](AGENTS.md) 提供工作规则，[知识地图](docs/knowledge/index.md)按实际源码职责定位主题、实现和测试。不需要先构建项目或网站，也不依赖维护者的个人记忆。
+
+例如：“新增属性编辑器从哪里扩展？先核对契约和测试，不修改代码。”或“首次构建缺什么环境？先检查，不执行发布。”
+
+安装了 Node.js 时可只读查询，无需安装 npm 依赖：
+
+```powershell
+node docs/.vitepress/scripts/knowledge.mjs search "属性编辑器" --limit 5
+node docs/.vitepress/scripts/knowledge.mjs impact "UI/ColorVision.UI/PropertyEditor"
+```
+
+没有 Node.js 时直接读取 Markdown 或用 `rg` 搜索即可。工具只提供定位候选，回答前仍需阅读主题和实际代码；详细边界见[知识使用约定](docs/README.md)。
 
 ## 仓库结构
 
-| 路径 | 作用 |
-| --- | --- |
-| `ColorVision/` | 主 WPF 应用入口 |
-| `UI/` | UI 类库、主题、图像编辑器、数据库 UI、调度、Socket 协议和桌面基础设施 |
-| `Engine/` | 设备服务、模板系统、FlowEngine 集成、MQTT、数据访问、结果处理和文件 I/O |
-| `Native/` | C++ OpenCV helper 和导出的 native 算法 |
-| `Plugins/` | 运行时发现的通用插件 |
-| `Projects/` | 客户或场景定制项目包 |
-| `Scripts/` | 构建、打包、发布和后端辅助脚本 |
-| `Test/` | xUnit 和 native helper 测试 |
-| `Web/` | 插件市场后端和相关 Web 模块 |
-| `docs/` | VitePress 文档源码 |
+[生成的源码地图](docs/knowledge/index.md)覆盖主程序、UI、Engine、Native、插件、客户项目、Web、脚本和测试。它随主题的 `code_paths` 更新，不在 README 再维护一份模块目录。
 
-更完整的目录说明见 [项目结构总览](docs/05-resources/project-structure/README.md)。
+跨模块职责与调用边界见[系统职责](docs/03-architecture/overview/system-overview.md)。目录归属、程序集引用、运行调用顺序不是同一件事。
 
 ## 环境要求
 
-- Windows 10/11
-- Visual Studio 2022 或 MSBuild
-- 当前主线使用 .NET 10 SDK
-- 文档站需要 Node.js 20+
-- 发布、打包和后端脚本需要 Python 3.9+
-- ColorVision 桌面宿主运行时、官方插件和客户项目交付包当前仅支持 Windows x64；显式非 x64 Platform/PlatformTarget、非空且非 `win-x64` 的 RID 或混合 RID 构建会直接失败
-- `ColorVision.FileIO` 是唯一 AnyCPU 例外；它使用独立的纯托管 NuGet 包坐标且只允许 IL-only AnyCPU 资产，可跨架构使用但不代表桌面宿主支持其他架构
-
-运行时依赖的 vendor/native 文件以安装和交付文档为准。
+桌面宿主面向 Windows x64，工具链和运行依赖以当前项目文件及[环境与首次构建](docs/00-getting-started/prerequisites.md)为准。只读源码问答不需要安装设备驱动或启动应用；独立 FileIO 包的 AnyCPU 例外见[构建平台与制品边界](docs/02-developer-guide/README.md)，不能推广为宿主跨架构支持。
 
 ## 构建
 
-```powershell
-dotnet restore .\ColorVision\ColorVision.csproj
-dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64
-```
-
-单独构建和运行主程序：
-
-```powershell
-dotnet build ColorVision/ColorVision.csproj -p:Platform=x64
-dotnet run --project ColorVision/ColorVision.csproj -p:Platform=x64
-```
-
-GitHub Actions 的 Windows 构建使用 MSBuild：
-
-```powershell
-dotnet restore .\build.sln
-msbuild .\build.sln /m /p:Configuration=Release /p:Platform=x64
-```
+按[环境与首次构建](docs/00-getting-started/prerequisites.md)选择已有 native DLL 或首次 C++ 构建路径。构建会生成本地产物，并可能还原依赖；启动产品是另一项动作，副作用与验证见[启动与最小运行验证](docs/00-getting-started/first-steps.md)。
 
 ## 测试
 
-```powershell
-dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64
-dotnet test Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj -c Release -p:Platform=x64
-```
-
-后端测试：
-
-```powershell
-cd Web/Backend
-python test_app.py
-python test_app_releases.py
-```
-
-更多验证范围见 [测试与验证](docs/02-developer-guide/testing.md)。
+从改动主题的 `test_paths` 和[测试与验证](docs/02-developer-guide/testing.md)选择相关 managed、native、脚本或后端检查。一次构建或局部测试通过，不代表设备、数据库或正式交付已验收。
 
 ## 文档
 
-本仓库按标准 Git 工程方式组织文档入口：
+- [本地知识地图](docs/knowledge/index.md)：生成的源码与能力检索入口。
+- [知识使用约定](docs/README.md)：按需阅读、源码核对及标准资料的职责。
+- [共同维护规范](docs/knowledge/maintenance.md)：正文、元数据、生成与验证命令。
+- [在线知识库](https://xincheng213618.github.io/scgd_general_wpf/)：同一份资料的网页展示。
 
-- `README.md`：仓库总览和第一组命令
-- `CONTRIBUTING.md`：开发、测试、文档和发布贡献规则
-- `CHANGELOG.md`：版本历史
-- `LICENSE.md`：许可入口
-- `docs/`：用户、开发、项目、插件、交付和源码参考的详细文档
-
-构建文档站：
-
-```powershell
-npm install
-npm run docs:build
-```
-
-`docs:build` 会构建站点、生成自定义索引，并校验内部链接、旧页面兼容入口和搜索索引。
-
-已有构建产物时可单独复查：
-
-```powershell
-npm run docs:validate:dist
-```
-
-启动本地文档站：
-
-```powershell
-npm run docs:dev
-```
-
-简体中文是当前维护的文档和事实来源。
+主题正文以简体中文为主；英文 `AGENTS.md` 与有用的原生英文模块说明保留，不维护中英重复镜像。网页构建不是本地知识查询的前提；知识和网站的本地生成不等于发布。
 
 ## 打包与发布
 
-常规发布入口：
+主程序、插件、客户项目包的入口和副作用由[构建与发布脚本](docs/02-developer-guide/scripts/README.md)统一维护。发布 wrapper 可能签名、上传或删除临时包，不要作为普通构建或文档验证命令运行；只有任务明确要求发布时才进入该流程。
 
-```powershell
-Scripts\release.bat
-```
-
-不要为主安装包新增或使用本地-only 发布捷径。发布脚本链负责构建、打包、上传发布产物、更新远端发布元数据和生成更新包。
-
-发布普通插件或客户项目包：
-
-```powershell
-Scripts\package_plugin.bat Conoscope
-Scripts\package_project.bat ProjectLUX
-```
-
-Spectrum 同时维护独立 ZIP 和 `.cvxp` 两个更新源，正式发布使用：
-
-```powershell
-Scripts\Spectrum.bat --release-notes "本次变更说明"
-```
-
-这些 wrapper 默认会上传；普通插件/项目包的本地 `.cvxp` 会在上传尝试结束后删除。主程序仍只使用 `Scripts\release.bat`，不要混用三个发布入口。
-
-更多说明：
-
-- [构建与发布脚本](docs/02-developer-guide/scripts/README.md)
-- [部署概览](docs/02-developer-guide/deployment/overview.md)
-- [插件开发](docs/02-developer-guide/plugin-development/README.md)
-- [项目说明](docs/00-projects/README.md)
+制品种类、外部安装工程及历史安装器边界见[桌面交付责任](docs/02-developer-guide/deployment/overview.md)。
 
 ## 参与开发
 
-提交 PR 前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。保持变更聚焦，运行相关验证，并更新与行为变化对应的文档入口。
+提交 PR 前阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。变更保持聚焦，同步受影响的知识与验证入口；提交、推送和发布分别以任务授权为准。
 
 ## 许可
 

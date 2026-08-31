@@ -1,3 +1,14 @@
+---
+knowledge_id: "algorithms.image-profile"
+knowledge_type: "reference"
+status: "current"
+summary: "ImageProfile 的输入、参数、结果、宿主接入与定向验证契约。"
+aliases: ["如何读取图像剖面和多点曲线","ImageProfile","ImageProfileAlgorithmProvider"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/ImageProfileAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ImageProfileV1Tests.cs"]
+related: ["algorithms.platform","algorithms.index"]
+---
+
 # 灰度与颜色剖面 V1（M2）
 
 M2 在统一 Catalog/Invocation/Runner/Result 上提供水平、垂直和任意折线剖面。它迁移仓库原有 `ProfileDataExtractor` 能力，但不包含图像比较；M3 及后续能力没有提前实现。

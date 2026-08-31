@@ -60,11 +60,7 @@ namespace ColorVision.Copilot
 
             try
             {
-                if (string.IsNullOrWhiteSpace(attachmentDirectoryPath))
-                    throw new InvalidOperationException("The Copilot attachment directory is unavailable.");
-
-                var attachmentRoot = Path.GetFullPath(attachmentDirectoryPath);
-                Directory.CreateDirectory(attachmentRoot);
+                var attachmentRoot = PrepareStorageDirectory(attachmentDirectoryPath);
                 var preparedImages = payloads
                     .Select(payload => PrepareStoredImage(payload, attachmentRoot))
                     .ToArray();
@@ -104,6 +100,41 @@ namespace ColorVision.Copilot
             }
         }
 
+        internal static string PrepareStorageDirectory(string attachmentDirectoryPath)
+        {
+            if (string.IsNullOrWhiteSpace(attachmentDirectoryPath))
+                throw new InvalidOperationException("The Copilot attachment directory is unavailable.");
+
+            var attachmentRoot = Path.GetFullPath(attachmentDirectoryPath);
+            EnsureSafeStoragePath(attachmentRoot);
+            Directory.CreateDirectory(attachmentRoot);
+            EnsureSafeStoragePath(attachmentRoot);
+            return attachmentRoot;
+        }
+
+        private static void EnsureSafeStoragePath(string path)
+        {
+            for (string? current = path; !string.IsNullOrWhiteSpace(current); current = Path.GetDirectoryName(current))
+            {
+                FileAttributes attributes;
+                try
+                {
+                    attributes = File.GetAttributes(current);
+                }
+                catch (FileNotFoundException)
+                {
+                    continue;
+                }
+                catch (DirectoryNotFoundException)
+                {
+                    continue;
+                }
+
+                if ((attributes & FileAttributes.ReparsePoint) != 0)
+                    throw new InvalidOperationException("The Copilot attachment storage path crosses a file-system reparse point.");
+            }
+        }
+
         private static PreparedStoredImage PrepareStoredImage(
             CopilotImagePayload payload,
             string attachmentRoot)
@@ -130,6 +161,7 @@ namespace ColorVision.Copilot
             PreparedStoredImage image,
             CancellationToken cancellationToken)
         {
+            EnsureSafeStoragePath(image.FilePath);
             if (File.Exists(image.FilePath))
             {
                 await VerifyStoredAsync(image, cancellationToken).ConfigureAwait(false);

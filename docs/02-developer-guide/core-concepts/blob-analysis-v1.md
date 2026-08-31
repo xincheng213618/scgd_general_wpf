@@ -1,6 +1,24 @@
+---
+knowledge_id: "algorithms.blob-analysis"
+knowledge_type: "reference"
+status: "current"
+summary: "BlobAnalysis 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。"
+aliases: ["连通域分析有何契约、为什么菜单里没有 Blob","BlobAnalysis","BlobAnalysisAlgorithmProvider"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/BlobAnalysisAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/BlobAnalysisV1Tests.cs","Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
+related: ["algorithms.platform","algorithms.index"]
+---
+
 # Blob / 连通域 V1（M5.1）
 
-M5.1 是工业测量阶段的第一个独立纵向切片，只交付 Blob/连通域；轮廓、亚像素边缘、直线和圆拟合仍属于后续里程碑。仓库原有 Conoscope 除尘和若干专用 native 算法内部使用过连通域，但没有可供 ImageView、Batch 与本地 Flow 共用的稳定契约。本阶段复用 OpenCvSharp `ConnectedComponentsWithStats`，不复制插件私有 API，也不改变旧 MQTT/设备算法 execution plane。
+## 当前发布边界
+
+当前默认 `ImageAlgorithmPlatform.CreateDefaultProviders()` 把本页 provider 包装在 `ExperimentalAlgorithmProviderGate` 中：菜单和 Batch 可执行投影隐藏该能力，直接调用默认 Runner 也返回 `provider_unavailable`，详情包含 `algorithm_experimental`。本页后面的参数、结果与宿主接入描述属于保留实现及测试契约，不是产品已开放的承诺；不得在调用方另建执行旁路来绕过门禁。
+
+本页 `status: current` 表示它记录当前源码事实，不代表算法已发布。M 编号是历史增量标识；其他增量是否可用以 [统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单) 为准。`Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs` 验证默认拒绝行为，专题测试覆盖实现细节；解除门禁还需完成对应数值、最坏资源与生产规模验证。
+
+
+Blob/连通域是一个独立分析契约，不包含轮廓、亚像素边缘、直线或圆拟合；这些能力分别记录在独立专题中。仓库原有 Conoscope 除尘和若干专用 native 算法内部使用过连通域，本 provider 复用 OpenCvSharp `ConnectedComponentsWithStats` 形成统一契约，不复制插件私有 API，也不改变旧 MQTT/设备算法 execution plane。
 
 ## 身份与能力
 
@@ -40,7 +58,9 @@ Blob 没有加入 Copilot 白名单。当前获批 Copilot 图像工具只提交
 
 过滤原因按固定顺序组合：`area_below_minimum`、`area_above_maximum`、`width_below_minimum`、`width_above_maximum`、`height_below_minimum`、`height_above_maximum`、`touches_image_border`。Geometry 的 `Confidence` 是 `area / (width × height)` 的边界框填充率，只用于表达区域紧致程度，不是检测类别概率。
 
-## 宿主与所有权
+## 保留的宿主适配与所有权（默认禁用）
+
+以下描述保留代码在测试环境中的接入设计。默认产品运行时仍受 Experimental 门禁阻止，不能据此指导用户从当前菜单执行 Blob。
 
 ImageView 的“算法调用 → Blob / 连通域”提供整图、矩形 ROI、圆形 ROI 和多边形 ROI 入口。参数窗口取消后不执行；运行和结果展示复用统一 analysis session，以 `DocumentInstanceId + SourceRevision + InvocationId` 拒绝旧结果。结果窗口展示组件表并可导出 CSV bundle 或 JSON；窗口关闭时释放 Result，并由 overlay 管理器同步移除实际 WPF Visual。
 
@@ -50,4 +70,4 @@ Runner 继续拥有 transferred input 的释放。Provider 在 mask 扫描、组
 
 ## M5.1 验收边界
 
-数值测试覆盖两个已知区域的面积/边界框/质心、4/8 连通对角规则、Gray8/Gray16/Gray32Float/Bgr24 标称阈值一致性、NaN、三类 ROI、过滤原因、图像边界、overlay 与候选上限。宿主测试覆盖 Batch JSON、Flow RAW、ImageView 菜单、结果表、实际 Visual/transient overlay 释放；取消测试验证 transferred input 释放。轮廓提取明确不在 M5.1 内，必须作为下一个串行增量单独通过门禁。
+数值测试覆盖两个已知区域的面积/边界框/质心、4/8 连通对角规则、Gray8/Gray16/Gray32Float/Bgr24 标称阈值一致性、NaN、三类 ROI、过滤原因、图像边界、overlay 与候选上限。宿主测试覆盖 Batch JSON、Flow RAW、ImageView 菜单、结果表、实际 Visual/transient overlay 释放；取消测试验证 transferred input 释放。轮廓提取由 [独立契约](./contour-analysis-v1.md) 描述，不能因 Blob 测试通过而解除轮廓或 Blob 的生产资源门禁。

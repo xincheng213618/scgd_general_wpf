@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Search application</value></data>
+  <data name="Placeholder" xml:space="preserve"><value>Search commands, settings and templates…</value></data>
+  <data name="Close" xml:space="preserve"><value>Close search</value></data>
+  <data name="Clear" xml:space="preserve"><value>Clear search</value></data>
+  <data name="Filter" xml:space="preserve"><value>Filter result types</value></data>
+  <data name="AllCategories" xml:space="preserve"><value>All types</value></data>
+  <data name="KeyboardHint" xml:space="preserve"><value>↑ ↓ Select    Enter Open    Esc Back</value></data>
+  <data name="Settings" xml:space="preserve"><value>Search settings</value></data>
+  <data name="NoResults" xml:space="preserve"><value>No matching results</value></data>
+  <data name="NoResultsHelp" xml:space="preserve"><value>Try a command name, a keyword from its description, or another result type.</value></data>
+  <data name="Searching" xml:space="preserve"><value>Searching…</value></data>
+  <data name="RecentAndCommon" xml:space="preserve"><value>Recently used and commands</value></data>
+  <data name="ResultCount" xml:space="preserve"><value>{0} results</value></data>
+  <data name="TruncatedCount" xml:space="preserve"><value>Showing the first {0}; narrow your search</value></data>
+  <data name="PartialFailure" xml:space="preserve"><value>Some sources are unavailable. Other results are shown.</value></data>
+  <data name="SearchFailed" xml:space="preserve"><value>Search is unavailable. Change your query or try again later.</value></data>
+  <data name="Unavailable" xml:space="preserve"><value>Unavailable in this context. Check the active document, permissions or feature state.</value></data>
+  <data name="TargetUnavailable" xml:space="preserve"><value>The original target has closed or changed. Return to the document and search again.</value></data>
+  <data name="ExecutionFailed" xml:space="preserve"><value>Unable to open this result: {0}</value></data>
+  <data name="CategoryCommands" xml:space="preserve"><value>Commands</value></data>
+  <data name="CategorySettings" xml:space="preserve"><value>Settings</value></data>
+  <data name="CategoryTemplates" xml:space="preserve"><value>Templates</value></data>
+  <data name="CategoryFlowNodes" xml:space="preserve"><value>Flow nodes</value></data>
+  <data name="CategoryTools" xml:space="preserve"><value>Tools</value></data>
+  <data name="CategoryExternal" xml:space="preserve"><value>External search</value></data>
+  <data name="DescriptionCommand" xml:space="preserve"><value>Open this command</value></data>
+  <data name="DescriptionTemplate" xml:space="preserve"><value>Open template</value></data>
+  <data name="DescriptionTool" xml:space="preserve"><value>Open external tool</value></data>
+  <data name="DescriptionExternalSearch" xml:space="preserve"><value>Open an external search application; may use the network</value></data>
+  <data name="SearchWithFormat" xml:space="preserve"><value>Search with {0}</value></data>
+</root>

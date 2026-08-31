@@ -120,12 +120,6 @@
   <data name="Search" xml:space="preserve">
     <value>搜尋</value>
   </data>
-  <data name="ConfigurationManagement" xml:space="preserve">
-    <value>配置管理視窗</value>
-  </data>
-  <data name="SaveConfiguration" xml:space="preserve">
-    <value>儲存配置</value>
-  </data>
   <data name="OpenConfigFolder" xml:space="preserve">
     <value>開啟設定資料夾</value>
   </data>
@@ -161,9 +155,6 @@
   <data name="Restart" xml:space="preserve">
     <value>重啟</value>
   </data>
-  <data name="UpdateAll" xml:space="preserve">
-    <value>更新所有</value>
-  </data>
   <data name="PluginManagerWindow" xml:space="preserve">
     <value>插件管理器視窗</value>
   </data>
@@ -192,8 +183,6 @@
     <value>更新</value>
   </data>  <data name="Reset" xml:space="preserve">
     <value>重置</value>
-  </data>  <data name="ProjectNotFound" xml:space="preserve">
-    <value>找不到項目{0}</value>
   </data>  <data name="Options" xml:space="preserve">
     <value>選項</value>
   </data>  <data name="NoLocalLog4Output" xml:space="preserve">
@@ -391,15 +380,6 @@
   <data name="MenuTimedButtonOperationStats" xml:space="preserve">
     <value>按鈕耗時統計</value>
   </data>
-  <data name="ConfigManager_Columns" xml:space="preserve"><value>Columns:</value></data>
-  <data name="ConfigManager_Assembly" xml:space="preserve"><value>Assembly</value></data>
-  <data name="ConfigManager_ConfigList" xml:space="preserve"><value>Config List</value></data>
-  <data name="ConfigManager_SelectConfig" xml:space="preserve"><value>Select a config to view details</value></data>
-  <data name="ConfigManager_Summary" xml:space="preserve"><value>{0} assemblies, {1} config types</value></data>
-  <data name="ConfigManager_ConfigPrefix" xml:space="preserve"><value>Config: {0}</value></data>
-  <data name="ConfigManager_CurrentSelection" xml:space="preserve"><value>Current: {0}</value></data>
-  <data name="ConfigManager_LoadFailed" xml:space="preserve"><value>Failed to load config properties</value></data>
-  <data name="ConfigManager_SaveSuccess" xml:space="preserve"><value>Saved successfully</value></data>
   <data name="ConfigManager_Prompt" xml:space="preserve"><value>Prompt</value></data>
   <data name="Wizard_Configure" xml:space="preserve"><value>Configure</value></data>
   <data name="CustomApp_AddTitle" xml:space="preserve"><value>Add Custom Application</value></data>
@@ -429,7 +409,6 @@
   <data name="CustomApp_ConfirmDelete" xml:space="preserve"><value>Are you sure you want to delete custom application "{0}"?</value></data>
   <data name="CustomApp_ConfirmDeleteTitle" xml:space="preserve"><value>Confirm Delete</value></data>
   <data name="CustomApp_AddScriptTitle" xml:space="preserve"><value>Add Quick Script</value></data>
-  <data name="CustomApp_LocalApps" xml:space="preserve"><value>Local Apps</value></data>
   <data name="CustomApp_QuickActions" xml:space="preserve"><value>Quick Actions</value></data>
   <data name="CustomApp_ExeFilter" xml:space="preserve"><value>Executable (*.exe)|*.exe|Batch (*.bat;*.cmd)|*.bat;*.cmd|All Files (*.*)|*.*</value></data>
   <data name="Stats_Title" xml:space="preserve"><value>Button Timing Stats</value></data>
@@ -490,6 +469,30 @@
   </data>
   <data name="SendFeedback" xml:space="preserve">
     <value>發送反饋</value>
+  </data>
+  <data name="FeedbackMessageLabel" xml:space="preserve">
+    <value>問題描述</value>
+  </data>
+  <data name="FeedbackMessageHint" xml:space="preserve">
+    <value>請補充操作步驟、實際情況及預期結果。</value>
+  </data>
+  <data name="FeedbackAttachmentsHint" xml:space="preserve">
+    <value>新增螢幕擷取畫面或檔案，幫助我們了解問題。</value>
+  </data>
+  <data name="FeedbackNoAttachments" xml:space="preserve">
+    <value>尚未新增附件</value>
+  </data>
+  <data name="FeedbackDiagnosticsHint" xml:space="preserve">
+    <value>傳送時會自動打包所選項目；也可先打包，離線複製。</value>
+  </data>
+  <data name="FeedbackDiagnosticsSummary" xml:space="preserve">
+    <value>已選擇 {0} / {1} 項</value>
+  </data>
+  <data name="FeedbackRemoveAttachment" xml:space="preserve">
+    <value>移除附件</value>
+  </data>
+  <data name="FeedbackPackageReadyHint" xml:space="preserve">
+    <value>診斷包已加入附件。修改診斷選項後，請移除舊包並重新打包。</value>
   </data>
   <data name="FeedbackPlaceholder" xml:space="preserve">
     <value>請描述您遇到的問題或建議...</value>
@@ -575,9 +578,6 @@
   <data name="MarketplaceDetailInfoHeader" xml:space="preserve">
     <value>詳情</value>
   </data>
-  <data name="MarketplaceDependentsHeader" xml:space="preserve">
-    <value>依賴</value>
-  </data>
   <data name="MarketplaceOpenProjectUrl" xml:space="preserve">
     <value>打開鏈接</value>
   </data>
@@ -662,9 +662,6 @@
   <data name="MarketplaceBulkUpdateTitle" xml:space="preserve">
     <value>一鍵更新</value>
   </data>
-  <data name="MarketplacePackageColumn" xml:space="preserve">
-    <value>包</value>
-  </data>
   <data name="MarketplaceHasUpdateTooltip" xml:space="preserve">
     <value>有可用更新</value>
   </data>
@@ -733,4 +730,11 @@
   <data name="Wizard_Progress" xml:space="preserve"><value>初始化進度</value></data>
   <data name="Wizard_Steps" xml:space="preserve"><value>設定步驟</value></data>
   <data name="Wizard_RequiredStepPrompt" xml:space="preserve"><value>請先完成此必需步驟後再繼續。</value></data>
+  <data name="MarketplaceWindowTitle" xml:space="preserve"><value>外掛市集</value></data>
+  <data name="MarketplaceMoreActions" xml:space="preserve"><value>更多操作</value></data>
+  <data name="MarketplaceEnabled" xml:space="preserve"><value>啟用外掛</value></data>
+  <data name="MarketplaceFeatureActions" xml:space="preserve"><value>功能入口</value></data>
+  <data name="MarketplaceShortcuts" xml:space="preserve"><value>捷徑</value></data>
+  <data name="MarketplacePluginSettings" xml:space="preserve"><value>外掛設定</value></data>
+  <data name="MarketplaceNoPluginActions" xml:space="preserve"><value>此外掛沒有可直接開啟的功能或設定。</value></data>
 </root>

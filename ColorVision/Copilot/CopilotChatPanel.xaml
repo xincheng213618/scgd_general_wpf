@@ -2233,7 +2233,7 @@
                                            VerticalAlignment="Center"
                                            FontSize="9"
                                            Opacity="0.48"
-                                           Text="↑↓ 选择 · Enter/→ 恢复 · Ctrl+S 范围 · Esc 关闭" />
+                                           Text="↑↓ 选择 · Enter/→ 恢复 · 保存快捷键切换范围 · Esc 关闭" />
                                 <TextBlock VerticalAlignment="Center"
                                            FontSize="10"
                                            FontWeight="SemiBold"

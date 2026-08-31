@@ -1,3 +1,14 @@
+---
+knowledge_id: "flow.node-extension"
+knowledge_type: "guide"
+status: "current"
+summary: "说明服务节点基类、请求与响应扩展点、属性编辑和流程完成的边界。"
+aliases: ["如何新增Flow节点","CVCommonNode","CVBaseServerNode","getBaseEventData","CVEndNode"]
+code_paths: ["Engine/FlowEngineLib/Base/CVCommonNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs","Test/ColorVision.UI.Tests/LocalFlowNodePortTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs"]
+related: ["platform.extensions","flow.index","flow.runtime","ui.property-grid"]
+---
+
 # FlowEngineLib 节点扩展
 
 本页只描述当前仓库里真实可用的 Flow 节点扩展路径，不再继续维护基于示意 API 的旧版“开发指南”。
@@ -83,3 +94,9 @@
 3. `BaseStartNode`：理解流程启动、循环输出和 `Finished` 事件来源。
 4. `CVEndNode`：确认流程结束链在哪里闭环。
 5. `AlgorithmNode` 或其他相邻真实节点：最后照着现有节点扩展，而不是从旧教程样板出发。
+
+## 验证入口与缺口
+
+关联测试：`Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs`、`Test/ColorVision.UI.Tests/LocalFlowNodePortTests.cs`、`Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs`。
+
+节点端口与终态测试不能替代新增服务协议；修改请求或资源生命周期时应为目标节点新增样例，硬件执行需要单独授权。

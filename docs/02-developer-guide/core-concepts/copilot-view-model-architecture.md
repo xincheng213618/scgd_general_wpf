@@ -1,7 +1,19 @@
+---
+knowledge_id: "copilot.view-model"
+knowledge_type: "topic"
+status: "current"
+summary: "CopilotChatViewModel 的状态所有权、请求边界、会话与输入状态拆分和测试入口。"
+aliases: ["CopilotChatViewModel 太大从哪里改","聊天状态属于哪个对象","CopilotConversationSession","CopilotComposerSession","ICopilotTurnRuntime"]
+code_paths: ["ColorVision/Copilot/CopilotChatViewModel.cs","ColorVision/Copilot/State/CopilotConversationSession.cs","ColorVision/Copilot/State/CopilotComposerSession.cs","ColorVision/Copilot/Runtime/ICopilotTurnRuntime.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotChatViewModelContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotConversationSessionTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs","Test/ColorVision.Copilot.Tests/CopilotAttachmentRemovalEditLifetimeTests.cs"]
+related: ["copilot.runtime","copilot.interactions","copilot.session-tools"]
+---
+
 # Copilot ViewModel 维护地图
 
-修改 Copilot 对话界面时，先找状态 owner，不要先翻完 31 个 `CopilotChatViewModel` partial。ViewModel 是 WPF facade；partial 只是文件组织方式，不能作为状态边界。
-## 阅读顺序
+修改 Copilot 对话界面时，先找状态 owner，不需要先遍历全部 `CopilotChatViewModel` partial。ViewModel 是 WPF facade；partial 只是文件组织方式，不能作为状态边界。
+
+## 问题到源码的定位顺序
 
 1. 在下表找到状态 owner。
 2. 查看对应 `CopilotChatViewModel.*.cs` 如何投影到 WPF。
@@ -20,6 +32,8 @@
 | Turn runtime | Provider/Agent 执行和事件流 | `Runtime/ICopilotTurnRuntime.cs`、`Runtime/CopilotTurnRuntime.cs` |
 | Conversation Agent state | 当前可恢复 checkpoint、最新有界事件证据及两者的原子提交 | `CopilotConversationRecord.cs`、`CopilotConversationRecord.Validation.cs` |
 | Persistence coordinator | 保存合并、Flush、失败通知和重试 | `State/CopilotChatStatePersistenceCoordinator.cs` |
+
+消息编辑前的草稿备份由 ViewModel 持有，属于当前编辑会话的内存状态。备份对象的引用也是异步编辑发送、网页读取和附件移除识别该次编辑的依据；失败回滚可以向其附件列表补回原草稿内容，但不能替换整个备份对象而使仍有效的请求失效。取消编辑把备份恢复到 composer，成功排程编辑发送后丢弃备份。它不属于持久化的 `ComposerStash`，不保证退出或重启后恢复；交互与文件引用边界见[草稿编辑与历史恢复](./copilot-local-interactions.md#草稿编辑与历史恢复)。
 
 `CopilotChatState` 仍是持久化 aggregate，但不是业务 God object；各 owner 只管理自己的字段，持久化 coordinator 只负责快照和保存。分片快照以保存请求版本作为一致性水位线；捕获期间出现新请求时丢弃旧切面并继续保存新批次，不能把多个 UI 时刻拼成一份磁盘状态。
 ### DeepSeek Harness 借鉴边界

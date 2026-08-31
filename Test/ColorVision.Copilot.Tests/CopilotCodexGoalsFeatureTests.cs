@@ -1,77 +1,10 @@
 using ColorVision.Copilot;
 using System;
-using System.IO;
 
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexGoalsFeatureTests
 {
-    [Fact]
-    public void ClosestTrustedValueIsFrozenAndOmitsTheActiveGoalFromTheRequest()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                features.goals = true
-
-                [projects.'{projectRoot}']
-                trust_level = "trusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
-            File.WriteAllText(
-                projectConfigPath,
-                """
-                [features]
-                goals = false
-                """);
-
-            var submittedContext = new CopilotAgentHostContextSnapshot(
-                activeDocumentPath: null,
-                projectRoot,
-                attachments: null,
-                liveContext: null,
-                conversationHistory: null,
-                additionalReadRootPaths: null,
-                globalInstructionRootPath: globalRoot);
-            var submittedPlan = CopilotAgentRequestFactory.Prepare(
-                "Continue the current task.",
-                CopilotAgentMode.Code,
-                submittedContext);
-            var submittedRequest = CopilotAgentRequestFactory.Create(
-                submittedPlan,
-                new CopilotAgentRequestBuildInput
-                {
-                    Profile = CopilotProfileConfig.CreateDefault(),
-                    AgentDefaults = new CopilotAgentDefaultsConfig(),
-                    ActiveGoalText = "Finish the persistent objective.",
-                });
-            File.WriteAllText(projectConfigPath, "features.goals = true");
-            var refreshed = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            var submitted = submittedContext.ProjectInstructionDiscoveryOptions;
-            Assert.False(submitted.ConfiguredGoalsEnabled);
-            Assert.True(submitted.HasGoalsEnabledOverride);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.TrustedProject,
-                submitted.GoalsEnabledSource);
-            Assert.False(submittedPlan.CodexGoalsEnabled);
-            Assert.Empty(submittedRequest.ActiveGoalText);
-            Assert.True(refreshed.ConfiguredGoalsEnabled);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
     [Fact]
     public void EnabledDefaultKeepsTheNormalizedActiveGoal()
     {
@@ -151,10 +84,4 @@ public sealed class CopilotCodexGoalsFeatureTests
         Assert.Contains("/goal 仍可查看、暂停或清除", debugReport, StringComparison.Ordinal);
     }
 
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-goals-feature-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
-    }
 }

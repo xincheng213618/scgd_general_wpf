@@ -1,3 +1,14 @@
+---
+knowledge_id: "projects.arvr-pro-demo"
+knowledge_type: "reference"
+status: "current"
+summary: "独立 net48 ARVRPro TCP/JSON Demo 的公开字段、ACK 与最终完成判据、半包粘包及离线验证。"
+aliases: ["RunAll Code=0 是否已经测试完成","客户怎么对接 ARVRPro","最终结果MsgID为什么为空","ProjectARVRPro.IntegrationDemo","ProjectARVRResult","MsgID","TotalResult"]
+code_paths: ["Projects/ProjectARVRPro.IntegrationDemo/Program.cs","Projects/ProjectARVRPro.IntegrationDemo/Contracts/","Projects/ProjectARVRPro.IntegrationDemo/Samples/project-arvr-result.json","Projects/ProjectARVRPro/Services/RunAllSocket.cs","Projects/ProjectARVRPro/ARVRWindow.xaml.cs"]
+test_paths: ["Test/ProjectARVRPro.Tests/IntegrationDemoReleaseClientTests.cs"]
+related: ["projects.arvr-pro","projects.index"]
+---
+
 # ProjectARVRPro.IntegrationDemo
 
 `Projects/ProjectARVRPro.IntegrationDemo/` 是给客户、MES、PLC 上位机或自动化中控使用的最小 TCP/JSON 对接示例。它不是 ColorVision 插件，不依赖 ColorVision 主程序和内部算法 DLL。
@@ -34,6 +45,8 @@
 
 ## 对接事件时序
 
+服务端接收行为看 `Projects/ProjectARVRPro/Services/RunAllSocket.cs`，最终报文看 `Projects/ProjectARVRPro/ARVRWindow.xaml.cs`，Demo 接收判定看 `Program.cs`。`RunAll Code=0` 只是开始执行的 ACK，不是测试完成或成功，不能触发客户产线的完成放行。
+
 | 阶段 | Demo 行为 | ARVRPro 期望 | 对接要点 |
 | --- | --- | --- | --- |
 | 建连 | `TcpClient` 连接 `host:port` | ARVRPro Socket 服务监听，默认端口 `6666` | 现场先确认端口、防火墙、宿主是否已加载 ProjectARVRPro |
@@ -46,7 +59,22 @@
 | 设置流程启用状态 | 同步发送 `SetProcessEnable` | 宿主返回 `{ActiveGroupName, Applied, NotFound}` | `Params` 是 JSON 字符串，推荐 `{"Items":[{"Index":0,"IsEnabled":true}]}` |
 | 结果解析 | 收到 `ProjectARVRResult` 后解析并保存 JSON/CSV | 宿主按配置返回标准或 Legacy `Data` | 标准字段变化时同步 `Contracts/`、样例 JSON 和 CSV 说明；Legacy 按独立形态维护 |
 
-## 常用命令
+## 完成判据与结果关联边界
+
+| 报文或分支 | 当前实现 | 不可推断的保证 |
+| --- | --- | --- |
+| `RunAll` ACK | 服务端接受后异步启动 `RunAllAsync()`，返回请求 `MsgID`、解析后的 SN 和 `Code=0`；忙时 `Code=-4` | ACK 不代表步骤、后处理或最终判定已完成 |
+| 同步管理命令 | Demo 要求响应 `EventName` 与 `MsgID` 均匹配请求；匹配响应的负 `Code` 使 CLI 失败 | 此匹配逻辑不能套用到异步最终结果 |
+| 最终 `ProjectARVRResult` | 服务端填 `MsgID=string.Empty`、当前 SN、最终 `Code` 和标准或 Legacy `Data` | 最终结果不回显原始 RunAll MsgID，不能用该 MsgID 一对一关联 |
+| Demo 的测试流程分支 | 收到 `ProjectARVRResult` 后解析并结束；任意可解析负 `Code` 或 `TotalResult==false` 会失败 | 当前未核对最终 SN 是否等于请求 SN，也未核对原请求 MsgID |
+
+`TotalResult` 在 Demo 解析模型里可为空。当前判断是 `parsed.TotalResult == false`，不是必须为 `true`；缺失或无法解析为布尔值不会在这条判断中被明确拒绝。因此“Demo 正常退出”不能直接解释为已经严格验证结果属于本次请求且明确 PASS。
+
+客户对接应跟踪当前连接会话和服务端确认的 SN，核对最终结果确属预期测试，并按选定的标准/Legacy schema 验证必需字段与明确的最终判定。上述要求是对接契约与现有缺口，不表示 Demo 已实现严格会话匹配或缺失字段拒绝；不能把这些缺口写成已被测试覆盖。
+
+## 命令与副作用
+
+先区分副作用：`--parse-file` 是离线解析并写出本地 JSON/CSV；`--get-process-enable` 是联网只读查询。联机初始化、RunAll、切图确认会推进真实测试，切换组和设置启用状态会修改宿主运行配置；执行这些命令前必须获得对应现场操作授权并确认目标 host/port，不能作为普通文档检索的验证步骤。
 
 | 场景 | 命令 |
 | --- | --- |
@@ -64,6 +92,20 @@
 - `--mode init|runall` 会等待最终 `ProjectARVRResult`；`RunAll Code=0` 只是接收确认，不会提前结束。任意负 `Code`、最终 `TotalResult=false`、超时、连接提前断开或达到消息上限都返回非零退出码。
 - `SetProcessEnable.Params` 是包含 JSON 的字符串。推荐使用 `Items` 外壳；先查询再复用服务端返回的 `Index`，避免 Legacy 索引偏移。
 - 客户系统读取 TCP 时必须处理半包和粘包；本 demo 的 reader 可以作为参考实现。
+
+## 离线验证与客户产物
+
+`Test/ProjectARVRPro.Tests/IntegrationDemoReleaseClientTests.cs` 覆盖发布元数据读取、下载路径约束和包大小/SHA-256 校验，使用 HTTP stub；它不覆盖 TCP 协议、RunAll ACK 或最终结果关联。
+
+验证缺口：当前未登记覆盖 `Program.cs` 的 ACK 后等待、负 Code、最终失败、超时/断连和 EventName+MsgID 匹配的专门协议自动化测试。下表是待执行的验收要求，不是既有测试成功记录。最终 SN 不匹配、缺失/不可解析 `TotalResult` 的场景还应单独建立验收，并先明确要保留还是修改当前宽松行为。
+
+以下为本地构建/测试与客户产物生成，不上传到插件市场；会写入 bin/obj 或 publish 输出。Demo 不是 `.cvxp` 插件，不调用 `package_project.bat`。
+
+```powershell
+# 仅验证发布元数据与下载校验，不证明 TCP 协议通过
+dotnet test Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj -c Release -p:Platform=x64 --filter FullyQualifiedName~IntegrationDemoReleaseClientTests
+dotnet publish Projects/ProjectARVRPro.IntegrationDemo/ProjectARVRPro.IntegrationDemo.csproj -c Release -f net48
+```
 
 ## 对接检查表
 

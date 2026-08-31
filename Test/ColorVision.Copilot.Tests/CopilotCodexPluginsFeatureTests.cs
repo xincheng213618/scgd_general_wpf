@@ -1,7 +1,6 @@
 using ColorVision.Copilot;
 using ColorVision.UI;
 using System;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -204,110 +203,6 @@ public sealed class CopilotCodexPluginsFeatureTests
 
         Assert.Equal(["refresh-context", "stable-context"], items.Select(item => item.Id));
         Assert.Equal(1, contextProvider.CaptureCount);
-    }
-
-    [Fact]
-    public void ClosestTrustedValueIsFrozenAcrossContextPlanAndRequest()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                [features]
-                plugins = true
-
-                [projects.'{projectRoot}']
-                trust_level = "trusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
-            File.WriteAllText(projectConfigPath, "features.plugins = false");
-
-            var submittedContext = CreateHostContext(globalRoot, projectRoot);
-            var submittedPlan = CopilotAgentRequestFactory.Prepare(
-                "Inspect the active ColorVision extension context.",
-                CopilotAgentMode.Code,
-                submittedContext);
-            var submittedRequest = CopilotAgentRequestFactory.Create(
-                submittedPlan,
-                new CopilotAgentRequestBuildInput
-                {
-                    Profile = CopilotProfileConfig.CreateDefault(),
-                    AgentDefaults = new CopilotAgentDefaultsConfig(),
-                });
-
-            File.WriteAllText(projectConfigPath, "features.plugins = true");
-            var refreshed = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-            var options = submittedContext.ProjectInstructionDiscoveryOptions;
-
-            Assert.False(options.ConfiguredPluginsEnabled);
-            Assert.True(options.HasPluginsEnabledOverride);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.TrustedProject,
-                options.PluginsEnabledSource);
-            Assert.False(submittedPlan.ContextRequest.IncludeExtensionProviders);
-            Assert.False(submittedPlan.CodexPluginsEnabled);
-            Assert.False(submittedRequest.CodexPluginsEnabled);
-            Assert.True(refreshed.ConfiguredPluginsEnabled);
-            Assert.False(submittedPlan.CodexPluginsEnabled);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void UntrustedAndInvalidValuesCannotBroadenTheCodexHomeContract()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                [features]
-                plugins = false
-
-                [projects.'{projectRoot}']
-                trust_level = "untrusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            File.WriteAllText(
-                Path.Combine(projectConfigDirectory, "config.toml"),
-                "[features]" + Environment.NewLine + "plugins = true");
-
-            var untrusted = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            Assert.False(untrusted.ConfiguredPluginsEnabled);
-            Assert.True(untrusted.HasPluginsEnabledOverride);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.CodexHome,
-                untrusted.PluginsEnabledSource);
-            Assert.Empty(untrusted.AppliedProjectConfigFilePaths);
-
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                "[features]" + Environment.NewLine + "plugins = \"false\"");
-            var invalid = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot);
-
-            Assert.True(invalid.ConfiguredPluginsEnabled);
-            Assert.False(invalid.HasPluginsEnabledOverride);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
     }
 
     [Fact]
@@ -695,17 +590,6 @@ public sealed class CopilotCodexPluginsFeatureTests
         Assert.Contains("independently configured external MCP tools are unaffected", harness, StringComparison.Ordinal);
     }
 
-    private static CopilotAgentHostContextSnapshot CreateHostContext(
-        string globalRoot,
-        string projectRoot) => new(
-        activeDocumentPath: null,
-        projectRoot,
-        attachments: null,
-        liveContext: null,
-        conversationHistory: null,
-        additionalReadRootPaths: null,
-        globalInstructionRootPath: globalRoot);
-
     private static CopilotAgentRequest CreateAgentRequest(bool pluginsEnabled) => new()
     {
         Profile = CopilotProfileConfig.CreateDefault(),
@@ -737,12 +621,6 @@ public sealed class CopilotCodexPluginsFeatureTests
         ToolInput = CopilotAgentToolInput.Empty,
     };
 
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-codex-plugins-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
-    }
 
     private sealed class RecordingContextProvider(string id) : ICopilotContextProvider
     {

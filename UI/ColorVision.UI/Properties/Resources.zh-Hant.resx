@@ -188,12 +188,7 @@
   </data>  <data name="LogLevelDescription" xml:space="preserve">
     <value>控制應用程式寫入日誌的詳細程度。</value>
   </data>
-  <data name="MarketplaceServiceBaseUrl" xml:space="preserve">
-    <value>插件市場服務地址</value>
-  </data>
-  <data name="MarketplaceServiceBaseUrlDescription" xml:space="preserve">
-    <value>插件市場、更新檢查與線上套件介面使用的服務地址。</value>
-  </data>  <data name="Search" xml:space="preserve">
+  <data name="Search" xml:space="preserve">
     <value>搜尋</value>
   </data>
   <data name="SearchSettingsTitle" xml:space="preserve">
@@ -255,8 +250,6 @@
     <value>更新Log4Net 日誌級別：</value>
   </data>  <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>正在檢索是否存在附加項目</value>
-  </data>  <data name="ProjectNotFound" xml:space="preserve">
-    <value>找不到項目{0}</value>
   </data>
   <data name="FoundProjectDownloadConfirm" xml:space="preserve">
     <value>找到項目{0}，{1}，是否下載</value>
@@ -338,38 +331,11 @@
   <data name="RemStagePointsToTemp" xml:space="preserve">
     <value>rem STAGE 指向臨時目錄中解壓出的 ColorVision 內容根</value>
   </data>
-  <data name="EchoBackingUpCurrentVersion" xml:space="preserve">
-    <value>echo 正在備份當前版本...</value>
-  </data>
-  <data name="EchoTargetDirNotExist" xml:space="preserve">
-    <value>  echo 目標目錄不存在，跳過備份。</value>
-  </data>
-  <data name="EchoBackupTo" xml:space="preserve">
-    <value>  echo 備份到：%BKDIR%</value>
-  </data>
-  <data name="EchoBackupComplete" xml:space="preserve">
-    <value>  echo 備份完成。</value>
-  </data>
-  <data name="RemRobocopySuccess" xml:space="preserve">
-    <value>  rem Robocopy 0-7 視為成功</value>
-  </data>
-  <data name="EchoRobocopyFailed" xml:space="preserve">
-    <value>     echo Robocopy 失敗，錯誤碼 !RC! ，嘗試使用 XCOPY 回退...</value>
-  </data>
-  <data name="EchoRobocopyNotFound" xml:space="preserve">
-    <value>  echo 未找到 Robocopy，回退到 XCOPY...</value>
-  </data>
   <data name="EchoUsingXCOPY" xml:space="preserve">
     <value>echo 使用 XCOPY 回退複製...</value>
   </data>
-  <data name="EchoXCOPYFailed" xml:space="preserve">
-    <value>  echo XCOPY 複製失敗，更新中止。</value>
-  </data>
   <data name="EchoCopyComplete" xml:space="preserve">
     <value>echo 複製完成。</value>
-  </data>
-  <data name="EchoRestartingProgram" xml:space="preserve">
-    <value>echo 正在重新啟動程序...</value>
   </data>
   <data name="EchoSchedulingCleanup" xml:space="preserve">
     <value>echo 安排延遲清理臨時目錄與腳本...</value>
@@ -404,9 +370,6 @@
   </data>
   <data name="Theme" xml:space="preserve">
     <value>主題</value>
-  </data>
-  <data name="ThemeDescription" xml:space="preserve">
-    <value>選擇應用介面的顏色主題。</value>
   </data>
   <data name="PropEditor_SearchPlaceholder" xml:space="preserve"><value>Search properties...</value></data>
   <data name="PropEditor_ResetToDefault" xml:space="preserve"><value>Reset to Default</value></data>
@@ -456,19 +419,8 @@
   <data name="TimedOp_ViewStats" xml:space="preserve"><value>檢視耗時統計</value></data>
   <data name="TimedOp_NoHistory" xml:space="preserve"><value>暫無耗時記錄。</value></data>
   <data name="TimedOp_Warmup" xml:space="preserve"><value>預熱：</value></data>
-  <data name="TimedOp_NoStableSamples" xml:space="preserve"><value>尚無穩定樣本。</value></data>
-  <data name="TimedOp_WarmupNote" xml:space="preserve"><value>啟動後首次執行視為預熱，不計入平均值。</value></data>
   <data name="TimedOp_Last" xml:space="preserve"><value>上次：</value></data>
   <data name="TimedOp_Average" xml:space="preserve"><value>平均：</value></data>
-  <data name="TimedOp_Fastest" xml:space="preserve"><value>最快：</value></data>
-  <data name="TimedOp_Slowest" xml:space="preserve"><value>最慢：</value></data>
-  <data name="TimedOp_StableSamples" xml:space="preserve"><value>穩定樣本：</value></data>
-  <data name="TimedOp_RightClickHint" xml:space="preserve"><value>右鍵點擊按鈕可開啟統計視窗。</value></data>
-  <data name="TimedOp_FewSamples" xml:space="preserve"><value>穩定樣本較少，繼續執行可提高準確度。</value></data>
-  <data name="TimedOp_StatsRecorded" xml:space="preserve"><value>已記錄耗時統計。</value></data>
-  <data name="TimedOp_CloseToAverage" xml:space="preserve"><value>本次接近歷史平均值。</value></data>
-  <data name="TimedOp_FasterThanAverage" xml:space="preserve"><value>本次比歷史平均快 {0}。</value></data>
-  <data name="TimedOp_SlowerThanAverage" xml:space="preserve"><value>本次比歷史平均慢 {0}。</value></data>
   <data name="SearchEngine" xml:space="preserve">
     <value>搜索引擎</value>
   </data>
@@ -526,4 +478,7 @@
   <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
     <value>啟用後，更新檢查與外掛市集請求會直接連線到公網服務；停用時使用 Windows 系統代理。變更會從下一次請求生效。</value>
   </data>
+  <data name="SettingsSectionAppearance" xml:space="preserve"><value>外觀與語言</value></data>
+  <data name="SettingsSectionUpdates" xml:space="preserve"><value>更新與網路</value></data>
+  <data name="SettingsSectionDiagnostics" xml:space="preserve"><value>日誌與診斷</value></data>
 </root>

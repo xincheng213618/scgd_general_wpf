@@ -38,6 +38,12 @@ namespace ColorVision.Solution
             AddCommandBinding(
                 mainWindow,
                 ApplicationCommands.Open,
+                (s, e) => new MenuFileOpen().Execute(),
+                (s, e) => e.CanExecute = true);
+
+            AddCommandBinding(
+                mainWindow,
+                SolutionWorkspaceCommands.OpenWorkspace,
                 (s, e) => SolutionManager.OpenSolutionWindow(),
                 (s, e) => e.CanExecute = true);
 

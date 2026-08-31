@@ -111,22 +111,54 @@ namespace ColorVision.Copilot
             window.ShowDialog();
         }
 
-        private void RemoveAttachment(CopilotAttachmentItem? attachment)
+        private async Task RemoveAttachment(CopilotAttachmentItem? attachment)
         {
-            if (attachment == null || SelectedConversation == null)
+            var conversation = SelectedConversation;
+            if (attachment == null || conversation == null
+                || Volatile.Read(ref _disposeState) != 0 || IsBusy || HasExclusiveLocalOperation)
                 return;
 
-            if (!SelectedConversation.Attachments.Remove(attachment))
+            var messageEditSnapshot = _composerDraftBeforeMessageEdit;
+            var attachmentIndex = conversation.Attachments.IndexOf(attachment);
+            if (attachmentIndex < 0 || !conversation.Attachments.Remove(attachment))
                 return;
 
-            if (!SelectedConversation.Messages
-                .SelectMany(message => message.Attachments)
-                .Any(candidate => string.Equals(candidate.Value, attachment.Value, StringComparison.OrdinalIgnoreCase)))
+            UpdateAttachmentsState(conversation);
+            try
             {
-                TryDeleteManagedAttachmentFile(attachment);
+                await FlushStatePersistenceBarrierAsync();
+            }
+            catch
+            {
+                // A cancelled or reopened edit no longer owns these historical
+                // attachments; restoring them would modify the replacement draft.
+                var editStillOwnsRemoval = messageEditSnapshot == null
+                    || (ReferenceEquals(messageEditSnapshot, _composerDraftBeforeMessageEdit)
+                        && string.Equals(_editingConversationId, conversation.Id, StringComparison.Ordinal));
+                // An edit started while this ordinary draft removal was saving.
+                // Restore its backup without adding the attachment to the edited turn.
+                IList<CopilotAttachmentItem> rollbackAttachments = messageEditSnapshot == null
+                    && _composerDraftBeforeMessageEdit is { } draftBeforeEdit
+                    && string.Equals(draftBeforeEdit.ConversationId, conversation.Id, StringComparison.Ordinal)
+                        ? draftBeforeEdit.Attachments
+                        : conversation.Attachments;
+                var contextWasReplaced = messageEditSnapshot == null
+                    && attachment.Type == CopilotAttachmentType.Context
+                    && FindExternalContextAttachment(rollbackAttachments, attachment.Title, attachment.Source) != null;
+
+                // A concurrent conversation deletion may only have detached this
+                // object while its own save is pending. Restore the captured owner
+                // so that a failed deletion can put the complete draft back.
+                if (editStillOwnsRemoval && !contextWasReplaced && !rollbackAttachments.Contains(attachment))
+                {
+                    rollbackAttachments.Insert(Math.Min(attachmentIndex, rollbackAttachments.Count), attachment);
+                    if (ReferenceEquals(rollbackAttachments, conversation.Attachments) && Conversations.Contains(conversation))
+                        UpdateAttachmentsState(conversation);
+                }
+                throw;
             }
 
-            UpdateAttachmentsState(SelectedConversation);
+            TryDeleteManagedAttachmentFile(attachment);
         }
 
         private static bool EnsureAssistantHeaders(CopilotConversationRecord conversation, CopilotProfileConfig? profile)

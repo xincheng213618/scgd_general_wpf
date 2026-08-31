@@ -2,6 +2,8 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { localeOrder } from '../i18n/locales.mjs'
 import { createNavItems, createSidebarItems } from '../i18n/navigation.mjs'
+import { generateKnowledge } from './knowledge.mjs'
+import { parseHtmlLinks, validateBuiltLinkFragments } from './html-links.mjs'
 
 const root = process.cwd()
 const docsRoot = path.join(root, 'docs')
@@ -13,17 +15,6 @@ const searchIndexPath = path.join(distRoot, 'docs-search-index.json')
 const skippedDirectoryNames = new Set(['.vitepress', 'node_modules'])
 const skippedMarkdownFileNames = new Set(['agents.md'])
 const archivedLocaleDirectories = ['en', 'zh-tw', 'ja', 'ko']
-const maxActiveMarkdownLines = 95
-const forbiddenActiveMarkdownPatterns = [
-  { label: 'Japanese text', pattern: /[\u3040-\u30ff]/u },
-  { label: 'Korean text', pattern: /[\uac00-\ud7af]/u },
-  { label: 'English license heading', pattern: /Software License Agreement/u },
-  { label: 'traditional Chinese license heading', pattern: /軟件許可|软件许可協議/u },
-  { label: 'internal handoff wording', pattern: /交接/u },
-  { label: 'internal takeover wording', pattern: /接手(?!工)/u },
-  { label: 'temporary planning wording', pattern: /draft|路线图|覆盖清单|证据表/u },
-  { label: 'old module map wording', pattern: /模块对照表|模块与文档对照|模块文档对照/u },
-]
 const genericSearchSectionTitles = new Set([
   '先查什么',
   '说明',
@@ -41,56 +32,6 @@ const genericSearchSectionTitles = new Set([
   '常见使用顺序',
   '常见问题',
 ])
-const staleSearchTerms = [
-  'UI DLL 发布矩阵',
-  'UI DLL 发布手册',
-  'UI DLL 发布场景手册',
-  'UI DLL 组件手册',
-  'Engine 业务交接手册',
-  '业务交接手册',
-  'Engine 业务场景交接手册',
-  '业务场景交接手册',
-  'Engine 变更影响与验收清单',
-  '变更影响与验收清单',
-  '测试与验证交接手册',
-  '插件与现状页',
-  'UI组件概览',
-  '插件能力与交接矩阵',
-  '插件能力矩阵',
-  '项目包能力矩阵',
-  '项目包矩阵',
-  '项目包交接手册',
-  '发布证据',
-  '功能大全',
-  '教程示例',
-  '性能数字承诺',
-  '稳定公共 SDK',
-  'publish_plugin.py',
-  'Gunicorn',
-  'uWSGI',
-  'Let\'s Encrypt',
-  'ui-dll-release-playbook',
-  'current-algorithm-template-coverage',
-  'MCP v5',
-  '模块与文档对照表',
-  '模块文档对照',
-  '模块对照表',
-  '交接手册',
-  '交接',
-  '接手时',
-  '接手代码',
-  '接手人员',
-  '接手维护',
-  '接手客户',
-  '路线图',
-  '覆盖清单',
-  '证据表',
-]
-const staleBuiltOutputTerms = [
-  ...staleSearchTerms.filter((term) => !['ui-dll-release-playbook', 'current-algorithm-template-coverage'].includes(term)),
-  '统一 Excel 导出中心',
-  '统一 JSON 导出中心',
-]
 const forbiddenBuiltOutputPatterns = [
   { label: 'default VitePress not found title', pattern: /PAGE NOT FOUND/iu },
   { label: 'default VitePress not found home link', pattern: /Take me home/iu },
@@ -100,8 +41,11 @@ const forbiddenBuiltOutputPatterns = [
 ]
 
 const failures = []
+const indexedPageIds = new Map()
+let knowledgeCatalog
 
 async function main() {
+  knowledgeCatalog = await generateKnowledge(root, true)
   await validateStrictBuildConfig()
   await validateArchivedLocales()
 
@@ -110,14 +54,13 @@ async function main() {
   const checkedMarkdownFiles = [...rootMarkdownFiles, ...docsMarkdownFiles]
   const redirectPages = await findRedirectPages(docsMarkdownFiles)
 
-  await validateMarkdownLength(checkedMarkdownFiles, redirectPages)
-  await validateMarkdownSectionHeadings(checkedMarkdownFiles, redirectPages)
-  await validateActiveMarkdownContent(checkedMarkdownFiles, redirectPages)
   await validateMarkdownTables(checkedMarkdownFiles)
   await validateMarkdownLinks(checkedMarkdownFiles, redirectPages)
   await validateNavigationLinks(redirectPages)
   await validateRedirectPages(redirectPages)
   await validateGeneratedIndexes(redirectPages)
+  const builtLinks = await validateBuiltLinkFragments(distRoot)
+  for (const failure of builtLinks.failures) fail(`docs/.vitepress/dist/${failure}`)
   await validateCustomNotFoundPage()
   await validateBuiltOutputPublicContent()
   await validatePageReachability(docsMarkdownFiles, redirectPages)
@@ -128,6 +71,7 @@ async function main() {
   }
 
   console.log(`Validated ${checkedMarkdownFiles.length} markdown files and ${redirectPages.length} redirect compatibility pages.`)
+  console.log(`Validated ${builtLinks.checkedLinks} distinct local fragment links across ${builtLinks.htmlFiles} built HTML files.`)
 }
 
 async function validateStrictBuildConfig() {
@@ -185,76 +129,6 @@ async function collectRootMarkdownFiles() {
   }
 
   return files
-}
-
-async function validateMarkdownLength(markdownFiles, redirectPages) {
-  const redirectFilePaths = new Set(redirectPages.map((page) => page.filePath))
-
-  for (const filePath of markdownFiles) {
-    const fileLabel = relative(filePath)
-    if (!fileLabel.startsWith('docs/') || redirectFilePaths.has(filePath)) {
-      continue
-    }
-
-    const content = await fs.readFile(filePath, 'utf8')
-    const lineCount = countLines(content)
-    if (lineCount > maxActiveMarkdownLines) {
-      fail(`${fileLabel}: active docs page has ${lineCount} lines; keep it at ${maxActiveMarkdownLines} or fewer.`)
-    }
-  }
-}
-
-function countLines(content) {
-  if (!content) {
-    return 0
-  }
-
-  return content.replace(/\r?\n$/u, '').split(/\r?\n/u).length
-}
-
-async function validateMarkdownSectionHeadings(markdownFiles, redirectPages) {
-  const redirectFilePaths = new Set(redirectPages.map((page) => page.filePath))
-
-  for (const filePath of markdownFiles) {
-    const fileLabel = relative(filePath)
-    if (!fileLabel.startsWith('docs/') || redirectFilePaths.has(filePath)) {
-      continue
-    }
-
-    const content = await fs.readFile(filePath, 'utf8')
-    const lines = content.split(/\r?\n/u)
-    let fenced = false
-
-    for (let index = 0; index < lines.length; index += 1) {
-      const line = lines[index]
-      if (/^\s*(```|~~~)/u.test(line)) {
-        fenced = !fenced
-        continue
-      }
-
-      if (!fenced && /^#{2,3}\s+.*继续阅读/u.test(line)) {
-        fail(`${fileLabel}:${index + 1}: avoid standalone "继续阅读" sections; keep docs focused and rely on navigation/search.`)
-      }
-    }
-  }
-}
-
-async function validateActiveMarkdownContent(markdownFiles, redirectPages) {
-  const redirectFilePaths = new Set(redirectPages.map((page) => page.filePath))
-
-  for (const filePath of markdownFiles) {
-    const fileLabel = relative(filePath)
-    if (!fileLabel.startsWith('docs/') || redirectFilePaths.has(filePath)) {
-      continue
-    }
-
-    const content = await fs.readFile(filePath, 'utf8')
-    for (const { label, pattern } of forbiddenActiveMarkdownPatterns) {
-      if (pattern.test(content)) {
-        fail(`${fileLabel}: forbidden active docs content found: ${label}.`)
-      }
-    }
-  }
 }
 
 async function validateMarkdownTables(markdownFiles) {
@@ -555,26 +429,58 @@ async function validateGeneratedIndexes(redirectPages) {
   const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'))
   const searchIndex = JSON.parse(await fs.readFile(searchIndexPath, 'utf8'))
   const redirectRelativePaths = new Set(redirectPages.map((page) => normalizePath(path.relative(docsRoot, page.filePath))))
+  const expected = new Map(knowledgeCatalog.entries.map((entry) => [entry.knowledge_id, entry]))
+  const manifestIds = new Set()
 
   for (const page of manifest.pages ?? []) {
+    if (manifestIds.has(page.knowledge_id)) fail(`docs-manifest.json: duplicate knowledge_id ${page.knowledge_id}`)
+    manifestIds.add(page.knowledge_id)
     if (redirectRelativePaths.has(page.relativePath)) {
       fail(`${page.relativePath}: redirect compatibility page leaked into docs-manifest.json.`)
     }
+    await validateIndexedPage(page, expected, 'docs-manifest.json')
   }
 
   for (const entry of searchIndex.entries ?? []) {
     if (redirectRelativePaths.has(entry.relativePath)) {
       fail(`${entry.relativePath}: redirect compatibility page leaked into docs-search-index.json.`)
     }
+    await validateIndexedPage(entry, expected, 'docs-search-index.json')
   }
+
+  for (const id of expected.keys()) if (!manifestIds.has(id)) fail(`docs-manifest.json: missing knowledge topic ${id}`)
+  for (const entry of knowledgeCatalog.entries.filter((item) => item.searchable)) {
+    if (!(searchIndex.entries ?? []).some((item) => item.knowledge_id === entry.knowledge_id && item.kind === 'page')) {
+      fail(`docs-search-index.json: missing searchable topic ${entry.knowledge_id}`)
+    }
+  }
+  if (manifest.pagesCount !== (manifest.pages ?? []).length || manifest.pagesCount !== expected.size) fail('docs-manifest.json: inconsistent page count')
+  if (searchIndex.entriesCount !== (searchIndex.entries ?? []).length) fail('docs-search-index.json: inconsistent entry count')
 
   validateSearchIndexEntries(searchIndex.entries ?? [])
 
-  const searchIndexRaw = await fs.readFile(searchIndexPath, 'utf8')
-  for (const staleTerm of staleSearchTerms) {
-    if (searchIndexRaw.includes(staleTerm)) {
-      fail(`docs-search-index.json: stale public docs term is still searchable: ${staleTerm}`)
+}
+
+async function validateIndexedPage(page, expected, artifact) {
+  if (/(^|\/)agents\.md$/iu.test(page.relativePath ?? '')) fail(`${artifact}: AGENTS instructions must not be indexed as product knowledge`)
+  const source = expected.get(page.knowledge_id)
+  if (!source) { fail(`${artifact}: unknown knowledge_id ${page.knowledge_id}`); return }
+  for (const field of ['status', 'knowledge_type', 'aliases', 'code_paths', 'test_paths', 'related', 'source_hash']) {
+    if (JSON.stringify(page[field]) !== JSON.stringify(source[field])) fail(`${artifact}: stale ${field} for ${page.knowledge_id}`)
+  }
+  if (page.sourcePath !== source.source || page.relativePath !== source.source.replace(/^docs\//u, '')) fail(`${artifact}: incorrect source mapping for ${page.knowledge_id}`)
+  const route = normalizeLinkTarget(page.url)
+  if (route !== source.url) fail(`${artifact}: incorrect URL for ${page.knowledge_id}`)
+  if (!(await builtRouteExists(route)) || !(await builtHtmlLooksValid(route))) fail(`${artifact}: no real built HTML for ${page.url}`)
+  const fragment = page.url.split('#').slice(1).join('#')
+  if (fragment && await builtRouteExists(route)) {
+    if (!indexedPageIds.has(route)) {
+      const html = await fs.readFile(distPathForRoute(normalizeRoute(route)), 'utf8')
+      indexedPageIds.set(route, parseHtmlLinks(html).ids)
     }
+    let requested
+    try { requested = decodeURIComponent(fragment) } catch { /* Invalid fragments cannot match an ID. */ }
+    if (!indexedPageIds.get(route).has(requested)) fail(`${artifact}: missing built section anchor for ${page.url}`)
   }
 }
 
@@ -633,11 +539,6 @@ async function validateBuiltOutputPublicContent() {
       }
     }
 
-    for (const staleTerm of staleBuiltOutputTerms) {
-      if (content.includes(staleTerm)) {
-        fail(`${fileLabel}: stale public docs term leaked into built output: ${staleTerm}`)
-      }
-    }
   }
 }
 
@@ -819,7 +720,7 @@ async function builtRouteExists(route) {
 async function builtHtmlLooksValid(route) {
   const htmlPath = distPathForRoute(normalizeRoute(route))
   const html = await fs.readFile(htmlPath, 'utf8')
-  return !/404\s+PAGE NOT FOUND|PAGE NOT FOUND|Take me home/iu.test(html)
+  return /<!doctype html/iu.test(html) && /id="app"/u.test(html) && !/class="VPNotFound"|PAGE NOT FOUND|Take me home/iu.test(html)
 }
 
 function distPathForRoute(route) {

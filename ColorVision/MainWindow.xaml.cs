@@ -130,7 +130,6 @@ namespace ColorVision
             Stopwatch phaseStopwatch = Stopwatch.StartNew();
             this.SizeChanged += (s, e) =>
             {
-                SearchControl1.Visibility = this.ActualWidth < 700 ? Visibility.Collapsed : Visibility.Visible;
                 RightMenuItemPanel.Visibility = this.ActualWidth < Menu1.ActualWidth + RightMenuItemPanel.ActualWidth + 100 ? Visibility.Collapsed : Visibility.Visible;
             };
 
@@ -141,10 +140,7 @@ namespace ColorVision
             {
                 // 先设置为 null 以强制 AvalonDock 重新加载资源
                 DockingManager1.Theme = null;
-                if (theme == Theme.Dark)
-                    DockingManager1.Theme = new AvalonDock.Themes.Vs2013DarkTheme();
-                else
-                    DockingManager1.Theme = new AvalonDock.Themes.Vs2013LightTheme();
+                DockingManager1.Theme = new AvalonDockTheme(theme == Theme.Dark);
             }
             ThemeManager.Current.CurrentUIThemeChanged += ApplyAvalonDockTheme;
 
@@ -217,19 +213,17 @@ namespace ColorVision
             WorkspaceManager.DealyLoad.Clear();
             log.Info($"Main window view activation took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
-            // Ctrl+W 关闭当前活动的文档
-            CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) =>
-            {
-                var doc = WorkspaceManager.FindDocumentActive(WorkspaceManager.LayoutDocumentPane);
-                doc?.Close();
-            }));
-            InputBindings.Add(new KeyBinding(ApplicationCommands.Close, new KeyGesture(Key.W, ModifierKeys.Control)));
+            CommandBindings.Add(CreateCloseDocumentBinding(DockingManager1));
 
             phaseStopwatch.Restart();
             MenuManager.GetInstance().LoadMenuForWindow(MenuItemConstants.MainWindowTarget, Menu1);
             log.Info($"Main window menu phase took {phaseStopwatch.ElapsedMilliseconds} ms.");
             phaseStopwatch.Restart();
             this.LoadHotKeyFromAssembly();
+            _ = new RoutedCommandHotkeyGuard(this, HotkeyService.GetInstance(),
+                [ApplicationCommands.Open, ApplicationCommands.Save, ApplicationCommands.SaveAs,
+                 ApplicationCommands.Close, SolutionWorkspaceCommands.OpenFolder],
+                [new Hotkey(Key.F, ModifierKeys.Control)]);
             log.Info($"Main window hotkey phase took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
             // 监听 DockingManager 活动文档切换和状态变化，更新视图管理器并通知视图变更
@@ -257,11 +251,6 @@ namespace ColorVision
                 Interaction.GetBehaviors(StackPanelSPD).Add(fluidMoveBehavior);
             }));
 
-            // 设置快捷键 Ctrl + F
-            var gesture = new KeyGesture(Key.F, ModifierKeys.Control);
-            var command = new RoutedCommand();
-            command.InputGestures.Add(gesture);
-            CommandBindings.Add(new CommandBinding(command, FocusSearchBox));
             phaseStopwatch.Restart();
             InitRightMenuItemPanel();
             log.Info($"Main window right-side menu phase took {phaseStopwatch.ElapsedMilliseconds} ms.");
@@ -398,11 +387,6 @@ namespace ColorVision
             return icon;
         }
 
-
-        private void FocusSearchBox(object sender, ExecutedRoutedEventArgs e)
-        {
-            SearchControl1.FocusSearchBox();
-        }
 
         private void MainWindow_ContentRendered(object? sender, EventArgs e)
         {

@@ -1,3 +1,14 @@
+---
+knowledge_id: "projects.lux"
+knowledge_type: "reference"
+status: "current"
+summary: "ProjectLUX 文本 Socket、ProcessGroup、Recipe/Fix 与 CSV/SQLite 结果链及构建发布边界。"
+aliases: ["T00XX 如何匹配 LUX 流程","LUX 结果和修正在哪里","ProjectLUX","LUXWindow","ProcessMeta.SocketCode"]
+code_paths: ["Projects/ProjectLUX/LUXWindow.xaml.cs","Projects/ProjectLUX/Services/SocketControl.cs","Projects/ProjectLUX/Process/","Projects/ProjectLUX/ViewResultManager.cs"]
+test_paths: ["Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj"]
+related: ["projects.index","projects.capabilities"]
+---
+
 # ProjectLUX
 
 `Projects/ProjectLUX/` 是亮度、色彩、对比度、MTF、畸变、光学中心、VID、光通量等光学测试项目包，运行时加载 `ProjectLUX.dll`。它以文本 Socket 命令 `T00XX,SN;` 和流程组配置为核心。
@@ -58,12 +69,26 @@
 
 修改判定规则先改 Recipe；修改校准系数改 Fix；只有解析逻辑变化才改 Process 或 ProcessConfig。
 
-## 构建和验收
+## 本地构建与测试
+
+以下命令编译和运行本地测试，不上传包；会写入本地构建/测试产物。发送 `T00XX` 会推进真实测试，必须单独确认现场操作授权。
 
 ```powershell
 dotnet build Projects/ProjectLUX/ProjectLUX.csproj -c Release -p:Platform=x64
-Scripts\package_project.bat ProjectLUX
+dotnet test Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj -c Release -p:Platform=x64
 ```
+
+## 打包上传（需明确发布授权）
+
+只有明确要求发布 ProjectLUX 时执行。wrapper 会构建、打包上传并清理本地 `.cvxp`，不支持 `--no-upload`；本地编译成功不等于远端发布完成。
+
+```powershell
+.\Scripts\package_project.bat ProjectLUX
+```
+
+## 现场验收边界
+
+下面列的是验证标准，不是本次文档更新已执行的结果。硬件命令和配置修改只在获授权的测试环境执行。
 
 | 验收项 | 通过标准 |
 | --- | --- |

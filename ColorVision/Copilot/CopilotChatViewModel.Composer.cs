@@ -35,15 +35,15 @@ namespace ColorVision.Copilot
 
         public bool HasConfigurableReasoning => CopilotReasoningCapabilities.HasConfigurableReasoning(SelectedProfile);
 
-        public void SetSelectedProfileReasoningMode(CopilotReasoningMode mode)
+        public bool SetSelectedProfileReasoningMode(CopilotReasoningMode mode)
         {
             var profile = SelectedProfile;
             if (profile == null || !HasConfigurableReasoning)
-                return;
+                return false;
 
             var normalized = CopilotReasoningCapabilities.Normalize(profile.VendorType, mode);
             if (profile.ReasoningMode == normalized)
-                return;
+                return true;
 
             var status = TryPersistConfigMutation(candidate =>
             {
@@ -57,17 +57,18 @@ namespace ColorVision.Copilot
                     "推理模式未更改：配置保存失败。" + Environment.NewLine
                     + CopilotUserFacingErrorFormatter.Sanitize(errorMessage));
                 RefreshSelectedProfileReasoningState();
-                return;
+                return false;
             }
             if (status == ConfigSavePublicationStatus.PersistedButPublishFailed)
             {
                 SetPendingActionFeedback(
                     "推理模式已保存，但当前聊天界面未能刷新。" + Environment.NewLine
                     + CopilotUserFacingErrorFormatter.Sanitize(errorMessage));
-                return;
+                return false;
             }
 
             RefreshSelectedProfileReasoningState();
+            return true;
         }
         public string InputPlaceholder => IsPromptHistorySearchOpen
             ? $"搜索{PromptHistorySearchScopeLabel}的可见历史请求"

@@ -5,503 +5,289 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.UI.Desktop.Marketplace"
         xmlns:properties="clr-namespace:ColorVision.UI.Desktop.Properties"
-        xmlns:hc ="https://handyorg.github.io/handycontrol"
-        d:DataContext="{d:DesignInstance local:MarketplaceManager}"
-        xmlns:pl="clr-namespace:ColorVision.UI;assembly=ColorVision.UI"
-        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf" 
+        xmlns:uiProperties="clr-namespace:ColorVision.UI.Properties;assembly=ColorVision.UI"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         xmlns:themes="https://schemas.colorvision.cn/wpf/themes"
-        mc:Ignorable="d"
-        Title="Marketplace" Background="{DynamicResource GlobalBackground}" Height="720" Width="1280" Initialized="Window_Initialized">
-
+        d:DataContext="{d:DesignInstance local:MarketplaceManager}" mc:Ignorable="d"
+        Title="{x:Static properties:Resources.MarketplaceWindowTitle}"
+        Background="{DynamicResource Marketplace.Background}" Foreground="{DynamicResource Marketplace.TextPrimary}"
+        Width="520" Height="720" MinWidth="480" MinHeight="600"
+        SnapsToDevicePixels="True" UseLayoutRounding="True"
+        WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
     <Window.Resources>
-        <SolidColorBrush x:Key="MarketplaceSelectedItemBrush" Color="#145A8DEE"/>
-        <SolidColorBrush x:Key="MarketplaceHoverItemBrush" Color="#0A5A8DEE"/>
-        <SolidColorBrush x:Key="MarketplaceCardBackgroundBrush" Color="#08000000"/>
-        <SolidColorBrush x:Key="MarketplaceCardBorderBrush" Color="#12000000"/>
-        <SolidColorBrush x:Key="MarketplaceAccentBlueBrush" Color="#2E5CB8"/>
-        <SolidColorBrush x:Key="MarketplaceAccentBlueBackgroundBrush" Color="#1A5A8DEE"/>
-        <SolidColorBrush x:Key="MarketplaceAccentGreenBrush" Color="#2E7D32"/>
-        <SolidColorBrush x:Key="MarketplaceAccentGreenBackgroundBrush" Color="#1A2E7D32"/>
-        <SolidColorBrush x:Key="MarketplaceAccentOrangeBrush" Color="#F57C00"/>
-        <SolidColorBrush x:Key="MarketplaceAccentOrangeBackgroundBrush" Color="#1AF57C00"/>
-        <SolidColorBrush x:Key="MarketplaceAccentNeutralBrush" Color="#666666"/>
-        <SolidColorBrush x:Key="MarketplaceAccentNeutralBackgroundBrush" Color="#1A888888"/>
-        <SolidColorBrush x:Key="MarketplaceMutedTextBrush" Color="#FF6B7280"/>
-        <SolidColorBrush x:Key="MarketplaceErrorBrush" Color="#C62828"/>
-        <SolidColorBrush x:Key="MarketplaceHeaderIconBackgroundBrush" Color="#0D000000"/>
-        <SolidColorBrush x:Key="MarketplaceVersionCardBorderBrush" Color="#FFDCDCDC"/>
-
-        <DataTemplate x:Key="MarketplaceDetailRowTemplate" DataType="{x:Type local:MarketplaceDetailRow}">
-            <Grid Margin="5,3">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="130"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="{Binding Label}" FontWeight="SemiBold" Margin="0,0,12,0"/>
-                <TextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap"/>
-            </Grid>
-        </DataTemplate>
-
-        <DataTemplate x:Key="MarketplaceVersionBadgeTemplate" DataType="{x:Type local:MarketplaceVersionBadgeItem}">
-            <Border CornerRadius="10" Padding="8,2" Margin="4,0,0,0">
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <Setter Property="Background" Value="{DynamicResource MarketplaceAccentNeutralBackgroundBrush}"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static local:MarketplaceVersionBadgeKind.Latest}">
-                                <Setter Property="Background" Value="{DynamicResource MarketplaceAccentGreenBrush}"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static local:MarketplaceVersionBadgeKind.Installed}">
-                                <Setter Property="Background" Value="{DynamicResource MarketplaceAccentBlueBrush}"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static local:MarketplaceVersionBadgeKind.Current}">
-                                <Setter Property="Background" Value="{DynamicResource MarketplaceAccentNeutralBrush}"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static local:MarketplaceVersionBadgeKind.Archive}">
-                                <Setter Property="Background" Value="{DynamicResource MarketplaceAccentOrangeBrush}"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
-                <TextBlock Text="{Binding Text}" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
-            </Border>
-        </DataTemplate>
-
-        <DataTemplate x:Key="MarketplaceVersionCardTemplate" DataType="{x:Type local:MarketplaceVersionItemViewModel}">
-            <Border Margin="12,4,5,8"
-                    Padding="10"
-                    CornerRadius="6"
-                    BorderThickness="1"
-                    BorderBrush="{DynamicResource MarketplaceVersionCardBorderBrush}"
-                    Background="Transparent">
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="MarketplaceStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="InstalledPluginItemStyle" TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource MarketplaceListItemStyle}">
+                <Setter Property="ContextMenu" Value="{Binding ContextMenu}" />
+            </Style>
+            <Style x:Key="MarketplaceDetailTabsStyle" TargetType="{x:Type TabControl}" BasedOn="{StaticResource MarketplaceTabHeadersStyle}">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding}" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="MarketplacePendingContentStyle" TargetType="{x:Type FrameworkElement}">
+                <Style.Triggers>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding DataContext.IsMarketplaceTabActive, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
+                            <Condition Binding="{Binding DataContext.Catalog.IsLoadingDetail, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="IsEnabled" Value="False" />
+                    </MultiDataTrigger>
+                </Style.Triggers>
+            </Style>
+            <DataTemplate x:Key="MarketplaceDetailRowTemplate" DataType="{x:Type local:MarketplaceDetailRow}">
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="136" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Marketplace.TextSecondary}" Margin="0,0,16,0" />
+                    <TextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" />
+                </Grid>
+            </DataTemplate>
+            <DataTemplate x:Key="MarketplaceVersionBadgeTemplate" DataType="{x:Type local:MarketplaceVersionBadgeItem}">
+                <Border Style="{StaticResource MarketplaceTagStyle}" Margin="6,0,0,4">
+                    <TextBlock Text="{Binding Text}" Foreground="{DynamicResource Marketplace.Accent}" FontSize="11" />
+                </Border>
+            </DataTemplate>
+            <DataTemplate x:Key="MarketplaceVersionCardTemplate" DataType="{x:Type local:MarketplaceVersionItemViewModel}">
+                <Border Style="{StaticResource MarketplaceCardStyle}" Margin="0,0,0,10" Padding="16">
+                    <StackPanel>
+                        <DockPanel>
+                            <ItemsControl DockPanel.Dock="Right" ItemsSource="{Binding Badges}" ItemTemplate="{StaticResource MarketplaceVersionBadgeTemplate}">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                            <TextBlock Text="{Binding VersionText}" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <TextBlock Text="{Binding SummaryText}" Margin="0,8,0,0" Foreground="{DynamicResource Marketplace.TextSecondary}" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding ChangeLog}" Margin="0,8,0,0" TextWrapping="Wrap" MaxHeight="90" Visibility="{Binding HasChangeLog, Converter={StaticResource bool2VisibilityConverter}}" />
+                        <WrapPanel Margin="0,12,0,0">
+                            <Button Content="{Binding InstallText}" Command="{Binding InstallCommand}" Style="{StaticResource MarketplacePrimaryButtonStyle}" Margin="0,0,8,0" />
+                            <Button Content="{x:Static properties:Resources.Download}" Command="{Binding DownloadCommand}" Style="{StaticResource MarketplaceButtonStyle}" />
+                        </WrapPanel>
+                        <TextBlock Text="{Binding HashText}" Margin="0,10,0,0" FontSize="11" Foreground="{DynamicResource Marketplace.TextSecondary}" TextWrapping="Wrap" Visibility="{Binding HasHash, Converter={StaticResource bool2VisibilityConverter}}" />
+                    </StackPanel>
+                </Border>
+            </DataTemplate>
+            <DataTemplate x:Key="MarketplaceVersionGroupTemplate" DataType="{x:Type local:MarketplaceVersionGroup}">
                 <StackPanel>
-                    <DockPanel>
-                        <TextBlock Text="{Binding VersionText}"
-                                   FontWeight="SemiBold"
-                                   FontSize="13"
-                                   VerticalAlignment="Center"/>
-                        <ItemsControl DockPanel.Dock="Right" ItemsSource="{Binding Badges}" ItemTemplate="{StaticResource MarketplaceVersionBadgeTemplate}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel HorizontalAlignment="Right"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
-                    </DockPanel>
-
-                    <TextBlock Text="{Binding SummaryText}"
-                               Margin="0,6,0,0"
-                               Foreground="{DynamicResource MarketplaceMutedTextBrush}"
-                               TextWrapping="Wrap"/>
-
-                    <TextBlock Text="{Binding ChangeLog}"
-                               Margin="0,6,0,0"
-                               TextWrapping="Wrap"
-                               MaxHeight="90"
-                               Visibility="{Binding HasChangeLog, Converter={StaticResource bool2VisibilityConverter}}"/>
-
-                    <WrapPanel Margin="0,8,0,0">
-                        <Button Content="{Binding InstallText}" Command="{Binding InstallCommand}" Margin="0,0,8,0" Padding="10,4" MinWidth="84"/>
-                        <Button Content="{x:Static properties:Resources.Download}" Command="{Binding DownloadCommand}" Padding="10,4" MinWidth="84"/>
-                    </WrapPanel>
-
-                    <TextBlock Text="{Binding HashText}"
-                               Margin="0,8,0,0"
-                               FontSize="11"
-                               Foreground="{DynamicResource MarketplaceMutedTextBrush}"
-                               TextWrapping="Wrap"
-                               Visibility="{Binding HasHash, Converter={StaticResource bool2VisibilityConverter}}"/>
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="16" Margin="0,18,0,12" />
+                    <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource MarketplaceVersionCardTemplate}" />
                 </StackPanel>
-            </Border>
-        </DataTemplate>
-
-        <DataTemplate x:Key="MarketplaceVersionGroupTemplate" DataType="{x:Type local:MarketplaceVersionGroup}">
-            <StackPanel>
-                <TextBlock Text="{Binding Title}" FontWeight="Bold" Margin="5,10,5,5"/>
-                <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource MarketplaceVersionCardTemplate}"/>
-            </StackPanel>
-        </DataTemplate>
+            </DataTemplate>
+        </ResourceDictionary>
     </Window.Resources>
 
-    <Grid>
+    <Grid Margin="24,22,24,18">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="430"/>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition x:Name="CatalogColumn" Width="*" />
+            <ColumnDefinition x:Name="DetailColumn" Width="0" />
         </Grid.ColumnDefinitions>
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            
+        <Border Style="{StaticResource MarketplaceCardStyle}" Padding="14">
             <Grid>
-                <StackPanel Margin="5,5,0,0">
-                    <WrapPanel Margin="0,0,0,5">
-                        <Button Command="{Binding InstallPackageCommand}" Margin="0,0,3,0" Padding="6,2" ToolTip="{x:Static properties:Resources.InstallPackage}">
+                <TabControl x:Name="MainTabControl" Style="{StaticResource MarketplaceTabsStyle}" SelectionChanged="MainTabControl_SelectionChanged">
+                    <TabItem>
+                        <TabItem.Header>
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                <TextBlock Text="{x:Static properties:Resources.InstallPackage}" VerticalAlignment="Center" FontSize="12"/>
+                                <TextBlock Text="{x:Static properties:Resources.Installed}" />
+                                <TextBlock Text="{Binding Plugins.Count}" Margin="8,0,0,0" Opacity="0.7" />
                             </StackPanel>
-                        </Button>
-                        <Button Command="{Binding RestartCommand}" Margin="0,0,3,0" Padding="6,2" ToolTip="{x:Static properties:Resources.Restart}">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                <TextBlock Text="{x:Static properties:Resources.Restart}" VerticalAlignment="Center" FontSize="12"/>
-                            </StackPanel>
-                        </Button>
-                        <Button Click="RefreshVersionsButton_Click" Margin="0,0,3,0" Padding="6,2" ToolTip="{x:Static properties:Resources.Refresh}">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE777;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                <TextBlock Text="{x:Static properties:Resources.Refresh}" VerticalAlignment="Center" FontSize="12"/>
-                            </StackPanel>
-                        </Button>
-                        <Button Command="{Binding UpdateAllCommand}" Margin="0,0,3,0" Padding="6,2" ToolTip="{x:Static properties:Resources.UpdateAll}">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE895;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                <TextBlock Text="{x:Static properties:Resources.UpdateAll}" VerticalAlignment="Center" FontSize="12"/>
-                                <Border Background="#FF5252" CornerRadius="8" Padding="4,0" Margin="5,0,0,0" MinWidth="16" Visibility="{Binding UpdateAvailableCount, Converter={StaticResource int2VisibilityConverter}}">
-                                    <TextBlock Text="{Binding UpdateAvailableCount}" Foreground="White" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold"/>
-                                </Border>
-                            </StackPanel>
-                        </Button>
-                    </WrapPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                        <Grid>
-                            <hc:ComboBox x:Name="DefalutSearchComboBox" Width="250" Padding="25,1,2,1" IsEditable="True" ItemsSource="{Binding Catalog.PackageSuggestions}" Text="{Binding SearchName, UpdateSourceTrigger=PropertyChanged}" BorderThickness="1" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" hc:InfoElement.ShowClearButton="True" BorderBrush="#CCCEDB" VerticalContentAlignment="Center" />
-                            <Viewbox Width="20 " Height="20" HorizontalAlignment="Left" Margin="4,0,0,0">
-                                <Rectangle Width="25 " Height="25" >
-                                    <Rectangle.Resources>
-                                        <SolidColorBrush x:Key="canvas" Opacity="0" />
-                                        <SolidColorBrush x:Key="light-defaultgrey-10" Color="{DynamicResource defaultgreyColor}" Opacity=" 0.1" />
-                                        <SolidColorBrush x:Key="light-defaultgrey" Color="{DynamicResource defaultgreyColor}" Opacity="1" />
-                                    </Rectangle.Resources>
-                                    <Rectangle.Fill>
-                                        <DrawingBrush Stretch="None">
-                                            <DrawingBrush.Drawing>
-                                                <DrawingGroup>
-                                                    <DrawingGroup x:Name="canvas">
-                                                        <GeometryDrawing Brush="{DynamicResource canvas}" Geometry="F1M0,0H16V16H0Z" />
-                                                    </DrawingGroup>
-                                                    <DrawingGroup x:Name="level_1">
-                                                        <GeometryDrawing Brush="{DynamicResource light-defaultgrey-10}" Geometry="F1M11.5,6.5a5,5,0,1,1-5-5A5,5,0,0,1,11.5,6.5Z" />
-                                                        <GeometryDrawing Brush="{DynamicResource light-defaultgrey}" Geometry="F1M1,6.5a5.5,5.5,0,0,0,9.017,4.224l5.129,5.13.708-.708-5.13-5.129A5.5,5.5,0,1,0,1,6.5Zm1,0A4.5,4.5,0,1,1,6.5,11,4.505,4.505,0,0,1,2,6.5Z" />
-                                                    </DrawingGroup>
-                                                </DrawingGroup>
-                                            </DrawingBrush.Drawing>
-                                        </DrawingBrush>
-                                    </Rectangle.Fill>
-                                </Rectangle>
-                            </Viewbox>
-                        </Grid>
-                        <Button Content="{x:Static properties:Resources.Install}" Command="{Binding DownloadPackageCommand}" Margin="5,0,5,0"/>
-                        <Button  Command="{Binding EditConfigCommand}" Padding="2" Height="27" Width="27" >
-                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5"  FontSize="20" Foreground="{DynamicResource GlobalTextBrush}">
-                                <TextBlock.RenderTransform>
-                                    <RotateTransform x:Name="rotateTransform21"/>
-                                </TextBlock.RenderTransform>
-                            </TextBlock>
-                            <Button.Triggers>
-                                <EventTrigger RoutedEvent="Button.Click">
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </EventTrigger>
-                            </Button.Triggers>
-                        </Button>
-                    </StackPanel>
-
-
-                </StackPanel>
-
-            </Grid>
-
-            <!-- Tabbed panel: Installed / Marketplace -->
-            <TabControl x:Name="MainTabControl" Grid.Row="1" Margin="5,0,5,5" SelectionChanged="MainTabControl_SelectionChanged">
-                <TabItem>
-                    <TabItem.Header>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                            <TextBlock Text="{x:Static properties:Resources.Installed}" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </TabItem.Header>
-                    <ListBox x:Name="ListViewPlugins" Background="Transparent" ItemsSource="{Binding Plugins}" SelectedItem="{Binding SelectedInstalledPlugin, Mode=TwoWay}" Padding="2" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="True">
-                        <ListBox.ItemContainerStyle>
-                            <Style TargetType="{x:Type ListBoxItem}">
-                                <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                <Setter Property="Margin" Value="0,1,0,1"/>
-                                <Setter Property="Padding" Value="0"/>
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="BorderThickness" Value="0"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
-                                            <Border x:Name="Bd" Background="{TemplateBinding Background}"
-                                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                                    SnapsToDevicePixels="True">
-                                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsSelected" Value="True">
-                                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource MarketplaceSelectedItemBrush}"/>
-                                                </Trigger>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource MarketplaceHoverItemBrush}"/>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding HasUpdate}" Value="True">
-                                        <Setter Property="BorderBrush" Value="{DynamicResource MarketplaceAccentOrangeBrush}"/>
-                                        <Setter Property="BorderThickness" Value="1"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </ListBox.ItemContainerStyle>
-                        <ListBox.ItemTemplate>
-                            
-                            <DataTemplate DataType="{x:Type local:PluginInfoVM}">
-                                <Border Padding="10,8" CornerRadius="6" Background="{DynamicResource MarketplaceCardBackgroundBrush}" BorderBrush="{DynamicResource MarketplaceCardBorderBrush}" BorderThickness="1" Margin="2,2">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-
-                                        <StackPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center">
-                                            <themes:ToggleSwitch IsChecked="{Binding PluginInfo.Enabled}" Margin="0,0,8,0"/>
-                                            <Image Source="{Binding Icon}" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                        </StackPanel>
-
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
-                                            <TextBlock Text="{Binding Name,Mode=OneWay}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{Binding Description}" Foreground="{DynamicResource MarketplaceMutedTextBrush}" FontSize="11" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
-                                        </StackPanel>
-
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <Border Background="{DynamicResource MarketplaceAccentGreenBackgroundBrush}" CornerRadius="8" Padding="6,2" Margin="0,0,4,0">
-                                                <TextBlock Text="{Binding AssemblyVersion}" FontSize="10" Foreground="{DynamicResource MarketplaceAccentGreenBrush}" VerticalAlignment="Center"/>
-                                            </Border>
-                                            <Border Background="{DynamicResource MarketplaceAccentBlueBackgroundBrush}" CornerRadius="8" Padding="6,2" Margin="0,0,4,0">
-                                                <TextBlock Text="{Binding LastVersion}" FontSize="10" Foreground="{DynamicResource MarketplaceAccentBlueBrush}" VerticalAlignment="Center"/>
-                                            </Border>
-                                            <Border Background="{DynamicResource MarketplaceAccentOrangeBrush}" CornerRadius="10" Width="20" Height="20" Margin="0,0,4,0" ToolTip="{x:Static properties:Resources.MarketplaceHasUpdateTooltip}" Visibility="{Binding HasUpdate, Converter={StaticResource bool2VisibilityConverter}}">
-                                                <TextBlock Text="⬆" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
-                                            </Border>
-                                            <Button Content="{x:Static properties:Resources.Update}" Command="{Binding UpdateCommand}" Visibility="{Binding HasUpdate,Converter={StaticResource bool2VisibilityConverter}}" MinWidth="50" Padding="6,2"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </TabItem>
-                <TabItem>
-                    <TabItem.Header>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE774;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                            <TextBlock Text="{x:Static properties:Resources.Marketplace}" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </TabItem.Header>
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5,5,5,3">
-                            <TextBlock Text="{Binding Catalog.StatusText}" FontStyle="Italic" Foreground="{DynamicResource MarketplaceMutedTextBrush}"/>
-                            <TextBlock Text="{x:Static properties:Resources.MarketplaceOffline}" Foreground="{DynamicResource MarketplaceErrorBrush}" Visibility="{Binding Catalog.IsOffline, Converter={StaticResource bool2VisibilityConverter}}"/>
-                        </StackPanel>
-                        <Grid Grid.Row="1">
-                            <ListBox x:Name="ListViewMarketplace" Background="Transparent" ItemsSource="{Binding Catalog.MarketplacePlugins}" SelectedItem="{Binding Catalog.SelectedPlugin, Mode=TwoWay}" Padding="2" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="True" Visibility="{Binding Catalog.HasItems, Converter={StaticResource bool2VisibilityConverter}}">
-                            <ListBox.ItemContainerStyle>
-                                <Style TargetType="{x:Type ListBoxItem}">
-                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                    <Setter Property="Padding" Value="0"/>
-                                    <Setter Property="Margin" Value="0,1,0,1"/>
-                                    <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="BorderThickness" Value="0"/>
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="{x:Type ListBoxItem}">
-                                                <Border x:Name="Bd" Background="{TemplateBinding Background}"
-                                                        BorderBrush="{TemplateBinding BorderBrush}"
-                                                        BorderThickness="{TemplateBinding BorderThickness}"
-                                                        SnapsToDevicePixels="True">
-                                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-                                                </Border>
-                                                <ControlTemplate.Triggers>
-                                                    <Trigger Property="IsSelected" Value="True">
-                                                        <Setter TargetName="Bd" Property="Background" Value="{DynamicResource MarketplaceSelectedItemBrush}"/>
-                                                    </Trigger>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="Bd" Property="Background" Value="{DynamicResource MarketplaceHoverItemBrush}"/>
-                                                    </Trigger>
-                                                </ControlTemplate.Triggers>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </ListBox.ItemContainerStyle>
+                        </TabItem.Header>
+                        <ListBox x:Name="ListViewPlugins" ItemsSource="{Binding Plugins}" SelectedItem="{Binding SelectedInstalledPlugin, Mode=TwoWay}" Style="{StaticResource MarketplaceListStyle}" ItemContainerStyle="{StaticResource InstalledPluginItemStyle}">
                             <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Padding="10,8" CornerRadius="6" Background="{DynamicResource MarketplaceCardBackgroundBrush}" BorderBrush="{DynamicResource MarketplaceCardBorderBrush}" BorderThickness="1" Margin="2,2">
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                            </Grid.RowDefinitions>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-
-                                            <TextBlock Grid.Row="0" Grid.Column="0"
-                                                       Text="{Binding Name}" FontWeight="SemiBold" FontSize="13"
-                                                       Foreground="{DynamicResource GlobalTextBrush}"
-                                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-
-                                            <Border Grid.Row="0" Grid.Column="1" Margin="8,0,0,0"
-                                                    Background="{DynamicResource MarketplaceAccentBlueBackgroundBrush}" CornerRadius="10" Padding="8,2" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding LatestVersion, StringFormat=v{0}}"
-                                                           Foreground="{DynamicResource MarketplaceAccentBlueBrush}" FontSize="11" FontWeight="SemiBold"/>
-                                            </Border>
-
-                                            <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Margin="0,4,0,0"
-                                                       Text="{Binding Description}" Foreground="{DynamicResource MarketplaceMutedTextBrush}" FontSize="11"
-                                                       MaxHeight="34" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
-
-                                            <WrapPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="0,6,0,0">
-                                                <Border Background="{DynamicResource MarketplaceAccentGreenBackgroundBrush}" CornerRadius="4" Padding="6,2">
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="9" VerticalAlignment="Center" Margin="0,0,3,0" Foreground="{DynamicResource MarketplaceAccentGreenBrush}"/>
-                                                        <TextBlock Text="{Binding TotalDownloads}" FontSize="10" Foreground="{DynamicResource MarketplaceAccentGreenBrush}"/>
-                                                    </StackPanel>
+                                <DataTemplate DataType="{x:Type local:PluginInfoVM}">
+                                    <Grid ToolTip="{Binding Description}">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                        <Image Source="{Binding Icon}" Width="32" Height="32" Margin="0,2,12,0" VerticalAlignment="Top" RenderOptions.BitmapScalingMode="HighQuality" />
+                                        <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}" />
+                                            <WrapPanel Margin="0,6,0,0">
+                                                <TextBlock Text="{Binding AssemblyVersion, StringFormat=v{0}}" FontSize="11" Foreground="{DynamicResource Marketplace.TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0" ToolTip="{x:Static properties:Resources.MarketplaceInstalledVersion}" />
+                                                <Border Style="{StaticResource MarketplaceTagStyle}" Padding="6,2" Visibility="{Binding HasUpdate, Converter={StaticResource bool2VisibilityConverter}}">
+                                                    <TextBlock Text="{Binding LastVersion, StringFormat=→ v{0}}" FontSize="11" Foreground="{DynamicResource Marketplace.Accent}" ToolTip="{x:Static properties:Resources.MarketplaceHasUpdateTooltip}" />
                                                 </Border>
                                             </WrapPanel>
-                                        </Grid>
-                                    </Border>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                            <themes:ToggleSwitch IsChecked="{Binding PluginInfo.Enabled}" HorizontalAlignment="Right" ToolTip="{x:Static properties:Resources.MarketplaceEnabled}" AutomationProperties.Name="{Binding Name}" />
+                                            <Button Content="{x:Static properties:Resources.Update}" Command="{Binding UpdateCommand}" Visibility="{Binding HasUpdate, Converter={StaticResource bool2VisibilityConverter}}"
+                                                    Style="{StaticResource MarketplaceButtonStyle}" MinHeight="28" Padding="8,4" Margin="0,8,0,0" />
+                                        </StackPanel>
+                                    </Grid>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
-                            </ListBox>
-                            <Border Background="Transparent" Visibility="{Binding Catalog.IsLoading, Converter={StaticResource bool2VisibilityConverter}}">
-                                <TextBlock Text="{Binding Catalog.StatusText}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource MarketplaceMutedTextBrush}" FontStyle="Italic"/>
-                            </Border>
-                            <Border Background="Transparent" Visibility="{Binding Catalog.HasError, Converter={StaticResource bool2VisibilityConverter}}">
-                                <TextBlock Text="{Binding Catalog.StatusText}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource MarketplaceErrorBrush}" TextWrapping="Wrap" TextAlignment="Center" Margin="30"/>
-                            </Border>
-                            <Border Background="Transparent" Visibility="{Binding Catalog.IsEmpty, Converter={StaticResource bool2VisibilityConverter}}">
-                                <TextBlock Text="{x:Static properties:Resources.MarketplaceNoMatches}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource MarketplaceMutedTextBrush}" FontStyle="Italic"/>
-                            </Border>
-                        </Grid>
-                    </Grid>
-                </TabItem>
-            </TabControl>
-        </Grid>
-
-        <Border x:Name="BorderContent" CornerRadius="5" Margin="0,0,5,5" DataContext="{Binding CurrentDetailContext}" d:DataContext="{d:DesignInstance local:PluginInfoVM}" Grid.Column="1">
-            <Grid Margin="5">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1 " Margin="0,0,0,2">
-                    <Grid>
-                        <DockPanel>
-                            <Border Width="68" Height="68" Margin="10" CornerRadius="8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Background="{DynamicResource MarketplaceHeaderIconBackgroundBrush}">
-                                <Image Source="{Binding Icon}" Width="50" Height="50" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <StackPanel HorizontalAlignment="Left">
-                                <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding Name}" FontWeight="Bold" FontSize="20"  />
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding HeaderMetaText,Mode=OneWay}" />
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                    <Border Background="{DynamicResource MarketplaceAccentGreenBrush}" CornerRadius="10" Padding="8,2" Margin="0,0,6,0" Visibility="{Binding InstalledBadgeVisibility,Mode=OneWay}">
-                                        <TextBlock Text="{Binding InstalledBadgeText,Mode=OneWay}" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
-                                    </Border>
-                                    <Border Background="{DynamicResource MarketplaceAccentOrangeBrush}" CornerRadius="10" Padding="8,2" Margin="0,0,6,0" Visibility="{Binding UpdateBadgeVisibility ,Mode=OneWay}">
-                                        <TextBlock Text="{Binding UpdateBadgeText,Mode=OneWay}" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
-                                    </Border>
-                                </StackPanel>
-                                <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Foreground="{DynamicResource MarketplaceMutedTextBrush}" MaxWidth="620" Margin="2,2,0,0" />
-                            </StackPanel>
-                        </DockPanel>
-                        <StackPanel  HorizontalAlignment="Right" VerticalAlignment="Top">
-                            <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding HeaderRightPrimary,Mode=OneWay}" HorizontalAlignment="Right" Padding="3"/>
-                            <TextBlock Text="{Binding HeaderRightSecondary,Mode=OneWay}" HorizontalAlignment="Right" Foreground="{DynamicResource MarketplaceMutedTextBrush}" Margin="0,0,0,4"/>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                <Button Content="{Binding PrimaryActionText, FallbackValue={x:Static properties:Resources.Install}}" Background="Transparent" BorderThickness="0" Command="{Binding InstallCommand}" Margin="0,0,5,0" Visibility="{Binding PrimaryActionVisibility, FallbackValue=Collapsed}"/>
-                                <Button Content="{x:Static properties:Resources.Download}" Background="Transparent" BorderThickness="0" Command="{Binding DownloadCommand}" Margin="0,0,5,0" Visibility="{Binding DownloadLatestVisibility, FallbackValue=Collapsed}"/>
-                                <Button Content="{x:Static properties:Resources.MarketplaceOpenProjectUrl}" Background="Transparent" BorderThickness="0" Command="{Binding OpenProjectUrlCommand}" Visibility="{Binding OpenProjectUrlVisibility, FallbackValue=Collapsed}"/>
-                            </StackPanel>
-
-                        </StackPanel>
-                    </Grid>
-
-                </Border>
-                <TabControl x:Name="TabControl1" Grid.Row="1" SelectionChanged="TabControl_SelectionChanged">
-                    <TabItem Header="{x:Static properties:Resources.MarketplaceReadmeHeader}">
-                        <wv2:WebView2 Name="webViewReadMe"  Grid.Row="1" />
+                        </ListBox>
                     </TabItem>
-                    <TabItem Header="{x:Static properties:Resources.MarketplaceChangelogHeader}" > 
-                        <wv2:WebView2 Name="webViewChangeLog"  Grid.Row="1" />
-                    </TabItem>
-                    <TabItem Header="{x:Static properties:Resources.MarketplaceDetailInfoHeader}">
+                    <TabItem Header="{x:Static properties:Resources.Marketplace}">
                         <Grid>
-                            <ScrollViewer x:Name="InstalledDetailScrollViewer">
-                                <StackPanel x:Name="DetailInfo"/>
-                            </ScrollViewer>
-                            <ScrollViewer x:Name="MarketplaceDetailScrollViewer" Visibility="Collapsed">
-                                <StackPanel>
-                                    <ItemsControl ItemsSource="{Binding DetailRows}" ItemTemplate="{StaticResource MarketplaceDetailRowTemplate}"/>
-                                    <ItemsControl ItemsSource="{Binding VersionGroups}" ItemTemplate="{StaticResource MarketplaceVersionGroupTemplate}"/>
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                            <WrapPanel Margin="0,0,0,10">
+                                <TextBlock Text="{Binding Catalog.StatusText}" Foreground="{DynamicResource Marketplace.TextSecondary}" FontSize="12" Margin="0,0,8,0" />
+                                <TextBlock Text="{x:Static properties:Resources.MarketplaceOffline}" Foreground="{DynamicResource Marketplace.TextSecondary}" FontSize="12" Visibility="{Binding Catalog.IsOffline, Converter={StaticResource bool2VisibilityConverter}}" />
+                            </WrapPanel>
+                            <Grid Grid.Row="1">
+                                <ListBox x:Name="ListViewMarketplace" ItemsSource="{Binding Catalog.MarketplacePlugins}" SelectedItem="{Binding Catalog.SelectedPlugin, Mode=TwoWay}"
+                                         Style="{StaticResource MarketplaceListStyle}" Visibility="{Binding Catalog.HasItems, Converter={StaticResource bool2VisibilityConverter}}">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}" />
+                                                <TextBlock Text="{Binding Description}" Foreground="{DynamicResource Marketplace.TextSecondary}" FontSize="12" Margin="0,6,0,0" MaxHeight="36" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" />
+                                                <DockPanel Margin="0,10,0,0">
+                                                    <Border Style="{StaticResource MarketplaceTagStyle}" DockPanel.Dock="Left">
+                                                        <TextBlock Text="{Binding LatestVersion, StringFormat=v{0}}" Foreground="{DynamicResource Marketplace.Accent}" FontSize="11" />
+                                                    </Border>
+                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" ToolTip="{x:Static properties:Resources.MarketplaceDownloads}">
+                                                        <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="11" Foreground="{DynamicResource Marketplace.TextSecondary}" Margin="0,0,5,0" />
+                                                        <TextBlock Text="{Binding TotalDownloads}" FontSize="11" Foreground="{DynamicResource Marketplace.TextSecondary}" />
+                                                    </StackPanel>
+                                                </DockPanel>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24" Visibility="{Binding Catalog.IsLoading, Converter={StaticResource bool2VisibilityConverter}}">
+                                    <ProgressBar IsIndeterminate="True" Height="3" Width="120" Margin="0,0,0,12" />
+                                    <TextBlock Text="{Binding Catalog.StatusText}" Foreground="{DynamicResource Marketplace.TextSecondary}" TextWrapping="Wrap" TextAlignment="Center" />
                                 </StackPanel>
-                            </ScrollViewer>
+                                <TextBlock Text="{Binding Catalog.StatusText}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24" TextWrapping="Wrap" TextAlignment="Center"
+                                           Foreground="{DynamicResource Marketplace.TextSecondary}" Visibility="{Binding Catalog.HasError, Converter={StaticResource bool2VisibilityConverter}}" />
+                                <TextBlock Text="{x:Static properties:Resources.MarketplaceNoMatches}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24" TextWrapping="Wrap" TextAlignment="Center"
+                                           Foreground="{DynamicResource Marketplace.TextSecondary}" Visibility="{Binding Catalog.IsEmpty, Converter={StaticResource bool2VisibilityConverter}}" />
+                            </Grid>
                         </Grid>
-                    </TabItem>
-                    <TabItem Header="{x:Static properties:Resources.MarketplaceDependentsHeader}">
-                        <ScrollViewer>
-                            <StackPanel  x:Name="Dependents">
-                                <ListView  x:Name="DependentsListView">
-                                    <ListView.View>
-                                        <GridView >
-                                            <GridViewColumn Header="{x:Static properties:Resources.MarketplacePackageColumn}">
-                                                <GridViewColumn.CellTemplate>
-                                                    <DataTemplate >
-                                                        <TextBlock  Text="{Binding Key}"/>
-                                                    </DataTemplate>
-                                                </GridViewColumn.CellTemplate>
-                                            </GridViewColumn>
-                                            <GridViewColumn Header="{x:Static properties:Resources.Version}">
-                                                <GridViewColumn.CellTemplate>
-                                                    <DataTemplate >
-                                                        <TextBlock  Text="{Binding Value}"/>
-                                                    </DataTemplate>
-                                                </GridViewColumn.CellTemplate>
-                                            </GridViewColumn>
-                                        </GridView>
-                                    </ListView.View>
-                                </ListView>
-
-                            </StackPanel>
-                        </ScrollViewer>
                     </TabItem>
                 </TabControl>
-  
-                
+                <Button Click="MoreButton_Click" Style="{StaticResource MarketplaceButtonStyle}" Width="32" MinHeight="32" Padding="0"
+                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,2,0,0"
+                        ToolTip="{x:Static properties:Resources.MarketplaceMoreActions}" AutomationProperties.Name="{x:Static properties:Resources.MarketplaceMoreActions}">
+                    <Button.ContextMenu>
+                        <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                            <MenuItem Header="{x:Static properties:Resources.InstallPackage}" Command="{Binding InstallPackageCommand}" />
+                            <MenuItem Header="{x:Static properties:Resources.Refresh}" Click="RefreshVersionsButton_Click" />
+                            <Separator />
+                            <MenuItem Header="{x:Static properties:Resources.Options}" Command="{Binding EditConfigCommand}" />
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                    <TextBlock Text="&#xE712;" FontFamily="Segoe MDL2 Assets" FontSize="16" />
+                </Button>
             </Grid>
         </Border>
 
+        <Border x:Name="BorderContent" Grid.Column="1" DataContext="{Binding CurrentDetailContext}" Visibility="Collapsed"
+                Style="{StaticResource MarketplaceCardStyle}" Padding="20,18" Margin="16,0,0,0">
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Margin="0,0,12,0">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel" BasedOn="{StaticResource MarketplacePendingContentStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding}" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                            <Border Width="56" Height="56" CornerRadius="12" Background="{DynamicResource Marketplace.Background}" BorderBrush="{DynamicResource Marketplace.WeakBorder}" BorderThickness="1" Margin="0,0,14,0" VerticalAlignment="Top">
+                                <Image Source="{Binding Icon}" Width="40" Height="40" RenderOptions.BitmapScalingMode="HighQuality" />
+                            </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Name}" FontSize="22" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding HeaderMetaText}" FontSize="12" Margin="0,5,0,0" Foreground="{DynamicResource Marketplace.TextSecondary}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Grid>
+                        <WrapPanel Margin="0,16,0,0">
+                            <Button Content="{Binding PrimaryActionText}" Visibility="{Binding PrimaryActionVisibility, FallbackValue=Collapsed}" Margin="0,0,8,6">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource MarketplacePrimaryButtonStyle}">
+                                        <Setter Property="Command" Value="{Binding InstallCommand}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding DataContext.IsMarketplaceTabActive, RelativeSource={RelativeSource AncestorType=Window}}" Value="False"><Setter Property="Command" Value="{Binding UpdateCommand}" /></DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Content="{x:Static properties:Resources.Download}" Command="{Binding DownloadCommand}" Visibility="{Binding DownloadLatestVisibility, FallbackValue=Collapsed}" Style="{StaticResource MarketplaceButtonStyle}" Margin="0,0,8,6" />
+                            <Button Content="{x:Static properties:Resources.MarketplaceOpenProjectUrl}" Command="{Binding OpenProjectUrlCommand}" Visibility="{Binding OpenProjectUrlVisibility, FallbackValue=Collapsed}" Style="{StaticResource MarketplaceButtonStyle}" Margin="0,0,0,6" />
+                        </WrapPanel>
+                    </StackPanel>
+                    <Button Grid.Column="1" Click="CloseDetailButton_Click" Style="{StaticResource MarketplaceButtonStyle}" Width="32" MinHeight="32" Padding="0" VerticalAlignment="Top"
+                            ToolTip="{x:Static uiProperties:Resources.Close}" AutomationProperties.Name="{x:Static uiProperties:Resources.Close}">
+                        <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="12" />
+                    </Button>
+                </Grid>
+                <TabControl x:Name="TabControl1" Grid.Row="1" Style="{StaticResource MarketplaceDetailTabsStyle}" SelectionChanged="TabControl_SelectionChanged">
+                    <TabItem Header="{x:Static properties:Resources.MarketplaceReadmeHeader}" />
+                    <TabItem Header="{x:Static properties:Resources.MarketplaceChangelogHeader}" />
+                    <TabItem Header="{x:Static properties:Resources.MarketplaceDetailInfoHeader}" />
+                </TabControl>
+                <!-- Keep the native browser attached while changing document tabs. -->
+                <Grid Grid.Row="2" Margin="0,14,0,0" Style="{StaticResource MarketplacePendingContentStyle}">
+                    <wv2:WebView2 x:Name="webViewMarkdown" Visibility="Hidden" />
+                    <ScrollViewer x:Name="InstalledDetailScrollViewer" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="DetailInfo" Margin="0,0,8,0" />
+                    </ScrollViewer>
+                    <ScrollViewer x:Name="MarketplaceDetailScrollViewer" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="0,0,8,0">
+                            <ItemsControl ItemsSource="{Binding DetailRows}" ItemTemplate="{StaticResource MarketplaceDetailRowTemplate}" />
+                            <ItemsControl ItemsSource="{Binding VersionGroups}" ItemTemplate="{StaticResource MarketplaceVersionGroupTemplate}" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+                <ProgressBar Grid.RowSpan="3" Height="2" Margin="0,-10,0,0" VerticalAlignment="Top" IsIndeterminate="True">
+                    <ProgressBar.Style>
+                        <Style TargetType="ProgressBar">
+                            <Setter Property="Visibility" Value="Hidden" />
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding DataContext.IsMarketplaceTabActive, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
+                                        <Condition Binding="{Binding DataContext.Catalog.IsLoadingDetail, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ProgressBar.Style>
+                </ProgressBar>
+                <StackPanel Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding}" Value="{x:Null}"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <ProgressBar IsIndeterminate="True" Height="3" Width="120" Margin="0,0,0,16"
+                                 Visibility="{Binding DataContext.Catalog.IsLoadingDetail, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource bool2VisibilityConverter}}" />
+                    <TextBlock Foreground="{DynamicResource Marketplace.TextSecondary}" TextWrapping="Wrap" TextAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="{x:Static properties:Resources.MarketplaceLoadFailed}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding DataContext.Catalog.IsLoadingDetail, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                        <Setter Property="Text" Value="{x:Static properties:Resources.Loading}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <Button Content="{x:Static properties:Resources.Refresh}" Click="RefreshVersionsButton_Click" Margin="0,16,0,0" HorizontalAlignment="Center">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource MarketplaceButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding DataContext.Catalog.IsLoadingDetail, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
     </Grid>
-
 </Window>

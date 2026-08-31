@@ -1,73 +1,41 @@
-# 通用算法模块
+---
+knowledge_id: "algorithms.template-primitives"
+knowledge_type: "index"
+status: "current"
+summary: "路由 Engine 模板中的 ROI、POI、Matching 共享构件并区分统一算法平台。"
+aliases: ["ROI POI Matching如何复用","TemplateRoi","TemplatePoi","TemplateMatch"]
+code_paths: ["Engine/ColorVision.Engine/Templates/FindLightArea","Engine/ColorVision.Engine/Templates/POI","Engine/ColorVision.Engine/Templates/Matching"]
+test_paths: []
+related: ["algorithms.index","algorithms.roi-routes","algorithms.poi-routes","algorithms.matching","algorithms.platform"]
+---
 
-本页不再把当前仓库描述成一个独立的“通用算法平台”。按源码现状，它更适合作为共享算法构件的导航页。
+# Engine 模板共享构件
 
-## 现在这页真正应该覆盖什么
+本页路由 Engine 模板中的 ROI、POI、Matching 共享构件，不定义另一套算法接口。中立输入、参数、Result 和 overlay 的统一契约已在 [图像算法平台](../../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) 与 `UI/ColorVision.Algorithms/` 中实现；两层不能混称。
 
-当前仓库里反复被多个算法、模板和 Flow 节点复用的公共构件，主要集中在这几组：
+## 按任务定位
 
-- ROI / 发光区定位
-- POI 点集与伴生模板
-- Matching 模板匹配
-- JSON 形式的裁剪或寻边模板
-
-这些构件的共同点不是“纯算法内核”，而是都同时带有：
-
-- 模板编辑入口
-- 显示算法宿主
-- MQTT 命令打包
-- 有时还带结果处理或 Flow 接入
-
-所以本页的作用更像“去哪看哪一组共享构件”，而不是继续抽象一套并不存在的统一框架。
-
-## 当前最值得优先看的几支
-
-| 分支 | 当前入口 | 判断 |
+| 任务 | 模板与源码入口 | 边界 |
 | --- | --- | --- |
-| ROI | `TemplateRoi`、`RoiParam`、`AlgorithmRoi`、`DisplayRoi`、`TemplateImageROI`、`TemplateSFRFindROI` | 经典 ROI 主要是发光区定位；裁剪和 ARVR 找 ROI 更接近 JSON 分支 |
-| POI | `TemplatePoi`、`PoiParam`、`PoiPoint`、`AlgorithmPOI`、`AlgorithmBuildPoi`、过滤/修正/标定/输出伴生模板 | 跨 JSON 算法和 Flow 节点复用，不是单一算法页 |
-| Matching | `TemplateMatch`、`MatchParam`、`AlgorithmMatching`、`DisplayMatching`、`ViewHandleMatching` | 会打开 `TemplateMatch`，可选 `TemplatePoi`，指定 `TemplateFile`，发布 `Event_MatchTemplate` |
+| 发光区、区域定位与裁剪 | [ROI](./roi.md)、`TemplateRoi`、`TemplateImageROI`、`TemplateSFRFindROI` | 传统参数、JSON 与本地算法路径分开核对 |
+| 点集构建、过滤、修正和复用 | [POI](./poi.md)、[POI 模板](../templates/poi-template.md) | `TemplatePoi`、`PoiParam`、`PoiPoint` 被多个算法族使用 |
+| 模板图匹配和 AOI 四角结果 | [Matching](../templates/matching-template.md) | `MatchingDisplayAlgorithmConfig` 分别持有参数选择与 `TemplateFile`，当前不附带 POI 模板选择 |
+| 编排进流程 | [Flow 接入](../templates/flow-engine.md)、[PropertyGrid](../../ui-components/property-grid.md) | 节点执行、参数编辑与模板持久化是不同契约 |
+| 新增中立算法或自定义 overlay | [算法平台](../../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)、[结果链](../../engine-components/result-handoff-chain.md) | 不以旧模板目录替代中立算法接口 |
 
-## 当前这些共享模块怎样串到系统里
+## 传统适配链的共同结构
 
-按当前实现，它们大体都走同一类运行模式：
+1. `TemplateControl` 与 `TemplateEditorWindow` 负责发现、选择和编辑模板。
+2. `DisplayAlgorithmBase<TConfig>` 暴露配置与 `Execute()`，`DisplayAlgorithmControl` 提供手动界面。
+3. 服务型适配器打包 `CVTemplateParam`、图像和附加参数，经 MQTT 请求执行。
+4. Flow 可从节点参数进入同一服务语义；结果再按实际类型进入历史 handler 或后续节点。
 
-1. 通过 `TemplateEditorWindow` 或自定义编辑控件维护模板。
-2. 通过 `DisplayAlgorithmBase` 派生类暴露 UI 和命令。
-3. 在算法类里组装 `CVTemplateParam` 和其它输入参数。
-4. 通过 MQTT 事件把请求发给服务侧。
-5. 视情况再由结果处理器或 Flow 节点继续消费。
+这个结构描述的是服务型模板适配器，不覆盖所有本地算法。具体类是否走 native、本地托管或外部服务，必须沿 `Execute` / `SendCommand` 继续追踪。
 
-这也是为什么把这些模块单纯写成“算法库”会失真，因为当前实现里 UI、模板和命令宿主是一体的。
+## 不可互换的模型
 
-## 如果现在要按需求读源码
+`TemplateRoi` 是传统参数模板，`TemplateImageROI` 和 `TemplateSFRFindROI` 是 JSON 模板；它们不能合并成一张“ROI 参数”表。ARVR 的 SFR 找 ROI 依赖 POI，并不意味着 Matching 也依赖 POI。公共术语相同只能作为检索线索，不能用来推导配置或运行时兼容性。
 
-### 想看区域选择或裁剪
+## 验证入口与缺口
 
-优先读 [ROI](./roi.md)。
-
-### 想看点集模板、点集构建或 POI 复用
-
-优先读 [POI](./poi.md) 和 [POI 模板](../templates/poi-template.md)。
-
-### 想看图像模板匹配
-
-优先读 `Engine/ColorVision.Engine/Templates/Matching/AlgorithmMatching.cs` 和 `TemplateMatch.cs`。
-
-### 想看这些构件怎样被编排进流程
-
-优先读 [流程引擎](../templates/flow-engine.md) 以及 `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/`。
-
-## 当前几个最容易写错的点
-
-### 通用不等于独立框架
-
-这些共享模块并没有组成一套单独发布的公共 SDK，而是散布在 `ColorVision.Engine/Templates` 下、由主程序宿主统一托管。
-
-### 共享模块并不纯粹
-
-它们通常混合了模板、UI、MQTT 消息和结果显示。继续按严格三层架构去写，很容易和现状错位。
-
-### POI、ROI、Matching 之间有交叉引用
-
-例如 Matching 可以继续打开 `TemplatePoi`，而 ARVR 的 `SFR_FindROI` 又会要求 POI 模板。这些模块不是完全彼此独立的岛。
+此索引不宣称模板构件具有统一执行契约；各分支的测试、服务依赖和验证缺口以对应页为准。

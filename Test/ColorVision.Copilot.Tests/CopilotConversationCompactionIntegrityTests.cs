@@ -89,7 +89,7 @@ public sealed class CopilotConversationCompactionIntegrityTests
         Assert.Equal(
             [CopilotAgentStopReason.Blocked],
             plan.TerminalEvidence.IncompleteAgentStopReasons);
-        Assert.DoesNotContain(
+        Assert.Contains(
             plan.SourceMessages,
             message => message.Content.Contains(
                 CopilotConversationCompactionTerminalEvidence.ResponseInterruptedMarker,
@@ -295,6 +295,15 @@ public sealed class CopilotConversationCompactionIntegrityTests
             CopilotConversationCompactionTerminalEvidence.ResponseInterruptedMarker
             + Environment.NewLine
             + agentMarker);
+    }
+
+    [Fact]
+    public void EmptyCompactPromptUsesTheDefaultBodyAndKeepsHostIntegrity()
+    {
+        var request = CopilotConversationCompactionPrompt.BuildRequest(null, string.Empty);
+
+        Assert.StartsWith("Create a continuation summary", request, StringComparison.Ordinal);
+        Assert.Contains("ColorVision host integrity requirements", request, StringComparison.Ordinal);
     }
 
     [Fact]

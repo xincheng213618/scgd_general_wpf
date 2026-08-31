@@ -1,4 +1,22 @@
+---
+knowledge_id: "algorithms.frequency-spectrum"
+knowledge_type: "reference"
+status: "current"
+summary: "FrequencySpectrum 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。"
+aliases: ["如何读取 FFT 频谱、为什么 FFT 默认不可执行","FrequencySpectrum","FrequencySpectrumAlgorithmProvider"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/FrequencySpectrumAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/FrequencySpectrumV1Tests.cs","Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
+related: ["algorithms.platform","algorithms.index"]
+---
+
 # FFT / 频域分析 V1（M10）
+
+## 当前发布边界
+
+当前默认 `ImageAlgorithmPlatform.CreateDefaultProviders()` 把本页 provider 包装在 `ExperimentalAlgorithmProviderGate` 中：菜单和 Batch 可执行投影隐藏该能力，直接调用默认 Runner 也返回 `provider_unavailable`，详情包含 `algorithm_experimental`。本页后面的参数、结果与宿主接入描述属于保留实现及测试契约，不是产品已开放的承诺；不得在调用方另建执行旁路来绕过门禁。
+
+本页 `status: current` 表示它记录当前源码事实，不代表算法已发布。M 编号是历史增量标识；其他增量是否可用以 [统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单) 为准。`Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs` 验证默认拒绝行为，专题测试覆盖实现细节；解除门禁还需完成对应数值、最坏资源与生产规模验证。
+
 
 ## 阶段边界与仓库盘点
 
@@ -42,7 +60,9 @@ V1 接受九种 canonical format：Gray8/16/32F、Bgr24/48/96F、Bgra32/64/128F�
 
 逆变换使用同一复数 DFT 与 `RealOutput | Scale`，误差目标是“已移除均值并加窗的空间信号”。因此非 Rectangular 窗不会声称重建未加窗原图；结果会附 `frequency_inverse_windowed_target` 诊断。测试对四种窗分别校验 RMSE 和最大误差。
 
-## 宿主、所有权与导出
+## 保留的宿主、所有权与导出（默认禁用）
+
+下述宿主适配描述保留实现及测试；默认产品菜单与 Runner 仍受 Experimental 门禁阻止。
 
 - ImageView：“算法 → FFT / 频域分析...”使用统一 analysis session；Clear、切图、revision 变化或同 revision 的新 Invocation 会取消/淘汰旧结果。结果窗口显示幅度/功率图、径向/方向曲线和峰值表，可保存 PNG 或导出 CSV/JSON，关闭时释放 Result 图像。
 - Batch：`BatchAlgorithmAnalysisProcessor` 使用同一 Invocation/Runner，导出 JSON 或 CSV bundle；只有 Invocation 确实含 ROI 时才要求 `Roi` capability。

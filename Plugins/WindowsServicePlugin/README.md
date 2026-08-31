@@ -1,105 +1,38 @@
 # WindowsServicePlugin
 
-WindowsServicePlugin provides the in-app service manager used to install and maintain
-the local ColorVision Windows services.
+Windows/x64 WPF plugin for the ColorVision in-app service manager. The manifest
+loads `WindowsServicePlugin.dll`; the project depends on matching ColorVision
+Engine/UI assemblies and currently targets `net10.0-windows`.
 
-The current implementation is intentionally focused on the workflow needed for
-`CVWindowsService`:
+Use the canonical [package selection, local installation, database migration,
+and recovery contract](../../docs/04-api-reference/plugins/standard-plugins/windows-service.md).
+The [CVWindowsService Backend contract](../../docs/02-developer-guide/backend/cvwindowsservice.md)
+owns service ZIP publication and HTTP selection/download behavior. These links
+require the matching full source checkout; `docs/` is not included merely because
+this README is copied into a plugin package.
 
-- manage `RegistrationCenterService`, `CVMainService_x64`, and `CVMainService_dev`;
-- install or update a full `CVWindowsService` service package;
-- install/register MySQL and run the service database SQL;
-- install/open MQTT only as needed for the service to start;
-- synchronize `cfg/MySql.config`, `cfg/MQTT.config`, and `cfg/WinService.config`;
-- keep optional local backups for database and service files.
+Package-local prerequisites and warnings:
 
-The older CVWinSMS-related online download, incremental update, service log menu,
-archive-service unregister, license, RESTful, and external management-tool entry
-points have been removed from the plugin surface.
+- `WindowsServicePlugin` is not the `CVWindowsService` service ZIP or the separate
+  `ColorVisionServiceHost` privilege broker. Broker-backed operations require a
+  compatible installed broker and appropriate service, file, and database rights.
+  The app Administrator permission is not proof of Windows elevation.
+- Current installation uses full service packages. It can stop/register/start
+  services, replace files, execute SQL, change credentials/configuration, and close
+  the old CVWinSMS process. Confirm the targets and obtain maintenance authority.
+- Backup options are off by default; backup failures do not always stop installation.
+  An installation-complete log is not proof that all services started. Manual
+  service-file restore deletes the entire configured installation directory before
+  extraction and is not a transactional rollback.
+- Online package selection and local cache reuse are implemented. This consumer
+  checks package directory names, not a publisher signature or package hash.
+- Legacy `CVWinSMS/InstallTool` and service-log menu classes are still compiled and
+  discoverable. The old tool path can query/download from its separate endpoint,
+  replace files, terminate processes, and launch an elevated executable after its
+  confirmation flow; do not treat it as inert configuration compatibility code.
+- Publishing this plugin through `Scripts/package_plugin.bat WindowsServicePlugin`
+  uploads a `.cvxp`; it neither publishes the service ZIP nor authorizes installing it.
 
-## Entry Points
-
-| Entry | Purpose |
-| --- | --- |
-| `ServiceManager/MenuServiceManager.cs` | Administrator-only provider under Apps & Tools > Internal. |
-| `ServiceManager/InstallServiceManager.cs` | Wizard entry that opens the in-app service manager. |
-| `ServiceManager/ServiceManagerWindow.xaml` | Main service manager window. |
-| `ServiceManager/ServiceInstallWindow.xaml` | Local install/update window. |
-
-`CVWinSMS/CVWinSMSConfig.cs` remains only for reading a legacy `App.config` path when
-one already exists. It no longer downloads, updates, or launches the external
-`CVWinSMS.exe` tool.
-
-## Install Flow
-
-1. Start ColorVision as administrator.
-2. Open `ServiceManagerWindow`.
-3. Confirm `BaseLocation`, for example `D:\CVService`.
-4. Open the install window and select a full `CVWindowsService` package, such as
-   `CVWindowsService[4.0.6.603]-0603.zip`.
-5. Optionally select a local MySQL ZIP and MQTT installer.
-6. Run install.
-
-For a full service package, the installer:
-
-- validates that the package contains service roots such as `RegWindowsService` and
-  `CVMainWindowsService_x64` or `CVMainWindowsService_dev`;
-- stops managed services before replacing service files;
-- cleans only the top-level targets present in the selected service package;
-- extracts the package into `BaseLocation`;
-- copies `CommonDll` into the packaged service folders and removes the temporary
-  `CommonDll` directory;
-- unregisters and re-registers the packaged Windows services;
-- maps the installed and target CVWindowsService versions to their source and
-  target databases;
-- optionally executes `SQL/color_vision_all.sql`, restores preserved resource
-  data into the target database, and refreshes the business-user grant;
-- switches and synchronizes service config files only after database migration
-  succeeds;
-- optionally starts the managed services.
-
-Incremental update packages are not supported by this workflow.
-
-## MySQL
-
-The MySQL workflow uses the CVWindowsService major version as the maintained
-database compatibility boundary:
-
-| CVWindowsService version | Database |
-| --- | --- |
-| `< 4.0` | `color_vision` |
-| `>= 4.0` | `color_vision_4xx` |
-
-The default business user is `cv`. SQL files are read as UTF-8 when possible,
-with GB18030 fallback, and are sent to `mysql.exe` as UTF-8 to avoid Chinese text
-import failures.
-
-MySQL installed from a ZIP is placed beside the service root, for example:
-
-```text
-D:\CVService
-D:\mysql-5.7.37-winx64
-```
-
-## Configuration
-
-`ServiceManagerConfig` stores only the active service-manager settings:
-
-| Field | Purpose |
-| --- | --- |
-| `BaseLocation` | Service installation root. |
-| `MySqlPort` | MySQL port. |
-| `InstallServiceChecked` | Default service package selection state. |
-| `InstallMySqlChecked` | Default MySQL package selection state. |
-| `InstallMqttChecked` | Default MQTT installer selection state. |
-
-`MySqlServiceConfig` stores MySQL service path, port, credentials, and database.
-`MqttServiceConfig` stores MQTT process/service state and connection settings.
-
-## Notes
-
-- Full install and service registration require administrator privileges.
-- If config synchronization fails after file extraction, install fails instead of
-  starting services with stale config.
-- The install log shown in the window is retained for operational feedback; the old
-  service-log menu entries are removed.
+The standalone WinExe startup currently initializes shared components and exits;
+it is not a standalone service-manager distribution. Refer to the project,
+manifest, and canonical topics for the matching source version.

@@ -1,3 +1,14 @@
+---
+knowledge_id: "algorithms.led"
+knowledge_type: "reference"
+status: "current"
+summary: "区分灯条、灯珠强类型与 JSON V2 模板、事件、POI 输入和结果限制。"
+aliases: ["LED灯条和灯珠检测该用哪个模板","TemplateLedCheck","TemplateLEDStripDetectionV2","ViewHandleLedCheck"]
+code_paths: ["Engine/ColorVision.Engine/Templates/LEDStripDetection/AlgorithmLEDStripDetection.cs","Engine/ColorVision.Engine/Templates/LedCheck/AlgorithmLedCheck.cs","Engine/ColorVision.Engine/Templates/LedCheck/ViewHandleMTF.cs","Engine/ColorVision.Engine/Templates/Jsons/LEDStripDetectionV2","Engine/ColorVision.Engine/Templates/Jsons/LedCheck2"]
+test_paths: []
+related: ["algorithms.index","algorithms.json-templates","engine.results"]
+---
+
 # LED 检测模板
 
 本页说明当前仓库中 LED 检测相关模板的维护边界，重点覆盖 `LEDStripDetection/` 和 `LedCheck/` 两个强类型模板，并说明它们和 `Jsons/LEDStripDetectionV2/`、`Jsons/LedCheck2/` 的关系。
@@ -21,7 +32,7 @@
 | `LEDStripDetectionParam.cs` | 保存点数、点距、起始位置、二值化比例、调试和保存路径。 |
 | `EditLEDStripDetection.xaml(.cs)` | 自定义参数编辑控件。 |
 | `AlgorithmLEDStripDetection.cs` | 组装 `Event_LED_StripDetection` 请求。 |
-| `DisplayLEDStripDetection.xaml(.cs)` | 选择模板、图像来源、批次号/Raw/本地图像，并触发执行。 |
+| `LEDStripDetectionDisplayAlgorithmConfig` | 通用宿主的配置对象，持有模板选择、图像路径和运行时 `IsInversion`。 |
 
 关键参数：
 
@@ -35,7 +46,7 @@
 | `IsDebug` | `false` | 是否开启调试输出。 |
 | `SaveName` | `binim.tif` | 调试/保存图路径。 |
 
-请求参数包括 `ImgFileName`、`FileType`、`DeviceCode`、`DeviceType`、`TemplateParam` 和 `IsInversion`。
+手动页面由 `Services/Devices/Algorithm/DisplayAlgorithmControl.xaml.cs` 生成，不再使用 `DisplayLEDStripDetection.xaml`。`Execute()` 校验 `Config.Template` 与图像输入；请求包括 `ImgFileName`、`FileType`、`DeviceCode`、`DeviceType`、`TemplateParam` 和 `Config.IsInversion`，当前手动入口设备 code/type 传空字符串。模板编辑入口见 [模板菜单与配置宿主](./template-menu-entries.md)。
 
 ## LedCheck 强类型链路
 
@@ -44,11 +55,11 @@
 | `TemplateLedCheck.cs` | 注册灯珠检测模板，`Code = FindLED`。 |
 | `LedCheckParam.cs` | 保存灯珠通道、固定半径、轮廓面积、二值化补正、灯珠网格数量等参数。 |
 | `AlgorithmLedCheck.cs` | 同时收集灯珠模板和 POI 模板，并发布 `Event_LED_Check_GetData`。 |
-| `DisplayLedCheck.xaml(.cs)` | 选择灯珠模板、POI 模板和图像来源。 |
-| `ViewHandleLedCheck.cs` | 从 POI 结果表恢复点位，以半径绘制灯珠结果。 |
+| `DualTemplateDisplayAlgorithmConfig` | 通用宿主选择灯珠模板与 POI 模板；不再使用 `DisplayLedCheck.xaml`。 |
+| `ViewHandleMTF.cs` 内的 `ViewHandleLedCheck` | 从 POI 结果表恢复点位，以半径绘制灯珠结果；文件名与类名不同。 |
 | `ViewResultLedCheck.cs` | 保存点位和半径。 |
 
-`LedCheck` 的请求比灯条定位多一个 `POITemplateParam`。当前 UI 使用 `TemplatePoi.Params.CreateEmpty()`，因此维护时要确认现场是允许空 POI，还是必须选择具体 POI 模板。
+`LedCheck` 的请求比灯条定位多一个 `POITemplateParam`。`Execute()` 同时校验 `Config.Template` 和 `Config.SecondaryTemplate` 的可解析选中值；后者来源为 `TemplatePoi.Params.CreateEmpty()`，其中空项可形成 `ID = -1`、`Name = string.Empty`。这不等于取消选择校验，也不证明每个服务版本都接受空 POI，需核对实际下游契约。
 
 `ViewHandleLedCheck.CanHandle` 当前为空列表。如果现场出现“算法执行成功但结果页不接管展示”，要先检查结果类型是否注册到这个 handler，而不是只排查绘图代码。
 
@@ -89,3 +100,7 @@
 - 修改强类型参数时，同步更新参数类、默认值、编辑控件和现场样例。
 - 修改 JSON 参数时，同步更新 schema/说明 JSON、`Mysql*` 恢复命令和版本策略。
 - 修改结果展示时，同步更新 handler 的 `CanHandle`、导出、项目验收页和截图样例。
+
+## 验证入口与缺口
+
+验证缺口：未登记全部 LED 分支的专门自动化测试；尤其旧 ViewHandleLedCheck 的类型注册和 CSV 行写入限制仍需独立验收，不能按现有类名宣称功能完整。

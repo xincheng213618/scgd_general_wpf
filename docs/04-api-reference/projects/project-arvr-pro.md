@@ -1,3 +1,14 @@
+---
+knowledge_id: "projects.arvr-pro"
+knowledge_type: "reference"
+status: "current"
+summary: "ARVRPro 流程组、Recipe、Socket、输出与历史结果图原图到保存原图再到标记图的回退契约。"
+aliases: ["ARVR 历史原图删了还能看结果吗","保存结果图会不会重复画标记","ProjectARVRPro","ResultImageFileCandidates","SavedSourceImageFileName","SavedResultImageFileName"]
+code_paths: ["Projects/ProjectARVRPro/ARVRWindow.xaml.cs","Projects/ProjectARVRPro/ResultImagePresentation.cs","Projects/ProjectARVRPro/ProjectARVRReuslt.cs","Projects/ProjectARVRPro/ViewResultManager.cs","Projects/ProjectARVRPro/Services/SocketControl.cs"]
+test_paths: ["Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj","Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs","Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs"]
+related: ["projects.index","projects.arvr-pro-demo","projects.capabilities"]
+---
+
 # ProjectARVRPro
 
 `Projects/ProjectARVRPro/` 是当前主力 AR/VR 专业测试项目包，运行时以 `ProjectARVRPro.dll` 加载。维护时优先看流程组、Socket 自动化、切图、Recipe 和输出格式。
@@ -64,6 +75,22 @@ AOI 相关流程还要看 `SocketRelay/`。只连通主 Socket 端口不代表 R
 
 结果输出由 `ViewResultManager.Config` 控制，覆盖 SQLite、标准 CSV、Legacy CSV、客户 XLSX 和 Socket `ProjectARVRResult.Data`。`UseLegacyARVROutput` 会影响 CSV 和 Socket `Data`，改字段前先确认客户解析程序使用新版还是旧版。
 
+## 历史结果图回退与持久化
+
+历史记录的原始图像不在原路径时，不应立即判定“无法查看结果”。`Projects/ProjectARVRPro/ResultImagePresentation.cs` 中 `ResultImageFileCandidates.GetExisting` 按下列顺序收集存在且去重的路径，`OpenFirstAsync` 在解码失败、超时或未得到图像时继续尝试下一候选；取消仍中止当前请求。
+
+| 顺序 | 字段/条件 | 显示规则 |
+| --- | --- | --- |
+| 1 | 原始 `FileName` | 打开原图并按历史结果重新绘制 overlay |
+| 2 | `SavedSourceImageFileName` | 打开保存的原位深原图并重新绘制 overlay |
+| 3 | `SavedResultImageFileName` | 直接显示已经含标记的结果图，`RequiresOverlayRendering=false`，不能重复绘制 overlay |
+| 4 | 候选均不可用，但能确认结果宽高 | 使用相同尺寸的白色画布承载历史标记 |
+| 5 | 候选均不可用且尺寸未知 | 清除旧底图并记录失败，不能继续显示上一条结果的图 |
+
+`ARVRWindow.xaml.cs` 负责实际加载、请求版本仲裁和 `RenderResultImage` / `ShowSavedResultImage` 分流。两个保存路径是 `ProjectARVRReuslt` 的可空列；`ViewResultManager` 通过现有 `CodeFirst.InitTables<ProjectARVRReuslt, ObjectiveTestResultRecord>()` 为旧库补列，不能要求用户删库或手工编辑 SQLite。旧磁盘 PNG 不会被自动扫描回填；只有实际成功导出的通道才更新对应路径。
+
+验证入口：`Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs` 覆盖候选顺序、缺失/重复路径、首图加载失败后继续及标记图不重复绘制契约；`ResultJsonPayloadStorageTests.cs` 覆盖结果持久化相关兼容。自动测试不等于已验证现场历史文件仍存在，现场排查还须只读核对记录路径与文件可读性。
+
 ## 验收
 
 | 验收项 | 通过标准 |
@@ -78,9 +105,19 @@ AOI 相关流程还要看 `SocketRelay/`。只连通主 Socket 端口不代表 R
 | AOI Relay | Flow 请求、外部确认、Relay 转发三段都可追踪 |
 | 交付包 | `.cvxp` 内含 DLL、manifest、README、CHANGELOG |
 
-## 构建
+## 本地构建与测试
+
+下列命令编译和运行本地测试，会写入本地构建/测试产物，不上传包。项目版本读取 `ProjectARVRPro.csproj` 的 `VersionPrefix`，与主程序版本独立。
 
 ```powershell
 dotnet build Projects/ProjectARVRPro/ProjectARVRPro.csproj -c Release -p:Platform=x64
-Scripts\package_project.bat ProjectARVRPro
+dotnet test Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj -c Release -p:Platform=x64
+```
+
+## 打包上传（需明确发布授权）
+
+只有明确要求发布 ProjectARVRPro 时才运行以下命令。wrapper 会重新构建、生成并上传 `.cvxp`，随后清理本地包；不支持 `--no-upload`。打包器由主 DLL 的 `FileVersion` 同步 manifest 版本，不要另行手工同步 manifest。发布完成还需核对远端元数据和可下载包，不能以本地 build 成功代替。
+
+```powershell
+.\Scripts\package_project.bat ProjectARVRPro
 ```

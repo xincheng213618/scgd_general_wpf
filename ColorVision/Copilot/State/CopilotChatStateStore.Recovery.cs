@@ -37,6 +37,13 @@ namespace ColorVision.Copilot
                     LastLoadStatus.SchemaVersion ?? CopilotChatState.CurrentSchemaVersion + 1,
                     CopilotChatState.CurrentSchemaVersion,
                     LastLoadStatus.StateFilePath);
+
+            if (LastLoadStatus.RequiresRecoveryProtection
+                && !IsManagedAttachmentCleanupProtected
+                && !ProtectManagedAttachments())
+            {
+                throw new IOException("Copilot state cannot be saved until attachment recovery protection is persisted.");
+            }
         }
 
         private void ReplaceStateFile(string tempFilePath)

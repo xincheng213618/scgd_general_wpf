@@ -22,6 +22,10 @@ namespace ColorVision.Recovery
     public partial class StartupRecoveryWindow : Window, INotifyPropertyChanged, IDisposable
     {
         private readonly StartupFailureInfo? _previousFailure;
+        private readonly bool _manualRequest;
+        private readonly bool _isRunningApplication;
+        private readonly Action? _validateRuntimeOperation;
+        private readonly Action<Window>? _prepareRuntimeOperation;
         private readonly CancellationTokenSource _windowCancellation = new();
         private AutoUpdatePlan? _applicationUpdatePlan;
         private bool _isCheckingUpdates;
@@ -44,6 +48,24 @@ namespace ColorVision.Recovery
 
         public string CurrentApplicationVersionText { get; }
 
+        public string RecoverySubtitle => _isRunningApplication
+            ? StartupMaintenanceText.Get("RuntimeRecoverySubtitle")
+            : _manualRequest ? StartupMaintenanceText.Get("ManualRecoveryHeadline") : "ColorVision 上次未能正常启动";
+
+        public string NormalActionText => _isRunningApplication ? StartupMaintenanceText.Get("RuntimeNormalAction") : "正常启动";
+
+        public string ExitActionText => _isRunningApplication ? StartupMaintenanceText.Get("RuntimeExitAction") : "退出 ColorVision";
+
+        public string SkipAllActionText => _isRunningApplication ? StartupMaintenanceText.Get("RuntimeSkipAllAction") : "不加载全部插件";
+
+        public string SkipSelectedActionText => _isRunningApplication ? StartupMaintenanceText.Get("RuntimeSkipSelectedAction") : "本次跳过所选";
+
+        public string DisableSelectedActionText => _isRunningApplication ? StartupMaintenanceText.Get("RuntimeDisableSelectedAction") : "永久禁用所选";
+
+        public string PluginSelectionHint => _isRunningApplication
+            ? StartupMaintenanceText.Get("RuntimePluginSelectionHint")
+            : "选择插件后，可临时跳过、永久禁用或恢复备份。";
+
         public Visibility FailureVisibility => _previousFailure == null
             ? Visibility.Collapsed
             : Visibility.Visible;
@@ -54,6 +76,8 @@ namespace ColorVision.Recovery
         {
             get
             {
+                if (_manualRequest && _previousFailure == null)
+                    return StartupMaintenanceText.Get("ManualRecoveryHeadline");
                 string? component = RecordedComponent;
                 return _previousFailure?.Stage switch
                 {
@@ -71,7 +95,11 @@ namespace ColorVision.Recovery
             }
         }
 
-        public string RecoveryExplanation => IsDependencyFailure
+        public string RecoveryExplanation => _isRunningApplication
+            ? StartupMaintenanceText.Get("RuntimeRecoveryExplanation")
+            : _manualRequest && _previousFailure == null
+            ? StartupMaintenanceText.Get("ManualRecoveryExplanation")
+            : IsDependencyFailure
             ? "建议使用完整安装包修复；现有配置和用户数据会保留。"
             : IsPluginLoadingFailure
                 ? "建议使用安全启动，本次不加载任何插件。"
@@ -79,7 +107,7 @@ namespace ColorVision.Recovery
 
         public string RecommendedRecoveryActionText => IsDependencyFailure
             ? "完整安装包修复"
-            : "安全启动";
+            : _isRunningApplication ? StartupMaintenanceText.Get("RuntimeSafeStartAction") : "安全启动";
 
         private string? RecordedComponent => _previousFailure?.Component is { } component &&
             !string.IsNullOrWhiteSpace(component)
@@ -168,8 +196,19 @@ namespace ColorVision.Recovery
         }
 
         public StartupRecoveryWindow(StartupFailureInfo? previousFailure)
+            : this(previousFailure, false)
+        {
+        }
+
+        internal StartupRecoveryWindow(StartupFailureInfo? previousFailure, bool manualRequest,
+            bool isRunningApplication = false, Action? validateRuntimeOperation = null,
+            Action<Window>? prepareRuntimeOperation = null)
         {
             _previousFailure = previousFailure;
+            _manualRequest = manualRequest;
+            _isRunningApplication = isRunningApplication;
+            _validateRuntimeOperation = validateRuntimeOperation;
+            _prepareRuntimeOperation = prepareRuntimeOperation;
             CurrentApplicationVersionText =
                 $"当前版本 {AutoUpdater.CurrentVersion?.ToString() ?? "未知"}";
             DataContext = this;
@@ -184,10 +223,13 @@ namespace ColorVision.Recovery
         private async void StartupRecoveryWindow_Loaded(object sender, RoutedEventArgs e)
         {
             Loaded -= StartupRecoveryWindow_Loaded;
+            CancellationToken cancellationToken = _windowCancellation.Token;
             await Dispatcher.Yield(DispatcherPriority.Background);
+            if (cancellationToken.IsCancellationRequested)
+                return;
             await Task.WhenAll(
-                RefreshPluginsAsync(_windowCancellation.Token),
-                CheckForApplicationUpdateAsync(_windowCancellation.Token));
+                RefreshPluginsAsync(cancellationToken),
+                CheckForApplicationUpdateAsync(cancellationToken));
         }
 
         private void StartupRecoveryWindow_Closed(object? sender, EventArgs e)
@@ -429,7 +471,7 @@ namespace ColorVision.Recovery
         private void FullApplicationRepair_Click(object sender, RoutedEventArgs e)
         {
             Version? currentVersion = AutoUpdater.CurrentVersion;
-            if (!CanRunFullApplicationRepair || currentVersion == null)
+            if (!CanRunFullApplicationRepair || currentVersion == null || !TryValidateRuntimeOperation())
                 return;
 
             string message =
@@ -451,8 +493,11 @@ namespace ColorVision.Recovery
             SkipAll_Click(sender, e);
         }
 
-        private void StartApplicationUpdate(Action startUpdate)
+        internal void StartApplicationUpdate(Action startUpdate)
         {
+            if (!TryPrepareRuntimeOperation())
+                return;
+
             SetRecoveryBusy(true);
             UpdateStatusDetail = "正在准备下载安装包；完成后将退出并重启 ColorVision。";
 
@@ -478,11 +523,13 @@ namespace ColorVision.Recovery
             if (_isRecoveryBusy ||
                 _isRefreshingPlugins ||
                 sender is not Button { CommandParameter: StartupRecoveryPluginItem item } ||
-                item.Backup == null)
+                item.Backup == null || !TryValidateRuntimeOperation())
                 return;
 
             string message = $"将先校验最近一次备份，再退出 ColorVision 并回退插件“{item.DisplayName}”。确定继续？";
             if (MessageBox.Show(this, message, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                return;
+            if (!TryPrepareRuntimeOperation())
                 return;
 
             PluginRecoveryBackupInfo backup = item.Backup;
@@ -517,6 +564,9 @@ namespace ColorVision.Recovery
             {
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                IsRunningApplication = _isRunningApplication,
+                ValidateRuntimeOperation = _validateRuntimeOperation,
+                PrepareRuntimeOperation = _prepareRuntimeOperation,
             }.ShowDialog();
         }
 
@@ -589,23 +639,78 @@ namespace ColorVision.Recovery
                 Array.Empty<StartupRecoveryPluginSelection>());
         }
 
-        private void DisableSelected_Click(object sender, RoutedEventArgs e)
+        private async void DisableSelected_Click(object sender, RoutedEventArgs e)
         {
+            if (!DisableSelectedPlugins(PersistDisabledPlugins) || !_isRunningApplication)
+                return;
+
+            await RefreshPluginsAsync(_windowCancellation.Token);
+            if (!_isDisposed)
+                OperationStatusText = StartupMaintenanceText.Get("RuntimePluginsDisabled");
+        }
+
+        internal bool DisableSelectedPlugins(Action<IReadOnlyList<StartupRecoveryPluginItem>> persistDisabledPlugins)
+        {
+            if (!CanUseSelection || _resultWasChosen || !TryValidateRuntimeOperation())
+                return false;
+
             StartupRecoveryPluginItem[] selected = GetSelectedPlugins();
             if (selected.Length == 0)
-                return;
+                return false;
 
             try
             {
-                PersistDisabledPlugins(selected);
-                CloseWithResult(
-                    StartupRecoveryAction.DisableSelectedAndStart,
-                    selected.Select(item => item.ToSelection()).ToArray());
+                persistDisabledPlugins(selected);
+                if (_isRunningApplication)
+                    OperationStatusText = StartupMaintenanceText.Get("RuntimePluginsDisabled");
+                else
+                    CloseWithResult(StartupRecoveryAction.DisableSelectedAndStart, selected.Select(item => item.ToSelection()).ToArray());
+                return true;
             }
             catch (Exception ex)
             {
                 OperationStatusText = $"保存插件禁用状态失败：{ex.GetBaseException().Message}";
-                MessageBox.Show(this, OperationStatusText, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+        }
+
+        internal bool TryValidateRuntimeOperation()
+        {
+            if (!_isRunningApplication)
+                return true;
+
+            try
+            {
+                if (_validateRuntimeOperation == null)
+                    throw new InvalidOperationException(StartupMaintenanceText.Get("ApplicationUnavailable"));
+                _validateRuntimeOperation();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                OperationStatusText = ex.GetBaseException().Message;
+                return false;
+            }
+        }
+
+        internal bool TryPrepareRuntimeOperation()
+        {
+            if (!TryValidateRuntimeOperation())
+                return false;
+            if (!_isRunningApplication)
+                return true;
+
+            try
+            {
+                if (_prepareRuntimeOperation == null)
+                    throw new InvalidOperationException(StartupMaintenanceText.Get("ApplicationUnavailable"));
+                _prepareRuntimeOperation(this);
+                return TryValidateRuntimeOperation();
+            }
+            catch (Exception ex)
+            {
+                OperationStatusText = ex.GetBaseException().Message;
+                return false;
             }
         }
 

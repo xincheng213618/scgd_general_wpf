@@ -206,7 +206,8 @@ namespace ColorVision.Copilot
 
             changed |= CopilotConversationService.NormalizeOrder(Conversations);
 
-            changed |= CopilotQueuedFollowUpRecovery.PrepareForRestartDispatch(this);
+            if (normalizeRestoredConversations)
+                changed |= CopilotQueuedFollowUpRecovery.PrepareForRestartDispatch(this);
 
             var activeConversations = Conversations
                 .Where(conversation => !conversation.IsArchived)

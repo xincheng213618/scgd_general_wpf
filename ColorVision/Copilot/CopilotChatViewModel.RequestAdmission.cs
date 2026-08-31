@@ -58,6 +58,11 @@ namespace ColorVision.Copilot
                 && EvaluateConversationRequestAdmission(conversationId, mode).IsAllowed;
         }
 
+        private bool CanContinueConversationRequestPreparation(CopilotConversationRecord conversation, CopilotAgentMode mode) =>
+            Conversations.Contains(conversation)
+            && !conversation.IsArchived
+            && CanScheduleConversationRequest(conversation.Id, mode);
+
         private bool HasExclusiveLocalOperation => _isCompactingConversation
             || _isEndingConversation
             || _fileAttachmentCts != null

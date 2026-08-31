@@ -202,6 +202,12 @@ namespace ColorVision.Copilot
                     continue;
                 }
 
+                if (inCodeBlock)
+                {
+                    codeBuilder.AppendLine(line);
+                    continue;
+                }
+
                 if (CopilotMarkdownMath.TryParseDisplayLine(line, out var formulas))
                 {
                     FlushParagraph();
@@ -219,12 +225,6 @@ namespace ColorVision.Copilot
                     FlushParagraph();
                     if (initialMathContent.Length > 0)
                         displayMathBuilder.AppendLine(initialMathContent);
-                    continue;
-                }
-
-                if (inCodeBlock)
-                {
-                    codeBuilder.AppendLine(line);
                     continue;
                 }
 

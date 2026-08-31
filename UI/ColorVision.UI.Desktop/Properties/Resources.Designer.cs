@@ -403,101 +403,11 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
-        ///   查找类似 程序集 的本地化字符串。
-        /// </summary>
-        public static string ConfigManager_Assembly {
-            get {
-                return ResourceManager.GetString("ConfigManager_Assembly", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 列数: 的本地化字符串。
-        /// </summary>
-        public static string ConfigManager_Columns {
-            get {
-                return ResourceManager.GetString("ConfigManager_Columns", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 配置列表 的本地化字符串。
-        /// </summary>
-        public static string ConfigManager_ConfigList {
-            get {
-                return ResourceManager.GetString("ConfigManager_ConfigList", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 配置: {0} 的本地化字符串。
-        /// </summary>
-        public static string ConfigManager_ConfigPrefix {
-            get {
-                return ResourceManager.GetString("ConfigManager_ConfigPrefix", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 当前选择: {0} 的本地化字符串。
-        /// </summary>
-        public static string ConfigManager_CurrentSelection {
-            get {
-                return ResourceManager.GetString("ConfigManager_CurrentSelection", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 无法加载配置属性 的本地化字符串。
-        /// </summary>
-        public static string ConfigManager_LoadFailed {
-            get {
-                return ResourceManager.GetString("ConfigManager_LoadFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 提示 的本地化字符串。
         /// </summary>
         public static string ConfigManager_Prompt {
             get {
                 return ResourceManager.GetString("ConfigManager_Prompt", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 保存成功 的本地化字符串。
-        /// </summary>
-        public static string ConfigManager_SaveSuccess {
-            get {
-                return ResourceManager.GetString("ConfigManager_SaveSuccess", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 选择一个配置查看详情 的本地化字符串。
-        /// </summary>
-        public static string ConfigManager_SelectConfig {
-            get {
-                return ResourceManager.GetString("ConfigManager_SelectConfig", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 共计 {0} 个程序集，{1} 个配置类型 的本地化字符串。
-        /// </summary>
-        public static string ConfigManager_Summary {
-            get {
-                return ResourceManager.GetString("ConfigManager_Summary", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 配置管理窗口 的本地化字符串。
-        /// </summary>
-        public static string ConfigurationManagement {
-            get {
-                return ResourceManager.GetString("ConfigurationManagement", resourceCulture);
             }
         }
         
@@ -696,15 +606,6 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string CustomApp_HintPs {
             get {
                 return ResourceManager.GetString("CustomApp_HintPs", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 本机应用 的本地化字符串。
-        /// </summary>
-        public static string CustomApp_LocalApps {
-            get {
-                return ResourceManager.GetString("CustomApp_LocalApps", resourceCulture);
             }
         }
         
@@ -934,6 +835,33 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 添加截图或文件，帮助我们了解问题。 的本地化字符串。
+        /// </summary>
+        public static string FeedbackAttachmentsHint {
+            get {
+                return ResourceManager.GetString("FeedbackAttachmentsHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 发送时会自动打包所选项目；也可先打包，离线复制。 的本地化字符串。
+        /// </summary>
+        public static string FeedbackDiagnosticsHint {
+            get {
+                return ResourceManager.GetString("FeedbackDiagnosticsHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已选择 {0} / {1} 项 的本地化字符串。
+        /// </summary>
+        public static string FeedbackDiagnosticsSummary {
+            get {
+                return ResourceManager.GetString("FeedbackDiagnosticsSummary", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 请输入反馈信息或添加附件 的本地化字符串。
         /// </summary>
         public static string FeedbackEmptyWarning {
@@ -952,6 +880,42 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 请补充操作步骤、实际现象和预期结果。 的本地化字符串。
+        /// </summary>
+        public static string FeedbackMessageHint {
+            get {
+                return ResourceManager.GetString("FeedbackMessageHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 问题描述 的本地化字符串。
+        /// </summary>
+        public static string FeedbackMessageLabel {
+            get {
+                return ResourceManager.GetString("FeedbackMessageLabel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 尚未添加附件 的本地化字符串。
+        /// </summary>
+        public static string FeedbackNoAttachments {
+            get {
+                return ResourceManager.GetString("FeedbackNoAttachments", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 诊断包已加入附件。修改诊断选项后，请移除旧包并重新打包。 的本地化字符串。
+        /// </summary>
+        public static string FeedbackPackageReadyHint {
+            get {
+                return ResourceManager.GetString("FeedbackPackageReadyHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 请描述您遇到的问题或建议... 的本地化字符串。
         /// </summary>
         public static string FeedbackPlaceholder {
@@ -969,6 +933,15 @@ namespace ColorVision.UI.Desktop.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 移除附件 的本地化字符串。
+        /// </summary>
+        public static string FeedbackRemoveAttachment {
+            get {
+                return ResourceManager.GetString("FeedbackRemoveAttachment", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 反馈已发送成功，感谢您的反馈！ 的本地化字符串。
         /// </summary>
@@ -1222,15 +1195,6 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
-        ///   查找类似 依赖 的本地化字符串。
-        /// </summary>
-        public static string MarketplaceDependentsHeader {
-            get {
-                return ResourceManager.GetString("MarketplaceDependentsHeader", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 描述 的本地化字符串。
         /// </summary>
         public static string MarketplaceDescription {
@@ -1275,6 +1239,24 @@ namespace ColorVision.UI.Desktop.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 启用插件 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceEnabled {
+            get {
+                return ResourceManager.GetString("MarketplaceEnabled", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 功能入口 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceFeatureActions {
+            get {
+                return ResourceManager.GetString("MarketplaceFeatureActions", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 有可用更新 的本地化字符串。
         /// </summary>
@@ -1339,6 +1321,15 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 更多操作 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceMoreActions {
+            get {
+                return ResourceManager.GetString("MarketplaceMoreActions", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 没有匹配的插件 的本地化字符串。
         /// </summary>
         public static string MarketplaceNoMatches {
@@ -1347,6 +1338,15 @@ namespace ColorVision.UI.Desktop.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 此插件没有可直接打开的功能或设置。 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceNoPluginActions {
+            get {
+                return ResourceManager.GetString("MarketplaceNoPluginActions", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 没有可更新的插件 的本地化字符串。
         /// </summary>
@@ -1384,15 +1384,6 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
-        ///   查找类似 包 的本地化字符串。
-        /// </summary>
-        public static string MarketplacePackageColumn {
-            get {
-                return ResourceManager.GetString("MarketplacePackageColumn", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 共 {0} 个插件 的本地化字符串。
         /// </summary>
         public static string MarketplacePluginCount {
@@ -1410,6 +1401,15 @@ namespace ColorVision.UI.Desktop.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 插件设置 的本地化字符串。
+        /// </summary>
+        public static string MarketplacePluginSettings {
+            get {
+                return ResourceManager.GetString("MarketplacePluginSettings", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 项目地址 的本地化字符串。
         /// </summary>
@@ -1464,6 +1464,15 @@ namespace ColorVision.UI.Desktop.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 快捷方式 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceShortcuts {
+            get {
+                return ResourceManager.GetString("MarketplaceShortcuts", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 状态 的本地化字符串。
         /// </summary>
@@ -1536,6 +1545,15 @@ namespace ColorVision.UI.Desktop.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 插件市场 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceWindowTitle {
+            get {
+                return ResourceManager.GetString("MarketplaceWindowTitle", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 菜单管理器 的本地化字符串。
         /// </summary>
@@ -1762,15 +1780,6 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
-        ///   查找类似 找不到项目{0} 的本地化字符串。
-        /// </summary>
-        public static string ProjectNotFound {
-            get {
-                return ResourceManager.GetString("ProjectNotFound", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 刷新 的本地化字符串。
         /// </summary>
         public static string Refresh {
@@ -1821,15 +1830,6 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string RpcPort {
             get {
                 return ResourceManager.GetString("RpcPort", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 保存配置 的本地化字符串。
-        /// </summary>
-        public static string SaveConfiguration {
-            get {
-                return ResourceManager.GetString("SaveConfiguration", resourceCulture);
             }
         }
         
@@ -2649,15 +2649,6 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string Update {
             get {
                 return ResourceManager.GetString("Update", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 一键更新 的本地化字符串。
-        /// </summary>
-        public static string UpdateAll {
-            get {
-                return ResourceManager.GetString("UpdateAll", resourceCulture);
             }
         }
         

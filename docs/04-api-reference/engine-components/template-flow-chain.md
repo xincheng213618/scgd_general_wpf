@@ -1,92 +1,85 @@
-# Engine 模板与 Flow 链路
+---
+knowledge_id: "flow.templates"
+knowledge_type: "topic"
+status: "current"
+summary: "Flow 模板的数据库保存、文档基线、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。"
+aliases: ["Flow模板保存后参数为什么丢失","TemplateFlow","FlowPackageHelper","cvflow","FlowKey","FlowTemplateSaveCondition","FlowTemplateConcurrencyException","导入流程","关联模板"]
+code_paths: ["Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs","Engine/ColorVision.Engine/Templates/Flow/FlowParam.cs","Engine/ColorVision.Engine/Templates/Flow/FlowTemplateSaveCondition.cs","Engine/ColorVision.Engine/Templates/Flow/FlowPackageHelper.cs","Engine/ColorVision.Engine/Templates/Flow/Versioning","Engine/ColorVision.Engine/FlowProcessing/Compilation/FlowCanvasCatalogBuilder.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs","Test/ColorVision.UI.Tests/FlowTemplateIdentityTests.cs","Test/ColorVision.UI.Tests/FlowCanvasCatalogBuilderTests.cs","Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs"]
+related: ["flow.architecture","flow.workspace","flow.session","flow.headless","engine.template-design","engine.results"]
+---
 
-模板保存业务参数和流程定义，`FlowEngineLib` 执行节点。真正的业务流程由 `TemplateControl`、`TemplateFlow`、Flow 属性编辑器、`FlowExecutionSession` 和最终化链共同完成。
+# Flow 模板、持久化与流程包
 
-## 先查什么
+`TemplateFlow` 管理数据库中的流程定义；`FlowPackageHelper` 负责 `.cvflow` 及其关联模板。它们不拥有画布交互、节点运行或客户最终判定。编辑对象与文件/数据库保存目标见[工作区契约](../../01-user-guide/workflow/design.md)，执行与后处理见[执行会话](../../01-user-guide/workflow/execution.md)。
+
+导入会创建或复用关联模板，保存/删除会修改数据库。查询格式或验证文档不授权实际导入、删除或覆盖生产模板；导出可能包含客户参数，分享前须确认范围并脱敏。
+
+## 模板发现与主存储
+
+模板初始化与注册由[模板核心契约](../../03-architecture/components/templates/design.md)维护。列表为空先检查数据库与程序集发现，不先改菜单；以下仅描述 Flow 自己的存储、身份与包行为。
+
+| 数据 | 当前职责 |
+| --- | --- |
+| `TemplateFlow.Code` | `flow` |
+| `ModMasterModel` | 流程主表，`Pid == 11` |
+| `ModDetailModel.ValueA` | 保存资源 ID，不是节点图本体 |
+| `SysResourceModel` | `Type = 101`，`Value` 保存 Base64 STN |
+| `FlowParam.DataBase64` | 宿主读取与保存的流程内容 |
+| `FlowKey` / 内容 hash | 稳定流程身份与加载基线，不以可重排模板 ID 代替身份 |
+| 本地 `.stn` | 独立文档的画布文件，不等于完整模板迁移包 |
+
+## 保存与并发边界
+
+`ViewFlow.TrySave` 校验画布并取得 STN 后，调用 `TemplateFlow.Save2DB`。数据库保存更新主表、明细和资源，失败回滚事务并抛出异常；调用方不能把错误吞掉后标记已保存。窗口保存传入自己的 `FlowTemplateSaveCondition`，按加载时内容 hash 判断并发冲突，不能借另一个窗口已更新的共享对象基线覆盖较新的内容。
+
+锁定已有资源行时使用 `FOR UPDATE`，加载基线不符时抛 `FlowTemplateConcurrencyException`；这些是 Flow 的专用保存规则，不扩展为普通 `ITemplate<T>` 的事务保证。`FlowParam` 的 `ResourceId`、`ResourceCode`、`FlowKey`、revision 和内容 hash 标为 `JsonIgnore`，属于运行时身份/基线，不是普通参数 JSON 序列化能完整迁移的字段。
+
+`Save2DB` 成功后更新运行身份和加载 hash，再尝试记录本地 catalog revision / 搜索投影。`TryRecordCatalogRevision` 的失败只记录日志并清空本次侧车 revision 信息，不能把已经成功的 MySQL/STN 保存伪报为失败。保存成功与“版本/搜索索引可用”是两个检查点。
+
+`FlowCanvasCatalogBuilder` 从 STND v1 构建语义、布局和搜索投影，不修改源画布，也不建立 live editor graph；codec 可短暂实例化节点发现 option schema。catalog revision 是不可变记录。旧 Artifact 表不再由当前保存/运行链读写或迁移，既有表与数据按兼容保留，不要求手工清库。
+
+## 单流程包与多选导出的区别
+
+| 导出对象 | 内容与限制 |
+| --- | --- |
+| 单流程 `.cvflow` | `flow.stn`、`manifest.json` 及关联模板载荷 |
+| 多选流程 | zip 内多个 `.stn`，不自动带 `.cvflow` 的关联模板 manifest |
+| 独立窗口保存 | 由文档模式决定文件或数据库目标，不因按钮名为“导出”就等于 `.cvflow` |
+
+`TemplateFlow.ImportFile` 不是本地 `.stn` 的可靠模板导入路径；本地画布应由独立 `ViewFlow` 打开。需要迁移算法参数时不能只复制 STN，须使用并核对关联模板包。
+
+## `.cvflow` v3 契约
+
+| 包内文件 | 作用 |
+| --- | --- |
+| `flow.stn` | 原样保存的 STND v1 画布二进制；包格式升级不改变画布格式 |
+| `manifest.json` | 包版本、流程 SHA-256 与关联模板元数据 |
+| `templates/<sha256>.json` | 按内容寻址的模板载荷；相同载荷在包内只保存一次 |
+
+导出调用 `CollectTemplatesForExport` 扫描节点模板引用属性，如 `TempName`、`POITempName`、`SavePOITempName`、`OutputTemplateName`、`ModelName`，并继续扫描模板内容里的二级引用。
+
+导入先完整校验包：限制条目数、模板数、单项和总解压大小，校验流程与模板载荷 SHA-256，并验证 STND v1 内容。未知未来大版本明确拒绝；v1/v2 manifest 内联模板仍可兼容导入。哈希一致不是唯一合法性条件，损坏或不支持的 STN 仍应拒绝。
+
+通过校验后，按“模板类型 + 规范化有效内容”匹配本地模板：
+
+1. 同名同内容直接复用；异名同内容映射到已有模板。
+2. 同名不同内容创建带流程名的冲突副本；重复导入同包复用已创建的等价副本。
+3. 名称映射同时更新关联模板的二级引用与 STN 节点引用，再将最终 STN 转成新流程模板的 Base64 内容。
+
+导入和冲突处理不是“所有外部数据都可回滚”的承诺；应记录包来源、目标环境、名称映射和失败阶段，保留导入前可恢复的模板数据。
+
+## 故障定位与验收
 
 | 现象 | 第一检查点 |
 | --- | --- |
-| 模板列表为空 | MySQL 连接、`TemplateInitializer`、`IITemplateLoad.Load()` |
-| 新模板不出现 | 程序集是否加载、是否无参构造、是否注册到 `TemplateControl` |
-| Flow 能打开但保存失败 | `FlowParam.DataBase64`、`ModMasterModel`、`ModDetailModel.ValueA` |
-| Flow 导入后模板找不到 | `.cvflow` manifest、模板名称映射、`TemplateControl.ITemplateNames` |
-| 节点模板选择器不出现 | `FlowNodePropertyEditorAttribute` / `PropertyEditorTypeAttribute`；类型级补充面板再查 `NodeConfiguratorRegistry` |
-| 共享执行链引擎完成但没最终结果 | `FlowRunFinalizer`、`RunFinalized`、后处理策略、模板名和结果类型 |
+| 流程能打开但保存失败 | 画布验证、当前 active 文档、加载 hash、`Save2DB` 异常及数据库事务 |
+| 保存后重开没变化 | 保存目标是本地文件还是数据库；`ValueA` 是否指向实际更新资源 |
+| 保存成功但历史/搜索缺项 | catalog 日志、`FlowKey`、投影构建；不因侧车失败重写生产流程 |
+| 导入后模板名找不到 | manifest、模板内容匹配、冲突副本和二级引用替换 |
+| 图正常但属性缺选择器 | [工作区](../../01-user-guide/workflow/design.md)及[PropertyGrid 契约](../ui-components/property-grid.md)，不是包格式问题 |
+| 引擎结束但业务结果未完成 | [执行会话](../../01-user-guide/workflow/execution.md)的最终化判据，不在模板保存层补等待 |
 
-## 关键对象
+`FlowPackageCompatibilityTests` 覆盖包完整性、旧版本、未来版本拒绝、模板去重和引用替换；`FlowTemplateIdentityTests` 覆盖身份及窗口保存条件；`FlowCanvasCatalogBuilderTests` / `FlowCatalogServiceTests` 覆盖投影与版本目录。这些局部测试不等于真实 MySQL 事务、全部旧流程语料或现场导入已通过。
 
-| 对象 | 负责 |
-| --- | --- |
-| `TemplateInitializer` | 在 MySQL 后初始化模板系统 |
-| `TemplateControl` | 扫描 `IITemplateLoad`，维护模板入口字典 |
-| `TemplateModel<T>` | 模板列表项，包装真正的参数对象 |
-| `TemplateFlow` | Flow 模板目录、数据库持久化和 `.cvflow` 包接入 |
-| `FlowExecutionSession` | UI 批次、前处理、节点执行、诊断和最终化编排 |
-| `FlowControl` | Engine 侧节点图执行包装和 engine completion 事件 |
-| `FlowEngineControl` | FlowEngineLib 的底层执行控制 |
-| `FlowRunFinalizer` | engine completion 后执行后处理并解析最终业务结果 |
-| `NodeConfiguratorRegistry` | 扫描节点类型级补充配置器；普通属性不依赖它 |
-
-## 模板初始化
-
-`TemplateInitializer` 的顺序是 `Order = 4`，依赖 `MySqlInitializer`。`TemplateControl.Init()` 会：
-
-1. 检查 MySQL 是否连接。
-2. 调用 `AssemblyHandler.GetInstance().LoadImplementations<IITemplateLoad>()` 读取已缓存程序集。
-3. 筛选可实例化且有无参构造的 `IITemplateLoad` 类型。
-4. 创建实例并调用 `Load()`。
-
-新增模板后如果没有加载，先查这四步，不要先改菜单。
-
-## Flow 保存和导入
-
-`TemplateFlow` 的关键点：
-
-| 项 | 当前事实 |
-| --- | --- |
-| `Code` | `flow` |
-| 主表 | `ModMasterModel`，`Pid == 11` |
-| 明细表 | `ModDetailModel` |
-| 流程内容 | `SysResourceModel.Value` 中的 Base64 STN |
-| 本地 `.stn` | 独立 `ViewFlow` 打开和保存，不作为当前 `TemplateFlow.ImportFile(...)` 的可靠模板导入路径 |
-| `.cvflow` | `FlowPackageHelper` 导入导出单流程及关联模板；多选导出仍是 zip 内多个 `.stn` |
-
-`.cvflow` 不是单个 STN 文件，它会通过 `FlowPackageHelper` 带上关联模板。导入失败时同时看包 manifest、关联模板导入、模板重命名和 STN 引用替换。
-
-## 执行链路
-
-```mermaid
-flowchart TD
-  View["ViewFlow / FlowExecutionSession"] --> Pre["批次 + PreProcess"]
-  Pre --> Run["FlowRunExecutor / FlowControl"]
-  Run --> Engine["FlowEngineControl 节点图"]
-  Engine --> Completed["EngineExecutionCompleted"]
-  Completed --> Finalizer["FlowRunFinalizer + PostProcess"]
-  Finalizer --> Final["RunFinalized"]
-  Final --> SharedResult["ViewFlow / FlowJob / 共享自动化读取最终结果"]
-```
-
-`FlowControl.FlowCompleted` / `EngineExecutionCompleted` 只表示节点图结束，后处理可能仍在运行。`ViewFlow`、`FlowJob` 和共享自动化应等待 `RunFinalized`，或调用 `RunFlowAndWaitForFinalizationAsync()` 取得最终结果。部分现有项目窗口仍直接创建 `FlowControl`，并在 `FlowCompleted` 后调用项目自己的 `FinalizeCurrentFlowRunAsync` 或 `Processing`；这是尚未迁入共享最终化链的兼容路径。
-
-## 节点属性 UI
-
-新增 Flow 节点时不要只改执行类。普通设备/模板字段优先用 `FlowNodePropertyEditorAttribute` 或 `PropertyEditorTypeAttribute` 接入 `FlowPropertyEditorRegistry`；只有多模板族、随算法类型变化等节点级补充面板才放进 `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/`。当前真实分组文件是 `CameraNodeConfigurators.cs`、`AlgorithmNodeConfigurators.cs`、`POINodeConfigurators.cs` 和 `OLEDNodeConfigurators.cs`。
-
-## 新增算法模板
-
-| 任务 | 位置 |
-| --- | --- |
-| 参数类 | 对应模板目录，继承 `ParamBase` 或 JSON 参数基类 |
-| 模板入口 | `ITemplate<T>` 或 `ITemplateJson<T>` |
-| 初始化加载 | `IITemplateLoad.Load()` 注册到 `TemplateControl` |
-| 编辑 UI | `EditTemplateJson` 或专用 UserControl |
-| Flow 绑定 | 普通字段走属性编辑器注册；补充面板走 `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/` |
-| 结果展示 | `ViewHandle*.cs`、`IResultHandleBase` |
-| 明细读取 | DAO 或模板目录下 `*Dao.cs` |
-
-## 不要这样改
-
-- 不要把业务绑定全部写进 `FlowEngineLib`。
-- 不要绕过 `TemplateFlow.Save2DB()` 直接改数据库字段。
-- 不要只复制 STN 文件而不处理关联模板。
-- 不要在通用模板里写客户项目专用判定。
+授权验证至少核对：新增节点/参数保存后重开、并发窗口保存冲突、单流程包重导入不重复创建模板、冲突模板及二级引用正确、多选 zip 不被误认为完整迁移包。结果模型的历史 handler / 中立 overlay / 项目输出分流由[结果契约](./result-handoff-chain.md)维护。

@@ -5,6 +5,7 @@ namespace ColorVision.UI.Desktop.Settings
 {
     internal sealed class SettingEntry
     {
+        public string Id { get; set; } = string.Empty;
         public ConfigSettingMetadata Metadata { get; set; } = null!;
         public PropertyInfo? PropertyInfo { get; set; }
         public string Group { get; set; } = string.Empty;
@@ -16,5 +17,6 @@ namespace ColorVision.UI.Desktop.Settings
         public string Description { get; set; } = string.Empty;
         public string SearchText { get; set; } = string.Empty;
         public FrameworkElement? CustomContent { get; set; }
+        public FrameworkElement? RenderedElement { get; set; }
     }
 }

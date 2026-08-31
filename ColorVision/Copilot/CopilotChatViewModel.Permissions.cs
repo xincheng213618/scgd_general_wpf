@@ -286,10 +286,11 @@ namespace ColorVision.Copilot
             }
 
             var latestAssistant = conversation.Messages.LastOrDefault(message => !message.IsUser);
+            CopilotAgentRecoveryRequest? recoveryRequest = null;
             if (latestAssistant != null
                 && conversation.AgentSessionCheckpoint?.IsStructurallyValid() == true)
             {
-                _pendingAgentRecoveryRequest = new CopilotAgentRecoveryRequest
+                recoveryRequest = new CopilotAgentRecoveryRequest
                 {
                     Mode = CopilotAgentRecoveryMode.RetryDeniedAction,
                     PreviousStopReason = latestAssistant.AgentStopReason,
@@ -299,6 +300,9 @@ namespace ColorVision.Copilot
 
             SetPendingRequestModeOverride(CopilotAgentMode.Auto);
             InputText = retryInstruction;
+            _pendingAgentRecoveryRequest = recoveryRequest == null
+                ? null
+                : new PendingAgentRecoveryRequest(conversation.Id, retryInstruction, recoveryRequest);
             await SendAsync();
         }
 

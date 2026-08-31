@@ -61,8 +61,7 @@ namespace ColorVision.Copilot
                     repairMessages,
                     BuildFinalAnswerOptions(request),
                     cancellationToken);
-                foreach (var usageContent in repairResponse.Messages.SelectMany(message => message.Contents).OfType<UsageContent>())
-                    usage = usage.Add(ToCopilotUsage(usageContent.Details));
+                usage = usage.Add(CopilotTokenBudgetChatClient.ExtractResponseUsage(repairResponse));
                 var repairLengthLimited = IsLengthLimitedOutput(repairResponse.FinishReason);
                 var repairContentFiltered = IsContentFilteredOutput(repairResponse.FinishReason);
                 var repairFinishReasonIncomplete = IsUnexpectedIncompleteOutput(repairResponse.FinishReason);

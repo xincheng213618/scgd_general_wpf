@@ -1,71 +1,10 @@
 using ColorVision.Copilot;
 using System;
-using System.IO;
 
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexCollaborationModeInstructionsTests
 {
-    [Fact]
-    public void ClosestTrustedValueIsFrozenIntoTheSubmittedRequest()
-    {
-        string globalRoot = CreateTemporaryDirectory();
-        string projectRoot = CreateTemporaryDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(projectRoot, ".git"));
-            File.WriteAllText(
-                Path.Combine(globalRoot, "config.toml"),
-                $"""
-                include_collaboration_mode_instructions = true
-
-                [projects.'{projectRoot}']
-                trust_level = "trusted"
-                """);
-            string projectConfigDirectory = Path.Combine(projectRoot, ".codex");
-            Directory.CreateDirectory(projectConfigDirectory);
-            string projectConfigPath = Path.Combine(projectConfigDirectory, "config.toml");
-            File.WriteAllText(projectConfigPath, "include_collaboration_mode_instructions = false");
-
-            var submittedContext = new CopilotAgentHostContextSnapshot(
-                activeDocumentPath: null,
-                projectRoot,
-                attachments: null,
-                liveContext: null,
-                conversationHistory: null,
-                additionalReadRootPaths: null,
-                globalInstructionRootPath: globalRoot);
-            var submittedPlan = CopilotAgentRequestFactory.Prepare(
-                "Plan the requested implementation.",
-                CopilotAgentMode.Plan,
-                submittedContext);
-            var submittedRequest = CopilotAgentRequestFactory.Create(
-                submittedPlan,
-                new CopilotAgentRequestBuildInput
-                {
-                    Profile = CopilotProfileConfig.CreateDefault(),
-                    AgentDefaults = new CopilotAgentDefaultsConfig(),
-                });
-            File.WriteAllText(projectConfigPath, "include_collaboration_mode_instructions = true");
-            var refreshed = CopilotProjectInstructionDiscoveryConfig.Load(globalRoot, projectRoot);
-
-            var submitted = submittedContext.ProjectInstructionDiscoveryOptions;
-            Assert.False(submitted.ConfiguredIncludeCollaborationModeInstructions);
-            Assert.True(submitted.HasIncludeCollaborationModeInstructionsOverride);
-            Assert.Equal(
-                CopilotProjectInstructionConfigSources.TrustedProject,
-                submitted.IncludeCollaborationModeInstructionsSource);
-            Assert.False(submittedPlan.CodexIncludeCollaborationModeInstructions);
-            Assert.False(submittedRequest.CodexIncludeCollaborationModeInstructions);
-            Assert.True(refreshed.ConfiguredIncludeCollaborationModeInstructions);
-        }
-        finally
-        {
-            Directory.Delete(globalRoot, recursive: true);
-            Directory.Delete(projectRoot, recursive: true);
-        }
-    }
-
     [Fact]
     public void DisabledSnapshotOmitsModeGuidanceWithoutChangingPlanRuntimePolicy()
     {
@@ -167,10 +106,4 @@ public sealed class CopilotCodexCollaborationModeInstructionsTests
         CodexIncludeCollaborationModeInstructions = includeCollaborationModeInstructions,
     };
 
-    private static string CreateTemporaryDirectory()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"copilot-collaboration-instructions-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
-    }
 }

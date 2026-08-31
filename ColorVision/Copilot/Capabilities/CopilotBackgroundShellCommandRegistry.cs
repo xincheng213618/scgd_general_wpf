@@ -55,6 +55,16 @@ namespace ColorVision.Copilot
 
         public static CopilotBackgroundShellCommandRegistry Shared { get; } = new();
 
+        /// <summary>Read-only maintenance guard: does not refresh entries, consume output, or stop work.</summary>
+        internal bool HasActiveCommands
+        {
+            get
+            {
+                lock (_syncRoot)
+                    return _startReservations > 0 || _entries.Any(entry => !entry.Completion.IsCompletedSuccessfully);
+            }
+        }
+
         public event EventHandler<CopilotBackgroundShellCommandCompletedEventArgs>? CommandCompleted;
 
         public async Task<CopilotBackgroundShellCommandStartResult> StartAsync(

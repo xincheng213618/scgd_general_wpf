@@ -1240,15 +1240,6 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
-        ///   查找类似 令牌 的本地化字符串。
-        /// </summary>
-        internal static string Token {
-            get {
-                return ResourceManager.GetString("Token", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 主题 的本地化字符串。
         /// </summary>
         internal static string Topic {

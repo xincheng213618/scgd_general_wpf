@@ -1,6 +1,24 @@
+---
+knowledge_id: "algorithms.subpixel-edge"
+knowledge_type: "reference"
+status: "current"
+summary: "SubpixelEdge 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。"
+aliases: ["亚像素边缘如何采样、为什么默认不可执行","SubpixelEdge","SubpixelEdgeAlgorithmProvider"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/SubpixelEdgeAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/SubpixelEdgeV1Tests.cs","Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
+related: ["algorithms.platform","algorithms.index"]
+---
+
 # 亚像素边缘 V1（M6.1）
 
-M6.1 是亚像素测量的第一个独立切片。仓库已有发光区域、十字和模板匹配中的专用亚像素逻辑，但它们绑定各自 native/模板流程，不能作为统一卡尺契约复用。本阶段实现通用“有向卡尺 → 单个亚像素边缘点”，不包含直线拟合或圆拟合；后两项分别由后续 M6.2、M6.3 消费本阶段的结构化点结果。
+## 当前发布边界
+
+当前默认 `ImageAlgorithmPlatform.CreateDefaultProviders()` 把本页 provider 包装在 `ExperimentalAlgorithmProviderGate` 中：菜单和 Batch 可执行投影隐藏该能力，直接调用默认 Runner 也返回 `provider_unavailable`，详情包含 `algorithm_experimental`。本页后面的参数、结果与宿主接入描述属于保留实现及测试契约，不是产品已开放的承诺；不得在调用方另建执行旁路来绕过门禁。
+
+本页 `status: current` 表示它记录当前源码事实，不代表算法已发布。M 编号是历史增量标识；其他增量是否可用以 [统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单) 为准。`Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs` 验证默认拒绝行为，专题测试覆盖实现细节；解除门禁还需完成对应数值、最坏资源与生产规模验证。
+
+
+亚像素边缘是独立测量契约。仓库已有发光区域、十字和模板匹配中的专用亚像素逻辑，但它们绑定各自 native/模板流程，不能作为统一卡尺契约复用。该 provider 保留通用“有向卡尺 → 单个亚像素边缘点”实现，不包含直线拟合或圆拟合；后两项由 [直线拟合](./line-fit-v1.md)、[圆拟合](./circle-fit-v1.md) 的独立点集契约消费结构化结果，三者默认门禁分别生效。
 
 ## 稳定身份与边界
 
@@ -36,7 +54,9 @@ Descriptor 不声明 Copilot。当前 Copilot 获批批处理工具要求主图�
 
 稳定拒绝原因包括 `degenerate_caliper`、`sample_out_of_bounds`、`invalid_sample`、`insufficient_samples`、`gradient_below_minimum`、`sample_limit_exceeded` 和 `total_sample_limit_exceeded`。卡尺数量越过 `MaximumCalipers` 时返回 `subpixel_edge_caliper_limit_exceeded` 结构化失败；结果不会用截断数据冒充完整测量。
 
-## ImageView、Batch 与 Flow
+## 保留的 ImageView、Batch 与 Flow 适配（默认禁用）
+
+下文描述保留代码及测试中的宿主接入，默认产品菜单与 Runner 仍拒绝该 Experimental provider。
 
 ImageView 的“算法调用 → 亚像素边缘”提供水平卡尺、垂直卡尺和折线卡尺组：前两项用矩形选择范围的中心线作为搜索方向，折线入口把每一相邻点对作为卡尺。结果窗口显示完整 Table、在图上显示 transient 几何并导出 CSV/JSON；运行使用统一 analysis session 的 document/revision/invocation latest-wins 语义。
 

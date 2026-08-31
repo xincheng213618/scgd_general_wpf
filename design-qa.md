@@ -395,6 +395,77 @@ final result: passed
 
 ---
 
+# Keyboard shortcut settings — 2026-08-31
+
+## Evidence and scope
+
+- Reference: `C:\Users\17917\AppData\Local\Temp\codex-clipboard-dad1cdcf-25dd-4962-8928-c558e7ae0e6e.png` (1628 × 1776 source pixels). The Codex list establishes search, action/description hierarchy, key pills, edit/clear affordances and reset placement.
+- Full implementation: `C:\Users\17917\Desktop\scgd_general_wpf\artifacts\hotkeys-preview\hotkeys-dark-zh-CN-1180.png`; alternate full views are `hotkeys-dark-zh-CN-980.png`, `hotkeys-light-zh-CN-980.png`, and `hotkeys-light-en-US-980.png` in the same directory.
+- Focused evidence: corresponding `-detail.png` and `-editor.png` files. Editor client-content captures are 464 DIPs wide, including their padding.
+- WPF views are rendered at 96 DPI, 1180 × 760 or 980 × 760 DIPs, using the real settings shell/controller with injected safe data. They do not start the application, execute business callbacks or load user configuration.
+- State: four representative real ColorVision actions, including one cleared binding and a customized global binding. The comparison preserves ColorVision navigation, native typography/theme resources and a single binding per action. It intentionally does not clone Codex chat actions, alternate/mouse bindings or its longer catalog.
+- The reference and the full/focused implementation images were opened together for comparison. Match is assessed by normalized component hierarchy and desktop density, not by claiming identical source and WPF pixel dimensions.
+
+## Findings and comparison history
+
+1. P1, first dark render: action names inherited black foreground; explicit theme text brushes fix the list and editor headings. The layout test now checks the actual action foreground.
+2. P2, first dark render: the disabled trash button inherited a white native background. A theme-aware icon-button template preserves transparent disabled surfaces and visible keyboard focus.
+3. P2, evidence capture: the editor content's margin was omitted from bitmap bounds. Rendering now includes its padding; a recapture shows the complete clear/cancel/save controls and uncut helper text.
+4. Final list and editor comparison: no remaining P0/P1/P2 visual defect in the tested states. Names use 14-DIP semibold text, descriptions use 12-DIP secondary text, key pills and icons align across rows, and long text wraps without clipping at the tested widths. The icon family is Segoe Fluent Icons/MDL2, not fabricated assets.
+
+## Interaction and verification
+
+- Text search, empty results, single clear/reset, reset-all submission, scope-aware validation, cancel-without-saving, failed persistence, failed capture restoration, disabled recovery controls and immutable serialized identities are covered by isolated tests.
+- Editing is a detached modal draft; confirmation applies and saves. Failed restore disables recording and saving. Capture suppresses the app's registered shortcut dispatch; Esc cancels and Tab/Shift+Tab retain navigation semantics.
+- Final targeted run and post-application-build rerun: 163 tests passed, zero failures/skips, covering shortcut settings/service/backends/menu hints, configuration persistence and existing menu regressions. The UI library builds for net8.0-windows7.0 and net10.0-windows7.0; the main application also builds with zero errors. Isolated `HotkeyVerify` / `HotkeyVerifyNet8` output leaves the running application output untouched. Build warnings remain; these were not warning-free builds.
+- Follow-up interaction fixes keep an invalid recorded candidate invalid when toggling global scope, preserve Tab/Shift+Tab and Esc semantics, prevent duplicate Loaded capture leases, and isolate mutable current/default key values. Menu hints track edits, clear/reset and late/replaced definitions by stable ID through weak subscriptions.
+- Eight real-backend tests use test-owned invisible HWNDs and harmless counters. They verify Win32 contention, release/reacquisition, callback replacement, capture restoration and restoration conflicts; WPF routing and held-key release are verified without physical keyboard injection. The temporary Ctrl+Alt+Shift+F23/F24 registrations are disposed. Provider-failure and same-ID replacement compensation regressions also pass.
+- Documentation source/catalog validation and its 43 parser/link tests passed. `npm run docs:build` stops at the Backend task-handler retrieval acceptance case (`delivery.backend-jobs`); site generation therefore did not run. The menu discovery summary retained its existing DLL/type-cache contract after a new-summary regression was identified. No unrelated retrieval fixture or backend document was changed to bypass the remaining failure.
+- Remaining verification boundary: physical keyboard/IME/layout sequences and actual business operations were not exercised against the running application. Offscreen screenshots and hidden test-owned HWND checks do not claim that manual verification.
+
+final result: passed (scoped WPF design and isolated interaction verification)
+
+---
+
+# Keyboard shortcuts: multiple bindings — 2026-08-31
+
+## Evidence and scope
+
+- Source: `C:\Users\17917\AppData\Local\Temp\codex-clipboard-74a965e3-a1bf-4772-abf3-2929801ab8f5.png`, 1628 × 1776 pixels. The reference clarifies multiple bindings per action, not multi-row selection.
+- Latest full WPF capture: `C:\Users\17917\Desktop\scgd_general_wpf\artifacts\hotkeys-multiple-preview\hotkeys-dark-zh-CN-1180.png`. Light/English and 980-DIP captures, plus `-detail.png` and `-editor.png`, are in the same directory.
+- Minimum-width evidence: `hotkeys-compact-en-US-420.png` and `hotkeys-compact-zh-CN-420.png` in that directory.
+- Full views use 1180 × 760 / 980 × 760 DIPs at 96 DPI; compact views use 420 DIPs. This is a native WPF settings enhancement, not a web clone. The source and full/focused captures were opened in the same comparison input; comparisons use action-column hierarchy and desktop density, not a claim of identical source pixels or Codex content.
+- Representative isolated data includes a two-binding action, a single-binding action, an unassigned action and a global action. No production configuration or business action is loaded/executed. No browser console applies to these WPF renders.
+
+## Fidelity and interaction review
+
+- Typography: retains ColorVision's 14-DIP semibold action names and 12-DIP descriptions/key labels. Descriptions wrap; both languages remain readable. Names and descriptions are provider-supplied, read-only metadata.
+- Layout: each action has an ordered binding stack with per-binding edit/delete and an explicit add action. Unassigned is plain clickable text, not a false key pill; it has no delete button. Reset restores the complete default list. The existing native navigation, title and theme spacing are retained intentionally.
+- Colors/tokens: existing dark/light brushes and secondary state text are retained. Clear keyboard focus and native controls remain available; no new raster asset, custom illustration or decorative gradient is needed.
+- Assets/icons: standard Segoe Fluent/MDL2 edit/delete/reset/search icons are reused; there are no generated or fabricated visual assets.
+- Copy/content: distinguishes unassigned actions from no loaded actions and no search results. “Add shortcut,” modified/global state, filter counts and default-value tooltips describe their actual behavior. Scope help states that global mode applies to all bindings of the action.
+- Search matches all bindings, descriptions and multiple terms; all/unassigned/modified filtering, search clearing and empty-state recovery work. Mouse-side-button bindings and key sequences are outside this keyboard-only change; no historical migration flow was added.
+
+## Findings and comparison history
+
+1. P2: the first compact 420-DIP capture showed a long four-modifier binding crowding out the edit icon. An unbounded horizontal stack let edit overlap delete despite both remaining inside page bounds.
+2. Fix: replace that stack with constrained key/edit columns; the key label ellipsizes while its complete combination remains in the tooltip and editor. Keep deletion in its own column.
+3. Post-fix comparison: the recaptured compact view shows separate key, edit and delete targets. Regression assertions now check both page containment and pairwise non-overlap. Full-width captures retain adjacent edit icons and the reference's ordered multi-binding layout.
+4. No remaining actionable P0/P1/P2 visual issue in the tested states. No P3 follow-up is required for this scope.
+
+## Verification
+
+- Final run: 219 relevant tests passed, zero failed/skipped, including model/backend/service/UI/menu/configuration regression coverage. It also rebuilt application project references in isolated output.
+- UI builds passed for net8.0-windows7.0 and net10.0-windows7.0. Warnings remain; no claim of warning-free builds.
+- Tests cover adding/editing/removing individual bindings, deletion of the final binding, empty defaults, search/filter transitions, full reset, persisted value round trips, duplicate/ancestor/global conflicts, rollback and registration-group cleanup. Real Win32 checks use hidden test-owned HWNDs and harmless counters with temporary registrations disposed afterward.
+- The first new service run exposed a logical-ancestor conflict gap; the service now checks logical and visual ancestry, with both routes verified without showing windows.
+- `npm run docs:knowledge` and complete `npm run docs:build` passed, including 303 retrieval cases, 74 tooling tests, 256 Markdown files and 16879 local fragment links.
+- Physical keyboard layouts/IME and live business actions were not manually exercised. Existing running instances and field configuration were not changed.
+
+final result: passed
+
+---
+
 # Public brand icon and favicon QA
 
 - Source visual truth:

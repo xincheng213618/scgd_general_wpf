@@ -24,11 +24,19 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
         {
             foreach (var registration in Registrations.Values.Concat(CallbackRegistrations.Values).Distinct().ToList())
             {
-                registration.Dispose();
+                try { registration.Dispose(); }
+                catch (Exception exception) { System.Diagnostics.Trace.TraceWarning(exception.Message); }
             }
 
+            foreach (var (hotkeys, registration) in Registrations)
+            {
+                if (!ReferenceEquals(hotkeys.Registration, registration)) continue;
+                hotkeys.Registration = null;
+                hotkeys.IsRegistered = false;
+            }
             Registrations.Clear();
             CallbackRegistrations.Clear();
+            if (sender is Window window) window.Closed -= Window_Closed;
             Instances.Remove(WindowHandle);
         }
         private static readonly object locker = new();
@@ -57,21 +65,42 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
 
         public IHotkeyRegistration? RegisterHandle(HotKeys hotKeys)
         {
-            if (hotKeys == null || hotKeys.Kinds != HotKeyKinds.Global || hotKeys.HotKeyHandler == null) return null;
+            return TryRegisterHandle(hotKeys).Registration;
+        }
 
-            var registration = GlobalHotKey.Register(WindowHandle, hotKeys.Hotkey.Modifiers, hotKeys.Hotkey.Key, hotKeys.HotKeyHandler);
+        internal HotkeyRegistrationAttempt TryRegisterHandle(HotKeys hotKeys)
+        {
+            if (hotKeys == null || hotKeys.Kinds != HotKeyKinds.Global || hotKeys.HotKeyHandler == null)
+                return new(null, "全局快捷键类型或操作无效。");
+            IReadOnlyList<Hotkey> bindings = hotKeys.GetBindings();
+            if (Registrations.TryGetValue(hotKeys, out var existing))
+            {
+                if (HotkeyRegistrationGroup.Matches(existing, bindings, hotKeys.HotKeyHandler, GlobalHotKey.Matches)) return new(existing);
+                existing.Dispose();
+                Registrations.Remove(hotKeys);
+            }
+
+            HotkeyRegistrationAttempt attempt = HotkeyRegistrationGroup.TryRegister(bindings, hotKeys.HotKeyHandler,
+                (binding, callback) => GlobalHotKey.TryRegister(WindowHandle, binding.Modifiers, binding.Key, callback));
+            var registration = attempt.Registration;
             hotKeys.Registration = registration;
             hotKeys.IsRegistered = registration?.IsRegistered == true;
             if (registration != null)
             {
                 Registrations[hotKeys] = registration;
             }
-            return registration;
+            return attempt;
         }
 
         public bool Register(Hotkey hotkey, HotKeyCallBackHanlder callBack)
         {
             if (hotkey.IsNullOrEmpty()) return false;
+            if (CallbackRegistrations.TryGetValue(callBack, out var existing))
+            {
+                if (GlobalHotKey.Matches(existing, hotkey, callBack)) return true;
+                existing.Dispose();
+                CallbackRegistrations.Remove(callBack);
+            }
             var registration = GlobalHotKey.Register(WindowHandle, hotkey.Modifiers, hotkey.Key, callBack);
             if (registration == null) return false;
 
@@ -80,18 +109,15 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
         }
         public bool Register(ModifierKeys modifierKeys, Key key, HotKeyCallBackHanlder callBack)
         {
-            var registration = GlobalHotKey.Register(WindowHandle, modifierKeys, key, callBack);
-            if (registration == null) return false;
-
-            CallbackRegistrations[callBack] = registration;
-            return true;
+            return Register(new Hotkey(key, modifierKeys), callBack);
         }
 
         public void UnRegister(HotKeys hotKeys)
         {
-            if (Registrations.Remove(hotKeys, out var registration))
+            if (Registrations.TryGetValue(hotKeys, out var registration))
             {
                 registration.Dispose();
+                Registrations.Remove(hotKeys);
             }
             else
             {
@@ -102,9 +128,10 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
         }
         public void UnRegister(HotKeyCallBackHanlder callBack)
         {
-            if (CallbackRegistrations.Remove(callBack, out var registration))
+            if (CallbackRegistrations.TryGetValue(callBack, out var registration))
             {
                 registration.Dispose();
+                CallbackRegistrations.Remove(callBack);
             }
             else
             {

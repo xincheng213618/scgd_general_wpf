@@ -278,44 +278,92 @@ namespace ColorVision.Copilot
                 return CopilotConversationDeletionResult.NotDeleted;
             }
 
+            return await DeleteConfirmedConversationAsync(target);
+        }
+
+        private async Task<CopilotConversationDeletionResult> DeleteConfirmedConversationAsync(
+            CopilotConversationRecord target)
+        {
+            // A native confirmation dialog pumps the Dispatcher. Recheck the
+            // target before consuming state that may have changed while it was open.
+            if (!CanDeleteConversation(target)
+                || GetConversationRetentionBlocker(target) != CopilotConversationRetentionBlocker.None
+                || CopilotBackgroundShellCommandRegistry.Shared.GetSnapshots(target.Id).Any(snapshot => snapshot.IsActive))
+            {
+                LocalCommandResultTitle = "会话未删除";
+                LocalCommandResultText = "确认期间会话状态已变化，请先处理正在运行或待恢复的任务后重试。";
+                return CopilotConversationDeletionResult.NotDeleted;
+            }
+
             _isEndingConversation = true;
             CommandManager.InvalidateRequerySuggested();
             try
             {
-                if (!Conversations.Contains(target))
-                    return CopilotConversationDeletionResult.NotDeleted;
-
                 var deletedTitle = target.Title;
                 var wasSelected = ReferenceEquals(target, SelectedConversation);
-                _conversationTitleCoordinator.Cancel(target.Id);
+                var previousProfileId = SelectedProfile?.Id;
                 var managedAttachments = target.EnumerateReferencedAttachments().ToArray();
-                ClearAgentRunNoticeForConversation(target.Id);
-                AcknowledgeCompletionNotices(target.Id);
+                var recoveries = _state.QueuedFollowUpRecoveries
+                    .Select((recovery, index) => (Recovery: recovery, Index: index))
+                    .Where(item => string.Equals(item.Recovery.ConversationId, target.Id, StringComparison.Ordinal))
+                    .ToArray();
 
                 var currentIndex = Conversations.IndexOf(target);
                 if (!Conversations.Remove(target))
-                {
                     return CopilotConversationDeletionResult.NotDeleted;
-                }
 
                 RemoveQueuedFollowUpRecoveryRecords(target.Id);
-                CopilotBackgroundShellCommandRegistry.Shared.ClearCompleted(target.Id);
-                CopilotShellCommandOutputArchiveRegistry.Shared.ClearConversation(
-                    target.Id);
-                CopilotToolOutputArchiveRegistry.Shared.ClearConversation(
-                    target.Id);
-                RemoveManagedAttachmentFiles(managedAttachments);
-
+                CopilotConversationRecord? replacement = null;
+                var createdReplacement = false;
                 if (wasSelected)
                 {
-                    var replacement = CopilotConversationRetentionPolicy.FindNearestActive(
+                    replacement = CopilotConversationRetentionPolicy.FindNearestActive(
                         Conversations,
-                        currentIndex)
-                        ?? CreateConversation();
+                        currentIndex);
+                    if (replacement == null)
+                    {
+                        replacement = CreateConversation();
+                        createdReplacement = true;
+                    }
                     SelectConversation(replacement, persist: false);
                 }
 
-                PersistState(immediate: true);
+                try
+                {
+                    // Until this snapshot is durable, the old disk state still owns
+                    // the attachments. A failed save must remain recoverable.
+                    await FlushStatePersistenceBarrierAsync();
+                }
+                catch
+                {
+                    Conversations.Insert(Math.Min(currentIndex, Conversations.Count), target);
+                    foreach (var item in recoveries)
+                    {
+                        if (!_state.QueuedFollowUpRecoveries.Contains(item.Recovery))
+                            _state.QueuedFollowUpRecoveries.Insert(Math.Min(item.Index, _state.QueuedFollowUpRecoveries.Count), item.Recovery);
+                    }
+                    if (wasSelected && ReferenceEquals(SelectedConversation, replacement))
+                        SelectConversation(target, persist: false, preferredProfileId: previousProfileId);
+                    if (createdReplacement
+                        && !ReferenceEquals(SelectedConversation, replacement)
+                        && CopilotConversationService.IsReusableEmpty(replacement))
+                    {
+                        Conversations.Remove(replacement!);
+                        Conversations.Move(Conversations.IndexOf(target), Math.Min(currentIndex, Conversations.Count - 1));
+                    }
+                    PersistState(immediate: true);
+                    LocalCommandResultTitle = "会话未删除";
+                    LocalCommandResultText = "删除后的会话状态未能保存，原会话和附件已保留。请处理保存提示后重试。";
+                    return CopilotConversationDeletionResult.NotDeleted;
+                }
+
+                _conversationTitleCoordinator.Cancel(target.Id);
+                ClearAgentRunNoticeForConversation(target.Id);
+                AcknowledgeCompletionNotices(target.Id);
+                CopilotBackgroundShellCommandRegistry.Shared.ClearCompleted(target.Id);
+                CopilotShellCommandOutputArchiveRegistry.Shared.ClearConversation(target.Id);
+                CopilotToolOutputArchiveRegistry.Shared.ClearConversation(target.Id);
+                RemoveManagedAttachmentFiles(managedAttachments);
                 return new CopilotConversationDeletionResult(true, deletedTitle);
             }
             finally

@@ -446,9 +446,6 @@
   <data name="AutoExploreTemplate" xml:space="preserve">
     <value>Auto Exposure Template</value>
   </data>
-  <data name="EditThirdPartyAlgorithmTemplate" xml:space="preserve">
-    <value>Editing third-party algorithm templates</value>
-  </data>
   <data name="ModifyConfiguration" xml:space="preserve">
     <value>Change setting</value>
   </data>
@@ -636,12 +633,6 @@
   <data name="TemplateMatching" xml:space="preserve">
     <value>Template Matching</value>
   </data>
-  <data name="LightBarDetectionV2" xml:space="preserve">
-    <value>Light Bar Detection V2</value>
-  </data>
-  <data name="GhostingDetection2_0" xml:space="preserve">
-    <value>Ghosting Detection 2.0</value>
-  </data>
   
 
 
@@ -689,9 +680,6 @@
   </data>
   <data name="DataLoad" xml:space="preserve">
     <value>Data loading</value>
-  </data>
-  <data name="AADetect" xml:space="preserve">
-    <value>Detection of luminescent areas</value>
   </data>
   <data name="StereoFusion" xml:space="preserve">
     <value>Binocular Fusion</value>
@@ -1167,12 +1155,6 @@
   <data name="Angle" xml:space="preserve">
     <value>Angle</value>
   </data>
-  <data name="FindActiveArea" xml:space="preserve">
-    <value>Find Active Area</value>
-  </data>
-  <data name="FillArea" xml:space="preserve">
-    <value>Fill Area</value>
-  </data>
   <data name="Width" xml:space="preserve">
     <value>Width</value>
   </data>
@@ -1482,14 +1464,8 @@
   <data name="DistortionEvaluationTemplateManagement" xml:space="preserve">
     <value>Distortion evaluation template management</value>
   </data>
-  <data name="FOVTemplateManagement" xml:space="preserve">
-    <value>FOV Template Management</value>
-  </data>
   <data name="GhostTemplateManagement" xml:space="preserve">
     <value>Ghost Template Management</value>
-  </data>
-  <data name="MTFTemplateManagement" xml:space="preserve">
-    <value>MTF Template Management</value>
   </data>
   <data name="SFRTemplateManagement" xml:space="preserve">
     <value>SFR Template Management</value>
@@ -3353,12 +3329,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Engine_Msg_BackupSuccess" xml:space="preserve">
     <value>Backup successful</value>
   </data>
-  <data name="Engine_Msg_RestoreSuccessRestarting" xml:space="preserve">
-    <value>Restore successful, restarting service</value>
-  </data>
-  <data name="Engine_Msg_ServiceRestartSuccess" xml:space="preserve">
-    <value>Service restart successful, restarting software</value>
-  </data>
   <data name="Engine_Msg_ServiceRestartFailed" xml:space="preserve">
     <value>Service restart failed</value>
   </data>
@@ -4204,7 +4174,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Camera_HkRoiAlignmentWarning" xml:space="preserve"><value>The width and height of an HK camera ROI must use {0}-pixel increments; integer values alone are not sufficient.&#xD;&#xA;&#xD;&#xA;Current ROI: Width={1}, Height={2}&#xD;&#xA;Invalid fields: {3}&#xD;&#xA;&#xD;&#xA;Adjust these values to multiples of {0} before saving.</value></data>
   <data name="Calibration_PackageFileNotFound" xml:space="preserve"><value>File not found in the calibration package: {0}&#xD;&#xA;{1}</value></data>
   <data name="Statistics" xml:space="preserve"><value>Statistics</value></data>
-  <data name="MtfStatisticsCsvHeader" xml:space="preserve"><value>Property,Maximum,Maximum Name,Minimum,Minimum Name,Average,Variance,Uniformity</value></data>
   <data name="CommonTools" xml:space="preserve"><value>Common Tools</value></data>
   <data name="CreateToPOI" xml:space="preserve">
     <value>Create as POI</value>
@@ -4739,18 +4708,12 @@ Please close camera or other programs using this serial port, or check device co
   <data name="还原" xml:space="preserve"><value>Restore</value></data>
   <data name="选中" xml:space="preserve"><value>Select</value></data>
   <data name="数据库清理" xml:space="preserve"><value>Database Cleanup</value></data>
-  <data name="先确认范围和备份策略，再清理历史数据或指定数据表。" xml:space="preserve"><value>Confirm the scope and backup policy before cleaning historical data or selected tables.</value></data>
-  <data name="企业数据操作" xml:space="preserve"><value>Enterprise Data Operation</value></data>
   <data name="刷新统计" xml:space="preserve"><value>Refresh Statistics</value></data>
-  <data name="仅创建完整备份" xml:space="preserve"><value>Create Full Backup Only</value></data>
-  <data name="清理策略" xml:space="preserve"><value>Cleanup Policy</value></data>
   <data name="保留最近" xml:space="preserve"><value>Keep the latest</value></data>
   <data name="个月" xml:space="preserve"><value>month(s)</value></data>
   <data name="清理过期数据" xml:space="preserve"><value>Clean Expired Data</value></data>
   <data name="清理前创建完整备份（推荐）" xml:space="preserve"><value>Create a full backup before cleanup (recommended)</value></data>
-  <data name="按表清理只处理勾选项；清理主表时需同时选择所有现存关联明细表；完全清理会清空所有可用表。" xml:space="preserve"><value>Table cleanup processes only selected items. When cleaning a primary table, select all existing related detail tables. Full cleanup clears every available table.</value></data>
   <data name="清空选中表" xml:space="preserve"><value>Clear Selected Tables</value></data>
-  <data name="完全清理全部表" xml:space="preserve"><value>Fully Clear All Tables</value></data>
   <data name="可清理数据表" xml:space="preserve"><value>Cleanable Tables</value></data>
   <data name="全选可用表" xml:space="preserve"><value>Select All Available Tables</value></data>
   <data name="清除选择" xml:space="preserve"><value>Clear Selection</value></data>
@@ -4811,7 +4774,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="完整备份已创建：{0}" xml:space="preserve"><value>Full backup created: {0}</value></data>
   <data name="至少选择一张要清理的数据表。" xml:space="preserve"><value>Select at least one table to clean.</value></data>
   <data name="不允许清理未登记的数据表：{0}" xml:space="preserve"><value>Unregistered tables cannot be cleaned: {0}</value></data>
-  <data name="不能清理所选主表，因为仍存在未选中的关联明细表。请同时选择以下数据表：" xml:space="preserve"><value>The selected primary table cannot be cleaned while related detail tables remain unselected. Also select these tables:</value></data>
   <data name="{0}: 未找到，已跳过" xml:space="preserve"><value>{0}: not found, skipped</value></data>
   <data name="{0}: 已清空" xml:space="preserve"><value>{0}: cleared</value></data>
   <data name="没有找到可清空的 MySQL 结果表。" xml:space="preserve"><value>No MySQL result tables were available to clear.</value></data>
@@ -4945,4 +4907,23 @@ Please close camera or other programs using this serial port, or check device co
   <data name="CAD映射" xml:space="preserve"><value>CAD Mapping</value></data>
   <data name="CIE文件" xml:space="preserve"><value>CIE File</value></data>
   <data name="POI文件" xml:space="preserve"><value>POI File</value></data>
+  <data name="选择数据源后再操作，每次仅处理当前数据库。" xml:space="preserve"><value>Select a data source first. Each operation applies only to the current database.</value></data>
+  <data name="仅管理当前数据库，不显示或操作其他数据源。" xml:space="preserve"><value>Manage only the current database. Other data sources are not shown or affected.</value></data>
+  <data name="单库维护" xml:space="preserve"><value>Single Database Maintenance</value></data>
+  <data name="全局入口" xml:space="preserve"><value>Global Access</value></data>
+  <data name="数据源" xml:space="preserve"><value>Data Sources</value></data>
+  <data name="仅对右侧当前数据库执行操作。" xml:space="preserve"><value>Operations apply only to the current database shown on the right.</value></data>
+  <data name="当前数据库" xml:space="preserve"><value>Current Database</value></data>
+  <data name="可用数据表" xml:space="preserve"><value>Available Tables</value></data>
+  <data name="数据行数" xml:space="preserve"><value>Total Rows</value></data>
+  <data name="创建完整备份" xml:space="preserve"><value>Create Full Backup</value></data>
+  <data name="备份策略" xml:space="preserve"><value>Backup Policy</value></data>
+  <data name="历史数据清理" xml:space="preserve"><value>Historical Data Cleanup</value></data>
+  <data name="按保留月数清理当前数据库中的过期记录。" xml:space="preserve"><value>Remove expired records from the current database based on the retention period in months.</value></data>
+  <data name="所有清理操作都需要再次确认。" xml:space="preserve"><value>All cleanup operations require confirmation.</value></data>
+  <data name="危险操作" xml:space="preserve"><value>Danger Zone</value></data>
+  <data name="清空当前库的全部可清理表，无法直接撤销。" xml:space="preserve"><value>Empty all cleanable tables in the current database. This cannot be undone directly.</value></data>
+  <data name="清空当前库全部可清理表" xml:space="preserve"><value>Empty All Cleanable Tables in Current Database</value></data>
+  <data name="按表清理只处理勾选项；清理主表时需同时选择所有现存关联明细表。" xml:space="preserve"><value>Table cleanup affects only checked tables. To clean a main table, also select all existing related detail tables.</value></data>
+  <data name="未启用清理前备份。" xml:space="preserve"><value>Backup before cleanup is not enabled.</value></data>
 </root>

@@ -1,87 +1,18 @@
 # ColorVision.ImageEditor
 
-> 目标框架：.NET 10 Windows x64（以 `ColorVision.ImageEditor.csproj` 为准）
+Windows/WPF 图像交互控件库，提供 `ImageView`、绘图与注释、视频播放、算法工具和两类 3D 查看入口。客户判定、MES 字段和业务导出不属于本模块。
 
-## 维护文档
+## 包与运行前提
 
-- 架构与功能梳理: [ARCHITECTURE.md](ARCHITECTURE.md)
+- 当前面向 `net10.0-windows7.0` / x64；框架、项目引用、OpenCV runtime、HelixToolkit/SharpDX/Assimp 及资源以 `ColorVision.ImageEditor.csproj` 为准。
+- 内建打开器覆盖常见位图与 TIFF；`.cvraw/.cvcie` 由 Engine 扩展提供，不能把普通 `.raw` 当成内建格式。后缀被识别也不保证任意编码均可解码。
+- 可载入 RGB48 等高位深位图，不表示截图、3D 高度图或所有工具都保留原始测量值。原生、视频和 3D 能力还需各自的运行依赖。
+- 控件创建会装配工具与服务；打开完成、渲染完成、保存完成是不同信号。模型导出和图像保存会写入文件，需确认目标及覆盖范围。
 
-## 功能定位
+## 源码知识入口
 
-专业图像编辑和标注控件库，支持 RGB48 高位深图像、矢量绘图、视频播放、3D 可视化和 CIE 色彩空间分析。
+[ImageEditor 权威主题](../../docs/04-api-reference/ui-components/ColorVision.ImageEditor.md)维护打开、绘制、撤销、叠加层、视频、3D 与输出边界，以及对应实现和测试。3D 高度曲面与模型查看器走不同代码路径，不共用一套材质、线框或导出契约。
 
-## 主要功能
+[上下文、工具装配与临时选区](../../docs/04-api-reference/ui-components/image-editor-context.md)维护状态归属、构造与刷新、ROI 坐标和有效期；[ARCHITECTURE.md](ARCHITECTURE.md)仅保留源码旁入口，不维护第二套架构正文。
 
-### 图像显示
-- 多格式支持（PNG/JPG/BMP/TIFF/RAW）
-- RGB48 高位深图像
-- 缩放/平移/全屏/旋转
-
-### 视频播放
-- 多格式支持（MP4/AVI/MKV/MOV/WMV/FLV/WebM）
-- C++/C# 跨语言解码（OpenCV + FFmpeg）
-- 音频同步（WPF MediaPlayer）
-- 倍速播放（0.25x-4x）、降采样预览、帧丢弃
-
-### 矢量绘图 (Draw/)
-| 工具 | 说明 |
-|------|------|
-| Rectangle | 矩形绘制 |
-| Circle | 圆形/椭圆 |
-| Line | 直线/折线 |
-| Text | 文本标注 |
-| Polygon | 多边形区域 |
-| BezierCurve | 贝塞尔曲线 |
-| Ruler | 标尺/测量 |
-| Special | POI 点/十字线 |
-
-### 编辑工具 (EditorTools/)
-- **Zoom** — 缩放工具
-- **FullScreen** — 全屏模式
-- **Rotate** — 图像旋转
-- **Histogram** — 直方图
-- **Algorithms/** — 图像算法（SFR、FindLightBeads、亮度/对比度/Gamma）
-
-### 3D 可视化 (EditorTools/ThreeD/)
-基于 HelixToolkit.Wpf 的 3D 渲染模块，包含两个独立查看器：
-
-**Window3D — 图像转 3D 表面**
-- 2D 图像 → 高度图 3D 曲面（支持 RGB48/Gray8 等多格式自动转换）
-- 双线性插值降采样，逐顶点法线计算
-- 24 种伪彩色映射（jet/viridis/plasma 等）+ 色条图例
-- 实时高度缩放（键盘 +/- 或按钮）
-- 3D 拾取悬停提示（`VisualTreeHelper.HitTest` raycast）
-- 截图导出（PNG/JPEG/BMP）、模型导出（OBJ/STL）
-
-**ModelViewer3DControl — OBJ/STL 模型查看器**
-- 异步后台加载 OBJ/STL 文件，自动预处理无效 mtllib 行
-- 自动法线生成、材质可见性检测与回退
-- 真实线框模式（`MeshGeometryHelper.FindEdges` + 边圆柱体渲染）
-- 正交/透视投影实时切换
-- 模型树视图（隔离/显示全部）
-- 预设视角（前/后/左/右/上/下/ISO）
-- 基于模型包围盒中心的对象旋转（非世界原点）
-- 截图/模型导出（OBJ/STL 含材质和纹理）
-
-**Viewport3DHelper — 共享工具类**
-- 相机初始化、重置、帧适配
-- 固定角坐标轴指示器（PipeVisual3D + SphereVisual3D）
-- 统一键盘移动处理（L/T/R/B/A/C/D/F）
-- 共享 UI 样式（`ThreeDStyles.xaml` 资源字典）
-- 线框几何体生成、截图/导出
-
-### 其他
-- **Tif/** — TIFF 图像读写
-- **WindowCIE** — CIE 色彩空间分析窗口
-- **ScottPlot** — 图表绘制
-
-## 依赖关系
-
-- **引用**: ColorVision.Common, ColorVision.Core, ColorVision.Themes, ColorVision.UI, HelixToolkit.Core.Wpf, ScottPlot.WPF, log4net, Newtonsoft.Json
-- **被引用**: ColorVision.Solution
-
-## 构建
-
-```powershell
-dotnet build .\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj -p:Platform=x64
-```
+本 README 会作为 NuGet 包说明打包到包根目录，`docs/` 与 `ARCHITECTURE.md` 不保证随包存在。上述链接用于源码仓库；包使用者需读取与包版本匹配的源码知识，不能以当前网站或另一分支替代该包的契约。

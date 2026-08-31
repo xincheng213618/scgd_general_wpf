@@ -572,34 +572,56 @@ namespace ColorVision.Database
     {
         private DatabaseCleanupSourceViewModel? _selectedSource;
 
-        public ObservableCollection<DatabaseCleanupSourceViewModel> Sources { get; } = new();
+        public ReadOnlyObservableCollection<DatabaseCleanupSourceViewModel> Sources { get; }
+        public bool IsSourceScoped { get; }
+        public bool ShowSourceNavigation => !IsSourceScoped;
+        public string WindowTitle => IsSourceScoped
+            ? $"{Sources[0].DisplayName} · {EngineLocalization.Get("数据库清理")}"
+            : EngineLocalization.Get("数据库清理");
+        public string ScopeDescription => IsSourceScoped
+            ? EngineLocalization.Get("仅管理当前数据库，不显示或操作其他数据源。")
+            : EngineLocalization.Get("选择数据源后再操作，每次仅处理当前数据库。");
 
         public DatabaseCleanupSourceViewModel? SelectedSource
         {
             get => _selectedSource;
             set
             {
+                if (value != null && !Sources.Contains(value))
+                    throw new ArgumentException("The selected cleanup source must belong to this window.", nameof(value));
+                if (ReferenceEquals(_selectedSource, value))
+                    return;
+
                 _selectedSource = value;
                 OnPropertyChanged();
             }
         }
 
-        public DatabaseCleanupWindowViewModel()
+        public DatabaseCleanupWindowViewModel() : this(DiscoverProviders())
         {
-            AssemblyHandler.GetInstance().RefreshAssemblies();
+        }
 
-            var providers = AssemblyHandler.GetInstance()
-                .LoadImplementations<IDatabaseCleanupSourceProvider>()
+        internal DatabaseCleanupWindowViewModel(IEnumerable<IDatabaseCleanupSourceProvider> providers, bool isSourceScoped = false)
+        {
+            ArgumentNullException.ThrowIfNull(providers);
+            var providerList = providers
                 .OrderBy(provider => provider.Order)
                 .ThenBy(provider => provider.DisplayName)
                 .ToList();
+            if (isSourceScoped && providerList.Count != 1)
+                throw new ArgumentException("A source-scoped cleanup window requires exactly one provider.", nameof(providers));
 
-            foreach (var provider in providers)
-            {
-                Sources.Add(new DatabaseCleanupSourceViewModel(provider));
-            }
-
+            IsSourceScoped = isSourceScoped;
+            Sources = new ReadOnlyObservableCollection<DatabaseCleanupSourceViewModel>(
+                new ObservableCollection<DatabaseCleanupSourceViewModel>(providerList.Select(provider => new DatabaseCleanupSourceViewModel(provider))));
             SelectedSource = Sources.FirstOrDefault();
+        }
+
+        private static IEnumerable<IDatabaseCleanupSourceProvider> DiscoverProviders()
+        {
+            AssemblyHandler assemblies = AssemblyHandler.GetInstance();
+            assemblies.RefreshAssemblies();
+            return assemblies.LoadImplementations<IDatabaseCleanupSourceProvider>();
         }
 
         public Task RefreshAllAsync()

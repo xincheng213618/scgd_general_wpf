@@ -103,7 +103,7 @@ jobs:
         retention-days: 7
 
     - name: Verify NuGet package versions are unused
-      if: github.event_name == 'release'
+      if: github.event_name == 'release' && !startsWith(github.event.release.tag_name, 'algorithms-v')
       run: |
         python Scripts/verify_nuget_package_versions.py `
           ".\UI\ColorVision.Common\bin\x64\Release\*.nupkg" `
@@ -123,22 +123,58 @@ jobs:
           ".\Engine\cvColorVision\bin\x64\Release\*.nupkg"
 
     - name: Publish to NuGet
-      if: github.event_name == 'release'
+      if: github.event_name == 'release' && !startsWith(github.event.release.tag_name, 'algorithms-v')
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
       run: |
-        dotnet nuget push .\UI\ColorVision.Common\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
-        dotnet nuget push .\UI\ColorVision.Themes\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
-        dotnet nuget push .\UI\ColorVision.UI\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
-        dotnet nuget push .\UI\ColorVision.Solution\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
-        dotnet nuget push .\UI\ColorVision.Scheduler\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
-        dotnet nuget push .\UI\ColorVision.Core\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
-        dotnet nuget push .\UI\ColorVision.Algorithms\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
-        dotnet nuget push .\UI\ColorVision.ImageEditor\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
-        dotnet nuget push .\UI\ColorVision.SocketProtocol\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
-        dotnet nuget push .\UI\ColorVision.Database\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
-        dotnet nuget push .\UI\ColorVision.UI.Desktop\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
-        dotnet nuget push .\UI\ColorVision.ImageTools\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
-        dotnet nuget push .\UI\ColorVision.Rbac\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
-        dotnet nuget push .\Engine\ColorVision.FileIO\bin\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
-        dotnet nuget push .\Engine\cvColorVision\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+        dotnet nuget push .\UI\ColorVision.Common\bin\x64\Release\*.nupkg --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+        dotnet nuget push .\UI\ColorVision.Themes\bin\x64\Release\*.nupkg --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+        dotnet nuget push .\UI\ColorVision.UI\bin\x64\Release\*.nupkg --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+        dotnet nuget push .\UI\ColorVision.Solution\bin\x64\Release\*.nupkg --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+        dotnet nuget push .\UI\ColorVision.Scheduler\bin\x64\Release\*.nupkg --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+        dotnet nuget push .\UI\ColorVision.Core\bin\x64\Release\*.nupkg --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+        dotnet nuget push .\UI\ColorVision.Algorithms\bin\x64\Release\*.nupkg --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+        dotnet nuget push .\UI\ColorVision.ImageEditor\bin\x64\Release\*.nupkg --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+        dotnet nuget push .\UI\ColorVision.SocketProtocol\bin\x64\Release\*.nupkg --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+        dotnet nuget push .\UI\ColorVision.Database\bin\x64\Release\*.nupkg --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+        dotnet nuget push .\UI\ColorVision.UI.Desktop\bin\x64\Release\*.nupkg --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+        dotnet nuget push .\UI\ColorVision.ImageTools\bin\x64\Release\*.nupkg --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+        dotnet nuget push .\UI\ColorVision.Rbac\bin\x64\Release\*.nupkg --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+        dotnet nuget push .\Engine\ColorVision.FileIO\bin\Release\*.nupkg --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+        dotnet nuget push .\Engine\cvColorVision\bin\x64\Release\*.nupkg --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+
+    - name: Verify scoped Algorithms release
+      id: algorithms_package
+      if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'algorithms-v')
+      env:
+        RELEASE_TAG: ${{ github.event.release.tag_name }}
+      run: |
+        @'
+        import os
+        import re
+        from pathlib import Path
+        from Scripts.verify_nuget_package_versions import main, read_package_identity
+
+        tag = os.environ["RELEASE_TAG"]
+        match = re.fullmatch(r"algorithms-v((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:\.[1-9][0-9]*)?(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?)", tag)
+        if match is None:
+            raise ValueError("Use algorithms-v<normalized NuGet version>, for example algorithms-v1.5.8.")
+        version = match.group(1)
+        package = Path("UI/ColorVision.Algorithms/bin/x64/Release") / f"ColorVision.Algorithms.{version}.nupkg"
+        identity = read_package_identity(package)
+        if identity.package_id != "ColorVision.Algorithms" or identity.version != version:
+            raise ValueError("The Algorithms package ID/version must match the release tag.")
+        result = main([str(package)])
+        if result != 0:
+            raise SystemExit(result)
+        with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+            output.write(f"package_path={package.as_posix()}\n")
+        '@ | python -
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+    - name: Publish scoped Algorithms package to NuGet
+      if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'algorithms-v')
+      env:
+        ALGORITHMS_PACKAGE: ${{ steps.algorithms_package.outputs.package_path }}
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      run: dotnet nuget push $env:ALGORITHMS_PACKAGE --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json

@@ -1,14 +1,14 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { generateKnowledge, parseFrontmatter } from './knowledge.mjs'
 import {
   defaultLocaleKey,
-  defaultSectionKey,
   getLocaleDefinition,
   getLocaleHomeUrl,
   getSectionSortIndex,
   getSectionTitle,
   getSectionUrl,
-  isKnownSectionKey,
   isLocaleKey,
   localeOrder,
 } from '../i18n/locales.mjs'
@@ -17,21 +17,18 @@ const docsRoot = path.resolve(process.cwd(), 'docs')
 const distRoot = path.join(docsRoot, '.vitepress', 'dist')
 const manifestOutputPath = path.join(distRoot, 'docs-manifest.json')
 const searchIndexOutputPath = path.join(distRoot, 'docs-search-index.json')
-const archivedLocaleDirectories = new Set(['en', 'zh-tw', 'ja', 'ko'])
 
 async function main() {
   await ensureDistDirectory()
 
-  const markdownFiles = await collectMarkdownFiles(docsRoot)
+  const catalog = await generateKnowledge(process.cwd(), true)
   const pages = []
   const searchEntries = []
 
-  for (const markdownFilePath of markdownFiles) {
-    const page = await buildPageRecord(markdownFilePath)
-    if (page.redirectFromDeletedPage) {
-      continue
-    }
-
+  for (const knowledge of catalog.entries) {
+    const htmlRelativePath = knowledge.url.endsWith('/') ? `${knowledge.url.slice(1)}index.html` : `${knowledge.url.slice(1)}.html`
+    const builtHtml = await fs.readFile(path.join(distRoot, htmlRelativePath), 'utf8')
+    const page = await buildPageRecord(path.resolve(process.cwd(), knowledge.source), knowledge, builtHtml)
     pages.push(page)
     searchEntries.push(...buildSearchEntries(page))
   }
@@ -54,6 +51,7 @@ async function main() {
     entriesCount: searchEntries.length,
     sections,
     pages: pages.map((page) => ({
+      ...knowledgeProjection(page),
       localeKey: page.localeKey,
       localeLabel: page.localeLabel,
       title: page.title,
@@ -96,78 +94,29 @@ async function ensureDistDirectory() {
   await fs.mkdir(distRoot, { recursive: true })
 }
 
-async function collectMarkdownFiles(rootDirectory) {
-  const entries = await fs.readdir(rootDirectory, { withFileTypes: true })
-  const filePaths = []
-
-  for (const entry of entries) {
-    const entryPath = path.join(rootDirectory, entry.name)
-    const relativeEntryPath = normalizePath(path.relative(docsRoot, entryPath))
-
-    if (shouldSkipEntry(entry.name, relativeEntryPath)) {
-      continue
-    }
-
-    if (entry.isDirectory()) {
-      filePaths.push(...await collectMarkdownFiles(entryPath))
-      continue
-    }
-
-    if (entry.isFile() && entry.name.toLowerCase().endsWith('.md')) {
-      filePaths.push(entryPath)
-    }
-  }
-
-  return filePaths
-}
-
-function shouldSkipEntry(name, relativePath = name) {
-  if (name === '.vitepress' || name === 'node_modules') {
-    return true
-  }
-
-  if (name.startsWith('_')) {
-    return true
-  }
-
-  if (name.startsWith('._') || name.startsWith('~')) {
-    return true
-  }
-
-  if (name.endsWith('.bak') || name.endsWith('.tmp')) {
-    return true
-  }
-
-  const [firstSegment] = relativePath.split('/')
-  if (archivedLocaleDirectories.has(firstSegment)) {
-    return true
-  }
-
-  return false
-}
-
-async function buildPageRecord(markdownFilePath) {
+export async function buildPageRecord(markdownFilePath, knowledge, builtHtml) {
   const rawContent = await fs.readFile(markdownFilePath, 'utf8')
-  const pageFlags = parsePageFlags(rawContent)
-  const relativePath = normalizePath(path.relative(docsRoot, markdownFilePath))
+  const relativePath = knowledge.source.replace(/^docs\//u, '')
   const localeKey = getLocaleKey(relativePath)
   const localeLabel = getLocaleDefinition(localeKey).label
   const contentRelativePath = stripLocalePrefix(relativePath, localeKey)
-  const sourcePath = normalizePath(path.join('docs', relativePath))
-  const url = toDocumentUrl(relativePath)
-  const sectionKey = getSectionKey(contentRelativePath)
+  const sourcePath = knowledge.source
+  const url = knowledge.url
+  const sectionKey = knowledge.domain
   const sectionTitle = getSectionTitle(localeKey, sectionKey)
   const parsedMarkdown = parseMarkdown(rawContent)
-  const title = parsedMarkdown.title || fallbackTitleFromPath(contentRelativePath, localeKey)
-  const summary = createSummary(parsedMarkdown.summaryText)
+  bindBuiltHeadings(parsedMarkdown, builtHtml, knowledge.source)
+  const title = knowledge.title
+  const summary = knowledge.summary
   const headings = parsedMarkdown.headings.map((heading) => ({
     depth: heading.depth,
     text: heading.text,
     slug: heading.slug,
-    url: heading.depth === 1 ? url : `${url}#${heading.slug}`,
+    url: heading.depth === 1 ? url : `${url}#${encodeURIComponent(heading.slug)}`,
   }))
 
   return {
+    knowledge,
     localeKey,
     localeLabel,
     title,
@@ -178,8 +127,7 @@ async function buildPageRecord(markdownFilePath) {
     sourcePath,
     sectionKey,
     sectionTitle,
-    searchable: pageFlags.searchable,
-    redirectFromDeletedPage: pageFlags.redirectFromDeletedPage,
+    searchable: knowledge.searchable,
     wordCount: countWords(parsedMarkdown.plainText),
     headings,
     sections: parsedMarkdown.sections.map((section) => ({
@@ -189,26 +137,14 @@ async function buildPageRecord(markdownFilePath) {
       titles: section.titles,
       text: section.text,
       summary: createSummary(section.text),
-      url: section.slug ? `${url}#${section.slug}` : url,
+      url: section.slug ? `${url}#${encodeURIComponent(section.slug)}` : url,
     })),
   }
 }
 
-function parsePageFlags(markdownContent) {
-  const frontmatter = markdownContent.match(/^---\s*[\r\n]+([\s\S]*?)[\r\n]+---\s*/u)?.[1] ?? ''
-  const hasSearchDisabled = /^\s*search:\s*false\s*$/mu.test(frontmatter)
-  const redirectFromDeletedPage = /^\s*redirect_from_deleted_page:\s*true\s*$/mu.test(frontmatter)
-
-  return {
-    searchable: !hasSearchDisabled && !redirectFromDeletedPage,
-    redirectFromDeletedPage,
-  }
-}
-
 function parseMarkdown(markdownContent) {
-  const contentWithoutFrontmatter = markdownContent.replace(/^---\s*[\r\n]+[\s\S]*?[\r\n]+---\s*/u, '')
+  const contentWithoutFrontmatter = parseFrontmatter(markdownContent).body
   const lines = contentWithoutFrontmatter.split(/\r?\n/)
-  const slugCounts = new Map()
   const headings = []
   const sections = []
   const headingStack = []
@@ -216,24 +152,25 @@ function parseMarkdown(markdownContent) {
 
   let pageTitle = ''
   let currentSection = createSection('', '', 1, [])
-  let inCodeFence = false
+  let codeFence = null
 
   for (const rawLine of lines) {
     const trimmedLine = rawLine.trim()
 
-    if (trimmedLine.startsWith('```')) {
-      inCodeFence = !inCodeFence
+    const fenceMarker = /^(`{3,}|~{3,})/u.exec(trimmedLine)?.[1]
+    if (fenceMarker && (!codeFence || (fenceMarker[0] === codeFence[0] && fenceMarker.length >= codeFence.length))) {
+      codeFence = codeFence ? null : fenceMarker
       continue
     }
 
-    if (!inCodeFence) {
+    if (!codeFence) {
       const headingMatch = /^(#{1,6})\s+(.*)$/u.exec(trimmedLine)
       if (headingMatch) {
         flushSection(sections, currentSection)
 
         const depth = headingMatch[1].length
-        const headingText = normalizeInlineText(headingMatch[2])
-        const slug = createSlug(headingText, slugCounts)
+        const headingText = normalizeInlineText(headingMatch[2].replace(/\s+\{[^}]*\}\s*$/u, ''))
+        const slug = `heading-${headings.length}`
 
         while (headingStack.length >= depth) {
           headingStack.pop()
@@ -257,7 +194,7 @@ function parseMarkdown(markdownContent) {
       }
     }
 
-    const normalizedLine = normalizeMarkdownLine(rawLine)
+    const normalizedLine = codeFence ? normalizeWhitespace(rawLine) : normalizeMarkdownLine(rawLine)
     if (!normalizedLine) {
       currentSection.lines.push('')
       continue
@@ -312,7 +249,7 @@ function flushSection(targetSections, section) {
   })
 }
 
-function buildSearchEntries(page) {
+export function buildSearchEntries(page) {
   if (!page.searchable) {
     return []
   }
@@ -320,6 +257,7 @@ function buildSearchEntries(page) {
   const entries = []
 
   entries.push({
+    ...knowledgeProjection(page),
     id: page.url,
     kind: 'page',
     localeKey: page.localeKey,
@@ -339,6 +277,7 @@ function buildSearchEntries(page) {
     }
 
     entries.push({
+      ...knowledgeProjection(page),
       id: section.url,
       kind: 'section',
       localeKey: page.localeKey,
@@ -363,6 +302,11 @@ function formatSectionSearchTitle(page, section) {
   }
 
   return `${page.title}：${section.title}`
+}
+
+function knowledgeProjection(page) {
+  const { knowledge_id, knowledge_type, status, aliases, code_paths, test_paths, related, source_hash } = page.knowledge
+  return { knowledge_id, knowledge_type, status, aliases, code_paths, test_paths, related, source_hash, sourcePath: page.sourcePath }
 }
 
 function buildSections(pages) {
@@ -392,6 +336,7 @@ function buildSections(pages) {
         pages: sectionPages
           .sort((left, right) => left.relativePath.localeCompare(right.relativePath, 'zh-CN'))
           .map((page) => ({
+            ...knowledgeProjection(page),
             localeKey: page.localeKey,
             localeLabel: page.localeLabel,
             title: page.title,
@@ -431,47 +376,10 @@ function stripLocalePrefix(relativePath, localeKey) {
   return relativePath.slice(localeKey.length + 1)
 }
 
-function getSectionKey(contentRelativePath) {
-  const firstSegment = contentRelativePath.split('/')[0]
-  return isKnownSectionKey(firstSegment) ? firstSegment : defaultSectionKey
-}
-
-function toDocumentUrl(relativePath) {
-  const normalizedRelativePath = relativePath.replace(/\.md$/iu, '')
-  if (normalizedRelativePath === 'index') {
-    return '/'
-  }
-
-  if (normalizedRelativePath.endsWith('/index')) {
-    return `/${normalizedRelativePath.slice(0, -'/index'.length)}/`
-  }
-
-  return `/${normalizedRelativePath}`
-}
-
-function fallbackTitleFromPath(contentRelativePath, localeKey) {
-  if (contentRelativePath === 'index.md') {
-    return getLocaleDefinition(localeKey).homeDocumentTitle
-  }
-
-  const fileName = contentRelativePath.split('/').pop()?.replace(/\.md$/iu, '') || 'Untitled'
-  if (fileName.toLowerCase() === 'readme') {
-    const parentSegment = contentRelativePath.split('/').slice(-2, -1)[0]
-    return formatTitle(parentSegment || 'README')
-  }
-
-  return formatTitle(fileName)
-}
-
-function formatTitle(value) {
-  return value
-    .replace(/[-_]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function normalizeMarkdownLine(line) {
+export function normalizeMarkdownLine(line) {
   let text = line
+  const codeSpans = []
+  text = text.replace(/`([^`]+)`/gu, (_, code) => `CODE_SPAN_${codeSpans.push(code) - 1}_TOKEN`)
 
   if (/^[\s|:-]+$/u.test(text)) {
     return ''
@@ -484,20 +392,15 @@ function normalizeMarkdownLine(line) {
   text = text.replace(/\|/g, ' ')
   text = text.replace(/!\[([^\]]*)\]\([^)]*\)/gu, '$1')
   text = text.replace(/\[([^\]]+)\]\([^)]*\)/gu, '$1')
-  text = text.replace(/`([^`]+)`/gu, '$1')
   text = text.replace(/<[^>]+>/gu, ' ')
-  text = text.replace(/[*_~#]+/g, ' ')
+  text = text.replace(/\*\*([^*]+)\*\*/gu, '$1').replace(/~~([^~]+)~~/gu, '$1')
+  text = text.replace(/CODE_SPAN_(\d+)_TOKEN/gu, (_, index) => codeSpans[Number(index)])
 
   return normalizeWhitespace(text)
 }
 
 function normalizeInlineText(text) {
-  return normalizeWhitespace(
-    text
-      .replace(/`([^`]+)`/gu, '$1')
-      .replace(/\[([^\]]+)\]\([^)]*\)/gu, '$1')
-      .replace(/<[^>]+>/gu, ' '),
-  )
+  return normalizeMarkdownLine(text)
 }
 
 function normalizeWhitespace(text) {
@@ -525,28 +428,49 @@ function countWords(text) {
   return text.split(/\s+/).filter(Boolean).length
 }
 
-function createSlug(text, slugCounts) {
-  const baseSlug = (text || '')
-    .toLowerCase()
-    .replace(/[\t\n\r]+/g, ' ')
-    .replace(/[!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~]+/g, '')
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-
-  const fallbackSlug = baseSlug || 'section'
-  const count = slugCounts.get(fallbackSlug) ?? 0
-  slugCounts.set(fallbackSlug, count + 1)
-
-  return count === 0 ? fallbackSlug : `${fallbackSlug}-${count}`
+function decodeHtml(value) {
+  const named = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', ZeroWidthSpace: '' }
+  return value.replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos|nbsp|ZeroWidthSpace);/giu, (entity, name) => {
+    if (name.startsWith('#')) return String.fromCodePoint(Number.parseInt(name.slice(name[1].toLowerCase() === 'x' ? 2 : 1), name[1].toLowerCase() === 'x' ? 16 : 10))
+    return named[name] ?? entity
+  })
 }
 
-function normalizePath(filePath) {
-  return filePath.split(path.sep).join('/')
+export function readHeadingAnchors(html) {
+  if (typeof html !== 'string') throw new Error('Built HTML is required; section anchors must never be guessed')
+  const headings = []
+  for (const match of html.matchAll(/<h([1-6])\b([^>]*)>([\s\S]*?)<\/h\1>/giu)) {
+    const id = /(?:^|\s)id=(?:"([^"]*)"|'([^']*)')/iu.exec(match[2])
+    if (!id) continue
+    const content = match[3].replace(/<a\b[^>]*\bclass="[^"]*\bheader-anchor\b[^"]*"[^>]*>[\s\S]*?<\/a>/giu, '').replace(/<[^>]*>/gu, '')
+    headings.push({ depth: Number(match[1]), slug: decodeHtml(id[1] ?? id[2]), text: normalizeWhitespace(decodeHtml(content)) })
+  }
+  return headings
 }
 
-main().catch((error) => {
-  console.error('Failed to generate docs index artifacts.')
-  console.error(error)
-  process.exitCode = 1
-})
+function bindBuiltHeadings(parsed, html, source) {
+  // VitePress 1.6 uses NFKD, punctuation replacement and markdown-it-anchor's
+  // duplicate/custom-id rules. The built HTML is authoritative across versions.
+  const actual = readHeadingAnchors(html)
+  if (parsed.headings.length !== actual.length) throw new Error(`${source}: ${parsed.headings.length} Markdown headings but ${actual.length} built anchors; rebuild or inspect the heading parser`)
+  const headingMap = new Map()
+  parsed.headings.forEach((heading, index) => {
+    if (heading.depth !== actual[index].depth) throw new Error(`${source}: built heading order/depth differs at ${heading.text}`)
+    headingMap.set(heading.slug, actual[index])
+    Object.assign(heading, actual[index])
+  })
+  for (const section of parsed.sections) {
+    if (!section.slug) continue
+    const heading = headingMap.get(section.slug)
+    section.slug = heading.slug
+    section.title = heading.text
+  }
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error('Failed to generate docs index artifacts.')
+    console.error(error)
+    process.exitCode = 1
+  })
+}

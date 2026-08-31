@@ -1,56 +1,51 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.UI.HotKey
+namespace ColorVision.UI.HotKey;
+
+public partial class HotKeysSetting : UserControl
 {
-    /// <summary>
-    /// HotKeysSetting.xaml 的交互逻辑
-    /// </summary>
-    public partial class HotKeysSetting : UserControl
+    public HotKeysSetting() : this(new HotkeySettingsViewModel()) { }
+
+    public HotKeysSetting(HotkeySettingsViewModel viewModel)
     {
-        private List<HotKeys> _editableHotKeys = new();
+        InitializeComponent();
+        ViewModel = viewModel;
+        DataContext = viewModel;
+        Loaded += (_, _) => ViewModel.TryRefresh();
+    }
 
-        public HotKeysSetting()
-        {
-            InitializeComponent();
-        }
+    public HotkeySettingsViewModel ViewModel { get; }
 
-        private void UserControl_Initialized(object sender, EventArgs e)
-        {
-            LoadEditableHotKeys(useSavedSettings: false);
-        }
+    private void Edit_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: HotkeySettingsBindingRow binding }) return;
+        HotkeyEditWindow dialog = new(ViewModel, binding.Owner, binding.Index) { Owner = Window.GetWindow(this) };
+        dialog.ShowDialog();
+    }
 
-        private void LoadEditableHotKeys(bool useSavedSettings)
-        {
-            _editableHotKeys = HotkeyService.GetInstance().CreateEditableHotKeys(useSavedSettings);
-            RenderEditableHotKeys();
-        }
+    private void Add_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: HotkeySettingsRow row }) return;
+        new HotkeyEditWindow(ViewModel, row, null) { Owner = Window.GetWindow(this) }.ShowDialog();
+    }
 
-        private void RenderEditableHotKeys()
-        {
-            HotKeyStackPanel.Children.Clear();
-            foreach (HotKeys hotKeys in _editableHotKeys)
-            {
-                HotKeyStackPanel.Children.Add(new HoyKeyControl(hotKeys));
-            }
-        }
+    private void Clear_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: HotkeySettingsBindingRow binding }) ViewModel.RemoveBinding(binding);
+    }
 
-        private void SetDefault_Click(object sender, RoutedEventArgs e)
-        {
-            _editableHotKeys = HotkeyService.GetInstance().CreateDefaultEditableHotKeys();
-            RenderEditableHotKeys();
-        }
+    private void ClearSearch_Click(object sender, RoutedEventArgs e) { ViewModel.Search = string.Empty; SearchBox.Focus(); }
+    private void ClearFilters_Click(object sender, RoutedEventArgs e) => ViewModel.ClearFilters();
 
-        private void ButtonLoad_Click(object sender, RoutedEventArgs e)
-        {
-            LoadEditableHotKeys(useSavedSettings: true);
-        }
+    private void Reset_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: HotkeySettingsRow row }) ViewModel.Reset(row);
+    }
 
-        private void ButtonSave_Click(object sender, RoutedEventArgs e)
-        {
-            HotkeyService.GetInstance().ApplySettings(_editableHotKeys.Select(HotkeySetting.FromHotKeys));
-            HotkeyService.GetInstance().SaveSettings();
-            LoadEditableHotKeys(useSavedSettings: false);
-        }
+    private void ResetAll_Click(object sender, RoutedEventArgs e)
+    {
+        if (MessageBox.Show(Window.GetWindow(this), HotkeyEditorText.ResetConfirm, HotkeyEditorText.ResetTitle,
+            MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK) ViewModel.ResetAll();
     }
 }

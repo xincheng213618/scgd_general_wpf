@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1720,CA1822,CA1854,CS8619
 using ColorVision.Common.MVVM;
+using ColorVision.UI.HotKey;
 using log4net;
 using System.Diagnostics;
 using System.Reflection;
@@ -278,6 +279,8 @@ namespace ColorVision.UI.Menus
                 IsChecked = mi.IsChecked ?? false,
                 Visibility = mi.Visibility,
             };
+            if (mi is IHotKey)
+                HotkeyMenuGestureBinding.Attach(menuItem, mi, HotkeyService.GetInstance().HotKeys);
 #if DEBUG
             menuItem.ToolTip = $"Class: {mi.GetType().Name}\nAssembly: {mi.GetType().Assembly.GetName().Name}";
 #endif

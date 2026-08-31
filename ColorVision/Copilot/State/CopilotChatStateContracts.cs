@@ -39,7 +39,8 @@ namespace ColorVision.Copilot
 
         public bool IsFutureVersion => Source == CopilotChatStateLoadSource.FutureVersion;
 
-        public bool RequiresRecoveryProtection => IsUnrecoverable || IsFutureVersion;
+        public bool RequiresRecoveryProtection => IsUnrecoverable || IsFutureVersion
+            || Source is CopilotChatStateLoadSource.Backup or CopilotChatStateLoadSource.RecoverySnapshot;
     }
 
     public sealed class CopilotChatStateSizeLimitException : IOException

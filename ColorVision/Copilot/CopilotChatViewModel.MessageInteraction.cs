@@ -335,7 +335,7 @@ namespace ColorVision.Copilot
                 composerCapture.RequestMode,
                 composerCapture.WorkspaceReviewTarget,
                 composerCapture.AgentSkillReference,
-                conversation.Attachments.Select(attachment => attachment.CreateSnapshot()).ToArray());
+                conversation.Attachments.Select(attachment => attachment.CreateSnapshot()).ToList());
             var messageAttachments = (userMessage.AttachmentSnapshotCaptured
                     ? userMessage.Attachments
                     : conversation.Attachments)
@@ -454,19 +454,22 @@ namespace ColorVision.Copilot
 
         private bool CanRegenerateMessage(CopilotChatMessage? message)
         {
-            if (IsBusy || IsEditingMessage || message == null || SelectedConversation == null || SelectedProfile == null || !SelectedProfile.IsConfigured)
+            var queuedFollowUp = _queuedLocalCommandExecution?.QueuedFollowUp;
+            var selectedProfile = queuedFollowUp?.Profile ?? SelectedProfile;
+            if (IsBusy || IsEditingMessage || message == null || SelectedConversation == null || selectedProfile == null || !selectedProfile.IsConfigured)
                 return false;
 
+            var discoveryOptions = queuedFollowUp?.SubmissionContext.ProjectInstructionDiscoveryOptions ?? _currentCodexConfigOptions;
             return TryResolveLatestTurn(message, out var conversation, out _, out var assistantMessage)
                 && !CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
                     conversation,
                     assistantMessage,
-                    CreateCurrentConversationRequestProfile(SelectedProfile, conversation),
+                    queuedFollowUp?.Profile ?? CreateCurrentConversationRequestProfile(selectedProfile, conversation),
                     CopilotCapabilityCatalog.Shared.GetSnapshot(
-                        _currentCodexConfigOptions.ConfiguredPluginsEnabled),
+                        discoveryOptions.ConfiguredPluginsEnabled),
                     CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                        _currentCodexConfigOptions.ConfiguredHooksEnabled,
-                        _currentCodexConfigOptions.ConfiguredPluginsEnabled));
+                        discoveryOptions.ConfiguredHooksEnabled,
+                        discoveryOptions.ConfiguredPluginsEnabled));
         }
 
         private async Task RetryMessageAsync(CopilotChatMessage? message, bool refreshExternalContext)
@@ -474,20 +477,24 @@ namespace ColorVision.Copilot
             if (!TryResolveLatestTurn(message, out var conversation, out var userMessage, out var assistantMessage))
                 return;
 
-            if (SelectedProfile == null || !SelectedProfile.IsConfigured)
+            var queuedCommandExecution = _queuedLocalCommandExecution;
+            var queuedFollowUp = queuedCommandExecution?.QueuedFollowUp;
+            var selectedProfile = queuedFollowUp?.Profile ?? SelectedProfile;
+            if (selectedProfile == null || !selectedProfile.IsConfigured)
             {
                 OpenSettings();
                 return;
             }
+            var discoveryOptions = queuedFollowUp?.SubmissionContext.ProjectInstructionDiscoveryOptions ?? _currentCodexConfigOptions;
             if (CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
                 conversation,
                 assistantMessage,
-                CreateCurrentConversationRequestProfile(SelectedProfile, conversation),
+                queuedFollowUp?.Profile ?? CreateCurrentConversationRequestProfile(selectedProfile, conversation),
                 CopilotCapabilityCatalog.Shared.GetSnapshot(
-                    _currentCodexConfigOptions.ConfiguredPluginsEnabled),
+                    discoveryOptions.ConfiguredPluginsEnabled),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                    _currentCodexConfigOptions.ConfiguredHooksEnabled,
-                    _currentCodexConfigOptions.ConfiguredPluginsEnabled)))
+                    discoveryOptions.ConfiguredHooksEnabled,
+                    discoveryOptions.ConfiguredPluginsEnabled)))
             {
                 return;
             }
@@ -497,7 +504,13 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(prompt))
                 return;
 
-            var turnSnapshot = CaptureHostedTurnSnapshot(conversation, userMessage);
+            var turnSnapshot = queuedFollowUp == null
+                ? CaptureHostedTurnSnapshot(conversation, userMessage)
+                : queuedFollowUp.SubmissionContext
+                    .WithAttachments(userMessage.AttachmentSnapshotCaptured
+                        ? userMessage.Attachments
+                        : queuedFollowUp.SubmissionContext.Attachments)
+                    .WithConversationHistory(CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation, userMessage));
             if (!TryPrepareExplicitSkillMcpDependencies(
                 prompt,
                 userMessage.AgentSkillReference,
@@ -506,10 +519,10 @@ namespace ColorVision.Copilot
             {
                 return;
             }
-            var runtimeConfigSnapshot = CaptureTurnRuntimeConfigSnapshot();
+            var runtimeConfigSnapshot = queuedFollowUp?.RuntimeConfigSnapshot ?? CaptureTurnRuntimeConfigSnapshot();
             var agentDefaultsSnapshot = runtimeConfigSnapshot.CreateAgentDefaultsSnapshot();
-            var requestProfile = CreateConversationRequestProfile(
-                SelectedProfile,
+            var requestProfile = queuedFollowUp?.Profile.Clone() ?? CreateConversationRequestProfile(
+                selectedProfile,
                 conversation,
                 userMessage.RequestMode,
                 turnSnapshot.ProjectInstructionDiscoveryOptions);
@@ -526,7 +539,19 @@ namespace ColorVision.Copilot
             if (!TryValidateComposerAttachments(turnSnapshot.Attachments, requestProfile))
                 return;
             var admittedAttachments = await TryPersistImageAttachmentsAsync(turnSnapshot.Attachments);
-            if (admittedAttachments == null)
+            if (admittedAttachments == null
+                || !CanContinueConversationRequestPreparation(conversation, userMessage.RequestMode)
+                || !IsLatestTurnPair(conversation, userMessage, assistantMessage)
+                || string.Equals(_editingConversationId, conversation.Id, StringComparison.Ordinal)
+                || CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
+                    conversation,
+                    assistantMessage,
+                    requestProfile,
+                    CopilotCapabilityCatalog.Shared.GetSnapshot(
+                        turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredPluginsEnabled),
+                    CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
+                        turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredHooksEnabled,
+                        turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredPluginsEnabled)))
                 return;
             turnSnapshot = turnSnapshot.WithAttachments(admittedAttachments);
 
@@ -544,7 +569,6 @@ namespace ColorVision.Copilot
                 turnSnapshot,
                 runtimeConfigSnapshot,
                 refreshExternalContext);
-            var queuedCommandExecution = _queuedLocalCommandExecution;
             CopilotHostedAgentRun? hostedRun;
             if (queuedCommandExecution == null)
             {
@@ -616,6 +640,17 @@ namespace ColorVision.Copilot
                 refreshExternalContext,
                 isAutomaticGoalContinuation: false);
             await ExecuteHostedPreparedTurnAsync(hostedRun, preparedTurn);
+        }
+
+        private static bool IsLatestTurnPair(
+            CopilotConversationRecord conversation,
+            CopilotChatMessage userMessage,
+            CopilotChatMessage? assistantMessage)
+        {
+            var userIndex = conversation.Messages.Count - (assistantMessage == null ? 1 : 2);
+            return userIndex >= 0
+                && ReferenceEquals(conversation.Messages[userIndex], userMessage)
+                && (assistantMessage == null || ReferenceEquals(conversation.Messages[userIndex + 1], assistantMessage));
         }
 
         private bool TryResolveLatestTurn(CopilotChatMessage? message, out CopilotConversationRecord conversation, out CopilotChatMessage userMessage, out CopilotChatMessage? assistantMessage)

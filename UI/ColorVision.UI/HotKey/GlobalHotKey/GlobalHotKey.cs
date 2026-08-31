@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -28,6 +29,11 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
         private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
         private static readonly Dictionary<IntPtr, HwndHotkeyScope> Scopes = new();
+        private static int _nextAutomaticId;
+
+        internal static bool Matches(IHotkeyRegistration registration, Hotkey hotkey, HotKeyCallBackHanlder callback)
+            => registration is GlobalHotkeyRegistration globalRegistration && globalRegistration.IsRegistered
+                && globalRegistration.Hotkey == hotkey && globalRegistration.Callback == callback;
 
         /// <summary>
         /// 注册快捷键
@@ -38,10 +44,14 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
         /// <param name="callBack">回调函数</param>
         public static IHotkeyRegistration? Register(IntPtr hwnd, ModifierKeys fsModifiers, Key key, HotKeyCallBackHanlder callBack)
         {
-            if (key == Key.None) return null;
+            return TryRegister(hwnd, fsModifiers, key, callBack).Registration;
+        }
 
+        internal static HotkeyRegistrationAttempt TryRegister(IntPtr hwnd, ModifierKeys modifiers, Key key, HotKeyCallBackHanlder callback)
+        {
+            if (key == Key.None) return new(null);
             var scope = GetOrCreateScope(hwnd);
-            return scope?.Register(fsModifiers, key, callBack);
+            return scope?.Register(modifiers, key, callback) ?? new(null, "全局快捷键的窗口句柄不可用。");
         }
 
         /// <summary>
@@ -52,7 +62,7 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
             if (key == Key.None) return null;
 
             var scope = GetOrCreateScope(hwnd);
-            return scope?.Register(id, fsModifiers, key, callBack);
+            return scope?.Register(id, fsModifiers, key, callBack).Registration;
         }
 
         /// <summary>
@@ -107,7 +117,6 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
             private readonly HwndSource _source;
             private readonly HwndSourceHook _hook;
             private readonly Action<IntPtr> _removeScope;
-            private int _nextId;
 
             public HwndHotkeyScope(IntPtr hwnd, HwndSource source, Action<IntPtr> removeScope)
             {
@@ -120,25 +129,35 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
 
             public IntPtr HWnd { get; }
 
-            public GlobalHotkeyRegistration? Register(ModifierKeys modifiers, Key key, HotKeyCallBackHanlder callback)
+            public HotkeyRegistrationAttempt Register(ModifierKeys modifiers, Key key, HotKeyCallBackHanlder callback)
             {
-                return Register(_nextId++, modifiers, key, callback);
+                // Do not immediately reuse an ID when the last scope is rebuilt after
+                // capture; a previously queued WM_HOTKEY must not invoke a new binding.
+                for (int attempt = 0; attempt <= 0xBFFF; attempt++)
+                {
+                    int id = _nextAutomaticId;
+                    _nextAutomaticId = (_nextAutomaticId + 1) % 0xC000;
+                    if (!_registrations.ContainsKey(id)) return Register(id, modifiers, key, callback);
+                }
+                return new(null, "当前窗口的全局快捷键 ID 已用尽。");
             }
 
-            public GlobalHotkeyRegistration? Register(int id, ModifierKeys modifiers, Key key, HotKeyCallBackHanlder callback)
+            public HotkeyRegistrationAttempt Register(int id, ModifierKeys modifiers, Key key, HotKeyCallBackHanlder callback)
             {
-                if (_registrations.ContainsKey(id)) return null;
+                if (_registrations.ContainsKey(id)) return new(null, "当前窗口的全局快捷键 ID 已被使用。");
 
                 int virtualKey = KeyInterop.VirtualKeyFromKey(key);
-                if (!RegisterHotKey(HWnd, id, modifiers, (uint)virtualKey))
+                const ModifierKeys noRepeat = (ModifierKeys)0x4000;
+                if (!RegisterHotKey(HWnd, id, modifiers | noRepeat, (uint)virtualKey))
                 {
-                    UnregisterHotKey(HWnd, id);
-                    return null;
+                    int error = Marshal.GetLastWin32Error();
+                    ReleaseEmptyScope();
+                    return new(null, $"系统拒绝注册快捷键（{error}）：{new Win32Exception(error).Message}");
                 }
 
                 var registration = new GlobalHotkeyRegistration(this, id, new Hotkey(key, modifiers), callback);
                 _registrations.Add(id, registration);
-                return registration;
+                return new(registration);
             }
 
             public List<GlobalHotkeyRegistration> FindByCallback(HotKeyCallBackHanlder callback)
@@ -148,8 +167,18 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
 
             public void Remove(GlobalHotkeyRegistration registration)
             {
-                UnregisterHotKey(HWnd, registration.Id);
+                if (!UnregisterHotKey(HWnd, registration.Id))
+                {
+                    int error = Marshal.GetLastWin32Error();
+                    // A destroyed HWND or an already removed registration owns no OS hotkey.
+                    if (error is not (1400 or 1419)) throw new Win32Exception(error, "系统未能解除全局快捷键。");
+                }
                 _registrations.Remove(registration.Id);
+                ReleaseEmptyScope();
+            }
+
+            private void ReleaseEmptyScope()
+            {
                 if (_registrations.Count == 0)
                 {
                     _source.RemoveHook(_hook);
@@ -164,7 +193,8 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
                     int id = wParam.ToInt32();
                     if (_registrations.TryGetValue(id, out var registration))
                     {
-                        registration.Callback();
+                        handled = true;
+                        if (!HotkeyDispatchGate.ShouldSuppress(registration.Hotkey.Key)) registration.Callback();
                     }
                 }
 

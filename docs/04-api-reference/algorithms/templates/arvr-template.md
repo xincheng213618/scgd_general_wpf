@@ -1,3 +1,14 @@
+---
+knowledge_id: "algorithms.arvr"
+knowledge_type: "reference"
+status: "current"
+summary: "对照 ARVR 模板族、手动请求、Flow 算子和结果 handler 的版本边界。"
+aliases: ["MTF SFR FOV模板对应哪个结果","AlgorithmARVRNode","TemplateMTF2","ViewHandleSFR"]
+code_paths: ["Engine/ColorVision.Engine/Templates/ARVR/SFR","Engine/ColorVision.Engine/Templates/ARVR/Ghost","Engine/ColorVision.Engine/Templates/Jsons/MTF2","Engine/FlowEngineLib/Algorithm/AlgorithmARVRNode.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs","Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs"]
+related: ["algorithms.index","algorithms.ghost","algorithms.json-templates","engine.results"]
+---
+
 # ARVR 模板
 
 ARVR 不是一个统一 schema，而是一组传统模板、JSON 模板、POI 模板和 Flow 节点共同组成的算法家族。维护时先确认当前链路走的是手动算法还是 Flow 节点，再看模板类型。
@@ -92,3 +103,9 @@ Flow 请求还会统一带 `BufferLen`、颜色通道、上一步图像参数和
 | `Templates/ARVR/Ghost/AlgorithmGhost.cs` | Ghost 请求 |
 | `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs` | Flow ARVR 补充属性面板 |
 | `Engine/FlowEngineLib/Algorithm/AlgorithmARVRNode.cs` | Flow `operatorCode` 和基础请求 |
+
+## 验证入口与缺口
+
+关联测试：`Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs`、`Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs`。
+
+已登记测试仅覆盖 ARVR POI 属性行与 FindCross 绘制；各 MTF/SFR/FOV 服务协议、曲线和项目判定需对应真实结果样例。

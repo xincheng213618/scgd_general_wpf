@@ -14,6 +14,9 @@ namespace ColorVision.UI.Desktop.Settings
         public static string StartupCheckUpdatesDescription => GetString("SettingsStartupCheckUpdatesDescription");
         public static string StartupCheckUpdatesSearchAliases => GetString("SettingsStartupCheckUpdatesSearchAliases");
         public static string SectionBasic => GetString("SettingsSectionBasic");
+        public static string SectionAppearance => GetString("SettingsSectionAppearance");
+        public static string SectionUpdates => GetString("SettingsSectionUpdates");
+        public static string SectionDiagnostics => GetString("SettingsSectionDiagnostics");
         public static string SectionSearch => GetString("SettingsSectionSearch");
         public static string SectionFileArchive => GetString("SettingsSectionFileArchive");
         public static string SectionServices => GetString("SettingsSectionServices");

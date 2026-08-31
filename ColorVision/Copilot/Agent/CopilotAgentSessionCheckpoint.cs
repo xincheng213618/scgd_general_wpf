@@ -27,6 +27,13 @@ namespace ColorVision.Copilot
         UnresolvedProviderToolCall,
     }
 
+    public enum CopilotAgentSessionResumeRestriction
+    {
+        None,
+        UncertainToolOutcome,
+        UnresolvedProviderToolCall,
+    }
+
     public sealed class CopilotAgentCheckpointCapability
     {
         public string Id { get; init; } = string.Empty;
@@ -89,6 +96,8 @@ namespace ColorVision.Copilot
         private bool _isDetachedSnapshot;
 
         public string ProfileKey { get; init; } = string.Empty;
+
+        public CopilotAgentSessionResumeRestriction SessionResumeRestriction { get; init; }
 
         [Newtonsoft.Json.JsonIgnore]
         public string SerializedSessionJson
@@ -164,6 +173,7 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(source);
             _serializedSessionJson = source._serializedSessionJson;
             _serializedSessionPayload = source._serializedSessionPayload;
+            SessionResumeRestriction = source.SessionResumeRestriction;
         }
 
         public bool IsUsableFor(CopilotProfileConfig profile)
@@ -197,9 +207,10 @@ namespace ColorVision.Copilot
                 return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.Invalid, capabilitySnapshot);
             if (!string.Equals(ProfileKey, CreateProfileKey(profile), StringComparison.Ordinal))
                 return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.ProfileChanged, capabilitySnapshot);
-            if (LatestRunHasUncertainToolOutcome())
+            var sessionResumeRestriction = GetSessionResumeRestriction();
+            if (sessionResumeRestriction == CopilotAgentSessionResumeRestriction.UncertainToolOutcome)
                 return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.UncertainToolOutcome, capabilitySnapshot);
-            if (LatestRunHasUnresolvedProviderToolCall())
+            if (sessionResumeRestriction == CopilotAgentSessionResumeRestriction.UnresolvedProviderToolCall)
                 return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.UnresolvedProviderToolCall, capabilitySnapshot);
             if (CapabilityCatalogRevision <= 0 || Capabilities == null || Capabilities.Count == 0)
                 return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.CapabilitySnapshotMissing, capabilitySnapshot);
@@ -286,6 +297,21 @@ namespace ColorVision.Copilot
             return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.Compatible, capabilitySnapshot);
         }
 
+        private CopilotAgentSessionResumeRestriction GetSessionResumeRestriction()
+        {
+            if (SessionResumeRestriction == CopilotAgentSessionResumeRestriction.UncertainToolOutcome
+                || LatestRunHasUncertainToolOutcome())
+            {
+                return CopilotAgentSessionResumeRestriction.UncertainToolOutcome;
+            }
+            if (SessionResumeRestriction == CopilotAgentSessionResumeRestriction.UnresolvedProviderToolCall
+                || LatestRunHasUnresolvedProviderToolCall())
+            {
+                return CopilotAgentSessionResumeRestriction.UnresolvedProviderToolCall;
+            }
+            return SessionResumeRestriction;
+        }
+
         private bool LatestRunHasUncertainToolOutcome()
         {
             var latestRun = TaskEventJournal.Events.LastOrDefault(item =>
@@ -338,6 +364,7 @@ namespace ColorVision.Copilot
         public bool IsStructurallyValid()
         {
             if (string.IsNullOrWhiteSpace(ProfileKey)
+                || !Enum.IsDefined(SessionResumeRestriction)
                 || string.IsNullOrWhiteSpace(SerializedSessionJson)
                 || SerializedSessionJson.Length > MaxSerializedSessionCharacters
                 || CapabilityCatalogRevision < 0
@@ -483,6 +510,7 @@ namespace ColorVision.Copilot
 
             return string.Equals(left.ProfileKey, right.ProfileKey, StringComparison.Ordinal)
                 && string.Equals(left.SerializedSessionJson, right.SerializedSessionJson, StringComparison.Ordinal)
+                && left.SessionResumeRestriction == right.SessionResumeRestriction
                 && left.CapabilityCatalogRevision == right.CapabilityCatalogRevision
                 && SequenceEqual(left.Capabilities, right.Capabilities, AreCapabilitiesEquivalent)
                 && left.ToolSurfaceVersion == right.ToolSurfaceVersion
@@ -659,7 +687,9 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(taskEventJournal);
             ArgumentNullException.ThrowIfNull(conversationMemory);
-            if (!CopilotAgentTaskEventJournal.TryCreateSnapshot(
+            if (!Enum.IsDefined(SessionResumeRestriction)
+                || TaskEventJournal?.IsStructurallyValid() != true
+                || !CopilotAgentTaskEventJournal.TryCreateSnapshot(
                     taskEventJournal,
                     out var taskEventJournalSnapshot))
             {
@@ -668,6 +698,9 @@ namespace ColorVision.Copilot
             var checkpoint = new CopilotAgentSessionCheckpoint(this)
             {
                 ProfileKey = ProfileKey,
+                // The journal may advance without replacing the opaque provider
+                // session. Preserve any restriction belonging to that session.
+                SessionResumeRestriction = GetSessionResumeRestriction(),
                 CapabilityCatalogRevision = CapabilityCatalogRevision,
                 Capabilities = Array.AsReadOnly(
                     (Capabilities ?? Array.Empty<CopilotAgentCheckpointCapability>()).ToArray()),

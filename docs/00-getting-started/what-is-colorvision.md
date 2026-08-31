@@ -1,3 +1,14 @@
+---
+knowledge_id: "platform.product"
+knowledge_type: "reference"
+status: "current"
+summary: "定位ColorVision视觉检测平台的业务场景和主要职责，不代替具体能力契约。"
+aliases: ["ColorVision是什么","视觉检测平台"]
+code_paths: ["ColorVision/ColorVision.csproj"]
+test_paths: []
+related: ["platform.system"]
+---
+
 # 什么是 ColorVision？
 
 ## 概述

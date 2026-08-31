@@ -295,7 +295,9 @@ namespace ColorVision.Copilot
                 ShowLocalCommandResult(command, "当前会话还没有可重试的请求。");
                 return;
             }
-            if (SelectedProfile?.IsConfigured != true)
+            var queuedFollowUp = _queuedLocalCommandExecution?.QueuedFollowUp;
+            var selectedProfile = queuedFollowUp?.Profile ?? SelectedProfile;
+            if (selectedProfile?.IsConfigured != true)
             {
                 ShowLocalCommandResult(
                     command,
@@ -304,6 +306,7 @@ namespace ColorVision.Copilot
             }
             if (!CanRegenerateMessage(message))
             {
+                var discoveryOptions = queuedFollowUp?.SubmissionContext.ProjectInstructionDiscoveryOptions ?? _currentCodexConfigOptions;
                 if (TryResolveLatestTurn(
                         message,
                         out var conversation,
@@ -313,12 +316,12 @@ namespace ColorVision.Copilot
                     && CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
                         conversation,
                         assistantMessage,
-                        CreateCurrentConversationRequestProfile(SelectedProfile, conversation),
+                        queuedFollowUp?.Profile ?? CreateCurrentConversationRequestProfile(selectedProfile, conversation),
                         CopilotCapabilityCatalog.Shared.GetSnapshot(
-                            _currentCodexConfigOptions.ConfiguredPluginsEnabled),
+                            discoveryOptions.ConfiguredPluginsEnabled),
                         CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                            _currentCodexConfigOptions.ConfiguredHooksEnabled,
-                            _currentCodexConfigOptions.ConfiguredPluginsEnabled)))
+                            discoveryOptions.ConfiguredHooksEnabled,
+                            discoveryOptions.ConfiguredPluginsEnabled)))
                 {
                     ShowLocalCommandResult(
                         command,
@@ -432,7 +435,11 @@ namespace ColorVision.Copilot
             }
 
             var previousMode = CopilotReasoningCapabilities.GetEffectiveMode(profile);
-            SetSelectedProfileReasoningMode(option.Mode);
+            if (!SetSelectedProfileReasoningMode(option.Mode))
+            {
+                ShowLocalCommandResult(command, PendingActionFeedbackText);
+                return;
+            }
             var changeLabel = previousMode == option.Mode ? "保持" : "已设置";
             ShowLocalCommandResult(
                 command,

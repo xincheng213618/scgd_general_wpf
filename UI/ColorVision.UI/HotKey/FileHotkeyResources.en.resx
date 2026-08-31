@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Category" xml:space="preserve"><value>Files and workspaces</value></data>
+  <data name="OpenFile" xml:space="preserve"><value>Open file</value></data>
+  <data name="OpenFileDescription" xml:space="preserve"><value>Select a file and open it with the appropriate editor.</value></data>
+  <data name="OpenWorkspace" xml:space="preserve"><value>Open workspace list</value></data>
+  <data name="OpenWorkspaceDescription" xml:space="preserve"><value>Browse recent workspaces and choose a project or solution to open.</value></data>
+  <data name="OpenFolder" xml:space="preserve"><value>Open folder workspace</value></data>
+  <data name="OpenFolderDescription" xml:space="preserve"><value>Choose a folder as the workspace, keeping the existing save and cancellation prompts when switching.</value></data>
+  <data name="Save" xml:space="preserve"><value>Save current document</value></data>
+  <data name="SaveDescription" xml:space="preserve"><value>Save changes to the current document when its editor permits saving.</value></data>
+  <data name="SaveAs" xml:space="preserve"><value>Save as</value></data>
+  <data name="SaveAsDescription" xml:space="preserve"><value>Open Save As when the current editor supports it. The image editor exports the current rendered image.</value></data>
+  <data name="CloseDocument" xml:space="preserve"><value>Close current tab</value></data>
+  <data name="CloseDocumentDescription" xml:space="preserve"><value>Close the current document tab, following the editor's confirmation flow for unsaved changes.</value></data>
+</root>

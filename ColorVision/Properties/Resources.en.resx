@@ -150,14 +150,8 @@
   <data name="LaunchSuccess" xml:space="preserve">
     <value>Started successfully</value>
   </data>
-  <data name="CurrentVersionIsUpToDate" xml:space="preserve">
-    <value>The current version is already the latest version</value>
-  </data>
   <data name="ConfirmUpdate" xml:space="preserve">
     <value>Update or not</value>
-  </data>
-  <data name="NewVersionFound" xml:space="preserve">
-    <value>New version found</value>
   </data>
 
 
@@ -197,9 +191,6 @@
   <data name="Bit" xml:space="preserve">
     <value>Bit</value>
   </data>
-  <data name="ReleaseDate" xml:space="preserve">
-    <value>Release Date</value>
-  </data>
   <data name="Delete" xml:space="preserve">
     <value>Delete</value>
   </data>
@@ -218,19 +209,11 @@
     <value>Local download</value>
   </data>
 
-  <data name="SoftwareVersionIdentical" xml:space="preserve">
-    <value>Same software version</value>
-  </data>
 
   <data name="FullScreen" xml:space="preserve">
     <value>Full Screen</value>
   </data>
-  <data name="TerminateUnresponsiveProcess" xml:space="preserve">
-    <value>Terminate unresponsive processes</value>
-  </data>
-  <data name="ClickYesToUpdateNow" xml:space="preserve">
-    <value>Click Yes to update immediately, click No to skip this version, or click Cancel to remind me later.</value>
-  </data>  <data name="UpdatePreviewCheckingHeading" xml:space="preserve">
+    <data name="UpdatePreviewCheckingHeading" xml:space="preserve">
     <value>Checking for updates</value>
   </data>
   <data name="UpdatePreviewCheckingSummary" xml:space="preserve">
@@ -366,9 +349,6 @@
     <value>Host requirement: {0}</value>
   </data>
 
-  <data name="UpdatePreviewHostVersionLabel" xml:space="preserve">
-    <value>Main app version</value>
-  </data>
   <data name="UpdatePreviewSkippedIncompatibleUpdatesFormat" xml:space="preserve">
     <value>The following updates are hidden because of compatibility requirements: {0}</value>
   </data>
@@ -411,9 +391,6 @@
   <data name="CopilotExpandConversationList" xml:space="preserve">
     <value>Expand Conversation List</value>
   </data>
-  <data name="CopilotConfigureCopilot" xml:space="preserve">
-    <value>Configure Copilot</value>
-  </data>
   <data name="Copy" xml:space="preserve">
     <value>Copy</value>
   </data>
@@ -423,17 +400,8 @@
   <data name="CopilotRetry" xml:space="preserve">
     <value>Retry</value>
   </data>
-  <data name="CopilotRegenerateAnswer" xml:space="preserve">
-    <value>Regenerate Current Answer</value>
-  </data>
   <data name="Refresh" xml:space="preserve">
     <value>Refresh</value>
-  </data>
-  <data name="CopilotRefreshWebContext" xml:space="preserve">
-    <value>Re-fetch Web Context and Generate Answer</value>
-  </data>
-  <data name="CopilotCurrentWindowContext" xml:space="preserve">
-    <value>Current Window Context</value>
   </data>
 
   <data name="CopilotPasteImage" xml:space="preserve">
@@ -477,18 +445,6 @@
   <data name="CopilotModel" xml:space="preserve">
     <value>Model</value>
   </data>
-  <data name="CopilotMaxToken" xml:space="preserve">
-    <value>Max Token</value>
-  </data>
-  <data name="CopilotTemperature" xml:space="preserve">
-    <value>Temperature</value>
-  </data>
-  <data name="CopilotToolRounds" xml:space="preserve">
-    <value>Tool Rounds</value>
-  </data>
-  <data name="CopilotSystemPrompt" xml:space="preserve">
-    <value>Custom Prompt</value>
-  </data>
 
   <data name="Cancel" xml:space="preserve">
     <value>Cancel</value>
@@ -508,9 +464,6 @@
   <data name="Open" xml:space="preserve">
     <value>Open</value>
   </data>
-  <data name="OpenWithSystemDefault" xml:space="preserve">
-    <value>Open with System Default</value>
-  </data>
   <data name="DesktopPetSendTestReminder" xml:space="preserve">
     <value>Send Test Reminder</value>
   </data>
@@ -522,9 +475,6 @@
   </data>
   <data name="DesktopPetShowMainWindow" xml:space="preserve">
     <value>Show Main Window</value>
-  </data>
-  <data name="DesktopPetSettings" xml:space="preserve">
-    <value>Pet Settings</value>
   </data>
   <data name="DesktopPetAlwaysOnTop" xml:space="preserve">
     <value>Always on Top</value>
@@ -601,9 +551,6 @@
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>Unsupported file format</value>
   </data>
-  <data name="PluginLoadFailedPrompt" xml:space="preserve">
-    <value>The software failed to open last time. Do you want to disable plugins?</value>
-  </data>
 
 
 
@@ -632,12 +579,6 @@
 
 
 
-  <data name="CannotFindUpdateRecord" xml:space="preserve">
-    <value>Cannot find update record</value>
-  </data>
-  <data name="ReadUpdateRecordFailed" xml:space="preserve">
-    <value>Failed to read update record: {0}</value>
-  </data>
   <data name="ShellExtensionNotFound" xml:space="preserve">
     <value>Shell Extension not found:\n{0}</value>
   </data>
@@ -679,12 +620,6 @@
 
 
 
-  <data name="CopilotUpdateSnapshot" xml:space="preserve">
-    <value>Update Snapshot</value>
-  </data>
-  <data name="CopilotAttachToQuestion" xml:space="preserve">
-    <value>Attach to Question</value>
-  </data>
   <data name="CopilotSelectHistoryOrNew" xml:space="preserve">
     <value>Select a history session from the right, or click + to create a new session.</value>
   </data>
@@ -696,9 +631,6 @@
   </data>
   <data name="CopilotSend" xml:space="preserve">
     <value>Send</value>
-  </data>
-  <data name="CopilotExecuteAgent" xml:space="preserve">
-    <value>Execute Agent</value>
   </data>
 
 

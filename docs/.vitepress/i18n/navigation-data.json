@@ -1,4 +1,5 @@
 {
+  "generated": "knowledge.mjs; edit Markdown metadata, not this file",
   "navItems": [
     {
       "text": {
@@ -8,33 +9,167 @@
     },
     {
       "text": {
-        "root": "快速上手"
+        "root": "知识地图"
       },
-      "link": "/00-getting-started/quick-start"
+      "link": "/knowledge/"
     },
     {
       "text": {
-        "root": "使用手册"
+        "root": "源码模块"
       },
-      "link": "/01-user-guide/README"
+      "items": [
+        {
+          "text": {
+            "root": "ColorVision"
+          },
+          "link": "/knowledge/code/source-ColorVision"
+        },
+        {
+          "text": {
+            "root": "UI"
+          },
+          "link": "/knowledge/code/source-UI"
+        },
+        {
+          "text": {
+            "root": "Engine"
+          },
+          "link": "/knowledge/code/source-Engine"
+        },
+        {
+          "text": {
+            "root": "Native"
+          },
+          "link": "/knowledge/code/source-Native"
+        },
+        {
+          "text": {
+            "root": "Plugins"
+          },
+          "link": "/knowledge/code/source-Plugins"
+        },
+        {
+          "text": {
+            "root": "Projects"
+          },
+          "link": "/knowledge/code/source-Projects"
+        },
+        {
+          "text": {
+            "root": "Web"
+          },
+          "link": "/knowledge/code/source-Web"
+        },
+        {
+          "text": {
+            "root": "Scripts"
+          },
+          "link": "/knowledge/code/source-Scripts"
+        },
+        {
+          "text": {
+            "root": "Test"
+          },
+          "link": "/knowledge/code/source-Test"
+        },
+        {
+          "text": {
+            "root": "AndroidWebViewApp"
+          },
+          "link": "/knowledge/code/source-AndroidWebViewApp"
+        },
+        {
+          "text": {
+            "root": "SDK"
+          },
+          "link": "/knowledge/code/source-SDK"
+        },
+        {
+          "text": {
+            "root": "src"
+          },
+          "link": "/knowledge/code/source-src"
+        },
+        {
+          "text": {
+            "root": "仓库与知识基础设施"
+          },
+          "link": "/knowledge/code/repository"
+        }
+      ]
     },
     {
       "text": {
-        "root": "开发与交付"
+        "root": "能力领域"
       },
-      "link": "/02-developer-guide/README"
-    },
-    {
-      "text": {
-        "root": "参考资料"
-      },
-      "link": "/04-api-reference/README"
-    },
-    {
-      "text": {
-        "root": "更新日志"
-      },
-      "link": "https://github.com/xincheng213618/scgd_general_wpf/blob/master/CHANGELOG.md"
+      "items": [
+        {
+          "text": {
+            "root": "AI 共治与知识维护"
+          },
+          "link": "/knowledge/domains/governance"
+        },
+        {
+          "text": {
+            "root": "平台与架构"
+          },
+          "link": "/knowledge/domains/platform"
+        },
+        {
+          "text": {
+            "root": "UI 与图像交互"
+          },
+          "link": "/knowledge/domains/ui"
+        },
+        {
+          "text": {
+            "root": "设备、服务与结果"
+          },
+          "link": "/knowledge/domains/engine"
+        },
+        {
+          "text": {
+            "root": "流程编排与执行"
+          },
+          "link": "/knowledge/domains/flow"
+        },
+        {
+          "text": {
+            "root": "算法与模板"
+          },
+          "link": "/knowledge/domains/algorithms"
+        },
+        {
+          "text": {
+            "root": "Copilot"
+          },
+          "link": "/knowledge/domains/copilot"
+        },
+        {
+          "text": {
+            "root": "客户项目"
+          },
+          "link": "/knowledge/domains/projects"
+        },
+        {
+          "text": {
+            "root": "插件与扩展"
+          },
+          "link": "/knowledge/domains/plugins"
+        },
+        {
+          "text": {
+            "root": "构建、测试与交付"
+          },
+          "link": "/knowledge/domains/delivery"
+        },
+        {
+          "text": {
+            "root": "运行与现场排查"
+          },
+          "link": "/knowledge/domains/operations"
+        }
+      ]
     },
     {
       "text": {
@@ -46,331 +181,3224 @@
   "sidebarItems": [
     {
       "text": {
-        "root": "开始"
+        "root": "检索入口"
       },
       "collapsed": false,
       "items": [
         {
           "text": {
-            "root": "文档首页"
+            "root": "项目知识入口"
           },
           "link": "/"
         },
         {
           "text": {
-            "root": "快速上手"
+            "root": "源码知识地图"
           },
-          "link": "/00-getting-started/quick-start"
-        },
-        {
-          "text": {
-            "root": "安装指南"
-          },
-          "link": "/00-getting-started/installation"
-        },
-        {
-          "text": {
-            "root": "首次运行"
-          },
-          "link": "/00-getting-started/first-steps"
-        },
-        {
-          "text": {
-            "root": "常见问题"
-          },
-          "link": "/01-user-guide/troubleshooting/common-issues"
+          "link": "/knowledge/"
         }
       ]
     },
     {
       "text": {
-        "root": "日常使用"
+        "root": "ColorVision"
       },
-      "collapsed": false,
+      "link": "/knowledge/code/source-ColorVision",
+      "collapsed": true,
       "items": [
         {
           "text": {
-            "root": "使用手册总览"
+            "root": "ColorVision/ 根目录与跨模块关联"
           },
-          "link": "/01-user-guide/README"
+          "link": "/knowledge/code/source-ColorVision#module-436f6c6f72566973696f6e",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "桌面交付制品与责任路由"
+              },
+              "link": "/02-developer-guide/deployment/overview"
+            },
+            {
+              "text": {
+                "root": "安装、构建与运行入口"
+              },
+              "link": "/00-getting-started/README"
+            },
+            {
+              "text": {
+                "root": "架构设计"
+              },
+              "link": "/03-architecture/README"
+            },
+            {
+              "text": {
+                "root": "Copilot 输入、命令与活动呈现"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-local-interactions"
+            },
+            {
+              "text": {
+                "root": "Backend Operations 中继与只读概览"
+              },
+              "link": "/02-developer-guide/backend/operations-relay"
+            },
+            {
+              "text": {
+                "root": "更新扫描保护：临时排除项与清理所有权"
+              },
+              "link": "/02-developer-guide/deployment/update-scan-protection"
+            },
+            {
+              "text": {
+                "root": "RC 注册、服务快照与连接测试"
+              },
+              "link": "/04-api-reference/engine-components/rc-registration"
+            },
+            {
+              "text": {
+                "root": "跨模块运行问题定位"
+              },
+              "link": "/01-user-guide/README"
+            },
+            {
+              "text": {
+                "root": "日志来源、历史读取与筛选"
+              },
+              "link": "/01-user-guide/interface/log-viewer"
+            },
+            {
+              "text": {
+                "root": "主窗口与入口装配"
+              },
+              "link": "/01-user-guide/interface/main-window"
+            },
+            {
+              "text": {
+                "root": "RBAC：登录缓存、会话与权限边界"
+              },
+              "link": "/03-architecture/security/rbac"
+            },
+            {
+              "text": {
+                "root": "架构运行时"
+              },
+              "link": "/03-architecture/overview/runtime"
+            },
+            {
+              "text": {
+                "root": "启动失败上报与缺依赖告警"
+              },
+              "link": "/03-architecture/components/startup-integrity"
+            },
+            {
+              "text": {
+                "root": "系统职责与跨模块边界"
+              },
+              "link": "/03-architecture/overview/system-overview"
+            },
+            {
+              "text": {
+                "root": "插件装载、依赖门禁与扩展发现"
+              },
+              "link": "/02-developer-guide/plugin-development/overview"
+            },
+            {
+              "text": {
+                "root": "WindowsServicePlugin：选包、本机安装与恢复"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/windows-service"
+            },
+            {
+              "text": {
+                "root": "编辑器选择、文档生命周期与停靠布局"
+              },
+              "link": "/04-api-reference/ui-components/editor-document-lifecycle"
+            },
+            {
+              "text": {
+                "root": "快捷键：发现、注册、编辑与释放"
+              },
+              "link": "/04-api-reference/ui-components/hotkeys"
+            },
+            {
+              "text": {
+                "root": "多图查看、刷新与缩略图缓存"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.ImageTools"
+            },
+            {
+              "text": {
+                "root": "界面语言：资源发现、配置与重启"
+              },
+              "link": "/04-api-reference/ui-components/localization"
+            },
+            {
+              "text": {
+                "root": "菜单：发现、显示、执行与管理提交"
+              },
+              "link": "/04-api-reference/ui-components/menus"
+            },
+            {
+              "text": {
+                "root": "应用搜索：入口、候选与执行"
+              },
+              "link": "/04-api-reference/ui-components/search"
+            },
+            {
+              "text": {
+                "root": "TCP 监听、协议分发与消息记录"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.SocketProtocol"
+            },
+            {
+              "text": {
+                "root": "状态栏：发现、刷新与宿主生命周期"
+              },
+              "link": "/04-api-reference/ui-components/status-bar"
+            },
+            {
+              "text": {
+                "root": "存储清理与选择性设置重置"
+              },
+              "link": "/04-api-reference/ui-components/storage-maintenance"
+            },
+            {
+              "text": {
+                "root": "主题选择、资源应用与窗口外观"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.Themes"
+            },
+            {
+              "text": {
+                "root": "配置向导：步骤、应用与完成边界"
+              },
+              "link": "/04-api-reference/ui-components/wizards"
+            },
+            {
+              "text": {
+                "root": "安装制品与运行输出"
+              },
+              "link": "/00-getting-started/installation"
+            },
+            {
+              "text": {
+                "root": "主程序启动与最小图像验证"
+              },
+              "link": "/00-getting-started/first-steps"
+            },
+            {
+              "text": {
+                "root": "什么是 ColorVision？"
+              },
+              "link": "/00-getting-started/what-is-colorvision"
+            }
+          ]
         },
         {
           "text": {
-            "root": "主窗口导览"
+            "root": "ColorVision/Copilot"
           },
-          "link": "/01-user-guide/interface/main-window"
+          "link": "/knowledge/code/source-ColorVision#module-436f6c6f72566973696f6e2f436f70696c6f74",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "Copilot Agent Runtime"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-agent-runtime"
+            },
+            {
+              "text": {
+                "root": "Copilot 设置、持久化与连接诊断"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-configuration"
+            },
+            {
+              "text": {
+                "root": "Copilot Agent 执行链"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-agent-execution"
+            },
+            {
+              "text": {
+                "root": "Copilot 扩展、MCP 与 Hook"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-agent-extensions"
+            },
+            {
+              "text": {
+                "root": "Copilot 输入、命令与活动呈现"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-local-interactions"
+            },
+            {
+              "text": {
+                "root": "Copilot 生命周期、预算与 Skills"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-agent-lifecycle"
+            },
+            {
+              "text": {
+                "root": "Copilot 任务、恢复与内置工具"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-agent-session-and-tools"
+            },
+            {
+              "text": {
+                "root": "Copilot 工具契约"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-agent-tool-contracts"
+            },
+            {
+              "text": {
+                "root": "Copilot ViewModel 维护地图"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-view-model-architecture"
+            },
+            {
+              "text": {
+                "root": "界面语言：资源发现、配置与重启"
+              },
+              "link": "/04-api-reference/ui-components/localization"
+            },
+            {
+              "text": {
+                "root": "ColorVision 本地 MCP"
+              },
+              "link": "/02-developer-guide/core-concepts/colorvision-mcp"
+            }
+          ]
         },
         {
           "text": {
-            "root": "连接与配置设备"
+            "root": "ColorVision/FloatingBall"
           },
-          "link": "/01-user-guide/devices/overview"
+          "link": "/knowledge/code/source-ColorVision#module-436f6c6f72566973696f6e2f466c6f6174696e6742616c6c",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "Copilot 输入、命令与活动呈现"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-local-interactions"
+            }
+          ]
         },
         {
           "text": {
-            "root": "流程设计与执行"
+            "root": "ColorVision/NativeLogging"
           },
-          "link": "/01-user-guide/workflow/README"
+          "link": "/knowledge/code/source-ColorVision#module-436f6c6f72566973696f6e2f4e61746976654c6f6767696e67",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "日志来源、历史读取与筛选"
+              },
+              "link": "/01-user-guide/interface/log-viewer"
+            }
+          ]
         },
         {
           "text": {
-            "root": "数据管理"
+            "root": "ColorVision/Recovery"
           },
-          "link": "/01-user-guide/data-management/README"
+          "link": "/knowledge/code/source-ColorVision#module-436f6c6f72566973696f6e2f5265636f76657279",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "桌面交付制品与责任路由"
+              },
+              "link": "/02-developer-guide/deployment/overview"
+            },
+            {
+              "text": {
+                "root": "自动更新"
+              },
+              "link": "/02-developer-guide/deployment/auto-update"
+            },
+            {
+              "text": {
+                "root": "跨模块运行问题定位"
+              },
+              "link": "/01-user-guide/README"
+            },
+            {
+              "text": {
+                "root": "架构运行时"
+              },
+              "link": "/03-architecture/overview/runtime"
+            },
+            {
+              "text": {
+                "root": "应用搜索：入口、候选与执行"
+              },
+              "link": "/04-api-reference/ui-components/search"
+            }
+          ]
         },
         {
           "text": {
-            "root": "图像编辑器"
+            "root": "ColorVision/ServiceHost"
           },
-          "link": "/01-user-guide/image-editor/overview"
+          "link": "/knowledge/code/source-ColorVision#module-436f6c6f72566973696f6e2f53657276696365486f7374",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "Explorer 缩略图读取与 COM 注册"
+              },
+              "link": "/04-api-reference/engine-components/ColorVision.ShellExtension"
+            },
+            {
+              "text": {
+                "root": "ColorVisionServiceHost：本机权限代理与生命周期"
+              },
+              "link": "/03-architecture/components/service-host"
+            }
+          ]
         },
         {
           "text": {
-            "root": "日志查看器"
+            "root": "ColorVision/Settings"
           },
-          "link": "/01-user-guide/interface/log-viewer"
+          "link": "/knowledge/code/source-ColorVision#module-436f6c6f72566973696f6e2f53657474696e6773",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "存储清理与选择性设置重置"
+              },
+              "link": "/04-api-reference/ui-components/storage-maintenance"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "ColorVision/Themes"
+          },
+          "link": "/knowledge/code/source-ColorVision#module-436f6c6f72566973696f6e2f5468656d6573",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "主窗口与入口装配"
+              },
+              "link": "/01-user-guide/interface/main-window"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "ColorVision/Update"
+          },
+          "link": "/knowledge/code/source-ColorVision#module-436f6c6f72566973696f6e2f557064617465",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "桌面交付制品与责任路由"
+              },
+              "link": "/02-developer-guide/deployment/overview"
+            },
+            {
+              "text": {
+                "root": "自动更新"
+              },
+              "link": "/02-developer-guide/deployment/auto-update"
+            },
+            {
+              "text": {
+                "root": "更新扫描保护：临时排除项与清理所有权"
+              },
+              "link": "/02-developer-guide/deployment/update-scan-protection"
+            },
+            {
+              "text": {
+                "root": "Explorer 缩略图读取与 COM 注册"
+              },
+              "link": "/04-api-reference/engine-components/ColorVision.ShellExtension"
+            },
+            {
+              "text": {
+                "root": "快捷键：发现、注册、编辑与释放"
+              },
+              "link": "/04-api-reference/ui-components/hotkeys"
+            },
+            {
+              "text": {
+                "root": "存储清理与选择性设置重置"
+              },
+              "link": "/04-api-reference/ui-components/storage-maintenance"
+            },
+            {
+              "text": {
+                "root": "安装制品与运行输出"
+              },
+              "link": "/00-getting-started/installation"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "ColorVision/Wizards"
+          },
+          "link": "/knowledge/code/source-ColorVision#module-436f6c6f72566973696f6e2f57697a61726473",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "配置向导：步骤、应用与完成边界"
+              },
+              "link": "/04-api-reference/ui-components/wizards"
+            }
+          ]
         }
       ]
     },
     {
       "text": {
-        "root": "项目与插件"
+        "root": "UI"
+      },
+      "link": "/knowledge/code/source-UI",
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "UI/ 根目录与跨模块关联"
+          },
+          "link": "/knowledge/code/source-UI#module-5549",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "UI 知识入口"
+              },
+              "link": "/04-api-reference/ui-components/README"
+            },
+            {
+              "text": {
+                "root": "UI DLL 发布"
+              },
+              "link": "/04-api-reference/ui-components/publishing"
+            },
+            {
+              "text": {
+                "root": "UI DLL 速查"
+              },
+              "link": "/04-api-reference/ui-components/component-handbook"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "UI/ColorVision.Algorithms"
+          },
+          "link": "/knowledge/code/source-UI#module-55492f436f6c6f72566973696f6e2e416c676f726974686d73",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "算法与模板知识入口"
+              },
+              "link": "/04-api-reference/algorithms/README"
+            },
+            {
+              "text": {
+                "root": "ROI"
+              },
+              "link": "/04-api-reference/algorithms/primitives/roi"
+            },
+            {
+              "text": {
+                "root": "统一图像算法平台 V1"
+              },
+              "link": "/02-developer-guide/core-concepts/image-algorithm-platform-v1"
+            },
+            {
+              "text": {
+                "root": "Engine 结果展示链路"
+              },
+              "link": "/04-api-reference/engine-components/result-handoff-chain"
+            },
+            {
+              "text": {
+                "root": "系统职责与跨模块边界"
+              },
+              "link": "/03-architecture/overview/system-overview"
+            },
+            {
+              "text": {
+                "root": "UI DLL 发布"
+              },
+              "link": "/04-api-reference/ui-components/publishing"
+            },
+            {
+              "text": {
+                "root": "ONNX / AI 推理接入设计（Deferred） [规划]"
+              },
+              "link": "/02-developer-guide/core-concepts/onnx-inference-future-design"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "UI/ColorVision.Common"
+          },
+          "link": "/knowledge/code/source-UI#module-55492f436f6c6f72566973696f6e2e436f6d6d6f6e",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "UI 组件目录"
+              },
+              "link": "/04-api-reference/ui-components/control-catalog"
+            },
+            {
+              "text": {
+                "root": "Copilot 扩展、MCP 与 Hook"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-agent-extensions"
+            },
+            {
+              "text": {
+                "root": "模板注册、参数与持久化"
+              },
+              "link": "/03-architecture/components/templates/design"
+            },
+            {
+              "text": {
+                "root": "扩展性开发"
+              },
+              "link": "/02-developer-guide/core-concepts/extensibility"
+            },
+            {
+              "text": {
+                "root": "安全与权限控制"
+              },
+              "link": "/03-architecture/security/overview"
+            },
+            {
+              "text": {
+                "root": "插件装载、依赖门禁与扩展发现"
+              },
+              "link": "/02-developer-guide/plugin-development/overview"
+            },
+            {
+              "text": {
+                "root": "共享接口、属性通知与粗粒度权限"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.Common"
+            },
+            {
+              "text": {
+                "root": "配置持久化、重载与对象所有权"
+              },
+              "link": "/04-api-reference/ui-components/configuration"
+            },
+            {
+              "text": {
+                "root": "数据库 Provider、表浏览与写入契约"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.Database"
+            },
+            {
+              "text": {
+                "root": "多图查看、刷新与缩略图缓存"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.ImageTools"
+            },
+            {
+              "text": {
+                "root": "菜单：发现、显示、执行与管理提交"
+              },
+              "link": "/04-api-reference/ui-components/menus"
+            },
+            {
+              "text": {
+                "root": "应用搜索：入口、候选与执行"
+              },
+              "link": "/04-api-reference/ui-components/search"
+            },
+            {
+              "text": {
+                "root": "设置窗口：发现、编辑与关闭契约"
+              },
+              "link": "/04-api-reference/ui-components/settings"
+            },
+            {
+              "text": {
+                "root": "状态栏：发现、刷新与宿主生命周期"
+              },
+              "link": "/04-api-reference/ui-components/status-bar"
+            },
+            {
+              "text": {
+                "root": "配置向导：步骤、应用与完成边界"
+              },
+              "link": "/04-api-reference/ui-components/wizards"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "UI/ColorVision.Core"
+          },
+          "link": "/knowledge/code/source-UI#module-55492f436f6c6f72566973696f6e2e436f7265",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "FindLightArea 发光区定位模板"
+              },
+              "link": "/04-api-reference/algorithms/templates/find-light-area"
+            },
+            {
+              "text": {
+                "root": "ImageEditor 直接 native 分析"
+              },
+              "link": "/04-api-reference/algorithms/local-native-analysis"
+            },
+            {
+              "text": {
+                "root": "日志来源、历史读取与筛选"
+              },
+              "link": "/01-user-guide/interface/log-viewer"
+            },
+            {
+              "text": {
+                "root": "源图像帧：租约、位图复制与缓存失效"
+              },
+              "link": "/04-api-reference/ui-components/image-frame-lifetime"
+            },
+            {
+              "text": {
+                "root": "景深融合：输入、执行与结果生命周期"
+              },
+              "link": "/04-api-reference/ui-components/image-fusion"
+            },
+            {
+              "text": {
+                "root": "系统要求"
+              },
+              "link": "/00-getting-started/prerequisites"
+            },
+            {
+              "text": {
+                "root": "OpenCV 和 native 集成开发指南"
+              },
+              "link": "/02-developer-guide/engine-development/opencv-integration"
+            },
+            {
+              "text": {
+                "root": "ColorVision.Core"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.Core"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "UI/ColorVision.Database"
+          },
+          "link": "/knowledge/code/source-UI#module-55492f436f6c6f72566973696f6e2e4461746162617365",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "数据所有者与存储定位"
+              },
+              "link": "/01-user-guide/data-management/README"
+            },
+            {
+              "text": {
+                "root": "MySQL 结果清理、备份与失败边界"
+              },
+              "link": "/04-api-reference/engine-components/mysql-maintenance"
+            },
+            {
+              "text": {
+                "root": "MySQL SQL 恢复、重置与资源保留"
+              },
+              "link": "/04-api-reference/engine-components/mysql-recovery"
+            },
+            {
+              "text": {
+                "root": "数据库 Provider、表浏览与写入契约"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.Database"
+            },
+            {
+              "text": {
+                "root": "通用查询、条件会话与整表操作"
+              },
+              "link": "/04-api-reference/ui-components/database-query"
+            },
+            {
+              "text": {
+                "root": "SQLite 正文存储、迁移与文件维护"
+              },
+              "link": "/04-api-reference/ui-components/sqlite-storage"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "UI/ColorVision.ImageEditor"
+          },
+          "link": "/knowledge/code/source-UI#module-55492f436f6c6f72566973696f6e2e496d616765456469746f72",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "UI 组件目录"
+              },
+              "link": "/04-api-reference/ui-components/control-catalog"
+            },
+            {
+              "text": {
+                "root": "UI 知识入口"
+              },
+              "link": "/04-api-reference/ui-components/README"
+            },
+            {
+              "text": {
+                "root": "ImageEditor 直接 native 分析"
+              },
+              "link": "/04-api-reference/algorithms/local-native-analysis"
+            },
+            {
+              "text": {
+                "root": "统一图像算法平台 V1"
+              },
+              "link": "/02-developer-guide/core-concepts/image-algorithm-platform-v1"
+            },
+            {
+              "text": {
+                "root": "Copilot 扩展、MCP 与 Hook"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-agent-extensions"
+            },
+            {
+              "text": {
+                "root": "Engine 结果展示链路"
+              },
+              "link": "/04-api-reference/engine-components/result-handoff-chain"
+            },
+            {
+              "text": {
+                "root": "系统职责与跨模块边界"
+              },
+              "link": "/03-architecture/overview/system-overview"
+            },
+            {
+              "text": {
+                "root": "UI 运行时组件"
+              },
+              "link": "/04-api-reference/ui-components/ui-runtime-handoff"
+            },
+            {
+              "text": {
+                "root": "ColorVision.ImageEditor：打开、绘制与输出"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.ImageEditor"
+            },
+            {
+              "text": {
+                "root": "ImageEditor：上下文、工具装配与临时选区"
+              },
+              "link": "/04-api-reference/ui-components/image-editor-context"
+            },
+            {
+              "text": {
+                "root": "源图像帧：租约、位图复制与缓存失效"
+              },
+              "link": "/04-api-reference/ui-components/image-frame-lifetime"
+            },
+            {
+              "text": {
+                "root": "状态栏：发现、刷新与宿主生命周期"
+              },
+              "link": "/04-api-reference/ui-components/status-bar"
+            },
+            {
+              "text": {
+                "root": "设置、流程与结果的导入导出边界"
+              },
+              "link": "/01-user-guide/data-management/export-import"
+            },
+            {
+              "text": {
+                "root": "Blob / 连通域 V1（M5.1）"
+              },
+              "link": "/02-developer-guide/core-concepts/blob-analysis-v1"
+            },
+            {
+              "text": {
+                "root": "圆拟合 V1（M6.3）"
+              },
+              "link": "/02-developer-guide/core-concepts/circle-fit-v1"
+            },
+            {
+              "text": {
+                "root": "轮廓提取 V1（M5.2）"
+              },
+              "link": "/02-developer-guide/core-concepts/contour-analysis-v1"
+            },
+            {
+              "text": {
+                "root": "FFT / 频域分析 V1（M10）"
+              },
+              "link": "/02-developer-guide/core-concepts/frequency-spectrum-v1"
+            },
+            {
+              "text": {
+                "root": "几何变换 V1（M7）"
+              },
+              "link": "/02-developer-guide/core-concepts/geometric-transform-v1"
+            },
+            {
+              "text": {
+                "root": "图像比较基础 V1（M3）"
+              },
+              "link": "/02-developer-guide/core-concepts/image-comparison-v1"
+            },
+            {
+              "text": {
+                "root": "图像比较高级 V1（M4）"
+              },
+              "link": "/02-developer-guide/core-concepts/image-comparison-advanced-v1"
+            },
+            {
+              "text": {
+                "root": "灰度与颜色剖面 V1（M2）"
+              },
+              "link": "/02-developer-guide/core-concepts/image-profile-v1"
+            },
+            {
+              "text": {
+                "root": "图像配准 V1（M8.1）"
+              },
+              "link": "/02-developer-guide/core-concepts/image-registration-v1"
+            },
+            {
+              "text": {
+                "root": "成像校正 V1（M9）"
+              },
+              "link": "/02-developer-guide/core-concepts/imaging-correction-v1"
+            },
+            {
+              "text": {
+                "root": "镜头畸变校正 V1（M8.2）"
+              },
+              "link": "/02-developer-guide/core-concepts/lens-distortion-correction-v1"
+            },
+            {
+              "text": {
+                "root": "直线拟合 V1（M6.2）"
+              },
+              "link": "/02-developer-guide/core-concepts/line-fit-v1"
+            },
+            {
+              "text": {
+                "root": "摩尔纹分析 V1（M11）"
+              },
+              "link": "/02-developer-guide/core-concepts/moire-analysis-v1"
+            },
+            {
+              "text": {
+                "root": "ROI 统计 V1（M1）"
+              },
+              "link": "/02-developer-guide/core-concepts/roi-statistics-v1"
+            },
+            {
+              "text": {
+                "root": "亚像素边缘 V1（M6.1）"
+              },
+              "link": "/02-developer-guide/core-concepts/subpixel-edge-v1"
+            },
+            {
+              "text": {
+                "root": "UI DLL 速查"
+              },
+              "link": "/04-api-reference/ui-components/component-handbook"
+            },
+            {
+              "text": {
+                "root": "ONNX / AI 推理接入设计（Deferred） [规划]"
+              },
+              "link": "/02-developer-guide/core-concepts/onnx-inference-future-design"
+            },
+            {
+              "text": {
+                "root": "本地相机内存帧预览：生命周期与显示语义 [规划]"
+              },
+              "link": "/02-developer-guide/engine-development/local-camera-memory-preview-runtime"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "UI/ColorVision.ImageTools"
+          },
+          "link": "/knowledge/code/source-UI#module-55492f436f6c6f72566973696f6e2e496d616765546f6f6c73",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "景深融合：输入、执行与结果生命周期"
+              },
+              "link": "/04-api-reference/ui-components/image-fusion"
+            },
+            {
+              "text": {
+                "root": "多图查看、刷新与缩略图缓存"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.ImageTools"
+            },
+            {
+              "text": {
+                "root": "存储清理与选择性设置重置"
+              },
+              "link": "/04-api-reference/ui-components/storage-maintenance"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "UI/ColorVision.Rbac"
+          },
+          "link": "/knowledge/code/source-UI#module-55492f436f6c6f72566973696f6e2e52626163",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "RBAC：登录缓存、会话与权限边界"
+              },
+              "link": "/03-architecture/security/rbac"
+            },
+            {
+              "text": {
+                "root": "安全与权限控制"
+              },
+              "link": "/03-architecture/security/overview"
+            },
+            {
+              "text": {
+                "root": "共享接口、属性通知与粗粒度权限"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.Common"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "UI/ColorVision.Scheduler"
+          },
+          "link": "/knowledge/code/source-UI#module-55492f436f6c6f72566973696f6e2e5363686564756c6572",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "Quartz 任务定义、恢复与执行历史"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.Scheduler"
+            },
+            {
+              "text": {
+                "root": "状态栏：发现、刷新与宿主生命周期"
+              },
+              "link": "/04-api-reference/ui-components/status-bar"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "UI/ColorVision.SocketProtocol"
+          },
+          "link": "/knowledge/code/source-UI#module-55492f436f6c6f72566973696f6e2e536f636b657450726f746f636f6c",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "数据所有者与存储定位"
+              },
+              "link": "/01-user-guide/data-management/README"
+            },
+            {
+              "text": {
+                "root": "数据库清理窗口、能力接入与完成边界"
+              },
+              "link": "/04-api-reference/engine-components/database-maintenance"
+            },
+            {
+              "text": {
+                "root": "跨模块运行问题定位"
+              },
+              "link": "/01-user-guide/README"
+            },
+            {
+              "text": {
+                "root": "通用查询、条件会话与整表操作"
+              },
+              "link": "/04-api-reference/ui-components/database-query"
+            },
+            {
+              "text": {
+                "root": "TCP 监听、协议分发与消息记录"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.SocketProtocol"
+            },
+            {
+              "text": {
+                "root": "SQLite 正文存储、迁移与文件维护"
+              },
+              "link": "/04-api-reference/ui-components/sqlite-storage"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "UI/ColorVision.Solution"
+          },
+          "link": "/knowledge/code/source-UI#module-55492f436f6c6f72566973696f6e2e536f6c7574696f6e",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "UI 组件目录"
+              },
+              "link": "/04-api-reference/ui-components/control-catalog"
+            },
+            {
+              "text": {
+                "root": "主窗口与入口装配"
+              },
+              "link": "/01-user-guide/interface/main-window"
+            },
+            {
+              "text": {
+                "root": "终端进程、会话与脚本运行"
+              },
+              "link": "/01-user-guide/interface/terminal"
+            },
+            {
+              "text": {
+                "root": "编辑器选择、文档生命周期与停靠布局"
+              },
+              "link": "/04-api-reference/ui-components/editor-document-lifecycle"
+            },
+            {
+              "text": {
+                "root": "快捷键：发现、注册、编辑与释放"
+              },
+              "link": "/04-api-reference/ui-components/hotkeys"
+            },
+            {
+              "text": {
+                "root": "资源打开与单工作区切换"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.Solution"
+            },
+            {
+              "text": {
+                "root": "状态栏：发现、刷新与宿主生命周期"
+              },
+              "link": "/04-api-reference/ui-components/status-bar"
+            },
+            {
+              "text": {
+                "root": "主程序启动与最小图像验证"
+              },
+              "link": "/00-getting-started/first-steps"
+            },
+            {
+              "text": {
+                "root": "UI DLL 速查"
+              },
+              "link": "/04-api-reference/ui-components/component-handbook"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "UI/ColorVision.Themes"
+          },
+          "link": "/knowledge/code/source-UI#module-55492f436f6c6f72566973696f6e2e5468656d6573",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "主题选择、资源应用与窗口外观"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.Themes"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "UI/ColorVision.UI"
+          },
+          "link": "/knowledge/code/source-UI#module-55492f436f6c6f72566973696f6e2e5549",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "数据所有者与存储定位"
+              },
+              "link": "/01-user-guide/data-management/README"
+            },
+            {
+              "text": {
+                "root": "扩展任务入口"
+              },
+              "link": "/04-api-reference/extensions/README"
+            },
+            {
+              "text": {
+                "root": "插件装配与模块知识入口"
+              },
+              "link": "/04-api-reference/plugins/README"
+            },
+            {
+              "text": {
+                "root": "UI 组件目录"
+              },
+              "link": "/04-api-reference/ui-components/control-catalog"
+            },
+            {
+              "text": {
+                "root": "ColorVision.UI 壳层责任与知识入口"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.UI"
+            },
+            {
+              "text": {
+                "root": "UI 知识入口"
+              },
+              "link": "/04-api-reference/ui-components/README"
+            },
+            {
+              "text": {
+                "root": "模板编辑入口与菜单契约"
+              },
+              "link": "/04-api-reference/algorithms/templates/template-menu-entries"
+            },
+            {
+              "text": {
+                "root": "Copilot 设置、持久化与连接诊断"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-configuration"
+            },
+            {
+              "text": {
+                "root": "自动更新"
+              },
+              "link": "/02-developer-guide/deployment/auto-update"
+            },
+            {
+              "text": {
+                "root": "更新扫描保护：临时排除项与清理所有权"
+              },
+              "link": "/02-developer-guide/deployment/update-scan-protection"
+            },
+            {
+              "text": {
+                "root": "数据库清理窗口、能力接入与完成边界"
+              },
+              "link": "/04-api-reference/engine-components/database-maintenance"
+            },
+            {
+              "text": {
+                "root": "Engine 设备资源与运行装配"
+              },
+              "link": "/04-api-reference/engine-components/device-service-chain"
+            },
+            {
+              "text": {
+                "root": "MySQL SQL 恢复、重置与资源保留"
+              },
+              "link": "/04-api-reference/engine-components/mysql-recovery"
+            },
+            {
+              "text": {
+                "root": "Explorer 缩略图读取与 COM 注册"
+              },
+              "link": "/04-api-reference/engine-components/ColorVision.ShellExtension"
+            },
+            {
+              "text": {
+                "root": "模板注册、参数与持久化"
+              },
+              "link": "/03-architecture/components/templates/design"
+            },
+            {
+              "text": {
+                "root": "跨模块运行问题定位"
+              },
+              "link": "/01-user-guide/README"
+            },
+            {
+              "text": {
+                "root": "日志来源、历史读取与筛选"
+              },
+              "link": "/01-user-guide/interface/log-viewer"
+            },
+            {
+              "text": {
+                "root": "主窗口与入口装配"
+              },
+              "link": "/01-user-guide/interface/main-window"
+            },
+            {
+              "text": {
+                "root": "终端进程、会话与脚本运行"
+              },
+              "link": "/01-user-guide/interface/terminal"
+            },
+            {
+              "text": {
+                "root": "扩展性开发"
+              },
+              "link": "/02-developer-guide/core-concepts/extensibility"
+            },
+            {
+              "text": {
+                "root": "架构运行时"
+              },
+              "link": "/03-architecture/overview/runtime"
+            },
+            {
+              "text": {
+                "root": "ColorVisionServiceHost：本机权限代理与生命周期"
+              },
+              "link": "/03-architecture/components/service-host"
+            },
+            {
+              "text": {
+                "root": "系统职责与跨模块边界"
+              },
+              "link": "/03-architecture/overview/system-overview"
+            },
+            {
+              "text": {
+                "root": "插件产物、安装与交付"
+              },
+              "link": "/02-developer-guide/plugin-development/getting-started"
+            },
+            {
+              "text": {
+                "root": "插件装载、依赖门禁与扩展发现"
+              },
+              "link": "/02-developer-guide/plugin-development/overview"
+            },
+            {
+              "text": {
+                "root": "WindowsServicePlugin：选包、本机安装与恢复"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/windows-service"
+            },
+            {
+              "text": {
+                "root": "共享接口、属性通知与粗粒度权限"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.Common"
+            },
+            {
+              "text": {
+                "root": "配置持久化、重载与对象所有权"
+              },
+              "link": "/04-api-reference/ui-components/configuration"
+            },
+            {
+              "text": {
+                "root": "UI 运行时组件"
+              },
+              "link": "/04-api-reference/ui-components/ui-runtime-handoff"
+            },
+            {
+              "text": {
+                "root": "编辑器选择、文档生命周期与停靠布局"
+              },
+              "link": "/04-api-reference/ui-components/editor-document-lifecycle"
+            },
+            {
+              "text": {
+                "root": "快捷键：发现、注册、编辑与释放"
+              },
+              "link": "/04-api-reference/ui-components/hotkeys"
+            },
+            {
+              "text": {
+                "root": "ImageEditor：上下文、工具装配与临时选区"
+              },
+              "link": "/04-api-reference/ui-components/image-editor-context"
+            },
+            {
+              "text": {
+                "root": "界面语言：资源发现、配置与重启"
+              },
+              "link": "/04-api-reference/ui-components/localization"
+            },
+            {
+              "text": {
+                "root": "菜单：发现、显示、执行与管理提交"
+              },
+              "link": "/04-api-reference/ui-components/menus"
+            },
+            {
+              "text": {
+                "root": "PropertyGrid 属性编辑契约"
+              },
+              "link": "/04-api-reference/ui-components/property-grid"
+            },
+            {
+              "text": {
+                "root": "Quartz 任务定义、恢复与执行历史"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.Scheduler"
+            },
+            {
+              "text": {
+                "root": "应用搜索：入口、候选与执行"
+              },
+              "link": "/04-api-reference/ui-components/search"
+            },
+            {
+              "text": {
+                "root": "设置窗口：发现、编辑与关闭契约"
+              },
+              "link": "/04-api-reference/ui-components/settings"
+            },
+            {
+              "text": {
+                "root": "资源打开与单工作区切换"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.Solution"
+            },
+            {
+              "text": {
+                "root": "状态栏：发现、刷新与宿主生命周期"
+              },
+              "link": "/04-api-reference/ui-components/status-bar"
+            },
+            {
+              "text": {
+                "root": "存储清理与选择性设置重置"
+              },
+              "link": "/04-api-reference/ui-components/storage-maintenance"
+            },
+            {
+              "text": {
+                "root": "主题选择、资源应用与窗口外观"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.Themes"
+            },
+            {
+              "text": {
+                "root": "配置向导：步骤、应用与完成边界"
+              },
+              "link": "/04-api-reference/ui-components/wizards"
+            },
+            {
+              "text": {
+                "root": "设置、流程与结果的导入导出边界"
+              },
+              "link": "/01-user-guide/data-management/export-import"
+            },
+            {
+              "text": {
+                "root": "主程序启动与最小图像验证"
+              },
+              "link": "/00-getting-started/first-steps"
+            },
+            {
+              "text": {
+                "root": "UI DLL 速查"
+              },
+              "link": "/04-api-reference/ui-components/component-handbook"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "UI/ColorVision.UI.Desktop"
+          },
+          "link": "/knowledge/code/source-UI#module-55492f436f6c6f72566973696f6e2e55492e4465736b746f70",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "Android 运维伴侣"
+              },
+              "link": "/02-developer-guide/backend/android-operations"
+            },
+            {
+              "text": {
+                "root": "Backend Operations 中继与只读概览"
+              },
+              "link": "/02-developer-guide/backend/operations-relay"
+            },
+            {
+              "text": {
+                "root": "自动更新"
+              },
+              "link": "/02-developer-guide/deployment/auto-update"
+            },
+            {
+              "text": {
+                "root": "插件产物、安装与交付"
+              },
+              "link": "/02-developer-guide/plugin-development/getting-started"
+            },
+            {
+              "text": {
+                "root": "插件装载、依赖门禁与扩展发现"
+              },
+              "link": "/02-developer-guide/plugin-development/overview"
+            },
+            {
+              "text": {
+                "root": "快捷键：发现、注册、编辑与释放"
+              },
+              "link": "/04-api-reference/ui-components/hotkeys"
+            },
+            {
+              "text": {
+                "root": "界面语言：资源发现、配置与重启"
+              },
+              "link": "/04-api-reference/ui-components/localization"
+            },
+            {
+              "text": {
+                "root": "菜单：发现、显示、执行与管理提交"
+              },
+              "link": "/04-api-reference/ui-components/menus"
+            },
+            {
+              "text": {
+                "root": "应用搜索：入口、候选与执行"
+              },
+              "link": "/04-api-reference/ui-components/search"
+            },
+            {
+              "text": {
+                "root": "设置窗口：发现、编辑与关闭契约"
+              },
+              "link": "/04-api-reference/ui-components/settings"
+            },
+            {
+              "text": {
+                "root": "存储清理与选择性设置重置"
+              },
+              "link": "/04-api-reference/ui-components/storage-maintenance"
+            },
+            {
+              "text": {
+                "root": "配置向导：步骤、应用与完成边界"
+              },
+              "link": "/04-api-reference/ui-components/wizards"
+            },
+            {
+              "text": {
+                "root": "设置、流程与结果的导入导出边界"
+              },
+              "link": "/01-user-guide/data-management/export-import"
+            },
+            {
+              "text": {
+                "root": "ColorVision.UI.Desktop"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.UI.Desktop"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "Engine"
+      },
+      "link": "/knowledge/code/source-Engine",
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "Engine/ColorVision.Engine"
+          },
+          "link": "/knowledge/code/source-Engine#module-456e67696e652f436f6c6f72566973696f6e2e456e67696e65",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "算法与模板知识入口"
+              },
+              "link": "/04-api-reference/algorithms/README"
+            },
+            {
+              "text": {
+                "root": "ROI"
+              },
+              "link": "/04-api-reference/algorithms/primitives/roi"
+            },
+            {
+              "text": {
+                "root": "Engine 模板共享构件"
+              },
+              "link": "/04-api-reference/algorithms/primitives/common-modules"
+            },
+            {
+              "text": {
+                "root": "Engine 知识入口"
+              },
+              "link": "/04-api-reference/engine-components/README"
+            },
+            {
+              "text": {
+                "root": "Flow 节点检索入口"
+              },
+              "link": "/04-api-reference/flow_nodes_summary"
+            },
+            {
+              "text": {
+                "root": "数据所有者与存储定位"
+              },
+              "link": "/01-user-guide/data-management/README"
+            },
+            {
+              "text": {
+                "root": "架构设计"
+              },
+              "link": "/03-architecture/README"
+            },
+            {
+              "text": {
+                "root": "扩展任务入口"
+              },
+              "link": "/04-api-reference/extensions/README"
+            },
+            {
+              "text": {
+                "root": "DataLoad 数据加载模板"
+              },
+              "link": "/04-api-reference/algorithms/templates/data-load-template"
+            },
+            {
+              "text": {
+                "root": "FindLightArea 发光区定位模板"
+              },
+              "link": "/04-api-reference/algorithms/templates/find-light-area"
+            },
+            {
+              "text": {
+                "root": "FocusPoints 关注点模板"
+              },
+              "link": "/04-api-reference/algorithms/templates/focus-points-template"
+            },
+            {
+              "text": {
+                "root": "Ghost Detection"
+              },
+              "link": "/04-api-reference/algorithms/detectors/ghost-detection"
+            },
+            {
+              "text": {
+                "root": "ImageCropping 图像裁剪模板"
+              },
+              "link": "/04-api-reference/algorithms/templates/image-cropping-template"
+            },
+            {
+              "text": {
+                "root": "Matching 模板匹配"
+              },
+              "link": "/04-api-reference/algorithms/templates/matching-template"
+            },
+            {
+              "text": {
+                "root": "统一图像算法平台 V1"
+              },
+              "link": "/02-developer-guide/core-concepts/image-algorithm-platform-v1"
+            },
+            {
+              "text": {
+                "root": "POI"
+              },
+              "link": "/04-api-reference/algorithms/primitives/poi"
+            },
+            {
+              "text": {
+                "root": "模板编辑与创建宿主"
+              },
+              "link": "/04-api-reference/algorithms/templates/template-management"
+            },
+            {
+              "text": {
+                "root": "模板编辑入口与菜单契约"
+              },
+              "link": "/04-api-reference/algorithms/templates/template-menu-entries"
+            },
+            {
+              "text": {
+                "root": "算法与模板接入概览"
+              },
+              "link": "/04-api-reference/algorithms/overview"
+            },
+            {
+              "text": {
+                "root": "Copilot 扩展、MCP 与 Hook"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-agent-extensions"
+            },
+            {
+              "text": {
+                "root": "Copilot 工具契约"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-agent-tool-contracts"
+            },
+            {
+              "text": {
+                "root": "Backend Operations 中继与只读概览"
+              },
+              "link": "/02-developer-guide/backend/operations-relay"
+            },
+            {
+              "text": {
+                "root": "数据库清理窗口、能力接入与完成边界"
+              },
+              "link": "/04-api-reference/engine-components/database-maintenance"
+            },
+            {
+              "text": {
+                "root": "Engine 设备资源与运行装配"
+              },
+              "link": "/04-api-reference/engine-components/device-service-chain"
+            },
+            {
+              "text": {
+                "root": "CV 文件读取、通道与写回契约"
+              },
+              "link": "/04-api-reference/engine-components/ColorVision.FileIO"
+            },
+            {
+              "text": {
+                "root": "ColorVision.Engine 工程、资源与依赖"
+              },
+              "link": "/04-api-reference/engine-components/ColorVision.Engine"
+            },
+            {
+              "text": {
+                "root": "MySQL 结果清理、备份与失败边界"
+              },
+              "link": "/04-api-reference/engine-components/mysql-maintenance"
+            },
+            {
+              "text": {
+                "root": "MySQL SQL 恢复、重置与资源保留"
+              },
+              "link": "/04-api-reference/engine-components/mysql-recovery"
+            },
+            {
+              "text": {
+                "root": "RC 注册、服务快照与连接测试"
+              },
+              "link": "/04-api-reference/engine-components/rc-registration"
+            },
+            {
+              "text": {
+                "root": "Engine 结果展示链路"
+              },
+              "link": "/04-api-reference/engine-components/result-handoff-chain"
+            },
+            {
+              "text": {
+                "root": "模板注册、参数与持久化"
+              },
+              "link": "/03-architecture/components/templates/design"
+            },
+            {
+              "text": {
+                "root": "Flow 架构与责任边界"
+              },
+              "link": "/03-architecture/components/engine/flow-engine"
+            },
+            {
+              "text": {
+                "root": "Flow 运行诊断、中断恢复与 Incident 处置"
+              },
+              "link": "/04-api-reference/engine-components/flow-diagnostics"
+            },
+            {
+              "text": {
+                "root": "Flow 隔离无界面执行"
+              },
+              "link": "/04-api-reference/algorithms/templates/flow-engine"
+            },
+            {
+              "text": {
+                "root": "Flow 启动、停止与最终化"
+              },
+              "link": "/01-user-guide/workflow/execution"
+            },
+            {
+              "text": {
+                "root": "Flow 模板、持久化与流程包"
+              },
+              "link": "/04-api-reference/engine-components/template-flow-chain"
+            },
+            {
+              "text": {
+                "root": "Flow 编辑工作区与文档命令"
+              },
+              "link": "/01-user-guide/workflow/design"
+            },
+            {
+              "text": {
+                "root": "校准服务、本地文件校正与结果持久化"
+              },
+              "link": "/01-user-guide/devices/calibration"
+            },
+            {
+              "text": {
+                "root": "相机服务、采集与结果视图"
+              },
+              "link": "/01-user-guide/devices/camera"
+            },
+            {
+              "text": {
+                "root": "相机参数来源、同步与保存"
+              },
+              "link": "/01-user-guide/devices/camera-configuration"
+            },
+            {
+              "text": {
+                "root": "设备资源配置、保存与重启"
+              },
+              "link": "/01-user-guide/devices/configuration"
+            },
+            {
+              "text": {
+                "root": "FileServer 设备配置与实现边界"
+              },
+              "link": "/01-user-guide/devices/file-server"
+            },
+            {
+              "text": {
+                "root": "FlowDevice 远端服务包装与本地图边界"
+              },
+              "link": "/01-user-guide/devices/flow-device"
+            },
+            {
+              "text": {
+                "root": "跨模块运行问题定位"
+              },
+              "link": "/01-user-guide/README"
+            },
+            {
+              "text": {
+                "root": "电机命令与位置读回"
+              },
+              "link": "/01-user-guide/devices/motor"
+            },
+            {
+              "text": {
+                "root": "物理相机发现、许可证与资源管理"
+              },
+              "link": "/01-user-guide/devices/camera-management"
+            },
+            {
+              "text": {
+                "root": "SMU 参数、结果与输出关闭"
+              },
+              "link": "/01-user-guide/devices/smu"
+            },
+            {
+              "text": {
+                "root": "扩展性开发"
+              },
+              "link": "/02-developer-guide/core-concepts/extensibility"
+            },
+            {
+              "text": {
+                "root": "系统职责与跨模块边界"
+              },
+              "link": "/03-architecture/overview/system-overview"
+            },
+            {
+              "text": {
+                "root": "WindowsServicePlugin：选包、本机安装与恢复"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/windows-service"
+            },
+            {
+              "text": {
+                "root": "通用查询、条件会话与整表操作"
+              },
+              "link": "/04-api-reference/ui-components/database-query"
+            },
+            {
+              "text": {
+                "root": "ColorVision.ImageEditor：打开、绘制与输出"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.ImageEditor"
+            },
+            {
+              "text": {
+                "root": "多图查看、刷新与缩略图缓存"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.ImageTools"
+            },
+            {
+              "text": {
+                "root": "PropertyGrid 属性编辑契约"
+              },
+              "link": "/04-api-reference/ui-components/property-grid"
+            },
+            {
+              "text": {
+                "root": "Quartz 任务定义、恢复与执行历史"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.Scheduler"
+            },
+            {
+              "text": {
+                "root": "应用搜索：入口、候选与执行"
+              },
+              "link": "/04-api-reference/ui-components/search"
+            },
+            {
+              "text": {
+                "root": "SQLite 正文存储、迁移与文件维护"
+              },
+              "link": "/04-api-reference/ui-components/sqlite-storage"
+            },
+            {
+              "text": {
+                "root": "本地相机内存帧预览：实施与验证 [规划]"
+              },
+              "link": "/02-developer-guide/engine-development/local-camera-memory-preview-validation"
+            },
+            {
+              "text": {
+                "root": "Engine MQTT 消息处理指南"
+              },
+              "link": "/02-developer-guide/engine-development/mqtt"
+            },
+            {
+              "text": {
+                "root": "OpenCV 和 native 集成开发指南"
+              },
+              "link": "/02-developer-guide/engine-development/opencv-integration"
+            },
+            {
+              "text": {
+                "root": "现场操作验收清单"
+              },
+              "link": "/01-user-guide/field-operation-acceptance"
+            },
+            {
+              "text": {
+                "root": "设置、流程与结果的导入导出边界"
+              },
+              "link": "/01-user-guide/data-management/export-import"
+            },
+            {
+              "text": {
+                "root": "主程序启动与最小图像验证"
+              },
+              "link": "/00-getting-started/first-steps"
+            },
+            {
+              "text": {
+                "root": "ARVR 模板"
+              },
+              "link": "/04-api-reference/algorithms/templates/arvr-template"
+            },
+            {
+              "text": {
+                "root": "JSON 模板"
+              },
+              "link": "/04-api-reference/algorithms/templates/json-templates"
+            },
+            {
+              "text": {
+                "root": "LED 检测模板"
+              },
+              "link": "/04-api-reference/algorithms/templates/led-detection"
+            },
+            {
+              "text": {
+                "root": "POI 模板"
+              },
+              "link": "/04-api-reference/algorithms/templates/poi-template"
+            },
+            {
+              "text": {
+                "root": "SysDictionary 系统字典兼容层"
+              },
+              "link": "/04-api-reference/algorithms/templates/sys-dictionary-template"
+            },
+            {
+              "text": {
+                "root": "Flow 转换与校准节点"
+              },
+              "link": "/04-api-reference/engine-components/flow-conversion-calibration-nodes"
+            },
+            {
+              "text": {
+                "root": "本地相机内存帧预览：生命周期与显示语义 [规划]"
+              },
+              "link": "/02-developer-guide/engine-development/local-camera-memory-preview-runtime"
+            },
+            {
+              "text": {
+                "root": "本地相机内存帧预览方案（待实施） [规划]"
+              },
+              "link": "/02-developer-guide/engine-development/local-camera-memory-preview"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Engine/ColorVision.FileIO"
+          },
+          "link": "/knowledge/code/source-Engine#module-456e67696e652f436f6c6f72566973696f6e2e46696c65494f",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "CV 文件读取、通道与写回契约"
+              },
+              "link": "/04-api-reference/engine-components/ColorVision.FileIO"
+            },
+            {
+              "text": {
+                "root": "Explorer 缩略图读取与 COM 注册"
+              },
+              "link": "/04-api-reference/engine-components/ColorVision.ShellExtension"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Engine/ColorVision.ShellExtension"
+          },
+          "link": "/knowledge/code/source-Engine#module-456e67696e652f436f6c6f72566973696f6e2e5368656c6c457874656e73696f6e",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "Explorer 缩略图读取与 COM 注册"
+              },
+              "link": "/04-api-reference/engine-components/ColorVision.ShellExtension"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Engine/cvColorVision"
+          },
+          "link": "/knowledge/code/source-Engine#module-456e67696e652f6376436f6c6f72566973696f6e",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "cvColorVision"
+              },
+              "link": "/04-api-reference/engine-components/cvColorVision"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Engine/FlowEngineLib"
+          },
+          "link": "/knowledge/code/source-Engine#module-456e67696e652f466c6f77456e67696e654c6962",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "Engine 知识入口"
+              },
+              "link": "/04-api-reference/engine-components/README"
+            },
+            {
+              "text": {
+                "root": "Flow 节点检索入口"
+              },
+              "link": "/04-api-reference/flow_nodes_summary"
+            },
+            {
+              "text": {
+                "root": "扩展任务入口"
+              },
+              "link": "/04-api-reference/extensions/README"
+            },
+            {
+              "text": {
+                "root": "DataLoad 数据加载模板"
+              },
+              "link": "/04-api-reference/algorithms/templates/data-load-template"
+            },
+            {
+              "text": {
+                "root": "ImageCropping 图像裁剪模板"
+              },
+              "link": "/04-api-reference/algorithms/templates/image-cropping-template"
+            },
+            {
+              "text": {
+                "root": "Matching 模板匹配"
+              },
+              "link": "/04-api-reference/algorithms/templates/matching-template"
+            },
+            {
+              "text": {
+                "root": "Flow 架构与责任边界"
+              },
+              "link": "/03-architecture/components/engine/flow-engine"
+            },
+            {
+              "text": {
+                "root": "Flow 隔离无界面执行"
+              },
+              "link": "/04-api-reference/algorithms/templates/flow-engine"
+            },
+            {
+              "text": {
+                "root": "电机命令与位置读回"
+              },
+              "link": "/01-user-guide/devices/motor"
+            },
+            {
+              "text": {
+                "root": "SMU 参数、结果与输出关闭"
+              },
+              "link": "/01-user-guide/devices/smu"
+            },
+            {
+              "text": {
+                "root": "PropertyGrid 属性编辑契约"
+              },
+              "link": "/04-api-reference/ui-components/property-grid"
+            },
+            {
+              "text": {
+                "root": "Engine MQTT 消息处理指南"
+              },
+              "link": "/02-developer-guide/engine-development/mqtt"
+            },
+            {
+              "text": {
+                "root": "FlowEngineLib 节点扩展"
+              },
+              "link": "/04-api-reference/extensions/flow-node"
+            },
+            {
+              "text": {
+                "root": "ARVR 模板"
+              },
+              "link": "/04-api-reference/algorithms/templates/arvr-template"
+            },
+            {
+              "text": {
+                "root": "Flow 转换与校准节点"
+              },
+              "link": "/04-api-reference/engine-components/flow-conversion-calibration-nodes"
+            },
+            {
+              "text": {
+                "root": "FlowEngineLib"
+              },
+              "link": "/04-api-reference/engine-components/FlowEngineLib"
+            },
+            {
+              "text": {
+                "root": "本地相机内存帧预览：生命周期与显示语义 [规划]"
+              },
+              "link": "/02-developer-guide/engine-development/local-camera-memory-preview-runtime"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Engine/ST.Library.UI"
+          },
+          "link": "/knowledge/code/source-Engine#module-456e67696e652f53542e4c6962726172792e5549",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "ST.Library.UI"
+              },
+              "link": "/04-api-reference/engine-components/ST.Library.UI"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "Native"
+      },
+      "link": "/knowledge/code/source-Native",
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "Native/ 根目录与跨模块关联"
+          },
+          "link": "/knowledge/code/source-Native#module-4e6174697665",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "系统要求"
+              },
+              "link": "/00-getting-started/prerequisites"
+            },
+            {
+              "text": {
+                "root": "OpenCV 和 native 集成开发指南"
+              },
+              "link": "/02-developer-guide/engine-development/opencv-integration"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Native/include"
+          },
+          "link": "/knowledge/code/source-Native#module-4e61746976652f696e636c756465",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "FindLightArea 发光区定位模板"
+              },
+              "link": "/04-api-reference/algorithms/templates/find-light-area"
+            },
+            {
+              "text": {
+                "root": "ImageEditor 直接 native 分析"
+              },
+              "link": "/04-api-reference/algorithms/local-native-analysis"
+            },
+            {
+              "text": {
+                "root": "景深融合：输入、执行与结果生命周期"
+              },
+              "link": "/04-api-reference/ui-components/image-fusion"
+            },
+            {
+              "text": {
+                "root": "OpenCV 和 native 集成开发指南"
+              },
+              "link": "/02-developer-guide/engine-development/opencv-integration"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Native/opencv_cuda"
+          },
+          "link": "/knowledge/code/source-Native#module-4e61746976652f6f70656e63765f63756461",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "景深融合：输入、执行与结果生命周期"
+              },
+              "link": "/04-api-reference/ui-components/image-fusion"
+            },
+            {
+              "text": {
+                "root": "OpenCV 和 native 集成开发指南"
+              },
+              "link": "/02-developer-guide/engine-development/opencv-integration"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Native/opencv_helper"
+          },
+          "link": "/knowledge/code/source-Native#module-4e61746976652f6f70656e63765f68656c706572",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "FindLightArea 发光区定位模板"
+              },
+              "link": "/04-api-reference/algorithms/templates/find-light-area"
+            },
+            {
+              "text": {
+                "root": "ImageEditor 直接 native 分析"
+              },
+              "link": "/04-api-reference/algorithms/local-native-analysis"
+            },
+            {
+              "text": {
+                "root": "景深融合：输入、执行与结果生命周期"
+              },
+              "link": "/04-api-reference/ui-components/image-fusion"
+            },
+            {
+              "text": {
+                "root": "系统要求"
+              },
+              "link": "/00-getting-started/prerequisites"
+            },
+            {
+              "text": {
+                "root": "OpenCV 和 native 集成开发指南"
+              },
+              "link": "/02-developer-guide/engine-development/opencv-integration"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "Plugins"
+      },
+      "link": "/knowledge/code/source-Plugins",
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "Plugins/ 根目录与跨模块关联"
+          },
+          "link": "/knowledge/code/source-Plugins#module-506c7567696e73",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "插件装配与模块知识入口"
+              },
+              "link": "/04-api-reference/plugins/README"
+            },
+            {
+              "text": {
+                "root": "插件产物、安装与交付"
+              },
+              "link": "/02-developer-guide/plugin-development/getting-started"
+            },
+            {
+              "text": {
+                "root": "WindowsServicePlugin：选包、本机安装与恢复"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/windows-service"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Plugins/Conoscope"
+          },
+          "link": "/knowledge/code/source-Plugins#module-506c7567696e732f436f6e6f73636f7065",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "CV 文件读取、通道与写回契约"
+              },
+              "link": "/04-api-reference/engine-components/ColorVision.FileIO"
+            },
+            {
+              "text": {
+                "root": "Conoscope 图像、采集与分析"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/conoscope"
+            },
+            {
+              "text": {
+                "root": "插件依赖与接入矩阵"
+              },
+              "link": "/04-api-reference/plugins/plugin-capability-matrix"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Plugins/Spectrum"
+          },
+          "link": "/knowledge/code/source-Plugins#module-506c7567696e732f537065637472756d",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "数据所有者与存储定位"
+              },
+              "link": "/01-user-guide/data-management/README"
+            },
+            {
+              "text": {
+                "root": "Spectrum 插件"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/spectrum"
+            },
+            {
+              "text": {
+                "root": "Spectrum Socket 业务指令与完成边界"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/spectrum-socket"
+            },
+            {
+              "text": {
+                "root": "插件依赖与接入矩阵"
+              },
+              "link": "/04-api-reference/plugins/plugin-capability-matrix"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Plugins/SystemMonitor"
+          },
+          "link": "/knowledge/code/source-Plugins#module-506c7567696e732f53797374656d4d6f6e69746f72",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "插件产物、安装与交付"
+              },
+              "link": "/02-developer-guide/plugin-development/getting-started"
+            },
+            {
+              "text": {
+                "root": "状态栏：发现、刷新与宿主生命周期"
+              },
+              "link": "/04-api-reference/ui-components/status-bar"
+            },
+            {
+              "text": {
+                "root": "插件依赖与接入矩阵"
+              },
+              "link": "/04-api-reference/plugins/plugin-capability-matrix"
+            },
+            {
+              "text": {
+                "root": "SystemMonitor 插件"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/system-monitor"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Plugins/WindowsServicePlugin"
+          },
+          "link": "/knowledge/code/source-Plugins#module-506c7567696e732f57696e646f777353657276696365506c7567696e",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "WindowsServicePlugin：选包、本机安装与恢复"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/windows-service"
+            },
+            {
+              "text": {
+                "root": "插件依赖与接入矩阵"
+              },
+              "link": "/04-api-reference/plugins/plugin-capability-matrix"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "Projects"
+      },
+      "link": "/knowledge/code/source-Projects",
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "Projects/ 根目录与跨模块关联"
+          },
+          "link": "/knowledge/code/source-Projects#module-50726f6a65637473",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "客户项目与对接示例入口"
+              },
+              "link": "/04-api-reference/projects/README"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Projects/ProjectARVRPro"
+          },
+          "link": "/knowledge/code/source-Projects#module-50726f6a656374732f50726f6a6563744152565250726f",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "数据所有者与存储定位"
+              },
+              "link": "/01-user-guide/data-management/README"
+            },
+            {
+              "text": {
+                "root": "数据库清理窗口、能力接入与完成边界"
+              },
+              "link": "/04-api-reference/engine-components/database-maintenance"
+            },
+            {
+              "text": {
+                "root": "ProjectARVRPro"
+              },
+              "link": "/04-api-reference/projects/project-arvr-pro"
+            },
+            {
+              "text": {
+                "root": "ProjectARVRPro.IntegrationDemo"
+              },
+              "link": "/04-api-reference/projects/project-arvr-pro-integration-demo"
+            },
+            {
+              "text": {
+                "root": "项目横向速查"
+              },
+              "link": "/04-api-reference/projects/project-capability-matrix"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Projects/ProjectARVRPro.IntegrationDemo"
+          },
+          "link": "/knowledge/code/source-Projects#module-50726f6a656374732f50726f6a6563744152565250726f2e496e746567726174696f6e44656d6f",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "ProjectARVRPro.IntegrationDemo"
+              },
+              "link": "/04-api-reference/projects/project-arvr-pro-integration-demo"
+            },
+            {
+              "text": {
+                "root": "项目横向速查"
+              },
+              "link": "/04-api-reference/projects/project-capability-matrix"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Projects/ProjectKB"
+          },
+          "link": "/knowledge/code/source-Projects#module-50726f6a656374732f50726f6a6563744b42",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "数据库清理窗口、能力接入与完成边界"
+              },
+              "link": "/04-api-reference/engine-components/database-maintenance"
+            },
+            {
+              "text": {
+                "root": "项目横向速查"
+              },
+              "link": "/04-api-reference/projects/project-capability-matrix"
+            },
+            {
+              "text": {
+                "root": "ProjectKB"
+              },
+              "link": "/04-api-reference/projects/project-kb"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Projects/ProjectLUX"
+          },
+          "link": "/knowledge/code/source-Projects#module-50726f6a656374732f50726f6a6563744c5558",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "项目横向速查"
+              },
+              "link": "/04-api-reference/projects/project-capability-matrix"
+            },
+            {
+              "text": {
+                "root": "ProjectLUX"
+              },
+              "link": "/04-api-reference/projects/project-lux"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "Web"
+      },
+      "link": "/knowledge/code/source-Web",
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "Web/ 根目录与跨模块关联"
+          },
+          "link": "/knowledge/code/source-Web#module-576562",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "审计与部署记录：来源、查询与证据边界"
+              },
+              "link": "/02-developer-guide/backend/management-records"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Web/Backend"
+          },
+          "link": "/knowledge/code/source-Web#module-5765622f4261636b656e64",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "Android 运维伴侣"
+              },
+              "link": "/02-developer-guide/backend/android-operations"
+            },
+            {
+              "text": {
+                "root": "HTTP 制品交付、完成计数与响应策略"
+              },
+              "link": "/02-developer-guide/backend/artifact-delivery"
+            },
+            {
+              "text": {
+                "root": "插件市场后端"
+              },
+              "link": "/02-developer-guide/backend/README"
+            },
+            {
+              "text": {
+                "root": "Web账号、角色与会话生命周期"
+              },
+              "link": "/02-developer-guide/backend/accounts"
+            },
+            {
+              "text": {
+                "root": "HTTP认证、API key与浏览器CSRF"
+              },
+              "link": "/02-developer-guide/backend/authentication"
+            },
+            {
+              "text": {
+                "root": "Backend Copilot配置管理与敏感配置交付"
+              },
+              "link": "/02-developer-guide/backend/copilot-sync"
+            },
+            {
+              "text": {
+                "root": "Backend反馈提交、处理状态与附件访问"
+              },
+              "link": "/02-developer-guide/backend/feedback"
+            },
+            {
+              "text": {
+                "root": "Backend内置任务、执行记录与恢复"
+              },
+              "link": "/02-developer-guide/backend/jobs"
+            },
+            {
+              "text": {
+                "root": "访问统计、浏览器体验与性能观测"
+              },
+              "link": "/02-developer-guide/backend/observability"
+            },
+            {
+              "text": {
+                "root": "Backend Operations 中继与只读概览"
+              },
+              "link": "/02-developer-guide/backend/operations-relay"
+            },
+            {
+              "text": {
+                "root": "公共站点数据、分页与文件可见性"
+              },
+              "link": "/02-developer-guide/backend/public-data"
+            },
+            {
+              "text": {
+                "root": "审计与部署记录：来源、查询与证据边界"
+              },
+              "link": "/02-developer-guide/backend/management-records"
+            },
+            {
+              "text": {
+                "root": "Backend保留配置、数据库快照与隐私清理"
+              },
+              "link": "/02-developer-guide/backend/backup-retention"
+            },
+            {
+              "text": {
+                "root": "CVWindowsService 服务包发布与选择"
+              },
+              "link": "/02-developer-guide/backend/cvwindowsservice"
+            },
+            {
+              "text": {
+                "root": "文件中转、覆盖与公开分享"
+              },
+              "link": "/02-developer-guide/backend/file-transfer"
+            },
+            {
+              "text": {
+                "root": "插件目录、详情投影与索引刷新"
+              },
+              "link": "/02-developer-guide/backend/plugin-catalog"
+            },
+            {
+              "text": {
+                "root": "测试与验证"
+              },
+              "link": "/02-developer-guide/testing"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Web/Frontend"
+          },
+          "link": "/knowledge/code/source-Web#module-5765622f46726f6e74656e64",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "Backend Copilot配置管理与敏感配置交付"
+              },
+              "link": "/02-developer-guide/backend/copilot-sync"
+            },
+            {
+              "text": {
+                "root": "Backend反馈提交、处理状态与附件访问"
+              },
+              "link": "/02-developer-guide/backend/feedback"
+            },
+            {
+              "text": {
+                "root": "访问统计、浏览器体验与性能观测"
+              },
+              "link": "/02-developer-guide/backend/observability"
+            },
+            {
+              "text": {
+                "root": "审计与部署记录：来源、查询与证据边界"
+              },
+              "link": "/02-developer-guide/backend/management-records"
+            },
+            {
+              "text": {
+                "root": "Backend保留配置、数据库快照与隐私清理"
+              },
+              "link": "/02-developer-guide/backend/backup-retention"
+            },
+            {
+              "text": {
+                "root": "CVWindowsService 服务包发布与选择"
+              },
+              "link": "/02-developer-guide/backend/cvwindowsservice"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "Scripts"
+      },
+      "link": "/knowledge/code/source-Scripts",
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "Scripts/ 根目录与跨模块关联"
+          },
+          "link": "/knowledge/code/source-Scripts#module-53637269707473",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "桌面交付制品与责任路由"
+              },
+              "link": "/02-developer-guide/deployment/overview"
+            },
+            {
+              "text": {
+                "root": "客户项目与对接示例入口"
+              },
+              "link": "/04-api-reference/projects/README"
+            },
+            {
+              "text": {
+                "root": "构建平台与制品边界"
+              },
+              "link": "/02-developer-guide/README"
+            },
+            {
+              "text": {
+                "root": "插件产物、安装与交付"
+              },
+              "link": "/02-developer-guide/plugin-development/getting-started"
+            },
+            {
+              "text": {
+                "root": "Spectrum 插件"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/spectrum"
+            },
+            {
+              "text": {
+                "root": "安装制品与运行输出"
+              },
+              "link": "/00-getting-started/installation"
+            },
+            {
+              "text": {
+                "root": "构建与发布脚本"
+              },
+              "link": "/02-developer-guide/scripts/README"
+            },
+            {
+              "text": {
+                "root": "OpenCV 和 native 集成开发指南"
+              },
+              "link": "/02-developer-guide/engine-development/opencv-integration"
+            },
+            {
+              "text": {
+                "root": "UI DLL 发布"
+              },
+              "link": "/04-api-reference/ui-components/publishing"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Scripts/tests"
+          },
+          "link": "/knowledge/code/source-Scripts#module-536372697074732f7465737473",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "测试与验证"
+              },
+              "link": "/02-developer-guide/testing"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "Test"
+      },
+      "link": "/knowledge/code/source-Test",
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "Test/ 根目录与跨模块关联"
+          },
+          "link": "/knowledge/code/source-Test#module-54657374",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "测试与验证"
+              },
+              "link": "/02-developer-guide/testing"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "AndroidWebViewApp"
+      },
+      "link": "/knowledge/code/source-AndroidWebViewApp",
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "AndroidWebViewApp/ 根目录与跨模块关联"
+          },
+          "link": "/knowledge/code/source-AndroidWebViewApp#module-416e64726f696457656256696577417070",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "Android 运维伴侣"
+              },
+              "link": "/02-developer-guide/backend/android-operations"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "AndroidWebViewApp/app"
+          },
+          "link": "/knowledge/code/source-AndroidWebViewApp#module-416e64726f6964576562566965774170702f617070",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "Android 运维伴侣"
+              },
+              "link": "/02-developer-guide/backend/android-operations"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "SDK"
+      },
+      "link": "/knowledge/code/source-SDK",
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "SDK/ColorVision.PluginKit"
+          },
+          "link": "/knowledge/code/source-SDK#module-53444b2f436f6c6f72566973696f6e2e506c7567696e4b6974",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "PluginKit SDK 打包器"
+              },
+              "link": "/02-developer-guide/plugin-development/sdk-packaging"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "src"
+      },
+      "link": "/knowledge/code/source-src",
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "src/ColorVisionServiceHost"
+          },
+          "link": "/knowledge/code/source-src#module-7372632f436f6c6f72566973696f6e53657276696365486f7374",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "更新扫描保护：临时排除项与清理所有权"
+              },
+              "link": "/02-developer-guide/deployment/update-scan-protection"
+            },
+            {
+              "text": {
+                "root": "Explorer 缩略图读取与 COM 注册"
+              },
+              "link": "/04-api-reference/engine-components/ColorVision.ShellExtension"
+            },
+            {
+              "text": {
+                "root": "ColorVisionServiceHost：本机权限代理与生命周期"
+              },
+              "link": "/03-architecture/components/service-host"
+            },
+            {
+              "text": {
+                "root": "启动失败上报与缺依赖告警"
+              },
+              "link": "/03-architecture/components/startup-integrity"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "src/ColorVisionSetup"
+          },
+          "link": "/knowledge/code/source-src#module-7372632f436f6c6f72566973696f6e5365747570",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "桌面交付制品与责任路由"
+              },
+              "link": "/02-developer-guide/deployment/overview"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "仓库与知识基础设施"
+      },
+      "link": "/knowledge/code/repository",
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "仓库根文件"
+          },
+          "link": "/knowledge/code/repository#module-2e",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "安装、构建与运行入口"
+              },
+              "link": "/00-getting-started/README"
+            },
+            {
+              "text": {
+                "root": "仓库知识使用约定"
+              },
+              "link": "/README"
+            },
+            {
+              "text": {
+                "root": "插件装配与模块知识入口"
+              },
+              "link": "/04-api-reference/plugins/README"
+            },
+            {
+              "text": {
+                "root": "客户项目与对接示例入口"
+              },
+              "link": "/04-api-reference/projects/README"
+            },
+            {
+              "text": {
+                "root": "构建平台与制品边界"
+              },
+              "link": "/02-developer-guide/README"
+            },
+            {
+              "text": {
+                "root": "ColorVision.Engine 工程、资源与依赖"
+              },
+              "link": "/04-api-reference/engine-components/ColorVision.Engine"
+            },
+            {
+              "text": {
+                "root": "Conoscope 图像、采集与分析"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/conoscope"
+            },
+            {
+              "text": {
+                "root": "插件产物、安装与交付"
+              },
+              "link": "/02-developer-guide/plugin-development/getting-started"
+            },
+            {
+              "text": {
+                "root": "系统要求"
+              },
+              "link": "/00-getting-started/prerequisites"
+            },
+            {
+              "text": {
+                "root": "知识维护规范"
+              },
+              "link": "/knowledge/maintenance"
+            },
+            {
+              "text": {
+                "root": "测试与验证"
+              },
+              "link": "/02-developer-guide/testing"
+            },
+            {
+              "text": {
+                "root": "软件许可协议"
+              },
+              "link": "/05-resources/legal/software-agreement"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": ".github/workflows"
+          },
+          "link": "/knowledge/code/repository#module-2e6769746875622f776f726b666c6f7773",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "UI DLL 发布"
+              },
+              "link": "/04-api-reference/ui-components/publishing"
+            },
+            {
+              "text": {
+                "root": "测试与验证"
+              },
+              "link": "/02-developer-guide/testing"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "docs"
+          },
+          "link": "/knowledge/code/repository#module-646f6373",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "仓库知识使用约定"
+              },
+              "link": "/README"
+            },
+            {
+              "text": {
+                "root": "知识维护规范"
+              },
+              "link": "/knowledge/maintenance"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "docs/.vitepress"
+          },
+          "link": "/knowledge/code/repository#module-646f63732f2e766974657072657373",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "仓库知识使用约定"
+              },
+              "link": "/README"
+            },
+            {
+              "text": {
+                "root": "知识维护规范"
+              },
+              "link": "/knowledge/maintenance"
+            },
+            {
+              "text": {
+                "root": "知识检索与问答验收"
+              },
+              "link": "/knowledge/retrieval-checks"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "docs/knowledge"
+          },
+          "link": "/knowledge/code/repository#module-646f63732f6b6e6f776c65646765",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "知识检索与问答验收"
+              },
+              "link": "/knowledge/retrieval-checks"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "能力领域（补充检索）"
       },
       "collapsed": true,
       "items": [
         {
           "text": {
-            "root": "项目说明"
+            "root": "AI 共治与知识维护"
           },
-          "link": "/00-projects/README"
+          "link": "/knowledge/domains/governance"
         },
         {
           "text": {
-            "root": "现有插件能力"
+            "root": "平台与架构"
           },
-          "link": "/04-api-reference/plugins/README"
+          "link": "/knowledge/domains/platform"
         },
         {
           "text": {
-            "root": "插件开发"
+            "root": "UI 与图像交互"
           },
-          "link": "/02-developer-guide/plugin-development/README"
-        }
-      ]
-    },
-    {
-      "text": {
-        "root": "开发与交付"
-      },
-      "collapsed": true,
-      "items": [
-        {
-          "text": {
-            "root": "开发手册"
-          },
-          "link": "/02-developer-guide/README"
+          "link": "/knowledge/domains/ui"
         },
         {
           "text": {
-            "root": "统一图像算法平台 V1"
+            "root": "设备、服务与结果"
           },
-          "link": "/02-developer-guide/core-concepts/image-algorithm-platform-v1"
+          "link": "/knowledge/domains/engine"
         },
         {
           "text": {
-            "root": "ONNX / AI 推理接入设计（Deferred）"
+            "root": "流程编排与执行"
           },
-          "link": "/02-developer-guide/core-concepts/onnx-inference-future-design"
-        },
-        {
-          "text": {
-            "root": "ROI 统计 V1（M1）"
-          },
-          "link": "/02-developer-guide/core-concepts/roi-statistics-v1"
-        },
-        {
-          "text": {
-            "root": "灰度与颜色剖面 V1（M2）"
-          },
-          "link": "/02-developer-guide/core-concepts/image-profile-v1"
-        },
-        {
-          "text": {
-            "root": "Blob / 连通域 V1（M5.1）"
-          },
-          "link": "/02-developer-guide/core-concepts/blob-analysis-v1"
-        },
-        {
-          "text": {
-            "root": "轮廓提取 V1（M5.2）"
-          },
-          "link": "/02-developer-guide/core-concepts/contour-analysis-v1"
-        },
-          {
-            "text": {
-              "root": "亚像素边缘 V1（M6.1）"
-            },
-            "link": "/02-developer-guide/core-concepts/subpixel-edge-v1"
-          },
-          {
-            "text": {
-              "root": "直线拟合 V1（M6.2）"
-            },
-            "link": "/02-developer-guide/core-concepts/line-fit-v1"
-          },
-          {
-            "text": {
-              "root": "圆拟合 V1（M6.3）"
-            },
-            "link": "/02-developer-guide/core-concepts/circle-fit-v1"
-          },
-          {
-            "text": {
-              "root": "几何变换 V1（M7）"
-            },
-            "link": "/02-developer-guide/core-concepts/geometric-transform-v1"
-          },
-          {
-            "text": {
-              "root": "图像配准 V1（M8.1）"
-            },
-            "link": "/02-developer-guide/core-concepts/image-registration-v1"
-          },
-          {
-            "text": {
-              "root": "镜头畸变校正 V1（M8.2）"
-            },
-            "link": "/02-developer-guide/core-concepts/lens-distortion-correction-v1"
-          },
-          {
-            "text": {
-              "root": "成像校正 V1（M9）"
-            },
-            "link": "/02-developer-guide/core-concepts/imaging-correction-v1"
-          },
-          {
-            "text": {
-              "root": "FFT / 频域分析 V1（M10）"
-            },
-            "link": "/02-developer-guide/core-concepts/frequency-spectrum-v1"
-          },
-          {
-            "text": {
-              "root": "摩尔纹分析 V1（M11）"
-            },
-            "link": "/02-developer-guide/core-concepts/moire-analysis-v1"
-          },
-        {
-          "text": {
-            "root": "测试与验证"
-          },
-          "link": "/02-developer-guide/testing"
-        },
-        {
-          "text": {
-            "root": "部署概览"
-          },
-          "link": "/02-developer-guide/deployment/overview"
-        },
-        {
-          "text": {
-            "root": "构建与发布脚本"
-          },
-          "link": "/02-developer-guide/scripts/README"
-        },
-        {
-          "text": {
-            "root": "Engine 开发"
-          },
-          "link": "/02-developer-guide/engine-development/README"
-        },
-        {
-          "text": {
-            "root": "UI DLL 发布"
-          },
-          "link": "/04-api-reference/ui-components/publishing"
-        },
-        {
-          "text": {
-            "root": "项目包交付"
-          },
-          "link": "/04-api-reference/projects/README"
-        }
-      ]
-    },
-    {
-      "text": {
-        "root": "源码参考"
-      },
-      "collapsed": true,
-      "items": [
-        {
-          "text": {
-            "root": "参考资料总览"
-          },
-          "link": "/04-api-reference/README"
-        },
-        {
-          "text": {
-            "root": "UI 组件"
-          },
-          "link": "/04-api-reference/ui-components/README"
-        },
-        {
-          "text": {
-            "root": "Engine 组件"
-          },
-          "link": "/04-api-reference/engine-components/README"
+          "link": "/knowledge/domains/flow"
         },
         {
           "text": {
             "root": "算法与模板"
           },
-          "link": "/04-api-reference/algorithms/README"
+          "link": "/knowledge/domains/algorithms"
         },
         {
           "text": {
-            "root": "扩展点"
+            "root": "Copilot"
           },
-          "link": "/04-api-reference/extensions/README"
+          "link": "/knowledge/domains/copilot"
         },
         {
           "text": {
-            "root": "Flow 节点摘要"
+            "root": "客户项目"
           },
-          "link": "/04-api-reference/flow_nodes_summary"
-        }
-      ]
-    },
-    {
-      "text": {
-        "root": "附录"
-      },
-      "collapsed": true,
-      "items": [
-        {
-          "text": {
-            "root": "文档目录说明"
-          },
-          "link": "/README"
+          "link": "/knowledge/domains/projects"
         },
         {
           "text": {
-            "root": "项目结构"
+            "root": "插件与扩展"
           },
-          "link": "/05-resources/project-structure/README"
+          "link": "/knowledge/domains/plugins"
         },
         {
           "text": {
-            "root": "软件许可协议"
+            "root": "构建、测试与交付"
           },
-          "link": "/05-resources/legal/software-agreement"
+          "link": "/knowledge/domains/delivery"
         },
         {
           "text": {
-            "root": "更新日志"
+            "root": "运行与现场排查"
           },
-          "link": "https://github.com/xincheng213618/scgd_general_wpf/blob/master/CHANGELOG.md"
+          "link": "/knowledge/domains/operations"
         }
       ]
     }

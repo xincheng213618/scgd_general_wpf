@@ -44,8 +44,7 @@ namespace ColorVision.Copilot
                 liveContext,
                 conversationHistory,
                 additionalReadRootPaths,
-                globalInstructionRootPath: null,
-                loadCodexConfigLayers: false)
+                globalInstructionRootPath: null)
         {
         }
 
@@ -57,27 +56,6 @@ namespace ColorVision.Copilot
             CopilotConversationHistorySnapshot? conversationHistory,
             IEnumerable<string>? additionalReadRootPaths,
             string? globalInstructionRootPath)
-            : this(
-                activeDocumentPath,
-                solutionDirectoryPath,
-                attachments,
-                liveContext,
-                conversationHistory,
-                additionalReadRootPaths,
-                globalInstructionRootPath,
-                loadCodexConfigLayers: true)
-        {
-        }
-
-        private CopilotAgentHostContextSnapshot(
-            string? activeDocumentPath,
-            string? solutionDirectoryPath,
-            IEnumerable<CopilotAttachmentItem>? attachments,
-            CopilotLiveContext? liveContext,
-            CopilotConversationHistorySnapshot? conversationHistory,
-            IEnumerable<string>? additionalReadRootPaths,
-            string? globalInstructionRootPath,
-            bool loadCodexConfigLayers)
         {
             ActiveDocumentPath = activeDocumentPath ?? string.Empty;
             SolutionDirectoryPath = solutionDirectoryPath ?? string.Empty;
@@ -94,26 +72,12 @@ namespace ColorVision.Copilot
             ProjectConfigWorkingDirectoryPath = CopilotAgentRequestFactory.ResolvePrimaryProjectWorkingDirectoryPath(
                 SolutionDirectoryPath,
                 ActiveDocumentPath);
-            if (loadCodexConfigLayers)
-            {
-                var codexHome = CopilotProjectInstructionDiscoveryConfig.LoadCodexHome(GlobalInstructionRootPath);
-                PrimaryTrustedProjectRootPath = CopilotAgentRequestFactory.ResolvePrimaryTrustedProjectRootPath(
-                    SolutionDirectoryPath,
-                    ActiveDocumentPath,
-                    codexHome.Options.ProjectRootMarkers);
-                ProjectInstructionDiscoveryOptions = CopilotProjectInstructionDiscoveryConfig.LoadTrustedProjectLayers(
-                    codexHome,
-                    PrimaryTrustedProjectRootPath,
-                    ProjectConfigWorkingDirectoryPath);
-            }
-            else
-            {
-                ProjectInstructionDiscoveryOptions = CopilotProjectInstructionDiscoveryConfig.CreateDefault();
-                PrimaryTrustedProjectRootPath = CopilotAgentRequestFactory.ResolvePrimaryTrustedProjectRootPath(
-                    SolutionDirectoryPath,
-                    ActiveDocumentPath,
-                    ProjectInstructionDiscoveryOptions.ProjectRootMarkers);
-            }
+            // config.toml integration was intentionally removed. Only instruction documents are shared with Codex.
+            ProjectInstructionDiscoveryOptions = CopilotProjectInstructionDiscoveryConfig.CreateDefault();
+            PrimaryTrustedProjectRootPath = CopilotAgentRequestFactory.ResolvePrimaryTrustedProjectRootPath(
+                SolutionDirectoryPath,
+                ActiveDocumentPath,
+                ProjectInstructionDiscoveryOptions.ProjectRootMarkers);
         }
 
         internal CopilotAgentHostContextSnapshot WithConversationHistory(

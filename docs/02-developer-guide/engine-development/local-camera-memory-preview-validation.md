@@ -1,4 +1,17 @@
+---
+knowledge_id: "engine.camera-preview-validation-plan"
+knowledge_type: "guide"
+status: "planned"
+summary: "列出尚未实施的相机内存预览阶段、验收用例和实施前需要重新核对的源码。"
+aliases: ["相机内存预览怎样验收","LocalCameraNode","ViewCamera","LocalFlowFrame"]
+code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowFrame.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs"]
+test_paths: []
+related: ["engine.camera-preview-plan","engine.camera-preview-lifecycle-plan"]
+---
+
 # 本地相机内存帧预览：实施与验证
+
+本页是待实施验收计划，以下阶段和用例尚不是测试执行结果；实施后应补实际测试路径、运行记录与未通过项，再修改知识状态。
 
 本文补充[方案总览](./local-camera-memory-preview.md)的实施顺序、验收要求和源码入口。
 
@@ -75,3 +88,7 @@
 - View 不可见时跳过预览，还是保存最新的轻量显示副本。
 - 是否自动把结果行加入列表并选中。
 - 完整 CIE 功能是否属于第一版范围。
+
+## 验证入口与缺口
+
+验证缺口：本页是未来验收清单而非测试结果；预览功能实施前重新核对源码，实施后记录实际执行命令、设备与样例条件。

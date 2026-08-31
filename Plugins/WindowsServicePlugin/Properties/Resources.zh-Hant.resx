@@ -135,9 +135,6 @@
   <data name="ManagementService" xml:space="preserve">
     <value>管理服務</value>
   </data>
-  <data name="ReplaceServiceCfg" xml:space="preserve">
-    <value>替換服務CFG</value>
-  </data>
   <data name="ServiceManager" xml:space="preserve">
     <value>服務管理器</value>
   </data>
@@ -146,12 +143,6 @@
   </data>
   <data name="CVWinSMSPathDescription" xml:space="preserve">
     <value>CVWinSMS 服務程式的可執行檔路徑。</value>
-  </data>
-  <data name="CVWinSMSIsAutoUpdate" xml:space="preserve">
-    <value>CVWinSMS 自動更新</value>
-  </data>
-  <data name="CVWinSMSIsAutoUpdateDescription" xml:space="preserve">
-    <value>允許 CVWinSMS 服務工具自動偵測並套用更新。</value>
   </data>
   <data name="ServiceManagerBaseLocation" xml:space="preserve">
     <value>服務安裝根目錄</value>
@@ -431,9 +422,6 @@
   </data>
   <data name="SelectVc2013InstallerDialog" xml:space="preserve">
     <value>選擇 VC++ 2013 x64 執行階段安裝程式</value>
-  </data>
-  <data name="InstallErrorCaption" xml:space="preserve">
-    <value>錯誤</value>
   </data>
   <data name="CVWindowsService" xml:space="preserve">
     <value>CVWindowsService</value>

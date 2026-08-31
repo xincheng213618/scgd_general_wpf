@@ -360,7 +360,14 @@ namespace ColorVision.Copilot
             }
             catch (JsonException)
             {
-                return false;
+                var requestId = CopilotProviderRequestId.Redact(fallbackRequestId, apiKey);
+                exception = new CopilotProviderPayloadException(
+                    CopilotProviderRequestId.AppendToMessage(
+                        $"{sourceLabel} returned malformed JSON.", requestId),
+                    "invalid_response_format",
+                    isTransient: false,
+                    requestId);
+                return true;
             }
         }
 

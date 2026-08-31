@@ -531,8 +531,9 @@ namespace ColorVision.Copilot
                     executionCancellation.RequestCancellation();
                     executionLeaseGuard.HoldUntilCompleted(executionTask);
                     CopilotCancellationBoundary.ObserveLateFault(executionTask);
-                    var outcomeUnknown = executionTask is { IsCompleted: false }
-                        && HasUnknownOutcomeAfterExecutionBoundary(invocation);
+                    // A cancelled task has no authoritative result, even when its local work
+                    // has settled: writes may already exist or continue on a remote server.
+                    var outcomeUnknown = HasUnknownOutcomeAfterExecutionBoundary(invocation);
                     var outcome = CreateOutcome(
                         invocation,
                         outcomeUnknown

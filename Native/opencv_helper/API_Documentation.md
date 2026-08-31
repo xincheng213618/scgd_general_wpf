@@ -4,6 +4,13 @@
 
 `opencv_helper.dll` is a C++ dynamic link library that provides computer vision and image processing functions for the ColorVision WPF application. It serves as a bridge between OpenCV algorithms and C# code via P/Invoke.
 
+This source-adjacent reference retains the calibration context, POI batch and
+per-function details. Start with the current [native integration contract](../../docs/02-developer-guide/engine-development/opencv-integration.md)
+for ABI, ownership, build inputs and verification limits. Header declarations and
+matching implementations remain the signature source of truth; this document is
+not a generated or exhaustive export list. ImageEditor P2/FindLightBeads behavior
+is described in [local native analysis](../../docs/04-api-reference/algorithms/local-native-analysis.md).
+
 ---
 
 ## Table of Contents
@@ -28,20 +35,22 @@
 Image data structure used for passing images between C# and C++.
 
 ```cpp
+#pragma pack(push, 8)
 struct HImage {
     int rows;           // Image height
     int cols;           // Image width
-    int channels;       // Number of channels (1, 3, or 4)
-    int depth;          // Bit depth (8, 16, 32)
-    int stride;         // Bytes per row
-    bool isDispose;     // Whether to dispose memory
+    int channels;       // Shared conversion: 1..CV_CN_MAX; algorithms may restrict this
+    int depth;          // 8=CV_8U, 16=CV_16U, 32=CV_32F, 64=CV_64F
+    int stride;         // Bytes per row; 0 means tightly packed, negative is invalid
+    bool isDispose = false; // true: borrowed buffer; managed Dispose must not free it
     unsigned char* pData;  // Pointer to pixel data
 };
+#pragma pack(pop)
 ```
 
 **C# Equivalent:**
 ```csharp
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
 public struct HImage : IDisposable
 {
     public int rows;
@@ -49,11 +58,23 @@ public struct HImage : IDisposable
     public int channels;
     public int depth;
     public int stride;
+    [MarshalAs(UnmanagedType.I1)]
     public bool isDispose;
     public IntPtr pData;
     // ... methods
 }
 ```
+
+Use the actual definitions in `Native/include/custom_structs.h` and
+`UI/ColorVision.Core/HImage.cs`, not a separately maintained interop struct. On
+x64 the native layout is 32 bytes, with `isDispose` at offset 20 and `pData` at
+offset 24; the bool is one byte. Native assertions guard the layout.
+
+`isDispose` is not a "please free" flag: the managed `Dispose()` frees a non-null
+`pData` with `FreeCoTaskMem` only when `isDispose == false`, then clears that
+struct's pointer. With `true`, the buffer is borrowed and its owner must keep it
+valid for the native call. Copying an `HImage` does not clone its pixels or make
+two independent owners; do not dispose two owning copies of the same pointer.
 
 ### RoiRect
 
@@ -151,8 +172,10 @@ ABI compatibility; its RAW and CIE ranges must also be distinct.
 All functions use `__cdecl`. Calls on a live context are serialized internally,
 but `M_CalibrationDestroy` must not overlap another call on the same context.
 Use `M_CalibrationGetLastError` twice: first to obtain the required UTF-8 byte
-count, then to copy the message. Return value `1` means success; negative values
-are `MCalibrationResult` errors. A failed call and both error-reading calls must
+count including the terminator, then to copy the message; both calls return that
+required count. Calibration mutation/execution calls use `M_CALIBRATION_OK = 1`
+and negative `MCalibrationResult` errors, while `M_CalibrationGetItemCount`
+returns an item count. A failed call and both error-reading calls must
 be kept in the same caller-side critical section so another call cannot replace
 the context's last-error text between them.
 
@@ -198,6 +221,11 @@ old `cvCamera.dll` path.
 
 ## Image Processing Functions
 
+The zero-success image operations below can return more than `-1`. Their common
+export guards translate exceptions to negative codes; consult the
+[function-family error contracts](#error-codes) rather than treating every API
+in this DLL as one shared status enum.
+
 ### M_AutoLevelsAdjust
 
 Automatic levels adjustment using histogram stretching.
@@ -210,7 +238,7 @@ COLORVISIONCORE_API int M_AutoLevelsAdjust(HImage img, HImage* outImage);
 - `img` - Input image (must be 3-channel)
 - `outImage` - Output image pointer
 
-**Returns:** 0 on success, -1 on error
+**Returns:** 0 on success; negative on failure, including common export-guard errors.
 
 **C# Usage:**
 ```csharp
@@ -232,7 +260,7 @@ COLORVISIONCORE_API int M_AutomaticColorAdjustment(HImage img, HImage* outImage)
 - `img` - Input image (must be 3-channel)
 - `outImage` - Output image pointer
 
-**Returns:** 0 on success, -1 on error
+**Returns:** 0 on success; negative on failure, including common export-guard errors.
 
 ---
 
@@ -248,7 +276,7 @@ COLORVISIONCORE_API int M_AutomaticToneAdjustment(HImage img, HImage* outImage);
 - `img` - Input image (must be 3-channel)
 - `outImage` - Output image pointer
 
-**Returns:** 0 on success, -1 on error
+**Returns:** 0 on success; negative on failure, including common export-guard errors.
 
 ---
 
@@ -269,7 +297,7 @@ COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage,
 - `types` - OpenCV colormap type (COLORMAP_JET, COLORMAP_HOT, etc.)
 - `channel` - Channel to extract (-1 for grayscale conversion)
 
-**Returns:** 0 on success, -1 on error
+**Returns:** 0 on success; negative on failure, including common export-guard errors.
 
 **C# Usage:**
 ```csharp
@@ -310,7 +338,7 @@ COLORVISIONCORE_API int M_GetMinMax(HImage img, uint* outMin, uint* outMax, int 
 - `outMax` - Output maximum value
 - `channel` - Channel to analyze (-1 for all)
 
-**Returns:** 0 on success, -1 on error
+**Returns:** 0 on success; negative on failure, including common export-guard errors.
 
 ---
 
@@ -327,7 +355,7 @@ COLORVISIONCORE_API int M_ExtractChannel(HImage img, HImage* outImage, int chann
 - `outImage` - Output single-channel image
 - `channel` - Channel index to extract (0, 1, 2)
 
-**Returns:** 0 on success, -1 on error
+**Returns:** 0 on success; negative on failure, including common export-guard errors.
 
 ---
 
@@ -605,6 +633,7 @@ COLORVISIONCORE_API int M_CalSFRMultiChannel(
 - -1 on parameter error
 - -2 on empty image
 - -3 on calculation failure
+- -4 on OpenCV exception, -5 on standard exception, -6 on unknown exception (`GuardSfrExport`)
 
 **C# Usage:**
 ```csharp
@@ -644,6 +673,11 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 - `roi` - Region of interest (width/height=0 for full image)
 
 **Returns:** Raw pixel-unit focus measure value (higher = sharper). The value is not normalized to `0..1`.
+
+Input-preparation failure, a non-finite result, or an exception caught by
+`GuardDoubleExportImpl` returns `-1.0`. Exclude this failure sentinel before
+comparing scores. Zero can be a valid score; some undersized-image branches also
+return `0`, so zero alone is not a failure indicator.
 
 There is no single industry-standard numeric scale or threshold for these general-purpose focus measures. Values depend on the selected algorithm, bit depth, exposure, ROI, demosaicing/preprocessing, and target content. Use the SFR/MTF APIs when a calibrated optical-resolution measurement is required.
 
@@ -848,7 +882,12 @@ Open video file for playback.
 COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info);
 ```
 
-**Returns:** Handle (positive) on success, -1 on error
+**Returns:** Handle (positive) on success; negative on failure. Invalid input or
+an unopened source normally returns `-1`; `GuardVideoExport` also maps OpenCV,
+standard and unknown exceptions to `-2`, `-3` and `-4` respectively.
+
+Opening creates the producer/consumer workers in a paused state. A valid handle
+does not mean playback has started or a frame callback has completed.
 
 ---
 
@@ -860,15 +899,27 @@ Read single frame from video.
 COLORVISIONCORE_API int M_VideoReadFrame(int handle, HImage* outImage);
 ```
 
+Returns `0` with an owned output buffer on success. `-1` covers invalid output or
+handle, `-2` a failed/empty read, and `-3` a known end-of-stream position. The
+result of `MatToHImage` is also propagated, including conversion/allocation
+failures (`-3` for allocation failure). The video exception guard reuses some
+of these numbers, so the code alone does not always identify a unique cause.
+Dispose a non-null owned output after use.
+
 ---
 
 ### M_VideoSeek
 
-Seek to specific frame.
+Queue a seek to a specific frame.
 
 ```cpp
 COLORVISIONCORE_API int M_VideoSeek(int handle, int frameIndex);
 ```
+
+`0` means the frame index passed validation and was stored in `seekRequestFrame`;
+the producer performs the actual seek later. It does not prove that the target
+frame has been decoded, delivered or rendered. Invalid handle/index returns
+`-1`/`-2` respectively, with additional video guard errors possible.
 
 ---
 
@@ -900,7 +951,9 @@ Set display resize scale for performance.
 COLORVISIONCORE_API int M_VideoSetResizeScale(int handle, double scale);
 ```
 
-**Scale values:** 1.0, 0.5, 0.25, 0.125
+**Scale values:** 1.0, 0.5, 0.25 and 0.125 have dedicated processing paths, but
+the native setter also accepts intermediate values. It changes non-positive
+values to 0.125 and clamps values above 1.0 to 1.0; this is not a four-value enum.
 
 ---
 
@@ -920,7 +973,18 @@ COLORVISIONCORE_API int M_VideoPlay(int handle,
     void* userData);
 ```
 
-`frame` is an owned `HImage` buffer allocated by the DLL for the callback. Managed callers should dispose the received `HImage` after copying/rendering the frame.
+`InvokeFrame` passes the address of a stack-local `HImage`; that struct pointer
+is borrowed only for the callback and must not be retained. Its `pData` is a
+separately allocated owned buffer transferred to the receiver. Copy/render the
+pixels and dispose the received `HImage` exactly once, or explicitly transfer
+that buffer ownership to a longer-lived holder. The native callback path does
+not free the buffer after calling the receiver.
+
+Playback uses a latest-frame slot: the producer may overwrite an undelivered
+frame, and the consumer takes the newest one. This is not a lossless per-frame
+processing queue. Frame callbacks can run on native worker threads (including
+the producer for a paused seek), not the WPF UI thread. Keep callback delegates
+and `userData` alive while callbacks can still execute.
 
 **Status codes:** 0=Paused, 1=Playing, 2=Ended
 
@@ -934,6 +998,9 @@ Pause video playback.
 COLORVISIONCORE_API int M_VideoPause(int handle);
 ```
 
+Pause changes the playback flag; it does not wait for an already-running callback
+to finish.
+
 ---
 
 ### M_VideoClose
@@ -943,6 +1010,19 @@ Close video and release resources.
 ```cpp
 COLORVISIONCORE_API int M_VideoClose(int handle);
 ```
+
+Close removes the handle, clears stored callbacks, stops workers and releases
+capture resources. `StopVideoWorkers` normally joins the workers, but detaches
+the current worker if close is called from that worker's callback. In that case
+close can return before the current callback has returned. Do not treat every
+successful close as a universal callback-completion barrier.
+
+Callers must serialize close against other operations on the same handle. An
+operation that already obtained the context can outlive handle removal, and
+`M_VideoClose` releases `cap` without the `capMutex` used by manual frame reads.
+The current implementation therefore does not establish arbitrary concurrent
+close/read safety. This is an implementation limitation, not a claim that a
+concurrency stress test passed.
 
 ---
 
@@ -1043,12 +1123,32 @@ available for older exports whose historical encoding contract differs.
 
 ### General Errors
 
-| Code | Meaning |
-|------|---------|
-| 0 | Success |
-| -1 | Invalid parameter or general error |
-| -2 | Invalid image data |
-| -3 | Memory allocation failed |
+There is no DLL-wide status enum. The following named codes belong to the
+common export implementation in `opencv_media_export.cpp`; individual algorithm
+bodies can add their own meanings. `GuardIntExportImpl` / `GuardHImageExportImpl`
+propagate the body result and translate exceptions; they do not normalize every
+function family into this table.
+
+| Code | Common export meaning |
+|------|-----------------------|
+| -1 | Invalid argument |
+| -2 | Algorithm failed |
+| -3 | Allocation failed |
+| -4 | JSON exception / invalid JSON |
+| -5 | OpenCV exception |
+| -6 | Standard exception |
+| -7 | Unknown exception |
+
+Zero means success for the zero-success image operations, not for every export.
+Calibration mutation/execution and POI batch calls use `M_CALIBRATION_OK = 1`
+and `M_POI_OK = 1`; calibration text/count queries return sizes or counts.
+JSON-producing detection exports return a positive length, which may still
+describe an algorithm rejection. Focus evaluation returns a score. Video open
+returns a positive handle, video position returns a frame index, and video
+operations use their own negative results and `GuardVideoExport` mappings.
+In particular, video read `-3` may mean end-of-stream, `MatToHImage` allocation
+failure, or a standard exception; inspect the call path/logs instead of assigning
+a DLL-wide meaning.
 
 ### Stitching Errors
 
@@ -1069,13 +1169,16 @@ enum StitchingErrorCode {
 | -1 | Null pointer parameter |
 | -2 | Empty image |
 | -3 | SFR calculation failed |
+| -4 | OpenCV exception |
+| -5 | Standard exception |
+| -6 | Unknown exception |
 
 ---
 
 ## Thread Safety
 
-- **Video functions:** Thread-safe with internal mutex protection
-- **Image processing:** Not thread-safe; process one image at a time per instance
+- **Video functions:** Internal mutexes protect selected state, not arbitrary lifecycle concurrency. Serialize close against other same-handle calls and observe the callback lifetime limits above; seek/pause returns do not wait for rendering or all callbacks.
+- **Image processing:** Keep input buffers alive and synchronize shared buffers/output locations. There is no blanket DLL-wide thread-safety guarantee or general "instance" lock for these free functions.
 - **SFR calculations:** Thread-safe for independent images
 - **P2 local analysis functions:** Thread-safe for independent calls; no retained mutable state
 
@@ -1085,39 +1188,45 @@ enum StitchingErrorCode {
 
 ### C# Side Responsibilities
 
-1. **Allocating HImage:** Use `Marshal.AllocCoTaskMem()` for `pData`
-2. **Freeing HImage:** Call `HImage.Dispose()` or `Marshal.FreeCoTaskMem()`
-3. **Freeing Results:** Always call `FreeResult()` for JSON output strings, or use `PtrToStringAnsiAndFree()`
+1. **Allocating HImage:** For an owned copy, allocate `pData` with `Marshal.AllocCoTaskMem()` and use `isDispose=false`. Borrowed inputs use `isDispose=true` and keep their original owner alive for the call.
+2. **Freeing HImage:** Dispose each owned buffer exactly once, including a non-null output on a failure path. Do not additionally call `FreeCoTaskMem`/`M_FreeHImageData` after disposal, free borrowed storage, or dispose multiple copies of one owning struct.
+3. **Freeing Results:** Free non-null JSON result buffers with `FreeResult()` in a failure-safe path; use the API's matching ANSI or UTF-8 copy-and-free helper (P2 uses UTF-8).
 4. **Freeing Byte Arrays:** Use `M_FreeHImageData()` for `M_ConvertImage` buffers
 
 ### Example Memory Lifecycle
 
 ```csharp
-// Create HImage
+// Owned, tightly packed BGR8 input; dimensions/pixelData must be valid.
+int stride = checked(width * 3);
+int byteCount = checked(stride * height);
 HImage img = new HImage
 {
     rows = height,
     cols = width,
     channels = 3,
     depth = 8,
-    pData = Marshal.AllocCoTaskMem(width * height * 3)
+    stride = stride,
+    isDispose = false,
+    pData = Marshal.AllocCoTaskMem(byteCount)
 };
+HImage outImg = default;
 
 try
 {
     // Copy data to unmanaged memory
-    Marshal.Copy(pixelData, 0, img.pData, width * height * 3);
+    Marshal.Copy(pixelData, 0, img.pData, byteCount);
     
     // Process
-    HImage outImg;
-    M_AutoLevelsAdjust(img, out outImg);
+    int status = OpenCVMediaHelper.M_AutoLevelsAdjust(img, out outImg);
+    if (status != 0 || outImg.pData == IntPtr.Zero)
+        throw new InvalidOperationException($"AutoLevels failed: {status}");
     
-    // Use result...
-    M_FreeHImageData(outImg.pData);  // Free output
+    // Copy/use result while outImg is still alive.
 }
 finally
 {
-    img.Dispose();  // Free input
+    outImg.Dispose(); // Also covers an allocated output on a failure path.
+    img.Dispose();
 }
 ```
 
@@ -1129,7 +1238,12 @@ finally
 - **Runtime Dependencies:** 
   - OpenCV 4.x
   - Visual C++ Redistributable
-- **Output Location:** `ColorVision/bin/<Config>/net8.0-windows/opencv_helper.dll`
+- **Build/output selection:** Follow `Native/opencv_helper/opencv_helper.vcxproj`
+  and `UI/ColorVision.Core/ColorVision.Core.csproj`, not a fixed net8 application
+  output path. Core uses `OpenCvHelperBinary` to select the solution-level or
+  project-level Release/x64 helper, copies it to output and packages it under
+  `runtimes/win-x64/native`; the consuming project's target framework/output
+  settings determine the application layout. See the native integration contract.
 
 ---
 

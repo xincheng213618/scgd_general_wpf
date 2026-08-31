@@ -1,6 +1,19 @@
+---
+knowledge_id: "algorithms.onnx"
+knowledge_type: "decision"
+status: "planned"
+summary: "尚未实现的 ONNX 接入设计：保持基础产品无 ONNX 运行时，新增 adapter 前须明确模型与验收门禁。"
+aliases: ["ONNX 未来如何接入","AI 推理是否已实现","Microsoft.ML.OnnxRuntime","InferenceSession","Execution Provider"]
+code_paths: ["UI/ColorVision.Algorithms/ColorVision.Algorithms.csproj","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
+test_paths: []
+related: ["algorithms.platform"]
+---
+
 # ONNX / AI 推理接入设计（Deferred）
 
 该能力只保留未来设计，当前不实施。现有安装包、ImageEditor 和 `ColorVision.Algorithms` 的依赖图必须保持不含 `Microsoft.ML.OnnxRuntime`；不增加 CPU/DirectML/CUDA Execution Provider、模型文件、模型下载器或任何 ONNX 运行时代码。OpenCV 自带头文件中的 ONNX 声明不代表产品已启用该能力。
+
+本页 `status: planned`，不得作为已经存在的接口或执行步骤。`code_paths` 指向待保持兼容的现有平台契约与 provider 注册边界，不表示这些文件中有 ONNX 实现。当前没有 ONNX 业务模型和对应实现测试，故 `test_paths` 留空；下面的门禁是未来实施前必须建立的验证要求，而不是已经通过的证据。
 
 ## 目标边界
 

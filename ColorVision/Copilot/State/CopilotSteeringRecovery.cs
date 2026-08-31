@@ -35,7 +35,7 @@ namespace ColorVision.Copilot
     {
         internal const int MaximumPendingRecoveryRecords = 16;
         internal const int MaximumPendingRecoveryCharacters = 256_000;
-        private const string RecoveryHeading = "以下运行中指令尚未送达，请检查后重新发送：";
+        private const string RecoveryHeading = "以下运行中指令尚未确认进入已保存的会话，请核对任务状态后决定是否重新发送：";
 
         internal static bool TrackPending(
             CopilotConversationRecord conversation,

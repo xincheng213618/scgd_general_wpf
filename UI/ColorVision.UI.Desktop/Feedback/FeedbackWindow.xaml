@@ -5,9 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:ColorVision.UI.Desktop.Properties"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resources.SendFeedback}" 
-        Background="{DynamicResource GlobalBackground}" 
-        Height="720" Width="760"
+        Title="{x:Static properties:Resources.SendFeedback}"
+        Background="{DynamicResource GlobalBackground}"
+        Height="600" Width="760"
         MinHeight="560" MinWidth="680"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
@@ -22,7 +22,15 @@
         <Style x:Key="FeedbackSecondaryTextBlockStyle" TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <Style x:Key="FeedbackSectionTitleStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
 
         <Style TargetType="{x:Type CheckBox}">
@@ -42,8 +50,9 @@
         <Style x:Key="FeedbackListBoxStyle" TargetType="{x:Type ListBox}">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
             <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
-            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled"/>
         </Style>
 
         <Style x:Key="FeedbackListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
@@ -52,234 +61,215 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         </Style>
     </Window.Resources>
 
-    <Grid Margin="18">
+    <Grid Margin="20">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Border Style="{StaticResource FeedbackSectionBorderStyle}" Margin="0,0,0,12">
-            <TextBox x:Name="MessageTextBox"
-                     AcceptsReturn="True"
-                     Background="Transparent"
-                     BorderThickness="0"
-                     MinHeight="110"
-                     MaxHeight="150"
-                     Padding="0"
-                     Text="{x:Static properties:Resources.FeedbackPlaceholder}"
-                     TextWrapping="Wrap"
-                     VerticalContentAlignment="Top"
-                     VerticalScrollBarVisibility="Auto"
-                     Foreground="{DynamicResource SecondaryTextBrush}"
-                     GotFocus="MessageTextBox_GotFocus"
-                     LostFocus="MessageTextBox_LostFocus"/>
-        </Border>
-
-        <Border Grid.Row="1" Style="{StaticResource FeedbackSectionBorderStyle}">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+        <ScrollViewer x:Name="FeedbackContentScrollViewer"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Padding="0,0,4,0">
+            <StackPanel>
+                <TextBlock x:Name="MessageLabel"
+                           Text="{x:Static properties:Resources.FeedbackMessageLabel}"
+                           Style="{StaticResource FeedbackSectionTitleStyle}"/>
+                <TextBlock Text="{x:Static properties:Resources.FeedbackMessageHint}"
+                           Margin="0,5,0,10"
+                           Style="{StaticResource FeedbackSecondaryTextBlockStyle}"/>
+                <Border Style="{StaticResource FeedbackSectionBorderStyle}" Margin="0,0,0,18">
+                    <TextBox x:Name="MessageTextBox"
+                             AutomationProperties.LabeledBy="{Binding ElementName=MessageLabel}"
+                             AcceptsReturn="True"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             MinHeight="100"
+                             MaxHeight="200"
+                             Padding="0"
+                             Text="{x:Static properties:Resources.FeedbackPlaceholder}"
+                             TextWrapping="Wrap"
+                             VerticalContentAlignment="Top"
+                             VerticalScrollBarVisibility="Auto"
+                             Foreground="{DynamicResource SecondaryTextBrush}"
+                             GotFocus="MessageTextBox_GotFocus"
+                             LostFocus="MessageTextBox_LostFocus"/>
+                </Border>
 
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="{x:Static properties:Resources.DiagnosticItems}"
-                               FontSize="15"
-                               FontWeight="SemiBold"/>
-                    <Button x:Name="PackLogsButton"
-                            Grid.Column="1"
-                            Content="{x:Static properties:Resources.PackLogs}"
-                            Click="PackLogs_Click"
-                            Padding="14,5"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{x:Static properties:Resources.Attachments}"
+                                   Style="{StaticResource FeedbackSectionTitleStyle}"/>
+                        <TextBlock Text="{Binding Items.Count, ElementName=AttachmentsList, StringFormat='({0})'}"
+                                   Margin="8,0,0,0"
+                                   Style="{StaticResource FeedbackSecondaryTextBlockStyle}"/>
+                    </StackPanel>
+                    <Button x:Name="AddFileButton" Grid.Column="1"
+                            Content="{x:Static properties:Resources.AddFile}"
+                            Click="AddFile_Click" Padding="12,5" Margin="0,0,8,0"/>
+                    <Button x:Name="AddScreenshotButton" Grid.Column="2"
+                            Content="{x:Static properties:Resources.CaptureScreenshot}"
+                            Click="CaptureScreenshot_Click" Padding="12,5"/>
                 </Grid>
-
-                <ListBox x:Name="CollectorsList"
-                         Grid.Row="1"
-                         Margin="0,12,0,0"
-                         MinHeight="250"
+                <TextBlock Text="{x:Static properties:Resources.FeedbackAttachmentsHint}"
+                           Margin="0,5,0,8" Style="{StaticResource FeedbackSecondaryTextBlockStyle}"/>
+                <TextBlock x:Name="EmptyAttachmentsText"
+                           Text="{x:Static properties:Resources.FeedbackNoAttachments}"
+                           Margin="0,10,0,12">
+                    <TextBlock.Style>
+                        <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource FeedbackSecondaryTextBlockStyle}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasItems, ElementName=AttachmentsList}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <ListBox x:Name="AttachmentsList"
+                         AutomationProperties.Name="{x:Static properties:Resources.Attachments}"
                          Style="{StaticResource FeedbackListBoxStyle}"
                          ItemContainerStyle="{StaticResource FeedbackListBoxItemStyle}">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Border Background="{DynamicResource GlobalBackground}"
-                                    BorderBrush="{DynamicResource GlobalBorderBrush1}"
-                                    BorderThickness="1"
-                                    CornerRadius="5"
-                                    Margin="0,0,0,8"
-                                    Padding="10">
+                            <Border BorderBrush="{DynamicResource GlobalBorderBrush1}"
+                                    BorderThickness="0,0,0,1" Padding="0,9">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <CheckBox IsChecked="{Binding IsChecked}"
-                                              VerticalAlignment="Top"
-                                              Margin="0,2,8,0"/>
-                                    <Grid Grid.Column="1">
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        <TextBlock Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold"/>
-                                        <TextBlock Grid.Row="1"
-                                                   Text="{Binding Description, Mode=OneWay}"
-                                                   FontSize="12"
-                                                   Margin="0,3,0,0"
+                                    <StackPanel Margin="0,0,12,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding FileName}" ToolTip="{Binding FileName}"
+                                                   Foreground="{DynamicResource GlobalTextBrush}"/>
+                                        <TextBlock Text="{Binding SizeText}" Margin="0,3,0,0"
                                                    Style="{StaticResource FeedbackSecondaryTextBlockStyle}"/>
-                                        <StackPanel Grid.Row="2"
-                                                    Orientation="Horizontal"
-                                                    Margin="0,8,0,0"
-                                                    Visibility="{Binding TimeRangeVisibility, Mode=OneWay}">
-                                            <TextBlock Text="{x:Static properties:Resources.FeedbackLogRange}"
-                                                       Margin="0,0,6,0"/>
-                                            <ComboBox Width="112"
-                                                      ItemsSource="{Binding TimeRangeOptions, Mode=OneWay}"
-                                                      DisplayMemberPath="DisplayName"
-                                                      SelectedValuePath="Days"
-                                                      SelectedValue="{Binding SelectedDays, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                            <Button Content="{x:Static properties:Resources.OpenLogFolder}"
-                                                    Click="OpenLogFolder_Click"
-                                                    Tag="{Binding}"
-                                                    IsEnabled="{Binding CanOpenLogDirectory, Mode=OneWay}"
-                                                    Margin="8,0,0,0"
-                                                    Padding="9,2"/>
-                                        </StackPanel>
-                                    </Grid>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="{x:Static properties:Resources.OpenFolder}"
+                                            Click="OpenAttachmentFolder_Click" Tag="{Binding}"
+                                            IsEnabled="{Binding FileExists, Mode=OneWay}"
+                                            ToolTip="{x:Static properties:Resources.OfflinePackageHint}"
+                                            Margin="0,0,8,0" Padding="10,4" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="2" Click="RemoveAttachment_Click" Tag="{Binding}"
+                                            AutomationProperties.Name="{x:Static properties:Resources.FeedbackRemoveAttachment}"
+                                            ToolTip="{x:Static properties:Resources.FeedbackRemoveAttachment}"
+                                            Width="30" Height="30" Padding="0" VerticalAlignment="Center"
+                                            Background="Transparent" BorderThickness="0">
+                                        <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
+                                    </Button>
                                 </Grid>
                             </Border>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
+
+                <Border Style="{StaticResource FeedbackSectionBorderStyle}" Margin="0,18,0,0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Expander x:Name="DiagnosticsExpander" IsExpanded="False"
+                                  Grid.ColumnSpan="2"
+                                  HorizontalContentAlignment="Stretch"
+                                  Foreground="{DynamicResource GlobalTextBrush}"
+                                  AutomationProperties.Name="{x:Static properties:Resources.DiagnosticItems}">
+                            <Expander.Header>
+                                <StackPanel Orientation="Horizontal" Margin="4,4,0,4">
+                                    <TextBlock Text="{x:Static properties:Resources.DiagnosticItems}"
+                                               FontWeight="SemiBold"/>
+                                    <TextBlock x:Name="DiagnosticsSummaryText" Margin="12,0,0,0"
+                                               Style="{StaticResource FeedbackSecondaryTextBlockStyle}"/>
+                                </StackPanel>
+                            </Expander.Header>
+                            <ListBox x:Name="CollectorsList" Margin="0,10,0,0"
+                                     AutomationProperties.Name="{x:Static properties:Resources.DiagnosticItems}"
+                                     Style="{StaticResource FeedbackListBoxStyle}"
+                                     ItemContainerStyle="{StaticResource FeedbackListBoxItemStyle}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="{DynamicResource GlobalBorderBrush1}"
+                                                BorderThickness="0,0,0,1" Padding="0,10">
+                                            <StackPanel>
+                                                <CheckBox IsChecked="{Binding IsChecked}"
+                                                          AutomationProperties.Name="{Binding Name, Mode=OneWay}"
+                                                          AutomationProperties.HelpText="{Binding Description, Mode=OneWay}"
+                                                          Foreground="{DynamicResource GlobalTextBrush}"
+                                                          HorizontalContentAlignment="Stretch">
+                                                    <StackPanel Margin="6,0,0,0">
+                                                        <TextBlock Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource GlobalTextBrush}"/>
+                                                        <TextBlock Text="{Binding Description, Mode=OneWay}" Margin="0,3,0,0"
+                                                                   Style="{StaticResource FeedbackSecondaryTextBlockStyle}"/>
+                                                    </StackPanel>
+                                                </CheckBox>
+                                                <WrapPanel Margin="24,8,0,0" Visibility="{Binding TimeRangeVisibility, Mode=OneWay}">
+                                                    <TextBlock Text="{x:Static properties:Resources.FeedbackLogRange}" Margin="0,0,6,0"
+                                                               Foreground="{DynamicResource GlobalTextBrush}"/>
+                                                    <ComboBox Width="112" ItemsSource="{Binding TimeRangeOptions, Mode=OneWay}"
+                                                              AutomationProperties.Name="{x:Static properties:Resources.FeedbackLogRange}"
+                                                              DisplayMemberPath="DisplayName" SelectedValuePath="Days"
+                                                              SelectedValue="{Binding SelectedDays, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                                    <Button Content="{x:Static properties:Resources.OpenLogFolder}"
+                                                            Click="OpenLogFolder_Click" Tag="{Binding}"
+                                                            IsEnabled="{Binding CanOpenLogDirectory, Mode=OneWay}"
+                                                            Margin="8,0,0,0" Padding="9,2"/>
+                                                </WrapPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Expander>
+                        <TextBlock x:Name="DiagnosticsHintText" Grid.Row="1" Margin="0,10,16,0"
+                                   Style="{StaticResource FeedbackSecondaryTextBlockStyle}"/>
+                        <Button x:Name="PackLogsButton" Grid.Row="1" Grid.Column="1"
+                                Content="{x:Static properties:Resources.PackLogs}"
+                                Click="PackLogs_Click" Padding="12,5" Margin="0,10,0,0"/>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border x:Name="FeedbackFooter" Grid.Row="1" Margin="0,18,0,0" Padding="0,14,0,0"
+                BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="0,1,0,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <ProgressBar x:Name="UploadProgressBar" Grid.ColumnSpan="2" Height="4" Margin="0,0,0,10"
+                             Minimum="0" Maximum="100" Value="0" Visibility="Collapsed"/>
+                <TextBlock x:Name="StatusText" Grid.Row="1" Margin="0,0,16,0" MaxHeight="40"
+                           ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"
+                           AutomationProperties.LiveSetting="Polite"
+                           Style="{StaticResource FeedbackSecondaryTextBlockStyle}"/>
+                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="{x:Static properties:Resources.Cancel}" Click="Cancel_Click"
+                            Padding="18,6" Margin="0,0,10,0" IsCancel="True"/>
+                    <Button x:Name="SendButton" Content="{x:Static properties:Resources.SendFeedback}"
+                            Click="Send_Click" Padding="18,6" IsDefault="True"
+                            Foreground="White" Background="{DynamicResource PrimaryBrush}"
+                            BorderBrush="{DynamicResource PrimaryBrush}"/>
+                </StackPanel>
             </Grid>
         </Border>
-
-        <Grid Grid.Row="2" Margin="0,12,0,0">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <StackPanel>
-                <TextBlock Text="{x:Static properties:Resources.Attachments}" FontWeight="SemiBold"/>
-                <TextBlock Text="{x:Static properties:Resources.OfflinePackageHint}"
-                           FontSize="11"
-                           Margin="0,3,0,0"
-                           Style="{StaticResource FeedbackSecondaryTextBlockStyle}"/>
-            </StackPanel>
-            <Button x:Name="AddFileButton"
-                    Grid.Column="1"
-                    Content="{x:Static properties:Resources.AddFile}"
-                    Click="AddFile_Click"
-                    Margin="5,0"
-                    Padding="10,4"/>
-            <Button x:Name="AddScreenshotButton"
-                    Grid.Column="2"
-                    Content="{x:Static properties:Resources.CaptureScreenshot}"
-                    Click="CaptureScreenshot_Click"
-                    Padding="10,4"/>
-
-            <ListBox x:Name="AttachmentsList"
-                     Grid.Row="1"
-                     Grid.ColumnSpan="3"
-                     Height="76"
-                     Margin="0,8,0,0"
-                     Style="{StaticResource FeedbackListBoxStyle}"
-                     ItemContainerStyle="{StaticResource FeedbackListBoxItemStyle}">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <Border BorderBrush="{DynamicResource GlobalBorderBrush1}"
-                                BorderThickness="0,0,0,1"
-                                Padding="0,5">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{Binding FileName}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                <TextBlock Grid.Column="1"
-                                           Text="{Binding SizeText}"
-                                           VerticalAlignment="Center"
-                                           Margin="0,0,8,0"
-                                           Style="{StaticResource FeedbackSecondaryTextBlockStyle}"/>
-                                <Button Grid.Column="2"
-                                        Content="{x:Static properties:Resources.OpenFolder}"
-                                        Click="OpenAttachmentFolder_Click"
-                                        Tag="{Binding}"
-                                        IsEnabled="{Binding FileExists, Mode=OneWay}"
-                                        Margin="0,0,6,0"
-                                        Padding="8,1"/>
-                                <Button Grid.Column="3"
-                                        Content="x"
-                                        Click="RemoveAttachment_Click"
-                                        Tag="{Binding}"
-                                        Padding="5,0"
-                                        Background="Transparent"
-                                        BorderThickness="0"
-                                        Cursor="Hand"/>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-        </Grid>
-
-        <Grid Grid.Row="3" Margin="0,14,0,0">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
-            <ProgressBar x:Name="UploadProgressBar"
-                         Grid.ColumnSpan="3"
-                         Height="14"
-                         Minimum="0"
-                         Maximum="100"
-                         Value="0"
-                         Visibility="Collapsed"/>
-            <TextBlock x:Name="StatusText"
-                       Grid.Row="1"
-                       Margin="0,8,12,0"
-                       Style="{StaticResource FeedbackSecondaryTextBlockStyle}"/>
-            <Button x:Name="SendButton"
-                    Grid.Row="1"
-                    Grid.Column="1"
-                    Content="{x:Static properties:Resources.SendFeedback}"
-                    Click="Send_Click"
-                    Padding="12,4"
-                    Margin="0,8,10,0"
-                    Foreground="White"
-                    Background="{DynamicResource PrimaryBrush}"
-                    BorderBrush="{DynamicResource PrimaryBrush}"
-                    IsDefault="True"/>
-            <Button Grid.Row="1"
-                    Grid.Column="2"
-                    Content="{x:Static properties:Resources.Cancel}"
-                    Click="Cancel_Click"
-                    Padding="18,6"
-                    Margin="0,8,0,0"
-                    IsCancel="True"/>
-        </Grid>
     </Grid>
 </Window>

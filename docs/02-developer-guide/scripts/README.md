@@ -1,3 +1,14 @@
+---
+knowledge_id: "delivery.scripts"
+knowledge_type: "guide"
+status: "current"
+summary: "主程序、插件和项目包的正式发布入口、只读校验与上传清理副作用。"
+aliases: ["发布","打包","release.bat","package_project.bat","只做本地构建"]
+code_paths: ["Scripts/release.bat","Scripts/package_project.bat","Scripts/package_plugin.bat","Scripts/package_cvxp.py","Scripts/build_spectrum.py"]
+test_paths: ["Scripts/tests"]
+related: ["delivery.index","delivery.testing","delivery.backend"]
+---
+
 # 构建与发布脚本
 
 本页只回答四件事：正式发布走哪个入口，插件和项目包怎么打包，上传凭据怎么提供，失败时先查哪里。脚本参数以源码和 `--help` 为准；不要把这里写成每个 Python 函数的说明书。
@@ -19,7 +30,9 @@
 
 ## 正式发布
 
-主程序和 ServiceHost 共用仓库根目录 `Directory.Build.props` 中的 `VersionPrefix`。每个增量包都必须携带完整的 `ServiceHost/` 运行时，确保 ZIP 部署机器可从空的 ProgramData 目录完成首次安装。发布前只提升这个版本号，然后运行：
+以下命令会签名、打包并修改远端发布状态，只在用户明确要求发布时执行；文档或代码审阅不授予发布权限。
+
+主程序和 ServiceHost 共用仓库根目录 `Directory.Build.props` 中的 `VersionPrefix`。每个增量包都必须携带完整的 `ServiceHost/` 运行时，确保 ZIP 部署机器可从空的 ProgramData 目录完成首次安装。发布前提升这个版本号并更新根 `CHANGELOG.md`，然后运行：
 
 ```powershell
 Scripts\release.bat
@@ -80,7 +93,7 @@ $env:COLORVISION_UPLOAD_USE_SYSTEM_PROXY = "1"
 | `generate_shared_files.py` | 宿主输出集合变化时 | 同步生成两份共享文件清单，或用 `--check` 做集合门禁 |
 | `build_spectrum.py` | 特殊 | Spectrum 独立 ZIP + 插件 `.cvxp` 双通道构建、签名、发布和远程验收 |
 
-如果某个脚本不在 `Scripts/` 目录里，就不要在文档里继续引用它。改正式发布路径时，需要做一次测试环境发布演练。
+如果某个脚本不在 `Scripts/` 目录里，就不要在文档里继续引用它。改正式发布路径时先运行相关脚本测试；测试环境发布演练也需要明确的远端写入授权。快速发布/完整发布的范围以根 `AGENTS.md` 为准，不自行添加额外发布轮次。
 
 ## 常见失败
 

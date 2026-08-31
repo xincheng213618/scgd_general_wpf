@@ -99,6 +99,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.Rbac", "UI\Colo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.Copilot.Tests", "Test\ColorVision.Copilot.Tests\ColorVision.Copilot.Tests.csproj", "{66C4A70B-465D-4D6D-A6FC-D40B95724A92}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.Algorithms", "UI\ColorVision.Algorithms\ColorVision.Algorithms.csproj", "{064B9D2F-F731-BC49-74C5-6E812FDA24E7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -241,6 +243,10 @@ Global
 		{66C4A70B-465D-4D6D-A6FC-D40B95724A92}.Debug|x64.Build.0 = Debug|x64
 		{66C4A70B-465D-4D6D-A6FC-D40B95724A92}.Release|x64.ActiveCfg = Release|x64
 		{66C4A70B-465D-4D6D-A6FC-D40B95724A92}.Release|x64.Build.0 = Release|x64
+		{064B9D2F-F731-BC49-74C5-6E812FDA24E7}.Debug|x64.ActiveCfg = Debug|x64
+		{064B9D2F-F731-BC49-74C5-6E812FDA24E7}.Debug|x64.Build.0 = Debug|x64
+		{064B9D2F-F731-BC49-74C5-6E812FDA24E7}.Release|x64.ActiveCfg = Release|x64
+		{064B9D2F-F731-BC49-74C5-6E812FDA24E7}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -279,6 +285,7 @@ Global
 		{571E4353-7454-428E-BFA9-E6B3638BBDD6} = {E24919A5-7981-44FF-82A9-E7259C5492CE}
 		{130F0C9D-9415-4E35-8333-19673B9822BE} = {E24919A5-7981-44FF-82A9-E7259C5492CE}
 		{66C4A70B-465D-4D6D-A6FC-D40B95724A92} = {17024679-C50D-4948-A0F7-4A67B6EFBEA8}
+		{064B9D2F-F731-BC49-74C5-6E812FDA24E7} = {E24919A5-7981-44FF-82A9-E7259C5492CE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}

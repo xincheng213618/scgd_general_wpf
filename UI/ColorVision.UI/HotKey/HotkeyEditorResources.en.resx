@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Keyboard shortcuts</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Find, edit, or clear shortcuts. Confirmed changes are saved immediately.</value></data>
+  <data name="Search" xml:space="preserve"><value>Search actions or shortcuts</value></data>
+  <data name="ResetAll" xml:space="preserve"><value>Reset all to defaults</value></data>
+  <data name="Reset" xml:space="preserve"><value>Restore default</value></data>
+  <data name="Edit" xml:space="preserve"><value>Edit shortcut</value></data>
+  <data name="Clear" xml:space="preserve"><value>Clear shortcut</value></data>
+  <data name="Unassigned" xml:space="preserve"><value>Unassigned</value></data>
+  <data name="Global" xml:space="preserve"><value>Global</value></data>
+  <data name="Modified" xml:space="preserve"><value>Modified</value></data>
+  <data name="Empty" xml:space="preserve"><value>No matching shortcuts</value></data>
+  <data name="EmptyHelp" xml:space="preserve"><value>Try an action name or a shortcut, such as Ctrl+I.</value></data>
+  <data name="Count" xml:space="preserve"><value>{0} actions · {1} modified · {2} unassigned</value></data>
+  <data name="SearchCount" xml:space="preserve"><value>{0} of {1} actions</value></data>
+  <data name="Saved" xml:space="preserve"><value>Shortcut saved</value></data>
+  <data name="ResetConfirm" xml:space="preserve"><value>Restore the shortcuts and global mode of all loaded actions to their defaults? Other settings will not change.</value></data>
+  <data name="ResetTitle" xml:space="preserve"><value>Restore default shortcuts</value></data>
+  <data name="EditTitle" xml:space="preserve"><value>Edit shortcut</value></data>
+  <data name="Record" xml:space="preserve"><value>Press a new shortcut</value></data>
+  <data name="RecordHelp" xml:space="preserve"><value>Select the field and press a combination. Each binding triggers this action. Tab moves focus; Esc cancels.</value></data>
+  <data name="GlobalOption" xml:space="preserve"><value>Global shortcut</value></data>
+  <data name="GlobalHelp" xml:space="preserve"><value>This applies to all bindings for this action. Allow them to work while the app is in the background.</value></data>
+  <data name="Default" xml:space="preserve"><value>Default: {0}</value></data>
+  <data name="Apply" xml:space="preserve"><value>Save</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Invalid" xml:space="preserve"><value>Use Ctrl, Alt, or Win with character keys. Function and navigation keys can be used alone.</value></data>
+  <data name="Conflict" xml:space="preserve"><value>This shortcut is assigned to “{0}”. Choose another key or clear that binding first.</value></data>
+  <data name="Error" xml:space="preserve"><value>Could not apply shortcut</value></data>
+  <data name="NoChange" xml:space="preserve"><value>No shortcut changes</value></data>
+  <data name="CaptureError" xml:space="preserve"><value>Could not restore shortcuts. Please check: {0}</value></data>
+  <data name="ScopeWindow" xml:space="preserve"><value>Works within the app</value></data>
+  <data name="ScopeGlobal" xml:space="preserve"><value>Works while the app is in the background</value></data>
+  <data name="ClearValue" xml:space="preserve"><value>Clear</value></data>
+  <data name="ChangedHelp" xml:space="preserve"><value>The restore button resets only this action.</value></data>
+  <data name="KeyboardHint" xml:space="preserve"><value>You can search combinations such as Ctrl+Shift+B.</value></data>
+  <data name="CaptureLabel" xml:space="preserve"><value>Shortcut combination</value></data>
+  <data name="SavedHelp" xml:space="preserve"><value>Changes are applied; no additional save is needed.</value></data>
+  <data name="Add" xml:space="preserve"><value>Add shortcut</value></data>
+  <data name="Duplicate" xml:space="preserve"><value>This action already has that shortcut. Choose another combination.</value></data>
+  <data name="ClearSearch" xml:space="preserve"><value>Clear search</value></data>
+  <data name="ClearFilters" xml:space="preserve"><value>Clear search and filters</value></data>
+  <data name="Filter" xml:space="preserve"><value>Filter shortcut status</value></data>
+  <data name="All" xml:space="preserve"><value>All actions</value></data>
+  <data name="NoActions" xml:space="preserve"><value>No configurable actions</value></data>
+  <data name="NoActionsHelp" xml:space="preserve"><value>No shortcut actions are currently loaded.</value></data>
+</root>
