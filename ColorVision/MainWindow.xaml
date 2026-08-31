@@ -53,9 +53,7 @@
             </Setter>
         </Style>
         <DataTemplate x:Key="DocumentHeaderTemplate">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Foreground="{DynamicResource GlobalTextBrush}" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-            </StackPanel>
+            <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
         </DataTemplate>
     </Window.Resources>
     <Grid x:Name="Root">
@@ -79,7 +77,7 @@
             </DockPanel>
         </Border>
 
-        <xcad:DockingManager x:Name="DockingManager1" Grid.Row="1" Margin="-6,-6" Padding="0" Background="Transparent" BorderThickness="0" DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}">
+        <xcad:DockingManager x:Name="DockingManager1" Grid.Row="1" Margin="-2,-3,-2,-2" Padding="0" BorderThickness="0" Background="Transparent" DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}">
             <xcad:LayoutRoot x:Name="_layoutRoot">
                 <xcad:LayoutPanel Orientation="Horizontal">
                     <xcad:LayoutAnchorablePaneGroup x:Name="LeftPaneGroup" DockWidth="303">
@@ -89,7 +87,7 @@
                             </xcad:LayoutAnchorable>
                             <xcad:LayoutAnchorable Title="{x:Static properties:Resources.DeviceControl}" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="AcquirePanel">
                                 <ScrollViewer x:Name="ScrollViewerDisplay"
-                                              Background="{DynamicResource GlobalBorderBrush1}"
+                                              Background="{DynamicResource GlobalBackground}"
                                               HorizontalScrollBarVisibility="Disabled"
                                               VerticalScrollBarVisibility="Auto">
                                     <StackPanel x:Name="StackPanelSPD"

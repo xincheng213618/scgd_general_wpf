@@ -20,6 +20,9 @@ next: false
 - [扩展任务入口](../../04-api-reference/extensions/README.md) — `platform.extensions`
   按 Flow 节点、属性编辑器、模板、设备和插件问题定位可复用扩展契约。
 
+- [系统开发工具管理](../../02-developer-guide/core-concepts/developer-tools-manager.md) — `platform.developer-tools`
+  独立开发工具窗口发现系统 Python、Node.js/npm，并由用户选择校验后启动官方安装向导；不托管项目环境，不自动改默认版本。
+
 - [扩展性开发](../../02-developer-guide/core-concepts/extensibility.md) — `platform.extensibility`
   菜单、插件、属性编辑器、算法模板和 Copilot 扩展的职责与源码入口。
 

@@ -2,9 +2,9 @@
 knowledge_id: "operations.main-window"
 knowledge_type: "topic"
 status: "current"
-summary: "主窗口如何挂接菜单、搜索、状态栏和工作区，以及入口缺失时应核对的代码边界。"
-aliases: ["主窗口","菜单不见了","搜索框消失","工作区","MainWindow"]
-code_paths: ["ColorVision/MainWindow.xaml","ColorVision/MainWindow.xaml.cs","ColorVision/MainWindow.Hotkeys.cs","ColorVision/Themes/AvalonDockTheme.cs","ColorVision/Themes/AvalonDockGripTemplates.xaml","UI/ColorVision.UI/Menus","UI/ColorVision.UI/Serach/ContextualFindRouter.cs","UI/ColorVision.UI/Serach/SearchWindow.xaml","UI/ColorVision.UI/Serach/SearchWindow.xaml.cs","UI/ColorVision.UI/Serach/SearchWindowHotkeyBridge.cs","UI/ColorVision.Solution/Workspace"]
+summary: "主窗口如何挂接菜单、搜索、状态栏和工作区，以及现代停靠外观的主题覆盖与交互边界。"
+aliases: ["主窗口","菜单不见了","搜索框消失","工作区","MainWindow","AvalonDock","VS2026","停靠标题","文档标签","浮动窗口主题","工具面板三段色","标题右键菜单"]
+code_paths: ["ColorVision/MainWindow.xaml","ColorVision/MainWindow.xaml.cs","ColorVision/MainWindow.Hotkeys.cs","ColorVision/Themes/AvalonDockTheme.cs","ColorVision/Themes/AvalonDockModernLight.xaml","ColorVision/Themes/AvalonDockModernDark.xaml","ColorVision/Themes/AvalonDockModernTemplates.xaml","ColorVision/Themes/AvalonDockGripTemplates.xaml","ColorVision/Themes/DockingSurfaceBorder.cs","ColorVision/Themes/DockingTabBorder.cs","UI/ColorVision.Themes/Themes/White.xaml","UI/ColorVision.Themes/Themes/Dark.xaml","UI/ColorVision.UI/Menus","UI/ColorVision.UI/Serach/ContextualFindRouter.cs","UI/ColorVision.UI/Serach/SearchWindow.xaml","UI/ColorVision.UI/Serach/SearchWindow.xaml.cs","UI/ColorVision.UI/Serach/SearchWindowHotkeyBridge.cs","UI/ColorVision.Solution/Workspace"]
 test_paths: ["Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs","Test/ColorVision.UI.Tests/AvalonDockThemeBindingTests.cs","Test/ColorVision.UI.Tests/MainWindowSearchShellTests.cs","Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs","Test/ColorVision.UI.Tests/SearchWindowHotkeyBridgeTests.cs","Test/ColorVision.UI.Tests/SearchWindowHostTests.cs"]
 related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui.solution","platform.runtime","operations.index"]
 ---
@@ -37,11 +37,27 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 
 搜索窗口活动时主窗口通常不活动，`SearchWindowHotkeyBridge` 因此检查搜索窗口自身活动状态，只将当前已注册、属于主窗口的两项应用内搜索动作组合映射为“聚焦已有窗口”。它不执行任意其他业务回调，忽略 IME 占位键、消费重复按键，并沿用快捷键录入/尾键门禁；当前配置清空、改绑、未注册或属于其他宿主时不会用硬编码组合补回。两窗均不活动时入口不主动激活应用，即使动作被配置为系统全局键也一样。搜索仍打开但焦点回到主窗口内容时，Ctrl+F 仍优先局部查找；标准命令、Copilot 适配及原生 Ctrl+F 保留规则归[快捷键](../../04-api-reference/ui-components/hotkeys.md)。
 
+## 停靠外观与主题边界
+
+工作区使用 AvalonDock 4.74.1，停靠标题、文档标签和工具面板边框采用参考 VS2026 的深浅色外观：中性背景、圆角标签与面板、紫色活动边框，不再绘制标题中的点状握柄。文档标题继承标签前景色，长标题省略；普通未选中标签为关闭按钮保留位置，悬停不改变标签宽度。工具面板只剩一个标签时隐藏整个底部标签栏；多个标签时，选中标签沿面板轮廓向下延伸，而不是在标签下画独立下划线。`MainWindow.xaml` 的停靠管理器不使用负外边距，避免标题与菜单区域重叠。外观模板不改变停靠模型、布局持久化、启动配置或业务命令。
+
+停靠管理器、文档标签栏、工具面板模板底板、工具标题、选中底部标签和工具浮窗的标题/主体统一动态引用应用的 `GlobalBackground`，与菜单、状态栏、资源管理器和 Copilot 的主背景保持一致。`MainWindow.xaml` 中设备控制的 `ScrollViewerDisplay` 外层也引用该资源，不再使用 `GlobalBorderBrush1`，避免标题、内容空白、底部标签分别出现三种底色。颜色来源是 `UI/ColorVision.Themes/Themes/White.xaml` 和 `Dark.xaml` 的全局资源，不在停靠主题中复制一份全局配色。该统一只针对停靠外壳：选中文档标签及文档内容面板仍使用自身停靠配色，流程网格、图像画布、编辑器和设备卡片等内容继续保留各自的背景资源，不批量改写内容背景。
+
+文档标签最小高度为 26 DIP，内部原生标签布局最小高度为 25 DIP，标签圆角为 3 DIP；工具标签圆角仍为 4 DIP。选中文档标签始终使用 `SemiBold`；焦点转到工具面板后，仍被选中且为 `IsLastFocusedDocument` 的文档标签保留紫色边框，文档面板同步读取选中项的该状态。这里只根据 AvalonDock 状态改变外观，不重新激活文档或抢回键盘焦点。
+
+`DockingTabBorder` 为顶部文档标签与底部工具标签绘制同一轮廓的上下镜像：远离面板的一端为凸圆角，连接面板的两侧为凹肩，选中标签与面板接缝处不重复描边。未选中标签绘制时，在连接面板的一侧留出 1 DIP 的主线区域，启用布局舍入时按当前 DPI 舍入该厚度，防止悬停底色覆盖主线；这只裁切装饰绘制，不缩小原生标签布局或命中区，也不改变选中标签的凹肩。标签贴靠标签栏首/尾边缘时，对应一侧不再向外绘制凹肩。关闭前方相邻标签或重排可能只移动标签而不改变其尺寸，因此仅已加载且选中的真实 `TabItem` 跟踪布局事件，比对贴边状态变化后才调用 `InvalidateVisual`，不在每次布局时重绘。凹肩可以绘制到布局矩形之外，但 `HitTestCore` 将命中范围限制在自身布局矩形内，不抢相邻标签的点击。
+
+WPF `Border.CornerRadius` 只约束边框自身绘制，不会自动裁切子内容。`DockingSurfaceBorder` 在布局时按边框厚度、内边距、DPI 与圆角计算内轮廓，只裁切模板拥有的 `ContentPresenter` 或 `Grid`，避免方形内容覆盖面板圆角；不直接改写实际编辑器的 `Clip`。尺寸或圆角变化后重新计算该裁切。标题和浮窗按钮使用 Windows 系统字体 `Segoe Fluent Icons`，以 `Segoe MDL2 Assets` 为回退，图标字号为 12 DIP；按钮样式默认提供 24×24 DIP 命中区，透明背景且无边框，悬停/按下时才显示状态底色，文档标签关闭按钮单独使用 22×22 DIP。
+
+`AvalonDockTheme` 按“VS2013 基础字典 → `AvalonDockModernLight.xaml` / `AvalonDockModernDark.xaml` 调色板 → `AvalonDockModernTemplates.xaml` 模板”合并资源。VS2013 基础仍提供停靠菜单、命令和图标，不是更换停靠引擎。现代模板内合并保留原文件名的 `AvalonDockGripTemplates.xaml`；该文件现在承载无点状握柄的工具浮动窗口模板，并先合并上游 `Generic.xaml`。不要在现代模板之后再次合并上游通用字典，否则同名浮动窗口样式可能覆盖自定义模板。
+
+上游 `DockingManager` 样式用 `StaticResource` 固定了面板样式，仅添加隐式 `TabItem` 或面板样式不能保证生效。现代管理器样式因此显式重新设置 `DocumentPaneControlStyle`、`AnchorablePaneControlStyle` 和标题模板。在本项目编译后的嵌套资源组合中，直接对同一隐式类型键使用 `BasedOn` 曾未能建立继承链，导致默认菜单为空；这不代表所有同键 `BasedOn` 都失效。`AvalonDockGripTemplates.xaml` 先以唯一键 `ColorVisionBaseDockingManagerStyle` 捕获上游管理器样式，现代样式再基于此键保留整套上游菜单及其余默认 Setter，避免依赖同键查找顺序。颜色通过动态主题资源引用；模板覆盖放在 Theme 字典内，工具背景从应用全局字典取色，使独立加载主题的浮动窗口也能取得同一资源，不依靠主窗口局部资源、Loaded 后遍历修补或关闭绑定诊断。移除点状绘图同时去掉了旧模板中依赖隐藏矩形 `Fill` 的 `GeometryDrawing.Brush` / `ElementName` 绑定，避免其缺少 WPF 继承上下文时的绑定失败。
+
+模板保留 AvalonDock 的真实标题控件、内容宿主、菜单数据上下文和关闭、隐藏、自动隐藏命令；不可关闭但可隐藏的工具文档仍走隐藏命令。浮动工具窗口保留 `WindowChrome` 标题命中区、缩放边框以及最大化、还原和关闭/隐藏命令，去掉装饰握柄不等于取消拖动。文档浮动窗口、自动隐藏标签等未替换的上游模板仅通过调色板协调颜色，不宣称所有上游界面都已重绘。覆盖模板来源和许可证保留在 `ColorVision/Themes/`；升级 AvalonDock 时应复核模板部件、命令和资源解析顺序。
+
+标题与标签的右键菜单和拖动入口使用 AvalonDock 原生 `DropDownControlArea` 与真实标题/标签控件，命中区域覆盖文字及其周围空白，而不是只让文字可点。圆角和凹肩等装饰层不参与命中，标签内边距放在真实原生标签控件内部，避免空白区域由装饰边框截获，导致右键菜单或拖动收不到事件。标题按钮仍保留各自的命令和命中区域；菜单继续使用上游菜单资源及正确的 `LayoutItem` 数据上下文，不另造一套停靠命令或菜单模型。
+
 ## 故障定位顺序
-
-主窗口通过 `AvalonDockTheme` 应用 VS2013 深/浅色字典，并为停靠标题、浮动窗口标题覆盖两份握柄模板。AvalonDock 4.74.1 原模板把 `GeometryDrawing.Brush` 绑定到隐藏矩形的 `Fill`，绘图对象在缺少 WPF 继承上下文时无法解析 `ElementName`，会产生 XAML 绑定失败。覆盖模板直接给握柄矩形应用主题画刷，以不含绑定的平铺几何作为透明度蒙版；原有激活/未激活配色、拖拽、标题按钮和菜单仍保留。修正在 Theme 字典内，使独立加载主题的浮动窗口也使用同一版本，而不是在 Loaded 后修补或关闭绑定诊断。
-
-覆盖模板来源和许可证在 `ColorVision/Themes/` 中保留。升级 AvalonDock 时，应与新版本的这两份模板核对，避免遗漏上游交互变化。
 
 1. 记录功能名、窗口宽度、当前文档和本次启动时间；确认是入口缺失，还是入口存在但命令失败。
 2. 入口缺失按[UI 发现链](../../04-api-reference/ui-components/ui-runtime-handoff.md)核对程序集和扩展；程序集在磁盘上存在不等于已加载。
@@ -50,6 +66,10 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 
 ## 验证范围
 
-关联的 `StartupFileOpenPolicyTests` 覆盖启动文件打开策略；`AvalonDockThemeBindingTests` 检查停靠/浮动标题的深浅色、激活状态、主题替换和绘图绑定诊断。这些测试不覆盖所有菜单、状态栏、窗口布局或插件初始化，也不证明真实拖拽和浮动窗口最大化已通过。对宿主交互的修改仍需在获准启动应用的环境中检查目标入口、窄窗口、文档切换和日志；只读文档核对不能记为这些交互已通过。
+关联的 `StartupFileOpenPolicyTests` 覆盖启动文件打开策略；`AvalonDockThemeBindingTests` 在隔离合成工作区中检查深浅色资源、现代面板与标题模板的实际应用、活动/选中状态、主题替换、命令绑定及绘图绑定诊断。像素级检查包括方形内容的圆角裁切、尺寸/圆角变化后裁切更新、上下标签凸角与凹肩、底部选中标签接缝和外绘凹肩的点击边界；布局验证还需覆盖首/尾贴边、关闭前方相邻标签、重排和窗口缩放，不能只检查 `CornerRadius` 属性值。合成渲染用于核对停靠外观，不启动生产主窗口或设备，不表示真机交互已通过。
+
+背景与命中路由的验证应加载应用实际深浅色字典，而不是只给合成内容填入与停靠模板相同的测试颜色；分别核对停靠管理器、文档标签栏、工具面板底板、工具标题、选中底部标签及浮窗背景均解析为 `GlobalBackground`。文档选择验证应区分 `IsSelected`、`IsActive` 与 `IsLastFocusedDocument`，检查焦点转入工具面板后的字重和标签/面板边框，不通过重新激活文档满足外观断言。悬停像素验证应在不同 DPI 和选中项切换后检查主线仍连续，同时保留原有凹肩与命中边界检查。右键路由用例应从标题和标签的文字区、内边距空白区分别发起，检查命中原生控件、打开正确菜单并带有正确 `LayoutItem`，同时检查装饰层不截获事件。这些资源与路由测试不能替代真实鼠标拖出、浮动、重新停靠或设备内容交互验收。
+
+这些测试不覆盖所有菜单、状态栏、窗口布局或插件初始化，也不证明真实拖拽和浮动窗口最大化已通过。对宿主交互的修改仍需在获准启动应用的环境中检查目标入口、窄窗口、文档切换、自动隐藏、浮动/重新停靠和日志；只读文档核对不能记为这些交互已通过。
 
 `MainWindowSearchShellTests` 检查独立窗口标记与入口接线；`ContextualFindRouterTests` 用隔离内容检查局部查找、禁用状态、菜单焦点和跨面板边界。`SearchWindowHotkeyBridgeTests` 检查当前组合、搜索窗口活动状态、重复按键和捕获门禁；`SearchWindowHostTests` 使用隔离测试窗口，检查原生 Owner 关系、可缩放非模态窗口且无独立任务栏项、移动宿主不关闭、单独关闭后重开与 Owner 关闭联动；会话测试注入合成查询，检查关闭取消和窗口关闭后才执行结果，不运行真实 provider 或生产 MainWindow。列出这些用例不表示它们已经执行；真实输入法、多屏 DPI、拖动和业务文档交互仍需对应运行时验收。

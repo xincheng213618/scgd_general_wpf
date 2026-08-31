@@ -14,7 +14,7 @@ next: false
 
 离线检索：`node docs/.vitepress/scripts/knowledge.mjs search "问题或代码符号"`；反向映射：`node docs/.vitepress/scripts/knowledge.mjs impact "仓库相对路径"`。
 
-共 179 个主题；默认 CLI 搜索只返回 current，使用 `--all` 明确包含规划与历史。
+共 180 个主题；默认 CLI 搜索只返回 current，使用 `--all` 明确包含规划与历史。
 
 ## 按源码根与模块定位
 
@@ -22,9 +22,9 @@ next: false
 
 | 源码根 | 目录分组 | 关联主题 |
 | --- | ---: | ---: |
-| [ColorVision](./code/source-ColorVision.md) | 10 | 42 |
-| [UI](./code/source-UI.md) | 14 | 88 |
-| [Engine](./code/source-Engine.md) | 6 | 76 |
+| [ColorVision](./code/source-ColorVision.md) | 11 | 43 |
+| [UI](./code/source-UI.md) | 14 | 89 |
+| [Engine](./code/source-Engine.md) | 6 | 77 |
 | [Native](./code/source-Native.md) | 4 | 5 |
 | [Plugins](./code/source-Plugins.md) | 5 | 11 |
 | [Projects](./code/source-Projects.md) | 5 | 8 |
@@ -41,7 +41,7 @@ next: false
 跨源码模块的问题仍可从能力领域进入；这不是另一套按读者身份编排的手册。
 
 - [AI 共治与知识维护](./domains/governance.md) — 4 个主题；工作边界、知识维护、文档与源码冲突、检索验收。
-- [平台与架构](./domains/platform.md) — 11 个主题；宿主架构、模块责任、扩展分流与权限边界。
+- [平台与架构](./domains/platform.md) — 12 个主题；宿主架构、模块责任、扩展分流与权限边界。
 - [UI 与图像交互](./domains/ui.md) — 32 个主题；属性编辑器、窗口组件、图像交互和绘制扩展。
 - [设备、服务与结果](./domains/engine.md) — 17 个主题；设备服务、MQTT、模板宿主和结果展示。
 - [流程编排与执行](./domains/flow.md) — 11 个主题；流程编辑、节点运行、参数传递与完成语义。

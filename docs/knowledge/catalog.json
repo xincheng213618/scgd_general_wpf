@@ -5379,20 +5379,34 @@
       "knowledge_id": "operations.main-window",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "主窗口如何挂接菜单、搜索、状态栏和工作区，以及入口缺失时应核对的代码边界。",
+      "summary": "主窗口如何挂接菜单、搜索、状态栏和工作区，以及现代停靠外观的主题覆盖与交互边界。",
       "aliases": [
         "主窗口",
         "菜单不见了",
         "搜索框消失",
         "工作区",
-        "MainWindow"
+        "MainWindow",
+        "AvalonDock",
+        "VS2026",
+        "停靠标题",
+        "文档标签",
+        "浮动窗口主题",
+        "工具面板三段色",
+        "标题右键菜单"
       ],
       "code_paths": [
         "ColorVision/MainWindow.xaml",
         "ColorVision/MainWindow.xaml.cs",
         "ColorVision/MainWindow.Hotkeys.cs",
         "ColorVision/Themes/AvalonDockTheme.cs",
+        "ColorVision/Themes/AvalonDockModernLight.xaml",
+        "ColorVision/Themes/AvalonDockModernDark.xaml",
+        "ColorVision/Themes/AvalonDockModernTemplates.xaml",
         "ColorVision/Themes/AvalonDockGripTemplates.xaml",
+        "ColorVision/Themes/DockingSurfaceBorder.cs",
+        "ColorVision/Themes/DockingTabBorder.cs",
+        "UI/ColorVision.Themes/Themes/White.xaml",
+        "UI/ColorVision.Themes/Themes/Dark.xaml",
         "UI/ColorVision.UI/Menus",
         "UI/ColorVision.UI/Serach/ContextualFindRouter.cs",
         "UI/ColorVision.UI/Serach/SearchWindow.xaml",
@@ -5422,6 +5436,7 @@
         "ColorVision",
         "ColorVision/Themes",
         "UI/ColorVision.Solution",
+        "UI/ColorVision.Themes",
         "UI/ColorVision.UI"
       ],
       "domain": "operations",
@@ -5429,7 +5444,7 @@
       "source": "docs/01-user-guide/interface/main-window.md",
       "url": "/01-user-guide/interface/main-window",
       "searchable": true,
-      "source_hash": "7d89cdb9173a08e07e69fce5d7b08b0fbed9f87c373db802d28dd6d2b26ef37b"
+      "source_hash": "6381f7481efe2fb7e2f14d3ee45ab1311c1f6a74913f1492a82019ce0f22f7dc"
     },
     {
       "knowledge_id": "operations.motor",
@@ -5654,6 +5669,47 @@
       "url": "/03-architecture/README",
       "searchable": true,
       "source_hash": "2139db8ba5e3dd13124d682c059b909b7af1478beeb0b4791f6985340944b2e3"
+    },
+    {
+      "knowledge_id": "platform.developer-tools",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "独立开发工具窗口发现系统 Python、Node.js/npm，并由用户选择校验后启动官方安装向导；不托管项目环境，不自动改默认版本。",
+      "aliases": [
+        "开发工具管理",
+        "Python安装",
+        "Node.js安装",
+        "npm版本",
+        "npmmirror",
+        "DeveloperToolsWindow",
+        "DeveloperToolDiscoveryService",
+        "DeveloperToolInstallerService"
+      ],
+      "code_paths": [
+        "ColorVision/ToolPlugins/DeveloperTools",
+        "Engine/ColorVision.Engine/Services/DeveloperTools",
+        "UI/ColorVision.UI/Download/IDownloadService.cs"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/DeveloperToolSafetyTests.cs",
+        "Test/ColorVision.UI.Tests/DeveloperToolsWindowTests.cs"
+      ],
+      "related": [
+        "ui.common",
+        "ui.desktop",
+        "delivery.artifact-delivery"
+      ],
+      "code_scopes": [
+        "ColorVision/ToolPlugins",
+        "Engine/ColorVision.Engine",
+        "UI/ColorVision.UI"
+      ],
+      "domain": "platform",
+      "title": "系统开发工具管理",
+      "source": "docs/02-developer-guide/core-concepts/developer-tools-manager.md",
+      "url": "/02-developer-guide/core-concepts/developer-tools-manager",
+      "searchable": true,
+      "source_hash": "af3866e956fc0e0eabd57f0ad2edbe2a644905c66f9f03c8f8cf1ead7dd4afcf"
     },
     {
       "knowledge_id": "platform.extensibility",

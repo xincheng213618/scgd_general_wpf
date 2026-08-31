@@ -592,6 +592,21 @@
         },
         {
           "text": {
+            "root": "ColorVision/ToolPlugins"
+          },
+          "link": "/knowledge/code/source-ColorVision#module-436f6c6f72566973696f6e2f546f6f6c506c7567696e73",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "系统开发工具管理"
+              },
+              "link": "/02-developer-guide/core-concepts/developer-tools-manager"
+            }
+          ]
+        },
+        {
+          "text": {
             "root": "ColorVision/Update"
           },
           "link": "/knowledge/code/source-ColorVision#module-436f6c6f72566973696f6e2f557064617465",
@@ -1331,6 +1346,12 @@
           "items": [
             {
               "text": {
+                "root": "主窗口与入口装配"
+              },
+              "link": "/01-user-guide/interface/main-window"
+            },
+            {
+              "text": {
                 "root": "主题选择、资源应用与窗口外观"
               },
               "link": "/04-api-reference/ui-components/ColorVision.Themes"
@@ -1457,6 +1478,12 @@
                 "root": "终端进程、会话与脚本运行"
               },
               "link": "/01-user-guide/interface/terminal"
+            },
+            {
+              "text": {
+                "root": "系统开发工具管理"
+              },
+              "link": "/02-developer-guide/core-concepts/developer-tools-manager"
             },
             {
               "text": {
@@ -2012,6 +2039,12 @@
                 "root": "SMU 参数、结果与输出关闭"
               },
               "link": "/01-user-guide/devices/smu"
+            },
+            {
+              "text": {
+                "root": "系统开发工具管理"
+              },
+              "link": "/02-developer-guide/core-concepts/developer-tools-manager"
             },
             {
               "text": {

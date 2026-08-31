@@ -292,7 +292,7 @@ next: false
   按控件、窗口和扩展接口定位对应 UI 源码与专题。
 
 - [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
-  主窗口如何挂接菜单、搜索、状态栏和工作区，以及入口缺失时应核对的代码边界。
+  主窗口如何挂接菜单、搜索、状态栏和工作区，以及现代停靠外观的主题覆盖与交互边界。
 
 - [终端进程、会话与脚本运行](../../01-user-guide/interface/terminal.md) — `operations.terminal`
   定义内嵌ConPTY会话、编辑器Python运行与外部CMD入口，区分命令提交、脚本结束、shell退出和强制释放。
@@ -316,6 +316,9 @@ next: false
   按职责和依赖方向判断 UI DLL 的修改归属与消费方兼容风险。
 
 ## UI/ColorVision.Themes {#module-55492f436f6c6f72566973696f6e2e5468656d6573}
+
+- [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
+  主窗口如何挂接菜单、搜索、状态栏和工作区，以及现代停靠外观的主题覆盖与交互边界。
 
 - [主题选择、资源应用与窗口外观](../../04-api-reference/ui-components/ColorVision.Themes.md) — `ui.themes`
   ThemeManager的主题选择、资源追加、系统跟随和窗口外观契约；选择不等于应用成功，预览不等于配置落盘。
@@ -374,10 +377,13 @@ next: false
   区分log4net输出、历史文件读取与UI筛选，说明刷新、截断和原生日志采集边界；没有显示不等于动作未发生。
 
 - [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
-  主窗口如何挂接菜单、搜索、状态栏和工作区，以及入口缺失时应核对的代码边界。
+  主窗口如何挂接菜单、搜索、状态栏和工作区，以及现代停靠外观的主题覆盖与交互边界。
 
 - [终端进程、会话与脚本运行](../../01-user-guide/interface/terminal.md) — `operations.terminal`
   定义内嵌ConPTY会话、编辑器Python运行与外部CMD入口，区分命令提交、脚本结束、shell退出和强制释放。
+
+- [系统开发工具管理](../../02-developer-guide/core-concepts/developer-tools-manager.md) — `platform.developer-tools`
+  独立开发工具窗口发现系统 Python、Node.js/npm，并由用户选择校验后启动官方安装向导；不托管项目环境，不自动改默认版本。
 
 - [扩展性开发](../../02-developer-guide/core-concepts/extensibility.md) — `platform.extensibility`
   菜单、插件、属性编辑器、算法模板和 Copilot 扩展的职责与源码入口。

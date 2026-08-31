@@ -1,0 +1,113 @@
+<Window x:Class="ColorVision.ToolPlugins.DeveloperTools.DeveloperToolsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ColorVision.ToolPlugins.DeveloperTools"
+        Title="开发工具管理" Width="1060" Height="820" MinWidth="820" MinHeight="640"
+        Background="{DynamicResource GlobalBackground}" Foreground="{DynamicResource GlobalTextBrush}"
+        WindowStartupLocation="CenterOwner" Loaded="Window_Loaded" Activated="Window_Activated" Closed="Window_Closed">
+    <Window.Resources>
+        <Style x:Key="ToolButton" TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="Padding" Value="14,5" />
+        </Style>
+        <Style x:Key="ToolCard" TargetType="Border">
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
+            <Setter Property="Background" Value="{DynamicResource ButtonBackground}" />
+        </Style>
+        <DataTemplate DataType="{x:Type local:DeveloperToolPageModel}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Foreground="{DynamicResource GlobalTextBrush}">
+                <StackPanel Margin="0,14,0,0">
+                    <Grid Margin="2,0,2,12">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Description}" Margin="0,5,12,0" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" />
+                        </StackPanel>
+                        <Border Grid.Column="1" Padding="12,6" CornerRadius="5" Background="{DynamicResource GlobalBackground}" VerticalAlignment="Top">
+                            <TextBlock Text="{Binding DetectionStatus}" />
+                        </Border>
+                    </Grid>
+                    <Border Style="{StaticResource ToolCard}">
+                        <StackPanel>
+                            <TextBlock Text="系统中发现的安装" FontWeight="SemiBold" FontSize="14" />
+                            <DataGrid ItemsSource="{Binding Installations}" Margin="0,10,0,12" MinHeight="116" MaxHeight="220"
+                                      AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
+                                      HeadersVisibility="Column" GridLinesVisibility="Horizontal" SelectionMode="Single">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="版本" Binding="{Binding Version}" Width="95" />
+                                    <DataGridTextColumn Header="随附包管理器" Binding="{Binding PackageManagerVersion}" Width="130" />
+                                    <DataGridTextColumn Header="解释器路径" Binding="{Binding ExecutablePath}" Width="*" MinWidth="280">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                                                <Setter Property="ToolTip" Value="{Binding ExecutablePath}" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Header="发现方式" Binding="{Binding Source}" Width="160" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <TextBlock Text="应用当前命令路径" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            <TextBlock Text="{Binding CurrentCommandPath}" Margin="0,3,0,9" TextWrapping="Wrap" FontFamily="Consolas" />
+                            <TextBlock Text="系统登记命令路径（新终端参考）" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            <TextBlock Text="{Binding RefreshedCommandPath}" Margin="0,3,0,10" TextWrapping="Wrap" FontFamily="Consolas" />
+                            <TextBlock Text="{Binding Note}" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource ToolCard}" Margin="0,12,0,0">
+                        <StackPanel>
+                            <DockPanel LastChildFill="True">
+                                <Button DockPanel.Dock="Right" Content="获取可安装版本" Style="{StaticResource ToolButton}" Click="LoadVersions_Click" Margin="12,0,0,0" />
+                                <TextBlock Text="可选安装" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <TextBlock Text="{Binding CatalogStatus}" Margin="0,8,0,12" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="180" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <ComboBox ItemsSource="{Binding Releases}" SelectedItem="{Binding SelectedRelease}" DisplayMemberPath="DisplayName"
+                                          MinHeight="34" Margin="0,0,10,0" VerticalContentAlignment="Center" AutomationProperties.Name="安装版本" />
+                                <ComboBox Grid.Column="1" SelectedIndex="{Binding SelectedSourceIndex}" MinHeight="34" Margin="0,0,10,0"
+                                          VerticalContentAlignment="Center" AutomationProperties.Name="安装包下载源">
+                                    <ComboBoxItem Content="国内镜像 · npmmirror" /><ComboBoxItem Content="官方网站" />
+                                </ComboBox>
+                                <Button Grid.Column="2" Content="下载并安装…" Click="Install_Click" Padding="16,6" MinHeight="34"
+                                        Style="{StaticResource ButtonPrimary}" IsEnabled="{Binding CanInstall}" />
+                            </Grid>
+                            <TextBlock Text="{Binding InstallHint}" Margin="0,12,0,6" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding RegistryHint}" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            <TextBlock Margin="0,10,0,0" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap">
+                                先按官网 SHA256 校验，再验证发布者数字签名；仅在通过校验后启动官方安装向导。
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </DataTemplate>
+    </Window.Resources>
+    <Grid Margin="22,18,22,16">
+        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+        <Grid Margin="0,0,0,16">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="开发工具管理" FontSize="24" FontWeight="SemiBold" />
+                <TextBlock Text="管理这台电脑的开发环境，供所有软件使用。不会自动安装、升级或更改默认版本。"
+                           Margin="0,7,16,0" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" />
+            </StackPanel>
+            <Button Grid.Column="1" Content="刷新检测" Style="{StaticResource ToolButton}" VerticalAlignment="Center" Click="Refresh_Click" />
+        </Grid>
+        <TabControl x:Name="ToolTabs" Grid.Row="1" Background="Transparent" BorderThickness="0">
+            <TabItem Header="Python" Content="{Binding Python}" Padding="22,9" />
+            <TabItem Header="Node.js / npm" Content="{Binding NodeJs}" Padding="22,9" />
+        </TabControl>
+        <Grid Grid.Row="2" Margin="0,14,0,0">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock x:Name="OperationStatus" Text="只在此窗口打开时检测系统环境。" TextWrapping="Wrap" Margin="0,0,12,4" />
+                <TextBlock x:Name="LastChecked" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" />
+            </StackPanel>
+            <Button Grid.Column="1" Content="关闭" Style="{StaticResource ToolButton}" VerticalAlignment="Bottom" Click="Close_Click" />
+        </Grid>
+    </Grid>
+</Window>

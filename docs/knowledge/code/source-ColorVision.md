@@ -44,7 +44,7 @@ next: false
   区分log4net输出、历史文件读取与UI筛选，说明刷新、截断和原生日志采集边界；没有显示不等于动作未发生。
 
 - [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
-  主窗口如何挂接菜单、搜索、状态栏和工作区，以及入口缺失时应核对的代码边界。
+  主窗口如何挂接菜单、搜索、状态栏和工作区，以及现代停靠外观的主题覆盖与交互边界。
 
 - [RBAC：登录缓存、会话与权限边界](../../03-architecture/security/rbac.md) — `platform.rbac`
   本地RBAC的登录缓存、会话校验和权限同步限制，以及自动登录失败、登出撤销和用户中心统计的实际边界。
@@ -184,7 +184,12 @@ next: false
 ## ColorVision/Themes {#module-436f6c6f72566973696f6e2f5468656d6573}
 
 - [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
-  主窗口如何挂接菜单、搜索、状态栏和工作区，以及入口缺失时应核对的代码边界。
+  主窗口如何挂接菜单、搜索、状态栏和工作区，以及现代停靠外观的主题覆盖与交互边界。
+
+## ColorVision/ToolPlugins {#module-436f6c6f72566973696f6e2f546f6f6c506c7567696e73}
+
+- [系统开发工具管理](../../02-developer-guide/core-concepts/developer-tools-manager.md) — `platform.developer-tools`
+  独立开发工具窗口发现系统 Python、Node.js/npm，并由用户选择校验后启动官方安装向导；不托管项目环境，不自动改默认版本。
 
 ## ColorVision/Update {#module-436f6c6f72566973696f6e2f557064617465}
 
