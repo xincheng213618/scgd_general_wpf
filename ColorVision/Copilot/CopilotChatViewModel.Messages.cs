@@ -118,6 +118,7 @@ namespace ColorVision.Copilot
                 || Volatile.Read(ref _disposeState) != 0 || IsBusy || HasExclusiveLocalOperation)
                 return;
 
+            var messageEditSnapshot = _composerDraftBeforeMessageEdit;
             var attachmentIndex = conversation.Attachments.IndexOf(attachment);
             if (attachmentIndex < 0 || !conversation.Attachments.Remove(attachment))
                 return;
@@ -129,10 +130,20 @@ namespace ColorVision.Copilot
             }
             catch
             {
+                // A cancelled or reopened edit no longer owns these historical
+                // attachments; restoring them would modify the replacement draft.
+                var editStillOwnsRemoval = messageEditSnapshot == null
+                    || (ReferenceEquals(messageEditSnapshot, _composerDraftBeforeMessageEdit)
+                        && string.Equals(_editingConversationId, conversation.Id, StringComparison.Ordinal));
+                var contextWasReplaced = messageEditSnapshot == null
+                    && !string.Equals(_editingConversationId, conversation.Id, StringComparison.Ordinal)
+                    && attachment.Type == CopilotAttachmentType.Context
+                    && FindExternalContextAttachment(conversation, attachment.Title, attachment.Source) != null;
+
                 // A concurrent conversation deletion may only have detached this
                 // object while its own save is pending. Restore the captured owner
                 // so that a failed deletion can put the complete draft back.
-                if (!conversation.Attachments.Contains(attachment))
+                if (editStillOwnsRemoval && !contextWasReplaced && !conversation.Attachments.Contains(attachment))
                 {
                     conversation.Attachments.Insert(Math.Min(attachmentIndex, conversation.Attachments.Count), attachment);
                     if (Conversations.Contains(conversation))

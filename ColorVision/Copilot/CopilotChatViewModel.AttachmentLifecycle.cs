@@ -68,17 +68,7 @@ namespace ColorVision.Copilot
                 ? contextItems.FirstOrDefault(item => !string.IsNullOrWhiteSpace(item.Title))?.Title ?? "Attached Context"
                 : attachmentTitle.Trim();
 
-            CopilotAttachmentItem? existingAttachment;
-            if (!string.IsNullOrWhiteSpace(attachmentSourceId))
-            {
-                existingAttachment = conversation.Attachments.FirstOrDefault(item => item.Type == CopilotAttachmentType.Context
-                    && string.Equals(item.Source, attachmentSourceId, StringComparison.Ordinal));
-            }
-            else
-            {
-                existingAttachment = conversation.Attachments.FirstOrDefault(item => item.Type == CopilotAttachmentType.Context
-                    && string.Equals(item.Title, normalizedTitle, StringComparison.Ordinal));
-            }
+            var existingAttachment = FindExternalContextAttachment(conversation, normalizedTitle, attachmentSourceId);
 
             if (existingAttachment != null)
             {
@@ -96,6 +86,14 @@ namespace ColorVision.Copilot
             UpdateAttachmentsState(conversation);
             return true;
         }
+
+        private static CopilotAttachmentItem? FindExternalContextAttachment(
+            CopilotConversationRecord conversation,
+            string title,
+            string? sourceId) => conversation.Attachments.FirstOrDefault(item => item.Type == CopilotAttachmentType.Context
+                && (!string.IsNullOrWhiteSpace(sourceId)
+                    ? string.Equals(item.Source, sourceId, StringComparison.Ordinal)
+                    : string.Equals(item.Title, title, StringComparison.Ordinal)));
 
         private static string BuildStoredWebPageContent(CopilotFetchedWebPageContent page) =>
             CopilotWebPageToolSupport.BuildStoredWebPageContent(page);

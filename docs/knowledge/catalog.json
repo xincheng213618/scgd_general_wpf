@@ -1601,6 +1601,8 @@
         "Test/ColorVision.Copilot.Tests/CopilotRequestAdmissionLifetimeTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotMessageEditAdmissionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotWebPageDeadlineTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotWebPageAttachmentAdmissionTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotAttachmentRemovalEditLifetimeTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotImagePayloadValidationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotImageInputBudgetTests.cs"
       ],
@@ -1623,7 +1625,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-local-interactions.md",
       "url": "/02-developer-guide/core-concepts/copilot-local-interactions",
       "searchable": true,
-      "source_hash": "11aa95278ff7bdcd75aef5eabc49759ca9f592db7637857918960caa4515212c"
+      "source_hash": "2f3763cbba7a81903a26fde3416776059debc205e28d3eac59b9d84df9a9bd57"
     },
     {
       "knowledge_id": "copilot.lifecycle",
