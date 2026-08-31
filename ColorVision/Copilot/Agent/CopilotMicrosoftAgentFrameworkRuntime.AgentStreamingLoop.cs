@@ -257,8 +257,9 @@ namespace ColorVision.Copilot
                 }
                 else
                 {
-                    emit(CopilotAgentEvent.RuntimeDiagnostic(
-                        "The provider stream was interrupted after material Agent progress. The current Harness session will be checkpointed without replaying tools."));
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(CopilotProviderRequestId.AppendToMessage(
+                        "The provider stream was interrupted after material Agent progress. The current Harness session will be checkpointed without replaying tools.",
+                        CopilotProviderRequestId.Find(ex))));
                 }
                 if (answerText.Length == 0)
                 {
