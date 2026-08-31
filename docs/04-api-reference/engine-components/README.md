@@ -6,7 +6,7 @@ summary: "按实际代码职责路由 Engine 的设备、消息、模板、Flow�
 aliases: ["Engine代码在哪里","Engine问题该从哪里查","看到Engine类名应该查哪里","修改Engine要先看什么"]
 code_paths: ["Engine/ColorVision.Engine/ColorVision.Engine.csproj","Engine/ColorVision.Engine/Services/ServiceManager.cs","Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/FlowEngineLib/FlowEngineControl.cs"]
 test_paths: []
-related: ["engine.host", "engine.devices", "engine.mqtt", "engine.rc-registration", "engine.template-design", "flow.templates", "flow.session", "engine.results"]
+related: ["engine.host", "engine.devices", "engine.mqtt", "engine.rc-registration", "engine.template-design", "flow.templates", "flow.session", "flow.diagnostics", "engine.results"]
 ---
 
 # Engine 知识入口
@@ -23,6 +23,7 @@ related: ["engine.host", "engine.devices", "engine.mqtt", "engine.rc-registratio
 | 新增模板、模板未加载或参数保存异常 | [模板核心契约](../../03-architecture/components/templates/design.md)、[编辑与创建宿主](../algorithms/templates/template-management.md) | `TemplateControl`、`ITemplate<T>`；JSON 分支见 [JSON 模板](../algorithms/templates/json-templates.md) |
 | Flow 保存、导入或节点关联参数不正确 | [Flow 模板持久化](./template-flow-chain.md) | `TemplateFlow`、`FlowParam`、`FlowPackageHelper` |
 | 流程未启动、停止后仍处理结果或结束信号不一致 | [Flow 会话与最终化](../../01-user-guide/workflow/execution.md) | `FlowExecutionSession`、`FlowRunFinalizer`；对象责任见 [Flow 架构](../../03-architecture/components/engine/flow-engine.md) |
+| 本地运行记录未完成、进程中断恢复或 Incident 处置 | [Flow 运行诊断](./flow-diagnostics.md) | `FlowExecutionJournal`、`FlowExecutionJournalScope`、`FlowIncidentService`；与业务结果和续跑分开 |
 | 新节点放哪里、哪些配置用 PropertyGrid | [Flow 节点入口](../flow_nodes_summary.md)、[节点扩展](../extensions/flow-node.md)、[PropertyGrid 契约](../ui-components/property-grid.md) | `STNode`、`FlowNodePropertyEditorAttribute`、`FlowPropertyEditorRegistry` |
 | 结果没有 handler、图像缺失、overlay 残留 | [结果交接链](./result-handoff-chain.md) | `ResultHandleRegistry`、`AlgorithmOverlayManager` |
 | 客户判定或 CSV/MES/Socket 字段不正确 | [项目知识入口](../projects/README.md)、[Socket 协议](../ui-components/ColorVision.SocketProtocol.md) | `Projects/` 的 `Process/Recipe/Fix` 与具体协议消费方 |

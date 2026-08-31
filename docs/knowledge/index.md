@@ -14,7 +14,7 @@ next: false
 
 离线检索：`node docs/.vitepress/scripts/knowledge.mjs search "问题或代码符号"`；反向映射：`node docs/.vitepress/scripts/knowledge.mjs impact "仓库相对路径"`。
 
-共 177 个主题；默认 CLI 搜索只返回 current，使用 `--all` 明确包含规划与历史。
+共 178 个主题；默认 CLI 搜索只返回 current，使用 `--all` 明确包含规划与历史。
 
 ## 按源码根与模块定位
 
@@ -24,7 +24,7 @@ next: false
 | --- | ---: | ---: |
 | [ColorVision](./code/source-ColorVision.md) | 10 | 41 |
 | [UI](./code/source-UI.md) | 14 | 86 |
-| [Engine](./code/source-Engine.md) | 6 | 75 |
+| [Engine](./code/source-Engine.md) | 6 | 76 |
 | [Native](./code/source-Native.md) | 4 | 5 |
 | [Plugins](./code/source-Plugins.md) | 5 | 11 |
 | [Projects](./code/source-Projects.md) | 5 | 8 |
@@ -44,7 +44,7 @@ next: false
 - [平台与架构](./domains/platform.md) — 11 个主题；宿主架构、模块责任、扩展分流与权限边界。
 - [UI 与图像交互](./domains/ui.md) — 31 个主题；属性编辑器、窗口组件、图像交互和绘制扩展。
 - [设备、服务与结果](./domains/engine.md) — 17 个主题；设备服务、MQTT、模板宿主和结果展示。
-- [流程编排与执行](./domains/flow.md) — 10 个主题；流程编辑、节点运行、参数传递与完成语义。
+- [流程编排与执行](./domains/flow.md) — 11 个主题；流程编辑、节点运行、参数传递与完成语义。
 - [算法与模板](./domains/algorithms.md) — 36 个主题；算法平台、传统模板、计算适配和规划中的能力。
 - [Copilot](./domains/copilot.md) — 10 个主题；Agent会话、工具契约、上下文、恢复和MCP边界。
 - [客户项目](./domains/projects.md) — 6 个主题；客户包、业务流程、协议对接与结果留存。

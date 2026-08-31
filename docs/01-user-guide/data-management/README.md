@@ -6,7 +6,7 @@ summary: "按设置JSON、Engine MySQL、模块SQLite和结果文件定位数据
 aliases: ["数据管理", "数据在哪里", "数据库文件位置", "备份包含哪些数据", "ConfigFilePath", "SqliteDbPath", "MsgRecords.db", "FlowNodeRecords.db", "SocketMessages.db", "Spectrum.db", "ProjectARVRPro.db", "数据没保存"]
 code_paths: ["UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.Database/MySqlControl.cs", "UI/ColorVision.Database/DatabaseBrowserProviderRegistry.cs", "Engine/ColorVision.Engine/Dao/SysResourceModel.cs", "Engine/ColorVision.Engine/Dao/AlgResultMasterDao.cs", "Engine/ColorVision.Engine/Messages/MessagesListManager.cs", "Engine/ColorVision.Engine/Messages/MsgRecordManagerConfig.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeRecordDataBaseHelper.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeRecordConfig.cs", "UI/ColorVision.SocketProtocol/SocketMessageManager.cs", "Plugins/Spectrum/Data/ViewResultManager.cs", "Projects/ProjectARVRPro/ViewResultManager.cs"]
 test_paths: []
-related: ["ui.database", "ui.database-query", "engine.database-maintenance", "engine.mysql-maintenance", "engine.mysql-recovery", "ui.sqlite-storage", "ui.configuration", "operations.exports", "operations.device-configuration", "engine.results", "flow.templates", "ui.socket-protocol", "plugins.spectrum", "projects.arvr-pro"]
+related: ["ui.database", "ui.database-query", "engine.database-maintenance", "engine.mysql-maintenance", "engine.mysql-recovery", "ui.sqlite-storage", "ui.configuration", "operations.exports", "operations.device-configuration", "engine.results", "flow.templates", "flow.diagnostics", "ui.socket-protocol", "plugins.spectrum", "projects.arvr-pro"]
 ---
 
 # 数据所有者与存储定位
@@ -24,7 +24,7 @@ ColorVision 没有一个覆盖软件设置、设备资源、流程模板、消�
 | 流程与关联模板 | Engine 的 `TemplateFlow` 及模板 DAO；运行图、保存模板和导出包不是一份对象 | [Flow 模板与持久化](../../04-api-reference/engine-components/template-flow-chain.md) |
 | Engine 算法历史结果 | MySQL `t_scgd_algorithm_result_master` 与所属明细 DAO；`ImgFile` / `ResultImagFile` 是路径字段 | [结果展示链路](../../04-api-reference/engine-components/result-handoff-chain.md) |
 | Engine MQTT 消息记录 | `MessagesListManager` / `MsgRecordDataBaseHelper`，路径取 `MsgRecordManagerConfig.SqliteDbPath` | [MQTT 消息契约](../../02-developer-guide/engine-development/mqtt.md) |
-| Flow 节点诊断记录 | `FlowNodeRecordDataBaseHelper`，路径取 `FlowNodeRecordConfig.SqliteDbPath`，有独立写队列 | [Flow 执行与最终化](../workflow/execution.md) |
+| Flow 运行与节点诊断 | 旧节点写队列与 `FlowExecutionJournal` 共用 `FlowNodeRecordConfig.SqliteDbPath`，不是业务 MySQL | [Flow 运行诊断与中断恢复](../../04-api-reference/engine-components/flow-diagnostics.md) |
 | Socket 收发记录 | `SocketMessageManager.SqliteDbPath`，与 Engine MQTT 消息库分开 | [Socket 协议模块](../../04-api-reference/ui-components/ColorVision.SocketProtocol.md) |
 | Spectrum 测量结果 | `Plugins/Spectrum/Data/ViewResultManager.cs` 管理自身 SQLite | [Spectrum](../../04-api-reference/plugins/standard-plugins/spectrum.md) |
 | ARVR 项目结果 | `Projects/ProjectARVRPro/ViewResultManager.cs` 管理自身 SQLite 与历史结果模型 | [ProjectARVRPro](../../04-api-reference/projects/project-arvr-pro.md) |

@@ -3,10 +3,10 @@ knowledge_id: "flow.session"
 knowledge_type: "topic"
 status: "current"
 summary: "FlowExecutionSession 的启动前提、停止请求与最终化判据，以及按失败阶段定位证据。"
-aliases: ["流程运行","流程没结束","RunFinalized","执行调试","StopFlow","CVBaseServerNode","FlowExecutionSession","FlowJob","FlowIncident"]
-code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunExecutor.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/FlowJob.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionJournalCoordinator.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowIncidentService.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowDiagnosticsSchemaMigrator.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FlowFinalizedExecutionApiTests.cs","Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs","Test/ColorVision.UI.Tests/FlowExecutionJournalCoordinatorTests.cs","Test/ColorVision.UI.Tests/FlowIncidentServiceTests.cs","Test/ColorVision.UI.Tests/FlowDiagnosticsSchemaTests.cs"]
-related: ["flow.architecture","flow.templates","flow.workspace","flow.headless"]
+aliases: ["流程运行","流程没结束","RunFinalized","执行调试","StopFlow","CVBaseServerNode","FlowExecutionSession","FlowJob"]
+code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunExecutor.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/FlowJob.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/FlowFinalizedExecutionApiTests.cs","Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs"]
+related: ["flow.architecture","flow.templates","flow.workspace","flow.headless","flow.diagnostics"]
 ---
 
 # Flow 启动、停止与最终化
@@ -75,14 +75,14 @@ related: ["flow.architecture","flow.templates","flow.workspace","flow.headless"]
 
 ## Incident 与诊断持久化
 
-`FlowExecutionJournalCoordinator` 关联 Run/Event/Attempt，并在关键异常边界记录 Incident。journal 与 abandoned-run recovery 是 fail-open 辅助诊断：诊断库失败不能改变生产执行结果，也不能把“没有诊断记录”当作“流程未运行”。普通日志检索见[日志主题](../interface/log-viewer.md)。
+`FlowExecutionJournalCoordinator` 关联 Run/Event/Attempt，诊断存储失败不应改变业务结果；最终化返回也不保证 journal 终态已写入。进程中断恢复只标记遗留记录失败，不续跑节点，且不能仅凭心跳过旧判死。快照、重试、owner 判定与 Incident 处置统一见[Flow 运行诊断](../../04-api-reference/engine-components/flow-diagnostics.md)。
 
-`FlowIncidentManagementWindow` / `FlowIncidentService` 支持按状态、级别、类型与文本分页查询，读取关联 Run/Event/Attempt，并确认或关闭 Incident，保存 UTC 时间、操作人及备注。确认/关闭是数据库写入，需明确授权，不是一次只读查询的附带操作。旧诊断库由 `FlowDiagnosticsSchemaMigrator` 的 CodeFirst 路径补齐字段，不要求手工清库。
+打开默认自动加载的 Incident 窗口可能初始化/迁移本地 schema，不是严格零写入；确认/关闭另有明确的写入授权边界，也不改变流程成功失败。普通日志检索仍见[日志主题](../interface/log-viewer.md)。
 
 ## 源码与验证边界
 
 主入口为 `Engine/ColorVision.Engine/FlowProcessing/Runtime/DisplayFlow.xaml.cs`。同目录 `ViewFlow.xaml.cs` / `FlowExecutionSession.cs` 负责交互会话，`FlowRunExecutor.cs` 负责运行等待，`FlowRunFinalizer.cs` 负责后处理与最终业务状态；无界面入口为 `FlowExecutionCoordinator.cs` 和 `FlowHeadlessExecutionService.cs`。
 
-`FlowFinalizedExecutionApiTests.cs` 覆盖兼容/最终化 API 区别以及 `FlowJob` 读取最终结果；`FlowRunFinalizerTests.cs` 覆盖必需/警告级后处理失败及后处理先于最终持久化。`FlowExecutionJournalCoordinatorTests.cs`、`FlowIncidentServiceTests.cs` 与 `FlowDiagnosticsSchemaTests.cs` 分别核对诊断协调、事件处置及旧库结构兼容。
+`FlowFinalizedExecutionApiTests.cs` 覆盖兼容/最终化 API 区别以及 `FlowJob` 读取最终结果；`FlowRunFinalizerTests.cs` 覆盖必需/警告级后处理失败，顺序用例核对后处理先于 legacy fallback 终态持久化。诊断协调、事件处置、旧库迁移与进程恢复的测试及未覆盖分支见[诊断验证边界](../../04-api-reference/engine-components/flow-diagnostics.md#验证入口与缺口)。
 
 这些测试不证明真实设备已停止、注册中心可用或项目外部系统收到结果；环境行为须在获授权的对应环境补验。需要验证整轮时，在最终化后关联批次状态、耗时、节点尝试、Incident 和后处理结果；当前没有据此承诺单步或断点调试能力。

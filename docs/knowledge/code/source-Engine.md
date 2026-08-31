@@ -112,8 +112,11 @@ next: false
 - [Flow 架构与责任边界](../../03-architecture/components/engine/flow-engine.md) — `flow.architecture`
   区分 Flow 底层画布、节点内核、模板存储、编辑工作区、共享会话与隔离执行的所有权。
 
+- [Flow 运行诊断、中断恢复与 Incident 处置](../../04-api-reference/engine-components/flow-diagnostics.md) — `flow.diagnostics`
+  Flow本地诊断SQLite快照、节点尝试与Incident事件列表的读写边界；进程中断恢复只标记失败不续跑，心跳不是判死条件，终态持久化与业务结果分开。
+
 - [Flow 隔离无界面执行](../../04-api-reference/algorithms/templates/flow-engine.md) — `flow.headless`
-  隔离 STN 无界面执行的不可变请求、终止结果与 HeadlessFlowJob 调度边界，不自动运行批次和前后处理。
+  隔离STN流程的加载、起始节点就绪、执行超时与诊断收尾；停止请求不证明设备停稳，默认执行不限时，批次与前后处理由调用方负责。
 
 - [Flow 启动、停止与最终化](../../01-user-guide/workflow/execution.md) — `flow.session`
   FlowExecutionSession 的启动前提、停止请求与最终化判据，以及按失败阶段定位证据。
@@ -268,7 +271,7 @@ next: false
   区分 Flow 底层画布、节点内核、模板存储、编辑工作区、共享会话与隔离执行的所有权。
 
 - [Flow 隔离无界面执行](../../04-api-reference/algorithms/templates/flow-engine.md) — `flow.headless`
-  隔离 STN 无界面执行的不可变请求、终止结果与 HeadlessFlowJob 调度边界，不自动运行批次和前后处理。
+  隔离STN流程的加载、起始节点就绪、执行超时与诊断收尾；停止请求不证明设备停稳，默认执行不限时，批次与前后处理由调用方负责。
 
 - [电机命令与位置读回](../../01-user-guide/devices/motor.md) — `operations.motor`
   电机设备配置、MQTT运动命令与位置读回契约；移动回包不会刷新位置，客户端参数不能代替现场限位与急停。

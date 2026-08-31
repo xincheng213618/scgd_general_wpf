@@ -336,6 +336,18 @@
     {"query":"程序自己已经报过启动失败，为什么后台有时不再弹“无法启动”？这个抑制是按固定时间节流的吗？","expected_any":["platform.startup-integrity"],"include_planned":false},
     {"query":"直接从源码运行或看到服务启动成功但没收到缺文件告警，能说明运行依赖已经完整了吗？","expected_any":["platform.startup-integrity"],"include_planned":false},
     {"query":"ApplicationRuntimeDependencyInspector.FindMissingDependencies会检查DLL版本和hash吗","expected_any":["platform.startup-integrity"],"include_planned":false},
-    {"query":"ApplicationUpdatePrivilegeBroker在目录可写时就完全不调用ServiceHost吗","expected_any":["delivery.update"],"include_planned":false}
+    {"query":"ApplicationUpdatePrivilegeBroker在目录可写时就完全不调用ServiceHost吗","expected_any":["delivery.update"],"include_planned":false},
+    {"query":"程序意外退出后，流程诊断记录会续跑原来的节点吗","expected_any":["flow.diagnostics"],"include_planned":false},
+    {"query":"流程没有新心跳就会被恢复成失败吗","expected_any":["flow.diagnostics"],"include_planned":false},
+    {"query":"打开流程事件列表是否只读，不会修改数据库","expected_any":["flow.diagnostics"],"include_planned":false},
+    {"query":"节点图和后处理已成功，为什么本地运行记录还显示运行中","expected_any":["flow.diagnostics"],"include_planned":false},
+    {"query":"确认或关闭 Flow Incident 会改变批次的成功失败吗","expected_any":["flow.diagnostics"],"include_planned":false},
+    {"query":"同一节点在循环里执行几次，诊断中如何区分每次尝试","expected_any":["flow.diagnostics"],"include_planned":false},
+    {"query":"后台流程把超时设成五秒，是否从加载开始算起，五秒后设备就已停止并且可以安全重试？","expected_any":["flow.headless"],"include_planned":false},
+    {"query":"起始节点一直连不上，和流程已经跑起来才超过时间，返回的失败类型一样吗？","expected_any":["flow.headless"],"include_planned":false},
+    {"query":"无界面流程的运行任务返回了，是不是所有节点结束诊断都已经收齐，耗时也包括清理宿主？","expected_any":["flow.headless"],"include_planned":false},
+    {"query":"FlowExecutionJournalScope.IsCompletionRequested表示刚请求结束还是落库成功","expected_any":["flow.diagnostics"],"include_planned":false},
+    {"query":"FlowIncidentService.Acknowledge与Resolve会重写原处置人和备注吗","expected_any":["flow.diagnostics"],"include_planned":false},
+    {"query":"FlowHeadlessExecutionResult.ElapsedMilliseconds包含DisposeAsync吗","expected_any":["flow.headless"],"include_planned":false}
   ]
 }

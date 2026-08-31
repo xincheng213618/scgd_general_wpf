@@ -3586,6 +3586,7 @@
         "engine.template-design",
         "flow.templates",
         "flow.session",
+        "flow.diagnostics",
         "engine.results"
       ],
       "code_scopes": [
@@ -3597,7 +3598,7 @@
       "source": "docs/04-api-reference/engine-components/README.md",
       "url": "/04-api-reference/engine-components/README",
       "searchable": true,
-      "source_hash": "b71d3bc57573088885d37ffd26e0f6aad8d32a73a86fee1df60738574b1b02df"
+      "source_hash": "3ed3f5b16961236aa434e67af80cd10d84b09b3ea4bc2bf68f9c4c235ea98241"
     },
     {
       "knowledge_id": "engine.mqtt",
@@ -4172,6 +4173,72 @@
       "source_hash": "0506c08e03697de137f821eae55bafe93f1b52e9930b9799935dbe0b3a8494ea"
     },
     {
+      "knowledge_id": "flow.diagnostics",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "Flow本地诊断SQLite快照、节点尝试与Incident事件列表的读写边界；进程中断恢复只标记失败不续跑，心跳不是判死条件，终态持久化与业务结果分开。",
+      "aliases": [
+        "流程运行诊断",
+        "进程中断恢复",
+        "流程心跳",
+        "节点执行尝试",
+        "诊断记录未完成",
+        "Incident确认关闭",
+        "异常事件管理",
+        "FlowExecutionJournal",
+        "FlowExecutionJournalCoordinator",
+        "FlowExecutionJournalScope",
+        "FlowRunRecord",
+        "FlowNodeAttempt",
+        "FlowTemplateSnapshot",
+        "FlowIncidentService",
+        "FlowIncidentManagementWindow",
+        "FlowOwnerProcessState",
+        "RunRecovered"
+      ],
+      "code_paths": [
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionJournal.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/IFlowExecutionJournal.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionJournalCoordinator.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionRecovery.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowIncidentService.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowIncidentManagementWindow.xaml.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowDiagnosticsSchemaMigrator.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeRecordConfig.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowTemplateSnapshot.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowRunRecord.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionEvent.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeAttempt.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowIncident.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/FlowExecutionJournalTests.cs",
+        "Test/ColorVision.UI.Tests/FlowExecutionJournalCoordinatorTests.cs",
+        "Test/ColorVision.UI.Tests/FlowExecutionRecoveryTests.cs",
+        "Test/ColorVision.UI.Tests/FlowIncidentServiceTests.cs",
+        "Test/ColorVision.UI.Tests/FlowDiagnosticsSchemaTests.cs",
+        "Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs"
+      ],
+      "related": [
+        "flow.session",
+        "flow.templates",
+        "flow.headless",
+        "operations.data",
+        "ui.sqlite-storage"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine"
+      ],
+      "domain": "flow",
+      "title": "Flow 运行诊断、中断恢复与 Incident 处置",
+      "source": "docs/04-api-reference/engine-components/flow-diagnostics.md",
+      "url": "/04-api-reference/engine-components/flow-diagnostics",
+      "searchable": true,
+      "source_hash": "c64530ab978726dc87542a3ade1e7611e43b1e66ea5e4b75402ce908d06b323c"
+    },
+    {
       "knowledge_id": "flow.editor",
       "knowledge_type": "reference",
       "status": "current",
@@ -4214,22 +4281,31 @@
       "knowledge_id": "flow.headless",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "隔离 STN 无界面执行的不可变请求、终止结果与 HeadlessFlowJob 调度边界，不自动运行批次和前后处理。",
+      "summary": "隔离STN流程的加载、起始节点就绪、执行超时与诊断收尾；停止请求不证明设备停稳，默认执行不限时，批次与前后处理由调用方负责。",
       "aliases": [
         "无界面运行流程",
         "独立调度",
+        "流程就绪等待",
+        "无界面流程超时",
+        "节点结束诊断",
         "FlowHeadlessExecutionRequest",
         "FlowHeadlessExecutionService",
+        "FlowHeadlessExecutionResult",
+        "FlowHeadlessExecutionObserver",
         "RunSavedFlowHeadlessAsync",
         "HeadlessFlowJob",
-        "FlowRuntimeHost"
+        "FlowRuntimeHost",
+        "FlowEngineRunner"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowHeadlessExecutionService.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionCoordinator.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Runtime/AsyncOperationDrain.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Scheduling/HeadlessFlowJob.cs",
         "Engine/FlowEngineLib/Runtime/FlowRuntimeHost.cs",
-        "Engine/FlowEngineLib/Runtime/FlowEngineRunner.cs"
+        "Engine/FlowEngineLib/Runtime/FlowEngineRunner.cs",
+        "Engine/FlowEngineLib/FlowEngineControl.cs",
+        "Engine/FlowEngineLib/Start/BaseStartNode.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/FlowHeadlessExecutionServiceTests.cs",
@@ -4252,7 +4328,7 @@
       "source": "docs/04-api-reference/algorithms/templates/flow-engine.md",
       "url": "/04-api-reference/algorithms/templates/flow-engine",
       "searchable": true,
-      "source_hash": "13881e136ed072f8c13f2b422bfaf6fdecdaa8d51dc42b72d8557b76bca11128"
+      "source_hash": "ae9e8ee0925f35a747b7817c37def0009df5f0f82dec6383eeb82311e131faf1"
     },
     {
       "knowledge_id": "flow.index",
@@ -4394,30 +4470,24 @@
         "StopFlow",
         "CVBaseServerNode",
         "FlowExecutionSession",
-        "FlowJob",
-        "FlowIncident"
+        "FlowJob"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunExecutor.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Scheduling/FlowJob.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionJournalCoordinator.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowIncidentService.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowDiagnosticsSchemaMigrator.cs"
+        "Engine/ColorVision.Engine/FlowProcessing/Scheduling/FlowJob.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/FlowFinalizedExecutionApiTests.cs",
-        "Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs",
-        "Test/ColorVision.UI.Tests/FlowExecutionJournalCoordinatorTests.cs",
-        "Test/ColorVision.UI.Tests/FlowIncidentServiceTests.cs",
-        "Test/ColorVision.UI.Tests/FlowDiagnosticsSchemaTests.cs"
+        "Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs"
       ],
       "related": [
         "flow.architecture",
         "flow.templates",
         "flow.workspace",
-        "flow.headless"
+        "flow.headless",
+        "flow.diagnostics"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine"
@@ -4427,7 +4497,7 @@
       "source": "docs/01-user-guide/workflow/execution.md",
       "url": "/01-user-guide/workflow/execution",
       "searchable": true,
-      "source_hash": "baf8cd88fc54a105db7c4f9b6cea4132446889b872639841f1b054a429ecd373"
+      "source_hash": "e54a5473e28956e421c974097b0f3a2fbc7bc7b6cda63c4bfe71c528d959081c"
     },
     {
       "knowledge_id": "flow.templates",
@@ -4891,6 +4961,7 @@
         "operations.device-configuration",
         "engine.results",
         "flow.templates",
+        "flow.diagnostics",
         "ui.socket-protocol",
         "plugins.spectrum",
         "projects.arvr-pro"
@@ -4908,7 +4979,7 @@
       "source": "docs/01-user-guide/data-management/README.md",
       "url": "/01-user-guide/data-management/README",
       "searchable": true,
-      "source_hash": "690787e3c0154400aa095239361ce71fcbb0e16c675913bc6cd0498b6ce0cd1a"
+      "source_hash": "7babc9287a02e30a39f42f53d738abbb546456db77b2d795f248171c078fd950"
     },
     {
       "knowledge_id": "operations.device-configuration",

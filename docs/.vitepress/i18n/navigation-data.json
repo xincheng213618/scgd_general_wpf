@@ -1895,6 +1895,12 @@
             },
             {
               "text": {
+                "root": "Flow 运行诊断、中断恢复与 Incident 处置"
+              },
+              "link": "/04-api-reference/engine-components/flow-diagnostics"
+            },
+            {
+              "text": {
                 "root": "Flow 隔离无界面执行"
               },
               "link": "/04-api-reference/algorithms/templates/flow-engine"

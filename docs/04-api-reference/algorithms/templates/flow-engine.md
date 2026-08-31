@@ -2,9 +2,9 @@
 knowledge_id: "flow.headless"
 knowledge_type: "topic"
 status: "current"
-summary: "隔离 STN 无界面执行的不可变请求、终止结果与 HeadlessFlowJob 调度边界，不自动运行批次和前后处理。"
-aliases: ["无界面运行流程","独立调度","FlowHeadlessExecutionRequest","FlowHeadlessExecutionService","RunSavedFlowHeadlessAsync","HeadlessFlowJob","FlowRuntimeHost"]
-code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowHeadlessExecutionService.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionCoordinator.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/HeadlessFlowJob.cs","Engine/FlowEngineLib/Runtime/FlowRuntimeHost.cs","Engine/FlowEngineLib/Runtime/FlowEngineRunner.cs"]
+summary: "隔离STN流程的加载、起始节点就绪、执行超时与诊断收尾；停止请求不证明设备停稳，默认执行不限时，批次与前后处理由调用方负责。"
+aliases: ["无界面运行流程","独立调度","流程就绪等待","无界面流程超时","节点结束诊断","FlowHeadlessExecutionRequest","FlowHeadlessExecutionService","FlowHeadlessExecutionResult","FlowHeadlessExecutionObserver","RunSavedFlowHeadlessAsync","HeadlessFlowJob","FlowRuntimeHost","FlowEngineRunner"]
+code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowHeadlessExecutionService.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionCoordinator.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/AsyncOperationDrain.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/HeadlessFlowJob.cs","Engine/FlowEngineLib/Runtime/FlowRuntimeHost.cs","Engine/FlowEngineLib/Runtime/FlowEngineRunner.cs","Engine/FlowEngineLib/FlowEngineControl.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/FlowHeadlessExecutionServiceTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeHostTests.cs","Test/ColorVision.UI.Tests/FlowHeadlessHostTests.cs"]
 related: ["flow.architecture","flow.runtime","flow.templates","flow.session","ui.scheduler"]
 ---
@@ -23,6 +23,20 @@ readiness timeout 必须为正值且不接受无限等待；execution timeout �
 
 `RunAsync` 每次创建并最终释放一个 `FlowRuntimeHost`，加载后由 `FlowEngineRunner` 等待运行结束；并发请求不共享可变节点实例。若图中有 `CVBaseServerNode` 但未提供任何服务快照，明确返回 `StartRejected`。提供了非空快照也不证明每个设备在线或绑定成功。
 
+## 就绪、执行与停止边界
+
+未提供超时时间时，`FlowRuntimeHost.RunAsync` 使用 **2 秒就绪等待**，但 **执行等待不限时**；执行参数为 `null` 或 `Timeout.InfiniteTimeSpan` 都没有运行计时器。这不是整次调用的统一截止时间。
+
+| 阶段 | 等待范围与结果 |
+| --- | --- |
+| 起始节点就绪 | `FlowEngineControl.EnsureStartNodeReadyAsync` 向要求连接就绪的节点传递带就绪时限的取消 token；不要求连接就绪的节点跳过此等待。就绪超时返回未就绪，运行器给出 `Started=false`、`StartRejected`、`Data.Status=Failed`，不是 `TimedOut` |
+| 节点图执行 | `TryStartNode` 成功返回后，execution timeout 才用于等待与起始节点名及 SN 匹配的 `Finished`；超时给出 `Started=true`、`TimedOut`、`Data.Status=OverTime` |
+| 运行中取消 | 运行器捕获取消后给出 `Started=true`、`Canceled`、`Data.Status=Canceled`；启动前已捕获的取消则为 `Started=false` |
+
+执行超时不覆盖 STN 加载、前面的就绪等待、`TryStartNode` 内同步启动代码、随后观察器收尾或宿主释放。因此设置执行时限不保证整个 `RunAsync` 在同样的时间内返回，也不能约束已经发出的外部动作持续多久。
+
+运行器在执行超时或运行中取消时调用 `StopNode(startNodeName, serialNumber)`，再构造终止结果。若指定 SN 仍有活动动作，`BaseStartNode.Stop` 将其改为停止并从活动映射移除、向节点图传递停止动作；这条链没有等待设备停止确认或回滚外部写入的完成屏障。`Canceled` / `TimedOut`、宿主回到 `Ready` 或随后释放，都不能单独证明硬件已经停稳；重试前须由相应设备/业务边界确认实际状态。
+
 ## 三种入口不能混用
 
 | 入口 | 读取什么 | 完成含义 |
@@ -37,20 +51,22 @@ readiness timeout 必须为正值且不接受无限等待；execution timeout �
 
 ## 结果与失败语义
 
-`FlowHeadlessExecutionResult` 返回 `Started`、`Termination`、`ContentHash`、`Data` 和总耗时。`Succeeded` 只有在已经启动、终止类型为 `Completed` 且引擎状态也为 `Completed` 时才为真。
+`FlowHeadlessExecutionResult` 返回 `Started`、`Termination`、`ContentHash`、`Data` 和 `ElapsedMilliseconds`。`Succeeded` 只有在已经启动、终止类型为 `Completed` 且引擎状态也为 `Completed` 时才为真。
 
 | `Termination` | 含义 |
 | --- | --- |
 | `Completed` | 运行器完成；仍须检查 `Data.Status`，不能只读枚举名判成功 |
-| `StartRejected` | 门禁、服务快照或起始节点等条件未满足 |
+| `StartRejected` | 门禁、服务快照或起始节点等条件未满足，包括就绪等待超时 |
 | `Canceled` | 取消请求导致终止 |
-| `TimedOut` | 运行超时 |
+| `TimedOut` | 启动后的执行完成等待超时，不是整次调用超时 |
 | `LoadFailed` | 加载 STN/运行图失败 |
 | `Faulted` | 已进入加载后的运行阶段发生异常 |
 
 `ToFlowControlData()` 保留起始节点、SN、状态、时间、消息和错误节点映射，不会凭空创建 `RunFinalized` 或客户报表。调用边界也有会直接抛出的错误，例如空请求、非法请求参数，以及已保存流程不存在/非合法 Base64；不要假定所有失败都以 `Termination` 返回。
 
-`FlowHeadlessExecutionObserver` 只附着于本次隔离图，用于节点 Run/End 诊断；结束时解除订阅，不作为全局编辑器事件注册。
+`FlowHeadlessExecutionObserver` 只附着于本次隔离图，用于节点 Run/End 诊断，不作为全局编辑器事件注册。运行器返回后，服务最多再等待 **1 秒**，让已观察到 Run 的节点补齐 End；`AsyncOperationDrain.WaitAsync` 返回的“是否排空”布尔值没有进入运行结果。随后解除订阅，因此返回成功或取消结果都不保证所有节点结束诊断已经收齐，迟到事件也不保证被该观察器接收。
+
+正常结果的 `ElapsedMilliseconds` 从进入 `RunCoreAsync` 开始计量，包含加载、就绪、执行和上述观察器等待；在解除订阅和 `await using` 释放宿主之前停止计时。调用本身仍会等待宿主释放后才返回，所以此字段不是调用方测得的完整墙钟耗时，也不能当成设备动作耗时。`ToFlowControlData()` 原样保留 `Data.TotalTime`，不会用 `ElapsedMilliseconds` 替换；两者并不总相等，例如运行器构造取消/超时结果时，`Data.TotalTime` 为零。
 
 ## Quartz 独立调度
 
@@ -62,10 +78,22 @@ readiness timeout 必须为正值且不接受无限等待；execution timeout �
 | `SerialNumber` | 可选；缺省时由作业名与 UTC 时间生成 |
 | `ReadinessTimeoutMs`、`ExecutionTimeoutMs` | 可选，设置时必须为正整数毫秒 |
 
+未设置这两个字段时沿用就绪 2 秒、执行不限时的默认值；JobDataMap 不接受用负数表示无限等待。
+
 这是 `HeadlessFlowJob` 的字段契约，不能套用到 `FlowJob`。后者通过 WPF Dispatcher 运行单例 `FlowEngineManager.View` 主工作区选中的流程，不跟随任意独立窗口的激活状态；它包含批次/前后处理并等待最终化结果，并非运行已保存快照的同义入口。
+
+## 源码定位
+
+| 契约 | 源码与符号 |
+| --- | --- |
+| 请求、结果、观察器和计时收尾 | `Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowHeadlessExecutionService.cs`：`FlowHeadlessExecutionRequest`、`FlowHeadlessExecutionResult`、`FlowHeadlessExecutionObserver`、`RunCoreAsync` |
+| 诊断等待是否排空 | `Engine/ColorVision.Engine/FlowProcessing/Runtime/AsyncOperationDrain.cs`：`WaitAsync` |
+| 独占图、默认就绪时限和释放 | `Engine/FlowEngineLib/Runtime/FlowRuntimeHost.cs`：`LoadAsync`、`RunAsync`、`DisposeAsync` |
+| 完成匹配、执行超时和取消结果 | `Engine/FlowEngineLib/Runtime/FlowEngineRunner.cs`：`RunAsync` |
+| 就绪门禁与指定 SN 停止链 | `Engine/FlowEngineLib/FlowEngineControl.cs`：`EnsureStartNodeReadyAsync`、`StopNode`；`Engine/FlowEngineLib/Start/BaseStartNode.cs`：`Stop`、`DoStartTransferData`、`RemoveStartAction` |
 
 ## 验证入口与缺口
 
-`FlowHeadlessExecutionServiceTests` 覆盖请求副本、并发隔离、取消结果、无效 STN、观察器和无服务快照拒绝；`FlowRuntimeHostTests` / `FlowHeadlessHostTests` 覆盖非可视宿主及生命周期。裸执行测试不能证明真实 MQTT/设备可用、Quartz 配置完整或项目业务输出成功。
+`FlowHeadlessExecutionServiceTests` 覆盖请求副本、并发隔离、取消结果、无效 STN、观察器和无服务快照拒绝；`FlowRuntimeHostTests` / `FlowHeadlessHostTests` 覆盖非可视宿主及生命周期。取消用例采用本地不结束节点，观察器用例由测试节点直接发出 Run/End 事件，不是真实 MQTT/设备往返。以上测试文件尚未直接覆盖执行超时窗口、超过 1 秒的观察器收尾或释放宿主的计时口径；这些契约来自当前源码核对，不是已通过的行为测试结论。裸执行测试也不能证明设备停稳、Quartz 配置完整或项目业务输出成功。
 
 对应改动应核对两次并发执行不共享图、请求创建后修改原输入无效、取消/超时/加载失败/启动拒绝有明确结果。若还要求批次、后处理、MES 或客户结果，必须另外验证负责这些阶段的宿主，不能将裸图完成当作业务交付。
