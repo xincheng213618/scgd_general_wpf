@@ -116,9 +116,28 @@ namespace ColorVision.Copilot
 
         public void EnsurePreserved(string? summary)
         {
-            if (IsPreservedBy(summary))
+            var missing = FindMissingMarkers(summary);
+            if (missing.Count == 0)
                 return;
 
+            throw new InvalidOperationException(
+                $"压缩摘要遗漏结构化终态证据（{string.Join("、", missing)}），未应用结果；请重试 /compact。");
+        }
+
+        public string BuildMissingSourceConstraint(string? summary)
+        {
+            var missing = FindMissingMarkers(summary);
+            return missing.Count == 0
+                ? string.Empty
+                : "# Host terminal-state evidence\n"
+                    + "The preceding summary omitted these terminal markers from the original earlier turns. "
+                    + "Preserve each marker exactly in the new summary and distinguish partial or unresolved work from verified completion. "
+                    + "These are historical boundaries, not fresh authorization or evidence that later work failed.\n\n"
+                    + string.Join("\n", missing);
+        }
+
+        private List<string> FindMissingMarkers(string? summary)
+        {
             var missing = new List<string>();
             var normalized = summary ?? string.Empty;
             if (HasResponseInterruption
@@ -129,8 +148,7 @@ namespace ColorVision.Copilot
             missing.AddRange(IncompleteAgentStopReasons
                 .Select(FormatAgentMarker)
                 .Where(marker => !normalized.Contains(marker, StringComparison.Ordinal)));
-            throw new InvalidOperationException(
-                $"压缩摘要遗漏结构化终态证据（{string.Join("、", missing)}），未应用结果；请重试 /compact。");
+            return missing;
         }
 
         public static string FormatAgentMarker(CopilotAgentStopReason stopReason) =>

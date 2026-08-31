@@ -162,6 +162,7 @@ namespace ColorVision.Copilot
                 }
                 catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out var failureKind))
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (recovery != null)
                         throw CreateExhaustedException(recovery, exception);
 
@@ -188,6 +189,7 @@ namespace ColorVision.Copilot
                 }
                 catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out var failureKind))
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (recovery != null)
                         throw CreateExhaustedException(recovery, exception);
 

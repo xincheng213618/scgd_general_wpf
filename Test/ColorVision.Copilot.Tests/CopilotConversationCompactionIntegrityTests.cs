@@ -89,7 +89,7 @@ public sealed class CopilotConversationCompactionIntegrityTests
         Assert.Equal(
             [CopilotAgentStopReason.Blocked],
             plan.TerminalEvidence.IncompleteAgentStopReasons);
-        Assert.DoesNotContain(
+        Assert.Contains(
             plan.SourceMessages,
             message => message.Content.Contains(
                 CopilotConversationCompactionTerminalEvidence.ResponseInterruptedMarker,

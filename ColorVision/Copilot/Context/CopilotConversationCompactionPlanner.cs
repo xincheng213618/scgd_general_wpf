@@ -75,6 +75,7 @@ namespace ColorVision.Copilot
 
             var sourceMessages = new List<CopilotRequestMessage>();
             var remainingWeight = limits.MaximumCharacters - compactRequestWeight;
+            var terminalConstraintWeight = 0L;
             if (existingCompaction != null)
             {
                 var summaryMessage = CopilotConversationCompactionContext.CreateSummaryMessage(existingCompaction);
@@ -84,6 +85,19 @@ namespace ColorVision.Copilot
 
                 sourceMessages.Add(summaryMessage);
                 remainingWeight -= summaryWeight;
+
+                var terminalConstraint = CopilotConversationCompactionTerminalEvidence
+                    .Capture(conversation.Messages.Take(startIndex))
+                    .BuildMissingSourceConstraint(existingCompaction.Summary);
+                if (terminalConstraint.Length > 0)
+                {
+                    terminalConstraintWeight = CopilotTokenEstimator.EstimateTextWeight(terminalConstraint);
+                    if (terminalConstraintWeight > remainingWeight)
+                        throw new InvalidOperationException("当前模型没有足够的上下文空间来保留原始对话的终态证据。");
+
+                    sourceMessages.Add(new CopilotRequestMessage("user", terminalConstraint));
+                    remainingWeight -= terminalConstraintWeight;
+                }
             }
 
             var maximumNewMessageCount = pendingMessages.Length <= RecentMessagesToKeepVerbatim
@@ -145,7 +159,7 @@ namespace ColorVision.Copilot
                 SaturatingAdd(previousMessageCount, lastCompleteTurnCount),
                 SaturatingAdd(previousCharacters, lastCompleteTurnCharacters),
                 sourceMessages.Sum(message =>
-                    (long)CopilotTokenEstimator.EstimateTextWeight(message.Content)),
+                    (long)CopilotTokenEstimator.EstimateTextWeight(message.Content)) - terminalConstraintWeight,
                 CreateSourceRevision(conversation, boundaryMessage.Id));
         }
 

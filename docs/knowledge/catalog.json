@@ -1438,7 +1438,10 @@
         "ColorVision/Copilot/Agent/CopilotOpenAiAgentChatClientFactory.cs",
         "ColorVision/Copilot/Agent/CopilotCancellationGuardChatClient.cs",
         "ColorVision/Copilot/Agent/CopilotOpenAiRequestIdChatClient.cs",
-        "ColorVision/Copilot/CopilotProviderRequestId.cs"
+        "ColorVision/Copilot/CopilotProviderRequestId.cs",
+        "ColorVision/Copilot/Context/CopilotConversationCompactionPlanner.cs",
+        "ColorVision/Copilot/Context/CopilotConversationCompactionPrompt.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs"
       ],
       "test_paths": [
         "Test/ColorVision.Copilot.Tests/CopilotAgentTaskHostQueueDispatchTests.cs",
@@ -1453,7 +1456,10 @@
         "Test/ColorVision.Copilot.Tests/CopilotOpenAiProviderRetryTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotProviderStreamCleanupTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotProviderStreamCleanupTimeoutTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotOpenAiRequestIdTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotOpenAiRequestIdTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotContextWindowRecoveryCancellationTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotCompactionTerminalEvidenceRequestTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotConversationCompactionIntegrityTests.cs"
       ],
       "related": [
         "copilot.runtime",
@@ -1470,7 +1476,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-agent-execution.md",
       "url": "/02-developer-guide/core-concepts/copilot-agent-execution",
       "searchable": true,
-      "source_hash": "2753fe1c53943b9e575672a2cb46335b6d32195d02d0a5c2b97212f994410894"
+      "source_hash": "4eb9c32c2302d2a73c75e4f106d6468e53d059a78d125fd02985437cde5bd7c6"
     },
     {
       "knowledge_id": "copilot.extensions",
@@ -1573,7 +1579,10 @@
         "ColorVision/Copilot/CopilotChatViewModel.ConversationDataCommands.cs",
         "ColorVision/Copilot/CopilotChatViewModel.Messages.cs",
         "ColorVision/Copilot/CopilotChatViewModel.RequestAdmission.cs",
-        "ColorVision/Copilot/CopilotChatViewModel.MessageInteraction.cs"
+        "ColorVision/Copilot/CopilotChatViewModel.MessageInteraction.cs",
+        "ColorVision/Copilot/Context/CopilotImageInputBudget.cs",
+        "ColorVision/Copilot/Context/CopilotImageUnderstandingService.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs"
       ],
       "test_paths": [
         "Test/ColorVision.Copilot.Tests/CopilotLocalCommandAvailabilityTests.cs",
@@ -1586,7 +1595,9 @@
         "Test/ColorVision.Copilot.Tests/CopilotImageAttachmentAdmissionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAttachmentPathTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotConversationDeletionPersistenceTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotRequestAdmissionLifetimeTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotRequestAdmissionLifetimeTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotImagePayloadValidationTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotImageInputBudgetTests.cs"
       ],
       "related": [
         "copilot.runtime",
@@ -1607,7 +1618,7 @@
       "source": "docs/02-developer-guide/core-concepts/copilot-local-interactions.md",
       "url": "/02-developer-guide/core-concepts/copilot-local-interactions",
       "searchable": true,
-      "source_hash": "85740deceb23858aecd6993c353aeb9934c034a7bd84a5df78a7bc78bf880d26"
+      "source_hash": "28e03c7e3bc89aad50433555d42e59cef995898b7b8089dd5d6df0192a73fc90"
     },
     {
       "knowledge_id": "copilot.lifecycle",

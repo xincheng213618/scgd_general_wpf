@@ -1,8 +1,11 @@
 using System.Collections.Concurrent;
 using System.IO;
+using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Text;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using ColorVision.Copilot;
@@ -15,6 +18,153 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotRequestAdmissionLifetimeTests
 {
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
+
+    [Theory]
+    [InlineData("unchanged")]
+    [InlineData("switch")]
+    [InlineData("switch-profile")]
+    [InlineData("edit-model")]
+    [InlineData("clear-key")]
+    public void AutomaticCompactionUsesTheAdmittedConversationAndProfile(string transition)
+    {
+        RunOnSta(() =>
+        {
+            var root = Directory.CreateTempSubdirectory("CopilotAdmissionLifetime-").FullName;
+            var sourcePath = Path.Combine(root, "source.png");
+            var storePath = Path.Combine(root, "attachments");
+            CreateImage(sourcePath);
+            var profile = new CopilotProfileConfig
+            {
+                Id = "origin-profile",
+                Name = "Origin profile",
+                VendorType = CopilotVendorType.Custom,
+                ProviderType = CopilotProviderType.OpenAICompatible,
+                ApiKey = "admission-lifetime-test-key",
+                BaseUrl = "https://unit.test/v1",
+                Model = "origin-model",
+                SupportsImageInput = true,
+            };
+            var otherProfile = profile.Clone();
+            otherProfile.Id = "other-profile";
+            otherProfile.Model = "other-model";
+            var origin = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
+            origin.DraftText = "Inspect the captured image";
+            origin.DraftRequestMode = CopilotAgentMode.Chat;
+            origin.Attachments.Add(CopilotAttachmentItem.CreateImage(sourcePath));
+            var other = CopilotConversationRecord.CreateEmpty(
+                transition == "switch-profile" ? otherProfile.Id : profile.Id, "Other profile");
+            other.DraftText = "Unrelated draft";
+            foreach (var conversation in new[] { origin, other })
+            {
+                var marker = ReferenceEquals(conversation, origin) ? "origin-history" : "other-history";
+                for (var turn = 0; turn < 4; turn++)
+                {
+                    conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User,
+                        marker + " question " + turn + new string('u', 300)));
+                    conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.Assistant,
+                        marker + " answer " + turn + new string('a', 300)));
+                }
+            }
+            var otherMessages = other.Messages.ToArray();
+            var config = new CopilotConfig
+            {
+                SchemaVersion = CopilotConfig.CurrentSchemaVersion,
+                McpBearerToken = "admission-lifetime-test-token",
+                Profiles = [profile, otherProfile],
+                AgentDefaults = new CopilotAgentDefaultsConfig
+                {
+                    ContextWindowTokens = CopilotAgentTokenBudget.MinimumContextWindowTokens,
+                    AutoCompactConversationHistory = true,
+                    AutoCompactThresholdPercent = 50,
+                },
+            };
+            var state = new CopilotChatState
+            {
+                ActiveConversationId = origin.Id,
+                ActiveProfileId = profile.Id,
+                Conversations = [origin, other],
+            };
+            using var solutionScope = new IsolatedSolutionManagerScope();
+            var runtime = new RecordingTurnRuntime();
+            using var handler = new CompactionHandler();
+            using var client = new HttpClient(handler);
+            using var viewModel = new CopilotChatViewModel(
+                new CopilotChatService(client), new InMemoryStateStore(state, storePath), config,
+                runtime, new CopilotAgentTaskHost());
+            using var context = new PausedAdmissionSynchronizationContext();
+            var previousContext = SynchronizationContext.Current;
+            Task? operation = null;
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(context);
+                operation = InvokeTask(viewModel, "SendAsync", [], Type.EmptyTypes);
+                Assert.True(context.WaitForCallback(TestTimeout));
+                Assert.False(operation.IsCompleted);
+                Assert.Single(Directory.GetFiles(storePath, "image-*.png"));
+                Assert.Empty(handler.Payloads);
+                if (transition.StartsWith("switch", StringComparison.Ordinal))
+                    Assert.True(viewModel.TrySelectConversation(other.Id));
+                else if (transition == "edit-model")
+                    profile.Model = "changed-model";
+                else if (transition == "clear-key")
+                    profile.ApiKey = string.Empty;
+
+                context.Complete(operation);
+                operation.GetAwaiter().GetResult();
+
+                var payload = JObject.Parse(Assert.Single(handler.Payloads));
+                Assert.Equal("origin-model", (string?)payload["model"]);
+                Assert.Contains("origin-history", payload.ToString(), StringComparison.Ordinal);
+                Assert.DoesNotContain("other-history", payload.ToString(), StringComparison.Ordinal);
+                Assert.NotNull(origin.Compaction);
+                Assert.Equal(1, origin.CompactionUsage?.RequestCount);
+                Assert.Null(other.Compaction);
+                Assert.Null(other.CompactionUsage);
+                Assert.Equal(otherMessages, other.Messages.ToArray());
+                var request = Assert.Single(runtime.Requests);
+                Assert.Equal(origin.Id, request.ConversationId);
+                Assert.Equal("origin-model", request.Profile.Model);
+                Assert.Contains(request.HostContext.ConversationHistory.ModelMessages,
+                    message => message.Content.Contains("Captured origin summary", StringComparison.Ordinal));
+                Assert.Equal("Unrelated draft", other.DraftText);
+                if (transition.StartsWith("switch", StringComparison.Ordinal))
+                {
+                    Assert.Same(other, viewModel.SelectedConversation);
+                    Assert.Equal("Unrelated draft", viewModel.InputText);
+                }
+            }
+            finally
+            {
+                if (operation != null && !operation.IsCompleted)
+                    context.Complete(operation);
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+                viewModel.Dispose();
+                var fullRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
+                var tempRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath()));
+                Assert.True(string.Equals(Path.GetDirectoryName(fullRoot), tempRoot, StringComparison.OrdinalIgnoreCase)
+                    && Path.GetFileName(fullRoot).StartsWith("CopilotAdmissionLifetime-", StringComparison.Ordinal));
+                Directory.Delete(fullRoot, recursive: true);
+            }
+        });
+    }
+
+    private sealed class CompactionHandler : HttpMessageHandler
+    {
+        public List<string> Payloads { get; } = [];
+
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Payloads.Add(await request.Content!.ReadAsStringAsync(cancellationToken));
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("""
+                    {"choices":[{"message":{"role":"assistant","content":"Captured origin summary"},"finish_reason":"stop"}],
+                    "usage":{"prompt_tokens":100,"completion_tokens":10,"total_tokens":110}}
+                    """, Encoding.UTF8, "application/json"),
+            };
+        }
+    }
 
     [Theory]
     [InlineData(false, "delete")]
