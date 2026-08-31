@@ -16,4 +16,7 @@
   <data name="ResetLayout" xml:space="preserve"><value>恢复默认停靠布局，可能移除已打开的文件标签；请先保存文档。</value></data>
   <data name="SearchCommandsName" xml:space="preserve"><value>搜索命令与功能</value></data>
   <data name="SearchCommands" xml:space="preserve"><value>搜索应用中的菜单、工具和模板，不查找文档正文。</value></data>
+  <data name="SearchEntryPlaceholder" xml:space="preserve"><value>搜索功能…</value></data>
+  <data name="ContextualFindName" xml:space="preserve"><value>查找当前内容或应用功能</value></data>
+  <data name="ContextualFind" xml:space="preserve"><value>优先查找当前编辑器、会话或日志；没有局部查找的普通页面打开应用搜索。改键不移除编辑器原有的 Ctrl+F。</value></data>
 </root>

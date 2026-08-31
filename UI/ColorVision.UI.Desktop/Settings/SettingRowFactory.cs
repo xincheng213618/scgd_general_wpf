@@ -102,6 +102,8 @@ namespace ColorVision.UI.Desktop.Settings
             if (entry.PropertyInfo != null && entry.Metadata.Source != null)
                 PropertyEditorHelper.ApplyVisibilityBinding(row, entry.PropertyInfo, entry.Metadata.Source);
 
+            row.Tag = entry.Id;
+            entry.RenderedElement = row;
             return row;
         }
 

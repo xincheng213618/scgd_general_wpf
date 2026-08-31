@@ -335,7 +335,7 @@
             },
             {
               "text": {
-                "root": "主窗口搜索：候选、刷新与执行"
+                "root": "应用搜索：入口、候选与执行"
               },
               "link": "/04-api-reference/ui-components/search"
             },
@@ -806,7 +806,7 @@
             },
             {
               "text": {
-                "root": "主窗口搜索：候选、刷新与执行"
+                "root": "应用搜索：入口、候选与执行"
               },
               "link": "/04-api-reference/ui-components/search"
             },
@@ -1532,7 +1532,7 @@
             },
             {
               "text": {
-                "root": "主窗口搜索：候选、刷新与执行"
+                "root": "应用搜索：入口、候选与执行"
               },
               "link": "/04-api-reference/ui-components/search"
             },
@@ -1649,7 +1649,7 @@
             },
             {
               "text": {
-                "root": "主窗口搜索：候选、刷新与执行"
+                "root": "应用搜索：入口、候选与执行"
               },
               "link": "/04-api-reference/ui-components/search"
             },
@@ -2033,7 +2033,7 @@
             },
             {
               "text": {
-                "root": "主窗口搜索：候选、刷新与执行"
+                "root": "应用搜索：入口、候选与执行"
               },
               "link": "/04-api-reference/ui-components/search"
             },

@@ -10,6 +10,78 @@ namespace ColorVision.UI.Tests;
 [Collection(AssemblyDiscoveryCollection.CollectionName)]
 public sealed class RoutedCommandHotkeyGuardTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void IndependentNativeFindSurvivesClearingOrRebindingTheApplicationFallback(bool rebind)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using HiddenHost host = new();
+            int applicationFinds = 0;
+            HotKeys action = host.AddAction("contextual-find", Bindings(Key.F23), () => applicationFinds++);
+            using RoutedCommandHotkeyGuard guard = new(host.Window, host.Service, [host.NativeCommand], Bindings(Key.F23));
+            host.ReplaceBindings(action, rebind ? Bindings(Key.F24) : []);
+            Assert.False(guard.ShouldSuppress(Key.F23, ModifierKeys.None));
+            host.RaiseKeyDown(Key.F23);
+            Assert.Equal(1, host.NativeInvoked);
+            Assert.Equal(0, applicationFinds);
+            if (rebind)
+            {
+                host.RaiseKeyDown(Key.F24);
+                Assert.Equal(1, applicationFinds);
+                Assert.Equal(1, host.NativeInvoked);
+            }
+        });
+    }
+
+    [Fact]
+    public void ReassignedIndependentNativeKeyRunsOnlyTheNewApplicationAction()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using HiddenHost host = new();
+            HotKeys original = host.AddAction("contextual-find", Bindings(Key.F23), () => throw new InvalidOperationException("Old action must not run."));
+            using RoutedCommandHotkeyGuard guard = new(host.Window, host.Service, [host.NativeCommand], Bindings(Key.F23));
+            host.ReplaceBindings(original, []);
+            int replacementCalls = 0;
+            host.AddAction("replacement", Bindings(Key.F23), () => replacementCalls++);
+            host.RaiseKeyDown(Key.F23);
+            Assert.Equal(1, replacementCalls);
+            Assert.Equal(0, host.NativeInvoked);
+        });
+    }
+
+    [Fact]
+    public void IndependentNativeKeyStillHonorsCaptureTailSuppression()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using HiddenHost host = new();
+            using RoutedCommandHotkeyGuard guard = new(host.Window, host.Service, [host.NativeCommand], Bindings(Key.F23));
+            Func<Key, bool> previousReader = HotkeyDispatchGate.KeyStateReader;
+            bool held = true;
+            HotkeyDispatchGate.KeyStateReader = key => held && key == Key.F23;
+            try
+            {
+                using (host.Service.BeginCapture())
+                    Assert.False(host.RaiseKeyDown(Key.F23, bubble: false).Handled);
+                Assert.True(guard.ShouldSuppress(Key.F23, ModifierKeys.None));
+                host.RaiseKeyDown(Key.F23);
+                Assert.Equal(0, host.NativeInvoked);
+                held = false;
+                HotkeyDispatchGate.ShouldSuppress(Key.F23, isKeyUp: true);
+                host.RaiseKeyDown(Key.F23);
+                Assert.Equal(1, host.NativeInvoked);
+            }
+            finally
+            {
+                HotkeyDispatchGate.ShouldSuppress(Key.F23, isKeyUp: true);
+                HotkeyDispatchGate.KeyStateReader = previousReader;
+            }
+        });
+    }
+
     [Fact]
     public void ClearedManagedDefaultAlsoBlocksAnEditorsHardcodedFallback()
     {

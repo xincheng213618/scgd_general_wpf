@@ -181,8 +181,8 @@ next: false
 - [Quartz 任务定义、恢复与执行历史](../../04-api-reference/ui-components/ColorVision.Scheduler.md) — `ui.scheduler`
   Quartz 调度定义的启动恢复、JSON/SQLite 分工与执行统计；暂停不终止在途任务，重启恢复不是执行进度续跑。
 
-- [主窗口搜索：候选、刷新与执行](../../04-api-reference/ui-components/search.md) — `ui.search`
-  主窗口搜索框的关键词匹配、候选来源、刷新缓存、结果顺序和执行；关闭搜索设置不回滚也不直接保存，回车不统一检查命令权限。
+- [应用搜索：入口、候选与执行](../../04-api-reference/ui-components/search.md) — `ui.search`
+  主窗口搜索框的关键词匹配、候选来源、缓存刷新与安全执行；重新打开读取插件候选列表，重复输入不扫描磁盘文件列表，旧动态来源仍同步。
 
 - [SQLite 正文存储、迁移与文件维护](../../04-api-reference/ui-components/sqlite-storage.md) — `ui.sqlite-storage`
   Socket 与 Flow 的 SQLite 正文 gzip 编解码、按ID读写、旧TEXT逐批迁移、WAL备份与VACUUM；通用工具不自动停写/备份/恢复，失败可能已有批次提交。

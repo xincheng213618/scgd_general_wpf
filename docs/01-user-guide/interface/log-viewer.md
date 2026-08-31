@@ -5,7 +5,7 @@ status: "current"
 summary: "区分log4net输出、历史文件读取与UI筛选，说明刷新、截断和原生日志采集边界；没有显示不等于动作未发生。"
 aliases: ["日志查看器","查看日志","日志搜索","日志等级","历史日志","日志丢失","正则变红","自动刷新","自动滚动","WindowLog","LogOutput","LogLocalOutput","LogLoadState","LogHistoryReader","LogSearchHelper","LogViewerAppender","NativeLogWindow"]
 code_paths: ["UI/ColorVision.UI/LogImp","ColorVision/log4net.config","ColorVision/EntryClass.cs","ColorVision/App.xaml.cs","ColorVision/MainWindow.xaml.cs","ColorVision/NativeLogging","UI/ColorVision.Core/NativeLogBridge.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LogHistoryReaderTests.cs","Test/ColorVision.UI.Tests/LogSearchHelperTests.cs","Test/ColorVision.UI.Tests/LogEntryParserTests.cs","Test/ColorVision.UI.Tests/LogViewConfigTests.cs","Test/ColorVision.UI.Tests/NativeLogPendingBufferTests.cs","Test/ColorVision.UI.Tests/NativeLogWindowTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/LogHistoryReaderTests.cs","Test/ColorVision.UI.Tests/LogSearchHelperTests.cs","Test/ColorVision.UI.Tests/LogEntryParserTests.cs","Test/ColorVision.UI.Tests/LogViewConfigTests.cs","Test/ColorVision.UI.Tests/NativeLogPendingBufferTests.cs","Test/ColorVision.UI.Tests/NativeLogWindowTests.cs","Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs"]
 related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 ---
 
@@ -17,7 +17,7 @@ related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 
 | 入口 | 数据来源与边界 |
 | --- | --- |
-| `WindowLog`，帮助菜单的日志窗口（默认 `Ctrl+L`） | 给 log4net 根 logger 附加 `LogViewerAppender` 接收新事件，并在初始化时读取当前文件历史；每次菜单执行创建新窗口 |
+| `WindowLog`，帮助菜单的日志窗口（快捷键可配置，默认未分配） | 给 log4net 根 logger 附加 `LogViewerAppender` 接收新事件，并在初始化时读取当前文件历史；每次菜单执行创建新窗口 |
 | `LogOutput`，主窗口等嵌入式面板 | 同样接收 log4net 新事件，本身不加载文件历史；`ModuleLogViewerBinder` 的模块面板只接受指定 logger 名或其点分隔子名称 |
 | `WindowLogLocal` / `LogLocalOutput` | 读取调用方指定的外部文件，不接收 log4net 事件；编码可由调用方指定，默认 `Encoding.Default` |
 | `NativeLogWindow` | 独立的 `NativeLogBridge` 回调与采集会话，不是从托管日志文件读回 native 历史 |
@@ -66,6 +66,8 @@ related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 
 托管/外部文件视图通过右键“搜索”或 `Ctrl+F` 打开搜索栏；`Esc` 或关闭按钮清空搜索并隐藏栏。输入有约 `200 ms` 防抖，清空立即应用。不要套用其他模块顶部搜索框的响应式隐藏规则。
 
+`LogTextViewController` 同时在所属键盘目标上注册标准 `ApplicationCommands.Find`，执行仍是显示同一搜索栏；Detach 时解除命令绑定。这样主窗口可配置的[场景查找](../../04-api-reference/ui-components/hotkeys.md)能直接复用当前日志视图的局部搜索，而不先打开应用功能搜索，也不模拟 Ctrl+F。此适配不改变过滤算法、日志源或全局日志等级。
+
 - 普通搜索按空格拆词，每个词必须在同一被匹配文本中出现，忽略大小写。TextBox 按行过滤，Virtualized 按整条 `LogEntry.Text` 过滤，因此多行异常的匹配和保留范围会不同。
 - 含 `. * + ? ^ $ ( ) [ ] { } | \` 中任一字符就自动转为正则；不存在独立的“纯文本/正则”开关，文件名中的点和 Windows 路径也会触发。正则使用 `IgnoreCase`，每次匹配超时为 `250 ms`，不是全量搜索总时限。
 - UI 的 `NormalizeSearchText` 会先按当前文化转成小写，再传给 helper；不能承诺任意正则原样执行，例如 `\D` 会变为 `\d`。复杂模式需核对这条调用链，不能只看 helper 测试。
@@ -84,6 +86,7 @@ native 的“暂停”仅暂停显示队列取出，采集仍继续。待显示�
 - `LogHistoryReaderTests` 用合成文本验证启动时间边界、续行与顺/倒序字符裁剪；`LogEntryParserTests` 验证部分等级识别和多行归组。
 - `LogSearchHelperTests` 验证普通词 AND、正则、非法语法、行/对象匹配；没有据此证明 UI 防抖、变红、超时后的可见状态或大小写规范化都已验证。
 - `LogViewConfigTests` 验证主面板与实时实例的默认条目限制和配置独立性，包含 STA 构造检查；不等于验证刷新丢弃、关闭释放或大文件性能。
+- `ContextualFindRouterTests` 使用独立控件与日志搜索控制器检查标准 Find 显示搜索栏及 Detach 解绑；不挂接生产日志 appender，不读取现场日志。
 - `NativeLogPendingBufferTests` 验证容量淘汰、批量读取、清空和 fake controller 会话暂停；`NativeLogWindowTests` 只验证菜单与编译 XAML 存在，不是 native DLL 或真实窗口交互验收。
 
 当前主题未声明外部文件轮转/编码组合、实际文件写入保留、UI 生命周期压力或生产日志不丢失的端到端覆盖。最小人工复核应使用获准的合成日志与隔离环境；不为文档校验开启真实采集。对外分享前脱敏路径、客户标识、设备数据与凭据，不删除现场日志来“清理”排障证据。

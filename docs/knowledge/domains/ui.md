@@ -68,11 +68,11 @@ next: false
 - [Quartz 任务定义、恢复与执行历史](../../04-api-reference/ui-components/ColorVision.Scheduler.md) — `ui.scheduler`
   Quartz 调度定义的启动恢复、JSON/SQLite 分工与执行统计；暂停不终止在途任务，重启恢复不是执行进度续跑。
 
-- [主窗口搜索：候选、刷新与执行](../../04-api-reference/ui-components/search.md) — `ui.search`
-  主窗口搜索框的关键词匹配、候选来源、刷新缓存、结果顺序和执行；关闭搜索设置不回滚也不直接保存，回车不统一检查命令权限。
+- [应用搜索：入口、候选与执行](../../04-api-reference/ui-components/search.md) — `ui.search`
+  主窗口搜索框的关键词匹配、候选来源、缓存刷新与安全执行；重新打开读取插件候选列表，重复输入不扫描磁盘文件列表，旧动态来源仍同步。
 
 - [设置窗口：发现、编辑与关闭契约](../../04-api-reference/ui-components/settings.md) — `ui.settings`
-  设置窗口的发现缓存、侧栏搜索、活对象编辑和自定义页面生命周期；普通选项关窗不撤销，启动检查更新的勾选只表示至少一个更新开关开启。
+  设置窗口的元数据发现、全局搜索定位、侧栏筛选与活对象编辑；普通选项关窗不撤销，启动检查更新仍是聚合开关。
 
 - [TCP 监听、协议分发与消息记录](../../04-api-reference/ui-components/ColorVision.SocketProtocol.md) — `ui.socket-protocol`
   TCP网络通信的监听快照、窗口关闭与服务停止、JSON/Text分发及消息记录；Sent不证明对端执行，重发可能换客户端并追加记录。

@@ -1,5 +1,7 @@
 using ColorVision.Themes;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 
 namespace ColorVision.UI.Desktop.Settings
 {
@@ -39,6 +41,17 @@ namespace ColorVision.UI.Desktop.Settings
                 _controller?.SelectGroup(navigationEntry.Group);
                 SettingsScrollViewer.ScrollToTop();
             }
+        }
+
+        public bool NavigateToSetting(string settingId)
+        {
+            FrameworkElement? target = _controller?.NavigateToSetting(settingId);
+            if (target == null) return false;
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+            {
+                if (IsVisible && target.IsVisible) target.BringIntoView();
+            }));
+            return true;
         }
     }
 }

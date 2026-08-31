@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -10,29 +11,43 @@ namespace ColorVision.Engine.Templates
     {
         public IEnumerable<ISearch> GetSearchItems()
         {
-            var templateNames = TemplateControl.ITemplateNames.Values.SelectMany(item => item.GetTemplateNames()).Distinct().ToList();
-            foreach (var item in templateNames)
+            return CreateItems(TemplateControl.ITemplateNames.ToArray(),
+                key => TemplateControl.ITemplateNames.TryGetValue(key, out ITemplate? template) ? template : null);
+        }
+
+        internal static IEnumerable<ISearch> CreateItems(IEnumerable<KeyValuePair<string, ITemplate>> registrations, Func<string, ITemplate?> resolve)
+        {
+            foreach (KeyValuePair<string, ITemplate> registration in registrations)
             {
-                SearchMeta search = new SearchMeta
+                string registrationKey = registration.Key;
+                ITemplate registered = registration.Value;
+                foreach (string name in registered.GetTemplateNames().Where(name => !string.IsNullOrWhiteSpace(name)).Distinct(StringComparer.OrdinalIgnoreCase))
                 {
-                    Type = SearchType.File,
-                    Header = item,
-                    Command = new RelayCommand(a =>
+                    yield return new SearchMeta
                     {
-                        if (TemplateControl.FindDuplicateTemplate(item) is ITemplate template)
+                        GuidId = $"template:{Uri.EscapeDataString(registrationKey)}:{Uri.EscapeDataString(name)}",
+                        Type = SearchType.File,
+                        CategoryKey = "Templates",
+                        Header = name,
+                        Description = string.IsNullOrWhiteSpace(registered.Title) ? registered.Name : registered.Title,
+                        Aliases = new[] { registrationKey, registered.Code ?? string.Empty, registered.GetType().Name },
+                        Command = new RelayCommand(_ =>
                         {
+                            ITemplate? template = resolve(registrationKey);
+                            if (template == null || !template.GetTemplateNames().Contains(name, StringComparer.OrdinalIgnoreCase)) return;
+                            int index = template.GetTemplateIndex(name);
+                            if (index < 0) return;
                             if (template.IsSideHide)
                             {
-                                template.PreviewMouseDoubleClick(template.GetTemplateIndex(item));
+                                template.PreviewMouseDoubleClick(index);
                             }
                             else
                             {
-                                new TemplateEditorWindow(template, template.GetTemplateIndex(item)) { Owner = Application.Current.GetActiveWindow() }.Show();
+                                new TemplateEditorWindow(template, index) { Owner = Application.Current.GetActiveWindow() }.Show();
                             }
-                        }
-                    })
-                };
-                yield return search;
+                        }, _ => resolve(registrationKey)?.GetTemplateNames().Contains(name, StringComparer.OrdinalIgnoreCase) == true)
+                    };
+                }
             }
         }
     }

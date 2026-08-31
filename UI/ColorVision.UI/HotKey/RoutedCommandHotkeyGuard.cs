@@ -12,11 +12,14 @@ public sealed class RoutedCommandHotkeyGuard : IDisposable
     private readonly Window _window;
     private readonly HotkeyService _service;
     private readonly List<Hotkey> _nativeGestures;
+    private readonly HashSet<Hotkey> _independentNativeGestures;
 
-    public RoutedCommandHotkeyGuard(Window window, HotkeyService service, IEnumerable<RoutedCommand> commands)
+    public RoutedCommandHotkeyGuard(Window window, HotkeyService service, IEnumerable<RoutedCommand> commands,
+        IEnumerable<Hotkey>? independentNativeGestures = null)
     {
         _window = window;
         _service = service;
+        _independentNativeGestures = (independentNativeGestures ?? []).ToHashSet();
         _nativeGestures = commands.SelectMany(command => command.InputGestures.OfType<KeyGesture>())
             .Select(gesture => new Hotkey(gesture.Key, gesture.Modifiers))
             // Some editors implement the default directly in PreviewKeyDown instead of
@@ -30,11 +33,14 @@ public sealed class RoutedCommandHotkeyGuard : IDisposable
     internal bool ShouldSuppress(Key key, ModifierKeys modifiers)
     {
         var pressed = new Hotkey(key, modifiers);
-        return _nativeGestures.Contains(pressed) && (HotkeyDispatchGate.HasPendingKeyRelease || !_service.HotKeys.Any(action =>
+        // Contextual Find adds an application fallback, not ownership of an editor's
+        // native Find. Editing that fallback must not disable the original local key.
+        return _nativeGestures.Contains(pressed) && (HotkeyDispatchGate.HasPendingKeyRelease ||
+            (!_independentNativeGestures.Contains(pressed) && !_service.HotKeys.Any(action =>
             !action.IsGlobal && action.IsRegistered &&
             (ReferenceEquals(action.Control, _window) ||
              (action.Control?.IsKeyboardFocusWithin == true && Window.GetWindow(action.Control) == _window)) &&
-            action.GetBindings().Contains(pressed)));
+            action.GetBindings().Contains(pressed))));
     }
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)

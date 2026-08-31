@@ -16,4 +16,7 @@
   <data name="ResetLayout" xml:space="preserve"><value>Restore the default dock layout, which may remove open file tabs; save documents first.</value></data>
   <data name="SearchCommandsName" xml:space="preserve"><value>Search commands and features</value></data>
   <data name="SearchCommands" xml:space="preserve"><value>Search application menus, tools and templates, not document text.</value></data>
+  <data name="SearchEntryPlaceholder" xml:space="preserve"><value>Search features…</value></data>
+  <data name="ContextualFindName" xml:space="preserve"><value>Find in content or search features</value></data>
+  <data name="ContextualFind" xml:space="preserve"><value>Find in the focused editor, conversation or log; open application search on ordinary pages without local Find. Rebinding preserves the editor's native Ctrl+F.</value></data>
 </root>

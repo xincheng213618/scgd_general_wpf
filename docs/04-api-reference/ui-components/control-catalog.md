@@ -19,6 +19,7 @@ related: ["ui.index","ui.property-grid","ui.settings","ui.wizards","ui.menus","u
 | --- | --- | --- |
 | MVVM、命令、共享接口 | `UI/ColorVision.Common/` | [ColorVision.Common](./ColorVision.Common.md) |
 | 菜单、热键、状态栏、搜索 | `UI/ColorVision.UI/` | [ColorVision.UI](./ColorVision.UI.md) |
+| 功能搜索浮层、结果排序、执行目标 | `UI/ColorVision.UI/Serach/` | [产品搜索](./search.md)；宿主入口由 `ColorVision/MainWindow.Hotkeys.cs` 装配 |
 | 设置窗口、市场、下载、向导 | `UI/ColorVision.UI.Desktop/` | [桌面总览](./ColorVision.UI.Desktop.md)、[设置](./settings.md)、[向导](./wizards.md) |
 | 主题、窗口外观、通用控件 | `UI/ColorVision.Themes/` | [ColorVision.Themes](./ColorVision.Themes.md) |
 | PropertyGrid 和自定义编辑器 | `UI/ColorVision.UI/PropertyEditor/` | [PropertyGrid 契约](./property-grid.md) |
@@ -43,8 +44,9 @@ related: ["ui.index","ui.property-grid","ui.settings","ui.wizards","ui.menus","u
 | 状态栏 | `IStatusBarProvider`、`IStatusBarProviderUpdatable`、`IActiveDocumentStatusProvider` | [发现、绑定、文档通知与清理](./status-bar.md)；隐藏不停止业务 |
 | 界面语言 | `LanguageConfig`、`LanguageManager`、`LanguagePropertiesEditor` | [资源发现、文化回退和重启切换](./localization.md)；不是全窗口实时翻译 |
 | 热键 | `IHotkeyProvider`、`IHotKey`、`HotkeyService` | [定义身份、草稿、注册和释放](./hotkeys.md)；保存配置不证明注册成功 |
-| 搜索候选 | `ISearch`、`ISearchProvider`、`IDynamicSearchProvider` | [静态刷新、动态缓存和执行边界](./search.md)；不是仓库知识检索 |
-| 设置页 | `IConfigSettingProvider`、`[ConfigSetting]` | [发现缓存、搜索范围与活对象编辑](./settings.md) |
+| 搜索候选 | `ISearch`、`ISearchMetadata`、`ISearchProvider`、`IDynamicSearchProvider`、`IAsyncSearchProvider` | [稳定身份、元数据、取消和执行边界](./search.md)；异步接口不允许后台访问 WPF 状态，不是仓库知识检索 |
+| 当前内容查找 | `ContextualFindRouter`、`ApplicationCommands.Find`、`LocalFindCommand` | [功能搜索与局部查找的分流](./search.md)；优先尊重当前内容的查找入口 |
+| 设置页与设置搜索 | `IConfigSettingProvider`、`[ConfigSetting]`、`SettingSearchProvider`、`SettingWindow.NavigateToSetting` | [发现缓存、共享条目目录、定位与活对象编辑](./settings.md)；索引不实例化页面 |
 | 属性编辑器 | `PropertyEditorTypeAttribute`、`IPropertyEditor.GenProperties`、`PropertyEditorRegistry` | [选择、复用与失败契约](./property-grid.md)，不要在缓存编辑器实例里持有目标对象 |
 | 图像打开器 | `IImageOpen`、`FileExtensionAttribute` | 新格式优先走打开器 |
 | 图像工具 | `IEditorTool`、`IEditorToggleTool`、`IEditorCustomControlTool` | 工具由 ImageEditor 工厂装配 |
@@ -58,6 +60,7 @@ related: ["ui.index","ui.property-grid","ui.settings","ui.wizards","ui.menus","u
 | 目标 | 入口 |
 | --- | --- |
 | 设置 | `UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml` |
+| 功能搜索浮层 | `UI/ColorVision.UI/Serach/SearchControl.xaml`，由主窗口附着宿主显示，不是独立业务窗口 |
 | 插件市场 | `UI/ColorVision.UI.Desktop/Marketplace/MarketplaceWindow.xaml` |
 | 下载器 | `UI/ColorVision.UI.Desktop/Download/DownloadWindow.xaml` |
 | 菜单管理 | `UI/ColorVision.UI.Desktop/MenuItemManager/MenuItemManagerWindow.xaml` |

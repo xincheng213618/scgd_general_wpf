@@ -134,4 +134,7 @@ public static class BuiltInHotkeyDescriptions
     public static string ResetLayout => HotkeyPresentation.GetText("ResetLayout");
     public static string SearchCommandsName => HotkeyPresentation.GetText("SearchCommandsName");
     public static string SearchCommands => HotkeyPresentation.GetText("SearchCommands");
+    public static string SearchEntryPlaceholder => HotkeyPresentation.GetText("SearchEntryPlaceholder");
+    public static string ContextualFindName => HotkeyPresentation.GetText("ContextualFindName");
+    public static string ContextualFind => HotkeyPresentation.GetText("ContextualFind");
 }

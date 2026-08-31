@@ -55,18 +55,21 @@ namespace ColorVision.Engine.Templates.Flow.Search
                 yield return new SearchMeta
                 {
                     Type = SearchType.File,
-                    Header = $"{flowName} / {nodeName}",
-                    GuidId = string.Join(
-                        ' ',
+                    CategoryKey = "FlowNodes",
+                    Header = nodeName,
+                    Description = $"{flowName} / {entry.NodeTypeKey}",
+                    GuidId = $"flow-node:{Uri.EscapeDataString(flowKey)}:{revision}:{sourceNodeGuid:D}",
+                    Aliases =
                         new[]
                         {
+                            flowName,
                             entry.FlowKey,
                             entry.NodeTypeKey,
                             entry.DeviceCode,
                             entry.ServiceCode,
                             entry.Tags,
                         }.Where(value =>
-                            !string.IsNullOrWhiteSpace(value))),
+                            !string.IsNullOrWhiteSpace(value)).ToArray(),
                     Command = new RelayCommand(_ =>
                     {
                         TemplateModel<FlowParam>? current =

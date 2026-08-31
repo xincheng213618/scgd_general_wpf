@@ -71,19 +71,19 @@ public sealed class ApplicationHotkeyIntegrationTests
             new ColorVision.Solution.MenuOpenFolder(), new ColorVision.Solution.MenuOpenSolution(),
             new ColorVision.UI.Menus.Base.File.MenuSave(), new ColorVision.UI.Menus.Base.File.MenuSaveAs(),
             new ColorVision.UI.Menus.Base.File.MenuClose(), new ColorVision.UI.Desktop.Settings.MenuOptions(),
-            new MenuCommandSearch(), new ColorVision.UI.LogImp.MenuLogWindow(),
+            new MenuCommandSearch(), new MenuContextualFind(), new ColorVision.UI.LogImp.MenuLogWindow(),
             new ColorVision.Update.MenuCheckAndUpdateV1(), new ExportMenuViewStatusBar(),
             new AboutMsgExport(), new ColorVision.Solution.Workspace.MenuResetLayout()
         ];
         var actions = providers.Select(provider => provider.HotKeys).ToArray();
         var bindings = actions.SelectMany(action => action.GetDefaultBindings()).ToArray();
-        Assert.Equal(13, actions.Length);
+        Assert.Equal(14, actions.Length);
         Assert.Equal(6, actions.Count(action => action.GetDefaultBindings().Count == 0));
-        Assert.Equal(8, bindings.Length);
+        Assert.Equal(9, bindings.Length);
         Assert.Equal(bindings.Length, bindings.Distinct().Count());
         Assert.All(actions, action => Assert.Equal(HotKeyKinds.Windows, action.Kinds));
         Assert.DoesNotContain(bindings, binding => binding.Key is Key.F5 or Key.Delete or Key.Escape);
-        Assert.DoesNotContain(bindings, binding => binding.Modifiers == ModifierKeys.Control && binding.Key is Key.F or Key.L or Key.C or Key.V or Key.Z or Key.A);
+        Assert.DoesNotContain(bindings, binding => binding.Modifiers == ModifierKeys.Control && binding.Key is Key.L or Key.C or Key.V or Key.Z or Key.A);
     }
 
     [Fact]
@@ -93,6 +93,16 @@ public sealed class ApplicationHotkeyIntegrationTests
         Assert.Equal(new Hotkey(Key.P, ModifierKeys.Control | ModifierKeys.Shift), Assert.Single(action.GetDefaultBindings()));
         Assert.False(string.IsNullOrWhiteSpace(action.Description));
         Assert.Equal(HotKeyKinds.Windows, action.Kinds);
+    }
+
+    [Fact]
+    public void ContextualFindHasItsOwnConfigurableDefaultAndExplainsLocalBehavior()
+    {
+        var action = new MenuContextualFind().HotKeys;
+        Assert.Equal(new Hotkey(Key.F, ModifierKeys.Control), Assert.Single(action.GetDefaultBindings()));
+        Assert.False(string.IsNullOrWhiteSpace(action.Description));
+        Assert.Equal(HotKeyKinds.Windows, action.Kinds);
+        Assert.NotEqual(new MenuCommandSearch().GuidId, new MenuContextualFind().GuidId);
     }
 
     [Fact]

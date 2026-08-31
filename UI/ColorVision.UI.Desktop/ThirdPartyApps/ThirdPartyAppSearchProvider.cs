@@ -17,8 +17,11 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                 yield return new SearchMeta
                 {
                     Type = SearchType.ThirdPartyApp,
+                    CategoryKey = "Tools",
                     GuidId = BuildSearchId(app),
                     Header = BuildHeader(app),
+                    Description = app.Group,
+                    Aliases = new[] { app.Name, app.Group ?? string.Empty, app.Category.ToString() },
                     Icon = app.IconSource,
                     Command = app.DoubleClickCommand,
                 };

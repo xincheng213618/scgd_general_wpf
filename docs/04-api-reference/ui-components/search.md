@@ -2,89 +2,104 @@
 knowledge_id: "ui.search"
 knowledge_type: "topic"
 status: "current"
-summary: "主窗口搜索框的关键词匹配、候选来源、刷新缓存、结果顺序和执行；关闭搜索设置不回滚也不直接保存，回车不统一检查命令权限。"
-aliases: ["搜索框", "搜索候选", "搜索结果", "搜索刷新", "动态搜索", "网页搜索", "浏览器搜索", "Everything", "SearchControl", "SearchManager", "SearchConfig", "SearchSettingsWindow", "ISearch", "ISearchProvider", "IDynamicSearchProvider", "SearchMeta", "SearchType", "MenuSearchProvider", "TemplateSearchProvider", "ThirdPartyAppSearchProvider", "FlowNodeDynamicSearchProvider", "EnableTemplateIndex", "EnableBrowserSearch"]
-code_paths: ["UI/ColorVision.UI/Serach", "UI/ColorVision.Common/Interfaces/Serach", "UI/ColorVision.UI/AssemblyHandler.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI.Desktop/ThirdPartyApps/ThirdPartyAppSearchProvider.cs", "Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs", "Engine/ColorVision.Engine/Templates/Flow/Search/FlowNodeDynamicSearchProvider.cs", "Engine/ColorVision.Engine/Templates/Flow/Search/SqliteFlowNodeSearchIndex.cs", "Engine/ColorVision.Engine/Templates/Flow/Versioning/FlowCatalogService.cs", "ColorVision/MainWindow.xaml", "ColorVision/MainWindow.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/WpfResourceEmbeddingTests.cs", "Test/ColorVision.UI.Tests/FlowSafeSearchSidecarTests.cs", "Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs"]
-related: ["ui.framework", "ui.discovery", "ui.menus", "ui.common", "ui.configuration", "operations.main-window", "flow.templates", "governance.knowledge"]
+summary: "主窗口搜索框的关键词匹配、候选来源、缓存刷新与安全执行；重新打开读取插件候选列表，重复输入不扫描磁盘文件列表，旧动态来源仍同步。"
+aliases: ["搜索框", "命令面板", "应用搜索", "关键词匹配", "搜索缓存", "候选目录刷新", "搜索候选", "搜索结果", "搜索刷新", "动态搜索", "网页搜索", "浏览器搜索", "Everything", "Ctrl+F", "Ctrl+Shift+P", "SearchControl", "SearchManager", "SearchQuery", "SearchResultItem", "SearchPaletteViewModel", "SearchCommandExecutor", "ContextualFindRouter", "SearchPopupHotkeyBridge", "SearchConfig", "SearchSettingsWindow", "ISearch", "ISearchMetadata", "ISearchProvider", "IDynamicSearchProvider", "IAsyncSearchProvider", "SearchMeta", "SearchType", "MenuSearchProvider", "SettingSearchProvider", "TemplateSearchProvider", "ThirdPartyAppSearchProvider", "FlowNodeDynamicSearchProvider", "EnableTemplateIndex", "EnableBrowserSearch"]
+code_paths: ["UI/ColorVision.UI/Serach", "UI/ColorVision.Common/Interfaces/Serach", "UI/ColorVision.UI/AssemblyHandler.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI.Desktop/Settings/SettingSearchProvider.cs", "UI/ColorVision.UI.Desktop/Settings/SettingEntryCatalog.cs", "UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml.cs", "UI/ColorVision.UI.Desktop/ThirdPartyApps/ThirdPartyAppSearchProvider.cs", "Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs", "Engine/ColorVision.Engine/Templates/Flow/Search/FlowNodeDynamicSearchProvider.cs", "Engine/ColorVision.Engine/Templates/Flow/Search/SqliteFlowNodeSearchIndex.cs", "Engine/ColorVision.Engine/Templates/Flow/Versioning/FlowCatalogService.cs", "ColorVision/MainWindow.xaml", "ColorVision/MainWindow.Hotkeys.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/SearchQueryTests.cs", "Test/ColorVision.UI.Tests/SearchManagerTests.cs", "Test/ColorVision.UI.Tests/SearchPaletteTests.cs", "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs", "Test/ColorVision.UI.Tests/MainWindowSearchShellTests.cs", "Test/ColorVision.UI.Tests/SettingSearchProviderTests.cs", "Test/ColorVision.UI.Tests/TemplateSearchProviderTests.cs", "Test/ColorVision.UI.Tests/WpfResourceEmbeddingTests.cs", "Test/ColorVision.UI.Tests/FlowSafeSearchSidecarTests.cs", "Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs"]
+related: ["ui.framework", "ui.discovery", "ui.menus", "ui.hotkeys", "ui.settings", "ui.common", "ui.configuration", "operations.main-window", "flow.templates", "governance.knowledge"]
 ---
 
-# 主窗口搜索：候选、刷新与执行
+# 应用搜索：入口、候选与执行
 
-`UI/ColorVision.UI/Serach/` 是实际目录拼写，负责 ColorVision 产品中的搜索框，不是本仓库供 Codex 使用的[知识检索](../../README.md)，也不是遍历仓库或磁盘文件内容的全文引擎。共享接口位于 `UI/ColorVision.Common/Interfaces/Serach/`，具体菜单、模板和工具由各模块贡献。
+`UI/ColorVision.UI/Serach/` 是实际目录拼写。它提供 ColorVision 主窗口中的功能快速入口，可找菜单命令、设置、模板、工具和流程节点；不是仓库[知识检索](../../README.md)，也不遍历磁盘文件正文。工作区文件搜索、日志全文与历史检测结果尚未统一接入这个面板。
 
-`MainWindow.Hotkeys.cs` 的 `MenuCommandSearch` 通过可配置动作将默认 `Ctrl+Shift+P` 接到功能搜索，`Ctrl+F` 留给当前编辑器的正文查找；窄窗口使用菜单下方的搜索行，折叠规则归[宿主装配](../../01-user-guide/interface/main-window.md)。聚焦、查询候选和执行结果是不同阶段；找到入口不证明其业务操作已获授权或成功。
+## 入口与局部查找
 
-## 候选从哪里来、何时刷新
+顶部保留一个搜索按钮；点击或触发 `MenuCommandSearch` 的默认 `Ctrl+Shift+P`，打开主窗口上方居中的 `SearchControl`。它由附着主窗口的 WPF `Popup` 承载，没有独立任务栏窗口。Popup 自有 HWND 使浮层能够覆盖 WebView2 等原生子窗口，而不是仅靠普通 WPF Grid 覆盖；移动、缩放、最小化、失去活动状态或关闭宿主时会收起。具体装配见[主窗口](../../01-user-guide/interface/main-window.md)。
 
-`SearchManager.GetISearches()` 从 `AssemblyHandler.GetAssemblies()` 的缓存/过滤视图扫描 `ISearch` 和 `ISearchProvider` 实现，每次调用重新构造和枚举。两类分别扫描，不是菜单那种互斥发现路径；不按 ID 统一去重。静态发现没有逐程序集、类型或 provider 的异常隔离，类型读取、构造或枚举失败可中断这一轮。
+`MenuContextualFind` 的默认 `Ctrl+F` 按当前焦点分流：
 
-`SearchControl.Searches` 是控件持有的静态候选集合，通常在搜索框 GotFocus 时重建；UpdateResults 发现集合为空也会重建，且此步骤在空关键词检查之前。通过搜索图标打开设置并关闭后，调用方还会重建集合和结果。普通非空集合上的每次文字变化只过滤已有静态集合，不等于重新加载插件或文件列表；获焦点本身也只重建 Searches，不立即重算已显示的 FilteredResults。
-
-| 候选来源 | 当前内容与责任 |
+| 焦点场景 | 行为 |
 | --- | --- |
-| `MenuSearchProvider` | 从 `GetAllMenuItemsFiltered` 复制菜单 Header/GuidId/Command；ID 隐藏过滤不等于当前窗口可见或可执行，见[菜单契约](./menus.md) |
-| `TemplateSearchProvider` | 枚举 `TemplateControl.ITemplateNames` 已注册模板名并去重；选择后打开对应模板入口，不扫描任意磁盘文件 |
-| `ThirdPartyAppSearchProvider` | 调用工具 manager.Refresh，取已授权、已安装且名称非空的工具，按 Order/Name 排序；执行使用该工具的 DoubleClickCommand |
-| `IDynamicSearchProvider` | 每次非空 UpdateResults 调用同步 Search；当前 Flow 节点 provider 查询本地版本侧车，内容及执行复核见下文 |
-| Everything / 浏览器 | 末尾追加外部启动命令，不把外部引擎结果取回并混入本地候选 |
+| 支持 `ApplicationCommands.Find` 的正文编辑器 | 对原焦点执行局部查找 |
+| 附有 `ContextualFindRouter.LocalFindCommand` 的内容 | 执行该局部命令；已有局部命令暂不可用时不回退全应用搜索 |
+| Copilot 聊天 | 宿主适配现有会话查找命令，不模拟键盘事件、不加载其它会话 |
+| 普通文本/密码输入、原生 `HwndHost` | 保留局部输入语义，不强占为应用搜索；不保证每种控件自身有查找 UI |
+| 没有局部查找归属的主界面 | 打开应用搜索 |
+| 已打开搜索浮层 | 聚焦现有输入框，不新增浮层 |
 
-动态 provider 实例有另一层缓存：仅比较程序集视图的**数量**是否变化，数量相同就复用原实例；同数量的程序集替换不能使它自动失效。重建 provider 时没有统一 Dispose 旧实例，类型发现/构造异常也不在逐 provider 查询的 try/catch 内。SearchManager 不缓存查询结果，但各 provider 可以有自己的状态，不能据此保证相同关键词总会读取最新业务数据。
+两项动作均通过[可配置快捷键](./hotkeys.md)注册，顶部提示读取当前运行时组合，不硬编码默认键。`SearchPopupHotkeyBridge` 只为已打开 Popup 转接这两项当前已注册、属于主宿主的应用内组合；遵守捕获门禁、改键和清空，不注册第二套快捷键。主窗口不活动时搜索入口不激活窗口，即使用户把该动作配置为系统全局键也不会把搜索框盖到别的应用上。
 
-查询调用链没有统一异步、节流、取消或超时调度；provider 构造和查询在调用线程执行，慢 provider 可能阻塞搜索框。传播到 SearchManager 的动态查询异常按 provider 记录后继续，静态发现不具备相同降级；provider 内部自行吞掉的异常则未必留下日志，“没有结果”不唯一表示没有对应对象。
+从顶部鼠标入口或菜单进入时，宿主保存内容区域的焦点，而不是将后续保存、关闭等文档命令路由到搜索框。收起时只有宿主仍活动、目标仍在宿主中且可用才恢复原焦点，否则使用停靠区；切换到别的应用后不会强制抢回焦点。
 
-## 匹配、过滤和结果顺序
+## 展示、匹配与限额
 
-静态匹配只按 ASCII 空格拆词，各词必须在同一候选的 Header 或 GuidId 中命中，使用 OrdinalIgnoreCase 包含判断。不是中文分词、模糊匹配或所有字段全文搜索；Tab 不作为分隔符。动态 provider 接收原始整段查询，自行定义匹配规则。
+输入框最多接受 256 个字符。结果显示名称、说明、分类和已有的快捷键，标题内直接高亮匹配文字，不把提供者文字解释为标记。没有快捷键的功能仍能搜索。分类使用稳定键 `Commands`、`Settings`、`Templates`、`FlowNodes`、`Tools`、`External`，显示名通过资源本地化。
 
-结果依次拼接为：静态匹配项 → 动态结果 → Everything → 浏览器。没有全局相关度排序、跨来源去重或总结果数上限。来源内部的排序不代表整个搜索框按该规则排序。
+- 上下键选择、Enter 执行，鼠标单击结果也可执行；重复 Enter 不重复提交。Esc、关闭按钮或点击浮层外部收起。类型下拉框与底部按钮保留原生键盘操作。
+- 空输入返回已有静态目录中的常用/最近入口，不查询动态来源、不添加外部启动项。会话最近只记成功返回的动作 ID，最多 10 项，不存查询文字、不持久化；不会把失效或不匹配项重新补进结果。
+- 非空输入默认 120 ms 防抖。开始新查询立即清空旧结果及选择接纳状态；查询版本与取消令牌共同阻止旧请求晚返回覆盖新结果，关闭也会失效所有待接纳结果。
+- 加载、无结果、部分来源失败和查询失败有不同状态。不可执行项可展示为弱化状态，但不允许提交；选择默认落在第一项可执行结果。
 
-`SearchDynamic` 默认最多收集 **30 个动态结果**，不是整个候选列表最多 30 个。provider 按发现顺序查询，前面的可用结果可占满限额；每个 provider 收到原始 limit，manager 在过滤后按剩余额度截取。框体 XAML 的 `MaxLength=15` 限制输入长度，Popup 的最大高度只是显示/滚动限制，都不是候选数限制。
+`SearchQuery.MatchAndRank` 按任意空白拆词，静态候选须覆盖全部词，但不同词可以命中不同字段。字段包括标题、说明、别名、分类、快捷键文本和原 `GuidId`；不区分大小写。完整标题优先于标题前缀、标题包含、别名、说明/分类/ID，近期使用只加小权重。尚无拼音生成、中文分词、编辑距离纠错或向量搜索；别名由提供者明确贡献。
 
-`SearchConfig.IsIndexedTypeEnabled` 按结果的 Type 筛选：
+动态 provider 已按自己索引匹配的条目不会因可见标题不含查询词而再次被排除，但仍参与统一相关度排序。外部启动项始终排在本地结果后；相同稳定身份只保留排序优先的一项，再按来源配额与总限额截取。
 
-| Type | 开关 | 容易混淆的边界 |
-| --- | --- | --- |
-| Menu | EnableMenuIndex | 不能据此推导命令权限 |
-| File | EnableTemplateIndex | 所有标为 File 的候选都受此开关影响，包括 Flow 节点，不只模板列表 |
-| ThirdPartyApp | EnableThirdPartyAppIndex | 工具 provider 自己还有授权/安装筛选 |
-| Link 和其它值 | 此方法返回 true | 外部入口另由 EnableEverythingSearch / EnableBrowserSearch 决定是否添加 |
+`QueryAsync` 默认最多展示 60 项，调用上限为 200；每个来源最多展示 20 项。静态目录每个来源最多物化 5000 项；动态调用要求至多 21 项，用额外一项判断截断，再参与来源限额。`IsTruncated` 表示存在目录、来源或总限额，不是精确的完整匹配总数。分类是结果过滤，不是保证相应其它 provider 不运行的调度隔离。
 
-这些索引开关、两个外部搜索开关默认均为 true；浏览器默认 Google。类型过滤发生在 provider 构造/查询之后，不是阻止 provider 运行或保证无副作用的开关；静态集合已建立后，直接改配置也不会主动通知它重建。manager 要求 Header 非空白，但不统一要求 Command 非空，条目出现后仍可能没有可执行动作。
+## 来源契约、身份与刷新
 
-## Flow 节点搜索不是执行流程
+旧 `ISearch`、`ISearchProvider` 与 `IDynamicSearchProvider.Search(query, limit)` 保持兼容。可选 `ISearchMetadata` 提供 `Description`、`CategoryKey`、本地化 `Category`、`Aliases` 与 `ActionId`；`SearchMeta` 实现该接口。搜索、菜单和快捷键使用同一真实动作的 `ActionId` 关联说明及当前键位，不通过显示名称猜测身份。
 
-`Engine/ColorVision.Engine/Templates/Flow/Search/FlowNodeDynamicSearchProvider.cs` 调用 `FlowCatalogProvider.Shared.SearchLatest`，取每个 Flow **最新已索引 revision** 的匹配项，再核对当前 `TemplateFlow.Params` 中 FlowKey 与 revision。当前模板不匹配的条目被丢弃，不继续补查下一批，所以返回数可以小于 limit；最新已索引不意味着每个已保存模板都有有效投影。
+`SearchResultItem` 是显示快照，仍保留原始 `ISearch Source` 供执行；它不创建自己的业务命令。身份优先为 `action:{ActionId}`，其次为 `{SearchType}:{GuidId}`，最后为提供者 ID、类型和标题的组合。**`SearchMeta.GuidId` 的默认值已由随机 GUID 改为 null**：这是现有属性默认行为的变化，没有删除接口成员。扩展应明确设置稳定 ID；依赖构造即得到随机 GUID 的代码需要自己赋值。无 ID 的后备身份随标题/语言变化，不适合跨语言持久引用。
 
-SQLite 实现对侧车 SearchText 作经过 LIKE 特殊字符转义的整段包含匹配，按 revision 降序、FlowKey、NodePath 排序，不能套用静态候选的拆词规则。索引只存安全投影，不是任意节点 payload/脚本的全文副本；保存、投影与失败边界归[Flow 模板和版本侧车](../engine-components/template-flow-chain.md)。
+`SearchManager` 根据 `AssemblyHandler.GetAssemblies()` 返回的实际程序集对象序列判断发现缓存是否失效，不再只比较数量。程序集类型加载、单个提供者构造/枚举失败按来源记录后继续；可恢复的 `ReflectionTypeLoadException` 保留成功加载的类型，枚举中途失败的提供者不发布半份目录。动态 provider 异常同样隔离，返回 `FailedSources`。provider 自己吞掉的错误无法由管理器凭空识别。
 
-执行结果前，provider 再核对当前版本；不匹配时提示重新搜索。通过后打开 `FlowEngineToolWindow` 并在 Loaded 尝试定位 SourceNodeGuid，目标不存在时给提示。这是打开编辑器和定位节点，不是启动流程执行，也不保证所有历史候选仍可定位。
+打开面板或关闭搜索设置后调用 `InvalidateCatalog()`，下次取候选重新枚举静态数据，但程序集未变化时不重复扫描类型。查询期间只过滤缓存目录，快捷键标签仍从当前运行时条目读取。旧 `GetISearches()` 保留显式刷新目录语义；`GetStaticResults(refresh: true)` 也能刷新。上游程序集视图本身是否刷新、新菜单类型是否进入菜单缓存，仍受各自[插件发现](../../02-developer-guide/plugin-development/overview.md)和[菜单](./menus.md)生命周期约束。
 
-首次查询可能触发 `FlowCatalogProvider.Shared` 的延迟初始化，在应用数据目录创建 Config、以 ReadWriteCreate 打开 `FlowCatalog.db` 并建表。因此输入搜索不保证纯内存、无文件写入，即使最终 File 类型被过滤。provider 对侧车查询异常返回空，不能将空结果当成数据库健康证明。本次文档核对未启动这条数据库路径。
+| 来源 | 当前范围与执行 |
+| --- | --- |
+| `MenuSearchProvider` | 取菜单 ID 过滤后的主窗口/Global 可见、非顶层条目；读取热键展示元数据，保留原 ICommand，包括 RoutedCommand。隐藏过滤不是业务权限保证 |
+| `SettingSearchProvider` | 从 `SettingEntryCatalog` 的页/行元数据构建目录，不读取配置属性值或构造自定义页面；选中后打开/激活设置窗口并定位稳定设置 ID，不直接修改设置 |
+| `TemplateSearchProvider` | 枚举已注册模板的名称，身份包含注册键与名称；执行时重新解析当前注册并检查名称仍存在，然后打开模板入口 |
+| `ThirdPartyAppSearchProvider` | 刷新工具目录，取已授权、已安装、名称非空的工具；使用已有 `DoubleClickCommand`，安装与业务权限仍由工具模块负责 |
+| `FlowNodeDynamicSearchProvider` | 查询本地版本侧车并复核当前流程版本；执行只打开流程编辑器并定位节点，不启动流程 |
+| Everything / 浏览器 | 显式外部启动入口，不将外部检索结果返回或混入本地索引 |
 
-## 设置关闭、结果执行与外部副作用
+设置结果通过 `SettingNavigation` 定位已有窗口，或创建设置窗口并在关闭后调用通用配置保存；定位细节和页面内查找范围归[设置框架](./settings.md)。新增设置搜索不赋予更改某项设置的权限，也不保证所有自定义页面内部控件都可逐项定位。
 
-双击搜索图标打开 `SearchSettingsWindow`。其 DataContext 直接使用活 `SearchConfig`，没有工作副本；Close 只关闭，按钮的 IsCancel 不提供回滚。调用方返回后仅刷新候选和结果，**没有调用配置保存**。后续落盘取决于通用[配置持久化](./configuration.md)，包括退出时的保存尝试；关闭设置不是保存成功或取消修改的信号。
+## 异步、线程归属与尚存限制
 
-Enter 和结果双击处理只检查 `SelectedIndex > -1`，清空输入后直接调用候选 `Command?.Execute(this)`，不先检查 CanExecute，没有统一业务异常捕获、异步等待或权限检查。只在菜单 Command 的 predicate 里做检查，不能保证搜索入口会阻止同一操作；命令执行本身仍须承担相应业务边界，见[Common 命令契约](./ColorVision.Common.md)。
+新来源可实现 `IAsyncSearchProvider.SearchAsync(query, limit, cancellationToken)`；同时实现同步/异步接口时，`QueryAsync` 优先异步版本。调用从 UI 上下文开始，等待保留上下文，并使用 `WaitAsync(token)` 让不配合取消的异步任务不能继续占住当前查询的等待。取消并不强行终止 provider 已经开始的 I/O 或副作用；提供者仍负责合作取消和资源生命周期。
 
-空白输入只关闭 Popup，不清空 FilteredResults、ItemsSource 或选中索引；执行入口也不检查当前文本或 Popup 状态。因此源码不能保证清空文字或收起候选后旧选中项就不可执行。这是现存输入接纳条件的缺口，未在 WPF 环境复现，也未在本次文档工作中修复。
+旧静态/动态 provider 可能读取 WPF 控件、绑定集合或业务单例，管理器**不会用 `Task.Run` 把它们整体搬到后台线程**。旧动态 `Search` 仍同步执行，慢查询可阻塞 UI；UI 的防抖/版本门禁不等于已解决所有来源的响应时间。`SearchDynamic` 旧 API 只调用同步提供者，新的界面走 `QueryAsync`。当前没有统一超时、provider Dispose 或后台索引构建协议。
 
-勾选网页搜索并输入关键词，仅增加一个候选，不自动打开浏览器或向该搜索引擎发请求。执行相应候选后才发生外部启动：
+配置按结果 `SearchType` 过滤：Menu 受 `EnableMenuIndex` 控制，包含新的设置条目；File 受 `EnableTemplateIndex` 控制，包含模板和流程节点；ThirdPartyApp 受 `EnableThirdPartyAppIndex` 控制。其它类型不经该类型开关。过滤发生在来源运行后，不保证关闭某个类型就禁止其构造或查询副作用。
 
-- Everything：生成候选时还要求 `File.Exists(EverythingPath)`；执行时使用 ShellExecute 启动配置路径，工作目录为当前进程目录，Arguments 为 `-s {searchtext}`。这条参数字符串没有为查询单独加引号或结构化转义，不能保证任意输入都按一个纯文本参数解释；路径存在也不证明该程序身份可信。
-- 浏览器：Google/Baidu/Bing URL 对查询使用 `Uri.EscapeDataString`，交给系统 ShellExecute 打开；未知枚举值回退 Google。实际访问可能联网，执行前仍需符合当前任务授权。
+Flow 首次查询仍可能延迟初始化 `FlowCatalogProvider.Shared`，在应用数据目录以 ReadWriteCreate 创建 `Config/FlowCatalog.db` 并建表。SQLite 按转义后的整段查询匹配安全投影，不是任意脚本/payload 全文搜索；获取每个流程最新已索引 revision 后还会复核当前模板版本，过滤后不继续补足。因此空结果不是数据库健康或所有模板已索引的证明，见[Flow 模板和版本侧车](../engine-components/template-flow-chain.md)。
 
-启用开关和路径存在只在生成候选时检查，执行时不重新核对。命令捕获当时的配置对象和查询文字，到执行时再读该对象的 EverythingPath / SearchEngine；因此实际目标可能与生成候选时不同，配置重载后该对象也不保证仍是最新实例。
+## 提交、焦点与外部副作用
 
-两种外部启动捕获同步异常并显示消息，但进程启动返回不证明检索完成；也没有外部搜索结果、退出状态或后续网络失败的完成协议。普通候选的副作用由其 provider/Command 决定，不能把外部入口“不自动启动”推广成整个搜索框无副作用。
+`SearchControl.SubmitSelection` 仅接纳当前已完成查询中的选中项，输入法组合期间不提交。对 RoutedCommand 还检查打开面板时的原目标仍在原窗口、未卸载且 DataContext 未替换，避免把保存/关闭路由到另一份内容。不能据此检测一切业务对象内部变化，各 provider 仍需复核自己的有效性。
 
-## 源码定位与验证缺口
+执行前检查 `CanExecute`，关闭浮层并恢复焦点后再次检查；RoutedCommand 显式使用原目标执行。同步异常由搜索入口记录并提示，失败不记为最近使用。ICommand 仍是同步协议：某个命令内部启动异步工作或静默拒绝时，正常返回不能证明业务完成；详见[Common 命令契约](./ColorVision.Common.md)。搜索不绕过业务已有确认，也没有为缺少业务鉴权的命令自动补齐授权体系。
 
-- 控件刷新、拼接和执行：`UI/ColorVision.UI/Serach/SearchControl.xaml.cs`；输入上限和列表呈现：同目录 `.xaml`。
-- provider 发现/缓存和限额：同目录 `SearchManager.cs`；类型开关与设置关闭：`SearchConfig.cs`、`SearchSettingsWindow.xaml.cs`。
-- 接口和候选数据：`UI/ColorVision.Common/Interfaces/Serach/`；菜单、模板、工具与 Flow provider 的实际路径列在元数据中。
+外部入口只在非空查询、对应开关启用时生成，查询过程不会因此自动打开外部应用：
 
-`WpfResourceEmbeddingTests.SearchControl_CompiledXamlIsEmbedded` 只检查 BAML 嵌入，不构造或交互搜索框。`FlowSafeSearchSidecarTests` 覆盖安全投影、深链和内存/SQLite 查询；`FlowCatalogServiceTests` 覆盖保存版本及索引投影，不覆盖动态 provider 到真实窗口定位。列出这些测试不代表本次已运行。
+- Everything 还要求配置路径存在。候选捕获当时的路径和查询；执行前复核启用、路径未改变且文件仍存在。`ProcessStartInfo.ArgumentList` 将 `-s` 与整个查询作为两个独立参数，不再拼接不带转义的命令字符串。路径存在不证明程序身份可信。
+- 浏览器候选捕获引擎和查询；执行前复核当前开关与引擎相同。Google/Baidu/Bing URL 对查询执行 `Uri.EscapeDataString`，未知枚举值回退 Google。选中后才交给 ShellExecute，可能联网；不采集外部搜索结果。
 
-目前未找到 SearchManager 缓存、结果顺序、CanExecute/旧候选执行、设置关窗或外部启动的专项交互测试。文档检索与网站通过不能代替产品验收；后续应在获授权的隔离配置和无害命令/provider 下测试，不通过实际设备操作或浏览器联网来顺带验证文档。
+进程启动返回不证明搜索完成或后续网络成功。外部启动失败走统一同步异常提示。其它候选的副作用由自身 Command 决定，不能把外部入口“不自动启动”推广为所有 provider 查询都无副作用。
+
+“搜索设置”按钮现在是显式入口，不再要求双击搜索图标。其独立 `SearchSettingsWindow` 仍直接绑定活 `SearchConfig`；关闭只收起窗口，不回滚，也没有在这个调用点直接保存配置。调用方只使目录失效，后续持久化仍按[配置服务](./configuration.md)的保存流程判断；不要把关闭按钮的 IsCancel 当作撤销修改。
+
+## 验证入口与边界
+
+- `SearchQueryTests`：字段匹配、排序、分类、跨来源去重、配额、最近权重与稳定后备身份。
+- `SearchManagerTests`：缓存及同数量程序集替换、构造/枚举故障隔离、部分类型加载、空查询、异步优先/取消、旧来源线程归属、开关/限额、菜单元数据与外部参数；使用隔离来源与无害/不可执行业务替身。
+- `SearchPaletteTests`：旧选择失效、晚响应、关闭/重开、错误状态、命令门禁、原焦点、IME 组合保护、标题高亮，以及中英文深浅色窄宽布局。显式设置 `COLORVISION_SEARCH_PREVIEW_DIRECTORY` 可输出隔离预览 PNG，不启动生产设备。
+- `ContextualFindRouterTests`、`MainWindowSearchShellTests`：局部 Find 归属、编辑器/聊天适配、菜单焦点、单一浮层及宿主接线；不是生产主窗口的硬件验收。
+- `SettingSearchProviderTests`、`TemplateSearchProviderTests`：元数据建索引不读配置值/构造页面、稳定设置身份与定位，以及模板同名去重边界、移除后不执行旧目标。
+- `FlowSafeSearchSidecarTests`、`FlowCatalogServiceTests`：侧车安全投影和版本索引；不等同于真实流程窗口定位验收。`WpfResourceEmbeddingTests` 只补充 BAML 嵌入检查。
+
+上述测试文件是可运行验证入口，不是本页声称已通过的结果。物理键盘、各输入法和键盘布局、原生编辑器覆盖、多显示器缩放与真实业务操作仍需在明确授权的隔离环境验收；不通过设备运行、删除数据或启动浏览器来顺带测试文档。

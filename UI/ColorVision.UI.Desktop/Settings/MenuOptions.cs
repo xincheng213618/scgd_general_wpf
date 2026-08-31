@@ -30,8 +30,7 @@ namespace ColorVision.UI.Desktop.Settings
         public HotKeys HotKeys => new(Resources.MenuOptions, new Hotkey(Key.OemComma, ModifierKeys.Control), Execute) { Description = BuiltInHotkeyDescriptions.OpenSettings };
         public override void Execute()
         {
-            new SettingWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            ConfigService.Instance.SaveConfigs();
+            SettingNavigation.Show(null);
         }
     }
 }

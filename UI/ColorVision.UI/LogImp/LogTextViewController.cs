@@ -19,6 +19,7 @@ namespace ColorVision.UI.LogImp
         private readonly ButtonBase? _closeSearchButton;
         private readonly Brush? _defaultSearchBorderBrush;
         private readonly DispatcherTimer _searchDebounceTimer;
+        private readonly CommandBinding _findCommandBinding;
 
         private string _pendingSearchText = string.Empty;
         private bool _isDetached;
@@ -45,6 +46,10 @@ namespace ColorVision.UI.LogImp
             };
             _searchDebounceTimer.Tick += SearchDebounceTimer_Tick;
 
+            _findCommandBinding = new CommandBinding(ApplicationCommands.Find,
+                (_, e) => { ShowSearchPanel(); e.Handled = true; },
+                (_, e) => { e.CanExecute = !_isDetached; e.Handled = true; });
+            _keyboardTarget.CommandBindings.Add(_findCommandBinding);
             _keyboardTarget.PreviewKeyDown += KeyboardTarget_PreviewKeyDown;
             if (_closeSearchButton != null)
             {
@@ -165,6 +170,7 @@ namespace ColorVision.UI.LogImp
             _isDetached = true;
             _searchDebounceTimer.Stop();
             _searchDebounceTimer.Tick -= SearchDebounceTimer_Tick;
+            _keyboardTarget.CommandBindings.Remove(_findCommandBinding);
             _keyboardTarget.PreviewKeyDown -= KeyboardTarget_PreviewKeyDown;
             if (_closeSearchButton != null)
             {

@@ -5301,7 +5301,8 @@
         "Test/ColorVision.UI.Tests/LogEntryParserTests.cs",
         "Test/ColorVision.UI.Tests/LogViewConfigTests.cs",
         "Test/ColorVision.UI.Tests/NativeLogPendingBufferTests.cs",
-        "Test/ColorVision.UI.Tests/NativeLogWindowTests.cs"
+        "Test/ColorVision.UI.Tests/NativeLogWindowTests.cs",
+        "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs"
       ],
       "related": [
         "operations.index",
@@ -5320,7 +5321,7 @@
       "source": "docs/01-user-guide/interface/log-viewer.md",
       "url": "/01-user-guide/interface/log-viewer",
       "searchable": true,
-      "source_hash": "704b0d292eba46a1eb3dc3656162f5f5f85c9f20c159b80fefae6305514e89bc"
+      "source_hash": "b52c26fa5bca4a19658d9bdb909ba9daecf2c0c8f33476300de228c302b1f66f"
     },
     {
       "knowledge_id": "operations.main-window",
@@ -5337,14 +5338,21 @@
       "code_paths": [
         "ColorVision/MainWindow.xaml",
         "ColorVision/MainWindow.xaml.cs",
+        "ColorVision/MainWindow.Hotkeys.cs",
         "ColorVision/Themes/AvalonDockTheme.cs",
         "ColorVision/Themes/AvalonDockGripTemplates.xaml",
         "UI/ColorVision.UI/Menus",
+        "UI/ColorVision.UI/Serach/ContextualFindRouter.cs",
+        "UI/ColorVision.UI/Serach/SearchPopupHotkeyBridge.cs",
         "UI/ColorVision.Solution/Workspace"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs",
-        "Test/ColorVision.UI.Tests/AvalonDockThemeBindingTests.cs"
+        "Test/ColorVision.UI.Tests/AvalonDockThemeBindingTests.cs",
+        "Test/ColorVision.UI.Tests/MainWindowSearchShellTests.cs",
+        "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs",
+        "Test/ColorVision.UI.Tests/SearchPopupHotkeyBridgeTests.cs",
+        "Test/ColorVision.UI.Tests/SearchPopupAirspaceTests.cs"
       ],
       "related": [
         "ui.discovery",
@@ -5367,7 +5375,7 @@
       "source": "docs/01-user-guide/interface/main-window.md",
       "url": "/01-user-guide/interface/main-window",
       "searchable": true,
-      "source_hash": "63ff0a80a45cbe0cc3d21c45f5487e16f64f4170931cbffcc61972d0a5e36aba"
+      "source_hash": "cb075f800d7a6151e4974c833acccad6679dbd898efe2c8ae30a05291d5e4906"
     },
     {
       "knowledge_id": "operations.motor",
@@ -7000,7 +7008,7 @@
       "source": "docs/04-api-reference/ui-components/control-catalog.md",
       "url": "/04-api-reference/ui-components/control-catalog",
       "searchable": true,
-      "source_hash": "f2f0bb61ad0ac7add0bb06b9baaca1605c466acc5d08ac7d2bf0a4a32561547c"
+      "source_hash": "7d764481a6b2529bcf2dae8f9c95ed98d94df78ce28e6c47a4000d38250ed4d2"
     },
     {
       "knowledge_id": "ui.core",
@@ -7426,7 +7434,9 @@
         "Test/ColorVision.UI.Tests/BuiltInShortcutDefaultsTests.cs",
         "Test/ColorVision.UI.Tests/FileHotkeyDefaultsTests.cs",
         "Test/ColorVision.UI.Tests/RoutedCommandHotkeyGuardTests.cs",
-        "Test/ColorVision.UI.Tests/ApplicationHotkeyIntegrationTests.cs"
+        "Test/ColorVision.UI.Tests/ApplicationHotkeyIntegrationTests.cs",
+        "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs",
+        "Test/ColorVision.UI.Tests/SearchPopupHotkeyBridgeTests.cs"
       ],
       "related": [
         "ui.framework",
@@ -7447,7 +7457,7 @@
       "source": "docs/04-api-reference/ui-components/hotkeys.md",
       "url": "/04-api-reference/ui-components/hotkeys",
       "searchable": true,
-      "source_hash": "bdbf5ff69d13b0e7c1c9f4fc39d71f236708e5d4896eb53b2aeb042a6310e41e"
+      "source_hash": "2a3f9bf161442c2451c3f3473f0c7effcaf35a2c25c898a7d31992d8ddc5c4f7"
     },
     {
       "knowledge_id": "ui.image-editor",
@@ -7853,7 +7863,9 @@
       "test_paths": [
         "Test/ColorVision.UI.Tests/MenuDiscoveryExclusionTests.cs",
         "Test/ColorVision.UI.Tests/MenuItemManagerServiceTests.cs",
-        "Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs"
+        "Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs",
+        "Test/ColorVision.UI.Tests/SearchManagerTests.cs",
+        "Test/ColorVision.UI.Tests/SearchPaletteTests.cs"
       ],
       "related": [
         "ui.framework",
@@ -7878,7 +7890,7 @@
       "source": "docs/04-api-reference/ui-components/menus.md",
       "url": "/04-api-reference/ui-components/menus",
       "searchable": true,
-      "source_hash": "5f8840a5d0e7eb7113ed2c1aae28c6f3fafef3bcd26b2dfbc2ae63e5673c0ea8"
+      "source_hash": "f0122ebfefdf8015ef4d5ab39b36f7c84662cc83c02aa28bfed5878d733693ba"
     },
     {
       "knowledge_id": "ui.package-boundaries",
@@ -8082,9 +8094,14 @@
       "knowledge_id": "ui.search",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "主窗口搜索框的关键词匹配、候选来源、刷新缓存、结果顺序和执行；关闭搜索设置不回滚也不直接保存，回车不统一检查命令权限。",
+      "summary": "主窗口搜索框的关键词匹配、候选来源、缓存刷新与安全执行；重新打开读取插件候选列表，重复输入不扫描磁盘文件列表，旧动态来源仍同步。",
       "aliases": [
         "搜索框",
+        "命令面板",
+        "应用搜索",
+        "关键词匹配",
+        "搜索缓存",
+        "候选目录刷新",
         "搜索候选",
         "搜索结果",
         "搜索刷新",
@@ -8092,16 +8109,27 @@
         "网页搜索",
         "浏览器搜索",
         "Everything",
+        "Ctrl+F",
+        "Ctrl+Shift+P",
         "SearchControl",
         "SearchManager",
+        "SearchQuery",
+        "SearchResultItem",
+        "SearchPaletteViewModel",
+        "SearchCommandExecutor",
+        "ContextualFindRouter",
+        "SearchPopupHotkeyBridge",
         "SearchConfig",
         "SearchSettingsWindow",
         "ISearch",
+        "ISearchMetadata",
         "ISearchProvider",
         "IDynamicSearchProvider",
+        "IAsyncSearchProvider",
         "SearchMeta",
         "SearchType",
         "MenuSearchProvider",
+        "SettingSearchProvider",
         "TemplateSearchProvider",
         "ThirdPartyAppSearchProvider",
         "FlowNodeDynamicSearchProvider",
@@ -8113,15 +8141,25 @@
         "UI/ColorVision.Common/Interfaces/Serach",
         "UI/ColorVision.UI/AssemblyHandler.cs",
         "UI/ColorVision.UI/ConfigHandler.cs",
+        "UI/ColorVision.UI.Desktop/Settings/SettingSearchProvider.cs",
+        "UI/ColorVision.UI.Desktop/Settings/SettingEntryCatalog.cs",
+        "UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml.cs",
         "UI/ColorVision.UI.Desktop/ThirdPartyApps/ThirdPartyAppSearchProvider.cs",
         "Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs",
         "Engine/ColorVision.Engine/Templates/Flow/Search/FlowNodeDynamicSearchProvider.cs",
         "Engine/ColorVision.Engine/Templates/Flow/Search/SqliteFlowNodeSearchIndex.cs",
         "Engine/ColorVision.Engine/Templates/Flow/Versioning/FlowCatalogService.cs",
         "ColorVision/MainWindow.xaml",
-        "ColorVision/MainWindow.xaml.cs"
+        "ColorVision/MainWindow.Hotkeys.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/SearchQueryTests.cs",
+        "Test/ColorVision.UI.Tests/SearchManagerTests.cs",
+        "Test/ColorVision.UI.Tests/SearchPaletteTests.cs",
+        "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs",
+        "Test/ColorVision.UI.Tests/MainWindowSearchShellTests.cs",
+        "Test/ColorVision.UI.Tests/SettingSearchProviderTests.cs",
+        "Test/ColorVision.UI.Tests/TemplateSearchProviderTests.cs",
         "Test/ColorVision.UI.Tests/WpfResourceEmbeddingTests.cs",
         "Test/ColorVision.UI.Tests/FlowSafeSearchSidecarTests.cs",
         "Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs"
@@ -8130,6 +8168,8 @@
         "ui.framework",
         "ui.discovery",
         "ui.menus",
+        "ui.hotkeys",
+        "ui.settings",
         "ui.common",
         "ui.configuration",
         "operations.main-window",
@@ -8144,27 +8184,32 @@
         "UI/ColorVision.UI.Desktop"
       ],
       "domain": "ui",
-      "title": "主窗口搜索：候选、刷新与执行",
+      "title": "应用搜索：入口、候选与执行",
       "source": "docs/04-api-reference/ui-components/search.md",
       "url": "/04-api-reference/ui-components/search",
       "searchable": true,
-      "source_hash": "6cd442720a6a66390543cb161c5692722e9fb53870f301d922d0c68381f286ae"
+      "source_hash": "3505f56f04a996d91003ce23dc6648160f91664238fc56d0c2c1d2daaeebfd0d"
     },
     {
       "knowledge_id": "ui.settings",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "设置窗口的发现缓存、侧栏搜索、活对象编辑和自定义页面生命周期；普通选项关窗不撤销，启动检查更新的勾选只表示至少一个更新开关开启。",
+      "summary": "设置窗口的元数据发现、全局搜索定位、侧栏筛选与活对象编辑；普通选项关窗不撤销，启动检查更新仍是聚合开关。",
       "aliases": [
         "设置窗口",
         "选项",
         "设置搜索",
+        "定位设置项",
         "自定义设置页",
         "启动检查更新",
         "SettingWindow",
         "SettingWindowController",
         "SettingRowFactory",
         "SettingMetadataResolver",
+        "SettingEntryCatalog",
+        "SettingSearchProvider",
+        "SettingNavigation",
+        "NavigateToSetting",
         "ConfigSettingManager",
         "IConfigSettingProvider",
         "ConfigSettingMetadata",
@@ -8181,7 +8226,8 @@
         "Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs",
         "Test/ColorVision.UI.Tests/ConfigServiceAdaptersTests.cs",
         "Test/ColorVision.UI.Tests/StorageMaintenanceTests.cs",
-        "Test/ColorVision.UI.Tests/HotkeySettingsTests.cs"
+        "Test/ColorVision.UI.Tests/HotkeySettingsTests.cs",
+        "Test/ColorVision.UI.Tests/SettingSearchProviderTests.cs"
       ],
       "related": [
         "ui.desktop",
@@ -8189,6 +8235,7 @@
         "ui.property-grid",
         "ui.discovery",
         "ui.hotkeys",
+        "ui.search",
         "ui.localization",
         "operations.exports",
         "delivery.update",
@@ -8204,7 +8251,7 @@
       "source": "docs/04-api-reference/ui-components/settings.md",
       "url": "/04-api-reference/ui-components/settings",
       "searchable": true,
-      "source_hash": "45a220f0850868f1fb929b0e74dcfdc7ac62808caf21378b1cb6ba0e561972f9"
+      "source_hash": "3f9ec6c3f23587c017adcb8bb5a5b2bed89dee13e0922bb669e87e58820a7c55"
     },
     {
       "knowledge_id": "ui.socket-protocol",

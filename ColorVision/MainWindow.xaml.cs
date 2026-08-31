@@ -130,8 +130,9 @@ namespace ColorVision
             Stopwatch phaseStopwatch = Stopwatch.StartNew();
             this.SizeChanged += (s, e) =>
             {
-                SearchControl1.Visibility = this.ActualWidth < 700 ? Visibility.Collapsed : Visibility.Visible;
-                if (this.ActualWidth >= 700) CompactSearchControl.Visibility = Visibility.Collapsed;
+                SearchEntryButton.Width = this.ActualWidth < 900 ? 150 : 260;
+                SearchEntryGestureText.Visibility = this.ActualWidth < 900 ? Visibility.Collapsed : Visibility.Visible;
+                SearchEntryButton.Visibility = this.ActualWidth < Menu1.ActualWidth + 180 ? Visibility.Collapsed : Visibility.Visible;
                 RightMenuItemPanel.Visibility = this.ActualWidth < Menu1.ActualWidth + RightMenuItemPanel.ActualWidth + 100 ? Visibility.Collapsed : Visibility.Visible;
             };
 
@@ -224,7 +225,9 @@ namespace ColorVision
             this.LoadHotKeyFromAssembly();
             _ = new RoutedCommandHotkeyGuard(this, HotkeyService.GetInstance(),
                 [ApplicationCommands.Open, ApplicationCommands.Save, ApplicationCommands.SaveAs,
-                 ApplicationCommands.Close, SolutionWorkspaceCommands.OpenFolder]);
+                 ApplicationCommands.Close, SolutionWorkspaceCommands.OpenFolder],
+                [new Hotkey(Key.F, ModifierKeys.Control)]);
+            InitializeCommandSearch();
             log.Info($"Main window hotkey phase took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
             // 监听 DockingManager 活动文档切换和状态变化，更新视图管理器并通知视图变更
