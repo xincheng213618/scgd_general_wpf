@@ -251,6 +251,12 @@
             },
             {
               "text": {
+                "root": "RC 注册、服务快照与连接测试"
+              },
+              "link": "/04-api-reference/engine-components/rc-registration"
+            },
+            {
+              "text": {
                 "root": "跨模块运行问题定位"
               },
               "link": "/01-user-guide/README"

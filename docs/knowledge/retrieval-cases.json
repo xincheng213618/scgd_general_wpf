@@ -348,6 +348,12 @@
     {"query":"无界面流程的运行任务返回了，是不是所有节点结束诊断都已经收齐，耗时也包括清理宿主？","expected_any":["flow.headless"],"include_planned":false},
     {"query":"FlowExecutionJournalScope.IsCompletionRequested表示刚请求结束还是落库成功","expected_any":["flow.diagnostics"],"include_planned":false},
     {"query":"FlowIncidentService.Acknowledge与Resolve会重写原处置人和备注吗","expected_any":["flow.diagnostics"],"include_planned":false},
-    {"query":"FlowHeadlessExecutionResult.ElapsedMilliseconds包含DisposeAsync吗","expected_any":["flow.headless"],"include_planned":false}
+    {"query":"FlowHeadlessExecutionResult.ElapsedMilliseconds包含DisposeAsync吗","expected_any":["flow.headless"],"include_planned":false},
+    {"query":"远端把设备删掉了，本地旧的令牌和收发主题为什么还在？后面还会拿这些旧信息去访问它吗？","expected_any":["engine.rc-registration"],"include_planned":false},
+    {"query":"服务目录里删掉一个终端后，本地列表是不是马上也会删掉？删除和新增更新走的是同一套同步吗？","expected_any":["engine.rc-registration"],"include_planned":false},
+    {"query":"一次状态推送只更新了部分设备，后面的设备没变，而且日志里没看到回调异常，是整包被回滚了还是可能更新到一半？","expected_any":["engine.rc-registration"],"include_planned":false},
+    {"query":"设备的存活时间一直往上加，能不能说明它刚刚还在线？多久没收到状态消息才算过期？","expected_any":["engine.rc-registration"],"include_planned":false},
+    {"query":"ServiceTokensUpdated没触发能说明本地配置完全没变吗","expected_any":["engine.rc-registration"],"include_planned":false},
+    {"query":"MqttRCService.ApplyPendingServiceUpdates异常后缓冲会恢复并继续生成显示吗","expected_any":["engine.rc-registration"],"include_planned":false}
   ]
 }

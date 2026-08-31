@@ -2,9 +2,9 @@
 knowledge_id: "engine.rc-registration"
 knowledge_type: "topic"
 status: "current"
-summary: "RC注册令牌、启动早到服务快照与连接测试；连接标志不等于设备就绪，测试会影响运行单例，取消不回滚注册或订阅。"
-aliases: ["注册中心", "RC连接", "RC服务列表", "服务状态快照", "启动早到消息", "RC测试连接", "注册令牌", "MqttRCService", "PendingServiceUpdateBuffer", "RCServiceConnect", "RCSetting", "TryGetUsableToken"]
-code_paths: ["Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs", "Engine/ColorVision.Engine/Services/RC/PendingServiceUpdateBuffer.cs", "Engine/ColorVision.Engine/Services/RC/RCServiceConnect.xaml.cs", "Engine/ColorVision.Engine/Services/RC/RCServiceConnect.xaml", "Engine/ColorVision.Engine/Services/RC/RCSetting.cs", "Engine/ColorVision.Engine/Services/RC/RCServiceConfig.cs", "Engine/ColorVision.Engine/Services/RC/RCInitializer.cs", "Engine/ColorVision.Engine/Services/ServiceInitializer.cs", "Engine/ColorVision.Engine/Services/ServiceManager.cs", "Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs"]
+summary: "RC注册、服务目录同步、状态快照与连接测试；远端删除不清本地令牌和收发主题，更新可能部分生效，连接或测试成功不等于设备就绪。"
+aliases: ["注册中心", "RC连接", "RC服务列表", "服务目录同步", "远端设备删除", "终端移除", "服务状态快照", "状态新鲜度", "启动早到消息", "RC测试连接", "注册令牌", "MqttRCService", "PendingServiceUpdateBuffer", "RCServiceConnect", "RCSetting", "TryGetUsableToken", "ServiceTokensUpdated", "LiveTime", "LastAliveTime"]
+code_paths: ["Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs", "Engine/ColorVision.Engine/Services/RC/PendingServiceUpdateBuffer.cs", "Engine/ColorVision.Engine/Services/RC/RCServiceConnect.xaml.cs", "Engine/ColorVision.Engine/Services/RC/RCServiceConnect.xaml", "Engine/ColorVision.Engine/Services/RC/RCSetting.cs", "Engine/ColorVision.Engine/Services/RC/RCServiceConfig.cs", "Engine/ColorVision.Engine/Services/RC/RCInitializer.cs", "Engine/ColorVision.Engine/Services/ServiceInitializer.cs", "Engine/ColorVision.Engine/Services/ServiceManager.cs", "Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs", "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs", "ColorVision/StartWindow.xaml.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/PendingServiceUpdateBufferTests.cs"]
 related: ["engine.index", "engine.devices", "engine.mqtt", "operations.device-configuration", "operations.camera", "ui.configuration", "platform.runtime"]
 ---
@@ -61,12 +61,36 @@ related: ["engine.index", "engine.devices", "engine.mqtt", "operations.device-co
 
 ## 服务列表、状态与本地资源的交接
 
-`UpdateServices` 先清空并重建 `ServiceTokens`，再应用或缓冲服务列表，最后发布 `ServiceTokensUpdated`。服务令牌列表更新不是本地服务树已匹配完成的证明。
+### 远端目录不是本地资源的全量替换
 
-- 列表应用按服务类型找到已有 `TypeService`，再按 `ServiceCode` 找到已有终端；更新终端/设备的 Topic、服务 Token 并触发设备订阅。它不从远端目录自动创建设备资源。
-- 状态应用按终端 `ServiceCode`、设备 `Code` 匹配，解析状态字符串后写入 `DeviceStatus`。找不到对应项会跳过，保留旧状态，不自动标成离线。
-- `ApplyServiceStatus` 虽解析 `LiveTime`，但未用它验证快照新鲜度；无效状态字符串等异常也没有整批回滚保证。
-- 服务树装配、实际设备许可/初始化、命令参数、匹配 MsgID 的返回结果各有检查。尤其不要把 RC 状态同步直接说成“相机已经能采集”，具体条件见[相机服务](../../01-user-guide/devices/camera.md)。
+`DoUpdateServiceTokens` 根据远端 `nodeService.Devices` 重建独立的 `ServiceTokens` 设备映射；`ApplyServices` 则按服务类型找到已有 `TypeService`，再按 `ServiceCode` 找到已有终端。两者的匹配粒度不同：
+
+- 终端匹配时，更新终端及其下所有使用 `DeviceServiceConfig` 的本地设备的 Topic、服务 Token，并触发设备订阅；**不逐设备核对远端 `Devices` 成员**。远端移除单个设备但保留终端时，该本地设备仍可能获得此次下发的 Topic/Token。
+- 远端列表缺少某类型或终端时，本次应用跳过这些本地资源，不清其旧 Topic/Token，也不删除本地终端或设备。远端新增项没有本地匹配资源时，同样不会自动创建。本地资源的增删与保存仍由[设备配置](../../01-user-guide/devices/configuration.md)负责。
+
+这不是“目录移除即撤销本地访问”。`MQTTDeviceService` 的通信属性直接读取当前 `Config`；后续命令如果走到 `MQTTServiceBase.PublishAsyncClient`，消息未显式指定 Token 时使用 `ServiceToken`，发布目标使用 `SendTopic`。保留的旧值可能继续被取用，但目录更新本身不等于已经发送设备命令，更不能证明远端会接受旧凭据。不要为验证残留值而触发真实设备。
+
+### 顺序更新、部分生效与通知
+
+`UpdateServices` 依次清空并重建 `ServiceTokens`、应用或缓冲服务列表，最后调用 `ServiceTokensUpdated`。这些步骤不是原子事务：目录重建中途异常可能留下空目录或部分目录，并阻止后续本地应用；本地应用异常可能留下新目录及部分已写入的配置，并阻止通知。通知失败也不会撤销之前的写入。因此未收到通知不等于状态未改变；收到通知也不是本地服务树已完整匹配的证明，管理器尚不存在时可能只是入槽。
+
+`ApplyServiceStatus` 按终端 `ServiceCode`、设备 `Code` 顺序匹配，解析状态字符串后写入 `DeviceStatus`。找不到对应项会跳过，保留旧状态，不自动标成离线。遇到无法解析的状态字符串等同步异常时，没有逐设备捕获或整批回滚：先前写入可以保留，后续项不再由此次调用处理。
+
+异常传播取决于入口，不能统一说成“消息回调已经捕获”或“一定导致程序退出”：
+
+| 入口 | 当前异常边界 |
+| --- | --- |
+| 正常 MQTT 列表/状态回包 | 通过 `Dispatcher.BeginInvoke` 排队应用。稍后委托执行时的异常不在接收回调外层 `catch` 范围内；没有该回调的捕获日志不能排除应用失败 |
+| 直接调用更新方法 | `UpdateServices`、`DoUpdateServices`、`UpdateServiceStatus` 不为整个应用过程统一切换线程或捕获异常；只有 `UpdateServices` 的最后通知显式使用 `Dispatcher.Invoke` |
+| 启动消费早到槽 | `ServiceInitializer` 以同步 `Dispatcher.Invoke` 调用 `ApplyPendingServiceUpdates`。同步应用失败中断本初始化器后续显示生成、相机资源初始化；异常经初始化任务传到 `StartWindow.InitializedOver` 的逐初始化器 `catch`，记录后继续其它初始化器。已被 `Take` 清空的槽不会恢复 |
+
+上表描述列表/状态的同步应用阶段，不是所有 UI 事件的统一捕获保证；例如 `MQTTDeviceService.DeviceStatus` 还会异步投递 `DeviceStatusChanged`，其订阅者异常属于后续委托。
+
+### 存活时间不等于设备状态有效期
+
+`ApplyServiceStatus` 尝试将远端 `LiveTime` 解析为 `DateTime`，但后续未使用解析值验证新鲜度，不据此计算单设备状态过期时间。`KeepLive` 的十秒阈值检查的是本地 RC 消息接收时间 `LastAliveTime`，用于触发重注册，不是设备状态 TTL；到达当前 RC 订阅主题的消息会在 JSON 解析前刷新该时间。
+
+服务树装配、实际设备许可/初始化、命令参数、匹配 MsgID 的返回结果各有检查。尤其不要把存活时间变化或 RC 状态同步直接说成“相机已经能采集”，具体条件见[相机服务](../../01-user-guide/devices/camera.md)。
 
 ## RCServiceConnect 的编辑、测试与关闭
 
@@ -91,8 +115,8 @@ related: ["engine.index", "engine.devices", "engine.mqtt", "operations.device-co
 
 先区分失败在哪一层：broker、RC 注册、节点 Token、服务目录/服务 Token、本地资源匹配、设备状态还是具体命令。只读调查可检查已有脱敏日志和这些源码入口；不要以“刷新一下”为由重注册、重载资源、安装服务或触发设备。
 
-`PendingServiceUpdateBufferTests.cs` 目前验证取出两份并清空、更新列表只保留最新且不丢另一槽，断言保留相同对象引用。它不覆盖真实 RC、完整启动、并发时序、异常回放、连接测试关联、窗口取消或主题切换。本页引用测试不表示已经运行。
+`PendingServiceUpdateBufferTests.cs` 目前验证取出两份并清空、更新列表只保留最新且不丢另一槽，断言保留相同对象引用。它不覆盖目录删除与本地匹配、部分应用和通知中断、Dispatcher 异常传播、状态新鲜度，也不覆盖真实 RC、完整启动、并发时序、异常回放、连接测试关联、窗口取消或主题切换。本页引用测试不表示已经运行。
 
-后续获得相应授权的隔离验证应覆盖：状态先到/列表先到、多次覆盖、管理器已存在但树不匹配、应用异常、令牌刷新、迟到和并发 Startup、换 RCName、取消与标题栏关闭、订阅残留、显式保存与重启。真实 broker/设备和 Windows 服务另外验收。
+后续获得相应授权的隔离验证应覆盖：状态先到/列表先到、多次覆盖、管理器已存在但树不匹配、远端移除设备/终端后的本地残留、中途应用异常与通知缺失、不同入口的异常传播、旧状态保留、令牌刷新、迟到和并发 Startup、换 RCName、取消与标题栏关闭、订阅残留、显式保存与重启。真实 broker/设备和 Windows 服务另外验收。
 
 不要把 AppSecret、AccessToken、ServiceToken 或带凭据的完整注册消息写进文档和问答记录。`RCSetting.Encryption` 只处理当前 `Config.AppSecret`，没有在该方法中遍历配置列表；不能仅凭实现 `IConfigSecure` 就断言所有历史配置或日志字段都已加密。

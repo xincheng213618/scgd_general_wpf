@@ -101,7 +101,7 @@ next: false
   MySQL手动SQL恢复、数据库重置与资源保留：导入后才同步配置和重启注册中心，失败不回滚；迁移备份不含结果，配置更新计数不证明键完整。
 
 - [RC 注册、服务快照与连接测试](../../04-api-reference/engine-components/rc-registration.md) — `engine.rc-registration`
-  RC注册令牌、启动早到服务快照与连接测试；连接标志不等于设备就绪，测试会影响运行单例，取消不回滚注册或订阅。
+  RC注册、服务目录同步、状态快照与连接测试；远端删除不清本地令牌和收发主题，更新可能部分生效，连接或测试成功不等于设备就绪。
 
 - [Engine 结果展示链路](../../04-api-reference/engine-components/result-handoff-chain.md) — `engine.results`
   区分 Engine 历史结果 handler、项目业务结果和统一算法 overlay 的注册及生命周期。

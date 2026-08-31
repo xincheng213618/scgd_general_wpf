@@ -3872,12 +3872,16 @@
       "knowledge_id": "engine.rc-registration",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "RC注册令牌、启动早到服务快照与连接测试；连接标志不等于设备就绪，测试会影响运行单例，取消不回滚注册或订阅。",
+      "summary": "RC注册、服务目录同步、状态快照与连接测试；远端删除不清本地令牌和收发主题，更新可能部分生效，连接或测试成功不等于设备就绪。",
       "aliases": [
         "注册中心",
         "RC连接",
         "RC服务列表",
+        "服务目录同步",
+        "远端设备删除",
+        "终端移除",
         "服务状态快照",
+        "状态新鲜度",
         "启动早到消息",
         "RC测试连接",
         "注册令牌",
@@ -3885,7 +3889,10 @@
         "PendingServiceUpdateBuffer",
         "RCServiceConnect",
         "RCSetting",
-        "TryGetUsableToken"
+        "TryGetUsableToken",
+        "ServiceTokensUpdated",
+        "LiveTime",
+        "LastAliveTime"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs",
@@ -3897,7 +3904,9 @@
         "Engine/ColorVision.Engine/Services/RC/RCInitializer.cs",
         "Engine/ColorVision.Engine/Services/ServiceInitializer.cs",
         "Engine/ColorVision.Engine/Services/ServiceManager.cs",
-        "Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs"
+        "Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs",
+        "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs",
+        "ColorVision/StartWindow.xaml.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/PendingServiceUpdateBufferTests.cs"
@@ -3912,6 +3921,7 @@
         "platform.runtime"
       ],
       "code_scopes": [
+        "ColorVision",
         "Engine/ColorVision.Engine"
       ],
       "domain": "engine",
@@ -3919,7 +3929,7 @@
       "source": "docs/04-api-reference/engine-components/rc-registration.md",
       "url": "/04-api-reference/engine-components/rc-registration",
       "searchable": true,
-      "source_hash": "687af0f100e30923719aca6da771894824a575791295c38505c8023086778785"
+      "source_hash": "da294662c4b5d2fb881275e46c6ddc5f0806f9d8c7cecccfbe77b7a89122aa01"
     },
     {
       "knowledge_id": "engine.results",
