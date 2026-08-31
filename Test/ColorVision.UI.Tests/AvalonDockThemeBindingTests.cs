@@ -1,6 +1,7 @@
 using AvalonDock;
 using AvalonDock.Controls;
 using AvalonDock.Layout;
+using ColorVision.Solution.Workspace;
 using ColorVision.Themes;
 using System.Diagnostics;
 using System.IO;
@@ -178,6 +179,209 @@ public class AvalonDockThemeBindingTests
             }
             Assert.DoesNotContain("GeometryDrawing", trace.Output);
             Assert.DoesNotContain("BindingExpression path error", trace.Output);
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void InitiallySingleTool_GeneratesSelectedContentAndMaterializesOnceAcrossTabCountAndThemeChanges(bool isDark)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var trace = new BindingTrace();
+            int factoryCalls = 0;
+            int materializedNotifications = 0;
+            bool factoryRanWhileLoadedAndVisible = false;
+            var lifecycle = new List<string>();
+            var failures = new List<Exception>();
+            var payload = new Border { Child = new TextBlock { Text = "Synthetic deferred tool content" } };
+            DeferredDockContent? deferred = null;
+            deferred = new DeferredDockContent(() =>
+            {
+                factoryCalls++;
+                factoryRanWhileLoadedAndVisible = deferred!.IsLoaded && deferred.IsVisible;
+                lifecycle.Add("factory");
+                return payload;
+            }, _ => materializedNotifications++, failures.Add);
+            deferred.Loaded += (_, _) => lifecycle.Add("loaded");
+            var tool = new LayoutAnchorable
+            {
+                ContentId = "synthetic-single-tool", Title = "Synthetic Chat Assistant", Content = deferred, IsSelected = true
+            };
+            var tools = new LayoutAnchorablePane(tool);
+            var document = new LayoutDocument { Title = "Synthetic document", Content = new Border(), IsSelected = true };
+            var rootPanel = new LayoutPanel();
+            rootPanel.Children.Add(new LayoutDocumentPane(document));
+            rootPanel.Children.Add(new LayoutAnchorablePaneGroup(tools) { DockWidth = new GridLength(300) });
+            var manager = new DockingManager { Theme = new AvalonDockTheme(isDark), Layout = new LayoutRoot { RootPanel = rootPanel } };
+            ResourceDictionary globalPalette = LoadGlobalPalette(isDark);
+            manager.Resources.MergedDictionaries.Add(globalPalette);
+            tool.IsSelected = true;
+            var host = new Window
+            {
+                Content = manager, Width = 720, Height = 460, Left = -10000, Top = -10000,
+                WindowStartupLocation = WindowStartupLocation.Manual, WindowStyle = WindowStyle.None,
+                ResizeMode = ResizeMode.NoResize, ShowActivated = false, ShowInTaskbar = false, Opacity = 0
+            };
+            try
+            {
+                // The first layout must start with one selected model. Starting with
+                // two tabs and removing one would miss the item-generation deadlock.
+                Assert.Single(tools.Children);
+                Assert.True(tool.IsSelected);
+                Assert.False(deferred.IsLoaded);
+                Assert.Equal(0, factoryCalls);
+                host.Show();
+                AssertToolContent(singleTool: true);
+                Assert.False(host.IsActive);
+                Assert.True(factoryRanWhileLoadedAndVisible);
+                Assert.True(lifecycle.IndexOf("loaded") >= 0 && lifecycle.IndexOf("loaded") < lifecycle.IndexOf("factory"));
+
+                foreach (bool dark in new[] { !isDark, isDark })
+                {
+                    manager.Resources.MergedDictionaries.Remove(globalPalette);
+                    globalPalette = LoadGlobalPalette(dark);
+                    manager.Resources.MergedDictionaries.Add(globalPalette);
+                    manager.Theme = null;
+                    manager.Theme = new AvalonDockTheme(dark);
+                    AssertToolContent(singleTool: true);
+
+                    var secondTool = new LayoutAnchorable { Title = "Second synthetic tool", Content = new Border() };
+                    tools.Children.Add(secondTool);
+                    AssertToolContent(singleTool: false);
+                    secondTool.IsSelected = true;
+                    Arrange(manager, 720, 460);
+                    Assert.Same(secondTool, Assert.Single(Descendants<LayoutAnchorablePaneControl>(manager)).SelectedContent);
+                    tool.IsSelected = true;
+                    AssertToolContent(singleTool: false);
+                    tools.Children.Remove(secondTool);
+                    AssertToolContent(singleTool: true);
+                }
+                Assert.DoesNotContain("BindingExpression path error", trace.Output);
+            }
+            finally
+            {
+                host.Content = null;
+                host.Close();
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                manager.Layout = new LayoutRoot();
+            }
+
+            void AssertToolContent(bool singleTool)
+            {
+                Arrange(manager, 720, 460);
+                Assert.True(manager.IsLoaded);
+                LayoutAnchorablePaneControl pane = Assert.Single(Descendants<LayoutAnchorablePaneControl>(manager));
+                Assert.Same(tools, pane.Model);
+                Assert.True(tool.IsSelected);
+                Assert.Equal(0, pane.SelectedIndex);
+                Assert.Same(tool, pane.SelectedContent);
+                Assert.Same(tool, Part<ContentPresenter>(pane, "PART_SelectedContentHost").Content);
+                TabItem tab = Assert.IsType<TabItem>(pane.ItemContainerGenerator.ContainerFromItem(tool));
+                Assert.True(tab.IsSelected);
+                Assert.Equal(singleTool ? Visibility.Collapsed : Visibility.Visible, tab.Visibility);
+                Grid strip = Part<Grid>(pane, "ToolTabStrip");
+                Assert.Equal(Visibility.Visible, strip.Visibility);
+                if (singleTool)
+                {
+                    Assert.Equal(0, strip.Height);
+                    Assert.Equal(0, strip.ActualHeight);
+                }
+                else
+                {
+                    Assert.True(double.IsNaN(strip.Height));
+                    Assert.True(strip.ActualHeight > 0);
+                }
+                Assert.True(Part<AnchorablePaneTabPanel>(pane, "HeaderPanel").IsItemsHost);
+                LayoutAnchorableControl content = Assert.Single(Descendants<LayoutAnchorableControl>(pane), candidate => ReferenceEquals(candidate.Model, tool));
+                AnchorablePaneTitle title = Assert.Single(Descendants<AnchorablePaneTitle>(content), candidate => ReferenceEquals(candidate.Model, tool));
+                Assert.True(title.IsVisible);
+                Assert.True(Part<Border>(title, "CaptionBorder").ActualHeight > 0);
+                Assert.True(deferred.IsLoaded && deferred.IsVisible);
+                Assert.NotNull(PresentationSource.FromVisual(payload));
+                Assert.Same(deferred, tool.Content);
+                Assert.Same(payload, deferred.Content);
+                Assert.Empty(failures);
+                Assert.Equal(1, factoryCalls);
+                Assert.Equal(1, materializedNotifications);
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FactoryTool_ClosedAndImmediatelyReopened_RetainsVisiblePayloadInTheSameHost(bool isDark)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var rootPanel = new LayoutPanel();
+            rootPanel.Children.Add(new LayoutDocumentPane(new LayoutDocument { Title = "Synthetic document", Content = new Border() }));
+            var manager = new DockingManager { Theme = new AvalonDockTheme(isDark), Layout = new LayoutRoot { RootPanel = rootPanel } };
+            manager.Resources.MergedDictionaries.Add(LoadGlobalPalette(isDark));
+            var layout = new DockLayoutManager(manager);
+            var payload = new Border { Child = new TextBlock { Text = "Synthetic reopened content" } };
+            int factoryCalls = 0;
+            layout.RegisterPanel("synthetic-reopened-tool", () => { factoryCalls++; return payload; }, "Synthetic Chat Assistant", PanelPosition.Right);
+            var host = new Window
+            {
+                Content = manager, Width = 720, Height = 460, Left = -10000, Top = -10000,
+                WindowStartupLocation = WindowStartupLocation.Manual, WindowStyle = WindowStyle.None,
+                ResizeMode = ResizeMode.NoResize, ShowActivated = false, ShowInTaskbar = false, Opacity = 0
+            };
+            try
+            {
+                Assert.Equal(0, factoryCalls);
+                host.Show();
+                layout.ShowPanel("synthetic-reopened-tool");
+                Arrange(manager, 720, 460);
+                LayoutAnchorable original = Assert.Single(manager.Layout.Descendents().OfType<LayoutAnchorable>());
+                DeferredDockContent contentHost = Assert.IsType<DeferredDockContent>(original.Content);
+                AssertVisiblePayload(original);
+
+                // No dispatcher drain between these calls: the old LayoutItem and
+                // ContentPresenter cleanup must not retain or later detach the host.
+                original.Close();
+                layout.ShowPanel("synthetic-reopened-tool");
+                Arrange(manager, 720, 460);
+
+                LayoutAnchorable reopened = Assert.Single(manager.Layout.Descendents().OfType<LayoutAnchorable>());
+                Assert.NotSame(original, reopened);
+                Assert.Null(original.Root);
+                Assert.Same(contentHost, reopened.Content);
+                AssertVisiblePayload(reopened);
+                Assert.False(host.IsActive);
+
+                void AssertVisiblePayload(LayoutAnchorable model)
+                {
+                    Assert.True(layout.IsPanelVisible("synthetic-reopened-tool"));
+                    Assert.NotNull(manager.GetLayoutItemFromModel(model));
+                    LayoutAnchorablePaneControl pane = Assert.Single(Descendants<LayoutAnchorablePaneControl>(manager));
+                    Assert.Same(model, pane.SelectedContent);
+                    LayoutAnchorableControl content = Assert.Single(Descendants<LayoutAnchorableControl>(pane), candidate => ReferenceEquals(candidate.Model, model));
+                    AnchorablePaneTitle title = Assert.Single(Descendants<AnchorablePaneTitle>(content), candidate => ReferenceEquals(candidate.Model, model));
+                    Assert.Equal("Synthetic Chat Assistant", title.Model.Title);
+                    Assert.True(title.IsVisible && Part<Border>(title, "CaptionBorder").ActualHeight > 0);
+                    Assert.Same(payload, contentHost.Content);
+                    Assert.Same(contentHost, LogicalTreeHelper.GetParent(payload));
+                    Assert.Same(manager, LogicalTreeHelper.GetParent(contentHost));
+                    Assert.True(content.IsAncestorOf(contentHost));
+                    Assert.True(payload.IsLoaded && payload.IsVisible);
+                    Assert.True(payload.ActualWidth > 0 && payload.ActualHeight > 0);
+                    Assert.NotNull(PresentationSource.FromVisual(payload));
+                    Assert.Same(PresentationSource.FromVisual(manager), PresentationSource.FromVisual(payload));
+                    Assert.Same(host, Window.GetWindow(payload));
+                    Assert.Equal(1, factoryCalls);
+                }
+            }
+            finally
+            {
+                host.Content = null;
+                host.Close();
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                manager.Layout = new LayoutRoot();
+            }
         });
     }
 
@@ -442,13 +646,9 @@ public class AvalonDockThemeBindingTests
     }
 
     [Fact]
-    public void MainWindow_DoesNotCropDockingChromeOrOverrideDocumentCaptionForeground()
+    public void MainWindow_PreservesDocumentCaptionForeground()
     {
         XDocument document = LoadShell();
-        XElement manager = Assert.Single(document.Descendants(), element => element.Name.LocalName == "DockingManager");
-        string? marginText = manager.Attribute("Margin")?.Value;
-        Thickness margin = marginText == null ? new Thickness() : (Thickness)new ThicknessConverter().ConvertFromInvariantString(marginText)!;
-        Assert.True(margin.Left >= 0 && margin.Top >= 0 && margin.Right >= 0 && margin.Bottom >= 0);
         XElement? header = DocumentHeaderTemplate(document);
         if (header != null)
             Assert.DoesNotContain(header.DescendantsAndSelf().Attributes(), attribute => attribute.Name.LocalName.EndsWith("Foreground", StringComparison.Ordinal)

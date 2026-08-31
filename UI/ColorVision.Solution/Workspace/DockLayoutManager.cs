@@ -429,20 +429,18 @@ namespace ColorVision.Solution.Workspace
 
         private bool TryGetRegisteredContent(string contentId, out object? content)
         {
-            content = null;
-            if (!_contentRegistry.TryGetValue(contentId, out DockContentRegistration? registration))
+            if (!TryGetRegisteredLayoutContent(contentId, out content))
                 return false;
 
-            try
+            // Explicit show is synchronous, but AvalonDock must receive the same
+            // host as layout restoration, never the host's already-parented child.
+            if (content is DeferredDockContent deferredContent && deferredContent.Materialize() == null)
             {
-                content = registration.GetOrCreate();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                log.Warn($"Failed to create dock content '{contentId}'.", ex);
+                content = null;
                 return false;
             }
+
+            return true;
         }
 
         private static void MaterializeDeferredContent(LayoutAnchorable anchorable)
@@ -461,7 +459,7 @@ namespace ColorVision.Solution.Workspace
             {
                 content = registration.GetForLayout(
                     elapsedMilliseconds => log.Info(
-                        $"Deferred dock content '{contentId}' materialized in {elapsedMilliseconds} ms after layout restore."),
+                        $"Deferred dock content '{contentId}' materialized in {elapsedMilliseconds} ms."),
                     ex => log.Warn($"Failed to create deferred dock content '{contentId}'.", ex));
                 return true;
             }
@@ -661,6 +659,7 @@ namespace ColorVision.Solution.Workspace
     {
         private readonly Lazy<object> _content;
         private readonly bool _isDeferred;
+        private DeferredDockContent? _deferredContent;
 
         private DockContentRegistration(Func<object> contentFactory, bool isDeferred)
         {
@@ -674,7 +673,9 @@ namespace ColorVision.Solution.Workspace
 
         public object GetForLayout(Action<long> materialized, Action<Exception> materializationFailed) =>
             _isDeferred
-                ? new DeferredDockContent(GetOrCreate, materialized, materializationFailed)
+                // Keep the cached panel under one logical parent across layout
+                // replacement and close/reopen; only its stable host is docked.
+                ? _deferredContent ??= new DeferredDockContent(GetOrCreate, materialized, materializationFailed)
                 : GetOrCreate();
 
         public static DockContentRegistration FromContent(object content)

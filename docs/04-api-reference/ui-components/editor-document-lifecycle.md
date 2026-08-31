@@ -3,7 +3,7 @@ knowledge_id: "ui.documents"
 knowledge_type: "topic"
 status: "current"
 summary: "编辑器注册与选择、按路径和编辑器区分文档、保存重载关闭及外部变更；停靠布局不恢复未注册文件标签，重置也不预审脏文档。"
-aliases: ["EditorManager", "EditorDescriptor", "EditorDocumentService", "IEditorDocumentContent", "IReloadableEditorDocumentContent", "IResourcePathAwareDocumentContent", "DockLayoutManager", "WorkspaceManager", "TryCloseAllDocuments", "NotifyResourceRenamed", "ResetLayout", "DefaultEditorUpdated", "默认编辑器", "重复打开文件", "保存文档", "重新加载文件", "文件被外部修改", "重置窗口布局", "停靠布局恢复"]
+aliases: ["EditorManager", "EditorDescriptor", "EditorDocumentService", "IEditorDocumentContent", "IReloadableEditorDocumentContent", "IResourcePathAwareDocumentContent", "DockLayoutManager", "DockContentRegistration", "DeferredDockContent", "WorkspaceManager", "TryCloseAllDocuments", "NotifyResourceRenamed", "ResetLayout", "DefaultEditorUpdated", "默认编辑器", "重复打开文件", "保存文档", "重新加载文件", "文件被外部修改", "重置窗口布局", "停靠布局恢复", "关闭重开面板", "面板内容双父节点"]
 code_paths: ["UI/ColorVision.Solution/Editor/EditorManager.cs", "UI/ColorVision.Solution/Editor/EditorDescriptor.cs", "UI/ColorVision.Solution/Editor/IEditor.cs", "UI/ColorVision.Solution/Editor/EditorForExtensionAttribute.cs", "UI/ColorVision.Solution/Editor/GenericEditorAttribute.cs", "UI/ColorVision.Solution/Editor/TextEditor.cs", "UI/ColorVision.Solution/Editor/ImageEditor.cs", "UI/ColorVision.Solution/Editor/SystemEditor.cs", "UI/ColorVision.Solution/Workspace/EditorDocumentService.cs", "UI/ColorVision.Solution/Workspace/IEditorDocumentContent.cs", "UI/ColorVision.Solution/Workspace/DockLayoutManager.cs", "UI/ColorVision.Solution/Workspace/WorkspaceManager.cs", "UI/ColorVision.Solution/Workspace/LayoutMenuItems.cs", "UI/ColorVision.Solution/CommandInitializer.cs", "ColorVision/MainWindow.xaml.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI/Environments.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/DockContentRegistrationTests.cs", "Test/ColorVision.UI.Tests/BuiltInShortcutDefaultsTests.cs"]
 related: ["ui.solution", "ui.configuration", "ui.image-editor", "operations.terminal"]
@@ -110,11 +110,15 @@ Reload 要求受管理内容支持重载且 `File.Exists(ResourcePath)`。有未
 
 面板的 Hide/Show 与文档关闭不同。`TogglePanel` 隐藏/显示已有面板；`ShowPanel` 还会激活面板。面板已从布局移除时，两者可从注册表重新加入；不代表创建全新内容实例或重启终端进程。`IsPanelVisible` 只检查是否找到面板且未隐藏，不保证该页签当前激活或内容已构造。
 
-工厂注册用 `Lazy<object>` 复用内容；恢复布局时先放 `DeferredDockContent`，可见且已 Loaded 后在 `ApplicationIdle` 尝试构造，显式 Show 也会触发。每个延迟宿主只尝试物化一次，失败记录日志，不承诺再次 Show 会重试；空工厂结果在取值时拒绝。Reset 不重建内容注册表，也不使其中的 Lazy 缓存失效；不能用布局重置推断面板实例或失败的工厂已重新创建。布局恢复返回 true 也不意味着所有延迟面板均已构造成功。
+工厂注册用 `Lazy<object>` 复用内容，并由每个注册项懒建、持有唯一的 `DeferredDockContent`。自动恢复、Reset 和关闭后重新 Show/Toggle 都向布局交付同一个宿主；原始 UI 内容始终作为该宿主的子内容，不再直接挂到新 `LayoutAnchorable.Content` 或另一个延迟宿主上。由 AvalonDock 管理宿主随布局的挂接，不通过遍历任意 UI 父节点来强行解绑内容。已构造对象的非工厂注册仍直接使用原对象，不增加延迟宿主。
+
+自动恢复保持惰性：宿主可见且已 Loaded 后才在 `ApplicationIdle` 尝试构造；显式 Show 和 Toggle 的显示分支则同步物化，再显示/激活，不额外等待空闲回调。每个稳定宿主只尝试物化一次，失败记录日志，不承诺再次 Show 会重试；空工厂结果在取值时拒绝。Reset 不重建内容注册表，也不使宿主或 Lazy 缓存失效；不能用布局重置推断面板实例或失败的工厂已重新创建。布局恢复返回 true 也不意味着所有延迟面板均已构造成功。
 
 ## 证据与验证缺口
 
-`Test/ColorVision.UI.Tests/DockContentRegistrationTests.cs` 当前覆盖工厂延迟与单次创建、空结果拒绝、显式物化、已有内容直接恢复，以及 `ShowPanel` 首次构造/物化复用。它没有覆盖主窗口布局 XML 的保存恢复、带脏文档重置、默认编辑器配置落盘失败、文档关闭取消、外部文件事件或路径更新失败，不能从这份测试推断完整生命周期已验证。
+`Test/ColorVision.UI.Tests/DockContentRegistrationTests.cs` 用合成内容和真实 AvalonDock 内存布局检查工厂延迟与单次创建、空结果拒绝、已有对象直接恢复、重复取得注册内容，以及关闭后 Show/Toggle、Hide 后再显示、未物化就关闭后同步显示和重复布局替换。断言宿主及子内容引用、逻辑父子关系和工厂调用次数，并区分旧布局项的 Dispatcher 清理在重开之前或之后发生。
+
+这些用例通过实际注册内容恢复入口取得宿主，再替换内存 `LayoutRoot`；不调用 `SaveLayout` / `LoadLayout` / `ResetLayout`，不读写用户 XML 或配置。因此它们不覆盖完整布局文件保存恢复、带脏文档重置、默认编辑器配置落盘失败、文档关闭取消、外部文件事件或路径更新失败，不能据此推断完整生命周期已验证。
 
 `BuiltInShortcutDefaultsTests` 用注入的确认和重置回调检查菜单/快捷键取消后不执行、确认后仅执行一次；不重建真实布局或写入用户布局文件，也不证明未保存文档已被自动保护。
 

@@ -405,7 +405,9 @@
                             <Setter TargetName="ToolTabStripLine" Property="BorderBrush" Value="{DynamicResource DockingAccentBrush}" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding Items.Count, RelativeSource={RelativeSource Self}}" Value="1">
-                            <Setter TargetName="ToolTabStrip" Property="Visibility" Value="Collapsed" />
+                            <!-- Keep the items host in layout so its selection binding can
+                                 create the content/title even when the only tab is hidden. -->
+                            <Setter TargetName="ToolTabStrip" Property="Height" Value="0" />
                             <Setter TargetName="ToolPaneBorder" Property="CornerRadius" Value="4" />
                             <Setter TargetName="ToolPaneBorder" Property="BorderThickness" Value="1" />
                         </DataTrigger>
