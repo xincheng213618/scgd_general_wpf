@@ -498,8 +498,42 @@ export function validateRetrievalCases(catalog, fixture) {
   return results
 }
 
+const cliUsage = 'Usage: node docs/.vitepress/scripts/knowledge.mjs generate|check|search "query" [--all] [--limit N]|impact "path"\nSearch defaults to 12 results; --all includes planned/historical topics. Use -- before literal option text.\nImpact takes one repository-relative path and always lists every mapped topic. Use --help for this message.'
+
+function parseLookupArguments(command, args) {
+  const values = []
+  let all = false
+  let limit = 12
+  let limitSeen = false
+  let literal = false
+  for (let index = 0; index < args.length; index++) {
+    const arg = args[index]
+    if (literal) values.push(arg)
+    else if (arg === '--') literal = true
+    else if (command === 'search' && arg === '--all') all = true
+    else if (command === 'search' && (arg === '--limit' || arg.startsWith('--limit='))) {
+      if (limitSeen) throw new Error('--limit may only be supplied once')
+      limitSeen = true
+      const value = arg === '--limit' ? args[++index] : arg.slice('--limit='.length)
+      if (!/^[1-9]\d*$/u.test(value ?? '') || !Number.isSafeInteger(Number(value))) {
+        throw new Error('--limit requires a positive safe integer')
+      }
+      limit = Number(value)
+    } else if (arg.startsWith('--')) throw new Error(`Unknown ${command} option: ${arg}. Use -- before literal option text.`)
+    else values.push(arg)
+  }
+  if (command === 'impact' && values.length !== 1) throw new Error('impact requires exactly one repository-relative path; quote paths containing spaces')
+  const value = values.join(' ').trim()
+  if (!value) throw new Error(`${command} requires ${command === 'search' ? 'a query' : 'a repository-relative path'}`)
+  return { value, all, limit }
+}
+
 async function main() {
   const [command, ...args] = process.argv.slice(2)
+  if ((command === '--help' && !args.length) || (['search', 'impact'].includes(command) && args.length === 1 && args[0] === '--help')) {
+    console.log(cliUsage)
+    return
+  }
   const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
   if (command === 'generate' || command === 'check') {
     const catalog = await generateKnowledge(repoRoot, command === 'check')
@@ -515,20 +549,23 @@ async function main() {
     return
   }
   if (command === 'search' || command === 'impact') {
+    const { value, all, limit } = parseLookupArguments(command, args)
     const catalog = JSON.parse(await fs.readFile(path.join(repoRoot, 'docs/knowledge/catalog.json'), 'utf8'))
-    const value = args.filter((arg) => arg !== '--all').join(' ').trim()
-    if (!value) throw new Error(`${command} requires ${command === 'search' ? 'a query' : 'a repository-relative path'}`)
-    const matches = command === 'search' ? searchCatalog(catalog, value, { all: args.includes('--all') }) : impactCatalog(catalog, value)
+    // Ranking already considers the full catalog. Slice only the printed window
+    // so a smaller response does not change order or conceal the total count.
+    const candidates = command === 'search' ? searchCatalog(catalog, value, { all, limit: catalog.entries.length }) : impactCatalog(catalog, value)
+    const matches = command === 'search' ? candidates.slice(0, limit) : candidates
     for (const entry of matches) {
       console.log(`[${entry.status}] ${entry.knowledge_id} — ${entry.title}\n  ${entry.source}\n  ${entry.summary}`)
       if (command === 'impact') console.log(`  mapped: ${entry.matched_paths.join(', ')}`)
       else console.log(`  match: ${entry.match_kind}`)
     }
     if (command === 'search') console.log('Search reads metadata. Read the selected topic for source/test mappings; owner-fallback does not verify the requested member.')
-    console.log(`${matches.length} match(es). Index is a locator, not proof of current behavior; verify source and tests. Use check to detect stale metadata.`)
+    const count = matches.length < candidates.length ? `${matches.length} of ${candidates.length} match(es) shown (limit ${limit})` : `${matches.length} match(es)`
+    console.log(`${count}. Index is a locator, not proof of current behavior; verify source and tests. Use check to detect stale metadata.`)
     return
   }
-  throw new Error('Usage: node docs/.vitepress/scripts/knowledge.mjs generate|check|search "query" [--all]|impact "path"')
+  throw new Error(cliUsage)
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

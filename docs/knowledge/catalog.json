@@ -4582,7 +4582,7 @@
       "source": "docs/README.md",
       "url": "/README",
       "searchable": true,
-      "source_hash": "4f729153d9de5ae2ba0a145cdd854ce3e5a09fa3193f93eb7c6bd304ed3811fb"
+      "source_hash": "3623d66ddc2e4c92a6dbf8bb2f140ed2e293cb4acd1a0c2f9c608b8b74e48133"
     },
     {
       "knowledge_id": "governance.maintenance",
@@ -4659,7 +4659,7 @@
       "source": "docs/knowledge/retrieval-checks.md",
       "url": "/knowledge/retrieval-checks",
       "searchable": true,
-      "source_hash": "fe3a38df43dbd7c4cd88469ca3e585c9f87ba833b5049573103a1f00c461aabc"
+      "source_hash": "b8128c9766e08bb001478379d51344fee5c0913ee19352f22c87af038c588d22"
     },
     {
       "knowledge_id": "operations.acceptance",

@@ -568,6 +568,129 @@ test('search CLI labels owner fallback and bare code symbols while impact retain
   assert.match(impact, /mapped: src\/example\.cs/u)
 })
 
+async function lookupCliFixture(t) {
+  const root = await fixture(t)
+  const catalog = await buildCatalog(root)
+  const entry = catalog.entries[0]
+  catalog.entries = Array.from({ length: 14 }, (_, index) => ({ ...entry,
+    knowledge_id: `ui.fixture-${String(index).padStart(2, '0')}`,
+    status: index === 13 ? 'planned' : 'current', aliases: ['CLIStore', '--all', '--limit', '--help'],
+  }))
+  const catalogPath = path.join(root, 'docs/knowledge/catalog.json')
+  await fs.mkdir(path.dirname(catalogPath), { recursive: true })
+  await fs.writeFile(catalogPath, JSON.stringify(catalog))
+  const scriptPath = path.join(root, 'docs/.vitepress/scripts/knowledge.mjs')
+  await fs.mkdir(path.dirname(scriptPath), { recursive: true })
+  await fs.copyFile(fileURLToPath(new URL('./knowledge.mjs', import.meta.url)), scriptPath)
+  const run = (...args) => spawnSync(process.execPath, [scriptPath, ...args], { encoding: 'utf8', cwd: os.tmpdir() })
+  const ids = (output) => [...output.matchAll(/^\[(?:current|planned)\] (\S+) —/gmu)].map((match) => match[1])
+  return { root, catalog, catalogPath, run, ids }
+}
+
+test('search CLI reports truncation and accepts an explicit result window without changing rank', async (t) => {
+  const { catalog, run, ids } = await lookupCliFixture(t)
+  const full = searchCatalog(catalog, 'CLIStore', { limit: catalog.entries.length }).map((entry) => entry.knowledge_id)
+  const normal = run('search', 'CLIStore')
+  assert.equal(normal.status, 0, normal.stderr)
+  assert.deepEqual(ids(normal.stdout), full.slice(0, 12))
+  assert.match(normal.stdout, /12 of 13 match\(es\) shown \(limit 12\)/u)
+  for (const args of [['CLIStore', '--limit', '3'], ['--limit=3', 'CLIStore'], ['--limit', '3', 'CLIStore']]) {
+    const result = run('search', ...args)
+    assert.equal(result.status, 0, result.stderr)
+    assert.deepEqual(ids(result.stdout), full.slice(0, 3))
+    assert.match(result.stdout, /3 of 13 match\(es\) shown \(limit 3\)/u)
+  }
+  const wide = run('search', 'CLIStore', '--limit', '100')
+  assert.equal(wide.status, 0, wide.stderr)
+  assert.deepEqual(ids(wide.stdout), full)
+  assert.match(wide.stdout, /13 match\(es\)\./u)
+  const empty = run('search', 'DefinitelyAbsentSymbol_297abc', '--limit', '1')
+  assert.equal(empty.status, 0, empty.stderr)
+  assert.deepEqual(ids(empty.stdout), [])
+  assert.match(empty.stdout, /0 match\(es\)\./u)
+})
+
+test('search CLI combines all-status lookup with limits and preserves literal option text', async (t) => {
+  const { catalog, run, ids } = await lookupCliFixture(t)
+  const result = run('search', '--all', 'CLIStore', '--limit=14')
+  assert.equal(result.status, 0, result.stderr)
+  assert.deepEqual(ids(result.stdout), searchCatalog(catalog, 'CLIStore', { all: true, limit: 14 }).map((entry) => entry.knowledge_id))
+  assert.match(result.stdout, /\[planned\] ui.fixture-13/u)
+  for (const literal of ['--all', '--limit', '--help']) {
+    const result = run('search', '--limit', '2', '--', literal)
+    assert.equal(result.status, 0, result.stderr)
+    assert.deepEqual(ids(result.stdout), searchCatalog(catalog, literal, { limit: 2 }).map((entry) => entry.knowledge_id))
+    assert.doesNotMatch(result.stdout, /\[planned\]/u)
+  }
+})
+
+test('search CLI rejects invalid limits and unknown options instead of changing the query', async (t) => {
+  const { run } = await lookupCliFixture(t)
+  for (const value of ['0', '-1', '1.5', '1e2', 'Infinity', '9007199254740992', '', 'abc']) {
+    const result = run('search', 'CLIStore', `--limit=${value}`)
+    assert.equal(result.status, 1, value)
+    assert.match(result.stderr, /--limit requires a positive safe integer/u)
+    assert.equal(result.stdout, '')
+  }
+  for (const args of [['CLIStore', '--limit'], ['CLIStore', '--limit', '--all']]) {
+    const result = run('search', ...args)
+    assert.equal(result.status, 1)
+    assert.match(result.stderr, /--limit requires a positive safe integer/u)
+  }
+  const duplicate = run('search', 'CLIStore', '--limit=2', '--limit', '3')
+  assert.equal(duplicate.status, 1)
+  assert.match(duplicate.stderr, /--limit may only be supplied once/u)
+  const unknown = run('search', 'CLIStore', '--limt', '2')
+  assert.equal(unknown.status, 1)
+  assert.match(unknown.stderr, /Unknown search option.*--limt/u)
+  const empty = run('search', '--all', '--limit', '2')
+  assert.equal(empty.status, 1)
+  assert.match(empty.stderr, /search requires a query/u)
+})
+
+test('impact CLI remains exhaustive and rejects search options and multiple paths', async (t) => {
+  const { catalog, catalogPath, run, ids } = await lookupCliFixture(t)
+  const result = run('impact', 'src/example.cs')
+  assert.equal(result.status, 0, result.stderr)
+  assert.equal(ids(result.stdout).length, 14)
+  assert.match(result.stdout, /\[planned\]/u)
+  assert.match(result.stdout, /mapped: src\/example\.cs/u)
+  for (const args of [['src/example.cs', '--limit', '2'], ['src/example.cs', '--all']]) {
+    const result = run('impact', ...args)
+    assert.equal(result.status, 1)
+    assert.match(result.stderr, /Unknown impact option/u)
+  }
+  const multiple = run('impact', 'src/example.cs', 'docs/example.md')
+  assert.equal(multiple.status, 1)
+  assert.match(multiple.stderr, /impact requires exactly one repository-relative path/u)
+  assert.equal(run('impact', 'src/deleted.cs').status, 0)
+  catalog.entries[0].code_paths = [...catalog.entries[0].code_paths, 'src/with space.cs']
+  await fs.writeFile(catalogPath, JSON.stringify(catalog))
+  const spaced = run('impact', 'src/with space.cs')
+  assert.equal(spaced.status, 0, spaced.stderr)
+  assert.deepEqual(ids(spaced.stdout), ['ui.fixture-00'])
+})
+
+test('lookup CLI stays dependency-free and read-only while help needs no catalog', async (t) => {
+  const { root, catalogPath, run } = await lookupCliFixture(t)
+  const before = await fs.readFile(catalogPath, 'utf8')
+  await fs.writeFile(path.join(root, 'docs/example.md'), '---\ninvalid metadata')
+  await fs.unlink(path.join(root, 'src/example.cs'))
+  assert.equal(run('search', 'CLIStore', '--limit', '1').status, 0)
+  assert.equal(run('impact', 'src/example.cs').status, 0)
+  assert.equal(await fs.readFile(catalogPath, 'utf8'), before)
+  await assert.rejects(fs.stat(path.join(root, 'node_modules')), { code: 'ENOENT' })
+  await fs.unlink(catalogPath)
+  for (const args of [['--help'], ['search', '--help'], ['impact', '--help']]) {
+    const result = run(...args)
+    assert.equal(result.status, 0, result.stderr)
+    assert.match(result.stdout, /--limit/u)
+    assert.match(result.stdout, /impact/u)
+    assert.equal(result.stderr, '')
+  }
+  assert.equal(run('search', 'CLIStore').status, 1)
+})
+
 test('website search text retains underscores and generic code identifiers', () => {
   assert.equal(normalizeMarkdownLine('Read `poi_batch.cpp` and `List<T>` or **important** `cv::Mat`.'), 'Read poi_batch.cpp and List<T> or important cv::Mat.')
 })

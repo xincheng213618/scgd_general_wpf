@@ -17,7 +17,7 @@ ColorVision 是一个 Windows WPF 视觉检测平台，包含设备集成、可�
 安装了 Node.js 时可只读查询，无需安装 npm 依赖：
 
 ```powershell
-node docs/.vitepress/scripts/knowledge.mjs search "属性编辑器"
+node docs/.vitepress/scripts/knowledge.mjs search "属性编辑器" --limit 5
 node docs/.vitepress/scripts/knowledge.mjs impact "UI/ColorVision.UI/PropertyEditor"
 ```
 

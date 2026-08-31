@@ -22,7 +22,7 @@ related: ["governance.maintenance", "governance.retrieval", "platform.system", "
 
 ```powershell
 # 只读查询：不需要 npm install，不会调用模型或联网
-node docs/.vitepress/scripts/knowledge.mjs search "属性编辑器"
+node docs/.vitepress/scripts/knowledge.mjs search "属性编辑器" --limit 5
 node docs/.vitepress/scripts/knowledge.mjs search "ConfigHandler.ReloadFromDisk读取失败"
 node docs/.vitepress/scripts/knowledge.mjs search "ONNX" --all
 node docs/.vitepress/scripts/knowledge.mjs impact "UI/ColorVision.UI/PropertyEditor"
@@ -36,9 +36,13 @@ node docs/.vitepress/scripts/knowledge.mjs impact "UI/ColorVision.UI/PropertyEdi
 
 非限定代码名也按完整词匹配，目录中具有camel/Pascal或snake_case形态的符号可优先于中文泛词，查询大小写不影响这一判断；`StateStoreBackup` 不算 `StateStore` 的完整命中。`Save`、`backup`、`ID` 等普通词不因此升级；混合问句若有更稀有的已知英文词指向其它主题，会将较广泛的代码形态词降回普通词法匹配。具体规则与歧义限制见[检索验收](./knowledge/retrieval-checks.md#非限定代码符号与混合问句)。
 
-搜索结果只列主题、摘要和匹配方式（`exact`、`qualified-symbol`、`owner-fallback`、`code-symbol`、`text`），不逐项展开全部源码路径；选中主题后再读其元数据。`impact` 仍列出实际相交路径，用于代码变更后的反向核对。
+搜索结果只列主题、摘要和匹配方式（`exact`、`qualified-symbol`、`owner-fallback`、`code-symbol`、`text`），不逐项展开全部源码路径；选中主题后再读其元数据。默认最多12条，`--limit 5` 或 `--limit=5` 可缩小输出窗口，不改变候选排序；不足时再扩大。截断时会显示已展示数量和总匹配数，不能将前几条当作全部匹配。`--all` 只包含规划/历史状态，不解除数量上限。
+
+`impact` 保留全部状态的所有相交主题和具体路径，不支持数量截断；优先查询具体文件/模块，避免把整个UI等源码根的所有关系塞入上下文。它只接受一个仓库相对路径，含空格时加引号，多条路径分别查询。`--help` 查看命令格式；未知选项、无效/重复limit会报错，要检索 `--all` 等选项原文本时先用 `--` 分隔，例如 `search --limit 3 -- "--all"`。
 
 这种回退只提供核对入口，不证明某个成员确实存在、行为已支持或主题涵盖全部调用链。没有命中时，先用较短类型名、能力词或 `rg` 查正文/源码；不要把检索无结果解释为功能不存在。网页搜索还收录正文片段，与本地命令不是同一排序器，但两者都引用同一份主题知识。
+
+查询只读现有catalog，不自动生成或检查其新鲜度；`check` 才读取全部知识正文、校验路径并比较派生资料。catalog的 `source_hash` 对应Markdown，不是关联源码的hash。即使查询或check成功，也要核对当前实现，不能据此宣称文档与代码语义已经同步。
 
 ## 知识的职责
 
