@@ -111,22 +111,37 @@ namespace ColorVision.Copilot
             window.ShowDialog();
         }
 
-        private void RemoveAttachment(CopilotAttachmentItem? attachment)
+        private async Task RemoveAttachment(CopilotAttachmentItem? attachment)
         {
-            if (attachment == null || SelectedConversation == null)
+            var conversation = SelectedConversation;
+            if (attachment == null || conversation == null
+                || Volatile.Read(ref _disposeState) != 0 || IsBusy || HasExclusiveLocalOperation)
                 return;
 
-            if (!SelectedConversation.Attachments.Remove(attachment))
+            var attachmentIndex = conversation.Attachments.IndexOf(attachment);
+            if (attachmentIndex < 0 || !conversation.Attachments.Remove(attachment))
                 return;
 
-            if (!SelectedConversation.Messages
-                .SelectMany(message => message.Attachments)
-                .Any(candidate => string.Equals(candidate.Value, attachment.Value, StringComparison.OrdinalIgnoreCase)))
+            UpdateAttachmentsState(conversation);
+            try
             {
-                TryDeleteManagedAttachmentFile(attachment);
+                await FlushStatePersistenceBarrierAsync();
+            }
+            catch
+            {
+                // A concurrent conversation deletion may only have detached this
+                // object while its own save is pending. Restore the captured owner
+                // so that a failed deletion can put the complete draft back.
+                if (!conversation.Attachments.Contains(attachment))
+                {
+                    conversation.Attachments.Insert(Math.Min(attachmentIndex, conversation.Attachments.Count), attachment);
+                    if (Conversations.Contains(conversation))
+                        UpdateAttachmentsState(conversation);
+                }
+                throw;
             }
 
-            UpdateAttachmentsState(SelectedConversation);
+            TryDeleteManagedAttachmentFile(attachment);
         }
 
         private static bool EnsureAssistantHeaders(CopilotConversationRecord conversation, CopilotProfileConfig? profile)

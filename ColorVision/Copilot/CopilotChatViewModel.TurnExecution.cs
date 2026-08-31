@@ -64,7 +64,8 @@ namespace ColorVision.Copilot
             if (!CanScheduleComposerRequest(requestMode))
                 return;
 
-            var selectedProfile = SelectedProfile;
+            var queuedFollowUp = queuedCommandExecution?.QueuedFollowUp;
+            var selectedProfile = queuedFollowUp?.Profile ?? SelectedProfile;
             if (selectedProfile == null || !selectedProfile.IsConfigured)
             {
                 OpenSettings();
@@ -95,9 +96,15 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var turnSnapshot = isReplacingTurn
-                ? CaptureHostedTurnSnapshot(conversation, replacedUserMessage, conversation.Attachments)
-                : CaptureHostedTurnSnapshot(conversation, attachmentOverride: requestAttachments);
+            var turnSnapshot = queuedFollowUp != null
+                ? queuedFollowUp.SubmissionContext
+                    .WithAttachments(requestAttachments)
+                    .WithConversationHistory(CopilotConversationRequestBuilder.CaptureHistorySnapshot(
+                        conversation,
+                        isReplacingTurn ? replacedUserMessage : null))
+                : isReplacingTurn
+                    ? CaptureHostedTurnSnapshot(conversation, replacedUserMessage, conversation.Attachments)
+                    : CaptureHostedTurnSnapshot(conversation, attachmentOverride: requestAttachments);
             var agentSkillReference = isDirectSubmission
                 ? null
                 : composerCapture?.AgentSkillReference;
@@ -109,9 +116,9 @@ namespace ColorVision.Copilot
             {
                 return;
             }
-            var runtimeConfigSnapshot = CaptureTurnRuntimeConfigSnapshot();
+            var runtimeConfigSnapshot = queuedFollowUp?.RuntimeConfigSnapshot ?? CaptureTurnRuntimeConfigSnapshot();
             var agentDefaultsSnapshot = runtimeConfigSnapshot.CreateAgentDefaultsSnapshot();
-            var requestProfile = CreateConversationRequestProfile(
+            var requestProfile = queuedFollowUp?.Profile.Clone() ?? CreateConversationRequestProfile(
                 selectedProfile,
                 conversation,
                 requestMode,
@@ -126,7 +133,8 @@ namespace ColorVision.Copilot
                 return;
             }
             var admittedAttachments = await TryPersistImageAttachmentsAsync(turnSnapshot.Attachments);
-            if (admittedAttachments == null)
+            if (admittedAttachments == null
+                || !CanContinueConversationRequestPreparation(conversation, requestMode))
                 return;
             turnSnapshot = turnSnapshot.WithAttachments(admittedAttachments);
             var automaticCompaction = await TryAutoCompactConversationAsync(
@@ -135,7 +143,8 @@ namespace ColorVision.Copilot
                 modelPrompt,
                 turnSnapshot.ProjectInstructionDiscoveryOptions,
                 agentDefaultsSnapshot);
-            if (automaticCompaction == CopilotAutomaticCompactionOutcome.Failed)
+            if (automaticCompaction == CopilotAutomaticCompactionOutcome.Failed
+                || !CanContinueConversationRequestPreparation(conversation, requestMode))
                 return;
             if (automaticCompaction == CopilotAutomaticCompactionOutcome.Applied)
             {

@@ -314,7 +314,9 @@ namespace ColorVision.Copilot
                 item => item?.CanMoveDown == true);
             DeleteQueuedFollowUpCommand = new RelayCommand<CopilotQueuedFollowUp>(DeleteQueuedFollowUp, item => item != null);
             OpenAttachmentCommand = new RelayCommand<CopilotAttachmentItem>(OpenAttachment, attachment => attachment != null);
-            RemoveAttachmentCommand = new RelayCommand<CopilotAttachmentItem>(RemoveAttachment, attachment => !IsBusy && attachment != null);
+            RemoveAttachmentCommand = new RelayCommand<CopilotAttachmentItem>(
+                attachment => RunUiOperation(() => RemoveAttachment(attachment), "移除附件"),
+                attachment => !IsBusy && !HasExclusiveLocalOperation && attachment != null);
             RenameConversationCommand = new RelayCommand<CopilotConversationRecord>(RenameConversation, CanRenameConversation);
             ExportConversationCommand = new RelayCommand<CopilotConversationRecord>(
                 conversation => RunUiOperation(() => ExportConversationAsync(conversation), "导出会话"),

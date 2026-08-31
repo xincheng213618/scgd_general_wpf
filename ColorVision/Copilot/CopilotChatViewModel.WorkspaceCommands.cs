@@ -89,7 +89,8 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
+            var turnSnapshot = _queuedLocalCommandExecution?.QueuedFollowUp.SubmissionContext
+                ?? CaptureHostedTurnSnapshot(Attachments);
             var plan = CopilotProjectInitialization.Create(
                 turnSnapshot.SolutionDirectoryPath,
                 turnSnapshot.ProjectInstructionDiscoveryOptions);

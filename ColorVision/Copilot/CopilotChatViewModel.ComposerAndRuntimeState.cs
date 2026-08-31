@@ -180,7 +180,7 @@ namespace ColorVision.Copilot
                 if (_isCompactingConversation)
                     return "停止上下文压缩";
                 if (_isEndingConversation)
-                    return "正在结束会话并运行 SessionEnd Hook";
+                    return "正在保存会话变更，请稍候";
                 if (_fileAttachmentCts != null)
                     return "停止处理附件";
                 if (_webPageAttachmentCts != null)
