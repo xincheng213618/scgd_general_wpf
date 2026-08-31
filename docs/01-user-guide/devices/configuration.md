@@ -2,9 +2,9 @@
 knowledge_id: "operations.device-configuration"
 knowledge_type: "topic"
 status: "current"
-summary: "终端与设备资源的创建、JSON恢复、保存和RC重启边界；保存、导入、重置与删除均不能视为无副作用检查。"
-aliases: ["添加设备","保存设备","设备Code","设备配置保存失败","RestartRCService","SaveConfig","DeviceServiceConfig","DeviceServiceCreateContext","TryDeserializeConfig"]
-code_paths: ["Engine/ColorVision.Engine/Dao/SysResourceModel.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Services/Core/ServiceObjectBaseExtensions.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceConfig.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs","Engine/ColorVision.Engine/Services/Type/CreateType.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/CreateTerminal.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/TerminalService.cs","Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs"]
+summary: "终端与设备配置引用、创建、保存、重启和删除清理；未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。"
+aliases: ["添加设备","保存设备","删除设备","设备配置引用","通信订阅清理","设备Code","设备配置保存失败","RestartRCService","SaveConfig","DeviceService","DeviceServiceConfig","DeviceServiceCreateContext","TryDeserializeConfig"]
+code_paths: ["Engine/ColorVision.Engine/Dao/SysResourceModel.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Services/Core/ServiceObjectBaseExtensions.cs","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceConfig.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs","Engine/ColorVision.Engine/Services/Devices/SMU/DeviceSMU.cs","Engine/ColorVision.Engine/Services/Devices/SMU/MQTTSMU.cs","Engine/ColorVision.Engine/Services/Type/CreateType.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/CreateTerminal.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/TerminalService.cs","Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs"]
 test_paths: []
 related: ["engine.devices","engine.mqtt","engine.rc-registration","ui.property-grid","operations.acceptance"]
 ---
@@ -42,6 +42,10 @@ RCName/AppId 等客户端注册配置不是这里的 MySQL 设备参数；其连
 
 ## 编辑、保存与远端应用
 
+`DeviceService<T>.Config` 是运行对象持有的配置，不是天然的待保存副本。`MQTTDeviceService<T>` 的 `DeviceCode`、收发 Topic 和 `ServiceToken` 直接读取它持有的 Config；例如 `MQTTSMU` 构造时接收 `DeviceSMU.Config` 的同一引用。直接修改这个共享对象，后续取值即可变化，不以 `Save()` 为内存生效开关。但字段变化不证明新主题已经订阅、配置已持久化或远端设备已经应用，通信状态仍按[消息契约](../../02-developer-guide/engine-development/mqtt.md)核对。
+
+修改同一对象与替换引用也不同：通用重置直接 `Config = new T()`，不会自动重绑其它对象已保存的旧 Config。`Save()` 的基类流程不调用 `LoadServices()` 或重建显示区，默认 `OnConfigChanged()` 为空；具体设备可覆盖或订阅通知。不能承诺保存后所有运行对象自动重建，也不能统一建议“再重载一次”——重载对旧对象及集合的影响见[运行装配](../../04-api-reference/engine-components/device-service-chain.md#重载、旧对象与集合引用)。事务属性窗口的工作副本与提交边界仍只在[属性契约](../../04-api-reference/ui-components/property-grid.md)维护，不把直接改 Config 的语义套到所有编辑窗口。
+
 通用 `DeviceService<T>` 的顺序是：
 
 | 阶段 | 代码行为 | 不能据此推断 |
@@ -67,8 +71,12 @@ RC 的三参数 `RestartServices` 是 void 包装，丢弃 `TryRestartServices` 
 | 导入 `.config` | 读取并反序列化为具体 T，复制到现有 Config 后调用 `Save()`；可能改变身份/主题并请求远端重启，不是预览 |
 | 重置 | 确认后仅 `Config = new T()`；本身没有保存或重建其它持有旧 Config 的对象，不等于恢复出厂硬件状态 |
 | 文件存储配置 | 仅 Config 实现 `IFileServerCfg` 时可用；`UpdateFilecfg` 用事务属性窗口，关闭时比较值，有变化才调用 Save |
-| 删除设备 | 确认后移出树，物理删除该资源行，再移出设备/显示集合并 Dispose；没有通用软删除、子资源级联或整轮回滚保证 |
+| 删除设备 | 确认后移出树，物理删除该资源行，再移出 `DeviceServices`；尝试按本次 `GetDisplayControl()` 返回值移除显示项，最后调用 Dispose。没有通用软删除、子资源级联或整轮回滚保证 |
 | 删除终端 | 删除直接子资源行和终端行并移出终端集合；不能推断递归删除全部后代或立即清理所有旧设备/窗口引用 |
+
+删除显示项依赖返回同一个已登记实例，并非按设备 Code 查找。例如 `DeviceSMU.GetDisplayControl()` 每次创建新的 `DisplaySMU(this)`，删除时拿到新实例不能据此保证原显示项已移除。删除中途任一步抛异常也会阻止后续清理，不恢复先前已完成的移树或数据库删除。
+
+调用 Dispose 不等于释放通信：通用 `DeviceService.Dispose()` 只调用 `GC.SuppressFinalize`，不会自动执行 `GetMQTTService()?.Dispose()`；`DeviceSMU` 也没有覆盖这个方法。`MQTTServiceBase.Dispose()` 才负责自身 `Processing` 退订、计时器及待处理记录清理，派生通信类另加的事件仍要核对其解绑实现。因此不能从“设备已删”推断所有通信回调、显示缓存或已打开窗口均已失效。这些是现有实现边界，不是本次文档调整已修复的功能，也不是触发硬件或重启服务来验证的授权。
 
 具体 `Device*` 可以覆盖上述方法，操作前应核对实际类型。PropertyGrid 的编辑会话、确定与关闭语义只在[属性契约](../../04-api-reference/ui-components/property-grid.md)维护；按钮是否可用不扩大 AI 的执行授权。
 
@@ -77,3 +85,5 @@ RC 的三参数 `RestartServices` 是 void 包装，丢弃 `TryRestartServices` 
 保存/创建失败时，分别记录：当前数据库和目标资源 ID/Type/Pid/Code、旧 Value 备份、编辑模式、数据库阶段结果、RC 连接与重启请求、设备端最终状态。只读诊断可以审查代码、脱敏日志与既有记录；不要通过改 Code、清库、重新导入或点击“重启服务”试探。
 
 本页未声明创建/保存/重启的自动化集成测试。`ServiceConfigTests` 只覆盖 RC 配置信息属性通知，不能证明本页契约。受授权的隔离验证应覆盖旧 JSON 恢复、无效 JSON 保留证据、保存后重开、目标行不存在、RC 离线和后阶段失败，并检查数据库已提交但远端未生效的分离状态；真实设备动作另外验收。
+
+共享 Config 的即时取值、重置后的新旧引用、删除前后显示实例与通信事件解绑也尚无本页声明的自动化覆盖；应使用隔离对象/替身分别验证，不能以知识检索命中替代生命周期测试。

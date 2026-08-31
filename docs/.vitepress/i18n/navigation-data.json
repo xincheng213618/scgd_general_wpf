@@ -1394,6 +1394,12 @@
             },
             {
               "text": {
+                "root": "Engine 设备资源与运行装配"
+              },
+              "link": "/04-api-reference/engine-components/device-service-chain"
+            },
+            {
+              "text": {
                 "root": "MySQL SQL 恢复、重置与资源保留"
               },
               "link": "/04-api-reference/engine-components/mysql-recovery"

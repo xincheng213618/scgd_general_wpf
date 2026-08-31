@@ -27,7 +27,7 @@ next: false
   区分物理配置、逻辑服务、显示参数与CameraRunParam，说明同步覆盖、ROI约束、保存重启和路径移动副作用。
 
 - [设备资源配置、保存与重启](../../01-user-guide/devices/configuration.md) — `operations.device-configuration`
-  终端与设备资源的创建、JSON恢复、保存和RC重启边界；保存、导入、重置与删除均不能视为无副作用检查。
+  终端与设备配置引用、创建、保存、重启和删除清理；未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。
 
 - [FileServer 设备配置与实现边界](../../01-user-guide/devices/file-server.md) — `operations.file-server`
   FileServer 工厂存在但默认类型树过滤；当前仅有配置与通用 MQTT 包装，未实现远端文件列表、上传或下载操作。

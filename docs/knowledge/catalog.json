@@ -3436,17 +3436,21 @@
       "knowledge_id": "engine.devices",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "设备资源、工厂、运行集合与显示页的装配契约；区分记录存在、默认可见、服务在线和动作完成。",
+      "summary": "设备工厂、资源重载与显示装配；旧对象释放、集合重建和显示替换并非一个事务，记录存在、默认可见、服务在线和动作完成分别判断。",
       "aliases": [
         "设备打不开",
         "设备服务",
         "设备连接",
         "设备资源有记录却不出现",
         "如何新增设备服务",
+        "设备资源重载",
+        "运行对象生命周期",
+        "显示集合",
         "ServiceManager",
         "DeviceServiceFactoryRegistry",
         "ServiceTypes",
-        "LoadServices"
+        "LoadServices",
+        "LastGenControl"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Dao/SysResourceModel.cs",
@@ -3456,7 +3460,8 @@
         "Engine/ColorVision.Engine/Services/WindowService.xaml.cs",
         "Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs",
         "Engine/ColorVision.Engine/Services/Type/TypeService.cs",
-        "Engine/ColorVision.Engine/Services/DeviceService.cs"
+        "Engine/ColorVision.Engine/Services/DeviceService.cs",
+        "UI/ColorVision.UI/DisPlayManager.cs"
       ],
       "test_paths": [],
       "related": [
@@ -3474,14 +3479,15 @@
         "ui.property-grid"
       ],
       "code_scopes": [
-        "Engine/ColorVision.Engine"
+        "Engine/ColorVision.Engine",
+        "UI/ColorVision.UI"
       ],
       "domain": "engine",
       "title": "Engine 设备资源与运行装配",
       "source": "docs/04-api-reference/engine-components/device-service-chain.md",
       "url": "/04-api-reference/engine-components/device-service-chain",
       "searchable": true,
-      "source_hash": "64330f5605a16bcfd64b2709c0a480dd442ad8b4a781bcd7b3e31f56bc05af46"
+      "source_hash": "b90dd8234b1bb68651791aafb972d39bee7ed052b8c8a6fda48260c93ebc482b"
     },
     {
       "knowledge_id": "engine.file-io",
@@ -5006,14 +5012,18 @@
       "knowledge_id": "operations.device-configuration",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "终端与设备资源的创建、JSON恢复、保存和RC重启边界；保存、导入、重置与删除均不能视为无副作用检查。",
+      "summary": "终端与设备配置引用、创建、保存、重启和删除清理；未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。",
       "aliases": [
         "添加设备",
         "保存设备",
+        "删除设备",
+        "设备配置引用",
+        "通信订阅清理",
         "设备Code",
         "设备配置保存失败",
         "RestartRCService",
         "SaveConfig",
+        "DeviceService",
         "DeviceServiceConfig",
         "DeviceServiceCreateContext",
         "TryDeserializeConfig"
@@ -5022,8 +5032,12 @@
         "Engine/ColorVision.Engine/Dao/SysResourceModel.cs",
         "Engine/ColorVision.Engine/Services/DeviceService.cs",
         "Engine/ColorVision.Engine/Services/Core/ServiceObjectBaseExtensions.cs",
+        "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs",
+        "Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs",
         "Engine/ColorVision.Engine/Services/Devices/DeviceServiceConfig.cs",
         "Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs",
+        "Engine/ColorVision.Engine/Services/Devices/SMU/DeviceSMU.cs",
+        "Engine/ColorVision.Engine/Services/Devices/SMU/MQTTSMU.cs",
         "Engine/ColorVision.Engine/Services/Type/CreateType.xaml.cs",
         "Engine/ColorVision.Engine/Services/Terminal/CreateTerminal.xaml.cs",
         "Engine/ColorVision.Engine/Services/Terminal/TerminalService.cs",
@@ -5045,7 +5059,7 @@
       "source": "docs/01-user-guide/devices/configuration.md",
       "url": "/01-user-guide/devices/configuration",
       "searchable": true,
-      "source_hash": "cb000e99ffb86ce2ba3947e7b56d98b4060ec7d69126e04e7dd18acc04457798"
+      "source_hash": "a766bcdf41641c8cab5be2f87c91f8cc753cfab4ffc27f0fdc9e501bf1ef0b4f"
     },
     {
       "knowledge_id": "operations.exports",

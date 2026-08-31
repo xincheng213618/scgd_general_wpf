@@ -2,9 +2,9 @@
 knowledge_id: "engine.devices"
 knowledge_type: "topic"
 status: "current"
-summary: "设备资源、工厂、运行集合与显示页的装配契约；区分记录存在、默认可见、服务在线和动作完成。"
-aliases: ["设备打不开","设备服务","设备连接","设备资源有记录却不出现","如何新增设备服务","ServiceManager","DeviceServiceFactoryRegistry","ServiceTypes","LoadServices"]
-code_paths: ["Engine/ColorVision.Engine/Dao/SysResourceModel.cs","Engine/ColorVision.Engine/Dao/SysDictionaryModel.cs","Engine/ColorVision.Engine/Services/ServiceManager.cs","Engine/ColorVision.Engine/Services/ServiceInitializer.cs","Engine/ColorVision.Engine/Services/WindowService.xaml.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs","Engine/ColorVision.Engine/Services/Type/TypeService.cs","Engine/ColorVision.Engine/Services/DeviceService.cs"]
+summary: "设备工厂、资源重载与显示装配；旧对象释放、集合重建和显示替换并非一个事务，记录存在、默认可见、服务在线和动作完成分别判断。"
+aliases: ["设备打不开","设备服务","设备连接","设备资源有记录却不出现","如何新增设备服务","设备资源重载","运行对象生命周期","显示集合","ServiceManager","DeviceServiceFactoryRegistry","ServiceTypes","LoadServices","LastGenControl"]
+code_paths: ["Engine/ColorVision.Engine/Dao/SysResourceModel.cs","Engine/ColorVision.Engine/Dao/SysDictionaryModel.cs","Engine/ColorVision.Engine/Services/ServiceManager.cs","Engine/ColorVision.Engine/Services/ServiceInitializer.cs","Engine/ColorVision.Engine/Services/WindowService.xaml.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs","Engine/ColorVision.Engine/Services/Type/TypeService.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","UI/ColorVision.UI/DisPlayManager.cs"]
 test_paths: []
 related: ["engine.index","operations.device-configuration","engine.mqtt","engine.rc-registration","operations.camera","operations.motor","operations.smu","operations.calibration","operations.file-server","operations.flow-device","flow.session","ui.property-grid"]
 ---
@@ -30,9 +30,21 @@ related: ["engine.index","operations.device-configuration","engine.mqtt","engine
 | `DeviceService` | 终端的直接子资源：`IsEnable=true`、`IsDelete=false`、`TenantId=0`，按子资源自己的 Type 查工厂 |
 | 设备子资源 | 同样要求启用且未删除；`Group` 生成组，Type 30–50 生成校准资源，其余生成 `ServiceFileBase` |
 
-组关联经 `SysResourceGoupModel` 另行解析，不能把直属子资源过滤规则自动套到所有组关联对象。嵌套组用祖先 ID 集合拒绝循环引用并记录警告。
+组关联经 `SysResourceGoupModel` 另行解析，不能把直属子资源过滤规则自动套到所有组关联对象。本轮重载使用的私有 `LoadGroupResource` 遇到重复祖先 ID 时记录警告并停止继续递归；父调用仍会加入已创建的组节点，因此不是完全排除重复 ID 节点。另一个公开入口 `LoadgroupResource` 递归查库但没有此祖先集合，不能套用同一循环保护保证。
 
-本轮资源索引不是数据库事务快照。重载先调用已有设备的 `Dispose()`，再查询并清空/重建集合；构造或查询异常没有整轮回滚保证，具体设备是否释放全部句柄取决于其实现。不要在只读诊断时通过重载来“试一下”，更不能保证运行中的设备和旧窗口不受影响。
+## 重载、旧对象与集合引用
+
+`LoadServices()` 是重新装配，不是按 Code 原地刷新旧设备：清理后会通过工厂构造新的运行实例；即使 Code 相同，旧窗口或调用者持有的对象引用也不会被这段代码自动改指向新实例。
+
+| 阶段 | 当前边界 |
+| --- | --- |
+| 清理旧对象 | 先清理设备 Copilot 上下文/映射，逐个调用当前 `DeviceServices` 的 `Dispose()`；某个 Dispose 失败会记录警告并继续，不保证该对象已释放 |
+| 清理上次生成集合 | 接着执行 `LastGenControl?.Clear()`，发生在字典与资源查询之前。它不是独立快照：`GenDeviceDisplayControl()` 最终使它引用 `DeviceServices`；`GenControl(collection)` 则直接保存调用者传入的集合，因此也可能清空调用者持有的集合 |
+| 查询与重建 | 再查询字典及本轮资源索引，依次清空/构造类型、终端、设备与子资源，最后发布 `ServiceChanged`。这些查询不是数据库事务快照，构造和通知也没有整轮回滚 |
+
+因此查询失败时，旧对象可能已被 Dispose，设备集合可能因共享引用已被清空，但旧类型树或显示项仍在；更晚失败也可能留下部分新集合。不能把“加载失败”解释为旧运行状态完整保留。具体设备是否释放全部句柄和事件取决于其 Dispose 实现；删除时的清理限制集中在[设备配置契约](../../01-user-guide/devices/configuration.md#导入、导出、重置与删除)。
+
+构造器只在 MySQL 已连接时首次重载，但其 `MySqlConnectChanged` 订阅没有按新的连接值过滤就调用 `LoadServices()`。不能认为断开通知天然是无操作，也不要在只读诊断中用切换数据库连接或重载来试探；这些动作可能影响运行设备和旧窗口。
 
 ## 工厂存在不等于默认可见
 
@@ -48,7 +60,7 @@ related: ["engine.index","operations.device-configuration","engine.mqtt","engine
 
 `GenDeviceDisplayControl()` 沿当前类型树生成主显示区；`GenControl(collection)` 使用指定设备集合。两者都先加入共享 `DisplayFlow`，只有设备 `GetDisplayControl()` 返回 `IDisPlayControl` 才追加该页，最后通过 `DisPlayManager.ReplaceControls` 替换显示集合。
 
-`LoadServices()` 最后发布 `ServiceChanged`，但本身不调用 `GenDeviceDisplayControl()`；初始化器和设备窗口的确认入口会另行生成显示区。新增资源后列表出现、主区域出现、Flow 能按正确 Code 绑定，应分别核对，不能只检查一个窗口。
+`LoadServices()` 最后发布 `ServiceChanged`，但本身不调用 `GenDeviceDisplayControl()` 或 `ReplaceControls()`；释放设备、清空 `LastGenControl` 也不等于替换主显示集合。初始化器和设备窗口的确认入口会另行生成显示区。设备窗口的 `OnClosed()` 不调用显示生成，不能把标题栏关闭当作确认按钮。因此资源集合、主显示项和旧窗口引用可能处于不同轮次；新增资源后列表出现、主区域出现、Flow 能按正确 Code 绑定，应分别核对，不能只检查一个窗口。
 
 ## 各模块的独立契约
 
@@ -85,5 +97,7 @@ PG、Spectrum、Sensor 等设备从 `RegisterDefaults` 定位具体配置、命�
 | 保存后异常或重启未生效 | 配置持久化和 RC 重启是不同阶段，进入[配置契约](../../01-user-guide/devices/configuration.md) |
 
 本页未声明资源树、工厂与真实 MySQL 的自动化集成覆盖。`ServiceConfigTests` 只验证注册中心服务信息属性通知，不证明此装配链；具体设备测试从对应主题进入。验证应记录同一设备的资源 ID/Code、版本、父终端、配置来源和实际失败阶段，敏感配置须脱敏。
+
+获得授权后的隔离验证还需覆盖：查询失败发生在 Dispose/集合清理之后、`LastGenControl` 与调用者集合共享引用、构造中途失败、显示生成前后的对象身份，以及确认按钮与标题栏关闭。字段、路径和检索校验不覆盖这些运行时行为。
 
 真机验收另按[现场证据规范](../../01-user-guide/field-operation-acceptance.md)授权执行。电机运动、SMU 输出、相机触发、远端重启和文件写入都不是文档校验或设备列表查看的附带动作。

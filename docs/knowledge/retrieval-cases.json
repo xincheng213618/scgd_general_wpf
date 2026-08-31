@@ -354,6 +354,12 @@
     {"query":"一次状态推送只更新了部分设备，后面的设备没变，而且日志里没看到回调异常，是整包被回滚了还是可能更新到一半？","expected_any":["engine.rc-registration"],"include_planned":false},
     {"query":"设备的存活时间一直往上加，能不能说明它刚刚还在线？多久没收到状态消息才算过期？","expected_any":["engine.rc-registration"],"include_planned":false},
     {"query":"ServiceTokensUpdated没触发能说明本地配置完全没变吗","expected_any":["engine.rc-registration"],"include_planned":false},
-    {"query":"MqttRCService.ApplyPendingServiceUpdates异常后缓冲会恢复并继续生成显示吗","expected_any":["engine.rc-registration"],"include_planned":false}
+    {"query":"MqttRCService.ApplyPendingServiceUpdates异常后缓冲会恢复并继续生成显示吗","expected_any":["engine.rc-registration"],"include_planned":false},
+    {"query":"在本地重新加载设备资源后，原来已经创建的设备对象会被替换吗，已经打开的界面还会拿着旧对象吗？","expected_any":["engine.devices"],"include_planned":false},
+    {"query":"设备配置保存成功后，正在用的设备对象和界面列表会马上按新配置重建吗，还是要另外重新加载？","expected_any":["operations.device-configuration"],"include_planned":false},
+    {"query":"把本地设备删掉以后，它已经创建的通信对象和显示项也会一起消失吗，后面还有可能收到它的事件吗？","expected_any":["operations.device-configuration"],"include_planned":false},
+    {"query":"我拿到设备对象里的配置直接改几个字段但不保存，会不会立刻影响运行中的收发设置，还是只有保存后才生效？","expected_any":["operations.device-configuration"],"include_planned":false},
+    {"query":"LastGenControl.Clear会清空调用者传入的集合吗","expected_any":["engine.devices"],"include_planned":false},
+    {"query":"DeviceService.Delete调用Dispose保证解绑MQTT和移除旧显示页吗","expected_any":["operations.device-configuration"],"include_planned":false}
   ]
 }
