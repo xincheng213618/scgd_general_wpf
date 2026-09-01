@@ -190,9 +190,6 @@ next: false
 - [SQLite 正文存储、迁移与文件维护](../../04-api-reference/ui-components/sqlite-storage.md) — `ui.sqlite-storage`
   Socket 与 Flow 的 SQLite 正文 gzip 编解码、按ID读写、旧TEXT逐批迁移、WAL备份与VACUUM；通用工具不自动停写/备份/恢复，失败可能已有批次提交。
 
-- [本地相机内存帧预览：实施与验证 \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview-validation.md) — `engine.camera-preview-validation-plan`
-  列出尚未实施的相机内存预览阶段、验收用例和实施前需要重新核对的源码。
-
 - [Engine MQTT 消息处理指南](../../02-developer-guide/engine-development/mqtt.md) — `engine.mqtt`
   说明 Engine MQTT 连接、设备请求、MsgID 关联、超时和订阅恢复。
 
@@ -226,11 +223,8 @@ next: false
 - [Flow 转换与校准节点](../../04-api-reference/engine-components/flow-conversion-calibration-nodes.md) — `flow.conversion-calibration`
   定位 Flow 数据转换、图像转换、单双输入校准及属性选择器。
 
-- [本地相机内存帧预览：生命周期与显示语义 \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview-runtime.md) — `engine.camera-preview-lifecycle-plan`
-  记录待实施预览的租约取得、latest-wins、RAW/CIE 模式和内存预算约束。
-
 - [本地相机内存帧预览方案（待实施） \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview.md) — `engine.camera-preview-plan`
-  记录待实施的设备级内存帧预览设计，不代表当前 ViewCamera 已支持无文件历史结果。
+  待实施的设备级内存帧预览单一方案：发布器、租约、latest-wins、RAW/CIE 模式、内存预算、实施阶段与验收。
 
 ## Engine/ColorVision.FileIO {#module-456e67696e652f436f6c6f72566973696f6e2e46696c65494f}
 
@@ -300,8 +294,8 @@ next: false
 - [FlowEngineLib](../../04-api-reference/engine-components/FlowEngineLib.md) — `flow.runtime`
   说明节点图加载、服务绑定、完成事件和隔离 RuntimeHost 的执行边界。
 
-- [本地相机内存帧预览：生命周期与显示语义 \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview-runtime.md) — `engine.camera-preview-lifecycle-plan`
-  记录待实施预览的租约取得、latest-wins、RAW/CIE 模式和内存预算约束。
+- [本地相机内存帧预览方案（待实施） \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview.md) — `engine.camera-preview-plan`
+  待实施的设备级内存帧预览单一方案：发布器、租约、latest-wins、RAW/CIE 模式、内存预算、实施阶段与验收。
 
 ## Engine/ST.Library.UI {#module-456e67696e652f53542e4c6962726172792e5549}
 

@@ -2,68 +2,106 @@
 knowledge_id: "algorithms.image-comparison"
 knowledge_type: "reference"
 status: "current"
-summary: "ImageComparison 的输入、参数、结果、宿主接入与定向验证契约。"
-aliases: ["如何比较两幅图像并读取误差与差异结果","ImageComparison","ImageComparisonAlgorithmProvider"]
+summary: "ImageComparison 当前行为版本 1.1、schema 2 的双输入比较、ROI、SSIM、对齐预检、输出预算及 schema 1 迁移契约。"
+aliases: ["如何比较两幅图像并读取误差与差异结果","SSIM、色差与高级图像比较如何解释","ImageComparison","ImageComparisonAlgorithmProvider"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/ImageComparisonAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageComparisonV1Tests.cs"]
-related: ["algorithms.platform","algorithms.index"]
+test_paths: ["Test/ColorVision.UI.Tests/ImageComparisonV1Tests.cs","Test/ColorVision.UI.Tests/ImageComparisonAdvancedV1Tests.cs","Test/ColorVision.UI.Tests/ImageAlgorithmPerformanceGateTests.cs"]
+related: ["algorithms.platform","algorithms.index","algorithms.image-registration","algorithms.lens-distortion-correction"]
 ---
 
-# 图像比较基础 V1（M3）
+# 图像比较 V1（M3–M4）
 
-M3 提供可实际使用的双输入基础比较，稳定算法 ID 为 `colorvision.analysis.image-comparison`。M3 首次发布时行为版本和参数 schema 均为 V1；[M4](./image-comparison-advanced-v1.md) 已在同一身份上把行为版本升级到 1.1、schema 升级到 2，并为旧 schema 提供显式迁移。本页保留 M3 的兼容基线。
+稳定算法 ID 为 `colorvision.analysis.image-comparison`。当前行为版本是 `1.1.0`，参数 schema 是 2；M3 的 schema 1 Invocation 通过显式 `1 → 2` migrator 迁移，原有参数保持不变，新参数使用统一默认值。本页是基础差分、ROI、SSIM 和对齐预检的单一当前契约。
 
-## 仓库盘点和阶段边界
+## 输入与能力边界
 
-实施前盘点没有发现可复用的通用比较算法；P2 下的双图代码是专用调试路径，不能作为公共契约。统一平台已经具备具名多输入、多个 Image artifact、Measurement、Table、StructuredData、取消和转移所有权，M3 在这些边界上实现 CPU provider。
+算法比较编码后的设备样本值，不执行缩放、裁剪、位深/通道转换、ICC 转换或配准。两个输入必须：
 
-M3 比较编码后的设备样本值，不执行缩放、裁剪、位深转换、通道转换、ICC/颜色空间转换或配准。两个输入必须：
+- 分别命名为 `reference` 和 `candidate`，有符号差固定为 `reference - candidate`。
+- 尺寸、位深、通道数完全一致。
+- 都提供相同的显式 `ColorSpace` 标签；ImageView 使用 `encoded-device-values`。
 
-- 分别命名为 `reference` 和 `candidate`，有符号差固定为 `reference - candidate`；
-- 尺寸完全一致；
-- 核心格式完全一致，即位深和通道数一致；
-- 都提供相同的显式 `ColorSpace` 标签。ImageView V1 使用 `encoded-device-values`，表示按解码后通道样本直接比较。
+违反约束时返回 `invalid_input_names`、`dimension_mismatch`、`format_mismatch`、`color_space_unspecified` 或 `color_space_mismatch`，不会隐式转换。DPI 不同不改变像素阵列比较，但产生 `dpi_mismatch` warning。
 
-违反约束时返回 `invalid_input_names`、`dimension_mismatch`、`format_mismatch`、`color_space_unspecified` 或 `color_space_mismatch`，不会偷偷转换。DPI 不同不改变像素阵列比较，但产生 `dpi_mismatch` warning。SSIM、ROI 比较和对齐前质量诊断随后由 M4 在这些约束上扩展。
+算法的“对齐”只是有界采样的整数平移预检：报告 candidate 相对 reference 的偏移、相关性、重叠率和置信度，不变换输入或差分结果。实际变换属于[图像配准](./image-registration-v1.md)和[镜头畸变校正](./lens-distortion-correction-v1.md)。
 
-## 参数与数值语义
+## 参数与基础数值语义
 
-schema 1 的 `ImageComparisonParameters` 有三个参数：
+schema 2 保留三个基础参数：
 
-- `IncludeAlphaInMetrics` 默认 `true`，只控制指标和热力图是否统计 alpha；精确差分仍保留所有通道。
+- `IncludeAlphaInMetrics` 默认 `true`，只控制指标和热力图是否统计 alpha；精确差分保留所有通道。
 - `FloatPeakValue` 默认 `1`，是 float 输入计算 PSNR 的显式峰值；8/16-bit 固定使用 255/65535。
-- `HeatmapMaximum` 默认 `0`，表示使用上述峰值作显示归一化上限；正值用于固定可复现的显示量程。
+- `HeatmapMaximum` 默认 `0`，表示使用峰值作显示归一化上限；正值用于固定显示量程。
 
-对所有被统计通道的有限样本对，`MSE = mean((reference-candidate)^2)`，`RMSE = sqrt(MSE)`，`PSNR = 20 log10(peak/RMSE)`。完全相同时 PSNR 为 `Infinity`，JSON 以命名浮点字符串安全导出。float 输入先读入 double 域再做差和累计，因此两个有限 Float32 极值的差仍进入指标；若差值超出 Float32 artifact 范围，有符号差图按 IEEE Infinity 保存并产生 warning，而 double 指标不丢样本。输入本身的 NaN/Infinity 不进入指标并计入 invalid count，显示图以洋红标识。
+对所有被统计通道的有限样本对，`MSE = mean((reference-candidate)^2)`，`RMSE = sqrt(MSE)`，`PSNR = 20 log10(peak/RMSE)`。完全相同时 PSNR 为 `Infinity`，JSON 使用命名浮点字符串。Float32 输入在 double 域累计；输入 NaN/Infinity 不进入指标并计入 invalid count，显示图以洋红标识。
 
-## Result artifacts
+schema 2 增加：
 
-算法定义以下五种图像 artifact：
+| 参数 | 默认值 | 验证与含义 |
+| --- | --- | --- |
+| `EnableSsim` | true | 计算逐通道及聚合 SSIM |
+| `SsimWindowSize` | 11 | 3..255 的奇数；使用边界裁剪的方形 box window |
+| `SsimK1` / `SsimK2` | 0.01 / 0.03 | 各自 `(0,1]`，生成稳定常数 C1/C2 |
+| `SsimMinimumValidFraction` | 0.5 | `(0,1]`；有限样本不足时排除窗口 |
+| `EnableAlignmentPrecheck` | true | 启用只读整数平移诊断 |
+| `AlignmentSearchRadius` | 8 | 0..32 pixel，X/Y 各向搜索 |
+| `AlignmentWarningThresholdPixels` | 0.5 | 非负；超过时产生偏移 warning |
+| `AlignmentMinimumOverlapFraction` | 0.75 | `(0,1]`；拒绝重叠不足的候选偏移 |
+| `AlignmentMaximumSamples` | 4096 | 256..100000；限制每个偏移的样本量 |
 
-- `absolute-difference`：精确绝对差，保持输入尺寸、位深和通道；
-- `signed-difference`：精确有符号差，统一为同通道 32-bit float；
-- `absolute-difference-visualization`：BGR24 显示归一化；
-- `signed-difference-visualization`：BGR24，中性灰表示零；
-- `difference-heatmap`：BGR24 差值热力图；
-- `image-comparison` Measurement 与 StructuredData；
-- `image-comparison-channels` Table，包含逐通道 MSE、RMSE、PSNR、最大差值及有效/无效计数。
+Runner 在执行 provider 前完成迁移、默认值合并和校验；未知未来 schema 结构化拒绝。
 
-精确 artifact 和显示 artifact 故意分离；不得用截图或热力图反推数值。未携带输出提示的旧 Invocation 仍返回五张图，保持公开调用兼容。新调用可在 Invocation metadata 的 `colorvision.image-comparison.requested-artifacts` 中列出实际需要的名称，或使用 `metrics-only`；Measurement、Table、Geometry、StructuredData 与 Diagnostics 始终返回。未知名称以 `comparison_output_plan_invalid` 结构化拒绝。
+## ROI 与差分语义
 
-provider 在任何输出分配前计算所请求图像的 `stride × height × count`，总 retained image 上限为 192 MiB，单数组还必须满足运行时数组上限；超限返回 `comparison_output_budget_exceeded`，不会先分配再失败。每次大数组分配前检查取消。所有已生成图像仍由 `AlgorithmResult` 统一持有并释放，Runner 负责释放 transferred 双输入。
+- Invocation 可不带 ROI，或携带 Pixel/Physical 坐标的矩形、圆、多边形 ROI；整数像素中心、矩形半开区间、边界包含和 DPI 换算复用统一 ROI 规则。
+- ROI 超界时与图像求交并返回 `comparison_roi_clipped`；没有像素中心时返回 `comparison_roi_empty`。
+- MSE、RMSE、PSNR、SSIM 和对齐预检只使用 ROI 内样本。
+- `absolute-difference`、`signed-difference` 及普通显示图仍覆盖完整图像；ROI 外不清零或裁剪。
+- `difference-heatmap` 在 ROI 外为黑色，避免展示边界与数值 artifact 混淆。
+- 成功结果包含 Pixel Geometry 和 transient Overlay，窗口关闭时统一移除并释放 Result。
 
-## ImageView 使用
+## 输出与资源预算
 
-在“算法调用 → 图像比较”中选择“全图比较...”，设置参数后选择候选文件。当前 ImageView 和候选文件都会形成不可变快照，再通过同一 Runner 执行。ImageView 明确请求三张 BGR24 visualization，不再同时保留两张未显示的全分辨率精确差图；结果窗提供差分热力/绝对差/有符号差显示、可调 blink、交互 split、逐通道指标、CSV/JSON 导出和当前显示 PNG 保存。需要精确差图的 headless/API 调用应在输出计划中显式请求。导出默认拒绝覆盖已有文件；M4 另增加三种 ROI 入口和质量诊断页。
+图像输出包括：
 
-交互调用复用共享 analysis session。取消、关闭进度窗、当前文档 revision 改变、切图或较新的 Invocation 都会阻止迟到结果显示；关闭结果窗会释放全部 result image。
+- `absolute-difference`：保持输入尺寸、位深和通道的精确绝对差。
+- `signed-difference`：同通道 32-bit float 有符号差。
+- `absolute-difference-visualization`：BGR24 显示归一化。
+- `signed-difference-visualization`：BGR24，中性灰表示零。
+- `difference-heatmap`：BGR24 差值热力图。
 
-## 能力声明
+结构化输出包括 `image-comparison` Measurement/StructuredData、`image-comparison-channels` Table、Geometry 和 Diagnostics。精确与显示 artifact 故意分离，不得从截图或热力图反推数值。
 
-Descriptor 声明 `Interactive | Headless | Local | Deterministic | MultiInput`。M3 没有声明 Batch、Flow 或 Copilot：现有 Batch/Flow 适配器是单输入，缺少显式成对策略；Copilot 也没有加入白名单。未来只有在宿主提供明确的双输入绑定、配对和权限策略后才能增加相应 capability，不能借文件名或目录顺序隐式配对。
+旧 Invocation 未指定计划时仍返回五张图。新调用在 metadata 的 `colorvision.image-comparison.requested-artifacts` 中按名称选择，或使用 `metrics-only`；未知名称返回 `comparison_output_plan_invalid`。图像分配前检查 192 MiB retained-output 总预算，超限返回 `comparison_output_budget_exceeded`；每次大数组分配前检查取消，Runner 负责释放 transferred 双输入。
 
-## 验证边界
+## SSIM 规则
 
-回归覆盖 8-bit golden、16-bit/BGRA、float 极值/NaN/Infinity、alpha 策略、精确差分、MSE/RMSE/PSNR 数值容差、输入只读、命名方向、尺寸/格式/颜色标签结构化拒绝、DPI warning、完美匹配 JSON、预取消、输出计划、4K 分配前预算拒绝、双输入释放、结果统一释放、Catalog/白名单和 WPF 结果窗。阶段验收的具体命令与通过数量记录在任务报告中。
+每个比较通道独立计算局部 SSIM：
 
-高级比较的当前契约、数值规则和门禁见 [图像比较高级 V1（M4）](./image-comparison-advanced-v1.md)。
+`((2 μx μy + C1) (2 σxy + C2)) / ((μx² + μy² + C1) (σx² + σy² + C2))`
+
+均值、总体方差和协方差只使用窗口内、ROI 内且两输入均有限的样本对。边缘窗口裁剪到有效像素；有限样本比例不足的窗口记为 invalid。峰值规则与 PSNR 相同，结果限制在 `[-1,1]` 并按有效窗口数聚合。实现使用逐列滚动和水平滑窗，时间复杂度为 `O(width × height × channels)`、额外内存为 `O(width)`，每 16 行检查取消。没有有效窗口时省略 `comparison.ssim` 并产生 `ssim_unavailable`。
+
+## 对齐预检
+
+预检按 BGR Rec.601 luma（灰度直接使用原值）采样 reference ROI，在 `[-radius,+radius]²` 搜索 candidate。候选偏移使用有限样本对的归一化互相关；规则网格步长由 ROI 包围盒和 `AlignmentMaximumSamples` 决定，不做随机抽样。`(dx,dy)` 表示比较 `reference(x,y)` 与 `candidate(x+dx,y+dy)`。
+
+`image-comparison-alignment` Table 返回状态、偏移、幅值、best/zero correlation、峰值 margin、confidence、overlap、样本数和步长。`ok` 时还返回 `alignment-precheck` Transform Geometry。低纹理、样本不足或重叠不足分别使用 `low_texture`、`insufficient_samples`、`insufficient_overlap` 并产生 warning；不会触发隐式配准。
+
+## ImageView 与宿主
+
+ImageView 的“算法调用 → 图像比较”提供全图、矩形、圆和多边形入口。当前图与文件候选形成不可变快照并使用共享 analysis session；窗口显示差分、blink/split、通道质量和对齐预检，可导出 JSON/CSV bundle 和当前 PNG，默认拒绝覆盖已有文件。交互入口只请求三个 visualization；关闭、取消、切图、source revision 改变或较新 Invocation 会阻止迟到结果显示。
+
+Descriptor 声明 `Interactive | Headless | Local | Deterministic | MultiInput` 和三种 ROI 支持。Batch、Flow 和 Copilot 尚无经审批的双输入配对契约，不得按文件名或目录顺序隐式配对，也不应强行声明对应 capability。
+
+## 共享平台契约
+
+图像 revision、latest-wins、overlay token、源帧租约和结果释放遵守[平台执行与所有权规则](./image-algorithm-platform-v1.md#m0-执行与所有权规则)。格式规范化、只读 header、Catalog 投影、native 依赖和 Copilot 审批由[平台兼容规范](./image-algorithm-platform-v1.md#执行平面与兼容层)维护。
+
+## 验证范围与缺口
+
+`ImageComparisonV1Tests` 覆盖输入校验、基础指标、精确差分、非有限值、输出计划、预算、取消、双输入和结果释放。`ImageComparisonAdvancedV1Tests` 覆盖 schema 迁移、ROI、SSIM、已知平移、低纹理诊断、ImageView 质量表与 overlay 生命周期。
+
+`ImageAlgorithmPerformanceGateTests` 的 `ComparisonPipelineProbe` 只在 `COLORVISION_IMAGE_ALGORITHM_PERF=1` 时运行，并关闭 SSIM/对齐、只请求 heatmap；普通测试通过不能当作 4K/8K 或全分析性能证据。启用探针会消耗较多 CPU 和内存，跨机器比较须保持输入、配置和测量方法一致。
+
+普通托管测试不证明 native 项目已重建；缺少 C++ workload 或真实 helper 时，应按[平台验收门禁](./image-algorithm-platform-v1.md#m0-验收门禁)保留缺口。

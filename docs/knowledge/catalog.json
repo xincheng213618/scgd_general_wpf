@@ -73,7 +73,7 @@
       "source": "docs/02-developer-guide/core-concepts/blob-analysis-v1.md",
       "url": "/02-developer-guide/core-concepts/blob-analysis-v1",
       "searchable": true,
-      "source_hash": "ee54ce59bb97fe31197d416d8ae5f16cec6803b4ea3feab488eabda9e60cea4f"
+      "source_hash": "700fd288332cdc1282ac1f2c18e191f68bb2cce7cfc4efc768c6a81a6af3eadb"
     },
     {
       "knowledge_id": "algorithms.circle-fit",
@@ -106,7 +106,7 @@
       "source": "docs/02-developer-guide/core-concepts/circle-fit-v1.md",
       "url": "/02-developer-guide/core-concepts/circle-fit-v1",
       "searchable": true,
-      "source_hash": "82da4546614d3ee9beff2d0176122c13abcc6044379f14fcd45a1edf52d6d4b4"
+      "source_hash": "801aafef9fe6288b987d4226b72fa8b4f88aa35d7dba6ba199186a34a1f72349"
     },
     {
       "knowledge_id": "algorithms.contour-analysis",
@@ -139,7 +139,7 @@
       "source": "docs/02-developer-guide/core-concepts/contour-analysis-v1.md",
       "url": "/02-developer-guide/core-concepts/contour-analysis-v1",
       "searchable": true,
-      "source_hash": "861713c172470ac63cc85af1ab06eb7a6a8b4992dfa4f161b4bd4a673dda95fa"
+      "source_hash": "d0a92231d6c7ee26f9eb99b33a1c7d70a84b0e82dd13e1f8c444361f790c403f"
     },
     {
       "knowledge_id": "algorithms.data-load",
@@ -290,7 +290,7 @@
       "source": "docs/02-developer-guide/core-concepts/frequency-spectrum-v1.md",
       "url": "/02-developer-guide/core-concepts/frequency-spectrum-v1",
       "searchable": true,
-      "source_hash": "b3c4e75851955e107b00bc8181bb9d396b2bb595a08bdc5a14b0d9d299a3ba6f"
+      "source_hash": "759288cd766b0f356a93d2ee7cad78ae35b7e466b379ac510c3509aa05abade0"
     },
     {
       "knowledge_id": "algorithms.geometric-transform",
@@ -362,40 +362,9 @@
       "knowledge_id": "algorithms.image-comparison",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "ImageComparison 的输入、参数、结果、宿主接入与定向验证契约。",
+      "summary": "ImageComparison 当前行为版本 1.1、schema 2 的双输入比较、ROI、SSIM、对齐预检、输出预算及 schema 1 迁移契约。",
       "aliases": [
         "如何比较两幅图像并读取误差与差异结果",
-        "ImageComparison",
-        "ImageComparisonAlgorithmProvider"
-      ],
-      "code_paths": [
-        "UI/ColorVision.ImageEditor/Algorithms/ImageComparisonAlgorithmProvider.cs",
-        "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs",
-        "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"
-      ],
-      "test_paths": [
-        "Test/ColorVision.UI.Tests/ImageComparisonV1Tests.cs"
-      ],
-      "related": [
-        "algorithms.platform",
-        "algorithms.index"
-      ],
-      "code_scopes": [
-        "UI/ColorVision.ImageEditor"
-      ],
-      "domain": "algorithms",
-      "title": "图像比较基础 V1（M3）",
-      "source": "docs/02-developer-guide/core-concepts/image-comparison-v1.md",
-      "url": "/02-developer-guide/core-concepts/image-comparison-v1",
-      "searchable": true,
-      "source_hash": "f4fc6ca63e59a9376317557464585d33d308cdb7d3e51b27543943f54d227c18"
-    },
-    {
-      "knowledge_id": "algorithms.image-comparison-advanced",
-      "knowledge_type": "reference",
-      "status": "current",
-      "summary": "ImageComparison 的输入、参数、结果、宿主接入与定向验证契约。",
-      "aliases": [
         "SSIM、色差与高级图像比较如何解释",
         "ImageComparison",
         "ImageComparisonAlgorithmProvider"
@@ -406,23 +375,25 @@
         "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/ImageComparisonAdvancedV1Tests.cs",
         "Test/ColorVision.UI.Tests/ImageComparisonV1Tests.cs",
+        "Test/ColorVision.UI.Tests/ImageComparisonAdvancedV1Tests.cs",
         "Test/ColorVision.UI.Tests/ImageAlgorithmPerformanceGateTests.cs"
       ],
       "related": [
         "algorithms.platform",
-        "algorithms.index"
+        "algorithms.index",
+        "algorithms.image-registration",
+        "algorithms.lens-distortion-correction"
       ],
       "code_scopes": [
         "UI/ColorVision.ImageEditor"
       ],
       "domain": "algorithms",
-      "title": "图像比较高级 V1（M4）",
-      "source": "docs/02-developer-guide/core-concepts/image-comparison-advanced-v1.md",
-      "url": "/02-developer-guide/core-concepts/image-comparison-advanced-v1",
+      "title": "图像比较 V1（M3–M4）",
+      "source": "docs/02-developer-guide/core-concepts/image-comparison-v1.md",
+      "url": "/02-developer-guide/core-concepts/image-comparison-v1",
       "searchable": true,
-      "source_hash": "58f72a0cfe7273d4815d13b316f6085ed1242bc0cc0324cfbfdce5c56b4d3ba8"
+      "source_hash": "70ddf4115c6c5bc16bdab32c45701601c0730d6098a88e9c28b0e4b0c751d8e3"
     },
     {
       "knowledge_id": "algorithms.image-cropping",
@@ -727,7 +698,7 @@
       "source": "docs/02-developer-guide/core-concepts/line-fit-v1.md",
       "url": "/02-developer-guide/core-concepts/line-fit-v1",
       "searchable": true,
-      "source_hash": "5f806afb2f341fd644b4cd409c7e60695b604ad3c44277d2258ce7a0efe6ca2a"
+      "source_hash": "27ac2ca786b2ce27b115f8c8a6f5f3406789ea84cfa58d47467048959e301e40"
     },
     {
       "knowledge_id": "algorithms.local-native-analysis",
@@ -862,7 +833,7 @@
       "source": "docs/02-developer-guide/core-concepts/moire-analysis-v1.md",
       "url": "/02-developer-guide/core-concepts/moire-analysis-v1",
       "searchable": true,
-      "source_hash": "b95b1157df07a0097eb917ecefe84efd1d3f66dd12a7fe48e83edb9d2ec2d32b"
+      "source_hash": "52927e8c7bd5a466baf8168cc7d6ade845af7bcf6f61c8bfd0c596470c262edc"
     },
     {
       "knowledge_id": "algorithms.onnx",
@@ -959,7 +930,7 @@
       "source": "docs/02-developer-guide/core-concepts/image-algorithm-platform-v1.md",
       "url": "/02-developer-guide/core-concepts/image-algorithm-platform-v1",
       "searchable": true,
-      "source_hash": "5ef44f47c26a1a37b2639a167d7a5da31d47d8aee41e84ffec5e01f9e8eec700"
+      "source_hash": "78a63cf6ba0cbebca57889016e6c16eb4ebfcacca413f27ffc39e632a7f5129e"
     },
     {
       "knowledge_id": "algorithms.poi-routes",
@@ -1138,7 +1109,7 @@
       "source": "docs/02-developer-guide/core-concepts/subpixel-edge-v1.md",
       "url": "/02-developer-guide/core-concepts/subpixel-edge-v1",
       "searchable": true,
-      "source_hash": "a29e68d9d671302c1e8e1582538f78a8cdb010fb078c6785c32cdfb81223c36a"
+      "source_hash": "1421ddff6e25bcc05410e6b04f4459f927b0a62389ad4f323376075b1cd58acb"
     },
     {
       "knowledge_id": "algorithms.template-dictionary",
@@ -3287,26 +3258,33 @@
       "source_hash": "e03f1df3cc1966b9e33fed822fe96c76e77fde71e06f569ff1630eb34a2a7fd5"
     },
     {
-      "knowledge_id": "engine.camera-preview-lifecycle-plan",
+      "knowledge_id": "engine.camera-preview-plan",
       "knowledge_type": "decision",
       "status": "planned",
-      "summary": "记录待实施预览的租约取得、latest-wins、RAW/CIE 模式和内存预算约束。",
+      "summary": "待实施的设备级内存帧预览单一方案：发布器、租约、latest-wins、RAW/CIE 模式、内存预算、实施阶段与验收。",
       "aliases": [
+        "不保存文件能在设备视图预览吗",
+        "相机内存预览怎样验收",
         "内存预览租约何时释放",
+        "LocalCameraNode",
+        "LocalFlowFrame",
         "LocalFlowFrameLease",
-        "Acquire",
+        "SaveFiles",
         "FullCie"
       ],
       "code_paths": [
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowFrame.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs",
         "Engine/FlowEngineLib/Base/CVStartCFC.cs",
         "Engine/ColorVision.Engine/Media/CVRawOpen.cs",
         "UI/ColorVision.ImageEditor/ImageView.xaml.cs"
       ],
       "test_paths": [],
       "related": [
-        "engine.camera-preview-plan",
-        "engine.camera-preview-validation-plan"
+        "engine.index",
+        "operations.camera"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine",
@@ -3314,76 +3292,11 @@
         "UI/ColorVision.ImageEditor"
       ],
       "domain": "engine",
-      "title": "本地相机内存帧预览：生命周期与显示语义",
-      "source": "docs/02-developer-guide/engine-development/local-camera-memory-preview-runtime.md",
-      "url": "/02-developer-guide/engine-development/local-camera-memory-preview-runtime",
-      "searchable": true,
-      "source_hash": "6c640127be4d56c59d109d8bcb796fc9689f902e120e5ef273001ae531f3b738"
-    },
-    {
-      "knowledge_id": "engine.camera-preview-plan",
-      "knowledge_type": "decision",
-      "status": "planned",
-      "summary": "记录待实施的设备级内存帧预览设计，不代表当前 ViewCamera 已支持无文件历史结果。",
-      "aliases": [
-        "不保存文件能在设备视图预览吗",
-        "LocalCameraNode",
-        "LocalFlowFrame",
-        "SaveFiles"
-      ],
-      "code_paths": [
-        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs",
-        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowFrame.cs",
-        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs",
-        "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs"
-      ],
-      "test_paths": [],
-      "related": [
-        "engine.index",
-        "engine.camera-preview-lifecycle-plan",
-        "engine.camera-preview-validation-plan"
-      ],
-      "code_scopes": [
-        "Engine/ColorVision.Engine"
-      ],
-      "domain": "engine",
       "title": "本地相机内存帧预览方案（待实施）",
       "source": "docs/02-developer-guide/engine-development/local-camera-memory-preview.md",
       "url": "/02-developer-guide/engine-development/local-camera-memory-preview",
       "searchable": true,
-      "source_hash": "b6bb3909c03c68c1eeba2d5ace735073ae1b433dabc746e4acbcff7951b96d71"
-    },
-    {
-      "knowledge_id": "engine.camera-preview-validation-plan",
-      "knowledge_type": "guide",
-      "status": "planned",
-      "summary": "列出尚未实施的相机内存预览阶段、验收用例和实施前需要重新核对的源码。",
-      "aliases": [
-        "相机内存预览怎样验收",
-        "LocalCameraNode",
-        "ViewCamera",
-        "LocalFlowFrame"
-      ],
-      "code_paths": [
-        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs",
-        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowFrame.cs",
-        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs",
-        "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs"
-      ],
-      "test_paths": [],
-      "related": [
-        "engine.camera-preview-plan",
-        "engine.camera-preview-lifecycle-plan"
-      ],
-      "code_scopes": [
-        "Engine/ColorVision.Engine"
-      ],
-      "domain": "engine",
-      "title": "本地相机内存帧预览：实施与验证",
-      "source": "docs/02-developer-guide/engine-development/local-camera-memory-preview-validation.md",
-      "url": "/02-developer-guide/engine-development/local-camera-memory-preview-validation",
-      "searchable": true,
-      "source_hash": "520899389fd0189e18652fea88091a633d5219b6ea9fae0244e1bfdb2e545c28"
+      "source_hash": "e74d9ccea4cb9ed5d324f0e88ff51ce80a8acd3785478916ba93bfc3eccb9685"
     },
     {
       "knowledge_id": "engine.database-maintenance",
@@ -3631,7 +3544,7 @@
       "source": "docs/04-api-reference/engine-components/README.md",
       "url": "/04-api-reference/engine-components/README",
       "searchable": true,
-      "source_hash": "3ed3f5b16961236aa434e67af80cd10d84b09b3ea4bc2bf68f9c4c235ea98241"
+      "source_hash": "0973ad97dbc12859c94553128056a16f4987e8a0650b173f92dc91be8c64741d"
     },
     {
       "knowledge_id": "engine.mqtt",
@@ -4707,7 +4620,7 @@
       "source": "docs/README.md",
       "url": "/README",
       "searchable": true,
-      "source_hash": "3623d66ddc2e4c92a6dbf8bb2f140ed2e293cb4acd1a0c2f9c608b8b74e48133"
+      "source_hash": "fb54774ef334c27ad32e9576f400c7fa24c76ecd97145c1ad3da7b36f9ff679a"
     },
     {
       "knowledge_id": "governance.maintenance",

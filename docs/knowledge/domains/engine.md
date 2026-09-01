@@ -47,9 +47,6 @@ next: false
 - [模板注册、参数与持久化](../../03-architecture/components/templates/design.md) — `engine.template-design`
   TemplateControl注册与普通ITemplate\<T\>参数加载、保存、复制和删除契约；注册、内存变更和数据库成功是不同状态，JSON与Flow另有实现。
 
-- [本地相机内存帧预览：实施与验证 \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview-validation.md) — `engine.camera-preview-validation-plan`
-  列出尚未实施的相机内存预览阶段、验收用例和实施前需要重新核对的源码。
-
 - [Engine MQTT 消息处理指南](../../02-developer-guide/engine-development/mqtt.md) — `engine.mqtt`
   说明 Engine MQTT 连接、设备请求、MsgID 关联、超时和订阅恢复。
 
@@ -59,8 +56,5 @@ next: false
 - [cvColorVision](../../04-api-reference/engine-components/cvColorVision.md) — `engine.native-bindings`
   定位供应商 native DLL 的相机、光谱、XYZ、OLED、PG 与源表绑定契约。
 
-- [本地相机内存帧预览：生命周期与显示语义 \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview-runtime.md) — `engine.camera-preview-lifecycle-plan`
-  记录待实施预览的租约取得、latest-wins、RAW/CIE 模式和内存预算约束。
-
 - [本地相机内存帧预览方案（待实施） \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview.md) — `engine.camera-preview-plan`
-  记录待实施的设备级内存帧预览设计，不代表当前 ViewCamera 已支持无文件历史结果。
+  待实施的设备级内存帧预览单一方案：发布器、租约、latest-wins、RAW/CIE 模式、内存预算、实施阶段与验收。

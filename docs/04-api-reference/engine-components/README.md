@@ -56,7 +56,7 @@ node docs/.vitepress/scripts/knowledge.mjs impact "Engine/ColorVision.Engine/Flo
 
 ## 待实施设计
 
-本地相机内存预览仍是 `planned`，不表示当前设备已支持该发布器或生命周期：[方案](../../02-developer-guide/engine-development/local-camera-memory-preview.md)、[显示与生命周期](../../02-developer-guide/engine-development/local-camera-memory-preview-runtime.md)、[实施与验证计划](../../02-developer-guide/engine-development/local-camera-memory-preview-validation.md)。
+本地相机内存预览仍是 `planned`，不表示当前设备已支持该发布器或生命周期；设计、生命周期与验收统一维护在[本地相机内存帧预览方案](../../02-developer-guide/engine-development/local-camera-memory-preview.md)。
 
 ## 验证入口与缺口
 

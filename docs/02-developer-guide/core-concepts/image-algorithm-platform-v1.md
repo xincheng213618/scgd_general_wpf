@@ -17,7 +17,7 @@ related: ["algorithms.index","algorithms.onnx","ui.index","ui.image-editor"]
 
 ## 里程碑范围
 
-M0 只覆盖平台基础、现有普通 ImageEditor 算法和兼容适配。ROI 统计、剖面、基础与高级图像比较已分别在 [M1](./roi-statistics-v1.md)、[M2](./image-profile-v1.md)、[M3](./image-comparison-v1.md)、[M4](./image-comparison-advanced-v1.md) 形成独立增量。M5–M11 的页面同时记录实现候选和验证契约；是否进入默认产品执行面必须以本页的发布清单为准，不能因为 Catalog 已有 Descriptor 或仓库已有 provider 就写成已发布。原计划的 M12 ONNX/AI 已标记为 Deferred；当前不引入运行时依赖，未来边界见 [ONNX / AI 推理接入设计](./onnx-inference-future-design.md)。
+M0 只覆盖平台基础、现有普通 ImageEditor 算法和兼容适配。ROI 统计、剖面和图像比较分别在 [M1](./roi-statistics-v1.md)、[M2](./image-profile-v1.md)、[M3–M4](./image-comparison-v1.md) 形成增量；图像比较的当前行为与 schema 迁移由同一主题维护。M5–M11 的页面同时记录实现候选和验证契约；是否进入默认产品执行面必须以本页的发布清单为准，不能因为 Catalog 已有 Descriptor 或仓库已有 provider 就写成已发布。原计划的 M12 ONNX/AI 已标记为 Deferred；当前不引入运行时依赖，未来边界见 [ONNX / AI 推理接入设计](./onnx-inference-future-design.md)。
 
 ## 当前发布清单
 

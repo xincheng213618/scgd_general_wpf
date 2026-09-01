@@ -77,11 +77,8 @@ next: false
 - [几何变换 V1（M7）](../../02-developer-guide/core-concepts/geometric-transform-v1.md) — `algorithms.geometric-transform`
   GeometricTransform 的输入、参数、结果、宿主接入与定向验证契约。
 
-- [图像比较基础 V1（M3）](../../02-developer-guide/core-concepts/image-comparison-v1.md) — `algorithms.image-comparison`
-  ImageComparison 的输入、参数、结果、宿主接入与定向验证契约。
-
-- [图像比较高级 V1（M4）](../../02-developer-guide/core-concepts/image-comparison-advanced-v1.md) — `algorithms.image-comparison-advanced`
-  ImageComparison 的输入、参数、结果、宿主接入与定向验证契约。
+- [图像比较 V1（M3–M4）](../../02-developer-guide/core-concepts/image-comparison-v1.md) — `algorithms.image-comparison`
+  ImageComparison 当前行为版本 1.1、schema 2 的双输入比较、ROI、SSIM、对齐预检、输出预算及 schema 1 迁移契约。
 
 - [灰度与颜色剖面 V1（M2）](../../02-developer-guide/core-concepts/image-profile-v1.md) — `algorithms.image-profile`
   ImageProfile 的输入、参数、结果、宿主接入与定向验证契约。

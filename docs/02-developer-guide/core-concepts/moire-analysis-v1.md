@@ -13,9 +13,7 @@ related: ["algorithms.platform","algorithms.index"]
 
 ## 当前发布边界
 
-当前默认 `ImageAlgorithmPlatform.CreateDefaultProviders()` 把本页 provider 包装在 `ExperimentalAlgorithmProviderGate` 中：菜单和 Batch 可执行投影隐藏该能力，直接调用默认 Runner 也返回 `provider_unavailable`，详情包含 `algorithm_experimental`。本页后面的参数、结果与宿主接入描述属于保留实现及测试契约，不是产品已开放的承诺；不得在调用方另建执行旁路来绕过门禁。
-
-本页 `status: current` 表示它记录当前源码事实，不代表算法已发布。M 编号是历史增量标识；其他增量是否可用以 [统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单) 为准。`Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs` 验证默认拒绝行为，专题测试覆盖实现细节；解除门禁还需完成对应数值、最坏资源与生产规模验证。
+本 provider 当前受[统一平台 Experimental 发布门禁](./image-algorithm-platform-v1.md#当前发布清单)约束：默认菜单和 Batch 不展示，默认 Runner 返回 `provider_unavailable` / `algorithm_experimental`。下文记录保留实现和专题测试契约，不表示产品已发布。
 
 
 ## 阶段边界与既有能力

@@ -1076,15 +1076,9 @@
             },
             {
               "text": {
-                "root": "图像比较基础 V1（M3）"
+                "root": "图像比较 V1（M3–M4）"
               },
               "link": "/02-developer-guide/core-concepts/image-comparison-v1"
-            },
-            {
-              "text": {
-                "root": "图像比较高级 V1（M4）"
-              },
-              "link": "/02-developer-guide/core-concepts/image-comparison-advanced-v1"
             },
             {
               "text": {
@@ -1148,9 +1142,9 @@
             },
             {
               "text": {
-                "root": "本地相机内存帧预览：生命周期与显示语义 [规划]"
+                "root": "本地相机内存帧预览方案（待实施） [规划]"
               },
-              "link": "/02-developer-guide/engine-development/local-camera-memory-preview-runtime"
+              "link": "/02-developer-guide/engine-development/local-camera-memory-preview"
             }
           ]
         },
@@ -2108,12 +2102,6 @@
             },
             {
               "text": {
-                "root": "本地相机内存帧预览：实施与验证 [规划]"
-              },
-              "link": "/02-developer-guide/engine-development/local-camera-memory-preview-validation"
-            },
-            {
-              "text": {
                 "root": "Engine MQTT 消息处理指南"
               },
               "link": "/02-developer-guide/engine-development/mqtt"
@@ -2177,12 +2165,6 @@
                 "root": "Flow 转换与校准节点"
               },
               "link": "/04-api-reference/engine-components/flow-conversion-calibration-nodes"
-            },
-            {
-              "text": {
-                "root": "本地相机内存帧预览：生命周期与显示语义 [规划]"
-              },
-              "link": "/02-developer-guide/engine-development/local-camera-memory-preview-runtime"
             },
             {
               "text": {
@@ -2348,9 +2330,9 @@
             },
             {
               "text": {
-                "root": "本地相机内存帧预览：生命周期与显示语义 [规划]"
+                "root": "本地相机内存帧预览方案（待实施） [规划]"
               },
-              "link": "/02-developer-guide/engine-development/local-camera-memory-preview-runtime"
+              "link": "/02-developer-guide/engine-development/local-camera-memory-preview"
             }
           ]
         },
