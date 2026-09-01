@@ -77,7 +77,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
             return CameraModel is CameraModel.HK_USB or CameraModel.HK_CARD or CameraModel.HK_FG_CARD;
         }
 
-        public void ApplyTo(ConfigCamera target, bool includeCameraId = true, bool includeCameraType = true)
+        /// <summary>
+        /// Applies shared physical-camera parameters to a device configuration.
+        /// CameraID identifies the camera in the current local runtime, so it is preserved by default.
+        /// </summary>
+        public void ApplyTo(ConfigCamera target, bool includeCameraId = false, bool includeCameraType = true)
         {
             ArgumentNullException.ThrowIfNull(target);
 
