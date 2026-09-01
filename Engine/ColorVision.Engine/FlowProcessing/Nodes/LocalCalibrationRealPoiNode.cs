@@ -38,17 +38,23 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(cameraConfig);
             ArgumentNullException.ThrowIfNull(frameMetadata);
-            if (!cameraConfig.IsRoiConfigured)
+            bool hasRoiValues = cameraConfig.PointX != 0
+                || cameraConfig.PointY != 0
+                || cameraConfig.Width != 0
+                || cameraConfig.Height != 0;
+            if (!cameraConfig.IsRoiConfigured && hasRoiValues)
             {
-                throw new InvalidOperationException("已启用“使用 ROI”，但物理相机没有配置有效的 ROI。");
+                throw new InvalidOperationException($"物理相机 ROI 配置不完整：ROI=({cameraConfig.PointX},{cameraConfig.PointY},{cameraConfig.Width},{cameraConfig.Height})。");
             }
-            if (cameraConfig.PointX < 0 || cameraConfig.PointY < 0
-                || (long)cameraConfig.PointX + cameraConfig.Width > cameraConfig.SensorWidth
-                || (long)cameraConfig.PointY + cameraConfig.Height > cameraConfig.SensorHeight)
+            if (cameraConfig.IsRoiConfigured
+                && (cameraConfig.PointX < 0 || cameraConfig.PointY < 0
+                    || (long)cameraConfig.PointX + cameraConfig.Width > cameraConfig.SensorWidth
+                    || (long)cameraConfig.PointY + cameraConfig.Height > cameraConfig.SensorHeight))
             {
                 throw new InvalidOperationException($"物理相机 ROI 超出传感器范围：ROI=({cameraConfig.PointX},{cameraConfig.PointY},{cameraConfig.Width},{cameraConfig.Height})，Sensor={cameraConfig.SensorWidth}x{cameraConfig.SensorHeight}。");
             }
-            if (frameMetadata.Width != cameraConfig.Width || frameMetadata.Height != cameraConfig.Height)
+            if (cameraConfig.IsRoiConfigured
+                && (frameMetadata.Width != cameraConfig.Width || frameMetadata.Height != cameraConfig.Height))
             {
                 throw new InvalidOperationException($"已启用“使用 ROI”，但当前图像尺寸 {frameMetadata.Width}x{frameMetadata.Height} 与物理相机 ROI {cameraConfig.Width}x{cameraConfig.Height} 不一致。全幅或历史图像请关闭此选项。");
             }
@@ -62,12 +68,16 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
 
             LocalFrameMirrorService.ValidateFlipMode(frameMetadata.FlipMode);
-            int offsetX = frameMetadata.FlipMode is CVImageFlipMode.Y or CVImageFlipMode.XY
-                ? checked(cameraConfig.SensorWidth - cameraConfig.PointX - cameraConfig.Width)
-                : cameraConfig.PointX;
-            int offsetY = frameMetadata.FlipMode is CVImageFlipMode.X or CVImageFlipMode.XY
-                ? checked(cameraConfig.SensorHeight - cameraConfig.PointY - cameraConfig.Height)
-                : cameraConfig.PointY;
+            int offsetX = cameraConfig.IsRoiConfigured
+                ? frameMetadata.FlipMode is CVImageFlipMode.Y or CVImageFlipMode.XY
+                    ? checked(cameraConfig.SensorWidth - cameraConfig.PointX - cameraConfig.Width)
+                    : cameraConfig.PointX
+                : 0;
+            int offsetY = cameraConfig.IsRoiConfigured
+                ? frameMetadata.FlipMode is CVImageFlipMode.X or CVImageFlipMode.XY
+                    ? checked(cameraConfig.SensorHeight - cameraConfig.PointY - cameraConfig.Height)
+                    : cameraConfig.PointY
+                : 0;
             PoiParam transformed = new()
             {
                 Id = source.Id,

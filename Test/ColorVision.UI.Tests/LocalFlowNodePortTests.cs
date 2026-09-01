@@ -297,6 +297,32 @@ public class LocalFlowNodePortTests
         Assert.NotSame(source, adjustment.Poi);
     }
 
+    [Fact]
+    public void LocalCalibrationRealPoiRoiTreatsZeroConfigurationAsFullFrame()
+    {
+        PoiParam source = new() { Name = "Global" };
+        source.PoiPoints.Add(new PoiPoint { PixX = 5690, PixY = 2746, PixWidth = 10, PixHeight = 10 });
+        PhyCameraCfg cameraConfig = new()
+        {
+            PointX = 0,
+            PointY = 0,
+            Width = 0,
+            Height = 0,
+            SensorWidth = 9568,
+            SensorHeight = 6380
+        };
+        LocalFrameMetadata metadata = new() { Width = 9568, Height = 6380 };
+
+        LocalPoiRoiAdjustment adjustment = LocalPoiRoiCoordinateTransformer.Transform(source, cameraConfig, metadata);
+        PoiPoint transformed = Assert.Single(adjustment.Poi.PoiPoints);
+
+        Assert.Equal(0, adjustment.OffsetX);
+        Assert.Equal(0, adjustment.OffsetY);
+        Assert.Equal(5690, transformed.PixX);
+        Assert.Equal(2746, transformed.PixY);
+        Assert.NotSame(source, adjustment.Poi);
+    }
+
     [Theory]
     [InlineData(FlowEngineLib.Algorithm.CVImageFlipMode.Y, 3768, 2200)]
     [InlineData(FlowEngineLib.Algorithm.CVImageFlipMode.X, 5000, 3480)]
