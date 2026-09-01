@@ -45,13 +45,25 @@ public sealed class PoiLayoutGeometryTests
     }
 
     [Fact]
-    public void CreateQuadrilateralGrid_SupportsSingleRowAndSingleColumn()
+    public void CreateQuadrilateralGrid_CentersSingletonDimensions()
     {
         List<Point> row = PoiLayoutGeometry.CreateQuadrilateralGrid(RectangleCorners, 1, 3);
         List<Point> column = PoiLayoutGeometry.CreateQuadrilateralGrid(RectangleCorners, 3, 1);
+        List<Point> point = PoiLayoutGeometry.CreateQuadrilateralGrid(RectangleCorners, 1, 1);
 
-        Assert.Equal([new Point(0, 0), new Point(50, 0), new Point(100, 0)], row);
-        Assert.Equal([new Point(0, 0), new Point(0, 25), new Point(0, 50)], column);
+        Assert.Equal([new Point(0, 25), new Point(50, 25), new Point(100, 25)], row);
+        Assert.Equal([new Point(50, 0), new Point(50, 25), new Point(50, 50)], column);
+        Assert.Equal([new Point(50, 25)], point);
+    }
+
+    [Fact]
+    public void TryGetCollapsedPoint_AcceptsFiftyPercentInsetForOneByOneLayout()
+    {
+        Point[] collapsedCorners = [new(50, 25), new(50, 25), new(50, 25), new(50, 25)];
+
+        Assert.True(PoiLayoutGeometry.TryGetCollapsedPoint(collapsedCorners, out Point point));
+        Assert.Equal(new Point(50, 25), point);
+        Assert.False(PoiLayoutGeometry.TryGetCollapsedPoint(RectangleCorners, out _));
     }
 
     [Fact]

@@ -50,6 +50,7 @@ namespace ColorVision.ImageEditor
         private readonly List<Func<IEnumerable<ImageViewSettingsEntry>>> _settingsEntries = new();
         private int _disposed;
         private bool _suppressConfigClearDocumentMutation;
+        private ImageSource? _imageFrameSource;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -1479,6 +1480,7 @@ namespace ColorVision.ImageEditor
 
         private void ApplyImageDocumentMutation(ImageDocumentMutationKind mutationKind)
         {
+            _imageFrameSource = null;
             long previousRevision = _imageFrameStore.Revision;
             long currentRevision = _imageFrameStore.Invalidate();
             ImageDocumentRevisionAdvancedHook?.Invoke(previousRevision, currentRevision);
@@ -1502,11 +1504,15 @@ namespace ColorVision.ImageEditor
         private ImageFrameLease? AcquireImageFrameCore()
         {
             Dispatcher.VerifyAccess();
-            return _imageFrameStore.AcquireOrCreate(() =>
-            {
-                ImageSource? source = ViewBitmapSource ?? ImageShow.Source;
-                return source is WriteableBitmap writeableBitmap ? writeableBitmap.ToHImage() : null;
-            });
+            ImageSource? source = ViewBitmapSource ?? ImageShow.Source;
+            if (_imageFrameSource != null && !ReferenceEquals(_imageFrameSource, source))
+                ApplyImageDocumentMutation(ImageDocumentMutationKind.ImageSourceReplaced);
+
+            ImageFrameLease? lease = _imageFrameStore.AcquireOrCreate(
+                () => source is WriteableBitmap writeableBitmap ? writeableBitmap.ToHImage() : null);
+            if (lease != null)
+                _imageFrameSource = source;
+            return lease;
         }
 
 

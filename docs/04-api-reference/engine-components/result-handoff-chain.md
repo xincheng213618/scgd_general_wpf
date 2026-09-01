@@ -48,6 +48,8 @@ related: ["engine.index","ui.image-editor","algorithms.platform"]
 
 Engine 的 `AlgorithmView` 会先清理旧显示：原文件存在时交给 handler 打开；文件缺失但能恢复尺寸时，用 `ResultImagePlaceholderCache` 建立相同坐标空间的空白底图；尺寸也无法恢复时清空旧图并记录警告。空白底图仅用于恢复标注位置，不能当作原始像素或重新计算算法的证据。
 
+历史结果完成切图后，右键本地算法取得的帧必须对应当前 `ViewBitmapSource`。ImageView 在取帧时会核对缓存所属的源图对象；源图已替换而缓存仍指向上一条结果时，先使旧 revision 失效并从当前位图重建帧。
+
 客户项目可以有自己的历史图片策略，例如保存原图/标注图的回退。不要把某个项目的策略当成 Engine 全局契约；项目页面和项目测试是该策略的权威入口。
 
 ## 统一算法 overlay 是另一条链

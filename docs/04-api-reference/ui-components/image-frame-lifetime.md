@@ -46,7 +46,7 @@ related: ["ui.core", "ui.image-editor", "engine.native-integration", "algorithms
 
 ImageView 的取帧工厂优先读 `ViewBitmapSource`，其次 `ImageShow.Source`；只有 `WriteableBitmap` 才以 `ToHImage()` 创建缓存副本，不重新读取磁盘。取帧入口会调度到该 ImageView 的 Dispatcher。旧租约因此是旧副本：原位图换掉或改写，不会自动改掉它的像素。
 
-原地改写同一张位图后，宿主须经 `NotifySourcePixelsChanged()` 通知失效；只改字节、只赋值 `ViewBitmapSource` 或调用 Core 的位图复制工具，不会由 store 自动识别为新版本。`SetImageSource`、`Clear` 和显式像素变更入口怎样联动算法会话、预览与 overlay，统一见[文档变更边界](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md#m0-执行与所有权规则)。
+ImageView 会记录当前缓存帧对应的 `ImageSource` 对象；取帧时若发现规范源图对象已被替换，会先推进 revision 并从当前源图重建缓存，不能把上一张图的帧交给当前本地算法。原地改写同一张位图后对象引用不变，宿主仍须经 `NotifySourcePixelsChanged()` 通知失效；只改字节或调用 Core 的位图复制工具不会由 store 自动识别为新版本。`SetImageSource`、`Clear` 和显式像素变更入口怎样联动算法会话、预览与 overlay，统一见[文档变更边界](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md#m0-执行与所有权规则)。
 
 发布结果前仍须核对当前宿主的 revision；统一算法路径还核对 `DocumentInstanceId` 与 `InvocationId`。保留租约只保证读取期帧存储持有的像素内存有效，不能用它证明结果仍属于当前图像，也不自动提供 latest-wins 或取消。
 

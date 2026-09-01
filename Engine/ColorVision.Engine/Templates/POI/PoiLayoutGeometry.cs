@@ -44,6 +44,22 @@ namespace ColorVision.Engine.Templates.POI
             return IsConvex(result, signedArea);
         }
 
+        public static bool TryGetCollapsedPoint(IReadOnlyList<Point> corners, out Point point)
+        {
+            point = default;
+            if (corners == null || corners.Count != 4)
+                return false;
+            if (corners.Any(corner => !double.IsFinite(corner.X) || !double.IsFinite(corner.Y)))
+                return false;
+
+            Point center = new(corners.Average(corner => corner.X), corners.Average(corner => corner.Y));
+            if (!corners.All(corner => (corner - center).LengthSquared <= Epsilon * Epsilon))
+                return false;
+
+            point = center;
+            return true;
+        }
+
         public static List<Point> CreateQuadrilateralGrid(IReadOnlyList<Point> corners, int rows, int columns)
         {
             ArgumentNullException.ThrowIfNull(corners);
@@ -52,16 +68,14 @@ namespace ColorVision.Engine.Templates.POI
             if (corners.Count != 4)
                 throw new ArgumentException("四边形必须包含四个角点。", nameof(corners));
 
-            double rowStep = rows > 1 ? 1.0 / (rows - 1) : 0;
-            double columnStep = columns > 1 ? 1.0 / (columns - 1) : 0;
             List<Point> points = new(rows * columns);
 
             for (int row = 0; row < rows; row++)
             {
-                double v = row * rowStep;
+                double v = rows == 1 ? 0.5 : (double)row / (rows - 1);
                 for (int column = 0; column < columns; column++)
                 {
-                    double u = column * columnStep;
+                    double u = columns == 1 ? 0.5 : (double)column / (columns - 1);
                     points.Add(new Point(
                         (1 - v) * (1 - u) * corners[0].X +
                         (1 - v) * u * corners[1].X +

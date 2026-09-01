@@ -968,6 +968,8 @@
       "summary": "说明 POI 点位、伴生模板、文件模式与 Flow 和 JSON 算法的消费关系。",
       "aliases": [
         "POI点集由谁生成和消费",
+        "POI 1x1中心点",
+        "POI 50%缩进",
         "PoiPoint",
         "PoiParam",
         "AlgorithmPoi",
@@ -996,7 +998,7 @@
       "source": "docs/04-api-reference/algorithms/primitives/poi.md",
       "url": "/04-api-reference/algorithms/primitives/poi",
       "searchable": true,
-      "source_hash": "f46227f5bdbbd7cd6b9987ef8caf6a8458a3cf441d5118434423f31a87a9f9ff"
+      "source_hash": "692d56f126580196b78c9d35edfed19a5dd034d904db5f0210febbaa3823035d"
     },
     {
       "knowledge_id": "algorithms.poi-template",
@@ -4010,7 +4012,7 @@
       "source": "docs/04-api-reference/engine-components/result-handoff-chain.md",
       "url": "/04-api-reference/engine-components/result-handoff-chain",
       "searchable": true,
-      "source_hash": "bc2cdda1103d8e8aaa6ac8f09af55296258ae01a39134dad71931136241394d0"
+      "source_hash": "60a353722372fa8b9d20a1531201761aae67278df03d8b57b2afb9ef5cfb1b33"
     },
     {
       "knowledge_id": "engine.shell-extension",
@@ -7773,7 +7775,7 @@
       "source": "docs/04-api-reference/ui-components/image-frame-lifetime.md",
       "url": "/04-api-reference/ui-components/image-frame-lifetime",
       "searchable": true,
-      "source_hash": "5654b7169432bcc5045c5b82afa6d0fe4597edf5484d6b509388e1e02d94ba85"
+      "source_hash": "2c861fe1778e91069688fe4f0e736193a837112c63bdafa7380c94e03133e64a"
     },
     {
       "knowledge_id": "ui.image-fusion",

@@ -57,7 +57,7 @@
                                 <DockPanel>
                                     <TextBlock FontWeight="SemiBold" Text="图像结果" />
                                     <TextBlock Margin="10,0,0,0" HorizontalAlignment="Right" Opacity="0.65">
-                                        <Run Text="(" /><Run Text="{Binding Items.Count, ElementName=listView1}" /><Run Text=")" />
+                                        <Run Text="(" /><Run Text="{Binding Items.Count, ElementName=listView1, Mode=OneWay}" /><Run Text=")" />
                                     </TextBlock>
                                 </DockPanel>
                             </Border>
@@ -196,7 +196,7 @@
                                 <DockPanel>
                                     <TextBlock FontWeight="SemiBold" Text="算法结果" />
                                     <TextBlock Margin="10,0,0,0" HorizontalAlignment="Right" Opacity="0.65">
-                                        <Run Text="(" /><Run Text="{Binding Items.Count, ElementName=listView2}" /><Run Text=")" />
+                                        <Run Text="(" /><Run Text="{Binding Items.Count, ElementName=listView2, Mode=OneWay}" /><Run Text=")" />
                                     </TextBlock>
                                 </DockPanel>
                             </Border>

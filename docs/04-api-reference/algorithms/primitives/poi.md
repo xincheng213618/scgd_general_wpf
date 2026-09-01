@@ -3,7 +3,7 @@ knowledge_id: "algorithms.poi-routes"
 knowledge_type: "topic"
 status: "current"
 summary: "说明 POI 点位、伴生模板、文件模式与 Flow 和 JSON 算法的消费关系。"
-aliases: ["POI点集由谁生成和消费","PoiPoint","PoiParam","AlgorithmPoi","AlgorithmBuildPoi"]
+aliases: ["POI点集由谁生成和消费","POI 1x1中心点","POI 50%缩进","PoiPoint","PoiParam","AlgorithmPoi","AlgorithmBuildPoi"]
 code_paths: ["Engine/ColorVision.Engine/Templates/POI/PoiPoint.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/AlgorithmPOI.cs","Engine/ColorVision.Engine/Templates/POI/BuildPoi/AlgorithmBuildPoi.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/PoiPointModelTests.cs","Test/ColorVision.UI.Tests/PoiLayoutGeometryTests.cs"]
 related: ["algorithms.index","algorithms.poi-template","flow.templates"]
@@ -36,6 +36,8 @@ POI 在当前系统里是一套共享点位原语，不是单个“检测算法�
 | `PoiDetailDao` | POI 点明细 |
 
 `CfgJson` 不是普通备注字段，当前会和 `PoiConfig` 相互序列化、反序列化。修改配置结构时要同时验证数据库读取、保存和旧模板兼容性。
+
+矩形/四边形点阵按行列方向插值。某一方向数量为 `1` 时，该方向固定取区域中线；`1×1` 因而位于区域中心。相对边距把四角同时缩进 `50%` 后形成的重合点只允许生成 `1×1` 点阵，不能作为多点区域继续插值。
 
 ## 存储方式
 

@@ -678,6 +678,8 @@ namespace ColorVision.Engine.Templates.POI
 
                     double StepRow = (rows > 1) ? (imageHeight - startD - startU) / (rows - 1) : 0;
                     double StepCol = (cols > 1) ? (imageWidth - startL - startR) / (cols - 1) : 0;
+                    double singleRowY = (startU + imageHeight - startD) / 2;
+                    double singleColumnX = (startL + imageWidth - startR) / 2;
 
 
                     int all = rows * cols;
@@ -693,8 +695,8 @@ namespace ColorVision.Engine.Templates.POI
                         {
                             Num++;
 
-                            double x1 = startL + StepCol * j;
-                            double y1 = startU + StepRow * i;
+                            double x1 = cols == 1 ? singleColumnX : startL + StepCol * j;
+                            double y1 = rows == 1 ? singleRowY : startU + StepRow * i;
 
                             switch (PoiConfig.DefaultPointType)
                             {
@@ -738,31 +740,40 @@ namespace ColorVision.Engine.Templates.POI
                         PoiConfig.Polygon4,
                     ];
 
-                    List<Point> points = Helpers.SortPolyPoints(pts_src);
-
-
                     cols = PoiConfig.AreaPolygonCol;
                     rows = PoiConfig.AreaPolygonRow;
 
-                    double rowStep = (rows > 1) ? 1.0 / (rows - 1) : 0;
-                    double columnStep = (cols > 1) ? 1.0 / (cols - 1) : 0;
+                    if (rows < 1 || cols < 1)
+                    {
+                        MessageBox.Show("点阵数的行列不能小于1", "ColorVision");
+                        return;
+                    }
+
+                    List<Point> layoutPoints;
+                    if (PoiLayoutGeometry.TryGetCollapsedPoint(pts_src, out Point collapsedPoint))
+                    {
+                        if (rows != 1 || cols != 1)
+                        {
+                            MessageBox.Show("缩进后的布点区域只能生成1×1点阵", "ColorVision");
+                            return;
+                        }
+                        layoutPoints = [collapsedPoint];
+                    }
+                    else
+                    {
+                        if (!PoiLayoutGeometry.TryNormalizeQuadrilateral(pts_src, out List<Point> points))
+                        {
+                            MessageBox.Show("布点四边形无效，请重新定位或框选", "ColorVision");
+                            return;
+                        }
+                        layoutPoints = PoiLayoutGeometry.CreateQuadrilateralGrid(points, rows, cols);
+                    }
 
                     for (int i = 0; i < rows; i++)
                     {
                         for (int j = 0; j < cols; j++)
                         {
-                            // Calculate the position of the point within the quadrilateral
-                            double x = (1 - i * rowStep) * (1 - j * columnStep) * points[0].X +
-                                       (1 - i * rowStep) * (j * columnStep) * points[1].X +
-                                       (i * rowStep) * (1 - j * columnStep) * points[3].X +
-                                       (i * rowStep) * (j * columnStep) * points[2].X;
-
-                            double y = (1 - i * rowStep) * (1 - j * columnStep) * points[0].Y +
-                                       (1 - i * rowStep) * (j * columnStep) * points[1].Y +
-                                       (i * rowStep) * (1 - j * columnStep) * points[3].Y +
-                                       (i * rowStep) * (j * columnStep) * points[2].Y;
-
-                            Point point = new(x, y);
+                            Point point = layoutPoints[i * cols + j];
 
                             switch (PoiConfig.DefaultPointType)
                             {
@@ -1173,7 +1184,11 @@ namespace ColorVision.Engine.Templates.POI
             RenderPoiConfig();
         }
 
-        private static double ParseDoubleOrDefault(string input, double defaultValue = 0) => double.TryParse(input, out double result) ? result : defaultValue;
+        private static double ParseDoubleOrDefault(string input, double defaultValue = 0)
+        {
+            string value = input.Trim().TrimEnd('%', '％');
+            return double.TryParse(value, out double result) ? result : defaultValue;
+        }
 
         private void ButtonImportMarinSetting2(object sender, RoutedEventArgs e)
         {
