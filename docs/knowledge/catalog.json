@@ -5392,7 +5392,9 @@
         "文档标签",
         "浮动窗口主题",
         "工具面板三段色",
-        "标题右键菜单"
+        "标题右键菜单",
+        "单工具面板空白",
+        "ToolTabStrip"
       ],
       "code_paths": [
         "ColorVision/MainWindow.xaml",
@@ -5429,6 +5431,7 @@
         "ui.search",
         "ui.status-bar",
         "ui.solution",
+        "ui.documents",
         "platform.runtime",
         "operations.index"
       ],
@@ -5444,7 +5447,7 @@
       "source": "docs/01-user-guide/interface/main-window.md",
       "url": "/01-user-guide/interface/main-window",
       "searchable": true,
-      "source_hash": "6381f7481efe2fb7e2f14d3ee45ab1311c1f6a74913f1492a82019ce0f22f7dc"
+      "source_hash": "8f602ac31f2a36ebd486ac83107265ae34b33fc230268f904da79ab8fb81b153"
     },
     {
       "knowledge_id": "operations.motor",
@@ -5626,6 +5629,7 @@
       ],
       "related": [
         "ui.solution",
+        "ui.documents",
         "operations.index",
         "operations.logs"
       ],
@@ -5638,7 +5642,7 @@
       "source": "docs/01-user-guide/interface/terminal.md",
       "url": "/01-user-guide/interface/terminal",
       "searchable": true,
-      "source_hash": "b61d42ed7a5b16d3f05d475c5911363c06984818b22c2a9e8a8f5ff538a39638"
+      "source_hash": "43197a30ff6ce0f8bfa2132c96b3b780f9a0f071a3e87365f9a9769786ab6121"
     },
     {
       "knowledge_id": "platform.architecture",
@@ -7392,6 +7396,8 @@
         "IReloadableEditorDocumentContent",
         "IResourcePathAwareDocumentContent",
         "DockLayoutManager",
+        "DockContentRegistration",
+        "DeferredDockContent",
         "WorkspaceManager",
         "TryCloseAllDocuments",
         "NotifyResourceRenamed",
@@ -7403,7 +7409,9 @@
         "重新加载文件",
         "文件被外部修改",
         "重置窗口布局",
-        "停靠布局恢复"
+        "停靠布局恢复",
+        "关闭重开面板",
+        "面板内容双父节点"
       ],
       "code_paths": [
         "UI/ColorVision.Solution/Editor/EditorManager.cs",
@@ -7444,7 +7452,7 @@
       "source": "docs/04-api-reference/ui-components/editor-document-lifecycle.md",
       "url": "/04-api-reference/ui-components/editor-document-lifecycle",
       "searchable": true,
-      "source_hash": "59663cf06e8053841b8518057cbd224451d44b1e7d493af813e845de3c0e9b01"
+      "source_hash": "a02c0bb455af322009479504f3fa121b208fec8e57acd649e861b945b5ce452b"
     },
     {
       "knowledge_id": "ui.framework",

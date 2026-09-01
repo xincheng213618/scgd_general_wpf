@@ -6,7 +6,7 @@ summary: "定义内嵌ConPTY会话、编辑器Python运行与外部CMD入口，�
 aliases: ["终端面板","终端乱码","运行Python","F5","脚本工作目录","在终端中打开","运行脚本","TerminalService","TerminalControl","ConPtyTerminal","ConPTY","TerminalScreenBuffer","AvalonEditControll","RunPythonCommand","TrySendCommand","BuildScriptStartupCommand"]
 code_paths: ["UI/ColorVision.Solution/Terminal","UI/ColorVision.Solution/Editor/TextEditor.cs","UI/ColorVision.Solution/Editor/AvalonEditor/AvalonEditControll.xaml.cs","UI/ColorVision.Solution/Editor/AvalonEditor/AvalonEditControll.xaml","UI/ColorVision.Solution/Workspace/EditorDocumentService.cs","UI/ColorVision.Solution/Workspace/DockLayoutManager.cs","UI/ColorVision.Solution/Explorer/ScriptFileSupport.cs","UI/ColorVision.Solution/Explorer/SolutionResourceCommands.cs","UI/ColorVision.Solution/TreeViewControl.Command.cs","UI/ColorVision.UI/Environments.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/TerminalScreenBufferTests.cs","Test/ColorVision.UI.Tests/AvalonEditorSupportTests.cs","Test/ColorVision.UI.Tests/DockContentRegistrationTests.cs"]
-related: ["ui.solution","operations.index","operations.logs"]
+related: ["ui.solution","ui.documents","operations.index","operations.logs"]
 ---
 
 # 终端进程、会话与脚本运行
@@ -17,7 +17,7 @@ related: ["ui.solution","operations.index","operations.logs"]
 
 ## 入口与会话归属
 
-`TerminalPanelProvider` 在底部注册默认隐藏的 `TerminalPanel`，创建两个独立 `TerminalControl`：“终端”用于手工命令，“运行”用于 `RunScript`。二者不共享 ConPTY 进程，但仍继承同一宿主环境，不构成安全隔离。
+`TerminalPanelProvider` 在底部以工厂注册默认隐藏的 `TerminalPanel`，首次物化时创建两个独立 `TerminalControl`：“终端”用于手工命令，“运行”用于 `RunScript`。二者不共享 ConPTY 进程，但仍继承同一宿主环境，不构成安全隔离。
 
 | 入口 | 执行对象与边界 |
 | --- | --- |
@@ -26,7 +26,7 @@ related: ["ui.solution","operations.index","operations.logs"]
 | `TerminalService.SendCommand` / `TrySendCommand` / `TrySendCommandBatch` | 激活“终端”标签，把命令文本发送给交互 shell，不创建独立的每命令任务对象 |
 | 资源树“在终端中打开” | `SolutionResourceShellPolicy.TryOpenTerminal` 用 `Process.Start` 启动外部 `cmd.exe /K cd /d ...`；不经过内嵌会话，也不受其 ConPTY Job 管理 |
 
-`RunScript` 会展开面板；若控件尚未物化，只保留最新一个待运行路径，不排队执行全部请求。无 `WorkspaceManager.LayoutManager` 时直接返回，`RunScript` 是 `void`，没有表示脚本成功的返回值。停靠宿主的注册与内容复用见 [ColorVision.Solution](../../04-api-reference/ui-components/ColorVision.Solution.md)。
+`RunScript` 会展开面板；若控件尚未物化，只保留最新一个待运行路径，不排队执行全部请求。无 `WorkspaceManager.LayoutManager` 时直接返回，`RunScript` 是 `void`，没有表示脚本成功的返回值。停靠工厂注册复用同一个延迟宿主及其中的终端标签控件，关闭重开或重建布局不把原控件转挂到新的父节点，也不主动重建两个终端实例；显式显示会同步物化，自动恢复仍惰性加载。所有权与失败边界见[停靠注册、布局恢复和重置](../../04-api-reference/ui-components/editor-document-lifecycle.md#停靠注册、布局恢复和重置)，不能据面板重新出现推断旧进程已停止或新进程已启动。
 
 ## Shell、工作目录与环境
 
@@ -81,6 +81,6 @@ ConPTY 用 UTF-8 编解码，通过带会话编号的输出队列交给 `Termina
 
 - `TerminalScreenBufferTests` 覆盖换行、退格、光标移动、清屏、颜色、长行、缩放与快照；不证明所有 VT/IME/交互程序兼容。
 - `AvalonEditorSupportTests` 覆盖 Python 扩展识别、路径编码包装和部分保存编码；其中批处理路径测试会真实启动 PowerShell，ConPTY Job 测试会真实启动 CMD 并调用 `Kill`，不属于纯解析测试。Job 测试断言看到就绪输出，没有断言所有后代进程均退出。
-- `DockContentRegistrationTests` 覆盖延迟物化和复用，不证明隐藏、关闭、退出时的进程生命周期。
+- `DockContentRegistrationTests` 检查延迟物化、关闭/隐藏重开及内存布局替换时的宿主和内容复用；使用合成内容，不启动 ConPTY，也不证明隐藏、关闭、退出时的进程生命周期。
 
 当前未声明 F5 保存失败后不运行、双标签并发隔离、待运行请求覆盖、批次失败短路、取消确认与应用退出后全部进程消失的端到端覆盖。文档核验只读源码；真实验证需获准的合成脚本与隔离目录，并分别检查磁盘内容、输出和进程状态，不运行产品脚本或设备命令代替测试。通用输出定位见[日志来源与筛选](./log-viewer.md)。
