@@ -78,7 +78,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
             IntPtr rawPointer,
             IntPtr ciePointer,
-            float[] exposure)
+            float[] exposure,
+            LocalCalibrationRoi calibrationRoi)
         {
             ArgumentNullException.ThrowIfNull(calibrationFiles);
             ArgumentNullException.ThrowIfNull(exposure);
@@ -90,7 +91,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 ObjectDisposedException.ThrowIf(disposed, this);
                 if (!useLegacyCalibration)
                 {
-                    openCvCache.Execute(layout, calibrationFiles, rawPointer, ciePointer, exposure);
+                    openCvCache.Execute(layout, calibrationFiles, rawPointer, ciePointer, exposure, calibrationRoi);
                     return;
                 }
                 CachedCalibrationFile[] files = calibrationFiles.Select(CreateCachedFile).ToArray();

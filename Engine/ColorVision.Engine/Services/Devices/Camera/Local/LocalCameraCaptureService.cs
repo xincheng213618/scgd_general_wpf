@@ -155,7 +155,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         frame,
                         device.LocalCalibrationCacheManager,
                         calibrationFiles,
-                        request.Calibration?.Name ?? string.Empty);
+                        request.Calibration?.Name ?? string.Empty,
+                        LocalCalibrationRoi.Resolve(device.PhyCamera?.Config?.CameraCfg, frame.Metadata.Width, frame.Metadata.Height));
                     calibrationStopwatch.Stop();
                     calibrationTimeMs = ToMilliseconds(calibrationStopwatch.ElapsedMilliseconds);
                 }

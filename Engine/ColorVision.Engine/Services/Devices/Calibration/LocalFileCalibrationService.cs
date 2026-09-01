@@ -55,7 +55,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 frame,
                 cameraDevice.LocalCalibrationCacheManager,
                 calibrationFiles,
-                calibration.Name);
+                calibration.Name,
+                LocalCalibrationRoi.Resolve(cameraDevice.PhyCamera?.Config?.CameraCfg, frame.Metadata.Width, frame.Metadata.Height));
             LocalFrameFileService.SaveCapture(
                 frame,
                 device.Config.FileServerCfg.DataBasePath,

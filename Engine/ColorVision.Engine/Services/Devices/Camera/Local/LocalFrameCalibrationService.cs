@@ -1,10 +1,32 @@
 using cvColorVision;
+using ColorVision.Engine.Services.PhyCameras.Configs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
+    internal readonly record struct LocalCalibrationRoi(int X, int Y, int Width, int Height)
+    {
+        public bool IsConfigured => Width > 0 && Height > 0;
+
+        public static LocalCalibrationRoi Resolve(PhyCameraCfg? cameraConfig, int imageWidth, int imageHeight)
+        {
+            if (cameraConfig?.IsRoiConfigured != true
+                || cameraConfig.Width != imageWidth
+                || cameraConfig.Height != imageHeight)
+            {
+                return default;
+            }
+            if (cameraConfig.PointX < 0 || cameraConfig.PointY < 0)
+            {
+                throw new InvalidOperationException($"物理相机 ROI 起点不能为负数：({cameraConfig.PointX},{cameraConfig.PointY})。");
+            }
+
+            return new LocalCalibrationRoi(cameraConfig.PointX, cameraConfig.PointY, cameraConfig.Width, cameraConfig.Height);
+        }
+    }
+
     /// <summary>
     /// Applies a camera calibration template directly to a process-local RAW buffer.
     /// Basic stages update RAW in place; a color stage additionally writes CIE data.
@@ -15,7 +37,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             LocalFlowFrame frame,
             LocalCalibrationCacheManager cacheManager,
             IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
-            string calibrationTemplate)
+            string calibrationTemplate,
+            LocalCalibrationRoi calibrationRoi)
         {
             ArgumentNullException.ThrowIfNull(frame);
             ArgumentNullException.ThrowIfNull(cacheManager);
@@ -45,7 +68,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     calibrationFiles,
                     lease.RawPointer,
                     plan.GeneratesCie ? lease.CiePointer : IntPtr.Zero,
-                    plan.GeneratesCie ? NormalizeExposure(lease.Metadata.Exposure) : Array.Empty<float>());
+                    plan.GeneratesCie ? NormalizeExposure(lease.Metadata.Exposure) : Array.Empty<float>(),
+                    calibrationRoi);
                 if (plan.GeneratesCie && sourceRawAlreadyMirrored)
                 {
                     lease.MarkBufferFlipApplied(LocalFrameBufferKind.CvCie);

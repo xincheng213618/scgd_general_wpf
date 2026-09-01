@@ -27,7 +27,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
             IntPtr rawPointer,
             IntPtr ciePointer,
-            float[] exposure)
+            float[] exposure,
+            LocalCalibrationRoi calibrationRoi)
         {
             ObjectDisposedException.ThrowIf(disposed, this);
             ArgumentNullException.ThrowIfNull(calibrationFiles);
@@ -35,7 +36,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             if (rawPointer == IntPtr.Zero) throw new ArgumentException("RAW pointer is null.", nameof(rawPointer));
 
             CachedContext cachedContext = Prepare(layout, calibrationFiles, ciePointer);
-            CalibrationExecutionOptionsV1 options = CalibrationExecutionOptionsV1.Create(exposure);
+            CalibrationExecutionOptionsV1 options = CreateExecutionOptions(exposure, calibrationRoi);
             (ulong rawByteLength, ulong cieFloatCount) = GetBufferLengths(layout, cachedContext.Files);
             int result = OpenCVCalibration.M_CalibrationExecute(
                 cachedContext.Context,
@@ -52,6 +53,21 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 throw CreateNativeException("执行本地校正失败", result, cachedContext.Context);
             }
+        }
+
+        internal static CalibrationExecutionOptionsV1 CreateExecutionOptions(float[] exposure, LocalCalibrationRoi calibrationRoi)
+        {
+            CalibrationExecutionOptionsV1 options = CalibrationExecutionOptionsV1.Create(exposure);
+            if (!calibrationRoi.IsConfigured)
+            {
+                return options;
+            }
+
+            options.RoiX = checked((uint)calibrationRoi.X);
+            options.RoiY = checked((uint)calibrationRoi.Y);
+            options.RoiWidth = checked((uint)calibrationRoi.Width);
+            options.RoiHeight = checked((uint)calibrationRoi.Height);
+            return options;
         }
 
         public int Release()

@@ -165,7 +165,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         throw new InvalidOperationException(errorMessage ?? "校正模板无效。");
                     }
                     bool hasBasicCalibration = !LocalFrameCalibrationService.IsColorOnlyTemplate(calibrationFiles);
-                    LocalFrameCalibrationService.CalibrateInPlace(sourceFrame, device.LocalCalibrationCacheManager, calibrationFiles, calibration.Name);
+                    LocalFrameCalibrationService.CalibrateInPlace(
+                        sourceFrame,
+                        device.LocalCalibrationCacheManager,
+                        calibrationFiles,
+                        calibration.Name,
+                        LocalCalibrationRoi.Resolve(device.PhyCamera?.Config?.CameraCfg, sourceFrame.Metadata.Width, sourceFrame.Metadata.Height));
                     outputFrame = sourceFrame;
                     ownsOutputFrame = ownsSourceFrame;
                     ownsSourceFrame = false;
