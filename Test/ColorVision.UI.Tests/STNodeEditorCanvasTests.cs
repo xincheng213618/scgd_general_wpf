@@ -170,36 +170,72 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
-        public void AutoCanvasDragMode_PreservesRectangleSelectionDecisionAfterClearingSelection()
+        public void FlowCanvasDragLock_EntersEditModeOnceAfterSelection()
         {
             RunInSta(() =>
             {
-                using var editor = new STNodeEditor
-                {
-                    AutoSwitchCanvasDragBySelection = true
-                };
+                using var canvas = new FlowEditorCanvas();
+                STNodeEditor editor = canvas.NodeEditor;
+                var toggle = Assert.IsType<System.Windows.Controls.Primitives.ToggleButton>(
+                    canvas.FindName("CanvasDragLockButton"));
+                var node = new TrackingNode();
+                node.Create();
+                editor.Nodes.Add(node);
+
+                Assert.False(editor.ShowCanvasDragLockButton);
+                Assert.False(editor.AutoSwitchCanvasDragBySelection);
+                Assert.True(editor.EnableBlankLeftDragCanvas);
+                Assert.True(toggle.IsChecked);
+
+                node.SetSelected(bSelected: true, bRedraw: false);
+
+                Assert.False(editor.EnableBlankLeftDragCanvas);
+                Assert.False(toggle.IsChecked);
+
+                node.SetSelected(bSelected: false, bRedraw: false);
+
+                Assert.False(editor.EnableBlankLeftDragCanvas);
+                Assert.False(toggle.IsChecked);
+
+                toggle.IsChecked = true;
+                node.SetSelected(bSelected: true, bRedraw: false);
+
+                Assert.True(editor.EnableBlankLeftDragCanvas);
+                Assert.True(toggle.IsChecked);
+            });
+        }
+
+        [Fact]
+        public void ResetCanvasInteractionMode_RestoresOpeningPanMode()
+        {
+            RunInSta(() =>
+            {
+                using var canvas = new FlowEditorCanvas();
+                STNodeEditor editor = canvas.NodeEditor;
                 var node = new TrackingNode();
                 node.Create();
                 editor.Nodes.Add(node);
                 node.SetSelected(bSelected: true, bRedraw: false);
-                bool enableBlankLeftDragCanvasAtMouseDown = editor.EnableBlankLeftDragCanvas;
 
+                Assert.False(editor.EnableBlankLeftDragCanvas);
+
+                canvas.ResetCanvasInteractionMode();
                 node.SetSelected(bSelected: false, bRedraw: false);
 
                 Assert.True(editor.EnableBlankLeftDragCanvas);
-                Assert.False(TestNodeEditor.ShouldPanBlankCanvasForTest(
-                    STMouseButtons.Left,
-                    enableBlankLeftDragCanvasAtMouseDown,
-                    System.Windows.Input.ModifierKeys.None));
+
+                node.SetSelected(bSelected: true, bRedraw: false);
+
+                Assert.False(editor.EnableBlankLeftDragCanvas);
             });
         }
 
         [Theory]
         [InlineData(true, System.Windows.Input.ModifierKeys.None, true)]
-        [InlineData(true, System.Windows.Input.ModifierKeys.Control, false)]
+        [InlineData(true, System.Windows.Input.ModifierKeys.Control, true)]
         [InlineData(false, System.Windows.Input.ModifierKeys.None, false)]
-        [InlineData(false, System.Windows.Input.ModifierKeys.Control, false)]
-        public void ControlForcesBlankLeftDragIntoRectangleSelection(
+        [InlineData(false, System.Windows.Input.ModifierKeys.Control, true)]
+        public void ControlTemporarilyPansBlankCanvasInEditMode(
             bool enableBlankLeftDragCanvas,
             System.Windows.Input.ModifierKeys modifiers,
             bool expectedPan)
@@ -217,7 +253,7 @@ namespace ColorVision.UI.Tests
         [InlineData(true, false, true)]
         [InlineData(false, true, true)]
         [InlineData(true, true, true)]
-        public void ControlRectangleSelectionAddsNodesToTheExistingSelection(
+        public void RectangleSelectionKeepsPreviouslySelectedIntersectingNodes(
             bool intersectsSelectionRectangle,
             bool wasSelectedBeforeDrag,
             bool expectedSelected)

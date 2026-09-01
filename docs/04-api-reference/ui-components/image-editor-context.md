@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "ImageEditor 的状态归属、扩展构造、工具刷新与临时 ROI 有效期；区分配置分类、图像版本和真实像素坐标。"
 aliases: ["图像编辑器上下文", "工具栏刷新", "配置作用域", "临时ROI", "临时选区", "选区坐标", "EditorContext", "ImageProcessingContext", "ImageViewConfig", "ImageViewPropertyScope", "IEditorToolFactory", "BeginSelectAsync", "TransientRoiSelectionSession", "ImageSelectionScope", "EnableEditorImageServices"]
-code_paths: ["UI/ColorVision.ImageEditor/ARCHITECTURE.md", "UI/ColorVision.ImageEditor/EditorContext.cs", "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs", "UI/ColorVision.ImageEditor/ImageViewConfig.cs", "UI/ColorVision.ImageEditor/ImageViewPropertyMetadata.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/TransientRoiSelectionSession.cs", "UI/ColorVision.ImageEditor/EditorTools/PseudoColor", "UI/ColorVision.UI/AssemblyHandler.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/EditorToolFactoryLifecycleTests.cs", "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs"]
+code_paths: ["UI/ColorVision.ImageEditor/ARCHITECTURE.md", "UI/ColorVision.ImageEditor/Abstractions/IRealtimePseudoColorService.cs", "UI/ColorVision.ImageEditor/EditorContext.cs", "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs", "UI/ColorVision.ImageEditor/ImageViewConfig.cs", "UI/ColorVision.ImageEditor/ImageViewPropertyMetadata.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/TransientRoiSelectionSession.cs", "UI/ColorVision.ImageEditor/EditorTools/PseudoColor", "UI/ColorVision.UI/AssemblyHandler.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/EditorToolFactoryLifecycleTests.cs", "Test/ColorVision.UI.Tests/RealtimePseudoColorServiceTests.cs", "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs"]
 related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.platform", "algorithms.roi-routes", "algorithms.local-native-analysis"]
 ---
 
@@ -34,7 +34,7 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 `SetImageSource` 有单参入口和三参 `(source, enableEditorImageServices, configureDefaultLayerController)` 入口，没有二参重载。它总会先登记 `ImageSourceReplaced`、重置伪彩并清旧源，再检查/设置新像素源。`enableEditorImageServices=false` 主要关闭图层选择以及本次伪彩图像配置和默认图像校准应用，不会跳过文档版本推进、源替换、像素元数据、加载通知或状态栏刷新。因此 `EnableEditorImageServices=false` 不是只读显示沙箱；不支持的像素格式也可能在旧源已清除后抛出异常。
 
-伪彩由 `PseudoColorEditorTool` 持有 state/controller，并通过工厂查找，不是向 `EditorContext` 注册旧稿中的 `IPseudoColorService`。构造视图会创建这些工具；不要从“尚未打开图像”推断没有初始化副作用。
+伪彩由 `PseudoColorEditorTool` 持有 state/controller，并通过工厂查找，不向 `EditorContext` 注册通用服务。相机实时显示只通过 `ImageView.RealtimePseudoColorService` 暴露的窄 `IRealtimePseudoColorService` 捕获不可变参数和 generation，并把已处理帧交还同一 controller；它不是任意扩展可注册/替换的 DI 容器。构造视图会创建这些工具；不要从“尚未打开图像”推断没有初始化副作用。实时请求要求已有 `ViewBitmapSource`，第一帧仍由实时 presenter 建立基准源；发布前再次核对启用状态和 generation，状态变化后的旧 native 结果只释放、不覆盖当前画面。
 
 ## 扩展发现、构造与刷新
 
@@ -69,4 +69,4 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 ## 验证范围
 
-`EditorToolFactoryLifecycleTests` 覆盖重复工具栏刷新时图标元素复用，不覆盖任意插件、重复后缀或所有构造失败。`TransientRoiSelectionSessionTests` 覆盖退化/自交形状、完成后 scope、版本变化/释放取消及后续输入获取拒绝过期范围；部分通过反射驱动内部状态，不等于真实鼠标和任意 DPI 的整链验收。配置同名键、实际工具发现与真实窗口行为仍需按改动补验证。文档引用测试不表示本轮运行了 WPF 或 native 测试；只读知识问答无需启动产品或连接设备。
+`EditorToolFactoryLifecycleTests` 覆盖重复工具栏刷新时图标元素复用，不覆盖任意插件、重复后缀或所有构造失败。`RealtimePseudoColorServiceTests` 覆盖实时参数必须有基准源、当前 generation 发布以及旧 generation 拒绝，不运行 native 伪彩或真实相机。`TransientRoiSelectionSessionTests` 覆盖退化/自交形状、完成后 scope、版本变化/释放取消及后续输入获取拒绝过期范围；部分通过反射驱动内部状态，不等于真实鼠标和任意 DPI 的整链验收。配置同名键、实际工具发现与真实窗口行为仍需按改动补验证。文档引用测试不表示本轮运行了 WPF 或 native 测试；只读知识问答无需启动产品或连接设备。

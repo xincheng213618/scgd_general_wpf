@@ -26,6 +26,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         private bool _fitCanvasToNodesPending;
         private bool _fitCanvasToNodesScheduled;
         private bool _showNodeDocumentation;
+        private bool _hasEnteredCanvasEditMode;
         private float _fitCanvasMaximumScale = 0.85f;
         private bool _disposed;
         private readonly StackPanel _generatedPropertyPanel = new();
@@ -66,6 +67,10 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             DocumentationViewButton.Content = GetInspectorText("Flow_NodeInspector_Documentation");
             STNodeEditorMain.EnableHistory = true;
             AttachEditCommandRouting(this);
+            STNodeEditorMain.EnableBlankLeftDragCanvasChanged += STNodeEditorMain_EnableBlankLeftDragCanvasChanged;
+            CanvasDragLockButton.SetCurrentValue(
+                ToggleButton.IsCheckedProperty,
+                STNodeEditorMain.EnableBlankLeftDragCanvas);
             SizeChanged += FlowEditorCanvas_SizeChanged;
             STNodeEditorMain.SizeChanged += STNodeEditorMain_SizeChanged;
             PropertyEditorPanel.IsVisibleChanged += PropertyEditorPanel_IsVisibleChanged;
@@ -174,9 +179,21 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         private void STNodeEditorMain_SelectionChanged(object? sender, EventArgs e)
         {
+            if (!_hasEnteredCanvasEditMode && STNodeEditorMain.GetSelectedNode().Length > 0)
+            {
+                _hasEnteredCanvasEditMode = true;
+                STNodeEditorMain.EnableBlankLeftDragCanvas = false;
+            }
+
             _hidePropertyEditorUntilNextSelection = false;
             RefreshNodePropertyPanel();
             QueuePropertyPanelPositionUpdate();
+        }
+
+        internal void ResetCanvasInteractionMode()
+        {
+            _hasEnteredCanvasEditMode = false;
+            STNodeEditorMain.EnableBlankLeftDragCanvas = true;
         }
 
         private void STNodeEditorMain_NodeLocationChanged(object? sender, EventArgs e)
@@ -588,6 +605,35 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             };
         }
 
+        private void CanvasDragLockButton_Checked(object sender, RoutedEventArgs e)
+        {
+            STNodeEditorMain.EnableBlankLeftDragCanvas = true;
+        }
+
+        private void CanvasDragLockButton_Unchecked(object sender, RoutedEventArgs e)
+        {
+            STNodeEditorMain.EnableBlankLeftDragCanvas = false;
+        }
+
+        private void STNodeEditorMain_EnableBlankLeftDragCanvasChanged(object? sender, EventArgs e)
+        {
+            void UpdateToggle()
+            {
+                CanvasDragLockButton.SetCurrentValue(
+                    ToggleButton.IsCheckedProperty,
+                    STNodeEditorMain.EnableBlankLeftDragCanvas);
+            }
+
+            if (Dispatcher.CheckAccess())
+            {
+                UpdateToggle();
+            }
+            else
+            {
+                _ = Dispatcher.BeginInvoke(UpdateToggle);
+            }
+        }
+
         private void ThemeChanged(Theme theme)
         {
             if (theme == Theme.Dark)
@@ -614,6 +660,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             STNodeEditorMain.SizeChanged -= STNodeEditorMain_SizeChanged;
             PropertyEditorPanel.IsVisibleChanged -= PropertyEditorPanel_IsVisibleChanged;
             PropertyEditorPanel.SizeChanged -= PropertyEditorPanel_SizeChanged;
+            STNodeEditorMain.EnableBlankLeftDragCanvasChanged -= STNodeEditorMain_EnableBlankLeftDragCanvasChanged;
             STNodeEditorMain.ActiveChanged -= STNodeEditorMain_SelectionChanged;
             STNodeEditorMain.SelectedChanged -= STNodeEditorMain_SelectionChanged;
             STNodeEditorMain.NodeLocationChanged -= STNodeEditorMain_NodeLocationChanged;

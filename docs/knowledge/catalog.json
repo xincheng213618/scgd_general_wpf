@@ -224,7 +224,7 @@
       "source": "docs/04-api-reference/algorithms/templates/find-light-area.md",
       "url": "/04-api-reference/algorithms/templates/find-light-area",
       "searchable": true,
-      "source_hash": "a1076bf0554c1d537ad01398680be4e16a26644177087cda9dc85ca60f2d55db"
+      "source_hash": "821e5a3328ff5cda7e3c277886f2d8ea0da9ee1b054c72169621e6d91b2397f0"
     },
     {
       "knowledge_id": "algorithms.focus-points",
@@ -3900,6 +3900,8 @@
         "Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs",
         "Engine/ColorVision.Engine/Services/Core/ResultImagePresentation.cs",
         "Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmManager.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindCrossNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs",
         "UI/ColorVision.Algorithms/AlgorithmResults.cs",
         "UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs",
         "UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs"
@@ -3907,6 +3909,8 @@
       "test_paths": [
         "Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs",
         "Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs",
+        "Test/ColorVision.UI.Tests/LocalFindCrossNodeTests.cs",
+        "Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs",
         "Test/ColorVision.UI.Tests/ResultImagePresentationTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs"
       ],
@@ -3925,7 +3929,7 @@
       "source": "docs/04-api-reference/engine-components/result-handoff-chain.md",
       "url": "/04-api-reference/engine-components/result-handoff-chain",
       "searchable": true,
-      "source_hash": "60a353722372fa8b9d20a1531201761aae67278df03d8b57b2afb9ef5cfb1b33"
+      "source_hash": "ea9975f4b80959fae8fc49598735a2b299283e9434d8787f299c99cb645433df"
     },
     {
       "knowledge_id": "engine.shell-extension",
@@ -4233,7 +4237,7 @@
       "source": "docs/04-api-reference/engine-components/ST.Library.UI.md",
       "url": "/04-api-reference/engine-components/ST.Library.UI",
       "searchable": true,
-      "source_hash": "05506332b0d9b40841dadb300780da40b068cf30a24bb70685884f8c5f36457b"
+      "source_hash": "159f368e131faf28979848ad274f2188dacaf277b6d51237eebc708a678cf325"
     },
     {
       "knowledge_id": "flow.headless",
@@ -4524,6 +4528,7 @@
       "code_paths": [
         "Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowTemplateWorkspaceController.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml",
         "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEngineToolWindow.xaml.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorOperations.cs"
@@ -4532,7 +4537,8 @@
         "Test/ColorVision.UI.Tests/FlowTemplateWorkspaceControllerTests.cs",
         "Test/ColorVision.UI.Tests/ViewFlowDocumentBehaviorTests.cs",
         "Test/ColorVision.UI.Tests/FlowLocalShortcutTests.cs",
-        "Test/ColorVision.UI.Tests/STNodeCopyPasteTests.cs"
+        "Test/ColorVision.UI.Tests/STNodeCopyPasteTests.cs",
+        "Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs"
       ],
       "related": [
         "flow.architecture",
@@ -4550,7 +4556,7 @@
       "source": "docs/01-user-guide/workflow/design.md",
       "url": "/01-user-guide/workflow/design",
       "searchable": true,
-      "source_hash": "ae34e81e34ff2b8599808b0e262213030ecfd3e439de930fa976811d4a066696"
+      "source_hash": "192f2334c75c819e9c516b852617a57308f3099e2012d5d54786fa5c4b22d3d5"
     },
     {
       "knowledge_id": "governance.home",
@@ -4799,12 +4805,16 @@
         "Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Video/CameraRealtimeFramePipeline.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Video/VideoFrameProcessor.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/CameraViewLifecycleTests.cs",
-        "Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs"
+        "Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs",
+        "Test/ColorVision.UI.Tests/RealtimePseudoColorServiceTests.cs",
+        "Test/ColorVision.UI.Tests/VideoProcessorResilienceTests.cs"
       ],
       "related": [
         "engine.devices",
@@ -4821,7 +4831,7 @@
       "source": "docs/01-user-guide/devices/camera.md",
       "url": "/01-user-guide/devices/camera",
       "searchable": true,
-      "source_hash": "835c67552259200a82356810ba8a37c0c7a0149e648517ff89fe53225c8e653a"
+      "source_hash": "50f946bccc05af373b0c41aba1b503a310cfa2db88c4584be7b2167466ee292b"
     },
     {
       "knowledge_id": "operations.camera-configuration",
@@ -7611,6 +7621,7 @@
       ],
       "code_paths": [
         "UI/ColorVision.ImageEditor/ARCHITECTURE.md",
+        "UI/ColorVision.ImageEditor/Abstractions/IRealtimePseudoColorService.cs",
         "UI/ColorVision.ImageEditor/EditorContext.cs",
         "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs",
         "UI/ColorVision.ImageEditor/ImageViewConfig.cs",
@@ -7623,6 +7634,7 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/EditorToolFactoryLifecycleTests.cs",
+        "Test/ColorVision.UI.Tests/RealtimePseudoColorServiceTests.cs",
         "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs"
       ],
       "related": [
@@ -7642,7 +7654,7 @@
       "source": "docs/04-api-reference/ui-components/image-editor-context.md",
       "url": "/04-api-reference/ui-components/image-editor-context",
       "searchable": true,
-      "source_hash": "a43ce72163a9668cde1ddfb18fbb4f82ade48d077c89a0d92a70513f2180e475"
+      "source_hash": "3f4a2e878c275b06fb93e32bc2b92ab58eac8d87a409bbc3319c7438b05399d9"
     },
     {
       "knowledge_id": "ui.image-frames",

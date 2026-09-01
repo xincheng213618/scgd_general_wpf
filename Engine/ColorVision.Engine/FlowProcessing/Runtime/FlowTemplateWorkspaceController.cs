@@ -455,6 +455,7 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
 
         _resetNodeTitleProgress();
         _view.FlowEngineControl.LoadFromBase64(string.Empty);
+        _view.EditorCanvas.ResetCanvasInteractionMode();
         _view.SetDocumentBaseline(flowParam);
         RefreshStartNodeSelection();
         _workspaceServerNodes.Clear();

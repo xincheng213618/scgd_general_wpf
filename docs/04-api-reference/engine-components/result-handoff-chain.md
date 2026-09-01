@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "区分 Engine 历史结果 handler、项目业务结果和统一算法 overlay 的注册及生命周期。"
 aliases: ["算法有结果为什么没有叠加层","ViewResultAlg","ResultHandleRegistry","IViewResult","IResultHandleBase","CanHandle1","AlgorithmOverlayManager"]
-code_paths: ["Engine/ColorVision.Engine/Services/Core/ViewResultAlg.cs","Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs","Engine/ColorVision.Engine/Abstractions/IResultHandlers.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs","Engine/ColorVision.Engine/Services/Core/ResultImagePresentation.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmManager.cs","UI/ColorVision.Algorithms/AlgorithmResults.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs","Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs","Test/ColorVision.UI.Tests/ResultImagePresentationTests.cs","Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs"]
+code_paths: ["Engine/ColorVision.Engine/Services/Core/ViewResultAlg.cs","Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs","Engine/ColorVision.Engine/Abstractions/IResultHandlers.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs","Engine/ColorVision.Engine/Services/Core/ResultImagePresentation.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmManager.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindCrossNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs","UI/ColorVision.Algorithms/AlgorithmResults.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs","Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs","Test/ColorVision.UI.Tests/LocalFindCrossNodeTests.cs","Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs","Test/ColorVision.UI.Tests/ResultImagePresentationTests.cs","Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs"]
 related: ["engine.index","ui.image-editor","algorithms.platform"]
 ---
 
@@ -37,6 +37,8 @@ related: ["engine.index","ui.image-editor","algorithms.platform"]
 `AlgorithmView.listView1_SelectionChanged` 从 `ResultHandles` 取第一个满足 `CanHandle1(result)` 的 handler，然后依次调用 `Load(context, result)`、准备图像坐标空间、`Handle(context, result)`。默认 `CanHandle1` 判断 `CanHandle.Contains(result.ResultType)`，V2 等 handler 可以覆写它并检查结果版本。
 
 主结果与明细的关系是：`AlgResultMasterModel → ViewResultAlg → ResultHandleRegistry/CanHandle1 → Load/DAO → IViewResult → Handle/表格/图元`。不匹配时会清空图像，而不是随意选一个 handler。多个 handler 的匹配条件冲突会受到集合顺序影响，不能以“都能处理同一枚举”作为正确注册。
+
+本地 Flow 算法的“节点失败”和“没有业务结果记录”不是同一语义。`LocalFindLuminousAreaNode` 与 `LocalFindCrossNode` 在 native 检测被拒绝或返回内容校验失败时，先保存一条对应结果类型、非零 `ResultCode` 的主结果和失败原因，再通过 `ResultMessageBus` 发布到算法结果页，随后节点仍按失败结束。失败主记录不生成角点、十字 JSON 文件或结果明细，也不写入 `action.MasterValue(...)`，避免下游把诊断记录当作有效算法输出；图像/批次缺失等执行前置错误仍可能发生在业务结果记录可建立之前。
 
 ## 注册与手动算法发现的区别
 

@@ -1229,13 +1229,6 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			}
 		}
 		NodeFindInfo nodeFindInfo = FindNodeFromPoint(m_pt_down_in_canvas);
-		if (nodeEvent.Button == STMouseButtons.Left
-			&& !_AutoSwitchCanvasDragBySelection
-			&& EnableBlankLeftDragCanvas
-			&& (!string.IsNullOrEmpty(nodeFindInfo.Mark) || nodeFindInfo.NodeOption != null || nodeFindInfo.Node != null))
-		{
-			EnableBlankLeftDragCanvas = false;
-		}
 		if (nodeFindInfo.Node != null && !ShouldActivateNodeFromMouse(nodeEvent.Button))
 		{
 			return;
@@ -1350,8 +1343,8 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	{
 		return button == STMouseButtons.Middle
 			|| button == STMouseButtons.Left
-			&& enableBlankLeftDragCanvasAtMouseDown
-			&& (modifiers & ModifierKeys.Control) != ModifierKeys.Control;
+			&& (enableBlankLeftDragCanvasAtMouseDown
+				|| (modifiers & ModifierKeys.Control) == ModifierKeys.Control);
 	}
 
 	protected internal static bool ShouldSelectNodeFromRectangle(bool intersectsSelectionRectangle, bool wasSelectedBeforeDrag)

@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "DeviceCamera的物理关联、远程采集完成判据与本地采集/实时预览边界；无文件设备结果预览仍未实现。"
 aliases: ["相机拍图","相机服务","手动采集成功流程失败","采集超时","无文件预览","DeviceCamera","MQTTCamera","DisplayCamera","ViewCamera","LocalCameraNode","SaveFiles"]
-code_paths: ["Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/MQTTCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CameraViewLifecycleTests.cs","Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs"]
+code_paths: ["Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/MQTTCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Video/CameraRealtimeFramePipeline.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Video/VideoFrameProcessor.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CameraViewLifecycleTests.cs","Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs","Test/ColorVision.UI.Tests/RealtimePseudoColorServiceTests.cs","Test/ColorVision.UI.Tests/VideoProcessorResilienceTests.cs"]
 related: ["engine.devices","operations.device-configuration","operations.physical-camera","operations.camera-configuration","engine.camera-preview-plan"]
 ---
 
@@ -46,6 +46,8 @@ related: ["engine.devices","operations.device-configuration","operations.physica
 
 本地视频的打开在后台任务中执行、受句柄锁和打开中标志保护。它可能重新解析 `CameraID` 并在成功后调用 `Device.SaveConfig()` 保存新 ID；还会保存本地显示偏好。关闭时注销回调并关闭相机。打开失败、关闭异常和设备占用必须按返回错误检查，不能把本地预览当成无副作用操作。
 
+实时画面启用 ImageEditor 伪彩后，`CameraRealtimeFramePipeline` 从当前工具状态捕获颜色表、范围和 generation，把相机帧交给 `VideoFrameProcessor` 的 latest-only 后台槽位；处理期间新帧覆盖等待帧，不在相机回调线程排队做 native 算法。伪彩输出继续应用本地视频的 FlipX/FlipY 变换，回到当前 `ImageView` 的 UI Dispatcher 后才发布。颜色表、范围或启用状态变化会推进 generation，旧结果和停流后的结果会释放而不回写；关闭伪彩后原始实时提交立即恢复。第一次还没有基准图像源时先显示一帧原图，用于建立尺寸、像素格式和缩放状态，再进入逐帧伪彩。该链只改变实时预览显示，不改写相机采集、流程测量或结果文件。
+
 `LocalCameraNode.AutoConnect` 在会话未打开时尝试连接，拒绝 Live 模式、空 `CameraID` 和原生打开错误；`LocalCameraCaptureService` 还会拒绝本地测量使用 Live 模式。`SaveFiles=false` 仅跳过 CVRAW/CVCIE 文件保存：节点仍保存测量主记录、发布结果消息，并通过 `SetCurrentFrame` 交接内存帧，**不等于不写数据库**。
 
 当前 `ViewCamera` 的结果选择链是 `ViewResultImage.FileUrl → OpenImage(string?) → ImageView.OpenImage(filePath)`，空路径清空图像。本地结果通知也先按 `MasterId` 查主记录；没有把流程内存帧直接送入设备结果视图。因此 `SaveFiles=false` 时下游算法可消费内存帧，但设备结果视图不具备对应的无文件预览/历史重放能力。该扩展仍是[待实施设计](../../02-developer-guide/engine-development/local-camera-memory-preview.md)，不要与已实现的本地视频混淆。
@@ -58,4 +60,5 @@ related: ["engine.devices","operations.device-configuration","operations.physica
 
 - `DeviceCameraAssociationTests` 覆盖关联/解绑对象不改许可证中设备 ID 的断言；不覆盖 `Save()`、数据库写入和服务重启。
 - `CameraViewLifecycleTests` 覆盖结果列表解绑的幂等性、事件/绑定清理；不证明完整视频或硬件生命周期。
+- `VideoProcessorResilienceTests` 覆盖后台帧处理异常后的继续运行，以及伪彩输出与实时原图一致的三个翻转方向；`RealtimePseudoColorServiceTests` 覆盖首帧基准源门禁、当前 generation 发布和旧 generation 丢弃。它们不调用真实相机或 native 伪彩 DLL。
 - 尚需在已授权的设备环境验证远程完成消息、校准资源、超时后结果关联、句柄互斥和文件显示；本主题的源码核对不代替真机验收。

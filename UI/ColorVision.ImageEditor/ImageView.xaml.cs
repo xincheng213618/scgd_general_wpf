@@ -57,6 +57,7 @@ namespace ColorVision.ImageEditor
         public ImageViewConfig Config => EditorContext.Config;
         public IEditorToolFactory IEditorToolFactory => EditorContext.IEditorToolFactory;
         private PseudoColorEditorTool? PseudoColorTool => IEditorToolFactory.GetIEditorTool<PseudoColorEditorTool>();
+        public IRealtimePseudoColorService? RealtimePseudoColorService => PseudoColorTool?.RealtimeService;
         public bool EnableEditorImageServices { get; set; } = true;
         public ImageLayerDescriptor? SelectedLayer { get; private set; }
         public bool AutoFollowImageGroup { get; set; } = true;

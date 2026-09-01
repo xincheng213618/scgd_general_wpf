@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Algorithms;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Algorithms;
+using ColorVision.ImageEditor.Abstractions;
 using log4net;
 using System;
 using System.ComponentModel;
@@ -13,18 +14,6 @@ using System.Windows.Threading;
 
 namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 {
-    internal readonly record struct PseudoColorFrameRequest(
-        uint Min,
-        uint Max,
-        ColormapTypes ColormapTypes,
-        int Channel,
-        bool IsAutoRangeEnabled,
-        uint DataMin,
-        uint DataMax)
-    {
-        public bool HasValidAutoRange => IsAutoRangeEnabled && DataMin < DataMax;
-    }
-
     internal readonly record struct PseudoColorPreviewRequest(
         int Version,
         long ImageRevision,
@@ -32,7 +21,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
         bool IsEnabled,
         PseudoColorFrameRequest? Request);
 
-    internal sealed class PseudoColorController : IDisposable
+    internal sealed class PseudoColorController : IRealtimePseudoColorService, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PseudoColorController));
 
@@ -114,7 +103,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
             });
         }
 
-        private bool TryCreateRequest(out PseudoColorFrameRequest request, int? channelOverride = null)
+        private bool TryCreateFrameRequest(out PseudoColorFrameRequest request, int? channelOverride = null)
         {
             var snapshot = InvokeOnUiThread(() =>
             {
@@ -124,6 +113,48 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 
             request = snapshot.Request;
             return snapshot.IsEnabled;
+        }
+
+        public bool TryCreateRequest(out RealtimePseudoColorRequest request, int? channelOverride = null)
+        {
+            var snapshot = InvokeOnUiThread(() =>
+            {
+                int channel = channelOverride ?? GetSelectedChannel();
+                return (
+                    IsEnabled: IsEnabledCore(),
+                    HasSource: _owner.ViewBitmapSource != null,
+                    Generation: Volatile.Read(ref _renderVersion),
+                    FrameRequest: CaptureFrameRequest(channel));
+            });
+
+            request = new RealtimePseudoColorRequest(snapshot.Generation, snapshot.FrameRequest);
+            return snapshot.IsEnabled && snapshot.HasSource;
+        }
+
+        public void ApplyProcessedImage(RealtimePseudoColorRequest request, HImage pseudoImage)
+        {
+            if (!_owner.Dispatcher.CheckAccess())
+            {
+                _owner.Dispatcher.BeginInvoke(() => ApplyProcessedImage(request, pseudoImage));
+                return;
+            }
+
+            if (!IsEnabledCore() || request.Generation != Volatile.Read(ref _renderVersion))
+            {
+                pseudoImage.Dispose();
+                return;
+            }
+
+            DisposePreviewSession();
+            if (!HImageExtension.UpdateWriteableBitmap(_owner.FunctionImage, pseudoImage))
+            {
+                _owner.FunctionImage = pseudoImage.ToWriteableBitmapAndDispose();
+            }
+
+            if (IsEnabledCore() && request.Generation == Volatile.Read(ref _renderVersion))
+            {
+                _owner.ImageShow.Source = _owner.FunctionImage;
+            }
         }
 
         public void RestoreSource()
@@ -267,7 +298,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
             var version = Interlocked.Increment(ref _renderVersion);
             var imageRevision = _owner.ImageRevision;
             var previewGeneration = _owner.AlgorithmPreviewGeneration;
-            if (TryCreateRequest(out var request))
+            if (TryCreateFrameRequest(out var request))
             {
                 return new PseudoColorPreviewRequest(version, imageRevision, previewGeneration, true, request);
             }

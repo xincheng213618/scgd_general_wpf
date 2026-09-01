@@ -47,10 +47,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             string? deviceCode,
             int zIndex,
             int totalTime,
-            object parameters)
+            object parameters,
+            int resultCode = 0,
+            string result = "ok")
         {
             AlgResultMasterModel model = CreateAlgorithmResultModel(
-                action, resultType, templateId, templateName, imageFile, deviceCode, zIndex, totalTime, parameters);
+                action, resultType, templateId, templateName, imageFile, deviceCode, zIndex, totalTime, parameters, resultCode, result);
             int masterId = AlgResultMasterDao.Instance.SaveAndReturnId(model);
             if (masterId <= 0) throw new InvalidOperationException($"保存本地算法结果失败：{resultType}。");
             return masterId;
@@ -137,9 +139,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             string? deviceCode,
             int zIndex,
             int totalTime,
-            object parameters)
+            object parameters,
+            int resultCode = 0,
+            string result = "ok")
         {
             ArgumentNullException.ThrowIfNull(action);
+            ArgumentException.ThrowIfNullOrWhiteSpace(result);
             MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber)
                 ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
             return new AlgResultMasterModel
@@ -152,8 +157,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 Zindex = zIndex,
                 Params = JsonConvert.SerializeObject(parameters),
                 DeviceCode = NullIfEmpty(deviceCode),
-                ResultCode = 0,
-                Result = "ok",
+                ResultCode = resultCode,
+                Result = result,
                 TotalTime = totalTime,
                 CreateDate = DateTime.Now
             };

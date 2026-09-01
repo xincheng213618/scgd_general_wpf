@@ -746,13 +746,20 @@ public sealed class LocalFindLuminousAreaNodeTests
     }
 
     [Fact]
-    public void DetectionFailureDoesNotPersistPublishOrOutputMaster()
+    public void DetectionFailurePersistsAndPublishesFailedMasterWithoutOutputMaster()
     {
         CVStartCFC action = CreateRawAction("detection-failure");
+        LocalFindLuminousAreaPersistenceRequest? persisted = null;
+        LocalFindLuminousAreaPublishRequest? published = null;
         FakeNodeServices services = new()
         {
             DetectHandler = (_, _, _) => LuminousAreaDetectionResult.CreateFailure("RobustV2", "NoCandidate"),
-            PersistHandler = _ => throw new InvalidOperationException("Persist must not run.")
+            PersistHandler = request =>
+            {
+                persisted = request;
+                return 117;
+            },
+            PublishHandler = request => published = request
         };
         LocalFindLuminousAreaNode node = new(services);
         try
@@ -760,8 +767,17 @@ public sealed class LocalFindLuminousAreaNodeTests
             InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => node.ExecuteSynchronously(action));
 
             Assert.Contains("NoCandidate", exception.Message);
-            Assert.Equal(0, services.PersistCount);
-            Assert.Equal(0, services.PublishCount);
+            Assert.Equal(1, services.PersistCount);
+            Assert.Equal(1, services.PublishCount);
+            Assert.NotNull(persisted);
+            Assert.Equal(LocalFindLuminousAreaNode.DetectionFailureResultCode, persisted!.ResultCode);
+            Assert.Equal(exception.Message, persisted.Result);
+            Assert.Empty(persisted.Corners);
+            JObject parameters = JObject.FromObject(persisted.Parameters);
+            Assert.False(parameters.Value<bool>("Success"));
+            Assert.Equal("NoCandidate", parameters.Value<string>("FailureReason"));
+            Assert.NotNull(published);
+            Assert.Equal(117, published!.MasterId);
             Assert.False(action.Data.ContainsKey("MasterId"));
         }
         finally
