@@ -206,7 +206,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (IsDisposed || !ReferenceEquals(sender, _subscribedPhyCamera)) return;
 
-            e.ApplyTo(Config);
+            e.ApplyTo(Config, includeCameraId: false);
 
             DisplayConfig.Gain = e.CameraParameterLimit.GainDefault;
             DisplayConfig.ExpTime = e.CameraParameterLimit.ExpDefalut;
@@ -287,7 +287,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (PhyCamera != null)
             {
                 PhyCamera.SetDeviceCamera(this);
-                PhyCamera.Config.ApplyTo(Config);
+                PhyCamera.Config.ApplyTo(Config, includeCameraId: false);
 
                 OnPropertyChanged(nameof(PhyCamera));
             }
