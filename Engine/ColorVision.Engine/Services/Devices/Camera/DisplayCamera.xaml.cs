@@ -3,6 +3,7 @@ using ColorVision.Core;
 using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.HDR;
@@ -1802,22 +1803,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private bool TryOpenLocalVideoCamera(out int errorCode, out string errorMessage)
         {
+            if (Device.PhyCamera?.Config?.CameraCfg is { } cameraConfig
+                && !cvCameraCSLib.UpdateCfgJson(m_hCamHandle, ConfigType.Cfg_Camera, LocalCameraSession.BuildCameraConfigurationJson(cameraConfig)))
+            {
+                errorCode = cvErrorDefine.CV_ERR_UNKNOWN;
+                errorMessage = "注入物理相机配置失败，无法打开本地视频。";
+                return false;
+            }
+
             errorCode = cvCameraCSLib.CM_Open(m_hCamHandle);
             if (errorCode != cvErrorDefine.CV_ERR_SUCCESS)
             {
                 errorMessage = GetCameraErrorMessage(errorCode);
                 return false;
-            }
-
-            if (Device.PhyCamera?.Config?.CameraCfg?.IsRoiConfigured == true)
-            {
-                cvCameraCSLib.CM_Close(m_hCamHandle);
-                errorCode = cvCameraCSLib.CM_Open(m_hCamHandle);
-                if (errorCode != cvErrorDefine.CV_ERR_SUCCESS)
-                {
-                    errorMessage = GetCameraErrorMessage(errorCode);
-                    return false;
-                }
             }
 
             errorMessage = string.Empty;

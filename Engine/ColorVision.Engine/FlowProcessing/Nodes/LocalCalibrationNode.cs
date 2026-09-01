@@ -284,7 +284,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         private protected virtual string SourceImageFilePath => string.Empty;
 
-        private DeviceCamera ResolveDevice(string frameDeviceCode)
+        private protected DeviceCamera ResolveDevice(string frameDeviceCode)
         {
             string deviceCode = ResolveDeviceCode(frameDeviceCode);
             if (string.IsNullOrWhiteSpace(deviceCode)) throw new InvalidOperationException("校正 RAW 内存前必须选择本地相机设备。");

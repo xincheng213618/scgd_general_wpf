@@ -1,4 +1,6 @@
 using cvColorVision;
+using ColorVision.Engine.Services.PhyCameras.Configs;
+using Newtonsoft.Json;
 using System;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
@@ -74,8 +76,38 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 cvCameraCSLib.CM_SetCameraID(manager, cameraId);
                 _ = cvCameraCSLib.CM_SetTakeImageMode(manager, takeImageMode);
                 _ = cvCameraCSLib.CM_SetImageBpp(manager, imageBpp);
+                PhyCameraCfg? cameraConfig = device.PhyCamera?.Config?.CameraCfg;
+                if (cameraConfig != null && !cvCameraCSLib.UpdateCfgJson(manager, ConfigType.Cfg_Camera, BuildCameraConfigurationJson(cameraConfig)))
+                {
+                    return cvErrorDefine.CV_ERR_UNKNOWN;
+                }
                 return cvCameraCSLib.CM_Open(manager);
             }
+        }
+
+        internal static string BuildCameraConfigurationJson(PhyCameraCfg cameraConfig)
+        {
+            ArgumentNullException.ThrowIfNull(cameraConfig);
+            return JsonConvert.SerializeObject(new
+            {
+                cameraCfg = new
+                {
+                    ob = cameraConfig.Ob,
+                    obR = cameraConfig.ObR,
+                    obT = cameraConfig.ObT,
+                    obB = cameraConfig.ObB,
+                    tempCtlChecked = cameraConfig.TempCtlChecked,
+                    targetTemp = cameraConfig.TargetTemp,
+                    cameraConfig.TempSpanTime,
+                    usbTraffic = cameraConfig.UsbTraffic,
+                    offset = cameraConfig.Offset,
+                    gain = cameraConfig.Gain,
+                    ex = cameraConfig.PointX,
+                    ey = cameraConfig.PointY,
+                    ew = cameraConfig.Width,
+                    eh = cameraConfig.Height
+                }
+            });
         }
 
         public void Close(bool unregisterCallback)

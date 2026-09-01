@@ -1,4 +1,5 @@
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.Templates.POI;
@@ -242,6 +243,129 @@ public class LocalFlowNodePortTests
 
         Assert.Equal(12, node.POIWidth);
         Assert.Equal(node.POIWidth, node.POIHeight);
+    }
+
+    [Fact]
+    public void LocalCalibrationRealPoiNodeRoiOptionIsAdvancedAndDefaultsOff()
+    {
+        LocalCalibrationRealPoiNode node = new();
+        var property = typeof(LocalCalibrationRealPoiNode).GetProperty(nameof(LocalCalibrationRealPoiNode.UseROI))!;
+
+        Assert.False(node.UseROI);
+        Assert.True(FlowNodePropertyMetadataProvider.AdvancedOptions.IsAdvancedProperty(property));
+    }
+
+    [Fact]
+    public void LocalCalibrationRealPoiRoiCoordinatesUseTemporaryOffsetCopy()
+    {
+        PoiParam source = new() { Id = 12, Name = "Global" };
+        source.PoiPoints.Add(new PoiPoint
+        {
+            Id = 34,
+            Name = "P1",
+            PointType = PoiShape.Circle,
+            PixX = 5690,
+            PixY = 2746,
+            PixWidth = 10,
+            PixHeight = 10
+        });
+        PhyCameraCfg cameraConfig = new()
+        {
+            PointX = 5000,
+            PointY = 2200,
+            Width = 800,
+            Height = 700,
+            SensorWidth = 9568,
+            SensorHeight = 6380
+        };
+        LocalFrameMetadata metadata = new()
+        {
+            Width = 800,
+            Height = 700,
+            FlipMode = FlowEngineLib.Algorithm.CVImageFlipMode.None
+        };
+
+        LocalPoiRoiAdjustment adjustment = LocalPoiRoiCoordinateTransformer.Transform(source, cameraConfig, metadata);
+        PoiPoint transformed = Assert.Single(adjustment.Poi.PoiPoints);
+
+        Assert.Equal(5000, adjustment.OffsetX);
+        Assert.Equal(2200, adjustment.OffsetY);
+        Assert.Equal(690, transformed.PixX);
+        Assert.Equal(546, transformed.PixY);
+        Assert.Equal(5690, source.PoiPoints[0].PixX);
+        Assert.Equal(2746, source.PoiPoints[0].PixY);
+        Assert.NotSame(source, adjustment.Poi);
+    }
+
+    [Theory]
+    [InlineData(FlowEngineLib.Algorithm.CVImageFlipMode.Y, 3768, 2200)]
+    [InlineData(FlowEngineLib.Algorithm.CVImageFlipMode.X, 5000, 3480)]
+    [InlineData(FlowEngineLib.Algorithm.CVImageFlipMode.XY, 3768, 3480)]
+    public void LocalCalibrationRealPoiRoiOffsetFollowsFinalFlipDirection(
+        FlowEngineLib.Algorithm.CVImageFlipMode flipMode,
+        int expectedX,
+        int expectedY)
+    {
+        PoiParam source = new() { Name = "Global" };
+        source.PoiPoints.Add(new PoiPoint { PixX = 5000, PixY = 3500, PixWidth = 1, PixHeight = 1 });
+        PhyCameraCfg cameraConfig = new()
+        {
+            PointX = 5000,
+            PointY = 2200,
+            Width = 800,
+            Height = 700,
+            SensorWidth = 9568,
+            SensorHeight = 6380
+        };
+        LocalFrameMetadata metadata = new() { Width = 800, Height = 700, FlipMode = flipMode };
+
+        LocalPoiRoiAdjustment adjustment = LocalPoiRoiCoordinateTransformer.Transform(source, cameraConfig, metadata);
+
+        Assert.Equal(expectedX, adjustment.OffsetX);
+        Assert.Equal(expectedY, adjustment.OffsetY);
+    }
+
+    [Fact]
+    public void LocalCalibrationRealPoiRoiRejectsFullFrameHistoryImage()
+    {
+        PoiParam source = new() { Name = "Global" };
+        source.PoiPoints.Add(new PoiPoint { PixX = 10, PixY = 10, PixWidth = 1, PixHeight = 1 });
+        PhyCameraCfg cameraConfig = new()
+        {
+            PointX = 5000,
+            PointY = 2200,
+            Width = 800,
+            Height = 700,
+            SensorWidth = 9568,
+            SensorHeight = 6380
+        };
+        LocalFrameMetadata metadata = new() { Width = 9568, Height = 6380 };
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => LocalPoiRoiCoordinateTransformer.Transform(source, cameraConfig, metadata));
+
+        Assert.Contains("全幅或历史图像", exception.Message);
+    }
+
+    [Fact]
+    public void LocalCalibrationRealPoiRoiRejectsEmptyTemporaryTemplate()
+    {
+        PoiParam source = new() { Name = "Empty" };
+        PhyCameraCfg cameraConfig = new()
+        {
+            PointX = 100,
+            PointY = 200,
+            Width = 800,
+            Height = 700,
+            SensorWidth = 9568,
+            SensorHeight = 6380
+        };
+        LocalFrameMetadata metadata = new() { Width = 800, Height = 700 };
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => LocalPoiRoiCoordinateTransformer.Transform(source, cameraConfig, metadata));
+
+        Assert.Contains("没有关注点", exception.Message);
     }
 
     [Fact]
