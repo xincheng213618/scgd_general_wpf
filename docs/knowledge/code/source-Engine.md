@@ -119,13 +119,13 @@ next: false
   区分 Flow 底层画布、节点内核、模板存储、编辑工作区、共享会话与隔离执行的所有权。
 
 - [Flow 运行诊断、中断恢复与 Incident 处置](../../04-api-reference/engine-components/flow-diagnostics.md) — `flow.diagnostics`
-  Flow本地诊断SQLite快照、节点尝试与Incident事件列表的读写边界；进程中断恢复只标记失败不续跑，心跳不是判死条件，终态持久化与业务结果分开。
+  Flow本地诊断SQLite快照、节点尝试与Incident事件列表的读写边界；快照不保证包含未保存画布，终态持久化与业务结果分开，中断恢复不续跑节点，心跳不是判死条件。
 
 - [Flow 隔离无界面执行](../../04-api-reference/algorithms/templates/flow-engine.md) — `flow.headless`
   隔离STN流程的加载、起始节点就绪、执行超时与诊断收尾；停止请求不证明设备停稳，默认执行不限时，批次与前后处理由调用方负责。
 
 - [Flow 启动、停止与最终化](../../01-user-guide/workflow/execution.md) — `flow.session`
-  FlowExecutionSession 的启动前提、停止请求与最终化判据，以及按失败阶段定位证据。
+  流程启动、分阶段停止与后处理完成判据；区分当前画布、诊断快照、执行耗时和结果落库。
 
 - [Flow 模板、持久化与流程包](../../04-api-reference/engine-components/template-flow-chain.md) — `flow.templates`
   Flow 模板的保存基线、导出/删除勾选范围、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。

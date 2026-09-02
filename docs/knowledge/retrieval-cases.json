@@ -517,6 +517,9 @@
     {"query":"如何判断不同项目已经测试完成","expected_any":["projects.capabilities"],"include_planned":false},
     {"query":"导入模板为模块","expected_any":["flow.workspace"],"include_planned":false},
     {"query":"自动对齐","expected_any":["flow.workspace"],"include_planned":false},
-    {"query":"流程删除范围","expected_any":["flow.templates"],"include_planned":false}
+    {"query":"流程删除范围","expected_any":["flow.templates"],"include_planned":false},
+    {"query":"停止流程后还在后处理","expected_any":["flow.session"],"include_planned":false},
+    {"query":"流程执行耗时","expected_any":["flow.session"],"include_planned":false},
+    {"query":"流程诊断快照","expected_any":["flow.diagnostics"],"include_planned":false}
   ]
 }
