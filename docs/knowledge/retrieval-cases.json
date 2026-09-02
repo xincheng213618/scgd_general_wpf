@@ -535,6 +535,8 @@
     {"query":"JSON Schema默认值","expected_any":["algorithms.json-templates"],"include_planned":false},
     {"query":"无法重置，请检查数据库相关配置","expected_any":["algorithms.json-templates"],"include_planned":false},
     {"query":"HDR参数Schema","expected_any":["algorithms.json-templates"],"include_planned":false},
-    {"query":"设置为默认参数","expected_any":["algorithms.json-templates"],"include_planned":false}
+    {"query":"设置为默认参数","expected_any":["algorithms.json-templates"],"include_planned":false},
+    {"query":"UI包依赖","expected_any":["ui.package-boundaries"],"include_planned":false},
+    {"query":"目标框架兼容","expected_any":["ui.package-boundaries"],"include_planned":false}
   ]
 }

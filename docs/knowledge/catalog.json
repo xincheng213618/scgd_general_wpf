@@ -9115,18 +9115,32 @@
       "knowledge_id": "ui.package-boundaries",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "按职责和依赖方向判断 UI DLL 的修改归属与消费方兼容风险。",
+      "summary": "UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，中立算法与窗口适配分层维护。",
       "aliases": [
         "应该改哪个UI类库",
+        "UI包依赖",
+        "UI类库版本",
+        "目标框架兼容",
+        "ColorVision.Algorithms",
         "ColorVision.Common",
         "ColorVision.Core",
         "ColorVision.ImageTools"
       ],
       "code_paths": [
         "UI/Directory.Build.props",
-        "UI/ColorVision.UI/ColorVision.UI.csproj",
+        "UI/ColorVision.Algorithms/ColorVision.Algorithms.csproj",
+        "UI/ColorVision.Common/ColorVision.Common.csproj",
+        "UI/ColorVision.Core/ColorVision.Core.csproj",
+        "UI/ColorVision.Database/ColorVision.Database.csproj",
         "UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj",
-        "UI/ColorVision.Solution/ColorVision.Solution.csproj"
+        "UI/ColorVision.ImageTools/ColorVision.ImageTools.csproj",
+        "UI/ColorVision.Rbac/ColorVision.Rbac.csproj",
+        "UI/ColorVision.Scheduler/ColorVision.Scheduler.csproj",
+        "UI/ColorVision.SocketProtocol/ColorVision.SocketProtocol.csproj",
+        "UI/ColorVision.Solution/ColorVision.Solution.csproj",
+        "UI/ColorVision.Themes/ColorVision.Themes.csproj",
+        "UI/ColorVision.UI/ColorVision.UI.csproj",
+        "UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj"
       ],
       "test_paths": [
         "Scripts/tests/test_algorithm_package_contract.py",
@@ -9134,16 +9148,28 @@
       ],
       "related": [
         "ui.index",
-        "ui.publishing"
+        "ui.publishing",
+        "algorithms.platform",
+        "delivery.index"
       ],
       "code_scopes": [
         "UI",
+        "UI/ColorVision.Algorithms",
+        "UI/ColorVision.Common",
+        "UI/ColorVision.Core",
+        "UI/ColorVision.Database",
         "UI/ColorVision.ImageEditor",
+        "UI/ColorVision.ImageTools",
+        "UI/ColorVision.Rbac",
+        "UI/ColorVision.Scheduler",
+        "UI/ColorVision.SocketProtocol",
         "UI/ColorVision.Solution",
-        "UI/ColorVision.UI"
+        "UI/ColorVision.Themes",
+        "UI/ColorVision.UI",
+        "UI/ColorVision.UI.Desktop"
       ],
       "domain": "ui",
-      "title": "UI DLL 速查",
+      "title": "UI 包职责与依赖边界",
       "source": "docs/04-api-reference/ui-components/component-handbook.md",
       "url": "/04-api-reference/ui-components/component-handbook",
       "searchable": true

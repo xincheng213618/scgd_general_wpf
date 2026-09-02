@@ -755,7 +755,7 @@
             },
             {
               "text": {
-                "root": "UI DLL 速查"
+                "root": "UI 包职责与依赖边界"
               },
               "link": "/04-api-reference/ui-components/component-handbook"
             }
@@ -809,6 +809,12 @@
                 "root": "ColorVision 概览"
               },
               "link": "/00-getting-started/what-is-colorvision"
+            },
+            {
+              "text": {
+                "root": "UI 包职责与依赖边界"
+              },
+              "link": "/04-api-reference/ui-components/component-handbook"
             },
             {
               "text": {
@@ -926,6 +932,12 @@
                 "root": "系统监控（SystemMonitor）"
               },
               "link": "/04-api-reference/plugins/standard-plugins/system-monitor"
+            },
+            {
+              "text": {
+                "root": "UI 包职责与依赖边界"
+              },
+              "link": "/04-api-reference/ui-components/component-handbook"
             }
           ]
         },
@@ -995,6 +1007,12 @@
                 "root": "ColorVision.Core"
               },
               "link": "/04-api-reference/ui-components/ColorVision.Core"
+            },
+            {
+              "text": {
+                "root": "UI 包职责与依赖边界"
+              },
+              "link": "/04-api-reference/ui-components/component-handbook"
             }
           ]
         },
@@ -1040,6 +1058,12 @@
                 "root": "SQLite 正文存储、迁移与文件维护"
               },
               "link": "/04-api-reference/ui-components/sqlite-storage"
+            },
+            {
+              "text": {
+                "root": "UI 包职责与依赖边界"
+              },
+              "link": "/04-api-reference/ui-components/component-handbook"
             }
           ]
         },
@@ -1232,7 +1256,7 @@
             },
             {
               "text": {
-                "root": "UI DLL 速查"
+                "root": "UI 包职责与依赖边界"
               },
               "link": "/04-api-reference/ui-components/component-handbook"
             },
@@ -1274,6 +1298,12 @@
                 "root": "存储清理与选择性设置重置"
               },
               "link": "/04-api-reference/ui-components/storage-maintenance"
+            },
+            {
+              "text": {
+                "root": "UI 包职责与依赖边界"
+              },
+              "link": "/04-api-reference/ui-components/component-handbook"
             }
           ]
         },
@@ -1301,6 +1331,12 @@
                 "root": "共享接口、属性通知与粗粒度权限"
               },
               "link": "/04-api-reference/ui-components/ColorVision.Common"
+            },
+            {
+              "text": {
+                "root": "UI 包职责与依赖边界"
+              },
+              "link": "/04-api-reference/ui-components/component-handbook"
             }
           ]
         },
@@ -1322,6 +1358,12 @@
                 "root": "状态栏：发现、刷新与宿主生命周期"
               },
               "link": "/04-api-reference/ui-components/status-bar"
+            },
+            {
+              "text": {
+                "root": "UI 包职责与依赖边界"
+              },
+              "link": "/04-api-reference/ui-components/component-handbook"
             }
           ]
         },
@@ -1379,6 +1421,12 @@
                 "root": "LUX TCP 通讯协议"
               },
               "link": "/04-api-reference/projects/project-lux-protocol"
+            },
+            {
+              "text": {
+                "root": "UI 包职责与依赖边界"
+              },
+              "link": "/04-api-reference/ui-components/component-handbook"
             }
           ]
         },
@@ -1439,7 +1487,7 @@
             },
             {
               "text": {
-                "root": "UI DLL 速查"
+                "root": "UI 包职责与依赖边界"
               },
               "link": "/04-api-reference/ui-components/component-handbook"
             }
@@ -1463,6 +1511,12 @@
                 "root": "主题选择、资源应用与窗口外观"
               },
               "link": "/04-api-reference/ui-components/ColorVision.Themes"
+            },
+            {
+              "text": {
+                "root": "UI 包职责与依赖边界"
+              },
+              "link": "/04-api-reference/ui-components/component-handbook"
             }
           ]
         },
@@ -1769,7 +1823,7 @@
             },
             {
               "text": {
-                "root": "UI DLL 速查"
+                "root": "UI 包职责与依赖边界"
               },
               "link": "/04-api-reference/ui-components/component-handbook"
             }
@@ -1865,6 +1919,12 @@
                 "root": "ColorVision.UI.Desktop"
               },
               "link": "/04-api-reference/ui-components/ColorVision.UI.Desktop"
+            },
+            {
+              "text": {
+                "root": "UI 包职责与依赖边界"
+              },
+              "link": "/04-api-reference/ui-components/component-handbook"
             }
           ]
         }

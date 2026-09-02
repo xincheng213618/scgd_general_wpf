@@ -110,5 +110,5 @@ next: false
 - [ColorVision.UI.Desktop](../../04-api-reference/ui-components/ColorVision.UI.Desktop.md) — `ui.desktop`
   桌面辅助壳层而非产品主入口：定位设置、市场下载、第三方工具、反馈和特权崩溃诊断。
 
-- [UI DLL 速查](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
-  按职责和依赖方向判断 UI DLL 的修改归属与消费方兼容风险。
+- [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
+  UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，中立算法与窗口适配分层维护。

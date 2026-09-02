@@ -22,8 +22,8 @@ next: false
 - [UI DLL 发布](../../04-api-reference/ui-components/publishing.md) — `ui.publishing`
   说明 UI NuGet 构建、版本占用预检、显式 Release 发布与包消费验证。
 
-- [UI DLL 速查](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
-  按职责和依赖方向判断 UI DLL 的修改归属与消费方兼容风险。
+- [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
+  UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，中立算法与窗口适配分层维护。
 
 ## UI/ColorVision.Algorithms {#module-55492f436f6c6f72566973696f6e2e416c676f726974686d73}
 
@@ -47,6 +47,9 @@ next: false
 
 - [ColorVision 概览](../../00-getting-started/what-is-colorvision.md) — `platform.product`
   ColorVision 的设备、流程、图像分析、结果、插件与客户项目能力，以及从任务进入文档的方法。
+
+- [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
+  UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，中立算法与窗口适配分层维护。
 
 - [ONNX / AI 推理接入设计（Deferred） \[规划\]](../../02-developer-guide/core-concepts/onnx-inference-future-design.md) — `algorithms.onnx`
   尚未实现的 ONNX 接入设计：保持基础产品无 ONNX 运行时，新增 adapter 前须明确模型与验收门禁。
@@ -104,6 +107,9 @@ next: false
 - [系统监控（SystemMonitor）](../../04-api-reference/plugins/standard-plugins/system-monitor.md) — `plugins.system-monitor`
   系统监控的 CPU/RAM 采样、手动刷新与状态栏生命周期；缓存大小包含子目录，清理只删顶层文件，逐文件失败不会单独提示。
 
+- [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
+  UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，中立算法与窗口适配分层维护。
+
 ## UI/ColorVision.Core {#module-55492f436f6c6f72566973696f6e2e436f7265}
 
 - [本地十字定位 FindCross](../../04-api-reference/algorithms/detectors/find-cross.md) — `algorithms.find-cross`
@@ -136,6 +142,9 @@ next: false
 - [ColorVision.Core](../../04-api-reference/ui-components/ColorVision.Core.md) — `ui.core`
   定位 HImage 所有权、OpenCV/CUDA PInvoke、ImageCompute 融合分流、位图桥接与默认关闭的原生日志。
 
+- [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
+  UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，中立算法与窗口适配分层维护。
+
 ## UI/ColorVision.Database {#module-55492f436f6c6f72566973696f6e2e4461746162617365}
 
 - [数据所有者与存储定位](../../01-user-guide/data-management/README.md) — `operations.data`
@@ -155,6 +164,9 @@ next: false
 
 - [SQLite 正文存储、迁移与文件维护](../../04-api-reference/ui-components/sqlite-storage.md) — `ui.sqlite-storage`
   Socket 与 Flow 的 SQLite 正文 gzip 编解码、按ID读写、旧TEXT逐批迁移、WAL备份与VACUUM；通用工具不自动停写/备份/恢复，失败可能已有批次提交。
+
+- [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
+  UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，中立算法与窗口适配分层维护。
 
 ## UI/ColorVision.ImageEditor {#module-55492f436f6c6f72566973696f6e2e496d616765456469746f72}
 
@@ -248,8 +260,8 @@ next: false
 - [ColorVision 概览](../../00-getting-started/what-is-colorvision.md) — `platform.product`
   ColorVision 的设备、流程、图像分析、结果、插件与客户项目能力，以及从任务进入文档的方法。
 
-- [UI DLL 速查](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
-  按职责和依赖方向判断 UI DLL 的修改归属与消费方兼容风险。
+- [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
+  UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，中立算法与窗口适配分层维护。
 
 - [ONNX / AI 推理接入设计（Deferred） \[规划\]](../../02-developer-guide/core-concepts/onnx-inference-future-design.md) — `algorithms.onnx`
   尚未实现的 ONNX 接入设计：保持基础产品无 ONNX 运行时，新增 adapter 前须明确模型与验收门禁。
@@ -268,6 +280,9 @@ next: false
 - [存储清理与选择性设置重置](../../04-api-reference/ui-components/storage-maintenance.md) — `ui.storage-maintenance`
   设置中的存储清理与选择性启动重置：先确认白名单扫描清单，保护活跃任务和业务数据；删除不回滚，重置先独立备份再在启动时应用。
 
+- [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
+  UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，中立算法与窗口适配分层维护。
+
 ## UI/ColorVision.Rbac {#module-55492f436f6c6f72566973696f6e2e52626163}
 
 - [RBAC：登录缓存、会话与权限边界](../../03-architecture/security/rbac.md) — `platform.rbac`
@@ -279,6 +294,9 @@ next: false
 - [共享接口、属性通知与粗粒度权限](../../04-api-reference/ui-components/ColorVision.Common.md) — `ui.common`
   共享接口的宿主接入、属性通知与命令的同步执行限制、粗粒度权限判据，以及第三方工具发现和启动边界。
 
+- [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
+  UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，中立算法与窗口适配分层维护。
+
 ## UI/ColorVision.Scheduler {#module-55492f436f6c6f72566973696f6e2e5363686564756c6572}
 
 - [Quartz 任务定义、恢复与执行历史](../../04-api-reference/ui-components/ColorVision.Scheduler.md) — `ui.scheduler`
@@ -286,6 +304,9 @@ next: false
 
 - [状态栏：发现、刷新与宿主生命周期](../../04-api-reference/ui-components/status-bar.md) — `ui.status-bar`
   状态栏的插件发现、活动文档通知、绑定更新、控件重建和关闭生命周期；刷新不保证发现新provider，隐藏不等于保存偏好或停止采样。
+
+- [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
+  UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，中立算法与窗口适配分层维护。
 
 ## UI/ColorVision.SocketProtocol {#module-55492f436f6c6f72566973696f6e2e536f636b657450726f746f636f6c}
 
@@ -313,6 +334,9 @@ next: false
 - [LUX TCP 通讯协议](../../04-api-reference/projects/project-lux-protocol.md) — `projects.lux-protocol`
   LUX TCP 文本协议的 T0000 握手、VID、光学中心、光通量与 SocketCode 流程，说明响应字段、状态码、分帧及共享会话限制。
 
+- [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
+  UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，中立算法与窗口适配分层维护。
+
 ## UI/ColorVision.Solution {#module-55492f436f6c6f72566973696f6e2e536f6c7574696f6e}
 
 - [UI 组件目录](../../04-api-reference/ui-components/control-catalog.md) — `ui.control-catalog`
@@ -339,8 +363,8 @@ next: false
 - [主程序启动与最小图像验证](../../00-getting-started/first-steps.md) — `operations.first-run`
   主程序启动的配置、实例和服务副作用，以及隔离测试环境中的最小本地图像验证。
 
-- [UI DLL 速查](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
-  按职责和依赖方向判断 UI DLL 的修改归属与消费方兼容风险。
+- [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
+  UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，中立算法与窗口适配分层维护。
 
 ## UI/ColorVision.Themes {#module-55492f436f6c6f72566973696f6e2e5468656d6573}
 
@@ -349,6 +373,9 @@ next: false
 
 - [主题选择、资源应用与窗口外观](../../04-api-reference/ui-components/ColorVision.Themes.md) — `ui.themes`
   ThemeManager的主题选择、资源追加、系统跟随和窗口外观契约；选择不等于应用成功，预览不等于配置落盘。
+
+- [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
+  UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，中立算法与窗口适配分层维护。
 
 ## UI/ColorVision.UI {#module-55492f436f6c6f72566973696f6e2e5549}
 
@@ -499,8 +526,8 @@ next: false
 - [系统监控（SystemMonitor）](../../04-api-reference/plugins/standard-plugins/system-monitor.md) — `plugins.system-monitor`
   系统监控的 CPU/RAM 采样、手动刷新与状态栏生命周期；缓存大小包含子目录，清理只删顶层文件，逐文件失败不会单独提示。
 
-- [UI DLL 速查](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
-  按职责和依赖方向判断 UI DLL 的修改归属与消费方兼容风险。
+- [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
+  UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，中立算法与窗口适配分层维护。
 
 ## UI/ColorVision.UI.Desktop {#module-55492f436f6c6f72566973696f6e2e55492e4465736b746f70}
 
@@ -545,3 +572,6 @@ next: false
 
 - [ColorVision.UI.Desktop](../../04-api-reference/ui-components/ColorVision.UI.Desktop.md) — `ui.desktop`
   桌面辅助壳层而非产品主入口：定位设置、市场下载、第三方工具、反馈和特权崩溃诊断。
+
+- [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
+  UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，中立算法与窗口适配分层维护。
