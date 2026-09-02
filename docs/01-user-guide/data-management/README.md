@@ -48,7 +48,7 @@ ColorVision 没有一个覆盖软件设置、设备资源、流程模板、消�
 
 MQTT/Flow 的 `SqliteDbPath` 是 `DirectoryPath` 加固定文件名的只读属性；Socket、Spectrum、ARVR 的同名静态属性则可被替换。修改已初始化的对象路径还要核对其持有连接和初始化状态，不能当成在线切库协议。MySQL 则由 `MySqlControl` 使用当前 `MySqlConfig` 的服务器、端口和数据库名建立连接，不是本地 `.db` 文件。
 
-内置数据库浏览器已移除。应通过所属业务页面和实际配置定位各数据库；旧插件的浏览器注册调用只由无操作兼容入口接收，不负责发现或展示数据源。数据库连接与 DAO 边界见[数据库基础契约](../../04-api-reference/ui-components/ColorVision.Database.md)。
+通过所属业务页面和实际配置定位各数据库；连接、DAO 与旧插件兼容的边界见[数据库基础契约](../../04-api-reference/ui-components/ColorVision.Database.md)。
 
 ## 查数据前的副作用边界
 

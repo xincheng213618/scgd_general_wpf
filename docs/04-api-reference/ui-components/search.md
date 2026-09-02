@@ -2,7 +2,7 @@
 knowledge_id: "ui.search"
 knowledge_type: "topic"
 status: "current"
-summary: "主窗口搜索框的关键词匹配、候选来源、缓存刷新与安全执行；重新打开读取插件候选列表，重复输入不扫描磁盘文件列表，旧动态来源仍同步。"
+summary: "应用搜索窗口的入口、关键词匹配、候选来源、缓存刷新与命令执行；Ctrl+F 按焦点执行局部查找，Ctrl+Shift+P 打开应用搜索。"
 aliases: ["搜索框", "命令面板", "应用搜索", "独立搜索窗口", "关键词匹配", "搜索缓存", "候选目录刷新", "搜索候选", "搜索结果", "搜索刷新", "动态搜索", "网页搜索", "浏览器搜索", "Everything", "Ctrl+F", "Ctrl+Shift+P", "SearchWindow", "SearchControl", "SearchManager", "SearchQuery", "SearchResultItem", "SearchPaletteViewModel", "SearchCommandExecutor", "ContextualFindRouter", "SearchWindowHotkeyBridge", "SearchConfig", "SearchSettingsWindow", "ISearch", "ISearchMetadata", "ISearchProvider", "IDynamicSearchProvider", "IAsyncSearchProvider", "SearchMeta", "SearchType", "MenuSearchProvider", "SettingSearchProvider", "TemplateSearchProvider", "ThirdPartyAppSearchProvider", "FlowNodeDynamicSearchProvider", "EnableTemplateIndex", "EnableBrowserSearch"]
 code_paths: ["UI/ColorVision.UI/Serach", "UI/ColorVision.Common/Interfaces/Serach", "UI/ColorVision.UI/AssemblyHandler.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI.Desktop/Settings/SettingSearchProvider.cs", "UI/ColorVision.UI.Desktop/Settings/SettingEntryCatalog.cs", "UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml.cs", "UI/ColorVision.UI.Desktop/ThirdPartyApps/ThirdPartyAppSearchProvider.cs", "Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs", "Engine/ColorVision.Engine/Templates/Flow/Search/FlowNodeDynamicSearchProvider.cs", "Engine/ColorVision.Engine/Templates/Flow/Search/SqliteFlowNodeSearchIndex.cs", "Engine/ColorVision.Engine/Templates/Flow/Versioning/FlowCatalogService.cs", "ColorVision/MainWindow.xaml", "ColorVision/MainWindow.Hotkeys.cs", "ColorVision/Recovery/StartupMaintenanceSearchProvider.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/SearchQueryTests.cs", "Test/ColorVision.UI.Tests/SearchManagerTests.cs", "Test/ColorVision.UI.Tests/SearchPaletteTests.cs", "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs", "Test/ColorVision.UI.Tests/MainWindowSearchShellTests.cs", "Test/ColorVision.UI.Tests/SearchWindowHotkeyBridgeTests.cs", "Test/ColorVision.UI.Tests/SearchWindowHostTests.cs", "Test/ColorVision.UI.Tests/SettingSearchProviderTests.cs", "Test/ColorVision.UI.Tests/TemplateSearchProviderTests.cs", "Test/ColorVision.UI.Tests/WpfResourceEmbeddingTests.cs", "Test/ColorVision.UI.Tests/FlowSafeSearchSidecarTests.cs", "Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs", "Test/ColorVision.UI.Tests/StartupMaintenanceSearchTests.cs", "Test/ColorVision.UI.Tests/StartupMaintenanceSearchHostTests.cs"]
@@ -15,7 +15,7 @@ related: ["ui.framework", "ui.discovery", "ui.menus", "ui.hotkeys", "ui.settings
 
 ## 入口与局部查找
 
-顶部不再放置搜索按钮；通过 `MenuCommandSearch` 的默认 `Ctrl+Shift+P`，打开承载 `SearchControl` 的独立 WPF `SearchWindow`。工具菜单的“搜索命令与功能”和编辑菜单的“查找当前内容或应用功能”入口已移除，快捷键功能仍保留。窗口首次相对主窗口居中，使用标准标题栏，可拖动、缩放；通过 `Owner` 关联主窗口，以非模态 `Show()` 显示且 `ShowInTaskbar=false`。点击外部、失焦或移动/缩放主窗口不关闭搜索；关闭主窗口则一并关闭。具体装配见[主窗口](../../01-user-guide/interface/main-window.md)。
+通过 `MenuCommandSearch` 的默认 `Ctrl+Shift+P` 打开承载 `SearchControl` 的独立 WPF `SearchWindow`。窗口首次相对主窗口居中，使用标准标题栏，可拖动、缩放；通过 `Owner` 关联主窗口，以非模态 `Show()` 显示且 `ShowInTaskbar=false`。点击外部、失焦或移动/缩放主窗口不关闭搜索；关闭主窗口则一并关闭。具体装配见[主窗口](../../01-user-guide/interface/main-window.md)。
 
 `MenuContextualFind` 的默认 `Ctrl+F` 按当前焦点分流：
 
@@ -52,16 +52,16 @@ related: ["ui.framework", "ui.discovery", "ui.menus", "ui.hotkeys", "ui.settings
 
 旧 `ISearch`、`ISearchProvider` 与 `IDynamicSearchProvider.Search(query, limit)` 保持兼容。可选 `ISearchMetadata` 提供 `Description`、`CategoryKey`、本地化 `Category`、`Aliases` 与 `ActionId`；`SearchMeta` 实现该接口。搜索、菜单和快捷键使用同一真实动作的 `ActionId` 关联说明及当前键位，不通过显示名称猜测身份。
 
-`SearchResultItem` 是显示快照，仍保留原始 `ISearch Source` 供执行；它不创建自己的业务命令。身份优先为 `action:{ActionId}`，其次为 `{SearchType}:{GuidId}`，最后为提供者 ID、类型和标题的组合。**`SearchMeta.GuidId` 的默认值已由随机 GUID 改为 null**：这是现有属性默认行为的变化，没有删除接口成员。扩展应明确设置稳定 ID；依赖构造即得到随机 GUID 的代码需要自己赋值。无 ID 的后备身份随标题/语言变化，不适合跨语言持久引用。
+`SearchResultItem` 是显示快照，仍保留原始 `ISearch Source` 供执行；它不创建自己的业务命令。身份优先为 `action:{ActionId}`，其次为 `{SearchType}:{GuidId}`，最后为提供者 ID、类型和标题的组合。`SearchMeta.GuidId` 默认为 null，扩展应明确设置稳定 ID。无 ID 的后备身份随标题/语言变化，不适合跨语言持久引用。
 
-`SearchManager` 根据 `AssemblyHandler.GetAssemblies()` 返回的实际程序集对象序列判断发现缓存是否失效，不再只比较数量。程序集类型加载、单个提供者构造/枚举失败按来源记录后继续；可恢复的 `ReflectionTypeLoadException` 保留成功加载的类型，枚举中途失败的提供者不发布半份目录。动态 provider 异常同样隔离，返回 `FailedSources`。provider 自己吞掉的错误无法由管理器凭空识别。
+`SearchManager` 根据 `AssemblyHandler.GetAssemblies()` 返回的实际程序集对象序列判断发现缓存是否失效。程序集类型加载、单个提供者构造/枚举失败按来源记录后继续；可恢复的 `ReflectionTypeLoadException` 保留成功加载的类型，枚举中途失败的提供者不发布半份目录。动态 provider 异常同样隔离，返回 `FailedSources`。provider 自己吞掉的错误无法由管理器凭空识别。
 
 开始新的搜索窗口会话或关闭搜索设置后调用 `InvalidateCatalog()`，下次取候选重新枚举静态数据，但程序集未变化时不重复扫描类型。重复聚焦尚未关闭的窗口不刷新目录或重置查询。查询期间只过滤缓存目录，快捷键标签仍从当前运行时条目读取。旧 `GetISearches()` 保留显式刷新目录语义；`GetStaticResults(refresh: true)` 也能刷新。上游程序集视图本身是否刷新、新菜单类型是否进入菜单缓存，仍受各自[插件发现](../../02-developer-guide/plugin-development/overview.md)和[菜单](./menus.md)生命周期约束。
 
 | 来源 | 当前范围与执行 |
 | --- | --- |
 | `MenuSearchProvider` | 取菜单 ID 过滤后的主窗口/Global 可见、非顶层条目；读取热键展示元数据，通常保留原 ICommand，包括 RoutedCommand。`MenuClose` 明确改用已有 `CloseDocumentCommand`，不依赖当前活动搜索窗口。隐藏过滤不是业务权限保证 |
-| `StartupMaintenanceSearchProvider` | 主程序集提供的搜索专用静态目录，贡献“初始化向导”和“故障恢复”，不恢复已移除菜单、不注册快捷键。名称、说明与中英文别名可检索；显示为高级维护，类型筛选仍属于 `Commands`，受 `EnableMenuIndex` 控制 |
+| `StartupMaintenanceSearchProvider` | 主程序集提供的搜索专用静态目录，贡献“初始化向导”和“故障恢复”，不注册菜单或快捷键。名称、说明与中英文别名可检索；显示为高级维护，类型筛选仍属于 `Commands`，受 `EnableMenuIndex` 控制 |
 | `SettingSearchProvider` | 从 `SettingEntryCatalog` 的页/行元数据构建目录，不读取配置属性值或构造自定义页面；选中后打开/激活设置窗口并定位稳定设置 ID，不直接修改设置 |
 | `TemplateSearchProvider` | 枚举已注册模板的名称，身份包含注册键与名称；执行时重新解析当前注册并检查名称仍存在，然后打开模板入口 |
 | `ThirdPartyAppSearchProvider` | 刷新工具目录，取已授权、已安装、名称非空的工具；使用已有 `DoubleClickCommand`，安装与业务权限仍由工具模块负责 |
@@ -82,7 +82,7 @@ Flow 首次查询仍可能延迟初始化 `FlowCatalogProvider.Shared`，在应�
 
 ## 提交、焦点与外部副作用
 
-初始化向导与故障恢复不通过枚举所有 `Window` 自动发现。`ColorVision/Recovery/StartupMaintenanceSearchProvider.cs` 只提供元数据与延迟执行委托：创建提供者、枚举候选和检查 `CanExecute` 都不构造维护窗口、不读取配置值、不检查更新或重启。搜索“向导／初始化／setup／wizard”或“恢复／修复／安全启动／recovery／repair”即可定位对应条目；稳定 ID 不随界面语言改变，也不依赖已删除的菜单关联。
+初始化向导与故障恢复不通过枚举所有 `Window` 自动发现。`ColorVision/Recovery/StartupMaintenanceSearchProvider.cs` 只提供元数据与延迟执行委托：创建提供者、枚举候选和检查 `CanExecute` 都不构造维护窗口、不读取配置值、不检查更新或重启。搜索“向导／初始化／setup／wizard”或“恢复／修复／安全启动／recovery／repair”即可定位对应条目；稳定 ID 不随界面语言改变。
 
 选中维护条目后检查宿主和管理员权限，直接在当前实例中以主窗口为 Owner 打开对应对话框，不弹重启确认，也不关闭工作区。运行期向导不执行首次初始化链，完成只关闭子窗口；恢复窗口返回也不退出应用。只有随后明确选择安全启动、临时跳过插件等动作时才走保存、取消与重启确认，具体边界见[架构运行时](../../03-architecture/overview/runtime.md)。搜索可见不是操作获准；打开向导不清空设置，打开恢复不自动修复。
 

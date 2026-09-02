@@ -3092,8 +3092,13 @@
       "knowledge_id": "delivery.update",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "主程序及插件更新、检查结果一次性消费、失败元数据回退、目录替换与启动恢复的实现和验收边界。",
+      "summary": "检查更新、重新安装与程序备份入口，以及主程序和插件的检查复用、下载安装、失败回退与启动恢复。",
       "aliases": [
+        "检查更新",
+        "变更日志",
+        "程序备份",
+        "更新前创建程序快照",
+        "正常启动后自动存档",
         "自动更新",
         "更新失败",
         "重新安装",
@@ -3111,11 +3116,18 @@
         "GetPluginUpdateMetadataAsync",
         "ServerUnavailable",
         "NoInternetConnection",
-        "forceRefresh"
+        "forceRefresh",
+        "ApplicationSnapshotService",
+        "ApplicationSnapshotConfig",
+        "ApplicationSnapshotsWindow",
+        "自动存档位置",
+        "autosave.zip",
+        "还原所选"
       ],
       "code_paths": [
         "ColorVision/Update",
         "ColorVision/Recovery",
+        "UI/ColorVision.UI/Update",
         "UI/ColorVision.UI/ServiceHost/ApplicationUpdatePrivilegeBroker.cs",
         "UI/ColorVision.UI/Plugins/PluginUpdater.cs",
         "UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs",
@@ -3125,7 +3137,9 @@
       "test_paths": [
         "Test/ColorVision.UI.Tests/PluginRecoveryBackupServiceTests.cs",
         "Test/ColorVision.UI.Tests/ServiceHostUpdateCompatibilityTests.cs",
-        "Test/ColorVision.UI.Tests/AutoUpdatePlanTests.cs"
+        "Test/ColorVision.UI.Tests/AutoUpdatePlanTests.cs",
+        "Test/ColorVision.UI.Tests/ApplicationSnapshotServiceTests.cs",
+        "Test/ColorVision.UI.Tests/StartupRecoverySnapshotRuntimeTests.cs"
       ],
       "related": [
         "delivery.deployment",
@@ -3141,7 +3155,7 @@
         "UI/ColorVision.UI.Desktop"
       ],
       "domain": "delivery",
-      "title": "自动更新",
+      "title": "检查更新、重新安装与程序备份",
       "source": "docs/02-developer-guide/deployment/auto-update.md",
       "url": "/02-developer-guide/deployment/auto-update",
       "searchable": true
@@ -7007,10 +7021,10 @@
       "knowledge_id": "ui.database",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "MySQL 连接配置、业务 DAO 与批 SQL 的失败边界，以及已移除浏览器的旧插件注册兼容。",
+      "summary": "MySQL 连接配置、业务 DAO 与批 SQL 的失败边界，以及旧插件注册的二进制兼容。",
       "aliases": [
         "数据库操作",
-        "数据库浏览器已移除",
+        "数据库浏览器",
         "连接数据库",
         "SQL",
         "MySQL",
@@ -8085,7 +8099,7 @@
       "knowledge_id": "ui.search",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "主窗口搜索框的关键词匹配、候选来源、缓存刷新与安全执行；重新打开读取插件候选列表，重复输入不扫描磁盘文件列表，旧动态来源仍同步。",
+      "summary": "应用搜索窗口的入口、关键词匹配、候选来源、缓存刷新与命令执行；Ctrl+F 按焦点执行局部查找，Ctrl+Shift+P 打开应用搜索。",
       "aliases": [
         "搜索框",
         "命令面板",

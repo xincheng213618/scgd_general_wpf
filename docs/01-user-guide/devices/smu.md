@@ -67,6 +67,6 @@ related: ["engine.devices","operations.device-configuration","flow.session"]
 
 ## 证据与验证缺口
 
-`NodeConfiguratorBindingTests.PropertyEditors_BindAndFilterAdvancedProperties` 包含 SMU 量程编辑器的元数据、选项和属性绑定断言；`InitTableEntityMappingTests` 校验 `SmuScanModel.channel` 的枚举/数据库列映射。这些测试不覆盖实际点测、扫描、关闭输出、超时保护或数据库结果往返，本次也未运行产品测试。
+`NodeConfiguratorBindingTests.PropertyEditors_BindAndFilterAdvancedProperties` 包含 SMU 量程编辑器的元数据、选项和属性绑定断言；`InitTableEntityMappingTests` 校验 `SmuScanModel.channel` 的枚举/数据库列映射。这些测试不覆盖实际点测、扫描、关闭输出、超时保护或数据库结果往返。
 
 当前没有在本主题声明 SMU 协议完成性或真机保护测试。后续验证须分别检查精确载荷、通道关联、失败/超时后的输出状态和结果持久化，且硬件及数据库操作需要单独授权。

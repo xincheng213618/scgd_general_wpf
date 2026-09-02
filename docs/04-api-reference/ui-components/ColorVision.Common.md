@@ -91,4 +91,4 @@ RBAC 的用户/角色/权限码校验在 `UI/ColorVision.Rbac/Services/Permissio
 - `ThirdPartyAppInfoTests.cs` 检查默认分类/权限、工具权限层级、直接执行命令仍检查权限及若干 provider 元数据；其中执行的是测试委托，不是实际安装或外部进程。它不覆盖 `AccessControl` 两套判据一致性或全部 Win32 行为。
 - `ModuleCatalogTests.cs` 检查重复登记、Seal、RBAC 模块进入现有发现快照及类型快照复用；不证明所有插件、构造失败路径或上层 UI 都已验证。
 - `ConfigHandlerPersistenceTests.cs` 中的重载测试检查配置实例替换与 `Authorization.Instance` 重绑定；不是账户鉴权、权限码或跨线程通知测试。
-- 当前关联测试未证明 `ViewModelBase` 的所有通知线程/重入场景、泛型命令参数与重查询时序、第三方 provider 失败/取消/重载、真实外部工具、完整 SDK/ABI 兼容性。本次文档对齐不代表运行过这些测试；公共契约变更仍需有针对性的测试和实际消费者构建。
+- 当前关联测试未证明 `ViewModelBase` 的所有通知线程/重入场景、泛型命令参数与重查询时序、第三方 provider 失败/取消/重载、真实外部工具、完整 SDK/ABI 兼容性。公共契约变更仍需有针对性的测试和实际消费者构建。

@@ -515,7 +515,7 @@
             },
             {
               "text": {
-                "root": "自动更新"
+                "root": "检查更新、重新安装与程序备份"
               },
               "link": "/02-developer-guide/deployment/auto-update"
             },
@@ -620,7 +620,7 @@
             },
             {
               "text": {
-                "root": "自动更新"
+                "root": "检查更新、重新安装与程序备份"
               },
               "link": "/02-developer-guide/deployment/auto-update"
             },
@@ -1415,7 +1415,7 @@
             },
             {
               "text": {
-                "root": "自动更新"
+                "root": "检查更新、重新安装与程序备份"
               },
               "link": "/02-developer-guide/deployment/auto-update"
             },
@@ -1670,7 +1670,7 @@
             },
             {
               "text": {
-                "root": "自动更新"
+                "root": "检查更新、重新安装与程序备份"
               },
               "link": "/02-developer-guide/deployment/auto-update"
             },

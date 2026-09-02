@@ -60,7 +60,7 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 
 ## 新增功能检查
 
-窗口能打开只证明入口可用，不等于[配置已持久化和发布](./configuration.md)、[安装替换成功](../../02-developer-guide/plugin-development/getting-started.md)或插件已加载。下表也用于回答运行问题，不再另维护一份 UI 使用手册。观察下载日志、目标路径和包版本是诊断；下载替换、安装更新、修改配置和系统状态需要相应授权，不因为“验证”而自动执行。
+窗口能打开只证明入口可用，不等于[配置已持久化和发布](./configuration.md)、[安装替换成功](../../02-developer-guide/plugin-development/getting-started.md)或插件已加载。观察下载日志、目标路径和包版本是诊断；下载替换、安装更新、修改配置和系统状态需要相应授权，不因为“验证”而自动执行。
 
 | 要做什么 | 检查点 |
 | --- | --- |
@@ -87,9 +87,7 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 ## 边界
 
 - 本项目的 `App.xaml.cs` 为空实现，`App.xaml` 未设置 `StartupUri`；`MainWindow.xaml` 仅有空 `Grid`，构造器只调用 `InitializeComponent()`。声明 `WinExe` 不代表包含完整产品启动、单实例、首次向导或 AvalonDock 主窗口；真正的[宿主启动链](../../03-architecture/overview/runtime.md)在 `ColorVision/`。
-- 旧文档里的 `SystemInitializer` 不在当前 `UI/ColorVision.UI.Desktop` 目录中。
-- Windows 事件查看器直接由“第三方应用”启动 `eventvwr.msc`；不再维护 `EventWindow` 内嵌控件。
-- “应用与工具”不再内置数据库浏览器、`CVRaw To CSV` 和 `DAT File Reader`；通用 CVRAW/CVCIE 文件读取仍由 Engine/FileIO 与图像编辑器负责。
+- Windows 事件查看器直接由“第三方应用”启动 `eventvwr.msc`。
 - 普通用户模式下，写入或清除 `HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps` 由 `ColorVisionServiceHost` 执行；管理员模式可直接写入，手动保存 Dump 不修改系统配置。
 - 特权服务的 `registry-set-values` / `registry-delete-key` 是通用 HKLM 写入接口，不限制到 WER 路径，并支持显式选择 32/64 位注册表视图；所有调用仍须通过调用方身份校验、单次 Broker Ticket，并写入不含值数据的审计日志。
 - 这里是窗口和管理工具集合，不是所有菜单、插件或配置运行时的唯一中心。

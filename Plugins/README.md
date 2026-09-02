@@ -8,7 +8,7 @@
 - [插件装载与扩展发现](../docs/02-developer-guide/plugin-development/overview.md)：manifest、依赖预检、程序集加载与扩展发现的契约。
 - [构建与发布脚本](../docs/02-developer-guide/scripts/README.md)：普通插件、Spectrum 和客户包的交付入口与副作用。
 
-实际项目身份、依赖与输出以本目录下各项目的 `.csproj`、`manifest.json`、`Directory.Build.props` 及根 `PluginProject.HostCopy.targets` 为准。进入具体模块后继续读取其 README；原有模块/包说明可以保持原语言。本页不再复制加载步骤或目录快照。
+实际项目身份、依赖与输出以本目录下各项目的 `.csproj`、`manifest.json`、`Directory.Build.props` 及根 `PluginProject.HostCopy.targets` 为准。进入具体模块后继续读取其 README；原有模块/包说明可以保持原语言。
 
 本目录的 `*.bat` 含发布入口，不是普通验证脚本：其中 wrapper 会上传，`Spectrum.bat` 直接调用带 `--upload` 的构建脚本。仅阅读、修改文档或诊断插件不授权执行它们。
 

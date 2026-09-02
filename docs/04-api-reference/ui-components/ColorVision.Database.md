@@ -2,8 +2,8 @@
 knowledge_id: "ui.database"
 knowledge_type: "topic"
 status: "current"
-summary: "MySQL 连接配置、业务 DAO 与批 SQL 的失败边界，以及已移除浏览器的旧插件注册兼容。"
-aliases: ["数据库操作", "数据库浏览器已移除", "连接数据库", "SQL", "MySQL", "SQLite", "ColorVision.Database", "BaseTableDao", "MySqlControl", "BatchExecuteNonQuery", "数据库事务回滚", "LegacyDatabaseBrowserRegistration"]
+summary: "MySQL 连接配置、业务 DAO 与批 SQL 的失败边界，以及旧插件注册的二进制兼容。"
+aliases: ["数据库操作", "数据库浏览器", "连接数据库", "SQL", "MySQL", "SQLite", "ColorVision.Database", "BaseTableDao", "MySqlControl", "BatchExecuteNonQuery", "数据库事务回滚", "LegacyDatabaseBrowserRegistration"]
 code_paths: ["UI/ColorVision.Database", "UI/ColorVision.Database/Compatibility/LegacyDatabaseBrowserRegistration.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/BatchExecuteNonQueryTests.cs", "Test/ColorVision.UI.Tests/LegacyDatabaseBrowserRegistrationTests.cs"]
 related: ["ui.database-query", "ui.sqlite-storage", "engine.database-maintenance", "operations.data", "ui.configuration", "ui.desktop", "flow.session"]
@@ -11,17 +11,15 @@ related: ["ui.database-query", "ui.sqlite-storage", "engine.database-maintenance
 
 # 数据库连接、DAO 与旧插件兼容
 
-`UI/ColorVision.Database/` 提供 MySQL 连接配置、业务 DAO、实体驱动的[通用查询](./database-query.md)，以及 [SQLite 正文存储、迁移与维护](./sqlite-storage.md)。这些基础能力继续保留；“应用与工具”中的通用数据库浏览器、表结构浏览、行级编辑窗口及浏览器专用 Copilot 上下文已移除。
+`UI/ColorVision.Database/` 提供 MySQL 连接配置、业务 DAO、实体驱动的[通用查询](./database-query.md)，以及 [SQLite 正文存储、迁移与维护](./sqlite-storage.md)。
 
-`DatabaseCleanupWindow` 虽使用同一命名空间，源码实际属于 Engine，是独立的[多数据源维护宿主](../engine-components/database-maintenance.md)。浏览器移除不删除清理、备份、迁移、业务查询或历史结果，也不删除任何数据库文件。
+`DatabaseCleanupWindow` 虽使用同一命名空间，源码实际属于 Engine，是独立的[多数据源维护宿主](../engine-components/database-maintenance.md)。
 
 ## 已发布插件的注册兼容
 
 旧版 ARVR、LUX、Spectrum 等插件会在结果管理器初始化时调用 `new SqliteDatabaseBrowserProvider(...)` 和 `DatabaseBrowserProviderRegistry.Register(IDatabaseBrowserProvider)`。直接删除这些公开类型，会让仍在运行的旧插件在启动时出现类型或方法缺失。
 
-`Compatibility/LegacyDatabaseBrowserRegistration.cs` 仅保留这组已发布签名：空的 `IDatabaseBrowserProvider` 接口、四参数 SQLite Provider 构造函数和静态 `Register`。它们均标记为过时；构造和注册不读取路径、不调用或持有 client factory、不保存 Provider、不连接数据库，也不贡献工具入口。当前源码中的数据源注册调用已移除。这个兼容文件不提供原浏览器的查询、CRUD 或扩展能力，不能作为新增数据源接口使用。
-
-浏览器原实现及恢复方式保留在 Git 和根目录 `CHANGELOG.md`，需要恢复时回退专门的移除提交，不要把空兼容类型改成另一套浏览器。
+`Compatibility/LegacyDatabaseBrowserRegistration.cs` 仅保留这组已发布签名：空的 `IDatabaseBrowserProvider` 接口、四参数 SQLite Provider 构造函数和静态 `Register`。它们均标记为过时；构造和注册不读取路径、不调用或持有 client factory、不保存 Provider、不连接数据库，也不贡献工具入口。这个兼容文件不提供原浏览器的查询、CRUD 或扩展能力，不能作为新增数据源接口使用。
 
 打开连接会访问数据库，业务写入、批 SQL、迁移和清理仍会改变真实数据。只读排障不授权执行这些操作；数据归属和备份范围见[数据责任地图](../../01-user-guide/data-management/README.md)。
 

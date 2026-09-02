@@ -18,7 +18,7 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 | 现象或行为 | 当前实现与检查点 |
 | --- | --- |
 | 主窗口布局 | `ColorVision/MainWindow.xaml` 定义菜单区、停靠区和状态栏；工作区内容由具体编辑器和扩展提供 |
-| 顶部没有搜索框 | 顶部不再放置搜索按钮或按键提示；通过可配置快捷键（默认 Ctrl+Shift+P）打开独立搜索窗口，不受主窗口宽度影响。工具与编辑菜单不再提供搜索入口 |
+| 查找功能或当前内容 | Ctrl+Shift+P 打开应用搜索；Ctrl+F 按当前内容分流到局部查找或应用搜索 |
 | 搜索存在但找不到候选或执行不符合预期 | `MainWindow.Hotkeys.cs` 负责承载与聚焦；Ctrl+F 是场景查找，先交给当前内容，没有局部查找的普通页面才打开应用搜索。候选来源、排序、类型开关和执行检查归[产品搜索](../../04-api-reference/ui-components/search.md)，不是宿主布局问题 |
 | 菜单提示了组合键但按键无响应 | `LoadHotKeyFromAssembly()` 独立接入[快捷键注册](../../04-api-reference/ui-components/hotkeys.md)；提示文字不创建注册，先核对具体宿主与模式 |
 | 菜单不出现 | `MenuManager.LoadMenuForWindow(MenuItemConstants.MainWindowTarget, Menu1)` 为宿主装配菜单；按[菜单契约](../../04-api-reference/ui-components/menus.md)核对类型缓存、目标窗口、父子可达性和显示过滤，命令检查另行判断 |
@@ -39,11 +39,11 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 
 ## 停靠外观与主题边界
 
-工作区使用 AvalonDock 4.74.1，停靠标题、文档标签和工具面板边框采用参考 VS2026 的深浅色外观：中性背景、圆角标签与面板、紫色活动边框，不再绘制标题中的点状握柄。文档标题继承标签前景色，长标题省略；普通未选中标签为关闭按钮保留位置，悬停不改变标签宽度。工具面板只剩一个标签时不显示底部标签栏；多个标签时，选中标签沿面板轮廓向下延伸，而不是在标签下画独立下划线。`MainWindow.xaml` 的停靠管理器沿用紧凑外边距 `-2,-3,-2,-2` 和透明背景；该宿主布局设置与单工具页的内容生成修复分开维护，不把非负外边距当作模板生效的前提。外观模板不改变停靠模型、布局持久化、启动配置或业务命令。
+工作区使用 AvalonDock 4.74.1，停靠标题、文档标签和工具面板边框采用参考 VS2026 的深浅色外观：中性背景、圆角标签与面板、紫色活动边框。文档标题继承标签前景色，长标题省略；普通未选中标签为关闭按钮保留位置，悬停不改变标签宽度。工具面板只剩一个标签时不显示底部标签栏；多个标签时，选中标签沿面板轮廓向下延伸，而不是在标签下画独立下划线。`MainWindow.xaml` 的停靠管理器使用紧凑外边距 `-2,-3,-2,-2` 和透明背景；外观模板不改变停靠模型、布局持久化、启动配置或业务命令。
 
 单工具页通过将 `ToolTabStrip.Height` 设为 0 隐藏标签栏的占位，保留该容器的 Visible 状态和 `IsItemsHost` 面板参与布局，仍让 WPF 生成 `TabItem` 并建立选择绑定。不能将包含 ItemsHost 的外层设为 Collapsed：首次布局尚未生成标签容器时，模型虽已选中，控件的 `SelectedContent` 和标题仍可能为空，延迟内容也无法进入 Loaded。恢复多个工具页后标签栏重新取得正常高度。面板内容在关闭重开和布局恢复之间的实例所有权另见[停靠注册、布局恢复和重置](../../04-api-reference/ui-components/editor-document-lifecycle.md#停靠注册、布局恢复和重置)。
 
-停靠主题为管理器、文档标签栏、工具面板模板底板、工具标题、选中底部标签和工具浮窗的标题/主体提供动态引用应用 `GlobalBackground` 的默认背景；主窗口管理器的局部透明背景则透出窗口底色。`MainWindow.xaml` 中设备控制的 `ScrollViewerDisplay` 外层也引用该资源，不再使用 `GlobalBorderBrush1`，避免标题、内容空白、底部标签分别出现三种底色。颜色来源是 `UI/ColorVision.Themes/Themes/White.xaml` 和 `Dark.xaml` 的全局资源，不在停靠主题中复制一份全局配色。该统一只针对停靠外壳：选中文档标签及文档内容面板仍使用自身停靠配色，流程网格、图像画布、编辑器和设备卡片等内容继续保留各自的背景资源，不批量改写内容背景。
+停靠主题为管理器、文档标签栏、工具面板模板底板、工具标题、选中底部标签和工具浮窗的标题/主体提供动态引用应用 `GlobalBackground` 的默认背景；主窗口管理器的局部透明背景则透出窗口底色。`MainWindow.xaml` 中设备控制的 `ScrollViewerDisplay` 外层也引用该资源。颜色来源是 `UI/ColorVision.Themes/Themes/White.xaml` 和 `Dark.xaml` 的全局资源，不在停靠主题中复制一份全局配色。该统一只针对停靠外壳：选中文档标签及文档内容面板仍使用自身停靠配色，流程网格、图像画布、编辑器和设备卡片等内容继续保留各自的背景资源，不批量改写内容背景。
 
 文档标签最小高度为 26 DIP，内部原生标签布局最小高度为 25 DIP，标签圆角为 3 DIP；工具标签圆角仍为 4 DIP。`IsSelected` 只决定选中页的轮廓与背景，只有 `IsActive` 才给文档标签、标签栏主线和内容面板紫色边框，并令标题文字使用 `SemiBold`。焦点转到工具面板后，文档仍可保持选中及 `IsLastFocusedDocument`，但恢复中性边框和普通字重；多个文档分组也不同时强调各自选中页。这里只读取 AvalonDock 状态改变外观，不重新激活文档或抢回键盘焦点。标题字重仅设置在 `LayoutDocumentTabItem` 模板的 `DocumentHeader` 内容呈现器上，不设置整个 `TabItem` 的字重，避免右键菜单、菜单项及其他子控件继承粗体；原生菜单和命令继续复用。
 
@@ -53,7 +53,7 @@ WPF `Border.CornerRadius` 只约束边框自身绘制，不会自动裁切子内
 
 `AvalonDockTheme` 按“VS2013 基础字典 → `AvalonDockModernLight.xaml` / `AvalonDockModernDark.xaml` 调色板 → `AvalonDockModernTemplates.xaml` 模板”合并资源。VS2013 基础仍提供停靠菜单、命令和图标，不是更换停靠引擎。现代模板内合并保留原文件名的 `AvalonDockGripTemplates.xaml`；该文件现在承载无点状握柄的工具浮动窗口模板，并先合并上游 `Generic.xaml`。不要在现代模板之后再次合并上游通用字典，否则同名浮动窗口样式可能覆盖自定义模板。
 
-上游 `DockingManager` 样式用 `StaticResource` 固定了面板样式，仅添加隐式 `TabItem` 或面板样式不能保证生效。现代管理器样式因此显式重新设置 `DocumentPaneControlStyle`、`AnchorablePaneControlStyle` 和标题模板。在本项目编译后的嵌套资源组合中，直接对同一隐式类型键使用 `BasedOn` 曾未能建立继承链，导致默认菜单为空；这不代表所有同键 `BasedOn` 都失效。`AvalonDockGripTemplates.xaml` 先以唯一键 `ColorVisionBaseDockingManagerStyle` 捕获上游管理器样式，现代样式再基于此键保留整套上游菜单及其余默认 Setter，避免依赖同键查找顺序。颜色通过动态主题资源引用；模板覆盖放在 Theme 字典内，工具背景从应用全局字典取色，使独立加载主题的浮动窗口也能取得同一资源，不依靠主窗口局部资源、Loaded 后遍历修补或关闭绑定诊断。移除点状绘图同时去掉了旧模板中依赖隐藏矩形 `Fill` 的 `GeometryDrawing.Brush` / `ElementName` 绑定，避免其缺少 WPF 继承上下文时的绑定失败。
+上游 `DockingManager` 样式用 `StaticResource` 固定了面板样式，仅添加隐式 `TabItem` 或面板样式不能保证生效。现代管理器样式因此显式重新设置 `DocumentPaneControlStyle`、`AnchorablePaneControlStyle` 和标题模板。`AvalonDockGripTemplates.xaml` 先以唯一键 `ColorVisionBaseDockingManagerStyle` 捕获上游管理器样式，现代样式再基于此键保留整套上游菜单及其余默认 Setter，避免依赖同键查找顺序。颜色通过动态主题资源引用；模板覆盖放在 Theme 字典内，工具背景从应用全局字典取色，使独立加载主题的浮动窗口也能取得同一资源，不依靠主窗口局部资源、Loaded 后遍历修补或关闭绑定诊断。
 
 模板保留 AvalonDock 的真实标题控件、内容宿主、菜单数据上下文和关闭、隐藏、自动隐藏命令；不可关闭但可隐藏的工具文档仍走隐藏命令。浮动工具窗口保留 `WindowChrome` 标题命中区、缩放边框以及最大化、还原和关闭/隐藏命令，去掉装饰握柄不等于取消拖动。文档浮动窗口、自动隐藏标签等未替换的上游模板仅通过调色板协调颜色，不宣称所有上游界面都已重绘。覆盖模板来源和许可证保留在 `ColorVision/Themes/`；升级 AvalonDock 时应复核模板部件、命令和资源解析顺序。
 

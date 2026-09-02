@@ -61,7 +61,7 @@ RC 的三参数 `RestartServices` 是 void 包装，丢弃 `TryRestartServices` 
 
 设备右键“重启服务”的 `RefreshCommand` 实际调用 `Save()`，也会尝试把当前 Config 写入数据库，不是只读刷新。不要把设备级与终端级操作视为相同范围。
 
-**终端保存仍有实现缺口：** `TerminalService.Save()` 先修改内存 `SysResourceModel`，但使用的是未传实体、未指定条件的 `Db.Updateable<SysResourceModel>().ExecuteCommand()`，不同于设备的 `Updateable(SysResourceModel)`。不能据此宣称目标终端行已正确持久化；实际 ORM 行为和修复需单独验证，不猜测它一定更新全部行或一定失败。随后重启仅传 `Config.ServiceType.ToString()`，未传终端 Code；`CreateType` 新建 Config 没有设置该 ServiceType，加载终端也只覆盖 Code/Name，不以资源 Type 同步它。需要核对实际配置和请求目标，不能声称只重启当前终端。这些问题是现有源码冲突，不是本次文档调整已修复的功能。
+**终端保存仍有实现缺口：** `TerminalService.Save()` 先修改内存 `SysResourceModel`，但使用的是未传实体、未指定条件的 `Db.Updateable<SysResourceModel>().ExecuteCommand()`，不同于设备的 `Updateable(SysResourceModel)`。不能据此宣称目标终端行已正确持久化；实际 ORM 行为和修复需单独验证，不猜测它一定更新全部行或一定失败。随后重启仅传 `Config.ServiceType.ToString()`，未传终端 Code；`CreateType` 新建 Config 没有设置该 ServiceType，加载终端也只覆盖 Code/Name，不以资源 Type 同步它。需要核对实际配置和请求目标，不能声称只重启当前终端。
 
 ## 导入、导出、重置与删除
 
@@ -76,7 +76,7 @@ RC 的三参数 `RestartServices` 是 void 包装，丢弃 `TryRestartServices` 
 
 删除显示项依赖返回同一个已登记实例，并非按设备 Code 查找。例如 `DeviceSMU.GetDisplayControl()` 每次创建新的 `DisplaySMU(this)`，删除时拿到新实例不能据此保证原显示项已移除。删除中途任一步抛异常也会阻止后续清理，不恢复先前已完成的移树或数据库删除。
 
-调用 Dispose 不等于释放通信：通用 `DeviceService.Dispose()` 只调用 `GC.SuppressFinalize`，不会自动执行 `GetMQTTService()?.Dispose()`；`DeviceSMU` 也没有覆盖这个方法。`MQTTServiceBase.Dispose()` 才负责自身 `Processing` 退订、计时器及待处理记录清理，派生通信类另加的事件仍要核对其解绑实现。因此不能从“设备已删”推断所有通信回调、显示缓存或已打开窗口均已失效。这些是现有实现边界，不是本次文档调整已修复的功能，也不是触发硬件或重启服务来验证的授权。
+调用 Dispose 不等于释放通信：通用 `DeviceService.Dispose()` 只调用 `GC.SuppressFinalize`，不会自动执行 `GetMQTTService()?.Dispose()`；`DeviceSMU` 也没有覆盖这个方法。`MQTTServiceBase.Dispose()` 才负责自身 `Processing` 退订、计时器及待处理记录清理，派生通信类另加的事件仍要核对其解绑实现。因此不能从“设备已删”推断所有通信回调、显示缓存或已打开窗口均已失效。
 
 具体 `Device*` 可以覆盖上述方法，操作前应核对实际类型。PropertyGrid 的编辑会话、确定与关闭语义只在[属性契约](../../04-api-reference/ui-components/property-grid.md)维护；按钮是否可用不扩大 AI 的执行授权。
 
