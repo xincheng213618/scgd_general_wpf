@@ -372,7 +372,7 @@
     {"query":"文件关联注册","expected_any":["engine.shell-extension"],"include_planned":false},
     {"query":"程序备份","expected_any":["delivery.update"],"include_planned":false},
     {"query":"变更日志","expected_any":["delivery.update"],"include_planned":false},
-    {"query":"T0000","expected_any":["projects.lux"],"include_planned":false},
+    {"query":"T0000","expected_any":["projects.lux-protocol"],"include_planned":false},
     {"query":"ARVR 流程解析映射","expected_any":["projects.arvr-pro-processes"],"include_planned":false},
     {"query":"MTFHV048","expected_any":["projects.arvr-pro-processes"],"include_planned":false},
     {"query":"ProjectARVRInit","expected_any":["projects.arvr-pro-protocol"],"include_planned":false},
@@ -382,6 +382,10 @@
     {"query":"GetProcessEnable","expected_any":["projects.arvr-pro-protocol"],"include_planned":false},
     {"query":"SetProcessEnable 返回 Partial applied","expected_any":["projects.arvr-pro-protocol"],"include_planned":false},
     {"query":"ARVRTestType 从 0 还是 1 开始","expected_any":["projects.arvr-pro-protocol"],"include_planned":false},
-    {"query":"No enabled ARVR flow","expected_any":["projects.arvr-pro-protocol"],"include_planned":false}
+    {"query":"No enabled ARVR flow","expected_any":["projects.arvr-pro-protocol"],"include_planned":false},
+    {"query":"T0001 VID 返回值","expected_any":["projects.lux-protocol"],"include_planned":false},
+    {"query":"T0031 光通量为空","expected_any":["projects.lux-protocol"],"include_planned":false},
+    {"query":"H03AR 光学中心","expected_any":["projects.lux-protocol"],"include_planned":false},
+    {"query":"No Dispatcher Hanle","expected_any":["projects.lux-protocol","ui.socket-protocol"],"include_planned":false}
   ]
 }

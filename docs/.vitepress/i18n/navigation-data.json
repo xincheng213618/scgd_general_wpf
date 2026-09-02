@@ -1277,6 +1277,12 @@
                 "root": "ARVRPro TCP 通讯协议"
               },
               "link": "/04-api-reference/projects/project-arvr-pro-protocol"
+            },
+            {
+              "text": {
+                "root": "LUX TCP 通讯协议"
+              },
+              "link": "/04-api-reference/projects/project-lux-protocol"
             }
           ]
         },
@@ -2783,6 +2789,12 @@
                 "root": "ProjectLUX"
               },
               "link": "/04-api-reference/projects/project-lux"
+            },
+            {
+              "text": {
+                "root": "LUX TCP 通讯协议"
+              },
+              "link": "/04-api-reference/projects/project-lux-protocol"
             }
           ]
         }

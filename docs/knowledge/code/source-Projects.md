@@ -70,4 +70,7 @@ next: false
   按协议、外部触发、结果出口与最小验证路径比较 ARVRPro、KB、LUX 和 IntegrationDemo。
 
 - [ProjectLUX](../../04-api-reference/projects/project-lux.md) — `projects.lux`
-  ProjectLUX 文本 Socket、ProcessGroup、Recipe/Fix 与 CSV/SQLite 结果链及构建发布边界。
+  ProjectLUX 流程组、Recipe/Fix 共享配置、处理类型与 CSV/SQLite 结果链；文本协议有独立参考主题。
+
+- [LUX TCP 通讯协议](../../04-api-reference/projects/project-lux-protocol.md) — `projects.lux-protocol`
+  LUX TCP 文本协议的 T0000 握手、VID、光学中心、光通量与 SocketCode 流程，说明响应字段、状态码、分帧及共享会话限制。

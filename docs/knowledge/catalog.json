@@ -6925,18 +6925,13 @@
       "knowledge_id": "projects.lux",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "ProjectLUX 文本 Socket、ProcessGroup、Recipe/Fix 与 CSV/SQLite 结果链及构建发布边界。",
+      "summary": "ProjectLUX 流程组、Recipe/Fix 共享配置、处理类型与 CSV/SQLite 结果链；文本协议有独立参考主题。",
       "aliases": [
         "T00XX 如何匹配 LUX 流程",
         "LUX 结果和修正在哪里",
         "ProjectLUX",
         "LUXWindow",
         "ProcessMeta.SocketCode",
-        "T0000",
-        "T0001",
-        "T0002",
-        "T0031",
-        "T00XX",
         "ARVRRecipe.json",
         "ProjectARVRProFixConfig.json",
         "ProjectLUXSummary.json",
@@ -6958,6 +6953,7 @@
       "related": [
         "projects.index",
         "projects.capabilities",
+        "projects.lux-protocol",
         "projects.arvr-pro-processes",
         "ui.socket-protocol"
       ],
@@ -6968,6 +6964,56 @@
       "title": "ProjectLUX",
       "source": "docs/04-api-reference/projects/project-lux.md",
       "url": "/04-api-reference/projects/project-lux",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "projects.lux-protocol",
+      "knowledge_type": "reference",
+      "status": "current",
+      "summary": "LUX TCP 文本协议的 T0000 握手、VID、光学中心、光通量与 SocketCode 流程，说明响应字段、状态码、分帧及共享会话限制。",
+      "aliases": [
+        "LUX TCP 协议",
+        "ProjectLUX TCP 通讯协议手册",
+        "T0000",
+        "T0001",
+        "T0002",
+        "T0031",
+        "T00XX",
+        "H03AR",
+        "MachineNO",
+        "No SN",
+        "No right Code",
+        "No Dispatcher Hanle",
+        "FlowFailed",
+        "LUX 光通量",
+        "LUX VID"
+      ],
+      "code_paths": [
+        "Projects/ProjectLUX/Services/SocketControl.cs",
+        "Projects/ProjectLUX/LUXWindow.xaml.cs",
+        "Projects/ProjectLUX/Process/ProcessManager.cs",
+        "Projects/ProjectLUX/Process/OpticCenter",
+        "Projects/ProjectLUX/Process/VID",
+        "Projects/ProjectLUX/Summary.cs",
+        "Projects/ProjectLUX/ProjectLUXConfig.cs",
+        "UI/ColorVision.SocketProtocol/SocketManager.cs",
+        "UI/ColorVision.SocketProtocol/SocketTextDispatcher.cs",
+        "UI/ColorVision.SocketProtocol/SocketConfig.cs"
+      ],
+      "test_paths": [],
+      "related": [
+        "projects.lux",
+        "projects.capabilities",
+        "ui.socket-protocol"
+      ],
+      "code_scopes": [
+        "Projects/ProjectLUX",
+        "UI/ColorVision.SocketProtocol"
+      ],
+      "domain": "projects",
+      "title": "LUX TCP 通讯协议",
+      "source": "docs/04-api-reference/projects/project-lux-protocol.md",
+      "url": "/04-api-reference/projects/project-lux-protocol",
       "searchable": true
     },
     {

@@ -15,7 +15,7 @@ ColorVision 的显示设备光学检测项目包，运行时加载 `ProjectLUX.d
 | 任务 | 文档 |
 | --- | --- |
 | 配置流程、Recipe/Fix、查询保存位置和处理类型 | [ProjectLUX](../../docs/04-api-reference/projects/project-lux.md) |
-| 对接 `T00XX,SN;`、解释响应及处理超时 | [TCP 通讯协议手册](./ProjectLUX%20TCP%20通讯协议手册.md) |
+| 对接 `T00XX,SN;`、解释响应及处理超时 | [TCP 通讯协议](../../docs/04-api-reference/projects/project-lux-protocol.md) |
 | 查询版本变化 | [CHANGELOG](./CHANGELOG.md) |
 
 完整功能文档需在匹配版本的源码仓库或文档站点查看；独立交付包中的相对链接需要完整源码。

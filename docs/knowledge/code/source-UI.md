@@ -289,6 +289,9 @@ next: false
 - [ARVRPro TCP 通讯协议](../../04-api-reference/projects/project-arvr-pro-protocol.md) — `projects.arvr-pro-protocol`
   ARVRPro TCP/JSON 对接：初始化与 RunAll、流程启用设置、切图确认、AOI 中转、状态码和最终结果关联；说明分帧与并发会话限制。
 
+- [LUX TCP 通讯协议](../../04-api-reference/projects/project-lux-protocol.md) — `projects.lux-protocol`
+  LUX TCP 文本协议的 T0000 握手、VID、光学中心、光通量与 SocketCode 流程，说明响应字段、状态码、分帧及共享会话限制。
+
 ## UI/ColorVision.Solution {#module-55492f436f6c6f72566973696f6e2e536f6c7574696f6e}
 
 - [UI 组件目录](../../04-api-reference/ui-components/control-catalog.md) — `ui.control-catalog`

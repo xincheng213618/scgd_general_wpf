@@ -2,11 +2,11 @@
 knowledge_id: "projects.lux"
 knowledge_type: "reference"
 status: "current"
-summary: "ProjectLUX 文本 Socket、ProcessGroup、Recipe/Fix 与 CSV/SQLite 结果链及构建发布边界。"
-aliases: ["T00XX 如何匹配 LUX 流程","LUX 结果和修正在哪里","ProjectLUX","LUXWindow","ProcessMeta.SocketCode","T0000","T0001","T0002","T0031","T00XX","ARVRRecipe.json","ProjectARVRProFixConfig.json","ProjectLUXSummary.json","LUX Recipe","LUX Fix"]
+summary: "ProjectLUX 流程组、Recipe/Fix 共享配置、处理类型与 CSV/SQLite 结果链；文本协议有独立参考主题。"
+aliases: ["T00XX 如何匹配 LUX 流程","LUX 结果和修正在哪里","ProjectLUX","LUXWindow","ProcessMeta.SocketCode","ARVRRecipe.json","ProjectARVRProFixConfig.json","ProjectLUXSummary.json","LUX Recipe","LUX Fix"]
 code_paths: ["Projects/ProjectLUX/LUXWindow.xaml.cs","Projects/ProjectLUX/Services/SocketControl.cs","Projects/ProjectLUX/Process/","Projects/ProjectLUX/ViewResultManager.cs","Projects/ProjectLUX/Recipe/","Projects/ProjectLUX/Fix/","Projects/ProjectLUX/Summary.cs"]
 test_paths: ["Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj"]
-related: ["projects.index","projects.capabilities","projects.arvr-pro-processes","ui.socket-protocol"]
+related: ["projects.index","projects.capabilities","projects.lux-protocol","projects.arvr-pro-processes","ui.socket-protocol"]
 ---
 
 # ProjectLUX
@@ -47,7 +47,7 @@ related: ["projects.index","projects.capabilities","projects.arvr-pro-processes"
 4. 外部对接时在“通信协议”中选择 Text 模式，启用 Socket Server，并将实际命令映射交给客户端。
 5. 在授权环境核对触发的 Flow、结果字段、CSV 和响应；确认持久化成功后再将方案投入使用。
 
-下面的命令说明用于定位实现；完整请求、响应字段与异步时序见源码仓库 `Projects/ProjectLUX/ProjectLUX TCP 通讯协议手册.md`。
+下面的命令说明用于定位实现；完整请求、响应字段、共享会话限制及异步时序见 [LUX TCP 通讯协议](./project-lux-protocol.md)。
 
 
 | 对象或命令 | 作用 |
@@ -66,7 +66,7 @@ related: ["projects.index","projects.capabilities","projects.arvr-pro-processes"
 
 `FindProcessMetaBySocketCode` 在活动组中按忽略大小写的精确命令码取第一项，不检查 `IsEnabled`。UI 中禁用步骤不能阻止这条 Socket 路径触发它。找到步骤后，`RunTemplateBySocketCode` 用 `Contains` 查找第一个包含 `FlowTemplate` 字符串的模板名，因此应使用完整且有辨识力的名称，避免短名命中其他模板。
 
-Flow 已运行时，新命令被忽略并记日志；活动组、命令映射或模板不存在时，可能仍返回现有 `ReturnCode` 前缀。收到通用 `00` 响应不能证明 Flow 已执行或 Recipe 判定 PASS，需结合日志及结果记录确认。
+Flow 已运行时，新的流程启动被忽略并记日志，但命令入口此前可能已经覆盖窗口中的 SN、Stream 和 ReturnCode。活动组、命令映射或模板不存在时，也可能返回现有响应前缀。收到通用 `00` 不能证明 Flow 已执行或 Recipe 判定 PASS；按协议串行操作并结合日志及结果记录确认。
 
 ## Process / Recipe / Fix
 
