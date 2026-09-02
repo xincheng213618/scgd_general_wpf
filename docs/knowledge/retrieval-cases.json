@@ -408,6 +408,12 @@
     {"query":"NAS 部署失败会自动回滚吗","expected_any":["delivery.web-deployment"],"include_planned":false},
     {"query":"RemoteGitBundle","expected_any":["delivery.web-deployment"],"include_planned":false},
     {"query":"DRY_RUN_ERROR","expected_any":["delivery.web-deployment"],"include_planned":false},
-    {"query":"web-deploy-backups","expected_any":["delivery.web-deployment"],"include_planned":false}
+    {"query":"web-deploy-backups","expected_any":["delivery.web-deployment"],"include_planned":false},
+    {"query":"静态文件压缩","expected_any":["delivery.web-pages"],"include_planned":false},
+    {"query":"vite:preloadError","expected_any":["delivery.web-pages"],"include_planned":false},
+    {"query":"docs/status","expected_any":["delivery.web-pages"],"include_planned":false},
+    {"query":"index/docs/refresh","expected_any":["delivery.web-pages"],"include_planned":false},
+    {"query":"Documentation site has not been built","expected_any":["delivery.web-pages"],"include_planned":false},
+    {"query":"get_docs_index_snapshot","expected_any":["delivery.web-pages"],"include_planned":false}
   ]
 }

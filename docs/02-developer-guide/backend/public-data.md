@@ -50,7 +50,7 @@ Windows归档的 `major_minor`、`branch` 精确匹配，`kind` 大写化、`era
 
 compact发行快路径最多取6个当前Windows条目和4个最近Windows归档供构造首页；update索引命中时先读取完整活跃索引再取前8并构造update_summary，tool摘要也按预览项构造。更新预览的磁盘回退则先收集全部规范包元数据计算canonical_count/retained_count，仅把详细条目截前8；因此同名summary字段的统计范围还要区分索引与回退，不能统一当成整个存储总量。
 
-完整首页先获取overview再按公开路径过滤并重算展示summary；overview缓存未命中会列存储根、统计各目录直接文件，并写缓存，不是递归文件总量。compact虽最后省略overview等展示字段，仍执行这段组装。docs摘要通过 `get_docs_index_snapshot(refresh_if_missing=False)` 获取Backend持有的文档快照，不保证当前源码知识目录已同步部署。
+完整首页先获取overview再按公开路径过滤并重算展示summary；overview缓存未命中会列存储根、统计各目录直接文件，并写缓存，不是递归文件总量。compact虽最后省略overview等展示字段，仍执行这段组装。docs摘要通过 `get_docs_index_snapshot(refresh_if_missing=False)` 获取Backend持有的文档快照，不保证当前源码知识目录已同步部署。文档扫描、缓存签名、状态与网页构建的区别见[Web 页面与文档托管](./web-pages.md#文档索引和状态查询)。
 
 `build_index_page_context` 的更新预览回退、`build_updates_page_context` 的磁盘回退会进入 `repair_update_storage_layout`：可创建Update目录、移动旧 `ColorVision/Update` 文件、删除同名同大小旧副本并清理空旧目录。GET和自动HEAD都不能因此被当成零修改探针；具体修复和HTTP完成边界见[制品交付](./artifact-delivery.md#head-不计下载-但不承诺无本地修改)。
 

@@ -6,7 +6,7 @@ summary: "Backend HTTP制品交付的Range、完成事件、下载计数、Cache
 aliases: ["HTTP制品下载", "下载完成计数", "Range", "Content-Range", "HEAD下载", "ETag", "Cache-Control", "no-store", "gzip", "Accept-Encoding", "ArtifactDeliverySpec", "ArtifactDeliveryService", "ArtifactDownloadEvent", "deliver_artifact", "_CompletionTrackingIterator", "_completed_representation_bytes", "record_download", "repair_update_storage_layout", "register_response_compression"]
 code_paths: ["Web/Backend/services/artifact_delivery.py", "Web/Backend/routes/artifact_delivery.py", "Web/Backend/marketplace_api_routes.py", "Web/Backend/services/marketplace_api.py", "Web/Backend/marketplace_services.py", "Web/Backend/download_stats.py", "Web/Backend/routes/pages.py", "Web/Backend/update_retention.py", "Web/Backend/services/http_security.py", "Web/Backend/services/http_compression.py", "Web/Backend/app.py", "Web/Backend/app_setup.py", "Web/Backend/services/access_analytics.py"]
 test_paths: ["Web/Backend/test_artifact_delivery.py", "Web/Backend/test_http_security.py", "Web/Backend/test_http_compression.py", "Web/Backend/test_app.py"]
-related: ["delivery.backend", "delivery.file-transfer", "delivery.plugin-catalog"]
+related: ["delivery.backend", "delivery.file-transfer", "delivery.plugin-catalog", "delivery.web-pages"]
 ---
 
 # HTTP 制品交付、完成计数与响应策略
@@ -75,6 +75,8 @@ HEAD 不触发本页的下载完成事件，客户端也不接收响应体；它
 达到阈值的候选响应先添加 `Vary: Accept-Encoding`，再判断客户端是否接受 gzip；显式 `gzip;q=0` 不压缩，未指定 gzip 时可由可接受的 `*` 启用。使用 `gzip.compress(compresslevel=6, mtime=0)`，只有压缩后更小时才设置 `Content-Encoding: gzip` 与压缩后的 `Content-Length`，否则保留原表示。此钩子没有 Brotli/deflate 分支。
 
 所以请求 `Accept-Encoding: gzip` 不会让 APK、普通文件流或带 ETag 的 JSON 必然压缩。HEAD 也进入这一钩子，可能读取已缓冲 JSON 并执行压缩来生成表示头；没有网络响应体不代表没有这部分计算。
+
+React 静态文件的 Brotli/gzip 旁文件协商、Range 表示选择和 VitePress 响应由[Web 页面与文档托管](./web-pages.md)维护，不适用本节的缓冲 JSON 筛选条件。
 
 ## 失败定位与验证边界
 

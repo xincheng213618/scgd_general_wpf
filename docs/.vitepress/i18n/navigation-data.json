@@ -2957,6 +2957,12 @@
             },
             {
               "text": {
+                "root": "Web 页面与文档托管"
+              },
+              "link": "/02-developer-guide/backend/web-pages"
+            },
+            {
+              "text": {
                 "root": "Web 架构与演进边界"
               },
               "link": "/03-architecture/components/web"
@@ -3023,6 +3029,12 @@
                 "root": "CVWindowsService 服务包发布与选择"
               },
               "link": "/02-developer-guide/backend/cvwindowsservice"
+            },
+            {
+              "text": {
+                "root": "Web 页面与文档托管"
+              },
+              "link": "/02-developer-guide/backend/web-pages"
             },
             {
               "text": {

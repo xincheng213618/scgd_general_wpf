@@ -1975,7 +1975,8 @@
       "related": [
         "delivery.backend",
         "delivery.file-transfer",
-        "delivery.plugin-catalog"
+        "delivery.plugin-catalog",
+        "delivery.web-pages"
       ],
       "code_scopes": [
         "Web/Backend"
@@ -2073,7 +2074,8 @@
         "delivery.backend-operations",
         "delivery.cvwindowsservice",
         "platform.web-architecture",
-        "delivery.web-deployment"
+        "delivery.web-deployment",
+        "delivery.web-pages"
       ],
       "code_scopes": [
         "Web/Backend",
@@ -3313,6 +3315,73 @@
       "title": "Web 本地启动与 NAS 部署",
       "source": "docs/02-developer-guide/deployment/web.md",
       "url": "/02-developer-guide/deployment/web",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "delivery.web-pages",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "React 页面和 VitePress 文档的托管、开发代理、缓存、Brotli/gzip 与 Range 协商、旧分块恢复及文档索引；后台索引刷新不构建网页，也不证明已部署内容最新。",
+      "aliases": [
+        "Web 页面托管",
+        "前端白屏",
+        "静态文件压缩",
+        "Brotli",
+        "SPA",
+        "Vite 开发代理",
+        "vite:preloadError",
+        "installChunkRecovery",
+        "colorvision-web-chunk-reload-at",
+        "FrontendSpaContext",
+        "_send_static_file",
+        "Documentation site has not been built",
+        "Web frontend has not been built",
+        "文档中心",
+        "文档索引",
+        "docs/status",
+        "index/docs/refresh",
+        "resolve_docs_site_file",
+        "docs_index_signature",
+        "get_docs_index_snapshot"
+      ],
+      "code_paths": [
+        "Web/Backend/routes/frontend_spa.py",
+        "Web/Backend/routes/docs_site.py",
+        "Web/Backend/services/docs_site.py",
+        "Web/Backend/routes/admin_api.py",
+        "Web/Backend/app_setup.py",
+        "Web/Backend/page_contexts.py",
+        "Web/Backend/services/http_security.py",
+        "Web/Frontend/vite.config.ts",
+        "Web/Frontend/package.json",
+        "Web/Frontend/src/main.tsx",
+        "Web/Frontend/src/utils/chunkRecovery.ts",
+        "Web/Frontend/scripts/precompress-static.mjs"
+      ],
+      "test_paths": [
+        "Web/Backend/test_frontend_spa.py",
+        "Web/Backend/test_docs_site.py",
+        "Web/Backend/test_contracts.py",
+        "Web/Backend/test_http_security.py",
+        "Web/Frontend/tests/viteConfig.test.ts"
+      ],
+      "related": [
+        "delivery.backend",
+        "delivery.web-deployment",
+        "platform.web-architecture",
+        "delivery.artifact-delivery",
+        "delivery.backend-public-data",
+        "delivery.backend-auth",
+        "governance.maintenance"
+      ],
+      "code_scopes": [
+        "Web/Backend",
+        "Web/Frontend"
+      ],
+      "domain": "delivery",
+      "title": "Web 页面与文档托管",
+      "source": "docs/02-developer-guide/backend/web-pages.md",
+      "url": "/02-developer-guide/backend/web-pages",
       "searchable": true
     },
     {

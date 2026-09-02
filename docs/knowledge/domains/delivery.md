@@ -77,6 +77,9 @@ next: false
 - [更新扫描保护：临时排除项与清理所有权](../../02-developer-guide/deployment/update-scan-protection.md) — `delivery.update-scan-protection`
   ServiceHost提供的主程序增量更新临时Defender排除项、目录准入和清理所有权；启用失败不阻断更新，服务停止或保护超时不保证排除项立即恢复。
 
+- [Web 页面与文档托管](../../02-developer-guide/backend/web-pages.md) — `delivery.web-pages`
+  React 页面和 VitePress 文档的托管、开发代理、缓存、Brotli/gzip 与 Range 协商、旧分块恢复及文档索引；后台索引刷新不构建网页，也不证明已部署内容最新。
+
 - [安装制品与运行输出](../../00-getting-started/installation.md) — `delivery.installation`
   区分完整安装制品、增量更新和源码输出，定位安装后缺依赖、配置与启动问题。
 

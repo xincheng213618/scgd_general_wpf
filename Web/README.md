@@ -6,6 +6,8 @@ site, Flask APIs, downloads and storage/index services.
 
 - [Local startup and NAS deployment](../docs/02-developer-guide/deployment/web.md):
   prerequisites, parameters, build stages, Git bundles, retention and recovery.
+- [Web pages and documentation hosting](../docs/02-developer-guide/backend/web-pages.md):
+  routes, compression, cache policy and documentation indexes.
 - [Backend](../docs/02-developer-guide/backend/README.md): configuration, CLI,
   database ownership and management routes.
 - [Web architecture](../docs/03-architecture/components/web.md): responsibilities,
