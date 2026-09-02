@@ -402,6 +402,12 @@
     {"query":"Web 架构","expected_any":["platform.web-architecture"],"include_planned":false},
     {"query":"前端包体预算","expected_any":["platform.web-architecture"],"include_planned":false},
     {"query":"IndexStateRepository","expected_any":["platform.web-architecture"],"include_planned":false},
-    {"query":"PERFORMANCE_AUDIT","expected_any":["delivery.web-performance-baseline"],"include_planned":true}
+    {"query":"PERFORMANCE_AUDIT","expected_any":["delivery.web-performance-baseline"],"include_planned":true},
+    {"query":"Run-Web -SkipDocsBuild","expected_any":["delivery.web-deployment"],"include_planned":false},
+    {"query":"Deploy-Nas -SkipTests","expected_any":["delivery.web-deployment"],"include_planned":false},
+    {"query":"NAS 部署失败会自动回滚吗","expected_any":["delivery.web-deployment"],"include_planned":false},
+    {"query":"RemoteGitBundle","expected_any":["delivery.web-deployment"],"include_planned":false},
+    {"query":"DRY_RUN_ERROR","expected_any":["delivery.web-deployment"],"include_planned":false},
+    {"query":"web-deploy-backups","expected_any":["delivery.web-deployment"],"include_planned":false}
   ]
 }

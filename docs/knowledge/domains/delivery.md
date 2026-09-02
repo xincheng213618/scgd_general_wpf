@@ -86,6 +86,9 @@ next: false
 - [构建与发布脚本](../../02-developer-guide/scripts/README.md) — `delivery.scripts`
   主程序、插件和项目包的正式发布入口、只读校验与上传清理副作用。
 
+- [Web 本地启动与 NAS 部署](../../02-developer-guide/deployment/web.md) — `delivery.web-deployment`
+  Web 本地启动与 Windows NAS 部署的前提、参数、构建和健康检查、Git bundle 交付、备份保留及失败恢复；SkipTests 仍运行前端测试，失败不保证回退代码或数据库。
+
 - [测试与验证](../../02-developer-guide/testing.md) — `delivery.testing`
   按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。
 

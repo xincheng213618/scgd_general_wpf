@@ -2072,7 +2072,8 @@
         "delivery.backend-copilot-sync",
         "delivery.backend-operations",
         "delivery.cvwindowsservice",
-        "platform.web-architecture"
+        "platform.web-architecture",
+        "delivery.web-deployment"
       ],
       "code_scopes": [
         "Web/Backend",
@@ -2615,7 +2616,8 @@
         "delivery.backend-auth",
         "delivery.backend-retention",
         "delivery.backend-jobs",
-        "delivery.backend-observability"
+        "delivery.backend-observability",
+        "delivery.web-deployment"
       ],
       "code_scopes": [
         "Web",
@@ -2777,7 +2779,8 @@
         "delivery.scripts",
         "plugins.getting-started",
         "operations.first-run",
-        "delivery.backend"
+        "delivery.backend",
+        "delivery.web-deployment"
       ],
       "code_scopes": [
         "ColorVision",
@@ -3238,6 +3241,78 @@
       "title": "更新扫描保护：临时排除项与清理所有权",
       "source": "docs/02-developer-guide/deployment/update-scan-protection.md",
       "url": "/02-developer-guide/deployment/update-scan-protection",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "delivery.web-deployment",
+      "knowledge_type": "guide",
+      "status": "current",
+      "summary": "Web 本地启动与 Windows NAS 部署的前提、参数、构建和健康检查、Git bundle 交付、备份保留及失败恢复；SkipTests 仍运行前端测试，失败不保证回退代码或数据库。",
+      "aliases": [
+        "Web 部署",
+        "NAS 部署",
+        "本地启动 Web",
+        "Run-Web",
+        "Deploy-Nas",
+        "SkipInstall",
+        "SkipBuild",
+        "SkipDocsBuild",
+        "SkipTests",
+        "RemoteGitBundle",
+        "GitNetworkTimeoutSeconds",
+        "DRY_RUN_ERROR",
+        "DEPLOYMENT_ERROR",
+        "already_current",
+        "web-deploy-backups",
+        "web-deploy-bundles",
+        "ColorVisionWeb.log",
+        "Invoke-WebDeployBackupRetention",
+        "Invoke-WebGitBundleRetention",
+        "New-WebRemotePowerShellTransport"
+      ],
+      "code_paths": [
+        "Web/Run-Web.ps1",
+        "Web/Run-Web.bat",
+        "Web/Deploy-Nas.ps1",
+        "Web/Deploy-Nas.bat",
+        "Web/RemotePowerShellTransport.psm1",
+        "Web/NativeProcess.psm1",
+        "Web/DeploymentRetention.psm1",
+        "Web/GitBundleRetention.psm1",
+        "Web/DeploymentHistory.psm1",
+        "Web/Backend/services/runtime_logging.py",
+        "Web/Frontend/package.json",
+        "Web/Frontend/scripts/precompress-static.mjs",
+        "Web/Frontend/scripts/check-dashboard-bundle.mjs"
+      ],
+      "test_paths": [
+        "Web/Test-NativeProcess.ps1",
+        "Web/Test-RemotePowerShellTransport.ps1",
+        "Web/Test-DeploymentRetention.ps1",
+        "Web/Test-GitBundleRetention.ps1",
+        "Web/Test-DeploymentHistory.ps1",
+        "Web/Backend/test_runtime_logging.py",
+        "Web/Backend/test_frontend_spa.py",
+        "Web/Backend/test_docs_site.py"
+      ],
+      "related": [
+        "delivery.backend",
+        "delivery.backend-records",
+        "delivery.backend-observability",
+        "delivery.deployment",
+        "delivery.artifact-delivery",
+        "platform.web-architecture",
+        "delivery.web-performance-baseline"
+      ],
+      "code_scopes": [
+        "Web",
+        "Web/Backend",
+        "Web/Frontend"
+      ],
+      "domain": "delivery",
+      "title": "Web 本地启动与 NAS 部署",
+      "source": "docs/02-developer-guide/deployment/web.md",
+      "url": "/02-developer-guide/deployment/web",
       "searchable": true
     },
     {

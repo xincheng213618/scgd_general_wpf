@@ -19,6 +19,9 @@ next: false
 - [审计与部署记录：来源、查询与证据边界](../../02-developer-guide/backend/management-records.md) — `delivery.backend-records`
   Backend审计与NAS部署历史的来源、筛选total与summary统计、展示脱敏和保留边界；空审计可能是查询失败，历史成功不证明当前服务或完整恢复。
 
+- [Web 本地启动与 NAS 部署](../../02-developer-guide/deployment/web.md) — `delivery.web-deployment`
+  Web 本地启动与 Windows NAS 部署的前提、参数、构建和健康检查、Git bundle 交付、备份保留及失败恢复；SkipTests 仍运行前端测试，失败不保证回退代码或数据库。
+
 - [Web 历史性能基线 \[历史\]](../../02-developer-guide/backend/performance-baseline.md) — `delivery.web-performance-baseline`
   Web 的 2026-07-18 基线及后续补充测量，保留样本、方法和比较数字；不是当前部署性能、容量或测试状态。
 
@@ -75,6 +78,9 @@ next: false
 - [Web 架构与演进边界](../../03-architecture/components/web.md) — `platform.web-architecture`
   Web 的组成根、HTTP/服务/持久化边界、现有接口和架构检查；区分已实现约束、性能预算与后续演进目标。
 
+- [Web 本地启动与 NAS 部署](../../02-developer-guide/deployment/web.md) — `delivery.web-deployment`
+  Web 本地启动与 Windows NAS 部署的前提、参数、构建和健康检查、Git bundle 交付、备份保留及失败恢复；SkipTests 仍运行前端测试，失败不保证回退代码或数据库。
+
 - [测试与验证](../../02-developer-guide/testing.md) — `delivery.testing`
   按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。
 
@@ -103,3 +109,6 @@ next: false
 
 - [Web 架构与演进边界](../../03-architecture/components/web.md) — `platform.web-architecture`
   Web 的组成根、HTTP/服务/持久化边界、现有接口和架构检查；区分已实现约束、性能预算与后续演进目标。
+
+- [Web 本地启动与 NAS 部署](../../02-developer-guide/deployment/web.md) — `delivery.web-deployment`
+  Web 本地启动与 Windows NAS 部署的前提、参数、构建和健康检查、Git bundle 交付、备份保留及失败恢复；SkipTests 仍运行前端测试，失败不保证回退代码或数据库。
