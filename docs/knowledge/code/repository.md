@@ -29,7 +29,7 @@ next: false
   从插件程序集装载、产物安装和具体模块能力定位源码；同一责任不再分开发手册与使用手册。
 
 - [客户项目与对接示例入口](../../04-api-reference/projects/README.md) — `projects.index`
-  按客户业务代码、独立对接示例与构建发布边界定位 Projects 的权威主题。
+  按客户业务代码、独立对接示例、旧项目归档与构建发布边界定位 Projects 的权威主题。
 
 - [构建平台与制品边界](../../02-developer-guide/README.md) — `delivery.index`
   定义宿主、插件、客户包和独立FileIO包的构建平台与制品边界，区分构建验证和远端发布。

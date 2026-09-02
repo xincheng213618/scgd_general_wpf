@@ -2,8 +2,8 @@
 knowledge_id: "projects.index"
 knowledge_type: "index"
 status: "current"
-summary: "按客户业务代码、独立对接示例与构建发布边界定位 Projects 的权威主题。"
-aliases: ["应该改哪个客户项目","客户项目包源码在哪里","客户项目如何构建","项目包和插件有什么区别","ProjectARVRPro","ProjectARVRPro.IntegrationDemo","ProjectKB","ProjectLUX","ProcessGroup","ProcessMeta"]
+summary: "按客户业务代码、独立对接示例、旧项目归档与构建发布边界定位 Projects 的权威主题。"
+aliases: ["应该改哪个客户项目","客户项目包源码在哪里","客户项目如何构建","项目包和插件有什么区别","ProjectARVRPro","ProjectARVRPro.IntegrationDemo","ProjectKB","ProjectLUX","ProcessGroup","ProcessMeta","归档项目","已停用项目","ProjectARVRLite","ProjectARVR","ProjectBlackMura","ProjectHeyuan","ProjectShiyuan"]
 code_paths: ["Projects/","PluginProject.HostCopy.targets","Scripts/package_project.bat","Scripts/package_cvxp.py"]
 test_paths: ["Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj","Test/ProjectKB.Tests/ProjectKB.Tests.csproj","Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj"]
 related: ["projects.capabilities","projects.arvr-pro","projects.arvr-pro-demo","projects.kb","projects.lux","plugins.model","plugins.getting-started"]
@@ -22,7 +22,7 @@ related: ["projects.capabilities","projects.arvr-pro","projects.arvr-pro-demo","
 | 键盘背光、Modbus 触发、MES 返回码与键位结果 | [ProjectKB](./project-kb.md) | `Projects/ProjectKB/ProjectKBWindow.xaml.cs`；宿主入口为 `PluginConfig/KBProjectPlugin.cs` |
 | LUX 文本 Socket、Recipe/Fix 与结果导出 | [ProjectLUX](./project-lux.md) | `Projects/ProjectLUX/LUXWindow.xaml.cs`、`Services/SocketControl.cs`；宿主入口为 `PluginConfig/ProjectLUXPlugin.cs` |
 
-尚未确定业务归属，或要比较协议、触发与结果出口时，查独立的[项目横向速查](./project-capability-matrix.md)（`projects.capabilities`），再进入具体项目主题。已停用项目的快照、归档标签与恢复约束见仓库 `Projects/ARCHIVED.md`；归档可追溯不代表旧包兼容当前宿主。
+尚未确定业务归属，或要比较协议、触发与结果出口时，查独立的[项目横向速查](./project-capability-matrix.md)（`projects.capabilities`），再进入具体项目主题。`ProjectARVR`、`ProjectARVRLite`、`ProjectBlackMura`、`ProjectHeyuan` 和 `ProjectShiyuan` 属于已停用项目，当前分支不包含这些项目目录。归档标签、原版本和源码取回步骤统一见仓库 `Projects/ARCHIVED.md`；恢复源码不包含外部依赖或运行环境，也不代表旧包兼容当前宿主。
 
 ## 项目包与独立示例的边界
 

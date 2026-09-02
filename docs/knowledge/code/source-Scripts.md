@@ -20,7 +20,7 @@ next: false
   按源码输出、完整安装器、主程序更新包及插件项目包定位交付责任；安装、更新与启动恢复各有完成边界，旧ColorVisionSetup不是当前入口。
 
 - [客户项目与对接示例入口](../../04-api-reference/projects/README.md) — `projects.index`
-  按客户业务代码、独立对接示例与构建发布边界定位 Projects 的权威主题。
+  按客户业务代码、独立对接示例、旧项目归档与构建发布边界定位 Projects 的权威主题。
 
 - [构建平台与制品边界](../../02-developer-guide/README.md) — `delivery.index`
   定义宿主、插件、客户包和独立FileIO包的构建平台与制品边界，区分构建验证和远端发布。

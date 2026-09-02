@@ -7706,7 +7706,7 @@
       "knowledge_id": "projects.index",
       "knowledge_type": "index",
       "status": "current",
-      "summary": "按客户业务代码、独立对接示例与构建发布边界定位 Projects 的权威主题。",
+      "summary": "按客户业务代码、独立对接示例、旧项目归档与构建发布边界定位 Projects 的权威主题。",
       "aliases": [
         "应该改哪个客户项目",
         "客户项目包源码在哪里",
@@ -7717,7 +7717,14 @@
         "ProjectKB",
         "ProjectLUX",
         "ProcessGroup",
-        "ProcessMeta"
+        "ProcessMeta",
+        "归档项目",
+        "已停用项目",
+        "ProjectARVRLite",
+        "ProjectARVR",
+        "ProjectBlackMura",
+        "ProjectHeyuan",
+        "ProjectShiyuan"
       ],
       "code_paths": [
         "Projects",

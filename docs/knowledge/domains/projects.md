@@ -15,7 +15,7 @@ next: false
 只读与当前问题相关的主题，再核对源码和测试。`规划`、`历史`不代表当前能力。
 
 - [客户项目与对接示例入口](../../04-api-reference/projects/README.md) — `projects.index`
-  按客户业务代码、独立对接示例与构建发布边界定位 Projects 的权威主题。
+  按客户业务代码、独立对接示例、旧项目归档与构建发布边界定位 Projects 的权威主题。
 
 - [配置 ARVRPro 流程、解析映射与 Recipe](../../04-api-reference/projects/project-arvr-pro-processes.md) — `projects.arvr-pro-processes`
   配置 ARVRPro 流程组、流程解析映射、实例 Recipe 与雷鸟切图，说明类型选择、结果快照、配置保存和有效迁移规则。

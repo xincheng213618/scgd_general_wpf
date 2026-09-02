@@ -17,7 +17,7 @@ next: false
 ## Projects/ 根目录与跨模块关联 {#module-50726f6a65637473}
 
 - [客户项目与对接示例入口](../../04-api-reference/projects/README.md) — `projects.index`
-  按客户业务代码、独立对接示例与构建发布边界定位 Projects 的权威主题。
+  按客户业务代码、独立对接示例、旧项目归档与构建发布边界定位 Projects 的权威主题。
 
 ## Projects/ProjectARVRPro {#module-50726f6a656374732f50726f6a6563744152565250726f}
 

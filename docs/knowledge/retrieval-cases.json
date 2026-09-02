@@ -509,6 +509,8 @@
     {"query":"暂停显示","expected_any":["operations.logs"],"include_planned":false},
     {"query":"新建 PowerShell","expected_any":["operations.terminal"],"include_planned":false},
     {"query":"进程已结束","expected_any":["operations.terminal"],"include_planned":false},
-    {"query":"启动终端失败","expected_any":["operations.terminal"],"include_planned":false}
+    {"query":"启动终端失败","expected_any":["operations.terminal"],"include_planned":false},
+    {"query":"归档项目","expected_any":["projects.index"],"include_planned":false},
+    {"query":"ProjectARVRLite","expected_any":["projects.index"],"include_planned":false}
   ]
 }
