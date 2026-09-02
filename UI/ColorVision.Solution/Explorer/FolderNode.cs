@@ -108,7 +108,8 @@ namespace ColorVision.Solution.Explorer
                 IReadOnlyList<SolutionDirectoryEntrySnapshot> entries = await SolutionNodeFactory.CreateChildrenSnapshotAsync(
                     DirectoryInfo,
                     cache,
-                    cancellation.Token).ConfigureAwait(false);
+                    cancellation.Token,
+                    fileSystemView: this is FileSystemFolderNode).ConfigureAwait(false);
                 IReadOnlyList<SolutionNode> materializedChildren = await SolutionNodeFactory.CreateNodesFromSnapshotAsync(
                     this,
                     entries,

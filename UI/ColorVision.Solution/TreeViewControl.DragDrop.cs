@@ -366,7 +366,7 @@ namespace ColorVision.Solution
             return dragData != null;
         }
 
-        private static bool TryGetSolutionOrganizationTarget(
+        private bool TryGetSolutionOrganizationTarget(
             SolutionNode? targetNode,
             out SolutionExplorer? solutionExplorer,
             out string? solutionFolderId)
@@ -381,7 +381,7 @@ namespace ColorVision.Solution
                     solutionExplorer = root;
                     solutionFolderId = null;
                     return true;
-                case null when SolutionManager.CurrentSolutionExplorer is { } current:
+                case null when GetDisplayedRootNode() is SolutionExplorer current:
                     solutionExplorer = current;
                     solutionFolderId = null;
                     return true;
@@ -526,12 +526,12 @@ namespace ColorVision.Solution
             return (targetNode as ISolutionPhysicalContainer)?.PhysicalContainerPath;
         }
 
-        private static SolutionNode? GetPhysicalDropTargetNode(SolutionNode? targetNode)
+        private SolutionNode? GetPhysicalDropTargetNode(SolutionNode? targetNode)
         {
             if (targetNode == null)
             {
-                SolutionExplorer? currentExplorer = SolutionManager.CurrentSolutionExplorer;
-                return currentExplorer?.CanPaste == true ? currentExplorer : null;
+                SolutionNode? currentRoot = GetDisplayedRootNode();
+                return currentRoot is ISolutionPhysicalContainer && currentRoot.CanPaste ? currentRoot : null;
             }
 
             targetNode = targetNode.ResolveCommandTarget();

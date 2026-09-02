@@ -3,9 +3,9 @@ knowledge_id: "ui.solution"
 knowledge_type: "topic"
 status: "current"
 summary: "工作区与普通文件的打开分流、单工作区切换和取消、私有cvsln与共享配置恢复；打开和加载不保证无写入。"
-aliases: ["ColorVision.Solution", "SolutionManager", "ResourceOpenService", "OpenSolutionAsync", "OpenWith", "OpenManyAsync", "PrivateWorkspaceService", "SolutionConfigStore", "SolutionConfigStore.Load", "SolutionCache", "MruPathService", "MruPathService.Touch", "cvsln", "cvproj", "打开文件夹工作区", "取消切换工作区", "批量打开图片和项目", "工作区文件树缓存", "解决方案备份恢复", "默认打开方式保存失败"]
-code_paths: ["UI/ColorVision.Solution/README.md", "UI/ColorVision.Solution/ColorVision.Solution.csproj", "UI/ColorVision.Solution/SolutionManager.cs", "UI/ColorVision.Solution/SolutionManagerInitializer.cs", "UI/ColorVision.Solution/StartupResourceOpenInitializer.cs", "UI/ColorVision.Solution/Editor/ResourceOpenService.cs", "UI/ColorVision.Solution/Editor/ResourcePathIdentityComparer.cs", "UI/ColorVision.Solution/Editor/CommandLineResourceOpenRequest.cs", "UI/ColorVision.Solution/Workspace/PrivateWorkspaceService.cs", "UI/ColorVision.Solution/Explorer/SolutionExplorer.cs", "UI/ColorVision.Solution/Explorer/SolutionExplorer.Persistence.cs", "UI/ColorVision.Solution/Explorer/SolutionCache.cs", "UI/ColorVision.Solution/Explorer/SolutionOperationHistory.cs", "UI/ColorVision.Solution/Explorer/ProjectTemplate.cs", "UI/ColorVision.Solution/Explorer/NewItemTemplate.cs", "UI/ColorVision.Solution/Explorer/SolutionConfigStore.cs", "UI/ColorVision.Solution/Explorer/SolutionWorkspaceStateStore.cs", "UI/ColorVision.Solution/Explorer/ProjectProviderRegistry.cs", "UI/ColorVision.Solution/Explorer/FolderProjectProvider.cs", "UI/ColorVision.Solution/Explorer/MsBuildProjectProvider.cs", "UI/ColorVision.Solution/SolutionFeatureVisibility.cs", "UI/ColorVision.Solution/Mru/MruPathService.cs", "UI/ColorVision.Solution/Mru/JsonMruPathStore.cs", "UI/ColorVision.UI/FileProcessorFactory.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/MruPathServiceTests.cs"]
+aliases: ["ColorVision.Solution", "SolutionManager", "ResourceOpenService", "OpenSolutionAsync", "OpenWith", "OpenManyAsync", "PrivateWorkspaceService", "SolutionConfigStore", "SolutionConfigStore.Load", "SolutionCache", "MruPathService", "MruPathService.Touch", "cvsln", "cvproj", "打开文件夹工作区", "取消切换工作区", "批量打开图片和项目", "工作区文件树缓存", "解决方案备份恢复", "默认打开方式保存失败", "解决方案资源管理器", "文件系统视图", "与活动文档同步", "全部折叠", "TreeViewControl"]
+code_paths: ["UI/ColorVision.Solution/README.md", "UI/ColorVision.Solution/TreeViewControl.xaml", "UI/ColorVision.Solution/TreeViewControl.xaml.cs", "UI/ColorVision.Solution/TreeViewControl.Navigation.cs", "UI/ColorVision.Solution/TreeViewControl.ViewMode.cs", "UI/ColorVision.Solution/TreeViewControl.Search.cs", "UI/ColorVision.Solution/Explorer/ExplorerChrome.xaml", "UI/ColorVision.Solution/Explorer/ExplorerScrollBarBehavior.cs", "UI/ColorVision.Solution/Explorer/TreeView.xaml", "UI/ColorVision.Solution/Explorer/FileSystemFolderNode.cs", "UI/ColorVision.Solution/Explorer/SolutionTreeNavigationService.cs", "UI/ColorVision.Solution/Explorer/SolutionSearchService.cs", "UI/ColorVision.Solution/ColorVision.Solution.csproj", "UI/ColorVision.Solution/SolutionManager.cs", "UI/ColorVision.Solution/SolutionManagerInitializer.cs", "UI/ColorVision.Solution/StartupResourceOpenInitializer.cs", "UI/ColorVision.Solution/Editor/ResourceOpenService.cs", "UI/ColorVision.Solution/Editor/ResourcePathIdentityComparer.cs", "UI/ColorVision.Solution/Editor/CommandLineResourceOpenRequest.cs", "UI/ColorVision.Solution/Workspace/PrivateWorkspaceService.cs", "UI/ColorVision.Solution/Explorer/SolutionExplorer.cs", "UI/ColorVision.Solution/Explorer/SolutionExplorer.Persistence.cs", "UI/ColorVision.Solution/Explorer/SolutionCache.cs", "UI/ColorVision.Solution/Explorer/SolutionOperationHistory.cs", "UI/ColorVision.Solution/Explorer/ProjectTemplate.cs", "UI/ColorVision.Solution/Explorer/NewItemTemplate.cs", "UI/ColorVision.Solution/Explorer/SolutionConfigStore.cs", "UI/ColorVision.Solution/Explorer/SolutionWorkspaceStateStore.cs", "UI/ColorVision.Solution/Explorer/ProjectProviderRegistry.cs", "UI/ColorVision.Solution/Explorer/FolderProjectProvider.cs", "UI/ColorVision.Solution/Explorer/MsBuildProjectProvider.cs", "UI/ColorVision.Solution/SolutionFeatureVisibility.cs", "UI/ColorVision.Solution/Mru/MruPathService.cs", "UI/ColorVision.Solution/Mru/JsonMruPathStore.cs", "UI/ColorVision.UI/FileProcessorFactory.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/MruPathServiceTests.cs", "Test/ColorVision.UI.Tests/SolutionExplorerPresentationTests.cs", "Test/ColorVision.UI.Tests/SolutionFileSystemViewTests.cs"]
 related: ["ui.index", "ui.documents", "operations.terminal", "operations.first-run", "operations.main-window", "ui.configuration"]
 ---
 
@@ -14,6 +14,20 @@ related: ["ui.index", "ui.documents", "operations.terminal", "operations.first-r
 `UI/ColorVision.Solution/` 是 ColorVision 的工作区壳层，不是 Visual Studio 解决方案加载器、算法运行时或文件访问权限沙箱。`ResourceOpenService` 区分工作区激活与文件编辑，`SolutionManager` 维护一个活动工作区，Explorer 负责项目树与配置；**编辑器能读某个文件，不等于它能作为工作区或项目加载**。
 
 本页负责打开路由、工作区身份、切换和持久化。编辑器选择、文档身份、保存/关闭和停靠布局统一见[编辑器与文档生命周期](./editor-document-lifecycle.md)；脚本、ConPTY 与进程完成见[终端契约](../../01-user-guide/interface/terminal.md)，不按“用户/开发者”再复制这些知识。
+
+## 资源管理器视图与导航
+
+`TreeViewControl` 在同一个活动工作区内提供“解决方案”和“文件系统”两个视图，切换不会重新调用工作区打开入口：
+
+- **解决方案**保留 Provider 项目模型、显式项目引用、虚拟文件夹和解决方案项。
+- **文件系统**以工作区根目录为范围，按需加载真实目录和文件；显示实际项目文件、配置文件和隐藏项，不套用项目包含/排除或虚拟组织规则。它不代表项目引用中的外部目录。根节点不能重命名、删除或剪切，子节点沿用物理文件操作。该视图不建立第二个 Explorer、缓存或监控器；需要更新目录内容时使用“刷新”。
+- 搜索按当前视图范围执行；清除搜索回到当前视图，“在解决方案资源管理器中定位”在该视图的真实节点中展开定位。搜索异步结果和定位请求在视图/工作区切换时取消，避免旧结果替换新树。
+- “与活动文档同步”根据文档服务保存的文件路径定位，兼容旧编辑器以路径作为 ContentId 的方式；不把文档的散列 ContentId 当作磁盘路径。未打开文件文档或文档不属于当前视图范围时禁用入口。
+- “全部折叠”清除搜索并折叠已加载的子节点，保留根节点展开；不为折叠而递归加载整个目录。“刷新”针对当前视图根节点。“属性”作用于单个选中节点，设置入口位于“更多选项”。
+
+工具栏、路径栏和树节点使用紧凑布局，保留文件扩展名图标，文件夹使用轮廓图标；解决方案和文件系统共用向右/向下的细线展开箭头。选中行使用中性灰圆角背景，左侧保留内缩的主题色短线；底色位于内容后方，不给文字或图标叠加色调；灰底宽度和左侧标记固定在可见区域，横向滚动长文件名时仍保留两端圆角与标记。选中项不再叠加整行彩色焦点边框，未选中的键盘焦点仍有独立指示。滚动条沿用主题颜色、模板和拖动范围，保留控件库的自动显隐，通过局部透明度遮罩降低显示时的不透明度：静止 `0.35`、悬停 `0.65`、鼠标捕获/拖动 `0.85`，横纵方向一致。`ExplorerScrollBarBehavior` 只处理当前文件树内部的两个滚动条，不改全局主题资源。
+
+解决方案树继续保存原有的展开/选中状态；文件系统视图的状态仅在当前控件生命周期保留，不覆盖解决方案状态文件。两种视图的功能边界不同，外观参考 VS 不意味着增加了 `.sln` 导入、Git 状态或构建/调试支持。
 
 ## 打开入口的区别
 
@@ -101,6 +115,8 @@ Load 遇到受支持的读取/JSON/数据异常会尝试 `.bak`；备份解析�
 物理文件操作位于 `SolutionResourceCommands`、`SolutionPhysicalItemOperations`、`SolutionClipboardFileOperations`、`SolutionBatchDeleteService`；虚拟组织和配置操作位于 Explorer 对应分部。`SolutionOperationHistory` 是有界配置快照历史，不能把存在 Undo/Redo 理解成任意磁盘删除、外部命令或项目文件修改都有撤销。操作真实文件前应沿具体入口核对授权和补偿，不从树的视觉变化推断磁盘状态。
 
 ## 验证入口与缺口
+
+`SolutionExplorerPresentationTests` 使用生产 XAML 和合成节点检查窄面板、主题切换、选中行与滚动条，并验证已加载节点定位、取消和折叠。`SolutionFileSystemViewTests` 使用隔离目录验证物理文件展示、根节点保护、刷新与搜索范围。这些测试不启动主窗口、不加载用户工作区；离屏渲染不能替代当前运行窗口的实际点击验收。
 
 `Test/ColorVision.UI.Tests/MruPathServiceTests.cs` 覆盖大小写去重、别名移除、固定项顺序/容量、一次通知和 JSON 往返/坏 JSON 回退。它没有覆盖工作区异步竞争、取消后的文件写入、共享配置备份恢复、Provider 命令或事件失败后状态；测试文件被引用不代表本次已经运行。
 

@@ -4,6 +4,29 @@
                     xmlns:Explorer="clr-namespace:ColorVision.Solution.Explorer"
                     xmlns:local="clr-namespace:ColorVision.Solution"
                     x:Class="ColorVision.Solution.Explorer.SolutionTreeViewBehavior">
+    <Style x:Key="ExplorerFolderGlyph" TargetType="Path">
+        <Setter Property="Width" Value="16"/>
+        <Setter Property="Height" Value="16"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Stroke" Value="#C28A00"/>
+        <Setter Property="StrokeThickness" Value="1"/>
+        <Setter Property="StrokeLineJoin" Value="Round"/>
+        <Setter Property="Data" Value="M1.5,4.5 L6,4.5 7.5,6 14.5,6 14.5,13.5 1.5,13.5 Z"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                <Setter Property="Data" Value="M1.5,13.5 L1.5,4.5 6,4.5 7.5,6 13.5,6 13.5,8 M1.5,13.5 L3.5,8 15,8 13,13.5 Z"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+    <Style x:Key="ExplorerSolutionGlyph" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="Width" Value="16"/>
+        <Setter Property="Text" Value="&#xE8F1;"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        <Setter Property="Opacity" Value="0.8"/>
+    </Style>
     
     <Style x:Key="ButtonStyle" TargetType="{x:Type Button}">
         <Setter Property="OverridesDefaultStyle"  Value="true" />
@@ -51,10 +74,11 @@
     <Style x:Key="TreeViewItemPanel" TargetType="StackPanel">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Orientation" Value="Horizontal"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
 
     <DataTemplate x:Key="displayTemplate">
-        <TextBlock Text="{Binding Path=Name}" Padding="6,0" ></TextBlock>
+        <TextBlock Text="{Binding Path=Name}" Padding="4,0,3,0" VerticalAlignment="Center" ></TextBlock>
     </DataTemplate>
     <DataTemplate x:Key="editTemplate">
         <TextBox Text="{Binding Path=Name, Mode=OneWay}"  Tag="{Binding .}"  LostFocus="TextBox_LostFocus" Padding="3,1" PreviewKeyDown="PreviewKeyDown" Loaded="TextBox_Loaded" />
@@ -76,14 +100,14 @@
 
     <HierarchicalDataTemplate DataType="{x:Type Explorer:SolutionExplorer}"   ItemsSource="{Binding VisualChildren}">
         <StackPanel Style="{StaticResource TreeViewItemPanel}" >
-            <TextBlock Text=" '"/>
+            <TextBlock Style="{StaticResource ExplorerSolutionGlyph}"/>
             <local:EditableTextBlock   Style="{StaticResource EditableTextBlockStyle}" IsEditMode="{Binding IsEditMode}" Content="{Binding .}"/>
-            <TextBlock Text="'"/>
+
         </StackPanel>
     </HierarchicalDataTemplate>
 
     <DataTemplate DataType="{x:Type Explorer:LazyLoadingNode}">
-        <TextBlock Text="{Binding Name}" Padding="6,0" Opacity="0.6"/>
+        <TextBlock Text="{Binding Name}" Padding="4,0,3,0" Opacity="0.6"/>
     </DataTemplate>
 
     <HierarchicalDataTemplate DataType="{x:Type Explorer:SolutionSearchResultNode}">
@@ -103,7 +127,7 @@
 
     <HierarchicalDataTemplate DataType="{x:Type Explorer:SolutionFolderNode}" ItemsSource="{Binding VisualChildren}">
         <StackPanel Style="{StaticResource TreeViewItemPanel}">
-            <Image Source="{Binding Icon}" Height="15" Margin="0,0,1,0"/>
+            <Path Style="{StaticResource ExplorerFolderGlyph}"/>
             <local:EditableTextBlock Style="{StaticResource EditableTextBlockStyle}" IsEditMode="{Binding IsEditMode}" Content="{Binding .}"/>
         </StackPanel>
     </HierarchicalDataTemplate>
@@ -119,7 +143,7 @@
                     </Style.Triggers>
                 </Style>
             </StackPanel.Style>
-            <Image Source="{Binding Icon}" Height="14" Margin="0,0,1,0"/>
+            <Image Source="{Binding Icon}" Height="16" Width="16" VerticalAlignment="Center"/>
             <local:EditableTextBlock   Style="{StaticResource EditableTextBlockStyle}" IsEditMode="{Binding IsEditMode}" Content="{Binding .}"/>
         </StackPanel>
     </HierarchicalDataTemplate>
@@ -134,7 +158,7 @@
                     </Style.Triggers>
                 </Style>
             </StackPanel.Style>
-            <Image Source="{Binding Icon}" Height="15" Margin="0,0,1,0"/>
+            <Path Style="{StaticResource ExplorerFolderGlyph}"/>
             <local:EditableTextBlock   Style="{StaticResource EditableTextBlockStyle}" IsEditMode="{Binding IsEditMode}" Content="{Binding .}"/>
         </StackPanel>
     </HierarchicalDataTemplate>

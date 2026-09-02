@@ -4,6 +4,72 @@ namespace ColorVision.Solution.Explorer
 {
     internal static class SolutionTreeNavigationService
     {
+        public static void CollapseDescendants(SolutionNode rootNode)
+        {
+            ArgumentNullException.ThrowIfNull(rootNode);
+            foreach (SolutionNode node in rootNode.VisualChildren.GetAllVisualChildren().ToList())
+                node.IsExpanded = false;
+            rootNode.IsExpanded = true;
+        }
+
+        public static bool CanResolvePath(SolutionNode rootNode, string fullPath)
+        {
+            ArgumentNullException.ThrowIfNull(rootNode);
+            if (string.IsNullOrWhiteSpace(fullPath) || !Path.IsPathFullyQualified(fullPath))
+                return false;
+            if (EnumerateNodes(rootNode).Any(node => MatchesResourcePath(node, fullPath)))
+                return true;
+            if (rootNode is SolutionExplorer explorer)
+            {
+                return (!explorer.IsExplicitProjectMode && IsPathWithin(explorer.DirectoryInfo.FullName, fullPath))
+                    || EnumerateNodes(explorer).OfType<ProjectNode>().Any(project =>
+                        IsPathWithin(project.Project.ProjectDirectory.FullName, fullPath) && project.IncludesPath(fullPath));
+            }
+            return rootNode is FolderNode folder && IsPathWithin(folder.DirectoryInfo.FullName, fullPath);
+        }
+
+        public static async Task<SolutionNode?> ResolvePathAsync(
+            SolutionNode rootNode,
+            string fullPath,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(rootNode);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!CanResolvePath(rootNode, fullPath))
+                return null;
+
+            SolutionNode? existingNode = EnumerateNodes(rootNode).FirstOrDefault(node => MatchesResourcePath(node, fullPath));
+            if (existingNode != null)
+                return existingNode;
+
+            if (rootNode is SolutionExplorer explorer)
+            {
+                foreach (ProjectNode projectNode in EnumerateNodes(explorer)
+                    .OfType<ProjectNode>()
+                    .Where(project => IsPathWithin(project.Project.ProjectDirectory.FullName, fullPath)
+                        && project.IncludesPath(fullPath))
+                    .OrderByDescending(project => project.Project.ProjectDirectory.FullName.Length))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    SolutionNode? projectResult = await ResolvePhysicalPathAsync(
+                        projectNode,
+                        projectNode.Project.ProjectDirectory.FullName,
+                        fullPath,
+                        cancellationToken);
+                    if (projectResult != null)
+                        return projectResult;
+                }
+
+                return !explorer.IsExplicitProjectMode
+                    ? await ResolvePhysicalPathAsync(explorer, explorer.DirectoryInfo.FullName, fullPath, cancellationToken)
+                    : null;
+            }
+
+            return rootNode is FolderNode folder
+                ? await ResolvePhysicalPathAsync(folder, folder.DirectoryInfo.FullName, fullPath, cancellationToken)
+                : null;
+        }
+
         public static async Task<SolutionNode?> ResolveNodeAsync(
             SolutionExplorer explorer,
             SolutionNode targetNode,
@@ -142,11 +208,22 @@ namespace ColorVision.Solution.Explorer
             return EnumerateNodes(explorer).Any(node => ReferenceEquals(node, targetNode));
         }
 
-        private static IEnumerable<SolutionNode> EnumerateNodes(SolutionExplorer explorer)
+        private static IEnumerable<SolutionNode> EnumerateNodes(SolutionNode rootNode)
         {
-            yield return explorer;
-            foreach (SolutionNode node in explorer.VisualChildren.GetAllVisualChildren())
+            yield return rootNode;
+            foreach (SolutionNode node in rootNode.VisualChildren.GetAllVisualChildren())
                 yield return node;
+        }
+
+        private static bool MatchesResourcePath(SolutionNode node, string fullPath)
+        {
+            string? resourcePath = node switch
+            {
+                SolutionExplorer explorer => explorer.ConfigFileInfo.FullName,
+                ProjectNode project => project.Project.ProjectFile.FullName,
+                _ => node.EditorResourcePath,
+            };
+            return PathEquals(node.FullPath, fullPath) || PathEquals(resourcePath, fullPath);
         }
 
         private static bool IsPathWithin(string rootPath, string candidatePath)

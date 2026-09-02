@@ -49,11 +49,20 @@ namespace ColorVision.Solution
             int version = ++_searchVersion;
             try
             {
-                SolutionSearchResult result = await SolutionSearchService.SearchAsync(
-                    GetActiveWorkspaceItems(),
-                    query,
-                    SolutionSearchService.DefaultMaxResults,
-                    cancellation.Token);
+                SolutionSearchResult result = IsFileSystemView
+                    && GetDisplayedRootNode() is FileSystemFolderNode fileSystemRoot
+                    && SolutionManager.CurrentSolutionExplorer is { } explorer
+                    ? await SolutionSearchService.SearchFileSystemAsync(
+                        explorer,
+                        fileSystemRoot,
+                        query,
+                        SolutionSearchService.DefaultMaxResults,
+                        cancellation.Token)
+                    : await SolutionSearchService.SearchAsync(
+                        GetActiveWorkspaceItems(),
+                        query,
+                        SolutionSearchService.DefaultMaxResults,
+                        cancellation.Token);
                 if (cancellation.IsCancellationRequested
                     || version != _searchVersion
                     || !string.Equals(query, SearchBar1.Text.Trim(), StringComparison.Ordinal))
@@ -120,9 +129,9 @@ namespace ColorVision.Solution
                 {
                     if (!Directory.Exists(hit.FullPath))
                         return null;
-                    targetNode = SolutionNodeFactory.CreateFolderNode(
-                        new DirectoryInfo(hit.FullPath),
-                        hit.Explorer);
+                    targetNode = hit.ParentNode is FileSystemFolderNode
+                        ? new FileSystemFolderNode(new DirectoryInfo(hit.FullPath))
+                        : SolutionNodeFactory.CreateFolderNode(new DirectoryInfo(hit.FullPath), hit.Explorer);
                 }
                 else
                 {
@@ -146,7 +155,7 @@ namespace ColorVision.Solution
         private void ShowSolutionTree()
         {
             _selectionService.Clear();
-            SolutionTreeView.ItemsSource = GetActiveWorkspaceItems();
+            SolutionTreeView.ItemsSource = GetDisplayedWorkspaceItems();
             DisposeSearchResultNodes();
             SearchStatusText.Text = string.Empty;
             SearchStatusText.Visibility = Visibility.Collapsed;

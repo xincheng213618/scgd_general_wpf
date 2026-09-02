@@ -8323,10 +8323,26 @@
         "批量打开图片和项目",
         "工作区文件树缓存",
         "解决方案备份恢复",
-        "默认打开方式保存失败"
+        "默认打开方式保存失败",
+        "解决方案资源管理器",
+        "文件系统视图",
+        "与活动文档同步",
+        "全部折叠",
+        "TreeViewControl"
       ],
       "code_paths": [
         "UI/ColorVision.Solution/README.md",
+        "UI/ColorVision.Solution/TreeViewControl.xaml",
+        "UI/ColorVision.Solution/TreeViewControl.xaml.cs",
+        "UI/ColorVision.Solution/TreeViewControl.Navigation.cs",
+        "UI/ColorVision.Solution/TreeViewControl.ViewMode.cs",
+        "UI/ColorVision.Solution/TreeViewControl.Search.cs",
+        "UI/ColorVision.Solution/Explorer/ExplorerChrome.xaml",
+        "UI/ColorVision.Solution/Explorer/ExplorerScrollBarBehavior.cs",
+        "UI/ColorVision.Solution/Explorer/TreeView.xaml",
+        "UI/ColorVision.Solution/Explorer/FileSystemFolderNode.cs",
+        "UI/ColorVision.Solution/Explorer/SolutionTreeNavigationService.cs",
+        "UI/ColorVision.Solution/Explorer/SolutionSearchService.cs",
         "UI/ColorVision.Solution/ColorVision.Solution.csproj",
         "UI/ColorVision.Solution/SolutionManager.cs",
         "UI/ColorVision.Solution/SolutionManagerInitializer.cs",
@@ -8352,7 +8368,9 @@
         "UI/ColorVision.UI/FileProcessorFactory.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/MruPathServiceTests.cs"
+        "Test/ColorVision.UI.Tests/MruPathServiceTests.cs",
+        "Test/ColorVision.UI.Tests/SolutionExplorerPresentationTests.cs",
+        "Test/ColorVision.UI.Tests/SolutionFileSystemViewTests.cs"
       ],
       "related": [
         "ui.index",

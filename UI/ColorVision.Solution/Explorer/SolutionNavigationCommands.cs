@@ -10,5 +10,20 @@ namespace ColorVision.Solution.Explorer
             "在解决方案资源管理器中定位",
             nameof(RevealInTree),
             typeof(SolutionNavigationCommands));
+
+        public static RoutedUICommand SyncWithActiveDocument { get; } = new(
+            "与活动文档同步",
+            nameof(SyncWithActiveDocument),
+            typeof(SolutionNavigationCommands));
+
+        public static RoutedUICommand CollapseAll { get; } = new(
+            "全部折叠",
+            nameof(CollapseAll),
+            typeof(SolutionNavigationCommands));
+
+        public static RoutedUICommand Refresh { get; } = new(
+            "刷新资源管理器",
+            nameof(Refresh),
+            typeof(SolutionNavigationCommands));
     }
 }

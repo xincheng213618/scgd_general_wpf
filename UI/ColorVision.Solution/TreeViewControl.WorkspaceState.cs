@@ -17,7 +17,7 @@ namespace ColorVision.Solution
     {
         private void ScheduleWorkspaceStateSave()
         {
-            if (_isRestoringWorkspaceState || !IsLoaded)
+            if (_isRestoringWorkspaceState || IsFileSystemView || !IsLoaded)
                 return;
 
             _workspaceStateSaveTimer.Stop();
@@ -32,7 +32,7 @@ namespace ColorVision.Solution
 
         private void SaveWorkspaceState(SolutionExplorer? explorer)
         {
-            if (_isRestoringWorkspaceState || explorer == null)
+            if (_isRestoringWorkspaceState || IsFileSystemView || explorer == null)
                 return;
 
             try
@@ -54,7 +54,7 @@ namespace ColorVision.Solution
 
         private async void RestoreWorkspaceState(SolutionExplorer? explorer)
         {
-            if (explorer == null
+            if (IsFileSystemView || explorer == null
                 || !ReferenceEquals(explorer, SolutionManager.CurrentSolutionExplorer))
             {
                 return;

@@ -24,7 +24,7 @@ namespace ColorVision.Solution
                 uIElement = (UIElement)VisualTreeHelper.GetParent(uIElement);
                 if (uIElement is TreeViewItem)
                 {
-                    num += 12.0;
+                    num += 16.0;
                 }
             }
 
@@ -88,8 +88,10 @@ namespace ColorVision.Solution
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = SolutionManager;
-            SolutionTreeView.ItemsSource = GetActiveWorkspaceItems();
+            SolutionTreeView.ItemsSource = GetDisplayedWorkspaceItems();
             IniCommand();
+            InitializeExplorerViewMode();
+            InitializeExplorerNavigation();
         }
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
@@ -107,6 +109,7 @@ namespace ColorVision.Solution
             SolutionManager.CurrentWorkspaceChanged -= SolutionManager_CurrentWorkspaceChanged;
             SolutionManager.CurrentWorkspaceChanged += SolutionManager_CurrentWorkspaceChanged;
             SynchronizeObservedExplorer();
+            SolutionTreeView.ItemsSource = GetDisplayedWorkspaceItems();
             Dispatcher.BeginInvoke(
                 () => RestoreWorkspaceState(SolutionManager.CurrentSolutionExplorer),
                 DispatcherPriority.Loaded);
@@ -123,6 +126,8 @@ namespace ColorVision.Solution
             CancelPendingSearch();
             CancelPendingReveal();
             DisposeSearchResultNodes();
+            ClearSelection();
+            DisposeFileSystemView();
             SolutionManager.CurrentWorkspaceChanged -= SolutionManager_CurrentWorkspaceChanged;
             if (_observedExplorer != null)
                 DetachExplorer(_observedExplorer);
@@ -136,12 +141,16 @@ namespace ColorVision.Solution
         private void SolutionManager_CurrentWorkspaceChanged(object? sender, EventArgs e)
         {
             _workspaceStateSaveTimer.Stop();
+            _searchDebounceTimer.Stop();
+            CancelPendingSearch();
+            DisposeSearchResultNodes();
+            ClearDropTargetVisual();
             CancelWorkspaceStateRestore();
             CancelPendingReveal();
             _isRestoringWorkspaceState = true;
             try
             {
-                _selectionService.Clear();
+                ClearSelection();
             }
             finally
             {
@@ -149,7 +158,7 @@ namespace ColorVision.Solution
             }
 
             SynchronizeObservedExplorer();
-            SolutionTreeView.ItemsSource = GetActiveWorkspaceItems();
+            SolutionTreeView.ItemsSource = GetDisplayedWorkspaceItems();
             Dispatcher.BeginInvoke(
                 () => RestoreWorkspaceState(SolutionManager.CurrentSolutionExplorer),
                 DispatcherPriority.Loaded);
@@ -297,6 +306,16 @@ namespace ColorVision.Solution
         private void TreeViewItem_ExpansionChanged(object sender, RoutedEventArgs e)
         {
             ScheduleWorkspaceStateSave();
+        }
+
+        private void ExplorerMoreButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button { ContextMenu: { } menu } button)
+            {
+                menu.PlacementTarget = button;
+                menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                menu.IsOpen = true;
+            }
         }
 
         private void ClearSelection()
