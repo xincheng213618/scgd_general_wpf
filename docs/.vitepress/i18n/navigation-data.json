@@ -311,6 +311,12 @@
             },
             {
               "text": {
+                "root": "桌面宠物"
+              },
+              "link": "/04-api-reference/ui-components/desktop-pet"
+            },
+            {
+              "text": {
                 "root": "编辑器选择、文档生命周期与停靠布局"
               },
               "link": "/04-api-reference/ui-components/editor-document-lifecycle"
@@ -482,6 +488,12 @@
                 "root": "Copilot 输入、命令与活动呈现"
               },
               "link": "/02-developer-guide/core-concepts/copilot-local-interactions"
+            },
+            {
+              "text": {
+                "root": "桌面宠物"
+              },
+              "link": "/04-api-reference/ui-components/desktop-pet"
             }
           ]
         },

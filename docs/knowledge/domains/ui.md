@@ -35,6 +35,9 @@ next: false
 - [通用查询、条件会话与整表操作](../../04-api-reference/ui-components/database-query.md) — `ui.database-query`
   实体驱动的通用查询窗口：条件参数化、执行时SQL预览、结果替换与进程内会话；关闭不取消查询，清空表/截断表作用于整表而非筛选结果。
 
+- [桌面宠物](../../04-api-reference/ui-components/desktop-pet.md) — `ui.desktop-pet`
+  桌面宠物的启用、选择、Codex 创建、本地素材导入、精灵表规格、配置与故障定位；创建结果由设置页限时发现。
+
 - [UI 运行时组件](../../04-api-reference/ui-components/ui-runtime-handoff.md) — `ui.discovery`
   排查程序集加载后菜单、设置、PropertyGrid、工具和服务扩展的发现链。
 

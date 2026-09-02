@@ -64,6 +64,9 @@ next: false
 - [WindowsServicePlugin：选包、本机安装与恢复](../../04-api-reference/plugins/standard-plugins/windows-service.md) — `plugins.windows-service`
   WindowsServicePlugin的在线选包与缓存、本机完整安装、数据库版本切换和恢复边界；下载、日志完成、备份与实际服务状态不能互相替代。
 
+- [桌面宠物](../../04-api-reference/ui-components/desktop-pet.md) — `ui.desktop-pet`
+  桌面宠物的启用、选择、Codex 创建、本地素材导入、精灵表规格、配置与故障定位；创建结果由设置页限时发现。
+
 - [编辑器选择、文档生命周期与停靠布局](../../04-api-reference/ui-components/editor-document-lifecycle.md) — `ui.documents`
   编辑器注册与选择、按路径和编辑器区分文档、保存重载关闭及外部变更；停靠布局不恢复未注册文件标签，重置也不预审脏文档。
 
@@ -145,6 +148,9 @@ next: false
 
 - [Copilot 输入、命令与活动呈现](../../02-developer-guide/core-concepts/copilot-local-interactions.md) — `copilot.interactions`
   Copilot 命令目录、输入与引用、会话导航及消息/桌宠呈现；本地入口不等于无副作用。
+
+- [桌面宠物](../../04-api-reference/ui-components/desktop-pet.md) — `ui.desktop-pet`
+  桌面宠物的启用、选择、Codex 创建、本地素材导入、精灵表规格、配置与故障定位；创建结果由设置页限时发现。
 
 ## ColorVision/NativeLogging {#module-436f6c6f72566973696f6e2f4e61746976654c6f6767696e67}
 

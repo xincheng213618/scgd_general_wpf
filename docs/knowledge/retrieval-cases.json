@@ -388,6 +388,12 @@
     {"query":"T0001 VID 返回值","expected_any":["projects.lux-protocol"],"include_planned":false},
     {"query":"T0031 光通量为空","expected_any":["projects.lux-protocol"],"include_planned":false},
     {"query":"H03AR 光学中心","expected_any":["projects.lux-protocol"],"include_planned":false},
-    {"query":"No Dispatcher Hanle","expected_any":["projects.lux-protocol","ui.socket-protocol"],"include_planned":false}
+    {"query":"No Dispatcher Hanle","expected_any":["projects.lux-protocol","ui.socket-protocol"],"include_planned":false},
+    {"query":"桌面宠物","expected_any":["ui.desktop-pet"],"include_planned":false},
+    {"query":"用 Codex 创建宠物","expected_any":["ui.desktop-pet"],"include_planned":false},
+    {"query":"导入精灵表","expected_any":["ui.desktop-pet"],"include_planned":false},
+    {"query":"pet.json","expected_any":["ui.desktop-pet"],"include_planned":false},
+    {"query":"DesktopPetPackageService","expected_any":["ui.desktop-pet"],"include_planned":false},
+    {"query":"素材不可用","expected_any":["ui.desktop-pet"],"include_planned":false}
   ]
 }
