@@ -1,33 +1,10 @@
-using ColorVision.Properties;
-using ColorVision.UI;
-using ColorVision.UI.Menus;
 using ColorVision.UI.ServiceHost;
 using log4net;
 using System;
 using System.Threading.Tasks;
-using System.Windows;
 
 namespace ColorVision.Update.Export
 {
-    public class MenuFileAssociation : MenuItemBase
-    {
-        public override string OwnerGuid => nameof(MenuUpdate);
-        public override int Order => 1000;
-        public override string Header => Resources.MenuFileAssociation;
-        public override Visibility Visibility => Visibility.Collapsed;
-
-        public override async void Execute()
-        {
-            bool success = await FileAssociationHelper.RegisterAssociationsAsync().ConfigureAwait(true);
-            MessageBox.Show(
-                Application.Current.GetActiveWindow(),
-                success ? Resources.RegistryAppliedSuccess : Resources.ComRegistrationFailed,
-                "ColorVision",
-                MessageBoxButton.OK,
-                success ? MessageBoxImage.Information : MessageBoxImage.Warning);
-        }
-    }
-
     public static class FileAssociationHelper
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FileAssociationHelper));

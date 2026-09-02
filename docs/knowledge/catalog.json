@@ -3903,7 +3903,7 @@
         "Engine/ColorVision.ShellExtension/Register.ps1",
         "Engine/ColorVision.ShellExtension/Unregister.ps1",
         "Engine/ColorVision.FileIO/CVFileUtil.cs",
-        "ColorVision/Update/Export/MenuRegisterThumbnail.cs",
+        "ColorVision/Update/Export/FileAssociationHelper.cs",
         "ColorVision/ServiceHost/ServiceHostManagerWindow.xaml.cs",
         "UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs",
         "src/ColorVisionServiceHost/ServiceHostCommandHandler.cs",

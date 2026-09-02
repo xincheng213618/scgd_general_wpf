@@ -92,8 +92,12 @@ namespace ColorVision.Update
             DialogResult = false;
         }
 
-        private void ApplicationSnapshotsLink_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        private void ApplicationSnapshotsButton_Click(object sender, RoutedEventArgs e)
         {
+            if (!Context.CanCancel)
+                return;
+
+            SaveUpdateOptions();
             new ApplicationSnapshotsWindow
             {
                 Owner = this,
@@ -101,6 +105,8 @@ namespace ColorVision.Update
             }.ShowDialog();
             Context.CreateSnapshotBeforeUpdate = ApplicationSnapshotConfig.Instance.CreateSnapshotBeforeUpdate;
         }
+
+        private void ChangelogButton_Click(object sender, RoutedEventArgs e) => ChangelogPage.Open();
 
         private async void ReinstallButton_Click(object sender, RoutedEventArgs e)
         {
