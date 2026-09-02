@@ -45,4 +45,4 @@ next: false
   说明 ST WPF 节点画布、端口、类型目录及 STN 兼容边界。
 
 - [FlowEngineLib](../../04-api-reference/engine-components/FlowEngineLib.md) — `flow.runtime`
-  说明节点图加载、服务绑定、完成事件和隔离 RuntimeHost 的执行边界。
+  节点图加载、服务绑定、弃用节点兼容、完成事件和隔离 RuntimeHost 的执行边界。

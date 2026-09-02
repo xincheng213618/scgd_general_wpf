@@ -292,7 +292,7 @@ next: false
   定位 Flow 数据转换、图像转换、单双输入校准及属性选择器。
 
 - [FlowEngineLib](../../04-api-reference/engine-components/FlowEngineLib.md) — `flow.runtime`
-  说明节点图加载、服务绑定、完成事件和隔离 RuntimeHost 的执行边界。
+  节点图加载、服务绑定、弃用节点兼容、完成事件和隔离 RuntimeHost 的执行边界。
 
 - [本地相机内存帧预览方案（待实施） \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview.md) — `engine.camera-preview-plan`
   待实施的设备级内存帧预览单一方案：发布器、租约、latest-wins、RAW/CIE 模式、内存预算、实施阶段与验收。
@@ -301,3 +301,6 @@ next: false
 
 - [ST.Library.UI](../../04-api-reference/engine-components/ST.Library.UI.md) — `flow.editor`
   说明 ST WPF 节点画布、端口、类型目录及 STN 兼容边界。
+
+- [FlowEngineLib](../../04-api-reference/engine-components/FlowEngineLib.md) — `flow.runtime`
+  节点图加载、服务绑定、弃用节点兼容、完成事件和隔离 RuntimeHost 的执行边界。

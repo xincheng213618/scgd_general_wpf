@@ -2,9 +2,9 @@
 knowledge_id: "flow.runtime"
 knowledge_type: "reference"
 status: "current"
-summary: "说明节点图加载、服务绑定、完成事件和隔离 RuntimeHost 的执行边界。"
-aliases: ["流程节点结束为什么业务还没完成","FlowEngineLib","FlowEngineAPI","FlowEngineControl","CVStartCFC","FlowRuntimeHost"]
-code_paths: ["Engine/FlowEngineLib/README.md","Engine/FlowEngineLib/FlowEngineLib.csproj","Engine/FlowEngineLib/FlowEngineAPI.cs","Engine/FlowEngineLib/FlowEngineControl.cs","Engine/FlowEngineLib/FlowEngineEventArgs.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Base/CVStartCFC.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/Runtime/FlowRuntimeHost.cs"]
+summary: "节点图加载、服务绑定、弃用节点兼容、完成事件和隔离 RuntimeHost 的执行边界。"
+aliases: ["流程节点结束为什么业务还没完成","FlowEngineLib","FlowEngineAPI","FlowEngineControl","CVStartCFC","FlowRuntimeHost","弃用节点兼容","合规验证旧流程","AlgComplianceMathNode","AlgComplianceContrastNode","AlgComplianceJudgmentNode","ComplianceMathType","Compliance_Math","Compliance_Contrast","Compliance.Judgment"]
+code_paths: ["Engine/FlowEngineLib/README.md","Engine/FlowEngineLib/FlowEngineLib.csproj","Engine/FlowEngineLib/FlowEngineAPI.cs","Engine/FlowEngineLib/FlowEngineControl.cs","Engine/FlowEngineLib/FlowEngineEventArgs.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Base/CVStartCFC.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/Runtime/FlowRuntimeHost.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceMathNode.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceContrastNode.cs","Engine/FlowEngineLib/Node/Algorithm/AlgComplianceJudgmentNode.cs","Engine/FlowEngineLib/Node/Algorithm/ComplianceMathType.cs","Engine/FlowEngineLib/Algorithm/ComplianceMathParam.cs","Engine/FlowEngineLib/Algorithm/ComplianceContrastParam.cs","Engine/FlowEngineLib/Algorithm/ComplianceJudgmentParam.cs","Engine/ST.Library.UI/NodeEditor/STNodeTypeRegistry.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/FlowEngineControlLifecycleTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeHostTests.cs"]
 related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","flow.session","flow.headless","flow.node-extension"]
 ---
@@ -49,7 +49,7 @@ related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","f
 | `CVCommonNode` | 节点名、类型、设备码、端口事件、颜色注册 |
 | `BaseStartNode` | 创建开始输出，维护 Ready/Running，分发 `CVStartCFC` |
 | `CVBaseServerNode` | 模板、图片、Token、超时、请求参数和服务端响应 |
-| `CVEndNode` | 调用 `DoFinishing()` 和 `FireFinished()` 闭合流程 |
+| `CVEndNode` | `TryDoFinishing()` 接受首次终止后调用 `FireFinished()`，重复到达不会再次结束 |
 | `AlgorithmNode` / `AlgorithmARVRNode` | 把模板、图像、颜色、POI、SMU 数据打包成算法请求 |
 
 大部分节点的核心职责是构建并转发执行参数，不是在本地完成完整算法。
@@ -57,6 +57,16 @@ related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","f
 ## 弃用节点兼容
 
 标记 `Obsolete` 的节点类型会从 `STNodeTreeView` 的新建/右键目录和 Copilot 节点目录中排除，但仍由节点类型注册表保留，因此旧画布可以继续反序列化。例如旧 MQTT、V5 开始/结束、合规验证、ROI、第三方算法、校正和图像拼接节点都走这条兼容路径；完成存量流程迁移前不要删除这些类型。
+
+旧合规流程依赖以下类型和请求标识；排查画布加载或服务请求时按表定位：
+
+| 节点类型 | 请求 operatorCode | 保留的参数契约 |
+| --- | --- | --- |
+| `AlgComplianceMathNode` | `Compliance_Math` | `TempName`、`ComplianceMath`、`IsBreak`；新实例默认 `CIE`、`IsBreak = false`，请求使用 `ComplianceMathParam.ComplianceType` 和模板/前步参数 |
+| `AlgComplianceContrastNode` | `Compliance_Contrast` | `Operation`、`TempName`；`ComplianceContrastParam` 带运算整数值及两路输入的 `PreFlowRecorderId` |
+| `AlgComplianceJudgmentNode` | `Compliance.Judgment` | `IsBreak` 默认 `true`，与前步参数一起构造 `ComplianceJudgmentParam` |
+
+`ComplianceMathType` 的序列化值为 `CIE = 1`、`JND = 2`、`CIE_BUZ = 3`。这些名字、类型和数值属于存量画布/请求兼容边界，迁移前须核对实际保存的节点、模板和算法服务。保留类型支持旧图加载，不表示当前客户端提供对应模板编辑器，也不保证所连接服务仍实现旧算法。
 
 ## 完成链路
 
@@ -72,7 +82,7 @@ flowchart TD
 
 “节点完成”不等于“流程图完成”。正常结束路径由 End 节点闭合上述 `Finished` 链；取消、超时和启动拒绝需读取所属运行器的终止状态。宿主可将此事件桥接为 `FlowControl.FlowCompleted` / `EngineExecutionCompleted`，但不会因此自动完成客户业务。
 
-`Finished` 携带 `FlowEngineEventArgs`，字段包括 `StartNodeName`、`SerialNumber`、`Status`、`TotalTime`、`Message` 与错误节点信息；不能只因收到事件就忽略 `Status`，也不要使用旧说明中不存在的 `FlowName` 字段。
+`Finished` 携带 `FlowEngineEventArgs`，字段包括 `StartNodeName`、`SerialNumber`、`Status`、`TotalTime`、`Message` 与错误节点信息；调用方按 `Status` 判断执行结果，按 `StartNodeName` 识别开始节点。
 
 共享会话的 `RunFinalized`、后处理失败策略及项目兼容链见[执行会话](../../01-user-guide/workflow/execution.md)；隔离运行的状态映射见[无界面执行](../algorithms/templates/flow-engine.md)。它们不是 FlowEngineLib 内核自动附带的业务阶段。
 
@@ -108,4 +118,4 @@ FlowEngineLib 只知道节点图和引擎执行状态，不拥有模板数据库
 
 `FlowEngineControlLifecycleTests` 分别核对本地开始节点无需连接就绪、连接型开始节点的目标就绪门禁、重复挂接和节点移除等行为；测试路径不是本次执行结果。
 
-执行内核测试不能替代宿主后处理或项目判定；需要最终业务状态时另外验证 RunFinalized 所属链。
+关联测试未专门声明旧合规画布和旧算法服务的端到端覆盖，交付兼容需要使用对应存量流程另行验证。执行内核测试不能替代宿主后处理或项目判定；需要最终业务状态时另外验证 RunFinalized 所属链。

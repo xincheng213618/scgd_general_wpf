@@ -4328,14 +4328,23 @@
       "knowledge_id": "flow.runtime",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "说明节点图加载、服务绑定、完成事件和隔离 RuntimeHost 的执行边界。",
+      "summary": "节点图加载、服务绑定、弃用节点兼容、完成事件和隔离 RuntimeHost 的执行边界。",
       "aliases": [
         "流程节点结束为什么业务还没完成",
         "FlowEngineLib",
         "FlowEngineAPI",
         "FlowEngineControl",
         "CVStartCFC",
-        "FlowRuntimeHost"
+        "FlowRuntimeHost",
+        "弃用节点兼容",
+        "合规验证旧流程",
+        "AlgComplianceMathNode",
+        "AlgComplianceContrastNode",
+        "AlgComplianceJudgmentNode",
+        "ComplianceMathType",
+        "Compliance_Math",
+        "Compliance_Contrast",
+        "Compliance.Judgment"
       ],
       "code_paths": [
         "Engine/FlowEngineLib/README.md",
@@ -4347,7 +4356,16 @@
         "Engine/FlowEngineLib/Base/CVBaseServerNode.cs",
         "Engine/FlowEngineLib/Base/CVStartCFC.cs",
         "Engine/FlowEngineLib/End/CVEndNode.cs",
-        "Engine/FlowEngineLib/Runtime/FlowRuntimeHost.cs"
+        "Engine/FlowEngineLib/Runtime/FlowRuntimeHost.cs",
+        "Engine/FlowEngineLib/Node/Algorithm/AlgComplianceMathNode.cs",
+        "Engine/FlowEngineLib/Node/Algorithm/AlgComplianceContrastNode.cs",
+        "Engine/FlowEngineLib/Node/Algorithm/AlgComplianceJudgmentNode.cs",
+        "Engine/FlowEngineLib/Node/Algorithm/ComplianceMathType.cs",
+        "Engine/FlowEngineLib/Algorithm/ComplianceMathParam.cs",
+        "Engine/FlowEngineLib/Algorithm/ComplianceContrastParam.cs",
+        "Engine/FlowEngineLib/Algorithm/ComplianceJudgmentParam.cs",
+        "Engine/ST.Library.UI/NodeEditor/STNodeTypeRegistry.cs",
+        "Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/FlowEngineControlLifecycleTests.cs",
@@ -4364,7 +4382,8 @@
         "flow.node-extension"
       ],
       "code_scopes": [
-        "Engine/FlowEngineLib"
+        "Engine/FlowEngineLib",
+        "Engine/ST.Library.UI"
       ],
       "domain": "flow",
       "title": "FlowEngineLib",
