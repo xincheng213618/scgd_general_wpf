@@ -546,6 +546,8 @@
     {"query":"generate_code_history_dashboard.py","expected_any":["delivery.code-statistics"],"include_planned":false},
     {"query":"Pillow is required to generate --share-card","expected_any":["delivery.code-statistics"],"include_planned":false},
     {"query":"切换深色主题","expected_any":["ui.themes"],"include_planned":false},
-    {"query":"任务计划程序","expected_any":["ui.scheduler"],"include_planned":false}
+    {"query":"任务计划程序","expected_any":["ui.scheduler"],"include_planned":false},
+    {"query":"ColorVisionDriver","expected_any":["platform.kernel-driver"],"include_planned":false},
+    {"query":"IOCTL_CVDRV_GET_VERSION","expected_any":["platform.kernel-driver"],"include_planned":false}
   ]
 }

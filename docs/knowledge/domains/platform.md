@@ -26,6 +26,9 @@ next: false
 - [扩展性开发](../../02-developer-guide/core-concepts/extensibility.md) — `platform.extensibility`
   菜单、插件、属性编辑器、算法模板和 Copilot 扩展的职责与源码入口。
 
+- [ColorVisionDriver：实验性内核驱动骨架](../../03-architecture/components/kernel-driver.md) — `platform.kernel-driver`
+  ColorVisionDriver 实验性 WDM 驱动骨架的两个 IOCTL、WDK 构建输入与接入边界；尚未接入主程序、服务宿主或正式发布链。
+
 - [RBAC：登录缓存、会话与权限边界](../../03-architecture/security/rbac.md) — `platform.rbac`
   本地RBAC的登录缓存、会话校验和权限同步限制，以及自动登录失败、登出撤销和用户中心统计的实际边界。
 
