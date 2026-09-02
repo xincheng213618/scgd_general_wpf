@@ -491,6 +491,13 @@
     {"query":"上传校正文件","expected_any":["operations.physical-camera"],"include_planned":false},
     {"query":"创建还原点","expected_any":["operations.physical-camera"],"include_planned":false},
     {"query":"CameraSearchResultViewModel","expected_any":["operations.physical-camera"],"include_planned":false},
-    {"query":"PhysicalCamera_Load","expected_any":["operations.physical-camera"],"include_planned":false}
+    {"query":"PhysicalCamera_Load","expected_any":["operations.physical-camera"],"include_planned":false},
+    {"query":"本地相机管理","expected_any":["operations.camera"],"include_planned":false},
+    {"query":"CameraLocalWindow","expected_any":["operations.camera"],"include_planned":false},
+    {"query":"是否重启服务","expected_any":["operations.camera"],"include_planned":false},
+    {"query":"相机结果查询","expected_any":["operations.camera"],"include_planned":false},
+    {"query":"AutoRefreshView","expected_any":["operations.camera"],"include_planned":false},
+    {"query":"本地相机尚未打开","expected_any":["operations.camera"],"include_planned":false},
+    {"query":"LocalFrameFileService","expected_any":["operations.camera"],"include_planned":false}
   ]
 }

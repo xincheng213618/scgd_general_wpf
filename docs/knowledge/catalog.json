@@ -5427,19 +5427,30 @@
       "knowledge_id": "operations.camera",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "DeviceCamera的物理关联、远程采集完成判据与本地采集/实时预览边界；无文件设备结果预览仍未实现。",
+      "summary": "远程取图、本地相机管理与流程节点的操作和完成判据，以及结果查询、文件保存和实时预览的限制。",
       "aliases": [
         "相机拍图",
         "相机服务",
         "手动采集成功流程失败",
         "采集超时",
         "无文件预览",
+        "本地相机管理",
+        "本地相机取图",
+        "视频模式",
+        "相机结果查询",
+        "是否重启服务",
+        "CameraLog",
         "DeviceCamera",
         "MQTTCamera",
         "DisplayCamera",
         "ViewCamera",
+        "CameraLocalWindow",
         "LocalCameraNode",
-        "SaveFiles"
+        "LocalCameraSession",
+        "LocalFrameFileService",
+        "SaveFiles",
+        "AutoRefreshView",
+        "本地相机尚未打开"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs",
@@ -5450,13 +5461,23 @@
         "Engine/ColorVision.Engine/Services/Devices/Camera/Video/CameraRealtimeFramePipeline.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Video/VideoFrameProcessor.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs",
-        "Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs"
+        "Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/CameraLocalWindow.xaml",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/CameraLocalWindow.xaml.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraSession.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCameraConfig.cs",
+        "Engine/ColorVision.Engine/Abstractions/ViewConfigBase.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Runtime/DisplayFlow.xaml.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/CameraViewLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs",
         "Test/ColorVision.UI.Tests/RealtimePseudoColorServiceTests.cs",
-        "Test/ColorVision.UI.Tests/VideoProcessorResilienceTests.cs"
+        "Test/ColorVision.UI.Tests/VideoProcessorResilienceTests.cs",
+        "Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs"
       ],
       "related": [
         "engine.devices",
