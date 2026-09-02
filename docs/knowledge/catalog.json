@@ -1766,7 +1766,11 @@
         "CopilotAgentSessionCheckpoint",
         "CopilotAgentTaskEventJournal",
         "GetRecentLog",
-        "CopilotRecentLogSupport"
+        "CopilotRecentLogSupport",
+        "QueryFlowExecutionStats",
+        "QueryDatabaseSql",
+        "ExecuteDatabaseSql",
+        "colorvision-database-operations"
       ],
       "code_paths": [
         "ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs",
@@ -1785,6 +1789,10 @@
         "ColorVision/Copilot/Agent/Tools/CopilotGetRecentLogTool.cs",
         "ColorVision/Copilot/Capabilities/CopilotRecentLogSupport.cs",
         "ColorVision/Copilot/Capabilities/CopilotAgentCapabilityServices.cs",
+        "ColorVision/Copilot/Capabilities/CopilotDatabaseSqlCapability.cs",
+        "ColorVision/Copilot/Capabilities/CopilotFlowExecutionStatisticsCapability.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotDatabaseSqlTools.cs",
+        "ColorVision/Copilot/Skills/colorvision-database-operations",
         "ColorVision/Copilot/Agent/CopilotToolExecution.cs",
         "ColorVision/Copilot/Agent/CopilotToolExecution.Support.cs",
         "ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs",
@@ -1808,13 +1816,15 @@
         "Test/ColorVision.Copilot.Tests/CopilotSettledShellCancellationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotExternalMcpToolOutcomeTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotFinalAnswerRecoverySafetyTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotQueuedLocalCommandSnapshotTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotQueuedLocalCommandSnapshotTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotDatabaseSqlPolicyTests.cs"
       ],
       "related": [
         "copilot.runtime",
         "copilot.tool-contracts",
         "copilot.lifecycle",
-        "copilot.interactions"
+        "copilot.interactions",
+        "engine.mysql-recovery"
       ],
       "code_scopes": [
         "ColorVision/Copilot"
