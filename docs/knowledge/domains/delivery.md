@@ -86,8 +86,8 @@ next: false
 - [原生 helper 测试与调试](../../02-developer-guide/engine-development/native-testing.md) — `delivery.native-testing`
   opencv\_helper\_test 的实际入口、工具集与配置映射、专项参数、DLL/样本前提和退出码边界；默认运行与真实样本验收不同。
 
-- [系统要求](../../00-getting-started/prerequisites.md) — `delivery.prerequisites`
-  首次构建所需Windows x64、.NET与C++工具链，区分已有native DLL与干净克隆。
+- [系统要求与首次构建](../../00-getting-started/prerequisites.md) — `delivery.prerequisites`
+  Windows x64 运行与源码构建前提：Desktop Runtime、SDK、C++ 工具集及已有 native DLL 的选择。
 
 - [构建与发布脚本](../../02-developer-guide/scripts/README.md) — `delivery.scripts`
   主程序、插件和项目包的正式发布入口、只读校验与上传清理副作用。

@@ -16,7 +16,7 @@ related: ["delivery.prerequisites","platform.runtime","ui.configuration","ui.wiz
 ## 启动前先确认副作用
 
 - 使用已获授权的隔离测试机器或环境，核对配置和网络边界，不载入现场设备配置、不连接真实设备、不执行流程。单独复制可执行文件并不自动隔离配置或本机服务。
-- 确认目标安装目录没有正在工作的实例。非调试、未允许多实例时，`SingleInstanceStartupPolicy` 会进入旧实例替换分支；`App.xaml.cs` 会尝试关闭同安装路径的旧进程，不能把再次启动当作无影响检查。
+- 确认目标安装目录没有正在工作的实例。未附加调试器、未允许多实例时，`SingleInstanceStartupPolicy` 会进入旧实例替换分支；`App.xaml.cs` 会尝试关闭同安装路径的旧进程。命令行 `debug` 标志不会代替这里的 `Debugger.IsAttached` 判断，不能把再次启动当作无影响检查。
 - 启动会初始化并可能写入配置、日志和插件目录。`App` 先将工作目录设为可执行文件目录；`ConfigHandler.InitializePaths` 优先使用已经存在的相邻 `Config/`，否则使用当前用户 ApplicationData 下按程序集公司名划分的 `Config/`。以实际 `ConfigFilePath` 为准，完整路径与恢复规则见[配置持久化与重载](../04-api-reference/ui-components/configuration.md)；不通过删除现有配置来“重置试用”。
 - 启动还可能连接已配置的服务并产生系统级副作用：`MySqlInitializer` 会连接数据库，连接失败且主机为本地时可通过 `ColorVisionServiceHost` 尝试启动或修复 MySQL 服务；`MqttInitializer` 可连接 MQTT 并尝试启动本地 `mosquitto`。没有设备不代表没有这些副作用。
 

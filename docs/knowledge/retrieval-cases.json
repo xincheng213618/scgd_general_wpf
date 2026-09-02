@@ -445,6 +445,11 @@
     {"query":"CalibrationOffset","expected_any":["algorithms.find-cross"],"include_planned":false},
     {"query":"RawGeometricCenter","expected_any":["algorithms.find-cross"],"include_planned":false},
     {"query":"NativeConfigurationInvalid","expected_any":["algorithms.find-cross"],"include_planned":false},
-    {"query":"AmbiguousPattern","expected_any":["algorithms.find-cross"],"include_planned":false}
+    {"query":"AmbiguousPattern","expected_any":["algorithms.find-cross"],"include_planned":false},
+    {"query":"ColorVision有哪些功能","expected_any":["platform.product"],"include_planned":false},
+    {"query":"Windows 7","expected_any":["delivery.prerequisites"],"include_planned":false},
+    {"query":"Microsoft.WindowsDesktop.App","expected_any":["delivery.prerequisites"],"include_planned":false},
+    {"query":"OpenCvHelperBinary","expected_any":["delivery.prerequisites"],"include_planned":false},
+    {"query":"Desktop Runtime","expected_any":["delivery.prerequisites"],"include_planned":false}
   ]
 }

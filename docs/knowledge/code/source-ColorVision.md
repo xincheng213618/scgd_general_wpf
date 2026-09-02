@@ -103,11 +103,14 @@ next: false
 - [安装制品与运行输出](../../00-getting-started/installation.md) — `delivery.installation`
   区分完整安装制品、增量更新和源码输出，定位安装后缺依赖、配置与启动问题。
 
+- [系统要求与首次构建](../../00-getting-started/prerequisites.md) — `delivery.prerequisites`
+  Windows x64 运行与源码构建前提：Desktop Runtime、SDK、C++ 工具集及已有 native DLL 的选择。
+
 - [主程序启动与最小图像验证](../../00-getting-started/first-steps.md) — `operations.first-run`
   主程序启动的配置、实例和服务副作用，以及隔离测试环境中的最小本地图像验证。
 
-- [什么是 ColorVision？](../../00-getting-started/what-is-colorvision.md) — `platform.product`
-  定位ColorVision视觉检测平台的业务场景和主要职责，不代替具体能力契约。
+- [ColorVision 概览](../../00-getting-started/what-is-colorvision.md) — `platform.product`
+  ColorVision 的设备、流程、图像分析、结果、插件与客户项目能力，以及从任务进入文档的方法。
 
 ## ColorVision/Copilot {#module-436f6c6f72566973696f6e2f436f70696c6f74}
 

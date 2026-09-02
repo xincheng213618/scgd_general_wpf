@@ -3121,35 +3121,54 @@
       "knowledge_id": "delivery.prerequisites",
       "knowledge_type": "guide",
       "status": "current",
-      "summary": "首次构建所需Windows x64、.NET与C++工具链，区分已有native DLL与干净克隆。",
+      "summary": "Windows x64 运行与源码构建前提：Desktop Runtime、SDK、C++ 工具集及已有 native DLL 的选择。",
       "aliases": [
         "环境要求",
+        "系统要求",
         "干净克隆",
         "只装.NET SDK能编译吗",
         "opencv_helper.dll",
-        "MSBuild"
+        "OpenCvHelperBinary",
+        "MSBuild",
+        "Microsoft.WindowsDesktop.App",
+        "Desktop Runtime",
+        "Windows 7",
+        "Visual Studio 2026"
       ],
       "code_paths": [
         "Directory.Build.props",
+        "ColorVision/ColorVision.csproj",
         "UI/ColorVision.Core/ColorVision.Core.csproj",
+        "Engine/ColorVision.Engine/ColorVision.Engine.csproj",
+        "Engine/cvColorVision/cvColorVision.csproj",
         "Native/opencv_helper/opencv_helper.vcxproj",
-        "Native/AGENTS.md"
+        "Native/AGENTS.md",
+        "build.sln",
+        "package.json",
+        "package-lock.json"
       ],
       "test_paths": [
         "Scripts/tests/test_verify_platform_policy.py"
       ],
       "related": [
         "delivery.start",
-        "delivery.testing"
+        "delivery.testing",
+        "delivery.native-testing",
+        "engine.native-integration",
+        "delivery.installation",
+        "operations.first-run"
       ],
       "code_scopes": [
         ".",
+        "ColorVision",
+        "Engine/ColorVision.Engine",
+        "Engine/cvColorVision",
         "Native",
         "Native/opencv_helper",
         "UI/ColorVision.Core"
       ],
       "domain": "delivery",
-      "title": "系统要求",
+      "title": "系统要求与首次构建",
       "source": "docs/00-getting-started/prerequisites.md",
       "url": "/00-getting-started/prerequisites",
       "searchable": true
@@ -6173,23 +6192,37 @@
       "knowledge_id": "platform.product",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "定位ColorVision视觉检测平台的业务场景和主要职责，不代替具体能力契约。",
+      "summary": "ColorVision 的设备、流程、图像分析、结果、插件与客户项目能力，以及从任务进入文档的方法。",
       "aliases": [
         "ColorVision是什么",
-        "视觉检测平台"
+        "视觉检测平台",
+        "ColorVision有哪些功能",
+        "产品概览"
       ],
       "code_paths": [
-        "ColorVision/ColorVision.csproj"
+        "ColorVision/ColorVision.csproj",
+        "Engine/ColorVision.Engine/ColorVision.Engine.csproj",
+        "UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj",
+        "UI/ColorVision.Algorithms/ColorVision.Algorithms.csproj"
       ],
       "test_paths": [],
       "related": [
-        "platform.system"
+        "platform.system",
+        "delivery.start",
+        "algorithms.index",
+        "engine.results",
+        "projects.index",
+        "plugins.index",
+        "copilot.runtime"
       ],
       "code_scopes": [
-        "ColorVision"
+        "ColorVision",
+        "Engine/ColorVision.Engine",
+        "UI/ColorVision.Algorithms",
+        "UI/ColorVision.ImageEditor"
       ],
       "domain": "platform",
-      "title": "什么是 ColorVision？",
+      "title": "ColorVision 概览",
       "source": "docs/00-getting-started/what-is-colorvision.md",
       "url": "/00-getting-started/what-is-colorvision",
       "searchable": true

@@ -45,6 +45,9 @@ next: false
 - [UI DLL 发布](../../04-api-reference/ui-components/publishing.md) — `ui.publishing`
   说明 UI NuGet 构建、版本占用预检、显式 Release 发布与包消费验证。
 
+- [ColorVision 概览](../../00-getting-started/what-is-colorvision.md) — `platform.product`
+  ColorVision 的设备、流程、图像分析、结果、插件与客户项目能力，以及从任务进入文档的方法。
+
 - [ONNX / AI 推理接入设计（Deferred） \[规划\]](../../02-developer-guide/core-concepts/onnx-inference-future-design.md) — `algorithms.onnx`
   尚未实现的 ONNX 接入设计：保持基础产品无 ONNX 运行时，新增 adapter 前须明确模型与验收门禁。
 
@@ -115,8 +118,8 @@ next: false
 - [景深融合：输入、执行与结果生命周期](../../04-api-reference/ui-components/image-fusion.md) — `ui.image-fusion`
   景深融合的CPU/CUDA调用、HImage显示和计时；自动模式不做失败回退，关窗不取消计算，GPU少量图片存在未修复的越界风险。
 
-- [系统要求](../../00-getting-started/prerequisites.md) — `delivery.prerequisites`
-  首次构建所需Windows x64、.NET与C++工具链，区分已有native DLL与干净克隆。
+- [系统要求与首次构建](../../00-getting-started/prerequisites.md) — `delivery.prerequisites`
+  Windows x64 运行与源码构建前提：Desktop Runtime、SDK、C++ 工具集及已有 native DLL 的选择。
 
 - [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
   native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
@@ -235,6 +238,9 @@ next: false
 
 - [亚像素边缘 V1（M6.1）](../../02-developer-guide/core-concepts/subpixel-edge-v1.md) — `algorithms.subpixel-edge`
   SubpixelEdge 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
+
+- [ColorVision 概览](../../00-getting-started/what-is-colorvision.md) — `platform.product`
+  ColorVision 的设备、流程、图像分析、结果、插件与客户项目能力，以及从任务进入文档的方法。
 
 - [UI DLL 速查](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
   按职责和依赖方向判断 UI DLL 的修改归属与消费方兼容风险。

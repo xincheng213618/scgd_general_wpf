@@ -50,5 +50,5 @@ next: false
 - [软件许可协议](../../05-resources/legal/software-agreement.md) — `platform.license`
   保留软件许可协议原文供定位，不由AI重新解释或改写许可条款。
 
-- [什么是 ColorVision？](../../00-getting-started/what-is-colorvision.md) — `platform.product`
-  定位ColorVision视觉检测平台的业务场景和主要职责，不代替具体能力契约。
+- [ColorVision 概览](../../00-getting-started/what-is-colorvision.md) — `platform.product`
+  ColorVision 的设备、流程、图像分析、结果、插件与客户项目能力，以及从任务进入文档的方法。

@@ -395,13 +395,19 @@
             },
             {
               "text": {
+                "root": "系统要求与首次构建"
+              },
+              "link": "/00-getting-started/prerequisites"
+            },
+            {
+              "text": {
                 "root": "主程序启动与最小图像验证"
               },
               "link": "/00-getting-started/first-steps"
             },
             {
               "text": {
-                "root": "什么是 ColorVision？"
+                "root": "ColorVision 概览"
               },
               "link": "/00-getting-started/what-is-colorvision"
             }
@@ -770,6 +776,12 @@
             },
             {
               "text": {
+                "root": "ColorVision 概览"
+              },
+              "link": "/00-getting-started/what-is-colorvision"
+            },
+            {
+              "text": {
                 "root": "ONNX / AI 推理接入设计（Deferred） [规划]"
               },
               "link": "/02-developer-guide/core-concepts/onnx-inference-future-design"
@@ -920,7 +932,7 @@
             },
             {
               "text": {
-                "root": "系统要求"
+                "root": "系统要求与首次构建"
               },
               "link": "/00-getting-started/prerequisites"
             },
@@ -1169,6 +1181,12 @@
                 "root": "亚像素边缘 V1（M6.1）"
               },
               "link": "/02-developer-guide/core-concepts/subpixel-edge-v1"
+            },
+            {
+              "text": {
+                "root": "ColorVision 概览"
+              },
+              "link": "/00-getting-started/what-is-colorvision"
             },
             {
               "text": {
@@ -2162,6 +2180,12 @@
             },
             {
               "text": {
+                "root": "系统要求与首次构建"
+              },
+              "link": "/00-getting-started/prerequisites"
+            },
+            {
+              "text": {
                 "root": "Engine MQTT 消息处理指南"
               },
               "link": "/02-developer-guide/engine-development/mqtt"
@@ -2234,6 +2258,12 @@
             },
             {
               "text": {
+                "root": "ColorVision 概览"
+              },
+              "link": "/00-getting-started/what-is-colorvision"
+            },
+            {
+              "text": {
                 "root": "本地相机内存帧预览方案（待实施） [规划]"
               },
               "link": "/02-developer-guide/engine-development/local-camera-memory-preview"
@@ -2283,6 +2313,12 @@
           "link": "/knowledge/code/source-Engine#module-456e67696e652f6376436f6c6f72566973696f6e",
           "collapsed": true,
           "items": [
+            {
+              "text": {
+                "root": "系统要求与首次构建"
+              },
+              "link": "/00-getting-started/prerequisites"
+            },
             {
               "text": {
                 "root": "cvColorVision"
@@ -2441,7 +2477,7 @@
           "items": [
             {
               "text": {
-                "root": "系统要求"
+                "root": "系统要求与首次构建"
               },
               "link": "/00-getting-started/prerequisites"
             },
@@ -2558,7 +2594,7 @@
             },
             {
               "text": {
-                "root": "系统要求"
+                "root": "系统要求与首次构建"
               },
               "link": "/00-getting-started/prerequisites"
             },
@@ -3473,7 +3509,7 @@
             },
             {
               "text": {
-                "root": "系统要求"
+                "root": "系统要求与首次构建"
               },
               "link": "/00-getting-started/prerequisites"
             },
