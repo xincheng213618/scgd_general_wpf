@@ -2,18 +2,26 @@
 knowledge_id: "ui.themes"
 knowledge_type: "topic"
 status: "current"
-summary: "ThemeManager的主题选择、资源追加、系统跟随和窗口外观契约；选择不等于应用成功，预览不等于配置落盘。"
-aliases: ["主题切换为什么不生效","跟随系统但标题栏没变","强制主题重复资源字典","主题预览会自动保存吗","主题系统事件订阅释放","XAML绑定失败","ComboBoxItem","GridViewColumnHeader","ColorVision.Themes","ThemeManager","ThemeManager.Current","Theme","ApplyTheme","ForceApplyTheme","ApplyThemeChanged","CurrentTheme","CurrentUITheme","CurrentThemeChanged","CurrentUIThemeChanged","ApplyCaption","ThemeConfig","ThemePropertiesEditor","AppsUseLightTheme"]
-code_paths: ["UI/ColorVision.Themes/README.md","UI/ColorVision.Themes/Theme.cs","UI/ColorVision.Themes/ThemeManager.cs","UI/ColorVision.Themes/ThemeManagerExtensions.cs","UI/ColorVision.Themes/Themes","UI/ColorVision.Themes/ColorVision.Themes.csproj","UI/ColorVision.UI/Themes/ThemeConfig.cs","UI/ColorVision.UI/Themes/ThemePropertiesEditor.cs","UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs","UI/ColorVision.UI/Extension/IIconExtension.cs","UI/ColorVision.UI/DisPlayManager.cs","ColorVision/App.xaml","ColorVision/App.xaml.cs","ColorVision/StartWindow.xaml.cs"]
+summary: "在外观与语言中切换主题；ThemeManager 的资源应用、系统跟随、窗口外观和公共控件样式，以及即时预览与保存的区别。"
+aliases: ["切换深色主题","跟随系统","外观与语言","主题切换为什么不生效","跟随系统但标题栏没变","强制主题重复资源字典","主题预览会自动保存吗","主题系统事件订阅释放","XAML绑定失败","ComboBoxItem","GridViewColumnHeader","ColorVision.Themes","ThemeManager","ThemeManager.Current","Theme","ApplyTheme","ForceApplyTheme","ApplyThemeChanged","CurrentTheme","CurrentUITheme","CurrentThemeChanged","CurrentUIThemeChanged","ApplyCaption","ThemeConfig","ThemePropertiesEditor","AppsUseLightTheme"]
+code_paths: ["UI/ColorVision.Themes/README.md","UI/ColorVision.Themes/Theme.cs","UI/ColorVision.Themes/ThemeManager.cs","UI/ColorVision.Themes/ThemeManagerExtensions.cs","UI/ColorVision.Themes/Themes","UI/ColorVision.Themes/ColorVision.Themes.csproj","UI/ColorVision.UI/Themes/ThemeConfig.cs","UI/ColorVision.UI/Themes/ThemePropertiesEditor.cs","UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs","UI/ColorVision.UI.Desktop/Settings/MenuOptions.cs","UI/ColorVision.UI.Desktop/Settings/SettingSearchProvider.cs","UI/ColorVision.UI/Extension/IIconExtension.cs","UI/ColorVision.UI/DisPlayManager.cs","ColorVision/App.xaml","ColorVision/App.xaml.cs","ColorVision/StartWindow.xaml.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/ThemeSettingsTests.cs","Test/ColorVision.UI.Tests/ThemeSubscriptionLifecycleTests.cs","Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs","Test/ColorVision.UI.Tests/GridViewColumnHeaderBindingTests.cs","Test/ColorVision.UI.Tests/ComboBoxItemBindingTests.cs"]
-related: ["ui.index","ui.property-grid","ui.configuration"]
+related: ["ui.index","ui.settings","ui.property-grid","ui.configuration"]
 ---
 
 # 主题选择、资源应用与窗口外观
 
 `ColorVision.Themes` 负责 WPF 主题资源与窗口外观；`ColorVision.UI` 中的 `ThemeConfig` / `ThemePropertiesEditor` 负责配置对象和选项编辑。主题选择、资源应用、标题栏更新、配置落盘是不同完成条件，不能用一次 `ApplyTheme` 返回统一代表。
 
-当前只有 `UseSystem`、`Light`、`Dark` 三种选择；`UseSystem` 是选择策略，不是第三套配色。没有 `Theme.Custom`、`ResourceDictionaryCustom`、`ThemeConfig.FollowSystem` 或运行时主题注册协议。资源列表虽然公开可改，仍须满足现有加载和事件边界。
+## 切换应用主题
+
+1. 打开 **工具 → 选项**（默认快捷键 **Ctrl+,**）。
+2. 在 **外观与语言 → 主题** 中选择 **跟随系统**、**浅色** 或 **深色**。
+3. 选择不同卡片后立即预览外观；关闭由上述入口打开的设置窗口时，设置入口会调用配置保存。关闭窗口不会撤销预览。
+
+默认选择“跟随系统”，使用 Windows 的应用配色。三个选择对应 `UseSystem`、`Light`、`Dark`；`UseSystem` 是选择策略，实际资源仍为浅色或深色。即时变色与配置写盘是两个步骤，设置窗口的保存边界见 [设置入口与配置编辑](./settings.md)。
+
+以下说明面向主题接入与排障。独立宿主可以调整公开资源列表，但仍须遵循资源加载和事件约束。
 
 ## 选择状态与实际资源
 
@@ -83,21 +91,24 @@ related: ["ui.index","ui.property-grid","ui.configuration"]
 
 用户中心、用户管理和服务主机管理窗口通过 `ApplyCaption` 接入原生标题栏外观，具体系统跟随与订阅限制仍适用前述窗口外观契约。
 
-## 公共样式的绑定诊断
+## 公共控件样式
 
-`ComboBoxItem` 的 WPF 默认对齐绑定会查找祖先 `ItemsControl`；尚未挂载或已回收的下拉项没有这个祖先。`Themes/Base.xaml` 为默认和 Small 下拉项提供 Left/Center 默认值，仅在 `IsVisible=true` 时建立祖先对齐绑定；可见项仍实时跟随父控件的水平、垂直对齐，关闭弹出层或脱离树时解除绑定。标准/HandyControl 默认 ComboBox，以及 `ComboBox.Small`、`ComboBoxExtend.Small`、`ComboBoxPlus.Small` 和项目 `ComboBoxBaseStyle` 均使用这些容器样式，保留原模板和紧凑尺寸；另行提供 `ItemContainerStyle` 的消费者仍负责自己的绑定。
+`Themes/Base.xaml` 在现有主题模板上设置以下默认值：
 
-`ComboBoxItemBindingTests` 用真实主题检查未挂载下拉项的绑定诊断、弹出层中对齐的动态继承，以及关闭/刷新后的容器解绑。不能通过全局关闭 WPF 绑定诊断代替修复样式。
+| 控件 | 对齐或尺寸规则 |
+| --- | --- |
+| `ComboBoxItem` | 默认水平 Left、垂直 Center；仅在 `IsVisible=true` 时绑定祖先 `ItemsControl` 的对齐属性，可见项实时跟随父控件，隐藏或脱离树时回到默认值 |
+| 隐式 `GridViewColumnHeader` | 继承 HandyControl 列头样式，设置 `MinHeight=0`；实际高度由内容和 Padding 决定，保留字号继承、模板和调整列宽的 `PART_HeaderGripper` |
 
-Visual Studio 的 XAML 绑定失败列表会按控件实例累计同一个样式错误；次数多不代表有同等数量的独立故障。应核对目标控件、目标属性和绑定来源，不能通过关闭 WPF 绑定诊断来处理。
+下拉项规则用于标准/HandyControl 默认 ComboBox、`ComboBox.Small`、`ComboBoxExtend.Small`、`ComboBoxPlus.Small` 和项目 `ComboBoxBaseStyle`，保留各自模板及紧凑尺寸。自定义 `ItemContainerStyle` 的消费者负责自己的绑定；需要固定列头高度时，明确设置列头样式的 `Height` / `MinHeight`。
 
-HandyControl 3.5.1 的隐式 `GridViewColumnHeader` 样式把 `MinHeight` 绑定到祖先 `ListView` 的 `GridViewAttach.ColumnHeaderHeight`。尚未连接到列表或用于浮动显示的列头找不到这个祖先时，会出现 `Path=(0)`、目标属性 `MinHeight (Double)` 的错误。仓库没有使用该附加属性定制列头高度；`Themes/Base.xaml` 因此保留 HandyControl 的隐式列头样式并仅覆盖 `MinHeight=0`，与附加属性原默认值一致，由内容和现有 Padding 决定实际高度。字号继承、列头模板和调整列宽的 `PART_HeaderGripper` 保持不变；以后需要固定列头高度的消费者应明确设置列头样式的 `Height` / `MinHeight`，不要依赖此祖先绑定。
+排查 XAML 绑定失败时，按目标控件、目标属性和绑定来源定位共享样式。未挂载、隐藏或回收的容器可能没有可用祖先；Visual Studio 会按控件实例累计错误次数，同一种样式问题可能产生多条记录。
 
-`GridViewColumnHeaderBindingTests` 在真实主题字典下检查未连接到列表的列头，以及默认/`GridViewColumnHeaderBase` 两类列表列头：捕获实际 WPF 绑定诊断，并核对字号继承和列宽调整模板。它不替代用户窗口中鼠标拖动、排序和主题切换的人工检查。
+`ComboBoxItemBindingTests` 使用真实主题检查未挂载项、弹出层对齐的动态继承和关闭/刷新后的解绑。`GridViewColumnHeaderBindingTests` 检查未挂载列头，以及默认/`GridViewColumnHeaderBase` 列头的绑定诊断、字号继承与调整列宽模板；用户窗口中的鼠标拖动、排序和主题切换仍需单独验证。
 
 ## 包入口与验证范围
 
-`UI/ColorVision.Themes/ColorVision.Themes.csproj` 当前面向 `net8.0-windows7.0;net10.0-windows7.0`，引用 HandyControl，启用 NuGet/符号包生成并打包 README。目标框架后缀不是每个 DWM 属性在该 Windows 版本可用的保证。包使用/本地构建入口保留在源码旁 README；发布规则见 [UI DLL 发布](./publishing.md)。
+`UI/ColorVision.Themes/ColorVision.Themes.csproj` 当前面向 `net8.0-windows7.0;net10.0-windows7.0`，引用 HandyControl，启用 NuGet/符号包生成并打包 README。目标框架后缀不是每个 DWM 属性在该 Windows 版本可用的保证。包使用/本地构建入口保留在源码旁 README；发布规则见 [NuGet 包发布](./publishing.md)。
 
 | 已有测试 | 实际断言范围 |
 | --- | --- |

@@ -1922,6 +1922,12 @@
             },
             {
               "text": {
+                "root": "主题选择、资源应用与窗口外观"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.Themes"
+            },
+            {
+              "text": {
                 "root": "配置向导：步骤、应用与完成边界"
               },
               "link": "/04-api-reference/ui-components/wizards"

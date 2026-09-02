@@ -544,6 +544,7 @@
     {"query":"algorithms-v1.5.8.0为什么发布失败","expected_any":["ui.publishing"],"include_planned":false},
     {"query":"代码行数","expected_any":["delivery.code-statistics"],"include_planned":false},
     {"query":"generate_code_history_dashboard.py","expected_any":["delivery.code-statistics"],"include_planned":false},
-    {"query":"Pillow is required to generate --share-card","expected_any":["delivery.code-statistics"],"include_planned":false}
+    {"query":"Pillow is required to generate --share-card","expected_any":["delivery.code-statistics"],"include_planned":false},
+    {"query":"切换深色主题","expected_any":["ui.themes"],"include_planned":false}
   ]
 }

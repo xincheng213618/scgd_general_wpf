@@ -9913,8 +9913,11 @@
       "knowledge_id": "ui.themes",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "ThemeManager的主题选择、资源追加、系统跟随和窗口外观契约；选择不等于应用成功，预览不等于配置落盘。",
+      "summary": "在外观与语言中切换主题；ThemeManager 的资源应用、系统跟随、窗口外观和公共控件样式，以及即时预览与保存的区别。",
       "aliases": [
+        "切换深色主题",
+        "跟随系统",
+        "外观与语言",
         "主题切换为什么不生效",
         "跟随系统但标题栏没变",
         "强制主题重复资源字典",
@@ -9949,6 +9952,8 @@
         "UI/ColorVision.UI/Themes/ThemeConfig.cs",
         "UI/ColorVision.UI/Themes/ThemePropertiesEditor.cs",
         "UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs",
+        "UI/ColorVision.UI.Desktop/Settings/MenuOptions.cs",
+        "UI/ColorVision.UI.Desktop/Settings/SettingSearchProvider.cs",
         "UI/ColorVision.UI/Extension/IIconExtension.cs",
         "UI/ColorVision.UI/DisPlayManager.cs",
         "ColorVision/App.xaml",
@@ -9964,13 +9969,15 @@
       ],
       "related": [
         "ui.index",
+        "ui.settings",
         "ui.property-grid",
         "ui.configuration"
       ],
       "code_scopes": [
         "ColorVision",
         "UI/ColorVision.Themes",
-        "UI/ColorVision.UI"
+        "UI/ColorVision.UI",
+        "UI/ColorVision.UI.Desktop"
       ],
       "domain": "ui",
       "title": "主题选择、资源应用与窗口外观",
