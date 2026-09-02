@@ -7663,14 +7663,18 @@
       "knowledge_id": "projects.capabilities",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "按协议、外部触发、结果出口与最小验证路径比较 ARVRPro、KB、LUX 和 IntegrationDemo。",
+      "summary": "比较 ARVRPro、KB、LUX 和 IntegrationDemo 的检测触发、测试完成判据、流程配置与结果出口。",
       "aliases": [
         "哪个项目使用 Modbus",
         "哪些项目输出 MES 或 Socket",
         "ProjectARVRPro",
         "ProjectKB",
         "ProjectLUX",
-        "ProjectARVRPro.IntegrationDemo"
+        "ProjectARVRPro.IntegrationDemo",
+        "项目协议对比",
+        "项目结果出口",
+        "项目流程配置",
+        "测试完成确认"
       ],
       "code_paths": [
         "Projects/ProjectARVRPro",
@@ -7773,7 +7777,9 @@
         "KBLVSacle",
         "KB生产统计",
         "KB统计日期记忆",
-        "KBProductionStatisticsWindow"
+        "KBProductionStatisticsWindow",
+        "KB Socket",
+        "OpenSocketConfigCommand"
       ],
       "code_paths": [
         "Projects/ProjectKB/App.xaml.cs",

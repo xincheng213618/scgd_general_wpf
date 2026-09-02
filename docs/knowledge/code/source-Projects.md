@@ -43,7 +43,7 @@ next: false
   ARVRPro TCP/JSON 对接：初始化与 RunAll、流程启用设置、切图确认、AOI 中转、状态码和最终结果关联；说明分帧与并发会话限制。
 
 - [项目横向速查](../../04-api-reference/projects/project-capability-matrix.md) — `projects.capabilities`
-  按协议、外部触发、结果出口与最小验证路径比较 ARVRPro、KB、LUX 和 IntegrationDemo。
+  比较 ARVRPro、KB、LUX 和 IntegrationDemo 的检测触发、测试完成判据、流程配置与结果出口。
 
 ## Projects/ProjectARVRPro.IntegrationDemo {#module-50726f6a656374732f50726f6a6563744152565250726f2e496e746567726174696f6e44656d6f}
 
@@ -51,7 +51,7 @@ next: false
   独立 net48 ARVRPro TCP/JSON Demo 的公开字段、ACK 与最终完成判据、半包粘包及离线验证。
 
 - [项目横向速查](../../04-api-reference/projects/project-capability-matrix.md) — `projects.capabilities`
-  按协议、外部触发、结果出口与最小验证路径比较 ARVRPro、KB、LUX 和 IntegrationDemo。
+  比较 ARVRPro、KB、LUX 和 IntegrationDemo 的检测触发、测试完成判据、流程配置与结果出口。
 
 ## Projects/ProjectKB {#module-50726f6a656374732f50726f6a6563744b42}
 
@@ -59,7 +59,7 @@ next: false
   数据库清理窗口与provider能力：表统计不是删除预览，确认只固定部分参数；备份默认关闭、组合维护不是事务，关窗不取消，成功与统计刷新分开。
 
 - [项目横向速查](../../04-api-reference/projects/project-capability-matrix.md) — `projects.capabilities`
-  按协议、外部触发、结果出口与最小验证路径比较 ARVRPro、KB、LUX 和 IntegrationDemo。
+  比较 ARVRPro、KB、LUX 和 IntegrationDemo 的检测触发、测试完成判据、流程配置与结果出口。
 
 - [ProjectKB](../../04-api-reference/projects/project-kb.md) — `projects.kb`
   ProjectKB 的宿主/独立启动依赖、Modbus/MES、Recipe 判定、背光修正、CSV 与按天生产统计和运行内查询记忆。
@@ -67,7 +67,7 @@ next: false
 ## Projects/ProjectLUX {#module-50726f6a656374732f50726f6a6563744c5558}
 
 - [项目横向速查](../../04-api-reference/projects/project-capability-matrix.md) — `projects.capabilities`
-  按协议、外部触发、结果出口与最小验证路径比较 ARVRPro、KB、LUX 和 IntegrationDemo。
+  比较 ARVRPro、KB、LUX 和 IntegrationDemo 的检测触发、测试完成判据、流程配置与结果出口。
 
 - [ProjectLUX](../../04-api-reference/projects/project-lux.md) — `projects.lux`
   ProjectLUX 流程组、Recipe/Fix 共享配置、处理类型与 CSV/SQLite 结果链；文本协议有独立参考主题。

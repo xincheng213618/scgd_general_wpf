@@ -33,7 +33,7 @@ next: false
   ARVRPro TCP/JSON 对接：初始化与 RunAll、流程启用设置、切图确认、AOI 中转、状态码和最终结果关联；说明分帧与并发会话限制。
 
 - [项目横向速查](../../04-api-reference/projects/project-capability-matrix.md) — `projects.capabilities`
-  按协议、外部触发、结果出口与最小验证路径比较 ARVRPro、KB、LUX 和 IntegrationDemo。
+  比较 ARVRPro、KB、LUX 和 IntegrationDemo 的检测触发、测试完成判据、流程配置与结果出口。
 
 - [ProjectKB](../../04-api-reference/projects/project-kb.md) — `projects.kb`
   ProjectKB 的宿主/独立启动依赖、Modbus/MES、Recipe 判定、背光修正、CSV 与按天生产统计和运行内查询记忆。
