@@ -2675,6 +2675,12 @@
             },
             {
               "text": {
+                "root": "配置 ARVRPro 流程、解析映射与 Recipe"
+              },
+              "link": "/04-api-reference/projects/project-arvr-pro-processes"
+            },
+            {
+              "text": {
                 "root": "ProjectARVRPro"
               },
               "link": "/04-api-reference/projects/project-arvr-pro"
@@ -2684,6 +2690,12 @@
                 "root": "ProjectARVRPro.IntegrationDemo"
               },
               "link": "/04-api-reference/projects/project-arvr-pro-integration-demo"
+            },
+            {
+              "text": {
+                "root": "Demura 烧录与 PG 通信"
+              },
+              "link": "/04-api-reference/projects/project-arvr-pro-demura"
             },
             {
               "text": {

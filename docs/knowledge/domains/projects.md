@@ -17,11 +17,17 @@ next: false
 - [客户项目与对接示例入口](../../04-api-reference/projects/README.md) — `projects.index`
   按客户业务代码、独立对接示例与构建发布边界定位 Projects 的权威主题。
 
+- [配置 ARVRPro 流程、解析映射与 Recipe](../../04-api-reference/projects/project-arvr-pro-processes.md) — `projects.arvr-pro-processes`
+  配置 ARVRPro 流程组、流程解析映射、实例 Recipe 与雷鸟切图，说明类型选择、结果快照、配置保存和有效迁移规则。
+
 - [ProjectARVRPro](../../04-api-reference/projects/project-arvr-pro.md) — `projects.arvr-pro`
-  ARVRPro 流程组、Recipe、Socket、输出、历史结果图回退，以及按自然周期查询结果统计与运行内筛选记忆。
+  ARVRPro 项目入口、Socket 自动化、输出与历史结果查询；流程组、实例 Recipe 和 Demura 各有对应操作主题。
 
 - [ProjectARVRPro.IntegrationDemo](../../04-api-reference/projects/project-arvr-pro-integration-demo.md) — `projects.arvr-pro-demo`
   独立 net48 ARVRPro TCP/JSON Demo 的公开字段、ACK 与最终完成判据、半包粘包及离线验证。
+
+- [Demura 烧录与 PG 通信](../../04-api-reference/projects/project-arvr-pro-demura.md) — `projects.arvr-pro-demura`
+  ProjectARVRPro Demura 烧录的 PG TCP 连接、GECS 帧、配置默认值、逐步回包和故障定位；写入成功回包不等于光学效果验收。
 
 - [项目横向速查](../../04-api-reference/projects/project-capability-matrix.md) — `projects.capabilities`
   按协议、外部触发、结果出口与最小验证路径比较 ARVRPro、KB、LUX 和 IntegrationDemo。

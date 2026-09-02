@@ -37,7 +37,7 @@ related: ["projects.arvr-pro","projects.index"]
 | 动态结果 | `DynamicTestResults`、`DynamicPoixyuvDatas`、`DynamicScreenDefectResults` | 分别承载动态测试项、POI 光色数据和屏幕缺陷汇总/缺陷框。 |
 | 固定/兼容结果 | W51、W255、Black、Chessboard、MTF、Distortion、OpticCenter 等结果 | Key 为 `White` 的视场角和亮色度流程还会写入 W51/W255 兼容字段。 |
 
-`ChessboardTestResult` 同时包含 `ChessboardContrast` 与 `AverageBlackLuminance`。随 Demo 提供的标准样例覆盖上述五个现代顶层字段及新增棋盘格字段。
+`ChessboardTestResult` 同时包含 `ChessboardContrast` 与 `AverageBlackLuminance`。随 Demo 提供的标准样例覆盖上述五个现代顶层字段及棋盘格字段。
 
 ### Legacy 输出边界
 

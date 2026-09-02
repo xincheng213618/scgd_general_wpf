@@ -368,9 +368,16 @@
     {"query":"HImageExtension.UpdateWriteableBitmapAsync返回false会释放输入吗","expected_any":["ui.image-frames"],"include_planned":false},
     {"query":"ImageFrameLease.Image可以在租约Dispose后继续使用吗","expected_any":["ui.image-frames"],"include_planned":false},
     {"query":"M_CalArtculation返回0是失败还是有效评分","expected_any":["engine.native-integration"],"include_planned":false},
+    {"query":"Demura 烧录","expected_any":["projects.arvr-pro-demura"],"include_planned":false},
     {"query":"文件关联注册","expected_any":["engine.shell-extension"],"include_planned":false},
     {"query":"程序备份","expected_any":["delivery.update"],"include_planned":false},
     {"query":"变更日志","expected_any":["delivery.update"],"include_planned":false},
+    {"query":"T0000","expected_any":["projects.lux"],"include_planned":false},
+    {"query":"ARVR 流程解析映射","expected_any":["projects.arvr-pro-processes"],"include_planned":false},
+    {"query":"MTFHV048","expected_any":["projects.arvr-pro-processes"],"include_planned":false},
+    {"query":"ProjectARVRInit","expected_any":["projects.arvr-pro"],"include_planned":false},
+    {"query":"AOITestSwitchImageComplete","expected_any":["projects.arvr-pro"],"include_planned":false},
+    {"query":"LUX Fix","expected_any":["projects.lux"],"include_planned":false},
     {"query":"自动存档位置","expected_any":["delivery.update"],"include_planned":false}
   ]
 }

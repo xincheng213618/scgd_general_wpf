@@ -6555,7 +6555,7 @@
       "knowledge_id": "projects.arvr-pro",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "ARVRPro 流程组、Recipe、Socket、输出、历史结果图回退，以及按自然周期查询结果统计与运行内筛选记忆。",
+      "summary": "ARVRPro 项目入口、Socket 自动化、输出与历史结果查询；流程组、实例 Recipe 和 Demura 各有对应操作主题。",
       "aliases": [
         "ARVR 历史原图删了还能看结果吗",
         "保存结果图会不会重复画标记",
@@ -6565,7 +6565,14 @@
         "SavedResultImageFileName",
         "结果统计",
         "统计日期记忆",
-        "CycleTimeStatisticsWindow"
+        "CycleTimeStatisticsWindow",
+        "ProjectARVRInit",
+        "SwitchPG",
+        "SwitchPGCompleted",
+        "SwitchGroup",
+        "RunAll",
+        "ProjectARVRResult",
+        "AOITestSwitchImageComplete"
       ],
       "code_paths": [
         "Projects/ProjectARVRPro/ARVRWindow.xaml.cs",
@@ -6573,6 +6580,9 @@
         "Projects/ProjectARVRPro/ProjectARVRReuslt.cs",
         "Projects/ProjectARVRPro/ViewResultManager.cs",
         "Projects/ProjectARVRPro/Services/SocketControl.cs",
+        "Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs",
+        "Projects/ProjectARVRPro/Services/RunAllSocket.cs",
+        "Projects/ProjectARVRPro/SocketRelay",
         "Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml",
         "Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml.cs",
         "Projects/ProjectARVRPro/ResultStatisticsTheme.xaml",
@@ -6588,6 +6598,8 @@
       "related": [
         "projects.index",
         "projects.arvr-pro-demo",
+        "projects.arvr-pro-processes",
+        "projects.arvr-pro-demura",
         "projects.capabilities"
       ],
       "code_scopes": [
@@ -6635,6 +6647,91 @@
       "title": "ProjectARVRPro.IntegrationDemo",
       "source": "docs/04-api-reference/projects/project-arvr-pro-integration-demo.md",
       "url": "/04-api-reference/projects/project-arvr-pro-integration-demo",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "projects.arvr-pro-demura",
+      "knowledge_type": "reference",
+      "status": "current",
+      "summary": "ProjectARVRPro Demura 烧录的 PG TCP 连接、GECS 帧、配置默认值、逐步回包和故障定位；写入成功回包不等于光学效果验收。",
+      "aliases": [
+        "Demura",
+        "Demura 烧录",
+        "生成后自动烧录",
+        "PG 烧录",
+        "GecsProtocol",
+        "DemuraProcess",
+        "DemuraProcessConfig",
+        "BurnAfterGenerate",
+        "SENDFILE",
+        "DemuraDynamic.bin"
+      ],
+      "code_paths": [
+        "Projects/ProjectARVRPro/Process/Demura",
+        "Projects/ProjectARVRPro/ARVRWindow.xaml.cs"
+      ],
+      "test_paths": [],
+      "related": [
+        "projects.arvr-pro",
+        "operations.device-configuration"
+      ],
+      "code_scopes": [
+        "Projects/ProjectARVRPro"
+      ],
+      "domain": "projects",
+      "title": "Demura 烧录与 PG 通信",
+      "source": "docs/04-api-reference/projects/project-arvr-pro-demura.md",
+      "url": "/04-api-reference/projects/project-arvr-pro-demura",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "projects.arvr-pro-processes",
+      "knowledge_type": "guide",
+      "status": "current",
+      "summary": "配置 ARVRPro 流程组、流程解析映射、实例 Recipe 与雷鸟切图，说明类型选择、结果快照、配置保存和有效迁移规则。",
+      "aliases": [
+        "ARVR 流程组",
+        "流程解析映射",
+        "ARVR Recipe",
+        "实例 Recipe",
+        "雷鸟切图",
+        "PictureSwitchConfig",
+        "ProcessWithRecipeBase",
+        "ResultParserMetas",
+        "ResultProcessResolver",
+        "ProcessGroups.json",
+        "MTFH07",
+        "MTFV07",
+        "MTFHV048",
+        "W25",
+        "导入旧版Recipe"
+      ],
+      "code_paths": [
+        "Projects/ProjectARVRPro/Process",
+        "Projects/ProjectARVRPro/Recipe",
+        "Projects/ProjectARVRPro/Services/PictureSwitchService.cs",
+        "Projects/ProjectARVRPro/ARVRWindow.xaml.cs"
+      ],
+      "test_paths": [
+        "Test/ProjectARVRPro.Tests/ProcessManagerPersistenceTests.cs",
+        "Test/ProjectARVRPro.Tests/EmbeddedRecipeConfigTests.cs",
+        "Test/ProjectARVRPro.Tests/LegacyRecipeImporterTests.cs",
+        "Test/ProjectARVRPro.Tests/ProcessStepProjectionTests.cs",
+        "Test/ProjectARVRPro.Tests/MTF07DynamicResultBuilderTests.cs"
+      ],
+      "related": [
+        "projects.arvr-pro",
+        "projects.arvr-pro-demura",
+        "flow.templates",
+        "ui.property-grid"
+      ],
+      "code_scopes": [
+        "Projects/ProjectARVRPro"
+      ],
+      "domain": "projects",
+      "title": "配置 ARVRPro 流程、解析映射与 Recipe",
+      "source": "docs/04-api-reference/projects/project-arvr-pro-processes.md",
+      "url": "/04-api-reference/projects/project-arvr-pro-processes",
       "searchable": true
     },
     {
@@ -6781,20 +6878,35 @@
         "LUX 结果和修正在哪里",
         "ProjectLUX",
         "LUXWindow",
-        "ProcessMeta.SocketCode"
+        "ProcessMeta.SocketCode",
+        "T0000",
+        "T0001",
+        "T0002",
+        "T0031",
+        "T00XX",
+        "ARVRRecipe.json",
+        "ProjectARVRProFixConfig.json",
+        "ProjectLUXSummary.json",
+        "LUX Recipe",
+        "LUX Fix"
       ],
       "code_paths": [
         "Projects/ProjectLUX/LUXWindow.xaml.cs",
         "Projects/ProjectLUX/Services/SocketControl.cs",
         "Projects/ProjectLUX/Process",
-        "Projects/ProjectLUX/ViewResultManager.cs"
+        "Projects/ProjectLUX/ViewResultManager.cs",
+        "Projects/ProjectLUX/Recipe",
+        "Projects/ProjectLUX/Fix",
+        "Projects/ProjectLUX/Summary.cs"
       ],
       "test_paths": [
         "Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj"
       ],
       "related": [
         "projects.index",
-        "projects.capabilities"
+        "projects.capabilities",
+        "projects.arvr-pro-processes",
+        "ui.socket-protocol"
       ],
       "code_scopes": [
         "Projects/ProjectLUX"
