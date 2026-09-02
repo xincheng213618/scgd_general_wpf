@@ -4,9 +4,9 @@ knowledge_type: "guide"
 status: "current"
 summary: "native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。"
 aliases: ["新克隆构建为什么需要C++","OpenCVMediaHelper","opencv_helper.dll","opencv_cuda.dll","HImage","isDispose","HImage.Dispose","M_FindLuminousAreaV2","M_CalArtculation","M_CalibrationExecuteToV1","M_CalibrationGetLastError","M_CalibrationCacheReleaseV1","M_CalculatePoiBatchV2","M_VideoSeek","M_VideoPlay","M_VideoClose","opencv_helper API"]
-code_paths: ["Native/README.md","Native/opencv_helper/API_Documentation.md","UI/ColorVision.Core/ColorVision.Core.csproj","UI/ColorVision.Core/OpenCVMediaHelper.cs","UI/ColorVision.Core/OpenCVCuda.cs","UI/ColorVision.Core/HImage.cs","Native/opencv_helper/opencv_helper.vcxproj","Native/include/opencv_media_export.h","Native/include/custom_structs.h","Native/include/video_export.h","Native/include/cuda_export.h","Native/opencv_helper/opencv_media_export.cpp","Native/opencv_helper/video_export.cpp","Native/opencv_helper/exports/calibration_export.cpp","Native/opencv_helper/exports/poi_export.cpp","Native/opencv_helper/exports/sfr_export.cpp","Native/opencv_cuda/opencv_cuda.vcxproj","Scripts/verify_native_contracts.py","Engine/ColorVision.Engine/Media/CVRawOpen.cs"]
+code_paths: [".github/workflows/dotnet.yml","build.sln","Native/README.md","Native/opencv_helper/API_Documentation.md","UI/ColorVision.Core/ColorVision.Core.csproj","UI/ColorVision.Core/OpenCVMediaHelper.cs","UI/ColorVision.Core/OpenCVCuda.cs","UI/ColorVision.Core/HImage.cs","Native/opencv_helper/opencv_helper.vcxproj","Native/include/opencv_media_export.h","Native/include/custom_structs.h","Native/include/video_export.h","Native/include/cuda_export.h","Native/opencv_helper/opencv_media_export.cpp","Native/opencv_helper/video_export.cpp","Native/opencv_helper/exports/calibration_export.cpp","Native/opencv_helper/exports/poi_export.cpp","Native/opencv_helper/exports/sfr_export.cpp","Native/opencv_cuda/opencv_cuda.vcxproj","Scripts/verify_native_contracts.py","Engine/ColorVision.Engine/Media/CVRawOpen.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs","Scripts/tests/test_algorithm_package_contract.py","Scripts/tests/test_verify_native_contracts.py","Test/opencv_helper_test"]
-related: ["engine.index","ui.core","ui.image-frames","engine.native-bindings","engine.file-io","algorithms.local-native-analysis","engine.opencv-helper-api"]
+related: ["engine.index","ui.core","ui.image-frames","engine.native-bindings","engine.file-io","algorithms.local-native-analysis","engine.opencv-helper-api","delivery.native-testing"]
 ---
 
 # OpenCV 和 native 集成开发指南
@@ -89,13 +89,13 @@ CUDA 是另一条边界：当前 Core 无条件打包仓库跟踪的 `x64/Releas
 
 不要因为 `x64/` 已在忽略规则中就直接删除该文件。只有同时满足以下条件后，才能移除 Git 中的 DLL：
 
-- GitHub Actions 能在干净的 `windows-2022` runner 上先安装精简 CUDA 组件并生成 DLL，再构建托管解决方案。
+- GitHub Actions 能在选定的干净 Windows runner 上提供受支持的 CUDA/C++ 工具链并生成 DLL，再构建托管解决方案。
 - Actions 只缓存生成的 DLL，并以 CUDA 源码、共享 ABI 头文件、CUDA/OpenCV 属性表、OpenCV 导入库和工具链版本共同生成缓存键。
 - 缓存缺失或被清理时必须自动执行真实 CUDA 编译，缓存不能成为 DLL 的唯一来源。
 - 本地 `Scripts/release.bat` 流程能够自行编译或获取同一制品，不再依赖仓库中的兜底文件。
 - 新生成的 DLL 通过现有 ABI/打包检查，并在带 NVIDIA GPU 的环境完成烟雾测试。
 
-这项决定最后复核于 2026-08-17。当前阶段即使远端增加了按需生成和 DLL 缓存，也应先保留仓库里的兜底文件；待远端至少稳定跑通并补齐本地发布链路后再删除。
+当前 `.github/workflows/dotnet.yml` 使用 `windows-latest`，构建 `build.sln` 后执行静态 native 契约和 DLL 传播检查；它不构建 CUDA 项目。上述条件用于替换现有发布输入，满足远端构建、本地发布及 GPU 验收前，保留跟踪的 DLL。
 
 ### CUDA 检查器证明什么
 
@@ -123,11 +123,11 @@ CUDA 是另一条边界：当前 Core 无条件打包仓库跟踪的 `x64/Releas
 ```powershell
 dotnet build UI/ColorVision.Core/ColorVision.Core.csproj -c Release -p:Platform=x64
 dotnet build Engine/cvColorVision/cvColorVision.csproj -c Release -p:Platform=x64
-msbuild .\Test\opencv_helper_test\opencv_helper_test.vcxproj /m:1 /nodeReuse:false /p:Configuration=Debug /p:Platform=x64
-.\Test\opencv_helper_test\build_test_find_luminous.bat
 ```
 
-如果当前机器没有 Visual Studio C++ 或 OpenCV native 依赖，至少要记录无法执行的原因，并在验证记录里说明由哪台构建机补验。
+以上命令构建托管包装及依赖，不执行原生测试。helper 的工具集、Debug/Release 映射、专项 CLI、DLL 与样本前提统一见[原生 helper 测试与调试](./native-testing.md)。供应商 `cvColorVision` 的设备/API 验收仍按其模块契约进行，不能由 helper 回归覆盖。
+
+如果当前机器没有所需 C++ 工具集或 OpenCV native 依赖，记录具体缺项和未运行范围；本地构建与发布/上传分开进行。
 
 ## 验收清单
 

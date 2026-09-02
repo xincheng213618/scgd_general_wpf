@@ -14,7 +14,7 @@ next: false
 
 离线检索：`node docs/.vitepress/scripts/knowledge.mjs search "问题或代码符号"`；反向映射：`node docs/.vitepress/scripts/knowledge.mjs impact "仓库相对路径"`。
 
-共 187 个主题；默认 CLI 搜索只返回 current，使用 `--all` 明确包含规划与历史。
+共 188 个主题；默认 CLI 搜索只返回 current，使用 `--all` 明确包含规划与历史。
 
 ## 按源码根与模块定位
 
@@ -25,16 +25,17 @@ next: false
 | [ColorVision](./code/source-ColorVision.md) | 11 | 44 |
 | [UI](./code/source-UI.md) | 14 | 92 |
 | [Engine](./code/source-Engine.md) | 6 | 76 |
-| [Native](./code/source-Native.md) | 4 | 6 |
+| [Native](./code/source-Native.md) | 4 | 7 |
 | [Plugins](./code/source-Plugins.md) | 5 | 11 |
 | [Projects](./code/source-Projects.md) | 5 | 12 |
 | [Web](./code/source-Web.md) | 3 | 21 |
 | [Scripts](./code/source-Scripts.md) | 2 | 10 |
-| [Test](./code/source-Test.md) | 1 | 1 |
+| [Test](./code/source-Test.md) | 2 | 2 |
 | [AndroidWebViewApp](./code/source-AndroidWebViewApp.md) | 2 | 1 |
+| [packages](./code/source-packages.md) | 1 | 1 |
 | [SDK](./code/source-SDK.md) | 2 | 1 |
 | [src](./code/source-src.md) | 2 | 5 |
-| [仓库与知识基础设施](./code/repository.md) | 5 | 15 |
+| [仓库与知识基础设施](./code/repository.md) | 5 | 17 |
 
 ## 按能力领域补充检索
 
@@ -49,5 +50,5 @@ next: false
 - [Copilot](./domains/copilot.md) — 10 个主题；Agent会话、工具契约、上下文、恢复和MCP边界。
 - [客户项目](./domains/projects.md) — 10 个主题；客户包、业务流程、协议对接与结果留存。
 - [插件与扩展](./domains/plugins.md) — 10 个主题；插件发现、生命周期、已有插件和集成边界。
-- [构建、测试与交付](./domains/delivery.md) — 28 个主题；克隆环境、构建依赖、测试、发布脚本和更新。
+- [构建、测试与交付](./domains/delivery.md) — 29 个主题；克隆环境、构建依赖、测试、发布脚本和更新。
 - [运行与现场排查](./domains/operations.md) — 17 个主题；安装使用、设备配置、现场故障、日志和数据管理。

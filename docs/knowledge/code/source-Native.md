@@ -58,6 +58,9 @@ next: false
 - [景深融合：输入、执行与结果生命周期](../../04-api-reference/ui-components/image-fusion.md) — `ui.image-fusion`
   景深融合的CPU/CUDA调用、HImage显示和计时；自动模式不做失败回退，关窗不取消计算，GPU少量图片存在未修复的越界风险。
 
+- [原生 helper 测试与调试](../../02-developer-guide/engine-development/native-testing.md) — `delivery.native-testing`
+  opencv\_helper\_test 的实际入口、工具集与配置映射、专项参数、DLL/样本前提和退出码边界；默认运行与真实样本验收不同。
+
 - [系统要求](../../00-getting-started/prerequisites.md) — `delivery.prerequisites`
   首次构建所需Windows x64、.NET与C++工具链，区分已有native DLL与干净克隆。
 

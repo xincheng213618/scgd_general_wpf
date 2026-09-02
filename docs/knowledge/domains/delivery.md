@@ -83,6 +83,9 @@ next: false
 - [安装制品与运行输出](../../00-getting-started/installation.md) — `delivery.installation`
   区分完整安装制品、增量更新和源码输出，定位安装后缺依赖、配置与启动问题。
 
+- [原生 helper 测试与调试](../../02-developer-guide/engine-development/native-testing.md) — `delivery.native-testing`
+  opencv\_helper\_test 的实际入口、工具集与配置映射、专项参数、DLL/样本前提和退出码边界；默认运行与真实样本验收不同。
+
 - [系统要求](../../00-getting-started/prerequisites.md) — `delivery.prerequisites`
   首次构建所需Windows x64、.NET与C++工具链，区分已有native DLL与干净克隆。
 

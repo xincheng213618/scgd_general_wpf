@@ -80,6 +80,12 @@
         },
         {
           "text": {
+            "root": "packages"
+          },
+          "link": "/knowledge/code/source-packages"
+        },
+        {
+          "text": {
             "root": "SDK"
           },
           "link": "/knowledge/code/source-SDK"
@@ -2516,6 +2522,12 @@
             },
             {
               "text": {
+                "root": "原生 helper 测试与调试"
+              },
+              "link": "/02-developer-guide/engine-development/native-testing"
+            },
+            {
+              "text": {
                 "root": "系统要求"
               },
               "link": "/00-getting-started/prerequisites"
@@ -3184,6 +3196,21 @@
               "link": "/02-developer-guide/testing"
             }
           ]
+        },
+        {
+          "text": {
+            "root": "Test/opencv_helper_test"
+          },
+          "link": "/knowledge/code/source-Test#module-546573742f6f70656e63765f68656c7065725f74657374",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "原生 helper 测试与调试"
+              },
+              "link": "/02-developer-guide/engine-development/native-testing"
+            }
+          ]
         }
       ]
     },
@@ -3221,6 +3248,30 @@
                 "root": "Android 运维伴侣"
               },
               "link": "/02-developer-guide/backend/android-operations"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": {
+        "root": "packages"
+      },
+      "link": "/knowledge/code/source-packages",
+      "collapsed": true,
+      "items": [
+        {
+          "text": {
+            "root": "packages/ 根目录与跨模块关联"
+          },
+          "link": "/knowledge/code/source-packages#module-7061636b61676573",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "原生 helper 测试与调试"
+              },
+              "link": "/02-developer-guide/engine-development/native-testing"
             }
           ]
         }
@@ -3386,9 +3437,21 @@
             },
             {
               "text": {
+                "root": "原生 helper 测试与调试"
+              },
+              "link": "/02-developer-guide/engine-development/native-testing"
+            },
+            {
+              "text": {
                 "root": "系统要求"
               },
               "link": "/00-getting-started/prerequisites"
+            },
+            {
+              "text": {
+                "root": "OpenCV 和 native 集成开发指南"
+              },
+              "link": "/02-developer-guide/engine-development/opencv-integration"
             },
             {
               "text": {
@@ -3417,6 +3480,12 @@
           "link": "/knowledge/code/repository#module-2e6769746875622f776f726b666c6f7773",
           "collapsed": true,
           "items": [
+            {
+              "text": {
+                "root": "OpenCV 和 native 集成开发指南"
+              },
+              "link": "/02-developer-guide/engine-development/opencv-integration"
+            },
             {
               "text": {
                 "root": "UI DLL 发布"

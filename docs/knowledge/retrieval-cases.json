@@ -427,6 +427,13 @@
     {"query":"Plugin DLL not found","expected_any":["plugins.sdk-packaging"],"include_planned":false},
     {"query":"Cannot read version from","expected_any":["plugins.sdk-packaging"],"include_planned":false},
     {"query":"添加界面语言","expected_any":["ui.localization"],"include_planned":false},
-    {"query":"卫星资源","expected_any":["ui.localization"],"include_planned":false}
+    {"query":"卫星资源","expected_any":["ui.localization"],"include_planned":false},
+    {"query":"opencv_helper_test","expected_any":["delivery.native-testing"],"include_planned":false},
+    {"query":"原生调试","expected_any":["delivery.native-testing"],"include_planned":false},
+    {"query":"--luminous-v2-only","expected_any":["delivery.native-testing"],"include_planned":false},
+    {"query":"--find-cross-cvraw","expected_any":["delivery.native-testing"],"include_planned":false},
+    {"query":"--calibration-cache-small-budget","expected_any":["delivery.native-testing"],"include_planned":false},
+    {"query":"All tests completed","expected_any":["delivery.native-testing"],"include_planned":false},
+    {"query":"build_test_find_luminous.bat","expected_any":["delivery.native-testing"],"include_planned":false}
   ]
 }

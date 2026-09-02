@@ -43,8 +43,14 @@ next: false
 - [插件产物、安装与交付](../../02-developer-guide/plugin-development/getting-started.md) — `plugins.getting-started`
   插件构建产物、HostCopy、manifest包身份、安装替换和恢复契约；发布会上传，安装器返回不等于替换或重启后加载成功。
 
+- [原生 helper 测试与调试](../../02-developer-guide/engine-development/native-testing.md) — `delivery.native-testing`
+  opencv\_helper\_test 的实际入口、工具集与配置映射、专项参数、DLL/样本前提和退出码边界；默认运行与真实样本验收不同。
+
 - [系统要求](../../00-getting-started/prerequisites.md) — `delivery.prerequisites`
   首次构建所需Windows x64、.NET与C++工具链，区分已有native DLL与干净克隆。
+
+- [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
+  native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
 
 - [知识维护规范](../maintenance.md) — `governance.maintenance`
   定义AI与人共同维护知识的字段、事实责任、源码反向影响检查和验收流程。
@@ -56,6 +62,9 @@ next: false
   保留软件许可协议原文供定位，不由AI重新解释或改写许可条款。
 
 ## .github/workflows {#module-2e6769746875622f776f726b666c6f7773}
+
+- [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
+  native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
 
 - [UI DLL 发布](../../04-api-reference/ui-components/publishing.md) — `ui.publishing`
   说明 UI NuGet 构建、版本占用预检、显式 Release 发布与包消费验证。

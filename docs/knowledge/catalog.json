@@ -2917,6 +2917,87 @@
       "searchable": true
     },
     {
+      "knowledge_id": "delivery.native-testing",
+      "knowledge_type": "guide",
+      "status": "current",
+      "summary": "opencv_helper_test 的实际入口、工具集与配置映射、专项参数、DLL/样本前提和退出码边界；默认运行与真实样本验收不同。",
+      "aliases": [
+        "原生测试",
+        "原生调试",
+        "opencv_helper_test",
+        "BUILD_AND_DEBUG_GUIDE",
+        "build_test_find_luminous.bat",
+        "v145",
+        "--luminous-v2-only",
+        "--find-cross-cvraw",
+        "--calibration-smoke",
+        "--calibration-cache-small-budget",
+        "--cuda-fusion-benchmark",
+        "--cuda-fusion-verify",
+        "--cuda-fusion-compare",
+        "--cuda-fusion-ab-benchmark",
+        "--find-cross-only",
+        "--luminous-v2-cvraw",
+        "--luminous-v2-cvraw-reject",
+        "--p2-only",
+        "--native-log",
+        "--pseudo-color",
+        "--calibration-real-data",
+        "--calibration-legacy-color",
+        "--surface-defect-equivalence",
+        "--surface-defect-benchmark",
+        "COLORVISION_POI_BATCH_BASELINE_DLL",
+        "COLORVISION_CALIBRATION_TEST_THREADS",
+        "All tests completed",
+        "LNK2019",
+        "MSB8020"
+      ],
+      "code_paths": [
+        "Test/opencv_helper_test/BUILD_AND_DEBUG_GUIDE.md",
+        "Test/opencv_helper_test/opencv_helper_test.vcxproj",
+        "Test/opencv_helper_test/test_find_luminous_area.cpp",
+        "Test/opencv_helper_test/build_test_find_luminous.bat",
+        "Test/opencv_helper_test/test_cuda_fusion.cpp",
+        "Test/opencv_helper_test/test_calibration.cpp",
+        "Test/opencv_helper_test/test_find_cross.cpp",
+        "Native/opencv_helper/opencv_helper.vcxproj",
+        "packages/OpenCV.Debug.x64.props",
+        "packages/OpenCV.Release.x64.props",
+        "packages/NativeCopy.targets",
+        "scgd_general_wpf.sln",
+        "build.sln"
+      ],
+      "test_paths": [
+        "Test/opencv_helper_test/test_find_luminous_area.cpp",
+        "Test/opencv_helper_test/test_calibration.cpp",
+        "Test/opencv_helper_test/test_cuda_fusion.cpp",
+        "Test/opencv_helper_test/test_find_cross.cpp",
+        "Test/opencv_helper_test/test_p2_algorithms.cpp",
+        "Test/opencv_helper_test/test_native_logging.cpp",
+        "Test/opencv_helper_test/test_pseudo_color.cpp",
+        "Test/opencv_helper_test/data/sfrmat5"
+      ],
+      "related": [
+        "delivery.testing",
+        "delivery.prerequisites",
+        "engine.native-integration",
+        "engine.opencv-helper-api",
+        "algorithms.find-light-area",
+        "ui.image-fusion"
+      ],
+      "code_scopes": [
+        ".",
+        "Native/opencv_helper",
+        "Test/opencv_helper_test",
+        "packages"
+      ],
+      "domain": "delivery",
+      "title": "原生 helper 测试与调试",
+      "source": "docs/02-developer-guide/engine-development/native-testing.md",
+      "url": "/02-developer-guide/engine-development/native-testing",
+      "searchable": true
+    },
+    {
       "knowledge_id": "delivery.plugin-catalog",
       "knowledge_type": "topic",
       "status": "current",
@@ -3109,6 +3190,7 @@
       "related": [
         "delivery.index",
         "delivery.prerequisites",
+        "delivery.native-testing",
         "governance.retrieval",
         "copilot.configuration"
       ],
@@ -3938,6 +4020,8 @@
         "opencv_helper API"
       ],
       "code_paths": [
+        ".github/workflows/dotnet.yml",
+        "build.sln",
         "Native/README.md",
         "Native/opencv_helper/API_Documentation.md",
         "UI/ColorVision.Core/ColorVision.Core.csproj",
@@ -3971,9 +4055,12 @@
         "engine.native-bindings",
         "engine.file-io",
         "algorithms.local-native-analysis",
-        "engine.opencv-helper-api"
+        "engine.opencv-helper-api",
+        "delivery.native-testing"
       ],
       "code_scopes": [
+        ".",
+        ".github/workflows",
         "Engine/ColorVision.Engine",
         "Native",
         "Native/include",
