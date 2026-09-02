@@ -423,7 +423,16 @@
     <value>Everything路径</value>
   </data>
   <data name="PropEditor_SearchPlaceholder" xml:space="preserve">
-    <value>搜索属性...</value>
+    <value>搜索属性…（Ctrl+F）</value>
+  </data>
+  <data name="PropEditor_ClearSearch" xml:space="preserve">
+    <value>清空搜索</value>
+  </data>
+  <data name="PropEditor_NoSearchResults" xml:space="preserve">
+    <value>没有匹配的属性</value>
+  </data>
+  <data name="PropEditor_SearchEmptyHint" xml:space="preserve">
+    <value>试试其他关键词，或清空搜索查看全部属性。</value>
   </data>
   <data name="PropEditor_ResetToDefault" xml:space="preserve">
     <value>恢复到默认</value>

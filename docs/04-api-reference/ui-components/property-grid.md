@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "属性面板的字段生成、编辑器选择和 Flow 适配；区分直接修改、工作副本、关闭、重置与宿主持久化。"
 aliases: ["属性面板", "修改参数", "编辑器显示成文本", "如何新增属性编辑器", "属性编辑器为什么不显示", "IPropertyEditor", "GenProperties", "PropertyEditorType", "PropertyVisibility", "PropertyEditSession", "PropertyEditorWindow", "FlowPropertyEditorRegistry", "FlowNodePropertyEditorRegistration", "FlowNodePropertyEditorAttribute", "取消修改", "关闭回滚"]
-code_paths: ["UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorRegistry.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorTypeAttribute.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditSession.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml.cs", "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs", "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs", "Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs", "Test/ColorVision.UI.Tests/ListEditorTests.cs", "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs", "Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs"]
+code_paths: ["UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorRegistry.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorTypeAttribute.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditSession.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml.cs", "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs", "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs", "Test/ColorVision.UI.Tests/PropertyEditorWindowTests.cs", "Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs", "Test/ColorVision.UI.Tests/ListEditorTests.cs", "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs", "Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs"]
 related: ["ui.index", "ui.configuration", "ui.discovery", "flow.templates", "algorithms.template-management"]
 ---
 
@@ -66,6 +66,16 @@ public interface IPropertyEditor
 
 `PropertyEditorWindow` 将当前编辑对象的字段按类别展示，并提供搜索与排序；复杂对象可展开为嵌套面板。字段缺失时先确认宿主传入了哪个对象、当前搜索条件和元数据，再查编辑器匹配，不根据界面控件外观猜属性类型。嵌入式属性面板不一定具有这个窗口的搜索、按钮或编辑会话，需核对实际宿主。
 
+独立窗口标题使用本地化的“编辑”与对象类型的 `DisplayName`（经对象资源解析；未标注时回退类型名），例如“编辑 ConfigAlgorithm”。只有一个顶层类别且其中所有属性均未显式标注 `Category` 时，右侧默认根类别不重复绘制标题、背景和边框；其容器、搜索标签和左侧树节点仍保留，嵌套对象如 `FileServerCfg` 继续显示分组。显式类别或多个顶层类别保持原有标题与边框。是否保留类别取决于实际生成的属性内容，不依赖标题子元素的数量，因此只有一个属性的无标题根也不会丢失。
+
+搜索框常驻左右分栏上方，递归过滤整个对象的分类名、属性代码名、显示名和描述，不搜索属性值，也不因左树选中某分类而缩小范围。窗口内 `Ctrl+F` 通过 `ApplicationCommands.Find` 聚焦搜索框并全选已有关键词；只有搜索框内不带修饰键的 `Esc` 清空筛选并保留窗口，其他控件的按键路由不变。输入框提供清除按钮，边框跟随当前主题。非空查询没有匹配项时，右侧显示“没有匹配的属性”和“清空搜索”按钮，后者清空筛选并将焦点送回搜索框。空状态独立于属性容器，不参加递归过滤；清空、排序或重新生成属性后同步更新，不以“没有树节点”直接跳过处理。这些查找动作不调用提交、重置或宿主持久化。
+
+搜索输入区使用 34 DIP 高度、14 DIP 字号及 14 DIP 图标；局部圆角模板保留标准 `TextBox` 的 `PART_ContentHost`，边框随实际高度布局，不沿用小号模板的固定内部高度。仅有文字时显示独立清除按钮。占位文字使用主题的次级文字色，输入后隐藏，且不拦截鼠标点击；输入内容与两侧图标预留独立空间。
+
+搜索区和左右面板使用统一的 8 DIP 外留白及面板间距。左树选中行使用主题中性底色和窄强调色标记，不使用整行高饱和底色；非活动时保留并减弱标记。键盘焦点由当前节点标题行的细边框提示，替代覆盖整个树项的默认虚线框。导航仍通过原有节点绑定完成选择、展开及右键操作，不改变属性搜索或编辑会话语义。
+
+底部按钮使用统一尺寸与间距，仅“确定”强调主色；重置、恢复默认、关闭／取消使用普通按钮样式，不改变各按钮的事件、默认键或编辑模式语义。无标题默认根同时含直接字段和嵌套卡片时，仅在此窗口为直接字段增加左右各 6 DIP 留白，与嵌套卡片的边框和内距对齐；不改变共享编辑器标签宽度或垂直间距。
+
 ## 编辑与持久化不是同一动作
 
 `PropertyEditSession` 有两种模式：`Immediate` 直接使用原对象；`Transactional` 使用配置数据的工作副本，调用 `Commit()` 才复制回原对象。它不是数据库事务或外部设备操作的回滚机制；WPF `DispatcherObject` 等运行时引用仍可共享，不能理解成整个运行环境完全隔离。
@@ -93,6 +103,7 @@ public interface IPropertyEditor
 | 测试文件，均在 `Test/ColorVision.UI.Tests/` | 覆盖契约 |
 | --- | --- |
 | `PropertyEditorContractTests.cs` | 更新触发与验证、失败降级、只读、精确类型优先、实例复用、标准类型和兼容入口 |
+| `PropertyEditorWindowTests.cs` | 合成对象窗口的标题、默认根与显式分组、搜索空状态及清除、排序/重置后单属性保留、查找命令与搜索框 Esc、按钮层级和局部字段对齐；不连接设备或读写生产配置 |
 | `PropertyEditSessionTests.cs` | 配置数据工作副本隔离、嵌套提交、重置、直接写入模式，以及 WPF 运行时引用保留 |
 | `ListEditorTests.cs` | 集合转换器的既有回归样例，不代表所有集合形态 |
 | `AlgorithmNodeTemplateMappingTests.cs` | ARVR POI 使用原生属性编辑行 |

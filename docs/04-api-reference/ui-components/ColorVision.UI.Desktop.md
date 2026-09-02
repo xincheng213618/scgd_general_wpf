@@ -54,6 +54,8 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 | 菜单管理链 | [MenuItemManagerWindow → 草稿 → CommitEditingSnapshot → 运行时覆盖/重建 → 尝试保存](./menus.md) |
 | DLL 诊断链 | `ViewDllVersionsWindow` |
 
+反馈窗口从帮助菜单、启动恢复或 Copilot `/feedback` 打开时均使用非模态 `Show()`，保留 Owner 与居中定位。打包和上传期间可最小化反馈窗口、切回其他窗口继续操作；打包仍在后台任务中执行，HTTP 上传仍异步等待。Copilot 附带的临时会话文件保留到反馈窗口关闭，不能在 `Show()` 返回时提前清理。
+
 ## 新增功能检查
 
 窗口能打开只证明入口可用，不等于[配置已持久化和发布](./configuration.md)、[安装替换成功](../../02-developer-guide/plugin-development/getting-started.md)或插件已加载。下表也用于回答运行问题，不再另维护一份 UI 使用手册。观察下载日志、目标路径和包版本是诊断；下载替换、安装更新、修改配置和系统状态需要相应授权，不因为“验证”而自动执行。

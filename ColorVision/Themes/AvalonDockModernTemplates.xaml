@@ -169,23 +169,13 @@
                         </MultiTrigger>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter Property="Background" Value="{DynamicResource DockingSurfaceBackground}" />
-                            <Setter Property="Foreground" Value="{DynamicResource DockingTextBrush}" />
                             <Setter Property="BorderBrush" Value="{DynamicResource DockingBorderBrush}" />
-                            <Setter Property="FontWeight" Value="SemiBold" />
                             <Setter Property="Panel.ZIndex" Value="1" />
                         </Trigger>
                         <DataTrigger Binding="{Binding IsActive}" Value="True">
+                            <Setter Property="Foreground" Value="{DynamicResource DockingTextBrush}" />
                             <Setter Property="BorderBrush" Value="{DynamicResource DockingAccentBrush}" />
                         </DataTrigger>
-                        <!-- A tool can own keyboard focus while this remains the current
-                             document. Preserve its accent without activating the document. -->
-                        <MultiDataTrigger>
-                            <MultiDataTrigger.Conditions>
-                                <Condition Binding="{Binding IsSelected}" Value="True" />
-                                <Condition Binding="{Binding IsLastFocusedDocument}" Value="True" />
-                            </MultiDataTrigger.Conditions>
-                            <Setter Property="BorderBrush" Value="{DynamicResource DockingAccentBrush}" />
-                        </MultiDataTrigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.5" />
                         </Trigger>
@@ -209,7 +199,8 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <ContentPresenter Margin="0,0,5,0" VerticalAlignment="Center"
+                                <!-- Emphasize only the caption, not the native menu owner. -->
+                                <ContentPresenter x:Name="DocumentHeader" Margin="0,0,5,0" VerticalAlignment="Center" TextElement.FontWeight="Normal"
                                     Content="{Binding Model, RelativeSource={RelativeSource TemplatedParent}}"
                                     ContentTemplate="{Binding Model.Root.Manager.DocumentHeaderTemplate, RelativeSource={RelativeSource TemplatedParent}}"
                                     ContentTemplateSelector="{Binding Model.Root.Manager.DocumentHeaderTemplateSelector, RelativeSource={RelativeSource TemplatedParent}}"
@@ -230,6 +221,7 @@
                         </DataTrigger>
                         <DataTrigger Binding="{Binding IsActive}" Value="True">
                             <Setter TargetName="PART_CloseButton" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="DocumentHeader" Property="TextElement.FontWeight" Value="SemiBold" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding IsLastFocusedDocument}" Value="True">
                             <Setter TargetName="PART_CloseButton" Property="Visibility" Value="Visible" />
@@ -291,10 +283,6 @@
                     </Grid>
                     <ControlTemplate.Triggers>
                         <DataTrigger Binding="{Binding SelectedItem.IsActive, RelativeSource={RelativeSource Self}}" Value="True">
-                            <Setter TargetName="TabStripLine" Property="BorderBrush" Value="{DynamicResource DockingAccentBrush}" />
-                            <Setter TargetName="DocumentPaneBorder" Property="BorderBrush" Value="{DynamicResource DockingAccentBrush}" />
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding SelectedItem.IsLastFocusedDocument, RelativeSource={RelativeSource Self}}" Value="True">
                             <Setter TargetName="TabStripLine" Property="BorderBrush" Value="{DynamicResource DockingAccentBrush}" />
                             <Setter TargetName="DocumentPaneBorder" Property="BorderBrush" Value="{DynamicResource DockingAccentBrush}" />
                         </DataTrigger>

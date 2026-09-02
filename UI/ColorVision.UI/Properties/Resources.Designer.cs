@@ -1267,7 +1267,34 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 搜索属性... 的本地化字符串。
+        ///   查找类似 清空搜索 的本地化字符串。
+        /// </summary>
+        public static string PropEditor_ClearSearch {
+            get {
+                return ResourceManager.GetString("PropEditor_ClearSearch", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 没有匹配的属性 的本地化字符串。
+        /// </summary>
+        public static string PropEditor_NoSearchResults {
+            get {
+                return ResourceManager.GetString("PropEditor_NoSearchResults", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 试试其他关键词，或清空搜索查看全部属性。 的本地化字符串。
+        /// </summary>
+        public static string PropEditor_SearchEmptyHint {
+            get {
+                return ResourceManager.GetString("PropEditor_SearchEmptyHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 搜索属性…（Ctrl+F） 的本地化字符串。
         /// </summary>
         public static string PropEditor_SearchPlaceholder {
             get {

@@ -19,7 +19,7 @@ namespace ColorVision.UI.Desktop.Feedback
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
-            }.ShowDialog();
+            }.Show();
         }
     }
 }

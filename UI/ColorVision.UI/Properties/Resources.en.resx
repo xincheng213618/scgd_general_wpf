@@ -384,7 +384,16 @@
     <value>Everything Path</value>
   </data>
   <data name="PropEditor_SearchPlaceholder" xml:space="preserve">
-    <value>Search properties...</value>
+    <value>Search properties… (Ctrl+F)</value>
+  </data>
+  <data name="PropEditor_ClearSearch" xml:space="preserve">
+    <value>Clear search</value>
+  </data>
+  <data name="PropEditor_NoSearchResults" xml:space="preserve">
+    <value>No matching properties</value>
+  </data>
+  <data name="PropEditor_SearchEmptyHint" xml:space="preserve">
+    <value>Try another keyword, or clear the search to see all properties.</value>
   </data>
   <data name="PropEditor_ResetToDefault" xml:space="preserve">
     <value>Reset to Default</value>

@@ -147,13 +147,13 @@ public class AvalonDockThemeBindingTests
                 TabItem selectedTab = DocumentTab(documents, scene.Document);
                 Border selectedBorder = Part<Border>(selectedTab, "DocumentTabBorder");
                 Assert.Equal(new CornerRadius(3), selectedBorder.CornerRadius);
-                Assert.Equal(FontWeights.SemiBold, selectedTab.FontWeight);
+                AssertDocumentCaptionWeight(selectedTab, scene.Document, FontWeights.SemiBold);
                 Assert.Same(resources["DockingAccentBrush"], selectedBorder.BorderBrush);
+                Assert.Same(resources["DockingAccentBrush"], Part<Border>(documents, "TabStripLine").BorderBrush);
+                Assert.Same(resources["DockingAccentBrush"], Part<Border>(documents, "DocumentPaneBorder").BorderBrush);
                 Assert.Same(resources["DockingSurfaceBackground"], selectedBorder.Background);
                 Assert.Same(resources["DockingSurfaceBackground"], Assert.IsType<Border>(scene.Document.Content).Background);
                 Assert.Same(resources["DockingTextBrush"], selectedTab.Foreground);
-                TextBlock caption = Assert.Single(Descendants<TextBlock>(selectedTab), text => text.Text == scene.Document.Title);
-                Assert.Same(selectedTab.Foreground, caption.Foreground);
 
                 scene.Tool.IsActive = true;
                 Arrange(scene.Manager);
@@ -161,8 +161,21 @@ public class AvalonDockThemeBindingTests
                 Assert.True(scene.Document.IsSelected);
                 Assert.False(scene.Document.IsActive);
                 Assert.True(scene.Document.IsLastFocusedDocument);
-                Assert.Equal(FontWeights.SemiBold, selectedTab.FontWeight);
-                Assert.Same(resources["DockingAccentBrush"], Part<Border>(selectedTab, "DocumentTabBorder").BorderBrush);
+                Assert.Same(scene.Document, documents.SelectedContent);
+                Assert.True(Part<DockingTabBorder>(selectedTab, "DocumentTabBorder").IsSelected);
+                AssertDocumentCaptionWeight(selectedTab, scene.Document, FontWeights.Normal);
+                Assert.Same(resources["DockingMutedTextBrush"], selectedTab.Foreground);
+                Assert.Same(resources["DockingSurfaceBackground"], selectedBorder.Background);
+                Assert.Same(resources["DockingBorderBrush"], selectedBorder.BorderBrush);
+                Assert.Same(resources["DockingBorderBrush"], Part<Border>(documents, "TabStripLine").BorderBrush);
+                Assert.Same(resources["DockingBorderBrush"], Part<Border>(documents, "DocumentPaneBorder").BorderBrush);
+
+                scene.Document.IsActive = true;
+                Arrange(scene.Manager);
+                Assert.False(scene.Tool.IsActive);
+                AssertDocumentCaptionWeight(selectedTab, scene.Document, FontWeights.SemiBold);
+                Assert.Same(resources["DockingTextBrush"], selectedTab.Foreground);
+                Assert.Same(resources["DockingAccentBrush"], selectedBorder.BorderBrush);
                 Assert.Same(resources["DockingAccentBrush"], Part<Border>(documents, "TabStripLine").BorderBrush);
                 Assert.Same(resources["DockingAccentBrush"], Part<Border>(documents, "DocumentPaneBorder").BorderBrush);
 
@@ -170,11 +183,12 @@ public class AvalonDockThemeBindingTests
                 Arrange(scene.Manager);
                 Assert.False(selectedTab.IsSelected);
                 Assert.False(scene.Document.IsLastFocusedDocument);
-                Assert.Equal(FontWeights.Normal, selectedTab.FontWeight);
+                AssertDocumentCaptionWeight(selectedTab, scene.Document, FontWeights.Normal);
                 Assert.NotSame(resources["DockingAccentBrush"], Part<Border>(selectedTab, "DocumentTabBorder").BorderBrush);
                 TabItem otherTab = DocumentTab(documents, scene.SecondDocument);
                 Assert.True(otherTab.IsSelected);
-                Assert.Equal(FontWeights.SemiBold, otherTab.FontWeight);
+                AssertDocumentCaptionWeight(otherTab, scene.SecondDocument, FontWeights.SemiBold);
+                Assert.Same(resources["DockingTextBrush"], otherTab.Foreground);
                 Assert.Same(resources["DockingAccentBrush"], Part<Border>(otherTab, "DocumentTabBorder").BorderBrush);
             }
             Assert.DoesNotContain("GeometryDrawing", trace.Output);
@@ -388,7 +402,7 @@ public class AvalonDockThemeBindingTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void MultipleDocumentGroups_EmphasizeOnlyTheLastFocusedGroupWithoutStealingToolActivation(bool isDark)
+    public void MultipleDocumentGroups_EmphasizeOnlyTheActiveDocumentWithoutStealingToolActivation(bool isDark)
     {
         WpfTestHost.Invoke(() =>
         {
@@ -400,8 +414,10 @@ public class AvalonDockThemeBindingTests
             ResourceDictionary resources = ((AvalonDockTheme)scene.Manager.Theme).ThemeResourceDictionary;
             foreach (bool focusOtherGroup in new[] { false, true, false })
             {
-                (focusOtherGroup ? otherDocument : scene.Document).IsActive = true;
+                LayoutDocument activeDocument = focusOtherGroup ? otherDocument : scene.Document;
+                activeDocument.IsActive = true;
                 Arrange(scene.Manager);
+                AssertDocumentGroups(activeDocument);
                 scene.Tool.IsActive = true;
                 Arrange(scene.Manager);
                 Assert.True(scene.Tool.IsActive);
@@ -409,6 +425,11 @@ public class AvalonDockThemeBindingTests
                 Assert.False(otherDocument.IsActive);
                 Assert.Equal(!focusOtherGroup, scene.Document.IsLastFocusedDocument);
                 Assert.Equal(focusOtherGroup, otherDocument.IsLastFocusedDocument);
+                AssertDocumentGroups(null);
+            }
+
+            void AssertDocumentGroups(LayoutDocument? activeDocument)
+            {
                 foreach ((LayoutDocumentPane model, LayoutDocument document) in new[]
                 {
                     (scene.Documents, scene.Document),
@@ -420,8 +441,12 @@ public class AvalonDockThemeBindingTests
                     TabItem tab = DocumentTab(pane, document);
                     Assert.True(document.IsSelected);
                     Assert.True(tab.IsSelected);
-                    Assert.Equal(FontWeights.SemiBold, tab.FontWeight);
-                    object stroke = resources[document.IsLastFocusedDocument ? "DockingAccentBrush" : "DockingBorderBrush"];
+                    bool active = ReferenceEquals(document, activeDocument);
+                    Assert.Equal(active, document.IsActive);
+                    AssertDocumentCaptionWeight(tab, document, active ? FontWeights.SemiBold : FontWeights.Normal);
+                    Assert.Same(resources[active ? "DockingTextBrush" : "DockingMutedTextBrush"], tab.Foreground);
+                    Assert.Same(resources["DockingSurfaceBackground"], Part<Border>(tab, "DocumentTabBorder").Background);
+                    object stroke = resources[active ? "DockingAccentBrush" : "DockingBorderBrush"];
                     Assert.Same(stroke, Part<Border>(tab, "DocumentTabBorder").BorderBrush);
                     Assert.Same(stroke, Part<Border>(pane, "TabStripLine").BorderBrush);
                     Assert.Same(stroke, Part<Border>(pane, "DocumentPaneBorder").BorderBrush);
@@ -459,6 +484,8 @@ public class AvalonDockThemeBindingTests
                     _ => Assert.IsType<TabItem>(scene.ToolPaneControl.ItemContainerGenerator.ContainerFromItem(scene.Tool))
                 };
                 TextBlock caption = Assert.Single(Descendants<TextBlock>(header), text => text.Text == model.Title);
+                if (surface == "document-tab")
+                    AssertDocumentCaptionWeight((TabItem)header, scene.Document, selectedOrActive ? FontWeights.SemiBold : FontWeights.Normal);
                 var samples = new List<(string Name, Point Point, bool OnText)>
                 {
                     ("text", caption.TranslatePoint(new Point(Math.Min(6, caption.ActualWidth / 2), caption.ActualHeight / 2), header), true),
@@ -958,9 +985,14 @@ public class AvalonDockThemeBindingTests
             Assert.False(menu.IsKeyboardFocusWithin);
             Assert.Same(expectedItem, menu.DataContext);
             Assert.Same(expectedItem.LayoutElement, Assert.IsAssignableFrom<LayoutItem>(menu.DataContext).LayoutElement);
+            Assert.Equal(FontWeights.Normal, menu.FontWeight);
             MenuItem[] entries = menu.Items.OfType<MenuItem>().ToArray();
             Assert.NotEmpty(entries);
-            Assert.All(entries, entry => Assert.NotNull(entry.Command));
+            Assert.All(entries, entry =>
+            {
+                Assert.NotNull(entry.Command);
+                Assert.Equal(FontWeights.Normal, entry.FontWeight);
+            });
             Assert.Contains(entries, entry => ReferenceEquals(entry.Command, expectedItem.FloatCommand));
             Assert.Contains(entries, entry => ReferenceEquals(entry.Command, expectedItem.DockAsDocumentCommand));
             ICommand actionCommand = expectedItem is LayoutAnchorableItem anchorable ? anchorable.AutoHideCommand : expectedItem.CloseCommand;
@@ -1113,6 +1145,18 @@ public class AvalonDockThemeBindingTests
 
     private static LayoutDocumentTabItem DocumentHeader(DependencyObject root, LayoutDocument model)
         => Assert.Single(Descendants<LayoutDocumentTabItem>(root), header => ReferenceEquals(header.Model, model));
+
+    private static void AssertDocumentCaptionWeight(TabItem tab, LayoutDocument model, FontWeight expectedWeight)
+    {
+        LayoutDocumentTabItem header = DocumentHeader(tab, model);
+        TextBlock caption = Assert.Single(Descendants<TextBlock>(header), text => text.Text == model.Title);
+        Assert.Equal(expectedWeight, caption.FontWeight);
+        Assert.Same(tab.Foreground, caption.Foreground);
+        // Emphasis belongs only to the caption, not the menu/tooltip placement target.
+        Assert.Equal(FontWeights.Normal, tab.FontWeight);
+        Assert.Equal(FontWeights.Normal, header.FontWeight);
+        Assert.Equal(FontWeights.Normal, Assert.Single(Descendants<DropDownControlArea>(header)).FontWeight);
+    }
 
     private static IEnumerable<T> Descendants<T>(DependencyObject root) where T : DependencyObject
     {

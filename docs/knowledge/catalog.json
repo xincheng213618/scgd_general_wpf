@@ -7895,12 +7895,14 @@
         "UI/ColorVision.UI/PropertyEditor/PropertyEditorRegistry.cs",
         "UI/ColorVision.UI/PropertyEditor/PropertyEditorTypeAttribute.cs",
         "UI/ColorVision.UI/PropertyEditor/PropertyEditSession.cs",
+        "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml",
         "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml.cs",
         "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs",
         "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs",
+        "Test/ColorVision.UI.Tests/PropertyEditorWindowTests.cs",
         "Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs",
         "Test/ColorVision.UI.Tests/ListEditorTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs",

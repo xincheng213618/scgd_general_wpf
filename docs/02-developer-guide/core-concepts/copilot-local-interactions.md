@@ -88,7 +88,7 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 | `/archive`、`/unarchive`、`/delete` | 归档隐藏与永久删除不同；删除经过状态检查与原生确认，不能把“本地会话命令”当作可无确认清理 |
 | `/copy N`、Ctrl+Shift+C | 从最近开始选择有正文、非活动、非中断且非 display-only 的回答；部分流式回答不遮住上一条稳定回答，使用既有正文剪贴板格式；不再占用打开文件的 Ctrl+O |
 | `/export [文件名]` | 无参数复制可见 Markdown，有文件名则预填保存对话框，由用户选目录及覆盖；使用同目录临时文件与原子替换 |
-| `/feedback [说明]` | 打开现有 FeedbackWindow，附上有界可见会话快照；用户仍需选择诊断内容并显式 Send，打开窗口不等于上传 |
+| `/feedback [说明]` | 非模态打开 FeedbackWindow，附上有界可见会话快照；可最小化并继续操作主窗口，用户仍需选择诊断内容并显式 Send，打开窗口不等于上传 |
 
 导出和反馈共用 `CopilotConversationMarkdownExporter` 的 UI 快照：只包含已完成且有可见正文/附件引用的消息，排除活动回答、隐藏请求、reasoning、execution trace、附件正文和 composer 草稿。反馈说明最多4,000字符，会话附件最多200,000字符/最近50条已完成消息，单条和附件字段仍有独立上限；反馈临时附件随窗口关闭清理；该附件仍可能含用户实际可见内容，发送前应审阅。
 
