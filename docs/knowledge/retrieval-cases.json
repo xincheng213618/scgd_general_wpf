@@ -503,6 +503,9 @@
     {"query":"获取位置","expected_any":["operations.motor"],"include_planned":false},
     {"query":"DwTimeOut","expected_any":["operations.motor"],"include_planned":false},
     {"query":"MsgID","expected_any":["engine.mqtt"],"include_planned":false},
-    {"query":"MQTT迟到回包","expected_any":["engine.mqtt"],"include_planned":false}
+    {"query":"MQTT迟到回包","expected_any":["engine.mqtt"],"include_planned":false},
+    {"query":"AllToday","expected_any":["operations.logs"],"include_planned":false},
+    {"query":"原生日志","expected_any":["operations.logs"],"include_planned":false},
+    {"query":"暂停显示","expected_any":["operations.logs"],"include_planned":false}
   ]
 }
