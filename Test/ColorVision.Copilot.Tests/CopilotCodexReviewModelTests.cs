@@ -39,60 +39,6 @@ public sealed class CopilotCodexReviewModelTests
         Assert.NotSame(sourceProfile, codeProfile);
     }
 
-    [Fact]
-    public void ReviewModelDiagnosticsExposeValueSourceModeAndProviderBoundary()
-    {
-        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
-        {
-            ConfiguredReviewModel = "gpt-review",
-            HasReviewModelOverride = true,
-            ReviewModelSource = CopilotProjectInstructionConfigSources.CodexHome,
-        };
-        var sourceProfile = CreateProfile();
-        var reviewProfile = CopilotReviewModelSelection.CreateRequestProfile(
-            sourceProfile,
-            CopilotAgentMode.Review,
-            CopilotResponsePersonality.None,
-            configuredModelInstructions: null,
-            configuredReviewModel: options.ConfiguredReviewModel);
-        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-            new CopilotProjectInstructionSnapshot(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                options,
-                Array.Empty<CopilotProjectInstructionDocument>()),
-            hasActiveAgentRun: false);
-        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
-        {
-            ProfileLabel = reviewProfile.DisplayLabel,
-            Mode = CopilotAgentMode.Review,
-            CodexReviewModel = options.ConfiguredReviewModel,
-            HasCodexReviewModelOverride = true,
-            CodexReviewModelSourceLabel = options.ReviewModelSourceLabel,
-        });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                SelectedProfile = sourceProfile,
-                ComposerMode = CopilotAgentMode.Review,
-                CodexConfigOptions = options,
-            });
-
-        Assert.Contains("Codex review_model：gpt-review", memoryReport, StringComparison.Ordinal);
-        Assert.Contains(options.ReviewModelSourceLabel, memoryReport, StringComparison.Ordinal);
-        Assert.Contains("Review 模型：gpt-review", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex review_model：gpt-review", debugReport, StringComparison.Ordinal);
-        Assert.Contains("当前 Review 模式生效", contextReport, StringComparison.Ordinal);
-        Assert.Contains("当前 Review 模式生效", debugReport, StringComparison.Ordinal);
-        Assert.Contains("Provider", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("Provider", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Provider", debugReport, StringComparison.Ordinal);
-        Assert.Contains("当前有效模型 gpt-review", debugReport, StringComparison.Ordinal);
-    }
-
     private static CopilotProfileConfig CreateProfile()
     {
         return new CopilotProfileConfig

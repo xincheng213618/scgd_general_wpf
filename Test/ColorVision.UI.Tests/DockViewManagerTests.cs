@@ -1,7 +1,6 @@
 using AvalonDock.Layout;
 using ColorVision.Solution.Workspace;
 using ColorVision.UI.Views;
-using System.Runtime.ExceptionServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -13,7 +12,7 @@ public class DockViewManagerTests
     [Fact]
     public void LateRegisteredView_IsAddedToDocumentPaneAndTitleCanBeUpdated()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             DockViewManager manager = DockViewManager.GetInstance();
             ResetDockViewManager(manager);
@@ -41,7 +40,7 @@ public class DockViewManagerTests
     [Fact]
     public void DoubleClickingDisplayControl_ActivatesAssociatedView()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             DockViewManager viewManager = DockViewManager.GetInstance();
             ResetDockViewManager(viewManager);
@@ -94,7 +93,7 @@ public class DockViewManagerTests
     [Fact]
     public void RemoveView_ClearsManagerStateAndHostedDocument()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             DockViewManager manager = DockViewManager.GetInstance();
             ResetDockViewManager(manager);
@@ -125,7 +124,7 @@ public class DockViewManagerTests
     [Fact]
     public void ReplaceControls_RestoresLastSelectedIndexAfterDeferredCreation()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             ConfigHandler configHandler = ConfigHandler.GetInstance("ColorVisionUITests");
             bool originalAutoSave = configHandler.IsAutoSave;
@@ -169,29 +168,6 @@ public class DockViewManagerTests
         manager.ViewRemovedHandler = null;
         manager.ViewTitleChangedHandler = null;
         manager.ShowAllViewsHandler = null;
-    }
-
-    private static void RunOnStaThread(Action action)
-    {
-        Exception? failure = null;
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
-        });
-
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-
-        if (failure != null)
-            ExceptionDispatchInfo.Capture(failure).Throw();
     }
 
     private sealed class TestDisplayControl(string displayName) : UserControl, IDisPlayControl

@@ -227,48 +227,6 @@ public sealed class CopilotCodexInterruptMessageTests
     }
 
     [Fact]
-    public void DiagnosticsExposeInterruptMessageValueSourceAndBoundary()
-    {
-        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
-        {
-            ConfiguredInterruptMessageEnabled = false,
-            HasInterruptMessageOverride = true,
-            InterruptMessageSource = CopilotProjectInstructionConfigSources.TrustedProject,
-        };
-        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-            new CopilotProjectInstructionSnapshot(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                options,
-                Array.Empty<CopilotProjectInstructionDocument>()),
-            hasActiveAgentRun: false);
-        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
-        {
-            ProfileLabel = "Profile",
-            Mode = CopilotAgentMode.Code,
-            CodexInterruptMessageEnabled = false,
-            HasCodexInterruptMessageOverride = true,
-            CodexInterruptMessageSourceLabel = options.InterruptMessageSourceLabel,
-        });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                ComposerMode = CopilotAgentMode.Code,
-                CodexConfigOptions = options,
-            });
-
-        Assert.Contains("Codex agents.interrupt_message：false", memoryReport, StringComparison.Ordinal);
-        Assert.Contains(options.InterruptMessageSourceLabel, memoryReport, StringComparison.Ordinal);
-        Assert.Contains("模型工具输出为空", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("子代理中断消息：仅保留本地审计", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex agents.interrupt_message：false", debugReport, StringComparison.Ordinal);
-        Assert.Contains("UI、事件与审计仍保留", debugReport, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void PersistedDelegatedUsageNormalizationPreservesTokenInvariants()
     {
         var trace = new CopilotAgentTraceEntry

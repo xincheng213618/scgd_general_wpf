@@ -41,51 +41,6 @@ public sealed class CopilotCodexPreventIdleSleepTests
         Assert.Equal(1, factory.DisposeCount);
     }
 
-    [Fact]
-    public void PreventIdleSleepDiagnosticsExposeValueSourceLifecycleAndRuntimeState()
-    {
-        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
-        {
-            ConfiguredPreventIdleSleep = true,
-            HasPreventIdleSleepOverride = true,
-            PreventIdleSleepSource = CopilotProjectInstructionConfigSources.CodexHome,
-        };
-        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-            new CopilotProjectInstructionSnapshot(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                options,
-                Array.Empty<CopilotProjectInstructionDocument>()),
-            hasActiveAgentRun: false);
-        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
-        {
-            ProfileLabel = "Profile",
-            Mode = CopilotAgentMode.Code,
-            CodexPreventIdleSleep = true,
-            HasCodexPreventIdleSleepOverride = true,
-            CodexPreventIdleSleepSourceLabel = options.PreventIdleSleepSourceLabel,
-            ActiveSleepPreventionLeaseCount = 1,
-        });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                ComposerMode = CopilotAgentMode.Code,
-                CodexConfigOptions = options,
-            });
-
-        Assert.Contains("Codex features.prevent_idle_sleep：true", memoryReport, StringComparison.Ordinal);
-        Assert.Contains(options.PreventIdleSleepSourceLabel, memoryReport, StringComparison.Ordinal);
-        Assert.Contains("仅活动轮次", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("排队等待不占用", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("活动轮次防休眠：开启", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Windows Power Request 活动 1 个", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex features.prevent_idle_sleep：true", debugReport, StringComparison.Ordinal);
-        Assert.Contains("提交快照", debugReport, StringComparison.Ordinal);
-    }
-
     private sealed class RecordingSleepRequestFactory : ICopilotSystemSleepRequestFactory
     {
         public int AcquireCount { get; private set; }

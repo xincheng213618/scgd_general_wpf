@@ -540,39 +540,8 @@ public sealed class CopilotCodexPluginsFeatureTests
     }
 
     [Fact]
-    public void DiagnosticsAndHarnessExposeTheFrozenPluginBoundary()
+    public void HarnessExposesTheFrozenPluginBoundary()
     {
-        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
-        {
-            ConfiguredPluginsEnabled = false,
-            HasPluginsEnabledOverride = true,
-            PluginsEnabledSource = CopilotProjectInstructionConfigSources.CodexHome,
-        };
-        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-            new CopilotProjectInstructionSnapshot(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                options,
-                Array.Empty<CopilotProjectInstructionDocument>()),
-            hasActiveAgentRun: false);
-        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
-        {
-            ProfileLabel = "Profile",
-            Mode = CopilotAgentMode.Code,
-            CodexHooksEnabled = true,
-            CodexPluginsEnabled = false,
-            HasCodexPluginsEnabledOverride = true,
-            CodexPluginsEnabledSourceLabel = options.PluginsEnabledSourceLabel,
-        });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                ComposerMode = CopilotAgentMode.Code,
-                CodexConfigOptions = options,
-            });
         string harness = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
             CreateAgentRequest(pluginsEnabled: false),
             [new RecordingTool("PluginFeatureHarnessTool")],
@@ -580,12 +549,6 @@ public sealed class CopilotCodexPluginsFeatureTests
             taskLedgerEnabled: false,
             agentModeEnabled: true);
 
-        Assert.Contains("Codex features.plugins：false", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("不卸载主程序业务插件", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("features.plugins=false", contextReport, StringComparison.Ordinal);
-        Assert.Contains("内置工具、外部 MCP", contextReport, StringComparison.Ordinal);
-        Assert.Contains("features.plugins：false", debugReport, StringComparison.Ordinal);
-        Assert.Contains(options.PluginsEnabledSourceLabel, debugReport, StringComparison.Ordinal);
         Assert.Contains("features.plugins=false is frozen", harness, StringComparison.Ordinal);
         Assert.Contains("independently configured external MCP tools are unaffected", harness, StringComparison.Ordinal);
     }

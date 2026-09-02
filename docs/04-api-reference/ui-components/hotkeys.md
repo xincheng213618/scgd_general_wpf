@@ -153,7 +153,7 @@ manager 的 Closed 路径释放所记录句柄，清空条目的 `Registration` 
 
 上述相对路径均位于 `UI/ColorVision.UI/HotKey/`。`Test/ColorVision.UI.Tests/HotkeyServiceTests.cs` 通过隔离注册与持久化委托验证事前校验、最小句柄替换、注册/保存/补偿失败、未知插件配置保留、控件宿主与嵌套录入门禁；注入类型来源验证故障 provider 隔离和显式同 ID 替换的恢复。
 
-`Test/ColorVision.UI.Tests/HotkeySettingsTests.cs` 覆盖文本搜索、单项清除/恢复、失败后显示实际状态、未显示的编辑弹窗关闭不提交、输入限制，以及展示元数据不改持久化身份；另在注入独立元数据的真实设置框架中检查中英文、深浅主题、不同宽度、搜索结果和空状态。测试不加载生产配置，不执行真实业务回调。设置 `COLORVISION_HOTKEY_PREVIEW_DIRECTORY` 可将这些隔离页面渲染为本地 PNG，属于显式的本地文件输出。
+`Test/ColorVision.UI.Tests/HotkeySettingsTests.cs` 覆盖文本搜索、单项清除/恢复、失败后显示实际状态、未显示的编辑弹窗关闭不提交、输入限制，以及展示元数据不改持久化身份；另在注入独立元数据的真实设置框架中检查中英文、深浅主题、不同宽度、搜索结果和空状态。测试不加载生产配置，不执行真实业务回调。
 
 `Test/ColorVision.UI.Tests/HotkeyBackendTests.cs` 在测试进程自己的不可见 HWND 上真实注册临时 `Ctrl+Alt+Shift+F23/F24`，使用无害计数回调验证占用、释放重申、捕获恢复及恢复冲突，结束时释放所有注册。只向自有隐藏 HWND 发送 `WM_HOTKEY`，不注入桌面键盘事件；窗口路由使用独立控件，尾键与真实 DispatcherTimer 检查通过隔离的内部读键委托模拟按住/释放。初始组合已被外部占用时明确失败，不抢占它。
 

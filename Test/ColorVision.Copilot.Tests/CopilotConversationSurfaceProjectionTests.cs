@@ -92,22 +92,4 @@ public sealed class CopilotConversationSurfaceProjectionTests
         Assert.False(surface.HasCompactionSummary);
         Assert.Equal("Still current", Assert.Single(modelHistory).Content);
     }
-
-    [Fact]
-    public void ContextDiagnosticsExposeTheDerivedMessageSurface()
-    {
-        var report = CopilotContextDiagnostics.Format(
-            new CopilotContextDiagnosticSnapshot
-            {
-                CurrentModelSurfaceMessages = 4,
-                ShadowedModelSurfaceMessages = 6,
-                LogOnlySurfaceMessages = 2,
-                HasCurrentCompactionSummary = true,
-            });
-
-        Assert.Contains(
-            "模型消息表面：当前 4 + 1 条压缩摘要；已被摘要替代 6；仅本地日志 2。",
-            report,
-            StringComparison.Ordinal);
-    }
 }

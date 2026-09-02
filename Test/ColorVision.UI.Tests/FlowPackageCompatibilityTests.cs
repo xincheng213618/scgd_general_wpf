@@ -6,7 +6,6 @@ using Newtonsoft.Json.Linq;
 using ST.Library.UI.NodeEditor;
 using System.IO;
 using System.IO.Compression;
-using System.Runtime.ExceptionServices;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -17,7 +16,7 @@ public class FlowPackageCompatibilityTests
     [Fact]
     public void TemplateExtractionAndReplacementAcceptVersionOne()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             byte[] flowData = CreateTemplateReferenceFlow("Camera.Template.A");
 
@@ -39,7 +38,7 @@ public class FlowPackageCompatibilityTests
     [Fact]
     public void UnknownStnVersionIsRejectedWithoutRewritingInput()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             byte[] flowData = CreateTemplateReferenceFlow("Camera.Template.A");
             flowData[4] = 2;
@@ -62,7 +61,7 @@ public class FlowPackageCompatibilityTests
     [Fact]
     public void TemplateExtractionCoversCurrentReferencePropertyNames()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = new STNodeEditor();
             var node = new AlternateTemplateReferenceNode
@@ -891,33 +890,12 @@ public class FlowPackageCompatibilityTests
         string templateName = "Camera.Template.A")
     {
         byte[]? flowData = null;
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             flowData = CreateTemplateReferenceFlow(
                 templateName);
         });
         return flowData!;
-    }
-
-    private static void RunInSta(Action action)
-    {
-        Exception? exception = null;
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                exception = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-        if (exception != null)
-            ExceptionDispatchInfo.Capture(exception).Throw();
     }
 
     private sealed class TemplateReferenceNode : STNode

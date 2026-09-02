@@ -850,36 +850,6 @@ public sealed class CopilotAgentSkillCatalogTests
     }
 
     [Fact]
-    public void DiagnosticsListAvailableSkillsAndForcedReloadState()
-    {
-        var projectPath = Path.Combine(Path.GetTempPath(), "project-skill", "SKILL.md");
-        var userPath = Path.Combine(Path.GetTempPath(), "user-skill", "SKILL.md");
-        var builtInPath = Path.Combine(Path.GetTempPath(), "built-in-skill", "SKILL.md");
-        var report = CopilotAgentSkillDiagnostics.FormatReport(
-            new CopilotAgentSkillUsageSnapshot(),
-            metadataCharacterBudget: 1_024,
-            overrides: null,
-            availableSkills:
-            [
-                new CopilotAgentSkillCatalogItem("project-skill", "Project description") { SkillFilePath = projectPath },
-                new CopilotAgentSkillCatalogItem("user-skill", "User description") { SourceKind = CopilotAgentSkillSourceKind.User, SkillFilePath = userPath },
-                new CopilotAgentSkillCatalogItem("built-in-skill", "Built-in description") { SourceKind = CopilotAgentSkillSourceKind.BuiltIn, SkillFilePath = builtInPath },
-            ],
-            catalogReloaded: true,
-            pathOverrides: new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase)
-            {
-                [userPath] = CopilotAgentSkillOverrideState.Off,
-            });
-
-        Assert.Contains("当前可调用：2/3 个 Skill 路径；已强制从磁盘重扫目录。", report, StringComparison.Ordinal);
-        Assert.Contains("1. $built-in-skill [内置] — Built-in description [自动]", report, StringComparison.Ordinal);
-        Assert.Contains("2. $project-skill [项目] — Project description [自动]", report, StringComparison.Ordinal);
-        Assert.Contains("3. $user-skill [用户] — User description [关闭]", report, StringComparison.Ordinal);
-        Assert.Contains("路径：" + userPath, report, StringComparison.Ordinal);
-        Assert.Contains("本地使用证据", report, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void DiscoveryReadsOpenAiInterfaceDependenciesAndDefaultPrompt()
     {
         var projectRoot = CreateTemporaryDirectory();

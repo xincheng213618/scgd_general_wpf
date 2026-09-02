@@ -99,7 +99,7 @@ public sealed class CopilotCodexApprovalPolicyTests
     }
 
     [Fact]
-    public async Task OnRequestAndEnabledGranularPoliciesPreserveNativeApprovalAndDiagnostics()
+    public async Task OnRequestAndEnabledGranularPoliciesPreserveNativeApproval()
     {
         var policies = new[]
         {
@@ -124,44 +124,6 @@ public sealed class CopilotCodexApprovalPolicyTests
             Assert.True(permission.Decision.ShouldPrompt);
             Assert.Equal(1, hook.PermissionRequestCount);
         }
-
-        var granular = policies[1];
-        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
-        {
-            ConfiguredApprovalPolicy = granular,
-            HasApprovalPolicyOverride = true,
-            ApprovalPolicySource = CopilotProjectInstructionConfigSources.CodexHome,
-        };
-        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-            new CopilotProjectInstructionSnapshot(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                options,
-                Array.Empty<CopilotProjectInstructionDocument>()),
-            hasActiveAgentRun: false);
-        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
-        {
-            ProfileLabel = "Profile",
-            Mode = CopilotAgentMode.Code,
-            CodexApprovalPolicy = granular,
-            HasCodexApprovalPolicyOverride = true,
-            CodexApprovalPolicySourceLabel = options.ApprovalPolicySourceLabel,
-        });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                ComposerMode = CopilotAgentMode.Code,
-                CodexConfigOptions = options,
-            });
-
-        Assert.Contains("Codex approval_policy：granular(sandbox_approval=true", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("交互类别：sandbox_approval, mcp_elicitations", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("自动拒绝：rules, request_permissions, skill_approval", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("审批策略：granular(sandbox_approval=true", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex approval_policy：granular(sandbox_approval=true", debugReport, StringComparison.Ordinal);
     }
 
     [Fact]

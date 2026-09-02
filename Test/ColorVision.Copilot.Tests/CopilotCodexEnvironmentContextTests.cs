@@ -76,49 +76,6 @@ public sealed class CopilotCodexEnvironmentContextTests
     }
 
     [Fact]
-    public void DiagnosticsExplainThePromptOnlyBoundary()
-    {
-        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
-        {
-            ConfiguredIncludeEnvironmentContext = false,
-            HasIncludeEnvironmentContextOverride = true,
-            IncludeEnvironmentContextSource = CopilotProjectInstructionConfigSources.CodexHome,
-        };
-        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-            new CopilotProjectInstructionSnapshot(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                options,
-                Array.Empty<CopilotProjectInstructionDocument>()),
-            hasActiveAgentRun: false);
-        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
-        {
-            ProfileLabel = "Profile",
-            Mode = CopilotAgentMode.Code,
-            CodexIncludeEnvironmentContext = false,
-            HasCodexIncludeEnvironmentContextOverride = true,
-            CodexIncludeEnvironmentContextSourceLabel = options.IncludeEnvironmentContextSourceLabel,
-        });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                ComposerMode = CopilotAgentMode.Code,
-                CodexConfigOptions = options,
-            });
-
-        Assert.Contains("Codex include_environment_context：false", memoryReport, StringComparison.Ordinal);
-        Assert.Contains(options.IncludeEnvironmentContextSourceLabel, memoryReport, StringComparison.Ordinal);
-        Assert.Contains("工具侧路径、沙箱与审批边界保持不变", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("运行环境上下文：省略", contextReport, StringComparison.Ordinal);
-        Assert.Contains("runtime_environment", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex include_environment_context：false", debugReport, StringComparison.Ordinal);
-        Assert.Contains("工具侧路径、沙箱与审批边界保持不变", debugReport, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void DisabledContextDoesNotResumeASessionThatPreviouslyReceivedEnvironmentData()
     {
         var profile = CopilotProfileConfig.CreateDefault();

@@ -4,7 +4,6 @@ using ColorVision.UI;
 using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace ColorVision.UI.Tests;
@@ -14,7 +13,7 @@ public class DrawingVisualScaleHostTests
     [Fact]
     public void DefaultTextNotificationIsForwardedWithoutKeepingHostAlive()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             FieldInfo defaultField = typeof(DefalutTextAttribute).GetField(
                 "_defalut",
@@ -63,30 +62,6 @@ public class DrawingVisualScaleHostTests
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
-        }
-    }
-
-    private static void RunOnStaThread(Action action)
-    {
-        Exception? failure = null;
-        Thread thread = new(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-
-        if (failure != null)
-        {
-            ExceptionDispatchInfo.Capture(failure).Throw();
         }
     }
 }

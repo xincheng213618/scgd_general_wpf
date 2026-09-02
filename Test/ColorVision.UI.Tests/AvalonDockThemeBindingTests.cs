@@ -902,42 +902,6 @@ public class AvalonDockThemeBindingTests
         });
     }
 
-    [Theory]
-    [InlineData(false, 1280)]
-    [InlineData(false, 800)]
-    [InlineData(true, 1280)]
-    [InlineData(true, 800)]
-    public void RenderSyntheticWorkspace_WhenPreviewDirectoryIsRequested(bool isDark, int width)
-    {
-        string? directory = Environment.GetEnvironmentVariable("COLORVISION_DOCKING_PREVIEW_DIR");
-        if (string.IsNullOrWhiteSpace(directory)) return;
-        Assert.True(Path.IsPathFullyQualified(directory));
-        WpfTestHost.Invoke(() =>
-        {
-            using var scene = new DockingScene(isDark);
-            scene.Document.IsActive = true;
-            Arrange(scene.Manager, width, 640);
-            scene.AssertRenderedLayout();
-            SavePreview(scene, directory, $"docking-{(isDark ? "dark" : "light")}-{width}.png");
-            scene.SecondDocument.IsActive = true;
-            Arrange(scene.Manager, width, 640);
-            DockingTabBorder hoveredDocument = Part<DockingTabBorder>(DocumentTab(scene.DocumentPaneControl, scene.Document), "DocumentTabBorder");
-            Brush originalBackground = hoveredDocument.Background;
-            hoveredDocument.SetCurrentValue(Border.BackgroundProperty,
-                ((AvalonDockTheme)scene.Manager.Theme).ThemeResourceDictionary["DockingHoverBrush"]);
-            Arrange(scene.Manager, width, 640);
-            SavePreview(scene, directory, $"docking-{(isDark ? "dark" : "light")}-{width}-second-document-hover.png");
-            hoveredDocument.SetCurrentValue(Border.BackgroundProperty, originalBackground);
-            scene.Tool.IsActive = true;
-            Arrange(scene.Manager, width, 640);
-            SavePreview(scene, directory, $"docking-{(isDark ? "dark" : "light")}-{width}-tool-focused.png");
-            SelectMiddleTool(scene);
-            Arrange(scene.Manager, width, 640);
-            scene.AssertRenderedLayout();
-            SavePreview(scene, directory, $"docking-{(isDark ? "dark" : "light")}-{width}-middle-tool.png");
-        });
-    }
-
     private static void SelectMiddleTool(DockingScene scene)
     {
         scene.Tool.Title = "Explorer";
@@ -1063,15 +1027,6 @@ public class AvalonDockThemeBindingTests
             (int)Math.Ceiling(element.ActualHeight * dpi / 96), dpi, dpi, PixelFormats.Pbgra32);
         bitmap.Render(element);
         return bitmap;
-    }
-
-    private static void SavePreview(DockingScene scene, string directory, string name)
-    {
-        var encoder = new PngBitmapEncoder();
-        encoder.Frames.Add(BitmapFrame.Create(RenderVisual(scene.Manager, 144)));
-        Directory.CreateDirectory(directory);
-        using FileStream output = File.Create(Path.Combine(directory, name));
-        encoder.Save(output);
     }
 
     private static Color BrushColor(object brush) => Assert.IsType<SolidColorBrush>(brush).Color;

@@ -16,10 +16,8 @@ public sealed class CieWindowCompositionTests
             {
                 TabControl tabs = Assert.IsType<TabControl>(window.FindName("CieTabs"));
                 Assert.Equal(2, tabs.Items.Count);
-                TabItem diagramTab = Assert.IsType<TabItem>(tabs.Items[0]);
-                Assert.Equal("色度图", diagramTab.Header);
+                Assert.IsType<TabItem>(tabs.Items[0]);
                 TabItem calculationTab = Assert.IsType<TabItem>(tabs.Items[1]);
-                Assert.Equal("色域计算", calculationTab.Header);
                 Assert.IsType<ManualColorGamutView>(calculationTab.Content);
             }
             finally

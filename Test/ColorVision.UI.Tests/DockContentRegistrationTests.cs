@@ -216,7 +216,7 @@ public class DockContentRegistrationTests
     [InlineData(true, true)]
     public void ClosedFactoryPanel_ReopensWithItsOriginalHost(bool drainBeforeReopen, bool useToggle)
     {
-        RunOnSta(() =>
+        StaTest.Run(() =>
         {
             var dockingManager = CreateDockingManager();
             var layoutManager = new DockLayoutManager(dockingManager);
@@ -262,7 +262,7 @@ public class DockContentRegistrationTests
     [Fact]
     public void ClosedUnmaterializedFactoryPanel_MaterializesSynchronouslyWhenReopened()
     {
-        RunOnSta(() =>
+        StaTest.Run(() =>
         {
             var dockingManager = CreateDockingManager();
             var layoutManager = new DockLayoutManager(dockingManager);
@@ -291,7 +291,7 @@ public class DockContentRegistrationTests
     [InlineData(true)]
     public void HiddenFactoryPanel_ReusesItsAnchorableAndHost(bool useToggle)
     {
-        RunOnSta(() =>
+        StaTest.Run(() =>
         {
             var dockingManager = CreateDockingManager();
             var layoutManager = new DockLayoutManager(dockingManager);
@@ -327,7 +327,7 @@ public class DockContentRegistrationTests
     [InlineData(true)]
     public void RepeatedInMemoryLayoutReplacement_ReusesTheRegisteredHost(bool drainBetweenLayouts)
     {
-        RunOnSta(() =>
+        StaTest.Run(() =>
         {
             var dockingManager = CreateDockingManager();
             var layoutManager = new DockLayoutManager(dockingManager);
@@ -394,25 +394,4 @@ public class DockContentRegistrationTests
     }
 
     private static void DrainDispatcher() => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
-
-    private static void RunOnSta(Action action)
-    {
-        Exception? failure = null;
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-        if (failure != null)
-            ExceptionDispatchInfo.Capture(failure).Throw();
-    }
 }

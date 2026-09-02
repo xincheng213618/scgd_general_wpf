@@ -1,6 +1,5 @@
 using ColorVision.Core;
 using System.Collections.Concurrent;
-using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media;
@@ -259,7 +258,7 @@ public sealed class ImageFrameOwnerTests
     [Fact]
     public void WriteableBitmapSwitchAndInPlaceUpdateRetireThePreviousRevision()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             using ImageFrameStore store = new();
             WriteableBitmap firstBitmap = CreateGray8Bitmap(11);
@@ -462,30 +461,6 @@ public sealed class ImageFrameOwnerTests
         WriteableBitmap bitmap = new(1, 1, 96, 96, PixelFormats.Gray8, null);
         bitmap.WritePixels(new Int32Rect(0, 0, 1, 1), new[] { value }, 1, 0);
         return bitmap;
-    }
-
-    private static void RunOnStaThread(Action action)
-    {
-        Exception? failure = null;
-        Thread thread = new(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-
-        if (failure != null)
-        {
-            ExceptionDispatchInfo.Capture(failure).Throw();
-        }
     }
 
     private sealed class ReleaseProbe

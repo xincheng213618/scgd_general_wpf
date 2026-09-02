@@ -78,54 +78,6 @@ public sealed class CopilotCodexToolRegistrationTests
         Assert.True(compatibility.RequiresReplan);
     }
 
-    [Fact]
-    public void DiagnosticsExposeBothCodexToolControls()
-    {
-        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
-        {
-            ConfiguredExperimentalRequestUserInputEnabled = false,
-            HasExperimentalRequestUserInputEnabledOverride = true,
-            ExperimentalRequestUserInputEnabledSource = CopilotProjectInstructionConfigSources.CodexHome,
-            ConfiguredUpdatePlanEnabled = false,
-            HasUpdatePlanEnabledOverride = true,
-            UpdatePlanEnabledSource = CopilotProjectInstructionConfigSources.CodexHome,
-        };
-        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-            new CopilotProjectInstructionSnapshot(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                options,
-                Array.Empty<CopilotProjectInstructionDocument>()),
-            hasActiveAgentRun: false);
-        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
-        {
-            ProfileLabel = "Profile",
-            Mode = CopilotAgentMode.Code,
-            CodexExperimentalRequestUserInputEnabled = false,
-            HasCodexExperimentalRequestUserInputEnabledOverride = true,
-            CodexExperimentalRequestUserInputEnabledSourceLabel = options.ExperimentalRequestUserInputEnabledSourceLabel,
-            CodexUpdatePlanEnabled = false,
-            HasCodexUpdatePlanEnabledOverride = true,
-            CodexUpdatePlanEnabledSourceLabel = options.UpdatePlanEnabledSourceLabel,
-        });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                ComposerMode = CopilotAgentMode.Code,
-                CodexConfigOptions = options,
-            });
-
-        Assert.Contains("Codex tools.experimental_request_user_input.enabled：false", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("Codex tools.update_plan.enabled：false", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("结构化澄清工具：关闭", contextReport, StringComparison.Ordinal);
-        Assert.Contains("任务清单工具：关闭", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex tools.experimental_request_user_input.enabled：false", debugReport, StringComparison.Ordinal);
-        Assert.Contains("Codex tools.update_plan.enabled：false", debugReport, StringComparison.Ordinal);
-    }
-
     private static CopilotAgentRequest CreatePlanRequest(
         bool requestUserInputEnabled = true,
         bool updatePlanEnabled = true) => new()

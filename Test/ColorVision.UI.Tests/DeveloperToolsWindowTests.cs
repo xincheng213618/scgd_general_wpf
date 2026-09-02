@@ -1,10 +1,6 @@
-using ColorVision.Engine.Services.DeveloperTools;
 using ColorVision.ToolPlugins.DeveloperTools;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace ColorVision.UI.Tests;
 
@@ -48,30 +44,6 @@ public sealed class DeveloperToolsWindowTests
                     Assert.Empty(page.Releases);
                     Assert.False(page.CanInstall);
                     Assert.Null(page.SelectedRelease);
-                }
-
-                string? previewDirectory = Environment.GetEnvironmentVariable("COLORVISION_DEVTOOLS_PREVIEW_DIR");
-                if (!string.IsNullOrEmpty(previewDirectory))
-                {
-                    Directory.CreateDirectory(previewDirectory);
-                    var discovery = new DeveloperToolDiscoveryService();
-                    window.Python.Apply(discovery.Inspect(DeveloperToolKind.Python));
-                    window.NodeJs.Apply(discovery.Inspect(DeveloperToolKind.NodeJs));
-                    foreach (int pageIndex in new[] { 0, 1 })
-                    {
-                        tabs.SelectedIndex = pageIndex;
-                        root.UpdateLayout();
-                        var bitmap = new RenderTargetBitmap(1016, 746, 96, 96, PixelFormats.Pbgra32);
-                        var background = new DrawingVisual();
-                        using (DrawingContext drawing = background.RenderOpen())
-                            drawing.DrawRectangle((Brush)window.FindResource("GlobalBackground"), null, new Rect(0, 0, 1016, 746));
-                        bitmap.Render(background);
-                        bitmap.Render(root);
-                        var encoder = new PngBitmapEncoder();
-                        encoder.Frames.Add(BitmapFrame.Create(bitmap));
-                        using FileStream output = File.Create(Path.Combine(previewDirectory, $"developer-tools-{(dark ? "dark" : "light")}-{pageIndex}.png"));
-                        encoder.Save(output);
-                    }
                 }
             }
             finally

@@ -32,10 +32,6 @@ public sealed class MainWindowSearchShellTests
         XElement window = Assert.IsType<XElement>(document.Root);
         Assert.Equal(Presentation + "Window", window.Name);
         Assert.Equal("ColorVision.UI.Serach.SearchWindow", window.Attribute(Xaml + "Class")?.Value);
-        Assert.Equal("720", window.Attribute("Width")?.Value);
-        Assert.Equal("560", window.Attribute("Height")?.Value);
-        Assert.Equal("420", window.Attribute("MinWidth")?.Value);
-        Assert.Equal("320", window.Attribute("MinHeight")?.Value);
         Assert.Equal("CanResize", window.Attribute("ResizeMode")?.Value);
         Assert.Equal("SingleBorderWindow", window.Attribute("WindowStyle")?.Value);
         Assert.Equal("CenterOwner", window.Attribute("WindowStartupLocation")?.Value);

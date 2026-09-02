@@ -8,7 +8,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
@@ -425,25 +424,6 @@ public sealed class HotkeySettingsTests
                 Assert.True(button.ActualHeight >= 30);
             }
 
-            string? directory = Environment.GetEnvironmentVariable("COLORVISION_HOTKEY_PREVIEW_DIRECTORY");
-            if (!string.IsNullOrEmpty(directory))
-            {
-                Directory.CreateDirectory(directory);
-                string stem = $"hotkeys-{(dark ? "dark" : "light")}-{culture}-{width}";
-                Render(host, Path.Combine(directory, stem + ".png"));
-                Render(page, Path.Combine(directory, stem + "-detail.png"));
-                HotkeyEditWindow dialog = new(fixture.Model, fixture.Model.Rows[0]);
-                try
-                {
-                    FrameworkElement dialogContent = (FrameworkElement)dialog.Content;
-                    dialogContent.Measure(new Size(464, double.PositiveInfinity));
-                    dialogContent.Arrange(new Rect(0, 0, 464, dialogContent.DesiredSize.Height));
-                    dialogContent.UpdateLayout();
-                    foreach (TextBlock text in Descendants(dialogContent).OfType<TextBlock>().Where(IsVisible)) AssertTextFits(text);
-                    Render(dialogContent, Path.Combine(directory, stem + "-editor.png"));
-                }
-                finally { dialog.Close(); }
-            }
 
             TextBox search = (TextBox)page.FindName("SearchBox");
             search.Text = "Ctrl + L";
@@ -523,8 +503,6 @@ public sealed class HotkeySettingsTests
             compact.Arrange(new Rect(0, 0, 420, compact.DesiredSize.Height));
             compact.UpdateLayout();
             Assert.Equal(420, compact.ActualWidth);
-            string? directory = Environment.GetEnvironmentVariable("COLORVISION_HOTKEY_PREVIEW_DIRECTORY");
-            if (!string.IsNullOrEmpty(directory)) Render(compact, Path.Combine(directory, $"hotkeys-compact-{culture}-420.png"));
             foreach (Button button in Descendants(compact).OfType<Button>().Where(IsVisible))
             {
                 Rect bounds = button.TransformToAncestor(compact).TransformBounds(new Rect(button.RenderSize));
@@ -636,32 +614,6 @@ public sealed class HotkeySettingsTests
             if (child is FrameworkElement element) yield return element;
             foreach (FrameworkElement descendant in Descendants(child)) yield return descendant;
         }
-    }
-
-    private static void Render(FrameworkElement element, string path)
-    {
-        DispatcherFrame frame = new();
-        DispatcherTimer timer = new(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(300) };
-        timer.Tick += (_, _) => frame.Continue = false;
-        timer.Start();
-        try { Dispatcher.PushFrame(frame); }
-        finally { timer.Stop(); }
-        element.UpdateLayout();
-        Thickness margin = element.Margin;
-        Rect rect = new(0, 0, element.ActualWidth + margin.Left + margin.Right, element.ActualHeight + margin.Top + margin.Bottom);
-        DrawingVisual visual = new();
-        using (DrawingContext drawing = visual.RenderOpen())
-        {
-            drawing.DrawRectangle((Brush)element.FindResource("GlobalBackground"), null, rect);
-            drawing.DrawRectangle(new VisualBrush(element) { AutoLayoutContent = false, Stretch = Stretch.Fill,
-                ViewboxUnits = BrushMappingMode.Absolute, Viewbox = rect }, null, rect);
-        }
-        RenderTargetBitmap bitmap = new((int)Math.Ceiling(rect.Width), (int)Math.Ceiling(rect.Height), 96, 96, PixelFormats.Pbgra32);
-        bitmap.Render(visual);
-        PngBitmapEncoder encoder = new();
-        encoder.Frames.Add(BitmapFrame.Create(bitmap));
-        using FileStream output = new(path, FileMode.Create, FileAccess.Write, FileShare.None);
-        encoder.Save(output);
     }
 
     public sealed class PreviewHotkeysPage : UserControl

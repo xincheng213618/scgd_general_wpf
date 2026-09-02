@@ -1,7 +1,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -48,7 +47,7 @@ public class PoiCanvasTests
     [Fact]
     public void AddVisualsAddsUniqueVisualsWithOneBatchEventAndNoUndoHistory()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             using DrawCanvas canvas = new();
             DrawingVisual first = new();
@@ -71,29 +70,5 @@ public class PoiCanvasTests
             Assert.Equal(2, eventArgs.Visuals.Count);
             Assert.Empty(canvas.UndoStack);
         });
-    }
-
-    private static void RunOnStaThread(Action action)
-    {
-        Exception? failure = null;
-        Thread thread = new(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-
-        if (failure != null)
-        {
-            ExceptionDispatchInfo.Capture(failure).Throw();
-        }
     }
 }

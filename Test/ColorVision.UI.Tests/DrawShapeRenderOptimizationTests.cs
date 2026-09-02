@@ -2,7 +2,6 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using System.Globalization;
 using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -15,7 +14,7 @@ public sealed class DrawShapeRenderOptimizationTests
     [Fact]
     public void SetRectRendersOnceWithOriginalOrReplacedPublicAttribute()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             Rect rect = new(20, 30, 80, 60);
 
@@ -72,7 +71,7 @@ public sealed class DrawShapeRenderOptimizationTests
     [Fact]
     public void AttributeReplacementMovesAutomaticRenderingToTheNewShapeProperties()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             CountingCircle circle = new();
             circle.Render();
@@ -151,7 +150,7 @@ public sealed class DrawShapeRenderOptimizationTests
     [Fact]
     public void AttributeReplacementUsesTheNewLayoutScaleBaselines()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             DrawingVisualScaleContext context = new(false, 1, 0);
 
@@ -176,7 +175,7 @@ public sealed class DrawShapeRenderOptimizationTests
     [InlineData(true)]
     public void FrozenPenLayoutScalingRendersEachShapeOnce(bool replaceAttribute)
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             Pen frozenPen = new(Brushes.Red, 3);
             frozenPen.Freeze();
@@ -226,7 +225,7 @@ public sealed class DrawShapeRenderOptimizationTests
     [Fact]
     public void InvalidShapeGeometryIsPreservedAsDataButNeverRenderedAsAFakeRegion()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             CircleTextProperties properties = new()
             {
@@ -276,7 +275,7 @@ public sealed class DrawShapeRenderOptimizationTests
     [Fact]
     public void RectangleTextPositionChangesRenderAndUnknownValuesUseCenter()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             RectangleTextProperties properties = new()
             {
@@ -305,7 +304,7 @@ public sealed class DrawShapeRenderOptimizationTests
     [InlineData(true)]
     public void DragPreviewRendersOnceWithOriginalOrReplacedPublicAttribute(bool replaceAttribute)
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             DrawCanvas drawCanvas = new();
             Zoombox zoombox = new() { Child = drawCanvas, ContentMatrix = Matrix.Identity };
@@ -356,7 +355,7 @@ public sealed class DrawShapeRenderOptimizationTests
     [InlineData(-12, -7)]
     public void CenteredRectangleKeepsTheMouseDownPointAcrossAllQuadrants(double deltaX, double deltaY)
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             DrawCanvas drawCanvas = new();
             Zoombox zoombox = new() { Child = drawCanvas, ContentMatrix = Matrix.Identity };
@@ -389,7 +388,7 @@ public sealed class DrawShapeRenderOptimizationTests
     [InlineData("   ")]
     public void CircleTextReusesMeasuredTextWithoutChangingPixels(string text)
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             CircleTextProperties properties = new()
             {
@@ -415,7 +414,7 @@ public sealed class DrawShapeRenderOptimizationTests
     [Fact]
     public void CircleReusesTypefaceAndDpiWithoutChangingPixels()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             CircleProperties properties = new()
             {
@@ -514,30 +513,6 @@ public sealed class DrawShapeRenderOptimizationTests
         managerType.GetField(cacheFieldName, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(manager, visual);
         MouseEventArgs mouseEventArgs = new(Mouse.PrimaryDevice, Environment.TickCount) { RoutedEvent = Mouse.MouseMoveEvent };
         managerType.GetMethod("OnUpdateDraw", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(manager, [point, mouseEventArgs]);
-    }
-
-    private static void RunOnStaThread(Action action)
-    {
-        Exception? failure = null;
-        Thread thread = new(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-
-        if (failure != null)
-        {
-            ExceptionDispatchInfo.Capture(failure).Throw();
-        }
     }
 
     private sealed class CountingCircle : DVCircle

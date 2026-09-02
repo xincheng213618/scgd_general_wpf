@@ -1,11 +1,9 @@
 using ColorVision.Recovery;
 using ColorVision.UI.Serach;
 using System.Globalization;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
@@ -14,9 +12,9 @@ namespace ColorVision.UI.Tests;
 public sealed class StartupMaintenanceSearchHostTests
 {
     [Theory]
-    [InlineData("向导", "maintenance:setup-wizard", "初始化向导", "wizard")]
-    [InlineData("恢复", "maintenance:startup-recovery", "故障恢复", "recovery")]
-    public void RealSearchControlDisplaysLocalMaintenanceWithoutRequestingIt(string query, string id, string title, string previewName)
+    [InlineData("向导", "maintenance:setup-wizard", "初始化向导")]
+    [InlineData("恢复", "maintenance:startup-recovery", "故障恢复")]
+    public void RealSearchControlDisplaysLocalMaintenanceWithoutRequestingIt(string query, string id, string title)
     {
         WpfTestHost.Invoke(() =>
         {
@@ -80,18 +78,6 @@ public sealed class StartupMaintenanceSearchHostTests
                 Assert.True(row.ActualWidth > 0 && row.ActualHeight > 0);
                 Assert.Empty(requests);
                 Assert.Empty(recent);
-                string? directory = Environment.GetEnvironmentVariable("COLORVISION_MAINTENANCE_SEARCH_PREVIEW_DIRECTORY");
-                if (!string.IsNullOrWhiteSpace(directory))
-                {
-                    Assert.True(Path.IsPathFullyQualified(directory));
-                    Directory.CreateDirectory(directory);
-                    var bitmap = new RenderTargetBitmap(720, 420, 96, 96, PixelFormats.Pbgra32);
-                    bitmap.Render(root);
-                    var encoder = new PngBitmapEncoder();
-                    encoder.Frames.Add(BitmapFrame.Create(bitmap));
-                    using FileStream output = File.Create(Path.Combine(directory, $"maintenance-search-{previewName}-light-zh-CN.png"));
-                    encoder.Save(output);
-                }
             }
             finally
             {

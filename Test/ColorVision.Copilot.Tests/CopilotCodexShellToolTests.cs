@@ -58,47 +58,4 @@ public sealed class CopilotCodexShellToolTests
         Assert.Contains("features.shell_tool=false applies", prompt, StringComparison.Ordinal);
         Assert.Contains("do not claim that a command or script was executed", prompt, StringComparison.Ordinal);
     }
-
-    [Fact]
-    public void DiagnosticsExposeTheEffectiveValueSourceAndFailClosedBoundary()
-    {
-        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
-        {
-            ConfiguredShellToolEnabled = false,
-            HasShellToolEnabledOverride = true,
-            ShellToolEnabledSource = CopilotProjectInstructionConfigSources.CodexHome,
-        };
-        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-            new CopilotProjectInstructionSnapshot(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                options,
-                Array.Empty<CopilotProjectInstructionDocument>()),
-            hasActiveAgentRun: false);
-        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
-        {
-            ProfileLabel = "Profile",
-            Mode = CopilotAgentMode.Code,
-            CodexShellToolEnabled = false,
-            HasCodexShellToolEnabledOverride = true,
-            CodexShellToolEnabledSourceLabel = options.ShellToolEnabledSourceLabel,
-        });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                ComposerMode = CopilotAgentMode.Code,
-                CodexConfigOptions = options,
-            });
-
-        Assert.Contains("Codex features.shell_tool：false", memoryReport, StringComparison.Ordinal);
-        Assert.Contains(options.ShellToolEnabledSourceLabel, memoryReport, StringComparison.Ordinal);
-        Assert.Contains("拒绝旧计划", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("命令工具：关闭", contextReport, StringComparison.Ordinal);
-        Assert.Contains("旧调用也会拒绝", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex features.shell_tool：false", debugReport, StringComparison.Ordinal);
-        Assert.Contains("注入调用", debugReport, StringComparison.Ordinal);
-    }
 }

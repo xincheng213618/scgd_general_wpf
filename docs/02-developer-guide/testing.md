@@ -59,7 +59,7 @@ dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:
 
 这些命令会构建/运行测试并写入本地产物，不等同于纯文档校验。`ImageAlgorithmPerformanceGateTests` 中调用 `Enabled()` 的 4K/8K 探针，仅在 `COLORVISION_IMAGE_ALGORITHM_PERF=1` 时执行测量，否则记录说明后直接返回；不是这个分类里的所有测试都受同一个开关控制。测试整体通过不能证明所有大型性能测量已经执行，记录时需核对筛选、环境变量与实际输出。
 
-两个测试项目的 `AssemblyInfo.cs` 都禁用测试集合并行，原因是进程级注册器、状态和 WPF 服务共享。`UseWPF=true` 不会让所有测试线程自动成为 STA；需要 WPF 线程的个案按既有 `WpfTestHost` 等执行入口处理，不为提速取消这些边界。
+两个测试项目的 `AssemblyInfo.cs` 都禁用测试集合并行，原因是进程级注册器、状态和 WPF 服务共享。`UseWPF=true` 不会让所有测试线程自动成为 STA；UI 测试中只需独立 STA 的同步操作使用 `StaTest.Run`，需要共享 `Application` 和消息循环的操作使用 `WpfTestHost`。两者的线程生命周期不同，不为提速取消这些边界。
 
 ## `ColorVision.Copilot.Tests`
 

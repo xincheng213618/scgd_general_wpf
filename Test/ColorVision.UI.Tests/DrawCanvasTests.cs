@@ -1,5 +1,4 @@
 using ColorVision.ImageEditor;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Windows.Media;
 
@@ -10,7 +9,7 @@ public class DrawCanvasTests
     [Fact]
     public void ContainsVisualTracksAddAndRemove()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             using DrawCanvas canvas = new();
             DrawingVisual visual = new();
@@ -28,7 +27,7 @@ public class DrawCanvasTests
     [Fact]
     public void FailedLayoutScaleDoesNotPoisonVisualMembership()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             using DrawCanvas canvas = new();
             ThrowingScaleVisual visual = new();
@@ -47,7 +46,7 @@ public class DrawCanvasTests
     [Fact]
     public void BatchLayoutScaleFailureRollsBackEarlierVisualsWithoutEvents()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             using DrawCanvas canvas = new();
             DrawingVisual first = new();
@@ -76,7 +75,7 @@ public class DrawCanvasTests
     [Fact]
     public void BatchTopVisualsPreservesExistingOrderingSemantics()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             using DrawCanvas canvas = new();
             DrawingVisual first = new();
@@ -95,7 +94,7 @@ public class DrawCanvasTests
     [Fact]
     public void BatchTopVisualsIgnoresDuplicateInputs()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             using DrawCanvas canvas = new();
             DrawingVisual first = new();
@@ -121,7 +120,7 @@ public class DrawCanvasTests
     [Fact]
     public void UndoRemoveRestoresOriginalVisualOrder()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             using DrawCanvas canvas = new();
             DrawingVisual first = new();
@@ -141,7 +140,7 @@ public class DrawCanvasTests
     [Fact]
     public void ClearingTransientOverlaysPreservesPersistentVisuals()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             using DrawCanvas canvas = new();
             DrawingVisual persistent = new();
@@ -155,30 +154,6 @@ public class DrawCanvasTests
             Assert.False(canvas.ContainsVisual(transient));
             Assert.Equal(new Visual[] { persistent }, canvas.Visuals);
         });
-    }
-
-    private static void RunOnStaThread(Action action)
-    {
-        Exception? failure = null;
-        Thread thread = new(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-
-        if (failure != null)
-        {
-            ExceptionDispatchInfo.Capture(failure).Throw();
-        }
     }
 
     private sealed class ThrowingScaleVisual : DrawingVisual, ILayoutScaleDrawingVisual
