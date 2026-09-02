@@ -614,33 +614,50 @@
       "knowledge_id": "algorithms.json-templates",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "JSON模板数据库存储、编辑器与结果版本匹配；Schema优先读取程序集嵌入资源，再回退磁盘索引，不要求输出目录有散文件。",
+      "summary": "JSON模板的文本/属性编辑、数据库保存、默认参数与重置；校验Json按钮只同步模型，Schema提供字段提示而不补默认值或执行完整校验。",
       "aliases": [
+        "JSON模板",
         "JSON模板保存和V2结果如何对应",
+        "属性编辑",
+        "文本编辑",
+        "校验Json",
+        "设置为默认参数",
+        "无法重置，请检查数据库相关配置",
+        "JSON Schema默认值",
+        "Schema default",
+        "JSON模板重置",
+        "HDR参数Schema",
         "ITemplateJson",
         "TemplateJsonParam",
         "EditTemplateJson",
+        "JsonPropertyEditorControl",
+        "JsonEditorSchemaDocument",
         "CanHandle1",
         "SchemaIndexResourceName",
         "TryLoadTemplateSchema"
       ],
       "code_paths": [
-        "Engine/ColorVision.Engine/Templates/Jsons/ITemplateJson.cs",
-        "Engine/ColorVision.Engine/Templates/Jsons/TemplateJsonParam.cs",
-        "Engine/ColorVision.Engine/Templates/Jsons/EditTemplateJson.xaml.cs",
-        "Engine/ColorVision.Engine/Templates/Jsons/Schemas/schema-index.json"
+        "Engine/ColorVision.Engine/Templates/Jsons",
+        "Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Templates/HDR/TemplateHDR.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Templates/HDR/Camera.RunParams.schema.json",
+        "UI/ColorVision.UI/PropertyEditor/Json",
+        "UI/ColorVision.UI/Utilities/JsonHelper.cs",
+        "UI/ColorVision.Common/Utilities/DebounceTimer.cs"
       ],
-      "test_paths": [
-        "Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs"
-      ],
+      "test_paths": [],
       "related": [
         "algorithms.index",
+        "algorithms.template-management",
         "engine.host",
         "engine.template-design",
-        "engine.results"
+        "engine.results",
+        "copilot.tool-contracts"
       ],
       "code_scopes": [
-        "Engine/ColorVision.Engine"
+        "Engine/ColorVision.Engine",
+        "UI/ColorVision.Common",
+        "UI/ColorVision.UI"
       ],
       "domain": "algorithms",
       "title": "JSON 模板",

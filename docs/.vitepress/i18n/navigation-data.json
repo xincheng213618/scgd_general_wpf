@@ -917,6 +917,12 @@
             },
             {
               "text": {
+                "root": "JSON 模板"
+              },
+              "link": "/04-api-reference/algorithms/templates/json-templates"
+            },
+            {
+              "text": {
                 "root": "系统监控（SystemMonitor）"
               },
               "link": "/04-api-reference/plugins/standard-plugins/system-monitor"
@@ -1748,6 +1754,12 @@
                 "root": "主程序启动与最小图像验证"
               },
               "link": "/00-getting-started/first-steps"
+            },
+            {
+              "text": {
+                "root": "JSON 模板"
+              },
+              "link": "/04-api-reference/algorithms/templates/json-templates"
             },
             {
               "text": {

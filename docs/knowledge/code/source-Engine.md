@@ -218,7 +218,7 @@ next: false
   对照 ARVR 模板族、手动请求、Flow 算子和结果 handler 的版本边界。
 
 - [JSON 模板](../../04-api-reference/algorithms/templates/json-templates.md) — `algorithms.json-templates`
-  JSON模板数据库存储、编辑器与结果版本匹配；Schema优先读取程序集嵌入资源，再回退磁盘索引，不要求输出目录有散文件。
+  JSON模板的文本/属性编辑、数据库保存、默认参数与重置；校验Json按钮只同步模型，Schema提供字段提示而不补默认值或执行完整校验。
 
 - [LED 检测模板](../../04-api-reference/algorithms/templates/led-detection.md) — `algorithms.led`
   区分灯条、灯珠强类型与 JSON V2 模板、事件、POI 输入和结果限制。
