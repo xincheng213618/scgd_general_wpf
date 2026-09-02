@@ -3,7 +3,7 @@ knowledge_id: "ui.localization"
 knowledge_type: "topic"
 status: "current"
 summary: "界面语言的资源发现、系统语言回退、设置绑定和重启切换；语言下拉框不证明插件翻译完整，修改配置值不等于刷新窗口。"
-aliases: ["多语言", "界面语言", "语言切换", "语言下拉框", "系统语言", "语言资源", "翻译", "日语", "简体中文", "繁体中文", "英文", "LanguageManager", "LanguageConfig", "LanguagePropertiesEditor", "UICulture", "CurrentUICulture", "LanguageChange", "zh-Hans", "zh-Hant", "REMOVED_LOCALIZATION_CULTURES"]
+aliases: ["多语言", "界面语言", "语言切换", "语言下拉框", "系统语言", "语言资源", "翻译", "日语", "简体中文", "繁体中文", "英文", "LanguageManager", "LanguageConfig", "LanguagePropertiesEditor", "UICulture", "CurrentUICulture", "LanguageChange", "zh-Hans", "zh-Hant", "添加界面语言", "卫星资源"]
 code_paths: ["UI/ColorVision.UI/Languages", "UI/ColorVision.UI/Properties/Resources.resx", "UI/ColorVision.UI/Properties/Resources.en.resx", "UI/ColorVision.UI/Properties/Resources.zh-Hant.resx", "UI/ColorVision.UI/Properties/Resources.Designer.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/Serach/SearchSettingsWindow.xaml.cs", "UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml", "ColorVision/App.xaml.cs", "ColorVision/Copilot/Capabilities/CopilotApplicationControlSupport.cs", "ColorVision/Copilot/Capabilities/CopilotAgentCapabilityServices.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/EngineUiLocalizationTests.cs", "Test/ColorVision.UI.Tests/FlowLocalizationTests.cs"]
 related: ["ui.framework", "ui.settings", "ui.configuration", "ui.property-grid", "platform.runtime", "copilot.tool-contracts", "governance.maintenance"]
@@ -15,7 +15,15 @@ related: ["ui.framework", "ui.settings", "ui.configuration", "ui.property-grid",
 
 ## 资源、可选列表与系统语言
 
-本模块保留简体中文中性资源 `Resources.resx`、英文 `Resources.en.resx` 和繁体中文 `Resources.zh-Hant.resx`。`Languages/REMOVED_LANGUAGES.md` 记录了 fr/ru/ja/ko 资源的退役；旧的“七种语言均受支持”说明不再适用。但这里没有一张强制拒绝这些文化名称的黑名单，实际输出目录中的卫星资源及当前系统文化仍影响候选和回退。
+本模块提供以下资源：
+
+| 界面文化 | 资源文件 |
+| --- | --- |
+| 简体中文 `zh-Hans` | 中性资源 `Resources.resx` |
+| 英文 `en` | `Resources.en.resx` |
+| 繁体中文 `zh-Hant` | `Resources.zh-Hant.resx` |
+
+资源文件不是可选语言的固定白名单。下拉框还受实际输出目录中的卫星资源、当前线程文化和系统文化影响；某语言能被选择，不代表所有模块都有对应翻译。
 
 两种目录扫描的用途不同：
 
@@ -63,6 +71,14 @@ LanguageChange 本身不要求 lang 先存在于下拉框，只直接构造 Cult
 - 强类型 `Resources.Designer.cs` 的 Culture 是该资源类独立的静态覆盖值；LanguageManager 不统一清空这些覆盖，也不重写硬编码字符串。
 
 因此，新增翻译应跟随拥有该文字的模块资源和实际消费入口，保留资源键/代码符号；不能只改 LanguageConfig 就承诺已打开窗口、插件内容和所有后台格式同步切换。
+
+## 添加或完善界面语言
+
+1. 在拥有该文字的模块中维护 `Properties/Resources.<culture>.resx`，沿用中性资源的键与格式占位符；语言显示名称由 `ColorVision.UI` 资源中的文化名键提供。只补显示名称不会生成其它模块的翻译。
+2. 核对主程序与目标模块构建后的卫星资源及部署目录。默认语言发现查主程序名对应的资源 DLL，仅有某个插件的翻译文件不保证它进入可选列表。
+3. 在隔离配置中启动新的应用实例，再检查目标窗口、属性标签和格式化文本；确认“跟随系统”、资源缺项及显式资源 Culture 的回退结果。语言切换会保存配置并关闭当前应用，先处理未保存工作。
+
+翻译只改变显示文本，不改枚举值、序列化字段、协议名称或资源键。历史翻译可从 Git 查询后按当前键集合核对；不要直接用旧资源覆盖当前文件。
 
 ## Copilot 入口与验证缺口
 

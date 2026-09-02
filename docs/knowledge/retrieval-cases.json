@@ -425,6 +425,8 @@
     {"query":"插件 SDK","expected_any":["plugins.sdk-packaging"],"include_planned":false},
     {"query":"buildWorkingDir","expected_any":["plugins.sdk-packaging"],"include_planned":false},
     {"query":"Plugin DLL not found","expected_any":["plugins.sdk-packaging"],"include_planned":false},
-    {"query":"Cannot read version from","expected_any":["plugins.sdk-packaging"],"include_planned":false}
+    {"query":"Cannot read version from","expected_any":["plugins.sdk-packaging"],"include_planned":false},
+    {"query":"添加界面语言","expected_any":["ui.localization"],"include_planned":false},
+    {"query":"卫星资源","expected_any":["ui.localization"],"include_planned":false}
   ]
 }

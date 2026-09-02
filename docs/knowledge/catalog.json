@@ -8462,7 +8462,8 @@
         "LanguageChange",
         "zh-Hans",
         "zh-Hant",
-        "REMOVED_LOCALIZATION_CULTURES"
+        "添加界面语言",
+        "卫星资源"
       ],
       "code_paths": [
         "UI/ColorVision.UI/Languages",
