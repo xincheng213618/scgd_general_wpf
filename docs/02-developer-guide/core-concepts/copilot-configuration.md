@@ -17,7 +17,7 @@ related: ["copilot.runtime", "copilot.interactions", "copilot.lifecycle", "copil
 
 运行时使用 `ConfigHandler` 提供的 `CopilotConfig`，不加载全局或项目 `config.toml` 来选择 provider、model、tools 或 approval。仍会发现有作用域的 `AGENTS.md` / `CLAUDE.md`，其顺序、预算和权限边界见[项目指令与 Skills](./copilot-agent-lifecycle.md)。源码中的 `CopilotCodex*` 兼容类型、来源标签或设置页生成的 TOML 片段，不表示内置 Copilot 会读取外部 Codex 配置。
 
-`CopilotProjectInstructionDiscoveryConfig` 只提供默认快照、预算上限和项目根标记校验；外部 TOML、Shell 环境配置分层和 `.rules` 文件发现/解析入口已删除。请求中仍保留的执行策略判断与 Shell 环境过滤直接消费请求快照，不通过这些退役入口读文件。`CopilotConfigurationIsolationTests` 验证外部配置不会覆盖 ColorVision 设置，同时仍能发现指令文档。
+`CopilotProjectInstructionDiscoveryConfig` 提供默认快照、预算上限和项目根标记校验；执行策略判断与 Shell 环境过滤直接消费请求快照。`CopilotConfigurationIsolationTests` 验证外部配置不会覆盖 ColorVision 设置，同时仍能发现指令文档。
 
 | 状态 | owner 与用途 |
 | --- | --- |

@@ -76,7 +76,7 @@ PUT正文必须且只能含 `status`，值为new/in_progress/resolved。服务�
 
 `FeedbackPage.tsx` 默认筛open；按钮引导new→in_progress→resolved，已解决项可重新打开到in_progress，这只是UI路线。它用独立详情请求展示附件，状态成功后替换详情并请求刷新列表；详情关闭/切换会abort详情读取，不是取消此前已发出的状态写请求。
 
-当前有一处明确的前后端不匹配：页面“全部”项使用 `status="all"`，`services/admin.ts::getFeedbackInbox` 原样传入查询，而Backend不接受all，因此该选择按当前代码返回400。API全量查询应省略status；不能把前端选项存在当作该分支已可用。此结论为源码核对，本次未运行浏览器或修改产品。
+当前有一处明确的前后端不匹配：页面“全部”项使用 `status="all"`，`services/admin.ts::getFeedbackInbox` 原样传入查询，而Backend不接受all，因此该选择按当前代码返回400。API全量查询应省略status；不能把前端选项存在当作该分支已可用。
 
 ## 附件定位、响应与审计不是完成下载
 
@@ -94,4 +94,4 @@ filename须等于当前平台 `Path(filename).name`，不能是内部名称；�
 
 `test_feedback_admin.py` 覆盖全局summary与过滤、缺metadata旧目录、open筛选、详情、路径穿越和内部文件拒绝、精确状态payload、sidecar持久化及replace失败保留旧状态。`test_contracts.py` 有管理权限、列表/详情/普通附件GET、状态更新和审计动作存在的HTTP用例；这不是HEAD或客户端下载完成证明。
 
-`Web/Frontend/tests/feedback.test.ts` 只验证状态引导、文案和等待时间辅助函数，不覆盖页面网络请求、all过滤、真实下载或并发状态更新。本次未运行这些测试、服务或浏览器，也未读真实Feedback目录、配置和数据库；真实网络、目录并发变化、跨平台路径大小写及故障后的部分落盘仍是验证缺口。
+`Web/Frontend/tests/feedback.test.ts` 只验证状态引导、文案和等待时间辅助函数，不覆盖页面网络请求、all过滤、真实下载或并发状态更新。真实网络、目录并发变化、跨平台路径大小写及故障后的部分落盘仍是验证缺口。

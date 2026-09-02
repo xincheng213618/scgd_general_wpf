@@ -1,8 +1,8 @@
 # ColorVision Android 运维伴侣
 
-ColorVision Android 现场运维伴侣。已配对设备启动后直接进入现场运维，Material 3 底部导航提供“概览 / 问题 / 工具 / 设置”四个一级目的地。应用不再提供下载站页面或通用 WebView；安全更新与远程中继仍使用应用固定、不可编辑的服务源。
+ColorVision Android 现场运维伴侣。已配对设备启动后直接进入现场运维，Material 3 底部导航提供“概览 / 问题 / 工具 / 设置”四个一级目的地。安全更新与远程中继使用应用固定、不可编辑的服务源。
 
-当前源码入口、直连/中继职责和验证边界见[Android 运维伴侣](../docs/02-developer-guide/backend/android-operations.md)。本 README 保留本地构建前提和安全说明；历史版本变化可通过 Git 历史查询。
+当前源码入口、直连/中继职责和验证边界见[Android 运维伴侣](../docs/02-developer-guide/backend/android-operations.md)。本 README 保留本地构建前提和安全说明。
 
 ## 构建方式
 
@@ -22,7 +22,7 @@ ColorVision Android 现场运维伴侣。已配对设备启动后直接进入现
 - `android.hardware.camera` 标记为非必需；相机用于扫描电脑端短时安全配对码
 - `network_security_config.xml` 默认拒绝明文，域名例外为 `xc213618.ddns.me` 且 `includeSubdomains="true"`；更新/中继客户端另检查固定主机、端口 `9998` 与允许的 API 路径，不能把 XML 本身说成只允许精确主机
 
-现场运维通道使用电脑端短时二维码配对、HTTPS 证书固定和手机设备密钥签名。已配对手机可以读取脱敏状态、性能与告警、显示或最小化主窗口，并提交受控运维作业。固定 MQTT 恢复、ColorVision 应用重启、脱敏诊断包和单次主窗口快照由已配对手机明确确认后执行；支持会话仍需电脑端本机同意。Android 2.5 起不再调用系统指纹或锁屏凭据门禁。
+现场运维通道使用电脑端短时二维码配对、HTTPS 证书固定和手机设备密钥签名。已配对手机可以读取脱敏状态、性能与告警、显示或最小化主窗口，并提交受控运维作业。固定 MQTT 恢复、ColorVision 应用重启、脱敏诊断包和单次主窗口快照由已配对手机明确确认后执行；支持会话仍需电脑端本机同意。
 
 ## 补充安全说明
 

@@ -108,4 +108,4 @@ Origin比较来自 `request.host_url`，按解析出的scheme/hostname/port元�
 
 `test_auth_policy.py` 覆盖凭据方式、普通Session opt-in、强制改密与独立凭据、key scope/wildcard；它不等于已通过所有HTTP前置门禁。`test_csrf_protection.py` 覆盖同源Session token、跨源Origin/Fetch、headerless和显式Authorization兼容；`test_browser_auth.py` 验证Basic challenge的元数据区别。`test_contracts.py` 有登录token轮换、同源管理写、401/403及key CRUD/有效期/目录用例，`test_plugin_index.py` 有明文/hash不泄漏、轮换、失效key、last_used合并和写失败容错；统计Beacon入口另有 `test_access_analytics.py` 用例。
 
-这里只声明现存关联证据，本次未运行测试、浏览器、服务、数据库或联网动作。任意Authorization与Session优先级组合、来源header冲突、轮换已撤销后创建失败、响应丢失和旧cookie撤销失败等结论来自分支/提交顺序，未冒称已有专门回归或多进程/反向代理实测。修正这些契约时须补相应故障与身份组合测试，不能只复用正常登录成功作为证明。
+任意Authorization与Session优先级组合、来源header冲突、轮换已撤销后创建失败、响应丢失和旧cookie撤销失败等分支需要专门的回归、多进程和反向代理验证。修正这些契约时须补相应故障与身份组合测试，不能只复用正常登录成功作为证明。

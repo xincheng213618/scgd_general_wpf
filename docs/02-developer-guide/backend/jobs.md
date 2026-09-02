@@ -23,7 +23,7 @@ related: ["delivery.backend", "delivery.backend-auth", "delivery.backend-retenti
 
 当前分派按固定 `job_id`，不是按数据库 `job_type` 动态加载处理器；保存的config字段也不是通用执行脚本。
 
-间隔来自 `DEFAULT_JOBS` 的初始值及 `scheduled_jobs.interval_seconds`，当前没有读取旧README示例中的 `plugin_index_check_interval_seconds` 配置键；不能靠往config.json添加这个键来调整周期。下表为新增定义时的默认值，不覆盖已经持久化的间隔：
+间隔来自 `DEFAULT_JOBS` 的初始值及 `scheduled_jobs.interval_seconds`。下表为新增定义时的默认值，不覆盖已经持久化的间隔：
 
 | job_id | 初始间隔 | 责任及权威边界 |
 | --- | --- | --- |
@@ -92,4 +92,4 @@ related: ["delivery.backend", "delivery.backend-auth", "delivery.backend-retenti
 
 `test_jobs_repository.py` 有默认元数据更新不重置运行状态、单飞、分页/计数、interrupted恢复、启停、完成结果与next_run_at同事务、保留latest/running及重复手动run用例；`test_schema_version.py` 有重复running迁移与唯一索引；`test_contracts.py` 有jobs读/写权限、分页参数、缺失job、409冲突及启停HTTP用例；每日备份注册/执行关联 `test_admin_data_retention.py`。
 
-本次只核对现有源码与测试内容，未运行产品或测试。真实后台线程计时、停止中的长任务、多进程启动恢复竞争、完成记录提交失败后HTTP结果等没有在本页据此宣称已验收；静态路径映射也不是所有handler成功的证明。
+真实后台线程计时、停止中的长任务、多进程启动恢复竞争、完成记录提交失败后HTTP结果等需要单独验证。

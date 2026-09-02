@@ -58,7 +58,7 @@ Agent `CopilotToolInputSchema.TryBind` 与本机 MCP dispatcher 共用 `CopilotT
 
 同会话 Agent 正在运行时，宿主发送 steering；空闲且允许调度时提交新的 Agent 轮次，有有效 checkpoint 时携带 `RetryDeniedAction`。其他任务占用、上下文不匹配或调度不允许时可能只保留票据，不能把命令反馈当成已经执行。模型仍须在原任务确有需要时重新提出完全相同的参数；票据不放宽 Schema、无进展闸门、调用预算或工具范围。新调用到达显式 `auto_review` 分支且精确匹配时，reviewer 才收到“一次重试获用户授权”的可信上下文，仍可能再次拒绝；它不是直接放行、相似动作许可或绕过不可覆盖规则的授权。
 
-对应验证入口是 `CopilotCodexApprovalsReviewerTests`（资格、关闭决定与 unavailable 等边界）和 `CopilotAutomaticApprovalOverrideTests`（跨运行精确匹配、单次消费、列表脱敏和排除非自动拒绝）。这些测试的存在不等于已在本次文档修改中运行，也不证明真实模型判断或每种受保护工具已完成端到端验证。
+对应验证入口是 `CopilotCodexApprovalsReviewerTests`（资格、关闭决定与 unavailable 等边界）和 `CopilotAutomaticApprovalOverrideTests`（跨运行精确匹配、单次消费、列表脱敏和排除非自动拒绝）。真实模型判断和各受保护工具仍需端到端验证。
 
 ## 执行作用域和非权威日志
 

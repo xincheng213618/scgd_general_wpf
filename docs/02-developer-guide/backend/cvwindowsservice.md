@@ -72,6 +72,6 @@ React `PublishPage.tsx::CvwsPublishPanel` 在 `getAdminPublishCapabilities().pub
 
 `test_cvwindowsservice_publish.py` 覆盖名称/版本正则、推断、顺序冲突后缀、直接保存、latest写入和context字段；`test_cvws_web.py` 覆盖未认证/浏览器挑战、Session上传、显式set_latest真假、基础列表/latest/下载及legacy PUT。`test_contracts.py` 另覆盖不存在版本404、撤销发布Session及普通角色缺少release:publish。测试名含“without_set_latest”的用例实际传的是 `"false"`，不能当作省略字段的覆盖证据。
 
-这些是静态源码和现有测试的关联，本次文档工作未运行 Backend 或产品测试。测试里的 `import app` 发生在临时路径替换之前，不能因为 setUp 有临时目录就推定整个导入过程隔离。并发占名/文件替换、官方名与手填版本冲突、缓存同秒失效、RAR平局、symlink边界、发布后失败回滚和真实服务安装均没有由上述用例证明。
+测试里的 `import app` 发生在临时路径替换之前，不能因为 setUp 有临时目录就推定整个导入过程隔离。并发占名/文件替换、官方名与手填版本冲突、缓存同秒失效、RAR平局、symlink边界、发布后失败回滚和真实服务安装均没有由上述用例证明。
 
 排查先分清：latest文本、扫描列表、按版本选中的文件、工具索引、客户端缓存、实际安装状态。获得目标存储与发布授权后才考虑重传/改指针；重新发布不是无副作用的验证方法。

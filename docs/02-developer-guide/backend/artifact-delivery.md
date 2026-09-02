@@ -84,4 +84,4 @@ HEAD 不触发本页的下载完成事件，客户端也不接收响应体；它
 
 现有 `test_artifact_delivery.py` 覆盖完整 GET、HEAD、304、部分/完整 Range 和提前关闭迭代器；`test_app.py::test_api_download_package_updates_stats_and_plugin_totals` 覆盖专用包路由的 HEAD/部分 Range 不计数及完整 GET 计数。`test_http_security.py` 覆盖补充 `no-store` 而不覆盖显式策略；`test_http_compression.py` 覆盖大 JSON、gzip质量值、通配符与小 JSON。
 
-`test_app.py` 的增量更新/旧下载路径用例覆盖 GET 触发目录修复，不等于已验证 HEAD 修复的部署表现。上述源码分支与测试也不证明真实网络断连、反向代理、WSGI服务器关闭时机、客户端下载落盘或回调失败后的统计补偿。本次文档维护未运行这些产品测试。
+`test_app.py` 的增量更新/旧下载路径用例覆盖 GET 触发目录修复，不等于已验证 HEAD 修复的部署表现。上述源码分支与测试也不证明真实网络断连、反向代理、WSGI服务器关闭时机、客户端下载落盘或回调失败后的统计补偿。

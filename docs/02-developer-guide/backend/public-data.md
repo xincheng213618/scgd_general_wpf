@@ -90,4 +90,4 @@ updates索引命中只返回已索引规范包，`other_update_files` / `other_u
 
 `test_artifact_index.py` 有ready快路径不调用旧builder、5000条Android归档分页、组跨页总量、update/tool索引读取、browse过滤先于分页等用例；`test_page_contexts.py` 覆盖投影形状与仅为本页构造详细目录记录；`test_app.py` 覆盖分页参数夹取/非法整数、compact日志输出、Android清单与固定下载。`test_app_releases.py` 覆盖发行文件扫描和Android分组。
 
-这些是代码与现有测试关联，本次文档工作未执行产品测试。跨索引一致性、并行文件替换、失效Android最高候选不回退、公开GET修复旧目录等结论来自源码分支，不冒称已完成生产或故障注入验收。排查时先辨别快路径/回退、过滤总量/页内总量、文件存在/索引可见，再决定是否需要获准的刷新或文件维护。
+跨索引一致性、并行文件替换、失效Android最高候选不回退、公开GET修复旧目录等分支需要生产环境或故障注入验证。排查时先辨别快路径/回退、过滤总量/页内总量、文件存在/索引可见，再决定是否需要获准的刷新或文件维护。
