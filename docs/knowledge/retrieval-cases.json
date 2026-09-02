@@ -485,6 +485,12 @@
     {"query":"打开配置文件夹","expected_any":["operations.exports"],"include_planned":false},
     {"query":"includeCameraId","expected_any":["operations.camera-configuration"],"include_planned":false},
     {"query":"应用设置","expected_any":["operations.camera-configuration"],"include_planned":false},
-    {"query":"相机数据路径","expected_any":["operations.camera-configuration"],"include_planned":false}
+    {"query":"相机数据路径","expected_any":["operations.camera-configuration"],"include_planned":false},
+    {"query":"扫描在线相机","expected_any":["operations.physical-camera"],"include_planned":false},
+    {"query":"添加未创建的相机","expected_any":["operations.physical-camera"],"include_planned":false},
+    {"query":"上传校正文件","expected_any":["operations.physical-camera"],"include_planned":false},
+    {"query":"创建还原点","expected_any":["operations.physical-camera"],"include_planned":false},
+    {"query":"CameraSearchResultViewModel","expected_any":["operations.physical-camera"],"include_planned":false},
+    {"query":"PhysicalCamera_Load","expected_any":["operations.physical-camera"],"include_planned":false}
   ]
 }

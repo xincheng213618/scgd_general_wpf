@@ -158,7 +158,7 @@ next: false
   电机设备配置、MQTT运动命令与位置读回契约；移动回包不会刷新位置，客户端参数不能代替现场限位与急停。
 
 - [物理相机发现、许可证与资源管理](../../01-user-guide/devices/camera-management.md) — `operations.physical-camera`
-  PhyCameraManager发现、许可导入、校准资源与恢复点契约；许可证导入可重置配置，并在唯一物理相机时批量绑定设备。
+  物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，创建/导入在唯一物理相机时可批量绑定服务。
 
 - [SMU 参数、结果与输出关闭](../../01-user-guide/devices/smu.md) — `operations.smu`
   SMU手动与Flow参数、A/B通道、扫描结果及关闭输出边界；成功回包、空读数或超时都不能单独证明输出安全关闭。
@@ -255,6 +255,9 @@ next: false
   Explorer 的 CVRAW/CVCIE COM provider 如何读取像素、生成非测量用途缩略图，以及源码脚本与 ServiceHost 注册的不同副作用和失败边界。
 
 ## Engine/cvColorVision {#module-456e67696e652f6376436f6c6f72566973696f6e}
+
+- [物理相机发现、许可证与资源管理](../../01-user-guide/devices/camera-management.md) — `operations.physical-camera`
+  物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，创建/导入在唯一物理相机时可批量绑定服务。
 
 - [Conoscope 图像、采集与分析](../../04-api-reference/plugins/standard-plugins/conoscope.md) — `plugins.conoscope`
   Conoscope 的采集、CVCIE 首屏/XYZ 就绪、Mat 与分析快照契约；按钮成功不代表文档加载完成，联合灰尘预处理不走 Y-first。

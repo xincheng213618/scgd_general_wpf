@@ -6064,7 +6064,7 @@
       "knowledge_id": "operations.physical-camera",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "PhyCameraManager发现、许可导入、校准资源与恢复点契约；许可证导入可重置配置，并在唯一物理相机时批量绑定设备。",
+      "summary": "物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，创建/导入在唯一物理相机时可批量绑定服务。",
       "aliases": [
         "物理相机",
         "相机管理",
@@ -6079,14 +6079,29 @@
         "SetLicense",
         "CreateRestore",
         "LoadResotre",
-        "UploadDataAsync"
+        "UploadDataAsync",
+        "扫描在线相机",
+        "添加未创建的相机",
+        "上传校正文件",
+        "创建还原点",
+        "加载还原点",
+        "CameraSearchResultViewModel",
+        "PhysicalCamera_Load"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManager.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraRestoreArchive.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadRunner.cs",
-        "Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadWorkspace.cs"
+        "Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadWorkspace.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml",
+        "Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchTypeWindow.xaml.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchResultWindow.xaml.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/CreateWindow.xaml.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml",
+        "Engine/ColorVision.Engine/Services/RC/RCFileUpload.cs",
+        "Engine/cvColorVision/Camera/cvCameraCSLib.Discovery.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/PhyCameraRestoreArchiveTests.cs",
@@ -6100,7 +6115,8 @@
         "engine.devices"
       ],
       "code_scopes": [
-        "Engine/ColorVision.Engine"
+        "Engine/ColorVision.Engine",
+        "Engine/cvColorVision"
       ],
       "domain": "operations",
       "title": "物理相机发现、许可证与资源管理",

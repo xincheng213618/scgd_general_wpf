@@ -2357,6 +2357,12 @@
           "items": [
             {
               "text": {
+                "root": "物理相机发现、许可证与资源管理"
+              },
+              "link": "/01-user-guide/devices/camera-management"
+            },
+            {
+              "text": {
                 "root": "Conoscope 图像、采集与分析"
               },
               "link": "/04-api-reference/plugins/standard-plugins/conoscope"
