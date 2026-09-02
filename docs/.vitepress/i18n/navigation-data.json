@@ -2315,6 +2315,12 @@
           "items": [
             {
               "text": {
+                "root": "Conoscope 图像、采集与分析"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/conoscope"
+            },
+            {
+              "text": {
                 "root": "系统要求与首次构建"
               },
               "link": "/00-getting-started/prerequisites"

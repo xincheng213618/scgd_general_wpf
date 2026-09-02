@@ -4060,11 +4060,17 @@
         "设备SDK入口在哪里",
         "cvColorVision",
         "cvCameraCSLib",
-        "ConvertXYZ"
+        "ConvertXYZ",
+        "CVCommCore",
+        "MQTTMessageLib",
+        "CVCommCore.dll",
+        "MQTTMessageLib.dll"
       ],
       "code_paths": [
         "Engine/cvColorVision/README.md",
         "Engine/cvColorVision/Camera",
+        "Engine/cvColorVision/CVCommCore",
+        "Engine/cvColorVision/MQTTMessageLib",
         "Engine/cvColorVision/Color/ConvertXYZ.cs",
         "Engine/cvColorVision/Devices/Display/CvOledDLL.cs",
         "Engine/cvColorVision/Devices/Spectrometer/Spectrometer.cs",
@@ -6680,6 +6686,7 @@
         "Plugins/Conoscope/README.md",
         "Plugins/Conoscope/Docs/ARCHITECTURE.md",
         "Plugins/Conoscope/Conoscope.csproj",
+        "Engine/cvColorVision/cvColorVision.csproj",
         "Plugins/Conoscope/manifest.json",
         "Plugins/Conoscope/Core/ConoscopeModuleService.cs",
         "Plugins/Conoscope/ConoscopeWindow.xaml",
@@ -6722,10 +6729,12 @@
         "flow.session",
         "operations.camera",
         "ui.configuration",
-        "plugins.getting-started"
+        "plugins.getting-started",
+        "engine.native-bindings"
       ],
       "code_scopes": [
         ".",
+        "Engine/cvColorVision",
         "Plugins/Conoscope"
       ],
       "domain": "plugins",

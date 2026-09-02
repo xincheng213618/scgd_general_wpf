@@ -450,6 +450,9 @@
     {"query":"Windows 7","expected_any":["delivery.prerequisites"],"include_planned":false},
     {"query":"Microsoft.WindowsDesktop.App","expected_any":["delivery.prerequisites"],"include_planned":false},
     {"query":"OpenCvHelperBinary","expected_any":["delivery.prerequisites"],"include_planned":false},
-    {"query":"Desktop Runtime","expected_any":["delivery.prerequisites"],"include_planned":false}
+    {"query":"Desktop Runtime","expected_any":["delivery.prerequisites"],"include_planned":false},
+    {"query":"CVCommCore","expected_any":["engine.native-bindings"],"include_planned":false},
+    {"query":"MQTTMessageLib.dll","expected_any":["engine.native-bindings"],"include_planned":false},
+    {"query":"CVCommCore.dll","expected_any":["engine.native-bindings"],"include_planned":false}
   ]
 }

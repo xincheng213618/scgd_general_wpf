@@ -96,7 +96,7 @@ if ($LASTEXITCODE -ne 0) { throw '解决方案构建失败；检查失败项目�
 运行输出必须按实际工程和交付清单核对，不能只复制 `ColorVision.exe`：
 
 - `ColorVision.Core.csproj` 复制 helper、CUDA 和 OpenCV native 输入；`ColorVision.Engine.csproj` 引入 OpenCvSharp Windows runtime。两套 native 依赖分别核对。
-- 供应商相机、校准等运行库由 `cvColorVision.csproj` 从 `DLL/scgd_internal_dll/` 引入，具体路径与复制条件见该项目及[设备 native 绑定](../04-api-reference/engine-components/cvColorVision.md)。旧插件若依赖独立 `CVCommCore.dll` / `MQTTMessageLib.dll`，仍须保留匹配的程序集；不能仅凭当前源码含同名命名空间判断旧二进制依赖已满足。
+- 供应商相机、校准等运行库由 `cvColorVision.csproj` 从 `DLL/scgd_internal_dll/` 引入，具体路径与复制条件见该项目及[设备 native 绑定](../04-api-reference/engine-components/cvColorVision.md)。`CVCommCore` / `MQTTMessageLib` 的当前类型来源与旧插件兼容要求见[命名空间与程序集](../04-api-reference/engine-components/cvColorVision.md#命名空间与程序集)。
 - 主工程复制 `log4net.config`、资源以及配套工具；插件/客户包还要核对各自 manifest 和共享依赖。
 
 | 现象 | 下一步 |

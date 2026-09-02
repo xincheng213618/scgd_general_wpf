@@ -3,8 +3,8 @@ knowledge_id: "engine.native-bindings"
 knowledge_type: "reference"
 status: "current"
 summary: "定位供应商 native DLL 的相机、光谱、XYZ、OLED、PG 与源表绑定契约。"
-aliases: ["设备SDK入口在哪里","cvColorVision","cvCameraCSLib","ConvertXYZ"]
-code_paths: ["Engine/cvColorVision/README.md","Engine/cvColorVision/Camera","Engine/cvColorVision/Color/ConvertXYZ.cs","Engine/cvColorVision/Devices/Display/CvOledDLL.cs","Engine/cvColorVision/Devices/Spectrometer/Spectrometer.cs","Engine/cvColorVision/cvColorVision.csproj"]
+aliases: ["设备SDK入口在哪里","cvColorVision","cvCameraCSLib","ConvertXYZ","CVCommCore","MQTTMessageLib","CVCommCore.dll","MQTTMessageLib.dll"]
+code_paths: ["Engine/cvColorVision/README.md","Engine/cvColorVision/Camera","Engine/cvColorVision/CVCommCore","Engine/cvColorVision/MQTTMessageLib","Engine/cvColorVision/Color/ConvertXYZ.cs","Engine/cvColorVision/Devices/Display/CvOledDLL.cs","Engine/cvColorVision/Devices/Spectrometer/Spectrometer.cs","Engine/cvColorVision/cvColorVision.csproj"]
 test_paths: []
 related: ["engine.index","engine.native-integration","ui.core"]
 ---
@@ -18,6 +18,14 @@ related: ["engine.index","engine.native-integration","ui.core"]
 当前工程目标是 `net10.0-windows7.0`。`cvColorVision.csproj` 从 `DLL/scgd_internal_dll/` 复制和打包供应商 DLL 及配置，不在本工程编译这些 native 实现。部分输入显式指定 `runtimes/win-x64/native` 包路径，其他设备 DLL 和配置按各自的 Pack/Copy 元数据处理，不能假设所有资产都位于同一目录。输入不止 `cvCamera.dll` / `cvoled.dll`：例如 CUDA runtime、CommLibrary、OpenCV 和设备 SDK 相关 DLL 也在清单中；具体功能还受设备驱动与部署配置约束。
 
 Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `glaDevSys64.dll`、`xGUSB64.dll`、`xGCOM64.dll`、`xserial64.dll` 和 `FTD2XX.dll` 是否存在；缺少其中任一文件就报错。这只是输入存在性门禁，不校验 DLL 能否加载、导出是否匹配或真实设备能否打开。README 也作为 NuGet 包说明打包，但其仓库相对链接不保证包内含有对应知识文件。
+
+## 命名空间与程序集
+
+`CVCommCore/` 和 `MQTTMessageLib/` 是本项目中的 C# 源码目录，保留 `CVCommCore.*`、`MQTTMessageLib.*` 命名空间，随默认 Compile 项编入 `cvColorVision.dll`。当前 `cvColorVision.csproj` 不生成两个同名独立程序集，也没有从仓库根 `DLL/` 引用 `CVCommCore.dll` / `MQTTMessageLib.dll`；不能把 `using` 的命名空间直接当成缺失 DLL 的清单。
+
+当前 Engine 通过项目引用消费 `cvColorVision`，依赖该 Engine 的插件沿实际程序集引用和复制规则取得所需库。部署故障应同时核对插件的依赖清单、实际 DLL 版本以及 native 输入；托管类型来源和供应商 DLL 是两种依赖。
+
+旧版或外部插件仍可能引用独立的 `CVCommCore` / `MQTTMessageLib` 程序集身份。此时保留并交付其要求的匹配 DLL，不能仅因当前源码编译通过就删除它们，也不能把 `cvColorVision.dll` 改名来充当旧程序集。应以该插件的实际引用为依据决定兼容部署或重建；同名类型不证明二进制兼容。
 
 ## 签名与返回值不能统一推断
 
