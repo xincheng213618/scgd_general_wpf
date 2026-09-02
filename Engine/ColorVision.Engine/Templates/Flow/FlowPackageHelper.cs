@@ -1310,26 +1310,33 @@ namespace ColorVision.Engine.Templates.Flow
                     throw new InvalidDataException(
                         "流程包包含无效或重复的关联模板。");
                 }
+            }
+
+            // Keep reference-only names reserved so a conflict copy cannot take them.
+            reservedNames.UnionWith(packageNames);
+            foreach (var pkgTemplate in manifest.Templates)
+            {
+                string originalName = pkgTemplate.TemplateName;
+                string templateCode = pkgTemplate.TemplateCode;
 
                 // 查找对应的 ITemplate 实例
                 if (!templateCatalog.TryGetValue(
                         templateCode,
                         out var iTemplate))
                 {
-                    throw new InvalidOperationException(
-                        $"当前环境不支持模板类型 "
-                        + $"'{templateCode}'（{originalName}）。");
+                    log.Warn($"Keep flow package template reference '{originalName}': template type '{templateCode}' is unavailable.");
+                    continue;
                 }
                 if (!CanCreateParamFromModData(iTemplate)
                     && string.IsNullOrWhiteSpace(
                         pkgTemplate.SerializedContent))
                 {
-                    throw new InvalidDataException(
-                        $"关联模板 '{originalName}' "
-                        + $"({templateCode}) 缺少可重建的内容。");
+                    log.Warn($"Keep flow package template reference '{originalName}' ({templateCode}): no content is available to recreate it.");
+                    continue;
                 }
 
                 string createName = originalName;
+                reservedNames.Remove(originalName);
                 if (IsReservedTemplateName(
                         originalName,
                         reservedNames,
@@ -1342,6 +1349,7 @@ namespace ColorVision.Engine.Templates.Flow
                         templateCatalog);
                 }
 
+                reservedNames.Add(originalName);
                 reservedNames.Add(createName);
                 importPlans.Add(
                     new TemplateImportPlan(

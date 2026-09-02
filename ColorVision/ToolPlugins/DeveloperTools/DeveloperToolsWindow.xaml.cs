@@ -92,7 +92,7 @@ namespace ColorVision.ToolPlugins.DeveloperTools
                 if (_closed) return;
                 Python.Apply(snapshots.Item1);
                 NodeJs.Apply(snapshots.Item2);
-                LastChecked.Text = $"最近检测：{DateTime.Now:HH:mm:ss} · 窗口可见时每 15 秒刷新 · 不执行解释器";
+                LastChecked.Text = $"最近检测：{DateTime.Now:HH:mm:ss} · 每 15 秒自动刷新";
             }
             catch (OperationCanceledException) { }
             catch (Exception ex) { if (!_closed) OperationStatus.Text = "检测失败：" + ex.Message; }
@@ -112,7 +112,7 @@ namespace ColorVision.ToolPlugins.DeveloperTools
                 page.Releases.Clear();
                 foreach (var release in releases) page.Releases.Add(release);
                 page.SelectedRelease = page.Releases.FirstOrDefault(release => release.Version == previousVersion) ?? page.Releases.FirstOrDefault();
-                page.CatalogStatus = releases.Count == 0 ? "官网没有返回可安装的稳定版本；请稍后重试。" : "版本目录来自官网；安装包可选择国内镜像。仅展示各系列最新的 Windows x64 稳定安装包。";
+                page.CatalogStatus = releases.Count == 0 ? "官网没有返回稳定版本，请稍后重试。" : "已获取 Windows x64 稳定版本。";
                 OperationStatus.Text = $"已更新 {page.Title} 可安装版本。尚未下载或安装。";
             }
             catch (OperationCanceledException) { }

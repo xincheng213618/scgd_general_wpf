@@ -514,6 +514,8 @@ test('generation is deterministic and check detects changed, missing and extra g
   await assert.rejects(generateKnowledge(root, true), /domains\/ui\.md/u)
   await generateKnowledge(root)
   await fs.appendFile(path.join(root, 'docs/example.md'), '\nChanged implementation guidance.\n')
+  await generateKnowledge(root, true)
+  await fs.writeFile(path.join(root, 'docs/example.md'), markdown({ summary: 'Updated topic summary' }))
   await assert.rejects(generateKnowledge(root, true), /stale or missing/u)
   await generateKnowledge(root)
   await fs.appendFile(path.join(root, 'docs/knowledge/catalog.json'), '\n')

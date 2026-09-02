@@ -193,8 +193,7 @@ export async function buildCatalog(repoRoot) {
         const info = validatedPaths.get(mappedPath) ?? validatedPaths.get(`${mappedPath}/`)
         return parts.slice(0, Math.min(2, parts.length - (info.isDirectory ? 0 : 1))).join('/') || '.'
       }))].sort()
-      entries.push({ ...metadata, code_scopes: codeScopes, domain, title: titleFromBody(parsed.body, source), source, url: documentUrl(source), searchable: parsed.searchable,
-        source_hash: createHash('sha256').update(raw.replace(/\r\n/gu, '\n')).digest('hex') })
+      entries.push({ ...metadata, code_scopes: codeScopes, domain, title: titleFromBody(parsed.body, source), source, url: documentUrl(source), searchable: parsed.searchable })
     } catch (error) { errors.push(error.message) }
   }
   for (const entry of entries) {
