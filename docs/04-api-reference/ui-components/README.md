@@ -28,24 +28,11 @@ related: ["ui.control-catalog","ui.discovery","ui.property-grid","ui.package-bou
 
 ## 按模块定位
 
-| 模块 | 职责 | 文档 |
-| --- | --- | --- |
-| ColorVision.Common | MVVM、插件接口、状态栏、共享接口 | [Common](./ColorVision.Common.md) |
-| ColorVision.Themes | 主题、资源字典、窗口外观 | [Themes](./ColorVision.Themes.md) |
-| ColorVision.UI | 配置、菜单、插件、属性编辑器、快捷键 | [UI](./ColorVision.UI.md) |
-| ColorVision.Core | OpenCV helper、`HImage`、图像互操作 | [Core](./ColorVision.Core.md) |
-| ColorVision.Database | SqlSugar DAO、MySQL/SQLite 接入 | [Database](./ColorVision.Database.md) |
-| ColorVision.SocketProtocol | TCP、消息分发与历史 | [SocketProtocol](./ColorVision.SocketProtocol.md) |
-| ColorVision.Scheduler | Quartz 调度、任务历史 | [Scheduler](./ColorVision.Scheduler.md) |
-| ColorVision.ImageEditor | 图像查看、绘制、overlay、3D/CIE | [ImageEditor](./ColorVision.ImageEditor.md) |
-| ColorVision.UI.Desktop | 设置、向导、插件市场 | [Desktop](./ColorVision.UI.Desktop.md) |
-| ColorVision.Solution | 工作区、本地项目与文档壳层 | [工作区](./ColorVision.Solution.md)、[文档生命周期](./editor-document-lifecycle.md)、[终端](../../01-user-guide/interface/terminal.md) |
-| ColorVision.ImageTools | 多图、缩略图、景深融合 | [ImageTools](./ColorVision.ImageTools.md) |
-| ColorVision.Rbac | 用户、角色、权限、会话和审计 | [RBAC](../../03-architecture/security/rbac.md) |
+各类库的职责和修改归属统一见[UI 包边界](./component-handbook.md)；按源码目录查主题使用[生成的 UI 知识地图](../../knowledge/code/source-UI.md)。本页的问答表负责问题分流，不另维护一份模块清单。
 
 ## 依赖约束
 
-`Common`、`Themes` 等底层库不应反向依赖高层窗口或客户项目。具体依赖以目标 `.csproj` 为准；模块说明不是允许跨层引用的白名单。新问题无法映射到上表时，先检索精确符号及调用方，不要从页面缺失推断功能不存在。
+`Common`、`Themes` 等底层库不应反向依赖高层窗口或客户项目。具体依赖以目标 `.csproj` 为准；模块说明不是允许跨层引用的白名单。新问题无法映射到现有主题时，先检索精确符号及调用方，不要从页面缺失推断功能不存在。
 
 ## 验证入口与缺口
 

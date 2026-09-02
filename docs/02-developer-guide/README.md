@@ -4,14 +4,14 @@ knowledge_type: "topic"
 status: "current"
 summary: "定义宿主、插件、客户包和独立FileIO包的构建平台与制品边界，区分构建验证和远端发布。"
 aliases: ["开发入口","改代码","交付","x64","AnyCPU","ARM64","平台支持"]
-code_paths: ["Directory.Build.props","build.sln","Scripts/release.bat","Scripts/verify_platform_policy.py"]
+code_paths: ["Directory.Build.props","ColorVision.PlatformPolicy.targets","build.sln","Engine/ColorVision.FileIO/ColorVision.FileIO.csproj",".github/workflows/dotnet.yml","Scripts/release.bat","Scripts/verify_platform_policy.py"]
 test_paths: ["Scripts/tests/test_verify_platform_policy.py"]
 related: ["platform.system","delivery.prerequisites","delivery.testing","delivery.scripts"]
 ---
 
 # 构建平台与制品边界
 
-这是共享构建策略的知识主题，不是按开发者身份编排的手册首页。具体模块从[源码知识地图](../knowledge/index.md)定位；本页只规定哪些平台与制品组合成立，避免一次修改把宿主、原生依赖和独立包的边界混在一起。
+本页规定 ColorVision 宿主、插件、客户项目和独立 FileIO 包的平台与制品组合。具体模块从[源码知识地图](../knowledge/index.md)定位；修改共享构建策略时，分别核对宿主、原生依赖和独立包。
 
 ## 先区分动作和制品
 
@@ -29,16 +29,19 @@ related: ["platform.system","delivery.prerequisites","delivery.testing","deliver
 宿主、官方插件和客户项目的 `Platform`/`PlatformTarget` 必须是 `x64`；RID 可以为空或为 `win-x64`，多 RID 只能包含 `win-x64`。
 x86、AnyCPU、ARM64、`win-x86`、`linux-x64` 和混合 RID 等显式覆盖都会由共享 MSBuild 策略在初始化阶段以及 Build/Pack 入口 fail-fast。
 
-`build.sln`、`scgd_general_wpf.sln` 和 `UI/UI.sln` 只公开 `Debug|x64` 与 `Release|x64`；不再保留 Any CPU、x86 或其他历史 solution alias。除 `ColorVision.FileIO` 外，所有 managed 与 native 项目都在这两个配置下映射到 x64。CI、安装器和发布脚本只接受 Release|x64。
+`build.sln`、`scgd_general_wpf.sln` 和 `UI/UI.sln` 只公开 `Debug|x64` 与 `Release|x64`。除 `ColorVision.FileIO` 外，所有 managed 与 native 项目都在这两个配置下映射到 x64。主程序 CI 构建和正式交付使用 `Release|x64`；本地开发可以使用 `Debug|x64`。
 
 `ColorVision.FileIO` 是唯一例外的独立纯托管 NuGet 包。包含它的 solution 在 x64 solution 配置下将该项目的 `ActiveCfg` 与 `Build.0` 映射到 `Any CPU`。
-规范产物位于无架构目录的 `Engine/ColorVision.FileIO/bin/Release`，并固定为单一 AnyCPU 程序集和同一包坐标；它要求 `Platform=AnyCPU`、`PlatformTarget=AnyCPU` 且 RID 为空，不生成 x64/x86/ARM64 变体。
+规范产物位于无架构目录的 `Engine/ColorVision.FileIO/bin/Release`，并使用同一包坐标，各目标框架内均为纯托管 AnyCPU 程序集；它要求 `Platform=AnyCPU`、`PlatformTarget=AnyCPU` 且 RID 为空，不生成 x64/x86/ARM64 变体。
 发布门禁会核对 nupkg 坐标、全部 PE 资产和 CLR flags。AnyCPU 包可被不同架构进程消费，
 并不表示 ColorVision 桌面宿主或官方插件已经支持 ARM64。
 
 ```powershell
+# 只读核对项目、solution 和策略声明；不构建、不启动应用或发布
 python Scripts\verify_platform_policy.py
 ```
+
+不带包参数时，此命令不检查已生成的 `.nupkg`。CI 使用 `--fileio-package-directory Engine/ColorVision.FileIO/bin/Release` 另核对 FileIO 包坐标、目标框架和 PE/CLR 标志；声明检查通过不能替代实际包验证。
 
 真正增加 ARM64 支持必须分阶段完成：
 

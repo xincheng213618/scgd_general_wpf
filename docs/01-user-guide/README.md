@@ -25,7 +25,7 @@ related: ["platform.system", "ui.configuration", "operations.logs", "ui.discover
 | 日志中没有错误，或切换筛选后内容消失 | 来源是否输出、文件是否留存、历史读取范围和窗口筛选，不先假定动作没发生 | [日志来源与显示](./interface/log-viewer.md) |
 | 设备在列表中但命令失败 | 资源身份、实例装配、通信与真实动作是不同阶段 | [设备装配](../04-api-reference/engine-components/device-service-chain.md)、[相机](./devices/camera.md)、[物理相机](./devices/camera-management.md) |
 | 流程开始后没有完成 | 节点结束、引擎执行结束与整轮后处理结束不等价 | [流程执行与最终化](./workflow/execution.md) |
-| JSON 或模板校验失败 | 原始 JSON 格式、模板 schema/版本、编辑模式与实际保存对象，而非笼统“参数不支持” | [JSON 模板](../04-api-reference/algorithms/templates/json-templates.md)、[流程模板与包](../04-api-reference/engine-components/template-flow-chain.md) |
+| JSON 或模板校验失败 | 原始 JSON 格式、编辑模式、实际保存对象及所用校验器的范围；通用 JSON 编辑器的 Schema 提示不等于完整规则校验 | [JSON 模板](../04-api-reference/algorithms/templates/json-templates.md)、[流程模板与包](../04-api-reference/engine-components/template-flow-chain.md) |
 | 图像存在但标注缺失或坐标不对 | Engine 历史结果、中立算法 overlay 和客户项目结果使用不同处理链 | [结果展示边界](../04-api-reference/engine-components/result-handoff-chain.md) |
 | 结果存在但数据库/导出为空 | 查询对象、批次、来源路径和写入完成状态；导出不是统一数据中心 | [存储所有者](./data-management/README.md)、[导入导出](./data-management/export-import.md) |
 | TCP 已连接但项目没有返回结果 | 通道连通、命令接收与业务最终响应不同；协议字段由项目 handler 定义 | [Socket 基础设施](../04-api-reference/ui-components/ColorVision.SocketProtocol.md)、[项目协议](../04-api-reference/projects/README.md) |

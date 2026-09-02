@@ -11,26 +11,18 @@ related: ["plugins.index","plugins.model","plugins.getting-started","plugins.con
 
 # 插件依赖与接入矩阵
 
-按菜单、状态栏、设置页、Socket、数据库、注册表、管理员权限或 native 依赖定位插件时检索本页。确定模块后转到 [现有插件能力](./README.md) 中的单插件页，并核对实际代码与测试；不需要先通读其余插件。
+本页比较当前 `Plugins/` 的接入点、依赖和外部边界。先用下表确定模块，再点击插件名读取其完整业务契约；按菜单、状态栏、设置、Socket 或管理员权限查找时，使用后续矩阵。
 
-本页比较当前 `Plugins/` 的接入点和外部边界，单插件业务契约由各自主题维护。这里重点回答：
-
-- 插件从哪里进入宿主。
-- 它依赖哪些 UI/Engine 模块。
-- 它有没有设备、Socket、数据库、注册表、Windows 服务等外部边界。
-- 发布时应该验收什么。
-- 哪些地方最容易被误判。
-
-如果你已经遇到具体问题，例如插件没有加载、菜单没出现、`.deps.json` 版本不满足、`.cvxp` 包缺文件、管理员权限或 Socket 指令异常，先回到 [现有插件能力说明](./README.md) 找对应插件页。发版或现场替换时，按本文的构建、打包和烟测矩阵核对，并保存 manifest、DLL 版本、`.cvxp` 和回退材料。
+程序集装载、依赖检查和产物安装问题统一见[插件装载与扩展发现](../../02-developer-guide/plugin-development/overview.md)及[插件产物与交付](../../02-developer-guide/plugin-development/getting-started.md)。本页不把 DLL 存在、端口连通或打包成功当作运行验证。
 
 ## 当前源码插件总表
 
 | 插件 | 源码目录 | 版本事实源 | 宿主入口 | 主要能力 | 关键风险 |
 | --- | --- | --- | --- | --- | --- |
-| Conoscope | `Plugins/Conoscope/` | DLL `FileVersion` / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Conoscope/Conoscope.csproj)；[manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Conoscope/manifest.json) 为同步副本 | Tool 菜单 `VAM`，ImageEditor 右键打开 | 锥镜/VAM 图像观察、关注点、参考轴、预处理、色域和对比度分析、MVS 观察相机 | MVS 依赖海康 `MvCameraControl.dll`；关注点逻辑是插件本地实现 |
-| Spectrum | `Plugins/Spectrum/` | DLL `FileVersion` / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Spectrum/Spectrum.csproj)；[manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Spectrum/manifest.json) 为同步副本 | Tool 菜单光谱窗口，Spectrum 窗口级菜单/状态栏，Socket JSON 指令 | 光谱仪连接、标定分组、测量、EQE、CIE、SQLite 结果、许可证、Socket 远程控制 | 依赖光谱仪 native DLL、OpenCV、串口、许可证；连接状态与标定可测量状态必须分开判断 |
-| SystemMonitor | `Plugins/SystemMonitor/` | [manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/SystemMonitor/manifest.json) / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/SystemMonitor/SystemMonitor.csproj) | Tool 菜单，设置页，主程序状态栏 | CPU/RAM/磁盘/网络/进程/GPU/缓存监控和状态栏投影 | 性能计数器可能初始化失败并降级；监控单例位于 `ColorVision.UI.Configs` 命名空间 |
-| WindowsServicePlugin | `Plugins/WindowsServicePlugin/` | [manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/WindowsServicePlugin/manifest.json) / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj) | 管理员应用提供器、安装向导；另有旧 `InstallTool` 菜单类型和主窗初始化器 | 本机服务管理、在线选包、完整包安装与数据库迁移；旧工具链另行存在 | 会改服务、数据库、进程和文件；新完整安装链不支持增量，下载与完成边界见[插件主题](./standard-plugins/windows-service.md) |
+| [Conoscope](./standard-plugins/conoscope.md) | `Plugins/Conoscope/` | DLL `FileVersion` / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Conoscope/Conoscope.csproj)；[manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Conoscope/manifest.json) 为同步副本 | Tool 菜单 `VAM`，ImageEditor 右键打开 | 锥镜/VAM 图像观察、关注点、参考轴、预处理、色域和对比度分析、MVS 观察相机 | MVS 依赖海康 `MvCameraControl.dll`；关注点逻辑是插件本地实现 |
+| [Spectrum](./standard-plugins/spectrum.md) | `Plugins/Spectrum/` | DLL `FileVersion` / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Spectrum/Spectrum.csproj)；[manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Spectrum/manifest.json) 为同步副本 | Tool 菜单光谱窗口，Spectrum 窗口级菜单/状态栏，Socket JSON 指令 | 光谱仪连接、标定分组、测量、EQE、CIE、SQLite 结果、许可证、Socket 远程控制 | 依赖光谱仪 native DLL、OpenCV、串口、许可证；连接状态与标定可测量状态必须分开判断 |
+| [SystemMonitor](./standard-plugins/system-monitor.md) | `Plugins/SystemMonitor/` | [manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/SystemMonitor/manifest.json) / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/SystemMonitor/SystemMonitor.csproj) | Tool 菜单，设置页，主程序状态栏 | CPU/RAM/磁盘/网络/进程/GPU/缓存监控和状态栏投影 | 性能计数器可能初始化失败并降级；监控单例位于 `ColorVision.UI.Configs` 命名空间 |
+| [WindowsServicePlugin](./standard-plugins/windows-service.md) | `Plugins/WindowsServicePlugin/` | [manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/WindowsServicePlugin/manifest.json) / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj) | 管理员应用提供器、安装向导；另有旧 `InstallTool` 菜单类型和主窗初始化器 | 本机服务管理、在线选包、完整包安装与数据库迁移；旧工具链另行存在 | 会改服务、数据库、进程和文件；新完整安装链不支持增量，下载与完成边界见[插件主题](./standard-plugins/windows-service.md) |
 
 表中的版本来源用于定位，不代表已经验证交付一致性。DLL `FileVersion`、包名、manifest 同步与安装门禁见[插件产物与交付](../../02-developer-guide/plugin-development/getting-started.md)；启动装载的实际依赖检查见[装载与扩展发现](../../02-developer-guide/plugin-development/overview.md)。不能从 manifest 的 `requires` 字段推断启动加载器已经执行该检查。
 

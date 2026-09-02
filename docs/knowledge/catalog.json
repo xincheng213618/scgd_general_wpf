@@ -3067,7 +3067,10 @@
       ],
       "code_paths": [
         "Directory.Build.props",
+        "ColorVision.PlatformPolicy.targets",
         "build.sln",
+        "Engine/ColorVision.FileIO/ColorVision.FileIO.csproj",
+        ".github/workflows/dotnet.yml",
         "Scripts/release.bat",
         "Scripts/verify_platform_policy.py"
       ],
@@ -3082,6 +3085,8 @@
       ],
       "code_scopes": [
         ".",
+        ".github/workflows",
+        "Engine/ColorVision.FileIO",
         "Scripts"
       ],
       "domain": "delivery",

@@ -36,7 +36,7 @@ node docs/.vitepress/scripts/knowledge.mjs impact "UI/ColorVision.UI/PropertyEdi
 | 根目录及局部 `AGENTS.md` | 工作规则、授权边界和检索入口 |
 | 活动主题 Markdown | 当前契约、理由、源码/测试入口和验证缺口 |
 | 源码、项目文件、协议与测试 | 核实实际实现和可重复行为 |
-| `knowledge/*`、catalog 和网站 | 从主题元数据生成发现、路由与展示 |
+| `knowledge/index.md`、`code/`、`domains/`、`catalog.json` 和网站 | 从主题元数据生成发现、路由与展示；`knowledge/maintenance.md` 等规范正文仍由人工维护 |
 | `CHANGELOG.md` 与 Git | 回溯版本变化和旧设计 |
 
 同一事实只维护一份。简体中文是主题正文的主要维护语言；英文 `AGENTS.md`、源码旁原生 README、符号和配置键可以保留。源码旁 README 只保留包身份、随包必需的前提/风险和权威主题入口，不复制另一套完整契约。

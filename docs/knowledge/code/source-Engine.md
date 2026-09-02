@@ -243,6 +243,9 @@ next: false
 
 ## Engine/ColorVision.FileIO {#module-456e67696e652f436f6c6f72566973696f6e2e46696c65494f}
 
+- [构建平台与制品边界](../../02-developer-guide/README.md) — `delivery.index`
+  定义宿主、插件、客户包和独立FileIO包的构建平台与制品边界，区分构建验证和远端发布。
+
 - [CV 文件读取、通道与写回契约](../../04-api-reference/engine-components/ColorVision.FileIO.md) — `engine.file-io`
   CVRAW/CVCIE 读取、内嵌 XYZ 真彩显示与原图回退、手动校正数值校验，以及版本写回和失败边界。
 

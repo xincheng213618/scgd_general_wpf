@@ -2345,6 +2345,12 @@
           "items": [
             {
               "text": {
+                "root": "构建平台与制品边界"
+              },
+              "link": "/02-developer-guide/README"
+            },
+            {
+              "text": {
                 "root": "CV 文件读取、通道与写回契约"
               },
               "link": "/04-api-reference/engine-components/ColorVision.FileIO"
@@ -3636,6 +3642,12 @@
           "link": "/knowledge/code/repository#module-2e6769746875622f776f726b666c6f7773",
           "collapsed": true,
           "items": [
+            {
+              "text": {
+                "root": "构建平台与制品边界"
+              },
+              "link": "/02-developer-guide/README"
+            },
             {
               "text": {
                 "root": "构建与发布脚本"

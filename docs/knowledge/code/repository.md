@@ -66,6 +66,9 @@ next: false
 
 ## .github/workflows {#module-2e6769746875622f776f726b666c6f7773}
 
+- [构建平台与制品边界](../../02-developer-guide/README.md) — `delivery.index`
+  定义宿主、插件、客户包和独立FileIO包的构建平台与制品边界，区分构建验证和远端发布。
+
 - [构建与发布脚本](../../02-developer-guide/scripts/README.md) — `delivery.scripts`
   主程序、插件和项目包的正式发布入口、只读校验与上传清理副作用。
 

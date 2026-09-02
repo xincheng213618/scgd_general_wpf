@@ -20,23 +20,12 @@ related: ["plugins.model", "plugins.getting-started", "plugins.capabilities", "p
 | 应放在插件、Engine 服务、模板还是项目包 | [扩展责任边界](../../02-developer-guide/core-concepts/extensibility.md) | 已有抽象与各模块边界 |
 | manifest 已识别但加载失败；DLL 加载了却没菜单 | [插件装载与扩展发现](../../02-developer-guide/plugin-development/overview.md) | `PluginLoader`、`AssemblyHandler`、各 provider 消费者 |
 | 新项目产物、HostCopy、cvxp 安装替换或导出 | [插件产物与交付](../../02-developer-guide/plugin-development/getting-started.md) | `PluginProject.HostCopy.targets`、宿主产物管理与 `package_cvxp.py` |
-| 某个插件的设备、设置、窗口或数据库行为 | 下表中的独立模块主题 | `Plugins/<Name>/` |
+| 当前有哪些插件；某个插件的设备、设置、窗口或数据库行为 | [当前插件与单模块主题](./plugin-capability-matrix.md#当前源码插件总表) | `Plugins/<Name>/` |
 | 横向检查插件扩展点与外部依赖 | [插件依赖与接入矩阵](./plugin-capability-matrix.md) | 各插件菜单、状态、配置和 native 接入 |
 | 客户判定、MES 字段或项目专用流程 | [项目知识入口](../../04-api-reference/projects/README.md) | `Projects/`，不是通用插件宿主 |
 
-## 当前通用插件
-
-| 源码目录 / manifest ID | 能力责任 | 规范主题 |
-| --- | --- | --- |
-| `Plugins/Conoscope/` / `Conoscope` | VAM/锥镜图像观察与分析、关注点及观察相机 | [Conoscope](./standard-plugins/conoscope.md) |
-| `Plugins/Spectrum/` / `Spectrum` | 光谱仪连接、测量校正、EQE 和自身 SQLite 结果 | [Spectrum](./standard-plugins/spectrum.md) |
-| `Plugins/SystemMonitor/` / `SystemMonitor` | 性能采样、状态栏与监控窗口生命周期 | [SystemMonitor](./standard-plugins/system-monitor.md) |
-| `Plugins/WindowsServicePlugin/` / `WindowsServicePlugin` | CVWindowsService 安装配置及 MySQL/MQTT 管理 | [WindowsServicePlugin](./standard-plugins/windows-service.md) |
-
-这张表只列当前 `Plugins/` 中有项目和 manifest 的模块，不将历史插件或 `Projects/` 包复制为另一份插件清单。模块自己的 README 可以保留原语言；这里维护源码检索入口，不要求再写一份面向不同读者的正文。
-
 ## 修改与验证
 
-修改装载、依赖检查或包结构时，更新相应共用契约；修改某个插件的业务行为时，更新该模块主题。新增或移除模块后同步本入口与横向矩阵，再生成知识地图和网站导航，不手改另一棵菜单树。
+修改装载、依赖检查或包结构时，更新相应共用契约；修改某个插件的业务行为时，更新该模块主题。新增或移除模块后更新横向矩阵及相关主题元数据，再生成知识地图和网站导航；只有问题路由变化时才修改本入口。
 
 本地构建、运行插件和发布是不同动作。创建文档或诊断加载失败不授权启动设备、修改系统服务或上传包；普通插件、Spectrum 双通道、客户项目包和主程序的发布对象与入口见[产物契约](../../02-developer-guide/plugin-development/getting-started.md)及对应模块页。本入口不声明覆盖所有插件的统一运行测试。
