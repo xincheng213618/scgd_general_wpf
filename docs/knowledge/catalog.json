@@ -7392,7 +7392,7 @@
       "knowledge_id": "plugins.spectrum-socket",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Spectrum 五个 Socket 业务指令的参数、结果字段、设备门禁与合作式取消；30/60 秒不保证原生操作按时停止。",
+      "summary": "Spectrum Socket 的启用与状态查询、五个指令的参数和返回值；连接成功与标定就绪不同，30/60 秒取消不保证原生操作按时停止。",
       "aliases": [
         "光谱仪远程连接和测量",
         "Spectrum Socket 指令",
@@ -7406,7 +7406,9 @@
         "SpectrumDarkCalibrationSocketHandler",
         "SpectrumAutoIntTimeSocketHandler",
         "SpectrumMeasureSocketHandler",
-        "Spectrum.Socket"
+        "Spectrum.Socket",
+        "光谱仪Socket接入",
+        "Handler not found for event: SpectrumStatus"
       ],
       "code_paths": [
         "Plugins/Spectrum/Socket/README.md",
@@ -7421,7 +7423,10 @@
         "Plugins/Spectrum/Models/ViewResultSpectrum.cs",
         "Plugins/Spectrum/App.xaml",
         "Plugins/Spectrum/App.xaml.cs",
-        "Plugins/Spectrum/MainWindow.xaml.cs"
+        "Plugins/Spectrum/MainWindow.xaml.cs",
+        "UI/ColorVision.SocketProtocol/SocketManagerWindow.xaml.cs",
+        "UI/ColorVision.SocketProtocol/SocketManagerWindow.xaml",
+        "UI/ColorVision.SocketProtocol/SocketConfig.cs"
       ],
       "test_paths": [],
       "related": [
@@ -7429,7 +7434,8 @@
         "ui.socket-protocol"
       ],
       "code_scopes": [
-        "Plugins/Spectrum"
+        "Plugins/Spectrum",
+        "UI/ColorVision.SocketProtocol"
       ],
       "domain": "plugins",
       "title": "Spectrum Socket 业务指令与完成边界",

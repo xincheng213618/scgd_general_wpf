@@ -1412,6 +1412,12 @@
             },
             {
               "text": {
+                "root": "Spectrum Socket 业务指令与完成边界"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/spectrum-socket"
+            },
+            {
+              "text": {
                 "root": "通用查询、条件会话与整表操作"
               },
               "link": "/04-api-reference/ui-components/database-query"

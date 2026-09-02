@@ -33,7 +33,7 @@ next: false
   Spectrum 的测量校正链、SQLite 结果和独立 ZIP 与 cvxp 双通道发布契约。
 
 - [Spectrum Socket 业务指令与完成边界](../../04-api-reference/plugins/standard-plugins/spectrum-socket.md) — `plugins.spectrum-socket`
-  Spectrum 五个 Socket 业务指令的参数、结果字段、设备门禁与合作式取消；30/60 秒不保证原生操作按时停止。
+  Spectrum Socket 的启用与状态查询、五个指令的参数和返回值；连接成功与标定就绪不同，30/60 秒取消不保证原生操作按时停止。
 
 - [WindowsServicePlugin：选包、本机安装与恢复](../../04-api-reference/plugins/standard-plugins/windows-service.md) — `plugins.windows-service`
   WindowsServicePlugin的在线选包与缓存、本机完整安装、数据库版本切换和恢复边界；下载、日志完成、备份与实际服务状态不能互相替代。

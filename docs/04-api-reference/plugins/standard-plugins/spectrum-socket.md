@@ -2,9 +2,9 @@
 knowledge_id: "plugins.spectrum-socket"
 knowledge_type: "topic"
 status: "current"
-summary: "Spectrum 五个 Socket 业务指令的参数、结果字段、设备门禁与合作式取消；30/60 秒不保证原生操作按时停止。"
-aliases: ["光谱仪远程连接和测量","Spectrum Socket 指令","SpectrumStatus","SpectrumConnect","SpectrumDarkCalibration","SpectrumAutoIntTime","SpectrumMeasure","SpectrumStatusSocketHandler","SpectrumConnectSocketHandler","SpectrumDarkCalibrationSocketHandler","SpectrumAutoIntTimeSocketHandler","SpectrumMeasureSocketHandler","Spectrum.Socket"]
-code_paths: ["Plugins/Spectrum/Socket/README.md","Plugins/Spectrum/Socket/SpectrumStatusSocketHandler.cs","Plugins/Spectrum/Socket/SpectrumConnectSocketHandler.cs","Plugins/Spectrum/Socket/SpectrumDarkCalibrationSocketHandler.cs","Plugins/Spectrum/Socket/SpectrumAutoIntTimeSocketHandler.cs","Plugins/Spectrum/Socket/SpectrumMeasureSocketHandler.cs","Plugins/Spectrum/SpectrometerManager.cs","Plugins/Spectrum/Configs/ShutterController.cs","Plugins/Spectrum/Data/ViewResultManager.cs","Plugins/Spectrum/Models/ViewResultSpectrum.cs","Plugins/Spectrum/App.xaml","Plugins/Spectrum/App.xaml.cs","Plugins/Spectrum/MainWindow.xaml.cs"]
+summary: "Spectrum Socket 的启用与状态查询、五个指令的参数和返回值；连接成功与标定就绪不同，30/60 秒取消不保证原生操作按时停止。"
+aliases: ["光谱仪远程连接和测量","Spectrum Socket 指令","SpectrumStatus","SpectrumConnect","SpectrumDarkCalibration","SpectrumAutoIntTime","SpectrumMeasure","SpectrumStatusSocketHandler","SpectrumConnectSocketHandler","SpectrumDarkCalibrationSocketHandler","SpectrumAutoIntTimeSocketHandler","SpectrumMeasureSocketHandler","Spectrum.Socket","光谱仪Socket接入","Handler not found for event: SpectrumStatus"]
+code_paths: ["Plugins/Spectrum/Socket/README.md","Plugins/Spectrum/Socket/SpectrumStatusSocketHandler.cs","Plugins/Spectrum/Socket/SpectrumConnectSocketHandler.cs","Plugins/Spectrum/Socket/SpectrumDarkCalibrationSocketHandler.cs","Plugins/Spectrum/Socket/SpectrumAutoIntTimeSocketHandler.cs","Plugins/Spectrum/Socket/SpectrumMeasureSocketHandler.cs","Plugins/Spectrum/SpectrometerManager.cs","Plugins/Spectrum/Configs/ShutterController.cs","Plugins/Spectrum/Data/ViewResultManager.cs","Plugins/Spectrum/Models/ViewResultSpectrum.cs","Plugins/Spectrum/App.xaml","Plugins/Spectrum/App.xaml.cs","Plugins/Spectrum/MainWindow.xaml.cs","UI/ColorVision.SocketProtocol/SocketManagerWindow.xaml.cs","UI/ColorVision.SocketProtocol/SocketManagerWindow.xaml","UI/ColorVision.SocketProtocol/SocketConfig.cs"]
 test_paths: []
 related: ["plugins.spectrum","ui.socket-protocol"]
 ---
@@ -15,7 +15,26 @@ related: ["plugins.spectrum","ui.socket-protocol"]
 
 本主题只定义 Spectrum 业务调用。设备、许可证、标定和原生驱动前提见 [Spectrum 测量与标定](./spectrum.md)。连接、断开、校零、自动积分和测量都会进入真实设备路径，必须另获现场授权；下面的合成报文只说明数据结构，不是设备联调授权。
 
+## 开始接入
+
+在已获授权的设备环境中，先确认通信入口，再连接和测量：
+
+1. 启动装载了 Spectrum 的 ColorVision，或启动完整依赖齐备的 Spectrum 独立程序。五个 handler 必须在公共分发器创建时已经加载；运行中加入程序集不会自动刷新分发器。
+2. 在 ColorVision 的 **帮助 → Socket 连接管理器 → 服务设置** 中配置地址、端口，将 **消息解析格式** 设为 `Json`，再启动服务。若服务已经运行，更改配置后须停止并重新启动；具体监听与停止规则见[公共 Socket 契约](../../ui-components/ColorVision.SocketProtocol.md)。
+3. 连接实际监听端点，发送下面的状态请求。收到对应 `MsgID` 和 `Code = 200` 表示状态 handler 可达；设备尚未连接时也可以成功查询。
+4. 准备好设备、许可证和标定后发送 `SpectrumConnect`，同时查看 `Code`、`IsConnected`、`IsCalibrationReady` 和 `CalibrationStatus`。需要测量时再调用 `SpectrumMeasure`；校零与自动积分按实际流程选择，不是每次请求都必须执行。
+
+状态查询读取 Manager 属性，不调用设备连接或测量：
+
+```json
+{"EventName":"SpectrumStatus","MsgID":"status-1"}
+```
+
+若返回 `404` 和 `Handler not found for event: SpectrumStatus`，先核对大小写、插件装载与分发器创建时机；若没有响应，先查监听端点、JSON 模式和公共传输层的消息边界。收到业务响应后，再按本页的设备门禁与错误码定位。
+
 ## 请求与五个入口
+
+`Params` 是字符串。连接请求示例：
 
 ```json
 {"EventName":"SpectrumConnect","MsgID":"example-1","Params":"connect"}
@@ -107,7 +126,7 @@ Socket 校零不回退到人工遮光。`CaptureDarkWithShutterCoreAsync` 先关
 
 业务 handler 不要求 `MainWindow` 已打开，不等于“关闭独立程序后仍提供后台服务”。Spectrum 窗口关闭会暂停接收新测量、等待在途路径并尝试断开设备；独立 WPF 程序也没有在 `App.xaml` 配置关闭窗口后常驻的模式。宿主仍存活且入口已启用时，可以在没有 Spectrum 窗口的情况下重新连接并操作，但仍须满足设备/标定/快门门禁。
 
-## 源码入口与验证缺口
+## 实现与验证范围
 
 五个 handler 的 `Handle` 定义参数和返回码；设备互斥、标定检查和取消观察点在 `SpectrometerManager`，快门确认在 `Configs/ShutterController.cs`，结果事务在 `Data/ViewResultManager.cs`，字段格式在 `Models/ViewResultSpectrum.cs`。扩展指令时保留这些责任边界，传输注册只依公共 Socket 的当前发现规则。
 
