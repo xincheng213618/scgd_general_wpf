@@ -462,6 +462,15 @@
     {"query":"VExportCIE","expected_any":["engine.cv-image-export"],"include_planned":false},
     {"query":"ConvertBatchImages","expected_any":["algorithms.platform"],"include_planned":false},
     {"query":"colorvision-batch-image-conversion","expected_any":["algorithms.platform"],"include_planned":false},
-    {"query":"OpenBatchImageProcessing","expected_any":["algorithms.platform"],"include_planned":false}
+    {"query":"OpenBatchImageProcessing","expected_any":["algorithms.platform"],"include_planned":false},
+    {"query":"技能","expected_any":["copilot.skills"],"include_planned":false},
+    {"query":"/skills","expected_any":["copilot.skills"],"include_planned":false},
+    {"query":"SKILL.json","expected_any":["copilot.skills"],"include_planned":false},
+    {"query":"CopilotAgentSkillCatalog","expected_any":["copilot.skills"],"include_planned":false},
+    {"query":"allow_implicit_invocation","expected_any":["copilot.skills"],"include_planned":false},
+    {"query":"colorvision-script-automation","expected_any":["copilot.skills"],"include_planned":false},
+    {"query":"InspectFlowGraph","expected_any":["copilot.tool-contracts"],"include_planned":false},
+    {"query":"ApplyFlowPatch","expected_any":["copilot.tool-contracts"],"include_planned":false},
+    {"query":"PreviewWorkspacePatchEnvelope","expected_any":["copilot.session-tools"],"include_planned":false}
   ]
 }

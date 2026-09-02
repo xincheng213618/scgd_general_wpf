@@ -6,7 +6,7 @@ summary: "CVRAW/CVCIE 原生导出的窗口、命令行参数、通道和命名�
 aliases: ["CVRAW转TIFF", "CVCIE导出", "ColorVision命令行导出", "Python批量转换CVRAW", "导出返回0但没有文件", "CVRawFileExporter", "VExportCIE", "ExportCVCIE", "SaveToTif"]
 code_paths: ["Engine/ColorVision.Engine/Media/FileProcessorCVRaw.cs", "Engine/ColorVision.Engine/Media/FileCVCIE.cs", "Engine/ColorVision.Engine/Media/Export/VExportCIE.cs", "Engine/ColorVision.Engine/Media/Export/ExportCVCIE.xaml", "Engine/ColorVision.Engine/Media/Export/ExportCVCIE.xaml.cs", "UI/ColorVision.UI/FileProcessorFactory.cs", "UI/ColorVision.UI/Shell/ArgumentParser.cs", "ColorVision/App.xaml.cs", "ColorVision/Copilot/Skills/colorvision-batch-image-conversion"]
 test_paths: ["Test/ColorVision.UI.Tests/ExportCieTests.cs"]
-related: ["engine.file-io", "ui.image-editor", "algorithms.platform", "copilot.lifecycle"]
+related: ["engine.file-io", "ui.image-editor", "algorithms.platform", "copilot.skills"]
 ---
 
 # CVRAW / CVCIE 图像导出

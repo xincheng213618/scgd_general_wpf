@@ -1644,13 +1644,11 @@
       "knowledge_id": "copilot.lifecycle",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Copilot 任务生命周期、恢复预算、项目指令发现和 Skill 渐进加载的契约。",
+      "summary": "Copilot 任务生命周期、恢复预算与项目指令发现的契约；技能发现和调用见独立技能主题。",
       "aliases": [
         "Copilot 如何加载 AGENTS.md",
         "为什么不读取 config.toml",
-        "Skill 什么时候加载",
         "CopilotAgentProjectInstructions",
-        "CopilotAgentSkillCatalog",
         "/init",
         "初始化项目指令",
         "CopilotProjectInitialization"
@@ -1658,7 +1656,6 @@
       "code_paths": [
         "ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.cs",
         "ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.Rules.cs",
-        "ColorVision/Copilot/Agent/CopilotAgentSkillCatalog.cs",
         "ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs",
         "ColorVision/Copilot/Agent/CopilotAgentTokenBudget.cs",
         "ColorVision/Copilot/Agent/CopilotAgentTokenBudget.Estimation.cs",
@@ -1671,7 +1668,6 @@
       ],
       "test_paths": [
         "Test/ColorVision.Copilot.Tests/CopilotAgentProjectInstructionsTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotAgentSkillCatalogTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotTokenUsageMergeTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotNonStreamingUsageTests.cs",
@@ -1681,13 +1677,14 @@
       "related": [
         "copilot.runtime",
         "copilot.execution",
-        "copilot.extensions"
+        "copilot.extensions",
+        "copilot.skills"
       ],
       "code_scopes": [
         "ColorVision/Copilot"
       ],
       "domain": "copilot",
-      "title": "Copilot 生命周期、预算与 Skills",
+      "title": "Copilot 生命周期、预算与项目指令",
       "source": "docs/02-developer-guide/core-concepts/copilot-agent-lifecycle.md",
       "url": "/02-developer-guide/core-concepts/copilot-agent-lifecycle",
       "searchable": true
@@ -1782,7 +1779,10 @@
         "QueryFlowExecutionStats",
         "QueryDatabaseSql",
         "ExecuteDatabaseSql",
-        "colorvision-database-operations"
+        "colorvision-database-operations",
+        "PreviewWorkspacePatchEnvelope",
+        "ApplyWorkspacePatchEnvelope",
+        "RunShellCommand"
       ],
       "code_paths": [
         "ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs",
@@ -1848,6 +1848,73 @@
       "searchable": true
     },
     {
+      "knowledge_id": "copilot.skills",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "Copilot 技能的项目/用户/内置发现路径、显式调用、同名选择、开关、按需加载、使用统计和 MCP 依赖配置。",
+      "aliases": [
+        "技能",
+        "内置技能",
+        "Skill 什么时候加载",
+        "/skills",
+        "SKILL.md",
+        "SKILL.json",
+        ".agents/skills",
+        "allow_implicit_invocation",
+        "Skill 没有出现",
+        "CopilotAgentSkills",
+        "CopilotAgentSkillCatalog",
+        "CopilotAgentSkillMetadata",
+        "CopilotAgentSkillReference",
+        "CopilotAgentSkillOverrideConfig",
+        "CopilotAgentSkillUsageStore",
+        "Skill MCP 依赖",
+        "colorvision-flow-diagnostics",
+        "colorvision-script-automation"
+      ],
+      "code_paths": [
+        "ColorVision/Copilot/Agent/CopilotAgentSkills.cs",
+        "ColorVision/Copilot/Agent/CopilotAgentSkillCatalog.cs",
+        "ColorVision/Copilot/Agent/CopilotAgentSkillCatalogMonitor.cs",
+        "ColorVision/Copilot/Agent/CopilotAgentSkillMetadata.cs",
+        "ColorVision/Copilot/Agent/CopilotAgentSkillSelectionPolicy.cs",
+        "ColorVision/Copilot/Agent/CopilotAgentSkillUsageStore.cs",
+        "ColorVision/Copilot/Agent/CopilotAgentSkillReference.cs",
+        "ColorVision/Copilot/Agent/CopilotAgentSkillCommand.cs",
+        "ColorVision/Copilot/Agent/CopilotAgentSkillDiagnostics.cs",
+        "ColorVision/Copilot/Agent/CopilotAgentSkillMcpDependencyPolicy.cs",
+        "ColorVision/Copilot/Agent/CopilotAgentSkillMcpDependencyInstaller.cs",
+        "ColorVision/Copilot/Config/CopilotAgentSkillOverrideConfig.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.SupportCommands.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.SkillMcpDependencies.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.ConfigPersistence.cs",
+        "ColorVision/Copilot/CopilotSettingsViewModel.Diagnostics.cs",
+        "ColorVision/Copilot/CopilotSettingsWindow.xaml",
+        "ColorVision/Copilot/Skills",
+        "ColorVision/ColorVision.csproj"
+      ],
+      "test_paths": [
+        "Test/ColorVision.Copilot.Tests/CopilotAgentSkillCatalogTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotCodexSkillInstructionsTests.cs"
+      ],
+      "related": [
+        "copilot.lifecycle",
+        "copilot.configuration",
+        "copilot.interactions",
+        "copilot.extensions",
+        "copilot.tool-contracts"
+      ],
+      "code_scopes": [
+        "ColorVision",
+        "ColorVision/Copilot"
+      ],
+      "domain": "copilot",
+      "title": "Copilot 技能：发现、调用与排障",
+      "source": "docs/02-developer-guide/core-concepts/copilot-skills.md",
+      "url": "/02-developer-guide/core-concepts/copilot-skills",
+      "searchable": true
+    },
+    {
       "knowledge_id": "copilot.tool-contracts",
       "knowledge_type": "topic",
       "status": "current",
@@ -1867,7 +1934,12 @@
         "TemplatePatch",
         "ApplyTemplatePatch",
         "preview_id",
-        "current_json"
+        "current_json",
+        "InspectFlowGraph",
+        "SearchFlowNodeCatalog",
+        "PreviewFlowPatch",
+        "ApplyFlowPatch",
+        "colorvision-flow-authoring"
       ],
       "code_paths": [
         "ColorVision/Copilot/Agent/CopilotToolExecutionContracts.cs",
@@ -1882,6 +1954,9 @@
         "ColorVision/Copilot/CopilotChatViewModel.LocalCommandWorkflows.cs",
         "ColorVision/Copilot/CopilotChatViewModel.Permissions.cs",
         "ColorVision/Copilot/Agent/CopilotSharedCapabilityCatalog.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotFlowGraphTools.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowPatch.cs",
+        "ColorVision/Copilot/Skills/colorvision-flow-authoring",
         "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.TemplatePatch.cs",
         "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.TemplatePatchSupport.cs",
         "ColorVision/Copilot/Mcp/CopilotMcpToolModels.cs",
@@ -3686,7 +3761,7 @@
         "engine.file-io",
         "ui.image-editor",
         "algorithms.platform",
-        "copilot.lifecycle"
+        "copilot.skills"
       ],
       "code_scopes": [
         "ColorVision",

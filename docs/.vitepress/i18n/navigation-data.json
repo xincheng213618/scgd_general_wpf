@@ -245,6 +245,12 @@
             },
             {
               "text": {
+                "root": "Copilot 技能：发现、调用与排障"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-skills"
+            },
+            {
+              "text": {
                 "root": "Backend Operations 中继与只读概览"
               },
               "link": "/02-developer-guide/backend/operations-relay"
@@ -464,7 +470,7 @@
             },
             {
               "text": {
-                "root": "Copilot 生命周期、预算与 Skills"
+                "root": "Copilot 生命周期、预算与项目指令"
               },
               "link": "/02-developer-guide/core-concepts/copilot-agent-lifecycle"
             },
@@ -473,6 +479,12 @@
                 "root": "Copilot 任务、恢复与内置工具"
               },
               "link": "/02-developer-guide/core-concepts/copilot-agent-session-and-tools"
+            },
+            {
+              "text": {
+                "root": "Copilot 技能：发现、调用与排障"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-skills"
             },
             {
               "text": {

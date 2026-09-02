@@ -29,11 +29,14 @@ Agent会话、工具契约、上下文、恢复和MCP边界。 返回[知识总�
 - [Copilot 输入、命令与活动呈现](../../02-developer-guide/core-concepts/copilot-local-interactions.md) — `copilot.interactions`
   Copilot 命令目录、输入与引用、会话导航及消息/桌宠呈现；本地入口不等于无副作用。
 
-- [Copilot 生命周期、预算与 Skills](../../02-developer-guide/core-concepts/copilot-agent-lifecycle.md) — `copilot.lifecycle`
-  Copilot 任务生命周期、恢复预算、项目指令发现和 Skill 渐进加载的契约。
+- [Copilot 生命周期、预算与项目指令](../../02-developer-guide/core-concepts/copilot-agent-lifecycle.md) — `copilot.lifecycle`
+  Copilot 任务生命周期、恢复预算与项目指令发现的契约；技能发现和调用见独立技能主题。
 
 - [Copilot 任务、恢复与内置工具](../../02-developer-guide/core-concepts/copilot-agent-session-and-tools.md) — `copilot.session-tools`
   Copilot 会话检查点、任务呈现、重试和内置工具的状态恢复与安全边界。
+
+- [Copilot 技能：发现、调用与排障](../../02-developer-guide/core-concepts/copilot-skills.md) — `copilot.skills`
+  Copilot 技能的项目/用户/内置发现路径、显式调用、同名选择、开关、按需加载、使用统计和 MCP 依赖配置。
 
 - [Copilot 工具契约](../../02-developer-guide/core-concepts/copilot-agent-tool-contracts.md) — `copilot.tool-contracts`
   Copilot 工具结果、事件、审批恢复和 Flow 编辑必须遵守的执行契约。

@@ -2,14 +2,14 @@
 knowledge_id: "copilot.lifecycle"
 knowledge_type: "topic"
 status: "current"
-summary: "Copilot 任务生命周期、恢复预算、项目指令发现和 Skill 渐进加载的契约。"
-aliases: ["Copilot 如何加载 AGENTS.md","为什么不读取 config.toml","Skill 什么时候加载","CopilotAgentProjectInstructions","CopilotAgentSkillCatalog","/init","初始化项目指令","CopilotProjectInitialization"]
-code_paths: ["ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.cs","ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.Rules.cs","ColorVision/Copilot/Agent/CopilotAgentSkillCatalog.cs","ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs","ColorVision/Copilot/Agent/CopilotAgentTokenBudget.cs","ColorVision/Copilot/Agent/CopilotAgentTokenBudget.Estimation.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.FinalAnswerRecovery.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.Recovery.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.Loop.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.AgentStreamingLoop.cs","ColorVision/Copilot/CopilotChatMessage.cs","ColorVision/Copilot/CopilotProjectInitialization.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentProjectInstructionsTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentSkillCatalogTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs","Test/ColorVision.Copilot.Tests/CopilotTokenUsageMergeTests.cs","Test/ColorVision.Copilot.Tests/CopilotNonStreamingUsageTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerRecoverySafetyTests.cs"]
-related: ["copilot.runtime","copilot.execution","copilot.extensions"]
+summary: "Copilot 任务生命周期、恢复预算与项目指令发现的契约；技能发现和调用见独立技能主题。"
+aliases: ["Copilot 如何加载 AGENTS.md","为什么不读取 config.toml","CopilotAgentProjectInstructions","/init","初始化项目指令","CopilotProjectInitialization"]
+code_paths: ["ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.cs","ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.Rules.cs","ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs","ColorVision/Copilot/Agent/CopilotAgentTokenBudget.cs","ColorVision/Copilot/Agent/CopilotAgentTokenBudget.Estimation.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.FinalAnswerRecovery.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.Recovery.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.Loop.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.AgentStreamingLoop.cs","ColorVision/Copilot/CopilotChatMessage.cs","ColorVision/Copilot/CopilotProjectInitialization.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentProjectInstructionsTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs","Test/ColorVision.Copilot.Tests/CopilotTokenUsageMergeTests.cs","Test/ColorVision.Copilot.Tests/CopilotNonStreamingUsageTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerRecoverySafetyTests.cs"]
+related: ["copilot.runtime","copilot.execution","copilot.extensions","copilot.skills"]
 ---
 
-# Copilot 生命周期、预算与 Skills
+# Copilot 生命周期、预算与项目指令
 
 每次工具调用都有稳定的 `CallId`、轮次、尝试次数/上限、运行时、工具名、读写级别、风险、审批模式、幂等性、并发模式、资源指纹、排队耗时、失败分类、是否允许重试、参数摘要、开始/结束时间、总耗时、超时、结果摘要和最终状态。状态包括 `Running`、`AwaitingApproval`、`Completed`、`Failed`、`TimedOut`、`Denied`、`Cancelled` 和 `Interrupted`。
 
@@ -89,32 +89,4 @@ rules 不含 `paths` frontmatter 时无条件适用于该受信项目根；存�
 
 ## Agent Skills
 
-Harness 的 `AgentSkillsProvider` 作为标准能力启用，采用渐进式加载：模型先看到技能的名称和说明，只有当前任务匹配时才调用 `load_skill` 读取完整 `SKILL.md`，随后按需读取该技能目录中的参考资料。这样可以让 ColorVision 保存稳定、可复用的诊断流程，而不必把所有领域说明长期塞进系统提示。
-
-技能只从受信任的应用或工作区目录发现：
-
-- 受信项目根下的 `.agents/skills/<skill-name>/SKILL.md`，适合项目级扩展和覆盖；显式文件和附件形成的额外搜索根不会贡献 Skill。
-- 应用输出目录下的 `Copilot/Skills/<skill-name>/SKILL.md`，用于随 ColorVision 发布的内置技能。
-- 不默认扫描用户主目录或任意外部路径；符号链接和重解析点目录不会加入技能源。
-
-### Skill 候选与元数据预算
-
-为避免项目 Skill 持续增长后放大每次模型调用的 L1 元数据成本，运行时在 Framework 完成一次文件发现后对候选项去重，并根据当前请求与 `name`、`description` 的中英文相关性选择最多 16 个活跃 Skill。Skill 名称和说明的合计预算按独立 Agent 上下文窗口的 2% 换算（以 4 字符约等于 1 Token 做保守估算），并保留 8,000 字符硬上限；当前默认 1,048,576 Token 窗口因此使用 8,000 字符硬上限，如用户收紧窗口，Skill 预算也会同步下降。预算不足时先按剩余候选数公平缩短 description，仍然过多时才省略低排名 Skill；缩短只影响初始目录，真正加载时仍读取完整 `SKILL.md`。用户显式点名的 Skill 具有最高优先级，同一运行的发现结果会被缓存。运行诊断会显示候选数、启用数、缩短说明数、预算省略数，以及真正被 `load_skill` 或参考资料读取路径加载的 Skill 名称。这与 Codex 初始 Skills 列表的 2% / 8,000 字符规则保持一致，而不是把 8,000 当作每次都应该占满的目标。
-
-### Skill 使用统计和历史降级
-
-运行结束后，宿主只把“本轮被选择”、“本轮实际加载”和“连续入选但未加载”计数写入本地有界状态 `Copilot/State/skill-usage.json`。状态最多保留 128 个名称，单文件上限 1 MiB，损坏或超限时安全重建；不保存提示正文、Skill 内容或用户问题。连续至少 20 次被选择但未加载的 Skill 会自动降级为 explicit-only，不再占用后续请求的默认 Skill 元数据预算；这也能识别“历史上曾用过一次，但后来长期不再有效”的 Skill。用户在当前问题中以 `$skill-name` 或完整 Skill 名称直接点名时仍可加载；一次真实加载会把连续未加载计数清零，使该 Skill 重新参与隐式匹配，之后若再次连续低效仍会重新降级。Schema 1 的旧统计会保守迁移：从未加载的历史保留已有降级结论，无法推断连续性的已加载历史从零重新取样。独立 Agent 设置页显示选择次数、加载次数、加载率、连续未加载次数和当前历史降级状态。
-
-### 作者策略与用户覆盖
-
-Skill 作者也可以在同目录的 `agents/openai.yaml` 中设置 `policy.allow_implicit_invocation: false`，长期保持 explicit-only；用户直接点名时仍可使用。运行时只读取 Skill 目录内、不经过重解析点且不超过 32 KiB 的该策略文件。作者策略优先于历史统计，真实加载不会把作者声明改回隐式匹配。两类 explicit-only 都只是从默认上下文中移除，宿主不会自动删除 Skill 文件、执行脚本或扩大业务工具授权，因此清理是可逆且可审计的。
-
-用户还可以在独立 Agent 设置页为具体 Skill 配置覆盖状态。`Auto` 使用作者策略和连续未加载证据；`Name only` 只向模型公开名称，用一个不可见的单字符 description 满足 Agent Framework 的非空校验，原说明和完整正文都不会进入初始目录；`Explicit only` 只允许用户直接点名；`Off` 即使被点名也不加入模型目录。覆盖按 Skill 名称保存到 `CopilotConfig.AgentDefaults.SkillOverrides`，与模型 Profile 无关；选择 Auto 会移除持久化覆盖。Name-only 可以用极低元数据成本重新观察历史低效 Skill，作者声明的 explicit-only 仍具有更高优先级。所有状态都只改变可见性，不删除或修改 `SKILL.md`，与 [Codex 禁用但不删除 Skill](https://learn.chatgpt.com/docs/build-skills) 及 [Claude Code skillOverrides](https://code.claude.com/docs/en/slash-commands) 的原则一致。
-
-### Skill 内容不授予执行权限
-
-技能脚本发现与执行当前完全关闭。`load_skill` 和 `read_skill_resource` 是只读元数据操作，由 Framework 的只读规则自动批准，不在界面生成无意义的审批；技能内容本身不构成任何业务操作授权。所有 ColorVision 工具仍经过现有 Schema、风险级别、并发闸门、审计和写操作审批。
-
-新增技能时，为目录创建 `SKILL.md`，并在 YAML frontmatter 中提供稳定的 `name` 和明确的 `description`。正文应描述何时使用、证据顺序、停止条件和安全边界；较长的清单或领域资料放进同目录的 `references/`，让 Agent 按需读取。内置的 `colorvision-flow-diagnostics` 是流程诊断示例；`colorvision-database-operations` 复用重置、导出和清理代码中的分类，把数据库组织为服务配置表、服务设置表和结果表，先验证实时 Schema，再指导通用 SQL 查询或经原生审批的数据清理。
-
-这种结构遵循 [OpenAI Skills](https://learn.chatgpt.com/docs/build-skills) 与 [Claude Code Skills](https://code.claude.com/docs/en/slash-commands) 的渐进式披露语义，并直接使用 [Microsoft Agent Framework Agent Skills](https://learn.microsoft.com/en-us/agent-framework/agents/skills) 实现运行时加载。
+技能通过独立的发现、选择与按需加载链进入运行时。项目/用户/内置路径、同名优先级、`/skills`、开关、元数据预算、使用统计与 MCP 依赖统一见 [Copilot 技能](./copilot-skills.md)。技能内容不授予文件、Shell、SQL 或流程操作权限。
