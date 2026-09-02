@@ -225,7 +225,7 @@ dotnet build .\Projects\ProjectARVRPro\ProjectARVRPro.csproj -c Release -p:Platf
 | 文档 | 说明 |
 |------|------|
 | [CHANGELOG.md](./CHANGELOG.md) | 版本更新日志 |
-| [ProjectARVRPro 权威主题](../../docs/04-api-reference/projects/project-arvr-pro.md) | ProcessGroup 与项目运行契约 |
+| [ProjectARVRPro 权威主题](../../docs/04-api-reference/projects/project-arvr-pro.md) | ProcessGroup、结果统计与运行内查询记忆、项目运行契约 |
 | [ARVRPRO TCP 通讯协议手册.md](./ARVRPRO%20TCP%20通讯协议手册.md) | TCP 通信协议详细说明 |
 
 ## 维护者

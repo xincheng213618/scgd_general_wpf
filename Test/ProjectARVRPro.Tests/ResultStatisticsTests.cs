@@ -1,7 +1,10 @@
 using Microsoft.Data.Sqlite;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using SqlSugar;
 using System.Data;
 using System.IO;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace ProjectARVRPro.Tests;
@@ -148,6 +151,100 @@ public sealed class ResultStatisticsTests
         Assert.Equal(state.FlowAnchorDate, restored.FlowAnchorDate);
         Assert.Equal(state.FlowName, restored.FlowName);
         Assert.Equal(state.FlowResultIndex, restored.FlowResultIndex);
+    }
+
+    [Fact]
+    public void NewStatisticsStateDefaultsAllThreePagesToTodayWithoutPreviousSelections()
+    {
+        DateTime today = DateTime.Today;
+        var previousState = new ResultStatisticsWindowState
+        {
+            SelectedTabIndex = 2,
+            HomePeriodMode = ResultStatisticsPeriodMode.All,
+            RecordPeriodMode = ResultStatisticsPeriodMode.Week,
+            RecordAnchorDate = today.AddDays(-14),
+            RecordSn = "previous-session-sn",
+            FlowPeriodMode = ResultStatisticsPeriodMode.Month,
+            FlowAnchorDate = today.AddMonths(-2),
+            FlowName = "previous-session-flow",
+        };
+
+        var newState = new ResultStatisticsWindowState();
+
+        Assert.NotSame(previousState, newState);
+        AssertDefaultStatisticsState(newState, today);
+    }
+
+    [Fact]
+    public void SavedConfigurationIgnoresLegacyStatisticsStateAndDoesNotWriteItBack()
+    {
+        DateTime today = DateTime.Today;
+        var settings = new JsonSerializerSettings { ContractResolver = new StatisticsConfigContractResolver() };
+        const string legacyJson = """
+            {
+              "TryCountMax": 7,
+              "ResultStatisticsWindowState": {
+                "SelectedTabIndex": 2,
+                "HomePeriodMode": 3,
+                "HomeAnchorDate": "2001-01-01T00:00:00",
+                "RecordPeriodMode": 1,
+                "RecordAnchorDate": "2002-02-02T00:00:00",
+                "RecordSn": "legacy-sn",
+                "RecordResultIndex": 2,
+                "FlowPeriodMode": 2,
+                "FlowAnchorDate": "2003-03-03T00:00:00",
+                "FlowName": "legacy-flow",
+                "FlowResultIndex": 1
+              }
+            }
+            """;
+
+        ProjectARVRProConfig restored = JsonConvert.DeserializeObject<ProjectARVRProConfig>(legacyJson, settings)!;
+
+        Assert.Equal(7, restored.TryCountMax);
+        AssertDefaultStatisticsState(restored.ResultStatisticsWindowState, today);
+        string rewritten = JsonConvert.SerializeObject(restored, settings);
+        Assert.Contains(nameof(ProjectARVRProConfig.TryCountMax), rewritten, StringComparison.Ordinal);
+        Assert.DoesNotContain(nameof(ProjectARVRProConfig.ResultStatisticsWindowState), rewritten, StringComparison.Ordinal);
+        Assert.DoesNotContain("legacy-sn", rewritten, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SessionConfigurationReusesItsStatisticsStateButARecreatedConfigurationStartsFresh()
+    {
+        DateTime today = DateTime.Today;
+        ProjectARVRProConfig configuration = CreateStatisticsOnlyConfiguration();
+        ResultStatisticsWindowState firstAccess = configuration.ResultStatisticsWindowState;
+        firstAccess.SelectedTabIndex = 2;
+        firstAccess.HomePeriodMode = ResultStatisticsPeriodMode.All;
+        firstAccess.RecordPeriodMode = ResultStatisticsPeriodMode.Week;
+        firstAccess.RecordAnchorDate = new DateTime(2026, 7, 20);
+        firstAccess.RecordSn = "session-sn";
+        firstAccess.RecordResultIndex = 2;
+        firstAccess.FlowPeriodMode = ResultStatisticsPeriodMode.Month;
+        firstAccess.FlowAnchorDate = new DateTime(2026, 6, 1);
+        firstAccess.FlowName = "session-flow";
+        firstAccess.FlowResultIndex = 1;
+
+        ResultStatisticsWindowState nextAccess = configuration.ResultStatisticsWindowState;
+
+        Assert.Same(firstAccess, nextAccess);
+        Assert.Equal(2, nextAccess.SelectedTabIndex);
+        Assert.Equal(ResultStatisticsPeriodMode.All, nextAccess.HomePeriodMode);
+        Assert.Equal(ResultStatisticsPeriodMode.Week, nextAccess.RecordPeriodMode);
+        Assert.Equal(new DateTime(2026, 7, 20), nextAccess.RecordAnchorDate);
+        Assert.Equal("session-sn", nextAccess.RecordSn);
+        Assert.Equal(2, nextAccess.RecordResultIndex);
+        Assert.Equal(ResultStatisticsPeriodMode.Month, nextAccess.FlowPeriodMode);
+        Assert.Equal(new DateTime(2026, 6, 1), nextAccess.FlowAnchorDate);
+        Assert.Equal("session-flow", nextAccess.FlowName);
+        Assert.Equal(1, nextAccess.FlowResultIndex);
+
+        var settings = new JsonSerializerSettings { ContractResolver = new StatisticsConfigContractResolver() };
+        string savedConfiguration = JsonConvert.SerializeObject(configuration, settings);
+        ProjectARVRProConfig recreated = JsonConvert.DeserializeObject<ProjectARVRProConfig>(savedConfiguration, settings)!;
+        Assert.NotSame(firstAccess, recreated.ResultStatisticsWindowState);
+        AssertDefaultStatisticsState(recreated.ResultStatisticsWindowState, today);
     }
 
     [Fact]
@@ -407,6 +504,56 @@ public sealed class ResultStatisticsTests
         Assert.Contains("IX_ARVRReuslt_CreateTime", indexNames);
         Assert.Contains("IX_ARVRReuslt_SN_CreateTime", indexNames);
         Assert.Contains("IX_ARVRReuslt_SN_Id", indexNames);
+    }
+
+    [Fact]
+    public void DayQueriesIncludeMidnightAndExcludeNextMidnightAcrossAllThreePages()
+    {
+        using var database = new TemporaryResultDatabase();
+        ResultStatisticsDataStore store = new(database.Path);
+        store.InitializeSchema();
+        DateTime today = new(2026, 9, 2);
+        DateTime tomorrow = today.AddDays(1);
+        ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(ResultStatisticsPeriodMode.Day, today.AddHours(12));
+        database.Insert(
+            CreateRecord("before-day", true, today.AddSeconds(-2), 1_000, "before", true),
+            CreateRecord("at-midnight", true, today.AddSeconds(-1), 1_000, "start", true),
+            CreateRecord("last-second", false, tomorrow.AddSeconds(-2), 1_000, "end", true),
+            CreateRecord("next-midnight", true, tomorrow.AddSeconds(-1), 1_000, "next", true));
+        foreach ((string sn, DateTime time) in new[]
+        {
+            ("before-day", today.AddSeconds(-1)),
+            ("at-midnight", today),
+            ("last-second", tomorrow.AddSeconds(-1)),
+            ("next-midnight", tomorrow),
+        })
+        {
+            database.InsertFlow(new ProjectARVRReuslt
+            {
+                SN = sn,
+                Model = "synthetic-flow",
+                CreateTime = time,
+                RunTime = 1_000,
+                Result = true,
+            });
+        }
+        var recordQuery = new ResultStatisticsQuery { From = range.From, ToExclusive = range.ToExclusive };
+        var flowQuery = new FlowExecutionQuery { From = range.From, ToExclusive = range.ToExclusive };
+
+        ResultStatisticsDashboard home = store.QueryDashboard(recordQuery, ResultStatisticsPeriodMode.Day, today.AddHours(12));
+        IReadOnlyList<ResultStatisticsRecordRow> records = store.QueryRecords(recordQuery);
+        IReadOnlyList<FlowExecutionRecordRow> flows = store.QueryFlowExecutions(flowQuery);
+
+        Assert.Equal(today, range.From);
+        Assert.Equal(tomorrow, range.ToExclusive);
+        Assert.Equal(2, home.Summary.TotalCount);
+        Assert.Equal([today, tomorrow.AddSeconds(-1)], home.Trend.Select(point => point.Time));
+        Assert.Equal(2, store.QueryRecordCount(recordQuery));
+        Assert.Equal(["last-second", "at-midnight"], records.Select(record => record.SN));
+        Assert.Equal(today, records.Single(record => record.SN == "at-midnight").EndTime);
+        Assert.Equal(2, store.QueryFlowExecutionCount(flowQuery));
+        Assert.Equal(["last-second", "at-midnight"], flows.Select(flow => flow.SN));
+        Assert.Equal(today, flows.Single(flow => flow.SN == "at-midnight").CreateTime);
     }
 
     [Fact]
@@ -751,6 +898,51 @@ public sealed class ResultStatisticsTests
             UpdateTime = start.AddMilliseconds(milliseconds),
             ObjectiveTestResultJson = $"{{\"model\":\"{model}\"}}",
         };
+    }
+
+    private static void AssertDefaultStatisticsState(ResultStatisticsWindowState state, DateTime today)
+    {
+        Assert.Equal(0, state.SelectedTabIndex);
+        Assert.Equal(ResultStatisticsPeriodMode.Day, state.HomePeriodMode);
+        Assert.Equal(today, state.HomeAnchorDate);
+        Assert.Equal(ResultStatisticsPeriodMode.Day, state.RecordPeriodMode);
+        Assert.Equal(today, state.RecordAnchorDate);
+        Assert.Empty(state.RecordSn);
+        Assert.Equal(0, state.RecordResultIndex);
+        Assert.Equal(ResultStatisticsPeriodMode.Day, state.FlowPeriodMode);
+        Assert.Equal(today, state.FlowAnchorDate);
+        Assert.Empty(state.FlowName);
+        Assert.Equal(0, state.FlowResultIndex);
+    }
+
+    private static ProjectARVRProConfig CreateStatisticsOnlyConfiguration()
+    {
+        // The real constructor loads TemplateFlow runtime metadata. This fixture
+        // needs only the query-state property and must not initialize real services.
+        var configuration = (ProjectARVRProConfig)RuntimeHelpers.GetUninitializedObject(typeof(ProjectARVRProConfig));
+        configuration.ResultStatisticsWindowState = new ResultStatisticsWindowState();
+        return configuration;
+    }
+
+    private sealed class StatisticsConfigContractResolver : DefaultContractResolver
+    {
+        protected override JsonObjectContract CreateObjectContract(Type objectType)
+        {
+            JsonObjectContract contract = base.CreateObjectContract(objectType);
+            if (objectType == typeof(ProjectARVRProConfig))
+                contract.DefaultCreator = CreateStatisticsOnlyConfiguration;
+            return contract;
+        }
+
+        protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
+        {
+            IList<JsonProperty> properties = base.CreateProperties(type, memberSerialization);
+            // Preserve the real JsonIgnore metadata; omit unrelated configuration
+            // getters so this contract test cannot reach devices or runtime services.
+            return type == typeof(ProjectARVRProConfig)
+                ? properties.Where(property => property.PropertyName is nameof(ProjectARVRProConfig.ResultStatisticsWindowState) or nameof(ProjectARVRProConfig.TryCountMax)).ToList()
+                : properties;
+        }
     }
 
     private sealed class TemporaryResultDatabase : IDisposable

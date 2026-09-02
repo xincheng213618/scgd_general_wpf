@@ -28,7 +28,7 @@ next: false
   数据库清理窗口与provider能力：表统计不是删除预览，确认只固定部分参数；备份默认关闭、组合维护不是事务，关窗不取消，成功与统计刷新分开。
 
 - [ProjectARVRPro](../../04-api-reference/projects/project-arvr-pro.md) — `projects.arvr-pro`
-  ARVRPro 流程组、Recipe、Socket、输出与历史结果图原图到保存原图再到标记图的回退契约。
+  ARVRPro 流程组、Recipe、Socket、输出、历史结果图回退，以及按自然周期查询结果统计与运行内筛选记忆。
 
 - [ProjectARVRPro.IntegrationDemo](../../04-api-reference/projects/project-arvr-pro-integration-demo.md) — `projects.arvr-pro-demo`
   独立 net48 ARVRPro TCP/JSON Demo 的公开字段、ACK 与最终完成判据、半包粘包及离线验证。

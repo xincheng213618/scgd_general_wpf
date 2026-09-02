@@ -6529,26 +6529,35 @@
       "knowledge_id": "projects.arvr-pro",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "ARVRPro 流程组、Recipe、Socket、输出与历史结果图原图到保存原图再到标记图的回退契约。",
+      "summary": "ARVRPro 流程组、Recipe、Socket、输出、历史结果图回退，以及按自然周期查询结果统计与运行内筛选记忆。",
       "aliases": [
         "ARVR 历史原图删了还能看结果吗",
         "保存结果图会不会重复画标记",
         "ProjectARVRPro",
         "ResultImageFileCandidates",
         "SavedSourceImageFileName",
-        "SavedResultImageFileName"
+        "SavedResultImageFileName",
+        "结果统计",
+        "统计日期记忆",
+        "CycleTimeStatisticsWindow"
       ],
       "code_paths": [
         "Projects/ProjectARVRPro/ARVRWindow.xaml.cs",
         "Projects/ProjectARVRPro/ResultImagePresentation.cs",
         "Projects/ProjectARVRPro/ProjectARVRReuslt.cs",
         "Projects/ProjectARVRPro/ViewResultManager.cs",
-        "Projects/ProjectARVRPro/Services/SocketControl.cs"
+        "Projects/ProjectARVRPro/Services/SocketControl.cs",
+        "Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml",
+        "Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml.cs",
+        "Projects/ProjectARVRPro/ResultStatisticsTheme.xaml",
+        "Projects/ProjectARVRPro/ResultStatistics.cs",
+        "Projects/ProjectARVRPro/ProjectARVRProConfig.cs"
       ],
       "test_paths": [
         "Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj",
         "Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs",
-        "Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs"
+        "Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs",
+        "Test/ProjectARVRPro.Tests/ResultStatisticsTests.cs"
       ],
       "related": [
         "projects.index",

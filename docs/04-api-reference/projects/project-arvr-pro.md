@@ -2,10 +2,10 @@
 knowledge_id: "projects.arvr-pro"
 knowledge_type: "reference"
 status: "current"
-summary: "ARVRPro 流程组、Recipe、Socket、输出与历史结果图原图到保存原图再到标记图的回退契约。"
-aliases: ["ARVR 历史原图删了还能看结果吗","保存结果图会不会重复画标记","ProjectARVRPro","ResultImageFileCandidates","SavedSourceImageFileName","SavedResultImageFileName"]
-code_paths: ["Projects/ProjectARVRPro/ARVRWindow.xaml.cs","Projects/ProjectARVRPro/ResultImagePresentation.cs","Projects/ProjectARVRPro/ProjectARVRReuslt.cs","Projects/ProjectARVRPro/ViewResultManager.cs","Projects/ProjectARVRPro/Services/SocketControl.cs"]
-test_paths: ["Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj","Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs","Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs"]
+summary: "ARVRPro 流程组、Recipe、Socket、输出、历史结果图回退，以及按自然周期查询结果统计与运行内筛选记忆。"
+aliases: ["ARVR 历史原图删了还能看结果吗","保存结果图会不会重复画标记","ProjectARVRPro","ResultImageFileCandidates","SavedSourceImageFileName","SavedResultImageFileName","结果统计","统计日期记忆","CycleTimeStatisticsWindow"]
+code_paths: ["Projects/ProjectARVRPro/ARVRWindow.xaml.cs","Projects/ProjectARVRPro/ResultImagePresentation.cs","Projects/ProjectARVRPro/ProjectARVRReuslt.cs","Projects/ProjectARVRPro/ViewResultManager.cs","Projects/ProjectARVRPro/Services/SocketControl.cs","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml.cs","Projects/ProjectARVRPro/ResultStatisticsTheme.xaml","Projects/ProjectARVRPro/ResultStatistics.cs","Projects/ProjectARVRPro/ProjectARVRProConfig.cs"]
+test_paths: ["Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj","Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs","Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs","Test/ProjectARVRPro.Tests/ResultStatisticsTests.cs"]
 related: ["projects.index","projects.arvr-pro-demo","projects.capabilities"]
 ---
 
@@ -90,6 +90,18 @@ AOI 相关流程还要看 `SocketRelay/`。只连通主 Socket 端口不代表 R
 `ARVRWindow.xaml.cs` 负责实际加载、请求版本仲裁和 `RenderResultImage` / `ShowSavedResultImage` 分流。两个保存路径是 `ProjectARVRReuslt` 的可空列；`ViewResultManager` 通过现有 `CodeFirst.InitTables<ProjectARVRReuslt, ObjectiveTestResultRecord>()` 为旧库补列，不能要求用户删库或手工编辑 SQLite。旧磁盘 PNG 不会被自动扫描回填；只有实际成功导出的通道才更新对应路径。
 
 验证入口：`Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs` 覆盖候选顺序、缺失/重复路径、首图加载失败后继续及标记图不重复绘制契约；`ResultJsonPayloadStorageTests.cs` 覆盖结果持久化相关兼容。自动测试不等于已验证现场历史文件仍存在，现场排查还须只读核对记录路径与文件可读性。
+
+## 结果统计与查询记忆
+
+`CycleTimeStatisticsWindow` 提供首页指标与 CT 趋势、批次记录及流程查询三个页面。界面使用与启动恢复窗口相同的主题调色板、标题层级和弱边框圆角卡片；样式在项目包本地的 `ResultStatisticsTheme.xaml` 中定义，不依赖宿主 `ColorVision` 程序集的资源。筛选区在窗口变窄时换行，表格保留分页、虚拟化、右键操作和详情入口。
+
+- 软件每次重新启动后，三个页面默认“按天／今天”，筛选文本和结果条件回到初始状态。同一次软件运行中关闭、重新打开统计窗口，保留当前标签、周期、日期和筛选条件。
+- `ProjectARVRProConfig.ResultStatisticsWindowState` 仅作为运行内状态，标注 `[JsonIgnore]`；旧配置 JSON 中的同名字段不再恢复，关闭统计窗口也不会为查询条件写入配置。此规则只涉及查询条件，不会删除或截断历史结果数据。
+- 手动切换仍支持按天、按周、按月和全部。按天使用所选日期的 `00:00` 到次日 `00:00`，按周使用周一到下周一，按月使用月初到下月初，统一为包含起点、不含终点的区间；不是滚动 24 小时或最近 7 天。
+- 各页的“今天／本周／本月”按钮按当前周期回到本周期并刷新查询；切到“全部”时隐藏日期导航，按钮显示“全部”。已有 SN、流程名和结果筛选不会被快捷返回清空，需要清空时使用“重置”。
+- 首页与批次记录按整组结束时间统计，流程查询按流程 `CreateTime` 统计，不能把跨午夜完成的整组记录误算到开始日。首页“今日产量”和“本小时产量”是所选查询范围中落入当前日期/小时的子集；查看不包含今天的历史范围时这两个值为零。
+
+验证入口：`ResultStatisticsTests.cs` 覆盖自然周期、日期前后切换、分页、配置 JSON 忽略与运行内状态，以及三个查询在午夜的包含/排除边界。测试使用临时 SQLite；界面布局另需检查浅色/深色、最小窗口宽度、日期弹出日历和筛选操作。只加载 XAML 的合成预览不能替代真实窗口的查询与重开验证。
 
 ## 验收
 

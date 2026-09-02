@@ -186,6 +186,12 @@ namespace ProjectARVRPro
             ShiftPeriod(HomePeriodMode, HomeAnchorDatePicker, 1);
         }
 
+        private void HomeCurrentPeriod_Click(object sender, RoutedEventArgs e)
+        {
+            HomeAnchorDatePicker.SelectedDate = DateTime.Today;
+            QueueHomeRefresh();
+        }
+
         private async void RecordPreviousPeriod_Click(object sender, RoutedEventArgs e)
         {
             ShiftPeriod(RecordPeriodMode, RecordAnchorDatePicker, -1);
@@ -198,6 +204,13 @@ namespace ProjectARVRPro
             await RefreshRecordsAsync(1);
         }
 
+        private async void RecordCurrentPeriod_Click(object sender, RoutedEventArgs e)
+        {
+            RecordAnchorDatePicker.SelectedDate = DateTime.Today;
+            CaptureSearchState();
+            await RefreshRecordsAsync(1);
+        }
+
         private async void FlowPreviousPeriod_Click(object sender, RoutedEventArgs e)
         {
             ShiftPeriod(FlowPeriodMode, FlowAnchorDatePicker, -1);
@@ -207,6 +220,13 @@ namespace ProjectARVRPro
         private async void FlowNextPeriod_Click(object sender, RoutedEventArgs e)
         {
             ShiftPeriod(FlowPeriodMode, FlowAnchorDatePicker, 1);
+            await RefreshFlowsAsync(1);
+        }
+
+        private async void FlowCurrentPeriod_Click(object sender, RoutedEventArgs e)
+        {
+            FlowAnchorDatePicker.SelectedDate = DateTime.Today;
+            CaptureSearchState();
             await RefreshFlowsAsync(1);
         }
 
@@ -250,19 +270,6 @@ namespace ProjectARVRPro
             _windowState.FlowResultIndex = Math.Clamp(FlowResultFilter.SelectedIndex, 0, 2);
         }
 
-        private void SaveSearchState()
-        {
-            CaptureSearchState();
-            try
-            {
-                ConfigService.Instance.Save<ProjectARVRProConfig>();
-            }
-            catch (Exception ex)
-            {
-                Log.Warn("Could not save the ARVRPro result-statistics search state.", ex);
-            }
-        }
-
         private void QueueHomeRefresh()
         {
             CaptureSearchState();
@@ -285,35 +292,49 @@ namespace ProjectARVRPro
 
         private void UpdateHomePeriodText()
         {
-            if (HomePeriodText == null || HomePeriodMode == null || HomeAnchorDatePicker == null)
+            if (HomePeriodText == null || HomePeriodMode == null || HomeAnchorDatePicker == null || HomeCurrentPeriodButton == null)
                 return;
 
             ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(HomePeriodMode);
             ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, HomeAnchorDatePicker.SelectedDate ?? DateTime.Today);
             HomePeriodText.Text = $"查询范围：{range.ToDisplayText(mode)}";
+            HomeCurrentPeriodButton.Content = GetCurrentPeriodButtonText(mode);
             HomePeriodNavigation.Visibility = mode == ResultStatisticsPeriodMode.All ? Visibility.Collapsed : Visibility.Visible;
         }
 
         private void UpdateRecordPeriodText()
         {
-            if (RecordPeriodText == null || RecordPeriodMode == null || RecordAnchorDatePicker == null)
+            if (RecordPeriodText == null || RecordPeriodMode == null || RecordAnchorDatePicker == null || RecordCurrentPeriodButton == null)
                 return;
 
             ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(RecordPeriodMode);
             ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, RecordAnchorDatePicker.SelectedDate ?? DateTime.Today);
             RecordPeriodText.Text = $"查询范围：{range.ToDisplayText(mode)}";
+            RecordCurrentPeriodButton.Content = GetCurrentPeriodButtonText(mode);
             RecordPeriodNavigation.Visibility = mode == ResultStatisticsPeriodMode.All ? Visibility.Collapsed : Visibility.Visible;
         }
 
         private void UpdateFlowPeriodText()
         {
-            if (FlowPeriodText == null || FlowPeriodMode == null || FlowAnchorDatePicker == null)
+            if (FlowPeriodText == null || FlowPeriodMode == null || FlowAnchorDatePicker == null || FlowCurrentPeriodButton == null)
                 return;
 
             ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(FlowPeriodMode);
             ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, FlowAnchorDatePicker.SelectedDate ?? DateTime.Today);
             FlowPeriodText.Text = $"查询范围：{range.ToDisplayText(mode)}";
+            FlowCurrentPeriodButton.Content = GetCurrentPeriodButtonText(mode);
             FlowPeriodNavigation.Visibility = mode == ResultStatisticsPeriodMode.All ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        private static string GetCurrentPeriodButtonText(ResultStatisticsPeriodMode mode)
+        {
+            return mode switch
+            {
+                ResultStatisticsPeriodMode.Week => "本周",
+                ResultStatisticsPeriodMode.Month => "本月",
+                ResultStatisticsPeriodMode.All => "全部",
+                _ => "今天",
+            };
         }
 
         private static ResultStatisticsPeriodMode GetSelectedPeriodMode(ComboBox selector)
@@ -1464,7 +1485,7 @@ namespace ProjectARVRPro
         protected override void OnClosed(EventArgs e)
         {
             _windowLoaded = false;
-            SaveSearchState();
+            CaptureSearchState();
             ++_homeLoadVersion;
             ++_recordLoadVersion;
             ++_flowLoadVersion;
