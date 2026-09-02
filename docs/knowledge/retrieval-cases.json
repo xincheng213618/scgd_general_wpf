@@ -506,6 +506,9 @@
     {"query":"MQTT迟到回包","expected_any":["engine.mqtt"],"include_planned":false},
     {"query":"AllToday","expected_any":["operations.logs"],"include_planned":false},
     {"query":"原生日志","expected_any":["operations.logs"],"include_planned":false},
-    {"query":"暂停显示","expected_any":["operations.logs"],"include_planned":false}
+    {"query":"暂停显示","expected_any":["operations.logs"],"include_planned":false},
+    {"query":"新建 PowerShell","expected_any":["operations.terminal"],"include_planned":false},
+    {"query":"进程已结束","expected_any":["operations.terminal"],"include_planned":false},
+    {"query":"启动终端失败","expected_any":["operations.terminal"],"include_planned":false}
   ]
 }
