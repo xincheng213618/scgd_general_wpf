@@ -6,14 +6,14 @@ summary: "主程序、插件和项目包的正式发布入口、只读校验与�
 aliases: ["发布","打包","release.bat","package_project.bat","只做本地构建","版本标签","auto-tag.yml"]
 code_paths: [".github/workflows/auto-tag.yml","Directory.Build.props","Scripts/release.bat","Scripts/build.py","Scripts/build_update.py","Scripts/generate_shared_files.py","Scripts/package_project.bat","Scripts/package_plugin.bat","Scripts/package_cvxp.py","Scripts/build_spectrum.py"]
 test_paths: ["Scripts/tests"]
-related: ["delivery.index","delivery.testing","delivery.backend"]
+related: ["delivery.index","delivery.testing","delivery.backend","delivery.update","delivery.code-statistics","ui.publishing"]
 ---
 
 # 构建与发布脚本
 
-本页只回答四件事：正式发布走哪个入口，插件和项目包怎么打包，上传凭据怎么提供，失败时先查哪里。脚本参数以源码和 `--help` 为准；不要把这里写成每个 Python 函数的说明书。
+本页说明主程序、插件和项目包的发布入口、上传配置与失败处理。源码规模与历史图表使用独立的[代码统计工具](./code-statistics.md)，UI NuGet 发布见[包构建与发布](../../04-api-reference/ui-components/publishing.md)。
 
-## 先记住
+## 选择入口
 
 | 场景 | 使用入口 | 说明 |
 | --- | --- | --- |
@@ -40,7 +40,7 @@ Scripts\release.bat
 
 主程序发布不携带输出根目录的 `CHANGELOG.md`：`build_update.py` 在全量 ZIP 和增量 CVX 中排除该路径，`generate_shared_files.py` 也忽略该文件，避免旧输出副本重新进入共享清单。外部 `ColorVision.aip` 不应包含对应文件行及 `AI_ViewReadme` 对该本地日志的引用。仓库根目录原稿继续由 `build.py` 独立上传，插件自己的日志照常随插件包交付；这些规则不清理历史包或已有安装目录。
 
-发布成功时，控制台应依次看到主包上传、`CHANGELOG.md` 上传、`LATEST_RELEASE` 更新和增量包上传成功。最后 `verify_release.py` 会并行验证安装包 Authenticode 签名、远端 latest/changelog、安装包与更新包 Range 下载大小，并报告 Git 状态；只有这一阶段也返回零，wrapper 才算成功。后端 HTTP 接口是唯一发布通道，不再同步企业微信 WeDrive 或百度云；任一元数据上传失败都会阻止版本号更新。本地安装包、全量 zip、增量包是正常构建产物，不代表“本地-only 发布”。其中桌面 `History` 目录用于生成增量差分，不是额外分发渠道。客户端会合并启动检查和手动检查中同时进行的 `LATEST_RELEASE` 读取；插件详情在单次 2 秒空响应后新建连接重试，候选插件元数据仍不完整时整轮更新延期。这些客户端容错不改变发布脚本的上传顺序或成功判定。发布失败时先修复失败原因，再重新走 `release.bat`。
+发布成功时，控制台应依次看到主包上传、`CHANGELOG.md` 上传、`LATEST_RELEASE` 更新和增量包上传成功。最后 `verify_release.py` 会并行验证安装包 Authenticode 签名、远端 latest/changelog、安装包与更新包 Range 下载大小，并报告 Git 状态；只有这一阶段也返回零，wrapper 才算成功。后端 HTTP 接口是唯一发布通道，不再同步企业微信 WeDrive 或百度云；任一元数据上传失败都会阻止版本号更新。本地安装包、全量 zip、增量包是正常构建产物，不代表“本地-only 发布”。其中桌面 `History` 目录用于生成增量差分，不是额外分发渠道。客户端检查、缓存和元数据重试规则见[检查更新](../deployment/auto-update.md#检查复用与元数据新鲜度)。发布失败时先修复失败原因，再重新走 `release.bat`。
 
 ### Git 版本标签
 
@@ -86,20 +86,14 @@ $env:COLORVISION_UPLOAD_USE_SYSTEM_PROXY = "1"
 
 上传脚本会先做后端预检。新后端走 `/api/health` 和 `/api/ready`；旧后端没有这些接口时会按兼容模式继续上传。
 
-## 脚本速查
+## 内部步骤与其他工具
 
-| 脚本 | 是否日常入口 | 用途 |
-| --- | --- | --- |
-| `release.bat` | 是 | 主程序正式发布入口 |
-| `package_cvxp.py` | 是 | `.cvxp` 打包、上传和本地包清理 |
-| `package_plugin.bat` | 是 | 仓库内普通插件构建、上传快捷入口 |
-| `package_project.bat` | 是 | 仓库内项目包构建、上传快捷入口 |
-| `clear-bin.ps1`、`clear-artifacts.ps1` | 是 | 清理本地构建产物 |
-| `build.py`、`build_update.py` | 否 | `release.bat` 内部构建、上传和增量更新步骤 |
-| `verify_release.py` | 否 | `release.bat` 最后的并行签名、远端元数据、下载大小和 Git 状态验收 |
-| `backend_client.py` | 否 | 统一处理上传认证、预检、重试、流式上传和路径编码 |
-| `generate_shared_files.py` | 宿主输出集合变化时 | 同步生成两份共享文件清单，或用 `--check` 做集合门禁 |
-| `build_spectrum.py` | 特殊 | Spectrum 独立 ZIP + 插件 `.cvxp` 双通道构建、签名、发布和远程验收 |
+| 脚本 | 用途 |
+| --- | --- |
+| `clear-bin.ps1`、`clear-artifacts.ps1` | 删除本地构建产物；执行前确认目标目录和所需产物 |
+| `build.py`、`build_update.py` | `release.bat` 内部构建、上传和增量更新步骤 |
+| `verify_release.py` | wrapper 的签名、远端元数据、下载大小和 Git 状态验收 |
+| `backend_client.py` | 发布脚本共用的认证、预检、重试、流式上传和路径编码 |
 
 如果某个脚本不在 `Scripts/` 目录里，就不要在文档里继续引用它。改正式发布路径时先运行相关脚本测试；测试环境发布演练也需要明确的远端写入授权。快速发布/完整发布的范围以根 `AGENTS.md` 为准，不自行添加额外发布轮次。
 
@@ -113,4 +107,4 @@ $env:COLORVISION_UPLOAD_USE_SYSTEM_PROXY = "1"
 | 插件/项目包找不到项目 | 名称是否等于 `Plugins/<Name>/<Name>.csproj` 或 `Projects/<Name>/<Name>.csproj` |
 | 上传 401 或连接失败 | 环境变量、后端是否运行、URL 是否正确、代理是否需要启用 |
 | Spectrum 发布保留了本地 `.cvxp` | 检查签名证书、独立发布接口响应、两个 latest 以及 Range 下载的大小/SHA-256 验证输出；修复后重新完整发布 |
-| 构建失败 | 先单独跑对应 `dotnet build`，再看 MSBuild、Advanced Installer 或外部 DLL |
+| 构建失败 | 根据 wrapper 报告定位 MSBuild、Advanced Installer 或外部依赖；快速发布只处理失败阶段，按根 `AGENTS.md` 执行，不额外增加预构建 |

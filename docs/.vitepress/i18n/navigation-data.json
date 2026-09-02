@@ -3374,6 +3374,12 @@
             },
             {
               "text": {
+                "root": "代码行数与 Git 历史统计"
+              },
+              "link": "/02-developer-guide/scripts/code-statistics"
+            },
+            {
+              "text": {
                 "root": "安装制品与运行输出"
               },
               "link": "/00-getting-started/installation"
@@ -3674,6 +3680,12 @@
                 "root": "插件产物、安装与交付"
               },
               "link": "/02-developer-guide/plugin-development/getting-started"
+            },
+            {
+              "text": {
+                "root": "代码行数与 Git 历史统计"
+              },
+              "link": "/02-developer-guide/scripts/code-statistics"
             },
             {
               "text": {
