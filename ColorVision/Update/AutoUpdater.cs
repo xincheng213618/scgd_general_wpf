@@ -109,49 +109,6 @@ namespace ColorVision.Update
 
         public static string GetIncrementalPackageDownloadUrl(Version version) => BuildAppApiUrl($"updates/{Uri.EscapeDataString(version.ToString())}/download");
 
-        public static string GetOfflineInstallerDownloadPowerShellCommand()
-        {
-            return BuildOfflineInstallerDownloadPowerShellCommand(
-                MarketplaceConfig.ServiceBaseUrl,
-                DownloadFileConfig.Instance.Authorization);
-        }
-
-        public static string GetOfflineInstallerDownloadCommandFileContent()
-        {
-            return BuildOfflineInstallerDownloadCommandFileContent(
-                GetOfflineInstallerDownloadPowerShellCommand());
-        }
-
-        internal static string BuildOfflineInstallerDownloadPowerShellCommand(string serviceBaseUrl, string? authorization)
-        {
-            string baseUrl = serviceBaseUrl.TrimEnd('/');
-            string latestVersionUrl = $"{baseUrl}/api/app/latest-version";
-            string releaseDownloadUrlFormat = $"{baseUrl}/api/app/releases/{{0}}/download";
-            string encodedAuthorization = string.IsNullOrWhiteSpace(authorization)
-                ? string.Empty
-                : Convert.ToBase64String(Encoding.ASCII.GetBytes(authorization));
-            string headers = string.IsNullOrWhiteSpace(encodedAuthorization)
-                ? "$headers = @{}"
-                : $"$headers = @{{ Authorization = 'Basic {EscapePowerShellSingleQuotedString(encodedAuthorization)}' }}";
-
-            return $"$ErrorActionPreference = 'Stop'; {headers}; "
-                + $"$metadata = Invoke-RestMethod -Uri '{EscapePowerShellSingleQuotedString(latestVersionUrl)}' -Headers $headers -UseBasicParsing; "
-                + "$latest = if ($metadata -is [string]) { $metadata.Trim() } else { [string]$metadata.version }; "
-                + "if ([string]::IsNullOrWhiteSpace($latest)) { throw 'The update server did not return a version.' }; "
-                + "$output = Join-Path ([Environment]::GetFolderPath('Desktop')) (\"ColorVision-{0}.exe\" -f $latest); "
-                + $"$downloadUrl = '{EscapePowerShellSingleQuotedString(releaseDownloadUrlFormat)}' -f $latest; "
-                + "Invoke-WebRequest -Uri $downloadUrl -Headers $headers -OutFile $output -UseBasicParsing; "
-                + "Write-Host (\"Downloaded: {0}\" -f $output)";
-        }
-
-        internal static string BuildOfflineInstallerDownloadCommandFileContent(string powershellCommand)
-        {
-            string encodedCommand = Convert.ToBase64String(Encoding.Unicode.GetBytes(powershellCommand));
-            return "@echo off\r\n"
-                + $"powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand {encodedCommand}\r\n"
-                + "if errorlevel 1 pause\r\n";
-        }
-
         public static string GetApplicationPackageCacheDirectory(bool isIncremental)
         {
             return isIncremental
@@ -382,6 +339,21 @@ namespace ColorVision.Update
                 LatestVersion = latestVersion,
                 VersionsToApply = versionsToApply,
                 IsIncremental = isIncrement,
+            };
+        }
+
+        internal static AutoUpdatePlan? BuildReinstallPlan(Version currentVersion, LatestVersionCheckResult latestVersionResult)
+        {
+            // A failed refresh may return cached metadata; it cannot establish the latest installer.
+            if (latestVersionResult.Status != UpdateServerCheckStatus.Success || latestVersionResult.Version == new Version())
+                return null;
+
+            return new AutoUpdatePlan
+            {
+                CurrentVersion = currentVersion,
+                LatestVersion = latestVersionResult.Version,
+                VersionsToApply = new[] { latestVersionResult.Version },
+                IsIncremental = false,
             };
         }
 
@@ -705,11 +677,6 @@ namespace ColorVision.Update
         private static string BuildAppApiUrl(string relativePath)
         {
             return MarketplaceConfig.BuildApiUrl($"api/app/{relativePath.TrimStart('/')}");
-        }
-
-        private static string EscapePowerShellSingleQuotedString(string value)
-        {
-            return value.Replace("'", "''", StringComparison.Ordinal);
         }
 
         public static bool IsIncrementalPackageFileReady(string? filePath)

@@ -1,12 +1,8 @@
 using ColorVision.Themes;
 using ColorVision.UI;
-using Microsoft.Win32;
 using System;
-using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Input;
 
 namespace ColorVision.Update
 {
@@ -16,6 +12,8 @@ namespace ColorVision.Update
         private bool _hasInitialized;
 
         public UpdatePreviewAction ResultAction { get; private set; } = UpdatePreviewAction.None;
+
+        internal AutoUpdatePlan? ReinstallPlan { get; private set; }
 
         public UpdatePreviewDialogContext Context { get; }
 
@@ -104,52 +102,42 @@ namespace ColorVision.Update
             Context.CreateSnapshotBeforeUpdate = ApplicationSnapshotConfig.Instance.CreateSnapshotBeforeUpdate;
         }
 
-        private void CopyOfflineDownloadCommandButton_Click(object sender, RoutedEventArgs e)
+        private async void ReinstallButton_Click(object sender, RoutedEventArgs e)
         {
-            ColorVision.Common.Clipboard.SetText(AutoUpdater.GetOfflineInstallerDownloadPowerShellCommand());
-            CopyOfflineDownloadCommandButton.Content = Properties.Resources.UpdatePreviewOfflineDownloadCommandCopied;
-            CopyOfflineDownloadCommandButton.ToolTip = Properties.Resources.UpdatePreviewOfflineDownloadCommandCopiedDescription;
-        }
-
-        private void CopyOfflineDownloadCommandButton_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            e.Handled = true;
-            SaveFileDialog dialog = new()
-            {
-                AddExtension = true,
-                DefaultExt = ".cmd",
-                FileName = "Download-ColorVision.cmd",
-                Filter = "可直接运行的命令脚本 (*.cmd)|*.cmd|PowerShell 脚本 (*.ps1)|*.ps1",
-                OverwritePrompt = true,
-                Title = Properties.Resources.UpdatePreviewSaveOfflineDownloadCommand,
-            };
-            if (dialog.ShowDialog(this) != true)
+            if (!Context.CanReinstall)
                 return;
 
+            Context.IsUpdating = true;
+            ReinstallButton.Content = Properties.Resources.UpdatePreviewReinstallChecking;
             try
             {
-                string runnablePath = dialog.FileName;
-                if (string.Equals(Path.GetExtension(dialog.FileName), ".ps1", StringComparison.OrdinalIgnoreCase))
+                SaveUpdateOptions();
+                LatestVersionCheckResult latestVersion = await AutoUpdater.GetLatestVersionCheckResultAsync(AutoUpdater.UpdateUrl, forceRefresh: true);
+                if (IsClosed)
+                    return;
+
+                ReinstallPlan = AutoUpdater.BuildReinstallPlan(AutoUpdater.CurrentVersion ?? latestVersion.Version, latestVersion);
+                if (ReinstallPlan == null)
                 {
-                    File.WriteAllText(
-                        dialog.FileName,
-                        AutoUpdater.GetOfflineInstallerDownloadPowerShellCommand(),
-                        new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
-                    runnablePath = Path.ChangeExtension(dialog.FileName, ".cmd");
+                    string message = latestVersion.Status == UpdateServerCheckStatus.NoInternetConnection
+                        ? Properties.Resources.UpdatePreviewNoInternetConnectionMessage
+                        : Properties.Resources.UpdatePreviewServerUnavailableMessage;
+                    MessageBox.Show(this, message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
                 }
 
-                File.WriteAllText(
-                    runnablePath,
-                    AutoUpdater.GetOfflineInstallerDownloadCommandFileContent(),
-                    new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-                CopyOfflineDownloadCommandButton.Content = Properties.Resources.UpdatePreviewOfflineDownloadCommandSaved;
-                CopyOfflineDownloadCommandButton.ToolTip = string.Format(
-                    Properties.Resources.UpdatePreviewOfflineDownloadCommandSavedDescriptionFormat,
-                    runnablePath);
+                ResultAction = UpdatePreviewAction.Reinstall;
+                DialogResult = true;
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (!IsClosed)
+                    MessageBox.Show(this, ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                Context.IsUpdating = false;
+                ReinstallButton.Content = Properties.Resources.UpdatePreviewReinstall;
             }
         }
 

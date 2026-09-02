@@ -241,10 +241,10 @@
     <value>未能获取主程序、插件和主题的最新版本信息。</value>
   </data>
   <data name="UpdatePreviewServerUnavailableMessage" xml:space="preserve">
-    <value>已尝试连接更新服务器，但未能取得版本信息。请检查网络或代理设置，也可以复制上方的离线下载命令，在可联网的堡垒机上下载完整安装包。</value>
+    <value>已尝试连接更新服务器，但未能取得版本信息。请检查网络或代理设置后重试。</value>
   </data>
   <data name="UpdatePreviewNoInternetConnectionMessage" xml:space="preserve">
-    <value>Windows 未检测到可用的互联网连接。可以复制上方的离线下载命令，在可联网的堡垒机上下载完整安装包。</value>
+    <value>Windows 未检测到可用的互联网连接。请恢复网络连接后重试。</value>
   </data>
   <data name="UpdatePreviewUpdateNowButtonText" xml:space="preserve">
     <value>立即更新</value>
@@ -291,26 +291,14 @@
   <data name="UpdatePreviewApplicationSnapshotsLink" xml:space="preserve">
     <value>程序备份</value>
   </data>
-  <data name="UpdatePreviewCopyOfflineDownloadCommand" xml:space="preserve">
-    <value>复制离线下载命令</value>
+  <data name="UpdatePreviewReinstall" xml:space="preserve">
+    <value>重新安装</value>
   </data>
-  <data name="UpdatePreviewCopyOfflineDownloadCommandDescription" xml:space="preserve">
-    <value>左键复制 PowerShell 命令；右键选择保存路径，默认导出可直接运行的 .cmd 文件。</value>
+  <data name="UpdatePreviewReinstallDescription" xml:space="preserve">
+    <value>下载最新完整安装包并启动安装，用于修复增量更新问题；当前已是最新版本时也可使用。</value>
   </data>
-  <data name="UpdatePreviewOfflineDownloadCommandCopied" xml:space="preserve">
-    <value>离线下载命令已复制</value>
-  </data>
-  <data name="UpdatePreviewOfflineDownloadCommandCopiedDescription" xml:space="preserve">
-    <value>请在可联网的堡垒机上运行该 PowerShell 命令，下载后将安装包复制回本机并运行。</value>
-  </data>
-  <data name="UpdatePreviewSaveOfflineDownloadCommand" xml:space="preserve">
-    <value>保存离线下载文件</value>
-  </data>
-  <data name="UpdatePreviewOfflineDownloadCommandSaved" xml:space="preserve">
-    <value>离线下载启动器已保存</value>
-  </data>
-  <data name="UpdatePreviewOfflineDownloadCommandSavedDescriptionFormat" xml:space="preserve">
-    <value>已保存到：{0}。请直接运行此 .cmd 文件。</value>
+  <data name="UpdatePreviewReinstallChecking" xml:space="preserve">
+    <value>正在获取最新版本…</value>
   </data>
   <data name="UpdatePreviewUpdateKindApplication" xml:space="preserve">
     <value>主程序</value>

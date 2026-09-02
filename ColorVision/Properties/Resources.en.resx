@@ -241,10 +241,10 @@
     <value>Version information for the application, plugins, and themes could not be retrieved.</value>
   </data>
   <data name="UpdatePreviewServerUnavailableMessage" xml:space="preserve">
-    <value>The update server did not return version information. Check the network or proxy settings, or copy the offline command above and download the full installer on a connected jump host.</value>
+    <value>The update server did not return version information. Check the network or proxy settings and try again.</value>
   </data>
   <data name="UpdatePreviewNoInternetConnectionMessage" xml:space="preserve">
-    <value>Windows did not detect an internet connection. Copy the offline command above to download the full installer on a connected jump host.</value>
+    <value>Windows did not detect an internet connection. Restore the network connection and try again.</value>
   </data>
   <data name="UpdatePreviewUpdateNowButtonText" xml:space="preserve">
     <value>Update now</value>
@@ -318,26 +318,14 @@
   <data name="UpdatePreviewApplicationSnapshotsLink" xml:space="preserve">
     <value>Program backups</value>
   </data>
-  <data name="UpdatePreviewCopyOfflineDownloadCommand" xml:space="preserve">
-    <value>Copy offline command</value>
+  <data name="UpdatePreviewReinstall" xml:space="preserve">
+    <value>Reinstall</value>
   </data>
-  <data name="UpdatePreviewCopyOfflineDownloadCommandDescription" xml:space="preserve">
-    <value>Left-click to copy the PowerShell command; right-click to choose a path and export a directly runnable .cmd file.</value>
+  <data name="UpdatePreviewReinstallDescription" xml:space="preserve">
+    <value>Download and launch the latest full installer to repair update problems, even when already up to date.</value>
   </data>
-  <data name="UpdatePreviewOfflineDownloadCommandCopied" xml:space="preserve">
-    <value>Offline command copied</value>
-  </data>
-  <data name="UpdatePreviewOfflineDownloadCommandCopiedDescription" xml:space="preserve">
-    <value>Run the PowerShell command on a connected jump host, then copy the downloaded installer back and run it.</value>
-  </data>
-  <data name="UpdatePreviewSaveOfflineDownloadCommand" xml:space="preserve">
-    <value>Save offline download file</value>
-  </data>
-  <data name="UpdatePreviewOfflineDownloadCommandSaved" xml:space="preserve">
-    <value>Offline download launcher saved</value>
-  </data>
-  <data name="UpdatePreviewOfflineDownloadCommandSavedDescriptionFormat" xml:space="preserve">
-    <value>Saved to: {0}. Run this .cmd file directly.</value>
+  <data name="UpdatePreviewReinstallChecking" xml:space="preserve">
+    <value>Checking the latest version…</value>
   </data>
   <data name="UpdatePreviewSelectionIncludesRequired" xml:space="preserve">
     <value>Includes required updates</value>

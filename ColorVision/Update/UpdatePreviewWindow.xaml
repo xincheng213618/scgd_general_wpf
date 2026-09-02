@@ -61,15 +61,14 @@
                             VerticalAlignment="Top"
                             Visibility="{Binding HostVersionVisibility}">
 
-                    <Button x:Name="CopyOfflineDownloadCommandButton"
+                    <Button x:Name="ReinstallButton"
                             Margin="0,0,0,6"
                             HorizontalAlignment="Right"
-                            Click="CopyOfflineDownloadCommandButton_Click"
-                            Content="{x:Static properties:Resources.UpdatePreviewCopyOfflineDownloadCommand}"
-                            IsEnabled="{Binding CanCancel}"
-                            MouseRightButtonUp="CopyOfflineDownloadCommandButton_MouseRightButtonUp"
+                            Click="ReinstallButton_Click"
+                            Content="{x:Static properties:Resources.UpdatePreviewReinstall}"
+                            IsEnabled="{Binding CanReinstall}"
                             Style="{StaticResource UpdateDialogTextButtonStyle}"
-                            ToolTip="{x:Static properties:Resources.UpdatePreviewCopyOfflineDownloadCommandDescription}" />
+                            ToolTip="{x:Static properties:Resources.UpdatePreviewReinstallDescription}" />
                     <TextBlock 
                                HorizontalAlignment="Right"
                                Cursor="Hand"

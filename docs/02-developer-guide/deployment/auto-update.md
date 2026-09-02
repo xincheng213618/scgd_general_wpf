@@ -3,7 +3,7 @@ knowledge_id: "delivery.update"
 knowledge_type: "topic"
 status: "current"
 summary: "主程序及插件更新、检查结果一次性消费、失败元数据回退、目录替换与启动恢复的实现和验收边界。"
-aliases: ["自动更新","更新失败","插件回滚","重复检查更新","更新检查缓存","五分钟缓存","启动检查结果","PluginUpdater","CombinedUpdateCoordinator","UpdateCheckReuseState","LatestVersionCheckRequestCache","CanReuseUpdateCheckOptions","GetPluginUpdateMetadataAsync","ServerUnavailable","NoInternetConnection","forceRefresh"]
+aliases: ["自动更新","更新失败","重新安装","最新完整安装包","插件回滚","重复检查更新","更新检查缓存","五分钟缓存","启动检查结果","PluginUpdater","CombinedUpdateCoordinator","UpdateCheckReuseState","LatestVersionCheckRequestCache","CanReuseUpdateCheckOptions","GetPluginUpdateMetadataAsync","ServerUnavailable","NoInternetConnection","forceRefresh"]
 code_paths: ["ColorVision/Update","ColorVision/Recovery","UI/ColorVision.UI/ServiceHost/ApplicationUpdatePrivilegeBroker.cs","UI/ColorVision.UI/Plugins/PluginUpdater.cs","UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceClient.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceManager.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/PluginRecoveryBackupServiceTests.cs","Test/ColorVision.UI.Tests/ServiceHostUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/AutoUpdatePlanTests.cs"]
 related: ["delivery.deployment","delivery.scripts","platform.service-host","delivery.update-scan-protection","platform.startup-integrity"]
@@ -48,6 +48,10 @@ flowchart LR
 客户端使用 `GET /api/app/latest-version`、`POST /api/plugins/batch-version-check` 和插件更新元数据接口 `GET /api/plugins/{id}?view=update`。主程序版本与插件批量版本并发查询，插件管理器再按 `HasUpdate` 选择候选并读取元数据以筛选兼容版本。插件更新元数据请求采用 2 秒单次超时，并以 300 ms、900 ms 间隔最多建立 3 次新请求。任一候选插件的元数据在重试和可用旧结果回退后仍未取得时，本轮主程序与插件更新计划整体延期，不把本应组合的更新拆成两次。请求共享与旧结果回退的区别见本页“检查复用与元数据新鲜度”。
 
 更新窗口在“程序备份”旁提供“不使用系统代理”选项，默认开启。开启时使用独立的直连 `HttpClient`；取消勾选后，更新检查和 Marketplace 请求遵循 Windows 系统代理。修改从下一次请求生效。该选项只影响 HTTP 元数据与 Marketplace 请求，不改变 aria2 下载和程序快照行为。
+
+更新窗口右上角提供“重新安装”，替代原来的离线下载命令复制与脚本导出。即使显示“已是最新版本”，或本轮主程序/插件检查失败，检查结束后仍可点击该入口：客户端重新请求主程序最新版本，仅在服务器确认成功且版本有效时生成完整安装计划，不以当前版本是否更低为条件。断网或请求失败时，即使接口返回上次成功的版本缓存，也不启动重装；窗口显示错误并允许重试。
+
+重新安装取消待执行的启动更新及其预下载，不等待增量包或合并插件更新，直接下载最新版本的完整 `.exe` 安装包；已有通过结构与目标版本校验的完整包可复用。获取版本期间禁用重复操作，关闭窗口不会启动安装。包校验成功后启动完整安装器，并沿用更新前快照选项、配置保存与退出交接。此入口用于增量更新异常但仍能打开更新窗口的情况；安装器启动不代表重装或问题修复已完成，需要在目标环境完成安装并重新启动验证。
 
 更新提示显示 30 秒后会静默预下载主程序和插件包。退出时只自动应用已经完整缓存并通过校验的增量包；程序目录不可写时，必须由 `ColorVisionServiceHost` 在 3 秒内静默准备好目录权限，否则本次退出直接跳过，不弹 UAC。这3秒只约束权限准备请求，不是全部退出更新准备阶段的耗时上限。主程序和插件分别判断包是否可用：任意一方未准备好不会阻止另一方更新。完整安装程序可以预下载和复用，但不会在退出时自动运行；后台启动检查仍会按当前主程序版本独立查询和预下载兼容插件，使已经准备好的插件可以在退出时单独更新。
 
