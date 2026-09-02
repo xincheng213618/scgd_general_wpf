@@ -540,6 +540,7 @@
     {"query":"目标框架兼容","expected_any":["ui.package-boundaries"],"include_planned":false},
     {"query":"NuGet发布失败","expected_any":["ui.publishing"],"include_planned":false},
     {"query":"NuGet版本已占用","expected_any":["ui.publishing"],"include_planned":false},
-    {"query":"Verify scoped Algorithms release","expected_any":["ui.publishing"],"include_planned":false}
+    {"query":"Verify scoped Algorithms release","expected_any":["ui.publishing"],"include_planned":false},
+    {"query":"algorithms-v1.5.8.0为什么发布失败","expected_any":["ui.publishing"],"include_planned":false}
   ]
 }

@@ -215,6 +215,43 @@ test('qualified symbols fall back to bounded owners without splitting underscore
     searchCatalog(catalog, 'Namespace.StateStore.Save Namespace.StateStore.Save')[0].score)
 })
 
+test('versioned release tags locate bounded prefixes without treating version digits as owners', () => {
+  const base = { title: 'Fixture', status: 'current', summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const catalog = { entries: [
+    { ...base, knowledge_id: 'ui.release', aliases: ['widget-v'] },
+    { ...base, knowledge_id: 'ui.noise', aliases: ['widget', '8', '1.5.8', 'preview', 'upload'] },
+  ] }
+  for (const tag of ['widget-v1.5.8.0', 'WIDGET-V2.10.4-preview.2', 'widget-v03.0.12.1+build.7']) {
+    const ranked = searchCatalog(catalog, `${tag}为什么发布失败`)
+    assert.deepEqual(ranked.map((entry) => entry.knowledge_id), ['ui.release'], tag)
+    assert.equal(ranked[0].match_kind, 'owner-fallback', 'routing to a release guide does not validate the tag')
+  }
+  for (const query of ['unknown-v1.5.8.0', '1.5.8.0', 'Namespace.8.Save', 'widget-vNext']) {
+    assert.deepEqual(searchCatalog(catalog, query), [], query)
+  }
+})
+
+test('release prefix fallback preserves exact versions, boundaries, filters and deduplication', () => {
+  const base = { title: 'Fixture', status: 'current', summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const tag = 'widget-v2.4.7'
+  const query = `${tag}为什么失败`
+  const catalog = { entries: [
+    { ...base, knowledge_id: 'ui.a', aliases: ['widget-v'] },
+    { ...base, knowledge_id: 'ui.z', aliases: ['WIDGET-V'] },
+    { ...base, knowledge_id: 'ui.nearby', aliases: ['mywidget-v', 'widget-version'] },
+    { ...base, knowledge_id: 'ui.future', aliases: ['widget-v'], status: 'planned' },
+    { ...base, knowledge_id: 'ui.hidden', aliases: ['widget-v'], searchable: false },
+  ] }
+  assert.deepEqual(searchCatalog(catalog, query).map((entry) => entry.knowledge_id), ['ui.a', 'ui.z'])
+  assert.deepEqual(searchCatalog(catalog, `${tag} ${query}`), searchCatalog(catalog, query))
+  assert.deepEqual(searchCatalog(catalog, query, { all: true }).map((entry) => entry.knowledge_id), ['ui.a', 'ui.future', 'ui.z'])
+  assert.deepEqual(searchCatalog(catalog, query, { limit: 1 }).map((entry) => entry.knowledge_id), ['ui.a'])
+  catalog.entries.push({ ...base, knowledge_id: 'ui.version', aliases: [tag] })
+  assert.equal(searchCatalog(catalog, query)[0].knowledge_id, 'ui.version')
+  catalog.entries.push({ ...base, knowledge_id: 'ui.phrase', aliases: [query] })
+  assert.equal(searchCatalog(catalog, query)[0].knowledge_id, 'ui.phrase')
+})
+
 test('full qualified evidence outranks owner context and exact whole-query aliases remain first', async (t) => {
   const root = await fixture(t)
   const catalog = await buildCatalog(root)
