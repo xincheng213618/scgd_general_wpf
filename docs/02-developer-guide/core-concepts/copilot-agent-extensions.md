@@ -3,17 +3,19 @@ knowledge_id: "copilot.extensions"
 knowledge_type: "topic"
 status: "current"
 summary: "业务模块动态上下文、外部 MCP client 和 Hook 如何进入统一宿主权限与生命周期。"
-aliases: ["业务模块如何接入 Copilot","外部 MCP 如何授权","Hook 能否绕过审批","图像上下文包含像素吗","模板JSON上下文是否完整","CopilotAgentExtensionRegistry","ICopilotModuleTool","EditTemplateJson","AskCopilotAboutImage"]
-code_paths: ["UI/ColorVision.Common/Interfaces/Copilot/CopilotAgentExtensionRegistry.cs","ColorVision/Copilot/Agent/CopilotMcpToolProvider.cs","ColorVision/Copilot/Agent/CopilotToolExecution.Hooks.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowEngineManager.cs","Engine/ColorVision.Engine/FlowProcessing/Integration/FlowCopilotService.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Templates/Jsons/EditTemplateJson.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/AppCommand/ZoomEditorToolContextMenu.cs","UI/ColorVision.Common/Interfaces/Copilot/CopilotBusinessContextBuilder.cs","ColorVision/Copilot/Agent/CopilotMcpToolAdapter.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotMcpClientConfigurationTests.cs","Test/ColorVision.Copilot.Tests/CopilotExternalMcpRefreshTests.cs","Test/ColorVision.Copilot.Tests/CopilotToolExecutionHookIntegrityTests.cs","Test/ColorVision.Copilot.Tests/CopilotExternalMcpToolOutcomeTests.cs"]
+aliases: ["业务模块如何接入 Copilot","外部 MCP 如何授权","Hook 能否绕过审批","图像上下文包含像素吗","模板JSON上下文是否完整","CopilotAgentExtensionRegistry","ICopilotModuleTool","EditTemplateJson","AskCopilotAboutImage","ICopilotModuleToolExecutionHook","ICopilotModuleToolPermissionRequestHook","异步Hook"]
+code_paths: ["UI/ColorVision.Common/Interfaces/Copilot/CopilotAgentExtensionRegistry.cs","UI/ColorVision.Common/Interfaces/Copilot/CopilotModuleToolExecutionHook.cs","Engine/ColorVision.Engine/Services/ServiceManager.cs","Engine/ColorVision.Engine/Services/CopilotDeviceContextProvider.cs","Engine/ColorVision.Engine/FlowProcessing/Integration/CopilotFlowContextProvider.cs","ColorVision/Copilot/Agent/CopilotMcpToolProvider.cs","ColorVision/Copilot/Agent/CopilotToolExecution.Hooks.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowEngineManager.cs","Engine/ColorVision.Engine/FlowProcessing/Integration/FlowCopilotService.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Templates/Jsons/EditTemplateJson.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/AppCommand/ZoomEditorToolContextMenu.cs","UI/ColorVision.Common/Interfaces/Copilot/CopilotBusinessContextBuilder.cs","ColorVision/Copilot/Agent/CopilotMcpToolAdapter.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotMcpClientConfigurationTests.cs","Test/ColorVision.Copilot.Tests/CopilotExternalMcpRefreshTests.cs","Test/ColorVision.Copilot.Tests/CopilotToolExecutionHookIntegrityTests.cs","Test/ColorVision.Copilot.Tests/CopilotPermissionRequestHookTests.cs","Test/ColorVision.Copilot.Tests/CopilotExternalMcpToolOutcomeTests.cs"]
 related: ["copilot.runtime","copilot.mcp-server","platform.extensibility","copilot.session-tools","copilot.tool-contracts"]
 ---
 
 # Copilot 扩展、MCP 与 Hook
 
+Copilot 通过进程内模块注册读取业务上下文、接收窄范围工具与执行 Hook，通过外部 MCP client 使用独立服务。三种入口沿用宿主的参数、权限、审批和结果协议；本主题说明各自的接入方式与生命周期。
+
 ## 业务模块 Agent 扩展
 
-Flow、设备、模板、图像和其他业务项目不能反向引用主程序中的 `ICopilotTool`。需要把模块状态或窄业务动作交给 Agent 时，在 UI 公共契约层使用 `CopilotAgentExtensionRegistry.Shared.Register`，并持有返回的 `IDisposable`。注册项包含稳定 `SourceId`、显示名、版本、零到多个 `ICopilotContextProvider`，以及零到多个 `ICopilotModuleTool`；页面、编辑器或插件卸载时释放句柄，提供者、工具和 Capability Catalog 来源会一起撤销。注册表拒绝空扩展、重复来源、跨模块重复工具名、非法 Schema 和无界超时，桥接层还会报告与内置工具名冲突的能力并拒绝激活。
+Flow、设备、模板、图像和其他业务项目不能反向引用主程序中的 `ICopilotTool`。需要把模块状态或窄业务动作交给 Agent 时，在 UI 公共契约层使用 `CopilotAgentExtensionRegistry.Shared.Register`，并持有返回的 `IDisposable`。注册项包含稳定 `SourceId`、显示名、版本，以及 `ContextProviders`、`Tools`、`ToolExecutionHooks` 三类集合；至少提供一项上下文、工具或 Hook。页面、编辑器或插件卸载时释放句柄，相关注册和 Capability Catalog 来源随之撤销。注册表拒绝空扩展、重复来源、跨模块重复工具名、非法 Schema 和无界超时，桥接层还会报告与内置工具名冲突的能力并拒绝激活。
 
 `ICopilotModuleTool` 是面向业务程序集的窄契约，不暴露模型 Profile、审批对象、会话 checkpoint 或完整 Agent 内部状态。模块只接收当前模式、用户目标、结构化参数、已采集上下文、搜索根和活动文档。只读模块工具映射成 `ReadOnly + Idempotent + SharedRead`；任何声明为 `Write` 的模块工具都由宿主强制映射成 `High risk + Always approval + NonIdempotent + Exclusive`，未收到 Agent Framework 对本次精确函数调用的原生批准时适配器直接拒绝，模块不能自行降低风险等级。
 
@@ -29,7 +31,7 @@ Flow、设备、模板、图像和其他业务项目不能反向引用主程序�
 
 `/context` 本地诊断会列出当前模块扩展来源、版本、上下文提供者数量、工具已激活/声明数量以及最多八个冲突或发布问题；输出有数量和单行长度上限，不调用模型，也不写入会话历史。模块工具名与内置工具冲突时，诊断会保留来源和原因，实际工具不会进入 Agent 工具面。
 
-能够执行 `ICopilotModuleTool` 的 DLL 本来就在 ColorVision 进程内运行，应只来自与普通插件代码相同信任级别的已审核程序集；未来若要允许远程或低信任扩展，应使用 MCP 或独立 ServiceHost 能力面，不应复用进程内注册表冒充沙箱。
+模块 DLL 在 ColorVision 进程内运行，与普通插件代码使用相同的信任边界；注册表不隔离其 Windows 身份、文件或网络访问。外部 MCP 使用独立连接与审批链，不能继承进程内注册带来的权限。通用 Shell 的 Job Object 和审批也不构成系统沙箱，其执行约束见[工作区与 Shell 工具](./copilot-agent-session-and-tools.md)。
 
 ## 外部 MCP 工具发现
 
@@ -62,22 +64,25 @@ lab | https://mcp.example.com/mcp | LAB_MCP_TOKEN | approval | get_status=read-o
 
 ## Hook 扩展点
 
-实现 `ICopilotToolExecutionHook` 可接入统一策略：
+主程序内部通过 `ICopilotToolExecutionHook` 接入执行器；业务模块通过公共 `ICopilotModuleToolExecutionHook` 及注册项的 `ToolExecutionHooks` 接入，无需引用主程序 Agent 类型。模块 Hook 声明稳定名称、`ToolNamePattern`、顺序和 `ExecutionMode`，可观察匹配工具的调用上下文与执行结果。
 
-- `BeforeExecuteAsync`：权限判断、用户确认、速率限制、策略拒绝。
-- `AfterExecuteAsync`：遥测、诊断记录、结果归档。
+| 模式与阶段 | 当前作用 |
+| --- | --- |
+| `Sync` + `BeforeExecuteAsync` | 工具执行前的控制点。拒绝、异常、自行取消或超时会阻止本次工具执行，并保留对应失败状态 |
+| `Sync` + `AfterExecuteAsync` | 接收已产生的执行结果，用于记录和诊断。异常、取消或超时记入 Hook 状态，不把已经执行的业务结果改成未执行，也不提供回滚 |
+| `Async` + 前置/后置回调 | 有界后台通知；前置返回的拒绝决定和输出不会控制发起它的工具，后置输出也不改工具结果。回调可能重叠，实现必须处理并发 |
 
-前置 Hook 拒绝或异常时工具不会运行；后置 Hook 异常只记录日志，不覆盖真实工具结果。Hook 应保持轻量，并避免保存未脱敏的参数。
+方法名中的 `Async` 表示返回异步任务，能否阻止工具取决于 `ExecutionMode`。不能把所有 `BeforeExecuteAsync` 都描述为审批或拒绝门禁。
 
-## 当前边界与下一步
+需要在受保护调用的审批边界补充理由或拒绝时，实现 `ICopilotModuleToolPermissionRequestHook`。它只能保留原生确认流程或拒绝，不能替用户批准；执行上下文中的 `FrameworkApprovalGranted` 是宿主状态，不是模块可发放的授权。精确输入冻结和审批绑定见[工具契约](./copilot-agent-tool-contracts.md#原生审批与参数快照)。
 
-这是一套基础框架，不等同于 Codex、Claude Code 或 OpenCode 的完整能力。当前已采用相同的核心分工：稳定工具目录和 JSON Schema 交给模型选择，宿主执行确定性的参数校验、权限、审批、隔离、审计与结果回传；关键词策略仅保留在确实需要缩减外部/动态能力的边界，不再承担核心诊断工具路由。后续按优先级扩展：
+Hook 应保留真实工具结果，避免将回调完成当作业务成功；不要保存未脱敏参数。后置 Hook 的事件发布失败也不能据此重放已经完成的写入。相关失败记录应同时核对工具终态和 Hook 终态。
 
-1. 先打磨主程序中的 Agent 基础闭环，包括运行状态、暂停/恢复、失败恢复、审批一致性、上下文预算和可测试性。业务模块接入暂缓，尤其不直接改动 `Plugins/**` 中的扩展版本；只有基础契约稳定且出现经过验证的高频需求后，才重新评估模块接入。
-2. `/context` 已展示模块来源、版本、上下文提供者、已激活工具和冲突原因；下一步只在出现真实启停需求后再增加设置管理页，避免让诊断信息提前膨胀成第二套插件管理器。
-3. 将同一 Capability Fabric 扩展到 LAN 和 ServiceHost，保持能力白名单、身份、审批、evidence 和审计语义一致；跨进程能力不直接复用进程内模块注册表。
-4. 通用 Shell 保持精确调用的原生审批与执行保护；自动复核也不是系统沙箱。当前 runner 使用 Job Object 进程树归组，但不能据此宣称具备受限 Windows 身份、文件系统或网络沙箱。
+## 实现与验证入口
 
-框架中间件与函数调用层的设计参考 [Microsoft Agent Framework Middleware](https://learn.microsoft.com/en-us/agent-framework/agents/middleware/)；请求预算中间件使用官方建议的 [DelegatingChatClient](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.ai.delegatingchatclient?view=net-11.0-pp) 组合方式。
+- `CopilotAgentExtensionRegistry`：注册、同名冲突、来源版本及释放；业务实现入口为 `FlowCopilotService`、`CopilotDeviceContextProvider`、`EditTemplateJson`，结果与调度上下文详见[任务与内置工具](./copilot-agent-session-and-tools.md)。
+- `CopilotToolExecution.Hooks.cs`：同步控制、后台通知与结果发布；`CopilotToolExecutionHookIntegrityTests` 核对输入/结果保护、前置执行顺序和后置事件失败时保留已完成结果。
+- `CopilotPermissionRequestHookTests`：模块在原生审批前拒绝精确调用，以及审批交接时保留冻结 Hook 和权限证据。
+- `CopilotExternalMcpRefreshTests`、`CopilotExternalMcpToolOutcomeTests`：使用受控 HTTP 核对发现、缓存与远端结果未知；`CopilotMcpClientConfigurationTests` 核对配置边界。
 
-相关测试集中在 `CopilotCoreRuntimeTests`、`CopilotAgentExtensionRegistryTests`、`CopilotFlowContextProviderTests`、`CopilotDeviceContextProviderTests`、`CopilotMeasurementResultContextProviderTests`、`CopilotSchedulerContextProviderTests`、`ProjectARVRCopilotContextTests`、`CopilotExploreSubagentTests`、`CopilotScoutSubagentTests` 与 `CopilotToolExecutorTests`。
+测试入口不代表本轮已运行，也不证明真实设备、第三方模块或外部 MCP 服务可用。验证某个扩展时，应核对实际注册来源、作用域和工具返回，不能只以 `/context` 中出现名称作为业务完成证据。

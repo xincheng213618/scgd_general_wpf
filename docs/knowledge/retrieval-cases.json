@@ -471,6 +471,8 @@
     {"query":"colorvision-script-automation","expected_any":["copilot.skills"],"include_planned":false},
     {"query":"InspectFlowGraph","expected_any":["copilot.tool-contracts"],"include_planned":false},
     {"query":"ApplyFlowPatch","expected_any":["copilot.tool-contracts"],"include_planned":false},
-    {"query":"PreviewWorkspacePatchEnvelope","expected_any":["copilot.session-tools"],"include_planned":false}
+    {"query":"PreviewWorkspacePatchEnvelope","expected_any":["copilot.session-tools"],"include_planned":false},
+    {"query":"ICopilotModuleToolExecutionHook","expected_any":["copilot.extensions"],"include_planned":false},
+    {"query":"ICopilotModuleToolPermissionRequestHook","expected_any":["copilot.extensions"],"include_planned":false}
   ]
 }

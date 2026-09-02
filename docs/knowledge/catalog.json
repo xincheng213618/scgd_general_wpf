@@ -1506,10 +1506,17 @@
         "CopilotAgentExtensionRegistry",
         "ICopilotModuleTool",
         "EditTemplateJson",
-        "AskCopilotAboutImage"
+        "AskCopilotAboutImage",
+        "ICopilotModuleToolExecutionHook",
+        "ICopilotModuleToolPermissionRequestHook",
+        "异步Hook"
       ],
       "code_paths": [
         "UI/ColorVision.Common/Interfaces/Copilot/CopilotAgentExtensionRegistry.cs",
+        "UI/ColorVision.Common/Interfaces/Copilot/CopilotModuleToolExecutionHook.cs",
+        "Engine/ColorVision.Engine/Services/ServiceManager.cs",
+        "Engine/ColorVision.Engine/Services/CopilotDeviceContextProvider.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Integration/CopilotFlowContextProvider.cs",
         "ColorVision/Copilot/Agent/CopilotMcpToolProvider.cs",
         "ColorVision/Copilot/Agent/CopilotToolExecution.Hooks.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowEngineManager.cs",
@@ -1524,6 +1531,7 @@
         "Test/ColorVision.Copilot.Tests/CopilotMcpClientConfigurationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotExternalMcpRefreshTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotToolExecutionHookIntegrityTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotPermissionRequestHookTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotExternalMcpToolOutcomeTests.cs"
       ],
       "related": [
