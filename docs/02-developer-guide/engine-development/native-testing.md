@@ -6,7 +6,7 @@ summary: "opencv_helper_test 的实际入口、工具集与配置映射、专项
 aliases: ["原生测试", "原生调试", "opencv_helper_test", "BUILD_AND_DEBUG_GUIDE", "build_test_find_luminous.bat", "v145", "--luminous-v2-only", "--find-cross-cvraw", "--calibration-smoke", "--calibration-cache-small-budget", "--cuda-fusion-benchmark", "--cuda-fusion-verify", "--cuda-fusion-compare", "--cuda-fusion-ab-benchmark", "--find-cross-only", "--luminous-v2-cvraw", "--luminous-v2-cvraw-reject", "--p2-only", "--native-log", "--pseudo-color", "--calibration-real-data", "--calibration-legacy-color", "--surface-defect-equivalence", "--surface-defect-benchmark", "COLORVISION_POI_BATCH_BASELINE_DLL", "COLORVISION_CALIBRATION_TEST_THREADS", "All tests completed", "LNK2019", "MSB8020"]
 code_paths: ["Test/opencv_helper_test/BUILD_AND_DEBUG_GUIDE.md", "Test/opencv_helper_test/opencv_helper_test.vcxproj", "Test/opencv_helper_test/test_find_luminous_area.cpp", "Test/opencv_helper_test/build_test_find_luminous.bat", "Test/opencv_helper_test/test_cuda_fusion.cpp", "Test/opencv_helper_test/test_calibration.cpp", "Test/opencv_helper_test/test_find_cross.cpp", "Native/opencv_helper/opencv_helper.vcxproj", "packages/OpenCV.Debug.x64.props", "packages/OpenCV.Release.x64.props", "packages/NativeCopy.targets", "scgd_general_wpf.sln", "build.sln"]
 test_paths: ["Test/opencv_helper_test/test_find_luminous_area.cpp", "Test/opencv_helper_test/test_calibration.cpp", "Test/opencv_helper_test/test_cuda_fusion.cpp", "Test/opencv_helper_test/test_find_cross.cpp", "Test/opencv_helper_test/test_p2_algorithms.cpp", "Test/opencv_helper_test/test_native_logging.cpp", "Test/opencv_helper_test/test_pseudo_color.cpp", "Test/opencv_helper_test/data/sfrmat5"]
-related: ["delivery.testing", "delivery.prerequisites", "engine.native-integration", "engine.opencv-helper-api", "algorithms.find-light-area", "ui.image-fusion"]
+related: ["delivery.testing", "delivery.prerequisites", "engine.native-integration", "engine.opencv-helper-api", "algorithms.find-light-area", "algorithms.find-cross", "ui.image-fusion"]
 ---
 
 # 原生 helper 测试与调试
@@ -71,7 +71,7 @@ if ($nativeTestExit -ne 0) { throw "亮区专项测试失败，退出码 $native
 | 参数 | 执行范围 / 前提 |
 | --- | --- |
 | `--luminous-v2-only` | 本地亮区 V2 合成回归 |
-| `--find-cross-only` | FindCross 合成图形、质量门禁和失败契约 |
+| `--find-cross-only` | [FindCross](../../04-api-reference/algorithms/detectors/find-cross.md) 合成图形、质量门禁和失败契约 |
 | `--p2-only` | P2 本地算法回归 |
 | `--native-log` | 原生日志桥接测试 |
 | `--pseudo-color` | 伪彩回归 |

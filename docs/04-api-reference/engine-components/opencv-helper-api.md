@@ -6,7 +6,7 @@ summary: "opencv_helper 英文 API 参考：校准/POI、图像处理、SFR、�
 aliases: ["opencv_helper API", "原生函数参考", "图像拼接", "伪彩原位输出", "POI 批量计算", "校准共享缓存", "StitchingErrorCode", "VideoInfo", "RoiRect", "COLORVISION_CALIBRATION_CACHE_MB", "M_CalibrationExecuteToV1", "M_CalibrationCacheReleaseV1", "M_CalculatePoiBatchV1", "M_CalculatePoiBatchV2", "M_AutoLevelsAdjust", "M_AutomaticColorAdjustment", "M_AutomaticToneAdjustment", "M_PseudoColor", "M_PseudoColorAutoRange", "M_PseudoColorInto", "M_GetMinMax", "M_ExtractChannel", "M_GetWhiteBalance", "M_ApplyGammaCorrection", "M_AdjustBrightnessContrast", "M_InvertImage", "M_Threshold", "M_RemoveMoire", "M_ConvertImage", "M_ConvertGray32Float", "M_DrawPoiImage", "M_StitchImages", "M_Fusion", "M_ApplyGaussianBlur", "M_ApplyMedianBlur", "M_ApplySharpen", "M_ApplyCannyEdgeDetection", "M_ApplyHistogramEqualization", "M_CalSFRMultiChannel", "M_CalArtculation", "M_FindLuminousArea", "M_FindLuminousAreaV2", "M_FindLightBeads", "M_DetectKeyRegions", "M_VideoOpen", "M_VideoReadFrame", "M_VideoSeek", "M_VideoGetCurrentFrame", "M_VideoSetPlaybackSpeed", "M_VideoSetResizeScale", "M_VideoPlay", "M_VideoPause", "M_VideoClose", "FreeResult", "M_FreeHImageData", "M_PseudoColorAutoRangeInto"]
 code_paths: ["Native/opencv_helper/API_Documentation.md", "Native/include/opencv_media_export.h", "Native/include/custom_structs.h", "Native/include/video_export.h", "Native/opencv_helper/opencv_media_export.cpp", "Native/opencv_helper/algorithm.cpp", "Native/opencv_helper/video_export.cpp", "Native/opencv_helper/exports/calibration_export.cpp", "Native/opencv_helper/exports/poi_export.cpp", "Native/opencv_helper/exports/sfr_export.cpp", "Native/opencv_helper/exports/p2_export.cpp", "Native/opencv_helper/algorithm/calibration", "Native/opencv_helper/algorithm/poi/poi_batch.cpp", "Native/opencv_helper/algorithm/sfr/sfr_slanted.cpp", "Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.cpp", "UI/ColorVision.Core/OpenCVMediaHelper.cs", "UI/ColorVision.Core/OpenCVCalibration.cs", "UI/ColorVision.Core/HImage.cs", "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs"]
 test_paths: ["Test/opencv_helper_test/test_find_luminous_area.cpp", "Test/opencv_helper_test/test_calibration.cpp", "Test/opencv_helper_test/test_pseudo_color.cpp", "Test/opencv_helper_test/test_p2_algorithms.cpp", "Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs"]
-related: ["engine.native-integration", "ui.core", "ui.image-frames", "algorithms.local-native-analysis", "algorithms.poi-routes"]
+related: ["engine.native-integration", "ui.core", "ui.image-frames", "algorithms.local-native-analysis", "algorithms.poi-routes", "algorithms.find-cross"]
 ---
 
 # opencv_helper.dll API 参考
@@ -854,6 +854,10 @@ Negative values are reserved for invalid arguments/JSON or system exceptions.
 Always release a non-null result with `FreeResult()`.
 
 ---
+
+### M_FindCrossLocal
+
+The [local FindCross reference](../algorithms/detectors/find-cross.md) owns `M_FindCrossLocal`, `M_FindCrossLocalGetLastError`, production/diagnostic options, global coordinates, return codes and managed ownership. It also distinguishes the integer compatibility center from `CenterSubpixel` and the Pattern detector from explicit OuterPanel assistance.
 
 ### M_FindLightBeads
 

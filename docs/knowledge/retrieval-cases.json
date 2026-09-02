@@ -437,6 +437,14 @@
     {"query":"build_test_find_luminous.bat","expected_any":["delivery.native-testing"],"include_planned":false},
     {"query":"贡献指南","expected_any":["governance.maintenance"],"include_planned":false},
     {"query":"版本标签","expected_any":["delivery.scripts"],"include_planned":false},
-    {"query":"auto-tag.yml","expected_any":["delivery.scripts"],"include_planned":false}
+    {"query":"auto-tag.yml","expected_any":["delivery.scripts"],"include_planned":false},
+    {"query":"M_FindCrossLocal","expected_any":["algorithms.find-cross"],"include_planned":false},
+    {"query":"本地十字定位","expected_any":["algorithms.find-cross"],"include_planned":false},
+    {"query":"FindCrossLocalOptions","expected_any":["algorithms.find-cross"],"include_planned":false},
+    {"query":"最大允许旋转偏差","expected_any":["algorithms.find-cross"],"include_planned":false},
+    {"query":"CalibrationOffset","expected_any":["algorithms.find-cross"],"include_planned":false},
+    {"query":"RawGeometricCenter","expected_any":["algorithms.find-cross"],"include_planned":false},
+    {"query":"NativeConfigurationInvalid","expected_any":["algorithms.find-cross"],"include_planned":false},
+    {"query":"AmbiguousPattern","expected_any":["algorithms.find-cross"],"include_planned":false}
   ]
 }

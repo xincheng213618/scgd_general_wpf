@@ -26,6 +26,9 @@ next: false
 - [DataLoad 数据加载模板](../../04-api-reference/algorithms/templates/data-load-template.md) — `algorithms.data-load`
   区分 DataLoad 模板与显式参数节点如何按设备、批次和 ZIndex 读取上游结果。
 
+- [本地十字定位 FindCross](../../04-api-reference/algorithms/detectors/find-cross.md) — `algorithms.find-cross`
+  本地十字定位的图像菜单、Flow 节点、生产参数、全图坐标、原生返回值与失败诊断。
+
 - [FindLightArea 发光区定位模板](../../04-api-reference/algorithms/templates/find-light-area.md) — `algorithms.find-light-area`
   区分远端 FindLightArea 模板与本地原生亮区检测 RobustV2；四角点不等于成功，须核对置信度、失败原因和各调用层的结果契约。
 

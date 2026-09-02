@@ -171,6 +171,69 @@
       "searchable": true
     },
     {
+      "knowledge_id": "algorithms.find-cross",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "本地十字定位的图像菜单、Flow 节点、生产参数、全图坐标、原生返回值与失败诊断。",
+      "aliases": [
+        "本地十字定位",
+        "本地 FindCross",
+        "M_FindCrossLocal",
+        "M_FindCrossLocalGetLastError",
+        "FindCrossLocal",
+        "FindCrossLocalOptions",
+        "FindCrossLocalResultParser",
+        "LocalFindCrossNode",
+        "PatternCrossV1",
+        "OuterPanel",
+        "ExpectedAngleDegrees",
+        "AngleToleranceDegrees",
+        "CalibrationOffset",
+        "RawGeometricCenter",
+        "LocalFindCrossCenterX",
+        "NativeConfigurationInvalid",
+        "AmbiguousPattern",
+        "PatternClipped",
+        "LegacyParametersIgnored",
+        "标准中心使用图像中心",
+        "最大允许旋转偏差"
+      ],
+      "code_paths": [
+        "Native/include/opencv_media_export.h",
+        "Native/opencv_helper/algorithm/find_cross",
+        "UI/ColorVision.Core/FindCrossLocal.cs",
+        "UI/ColorVision.Core/OpenCVMediaHelper.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindCross/FindCrossLocalCM.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindCrossNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs"
+      ],
+      "test_paths": [
+        "Test/opencv_helper_test/test_find_cross.cpp",
+        "Test/ColorVision.UI.Tests/FindCrossLocalTests.cs",
+        "Test/ColorVision.UI.Tests/LocalFindCrossNodeTests.cs",
+        "Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs"
+      ],
+      "related": [
+        "algorithms.index",
+        "engine.native-integration",
+        "engine.results",
+        "ui.image-editor",
+        "delivery.native-testing"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine",
+        "Native/include",
+        "Native/opencv_helper",
+        "UI/ColorVision.Core",
+        "UI/ColorVision.ImageEditor"
+      ],
+      "domain": "algorithms",
+      "title": "本地十字定位 FindCross",
+      "source": "docs/04-api-reference/algorithms/detectors/find-cross.md",
+      "url": "/04-api-reference/algorithms/detectors/find-cross",
+      "searchable": true
+    },
+    {
       "knowledge_id": "algorithms.find-light-area",
       "knowledge_type": "topic",
       "status": "current",
@@ -530,6 +593,7 @@
       "related": [
         "algorithms.platform",
         "algorithms.local-native-analysis",
+        "algorithms.find-cross",
         "algorithms.template-overview",
         "engine.template-design",
         "algorithms.roi-routes",
@@ -2983,6 +3047,7 @@
         "engine.native-integration",
         "engine.opencv-helper-api",
         "algorithms.find-light-area",
+        "algorithms.find-cross",
         "ui.image-fusion"
       ],
       "code_scopes": [
@@ -4177,7 +4242,8 @@
         "ui.core",
         "ui.image-frames",
         "algorithms.local-native-analysis",
-        "algorithms.poi-routes"
+        "algorithms.poi-routes",
+        "algorithms.find-cross"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine",
@@ -4687,7 +4753,8 @@
         "flow.templates",
         "flow.workspace",
         "flow.headless",
-        "flow.conversion-calibration"
+        "flow.conversion-calibration",
+        "algorithms.find-cross"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine",

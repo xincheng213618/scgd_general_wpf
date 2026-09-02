@@ -884,6 +884,12 @@
           "items": [
             {
               "text": {
+                "root": "本地十字定位 FindCross"
+              },
+              "link": "/04-api-reference/algorithms/detectors/find-cross"
+            },
+            {
+              "text": {
                 "root": "FindLightArea 发光区定位模板"
               },
               "link": "/04-api-reference/algorithms/templates/find-light-area"
@@ -1001,6 +1007,12 @@
                 "root": "UI 知识入口"
               },
               "link": "/04-api-reference/ui-components/README"
+            },
+            {
+              "text": {
+                "root": "本地十字定位 FindCross"
+              },
+              "link": "/04-api-reference/algorithms/detectors/find-cross"
             },
             {
               "text": {
@@ -1850,6 +1862,12 @@
             },
             {
               "text": {
+                "root": "本地十字定位 FindCross"
+              },
+              "link": "/04-api-reference/algorithms/detectors/find-cross"
+            },
+            {
+              "text": {
                 "root": "FindLightArea 发光区定位模板"
               },
               "link": "/04-api-reference/algorithms/templates/find-light-area"
@@ -2444,6 +2462,12 @@
           "items": [
             {
               "text": {
+                "root": "本地十字定位 FindCross"
+              },
+              "link": "/04-api-reference/algorithms/detectors/find-cross"
+            },
+            {
+              "text": {
                 "root": "FindLightArea 发光区定位模板"
               },
               "link": "/04-api-reference/algorithms/templates/find-light-area"
@@ -2502,6 +2526,12 @@
           "link": "/knowledge/code/source-Native#module-4e61746976652f6f70656e63765f68656c706572",
           "collapsed": true,
           "items": [
+            {
+              "text": {
+                "root": "本地十字定位 FindCross"
+              },
+              "link": "/04-api-reference/algorithms/detectors/find-cross"
+            },
             {
               "text": {
                 "root": "FindLightArea 发光区定位模板"

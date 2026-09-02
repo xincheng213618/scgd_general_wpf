@@ -6,7 +6,7 @@ summary: "按节点用途与执行归属定位 FlowEngineLib、Engine 本地节�
 aliases: ["Flow有哪些节点在哪里定义","NodeType","STNode","FlowNodePropertyEditorAttribute"]
 code_paths: ["Engine/FlowEngineLib/Node","Engine/FlowEngineLib/Base","Engine/ColorVision.Engine/FlowProcessing/Nodes","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
 test_paths: []
-related: ["flow.runtime","flow.editor","flow.node-extension","flow.templates","flow.workspace","flow.headless","flow.conversion-calibration"]
+related: ["flow.runtime","flow.editor","flow.node-extension","flow.templates","flow.workspace","flow.headless","flow.conversion-calibration","algorithms.find-cross"]
 ---
 
 # Flow 节点检索入口
@@ -19,6 +19,7 @@ related: ["flow.runtime","flow.editor","flow.node-extension","flow.templates","f
 | --- | --- | --- |
 | 公共流程节点与执行参数 | `Engine/FlowEngineLib/` | [FlowEngineLib](./engine-components/FlowEngineLib.md) |
 | 本地执行、内存帧和宿主扩展节点 | `Engine/ColorVision.Engine/FlowProcessing/Nodes/` | [节点扩展](./extensions/flow-node.md) |
+| 本地十字定位、搜索区域、结果文件与下游中心 | `FlowProcessing/Nodes/LocalFindCrossNode.cs` | [本地 FindCross](./algorithms/detectors/find-cross.md) |
 | 通用节点参数如何选择属性编辑器 | `Engine/FlowEngineLib/PropertyEditor/`、`Engine/ColorVision.Engine/PropertyEditor/` | [PropertyGrid 契约](./ui-components/property-grid.md) |
 | 复杂多模板或流程专用配置面板 | `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/` | [模板与 Flow 链](./engine-components/template-flow-chain.md) |
 | 模板存储、关联模板与导入导出 | `Templates/Flow/` | [模板与 Flow 链](./engine-components/template-flow-chain.md) |
