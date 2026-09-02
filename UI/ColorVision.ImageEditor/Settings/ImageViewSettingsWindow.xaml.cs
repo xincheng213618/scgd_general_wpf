@@ -36,43 +36,43 @@ namespace ColorVision.ImageEditor.Settings
         {
             _pages.Clear();
 
-            StackPanel display = AddPage(EditorResources.Settings_GroupDisplay);
+            StackPanel display = GetOrAddPage(EditorResources.Settings_GroupDisplay);
             AddProperty(display, _imageView.Config, nameof(ImageViewConfig.IsLayoutUpdated));
             AddProperty(display, _imageView.Config, nameof(ImageViewConfig.IsShowText));
             AddProperty(display, _imageView.Config, nameof(ImageViewConfig.IsShowMsg));
             AddProperty(display, _imageView.Config, nameof(ImageViewConfig.DrawingTextFontSize));
 
-            StackPanel context = AddPage(EditorResources.Settings_GroupContext);
+            StackPanel context = GetOrAddPage(EditorResources.Settings_GroupContext);
             AddView(context, new ImageViewContextSettingsView(_imageView));
 
-            StackPanel defaults = AddPage(EditorResources.Settings_GroupDefaults);
+            StackPanel defaults = GetOrAddPage(EditorResources.Settings_GroupDefaults);
             AddObject(defaults, EditorResources.Settings_DefaultImageScaling, DefaultBitmapScalingConfig.Current);
             AddObject(defaults, EditorResources.Settings_DefaultDisplayParams, DefaultImageViewDisplayConfig.Current);
             AddObject(defaults, EditorResources.Settings_DefaultTextStyle, DefaultTextStyleConfig.Current);
             AddObject(defaults, EditorResources.Settings_PhysicalSizeDefaults, DefalutTextAttribute.Defalut);
             AddObject(defaults, EditorResources.Settings_DefaultRealtimeCameraParams, DefaultRealtimeCameraConfig.Current);
 
-            StackPanel workspace = AddPage(EditorResources.Settings_GroupWorkspace);
+            StackPanel workspace = GetOrAddPage(EditorResources.Settings_GroupWorkspace);
             AddView(workspace, new ImageViewWorkspaceSettingsView(_imageView));
 
-            StackPanel loader = AddPage(EditorResources.Settings_GroupLoader);
+            StackPanel loader = GetOrAddPage(EditorResources.Settings_GroupLoader);
             AddObject(loader, EditorResources.Settings_TifOpener, TifOpenConfig.Current);
 
             if (_imageView.IEditorToolFactory.GetIEditorTool<DisplayShaderFilterEditorTool>() is DisplayShaderFilterEditorTool shaderFilter)
             {
-                StackPanel shader = AddPage("Shader Filter");
+                StackPanel shader = GetOrAddPage("Shader Filter");
                 AddObject(shader, "当前值", shaderFilter.State);
             }
 
             if (_imageView.IEditorToolFactory.GetIEditorTool<PseudoColorEditorTool>() is PseudoColorEditorTool pseudoColor)
             {
-                StackPanel pseudo = AddPage(EditorResources.PseudoColor_Group);
+                StackPanel pseudo = GetOrAddPage(EditorResources.PseudoColor_Group);
                 AddObjectPair(pseudo, EditorResources.PseudoColor_CurrentPseudoColor, pseudoColor.State, EditorResources.PseudoColor_DefaultPseudoColor, PseudoColorDefaultConfig.Current);
             }
 
             foreach (IGrouping<string, ImageViewSettingsEntry> group in _imageView.GetRegisteredSettings().GroupBy(entry => entry.Group))
             {
-                StackPanel custom = AddPage(group.Key);
+                StackPanel custom = GetOrAddPage(group.Key);
                 ImageViewSettingsEntry[] entries = group.ToArray();
                 if (entries.Length == 2)
                 {
@@ -91,8 +91,11 @@ namespace ColorVision.ImageEditor.Settings
             SelectInitialGroup();
         }
 
-        private StackPanel AddPage(string header)
+        private StackPanel GetOrAddPage(string header)
         {
+            if (_pages.FirstOrDefault(page => string.Equals(page.Header, header, StringComparison.Ordinal))?.Content is ScrollViewer { Content: StackPanel existing })
+                return existing;
+
             StackPanel stackPanel = new() { Margin = new Thickness(10) };
             _pages.Add(new SettingsPage
             {

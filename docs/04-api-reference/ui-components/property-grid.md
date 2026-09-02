@@ -3,9 +3,9 @@ knowledge_id: "ui.property-grid"
 knowledge_type: "topic"
 status: "current"
 summary: "属性面板的字段生成、编辑器选择和 Flow 适配；区分直接修改、工作副本、关闭、重置与宿主持久化。"
-aliases: ["属性面板", "修改参数", "编辑器显示成文本", "如何新增属性编辑器", "属性编辑器为什么不显示", "IPropertyEditor", "GenProperties", "PropertyEditorType", "PropertyVisibility", "PropertyEditSession", "PropertyEditorWindow", "FlowPropertyEditorRegistry", "FlowNodePropertyEditorRegistration", "FlowNodePropertyEditorAttribute", "取消修改", "关闭回滚"]
-code_paths: ["UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorRegistry.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorTypeAttribute.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditSession.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml.cs", "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs", "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs", "Test/ColorVision.UI.Tests/PropertyEditorWindowTests.cs", "Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs", "Test/ColorVision.UI.Tests/ListEditorTests.cs", "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs", "Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs"]
+aliases: ["属性面板", "修改参数", "编辑器显示成文本", "如何新增属性编辑器", "属性编辑器为什么不显示", "IPropertyEditor", "GenProperties", "PropertyEditorType", "PropertyVisibility", "PropertyEditSession", "PropertyEditorWindow", "FlowPropertyEditorRegistry", "FlowNodePropertyEditorRegistration", "FlowNodePropertyEditorAttribute", "取消修改", "关闭回滚", "枚举下拉显示英文", "EnumPropertiesEditor"]
+code_paths: ["UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorRegistry.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorTypeAttribute.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditSession.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml.cs", "UI/ColorVision.UI/PropertyEditor/Editor/EnumPropertiesEditor.cs", "UI/ColorVision.Common/Utilities/EnumUtils.cs", "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs", "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs", "Test/ColorVision.UI.Tests/EnumPropertiesEditorTests.cs", "Test/ColorVision.UI.Tests/PropertyEditorWindowTests.cs", "Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs", "Test/ColorVision.UI.Tests/ListEditorTests.cs", "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs", "Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs"]
 related: ["ui.index", "ui.configuration", "ui.discovery", "flow.templates", "algorithms.template-management"]
 ---
 
@@ -64,6 +64,10 @@ public interface IPropertyEditor
 - 标题、类别、描述优先用 `DisplayName`、`Category`、`Description` 和现有资源解析；显示条件用 `PropertyVisibility`，永久隐藏用 `Browsable(false)`。
 - 布尔、枚举、数值、日期、集合、字典、Brush/Color 等内置映射以 `PropertyEditorBuiltIns.cs` 为准。先检查能否复用，不把“新业务字段”自动等同于“需要新编辑器”。
 
+枚举下拉框的显示文本由共享 `EnumPropertiesEditor` 生成。首先以枚举成员名查询当前对象的资源管理器；资源命中时保留该译文，即使译文与成员名相同。资源缺失或读取失败时，复用 `EnumExtensions.ToDescription()`：优先取枚举字段的 `DisplayAttribute`（支持 `ResourceType` 指向的显示资源），其次取 `Description`，最后回退成员名；得到的文本再经过现有资源解析。例如 CVCIE 的 `Source` 可用 `Description("原图（CVRAW）")` 显示中文，无需专用编辑器。
+
+显示文本与选项值分开保存：`ComboBox` 展示 `KeyValuePair.Value`，`SelectedValue` 仍绑定枚举对象 `Key`，因此选择中文标签不会把属性或序列化值改成中文字符串。可空枚举保留首项的空白显示和 `null` 值。其他语言仍取决于资源表或字段显示元数据，不因支持 `Description` 就自动获得翻译。
+
 `PropertyEditorWindow` 将当前编辑对象的字段按类别展示，并提供搜索与排序；复杂对象可展开为嵌套面板。字段缺失时先确认宿主传入了哪个对象、当前搜索条件和元数据，再查编辑器匹配，不根据界面控件外观猜属性类型。嵌入式属性面板不一定具有这个窗口的搜索、按钮或编辑会话，需核对实际宿主。
 
 独立窗口标题使用本地化的“编辑”与对象类型的 `DisplayName`（经对象资源解析；未标注时回退类型名），例如“编辑 ConfigAlgorithm”。只有一个顶层类别且其中所有属性均未显式标注 `Category` 时，右侧默认根类别不重复绘制标题、背景和边框；其容器、搜索标签和左侧树节点仍保留，嵌套对象如 `FileServerCfg` 继续显示分组。显式类别或多个顶层类别保持原有标题与边框。是否保留类别取决于实际生成的属性内容，不依赖标题子元素的数量，因此只有一个属性的无标题根也不会丢失。
@@ -103,6 +107,7 @@ public interface IPropertyEditor
 | 测试文件，均在 `Test/ColorVision.UI.Tests/` | 覆盖契约 |
 | --- | --- |
 | `PropertyEditorContractTests.cs` | 更新触发与验证、失败降级、只读、精确类型优先、实例复用、标准类型和兼容入口 |
+| `EnumPropertiesEditorTests.cs` | CVCIE 中文枚举标签与实际值写回、已有资源优先级、显示元数据回退和可空枚举选择；不修改配置序列化值 |
 | `PropertyEditorWindowTests.cs` | 合成对象窗口的标题、默认根与显式分组、搜索空状态及清除、排序/重置后单属性保留、查找命令与搜索框 Esc、按钮层级和局部字段对齐；不连接设备或读写生产配置 |
 | `PropertyEditSessionTests.cs` | 配置数据工作副本隔离、嵌套提交、重置、直接写入模式，以及 WPF 运行时引用保留 |
 | `ListEditorTests.cs` | 集合转换器的既有回归样例，不代表所有集合形态 |
@@ -112,7 +117,7 @@ public interface IPropertyEditor
 可在 Windows/x64 上运行最接近的测试，例如：
 
 ```powershell
-dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~PropertyEditorContractTests|FullyQualifiedName~PropertyEditSessionTests|FullyQualifiedName~ListEditorTests"
+dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~PropertyEditorContractTests|FullyQualifiedName~EnumPropertiesEditorTests|FullyQualifiedName~PropertyEditSessionTests|FullyQualifiedName~ListEditorTests"
 ```
 
 这些是验证入口，不是运行通过记录；会话单元测试不等于窗口关闭、`Submitted` 订阅或持久化链路的端到端验证。自定义编辑器仍需在目标宿主检查样式、键盘操作、错误提示、订阅释放和保存重开；新增公开签名还要验证实际插件 DLL 的二进制兼容性。

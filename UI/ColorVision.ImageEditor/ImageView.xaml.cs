@@ -1620,6 +1620,8 @@ namespace ColorVision.ImageEditor
 
         public void SetLayerController(IImageLayerController? controller)
         {
+            if (!ReferenceEquals(_layerController, controller) && _layerController is IDisposable previous)
+                previous.Dispose();
             _layerController = controller;
             _isUpdatingLayerSelection = true;
             try

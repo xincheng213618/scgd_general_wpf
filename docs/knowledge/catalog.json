@@ -3351,7 +3351,7 @@
       "knowledge_id": "engine.file-io",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "CVRAW/CVCIE 二进制读取、关联源文件与内嵌通道的区别，以及版本写回、长度校验和失败边界。",
+      "summary": "CVRAW/CVCIE 读取、内嵌 XYZ 真彩显示与原图回退、手动校正数值校验，以及版本写回和失败边界。",
       "aliases": [
         "CVCIE文件为什么打不开",
         "ColorVision.FileIO",
@@ -3364,7 +3364,13 @@
         "内嵌XYZ通道",
         "CVCIE关联源文件",
         "CVCIE版本写回",
-        "文件写入失败原文件"
+        "文件写入失败原文件",
+        "CVCIE真彩显示",
+        "三刺激值转sRGB",
+        "CvcieSrgbRenderer",
+        "CvcieDisplayConfig",
+        "CVRawManualCieCalculator",
+        "校正文件异常"
       ],
       "code_paths": [
         "Engine/ColorVision.FileIO/CVFileUtil.cs",
@@ -3373,11 +3379,25 @@
         "Engine/ColorVision.FileIO/README.md",
         "Engine/ColorVision.Engine/Media/MediaHelper.cs",
         "Engine/ColorVision.Engine/Media/CVRawBatchImageLoader.cs",
+        "Engine/ColorVision.Engine/Media/CVRawOpen.cs",
+        "Engine/ColorVision.Engine/Media/CvRawLayerController.cs",
+        "Engine/ColorVision.Engine/Media/CvcieSrgbRenderer.cs",
+        "Engine/ColorVision.Engine/Media/CvcieDisplayConfig.cs",
+        "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs",
+        "Engine/ColorVision.Engine/Media/CVRawManualCieCalculator.cs",
+        "Engine/ColorVision.Engine/Media/CVRawManualCieWindow.xaml.cs",
+        "UI/ColorVision.ImageEditor/Settings/ImageViewSettingsWindow.xaml.cs",
         "Plugins/Conoscope/ConoscopeDocument.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ExportCieTests.cs",
-        "Test/Conoscope.Tests/CvcieChannelReaderTests.cs"
+        "Test/Conoscope.Tests/CvcieChannelReaderTests.cs",
+        "Test/ColorVision.UI.Tests/CvcieSrgbRendererTests.cs",
+        "Test/ColorVision.UI.Tests/CvcieDisplayIntegrationTests.cs",
+        "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs",
+        "Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs",
+        "Test/ColorVision.UI.Tests/CvFilePixelSafetyTests.cs",
+        "Test/ColorVision.UI.Tests/CvcieFloatChannelRendererTests.cs"
       ],
       "related": [
         "engine.index",
@@ -3389,7 +3409,8 @@
       "code_scopes": [
         "Engine/ColorVision.Engine",
         "Engine/ColorVision.FileIO",
-        "Plugins/Conoscope"
+        "Plugins/Conoscope",
+        "UI/ColorVision.ImageEditor"
       ],
       "domain": "engine",
       "title": "CV 文件读取、通道与写回契约",
@@ -7405,10 +7426,14 @@
         "UI/ColorVision.ImageEditor/README.md",
         "UI/ColorVision.ImageEditor/EditorTools/ThreeD",
         "UI/ColorVision.ImageEditor/PixelValueOverlay.cs",
-        "UI/ColorVision.ImageEditor/Settings/DefaultImageViewDisplayConfig.cs"
+        "UI/ColorVision.ImageEditor/Settings/DefaultImageViewDisplayConfig.cs",
+        "UI/ColorVision.ImageEditor/Settings/ImageViewSettingsWindow.xaml.cs",
+        "UI/ColorVision.ImageEditor/Settings/ImageViewSettingsEntry.cs",
+        "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs",
+        "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs",
         "Test/ColorVision.UI.Tests/ImageViewSnapshotSaveTests.cs",
         "Test/ColorVision.UI.Tests/EraseManagerUndoTests.cs",
@@ -7887,7 +7912,9 @@
         "FlowNodePropertyEditorRegistration",
         "FlowNodePropertyEditorAttribute",
         "取消修改",
-        "关闭回滚"
+        "关闭回滚",
+        "枚举下拉显示英文",
+        "EnumPropertiesEditor"
       ],
       "code_paths": [
         "UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs",
@@ -7897,11 +7924,14 @@
         "UI/ColorVision.UI/PropertyEditor/PropertyEditSession.cs",
         "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml",
         "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml.cs",
+        "UI/ColorVision.UI/PropertyEditor/Editor/EnumPropertiesEditor.cs",
+        "UI/ColorVision.Common/Utilities/EnumUtils.cs",
         "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs",
         "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs",
+        "Test/ColorVision.UI.Tests/EnumPropertiesEditorTests.cs",
         "Test/ColorVision.UI.Tests/PropertyEditorWindowTests.cs",
         "Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs",
         "Test/ColorVision.UI.Tests/ListEditorTests.cs",
@@ -7918,6 +7948,7 @@
       "code_scopes": [
         "Engine/ColorVision.Engine",
         "Engine/FlowEngineLib",
+        "UI/ColorVision.Common",
         "UI/ColorVision.UI"
       ],
       "domain": "ui",

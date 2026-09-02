@@ -1,6 +1,7 @@
 using ColorVision.Themes;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.UI;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -9,6 +10,7 @@ namespace ColorVision.Engine.Media
 {
     public partial class CVRawManualCieWindow : Window
     {
+        private static readonly ILog Log = LogManager.GetLogger(typeof(CVRawManualCieWindow));
         public event EventHandler? Submited;
 
         public CVRawManualCieConfig Config { get; }
@@ -46,7 +48,8 @@ namespace ColorVision.Engine.Media
 
             if (!CVRawManualCieCalculator.TryLoadLumFourColorCalibrationDefaults(selectedItem.FilePath, out CVRawManualCieConfig importedConfig, out string? errorMessage))
             {
-                MessageBox.Show(this, errorMessage ?? ColorVision.Engine.Properties.Resources.Engine_Msg_ImportFourColorCalFailed, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                Log.Warn($"四色校正文件导入失败，保留原始 CVRAW：{selectedItem.FilePath}。{errorMessage}");
+                DialogResult = false;
                 return;
             }
 

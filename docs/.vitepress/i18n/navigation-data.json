@@ -827,6 +827,12 @@
             },
             {
               "text": {
+                "root": "PropertyGrid 属性编辑契约"
+              },
+              "link": "/04-api-reference/ui-components/property-grid"
+            },
+            {
+              "text": {
                 "root": "应用搜索：入口、候选与执行"
               },
               "link": "/04-api-reference/ui-components/search"
@@ -989,6 +995,12 @@
                 "root": "Copilot 扩展、MCP 与 Hook"
               },
               "link": "/02-developer-guide/core-concepts/copilot-agent-extensions"
+            },
+            {
+              "text": {
+                "root": "CV 文件读取、通道与写回契约"
+              },
+              "link": "/04-api-reference/engine-components/ColorVision.FileIO"
             },
             {
               "text": {

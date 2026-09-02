@@ -1,5 +1,8 @@
 ﻿using ColorVision.UI;
+using ColorVision.Common.Utilities;
+using System.Globalization;
 using System.Reflection;
+using System.Resources;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -16,10 +19,10 @@ namespace System.ComponentModel
             var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
             var enumType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
             var values = Enum.GetValues(enumType)
-                .Cast<object>()
+                .Cast<Enum>()
                 .Select(value => new KeyValuePair<object?, string>(
                     value,
-                    PropertyEditorHelper.GetLocalizedString(rm, value.ToString())))
+                    GetDisplayText(rm, value)))
                 .ToList();
             if (Nullable.GetUnderlyingType(property.PropertyType) != null)
             {
@@ -42,6 +45,22 @@ namespace System.ComponentModel
             dockPanel.Children.Add(textBlock);
             dockPanel.Children.Add(comboBox);
             return dockPanel;
+        }
+
+        private static string GetDisplayText(ResourceManager? resourceManager, Enum value)
+        {
+            try
+            {
+                // Existing enum-name translations take priority, including translations identical to the key.
+                string? localizedName = resourceManager?.GetString(value.ToString(), CultureInfo.CurrentUICulture);
+                if (localizedName != null) return localizedName;
+            }
+            catch
+            {
+                // Match the property editor's existing resource lookup fallback.
+            }
+
+            return PropertyEditorHelper.GetLocalizedString(resourceManager, value.ToDescription());
         }
     }
 }
