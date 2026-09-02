@@ -1,5 +1,11 @@
 #   CHANGELOG
 
+## [Unreleased]
+
+1. 移除“应用与工具”中已停用的 `CVRaw To CSV` 和 `DAT File Reader`，删除各自的工具 Provider 与实现，并同步调整工具元数据测试；通用 CVRAW/CVCIE 文件读取能力不变。
+   - 原实现：`Engine/ColorVision.Engine/ToolPlugins/CVRawToCsvTool.cs`、`ColorVision/ToolPlugins/DatFileReader.cs`。
+   - 恢复记录：查找提交 `chore(tools): remove unused CVRAW and DAT utilities`，执行 `git revert <该提交号>` 可恢复工具实现及测试引用。
+
 ## [1.4.13.30] 2026.09.02
 
 1. 放宽流程包导入的关联模板限制：缺少可重建内容或当前环境找不到模板类型时保留原模板名，允许流程继续导入，并避免其他模板的冲突副本占用该名称。
