@@ -5122,7 +5122,7 @@
       "knowledge_id": "flow.templates",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Flow 模板的数据库保存、文档基线、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。",
+      "summary": "Flow 模板的保存基线、导出/删除勾选范围、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。",
       "aliases": [
         "Flow模板保存后参数为什么丢失",
         "TemplateFlow",
@@ -5132,7 +5132,10 @@
         "FlowTemplateSaveCondition",
         "FlowTemplateConcurrencyException",
         "导入流程",
-        "关联模板"
+        "关联模板",
+        "流程删除范围",
+        "流程多选导出",
+        "模板勾选项"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/TemplateControl.cs",
@@ -5170,7 +5173,7 @@
       "knowledge_id": "flow.workspace",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "ViewFlow 与 FlowEditorCanvas 的编辑命令、文档目标、工作区隔离及未保存画布的执行边界。",
+      "summary": "流程编辑器的打开与保存步骤、导出/删除范围、切换提示和工作区隔离；区分当前画布与已保存模板。",
       "aliases": [
         "流程设计",
         "拖节点",
@@ -5179,10 +5182,16 @@
         "ViewFlow",
         "FlowEditorCanvas",
         "ActiveFlowParam",
-        "FlowTemplateWorkspaceController"
+        "FlowTemplateWorkspaceController",
+        "流程编辑器",
+        "流程引擎模板管理",
+        "导入模板为模块",
+        "自动对齐",
+        "适应全部节点"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowEngineManager.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowTemplateWorkspaceController.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml",
         "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml.cs",

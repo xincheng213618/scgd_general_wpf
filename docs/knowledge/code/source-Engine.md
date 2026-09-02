@@ -128,10 +128,10 @@ next: false
   FlowExecutionSession 的启动前提、停止请求与最终化判据，以及按失败阶段定位证据。
 
 - [Flow 模板、持久化与流程包](../../04-api-reference/engine-components/template-flow-chain.md) — `flow.templates`
-  Flow 模板的数据库保存、文档基线、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。
+  Flow 模板的保存基线、导出/删除勾选范围、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。
 
 - [Flow 编辑工作区与文档命令](../../01-user-guide/workflow/design.md) — `flow.workspace`
-  ViewFlow 与 FlowEditorCanvas 的编辑命令、文档目标、工作区隔离及未保存画布的执行边界。
+  流程编辑器的打开与保存步骤、导出/删除范围、切换提示和工作区隔离；区分当前画布与已保存模板。
 
 - [校准服务、本地文件校正与结果持久化](../../01-user-guide/devices/calibration.md) — `operations.calibration`
   校准服务绑定物理相机并执行本地文件或MQTT校正；输出文件、结果显示、历史落库与缓存删除是不同完成边界。

@@ -514,6 +514,9 @@
     {"query":"ProjectARVRLite","expected_any":["projects.index"],"include_planned":false},
     {"query":"KB Socket","expected_any":["projects.kb"],"include_planned":false},
     {"query":"项目协议对比","expected_any":["projects.capabilities"],"include_planned":false},
-    {"query":"如何判断不同项目已经测试完成","expected_any":["projects.capabilities"],"include_planned":false}
+    {"query":"如何判断不同项目已经测试完成","expected_any":["projects.capabilities"],"include_planned":false},
+    {"query":"导入模板为模块","expected_any":["flow.workspace"],"include_planned":false},
+    {"query":"自动对齐","expected_any":["flow.workspace"],"include_planned":false},
+    {"query":"流程删除范围","expected_any":["flow.templates"],"include_planned":false}
   ]
 }

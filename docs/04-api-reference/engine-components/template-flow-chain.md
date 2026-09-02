@@ -2,8 +2,8 @@
 knowledge_id: "flow.templates"
 knowledge_type: "topic"
 status: "current"
-summary: "Flow 模板的数据库保存、文档基线、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。"
-aliases: ["Flow模板保存后参数为什么丢失","TemplateFlow","FlowPackageHelper","cvflow","FlowKey","FlowTemplateSaveCondition","FlowTemplateConcurrencyException","导入流程","关联模板"]
+summary: "Flow 模板的保存基线、导出/删除勾选范围、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。"
+aliases: ["Flow模板保存后参数为什么丢失","TemplateFlow","FlowPackageHelper","cvflow","FlowKey","FlowTemplateSaveCondition","FlowTemplateConcurrencyException","导入流程","关联模板","流程删除范围","流程多选导出","模板勾选项"]
 code_paths: ["Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs","Engine/ColorVision.Engine/Templates/Flow/FlowParam.cs","Engine/ColorVision.Engine/Templates/Flow/FlowTemplateSaveCondition.cs","Engine/ColorVision.Engine/Templates/Flow/FlowPackageHelper.cs","Engine/ColorVision.Engine/Templates/Flow/Versioning","Engine/ColorVision.Engine/FlowProcessing/Compilation/FlowCanvasCatalogBuilder.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs","Test/ColorVision.UI.Tests/FlowTemplateIdentityTests.cs","Test/ColorVision.UI.Tests/FlowCanvasCatalogBuilderTests.cs","Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs"]
 related: ["flow.architecture","flow.workspace","flow.session","flow.headless","engine.template-design","engine.results"]
@@ -38,6 +38,20 @@ related: ["flow.architecture","flow.workspace","flow.session","flow.headless","e
 `Save2DB` 成功后更新运行身份和加载 hash，再尝试记录本地 catalog revision / 搜索投影。`TryRecordCatalogRevision` 的失败只记录日志并清空本次侧车 revision 信息，不能把已经成功的 MySQL/STN 保存伪报为失败。保存成功与“版本/搜索索引可用”是两个检查点。
 
 `FlowCanvasCatalogBuilder` 从 STND v1 构建语义、布局和搜索投影，不修改源画布，也不建立 live editor graph；codec 可短暂实例化节点发现 option schema。catalog revision 是不可变记录。旧 Artifact 表不再由当前保存/运行链读写或迁移，既有表与数据按兼容保留，不要求手工清库。
+
+## 导出与删除的目标选择
+
+`TemplateFlow.Export(index)` 和 `Delete(index)` 都先统计共享 `TemplateFlow.Params` 中的 `IsSelected`，再决定目标；列表中高亮的当前行与勾选项不是同一状态：
+
+| 勾选数量 | 最终范围 |
+| --- | --- |
+| 0 | 使用调用方传入的索引 |
+| 1 | 使用唯一勾选项，覆盖传入索引 |
+| 多个 | 对所有勾选项执行多选导出或逐项删除 |
+
+`Load()` 复用既有 `TemplateModel`，不清除其勾选状态；关闭模板管理窗口时的重新加载也不清除勾选。主工作区 `ViewFlow` 虽按 active 模板传入索引，导出/删除前却未清除共享勾选。因此当前画布、列表高亮和删除确认框中的流程名都不能单独保证最终操作范围。操作前检查实际勾选，只保留目标模板；删除前另行保留需要恢复的流程包。
+
+删除直接修改主表、明细和对应资源，没有 `Save2DB` 的事务封装；不能把多项删除理解为全成或全败。导出读取模板保存的 `DataBase64`，不会自动保存当前编辑器画布。
 
 ## 单流程包与多选导出的区别
 
@@ -78,6 +92,7 @@ related: ["flow.architecture","flow.workspace","flow.session","flow.headless","e
 | 流程能打开但保存失败 | 画布验证、当前 active 文档、加载 hash、`Save2DB` 异常及数据库事务 |
 | 保存后重开没变化 | 保存目标是本地文件还是数据库；`ValueA` 是否指向实际更新资源 |
 | 保存成功但历史/搜索缺项 | catalog 日志、`FlowKey`、投影构建；不因侧车失败重写生产流程 |
+| 导出/删除对象与当前画布不同 | `TemplateFlow.Params` 的勾选项会优先于传入索引；核对列表勾选，而不只看高亮行 |
 | 导入后模板名找不到 | manifest、模板内容匹配、冲突副本和二级引用替换 |
 | 图正常但属性缺选择器 | [工作区](../../01-user-guide/workflow/design.md)及[PropertyGrid 契约](../ui-components/property-grid.md)，不是包格式问题 |
 | 引擎结束但业务结果未完成 | [执行会话](../../01-user-guide/workflow/execution.md)的最终化判据，不在模板保存层补等待 |
