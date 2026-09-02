@@ -27,7 +27,7 @@ next: false
   PluginLoader的manifest/依赖门禁、禁用缓存、程序集发现和失败边界；载入不等于provider可用，也不支持隔离卸载。
 
 - [PluginKit SDK 打包器](../../02-developer-guide/plugin-development/sdk-packaging.md) — `plugins.sdk-packaging`
-  独立PluginKit的project\_name包身份、无参数与显式config发布差异、成功清理及单文件exe边界；不是根打包器的同契约镜像。
+  独立 PluginKit 的项目命名、CLI/config 参数、构建与发布模式、包内容和失败排查；显式 config 的上传行为与无参数运行不同。
 
 - [Spectrum 插件](../../04-api-reference/plugins/standard-plugins/spectrum.md) — `plugins.spectrum`
   Spectrum 的测量校正链、SQLite 结果和独立 ZIP 与 cvxp 双通道发布契约。

@@ -10,7 +10,7 @@
 - 默认平台目标使用 `x64`。
 - 插件项目引用 ColorVision SDK 包，例如 `ColorVision.UI`。
 - 插件输出目录必须包含 `manifest.json` 和插件主 DLL。
-- 插件可以保留独立 `App.xaml`，这样既能单独运行，也能被 ColorVision 作为插件加载。
+- 需要独立运行时保留 `App.xaml` / `App.xaml.cs` 和窗口入口；宿主加载 DLL 不会代为运行插件的 `App` 启动流程。下面模板使用 `WinExe`，需要可执行入口；只作为库时可改为 `Library`，不要求独立 App。
 
 推荐 `.csproj` 基础模板：
 
@@ -23,7 +23,7 @@
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <Platforms>x64</Platforms>
-    <PlatformTarget>$(Platform)</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <GenerateDependencyFile>true</GenerateDependencyFile>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <VersionPrefix>0.1.0.0</VersionPrefix>
@@ -65,7 +65,7 @@
 
 ## 3. 菜单入口
 
-实现 `IMenuItemProvider` 后，ColorVision 会在启动时加载插件 DLL，并由菜单系统自动发现菜单项。
+菜单由 `IMenuItemProvider` 提供。插件 DLL 通过宿主装载和依赖检查后，菜单系统发现公开无参构造、非抽象且非开放泛型的 provider，并读取有 Header 和 Command 的菜单项。manifest 的 `entry_point` 只是字段，不负责调用入口；`requires` 也不是运行装载器的版本门禁。示例需提供自己的 `MainWindow`；构造 provider 成功仍需目标窗口与菜单过滤条件允许显示。
 
 ```csharp
 using ColorVision.Common.MVVM;
@@ -140,7 +140,7 @@ C:\Path\To\ColorVision\bin\x64\Debug\net10.0-windows\Plugins\DemoPlugin
 1. 把 `cvplugin.exe` 放到插件项目根目录。
 2. 第一次双击时，如果当前目录没有 `pluginkit.config.json`，它会进入交互式配置：
   - 是否配置构建步骤，默认是。
-  - 默认使用当前目录下唯一的 `.csproj`；也可以输入别的 `.csproj`、一个只包含单个 `.csproj` 的目录，或者输入 `cmd:<命令>` 保存成自定义构建命令。
+  - 优先发现当前目录直属的 `.csproj`，直属没有时再查可发现的子目录。唯一候选可直接使用；也可以明确选择 `.csproj`、能发现唯一项目的目录，或输入 `cmd:<命令>` 保存自定义构建命令。
   - 打包源目录，默认是 `bin\x64\Release\net10.0-windows`。
   - 包输出目录，默认是当前目录下的 `packages`。
   - 是否在打包完成后上传，默认上传。
@@ -161,11 +161,11 @@ C:\Path\To\ColorVision\bin\x64\Debug\net10.0-windows\Plugins\DemoPlugin
 python .\scripts\package_cvxp.py --config .\pluginkit.config.json --build
 ```
 
-SDK 实际生成 `{project_name}-{FileVersion}.cvxp`，包内顶层目录和上传路径 `Plugins/{project_name}` 也使用同一名字。推导优先级是显式 `--plugin-name` / 配置 `pluginName`、项目文件名；未提供这些时才尝试输出 manifest 的 `dllpath` 文件名、`.deps.json` 和 DLL。最后始终读取输出根目录 `<project_name>.dll`，不会按 manifest `id` 或嵌套 `dllpath` 独立选择主 DLL。示例使用 `DemoPlugin` 统一这些名字，得到 `DemoPlugin/manifest.json`、`DemoPlugin/DemoPlugin.dll`；不同命名方案不能从根打包器的能力推断 SDK 已支持。
+SDK 实际生成 `{project_name}-{FileVersion}.cvxp`，包内顶层目录和上传路径 `Plugins/{project_name}` 也使用同一名字。推导优先级是显式 `--plugin-name` / 配置 `pluginName`、项目文件名；未提供这些时才尝试输出 manifest 的 `dllpath` 文件名、`.deps.json` 和 DLL。最后始终读取输出根目录 `<project_name>.dll`，不会按 manifest `id` 或嵌套 `dllpath` 独立选择主 DLL。当前 `.deps.json` 回退只去掉 `.json` 后缀，可能错误查找 `DemoPlugin.deps.dll`；明确提供正确的项目文件或 `pluginName`，避免依赖此回退。示例使用 `DemoPlugin` 统一这些名字，得到 `DemoPlugin/manifest.json`、`DemoPlugin/DemoPlugin.dll`；不同命名方案不能从根打包器的能力推断 SDK 已支持。
 
 ## 7. 上传插件市场
 
-取得发布授权后，可在本 SDK 目录直接调用脚本。下面会构建、覆盖本地包并向指定市场上传；占位凭据必须通过批准的方式提供，不能写入公开版本库：
+取得发布授权后，可在本 SDK 目录直接调用脚本。下面会构建、覆盖本地包并向指定市场上传；占位凭据不能写入公开版本库。环境变量仅在配置的 `username` / `password` 缺失或为空时生效，不会覆盖非空配置凭据：
 
 ```powershell
 $env:COLORVISION_UPLOAD_USERNAME = "your-user"
@@ -196,6 +196,8 @@ python -m PyInstaller --noconfirm --clean .\cvplugin.spec
 
 ```text
 DemoPlugin.csproj
+App.xaml
+App.xaml.cs
 MainWindow.xaml
 MainWindow.xaml.cs
 DemoMenuProvider.cs
@@ -204,4 +206,4 @@ README.md
 CHANGELOG.md
 ```
 
-发布给用户时只需要 `.cvxp`，用户不需要插件源码。
+使用上述 `WinExe` 模板时需包含 App 文件及有效窗口启动入口；只作库的项目按其实际输出方式维护。发布给用户时交付 `.cvxp` 和必要的独立模型/数据资源，用户不需要插件源码。

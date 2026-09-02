@@ -32,7 +32,7 @@ next: false
 | [Scripts](./code/source-Scripts.md) | 2 | 10 |
 | [Test](./code/source-Test.md) | 1 | 1 |
 | [AndroidWebViewApp](./code/source-AndroidWebViewApp.md) | 2 | 1 |
-| [SDK](./code/source-SDK.md) | 1 | 1 |
+| [SDK](./code/source-SDK.md) | 2 | 1 |
 | [src](./code/source-src.md) | 2 | 5 |
 | [仓库与知识基础设施](./code/repository.md) | 5 | 15 |
 

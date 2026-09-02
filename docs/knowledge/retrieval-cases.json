@@ -421,6 +421,10 @@
     {"query":"M_ConvertGray32Float","expected_any":["engine.opencv-helper-api"],"include_planned":false},
     {"query":"M_PseudoColorInto","expected_any":["engine.opencv-helper-api"],"include_planned":false},
     {"query":"COLORVISION_CALIBRATION_CACHE_MB","expected_any":["engine.opencv-helper-api"],"include_planned":false},
-    {"query":"M_CalSFRMultiChannel","expected_any":["engine.opencv-helper-api"],"include_planned":false}
+    {"query":"M_CalSFRMultiChannel","expected_any":["engine.opencv-helper-api"],"include_planned":false},
+    {"query":"插件 SDK","expected_any":["plugins.sdk-packaging"],"include_planned":false},
+    {"query":"buildWorkingDir","expected_any":["plugins.sdk-packaging"],"include_planned":false},
+    {"query":"Plugin DLL not found","expected_any":["plugins.sdk-packaging"],"include_planned":false},
+    {"query":"Cannot read version from","expected_any":["plugins.sdk-packaging"],"include_planned":false}
   ]
 }

@@ -3235,6 +3235,21 @@
       "items": [
         {
           "text": {
+            "root": "SDK/ 根目录与跨模块关联"
+          },
+          "link": "/knowledge/code/source-SDK#module-53444b",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "PluginKit SDK 打包器"
+              },
+              "link": "/02-developer-guide/plugin-development/sdk-packaging"
+            }
+          ]
+        },
+        {
+          "text": {
             "root": "SDK/ColorVision.PluginKit"
           },
           "link": "/knowledge/code/source-SDK#module-53444b2f436f6c6f72566973696f6e2e506c7567696e4b6974",

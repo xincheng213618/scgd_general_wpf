@@ -6703,17 +6703,28 @@
       "knowledge_id": "plugins.sdk-packaging",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "独立PluginKit的project_name包身份、无参数与显式config发布差异、成功清理及单文件exe边界；不是根打包器的同契约镜像。",
+      "summary": "独立 PluginKit 的项目命名、CLI/config 参数、构建与发布模式、包内容和失败排查；显式 config 的上传行为与无参数运行不同。",
       "aliases": [
         "ColorVision.PluginKit",
         "cvplugin",
         "cvplugin.exe",
         "pluginkit.config.json",
+        "插件 SDK",
+        "外部插件 SDK",
         "PluginKit SDK打包",
         "auto_mode",
-        "keepPackageAfterUpload"
+        "keepPackageAfterUpload",
+        "buildCommand",
+        "buildWorkingDir",
+        "pluginName",
+        "srcDir",
+        "sharedFiles",
+        "Plugin DLL not found",
+        "Cannot read version from",
+        "No .csproj file found under"
       ],
       "code_paths": [
+        "SDK/ColorVision.Plugin.SDK.md",
         "SDK/ColorVision.PluginKit/README.md",
         "SDK/ColorVision.PluginKit/docs/ColorVision.Plugin.SDK.md",
         "SDK/ColorVision.PluginKit/examples/YoloWpfDemo.Commands.md",
@@ -6727,6 +6738,7 @@
         "delivery.scripts"
       ],
       "code_scopes": [
+        "SDK",
         "SDK/ColorVision.PluginKit"
       ],
       "domain": "plugins",

@@ -1,40 +1,46 @@
 # ColorVision Plugin Kit
 
-这个目录用于对外分发给第三方插件作者。
+Plugin Kit 为独立维护的 ColorVision 插件提供配置、构建、`.cvxp` 打包和市场上传入口。可以分发单文件 `cvplugin.exe`，也可以分发本目录的 Python 源码；插件工程本身由作者维护。
 
-仓库内的当前契约见[PluginKit SDK 打包器](../../docs/02-developer-guide/plugin-development/sdk-packaging.md)；单独分发时保留本页必要前提，并提供匹配版本的 `docs/ColorVision.Plugin.SDK.md` 使用说明。SDK 脚本与仓库根目录的 `Scripts/package_cvxp.py` 是不同实现，不能混用参数或包身份规则。
+[外部插件 SDK 使用说明](./docs/ColorVision.Plugin.SDK.md)包含项目模板、manifest、菜单示例、本地安装和首次发布步骤，随 Kit 一同提供。仓库中的[PluginKit SDK 打包器参考](../../docs/02-developer-guide/plugin-development/sdk-packaging.md)提供完整配置表、命名规则和错误排查；本 Kit 单独分发时，回到匹配版本的仓库读取该参考。
 
-对外分发时，插件作者只需要 `cvplugin.exe`。第一次双击时如果当前目录还没有 `pluginkit.config.json`，它会在 cmd 里引导用户完成配置；后续再双击就会自动按 config 执行构建、打包和上传。
+## 运行前提
 
-## 目录说明
+| 使用方式 | 所需环境 |
+| --- | --- |
+| 已构建的 `cvplugin.exe` | Windows；默认构建需要对应 .NET SDK，自定义构建需要其自己的工具链；无需另装 Python |
+| Python 源码 | Python 3.10+、`pefile`；上传需要 `requests`，构建工具链同上 |
+| 重新生成 exe | Python、PyInstaller 和待嵌入的依赖，包括提供上传能力的 `requests` 及其依赖 |
 
-- `docs/ColorVision.Plugin.SDK.md`
-  - 外部插件接入说明。
-- `cvplugin.spec`
-  - 仓库内用于构建单文件 `cvplugin.exe` 的 PyInstaller spec。
-- `build.bat`
-  - 仓库内一键重建 `cvplugin.exe` 的脚本，优先使用仓库 `.venv`。
-- `examples/YoloWpfDemo.Commands.md`
-  - 以 `YoloWpfDemo` 为例的常用命令。
-- `scripts/package_cvxp.py`
-  - 核心脚本。现在支持无参数交互式生成 config、自动读取当前目录 config 执行、`--config`、`--init-config` 和 `--build-only`。
-- `scripts/shared_files.json`
-  - 与平台共享 DLL/资源清单，用于瘦身 `.cvxp` 包；它由仓库根目录的 `Scripts/generate_shared_files.py` 与仓库镜像一次扫描同步生成，不要手工编辑。
+在所选源码/构建环境安装依赖时，以下命令会联网并修改 Python 环境；exe 使用者无需运行：
 
-## 推荐使用流程
+```powershell
+python -m pip install pefile
+python -m pip install requests
+```
 
-1. 把构建或分发得到的 `cvplugin.exe` 放到插件项目目录。
-2. 第一次双击时，如果当前目录没有 `pluginkit.config.json`，它会提示：
-   - 是否配置构建步骤。
-   - 默认使用当前目录下的单个 `.csproj`，也可以改成别的 `.csproj`、别的项目目录，或输入 `cmd:<命令>` 作为自定义构建命令。
-   - 打包源目录，默认是 `bin\x64\Release\net10.0-windows`。
-   - 是否在打包完成后上传，默认上传。
-3. 确认后会在当前目录写入 `pluginkit.config.json`。
-4. 后续再双击 `cvplugin.exe`，会自动读取当前目录的 `pluginkit.config.json`，并按配置执行构建、打包和上传。
+## 开始使用
 
-首次无配置仅写配置后退出；后续无参数运行可能构建、覆盖本地包并上传。配置可以包含 `buildCommand` 和上传凭据，只运行自己信任的配置，不把配置文件提交到公开仓库。
+1. 把 `cvplugin.exe` 放在插件工程目录，并从该目录运行。默认配置发现以**进程当前工作目录**为准。
+2. 没有 `pluginkit.config.json` 时进入向导。选择项目或 `cmd:<命令>` 自定义构建、打包源目录、输出目录及上传设置；构建/上传默认开启，选择上传时默认不保留本地包。
+3. 确认配置后写入文件并退出，本次不发布。检查配置中的路径、服务器和账户；不要执行不可信的 `buildCommand` 或把凭据提交到公开仓库。
+4. 后续无参数运行读取该配置，按设置构建、打包并可能上传。上传成功且不保留包时，会删除本地 `.cvxp`；输出目录为空且运行前不存在或为空时，也会清理该空目录。
 
-仓库内从根目录复现该流程时，先进入本 SDK 目录（Windows 下根 `Scripts/` 不是这里的 `scripts/`）。以下不是只读验证：已有配置时会执行配置中的构建/发布动作。
+首次配置默认源目录是项目的 `bin/x64/Release/net10.0-windows`，输出目录是配置旁 `packages`。示例项目应保持项目名、主 DLL 名与 manifest `id` 一致；SDK 不以 manifest `id` 独立推导包身份，也不校验或同步 manifest 版本。打包成功后仍须确认宿主安装与加载结果。
+
+SDK 脚本与根目录 `Scripts/package_cvxp.py` 是不同实现。SDK 显式 `--config` 不会仅因 `buildEnabled=true` 就构建，却会在打包后上传，即使配置写了 `uploadEnabled=false`。需要构建后继续发布时加 `--build`；`--build-only` 构建后退出。SDK 没有 `--validate-only` / `--no-upload`。配置模式和完整参数见 SDK 使用说明及仓库参考。
+
+## 源码入口与 exe 构建
+
+| 文件 | 用途 |
+| --- | --- |
+| `scripts/package_cvxp.py` | 与 exe 相同的主入口；无参数时发现当前目录配置或进入初始化 |
+| `scripts/shared_files.json` | 宿主共享 DLL/资源清单；由根 `Scripts/generate_shared_files.py` 同步生成，不手工维护镜像 |
+| `examples/YoloWpfDemo.Commands.md` | 使用明确工程路径的构建、本地安装与发布组合 |
+| `cvplugin.spec` | PyInstaller 控制台单文件配置，嵌入共享清单和运行依赖 |
+| `build.bat` | 优先使用仓库 `.venv`，缺少 PyInstaller 时联网安装，然后构建 exe |
+
+在仓库根目录通过源码使用向导或配置时：
 
 ```powershell
 Push-Location .\SDK\ColorVision.PluginKit
@@ -42,34 +48,10 @@ python .\scripts\package_cvxp.py
 Pop-Location
 ```
 
-无参数行为和 `cvplugin.exe` 一致。显式 `--config` 则不是相同模式：不会仅因 `buildEnabled=true` 就构建，且即使 `uploadEnabled=false` 仍会上传；构建须显式加 `--build`，`--build-only` 执行构建后退出、不打包上传。SDK 没有 `--validate-only` 或 `--no-upload` 参数。
+该命令已有配置时可能执行构建和上传，须先确认配置及发布授权。实际插件发布应从其配置所在目录运行，或使用指向该配置的显式命令；不要将 SDK 目录误认为插件工程目录。
 
-SDK 以推导的 `project_name` 定位输出根目录下的同名 DLL，并决定包名、包内根目录和市场路径，不以 manifest `id` 作为独立打包身份。示例项目应保持项目名、主 DLL 名与 manifest `id` 一致；不同名称的场景先核对当前主题中的推导顺序，不能直接套用根打包器的规则。
-
-## 运行前提
-
-- 使用已构建的单文件 `cvplugin.exe`：Windows；启用默认 .NET 构建步骤时还需要对应 .NET SDK，自定义构建命令需要它自己的工具链。不要求使用者另装 Python。
-- 直接运行 Python 源码：Python 3.10+ 与 `pefile`；上传还需要 `requests`。构建步骤的工具链前提与 exe 相同。
-- 重建 exe：构建环境需要 Python、PyInstaller 和打入包内的依赖；提供上传功能的 exe 应在有 `requests` 及其依赖的环境构建。`build.bat` 缺少 PyInstaller 时会联网安装，并写本地 `build/`、`dist/`，不是仅做检查。
-
-仅在源码运行/构建环境安装最小依赖；下面的 pip 命令会联网并修改所选 Python 环境：
+重建 exe 时在本 SDK 目录运行 `build.bat`，或在依赖齐全的环境运行以下命令。它重建本地 `build/` 和 `dist/cvplugin.exe`，不发布插件；正常分发无需再附外部 `shared_files.json`，产物依赖是否完整仍需单独验收。
 
 ```powershell
-python -m pip install pefile
+python -m PyInstaller --noconfirm --clean .\cvplugin.spec
 ```
-
-需要上传时再安装：
-
-```powershell
-python -m pip install requests
-```
-
-## 备注
-
-- 这个目录可以单独拷贝出去使用。
-- `pluginkit.config.json` 现在会额外记录 `buildEnabled`、`uploadEnabled`、`keepPackageAfterUpload`，并且支持 `buildCommand` 这种自定义构建命令。
-- `cvplugin.spec` 已把 `shared_files.json` 打进单文件 exe 资源，不需要用户再放一个外部副本；实际分发产物仍需单独验收。
-- 如果只是想重新生成 `cvplugin.exe`，直接双击 `build.bat` 即可。
-- 如果 `keepPackageAfterUpload = false`，上传成功后不仅会删除本地 `.cvxp`，还会在输出目录原本不存在或原本为空时一并删掉空的输出目录。
-- 在本 SDK 目录重新构建 exe 时，可以运行：`python -m PyInstaller --noconfirm --clean cvplugin.spec`；会重建本地产物，不发布插件。
-- 如果你更新了 ColorVision 的插件协议、打包格式或上传接口，优先同步更新这个目录。
