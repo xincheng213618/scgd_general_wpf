@@ -35,7 +35,7 @@ next: false
 | [packages](./code/source-packages.md) | 1 | 1 |
 | [SDK](./code/source-SDK.md) | 2 | 1 |
 | [src](./code/source-src.md) | 2 | 5 |
-| [仓库与知识基础设施](./code/repository.md) | 5 | 17 |
+| [仓库与知识基础设施](./code/repository.md) | 5 | 18 |
 
 ## 按能力领域补充检索
 

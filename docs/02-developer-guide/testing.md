@@ -87,9 +87,22 @@ dotnet test .\Test\Conoscope.Tests\Conoscope.Tests.csproj -p:Platform=x64
 | 链路 | 命令 | 什么时候跑 |
 | --- | --- | --- |
 | native OpenCV helper | 按[原生测试指南](./engine-development/native-testing.md)构建 `.vcxproj`，选择实际覆盖改动的专项；核对退出码和跳过信息 | 改 helper、其托管调用或 OpenCV DLL 输出；供应商 `cvColorVision` 另按该模块的真实入口验收 |
-| 后端 | `cd Web/Backend` 后运行 `python test_app.py`、`python test_app_releases.py` | 改插件市场 API、release、上传下载或存储 |
+| 后端 | 在 `Web/Backend` 中运行目标 unittest 模块；需要全量 discover 时用下方命令 | 改插件市场 API、release、上传下载或存储 |
 
-如果当前机器没有 Python 依赖，先按 [插件市场后端](./backend/README.md) 和 [构建与发布脚本](./scripts/README.md) 准备环境。不要把“依赖没装”误写成业务逻辑失败。
+后端测试从 Backend 目录发现模块；先按[后端测试边界](./backend/README.md#测试与边界)核对 Python 依赖、配置及每个测试的数据隔离。下例执行测试并可能生成本地产物：
+
+```powershell
+Push-Location .\Web\Backend
+try {
+    python -m unittest discover -p "test_*.py"
+    if ($LASTEXITCODE -ne 0) { throw '后端测试失败，检查首个失败及测试输出。' }
+}
+finally {
+    Pop-Location
+}
+```
+
+如果当前机器没有 Python 依赖，先按[插件市场后端](./backend/README.md)和[构建与发布脚本](./scripts/README.md)准备环境。不要把“依赖没装”误写成业务逻辑失败。
 
 仓库的 Windows `.NET` 工作流会运行两套公共 managed 测试、上表五套领域测试以及 `Scripts/tests` 的完整 discover。它仍不是“仓库全部测试”：需要 CUDA/OpenCV 或真实设备的 native 验证、插件市场后端测试、文档构建和现场硬件验收继续使用各自入口。
 

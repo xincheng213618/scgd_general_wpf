@@ -3099,9 +3099,13 @@
         "打包",
         "release.bat",
         "package_project.bat",
-        "只做本地构建"
+        "只做本地构建",
+        "版本标签",
+        "auto-tag.yml"
       ],
       "code_paths": [
+        ".github/workflows/auto-tag.yml",
+        "Directory.Build.props",
         "Scripts/release.bat",
         "Scripts/build.py",
         "Scripts/build_update.py",
@@ -3120,6 +3124,8 @@
         "delivery.backend"
       ],
       "code_scopes": [
+        ".",
+        ".github/workflows",
         "Scripts"
       ],
       "domain": "delivery",
@@ -5014,10 +5020,13 @@
         "代码文档同步",
         "frontmatter",
         "knowledge_id",
-        "AI共治规范"
+        "AI共治规范",
+        "贡献指南",
+        "CONTRIBUTING.md"
       ],
       "code_paths": [
         "AGENTS.md",
+        "CONTRIBUTING.md",
         "docs/AGENTS.md",
         "docs/.vitepress/scripts",
         "package.json"

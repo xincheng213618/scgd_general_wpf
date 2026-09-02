@@ -49,6 +49,9 @@ next: false
 - [系统要求](../../00-getting-started/prerequisites.md) — `delivery.prerequisites`
   首次构建所需Windows x64、.NET与C++工具链，区分已有native DLL与干净克隆。
 
+- [构建与发布脚本](../../02-developer-guide/scripts/README.md) — `delivery.scripts`
+  主程序、插件和项目包的正式发布入口、只读校验与上传清理副作用。
+
 - [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
   native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
 
@@ -62,6 +65,9 @@ next: false
   保留软件许可协议原文供定位，不由AI重新解释或改写许可条款。
 
 ## .github/workflows {#module-2e6769746875622f776f726b666c6f7773}
+
+- [构建与发布脚本](../../02-developer-guide/scripts/README.md) — `delivery.scripts`
+  主程序、插件和项目包的正式发布入口、只读校验与上传清理副作用。
 
 - [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
   native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。

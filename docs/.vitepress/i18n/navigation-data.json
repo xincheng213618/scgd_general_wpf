@@ -3449,6 +3449,12 @@
             },
             {
               "text": {
+                "root": "构建与发布脚本"
+              },
+              "link": "/02-developer-guide/scripts/README"
+            },
+            {
+              "text": {
                 "root": "OpenCV 和 native 集成开发指南"
               },
               "link": "/02-developer-guide/engine-development/opencv-integration"
@@ -3480,6 +3486,12 @@
           "link": "/knowledge/code/repository#module-2e6769746875622f776f726b666c6f7773",
           "collapsed": true,
           "items": [
+            {
+              "text": {
+                "root": "构建与发布脚本"
+              },
+              "link": "/02-developer-guide/scripts/README"
+            },
             {
               "text": {
                 "root": "OpenCV 和 native 集成开发指南"

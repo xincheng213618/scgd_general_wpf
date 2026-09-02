@@ -3,8 +3,8 @@ knowledge_id: "governance.maintenance"
 knowledge_type: "guide"
 status: "current"
 summary: "定义AI与人共同维护知识的字段、事实责任、源码反向影响检查和验收流程。"
-aliases: ["如何更新文档", "知识过期", "代码文档同步", "frontmatter", "knowledge_id", "AI共治规范"]
-code_paths: ["AGENTS.md", "docs/AGENTS.md", "docs/.vitepress/scripts", "package.json"]
+aliases: ["如何更新文档", "知识过期", "代码文档同步", "frontmatter", "knowledge_id", "AI共治规范", "贡献指南", "CONTRIBUTING.md"]
+code_paths: ["AGENTS.md", "CONTRIBUTING.md", "docs/AGENTS.md", "docs/.vitepress/scripts", "package.json"]
 test_paths: ["docs/.vitepress/scripts/knowledge.test.mjs", "docs/.vitepress/scripts/readme-links.test.mjs", "docs/.vitepress/scripts/html-links.test.mjs"]
 related: ["governance.knowledge", "governance.retrieval", "delivery.testing"]
 ---

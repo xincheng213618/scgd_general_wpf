@@ -434,6 +434,9 @@
     {"query":"--find-cross-cvraw","expected_any":["delivery.native-testing"],"include_planned":false},
     {"query":"--calibration-cache-small-budget","expected_any":["delivery.native-testing"],"include_planned":false},
     {"query":"All tests completed","expected_any":["delivery.native-testing"],"include_planned":false},
-    {"query":"build_test_find_luminous.bat","expected_any":["delivery.native-testing"],"include_planned":false}
+    {"query":"build_test_find_luminous.bat","expected_any":["delivery.native-testing"],"include_planned":false},
+    {"query":"贡献指南","expected_any":["governance.maintenance"],"include_planned":false},
+    {"query":"版本标签","expected_any":["delivery.scripts"],"include_planned":false},
+    {"query":"auto-tag.yml","expected_any":["delivery.scripts"],"include_planned":false}
   ]
 }

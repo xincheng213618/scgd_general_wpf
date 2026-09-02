@@ -1,122 +1,45 @@
 # 贡献指南
 
-本仓库是 Windows WPF/.NET 代码库，包含运行时插件、客户项目包、Native OpenCV helper、发布脚本和 VitePress 文档站。提交变更时请保持范围清晰、可验证，并遵守现有模块边界。
+一次变更应能独立说明解决的问题、当前结果和验证范围。本仓库包含 Windows WPF 主程序、共享库、native 依赖、插件、客户项目、Web 和文档；先按实际模块选择实现与验证入口。
 
-## 开发流程
+## 完成一次变更
 
-1. 从当前集成分支创建工作分支。
-2. 每个变更只解决一个明确问题。
-3. 不要把无关重构和行为修改混在一起。
-4. 当公开行为、构建步骤、发布步骤、插件打包或项目交付行为变化时，用 `knowledge.mjs impact <源码路径>` 找到候选主题，并在同一变更中更新对应知识和验证入口；没有候选不等于无需更新。
-5. 提交 PR 前运行与变更相关的验证命令。
+1. 阅读根 [AGENTS.md](AGENTS.md) 及所改目录最近的同名文件，确认平台、架构边界和命令前提。检查已有工作区改动，保留无关或并行工作；需要工作分支时从任务约定的集成分支建立，不擅自切换或清理已有工作。
+2. 从[知识地图](docs/knowledge/index.md)按功能或源码定位主题，读取相关实现和测试。改动已知路径前用 `knowledge.mjs impact <仓库相对源码路径>` 找文档候选；没有候选仍须判断是否缺少知识。
+3. 实现一个明确目的，沿用现有 MVVM、服务、模板、插件及属性编辑器边界。强名称、运行时依赖和平台要求按项目文件与 AGENTS 维护，不用临时关闭检查来隐藏问题。
+4. 在同一变更中更新受影响的当前说明，选择下表对应的最小验证集。区分构建、测试、启动、设备操作和发布；文档示例不扩大任务授权。
+5. 检查最终 diff 和制品范围。已获提交授权时，完成一个可解释、已验证的主题就独立提交；提交说明描述问题和最终行为，避免把多个无关主题积到一次提交。推送、合并和发布按各自任务授权执行。
 
-## 构建与测试
+## 选择验证入口
 
-恢复依赖并构建：
+所有命令从仓库根目录在 PowerShell 中执行，具体前提与命令维护在下列主题中：
 
-```powershell
-dotnet restore .\ColorVision\ColorVision.csproj
-dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64
-```
+| 变更范围 | 参考与验证 |
+| --- | --- |
+| 首次准备环境、主程序或完整解决方案构建 | [系统要求与构建前提](docs/00-getting-started/prerequisites.md)：Windows x64、.NET/C++、现有 DLL 与干净克隆的区别 |
+| UI、Copilot、插件/客户逻辑、脚本测试 | [测试与验证](docs/02-developer-guide/testing.md)：选定程序集/测试，按需区分普通回归与性能探针 |
+| helper / OpenCV / P/Invoke | [原生测试与调试](docs/02-developer-guide/engine-development/native-testing.md)：工具集、配置、专项参数、实际 DLL 和跳过信息 |
+| 后端 API、索引、上传下载或存储 | [后端测试边界](docs/02-developer-guide/backend/README.md#测试与边界)及[测试入口](docs/02-developer-guide/testing.md#native-和后端)：先核对依赖、配置和数据隔离 |
+| 知识内容、文档工具和页面 | [知识维护规范](docs/knowledge/maintenance.md)：生成目录、检查元数据/检索，再构建实际网页 |
+| 打包或交付行为 | [构建与发布脚本](docs/02-developer-guide/scripts/README.md)：优先相关合成制品测试和只校验入口；正式 wrapper 会上传 |
 
-CI 风格 Windows 构建：
+只改文档时运行对应知识/网页验证，不因此执行产品发布或硬件调用。无法完成某项验证时，记录具体缺项和未覆盖的行为；不要把缺工具链写成业务失败，也不要把静态检查通过写成运行验收完成。
 
-```powershell
-dotnet restore .\build.sln
-msbuild .\build.sln /m /p:Configuration=Release /p:Platform=x64
-```
+## 同步文档与版本信息
 
-.NET 测试：
+文档按[维护规范](docs/knowledge/maintenance.md)原位说明当前事实：替换过期描述，删除失效入口，合并重复契约，保留实际操作、参数、例外和兼容条件。目标是清晰、准确、可查询、不冗余，篇幅服从内容需要；修改过程和验证报告留在 Git/任务记录，发布变化写入相应 CHANGELOG。
 
-```powershell
-dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64
-dotnet test Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj -c Release -p:Platform=x64
-```
+主题正文以简体中文为主；英文 AGENTS 和有独立交付用途的原生模块/包说明可保留。源码旁 README 保留包的必要前提并链接权威主题。已知旧网址需要兼容时按规范保留短跳转页，正文和导航指向正式主题；不为没有地址兼容价值的过程记录制造新页面。
 
-文档站构建（Node.js 22+；安装依赖会联网，本地构建不会发布）：
+插件/客户项目的公共行为或交付变更还要核对 manifest、README、版本记录、复制规则、配置/流程及协议导出说明。具体范围见[插件交付](docs/02-developer-guide/plugin-development/getting-started.md)和[客户项目](docs/04-api-reference/projects/README.md)，不另维护按读者身份重复的手册。
 
-```powershell
-npm ci
-npm run docs:build
-```
+主程序发布、版本号与自动 Git 标签见[发布脚本](docs/02-developer-guide/scripts/README.md)。本地生成包、提交 Git、推送分支和更新远端安装源是不同结果，报告时明确完成了哪一步。
 
-已有构建产物时，可单独复查文档链接、导航、旧页面兼容入口和搜索索引：
+## 提交与 PR 内容
 
-```powershell
-npm run docs:validate:dist
-```
+- 说明具体问题、最终行为和必要的兼容/迁移影响；内容应让未读过讨论的人能够评审。
+- 列出实际执行的验证、结果、未运行原因和剩余验收，保留命令中的配置与筛选条件。
+- 同步受影响知识及生成目录；不手工改 catalog、源码地图或站点导航。
+- 不混入无关格式化、临时日志、普通 bin/obj、站点 dist、本机配置或密钥。明确跟踪的发布输入（例如 CUDA DLL）按[原生交付契约](docs/02-developer-guide/engine-development/opencv-integration.md)处理，不能一概当临时产物删除。
 
-后端和脚本测试：
-
-```powershell
-Push-Location .\Web\Backend
-python -m unittest discover -p "test_*.py"
-Pop-Location
-
-python -m unittest discover -s .\Scripts\tests -p "test_*.py" -v
-```
-
-运行与你的变更相关的最小验证集。如果本地无法运行某个命令，请在 PR 中说明。
-
-## 代码规则
-
-- 默认面向当前 Windows WPF 和 x64 交付路径。
-- 沿用现有 MVVM、插件、服务、模板和 PropertyGrid 模式。
-- UI 代码放在 UI 模块，Engine/业务行为放在 Engine 或项目包。
-- 优先复用已有抽象，不轻易新增跨层依赖。
-- 代码保持简洁直接；只有非显而易见的行为才加注释。
-- `ColorVision.snk` 存在时不要关闭强名称签名。
-- 保留运行时依赖，例如 `DLL/CVCommCore.dll`、`DLL/MQTTMessageLib.dll` 和 OpenCvSharp runtime 资产。
-
-## 文档规则
-
-文档是供AI按需读取的项目知识，网站是派生视图。维护规则以 [docs/AGENTS.md](docs/AGENTS.md) 和[知识维护规范](docs/knowledge/maintenance.md)为准。
-
-- 根目录 `README.md` 是仓库第一入口。
-- `CONTRIBUTING.md` 说明贡献和验证规则。
-- `CHANGELOG.md` 记录版本历史。
-- `LICENSE.md` 指向许可协议。
-- `docs/` 按能力和任务组织知识，每个活动主题声明稳定ID、摘要、状态、源码、测试与相关主题。
-- `docs/knowledge/index.md`、`catalog.json` 和站点导航从元数据生成，不手工维护第二份事实。
-
-简体中文是当前维护中的文档语言。
-
-更新后运行 `npm run docs:knowledge`、`npm run docs:check`，涉及网页时运行 `npm run docs:build`。正文按完整语义组织，不按固定行数拆分。测试引用仅表示定位，不得伪造已验证结果；未来设计和默认关闭的实验能力必须明确标注。
-
-删掉或合并旧页面时，不要让旧地址直接 404。若旧地址可能来自导航、搜索、外部书签或历史链接，请保留一个带 `redirect_from_deleted_page: true` 和 `search: false` 的兼容页，并跳转到新的正式页面。导航和正文入口应指向正式页面，不要指向兼容页。
-
-修改导航或 VitePress 配置后，运行 `npm run docs:build`。如果只是复查已有构建产物，可运行 `npm run docs:validate:dist`。
-
-## 插件和项目包变更
-
-插件变更：
-
-- 保持 `manifest.json`、插件 README、CHANGELOG、构建复制规则和 `.cvxp` 打包行为一致。
-- 打包行为变化时先运行相关脚本测试和不上传的清单校验；`Scripts\package_plugin.bat <PluginName>` 会上传，只在任务明确授权发布/远端验收时执行。
-- 按改动责任更新[插件装配与模块知识](docs/04-api-reference/plugins/README.md)所指向的规范主题；不再分别维护开发手册与使用手册。
-
-客户项目变更：
-
-- 保持项目 README、CHANGELOG、manifest/配置、流程组、协议字段和结果导出文档一致。
-- 交付打包变化时先验证脚本与清单；`Scripts\package_project.bat <ProjectName>` 会上传，执行前必须有任务范围内的发布授权。
-- 更新 [项目说明](docs/04-api-reference/projects/README.md) 和受影响项目页。
-
-## 发布规则
-
-常规发布入口：
-
-```powershell
-Scripts\release.bat
-```
-
-不要为主安装包新增本地-only 发布捷径。发布脚本负责构建、打包、上传、更新元数据、更新包和完整 zip 产物。
-
-修改 `Directory.Build.props` 版本元数据时，注意 GitHub Actions 会在推送到 `master` 后按 `v<VersionPrefix>` 创建标签。
-
-## PR 检查清单
-
-- 变更聚焦在一个目的上。
-- 运行了与变更相关的构建/测试命令，或说明无法运行。
-- 受影响知识已核对和更新，或说明无需变更的依据；派生目录已同步，知识检查通过。
-- 插件/项目包的 manifest、README、CHANGELOG 在运行时打包行为变化时已同步。
-- 没有提交编译输出、网站 `dist`、本地密钥、机器私有配置或无关格式化变更；知识地图、领域索引和catalog属于必须同步提交的派生资料。
+许可条款以 [LICENSE.md](LICENSE.md) 指向的协议及对应发布包说明为准。
