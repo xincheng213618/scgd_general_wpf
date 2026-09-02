@@ -9244,18 +9244,28 @@
       "knowledge_id": "ui.publishing",
       "knowledge_type": "guide",
       "status": "current",
-      "summary": "说明 UI NuGet 构建、版本占用预检、显式 Release 发布与包消费验证。",
+      "summary": "UI NuGet整批与Algorithms单包发布、Release标签和版本预检；预检不预留版本，逐包上传没有整批回滚或逐条失败检查。",
       "aliases": [
         "如何发布UI NuGet包",
+        "NuGet发布失败",
+        "NuGet版本已占用",
         "UIProjectPackageVersion",
         "algorithms-v",
+        "Algorithms单包发布",
+        "Release标签",
+        "Verify scoped Algorithms release",
+        "Publish to NuGet",
         "verify_nuget_package_versions.py"
       ],
       "code_paths": [
         ".github/workflows/dotnet.yml",
         "UI/Directory.Build.props",
-        "Scripts/verify_nuget_package_versions.py",
-        "UI/ColorVision.Algorithms/ColorVision.Algorithms.csproj"
+        "UI/ColorVision.Algorithms/ColorVision.Algorithms.csproj",
+        "UI/ColorVision.Themes/ColorVision.Themes.csproj",
+        "UI/ColorVision.Core/ColorVision.Core.csproj",
+        "UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj",
+        "Engine/ColorVision.Engine/ColorVision.Engine.csproj",
+        "Scripts/verify_nuget_package_versions.py"
       ],
       "test_paths": [
         "Scripts/tests/test_verify_nuget_package_versions.py",
@@ -9264,16 +9274,23 @@
       "related": [
         "ui.index",
         "ui.package-boundaries",
-        "algorithms.platform"
+        "algorithms.platform",
+        "delivery.index",
+        "delivery.scripts",
+        "engine.host"
       ],
       "code_scopes": [
         ".github/workflows",
+        "Engine/ColorVision.Engine",
         "Scripts",
         "UI",
-        "UI/ColorVision.Algorithms"
+        "UI/ColorVision.Algorithms",
+        "UI/ColorVision.Core",
+        "UI/ColorVision.ImageEditor",
+        "UI/ColorVision.Themes"
       ],
       "domain": "ui",
-      "title": "UI DLL 发布",
+      "title": "UI NuGet 包构建与发布",
       "source": "docs/04-api-reference/ui-components/publishing.md",
       "url": "/04-api-reference/ui-components/publishing",
       "searchable": true

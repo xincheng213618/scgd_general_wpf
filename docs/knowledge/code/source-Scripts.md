@@ -40,8 +40,8 @@ next: false
 - [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
   native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
 
-- [UI DLL 发布](../../04-api-reference/ui-components/publishing.md) — `ui.publishing`
-  说明 UI NuGet 构建、版本占用预检、显式 Release 发布与包消费验证。
+- [UI NuGet 包构建与发布](../../04-api-reference/ui-components/publishing.md) — `ui.publishing`
+  UI NuGet整批与Algorithms单包发布、Release标签和版本预检；预检不预留版本，逐包上传没有整批回滚或逐条失败检查。
 
 ## Scripts/tests {#module-536372697074732f7465737473}
 

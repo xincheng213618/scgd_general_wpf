@@ -101,8 +101,8 @@ next: false
 - [配置向导：步骤、应用与完成边界](../../04-api-reference/ui-components/wizards.md) — `ui.wizards`
   配置向导的步骤发现、初始化时序、前进应用和完成标记；关闭不回滚，完成标记不证明组件健康或重启成功。
 
-- [UI DLL 发布](../../04-api-reference/ui-components/publishing.md) — `ui.publishing`
-  说明 UI NuGet 构建、版本占用预检、显式 Release 发布与包消费验证。
+- [UI NuGet 包构建与发布](../../04-api-reference/ui-components/publishing.md) — `ui.publishing`
+  UI NuGet整批与Algorithms单包发布、Release标签和版本预检；预检不预留版本，逐包上传没有整批回滚或逐条失败检查。
 
 - [ColorVision.Core](../../04-api-reference/ui-components/ColorVision.Core.md) — `ui.core`
   定位 HImage 所有权、OpenCV/CUDA PInvoke、ImageCompute 融合分流、位图桥接与默认关闭的原生日志。

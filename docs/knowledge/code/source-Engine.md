@@ -214,6 +214,9 @@ next: false
 - [主程序启动与最小图像验证](../../00-getting-started/first-steps.md) — `operations.first-run`
   主程序启动的配置、实例和服务副作用，以及隔离测试环境中的最小本地图像验证。
 
+- [UI NuGet 包构建与发布](../../04-api-reference/ui-components/publishing.md) — `ui.publishing`
+  UI NuGet整批与Algorithms单包发布、Release标签和版本预检；预检不预留版本，逐包上传没有整批回滚或逐条失败检查。
+
 - [ARVR 模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
   对照 ARVR 模板族、手动请求、Flow 算子和结果 handler 的版本边界。
 

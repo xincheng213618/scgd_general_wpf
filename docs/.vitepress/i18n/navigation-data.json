@@ -749,7 +749,7 @@
             },
             {
               "text": {
-                "root": "UI DLL 发布"
+                "root": "UI NuGet 包构建与发布"
               },
               "link": "/04-api-reference/ui-components/publishing"
             },
@@ -800,7 +800,7 @@
             },
             {
               "text": {
-                "root": "UI DLL 发布"
+                "root": "UI NuGet 包构建与发布"
               },
               "link": "/04-api-reference/ui-components/publishing"
             },
@@ -998,6 +998,12 @@
             },
             {
               "text": {
+                "root": "UI NuGet 包构建与发布"
+              },
+              "link": "/04-api-reference/ui-components/publishing"
+            },
+            {
+              "text": {
                 "root": "opencv_helper.dll API 参考"
               },
               "link": "/04-api-reference/engine-components/opencv-helper-api"
@@ -1163,6 +1169,12 @@
                 "root": "设置、流程与结果的导入导出边界"
               },
               "link": "/01-user-guide/data-management/export-import"
+            },
+            {
+              "text": {
+                "root": "UI NuGet 包构建与发布"
+              },
+              "link": "/04-api-reference/ui-components/publishing"
             },
             {
               "text": {
@@ -1511,6 +1523,12 @@
                 "root": "主题选择、资源应用与窗口外观"
               },
               "link": "/04-api-reference/ui-components/ColorVision.Themes"
+            },
+            {
+              "text": {
+                "root": "UI NuGet 包构建与发布"
+              },
+              "link": "/04-api-reference/ui-components/publishing"
             },
             {
               "text": {
@@ -2339,6 +2357,12 @@
                 "root": "主程序启动与最小图像验证"
               },
               "link": "/00-getting-started/first-steps"
+            },
+            {
+              "text": {
+                "root": "UI NuGet 包构建与发布"
+              },
+              "link": "/04-api-reference/ui-components/publishing"
             },
             {
               "text": {
@@ -3368,7 +3392,7 @@
             },
             {
               "text": {
-                "root": "UI DLL 发布"
+                "root": "UI NuGet 包构建与发布"
               },
               "link": "/04-api-reference/ui-components/publishing"
             }
@@ -3722,7 +3746,7 @@
             },
             {
               "text": {
-                "root": "UI DLL 发布"
+                "root": "UI NuGet 包构建与发布"
               },
               "link": "/04-api-reference/ui-components/publishing"
             },
