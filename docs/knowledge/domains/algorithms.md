@@ -41,8 +41,8 @@ next: false
 - [ImageCropping 图像裁剪模板](../../04-api-reference/algorithms/templates/image-cropping-template.md) — `algorithms.image-cropping`
   区分强类型 ImageCropping 的持久参数、运行时四点 ROI、Flow 双输入和图像结果。
 
-- [ImageEditor 直接 native 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
-  ImageEditor直接native灯珠与P2分析：Ghost/旋转模板/双目标定、缺失计数与完成边界；区别Engine/MQTT模板和统一Runner。
+- [本地灯珠与 P2 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
+  ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合的操作、参数与结果；灯珠暗区候选不完整，P2 运行失败后复制结果可能仍取上次 JSON。
 
 - [Matching 模板匹配](../../04-api-reference/algorithms/templates/matching-template.md) — `algorithms.matching`
   说明 Matching 通用配置宿主、运行时模板文件、Flow 请求和 AOI 结果绘制。

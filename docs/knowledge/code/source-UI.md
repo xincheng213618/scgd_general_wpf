@@ -109,8 +109,8 @@ next: false
 - [FindLightArea 发光区定位模板](../../04-api-reference/algorithms/templates/find-light-area.md) — `algorithms.find-light-area`
   区分远端 FindLightArea 模板与本地原生亮区检测 RobustV2；四角点不等于成功，须核对置信度、失败原因和各调用层的结果契约。
 
-- [ImageEditor 直接 native 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
-  ImageEditor直接native灯珠与P2分析：Ghost/旋转模板/双目标定、缺失计数与完成边界；区别Engine/MQTT模板和统一Runner。
+- [本地灯珠与 P2 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
+  ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合的操作、参数与结果；灯珠暗区候选不完整，P2 运行失败后复制结果可能仍取上次 JSON。
 
 - [日志来源、历史读取与筛选](../../01-user-guide/interface/log-viewer.md) — `operations.logs`
   区分log4net输出、历史文件读取与UI筛选，说明刷新、截断和原生日志采集边界；没有显示不等于动作未发生。
@@ -164,8 +164,8 @@ next: false
 - [本地十字定位 FindCross](../../04-api-reference/algorithms/detectors/find-cross.md) — `algorithms.find-cross`
   本地十字定位的图像菜单、Flow 节点、生产参数、全图坐标、原生返回值与失败诊断。
 
-- [ImageEditor 直接 native 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
-  ImageEditor直接native灯珠与P2分析：Ghost/旋转模板/双目标定、缺失计数与完成边界；区别Engine/MQTT模板和统一Runner。
+- [本地灯珠与 P2 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
+  ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合的操作、参数与结果；灯珠暗区候选不完整，P2 运行失败后复制结果可能仍取上次 JSON。
 
 - [统一图像算法平台 V1](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) — `algorithms.platform`
   统一图像算法Catalog、Invocation和Runner；普通像素预览、应用/取消、所有权与发布门禁；ONNX仅设计。

@@ -2,28 +2,36 @@
 knowledge_id: "algorithms.local-native-analysis"
 knowledge_type: "topic"
 status: "current"
-summary: "ImageEditor直接native灯珠与P2分析：Ghost/旋转模板/双目标定、缺失计数与完成边界；区别Engine/MQTT模板和统一Runner。"
-aliases: ["FindLightBeads", "M_FindLightBeads", "FindLightBeadsConfig", "BlackCenters", "MissingCount", "本地灯珠检测", "直接native分析", "P2", "GhostLocalAnalysis", "M_DetectGhosts", "RotatedTemplateLocalAnalysis", "M_MatchRotatedTemplate", "StereoFusionDebugWindow", "M_CalStereoBinocularFusion", "P2JsonAnalysisWindow", "本地Ghost检测", "旋转模板本地匹配", "双目标定融合"]
-code_paths: ["UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/FindLightBeadsCM.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/README.md", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/P2", "UI/ColorVision.ImageEditor/EditorTools/GraphicEditing/GraphicEditingWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj", "UI/ColorVision.Core/OpenCVMediaHelper.cs", "UI/ColorVision.Core/HImageExtension.cs", "Native/include/algorithm.h", "Native/include/opencv_media_export.h", "Native/include/custom_structs.h", "Native/opencv_helper/algorithm.cpp", "Native/opencv_helper/opencv_media_export.cpp", "Native/opencv_helper/exports/p2_export.cpp"]
+summary: "ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合的操作、参数与结果；灯珠暗区候选不完整，P2 运行失败后复制结果可能仍取上次 JSON。"
+aliases: ["FindLightBeads", "M_FindLightBeads", "FindLightBeadsConfig", "BlackCenters", "MissingCount", "本地灯珠检测", "直接native分析", "P2", "GhostLocalAnalysis", "M_DetectGhosts", "RotatedTemplateLocalAnalysis", "M_MatchRotatedTemplate", "StereoFusionDebugWindow", "M_CalStereoBinocularFusion", "P2JsonAnalysisWindow", "本地Ghost检测", "旋转模板本地匹配", "双目标定融合", "Ghost 本地分析", "设为旋转匹配模板", "运行融合", "P2 复制结果", "灯珠数量统计", "缺失数量"]
+code_paths: ["UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/FindLightBeadsCM.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/README.md", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/P2", "UI/ColorVision.ImageEditor/EditorTools/GraphicEditing/GraphicEditingWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmsContextMenu.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj", "UI/ColorVision.Core/OpenCVMediaHelper.cs", "UI/ColorVision.Core/HImageExtension.cs", "Native/include/algorithm.h", "Native/include/opencv_media_export.h", "Native/include/custom_structs.h", "Native/opencv_helper/algorithm.cpp", "Native/opencv_helper/opencv_media_export.cpp", "Native/opencv_helper/exports/p2_export.cpp"]
 test_paths: ["Test/ColorVision.UI.Tests/AlgorithmCircleOverlayRenderOptimizationTests.cs", "Test/opencv_helper_test/test_p2_algorithms.cpp"]
 related: ["algorithms.platform", "ui.image-editor", "engine.native-integration", "algorithms.ghost", "algorithms.led"]
 ---
 
-# ImageEditor 直接 native 分析
+# 本地灯珠与 P2 分析
 
-ImageEditor 中仍有通过专用菜单直接调用 `OpenCVMediaHelper`、取得 native JSON 后自行展示的分析入口。本页记录这条兼容链的真实输入、完成和结果边界；不能因为它位于 `EditorTools/Algorithms/`，就认定它经过[统一算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)的 Catalog、Runner、实验 provider 门禁或中立 artifact 生命周期。
+ImageEditor 提供本地灯珠检测、Ghost 分析、旋转模板匹配与双目标定融合，适用于对当前图像或矩形 ROI 进行本地分析。这些入口直接调用 `OpenCVMediaHelper` 并展示 native JSON 或标注，不经过[统一算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)的 Catalog、Runner、实验 provider 门禁或中立 artifact 生命周期。
 
 本地 `FindLightBeads` 也不是 Engine 的 `FindLED`/MQTT 模板，不读取历史结果 DAO。远端灯条/灯珠契约见 [LED 检测模板](./templates/led-detection.md)。
 
-## 灯珠入口与运行前提
+## 运行前提
 
-`FindLightBeadsCM.cs` 提供两个入口：`CMFindLightBeads` 在 `AlgorithmsCall` 下添加全图命令；`DVCMFindLightBeads` 为 `IRectangle` 提供矩形右键命令。两者创建临时 `FindLightBeadsConfig`，在属性窗口的 `Submitted` 事件中调用 `FindLightBeads.Execute`，不是打开参数窗口时就检测，也没有在此保存配置。
+准备 Windows/x64 环境、匹配的 `opencv_helper.dll` 及其依赖，并先打开可分析的图像。菜单存在不证明 DLL 已就绪或当前像素格式可执行；像素布局限制见下文。首次构建和 ABI/发布边界见 [native 集成](../../02-developer-guide/engine-development/opencv-integration.md)。
 
-发现由 `EditorToolFactory.cs` 扫描其实际程序集集合并构造上下文实例。这两个菜单不实现 `IAlgorithmCatalogBoundMenu`，因此 `IsAlgorithmMenuExecutable` 不对它们执行统一 Runtime 的 provider 检查。菜单存在不证明 DLL 或当前像素格式可执行，也不是所有程序集内的类都会无条件显示。
+## 执行灯珠检测
 
-当前 ImageEditor 工程通过 `ProjectReference` 引用 `UI/ColorVision.Core`，不是旧说明中的固定版本 Core NuGet 引用。实际绑定是 `OpenCVMediaHelper.M_FindLightBeads`，以 Cdecl 调用 `opencv_helper.dll`；导出声明在 `Native/include/opencv_media_export.h`，实现分别在 `Native/opencv_helper/opencv_media_export.cpp` 和 `Native/opencv_helper/algorithm.cpp`，不是旧 `Core/opencv_helper/` 路径。Windows/x64、匹配的 native DLL 和依赖仍是运行前提；首次构建与 ABI/发布边界见 [native 集成](../../02-developer-guide/engine-development/opencv-integration.md)。
+1. 在图像右键菜单选择“算法调用” → `FindLightBeads`，分析全图；只分析局部时，绘制矩形并右键该矩形，选择 `FindLightBeads`。矩形与图像无有效交集时不提供该命令。
+2. 在参数窗口调整阈值、尺寸和行列数，点击“确定”。参数窗口使用临时配置；关闭窗口而未提交不会发起检测，参数不在此保存。
+3. 结果以红色亮点圆和黄色暗区候选圆追加到画布。当前不显示统计对话框，也不自动保存；参数窗口关闭和 `Execute` 返回均不代表后台标注已经完成。需要输出标注时，先确认本次结果已绘制，再使用[图像编辑器输出](../ui-components/ColorVision.ImageEditor.md#保存前分清输出语义)。
 
-## 灯珠参数不是网格完整性承诺
+`FindLightBeadsCM.cs` 的 `CMFindLightBeads` 提供全图命令（父项 `AlgorithmsCall` 即“算法调用”），`DVCMFindLightBeads` 提供 `IRectangle` 右键命令；两者在属性窗口 `Submitted` 事件中调用 `FindLightBeads.Execute`。
+
+发现由 `EditorToolFactory.cs` 扫描其实际程序集集合并构造上下文实例。这两个菜单不实现 `IAlgorithmCatalogBoundMenu`，因此 `IsAlgorithmMenuExecutable` 不对它们执行统一 Runtime 的 provider 检查；实际发现集合仍限制哪些类可以显示。
+
+ImageEditor 通过 `ProjectReference` 引用 `UI/ColorVision.Core`。`OpenCVMediaHelper.M_FindLightBeads` 以 Cdecl 调用 `opencv_helper.dll`；导出声明在 `Native/include/opencv_media_export.h`，实现位于 `Native/opencv_helper/opencv_media_export.cpp` 和 `Native/opencv_helper/algorithm.cpp`。
+
+## 灯珠参数
 
 参数类位于 `EditorTools/GraphicEditing/GraphicEditingWindow.xaml.cs`，当前新建实例的值如下。属性 setter 的限制不等于字段初值已经经过 setter，也不等于直接 native JSON 调用受到同样校验。
 
@@ -64,7 +72,7 @@ ImageEditor 中仍有通过专用菜单直接调用 `OpenCVMediaHelper`、取得
 
 暗区分支先取已检亮点的凸包，将凸包外阈值图设为白色，再做 `12×12` 矩形膨胀、反相和外轮廓检测。若没有凸包，外部区域屏蔽步骤不执行。符合严格尺寸条件的暗轮廓产生一个包围框中心；不符合时，只有凸包非空且 `Rows/Cols` 都为正才按凸包包围框宽/`Cols`、高/`Rows` 生成网格候选，起点偏移为 `4`，并用 `pointPolygonTest` 过滤。此处不是拿 `Centers` 与一套已配准的完整灯珠网格逐一相减。
 
-重要的当前实现限制：`algorithm.cpp` 在遍历暗轮廓的循环体末尾就 `return 0`，因此只处理第一条暗轮廓，之后的暗轮廓被跳过。即使 native 成功返回 JSON，也不能承诺 `BlackCenters` 覆盖所有暗区。这个源码可见限制不等于已经用真机样本复现，也不应在文档维护时悄悄修产品算法。
+`algorithm.cpp` 在遍历暗轮廓的循环体末尾就 `return 0`，因此只处理第一条暗轮廓，之后的暗轮廓被跳过。即使 native 成功返回 JSON，`BlackCenters` 也不保证覆盖所有暗区；这项源码可见限制不等于经过真实样本验证。
 
 ## 灯珠完成、叠加与失败边界
 
@@ -72,7 +80,7 @@ ImageEditor 中仍有通过专用菜单直接调用 `OpenCVMediaHelper`、取得
 
 native 在调用期间借用帧，托管 `using (lease)` 在调用结束或异常时释放租约。成功字符串经 `PtrToStringAnsiAndFree` 读取并调用 `FreeResult` 释放，然后才调度 UI 发布。UI 发布前仅检查当前图像 revision：过期结果不绘制；同一 revision 多次执行没有统一 Runner 的 invocation/token 排他与取消机制，仍有效的结果会分别追加，不能宣称 latest-wins。
 
-UI 从 native JSON 的 `Centers` 画红色 `DVCircle`，从 `BlackCenters` 画黄色 `DVCircle`，半径均取 `Radius`，线宽按缩放调整并对无效缩放回退。每个圆通过 `DrawCanvas.AddVisualCommand` 加入可撤销绘图；不是旧说明的蓝圆、红矩形。统计对话框代码已注释，虽然读取 `CenterCount`/`BlackCenterCount`，当前不显示这些统计，也不读取 `ExpectedCount`/`MissingCount` 来显示“检测完成统计”。
+UI 从 native JSON 的 `Centers` 画红色 `DVCircle`，从 `BlackCenters` 画黄色 `DVCircle`，半径均取 `Radius`，线宽按缩放调整并对无效缩放回退。每个圆通过 `DrawCanvas.AddVisualCommand` 加入可撤销绘图。当前只读取 `CenterCount`/`BlackCenterCount`，不显示数量统计，也不读取 `ExpectedCount`/`MissingCount` 来展示缺失数量。
 
 这条链不创建中立 algorithm artifact，不调用 `AlgorithmOverlayManager`，不在执行前清理既有标注，也不提交源像素或自动保存文件。保存 source 与 rendered 的差别见[图像编辑器输出](../ui-components/ColorVision.ImageEditor.md)，不能把画布上的圆等同于源图已改写或业务结果已落库。
 
@@ -87,6 +95,28 @@ UI 从 native JSON 的 `Centers` 画红色 `DVCircle`，从 `BlackCenters` 画�
 | `GhostLocalAnalysis`，`GhostAnalysis.cs` | 当前图像或矩形 ROI → `P2JsonAnalysisWindow` → `M_DetectGhosts` | 原始 JSON、亮源/候选计数、严重度/置信度摘要与 overlay；不调用 `TemplateGhost` 或 MQTT，也不读 Ghost DAO |
 | `RotatedTemplateLocalAnalysis`，`RotatedTemplateAnalysis.cs` | 先在矩形右键“设为旋转匹配模板”，再对当前图像/ROI 调用 `M_MatchRotatedTemplate` | 匹配 JSON 与角度/位置等叠加；模板是当前 `DrawEditorContext` 会话持有的位图，不是 Engine 模板数据库记录 |
 | `CMStereoBinocularLocalAnalysis`，`StereoFusionAnalysis.cs` / `StereoFusionDebugWindow.xaml.cs` | 当前编辑器图像作左图，选择文件作右图，带标定 JSON 调用 `M_CalStereoBinocularFusion` | 左右五点、三维毫米坐标、视差、重投影误差、置信度及有效状态；不是单图 `M_CalBinocularFusion` |
+
+### 执行 Ghost 或旋转模板匹配
+
+按所需工具选择入口：
+
+- Ghost 分析：在图像右键菜单选择“算法调用” → “Ghost 本地分析”；局部分析则右键矩形，选择“在此 ROI 执行 Ghost 本地分析”。
+- 旋转模板匹配：先绘制模板区域矩形，右键选择“设为旋转匹配模板”；再选择“算法调用” → “旋转模板本地匹配”，或右键搜索区域矩形选择“在此 ROI 执行旋转模板匹配”。
+
+打开参数窗口后：
+
+1. 核对窗口的图像/ROI 信息，在“配置 JSON”中编辑对象参数，点击“运行”。
+2. 在“摘要”和“结果 JSON”查看本次状态与结果；`success=false` 或 `statusCode` 报错时，不能把存在 JSON 当作检测通过。
+3. 需要保留文本时点击“复制配置”或“复制结果”，内容只写入剪贴板，不自动保存文件。默认勾选“绘制 Overlay”和“自动清除上次结果”；临时叠加与清理范围见下文。
+
+### 执行双目标定融合
+
+1. 在编辑器打开左图，从图像右键菜单选择“算法调用” → “双目标定融合”。
+2. 点击“选择右图...”，再点击“加载标定 JSON...”，核对标定与这对图像、尺寸和单位匹配。窗口生成的示例标定不能用于测量。
+3. 检查“融合配置 JSON”，点击“运行融合”。查看“三维点”、结果 JSON、状态和警告；毫米坐标需结合点的 `valid`、视差和重投影误差判断。
+4. 需要文本结果时点击“复制结果”。更换左图后重新打开窗口核对输入；加载右图、加载配置或复制文本均不代表新一轮融合已完成。
+
+两个 P2 窗口开始新运行时不清空上次 JSON、摘要或点表；配置校验失败、调用异常或新结果被丢弃后，旧内容可能仍可见，“复制结果”也可能复制上一次结果。“清除 Overlay”只清理叠加，不清空结果文本；双目重新选择右图也不重置已保存的结果 JSON。应结合本次运行状态和输入判断，不能用页面仍有数值作为本次成功证据。
 
 P2 矩形入口使用 `P2RoiHelper.TryFromRectangle` 转换 DPI 并与当时图像求交；`Normalize` 只把非正尺寸 ROI 替换为全图，不提供任意 ROI 的通用边界校验。全图双目调试始终向导出传左右完整图像范围。不要把前面的 FindLightBeads 越界回退规则直接推广给全部 P2 内核。
 
@@ -104,13 +134,13 @@ Ghost 和旋转模板窗口允许编辑 JSON 对象，默认参数分别由各�
 
 P2 参数窗口只在点击运行时计算，不是滑动预览。适配器重新获取当前帧租约，在 `Task.Run` 中同步调用 native 并等待结果；调用后检查图像 revision。窗口另检查是否已关闭；双目窗口还核对右图是否仍是启动该次运行时的同一对象。它们不使用 `ImageAlgorithmPreviewSession`，不能据此推断 host-wide invocation 的 latest-wins、像素提交或统一 artifact 所有权。
 
-这里的 revision 校验从每次运行开始，不是把窗口绑定到打开时的图像。Ghost/旋转模板的搜索 ROI 在打开窗口时确定，而运行时重新取当前帧；双目左预览和尺寸文案只在构造时赋值，运行却使用新的左图租约。因此运行前换图后，窗口可能仍显示旧预览/ROI/标定而计算新图。应重新打开窗口并核对输入与标定，不能拿旧左预览证明本次计算输入，也不能把“计算期间换图会丢弃”扩大为全窗口生命周期绑定。
+这里的 revision 校验从每次运行开始，不是把窗口绑定到打开时的图像。Ghost/旋转模板的搜索 ROI 在打开窗口时确定，而运行时重新取当前帧；双目左预览和尺寸文案只在构造时赋值，运行却使用新的左图租约。因此运行前换图后，窗口可能仍显示旧预览/ROI/标定而计算新图。应重新打开窗口并核对输入与标定，不能拿旧左预览证明本次计算输入，也不能把“计算期间换图会丢弃”扩大为全窗口生命周期绑定。双目对右图对象身份的检查位于成功结果发布路径，异常提示分支只检查左图 revision 和关窗状态，不能保证换右图后旧运行的错误提示也被丢弃。
 
 `P2NativeJson.Invoke` 要求返回长度为正且指针非空，按 UTF-8 读取对象 JSON，并经 `FreeResult` 释放。这只证明拿到了 JSON，仍须读取 `success`、`statusCode`、`message`、`warnings` 及具体点的 `valid`/质量指标；例如无效常量模板可以返回成功分配但 `success=false` 的 JSON。
 
 关闭窗口只设关闭标志、清理当前记录的叠加并拒绝之后的显示，没有给正在运行的 native 调用传取消令牌，也不等待其停止。不要把关窗当作释放全部 native 资源的即时完成信号；输入租约与快照在后台调用退出后才释放。一个窗口禁用自己的运行按钮也不代表其他窗口或同图调用受到统一排他控制。
 
-P2 overlay 通过 `DrawCanvas.AddOverlayVisual` 添加临时 `DrawingVisual`，不提交 source 像素、不自动保存 JSON/图片，也不是 FindLightBeads 的可撤销 `DVCircle` 命令。Ghost/旋转模板窗口勾选“自动清理”时先移除上一次叠加；关闭该选项反复运行时，`_overlay` 字段只保留最新一项，清理/关闭只移除这项，先前叠加可能残留。此为当前实现限制，不承诺关窗会清空全部历史叠加。双目窗口另清理左右点预览和自己记录的画布叠加，不代表清空整个画布。
+P2 overlay 通过 `DrawCanvas.AddOverlayVisual` 添加临时 `DrawingVisual`，不提交 source 像素、不自动保存 JSON/图片，也不是 FindLightBeads 的可撤销 `DVCircle` 命令。Ghost/旋转模板窗口勾选“自动清除上次结果”且绘制新叠加时，先移除上一次叠加；关闭该选项反复运行时，`_overlay` 字段只保留最新一项，清理/关闭只移除这项，先前叠加可能残留。此为当前实现限制，不承诺关窗会清空全部历史叠加。双目窗口另清理左右点预览和自己记录的画布叠加，不代表清空整个画布。
 
 双目点预览还有当前代码限制：`ApplyResult` 为 `LeftPointOverlay` / `RightPointOverlay` 设置结果后，紧接着的 `ClearOverlay()` 又清空二者，随后只重建主画布的左图叠加。因此不能承诺成功计算后窗口内的左右点标记保留可见；JSON、点表与主画布叠加是不同显示路径。
 

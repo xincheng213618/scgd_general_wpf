@@ -748,7 +748,7 @@
       "knowledge_id": "algorithms.local-native-analysis",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "ImageEditor直接native灯珠与P2分析：Ghost/旋转模板/双目标定、缺失计数与完成边界；区别Engine/MQTT模板和统一Runner。",
+      "summary": "ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合的操作、参数与结果；灯珠暗区候选不完整，P2 运行失败后复制结果可能仍取上次 JSON。",
       "aliases": [
         "FindLightBeads",
         "M_FindLightBeads",
@@ -767,7 +767,13 @@
         "P2JsonAnalysisWindow",
         "本地Ghost检测",
         "旋转模板本地匹配",
-        "双目标定融合"
+        "双目标定融合",
+        "Ghost 本地分析",
+        "设为旋转匹配模板",
+        "运行融合",
+        "P2 复制结果",
+        "灯珠数量统计",
+        "缺失数量"
       ],
       "code_paths": [
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/FindLightBeadsCM.cs",
@@ -775,6 +781,7 @@
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/P2",
         "UI/ColorVision.ImageEditor/EditorTools/GraphicEditing/GraphicEditingWindow.xaml.cs",
         "UI/ColorVision.ImageEditor/EditorToolFactory.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmsContextMenu.cs",
         "UI/ColorVision.ImageEditor/ImageView.xaml.cs",
         "UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj",
         "UI/ColorVision.Core/OpenCVMediaHelper.cs",
@@ -804,7 +811,7 @@
         "UI/ColorVision.ImageEditor"
       ],
       "domain": "algorithms",
-      "title": "ImageEditor 直接 native 分析",
+      "title": "本地灯珠与 P2 分析",
       "source": "docs/04-api-reference/algorithms/local-native-analysis.md",
       "url": "/04-api-reference/algorithms/local-native-analysis",
       "searchable": true

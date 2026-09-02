@@ -526,6 +526,10 @@
     {"query":"复制稳定标识","expected_any":["flow.diagnostics"],"include_planned":false},
     {"query":"系统监控","expected_any":["plugins.system-monitor"],"include_planned":false},
     {"query":"缓存大小","expected_any":["plugins.system-monitor"],"include_planned":false},
-    {"query":"清理缓存后仍占空间","expected_any":["plugins.system-monitor"],"include_planned":false}
+    {"query":"清理缓存后仍占空间","expected_any":["plugins.system-monitor"],"include_planned":false},
+    {"query":"设为旋转匹配模板","expected_any":["algorithms.local-native-analysis"],"include_planned":false},
+    {"query":"运行融合","expected_any":["algorithms.local-native-analysis"],"include_planned":false},
+    {"query":"P2 复制结果","expected_any":["algorithms.local-native-analysis"],"include_planned":false},
+    {"query":"灯珠缺失数量","expected_any":["algorithms.local-native-analysis"],"include_planned":false}
   ]
 }
