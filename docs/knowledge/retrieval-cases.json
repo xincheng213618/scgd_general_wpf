@@ -498,6 +498,11 @@
     {"query":"相机结果查询","expected_any":["operations.camera"],"include_planned":false},
     {"query":"AutoRefreshView","expected_any":["operations.camera"],"include_planned":false},
     {"query":"本地相机尚未打开","expected_any":["operations.camera"],"include_planned":false},
-    {"query":"LocalFrameFileService","expected_any":["operations.camera"],"include_planned":false}
+    {"query":"LocalFrameFileService","expected_any":["operations.camera"],"include_planned":false},
+    {"query":"返回原点","expected_any":["operations.motor"],"include_planned":false},
+    {"query":"获取位置","expected_any":["operations.motor"],"include_planned":false},
+    {"query":"DwTimeOut","expected_any":["operations.motor"],"include_planned":false},
+    {"query":"MsgID","expected_any":["engine.mqtt"],"include_planned":false},
+    {"query":"MQTT迟到回包","expected_any":["engine.mqtt"],"include_planned":false}
   ]
 }

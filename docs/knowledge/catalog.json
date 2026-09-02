@@ -4068,17 +4068,27 @@
       "knowledge_id": "engine.mqtt",
       "knowledge_type": "guide",
       "status": "current",
-      "summary": "说明 Engine MQTT 连接、设备请求、MsgID 关联、超时和订阅恢复。",
+      "summary": "Engine MQTT 的连接与订阅、异步发送、请求状态、迟到回包和 MsgID 复用限制；区分 Flow 客户端池与设备命令链。",
       "aliases": [
         "MQTT请求发出为什么没有结果",
         "MQTTControl",
         "MQTTServiceBase",
         "MsgRecord",
-        "MQTTClientPool"
+        "MsgID",
+        "MsgReturnReceived",
+        "MQTTClientPool",
+        "MQTT迟到回包",
+        "MQTT消息超时",
+        "SubscribeCache"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/MQTT/MQTTControl.cs",
         "Engine/ColorVision.Engine/MQTT/MQTTSetting.cs",
+        "Engine/ColorVision.Engine/MQTT/MQTTConfig.cs",
+        "Engine/ColorVision.Engine/MQTT/MqttInitializer.cs",
+        "Engine/ColorVision.Engine/MQTT/MQTTConnect.xaml.cs",
+        "Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs",
+        "Engine/FlowEngineLib/MQTTHelper.cs",
         "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs",
         "Engine/FlowEngineLib/MQTTClientPool.cs"
       ],
@@ -6049,18 +6059,24 @@
       "aliases": [
         "电机不动",
         "回原点",
+        "返回原点",
+        "获取位置",
+        "调整光圈",
         "位置没有刷新",
         "绝对相对移动",
         "DeviceMotor",
         "MQTTMotor",
         "GetPosition",
-        "MoveDiaphragm"
+        "MoveDiaphragm",
+        "DwTimeOut"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Devices/Motor/DeviceMotor.cs",
         "Engine/ColorVision.Engine/Services/Devices/Motor/ConfigMotor.cs",
         "Engine/ColorVision.Engine/Services/Devices/Motor/MQTTMotor.cs",
         "Engine/ColorVision.Engine/Services/Devices/Motor/DisplayMotor.xaml.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Motor/DisplayMotor.xaml",
+        "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Configs/MotorConfig.cs",
         "Engine/FlowEngineLib/MotorNode.cs",
         "Engine/FlowEngineLib/CamMotorNode.cs"
@@ -6069,6 +6085,7 @@
       "related": [
         "engine.devices",
         "operations.device-configuration",
+        "engine.mqtt",
         "flow.session"
       ],
       "code_scopes": [
