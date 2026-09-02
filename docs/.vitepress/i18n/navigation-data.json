@@ -914,6 +914,12 @@
                 "root": "配置向导：步骤、应用与完成边界"
               },
               "link": "/04-api-reference/ui-components/wizards"
+            },
+            {
+              "text": {
+                "root": "系统监控（SystemMonitor）"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/system-monitor"
             }
           ]
         },
@@ -1742,6 +1748,12 @@
                 "root": "主程序启动与最小图像验证"
               },
               "link": "/00-getting-started/first-steps"
+            },
+            {
+              "text": {
+                "root": "系统监控（SystemMonitor）"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/system-monitor"
             },
             {
               "text": {
@@ -2789,7 +2801,7 @@
             },
             {
               "text": {
-                "root": "SystemMonitor 插件"
+                "root": "系统监控（SystemMonitor）"
               },
               "link": "/04-api-reference/plugins/standard-plugins/system-monitor"
             }

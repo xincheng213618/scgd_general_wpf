@@ -523,6 +523,9 @@
     {"query":"流程诊断快照","expected_any":["flow.diagnostics"],"include_planned":false},
     {"query":"流程 Incident 管理","expected_any":["flow.diagnostics"],"include_planned":false},
     {"query":"定位当前画布节点","expected_any":["flow.diagnostics"],"include_planned":false},
-    {"query":"复制稳定标识","expected_any":["flow.diagnostics"],"include_planned":false}
+    {"query":"复制稳定标识","expected_any":["flow.diagnostics"],"include_planned":false},
+    {"query":"系统监控","expected_any":["plugins.system-monitor"],"include_planned":false},
+    {"query":"缓存大小","expected_any":["plugins.system-monitor"],"include_planned":false},
+    {"query":"清理缓存后仍占空间","expected_any":["plugins.system-monitor"],"include_planned":false}
   ]
 }

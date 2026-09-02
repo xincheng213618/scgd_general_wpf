@@ -41,5 +41,5 @@ next: false
 - [插件依赖与接入矩阵](../../04-api-reference/plugins/plugin-capability-matrix.md) — `plugins.capabilities`
   横向定位现存插件的菜单、状态、数据库、设备与管理员权限边界。
 
-- [SystemMonitor 插件](../../04-api-reference/plugins/standard-plugins/system-monitor.md) — `plugins.system-monitor`
-  SystemMonitor 的性能采样、状态栏、窗口生命周期与停止采样边界。
+- [系统监控（SystemMonitor）](../../04-api-reference/plugins/standard-plugins/system-monitor.md) — `plugins.system-monitor`
+  系统监控的 CPU/RAM 采样、手动刷新与状态栏生命周期；缓存大小包含子目录，清理只删顶层文件，逐文件失败不会单独提示。

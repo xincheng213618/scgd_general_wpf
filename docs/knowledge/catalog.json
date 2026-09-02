@@ -7336,8 +7336,15 @@
       "knowledge_id": "plugins.system-monitor",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "SystemMonitor 的性能采样、状态栏、窗口生命周期与停止采样边界。",
+      "summary": "系统监控的 CPU/RAM 采样、手动刷新与状态栏生命周期；缓存大小包含子目录，清理只删顶层文件，逐文件失败不会单独提示。",
       "aliases": [
+        "系统监控",
+        "SystemMonitor",
+        "SystemMonitors",
+        "SystemMonitorSetting",
+        "清理缓存",
+        "缓存大小",
+        "更新速度",
         "状态栏性能监控在哪里",
         "关闭监控窗口后还采样吗",
         "SystemMonitorIStatusBarProvider",
@@ -7346,7 +7353,11 @@
       "code_paths": [
         "Plugins/SystemMonitor/SystemMonitorControl.xaml.cs",
         "Plugins/SystemMonitor/SystemMonitors.cs",
-        "Plugins/SystemMonitor/SystemMonitorIStatusBarProvider.cs"
+        "Plugins/SystemMonitor/SystemMonitorIStatusBarProvider.cs",
+        "Plugins/SystemMonitor/SystemMonitorControl.xaml",
+        "Plugins/SystemMonitor/manifest.json",
+        "UI/ColorVision.UI/Environments.cs",
+        "UI/ColorVision.Common/Utilities/MemorySize.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/SystemMonitorLifecycleTests.cs"
@@ -7357,10 +7368,12 @@
         "ui.status-bar"
       ],
       "code_scopes": [
-        "Plugins/SystemMonitor"
+        "Plugins/SystemMonitor",
+        "UI/ColorVision.Common",
+        "UI/ColorVision.UI"
       ],
       "domain": "plugins",
-      "title": "SystemMonitor 插件",
+      "title": "系统监控（SystemMonitor）",
       "source": "docs/04-api-reference/plugins/standard-plugins/system-monitor.md",
       "url": "/04-api-reference/plugins/standard-plugins/system-monitor",
       "searchable": true

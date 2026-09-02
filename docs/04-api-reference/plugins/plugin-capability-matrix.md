@@ -49,7 +49,7 @@ related: ["plugins.index","plugins.model","plugins.getting-started","plugins.con
 | --- | --- | --- | --- | --- |
 | Conoscope | MVS 观察相机、`MvCameraControl.dll` | 关注点/参考轴/预处理配置，CSV 导出 | 普通图像分析通常不需要管理员；相机驱动由系统环境决定 | MVS SDK 是否安装、图像是否可打开、关注点是否记录、导出文件是否生成 |
 | Spectrum | SP100/SP10/高利通光谱仪、Shutter、CFW、SMU、串口、native 光谱仪 DLL | `%APPDATA%\Spectromer\Config\Spectrum.db`、标定分组、许可证目录；CIE 图片来自宿主共享 ImageEditor 资源 | 通常不需要管理员；设备驱动和许可证要就绪 | 设备连接、标定 readiness、共享 native 会话、Socket 服务、SQLite 结果库 |
-| SystemMonitor | Windows 性能计数器、CUDA 信息、网络接口 | 应用缓存和日志目录统计 | 清理缓存取决于目标目录权限 | 性能计数器初始化、配置开关、状态栏 provider 是否刷新 |
+| SystemMonitor | Windows 性能计数器、CUDA 信息、网络接口 | 应用数据/日志的递归统计与顶层文件清理，详见[统计和清理范围](./standard-plugins/system-monitor.md#缓存大小与清理范围) | 删除取决于目标目录权限，逐文件失败会被忽略 | 性能计数器整组初始化、配置开关、状态栏 provider 是否刷新 |
 | WindowsServicePlugin | Windows 服务、MySQL、MQTT、服务包 ZIP | `BaseLocation`、`cfg/*.config`、MySQL ZIP、MQTT installer、服务数据库 SQL、备份目录 | 大部分操作需要管理员模式 | 服务状态、BaseLocation、安装包结构、MySQL/MQTT 状态、CFG 同步日志 |
 
 ## 本地构建与授权发布矩阵
@@ -71,7 +71,7 @@ related: ["plugins.index","plugins.model","plugins.getting-started","plugins.con
 | --- | --- | --- |
 | Conoscope | 打开 Tool -> VAM；导入大 CVCIE；观察 Y 首屏与 XYZ 后台就绪；切通道；新增/移动关注点；执行色域或对比度分析；导出 CSV | readiness 与分阶段加载一致；新文档清关注点、同文档换通道保留关注点；结果窗口和 CSV 正常 |
 | Spectrum | 打开 Spectrum；检查状态栏；执行无设备状态查询；有设备时连接、确认标定就绪、校零、测量、导出；启用 Socket 后发送 `SpectrumStatus`/`SpectrumConnect` | 状态栏区分连接和标定 readiness；测量结果与画像同事务落库；Socket 返回正确 Code/Msg 和连接标定状态 |
-| SystemMonitor | 打开性能监控窗口；切换状态栏开关；刷新磁盘/网络/进程；执行清理缓存前确认目录 | 监控数据刷新，状态栏能动态增删，失败项不会拖垮整个插件 |
+| SystemMonitor | 打开“系统监控”；切换状态栏开关；刷新磁盘/网络/进程；清理另按授权范围验证 | 核对采样来源、状态栏增删和停止条件；各数据源的失败边界见[监控排障](./standard-plugins/system-monitor.md#异常与排查) |
 | WindowsServicePlugin | 以管理员模式打开服务管理器；刷新服务状态；选择测试服务根目录；验证配置文件打开；在测试环境执行安装流程 | 服务状态可读，配置同步日志明确，失败时不会带旧配置继续启动 |
 
 ## 维护风险清单
