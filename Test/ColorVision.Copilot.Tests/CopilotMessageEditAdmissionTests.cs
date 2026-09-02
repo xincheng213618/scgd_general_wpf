@@ -5,7 +5,6 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -28,7 +27,7 @@ public sealed class CopilotMessageEditAdmissionTests
     [InlineData("newer-draft")]
     public void EditedSendRevalidatesItsEditSessionAfterImageAdmission(string transition)
     {
-        RunOnSta(() =>
+        StaTest.Run(() =>
         {
             using var fixture = new Fixture();
             using var context = new PausedAdmissionContext();
@@ -142,7 +141,7 @@ public sealed class CopilotMessageEditAdmissionTests
                     context.Complete(send);
                 SynchronizationContext.SetSynchronizationContext(previousContext);
             }
-        });
+        }, TimeSpan.FromSeconds(40), "The edit admission test did not finish.");
     }
 
     private sealed class Fixture : IDisposable
@@ -321,20 +320,5 @@ public sealed class CopilotMessageEditAdmissionTests
             }
         }
         public void Dispose() => _posted.Dispose();
-    }
-
-    private static void RunOnSta(Action action)
-    {
-        Exception? failure = null;
-        var thread = new Thread(() =>
-        {
-            try { action(); }
-            catch (Exception exception) { failure = exception; }
-        }) { IsBackground = true };
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        Assert.True(thread.Join(TimeSpan.FromSeconds(40)), "The edit admission test did not finish.");
-        if (failure != null)
-            ExceptionDispatchInfo.Capture(failure).Throw();
     }
 }

@@ -4,7 +4,6 @@ using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -26,7 +25,7 @@ public sealed class CopilotRequestAdmissionLifetimeTests
     [InlineData("unchanged")]
     public void RefreshingContextDuringImageAdmissionPreservesTheNewDraftAttachment(string update)
     {
-        RunOnSta(() =>
+        StaTest.Run(() =>
         {
             var root = Directory.CreateTempSubdirectory("CopilotAdmissionLifetime-").FullName;
             var sourcePath = Path.Combine(root, "source.png");
@@ -119,7 +118,7 @@ public sealed class CopilotRequestAdmissionLifetimeTests
                     && Path.GetFileName(fullRoot).StartsWith("CopilotAdmissionLifetime-", StringComparison.Ordinal));
                 Directory.Delete(fullRoot, recursive: true);
             }
-        });
+        }, TimeSpan.FromSeconds(30), "The admission-lifetime STA test did not finish.");
     }
 
     [Theory]
@@ -130,7 +129,7 @@ public sealed class CopilotRequestAdmissionLifetimeTests
     [InlineData("clear-key")]
     public void AutomaticCompactionUsesTheAdmittedConversationAndProfile(string transition)
     {
-        RunOnSta(() =>
+        StaTest.Run(() =>
         {
             var root = Directory.CreateTempSubdirectory("CopilotAdmissionLifetime-").FullName;
             var sourcePath = Path.Combine(root, "source.png");
@@ -248,7 +247,7 @@ public sealed class CopilotRequestAdmissionLifetimeTests
                     && Path.GetFileName(fullRoot).StartsWith("CopilotAdmissionLifetime-", StringComparison.Ordinal));
                 Directory.Delete(fullRoot, recursive: true);
             }
-        });
+        }, TimeSpan.FromSeconds(30), "The admission-lifetime STA test did not finish.");
     }
 
     private sealed class CompactionHandler : HttpMessageHandler
@@ -280,7 +279,7 @@ public sealed class CopilotRequestAdmissionLifetimeTests
     [InlineData(true, "switch")]
     public void CompletedImageAdmissionHonorsCapturedConversationLifetime(bool retry, string transition)
     {
-        RunOnSta(() =>
+        StaTest.Run(() =>
         {
             var root = Directory.CreateTempSubdirectory("CopilotAdmissionLifetime-").FullName;
             var sourcePath = Path.Combine(root, "source.png");
@@ -414,7 +413,7 @@ public sealed class CopilotRequestAdmissionLifetimeTests
                     "Refusing to delete a directory outside this test's temporary root.");
                 Directory.Delete(fullRoot, recursive: true);
             }
-        });
+        }, TimeSpan.FromSeconds(30), "The admission-lifetime STA test did not finish.");
     }
 
     private static Task InvokeTask(
@@ -548,20 +547,5 @@ public sealed class CopilotRequestAdmissionLifetimeTests
         }
 
         public void Dispose() => _callbackPosted.Dispose();
-    }
-
-    private static void RunOnSta(Action action)
-    {
-        Exception? failure = null;
-        var thread = new Thread(() =>
-        {
-            try { action(); }
-            catch (Exception exception) { failure = exception; }
-        }) { IsBackground = true };
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        Assert.True(thread.Join(TimeSpan.FromSeconds(30)), "The admission-lifetime STA test did not finish.");
-        if (failure != null)
-            ExceptionDispatchInfo.Capture(failure).Throw();
     }
 }

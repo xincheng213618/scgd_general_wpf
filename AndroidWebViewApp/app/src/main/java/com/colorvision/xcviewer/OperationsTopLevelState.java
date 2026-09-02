@@ -52,12 +52,6 @@ final class OperationsTopLevelState {
                 || OperationsDestinationState.TOOLS.equals(value);
     }
 
-    static boolean isTopLevel(String destination) {
-        return isDashboardTopLevel(destination)
-                || OperationsDestinationState.SETTINGS.equals(
-                        value(destination));
-    }
-
     private static String value(String destination) {
         return destination == null ? "" : destination.trim();
     }

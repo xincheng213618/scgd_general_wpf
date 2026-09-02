@@ -1,8 +1,5 @@
 package com.colorvision.xcviewer;
 
-import java.util.Arrays;
-import java.util.List;
-
 final class SettingsInformationArchitecture {
     static final String CONNECTION_SECTION = "连接";
     static final String BACKGROUND_SECTION = "后台运行";
@@ -17,32 +14,6 @@ final class SettingsInformationArchitecture {
     static final String APP_UPDATE = "应用更新";
 
     private SettingsInformationArchitecture() {
-    }
-
-    static List<String> sectionHeadings() {
-        return Arrays.asList(
-                CONNECTION_SECTION,
-                BACKGROUND_SECTION,
-                APPLICATION_SECTION);
-    }
-
-    static List<String> visibleRows(boolean paired) {
-        if (paired) {
-            return Arrays.asList(
-                    COMPUTER_CONNECTIONS,
-                    ADD_COMPUTER,
-                    OPERATIONS_WATCH,
-                    OPERATIONS_WATCH_STATUS,
-                    NOTIFICATION_PERMISSION,
-                    THEME_MODE,
-                    APP_UPDATE);
-        }
-        return Arrays.asList(
-                CONNECT_COMPUTER,
-                OPERATIONS_WATCH,
-                NOTIFICATION_PERMISSION,
-                THEME_MODE,
-                APP_UPDATE);
     }
 
     static String connectionSupportingText(boolean paired, String computerSummary) {

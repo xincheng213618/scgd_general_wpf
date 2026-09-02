@@ -28,14 +28,16 @@ public class OperationsRemoteToolboxPresentationTest {
                 model.toolbox.sections.get(2).shortcutAccessibilityLabel());
         assertEquals(11, model.toolbox.actionCount());
         assertEquals(10, model.toolbox.enabledActionCount());
-        assertEquals(3, model.toolbox.quickActionCount());
+        assertEquals(3, model.toolbox.quickActions.size());
         assertEquals(OperationsToolboxPresentation.ACTION_FAILURES,
                 model.toolbox.quickActions.get(0).actionId);
         assertEquals(OperationsRemoteToolboxPresentation.ACTION_RECENT_REMOTE_TASK,
                 model.toolbox.quickActions.get(1).actionId);
         assertEquals(OperationsToolboxPresentation.ACTION_TIMELINE,
                 model.toolbox.quickActions.get(2).actionId);
-        assertTrue(model.toolbox.hasUniqueActionIds());
+        assertEquals(model.toolbox.actionCount(), model.toolbox.sections.stream()
+                .flatMap(section -> section.actions.stream())
+                .map(action -> action.actionId).distinct().count());
         assertFalse(find(model, OperationsToolboxPresentation.ACTION_CANCEL_FLOW).enabled);
         assertTrue(find(model, OperationsToolboxPresentation.ACTION_RESTART_MQTT).enabled);
         assertTrue(find(model, OperationsToolboxPresentation.ACTION_RESTART_APPLICATION).enabled);
@@ -99,7 +101,7 @@ public class OperationsRemoteToolboxPresentationTest {
 
         assertFalse(model.hostFresh);
         assertEquals(1, model.toolbox.enabledActionCount());
-        assertEquals(1, model.toolbox.quickActionCount());
+        assertEquals(1, model.toolbox.quickActions.size());
         assertEquals(OperationsToolboxPresentation.ACTION_TIMELINE,
                 model.toolbox.quickActions.get(0).actionId);
         assertEquals("1 / 11 项可用 · 仅显示安全可用项", model.compactStateLabel);

@@ -1,18 +1,9 @@
 package com.colorvision.xcviewer;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 final class OperationsDashboardStatusOrder {
     private OperationsDashboardStatusOrder() {
-    }
-
-    static List<OperationsDashboardStatusFormatter.Item> prioritized(
-            List<OperationsDashboardStatusFormatter.Item> items) {
-        List<OperationsDashboardStatusFormatter.Item> ordered = new ArrayList<>(items);
-        Collections.sort(ordered, OperationsDashboardStatusOrder::compare);
-        return Collections.unmodifiableList(ordered);
     }
 
     static int compare(

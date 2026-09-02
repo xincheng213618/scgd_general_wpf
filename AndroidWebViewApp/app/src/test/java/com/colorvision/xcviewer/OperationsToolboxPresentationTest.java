@@ -34,7 +34,7 @@ public class OperationsToolboxPresentationTest {
         }
         assertEquals(20, model.actionCount());
         assertEquals(20, model.enabledActionCount());
-        assertEquals(4, model.quickActionCount());
+        assertEquals(4, model.quickActions.size());
         assertEquals(OperationsToolboxPresentation.ACTION_CONNECTION_CHECK,
                 model.quickActions.get(0).actionId);
         assertEquals(OperationsToolboxPresentation.ACTION_LIVE_MONITOR,
@@ -43,7 +43,9 @@ public class OperationsToolboxPresentationTest {
                 model.quickActions.get(2).actionId);
         assertEquals(OperationsToolboxPresentation.ACTION_RECENT_EVENTS,
                 model.quickActions.get(3).actionId);
-        assertTrue(model.hasUniqueActionIds());
+        assertEquals(model.actionCount(), model.sections.stream()
+                .flatMap(section -> section.actions.stream())
+                .map(action -> action.actionId).distinct().count());
     }
 
     @Test
@@ -78,7 +80,7 @@ public class OperationsToolboxPresentationTest {
                                 OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT,
                                 OperationsToolboxPresentation.ACTION_RECOVER_MESSAGE));
 
-        assertEquals(4, model.quickActionCount());
+        assertEquals(4, model.quickActions.size());
         assertEquals(OperationsToolboxPresentation.ACTION_CONNECTION_CHECK,
                 model.quickActions.get(0).actionId);
         assertEquals(OperationsToolboxPresentation.ACTION_LIVE_MONITOR,
@@ -100,7 +102,7 @@ public class OperationsToolboxPresentationTest {
                                 OperationsToolboxPresentation.ACTION_SUPPORT,
                                 OperationsToolboxPresentation.ACTION_AUDIT));
 
-        assertEquals(4, model.quickActionCount());
+        assertEquals(4, model.quickActions.size());
         assertEquals(20, model.actionCount());
         assertEquals(OperationsToolboxPresentation.ACTION_AUDIT,
                 model.quickActions.get(0).actionId);
@@ -112,7 +114,9 @@ public class OperationsToolboxPresentationTest {
                 OperationsToolboxPresentation.ACTION_LIVE_MONITOR).title);
         assertEquals("设备状态", find(model,
                 OperationsToolboxPresentation.ACTION_DEVICE_HEALTH).title);
-        assertTrue(model.hasUniqueActionIds());
+        assertEquals(model.actionCount(), model.sections.stream()
+                .flatMap(section -> section.actions.stream())
+                .map(action -> action.actionId).distinct().count());
     }
 
     @Test
@@ -132,7 +136,7 @@ public class OperationsToolboxPresentationTest {
                                 OperationsToolboxPresentation.ACTION_SUPPORT,
                                 OperationsToolboxPresentation.ACTION_DEPLOYMENT));
 
-        assertEquals(4, model.quickActionCount());
+        assertEquals(4, model.quickActions.size());
         assertEquals(OperationsToolboxPresentation.ACTION_CONNECTION_CHECK,
                 model.quickActions.get(0).actionId);
         assertEquals(OperationsToolboxPresentation.ACTION_RECENT_EVENTS,
@@ -156,7 +160,7 @@ public class OperationsToolboxPresentationTest {
                         Arrays.asList(null, "toolbox.unknown", "toolbox.disabled",
                                 "toolbox.enabled", "toolbox.enabled"));
 
-        assertEquals(1, model.quickActionCount());
+        assertEquals(1, model.quickActions.size());
         assertEquals("toolbox.enabled", model.quickActions.get(0).actionId);
     }
 

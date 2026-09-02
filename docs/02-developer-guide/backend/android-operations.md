@@ -11,7 +11,7 @@ related: ["delivery.backend"]
 
 # Android 运维伴侣
 
-`AndroidWebViewApp/` 是当前原生 Android 现场运维客户端，不是通用 WebView 容器。目录名保留历史命名；当前不提供下载站页面、任意网址输入或通用远程命令入口。本主题负责当前入口、通道与能力边界；`AndroidWebViewApp/README.md` 保留独立构建说明、安全细节及历次版本演进，旧版本描述不能当作当前能力叠加使用。
+`AndroidWebViewApp/` 是当前原生 Android 现场运维客户端，不是通用 WebView 容器。目录名保留历史命名；当前不提供下载站页面、任意网址输入或通用远程命令入口。本主题负责当前入口、通道与能力边界；`AndroidWebViewApp/README.md` 保留独立构建说明和安全细节；历次版本变化从 Git 历史查询，不能当作当前能力叠加使用。
 
 ## 启动与源码入口
 

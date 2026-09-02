@@ -4693,10 +4693,6 @@ public class OperationsActivity extends AppCompatActivity {
                         && !dashboardFlowActive);
     }
 
-    private Button capabilityButton(String label, String path) {
-        return dashboardButton(label, v -> loadCapability(path));
-    }
-
     private void scrollDashboardToTop() {
         if (dashboardScroll != null) {
             dashboardScroll.post(() -> scrollWithoutRemembering(dashboardScroll, 0));
@@ -7669,13 +7665,6 @@ public class OperationsActivity extends AppCompatActivity {
         if (detailsCard != null) {
             detailsCard.setVisibility(View.VISIBLE);
         }
-    }
-
-    private void addAction(String label, String path) {
-        Button button = new MaterialButton(this);
-        button.setText(label);
-        button.setOnClickListener(v -> loadCapability(path));
-        actions.addView(button, actionParams());
     }
 
     private void loadDashboardSnapshot() {

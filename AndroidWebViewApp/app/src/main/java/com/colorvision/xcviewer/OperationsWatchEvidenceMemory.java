@@ -46,14 +46,6 @@ final class OperationsWatchEvidenceMemory {
         return serialize(entries);
     }
 
-    static String removeHost(String serialized, String hostId) {
-        return update(
-                serialized,
-                hostId,
-                "",
-                OperationsMonitorEvidenceRevision.Evidence.EMPTY);
-    }
-
     private static List<Entry> parse(String serialized) {
         List<Entry> entries = new ArrayList<>();
         if (serialized == null || serialized.isEmpty()

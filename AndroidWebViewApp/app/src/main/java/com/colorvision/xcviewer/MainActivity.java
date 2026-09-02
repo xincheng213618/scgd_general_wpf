@@ -165,10 +165,6 @@ public class MainActivity extends AppCompatActivity {
         return themeManager.pageBackgroundColor();
     }
 
-    private int settingsBackgroundColor() {
-        return themeManager.settingsBackgroundColor();
-    }
-
     private int cardBackgroundColor() {
         return themeManager.cardBackgroundColor();
     }
@@ -183,18 +179,6 @@ public class MainActivity extends AppCompatActivity {
 
     private int secondaryTextColor() {
         return themeManager.secondaryTextColor();
-    }
-
-    private int mutedTextColor() {
-        return themeManager.mutedTextColor();
-    }
-
-    private int inactiveTabColor() {
-        return themeManager.inactiveTabColor();
-    }
-
-    private int dividerColor() {
-        return themeManager.dividerColor();
     }
 
     private LinearLayout createAppShell() {

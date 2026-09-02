@@ -1289,6 +1289,8 @@
         "config.toml不生效"
       ],
       "code_paths": [
+        "ColorVision/Copilot/Agent/CopilotProjectInstructionDiscoveryConfig.cs",
+        "ColorVision/Copilot/Agent/CopilotCodexExecPolicy.cs",
         "ColorVision/Copilot/Config",
         "ColorVision/Copilot/CopilotSettingsWindow.xaml",
         "ColorVision/Copilot/CopilotSettingsWindow.xaml.cs",

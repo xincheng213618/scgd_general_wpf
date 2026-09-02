@@ -39,7 +39,6 @@ namespace ColorVision.Copilot.Tests
             yield return [typeof(ICopilotShellProcessRunner)];
             yield return [typeof(CopilotShellProcessRunner)];
             yield return [typeof(CopilotCodexShellEnvironmentPolicy)];
-            yield return [typeof(CopilotCodexShellEnvironmentPolicyLayer)];
             yield return [typeof(CopilotTemporaryRedactedOutputArchive)];
             yield return [typeof(CopilotShellCommandOutputCapture)];
             yield return [typeof(CopilotShellCommandOutputArchiveRegistry)];

@@ -5,7 +5,6 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -108,7 +107,7 @@ public sealed class CopilotPendingRecoveryConversationTests
     [Fact]
     public void RecoveryAlreadyInImageAdmissionKeepsItsCapturedConversationAfterSelectionChanges()
     {
-        RunOnSta(() =>
+        StaTest.Run(() =>
         {
             var fixture = new RecoveryFixture();
             using var context = new PausedSynchronizationContext();
@@ -168,7 +167,7 @@ public sealed class CopilotPendingRecoveryConversationTests
                     fixture.DisposeAsync().AsTask().GetAwaiter().GetResult();
                 }
             }
-        });
+        }, TimeSpan.FromSeconds(30), "The STA recovery admission test did not finish.");
     }
 
     private sealed class RecoveryFixture : IAsyncDisposable
@@ -328,20 +327,5 @@ public sealed class CopilotPendingRecoveryConversationTests
                 callback.Callback(callback.State);
         }
         public void Dispose() => CallbackPosted.Dispose();
-    }
-
-    private static void RunOnSta(Action action)
-    {
-        Exception? failure = null;
-        var thread = new Thread(() =>
-        {
-            try { action(); }
-            catch (Exception exception) { failure = exception; }
-        }) { IsBackground = true };
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        Assert.True(thread.Join(TimeSpan.FromSeconds(30)), "The STA recovery admission test did not finish.");
-        if (failure != null)
-            ExceptionDispatchInfo.Capture(failure).Throw();
     }
 }

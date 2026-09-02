@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using System.Collections.Concurrent;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -26,7 +25,7 @@ public sealed class CopilotChatViewModelProfileIsolationTests
     [Fact]
     public void ClipboardImageCanCreateMultipleMissingStorageDirectories()
     {
-        RunAttachmentTestOnSta(() =>
+        StaTest.Run(() =>
         {
             var root = Directory.CreateTempSubdirectory("CopilotClipboardStorage-").FullName;
             var storePath = Path.Combine(root, "new-parent", "nested", "attachments");
@@ -56,7 +55,7 @@ public sealed class CopilotChatViewModelProfileIsolationTests
                 viewModel.Dispose();
                 Directory.Delete(root, recursive: true);
             }
-        });
+        }, TimeSpan.FromSeconds(20), "The STA clipboard lifecycle test did not finish.");
     }
 
     [Theory]
@@ -64,7 +63,7 @@ public sealed class CopilotChatViewModelProfileIsolationTests
     [InlineData(true)]
     public void ClipboardImageCannotBeStoredThroughLinkedDirectory(bool linkedAncestor)
     {
-        RunAttachmentTestOnSta(() =>
+        StaTest.Run(() =>
         {
             var root = Directory.CreateTempSubdirectory("CopilotClipboardStorage-").FullName;
             var outside = Directory.CreateDirectory(Path.Combine(root, "outside")).FullName;
@@ -97,7 +96,7 @@ public sealed class CopilotChatViewModelProfileIsolationTests
                 Directory.Delete(linkedPath, recursive: false);
                 Directory.Delete(root, recursive: true);
             }
-        });
+        }, TimeSpan.FromSeconds(20), "The STA clipboard lifecycle test did not finish.");
     }
 
     [Theory]
@@ -106,7 +105,7 @@ public sealed class CopilotChatViewModelProfileIsolationTests
     [InlineData("complete")]
     public void ClipboardImageCompletedBeforeUiContinuationIsKeptOnlyWhenAttached(string transition)
     {
-        RunAttachmentTestOnSta(() =>
+        StaTest.Run(() =>
         {
             var root = Path.Combine(Path.GetTempPath(), "CopilotClipboardLifecycle-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(root);
@@ -164,7 +163,7 @@ public sealed class CopilotChatViewModelProfileIsolationTests
                 viewModel.Dispose();
                 Directory.Delete(root, recursive: true);
             }
-        });
+        }, TimeSpan.FromSeconds(20), "The STA clipboard lifecycle test did not finish.");
     }
 
     [Fact]
@@ -2497,20 +2496,5 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         }
 
         public void Dispose() => CallbackPosted.Dispose();
-    }
-
-    private static void RunAttachmentTestOnSta(Action action)
-    {
-        Exception? failure = null;
-        var thread = new Thread(() =>
-        {
-            try { action(); }
-            catch (Exception exception) { failure = exception; }
-        }) { IsBackground = true };
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        Assert.True(thread.Join(TimeSpan.FromSeconds(20)), "The STA clipboard lifecycle test did not finish.");
-        if (failure != null)
-            ExceptionDispatchInfo.Capture(failure).Throw();
     }
 }

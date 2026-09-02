@@ -1407,11 +1407,6 @@ public sealed class DrawTextRegressionTests
         dispatcher.Invoke(() => { }, DispatcherPriority.Input);
     }
 
-    private static Color GetColor(Brush brush)
-    {
-        return Assert.IsType<SolidColorBrush>(brush).Color;
-    }
-
     private static Color GetEffectiveColor(Brush brush)
     {
         SolidColorBrush solidColorBrush = Assert.IsType<SolidColorBrush>(brush);

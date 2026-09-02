@@ -53,14 +53,9 @@ public class OperationsTopLevelStateTest {
         state.rememberScroll(OperationsDestinationState.SETTINGS, -20);
 
         assertEquals(0, state.scrollY(OperationsDestinationState.SETTINGS));
-        assertTrue(OperationsTopLevelState.isTopLevel(OperationsDestinationState.SETTINGS));
         assertTrue(OperationsTopLevelState.isDashboardTopLevel(
                 OperationsDestinationState.TRIAGE));
         assertFalse(OperationsTopLevelState.isDashboardTopLevel(
                 OperationsDestinationState.SETTINGS));
-        assertFalse(OperationsTopLevelState.isTopLevel(
-                OperationsDestinationState.CONNECTIONS));
-        assertFalse(OperationsTopLevelState.isTopLevel(null));
-        assertFalse(OperationsTopLevelState.isTopLevel("unknown"));
     }
 }

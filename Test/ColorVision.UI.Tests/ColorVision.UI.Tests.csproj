@@ -25,6 +25,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Shared\StaTest.cs" Link="StaTest.cs" />
+    <Using Include="ColorVision.Testing" />
     <Using Include="Xunit" />
   </ItemGroup>
 

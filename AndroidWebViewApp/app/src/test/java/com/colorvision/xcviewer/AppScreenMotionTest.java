@@ -101,7 +101,7 @@ public class AppScreenMotionTest {
     }
 
     @Test
-    public void topLevelMovesUseFadeThroughAndHierarchyUsesSharedAxis() {
+    public void topLevelDirectionalMovesUseFadeThrough() {
         assertTrue(AppScreenMotion.usesFadeThrough(
                 AppScreenMotion.DIRECTION_FORWARD, true));
         assertTrue(AppScreenMotion.usesFadeThrough(
@@ -110,15 +110,6 @@ public class AppScreenMotionTest {
                 AppScreenMotion.DIRECTION_NONE, true));
         assertFalse(AppScreenMotion.usesFadeThrough(
                 AppScreenMotion.DIRECTION_FORWARD, false));
-
-        assertTrue(AppScreenMotion.usesSharedAxis(
-                AppScreenMotion.DIRECTION_FORWARD, false));
-        assertTrue(AppScreenMotion.usesSharedAxis(
-                AppScreenMotion.DIRECTION_BACKWARD, false));
-        assertFalse(AppScreenMotion.usesSharedAxis(
-                AppScreenMotion.DIRECTION_NONE, false));
-        assertFalse(AppScreenMotion.usesSharedAxis(
-                AppScreenMotion.DIRECTION_FORWARD, true));
     }
 
     @Test

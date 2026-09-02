@@ -58,10 +58,6 @@ final class AppScreenMotion {
         return topLevelTransition && isDirectional(direction);
     }
 
-    static boolean usesSharedAxis(int direction, boolean topLevelTransition) {
-        return !topLevelTransition && isDirectional(direction);
-    }
-
     private static boolean isDirectional(int direction) {
         return direction == DIRECTION_FORWARD || direction == DIRECTION_BACKWARD;
     }
@@ -78,14 +74,6 @@ final class AppScreenMotion {
 
     static void startForward(Activity activity, Intent intent) {
         int[] animations = activityAnimations(activity, true);
-        activity.startActivity(intent, ActivityOptions.makeCustomAnimation(
-                activity,
-                animations[0],
-                animations[1]).toBundle());
-    }
-
-    static void startBackward(Activity activity, Intent intent) {
-        int[] animations = activityAnimations(activity, false);
         activity.startActivity(intent, ActivityOptions.makeCustomAnimation(
                 activity,
                 animations[0],

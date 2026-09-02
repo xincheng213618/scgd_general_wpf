@@ -282,10 +282,6 @@ final class OperationsToolboxPresentation {
             this.quickActions = quickActions;
         }
 
-        int quickActionCount() {
-            return quickActions.size();
-        }
-
         int actionCount() {
             int count = 0;
             for (Section section : sections) {
@@ -306,17 +302,6 @@ final class OperationsToolboxPresentation {
             return count;
         }
 
-        boolean hasUniqueActionIds() {
-            Set<String> actionIds = new HashSet<>();
-            for (Section section : sections) {
-                for (Action action : section.actions) {
-                    if (!actionIds.add(action.actionId)) {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
     }
 
     static final class Section {

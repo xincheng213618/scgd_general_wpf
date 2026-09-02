@@ -83,10 +83,6 @@ final class ThemeManager {
         return color(R.attr.colorPrimary, Color.BLACK);
     }
 
-    int onPrimaryColor() {
-        return color(com.google.android.material.R.attr.colorOnPrimary, Color.WHITE);
-    }
-
     int primaryContainerColor() {
         return color(com.google.android.material.R.attr.colorPrimaryContainer, cardBackgroundColor());
     }
@@ -101,14 +97,6 @@ final class ThemeManager {
 
     int onSecondaryContainerColor() {
         return color(com.google.android.material.R.attr.colorOnSecondaryContainer, primaryTextColor());
-    }
-
-    int tertiaryContainerColor() {
-        return color(com.google.android.material.R.attr.colorTertiaryContainer, cardBackgroundColor());
-    }
-
-    int onTertiaryContainerColor() {
-        return color(com.google.android.material.R.attr.colorOnTertiaryContainer, primaryTextColor());
     }
 
     int shellBackgroundColor() {
