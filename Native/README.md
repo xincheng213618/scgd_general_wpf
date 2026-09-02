@@ -4,9 +4,10 @@ This directory contains the repository's native C++ and CUDA source tree.
 
 Current ABI, ownership, return-value and lifecycle guidance is in the
 [native integration contract](../docs/02-developer-guide/engine-development/opencv-integration.md).
-The English [helper API reference](./opencv_helper/API_Documentation.md) retains
+The English [helper API reference](../docs/04-api-reference/engine-components/opencv-helper-api.md) retains
 per-function, calibration context, POI and focus details; it is not a generated
-list of every export.
+list of every export. The source-adjacent API entry keeps standalone ABI and
+resource prerequisites when this directory is delivered without the docs tree.
 
 ## Current layout
 
@@ -46,7 +47,7 @@ native integration contract linked above.
 
 Changes to `include/cuda_export.h`, `include/custom_structs.h` or managed interop
 must be reviewed against the repository-root tracked DLL. The detailed checker
-contract now lives in the native integration topic linked above, including
+contract is maintained in the native integration topic linked above, including
 Pack8/one-byte-bool layout, calling conventions, export macros and package-byte
 propagation. Do not weaken those checks to make a build pass.
 

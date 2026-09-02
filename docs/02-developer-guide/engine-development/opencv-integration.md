@@ -6,14 +6,14 @@ summary: "native ABI与HImage所有权、函数族返回值、视频异步/关�
 aliases: ["新克隆构建为什么需要C++","OpenCVMediaHelper","opencv_helper.dll","opencv_cuda.dll","HImage","isDispose","HImage.Dispose","M_FindLuminousAreaV2","M_CalArtculation","M_CalibrationExecuteToV1","M_CalibrationGetLastError","M_CalibrationCacheReleaseV1","M_CalculatePoiBatchV2","M_VideoSeek","M_VideoPlay","M_VideoClose","opencv_helper API"]
 code_paths: ["Native/README.md","Native/opencv_helper/API_Documentation.md","UI/ColorVision.Core/ColorVision.Core.csproj","UI/ColorVision.Core/OpenCVMediaHelper.cs","UI/ColorVision.Core/OpenCVCuda.cs","UI/ColorVision.Core/HImage.cs","Native/opencv_helper/opencv_helper.vcxproj","Native/include/opencv_media_export.h","Native/include/custom_structs.h","Native/include/video_export.h","Native/include/cuda_export.h","Native/opencv_helper/opencv_media_export.cpp","Native/opencv_helper/video_export.cpp","Native/opencv_helper/exports/calibration_export.cpp","Native/opencv_helper/exports/poi_export.cpp","Native/opencv_helper/exports/sfr_export.cpp","Native/opencv_cuda/opencv_cuda.vcxproj","Scripts/verify_native_contracts.py","Engine/ColorVision.Engine/Media/CVRawOpen.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs","Scripts/tests/test_algorithm_package_contract.py","Scripts/tests/test_verify_native_contracts.py","Test/opencv_helper_test"]
-related: ["engine.index","ui.core","ui.image-frames","engine.native-bindings","engine.file-io","algorithms.local-native-analysis"]
+related: ["engine.index","ui.core","ui.image-frames","engine.native-bindings","engine.file-io","algorithms.local-native-analysis","engine.opencv-helper-api"]
 ---
 
 # OpenCV 和 native 集成开发指南
 
 本页说明当前仓库里 OpenCV/native 能力的真实边界。Engine 侧有 `cvColorVision` 这种设备 SDK / 算法 DLL 绑定层，UI/Core 侧有 `opencv_helper.dll` / `opencv_cuda.dll` 的 P/Invoke 包装，文件打开链路还包含 `.cvraw` / `.cvcie` 解析和缩略图。
 
-`Native/README.md` 是可独立阅读的英文目录/构建风险入口；`Native/opencv_helper/API_Documentation.md` 保留英文函数参考，以及校准 Context/共享缓存、POI V2、原始焦点评分等独有细节，不是自动生成的完整导出清单。签名以对应头文件、实现和托管声明三者核对为准。ImageEditor 的 P2/FindLightBeads 调用与显示生命周期见[直接 native 分析](../../04-api-reference/algorithms/local-native-analysis.md)，不在本页复制整套算法契约。
+`Native/README.md` 是可独立阅读的英文目录/构建风险入口；[opencv_helper API 参考](../../04-api-reference/engine-components/opencv-helper-api.md)维护英文函数正文，包括校准 Context/共享缓存、POI V2、图像处理、SFR 和视频。`Native/opencv_helper/API_Documentation.md` 保留随源码使用的 ABI/资源前提与正文入口，完整参考可在文档站按函数名查询；它不是自动生成的全部导出清单。签名以对应头文件、实现和托管声明三者核对为准。ImageEditor 的 P2/FindLightBeads 调用与显示生命周期见[直接 native 分析](../../04-api-reference/algorithms/local-native-analysis.md)，不在本页复制整套算法契约。
 
 ## 当前分层
 
@@ -77,15 +77,11 @@ CUDA 是另一条边界：当前 Core 无条件打包仓库跟踪的 `x64/Releas
 | 视频 | open返回正handle，position返回帧号；手动read透传 `MatToHImage` 转换/分配失败，−3既可表示已到末尾也可为分配失败；视频guard又将OpenCV/标准/未知异常映射到−2/−3/−4，代码不能唯一说明失败原因 |
 | SFR | `exports/sfr_export.cpp` 使用自身参数/图像/计算及异常码，不套common export表 |
 
-校准的只读RAW执行、共享缓存释放和调用者临界区，以及POI V2过滤/回退开关的完整说明保留在上述英文API参考；入口分别是 `M_CalibrationExecuteToV1`、`M_CalibrationCacheReleaseV1` 和 `M_CalculatePoiBatchV2`。缓存释放不等于磁盘文件删除或活动Context失效，不能借文档检查调用这些有状态入口。
+校准的只读 RAW 执行、共享缓存释放和调用者临界区，以及 POI V2 原生选项、Engine 标准测量入口的完整说明见 [API 参考](../../04-api-reference/engine-components/opencv-helper-api.md)；入口分别是 `M_CalibrationExecuteToV1`、`M_CalibrationCacheReleaseV1` 和 `M_CalculatePoiBatchV2`。缓存释放不等于磁盘文件删除或活动Context失效，不能借文档检查调用这些有状态入口。
 
 ### 视频执行与回调生命周期
 
-`Native/include/video_export.h` 与 `Native/opencv_helper/video_export.cpp` 是视频入口。`M_VideoSeek` 返回0只表示已写入seek请求，实际解码/显示尚未完成；播放采用可覆盖的latest-frame单槽，不保证逐帧交付。帧回调运行在native工作线程，暂停也不等待已经在执行的回调返回。
-
-`InvokeFrame` 传入的 `HImage*` 指向本次调用的栈变量，只能在回调内借用；其中由 `MatToHImage` 分配的 `pData` 所有权则交给接收方，须消费后释放一次或明确移交。保活托管delegate和userData，并将UI更新调度与buffer生命周期分别处理，不能保存栈指针等待UI线程稍后解引用。
-
-调用者须串行化同一handle的关闭与其它操作。当前Close先移除handle、清除回调，再停止worker；从当前worker回调内部关闭时，`StopVideoWorkers` 对本线程detach而不是join，返回不等于当前回调结束。此外Close的 `cap.release()` 没有取得手动read使用的 `capMutex`，已取得Context的并发调用也不会因handle移除而自动消失。这是当前未修复的并发生命周期限制，不是“内部有mutex所以全部线程安全”，也不构成真实并发测试已通过的声明。
+视频 API 区分排队、解码、回调与显示完成。Seek/Play/Pause 返回不等待所有显示工作；回调中的 HImage 结构指针与像素缓冲有不同的生命周期，同一 handle 的关闭须与其它调用串行化。完整的工作线程、latest-frame 槽、回调所有权和 Close 并发限制见 [Video Processing Functions](../../04-api-reference/engine-components/opencv-helper-api.md#video-processing-functions)，不要由内部存在 mutex 推导任意并发都安全。
 
 ## 为什么仓库单独跟踪 `opencv_cuda.dll`
 

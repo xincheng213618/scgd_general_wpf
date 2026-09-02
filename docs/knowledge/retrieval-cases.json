@@ -414,6 +414,13 @@
     {"query":"docs/status","expected_any":["delivery.web-pages"],"include_planned":false},
     {"query":"index/docs/refresh","expected_any":["delivery.web-pages"],"include_planned":false},
     {"query":"Documentation site has not been built","expected_any":["delivery.web-pages"],"include_planned":false},
-    {"query":"get_docs_index_snapshot","expected_any":["delivery.web-pages"],"include_planned":false}
+    {"query":"get_docs_index_snapshot","expected_any":["delivery.web-pages"],"include_planned":false},
+    {"query":"M_DrawPoiImage","expected_any":["engine.opencv-helper-api"],"include_planned":false},
+    {"query":"M_StitchImages","expected_any":["engine.opencv-helper-api"],"include_planned":false},
+    {"query":"VideoInfo","expected_any":["engine.opencv-helper-api"],"include_planned":false},
+    {"query":"M_ConvertGray32Float","expected_any":["engine.opencv-helper-api"],"include_planned":false},
+    {"query":"M_PseudoColorInto","expected_any":["engine.opencv-helper-api"],"include_planned":false},
+    {"query":"COLORVISION_CALIBRATION_CACHE_MB","expected_any":["engine.opencv-helper-api"],"include_planned":false},
+    {"query":"M_CalSFRMultiChannel","expected_any":["engine.opencv-helper-api"],"include_planned":false}
   ]
 }

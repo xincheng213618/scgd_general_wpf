@@ -920,6 +920,12 @@
             },
             {
               "text": {
+                "root": "opencv_helper.dll API 参考"
+              },
+              "link": "/04-api-reference/engine-components/opencv-helper-api"
+            },
+            {
+              "text": {
                 "root": "ColorVision.Core"
               },
               "link": "/04-api-reference/ui-components/ColorVision.Core"
@@ -2192,6 +2198,12 @@
             },
             {
               "text": {
+                "root": "opencv_helper.dll API 参考"
+              },
+              "link": "/04-api-reference/engine-components/opencv-helper-api"
+            },
+            {
+              "text": {
                 "root": "Flow 转换与校准节点"
               },
               "link": "/04-api-reference/engine-components/flow-conversion-calibration-nodes"
@@ -2447,6 +2459,12 @@
                 "root": "OpenCV 和 native 集成开发指南"
               },
               "link": "/02-developer-guide/engine-development/opencv-integration"
+            },
+            {
+              "text": {
+                "root": "opencv_helper.dll API 参考"
+              },
+              "link": "/04-api-reference/engine-components/opencv-helper-api"
             }
           ]
         },
@@ -2507,6 +2525,12 @@
                 "root": "OpenCV 和 native 集成开发指南"
               },
               "link": "/02-developer-guide/engine-development/opencv-integration"
+            },
+            {
+              "text": {
+                "root": "opencv_helper.dll API 参考"
+              },
+              "link": "/04-api-reference/engine-components/opencv-helper-api"
             }
           ]
         }

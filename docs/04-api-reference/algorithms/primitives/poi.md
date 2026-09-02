@@ -25,6 +25,8 @@ POI 在当前系统里是一套共享点位原语，不是单个“检测算法�
 | 过滤/修正结果异常 | `TemplatePoiFilterParam`、`TemplatePoiReviseParam`、`TemplatePoiOutputParam` 是否被联动选中 |
 | 文件模式不生效 | `AlgorithmPoi` 的 `POIStorageModel.File` 路径和外部点文件是否有效 |
 
+标准 CIE 批量测量的原生参数、32 位浮点布局、V1/V2 选项与返回值见 [opencv_helper POI Batch API](../../engine-components/opencv-helper-api.md#poi-batch-api)。这里的模板过滤/修正配置不能直接等同于原生 V2 options 的调用入口。
+
 ## 数据模型
 
 | 对象 | 当前作用 |
