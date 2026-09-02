@@ -5478,7 +5478,7 @@
       "knowledge_id": "operations.camera-configuration",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "区分物理配置、逻辑服务、显示参数与CameraRunParam，说明同步覆盖、ROI约束、保存重启和路径移动副作用。",
+      "summary": "相机参数的编辑入口、同步覆盖与保存；物理配置同步保留本地CameraID，路径移动失败或被拒绝不等于取消路径变更。",
       "aliases": [
         "曝光",
         "增益",
@@ -5492,7 +5492,11 @@
         "CameraRunParam",
         "ApplyTo",
         "IsExpThree",
-        "LocalVideoRoi"
+        "LocalVideoRoi",
+        "includeCameraId",
+        "本地相机ID",
+        "应用设置",
+        "相机数据路径"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Devices/Camera/Configs/ConfigCamera.cs",
@@ -5504,11 +5508,13 @@
         "Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Configs/PhyCameraCfg.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/EditConfigPhyCamera.xaml.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml",
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/CameraRunParamTests.cs"
+        "Test/ColorVision.UI.Tests/CameraRunParamTests.cs",
+        "Test/ColorVision.UI.Tests/ConfigPhyCameraApplyTests.cs"
       ],
       "related": [
         "operations.camera",

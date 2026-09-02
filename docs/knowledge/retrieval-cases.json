@@ -482,6 +482,9 @@
     {"query":"uploadTransferFile","expected_any":["delivery.file-transfer"],"include_planned":false},
     {"query":"导入和导出设置","expected_any":["operations.exports"],"include_planned":false},
     {"query":"导出设置","expected_any":["operations.exports"],"include_planned":false},
-    {"query":"打开配置文件夹","expected_any":["operations.exports"],"include_planned":false}
+    {"query":"打开配置文件夹","expected_any":["operations.exports"],"include_planned":false},
+    {"query":"includeCameraId","expected_any":["operations.camera-configuration"],"include_planned":false},
+    {"query":"应用设置","expected_any":["operations.camera-configuration"],"include_planned":false},
+    {"query":"相机数据路径","expected_any":["operations.camera-configuration"],"include_planned":false}
   ]
 }

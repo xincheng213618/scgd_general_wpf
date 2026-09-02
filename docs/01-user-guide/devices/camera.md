@@ -28,7 +28,7 @@ related: ["engine.devices","operations.device-configuration","operations.physica
 
 `DeviceCamera.AttachPhyCamera` 只维护对象关联和 `ConfigChanged` 订阅；构造、重新关联、释放时走这里，不应因创建视图而写许可证关联。
 
-`DeviceCamera.Save()` 才解析新的 `CameraCode`、释放旧关联、调用 `PhyCamera.SetDeviceCamera` 并应用物理配置，最后进入[设备配置持久化与服务重启契约](./configuration.md)。`SetDeviceCamera` 会保存许可证中的 `DevCameraId`；如果许可证关联了校准设备，还可能请求该校准服务重启。因此保存、刷新命令或重新绑定不是只读诊断。
+`DeviceCamera.Save()` 才解析新的 `CameraCode`、释放旧关联、调用 `PhyCamera.SetDeviceCamera` 并同步物理参数，同时保留当前逻辑服务的 `CameraID`，最后进入[设备配置持久化与服务重启契约](./configuration.md)。`SetDeviceCamera` 会保存许可证中的 `DevCameraId`；如果许可证关联了校准设备，还可能请求该校准服务重启。因此保存、刷新命令或重新绑定不是只读诊断。
 
 `DeviceCamera.Dispose()` 幂等释放已经创建的控制面板/结果视图、物理订阅、本地会话、校正缓存和 MQTT 服务；不会为了释放而强制创建懒加载视图。
 
