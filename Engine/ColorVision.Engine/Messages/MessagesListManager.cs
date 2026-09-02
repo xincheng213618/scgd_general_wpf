@@ -80,17 +80,6 @@ namespace ColorVision.Engine.Messages
             ReloadCommand = new RelayCommand(_ => ReloadData());
 
             MsgRecordDataBaseHelper.EnsureDatabaseInitialized(Config);
-                DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
-                    "sqlite.msgrecords",
-                    ColorVision.Engine.Properties.Resources.Engine_Msg_MessageRecord,
-                    () => Config.SqliteDbPath,
-                    dbPath => new SqlSugarClient(new ConnectionConfig
-                    {
-                        ConnectionString = $"Data Source={dbPath}",
-                        DbType = DbType.Sqlite,
-                        IsAutoCloseConnection = true,
-                        InitKeyType = InitKeyType.Attribute
-                    })));
         }
 
         private bool _isListening;

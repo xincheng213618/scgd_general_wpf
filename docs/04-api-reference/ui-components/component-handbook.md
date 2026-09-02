@@ -21,7 +21,7 @@ related: ["ui.index","ui.publishing"]
 | ViewModel、命令、共享接口、权限基础对象 | `ColorVision.Common` |
 | 主题资源、窗口基类、通用控件外观 | `ColorVision.Themes` |
 | OpenCV/native 图像桥接、`HImage`、位图转换 | `ColorVision.Core` |
-| DAO、MySQL/SQLite、数据库浏览器 | `ColorVision.Database` |
+| DAO、MySQL/SQLite、实体通用查询 | `ColorVision.Database` |
 | 本机 TCP server、JSON/Text 消息、Socket 历史 | `ColorVision.SocketProtocol` |
 | Quartz 定时任务、任务历史、任务窗口 | `ColorVision.Scheduler` |
 | 图像查看、overlay、绘图工具、伪彩、CIE、3D | `ColorVision.ImageEditor` |
@@ -40,7 +40,7 @@ related: ["ui.index","ui.publishing"]
 | `ColorVision.Themes.dll` | 主题资源字典、窗口基类、标题栏、通用控件 | 资源缺失、主题枚举和实际 XAML 不一致 | [ColorVision.Themes](./ColorVision.Themes.md) |
 | `ColorVision.UI.dll` | 配置、菜单、插件装载、属性编辑器、热键、多语言、日志、状态栏 | 插件加载成功不等于菜单/设置/状态栏都注册成功 | [ColorVision.UI](./ColorVision.UI.md) |
 | `ColorVision.Core.dll` | `HImage`、OpenCV helper P/Invoke、CUDA/fusion bridge、WPF 位图桥接 | native DLL、x64 runtime 或 OpenCV 依赖漏包 | [ColorVision.Core](./ColorVision.Core.md) |
-| `ColorVision.Database.dll` | SqlSugar DAO、MySQL/SQLite 配置、数据库浏览器 Provider | 实体和真实表结构不一致、连接配置错误 | [ColorVision.Database](./ColorVision.Database.md) |
+| `ColorVision.Database.dll` | SqlSugar DAO、MySQL/SQLite 基础、实体通用查询 | 实体和真实表结构不一致、连接配置错误 | [ColorVision.Database](./ColorVision.Database.md) |
 | `ColorVision.SocketProtocol.dll` | TCP server、JSON/Text 分发、消息 SQLite、Socket 管理窗口 | 端口冲突、协议模式错误、Handler 未加载 | [ColorVision.SocketProtocol](./ColorVision.SocketProtocol.md) |
 | `ColorVision.Scheduler.dll` | Quartz 调度、任务配置、执行历史、任务管理窗口 | 任务程序集未被发现、Cron/历史库不一致 | [ColorVision.Scheduler](./ColorVision.Scheduler.md) |
 | `ColorVision.ImageEditor.dll` | `ImageView`、绘图图元、工具发现、结果 overlay、伪彩、CIE、3D、实时图像 | 工具初始化副作用、overlay 坐标和图像缩放不一致 | [ColorVision.ImageEditor](./ColorVision.ImageEditor.md) |
@@ -86,7 +86,7 @@ flowchart TD
 | 新增主题颜色、窗口样式或通用控件外观 | `ColorVision.Themes` |
 | 新增图像算法 native 调用包装 | `ColorVision.Core`，并同步 native 导出和测试 |
 | 新增图像工具、绘图图元、结果 overlay | `ColorVision.ImageEditor` |
-| 新增数据库浏览数据源 | `ColorVision.Database` 的 Provider |
+| 新增实体条件查询 | `ColorVision.Database` 的 `GenericQueryWindow` |
 | 新增 Socket JSON 事件 | `ColorVision.SocketProtocol` 契约 + 插件/项目包 Handler |
 | 新增定时任务 | `ColorVision.Scheduler` 的 Quartz `IJob` |
 | 新增工作区编辑器或文件类型支持 | `ColorVision.Solution` |

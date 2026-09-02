@@ -64,18 +64,6 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     FlowDiagnosticsMaintenanceGate.RunExclusive(
                         () => FlowDiagnosticsSchemaMigrator.EnsureSchema(sharedDb));
 
-                    DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
-                        "sqlite.flownoderecords",
-                        "流程节点记录",
-                        () => ConfigService.Instance.GetRequiredService<FlowNodeRecordConfig>().SqliteDbPath,
-                        dbPath => new SqlSugarClient(new ConnectionConfig
-                        {
-                            ConnectionString = $"Data Source={dbPath}",
-                            DbType = DbType.Sqlite,
-                            IsAutoCloseConnection = true,
-                            InitKeyType = InitKeyType.Attribute
-                        })));
-
                     _sharedDb = sharedDb;
                     _writerThread = new Thread(WriteLoop)
                     {

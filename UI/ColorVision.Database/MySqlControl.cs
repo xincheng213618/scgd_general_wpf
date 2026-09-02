@@ -255,12 +255,6 @@ namespace ColorVision.Database
             });
         }
 
-        public static IDatabaseBrowserProvider CreateBrowserProvider()
-        {
-            return new MySqlDatabaseBrowserProvider(() => Config);
-        }
-
-
         public static string GetConnectionString() => GetConnectionString(Config);
 
         public static string GetConnectionString(MySqlConfig MySqlConfig,int timeout = 1)

@@ -64,7 +64,7 @@ related: ["ui.index","ui.configuration","ui.settings","ui.wizards","ui.menus","u
 | 新增主题资源或窗口外观 | `ColorVision.Themes` | 把业务菜单塞进主题库 |
 | 新增图像打开器或工具 | `ColorVision.ImageEditor` 对应 opener/tool 扩展点 | 把客户导出/MES 字段写进 ImageEditor |
 | 新增结果 overlay | 先按[结果链路](../engine-components/result-handoff-chain.md)分流：Engine 历史 handler 或中立算法 renderer/manager | 把所有 overlay 都实现为 `IViewResult`，或将客户判定混进通用显示层 |
-| 新增数据库浏览入口 | `ColorVision.Database` Provider | 在业务窗口里手写另一套数据库浏览器 |
+| 新增实体查询入口 | `ColorVision.Database` 的 `GenericQueryWindow` | 在业务窗口里手写另一套条件查询器 |
 | 新增本地 TCP 指令 | 项目包 handler + `ColorVision.SocketProtocol` | 在通用 Socket 模块里写项目流程 |
 | 新增调度任务 | Scheduler Job 或项目任务入口 | 把长耗时算法写在 UI 调度窗口里 |
 | 新增工作区编辑器 | `ColorVision.Solution` Editor | 把设备控制流程写进 Solution 壳层 |

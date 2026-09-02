@@ -22,7 +22,7 @@ related: ["operations.data","ui.configuration","engine.results","flow.templates"
 | 软件设置 `.cvsettings` | 设置页中的“导入导出设置”；`ConfigTransferSettingsProvider` 注册 `ConfigTransferSettingsControl` TabItem | 序列化已实例化的配置节并合并目标文件，不是完整复制当前配置，更不包含全部数据库与结果图 |
 | 单流程及关联模板 `.cvflow` | `TemplateFlow` 调用 `FlowPackageHelper` | 带关联模板及引用处理；包兼容与导入规则见[模板与 Flow 链路](../../04-api-reference/engine-components/template-flow-chain.md) |
 | 多选流程 | `TemplateFlow` 多选导出 | 当前是 zip 内多个 `.stn`，不能等同于多个完整 `.cvflow` 包 |
-| 数据库记录 | 数据库浏览器或所属业务结果页 | 用于确认源记录和范围，不能据此推断存在通用数据库迁移向导 |
+| 数据库记录 | 所属业务结果页或实体通用查询 | 用于确认源记录和范围，不能据此推断存在通用数据库迁移向导 |
 | CSV、Excel、报告 | 对应业务窗口或项目 exporter | 字段、单位、判定与格式版本由具体业务实现决定 |
 | 原图与带 overlay 的结果图 | ImageEditor / 结果窗口；`ImageView.Snapshot.cs` | 区分原始像素导出和渲染快照，核对是否包含叠加层、尺寸与格式 |
 | Socket/MES 响应 | 项目 handler 和 `ColorVision.SocketProtocol` | 属于协议输出，不是文件导出；项目结果与关联字段见[结果链路](../../04-api-reference/engine-components/result-handoff-chain.md) |

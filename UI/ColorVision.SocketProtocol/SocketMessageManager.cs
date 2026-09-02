@@ -91,19 +91,6 @@ namespace ColorVision.SocketProtocol
             });
         }
 
-            public static IDatabaseBrowserProvider CreateBrowserProvider() =>
-                new SqliteDatabaseBrowserProvider(
-                    "sqlite.socketmessages",
-                    Properties.Resources.Socket_MessageTable,
-                    () => SqliteDbPath,
-                    dbPath => new SqlSugarClient(new ConnectionConfig
-                    {
-                        ConnectionString = $"Data Source={dbPath}",
-                        DbType = DbType.Sqlite,
-                        IsAutoCloseConnection = true,
-                        InitKeyType = InitKeyType.Attribute
-                    }));
-
         public void EditConfig()
         {
             new PropertyEditorWindow(Config) 

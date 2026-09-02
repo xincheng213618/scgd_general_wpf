@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+1. 移除内置数据库浏览器的工具入口、库表浏览、行级编辑、专用 Copilot 上下文及当前模块的数据源注册；保留业务数据库连接、DAO、通用查询和独立的数据清理/备份/迁移。旧 ARVR、LUX、Spectrum 插件所需的注册签名保留为无操作兼容接口，不访问数据库。
+   - 原实现位于 `UI/ColorVision.Database/DatabaseBrowser*`、`DatabaseRowEditWindow*`、`MenuEntityBrowser.cs` 和 `CopilotDatabaseContextProvider.cs`；数据源注册位于 Engine、Socket、Spectrum、LUX、ARVR 各自模块。
+   - 恢复记录：查找提交 `chore(database): retire the built-in database browser`，执行 `git revert <该提交号>`；独立的数据库清理兼容修复无需回退。
+
 1. 恢复数据库清理窗口的无参数 `OpenWindow()` 二进制入口，修复旧 ARVR 等项目插件点击“数据清理”时出现的 `MissingMethodException`；保留全局/单数据源窗口行为。
 
 1. 移除“应用与工具”中已停用的 `CVRaw To CSV` 和 `DAT File Reader`，删除各自的工具 Provider 与实现，并同步调整工具元数据测试；通用 CVRAW/CVCIE 文件读取能力不变。

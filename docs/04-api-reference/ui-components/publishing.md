@@ -91,7 +91,7 @@ Get-ChildItem ColorVision/bin/x64/Release/net10.0-windows -Recurse -Filter "open
 | --- | --- |
 | 基础 UI | 属性编辑器、菜单、主题切换 |
 | 图像 | 普通图片打开、伪彩色、CIE 资源、注释导入导出 |
-| 数据/通信 | 数据库浏览器、Socket 管理窗口、调度器窗口 |
+| 数据/通信 | 实体通用查询、Socket 管理窗口、调度器窗口 |
 | 桌面壳层 | 设置、插件管理器 README/CHANGELOG、市场/下载/WebView2 |
 | 应用工具 | 多图查看、图像融合、登录/登出、用户角色权限管理 |
 | Engine 包环境 | `dotnet restore` / `dotnet build Engine/ColorVision.Engine/ColorVision.Engine.csproj -c Release -p:Platform=x64` |

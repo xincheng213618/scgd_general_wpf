@@ -4,7 +4,7 @@ knowledge_type: "index"
 status: "current"
 summary: "按设置JSON、Engine MySQL、模块SQLite和结果文件定位数据所有者；有记录、有图片、已导出和已备份不是同一状态。"
 aliases: ["数据管理", "数据在哪里", "数据库文件位置", "备份包含哪些数据", "ConfigFilePath", "SqliteDbPath", "MsgRecords.db", "FlowNodeRecords.db", "SocketMessages.db", "Spectrum.db", "ProjectARVRPro.db", "数据没保存"]
-code_paths: ["UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.Database/MySqlControl.cs", "UI/ColorVision.Database/DatabaseBrowserProviderRegistry.cs", "Engine/ColorVision.Engine/Dao/SysResourceModel.cs", "Engine/ColorVision.Engine/Dao/AlgResultMasterDao.cs", "Engine/ColorVision.Engine/Messages/MessagesListManager.cs", "Engine/ColorVision.Engine/Messages/MsgRecordManagerConfig.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeRecordDataBaseHelper.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeRecordConfig.cs", "UI/ColorVision.SocketProtocol/SocketMessageManager.cs", "Plugins/Spectrum/Data/ViewResultManager.cs", "Projects/ProjectARVRPro/ViewResultManager.cs"]
+code_paths: ["UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.Database/MySqlControl.cs", "Engine/ColorVision.Engine/Dao/SysResourceModel.cs", "Engine/ColorVision.Engine/Dao/AlgResultMasterDao.cs", "Engine/ColorVision.Engine/Messages/MessagesListManager.cs", "Engine/ColorVision.Engine/Messages/MsgRecordManagerConfig.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeRecordDataBaseHelper.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeRecordConfig.cs", "UI/ColorVision.SocketProtocol/SocketMessageManager.cs", "Plugins/Spectrum/Data/ViewResultManager.cs", "Projects/ProjectARVRPro/ViewResultManager.cs"]
 test_paths: []
 related: ["ui.database", "ui.database-query", "engine.database-maintenance", "engine.mysql-maintenance", "engine.mysql-recovery", "ui.sqlite-storage", "ui.configuration", "operations.exports", "operations.device-configuration", "engine.results", "flow.templates", "flow.diagnostics", "ui.socket-protocol", "plugins.spectrum", "projects.arvr-pro"]
 ---
@@ -13,7 +13,7 @@ related: ["ui.database", "ui.database-query", "engine.database-maintenance", "en
 
 设置中的[存储与维护](../../04-api-reference/ui-components/storage-maintenance.md)集中提供历史日志、明确临时产物和可重建缓存的手动清理，以及独立的数据维护、备份与选择性设置重置入口。它不是“总数据库”或全盘垃圾扫描器，以下数据所有者边界仍然适用。
 
-ColorVision 没有一个覆盖软件设置、设备资源、流程模板、消息记录、业务结果和图片的“总数据库”。先确认对象由谁写入、谁读取，再选择查询、导出或备份入口。`UI/ColorVision.Database` 提供通用基础和浏览器，不拥有所有模块的数据。
+ColorVision 没有一个覆盖软件设置、设备资源、流程模板、消息记录、业务结果和图片的“总数据库”。先确认对象由谁写入、谁读取，再选择查询、导出或备份入口。`UI/ColorVision.Database` 提供通用数据库基础，不拥有所有模块的数据。
 
 ## 从对象找到实现
 
@@ -48,7 +48,7 @@ ColorVision 没有一个覆盖软件设置、设备资源、流程模板、消�
 
 MQTT/Flow 的 `SqliteDbPath` 是 `DirectoryPath` 加固定文件名的只读属性；Socket、Spectrum、ARVR 的同名静态属性则可被替换。修改已初始化的对象路径还要核对其持有连接和初始化状态，不能当成在线切库协议。MySQL 则由 `MySqlControl` 使用当前 `MySqlConfig` 的服务器、端口和数据库名建立连接，不是本地 `.db` 文件。
 
-数据库浏览器默认注册 MySQL，其它 SQLite 来源需要所属模块注册 Provider。例如消息记录、Flow 诊断、Spectrum 和 ARVR 的注册都在各自初始化路径中。因此“左侧树里没有”不证明磁盘文件或历史记录不存在。表结构查询、主键与写入规则统一见[数据库浏览与行级维护](../../04-api-reference/ui-components/ColorVision.Database.md)。
+内置数据库浏览器已移除。应通过所属业务页面和实际配置定位各数据库；旧插件的浏览器注册调用只由无操作兼容入口接收，不负责发现或展示数据源。数据库连接与 DAO 边界见[数据库基础契约](../../04-api-reference/ui-components/ColorVision.Database.md)。
 
 ## 查数据前的副作用边界
 
@@ -68,7 +68,7 @@ MQTT/Flow 的 `SqliteDbPath` 是 `DirectoryPath` 加固定文件名的只读属�
 3. 将证据拆开：写入返回与异常、重新查询的记录、实际文件及其可读取性、业务最终状态。需要导出时进入该对象的规范主题。
 4. 只有明确要求数据维护后才讨论备份、迁移和清理。使用模块已有的维护入口并核对它的停写、锁与恢复条件；“撤销界面编辑”或“重置数据库”都不是通用备份恢复策略。Socket/Flow 的压缩正文与旧 TEXT 迁移、强制备份入口和部分提交边界见 [SQLite 存储与维护](../../04-api-reference/ui-components/sqlite-storage.md)。
 
-业务页面的[通用查询窗口](../../04-api-reference/ui-components/database-query.md)按实体构造条件并替换调用方结果集合；它不是数据库浏览器，SQL 预览、会话保存和整表操作须分别核对，不能把“当前只显示这些行”当成删除范围。
+业务页面的[通用查询窗口](../../04-api-reference/ui-components/database-query.md)按实体构造条件并替换调用方结果集合；SQL 预览、会话保存和整表操作须分别核对，不能把“当前只显示这些行”当成删除范围。
 
 另一个[数据库维护窗口](../../04-api-reference/engine-components/database-maintenance.md)以 provider 组织表统计、按月清理、备份和迁移；统计不是删除预览，关闭不取消后台维护。MySQL 的结果表白名单、历史删除与整表截断、SQL 备份及部分失败边界见 [MySQL 结果维护](../../04-api-reference/engine-components/mysql-maintenance.md)。
 

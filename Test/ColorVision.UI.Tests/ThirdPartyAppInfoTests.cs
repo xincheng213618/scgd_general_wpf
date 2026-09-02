@@ -95,7 +95,6 @@ namespace ColorVision.UI.Tests
             [
                 new MenuItemManagerAppProvider(),
                 new ColorVision.ToolPlugins.ThirdPartyApps.InternalAppProvider(),
-                new ColorVision.Database.DatabaseBrowserAppProvider(),
                 new ColorVision.ImageEditor.EditorTools.ThreeD.ModelViewer3DAppProvider(),
                 new ColorVision.UI.Desktop.TimedButtons.TimedButtonOperationStatsAppProvider(),
                 new ColorVision.UI.Desktop.ThirdPartyApps.Treemap.TreemapAppProvider(),

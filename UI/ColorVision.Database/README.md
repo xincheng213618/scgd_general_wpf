@@ -1,6 +1,6 @@
 # ColorVision.Database
 
-数据库基础模块，提供表结构驱动的浏览器、实体驱动的通用查询、MySQL/DAO 基础，以及 SQLite 压缩正文和文件维护工具。它不拥有所有业务数据库，也不统一管理 Socket 服务、Flow 执行或连接生命周期。
+数据库基础模块，提供实体驱动的通用查询、MySQL/DAO 基础，以及 SQLite 压缩正文和文件维护工具。它不拥有所有业务数据库，也不统一管理 Socket 服务、Flow 执行或连接生命周期。
 
 目标框架为 `net8.0-windows7.0;net10.0-windows7.0`，使用 WPF；依赖和版本以 `ColorVision.Database.csproj` 为准。本 README 是源码入口，完整契约只维护在仓库知识主题中。
 
@@ -8,7 +8,7 @@
 
 | 责任 | 实现入口 | 权威知识 |
 | --- | --- | --- |
-| 表结构驱动的分页、行级 CRUD、Provider 注册 | `DatabaseBrowserWindow`、`IDatabaseBrowserProvider`、`DatabaseBrowserProviderRegistry` | [数据库浏览与写入契约](../../docs/04-api-reference/ui-components/ColorVision.Database.md) |
+| 已发布插件的旧浏览器注册兼容 | `Compatibility/LegacyDatabaseBrowserRegistration.cs`（无操作，不访问数据库） | [数据库连接与兼容边界](../../docs/04-api-reference/ui-components/ColorVision.Database.md) |
 | 实体字段条件、查询、结果集合与会话 | `GenericQueryWindow`、`GenericQueryConditionSupport`、`GenericQuerySessionStore` | [通用查询与整表操作](../../docs/04-api-reference/ui-components/database-query.md) |
 | MySQL 配置、连接和 DAO | `MySqlControl`、`MySqlConnect`、`BaseTableDao`、`IEntity` | [连接和 DAO 边界](../../docs/04-api-reference/ui-components/ColorVision.Database.md) |
 | gzip 正文读写、旧 TEXT 迁移、备份及空间回收 | `GzipTextPayloadCodec`、`SqliteGzipTextPayloadStore`、`SqliteGzipTextMigration`、`SqliteFileMaintenance` | [SQLite 存储与维护](../../docs/04-api-reference/ui-components/sqlite-storage.md) |

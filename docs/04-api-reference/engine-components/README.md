@@ -27,7 +27,7 @@ related: ["engine.host", "engine.devices", "engine.mqtt", "engine.rc-registratio
 | 新节点放哪里、哪些配置用 PropertyGrid | [Flow 节点入口](../flow_nodes_summary.md)、[节点扩展](../extensions/flow-node.md)、[PropertyGrid 契约](../ui-components/property-grid.md) | `STNode`、`FlowNodePropertyEditorAttribute`、`FlowPropertyEditorRegistry` |
 | 结果没有 handler、图像缺失、overlay 残留 | [结果交接链](./result-handoff-chain.md) | `ResultHandleRegistry`、`AlgorithmOverlayManager` |
 | 客户判定或 CSV/MES/Socket 字段不正确 | [项目知识入口](../projects/README.md)、[Socket 协议](../ui-components/ColorVision.SocketProtocol.md) | `Projects/` 的 `Process/Recipe/Fix` 与具体协议消费方 |
-| 数据库清理是否有预览、备份和回滚保证 | [维护窗口](./database-maintenance.md)、[MySQL 结果维护](./mysql-maintenance.md) | `DatabaseCleanupWindow`、`MySqlResultCleanupProvider`；与表浏览器、SQLite 工具分开 |
+| 数据库清理是否有预览、备份和回滚保证 | [维护窗口](./database-maintenance.md)、[MySQL 结果维护](./mysql-maintenance.md) | `DatabaseCleanupWindow`、`MySqlResultCleanupProvider`；与业务查询、SQLite 工具分开 |
 | SQL恢复失败但数据已变、重置为何没有保留结果 | [MySQL恢复、重置与资源保留](./mysql-recovery.md) | `MySqlDatabaseMaintenanceService`、`RestoreAndRestartAsync`；配置同步和服务重启有独立失败边界 |
 | 转换、图像转换、校准参数从哪来 | [转换与校准节点](./flow-conversion-calibration-nodes.md) | `Engine/FlowEngineLib/` |
 | FileServer 类型可见性或文件格式读写问题 | [FileServer 包装边界](../../01-user-guide/devices/file-server.md)、[CV 文件读写](./ColorVision.FileIO.md) | `DeviceFileServer` 不等同于本地格式读写库；不要根据包装类推断远程文件操作已实现 |

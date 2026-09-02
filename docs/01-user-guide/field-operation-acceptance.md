@@ -33,7 +33,7 @@ related: ["engine.devices","delivery.testing","operations.exports"]
 | 流程设计 | 打开现场流程模板，确认起始节点和关键节点参数 | 流程能保存、重新打开，设备/模板绑定正确 | [Flow 编辑工作区](./workflow/design.md) |
 | 流程执行 | 在已确认安全的环境中运行目标最小流程或项目流程 | 同一轮最终状态与预期一致，结果可追踪；能定位失败节点仅证明诊断有效，不算业务通过 | [Flow 执行会话与最终化](./workflow/execution.md) |
 | 图像与 overlay | 打开一张结果图并查看 ROI/POI/overlay | 图像、图层和坐标对齐 | [ImageEditor](../04-api-reference/ui-components/ColorVision.ImageEditor.md)、[Engine 结果展示链路](../04-api-reference/engine-components/result-handoff-chain.md) |
-| 数据落库 | 按 SN、时间或批次查一条结果 | SQLite/MySQL 有对应记录，字段基本完整 | [数据库浏览与写入契约](../04-api-reference/ui-components/ColorVision.Database.md) |
+| 数据落库 | 按 SN、时间或批次查一条结果 | SQLite/MySQL 有对应记录，字段基本完整 | [数据库连接与 DAO 契约](../04-api-reference/ui-components/ColorVision.Database.md) |
 | 文件导出 | 导出 CSV/Excel/图片或项目结果 | 文件存在、字段顺序和客户格式正确 | [数据导出与导入](./data-management/export-import.md)、项目页 |
 | Socket/MES/Modbus | 发送现场最小命令或联机样例 | 外部系统能触发并收到正确状态码/数据 | [SocketProtocol](../04-api-reference/ui-components/ColorVision.SocketProtocol.md)、[项目包总览](../04-api-reference/projects/README.md) |
 | 插件能力 | 打开现场插件并执行最小功能 | 插件菜单、窗口、设备连接、结果或导出正常 | [现有插件能力说明](../04-api-reference/plugins/README.md) |

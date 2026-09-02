@@ -74,9 +74,6 @@ next: false
 - [配置持久化、重载与对象所有权](../../04-api-reference/ui-components/configuration.md) — `ui.configuration`
   ConfigHandler的配置路径、延迟实例、文件合并保存和重载契约；单文件替换不等于内存发布成功，重载会使旧配置引用失效。
 
-- [数据库 Provider、表浏览与写入契约](../../04-api-reference/ui-components/ColorVision.Database.md) — `ui.database`
-  数据库 Provider、表浏览和 MySQL/DAO 契约；区分读取、行级写入、内存撤销与事务，保存可能部分成功。
-
 - [多图查看、刷新与缩略图缓存](../../04-api-reference/ui-components/ColorVision.ImageTools.md) — `ui.image-tools`
   ImageTools内置注册、多图列表中的单张预览、刷新与SQLite缩略图缓存；重选不保证重载，关窗不清缓存，缓存关闭也不等于零数据库访问。
 
@@ -132,8 +129,8 @@ next: false
 - [MySQL SQL 恢复、重置与资源保留](../../04-api-reference/engine-components/mysql-recovery.md) — `engine.mysql-recovery`
   MySQL手动SQL恢复、数据库重置与资源保留：导入后才同步配置和重启注册中心，失败不回滚；迁移备份不含结果，配置更新计数不证明键完整。
 
-- [数据库 Provider、表浏览与写入契约](../../04-api-reference/ui-components/ColorVision.Database.md) — `ui.database`
-  数据库 Provider、表浏览和 MySQL/DAO 契约；区分读取、行级写入、内存撤销与事务，保存可能部分成功。
+- [数据库连接、DAO 与旧插件兼容](../../04-api-reference/ui-components/ColorVision.Database.md) — `ui.database`
+  MySQL 连接配置、业务 DAO 与批 SQL 的失败边界，以及已移除浏览器的旧插件注册兼容。
 
 - [通用查询、条件会话与整表操作](../../04-api-reference/ui-components/database-query.md) — `ui.database-query`
   实体驱动的通用查询窗口：条件参数化、执行时SQL预览、结果替换与进程内会话；关闭不取消查询，清空表/截断表作用于整表而非筛选结果。

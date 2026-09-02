@@ -815,12 +815,6 @@
             },
             {
               "text": {
-                "root": "数据库 Provider、表浏览与写入契约"
-              },
-              "link": "/04-api-reference/ui-components/ColorVision.Database"
-            },
-            {
-              "text": {
                 "root": "多图查看、刷新与缩略图缓存"
               },
               "link": "/04-api-reference/ui-components/ColorVision.ImageTools"
@@ -941,7 +935,7 @@
             },
             {
               "text": {
-                "root": "数据库 Provider、表浏览与写入契约"
+                "root": "数据库连接、DAO 与旧插件兼容"
               },
               "link": "/04-api-reference/ui-components/ColorVision.Database"
             },
