@@ -377,6 +377,7 @@ FodyWeavers.xsd
 /.vscode
 /.workbuddy
 /.codex-artifacts/
+/.artifacts/
 
 
 # Node.js / npm

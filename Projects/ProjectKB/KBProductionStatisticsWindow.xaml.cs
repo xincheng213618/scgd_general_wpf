@@ -1,4 +1,3 @@
-using ColorVision.UI;
 using log4net;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -237,7 +236,7 @@ namespace ProjectKB
 
         private void UpdatePeriodPresentation()
         {
-            if (PeriodText == null || PeriodMode == null || AnchorDatePicker == null)
+            if (PeriodText == null || PeriodMode == null || AnchorDatePicker == null || CurrentPeriodButton == null)
                 return;
 
             KBProductionPeriodMode mode = GetSelectedPeriodMode();
@@ -248,6 +247,7 @@ namespace ProjectKB
             {
                 KBProductionPeriodMode.Week => "本周",
                 KBProductionPeriodMode.Month => "本月",
+                KBProductionPeriodMode.All => "全部",
                 _ => "今天",
             };
         }
@@ -297,19 +297,6 @@ namespace ProjectKB
             _windowState.SN = SnFilter.Text?.Trim() ?? string.Empty;
             _windowState.ResultIndex = Math.Clamp(ResultFilter.SelectedIndex, 0, 2);
             _windowState.PageNumber = Math.Max(1, _currentPage);
-        }
-
-        private void SaveState()
-        {
-            CaptureState();
-            try
-            {
-                ConfigService.Instance.Save<ProjectKBConfig>();
-            }
-            catch (Exception ex)
-            {
-                Log.Warn("Could not save the ProjectKB production-statistics window state.", ex);
-            }
         }
 
         private async Task LoadSuggestionsAsync()
@@ -651,7 +638,7 @@ namespace ProjectKB
                 _modelEditor.TextChanged -= ModelEditor_TextChanged;
             if (_snEditor != null)
                 _snEditor.TextChanged -= SnEditor_TextChanged;
-            SaveState();
+            CaptureState();
             base.OnClosed(e);
         }
     }

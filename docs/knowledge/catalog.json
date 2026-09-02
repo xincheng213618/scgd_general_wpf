@@ -6697,7 +6697,7 @@
       "knowledge_id": "projects.kb",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "ProjectKB 的宿主/独立启动依赖、Modbus/MES、Recipe 判定、背光修正与 CSV 输出边界。",
+      "summary": "ProjectKB 的宿主/独立启动依赖、Modbus/MES、Recipe 判定、背光修正、CSV 与按天生产统计和运行内查询记忆。",
       "aliases": [
         "Modbus 写 1 不触发 KB 测试",
         "KB MES 返回 N 是成功吗",
@@ -6706,7 +6706,10 @@
         "KBItemMaster",
         "KBItemMasterExtensions",
         "KB CSV",
-        "KBLVSacle"
+        "KBLVSacle",
+        "KB生产统计",
+        "KB统计日期记忆",
+        "KBProductionStatisticsWindow"
       ],
       "code_paths": [
         "Projects/ProjectKB/App.xaml.cs",
@@ -6717,7 +6720,8 @@
         "Projects/ProjectKB"
       ],
       "test_paths": [
-        "Test/ProjectKB.Tests/ProjectKB.Tests.csproj"
+        "Test/ProjectKB.Tests/ProjectKB.Tests.csproj",
+        "Test/ProjectKB.Tests/KBProductionStatisticsTests.cs"
       ],
       "related": [
         "projects.index",

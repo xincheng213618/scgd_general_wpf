@@ -27,7 +27,7 @@ next: false
   按协议、外部触发、结果出口与最小验证路径比较 ARVRPro、KB、LUX 和 IntegrationDemo。
 
 - [ProjectKB](../../04-api-reference/projects/project-kb.md) — `projects.kb`
-  ProjectKB 的宿主/独立启动依赖、Modbus/MES、Recipe 判定、背光修正与 CSV 输出边界。
+  ProjectKB 的宿主/独立启动依赖、Modbus/MES、Recipe 判定、背光修正、CSV 与按天生产统计和运行内查询记忆。
 
 - [ProjectLUX](../../04-api-reference/projects/project-lux.md) — `projects.lux`
   ProjectLUX 文本 Socket、ProcessGroup、Recipe/Fix 与 CSV/SQLite 结果链及构建发布边界。

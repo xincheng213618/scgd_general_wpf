@@ -10,6 +10,6 @@ ProjectKB 将 FlowEngine 的 KB/POI 结果、Recipe 判定、背光修正、Modb
 
 ## 源码知识入口
 
-[ProjectKB 权威主题](../../docs/04-api-reference/projects/project-kb.md)集中维护运行链、MES 返回码、Recipe 判定、CSV 字段边界、最小本地验证与发布约束；本文件不再维护第二份使用手册。
+[ProjectKB 权威主题](../../docs/04-api-reference/projects/project-kb.md)集中维护运行链、MES 返回码、Recipe 判定、CSV 字段边界、生产统计与运行内查询记忆、最小本地验证与发布约束；本文件不再维护第二份使用手册。
 
 该链接相对于源码仓库。此 README 会嵌入并复制到输出；若正在交付包中阅读，包内不保证包含 `docs/`，应在与包版本匹配的源码仓库中读取 `docs/04-api-reference/projects/project-kb.md`，不能用另一版本的文档代替当前交付契约。
