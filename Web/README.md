@@ -2,11 +2,12 @@
 
 ColorVision marketplace web product boundary.
 
-Architecture boundaries, compatibility policy, extension ports, analytics
-privacy rules, and performance guardrails are documented in
-[`ARCHITECTURE.md`](ARCHITECTURE.md).
-The measured 2026-07-18 baseline, completed first pass, and prioritized follow-up
-work are recorded in [`PERFORMANCE_AUDIT.md`](PERFORMANCE_AUDIT.md).
+Current module responsibilities, compatibility policy, implemented interfaces,
+performance budgets and planned evolution are maintained in
+[Web architecture](../docs/03-architecture/components/web.md).
+The [historical performance baseline](../docs/02-developer-guide/backend/performance-baseline.md)
+retains dated measurement samples and their limits. Startup and configuration
+are documented in [Backend](../docs/02-developer-guide/backend/README.md).
 
 ```text
 Web/

@@ -2071,7 +2071,8 @@
         "delivery.backend-feedback",
         "delivery.backend-copilot-sync",
         "delivery.backend-operations",
-        "delivery.cvwindowsservice"
+        "delivery.cvwindowsservice",
+        "platform.web-architecture"
       ],
       "code_scopes": [
         "Web/Backend",
@@ -3237,6 +3238,40 @@
       "title": "更新扫描保护：临时排除项与清理所有权",
       "source": "docs/02-developer-guide/deployment/update-scan-protection.md",
       "url": "/02-developer-guide/deployment/update-scan-protection",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "delivery.web-performance-baseline",
+      "knowledge_type": "reference",
+      "status": "historical",
+      "summary": "Web 的 2026-07-18 基线及后续补充测量，保留样本、方法和比较数字；不是当前部署性能、容量或测试状态。",
+      "aliases": [
+        "Web 历史性能",
+        "Web performance baseline",
+        "PERFORMANCE_AUDIT",
+        "性能基线",
+        "2026-07-18",
+        "2026-08-12",
+        "ProForm"
+      ],
+      "code_paths": [
+        "Web/PERFORMANCE_AUDIT.md"
+      ],
+      "test_paths": [],
+      "related": [
+        "platform.web-architecture",
+        "delivery.backend-observability",
+        "delivery.backend-public-data",
+        "delivery.plugin-catalog",
+        "delivery.backend-records"
+      ],
+      "code_scopes": [
+        "Web"
+      ],
+      "domain": "delivery",
+      "title": "Web 历史性能基线",
+      "source": "docs/02-developer-guide/backend/performance-baseline.md",
+      "url": "/02-developer-guide/backend/performance-baseline",
       "searchable": true
     },
     {
@@ -6052,6 +6087,71 @@
       "title": "系统职责与跨模块边界",
       "source": "docs/03-architecture/overview/system-overview.md",
       "url": "/03-architecture/overview/system-overview",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "platform.web-architecture",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "Web 的组成根、HTTP/服务/持久化边界、现有接口和架构检查；区分已实现约束、性能预算与后续演进目标。",
+      "aliases": [
+        "Web 架构",
+        "Web architecture",
+        "架构边界",
+        "ArchitectureBoundaryTests",
+        "MarketplaceContext",
+        "MarketplaceApiRouteContext",
+        "IndexStateRepository",
+        "JobRepository",
+        "OperationsAdminQuery",
+        "OperationsSupportStore",
+        "check-dashboard-bundle",
+        "前端包体预算",
+        "ArtifactStore",
+        "OpenAPI"
+      ],
+      "code_paths": [
+        "Web/Backend/app.py",
+        "Web/Backend/app_setup.py",
+        "Web/Backend/context.py",
+        "Web/Backend/marketplace_api_routes.py",
+        "Web/Backend/ports",
+        "Web/Backend/db/repositories",
+        "Web/Backend/routes/artifact_delivery.py",
+        "Web/Backend/services/artifact_delivery.py",
+        "Web/Backend/routes/auth_adapters.py",
+        "Web/Backend/services/auth_policy.py",
+        "Web/Backend/services/storage_events.py",
+        "Web/Backend/services/plugin_index.py",
+        "Web/Backend/services/artifact_index.py",
+        "Web/Backend/routes/frontend_spa.py",
+        "Web/Frontend/src/App.tsx",
+        "Web/Frontend/package.json",
+        "Web/Frontend/scripts/check-dashboard-bundle.mjs",
+        "Web/Frontend/scripts/precompress-static.mjs"
+      ],
+      "test_paths": [
+        "Web/Backend/test_architecture_boundaries.py",
+        "Web/Backend/test_artifact_delivery.py",
+        "Web/Frontend/tests/viteConfig.test.ts"
+      ],
+      "related": [
+        "delivery.backend",
+        "delivery.artifact-delivery",
+        "delivery.backend-auth",
+        "delivery.backend-observability",
+        "delivery.backend-jobs",
+        "delivery.plugin-catalog",
+        "delivery.backend-public-data"
+      ],
+      "code_scopes": [
+        "Web/Backend",
+        "Web/Frontend"
+      ],
+      "domain": "platform",
+      "title": "Web 架构与演进边界",
+      "source": "docs/03-architecture/components/web.md",
+      "url": "/03-architecture/components/web",
       "searchable": true
     },
     {

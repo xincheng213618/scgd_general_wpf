@@ -19,6 +19,9 @@ next: false
 - [审计与部署记录：来源、查询与证据边界](../../02-developer-guide/backend/management-records.md) — `delivery.backend-records`
   Backend审计与NAS部署历史的来源、筛选total与summary统计、展示脱敏和保留边界；空审计可能是查询失败，历史成功不证明当前服务或完整恢复。
 
+- [Web 历史性能基线 \[历史\]](../../02-developer-guide/backend/performance-baseline.md) — `delivery.web-performance-baseline`
+  Web 的 2026-07-18 基线及后续补充测量，保留样本、方法和比较数字；不是当前部署性能、容量或测试状态。
+
 ## Web/Backend {#module-5765622f4261636b656e64}
 
 - [Android 运维伴侣](../../02-developer-guide/backend/android-operations.md) — `delivery.android-operations`
@@ -69,6 +72,9 @@ next: false
 - [插件目录、详情投影与索引刷新](../../02-developer-guide/backend/plugin-catalog.md) — `delivery.plugin-catalog`
   插件市场列表、详情投影、索引刷新与版本缓存；compact不代表按页读取源码数据，ready不证明全量刷新无错误。
 
+- [Web 架构与演进边界](../../03-architecture/components/web.md) — `platform.web-architecture`
+  Web 的组成根、HTTP/服务/持久化边界、现有接口和架构检查；区分已实现约束、性能预算与后续演进目标。
+
 - [测试与验证](../../02-developer-guide/testing.md) — `delivery.testing`
   按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。
 
@@ -94,3 +100,6 @@ next: false
 
 - [CVWindowsService 服务包发布与选择](../../02-developer-guide/backend/cvwindowsservice.md) — `delivery.cvwindowsservice`
   CVWindowsService 服务包的发布、LATEST\_RELEASE、缓存与按版本选包；文件名通过不证明ZIP有效，发布不等于本机安装。
+
+- [Web 架构与演进边界](../../03-architecture/components/web.md) — `platform.web-architecture`
+  Web 的组成根、HTTP/服务/持久化边界、现有接口和架构检查；区分已实现约束、性能预算与后续演进目标。

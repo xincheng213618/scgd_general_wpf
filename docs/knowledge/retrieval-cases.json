@@ -398,6 +398,10 @@
     {"query":"--prune-updates","expected_any":["delivery.backend"],"include_planned":false},
     {"query":"--create-api-key","expected_any":["delivery.backend"],"include_planned":false},
     {"query":"--refresh-all-indexes","expected_any":["delivery.backend"],"include_planned":false},
-    {"query":"cache/cleanup","expected_any":["delivery.backend"],"include_planned":false}
+    {"query":"cache/cleanup","expected_any":["delivery.backend"],"include_planned":false},
+    {"query":"Web 架构","expected_any":["platform.web-architecture"],"include_planned":false},
+    {"query":"前端包体预算","expected_any":["platform.web-architecture"],"include_planned":false},
+    {"query":"IndexStateRepository","expected_any":["platform.web-architecture"],"include_planned":false},
+    {"query":"PERFORMANCE_AUDIT","expected_any":["delivery.web-performance-baseline"],"include_planned":true}
   ]
 }

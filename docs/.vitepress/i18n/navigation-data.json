@@ -2837,6 +2837,12 @@
                 "root": "审计与部署记录：来源、查询与证据边界"
               },
               "link": "/02-developer-guide/backend/management-records"
+            },
+            {
+              "text": {
+                "root": "Web 历史性能基线 [历史]"
+              },
+              "link": "/02-developer-guide/backend/performance-baseline"
             }
           ]
         },
@@ -2945,6 +2951,12 @@
             },
             {
               "text": {
+                "root": "Web 架构与演进边界"
+              },
+              "link": "/03-architecture/components/web"
+            },
+            {
+              "text": {
                 "root": "测试与验证"
               },
               "link": "/02-developer-guide/testing"
@@ -2999,6 +3011,12 @@
                 "root": "CVWindowsService 服务包发布与选择"
               },
               "link": "/02-developer-guide/backend/cvwindowsservice"
+            },
+            {
+              "text": {
+                "root": "Web 架构与演进边界"
+              },
+              "link": "/03-architecture/components/web"
             }
           ]
         }

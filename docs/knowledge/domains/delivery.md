@@ -88,3 +88,6 @@ next: false
 
 - [测试与验证](../../02-developer-guide/testing.md) — `delivery.testing`
   按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。
+
+- [Web 历史性能基线 \[历史\]](../../02-developer-guide/backend/performance-baseline.md) — `delivery.web-performance-baseline`
+  Web 的 2026-07-18 基线及后续补充测量，保留样本、方法和比较数字；不是当前部署性能、容量或测试状态。
