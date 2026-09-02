@@ -5652,11 +5652,16 @@
         "cvsettings",
         "导出图片",
         "ConfigTransferSettingsProvider",
-        "SaveSnapshotExportsAsync"
+        "SaveSnapshotExportsAsync",
+        "导入和导出设置",
+        "导出设置",
+        "导入设置",
+        "打开配置文件夹"
       ],
       "code_paths": [
         "UI/ColorVision.UI.Desktop/Settings/ExportAndImport/ConfigTransferSettingsProvider.cs",
         "UI/ColorVision.UI.Desktop/Settings/ExportAndImport/ConfigTransferSettingsControl.xaml.cs",
+        "UI/ColorVision.UI.Desktop/Settings/ExportAndImport/ConfigTransferSettingsControl.xaml",
         "UI/ColorVision.UI/ConfigHandler.cs",
         "Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs",
         "UI/ColorVision.ImageEditor/ImageView.Snapshot.cs"
@@ -5671,7 +5676,9 @@
         "ui.configuration",
         "engine.results",
         "flow.templates",
-        "ui.image-editor"
+        "ui.image-editor",
+        "engine.cv-image-export",
+        "delivery.file-transfer"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine",

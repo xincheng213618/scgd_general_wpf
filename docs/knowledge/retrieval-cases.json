@@ -479,6 +479,9 @@
     {"query":"重试失败项","expected_any":["delivery.file-transfer"],"include_planned":false},
     {"query":"服务器确认中","expected_any":["delivery.file-transfer"],"include_planned":false},
     {"query":"colorvision.transfer.client-id","expected_any":["delivery.file-transfer"],"include_planned":false},
-    {"query":"uploadTransferFile","expected_any":["delivery.file-transfer"],"include_planned":false}
+    {"query":"uploadTransferFile","expected_any":["delivery.file-transfer"],"include_planned":false},
+    {"query":"导入和导出设置","expected_any":["operations.exports"],"include_planned":false},
+    {"query":"导出设置","expected_any":["operations.exports"],"include_planned":false},
+    {"query":"打开配置文件夹","expected_any":["operations.exports"],"include_planned":false}
   ]
 }
