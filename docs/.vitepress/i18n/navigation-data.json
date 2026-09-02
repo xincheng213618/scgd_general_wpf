@@ -257,6 +257,12 @@
             },
             {
               "text": {
+                "root": "CVRAW / CVCIE 图像导出"
+              },
+              "link": "/04-api-reference/engine-components/cv-image-export"
+            },
+            {
+              "text": {
                 "root": "RC 注册、服务快照与连接测试"
               },
               "link": "/04-api-reference/engine-components/rc-registration"
@@ -428,6 +434,12 @@
             },
             {
               "text": {
+                "root": "统一图像算法平台 V1"
+              },
+              "link": "/02-developer-guide/core-concepts/image-algorithm-platform-v1"
+            },
+            {
+              "text": {
                 "root": "Copilot 设置、持久化与连接诊断"
               },
               "link": "/02-developer-guide/core-concepts/copilot-configuration"
@@ -473,6 +485,12 @@
                 "root": "Copilot ViewModel 维护地图"
               },
               "link": "/02-developer-guide/core-concepts/copilot-view-model-architecture"
+            },
+            {
+              "text": {
+                "root": "CVRAW / CVCIE 图像导出"
+              },
+              "link": "/04-api-reference/engine-components/cv-image-export"
             },
             {
               "text": {
@@ -1493,6 +1511,12 @@
             },
             {
               "text": {
+                "root": "CVRAW / CVCIE 图像导出"
+              },
+              "link": "/04-api-reference/engine-components/cv-image-export"
+            },
+            {
+              "text": {
                 "root": "数据库清理窗口、能力接入与完成边界"
               },
               "link": "/04-api-reference/engine-components/database-maintenance"
@@ -1961,6 +1985,12 @@
                 "root": "Backend Operations 中继与只读概览"
               },
               "link": "/02-developer-guide/backend/operations-relay"
+            },
+            {
+              "text": {
+                "root": "CVRAW / CVCIE 图像导出"
+              },
+              "link": "/04-api-reference/engine-components/cv-image-export"
             },
             {
               "text": {

@@ -456,6 +456,12 @@
     {"query":"CVCommCore.dll","expected_any":["engine.native-bindings"],"include_planned":false},
     {"query":"QueryDatabaseSql","expected_any":["copilot.session-tools"],"include_planned":false},
     {"query":"ExecuteDatabaseSql","expected_any":["copilot.session-tools"],"include_planned":false},
-    {"query":"colorvision-database-operations","expected_any":["copilot.session-tools"],"include_planned":false}
+    {"query":"colorvision-database-operations","expected_any":["copilot.session-tools"],"include_planned":false},
+    {"query":"CVRAW转TIFF","expected_any":["engine.cv-image-export"],"include_planned":false},
+    {"query":"ColorVision命令行导出","expected_any":["engine.cv-image-export"],"include_planned":false},
+    {"query":"VExportCIE","expected_any":["engine.cv-image-export"],"include_planned":false},
+    {"query":"ConvertBatchImages","expected_any":["algorithms.platform"],"include_planned":false},
+    {"query":"colorvision-batch-image-conversion","expected_any":["algorithms.platform"],"include_planned":false},
+    {"query":"OpenBatchImageProcessing","expected_any":["algorithms.platform"],"include_planned":false}
   ]
 }

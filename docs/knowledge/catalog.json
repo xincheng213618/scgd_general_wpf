@@ -930,7 +930,11 @@
         "基础调整",
         "图像反相",
         "白平衡",
-        "图像阈值"
+        "图像阈值",
+        "ConvertBatchImages",
+        "OpenBatchImageProcessing",
+        "colorvision-batch-image-conversion",
+        "批量图片处理"
       ],
       "code_paths": [
         "UI/ColorVision.Algorithms",
@@ -946,6 +950,12 @@
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/ThresholdWindow.xaml.cs",
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/InvertEditorTool.cs",
         "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageAlgorithms.cs",
+        "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageProcessor.cs",
+        "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageOutput.cs",
+        "Engine/ColorVision.Engine/Media/CVRawBatchImageLoader.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotConvertBatchImagesTool.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotOpenBatchImageProcessingTool.cs",
+        "ColorVision/Copilot/Skills/colorvision-batch-image-conversion",
         "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs"
       ],
       "test_paths": [
@@ -958,9 +968,11 @@
         "algorithms.index",
         "algorithms.onnx",
         "ui.index",
-        "ui.image-editor"
+        "ui.image-editor",
+        "engine.cv-image-export"
       ],
       "code_scopes": [
+        "ColorVision/Copilot",
         "Engine/ColorVision.Engine",
         "UI/ColorVision.Algorithms",
         "UI/ColorVision.ImageEditor"
@@ -3641,6 +3653,54 @@
       "searchable": true
     },
     {
+      "knowledge_id": "engine.cv-image-export",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "CVRAW/CVCIE 原生导出的窗口、命令行参数、通道和命名规则，以及覆盖、部分失败和退出码边界。",
+      "aliases": [
+        "CVRAW转TIFF",
+        "CVCIE导出",
+        "ColorVision命令行导出",
+        "Python批量转换CVRAW",
+        "导出返回0但没有文件",
+        "CVRawFileExporter",
+        "VExportCIE",
+        "ExportCVCIE",
+        "SaveToTif"
+      ],
+      "code_paths": [
+        "Engine/ColorVision.Engine/Media/FileProcessorCVRaw.cs",
+        "Engine/ColorVision.Engine/Media/FileCVCIE.cs",
+        "Engine/ColorVision.Engine/Media/Export/VExportCIE.cs",
+        "Engine/ColorVision.Engine/Media/Export/ExportCVCIE.xaml",
+        "Engine/ColorVision.Engine/Media/Export/ExportCVCIE.xaml.cs",
+        "UI/ColorVision.UI/FileProcessorFactory.cs",
+        "UI/ColorVision.UI/Shell/ArgumentParser.cs",
+        "ColorVision/App.xaml.cs",
+        "ColorVision/Copilot/Skills/colorvision-batch-image-conversion"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/ExportCieTests.cs"
+      ],
+      "related": [
+        "engine.file-io",
+        "ui.image-editor",
+        "algorithms.platform",
+        "copilot.lifecycle"
+      ],
+      "code_scopes": [
+        "ColorVision",
+        "ColorVision/Copilot",
+        "Engine/ColorVision.Engine",
+        "UI/ColorVision.UI"
+      ],
+      "domain": "engine",
+      "title": "CVRAW / CVCIE 图像导出",
+      "source": "docs/04-api-reference/engine-components/cv-image-export.md",
+      "url": "/04-api-reference/engine-components/cv-image-export",
+      "searchable": true
+    },
+    {
       "knowledge_id": "engine.database-maintenance",
       "knowledge_type": "topic",
       "status": "current",
@@ -3815,7 +3875,8 @@
         "ui.image-editor",
         "engine.shell-extension",
         "plugins.conoscope",
-        "delivery.index"
+        "delivery.index",
+        "engine.cv-image-export"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine",

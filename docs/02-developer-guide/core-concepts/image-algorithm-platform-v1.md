@@ -3,10 +3,10 @@ knowledge_id: "algorithms.platform"
 knowledge_type: "topic"
 status: "current"
 summary: "统一图像算法Catalog、Invocation和Runner；普通像素预览、应用/取消、所有权与发布门禁；ONNX仅设计。"
-aliases: ["有哪些本地图像算法","为什么算法有源码但菜单没有","ONNX 是否已经支持","Microsoft.ML.OnnxRuntime","AlgorithmRunner","ImageAlgorithmPlatform","ExperimentalAlgorithmProviderGate","AlgorithmsContextMenu","ImageAlgorithmPreviewSession","ImageAlgorithmApplier","BasicAdjustmentWindow","WhiteBalanceWindow","ThresholdWindow","算法预览","应用与保存","基础调整","图像反相","白平衡","图像阈值"]
-code_paths: ["UI/ColorVision.Algorithms/","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmParameters.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPreviewSession.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmApplier.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/README.md","UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmsContextMenu.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/BasicAdjustmentWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/WhiteBalanceWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/ThresholdWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/InvertEditorTool.cs","UI/ColorVision.ImageEditor/BatchProcessing/BatchImageAlgorithms.cs","Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs"]
+aliases: ["有哪些本地图像算法","为什么算法有源码但菜单没有","ONNX 是否已经支持","Microsoft.ML.OnnxRuntime","AlgorithmRunner","ImageAlgorithmPlatform","ExperimentalAlgorithmProviderGate","AlgorithmsContextMenu","ImageAlgorithmPreviewSession","ImageAlgorithmApplier","BasicAdjustmentWindow","WhiteBalanceWindow","ThresholdWindow","算法预览","应用与保存","基础调整","图像反相","白平衡","图像阈值","ConvertBatchImages","OpenBatchImageProcessing","colorvision-batch-image-conversion","批量图片处理"]
+code_paths: ["UI/ColorVision.Algorithms/","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmParameters.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPreviewSession.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmApplier.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/README.md","UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmsContextMenu.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/BasicAdjustmentWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/WhiteBalanceWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/ThresholdWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/InvertEditorTool.cs","UI/ColorVision.ImageEditor/BatchProcessing/BatchImageAlgorithms.cs","UI/ColorVision.ImageEditor/BatchProcessing/BatchImageProcessor.cs","UI/ColorVision.ImageEditor/BatchProcessing/BatchImageOutput.cs","Engine/ColorVision.Engine/Media/CVRawBatchImageLoader.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotConvertBatchImagesTool.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotOpenBatchImageProcessingTool.cs","ColorVision/Copilot/Skills/colorvision-batch-image-conversion","Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs","Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs","Test/ColorVision.Copilot.Tests/CopilotBatchImageProcessingTests.cs","Scripts/tests/test_algorithm_package_contract.py"]
-related: ["algorithms.index","algorithms.onnx","ui.index","ui.image-editor"]
+related: ["algorithms.index","algorithms.onnx","ui.index","ui.image-editor","engine.cv-image-export"]
 ---
 
 # 统一图像算法平台 V1
@@ -113,7 +113,25 @@ ImageView 适配器通过 `ImageFrameStore`/`ImageFrameLease` 读取 source，�
 
 本地像素算法和远端 MQTT/设备算法共享 Descriptor/Invocation/Result 控制面，但保持不同 execution plane。旧 `AlgorithmNode`、STN 序列化字段、公开 EditorTool 构造方法和菜单 Guid 保留；适配器只把适合的本地算法路由到 Runner，不反射发现或重写远端节点。能力矩阵的“本地 Flow adapter=是”表示 `LocalFlowImageAlgorithmAdapter.ExecuteRawAsync` 可从进程内 `LocalFlowFrameLease` 调用同一 Catalog/Invocation/Runner，并已有直接适配器测试；它不表示生产 Flow 画布已经注册新的本地算法节点。当前真实生产接入仍只有既有远端 MQTT/设备 `AlgorithmNode`；仓库尚无引用 `LocalFlowImageAlgorithmAdapter` 的节点模板、节点注册或 STN 序列化类型。因此本地 Flow 目前是可调用 adapter/API 边界，不能在发布说明中写成已完成生产节点接入。
 
+### Copilot 批量图像工具
+
 Copilot 仅能看到显式白名单中同时声明 `Headless | Local | Deterministic | Copilot` 的算法。算法 Catalog 本身不授予目录访问、覆盖、数量或审批权限；宿主现有策略仍是最终授权边界。“对图片执行反相/Canny/白平衡”等明确算法动作与格式转换一起路由到受保护的 `ConvertBatchImages` 工具，并由 execution contract 强制收集逐文件成功/失败与输出路径证据。该工具仍要求原生审批，只接受可读/可写范围，最多 500 个文件，从不覆盖已有文件，并在解析 Catalog 后再次检查显式白名单与 `Batch | Headless | Local | Deterministic | Copilot` 能力；反射发现、远端 provider 和未列入白名单的算法不会因此暴露。
+
+`ConvertBatchImages` 执行转换或获准的图像算法；`OpenBatchImageProcessing` 只打开交互窗口，不产生转换完成证据。
+
+| 输入 | 当前约束 |
+| --- | --- |
+| `sources` | 必填，1–32 个当前授权范围内的文件或目录；展开后最多 500 个支持的图像文件 |
+| `outputDirectory`、`preserveFolderStructure` | 目录必须位于可写范围；省略目录时输出在源文件旁，提供目录时默认保留源根下的子目录 |
+| `format` | `same-as-source`（默认）、`tiff`、`png`、`jpeg`、`bmp`、`webp`；CVRAW/CVCIE 的 `same-as-source` 输出 `.tiff` |
+| `algorithm`、`parameters` | 可选的 Catalog ID/兼容别名及对应参数；省略算法表示仅格式转换 |
+| `recursive`、`suffix` | 默认不递归；可指定文件名后缀，算法存在且未给后缀时可使用算法默认后缀 |
+
+批量路径通过 `CVRawBatchImageLoader` 为每个专有源文件加载一个图像，再由 `BatchImageOutput` 生成一个输出；它不拆分 CVCIE 的 X/Y/Z 通道集合。需要原生通道导出或显式 Python/CLI 包装器时，使用 [CVRAW / CVCIE 图像导出](../../04-api-reference/engine-components/cv-image-export.md)，按该路径核对参数、覆盖和退出码。
+
+工具使用 `AvoidOverwrite = true`，已存在或本批次已占用的路径追加 `_2`、`_3` 等编号。无算法、输出目录和后缀，且目标扩展名与源相同时记入 `skipped_identity`，不把无变化文件算成重新转换。响应提供总计和最多 100 条 `results`；`results_truncated` 表示逐文件列表被截断，完整数量仍以 `requested`、`processed`、`succeeded`、`failed`、`skipped_identity` 与 `cancelled` 为准。某项失败可继续处理后续项，取消或部分失败的整体结果不是成功。工具结果范围不等于用户最初发现的全部目录，汇报前应核对选定输入。
+
+### Flow 与发布适配
 
 普通算法的 ImageView 菜单兼容 ID/顺序和图像输出 Batch 顺序由 Descriptor 的中立 `AlgorithmPresentationMetadata` 承载。`AlgorithmCatalogProjection` 先按 `Interactive | Local` 或 `Batch | Headless | Local` 过滤，再投影给 `AlgorithmsContextMenu` 与 `BatchImageAlgorithms`；宿主不再维护成员清单。现有专用预览窗口仍作为 WPF 兼容命令适配器，未知的单输入菜单项使用 Catalog 默认参数的通用编辑/执行回退。Batch 列表保持旧 UI 顺序，`BatchImageAlgorithmDefinition` 的公开构造方法和同步 `Apply(Mat)` façade 保留；Canny 不再由 Batch 覆盖 50/150 的统一默认值。ROI 统计和剖面虽声明 Batch capability，但由结构化 `BatchAlgorithmAnalysisProcessor` 执行，不设置 `BatchImageProcessingOrder`，因此不会错误进入只接受主图像 artifact 的 `BatchImageProcessingWindow`。旧菜单 Guid（例如 `InvertImage`、`EdgeDetection`、`Erode`、`BilateralFilter`）继续作为 Catalog alias 解析。Flow 的 `LocalFlowImageAlgorithmAdapter` 只复制并执行进程内 RAW 帧，不取得调用者 `LocalFlowFrameLease` 的所有权；旧远端 `AlgorithmNode` 及其 STN/MQTT 字段没有改写。`ColorVision.Algorithms` 作为独立同名 NuGet 包生成 `net8.0` 与 `net10.0` 资产，ImageEditor 的项目引用在打包时成为包依赖，CI 发布顺序固定为先 Algorithms、后 ImageEditor。该中立包不携带 provider/native runtime；`opencv_helper.dll` 的 RemoveMoire provider 在候选选择阶段探测 DLL 可加载性和 `M_RemoveMoire` export，也会解析打包目录 `runtimes/win-x64/native`。验证成功的模块保留到进程结束，避免探针卸载与后续 P/Invoke 之间的竞态；失败由 Runner 返回带拒绝诊断的 `provider_unavailable`。
 
