@@ -28,7 +28,7 @@ next: false
   Backend HTTP制品交付的Range、完成事件、下载计数、Cache-Control/ETag、HEAD副作用与JSON gzip边界；服务端迭代完成不证明客户端落盘。
 
 - [插件市场后端](../../02-developer-guide/backend/README.md) — `delivery.backend`
-  Flask后端的组成、配置、制品与数据库路径、认证和探测边界；--storage不隔离配置或SQLite。
+  Flask 后端的组成、配置、CLI 参数、管理入口与探测边界；--storage 不隔离配置或 SQLite，命令退出 0 仍须核对业务结果。
 
 - [Web账号、角色与会话生命周期](../../02-developer-guide/backend/accounts.md) — `delivery.backend-accounts`
   Backend注册、角色权限、改密与找回、数据库Session撤销；配置管理员不走auth\_version，跨服务安全操作可能部分成功。
@@ -73,6 +73,9 @@ next: false
   按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。
 
 ## Web/Frontend {#module-5765622f46726f6e74656e64}
+
+- [插件市场后端](../../02-developer-guide/backend/README.md) — `delivery.backend`
+  Flask 后端的组成、配置、CLI 参数、管理入口与探测边界；--storage 不隔离配置或 SQLite，命令退出 0 仍须核对业务结果。
 
 - [Backend Copilot配置管理与敏感配置交付](../../02-developer-guide/backend/copilot-sync.md) — `delivery.backend-copilot-sync`
   Backend Copilot配置管理、AES-GCM密钥存储与全量同步；版本HMAC不是独立设备身份，nonce不去重，成功读取会交付provider秘密。

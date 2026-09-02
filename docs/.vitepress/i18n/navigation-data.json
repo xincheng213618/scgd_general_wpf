@@ -2960,6 +2960,12 @@
           "items": [
             {
               "text": {
+                "root": "插件市场后端"
+              },
+              "link": "/02-developer-guide/backend/README"
+            },
+            {
+              "text": {
                 "root": "Backend Copilot配置管理与敏感配置交付"
               },
               "link": "/02-developer-guide/backend/copilot-sync"

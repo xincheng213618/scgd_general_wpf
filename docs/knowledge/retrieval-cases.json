@@ -394,6 +394,10 @@
     {"query":"导入精灵表","expected_any":["ui.desktop-pet"],"include_planned":false},
     {"query":"pet.json","expected_any":["ui.desktop-pet"],"include_planned":false},
     {"query":"DesktopPetPackageService","expected_any":["ui.desktop-pet"],"include_planned":false},
-    {"query":"素材不可用","expected_any":["ui.desktop-pet"],"include_planned":false}
+    {"query":"素材不可用","expected_any":["ui.desktop-pet"],"include_planned":false},
+    {"query":"--prune-updates","expected_any":["delivery.backend"],"include_planned":false},
+    {"query":"--create-api-key","expected_any":["delivery.backend"],"include_planned":false},
+    {"query":"--refresh-all-indexes","expected_any":["delivery.backend"],"include_planned":false},
+    {"query":"cache/cleanup","expected_any":["delivery.backend"],"include_planned":false}
   ]
 }

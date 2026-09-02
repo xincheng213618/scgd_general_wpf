@@ -2,10 +2,10 @@
 knowledge_id: "delivery.backend"
 knowledge_type: "topic"
 status: "current"
-summary: "Flask后端的组成、配置、制品与数据库路径、认证和探测边界；--storage不隔离配置或SQLite。"
-aliases: ["插件市场后端","上传401","Flask","marketplace.db","api/ready","create_app_and_context","RuntimeOverrides","AuthPolicy","Session权限","角色权限"]
-code_paths: ["Web/Backend/app.py","Web/Backend/app_setup.py","Web/Backend/cli.py","Web/Backend/config_loader.py","Web/Backend/runtime_health.py","Web/Backend/routes/health_api.py","Web/Backend/routes/auth_adapters.py","Web/Backend/services/auth_policy.py","Web/Backend/services/auth_middleware.py","Web/Backend/services/permission_service.py","Web/Backend/marketplace_api_routes.py","Web/Backend/services/marketplace_api.py","Web/Backend/services/scheduler.py","Web/Backend/services/storage_events.py"]
-test_paths: ["Web/Backend/test_app.py","Web/Backend/test_app_releases.py","Web/Backend/test_upload_services.py","Web/Backend/test_config_loader.py","Web/Backend/test_auth_policy.py"]
+summary: "Flask 后端的组成、配置、CLI 参数、管理入口与探测边界；--storage 不隔离配置或 SQLite，命令退出 0 仍须核对业务结果。"
+aliases: ["插件市场后端","上传401","Flask","marketplace.db","api/ready","create_app_and_context","RuntimeOverrides","AuthPolicy","Session权限","角色权限","Backend CLI","命令行参数","--storage","--refresh-all-indexes","--reconcile-history","--reconcile-plugin-history","--prune-updates","--run-job","--create-api-key","cache/status","cache/cleanup","--refresh-index","--refresh-plugin-index","--cleanup-cache","--scopes","--port","--debug","api/stats","后台管理页面"]
+code_paths: ["Web/Backend/app.py","Web/Backend/app_setup.py","Web/Backend/cli.py","Web/Backend/config_loader.py","Web/Backend/runtime_health.py","Web/Backend/routes/health_api.py","Web/Backend/routes/auth_adapters.py","Web/Backend/services/auth_policy.py","Web/Backend/services/auth_middleware.py","Web/Backend/services/permission_service.py","Web/Backend/marketplace_api_routes.py","Web/Backend/services/marketplace_api.py","Web/Backend/services/scheduler.py","Web/Backend/services/storage_events.py","Web/Backend/marketplace_services.py","Web/Backend/app_releases.py","Web/Backend/plugin_marketplace.py","Web/Backend/update_retention.py","Web/Backend/routes/admin_api.py","Web/Backend/db_cache.py","Web/Backend/services/artifact_index.py","Web/Backend/routes/public_api.py","Web/Frontend/src/App.tsx"]
+test_paths: ["Web/Backend/test_app.py","Web/Backend/test_app_releases.py","Web/Backend/test_upload_services.py","Web/Backend/test_config_loader.py","Web/Backend/test_auth_policy.py","Web/Backend/test_artifact_index.py"]
 related: ["delivery.scripts","plugins.index","delivery.file-transfer","delivery.plugin-catalog","delivery.backend-accounts","delivery.backend-auth","delivery.artifact-delivery","delivery.backend-public-data","delivery.backend-observability","delivery.backend-jobs","delivery.backend-retention","delivery.backend-records","delivery.backend-feedback","delivery.backend-copilot-sync","delivery.backend-operations","delivery.cvwindowsservice"]
 ---
 
@@ -26,7 +26,7 @@ related: ["delivery.scripts","plugins.index","delivery.file-transfer","delivery.
 
 `services/auth_middleware.py` 当前只是旧导入路径的兼容转发，不是独立的认证事实源。不能只按目录名寻找路由：市场核心路由仍在 Backend 根目录的 `marketplace_api_routes.py`。
 
-## 先查什么
+## 常见问题定位
 
 | 现象 | 优先看 |
 | --- | --- |
@@ -58,15 +58,44 @@ CLI 在非 debug 模式发现默认 session 密钥、默认或空上传凭证等
 
 | 项 | 说明 |
 | --- | --- |
-| `--storage H:\ColorVision` / `storage_path` | 插件包、安装包、更新包和工具文件根目录 |
-| `--port 9999` / `host` / `port` / `debug` | Flask 运行参数 |
-| `--refresh-all-indexes` / `--refresh-plugin-index Spectrum` | 重建全部或单个插件索引 |
+| `storage_path` | 插件包、安装包、更新包和工具文件根目录 |
+| `host` / `port` / `debug` | Flask 运行参数 |
 | `secret_key` | Web session 密钥，生产环境必须改 |
 | `upload_auth` | 构建脚本上传和后台接口 Basic Auth |
 | `transfer_upload_dir` | 大文件传输目录，默认相对 `storage_path` |
 | `app_release_keep_count` / `plugin_package_keep_count` | 主程序和插件历史包保留数量 |
 
-不要在公开文档里写真实账号、密码或 API key。
+配置包含上传凭据、会话密钥和可能需要交付给客户端的服务密钥，应按部署环境单独管理。
+
+## 命令行参数
+
+从 `Web/Backend/` 运行 `python .\app.py <参数>`。解析入口是 `cli.build_parser`；主入口先组成应用，再解析参数、预热版本缓存并调用 `handle_cli_args`。因此查看 `--help` 或执行一次性命令，也会经历前述数据库/缓存初始化边界。
+
+| 启动参数 | 当前行为 |
+| --- | --- |
+| `--storage <目录>` | 覆盖制品根；相对路径按命令工作目录解析，不改变 Backend 的配置或数据库路径 |
+| `--port <整数>` | 覆盖配置端口；默认配置为 9998，传入 0 时不覆盖 |
+| `--debug` | 将 debug 设为 true；未传入时沿用配置，不能用此开关强制关闭配置中的 debug |
+| `--help` / `-h` | 输出 argparse 帮助并退出；不启动监听，但应用组成已发生 |
+
+下列一次性命令会写入数据库或制品目录；使用前确认目标和操作授权，并保留所需恢复副本。每次只指定一个操作。多个操作同时出现时，当前实现按表中顺序执行第一个，然后退出；不是组合事务。
+
+| 一次性参数 | 作用与输出 |
+| --- | --- |
+| `--reconcile-history` | 按 `app_release_keep_count`（默认 5）整理主程序根目录候选包到 History，输出已处理的文件映射 |
+| `--reconcile-plugin-history` | 按 `plugin_package_keep_count`（默认 3）把插件当前包整理到 History/Plugins，输出插件/文件数量 |
+| `--prune-updates` | 先修复旧更新目录布局，再删除不保留的规范 `.cvx`；保留全局最新版本和版本第四段为 1 的包，输出 retained/deleted |
+| `--refresh-index` | 刷新全部插件索引，输出 indexed/deleted/duration/errors；errors 非空仍可能退出 0 |
+| `--refresh-plugin-index <PluginId>` | 刷新单插件索引；“Plugin not found”也按已处理命令退出 0 |
+| `--refresh-all-indexes` | 依次刷新 plugins、releases、updates、tools，输出各作用域摘要；不包含独立 docs 索引 |
+| `--cleanup-cache` | 删除到期缓存条目，输出数量 |
+| `--run-job <JobId>` | 同步执行一个已登记任务，输出 status/duration/summary/error；具体写入或清理由[任务契约](./jobs.md)决定 |
+| `--create-api-key <名称>` | 在本地数据库创建 key，向终端输出完整明文；它直接调用服务，不经过 HTTP Session/Bearer 鉴权 |
+| `--scopes <scope1,scope2>` | 仅配合创建 key；省略时默认 `admin:*`。按允许列表验证，非法项退出 1；应显式给出所需最小范围，语义见[API key](./authentication.md) |
+
+归档不是单纯复制：可移动原文件，也可删除被识别为已有归档副本的源文件。插件归档的同名去重仅比较文件大小；不能把归档数量当成逐字节完整性验证。更新清理可能忽略单个删除错误，实际文件仍须按输出核对。未识别的更新文件不进入规范包删除集合。
+
+这些命令没有统一的“业务成功退出码”：完成分支通常退出 0，任务结果仍可能为 failed，索引也可能只部分刷新。读完具体摘要/错误后，再核对目标状态；未捕获异常仍会终止命令。CLI 的非 debug 配置校验失败退出 2。没有一次性操作时才继续注册内置任务、按配置启动调度线程并监听服务。
 
 ## 共用认证不是所有 Session 全权
 
@@ -128,6 +157,41 @@ CLI 在非 debug 模式发现默认 session 密钥、默认或空上传凭证等
 | `POST /api/packages/publish` | 发布插件包 |
 | `PUT /upload/<path>` | 构建脚本兼容上传 |
 | `GET /api/health` / `GET /api/ready` | 健康和就绪检查 |
+| `GET /api/stats` | 插件下载统计；与 HTTP/SPA 访问统计分开，完成计数语义见[制品交付](./artifact-delivery.md) |
+
+## 管理页面入口
+
+以下是 React `App.tsx` 注册的页面地址；页面可打开与具体 API 可执行仍由[认证与权限](./authentication.md)分别决定。
+
+| 地址 | 用途与说明 |
+| --- | --- |
+| `/admin` | 管理概览 |
+| `/admin/publish` | 主程序/插件等制品发布入口；交付见[制品接口](./artifact-delivery.md) |
+| `/admin/files` | 管理存储文件，目录与路径规则见[公共存储](./public-data.md) |
+| `/admin/cache` | 缓存与索引 |
+| `/admin/jobs` | [内置任务](./jobs.md) |
+| `/admin/deployments` | [部署历史](./management-records.md) |
+| `/admin/operations/hosts` | [终端运维](./operations-relay.md) |
+| `/admin/feedback` | [反馈收件箱](./feedback.md) |
+| `/admin/users` / `/admin/login-security` | [账号管理与账号安全](./accounts.md) |
+| `/admin/permissions` | [角色权限](./authentication.md) |
+| `/admin/api-keys` | [API key](./authentication.md) |
+| `/admin/copilot` | [Copilot 配置交付](./copilot-sync.md) |
+| `/admin/audit` | [审计日志](./management-records.md) |
+| `/admin/traffic` | [HTTP/SPA 访问与体验统计](./observability.md) |
+| `/admin/settings` | 浏览器外观、[注册策略](./accounts.md)和[六项保留设置](./backup-retention.md)；受保护或需重启的配置仍由部署配置管理 |
+
+## 缓存管理接口
+
+这些接口由 `routes/admin_api.py` 提供，认证方式与 permission/scope 判定见[HTTP 认证](./authentication.md)。
+
+| 接口 | 所需范围 | 结果 |
+| --- | --- | --- |
+| `GET /api/admin/cache/status` | `cache:read` | 数据库状态、storage_path、Plugins 目录存在性与插件目录缓存摘要 |
+| `POST /api/admin/cache/cleanup` | `cache:refresh` | 删除过期缓存后写审计，返回 `deleted_count` |
+| `GET /api/admin/index/status` | `cache:read` | 各索引的数量、状态、耗时和错误；刷新行为见[插件索引](./plugin-catalog.md)与[公共读模型](./public-data.md) |
+
+cache/status 包含实际数据库/存储路径；数据库状态读取失败可在 200 响应中携带 `error`。`cleanup_expired_cache` 捕获异常、打印后返回 0，因此 `deleted_count = 0` 既可能没有过期项，也可能清理失败。审计写入失败另行打印且不抛出，200 不证明审计已落盘。
 
 ## 测试与边界
 
@@ -137,6 +201,6 @@ python -m unittest test_app test_app_releases test_page_contexts test_upload_ser
 Pop-Location
 ```
 
-改上传、索引、认证、发布接口或存储路径后，至少跑相关后端测试。构建脚本是发布入口，后端只接收和组织制品；`marketplace.db` 不是插件包内容来源，WPF 客户端行为不在后端文档里展开。
+`test_artifact_index.py` 覆盖部分缓存接口认证及权限；当前未登记 CLI 解析和全部一次性分支的专门测试，命令行参考按 `cli.py` 与所调用服务核对。改上传、索引、认证、发布接口或存储路径后，至少跑相关后端测试。构建脚本是发布入口，后端只接收和组织制品；`marketplace.db` 不是插件包内容来源，WPF 客户端行为不在后端文档里展开。
 
 `test_config_loader.py` 覆盖配置默认值、合并和已实现的校验，`test_auth_policy.py` 覆盖认证方式、普通角色参与条件、scope 与改密限制；它们不是实际部署、完整浏览器链或生产权限审计的证明。测试路径表示关联证据，不表示已经执行；本地测试也须先核对测试自己的配置/数据库隔离方式，不能只看命令中的临时制品目录。

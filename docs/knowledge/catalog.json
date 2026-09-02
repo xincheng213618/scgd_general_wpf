@@ -1990,7 +1990,7 @@
       "knowledge_id": "delivery.backend",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Flask后端的组成、配置、制品与数据库路径、认证和探测边界；--storage不隔离配置或SQLite。",
+      "summary": "Flask 后端的组成、配置、CLI 参数、管理入口与探测边界；--storage 不隔离配置或 SQLite，命令退出 0 仍须核对业务结果。",
       "aliases": [
         "插件市场后端",
         "上传401",
@@ -2001,7 +2001,26 @@
         "RuntimeOverrides",
         "AuthPolicy",
         "Session权限",
-        "角色权限"
+        "角色权限",
+        "Backend CLI",
+        "命令行参数",
+        "--storage",
+        "--refresh-all-indexes",
+        "--reconcile-history",
+        "--reconcile-plugin-history",
+        "--prune-updates",
+        "--run-job",
+        "--create-api-key",
+        "cache/status",
+        "cache/cleanup",
+        "--refresh-index",
+        "--refresh-plugin-index",
+        "--cleanup-cache",
+        "--scopes",
+        "--port",
+        "--debug",
+        "api/stats",
+        "后台管理页面"
       ],
       "code_paths": [
         "Web/Backend/app.py",
@@ -2017,14 +2036,24 @@
         "Web/Backend/marketplace_api_routes.py",
         "Web/Backend/services/marketplace_api.py",
         "Web/Backend/services/scheduler.py",
-        "Web/Backend/services/storage_events.py"
+        "Web/Backend/services/storage_events.py",
+        "Web/Backend/marketplace_services.py",
+        "Web/Backend/app_releases.py",
+        "Web/Backend/plugin_marketplace.py",
+        "Web/Backend/update_retention.py",
+        "Web/Backend/routes/admin_api.py",
+        "Web/Backend/db_cache.py",
+        "Web/Backend/services/artifact_index.py",
+        "Web/Backend/routes/public_api.py",
+        "Web/Frontend/src/App.tsx"
       ],
       "test_paths": [
         "Web/Backend/test_app.py",
         "Web/Backend/test_app_releases.py",
         "Web/Backend/test_upload_services.py",
         "Web/Backend/test_config_loader.py",
-        "Web/Backend/test_auth_policy.py"
+        "Web/Backend/test_auth_policy.py",
+        "Web/Backend/test_artifact_index.py"
       ],
       "related": [
         "delivery.scripts",
@@ -2045,7 +2074,8 @@
         "delivery.cvwindowsservice"
       ],
       "code_scopes": [
-        "Web/Backend"
+        "Web/Backend",
+        "Web/Frontend"
       ],
       "domain": "delivery",
       "title": "插件市场后端",
