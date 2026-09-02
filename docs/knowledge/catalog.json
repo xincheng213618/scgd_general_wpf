@@ -2970,7 +2970,7 @@
       "knowledge_id": "delivery.file-transfer",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Backend文件中转的整文件与断点上传、权限、覆盖、公开分享及到期删除；分享绑定文件名而非不可变上传版本。",
+      "summary": "Web文件中转的上传、取消与续传、完成判定、权限、覆盖和公开分享；队列不持久化，分享绑定当前文件名。",
       "aliases": [
         "文件中转",
         "Transfer",
@@ -2982,7 +2982,13 @@
         "get_or_create_transfer_share",
         "断点续传",
         "匿名上传",
-        "文件分享过期"
+        "文件分享过期",
+        "TransferPanel",
+        "uploadTransferFile",
+        "取消上传",
+        "重试失败项",
+        "服务器确认中",
+        "colorvision.transfer.client-id"
       ],
       "code_paths": [
         "Web/Backend/routes/transfer.py",
@@ -2993,17 +2999,27 @@
         "Web/Backend/services/permission_service.py",
         "Web/Backend/services/scheduler.py",
         "Web/Backend/services/artifact_delivery.py",
-        "Web/Backend/routes/artifact_delivery.py"
+        "Web/Backend/routes/artifact_delivery.py",
+        "Web/Frontend/src/pages/TransferPage.tsx",
+        "Web/Frontend/src/pages/TransferSharePage.tsx",
+        "Web/Frontend/src/components/TransferPanel.tsx",
+        "Web/Frontend/src/services/transferUpload.ts",
+        "Web/Frontend/src/services/transferShares.ts",
+        "Web/Frontend/src/utils/transferAccess.ts"
       ],
       "test_paths": [
         "Web/Backend/test_transfer_files.py",
-        "Web/Backend/test_auth_policy.py"
+        "Web/Backend/test_auth_policy.py",
+        "Web/Frontend/tests/transferAccess.test.ts"
       ],
       "related": [
-        "delivery.backend"
+        "delivery.backend",
+        "operations.file-server",
+        "operations.exports"
       ],
       "code_scopes": [
-        "Web/Backend"
+        "Web/Backend",
+        "Web/Frontend"
       ],
       "domain": "delivery",
       "title": "文件中转、覆盖与公开分享",
@@ -5698,7 +5714,8 @@
         "engine.devices",
         "operations.device-configuration",
         "engine.mqtt",
-        "operations.data"
+        "operations.data",
+        "delivery.file-transfer"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine"

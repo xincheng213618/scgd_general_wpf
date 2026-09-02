@@ -3182,6 +3182,12 @@
             },
             {
               "text": {
+                "root": "文件中转、覆盖与公开分享"
+              },
+              "link": "/02-developer-guide/backend/file-transfer"
+            },
+            {
+              "text": {
                 "root": "Web 页面与文档托管"
               },
               "link": "/02-developer-guide/backend/web-pages"

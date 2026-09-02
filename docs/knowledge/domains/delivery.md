@@ -63,7 +63,7 @@ next: false
   CVWindowsService 服务包的发布、LATEST\_RELEASE、缓存与按版本选包；文件名通过不证明ZIP有效，发布不等于本机安装。
 
 - [文件中转、覆盖与公开分享](../../02-developer-guide/backend/file-transfer.md) — `delivery.file-transfer`
-  Backend文件中转的整文件与断点上传、权限、覆盖、公开分享及到期删除；分享绑定文件名而非不可变上传版本。
+  Web文件中转的上传、取消与续传、完成判定、权限、覆盖和公开分享；队列不持久化，分享绑定当前文件名。
 
 - [构建平台与制品边界](../../02-developer-guide/README.md) — `delivery.index`
   定义宿主、插件、客户包和独立FileIO包的构建平台与制品边界，区分构建验证和远端发布。

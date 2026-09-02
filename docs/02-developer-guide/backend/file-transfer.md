@@ -2,18 +2,43 @@
 knowledge_id: "delivery.file-transfer"
 knowledge_type: "topic"
 status: "current"
-summary: "Backend文件中转的整文件与断点上传、权限、覆盖、公开分享及到期删除；分享绑定文件名而非不可变上传版本。"
-aliases: ["文件中转", "Transfer", "file:transfer", "Upload-Offset", "X-Transfer-Client", "stream_transfer_upload", "create_or_resume_transfer_upload", "get_or_create_transfer_share", "断点续传", "匿名上传", "文件分享过期"]
-code_paths: ["Web/Backend/routes/transfer.py", "Web/Backend/transfer_files.py", "Web/Backend/app_setup.py", "Web/Backend/config_loader.py", "Web/Backend/services/auth_policy.py", "Web/Backend/services/permission_service.py", "Web/Backend/services/scheduler.py", "Web/Backend/services/artifact_delivery.py", "Web/Backend/routes/artifact_delivery.py"]
-test_paths: ["Web/Backend/test_transfer_files.py", "Web/Backend/test_auth_policy.py"]
-related: ["delivery.backend"]
+summary: "Web文件中转的上传、取消与续传、完成判定、权限、覆盖和公开分享；队列不持久化，分享绑定当前文件名。"
+aliases: ["文件中转", "Transfer", "file:transfer", "Upload-Offset", "X-Transfer-Client", "stream_transfer_upload", "create_or_resume_transfer_upload", "get_or_create_transfer_share", "断点续传", "匿名上传", "文件分享过期", "TransferPanel", "uploadTransferFile", "取消上传", "重试失败项", "服务器确认中", "colorvision.transfer.client-id"]
+code_paths: ["Web/Backend/routes/transfer.py", "Web/Backend/transfer_files.py", "Web/Backend/app_setup.py", "Web/Backend/config_loader.py", "Web/Backend/services/auth_policy.py", "Web/Backend/services/permission_service.py", "Web/Backend/services/scheduler.py", "Web/Backend/services/artifact_delivery.py", "Web/Backend/routes/artifact_delivery.py", "Web/Frontend/src/pages/TransferPage.tsx", "Web/Frontend/src/pages/TransferSharePage.tsx", "Web/Frontend/src/components/TransferPanel.tsx", "Web/Frontend/src/services/transferUpload.ts", "Web/Frontend/src/services/transferShares.ts", "Web/Frontend/src/utils/transferAccess.ts"]
+test_paths: ["Web/Backend/test_transfer_files.py", "Web/Backend/test_auth_policy.py", "Web/Frontend/tests/transferAccess.test.ts"]
+related: ["delivery.backend", "operations.file-server", "operations.exports"]
 ---
 
 # 文件中转、覆盖与公开分享
 
-`routes/transfer.py` 提供大文件中转 API，`transfer_files.py` 持有文件、断点会话和分享元数据。它不解析或发布插件包，也不刷新插件市场索引。文件列表/直接下载需要授权，但分享 token 的读取与下载是公开入口；中转目录不能整体理解为私有保险箱。
+Web 的“文件中转”（`/transfer`）用于多文件上传、断点续传和链接分享。上传由 `TransferPanel` / `transferUpload.ts` 调用 Backend 中转 API，`transfer_files.py` 管理文件、会话和分享记录。它不解析或发布插件包，也不刷新插件市场索引。文件列表和直接下载需要授权；分享链接则允许持有者公开访问。
 
 配置与数据库、启动副作用见[Backend 组成](./README.md)。本页的上传、覆盖、删除和配置说明不是执行这些动作的授权。
+
+## 使用网页中转文件
+
+1. 打开 `/transfer`。已登录账号需要 `file:transfer` 权限；访客入口取决于下文的匿名上传开关。页面先确认登录状态；需改密码时进入账号页，已登录但缺权限时也进入账号页，未开放访客上传时跳转登录并保留原目标地址。
+2. 点击“选择文件”或拖放文件，将文件加入队列，然后点击“开始上传”。选择文件不会自动上传。队列按去除首尾空白、忽略大小写后的文件名去重，同名项会被忽略；上传过程中不能继续添加文件。
+3. 查看每一项的状态。文件逐个上传，普通失败后会继续后面的文件；认证失败或用户取消会停止后续上传。进度到 100% 时可能仍显示“服务器确认中”，只有该项变成“上传完成”才表示收到完成结果。汇总中的“完成 N”仅计算成功项，不保证整批全部成功。
+4. 完成后点击“复制链接”。已登录用户也可在下方“文件”列表分享、下载或删除；访客没有这个列表，应在关闭页面前保存分享链接。分享页提供文件名、大小、更新时间、到期时间（如有）和“下载文件”。复制失败时可从分享页地址栏复制。
+
+已登录用户开始上传前，会按已加载的文件列表提示“将覆盖”并要求“覆盖并上传”。这是客户端预检，不会锁住文件名，也不能保证期间没有其他上传。访客没有文件列表可供预检，同名冲突由服务端拒绝。覆盖会影响已发出的分享链接，具体见下文。
+
+### 取消、重试与刷新
+
+| 操作或现象 | 处理方式与结果 |
+| --- | --- |
+| 取消正在上传的队列 | “取消上传”中止当前请求并把待传项标为“已取消”；已完成项保留。它不调用服务端删除，也不保证尚未开始的项已有断点 |
+| 重试失败或取消项 | “重试失败项”只重试失败项；取消项需点击该行“重新上传”。“开始上传”只处理“等待上传”项。仍有效且匹配的未完成会话可从确认 offset 继续 |
+| 从队列移除、清除已完成 | 只移除当前页面的条目，不删除服务端文件、会话或分享。删除已完成文件需使用下方文件列表的删除动作并确认 |
+| 刷新页面、关闭后重开 | 队列和本地 `File` 对象不持久化；需重新选择原文件并开始上传，由服务端查找匹配会话。重新打开页面不会自动继续读取本地文件 |
+| 访客换浏览器或清理站点数据 | `X-Transfer-Client` 来自同源 localStorage 的 `colorvision.transfer.client-id`；改变这个标识不能接管原匿名会话。localStorage 不可用时只保留内存备用标识，刷新后不能依赖它恢复 |
+
+恢复要求上传身份、文件名、大小和指纹相符，且未完成会话仍在保留期内。已登录账号与访客身份之间切换不能接续同一会话。浏览器指纹还包含文件修改时间，重命名或修改文件也可能重新创建会话。
+
+如果上次其实已完成，只是页面丢失结果，重新添加文件不会复用已完成回执：授权用户可能再次覆盖，访客可能遇到同名冲突。先用已保存的分享链接或授权文件列表确认。单次上传过程中的断线恢复会查询原会话，规则见“断点与重试”。
+
+分享页的“无需登录”提示不能代替站点配置；其“我也要传文件”仍进入 `/transfer` 并重新检查访问条件。页面将请求失败统一显示为“分享链接已失效”，排障还需看具体错误：网络失败并不证明文件已过期或被删除。
 
 ## 路径和访问控制
 
@@ -53,7 +78,7 @@ related: ["delivery.backend"]
 | `PATCH /api/transfer/uploads/<upload_id>` | 按 `Upload-Offset` 顺序追加数据，返回新的确认进度和完成状态 |
 | `GET /api/transfer/shares/<token>` / `.../<token>/download` | 公开读取分享元数据或下载其当前文件；分享页地址为 `/transfer/share/<token>` |
 
-React 中转入口为 `/transfer`；协议建议块大小为 8 MiB，服务端单块最大为 16 MiB。整文件与 PATCH 通过输入流读取，绕过普通包上传的 500 MiB 全局限制；这不取消匿名总大小限制、单块限制、磁盘容量或反向代理的请求体/超时约束。
+协议建议块大小为 8 MiB，服务端单块最大为 16 MiB。整文件与 PATCH 通过输入流读取，绕过普通包上传的 500 MiB 全局限制；这不取消匿名总大小限制、单块限制、磁盘容量或反向代理的请求体/超时约束。
 
 ### 整文件覆盖
 
@@ -63,11 +88,13 @@ React 中转入口为 `/transfer`；协议建议块大小为 8 MiB，服务端�
 
 ### 断点与重试
 
-新建/恢复会话按上传者、精确文件名、声明大小和由 64 个十六进制字符组成的 `fingerprint` 匹配未完成会话。服务端只校验指纹格式并用它找会话，不重算上传内容的哈希，因此 fingerprint 不是服务端完整性验收。零字节文件可在创建会话时直接完成。
+新建/恢复会话按上传者、精确文件名、声明大小和由 64 个十六进制字符组成的 `fingerprint` 匹配未完成会话。网页用文件名、大小、`lastModified` 和首尾各最多 64 KiB 的样本计算 SHA-256 指纹；这不是整个文件的内容哈希。服务端只校验指纹格式并用它找会话，不重算上传内容的哈希，因此 fingerprint 不是服务端完整性验收。零字节文件可在创建会话时直接完成。
 
 追加只接受与服务端确认值相等的 offset；错误 offset 返回 `409`，缺少/无法解析的请求头为 `400`，过大块为 `413`，超过声明总大小为 `409`。同一进程用会话锁串行追加；不要把它推断成多个独立服务进程共享目录时的分布式锁。
 
 每次从已确认 offset 截断并继续写 `.part`，写完块后才持久化确认进度。断线或响应丢失时，应重新查询确认 offset，而不是直接重发下一块；半块数据可能已落在临时文件中但尚未被确认。服务端协调逻辑可以根据已有部分文件与元数据恢复，也可能在最终文件大小符合声明时修复完成记录，仍不是内容哈希验证。
+
+网页对分块网络错误、`409` 和 `5xx` 先查询原会话；已完成则返回结果，offset 有变化则从新确认位置继续。查询未能取得进展时，同一分块最多尝试 3 次，中间等待 500 ms、1000 ms，再提示手动重试。其它 `4xx` 不走这条自动重试；创建会话请求也没有此分块重试循环。
 
 到达总大小后，授权用户的断点上传也会替换同名目标；匿名会话在创建及最终提交处拒绝已存在的同名文件。成功响应的 `complete=true` 表示这条会话完成，不表示文件以后不可覆盖或永久存在。当前协议没有取消并删除会话的 DELETE 入口；停止客户端上传不是立即清理服务端临时文件。
 
@@ -93,7 +120,9 @@ React 中转入口为 `/transfer`；协议建议块大小为 8 MiB，服务端�
 
 `transfer_file_cleanup` 是小时级后台任务，是否运行仍取决于 Backend 调度器和 job 状态。列表、创建会话及过期分享/会话访问也可能触发文件清理；调度器关闭不等于临时文件永不清理。删除失败或服务没有运行时，不保证到达 24 小时就已从磁盘移除。
 
-## 验证范围
+## 实现与验证范围
+
+`TransferPage.tsx` / `transferAccess.ts` 决定网页访问，`TransferPanel.tsx` 管理内存队列、覆盖确认和操作反馈，`transferUpload.ts` 负责指纹、客户端标识、分块和重试；`TransferSharePage.tsx` / `transferShares.ts` 读取公开分享。`transferAccess.test.ts` 覆盖登录跳转、访客开关、权限移除和强制改密分流，不覆盖完整上传队列。
 
 `test_transfer_files.py` 有直属路径限制、所属会话、错误 offset、断线重试、匿名覆盖冲突、大小限制、过期删除、常规 Basic/Bearer/Session 与浏览器 CSRF、整文件流式上传和 HEAD 不走普通删除分支等用例。`test_auth_policy.py` 验证普通角色参与授权、scope、配置 Basic 及改密限制。
 
