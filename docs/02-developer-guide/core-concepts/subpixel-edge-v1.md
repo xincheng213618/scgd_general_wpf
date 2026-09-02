@@ -13,7 +13,7 @@ related: ["algorithms.platform","algorithms.index"]
 
 ## 当前发布边界
 
-本 provider 当前受[统一平台 Experimental 发布门禁](./image-algorithm-platform-v1.md#当前发布清单)约束：默认菜单和 Batch 不展示，默认 Runner 返回 `provider_unavailable` / `algorithm_experimental`。下文记录保留实现和专题测试契约，不表示产品已发布。
+此算法为 Experimental，默认不展示或执行；门禁和错误码见[统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单)。
 
 
 亚像素边缘是独立测量契约。仓库已有发光区域、十字和模板匹配中的专用亚像素逻辑，但它们绑定各自 native/模板流程，不能作为统一卡尺契约复用。该 provider 保留通用“有向卡尺 → 单个亚像素边缘点”实现，不包含直线拟合或圆拟合；后两项由 [直线拟合](./line-fit-v1.md)、[圆拟合](./circle-fit-v1.md) 的独立点集契约消费结构化结果，三者默认门禁分别生效。

@@ -21,7 +21,7 @@ Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `
 
 ## 签名与返回值不能统一推断
 
-当前相机绑定使用 `CM_Open(IntPtr)`、`CM_SetExpTime(IntPtr, float)`、`CM_GetFrame(...)` 等实际声明，不提供旧示例中的 `CM_Init(CameraType)`、`CM_GetImage(handle, buffer)`、`CM_SetExposureTime` 或 `CM_Uninit` 这一套通用生命周期 API。查阅 `Camera/cvCameraCSLib.*.cs` 和实际设备调用方，不应为适配旧教程补造包装。
+当前相机绑定使用 `CM_Open(IntPtr)`、`CM_SetExpTime(IntPtr, float)`、`CM_GetFrame(...)` 等实际声明，不提供旧示例中的 `CM_Init(CameraType)`、`CM_GetImage(handle, buffer)`、`CM_SetExposureTime` 或 `CM_Uninit` 这一套通用生命周期 API。签名和使用方式见 `Camera/cvCameraCSLib.*.cs` 及实际设备调用方。
 
 `ConvertXYZ.CM_InitXYZ(IntPtr handle)` 返回 `int`，不是新建的 `IntPtr`；调用方持有并传入已有句柄。`CM_SetBufferXYZ` 的尺寸/通道参数为 `UInt32`，数组与指针重载均存在，且另有 `CM_ReleaseBuffer`。跨 native 边界须核对签名、缓冲区大小、所有权与释放顺序，不能只按方法名猜测资源生命周期。
 

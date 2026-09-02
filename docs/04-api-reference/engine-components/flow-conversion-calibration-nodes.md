@@ -57,7 +57,7 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 | 单输入校准 | 可写曝光模板、图像、`IsSaveCIE` 和可选 POI 模板 |
 | 双输入校准 | 不直接设置 `POIParam`，而是引用第二输入的 POI 结果 |
 | 校准 ROI | 只设置 ROI，不保存校准结果文件 |
-| 旧色差校正 | Engine 模板、调试 UI 和结果 handler 已移除；`AlgorithmCaliNode` 同时保留 `STNode` 和 `Obsolete`，由编辑器的 Obsolete 过滤隐藏但仍可反序列化旧画布 |
+| 旧色差校正 | `AlgorithmCaliNode` 同时保留 `STNode` 和 `Obsolete`，由编辑器的 Obsolete 过滤隐藏但仍可反序列化旧画布 |
 
 ## Engine 属性编辑器
 
@@ -84,7 +84,7 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 - 新增转换类型时，同步枚举、算法服务解释、节点 UI、测试样例和本页矩阵。
 - 新增校准字段时，检查 `CalibrationData`、`CalibrationNode`、`Calibration2InNode` 和属性编辑器注册。
 - 修改 `PhyCamera` 关系时，回归校准模板选择器。
-- 新需求走当前 JSON V2 或强类型模板规范，不恢复已移除的 Deprecated 链。
+- 新需求使用 JSON V2 或强类型模板规范。
 
 ## 验证入口与缺口
 

@@ -48,7 +48,7 @@ related: ["flow.architecture","flow.runtime","flow.workspace"]
 `ViewFlow` 组合 Canvas，`FlowEngineToolWindow` 再承载 standalone `ViewFlow`。
 主/独立窗口命令与文档目标由[工作区契约](../../01-user-guide/workflow/design.md)维护，
 不是 ST 库职责。旧的 WinForms 编辑器、属性输入窗体、预览窗体和
-`STNodeEditorHost` 已移除；`STNodeEditorPannel` 保留名称但已是 WPF 组合控件。
+`STNodeEditorPannel` 是 WPF 组合控件。
 
 ## 与 ColorVision 的关系
 

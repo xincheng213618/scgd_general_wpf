@@ -13,10 +13,10 @@ related: ["algorithms.platform","algorithms.index"]
 
 ## 当前发布边界
 
-本 provider 当前受[统一平台 Experimental 发布门禁](./image-algorithm-platform-v1.md#当前发布清单)约束：默认菜单和 Batch 不展示，默认 Runner 返回 `provider_unavailable` / `algorithm_experimental`。下文记录保留实现和专题测试契约，不表示产品已发布。
+此算法为 Experimental，默认不展示或执行；门禁和错误码见[统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单)。
 
 
-Blob/连通域是一个独立分析契约，不包含轮廓、亚像素边缘、直线或圆拟合；这些能力分别记录在独立专题中。仓库原有 Conoscope 除尘和若干专用 native 算法内部使用过连通域，本 provider 复用 OpenCvSharp `ConnectedComponentsWithStats` 形成统一契约，不复制插件私有 API，也不改变旧 MQTT/设备算法 execution plane。
+Blob/连通域是一个独立分析契约，不包含轮廓、亚像素边缘、直线或圆拟合；这些能力分别记录在独立专题中。provider 使用 OpenCvSharp `ConnectedComponentsWithStats`，与插件私有分析和 MQTT 设备算法分别调用。
 
 ## 身份与能力
 

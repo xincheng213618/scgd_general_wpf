@@ -13,14 +13,14 @@ related: ["algorithms.platform","algorithms.index"]
 
 ## 当前发布边界
 
-本 provider 当前受[统一平台 Experimental 发布门禁](./image-algorithm-platform-v1.md#当前发布清单)约束：默认菜单和 Batch 不展示，默认 Runner 返回 `provider_unavailable` / `algorithm_experimental`。下文记录保留实现和专题测试契约，不表示产品已发布。
+此算法为 Experimental，默认不展示或执行；门禁和错误码见[统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单)。
 
 
 ## 阶段边界与仓库盘点
 
-M10 提供稳定 ID `colorvision.frequency.spectrum-analysis`，把二维频谱、径向/方向统计、峰值周期与方向估计以及逆变换验证接入统一 Catalog、Invocation、Runner 和 Result。仓库此前没有可复用的 DFT 平台实现；Native `M_RemoveMoire` 只是 Gaussian blur、pyrDown/pyrUp 与锐化的兼容路径，不计算频谱，M10 也不改变其既有 ID、ABI 或行为。
+M10 提供稳定 ID `colorvision.frequency.spectrum-analysis`，把二维频谱、径向/方向统计、峰值周期与方向估计以及逆变换验证接入统一 Catalog、Invocation、Runner 和 Result。Native `M_RemoveMoire` 使用 Gaussian blur、pyrDown/pyrUp 与锐化，不属于频谱计算。
 
-本阶段只提供通用频域事实。摩尔纹评分、峰值的摩尔纹语义解释、notch 建议/滤波、逆滤波结果和热力图属于 M11，不能由本结果的“高峰值”自动推断；ONNX/AI 已延期，只在平台文档中保留未来接入设计，当前不引入运行时依赖。
+本算法提供通用频域测量。摩尔纹评分、峰值的摩尔纹语义解释、notch 建议/滤波、逆滤波结果和热力图属于 M11，不能由本结果的“高峰值”自动推断；ONNX/AI 已延期，只在平台文档中保留未来接入设计，当前不引入运行时依赖。
 
 ## 输入与数值契约
 

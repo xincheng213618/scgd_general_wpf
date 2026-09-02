@@ -11,9 +11,9 @@ related: ["algorithms.platform","algorithms.index"]
 
 # 图像配准 V1（M8.1）
 
-## 阶段边界与已有能力盘点
+## 适用范围
 
-M8.1 提供稳定 ID `colorvision.geometry.registration`，把一幅 `moving` 图像变换到 `reference` 的 pixel-center 坐标系。仓库原有的图像比较对齐预检只报告小范围平移，不修改图像；POI、相机标定和客户算法则绑定各自模板或专有文件，不能充当统一双输入 provider。本阶段复用 M7 的矩阵数值门禁、warp 和有效区域规则，但不实现镜头畸变参数，后者属于 M8.2。
+`colorvision.geometry.registration` 把 `moving` 图像变换到 `reference` 的 pixel-center 坐标系，复用[几何变换](./geometric-transform-v1.md)的矩阵数值校验、warp 和有效区域规则。镜头参数由[镜头畸变校正](./lens-distortion-correction-v1.md)处理。
 
 Descriptor、Invocation、preset 与 Result 保持宿主中立。OpenCV CPU provider 通过 `AlgorithmImageMatLease` 只读借用两幅输入；输入不复制为中间 `byte[]`。输出在 native warp 后复制一次进入 Result 所有的 `AlgorithmImageBuffer`，另生成一字节每像素的有效区域 mask。V1 不修改 reference 或 moving。
 

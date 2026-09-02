@@ -35,7 +35,7 @@ Engine 模板中的 ROI 至少有三条相关分支：
 
 ## 经典 ROI 链当前是什么样
 
-当前经典 ROI 实际落在 `FindLightArea`，不是旧文档写的 `Templates/ROI`。`TemplateRoi` 的关键特征是 `Name = FindLightArea`、`Code = FindLightArea`、`TemplateDicId = 31`，并通过 `GetMysqlCommand()` 返回 `MysqlRoi`。
+经典 ROI 实现位于 `FindLightArea`。`TemplateRoi` 的关键特征是 `Name = FindLightArea`、`Code = FindLightArea`、`TemplateDicId = 31`，并通过 `GetMysqlCommand()` 返回 `MysqlRoi`。
 
 `RoiParam` 只暴露 `Threshold`、`Times`、`SmoothSize` 三项参数。`AlgorithmRoi` 使用 `SingleTemplateDisplayAlgorithmConfig` 和通用 `DisplayAlgorithmBase` 取得模板与图像输入，再组装 `Event_LightArea2_GetData` 请求。
 

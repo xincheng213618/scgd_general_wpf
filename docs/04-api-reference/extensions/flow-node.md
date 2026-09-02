@@ -11,92 +11,39 @@ related: ["platform.extensions","flow.index","flow.runtime","ui.property-grid"]
 
 # FlowEngineLib 节点扩展
 
-本页只描述当前仓库里真实可用的 Flow 节点扩展路径，不再继续维护基于示意 API 的旧版“开发指南”。
+Flow 节点建立在 `STNode` 和 `FlowEngineLib` 基类上。服务节点负责构建请求、接入 MQTT 执行链并处理响应；客户业务计算由对应服务或算法承担。
 
-## 先看节点体系实际长什么样
+## 选择基类
 
-从当前代码看，Flow 节点扩展主要围绕这几类基类展开：
+| 基类 | 职责 | 源码位置 |
+| --- | --- | --- |
+| `CVCommonNode` | 节点公共属性、控件和节点事件 | `Engine/FlowEngineLib/Base/CVCommonNode.cs` |
+| `CVBaseServerNode` | 输入输出、MQTT 请求、超时及响应处理 | `Engine/FlowEngineLib/Base/CVBaseServerNode.cs` |
+| `BaseStartNode` | 创建 `CVStartCFC`、维护运行状态及启动动作 | `Engine/FlowEngineLib/Start/BaseStartNode.cs` |
+| `CVEndNode` | 完成流程并发布终态 | `Engine/FlowEngineLib/End/CVEndNode.cs` |
 
-- `CVCommonNode`：所有节点的共同基类，提供 `NodeName`、`NodeType`、`DeviceCode`、`NodeID`、`ZIndex` 以及 `nodeEvent` / `nodeRunEvent` / `nodeEndEvent` 等公共能力。
-- `BaseStartNode`：流程开始节点，负责创建 `CVStartCFC`、维护运行中的 `startActions`，并在流程结束时抛出 `Finished`。
-- `CVBaseServerNode`：最常见的服务/算法类节点基类，负责输入输出、MQTT 请求组装、超时处理和节点级完成回传。
-- `CVEndNode`：流程结束节点，最终调用 `startAction.FireFinished()` 把整条流程标记为完成。
+`CVCommonNode` 提供 `NodeName`、`NodeType`、`DeviceCode`、`NodeID`、`ZIndex`，以及 `nodeEvent`、`nodeRunEvent`、`nodeEndEvent`。参数编辑使用[PropertyGrid 契约](../ui-components/property-grid.md)，Flow 编辑器注册见 `Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs`。
 
-这意味着当前节点扩展并不是一套“实现接口即可”的轻量插件模型，而是直接建立在 `STNode` 和一组具体基类之上。
+## 扩展服务节点
 
-## 当前最值得先看的代码锚点
+1. 继承 `CVBaseServerNode`，在构造函数中设置标题、`NodeType`、服务名、设备代码和 `operatorCode`。
+2. 在 `OnCreate()` 中添加输入输出或编辑控件。
+3. 重写 `getBaseEventData(CVStartCFC start)`，组装执行端需要的参数。
+4. 按需要重写 `OnServerResponse(...)`、`Reset(...)` 或连接相关虚方法，处理响应与清理。
+5. 核对 `GetSendTopic()`、`GetRecvTopic()`、`operatorCode` 和 `FlowServiceManager` 中的服务配置，并使用目标协议样例验证请求与响应。
 
-如果你要新增或理解一个节点，优先看这些文件：
+`Engine/FlowEngineLib/Algorithm/AlgorithmNode.cs` 是服务节点示例：它收集模板、颜色和图像路径等参数，生成发往算法服务的请求。`[STNode("...")]` 决定节点树分类，扩展时采用相邻节点的实际分组。
 
-- `Engine/FlowEngineLib/Base/CVCommonNode.cs`
-- `Engine/FlowEngineLib/Base/CVBaseServerNode.cs`
-- `Engine/FlowEngineLib/Start/BaseStartNode.cs`
-- `Engine/FlowEngineLib/End/CVEndNode.cs`
-- `Engine/FlowEngineLib/Algorithm/AlgorithmNode.cs`
+## 流程完成与节点完成
 
-其中 `AlgorithmNode` 是一个很典型的现实例子：它不是在节点内部直接算图，而是收集模板、颜色、图像路径等参数，再拼出真正发往服务端的请求数据。
+`BaseStartNode` 创建并保存 `CVStartCFC`，通过 `m_op_start` 和 `m_op_loop` 分发启动动作，管理 `Ready`、`Running` 及 `startActions`。`CVEndNode` 接收开始或循环动作；其 `DoNodeEnded(...)` 仅在 `TryDoFinishing()` 成功时调用 `FireFinished()`，避免重复发布流程完成。
 
-## 服务节点当前通常怎么扩展
+`nodeEndEvent` 只表示单个节点结束。整条流程的完成需要到达结束节点并发布 `FireFinished()`；服务主题或操作码不匹配通常表现为超时或没有响应。运行会话的状态与失败语义见[FlowEngineLib](../engine-components/FlowEngineLib.md)。
 
-从 `CVBaseServerNode` 的实现看，当前最常见的扩展方式是：
+## 验证
 
-1. 继承 `CVBaseServerNode`。
-2. 在构造函数里确定标题、`NodeType`、服务名和设备代码，并设置 `operatorCode` 等节点行为字段。
-3. 在 `OnCreate()` 里添加输入输出或编辑控件。
-4. 通过重写 `getBaseEventData(CVStartCFC start)` 组装真正发往执行端的参数对象。
-5. 需要时重写 `OnServerResponse(...)`、`Reset(...)` 或连接相关虚方法，补充响应处理和清理逻辑。
+- `ConventionalFlowNodeTests.cs`：常规节点契约。
+- `LocalFlowNodePortTests.cs`：本地节点端口。
+- `FlowRuntimeCompletionTests.cs`：流程终态。
 
-旧文档里那种“重写 `DoServerWork` 就完成节点开发”的说法，和当前 `CVBaseServerNode` 的真实实现并不一致。
-
-## 扩展骨架
-
-新增服务节点通常继承 `CVBaseServerNode`，构造函数里确定标题、服务名、设备代码和 `operatorCode`，`OnCreate()` 添加输入输出或编辑控件，`getBaseEventData(...)` 组装请求参数，必要时重写 `OnServerResponse(...)` 或 `Reset(...)`。节点核心是“构建请求并接入现有执行链”，不是在节点里完成整段业务计算。
-
-## 开始节点和结束节点分别控制什么
-
-### `BaseStartNode`
-
-开始节点负责创建并保存 `CVStartCFC`，通过 `m_op_start` 和多个 `m_op_loop` 分发启动动作，管理 `Ready`、`Running` 和进行中的 `startActions`，并在流程真正结束后抛出 `Finished`。
-
-### `CVEndNode`
-
-结束节点接收 `CVStartCFC` 或循环继续动作，在 `DoNodeEnded(...)` 中调用 `startAction.DoFinishing()`，最终调用 `startAction.FireFinished()`。这是当前代码里整条流程 finished 的真正出口。
-
-## 当前几个最容易写错的点
-
-### `nodeEndEvent` 不等于流程完成
-
-`CVCommonNode.nodeEndEvent` 只表示节点级别的结束反馈。整条流程完成要走到 `CVEndNode`，再由 `startAction.FireFinished()` 触发。
-
-### 不要围绕不存在的 `DoServerWork` 设计新节点
-
-当前 `CVBaseServerNode` 真正的扩展点更接近：
-
-- `OnCreate()`
-- `getBaseEventData(...)`
-- `OnServerResponse(...)`
-- `Reset(...)`
-
-如果按旧文档去找 `DoServerWork`，会直接把扩展路径理解错。
-
-### 节点和服务主题不是自动推断万能匹配
-
-`CVBaseServerNode` 当前通过 `GetSendTopic()`、`GetRecvTopic()`、`operatorCode` 和 `FlowServiceManager` 配合消息链。如果这些字段和服务端约定不一致，节点会表现成超时或收不到响应。
-
-### 分类路径没有单一固定规范
-
-当前 `[STNode("...")]` 的路径字符串是实际树结构的一部分，但仓库内现有节点已经混用了 `/00 全局`、`/03_2 Algorithm` 等风格。扩展时更应该遵循相邻节点的现有分组，而不是照搬旧文档里那套假定分类表。
-
-## 推荐阅读顺序
-
-1. `CVCommonNode`：先理解公共属性、事件和控件辅助方法。
-2. `CVBaseServerNode`：再看典型服务节点怎样发起请求、等待响应和处理超时。
-3. `BaseStartNode`：理解流程启动、循环输出和 `Finished` 事件来源。
-4. `CVEndNode`：确认流程结束链在哪里闭环。
-5. `AlgorithmNode` 或其他相邻真实节点：最后照着现有节点扩展，而不是从旧教程样板出发。
-
-## 验证入口与缺口
-
-关联测试：`Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs`、`Test/ColorVision.UI.Tests/LocalFlowNodePortTests.cs`、`Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs`。
-
-节点端口与终态测试不能替代新增服务协议；修改请求或资源生命周期时应为目标节点新增样例，硬件执行需要单独授权。
+测试均位于 `Test/ColorVision.UI.Tests/`。新增服务协议需要目标节点的请求、响应和资源生命周期用例；硬件执行应在获授权的测试环境中验证。

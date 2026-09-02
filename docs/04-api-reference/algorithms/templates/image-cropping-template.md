@@ -24,7 +24,7 @@ related: ["algorithms.index","algorithms.roi-routes","engine.results"]
 | Flow 算子 | `OLED.GetRIAand` |
 | 结果 | `ViewResultAlgType.Image_Cropping` / `ViewHandleImageCropping` |
 
-手动界面来自通用 `Services/Devices/Algorithm/DisplayAlgorithmControl.xaml.cs`，不是已移除的 `DisplayImageCropping.xaml`。模板入口见 [模板编辑路由](./template-menu-entries.md)。
+手动界面来自通用 `Services/Devices/Algorithm/DisplayAlgorithmControl.xaml.cs`。模板入口见 [模板编辑路由](./template-menu-entries.md)。
 
 ## 持久参数与运行时输入
 

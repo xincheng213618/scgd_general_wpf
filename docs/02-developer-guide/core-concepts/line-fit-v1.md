@@ -13,12 +13,12 @@ related: ["algorithms.platform","algorithms.index"]
 
 ## 当前发布边界
 
-本 provider 当前受[统一平台 Experimental 发布门禁](./image-algorithm-platform-v1.md#当前发布清单)约束：默认菜单和 Batch 不展示，默认 Runner 返回 `provider_unavailable` / `algorithm_experimental`。下文记录保留实现和专题测试契约，不表示产品已发布。
+此算法为 Experimental，默认不展示或执行；门禁和错误码见[统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单)。
 
 
-## 阶段边界与已有能力盘点
+## 适用范围
 
-M6.2 提供稳定 ID `colorvision.measurement.line-fit`。仓库此前的 Hough、FindCross 和客户专用线检测属于各自的图像检测链，没有一个可复用、可序列化的通用 point-set 拟合契约，因此本阶段没有复刻这些专用实现。
+`colorvision.measurement.line-fit` 对显式点集拟合直线；图像线检测由 Hough、FindCross 或对应业务算法负责。
 
 本算法只拟合显式点集：`Invocation.Roi` 必须是 `PolylineAlgorithmRoi`，其中每个顶点都是一个输入点。图像输入只提供文档/revision、宽高与 DPI 上下文；provider 不读取或复制像素。M6.1 的 `subpixel-edge-geometry` 中接受的边缘点可由调用方投影成这个 ROI，从而显式组合“找点”和“拟合”，二者不会被隐藏在一个难以单测的步骤里。
 
@@ -53,7 +53,7 @@ M6.2 提供稳定 ID `colorvision.measurement.line-fit`。仓库此前的 Hough�
 - ImageView：“算法调用 → 直线拟合...”选择点集、编辑统一参数、显示表格与 transient overlay，并可导出 CSV/JSON。关闭窗口、Clear、切图或 revision 改变均走统一 analysis session 与 overlay 生命周期。
 - Batch：使用 `BatchAlgorithmAnalysisProcessor` 和同一个 Invocation，输出结构化 JSON；它不是 Batch 图像格式转换菜单中的像素算法。
 - Flow：`LocalFlowImageAlgorithmAdapter` 可复用本地 Invocation/Result。当前没有宣称存在专用生产 STNode，也没有改变旧远端 MQTT execution plane。
-- Copilot：分析结果没有图像输出，本阶段不加入白名单；反射或 alias 不会使其自动暴露。
+- Copilot：分析结果没有图像输出，不在白名单内；反射或 alias 不会使其自动暴露。
 
 ## 验证范围与限制
 

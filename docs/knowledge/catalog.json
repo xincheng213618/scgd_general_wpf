@@ -3882,6 +3882,10 @@
       "status": "current",
       "summary": "Explorer 的 CVRAW/CVCIE COM provider 如何读取像素、生成非测量用途缩略图，以及源码脚本与 ServiceHost 注册的不同副作用和失败边界。",
       "aliases": [
+        "文件关联注册",
+        "文件关联",
+        "FileAssociationHelper",
+        "RegisterFileAssociations",
         "资源管理器没有cvraw缩略图",
         "cvcie缩略图颜色不对",
         "缩略图读取会锁文件吗",

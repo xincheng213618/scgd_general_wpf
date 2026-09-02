@@ -3,7 +3,7 @@ knowledge_id: "engine.shell-extension"
 knowledge_type: "topic"
 status: "current"
 summary: "Explorer 的 CVRAW/CVCIE COM provider 如何读取像素、生成非测量用途缩略图，以及源码脚本与 ServiceHost 注册的不同副作用和失败边界。"
-aliases: ["资源管理器没有cvraw缩略图","cvcie缩略图颜色不对","缩略图读取会锁文件吗","注册缩略图","卸载缩略图","ColorVision.ShellExtension","CVThumbnailProviderBase","CVRawShellThumbnailProvider","CVCieShellThumbnailProvider","IInitializeWithStream","GetThumbnail","Register.ps1","RegisterThumbnail.ps1"]
+aliases: ["文件关联注册","文件关联","FileAssociationHelper","RegisterFileAssociations","资源管理器没有cvraw缩略图","cvcie缩略图颜色不对","缩略图读取会锁文件吗","注册缩略图","卸载缩略图","ColorVision.ShellExtension","CVThumbnailProviderBase","CVRawShellThumbnailProvider","CVCieShellThumbnailProvider","IInitializeWithStream","GetThumbnail","Register.ps1","RegisterThumbnail.ps1"]
 code_paths: ["Engine/ColorVision.ShellExtension/CVThumbnailProviderBase.cs","Engine/ColorVision.ShellExtension/CVRawShellThumbnailProvider.cs","Engine/ColorVision.ShellExtension/CVCieShellThumbnailProvider.cs","Engine/ColorVision.ShellExtension/Interop/ShellInterfaces.cs","Engine/ColorVision.ShellExtension/ShellLog.cs","Engine/ColorVision.ShellExtension/ColorVision.ShellExtension.csproj","Engine/ColorVision.ShellExtension/Register.ps1","Engine/ColorVision.ShellExtension/Unregister.ps1","Engine/ColorVision.FileIO/CVFileUtil.cs","ColorVision/Update/Export/FileAssociationHelper.cs","ColorVision/ServiceHost/ServiceHostManagerWindow.xaml.cs","UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs","src/ColorVisionServiceHost/ServiceHostCommandHandler.cs","src/ColorVisionServiceHost/Tasks/RegisterThumbnail.ps1","src/ColorVisionServiceHost/Tasks/UnregisterThumbnail.ps1","src/ColorVisionServiceHost/Tasks/RegisterFileAssociations.ps1"]
 test_paths: []
 related: ["engine.index","engine.file-io","platform.service-host","delivery.update"]
@@ -46,7 +46,7 @@ related: ["engine.index","engine.file-io","platform.service-host","delivery.upda
 | 同目录 `Unregister.ps1` | 要求管理员；移除两种扩展名绑定和 RAW Approved 值；仅查找 Debug comhost，无 Release 回退 | 有 DLL 才调用 `regsvr32 /u`，但不检查退出码；重启 Explorer、清缩略图缓存，不清图标缓存。脚本完成文字不能证明已卸载曾注册的 Release DLL |
 | ServiceHost 的 `register-thumbnail` / `unregister-thumbnail` | 使用请求的 `appDirectory`，分别绑定/移除 RAW 与 CIE CLSID；当前 UI 传主程序所在目录及用户 Explorer 缓存目录 | 通过 `RegisterThumbnail.ps1` / `UnregisterThumbnail.ps1` 执行静默 `regsvr32`，只强制结束加载 `ColorVision.ShellExtension.dll` 的 `dllhost.exe`，不重启 Explorer；尝试删除传入目录中的两类缓存 |
 
-当前 `ServiceHostManagerWindow` 提供上述维护动作；原“更新”子菜单及其隐藏的缩略图、文件关联菜单注册已移除，维护功能仍由 ServiceHost 管理窗口提供，`FileAssociationHelper` 保留文件关联服务调用。ServiceHost 将命令映射到自身 `Tasks` 中的固定脚本，并要求 broker ticket；客户端 UI 不需要自行启动源码目录的管理员脚本。调用身份、票据与超时的统一边界见[本机权限代理](../../03-architecture/components/service-host.md)。`RegisterFileAssociations.ps1` 也是写入两种 CLSID 和扩展名绑定的来源，还会改打开命令、图标及其它文件关联，不是仅清理缩略图的等价入口。
+`ServiceHostManagerWindow` 提供上述维护动作，`FileAssociationHelper` 封装文件关联服务调用。ServiceHost 将命令映射到自身 `Tasks` 中的固定脚本，并要求 broker ticket；客户端 UI 不需要自行启动源码目录的管理员脚本。调用身份、票据与超时的统一边界见[本机权限代理](../../03-architecture/components/service-host.md)。`RegisterFileAssociations.ps1` 也是写入两种 CLSID 和扩展名绑定的来源，还会改打开命令、图标及其它文件关联，不是仅清理缩略图的等价入口。
 
 这些脚本不是注册事务：后续阶段失败时不补偿已经修改的 COM/关联项，也不保存并恢复原有 handler。ServiceHost 以脚本进程退出码形成结果，`regsvr32` 或定向 `taskkill` 非零会中断，但缓存删除使用忽略错误策略，成功响应不证明缓存已删净或新缩略图已生成。源码脚本还存在上述 Debug/Release 和双后缀共用 RAW 的差异；切换入口前应核对实际绑定及制品路径，不能假设它们相互对称回退。
 

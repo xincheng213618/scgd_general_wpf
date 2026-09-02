@@ -13,10 +13,10 @@ related: ["algorithms.platform","algorithms.index"]
 
 ## 当前发布边界
 
-本 provider 当前受[统一平台 Experimental 发布门禁](./image-algorithm-platform-v1.md#当前发布清单)约束：默认菜单和 Batch 不展示，默认 Runner 返回 `provider_unavailable` / `algorithm_experimental`。下文记录保留实现和专题测试契约，不表示产品已发布。
+此算法为 Experimental，默认不展示或执行；门禁和错误码见[统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单)。
 
 
-M5.2 是 Blob / 连通域之后的独立工业测量切片。仓库原有 `opencv_helper` 和若干设备模板内部使用过 `findContours`，但这些实现服务于专用算法，没有统一的参数、ROI、结构化结果或宿主契约。本阶段复用 OpenCvSharp 的轮廓能力，不修改专用 native ABI，也不包含亚像素边缘、直线或圆拟合。
+轮廓提取使用 OpenCvSharp，提供独立的参数、ROI 和结构化结果契约。亚像素边缘、直线和圆拟合由各自算法提供。
 
 ## 稳定身份和宿主能力
 

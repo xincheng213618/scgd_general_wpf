@@ -89,4 +89,4 @@ MySQL 进程使用 `ProcessStartInfo.ArgumentList`，不通过 shell 拼接重�
 
 `DatabaseCleanupWindowTests.cs` 检查白名单拒绝、去重和顺序、未知明细检测辅助方法，以及 fake 组合维护分派；没有证明真实主从选择闭包或数据库事务。`MySqlBackupRestoreSafetyTests.cs` 检查进程参数、字符集、密码不在命令行、方法返回路径的类型、进程内维护门串行/嵌套，以及源码中入口/防护代码的存在。
 
-这些测试不是实际 `mysqldump/mysql`、生产表引擎、并发写入、删除后恢复、截断中途异常或断电恢复演练。本次未运行它们，也未连接用户 MySQL；文档检索和网站验证只能证明知识路由有效，不能把上述产品风险变成已修复。
+这些测试不是实际 `mysqldump/mysql`、生产表引擎、并发写入、删除后恢复、截断中途异常或断电恢复演练。

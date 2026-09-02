@@ -11,7 +11,7 @@ related: ["engine.index", "engine.mysql-maintenance", "ui.sqlite-storage", "ui.d
 
 # 数据库清理窗口、能力接入与完成边界
 
-`DatabaseCleanupWindow` 是多数据源的统计、备份、清理和迁移宿主，实际文件位于 `Engine/ColorVision.Engine/Mysql/`，虽使用 `ColorVision.Database` 命名空间，却属于 Engine 的独立维护链路；通用数据库浏览器已移除。宿主只调用 provider，不统一实现业务删除、事务、停写或恢复。
+`DatabaseCleanupWindow` 是多数据源的统计、备份、清理和迁移宿主，实际文件位于 `Engine/ColorVision.Engine/Mysql/`，虽使用 `ColorVision.Database` 命名空间，却属于 Engine 的独立维护链路。宿主只调用 provider，不统一实现业务删除、事务、停写或恢复。
 
 本窗口没有 DatePicker、逐行删除预览或预览批准令牌。它提供表统计、保留月数、可选的选表清空和数据源迁移。若问题是“预览后只删除这些批次”，应先纠正这个功能前提，再读 [MySQL 结果维护](./mysql-maintenance.md) 或实际 SQLite owner；不能从表格行数推断删除范围。
 

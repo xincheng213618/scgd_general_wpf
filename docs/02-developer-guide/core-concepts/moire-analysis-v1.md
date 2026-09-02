@@ -13,14 +13,14 @@ related: ["algorithms.platform","algorithms.index"]
 
 ## 当前发布边界
 
-本 provider 当前受[统一平台 Experimental 发布门禁](./image-algorithm-platform-v1.md#当前发布清单)约束：默认菜单和 Batch 不展示，默认 Runner 返回 `provider_unavailable` / `algorithm_experimental`。下文记录保留实现和专题测试契约，不表示产品已发布。
+此算法为 Experimental，默认不展示或执行；门禁和错误码见[统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单)。
 
 
-## 阶段边界与既有能力
+## 适用范围
 
 M11 保留实现使用稳定 ID `colorvision.frequency.moire-analysis`，复用 [FFT / 频域分析](./frequency-spectrum-v1.md) 的亮度、窗函数、二维 DFT、带符号频率坐标、实数共轭规范化和峰值检测规则，在此基础上加入窄带周期证据评分、同半径背景解释、共轭 notch 建议、可选对称 notch 滤波和频域证据热力图。源码包含 Catalog、Invocation、Runner、Result、ImageView、Batch 与本地 Flow 适配，但默认产品发布门禁尚未解除。
 
-仓库原有 `RemoveMoire`/`M_RemoveMoire` 是 Gaussian blur、pyrDown/pyrUp 和锐化组合的兼容图像处理路径。它保留原稳定 ID、默认值、ABI 和批处理边界；M11 不把它改名，也不把其输出伪装成频谱测量。M11 的 score 只表示符合本契约的周期频谱证据，不证明摩尔纹的显示、传感器、采样或光学成因。ONNX/AI 已延期，只在平台文档中保留未来接入设计，本阶段不引入模型运行时。
+score 表示周期频谱证据，不能确定显示、传感器、采样或光学成因。`RemoveMoire`/`M_RemoveMoire` 是独立的 Gaussian blur、pyrDown/pyrUp 和锐化处理路径，不提供频谱测量；本算法不依赖 ONNX/AI 模型运行时。
 
 ## 输入、参数和数值契约
 
