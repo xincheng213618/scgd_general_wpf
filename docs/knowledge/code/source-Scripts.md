@@ -29,7 +29,7 @@ next: false
   插件构建产物、HostCopy、manifest包身份、安装替换和恢复契约；发布会上传，安装器返回不等于替换或重启后加载成功。
 
 - [Spectrum 插件](../../04-api-reference/plugins/standard-plugins/spectrum.md) — `plugins.spectrum`
-  Spectrum 的测量校正链、SQLite 结果和独立 ZIP 与 cvxp 双通道发布契约。
+  光谱仪软件 Spectrum 的连接、标定、单次测量和 CSV 导出；标定状态与测量前文件复核、EQE 输入及独立 ZIP/cvxp 发布版本来源。
 
 - [代码行数与 Git 历史统计](../../02-developer-guide/scripts/code-statistics.md) — `delivery.code-statistics`
   统计工作区代码行数与 Git 提交历史，说明文件筛选、变更量口径、缓存和图表生成依赖；历史快照不包含未提交修改，HTML 构建依赖外部构建器。

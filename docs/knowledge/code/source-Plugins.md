@@ -42,7 +42,7 @@ next: false
   按设置JSON、Engine MySQL、模块SQLite和结果文件定位数据所有者；有记录、有图片、已导出和已备份不是同一状态。
 
 - [Spectrum 插件](../../04-api-reference/plugins/standard-plugins/spectrum.md) — `plugins.spectrum`
-  Spectrum 的测量校正链、SQLite 结果和独立 ZIP 与 cvxp 双通道发布契约。
+  光谱仪软件 Spectrum 的连接、标定、单次测量和 CSV 导出；标定状态与测量前文件复核、EQE 输入及独立 ZIP/cvxp 发布版本来源。
 
 - [Spectrum Socket 业务指令与完成边界](../../04-api-reference/plugins/standard-plugins/spectrum-socket.md) — `plugins.spectrum-socket`
   Spectrum Socket 的启用与状态查询、五个指令的参数和返回值；连接成功与标定就绪不同，30/60 秒取消不保证原生操作按时停止。
