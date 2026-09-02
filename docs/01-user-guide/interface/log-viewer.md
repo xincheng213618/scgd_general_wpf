@@ -5,7 +5,7 @@ status: "current"
 summary: "区分log4net输出、历史文件读取与UI筛选，说明刷新、截断和原生日志采集边界；没有显示不等于动作未发生。"
 aliases: ["日志查看器","查看日志","日志搜索","日志等级","历史日志","日志丢失","正则变红","自动刷新","自动滚动","WindowLog","LogOutput","LogLocalOutput","LogLoadState","LogHistoryReader","LogSearchHelper","LogViewerAppender","NativeLogWindow"]
 code_paths: ["UI/ColorVision.UI/LogImp","ColorVision/log4net.config","ColorVision/EntryClass.cs","ColorVision/App.xaml.cs","ColorVision/MainWindow.xaml.cs","ColorVision/NativeLogging","UI/ColorVision.Core/NativeLogBridge.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LogHistoryReaderTests.cs","Test/ColorVision.UI.Tests/LogSearchHelperTests.cs","Test/ColorVision.UI.Tests/LogEntryParserTests.cs","Test/ColorVision.UI.Tests/LogViewConfigTests.cs","Test/ColorVision.UI.Tests/NativeLogPendingBufferTests.cs","Test/ColorVision.UI.Tests/NativeLogWindowTests.cs","Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/LogHistoryReaderTests.cs","Test/ColorVision.UI.Tests/LogSearchHelperTests.cs","Test/ColorVision.UI.Tests/LogEntryParserTests.cs","Test/ColorVision.UI.Tests/LogViewConfigTests.cs","Test/ColorVision.UI.Tests/NativeLogPendingBufferTests.cs","Test/ColorVision.UI.Tests/NativeLogWindowTests.cs","Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs","Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs"]
 related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 ---
 
@@ -23,6 +23,14 @@ related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 | `NativeLogWindow` | 独立的 `NativeLogBridge` 回调与采集会话，不是从托管日志文件读回 native 历史 |
 
 主程序通过 `EntryClass.cs` 的 `XmlConfigurator` 加载并监视 `ColorVision/log4net.config`。当前配置包含控制台和按日期滚动的 UTF-8 文件输出，文件配置前缀为 `log\`；当入口检查到当前工作目录包含 `C:\Program Files` 时，会改到应用数据目录下的 `ColorVision\Log\`。定位应读取当前 appender 的 `File`，不能只猜安装目录或将主面板当作完整日志文件。
+
+## 反馈打包的应用日志范围
+
+`AppLogCollector` 同时收集 `%APPDATA%\ColorVision\Log`、当前程序安装目录下的 `log`，以及当前文件 appender 所在目录。安装目录从 `AppDomain.CurrentDomain.BaseDirectory` 获取，覆盖安装在 `C:\Program Files` 下的程序，不扫描其他软件目录。更新后重启和正常启动可能选择不同日志目录，反馈不能只收当前正在写入的位置。
+
+目录转为绝对路径、忽略大小写和末尾分隔符后去重。ZIP 中分别使用 `AppLogs/AppData/`、`AppLogs/Installation/` 和 `AppLogs/Current/`，保留不同目录内同名的日志；当前目录与前两者重合时只收一次。所有来源沿用所选时间范围（默认最近 7 天）、按 `LastWriteTimeUtc` 过滤、单文件不超过 50 MiB 和只读顶层文件的规则。缺失目录会跳过，某个目录无法读取或某个文件复制失败不会阻止收集其他来源。“打开日志目录”仍指向当前 appender 所在目录，打包范围更广。
+
+`FeedbackLogCollectorTests` 使用临时目录覆盖两处同名日志同时保留、当前目录去重、自定义当前目录、时间范围和其他目录缺失时仍收集安装目录日志；不依赖现场管理员权限或生产日志。
 
 ## 全局输出等级不是本地筛选
 

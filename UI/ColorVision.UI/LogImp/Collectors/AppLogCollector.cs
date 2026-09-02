@@ -23,22 +23,48 @@ namespace ColorVision.UI.LogImp
         {
             var results = new List<(string, string)>();
 
-            string? logDir = LogDirectory;
-            if (string.IsNullOrEmpty(logDir) || !Directory.Exists(logDir))
-                return results;
-
-            foreach (var file in GetRecentLogFiles(logDir, RecentDays, DateTime.UtcNow))
+            var files = GetRecentApplicationLogFiles(LogDirectory,
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                AppDomain.CurrentDomain.BaseDirectory, RecentDays, DateTime.UtcNow);
+            foreach (var (entryPath, file) in files)
             {
                 try
                 {
                     string tempCopy = Path.Combine(Path.GetTempPath(), $"ColorVision_AppLog_{Guid.NewGuid():N}_{file.Name}");
                     file.CopyTo(tempCopy, true);
-                    results.Add(($"AppLogs/{file.Name}", tempCopy));
+                    results.Add((entryPath, tempCopy));
                 }
                 catch (Exception ex)
                 {
                     log.Debug($"Could not collect app log file {file.FullName}: {ex.Message}");
                 }
+            }
+
+            return results;
+        }
+
+        internal static IReadOnlyList<(string EntryPath, FileInfo File)> GetRecentApplicationLogFiles(
+            string? currentLogDirectory, string applicationDataDirectory, string applicationDirectory, int recentDays, DateTime utcNow)
+        {
+            (string Source, string? Directory)[] directories =
+            [
+                ("AppData", Path.Combine(applicationDataDirectory, "ColorVision", "Log")),
+                ("Installation", Path.Combine(applicationDirectory, "log")),
+                ("Current", currentLogDirectory),
+            ];
+            var results = new List<(string, FileInfo)>();
+            var collectedDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (source, directory) in directories)
+            {
+                if (string.IsNullOrWhiteSpace(directory))
+                    continue;
+
+                string fullDirectory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
+                if (!collectedDirectories.Add(fullDirectory) || !Directory.Exists(fullDirectory))
+                    continue;
+
+                foreach (FileInfo file in GetRecentLogFiles(fullDirectory, recentDays, utcNow))
+                    results.Add(($"AppLogs/{source}/{file.Name}", file));
             }
 
             return results;

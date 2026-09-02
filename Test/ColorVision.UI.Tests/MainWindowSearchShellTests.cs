@@ -45,14 +45,14 @@ public sealed class MainWindowSearchShellTests
     }
 
     [Fact]
-    public void SearchRemainsAvailableThroughConfigurableMenuActions()
+    public void SearchRemainsAvailableThroughConfigurableHotkeysWithoutMenuEntries()
     {
         var search = new MenuCommandSearch();
         var find = new MenuContextualFind();
         Assert.IsAssignableFrom<IHotKey>(search);
         Assert.IsAssignableFrom<IHotKey>(find);
-        Assert.Equal(MenuItemConstants.Tool, search.OwnerGuid);
-        Assert.Equal(MenuItemConstants.Edit, find.OwnerGuid);
+        Assert.False(typeof(IMenuItem).IsAssignableFrom(search.GetType()));
+        Assert.False(typeof(IMenuItem).IsAssignableFrom(find.GetType()));
         Assert.Equal(new Hotkey(Key.P, ModifierKeys.Control | ModifierKeys.Shift), search.HotKeys.Hotkey);
         Assert.Equal(new Hotkey(Key.F, ModifierKeys.Control), find.HotKeys.Hotkey);
     }

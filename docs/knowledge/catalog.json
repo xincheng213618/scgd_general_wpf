@@ -5169,7 +5169,8 @@
         "Test/ColorVision.UI.Tests/LogViewConfigTests.cs",
         "Test/ColorVision.UI.Tests/NativeLogPendingBufferTests.cs",
         "Test/ColorVision.UI.Tests/NativeLogWindowTests.cs",
-        "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs"
+        "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs",
+        "Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs"
       ],
       "related": [
         "operations.index",

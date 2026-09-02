@@ -55,8 +55,8 @@ related: ["ui.framework", "ui.menus", "ui.settings", "ui.configuration", "ui.com
 | 另存为 | Ctrl+Shift+S | 仅执行当前编辑器支持的 SaveAs；图像/3D 是渲染图或截图，不是通用原文件另存 |
 | 关闭当前标签页 | Ctrl+W、Ctrl+F4 | 主窗口独立关闭文档命令，保留未保存确认，不调用图像清空 |
 | 设置 | Ctrl+, | 打开选项，不占用文本斜体的 Ctrl+I |
-| 搜索命令与功能 | Ctrl+Shift+P | 打开或激活单一独立 SearchWindow，不查找文档正文 |
-| 查找当前内容或应用功能 | Ctrl+F | 优先当前编辑器、会话、日志的局部查找；没有局部查找的普通页面打开应用搜索 |
+| 搜索命令与功能 | Ctrl+Shift+P | 保留可配置快捷键，工具菜单入口已移除；打开或激活单一独立 SearchWindow，不查找文档正文 |
+| 查找当前内容或应用功能 | Ctrl+F | 保留可配置快捷键，编辑菜单入口已移除；优先当前编辑器、会话、日志的局部查找；没有局部查找的普通页面打开应用搜索 |
 | 日志 | Ctrl+Alt+L | 打开托管日志窗口，L 对应 Log；窗口内 Ctrl+F 仍用于日志查找 |
 | 重置窗口布局 | Ctrl+Alt+Shift+R | R 对应 Reset；菜单和快捷键均先询问，默认选择“否”，请先保存文档 |
 
