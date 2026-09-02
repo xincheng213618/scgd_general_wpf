@@ -1,4 +1,4 @@
-# CHANGELOAG
+# CHANGELOG
 
  ## [1.4.6.19] 2026.09.02
 
