@@ -16,7 +16,7 @@ ColorVision 的 AR/VR 光学检测项目包，运行时加载 `ProjectARVRPro.dl
 | --- | --- |
 | 配置流程组、解析映射、Recipe 和雷鸟切图；选择处理类型 | [流程与解析配置](../../docs/04-api-reference/projects/project-arvr-pro-processes.md) |
 | Socket 自动化、输出格式、历史结果图、结果统计 | [ProjectARVRPro](../../docs/04-api-reference/projects/project-arvr-pro.md) |
-| 对接外部产线控制程序 | [TCP 通讯协议手册](./ARVRPRO%20TCP%20通讯协议手册.md) |
+| 对接外部产线控制程序 | [TCP 通讯协议](../../docs/04-api-reference/projects/project-arvr-pro-protocol.md) |
 | 配置 Demura、生成 GECS 帧、定位烧录失败 | [Demura 烧录与 PG 通信](../../docs/04-api-reference/projects/project-arvr-pro-demura.md) |
 | 查询版本变化 | [CHANGELOG](./CHANGELOG.md) |
 

@@ -3,10 +3,10 @@ knowledge_id: "projects.arvr-pro"
 knowledge_type: "reference"
 status: "current"
 summary: "ARVRPro 项目入口、Socket 自动化、输出与历史结果查询；流程组、实例 Recipe 和 Demura 各有对应操作主题。"
-aliases: ["ARVR 历史原图删了还能看结果吗","保存结果图会不会重复画标记","ProjectARVRPro","ResultImageFileCandidates","SavedSourceImageFileName","SavedResultImageFileName","结果统计","统计日期记忆","CycleTimeStatisticsWindow","ProjectARVRInit","SwitchPG","SwitchPGCompleted","SwitchGroup","RunAll","ProjectARVRResult","AOITestSwitchImageComplete"]
+aliases: ["ARVR 历史原图删了还能看结果吗","保存结果图会不会重复画标记","ProjectARVRPro","ResultImageFileCandidates","SavedSourceImageFileName","SavedResultImageFileName","结果统计","统计日期记忆","CycleTimeStatisticsWindow","ARVR 项目"]
 code_paths: ["Projects/ProjectARVRPro/ARVRWindow.xaml.cs","Projects/ProjectARVRPro/ResultImagePresentation.cs","Projects/ProjectARVRPro/ProjectARVRReuslt.cs","Projects/ProjectARVRPro/ViewResultManager.cs","Projects/ProjectARVRPro/Services/SocketControl.cs","Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs","Projects/ProjectARVRPro/Services/RunAllSocket.cs","Projects/ProjectARVRPro/SocketRelay/","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml.cs","Projects/ProjectARVRPro/ResultStatisticsTheme.xaml","Projects/ProjectARVRPro/ResultStatistics.cs","Projects/ProjectARVRPro/ProjectARVRProConfig.cs"]
 test_paths: ["Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj","Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs","Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs","Test/ProjectARVRPro.Tests/ResultStatisticsTests.cs"]
-related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-processes","projects.arvr-pro-demura","projects.capabilities"]
+related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol","projects.arvr-pro-processes","projects.arvr-pro-demura","projects.capabilities"]
 ---
 
 # ProjectARVRPro
@@ -20,7 +20,7 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-processes
 | 项目包没出现 | `manifest.json`、`ProjectARVRPro.dll`、插件目录、主程序版本要求 |
 | 配置流程、Recipe 或解析映射 | [流程组与解析配置](./project-arvr-pro-processes.md) |
 | 初始化后没有下一步 | 当前 `ProcessGroup` 是否有启用的 `ProcessMeta` |
-| 外部系统触发无反应 | Socket 服务、`EventName`、项目 handler 是否加载 |
+| 外部系统触发无反应 | [TCP 协议、请求字段与错误排查](./project-arvr-pro-protocol.md) |
 | 切图失败 | `PictureSwitchConfig`、雷鸟串口、返回值和超时 |
 | RunAll 只跑一部分 | `AllowTestFailures`、Flow 模板名、切图和预处理错误 |
 | CSV 或 Socket 字段不对 | `UseLegacyARVROutput`、标准 CSV、Legacy 输出、客户 XLSX |
@@ -71,7 +71,7 @@ ARVRPro 通过 `ColorVision.SocketProtocol` 的 JSON 模式接入外部系统。
 | `RunAll` | 一键执行当前组内启用步骤 |
 | `AOITestSwitchImageComplete` | AOI 切图完成信号，经 Relay 回给 Flow |
 
-详细请求与响应见源码仓库 `Projects/ProjectARVRPro/ARVRPRO TCP 通讯协议手册.md`，可运行的客户端示例见[Integration Demo](./project-arvr-pro-integration-demo.md)。AOI 流程还使用 `SocketRelay/`；只连通主 Socket 端口不代表 Relay 已经可用。
+详细请求与响应、索引约定、状态码、并发限制及 AOI 中转见 [TCP 通讯协议](./project-arvr-pro-protocol.md)，可运行的客户端示例见 [Integration Demo](./project-arvr-pro-integration-demo.md)。
 
 ## 输出和兼容
 

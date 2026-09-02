@@ -1271,6 +1271,12 @@
                 "root": "SQLite 正文存储、迁移与文件维护"
               },
               "link": "/04-api-reference/ui-components/sqlite-storage"
+            },
+            {
+              "text": {
+                "root": "ARVRPro TCP 通讯协议"
+              },
+              "link": "/04-api-reference/projects/project-arvr-pro-protocol"
             }
           ]
         },
@@ -2696,6 +2702,12 @@
                 "root": "Demura 烧录与 PG 通信"
               },
               "link": "/04-api-reference/projects/project-arvr-pro-demura"
+            },
+            {
+              "text": {
+                "root": "ARVRPro TCP 通讯协议"
+              },
+              "link": "/04-api-reference/projects/project-arvr-pro-protocol"
             },
             {
               "text": {

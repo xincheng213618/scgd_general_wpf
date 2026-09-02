@@ -286,6 +286,9 @@ next: false
 - [SQLite 正文存储、迁移与文件维护](../../04-api-reference/ui-components/sqlite-storage.md) — `ui.sqlite-storage`
   Socket 与 Flow 的 SQLite 正文 gzip 编解码、按ID读写、旧TEXT逐批迁移、WAL备份与VACUUM；通用工具不自动停写/备份/恢复，失败可能已有批次提交。
 
+- [ARVRPro TCP 通讯协议](../../04-api-reference/projects/project-arvr-pro-protocol.md) — `projects.arvr-pro-protocol`
+  ARVRPro TCP/JSON 对接：初始化与 RunAll、流程启用设置、切图确认、AOI 中转、状态码和最终结果关联；说明分帧与并发会话限制。
+
 ## UI/ColorVision.Solution {#module-55492f436f6c6f72566973696f6e2e536f6c7574696f6e}
 
 - [UI 组件目录](../../04-api-reference/ui-components/control-catalog.md) — `ui.control-catalog`

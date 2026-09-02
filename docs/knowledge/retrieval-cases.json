@@ -375,9 +375,13 @@
     {"query":"T0000","expected_any":["projects.lux"],"include_planned":false},
     {"query":"ARVR 流程解析映射","expected_any":["projects.arvr-pro-processes"],"include_planned":false},
     {"query":"MTFHV048","expected_any":["projects.arvr-pro-processes"],"include_planned":false},
-    {"query":"ProjectARVRInit","expected_any":["projects.arvr-pro"],"include_planned":false},
-    {"query":"AOITestSwitchImageComplete","expected_any":["projects.arvr-pro"],"include_planned":false},
+    {"query":"ProjectARVRInit","expected_any":["projects.arvr-pro-protocol"],"include_planned":false},
+    {"query":"AOITestSwitchImageComplete","expected_any":["projects.arvr-pro-protocol"],"include_planned":false},
     {"query":"LUX Fix","expected_any":["projects.lux"],"include_planned":false},
-    {"query":"自动存档位置","expected_any":["delivery.update"],"include_planned":false}
+    {"query":"自动存档位置","expected_any":["delivery.update"],"include_planned":false},
+    {"query":"GetProcessEnable","expected_any":["projects.arvr-pro-protocol"],"include_planned":false},
+    {"query":"SetProcessEnable 返回 Partial applied","expected_any":["projects.arvr-pro-protocol"],"include_planned":false},
+    {"query":"ARVRTestType 从 0 还是 1 开始","expected_any":["projects.arvr-pro-protocol"],"include_planned":false},
+    {"query":"No enabled ARVR flow","expected_any":["projects.arvr-pro-protocol"],"include_planned":false}
   ]
 }

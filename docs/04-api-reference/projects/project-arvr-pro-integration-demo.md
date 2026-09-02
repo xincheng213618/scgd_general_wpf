@@ -6,12 +6,12 @@ summary: "独立 net48 ARVRPro TCP/JSON Demo 的公开字段、ACK 与最终完�
 aliases: ["RunAll Code=0 是否已经测试完成","客户怎么对接 ARVRPro","最终结果MsgID为什么为空","ProjectARVRPro.IntegrationDemo","ProjectARVRResult","MsgID","TotalResult"]
 code_paths: ["Projects/ProjectARVRPro.IntegrationDemo/Program.cs","Projects/ProjectARVRPro.IntegrationDemo/Contracts/","Projects/ProjectARVRPro.IntegrationDemo/Samples/project-arvr-result.json","Projects/ProjectARVRPro/Services/RunAllSocket.cs","Projects/ProjectARVRPro/ARVRWindow.xaml.cs"]
 test_paths: ["Test/ProjectARVRPro.Tests/IntegrationDemoReleaseClientTests.cs"]
-related: ["projects.arvr-pro","projects.index"]
+related: ["projects.arvr-pro","projects.arvr-pro-protocol","projects.index"]
 ---
 
 # ProjectARVRPro.IntegrationDemo
 
-`Projects/ProjectARVRPro.IntegrationDemo/` 是给客户、MES、PLC 上位机或自动化中控使用的最小 TCP/JSON 对接示例。它不是 ColorVision 插件，不依赖 ColorVision 主程序和内部算法 DLL。
+`Projects/ProjectARVRPro.IntegrationDemo/` 是给客户、MES、PLC 上位机或自动化中控使用的最小 TCP/JSON 对接示例。它不是 ColorVision 插件，不依赖 ColorVision 主程序和内部算法 DLL。服务端的完整请求/响应、索引、状态码和执行条件见 [TCP 通讯协议](./project-arvr-pro-protocol.md)。
 
 ## 项目定位
 
@@ -67,6 +67,8 @@ related: ["projects.arvr-pro","projects.index"]
 | 同步管理命令 | Demo 要求响应 `EventName` 与 `MsgID` 均匹配请求；匹配响应的负 `Code` 使 CLI 失败 | 此匹配逻辑不能套用到异步最终结果 |
 | 最终 `ProjectARVRResult` | 服务端填 `MsgID=string.Empty`、当前 SN、最终 `Code` 和标准或 Legacy `Data` | 最终结果不回显原始 RunAll MsgID，不能用该 MsgID 一对一关联 |
 | Demo 的测试流程分支 | 收到 `ProjectARVRResult` 后解析并结束；任意可解析负 `Code` 或 `TotalResult==false` 会失败 | 当前未核对最终 SN 是否等于请求 SN，也未核对原请求 MsgID |
+
+同步设置的 `Code=1 / Partial applied` 不会仅因状态码而令 CLI 失败，客户程序仍需检查 `Applied` / `NotFound`。
 
 `TotalResult` 在 Demo 解析模型里可为空。当前判断是 `parsed.TotalResult == false`，不是必须为 `true`；缺失或无法解析为布尔值不会在这条判断中被明确拒绝。因此“Demo 正常退出”不能直接解释为已经严格验证结果属于本次请求且明确 PASS。
 

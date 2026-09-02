@@ -6566,13 +6566,7 @@
         "结果统计",
         "统计日期记忆",
         "CycleTimeStatisticsWindow",
-        "ProjectARVRInit",
-        "SwitchPG",
-        "SwitchPGCompleted",
-        "SwitchGroup",
-        "RunAll",
-        "ProjectARVRResult",
-        "AOITestSwitchImageComplete"
+        "ARVR 项目"
       ],
       "code_paths": [
         "Projects/ProjectARVRPro/ARVRWindow.xaml.cs",
@@ -6598,6 +6592,7 @@
       "related": [
         "projects.index",
         "projects.arvr-pro-demo",
+        "projects.arvr-pro-protocol",
         "projects.arvr-pro-processes",
         "projects.arvr-pro-demura",
         "projects.capabilities"
@@ -6637,6 +6632,7 @@
       ],
       "related": [
         "projects.arvr-pro",
+        "projects.arvr-pro-protocol",
         "projects.index"
       ],
       "code_scopes": [
@@ -6732,6 +6728,63 @@
       "title": "配置 ARVRPro 流程、解析映射与 Recipe",
       "source": "docs/04-api-reference/projects/project-arvr-pro-processes.md",
       "url": "/04-api-reference/projects/project-arvr-pro-processes",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "projects.arvr-pro-protocol",
+      "knowledge_type": "reference",
+      "status": "current",
+      "summary": "ARVRPro TCP/JSON 对接：初始化与 RunAll、流程启用设置、切图确认、AOI 中转、状态码和最终结果关联；说明分帧与并发会话限制。",
+      "aliases": [
+        "ARVR TCP 协议",
+        "ARVRPRO TCP 通讯协议手册",
+        "ProjectARVRInit",
+        "SwitchPG",
+        "SwitchPGCompleted",
+        "SwitchGroup",
+        "RunAll",
+        "GetProcessEnable",
+        "SetProcessEnable",
+        "ARVRTestType",
+        "Partial applied",
+        "No enabled ARVR flow",
+        "ARVR test is busy",
+        "ProjectARVRResult",
+        "AoiSwitchPG",
+        "AOITestSwitchImageComplete",
+        "SocketRelay",
+        "UseLegacyARVROutput",
+        "SNlocked"
+      ],
+      "code_paths": [
+        "Projects/ProjectARVRPro/Services/SocketControl.cs",
+        "Projects/ProjectARVRPro/Services/RunAllSocket.cs",
+        "Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs",
+        "Projects/ProjectARVRPro/Services/ProcessEnableSocket.cs",
+        "Projects/ProjectARVRPro/SocketRelay",
+        "Projects/ProjectARVRPro/ARVRWindow.xaml.cs",
+        "Projects/ProjectARVRPro/ProjectARVRProConfig.cs",
+        "Projects/ProjectARVRPro/ObjectiveTestResult.cs",
+        "Projects/ProjectARVRPro/LegacyARVR",
+        "UI/ColorVision.SocketProtocol/SocketManager.cs",
+        "UI/ColorVision.SocketProtocol/SocketJsonDispatcher.cs",
+        "UI/ColorVision.SocketProtocol/SocketConfig.cs"
+      ],
+      "test_paths": [],
+      "related": [
+        "projects.arvr-pro",
+        "projects.arvr-pro-processes",
+        "projects.arvr-pro-demo",
+        "ui.socket-protocol"
+      ],
+      "code_scopes": [
+        "Projects/ProjectARVRPro",
+        "UI/ColorVision.SocketProtocol"
+      ],
+      "domain": "projects",
+      "title": "ARVRPro TCP 通讯协议",
+      "source": "docs/04-api-reference/projects/project-arvr-pro-protocol.md",
+      "url": "/04-api-reference/projects/project-arvr-pro-protocol",
       "searchable": true
     },
     {
