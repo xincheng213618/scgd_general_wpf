@@ -23,6 +23,8 @@ related: ["engine.index", "engine.mysql-maintenance", "ui.sqlite-storage", "ui.d
 
 `OpenWindow(owner, source)` 只注入一个 provider，不进行全局发现；`Sources` 对外只读，单源模式要求恰好一项，`SelectedSource` 拒绝集合外对象。Socket 的 Engine launcher 使用此入口；`MySqlToolWindow` 的清理按钮调用无 source 的全局入口。
 
+必须保留真正的 `public static void OpenWindow()` 无参数重载：已发布的 ARVR、KB 等项目插件可能仍引用这个二进制签名。把它替换为带可选参数的方法，只能兼容重新编译的源码，旧 DLL 点击“数据清理”会抛 `MissingMethodException`。无参数重载转入同一全局窗口逻辑，不改变单源范围或清理行为；`DatabaseCleanupWindowTests` 通过精确反射签名与委托绑定检查此兼容入口，不打开真实数据库。
+
 静态窗口表按不区分大小写的 `global` 或 `source:{Id}` 复用窗口，不按数据库连接、账号或文件路径区分。同 ID 再次调用只激活原窗口，不替换 provider，也不重新自动统计。全局和单源窗口可并存；直接构造窗口不走这个复用表。窗口范围是 UI 路由约束，不是数据库权限或进程级互斥机制。
 
 生产入口设置 `refreshOnLoad: true`，第一次 Loaded 调用 `RefreshAllAsync()`，以 `Task.WhenAll` 统计该窗口的**所有** sources；全局模式不是只读取当前选中项。单源只统计注入来源。提供者构造、描述属性和 `LoadTables` 是否会初始化目录/schema/连接需由 owner 核对，不能为回答“有哪些数据源”而直接打开真实维护窗口。

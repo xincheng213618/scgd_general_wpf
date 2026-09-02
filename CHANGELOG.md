@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+1. 恢复数据库清理窗口的无参数 `OpenWindow()` 二进制入口，修复旧 ARVR 等项目插件点击“数据清理”时出现的 `MissingMethodException`；保留全局/单数据源窗口行为。
+
 1. 移除“应用与工具”中已停用的 `CVRaw To CSV` 和 `DAT File Reader`，删除各自的工具 Provider 与实现，并同步调整工具元数据测试；通用 CVRAW/CVCIE 文件读取能力不变。
    - 原实现：`Engine/ColorVision.Engine/ToolPlugins/CVRawToCsvTool.cs`、`ColorVision/ToolPlugins/DatFileReader.cs`。
    - 恢复记录：查找提交 `chore(tools): remove unused CVRAW and DAT utilities`，执行 `git revert <该提交号>` 可恢复工具实现及测试引用。
