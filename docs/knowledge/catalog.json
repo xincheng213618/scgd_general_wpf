@@ -9340,8 +9340,12 @@
       "knowledge_id": "ui.scheduler",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Quartz 调度定义的启动恢复、JSON/SQLite 分工与执行统计；暂停不终止在途任务，重启恢复不是执行进度续跑。",
+      "summary": "任务计划程序的状态栏入口、创建步骤、调度参数、启动恢复和执行历史；暂停只限制后续触发，重启按保存的定义重新调度。",
       "aliases": [
+        "任务计划程序",
+        "创建任务",
+        "间隔/重复",
+        "执行历史",
         "定时任务为什么不执行",
         "任务暂停后仍然执行",
         "重启后一次性任务又执行",
@@ -9368,6 +9372,9 @@
         "UI/ColorVision.Scheduler/Data/SchedulerDbManager.cs",
         "UI/ColorVision.Scheduler/TaskViewerWindow.xaml.cs",
         "UI/ColorVision.Scheduler/CreateTask.xaml.cs",
+        "UI/ColorVision.Scheduler/CreateTask.xaml",
+        "UI/ColorVision.Scheduler/TaskViewerWindow.xaml",
+        "UI/ColorVision.Scheduler/Properties/Resources.resx",
         "UI/ColorVision.Scheduler/ExecutionHistoryWindow.xaml.cs",
         "UI/ColorVision.UI/Environments.cs",
         "Engine/ColorVision.Engine/Services/Devices/ScheduledDeviceJobHelper.cs",
@@ -9382,6 +9389,7 @@
       ],
       "related": [
         "ui.index",
+        "ui.status-bar",
         "ui.configuration",
         "flow.templates",
         "flow.headless"
@@ -9392,7 +9400,7 @@
         "UI/ColorVision.UI"
       ],
       "domain": "ui",
-      "title": "Quartz 任务定义、恢复与执行历史",
+      "title": "任务计划程序：创建、调度与执行历史",
       "source": "docs/04-api-reference/ui-components/ColorVision.Scheduler.md",
       "url": "/04-api-reference/ui-components/ColorVision.Scheduler",
       "searchable": true

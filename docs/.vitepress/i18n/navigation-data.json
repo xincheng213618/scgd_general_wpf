@@ -1361,7 +1361,7 @@
           "items": [
             {
               "text": {
-                "root": "Quartz 任务定义、恢复与执行历史"
+                "root": "任务计划程序：创建、调度与执行历史"
               },
               "link": "/04-api-reference/ui-components/ColorVision.Scheduler"
             },
@@ -1769,7 +1769,7 @@
             },
             {
               "text": {
-                "root": "Quartz 任务定义、恢复与执行历史"
+                "root": "任务计划程序：创建、调度与执行历史"
               },
               "link": "/04-api-reference/ui-components/ColorVision.Scheduler"
             },
@@ -2312,7 +2312,7 @@
             },
             {
               "text": {
-                "root": "Quartz 任务定义、恢复与执行历史"
+                "root": "任务计划程序：创建、调度与执行历史"
               },
               "link": "/04-api-reference/ui-components/ColorVision.Scheduler"
             },

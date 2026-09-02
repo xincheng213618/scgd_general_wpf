@@ -2,25 +2,44 @@
 knowledge_id: "ui.scheduler"
 knowledge_type: "topic"
 status: "current"
-summary: "Quartz 调度定义的启动恢复、JSON/SQLite 分工与执行统计；暂停不终止在途任务，重启恢复不是执行进度续跑。"
-aliases: ["定时任务为什么不执行","任务暂停后仍然执行","重启后一次性任务又执行","ColorVision.Scheduler","QuartzSchedulerManager","InitializationTask","scheduler_tasks.json","SchedulerHistory.db","SchedulerInfo","TaskExecutionListener","TimeoutSeconds","DisallowConcurrentExecution"]
-code_paths: ["UI/ColorVision.Scheduler/README.md","UI/ColorVision.Scheduler/ColorVision.Scheduler.csproj","UI/ColorVision.Scheduler/QuartzSchedulerManager.cs","UI/ColorVision.Scheduler/MenuTaskViewer.cs","UI/ColorVision.Scheduler/SchedulerStatusBarProvider.cs","UI/ColorVision.Scheduler/SchedulerInfo.cs","UI/ColorVision.Scheduler/SchedulerTriggerFactory.cs","UI/ColorVision.Scheduler/SchedulerTaskSerializer.cs","UI/ColorVision.Scheduler/TaskExecutionListener.cs","UI/ColorVision.Scheduler/Data/SchedulerDbManager.cs","UI/ColorVision.Scheduler/TaskViewerWindow.xaml.cs","UI/ColorVision.Scheduler/CreateTask.xaml.cs","UI/ColorVision.Scheduler/ExecutionHistoryWindow.xaml.cs","UI/ColorVision.UI/Environments.cs","Engine/ColorVision.Engine/Services/Devices/ScheduledDeviceJobHelper.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Job/CameraCaptureJob.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/HeadlessFlowJob.cs"]
+summary: "任务计划程序的状态栏入口、创建步骤、调度参数、启动恢复和执行历史；暂停只限制后续触发，重启按保存的定义重新调度。"
+aliases: ["任务计划程序","创建任务","间隔/重复","执行历史","定时任务为什么不执行","任务暂停后仍然执行","重启后一次性任务又执行","ColorVision.Scheduler","QuartzSchedulerManager","InitializationTask","scheduler_tasks.json","SchedulerHistory.db","SchedulerInfo","TaskExecutionListener","TimeoutSeconds","DisallowConcurrentExecution"]
+code_paths: ["UI/ColorVision.Scheduler/README.md","UI/ColorVision.Scheduler/ColorVision.Scheduler.csproj","UI/ColorVision.Scheduler/QuartzSchedulerManager.cs","UI/ColorVision.Scheduler/MenuTaskViewer.cs","UI/ColorVision.Scheduler/SchedulerStatusBarProvider.cs","UI/ColorVision.Scheduler/SchedulerInfo.cs","UI/ColorVision.Scheduler/SchedulerTriggerFactory.cs","UI/ColorVision.Scheduler/SchedulerTaskSerializer.cs","UI/ColorVision.Scheduler/TaskExecutionListener.cs","UI/ColorVision.Scheduler/Data/SchedulerDbManager.cs","UI/ColorVision.Scheduler/TaskViewerWindow.xaml.cs","UI/ColorVision.Scheduler/CreateTask.xaml.cs","UI/ColorVision.Scheduler/CreateTask.xaml","UI/ColorVision.Scheduler/TaskViewerWindow.xaml","UI/ColorVision.Scheduler/Properties/Resources.resx","UI/ColorVision.Scheduler/ExecutionHistoryWindow.xaml.cs","UI/ColorVision.UI/Environments.cs","Engine/ColorVision.Engine/Services/Devices/ScheduledDeviceJobHelper.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Job/CameraCaptureJob.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/HeadlessFlowJob.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/SchedulerTriggerFactoryTests.cs","Test/ColorVision.UI.Tests/SchedulerTaskSerializationTests.cs","Test/ColorVision.UI.Tests/SchedulerHistoryQueryTests.cs","Test/ColorVision.UI.Tests/ScheduledDeviceJobHelperTests.cs"]
-related: ["ui.index","ui.configuration","flow.templates","flow.headless"]
+related: ["ui.index","ui.status-bar","ui.configuration","flow.templates","flow.headless"]
 ---
 
-# Quartz 任务定义、恢复与执行历史
+# 任务计划程序：创建、调度与执行历史
 
 `UI/ColorVision.Scheduler/` 负责把 `SchedulerInfo` 定义注册到 Quartz、保存调度意图并记录已返回的执行结果。真正的设备、流程和客户操作由各 `IJob` 实现负责；任务已登记、Quartz 已触发、业务已完成和历史已落盘是不同完成条件。
 
-首次获取管理器、打开窗口、恢复或立即触发任务都可能启动已有设备任务，不是保证只读的诊断入口。未获运行授权时，只读源码和已有文件；不要为验证文档而调用 `GetInstance()`、打开产品调度窗口或尝试恢复任务。
+## 创建和管理任务
+
+1. 点击主程序状态栏的**时钟图标（任务计划程序）**打开任务列表。图标显示设置见[状态栏](./status-bar.md)。
+2. 点击 **创建任务**，选择任务类型，核对任务名称、分组及该类型的配置。
+3. 设置执行计划、重复方式和间隔；需要稍后开始时，选中 **延迟启动** 并填写正的时间间隔，例如 `00:05:00`。
+4. 点击 **创建**。提交成功后窗口关闭，任务按计划参与调度；校验或保存失败时窗口保留并显示错误。
+5. 在任务行右键菜单中编辑、暂停、恢复、立即执行或查看该任务的**执行历史**；顶部历史入口查看所有任务的记录。
+
+默认“间隔/重复 + 一次”计划可在创建后立即执行。调度器首次访问也会恢复已保存任务；涉及相机、光谱仪或流程的任务，应先确认设备和业务配置适合运行。暂停、立即执行和关闭窗口的具体效果见[暂停与关闭](#暂停、取消、超时和关闭)。
+
+| 设置 | 默认值与含义 |
+| --- | --- |
+| 执行计划 | `Simple`，界面显示“间隔/重复” |
+| 重复方式 | 一次；选择“多次”时，次数表示首次之后的追加次数，例如填 2 共触发 3 次 |
+| 间隔时间 | `00:00:10`；用于重复触发，`Interval` 模式要求整数秒 |
+| 延迟启动 | 默认关闭；启用后延迟必须大于零 |
+| 优先级 | 5，允许 1–10；参与触发器排序，不抢占正在执行的任务 |
+| 超时（秒） | 0；由具体 Job 决定是否使用该值，调度器没有统一终止所有 Job 的超时层 |
+
+任务名称和分组共同组成 `JobKey`。编辑调度参数应使用**编辑任务**入口；修改身份会影响统计归属，见[修改完成与回退](#修改完成、回退与界面边界)。
 
 ## 首次访问和恢复顺序
 
 `QuartzSchedulerManager.GetInstance()` 创建进程内单例，构造函数依次执行 `Load()`、`RestoreStatsFromDb()`、注册 Copilot 上下文，然后把 `Start()` 保存为 `InitializationTask`。取得对象不等于异步初始化已完成。
 
 - `Load()` 读取 JSON；统计恢复会取得 `SchedulerDbManager`，其首次构造创建目录并执行 `CodeFirst.InitTables<JobExecutionRecord>()`，即使当前没有任务也可能创建历史数据库。
-- `Start()` 取得默认 Quartz scheduler、注册 `TaskExecutionListener`、发现 Job 类型，再逐项调用 `CreateJob` 恢复定义。它先恢复暂停意图，最后才调用 `Scheduler.Start()`，不是“先启动、延迟一段时间再恢复”。
+- `Start()` 取得默认 Quartz scheduler、注册 `TaskExecutionListener`、发现 Job 类型，再逐项调用 `CreateJob` 恢复定义。恢复暂停意图后，最后调用 `Scheduler.Start()` 开始分派触发。
 - `TaskViewerInitializer.Order=1000` 的正常宿主入口等待 `InitializationTask`，让低 Order 的服务初始化先执行。但 `SchedulerStatusBarProvider`、`TaskViewerWindow` 和历史窗口的上下文注册也会取得单例，不能据初始化器顺序断言所有首次访问都已等待设备就绪。
 - 单个任务类型丢失、定义校验失败或注册失败会汇总警告，其他可恢复任务仍会启动；启动阶段整体异常则记录日志、提示并使初始化任务失败。JSON/SQLite 加载异常有各自的捕获分支，不等于启动被统一阻断。
 
@@ -28,7 +47,7 @@ Job 类型来自当次 `AssemblyService.Instance.GetAssemblies()` 扫描，不�
 
 ## JSON 定义不是执行检查点
 
-两种文件都位于 `Environments.DirStateScheduler`，即 `DirAppData/State/Scheduler`；默认公司名为 ColorVision 时是 `%AppData%/ColorVision/State/Scheduler`。`DirAppData` 可被宿主设置，不能继续把旧的 `%AppData%/ColorVision` 根目录当成当前固定路径。
+两种文件都位于 `Environments.DirStateScheduler`，即 `DirAppData/State/Scheduler`；默认公司名为 ColorVision 时是 `%AppData%/ColorVision/State/Scheduler`。`DirAppData` 可由宿主设置，实际根目录以运行配置为准。
 
 | 文件 | 保存和恢复的责任 | 不能据此推断 |
 | --- | --- | --- |
@@ -90,7 +109,7 @@ JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`，加载�
 
 历史窗口清理按钮经确认删除所有任务90天前的记录，即使窗口当前只展示某个任务或失败筛选也不会限于该视图。`CleanupOldRecords` 失败返回0，与无可删记录相同；没有内建撤销，也没有后台自动清理调用。删除历史会影响以后重启恢复的统计，不改任务定义，当前列表累计值也不会立即同步重算。执行清理或导出前需获得对应数据操作授权。
 
-任务窗口已有 CSV、JSON 和文本报告导出，但导出的是当前 `TaskInfos` 快照，不是完整 SQLite 执行历史或原子恢复备份；手工 JSON 导出使用的设置也不同于 canonical `SchedulerTaskSerializer`。状态栏当前只显示任务数量/是否有任务，不证明 Quartz 已启动或 Job 正常。
+任务窗口已有 CSV、JSON 和文本报告导出，但导出的是当前 `TaskInfos` 快照，不是完整 SQLite 执行历史或原子恢复备份；手工 JSON 导出使用的设置也不同于任务定义使用的 `SchedulerTaskSerializer`。状态栏当前只显示任务数量/是否有任务，不证明 Quartz 已启动或 Job 正常。
 
 ## 验证范围与缺口
 
