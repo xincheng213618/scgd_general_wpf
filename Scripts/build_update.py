@@ -218,6 +218,8 @@ def get_all_files(directory, include_shell_extension=True):
 
             absolute_path = os.path.join(root, file)
             relative_path = os.path.relpath(absolute_path, directory)
+            if relative_path.lower() == 'changelog.md':
+                continue
             if not include_shell_extension and is_shell_extension_file(relative_path):
                 continue
             if is_root_service_host_file(relative_path):

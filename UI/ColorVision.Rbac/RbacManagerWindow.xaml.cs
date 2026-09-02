@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Rbac.Services;
+using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
@@ -10,7 +11,6 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -124,6 +124,7 @@ namespace ColorVision.Rbac
         {
             Manager = RbacManager.GetInstance();
             InitializeComponent();
+            this.ApplyCaption();
             _runtimeTimer = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => RefreshRuntimeMetrics(), Dispatcher);
         }
 
@@ -139,14 +140,6 @@ namespace ColorVision.Rbac
             if (propertyName == nameof(StatisticsStatusDisplay))
                 OnPropertyChanged(nameof(StatisticsStatusVisibility));
         }
-
-        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            if (e.ButtonState == MouseButtonState.Pressed)
-                DragMove();
-        }
-
-        private void BtnClose_Click(object sender, RoutedEventArgs e) => Close();
 
         private void Window_Initialized(object sender, EventArgs e)
         {

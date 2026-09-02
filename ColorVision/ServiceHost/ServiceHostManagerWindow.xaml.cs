@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
+using ColorVision.Themes;
 using ColorVision.UI.Desktop.Feedback;
 using ColorVision.UI.ServiceHost;
 using ColorVision.UI.LogImp;
@@ -48,6 +49,7 @@ namespace ColorVision.ServiceHost
         public ServiceHostManagerWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
             _logBinder = new ModuleLogViewerBinder(LogViewer, "ColorVision.ServiceHost");
             _logRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
             _logRefreshTimer.Tick += LogRefreshTimer_Tick;

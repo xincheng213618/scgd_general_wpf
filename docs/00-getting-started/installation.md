@@ -24,6 +24,8 @@ related: ["delivery.prerequisites","delivery.deployment","delivery.update","oper
 
 安装器使用仓库外的 Advanced Installer 工程，具体组件与权限提示以本次交付包为准；本页不把未经核对的向导按钮、默认组件或升级行为当作代码契约。
 
+主程序通过 `ColorVision/Update/ChangelogPage.cs` 打开网页变更日志。仓库根目录 `CHANGELOG.md` 保留为项目链接和网站发布原稿，不复制到主程序的构建或 publish 输出目录；已有文件不清理。安装器、更新包和共享文件清单的日志排除规则见[构建与发布脚本](../02-developer-guide/scripts/README.md#正式发布)。
+
 ## 部署前与部署后边界
 
 - 先确认 Windows x64 环境、目标安装目录和当前交付版本，核对安装目录写权限；安装服务或提升权限需要相应授权。

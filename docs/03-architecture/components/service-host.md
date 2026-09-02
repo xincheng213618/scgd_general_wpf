@@ -30,6 +30,8 @@ related: ["platform.system", "platform.startup-integrity", "delivery.update", "d
 
 `--send` 走服务工程自己的 `ServiceHostPipeClient`，不是共享桌面客户端：实际业务请求仅携带命令、不传 `Data`，免票据名单也只有 `ping` / `status` / `issue-broker-ticket`。它会为 `self-update` / `prepare-application-update` / `application-startup-status` 申请票据，被服务端以 `broker_ticket_target_not_allowed` 拒绝；不能当成桌面调用的等价入口。Program传入的3秒只用于连接等待，没有共享客户端的整体等待超时逻辑。
 
+管理窗口采用更新、恢复窗口共享的主题资源，并通过 `ApplyCaption` 初始化原生标题栏颜色。窗口外观不参与服务状态、安装完整性或就绪判定。
+
 ## 协议、身份和票据
 
 `ServiceHostProtocol` 与服务端 `ServiceHostContracts` 定义协议版本2、camelCase JSON、UTF-8无BOM编码。服务名和管道名均为 `ColorVisionServiceHost`。共享客户端连接本机 `.`；一个连接只发送一行请求、接收一行响应，随后释放，不是多请求长连接。请求有 `RequestId`、`OperationId`、`Command`、`Data` 和可选 `BrokerTicket`；响应有 `RequestId`、`Success`、`Message`、`Data`。

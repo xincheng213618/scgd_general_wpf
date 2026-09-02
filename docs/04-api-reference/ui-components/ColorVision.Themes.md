@@ -77,6 +77,12 @@ related: ["ui.index","ui.property-grid","ui.configuration"]
 
 保存时机、退出自动保存、保存失败和重载对象替换均归配置服务，不由 Themes 库承诺。“预览已变色”不能证明设置已写盘，文件重载也不自动等于所有主题消费者已重新应用。
 
+## 更新与管理窗口的共享外观
+
+`Themes/UpdateDialogTheme.xaml` 提供 `UpdateDialog.*` 动态画刷以及主按钮、次按钮、文字按钮和卡片样式。配色来自 Dark / White 字典，次要文字使用 0.72 不透明度区分信息层级。更新、恢复、服务主机、应用与工具以及 RBAC 用户窗口共享这套资源；主程序的 `Update/UpdateDialogTheme.xaml` 是合并该字典的兼容入口。共享字典只定义外观，不引入更新或权限业务依赖。
+
+用户中心、用户管理和服务主机管理窗口通过 `ApplyCaption` 接入原生标题栏外观，具体系统跟随与订阅限制仍适用前述窗口外观契约。
+
 ## 公共样式的绑定诊断
 
 `ComboBoxItem` 的 WPF 默认对齐绑定会查找祖先 `ItemsControl`；尚未挂载或已回收的下拉项没有这个祖先。`Themes/Base.xaml` 为默认和 Small 下拉项提供 Left/Center 默认值，仅在 `IsVisible=true` 时建立祖先对齐绑定；可见项仍实时跟随父控件的水平、垂直对齐，关闭弹出层或脱离树时解除绑定。标准/HandyControl 默认 ComboBox，以及 `ComboBox.Small`、`ComboBoxExtend.Small`、`ComboBoxPlus.Small` 和项目 `ComboBoxBaseStyle` 均使用这些容器样式，保留原模板和紧凑尺寸；另行提供 `ItemContainerStyle` 的消费者仍负责自己的绑定。

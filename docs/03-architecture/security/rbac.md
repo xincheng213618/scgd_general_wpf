@@ -4,7 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "本地RBAC的登录缓存、会话校验和权限同步限制，以及自动登录失败、登出撤销和用户中心统计的实际边界。"
 aliases: ["登录后没有权限","RBAC","ColorVision.Rbac","RbacManager","IsUserLoggedIn","AuthService","SessionService","PermissionChecker","SessionToken","LoginResultDto","自动登录失败","退出登录后权限","用户中心","UserCenterStatisticsService","ApplicationUsageTracker"]
-code_paths: ["UI/ColorVision.Rbac/README.md","UI/ColorVision.Rbac/ColorVision.Rbac.csproj","UI/ColorVision.Rbac/RbacManager.cs","UI/ColorVision.Rbac/RbacManagerConfig.cs","UI/ColorVision.Rbac/Loginwindow.xaml.cs","UI/ColorVision.Rbac/RbacManagerWindow.xaml.cs","UI/ColorVision.Rbac/RegisterWindow.xaml.cs","UI/ColorVision.Rbac/Services/Auth/AuthService.cs","UI/ColorVision.Rbac/Services/Auth/IAuthService.cs","UI/ColorVision.Rbac/Services/IUserService.cs","UI/ColorVision.Rbac/Services/SessionService.cs","UI/ColorVision.Rbac/Services/SessionCleanupService.cs","UI/ColorVision.Rbac/Services/PermissionChecker.cs","UI/ColorVision.Rbac/Services/UserCenterStatisticsService.cs","UI/ColorVision.Rbac/ApplicationUsageTracker.cs","UI/ColorVision.Rbac/Dtos/LoginResultDto.cs","UI/ColorVision.Rbac/Entity","UI/ColorVision.Rbac/Security/PasswordHashing.cs","ColorVision/BuiltInModules.cs","ColorVision/App.xaml.cs"]
+code_paths: ["UI/ColorVision.Rbac/README.md","UI/ColorVision.Rbac/ColorVision.Rbac.csproj","UI/ColorVision.Rbac/RbacManager.cs","UI/ColorVision.Rbac/RbacManagerConfig.cs","UI/ColorVision.Rbac/Loginwindow.xaml.cs","UI/ColorVision.Rbac/RbacManagerWindow.xaml.cs","UI/ColorVision.Rbac/RbacManagerWindow.xaml","UI/ColorVision.Rbac/UserManagerWindow.xaml","UI/ColorVision.Rbac/UserManagerWindow.xaml.cs","UI/ColorVision.Rbac/RegisterWindow.xaml.cs","UI/ColorVision.Rbac/Services/Auth/AuthService.cs","UI/ColorVision.Rbac/Services/Auth/IAuthService.cs","UI/ColorVision.Rbac/Services/IUserService.cs","UI/ColorVision.Rbac/Services/SessionService.cs","UI/ColorVision.Rbac/Services/SessionCleanupService.cs","UI/ColorVision.Rbac/Services/PermissionChecker.cs","UI/ColorVision.Rbac/Services/UserCenterStatisticsService.cs","UI/ColorVision.Rbac/ApplicationUsageTracker.cs","UI/ColorVision.Rbac/Dtos/LoginResultDto.cs","UI/ColorVision.Rbac/Entity","UI/ColorVision.Rbac/Security/PasswordHashing.cs","ColorVision/BuiltInModules.cs","ColorVision/App.xaml.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/ModuleCatalogTests.cs"]
 related: ["platform.security","ui.common","ui.configuration"]
 ---
@@ -111,6 +111,10 @@ RBAC 当前实现集中在独立项目 `UI/ColorVision.Rbac/`，并由 `ColorVis
 | `UserManagerWindow` | 用户列表、角色查看、启停、删除、重置密码 |
 | `PermissionManagerWindow` | 按角色分配权限，保存后清权限缓存 |
 | `RbacManagerWindow` | RBAC 总入口和当前登录状态 |
+
+## 用户窗口外观
+
+`UserManagerWindow` 使用角色管理与用户列表两个分区，保留角色创建、权限管理、用户搜索及行内账户操作。`RbacManagerWindow` 使用原生标题栏，按账户资料、运行指标、流程活动和详情组织内容，窗口可调整大小。两个窗口共享 Themes 的更新窗口资源，背景、表格和统计文字随深浅主题变化；外观与布局不改变以下统计范围或账户权限边界。
 
 ## 用户中心统计：本机使用与业务库计数
 

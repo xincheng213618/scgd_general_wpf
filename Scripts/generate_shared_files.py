@@ -29,6 +29,8 @@ def collect_shared_files(root_dir: Path, *, excluded_files: Iterable[Path] = ())
         dir_names[:] = sorted(dir_name for dir_name in dir_names if dir_name.lower() not in EXCLUDED_DIR_NAMES)
         current_root_path = Path(current_root)
         for file_name in sorted(file_names):
+            if current_root_path == root_dir and file_name.lower() == "changelog.md":
+                continue
             file_path = current_root_path / file_name
             if file_path.resolve() in resolved_excluded_files:
                 continue
