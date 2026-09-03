@@ -15,7 +15,7 @@ next: false
 只读与当前问题相关的主题，再核对源码和测试。`规划`、`历史`不代表当前能力。
 
 - [插件装配与模块知识入口](../../04-api-reference/plugins/README.md) — `plugins.index`
-  从插件程序集装载、产物安装和具体模块能力定位源码；同一责任不再分开发手册与使用手册。
+  按程序集装载、产物交付、插件能力比较和模块操作定位权威主题与源码。
 
 - [Conoscope 图像、采集与分析](../../04-api-reference/plugins/standard-plugins/conoscope.md) — `plugins.conoscope`
   Conoscope 的采集、CVCIE 首屏/XYZ 就绪、Mat 与分析快照契约；按钮成功不代表文档加载完成，联合灰尘预处理不走 Y-first。

@@ -7145,14 +7145,11 @@
       "status": "current",
       "summary": "横向定位现存插件的菜单、状态、数据库、设备与管理员权限边界。",
       "aliases": [
-        "哪个插件负责系统监控",
+        "插件依赖",
+        "插件扩展点",
+        "插件权限",
         "哪些插件会操作设备或服务",
-        "Conoscope",
-        "Spectrum",
-        "SystemMonitor",
-        "WindowsServicePlugin",
-        "Pattern",
-        "ImageProjector"
+        "插件状态栏比较"
       ],
       "code_paths": [
         "Plugins/Conoscope",
@@ -7162,11 +7159,7 @@
         "Plugins/Pattern",
         "Plugins/ImageProjector"
       ],
-      "test_paths": [
-        "Test/Conoscope.Tests/Conoscope.Tests.csproj",
-        "Test/Spectrum.Tests/Spectrum.Tests.csproj",
-        "Test/ColorVision.UI.Tests/SystemMonitorLifecycleTests.cs"
-      ],
+      "test_paths": [],
       "related": [
         "plugins.index",
         "plugins.model",
@@ -7355,18 +7348,12 @@
       "knowledge_id": "plugins.index",
       "knowledge_type": "index",
       "status": "current",
-      "summary": "从插件程序集装载、产物安装和具体模块能力定位源码；同一责任不再分开发手册与使用手册。",
+      "summary": "按程序集装载、产物交付、插件能力比较和模块操作定位权威主题与源码。",
       "aliases": [
         "当前有哪些通用插件",
         "插件功能在哪里",
         "新建插件",
-        "插件不加载从哪里查",
-        "Conoscope",
-        "Spectrum",
-        "SystemMonitor",
-        "WindowsServicePlugin",
-        "Pattern",
-        "ImageProjector"
+        "插件不加载从哪里查"
       ],
       "code_paths": [
         "Plugins",

@@ -416,7 +416,7 @@ next: false
   按插件、菜单、属性面板、设备、Flow、算法和结果扩展任务定位实现与当前契约。
 
 - [插件装配与模块知识入口](../../04-api-reference/plugins/README.md) — `plugins.index`
-  从插件程序集装载、产物安装和具体模块能力定位源码；同一责任不再分开发手册与使用手册。
+  按程序集装载、产物交付、插件能力比较和模块操作定位权威主题与源码。
 
 - [UI 组件目录](../../04-api-reference/ui-components/control-catalog.md) — `ui.control-catalog`
   按控件、窗口和扩展接口定位对应 UI 源码与专题。

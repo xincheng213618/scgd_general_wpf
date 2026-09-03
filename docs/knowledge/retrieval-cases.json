@@ -585,6 +585,14 @@
     {"query":"提取插件后 DLL 没有更新","expected_any":["plugins.getting-started"],"include_planned":false},
     {"query":"插件包怎么离线安装","expected_any":["plugins.getting-started"],"include_planned":false},
     {"query":"插件备份在列表里但恢复失败","expected_any":["plugins.getting-started"],"include_planned":false},
-    {"query":"直接打开 cvx 升级","expected_any":["delivery.update"],"include_planned":false}
+    {"query":"直接打开 cvx 升级","expected_any":["delivery.update"],"include_planned":false},
+    {"query":"Conoscope","expected_any":["plugins.conoscope"],"include_planned":false},
+    {"query":"Spectrum","expected_any":["plugins.spectrum"],"include_planned":false},
+    {"query":"SystemMonitor","expected_any":["plugins.system-monitor"],"include_planned":false},
+    {"query":"WindowsServicePlugin","expected_any":["plugins.windows-service"],"include_planned":false},
+    {"query":"Pattern","expected_any":["plugins.pattern"],"include_planned":false},
+    {"query":"ImageProjector","expected_any":["plugins.pattern"],"include_planned":false},
+    {"query":"哪些插件提供状态栏","expected_any":["plugins.capabilities"],"include_planned":false},
+    {"query":"哪个插件负责系统监控","expected_any":["plugins.system-monitor"],"include_planned":false}
   ]
 }

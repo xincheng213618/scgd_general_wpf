@@ -17,7 +17,7 @@ next: false
 ## Plugins/ 根目录与跨模块关联 {#module-506c7567696e73}
 
 - [插件装配与模块知识入口](../../04-api-reference/plugins/README.md) — `plugins.index`
-  从插件程序集装载、产物安装和具体模块能力定位源码；同一责任不再分开发手册与使用手册。
+  按程序集装载、产物交付、插件能力比较和模块操作定位权威主题与源码。
 
 - [插件产物、安装与交付](../../02-developer-guide/plugin-development/getting-started.md) — `plugins.getting-started`
   插件项目构建、HostCopy、市场与本地安装、备份回退和提取插件；DLL目录替换、依赖补回及重启后加载的完成条件，正式打包会上传。
