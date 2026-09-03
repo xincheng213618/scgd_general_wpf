@@ -141,24 +141,40 @@
       "knowledge_id": "algorithms.data-load",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "区分 DataLoad 模板与显式参数节点如何按设备、批次和 ZIndex 读取上游结果。",
+      "summary": "数据加载与数据加载2的模板选择、参数初值和请求格式；区分要读取的数据来源与本次 Flow 执行设备、流水号及 ZIndex。",
       "aliases": [
         "DataLoad是文件导入吗",
         "TemplateDataLoad",
         "AlgDataLoadNode",
-        "AlgDataLoadNode2"
+        "AlgDataLoadNode2",
+        "数据加载2",
+        "加载设备Code",
+        "加载ZIndex",
+        "DataLoadInput"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/DataLoad/TemplateDataLoad.cs",
         "Engine/ColorVision.Engine/Templates/DataLoad/DataLoadParam.cs",
         "Engine/FlowEngineLib/Node/Algorithm/AlgDataLoadNode.cs",
-        "Engine/FlowEngineLib/Node/Algorithm/AlgDataLoadNode2.cs"
+        "Engine/FlowEngineLib/Node/Algorithm/AlgDataLoadNode2.cs",
+        "Engine/FlowEngineLib/Node/Algorithm/DataLoadData.cs",
+        "Engine/FlowEngineLib/Node/Algorithm/DataLoadData2.cs",
+        "Engine/FlowEngineLib/Node/Algorithm/DataLoadInput.cs",
+        "Engine/FlowEngineLib/Node/Algorithm/CVResultType.cs",
+        "Engine/FlowEngineLib/Base/CVBaseServerNode.cs",
+        "Engine/FlowEngineLib/Base/CVMQTTRequest.cs",
+        "Engine/FlowEngineLib/CVTemplateParam.cs",
+        "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs",
+        "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs",
+        "Engine/ColorVision.Engine/Templates/ModelBase.cs"
       ],
       "test_paths": [],
       "related": [
         "algorithms.index",
         "flow.templates",
-        "flow.node-extension"
+        "flow.node-extension",
+        "engine.template-design",
+        "algorithms.template-management"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine",

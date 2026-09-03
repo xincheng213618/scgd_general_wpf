@@ -2,100 +2,111 @@
 knowledge_id: "algorithms.data-load"
 knowledge_type: "topic"
 status: "current"
-summary: "区分 DataLoad 模板与显式参数节点如何按设备、批次和 ZIndex 读取上游结果。"
-aliases: ["DataLoad是文件导入吗","TemplateDataLoad","AlgDataLoadNode","AlgDataLoadNode2"]
-code_paths: ["Engine/ColorVision.Engine/Templates/DataLoad/TemplateDataLoad.cs","Engine/ColorVision.Engine/Templates/DataLoad/DataLoadParam.cs","Engine/FlowEngineLib/Node/Algorithm/AlgDataLoadNode.cs","Engine/FlowEngineLib/Node/Algorithm/AlgDataLoadNode2.cs"]
+summary: "数据加载与数据加载2的模板选择、参数初值和请求格式；区分要读取的数据来源与本次 Flow 执行设备、流水号及 ZIndex。"
+aliases: ["DataLoad是文件导入吗","TemplateDataLoad","AlgDataLoadNode","AlgDataLoadNode2","数据加载2","加载设备Code","加载ZIndex","DataLoadInput"]
+code_paths: ["Engine/ColorVision.Engine/Templates/DataLoad/TemplateDataLoad.cs","Engine/ColorVision.Engine/Templates/DataLoad/DataLoadParam.cs","Engine/FlowEngineLib/Node/Algorithm/AlgDataLoadNode.cs","Engine/FlowEngineLib/Node/Algorithm/AlgDataLoadNode2.cs","Engine/FlowEngineLib/Node/Algorithm/DataLoadData.cs","Engine/FlowEngineLib/Node/Algorithm/DataLoadData2.cs","Engine/FlowEngineLib/Node/Algorithm/DataLoadInput.cs","Engine/FlowEngineLib/Node/Algorithm/CVResultType.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Base/CVMQTTRequest.cs","Engine/FlowEngineLib/CVTemplateParam.cs","Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs","Engine/ColorVision.Engine/Templates/ModelBase.cs"]
 test_paths: []
-related: ["algorithms.index","flow.templates","flow.node-extension"]
+related: ["algorithms.index","flow.templates","flow.node-extension","engine.template-design","algorithms.template-management"]
 ---
 
 # DataLoad 数据加载模板
 
-本页说明 `Engine/ColorVision.Engine/Templates/DataLoad/` 与 Flow 数据加载节点的关系。`DataLoad` 不是图像算法，也没有独立结果 handler；它负责把“从哪个设备、哪个批次、哪类结果、哪个 ZIndex 取数据”这些信息整理成模板或 Flow 请求参数。
+Flow 的 **数据加载** 和 **数据加载2** 节点将数据来源条件交给算法服务：设备 Code、流水号、结果类型和 ZIndex。前者引用已保存模板，后者直接携带这些字段；节点本身不选择文件或解析文件内容。
 
-## 适用范围
+## 选择节点并配置
 
-| 事项 | 当前实现 |
-| --- | --- |
-| 模板类 | `TemplateDataLoad : ITemplate<DataLoadParam>, IITemplateLoad` |
-| 参数类 | `DataLoadParam : ParamModBase` |
-| 模板代码 | `DataLoad` |
-| 字典 ID | `TemplateDicId = 22` |
-| Flow 节点 | `AlgDataLoadNode`、`AlgDataLoadNode2` |
-| Flow 事件码 | `operatorCode = "DataLoad"` |
-| 属性编辑器 | `FlowDataLoadTemplateEditor` |
-| 结果 handler | 当前没有单独的 `ViewHandleDataLoad` |
+| 节点 | 使用方式 | 适用场景 |
+| --- | --- | --- |
+| **数据加载**（`AlgDataLoadNode`） | 在节点属性的 **模板** 中选择 DataLoad 模板；旁边的编辑命令打开模板管理窗口 | 复用已保存的数据来源规则 |
+| **数据加载2**（`AlgDataLoadNode2`） | 在节点属性中填写 **加载设备Code**、**流水号**、**结果类型**、**加载ZIndex** | 在当前流程直接配置要读取的数据 |
+
+1. 确认算法服务支持 `DataLoad`，并准备可核对的数据来源、流水号、结果类型和索引。
+2. 按上表选择节点和配置方式。模板路径需先保存模板参数；编辑器操作见[模板编辑与创建](./template-management.md)。
+3. 在受控流程中核对实际请求，再确认下游节点消费的数据确实来自目标记录。请求已构造或模板可选择，都不代表数据已经找到。
+
+两个节点的默认服务与执行设备为 `SVR.Algorithm.Default`、`DEV.Algorithm.Default`，事件码均为 `DataLoad`。这些是请求执行端，和下面的数据来源设备分别配置。
+
+## 模板与显式参数
+
+`TemplateDataLoad : ITemplate<DataLoadParam>` 使用字典 `22`、编码 `DataLoad` 和静态 `Params` 集合；通过普通模板编辑器呈现属性。加载和保存规则见[模板注册、参数与持久化](../../../03-architecture/components/templates/design.md)。
+
+| 含义 | 模板字段及新空对象初值 | 数据加载2字段及新节点初值 |
+| --- | --- | --- |
+| 数据来源设备 | `DeviceCode = null` | `DataDeviceCode = ""` |
+| 要读取的流水号 | `SerialNumber = null` | `SerialNumber = ""` |
+| 结果类型 | `CVCommCore.CVResultType.None` | `FlowEngineLib.Node.Algorithm.CVResultType.Algorithm_POI`（枚举值 `0`） |
+| 数据定位索引 | `ZIndex = 0` | `DataZIndex = -1` |
+
+这些初值不是推荐配置。已保存模板通过 `ModelBase.GetValue` 读取明细，新建模板预览又使用系统字典默认值，可能与空对象不同。两条路径的结果枚举也属于不同类型，不能只按整数互相替换。
+
+`AlgDataLoadNode2` 的 `_ResultType` 没有显式赋值，因此采用枚举值 `0`，不是 `None`（该枚举的 `None = -1`）。当前字段设置和请求构造不检查来源是否存在，也不解释空流水号或 `ZIndex = -1` 的服务端含义；这些值不会在本节点自动转换成“当前批次”或“最新结果”。
+
+## 请求格式
+
+以下是 `CVMQTTRequest` 的 **`params` 内容**，不是完整 MQTT 消息；设备和模板名称仅作示例。
+
+### 数据加载：引用模板
+
+`getBaseEventData()` 返回 `DataLoadData { TemplateParam = BuildTemp() }`：
+
+```json
+{
+  "TemplateParam": {
+    "ID": -1,
+    "Name": "已保存的DataLoad模板"
+  }
+}
+```
+
+`BuildTemp()` 复制基类的模板 ID 和名称，不内联发送模板中的四项来源参数。基类 ID 初值为 `-1`；该节点的 `TempName` 设置器只更新名称，不查询数据库 ID。服务端需要能解析实际收到的模板引用。
+
+### 数据加载2：携带来源条件
+
+`getBaseEventData()` 将节点字段传入 `DataLoadInput`，再包装为 `DataLoadData2`：
+
+```json
+{
+  "DataInput": {
+    "DeviceCode": "source-device",
+    "SerialNumber": "batch-001",
+    "ResultType": "Camera_Img",
+    "ZIndex": 0
+  }
+}
+```
+
+`DataLoadInput` 把结果枚举转成字符串，其余字段原样赋值。`Camera_Img` 是 Flow 枚举中的一个名称；具体服务是否支持该类型、目标记录是否存在，仍需按服务实现核对。
+
+## 数据来源与本次执行信息
+
+外层消息由 `CVBaseServerNode.getActionEvent()` 构造。两层字段各自赋值，不能因同名就当作同一个配置：
+
+| 字段 | 请求外层 | `params.DataInput`（数据加载2） |
+| --- | --- | --- |
+| `DeviceCode` | 当前节点的 `GetDeviceCode()`，用于执行请求 | 节点的 `DataDeviceCode`，用于定位数据来源 |
+| `SerialNumber` | 输入 `CVStartCFC.SerialNumber`，属于本次 Flow 执行 | 节点显式配置的 `SerialNumber`，属于要读取的数据 |
+| `ZIndex` | 当前节点的 `base.ZIndex` | 节点显式配置的 `DataZIndex` |
+
+数据加载2的参数构造没有读取 `start.SerialNumber` 来补齐内部流水号，也没有把外层 `ZIndex` 覆盖到 `DataInput.ZIndex`。模板路径则由模板引用提供来源规则；下游如何解释这些规则属于服务端契约。
 
 ## 源码入口
 
-| 文件 | 用途 |
+| 路径 | 责任 |
 | --- | --- |
-| `TemplateDataLoad.cs` | 注册 DataLoad 模板、模板代码和 `TemplateDicId`。 |
-| `DataLoadParam.cs` | 定义设备、结果类型、流水号和 ZIndex 参数。 |
-| `FlowEngineLib/Node/Algorithm/AlgDataLoadNode.cs` | 通过模板名构造 `DataLoadData { TemplateParam = BuildTemp() }`。 |
-| `FlowEngineLib/Node/Algorithm/AlgDataLoadNode2.cs` | 直接构造 `DataLoadData2(new DataLoadInput(...))`。 |
-| `FlowEngineLib/Node/Algorithm/DataLoadData*.cs` | 定义发给服务端的数据结构。 |
-| `Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs`、`Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs` | 注册 `FlowDataLoadTemplateEditor`，给 `AlgDataLoadNode` 提供 DataLoad 模板选择。 |
+| `Engine/ColorVision.Engine/Templates/DataLoad/` | 模板注册、字典和参数属性 |
+| `Engine/FlowEngineLib/Node/Algorithm/AlgDataLoadNode*.cs` | 两种节点的名称、属性、初值和请求构造 |
+| 同目录 `DataLoadData.cs`、`DataLoadData2.cs`、`DataLoadInput.cs`、`CVResultType.cs` | 内层数据结构与 Flow 结果枚举 |
+| `Engine/FlowEngineLib/Base/CVBaseServerNode.cs`、`CVMQTTRequest.cs` | 模板引用与请求外层字段 |
+| `Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs`、`Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs` | `FlowDataLoadTemplateEditor` 代理及模板选择/编辑窗口 |
 
-## 参数模型
+## 排查与验证
 
-| 参数 | 类型 | 说明 |
-| --- | --- | --- |
-| `DeviceCode` | `string?` | 数据来源设备 Code。 |
-| `ResultType` | `CVCommCore.CVResultType` | 要加载的结果类型。 |
-| `SerialNumber` | `string?` | 批次/流水号。 |
-| `ZIndex` | `int` | Flow 或服务侧用于定位数据层级的索引。 |
-
-这些字段在 `DataLoadParam` 里以 PropertyGrid 属性呈现；在 `AlgDataLoadNode2` 里则以节点属性 `DataDeviceCode`、`SerialNumber`、`ResultType`、`DataZIndex` 直接出现。
-
-## 两条 Flow 路径
-
-### `AlgDataLoadNode`
-
-`AlgDataLoadNode` 更偏模板驱动：
-
-1. 节点属性的 `FlowDataLoadTemplateEditor` 通过 Engine 注册表显示 DataLoad 模板选择。
-2. 用户选择 `TempName`。
-3. 节点执行时调用 `BuildTemp()`。
-4. 请求体是 `DataLoadData`，只包含 `TemplateParam`。
-
-这条路径适合把加载规则沉淀成模板，现场只选择模板名。
-
-### `AlgDataLoadNode2`
-
-`AlgDataLoadNode2` 更偏显式参数驱动：
-
-1. 节点上直接维护设备 Code、流水号、结果类型和 ZIndex。
-2. 执行时构造 `DataLoadInput`。
-3. `ResultType` 会被转成字符串。
-4. 请求体是 `DataLoadData2 { DataInput = ... }`。
-
-这条路径适合 Flow 中临时读取指定批次或指定结果。
-
-## 和模板系统的关系
-
-`TemplateDataLoad` 继承普通 `ITemplate<T>`，因此模板明细仍然来自系统字典和模板表。它没有自定义编辑控件，主要依赖通用模板编辑器和 PropertyGrid 展示 `DataLoadParam`。
-
-维护时不要把 DataLoad 写成“文件导入器”。当前代码没有直接选择文件或解析文件格式，它只是把数据定位参数交给算法服务或 Flow 链路，由下游服务按设备、流水号、结果类型和 ZIndex 读取数据。
-
-## 常见排查
-
-| 现象 | 优先排查 |
+| 现象 | 优先检查 |
 | --- | --- |
-| Flow 节点找不到模板 | `TemplateDataLoad.Params` 是否加载，`TemplateDicId = 22` 对应字典是否存在。 |
-| 加载到错误批次 | `SerialNumber` 是来自模板、节点显式属性，还是上游 Flow 传递。 |
-| 加载到错误设备 | `DeviceCode/DataDeviceCode` 是否指向预期算法服务设备。 |
-| 加载结果类型不对 | `CVResultType` 转字符串后是否是服务端期望值。 |
-| 多层结果取错 | `ZIndex/DataZIndex` 是否和 Flow 节点层级一致。 |
+| 模板列表为空 | `TemplateDataLoad.Params` 是否加载，字典 `22`、编码和模板记录是否存在 |
+| 发出请求却找不到数据 | 实际模板引用或 `DataInput` 内容、服务端支持范围与来源记录 |
+| 加载到错误批次或设备 | 区分外层执行字段与内层来源字段；核对显式流水号，不假定空值自动继承 |
+| 结果类型与预期不同 | 数据加载2的初始结果类型为 `Algorithm_POI`；核对枚举名称及服务端解释 |
+| 取错数据层级 | 核对 `DataInput.ZIndex` 或模板 `ZIndex`；不要求它与外层节点 `ZIndex` 相等 |
 
-## 检查清单
-
-- 写清使用的是 `AlgDataLoadNode` 模板路径，还是 `AlgDataLoadNode2` 显式参数路径。
-- 记录设备 Code、结果类型、流水号来源和 ZIndex 语义。
-- 修改服务端 DataLoad 协议时，同步检查 `DataLoadData`、`DataLoadData2` 和 Flow 节点文档。
-- 如果要加文件导入能力，应新增明确的文件参数和失败提示，不要混在当前 DataLoad 模板里。
-- 验收时用真实批次确认加载结果和下游节点消费的是同一条数据。
-
-## 验证入口与缺口
-
-验证缺口：未登记 DataLoad 两条节点路径的专门自动化测试；需用可控批次验证设备、ResultType、SerialNumber 与 ZIndex 的实际请求和下游结果。
+当前未登记两条 DataLoad 节点路径的专项自动化测试。验证应使用可控来源，分别记录实际请求、服务返回和下游消费结果；本地参数构造不证明服务完成读取。

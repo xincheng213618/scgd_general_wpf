@@ -24,7 +24,7 @@ next: false
   路由 Engine 模板中的 ROI、POI、Matching 共享构件并区分统一算法平台。
 
 - [DataLoad 数据加载模板](../../04-api-reference/algorithms/templates/data-load-template.md) — `algorithms.data-load`
-  区分 DataLoad 模板与显式参数节点如何按设备、批次和 ZIndex 读取上游结果。
+  数据加载与数据加载2的模板选择、参数初值和请求格式；区分要读取的数据来源与本次 Flow 执行设备、流水号及 ZIndex。
 
 - [本地十字定位 FindCross](../../04-api-reference/algorithms/detectors/find-cross.md) — `algorithms.find-cross`
   本地十字定位的图像菜单、Flow 节点、生产参数、全图坐标、原生返回值与失败诊断。
