@@ -633,6 +633,14 @@
     {"query":"ROI百分位重复列名","expected_any":["algorithms.roi-statistics"],"include_planned":false},
     {"query":"ROI浮点图缩小分箱数能省内存吗","expected_any":["algorithms.roi-statistics"],"include_planned":false},
     {"query":"ROI直方图只有一行","expected_any":["algorithms.roi-statistics"],"include_planned":false},
-    {"query":"roi_exact_float_statistics_budget_exceeded","expected_any":["algorithms.roi-statistics"],"include_planned":false}
+    {"query":"roi_exact_float_statistics_budget_exceeded","expected_any":["algorithms.roi-statistics"],"include_planned":false},
+    {"query":"成像校正关闭结果会撤销吗","expected_any":["algorithms.imaging-correction"],"include_planned":false},
+    {"query":"BadPixelThresholdNormalized","expected_any":["algorithms.imaging-correction"],"include_planned":false},
+    {"query":"成像校正preset包含参考图片吗","expected_any":["algorithms.imaging-correction"],"include_planned":false},
+    {"query":"成像校正JSON里面有像素吗","expected_any":["algorithms.imaging-correction"],"include_planned":false},
+    {"query":"成像校正没有启用阶段mask全白","expected_any":["algorithms.imaging-correction"],"include_planned":false},
+    {"query":"成像校正Alpha为什么被裁剪","expected_any":["algorithms.imaging-correction"],"include_planned":false},
+    {"query":"reference_valid_fraction_too_low","expected_any":["algorithms.imaging-correction"],"include_planned":false},
+    {"query":"成像校正批量只保存主图","expected_any":["algorithms.imaging-correction"],"include_planned":false}
   ]
 }
