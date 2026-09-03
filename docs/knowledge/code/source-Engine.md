@@ -19,8 +19,8 @@ next: false
 - [算法与模板知识入口](../../04-api-reference/algorithms/README.md) — `algorithms.index`
   区分统一 Runner、ImageEditor 直接 native 分析与 Engine 模板/MQTT 算法，并按任务定位专题。
 
-- [ROI](../../04-api-reference/algorithms/primitives/roi.md) — `algorithms.roi-routes`
-  区分发光区定位、JSON 裁剪、SFR 找 ROI 与统一算法 ROI 数据模型。
+- [ROI 模型与模板入口](../../04-api-reference/algorithms/primitives/roi.md) — `algorithms.roi-routes`
+  按用途定位发光区、传统与 JSON 裁剪、SFR 寻边和中立算法 ROI 模型；各分支参数与坐标契约分别维护。
 
 - [Engine 模板共享构件](../../04-api-reference/algorithms/primitives/common-modules.md) — `algorithms.template-primitives`
   路由 Engine 模板中的 ROI、POI、Matching 共享构件并区分统一算法平台。
@@ -46,8 +46,8 @@ next: false
 - [本地十字定位 FindCross](../../04-api-reference/algorithms/detectors/find-cross.md) — `algorithms.find-cross`
   本地十字定位的图像菜单、Flow 节点、生产参数、全图坐标、原生返回值与失败诊断。
 
-- [FindLightArea 发光区定位模板](../../04-api-reference/algorithms/templates/find-light-area.md) — `algorithms.find-light-area`
-  区分远端 FindLightArea 模板与本地原生亮区检测 RobustV2；四角点不等于成功，须核对置信度、失败原因和各调用层的结果契约。
+- [发光区定位：远端模板与本地 V2](../../04-api-reference/algorithms/templates/find-light-area.md) — `algorithms.find-light-area`
+  发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布，并说明模板字典恢复不一致。
 
 - [FocusPoints 关注点模板](../../04-api-reference/algorithms/templates/focus-points-template.md) — `algorithms.focus-points`
   发光区1（FocusPoints）的模板选择、参数初值和图像输入；区分手动 MQTT 模板引用、Flow 算子与计算结果。

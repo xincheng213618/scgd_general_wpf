@@ -788,7 +788,7 @@
             },
             {
               "text": {
-                "root": "ROI"
+                "root": "ROI 模型与模板入口"
               },
               "link": "/04-api-reference/algorithms/primitives/roi"
             },
@@ -968,7 +968,7 @@
             },
             {
               "text": {
-                "root": "FindLightArea 发光区定位模板"
+                "root": "发光区定位：远端模板与本地 V2"
               },
               "link": "/04-api-reference/algorithms/templates/find-light-area"
             },
@@ -1115,6 +1115,12 @@
                 "root": "本地十字定位 FindCross"
               },
               "link": "/04-api-reference/algorithms/detectors/find-cross"
+            },
+            {
+              "text": {
+                "root": "发光区定位：远端模板与本地 V2"
+              },
+              "link": "/04-api-reference/algorithms/templates/find-light-area"
             },
             {
               "text": {
@@ -2000,7 +2006,7 @@
             },
             {
               "text": {
-                "root": "ROI"
+                "root": "ROI 模型与模板入口"
               },
               "link": "/04-api-reference/algorithms/primitives/roi"
             },
@@ -2054,7 +2060,7 @@
             },
             {
               "text": {
-                "root": "FindLightArea 发光区定位模板"
+                "root": "发光区定位：远端模板与本地 V2"
               },
               "link": "/04-api-reference/algorithms/templates/find-light-area"
             },
@@ -2714,7 +2720,7 @@
             },
             {
               "text": {
-                "root": "FindLightArea 发光区定位模板"
+                "root": "发光区定位：远端模板与本地 V2"
               },
               "link": "/04-api-reference/algorithms/templates/find-light-area"
             },
@@ -2780,7 +2786,7 @@
             },
             {
               "text": {
-                "root": "FindLightArea 发光区定位模板"
+                "root": "发光区定位：远端模板与本地 V2"
               },
               "link": "/04-api-reference/algorithms/templates/find-light-area"
             },

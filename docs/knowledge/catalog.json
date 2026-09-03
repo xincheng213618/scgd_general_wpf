@@ -283,11 +283,19 @@
       "knowledge_id": "algorithms.find-light-area",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "区分远端 FindLightArea 模板与本地原生亮区检测 RobustV2；四角点不等于成功，须核对置信度、失败原因和各调用层的结果契约。",
+      "summary": "发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布，并说明模板字典恢复不一致。",
       "aliases": [
+        "发光区定位1",
+        "发光区检测模板",
+        "本地发光区定位(V2)",
         "本地发光区定位V2为什么拒绝",
         "原生亮区四角点置信度",
         "发光区检测失败原因",
+        "POI保存模板",
+        "SavePOITempName",
+        "最小置信度",
+        "搜索区域",
+        "恢复Mysql发光区检测",
         "cvnative::luminous",
         "FindLuminousAreaV2Result",
         "hasCorners",
@@ -298,8 +306,14 @@
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/FindLightArea",
+        "Engine/ColorVision.Engine/Templates/ITemplate.cs",
+        "Engine/ColorVision.Engine/Templates/POI/LocalLuminousAreaPoiTemplateUpdater.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowResultPersistence.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs",
         "UI/ColorVision.Core/LuminousAreaDetection.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLuminousArea",
+        "UI/ColorVision.ImageEditor/EditorTools/GraphicEditing/GraphicEditingWindow.xaml.cs",
         "Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.h",
         "Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.cpp",
         "Native/include/opencv_media_export.h",
@@ -309,11 +323,13 @@
         "Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs",
         "Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs",
         "Test/ColorVision.UI.Tests/FindLuminousAreaManualResultTests.cs",
-        "Test/opencv_helper_test"
+        "Test/opencv_helper_test/test_find_luminous_area.cpp"
       ],
       "related": [
         "algorithms.index",
         "algorithms.roi-routes",
+        "algorithms.focus-points",
+        "algorithms.template-management",
         "engine.native-integration",
         "engine.results"
       ],
@@ -321,10 +337,11 @@
         "Engine/ColorVision.Engine",
         "Native/include",
         "Native/opencv_helper",
-        "UI/ColorVision.Core"
+        "UI/ColorVision.Core",
+        "UI/ColorVision.ImageEditor"
       ],
       "domain": "algorithms",
-      "title": "FindLightArea 发光区定位模板",
+      "title": "发光区定位：远端模板与本地 V2",
       "source": "docs/04-api-reference/algorithms/templates/find-light-area.md",
       "url": "/04-api-reference/algorithms/templates/find-light-area",
       "searchable": true
@@ -1160,7 +1177,7 @@
       "knowledge_id": "algorithms.roi-routes",
       "knowledge_type": "index",
       "status": "current",
-      "summary": "区分发光区定位、JSON 裁剪、SFR 找 ROI 与统一算法 ROI 数据模型。",
+      "summary": "按用途定位发光区、传统与 JSON 裁剪、SFR 寻边和中立算法 ROI 模型；各分支参数与坐标契约分别维护。",
       "aliases": [
         "ROI到底对应哪个模块",
         "TemplateRoi",
@@ -1172,7 +1189,8 @@
         "Engine/ColorVision.Engine/Templates/FindLightArea/TemplateRoi.cs",
         "Engine/ColorVision.Engine/Templates/Jsons/ImageROI/TemplateImageROI.cs",
         "Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI/TemplateSFRFindROI.cs",
-        "UI/ColorVision.Algorithms/AlgorithmImages.cs"
+        "Engine/ColorVision.Engine/Templates/ImageCropping/TemplateImageCropping.cs",
+        "UI/ColorVision.Algorithms/AlgorithmInvocation.cs"
       ],
       "test_paths": [],
       "related": [
@@ -1180,6 +1198,7 @@
         "algorithms.find-light-area",
         "algorithms.image-cropping",
         "algorithms.json-templates",
+        "algorithms.arvr",
         "algorithms.platform"
       ],
       "code_scopes": [
@@ -1187,7 +1206,7 @@
         "UI/ColorVision.Algorithms"
       ],
       "domain": "algorithms",
-      "title": "ROI",
+      "title": "ROI 模型与模板入口",
       "source": "docs/04-api-reference/algorithms/primitives/roi.md",
       "url": "/04-api-reference/algorithms/primitives/roi",
       "searchable": true
