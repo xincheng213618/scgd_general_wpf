@@ -12868,6 +12868,27 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 自动适配尺寸 的本地化字符串。
+        /// </summary>
+        public static string PoiAutoFitSize {
+            get {
+                return ResourceManager.GetString("PoiAutoFitSize", resourceCulture);
+            }
+        }
+
+        public static string PoiAutoFitSizeToolTip {
+            get {
+                return ResourceManager.GetString("PoiAutoFitSizeToolTip", resourceCulture);
+            }
+        }
+
+        public static string PoiAutoFitSizeFailed {
+            get {
+                return ResourceManager.GetString("PoiAutoFitSizeFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 找不到流程启动结点，运行失败 的本地化字符串。
         /// </summary>
         public static string WorkflowStartNodeNotFound_RunFailed {

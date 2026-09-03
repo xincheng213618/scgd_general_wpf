@@ -225,7 +225,7 @@ next: false
   图像/视频打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。
 
 - [ImageEditor：上下文、工具装配与临时选区](../../04-api-reference/ui-components/image-editor-context.md) — `ui.image-editor-context`
-  ImageEditor 的状态归属、扩展构造、工具刷新与临时 ROI 有效期；区分配置分类、图像版本和真实像素坐标。
+  ImageEditor 的状态归属、扩展构造、工具刷新与临时 ROI 有效期；手动选区支持白色/矢量画布，像素算法仍需真实图像。
 
 - [源图像帧：租约、位图复制与缓存失效](../../04-api-reference/ui-components/image-frame-lifetime.md) — `ui.image-frames`
   位图读取时借用原图内存与复制像素的区别、租约释放责任和缓存版本；原图修改须显式失效，复制HImage不延长租约。
@@ -515,7 +515,7 @@ next: false
   快捷键的发现、多组绑定、窗口/全局注册与搜索编辑；同一操作共享作用域，未分配操作保留展示，确认后立即保存，注册或持久化失败按结果补偿。
 
 - [ImageEditor：上下文、工具装配与临时选区](../../04-api-reference/ui-components/image-editor-context.md) — `ui.image-editor-context`
-  ImageEditor 的状态归属、扩展构造、工具刷新与临时 ROI 有效期；区分配置分类、图像版本和真实像素坐标。
+  ImageEditor 的状态归属、扩展构造、工具刷新与临时 ROI 有效期；手动选区支持白色/矢量画布，像素算法仍需真实图像。
 
 - [界面语言：资源发现、配置与重启](../../04-api-reference/ui-components/localization.md) — `ui.localization`
   界面语言的资源发现、系统语言回退、设置绑定和重启切换；语言下拉框不证明插件翻译完整，修改配置值不等于刷新窗口。

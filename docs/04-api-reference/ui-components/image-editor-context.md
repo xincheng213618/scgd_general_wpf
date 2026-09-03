@@ -2,8 +2,8 @@
 knowledge_id: "ui.image-editor-context"
 knowledge_type: "topic"
 status: "current"
-summary: "ImageEditor 的状态归属、扩展构造、工具刷新与临时 ROI 有效期；区分配置分类、图像版本和真实像素坐标。"
-aliases: ["图像编辑器上下文", "工具栏刷新", "配置作用域", "临时ROI", "临时选区", "四边形", "选区坐标", "EditorContext", "ImageProcessingContext", "ImageViewConfig", "ImageViewPropertyScope", "IEditorToolFactory", "BeginSelectAsync", "SelectShapeType", "SelectResult", "TransientRoiSelectionSession", "ImageSelectionScope", "EnableEditorImageServices"]
+summary: "ImageEditor 的状态归属、扩展构造、工具刷新与临时 ROI 有效期；手动选区支持白色/矢量画布，像素算法仍需真实图像。"
+aliases: ["图像编辑器上下文", "工具栏刷新", "配置作用域", "临时ROI", "临时选区", "四边形", "选区坐标", "白色画布选区", "矢量画布布点", "EditorContext", "ImageProcessingContext", "ImageViewConfig", "ImageViewPropertyScope", "IEditorToolFactory", "BeginSelectAsync", "SelectShapeType", "SelectResult", "TransientRoiSelectionSession", "ImageSelectionScope", "EnableEditorImageServices"]
 code_paths: ["UI/ColorVision.ImageEditor/ARCHITECTURE.md", "UI/ColorVision.ImageEditor/Abstractions/IRealtimePseudoColorService.cs", "UI/ColorVision.ImageEditor/EditorContext.cs", "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs", "UI/ColorVision.ImageEditor/ImageViewConfig.cs", "UI/ColorVision.ImageEditor/ImageViewPropertyMetadata.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/TransientRoiSelectionSession.cs", "UI/ColorVision.ImageEditor/EditorTools/PseudoColor", "UI/ColorVision.UI/AssemblyHandler.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/EditorToolFactoryLifecycleTests.cs", "Test/ColorVision.UI.Tests/RealtimePseudoColorServiceTests.cs", "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs"]
 related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.platform", "algorithms.roi-routes", "algorithms.local-native-analysis"]
@@ -19,7 +19,7 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 `ImageProcessingContext` 通过 binding 委托访问宿主的 `DocumentInstanceId`、`ImageRevision`、`IsDisposed`、`ViewBitmapSource`、`FunctionImage` 与帧获取/修改入口，不维护第二份独立文档。它持有所选 `AlgorithmRuntime`、该 runtime 的 invocation coordinator 和本上下文的 overlay manager。不能用另一份位图或文档的版本号为当前结果背书。
 
-`ViewBitmapSource` 是当前基准位图，`FunctionImage` 是处理/预览显示层；直接赋这些属性不等同于调用像素提交入口，也不自动推进版本。异步结果发布需遵守文档身份、source revision 和释放状态检查，详见[统一算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)。
+`ViewBitmapSource` 名称虽含 Bitmap，实际类型是 `ImageSource`，既可持有基准位图，也可持有 `DrawingImage` 等矢量画布；`FunctionImage` 是处理/预览显示层。直接赋这些属性不等同于调用像素提交入口，也不自动推进版本。异步结果发布需遵守文档身份、source revision 和释放状态检查，详见[统一算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)。
 
 ### 配置分类不是隔离容器
 
@@ -61,6 +61,8 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 `ImageView.BeginSelectAsync` 每次创建一个 `TransientRoiSelectionSession`，支持 Rectangle、Circle、Polygon、Quadrilateral。临时 visual 直接加入/移出画布，不登记撤销命令，也不是持久注释。
 
+手动选择只需要有效画布，不要求 `BitmapSource`：宽高有限且大于零的 `ImageSource` 均可进入选区，包括 POI 默认白色 `DrawingImage`。选择过程不将矢量画布栅格化，也不生成虚构像素。涉及统计、识别等像素计算时，`ImageAlgorithmInputFactory` 仍要求可读取的源帧与匹配的位图；能绘制选区不代表能执行图像计算。
+
 多边形模式的完成键为 **Enter、Space、End、Tab**；**Escape** 取消任意形状并返回 `null`。
 
 | 形状 | 绘制与完成 | 右键行为 |
@@ -74,10 +76,12 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 - 位置来自 `e.GetPosition(DrawCanvas)`，是 WPF 画布坐标；此类没有统一进行原始像素换算或边界裁剪。非 96 DPI、图像变换或裁剪后不能直接把坐标当源像素 ROI，需按调用链明确转换，见 [ROI 路由](../algorithms/primitives/roi.md)。
 - 矩形/圆拖拽无效时清除本次临时形状并继续等待；无效多边形保留选点继续等待。这些情况不立即返回 `null`。
-- 绑定源失效时清理并返回 `null`。正常启动后完成/取消会解绑事件、删除临时 visual、释放鼠标捕获并恢复记录的交互状态。初始源就无效时，`Start` 在保存旧状态之前进入清理，当前可能用默认值覆盖 cursor/ActivateOn；立即返回 `null` 不保证交互状态未变，这是实现缺口而非推荐行为。
-- 绑定 `ImageProcessingContext` 时捕获不可变 `ImageSelectionScope`：文档身份、source revision、像素宽高和 DPI。选取期间换图、源版本变化或文档释放使 session 取消；成功结果携带该 scope。单独构造无处理上下文的绘图 session 则不能提供同样的图像绑定保证。
+- 绑定源失效时清理并返回 `null`。正常启动后完成/取消会解绑事件、删除临时 visual、释放鼠标捕获并恢复记录的 cursor、ActivateOn 和编辑模式。初始源为空、尺寸无效或文档已释放时，`Start` 在激活前直接返回 `null`，不更改这些交互状态，也不释放其它操作的鼠标捕获。
+- 绑定 `ImageProcessingContext` 时捕获不可变 `ImageSelectionScope`：文档身份、source revision 和 WPF 逻辑画布宽高 `CanvasWidth/CanvasHeight`。位图同时保存真实像素宽高和 DPI；非位图的 `HasPixels=false`、像素宽高为零、DPI 占位值为 96，逻辑尺寸保留小数，不能将它当作可计算的像素源。选取期间换图、源版本变化或文档释放使 session 取消；成功结果携带该 scope。单独构造无处理上下文的绘图 session 则不能提供同样的图像绑定保证。
 - 已完成结果不会在日后换图时自动消失。调用方须保留 `SelectResult.SourceScope`，使用 `ImageAlgorithmInputFactory.Acquire(context, scope)` 等入口再次核验；不能丢掉 scope 后复用旧坐标。每次调用各建 session，不保证新调用自动取消旧调用，也没有统一单活动 session 调度器。
 
 ## 验证范围
 
-`EditorToolFactoryLifecycleTests` 覆盖重复工具栏刷新时图标元素复用，不覆盖任意插件、重复后缀或所有构造失败。`RealtimePseudoColorServiceTests` 覆盖实时参数必须有基准源、当前 generation 发布以及旧 generation 拒绝，不运行 native 伪彩或真实相机。`TransientRoiSelectionSessionTests` 覆盖退化/自交形状、完成后 scope、版本变化/释放取消及后续输入获取拒绝过期范围；部分通过反射驱动内部状态，不等于真实鼠标和任意 DPI 的整链验收。配置同名键、实际工具发现、四边形键盘完成和真实窗口行为仍需按改动补验证。
+`EditorToolFactoryLifecycleTests` 覆盖重复工具栏刷新时图标元素复用，不覆盖任意插件、重复后缀或所有构造失败。`RealtimePseudoColorServiceTests` 覆盖实时参数必须有基准源、当前 generation 发布以及旧 generation 拒绝，不运行 native 伪彩或真实相机。
+
+`TransientRoiSelectionSessionTests` 覆盖退化/自交形状、白色矢量画布上四类形状完成、分数画布尺寸、位图像素尺寸与 DPI、版本变化/释放取消、临时 visual 清理和交互状态恢复；同时验证算法拒绝无像素选区或过期范围，正常位图仍可获取输入。部分通过反射驱动内部状态，不等于真实鼠标和任意 DPI 的整链验收。配置同名键、实际工具发现、四边形键盘完成和真实窗口行为仍需按改动补验证。

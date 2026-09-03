@@ -1260,6 +1260,9 @@
         "POI点集由谁生成和消费",
         "POI 1x1中心点",
         "POI 50%缩进",
+        "POI自动填充",
+        "自动适配尺寸",
+        "POI边距设置",
         "PoiPoint",
         "PoiParam",
         "AlgorithmPoi",
@@ -1268,17 +1271,22 @@
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/POI/PoiPoint.cs",
         "Engine/ColorVision.Engine/Templates/POI/PoiParam.cs",
+        "Engine/ColorVision.Engine/Templates/POI/EditPoiParam.xaml",
+        "Engine/ColorVision.Engine/Templates/POI/EditPoiParam.xaml.cs",
+        "Engine/ColorVision.Engine/Templates/POI/PoiLayoutGeometry.cs",
         "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/AlgorithmPOI.cs",
         "Engine/ColorVision.Engine/Templates/POI/BuildPoi/AlgorithmBuildPoi.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/PoiPointModelTests.cs",
-        "Test/ColorVision.UI.Tests/PoiLayoutGeometryTests.cs"
+        "Test/ColorVision.UI.Tests/PoiLayoutGeometryTests.cs",
+        "Test/ColorVision.UI.Tests/PoiEditorLayoutTests.cs"
       ],
       "related": [
         "algorithms.index",
         "algorithms.poi-template",
-        "flow.templates"
+        "flow.templates",
+        "ui.image-editor-context"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine"
@@ -9299,7 +9307,7 @@
       "knowledge_id": "ui.image-editor-context",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "ImageEditor 的状态归属、扩展构造、工具刷新与临时 ROI 有效期；区分配置分类、图像版本和真实像素坐标。",
+      "summary": "ImageEditor 的状态归属、扩展构造、工具刷新与临时 ROI 有效期；手动选区支持白色/矢量画布，像素算法仍需真实图像。",
       "aliases": [
         "图像编辑器上下文",
         "工具栏刷新",
@@ -9308,6 +9316,8 @@
         "临时选区",
         "四边形",
         "选区坐标",
+        "白色画布选区",
+        "矢量画布布点",
         "EditorContext",
         "ImageProcessingContext",
         "ImageViewConfig",

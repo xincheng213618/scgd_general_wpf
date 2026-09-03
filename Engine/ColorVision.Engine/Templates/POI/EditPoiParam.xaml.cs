@@ -427,6 +427,29 @@ namespace ColorVision.Engine.Templates.POI
 
 
 
+        private void AutoFitPointSize_Click(object sender, RoutedEventArgs e)
+        {
+            if (PoiConfig.PointType != GraphicTypes.Quadrilateral)
+                return;
+
+            if (!PoiLayoutGeometry.TryGetAutoFitSize(
+                [PoiConfig.Polygon1, PoiConfig.Polygon2, PoiConfig.Polygon3, PoiConfig.Polygon4],
+                PoiConfig.AreaPolygonRow, PoiConfig.AreaPolygonCol, PoiConfig.DefaultPointType, out Size size))
+            {
+                MessageBox.Show(this, Properties.Resources.PoiAutoFitSizeFailed, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (PoiConfig.IsPointCircle)
+                PoiConfig.DefaultCircleRadius = (int)(size.Width / 2);
+            else
+            {
+                PoiConfig.DefaultRectWidth = (int)size.Width;
+                PoiConfig.DefaultRectHeight = (int)size.Height;
+            }
+            PoiConfig.PointPosition = DrawingGraphicPosition.Internal;
+        }
+
         private async void Button2_Click(object sender, RoutedEventArgs e)
         {
             if (!ImageUtils.TryGetImageSize(ImageShow.Source, out int imageWidth, out int imageHeight)) return;

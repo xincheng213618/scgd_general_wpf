@@ -206,7 +206,7 @@
 
                                 </StackPanel>
                                 <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaMask,Converter={StaticResource bool2VisibilityConverter}}">
-                                    <Grid>
+                                    <StackPanel>
                                         <StackPanel>
                                             <DockPanel Margin="0,2" >
                                                 <Button Content="{x:Static properties:Resources.FindLuminousAreaCorners}" Margin="5,0,0,0" ToolTip="{x:Static properties:Resources.RunOnce}"  Click="FindLuminousAreaCorner_Click"   />
@@ -249,7 +249,8 @@
                                                 <TextBox   Text="{Binding PoiConfig.Polygon4Y}" Width="55" Margin="5,0"  />
                                             </DockPanel>
                                         </StackPanel>
-                                        <StackPanel  HorizontalAlignment="Right">
+                                        <WrapPanel>
+                                            <Button Content="{x:Static properties:Resources.SetPointLayoutArea}" Margin="3" Height="25" FontWeight="Bold" Click="ShowPoiConfig_Click"/>
                                             <Button x:Name="ButtonImportMarin" Content="{x:Static properties:Resources.MarginSettings}" Margin="3" Height="25" Click="ButtonImportMarin_Click"/>
                                             <Popup  x:Name="ImportMarinPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=ButtonImportMarin}">
                                                 <Border  Style="{StaticResource BorderModuleArea}" Background="{DynamicResource SecondaryRegionBrush}" Width="150" CornerRadius="5">
@@ -279,10 +280,9 @@
                                                     </StackPanel>
                                                 </Border>
                                             </Popup>
-                                        </StackPanel>
+                                        </WrapPanel>
 
-                                    </Grid>
-                                    <Button Content="{x:Static properties:Resources.SetPointLayoutArea}" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
+                                    </StackPanel>
                                     <UniformGrid  Columns="2" >
                                         <DockPanel Margin="2" HorizontalAlignment="Left">
                                             <TextBlock Text="{x:Static properties:Resources.RowCount}"   MinWidth="50"/>
@@ -354,10 +354,11 @@
                                 </StackPanel>
                             </StackPanel>
 
-                            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <WrapPanel Margin="0,5,0,0">
                                 <RadioButton x:Name="RadioButtonCircle" Width="60"  GroupName="shape" IsChecked="{Binding PoiConfig.IsPointCircle}" Content="{x:Static properties:Resources.Circle}"/>
                                 <RadioButton x:Name="RadioButtonRect" Width="60"  GroupName="shape" IsChecked="{Binding PoiConfig.IsPointRect}" Content="{x:Static properties:Resources.Rect}"/>
-                            </StackPanel>
+                                <Button x:Name="ButtonAutoFitPointSize" Content="{x:Static properties:Resources.PoiAutoFitSize}" Margin="5,0,0,0" Padding="5,0" Height="25" Visibility="{Binding PoiConfig.IsAreaMask,Converter={StaticResource bool2VisibilityConverter}}" Click="AutoFitPointSize_Click" ToolTip="{x:Static properties:Resources.PoiAutoFitSizeToolTip}"/>
+                            </WrapPanel>
 
                             <StackPanel Margin="5" Visibility="{Binding PoiConfig.IsPointCircle,Converter={StaticResource bool2VisibilityConverter}}" >
                                 <DockPanel Margin="2"  HorizontalAlignment="Left">

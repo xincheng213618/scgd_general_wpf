@@ -1043,4 +1043,7 @@
   <data name="Flow_LocalCamera_Usage" xml:space="preserve"><value>1. 选择设备代码，直接配置曝光时间、增益和平均次数。&#xA;2. 需要校正时选择校正模板；不选择时只输出 RAW。&#xA;3. 按需要开启自动连接、自动曝光、保存文件和图像翻转。&#xA;4. 将 OUT 连接到后续本地校正、POI 或其他算法节点。</value></data>
   <data name="Flow_LocalCamera_Processing" xml:space="preserve"><value>相机采集 RAW → 空间/普通校正 → 色度校正并生成 CIE（模板包含时）→ 图像翻转 → 保存文件。下游 POI 始终使用最终方向的图像坐标。</value></data>
   <data name="Flow_LocalCamera_Notes" xml:space="preserve"><value>X 表示上下翻转，Y 表示左右镜像，XY 表示旋转 180°；不支持 90°/270°旋转。未选择校正模板时不会提前翻转 RAW，方向配置会保留到下游本地校正完成后再应用。</value></data>
+  <data name="PoiAutoFitSize" xml:space="preserve"><value>自动适配尺寸</value></data>
+  <data name="PoiAutoFitSizeToolTip" xml:space="preserve"><value>根据四边形和行列数估算圆半径或矩形宽高，并切换为区域内布点。允许间隙、重叠和整数取整误差；可继续手动调整，点击绘制后生成点位。</value></data>
+  <data name="PoiAutoFitSizeFailed" xml:space="preserve"><value>无法自动适配尺寸：请确认四边形有效、行列数至少为1，且区域足够容纳整数像素的采样窗。缩进为单点时请手动设置尺寸。</value></data>
 </root>

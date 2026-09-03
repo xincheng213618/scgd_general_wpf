@@ -3059,4 +3059,7 @@
   <data name="当前没有找到可清理数据表。" xml:space="preserve"><value>目前找不到可清理的資料表。</value></data>
   <data name="当前数据源不支持自动备份，请确认已有可恢复副本。" xml:space="preserve"><value>目前的資料來源不支援自動備份，請確認已有可還原的副本。</value></data>
   <data name="未启用清理前备份。" xml:space="preserve"><value>未啟用清理前備份。</value></data>
+  <data name="PoiAutoFitSize" xml:space="preserve"><value>自動適配尺寸</value></data>
+  <data name="PoiAutoFitSizeToolTip" xml:space="preserve"><value>根據四邊形與行列數估算圓半徑或矩形寬高，並切換為區域內布點。允許間隙、重疊與整數取整誤差；可繼續手動調整，按下繪製後產生點位。</value></data>
+  <data name="PoiAutoFitSizeFailed" xml:space="preserve"><value>無法自動適配尺寸：請確認四邊形有效、行列數至少為1，且區域足以容納整數像素的取樣窗。縮進為單點時請手動設定尺寸。</value></data>
 </root>

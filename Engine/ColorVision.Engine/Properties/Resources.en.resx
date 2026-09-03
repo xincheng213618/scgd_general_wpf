@@ -4926,4 +4926,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="清空当前库全部可清理表" xml:space="preserve"><value>Empty All Cleanable Tables in Current Database</value></data>
   <data name="按表清理只处理勾选项；清理主表时需同时选择所有现存关联明细表。" xml:space="preserve"><value>Table cleanup affects only checked tables. To clean a main table, also select all existing related detail tables.</value></data>
   <data name="未启用清理前备份。" xml:space="preserve"><value>Backup before cleanup is not enabled.</value></data>
+  <data name="PoiAutoFitSize" xml:space="preserve"><value>Auto-fit size</value></data>
+  <data name="PoiAutoFitSizeToolTip" xml:space="preserve"><value>Estimate the circle radius or rectangle size from the quadrilateral and grid counts, and use Internal placement. Gaps, overlaps and integer rounding are allowed. You can adjust the values manually; click Draw to generate points.</value></data>
+  <data name="PoiAutoFitSizeFailed" xml:space="preserve"><value>Cannot fit the sampling size. Check that the quadrilateral is valid, row and column counts are at least 1, and the area can contain a whole-pixel sampling window. Set the size manually for an area collapsed to a point.</value></data>
 </root>
