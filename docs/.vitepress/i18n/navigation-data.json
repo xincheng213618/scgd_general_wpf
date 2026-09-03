@@ -1262,7 +1262,7 @@
             },
             {
               "text": {
-                "root": "灰度与颜色剖面 V1（M2）"
+                "root": "灰度与颜色剖面：采样、曲线与数据导出"
               },
               "link": "/02-developer-guide/core-concepts/image-profile-v1"
             },
@@ -2441,6 +2441,12 @@
                 "root": "ARVR 算法与模板"
               },
               "link": "/04-api-reference/algorithms/templates/arvr-template"
+            },
+            {
+              "text": {
+                "root": "灰度与颜色剖面：采样、曲线与数据导出"
+              },
+              "link": "/02-developer-guide/core-concepts/image-profile-v1"
             },
             {
               "text": {

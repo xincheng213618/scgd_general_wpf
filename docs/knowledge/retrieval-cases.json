@@ -617,6 +617,14 @@
     {"query":"SSIM最小有效比例是多少","expected_any":["algorithms.image-comparison"],"include_planned":false},
     {"query":"AlignmentMaximumSamples","expected_any":["algorithms.image-comparison"],"include_planned":false},
     {"query":"图像比较对齐会修改图像吗","expected_any":["algorithms.image-comparison"],"include_planned":false},
-    {"query":"float_difference_artifact_overflow","expected_any":["algorithms.image-comparison"],"include_planned":false}
+    {"query":"float_difference_artifact_overflow","expected_any":["algorithms.image-comparison"],"include_planned":false},
+    {"query":"水平剖面会对框选矩形求平均吗","expected_any":["algorithms.image-profile"],"include_planned":false},
+    {"query":"任意折线剖面两个点不能结束","expected_any":["algorithms.image-profile"],"include_planned":false},
+    {"query":"灰度剖面为什么只显示2000点","expected_any":["algorithms.image-profile"],"include_planned":false},
+    {"query":"剖面导出CSV哪个文件是采样数据","expected_any":["algorithms.image-profile"],"include_planned":false},
+    {"query":"ImageProfileParameters.MaximumSamples","expected_any":["algorithms.image-profile"],"include_planned":false},
+    {"query":"切面图和剖面窗口有什么区别","expected_any":["algorithms.image-profile"],"include_planned":false},
+    {"query":"ProfileDataExtractor返回空数据","expected_any":["algorithms.image-profile"],"include_planned":false},
+    {"query":"profile_result_budget_exceeded","expected_any":["algorithms.image-profile"],"include_planned":false}
   ]
 }

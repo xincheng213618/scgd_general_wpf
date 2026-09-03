@@ -248,8 +248,8 @@ next: false
 - [图像比较：差分、SSIM 与对齐预检](../../02-developer-guide/core-concepts/image-comparison-v1.md) — `algorithms.image-comparison`
   图像比较的操作、参数范围、ROI、差分/SSIM/对齐结果和PNG/JSON/CSV导出；预检不校正图像，192MiB仅限制图像输出，采样数存在狭长区域上限缺口。
 
-- [灰度与颜色剖面 V1（M2）](../../02-developer-guide/core-concepts/image-profile-v1.md) — `algorithms.image-profile`
-  ImageProfile 的输入、参数、结果、宿主接入与定向验证契约。
+- [灰度与颜色剖面：采样、曲线与数据导出](../../02-developer-guide/core-concepts/image-profile-v1.md) — `algorithms.image-profile`
+  灰度与颜色剖面的操作、采样/越界规则、2000行预览和完整JSON/CSV导出；多点入口受多边形选择器限制，MaximumSamples还受执行/字节预算限制，旧接口参数不同。
 
 - [图像配准 V1（M8.1）](../../02-developer-guide/core-concepts/image-registration-v1.md) — `algorithms.image-registration`
   ImageRegistration 的输入、参数、结果、宿主接入与定向验证契约。
