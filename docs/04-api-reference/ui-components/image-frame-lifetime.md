@@ -11,9 +11,9 @@ related: ["ui.core", "ui.image-editor", "engine.native-integration", "algorithms
 
 # 源图像帧：租约、位图复制与缓存失效
 
-本页维护 `ColorVision.Core` 的像素内存及 ImageView 取帧边界。**缓冲还活着、像素属于哪个版本、结果是否允许显示是三件事。** 租约防止受管理的帧在读者使用期间释放，不代表原始文件精度、任意指针安全、像素不可修改或算法调用自动取消。
+图像帧租约用于在后台读取或 native 调用期间保留源图像的像素缓冲。通过 `ImageView.AcquireImageFrame()` 取得租约，在读取结束后释放；显示计算结果前还需检查图像版本，防止把旧结果应用到新图。租约的内存所有权、缓存版本与结果适用性分别遵循下面的规则。
 
-`SourceImageFrame` 与 `ImageFrameStore` 是 Core 内部实现，`ImageFrameLease` 是公开读者句柄；ImageEditor 的使用入口是 `ImageView.AcquireImageFrame()`。不要把内部存储类型当作外部包的公开构造 API。`HImage` 的 Pack=8、释放标志和 native 函数族约定只在[native 集成](../../02-developer-guide/engine-development/opencv-integration.md)维护。
+`SourceImageFrame` 与 `ImageFrameStore` 是 Core 内部实现，`ImageFrameLease` 是公开读者句柄。外部调用方通过 ImageView 取帧，不直接构造内部存储。`HImage` 的 Pack=8、释放标志和 native 函数族约定只在[native 集成](../../02-developer-guide/engine-development/opencv-integration.md)维护。
 
 ## 借用、复制与拥有者
 
@@ -69,6 +69,4 @@ ImageView 会记录当前缓存帧对应的 `ImageSource` 对象；取帧时若�
 
 `ImageFrameOwnerTests` 覆盖最后租约释放、重复 Dispose、借用副本、revision 失效、候选竞争、并发取得/失效/关闭。多数用例使用合成指针和释放计数，不解引用真实 native 图像；另有小 WPF 位图切换及原地修改用例，测试主动调用 Invalidate，不证明修改字节会被自动监听。
 
-`HImageExtensionCopyTests` 覆盖冻结/可变位图复制、紧密/带 padding 的行、Bgr32 四通道校验。用例使用借用输入自行清理，不验证全部拥有型输入的成功/失败释放分支，也不覆盖任意格式的色彩正确性、Dispatcher 故障或完整 ImageView 交互。
-
-测试存在不表示本次运行过；这些托管/合成检查不能替代 native ABI、真实 DLL、GPU、相机或发布包验收。文档校验不授权加载真实图像样本、修改文件、触发设备或发布 DLL。
+`HImageExtensionCopyTests` 覆盖冻结/可变位图复制、紧密/带 padding 的行、Bgr32 四通道校验。`ToHImage` 用例释放生成的拥有型副本；以 HImage 为输入的转换/更新用例使用借用描述符并自行清理缓冲，不验证拥有型输入的全部成功/失败释放分支。任意格式的色彩正确性、Dispatcher 故障、完整 ImageView 交互及实际 native 运行仍不在这些测试的覆盖范围内。
