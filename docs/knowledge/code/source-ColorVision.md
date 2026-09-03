@@ -221,8 +221,8 @@ next: false
 
 ## ColorVision/ToolPlugins {#module-436f6c6f72566973696f6e2f546f6f6c506c7567696e73}
 
-- [系统开发工具管理](../../02-developer-guide/core-concepts/developer-tools-manager.md) — `platform.developer-tools`
-  独立开发工具窗口发现系统 Python、Node.js/npm，并由用户选择校验后启动官方安装向导；不托管项目环境，不自动改默认版本。
+- [开发工具管理：检测与安装 Python、Node.js](../../02-developer-guide/core-concepts/developer-tools-manager.md) — `platform.developer-tools`
+  开发工具管理的Python/Node检测、当前应用与新终端命令路径、官方版本选择和安装校验；下载等待30分钟，关窗停止后续安装但不取消下载或终止安装器。
 
 ## ColorVision/Update {#module-436f6c6f72566973696f6e2f557064617465}
 

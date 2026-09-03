@@ -641,6 +641,14 @@
     {"query":"成像校正没有启用阶段mask全白","expected_any":["algorithms.imaging-correction"],"include_planned":false},
     {"query":"成像校正Alpha为什么被裁剪","expected_any":["algorithms.imaging-correction"],"include_planned":false},
     {"query":"reference_valid_fraction_too_low","expected_any":["algorithms.imaging-correction"],"include_planned":false},
-    {"query":"成像校正批量只保存主图","expected_any":["algorithms.imaging-correction"],"include_planned":false}
+    {"query":"成像校正批量只保存主图","expected_any":["algorithms.imaging-correction"],"include_planned":false},
+    {"query":"开发工具管理当前应用与新终端参考不同","expected_any":["platform.developer-tools"],"include_planned":false},
+    {"query":"Python已安装但开发工具列表没有","expected_any":["platform.developer-tools"],"include_planned":false},
+    {"query":"开发工具管理npm命令路径跟随附版本不一致","expected_any":["platform.developer-tools"],"include_planned":false},
+    {"query":"npmmirror无法获取可安装版本","expected_any":["platform.developer-tools"],"include_planned":false},
+    {"query":"关闭开发工具管理下载还在继续","expected_any":["platform.developer-tools"],"include_planned":false},
+    {"query":"开发工具管理安装器退出0是成功吗","expected_any":["platform.developer-tools"],"include_planned":false},
+    {"query":"开发工具管理下载等待30分钟","expected_any":["platform.developer-tools"],"include_planned":false},
+    {"query":"DeveloperToolCatalogService","expected_any":["platform.developer-tools"],"include_planned":false}
   ]
 }

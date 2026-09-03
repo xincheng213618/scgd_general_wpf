@@ -677,7 +677,7 @@
           "items": [
             {
               "text": {
-                "root": "系统开发工具管理"
+                "root": "开发工具管理：检测与安装 Python、Node.js"
               },
               "link": "/02-developer-guide/core-concepts/developer-tools-manager"
             }
@@ -890,6 +890,12 @@
                 "root": "模板注册、参数与持久化"
               },
               "link": "/03-architecture/components/templates/design"
+            },
+            {
+              "text": {
+                "root": "开发工具管理：检测与安装 Python、Node.js"
+              },
+              "link": "/02-developer-guide/core-concepts/developer-tools-manager"
             },
             {
               "text": {
@@ -1751,7 +1757,7 @@
             },
             {
               "text": {
-                "root": "系统开发工具管理"
+                "root": "开发工具管理：检测与安装 Python、Node.js"
               },
               "link": "/02-developer-guide/core-concepts/developer-tools-manager"
             },
@@ -1949,6 +1955,12 @@
                 "root": "检查更新、重新安装与程序备份"
               },
               "link": "/02-developer-guide/deployment/auto-update"
+            },
+            {
+              "text": {
+                "root": "开发工具管理：检测与安装 Python、Node.js"
+              },
+              "link": "/02-developer-guide/core-concepts/developer-tools-manager"
             },
             {
               "text": {
@@ -2348,7 +2360,7 @@
             },
             {
               "text": {
-                "root": "系统开发工具管理"
+                "root": "开发工具管理：检测与安装 Python、Node.js"
               },
               "link": "/02-developer-guide/core-concepts/developer-tools-manager"
             },

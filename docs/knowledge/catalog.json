@@ -6731,21 +6731,47 @@
       "knowledge_id": "platform.developer-tools",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "独立开发工具窗口发现系统 Python、Node.js/npm，并由用户选择校验后启动官方安装向导；不托管项目环境，不自动改默认版本。",
+      "summary": "开发工具管理的Python/Node检测、当前应用与新终端命令路径、官方版本选择和安装校验；下载等待30分钟，关窗停止后续安装但不取消下载或终止安装器。",
       "aliases": [
         "开发工具管理",
+        "系统开发工具",
         "Python安装",
         "Node.js安装",
         "npm版本",
+        "命令路径详情",
+        "当前应用",
+        "新终端参考",
+        "随附包管理器",
+        "刷新检测",
+        "获取可安装版本",
+        "下载并安装",
         "npmmirror",
+        "NVM_HOME",
+        "FNM_DIR",
+        "VOLTA_HOME",
+        "DeveloperToolsAppProvider",
         "DeveloperToolsWindow",
+        "DeveloperToolPageModel",
         "DeveloperToolDiscoveryService",
-        "DeveloperToolInstallerService"
+        "DeveloperToolCatalogService",
+        "DeveloperToolInstallerService",
+        "DeveloperToolRelease",
+        "ResolvePathCommand",
+        "PrepareInstaller",
+        "VerifiedInstaller",
+        "官网SHA256",
+        "下载服务返回了意外的文件路径",
+        "安装向导已退出"
       ],
       "code_paths": [
         "ColorVision/ToolPlugins/DeveloperTools",
         "Engine/ColorVision.Engine/Services/DeveloperTools",
-        "UI/ColorVision.UI/Download/IDownloadService.cs"
+        "UI/ColorVision.Common/ThirdPartyApps/ThirdPartyAppManager.cs",
+        "UI/ColorVision.UI/Download/IDownloadService.cs",
+        "UI/ColorVision.UI/Environments.cs",
+        "UI/ColorVision.UI.Desktop/Download/Aria2cDownloadService.cs",
+        "UI/ColorVision.UI.Desktop/Download/Aria2cDownloadManager.cs",
+        "UI/ColorVision.UI.Desktop/Download/DownloadWindow.xaml.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/DeveloperToolSafetyTests.cs",
@@ -6754,15 +6780,17 @@
       "related": [
         "ui.common",
         "ui.desktop",
-        "delivery.artifact-delivery"
+        "ui.storage-maintenance"
       ],
       "code_scopes": [
         "ColorVision/ToolPlugins",
         "Engine/ColorVision.Engine",
-        "UI/ColorVision.UI"
+        "UI/ColorVision.Common",
+        "UI/ColorVision.UI",
+        "UI/ColorVision.UI.Desktop"
       ],
       "domain": "platform",
-      "title": "系统开发工具管理",
+      "title": "开发工具管理：检测与安装 Python、Node.js",
       "source": "docs/02-developer-guide/core-concepts/developer-tools-manager.md",
       "url": "/02-developer-guide/core-concepts/developer-tools-manager",
       "searchable": true
