@@ -38,7 +38,7 @@ related: ["ui.index","ui.property-grid","ui.settings","ui.wizards","ui.menus","u
 | 能力 | 接口/入口 | 备注 |
 | --- | --- | --- |
 | 启动初始化 | `IInitializer`、`InitializerBase` | 放共享启动扩展，不放业务流程 |
-| 主窗口初始化后扩展 | `IMainWindowInitialized` | 适合菜单、状态、服务启动后的挂接 |
+| 主窗口初始化后扩展 | `IMainWindowInitialized` | `MainWindow.LoadIMainWindowInitialized` 在基础界面装配后按 Order 调用；具体服务是否就绪由初始化器负责 |
 | 配置对象 | `IConfig`、`ConfigService` | 需要持久化的配置优先走这里 |
 | 菜单 | `IMenuItem`、`IMenuItemProvider`、`MenuItemBase`、`MenuItemAttribute` | [发现、父子树、隐藏与执行](./menus.md)；不将快捷键显示当成注册 |
 | 状态栏 | `IStatusBarProvider`、`IStatusBarProviderUpdatable`、`IActiveDocumentStatusProvider` | [发现、绑定、文档通知与清理](./status-bar.md)；隐藏不停止业务 |
@@ -50,7 +50,7 @@ related: ["ui.index","ui.property-grid","ui.settings","ui.wizards","ui.menus","u
 | 属性编辑器 | `PropertyEditorTypeAttribute`、`IPropertyEditor.GenProperties`、`PropertyEditorRegistry` | [选择、复用与失败契约](./property-grid.md)，不要在缓存编辑器实例里持有目标对象 |
 | 图像打开器 | `IImageOpen`、`FileExtensionAttribute` | 新格式优先走打开器 |
 | 图像工具 | `IEditorTool`、`IEditorToggleTool`、`IEditorCustomControlTool` | 工具由 ImageEditor 工厂装配 |
-| 图像右键菜单 | `IDVContextMenu`、`IIEditorToolContextMenu` | 根据是否需要 `EditorContext` 选接口 |
+| 图像右键菜单 | `IDVContextMenu`、`IIEditorToolContextMenu` | 前者按 `ContextType` 为匹配图元提供 MenuItem，后者为标准菜单提供元数据；两者均可注入上下文，构造规则见[图像编辑器上下文](./image-editor-context.md) |
 | Solution 编辑器 | `IEditor`、`EditorForExtensionAttribute` | 新文件类型不要硬写在文件树里 |
 | 向导步骤 | `IWizardStep`、`IWizardInitializer` | [步骤应用、初始化时序和完成标记](./wizards.md) |
 
