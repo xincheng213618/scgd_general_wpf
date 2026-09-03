@@ -9096,6 +9096,7 @@
         "配置作用域",
         "临时ROI",
         "临时选区",
+        "四边形",
         "选区坐标",
         "EditorContext",
         "ImageProcessingContext",
@@ -9103,6 +9104,8 @@
         "ImageViewPropertyScope",
         "IEditorToolFactory",
         "BeginSelectAsync",
+        "SelectShapeType",
+        "SelectResult",
         "TransientRoiSelectionSession",
         "ImageSelectionScope",
         "EnableEditorImageServices"
