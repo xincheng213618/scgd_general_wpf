@@ -690,6 +690,17 @@
     {"query":"CVCIE配置重载后修改不生效","expected_any":["engine.cvcie-results"],"include_planned":false},
     {"query":"POI主波长为-99","expected_any":["engine.cvcie-results"],"include_planned":false},
     {"query":"PoiOptionsFlagsV2.PreserveNonPositiveValues","expected_any":["engine.opencv-helper-api"],"include_planned":false},
-    {"query":"M_CalculatePoiBatchV2单通道负Y会被替换吗","expected_any":["engine.opencv-helper-api"],"include_planned":false}
+    {"query":"M_CalculatePoiBatchV2单通道负Y会被替换吗","expected_any":["engine.opencv-helper-api"],"include_planned":false},
+    {"query":"本地 MCP 支持 SSE 订阅吗","expected_any":["copilot.mcp-server"],"include_planned":false},
+    {"query":"Mcp-Session-Id 失效后还能确认旧动作吗","expected_any":["copilot.mcp-server"],"include_planned":false},
+    {"query":"ColorVision MCP 503 -32013","expected_any":["copilot.mcp-server"],"include_planned":false},
+    {"query":"execute_menu 会不会执行流程","expected_any":["copilot.mcp-server"],"include_planned":false},
+    {"query":"create_flow 是否只修改编辑器","expected_any":["copilot.mcp-server"],"include_planned":false},
+    {"query":"get_agent_task_events 没有 conversation 绑定","expected_any":["copilot.mcp-server"],"include_planned":false},
+    {"query":"Copy Token Command 为什么客户端仍然401","expected_any":["copilot.mcp-server"],"include_planned":false},
+    {"query":"本地 MCP 工作区和客户端目录一样吗","expected_any":["copilot.mcp-server"],"include_planned":false},
+    {"query":"arguments_digest 需要使用摘要吗","expected_any":["copilot.mcp-server"],"include_planned":false},
+    {"query":"ColorVision MCP Safety boundary","expected_any":["copilot.mcp-server"],"include_planned":false},
+    {"query":"get_enabled_tools 和 capabilities 一样吗","expected_any":["copilot.mcp-server"],"include_planned":false}
   ]
 }

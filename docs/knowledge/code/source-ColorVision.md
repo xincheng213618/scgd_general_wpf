@@ -169,7 +169,7 @@ next: false
   界面语言的资源发现、系统语言回退、设置绑定和重启切换；语言下拉框不证明插件翻译完整，修改配置值不等于刷新窗口。
 
 - [ColorVision 本地 MCP](../../02-developer-guide/core-concepts/colorvision-mcp.md) — `copilot.mcp-server`
-  ColorVision 入站本地 MCP 的 loopback 认证、会话、能力白名单与二次确认契约。
+  ColorVision 入站本地 MCP 的连接与会话、工具和资源、工作区读取、两阶段确认及菜单写入边界。
 
 ## ColorVision/FloatingBall {#module-436f6c6f72566973696f6e2f466c6f6174696e6742616c6c}
 

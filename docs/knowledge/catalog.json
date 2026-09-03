@@ -2043,27 +2043,58 @@
       "knowledge_id": "copilot.mcp-server",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "ColorVision 入站本地 MCP 的 loopback 认证、会话、能力白名单与二次确认契约。",
+      "summary": "ColorVision 入站本地 MCP 的连接与会话、工具和资源、工作区读取、两阶段确认及菜单写入边界。",
       "aliases": [
+        "ColorVision 本地 MCP",
+        "Local MCP",
         "Codex 如何连接 ColorVision",
         "MCP 工具能否执行流程",
         "CopilotMcpServer",
+        "CopilotMcpRequestHandler",
+        "CopilotMcpClientSessionStore",
+        "CopilotMcpToolDispatcher",
         "Mcp-Session-Id",
-        "confirm_action"
+        "MCP-Protocol-Version",
+        "MCP SSE",
+        "MCP 会话容量",
+        "-32013",
+        "Safety boundary",
+        "confirm_action",
+        "arguments_digest",
+        "get_enabled_tools",
+        "get_agent_task_events",
+        "agent_task_events_scope_required",
+        "workspace_scope_changed",
+        "no_allowed_roots",
+        "execute_menu",
+        "create_flow",
+        "Copy Codex Config",
+        "Copy Token Command"
       ],
       "code_paths": [
-        "ColorVision/Copilot/Mcp/CopilotMcpServer.cs",
         "ColorVision/Copilot/Mcp",
-        "ColorVision/Copilot/Capabilities"
+        "ColorVision/Copilot/Capabilities",
+        "ColorVision/Copilot/CopilotExecutionScope.cs",
+        "ColorVision/Copilot/Config/CopilotConfig.cs",
+        "ColorVision/Copilot/CopilotMcpSettingsControl.xaml",
+        "ColorVision/Copilot/CopilotSettingsViewModel.cs",
+        "ColorVision/Copilot/CopilotSettingsViewModel.McpProperties.cs",
+        "ColorVision/Copilot/CopilotSettingsViewModel.McpOperations.cs"
       ],
       "test_paths": [
         "Test/ColorVision.Copilot.Tests/CopilotMcpServerLifecycleTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotMcpConfirmationDecisionTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotMcpRequestIdentityTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotMcpPathSecurityTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotMcpWorkspaceSnapshotCaptureTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotMcpConfirmationDecisionTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotMcpConnectionDiagnosticTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs"
       ],
       "related": [
         "copilot.runtime",
         "copilot.extensions",
-        "copilot.configuration"
+        "copilot.configuration",
+        "copilot.tool-contracts"
       ],
       "code_scopes": [
         "ColorVision/Copilot"
