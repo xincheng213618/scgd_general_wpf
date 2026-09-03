@@ -657,6 +657,12 @@
     {"query":"FullCie预览指针优化","expected_any":["engine.camera-preview-plan"],"include_planned":true},
     {"query":"RAW预览行步长","expected_any":["engine.camera-preview-plan"],"include_planned":true},
     {"query":"设备级内存预览怎么验收","expected_any":["engine.camera-preview-plan"],"include_planned":true},
-    {"query":"内存预览latest-wins","expected_any":["engine.camera-preview-plan"],"include_planned":true}
+    {"query":"内存预览latest-wins","expected_any":["engine.camera-preview-plan"],"include_planned":true},
+    {"query":"管理员服务配置怎么进入采集窗口","expected_any":["engine.devices"],"include_planned":false},
+    {"query":"设备类型字典禁用后类型还在","expected_any":["engine.devices"],"include_planned":false},
+    {"query":"设备组关联资源是否过滤禁用和租户","expected_any":["engine.devices"],"include_planned":false},
+    {"query":"LoadServices完成但设备树是空的","expected_any":["engine.devices"],"include_planned":false},
+    {"query":"LastSelectIndex会按设备Code恢复吗","expected_any":["engine.devices"],"include_planned":false},
+    {"query":"DeviceServiceFactoryRegistry重复注册","expected_any":["engine.devices"],"include_planned":false}
   ]
 }

@@ -1097,6 +1097,12 @@
             },
             {
               "text": {
+                "root": "Engine 设备资源与运行装配"
+              },
+              "link": "/04-api-reference/engine-components/device-service-chain"
+            },
+            {
+              "text": {
                 "root": "MySQL 结果清理、备份与失败边界"
               },
               "link": "/04-api-reference/engine-components/mysql-maintenance"

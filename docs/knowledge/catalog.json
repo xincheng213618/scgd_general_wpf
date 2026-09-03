@@ -4321,6 +4321,14 @@
         "设备资源有记录却不出现",
         "如何新增设备服务",
         "设备资源重载",
+        "设备资源过滤",
+        "设备类型字典",
+        "组关联资源",
+        "空设备树",
+        "管理员服务配置",
+        "进入采集窗口",
+        "切换列表",
+        "LastSelectIndex",
         "运行对象生命周期",
         "显示集合",
         "ServiceManager",
@@ -4332,9 +4340,13 @@
       "code_paths": [
         "Engine/ColorVision.Engine/Dao/SysResourceModel.cs",
         "Engine/ColorVision.Engine/Dao/SysDictionaryModel.cs",
+        "Engine/ColorVision.Engine/Dao/SysResourceGoupModel.cs",
+        "Engine/ColorVision.Engine/Dao/VSysResourceDao.cs",
+        "UI/ColorVision.Database/BaseTableDao.cs",
         "Engine/ColorVision.Engine/Services/ServiceManager.cs",
         "Engine/ColorVision.Engine/Services/ServiceInitializer.cs",
         "Engine/ColorVision.Engine/Services/WindowService.xaml.cs",
+        "Engine/ColorVision.Engine/Services/WindowService.xaml",
         "Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs",
         "Engine/ColorVision.Engine/Services/Type/TypeService.cs",
         "Engine/ColorVision.Engine/Services/DeviceService.cs",
@@ -4353,10 +4365,12 @@
         "operations.file-server",
         "operations.flow-device",
         "flow.session",
-        "ui.property-grid"
+        "ui.property-grid",
+        "ui.database"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine",
+        "UI/ColorVision.Database",
         "UI/ColorVision.UI"
       ],
       "domain": "engine",
