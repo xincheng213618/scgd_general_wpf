@@ -159,8 +159,8 @@ next: false
 - [Copilot 工具契约](../../02-developer-guide/core-concepts/copilot-agent-tool-contracts.md) — `copilot.tool-contracts`
   Copilot 工具结果、事件、审批恢复和 Flow 编辑必须遵守的执行契约。
 
-- [Copilot ViewModel 维护地图](../../02-developer-guide/core-concepts/copilot-view-model-architecture.md) — `copilot.view-model`
-  CopilotChatViewModel 的状态所有权、请求边界、会话与输入状态拆分和测试入口。
+- [Copilot 状态所有权与界面交接](../../02-developer-guide/core-concepts/copilot-view-model-architecture.md) — `copilot.view-model`
+  Copilot 界面状态的所有权、异步输入交接、检查点提交及会话保存完成边界。
 
 - [CVRAW / CVCIE 图像导出](../../04-api-reference/engine-components/cv-image-export.md) — `engine.cv-image-export`
   CVRAW/CVCIE 原生导出的窗口、命令行参数、通道和命名规则，以及覆盖、部分失败和退出码边界。

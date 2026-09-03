@@ -701,6 +701,18 @@
     {"query":"本地 MCP 工作区和客户端目录一样吗","expected_any":["copilot.mcp-server"],"include_planned":false},
     {"query":"arguments_digest 需要使用摘要吗","expected_any":["copilot.mcp-server"],"include_planned":false},
     {"query":"ColorVision MCP Safety boundary","expected_any":["copilot.mcp-server"],"include_planned":false},
-    {"query":"get_enabled_tools 和 capabilities 一样吗","expected_any":["copilot.mcp-server"],"include_planned":false}
+    {"query":"get_enabled_tools 和 capabilities 一样吗","expected_any":["copilot.mcp-server"],"include_planned":false},
+    {"query":"CopilotComposerCaptureToken 切换会话再回来旧输入会被清空吗","expected_any":["copilot.view-model"],"include_planned":false},
+    {"query":"CommitScheduled 成功以后会直接保存草稿吗","expected_any":["copilot.view-model"],"include_planned":false},
+    {"query":"CopilotPreparedHostedTurn 是否会深拷贝会话和消息","expected_any":["copilot.view-model"],"include_planned":false},
+    {"query":"CopilotChatStatePersistenceCoordinator FlushAsync 等待什么","expected_any":["copilot.view-model"],"include_planned":false},
+    {"query":"SaveSynchronouslyAndStop 和 Dispose 有什么区别","expected_any":["copilot.view-model"],"include_planned":false},
+    {"query":"TrySetAgentSessionCheckpoint 接受但 changed 为 false","expected_any":["copilot.view-model"],"include_planned":false},
+    {"query":"TryCommitAgentRunState 如何处理落后的 checkpoint","expected_any":["copilot.view-model"],"include_planned":false},
+    {"query":"CurrentAgentTaskEventJournal 在 checkpoint 退役后从哪里读取","expected_any":["copilot.view-model"],"include_planned":false},
+    {"query":"CopilotTurnCheckpointLifecycleState 如何检查身份漂移","expected_any":["copilot.view-model"],"include_planned":false},
+    {"query":"CopilotApprovalCoordinator 待审批列表与全局计数","expected_any":["copilot.view-model"],"include_planned":false},
+    {"query":"Copilot 输入已经排队是不是已经写入磁盘","expected_any":["copilot.view-model"],"include_planned":false},
+    {"query":"CopilotAgentTaskEventJournalRegistry PublishedAtUtc 是磁盘保存时间吗","expected_any":["copilot.tool-contracts"],"include_planned":false}
   ]
 }

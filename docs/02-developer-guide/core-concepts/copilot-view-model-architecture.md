@@ -2,108 +2,139 @@
 knowledge_id: "copilot.view-model"
 knowledge_type: "topic"
 status: "current"
-summary: "CopilotChatViewModel 的状态所有权、请求边界、会话与输入状态拆分和测试入口。"
-aliases: ["CopilotChatViewModel 太大从哪里改","聊天状态属于哪个对象","CopilotConversationSession","CopilotComposerSession","ICopilotTurnRuntime"]
-code_paths: ["ColorVision/Copilot/CopilotChatViewModel.cs","ColorVision/Copilot/State/CopilotConversationSession.cs","ColorVision/Copilot/State/CopilotComposerSession.cs","ColorVision/Copilot/Runtime/ICopilotTurnRuntime.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotChatViewModelContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotConversationSessionTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs","Test/ColorVision.Copilot.Tests/CopilotAttachmentRemovalEditLifetimeTests.cs"]
-related: ["copilot.runtime","copilot.interactions","copilot.session-tools"]
+summary: "Copilot 界面状态的所有权、异步输入交接、检查点提交及会话保存完成边界。"
+aliases: ["CopilotChatViewModel 太大从哪里改","聊天状态属于哪个对象","CopilotConversationSession","CopilotComposerSession","CopilotComposerCaptureToken","CommitScheduled","CopilotPreparedHostedTurn","ICopilotTurnRuntime","CopilotApprovalCoordinator","CopilotChatStatePersistenceCoordinator","SaveSynchronouslyAndStop","TrySetAgentSessionCheckpoint","TryCommitAgentRunState","CurrentAgentTaskEventJournal","CopilotTurnCheckpointLifecycleState"]
+code_paths: ["ColorVision/Copilot/CopilotChatViewModel.cs","ColorVision/Copilot/CopilotChatViewModel.Conversations.cs","ColorVision/Copilot/CopilotChatViewModel.TurnExecution.cs","ColorVision/Copilot/CopilotChatViewModel.TurnEvents.cs","ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs","ColorVision/Copilot/CopilotChatViewModel.Permissions.cs","ColorVision/Copilot/CopilotChatViewModel.Lifecycle.cs","ColorVision/Copilot/State/CopilotConversationSession.cs","ColorVision/Copilot/State/CopilotComposerSession.cs","ColorVision/Copilot/Agent/CopilotQueuedFollowUpCoordinator.cs","ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs","ColorVision/Copilot/Runtime/CopilotApprovalCoordinator.cs","ColorVision/Copilot/Runtime/CopilotPreparedHostedTurn.cs","ColorVision/Copilot/Runtime/CopilotTurnRuntimeConfigSnapshot.cs","ColorVision/Copilot/Runtime/ICopilotTurnRuntime.cs","ColorVision/Copilot/Runtime/CopilotTurnRuntime.cs","ColorVision/Copilot/Runtime/CopilotTurnCheckpointLifecycleState.cs","ColorVision/Copilot/CopilotConversationRecord.cs","ColorVision/Copilot/CopilotConversationRecord.Validation.cs","ColorVision/Copilot/State/CopilotChatStatePersistenceCoordinator.cs","ColorVision/Copilot/State/CopilotChatStateSaveScheduler.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotChatViewModelContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotConversationSessionTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs","Test/ColorVision.Copilot.Tests/CopilotAttachmentRemovalEditLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpCoordinatorTests.cs","Test/ColorVision.Copilot.Tests/CopilotPreparedHostedTurnTests.cs","Test/ColorVision.Copilot.Tests/CopilotApprovalCoordinatorTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatStatePersistenceCoordinatorTests.cs","Test/ColorVision.Copilot.Tests/CopilotTurnCheckpointLifecycleTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs"]
+related: ["copilot.runtime","copilot.interactions","copilot.session-tools","copilot.configuration","copilot.tool-contracts"]
 ---
 
-# Copilot ViewModel 维护地图
+# Copilot 状态所有权与界面交接
 
-修改 Copilot 对话界面时，先找状态 owner，不需要先遍历全部 `CopilotChatViewModel` partial。ViewModel 是 WPF facade；partial 只是文件组织方式，不能作为状态边界。
+本页用于定位聊天界面的状态归属，以及会话切换、异步发送、审批和保存之间的交接。`CopilotChatViewModel` 负责组装依赖、WPF 绑定和界面流程编排；其 partial 文件只是组织方式，状态边界由下列对象及提交方法决定。模型执行链见 [Copilot Runtime](./copilot-agent-runtime.md)。
 
-## 问题到源码的定位顺序
-
-1. 在下表找到状态 owner。
-2. 查看对应 `CopilotChatViewModel.*.cs` 如何投影到 WPF。
-3. 最后进入 Provider、Agent 或持久化实现。
 ## 状态所有权
 
-| Owner | 唯一负责 | 主要文件 |
+表中相对源码路径均位于 `ColorVision/Copilot/`。遇到状态问题，先查所属对象，再查对应 ViewModel 调用是否正确捕获、提交和通知。
+
+| 对象 | 持有或管理的状态 | 实现入口 |
 | --- | --- | --- |
-| WPF facade | 命令、属性通知、Dispatcher、窗口、定时器和绑定投影 | `CopilotChatViewModel.cs`、`PresentationProperties.cs` |
-| Conversation session | 会话集合、活动 ID、选中会话和配置 | `State/CopilotConversationSession.cs`、`Conversations.cs` |
-| Composer session | 输入、模式、审查目标、Skill 引用和 capture token | `State/CopilotComposerSession.cs`、`ComposerAndRuntimeState.cs` |
-| Follow-up coordinator | 实时队列、run ID 索引、顺序、durable recovery 和关闭保护 | `Agent/CopilotQueuedFollowUpCoordinator.cs`、`QueuedFollowUps.cs` |
-| Approval coordinator | 待审批投影、最终校验、批准/拒绝和 trace 转换 | `Runtime/CopilotApprovalCoordinator.cs`、`Permissions.cs` |
-| Task host | 活动/等待任务、admission、取消和宿主生命周期 | `Agent/CopilotAgentTaskHost.cs` |
-| Prepared hosted turn | 单次执行固定使用的会话、配置、消息和上下文 | `Runtime/CopilotPreparedHostedTurn.cs` |
-| Turn runtime | Provider/Agent 执行和事件流 | `Runtime/ICopilotTurnRuntime.cs`、`Runtime/CopilotTurnRuntime.cs` |
-| Conversation Agent state | 当前可恢复 checkpoint、最新有界事件证据及两者的原子提交 | `CopilotConversationRecord.cs`、`CopilotConversationRecord.Validation.cs` |
-| Persistence coordinator | 保存合并、Flush、失败通知和重试 | `State/CopilotChatStatePersistenceCoordinator.cs` |
+| `CopilotChatViewModel` | 命令、绑定属性、界面投影、窗口、Dispatcher、定时器及应用生命周期接线；消息编辑期间的临时草稿备份 | `CopilotChatViewModel.cs` 及相关 partial |
+| `CopilotConversationSession` | 访问状态中的会话集合，维护选中会话、选中 Profile 与活动 ID 的一致性 | `State/CopilotConversationSession.cs`、`CopilotChatViewModel.Conversations.cs` |
+| `CopilotConversationRecord` | 消息、待发送附件、持久化 `Draft*` 字段，以及该会话的 Agent 恢复状态 | `CopilotConversationRecord.cs`、`CopilotConversationRecord.Validation.cs` |
+| `CopilotComposerSession` | 当前编辑区的文本、模式、审查目标、Skill 引用与版本；通过 capture token 识别提交的输入 | `State/CopilotComposerSession.cs` |
+| `CopilotQueuedFollowUpCoordinator` | 实时队列、run ID 索引、队列顺序、状态中的恢复记录与关闭保护 | `Agent/CopilotQueuedFollowUpCoordinator.cs`、`CopilotChatViewModel.QueuedFollowUps.cs` |
+| `CopilotAgentTaskHost` | 活动和等待任务、调度准入、取消及宿主生命周期 | `Agent/CopilotAgentTaskHost.cs` |
+| `CopilotPreparedHostedTurn` | 把本次执行的会话、Profile、消息、宿主上下文和运行配置关联为一个执行参数对象 | `Runtime/CopilotPreparedHostedTurn.cs` |
+| `ICopilotTurnRuntime` / `CopilotTurnRuntime` | Provider / Agent 执行与单轮事件流 | `Runtime/ICopilotTurnRuntime.cs`、`Runtime/CopilotTurnRuntime.cs` |
+| `CopilotApprovalCoordinator` | 待审批投影、作用域复核、批准/拒绝与审批状态到消息 trace 的转换；动作本身仍由 approval store 持有 | `Runtime/CopilotApprovalCoordinator.cs`、`CopilotChatViewModel.Permissions.cs` |
+| `CopilotChatStatePersistenceCoordinator` | 捕获会话状态快照、序列化和串行提交；委托 scheduler 合并保存请求、Flush 与重试 | `State/CopilotChatStatePersistenceCoordinator.cs`、`State/CopilotChatStateSaveScheduler.cs` |
 
-消息编辑前的草稿备份由 ViewModel 持有，属于当前编辑会话的内存状态。备份对象的引用也是异步编辑发送、网页读取和附件移除识别该次编辑的依据；失败回滚可以向其附件列表补回原草稿内容，但不能替换整个备份对象而使仍有效的请求失效。取消编辑把备份恢复到 composer，成功排程编辑发送后丢弃备份。它不属于持久化的 `ComposerStash`，不保证退出或重启后恢复；交互与文件引用边界见[草稿编辑与历史恢复](./copilot-local-interactions.md#草稿编辑与历史恢复)。
+`CopilotChatState` 是保存到磁盘的状态集合，各对象只管理自己的字段。Composer 不持有附件，也不会自行把输入写回 conversation：ViewModel 的 `SynchronizeSelectedConversationComposerDraft` 同步 `DraftText`、`DraftRequestMode`、`DraftWorkspaceReviewTarget` 和 `DraftAgentSkillReference`，附件提交另行按对象引用处理。
 
-`CopilotChatState` 仍是持久化 aggregate，但不是业务 God object；各 owner 只管理自己的字段，持久化 coordinator 只负责快照和保存。分片快照以保存请求版本作为一致性水位线；捕获期间出现新请求时丢弃旧切面并继续保存新批次，不能把多个 UI 时刻拼成一份磁盘状态。
-### DeepSeek Harness 借鉴边界
+消息编辑备份是 ViewModel 的临时内存状态，其对象身份也是旧异步操作是否仍有效的依据；它与持久化 `ComposerStash` 不同。取消编辑、发送失败、附件移除与备份恢复的完整规则见[草稿编辑与历史恢复](./copilot-local-interactions.md#草稿编辑与历史恢复)。
 
-ColorVision 借鉴 DeepSeek Harness 的目标是建立可验证的不变量，不是复制其微内核、插件容器或完整事件溯源形态。会话侧只把 Agent 任务 journal 收紧为可连续验证的权威证据，并让 checkpoint、执行结果和 UI 成为该证据的恢复点或投影；现有 `CopilotChatState` 快照、WPF 状态 owner 和普通 Chat 消息模型继续保留，不把整套桌面会话改写为 JSONL 事件存储。工具侧借鉴“注册、Schema、发布、执行一致”的原则，通过共享 capability catalog、注册阶段契约校验和发布成功后才暴露工具来消除双写与幽灵工具；Agent 的 CallId、预算、Hook、原生审批和外部 MCP 的 session identity、两阶段确认、审计仍是不同的安全边界，不合并成一个无差别执行器。DeepSeek 的 Cordis 组合方式、通用插件生命周期和全局单一 `ToolRuntime` 不作为 ColorVision 当前目标。
+## 会话选择与后台结果归属
 
-`CopilotTurnEvent` 是单次运行的瞬时协议，不是第二份会话状态；事件由 `CopilotTurnEventReducer` 回放成执行结果。Agent checkpoint 内的 task journal 用于安全恢复，conversation 的 `LatestAgentTaskEventJournal` 只在没有可恢复 checkpoint 时充当独立 journal owner。两个持久字段只开放程序集内 setter，业务代码通过 `SetAgentSessionCheckpoint` / `CommitAgentRunState` 原子更新这组状态，并从 `CurrentAgentTaskEventJournal` 读取派生值；只要 checkpoint 存在，它就必须持有当前权威 journal，不能同时保存一份领先的 terminal journal。终态提交以 `CopilotAgentRunResult.TaskEventJournal` 为本轮权威事件证据；若 checkpoint 落后，甚至在取消/恢复边界上属于上一 run，聚合根会创建一份重基到 terminal journal 的 checkpoint 副本后再提交，而不是持久化两个 owner。旧快照加载时同样先选择较新的 legacy evidence，再迁入 checkpoint，且不刷新原 checkpoint 时间戳。checkpoint 退役时才把其 journal 转交给独立字段。开始下一轮时，conversation 会把 `CurrentAgentTaskEventJournal` 作为独立的 `TaskEventJournalBaseline` 传入运行时；即使取消后 checkpoint 已退休，新 run 也会从当前权威 journal 继续 sequence，而不是重新从 1 建立另一条事件谱系。取消、暂停或异常未能返回正式 run result 时，由 conversation 的 `CompleteOpenAgentRun` 在同一次状态转换中补齐缺失的控制事件、悬空工具终态和 `RunStopped`，再决定保留还是退休 checkpoint；展示层只设置消息终态，普通 Chat 不通过这条路径改写 Agent 状态。`CopilotConversationCompactionContext.CaptureSurface` 只从现有完整消息、压缩边界和 `ModelContent` 派生 `current / shadowed / log-only` 计数，`/context` 用它说明当前模型表面；该投影不持久、不改写消息，也不成为新的事实源。
+`CopilotConversationSession.SelectConversation` 拒绝已归档或不属于当前集合的会话；接受的选择会更新活动会话、Profile ID 及选中对象。创建会话与选中会话是不同操作，创建本身不强制切换。
 
-同一轮的 checkpoint 增量先由 reducer 校验身份和 journal 单调性：Profile、任务意图、能力目录、工具、环境、Hook、项目指令面及其指纹在本轮内不得漂移；journal 必须相等或成为固定容量窗口中的前向后继。容量未满时要求严格追加；达到 256 条后允许既定淘汰策略删除旧事件，但仍保留的历史事件必须逐字段不变，最新 sequence 必须前进，不能用更晚时间戳包装回退或改写证据。conversation 聚合根使用同一条固定容量前向后继规则，不再用“最新时间戳”接纳从共同前缀分叉或完全跨谱系的候选；新 run 通过显式 journal baseline 续写同一谱系。事件等价性比较完整持久载荷，而不只比较 sequence 与 ID，因此相同 ID 下被改写的类型、时间、run、subject、关联 ID、工具名、状态、失败码、退出码或摘要不能替换现有证据；加载时还会从 sequence、run、type 与时间重新计算事件 ID，阻止借用另一事件的合法 ID。checkpoint 本身与独立终态证据都经过这条单调准入：只有等价或确实更新的 checkpoint 才能替换恢复点或撤下独立终态证据，整个 run 的迟到提交也会被拒绝。`TrySetAgentSessionCheckpoint` 与 `TryCommitAgentRunState` 都把“候选被接受”与“聚合值实际改变”分开返回；UI 只有在增量或终态 checkpoint 被接受后，才会把已送达 steering 视为已经进入该 checkpoint。checkpoint 与恢复记录清理作为同一次持久化转换；若终态提交被拒绝，steering 会恢复到会话草稿而不是依据未提交的候选被删除。这样倒退 checkpoint 即使声称包含新 steering，也不能造成指令丢失；等价 checkpoint 则仍可确认该 steering 已耐久化而无需重复替换对象。迟到但 sequence 更大的分叉 checkpoint、取消或失败回调因此不能让恢复 session 倒退、在取消后复活，或把已经完成的 run 改写成旧运行的终态；新一轮 checkpoint 确实更新时才重新成为 journal 的单一所有者。
-## 核心流程
+ViewModel 对选择分两条路径处理：
 
-### 会话切换
+- **切到不同会话**：取消当前消息编辑，解绑旧会话集合通知，清理当前界面的临时恢复/历史导航状态，再调用 `ComposerSession.Load`、同步规范化草稿并刷新绑定与审批投影。
+- **仍选择同一会话**：可以应用显式首选 Profile 并刷新相关状态，但不重新加载 Composer，也不因重复选择清掉现有输入。
 
-`SelectConversation` → `ConversationSession.SelectConversation` → `ComposerSession.Load` → 把规范化草稿写回 conversation → 刷新绑定 → 按需保存。
+`Load` 会推进 Composer 版本，因此“切出去再切回来”也不能重新使用旧 token。异步任务始终更新捕获的原 conversation 和消息；完成时重新读取 `SelectedConversation` 或 `SelectedProfile` 会把用户当前正在看的会话误当成任务所属会话。
 
-后台完成逻辑只能更新任务捕获的 conversation/profile，不能重新读取当前 `SelectedConversation` 或 `SelectedProfile`；用户可能已切到另一会话。
-### 输入与发送
+## 输入捕获与成功排程后的提交
 
-WPF setter → `ComposerSession.Set*` → 同步草稿 → 捕获 token/附件 → admission/trust/budget → 创建消息 → `CopilotPreparedHostedTurn` → `TaskHost.TrySchedule`。
+正常模型请求沿 `CopilotChatViewModel.TurnExecution.cs::SendAsync` 处理：先捕获输入和原会话，再做准入、上下文准备和异步附件处理，最后建立消息并交给 TaskHost。异步准备后会重查准入及消息编辑是否仍有效；排程失败则回滚本次建立的消息，保留输入。
 
-只有排程成功且 token 仍匹配才能清空 Composer。等待期间的新编辑必须保留；附件只移除捕获时的对象，不能对当前集合直接 `Clear()`。
+| 交接点 | 当前契约 |
+| --- | --- |
+| `ComposerSession.Capture()` | 返回文本、模式及引用的快照和 `CopilotComposerCaptureToken(ConversationId, Version)`；不清空输入，不包含附件 |
+| 捕获附件与配置 | 另行捕获原附件对象和执行上下文；准备阶段负责创建请求 Profile 与运行配置快照，后续执行使用这些已捕获值 |
+| `TaskHost.TrySchedule` | 成功表示宿主接受任务，不表示 Provider 已执行或状态已保存 |
+| `ComposerSession.CommitScheduled(token)` | 只在会话 ID 和版本都匹配时清空文本、恢复 Auto 模式并清除审查/Skill 引用；成功后推进版本，同一 token 不能再次消费 |
+| 成功提交后的附件处理 | 只移除捕获时的原对象；不能在 `await` 后对当前附件集合 `Clear()`。token 已失效时保留新的输入与附件 |
+| 显式 `directPrompt` | 不读取或消费界面 Composer、待发送附件、Skill、审查目标或待恢复请求 |
 
-`directPrompt` 不读取或消费界面 Composer、待发送附件、Skill、审查目标或 recovery。
-### 排队 Follow-up
+`CopilotPreparedHostedTurn` 本身不对所有参数深拷贝：它保留传入对象的引用，尤其是原 conversation 与 user/assistant 消息。`ValidateHostedRun` 检查会话 ID 和模式是否匹配；消息角色在构造时校验。配置隔离由准备阶段和 `CopilotTurnRuntimeConfigSnapshot` 等快照类型承担，不能把 prepared 对象误当成任意可变对象的冻结器。执行开始时仍从原会话获取恢复 checkpoint、journal baseline 等执行状态，而不是从后来选中的会话取值。
 
-捕获 Composer → `FollowUpCoordinator.TrySchedule` → 写 durable recovery → 成功后提交 token → 执行前生成 prepared turn → 消息 Flush 成功后删除 recovery。
+### 排队请求
 
-排队时冻结 profile、runtime config、附件和项目上下文，执行时重新捕获 history。Steering 是 runtime mailbox 消息，不是新 turn。
-### 审批
+普通 follow-up 入队时捕获 Profile、运行配置、附件、Skill/审查目标和项目上下文；实际执行前才重新捕获该会话历史，以包含前一轮已经完成的消息。Steering 是发给运行中任务的消息，不是新建 turn；取消、重启恢复和排队本地命令规则见[会话与工具](./copilot-agent-session-and-tools.md)。
 
-Store event → coordinator 捕获 immutable transition → facade 切回 UI Dispatcher → coordinator 更新列表或 trace → facade 发通知并请求保存。
+`FollowUpCoordinator.TrySchedule` 成功后，恢复记录先存在 `CopilotChatState.QueuedFollowUpRecoveries` 的内存集合中。ViewModel 提交匹配的输入 token，并请求立即保存；这里没有等待 Flush，所以不能把“已排队”当成磁盘耐久化回执。
 
-WPF 负责审查窗口和反馈；eligibility、TOCTOU 复核、决定和 trace 映射必须经过 `CopilotApprovalCoordinator`。
+执行前建立 prepared turn 和消息后会等待保存：Flush 失败时回滚未保存消息并恢复输入；成功后才移除该恢复记录并继续执行。Runtime 在进入 Provider / Agent 执行前还通过 `StatePersistenceBarrierEvent` 请求保存屏障。这样调度、输入消费、保存完成和模型执行分别有明确的交接点。
 
-## 必须留在 WPF facade
+## 检查点与任务事件的所有权
 
-- `ICommand`、CanExecute 和公开绑定属性。
-- `OnPropertyChanged` 与 `CommandManager.InvalidateRequerySuggested`。
-- Dispatcher、WeakEvent 和应用生命周期接线。
-- 窗口、剪贴板、文件选择器和中文界面文本。
-- 绑定所需的 `ObservableCollection` 投影。
+`CopilotTurnEvent` 是单轮执行的瞬时协议，经过协议校验并由 `CopilotTurnEventReducer` 汇总为运行结果；会话恢复使用持久化 checkpoint 和有界 task journal。普通 Chat 消息、UI trace 和 `/context` 的模型表面计数各有用途，不替代这份恢复状态；模型表面是从消息与压缩边界派生的投影，不另存一份事实源。journal 字段与事件类型见[结构化任务事件](./copilot-agent-tool-contracts.md#结构化任务事件-journal)。
 
-不要为了缩短 ViewModel 创建 `CopilotUiCoordinator`；那只是给同一个大类换名字。
+### 会话聚合提交
 
-## 禁止事项
+通过 `CurrentAgentTaskEventJournal` 读取当前 journal，通过 `SetAgentSessionCheckpoint` / `TrySetAgentSessionCheckpoint` 和 `CommitAgentRunState` / `TryCommitAgentRunState` 更新；不要直接双写两个持久字段。
 
-- 不增加 conversation、composer、pending action 或 queue 镜像字段。
-- session/coordinator 不反向引用 ViewModel，不接 delegate bag。
-- 不绕过 `CopilotPreparedHostedTurn` 重新传递大组平行参数。
-- 排程成功前不消费 Composer 或 recovery。
-- `await` 后不全量清空当前附件。
-- 后台执行不读取当前 profile/config，使用已捕获快照。
-- 不绕过 `CopilotApprovalCoordinator` 操作 approval store。
-- 不直接双写 `AgentSessionCheckpoint` 与 `LatestAgentTaskEventJournal`；使用 conversation 的原子提交方法。
-- 不把持久化、UI 通知和 Provider 执行合成 God service。
-- 不用“再拆一个 partial”代替明确 owner。
+| 状态转换 | 所有权结果 |
+| --- | --- |
+| 接受有效 checkpoint | checkpoint 持有当前 journal，清除重复的 `LatestAgentTaskEventJournal` |
+| 提交正式 Agent 终态 | 以有效的 terminal journal 为本轮事件证据；若提交的 checkpoint 落后或关联旧 run，将其复制并换入 terminal journal 后一起提交 |
+| 退役 checkpoint | 将其 journal 交给独立字段保留，供展示和后续运行使用 |
+| 加载旧状态同时存在两份 journal | 仅在加载规范化中选择较新的有效 legacy evidence，迁入 checkpoint 后清掉独立字段；迁移不刷新 checkpoint 原时间戳 |
+| 未返回正式结果而暂停、取消或中断 | `CompleteOpenAgentRun` 闭合尚未完成的 Agent run；取消退役 checkpoint，暂停/中断按恢复规则保留；普通 Chat 不走这条 Agent 状态转换 |
 
-## 修改前检查
+这是规范化和聚合提交后的所有权约束。为读取旧状态，`CurrentAgentTaskEventJournal` getter 仍优先返回有效的独立字段，随后才回退到 checkpoint journal；不能绕过规范化而假设 getter 总是直接读取 checkpoint。新 run 将当前 journal 作为独立的 `TaskEventJournalBaseline` 传入，即使取消后已没有 checkpoint，也从现有事件序列继续。
 
-1. 新状态是否只有一个 owner？
-2. 异步操作是否有 capture/commit 或 recovery 语义？
-3. 失败时消息、草稿和附件能否恢复？
-4. 是否保留构造器、命令和 XAML 契约？
-5. 是否同时有 owner 测试和最小 VM 集成测试？
+### 接受候选与实际改变
 
-## 测试入口
+同一轮的 `CopilotTurnCheckpointLifecycleState` 检查 checkpoint 身份、时间和 journal：Profile、任务意图、能力目录、工具、环境、Hook、项目指令及其相关版本/指纹不得在轮内漂移，更新时间不能倒退。`CheckpointReady` 必须在首个有效更新后出现且只能出现一次；发布过 checkpoint 的运行结束前必须已 ready。
 
-公开 facade 看 `CopilotChatViewModelContractTests`；会话看 `CopilotConversationSessionTests`；输入看 `CopilotComposerSessionTests`；队列看 `CopilotQueuedFollowUpCoordinatorTests`；审批看 `CopilotApprovalCoordinatorTests`；执行信封看 `CopilotPreparedHostedTurnTests`。
+journal 的准入使用 `IsSameOrForwardBoundedSuccessor`：等价候选可以接受；前向候选必须满足 sequence 增长与预期窗口条数，保留下来的历史事件逐字段相等。比较包括 ID、类型、时间、run、subject、关联 ID、工具名、状态、失败码、退出码和摘要；单凭更晚时间戳不能替换现有证据。
 
-```powershell
-dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64 --no-restore
-dotnet test .\Test\ColorVision.Copilot.Tests\ColorVision.Copilot.Tests.csproj -p:Platform=x64 --no-restore
-```
+窗口最多 **256 条**。前缀淘汰后只校验仍可比较的事件；两窗口已无重叠时，不能据此证明被淘汰的完整历史相同。事件 ID 的结构校验与有界窗口比较不等于无限历史的完整性证明。
+
+`TrySetAgentSessionCheckpoint` / `TryCommitAgentRunState` 分开返回“候选被接受”和 `changed`：等价候选可被接受而不替换对象。`TurnEvents.cs` 只有在 checkpoint 被接受且包含相应 steering 时，才据此消费已送达的指令恢复记录；被拒绝的候选不能证明这些指令已保存。显式取消有主动丢弃已送达批次的独立规则，其余未确认输入按恢复流程返回原会话草稿并保留后来的输入。
+
+checkpoint 与恢复记录的内存变更一起进入后续状态快照；“候选被接受”本身不是磁盘保存完成。Provider 恢复兼容性、未知工具结果与用户恢复操作见[会话与工具](./copilot-agent-session-and-tools.md)。
+
+## 会话保存、重试与退出
+
+会话保存由 `CopilotChatStatePersistenceCoordinator` 负责，设置窗口的配置发布是另一条路径，见[配置与发布](./copilot-configuration.md)。
+
+| API / 路径 | 完成含义 |
+| --- | --- |
+| `RequestSave(immediate)` | 增加保存请求版本并通知后台 worker；默认防抖 300 ms、单批最长等待 2 秒。`immediate` 跳过防抖，不等待文件写入 |
+| `FlushAsync()` | 等待调用时已有的保存请求成功处理；若旧快照被更新请求淘汰，等待可提交的新批次。没有未处理请求且无先前失败时直接完成，不自动发现未发出保存请求的对象变更 |
+| 失败与重试 | 每批最多尝试 2 次，间隔 50 ms；每次失败报告错误，最终失败使 Flush 抛异常。之后的新保存请求或显式 Flush 可重试 |
+| `FlushStatePersistenceBarrierAsync` | 显式请求保存并等待；较新 state schema 阻止持久化时抛错，失败不能作为执行前保存成功 |
+| `PersistStateAndFlushAsync` | 用于保留已完成运行的内存结果，捕获保存异常；调用返回不能单独证明磁盘成功，需看保存通知 |
+| `SaveSynchronouslyAndStop()` | 停止 scheduler，等待提交锁，再保存当前状态；失败通过回调报告，较新 state schema 阻止覆盖。普通应用退出调用此路径 |
+| `Dispose()` | 停止调度并释放接线；不等同于 Flush 或同步退出保存 |
+
+快照捕获以保存请求版本为水位线。支持分片的 store 从后台请求时，在 UI Dispatcher 的 Background 优先级分片复制，单片以 4 ms 为工作预算，然后后台序列化；这不是每片耗时的硬上限。捕获后、序列化后和进入提交锁后都会复核版本，已过时的快照不在该检查点继续提交。
+
+这一机制依赖状态修改方请求保存，不能把任意未经通知的可变对象变更变成事务。新请求若发生在文件写入已经开始后，较旧批次仍可能先完成，之后再保存新批次；不能承诺磁盘从未短暂出现旧批次。退出同步保存共用提交锁，避免被正在写入的较旧异步保存反向覆盖。
+
+保存失败时，检查界面的持久化通知和原始错误；“重试保存”通过请求加 Flush 重新提交当前状态。普通应用退出会先保留队列恢复记录、恢复待确认 steering、关闭宿主并处理未开始任务，再执行同步保存。构造 ViewModel 则可能加载/规范化状态和清理孤立附件，不应把实例化它当作无副作用的纯读取。
+
+## 审批与 WPF 边界
+
+Approval store 发事件时，coordinator 立即捕获不可变 transition；ViewModel 再通过 Dispatcher 将其应用到消息/trace，避免延迟处理时读到已继续变化的 action。`PendingActions` 是当前作用域的投影，`TotalPendingCount` 是全局计数，两者不必相等。
+
+审批窗口和用户反馈留在 WPF。打开窗口前、确认返回后以及 coordinator 执行决定时均复核动作与当前作用域；批准后的返回值区分已批准、已执行与执行失败。原生审批与外部 MCP 的 session、参数指纹和执行约束分别见[审批契约](./copilot-agent-tool-contracts.md#原生审批与参数快照)与 [Local MCP](./colorvision-mcp.md)，不能因为共用列表就合并授权范围。
+
+维护时保留公开构造器、`ICommand`、CanExecute、属性通知和 XAML/code-behind 契约。新状态应有明确 owner 与 capture/commit 或恢复语义；不要增加会话、输入、队列或审批镜像字段，让 session 反向引用 ViewModel，或用包含大量回调的参数包把界面职责搬到一个新的总协调器。Dispatcher、窗口、剪贴板、文件选择器与绑定通知仍由界面层负责。
+
+## 排障与验证入口
+
+| 现象 | 先核对 | 相关测试源码 |
+| --- | --- | --- |
+| 切换会话后输入被旧请求清空 | Composer 的会话 ID/版本、真实切换与重复选择分支、附件是否按原对象消费 | `CopilotConversationSessionTests`、`CopilotComposerSessionTests`、`CopilotAttachmentRemovalEditLifetimeTests` |
+| 等待中的请求用了新 Profile 或新页面 | 入队捕获、prepared 参数引用及执行时仅刷新历史的边界 | `CopilotPreparedHostedTurnTests`、`CopilotQueuedFollowUpCoordinatorTests`；具体队列恢复见[会话与工具](./copilot-agent-session-and-tools.md) |
+| 显示已排队或输入已清空，重启却未恢复 | 保存请求是否真正完成、Flush 是否失败；不要只看 TrySchedule 返回值 | `CopilotChatStatePersistenceCoordinatorTests` |
+| checkpoint 被拒绝或 steering 未消费 | 候选的接受结果与 changed、身份/时间、水位和仍保留的事件内容 | `CopilotTurnCheckpointLifecycleTests`、`CopilotAgentSessionCheckpointTests`、`CopilotAgentTaskEventJournalIntegrityTests` |
+| 审批数量不一致或 trace 串会话 | 作用域投影、事件捕获时刻与 Dispatcher 应用时刻 | `CopilotApprovalCoordinatorTests` |
+| 重构后按钮、快捷键或面板绑定失效 | 构造器、命令及 code-behind 依赖 | `CopilotChatViewModelContractTests` |
+
+测试源码是定位与预期契约的依据，不代表当前已经执行。行为改动应选对应 owner 测试和必要的 ViewModel 交接测试；较宽的构建/测试入口见 [Runtime 验证](./copilot-agent-runtime.md#验证)。纯文档整理使用知识与站点检查，无需启动应用、模型或审批服务。

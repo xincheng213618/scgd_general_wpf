@@ -41,8 +41,8 @@ Agent会话、工具契约、上下文、恢复和MCP边界。 返回[知识总�
 - [Copilot 工具契约](../../02-developer-guide/core-concepts/copilot-agent-tool-contracts.md) — `copilot.tool-contracts`
   Copilot 工具结果、事件、审批恢复和 Flow 编辑必须遵守的执行契约。
 
-- [Copilot ViewModel 维护地图](../../02-developer-guide/core-concepts/copilot-view-model-architecture.md) — `copilot.view-model`
-  CopilotChatViewModel 的状态所有权、请求边界、会话与输入状态拆分和测试入口。
+- [Copilot 状态所有权与界面交接](../../02-developer-guide/core-concepts/copilot-view-model-architecture.md) — `copilot.view-model`
+  Copilot 界面状态的所有权、异步输入交接、检查点提交及会话保存完成边界。
 
 - [ColorVision 本地 MCP](../../02-developer-guide/core-concepts/colorvision-mcp.md) — `copilot.mcp-server`
   ColorVision 入站本地 MCP 的连接与会话、工具和资源、工作区读取、两阶段确认及菜单写入边界。

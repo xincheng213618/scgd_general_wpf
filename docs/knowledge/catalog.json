@@ -1696,6 +1696,7 @@
       "summary": "ColorVision内置Copilot的设置草稿、配置保存与运行态发布、模型选择和联网诊断；保存失败可能已落盘，Local MCP测试核验会话握手与只读状态调用。",
       "aliases": [
         "Copilot配置",
+        "Copilot 设置 Save / Apply / Cancel",
         "聊天配置",
         "模型设置",
         "Test Model",
@@ -2309,6 +2310,7 @@
         "CopilotToolExecutionContracts",
         "CopilotToolRegistry",
         "CopilotAgentAccessContext",
+        "CopilotAgentTaskEventJournalRegistry",
         "CopilotAutomaticApprovalReviewer",
         "approvals_reviewer",
         "/approve",
@@ -2326,6 +2328,8 @@
         "ColorVision/Copilot/Agent/CopilotToolExecutionContracts.cs",
         "ColorVision/Copilot/Agent/CopilotToolExecution.cs",
         "ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.cs",
+        "ColorVision/Copilot/Agent/CopilotAgentTaskEventJournalRegistry.cs",
+        "ColorVision/Copilot/Agent/CopilotUserQuestion.cs",
         "ColorVision/Copilot/Agent/CopilotAgentAccessModels.cs",
         "ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.ApprovalRouting.cs",
         "ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge.ApprovalExecution.cs",
@@ -2357,7 +2361,8 @@
         "copilot.execution",
         "copilot.session-tools",
         "copilot.interactions",
-        "copilot.extensions"
+        "copilot.extensions",
+        "copilot.view-model"
       ],
       "code_scopes": [
         "ColorVision/Copilot",
@@ -2373,36 +2378,72 @@
       "knowledge_id": "copilot.view-model",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "CopilotChatViewModel 的状态所有权、请求边界、会话与输入状态拆分和测试入口。",
+      "summary": "Copilot 界面状态的所有权、异步输入交接、检查点提交及会话保存完成边界。",
       "aliases": [
         "CopilotChatViewModel 太大从哪里改",
         "聊天状态属于哪个对象",
         "CopilotConversationSession",
         "CopilotComposerSession",
-        "ICopilotTurnRuntime"
+        "CopilotComposerCaptureToken",
+        "CommitScheduled",
+        "CopilotPreparedHostedTurn",
+        "ICopilotTurnRuntime",
+        "CopilotApprovalCoordinator",
+        "CopilotChatStatePersistenceCoordinator",
+        "SaveSynchronouslyAndStop",
+        "TrySetAgentSessionCheckpoint",
+        "TryCommitAgentRunState",
+        "CurrentAgentTaskEventJournal",
+        "CopilotTurnCheckpointLifecycleState"
       ],
       "code_paths": [
         "ColorVision/Copilot/CopilotChatViewModel.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.Conversations.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.TurnExecution.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.TurnEvents.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.Permissions.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.Lifecycle.cs",
         "ColorVision/Copilot/State/CopilotConversationSession.cs",
         "ColorVision/Copilot/State/CopilotComposerSession.cs",
-        "ColorVision/Copilot/Runtime/ICopilotTurnRuntime.cs"
+        "ColorVision/Copilot/Agent/CopilotQueuedFollowUpCoordinator.cs",
+        "ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs",
+        "ColorVision/Copilot/Runtime/CopilotApprovalCoordinator.cs",
+        "ColorVision/Copilot/Runtime/CopilotPreparedHostedTurn.cs",
+        "ColorVision/Copilot/Runtime/CopilotTurnRuntimeConfigSnapshot.cs",
+        "ColorVision/Copilot/Runtime/ICopilotTurnRuntime.cs",
+        "ColorVision/Copilot/Runtime/CopilotTurnRuntime.cs",
+        "ColorVision/Copilot/Runtime/CopilotTurnCheckpointLifecycleState.cs",
+        "ColorVision/Copilot/CopilotConversationRecord.cs",
+        "ColorVision/Copilot/CopilotConversationRecord.Validation.cs",
+        "ColorVision/Copilot/State/CopilotChatStatePersistenceCoordinator.cs",
+        "ColorVision/Copilot/State/CopilotChatStateSaveScheduler.cs"
       ],
       "test_paths": [
         "Test/ColorVision.Copilot.Tests/CopilotChatViewModelContractTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotConversationSessionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotAttachmentRemovalEditLifetimeTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotAttachmentRemovalEditLifetimeTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpCoordinatorTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotPreparedHostedTurnTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotApprovalCoordinatorTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotChatStatePersistenceCoordinatorTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotTurnCheckpointLifecycleTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs"
       ],
       "related": [
         "copilot.runtime",
         "copilot.interactions",
-        "copilot.session-tools"
+        "copilot.session-tools",
+        "copilot.configuration",
+        "copilot.tool-contracts"
       ],
       "code_scopes": [
         "ColorVision/Copilot"
       ],
       "domain": "copilot",
-      "title": "Copilot ViewModel 维护地图",
+      "title": "Copilot 状态所有权与界面交接",
       "source": "docs/02-developer-guide/core-concepts/copilot-view-model-architecture.md",
       "url": "/02-developer-guide/core-concepts/copilot-view-model-architecture",
       "searchable": true

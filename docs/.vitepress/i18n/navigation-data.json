@@ -518,7 +518,7 @@
             },
             {
               "text": {
-                "root": "Copilot ViewModel 维护地图"
+                "root": "Copilot 状态所有权与界面交接"
               },
               "link": "/02-developer-guide/core-concepts/copilot-view-model-architecture"
             },
