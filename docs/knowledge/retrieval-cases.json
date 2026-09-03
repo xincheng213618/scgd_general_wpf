@@ -609,6 +609,14 @@
     {"query":"DefaultCreatName","expected_any":["ui.solution"],"include_planned":false},
     {"query":"NewCreateWindow","expected_any":["ui.solution"],"include_planned":false},
     {"query":"清空最近列表包含固定项吗","expected_any":["ui.solution"],"include_planned":false},
-    {"query":"恢复cvsln会覆盖主文件吗","expected_any":["ui.solution"],"include_planned":false}
+    {"query":"恢复cvsln会覆盖主文件吗","expected_any":["ui.solution"],"include_planned":false},
+    {"query":"图像比较怎么选择候选图","expected_any":["algorithms.image-comparison"],"include_planned":false},
+    {"query":"图像比较PNG为什么不是Split画面","expected_any":["algorithms.image-comparison"],"include_planned":false},
+    {"query":"图像比较导出JSON包含像素吗","expected_any":["algorithms.image-comparison"],"include_planned":false},
+    {"query":"图像比较ROI为什么仍然超出内存预算","expected_any":["algorithms.image-comparison"],"include_planned":false},
+    {"query":"SSIM最小有效比例是多少","expected_any":["algorithms.image-comparison"],"include_planned":false},
+    {"query":"AlignmentMaximumSamples","expected_any":["algorithms.image-comparison"],"include_planned":false},
+    {"query":"图像比较对齐会修改图像吗","expected_any":["algorithms.image-comparison"],"include_planned":false},
+    {"query":"float_difference_artifact_overflow","expected_any":["algorithms.image-comparison"],"include_planned":false}
   ]
 }

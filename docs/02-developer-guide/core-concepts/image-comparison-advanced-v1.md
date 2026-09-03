@@ -14,4 +14,4 @@ onMounted(() => {
 
 # 页面已整理
 
-基础比较与高级比较已经合并到 [图像比较 V1（M3–M4）](./image-comparison-v1.md)。
+请参阅[图像比较：差分、SSIM 与对齐预检](./image-comparison-v1.md)。

@@ -1256,7 +1256,7 @@
             },
             {
               "text": {
-                "root": "图像比较 V1（M3–M4）"
+                "root": "图像比较：差分、SSIM 与对齐预检"
               },
               "link": "/02-developer-guide/core-concepts/image-comparison-v1"
             },
