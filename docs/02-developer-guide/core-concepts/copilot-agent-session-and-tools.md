@@ -3,7 +3,7 @@ knowledge_id: "copilot.session-tools"
 knowledge_type: "topic"
 status: "current"
 summary: "Copilot 会话检查点、任务呈现、重试和内置工具的状态恢复与安全边界。"
-aliases: ["Copilot 会话如何恢复","工具失败能否重试","诊断模式会自动读取日志吗","CopilotAgentSessionCheckpoint","CopilotAgentTaskEventJournal","GetRecentLog","CopilotRecentLogSupport","QueryFlowExecutionStats","QueryDatabaseSql","ExecuteDatabaseSql","colorvision-database-operations","PreviewWorkspacePatchEnvelope","ApplyWorkspacePatchEnvelope","RunShellCommand"]
+aliases: ["Copilot 会话如何恢复","工具失败能否重试","诊断模式会自动读取日志吗","CopilotAgentSessionCheckpoint","CopilotAgentTaskEventJournal","GetRecentLog","CopilotRecentLogSupport","QueryFlowExecutionStats","QueryDatabaseSql","ExecuteDatabaseSql","rows_returned","data_tsv","SQL查询截断","数据库查询 JSON 脱敏","SQL审批预览","colorvision-database-operations","PreviewWorkspacePatchEnvelope","ApplyWorkspacePatchEnvelope","RunShellCommand"]
 code_paths: ["ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs","ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.cs","ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.Builder.cs","ColorVision/Copilot/State/","ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs","ColorVision/Copilot/CopilotChatViewModel.AgentTaskCommands.cs","ColorVision/Copilot/CopilotChatViewModel.Conversations.cs","ColorVision/Copilot/CopilotChatViewModel.TurnExecution.cs","ColorVision/Copilot/CopilotChatViewModel.TurnEvents.cs","ColorVision/Copilot/CopilotChatViewModel.Permissions.cs","ColorVision/Copilot/Agent/CopilotQueuedFollowUpCoordinator.cs","ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs","ColorVision/Copilot/Agent/CopilotToolIntentPolicy.cs","ColorVision/Copilot/Agent/Tools/CopilotGetRecentLogTool.cs","ColorVision/Copilot/Capabilities/CopilotRecentLogSupport.cs","ColorVision/Copilot/Capabilities/CopilotAgentCapabilityServices.cs","ColorVision/Copilot/Capabilities/CopilotDatabaseSqlCapability.cs","ColorVision/Copilot/Capabilities/CopilotFlowExecutionStatisticsCapability.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotDatabaseSqlTools.cs","ColorVision/Copilot/Skills/colorvision-database-operations","ColorVision/Copilot/Agent/CopilotToolExecution.cs","ColorVision/Copilot/Agent/CopilotToolExecution.Support.cs","ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs","ColorVision/Copilot/CopilotChatViewModel.MessageInteraction.cs"]
 test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs","Test/ColorVision.Copilot.Tests/CopilotCancelledToolJournalTests.cs","Test/ColorVision.Copilot.Tests/CopilotRetrySourceLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatStateRecoveryAttachmentTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatStateProfileReconciliationTests.cs","Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotSteeringCancellationRecoveryTests.cs","Test/ColorVision.Copilot.Tests/CopilotGoalQueueRecoveryTests.cs","Test/ColorVision.Copilot.Tests/CopilotPendingRecoveryConversationTests.cs","Test/ColorVision.Copilot.Tests/CopilotManagedAttachmentDeletionTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatViewModelProfileIsolationTests.cs","Test/ColorVision.Copilot.Tests/CopilotToolExecutionCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotSettledShellCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotExternalMcpToolOutcomeTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerRecoverySafetyTests.cs","Test/ColorVision.Copilot.Tests/CopilotQueuedLocalCommandSnapshotTests.cs","Test/ColorVision.Copilot.Tests/CopilotDatabaseSqlPolicyTests.cs"]
 related: ["copilot.runtime","copilot.tool-contracts","copilot.lifecycle","copilot.interactions","engine.mysql-recovery"]
@@ -128,7 +128,22 @@ netstat -ano | findstr :6666
 
 业务数据库同时提供语义快捷能力和通用 SQL 能力。`QueryFlowExecutionStats` 只读聚合 `t_scgd_measure_batch`：接受 `today`、`yesterday` 或 `last7days`，按本机时区生成左闭右开的日历范围，返回执行尝试总数、各 `FlowStatus` 数量、完成率和平均耗时。它适合“今天执行了多少次流程”这类常见问题，不要求模型了解表结构。
 
-`QueryDatabaseSql` 是 Agent 模式的通用只读数据库工具，作为稳定 Schema 与其他内置能力一起提供；是否需要查询、应生成哪条 SQL 由模型结合当前对话决定，宿主不会通过关键词把系统问题改写成数据库查询。该工具接受一条只读 MySQL 语句，支持 `SELECT`、`SHOW`、`DESCRIBE`、`EXPLAIN`、`TABLE` 和最终落到只读语句的 CTE。默认最多返回 100 行，可在 1–500 行内调整；列数、单元格和总输出长度都有上限，密码、token、API key 等敏感列会统一显示为 `<redacted>`。`ExecuteDatabaseSql` 接受一条数据或结构变更，支持 `INSERT`、`UPDATE`、`DELETE`、`REPLACE`、`CREATE`、`ALTER`、`DROP`、`TRUNCATE` 和 `RENAME`，每次都必须经过 Agent Framework 原生审批；无 `WHERE` 的 `UPDATE` / `DELETE`、`TRUNCATE` 和 `DROP` 会在审批说明中给出加强警告。普通 DML 在事务内提交，DDL 遵循 MySQL 的隐式提交语义。
+`QueryDatabaseSql` 是 Agent 模式的通用只读数据库工具，作为稳定 Schema 与其他内置能力一起提供；是否需要查询、应生成哪条 SQL 由模型结合当前对话决定，宿主不会通过关键词把系统问题改写成数据库查询。该工具接受一条只读 MySQL 语句，支持 `SELECT`、`SHOW`、`DESCRIBE`、`DESC`、`EXPLAIN`、`TABLE` 和最终落到只读语句的 CTE。`maxRows` 范围 1–500、默认 100；`timeoutSeconds` 范围 1–30、默认 15。两个 SQL 工具的 `sql` 输入上限均为 20,000 字符。
+
+查询返回 `rows_returned`、`truncated` 和 `data_tsv`，是有界结果，不能作为完整导出：
+
+| 限制 | 返回含义 |
+| --- | --- |
+| 行与列 | 最多读取 `maxRows` 行、100 列；超过行或列限制时 `truncated: true` |
+| 单元格 | 文本换行和制表符被展平；超过 512 字符后加省略号，此项不改变 `truncated` |
+| 总输出 | 写入行内容前检查 32,000 字符预算；放不下时输出 `<output truncated at 32000 characters>`，但不回写先前的 `truncated` 或 `rows_returned` |
+| 脱敏 | 识别到敏感列名或 SQL 敏感标识符时显示 `<redacted>`，并对文本脱敏；任意 JSON、编码许可证或普通列名不因此保证安全 |
+
+因此 `rows_returned` 是缓冲区行数，可能大于最终显示行数；`truncated: false` 也不证明单元格或输出完整。需要总数时使用明确聚合，需要细节时缩小列和条件；不要仅凭有限列表推断全部记录。`txt_value`、许可证 `value` 等载荷应只提取已确认必需且非敏感的字段，不能通过别名绕过脱敏。
+
+`ExecuteDatabaseSql` 接受一条数据或结构变更，支持 `INSERT`、`UPDATE`、`DELETE`、`REPLACE`、`CREATE`、`ALTER`、`DROP`、`TRUNCATE` 和 `RENAME`；`timeoutSeconds` 范围 1–60、默认 30。执行必须经过原生审批和 SQL 校验，不表示每次调用都会弹窗或执行。审批说明中的 SQL 预览经过脱敏，超过 1,000 字符后截断；需要完整审视时应先呈现不含秘密的完整语句和范围，不能把片段当成完整批准依据。无 `WHERE` 的 `UPDATE` / `DELETE`、`TRUNCATE` 和 `DROP` 会给出加强警告，警告本身不是一律拒绝规则。
+
+普通 DML 在事务内提交，DDL 遵循 MySQL 的隐式提交语义。`affected_rows` 表示数据库操作结果，不证明设备配置已经载入或服务已经重启；直接 SQL 不调用应用的保存和通知流程，运行边界见[设备配置持久化](../../01-user-guide/devices/configuration.md#编辑、保存与远端应用)。错误或中断后先核对目标现状，不能假设全部回滚而自动重试。
 
 ### 数据库工具权限与迁移保留
 

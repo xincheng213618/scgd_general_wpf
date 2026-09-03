@@ -725,6 +725,16 @@
     {"query":"window_snapshot_delete_failed","expected_any":["delivery.backend-operations"],"include_planned":false},
     {"query":"operations_relay_window_snapshots 密文存在哪里","expected_any":["delivery.backend-operations"],"include_planned":false},
     {"query":"运维任务 queued 过期会自动变为 expired 吗","expected_any":["delivery.backend-operations"],"include_planned":false},
-    {"query":"设备签名请求失败后可以重放原 nonce 吗","expected_any":["delivery.backend-operations"],"include_planned":false}
+    {"query":"设备签名请求失败后可以重放原 nonce 吗","expected_any":["delivery.backend-operations"],"include_planned":false},
+    {"query":"QueryDatabaseSql 的 truncated 为 false 是否代表返回内容完整","expected_any":["copilot.session-tools"],"include_planned":false},
+    {"query":"rows_returned 为什么比 data_tsv 中实际显示的行数多","expected_any":["copilot.session-tools"],"include_planned":false},
+    {"query":"数据库查询脱敏会隐藏任意配置 JSON 里面的秘密吗","expected_any":["copilot.session-tools"],"include_planned":false},
+    {"query":"SQL审批预览能显示多长的语句","expected_any":["copilot.session-tools"],"include_planned":false},
+    {"query":"SQL修改设备配置成功后为什么界面还是旧值","expected_any":["operations.device-configuration"],"include_planned":false},
+    {"query":"txt_value 修改以后会被设备保存覆盖吗","expected_any":["operations.device-configuration"],"include_planned":false},
+    {"query":"t_scgd_sys_resource 禁用记录还会载入吗","expected_any":["engine.devices"],"include_planned":false},
+    {"query":"t_scgd_sys_resource_group 的成员按什么条件载入","expected_any":["engine.devices"],"include_planned":false},
+    {"query":"t_scgd_camera_license 过期时间与界面许可状态不一致","expected_any":["operations.physical-camera"],"include_planned":false},
+    {"query":"LicenseState 是依据 expired 列还是 ExpiryDateTime","expected_any":["operations.physical-camera"],"include_planned":false}
   ]
 }

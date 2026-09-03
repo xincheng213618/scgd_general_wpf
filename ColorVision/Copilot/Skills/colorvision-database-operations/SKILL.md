@@ -45,12 +45,12 @@ WHERE create_date >= CURDATE()
 2. Query the target count and a small representative sample first.
 3. Explain the exact table, predicate, estimated affected rows, and parent/child impact.
 4. Prefer one bounded `DELETE`, `UPDATE`, or other statement per operation. Never remove a `WHERE` clause for convenience.
-5. Submit the statement through `ExecuteDatabaseSql` and let the native approval UI show the final SQL.
+5. Present the exact non-secret statement and scope for review, then submit through `ExecuteDatabaseSql`. Its native approval presentation contains a redacted SQL preview clipped to 1,000 characters; do not assume the preview shows the complete statement or bypass approval when it is clipped.
 6. After successful execution, re-query the affected scope and report the verified result.
 
 Treat writes differently by category:
 
-- Service configuration writes can disconnect, rename, or restart services. Preview the exact service row and avoid direct deletion unless the user identifies that service explicitly.
+- Service configuration writes can change identity or connection behavior when consumed by services; SQL itself does not call application save/restart hooks. Preview the exact service row and avoid direct deletion unless the user identifies that service explicitly.
 - Service setting tables must not be changed by Copilot, including through `INSERT`, `UPDATE`, `DELETE`, DDL, or cleanup. This tool restriction does not exclude their field data from migration backups.
 - Result cleanup must delete child rows before their parent rows. Prefer the application's Database Cleanup UI for coordinated cleanup of complete result families.
 

@@ -3,7 +3,7 @@ knowledge_id: "operations.device-configuration"
 knowledge_type: "topic"
 status: "current"
 summary: "终端与设备配置引用、创建、保存、重启和删除清理；未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。"
-aliases: ["添加设备","保存设备","删除设备","设备配置引用","通信订阅清理","设备Code","设备配置保存失败","RestartRCService","SaveConfig","DeviceService","DeviceServiceConfig","DeviceServiceCreateContext","TryDeserializeConfig"]
+aliases: ["添加设备","保存设备","删除设备","设备配置引用","通信订阅清理","设备Code","设备配置保存失败","RestartRCService","SaveConfig","DeviceService","DeviceServiceConfig","DeviceServiceCreateContext","TryDeserializeConfig","txt_value","SQL修改设备配置"]
 code_paths: ["Engine/ColorVision.Engine/Dao/SysResourceModel.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Services/Core/ServiceObjectBaseExtensions.cs","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceConfig.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs","Engine/ColorVision.Engine/Services/Devices/SMU/DeviceSMU.cs","Engine/ColorVision.Engine/Services/Devices/SMU/MQTTSMU.cs","Engine/ColorVision.Engine/Services/Type/CreateType.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/CreateTerminal.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/TerminalService.cs","Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs"]
 test_paths: []
 related: ["engine.devices","engine.mqtt","engine.rc-registration","ui.property-grid","operations.acceptance"]
@@ -54,6 +54,8 @@ RCName/AppId 等客户端注册配置不是这里的 MySQL 设备参数；其连
 | `SaveConfig()` | 将 Config 的 Code/Name/JSON 写入资源并执行 MySQL Update；返回的影响行数未检查 | 没抛异常就一定更新了目标行 |
 | `RestartRCService()` | 按 Type 查服务类型、按 Pid 查终端 Code，再请求 RC 重启该设备 | 远端已经重启或应用新配置 |
 | 本地通知 | `OnConfigChanged()`，再发 `ConfigChanged` | 各设备全部对象已经重建或硬件已健康 |
+
+直接 SQL 修改 `t_scgd_sys_resource` 不调用上述保存、重启和通知流程，也不会自动更新已经载入的 Config。已存在的设备对象稍后执行 `SaveConfig()`，还可能把旧 Code/Name/JSON 覆盖回数据库。核验 SQL 修改时应分别确认目标行与实际使用该配置的运行对象；不能把数据库写入成功当成界面刷新或远端生效。
 
 上述步骤不是 MySQL 与远端服务的分布式事务。后续阶段出错不会自动回滚已经成功的数据库更新；顺序中抛异常会阻止更后的通知。
 

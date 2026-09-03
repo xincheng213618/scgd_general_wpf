@@ -2161,6 +2161,11 @@
         "QueryFlowExecutionStats",
         "QueryDatabaseSql",
         "ExecuteDatabaseSql",
+        "rows_returned",
+        "data_tsv",
+        "SQL查询截断",
+        "数据库查询 JSON 脱敏",
+        "SQL审批预览",
         "colorvision-database-operations",
         "PreviewWorkspacePatchEnvelope",
         "ApplyWorkspacePatchEnvelope",
@@ -4433,6 +4438,8 @@
         "运行对象生命周期",
         "显示集合",
         "ServiceManager",
+        "t_scgd_sys_resource",
+        "t_scgd_sys_resource_group",
         "DeviceServiceFactoryRegistry",
         "ServiceTypes",
         "LoadServices",
@@ -6320,7 +6327,9 @@
         "DeviceService",
         "DeviceServiceConfig",
         "DeviceServiceCreateContext",
-        "TryDeserializeConfig"
+        "TryDeserializeConfig",
+        "txt_value",
+        "SQL修改设备配置"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Dao/SysResourceModel.cs",
@@ -6806,11 +6815,16 @@
         "创建还原点",
         "加载还原点",
         "CameraSearchResultViewModel",
-        "PhysicalCamera_Load"
+        "PhysicalCamera_Load",
+        "t_scgd_camera_license",
+        "LicenseState",
+        "ExpiryDateTime",
+        "许可证过期字段"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManager.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraRestoreArchive.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadRunner.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadWorkspace.cs",

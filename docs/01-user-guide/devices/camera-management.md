@@ -3,8 +3,8 @@ knowledge_id: "operations.physical-camera"
 knowledge_type: "topic"
 status: "current"
 summary: "物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，创建/导入在唯一物理相机时可批量绑定服务。"
-aliases: ["物理相机","相机管理","相机许可证","导入lic","唯一相机自动绑定","校准文件上传","恢复点","PhyCameraManager","PhyCamera","SearchCameraIds","SetLicense","CreateRestore","LoadResotre","UploadDataAsync","扫描在线相机","添加未创建的相机","上传校正文件","创建还原点","加载还原点","CameraSearchResultViewModel","PhysicalCamera_Load"]
-code_paths: ["Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManager.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraRestoreArchive.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadRunner.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadWorkspace.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchTypeWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchResultWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CreateWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml","Engine/ColorVision.Engine/Services/RC/RCFileUpload.cs","Engine/cvColorVision/Camera/cvCameraCSLib.Discovery.cs"]
+aliases: ["物理相机","相机管理","相机许可证","导入lic","唯一相机自动绑定","校准文件上传","恢复点","PhyCameraManager","PhyCamera","SearchCameraIds","SetLicense","CreateRestore","LoadResotre","UploadDataAsync","扫描在线相机","添加未创建的相机","上传校正文件","创建还原点","加载还原点","CameraSearchResultViewModel","PhysicalCamera_Load","t_scgd_camera_license","LicenseState","ExpiryDateTime","许可证过期字段"]
+code_paths: ["Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManager.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraRestoreArchive.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadRunner.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadWorkspace.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchTypeWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchResultWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CreateWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml","Engine/ColorVision.Engine/Services/RC/RCFileUpload.cs","Engine/cvColorVision/Camera/cvCameraCSLib.Discovery.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/PhyCameraRestoreArchiveTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadRunnerTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadWorkspaceTests.cs"]
 related: ["operations.camera","operations.camera-configuration","operations.calibration","engine.devices"]
 ---
@@ -49,6 +49,12 @@ related: ["operations.camera","operations.camera-configuration","operations.cali
 创建窗口和管理器许可证导入都可能调用 `CreatePhysicalCameraFloder`。它先经 `RCFileUpload` 发送 `PhysicalCamera_Load`，得到请求记录后继续执行，没有等待目录创建的完成回执。
 
 随后加载物理集合；若集合中仅一台相机，就设置该相机许可证，遍历当前全部设备服务：写入通用配置的 `SN`、相机/校准服务的 `CameraCode`，并逐个 `Save()`。这条路径可能影响多项绑定和服务；“唯一”按已加载的物理集合判断，不是按本次扫描到几台相机判断。文件/数据库/关联服务没有整批事务成功保证，需分别确认请求结果、保存内容和预期设备绑定。
+
+## 许可证字段与界面状态
+
+`LicenseModel` 映射 `t_scgd_camera_license`：`res_dev_cam_pid` / `res_dev_cali_pid` 是可空的相机/校准资源 ID，`value` 保存编码许可证，`expired` 保存过期时间元数据。查询许可证时优先使用必要的 ID、型号与时间字段，不输出编码或解码后的许可证载荷。
+
+`PhyCamera.LicenseState` 使用解码对象的 `ColorVisionLicense.ExpiryDateTime` 与本机时间比较，不直接用数据库 `expired` 列判断。按 `expired < CURRENT_TIMESTAMP` 查到的是数据库会话时间下的过期元数据记录，NULL 值也不会命中；不能据此断言界面许可状态、永久许可或硬件授权。排查差异时区分存储列、已载入对象、解码结果与时间基准，不默认通过重新导入来验证。
 
 ## 许可证导入的两个入口
 
