@@ -62,8 +62,8 @@ next: false
 - [算法与模板接入概览](../../04-api-reference/algorithms/overview.md) — `algorithms.template-overview`
   说明 Engine 模板发现、手动算法宿主、MQTT 请求和 Flow 接入链。
 
-- [ARVR 模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
-  对照 ARVR 模板族、手动请求、Flow 算子和结果 handler 的版本边界。
+- [ARVR 算法与模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
+  ARVR 手动算法与流程节点的模板、POI 和请求对应关系；说明结果版本匹配及 SFR 曲线、查询和两种 CSV 导出的数据范围。
 
 - [Blob / 连通域 V1（M5.1）](../../02-developer-guide/core-concepts/blob-analysis-v1.md) — `algorithms.blob-analysis`
   BlobAnalysis 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。

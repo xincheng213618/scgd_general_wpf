@@ -7,19 +7,46 @@
       "knowledge_id": "algorithms.arvr",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "对照 ARVR 模板族、手动请求、Flow 算子和结果 handler 的版本边界。",
+      "summary": "ARVR 手动算法与流程节点的模板、POI 和请求对应关系；说明结果版本匹配及 SFR 曲线、查询和两种 CSV 导出的数据范围。",
       "aliases": [
+        "ARVR算法",
         "MTF SFR FOV模板对应哪个结果",
+        "SFR1.0",
+        "MTF2.0",
+        "FOV2.0",
+        "畸变评价",
+        "畸变2.0",
+        "StereoFusion",
+        "SFR寻边",
+        "ARVR屏幕缺陷检测",
+        "SFR曲线",
+        "SFR导出CSV",
+        "MTF@Freq",
+        "Freq@MTF",
         "AlgorithmARVRNode",
         "TemplateMTF2",
-        "ViewHandleSFR"
+        "ViewHandleSFR",
+        "WindowSFR"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/ARVR/SFR",
         "Engine/ColorVision.Engine/Templates/ARVR/Ghost",
+        "Engine/ColorVision.Engine/Templates/ARVR/Distortion",
         "Engine/ColorVision.Engine/Templates/Jsons/MTF2",
+        "Engine/ColorVision.Engine/Templates/Jsons/FOV2",
+        "Engine/ColorVision.Engine/Templates/Jsons/Distortion2",
+        "Engine/ColorVision.Engine/Templates/Jsons/BinocularFusion",
+        "Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI",
+        "Engine/ColorVision.Engine/Templates/Jsons/FindCross",
+        "Engine/ColorVision.Engine/Templates/Jsons/DetectScreenDefects",
+        "Engine/ColorVision.Engine/Services/Devices/Algorithm/JsonDisplayAlgorithmBase.cs",
         "Engine/FlowEngineLib/Algorithm/AlgorithmARVRNode.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs"
+        "Engine/FlowEngineLib/Base/CVBaseServerNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs",
+        "Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs",
+        "Engine/ColorVision.Engine/Services/Results/AlgorithmResultDataSaver.cs",
+        "Engine/cvColorVision/MQTTMessageLib/Algorithm/MQTTAlgorithmEventEnum.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs",
@@ -29,14 +56,17 @@
         "algorithms.index",
         "algorithms.ghost",
         "algorithms.json-templates",
+        "algorithms.template-menus",
+        "algorithms.find-cross",
         "engine.results"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine",
-        "Engine/FlowEngineLib"
+        "Engine/FlowEngineLib",
+        "Engine/cvColorVision"
       ],
       "domain": "algorithms",
-      "title": "ARVR 模板",
+      "title": "ARVR 算法与模板",
       "source": "docs/04-api-reference/algorithms/templates/arvr-template.md",
       "url": "/04-api-reference/algorithms/templates/arvr-template",
       "searchable": true

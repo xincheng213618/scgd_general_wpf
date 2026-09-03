@@ -2396,7 +2396,7 @@
             },
             {
               "text": {
-                "root": "ARVR 模板"
+                "root": "ARVR 算法与模板"
               },
               "link": "/04-api-reference/algorithms/templates/arvr-template"
             },
@@ -2519,6 +2519,12 @@
             },
             {
               "text": {
+                "root": "ARVR 算法与模板"
+              },
+              "link": "/04-api-reference/algorithms/templates/arvr-template"
+            },
+            {
+              "text": {
                 "root": "cvColorVision"
               },
               "link": "/04-api-reference/engine-components/cvColorVision"
@@ -2618,7 +2624,7 @@
             },
             {
               "text": {
-                "root": "ARVR 模板"
+                "root": "ARVR 算法与模板"
               },
               "link": "/04-api-reference/algorithms/templates/arvr-template"
             },

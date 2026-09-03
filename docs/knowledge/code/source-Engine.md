@@ -217,8 +217,8 @@ next: false
 - [UI NuGet 包构建与发布](../../04-api-reference/ui-components/publishing.md) — `ui.publishing`
   UI NuGet整批与Algorithms单包发布、Release标签和版本预检；预检不预留版本，逐包上传没有整批回滚或逐条失败检查。
 
-- [ARVR 模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
-  对照 ARVR 模板族、手动请求、Flow 算子和结果 handler 的版本边界。
+- [ARVR 算法与模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
+  ARVR 手动算法与流程节点的模板、POI 和请求对应关系；说明结果版本匹配及 SFR 曲线、查询和两种 CSV 导出的数据范围。
 
 - [JSON 模板](../../04-api-reference/algorithms/templates/json-templates.md) — `algorithms.json-templates`
   JSON模板的文本/属性编辑、数据库保存、默认参数与重置；校验Json按钮只同步模型，Schema提供字段提示而不补默认值或执行完整校验。
@@ -271,6 +271,9 @@ next: false
 - [系统要求与首次构建](../../00-getting-started/prerequisites.md) — `delivery.prerequisites`
   Windows x64 运行与源码构建前提：Desktop Runtime、SDK、C++ 工具集及已有 native DLL 的选择。
 
+- [ARVR 算法与模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
+  ARVR 手动算法与流程节点的模板、POI 和请求对应关系；说明结果版本匹配及 SFR 曲线、查询和两种 CSV 导出的数据范围。
+
 - [cvColorVision](../../04-api-reference/engine-components/cvColorVision.md) — `engine.native-bindings`
   定位供应商 native DLL 的相机、光谱、XYZ、OLED、PG 与源表绑定契约。
 
@@ -318,8 +321,8 @@ next: false
 - [FlowEngineLib 节点扩展](../../04-api-reference/extensions/flow-node.md) — `flow.node-extension`
   说明服务节点基类、请求与响应扩展点、属性编辑和流程完成的边界。
 
-- [ARVR 模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
-  对照 ARVR 模板族、手动请求、Flow 算子和结果 handler 的版本边界。
+- [ARVR 算法与模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
+  ARVR 手动算法与流程节点的模板、POI 和请求对应关系；说明结果版本匹配及 SFR 曲线、查询和两种 CSV 导出的数据范围。
 
 - [Flow 转换与校准节点](../../04-api-reference/engine-components/flow-conversion-calibration-nodes.md) — `flow.conversion-calibration`
   定位 Flow 数据转换、图像转换、单双输入校准及属性选择器。
