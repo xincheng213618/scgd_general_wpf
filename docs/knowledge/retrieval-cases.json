@@ -559,6 +559,8 @@
     {"query":"POI保存模板","expected_any":["algorithms.find-light-area"],"include_planned":false},
     {"query":"发光区定位1","expected_any":["algorithms.find-light-area"],"include_planned":false},
     {"query":"HeadlessStartupException","expected_any":["flow.headless"],"include_planned":false},
-    {"query":"无界面流程Started=false","expected_any":["flow.headless"],"include_planned":false}
+    {"query":"无界面流程Started=false","expected_any":["flow.headless"],"include_planned":false},
+    {"query":"菜单管理器","expected_any":["ui.menus"],"include_planned":false},
+    {"query":"菜单恢复默认","expected_any":["ui.menus"],"include_planned":false}
   ]
 }
