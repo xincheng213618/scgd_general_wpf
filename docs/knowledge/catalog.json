@@ -9272,6 +9272,7 @@
         "UI/ColorVision.ImageTools/MultiImageViewer/MultiImageViewerConfig.cs",
         "UI/ColorVision.ImageTools/MultiImageViewer/ImageFileInfo.cs",
         "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.cs",
+        "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.Maintenance.cs",
         "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheEntry.cs",
         "UI/ColorVision.Common/Interfaces/Assembly/ModuleCatalog.cs",
         "UI/ColorVision.Common/Interfaces/ThumbnailProviderFactory.cs",
@@ -9288,6 +9289,7 @@
         "ui.image-editor",
         "ui.documents",
         "ui.image-fusion",
+        "ui.storage-maintenance",
         "plugins.model"
       ],
       "code_scopes": [
