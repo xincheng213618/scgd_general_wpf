@@ -57,7 +57,7 @@ next: false
   定义内嵌ConPTY会话、编辑器Python运行与外部CMD入口，区分命令提交、脚本结束、shell退出和强制释放。
 
 - [现场操作验收清单](../../01-user-guide/field-operation-acceptance.md) — `operations.acceptance`
-  记录设备、流程、数据和外部系统的现场验收证据，区分自动化测试与真机结果。
+  按交付范围验收启动、设备、流程、数据和外部协议；明确通过、失败、未测和不适用，记录同一轮证据及回退材料与演练状态。
 
 - [设置、流程与结果的导入导出边界](../../01-user-guide/data-management/export-import.md) — `operations.exports`
   按设置、流程、图像和项目结果定位导入导出实现，说明配置覆盖、文件验收与迁移边界。

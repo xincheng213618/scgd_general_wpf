@@ -5460,11 +5460,14 @@
       "knowledge_id": "operations.acceptance",
       "knowledge_type": "guide",
       "status": "current",
-      "summary": "记录设备、流程、数据和外部系统的现场验收证据，区分自动化测试与真机结果。",
+      "summary": "按交付范围验收启动、设备、流程、数据和外部协议；明确通过、失败、未测和不适用，记录同一轮证据及回退材料与演练状态。",
       "aliases": [
         "现场验收",
         "交付检查",
-        "真机验证"
+        "真机验证",
+        "交付验收表",
+        "未测",
+        "回退验证"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Devices",
@@ -5474,7 +5477,9 @@
       "related": [
         "engine.devices",
         "delivery.testing",
-        "operations.exports"
+        "operations.exports",
+        "flow.session",
+        "ui.socket-protocol"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine"
