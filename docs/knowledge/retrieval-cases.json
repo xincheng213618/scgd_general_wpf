@@ -552,6 +552,7 @@
     {"query":"光谱仪软件","expected_any":["plugins.spectrum"],"include_planned":false},
     {"query":"发光区1","expected_any":["algorithms.focus-points"],"include_planned":false},
     {"query":"模板未保存","expected_any":["algorithms.template-management"],"include_planned":false},
-    {"query":"数据加载2","expected_any":["algorithms.data-load"],"include_planned":false}
+    {"query":"数据加载2","expected_any":["algorithms.data-load"],"include_planned":false},
+    {"query":"Ghost1.0","expected_any":["algorithms.ghost"],"include_planned":false}
   ]
 }

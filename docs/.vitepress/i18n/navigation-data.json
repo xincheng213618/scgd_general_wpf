@@ -1049,6 +1049,12 @@
             },
             {
               "text": {
+                "root": "Ghost1.0 鬼影检测"
+              },
+              "link": "/04-api-reference/algorithms/detectors/ghost-detection"
+            },
+            {
+              "text": {
                 "root": "MySQL 结果清理、备份与失败边界"
               },
               "link": "/04-api-reference/engine-components/mysql-maintenance"
@@ -2060,7 +2066,7 @@
             },
             {
               "text": {
-                "root": "Ghost Detection"
+                "root": "Ghost1.0 鬼影检测"
               },
               "link": "/04-api-reference/algorithms/detectors/ghost-detection"
             },

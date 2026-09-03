@@ -35,8 +35,8 @@ next: false
 - [FocusPoints 关注点模板](../../04-api-reference/algorithms/templates/focus-points-template.md) — `algorithms.focus-points`
   发光区1（FocusPoints）的模板选择、参数初值和图像输入；区分手动 MQTT 模板引用、Flow 算子与计算结果。
 
-- [Ghost Detection](../../04-api-reference/algorithms/detectors/ghost-detection.md) — `algorithms.ghost`
-  说明 ARVR Ghost 传统模板的参数、MQTT 事件、结果 DAO 和叠图。
+- [Ghost1.0 鬼影检测](../../04-api-reference/algorithms/detectors/ghost-detection.md) — `algorithms.ghost`
+  Ghost1.0 鬼影检测的模板、颜色和请求入口；说明数据库明细、首条结果叠图、全部明细 CSV 追加导出及读取失败边界。
 
 - [ImageCropping 图像裁剪模板](../../04-api-reference/algorithms/templates/image-cropping-template.md) — `algorithms.image-cropping`
   区分强类型 ImageCropping 的持久参数、运行时四点 ROI、Flow 双输入和图像结果。
