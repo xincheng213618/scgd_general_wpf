@@ -89,7 +89,7 @@ next: false
   CVRAW/CVCIE 原生导出的窗口、命令行参数、通道和命名规则，以及覆盖、部分失败和退出码边界。
 
 - [CVCIE POI 结果数值](../../04-api-reference/engine-components/cvcie-results.md) — `engine.cvcie-results`
-  CVCIE POI 结果的 XYZ 非正值替换开关、可配置最小值，以及色坐标、色温和主波长重算。
+  CVCIE POI 的非正值替换、色值重算与生效时机；区分本地测量、历史结果缓存、鼠标探针和原始文件。
 
 - [数据库清理窗口、能力接入与完成边界](../../04-api-reference/engine-components/database-maintenance.md) — `engine.database-maintenance`
   数据库清理窗口与provider能力：表统计不是删除预览，确认只固定部分参数；备份默认关闭、组合维护不是事务，关窗不取消，成功与统计刷新分开。

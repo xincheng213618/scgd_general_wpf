@@ -3,9 +3,9 @@ knowledge_id: "engine.opencv-helper-api"
 knowledge_type: "reference"
 status: "current"
 summary: "opencv_helper 英文 API 参考：校准/POI、图像处理、SFR、检测、视频与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。"
-aliases: ["opencv_helper API", "原生函数参考", "图像拼接", "伪彩原位输出", "POI 批量计算", "校准共享缓存", "StitchingErrorCode", "VideoInfo", "RoiRect", "COLORVISION_CALIBRATION_CACHE_MB", "M_CalibrationExecuteToV1", "M_CalibrationCacheReleaseV1", "M_CalculatePoiBatchV1", "M_CalculatePoiBatchV2", "M_AutoLevelsAdjust", "M_AutomaticColorAdjustment", "M_AutomaticToneAdjustment", "M_PseudoColor", "M_PseudoColorAutoRange", "M_PseudoColorInto", "M_GetMinMax", "M_ExtractChannel", "M_GetWhiteBalance", "M_ApplyGammaCorrection", "M_AdjustBrightnessContrast", "M_InvertImage", "M_Threshold", "M_RemoveMoire", "M_ConvertImage", "M_ConvertGray32Float", "M_DrawPoiImage", "M_StitchImages", "M_Fusion", "M_ApplyGaussianBlur", "M_ApplyMedianBlur", "M_ApplySharpen", "M_ApplyCannyEdgeDetection", "M_ApplyHistogramEqualization", "M_CalSFRMultiChannel", "M_CalArtculation", "M_FindLuminousArea", "M_FindLuminousAreaV2", "M_FindLightBeads", "M_DetectKeyRegions", "M_VideoOpen", "M_VideoReadFrame", "M_VideoSeek", "M_VideoGetCurrentFrame", "M_VideoSetPlaybackSpeed", "M_VideoSetResizeScale", "M_VideoPlay", "M_VideoPause", "M_VideoClose", "FreeResult", "M_FreeHImageData", "M_PseudoColorAutoRangeInto"]
+aliases: ["opencv_helper API", "原生函数参考", "图像拼接", "伪彩原位输出", "POI 批量计算", "校准共享缓存", "StitchingErrorCode", "VideoInfo", "RoiRect", "COLORVISION_CALIBRATION_CACHE_MB", "M_CalibrationExecuteToV1", "M_CalibrationCacheReleaseV1", "M_CalculatePoiBatchV1", "M_CalculatePoiBatchV2", "MPoiOptionsV2", "PoiOptionsFlagsV2", "M_POI_OPTION_PRESERVE_NON_POSITIVE_VALUES", "PoiMeasurementService", "M_AutoLevelsAdjust", "M_AutomaticColorAdjustment", "M_AutomaticToneAdjustment", "M_PseudoColor", "M_PseudoColorAutoRange", "M_PseudoColorInto", "M_GetMinMax", "M_ExtractChannel", "M_GetWhiteBalance", "M_ApplyGammaCorrection", "M_AdjustBrightnessContrast", "M_InvertImage", "M_Threshold", "M_RemoveMoire", "M_ConvertImage", "M_ConvertGray32Float", "M_DrawPoiImage", "M_StitchImages", "M_Fusion", "M_ApplyGaussianBlur", "M_ApplyMedianBlur", "M_ApplySharpen", "M_ApplyCannyEdgeDetection", "M_ApplyHistogramEqualization", "M_CalSFRMultiChannel", "M_CalArtculation", "M_FindLuminousArea", "M_FindLuminousAreaV2", "M_FindLightBeads", "M_DetectKeyRegions", "M_VideoOpen", "M_VideoReadFrame", "M_VideoSeek", "M_VideoGetCurrentFrame", "M_VideoSetPlaybackSpeed", "M_VideoSetResizeScale", "M_VideoPlay", "M_VideoPause", "M_VideoClose", "FreeResult", "M_FreeHImageData", "M_PseudoColorAutoRangeInto"]
 code_paths: ["Native/opencv_helper/API_Documentation.md", "Native/include/opencv_media_export.h", "Native/include/custom_structs.h", "Native/include/video_export.h", "Native/opencv_helper/opencv_media_export.cpp", "Native/opencv_helper/algorithm.cpp", "Native/opencv_helper/video_export.cpp", "Native/opencv_helper/exports/calibration_export.cpp", "Native/opencv_helper/exports/poi_export.cpp", "Native/opencv_helper/exports/sfr_export.cpp", "Native/opencv_helper/exports/p2_export.cpp", "Native/opencv_helper/algorithm/calibration", "Native/opencv_helper/algorithm/poi/poi_batch.cpp", "Native/opencv_helper/algorithm/sfr/sfr_slanted.cpp", "Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.cpp", "UI/ColorVision.Core/OpenCVMediaHelper.cs", "UI/ColorVision.Core/OpenCVCalibration.cs", "UI/ColorVision.Core/HImage.cs", "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs"]
-test_paths: ["Test/opencv_helper_test/test_find_luminous_area.cpp", "Test/opencv_helper_test/test_calibration.cpp", "Test/opencv_helper_test/test_pseudo_color.cpp", "Test/opencv_helper_test/test_p2_algorithms.cpp", "Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs"]
+test_paths: ["Test/opencv_helper_test/test_find_luminous_area.cpp", "Test/opencv_helper_test/test_calibration.cpp", "Test/opencv_helper_test/test_pseudo_color.cpp", "Test/opencv_helper_test/test_p2_algorithms.cpp", "Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs", "Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"]
 related: ["engine.native-integration", "ui.core", "ui.image-frames", "algorithms.local-native-analysis", "algorithms.poi-routes", "algorithms.find-cross"]
 ---
 
@@ -232,24 +232,33 @@ to the caller-owned `MPoiResultV1` array.
 `M_CalculatePoiBatchV2` adds a 48-byte `MPoiOptionsV2` structure for Value,
 XYZ-mask, and NoArea filters, percentage thresholds, and final XYZ scaling.
 The `M_POI_OPTION_PRESERVE_NON_POSITIVE_VALUES` flag (`4`, managed
-`PoiOptionsFlagsV2.PreserveNonPositiveValues`) retains non-positive XYZ and
-derives color metrics from those values. Without this flag, V1 and V2 retain
-their fixed `0.000001` replacement. Struct sizes and existing signatures are
-unchanged; older DLLs reject the new flag. CVCIE result settings use this path
-before applying their configurable replacement and color-metric recalculation;
-see [CVCIE POI results](./cvcie-results.md).
-Unknown flags and non-zero reserved fields are rejected so the ABI can evolve
-safely. Percentage thresholds use the mean of the highest `maxPercent` samples.
+`PoiOptionsFlagsV2.PreserveNonPositiveValues`) skips the fixed replacement of
+three-channel XYZ values `<= 0` after optional scaling. Color metrics are then
+derived from those values, without a finite-value or valid-color guarantee.
+Without this flag, V1 and V2 replace non-positive XYZ with `0.000001`; this
+native comparison does not replace NaN. Single-channel Y bypasses this clamp
+regardless of the flag. The configurable result-display replacement is a
+separate step described in [CVCIE POI results](./cvcie-results.md).
+
+The request/result/options sizes remain 20/36/48 bytes and existing signatures
+are unchanged. Callers that request flag `4` need a V2 DLL supporting that flag:
+an older V2 validator may reject it, and a DLL without the V2 export cannot
+serve the call. `PoiMeasurementService` has no legacy retry; nonzero native
+status becomes `InvalidOperationException` with the returned error code.
+Unknown flags and non-zero reserved fields return `M_POI_INVALID_ARGUMENT`.
+Percentage thresholds use the mean of the highest `maxPercent` samples.
 XYZ-mask mode derives one deterministic common mask from the selected X, Y, or
 Z plane; percentage mode also derives its threshold from that selected plane.
 The mask is common to the selected output planes and does not depend on the
 order of POI requests.
 
 `PoiMeasurementService` is the Engine boundary for standard, unfiltered POI
-measurement. It calls `OpenCVCalibration.M_CalculatePoiBatchV2` with
-`PoiOptionsV2.Create()`; the native V2 implementation delegates to V1 when
-filterMode and flags are both zero. Direct native callers may supply supported
-V2 filter options. Buffers require 32-bit floats and one or three planar
+measurement. Its public `Calculate` calls
+`OpenCVCalibration.M_CalculatePoiBatchV2` with `PoiOptionsV2.Create()`
+(filterMode/flags `0`, scales `1`); the native V2 implementation then delegates
+to V1. The internal `CalculateRaw` path instead sets flag `4`; its CVCIE
+caller then applies result settings, including when the display replacement
+switch is off. Direct native callers may supply supported V2 filter options. Buffers require 32-bit floats and one or three planar
 channels; `cieFloatCount` counts floats, not bytes. The native entry requires
 non-empty requests; the managed service returns an empty array before calling
 native for an empty point list.

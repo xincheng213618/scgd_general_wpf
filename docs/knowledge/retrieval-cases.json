@@ -681,6 +681,15 @@
     {"query":"AlgorithmOverlayManager后台清理图元还在","expected_any":["engine.results"],"include_planned":false},
     {"query":"persistent句柄Dispose后Remove不生效","expected_any":["engine.results"],"include_planned":false},
     {"query":"ResultHandleRegistry构造失败","expected_any":["engine.results"],"include_planned":false},
-    {"query":"结果列表清空后查询又出现","expected_any":["engine.results"],"include_planned":false}
+    {"query":"结果列表清空后查询又出现","expected_any":["engine.results"],"include_planned":false},
+    {"query":"CVCIE最小值会把所有小值都抬高吗","expected_any":["engine.cvcie-results"],"include_planned":false},
+    {"query":"CVCIE关闭非正值替换以后还是旧结果","expected_any":["engine.cvcie-results"],"include_planned":false},
+    {"query":"CVCIE最小值为0色温NaN","expected_any":["engine.cvcie-results"],"include_planned":false},
+    {"query":"CVCIE设置为什么不影响鼠标探针","expected_any":["engine.cvcie-results"],"include_planned":false},
+    {"query":"CVCIE重新选中历史结果数值没变","expected_any":["engine.cvcie-results"],"include_planned":false},
+    {"query":"CVCIE配置重载后修改不生效","expected_any":["engine.cvcie-results"],"include_planned":false},
+    {"query":"POI主波长为-99","expected_any":["engine.cvcie-results"],"include_planned":false},
+    {"query":"PoiOptionsFlagsV2.PreserveNonPositiveValues","expected_any":["engine.opencv-helper-api"],"include_planned":false},
+    {"query":"M_CalculatePoiBatchV2单通道负Y会被替换吗","expected_any":["engine.opencv-helper-api"],"include_planned":false}
   ]
 }

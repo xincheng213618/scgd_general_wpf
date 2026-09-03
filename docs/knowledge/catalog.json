@@ -4211,7 +4211,7 @@
       "knowledge_id": "engine.cvcie-results",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "CVCIE POI 结果的 XYZ 非正值替换开关、可配置最小值，以及色坐标、色温和主波长重算。",
+      "summary": "CVCIE POI 的非正值替换、色值重算与生效时机；区分本地测量、历史结果缓存、鼠标探针和原始文件。",
       "aliases": [
         "CVCIE计算负值",
         "CVCIEShowConfig",
@@ -4219,14 +4219,25 @@
         "启用非正值替换",
         "ClampNonPositiveValues",
         "MinimumValue",
-        "0.0001"
+        "0.0001",
+        "POI负值",
+        "CVCIE最小值",
+        "CVCIE色温",
+        "CVCIE主波长",
+        "XYZ重算",
+        "结果数值替换",
+        "NormalizeXyz",
+        "CalculateColorMetrics"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Media/WindowCVCIE.xaml.cs",
+        "Engine/ColorVision.Engine/Media/WindowCVCIE.xaml",
         "Engine/ColorVision.Engine/Media/CVRawOpen.cs",
         "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs",
         "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiResultCIExyuvData.cs",
-        "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiResultData.cs"
+        "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiResultData.cs",
+        "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ViewHanlePOIXZY.cs",
+        "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ViewHanlePOIY.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/CvcieResultValueTests.cs",
@@ -4236,7 +4247,9 @@
         "engine.file-io",
         "algorithms.poi-routes",
         "engine.opencv-helper-api",
-        "ui.property-grid"
+        "engine.results",
+        "ui.property-grid",
+        "ui.configuration"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine"
@@ -4833,6 +4846,10 @@
         "M_CalibrationCacheReleaseV1",
         "M_CalculatePoiBatchV1",
         "M_CalculatePoiBatchV2",
+        "MPoiOptionsV2",
+        "PoiOptionsFlagsV2",
+        "M_POI_OPTION_PRESERVE_NON_POSITIVE_VALUES",
+        "PoiMeasurementService",
         "M_AutoLevelsAdjust",
         "M_AutomaticColorAdjustment",
         "M_AutomaticToneAdjustment",
@@ -4902,7 +4919,8 @@
         "Test/opencv_helper_test/test_calibration.cpp",
         "Test/opencv_helper_test/test_pseudo_color.cpp",
         "Test/opencv_helper_test/test_p2_algorithms.cpp",
-        "Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs"
+        "Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs",
+        "Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"
       ],
       "related": [
         "engine.native-integration",
