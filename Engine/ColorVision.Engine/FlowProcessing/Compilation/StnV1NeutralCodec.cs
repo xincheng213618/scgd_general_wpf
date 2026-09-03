@@ -16,8 +16,9 @@ namespace ColorVision.Engine.FlowProcessing.Compilation;
 
 /// <summary>
 /// STND v1 codec used by compilation. It retains opaque node payloads and
-/// materializes nodes only long enough to discover their option schema; it
-/// never connects options or invokes OnEditorLoadCompleted.
+/// materializes nodes only long enough to discover their default option schema.
+/// Persisted hub counts expand that schema without loading node properties,
+/// connecting options, or invoking OnEditorLoadCompleted.
 /// </summary>
 internal static class StnV1NeutralCodec
 {
@@ -25,6 +26,7 @@ internal static class StnV1NeutralCodec
     private const long MaximumTotalNodeDataLength = 128L * 1024 * 1024;
     private const int MaximumCompressedLength = 160 * 1024 * 1024;
     private const int MaximumDecompressedLength = 160 * 1024 * 1024;
+    private const int MaximumTotalPortCount = 1_000_000;
     private static readonly ConcurrentDictionary<Type, Lazy<NeutralNodeSchema>>
         SchemaCache = new();
     private static readonly ConcurrentDictionary<string, Type>
@@ -190,6 +192,7 @@ internal static class StnV1NeutralCodec
             options.MaximumNodeCount,
             "节点");
         long totalNodeDataLength = 0;
+        int remainingPortCount = MaximumTotalPortCount;
         var nodeIds = new HashSet<Guid>();
         for (int i = 0; i < nodeCount; i++)
         {
@@ -205,7 +208,8 @@ internal static class StnV1NeutralCodec
                 throw new InvalidDataException("节点数据总长度超过限制。");
 
             NeutralNode node = ParseNode(
-                ReadBytes(body, payloadLength));
+                ReadBytes(body, payloadLength),
+                ref remainingPortCount);
             if (!nodeIds.Add(node.NodeId))
             {
                 throw new InvalidDataException(
@@ -256,7 +260,7 @@ internal static class StnV1NeutralCodec
         return canvas;
     }
 
-    private static NeutralNode ParseNode(byte[] payload)
+    private static NeutralNode ParseNode(byte[] payload, ref int remainingPortCount)
     {
         int offset = 0;
         string modelKey = ReadByteLengthString(
@@ -269,6 +273,7 @@ internal static class StnV1NeutralCodec
             "节点类型标识");
         int guidValueOffset = -1;
         Guid nodeId = Guid.Empty;
+        byte[]? hubPortCount = null;
         var propertyNames = new HashSet<string>(
             StringComparer.Ordinal);
         while (offset < payload.Length)
@@ -308,6 +313,8 @@ internal static class StnV1NeutralCodec
                 nodeId = new Guid(value);
                 guidValueOffset = valueOffset;
             }
+            if (string.Equals(propertyName, "count", StringComparison.Ordinal))
+                hubPortCount = value;
         }
         if (guidValueOffset < 0 || nodeId == Guid.Empty)
             throw new InvalidDataException("节点缺少有效 Guid。");
@@ -329,6 +336,8 @@ internal static class StnV1NeutralCodec
                 $"无法读取节点端口结构：{type.FullName}。",
                 ex);
         }
+        schema = RestoreHubPortSchema(schema, hubPortCount, remainingPortCount);
+        remainingPortCount -= schema.Inputs.Length + schema.Outputs.Length;
         return new NeutralNode(
             payload,
             guidValueOffset,
@@ -336,6 +345,68 @@ internal static class StnV1NeutralCodec
             modelKey,
             typeKey,
             schema);
+    }
+
+    private static NeutralNodeSchema RestoreHubPortSchema(
+        NeutralNodeSchema schema,
+        byte[]? countData,
+        int remainingPortCount)
+    {
+        bool pairedHub = typeof(STNodeHub).IsAssignableFrom(schema.NodeType);
+        bool inputHub = typeof(STNodeInHub).IsAssignableFrom(schema.NodeType);
+        bool outputHub = typeof(STNodeOutHub).IsAssignableFrom(schema.NodeType);
+        int inputCount = schema.Inputs.Length;
+        int outputCount = schema.Outputs.Length;
+        if (pairedHub || inputHub || outputHub)
+        {
+            if (countData == null || countData.Length != sizeof(int))
+                throw new InvalidDataException("动态节点缺少有效的端口数量。");
+            int count = BitConverter.ToInt32(countData, 0);
+            if (count < 1 || count > remainingPortCount)
+                throw new InvalidDataException($"动态节点端口数量无效或超过限制：{count}。");
+
+            // Match the hub loaders: append ports up to the saved count, never
+            // remove constructor-defined ports. Paired hubs grow both sides.
+            if (pairedHub)
+            {
+                int added = Math.Max(0, count - inputCount);
+                inputCount += added;
+                outputCount += added;
+            }
+            else if (inputHub)
+            {
+                inputCount = Math.Max(inputCount, count);
+            }
+            else
+            {
+                outputCount = Math.Max(outputCount, count);
+            }
+        }
+        if ((long)inputCount + outputCount > remainingPortCount)
+            throw new InvalidDataException("流程端口总数量超过限制。");
+        if (inputCount == schema.Inputs.Length && outputCount == schema.Outputs.Length)
+            return schema;
+
+        // Cache only the default schema by type; each node owns its expanded
+        // shape. Do not invoke OnLoadNode/property setters or connection events.
+        return schema with
+        {
+            Inputs = AppendHubPorts(schema.Inputs, inputCount),
+            Outputs = AppendHubPorts(schema.Outputs, outputCount),
+        };
+    }
+
+    private static NeutralPortSchema[] AppendHubPorts(NeutralPortSchema[] ports, int count)
+    {
+        if (count == ports.Length)
+            return ports;
+        if (ports.Length == 0 || ports[0].IsEmpty)
+            throw new InvalidDataException("动态节点缺少默认汇聚端口。");
+        var expanded = new NeutralPortSchema[count];
+        ports.CopyTo(expanded, 0);
+        for (int i = ports.Length; i < count; i++)
+            expanded[i] = ports[0] with { LocalIndex = i };
+        return expanded;
     }
 
     private static Type ResolveNodeType(

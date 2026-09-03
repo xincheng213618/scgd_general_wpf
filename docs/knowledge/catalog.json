@@ -5787,7 +5787,10 @@
         "关联模板",
         "流程删除范围",
         "流程多选导出",
-        "模板勾选项"
+        "模板勾选项",
+        "StnV1NeutralCodec",
+        "动态端口索引",
+        "逻辑与索引警告"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/TemplateControl.cs",
@@ -5796,7 +5799,8 @@
         "Engine/ColorVision.Engine/Templates/Flow/FlowTemplateSaveCondition.cs",
         "Engine/ColorVision.Engine/Templates/Flow/FlowPackageHelper.cs",
         "Engine/ColorVision.Engine/Templates/Flow/Versioning",
-        "Engine/ColorVision.Engine/FlowProcessing/Compilation/FlowCanvasCatalogBuilder.cs"
+        "Engine/ColorVision.Engine/FlowProcessing/Compilation/FlowCanvasCatalogBuilder.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Compilation/StnV1NeutralCodec.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs",

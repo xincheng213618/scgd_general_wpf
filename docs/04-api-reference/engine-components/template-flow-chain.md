@@ -3,8 +3,8 @@ knowledge_id: "flow.templates"
 knowledge_type: "topic"
 status: "current"
 summary: "Flow 模板的保存基线、导出/删除勾选范围、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。"
-aliases: ["Flow模板保存后参数为什么丢失","TemplateFlow","FlowPackageHelper","cvflow","FlowKey","FlowTemplateSaveCondition","FlowTemplateConcurrencyException","导入流程","关联模板","流程删除范围","流程多选导出","模板勾选项"]
-code_paths: ["Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs","Engine/ColorVision.Engine/Templates/Flow/FlowParam.cs","Engine/ColorVision.Engine/Templates/Flow/FlowTemplateSaveCondition.cs","Engine/ColorVision.Engine/Templates/Flow/FlowPackageHelper.cs","Engine/ColorVision.Engine/Templates/Flow/Versioning","Engine/ColorVision.Engine/FlowProcessing/Compilation/FlowCanvasCatalogBuilder.cs"]
+aliases: ["Flow模板保存后参数为什么丢失","TemplateFlow","FlowPackageHelper","cvflow","FlowKey","FlowTemplateSaveCondition","FlowTemplateConcurrencyException","导入流程","关联模板","流程删除范围","流程多选导出","模板勾选项","StnV1NeutralCodec","动态端口索引","逻辑与索引警告"]
+code_paths: ["Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs","Engine/ColorVision.Engine/Templates/Flow/FlowParam.cs","Engine/ColorVision.Engine/Templates/Flow/FlowTemplateSaveCondition.cs","Engine/ColorVision.Engine/Templates/Flow/FlowPackageHelper.cs","Engine/ColorVision.Engine/Templates/Flow/Versioning","Engine/ColorVision.Engine/FlowProcessing/Compilation/FlowCanvasCatalogBuilder.cs","Engine/ColorVision.Engine/FlowProcessing/Compilation/StnV1NeutralCodec.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs","Test/ColorVision.UI.Tests/FlowTemplateIdentityTests.cs","Test/ColorVision.UI.Tests/FlowCanvasCatalogBuilderTests.cs","Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs"]
 related: ["flow.architecture","flow.workspace","flow.session","flow.headless","engine.template-design","engine.results"]
 ---
@@ -35,9 +35,11 @@ related: ["flow.architecture","flow.workspace","flow.session","flow.headless","e
 
 锁定已有资源行时使用 `FOR UPDATE`，加载基线不符时抛 `FlowTemplateConcurrencyException`；这些是 Flow 的专用保存规则，不扩展为普通 `ITemplate<T>` 的事务保证。`FlowParam` 的 `ResourceId`、`ResourceCode`、`FlowKey`、revision 和内容 hash 标为 `JsonIgnore`，属于运行时身份/基线，不是普通参数 JSON 序列化能完整迁移的字段。
 
-`Save2DB` 成功后更新运行身份和加载 hash，再尝试记录本地 catalog revision / 搜索投影。`TryRecordCatalogRevision` 的失败只记录日志并清空本次侧车 revision 信息，不能把已经成功的 MySQL/STN 保存伪报为失败。保存成功与“版本/搜索索引可用”是两个检查点。
+`Save2DB` 成功后更新运行身份和加载 hash，再尝试记录本地 catalog revision / 搜索投影。`TryRecordCatalogRevision` 的失败只记录 `WARN` 并清空本次侧车 revision 信息，明确提示流程已保存、仅版本历史/节点搜索索引未更新，不影响流程保存和执行。保存成功与“版本/搜索索引可用”是两个检查点；该警告不表示主存储保存失败，也不表示索引功能已恢复。
 
-`FlowCanvasCatalogBuilder` 从 STND v1 构建语义、布局和搜索投影，不修改源画布，也不建立 live editor graph；codec 可短暂实例化节点发现 option schema。catalog revision 是不可变记录。旧 Artifact 表不再由当前保存/运行链读写或迁移，既有表与数据按兼容保留，不要求手工清库。
+`FlowCanvasCatalogBuilder` 从 STND v1 构建语义、布局和搜索投影，不修改源画布，也不建立 live editor graph；codec 可短暂实例化节点发现默认 option schema。`STNodeInHub`、`STNodeOutHub`、`STNodeHub` 及其派生节点按各自保存的 `count` 扩展输入、输出或成对端口，保留空闲端口及原有端口顺序；类型缓存只保存默认结构，不把一个实例的端口数量套给另一个实例。索引恢复不调用 `OnLoadNode`、属性 setter 或真实连线事件，避免触发设备/MQTT行为。缺失、非四字节或非正数的动态数量会拒绝；整张画布最多分配 1,000,000 个端口，分配前检查预算。
+
+多路接线引起端口增长是正常行为，不需要删除重建节点。更新后的索引器能直接解析已有流程；重新保存可生成本次版本和节点搜索索引。catalog revision 是不可变记录。旧 Artifact 表不再由当前保存/运行链读写或迁移，既有表与数据按兼容保留，不要求手工清库。
 
 ## 导出与删除的目标选择
 
@@ -97,6 +99,6 @@ related: ["flow.architecture","flow.workspace","flow.session","flow.headless","e
 | 图正常但属性缺选择器 | [工作区](../../01-user-guide/workflow/design.md)及[PropertyGrid 契约](../ui-components/property-grid.md)，不是包格式问题 |
 | 引擎结束但业务结果未完成 | [执行会话](../../01-user-guide/workflow/execution.md)的最终化判据，不在模板保存层补等待 |
 
-`FlowPackageCompatibilityTests` 覆盖包完整性、旧版本、未来版本拒绝、模板去重和引用替换；`FlowTemplateIdentityTests` 覆盖身份及窗口保存条件；`FlowCanvasCatalogBuilderTests` / `FlowCatalogServiceTests` 覆盖投影与版本目录。这些局部测试不等于真实 MySQL 事务、全部旧流程语料或现场导入已通过。
+`FlowPackageCompatibilityTests` 覆盖包完整性、旧版本、未来版本拒绝、模板去重和引用替换；`FlowTemplateIdentityTests` 覆盖身份及窗口保存条件；`FlowCanvasCatalogBuilderTests` / `FlowCatalogServiceTests` 覆盖投影与版本目录，包括新建逻辑与节点多路接线、同类型不同端口数量、汇聚/分发节点往返、索引不执行加载/连线回调及非法数量拒绝。这些局部测试不等于真实 MySQL 事务、全部旧流程语料或现场导入已通过。
 
 授权验证至少核对：新增节点/参数保存后重开、并发窗口保存冲突、单流程包重导入不重复创建模板、冲突模板及二级引用正确、多选 zip 不被误认为完整迁移包。结果模型的历史 handler / 中立 overlay / 项目输出分流由[结果契约](./result-handoff-chain.md)维护。

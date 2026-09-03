@@ -629,8 +629,8 @@ namespace ColorVision.Engine.Templates.Flow
                 // failure.
                 flowParam.TemplateRevision = null;
                 flowParam.TemplateContentHash = null;
-                log.Error(
-                    $"流程 {flowParam.Name} 已保存，但版本/搜索索引更新失败。",
+                log.Warn(
+                    $"流程 {flowParam.Name} 已保存，仅版本历史/节点搜索索引未更新，不影响流程保存和执行。",
                     ex);
             }
         }
