@@ -9,7 +9,7 @@ test_paths: ["Test/ColorVision.UI.Tests/LineFitV1Tests.cs","Test/ColorVision.UI.
 related: ["algorithms.platform","algorithms.index"]
 ---
 
-# 直线拟合 V1（M6.2）
+# 直线拟合 V1
 
 ## 当前发布边界
 
@@ -20,7 +20,7 @@ related: ["algorithms.platform","algorithms.index"]
 
 `colorvision.measurement.line-fit` 对显式点集拟合直线；图像线检测由 Hough、FindCross 或对应业务算法负责。
 
-本算法只拟合显式点集：`Invocation.Roi` 必须是 `PolylineAlgorithmRoi`，其中每个顶点都是一个输入点。图像输入只提供文档/revision、宽高与 DPI 上下文；provider 不读取或复制像素。M6.1 的 `subpixel-edge-geometry` 中接受的边缘点可由调用方投影成这个 ROI，从而显式组合“找点”和“拟合”，二者不会被隐藏在一个难以单测的步骤里。
+本算法只拟合显式点集：`Invocation.Roi` 必须是 `PolylineAlgorithmRoi`，其中每个顶点都是一个输入点。图像输入只提供文档/revision、宽高与 DPI 上下文；provider 不读取或复制像素。亚像素边缘结果 `subpixel-edge-geometry` 中接受的边缘点可由调用方投影成这个 ROI，从而显式组合“找点”和“拟合”，二者不会被隐藏在一个难以单测的步骤里。
 
 ## 参数与数值规则
 
@@ -59,4 +59,4 @@ related: ["algorithms.platform","algorithms.index"]
 
 `LineFitV1Tests` 覆盖九种规范图像格式、稳健离群点 golden、垂直线、Physical/DPI、TLS/Huber、结构化拒绝、资源上限、取消、输入只读、成功/失败/取消释放、Batch/Flow 一致性，以及 ImageView 表格和实际 WPF Visual 回收。算法复杂度为 `O(iterations × points)`，内存为 `O(points)`。
 
-V1 不从图像自动提线、不隐式运行亚像素边缘、不拟合多条线，也不提供统计协方差。圆拟合属于 M6.3，保持独立阶段。
+V1 不从图像自动提线、不隐式运行亚像素边缘、不拟合多条线，也不提供统计协方差。需要拟合圆时使用独立的[圆拟合](./circle-fit-v1.md)参数和结果契约。

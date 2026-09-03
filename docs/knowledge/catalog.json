@@ -98,7 +98,7 @@
         "UI/ColorVision.ImageEditor"
       ],
       "domain": "algorithms",
-      "title": "Blob / 连通域 V1（M5.1）",
+      "title": "Blob / 连通域 V1",
       "source": "docs/02-developer-guide/core-concepts/blob-analysis-v1.md",
       "url": "/02-developer-guide/core-concepts/blob-analysis-v1",
       "searchable": true
@@ -130,7 +130,7 @@
         "UI/ColorVision.ImageEditor"
       ],
       "domain": "algorithms",
-      "title": "圆拟合 V1（M6.3）",
+      "title": "圆拟合 V1",
       "source": "docs/02-developer-guide/core-concepts/circle-fit-v1.md",
       "url": "/02-developer-guide/core-concepts/circle-fit-v1",
       "searchable": true
@@ -162,7 +162,7 @@
         "UI/ColorVision.ImageEditor"
       ],
       "domain": "algorithms",
-      "title": "轮廓提取 V1（M5.2）",
+      "title": "轮廓提取 V1",
       "source": "docs/02-developer-guide/core-concepts/contour-analysis-v1.md",
       "url": "/02-developer-guide/core-concepts/contour-analysis-v1",
       "searchable": true
@@ -417,7 +417,7 @@
         "UI/ColorVision.ImageEditor"
       ],
       "domain": "algorithms",
-      "title": "FFT / 频域分析 V1（M10）",
+      "title": "FFT / 频域分析 V1",
       "source": "docs/02-developer-guide/core-concepts/frequency-spectrum-v1.md",
       "url": "/02-developer-guide/core-concepts/frequency-spectrum-v1",
       "searchable": true
@@ -448,7 +448,7 @@
         "UI/ColorVision.ImageEditor"
       ],
       "domain": "algorithms",
-      "title": "几何变换 V1（M7）",
+      "title": "几何变换 V1",
       "source": "docs/02-developer-guide/core-concepts/geometric-transform-v1.md",
       "url": "/02-developer-guide/core-concepts/geometric-transform-v1",
       "searchable": true
@@ -721,7 +721,7 @@
         "UI/ColorVision.ImageEditor"
       ],
       "domain": "algorithms",
-      "title": "图像配准 V1（M8.1）",
+      "title": "图像配准 V1",
       "source": "docs/02-developer-guide/core-concepts/image-registration-v1.md",
       "url": "/02-developer-guide/core-concepts/image-registration-v1",
       "searchable": true
@@ -968,7 +968,7 @@
         "UI/ColorVision.ImageEditor"
       ],
       "domain": "algorithms",
-      "title": "镜头畸变校正 V1（M8.2）",
+      "title": "镜头畸变校正 V1",
       "source": "docs/02-developer-guide/core-concepts/lens-distortion-correction-v1.md",
       "url": "/02-developer-guide/core-concepts/lens-distortion-correction-v1",
       "searchable": true
@@ -1000,7 +1000,7 @@
         "UI/ColorVision.ImageEditor"
       ],
       "domain": "algorithms",
-      "title": "直线拟合 V1（M6.2）",
+      "title": "直线拟合 V1",
       "source": "docs/02-developer-guide/core-concepts/line-fit-v1.md",
       "url": "/02-developer-guide/core-concepts/line-fit-v1",
       "searchable": true
@@ -1139,7 +1139,7 @@
         "UI/ColorVision.ImageEditor"
       ],
       "domain": "algorithms",
-      "title": "摩尔纹分析 V1（M11）",
+      "title": "摩尔纹分析 V1",
       "source": "docs/02-developer-guide/core-concepts/moire-analysis-v1.md",
       "url": "/02-developer-guide/core-concepts/moire-analysis-v1",
       "searchable": true
@@ -1479,7 +1479,7 @@
         "UI/ColorVision.ImageEditor"
       ],
       "domain": "algorithms",
-      "title": "亚像素边缘 V1（M6.1）",
+      "title": "亚像素边缘 V1",
       "source": "docs/02-developer-guide/core-concepts/subpixel-edge-v1.md",
       "url": "/02-developer-guide/core-concepts/subpixel-edge-v1",
       "searchable": true

@@ -9,7 +9,7 @@ test_paths: ["Test/ColorVision.UI.Tests/LensDistortionCorrectionV1Tests.cs"]
 related: ["algorithms.platform","algorithms.index"]
 ---
 
-# 镜头畸变校正 V1（M8.2）
+# 镜头畸变校正 V1
 
 ## 适用范围
 
@@ -56,4 +56,4 @@ Preset 由 `LensDistortionCorrectionPresetSerializer` 保存，严格校验 Algo
 
 可选性能门禁 `LensDistortionCorrectionPipelineProbe` 在 4K Gray16/Bgra32 上执行非零畸变。管理内存预算只允许一份校正输出、一份 Gray8 mask 和固定 16 MiB 余量；native 侧仍需要两份 float map 与 OpenCV 输出工作区。取消在 map 前后、mask 每 32 行及 remap 前后检查；单次不可中断的 OpenCV 调用结束后会立即观察取消并释放临时 Mat。
 
-M8.2 不从棋盘格/圆点板估计标定，不自动改变输入尺寸的内参，不实现 fisheye/omnidir 模型，也不声称 CUDA/DirectML provider。
+镜头畸变校正不从棋盘格/圆点板估计标定，不自动改变输入尺寸的内参，不实现 fisheye/omnidir 模型，也不声称 CUDA/DirectML provider。

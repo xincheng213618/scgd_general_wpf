@@ -11,13 +11,13 @@ related: ["algorithms.index","algorithms.onnx","ui.index","ui.image-editor","eng
 
 # 统一图像算法平台 V1
 
-统一图像算法平台把算法身份、参数、调用、执行和结果从具体 UI、OpenCV、设备通信及 Flow 节点中分离。它采用串行里程碑交付；本页记录已落地的契约和兼容边界，不把后续能力当作当前实现。
+统一图像算法平台把算法身份、参数、调用、执行和结果从具体 UI、OpenCV、设备通信及 Flow 节点中分离。本页维护公共契约、普通像素处理和当前发布范围；实验实现与未来设计分别标明可用性。
 
 检索“ONNX 是否可用 / Microsoft.ML.OnnxRuntime / AI 推理”时，当前答案是未实现：没有 ONNX runtime、模型或默认执行能力。未来设计单独标记为 [planned](./onnx-inference-future-design.md)，不能用该设计回答当前已支持的功能。查询 Blob、轮廓、亚像素边缘、直线/圆拟合、FFT 或摩尔纹时，也必须先读取下方默认发布门禁，不能只看 provider 源码存在。
 
-## 里程碑范围
+## 能力范围
 
-M0 只覆盖平台基础、现有普通 ImageEditor 算法和兼容适配。ROI 统计、剖面和图像比较分别在 [M1](./roi-statistics-v1.md)、[M2](./image-profile-v1.md)、[M3–M4](./image-comparison-v1.md) 形成增量；图像比较的当前行为与 schema 迁移由同一主题维护。M5–M11 的页面同时记录实现候选和验证契约；是否进入默认产品执行面必须以本页的发布清单为准，不能因为 Catalog 已有 Descriptor 或仓库已有 provider 就写成已发布。原计划的 M12 ONNX/AI 已标记为 Deferred；当前不引入运行时依赖，未来边界见 [ONNX / AI 推理接入设计](./onnx-inference-future-design.md)。
+普通像素算法和兼容适配在本页维护；[ROI 统计](./roi-statistics-v1.md)、[图像剖面](./image-profile-v1.md)、[图像比较](./image-comparison-v1.md)及其他分析、几何与校正能力各有专题，参数和 schema 迁移由所属主题负责。查询任何能力时先检查下方发布清单，再阅读具体用法；Catalog 中存在描述或源码中存在 provider，不等于默认可执行。
 
 ## 当前发布清单
 
@@ -63,9 +63,11 @@ ImageView 适配器通过 `ImageFrameStore`/`ImageFrameLease` 读取 source，�
 
 参数的界面范围也不等于全部像素格式都能执行：`ThresholdWindow` 当前最大刻度固定为 `255`，使用标称范围而不是旧教程的按位深扩大到 `65535`；非 8-bit 中值滤波的大核会由 provider 拒绝，即使滑动条允许选择。白平衡菜单还检查当前 Channel 大于 1，Runner 仍另行校验实际格式。参数与输出以以下 Catalog 契约为准，不在 README 维护第二份数值表。
 
-## M0 Catalog 能力矩阵
+<span id="m0-catalog-能力矩阵"></span>
 
-格式缩写：`G8/G16/G32F` 分别表示 Gray8、Gray16、Gray32Float；`BGR8/BGR16/BGR32F` 表示 Bgr24、Bgr48、Bgr96Float；`BGRA8/BGRA16/BGRA32F` 表示 Bgra32、Bgra64、Bgra128Float。M0 的普通像素算法都以整幅图为输入，不声明 ROI；ROI 裁剪或 mask 不会被宿主静默应用。Batch 保存时的 TIFF/PNG/JPEG 等转换仍是输出策略。
+## 普通像素算法能力矩阵
+
+格式缩写：`G8/G16/G32F` 分别表示 Gray8、Gray16、Gray32Float；`BGR8/BGR16/BGR32F` 表示 Bgr24、Bgr48、Bgr96Float；`BGRA8/BGRA16/BGRA32F` 表示 Bgra32、Bgra64、Bgra128Float。本表的普通像素算法都以整幅图为输入，不声明 ROI；ROI 裁剪或 mask 不会被宿主静默应用。Batch 保存时的 TIFF/PNG/JPEG 等转换仍是输出策略。
 
 | 稳定 AlgorithmId | 参数与默认值（schema 1） | 输入 → 输出 | ImageView | Batch | 本地 Flow adapter | Copilot |
 | --- | --- | --- | :---: | :---: | :---: | :---: |
@@ -99,7 +101,9 @@ ImageView 适配器通过 `ImageFrameStore`/`ImageFrameLease` 读取 source，�
 
 像素坐标统一使用左上角原点。整数坐标表示像素中心；矩形是半开区间 `[x, x + width) × [y, y + height)`。物理坐标统一使用毫米，必须显式声明并通过图像 DPI/标定转换，核心结果不得暗中混用 WPF DIP。
 
-## M0 执行与所有权规则
+<span id="m0-执行与所有权规则"></span>
+
+## 执行与所有权规则
 
 1. Runner 把输入视为只读；provider 必须在独立输出上工作。
 2. `Borrowed` 输入由调用方释放；`Transferred` 输入无论成功、失败或取消都由 Runner 在结束时释放。
@@ -143,7 +147,9 @@ Copilot 仅能看到显式白名单中同时声明 `Headless | Local | Determini
 
 常见结构化失败包括 `algorithm_not_found`、`algorithm_version_incompatible`、`parameter_schema_newer`、`parameter_migration_missing`、`unsupported_format`、`roi_kind_unsupported`、`provider_unavailable` 和 `provider_output_format_violation`。发布门禁或运行时依赖拒绝都使用 `provider_unavailable`，具体原因位于失败详情的 `provider_dependency_unavailable`；暂缓算法包含 `algorithm_experimental` 和对应 `release_validation_pending` 原因码。取消返回 `Cancelled` 结果；旧 invocation 或旧 source revision 在 ImageView 中返回 `Superseded`，不会提交到当前图。
 
-## M0 验收门禁
+<span id="m0-验收门禁"></span>
+
+## 验收门禁
 
 验收以命令、测试类别和对应日志为准，不在文档中维护会随测试增长而失效的通过数量。固定入口是两个 `dotnet test` 项目 `Test\ColorVision.UI.Tests` 与 `Test\ColorVision.Copilot.Tests`（均使用 `-p:Platform=x64`）、`dotnet build .\UI\ColorVision.Algorithms\ColorVision.Algorithms.csproj --no-incremental`、`dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64 --no-incremental`，以及 `python .\Scripts\tests\test_algorithm_package_contract.py`。
 

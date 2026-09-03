@@ -9,7 +9,7 @@ test_paths: ["Test/ColorVision.UI.Tests/ImageRegistrationV1Tests.cs"]
 related: ["algorithms.platform","algorithms.index"]
 ---
 
-# 图像配准 V1（M8.1）
+# 图像配准 V1
 
 ## 适用范围
 
@@ -71,4 +71,4 @@ reference 与 moving 可以不同尺寸。provider 使用 ORB、双向最近邻�
 
 可选性能门禁 `ImageRegistrationPipelineProbe` 在 4K Gray16/Bgra32 上执行非 identity 相位相关，预算只允许一份配准输出、一份 mask 与固定 32 MiB 管理内存余量，并把延迟限制为 30 秒。仍不可消除的边界是 OpenCV 的归一化亮度/频域工作区、native warp 输出到 Result buffer 的一次复制，以及 mask；两幅输入均通过 lease 只读借用。
 
-M8.1 不估计相机内参/畸变系数，不执行径向或切向畸变校正，也不声称 CUDA/DirectML provider。镜头畸变校正在 M8.2 独立验收。
+图像配准不估计相机内参/畸变系数，不执行径向或切向畸变校正，也不声称 CUDA/DirectML provider。畸变处理见独立的[镜头畸变校正](./lens-distortion-correction-v1.md)。

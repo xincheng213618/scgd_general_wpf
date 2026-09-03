@@ -9,7 +9,7 @@ test_paths: ["Test/ColorVision.UI.Tests/GeometricTransformV1Tests.cs"]
 related: ["algorithms.platform","algorithms.index"]
 ---
 
-# 几何变换 V1（M7）
+# 几何变换 V1
 
 ## 适用范围
 
@@ -51,7 +51,7 @@ V1 支持最近邻/线性插值和常量/复制边界。常量边界以规范化
 - ImageView：“算法 → 几何变换...”可编辑 PropertyGrid 参数、加载/保存不覆盖已有文件的 JSON preset，并通过统一 preview session 执行和提交。结果窗口同时显示已提交图像、mask、正逆矩阵，可分别保存 PNG 或导出结构化 JSON。
 - Batch：Catalog 投影自动显示该算法，使用相同默认值、参数类和 primary image artifact；格式转换仍是独立输出策略。
 - Flow：`LocalFlowImageAlgorithmAdapter` 可复用同一 Invocation/Result；没有生产 STNode 入口。
-- Copilot：M7 未加入显式白名单，alias、Catalog 或反射发现不会自动暴露执行入口。
+- Copilot：几何变换未加入显式白名单，alias、Catalog 或反射发现不会自动暴露执行入口。
 
 ## 验证与性能
 
@@ -59,4 +59,4 @@ V1 支持最近邻/线性插值和常量/复制边界。常量边界以规范化
 
 可选性能门禁 `GeometricTransformPipelineProbe` 在 4K Gray16/Bgra32 上验证 retained managed 图像只包含一份输出和一份 mask（另加固定 16 MiB 容差），并限制单次执行在 20 秒内。实际门禁使用的 native warp 读取 lease，无 `input → byte[] → Mat` 复制；剩余不可消除的边界是 native 输出到 Result-owned buffer 的一次复制，以及单字节 mask。
 
-V1 不自动估计矩阵、不处理镜头畸变、不输出相机标定误差，也不声称 DirectML/CUDA provider。配准与畸变校正在 M8 单独验收。
+V1 不自动估计矩阵、不处理镜头畸变、不输出相机标定误差，也不声称 DirectML/CUDA provider。[图像配准](./image-registration-v1.md)与[镜头畸变校正](./lens-distortion-correction-v1.md)有各自的输入及验收契约。

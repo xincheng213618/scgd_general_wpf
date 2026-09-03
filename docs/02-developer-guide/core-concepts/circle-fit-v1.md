@@ -9,7 +9,7 @@ test_paths: ["Test/ColorVision.UI.Tests/CircleFitV1Tests.cs","Test/ColorVision.U
 related: ["algorithms.platform","algorithms.index"]
 ---
 
-# 圆拟合 V1（M6.3）
+# 圆拟合 V1
 
 ## 当前发布边界
 
@@ -20,7 +20,7 @@ related: ["algorithms.platform","algorithms.index"]
 
 `colorvision.measurement.circle-fit` 对显式点集拟合圆；图像找点与圆拟合分别调用。
 
-算法只拟合显式点集：`Invocation.Roi` 必须是 `PolylineAlgorithmRoi`，每个顶点都是一个输入点。图像输入仅提供 document/revision、宽高和 DPI 上下文；provider 不读取、复制或修改像素。M6.1 的亚像素边缘点可由调用方投影为该 ROI，从而与圆拟合显式组合。
+算法只拟合显式点集：`Invocation.Roi` 必须是 `PolylineAlgorithmRoi`，每个顶点都是一个输入点。图像输入仅提供 document/revision、宽高和 DPI 上下文；provider 不读取、复制或修改像素。亚像素边缘检测得到的点可由调用方投影为该 ROI，从而与圆拟合显式组合。
 
 ## 参数与数值规则
 

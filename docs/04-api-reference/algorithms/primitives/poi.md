@@ -82,12 +82,7 @@ POI 有专门的主从表结构，不只是普通模板明细：
 - `AlgorithmSFRFindROI` 会附带 `POITemplateParam`
 - `AlgorithmOLEDAOI` 也会附带 `POITemplateParam`
 
-Flow 节点里的常规 POI 字段由节点属性指定 PropertyEditor，并通过 `FlowPropertyEditorRegistry` 生成模板选择器；`POINodeConfigurators.cs` 只给 `BuildPOINode.TemplateName` 补充 BuildPOI/AA 两类模板选择：
-
-- `POINode` 需要主模板、过滤、修正、输出模板
-- `BuildPOINode` 会同时接布点模板、回写 POI 模板和布局 ROI 模板
-- `POIReviseNode` 会接修正标定模板
-- `POIAnalysisNode` 会接 JSON 分析模板
+Flow 的模板字段、BuildPOI 多模板入口及分析节点对应关系，统一见[POI 模板的 Flow 消费](../templates/poi-template.md#flow-消费)。
 
 ## 修改边界
 

@@ -9,7 +9,7 @@ test_paths: ["Test/ColorVision.UI.Tests/BlobAnalysisV1Tests.cs","Test/ColorVisio
 related: ["algorithms.platform","algorithms.index"]
 ---
 
-# Blob / 连通域 V1（M5.1）
+# Blob / 连通域 V1
 
 ## 当前发布边界
 
@@ -66,6 +66,6 @@ ImageView 的“算法调用 → Blob / 连通域”提供整图、矩形 ROI、
 
 Runner 继续拥有 transferred input 的释放。Provider 在 mask 扫描、组件读取及 native 连通域调用前后检查取消；成功、失败和取消都由现有 Result/Input 所有权规则收口。mask 是一次 Gray8 工作缓冲区，OpenCV 通过只读 pin header 借用它，不再复制第二份 mask。
 
-## M5.1 验收边界
+## 验收边界
 
 数值测试覆盖两个已知区域的面积/边界框/质心、4/8 连通对角规则、Gray8/Gray16/Gray32Float/Bgr24 标称阈值一致性、NaN、三类 ROI、过滤原因、图像边界、overlay 与候选上限。宿主测试覆盖 Batch JSON、Flow RAW、ImageView 菜单、结果表、实际 Visual/transient overlay 释放；取消测试验证 transferred input 释放。轮廓提取由 [独立契约](./contour-analysis-v1.md) 描述，不能因 Blob 测试通过而解除轮廓或 Blob 的生产资源门禁。

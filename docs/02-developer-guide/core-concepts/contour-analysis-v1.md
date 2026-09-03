@@ -9,7 +9,7 @@ test_paths: ["Test/ColorVision.UI.Tests/ContourAnalysisV1Tests.cs","Test/ColorVi
 related: ["algorithms.platform","algorithms.index"]
 ---
 
-# 轮廓提取 V1（M5.2）
+# 轮廓提取 V1
 
 ## 当前发布边界
 

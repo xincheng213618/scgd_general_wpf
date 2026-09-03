@@ -9,7 +9,7 @@ test_paths: ["Test/ColorVision.UI.Tests/SubpixelEdgeV1Tests.cs","Test/ColorVisio
 related: ["algorithms.platform","algorithms.index"]
 ---
 
-# 亚像素边缘 V1（M6.1）
+# 亚像素边缘 V1
 
 ## 当前发布边界
 

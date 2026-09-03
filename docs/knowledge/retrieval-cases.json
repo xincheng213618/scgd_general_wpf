@@ -745,6 +745,10 @@
     {"query":"生成所有模板图片失败会停止吗","expected_any":["plugins.pattern"],"include_planned":false},
     {"query":"ImageProjector 直接选择列表图片为什么投影不切换","expected_any":["plugins.pattern"],"include_planned":false},
     {"query":"ImageProjector 文件加载失败仍然显示旧图","expected_any":["plugins.pattern"],"include_planned":false},
-    {"query":"ImageProjector 修改显示器会迁移正在投影的窗口吗","expected_any":["plugins.pattern"],"include_planned":false}
+    {"query":"ImageProjector 修改显示器会迁移正在投影的窗口吗","expected_any":["plugins.pattern"],"include_planned":false},
+    {"query":"有哪些默认启用的本地图像算法","expected_any":["algorithms.platform"],"include_planned":false},
+    {"query":"轮廓提取有源码为什么菜单没有","expected_any":["algorithms.contour-analysis","algorithms.platform"],"include_planned":false},
+    {"query":"更新窗口为什么找不到更新前创建程序快照选项","expected_any":["delivery.update"],"include_planned":false},
+    {"query":"POINode 运行时要选择哪些 POI 模板","expected_any":["algorithms.poi-template"],"include_planned":false}
   ]
 }
