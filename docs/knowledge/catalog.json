@@ -6922,9 +6922,13 @@
       "knowledge_id": "platform.service-host",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "ColorVisionServiceHost本机权限代理的身份、票据与就绪：客户端超时不取消命令，服务停止超过两分钟仍等待排空，服务启动成功日志不证明后台清理和启动完整性检查完成。",
+      "summary": "ColorVision 服务主机的状态刷新、安装修复、日志诊断、身份票据与就绪条件；自动刷新只更新日志，客户端超时不取消命令，服务停止超过两分钟仍等待排空，服务启动成功日志不证明后台清理和启动完整性检查完成。",
       "aliases": [
         "ColorVisionServiceHost",
+        "ColorVision 服务主机",
+        "ColorVision Service Host",
+        "服务主机安装记录",
+        "ServiceHostLogReader",
         "后台权限代理",
         "本机特权服务",
         "服务宿主",
@@ -6956,6 +6960,7 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ServiceHostStatusTests.cs",
+        "Test/ColorVision.UI.Tests/ServiceHostLogReaderTests.cs",
         "Test/ColorVision.UI.Tests/ServiceHostBrokerTicketTests.cs",
         "Test/ColorVision.UI.Tests/ServiceHostPipeServerTests.cs",
         "Test/ColorVision.UI.Tests/ColorVisionServiceHostServiceLifecycleTests.cs",

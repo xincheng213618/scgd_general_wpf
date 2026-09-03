@@ -39,7 +39,7 @@ next: false
   区分应用管理员、RBAC会话与权限码、Windows服务身份及远程/工具授权；登录缓存和界面状态不能替代执行入口的权限检查。
 
 - [ColorVisionServiceHost：本机权限代理与生命周期](../../03-architecture/components/service-host.md) — `platform.service-host`
-  ColorVisionServiceHost本机权限代理的身份、票据与就绪：客户端超时不取消命令，服务停止超过两分钟仍等待排空，服务启动成功日志不证明后台清理和启动完整性检查完成。
+  ColorVision 服务主机的状态刷新、安装修复、日志诊断、身份票据与就绪条件；自动刷新只更新日志，客户端超时不取消命令，服务停止超过两分钟仍等待排空，服务启动成功日志不证明后台清理和启动完整性检查完成。
 
 - [启动失败上报与缺依赖告警](../../03-architecture/components/startup-integrity.md) — `platform.startup-integrity`
   主程序启动失败识别、状态上报和后台缺依赖告警；十秒观察不强杀进程，已处理终态抑制重复弹窗，无告警不证明安装完整。

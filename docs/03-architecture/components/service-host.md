@@ -2,10 +2,10 @@
 knowledge_id: "platform.service-host"
 knowledge_type: "topic"
 status: "current"
-summary: "ColorVisionServiceHost本机权限代理的身份、票据与就绪：客户端超时不取消命令，服务停止超过两分钟仍等待排空，服务启动成功日志不证明后台清理和启动完整性检查完成。"
-aliases: ["ColorVisionServiceHost", "后台权限代理", "本机特权服务", "服务宿主", "命名管道", "SCM停止预算", "broker ticket", "ServiceHostProtocol", "ColorVisionServiceHostClient", "IColorVisionServiceHostClient", "ServiceHostPipeClient", "ServiceHostCallerIdentity", "ServiceHostBrokerTicketService", "ServiceHostCommandHandler", "ServiceHostPipeServer", "ColorVisionServiceHostService", "ColorVisionServiceHostManager", "ServiceHostStatus", "ServiceHostRuntimeIntegrityChecker", "ServiceHostStartupUpdateChecker", "ServiceHostManagerWindow", "ColorVisionServiceHostWizardStep", "Program.BeginConsoleShutdown"]
+summary: "ColorVision 服务主机的状态刷新、安装修复、日志诊断、身份票据与就绪条件；自动刷新只更新日志，客户端超时不取消命令，服务停止超过两分钟仍等待排空，服务启动成功日志不证明后台清理和启动完整性检查完成。"
+aliases: ["ColorVisionServiceHost", "ColorVision 服务主机", "ColorVision Service Host", "服务主机安装记录", "ServiceHostLogReader", "后台权限代理", "本机特权服务", "服务宿主", "命名管道", "SCM停止预算", "broker ticket", "ServiceHostProtocol", "ColorVisionServiceHostClient", "IColorVisionServiceHostClient", "ServiceHostPipeClient", "ServiceHostCallerIdentity", "ServiceHostBrokerTicketService", "ServiceHostCommandHandler", "ServiceHostPipeServer", "ColorVisionServiceHostService", "ColorVisionServiceHostManager", "ServiceHostStatus", "ServiceHostRuntimeIntegrityChecker", "ServiceHostStartupUpdateChecker", "ServiceHostManagerWindow", "ColorVisionServiceHostWizardStep", "Program.BeginConsoleShutdown"]
 code_paths: ["src/ColorVisionServiceHost", "UI/ColorVision.UI/ServiceHost/ServiceHostProtocol.cs", "UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs", "ColorVision/ServiceHost"]
-test_paths: ["Test/ColorVision.UI.Tests/ServiceHostStatusTests.cs", "Test/ColorVision.UI.Tests/ServiceHostBrokerTicketTests.cs", "Test/ColorVision.UI.Tests/ServiceHostPipeServerTests.cs", "Test/ColorVision.UI.Tests/ColorVisionServiceHostServiceLifecycleTests.cs", "Test/ColorVision.UI.Tests/ServiceHostStartupStatusTests.cs", "Test/ColorVision.UI.Tests/ServiceHostApplicationUpdateAccessTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ServiceHostStatusTests.cs", "Test/ColorVision.UI.Tests/ServiceHostLogReaderTests.cs", "Test/ColorVision.UI.Tests/ServiceHostBrokerTicketTests.cs", "Test/ColorVision.UI.Tests/ServiceHostPipeServerTests.cs", "Test/ColorVision.UI.Tests/ColorVisionServiceHostServiceLifecycleTests.cs", "Test/ColorVision.UI.Tests/ServiceHostStartupStatusTests.cs", "Test/ColorVision.UI.Tests/ServiceHostApplicationUpdateAccessTests.cs"]
 related: ["platform.system", "platform.startup-integrity", "delivery.update", "delivery.update-scan-protection", "plugins.windows-service", "engine.shell-extension", "engine.mysql-recovery"]
 ---
 
@@ -30,7 +30,16 @@ related: ["platform.system", "platform.startup-integrity", "delivery.update", "d
 
 `--send` 走服务工程自己的 `ServiceHostPipeClient`，不是共享桌面客户端：实际业务请求仅携带命令、不传 `Data`，免票据名单也只有 `ping` / `status` / `issue-broker-ticket`。它会为 `self-update` / `prepare-application-update` / `application-startup-status` 申请票据，被服务端以 `broker_ticket_target_not_allowed` 拒绝；不能当成桌面调用的等价入口。Program传入的3秒只用于连接等待，没有共享客户端的整体等待超时逻辑。
 
-管理窗口采用更新、恢复窗口共享的主题资源，并通过 `ApplyCaption` 初始化原生标题栏颜色。窗口外观不参与服务状态、安装完整性或就绪判定。
+## 检查状态与查看安装记录
+
+默认入口是帮助菜单中的 **ColorVision Service Host**，窗口标题为“ColorVision 服务主机”。按以下顺序排查：
+
+1. 点击“刷新状态”，同时查看“运行状态”“安装完整性”和“服务连接”。运行状态来自SCM；连接正常只表示读到了运行版本，是否就绪还要核对运行路径和文件完整性，条件见后文。
+2. 查看“运行日志”“安装记录”和“操作记录”。前两项读取安装目录下 `ColorVisionServiceHost.log` 与 `install.log` 的最近一段，操作记录显示管理页面的调用与响应。默认勾选的“自动刷新”每2秒刷新日志，**不重新查询服务状态**；外部启停或更新服务后仍需点击“刷新状态”。
+3. 确认目标后选择恢复动作。“系统维护 → 服务控制”提供“启动服务”和“后台更新服务”等独立操作；概览中的安装、修复或重新安装按钮均调用 `InstallAsync`，不是自动选择启动/自更新的 `EnsureReadyAsync`。安装按钮要求程序包可用且完整、不会降级，并且页面没有正在执行的操作；具体权限和就绪条件见后文。
+4. 操作结束后检查新的状态与日志。需要诊断资料时，先刷新再到“支持与诊断”复制摘要；摘要来自最近一次成功查询。“发送反馈”打开反馈窗口并预选存在的运行日志与安装记录，提交前检查资料中的现场信息。
+
+“上次安装未完成”取自当前读到的安装日志末段：后续出现安装完成记录才清除该段中的失败提示。它不等于本次SCM状态，也不证明当前服务仍未运行。界面不展示完整历史；“打开文件”会在资源管理器中定位日志，选中“安装记录”时定位 `install.log`，其他日志页定位运行日志。
 
 ## 协议、身份和票据
 
@@ -90,7 +99,7 @@ SCM启动会启动更新扫描保护 `ApplicationUpdateScanProtectionService`、
 
 ## 源码核对与验证缺口
 
-- `ServiceHostStatusTests` 直接测试状态/决策对象、安装脚本文本和临时运行时文件夹，不执行真实SCM安装或UAC自更新；测试名中的无提权不等于现场演练。
+- `ServiceHostStatusTests` 测试状态/决策对象、安装脚本文本和临时运行时文件夹；`ServiceHostLogReaderTests` 测试日志末段读取、旧中文编码和安装结果识别。它们不执行真实SCM安装或UAC自更新，也不验证管理窗口的现场操作。
 - `ServiceHostBrokerTicketTests` 检查两端命令分类、单次票据重放、命令/PID变化等；没有逐项验证SID/OperationId/hash变化、真实过期等待、签名或生产管道身份准入。
 - `ServiceHostPipeServerTests` 使用真实本机命名管道，但大部分用例注入恒成功身份解析和fake handler，绕过生产ACL创建；当前进程token读取测试也不是端到端调用者鉴权。
 - `ColorVisionServiceHostServiceLifecycleTests` 使用fake SCM、pipe和扫描保护、手动时钟，验证停止所有权、预算及释放；没有真实服务安装、LocalSystem运行或完整性监视器验收。其中 `SelfUpdateCallerKeepsOwnershipUntilServiceReallyStops` 只模拟 `stopped → copy → restart` 事件与所有权变量，不替换真实文件或执行更新脚本。
