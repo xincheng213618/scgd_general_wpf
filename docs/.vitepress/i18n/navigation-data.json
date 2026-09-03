@@ -3527,6 +3527,12 @@
                 "root": "UI NuGet 包构建与发布"
               },
               "link": "/04-api-reference/ui-components/publishing"
+            },
+            {
+              "text": {
+                "root": "ProjectARVRPro.IntegrationDemo"
+              },
+              "link": "/04-api-reference/projects/project-arvr-pro-integration-demo"
             }
           ]
         },

@@ -65,7 +65,7 @@ dotnet run --project Projects/ProjectARVRPro.IntegrationDemo
 如果已经编译或发布，也可以直接运行：
 
 ```powershell
-ProjectARVRPro.IntegrationDemo.exe
+.\ProjectARVRPro.IntegrationDemo.exe
 ```
 
 窗口里可以：
@@ -100,7 +100,7 @@ dotnet run --project Projects/ProjectARVRPro.IntegrationDemo -- --parse-file Pro
 编译后 exe 用法：
 
 ```powershell
-ProjectARVRPro.IntegrationDemo.exe --parse-file Samples\project-arvr-result.json
+.\ProjectARVRPro.IntegrationDemo.exe --parse-file Samples\project-arvr-result.json
 ```
 
 输出目录默认为 `output`，会生成：
@@ -108,7 +108,7 @@ ProjectARVRPro.IntegrationDemo.exe --parse-file Samples\project-arvr-result.json
 - `ProjectARVRResult_*.json`：保存后的原始响应
 - `ProjectARVRResult_*_items.csv`：扁平化后的测试项清单，包含 `Description` 字段说明列
 
-随项目提供的样例覆盖九个现代键化/动态顶层字段：`FieldOfViewTestResults`、`LuminanceChromaticityTestResults`、`LuminanceChromaticityYWTestResults`、`ChessboardTestResults`、`DynamicMTFHV058TestResults`、`MTFH07TestResults`、`MTFV07TestResults`、`DynamicPoixyuvDatas`、`DynamicScreenDefectResults`，并覆盖 `ChessboardTestResult.AverageBlackLuminance`。离线解析后，键化 `ObjectiveTestItem`、YW 两组 POI 光色项、动态 POI、屏幕缺陷汇总和每个缺陷框的标量字段都会进入扁平 CSV，并保留可追溯到原始 JSON 的 `Path`。
+随项目提供的样例包含以下键化/动态顶层字段：`FieldOfViewTestResults`、`LuminanceChromaticityTestResults`、`LuminanceChromaticityYWTestResults`、`ChessboardTestResults`、`DynamicMTFHV058TestResults`、`MTFH07TestResults`、`MTFV07TestResults`、`DynamicPoixyuvDatas`、`DynamicScreenDefectResults`，并覆盖 `ChessboardTestResult.AverageBlackLuminance`。离线解析后，键化 `ObjectiveTestItem`、YW 两组 POI 光色项、动态 POI、屏幕缺陷汇总和每个缺陷框的标量字段都会进入扁平 CSV，并保留可追溯到原始 JSON 的 `Path`。
 
 ## 光学参数说明
 
@@ -141,6 +141,10 @@ ProjectARVRPro.IntegrationDemo.exe --parse-file Samples\project-arvr-result.json
 
 ## 联机测试
 
+联机初始化、RunAll 和切图确认会推进现场测试，切换组和设置启用状态会修改宿主配置。执行前确认目标 host/port 和现场操作权限。
+
+WPF 默认勾选两类自动确认，“仅连接”也会接收并自动回复切图请求。Demo 不控制或核验实际画面；需要人工或其它系统完成切图时，连接前取消自动确认，完成后再发送确认。CLI 默认询问，启用下方自动确认参数则直接回复。
+
 标准外部触发流程：
 
 ```powershell
@@ -159,7 +163,9 @@ dotnet run --project Projects/ProjectARVRPro.IntegrationDemo -- --host 127.0.0.1
 dotnet run --project Projects/ProjectARVRPro.IntegrationDemo -- --host 127.0.0.1 --port 6666 --sn SN001 --mode runall
 ```
 
-联机 CLI 会继续等待最终 `ProjectARVRResult`；`RunAll` 的 `Code=0` 仅表示请求已接收，不是流程完成。收到任意负 `Code`、最终 `TotalResult=false`、等待超时、连接提前断开或达到消息上限时，CLI 都以非零退出码结束，便于 MES/脚本可靠判定失败。
+联机 CLI 会继续等待最终 `ProjectARVRResult`；`RunAll Code=0` 仅表示请求已接收。收到可解析的负 `Code`、最终 `TotalResult=false`、等待超时、连接提前断开或达到消息上限时，CLI 以非零退出码结束。
+
+**退出码为零不等于本次测试已明确 PASS。** Demo 未核对最终 SN 与请求 SN；缺失或无法解析的 `TotalResult` 不会被上述判断拒绝，也不按 `TotalResultString` 判定失败。MES 应另行核对会话、SN、所选标准/Legacy 结构及明确的最终判定。
 
 ### 同步管理命令
 
@@ -181,13 +187,17 @@ dotnet run --project Projects/ProjectARVRPro.IntegrationDemo -- --host 127.0.0.1
 dotnet run --project Projects/ProjectARVRPro.IntegrationDemo -- --host 127.0.0.1 --port 6666 --set-process-enable '{"Items":[{"Index":0,"IsEnabled":true}]}'
 ```
 
-每次 CLI 调用只发送一个同步命令；它只把 `EventName` 和 `MsgID` 都与请求一致的报文视为对应响应，同名但 `MsgID` 不同的报文会跳过并继续等待。匹配后会打印 `Code`、`Msg` 和完整 JSON；`Code < 0` 时以非零退出码结束，其他响应正常结束。同步命令不能和 `--mode init|runall` 同时使用，等待仍受 `--timeout-seconds` 和 `--max-messages` 保护。
+每次 CLI 调用只发送一个同步命令；它只把 `EventName` 和 `MsgID` 都与请求一致的报文视为对应响应，同名但 `MsgID` 不同的报文会跳过并继续等待。匹配后会打印 `Code`、`Msg` 和完整 JSON；`Code < 0` 时以非零退出码结束，其他响应正常结束。同步命令不能和 `--mode init|runall` 同时使用。`Code=1` 部分应用、缺失或不可解析的 Code 都不会被负数判断拒绝；应检查 `Applied` / `NotFound` 和响应必需字段。该响应匹配是 CLI 行为，WPF 只发送并显示通信日志。
 
 可按现场情况调整等待保护：
 
 ```powershell
 dotnet run --project Projects/ProjectARVRPro.IntegrationDemo -- --host 127.0.0.1 --port 6666 --sn SN001 --timeout-seconds 300 --max-messages 200
 ```
+
+等待参数默认分别为300秒、200条。超时针对**每次读出一个完整JSON对象**，不包含建连、发送或 CLI 的人工确认等待，也不是整轮测试总时限；其它事件和重复消息同样占用消息数。超时会释放本地流，没有发送停止测试命令。WPF 收到最终结果或达到消息上限后结束本轮接收，需要重新连接才能开启下一轮接收。
+
+自动确认在当前连接内优先按 `EventName + MsgID` 去重；MsgID 为空时用 `EventName + SerialNumber + ARVRTestType`。去重只约束自动确认路径，手动按钮不经过该集合；发送前已登记的键也不会因发送失败自动恢复，不能将去重理解为对端已收到。
 
 ## 发布给客户
 
@@ -216,7 +226,7 @@ dotnet publish Projects/ProjectARVRPro.IntegrationDemo/ProjectARVRPro.Integratio
 .\Scripts\publish_project_arvrpro_integration_demo.bat
 ```
 
-如需保留本地制品，可增加 `--output-dir artifacts\ProjectARVRPro.IntegrationDemo`。远端目录固定为 `Tool/ProjectARVRPro.IntegrationDemo/`；ProjectARVRPro 的“外部对接”页读取其中的 `latest.json`，再通过现有 HTTP 下载服务获取 ZIP。HTTP 传输不提供链路加密，因此客户端会在下载完成后强制校验清单中的文件大小和 SHA-256；校验失败的文件不会作为有效交付包保留。
+如需保留本地制品，可增加 `--output-dir artifacts\ProjectARVRPro.IntegrationDemo`。远端目录固定为 `Tool/ProjectARVRPro.IntegrationDemo/`；ProjectARVRPro 的“外部对接”页读取其中的 `latest.json`，再通过现有 HTTP 下载服务获取 ZIP。采用 HTTP 时传输不加密；面板下载后比较清单中的大小与 SHA-256，失败时不报告成功并尝试删除文件。该校验比较内容与清单，不验证发布者身份。元数据 `verifiedProjectARVRProVersion` 取自构建时插件项目版本，发布脚本的离线解析检查不等于该版本已完成联机联调。
 
 ## 报文说明
 
@@ -269,13 +279,15 @@ dotnet publish Projects/ProjectARVRPro.IntegrationDemo/ProjectARVRPro.Integratio
 }
 ```
 
-Demo 同时提供两种解析方式：
+结果解析分为以下部分：
 
 - 强类型契约：见 `Contracts` 文件夹，适合客户在自己的 C# 项目里直接复制当前标准结果字段模型。
 - 通用扁平化：递归遍历自定义 Key，并按 `ObjectiveTestItem` 的形态识别测试项；对象里需包含 `Value`，并且包含 `LowLimit` / `UpLimit` / `TestResult` 中至少一个字段。
 - 结构化展开：把 `PoixyuvDatas` / `DynamicPoixyuvDatas` 转成 Lv、Cx、Cy、u'、v'、CCT、Wave 等行，并把 `DynamicScreenDefectResults` 的汇总字段与 `Defects[i]` 标量字段转成带原始 `Path` 的行。
 
-结构化展开只覆盖约定的 POI 和屏幕缺陷字段，不会把任意 JSON 标量都当成测试项。Legacy `Data` 是另一套扁平契约，应按现场模式单独解析。
+结构化展开只覆盖约定的 POI 和屏幕缺陷字段，不会把任意 JSON 标量都当成测试项。强类型解析失败会记录错误并继续尝试通用展开，因此生成 CSV 不证明强类型模型完全匹配。Legacy `Data` 是另一套扁平契约，应按现场模式单独解析。
+
+自动保存文件名含秒级时间，非空 SN 经清理后加入；同一输出目录下同一 SN 在同一秒保存会覆盖同名文件。先写 JSON、后写 CSV，两者不是事务提交；CSV 写入失败可能留下 JSON。离线 `--parse-file` 只解析和导出，不以报文负 Code 或最终失败判定退出码，需另外检查结果。
 
 ## 对接建议
 
@@ -286,5 +298,4 @@ Demo 同时提供两种解析方式：
 - 修改流程启用状态时先调用 `GetProcessEnable`，再把响应中的 `Index` 原样用于 `SetProcessEnable`。
 - TCP 是流式协议，客户端读取时要能处理半包和粘包；本 demo 的 `JsonStreamMessageReader` 用大括号配平方式拆 JSON 对象。
 - 联机等待应设置超时和最大消息数，避免流程中断后客户端一直卡住。
-- `SwitchPG` / `AoiSwitchPG` 确认建议按 `MsgID` 或 `EventName + SerialNumber + ARVRTestType` 去重，避免同一切图请求被重复确认。
 - 现场联调时，建议保存完整原始 JSON。字段变化时，原始报文比截图和口头描述更容易定位问题。

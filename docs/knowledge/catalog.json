@@ -7870,18 +7870,29 @@
       "knowledge_id": "projects.arvr-pro-demo",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "独立 net48 ARVRPro TCP/JSON Demo 的公开字段、ACK 与最终完成判据、半包粘包及离线验证。",
+      "summary": "独立 net48 ARVRPro TCP/JSON Demo 的公开字段、ACK 与最终完成判据、切图自动确认、逐条消息超时及 JSON/CSV 导出；正常退出不代表最终 SN 和明确 PASS 已核验。",
       "aliases": [
         "RunAll Code=0 是否已经测试完成",
         "客户怎么对接 ARVRPro",
         "最终结果MsgID为什么为空",
         "ProjectARVRPro.IntegrationDemo",
+        "JsonStreamMessageReader",
+        "ArvrClient",
+        "ResultParser",
+        "DemoOptions",
         "ProjectARVRResult",
         "MsgID",
         "TotalResult"
       ],
       "code_paths": [
         "Projects/ProjectARVRPro.IntegrationDemo/Program.cs",
+        "Projects/ProjectARVRPro.IntegrationDemo/MainWindow.xaml.cs",
+        "Projects/ProjectARVRPro.IntegrationDemo/MainWindow.xaml",
+        "Projects/ProjectARVRPro.IntegrationDemo/ProjectARVRPro.IntegrationDemo.csproj",
+        "Scripts/publish_project_arvrpro_integration_demo.py",
+        "Scripts/publish_project_arvrpro_integration_demo.bat",
+        "Projects/ProjectARVRPro/Integration/IntegrationDemoReleaseClient.cs",
+        "Projects/ProjectARVRPro/Integration/IntegrationDemoPanel.xaml.cs",
         "Projects/ProjectARVRPro.IntegrationDemo/Contracts",
         "Projects/ProjectARVRPro.IntegrationDemo/Samples/project-arvr-result.json",
         "Projects/ProjectARVRPro/Services/RunAllSocket.cs",
@@ -7897,7 +7908,8 @@
       ],
       "code_scopes": [
         "Projects/ProjectARVRPro",
-        "Projects/ProjectARVRPro.IntegrationDemo"
+        "Projects/ProjectARVRPro.IntegrationDemo",
+        "Scripts"
       ],
       "domain": "projects",
       "title": "ProjectARVRPro.IntegrationDemo",

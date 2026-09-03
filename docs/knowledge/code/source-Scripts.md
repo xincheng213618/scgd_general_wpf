@@ -46,6 +46,9 @@ next: false
 - [UI NuGet 包构建与发布](../../04-api-reference/ui-components/publishing.md) — `ui.publishing`
   UI NuGet整批与Algorithms单包发布、Release标签和版本预检；预检不预留版本，逐包上传没有整批回滚或逐条失败检查。
 
+- [ProjectARVRPro.IntegrationDemo](../../04-api-reference/projects/project-arvr-pro-integration-demo.md) — `projects.arvr-pro-demo`
+  独立 net48 ARVRPro TCP/JSON Demo 的公开字段、ACK 与最终完成判据、切图自动确认、逐条消息超时及 JSON/CSV 导出；正常退出不代表最终 SN 和明确 PASS 已核验。
+
 ## Scripts/tests {#module-536372697074732f7465737473}
 
 - [测试与验证](../../02-developer-guide/testing.md) — `delivery.testing`

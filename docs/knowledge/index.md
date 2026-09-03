@@ -29,7 +29,7 @@ next: false
 | [Plugins](./code/source-Plugins.md) | 7 | 12 |
 | [Projects](./code/source-Projects.md) | 5 | 12 |
 | [Web](./code/source-Web.md) | 3 | 21 |
-| [Scripts](./code/source-Scripts.md) | 2 | 11 |
+| [Scripts](./code/source-Scripts.md) | 2 | 12 |
 | [Test](./code/source-Test.md) | 2 | 2 |
 | [AndroidWebViewApp](./code/source-AndroidWebViewApp.md) | 2 | 1 |
 | [Drivers](./code/source-Drivers.md) | 1 | 1 |
