@@ -379,7 +379,7 @@ next: false
   按控件、窗口和扩展接口定位对应 UI 源码与专题。
 
 - [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
-  主窗口菜单、搜索、状态栏与工作区装配；紧凑标题栏为默认关闭、重启生效的 Windows 11 实验，停靠外观另有主题与交互边界。
+  主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口默认启用并保留旧窗口开关，Windows 11 兼容门禁与实际交互边界仍适用。
 
 - [终端进程、会话与脚本运行](../../01-user-guide/interface/terminal.md) — `operations.terminal`
   定义内嵌ConPTY会话、编辑器Python运行与外部CMD入口，区分命令提交、脚本结束、shell退出和强制释放。
@@ -408,7 +408,7 @@ next: false
 ## UI/ColorVision.Themes {#module-55492f436f6c6f72566973696f6e2e5468656d6573}
 
 - [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
-  主窗口菜单、搜索、状态栏与工作区装配；紧凑标题栏为默认关闭、重启生效的 Windows 11 实验，停靠外观另有主题与交互边界。
+  主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口默认启用并保留旧窗口开关，Windows 11 兼容门禁与实际交互边界仍适用。
 
 - [主题选择、资源应用与窗口外观](../../04-api-reference/ui-components/ColorVision.Themes.md) — `ui.themes`
   在外观与语言中切换主题；ThemeManager 的资源应用、系统跟随、窗口外观和公共控件样式，以及即时预览与保存的区别。
@@ -476,7 +476,7 @@ next: false
   区分log4net输出、历史文件读取与UI筛选，说明刷新、截断和原生日志采集边界；没有显示不等于动作未发生。
 
 - [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
-  主窗口菜单、搜索、状态栏与工作区装配；紧凑标题栏为默认关闭、重启生效的 Windows 11 实验，停靠外观另有主题与交互边界。
+  主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口默认启用并保留旧窗口开关，Windows 11 兼容门禁与实际交互边界仍适用。
 
 - [终端进程、会话与脚本运行](../../01-user-guide/interface/terminal.md) — `operations.terminal`
   定义内嵌ConPTY会话、编辑器Python运行与外部CMD入口，区分命令提交、脚本结束、shell退出和强制释放。

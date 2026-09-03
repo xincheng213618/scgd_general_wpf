@@ -4998,11 +4998,13 @@ Please close camera or other programs using this serial port, or check device co
   <data name="DeviceConnection" xml:space="preserve"><value>Device and connection</value></data>
   <data name="CalibrationCorrection" xml:space="preserve"><value>Calibration and correction</value></data>
   <data name="AcquisitionDisplay" xml:space="preserve"><value>Acquisition and display</value></data>
-  <data name="MaintenanceDiagnostics" xml:space="preserve"><value>Maintenance and diagnostics</value></data>
+  <data name="MaintenanceDiagnostics" xml:space="preserve"><value>Service and maintenance</value></data>
+  <data name="DataLogs" xml:space="preserve"><value>Data and logs</value></data>
+  <data name="SpectrumCalibrationGroups" xml:space="preserve"><value>Manage calibration groups</value></data>
   <data name="CameraLog" xml:space="preserve"><value>Camera log</value></data>
   <data name="EditCalibrationFile" xml:space="preserve"><value>Calibration files</value></data>
   <data name="CommandEditConfigHint" xml:space="preserve"><value>Connection, device and runtime settings</value></data>
-  <data name="CommandRestartHint" xml:space="preserve"><value>Restart the current device service</value></data>
+  <data name="CommandRestartHint" xml:space="preserve"><value>Save current settings and restart the device service</value></data>
   <data name="CommandResetHint" xml:space="preserve"><value>Restore default device settings</value></data>
   <data name="CommandSavePathHint" xml:space="preserve"><value>Data and file storage location</value></data>
   <data name="CommandDeleteHint" xml:space="preserve"><value>Delete the current device resource</value></data>

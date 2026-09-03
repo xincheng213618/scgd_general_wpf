@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows.Controls;
+using ColorVision.UI;
 
 namespace ColorVision.Engine.Services.Devices.Motor
 {
@@ -18,6 +19,7 @@ namespace ColorVision.Engine.Services.Devices.Motor
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
+            PropertyEditorHelper.GenCommand(Device, CommandGrid);
         }
 
     }

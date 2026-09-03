@@ -1115,11 +1115,13 @@
   <data name="DeviceConnection" xml:space="preserve"><value>设备与连接</value></data>
   <data name="CalibrationCorrection" xml:space="preserve"><value>校准与校正</value></data>
   <data name="AcquisitionDisplay" xml:space="preserve"><value>采集与显示</value></data>
-  <data name="MaintenanceDiagnostics" xml:space="preserve"><value>维护与诊断</value></data>
+  <data name="MaintenanceDiagnostics" xml:space="preserve"><value>服务与维护</value></data>
+  <data name="DataLogs" xml:space="preserve"><value>数据与日志</value></data>
+  <data name="SpectrumCalibrationGroups" xml:space="preserve"><value>标定分组管理</value></data>
   <data name="CameraLog" xml:space="preserve"><value>相机日志</value></data>
   <data name="EditCalibrationFile" xml:space="preserve"><value>校正文件设置</value></data>
   <data name="CommandEditConfigHint" xml:space="preserve"><value>连接、设备参数与运行配置</value></data>
-  <data name="CommandRestartHint" xml:space="preserve"><value>重新启动当前设备服务</value></data>
+  <data name="CommandRestartHint" xml:space="preserve"><value>保存当前配置并重启设备服务</value></data>
   <data name="CommandResetHint" xml:space="preserve"><value>恢复设备默认配置</value></data>
   <data name="CommandSavePathHint" xml:space="preserve"><value>配置数据与文件的保存位置</value></data>
   <data name="CommandDeleteHint" xml:space="preserve"><value>删除当前设备资源</value></data>

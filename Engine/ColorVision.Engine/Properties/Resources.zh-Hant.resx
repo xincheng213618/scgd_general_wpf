@@ -3131,11 +3131,13 @@
   <data name="DeviceConnection" xml:space="preserve"><value>裝置與連線</value></data>
   <data name="CalibrationCorrection" xml:space="preserve"><value>校準與校正</value></data>
   <data name="AcquisitionDisplay" xml:space="preserve"><value>擷取與顯示</value></data>
-  <data name="MaintenanceDiagnostics" xml:space="preserve"><value>維護與診斷</value></data>
+  <data name="MaintenanceDiagnostics" xml:space="preserve"><value>服務與維護</value></data>
+  <data name="DataLogs" xml:space="preserve"><value>資料與日誌</value></data>
+  <data name="SpectrumCalibrationGroups" xml:space="preserve"><value>標定分組管理</value></data>
   <data name="CameraLog" xml:space="preserve"><value>相機日誌</value></data>
   <data name="EditCalibrationFile" xml:space="preserve"><value>校正檔案設定</value></data>
   <data name="CommandEditConfigHint" xml:space="preserve"><value>連線、裝置參數與執行設定</value></data>
-  <data name="CommandRestartHint" xml:space="preserve"><value>重新啟動目前裝置服務</value></data>
+  <data name="CommandRestartHint" xml:space="preserve"><value>儲存目前設定並重新啟動裝置服務</value></data>
   <data name="CommandResetHint" xml:space="preserve"><value>還原裝置預設設定</value></data>
   <data name="CommandSavePathHint" xml:space="preserve"><value>設定資料與檔案的儲存位置</value></data>
   <data name="CommandDeleteHint" xml:space="preserve"><value>刪除目前裝置資源</value></data>

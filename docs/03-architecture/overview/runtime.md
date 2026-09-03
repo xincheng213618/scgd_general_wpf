@@ -3,7 +3,7 @@ knowledge_id: "platform.runtime"
 knowledge_type: "topic"
 status: "current"
 summary: "启动顺序与故障恢复：初始化进度和ready不代表全部成功，运行期维护区分浏览、禁用、文档准备与重启，一次性插件跳过不绕过真实故障。"
-aliases: ["启动链路", "App.xaml.cs", "启动恢复", "故障恢复", "初始化向导", "安全启动", "启动进度", "初始化失败", "StartupRegistryChecker", "StartupMaintenanceController", "StartupMaintenanceSearchProvider", "StartupRecoveryWindow", "StartupRecoveryPluginScanner", "StartupInitializersCompleted", "MainWindowInitializer", "MainWindowFactory", "CompactMainWindow", "UseCompactTitleBar", "LoadingPlugin", "startup-maintenance", "startup-skip-plugins", "wait-for-process", "safe-start", "skip-plugins", "验证并回退"]
+aliases: ["启动链路", "App.xaml.cs", "启动恢复", "故障恢复", "初始化向导", "安全启动", "启动进度", "初始化失败", "StartupRegistryChecker", "StartupMaintenanceController", "StartupMaintenanceSearchProvider", "StartupRecoveryWindow", "StartupRecoveryPluginScanner", "StartupInitializersCompleted", "MainWindowInitializer", "MainWindowFactory", "CompactMainWindow", "UseCompactMainWindow", "LoadingPlugin", "startup-maintenance", "startup-skip-plugins", "wait-for-process", "safe-start", "skip-plugins", "验证并回退"]
 code_paths: ["ColorVision/EntryClass.cs", "ColorVision/App.xaml.cs", "ColorVision/BuiltInModules.cs", "ColorVision/ProgramTimer.cs", "ColorVision/StartWindow.xaml.cs", "ColorVision/MainWindow.xaml.cs", "ColorVision/MainWindowFactory.cs", "ColorVision/CompactMainWindow.cs", "ColorVision/MainWindowConfig.cs", "ColorVision/SingleInstanceStartupPolicy.cs", "ColorVision/StartupFileOpenPolicy.cs", "ColorVision/OperationsApplicationRestartController.cs", "ColorVision/App.StartupMaintenance.cs", "ColorVision/Recovery", "UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs", "Test/ColorVision.UI.Tests/StartupRecoveryPluginScannerTests.cs", "Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs", "Test/ColorVision.UI.Tests/StartupMaintenanceWindowTests.cs", "Test/ColorVision.UI.Tests/WizardWindowRuntimeTests.cs", "Test/ColorVision.UI.Tests/StartupRecoveryWindowRuntimeTests.cs", "Test/ColorVision.Copilot.Tests/CopilotBackgroundShellMaintenanceGuardTests.cs", "Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs", "Test/ColorVision.UI.Tests/StartupRegistryCheckerTests.cs"]
 related: ["platform.architecture", "platform.startup-integrity", "delivery.update", "plugins.model", "ui.discovery", "ui.wizards", "ui.localization", "ui.search", "operations.main-window", "engine.rc-registration", "flow.architecture"]
@@ -38,13 +38,13 @@ related: ["platform.architecture", "platform.startup-integrity", "delivery.updat
 | --- | --- |
 | `StartWindow` 的 `IInitializer` | 首次渲染后在后台发现并构造实例；按 `--skip` 中逗号分隔的精确 Name 排除，再按 Order、Name 排序执行。单项 InitializeAsync 异常记录后继续，循环结束记录 `StartupInitializersCompleted`；这不表示每项成功 |
 | 功能启动器 | `--feature` 先按 Header、再按类型名匹配 `IFeatureLauncher`；匹配后执行并清理启动记录，未找到则交给主窗口工厂。Execute 返回不证明该功能后续的异步业务完成 |
-| 主窗口选择 | 未指定 `--feature` 或未匹配功能时，`MainWindowFactory.Create` 按 `MainWindowConfig.UseCompactTitleBar` 创建普通 `MainWindow` 或 `CompactMainWindow`；开关默认关闭，只在本次创建时选择，不原地切换现有窗口 |
+| 主窗口选择 | 未指定 `--feature` 或未匹配功能时，`MainWindowFactory.Create` 按 `MainWindowConfig.UseCompactMainWindow` 创建 `CompactMainWindow` 或普通 `MainWindow`；新开关默认开启，只在本次创建时选择，不原地切换现有窗口；旧 `UseCompactTitleBar` 字段不读取或迁移，新字段已保存的 false/true 则保留 |
 | 主窗口初始化 | 主窗口通过 Dispatcher 调用 `IMainWindowInitialized`，按 Order 执行并记录单项异常；该异步链和首次渲染各有完成入口 |
 | 启动健康标记 | 主窗口首次 `ContentRendered`、主窗口初始化链结束、功能启动器返回等路径均可调用 `StartupRegistryChecker.Clear()`。首次呈现可以先于某些异步初始化完成，因此 ready 不是设备、数据库或插件业务逐项验收 |
 
 `IInitializer` 的实例构造发生在 `--skip` 过滤之前，跳过其 InitializeAsync 不保证没有构造副作用。程序集过滤、provider 构造及各消费者缓存见[扩展发现与排查](../../04-api-reference/ui-components/ui-runtime-handoff.md)；插件的清单、条件依赖预检和装载失败规则只在[插件装载](../../02-developer-guide/plugin-development/overview.md)中维护。
 
-普通 `MainWindow` 保留原生外观；`CompactMainWindow : MainWindow` 继承同一份工作区 XAML 和初始化链，只增加标题栏适配，不第二次构造工作区。紧凑外观仅在满足 Windows 11 等门禁后附加，不支持或初始化失败时在该实例回退原生外观，不再创建第二个普通主窗口；这样不会重复改写全局工作区、文档宿主和快捷键注册。该实验的设置入口、重启与恢复方式、全屏订阅顺序及验证边界见[主窗口与入口装配](../../01-user-guide/interface/main-window.md)。已经匹配的功能启动器、独立文件路由、单实例交接和恢复门禁不由这个开关改变。
+普通 `MainWindow` 保留原生外观；`CompactMainWindow : MainWindow` 继承同一份工作区 XAML 和初始化链，只增加标题栏适配，不第二次构造工作区。新建配置或缺少 `UseCompactMainWindow` 的升级配置默认选择紧凑主窗口，包括仅有旧字段的配置；在设置中关闭新开关并重启仍可选择旧 `MainWindow`。紧凑外观仅在满足 Windows 11 等门禁后附加，不支持或初始化失败时在该实例回退原生外观，不再创建第二个普通主窗口；这样不会重复改写全局工作区、文档宿主和快捷键注册。设置入口、重启与恢复方式、全屏订阅顺序及验证边界见[主窗口与入口装配](../../01-user-guide/interface/main-window.md)。已经匹配的功能启动器、独立文件路由、单实例交接和恢复门禁不由这个开关改变。
 
 启动进度依据步骤和历史耗时估算，不是健康检查结果。定位“进度结束但功能不可用”时，先查具体 initializer 的日志，再查该能力的前提，不能仅依据 `PluginsLoaded`、`StartupInitializersCompleted` 或 ready 排除故障。
 

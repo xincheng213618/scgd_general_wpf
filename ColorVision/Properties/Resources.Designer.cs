@@ -295,20 +295,20 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 紧凑标题栏（实验，重启生效） 的本地化字符串。
+        ///   查找类似 紧凑主窗口（重启生效） 的本地化字符串。
         /// </summary>
-        public static string ConfigUseCompactTitleBar {
+        public static string ConfigUseCompactMainWindow {
             get {
-                return ResourceManager.GetString("ConfigUseCompactTitleBar", resourceCulture);
+                return ResourceManager.GetString("ConfigUseCompactMainWindow", resourceCulture);
             }
         }
 
         /// <summary>
-        ///   查找类似 使用独立紧凑主窗口，将菜单合并到标题栏并保留系统按钮。默认关闭，重启生效；仅在兼容的 Windows 11 环境启用，不支持时保留原生标题栏。关闭并重启可恢复旧主窗口。 的本地化字符串。
+        ///   查找类似 将菜单与快捷入口合并到标题栏，保留系统按钮和边框。全新安装或首次升级到此开关时默认开启，重启生效；关闭并重启可恢复旧主窗口，之后保留该选择。仅在兼容的 Windows 11 环境启用，不支持时保留原生标题栏。 的本地化字符串。
         /// </summary>
-        public static string ConfigUseCompactTitleBarDescription {
+        public static string ConfigUseCompactMainWindowDescription {
             get {
-                return ResourceManager.GetString("ConfigUseCompactTitleBarDescription", resourceCulture);
+                return ResourceManager.GetString("ConfigUseCompactMainWindowDescription", resourceCulture);
             }
         }
 

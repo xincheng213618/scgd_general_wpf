@@ -542,14 +542,14 @@
   <data name="ConfigEnableDesktopPetDescription" xml:space="preserve">
     <value>显示或隐藏桌面宠物组件。</value>
   </data>
-  <data name="ConfigUseCompactTitleBar" xml:space="preserve">
-    <value>紧凑标题栏（实验，重启生效）</value>
+  <data name="ConfigUseCompactMainWindow" xml:space="preserve">
+    <value>紧凑主窗口（重启生效）</value>
   </data>
   <data name="CompactTitleBarMoreActions" xml:space="preserve">
     <value>更多标题栏操作</value>
   </data>
-  <data name="ConfigUseCompactTitleBarDescription" xml:space="preserve">
-    <value>使用独立紧凑主窗口，将菜单合并到标题栏并保留系统按钮。默认关闭，重启生效；仅在兼容的 Windows 11 环境启用，不支持时保留原生标题栏。关闭并重启可恢复旧主窗口。</value>
+  <data name="ConfigUseCompactMainWindowDescription" xml:space="preserve">
+    <value>将菜单与快捷入口合并到标题栏，保留系统按钮和边框。全新安装或首次升级到此开关时默认开启，重启生效；关闭并重启可恢复旧主窗口，之后保留该选择。仅在兼容的 Windows 11 环境启用，不支持时保留原生标题栏。</value>
   </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>不支持的文件格式</value>

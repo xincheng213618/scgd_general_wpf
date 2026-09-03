@@ -14,7 +14,7 @@ using System.Windows.Threading;
 
 namespace ColorVision;
 
-/// <summary>Optional native-button chrome over the existing main-window workspace.</summary>
+/// <summary>Compact native-button chrome over the shared main-window workspace.</summary>
 public sealed class CompactMainWindow : MainWindow
 {
     private static readonly log4net.ILog log = log4net.LogManager.GetLogger(typeof(CompactMainWindow));
@@ -71,7 +71,7 @@ public sealed class CompactMainWindow : MainWindow
             foreach (Button button in RightMenuItemPanel.Children.OfType<Button>())
                 CompactTitleBarActions.ConfigureButton(button, actionStyle);
             Loaded += CompactTitleBarLoaded;
-            log.Info("Experimental compact title bar attached with native caption buttons.");
+            log.Info("Compact title bar attached with native caption buttons.");
         }
         catch (Exception ex)
         {

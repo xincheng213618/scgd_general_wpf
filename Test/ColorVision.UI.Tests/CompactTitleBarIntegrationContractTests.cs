@@ -1,7 +1,10 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Themes;
+using ColorVision.UI.Json;
 using ColorVision.UI.Menus;
 using ColorVision.Windowing;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
@@ -28,17 +31,65 @@ public sealed class CompactTitleBarIntegrationContractTests
     private static readonly XNamespace Xaml = "http://schemas.microsoft.com/winfx/2006/xaml";
 
     [Fact]
-    public void FreshConfigurationKeepsTheNativeTitleBarAndTheSwitchRaisesOnlyItsOwnNotification()
+    public void FreshConfigurationUsesTheCompactMainWindowAndDisablingRaisesOnlyItsOwnNotification()
     {
         var config = new MainWindowConfig();
-        Assert.False(config.UseCompactTitleBar);
+        Assert.True(config.UseCompactMainWindow);
         List<string?> notifications = [];
         config.PropertyChanged += (_, args) => notifications.Add(args.PropertyName);
 
-        config.UseCompactTitleBar = true;
+        config.UseCompactMainWindow = false;
 
-        Assert.True(config.UseCompactTitleBar);
-        Assert.Equal([nameof(MainWindowConfig.UseCompactTitleBar)], notifications);
+        Assert.False(config.UseCompactMainWindow);
+        Assert.Equal([nameof(MainWindowConfig.UseCompactMainWindow)], notifications);
+    }
+
+    [Theory]
+    [InlineData("{}", true)]
+    [InlineData("{\"UseCompactTitleBar\":false}", true)]
+    [InlineData("{\"UseCompactTitleBar\":true}", true)]
+    [InlineData("{\"UseCompactMainWindow\":false}", false)]
+    [InlineData("{\"UseCompactMainWindow\":true}", true)]
+    [InlineData("{\"UseCompactTitleBar\":true,\"UseCompactMainWindow\":false}", false)]
+    [InlineData("{\"UseCompactMainWindow\":false,\"UseCompactTitleBar\":true}", false)]
+    [InlineData("{\"UseCompactTitleBar\":false,\"UseCompactMainWindow\":true}", true)]
+    [InlineData("{\"UseCompactMainWindow\":true,\"UseCompactTitleBar\":false}", true)]
+    public void NewCompactWindowSettingDefaultsOnAndIgnoresTheRetiredTitleBarKey(string json, bool expected)
+    {
+        // Constructing a handler only creates its serializer settings; never call
+        // Load/GetInstance or deserialize unrelated setters such as OpenFloatingBall.
+        var handler = new ConfigHandler();
+        MainWindowConfig config = Assert.IsType<MainWindowConfig>(
+            JsonConvert.DeserializeObject<MainWindowConfig>(json, handler.JsonSerializerSettings));
+
+        Assert.Equal(expected, config.UseCompactMainWindow);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RealConfigSerializerPreservesAnExplicitCompactWindowChoiceIncludingFalse(bool value)
+    {
+        var handler = new ConfigHandler();
+        JsonSerializerSettings settings = handler.JsonSerializerSettings;
+        Assert.IsType<WpfContractResolver>(settings.ContractResolver);
+        Assert.Equal(DefaultValueHandling.Include, settings.DefaultValueHandling);
+        var config = new MainWindowConfig { UseCompactMainWindow = value };
+
+        // This is the non-secure serialization operation used by
+        // ConfigHandler.WriteConfigToken, without file I/O or global configuration.
+        JObject saved = JObject.FromObject(config, JsonSerializer.Create(settings));
+        JProperty property = Assert.IsType<JProperty>(saved.Property(nameof(MainWindowConfig.UseCompactMainWindow)));
+        Assert.Equal(JTokenType.Boolean, property.Value.Type);
+        Assert.Equal(value, property.Value.Value<bool>());
+        Assert.Null(saved.Property("UseCompactTitleBar"));
+
+        // Reload only the setting under test: deserializing the full MainWindowConfig
+        // payload would call the desktop-pet setter even when its value is false.
+        var settingOnly = new JObject(new JProperty(property.Name, property.Value.DeepClone()));
+        MainWindowConfig restored = Assert.IsType<MainWindowConfig>(
+            settingOnly.ToObject<MainWindowConfig>(JsonSerializer.Create(settings)));
+        Assert.Equal(value, restored.UseCompactMainWindow);
     }
 
     [Fact]
@@ -51,6 +102,7 @@ public sealed class CompactTitleBarIntegrationContractTests
 
         string ordinarySource = ReadRepositoryText("ColorVision/MainWindow.xaml.cs");
         Assert.Contains("public MainWindow() : this(useStandardWindowAppearance: true)", ordinarySource, StringComparison.Ordinal);
+        Assert.DoesNotContain("UseCompactMainWindow", ordinarySource, StringComparison.Ordinal);
         Assert.DoesNotContain("UseCompactTitleBar", ordinarySource, StringComparison.Ordinal);
         string baseConstructor = MethodBody(ordinarySource, "protected MainWindow(bool useStandardWindowAppearance)");
         Assert.Contains("if (useStandardWindowAppearance)", baseConstructor, StringComparison.Ordinal);
@@ -71,12 +123,14 @@ public sealed class CompactTitleBarIntegrationContractTests
     {
         MethodInfo factory = Assert.IsAssignableFrom<MethodInfo>(typeof(MainWindowFactory).GetMethod("Create", BindingFlags.NonPublic | BindingFlags.Static));
         Assert.Equal(typeof(MainWindow), factory.ReturnType);
-        Assert.Equal(typeof(bool), Assert.Single(factory.GetParameters()).ParameterType);
+        ParameterInfo parameter = Assert.Single(factory.GetParameters());
+        Assert.Equal(typeof(bool), parameter.ParameterType);
         string factorySource = ReadRepositoryText("ColorVision/MainWindowFactory.cs");
-        Assert.Matches(@"useCompactTitleBar\s*\?\s*new CompactMainWindow\(\)\s*:\s*new MainWindow\(\)", factorySource);
+        Assert.Matches($@"{Regex.Escape(parameter.Name!)}\s*\?\s*new CompactMainWindow\(\)\s*:\s*new MainWindow\(\)", factorySource);
 
         string startupBody = MethodBody(ReadRepositoryText("ColorVision/StartWindow.xaml.cs"), "private void ShowMainWindowAndClose()");
-        Assert.Equal(2, Regex.Matches(startupBody, @"MainWindowFactory\.Create\(MainWindowConfig\.Instance\.UseCompactTitleBar\)").Count);
+        Assert.Equal(2, Regex.Matches(startupBody, @"MainWindowFactory\.Create\(MainWindowConfig\.Instance\.UseCompactMainWindow\)").Count);
+        Assert.DoesNotContain("UseCompactTitleBar", startupBody, StringComparison.Ordinal);
         Assert.DoesNotContain("new MainWindow()", startupBody, StringComparison.Ordinal);
         Assert.DoesNotContain("new CompactMainWindow()", startupBody, StringComparison.Ordinal);
         Assert.Contains("project1.Execute()", startupBody, StringComparison.Ordinal);
@@ -84,12 +138,13 @@ public sealed class CompactTitleBarIntegrationContractTests
     }
 
     [Theory]
-    [InlineData("zh-CN", "重启", "实验")]
-    [InlineData("zh-Hant", "重新啟動", "實驗")]
-    [InlineData("en", "restart", "experimental")]
-    public void CompactSettingExplainsItsExperimentalAndRestartOnlyStatus(string cultureName, string restartText, string experimentalText)
+    [InlineData("zh-CN", "重启", "默认", "关闭", "旧主窗口", "实验")]
+    [InlineData("zh-Hant", "重新啟動", "預設", "關閉", "舊主視窗", "實驗")]
+    [InlineData("en", "restart", "default", "turn off", "original main window", "experimental")]
+    public void CompactSettingExplainsItsDefaultRestartAndReturnToOriginalWindowBehavior(
+        string cultureName, string restartText, string defaultText, string disableText, string originalWindowText, string experimentalText)
     {
-        PropertyInfo property = typeof(MainWindowConfig).GetProperty(nameof(MainWindowConfig.UseCompactTitleBar))!;
+        PropertyInfo property = typeof(MainWindowConfig).GetProperty(nameof(MainWindowConfig.UseCompactMainWindow))!;
         string displayName = property.GetCustomAttribute<DisplayNameAttribute>()!.DisplayName;
         string description = property.GetCustomAttribute<DescriptionAttribute>()!.Description;
         var culture = new CultureInfo(cultureName);
@@ -98,9 +153,13 @@ public sealed class CompactTitleBarIntegrationContractTests
 
         Assert.NotNull(localizedName);
         Assert.NotNull(localizedDescription);
-        Assert.Contains(experimentalText, localizedName, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(experimentalText, localizedName, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(experimentalText, localizedDescription, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(restartText, localizedName, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(restartText, localizedDescription, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(defaultText, localizedDescription, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(disableText, localizedDescription, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(originalWindowText, localizedDescription, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

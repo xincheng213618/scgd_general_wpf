@@ -98,6 +98,8 @@ public sealed class CommandPanelTests
             var groups = fixture.Groups;
             var grids = groups.Select(group => ((StackPanel)group.Child).Children.OfType<UniformGrid>().Single()).ToArray();
             Assert.All(grids, grid => Assert.True(grid.Columns >= 3));
+            Assert.All(fixture.Buttons, button => Assert.InRange(button.ActualHeight, 48, 52));
+            Assert.All(groups, group => Assert.Equal(new Thickness(0, 0, 0, 1), group.BorderThickness));
 
             fixture.Arrange(260);
             Assert.All(grids, grid => Assert.Equal(1, grid.Columns));
@@ -105,13 +107,13 @@ public sealed class CommandPanelTests
             Button danger = fixture.Buttons.Single(button => ((PropertyInfo)button.Tag).Name == nameof(Commands.DeleteCommand));
             Assert.Same(Brushes.Firebrick, danger.Foreground);
 
-            Application.Current.Resources["GlobalBackground"] = Brushes.Black;
-            Application.Current.Resources["PrimaryTextBrush"] = Brushes.White;
+            Application.Current.Resources["UpdateDialogSurfaceColor"] = Colors.Black;
+            Application.Current.Resources["UpdateDialogTextPrimaryColor"] = Colors.White;
             Application.Current.Resources["DangerBrush"] = Brushes.OrangeRed;
             fixture.Arrange(260);
-            Assert.All(groups, group => Assert.Same(Brushes.Black, group.Background));
+            Assert.All(fixture.Buttons, button => Assert.Equal(Colors.Black, ((SolidColorBrush)button.Background).Color));
             Assert.Same(Brushes.OrangeRed, danger.Foreground);
-            Assert.All(fixture.Buttons.Where(button => button != danger), button => Assert.Same(Brushes.White, button.Foreground));
+            Assert.All(fixture.Buttons.Where(button => button != danger), button => Assert.Equal(Colors.White, ((SolidColorBrush)button.Foreground).Color));
         });
     }
 
@@ -133,7 +135,13 @@ public sealed class CommandPanelTests
                 ["BorderBrush"] = Brushes.Gray,
                 ["PrimaryTextBrush"] = Brushes.Black,
                 ["SecondaryTextBrush"] = Brushes.Gray,
-                ["DangerBrush"] = Brushes.Firebrick
+                ["DangerBrush"] = Brushes.Firebrick,
+                ["UpdateDialogSurfaceColor"] = Colors.WhiteSmoke,
+                ["UpdateDialogSurfaceHoverColor"] = Colors.White,
+                ["UpdateDialogBorderColor"] = Colors.Gray,
+                ["UpdateDialogTextPrimaryColor"] = Colors.Black,
+                ["UpdateDialogTextSecondaryColor"] = Colors.Black,
+                ["UpdateDialogAccentColor"] = Colors.DodgerBlue
             };
             window = new Window { Content = Host, Left = -10000, Top = -10000, Width = 760, Height = 700, ShowActivated = false, ShowInTaskbar = false };
             window.Show();

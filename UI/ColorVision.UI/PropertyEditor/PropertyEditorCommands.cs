@@ -116,8 +116,8 @@ namespace ColorVision.UI
                 text.Children.Add(title);
                 if (!string.IsNullOrWhiteSpace(description))
                 {
-                    var detail = new TextBlock { Text = description, FontSize = 11, Margin = new Thickness(0, 4, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
-                    detail.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
+                    var detail = new TextBlock { Text = description, FontSize = 10.5, Margin = new Thickness(0, 2, 0, 0), Opacity = 0.72, TextTrimming = TextTrimming.CharacterEllipsis };
+                    detail.SetResourceReference(TextBlock.ForegroundProperty, "PropertyEditorCommandTextSecondary");
                     text.Children.Add(detail);
                 }
                 button.Content = text;

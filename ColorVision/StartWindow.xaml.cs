@@ -411,13 +411,13 @@ namespace ColorVision
                     else
                     {
                         log.Info($"Feature '{feature}' not found, starting main window.");
-                        Window mainWindow = MainWindowFactory.Create(MainWindowConfig.Instance.UseCompactTitleBar);
+                        Window mainWindow = MainWindowFactory.Create(MainWindowConfig.Instance.UseCompactMainWindow);
                         mainWindow.Show();
                     }
                 }
                 else
                 {
-                    Window mainWindow = MainWindowFactory.Create(MainWindowConfig.Instance.UseCompactTitleBar);
+                    Window mainWindow = MainWindowFactory.Create(MainWindowConfig.Instance.UseCompactMainWindow);
                     mainWindow.Show();
                 }
                 if (OperationsApplicationFailureWatchdog.TryStart())

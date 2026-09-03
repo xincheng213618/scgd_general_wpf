@@ -29,7 +29,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         public IDisplayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisplayConfigBase>(Config.Code);
 
 
-        [CommandDisplay("UploadThridPartPlusIn", CategoryOrder = 3)]
+        [CommandDisplay("UploadThridPartPlusIn", CategoryOrder = 4)]
         [Category("MaintenanceDiagnostics")]
         [Description("CommandAlgorithmPluginHint")]
         public RelayCommand UploadPluginCommand { get; set; }

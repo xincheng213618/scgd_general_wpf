@@ -2290,7 +2290,7 @@ namespace ColorVision.Engine.Properties {
         }
 
         /// <summary>
-        ///   查找类似 重新启动当前设备服务 的本地化字符串。
+        ///   查找类似 保存当前配置并重启设备服务 的本地化字符串。
         /// </summary>
         public static string CommandRestartHint {
             get {
@@ -2984,6 +2984,15 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 数据与日志 的本地化字符串。
+        /// </summary>
+        public static string DataLogs {
+            get {
+                return ResourceManager.GetString("DataLogs", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 数据保存天数 的本地化字符串。
         /// </summary>
@@ -7974,7 +7983,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 维护与诊断 的本地化字符串。
+        ///   查找类似 服务与维护 的本地化字符串。
         /// </summary>
         public static string MaintenanceDiagnostics {
             get {
@@ -11667,6 +11676,15 @@ namespace ColorVision.Engine.Properties {
         public static string SpectrumCalibrationGroupHint {
             get {
                 return ResourceManager.GetString("SpectrumCalibrationGroupHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 标定分组管理 的本地化字符串。
+        /// </summary>
+        public static string SpectrumCalibrationGroups {
+            get {
+                return ResourceManager.GetString("SpectrumCalibrationGroups", resourceCulture);
             }
         }
 

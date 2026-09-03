@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Services
     public class ServiceObjectBase : ViewModelBase
     {
 
-        [CommandDisplay("Delete", CommandType = CommandType.Highlighted, Order = 99999, CategoryOrder = 3)]
+        [CommandDisplay("Delete", CommandType = CommandType.Highlighted, Order = 99999, CategoryOrder = 4)]
         [Category("MaintenanceDiagnostics")]
         [Description("CommandDeleteHint")]
         public RelayCommand DeleteCommand { get; set; }

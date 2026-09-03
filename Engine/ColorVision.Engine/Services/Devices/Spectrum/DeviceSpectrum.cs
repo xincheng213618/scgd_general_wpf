@@ -142,13 +142,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         [Description("SpectrumRefreshHint")]
         public RelayCommand RefreshDeviceIdCommand { get; set; }
 
-        [CommandDisplay("UploadLic", Order = 2, CategoryOrder = 0)]
-        [Category("DeviceConnection")]
+        [CommandDisplay("UploadLic", Order = 2, CategoryOrder = 4)]
+        [Category("MaintenanceDiagnostics")]
         [Description("SpectrumLicenseHint")]
         public RelayCommand UploadLincenseCommand { get; set; }
 
         [CommandDisplay("AdaptiveZeroCalibration", Order = 3, CategoryOrder = 1)]
-
         [Category("CalibrationCorrection")]
         [Description("SpectrumDarkHint")]
         public RelayCommand SelfAdaptionInitDarkCommand { get; set; }
@@ -171,7 +170,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         [Description("SpectrumSearchHint")]
         public RelayCommand GetSpectrSerialNumberCommand { get; set; }
 
-        [CommandDisplay("CalibrationGroup", Order = 0, CategoryOrder = 1)]
+        [CommandDisplay("SpectrumCalibrationGroups", Order = 0, CategoryOrder = 1)]
         [Category("CalibrationCorrection")]
         [Description("SpectrumCalibrationGroupHint")]
         public RelayCommand OpenCalibrationGroupWindowCommand { get; set; }
@@ -867,7 +866,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         }
 
         [CommandDisplay("SpectrumLog", CategoryOrder = 3)]
-        [Category("MaintenanceDiagnostics")]
+        [Category("DataLogs")]
         [Description("SpectrumLogHint")]
         public RelayCommand OpenSpectrumLogCommand { get; set; }
         public static void OpenSpectrumLog()

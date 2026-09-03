@@ -69,22 +69,36 @@
                     <ControlTemplate TargetType="ToggleButton">
                         <Grid>
                             <Border x:Name="CheckedLayer"
+                                    Background="{DynamicResource PrimaryBrush}"
+                                    CornerRadius="6"
+                                    Opacity="0" />
+                            <Border x:Name="InteractionLayer"
                                     Background="{TemplateBinding BorderBrush}"
                                     CornerRadius="6"
                                     Opacity="0" />
                             <ContentPresenter Margin="{TemplateBinding Padding}"
                                               HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                            <Border x:Name="CheckedIndicator"
+                                    Width="10"
+                                    Height="2"
+                                    Margin="0,0,0,2"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Bottom"
+                                    Background="{DynamicResource PrimaryBrush}"
+                                    CornerRadius="1"
+                                    Opacity="0" />
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="CheckedLayer" Property="Opacity" Value="0.14" />
+                                <Setter TargetName="InteractionLayer" Property="Opacity" Value="0.12" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="CheckedLayer" Property="Opacity" Value="0.22" />
+                                <Setter TargetName="InteractionLayer" Property="Opacity" Value="0.26" />
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="CheckedLayer" Property="Opacity" Value="0.28" />
+                                <Setter TargetName="CheckedLayer" Property="Opacity" Value="0.16" />
+                                <Setter TargetName="CheckedIndicator" Property="Opacity" Value="1" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.45" />

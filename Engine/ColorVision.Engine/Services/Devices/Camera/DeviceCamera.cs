@@ -131,7 +131,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
 
         [CommandDisplay("CameraLog", CategoryOrder = 3)]
-        [Category("MaintenanceDiagnostics")]
+        [Category("DataLogs")]
         [Description("CommandCameraLogHint")]
         public RelayCommand OpenCameraLogCommand { get; set; }
 
