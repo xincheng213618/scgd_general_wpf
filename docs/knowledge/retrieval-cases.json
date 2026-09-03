@@ -713,6 +713,18 @@
     {"query":"CopilotTurnCheckpointLifecycleState 如何检查身份漂移","expected_any":["copilot.view-model"],"include_planned":false},
     {"query":"CopilotApprovalCoordinator 待审批列表与全局计数","expected_any":["copilot.view-model"],"include_planned":false},
     {"query":"Copilot 输入已经排队是不是已经写入磁盘","expected_any":["copilot.view-model"],"include_planned":false},
-    {"query":"CopilotAgentTaskEventJournalRegistry PublishedAtUtc 是磁盘保存时间吗","expected_any":["copilot.tool-contracts"],"include_planned":false}
+    {"query":"CopilotAgentTaskEventJournalRegistry PublishedAtUtc 是磁盘保存时间吗","expected_any":["copilot.tool-contracts"],"include_planned":false},
+    {"query":"运维 device-relay 查询任务应该 GET 还是 POST","expected_any":["delivery.backend-operations"],"include_planned":false},
+    {"query":"X-CV-Timestamp request_time_out_of_range","expected_any":["delivery.backend-operations"],"include_planned":false},
+    {"query":"host_identity_conflict 换证书后无法同步","expected_any":["delivery.backend-operations"],"include_planned":false},
+    {"query":"Operations 中继两个设备的 idempotencyKey 可以重复吗","expected_any":["delivery.backend-operations"],"include_planned":false},
+    {"query":"窗口快照下载后会自动删除吗","expected_any":["delivery.backend-operations"],"include_planned":false},
+    {"query":"window_snapshot_consumed 为什么还显示 completed 回执","expected_any":["delivery.backend-operations"],"include_planned":false},
+    {"query":"window_snapshot_task_not_uploadable","expected_any":["delivery.backend-operations"],"include_planned":false},
+    {"query":"X-CV-Receipt-Metadata 上传窗口快照","expected_any":["delivery.backend-operations"],"include_planned":false},
+    {"query":"window_snapshot_delete_failed","expected_any":["delivery.backend-operations"],"include_planned":false},
+    {"query":"operations_relay_window_snapshots 密文存在哪里","expected_any":["delivery.backend-operations"],"include_planned":false},
+    {"query":"运维任务 queued 过期会自动变为 expired 吗","expected_any":["delivery.backend-operations"],"include_planned":false},
+    {"query":"设备签名请求失败后可以重放原 nonce 吗","expected_any":["delivery.backend-operations"],"include_planned":false}
   ]
 }

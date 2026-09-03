@@ -3025,7 +3025,7 @@
       "knowledge_id": "delivery.backend-operations",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Backend Operations 的 Bearer 与设备签名中继、任务回执和管理员只读投影；在线、排队、验签与真实动作完成各有边界。",
+      "summary": "Backend Operations 的接口、身份与任务回执；区分在线、排队和执行完成，并说明加密快照的下载、消费与过期清理。",
       "aliases": [
         "Operations中继",
         "运维后台",
@@ -3044,7 +3044,23 @@
         "COLORVISION_OPERATIONS_RELAY_URL",
         "COLORVISION_OPERATIONS_RELAY_KEY",
         "signedRelayReady",
-        "awaiting_local_consent"
+        "awaiting_local_consent",
+        "X-CV-Timestamp",
+        "X-CV-Nonce",
+        "X-CV-Signature",
+        "X-CV-Receipt-Metadata",
+        "host_identity_conflict",
+        "unknown_or_revoked_device",
+        "request_time_out_of_range",
+        "replayed_request",
+        "idempotency_conflict",
+        "window_snapshot_upload_required",
+        "window_snapshot_task_not_uploadable",
+        "window_snapshot_consumed",
+        "window_snapshot_delete_failed",
+        "window_snapshot_expired",
+        "运维窗口快照",
+        "operations_relay_window_snapshots"
       ],
       "code_paths": [
         "Web/Backend/routes/operations_relay.py",
