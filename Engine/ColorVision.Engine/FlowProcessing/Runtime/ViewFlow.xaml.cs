@@ -374,6 +374,7 @@ namespace ColorVision.Engine.FlowProcessing
 
         internal void FitLoadedFlowToViewport()
         {
+            EditorCanvas.ResetCanvasInteractionMode();
             EditorCanvas.FitCanvasToNodesAfterLayout();
         }
 
@@ -727,6 +728,7 @@ namespace ColorVision.Engine.FlowProcessing
             StopStandaloneFlow();
             ShowExecutionSummary(string.Empty);
             FlowEngineControl.FlowClear();
+            EditorCanvas.ResetCanvasInteractionMode();
             RefreshStandaloneStartNodeSelection();
             _standaloneNodeManager!.ClearDevice();
             STNodeEditorMain.ClearHistory();

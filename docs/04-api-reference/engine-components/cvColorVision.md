@@ -3,8 +3,8 @@ knowledge_id: "engine.native-bindings"
 knowledge_type: "reference"
 status: "current"
 summary: "定位供应商 native DLL 的相机、光谱、XYZ、OLED、PG 与源表绑定契约。"
-aliases: ["设备SDK入口在哪里","cvColorVision","cvCameraCSLib","ConvertXYZ"]
-code_paths: ["Engine/cvColorVision/README.md","Engine/cvColorVision/Camera","Engine/cvColorVision/Color/ConvertXYZ.cs","Engine/cvColorVision/Devices/Display/CvOledDLL.cs","Engine/cvColorVision/Devices/Spectrometer/Spectrometer.cs","Engine/cvColorVision/cvColorVision.csproj"]
+aliases: ["设备SDK入口在哪里","cvColorVision","cvCameraCSLib","ConvertXYZ","CVCommCore","MQTTMessageLib","CVCommCore.dll","MQTTMessageLib.dll"]
+code_paths: ["Engine/cvColorVision/README.md","Engine/cvColorVision/Camera","Engine/cvColorVision/CVCommCore","Engine/cvColorVision/MQTTMessageLib","Engine/cvColorVision/Color/ConvertXYZ.cs","Engine/cvColorVision/Devices/Display/CvOledDLL.cs","Engine/cvColorVision/Devices/Spectrometer/Spectrometer.cs","Engine/cvColorVision/cvColorVision.csproj"]
 test_paths: []
 related: ["engine.index","engine.native-integration","ui.core"]
 ---
@@ -19,9 +19,17 @@ related: ["engine.index","engine.native-integration","ui.core"]
 
 Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `glaDevSys64.dll`、`xGUSB64.dll`、`xGCOM64.dll`、`xserial64.dll` 和 `FTD2XX.dll` 是否存在；缺少其中任一文件就报错。这只是输入存在性门禁，不校验 DLL 能否加载、导出是否匹配或真实设备能否打开。README 也作为 NuGet 包说明打包，但其仓库相对链接不保证包内含有对应知识文件。
 
+## 命名空间与程序集
+
+`CVCommCore/` 和 `MQTTMessageLib/` 是本项目中的 C# 源码目录，保留 `CVCommCore.*`、`MQTTMessageLib.*` 命名空间，随默认 Compile 项编入 `cvColorVision.dll`。当前 `cvColorVision.csproj` 不生成两个同名独立程序集，也没有从仓库根 `DLL/` 引用 `CVCommCore.dll` / `MQTTMessageLib.dll`；不能把 `using` 的命名空间直接当成缺失 DLL 的清单。
+
+当前 Engine 通过项目引用消费 `cvColorVision`，依赖该 Engine 的插件沿实际程序集引用和复制规则取得所需库。部署故障应同时核对插件的依赖清单、实际 DLL 版本以及 native 输入；托管类型来源和供应商 DLL 是两种依赖。
+
+旧版或外部插件仍可能引用独立的 `CVCommCore` / `MQTTMessageLib` 程序集身份。此时保留并交付其要求的匹配 DLL，不能仅因当前源码编译通过就删除它们，也不能把 `cvColorVision.dll` 改名来充当旧程序集。应以该插件的实际引用为依据决定兼容部署或重建；同名类型不证明二进制兼容。
+
 ## 签名与返回值不能统一推断
 
-当前相机绑定使用 `CM_Open(IntPtr)`、`CM_SetExpTime(IntPtr, float)`、`CM_GetFrame(...)` 等实际声明，不提供旧示例中的 `CM_Init(CameraType)`、`CM_GetImage(handle, buffer)`、`CM_SetExposureTime` 或 `CM_Uninit` 这一套通用生命周期 API。查阅 `Camera/cvCameraCSLib.*.cs` 和实际设备调用方，不应为适配旧教程补造包装。
+当前相机绑定使用 `CM_Open(IntPtr)`、`CM_SetExpTime(IntPtr, float)`、`CM_GetFrame(...)` 等实际声明，不提供旧示例中的 `CM_Init(CameraType)`、`CM_GetImage(handle, buffer)`、`CM_SetExposureTime` 或 `CM_Uninit` 这一套通用生命周期 API。签名和使用方式见 `Camera/cvCameraCSLib.*.cs` 及实际设备调用方。
 
 `ConvertXYZ.CM_InitXYZ(IntPtr handle)` 返回 `int`，不是新建的 `IntPtr`；调用方持有并传入已有句柄。`CM_SetBufferXYZ` 的尺寸/通道参数为 `UInt32`，数组与指针重载均存在，且另有 `CM_ReleaseBuffer`。跨 native 边界须核对签名、缓冲区大小、所有权与释放顺序，不能只按方法名猜测资源生命周期。
 

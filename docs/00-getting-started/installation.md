@@ -11,7 +11,7 @@ related: ["delivery.prerequisites","delivery.deployment","delivery.update","oper
 
 # 安装制品与运行输出
 
-安装、源码构建和启动是不同动作，不按终端用户或开发者划分文档。先判断目标是得到可运行制品、验证编译，还是实际启动服务；只问源码不需要做其中任何一步。
+首次部署使用完整安装包；已有安装通过更新入口升级；源码构建输出用于开发和本地验证。本页说明制品选择、安装前检查和故障定位，工具链要求见[系统要求](./prerequisites.md)，安装后的启动步骤见[首次运行](./first-steps.md)。
 
 ## 选择正确制品
 
@@ -23,6 +23,8 @@ related: ["delivery.prerequisites","delivery.deployment","delivery.update","oper
 | 排查安装制品生成 | 查[部署链路](../02-developer-guide/deployment/overview.md)和[脚本契约](../02-developer-guide/scripts/README.md)，不要为了查看安装行为执行会上传的发布 wrapper |
 
 安装器使用仓库外的 Advanced Installer 工程，具体组件与权限提示以本次交付包为准；本页不把未经核对的向导按钮、默认组件或升级行为当作代码契约。
+
+主程序通过 `ColorVision/Update/ChangelogPage.cs` 打开网页变更日志。仓库根目录 `CHANGELOG.md` 保留为项目链接和网站发布原稿，不复制到主程序的构建或 publish 输出目录；已有文件不清理。安装器、更新包和共享文件清单的日志排除规则见[构建与发布脚本](../02-developer-guide/scripts/README.md#正式发布)。
 
 ## 部署前与部署后边界
 

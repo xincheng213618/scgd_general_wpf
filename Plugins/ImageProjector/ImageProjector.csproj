@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+		<UseWindowsForms>true</UseWindowsForms>
+		<VersionPrefix>1.4.8.1</VersionPrefix>
+		<AssemblyOriginatorKeyFile>..\..\ColorVision.snk</AssemblyOriginatorKeyFile>
+		<SignAssembly Condition="Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
+		<CETCompat>false</CETCompat>
+	</PropertyGroup>
+	
+	<ItemGroup>
+		<ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="Properties\Resources.Designer.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>Resources.resx</DependentUpon>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Update="Properties\Resources.resx">
+	    <Generator>PublicResXFileCodeGenerator</Generator>
+	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+	  </EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="CHANGELOG.md">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Update="manifest.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Update="README.md">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
+	<Target Name="CopyImageProjectorToDevelopmentHost" AfterTargets="Build"
+			Condition="'$(EnableImageProjectorHostCopy)' == 'true' and '$(SolutionDir)' != '' and '$(SolutionDir)' != '*Undefined*' and '$(TargetFramework)' != ''">
+		<PropertyGroup>
+			<_ImageProjectorHostDirectory>$(SolutionDir)ColorVision\bin\x64\$(Configuration)\net10.0-windows\Plugins\ImageProjector\</_ImageProjectorHostDirectory>
+		</PropertyGroup>
+		<ItemGroup>
+			<_ImageProjectorHostFile Include="$(TargetDir)ImageProjector.dll;$(MSBuildProjectDirectory)\manifest.json;$(MSBuildProjectDirectory)\README.md;$(MSBuildProjectDirectory)\CHANGELOG.md" />
+			<_ImageProjectorHostResource Include="$(TargetDir)**\ImageProjector.resources.dll" />
+		</ItemGroup>
+		<Copy SourceFiles="@(_ImageProjectorHostFile)" DestinationFolder="$(_ImageProjectorHostDirectory)" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(_ImageProjectorHostResource)" DestinationFiles="@(_ImageProjectorHostResource->'$(_ImageProjectorHostDirectory)%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+	</Target>
+</Project>

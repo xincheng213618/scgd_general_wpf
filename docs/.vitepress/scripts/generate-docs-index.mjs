@@ -305,8 +305,8 @@ function formatSectionSearchTitle(page, section) {
 }
 
 function knowledgeProjection(page) {
-  const { knowledge_id, knowledge_type, status, aliases, code_paths, test_paths, related, source_hash } = page.knowledge
-  return { knowledge_id, knowledge_type, status, aliases, code_paths, test_paths, related, source_hash, sourcePath: page.sourcePath }
+  const { knowledge_id, knowledge_type, status, aliases, code_paths, test_paths, related } = page.knowledge
+  return { knowledge_id, knowledge_type, status, aliases, code_paths, test_paths, related, sourcePath: page.sourcePath }
 }
 
 function buildSections(pages) {

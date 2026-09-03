@@ -6,7 +6,7 @@ summary: "Backend HTTP制品交付的Range、完成事件、下载计数、Cache
 aliases: ["HTTP制品下载", "下载完成计数", "Range", "Content-Range", "HEAD下载", "ETag", "Cache-Control", "no-store", "gzip", "Accept-Encoding", "ArtifactDeliverySpec", "ArtifactDeliveryService", "ArtifactDownloadEvent", "deliver_artifact", "_CompletionTrackingIterator", "_completed_representation_bytes", "record_download", "repair_update_storage_layout", "register_response_compression"]
 code_paths: ["Web/Backend/services/artifact_delivery.py", "Web/Backend/routes/artifact_delivery.py", "Web/Backend/marketplace_api_routes.py", "Web/Backend/services/marketplace_api.py", "Web/Backend/marketplace_services.py", "Web/Backend/download_stats.py", "Web/Backend/routes/pages.py", "Web/Backend/update_retention.py", "Web/Backend/services/http_security.py", "Web/Backend/services/http_compression.py", "Web/Backend/app.py", "Web/Backend/app_setup.py", "Web/Backend/services/access_analytics.py"]
 test_paths: ["Web/Backend/test_artifact_delivery.py", "Web/Backend/test_http_security.py", "Web/Backend/test_http_compression.py", "Web/Backend/test_app.py"]
-related: ["delivery.backend", "delivery.file-transfer", "delivery.plugin-catalog"]
+related: ["delivery.backend", "delivery.file-transfer", "delivery.plugin-catalog", "delivery.web-pages"]
 ---
 
 # HTTP 制品交付、完成计数与响应策略
@@ -76,6 +76,8 @@ HEAD 不触发本页的下载完成事件，客户端也不接收响应体；它
 
 所以请求 `Accept-Encoding: gzip` 不会让 APK、普通文件流或带 ETag 的 JSON 必然压缩。HEAD 也进入这一钩子，可能读取已缓冲 JSON 并执行压缩来生成表示头；没有网络响应体不代表没有这部分计算。
 
+React 静态文件的 Brotli/gzip 旁文件协商、Range 表示选择和 VitePress 响应由[Web 页面与文档托管](./web-pages.md)维护，不适用本节的缓冲 JSON 筛选条件。
+
 ## 失败定位与验证边界
 
 - “200 但计数没增加”：先确认走插件包专用路由且有回调，再查是否完整迭代、长度/Range 是否符合、持久化是否失败；不要把状态码当作回调证据。
@@ -84,4 +86,4 @@ HEAD 不触发本页的下载完成事件，客户端也不接收响应体；它
 
 现有 `test_artifact_delivery.py` 覆盖完整 GET、HEAD、304、部分/完整 Range 和提前关闭迭代器；`test_app.py::test_api_download_package_updates_stats_and_plugin_totals` 覆盖专用包路由的 HEAD/部分 Range 不计数及完整 GET 计数。`test_http_security.py` 覆盖补充 `no-store` 而不覆盖显式策略；`test_http_compression.py` 覆盖大 JSON、gzip质量值、通配符与小 JSON。
 
-`test_app.py` 的增量更新/旧下载路径用例覆盖 GET 触发目录修复，不等于已验证 HEAD 修复的部署表现。上述源码分支与测试也不证明真实网络断连、反向代理、WSGI服务器关闭时机、客户端下载落盘或回调失败后的统计补偿。本次文档维护未运行这些产品测试。
+`test_app.py` 的增量更新/旧下载路径用例覆盖 GET 触发目录修复，不等于已验证 HEAD 修复的部署表现。上述源码分支与测试也不证明真实网络断连、反向代理、WSGI服务器关闭时机、客户端下载落盘或回调失败后的统计补偿。

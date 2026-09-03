@@ -9,13 +9,11 @@ test_paths: ["Test/ColorVision.UI.Tests/SubpixelEdgeV1Tests.cs","Test/ColorVisio
 related: ["algorithms.platform","algorithms.index"]
 ---
 
-# 亚像素边缘 V1（M6.1）
+# 亚像素边缘 V1
 
 ## 当前发布边界
 
-当前默认 `ImageAlgorithmPlatform.CreateDefaultProviders()` 把本页 provider 包装在 `ExperimentalAlgorithmProviderGate` 中：菜单和 Batch 可执行投影隐藏该能力，直接调用默认 Runner 也返回 `provider_unavailable`，详情包含 `algorithm_experimental`。本页后面的参数、结果与宿主接入描述属于保留实现及测试契约，不是产品已开放的承诺；不得在调用方另建执行旁路来绕过门禁。
-
-本页 `status: current` 表示它记录当前源码事实，不代表算法已发布。M 编号是历史增量标识；其他增量是否可用以 [统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单) 为准。`Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs` 验证默认拒绝行为，专题测试覆盖实现细节；解除门禁还需完成对应数值、最坏资源与生产规模验证。
+此算法为 Experimental，默认不展示或执行；门禁和错误码见[统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单)。
 
 
 亚像素边缘是独立测量契约。仓库已有发光区域、十字和模板匹配中的专用亚像素逻辑，但它们绑定各自 native/模板流程，不能作为统一卡尺契约复用。该 provider 保留通用“有向卡尺 → 单个亚像素边缘点”实现，不包含直线拟合或圆拟合；后两项由 [直线拟合](./line-fit-v1.md)、[圆拟合](./circle-fit-v1.md) 的独立点集契约消费结构化结果，三者默认门禁分别生效。

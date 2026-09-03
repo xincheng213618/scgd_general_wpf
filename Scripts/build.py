@@ -1,10 +1,11 @@
 import argparse
 import hashlib
+import json
 import os
 import re
 import shutil
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Callable
 from xml.etree import ElementTree
@@ -29,8 +30,9 @@ try:
         read_installer_source_paths,
         validate_service_host_runtime,
     )
-    from .generate_shared_files import DEFAULT_OUTPUT_FILES as SHARED_FILES_MANIFESTS, check_manifest
-    from .build_update import get_file_version
+    from .generate_shared_files import build_release_manifest
+    from .build_update import get_all_files, get_file_version
+    from .installer_shared_files import collect_installer_shared_files
 except ImportError:
     from backend_client import (
         DEFAULT_CONNECT_TIMEOUT,
@@ -51,8 +53,9 @@ except ImportError:
         read_installer_source_paths,
         validate_service_host_runtime,
     )
-    from generate_shared_files import DEFAULT_OUTPUT_FILES as SHARED_FILES_MANIFESTS, check_manifest
-    from build_update import get_file_version
+    from generate_shared_files import build_release_manifest
+    from build_update import get_all_files, get_file_version
+    from installer_shared_files import collect_installer_shared_files
 from tqdm import tqdm
 
 VERSION_RE = re.compile(r"(\d+\.\d+\.\d+\.\d+)")
@@ -218,38 +221,6 @@ def validate_installer_runtime_dlls(
     return True
 
 
-def validate_shared_files_manifests(
-    runtime_directory: str | Path,
-    *,
-    manifest_paths: tuple[Path, ...] = SHARED_FILES_MANIFESTS,
-    report: Callable[[str], None] = print,
-) -> bool:
-    runtime_path = Path(runtime_directory)
-    if not runtime_path.is_dir():
-        report(f"Release runtime directory does not exist: {runtime_path}")
-        return False
-
-    for manifest_path in manifest_paths:
-        if not manifest_path.is_file():
-            report(f"Shared files manifest does not exist: {manifest_path}")
-            return False
-        try:
-            manifest_only, runtime_only = check_manifest(runtime_path, manifest_path)
-        except (OSError, RuntimeError, ValueError) as exc:
-            report(f"Could not validate shared files manifest {manifest_path}: {exc}")
-            return False
-        if manifest_only or runtime_only:
-            report(
-                f"Shared files manifest drifted: {manifest_path} "
-                f"(manifest-only={len(manifest_only)}, runtime-only={len(runtime_only)}). "
-                "Run 'py Scripts\\generate_shared_files.py' and commit both generated manifests."
-            )
-            return False
-
-    report(f"Verified {len(manifest_paths)} shared files manifests against the current host output.")
-    return True
-
-
 def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_path: Path, aip_path: Path) -> bool:
     try:
         print(f"Running MSBuild: {msbuild_path} {solution_path}")
@@ -268,8 +239,6 @@ def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_
 
         runtime_directory = solution_path.parent / "ColorVision" / "bin" / "x64" / "Release" / "net10.0-windows"
         if not ensure_runtime_copy_integrity(solution_path.parent, runtime_directory):
-            return False
-        if not validate_shared_files_manifests(runtime_directory):
             return False
         if not validate_installer_runtime_dlls(runtime_directory, aip_path):
             return False
@@ -351,6 +320,8 @@ def publish_primary_release(
     changelog_src: str | Path,
     remote_settings: RemoteUploadSettings,
     *,
+    runtime_directory: Path,
+    aip_path: Path,
     upload_func: Callable[[str | Path, RemoteUploadSettings], bool] = upload_file,
     upload_content_func: Callable[[str | bytes, str, RemoteUploadSettings], bool] = backend_upload_content,
 ) -> bool:
@@ -360,6 +331,14 @@ def publish_primary_release(
     if not changelog_src.is_file():
         print(f"Release changelog is missing: {changelog_src}")
         return False
+
+    installer_files = {path.casefold() for path in collect_installer_shared_files(aip_path, runtime_directory)}
+    delivered_files = [
+        Path(path).relative_to(runtime_directory).as_posix()
+        for path in get_all_files(runtime_directory)
+        if Path(path).relative_to(runtime_directory).as_posix().casefold() in installer_files
+    ]
+    shared_manifest = build_release_manifest(runtime_directory, latest_version, delivered_files=delivered_files)
 
     current_version = backend_fetch_latest_version(remote_settings)
     if not should_update_version(latest_version, current_version):
@@ -374,6 +353,13 @@ def publish_primary_release(
     print(f"Uploading release changelog: {changelog_src.name}")
     if not upload_func(changelog_src, remote_settings):
         print("CHANGELOG.md upload failed; LATEST_RELEASE will not be updated.")
+        return False
+
+    manifest_settings = replace(remote_settings, folder_name=f"Tool/PluginKit/shared-files/{latest_version}")
+    manifest_filename = f"{shared_manifest['framework']}-{shared_manifest['platform']}.json"
+    print(f"Uploading versioned host shared manifest: {latest_version}/{manifest_filename}")
+    if not upload_content_func(json.dumps(shared_manifest, ensure_ascii=False, indent=2), manifest_filename, manifest_settings):
+        print("Shared manifest upload failed; LATEST_RELEASE will not be updated.")
         return False
 
     print("Uploading release marker: LATEST_RELEASE")
@@ -514,6 +500,8 @@ def main() -> int:
         latest_file,
         project.changelog_src,
         remote_settings,
+        runtime_directory=runtime_executable.parent,
+        aip_path=project.aip_path,
     ):
         return 1
     return 0

@@ -1,5 +1,4 @@
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
-using System.Runtime.ExceptionServices;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -29,7 +28,7 @@ public class CameraRunParamTests
     [Fact]
     public void CustomEditor_AppliesOneValueToEveryExposureField()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             var param = new CameraRunParam
             {
@@ -51,28 +50,5 @@ public class CameraRunParamTests
             Assert.Equal(80f, param.ExpTimeG);
             Assert.Equal(80f, param.ExpTimeB);
         });
-    }
-
-    private static void RunInSta(Action action)
-    {
-        Exception? exception = null;
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                exception = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-        if (exception != null)
-        {
-            ExceptionDispatchInfo.Capture(exception).Throw();
-        }
     }
 }

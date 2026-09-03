@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor
 {
@@ -68,7 +69,15 @@ namespace ColorVision.ImageEditor
         int PixelWidth,
         int PixelHeight,
         double DpiX,
-        double DpiY);
+        double DpiY)
+    {
+        /// <summary>Logical canvas dimensions in WPF units, including non-bitmap sources.</summary>
+        public double CanvasWidth { get; init; } = PixelWidth * 96d / DpiX;
+        public double CanvasHeight { get; init; } = PixelHeight * 96d / DpiY;
+
+        /// <summary>False for a drawable canvas without source pixels; pixel dimensions are then zero.</summary>
+        public bool HasPixels => PixelWidth > 0 && PixelHeight > 0;
+    }
 
     /// <summary>
     /// Provides a transient (non-recording) drawing selection mode on an existing ImageView.
@@ -126,12 +135,14 @@ namespace ColorVision.ImageEditor
             _sourceScope = CaptureSourceScope(_processingContext);
             if (_processingContext != null)
             {
-                _processingContext.DocumentScopeChanged += OnDocumentScopeChanged;
                 if (_sourceScope == null || !IsSourceScopeCurrent(_processingContext, _sourceScope))
                 {
-                    InvalidateSourceScope();
+                    // Nothing has been activated yet: do not restore uninitialized interaction
+                    // state or release another operation's mouse capture on this early exit.
+                    _tcs.TrySetResult(null);
                     return _tcs.Task;
                 }
+                _processingContext.DocumentScopeChanged += OnDocumentScopeChanged;
             }
 
             _previousCursor = _zoombox.Cursor;
@@ -245,15 +256,7 @@ namespace ColorVision.ImageEditor
             _drawCanvas.ReleaseMouseCapture();
             var mouseUp = e.GetPosition(_drawCanvas);
 
-            // Build result
-            SelectResult result = BuildDragResult(_mouseDown, mouseUp);
-
-            if (IsValidDragResult(result) && TryBindSourceScope(result))
-            {
-                Cleanup();
-                _tcs.TrySetResult(result);
-            }
-            else
+            if (!TryCompleteDrag(_mouseDown, mouseUp))
             {
                 ResetDragAttempt();
             }
@@ -402,6 +405,17 @@ namespace ColorVision.ImageEditor
             };
         }
 
+        private bool TryCompleteDrag(Point start, Point end)
+        {
+            SelectResult result = BuildDragResult(start, end);
+            if (!IsValidDragResult(result) || !TryBindSourceScope(result))
+                return false;
+
+            Cleanup();
+            _tcs.TrySetResult(result);
+            return true;
+        }
+
         private bool TryCompletePolygon()
         {
             if (_polygonPoints == null || !IsValidPolygon(_polygonPoints))
@@ -540,9 +554,21 @@ namespace ColorVision.ImageEditor
 
         internal static ImageSelectionScope? CaptureSourceScope(ImageProcessingContext? context)
         {
-            if (context?.ViewBitmapSource is not System.Windows.Media.Imaging.BitmapSource bitmap)
+            if (context == null || context.IsDisposed || context.ViewBitmapSource is not ImageSource source
+                || !IsFinite(source.Width) || !IsFinite(source.Height) || source.Width <= 0 || source.Height <= 0)
             {
                 return null;
+            }
+
+            if (source is not BitmapSource bitmap)
+            {
+                // Manual selection needs geometry, not readable pixels. Keep the document
+                // scope so changing a vector canvas still invalidates its selected coordinates.
+                return new ImageSelectionScope(context.DocumentInstanceId, context.ImageRevision, 0, 0, 96, 96)
+                {
+                    CanvasWidth = source.Width,
+                    CanvasHeight = source.Height,
+                };
             }
             return new ImageSelectionScope(
                 context.DocumentInstanceId,
@@ -557,11 +583,7 @@ namespace ColorVision.ImageEditor
             => !context.IsDisposed
                 && context.DocumentInstanceId == scope.DocumentInstanceId
                 && context.IsCurrentImageRevision(scope.SourceRevision)
-                && context.ViewBitmapSource is System.Windows.Media.Imaging.BitmapSource bitmap
-                && bitmap.PixelWidth == scope.PixelWidth
-                && bitmap.PixelHeight == scope.PixelHeight
-                && bitmap.DpiX.Equals(scope.DpiX)
-                && bitmap.DpiY.Equals(scope.DpiY);
+                && CaptureSourceScope(context) == scope;
 
         private void Cleanup()
         {
@@ -594,10 +616,7 @@ namespace ColorVision.ImageEditor
             // Restore previous state without running the full ImageView mode toggle side effects.
             _zoombox.Cursor = _previousCursor;
             _zoombox.ActivateOn = _previousActivateOn;
-            if (_previousEditMode)
-            {
-                _drawContext.IsImageEditMode = true;
-            }
+            _drawContext.IsImageEditMode = _previousEditMode;
         }
     }
 }

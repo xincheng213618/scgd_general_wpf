@@ -90,6 +90,10 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             {
                 return true;
             }
+            if (string.Equals(propertyInfo.GetCustomAttribute<CategoryAttribute>()?.Category, "高级", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
 
             Type? nodeType = propertyInfo.ReflectedType ?? propertyInfo.DeclaringType;
             return propertyInfo.Name == nameof(FlowEngineLib.Base.CVCommonNode.ZIndex)

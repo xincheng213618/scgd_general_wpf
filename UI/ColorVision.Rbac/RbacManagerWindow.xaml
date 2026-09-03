@@ -9,34 +9,34 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:RbacManagerWindow}"
         Title="{x:Static properties:Resources.UserCenter}"
-        Width="1040" Height="780"
-        Background="Transparent"
-        AllowsTransparency="True"
-        WindowStyle="None"
-        ResizeMode="NoResize"
+        Width="1120" Height="800" MinWidth="1000" MinHeight="650"
+        Background="{DynamicResource UpdateDialog.Background}"
+        Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"
         WindowStartupLocation="CenterOwner"
-        Initialized="Window_Initialized"
-        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+        Initialized="Window_Initialized">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="RbacStyles.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/UpdateDialogTheme.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <Style x:Key="SectionCard" TargetType="Border">
-                <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
-                <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
+                <Setter Property="Background" Value="{DynamicResource UpdateDialog.Surface}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource UpdateDialog.WeakBorder}"/>
                 <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="CornerRadius" Value="12"/>
+                <Setter Property="CornerRadius" Value="10"/>
                 <Setter Property="Padding" Value="22"/>
             </Style>
 
             <Style x:Key="SectionTitle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource UpdateDialog.TextPrimary}"/>
                 <Setter Property="FontSize" Value="15"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
             </Style>
 
             <Style x:Key="MetricValue" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource UpdateDialog.TextPrimary}"/>
                 <Setter Property="HorizontalAlignment" Value="Center"/>
                 <Setter Property="FontSize" Value="20"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
@@ -45,17 +45,18 @@
 
             <Style x:Key="MetricLabel" TargetType="TextBlock">
                 <Setter Property="HorizontalAlignment" Value="Center"/>
-                <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource UpdateDialog.TextSecondary}"/>
                 <Setter Property="FontSize" Value="12"/>
                 <Setter Property="Margin" Value="0,5,0,0"/>
             </Style>
 
             <Style x:Key="DetailLabel" TargetType="TextBlock">
-                <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource UpdateDialog.TextSecondary}"/>
                 <Setter Property="FontSize" Value="12"/>
             </Style>
 
             <Style x:Key="DetailValue" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource UpdateDialog.TextPrimary}"/>
                 <Setter Property="HorizontalAlignment" Value="Right"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
                 <Setter Property="FontSize" Value="13"/>
@@ -63,62 +64,30 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Border Background="{DynamicResource GlobalBackground}"
-            BorderBrush="{DynamicResource BordrBrush}"
-            BorderThickness="1"
-            CornerRadius="12">
-        <Border.Effect>
-            <DropShadowEffect Color="Black" Direction="270" ShadowDepth="2" Opacity="0.28" BlurRadius="16"/>
-        </Border.Effect>
-
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="54"/>
-                <RowDefinition Height="58"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-
+    <Grid Margin="30,28,30,24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
             <Border Grid.Row="0"
-                    Background="{DynamicResource StatusBarBackgroundBrush}"
-                    CornerRadius="12,12,0,0"
-                    Padding="20,0">
-                <Grid>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="&#xE77B;"
-                                   FontFamily="Segoe MDL2 Assets"
-                                   FontSize="20"
-                                   Foreground="White"
-                                   Margin="0,0,10,0"/>
-                        <TextBlock Text="{x:Static properties:Resources.UserCenter}"
-                                   FontSize="17"
-                                   FontWeight="SemiBold"
-                                   Foreground="White"/>
-                    </StackPanel>
-                    <Button Style="{StaticResource RbacCloseButton}"
-                            Click="BtnClose_Click"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Center"
-                            Foreground="White"/>
-                </Grid>
-            </Border>
-
-            <Border Grid.Row="1"
-                    Background="{DynamicResource GlobalBackground}"
-                    BorderBrush="{DynamicResource GlobalBorderBrush1}"
+                    Background="{DynamicResource UpdateDialog.Background}"
+                    BorderBrush="{DynamicResource UpdateDialog.WeakBorder}"
                     BorderThickness="0,0,0,1"
-                    Padding="24,0">
+                    Padding="0,0,0,22" Margin="0,0,0,22">
                 <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="{x:Static local:UserCenterText.Profile}" FontSize="15" FontWeight="SemiBold"/>
+                        <TextBlock Text="{x:Static properties:Resources.UserCenter}" FontSize="28" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource UpdateDialog.TextPrimary}"/>
                         <TextBlock Text="{x:Static local:UserCenterText.Description}"
-                                   FontSize="11"
-                                   Foreground="{DynamicResource SecondaryTextBrush}"
-                                   Margin="0,2,0,0"/>
+                                   FontSize="13"
+                                   Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                                   Margin="0,8,0,0"/>
                     </StackPanel>
 
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                         <Button Command="{Binding LoginCommand}"
-                                Style="{StaticResource ModernButton}"
+                                Style="{StaticResource UpdateDialogPrimaryButtonStyle}"
                                 Margin="0,0,8,0"
                                 Visibility="{Binding LoginButtonVisibility}"
                                 ToolTip="{x:Static properties:Resources.Sol_RbacMgr_LoginTooltip}">
@@ -128,7 +97,7 @@
                             </StackPanel>
                         </Button>
                         <Button Command="{Binding EditCommand}"
-                                Style="{StaticResource SecondaryButton}"
+                                Style="{StaticResource UpdateDialogSecondaryButtonStyle}"
                                 Margin="0,0,8,0"
                                 Visibility="{Binding LoggedInButtonVisibility}"
                                 ToolTip="{x:Static properties:Resources.Sol_RbacMgr_EditUserTooltip}">
@@ -138,7 +107,7 @@
                             </StackPanel>
                         </Button>
                         <Button Click="BtnChangePassword_Click"
-                                Style="{StaticResource SecondaryButton}"
+                                Style="{StaticResource UpdateDialogSecondaryButtonStyle}"
                                 Margin="0,0,8,0"
                                 Visibility="{Binding LoggedInButtonVisibility}"
                                 ToolTip="{x:Static properties:Resources.Sol_RbacMgr_ChangePwdTooltip}">
@@ -148,7 +117,7 @@
                             </StackPanel>
                         </Button>
                         <Button Command="{Binding OpenUserManagerCommand}"
-                                Style="{StaticResource ModernButton}"
+                                Style="{StaticResource UpdateDialogSecondaryButtonStyle}"
                                 Margin="0,0,8,0"
                                 Visibility="{Binding AdminButtonVisibility}"
                                 ToolTip="{x:Static properties:Resources.Sol_RbacMgr_UserMgmtTooltip}">
@@ -158,7 +127,7 @@
                             </StackPanel>
                         </Button>
                         <Button Click="BtnLogout_Click"
-                                Style="{StaticResource SecondaryButton}"
+                                Style="{StaticResource UpdateDialogSecondaryButtonStyle}"
                                 Visibility="{Binding LoggedInButtonVisibility}"
                                 ToolTip="{x:Static properties:Resources.Sol_RbacMgr_LogoutTooltip}">
                             <StackPanel Orientation="Horizontal">
@@ -170,8 +139,8 @@
                 </Grid>
             </Border>
 
-            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <Grid Margin="42,28,42,34">
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <Grid Margin="0,0,14,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -179,25 +148,17 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Row="0" HorizontalAlignment="Center">
-                        <Border Width="92" Height="92"
-                                Background="{DynamicResource ButtonBackground}"
-                                BorderBrush="{DynamicResource GlobalBorderBrush1}"
-                                BorderThickness="1"
-                                CornerRadius="46"
-                                Padding="5">
-                            <hc:Gravatar Id="{Binding Config.LoginResult.User.Username}" Width="80" Height="80"/>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,2,0,0">
+                        <Border Width="64" Height="64" Background="{DynamicResource UpdateDialog.Surface}"
+                                BorderBrush="{DynamicResource UpdateDialog.WeakBorder}" BorderThickness="1" CornerRadius="12" Padding="7">
+                            <hc:Gravatar Id="{Binding Config.LoginResult.User.Username}" Width="48" Height="48"/>
                         </Border>
-                        <TextBlock Text="{Binding CurrentUserDisplay}"
-                                   FontSize="27"
-                                   FontWeight="SemiBold"
-                                   HorizontalAlignment="Center"
-                                   Margin="0,14,0,0"/>
-                        <TextBlock Text="{Binding ProfileSubtitle}"
-                                   FontSize="13"
-                                   Foreground="{DynamicResource SecondaryTextBrush}"
-                                   HorizontalAlignment="Center"
-                                   Margin="0,5,0,0"/>
+                        <StackPanel VerticalAlignment="Center" Margin="18,0,0,0">
+                            <TextBlock Text="{Binding CurrentUserDisplay}" FontSize="24" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource UpdateDialog.TextPrimary}"/>
+                            <TextBlock Text="{Binding ProfileSubtitle}" FontSize="13" Margin="0,6,0,0"
+                                       Foreground="{DynamicResource UpdateDialog.TextSecondary}"/>
+                        </StackPanel>
                     </StackPanel>
 
                     <Border Grid.Row="1" Style="{StaticResource SectionCard}" Padding="0" Margin="0,26,0,0">
@@ -206,25 +167,25 @@
                                 <TextBlock Text="{Binding CurrentSessionDisplay}" Style="{StaticResource MetricValue}"/>
                                 <TextBlock Text="{x:Static local:UserCenterText.CurrentSession}" Style="{StaticResource MetricLabel}"/>
                             </StackPanel>
-                            <Border BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="1,0,0,0">
+                            <Border BorderBrush="{DynamicResource UpdateDialog.WeakBorder}" BorderThickness="1,0,0,0">
                                 <StackPanel VerticalAlignment="Center">
                                     <TextBlock Text="{Binding TotalRunTimeDisplay}" Style="{StaticResource MetricValue}"/>
                                     <TextBlock Text="{x:Static local:UserCenterText.TotalRuntime}" Style="{StaticResource MetricLabel}"/>
                                 </StackPanel>
                             </Border>
-                            <Border BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="1,0,0,0">
+                            <Border BorderBrush="{DynamicResource UpdateDialog.WeakBorder}" BorderThickness="1,0,0,0">
                                 <StackPanel VerticalAlignment="Center">
                                     <TextBlock Text="{Binding LaunchCountDisplay}" Style="{StaticResource MetricValue}"/>
                                     <TextBlock Text="{x:Static local:UserCenterText.LaunchCount}" Style="{StaticResource MetricLabel}"/>
                                 </StackPanel>
                             </Border>
-                            <Border BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="1,0,0,0">
+                            <Border BorderBrush="{DynamicResource UpdateDialog.WeakBorder}" BorderThickness="1,0,0,0">
                                 <StackPanel VerticalAlignment="Center">
                                     <TextBlock Text="{Binding TotalFlowCountDisplay}" Style="{StaticResource MetricValue}"/>
                                     <TextBlock Text="{x:Static local:UserCenterText.TotalFlowCount}" Style="{StaticResource MetricLabel}"/>
                                 </StackPanel>
                             </Border>
-                            <Border BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="1,0,0,0">
+                            <Border BorderBrush="{DynamicResource UpdateDialog.WeakBorder}" BorderThickness="1,0,0,0">
                                 <StackPanel VerticalAlignment="Center">
                                     <TextBlock Text="{Binding CompletionRateDisplay}" Style="{StaticResource MetricValue}"/>
                                     <TextBlock Text="{x:Static local:UserCenterText.Last7CompletionRate}" Style="{StaticResource MetricLabel}"/>
@@ -245,15 +206,15 @@
                                     <TextBlock Text="{x:Static local:UserCenterText.FlowActivity}" Style="{StaticResource SectionTitle}"/>
                                     <TextBlock Text="{Binding ActivitySummaryDisplay}"
                                                FontSize="12"
-                                               Foreground="{DynamicResource SecondaryTextBrush}"
+                                               Foreground="{DynamicResource UpdateDialog.TextSecondary}"
                                                Margin="0,4,0,0"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
                                     <TextBlock Text="{Binding ActivityRangeDisplay}"
-                                               Foreground="{DynamicResource SecondaryTextBrush}"
+                                               Foreground="{DynamicResource UpdateDialog.TextSecondary}"
                                                FontSize="12"
                                                Margin="0,0,12,0"/>
-                                    <Button Style="{StaticResource SecondaryButton}"
+                                    <Button Style="{StaticResource UpdateDialogSecondaryButtonStyle}"
                                             Padding="9,5"
                                             Click="BtnRefreshStatistics_Click"
                                             ToolTip="{x:Static local:UserCenterText.RefreshStatistics}">
@@ -270,6 +231,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
+                                <Viewbox Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Left">
                                 <ItemsControl ItemsSource="{Binding ActivityDays}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
@@ -280,36 +242,37 @@
                                         <DataTemplate>
                                             <Border Width="12" Height="12" Margin="1"
                                                     CornerRadius="2"
-                                                    Background="{DynamicResource StatusBarBackgroundBrush}"
+                                                    Background="{DynamicResource UpdateDialog.Accent}"
                                                     Opacity="{Binding Intensity}"
                                                     ToolTip="{Binding ToolTip}"/>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
+                                </Viewbox>
 
                                 <StackPanel Grid.Column="1" Margin="18,0,0,0" VerticalAlignment="Bottom">
-                                    <TextBlock Text="{x:Static local:UserCenterText.ActivityLess}" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{x:Static local:UserCenterText.ActivityLess}" FontSize="11" Foreground="{DynamicResource UpdateDialog.TextSecondary}" HorizontalAlignment="Center"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                        <Border Width="12" Height="12" Margin="2" CornerRadius="2" Background="{DynamicResource StatusBarBackgroundBrush}" Opacity="0.12"/>
-                                        <Border Width="12" Height="12" Margin="2" CornerRadius="2" Background="{DynamicResource StatusBarBackgroundBrush}" Opacity="0.35"/>
-                                        <Border Width="12" Height="12" Margin="2" CornerRadius="2" Background="{DynamicResource StatusBarBackgroundBrush}" Opacity="0.55"/>
-                                        <Border Width="12" Height="12" Margin="2" CornerRadius="2" Background="{DynamicResource StatusBarBackgroundBrush}" Opacity="0.75"/>
-                                        <Border Width="12" Height="12" Margin="2" CornerRadius="2" Background="{DynamicResource StatusBarBackgroundBrush}"/>
+                                        <Border Width="12" Height="12" Margin="2" CornerRadius="2" Background="{DynamicResource UpdateDialog.Accent}" Opacity="0.12"/>
+                                        <Border Width="12" Height="12" Margin="2" CornerRadius="2" Background="{DynamicResource UpdateDialog.Accent}" Opacity="0.35"/>
+                                        <Border Width="12" Height="12" Margin="2" CornerRadius="2" Background="{DynamicResource UpdateDialog.Accent}" Opacity="0.55"/>
+                                        <Border Width="12" Height="12" Margin="2" CornerRadius="2" Background="{DynamicResource UpdateDialog.Accent}" Opacity="0.75"/>
+                                        <Border Width="12" Height="12" Margin="2" CornerRadius="2" Background="{DynamicResource UpdateDialog.Accent}"/>
                                     </StackPanel>
-                                    <TextBlock Text="{x:Static local:UserCenterText.ActivityMore}" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                    <TextBlock Text="{x:Static local:UserCenterText.ActivityMore}" FontSize="11" Foreground="{DynamicResource UpdateDialog.TextSecondary}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Grid>
 
                             <Border Grid.Row="2"
-                                    Background="{DynamicResource GlobalBackground}"
-                                    BorderBrush="{DynamicResource GlobalBorderBrush1}"
+                                    Background="{DynamicResource UpdateDialog.Background}"
+                                    BorderBrush="{DynamicResource UpdateDialog.WeakBorder}"
                                     BorderThickness="1"
                                     CornerRadius="6"
                                     Padding="10,7"
                                     Margin="0,10,0,0"
                                     Visibility="{Binding StatisticsStatusVisibility}">
                                 <TextBlock Text="{Binding StatisticsStatusDisplay}"
-                                           Foreground="{DynamicResource SecondaryTextBrush}"
+                                           Foreground="{DynamicResource UpdateDialog.TextSecondary}"
                                            FontSize="12"/>
                             </Border>
                         </Grid>
@@ -326,24 +289,29 @@
                             <StackPanel>
                                 <TextBlock Text="{x:Static local:UserCenterText.AccountOverview}" Style="{StaticResource SectionTitle}" Margin="0,0,0,16"/>
                                 <Grid Margin="0,0,0,11">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                     <TextBlock Text="{x:Static properties:Resources.UserId}" Style="{StaticResource DetailLabel}"/>
-                                    <TextBlock Text="{Binding UserIdDisplay}" Style="{StaticResource DetailValue}"/>
+                                    <TextBlock Grid.Column="1" Margin="18,0,0,0" TextWrapping="Wrap" TextAlignment="Right" Text="{Binding UserIdDisplay}" Style="{StaticResource DetailValue}"/>
                                 </Grid>
                                 <Grid Margin="0,0,0,11">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                     <TextBlock Text="{x:Static properties:Resources.Role}" Style="{StaticResource DetailLabel}"/>
-                                    <TextBlock Text="{Binding UserRoleDisplay}" Style="{StaticResource DetailValue}"/>
+                                    <TextBlock Grid.Column="1" Margin="18,0,0,0" TextWrapping="Wrap" TextAlignment="Right" Text="{Binding UserRoleDisplay}" Style="{StaticResource DetailValue}"/>
                                 </Grid>
                                 <Grid Margin="0,0,0,11">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                     <TextBlock Text="{x:Static properties:Resources.PermissionMode}" Style="{StaticResource DetailLabel}"/>
-                                    <TextBlock Text="{Binding PermissionModeDisplay}" Style="{StaticResource DetailValue}"/>
+                                    <TextBlock Grid.Column="1" Margin="18,0,0,0" TextWrapping="Wrap" TextAlignment="Right" Text="{Binding PermissionModeDisplay}" Style="{StaticResource DetailValue}"/>
                                 </Grid>
                                 <Grid Margin="0,0,0,11">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                     <TextBlock Text="{x:Static local:UserCenterText.AccountUpdated}" Style="{StaticResource DetailLabel}"/>
-                                    <TextBlock Text="{Binding AccountUpdatedDisplay}" Style="{StaticResource DetailValue}"/>
+                                    <TextBlock Grid.Column="1" Margin="18,0,0,0" TextWrapping="Wrap" TextAlignment="Right" Text="{Binding AccountUpdatedDisplay}" Style="{StaticResource DetailValue}"/>
                                 </Grid>
                                 <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                     <TextBlock Text="{x:Static local:UserCenterText.FirstUsage}" Style="{StaticResource DetailLabel}"/>
-                                    <TextBlock Text="{Binding FirstLaunchDisplay}" Style="{StaticResource DetailValue}"/>
+                                    <TextBlock Grid.Column="1" Margin="18,0,0,0" TextWrapping="Wrap" TextAlignment="Right" Text="{Binding FirstLaunchDisplay}" Style="{StaticResource DetailValue}"/>
                                 </Grid>
                             </StackPanel>
                         </Border>
@@ -352,30 +320,34 @@
                             <StackPanel>
                                 <TextBlock Text="{x:Static local:UserCenterText.FlowInsights}" Style="{StaticResource SectionTitle}" Margin="0,0,0,16"/>
                                 <Grid Margin="0,0,0,11">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                     <TextBlock Text="{x:Static local:UserCenterText.Last7Executions}" Style="{StaticResource DetailLabel}"/>
-                                    <TextBlock Text="{Binding Last7DayFlowCountDisplay}" Style="{StaticResource DetailValue}"/>
+                                    <TextBlock Grid.Column="1" Margin="18,0,0,0" TextWrapping="Wrap" TextAlignment="Right" Text="{Binding Last7DayFlowCountDisplay}" Style="{StaticResource DetailValue}"/>
                                 </Grid>
                                 <Grid Margin="0,0,0,11">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                     <TextBlock Text="{x:Static local:UserCenterText.AverageFlowDuration}" Style="{StaticResource DetailLabel}"/>
-                                    <TextBlock Text="{Binding AverageFlowDurationDisplay}" Style="{StaticResource DetailValue}"/>
+                                    <TextBlock Grid.Column="1" Margin="18,0,0,0" TextWrapping="Wrap" TextAlignment="Right" Text="{Binding AverageFlowDurationDisplay}" Style="{StaticResource DetailValue}"/>
                                 </Grid>
                                 <Grid Margin="0,0,0,11">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                     <TextBlock Text="{x:Static local:UserCenterText.ActiveDays}" Style="{StaticResource DetailLabel}"/>
-                                    <TextBlock Text="{Binding ActiveDaysDisplay}" Style="{StaticResource DetailValue}"/>
+                                    <TextBlock Grid.Column="1" Margin="18,0,0,0" TextWrapping="Wrap" TextAlignment="Right" Text="{Binding ActiveDaysDisplay}" Style="{StaticResource DetailValue}"/>
                                 </Grid>
                                 <Grid Margin="0,0,0,11">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                     <TextBlock Text="{x:Static local:UserCenterText.BusiestDay}" Style="{StaticResource DetailLabel}"/>
-                                    <TextBlock Text="{Binding BusiestDayDisplay}" Style="{StaticResource DetailValue}"/>
+                                    <TextBlock Grid.Column="1" Margin="18,0,0,0" TextWrapping="Wrap" TextAlignment="Right" Text="{Binding BusiestDayDisplay}" Style="{StaticResource DetailValue}"/>
                                 </Grid>
                                 <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                     <TextBlock Text="{x:Static local:UserCenterText.LastLaunch}" Style="{StaticResource DetailLabel}"/>
-                                    <TextBlock Text="{Binding LastLaunchDisplay}" Style="{StaticResource DetailValue}"/>
+                                    <TextBlock Grid.Column="1" Margin="18,0,0,0" TextWrapping="Wrap" TextAlignment="Right" Text="{Binding LastLaunchDisplay}" Style="{StaticResource DetailValue}"/>
                                 </Grid>
                             </StackPanel>
                         </Border>
                     </Grid>
                 </Grid>
             </ScrollViewer>
-        </Grid>
-    </Border>
+    </Grid>
 </Window>

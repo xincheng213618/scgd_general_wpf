@@ -193,8 +193,7 @@ export async function buildCatalog(repoRoot) {
         const info = validatedPaths.get(mappedPath) ?? validatedPaths.get(`${mappedPath}/`)
         return parts.slice(0, Math.min(2, parts.length - (info.isDirectory ? 0 : 1))).join('/') || '.'
       }))].sort()
-      entries.push({ ...metadata, code_scopes: codeScopes, domain, title: titleFromBody(parsed.body, source), source, url: documentUrl(source), searchable: parsed.searchable,
-        source_hash: createHash('sha256').update(raw.replace(/\r\n/gu, '\n')).digest('hex') })
+      entries.push({ ...metadata, code_scopes: codeScopes, domain, title: titleFromBody(parsed.body, source), source, url: documentUrl(source), searchable: parsed.searchable })
     } catch (error) { errors.push(error.message) }
   }
   for (const entry of entries) {
@@ -372,12 +371,17 @@ function qualifiedSearchOwners(symbol) {
     const parts = symbol.split('/')
     return parts.slice(1).map((_, index) => parts.slice(index + 1).join('/')).filter(Boolean)
   }
+  // A release tag such as widget-v1.2.3 belongs to the documented widget-v
+  // prefix, not the numeric component before its last dot. This locates a
+  // guide; it deliberately does not decide whether that version is valid.
+  const versionTag = symbol.match(/^([a-z_][a-z0-9_.-]*-v)\d+(?:\.\d+)+(?:-[a-z0-9.-]+)?(?:\+[a-z0-9.-]+)?$/u)
+  if (versionTag) return [versionTag[1]]
   const lastSeparator = Math.max(symbol.lastIndexOf('.'), symbol.lastIndexOf('::'))
   const owner = symbol.slice(0, lastSeparator)
   const localOwner = owner.split(/\.|::/u).at(-1)
   // Namespace.Type.Member -> Namespace.Type / Type, never Member or Namespace.
   // Do not split underscores or use generic leaf names such as Save as owners.
-  return [...new Set([owner, localOwner].filter(Boolean))]
+  return [...new Set([owner, localOwner].filter((value) => /[a-z_]/u.test(value)))]
 }
 
 export function searchCatalog(catalog, query, { all = false, limit = 12 } = {}) {
@@ -560,7 +564,7 @@ async function main() {
       if (command === 'impact') console.log(`  mapped: ${entry.matched_paths.join(', ')}`)
       else console.log(`  match: ${entry.match_kind}`)
     }
-    if (command === 'search') console.log('Search reads metadata. Read the selected topic for source/test mappings; owner-fallback does not verify the requested member.')
+    if (command === 'search') console.log('Search reads metadata. Read the selected topic for source/test mappings; owner-fallback does not verify the requested member or release tag.')
     const count = matches.length < candidates.length ? `${matches.length} of ${candidates.length} match(es) shown (limit ${limit})` : `${matches.length} match(es)`
     console.log(`${count}. Index is a locator, not proof of current behavior; verify source and tests. Use check to detect stale metadata.`)
     return

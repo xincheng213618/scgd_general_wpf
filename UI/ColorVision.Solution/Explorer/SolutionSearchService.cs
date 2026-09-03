@@ -42,6 +42,49 @@ namespace ColorVision.Solution.Explorer
                 cancellationToken);
         }
 
+        internal static Task<SolutionSearchResult> SearchFileSystemAsync(
+            SolutionExplorer explorer,
+            FileSystemFolderNode root,
+            string query,
+            int maxResults,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(explorer);
+            ArgumentNullException.ThrowIfNull(root);
+            ArgumentOutOfRangeException.ThrowIfLessThan(maxResults, 1);
+            IReadOnlyList<string> keywords = ParseKeywords(query);
+            if (keywords.Count == 0)
+                return Task.FromResult(new SolutionSearchResult([], IsTruncated: false));
+
+            List<LoadedCandidate> loadedCandidates = new[] { root }
+                .Concat(root.VisualChildren.GetAllVisualChildren())
+                .Where(node => node is not LazyLoadingNode and not SolutionSearchResultNode)
+                .Select(node => new LoadedCandidate(
+                    node,
+                    node.FullPath,
+                    node.Name,
+                    IsDirectoryNode(node),
+                    node.Parent ?? root,
+                    Path.GetRelativePath(root.FullPath, node.FullPath)))
+                .ToList();
+            var loadedNodesByPath = loadedCandidates
+                .GroupBy(candidate => candidate.FullPath, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+            var context = new SearchContext(
+                explorer,
+                root.FullPath,
+                IsExplicitProjectMode: false,
+                Cache: null,
+                ProjectScopes: [],
+                loadedCandidates,
+                loadedNodesByPath,
+                root,
+                IsFileSystemView: true);
+            return Task.Run(
+                () => Search([context], keywords, query.Trim(), maxResults, cancellationToken),
+                cancellationToken);
+        }
+
         internal static IReadOnlyList<string> ParseKeywords(string? query)
         {
             if (string.IsNullOrWhiteSpace(query))
@@ -187,7 +230,7 @@ namespace ColorVision.Solution.Explorer
             pendingDirectories.Push(rootPath);
             var enumerationOptions = new EnumerationOptions
             {
-                AttributesToSkip = FileAttributes.Hidden | FileAttributes.System,
+                AttributesToSkip = context.IsFileSystemView ? 0 : FileAttributes.Hidden | FileAttributes.System,
                 IgnoreInaccessible = true,
                 RecurseSubdirectories = false,
                 ReturnSpecialDirectories = false,
@@ -221,7 +264,7 @@ namespace ColorVision.Solution.Explorer
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         string fileName = Path.GetFileName(filePath);
-                        if (!SolutionNodeFactory.IsInternalFile(fileName))
+                        if (context.IsFileSystemView || !SolutionNodeFactory.IsInternalFile(fileName))
                         {
                             AddPhysicalCandidate(
                                 context,
@@ -273,7 +316,7 @@ namespace ColorVision.Solution.Explorer
             SolutionNode? existingNode = loadedCandidate?.Node;
             SolutionNode parentNode = existingNode?.Parent
                 ?? (SolutionNode?)projectScope?.Node
-                ?? context.Explorer;
+                ?? context.RootNode;
             string displayPath = loadedCandidate?.DisplayPath
                 ?? CreatePhysicalDisplayPath(
                     context.Explorer,
@@ -323,7 +366,9 @@ namespace ColorVision.Solution.Explorer
                 explorer.Cache,
                 projectScopes,
                 loadedCandidates,
-                loadedNodesByPath);
+                loadedNodesByPath,
+                explorer,
+                IsFileSystemView: false);
         }
 
         private static string CreateLoadedDisplayPath(
@@ -459,7 +504,9 @@ namespace ColorVision.Solution.Explorer
             SolutionCache? Cache,
             IReadOnlyList<ProjectScope> ProjectScopes,
             IReadOnlyList<LoadedCandidate> LoadedCandidates,
-            IReadOnlyDictionary<string, LoadedCandidate> LoadedNodesByPath);
+            IReadOnlyDictionary<string, LoadedCandidate> LoadedNodesByPath,
+            SolutionNode RootNode,
+            bool IsFileSystemView);
 
         private sealed class SearchAccumulator
         {

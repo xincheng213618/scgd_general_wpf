@@ -1,100 +1,58 @@
 # Web
 
-ColorVision marketplace web product boundary.
+ColorVision marketplace web product boundary. `Frontend/` builds the React
+portal and `/admin` SPA into `Frontend/dist`; `Backend/` serves the compiled
+site, Flask APIs, downloads and storage/index services.
 
-Architecture boundaries, compatibility policy, extension ports, analytics
-privacy rules, and performance guardrails are documented in
-[`ARCHITECTURE.md`](ARCHITECTURE.md).
-The measured 2026-07-18 baseline, completed first pass, and prioritized follow-up
-work are recorded in [`PERFORMANCE_AUDIT.md`](PERFORMANCE_AUDIT.md).
+- [Local startup and NAS deployment](../docs/02-developer-guide/deployment/web.md):
+  prerequisites, parameters, build stages, Git bundles, retention and recovery.
+- [Web pages and documentation hosting](../docs/02-developer-guide/backend/web-pages.md):
+  routes, compression, cache policy and documentation indexes.
+- [Backend](../docs/02-developer-guide/backend/README.md): configuration, CLI,
+  database ownership and management routes.
+- [Web architecture](../docs/03-architecture/components/web.md): responsibilities,
+  implemented interfaces, compatibility and build budgets.
+- [Historical performance baseline](../docs/02-developer-guide/backend/performance-baseline.md):
+  dated measurements and their limits.
 
-```text
-Web/
-├── Frontend/   # React + TypeScript + Ant Design + ProComponents
-└── Backend/    # Flask APIs, auth, storage/index services
-```
+## Run locally
 
-`Frontend` builds the public portal and `/admin` management SPA into
-`Frontend/dist`. `Backend` serves the compiled React app, JSON APIs, auth,
-downloads, and storage/index services.
-
-Production frontend builds also emit verified `.br` and `.gz` variants for
-compressible static files. Flask negotiates those files from `Accept-Encoding`;
-the variant suffixes are not public URLs. Byte-range requests continue to
-address the identity representation unless the client explicitly rejects it.
-
-Common commands:
+Use Windows PowerShell from the repository root with working Node.js, Python
+and npm. Prepare `Web/Backend/config.json`, artifact storage and the Backend
+SQLite database for the intended environment before starting. `-Storage` only
+overrides artifacts; it does not isolate configuration or accounts. The default
+Backend host binds all interfaces.
 
 ```powershell
-.\Web\Run-Web.bat
-
-# Deploy the latest develop branch to the NAS and verify the live service.
-.\Web\Deploy-Nas.bat
-
-# Inspect the pending NAS update without changing production files.
-.\Web\Deploy-Nas.ps1 -DryRun
-
-# Rebuild and restart even when the NAS commit is already current.
-.\Web\Deploy-Nas.ps1 -Force
-
-cd Web/Frontend
-npm install
-npm run build
-
-cd ../Backend
-python app.py --port 9998
+# May install dependencies, write build/runtime data, and open a browser.
+.\Web\Run-Web.ps1
 ```
 
-`Deploy-Nas.ps1` defaults to the SSH alias `cv-publish`, the production task
-`\ColorVision\ColorVisionWeb`, and port `9998`. Override `-SshTarget`,
-`-RepoPath`, `-StoragePath`, `-TaskPath`, `-TaskName`, or `-Port` when another
-host uses a different layout. Each deployment preserves the production config,
-SQLite database, and previous frontend build under
-`D:\ColorVision\web-deploy-backups`, then records the result in
-`D:\ColorVision\web-deploy-history.jsonl`.
+Existing dependencies and documentation output are reused by the local wrapper;
+source changes do not necessarily refresh them. Full behavior and skip options
+are described in the startup guide linked above.
 
-`-DryRun` remains read-only when remote Git inspection fails: it returns a
-`DRY_RUN_ERROR` without starting recovery or adding a deployment-history row.
-Origin inspection and fetch have a 45-second hard timeout by default, disable
-interactive credential prompts, and stop the complete native process tree on
-timeout. Override the bound with `-GitNetworkTimeoutSeconds` (5-600 seconds).
-Normal origin deployment fetches once, then fast-forwards from the fetched
-`origin/<branch>` ref instead of opening a second connection during `pull`.
-When origin remains unavailable, create a verified transport bundle and pass
-its NAS path with `-RemoteGitBundle`.
-The SSH transport sends the encoded remote script as bounded newline-delimited
-chunks followed by an explicit terminator. Its loader consumes each chunk
-instead of waiting for stdin EOF, while the client closes stdin after the write
-so Windows OpenSSH cannot retain bytes or leave an abandoned PowerShell session.
+## Deploy an existing NAS service
 
-Deployment history keeps the newest 500 valid JSON records by default. Each
-write validates the existing file and replaces it atomically; malformed legacy
-content is preserved for manual repair instead of being silently discarded.
-History-write errors are reported without rolling back an otherwise healthy
-service. Override the limit with `-KeepHistoryRecords` (minimum 20). The
-administrator-only `/admin/deployments` page provides latest-first status,
-commit, verification, and retention summaries without exposing NAS paths,
-server names, runtime log paths, or raw deployment errors.
+`Deploy-Nas.ps1` requires an existing Windows SSH target, checked-out repository,
+production configuration/database, runtime executables and scheduled task. It
+is not a machine bootstrap script. The default target is `cv-publish`, task is
+`\ColorVision\ColorVisionWeb`, and port is `9998`; runtime executable paths are
+also fixed in its remote template and must match the target machine.
 
-After a deployment passes tests, process verification, health, and readiness,
-the backup history keeps the newest 10 successful deployments and 3 failed
-deployments by default. The current backup, failed evidence within that window,
-unexpected directory names, and directories without a deployment status marker
-are never removed. Override the bounded history with
-`-KeepSuccessfulBackups` (minimum 2) and `-KeepFailedBackups` (minimum 1).
+```powershell
+# Read-only deployment inspection over SSH; does not build or restart.
+.\Web\Deploy-Nas.ps1 -DryRun
+```
 
-Successful deployments and healthy already-current checks also bound
-`D:\ColorVision\web-deploy-bundles` to the newest 3 verified transport bundles
-by default. A bundle is eligible only when it is a direct regular file with the
-expected `ColorVision-Web-<commit>...bundle` name, passes `git bundle verify`,
-exposes exactly one `HEAD`, and that HEAD is an ancestor of the deployed commit.
-The bundle used by the current deployment is always protected. Unexpected,
-unverified, HEAD-less, divergent, and reparse-point files are preserved for
-manual inspection. Override the limit with `-KeepGitBundles` (minimum 1);
-cleanup results and errors are recorded under `git_bundle_retention` without
-turning an otherwise healthy deployment into a rollback.
+Formal deployment changes the remote checkout, dependencies and frontend,
+restarts the service, and can remove eligible old backups/bundles. Use the
+complete deployment guide before running it. `-SkipTests` still runs frontend
+tests. Automatic failure recovery does not restore Git, dependencies or SQLite,
+and is conditional on listener/frontend state. Keep configuration/database
+backups private and inspect the returned evidence rather than assuming that a
+backup or a deployment-history entry proves recovery.
 
-Production stdout, stderr, startup diagnostics, and background-thread errors are
-captured under `D:\ColorVision\Logs\Web\ColorVisionWeb.log`. The runtime keeps
-five rotated 10 MB backups, and NAS deployment verifies that the new process ID
-appears in the active log before reporting success.
+When this directory is delivered separately, use the matching repository's
+documentation for the full procedures; relative documentation links require
+that checkout.

@@ -44,6 +44,22 @@ namespace ColorVision.Engine.Templates.POI
             return IsConvex(result, signedArea);
         }
 
+        public static bool TryGetCollapsedPoint(IReadOnlyList<Point> corners, out Point point)
+        {
+            point = default;
+            if (corners == null || corners.Count != 4)
+                return false;
+            if (corners.Any(corner => !double.IsFinite(corner.X) || !double.IsFinite(corner.Y)))
+                return false;
+
+            Point center = new(corners.Average(corner => corner.X), corners.Average(corner => corner.Y));
+            if (!corners.All(corner => (corner - center).LengthSquared <= Epsilon * Epsilon))
+                return false;
+
+            point = center;
+            return true;
+        }
+
         public static List<Point> CreateQuadrilateralGrid(IReadOnlyList<Point> corners, int rows, int columns)
         {
             ArgumentNullException.ThrowIfNull(corners);
@@ -52,16 +68,14 @@ namespace ColorVision.Engine.Templates.POI
             if (corners.Count != 4)
                 throw new ArgumentException("四边形必须包含四个角点。", nameof(corners));
 
-            double rowStep = rows > 1 ? 1.0 / (rows - 1) : 0;
-            double columnStep = columns > 1 ? 1.0 / (columns - 1) : 0;
             List<Point> points = new(rows * columns);
 
             for (int row = 0; row < rows; row++)
             {
-                double v = row * rowStep;
+                double v = rows == 1 ? 0.5 : (double)row / (rows - 1);
                 for (int column = 0; column < columns; column++)
                 {
-                    double u = column * columnStep;
+                    double u = columns == 1 ? 0.5 : (double)column / (columns - 1);
                     points.Add(new Point(
                         (1 - v) * (1 - u) * corners[0].X +
                         (1 - v) * u * corners[1].X +
@@ -75,6 +89,54 @@ namespace ColorVision.Engine.Templates.POI
             }
 
             return points;
+        }
+
+        public static bool TryGetAutoFitSize(IReadOnlyList<Point> corners, int rows, int columns, GraphicTypes pointType, out Size size)
+        {
+            size = default;
+            if (rows < 1 || columns < 1 || (pointType != GraphicTypes.Circle && pointType != GraphicTypes.Rect))
+                return false;
+            if (!TryNormalizeQuadrilateral(corners, out List<Point> points))
+                return false;
+
+            // Estimate one sampling window from the opposing edges and the grid counts.
+            double width = ((points[1] - points[0]).Length + (points[2] - points[3]).Length) / 2 / columns;
+            double height = ((points[3] - points[0]).Length + (points[2] - points[1]).Length) / 2 / rows;
+            bool isCircle = pointType == GraphicTypes.Circle;
+            if (isCircle)
+                width = height = Math.Min(width, height);
+            if (!double.IsFinite(width) || !double.IsFinite(height) || width > int.MaxValue || height > int.MaxValue)
+                return false;
+
+            bool Fits(double scale) => isCircle
+                ? TryOffsetForCircle(points, width * scale / 2, DrawingGraphicPosition.Internal, out _)
+                : TryOffsetForRectangle(points, width * scale, height * scale, DrawingGraphicPosition.Internal, out _);
+
+            double scale = 1;
+            if (!Fits(scale))
+            {
+                // Skewed areas and singleton grids may need smaller windows. Keep a nonzero
+                // center-layout area so the existing Internal placement remains drawable.
+                double lower = 0;
+                double upper = 1;
+                for (int iteration = 0; iteration < 48; iteration++)
+                {
+                    double middle = (lower + upper) / 2;
+                    if (Fits(middle))
+                        lower = middle;
+                    else
+                        upper = middle;
+                }
+                scale = lower;
+            }
+
+            width = isCircle ? 2 * Math.Floor(width * scale / 2) : Math.Floor(width * scale);
+            height = isCircle ? width : Math.Floor(height * scale);
+            if (width < 1 || height < 1 || !Fits(1))
+                return false;
+
+            size = new Size(width, height);
+            return true;
         }
 
         public static bool TryOffsetForCircle(IReadOnlyList<Point> corners, double radius, DrawingGraphicPosition position, out List<Point> result)
@@ -135,7 +197,7 @@ namespace ColorVision.Engine.Templates.POI
 
             if (position == DrawingGraphicPosition.Internal)
             {
-                if (Math.Abs(offsetArea) >= Math.Abs(originalArea) || !IsInside(corners, offsetCorners, orientation))
+                if (Math.Abs(offsetArea) >= Math.Abs(originalArea) || !IsInsideShiftedEdges(edges, offsetCorners, orientation))
                     return false;
             }
             else if (Math.Abs(offsetArea) <= Math.Abs(originalArea))
@@ -160,15 +222,14 @@ namespace ColorVision.Engine.Templates.POI
             return true;
         }
 
-        private static bool IsInside(IReadOnlyList<Point> polygon, IReadOnlyList<Point> points, double orientation)
+        private static bool IsInsideShiftedEdges(IReadOnlyList<ShiftedEdge> edges, IReadOnlyList<Point> points, double orientation)
         {
             foreach (Point point in points)
             {
-                for (int i = 0; i < polygon.Count; i++)
+                foreach (ShiftedEdge edge in edges)
                 {
-                    Vector edge = polygon[(i + 1) % polygon.Count] - polygon[i];
-                    Vector toPoint = point - polygon[i];
-                    if (Cross(edge, toPoint) * orientation < -Epsilon)
+                    Vector toPoint = point - edge.Origin;
+                    if (Cross(edge.Direction, toPoint) * orientation < -Epsilon)
                         return false;
                 }
             }

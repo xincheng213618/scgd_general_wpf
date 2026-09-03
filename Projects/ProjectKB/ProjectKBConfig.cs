@@ -80,6 +80,8 @@ namespace ProjectKB
         private bool _IgnoreAutoRunWhenSnEmpty;
 
         [Browsable(false)]
+        [JsonIgnore]
+        // Search selections belong to this application session, not the saved configuration.
         public KBProductionStatisticsWindowState ProductionStatisticsWindowState { get; set; } = new();
 
         [JsonIgnore]

@@ -11,6 +11,8 @@ from urllib.parse import quote
 
 import pefile
 
+from shared_manifest import default_cache_dir, manifest_url, read_manifest, resolve_remote_manifest
+
 
 EXTRA_FILES = ["README.md", "CHANGELOG.md", "manifest.json", "PackageIcon.png"]
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -515,8 +517,11 @@ def resolve_src_dir(src_dir: Path | None, project_file: Path | None, configurati
 def resolve_shared_files_path(shared_files: Path | None) -> Path:
     candidates: list[Path] = []
     if shared_files:
-        candidates.append(shared_files.expanduser().resolve())
-    candidates.append((SCRIPT_DIR / "shared_files.json").resolve())
+        candidate = shared_files.expanduser().resolve()
+        if not candidate.is_file():
+            raise FileNotFoundError(f"Explicit shared files manifest not found: {candidate}")
+        return candidate
+    candidates.append(DEFAULT_SHARED_FILES.resolve())
     candidates.append((Path.cwd() / "shared_files.json").resolve())
 
     checked: list[str] = []
@@ -576,14 +581,7 @@ def run_build_step(
 
 
 def load_shared_files_manifest(file_path: Path) -> set[str]:
-    manifest_data = load_json_file(file_path)
-    if isinstance(manifest_data, dict):
-        shared_files = manifest_data.get("shared_files", [])
-    elif isinstance(manifest_data, list):
-        shared_files = manifest_data
-    else:
-        raise RuntimeError(f"Unsupported shared_files.json format: {file_path}")
-    return {normalize_relative_path(path_value) for path_value in shared_files}
+    return read_manifest(file_path)
 
 
 def find_extra_files(plugin_root: Path) -> list[Path]:
@@ -651,7 +649,12 @@ def main() -> None:
     parser.add_argument("--project-file", help="Plugin .csproj path used to infer plugin root and output directory")
     parser.add_argument("--plugin-root", help="Plugin project root used to copy README/CHANGELOG/manifest/icon")
     parser.add_argument("--plugin-name", help="Plugin name used for output file name and upload folder")
-    parser.add_argument("--shared-files", help="Path to shared_files.json. If omitted, package_cvxp.py looks next to itself first.")
+    parser.add_argument("--shared-files", help="Explicit local shared manifest; overrides remote lookup and must exist.")
+    parser.add_argument("--target-host-version", help="Exact four-part ColorVision version whose shared manifest should be downloaded")
+    parser.add_argument("--shared-files-url", help="Override the public versioned manifest download URL (requires --target-host-version)")
+    parser.add_argument("--shared-files-cache-dir", help="Manifest cache directory (default: LOCALAPPDATA/ColorVision/PluginKit/shared-files)")
+    parser.add_argument("--offline", action="store_true", help="Use only a matching cached manifest or an explicit local manifest")
+    parser.add_argument("--check-shared-files", action="store_true", help="Resolve and validate only the shared manifest; no build, packaging or upload")
     parser.add_argument("--output-dir", help=f"Output directory for the .cvxp file (default: {DEFAULT_OUTPUT_DIR})")
     parser.add_argument("-c", "--configuration", help=f"Build configuration used with --project-file (default: {DEFAULT_CONFIGURATION})")
     parser.add_argument("-f", "--framework", help=f"Target framework used with --project-file (default: {DEFAULT_FRAMEWORK})")
@@ -697,6 +700,30 @@ def main() -> None:
     config_keep_package = bool(config_data.get("keepPackageAfterUpload", True if config_data else False))
     keep_package_after_upload = args.keep_package or config_keep_package
 
+    host_version = args.target_host_version or config_data.get("targetHostVersion")
+    remote_manifest_url = args.shared_files_url or config_data.get("sharedFilesUrl")
+    manifest_cache = resolve_path_from_base(args.shared_files_cache_dir or config_data.get("sharedFilesCacheDir"), config_base_dir) or default_cache_dir()
+
+    # --build-only deliberately needs neither a network request nor a shared manifest.
+    shared_files_path = None
+    if not args.build_only or args.check_shared_files:
+        if shared_files_value:
+            shared_files_path = resolve_shared_files_path(resolve_path_from_base(shared_files_value, config_base_dir))
+            read_manifest(shared_files_path, host_version=host_version, framework=framework, platform=platform)
+        elif host_version:
+            url = remote_manifest_url or manifest_url(upload_url, host_version, framework, platform)
+            shared_files_path = resolve_remote_manifest(url, manifest_cache, host_version, framework, platform, offline=args.offline)
+        elif remote_manifest_url or args.offline:
+            raise ValueError("Remote/offline manifest lookup requires targetHostVersion; a NuGet version is not a host version.")
+        else:
+            shared_files_path = resolve_shared_files_path(None)
+            print("Warning: no targetHostVersion configured; using the legacy local/embedded manifest without host compatibility verification.")
+        shared_files = load_shared_files_manifest(shared_files_path)
+        if args.check_shared_files:
+            print(f"Shared files manifest: {shared_files_path}")
+            print(f"Shared file count: {len(shared_files)}")
+            return
+
     should_build = args.build or args.build_only or (auto_mode and config_build_enabled)
     if should_build:
         run_build_step(
@@ -724,7 +751,6 @@ def main() -> None:
         project_file,
         resolve_path_from_base(plugin_root_value, config_base_dir),
     )
-    shared_files_path = resolve_shared_files_path(resolve_path_from_base(shared_files_value, config_base_dir))
     output_dir = resolve_path_from_base(output_dir_value, config_base_dir) or DEFAULT_OUTPUT_DIR.resolve()
     output_dir_existed_before, output_dir_had_entries_before = capture_directory_state(output_dir)
 
@@ -740,7 +766,6 @@ def main() -> None:
     if not version:
         raise RuntimeError(f"Cannot read version from: {dll_path}")
 
-    shared_files = load_shared_files_manifest(shared_files_path)
     output_file = output_dir / f"{project_name}-{version}.cvxp"
     output_file, stripped_count, skipped_runtime_count = package_plugin(src_dir, plugin_root, shared_files, output_file, project_name)
 

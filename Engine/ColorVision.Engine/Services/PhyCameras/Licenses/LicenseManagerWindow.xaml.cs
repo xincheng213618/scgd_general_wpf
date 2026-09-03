@@ -1,6 +1,7 @@
 #pragma warning disable CA1805,CA1806,CA1822,CA1863,CS0219
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -50,7 +51,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
             DeleteSelectedCommand = new RelayCommand(a => DeleteSelected(), a => SelectedLicense != null);
             CopyLicenseCommand = new RelayCommand(a => CopyLicense(), a => SelectedLicense != null);
             GetCameraLicenseCommand = new RelayCommand(a=> GetCameraLicense());
-            GetSpectrumLicenseCommand = new RelayCommand(a => GetSpectrumLicense());
+            GetSpectrumLicenseCommand = new RelayCommand(async _ => await GetSpectrumLicenseAsync(), _ => !isDiscoveringSpectrometers);
 
             SaveToLincenseCommand = new RelayCommand(a=> SaveToLincense());
 
@@ -220,25 +221,26 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
             return 0;
         }
 
-        public void GetSpectrumLicense()
-        {
-            IntPtr Handle = Spectrometer.CM_CreateEmission(0, MyCallback);
-            int i = 0;
+        private bool isDiscoveringSpectrometers;
 
-            int iR = Spectrometer.CM_Emission_Init(Handle, 0,9600 );
-            int bufferLength = 1024;
-            StringBuilder stringBuilder = new StringBuilder(bufferLength);
-            cvColorVision.Spectrometer.CM_GetSpectrSerialNumber(Handle, stringBuilder);
-            Spectrometer.CM_Emission_Close(Handle);
-            Spectrometer.CM_ReleaseEmission(Handle);
-            string sn = stringBuilder.ToString();
-            if (string.IsNullOrWhiteSpace(sn))
+        public async Task GetSpectrumLicenseAsync()
+        {
+            if (isDiscoveringSpectrometers)
+                return;
+            isDiscoveringSpectrometers = true;
+            GetSpectrumLicenseCommand.RaiseCanExecuteChanged();
+            try
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.NoDeviceDetected, Properties.Resources.Spectrometer);
+                var results = await Task.Run(() => SpectrumDeviceDiscovery.Discover(0, Spectrometer.CM_Emission_GetAllSN));
+                foreach (SpectrumDiscoveryResult result in results)
+                    if (result.Error != null)
+                        log.Warn($"光谱仪搜索失败: Type={result.Type}, NativeResult={result.NativeResult}, Error={result.Error}");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), SpectrumDeviceDiscovery.FormatResults(results), Properties.Resources.Spectrometer);
             }
-            else
+            finally
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), stringBuilder.ToString(), Properties.Resources.Spectrometer);
+                isDiscoveringSpectrometers = false;
+                GetSpectrumLicenseCommand.RaiseCanExecuteChanged();
             }
         }
 

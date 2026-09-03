@@ -5,7 +5,6 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -28,7 +27,7 @@ public sealed class CopilotWebPageAttachmentAdmissionTests
     [InlineData("unchanged")]
     public void RefreshDuringImageAdmissionPreservesTheCapturedPageAndTheNewDraftPage(string update)
     {
-        RunOnSta(() =>
+        StaTest.Run(() =>
         {
             using var fixture = new Fixture(includeImage: true);
             using var context = new PausedOperationContext();
@@ -96,7 +95,7 @@ public sealed class CopilotWebPageAttachmentAdmissionTests
                     context.Complete(send);
                 SynchronizationContext.SetSynchronizationContext(previousContext);
             }
-        });
+        }, TimeSpan.FromSeconds(40), "The webpage admission test did not finish.");
     }
 
     [Theory]
@@ -106,7 +105,7 @@ public sealed class CopilotWebPageAttachmentAdmissionTests
     [InlineData("close", true)]
     public void AFinishedFetchDoesNotRestoreAnAbandonedPageAttachment(string transition, bool pageInitiallyExists)
     {
-        RunOnSta(() =>
+        StaTest.Run(() =>
         {
             using var fixture = new Fixture(editSource: transition == "cancel-edit", pageInitiallyExists: pageInitiallyExists);
             using var context = new PausedOperationContext();
@@ -203,7 +202,7 @@ public sealed class CopilotWebPageAttachmentAdmissionTests
                     context.Complete(fetch);
                 SynchronizationContext.SetSynchronizationContext(previousContext);
             }
-        });
+        }, TimeSpan.FromSeconds(40), "The webpage admission test did not finish.");
     }
 
     private static CopilotFetchedWebPageContent CreateUpdatedPage(string url) =>
@@ -379,20 +378,5 @@ public sealed class CopilotWebPageAttachmentAdmissionTests
         }
 
         public void Dispose() => _posted.Dispose();
-    }
-
-    private static void RunOnSta(Action action)
-    {
-        Exception? failure = null;
-        var thread = new Thread(() =>
-        {
-            try { action(); }
-            catch (Exception exception) { failure = exception; }
-        }) { IsBackground = true };
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        Assert.True(thread.Join(TimeSpan.FromSeconds(40)), "The webpage admission test did not finish.");
-        if (failure != null)
-            ExceptionDispatchInfo.Capture(failure).Throw();
     }
 }

@@ -2,8 +2,8 @@
 
 This vendored SDK was built from the official OpenCV 4.14.0 tags:
 
-- `opencv`: `0654a42e19215ef25b1d367d822f3c630447e7c7`
-- `opencv_contrib`: `a8e9acd62cabd30419dba83007f2ac0d07de5e2c`
+- [`opencv` 4.14.0](https://github.com/opencv/opencv/tree/4.14.0): `0654a42e19215ef25b1d367d822f3c630447e7c7`
+- [`opencv_contrib` 4.14.0](https://github.com/opencv/opencv_contrib/tree/4.14.0): `a8e9acd62cabd30419dba83007f2ac0d07de5e2c`
 - Generator: Visual Studio 18 2026, x64, shared libraries
 
 The important CMake options are:

@@ -27,6 +27,9 @@ namespace ColorVision.Database
             this.ApplyCaption();
         }
 
+        // Keep the exact parameterless signature used by already compiled project plugins.
+        public static void OpenWindow() => OpenWindow(null, null);
+
         public static void OpenWindow(Window? owner = null, IDatabaseCleanupSourceProvider? source = null)
         {
             if (source != null)

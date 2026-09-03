@@ -102,7 +102,6 @@ public sealed class ApplicationHotkeyIntegrationTests
         Assert.Equal(new Hotkey(Key.F, ModifierKeys.Control), Assert.Single(action.GetDefaultBindings()));
         Assert.False(string.IsNullOrWhiteSpace(action.Description));
         Assert.Equal(HotKeyKinds.Windows, action.Kinds);
-        Assert.NotEqual(new MenuCommandSearch().GuidId, new MenuContextualFind().GuidId);
     }
 
     [Fact]

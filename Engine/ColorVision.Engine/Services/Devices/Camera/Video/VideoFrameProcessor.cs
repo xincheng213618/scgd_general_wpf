@@ -1,5 +1,8 @@
 using ColorVision.Core;
+using ColorVision.ImageEditor.Abstractions;
+using ColorVision.ImageEditor.Realtime;
 using log4net;
+using OpenCvSharp;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -7,9 +10,20 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
-    internal readonly record struct VideoFrameProcessingRequest(FocusAlgorithm FocusAlgorithm, RoiRect Roi);
+    internal readonly record struct VideoFrameProcessingRequest(
+        bool EnableArticulation,
+        FocusAlgorithm FocusAlgorithm,
+        RoiRect Roi,
+        RealtimePseudoColorRequest? PseudoColor,
+        int Transform)
+    {
+        public bool NeedsProcessing => EnableArticulation || PseudoColor.HasValue;
+    }
 
-    internal readonly record struct VideoFrameProcessingResult(double Articulation);
+    internal readonly record struct VideoFrameProcessingResult(
+        double? Articulation,
+        HImage? PseudoImage,
+        RealtimePseudoColorRequest? PseudoColorRequest);
 
     internal sealed class VideoFrameProcessor : IDisposable
     {
@@ -52,7 +66,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         public void SubmitFrame(byte[] sourceBuffer, int length, int width, int height, int channels, int depth, int stride, VideoFrameProcessingRequest request)
         {
             ArgumentNullException.ThrowIfNull(sourceBuffer);
-            if (length <= 0 || length > sourceBuffer.Length || _disposed) return;
+            if (length <= 0 || length > sourceBuffer.Length || !request.NeedsProcessing || _disposed) return;
 
             unsafe
             {
@@ -65,7 +79,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public void SubmitFrame(IntPtr sourcePointer, int length, int width, int height, int channels, int depth, int stride, VideoFrameProcessingRequest request)
         {
-            if (sourcePointer == IntPtr.Zero || length <= 0 || _disposed) return;
+            if (sourcePointer == IntPtr.Zero || length <= 0 || !request.NeedsProcessing || _disposed) return;
             SubmitFrameCore(sourcePointer, length, width, height, channels, depth, stride, request);
         }
 
@@ -125,6 +139,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 {
                     if (_cts.IsCancellationRequested)
                     {
+                        DisposePseudoImage(result.PseudoImage);
                         break;
                     }
 
@@ -132,12 +147,72 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 }
                 catch
                 {
+                    DisposePseudoImage(result.PseudoImage);
                 }
             }
         }
 
         private static VideoFrameProcessingResult ProcessFrame(HImage frame, VideoFrameProcessingRequest request)
-            => new(OpenCVMediaHelper.M_CalArtculation(frame, request.FocusAlgorithm, request.Roi));
+        {
+            double? articulation = request.EnableArticulation
+                ? OpenCVMediaHelper.M_CalArtculation(frame, request.FocusAlgorithm, request.Roi)
+                : null;
+            HImage? pseudoImage = null;
+
+            if (request.PseudoColor is RealtimePseudoColorRequest pseudoRequest)
+            {
+                PseudoColorFrameRequest parameters = pseudoRequest.FrameRequest;
+                int ret = parameters.HasValidAutoRange
+                    ? OpenCVMediaHelper.ApplyPseudoColorAutoRange(frame, out HImage processedImage, parameters.Min, parameters.Max, parameters.ColormapTypes, parameters.Channel, parameters.DataMin, parameters.DataMax)
+                    : OpenCVMediaHelper.ApplyPseudoColor(frame, out processedImage, parameters.Min, parameters.Max, parameters.ColormapTypes, parameters.Channel);
+                if (ret == 0)
+                {
+                    try
+                    {
+                        ApplyTransform(processedImage, request.Transform);
+                        pseudoImage = processedImage;
+                    }
+                    catch
+                    {
+                        processedImage.Dispose();
+                        throw;
+                    }
+                }
+            }
+
+            return new VideoFrameProcessingResult(articulation, pseudoImage, request.PseudoColor);
+        }
+
+        internal static void ApplyTransform(HImage image, int transform)
+        {
+            if (transform == RealtimeFramePresenter.TransformNone || image.pData == IntPtr.Zero) return;
+
+            FlipMode flipMode = transform switch
+            {
+                RealtimeFramePresenter.TransformFlipX => FlipMode.X,
+                RealtimeFramePresenter.TransformFlipY => FlipMode.Y,
+                RealtimeFramePresenter.TransformFlipXY => FlipMode.XY,
+                _ => throw new ArgumentOutOfRangeException(nameof(transform), transform, "Unsupported realtime frame transform."),
+            };
+            MatType type = (image.depth, image.channels) switch
+            {
+                (8, 1) => MatType.CV_8UC1,
+                (8, 3) => MatType.CV_8UC3,
+                (8, 4) => MatType.CV_8UC4,
+                _ => throw new NotSupportedException($"Realtime pseudo color transform does not support {image.depth}-bit, {image.channels}-channel images."),
+            };
+
+            using Mat mat = Mat.FromPixelData(image.rows, image.cols, type, image.pData, image.stride);
+            Cv2.Flip(mat, mat, flipMode);
+        }
+
+        private static void DisposePseudoImage(HImage? image)
+        {
+            if (image is HImage pseudoImage)
+            {
+                pseudoImage.Dispose();
+            }
+        }
 
         private static void EnsureBuffer(ref HImage? buffer, ref int capacity, int width, int height, int channels, int depth, int stride, int requiredLength)
         {

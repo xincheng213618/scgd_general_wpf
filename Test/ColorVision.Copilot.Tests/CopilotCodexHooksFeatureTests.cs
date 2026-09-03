@@ -105,7 +105,7 @@ public sealed class CopilotCodexHooksFeatureTests
     }
 
     [Fact]
-    public void EffectiveHookSurfaceDrivesCheckpointCompatibilityAndDiagnostics()
+    public void EffectiveHookSurfaceDrivesCheckpointCompatibility()
     {
         var registry = new CopilotToolExecutionHookRegistry();
         using var registration = registry.Register(
@@ -131,40 +131,6 @@ public sealed class CopilotCodexHooksFeatureTests
             profile,
             capabilities,
             hookSurfaceSnapshot: enabledSurface);
-        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
-        {
-            ConfiguredHooksEnabled = false,
-            HasHooksEnabledOverride = true,
-            HooksEnabledSource = CopilotProjectInstructionConfigSources.CodexHome,
-        };
-        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-            new CopilotProjectInstructionSnapshot(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                options,
-                Array.Empty<CopilotProjectInstructionDocument>()),
-            hasActiveAgentRun: false);
-        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
-        {
-            ProfileLabel = "Profile",
-            Mode = CopilotAgentMode.Code,
-            CodexHooksEnabled = false,
-            HasCodexHooksEnabledOverride = true,
-            CodexHooksEnabledSourceLabel = options.HooksEnabledSourceLabel,
-        });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                ComposerMode = CopilotAgentMode.Code,
-                CodexConfigOptions = options,
-            });
-        string hooksReport = CopilotHookDiagnostics.Format(new CopilotHookDiagnosticSnapshot
-        {
-            HookSurface = enabledSurface,
-        });
 
         Assert.Contains(disabledSurface.Entries, entry => entry.SourceId == "builtin:write-tool-policy");
         Assert.DoesNotContain(disabledSurface.Entries, entry => entry.SourceId.StartsWith("extension:", StringComparison.OrdinalIgnoreCase));
@@ -175,13 +141,6 @@ public sealed class CopilotCodexHooksFeatureTests
         Assert.NotEqual(disabledSurface.Fingerprint, enabledSurface.Fingerprint);
         Assert.Equal(CopilotAgentCheckpointCompatibilityKind.Compatible, disabledCompatibility.Kind);
         Assert.Equal(CopilotAgentCheckpointCompatibilityKind.HookSurfaceDrift, enabledCompatibility.Kind);
-        Assert.Contains("Codex features.hooks：false", memoryReport, StringComparison.Ordinal);
-        Assert.Contains(options.HooksEnabledSourceLabel, memoryReport, StringComparison.Ordinal);
-        Assert.Contains("内置写入安全策略仍保留", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("模块扩展 Hook：关闭", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex features.hooks：false", debugReport, StringComparison.Ordinal);
-        Assert.Contains("checkpoint 按有效 Hook 面校验", debugReport, StringComparison.Ordinal);
-        Assert.Contains("mode sync", hooksReport, StringComparison.Ordinal);
     }
 
     [Fact]

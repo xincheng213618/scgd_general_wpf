@@ -24,7 +24,7 @@ One row represents one workflow execution attempt.
 
 `archived_flag`: `-2 Failed`, `-1 NotArchived`, `0 Pending`, `1 Archived`.
 
-Prefer `QueryFlowExecutionStats` for common period statistics. For a custom period:
+Prefer `QueryFlowExecutionStats` for application-local period statistics. The following SQL selects today in the database session time zone; for a different period or time zone, substitute explicit start/end timestamps:
 
 ```sql
 SELECT result_code, COUNT(*) AS execution_count, AVG(total_time) AS avg_duration_ms

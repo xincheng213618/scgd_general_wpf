@@ -2,97 +2,60 @@
 knowledge_id: "platform.security"
 knowledge_type: "topic"
 status: "current"
-summary: "区分全局粗粒度权限和独立RBAC模块，不承诺不存在的统一业务授权边界。"
-aliases: ["权限边界","安全架构","Authorization","PermissionMode"]
-code_paths: ["UI/ColorVision.Rbac","UI/ColorVision.Common"]
+summary: "区分应用管理员、RBAC会话与权限码、Windows服务身份及远程/工具授权；登录缓存和界面状态不能替代执行入口的权限检查。"
+aliases: ["权限边界", "安全架构", "应用管理员", "Windows管理员", "身份与权限", "授权入口", "鉴权入口"]
+code_paths: ["UI/ColorVision.Common/Authorizations", "UI/ColorVision.Rbac/RbacManager.cs", "UI/ColorVision.Rbac/Services/PermissionChecker.cs", "UI/ColorVision.Rbac/Services/Auth/AuthService.cs", "UI/ColorVision.Rbac/Services/SessionService.cs"]
 test_paths: []
-related: ["platform.architecture","platform.rbac"]
+related: ["platform.architecture", "platform.rbac", "ui.common", "ui.menus", "platform.service-host", "copilot.mcp-server", "delivery.backend-operations", "copilot.execution"]
 ---
 
-# 安全与权限控制
+# 权限边界与鉴权入口
 
-本章只描述当前仓库里已经落地的权限与会话实现，不再继续维护把 ColorVision 写成一套覆盖网络、数据、审计、认证全链路的通用安全白皮书。
+ColorVision 的权限判断分布在桌面入口、账户服务、本机权限代理、远程接口和工具执行器中。排查“为什么允许或拒绝这个操作”时，需要确认实际调用经过了哪一层；界面显示、登录缓存和同名的“管理员”不能替代执行入口的检查。
 
-## 当前真正存在的两层权限边界
+本页用于选择责任边界。具体比较规则、会话字段、协议验证和审批流程在各自主题维护，不在这里复制第二份契约。
 
-从代码看，当前安全相关能力主要分成两层：
+## 按实际入口查权限
 
-- `UI/ColorVision.Common/Authorizations/` 下的粗粒度 `PermissionMode`
-- `UI/ColorVision.Rbac/` 下的本地 RBAC 模块
+| 入口或问题 | 负责判断的模块 | 对应文档 |
+| --- | --- | --- |
+| 应用管理员、菜单和窗口访问 | 全局 `Authorization.Instance.PermissionMode`、AccessControl 以及具体命令/窗口中的显式检查 | [Common 权限帮助器](../../04-api-reference/ui-components/ColorVision.Common.md)、[菜单执行](../../04-api-reference/ui-components/menus.md) |
+| 用户登录、自动登录和登出 | RBAC 的 AuthService、SessionService 与登录/账户窗口；身份验证、缓存恢复和全局模式同步是不同步骤 | [RBAC 登录与会话](./rbac.md) |
+| 用户能否执行某个权限码 | RBAC PermissionChecker 查询角色权限并缓存结果；调用者仍需核对用户身份及检查位置 | [RBAC 权限检查](./rbac.md#权限检查) |
+| 本机服务、注册表、关联或安装维护 | ColorVisionServiceHost 的 Windows 调用身份、命令票据和业务参数规则 | [本机权限代理](../components/service-host.md) |
+| 入站 MCP 请求 | 本地 MCP server 的监听范围、认证、会话、能力白名单及二次确认 | [ColorVision 入站 MCP](../../02-developer-guide/core-concepts/colorvision-mcp.md) |
+| HTTP 运维中继与设备任务 | Backend Operations 的访问认证、设备签名和任务状态链 | [运维中继](../../02-developer-guide/backend/operations-relay.md) |
+| Copilot 工具执行 | 请求能力、工具权限、审批决定和执行瞬间的保护 | [Agent 执行与审批](../../02-developer-guide/core-concepts/copilot-agent-execution.md) |
 
-这两层不是互斥关系，而是并存。
+这些入口不会因为模块名称相近或共享同一界面就自动采用同一权限规则。协议已认证、工具已批准和业务执行完成也需要分别判断。
 
-## 第一层：全局粗粒度权限
+## 应用权限与 Windows 身份
 
-`Authorization.Instance.PermissionMode` 仍然是当前很多窗口和操作的第一道边界。
+`PermissionMode` 是应用内枚举，不是 Windows 用户组或进程提权状态。它提供 SuperAdministrator、Administrator、PowerUser、User、Guest，数值越小权限越高；多个管理入口用它决定是否允许继续。
 
-它提供的级别包括：
+`Authorization.Instance` 是可设置的全局配置对象，RBAC 的初始化和登录路径会更新其中的模式。看到 Administrator 不能证明已验证有效 SessionToken、拥有指定 RBAC 权限码，或当前进程具有 Windows 管理员令牌。应用管理员与 ServiceHost 的 Windows 调用身份应分别检查。
 
-- `SuperAdministrator`
-- `Administrator`
-- `PowerUser`
-- `User`
-- `Guest`
+AccessControl 的方法特性检查和执行帮助器使用不同判据；类特性、委托包装、直接调用和命令 CanExecute 也不具有自动统一拦截效果。精确规则与空实例行为见 [Common 权限契约](../../04-api-reference/ui-components/ColorVision.Common.md#粗粒度权限的判据不是统一授权拦截)，不要仅因方法名包含 Permission 就认为所有调用路径等价。
 
-很多 UI 入口当前直接用这层做判断，例如“只有管理员可以打开用户管理和权限管理窗口”。
+## 本地账户与权限码的范围
 
-所以如果只看 RBAC 服务层，很容易高估当前系统已经完成的细粒度接入范围。
+`UI/ColorVision.Rbac/` 是主程序登记的内置账户模块，使用本地 SQLite 和 SqlSugar CodeFirst 管理用户、角色、权限、会话及相关审计。构造 RbacManager 会初始化存储和服务，不能把调用 GetInstance 当成没有副作用的身份查询。
 
-## 第二层：独立的本地 RBAC 模块
+登录结果缓存、会话有效性、用户启停状态和权限码是不同证据。当前初始化还可能从结构有效的缓存恢复模式，缺少这种缓存时仍设置 Administrator；这是[RBAC 主题记录的现有限制](./rbac.md)，不能把它作为已认证或默认应授权的依据。自动登录失败、登出撤销、缓存失效和落盘结果也应按该主题分别核对。
 
-更细的用户、角色、权限、会话和审计能力，当前集中在 `UI/ColorVision.Rbac/`。
+RBAC 的 AuditLogService 记录其接入的账户与权限动作。其它模块可能有自己的日志、任务记录或审批证据；存在 RBAC 审计表不表示所有应用操作都被统一审计。数据库位置、表结构和会话期限继续以 RBAC 主题为准。
 
-这个子系统当前的特点是：
+## 定位一次允许或拒绝
 
-- 使用本地 SQLite 数据库
-- 数据库默认位于 `%AppData%/ColorVision/Config/Rbac.db`
-- 通过 SqlSugar CodeFirst 初始化表结构
-- 提供登录、用户管理、权限管理、会话和审计服务
+1. 确认入口：用户点击菜单、应用搜索执行命令、直接调用服务、pipe/HTTP 请求或 Copilot 工具调用。不要用某个按钮的状态替代实际调用路径。
+2. 找到操作执行前的检查代码，辨别它读取的是全局模式、用户权限码、会话、Windows 身份、协议凭据还是单次审批；确认其它入口是否也经过它。
+3. 核对身份和权限数据的来源、缓存与更新时机。需要当前有效会话时，不能以登录结果字段齐全或某个应用权限级别代替验证。
+4. 分别记录拒绝、审批、命令接纳及业务完成证据；网络连接、窗口打开或成功日志不能跨过后续责任边界。
 
-它是主程序注册的内置账户与权限模块，而不是整个产品所有安全能力的唯一总入口。
+新增或调整操作入口时，沿以上路径确认必要检查实际覆盖执行点，并按所属模块的契约处理失败。不能仅增加特性、隐藏菜单或启用某个账户服务，就宣称整个产品已接入统一鉴权、传输保护或审计。
 
-## 当前安全章最该关注什么
+## 验证范围
 
-### 登录与会话
+本页是跨模块定位概览，没有声明一套覆盖全产品的权限测试。Common、RBAC、ServiceHost、MCP 和 Copilot 的源码与测试入口随各自主题维护；只验证 UI 可见性或模块注册不足以证明未经授权的直接调用会被拒绝。
 
-当前 `AuthService` 负责用户名密码登录和基于 SessionToken 的自动登录恢复，`SessionService` 负责创建、校验、撤销和清理会话。
-
-这部分是当前代码里最明确的认证链。
-
-### 角色与权限
-
-当前 `RbacManager` 会初始化角色、权限、用户和角色-权限映射，并通过 `PermissionChecker` 做细粒度权限码校验。
-
-### 审计
-
-当前 `AuditLogService` 已经存在，但它是围绕 RBAC 相关动作记录本地审计日志，而不是一套覆盖整个应用所有操作的全局审计平台。
-
-## 当前没有证据支撑的内容
-
-以下内容不应继续在本章里作为既有能力陈述：
-
-- 多因素认证
-- 全局网络通信加密策略
-- 证书验证体系
-- IP 白名单
-- 防火墙策略
-- 覆盖所有模块的统一审计与拦截链
-
-如果将来这些能力真的落地，应基于实际代码另开专题页，而不是提前写进架构概览。
-
-## 推荐阅读顺序
-
-推荐按这条线读：
-
-1. `UI/ColorVision.Common/Authorizations/PermissionMode.cs`
-2. `UI/ColorVision.Common/Authorizations/AccessControl.cs`
-3. `UI/ColorVision.Rbac/RbacManager.cs`
-4. `UI/ColorVision.Rbac/Services/Auth/AuthService.cs`
-5. `UI/ColorVision.Rbac/Services/SessionService.cs`
-6. `UI/ColorVision.Rbac/Services/PermissionChecker.cs`
-7. `UI/ColorVision.Rbac/UserManagerWindow.xaml.cs`
-8. `UI/ColorVision.Rbac/PermissionManagerWindow.xaml.cs`
-
-## 说明
-
-- 本页只保留当前实现里可验证的权限与会话边界，不再继续维护泛化安全能力清单。
+文档审查可读取代码和测试，核对入口与责任关系。实际创建用户、修改角色、调用特权服务或执行工具时，还需按操作范围使用获授权的隔离环境；示例与文档本身不授予操作权限。

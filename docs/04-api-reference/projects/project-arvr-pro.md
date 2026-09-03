@@ -2,28 +2,30 @@
 knowledge_id: "projects.arvr-pro"
 knowledge_type: "reference"
 status: "current"
-summary: "ARVRPro 流程组、Recipe、Socket、输出与历史结果图原图到保存原图再到标记图的回退契约。"
-aliases: ["ARVR 历史原图删了还能看结果吗","保存结果图会不会重复画标记","ProjectARVRPro","ResultImageFileCandidates","SavedSourceImageFileName","SavedResultImageFileName"]
-code_paths: ["Projects/ProjectARVRPro/ARVRWindow.xaml.cs","Projects/ProjectARVRPro/ResultImagePresentation.cs","Projects/ProjectARVRPro/ProjectARVRReuslt.cs","Projects/ProjectARVRPro/ViewResultManager.cs","Projects/ProjectARVRPro/Services/SocketControl.cs"]
-test_paths: ["Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj","Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs","Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs"]
-related: ["projects.index","projects.arvr-pro-demo","projects.capabilities"]
+summary: "ARVRPro 项目入口、Socket 自动化、输出与历史结果查询；流程组、实例 Recipe 和 Demura 各有对应操作主题。"
+aliases: ["ARVR 历史原图删了还能看结果吗","保存结果图会不会重复画标记","ProjectARVRPro","ResultImageFileCandidates","SavedSourceImageFileName","SavedResultImageFileName","结果统计","统计日期记忆","CycleTimeStatisticsWindow","ARVR 项目"]
+code_paths: ["Projects/ProjectARVRPro/ARVRWindow.xaml.cs","Projects/ProjectARVRPro/ResultImagePresentation.cs","Projects/ProjectARVRPro/ProjectARVRReuslt.cs","Projects/ProjectARVRPro/ViewResultManager.cs","Projects/ProjectARVRPro/Services/SocketControl.cs","Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs","Projects/ProjectARVRPro/Services/RunAllSocket.cs","Projects/ProjectARVRPro/SocketRelay/","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml.cs","Projects/ProjectARVRPro/ResultStatisticsTheme.xaml","Projects/ProjectARVRPro/ResultStatistics.cs","Projects/ProjectARVRPro/ProjectARVRProConfig.cs"]
+test_paths: ["Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj","Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs","Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs","Test/ProjectARVRPro.Tests/ResultStatisticsTests.cs"]
+related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol","projects.arvr-pro-processes","projects.arvr-pro-demura","projects.capabilities"]
 ---
 
 # ProjectARVRPro
 
 `Projects/ProjectARVRPro/` 是当前主力 AR/VR 专业测试项目包，运行时以 `ProjectARVRPro.dll` 加载。维护时优先看流程组、Socket 自动化、切图、Recipe 和输出格式。
 
-## 先查什么
+## 按任务查找
 
 | 现场问题 | 第一检查点 |
 | --- | --- |
 | 项目包没出现 | `manifest.json`、`ProjectARVRPro.dll`、插件目录、主程序版本要求 |
+| 配置流程、Recipe 或解析映射 | [流程组与解析配置](./project-arvr-pro-processes.md) |
 | 初始化后没有下一步 | 当前 `ProcessGroup` 是否有启用的 `ProcessMeta` |
-| 外部系统触发无反应 | Socket 服务、`EventName`、项目 handler 是否加载 |
+| 外部系统触发无反应 | [TCP 协议、请求字段与错误排查](./project-arvr-pro-protocol.md) |
 | 切图失败 | `PictureSwitchConfig`、雷鸟串口、返回值和超时 |
 | RunAll 只跑一部分 | `AllowTestFailures`、Flow 模板名、切图和预处理错误 |
 | CSV 或 Socket 字段不对 | `UseLegacyARVROutput`、标准 CSV、Legacy 输出、客户 XLSX |
 | AOI 流程卡住 | 主 Socket、`SocketRelay`、`AOITestSwitchImageComplete` |
+| Demura 烧录失败 | [PG 连接、GECS 指令及烧录诊断](./project-arvr-pro-demura.md) |
 | 重启后配置丢失 | `%APPDATA%/ColorVision/Config/ProcessGroups.json` 和 Recipe 配置 |
 
 ## 项目边界和版本
@@ -33,11 +35,11 @@ related: ["projects.index","projects.arvr-pro-demo","projects.capabilities"]
 | `ProjectARVRPro` | JSON `EventName` | `ProcessGroup` + `ProcessMeta` | 切图、Legacy 输出、SocketRelay |
 | `ProjectLUX` | 文本命令 | 流程组 + `SocketCode` | 文本返码、客户命令映射 |
 
-客户项目判定逻辑应留在 `Projects/ProjectARVRPro/Process/` 和 Recipe 体系里，不要回写到 Engine 通用模板或 UI 基础库。插件版本和最低宿主要求以 [manifest.json](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Projects/ProjectARVRPro/manifest.json) 为准，程序集版本以 [ProjectARVRPro.csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Projects/ProjectARVRPro/ProjectARVRPro.csproj) 的 `VersionPrefix` 为准；发包前确认二者同步。
+客户项目判定逻辑应留在 `Projects/ProjectARVRPro/Process/` 和 Recipe 体系里，不要回写到 Engine 通用模板或 UI 基础库。手工维护项目 `ProjectARVRPro.csproj` 的 `VersionPrefix`；打包器从主 DLL 的文件版本生成 manifest 版本，不手工同步 `manifest.json`。最低宿主要求读取 manifest 的 `requires`。
 
 ## 主链路
 
-外部系统发送 `ProjectARVRInit`，或用户在窗口输入 SN 后，`ARVRWindow` 选择当前 `ProcessGroup` 并找到下一个启用的 `ProcessMeta`。步骤启用 `PictureSwitchConfig` 时先切图，再运行绑定的 FlowEngine 模板。对应 `IProcess.Execute(ctx)` 读取 Engine 结果并应用 Recipe，最后写入 `ObjectiveTestResult`，按配置保存 SQLite、CSV、Legacy CSV、客户 XLSX，并通过 Socket 返回下一步或最终结果。
+外部系统发送 `ProjectARVRInit`，或用户在窗口输入 SN 后，`ARVRWindow` 选择当前 `ProcessGroup` 并找到下一个启用的 `ProcessMeta`。步骤启用 `PictureSwitchConfig` 时先切图，再运行绑定的 FlowEngine 模板。该次启动选定的处理实例通过 `IProcess.Execute(ctx)` 读取 Engine 结果并应用自身 Recipe，最后写入 `ObjectiveTestResult`，按配置保存 SQLite、CSV、Legacy CSV、客户 XLSX，并通过 Socket 返回下一步或最终结果。
 
 ## 关键目录和配置
 
@@ -55,7 +57,7 @@ related: ["projects.index","projects.arvr-pro-demo","projects.capabilities"]
 | `ViewResultManager.cs` | 本地结果、SQLite、CSV 和输出配置 |
 | `TestResultViewWindow.xaml.cs` | 结果查看和导出 |
 
-`ProcessGroup` 是产品或场景方案，`ProcessMeta` 是单步测试。每步至少确认 `FlowTemplate`、`ProcessTypeFullName`、`IsEnabled`、`ConfigJson` 和 `PictureSwitchConfig`；复制流程组时重新核对 `SendCommand`、`ExpectedResponse`、`TimeoutMs`、`SuccessDelayMs`。
+流程字段、内置处理类型、解析映射的优先级、实例 Recipe、切图默认值及配置迁移统一见[流程与解析配置](./project-arvr-pro-processes.md)。`ProcessGroup` 决定执行顺序，独立的 `ResultParserMetas` 提供解析映射，不额外加入 RunAll。
 
 ## Socket 自动化
 
@@ -69,7 +71,7 @@ ARVRPro 通过 `ColorVision.SocketProtocol` 的 JSON 模式接入外部系统。
 | `RunAll` | 一键执行当前组内启用步骤 |
 | `AOITestSwitchImageComplete` | AOI 切图完成信号，经 Relay 回给 Flow |
 
-AOI 相关流程还要看 `SocketRelay/`。只连通主 Socket 端口不代表 Relay 已经可用。
+详细请求与响应、索引约定、状态码、并发限制及 AOI 中转见 [TCP 通讯协议](./project-arvr-pro-protocol.md)，可运行的客户端示例见 [Integration Demo](./project-arvr-pro-integration-demo.md)。
 
 ## 输出和兼容
 
@@ -90,6 +92,18 @@ AOI 相关流程还要看 `SocketRelay/`。只连通主 Socket 端口不代表 R
 `ARVRWindow.xaml.cs` 负责实际加载、请求版本仲裁和 `RenderResultImage` / `ShowSavedResultImage` 分流。两个保存路径是 `ProjectARVRReuslt` 的可空列；`ViewResultManager` 通过现有 `CodeFirst.InitTables<ProjectARVRReuslt, ObjectiveTestResultRecord>()` 为旧库补列，不能要求用户删库或手工编辑 SQLite。旧磁盘 PNG 不会被自动扫描回填；只有实际成功导出的通道才更新对应路径。
 
 验证入口：`Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs` 覆盖候选顺序、缺失/重复路径、首图加载失败后继续及标记图不重复绘制契约；`ResultJsonPayloadStorageTests.cs` 覆盖结果持久化相关兼容。自动测试不等于已验证现场历史文件仍存在，现场排查还须只读核对记录路径与文件可读性。
+
+## 结果统计与查询记忆
+
+`CycleTimeStatisticsWindow` 提供首页指标与 CT 趋势、批次记录及流程查询三个页面。界面使用与启动恢复窗口相同的主题调色板、标题层级和弱边框圆角卡片；样式在项目包本地的 `ResultStatisticsTheme.xaml` 中定义，不依赖宿主 `ColorVision` 程序集的资源。筛选区在窗口变窄时换行，表格保留分页、虚拟化、右键操作和详情入口。
+
+- 软件每次重新启动后，三个页面默认“按天／今天”，筛选文本和结果条件回到初始状态。同一次软件运行中关闭、重新打开统计窗口，保留当前标签、周期、日期和筛选条件。
+- `ProjectARVRProConfig.ResultStatisticsWindowState` 仅作为运行内状态，标注 `[JsonIgnore]`；旧配置 JSON 中的同名字段不再恢复，关闭统计窗口也不会为查询条件写入配置。此规则只涉及查询条件，不会删除或截断历史结果数据。
+- 手动切换仍支持按天、按周、按月和全部。按天使用所选日期的 `00:00` 到次日 `00:00`，按周使用周一到下周一，按月使用月初到下月初，统一为包含起点、不含终点的区间；不是滚动 24 小时或最近 7 天。
+- 各页的“今天／本周／本月”按钮按当前周期回到本周期并刷新查询；切到“全部”时隐藏日期导航，按钮显示“全部”。已有 SN、流程名和结果筛选不会被快捷返回清空，需要清空时使用“重置”。
+- 首页与批次记录按整组结束时间统计，流程查询按流程 `CreateTime` 统计，不能把跨午夜完成的整组记录误算到开始日。首页“今日产量”和“本小时产量”是所选查询范围中落入当前日期/小时的子集；查看不包含今天的历史范围时这两个值为零。
+
+验证入口：`ResultStatisticsTests.cs` 覆盖自然周期、日期前后切换、分页、配置 JSON 忽略与运行内状态，以及三个查询在午夜的包含/排除边界。测试使用临时 SQLite；界面布局另需检查浅色/深色、最小窗口宽度、日期弹出日历和筛选操作。只加载 XAML 的合成预览不能替代真实窗口的查询与重开验证。
 
 ## 验收
 

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-08-24T01:01:31.177193+00:00",
+  "generated_at": "2026-09-02T16:22:25.254395+00:00",
   "shared_files": [
     "Anthropic.dll",
     "Assets/InstallTool/Everything-1.4.1.1032.x64-Setup.exe",
@@ -13,7 +13,6 @@
     "AvalonDock.dll",
     "Azure.Core.dll",
     "Azure.Identity.dll",
-    "CHANGELOG.md",
     "ColorVision.Algorithms.dll",
     "ColorVision.Algorithms.pdb",
     "ColorVision.Common.dll",

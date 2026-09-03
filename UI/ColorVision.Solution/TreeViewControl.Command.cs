@@ -472,7 +472,8 @@ namespace ColorVision.Solution
 
             SolutionExplorer explorer = searchResult.Explorer;
             SolutionNode targetNode = searchResult.TargetNode;
-            if (!ReferenceEquals(explorer, SolutionManager.CurrentSolutionExplorer))
+            SolutionNode? displayedRoot = GetDisplayedRootNode();
+            if (displayedRoot == null || !ReferenceEquals(explorer, SolutionManager.CurrentSolutionExplorer))
                 return;
 
             CancelPendingReveal();
@@ -480,14 +481,15 @@ namespace ColorVision.Solution
             _revealCancellation = cancellation;
             try
             {
-                SolutionNode? resolvedNode = await SolutionTreeNavigationService.ResolveNodeAsync(
-                    explorer,
-                    targetNode,
-                    cancellation.Token);
+                SolutionNode? resolvedNode = IsFileSystemView
+                    ? await SolutionTreeNavigationService.ResolvePathAsync(displayedRoot, targetNode.FullPath, cancellation.Token)
+                    : await SolutionTreeNavigationService.ResolveNodeAsync(explorer, targetNode, cancellation.Token);
                 cancellation.Token.ThrowIfCancellationRequested();
-                if (resolvedNode == null || !ReferenceEquals(explorer, SolutionManager.CurrentSolutionExplorer))
+                if (resolvedNode == null
+                    || !ReferenceEquals(explorer, SolutionManager.CurrentSolutionExplorer)
+                    || !ReferenceEquals(displayedRoot, GetDisplayedRootNode()))
                 {
-                    SearchStatusText.Text = "无法在解决方案树中定位该项";
+                    SearchStatusText.Text = "无法在当前视图中定位该项";
                     SearchStatusText.Visibility = Visibility.Visible;
                     return;
                 }
@@ -509,9 +511,14 @@ namespace ColorVision.Solution
                 }
 
                 ScheduleWorkspaceStateSave();
-                _ = Dispatcher.BeginInvoke(
-                    () => BringNodeIntoView(resolvedNode),
-                    System.Windows.Threading.DispatcherPriority.Loaded);
+                await Dispatcher.InvokeAsync(
+                    () =>
+                    {
+                        if (ReferenceEquals(displayedRoot, GetDisplayedRootNode()))
+                            BringNodeIntoView(resolvedNode);
+                    },
+                    System.Windows.Threading.DispatcherPriority.Loaded,
+                    cancellation.Token).Task;
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {

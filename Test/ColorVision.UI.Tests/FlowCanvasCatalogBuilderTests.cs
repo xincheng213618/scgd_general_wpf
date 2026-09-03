@@ -1,6 +1,7 @@
 using ColorVision.Engine.FlowProcessing.Compilation;
 using ColorVision.Engine.Templates.Flow.Versioning;
 using FlowEngineLib.Base;
+using FlowEngineLib.Logical;
 using ST.Library.UI.NodeEditor;
 using System.IO;
 using System.Security.Cryptography;
@@ -11,6 +12,109 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FlowCanvasCatalogBuilderTests
 {
+    [Fact]
+    public void BuildIndexesNewLogicalAndAfterConnectingMultipleInputs()
+    {
+        StaTest.Run(() =>
+        {
+            using var editor = new STNodeEditor();
+            var hub = new LogicalANDNode();
+            hub.Create();
+            FlowCanvasCatalogTestNode first = CreateNode();
+            FlowCanvasCatalogTestNode second = CreateNode();
+            FlowCanvasCatalogTestNode target = CreateNode();
+            STNode[] nodes = [hub, target, first, second];
+            editor.Nodes.AddRange(nodes);
+            Assert.Equal(ConnectionStatus.Connected, first.Output.ConnectOption(hub.GetAllInputOptions()[0]));
+            Assert.Equal(ConnectionStatus.Connected, second.Output.ConnectOption(hub.GetAllInputOptions()[1]));
+            Assert.Equal(ConnectionStatus.Connected, hub.GetAllOutputOptions()[0].ConnectOption(target.Input));
+            Assert.Equal(3, hub.InputOptionsCount);
+
+            ConnectionInfo[] connections = STNodeCanvasWriter.GetConnections(nodes);
+            byte[] data = WriteCanvas(nodes, connections);
+            AssertCatalogMatchesConnections(data, nodes, connections);
+            Assert.Equal(data, WriteCanvas(nodes, connections));
+        });
+    }
+
+    [Theory]
+    [InlineData(typeof(LogicalANDNode))]
+    [InlineData(typeof(InputMergeNode))]
+    [InlineData(typeof(STNodeInHub))]
+    [InlineData(typeof(STNodeOutHub))]
+    [InlineData(typeof(STNodeHub))]
+    public void BuildRestoresEachHubInstanceCountWithoutChangingCachedDefaults(Type hubType)
+    {
+        FlowCanvasCatalogTestNode source = CreateNode();
+        FlowCanvasCatalogTestNode target = CreateNode();
+        var nodes = new List<STNode>();
+        var connections = new List<ConnectionInfo>();
+        foreach (int count in new[] { 3, 5, 1 })
+        {
+            var hub = (STNode)Activator.CreateInstance(hubType)!;
+            hub.Create();
+            hub.OnLoadNode(new Dictionary<string, byte[]> { ["count"] = BitConverter.GetBytes(count) });
+            nodes.Add(hub);
+            STNodeOption[] inputs = hub.GetAllInputOptions();
+            STNodeOption[] outputs = hub.GetAllOutputOptions();
+            if (inputs.Length > 0)
+                connections.Add(new ConnectionInfo { Output = source.Output, Input = inputs[^1] });
+            if (outputs.Length > 0)
+                connections.Add(new ConnectionInfo { Output = outputs[^1], Input = target.Input });
+        }
+        nodes.Add(source);
+        nodes.Add(target);
+
+        byte[] data = WriteCanvas(nodes, connections);
+        AssertCatalogMatchesConnections(data, nodes, connections);
+        NeutralCanvas decoded = StnV1NeutralCodec.Decode(data, new StnV1CodecOptions());
+        for (int i = 0; i < nodes.Count; i++)
+        {
+            Assert.Equal(nodes[i].InputOptionsCount, decoded.Nodes[i].Inputs.Length);
+            Assert.Equal(nodes[i].OutputOptionsCount, decoded.Nodes[i].Outputs.Length);
+        }
+        AssertCatalogMatchesConnections(
+            StnV1NeutralCodec.Encode(decoded, new StnV1CodecOptions()),
+            nodes,
+            connections);
+    }
+
+    [Fact]
+    public void BuildRestoresHubSchemaWithoutLoadingPropertiesOrConnectingOptions()
+    {
+        var hub = new FlowCanvasCatalogGuardHub();
+        hub.Create();
+        byte[] data = WriteCanvas([hub], []);
+
+        NeutralCanvas decoded = StnV1NeutralCodec.Decode(data, new StnV1CodecOptions());
+
+        Assert.Equal(3, Assert.Single(decoded.Nodes).Inputs.Length);
+        Assert.Single(new FlowCanvasCatalogBuilder().Build(data).SearchDocuments);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("030000")]
+    [InlineData("00000000")]
+    [InlineData("FFFFFFFF")]
+    [InlineData("41420F00")]
+    [InlineData("FFFFFF7F")]
+    public void BuildRejectsMalformedOrExcessiveDynamicPortCounts(string? countHex)
+    {
+        var hub = new FlowCanvasCatalogGuardHub
+        {
+            SerializedCount = countHex == null ? null : Convert.FromHexString(countHex),
+        };
+        hub.Create();
+        byte[] data = WriteCanvas([hub], []);
+
+        FlowCompilationException exception = Assert.Throws<FlowCompilationException>(
+            () => new FlowCanvasCatalogBuilder().Build(data));
+
+        Assert.Equal(FlowCompilationError.InvalidCanvas, exception.Error);
+    }
+
     [Fact]
     public void BuildSeparatesLayoutHashesPropertiesAndSearchAllowlist()
     {
@@ -162,11 +266,56 @@ public sealed class FlowCanvasCatalogBuilderTests
             .ToLowerInvariant();
     }
 
+    private static byte[] WriteCanvas(IEnumerable<STNode> nodes, IEnumerable<ConnectionInfo> connections)
+    {
+        using var stream = new MemoryStream();
+        STNodeCanvasWriter.Write(stream, nodes, connections, 0, 0, 1);
+        return stream.ToArray();
+    }
+
+    private static void AssertCatalogMatchesConnections(
+        byte[] data,
+        IReadOnlyCollection<STNode> nodes,
+        IEnumerable<ConnectionInfo> connections)
+    {
+        FlowCanvasCatalogBuildResult result = new FlowCanvasCatalogBuilder().Build(data);
+        Assert.Equal(nodes.Count, result.SemanticDocument.Nodes.Count);
+        Assert.Equal(nodes.Count, result.SearchDocuments.Count);
+        string[] expected = connections.Select(connection =>
+            $"{connection.Output.Owner.Guid:D}:{Array.IndexOf(connection.Output.Owner.GetAllOutputOptions(), connection.Output)}" +
+            $"->{connection.Input.Owner.Guid:D}:{Array.IndexOf(connection.Input.Owner.GetAllInputOptions(), connection.Input)}")
+            .OrderBy(value => value, StringComparer.Ordinal).ToArray();
+        string[] actual = result.SemanticDocument.Edges.Select(edge =>
+            $"{edge.SourceNodeId}:{edge.SourcePort}->{edge.TargetNodeId}:{edge.TargetPort}")
+            .OrderBy(value => value, StringComparer.Ordinal).ToArray();
+        Assert.Equal(expected, actual);
+    }
+
     private sealed record TestCanvas(
         byte[] Data,
         FlowCanvasCatalogTestNode Source,
         FlowCanvasCatalogTestNode Target);
 
+}
+
+public sealed class FlowCanvasCatalogGuardHub : STNodeInHub
+{
+    public byte[]? SerializedCount { get; set; } = BitConverter.GetBytes(3);
+
+    protected override void OnSaveNode(Dictionary<string, byte[]> properties)
+    {
+        base.OnSaveNode(properties);
+        if (SerializedCount == null)
+            properties.Remove("count");
+        else
+            properties["count"] = SerializedCount;
+    }
+
+    public override void OnLoadNode(Dictionary<string, byte[]> properties)
+        => throw new InvalidOperationException("Catalog indexing must not load node properties.");
+
+    protected override void DoInputConnected(STNodeOption sender, STNodeOptionEventArgs e)
+        => throw new InvalidOperationException("Catalog indexing must not connect live options.");
 }
 
 public sealed class FlowCanvasCatalogTestNode : CVCommonNode

@@ -3,10 +3,10 @@ knowledge_id: "operations.motor"
 knowledge_type: "topic"
 status: "current"
 summary: "电机设备配置、MQTT运动命令与位置读回契约；移动回包不会刷新位置，客户端参数不能代替现场限位与急停。"
-aliases: ["电机不动","回原点","位置没有刷新","绝对相对移动","DeviceMotor","MQTTMotor","GetPosition","MoveDiaphragm"]
-code_paths: ["Engine/ColorVision.Engine/Services/Devices/Motor/DeviceMotor.cs","Engine/ColorVision.Engine/Services/Devices/Motor/ConfigMotor.cs","Engine/ColorVision.Engine/Services/Devices/Motor/MQTTMotor.cs","Engine/ColorVision.Engine/Services/Devices/Motor/DisplayMotor.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/MotorConfig.cs","Engine/FlowEngineLib/MotorNode.cs","Engine/FlowEngineLib/CamMotorNode.cs"]
+aliases: ["电机不动","回原点","返回原点","获取位置","调整光圈","位置没有刷新","绝对相对移动","DeviceMotor","MQTTMotor","GetPosition","MoveDiaphragm","DwTimeOut"]
+code_paths: ["Engine/ColorVision.Engine/Services/Devices/Motor/DeviceMotor.cs","Engine/ColorVision.Engine/Services/Devices/Motor/ConfigMotor.cs","Engine/ColorVision.Engine/Services/Devices/Motor/MQTTMotor.cs","Engine/ColorVision.Engine/Services/Devices/Motor/DisplayMotor.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Motor/DisplayMotor.xaml","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/MotorConfig.cs","Engine/FlowEngineLib/MotorNode.cs","Engine/FlowEngineLib/CamMotorNode.cs"]
 test_paths: []
-related: ["engine.devices","operations.device-configuration","flow.session"]
+related: ["engine.devices","operations.device-configuration","engine.mqtt","flow.session"]
 ---
 
 # 电机命令与位置读回
@@ -21,7 +21,16 @@ related: ["engine.devices","operations.device-configuration","flow.session"]
 
 `ConfigMotor.Position` 是带 `JsonIgnore` 的运行期读回值，不是持久化目标。界面位置框绑定它；应用中保留的旧值不能证明当前物理位置。目标位置、绝对/相对模式则来自 `DisplayMotor` 当前控件。
 
-## 手动请求的实际契约
+## 手动操作
+
+在设备控制区展开电机面板后，按以下顺序使用。开始运动前须满足前述现场条件。
+
+1. 点击“连接”。`Open` 成功回包后，按钮显示“关闭”；这表示客户端收到服务确认。
+2. 在移动输入框填写整数目标。勾选“绝对位置”发送绝对目标，未勾选发送相对位移，再点击“移动”。调整光圈使用另一输入框和“调整光圈”按钮。界面不指定控制器的位置单位，应按所接设备的配置和协议解释数值。
+3. 需要回零时使用“返回原点”。当前处理器也要求移动输入框能解析为整数，但不会把这个数字传给回零命令。
+4. 检查动作结果时另点“获取位置”，成功回包才更新只读的“当前位置”。移动、光圈或回零回包都不会自动执行此读回。
+
+## 请求参数与响应
 
 | 操作 | 发出的关键参数 | 本客户端收到 `Code=0` 后的处理 |
 | --- | --- | --- |
@@ -32,13 +41,15 @@ related: ["engine.devices","operations.device-configuration","flow.session"]
 | `GoHome` | `dwTimeOut` | 没有专门的回包更新分支 |
 | `GetPosition` | `dwTimeOut` | 把 `Data.nPosition` 写入 `Config.Position` |
 
-`Move` / `MoveDiaphragm` 签名虽然接受 `dwTimeOut` 实参，当前实现没有使用它；上述运动、回原点和读位置消息的 `dwTimeOut` 都来自 `Config.MotorConfig.DwTimeOut`，并非 `HomeTimeout`。它是消息内传给服务的参数，和 `PublishAsyncClient` 的本地回包等待计时不是同一个设置。
+`Move` / `MoveDiaphragm` 签名虽然接受 `dwTimeOut` 实参，当前实现没有使用它；运动、回原点和读位置消息均使用 `Config.MotorConfig.DwTimeOut`（默认 5000），并非 `HomeTimeout`。这是发送给服务的参数；这些方法的本地回包等待使用 `PublishAsyncClient` 默认的 30000 ms。两种超时不能互相替代。
 
-`Move` 的 API 默认绝对移动（`IsbAbs=true`），但手动按钮显式传入 `CheckBoxIsAbs.IsChecked`；判断绝对或相对移动应看这次实际参数，不按方法默认值推断。手动移动只先做整数解析，光圈移动做浮点解析；当前回原点按钮也要求位置文本能解析为整数，尽管该数值不会传给 `GoHome`。因此“点了回原点但无消息”可能是输入框拦截，不一定是设备拒绝。
+`Move` 的 API 默认绝对移动（`IsbAbs=true`），手动按钮则显式传入复选框状态。移动与回零入口使用 `int.TryParse`，光圈使用 `double.TryParse`；解析失败时直接返回，不产生本次请求记录。
 
 ## 回包、位置与失败分流
 
-公共 `MQTTServiceBase` 按订阅主题和待处理 `MsgID` 关联回包，把 `Code=0` 标为 `MsgRecordState.Success`，其余代码标为 `Fail`；超时会结束本地追踪。这只描述请求回包，不独立证明电机停稳、到位或已安全断开。
+公共 `MQTTServiceBase` 按订阅主题和待处理 `MsgID` 关联请求记录，把 `Code=0` 标为 `Success`、其余代码标为 `Fail`。超时只结束本地追踪，不撤销已发出的动作，完整规则见[MQTT 请求与回包](../../02-developer-guide/engine-development/mqtt.md)。
+
+位置/状态回填是另一层处理：`MQTTMotor.ProcessingReceived` 按 `Code` 和 `EventName` 更新，不再次校验 `DeviceCode`，也不要求仍有匹配的待处理记录。同一订阅主题上的迟到或其它设备消息可能触发更新；确认位置时应同时核对原始回包的设备身份和时间。成功回包本身不能证明电机已停稳或到位。
 
 `MQTTMotor` 的附加处理在 `Code=1` 时把设备标为 `Closed`；其它非零代码不会在此处更新设备状态。不要因此把状态文字当作控制器真实电源或运动状态。
 
@@ -60,4 +71,4 @@ related: ["engine.devices","operations.device-configuration","flow.session"]
 
 ## 验证边界
 
-本主题没有声明独立电机自动化测试。源码核对可确认参数来源、消息事件和位置赋值，但不能证明真实控制器的单位、方向、限位、回零、停止或到位行为；这些仍需隔离现场、确认授权后的设备验收。文档维护不执行运动、设备打开/关闭或产品测试。
+本主题没有声明独立电机自动化测试。源码核对可确认参数来源、消息事件和位置赋值，但不能证明真实控制器的单位、方向、限位、回零、停止或到位行为；这些仍需隔离现场、确认授权后的设备验收。本页的源码和文档检查不提供现场运动验收结论。

@@ -6,7 +6,7 @@ summary: "FileServer 工厂存在但默认类型树过滤；当前仅有配置�
 aliases: ["文件服务器", "FileServer", "DeviceFileServer", "ConfigFileServer", "文件服务为什么不显示", "远程文件", "FileServerCfg"]
 code_paths: ["Engine/ColorVision.Engine/Services/Devices/FileServer", "Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs", "Engine/ColorVision.Engine/Services/ServiceManager.cs", "Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs", "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs", "Engine/ColorVision.Engine/Services/DeviceService.cs", "Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs", "Engine/ColorVision.Engine/Services/Cache/FileServerCfg.cs"]
 test_paths: []
-related: ["engine.devices", "operations.device-configuration", "engine.mqtt", "operations.data"]
+related: ["engine.devices", "operations.device-configuration", "engine.mqtt", "operations.data", "delivery.file-transfer"]
 ---
 
 # FileServer 设备配置与实现边界
@@ -31,13 +31,14 @@ related: ["engine.devices", "operations.device-configuration", "engine.mqtt", "o
 
 保存路径不是数据库与远端重启的整体事务：`RestartServices(nodeType, svrCode, devCode)` 不等待服务完成重启，RC 未连接或无可用 token 时内部可返回 `false`，该 void 包装不把结果交回编辑窗口。因此窗口关闭或数据库更新不能证明远端已应用配置。
 
-## 三种“文件服务”概念不要混用
+## 文件操作的不同入口
 
 | 入口 | 当前职责 |
 | --- | --- |
 | `DeviceFileServer / ConfigFileServer` | 本页的设备类型与配置包装；没有文件传输 UI/API |
 | `Services/Cache/FileServerCfg.cs` 的 `IFileServerCfg / FileServerCfg` | 部分相机、算法等配置持有的数据保存设置，含 `DataBasePath`、`Endpoint`、`PortRange`、`SaveDays` |
 | 基类 `ExportCommand / ImportCommand` | 本地设备配置 JSON 的导出/导入；不是远端结果文件下载/上传 |
+| Web“文件中转”（`/transfer`） | 独立的 HTTP 上传、断点续传和公开分享，见[文件中转](../../02-developer-guide/backend/file-transfer.md)；不通过本设备包装或 MQTT 文件回执 |
 
 `ConfigFileServer` 本身不实现 `IFileServerCfg`；基类 `UpdateFilecfgCommand` 的可执行条件正是这个接口，不能因设备名含 FileServer 就推断它提供“文件保存路径”编辑入口。实际数据保存、保留或清理行为应沿配置的消费方核对，见[数据管理](../data-management/README.md)。
 

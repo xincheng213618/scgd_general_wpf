@@ -11,11 +11,11 @@ related: ["delivery.backend"]
 
 # Android 运维伴侣
 
-`AndroidWebViewApp/` 是当前原生 Android 现场运维客户端，不是通用 WebView 容器。目录名保留历史命名；当前不提供下载站页面、任意网址输入或通用远程命令入口。本主题负责当前入口、通道与能力边界；`AndroidWebViewApp/README.md` 保留独立构建说明、安全细节及历次版本演进，旧版本描述不能当作当前能力叠加使用。
+`AndroidWebViewApp/` 是当前原生 Android 现场运维客户端，不是通用 WebView 容器。当前不提供下载站页面、任意网址输入或通用远程命令入口。本主题负责当前入口、通道与能力边界；`AndroidWebViewApp/README.md` 保留独立构建说明和安全细节。
 
 ## 启动与源码入口
 
-`AndroidManifest.xml` 的 launcher 是 `MainActivity`。它按配对资料和目标页经 `AppNavigationPolicy` 路由到 `OperationsActivity`；未配对时保留安全扫码引导。当前四个一级目的地是“概览 / 问题 / 工具 / 设置”，不应为了旧 README 的版本记录恢复已删除的下载站导航。
+`AndroidManifest.xml` 的 launcher 是 `MainActivity`。它按配对资料和目标页经 `AppNavigationPolicy` 路由到 `OperationsActivity`；未配对时保留安全扫码引导。当前四个一级目的地是“概览 / 问题 / 工具 / 设置”。
 
 `app/build.gradle` 是 Android 构建事实来源：Java 17、compile/target SDK 36、Build Tools 36.0.0、最低 API 23，应用 ID 为 `com.colorvision.xcviewer`。Release 任务要求有效本地签名配置。Android Studio/Gradle 同步可能下载依赖，构建写产物，Run 会安装并运行手机应用；签名、安装和发布不是文档检索验证步骤。
 

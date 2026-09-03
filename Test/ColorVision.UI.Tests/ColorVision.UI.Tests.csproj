@@ -11,6 +11,10 @@
     <VSTestTestAdapterPath>$(NuGetPackageRoot)xunit.runner.visualstudio\$(XunitRunnerVisualStudioVersion)\build\net8.0</VSTestTestAdapterPath>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(EnableWindowResizeDiagnostics)' == 'true'">
+    <DefineConstants>$(DefineConstants);COLORVISION_WINDOW_RESIZE_DIAGNOSTICS</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="10.0.1">
       <PrivateAssets>all</PrivateAssets>
@@ -25,6 +29,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Shared\StaTest.cs" Link="StaTest.cs" />
+    <Using Include="ColorVision.Testing" />
     <Using Include="Xunit" />
   </ItemGroup>
 

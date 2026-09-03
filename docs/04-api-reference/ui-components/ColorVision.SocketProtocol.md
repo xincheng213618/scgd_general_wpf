@@ -2,149 +2,163 @@
 knowledge_id: "ui.socket-protocol"
 knowledge_type: "topic"
 status: "current"
-summary: "TCP网络通信的监听快照、窗口关闭与服务停止、JSON/Text分发及消息记录；Sent不证明对端执行，重发可能换客户端并追加记录。"
-aliases: ["Socket端口连不上或消息没响应", "网络通信", "文本模式", "发送消息记录", "消息重发", "ColorVision.SocketProtocol", "SocketManager", "SocketConfig", "SocketServerLifecycle", "SocketServerSettings", "SocketJsonDispatcher", "SocketTextDispatcher", "ISocketJsonHandler", "ISocketTextDispatcher", "SocketMessageManager"]
-code_paths: ["UI/ColorVision.SocketProtocol/SocketManager.cs", "UI/ColorVision.SocketProtocol/SocketServerLifecycle.cs", "UI/ColorVision.SocketProtocol/SocketInitializer.cs", "UI/ColorVision.SocketProtocol/SocketConfig.cs", "UI/ColorVision.SocketProtocol/SocketJsonDispatcher.cs", "UI/ColorVision.SocketProtocol/SocketTextDispatcher.cs", "UI/ColorVision.SocketProtocol/ISocketJsonHandler.cs", "UI/ColorVision.SocketProtocol/ISocketTextDispatcher.cs", "UI/ColorVision.SocketProtocol/SocketMessageManager.cs", "UI/ColorVision.SocketProtocol/SocketMessagePayloadStorage.cs", "UI/ColorVision.SocketProtocol/SocketManagerWindow.xaml.cs", "ColorVision/App.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/SocketServerLifecycleTests.cs", "Test/ColorVision.UI.Tests/SocketShutdownTests.cs", "Test/ColorVision.UI.Tests/SocketManagerProjectionTests.cs", "Test/ColorVision.UI.Tests/SocketMessageStorageTests.cs"]
-related: ["ui.index", "ui.discovery", "ui.database-query", "ui.sqlite-storage"]
+summary: "Socket连接管理器的监听配置、窗口关闭与服务停止、防火墙放行、消息查询和JSON/Text分发；清空消息只清列表，重发可能换客户端，Sent不证明对端执行。"
+aliases: ["Socket端口连不上或消息没响应", "网络通信", "Socket 连接管理器", "Socket服务设置", "通信协议", "文本模式", "发送消息记录", "消息重发", "Socket消息搜索", "关闭Socket窗口", "停止Socket服务", "清空消息", "防火墙放行", "防火墙专用公用", "ColorVision.SocketProtocol", "SocketManager", "SocketManagerWindow", "SocketConfig", "SocketServerLifecycle", "SocketServerSettings", "SocketManagerApplicationLifetime", "SocketWorkerTracker", "SocketJsonDispatcher", "SocketTextDispatcher", "ISocketJsonHandler", "ISocketTextDispatcher", "SocketMessageManager", "SocketMessageManagerConfig", "SocketRequest", "SocketResponse", "SocketFirewallService", "WindowsFirewallStatusReader", "FirewallCommandService"]
+code_paths: ["UI/ColorVision.SocketProtocol", "src/ColorVisionServiceHost/FirewallCommandService.cs", "ColorVision/App.xaml.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/SocketServerLifecycleTests.cs", "Test/ColorVision.UI.Tests/SocketShutdownTests.cs", "Test/ColorVision.UI.Tests/SocketManagerProjectionTests.cs", "Test/ColorVision.UI.Tests/SocketMessageStorageTests.cs", "Test/ColorVision.UI.Tests/SocketManagerWindowLayoutTests.cs"]
+related: ["ui.index", "ui.discovery", "ui.database-query", "ui.sqlite-storage", "engine.database-maintenance", "platform.service-host"]
 ---
 
 # TCP 监听、协议分发与消息记录
 
-`ColorVision.SocketProtocol` 是桌面宿主中的 TCP 服务模块。配置已启用、服务在监听、客户端已连接、handler 已完成、对端已收到是不同状态。它不是外部设备协议规范，也不是项目业务协议全集；项目自己的 MES、PLC、客户设备协议应放在项目包文档里。
+`ColorVision.SocketProtocol` 为桌面宿主提供 TCP 监听、JSON/Text 指令分发和收发记录。通过 **帮助 → Socket 连接管理器** 查看与管理；启用服务后，也可点击状态栏的 Socket 服务图标进入。MES、PLC 和客户设备的业务字段、权限及动作约束由各项目协议负责。
 
-## 什么时候看这页
+## 配置与启用服务
 
-| 场景 | 先看哪里 |
+配置影响本机监听和现有客户端连接，操作前应确认允许中断当前通信。默认地址 `0.0.0.0` 面向本机所有 IPv4 网卡；只需本机通信时使用明确的 loopback 地址。模块没有内置 TLS、鉴权、自动重连或心跳协议，设备动作仍需项目自己的权限与流程校验。
+
+1. 打开“Socket 连接管理器”。已有服务运行时，先关闭右上角启用开关，检查最后错误及端口释放情况。
+2. 点击“服务设置”，调整地址、端口、缓冲区和解析模式。统一设置中“通信协议”也绑定同一个 `SocketConfig`。
+3. 开启服务。窗口开关会保存配置；确认服务状态进入运行，并分别检查实际监听与客户端数量。出现错误时查看窗口中的错误详情。
+
+| 配置项 | 默认值与含义 |
 | --- | --- |
-| 现场说端口连不上 | `SocketConfig`、`SocketInitializer`、`SocketManager` |
-| JSON 指令没有响应 | `SocketPhraseType.Json`、`EventName`、`ISocketJsonHandler` |
-| 文本指令没有响应 | `SocketPhraseType.Text`、`ISocketTextDispatcher` |
-| 要查收发原文 | `SocketMessageManager` 和 `SocketManagerWindow` |
-| 状态栏没有 Socket 图标 | `SocketConfig.IsServerEnabled`、`SocketStatusBarProvider` |
-| 升级后历史消息没了 | `%AppData%/ColorVision/Config/SocketMessages.db` |
+| `IsServerEnabled` | `false`；赋值触发启停事件，启用不等于监听成功 |
+| `IPAddress` | `0.0.0.0`；启动监听时由 `IPAddress.Parse` 解析 |
+| `ServerPort` | `6666`；设置值限制到 `0..65535` |
+| `SocketBufferSize` | `10240` 字节；每次读取的缓冲区至少为 `1024` 字节 |
+| `SocketPhraseType` | `Json`；另支持 `Text` |
 
-查询窗口的条件、结果与整表操作见[通用查询](./database-query.md)；正文 gzip 按 ID 读取、旧 TEXT 迁移、备份、维护锁和空间回收统一见 [SQLite 存储与维护](./sqlite-storage.md)。这些数据库维护操作不等同于停止 TCP 服务或完成业务恢复。
+`SocketInitializer` 在应用启动时读取启用配置，随后只订阅 `ServerEnabledChanged`。地址、端口、缓冲区和模式由 `SocketServerSettings.Capture` 在每次服务启动时形成快照，该次服务的客户端沿用它。**更改这些字段后需停止并重新启用服务**；保存配置不会更新已运行的监听或连接。
 
-## 监听配置与停止边界
+窗口的监听地址和模式文字来自当前配置，可能与仍在运行的旧快照不同。`SocketManager.IsConnect` 只表示 `ServerState == Running`，状态栏“已连接”也采用这一判断；它不表示已有客户端或业务通信正常。
 
-`SocketInitializer` 启动时读取 `SocketConfig.Instance.IsServerEnabled`，启用后调用 `StartServer()`，并只订阅 `ServerEnabledChanged` 来启停。地址、端口、缓冲区和解析模式在启动时通过 `SocketServerSettings.Capture` 形成该次服务的配置快照；后续接入的客户端也使用这一快照，不是每次收包重读配置。
+### 关闭窗口、停止服务与应用退出
 
-只修改或保存配置中的地址、端口、模式，不会自动改变正在运行的服务。切到 Text 后，旧服务中的连接仍按原模式处理；需在授权范围内明确停止/重新启动并验证实际监听状态，不能通过继续发送测试指令来假定新配置已生效。管理器的 `ListenAddress` 文字直接来自当前配置，可能与旧监听快照不同；`IsConnect` 只检查 `ServerState == Running`，不表示已有客户端或业务连接健康。
-
-| 动作 | 实际责任 | 不代表什么 |
-| --- | --- | --- |
-| 关闭 `SocketManagerWindow` | 解除消息视图订阅、清理窗口集合视图 | 不停止服务、不关闭客户端 |
-| 禁用配置 / `StopServer()` | 请求停止该次服务，关闭监听和客户端资源，后续投递停止状态 | 不等待正在执行的业务 handler 完成；handler 接口无取消令牌，设备/业务副作用不能据此推断已停止 |
-| 应用退出 / `ShutdownExisting` | 进入终态并在共用期限内等待已跟踪 worker；主程序传入 2 秒预算 | 超时或清理异常会返回 false，不承诺所有业务副作用收敛；结果日志异步排队也不是持久完成证据 |
-
-`StartServer` / `StopServer` 是 void 请求入口，不是带最终验收结果的 API。应核对 `ServerState`、最后错误和真实监听/连接；配置显示禁用也不能掩盖释放端口失败。停止/退出不提供业务回滚。
-
-## 关键文件
-
-| 文件 | 用途 |
+| 动作 | 完成范围 |
 | --- | --- |
-| `SocketConfig.cs` | 开关、监听地址、端口、Buffer、JSON/Text 模式 |
-| `SocketInitializer.cs` | 应用启动及启用开关事件的接入 |
-| `SocketManager.cs` | TCP 监听、客户端列表、JSON/Text 分发、错误状态 |
-| `SocketServerLifecycle.cs` | 服务配置快照、代次切换、资源关闭与 worker 收敛 |
-| `SocketJsonDispatcher.cs` / `SocketTextDispatcher.cs` | 构造时发现 handler 与具体分发行为 |
-| `ISocketJsonHandler.cs` | JSON 业务处理器扩展点 |
-| `SocketMessage.cs` | 收发消息实体，记录方向、内容、时间、EventName、MsgID、响应码 |
-| `SocketMessageManager.cs` | SQLite 持久化、查询、删除和数据库入口 |
-| `SocketManagerWindow.xaml.cs` | 管理窗口、过滤、重发、详情和诊断 |
-| `SocketStatusBarProvider.cs` | 状态栏图标和管理窗口入口 |
+| 关闭管理窗口 | 解除该窗口的消息订阅与筛选视图；监听和客户端继续存在 |
+| 关闭启用开关 / `StopServer()` | 请求关闭该次监听及客户端资源并投递状态；不等待在途业务 handler 完成，接口也没有取消令牌 |
+| 应用退出 / `ShutdownExisting` | 禁止再次创建或启动管理器，在共用期限内等待已跟踪 worker；主程序给出 2 秒预算，超时或资源清理异常返回 `false` |
 
-## 配置事实
+`StartServer` / `StopServer` 是 void 请求入口；应检查最终 `ServerState`、错误和实际端口。停止失败仍显示错误，不能仅凭配置已禁用判断资源释放成功。应用退出的等待结果只覆盖已跟踪工作，业务副作用、回滚和异步结果日志落盘不属于该保证。实现位于 `SocketServerLifecycle`、`SocketManagerApplicationLifetime` 和 `SocketWorkerTracker`。
 
-当前 `SocketConfig` 只有这些通信字段：
+## 查看与设置防火墙
 
-| 字段 | 默认/说明 |
+顶部“防火墙 · 专用”和“防火墙 · 公用”分别显示规则匹配结果；将鼠标停在卡片上可查看规则名、远程地址范围和相反动作规则提示。
+
+| 显示 | 读取依据 |
 | --- | --- |
-| `IsServerEnabled` | 默认 false；赋值触发启用开关事件，不等于监听成功 |
-| `IPAddress` | 默认 `0.0.0.0` |
-| `ServerPort` | 默认 `6666`，范围被限制到 `0..65535` |
-| `SocketBufferSize` | 默认 `10240`，实际读取时最小按 `1024` |
-| `SocketPhraseType` | `Json` 或 `Text`，默认 `Json` |
+| 已允许 | 存在对应网络类型的允许规则，未匹配到阻止规则 |
+| 可能被阻止 | 匹配到阻止规则，即使同时存在允许规则也显示此状态 |
+| 未放行 | 未找到对应网络类型的应用入站允许规则 |
+| 无法读取 | 防火墙策略对象不可用或读取失败；不提供放行按钮 |
 
-不要在文档或项目对接说明里承诺当前类没有的超时、自动重连、鉴权、TLS、保留策略等能力。
+`WindowsFirewallStatusReader` 只枚举已启用的入站应用规则，按当前可执行文件完整路径匹配，再区分专用/公用网络。它没有检查实际活动网络类型、规则端口/协议、全局策略或真实连通性；因此“已允许”不证明端口可达，“未放行”也不证明系统一定阻止连接。状态在管理器创建及放行操作后读取；外部更改规则不会自动刷新此处。
 
-默认监听地址 `0.0.0.0` 不是仅限 loopback。不要因模块位于桌面进程就把它当成只对本机可达的安全边界；测试监听应使用明确授权的地址/端口和隔离 handler。
+需要修改系统规则时：
 
-## JSON Handler
+1. 确认应允许的程序与网络类型，在对应卡片出现“放行”时点击。该操作会写入 Windows 防火墙，需具备相应管理授权。
+2. 请求通过本机 `ColorVisionServiceHost` 执行，客户端不会在此自动安装或修复服务。不可用、版本过旧或票据失败的排查见[服务主机](../../03-architecture/components/service-host.md)。
+3. 查看响应并核对系统实际规则。界面随后重新读取匹配状态；仍有阻止规则时，应检查具体冲突。
 
-新增 JSON 指令时只做最小闭环：
+后端 `FirewallCommandService` 先尝试删除固定名称的旧规则，再添加当前程序在指定网络类型上的入站允许规则，使用 `protocol=any`，没有限定 Socket 端口。规则名由网络类型和可执行文件名组成，不区分同名程序的安装目录；同名旧规则可能被删除。操作失败没有自动回滚，也不会清除其它名称的阻止规则。客户端等待 15 秒，超时后命令仍可能执行，处理方式见[客户端超时与服务停止](../../03-architecture/components/service-host.md#客户端超时与服务停止)。
 
-1. 在 dispatcher 构造前已加载的程序集里实现 `ISocketJsonHandler`，并可被无参构造。
-2. 给 `EventName` 一个唯一、稳定且大小写准确的值。
-3. 在 `Handle(NetworkStream stream, SocketRequest request)` 里返回 `SocketResponse`。
-4. 让业务失败显式写入 `Code` 和 `Msg`，不要只吞异常。
-5. 用管理窗口确认收到的 `EventName`、`MsgID`、响应码和响应内容。
+## 查询和查看消息
 
-| 模型 | 关键字段 |
+打开窗口时，`SocketMessageManager.LoadAll` 按消息 ID 排序加载记录。“消息设置”中默认查询数量为 `100`、排序为 `Desc`；传入正数时单次加载最多 `1000` 条，非正值会回退到配置值，配置本身未做有效范围校验。这些是查询参数，实时新增消息不会按此数量自动裁剪，也不构成数据库保留策略。
+
+1. 点击“查询”或按 `F5`，按消息设置重新加载列表。需要数据库条件查询时选择“高级查询”，条件与整表操作见[通用查询](./database-query.md)。
+2. 用搜索框与“全部 / 接收 / 发送”筛选。搜索不区分大小写，只匹配当前已加载记录的客户端端点、`EventName`、`MsgID`、响应码和 `ContentPreview`，不会搜索数据库全文。预览按最多 96 个 UTF-16 code unit 的前缀生成；截断规则见 [SQLite 正文存储](./sqlite-storage.md)。
+3. 选中一条记录，在详情区查看端点、事件、消息 ID、响应码和按 ID 加载的完整正文。默认“格式化查看”仅改变 JSON 显示，纯文本保持原文；“复制原文”和“格式化复制”按各自方式复制，不修改存储内容。
+4. 使用“重置筛选”或 `Esc` 清除关键词与方向，`Ctrl+F` 定位搜索框。默认启用“自动滚动”；多窗口共享消息集合，但筛选各自独立。
+
+| 操作 | 影响范围 |
 | --- | --- |
-| `SocketRequest` | `Version`、`MsgID`、`EventName`、`SerialNumber`、`Params` |
-| `SocketResponse` | `Version`、`MsgID`、`EventName`、`SerialNumber`、`Code`、`Msg`、`Data` |
+| 清空消息 | 仅清空共享的内存列表；数据库记录仍在，“查询”或 `F5` 可重新加载 |
+| 右键“删除” / 非文本框中按 `Delete` | 按所选 ID 删除数据库记录并移出列表，没有额外确认步骤；失败记入日志 |
+| 打开数据库 | 在资源管理器定位 `SocketMessages.db`，不会打开 SQL 编辑器 |
+| 数据库维护 | 打开宿主提供的维护窗口；未找到 `ISocketDatabaseCleanupWindowLauncher` 时提示不可用。具体动作见[数据库维护](../engine-components/database-maintenance.md) |
+| 右键“重发” | 将原始正文写给客户端，可能触发业务动作；目标规则见下文 |
 
-如果返回 `Code = 404` 且提示 handler 不存在，优先查 `EventName` 拼写和 handler 所在程序集是否已经被 `AssemblyService` 加载。
+默认数据库是 `%APPDATA%/ColorVision/Config/SocketMessages.db`。列表预览与完整正文分开读取；旧 TEXT 迁移、备份、锁和空间回收统一见 [SQLite 存储与维护](./sqlite-storage.md)，与 TCP 启停是独立操作。
 
-`SocketJsonDispatcher` 在构造时一次性扫描程序集，没有随模块加载自动刷新；重复 `EventName` 保留先发现者，字典匹配区分大小写。handler 自行负责请求/响应关联字段，dispatcher 不统一回填。内置 400/404 只设置 `Code/Msg`；`SocketManager` 捕获异常时生成的 `Code=-1` 响应则尝试保留已解析请求的关联字段，不能把两类错误响应视为同一关联保证。
+## JSON 指令与扩展处理器
+
+1. 在 dispatcher 构造前已加载的程序集里实现 `ISocketJsonHandler`，提供可用的无参构造函数。
+2. 为 `EventName` 指定唯一、稳定且大小写准确的值。
+3. 在 `Handle(NetworkStream stream, SocketRequest request)` 中返回 `SocketResponse`，明确填写业务结果与关联字段。
+4. 用收发记录核对实际请求、响应和业务结果。
+
+| 模型字段 | 类型与责任 |
+| --- | --- |
+| 共同字段 `Version`、`MsgID`、`EventName`、`SerialNumber` | `string`；由调用方和 handler 约定、填写 |
+| 请求 `Params` | `string`；包含 JSON 参数时需作为字符串编码，不能直接替换为 JSON 对象 |
+| 响应 `Code`、`Msg`、`Data` | `int`、`string`、`dynamic`；业务成功/失败码与数据由 handler 定义 |
+
+以下仅展示字段形状，`Example.Echo` 需由接入方实现，并非内置指令：
+
+```json
+{
+  "Version": "1.0",
+  "MsgID": "example-1",
+  "EventName": "Example.Echo",
+  "SerialNumber": "demo",
+  "Params": "{\"text\":\"hello\"}"
+}
+```
+
+`SocketJsonDispatcher` 构造时从 `AssemblyService` 一次性发现处理器，没有随模块加载自动刷新。重复 `EventName` 保留先发现者，匹配区分大小写。返回 `404` 时先核对事件名称和程序集是否在扫描前加载。
+
+dispatcher 不统一回填响应关联字段。内置空请求/空事件错误 `400` 与找不到 handler 的 `404` 只设置 `Code/Msg`；JSON 解析或业务处理等异常由 `SocketManager` 生成 `Code=-1`，尝试保留已解析请求的关联字段。三者不能视作相同的关联保证。
 
 ## Text 分发与 TCP 消息边界
 
-`SocketTextDispatcher` 同样在构造时发现 `ISocketTextDispatcher`。当前循环在第一个 handler 返回非空字符串时立即返回，返回空/空白时也立即返回 `null`；因此实际上只调用发现顺序中的第一个 handler，不会把“未处理”请求传给后面的 handler。没有 handler 时返回字面字符串 `No Dispatcher Hanle`。新增第二个处理器不是可靠的后备路由，且扫描顺序没有声明业务优先级契约。
+`SocketTextDispatcher` 构造时发现 `ISocketTextDispatcher`。当前实现只调用发现顺序中的第一个 handler：返回非空白字符串时立即返回，空白时也立即返回 `null`，不会尝试后续处理器。没有 handler 时返回字面字符串 `No Dispatcher Hanle`。这是多处理器路由的实现缺口，新增第二个处理器不能作为后备路由，扫描顺序也没有业务优先级约定。
 
-`HandleClientCore` 把每次 `NetworkStream.Read` 得到的字节段直接按 UTF-8 解码，再按服务快照选择 JSON 或 Text。没有跨次读取的帧累积、长度协议或多消息拆分；大包、粘包、半包以及跨读取分隔的 UTF-8 字符都不能当作已经受支持。项目需要可靠消息边界时必须明确分帧实现，不能仅在说明里约定一次 write 对应一次 read。
+`HandleClientCore` 将每次 `NetworkStream.Read` 的字节段直接按 UTF-8 解码，再按服务快照进入 JSON 或 Text 分发。当前没有跨读取的帧累积、长度协议或多消息拆分；大包、粘包、半包及跨读取分隔的 UTF-8 字符存在处理缺口。接入协议需要可靠消息边界时必须实现并验证分帧，不能假定一次 write 对应一次 read。
 
-## 记录、网络写入和对端执行
+## 发送记录与重发结果
 
-正常 JSON/Text 及错误响应路径，均先创建 `Sent` 行并调用 `MessageManager.AddMessage`，之后才 `NetworkStream.Write`。因此数据库或界面里已有 `Sent`，仍可能发生随后的网络写入失败；`ResponseCode` 是生成响应的内容，不是对端 ACK。接收记录也以读取片段为单位，不是独立业务操作的完成账本。
+正常 JSON/Text 及错误响应路径均先调用 `MessageManager.AddMessage` 创建 `Sent` 行，再写入网络。**有 Sent 不证明网络写入成功或对端已执行**；`ResponseCode` 是生成的响应内容，不是对端 ACK。接收行按读取片段登记，也不能直接用于统计业务操作次数。
 
-`AddMessage` 将消息元数据和压缩正文放入同一数据库事务，提交后才向 WPF 消息集合发布；数据库或 UI 发布异常都被捕获并记录，方法不返回可区分的结果。其返回不证明落库；界面未出现不证明事务未提交；调用方不会因此自动停止发送。正常分支写入/handler 异常进入错误分支后，还可能再次尝试登记接收记录，不能仅以行数统计唯一请求数量。
+`AddMessage` 在同一数据库事务内写入元数据和压缩正文，提交后才发布到 WPF 集合。数据库及 UI 发布异常被捕获记入日志，方法不返回可区分结果：返回不证明已落库，界面未出现也不证明事务未提交。JSON 正常分支出错后进入异常分支，还可能再次登记同一接收内容。
 
-文件仍由 `SocketMessageManager` 管理于 `%APPDATA%/ColorVision/Config/SocketMessages.db`。正文按消息 ID 延迟读取/解压，预览和元数据不是完整正文；持久化问题应核对消息记录、正文存储及日志，不修改真实库来验证说明。
+### 重新发送一条记录
 
-## 重发不是原会话中的可靠重试
+重发可能触发外部业务动作。操作前应核对正文、当前连接和重复执行影响；原端点不存在且有多个连接时，界面没有供用户指定接收方的步骤。
 
-`SocketManagerWindow.ResendMessageToClient` 加载所选记录的原始正文，无论该行原来是 Received 还是 Sent，都会把它写给客户端；不会重新进入本地 JSON/Text handler。目标选择先尝试匹配原记录的端点文字，找不到可写连接就使用客户端集合中第一个可写连接，没有选择/确认目标的步骤。
+`SocketManagerWindow.ResendMessageToClient` 的顺序是：
 
-网络 write 返回后，重发追加一条 `Sent`，沿用原 `EventName/MsgID`、使用当前时间，不更新原记录、不生成新业务请求 ID，也不复制原 `ResponseCode`。端点字段优先读取当前连接的远端，可能回退本地端点，读取失败还会沿用原记录；它不能独立证明实际接收方。随后显示的成功提示既不等待对端确认，也不保证 `AddMessage` 已持久化。重复消息的幂等性由具体协议负责，当前模块没有统一保证。
+1. 加载所选记录的原始正文。Received 和 Sent 行都可重发，内容直接发给客户端，不会重新进入本地 handler。
+2. 查找原记录端点文字包含的可写客户端远端地址；找不到则使用客户端集合中第一个可写连接。没有可用连接时提示未连接。
+3. 将 UTF-8 正文写入所选连接，再追加一条 `Sent`。沿用原 `EventName/MsgID`，使用当前时间，不复制 `ResponseCode`，不修改原记录。
+4. 显示重发结果。成功提示只表示该网络写入调用返回，不等待对端确认，也不保证新增记录持久化。
 
-重发是外部写入，可能触发业务动作且目标可能改变；仅排查消息时不要自动点击。需要重放时先明确目标连接、正文、重复执行风险和授权，不能把它当成无副作用的日志查看功能。
+新记录的端点优先取当前连接远端，可能回退到本地端点或原记录文字，不能独立证明实际接收方。重发没有生成新的业务请求 ID；重复执行的幂等性由具体协议负责。
 
-## 现场排障
+## 排查常见问题
 
-| 现象 | 第一判断 |
+| 现象 | 检查顺序 |
 | --- | --- |
-| 端口没有监听 | 配置是否启用、端口是否被占用、管理窗口诊断页的最后错误 |
-| 能连接但无响应 | 当前模式是否选错，JSON/Text handler 是否存在 |
-| JSON 返回格式异常 | 管理窗口查看原始请求、异常响应和 `SocketResponse.Code` |
-| 消息列表为空 | 数据库/正文读取、UI发布和过滤分别检查；空列表不证明未收发 |
-| 有 Sent 但对端未执行 | 核对网络写入异常、实际目标和业务回执，不凭记录判成功 |
-| 重发到了不同连接 | 原端点匹配失败后的首个可写客户端回退，不是用户选择的目标 |
-| 改了端口/模式仍用旧值 | 当前服务使用启动快照；配置显示与实际监听分别确认 |
+| 无法连接端口 | 启用状态 → 最后错误与实际监听 → 地址/端口 → 当前网络和系统规则；仅看防火墙卡片不足以判断 |
+| 修改端口或模式后仍用旧值 | 确认旧服务已停止，再启用以捕获新快照；配置文字与运行状态分别检查 |
+| 能连接但没有响应 | 检查模式、JSON 事件/程序集或 Text 首个 handler，再检查读取片段与分帧 |
+| 搜索不到某条消息 | 先重置筛选，再核对查询数量/排序；关键词只搜索元数据与预览，正文读取失败另查存储日志 |
+| 清空后记录又出现 | “清空消息”只影响内存列表，查询会重新读取数据库；删除单条和整表操作另有入口 |
+| 有 Sent 或重发成功，对端没有结果 | 核对网络写入异常、当前目标和业务回执；检查是否因端点未匹配而选到其它客户端 |
+| 升级后有列表、详情却为空 | 检查 gzip 正文与旧 TEXT 迁移情况，按 SQLite 维护主题处理 |
 
-## 发布检查
+## 实现与验证
 
-| 检查项 | 通过标准 |
+模块工程 `UI/ColorVision.SocketProtocol/ColorVision.SocketProtocol.csproj` 同时面向 `net8.0-windows7.0` 和 `net10.0-windows7.0`，依赖 `ColorVision.UI`、`ColorVision.Database`、`log4net`、`Newtonsoft.Json`。交付时应匹配宿主目标框架与依赖；项目可编译不替代真实监听、协议处理和业务响应验证。
+
+| 现有测试 | 覆盖范围 |
 | --- | --- |
-| DLL 目标框架 | `net8.0-windows7.0` 或 `net10.0-windows7.0` 能被主程序加载 |
-| 依赖 | `ColorVision.UI`、`ColorVision.Database`、`log4net`、`Newtonsoft.Json` 齐全 |
-| 服务生命周期 | 启用后核对真实监听，禁用后核对端口释放；在途handler另行确认 |
-| 协议模式 | JSON 和 Text 不互相误用 |
-| Handler 扫描 | 目标 `EventName` 能进入业务处理器 |
-| 消息库 | 核对元数据、压缩正文及界面发布，不以 Sent 行替代对端回执 |
-| UI 入口 | 状态栏图标和管理窗口可打开，诊断信息可读 |
+| `SocketServerLifecycleTests` | 启停代次、配置快照、绑定/停止失败、客户端资源清理 |
+| `SocketShutdownTests` | 共用关闭期限、延迟创建、worker 等待、清理重试和隔离 loopback 关闭 |
+| `SocketManagerProjectionTests` | WPF 状态投影、旧状态抑制、停止错误不被禁用配置掩盖 |
+| `SocketManagerWindowLayoutTests` | 筛选与空状态、详情格式化、多窗口独立筛选/关闭、维护入口及布局 |
+| `SocketMessageStorageTests` | 临时库的 gzip 写入、列表不取正文、按 ID 读取和旧 TEXT 迁移 |
 
-## 边界
-
-- 不把这个模块写成通用网络协议框架。
-- 不在这里维护项目私有协议字段。
-- 不承诺鉴权、TLS、自动重连、长连接心跳等未落地能力。
-- 不把 handler 当成设备控制的唯一保护层；设备动作仍应走项目自己的权限和流程校验。
-
-## 验证入口与缺口
-
-`SocketServerLifecycleTests` 覆盖配置快照、监听代次及客户端清理；`SocketShutdownTests` 覆盖共用关闭期限与 worker 等待；`SocketManagerProjectionTests` 覆盖停止失败不会被“禁用”配置掩盖等状态投影；`SocketMessageStorageTests` 覆盖压缩正文和按 ID 读取等存储行为。这些测试引用不是本轮已经运行的声明。
-
-当前未登记直接验证分发器大小写/重复名/Text首个handler、网络写失败后的 Sent 记录、重发目标选择和 ACK 的专项测试；现有生命周期/存储测试不能代替这些行为，更不能证明项目业务 handler、设备安全或 TCP 分帧协议已完成验收。验证这些缺口应使用隔离 loopback 客户端、临时库和无设备副作用的 handler，而非生产服务。
+尚缺直接覆盖 JSON 大小写/重复名、Text 多处理器分发、TCP 分帧、网络写失败后的 Sent、重发目标与回执、防火墙规则修改的专项验证。补充验证应使用临时库、隔离客户端和无设备副作用的 handler；系统规则修改需独立验证环境。现有测试覆盖范围不等于现场业务已验收。

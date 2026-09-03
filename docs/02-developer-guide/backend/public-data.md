@@ -50,7 +50,7 @@ Windows归档的 `major_minor`、`branch` 精确匹配，`kind` 大写化、`era
 
 compact发行快路径最多取6个当前Windows条目和4个最近Windows归档供构造首页；update索引命中时先读取完整活跃索引再取前8并构造update_summary，tool摘要也按预览项构造。更新预览的磁盘回退则先收集全部规范包元数据计算canonical_count/retained_count，仅把详细条目截前8；因此同名summary字段的统计范围还要区分索引与回退，不能统一当成整个存储总量。
 
-完整首页先获取overview再按公开路径过滤并重算展示summary；overview缓存未命中会列存储根、统计各目录直接文件，并写缓存，不是递归文件总量。compact虽最后省略overview等展示字段，仍执行这段组装。docs摘要通过 `get_docs_index_snapshot(refresh_if_missing=False)` 获取Backend持有的文档快照，不保证当前源码知识目录已同步部署。
+完整首页先获取overview再按公开路径过滤并重算展示summary；overview缓存未命中会列存储根、统计各目录直接文件，并写缓存，不是递归文件总量。compact虽最后省略overview等展示字段，仍执行这段组装。docs摘要通过 `get_docs_index_snapshot(refresh_if_missing=False)` 获取Backend持有的文档快照，不保证当前源码知识目录已同步部署。文档扫描、缓存签名、状态与网页构建的区别见[Web 页面与文档托管](./web-pages.md#文档索引和状态查询)。
 
 `build_index_page_context` 的更新预览回退、`build_updates_page_context` 的磁盘回退会进入 `repair_update_storage_layout`：可创建Update目录、移动旧 `ColorVision/Update` 文件、删除同名同大小旧副本并清理空旧目录。GET和自动HEAD都不能因此被当成零修改探针；具体修复和HTTP完成边界见[制品交付](./artifact-delivery.md#head-不计下载-但不承诺无本地修改)。
 
@@ -90,4 +90,4 @@ updates索引命中只返回已索引规范包，`other_update_files` / `other_u
 
 `test_artifact_index.py` 有ready快路径不调用旧builder、5000条Android归档分页、组跨页总量、update/tool索引读取、browse过滤先于分页等用例；`test_page_contexts.py` 覆盖投影形状与仅为本页构造详细目录记录；`test_app.py` 覆盖分页参数夹取/非法整数、compact日志输出、Android清单与固定下载。`test_app_releases.py` 覆盖发行文件扫描和Android分组。
 
-这些是代码与现有测试关联，本次文档工作未执行产品测试。跨索引一致性、并行文件替换、失效Android最高候选不回退、公开GET修复旧目录等结论来自源码分支，不冒称已完成生产或故障注入验收。排查时先辨别快路径/回退、过滤总量/页内总量、文件存在/索引可见，再决定是否需要获准的刷新或文件维护。
+跨索引一致性、并行文件替换、失效Android最高候选不回退、公开GET修复旧目录等分支需要生产环境或故障注入验证。排查时先辨别快路径/回退、过滤总量/页内总量、文件存在/索引可见，再决定是否需要获准的刷新或文件维护。

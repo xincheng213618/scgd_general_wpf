@@ -18,7 +18,7 @@ Read `references/schema.md` before answering a table, field, relation, result-da
 - Use `QueryFlowExecutionStats` first for flow execution counts, status distribution, completion rate, or average duration for today, yesterday, or the last seven local calendar days.
 - Use `QueryDatabaseSql` for schema discovery and all other read-only queries.
 - Use `ExecuteDatabaseSql` only for an explicitly requested service-configuration change or result-data cleanup. Every invocation requires native approval.
-- Service setting tables are version-managed and read-only to Copilot. Never submit a mutation against them; release/reset SQL supplies their native version.
+- Service setting tables are read-only to Copilot. Never submit a mutation against them. The versioned reset path loads the native schema/defaults and restores preserved field rows; read `references/service-setting-tables.md` for that boundary.
 - Do not call a database tool when the user only asks for a general explanation that does not depend on live data.
 
 ## Query workflow
@@ -30,14 +30,14 @@ Read `references/schema.md` before answering a table, field, relation, result-da
 5. Use `EXPLAIN` before a potentially broad join or scan.
 6. Execute the query and base the answer only on observed rows. State when output is truncated or no rows match.
 
-For local calendar days, prefer a half-open range:
+For a day in the database session time zone, use a half-open range:
 
 ```sql
 WHERE create_date >= CURDATE()
   AND create_date < CURDATE() + INTERVAL 1 DAY
 ```
 
-Do not replace it with `DATE(create_date) = CURDATE()` unless necessary, because wrapping the column can prevent index use.
+`CURDATE()` uses the database session date. To match the application-local periods used by `QueryFlowExecutionStats`, confirm that time zones agree or supply explicit start/end timestamps. Keep the timestamp column unwrapped so an applicable index can be used.
 
 ## Cleanup and write workflow
 
@@ -45,13 +45,13 @@ Do not replace it with `DATE(create_date) = CURDATE()` unless necessary, because
 2. Query the target count and a small representative sample first.
 3. Explain the exact table, predicate, estimated affected rows, and parent/child impact.
 4. Prefer one bounded `DELETE`, `UPDATE`, or other statement per operation. Never remove a `WHERE` clause for convenience.
-5. Submit the statement through `ExecuteDatabaseSql` and let the native approval UI show the final SQL.
+5. Present the exact non-secret statement and scope for review, then submit through `ExecuteDatabaseSql`. Its native approval presentation contains a redacted SQL preview clipped to 1,000 characters; do not assume the preview shows the complete statement or bypass approval when it is clipped.
 6. After successful execution, re-query the affected scope and report the verified result.
 
 Treat writes differently by category:
 
-- Service configuration writes can disconnect, rename, or restart services. Preview the exact service row and avoid direct deletion unless the user identifies that service explicitly.
-- Service setting tables must not be changed by Copilot, including through `INSERT`, `UPDATE`, `DELETE`, DDL, or cleanup. They follow the application version and are reset from native release SQL.
+- Service configuration writes can change identity or connection behavior when consumed by services; SQL itself does not call application save/restart hooks. Preview the exact service row and avoid direct deletion unless the user identifies that service explicitly.
+- Service setting tables must not be changed by Copilot, including through `INSERT`, `UPDATE`, `DELETE`, DDL, or cleanup. This tool restriction does not exclude their field data from migration backups.
 - Result cleanup must delete child rows before their parent rows. Prefer the application's Database Cleanup UI for coordinated cleanup of complete result families.
 
 Use `TRUNCATE` or `DROP` only when the user names that destructive scope explicitly.

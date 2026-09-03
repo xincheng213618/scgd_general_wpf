@@ -3,7 +3,7 @@ knowledge_id: "plugins.model"
 knowledge_type: "topic"
 status: "current"
 summary: "PluginLoader的manifest/依赖门禁、禁用缓存、程序集发现和失败边界；载入不等于provider可用，也不支持隔离卸载。"
-aliases: ["插件生命周期","插件菜单为什么没出现","插件能否卸载和热更新","插件禁用后仍运行","requires","deps.json","Loaded","IPlugin","PluginManifest","PluginLoader","PluginLoaderrConfig","ModuleCatalog","AssemblyHandler","LoadImplementations"]
+aliases: ["插件生命周期","插件菜单为什么没出现","插件能否卸载和热更新","插件禁用后仍运行","requires","deps.json","Loaded","IPlugin","PluginManifest","PluginLoader","PluginLoaderrConfig","ModuleCatalog"]
 code_paths: ["ColorVision/App.xaml.cs","ColorVision/MainWindow.xaml.cs","UI/ColorVision.Common/Interfaces/IPlugin.cs","UI/ColorVision.Common/Interfaces/Assembly/ModuleCatalog.cs","UI/ColorVision.UI/Plugins/PluginManifest.cs","UI/ColorVision.UI/Plugins/PluginLoader.cs","UI/ColorVision.UI/Plugins/PluginLoaderrConfig.cs","UI/ColorVision.UI/Plugins/PluginInfo.cs","UI/ColorVision.UI/AssemblyHandler.cs","UI/ColorVision.UI/Menus/MenuManager.cs","UI/ColorVision.UI/StatusBar/StatusBarManager.cs","UI/ColorVision.UI.Desktop/Marketplace/PluginUpdateCompatibility.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/PluginLoaderTests.cs","Test/ColorVision.UI.Tests/ModuleCatalogTests.cs","Test/ColorVision.UI.Tests/PluginUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/MenuDiscoveryExclusionTests.cs"]
 related: ["plugins.index","plugins.getting-started","ui.discovery"]
@@ -60,12 +60,7 @@ related: ["plugins.index","plugins.getting-started","ui.discovery"]
 
 “Loaded”应明确指哪个阶段。`PluginInfo.Assembly` 只在进程中保存且不序列化，版本/路径等缓存字段可能来自以前的扫描；`PluginsLoaded` 是启动阶段标记，`LastLoadCompletedWithoutFailures` 只表示装载器记录的失败计数为零，均不证明所有扩展已构造、初始化或可执行。
 
-装载后的可见性还要经过以下边界，不能压成“加载成功后菜单自动出现”：
-
-- `AssemblyHandler.RefreshAssemblies()` 合并当前 AppDomain 的程序集和显式注册项，排除框架前缀、动态程序集、无位置程序集以及不在宿主基础目录之下的程序集。仅执行 `RegisterAssembly` 不能绕过这些过滤。
-- `GetTypes` 失败（包括 `ReflectionTypeLoadException`）时记录异常并返回空类型集，不保留其中部分可加载类型；整个程序集可能因此退出发现结果。
-- 通用 `LoadImplementations<T>` 要求 `T` 是接口，候选为实现接口的非抽象类且有公开无参构造；缓存的是类型，每次调用仍创建实例，`args` 当前不用于构造。单个构造异常被记录并跳过，不保证所有 provider 有实例。
-- 不同宿主有自己的附加规则与缓存。`MenuManager` 额外排除开放泛型和 `[Obsolete]`，再检查菜单/命令、目标窗口和过滤；`StatusBarManager` 保留 provider 实例。刷新 `AssemblyHandler` 不自动清除这些宿主自己的缓存，也不等于已显示入口。具体入口诊断见 [UI 扩展发现](../../04-api-reference/ui-components/ui-runtime-handoff.md)。
+装载后的可见性继续经过程序集过滤、类型读取、provider 构造和宿主缓存，统一按[UI 扩展发现与排查](../../04-api-reference/ui-components/ui-runtime-handoff.md)核对。程序集登记不绕过目录/名称过滤，刷新程序集也不自动重建菜单或状态栏；不要将本页的装载成功当作入口已经显示。
 
 基础 `IPlugin` 只有 `Header`、`Description`、`Execute()`；实现它或填写 `entry_point` 本身不会注册菜单、设置或状态栏。主窗口另有 `IMainWindowInitialized` 扩展：在 dispatcher 回调中按 `Order` 逐个等待 `Initialize()`，该调用抛出的异常记录后继续；它不是插件通用的 Init/Start/Stop/Unload 状态机。
 

@@ -5,7 +5,6 @@ using FlowEngineLib.Start;
 using ST.Library.UI.NodeContainer;
 using ST.Library.UI.NodeEditor;
 using System.IO;
-using System.Runtime.ExceptionServices;
 
 namespace ColorVision.UI.Tests;
 
@@ -14,7 +13,7 @@ public sealed class FlowHeadlessHostTests
     [Fact]
     public void HeadlessControlLoadsAndExecutesExistingStnBytes()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             byte[] canvas = CreateCanvas();
             using var container = new CVNodeContainer();
@@ -41,7 +40,7 @@ public sealed class FlowHeadlessHostTests
     [Fact]
     public void CorruptReplacementPreservesReadyHeadlessGeneration()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             byte[] canvas = CreateCanvas();
             byte[] corrupt = (byte[])canvas.Clone();
@@ -64,7 +63,7 @@ public sealed class FlowHeadlessHostTests
     [Fact]
     public void HeadlessControlLoadsExistingStnFileThroughPublicApi()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             string filePath = Path.Combine(
                 Path.GetTempPath(),
@@ -93,7 +92,7 @@ public sealed class FlowHeadlessHostTests
     [Fact]
     public void HeadlessClearDisconnectsDetachedNodesAndPublishesRemoval()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var container = new CVNodeContainer();
             container.LoadCanvas(CreateCanvas());
@@ -117,7 +116,7 @@ public sealed class FlowHeadlessHostTests
     [Fact]
     public void EditorAndHeadlessHostsDecodeEquivalentRuntimeGraphs()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             byte[] canvas = CreateCanvas();
             using var editor = new STNodeEditor();
@@ -151,27 +150,6 @@ public sealed class FlowHeadlessHostTests
             ConnectionStatus.Connected,
             start.m_op_start.ConnectOption(end.m_in_start));
         return editor.GetCanvasData();
-    }
-
-    private static void RunInSta(Action action)
-    {
-        Exception? exception = null;
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                exception = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-        if (exception != null)
-            ExceptionDispatchInfo.Capture(exception).Throw();
     }
 }
 

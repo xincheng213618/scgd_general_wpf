@@ -182,6 +182,19 @@ namespace ColorVision.Update
                 if (window.SuppressPostCheckMessage)
                     return;
 
+                if (window.ResultAction == UpdatePreviewAction.Reinstall && window.ReinstallPlan != null)
+                {
+                    if (!lockTaken)
+                    {
+                        await _locker.WaitAsync(cancellationToken);
+                        lockTaken = true;
+                    }
+                    // Reinstallation must not wait for or apply a pending incremental update.
+                    ClearPendingStartupUpdate();
+                    await StartWorkflowAsync(window.ReinstallPlan, pluginPlan: null, showNoUpdatesMessage: false);
+                    return;
+                }
+
                 if (!HasUpdates(applicationPlan, pluginPlan))
                 {
                     ClearPendingStartupUpdate();

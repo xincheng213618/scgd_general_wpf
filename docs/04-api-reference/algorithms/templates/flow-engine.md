@@ -3,7 +3,7 @@ knowledge_id: "flow.headless"
 knowledge_type: "topic"
 status: "current"
 summary: "隔离STN流程的加载、起始节点就绪、执行超时与诊断收尾；停止请求不证明设备停稳，默认执行不限时，批次与前后处理由调用方负责。"
-aliases: ["无界面运行流程","独立调度","流程就绪等待","无界面流程超时","节点结束诊断","FlowHeadlessExecutionRequest","FlowHeadlessExecutionService","FlowHeadlessExecutionResult","FlowHeadlessExecutionObserver","RunSavedFlowHeadlessAsync","HeadlessFlowJob","FlowRuntimeHost","FlowEngineRunner"]
+aliases: ["无界面运行流程","独立调度","流程就绪等待","无界面流程超时","节点结束诊断","FlowHeadlessExecutionRequest","FlowHeadlessExecutionService","FlowHeadlessExecutionResult","FlowHeadlessExecutionObserver","RunSavedFlowHeadlessAsync","HeadlessFlowJob","FlowRuntimeHost","FlowEngineRunner","流程ContentHash","无界面流程Started=false","HeadlessStartupException","ReadinessTimeoutMs","ExecutionTimeoutMs"]
 code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowHeadlessExecutionService.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionCoordinator.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/AsyncOperationDrain.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/HeadlessFlowJob.cs","Engine/FlowEngineLib/Runtime/FlowRuntimeHost.cs","Engine/FlowEngineLib/Runtime/FlowEngineRunner.cs","Engine/FlowEngineLib/FlowEngineControl.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/FlowHeadlessExecutionServiceTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeHostTests.cs","Test/ColorVision.UI.Tests/FlowHeadlessHostTests.cs"]
 related: ["flow.architecture","flow.runtime","flow.templates","flow.session","ui.scheduler"]
@@ -15,13 +15,48 @@ related: ["flow.architecture","flow.runtime","flow.templates","flow.session","ui
 
 无界面不等于无副作用：节点仍可能控制硬件、写文件或调用远程服务。创建说明或检索文档不授权实际运行；调用前确认 STN、起始节点、SN、服务快照、超时和可影响的设备/数据范围。
 
+## 选择执行入口
+
+| 入口 | 读取什么 | 完成含义 |
+| --- | --- | --- |
+| `RunHeadlessAsync(request)` | 调用方提供的不可变 STN/服务请求 | 本次隔离节点图的终止结果 |
+| `RunSavedFlowHeadlessAsync(flowKey, ...)` | 在 `TemplateFlow.Params` 按 `FlowKey` 找到的 `DataBase64`，随后复制到请求 | 与裸执行相同，不自动增加前后处理 |
+| `RunSelectedFlowAndWaitForFinalizationAsync()` | 单例 `FlowEngineManager.View` 的主工作区，不是任意激活的独立窗口 | 共享会话的最终业务结果，详见[执行会话](../../../01-user-guide/workflow/execution.md) |
+
+“读取已保存流程”入口当前读取模板集合中的内容，不是每次直接向 MySQL 重新查询；也不读取当前尚未保存的编辑器画布。需要最新持久化内容时，先确认模板集合已经加载/刷新。创建请求后的字节副本不受后续编辑影响。
+
+裸 `FlowHeadlessExecutionService` 不访问 WPF Application/Dispatcher/Window。按 `FlowKey` 取模板的协调器在 WPF 应用存在时可能通过 Dispatcher 读取模板集合，这与“执行节点时不触碰编辑器”并不矛盾。
+
 ## 请求与隔离
 
-`FlowHeadlessExecutionRequest` 接收非空 STN、起始节点、SN、可选 MQTT 服务列表以及 readiness / execution timeout。构造时复制 STN、服务 token 和设备信息，计算 `ContentHash`；读取请求属性或创建宿主输入时再次复制，后续编辑和调用方修改不得改变正在执行的请求。
+`FlowHeadlessExecutionRequest` 接收非空 STN、起始节点、SN、可选 MQTT 服务列表以及 readiness / execution timeout。构造时复制 STN、服务 token 和设备信息，计算 `ContentHash`；读取请求属性或创建宿主输入时再次复制，后续编辑和调用方修改不得改变正在执行的请求。`ContentHash` 是 STN 字节的 SHA-256，小写十六进制；不包含起始节点、SN、服务/设备快照或超时配置。相同哈希不能证明两次调用具有相同的执行条件，也不是请求幂等键。
 
 readiness timeout 必须为正值且不接受无限等待；execution timeout 可为正值或 `Timeout.InfiniteTimeSpan`。传入非法参数会在请求构造时抛出异常，不会进入结构化运行结果。
 
-`RunAsync` 每次创建并最终释放一个 `FlowRuntimeHost`，加载后由 `FlowEngineRunner` 等待运行结束；并发请求不共享可变节点实例。若图中有 `CVBaseServerNode` 但未提供任何服务快照，明确返回 `StartRejected`。提供了非空快照也不证明每个设备在线或绑定成功。
+`RunAsync` 每次创建并最终释放一个 `FlowRuntimeHost`，加载后由 `FlowEngineRunner` 等待运行结束；并发请求不共享可变节点实例。若图中有 `CVBaseServerNode` 但未提供任何服务快照，明确返回 `StartRejected`。提供了非空快照也不证明每个设备在线或绑定成功。宿主本身不创建编辑器；具体节点的构造、加载和执行仍需满足其自身的 UI、服务和设备依赖。
+
+### 调用示例
+
+示例中的 `using` 指令放在文件顶部，其余语句放在调用方的异步方法内。`stnBytes` 是已确认的原始 STN 字节，`startNodeName` 是该图中的起始节点名，`serialNumber`、`mqttServices` 和 `cancellationToken` 由调用方提供；请求不接收 `.cvflow` 压缩包作为 STN。调用会实际执行图内节点，须先确认对应设备与数据操作范围。
+
+```csharp
+using System;
+using ColorVision.Engine.FlowProcessing;
+
+var request = new FlowHeadlessExecutionRequest(
+    stnSnapshot: stnBytes,
+    startNodeName: startNodeName,
+    serialNumber: serialNumber,
+    services: mqttServices,
+    readinessTimeout: TimeSpan.FromSeconds(2),
+    executionTimeout: TimeSpan.FromMinutes(2));
+
+FlowHeadlessExecutionResult result =
+    await FlowExecutionCoordinator.Instance.RunHeadlessAsync(
+        request, cancellationToken);
+```
+
+这里显式设置了 2 分钟执行等待；省略该项时执行不限时。调用后使用 `result.Succeeded` 判断本次节点图结果，并读取 `Termination`、`Data.Status`、`Data.Message` 排查失败；业务批次和前后处理需要对应执行入口负责。
 
 ## 就绪、执行与停止边界
 
@@ -37,18 +72,6 @@ readiness timeout 必须为正值且不接受无限等待；execution timeout �
 
 运行器在执行超时或运行中取消时调用 `StopNode(startNodeName, serialNumber)`，再构造终止结果。若指定 SN 仍有活动动作，`BaseStartNode.Stop` 将其改为停止并从活动映射移除、向节点图传递停止动作；这条链没有等待设备停止确认或回滚外部写入的完成屏障。`Canceled` / `TimedOut`、宿主回到 `Ready` 或随后释放，都不能单独证明硬件已经停稳；重试前须由相应设备/业务边界确认实际状态。
 
-## 三种入口不能混用
-
-| 入口 | 读取什么 | 完成含义 |
-| --- | --- | --- |
-| `RunHeadlessAsync(request)` | 调用方提供的不可变 STN/服务请求 | 本次隔离节点图的终止结果 |
-| `RunSavedFlowHeadlessAsync(flowKey, ...)` | 在 `TemplateFlow.Params` 按 `FlowKey` 找到的 `DataBase64`，随后复制到请求 | 与裸执行相同，不自动增加前后处理 |
-| `RunSelectedFlowAndWaitForFinalizationAsync()` | 单例 `FlowEngineManager.View` 的主工作区，不是任意激活的独立窗口 | 共享会话的最终业务结果，详见[执行会话](../../../01-user-guide/workflow/execution.md) |
-
-“读取已保存流程”入口当前读取模板集合中的内容，不是每次直接向 MySQL 重新查询；也不读取当前尚未保存的编辑器画布。需要最新持久化内容时，先确认模板集合已经加载/刷新。创建请求后的字节副本不受后续编辑影响。
-
-裸 `FlowHeadlessExecutionService` 不访问 WPF Application/Dispatcher/Window。按 `FlowKey` 取模板的协调器在 WPF 应用存在时可能通过 Dispatcher 读取模板集合，这与“执行节点时不触碰编辑器”并不矛盾。
-
 ## 结果与失败语义
 
 `FlowHeadlessExecutionResult` 返回 `Started`、`Termination`、`ContentHash`、`Data` 和 `ElapsedMilliseconds`。`Succeeded` 只有在已经启动、终止类型为 `Completed` 且引擎状态也为 `Completed` 时才为真。
@@ -62,6 +85,8 @@ readiness timeout 必须为正值且不接受无限等待；execution timeout �
 | `LoadFailed` | 加载 STN/运行图失败 |
 | `Faulted` | 已进入加载后的运行阶段发生异常 |
 
+`RunCoreAsync` 的外层异常处理通过 `CreateFailure()` 统一设置 `Started=false`，并没有保留此前是否已启动的信息；例如运行或宿主释放抛出异常后可能得到 `Faulted` 与 `Started=false`。因此该字段为假不能单独证明没有执行过节点或发出过设备动作，重试仍需核对本次 SN、日志和外部状态。
+
 `ToFlowControlData()` 保留起始节点、SN、状态、时间、消息和错误节点映射，不会凭空创建 `RunFinalized` 或客户报表。调用边界也有会直接抛出的错误，例如空请求、非法请求参数，以及已保存流程不存在/非合法 Base64；不要假定所有失败都以 `Termination` 返回。
 
 `FlowHeadlessExecutionObserver` 只附着于本次隔离图，用于节点 Run/End 诊断，不作为全局编辑器事件注册。运行器返回后，服务最多再等待 **1 秒**，让已观察到 Run 的节点补齐 End；`AsyncOperationDrain.WaitAsync` 返回的“是否排空”布尔值没有进入运行结果。随后解除订阅，因此返回成功或取消结果都不保证所有节点结束诊断已经收齐，迟到事件也不保证被该观察器接收。
@@ -70,12 +95,12 @@ readiness timeout 必须为正值且不接受无限等待；execution timeout �
 
 ## Quartz 独立调度
 
-`HeadlessFlowJob` 使用 `RunSavedFlowHeadlessAsync`，带 `DisallowConcurrentExecution`，限制同一 JobDetail 并发；不同作业与裸请求仍须自行考虑硬件共享。它将结果转换为 `FlowJobResult` 写入 `context.Result`，启动边界异常记录为 `HeadlessStartupException`。
+`HeadlessFlowJob` 使用 `RunSavedFlowHeadlessAsync`，带 `DisallowConcurrentExecution`，限制同一 JobDetail 并发；不同作业与裸请求仍须自行考虑硬件共享。它将结果转换为 `FlowJobResult` 写入 `context.Result`，作业内抛出的异常统一记录为 `HeadlessStartupException`；这是作业包装层的状态名，不证明异常一定发生在启动前。耗时优先取正值 `Data.TotalTime`，否则取 `ElapsedMilliseconds`，两者的计时范围并不相同。
 
 | JobDataMap 字段 | 约束 |
 | --- | --- |
-| `FlowKey`、`StartNode` | 必填 |
-| `SerialNumber` | 可选；缺省时由作业名与 UTC 时间生成 |
+| `FlowKey`、`StartNode` | 必填且非空白；`FlowKey` 对应模板的稳定键，按区分大小写的精确比较查找，不是显示名称 |
+| `SerialNumber` | 可选；键缺失时由作业名与 UTC 时间生成。显式空白字符串不会触发生成，会被请求参数校验拒绝 |
 | `ReadinessTimeoutMs`、`ExecutionTimeoutMs` | 可选，设置时必须为正整数毫秒 |
 
 未设置这两个字段时沿用就绪 2 秒、执行不限时的默认值；JobDataMap 不接受用负数表示无限等待。
@@ -94,6 +119,6 @@ readiness timeout 必须为正值且不接受无限等待；execution timeout �
 
 ## 验证入口与缺口
 
-`FlowHeadlessExecutionServiceTests` 覆盖请求副本、并发隔离、取消结果、无效 STN、观察器和无服务快照拒绝；`FlowRuntimeHostTests` / `FlowHeadlessHostTests` 覆盖非可视宿主及生命周期。取消用例采用本地不结束节点，观察器用例由测试节点直接发出 Run/End 事件，不是真实 MQTT/设备往返。以上测试文件尚未直接覆盖执行超时窗口、超过 1 秒的观察器收尾或释放宿主的计时口径；这些契约来自当前源码核对，不是已通过的行为测试结论。裸执行测试也不能证明设备停稳、Quartz 配置完整或项目业务输出成功。
+`FlowHeadlessExecutionServiceTests` 覆盖请求副本、并发隔离、取消结果、无效 STN、观察器和无服务快照拒绝；`FlowRuntimeHostTests` / `FlowHeadlessHostTests` 覆盖非可视宿主及生命周期。取消用例采用本地不结束节点，观察器用例由测试节点直接发出 Run/End 事件，不是真实 MQTT/设备往返。以上测试文件尚未直接覆盖执行超时窗口、超过 1 秒的观察器收尾、释放宿主的计时口径或外层异常丢失启动状态的情况；这些契约来自当前源码核对，不是已通过的行为测试结论。裸执行测试也不能证明设备停稳、Quartz 配置完整或项目业务输出成功。
 
 对应改动应核对两次并发执行不共享图、请求创建后修改原输入无效、取消/超时/加载失败/启动拒绝有明确结果。若还要求批次、后处理、MES 或客户结果，必须另外验证负责这些阶段的宿主，不能将裸图完成当作业务交付。

@@ -13,7 +13,7 @@ related: ["copilot.configuration","copilot.execution","copilot.lifecycle","copil
 
 ColorVision Copilot 使用 Microsoft Agent Framework 作为唯一 Agent 执行层。模型、工具、审批、任务账本、恢复和会话状态都沿同一条运行路径处理；框架不可用时本轮明确失败，不切换到另一套规划器重放请求。
 
-项目指令、按需 Skill、子 Agent、外部 MCP 与 Hook 分别拥有发现、上下文、执行和权限边界；不要因为界面入口相近就把它们合成同一种配置。按下面的源码责任定位权威主题，本页不再复制操作手册。
+项目指令、按需 Skill、子 Agent、外部 MCP 与 Hook 分别拥有发现、上下文、执行和权限边界；不要因为界面入口相近就把它们合成同一种配置。按下表定位各执行阶段的权威主题。
 
 ## 架构边界
 
@@ -34,7 +34,8 @@ ColorVision Copilot 使用 Microsoft Agent Framework 作为唯一 Agent 执行�
 | 工具为什么没调用、委派权限或证据不足 | [执行链](./copilot-agent-execution.md) | `CopilotToolRegistry`、`CopilotAgentExecutionContract` |
 | 本地命令、回顾、查找、快捷键 | [交互入口](./copilot-local-interactions.md) | `CopilotLocalCommandCatalog` |
 | Schema、审批、journal、恢复或 Flow 编辑契约 | [工具契约](./copilot-agent-tool-contracts.md) | `CopilotToolExecutionContracts`、`CopilotAgentTaskEventJournal` |
-| AGENTS.md、Skills、压缩或请求预算 | [生命周期](./copilot-agent-lifecycle.md) | `CopilotAgentProjectInstructions`、`CopilotAgentSkillCatalog` |
+| AGENTS.md、压缩或请求预算 | [生命周期](./copilot-agent-lifecycle.md) | `CopilotAgentProjectInstructions`、`CopilotAgentTokenBudget` |
+| 技能发现、调用、开关或 MCP 依赖 | [Copilot 技能](./copilot-skills.md) | `CopilotAgentSkillCatalog`、`CopilotAgentSkills` |
 | 检查点、重试、任务 UI 或取消终态 | [会话与工具](./copilot-agent-session-and-tools.md) | `CopilotAgentSessionCheckpoint`、`CopilotToolExecution` |
 | 模块上下文、外部 MCP client 或 Hook | [扩展边界](./copilot-agent-extensions.md) | `CopilotAgentExtensionRegistry`、`CopilotMcpToolProvider` |
 | 让外部 Codex 读取本机 ColorVision | [本地 MCP server](./colorvision-mcp.md) | `CopilotMcpServer` |

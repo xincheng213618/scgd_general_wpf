@@ -57,7 +57,7 @@ LIMIT 200
 
 ## Read-only rules
 
-1. Use these tables only to explain the currently installed version's settings.
+1. Query these tables to explain the current templates and settings, including preserved field data.
 2. Do not call `ExecuteDatabaseSql` for `INSERT`, `UPDATE`, `DELETE`, `REPLACE`, DDL, or cleanup involving these tables.
-3. Do not preserve them through the Service Manager reset backup; native release SQL is their source of truth.
+3. The reset path includes these tables in `MigrationBackupTableNames`: it backs up existing field rows, loads the versioned SQL, and restores the preserved rows. Do not remove them from the backup scope because Copilot cannot write them. This is selective migration, not a complete database backup or a guarantee that reset failures roll back.
 4. If settings must change, implement the change in the versioned model/SQL migration and release path rather than applying ad-hoc production SQL.

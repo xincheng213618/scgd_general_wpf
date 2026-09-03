@@ -3,7 +3,7 @@ knowledge_id: "operations.device-configuration"
 knowledge_type: "topic"
 status: "current"
 summary: "终端与设备配置引用、创建、保存、重启和删除清理；未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。"
-aliases: ["添加设备","保存设备","删除设备","设备配置引用","通信订阅清理","设备Code","设备配置保存失败","RestartRCService","SaveConfig","DeviceService","DeviceServiceConfig","DeviceServiceCreateContext","TryDeserializeConfig"]
+aliases: ["添加设备","保存设备","删除设备","设备配置引用","通信订阅清理","设备Code","设备配置保存失败","RestartRCService","SaveConfig","DeviceService","DeviceServiceConfig","DeviceServiceCreateContext","TryDeserializeConfig","txt_value","SQL修改设备配置"]
 code_paths: ["Engine/ColorVision.Engine/Dao/SysResourceModel.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Services/Core/ServiceObjectBaseExtensions.cs","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceConfig.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs","Engine/ColorVision.Engine/Services/Devices/SMU/DeviceSMU.cs","Engine/ColorVision.Engine/Services/Devices/SMU/MQTTSMU.cs","Engine/ColorVision.Engine/Services/Type/CreateType.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/CreateTerminal.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/TerminalService.cs","Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs"]
 test_paths: []
 related: ["engine.devices","engine.mqtt","engine.rc-registration","ui.property-grid","operations.acceptance"]
@@ -18,6 +18,8 @@ related: ["engine.devices","engine.mqtt","engine.rc-registration","ui.property-g
 RCName/AppId 等客户端注册配置不是这里的 MySQL 设备参数；其连接测试、取消、节点令牌与设备状态的区别见[RC 注册契约](../../04-api-reference/engine-components/rc-registration.md)。
 
 ## 资源与配置身份
+
+设备树右侧的属性操作由[通用命令生成器](../../04-api-reference/ui-components/property-grid.md#命令属性页自动生成)依据命令元数据生成，按设备与连接、校准与校正、采集与显示、数据与日志、服务与维护归类。不同设备使用同一套紧凑按钮布局和更新窗口主题规则，仅显示自身拥有的命令；修改配置、文件保存、重启、重置和删除来自基类元数据。页面不会因展示按钮而自动执行设备操作。
 
 | 对象/字段 | 含义 |
 | --- | --- |
@@ -55,13 +57,15 @@ RCName/AppId 等客户端注册配置不是这里的 MySQL 设备参数；其连
 | `RestartRCService()` | 按 Type 查服务类型、按 Pid 查终端 Code，再请求 RC 重启该设备 | 远端已经重启或应用新配置 |
 | 本地通知 | `OnConfigChanged()`，再发 `ConfigChanged` | 各设备全部对象已经重建或硬件已健康 |
 
+直接 SQL 修改 `t_scgd_sys_resource` 不调用上述保存、重启和通知流程，也不会自动更新已经载入的 Config。已存在的设备对象稍后执行 `SaveConfig()`，还可能把旧 Code/Name/JSON 覆盖回数据库。核验 SQL 修改时应分别确认目标行与实际使用该配置的运行对象；不能把数据库写入成功当成界面刷新或远端生效。
+
 上述步骤不是 MySQL 与远端服务的分布式事务。后续阶段出错不会自动回滚已经成功的数据库更新；顺序中抛异常会阻止更后的通知。
 
 RC 的三参数 `RestartServices` 是 void 包装，丢弃 `TryRestartServices` 的结果。RC 未连接或无可用 token 时内部返回 false；可以发送时也是异步发布并稍后查询，不等待设备应用完成。因此保存方法返回、通知发生、设备在线和参数生效必须分别取证。
 
 设备右键“重启服务”的 `RefreshCommand` 实际调用 `Save()`，也会尝试把当前 Config 写入数据库，不是只读刷新。不要把设备级与终端级操作视为相同范围。
 
-**终端保存仍有实现缺口：** `TerminalService.Save()` 先修改内存 `SysResourceModel`，但使用的是未传实体、未指定条件的 `Db.Updateable<SysResourceModel>().ExecuteCommand()`，不同于设备的 `Updateable(SysResourceModel)`。不能据此宣称目标终端行已正确持久化；实际 ORM 行为和修复需单独验证，不猜测它一定更新全部行或一定失败。随后重启仅传 `Config.ServiceType.ToString()`，未传终端 Code；`CreateType` 新建 Config 没有设置该 ServiceType，加载终端也只覆盖 Code/Name，不以资源 Type 同步它。需要核对实际配置和请求目标，不能声称只重启当前终端。这些问题是现有源码冲突，不是本次文档调整已修复的功能。
+**终端保存仍有实现缺口：** `TerminalService.Save()` 先修改内存 `SysResourceModel`，但使用的是未传实体、未指定条件的 `Db.Updateable<SysResourceModel>().ExecuteCommand()`，不同于设备的 `Updateable(SysResourceModel)`。不能据此宣称目标终端行已正确持久化；实际 ORM 行为和修复需单独验证，不猜测它一定更新全部行或一定失败。随后重启仅传 `Config.ServiceType.ToString()`，未传终端 Code；`CreateType` 新建 Config 没有设置该 ServiceType，加载终端也只覆盖 Code/Name，不以资源 Type 同步它。需要核对实际配置和请求目标，不能声称只重启当前终端。
 
 ## 导入、导出、重置与删除
 
@@ -76,7 +80,7 @@ RC 的三参数 `RestartServices` 是 void 包装，丢弃 `TryRestartServices` 
 
 删除显示项依赖返回同一个已登记实例，并非按设备 Code 查找。例如 `DeviceSMU.GetDisplayControl()` 每次创建新的 `DisplaySMU(this)`，删除时拿到新实例不能据此保证原显示项已移除。删除中途任一步抛异常也会阻止后续清理，不恢复先前已完成的移树或数据库删除。
 
-调用 Dispose 不等于释放通信：通用 `DeviceService.Dispose()` 只调用 `GC.SuppressFinalize`，不会自动执行 `GetMQTTService()?.Dispose()`；`DeviceSMU` 也没有覆盖这个方法。`MQTTServiceBase.Dispose()` 才负责自身 `Processing` 退订、计时器及待处理记录清理，派生通信类另加的事件仍要核对其解绑实现。因此不能从“设备已删”推断所有通信回调、显示缓存或已打开窗口均已失效。这些是现有实现边界，不是本次文档调整已修复的功能，也不是触发硬件或重启服务来验证的授权。
+调用 Dispose 不等于释放通信：通用 `DeviceService.Dispose()` 只调用 `GC.SuppressFinalize`，不会自动执行 `GetMQTTService()?.Dispose()`；`DeviceSMU` 也没有覆盖这个方法。`MQTTServiceBase.Dispose()` 才负责自身 `Processing` 退订、计时器及待处理记录清理，派生通信类另加的事件仍要核对其解绑实现。因此不能从“设备已删”推断所有通信回调、显示缓存或已打开窗口均已失效。
 
 具体 `Device*` 可以覆盖上述方法，操作前应核对实际类型。PropertyGrid 的编辑会话、确定与关闭语义只在[属性契约](../../04-api-reference/ui-components/property-grid.md)维护；按钮是否可用不扩大 AI 的执行授权。
 

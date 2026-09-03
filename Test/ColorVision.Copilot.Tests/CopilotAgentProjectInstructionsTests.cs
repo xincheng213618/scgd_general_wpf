@@ -1366,48 +1366,7 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
-    public void PersonalityDiagnosticsReportConfiguredAndEffectiveSourcesWithoutPromptContent()
-    {
-        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
-        {
-            ConfiguredPersonality = CopilotResponsePersonality.Friendly,
-            HasPersonalityOverride = true,
-            PersonalitySource = CopilotProjectInstructionConfigSources.CodexHome,
-        };
-        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
-        conversation.HasResponsePersonalityOverride = true;
-        conversation.ResponsePersonality = CopilotResponsePersonality.None;
-        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-            new CopilotProjectInstructionSnapshot(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                options,
-                Array.Empty<CopilotProjectInstructionDocument>()),
-            hasActiveAgentRun: false);
-        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
-        {
-            ResponsePersonality = CopilotResponsePersonality.None,
-            ResponsePersonalitySourceLabel = "会话覆盖",
-        });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
-        {
-            Config = new CopilotConfig(),
-            State = new CopilotChatState(),
-            Conversation = conversation,
-            CodexConfigOptions = options,
-        });
-
-        Assert.Contains("Codex personality：友好（friendly）", memoryReport, StringComparison.Ordinal);
-        Assert.Contains(options.PersonalitySourceLabel, memoryReport, StringComparison.Ordinal);
-        Assert.Contains("回答风格：无（none） · 来源 会话覆盖", contextReport, StringComparison.Ordinal);
-        Assert.Contains("回答风格：无 · 来源 会话覆盖", debugReport, StringComparison.Ordinal);
-        Assert.Contains("Codex personality 默认：友好", debugReport, StringComparison.Ordinal);
-        Assert.Contains("会话覆盖优先", debugReport, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void DisabledPersonalityFeatureDiagnosticsExplainTheEffectiveNeutralStyle()
+    public void DisabledPersonalityFeatureOverridesTheConversationStyle()
     {
         var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
         {
@@ -1422,37 +1381,8 @@ public sealed class CopilotAgentProjectInstructionsTests
         conversation.HasResponsePersonalityOverride = true;
         conversation.ResponsePersonality = CopilotResponsePersonality.Pragmatic;
         var resolution = CopilotResponsePersonalitySelection.Resolve(conversation, options);
-        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-            new CopilotProjectInstructionSnapshot(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                options,
-                Array.Empty<CopilotProjectInstructionDocument>()),
-            hasActiveAgentRun: false);
-        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
-        {
-            ResponsePersonality = resolution.Personality,
-            ResponsePersonalitySourceLabel = resolution.SourceLabel,
-            CodexPersonalityEnabled = false,
-            HasCodexPersonalityEnabledOverride = true,
-            CodexPersonalityEnabledSourceLabel = options.PersonalityEnabledSourceLabel,
-        });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
-        {
-            Config = new CopilotConfig(),
-            State = new CopilotChatState(),
-            Conversation = conversation,
-            CodexConfigOptions = options,
-        });
 
         Assert.Equal(CopilotResponsePersonality.None, resolution.Personality);
-        Assert.Contains("Codex features.personality：false", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("被 features.personality=false 阻断", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("回答风格：无（none）", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Personality 功能：关闭", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex features.personality：false", debugReport, StringComparison.Ordinal);
-        Assert.Contains("回答风格：无", debugReport, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1548,46 +1478,6 @@ public sealed class CopilotAgentProjectInstructionsTests
     }
 
     [Fact]
-    public void WebSearchDiagnosticsExposeUnsupportedModesWithoutClaimingLiveAccess()
-    {
-        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
-        {
-            ConfiguredWebSearchMode = CopilotCodexWebSearchMode.Cached,
-            HasWebSearchModeOverride = true,
-            WebSearchModeSource = CopilotProjectInstructionConfigSources.CodexHome,
-        };
-        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-            new CopilotProjectInstructionSnapshot(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                options,
-                Array.Empty<CopilotProjectInstructionDocument>()),
-            hasActiveAgentRun: false);
-        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
-        {
-            CodexWebSearchMode = options.ConfiguredWebSearchMode,
-            CodexWebSearchModeSourceLabel = options.WebSearchModeSourceLabel,
-            HasCodexWebSearchModeOverride = true,
-        });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
-        {
-            Config = new CopilotConfig(),
-            State = new CopilotChatState(),
-            CodexConfigOptions = options,
-        });
-
-        Assert.Contains("Codex web_search：cached", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("不支持 cached 后端", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("不支持 cached 后端", contextReport, StringComparison.Ordinal);
-        Assert.Contains(options.WebSearchModeSourceLabel, contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex web_search：cached", debugReport, StringComparison.Ordinal);
-        Assert.DoesNotContain("已允许按请求意图实时公网检索", memoryReport, StringComparison.Ordinal);
-        Assert.DoesNotContain("已允许按请求意图实时公网检索", contextReport, StringComparison.Ordinal);
-        Assert.DoesNotContain("已允许按请求意图实时公网检索", debugReport, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void ModelContextWindowChangesTheSharedHistoryAndAutoCompactionBudget()
     {
         var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
@@ -1630,50 +1520,6 @@ public sealed class CopilotAgentProjectInstructionsTests
         Assert.True(configuredLimits.MaximumCharacters < applicationLimits.MaximumCharacters);
         Assert.True(configuredDecision.ShouldCompact);
         Assert.False(applicationDecision.ShouldCompact);
-    }
-
-    [Fact]
-    public void ModelContextWindowDiagnosticsReportTheEffectiveSnapshotAndSource()
-    {
-        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
-        {
-            ConfiguredModelContextWindowTokens = 131_072,
-            HasModelContextWindowOverride = true,
-            ModelContextWindowSource = CopilotProjectInstructionConfigSources.CodexHome,
-        };
-        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-            new CopilotProjectInstructionSnapshot(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                options,
-                Array.Empty<CopilotProjectInstructionDocument>()),
-            hasActiveAgentRun: false);
-        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
-        {
-            HistoryContextWindowTokens = options.ConfiguredModelContextWindowTokens,
-            HasModelContextWindowOverride = true,
-            ModelContextWindowSourceLabel = options.ModelContextWindowSourceLabel,
-        });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
-        {
-            Config = new CopilotConfig
-            {
-                AgentDefaults = new CopilotAgentDefaultsConfig
-                {
-                    ContextWindowTokens = 524_288,
-                },
-            },
-            State = new CopilotChatState(),
-            CodexConfigOptions = options,
-        });
-
-        Assert.Contains("Codex model_context_window：131,072 Token", memoryReport, StringComparison.Ordinal);
-        Assert.Contains(options.ModelContextWindowSourceLabel, memoryReport, StringComparison.Ordinal);
-        Assert.Contains("Codex model_context_window：131,072 Token", contextReport, StringComparison.Ordinal);
-        Assert.Contains("同时约束聊天历史、发送校验、自动压缩和 Agent 上下文", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex model_context_window：131,072 tokens", debugReport, StringComparison.Ordinal);
-        Assert.Contains("请求快照覆盖应用默认值", debugReport, StringComparison.Ordinal);
     }
 
     private static string CreateTemporaryDirectory()

@@ -8,7 +8,6 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
@@ -358,31 +357,6 @@ public sealed class StorageMaintenanceTests
         });
     }
 
-    [Fact]
-    public void RenderIsolatedThemePreviewsOnlyWhenAnOutputDirectoryIsRequested()
-    {
-        string? directory = Environment.GetEnvironmentVariable("COLORVISION_STORAGE_MAINTENANCE_PREVIEW_DIRECTORY");
-        if (string.IsNullOrWhiteSpace(directory)) return;
-        Assert.True(Path.IsPathFullyQualified(directory), "Use an explicit absolute directory for generated UI previews.");
-        Directory.CreateDirectory(directory);
-        foreach (int width in new[] { 980, 1180 })
-        foreach (bool dark in new[] { false, true })
-        {
-            WithPage(width, dark, "zh-CN", (host, page, scroll, model, sandbox) =>
-            {
-                CompleteWithDispatcher(model.ScanAsync());
-                RefreshLayout(host, width);
-                string stem = $"storage-maintenance-{(dark ? "dark" : "light")}-{width}";
-                scroll.ScrollToTop();
-                RefreshLayout(host, width);
-                Render(host, Path.Combine(directory, stem + ".png"));
-                scroll.ScrollToBottom();
-                RefreshLayout(host, width);
-                Render(host, Path.Combine(directory, stem + "-reset.png"));
-            });
-        }
-    }
-
     [Theory]
     [InlineData(980, false)]
     [InlineData(980, true)]
@@ -412,13 +386,6 @@ public sealed class StorageMaintenanceTests
                 if (element is TextBlock text && !string.IsNullOrWhiteSpace(text.Text)) AssertTextFits(text);
             }
 
-            string? directory = Environment.GetEnvironmentVariable("COLORVISION_STORAGE_MAINTENANCE_PREVIEW_DIRECTORY");
-            if (!string.IsNullOrWhiteSpace(directory))
-            {
-                Assert.True(Path.IsPathFullyQualified(directory));
-                Directory.CreateDirectory(directory);
-                Render(host, Path.Combine(directory, $"settings-shell-general-{(dark ? "dark" : "light")}-{width}.png"));
-            }
         });
     }
 
@@ -497,18 +464,6 @@ public sealed class StorageMaintenanceTests
                     $"The real settings shell must scroll to maintenance action '{button.Content}': {bounds}, viewport {scroll.RenderSize}.");
             }
 
-            string? directory = Environment.GetEnvironmentVariable("COLORVISION_STORAGE_MAINTENANCE_PREVIEW_DIRECTORY");
-            if (!string.IsNullOrWhiteSpace(directory))
-            {
-                Assert.True(Path.IsPathFullyQualified(directory));
-                Directory.CreateDirectory(directory);
-                scroll.ScrollToTop();
-                RefreshLayout(host, width);
-                Render(host, Path.Combine(directory, $"settings-shell-maintenance-dark-{width}.png"));
-                scroll.ScrollToBottom();
-                RefreshLayout(host, width);
-                Render(host, Path.Combine(directory, $"settings-shell-maintenance-dark-{width}-reset.png"));
-            }
         });
     }
 
@@ -773,39 +728,6 @@ public sealed class StorageMaintenanceTests
             if (child is FrameworkElement element) yield return element;
             foreach (FrameworkElement descendant in Descendants(child)) yield return descendant;
         }
-    }
-
-    private static void Render(Grid host, string path)
-    {
-        // Offscreen layout can finish before checked/toggled visual-state animations do.
-        // Pump UI frames briefly instead of blocking the dispatcher with a thread sleep.
-        DispatcherFrame animationFrame = new();
-        DispatcherTimer settleTimer = new(DispatcherPriority.Background, host.Dispatcher)
-        {
-            Interval = TimeSpan.FromMilliseconds(300)
-        };
-        EventHandler stopFrame = (_, _) => animationFrame.Continue = false;
-        settleTimer.Tick += stopFrame;
-        settleTimer.Start();
-        try { Dispatcher.PushFrame(animationFrame); }
-        finally
-        {
-            settleTimer.Stop();
-            settleTimer.Tick -= stopFrame;
-        }
-        host.UpdateLayout();
-        RenderTargetBitmap bitmap = new((int)host.ActualWidth, (int)host.ActualHeight, 96, 96, PixelFormats.Pbgra32);
-        DrawingVisual visual = new();
-        using (DrawingContext drawing = visual.RenderOpen())
-        {
-            drawing.DrawRectangle(host.Background, null, new Rect(host.RenderSize));
-            drawing.DrawRectangle(new VisualBrush(host) { AutoLayoutContent = false, Stretch = Stretch.Fill }, null, new Rect(host.RenderSize));
-        }
-        bitmap.Render(visual);
-        PngBitmapEncoder encoder = new();
-        encoder.Frames.Add(BitmapFrame.Create(bitmap));
-        using FileStream output = new(path, FileMode.Create, FileAccess.Write, FileShare.None);
-        encoder.Save(output);
     }
 
     public enum PreviewLanguage { System, Chinese, English }

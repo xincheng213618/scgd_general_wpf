@@ -141,7 +141,27 @@ namespace ColorVision.Engine.Media
                 throw new InvalidOperationException("手动 CIE 当前仅支持 8bit 或 16bit 三通道 CVRAW。");
             }
 
+            if (rawFile.Rows <= 0 || rawFile.Cols <= 0)
+            {
+                throw new InvalidOperationException("CVRAW 图像尺寸无效，无法计算 CIE。");
+            }
+
             int pixelCount = checked(rawFile.Rows * rawFile.Cols);
+            int expectedLength = checked(pixelCount * 3 * (rawFile.Bpp / 8));
+            if (rawFile.Data.Length != expectedLength)
+            {
+                throw new InvalidOperationException($"CVRAW 数据长度与图像尺寸不一致：需要 {expectedLength} 字节，实际 {rawFile.Data.Length} 字节。");
+            }
+
+            ReadOnlySpan<double> matrix = [config.A, config.B, config.C, config.D, config.E, config.F, config.G, config.H, config.I];
+            foreach (double coefficient in matrix)
+            {
+                if (!double.IsFinite(coefficient))
+                {
+                    throw new InvalidOperationException("CIE 校正矩阵包含非有限数值，无法计算 CIE。");
+                }
+            }
+
             float[] exposure =
             {
                 ResolveExposure(config.Texp_x, rawFile.Exp, 0),
@@ -176,9 +196,9 @@ namespace ColorVision.Engine.Media
                     double source1 = rawFile.Data[sourceIndex + 1];
                     double source2 = rawFile.Data[sourceIndex + 0];
 
-                    xyzPlanes[pixelIndex] = (float)(xFrom0 * source0 + xFrom1 * source1 + xFrom2 * source2);
-                    xyzPlanes[yOffset + pixelIndex] = (float)(yFrom0 * source0 + yFrom1 * source1 + yFrom2 * source2);
-                    xyzPlanes[zOffset + pixelIndex] = (float)(zFrom0 * source0 + zFrom1 * source1 + zFrom2 * source2);
+                    xyzPlanes[pixelIndex] = ToFiniteSingle(xFrom0 * source0 + xFrom1 * source1 + xFrom2 * source2);
+                    xyzPlanes[yOffset + pixelIndex] = ToFiniteSingle(yFrom0 * source0 + yFrom1 * source1 + yFrom2 * source2);
+                    xyzPlanes[zOffset + pixelIndex] = ToFiniteSingle(zFrom0 * source0 + zFrom1 * source1 + zFrom2 * source2);
                 }
             }
             else
@@ -193,9 +213,9 @@ namespace ColorVision.Engine.Media
                     double source1 = source[sourceIndex + 1];
                     double source2 = source[sourceIndex + 0];
 
-                    xyzPlanes[pixelIndex] = (float)(xFrom0 * source0 + xFrom1 * source1 + xFrom2 * source2);
-                    xyzPlanes[yOffset + pixelIndex] = (float)(yFrom0 * source0 + yFrom1 * source1 + yFrom2 * source2);
-                    xyzPlanes[zOffset + pixelIndex] = (float)(zFrom0 * source0 + zFrom1 * source1 + zFrom2 * source2);
+                    xyzPlanes[pixelIndex] = ToFiniteSingle(xFrom0 * source0 + xFrom1 * source1 + xFrom2 * source2);
+                    xyzPlanes[yOffset + pixelIndex] = ToFiniteSingle(yFrom0 * source0 + yFrom1 * source1 + yFrom2 * source2);
+                    xyzPlanes[zOffset + pixelIndex] = ToFiniteSingle(zFrom0 * source0 + zFrom1 * source1 + zFrom2 * source2);
                 }
             }
 
@@ -207,19 +227,26 @@ namespace ColorVision.Engine.Media
 
         private static float ResolveExposure(double configuredValue, float[]? sourceExposure, int index)
         {
+            if (!double.IsFinite(configuredValue))
+            {
+                throw new InvalidOperationException($"第 {index + 1} 个输入通道曝光必须是有限数值。");
+            }
+
             if (configuredValue > 0)
             {
-                return (float)configuredValue;
+                float exposure = (float)configuredValue;
+                if (float.IsFinite(exposure) && exposure > 0) return exposure;
+                throw new InvalidOperationException($"第 {index + 1} 个输入通道曝光超出有效范围。");
             }
 
             if (sourceExposure != null)
             {
-                if (index < sourceExposure.Length && sourceExposure[index] > 0)
+                if (index < sourceExposure.Length && float.IsFinite(sourceExposure[index]) && sourceExposure[index] > 0)
                 {
                     return sourceExposure[index];
                 }
 
-                if (sourceExposure.Length == 1 && sourceExposure[0] > 0)
+                if (sourceExposure.Length == 1 && float.IsFinite(sourceExposure[0]) && sourceExposure[0] > 0)
                 {
                     return sourceExposure[0];
                 }
@@ -230,17 +257,32 @@ namespace ColorVision.Engine.Media
 
         private static double ResolveGain(double configuredValue, float rawGain)
         {
+            if (!double.IsFinite(configuredValue))
+            {
+                throw new InvalidOperationException("输入通道增益必须是有限数值。");
+            }
+
             if (configuredValue > 0)
             {
                 return configuredValue;
             }
 
-            if (rawGain > 0)
+            if (float.IsFinite(rawGain) && rawGain > 0)
             {
                 return rawGain;
             }
 
             throw new InvalidOperationException("输入通道增益无效，请在计算窗口里填写大于 0 的增益值。");
+        }
+
+        private static float ToFiniteSingle(double value)
+        {
+            float result = (float)value;
+            if (!float.IsFinite(result))
+            {
+                throw new InvalidOperationException("CIE 计算结果包含非有限数值或超出 32 位浮点范围。");
+            }
+            return result;
         }
 
         private static bool TryParseLumFourColorConfig(JObject root, out CVRawManualCieConfig config, out string? errorMessage)
@@ -301,9 +343,9 @@ namespace ColorVision.Engine.Media
             }
 
             string text = token.ToString();
-            if (!double.TryParse(text, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out value))
+            if (!double.TryParse(text, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out value) || !double.IsFinite(value))
             {
-                errorMessage = $"四色校正文件格式不正确，字段 {propertyName} 不是有效数字。";
+                errorMessage = $"四色校正文件格式不正确，字段 {propertyName} 不是有限数字。";
                 return false;
             }
 

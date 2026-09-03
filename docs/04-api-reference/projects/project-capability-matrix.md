@@ -2,8 +2,8 @@
 knowledge_id: "projects.capabilities"
 knowledge_type: "reference"
 status: "current"
-summary: "按协议、外部触发、结果出口与最小验证路径比较 ARVRPro、KB、LUX 和 IntegrationDemo。"
-aliases: ["哪个项目使用 Modbus","哪些项目输出 MES 或 Socket","ProjectARVRPro","ProjectKB","ProjectLUX","ProjectARVRPro.IntegrationDemo"]
+summary: "比较 ARVRPro、KB、LUX 和 IntegrationDemo 的检测触发、测试完成判据、流程配置与结果出口。"
+aliases: ["哪个项目使用 Modbus","哪些项目输出 MES 或 Socket","ProjectARVRPro","ProjectKB","ProjectLUX","ProjectARVRPro.IntegrationDemo","项目协议对比","项目结果出口","项目流程配置","测试完成确认"]
 code_paths: ["Projects/ProjectARVRPro/","Projects/ProjectARVRPro.IntegrationDemo/","Projects/ProjectKB/","Projects/ProjectLUX/"]
 test_paths: ["Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj","Test/ProjectKB.Tests/ProjectKB.Tests.csproj","Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj"]
 related: ["projects.index","projects.arvr-pro","projects.arvr-pro-demo","projects.kb","projects.lux"]
@@ -11,79 +11,48 @@ related: ["projects.index","projects.arvr-pro","projects.arvr-pro-demo","project
 
 # 项目横向速查
 
-需要按协议、触发方式、结果出口或流程组织定位项目时检索本页；确定项目后转到具体项目页，并核对其 `code_paths` 和 `test_paths`。业务归属、项目包与独立示例边界见[客户项目与对接示例入口](./README.md)。
+按业务、外部协议、流程配置或结果去向比较客户项目时使用本页。先确定现场实际启用的入口，再进入对应项目主题查看步骤、字段和失败处理；项目包与独立示例的装载、源码归属见[客户项目入口](./README.md)。
 
-它回答三个问题：这个项目解决什么现场问题，外部系统怎么触发，结果最终交给谁。
+## 业务与触发方式
 
-## 项目包总表
-
-| 项目 | 业务定位 | 外部触发 | 主要结果 | 最先看的代码 |
-| --- | --- | --- | --- | --- |
-| `ProjectARVRPro` | 当前主力 AR/VR 专业流程组项目 | Socket JSON、`RunAll`、`SwitchGroup`、雷鸟串口切图、AOI Relay | SQLite、CSV、Legacy CSV、客户 XLSX、Socket 结果 | `ARVRWindow.xaml.cs`、`Process/`、`Recipe/`、`Services/SocketControl.cs`、`SocketRelay/` |
-| `ProjectARVRPro.IntegrationDemo` | 给客户/上位机验证 ARVRPro TCP JSON 的示例 | 客户端主动连 `6666`，发送 JSON 事件 | 原始 JSON、解析后的结果表、CSV | `Program.cs`、`MainWindow.xaml.cs`、`Contracts/` |
-| `ProjectKB` | 键盘背光亮度、均匀性和自动修正 | Modbus TCP、MES DLL、可选 TCP Socket | SQLite、文本、summary、CSV、MES 上传 | `ProjectKBWindow.xaml.cs`、`Modbus/`、`MesDll.cs`、`BacklightAutotuneService.cs` |
-| `ProjectLUX` | LUX 亮度、色彩、MTF、畸变等自动化测试 | 文本 Socket：`T00XX,SN;` | `ProjectLUX.db`、`C_*.csv`、`B_*.csv`、`D_*.csv` | `LUXWindow.xaml.cs`、`Process/`、`Recipe/`、`Fix/`、`Services/SocketControl.cs` |
-
-## 按协议和触发方式分类
-
-| 类型 | 项目 | 入口 | 对接要点 |
+| 项目 | 业务定位 | 入口与协议 | 完成确认 |
 | --- | --- | --- | --- |
-| JSON Socket 项目 | `ProjectARVRPro` | `Services/SocketControl.cs`、各类 handler | `EventName`、SN 初始化、切图确认、最终 `ProjectARVRResult` 字段 |
-| 文本 Socket 项目 | `ProjectLUX` | `Services/SocketControl.cs` | `T00XX` 和 `ProcessMeta.SocketCode` 的对应关系 |
-| PLC/Modbus 项目 | `ProjectKB` | `Modbus/ModbusControl.cs` | holding register 地址、触发值 `1`、完成回写 `0`、SN 为空策略 |
-| 客户对接示例 | `ProjectARVRPro.IntegrationDemo` | `Contracts/`、`Program.cs` | 只保留公开 JSON 契约，不引入 ColorVision 内部逻辑 |
+| [ProjectARVRPro](./project-arvr-pro.md) | AR/VR 流程组、Recipe、切图与光学测试 | Socket JSON：`ProjectARVRInit`、`RunAll`、`SwitchGroup`；另有雷鸟串口切图、AOI Relay 对接 | `RunAll Code=0` 只表示接受启动；等待最终 `ProjectARVRResult` 并检查业务判定。详细时序见[ARVRPro 对接契约](./project-arvr-pro-integration-demo.md) |
+| [ProjectKB](./project-kb.md) | 键盘背光亮度、均匀性、局部对比度及背光修正 | Modbus TCP 触发检测；MES DLL 用于 SN 检查与结果回传 | 寄存器回 `0` 也可能是忽略空 SN 触发；需分别核对检测结果、PLC 读回和已启用的 MES 输出 |
+| [ProjectLUX](./project-lux.md) | 亮度、色彩、MTF、畸变、VID、光通量等测试 | 文本 Socket `T00XX,SN;`；普通 Flow 按活动组的 `SocketCode` 分派，VID/光通量有专用路径 | `T0000` 仅握手；命令响应不能单独证明 Flow 执行或 Recipe 判定通过。字段与异常响应见[LUX 协议](./project-lux-protocol.md) |
+| [IntegrationDemo](./project-arvr-pro-integration-demo.md) | 独立 ARVRPro TCP/JSON 对接客户端 | 主动连接服务端，默认端口 `6666`；支持离线解析样例、联机命令及切图确认 | 联机测试等待最终结果；离线解析成功只说明样例可读取，不证明宿主、设备或协议联调通过 |
 
-如果某个项目同时支持多种入口，现场排障时要先问清楚当前客户实际启用哪条链路。比如 `ProjectKB` 可能是 Modbus 自动触发，也可能只启用了 MES/SN 上传，不能把所有外部入口混成一条协议。
+KB 状态栏的 Socket 配置与 Modbus 不是两条等效检测入口。当前 TCP 接收类尚未接入项目启动和检测事件，具体边界见 [KB 外部集成](./project-kb.md#外部集成)。
 
-## 按结果交付方式分类
+## 结果出口
 
-| 输出类型 | 项目 | 关键文件或配置 | 验收点 |
+| 输出 | 所属项目 | 实现定位 | 核对内容 |
 | --- | --- | --- | --- |
-| 整机 CSV | `ProjectARVRPro`、`ProjectLUX` | `ObjectiveTestResult`、CSV exporter、`ViewResultManager.Config` | 文件名、目录、字段顺序、PASS/FAIL、旧格式兼容 |
-| SQLite/本地结果 | `ProjectARVRPro`、`ProjectLUX`、`ProjectKB` | `ViewResultManager`、`Project*Reuslt`、`KBItemMaster` | 能按 SN/时间查询，批次和流程模板能对上 |
-| Excel/XLSX | `ProjectARVRPro` | `CustomTestResultExportService` | 模板字段、客户标题、路径、依赖库 |
-| MES 上传 | `ProjectKB` | `MesDll.cs`、`Summary` | 返回码约定、设备编号、工站/线别/工号 |
-| Socket 结果返回 | `ProjectARVRPro`、`ProjectLUX` | Socket handler、`ObjectiveTestResult`、Legacy converter | `Data` 字段结构、状态码、超时/失败返回 |
-| Summary/文本 | `ProjectKB` | `Summary.cs`、`ViewResultManager.Config` | 模型分目录、良率汇总、失败项附加 |
+| 整组/整机 CSV | ARVRPro、LUX | 各项目 `ObjectiveTestResult`、CSV exporter 与结果保存代码 | 文件名、目录、列顺序、单位、判定及旧格式兼容；两项目的同名类型不代表相同 schema |
+| 本地 SQLite | ARVRPro、LUX、KB | 各自 `ViewResultManager`；KB 主结果为 `KBItemMaster` | SN、时间、批次、流程及结果详情；项目本地库不代替 Engine 原始批次与算法数据 |
+| 客户 XLSX | ARVRPro | `Exports/CustomTestResultExportService.cs` | 当前输出 profile、工作表字段、路径与依赖 |
+| MES | KB | `MesDll.cs`、`ProjectKBWindow.Processing()`、`Summary` | `CheckWIP` 与 `Collect_test` 的调用条件、参数和客户返回约定 |
+| Socket 响应 | ARVRPro、LUX | 各自 `Services/SocketControl.cs`、handler 与窗口结果发送代码 | ACK、最终事件、SN、标准/Legacy 数据结构及失败响应 |
+| 单次 CSV、文本与 summary | KB；Demo 另存解析结果 JSON/CSV | KB 的 `KBItemMasterExtensions.cs`、`ViewResultManager.Config`；Demo 的 `Program.cs` | 实际保存开关、路径、动态列及结果来源；客户端导出不是服务端业务结果落库 |
 
-修改结果字段时不要只改一个出口。ARVRPro 典型要同时核对标准 CSV、Legacy 输出、Socket `Data` 和客户定制 XLSX；KB 典型要同时核对 CSV、summary、MES `Collect_test` 和数据库字段。
+修改结果字段时，沿对应项目的所有已启用出口核对。例如 ARVRPro 的标准 CSV、Legacy、Socket `Data` 和客户 XLSX，KB 的 CSV、summary、MES 与本地结果可能使用不同转换逻辑。字段定义只在所属项目主题维护，本表用于定位受影响的出口。
 
-## 流程组织能力对照
+## 流程配置差异
 
-| 项目 | 流程组织方式 | 配置文件/对象 | 风险点 |
-| --- | --- | --- | --- |
-| `ProjectARVRPro` | `ProcessGroup` + `ProcessMeta` | `ProcessGroups.json`、`PictureSwitchConfig` | 流程组、切图、Recipe、输出格式必须一起迁移 |
-| `ProjectLUX` | `ProcessGroup` + `SocketCode` | `ProcessGroups.json`、`ProcessMeta.SocketCode` | 改流程名但不改 SocketCode 会导致外部命令找不到步骤 |
-| `ProjectKB` | 当前 Flow 模板 + Recipe | `RecipeManager`、`KBRecipeConfig`、Modbus 配置 | POI 名称/宽度必须和 KB 模板匹配 |
-
-流程组项目优先维护 `Process/`、`Recipe/`、`Fix/` 和 `ObjectiveTestResult`；固定流程项目优先维护主窗口状态机和模板关键字。
-
-## 最小验收清单
-
-| 项目 | 冒烟验收 |
-| --- | --- |
-| `ProjectARVRPro` | 切换一个流程组，跑 `RunAll` 或完整 `ProjectARVRInit` 链路，确认 PictureSwitch、Recipe、CSV/Legacy/Socket 输出 |
-| `ProjectARVRPro.IntegrationDemo` | 解析样例 JSON，联机发送 `ProjectARVRInit` 或 `RunAll`，确认半包/粘包 reader 能读完整结果 |
-| `ProjectKB` | Modbus 写 `1` 能触发流程，结束写回 `0`，CSV/summary/MES 输出符合当前配置 |
-| `ProjectLUX` | 发送一个 `T00XX,SN;`，能匹配当前组的 `SocketCode`，生成对应 CSV/SQLite 结果 |
-
-## 构建与发布授权
-
-本地构建使用 `dotnet build Projects/<Project>/<Project>.csproj -c Release -p:Platform=x64`，只产生本地编译输出。不要自动接着运行上传命令。
-
-只有用户明确要求发布指定项目时才执行 `Scripts\package_project.bat <Project>`；它会构建、上传并清理本地 `.cvxp`，不支持 `--no-upload`。协议排障、测试或构建请求不授权上传；Modbus、MES、Socket 等真实现场烟测也要先确认操作范围。
-
-交付时额外确认：ARVR 系列看 Socket、切图、CSV/Legacy；KB 看 `FunTestDll.dll`、Modbus 和 MES；LUX 看 `SocketCode`、Recipe/Fix 和输出目录。`ProjectARVRPro.IntegrationDemo` 不是插件包，发布给客户时走 `dotnet publish`。
-
-## 变更归属
-
-| 变更 | 优先修改 | 同步文档 |
+| 项目 | 组织方式与配置 | 需要区分的字段或范围 |
 | --- | --- | --- |
-| 新增客户测试项 | 对应项目的 `Process/`、`Recipe/`、`Fix/`、结果模型 | 对应项目页、本页流程组织能力 |
-| 新增外部事件或命令 | 项目 `Services/SocketControl.cs`、`HYMesManager`、`ModbusControl` | 对应项目页、本页协议分类 |
-| 修改结果字段 | `ObjectiveTestResult`、exporter、Socket response、SQLite model | 对应项目页、本页结果交付方式 |
-| 修改流程组或模板名 | `ProcessGroup` / `ProcessMeta` / 主窗口模板关键字 | 项目包总览、具体项目页 |
-| 修改交付包内容 | `manifest.json`、`.csproj`、打包脚本、README/CHANGELOG | 项目包总览、构建脚本文档 |
-| 通用能力沉淀 | Engine、UI 或通用插件 | Engine 业务链路、UI DLL 发布、插件横向速查 |
+| ARVRPro | `ProcessGroup`、`ProcessMeta`、`ProcessGroups.json`、`PictureSwitchConfig` | 流程组、步骤处理类型、Recipe 与切图设置共同决定执行；迁移和实例配置见[流程与 Recipe](./project-arvr-pro-processes.md) |
+| LUX | `ProcessGroup`、`ProcessMeta`、`ProcessGroups.json`，另有 Recipe/Fix 配置 | `Name` 是显示名，`SocketCode` 匹配命令，`FlowTemplate` 绑定 Flow 模板；同一处理类型的 Recipe/Fix 共享，不能套用 ARVRPro 的实例配置方式 |
+| KB | 当前 Flow 模板与按模板名选择的 `RecipeManager` / `KBRecipeConfig` | 模板名、POI 键名/宽度、KB 结果键名和 Recipe 快照需对应；不使用 ARVRPro/LUX 的流程组模型 |
 
-客户专用逻辑默认留在项目包。只有多个项目确认会复用，并且能抽象成稳定能力时，才考虑下沉到 Engine、UI 或通用插件。
+普通 LUX 命令先按 `SocketCode` 查找步骤，再根据 `FlowTemplate` 查找模板。仅修改显示名称不会修改这两个绑定；重复命令码、缺失绑定和模板重命名分别按 [LUX 流程配置](./project-lux.md)排查。
+
+## 交付与验证
+
+1. 先用对应项目页列出的自动化测试、样例和构建入口验证改动范围。测试项目存在或离线解析成功不代表现场联调完成。
+2. 真实 Modbus、MES、Socket、切图和设备测试会推进生产动作或写入外部系统；确认操作范围后，使用同一 SN/时间关联最终结果与已启用的输出。不能仅凭 ACK、寄存器归零或文件出现放行。
+3. 交付前核对配置与依赖：ARVRPro 关注流程组、切图、Recipe 和结果格式；KB 关注 `FunTestDll.dll`、Modbus、MES 与 Recipe；LUX 关注 `SocketCode`、FlowTemplate、Recipe/Fix 和输出目录。
+
+本地构建可能通过 `PostBuild` 把程序集和元数据复制到宿主的插件输出目录，不能理解为只修改项目自己的 `bin`。构建与上传、`.cvxp` 项目包与独立 Demo 的发布路径统一见[构建和交付边界](./README.md#本地构建与发布不是同一动作)，具体命令以各项目页为准。
+
+客户专用逻辑留在拥有该业务的项目。跨项目变化再更新本表；单个协议、参数或结果字段变化，直接更新其权威主题，避免在多张表中重复维护同一契约。

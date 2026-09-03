@@ -2,22 +2,34 @@
 knowledge_id: "plugins.spectrum"
 knowledge_type: "topic"
 status: "current"
-summary: "Spectrum 的测量校正链、SQLite 结果和独立 ZIP 与 cvxp 双通道发布契约。"
-aliases: ["Spectrum 如何校准和发布","光谱测量结果不一致","Spectrum","Spectrum.bat","SpectrometerManager","SpectrumMeasurementResult","ViewResultManagerConfig","ViewResultSpectrum","SpectrumMeasurementProfile"]
-code_paths: ["Plugins/Spectrum/README.md","Plugins/Spectrum/Spectrum.csproj","Plugins/Spectrum/manifest.json","Plugins/Spectrum/App.xaml.cs","Plugins/Spectrum/MainWindow.xaml.cs","Plugins/Spectrum/SpectrometerManager.cs","Plugins/Spectrum/Calibration/","Plugins/Spectrum/Configs/","Plugins/Spectrum/Data/","Plugins/Spectrum/Models/ViewResultSpectrum.cs","Plugins/Spectrum/SpectrumCsvExporter.cs","Plugins/Spectrum/DirectSpectrometer/","Plugins/Spectrum/Job/","Plugins/Spectrum/License/","Plugins/Spectrum/Update/","Scripts/Spectrum.bat"]
-test_paths: ["Test/Spectrum.Tests/Spectrum.Tests.csproj","Test/Spectrum.Tests/ViewResultSpectrumTests.cs","Test/Spectrum.Tests/SpectrumArchitectureBoundaryTests.cs","Scripts/tests/test_build_spectrum.py"]
+summary: "光谱仪软件 Spectrum 的连接、标定、单次测量和 CSV 导出；标定状态与测量前文件复核、EQE 输入及独立 ZIP/cvxp 发布版本来源。"
+aliases: ["Spectrum 如何校准和发布","光谱测量结果不一致","Spectrum","Spectrum.bat","SpectrometerManager","SpectrumMeasurementResult","ViewResultManagerConfig","ViewResultSpectrum","SpectrumMeasurementProfile","光谱仪软件","连接光谱仪","单次测试","IsCalibrationReady","设备序列号未知，无法保存标定配置"]
+code_paths: ["Plugins/Spectrum/README.md","Plugins/Spectrum/Spectrum.csproj","Plugins/Spectrum/manifest.json","Plugins/Spectrum/App.xaml.cs","Plugins/Spectrum/MainWindow.xaml.cs","Plugins/Spectrum/MainWindow.xaml","Plugins/Spectrum/Properties/Resources.resx","Plugins/Spectrum/SpectrometerManager.cs","Plugins/Spectrum/Calibration/","Plugins/Spectrum/Configs/","Plugins/Spectrum/Data/","Plugins/Spectrum/Models/ViewResultSpectrum.cs","Plugins/Spectrum/SpectrumCsvExporter.cs","Plugins/Spectrum/DirectSpectrometer/","Plugins/Spectrum/Job/","Plugins/Spectrum/License/","Plugins/Spectrum/Update/","Scripts/Spectrum.bat","Scripts/build_spectrum.py"]
+test_paths: ["Test/Spectrum.Tests/Spectrum.Tests.csproj","Test/Spectrum.Tests/ViewResultSpectrumTests.cs","Test/Spectrum.Tests/SpectrumArchitectureBoundaryTests.cs","Test/Spectrum.Tests/SpectrumCalibrationStateTests.cs","Test/Spectrum.Tests/SpectrumCsvExporterTests.cs","Scripts/tests/test_build_spectrum.py"]
 related: ["plugins.index","plugins.capabilities","plugins.spectrum-socket"]
 ---
 
 # Spectrum 插件
 
-`Plugins/Spectrum/` 是光谱仪测量工作台插件。程序集版本以 `Spectrum.csproj` 为事实源，最低宿主版本读取同目录 `manifest.json`；发布脚本会校验并同步两者，不在说明页复制易漂移的版本号。
+Spectrum 提供光谱仪连接、标定分组、光谱测量、EQE 计算和结果导出。在 ColorVision 中从 **工具 → 光谱仪软件** 打开，也可运行完整独立包中的 `Spectrum.exe`；再次点击宿主菜单会激活已有窗口。
+
+运行需要匹配的 Windows/x64 环境、ColorVision 公共库、原生 DLL、设备驱动、许可证和标定文件。项目与依赖以 `Spectrum.csproj`、`Plugins/Directory.Build.props` 为准，最低宿主要求见 `manifest.json`。连接、校零、快门、滤光轮、源表和测量会操作真实设备，以下步骤适用于已获授权的现场环境。
+
+## 连接、测量与导出
+
+1. 在 **光谱仪连接** 区域选择型号和连接方式；使用串口时配置串口与波特率，再点 **连接光谱仪**。确认型号、SN 和连接状态，连接失败先按下表排查。
+2. 查看 **标定文件** 区域的当前分组、波长文件、幅值文件和状态。需要配置时点 **管理...**，保存后确认加载结果；已有配置可用 **加载分组** 或文件旁的 **加载** 重载。标定未就绪时先修复配置，不继续测量。
+3. 设置 **积分时间 (ms)**、**平均次数** 及所需自动校零、自动积分等选项。自动暗场要求可用快门；启用 EQE 时核实电压、电流的实际来源，见下文。
+4. 点 **单次测试**，成功后检查结果列表与曲线。后台测量与界面投影异步衔接，返回成功和界面刷新不是同一时刻。
+5. 在结果列表选中需要导出的记录，点击列表右上方的保存图标，选择 CSV 路径。没有选中记录会提示先选择数据；导出使用当前 Normal/EQE 模式的固定字段。
+
+连续测试在同一区域设置间隔与次数；远程调用见 [Spectrum Socket](./spectrum-socket.md)，定时调用见下文“Socket 和调度”。
 
 ## 先查什么
 
 | 现场问题 | 第一检查点 |
 | --- | --- |
-| Tool 菜单没有 Spectrum | 插件目录、`manifest.json`、`Spectrum.dll`、宿主版本要求 |
+| 工具菜单没有“光谱仪软件” | 插件目录、`manifest.json`、`Spectrum.dll`、宿主版本要求 |
 | 窗口状态栏为空 | `LoadMenuForWindow("Spectrum", ...)`、`StatusBarManager.Init(..., "Spectrum")` |
 | 连接失败 | 许可证同步、USB/COM 配置、native DLL、设备占用、驱动 |
 | 已连接但测量按钮不可用 | `IsCalibrationReady`、`CalibrationStatus`、配置路径与已加载文件指纹 |
@@ -30,9 +42,11 @@ related: ["plugins.index","plugins.capabilities","plugins.spectrum-socket"]
 
 ## 运行链路
 
-宿主按 `manifest.json` 加载 `Spectrum.dll`，`MenuSpectrumWindow` 在 Tool 菜单提供入口。`MainWindow` 是 WPF 组合点，负责生命周期、提示、结果列表和绘图；`SpectrometerManager` 是无窗口依赖的设备入口，管理光谱仪句柄、标定状态和测量流程。Shutter、滤光轮和 SMU 各自在控制器内串行化设备访问。
+宿主按 `manifest.json` 加载 `Spectrum.dll`，`MenuSpectrumWindow` 在工具菜单提供“光谱仪软件”入口。`MainWindow` 是 WPF 组合点，负责生命周期、提示、结果列表和绘图；`SpectrometerManager` 是无窗口依赖的设备入口，管理光谱仪句柄、标定状态和测量流程。Shutter、滤光轮和 SMU 各自在控制器内串行化设备访问。
 
-`IsConnected` 只表示通信已经建立。连接后按设备 SN 加载标定分组，只有配置路径、文件指纹和 native 已加载快照一致，且没有加载或持久化请求在途时，`IsCalibrationReady` 才为 `true`。测量入口会再次执行同一门禁，不能仅凭按钮状态或连接状态判断可测量。
+`IsConnected` 只表示通信已经建立。连接后按设备 SN 加载标定分组；`IsCalibrationReady` 检查已连接、没有加载或配置提交在途，以及已加载快照的分组名和路径与当前配置一致。这个属性不会重新读取文件内容。
+
+测量入口的 `TryGetCalibrationNotReadyReason` 还会重算两个文件的 SHA-256。文件在加载后被替换，即使按钮先前可用，本次测量也会拒绝并要求重新加载；文件不存在或不可读也会使快照失效。排查时同时看 `CalibrationStatus` 和本次测量结果。
 
 测量按配置执行暗场、自动积分、采集和 EQE 派生，然后把结果与测量画像放进同一数据库事务。Manager 返回 `SpectrumMeasurementResult`；MainWindow 只做异步 UI 投影，历史曲线在第一次查看时延迟生成。
 
@@ -47,9 +61,13 @@ related: ["plugins.index","plugins.capabilities","plugins.spectrum-socket"]
 | 标定分组 | 当前设备 SN 能找到活动分组 |
 | 标定文件 | 两个文件通过预校验，加载快照与当前配置的路径、分组和 SHA-256 一致 |
 | 自动校零 | UI 手动流程允许人工遮光；Socket/Job 无人值守流程要求 Shutter 严格完成关闭和恢复 |
-| EQE | SMU 已连接，电压/电流结果能写入结果对象 |
+| EQE | 已启用 EQE；确认本次电压、电流来自手工配置还是源表采集，且与被测样品一致 |
 
-`CalibrationGroupWindow` 使用独立 working copy。保存时冻结候选配置，native 两个文件加载成功且该请求仍是当前请求后，才原子写入配置并发布为可测量状态；失败或取消不会把候选路径冒充成已加载标定。关闭窗口不会自动保存未提交改动。
+`CalibrationGroupWindow` 编辑独立副本。保存要求已知设备 SN；已连接时先加载两个候选文件，加载成功且请求仍有效才提交配置。未连接分支不加载 native，但 SN 缺失仍会拒绝保存。配置保存在 Windows 文档目录的 `Spectrometer/<SN>/CalibrationGroups.json`，以临时文件替换写入；保存失败会尝试恢复原标定，恢复失败时保持不可测量状态。
+
+关闭有未保存修改的窗口会询问保存、不保存或取消；保存失败保持窗口打开，保存进行中也不允许关闭。
+
+EQE 测量先取 `MainWindowConfig.EqeVoltage` / `EqeCurrentMA`。源表已打开且本次成功取得采样时，以实测电压、电流覆盖；未连接或没有取得本次采样时仍使用配置值。因此有 EQE 结果不等于本次读取过源表，配置值的来源必须与实验条件一致。
 
 主测量使用 `CM_*` API，`DirectSpectrometer/` 诊断工具使用 `SA_*` API；两者共享原生驱动并具有全会话互斥关系，不能同时连接。
 
@@ -57,8 +75,8 @@ related: ["plugins.index","plugins.capabilities","plugins.spectrum-socket"]
 
 | 类别 | 入口 | 说明 |
 | --- | --- | --- |
-| 插件元数据 | [manifest.json](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Spectrum/manifest.json) | 插件身份、DLL 路径和最低宿主要求；版本由发布脚本按 DLL 同步 |
-| 程序集版本 | [Spectrum.csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Spectrum/Spectrum.csproj) | `VersionPrefix` 生成发布 DLL `FileVersion`，是版本事实源 |
+| 插件元数据 | [manifest.json](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Spectrum/manifest.json) | 插件身份、DLL 路径和最低宿主要求；版本由专用脚本按编译后的 `Spectrum.exe` 同步 |
+| 构建与发布版本 | `Spectrum.csproj`、`Scripts/build_spectrum.py` | 工程的 `VersionPrefix` 生成版本；专用发布脚本读取编译后 `Spectrum.exe` 的四段 `FileVersion` 并同步源目录和输出目录的 manifest |
 | 窗口 | `MainWindow.xaml(.cs)` | 生命周期、连接/测量按钮、EQE、结果列表、绘图和用户提示 |
 | 设备状态 | `SpectrometerManager.cs` | 原生句柄、标定快照、设备操作门禁和一次完整测量；不创建窗口或文件对话框 |
 | 标定 | `Calibration/` | 按光谱仪 SN 管理标定分组 |
@@ -69,7 +87,9 @@ related: ["plugins.index","plugins.capabilities","plugins.spectrum-socket"]
 | 测量画像 | `SpectrumMeasurementProfile` | 测量上下文和配置快照 |
 | CSV | `SpectrumCsvExporter.cs` | 无 UI 的不可变快照、实际波长对齐和流式写入 |
 
-CSV 按调用时选中结果建立不可变快照，Normal/EQE 模式使用各自固定字段；波长列取实际网格并集，先输出全部绝对值列，再输出对应 `sp` 相对值列。排查“导出为空”时先确认已选中结果及其有效 `fSpect1/fSpect2/fInterval/fPL`，不要再按旧的可见列模型排查。
+CSV 按调用时选中结果建立不可变快照，Normal/EQE 模式使用各自固定字段，不按界面可见列生成。波长取各结果 `SpectralDatas` 的网格并集，先输出全部绝对值列，再输出对应 `sp` 相对值列；某条记录没有的波长留空。
+
+`SpectralDatas` 按 `max(1, round(1 / fInterval))` 的步长取点并补上实际末端。例如 380–780 nm、0.1 nm 间隔的 4001 个原始点会形成 401 个导出采样点；不能把 CSV 列数当作原始 `fPL` 长度。排查导出为空时先确认已选中结果及有效的 `fSpect1/fSpect2/fInterval/fPL`。
 
 保存前 `ViewResultSpectrum.NormalizeColorParam` 会规范化波长元数据并裁剪 `fPL`。有效起止波长和间隔下，点数按 `round((fSpect2 - fSpect1) / fInterval) + 1` 计算并限制在实际数组容量内；旧数据元信息无效时另有起点、间隔和最多 `4001` 点的初始回退规则，不能一律保存 native 数组全部容量。历史明细和曲线按需生成；`ViewResultManagerConfig.Count` 只限制内存显示集合，不删除 SQLite 历史记录，且 `Count <= 0` 不做该集合裁剪。
 
@@ -85,13 +105,13 @@ CSV 按调用时选中结果建立不可变快照，Normal/EQE 模式使用各�
 
 | 验收项 | 通过标准 |
 | --- | --- |
-| 插件装载 | Tool 菜单出现 Spectrum，能打开 `MainWindow` |
+| 插件装载 | 工具菜单出现“光谱仪软件”，能打开 `MainWindow` |
 | 窗口扩展 | Spectrum 窗口菜单和状态栏出现，连接、型号、SN、标定组、模式可读 |
 | 交付资源 | 包含 `Spectrum.dll`、manifest、README、CHANGELOG、标定文件和 native DLL |
 | 许可证 | 连接前能同步许可证，异常能打开许可证管理或原生日志 |
 | 设备连接 | 已知设备能读出型号和 SN；标定损坏时仍保持连接并明确显示不可测量状态，修复后可重新加载 |
 | 单次测量 | 曲线刷新，结果列表新增记录，测量画像写入数据库 |
-| EQE 测量 | SMU 数据、EQE 字段和导出结果一致 |
+| EQE 测量 | 确认电压、电流来源，结果对象中的值、EQE 字段与导出结果一致 |
 | 数据落库 | `Spectrum.db` 在同一事务中写入结果和测量画像；重置/删除不会发布数据库中已不存在的结果 |
 | 标定切换 | 快速切组、无效候选和取消不会让声明快照与 native 状态错配；失败能恢复上一组或明确锁住测量 |
 | Socket | 在宿主进程仍存活、服务启用且设备前提满足时验证无 Spectrum 窗口操作；区分连接与 readiness、忙与取消，校零要求快门 |
@@ -107,7 +127,7 @@ dotnet build .\Plugins\Spectrum\Spectrum.csproj -c Release -p:Platform=x64
 dotnet test .\Test\Spectrum.Tests\Spectrum.Tests.csproj -c Release -p:Platform=x64
 ```
 
-`ViewResultSpectrumTests` 覆盖有效点数、真实端点和旧元信息回退；`SpectrumArchitectureBoundaryTests` 检查 Manager 不反向引用指定窗口、对话框或同步 Application Dispatcher 的源码模式。程序集内另有标定、CSV 等测试；引用测试文件不表示测试已经通过，也不能代替原生设备、窗口关闭或 Socket 时序验证。
+`ViewResultSpectrumTests` 覆盖有效点数、采样端点和旧元信息回退；`SpectrumCalibrationStateTests` 检查标定快照、路径及文件哈希；`SpectrumCsvExporterTests` 检查字段、采样网格、格式和调用时快照。`SpectrumArchitectureBoundaryTests` 检查 Manager 不反向引用指定窗口、对话框或同步 Application Dispatcher 的源码模式。这些用例不能代替原生设备、窗口关闭或 Socket 时序验证；引用测试文件也不表示测试已经运行。
 
 ## 双通道发布（需明确发布授权）
 

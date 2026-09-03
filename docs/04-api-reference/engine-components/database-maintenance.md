@@ -11,17 +11,19 @@ related: ["engine.index", "engine.mysql-maintenance", "ui.sqlite-storage", "ui.d
 
 # 数据库清理窗口、能力接入与完成边界
 
-`DatabaseCleanupWindow` 是多数据源的统计、备份、清理和迁移宿主，实际文件位于 `Engine/ColorVision.Engine/Mysql/`，虽使用 `ColorVision.Database` 命名空间，却不是 `UI/ColorVision.Database` 的表浏览器。宿主只调用 provider，不统一实现业务删除、事务、停写或恢复。
+`DatabaseCleanupWindow` 是多数据源的统计、备份、清理和迁移宿主，实际文件位于 `Engine/ColorVision.Engine/Mysql/`，虽使用 `ColorVision.Database` 命名空间，却属于 Engine 的独立维护链路。宿主只调用 provider，不统一实现业务删除、事务、停写或恢复。
 
 本窗口没有 DatePicker、逐行删除预览或预览批准令牌。它提供表统计、保留月数、可选的选表清空和数据源迁移。若问题是“预览后只删除这些批次”，应先纠正这个功能前提，再读 [MySQL 结果维护](./mysql-maintenance.md) 或实际 SQLite owner；不能从表格行数推断删除范围。
 
-清理、迁移和备份会写真实数据库或文件。阅读本页不授权执行这些动作；必须先确定目标、业务停写、权限、备份与恢复条件。窗口构造、`OpenWindow` 和 provider 接口没有统一管理员鉴权，不应套用[表浏览器](../ui-components/ColorVision.Database.md)工具启动器的 Administrator 门禁；调用入口可见或方法可调用不代表操作已经获准。
+清理、迁移和备份会写真实数据库或文件。阅读本页不授权执行这些动作；必须先确定目标、业务停写、权限、备份与恢复条件。窗口构造、`OpenWindow` 和 provider 接口没有统一管理员鉴权，具体调用入口必须自行维护授权检查；调用入口可见或方法可调用不代表操作已经获准。
 
 ## 数据源发现与窗口范围
 
 无参数 `OpenWindow()` 建立全局窗口，默认 ViewModel 通过 `AssemblyHandler.RefreshAssemblies()` 和 `LoadImplementations<IDatabaseCleanupSourceProvider>()` 实例化 provider，再按 `Order`、`DisplayName` 排序。该刷新会重建程序集列表并清空接口实现类型缓存，但不会替换已经打开的维护窗口持有的 provider 实例；发现规则见[程序集与扩展发现](./../../02-developer-guide/core-concepts/extensibility.md)。这里不扫描磁盘上所有 `.db` 文件，也不保证未加载的项目 provider 可见。
 
 `OpenWindow(owner, source)` 只注入一个 provider，不进行全局发现；`Sources` 对外只读，单源模式要求恰好一项，`SelectedSource` 拒绝集合外对象。Socket 的 Engine launcher 使用此入口；`MySqlToolWindow` 的清理按钮调用无 source 的全局入口。
+
+必须保留真正的 `public static void OpenWindow()` 无参数重载：已发布的 ARVR、KB 等项目插件可能仍引用这个二进制签名。把它替换为带可选参数的方法，只能兼容重新编译的源码，旧 DLL 点击“数据清理”会抛 `MissingMethodException`。无参数重载转入同一全局窗口逻辑，不改变单源范围或清理行为；`DatabaseCleanupWindowTests` 通过精确反射签名与委托绑定检查此兼容入口，不打开真实数据库。
 
 静态窗口表按不区分大小写的 `global` 或 `source:{Id}` 复用窗口，不按数据库连接、账号或文件路径区分。同 ID 再次调用只激活原窗口，不替换 provider，也不重新自动统计。全局和单源窗口可并存；直接构造窗口不走这个复用表。窗口范围是 UI 路由约束，不是数据库权限或进程级互斥机制。
 

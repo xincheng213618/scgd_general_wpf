@@ -427,6 +427,29 @@ namespace ColorVision.Engine.Templates.POI
 
 
 
+        private void AutoFitPointSize_Click(object sender, RoutedEventArgs e)
+        {
+            if (PoiConfig.PointType != GraphicTypes.Quadrilateral)
+                return;
+
+            if (!PoiLayoutGeometry.TryGetAutoFitSize(
+                [PoiConfig.Polygon1, PoiConfig.Polygon2, PoiConfig.Polygon3, PoiConfig.Polygon4],
+                PoiConfig.AreaPolygonRow, PoiConfig.AreaPolygonCol, PoiConfig.DefaultPointType, out Size size))
+            {
+                MessageBox.Show(this, Properties.Resources.PoiAutoFitSizeFailed, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (PoiConfig.IsPointCircle)
+                PoiConfig.DefaultCircleRadius = (int)(size.Width / 2);
+            else
+            {
+                PoiConfig.DefaultRectWidth = (int)size.Width;
+                PoiConfig.DefaultRectHeight = (int)size.Height;
+            }
+            PoiConfig.PointPosition = DrawingGraphicPosition.Internal;
+        }
+
         private async void Button2_Click(object sender, RoutedEventArgs e)
         {
             if (!ImageUtils.TryGetImageSize(ImageShow.Source, out int imageWidth, out int imageHeight)) return;
@@ -533,12 +556,6 @@ namespace ColorVision.Engine.Templates.POI
                         PoiConfig.Polygon4,
                     ];
 
-                    if (!PoiLayoutGeometry.TryNormalizeQuadrilateral(pts_src, out List<Point> points))
-                    {
-                        MessageBox.Show("布点四边形无效，请重新定位或框选", "ColorVision");
-                        return;
-                    }
-
                     int cols = PoiConfig.AreaPolygonCol;
                     int rows = PoiConfig.AreaPolygonRow;
 
@@ -548,16 +565,37 @@ namespace ColorVision.Engine.Templates.POI
                         return;
                     }
 
-                    bool offsetSucceeded = PoiConfig.DefaultPointType switch
+                    List<Point> layoutPoints;
+                    if (PoiLayoutGeometry.TryGetCollapsedPoint(pts_src, out Point collapsedPoint))
                     {
-                        GraphicTypes.Circle => PoiLayoutGeometry.TryOffsetForCircle(points, PoiConfig.DefaultCircleRadius, PoiConfig.PointPosition, out points),
-                        GraphicTypes.Rect => PoiLayoutGeometry.TryOffsetForRectangle(points, PoiConfig.DefaultRectWidth, PoiConfig.DefaultRectHeight, PoiConfig.PointPosition, out points),
-                        _ => true,
-                    };
-                    if (!offsetSucceeded)
+                        if (rows != 1 || cols != 1)
+                        {
+                            MessageBox.Show("缩进后的布点区域只能生成1×1点阵", "ColorVision");
+                            return;
+                        }
+                        layoutPoints = [collapsedPoint];
+                    }
+                    else
                     {
-                        MessageBox.Show("布点四边形无效，或区域无法容纳当前采样窗尺寸", "ColorVision");
-                        return;
+                        if (!PoiLayoutGeometry.TryNormalizeQuadrilateral(pts_src, out List<Point> points))
+                        {
+                            MessageBox.Show("布点四边形无效，请重新定位或框选", "ColorVision");
+                            return;
+                        }
+
+                        bool offsetSucceeded = PoiConfig.DefaultPointType switch
+                        {
+                            GraphicTypes.Circle => PoiLayoutGeometry.TryOffsetForCircle(points, PoiConfig.DefaultCircleRadius, PoiConfig.PointPosition, out points),
+                            GraphicTypes.Rect => PoiLayoutGeometry.TryOffsetForRectangle(points, PoiConfig.DefaultRectWidth, PoiConfig.DefaultRectHeight, PoiConfig.PointPosition, out points),
+                            _ => true,
+                        };
+                        if (!offsetSucceeded)
+                        {
+                            MessageBox.Show("布点四边形无效，或区域无法容纳当前采样窗尺寸", "ColorVision");
+                            return;
+                        }
+
+                        layoutPoints = PoiLayoutGeometry.CreateQuadrilateralGrid(points, rows, cols);
                     }
 
                     if (PoiConfig.IsPoiCIEFile)
@@ -565,7 +603,6 @@ namespace ColorVision.Engine.Templates.POI
                         PoiParam.PoiPoints.Clear();
                     }
 
-                    List<Point> layoutPoints = PoiLayoutGeometry.CreateQuadrilateralGrid(points, rows, cols);
                     for (int i = 0; i < rows; i++)
                     {
                         for (int j = 0; j < cols; j++)
@@ -1164,7 +1201,11 @@ namespace ColorVision.Engine.Templates.POI
             RenderPoiConfig();
         }
 
-        private static double ParseDoubleOrDefault(string input, double defaultValue = 0) => double.TryParse(input, out double result) ? result : defaultValue;
+        private static double ParseDoubleOrDefault(string input, double defaultValue = 0)
+        {
+            string value = input.Trim().TrimEnd('%', '％');
+            return double.TryParse(value, out double result) ? result : defaultValue;
+        }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {

@@ -50,6 +50,8 @@ POI 是“点集模板体系”，不是单个检测算法。维护时先分清�
 
 保存时会写主记录、删除旧点明细，再批量重写点明细。导入或复制模板时必须把主模板和点明细的 `Id` 都重置，否则容易覆盖旧模板。
 
+`EditPoiParam` 和键盘模板编辑器 `EditPoiParam1` 使用动态主题底色、分隔条和无外框点位列表；图像画布独立于窗口主题。界面验收检查浅色、深色及运行时主题切换。
+
 ## 运行事件
 
 `AlgorithmPoi` 发布 `Event_POI_GetData`，用于按已有点集取值或输出，常带 `TemplateParam`、`FilterTemplate`、`ReviseTemplate`、`OutputTemplate`、`POIStorageType`、`POIPointFileName`、`IsSubPixel`、`IsCCTWave`。`AlgorithmBuildPoi` 发布 `Event_Build_POI`，用于生成点集；CAD Mapping 分支还要带四点多边形和 `CADMappingParam`。

@@ -2,6 +2,7 @@
 using System;
 using System.Windows;
 using System.Windows.Input;
+using ColorVision.ImageEditor.Abstractions;
 
 namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 {
@@ -26,6 +27,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
         public object? Icon => null;
         public ICommand? Command => null;
         internal PseudoColorToolState State => _state;
+        public IRealtimePseudoColorService RealtimeService => _controller;
 
         public void ConfigureForImage() => _controller.ConfigureForImage();
         public void Invalidate() => _controller.Invalidate();

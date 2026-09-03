@@ -131,6 +131,8 @@ namespace ProjectARVRPro
         private bool _ResultOverlayAutoRefresh;
 
         [Browsable(false)]
+        [JsonIgnore]
+        // Search selections belong to this application session, not the saved configuration.
         public ResultStatisticsWindowState ResultStatisticsWindowState { get; set; } = new();
 
         public void OpenConfig()

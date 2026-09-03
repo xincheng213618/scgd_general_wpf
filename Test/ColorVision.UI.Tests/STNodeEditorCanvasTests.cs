@@ -4,7 +4,6 @@ using ColorVision.Engine.FlowProcessing.Nodes;
 using ST.Library.UI;
 using ST.Library.UI.NodeEditor;
 using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -38,7 +37,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void CanvasBounds_AreLimitedByDefault()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var editor = CreateEditorWithNode();
 
@@ -52,7 +51,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void InfiniteCanvas_AllowsMovementBeyondNodeBounds()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var editor = CreateEditorWithNode();
                 editor.LimitCanvasToContentBounds = false;
@@ -67,7 +66,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void AnimationTimer_RemainsStoppedWhenLoadedEditorIsIdle()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var editor = new STNodeEditor();
                 Window window = ShowLoaded(editor);
@@ -85,7 +84,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void AnimationTimer_StopsAfterAnimatedCanvasMovementCompletes()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var editor = new STNodeEditor
                 {
@@ -113,7 +112,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void AnimationTimer_StopsAfterAlertFadeCompletes()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var editor = new STNodeEditor();
                 Window window = ShowLoaded(editor);
@@ -142,7 +141,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void AutoCanvasDragMode_FollowsSelectedNodeCollection()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var editor = new STNodeEditor
                 {
@@ -170,36 +169,72 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
-        public void AutoCanvasDragMode_PreservesRectangleSelectionDecisionAfterClearingSelection()
+        public void FlowCanvasDragLock_EntersEditModeOnceAfterSelection()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
-                using var editor = new STNodeEditor
-                {
-                    AutoSwitchCanvasDragBySelection = true
-                };
+                using var canvas = new FlowEditorCanvas();
+                STNodeEditor editor = canvas.NodeEditor;
+                var toggle = Assert.IsType<System.Windows.Controls.Primitives.ToggleButton>(
+                    canvas.FindName("CanvasDragLockButton"));
+                var node = new TrackingNode();
+                node.Create();
+                editor.Nodes.Add(node);
+
+                Assert.False(editor.ShowCanvasDragLockButton);
+                Assert.False(editor.AutoSwitchCanvasDragBySelection);
+                Assert.True(editor.EnableBlankLeftDragCanvas);
+                Assert.True(toggle.IsChecked);
+
+                node.SetSelected(bSelected: true, bRedraw: false);
+
+                Assert.False(editor.EnableBlankLeftDragCanvas);
+                Assert.False(toggle.IsChecked);
+
+                node.SetSelected(bSelected: false, bRedraw: false);
+
+                Assert.False(editor.EnableBlankLeftDragCanvas);
+                Assert.False(toggle.IsChecked);
+
+                toggle.IsChecked = true;
+                node.SetSelected(bSelected: true, bRedraw: false);
+
+                Assert.True(editor.EnableBlankLeftDragCanvas);
+                Assert.True(toggle.IsChecked);
+            });
+        }
+
+        [Fact]
+        public void ResetCanvasInteractionMode_RestoresOpeningPanMode()
+        {
+            StaTest.Run(() =>
+            {
+                using var canvas = new FlowEditorCanvas();
+                STNodeEditor editor = canvas.NodeEditor;
                 var node = new TrackingNode();
                 node.Create();
                 editor.Nodes.Add(node);
                 node.SetSelected(bSelected: true, bRedraw: false);
-                bool enableBlankLeftDragCanvasAtMouseDown = editor.EnableBlankLeftDragCanvas;
 
+                Assert.False(editor.EnableBlankLeftDragCanvas);
+
+                canvas.ResetCanvasInteractionMode();
                 node.SetSelected(bSelected: false, bRedraw: false);
 
                 Assert.True(editor.EnableBlankLeftDragCanvas);
-                Assert.False(TestNodeEditor.ShouldPanBlankCanvasForTest(
-                    STMouseButtons.Left,
-                    enableBlankLeftDragCanvasAtMouseDown,
-                    System.Windows.Input.ModifierKeys.None));
+
+                node.SetSelected(bSelected: true, bRedraw: false);
+
+                Assert.False(editor.EnableBlankLeftDragCanvas);
             });
         }
 
         [Theory]
         [InlineData(true, System.Windows.Input.ModifierKeys.None, true)]
-        [InlineData(true, System.Windows.Input.ModifierKeys.Control, false)]
+        [InlineData(true, System.Windows.Input.ModifierKeys.Control, true)]
         [InlineData(false, System.Windows.Input.ModifierKeys.None, false)]
-        [InlineData(false, System.Windows.Input.ModifierKeys.Control, false)]
-        public void ControlForcesBlankLeftDragIntoRectangleSelection(
+        [InlineData(false, System.Windows.Input.ModifierKeys.Control, true)]
+        public void ControlTemporarilyPansBlankCanvasInEditMode(
             bool enableBlankLeftDragCanvas,
             System.Windows.Input.ModifierKeys modifiers,
             bool expectedPan)
@@ -217,7 +252,7 @@ namespace ColorVision.UI.Tests
         [InlineData(true, false, true)]
         [InlineData(false, true, true)]
         [InlineData(true, true, true)]
-        public void ControlRectangleSelectionAddsNodesToTheExistingSelection(
+        public void RectangleSelectionKeepsPreviouslySelectedIntersectingNodes(
             bool intersectsSelectionRectangle,
             bool wasSelectedBeforeDrag,
             bool expectedSelected)
@@ -240,7 +275,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void PropertyEditorVisibility_RequiresOneActiveSelectedNode()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var editor = new STNodeEditor();
                 var first = new TrackingNode();
@@ -293,7 +328,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void PropertyEditorFirstRender_PositionsWhileHidden()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 var panel = new System.Windows.Controls.Border
                 {
@@ -325,7 +360,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void PropertyEditorPanel_LongContentDoesNotExceedMaximumWidth()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var canvas = new FlowEditorCanvas();
                 canvas.NodePropertyPanel.Children.Add(new System.Windows.Controls.TextBox
@@ -352,7 +387,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void NodeInspector_CanSwitchBetweenConfigurationAndDocumentation()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var canvas = new FlowEditorCanvas();
                 STNodeEditor editor = canvas.NodeEditor;
@@ -439,7 +474,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void NodeMovement_HidesEmbeddedPropertyEditor()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var canvas = new FlowEditorCanvas();
                 STNodeEditor editor = canvas.NodeEditor;
@@ -459,7 +494,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void PropertyEditorRefresh_FromWorkerThread_IsDispatchedToOwner()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var canvas = new FlowEditorCanvas();
                 STNodeEditor editor = canvas.NodeEditor;
@@ -497,7 +532,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void ClearSelection_HidesPropertyEditorBeforeFlowRuns()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var canvas = new FlowEditorCanvas();
                 STNodeEditor editor = canvas.NodeEditor;
@@ -520,7 +555,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void ManualCanvasDragMode_RemainsTheCompatibleDefault()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var editor = new STNodeEditor
                 {
@@ -541,7 +576,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void InfiniteCanvas_ZoomKeepsControlPointAnchored()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var editor = new STNodeEditor
                 {
@@ -564,7 +599,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void InfiniteCanvas_ZoomStillUsesSafetyLimits()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var editor = new STNodeEditor
                 {
@@ -582,7 +617,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void FitCanvasToNodes_CentersTheContent()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var editor = CreateEditorWithNode();
                 editor.LimitCanvasToContentBounds = false;
@@ -603,7 +638,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void FitCanvasToNodes_CanLeaveAdditionalViewportMargin()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var editor = CreateEditorWithNode();
                 editor.LimitCanvasToContentBounds = false;
@@ -617,7 +652,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void FlowEditorResize_PreservesFittedCanvasCenterAndScale()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var canvas = new FlowEditorCanvas();
                 canvas.Measure(new System.Windows.Size(1600, 900));
@@ -648,7 +683,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void FlowEditorInitialLoad_FitsCanvasAfterFirstLayout()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var canvas = new FlowEditorCanvas();
                 STNodeEditor editor = canvas.NodeEditor;
@@ -678,7 +713,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void DrawNodes_SkipsNodesOutsideTheViewport()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var editor = new TestNodeEditor
                 {
@@ -703,7 +738,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void RoundedNodes_KeepLegacyDefaultAndClipTheVisualCorners()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var legacyEditor = new STNodeEditor();
                 Assert.Equal(0, legacyEditor.NodeCornerRadius);
@@ -731,7 +766,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void NodeTitleText_IsOffsetDownByTwoPixels()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 var node = new TrackingNode();
                 node.Create();
@@ -748,7 +783,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void NodeTitleProgress_FillsOnlyTheRequestedWidth()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var editor = new TestNodeEditor
                 {
@@ -782,7 +817,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void ShadowlessNodes_DrawNoNormalOuterGlowButKeepSelectionOutline()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var editor = new TestNodeEditor
                 {
@@ -828,7 +863,7 @@ namespace ColorVision.UI.Tests
         [Fact]
         public void GridOriginHighlight_CanBeDisabledWithoutRemovingTheGridLine()
         {
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 using var legacyEditor = new STNodeEditor();
                 Assert.True(legacyEditor.HighlightGridOrigin);
@@ -914,29 +949,6 @@ namespace ColorVision.UI.Tests
             typeof(STNodeEditor)
                 .GetMethod("AnimationTimer_Tick", BindingFlags.Instance | BindingFlags.NonPublic)!
                 .Invoke(editor, [editor, EventArgs.Empty]);
-        }
-
-        private static void RunInSta(Action action)
-        {
-            Exception? exception = null;
-            var thread = new Thread(() =>
-            {
-                try
-                {
-                    action();
-                }
-                catch (Exception ex)
-                {
-                    exception = ex;
-                }
-            });
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
-            thread.Join();
-            if (exception != null)
-            {
-                ExceptionDispatchInfo.Capture(exception).Throw();
-            }
         }
 
         private sealed class TestNodeEditor : STNodeEditor

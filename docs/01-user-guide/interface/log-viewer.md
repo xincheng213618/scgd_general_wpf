@@ -3,9 +3,9 @@ knowledge_id: "operations.logs"
 knowledge_type: "topic"
 status: "current"
 summary: "区分log4net输出、历史文件读取与UI筛选，说明刷新、截断和原生日志采集边界；没有显示不等于动作未发生。"
-aliases: ["日志查看器","查看日志","日志搜索","日志等级","历史日志","日志丢失","正则变红","自动刷新","自动滚动","WindowLog","LogOutput","LogLocalOutput","LogLoadState","LogHistoryReader","LogSearchHelper","LogViewerAppender","NativeLogWindow"]
+aliases: ["日志查看器","查看日志","日志搜索","日志等级","历史日志","日志丢失","原生日志","开始捕获","暂停显示","AllToday","SinceStartup","正则变红","自动刷新","自动滚动","WindowLog","LogOutput","LogLocalOutput","LogLoadState","LogHistoryReader","LogSearchHelper","LogViewerAppender","NativeLogWindow"]
 code_paths: ["UI/ColorVision.UI/LogImp","ColorVision/log4net.config","ColorVision/EntryClass.cs","ColorVision/App.xaml.cs","ColorVision/MainWindow.xaml.cs","ColorVision/NativeLogging","UI/ColorVision.Core/NativeLogBridge.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LogHistoryReaderTests.cs","Test/ColorVision.UI.Tests/LogSearchHelperTests.cs","Test/ColorVision.UI.Tests/LogEntryParserTests.cs","Test/ColorVision.UI.Tests/LogViewConfigTests.cs","Test/ColorVision.UI.Tests/NativeLogPendingBufferTests.cs","Test/ColorVision.UI.Tests/NativeLogWindowTests.cs","Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/LogHistoryReaderTests.cs","Test/ColorVision.UI.Tests/LogSearchHelperTests.cs","Test/ColorVision.UI.Tests/LogEntryParserTests.cs","Test/ColorVision.UI.Tests/LogViewConfigTests.cs","Test/ColorVision.UI.Tests/NativeLogPendingBufferTests.cs","Test/ColorVision.UI.Tests/NativeLogWindowTests.cs","Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs","Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs"]
 related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 ---
 
@@ -13,16 +13,31 @@ related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 
 `UI/ColorVision.UI/LogImp/` 负责托管日志显示、历史解析和搜索；业务模块产生的日志、文件输出与当前可见文本是不同层。界面为空、被清空或没有某条记录，都不能单独证明设备命令、文件写入或流程动作没有发生；完成判据仍应核对[对应模块的执行契约](../README.md)。
 
+## 查找一次运行的日志
+
+1. 打开“帮助 > 日志”，或使用默认快捷键 `Ctrl+Alt+L`。独立窗口默认读取当前日志文件中的启动后记录，再接收新的托管事件；主窗口嵌入的日志面板只接收新事件。
+2. 若要查看当前文件中今天较早的记录，在日志窗口右键选择“通用设置”，将 `LogLoadState` 设为 `AllToday`，然后关闭并重新打开日志窗口。历史只在初始化时加载，修改此选项不会立即重读；跨天或滚动归档需另查对应源文件。
+3. 右键选择“搜索”或按 `Ctrl+F`，输入错误关键词。多词用空格分隔，例如 `camera timeout`。具体规则见下文[搜索与失败语义](#搜索与失败语义)。
+4. 要停留查看一条记录，关闭“自动滚动”；继续保留“自动刷新”才能接收之后的新 UI 事件。搜索框变红时先修正或清空条件；记录缺失时再核对历史范围、容量限制和源文件。
+
 ## 日志从哪里来
 
 | 入口 | 数据来源与边界 |
 | --- | --- |
-| `WindowLog`，帮助菜单的日志窗口（快捷键可配置，默认 Ctrl+Alt+L） | 给 log4net 根 logger 附加 `LogViewerAppender` 接收新事件，并在初始化时读取当前文件历史；每次菜单执行创建新窗口 |
+| 帮助 > 日志（`WindowLog`，快捷键可配置） | 给 log4net 根 logger 附加 `LogViewerAppender` 接收新事件，并在初始化时读取当前文件历史；每次菜单执行创建新窗口 |
 | `LogOutput`，主窗口等嵌入式面板 | 同样接收 log4net 新事件，本身不加载文件历史；`ModuleLogViewerBinder` 的模块面板只接受指定 logger 名或其点分隔子名称 |
 | `WindowLogLocal` / `LogLocalOutput` | 读取调用方指定的外部文件，不接收 log4net 事件；编码可由调用方指定，默认 `Encoding.Default` |
-| `NativeLogWindow` | 独立的 `NativeLogBridge` 回调与采集会话，不是从托管日志文件读回 native 历史 |
+| 帮助 > 原生日志（`NativeLogWindow`） | 独立的 `NativeLogBridge` 回调与采集会话，不是从托管日志文件读回 native 历史 |
 
 主程序通过 `EntryClass.cs` 的 `XmlConfigurator` 加载并监视 `ColorVision/log4net.config`。当前配置包含控制台和按日期滚动的 UTF-8 文件输出，文件配置前缀为 `log\`；当入口检查到当前工作目录包含 `C:\Program Files` 时，会改到应用数据目录下的 `ColorVision\Log\`。定位应读取当前 appender 的 `File`，不能只猜安装目录或将主面板当作完整日志文件。
+
+## 反馈打包的应用日志范围
+
+`AppLogCollector` 同时收集 `%APPDATA%\ColorVision\Log`、当前程序安装目录下的 `log`，以及当前文件 appender 所在目录。安装目录从 `AppDomain.CurrentDomain.BaseDirectory` 获取，覆盖安装在 `C:\Program Files` 下的程序，不扫描其他软件目录。更新后重启和正常启动可能选择不同日志目录，反馈不能只收当前正在写入的位置。
+
+目录转为绝对路径、忽略大小写和末尾分隔符后去重。ZIP 中分别使用 `AppLogs/AppData/`、`AppLogs/Installation/` 和 `AppLogs/Current/`，保留不同目录内同名的日志；当前目录与前两者重合时只收一次。所有来源沿用所选时间范围（默认最近 7 天）、按 `LastWriteTimeUtc` 过滤、单文件不超过 50 MiB 和只读顶层文件的规则。缺失目录会跳过，某个目录无法读取或某个文件复制失败不会阻止收集其他来源。“打开日志目录”仍指向当前 appender 所在目录，打包范围更广。
+
+`FeedbackLogCollectorTests` 使用临时目录覆盖两处同名日志同时保留、当前目录去重、自定义当前目录、时间范围和其他目录缺失时仍收集安装目录日志；不依赖现场管理员权限或生产日志。
 
 ## 全局输出等级不是本地筛选
 
@@ -69,7 +84,7 @@ related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 `LogTextViewController` 同时在所属键盘目标上注册标准 `ApplicationCommands.Find`，执行仍是显示同一搜索栏；Detach 时解除命令绑定。这样主窗口可配置的[场景查找](../../04-api-reference/ui-components/hotkeys.md)能直接复用当前日志视图的局部搜索，而不先打开应用功能搜索，也不模拟 Ctrl+F。此适配不改变过滤算法、日志源或全局日志等级。
 
 - 普通搜索按空格拆词，每个词必须在同一被匹配文本中出现，忽略大小写。TextBox 按行过滤，Virtualized 按整条 `LogEntry.Text` 过滤，因此多行异常的匹配和保留范围会不同。
-- 含 `. * + ? ^ $ ( ) [ ] { } | \` 中任一字符就自动转为正则；不存在独立的“纯文本/正则”开关，文件名中的点和 Windows 路径也会触发。正则使用 `IgnoreCase`，每次匹配超时为 `250 ms`，不是全量搜索总时限。
+- 含 `. * + ? ^ $ ( ) [ ] { } | \` 中任一字符就自动转为正则；不存在独立的“纯文本/正则”开关，文件名中的点和 Windows 路径也会触发。要匹配文件名中的字面点可写 `camera\.log`；`error|fatal` 表示任一关键词。正则使用 `IgnoreCase`，每次匹配超时为 `250 ms`，不是全量搜索总时限。
 - UI 的 `NormalizeSearchText` 会先按当前文化转成小写，再传给 helper；不能承诺任意正则原样执行，例如 `\D` 会变为 `\d`。复杂模式需核对这条调用链，不能只看 helper 测试。
 - 正则解析失败或匹配超时时返回 `false`；直接应用搜索时边框变红，控件保留原可见结果，而不是显示“匹配为零”。无效搜索串仍是当前搜索条件，后续追加可能继续筛选失败；先修正或清空再判断日志是否缺失。
 
@@ -77,9 +92,9 @@ related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 
 ## Native 采集是另一条控制链
 
-`NativeLogWindowService` 复用已打开的 native 窗口，窗口会话初始不采集；“开始”才调用 `NativeLogCaptureController.Start` 初始化/启用可用 native 日志源，可能加载 DLL。其等级影响进程级 `NativeLogBridge`，不等于 log4net 根等级或本地筛选。当前控制器传入 `sink: null`、`enableNativeSink: false`，不能据此承诺保存到托管日志文件；桥接层允许其他调用方提供 sink，但该窗口不安装文件输出。
+`NativeLogWindowService` 复用已打开的 native 窗口，窗口会话初始不采集；“开始捕获”才调用 `NativeLogCaptureController.Start` 初始化/启用可用 native 日志源，可能加载 DLL。其等级影响进程级 `NativeLogBridge`，不等于 log4net 根等级或本地筛选。当前控制器传入 `sink: null`、`enableNativeSink: false`，不能据此承诺保存到托管日志文件；桥接层允许其他调用方提供 sink，但该窗口不安装文件输出。
 
-native 的“暂停”仅暂停显示队列取出，采集仍继续。待显示缓冲上限 `8192`，溢出丢最旧记录并累加 `Dropped`；每次刷新最多取 `512` 条。停止或关闭窗口会请求禁用 bridge，而清空会清待显示缓冲、丢弃计数和当前视图。这些操作都不是停止算法/设备的命令。实际采集需先确认授权，排障文档不授权启动产品或触发硬件。
+native 的“暂停显示”仅暂停显示队列取出，采集仍继续；“继续显示”恢复取出。待显示缓冲上限 `8192`，溢出丢最旧记录并累加“已丢弃”（`Dropped`）；每次刷新最多取 `512` 条。“停止捕获”或关闭窗口会请求禁用 bridge，而清空会清待显示缓冲、丢弃计数和当前视图。这些操作都不是停止算法/设备的命令。实际采集需先确认授权，排障文档不授权启动产品或触发硬件。
 
 ## 证据与验证缺口
 

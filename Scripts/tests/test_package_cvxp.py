@@ -8,6 +8,7 @@ from Scripts.package_cvxp import (
     REPO_ROOT,
     ensure_default_shared_files_are_current,
     is_repository_package_project,
+    load_shared_files_manifest,
     package_plugin,
     resolve_primary_dll_path,
     synchronize_manifest_version,
@@ -150,15 +151,26 @@ class PackageCvxManifestValidationTests(unittest.TestCase):
         self.assertFalse(is_repository_package_project(Path(self._temp_directory.name) / "Sample.csproj"))
         self.assertFalse(is_repository_package_project(None))
 
-    def test_default_shared_file_gate_fails_closed_on_runtime_drift(self) -> None:
+    def test_default_shared_file_gate_refreshes_runtime_drift(self) -> None:
         host_root = Path(self._temp_directory.name) / "host"
         host_root.mkdir()
         (host_root / "Current.dll").write_bytes(b"runtime")
         shared_files_path = Path(self._temp_directory.name) / "shared_files.json"
+        mirror_path = Path(self._temp_directory.name) / "mirror" / "shared_files.json"
         shared_files_path.write_text(json.dumps({"shared_files": ["Old.dll"]}), encoding="utf-8")
 
-        with self.assertRaisesRegex(RuntimeError, "manifest-only=1, runtime-only=1"):
-            ensure_default_shared_files_are_current(shared_files_path, host_root)
+        self.assertTrue(ensure_default_shared_files_are_current(
+            shared_files_path,
+            host_root,
+            output_files=(shared_files_path, mirror_path),
+        ))
+        self.assertEqual({"Current.dll"}, load_shared_files_manifest(shared_files_path))
+        self.assertEqual({"Current.dll"}, load_shared_files_manifest(mirror_path))
+        self.assertFalse(ensure_default_shared_files_are_current(
+            shared_files_path,
+            host_root,
+            output_files=(shared_files_path, mirror_path),
+        ))
 
     def _write_manifest(self, manifest: dict) -> None:
         self.manifest_path.write_text(json.dumps(manifest), encoding="utf-8")

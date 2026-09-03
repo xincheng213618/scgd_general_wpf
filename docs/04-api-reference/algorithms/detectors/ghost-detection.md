@@ -2,69 +2,82 @@
 knowledge_id: "algorithms.ghost"
 knowledge_type: "topic"
 status: "current"
-summary: "说明 ARVR Ghost 传统模板的参数、MQTT 事件、结果 DAO 和叠图。"
-aliases: ["Ghost检测入口和结果在哪里","TemplateGhost","AlgorithmGhost","ViewHandleGhost"]
-code_paths: ["Engine/ColorVision.Engine/Templates/ARVR/Ghost/TemplateGhost.cs","Engine/ColorVision.Engine/Templates/ARVR/Ghost/GhostParam.cs","Engine/ColorVision.Engine/Templates/ARVR/Ghost/AlgorithmGhost.cs","Engine/ColorVision.Engine/Templates/ARVR/Ghost/ViewHandleGhost.cs"]
-test_paths: []
-related: ["algorithms.arvr","algorithms.json-templates","engine.results","algorithms.local-native-analysis"]
+summary: "Ghost1.0 鬼影检测的模板、颜色和请求入口；说明数据库明细、首条结果叠图、全部明细 CSV 追加导出及读取失败边界。"
+aliases: ["Ghost检测入口和结果在哪里","TemplateGhost","AlgorithmGhost","ViewHandleGhost","Ghost1.0","鬼影模板管理","Ghost模板","请先选择Ghost模板","鬼影灰度"]
+code_paths: ["Engine/ColorVision.Engine/Templates/ARVR/Ghost/TemplateGhost.cs","Engine/ColorVision.Engine/Templates/ARVR/Ghost/GhostParam.cs","Engine/ColorVision.Engine/Templates/ARVR/Ghost/AlgorithmGhost.cs","Engine/ColorVision.Engine/Templates/ARVR/Ghost/ViewHandleGhost.cs","Engine/ColorVision.Engine/Templates/ARVR/Ghost/AlgResultGhostDao.cs","Engine/ColorVision.Engine/Abstractions/IDisplayAlgorithm.cs","Engine/ColorVision.Engine/Abstractions/IResultHandlers.cs","Engine/ColorVision.Engine/Abstractions/IViewResult.cs","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","UI/ColorVision.Database/BaseTableDao.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/VectorizedSelectVisualTests.cs"]
+related: ["algorithms.arvr","algorithms.json-templates","engine.results","algorithms.local-native-analysis","algorithms.template-menus","engine.template-design"]
 ---
 
-# Ghost Detection
+# Ghost1.0 鬼影检测
 
-本页只描述 Engine 的 ARVR Ghost 传统模板接入链。ImageEditor 的 `GhostLocalAnalysis` / `M_DetectGhosts` 是另一条[本地 native 分析链](../local-native-analysis.md)，不能套用本页的 MQTT、参数和结果 DAO 契约。
+本页描述 Engine 的 ARVR 传统 Ghost 模板：手动界面发送算法服务请求，结果通过数据库明细、图像叠加和 CSV 呈现。ImageEditor 的 `GhostLocalAnalysis` / `M_DetectGhosts` 属于[本地原生分析](../local-native-analysis.md)；其它 Ghost 版本的入口见 [ARVR 模板](../templates/arvr-template.md)。
 
-## 先记住
+## 配置并执行
 
-这里的 Ghost 检测是 `ColorVision.Engine` 中 ARVR 模板族的一支，不是独立公共算法包。它由参数模板、通用显示算法配置、MQTT 命令、结果 DAO、图像叠加和 CSV 导出组成。
+1. 在算法设备的通用手动面板中选择 **ARVR → Ghost1.0**。
+2. 选择 **Ghost模板**，需要修改参数时打开模板旁的编辑命令并保存。模板加载依赖字典 `7`、编码 `ghost`；具体[模板编辑入口](../templates/template-menu-entries.md)共用通用宿主。
+3. 选择 **颜色**：`BLUE`、`GREEN` 或 `RED`。新配置默认为 `BLUE`，其枚举值依次为 `0`、`1`、`2`。
+4. 设置算法服务能读取的图像路径，点击 **计算**。输入助手检查有效模板及非空路径，并按扩展名确定文件类型；不检查图像是否存在或远端是否可读。
+5. 核对本次请求、服务返回和对应历史结果。`MsgRecord` 只表示请求记录已建立并发起发送，不代表网络发送、算法计算或结果落库成功。
 
-## 当前最关键的文件
+## 模板参数
 
-- `Engine/ColorVision.Engine/Templates/ARVR/Ghost/TemplateGhost.cs`
-- `Engine/ColorVision.Engine/Templates/ARVR/Ghost/GhostParam.cs`
-- `Engine/ColorVision.Engine/Templates/ARVR/Ghost/AlgorithmGhost.cs`
-- `Engine/ColorVision.Engine/Templates/ARVR/Ghost/ViewHandleGhost.cs`
-- `Engine/ColorVision.Engine/Templates/ARVR/Ghost/AlgResultGhostDao.cs`
+`TemplateGhost : ITemplate<GhostParam>` 使用静态 `Params` 集合。下表列的是无明细的新空参数对象初值；已保存模板和新建预览分别受模板明细与系统字典默认值影响，见[模板持久化](../../../03-architecture/components/templates/design.md)。
 
-如果要弄清传统 Ghost 模板如何配置、如何发送命令、如何显示结果，这几处覆盖主干。
+| 字段 | 类型 | 新空对象初值 | 含义 |
+| --- | --- | --- | --- |
+| `Ghost_radius` | `int` | `65` | 待检测点阵的半径，像素 |
+| `Ghost_cols` | `int` | `3` | 点阵列数 |
+| `Ghost_rows` | `int` | `3` | 点阵行数 |
+| `Ghost_ratioH` | `float` | `0.4` | 中心灰度百分比上限，保留参数原值 |
+| `Ghost_ratioL` | `float` | `0.2` | 中心灰度百分比下限，保留参数原值 |
 
-## 当前主链
+参数类没有范围、行列数或上下限关系校验；这些初值不是推荐测量配置，服务端接受的范围和比例解释需与实际算法一致。
 
-| 环节 | 当前实现 |
+## 手动请求
+
+`AlgorithmGhost.SendCommand()` 发布 `EventName = "Ghost"`，参数包括：
+
+| 字段 | 本入口发送的内容 |
 | --- | --- |
-| 模板入口 | `TemplateGhost : ITemplate<GhostParam>`，`TemplateDicId = 7`，`Code = ghost` |
-| 参数模型 | `Ghost_radius`、`Ghost_cols`、`Ghost_rows`、`Ghost_ratioH`、`Ghost_ratioL`，偏向点阵几何和灰度比例 |
-| 算法宿主 | `AlgorithmGhost` 负责颜色、模板、设备和图像输入打包，不是本地图像处理内核 |
-| 运行配置 | `GhostDisplayAlgorithmConfig` 在通用 `DisplayAlgorithmBase` 界面中提供 Ghost 模板和 `BLUE/GREEN/RED` 颜色选择 |
-| 命令链 | `SendCommand(...)` 打包 `ImgFileName`、`FileType`、`DeviceCode`、`DeviceType`、`TemplateParam`、`Color`，发布 `Ghost` 事件 |
+| `ImgFileName`、`FileType` | 输入路径及扩展名对应的类型 |
+| `TemplateParam` | 所选 `GhostParam` 的 `ID`、`Name`；不内联发送点阵数值 |
+| `Color` | 当前颜色配置 |
+| `Params.DeviceCode`、`Params.DeviceType` | 空字符串 |
+| `SerialNumber` | 空字符串 |
 
-## 结果当前怎么处理
+消息外层的设备、服务名和 Token 为 `null` 时，由 `MQTTServiceBase.PublishAsyncClient` 补入服务值；和表中的内层设备字段分别处理。`AlgorithmGhost` 负责配置与消息组装，实际检测由算法服务完成。
 
-`ViewHandleGhost` 是当前结果显示链最关键的入口。它负责：
+## 结果明细与叠图
 
-- 通过 `AlgResultGhostDao.Instance.GetAllByPid(...)` 加载结果明细
-- 把结果列表接回 `ViewResultAlg`
-- 根据 `GhostPixel` 和 `LedPixel` 在图像上绘制叠加点位
-- 在左侧列表中展示 `LEDCenters`、`LEDBlobGray`、`GhostAverageGray`
-- 导出 CSV
+`ViewHandleGhost` 处理 `ViewResultAlgType.Ghost`。`Load()` 仅在 `result.ViewResults == null` 时，通过 `AlgResultGhostDao.GetAllByPid(result.Id)` 查询 `t_scgd_algorithm_result_detail_ghost`，将明细放入结果集合；已有非空引用的集合不会在该方法中重新查询。
 
-本分支的 Ghost 结果通过数据库结果模型、图像叠加和列表视图呈现，不是单次调用返回统一 JSON。
+DAO 在数据库未连接或查询异常时记录日志并返回空集合。因此空列表可能表示无匹配记录，也可能是读取失败；需结合数据库日志和主结果 ID 判断。结果菜单的 **调试** 会选择 `AlgorithmGhost` 并带入结果图像路径，不会自动还原本次模板和颜色。
 
-## 当前几个最容易写错的点
-
-| 误区 | 正确判断 |
+| 呈现 | 当前范围 |
 | --- | --- |
-| 把它写成独立公共 API | 当前入口在 `Templates/ARVR/Ghost`，属于 ARVR 模板族 |
-| 把 `AlgorithmGhost` 写成本地计算内核 | 它主要负责 UI、输入、模板和消息组装 |
-| 套用通用缺陷检测参数表 | 当前参数面只有点阵半径、行列数和灰度比例上下限 |
-| 期待单次调用返回示例 JSON | 真实输出链是 `ViewHandleGhost`、DAO、图像叠加和列表视图 |
+| 明细列表 | 展示结果集合中的 `LEDCenters`、`LEDBlobGray`、`GhostAverageGray`，对应“质心坐标”“光斑灰度”“鬼影灰度” |
+| 图像叠加 | 只取第一条 `AlgResultGhostModel`，合并其 `GhostPixel` 与 `LedPixel` 点集；不是对全部明细逐条叠图 |
+| 点位图形 | 每个点构造 `1×1` 几何矩形，整体使用一份冻结的 `StreamGeometry`，透明填充、红色轮廓 |
+| 图形边界 | 可取得原图尺寸时使用图像范围，否则使用点集边界；空点集不创建图形 |
 
-## 推荐阅读顺序
+`GhostPixel` / `LedPixel` 分别反序列化 `GhostPixels` / `LEDPixels` 中的 JSON 点集；格式错误会使本次叠图失败并显示异常消息。打开源图也依赖结果路径上的文件存在。显示完整链见[结果交接](../../engine-components/result-handoff-chain.md)。
 
-1. `Engine/ColorVision.Engine/Templates/ARVR/Ghost/TemplateGhost.cs`
-2. `Engine/ColorVision.Engine/Templates/ARVR/Ghost/GhostParam.cs`
-3. `Engine/ColorVision.Engine/Templates/ARVR/Ghost/AlgorithmGhost.cs`
-4. `Engine/ColorVision.Engine/Templates/ARVR/Ghost/ViewHandleGhost.cs`
+## CSV 导出
 
-## 验证入口与缺口
+`ViewHandleGhost.SideSave()` 从当前 `ViewResults` 筛选全部 `AlgResultGhostModel`，按一条明细一行输出四列：`id`、质心坐标、光斑灰度、鬼影灰度。后三列直接使用存储的集合文本，不展开为“一个点一行”，也不包含完整轮廓坐标或导出的叠图。
 
-验证缺口：未登记 Ghost 服务与结果 DAO 的专门自动化测试；需用已知图像、颜色和点阵参数核对真实请求、明细与叠图，不以页面示例作为通过证据。
+文件以 UTF-8 **追加**写入；每次调用都会写列头和尾部空行，重复导出到同一文件会累积多个区块。含逗号、双引号或换行的字段会按 CSV 引号规则转义。导出基于已加载的内存明细，不会为此重新查询数据库。
+
+## 排查与验证
+
+| 现象 | 优先检查 |
+| --- | --- |
+| 提示“请先选择Ghost模板” | 当前模板选择、参数对象、字典 `7` 与编码 `ghost` 是否加载 |
+| 结果与颜色或点阵不符 | 实际 `Color`、模板引用及保存的参数；初始颜色是 `BLUE` |
+| 列表为空 | 主结果 ID、数据库连接与查询日志，以及结果集合是否已初始化；不把空列表直接当作检测结论 |
+| 列表有多条但叠图不完整 | 叠图只使用第一条明细；再查该条轮廓 JSON 和源图路径 |
+| CSV 重复列头或内容 | 同一路径采用追加写入；核对导出次数和文件是否已有内容 |
+
+`VectorizedSelectVisualTests` 的两个 Ghost 用例验证图像边界、无图时点集边界、冻结矢量图形及空点集处理。它们不覆盖算法服务、DAO 查询或 CSV 导出；这些路径仍需用已知图像、颜色与点阵参数分别核对请求、明细、叠图和文件内容。

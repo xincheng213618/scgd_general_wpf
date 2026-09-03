@@ -15,6 +15,41 @@
         Background="{DynamicResource GlobalBackground}"
         Initialized="Window_Initialized">
     <Window.Resources>
+        <Style x:Key="MainWindowActionButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource TitleBarActionForeground}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="ActionSurface" Background="{TemplateBinding Background}" CornerRadius="4" BorderBrush="Transparent" BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource AncestorType={x:Type Window}}, FallbackValue=True}" Value="False">
+                                <Setter Property="Foreground" Value="{DynamicResource TitleBarActionInactiveForeground}" />
+                            </DataTrigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+                                <Setter TargetName="ActionSurface" Property="Background" Value="{DynamicResource EnvironmentCommandBarMenuItemMouseOver}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+                                <Setter TargetName="ActionSurface" Property="Background" Value="{DynamicResource ButtonBackground}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+                                <Setter TargetName="ActionSurface" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ActionSurface" Property="Opacity" Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CompactTitleBarActionButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource MainWindowActionButtonStyle}" />
         <Style x:Key="UpdateNotificationButtonStyle" TargetType="{x:Type Button}">
             <Setter Property="Height" Value="28" />
             <Setter Property="Padding" Value="4,0" />
@@ -30,13 +65,15 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type Button}">
-                        <TextBlock x:Name="ButtonText"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   FontSize="{TemplateBinding FontSize}"
-                                   FontWeight="{TemplateBinding FontWeight}"
-                                   Foreground="{TemplateBinding Foreground}"
-                                   Text="{TemplateBinding Content}" />
+                        <Border Background="Transparent" Padding="{TemplateBinding Padding}">
+                            <TextBlock x:Name="ButtonText"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontSize="{TemplateBinding FontSize}"
+                                       FontWeight="{TemplateBinding FontWeight}"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       Text="{TemplateBinding Content}" />
+                        </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="ButtonText" Property="Foreground" Value="#62B8FF" />
@@ -47,15 +84,16 @@
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="ButtonText" Property="Opacity" Value="0.58" />
                             </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="ButtonText" Property="TextDecorations" Value="Underline" />
+                            </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
         <DataTemplate x:Key="DocumentHeaderTemplate">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Foreground="{DynamicResource GlobalTextBrush}" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-            </StackPanel>
+            <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
         </DataTemplate>
     </Window.Resources>
     <Grid x:Name="Root">
@@ -64,22 +102,48 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
-        <Border Grid.Row="0" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" WindowChrome.IsHitTestVisibleInChrome="True">
-            <DockPanel LastChildFill="False">
-                <StackPanel x:Name="RightMenuItemPanel" DockPanel.Dock="Right" Orientation="Horizontal" />
+        <Grid x:Name="TopBarGrid" Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Border x:Name="MainWindowTitleBar" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}">
+                <DockPanel LastChildFill="False" ClipToBounds="True">
+                    <Button x:Name="CompactActionsOverflowButton" DockPanel.Dock="Right" Width="32" Height="28" VerticalAlignment="Center"
+                            Panel.ZIndex="3" Background="{DynamicResource GlobalBackground}" WindowChrome.IsHitTestVisibleInChrome="True"
+                            Style="{StaticResource CompactTitleBarActionButtonStyle}" ToolTip="{x:Static properties:Resources.CompactTitleBarMoreActions}"
+                            AutomationProperties.Name="{x:Static properties:Resources.CompactTitleBarMoreActions}" Visibility="Collapsed">
+                        <Grid Width="24" Height="22">
+                            <TextBlock Text="⋯" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Ellipse x:Name="CompactUpdateBadge" Width="5" Height="5" Fill="#2D9CFF"
+                                     HorizontalAlignment="Right" VerticalAlignment="Top" Visibility="Collapsed" IsHitTestVisible="False" />
+                        </Grid>
+                    </Button>
+                    <StackPanel x:Name="RightMenuItemPanel" DockPanel.Dock="Right" Orientation="Horizontal" Panel.ZIndex="2"
+                                Background="{DynamicResource GlobalBackground}" WindowChrome.IsHitTestVisibleInChrome="True">
+                        <StackPanel.Resources>
+                            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MainWindowActionButtonStyle}" />
+                        </StackPanel.Resources>
+                    </StackPanel>
+                    <Border x:Name="CompactDragRegion" DockPanel.Dock="Right" Width="120" Visibility="Collapsed"
+                            Panel.ZIndex="1" Background="{DynamicResource GlobalBackground}" WindowChrome.IsHitTestVisibleInChrome="False" />
+                    <Image x:Name="CompactWindowIcon" DockPanel.Dock="Left" Width="16" Height="16" Margin="6,0,8,0"
+                           Source="{Binding Icon, RelativeSource={RelativeSource AncestorType=Window}}" Visibility="Collapsed" IsHitTestVisible="False" />
+                    <Menu x:Name="Menu1" Padding="2" HorizontalAlignment="Left" Background="Transparent" WindowChrome.IsHitTestVisibleInChrome="True" />
+                    <Button x:Name="UpdateNotificationButton"
+                            Click="UpdateNotificationButton_Click"
+                            Content="{x:Static properties:Resources.UpdatePreviewFoundUpdatesHeading}"
+                            Style="{StaticResource UpdateNotificationButtonStyle}"
+                            ToolTip="{x:Static properties:Resources.UpdatePreviewUpdateNowButtonText}"
+                            WindowChrome.IsHitTestVisibleInChrome="True"
+                            Visibility="Collapsed" />
+                </DockPanel>
+            </Border>
+            <!-- Reserved for DWM, not a WPF imitation of the system caption buttons. -->
+            <Border x:Name="NativeCaptionButtonsPlaceholder" Grid.Column="1" Width="0" IsHitTestVisible="False" />
+        </Grid>
 
-                <Menu x:Name="Menu1" Padding="2" HorizontalAlignment="Left" Background="Transparent" />
-                <Button x:Name="UpdateNotificationButton"
-                        Click="UpdateNotificationButton_Click"
-                        Content="{x:Static properties:Resources.UpdatePreviewFoundUpdatesHeading}"
-                        Style="{StaticResource UpdateNotificationButtonStyle}"
-                        ToolTip="{x:Static properties:Resources.UpdatePreviewUpdateNowButtonText}"
-                        Visibility="Collapsed" />
-
-            </DockPanel>
-        </Border>
-
-        <xcad:DockingManager x:Name="DockingManager1" Grid.Row="1" Margin="-6,-6" Padding="0" Background="Transparent" BorderThickness="0" DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}">
+        <xcad:DockingManager x:Name="DockingManager1" Grid.Row="1" Margin="-2,-3,-2,-2" Padding="0" BorderThickness="0" Background="{DynamicResource GlobalBackground}" DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}">
             <xcad:LayoutRoot x:Name="_layoutRoot">
                 <xcad:LayoutPanel Orientation="Horizontal">
                     <xcad:LayoutAnchorablePaneGroup x:Name="LeftPaneGroup" DockWidth="303">
@@ -89,7 +153,7 @@
                             </xcad:LayoutAnchorable>
                             <xcad:LayoutAnchorable Title="{x:Static properties:Resources.DeviceControl}" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="AcquirePanel">
                                 <ScrollViewer x:Name="ScrollViewerDisplay"
-                                              Background="{DynamicResource GlobalBorderBrush1}"
+                                              Background="{DynamicResource GlobalBackground}"
                                               HorizontalScrollBarVisibility="Disabled"
                                               VerticalScrollBarVisibility="Auto">
                                     <StackPanel x:Name="StackPanelSPD"
@@ -108,7 +172,7 @@
                 </xcad:LayoutPanel>
             </xcad:LayoutRoot>
         </xcad:DockingManager>
-        <Grid x:Name="StatusBarGrid" Grid.Row="2" Visibility="{Binding IsOpenStatusBar, Converter={StaticResource bool2VisibilityConverter}}" />
+        <Grid x:Name="StatusBarGrid" Grid.Row="2" Background="{DynamicResource GlobalBackground}" Visibility="{Binding IsOpenStatusBar, Converter={StaticResource bool2VisibilityConverter}}" />
 
     </Grid>
 </Window>

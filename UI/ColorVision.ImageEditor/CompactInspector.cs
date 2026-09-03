@@ -45,8 +45,11 @@ namespace ColorVision.ImageEditor
         public required string PropertyName { get; init; }
         public string? Label { get; init; }
         public object? Icon { get; init; }
+        public object? CheckedIcon { get; init; }
         public bool ShowLabel { get; init; }
         public double Width { get; init; } = 52;
+        public double ToggleMinWidth { get; init; } = 24;
+        public double ToggleHeight { get; init; } = 20;
         public CompactInspectorEditorKind EditorKind { get; init; } = CompactInspectorEditorKind.Auto;
     }
 
@@ -54,27 +57,51 @@ namespace ColorVision.ImageEditor
     {
         public static TextBlock CreateText(string text)
         {
-            return new TextBlock
+            return CreateText(text, 11);
+        }
+
+        public static TextBlock CreateText(string text, double fontSize, bool useAccent = false)
+        {
+            TextBlock textBlock = new TextBlock
             {
                 Text = text,
-                FontSize = 11,
+                FontSize = fontSize,
                 FontWeight = FontWeights.SemiBold,
                 VerticalAlignment = VerticalAlignment.Center,
                 TextAlignment = TextAlignment.Center,
             };
+
+            if (useAccent)
+            {
+                textBlock.SetResourceReference(TextBlock.ForegroundProperty, "PrimaryBrush");
+            }
+
+            return textBlock;
         }
 
         public static TextBlock CreateGlyph(string glyph)
         {
-            return new TextBlock
+            return CreateGlyph(glyph, 12);
+        }
+
+        public static TextBlock CreateGlyph(string glyph, double fontSize, bool useAccent = false)
+        {
+            TextBlock textBlock = new TextBlock
             {
                 Text = glyph,
                 FontFamily = new FontFamily("Segoe MDL2 Assets"),
-                FontSize = 12,
+                FontSize = fontSize,
                 FontWeight = FontWeights.SemiBold,
                 VerticalAlignment = VerticalAlignment.Center,
                 TextAlignment = TextAlignment.Center,
             };
+
+            if (useAccent)
+            {
+                textBlock.SetResourceReference(TextBlock.ForegroundProperty, "PrimaryBrush");
+            }
+
+            return textBlock;
         }
     }
 
@@ -293,19 +320,64 @@ namespace ColorVision.ImageEditor
         {
             ToggleButton toggleButton = new ToggleButton
             {
-                MinWidth = 24,
-                Height = 20,
+                MinWidth = item.ToggleMinWidth,
+                Height = item.ToggleHeight,
                 Padding = new Thickness(4, 0, 4, 0),
                 Margin = new Thickness(0),
                 ToolTip = toolTip,
                 HorizontalContentAlignment = HorizontalAlignment.Center,
                 VerticalContentAlignment = VerticalAlignment.Center,
-                Content = item.Icon ?? item.Label ?? toolTip,
+                Content = CreateToggleContent(item, toolTip),
             };
 
             toggleButton.SetResourceReference(FrameworkElement.StyleProperty, "CompactInspectorToggleButtonStyle");
             toggleButton.SetBinding(ToggleButton.IsCheckedProperty, CreateBinding(item.Source, item.PropertyName));
             return WrapControlInChip(toggleButton, toolTip);
+        }
+
+        private static object CreateToggleContent(CompactInspectorPropertyItem item, string toolTip)
+        {
+            object uncheckedContent = item.Icon ?? item.Label ?? toolTip;
+            if (item.CheckedIcon == null)
+            {
+                return uncheckedContent;
+            }
+
+            Grid stateIcon = new Grid
+            {
+                Width = 18,
+                Height = 18,
+                IsHitTestVisible = false,
+            };
+            stateIcon.Children.Add(CreateToggleStatePresenter(uncheckedContent, isCheckedState: false));
+            stateIcon.Children.Add(CreateToggleStatePresenter(item.CheckedIcon, isCheckedState: true));
+            return stateIcon;
+        }
+
+        private static ContentPresenter CreateToggleStatePresenter(object content, bool isCheckedState)
+        {
+            ContentPresenter presenter = new ContentPresenter
+            {
+                Content = content,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+
+            Style style = new Style(typeof(ContentPresenter));
+            style.Setters.Add(new Setter(UIElement.VisibilityProperty, isCheckedState ? Visibility.Collapsed : Visibility.Visible));
+
+            DataTrigger checkedTrigger = new DataTrigger
+            {
+                Binding = new Binding(nameof(ToggleButton.IsChecked))
+                {
+                    RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(ToggleButton), 1),
+                },
+                Value = true,
+            };
+            checkedTrigger.Setters.Add(new Setter(UIElement.VisibilityProperty, isCheckedState ? Visibility.Visible : Visibility.Collapsed));
+            style.Triggers.Add(checkedTrigger);
+            presenter.Style = style;
+            return presenter;
         }
 
         private static FrameworkElement CreateBrushElement(CompactInspectorPropertyItem item, PropertyInfo property, string toolTip)

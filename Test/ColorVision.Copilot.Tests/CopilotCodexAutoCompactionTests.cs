@@ -55,54 +55,6 @@ public sealed class CopilotCodexAutoCompactionTests
     }
 
     [Fact]
-    public void AutoCompactionDiagnosticsExposeTheConfiguredThresholdScopeAndCurrentCounters()
-    {
-        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
-        {
-            ConfiguredModelAutoCompactTokenLimit = 64_000,
-            HasModelAutoCompactTokenLimitOverride = true,
-            ModelAutoCompactTokenLimitSource = CopilotProjectInstructionConfigSources.CodexHome,
-            ConfiguredModelAutoCompactTokenLimitScope = CopilotModelAutoCompactTokenLimitScope.BodyAfterPrefix,
-            HasModelAutoCompactTokenLimitScopeOverride = true,
-            ModelAutoCompactTokenLimitScopeSource = CopilotProjectInstructionConfigSources.TrustedProject,
-        };
-        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-            new CopilotProjectInstructionSnapshot(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                options,
-                Array.Empty<CopilotProjectInstructionDocument>()),
-            hasActiveAgentRun: false);
-        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
-        {
-            AutoCompactConversationHistory = true,
-            ConfiguredModelAutoCompactTokenLimit = 64_000,
-            HasModelAutoCompactTokenLimitOverride = true,
-            ModelAutoCompactTokenLimitSourceLabel = options.ModelAutoCompactTokenLimitSourceLabel,
-            ModelAutoCompactTokenLimitScope = options.EffectiveModelAutoCompactTokenLimitScope,
-            HasModelAutoCompactTokenLimitScopeOverride = true,
-            ModelAutoCompactTokenLimitScopeSourceLabel = options.ModelAutoCompactTokenLimitScopeSourceLabel,
-            AutoCompactTotalEstimatedTokens = 70_000,
-            AutoCompactCarriedPrefixEstimatedTokens = 50_000,
-            AutoCompactBodyAfterPrefixEstimatedTokens = 20_000,
-        });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
-        {
-            Config = new CopilotConfig(),
-            State = new CopilotChatState(),
-            CodexConfigOptions = options,
-        });
-
-        Assert.Contains("model_auto_compact_token_limit：64,000 Token", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("model_auto_compact_token_limit_scope：body_after_prefix", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("body_after_prefix 计量 20,000/64,000 Token", contextReport, StringComparison.Ordinal);
-        Assert.Contains("carried prefix 50,000 Token", contextReport, StringComparison.Ordinal);
-        Assert.Contains("64,000 tokens @ body_after_prefix", debugReport, StringComparison.Ordinal);
-        Assert.Contains(options.ModelAutoCompactTokenLimitScopeSourceLabel, debugReport, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void ContextUsagePresentationUsesTheConfiguredScopeForPressure()
     {
         var usage = new CopilotConversationContextUsage(

@@ -11,15 +11,15 @@ related: ["ui.database", "ui.sqlite-storage", "operations.data", "ui.socket-prot
 
 # 通用查询、条件会话与整表操作
 
-`GenericQueryWindow` 编辑实体查询条件，并把查询结果写回调用方传入的集合。它不是[数据库浏览器](./ColorVision.Database.md)：字段来自 C# 实体，不扫描真实表结构；没有浏览器的分页、后台加载、取消旧结果和 `CanWriteCurrentTable` 门禁。不能因两个窗口都属于 `ColorVision.Database` 就混用契约。
+“高级查询”（`GenericQueryWindow`）用于按实体字段筛选业务列表。选择字段并添加条件，设置数量和排序，再点击“查询”，结果会替换原业务列表；窗口不另建结果表。
 
-执行查询会访问调用方数据库；默认窗口初始化只装配条件、恢复会话和绑定事件，打开入口是否提前初始化数据库取决于具体调用方。“清空表”和“截断表”是整表写操作。解释源码不授权连接用户库或做清理烟测。维护前必须明确目标表、影响范围、业务停写与恢复方案，不能把当前筛选范围当成删除范围。
+字段来自 C# 实体，不扫描真实表结构；当前没有分页、后台加载或取消旧结果机制。默认窗口初始化只装配条件、恢复会话和绑定事件，查询时才访问调用方数据库；打开入口是否提前初始化数据库取决于具体调用方。底层连接见[数据库基础](./ColorVision.Database.md)。
 
 ## 字段、条件与 SQL
 
 `GenericQuery<T>` 和 `GenericQuery<T,T1>` 都要求实体 `T` 实现 `IEntity`。`GenericQueryConditionSupport.GetQueryableProperties` 选取公共实例可读、非索引属性，排除 `SugarColumn.IsIgnore` 和 `Browsable(false)`；支持字符串、布尔、日期、Guid、枚举、数值及 nullable 形式。字段存在于实体不保证部署数据库具有相同列或类型。
 
-显示名依次取 `Display`、`DisplayName`、内置字段名映射、属性名；排序先按预设字段优先级，再按当前文化的显示名。SQL 列名取 `SugarColumn.ColumnName`，否则使用属性名。条件值参数化不意味着列名经过浏览器 Provider 的同一套标识符校验；实体元数据应由受信代码维护。
+显示名依次取 `Display`、`DisplayName`、内置字段名映射、属性名；排序先按预设字段优先级，再按当前文化的显示名。SQL 列名取 `SugarColumn.ColumnName`，否则使用属性名。条件值参数化，但列名直接来自实体元数据，本层没有额外的标识符校验；实体元数据应由受信代码维护。
 
 | 输入 | 当前行为 |
 | --- | --- |
@@ -61,9 +61,9 @@ related: ["ui.database", "ui.sqlite-storage", "operations.data", "ui.socket-prot
 | --- | --- |
 | 清空条件 | 只重置上述条件状态；不重新查询、不删除记录 |
 | 默认 `DeleteAll` | 无条件的 `Db.Deleteable<T>().ExecuteCommand()`；不使用当前条件或数量限制 |
-| 默认 `TruncateTable` | 直接发出 `TRUNCATE TABLE {tableName}`；不带当前过滤、不做统一方言适配，也没有浏览器相同的标识符处理 |
+| 默认 `TruncateTable` | 直接发出 `TRUNCATE TABLE {tableName}`；不带当前过滤；本层不做统一方言适配或表名转义 |
 
-窗口的两个整表入口各有 Yes/No 确认；公开方法与 `RelayCommand` 不内置该确认或统一权限检查。操作正常返回后窗口只显示成功，不核对影响行数、不自动重新查询或清空旧结果集合，也不提供备份、统一事务和恢复。不要将所有数据库的截断/自增重置/回滚行为视为相同。
+整表操作前应明确目标表、影响范围、业务停写与恢复方案。窗口的两个整表入口各有 Yes/No 确认；公开方法与 `RelayCommand` 不内置该确认或统一权限检查。操作正常返回后窗口只显示成功，不核对影响行数、不自动重新查询或清空旧结果集合，也不提供备份、统一事务和恢复。不要将所有数据库的截断/自增重置/回滚行为视为相同。
 
 Socket 的实际查询子类用自己的维护锁，并将 SQLite 截断改为事务内 `DELETE` 加 `sqlite_sequence` 清理；这是调用方定制，不是默认 `GenericQuery` 的跨库能力。锁、备份和压缩正文迁移的边界见 [SQLite 存储与维护](./sqlite-storage.md)。
 
@@ -75,4 +75,4 @@ Socket 的实际查询子类用自己的维护锁，并将 SQLite 截断改为�
 
 `Test/ColorVision.UI.Tests/GenericQueryConditionSupportTests.cs` 覆盖友好字段名与排除项、值解析、布尔与重复范围、空白跳过、直接保存/恢复会话，以及无查询前副作用时非法条件不清旧结果。测试使用临时 SQLite 与 STA 控件构造，引用不表示本次已经运行。
 
-现有专项测试不覆盖真实 Closing、未应用的数量/排序、SQL 数量限制显示、跨连接共享状态、转换器部分失败、关闭/取消时序、整表操作和实际 MySQL。上述执行边界来自源码核对，不是对用户数据库的运行验收；产品修复需单独授权并增加对应测试。
+现有专项测试不覆盖真实 Closing、未应用的数量/排序、SQL 数量限制显示、跨连接共享状态、转换器部分失败、关闭/取消时序、整表操作和实际 MySQL。上述执行边界来自源码核对，不是对用户数据库的运行验收。

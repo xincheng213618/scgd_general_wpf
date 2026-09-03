@@ -66,7 +66,7 @@ related: ["ui.framework","ui.settings","ui.wizards","ui.menus","ui.property-grid
 
 ## 保存是合并目标文件，不是完整内存镜像
 
-`SaveConfigs(fileName)` 先序列化 `Configs.ToArray()` 中已实例化的配置，再在锁内重新读取目标文件，把这些节覆盖到目标 JSON。未被覆盖的目标节保留，但 `ConfigOptions` 和 `MarketplaceServiceConfig` 两个明确过期节会移除。
+`SaveConfigs(fileName)` 先序列化 `Configs.ToArray()` 中已实例化的配置，再在锁内重新读取目标文件，移除 `ConfigOptions` 和 `MarketplaceServiceConfig` 两个明确过期节，然后把快照中的节覆盖到目标 JSON。其余未被覆盖的目标节保留。
 
 这带来三个边界：
 
@@ -76,7 +76,7 @@ related: ["ui.framework","ui.settings","ui.wizards","ui.menus","ui.property-grid
 
 任一已实例化节序列化失败，`CreateConfigSnapshot` 汇总错误并抛出，不写部分成功节。已有目标文件若不是一个完整 JSON 对象，保存会拒绝覆盖；尾随其它内容也视为无效。目标不存在时才从空对象开始。
 
-`TrySave<T>(candidate)` 只把 `typeof(T).Name` 对应节合并到主文件，保留其它目标节；它既不把 candidate 自动注册进 `Configs`，也不更新内部 `jsonObject`。另建候选对象保存成功后，已有缓存可能仍旧；尚未实例化的类型也可能继续从旧加载快照取值。运行期发布应由调用方明确完成，不能假设保存方法已重绑所有消费者。
+`TrySave<T>(candidate)` 同样先移除过期节，再只把 `typeof(T).Name` 对应节合并到主文件，保留其它目标节；它既不把 candidate 自动注册进 `Configs`，也不更新内部 `jsonObject`。另建候选对象保存成功后，已有缓存可能仍旧；尚未实例化的类型也可能继续从旧加载快照取值。运行期发布应由调用方明确完成，不能假设保存方法已重绑所有消费者。
 
 ## 单文件写入、锁和事务版本
 
@@ -115,7 +115,7 @@ related: ["ui.framework","ui.settings","ui.wizards","ui.menus","ui.property-grid
 
 主程序另行注册非关键配置节白名单，提供 `ConfigMaintenanceResetService` 选择性维护重置：只记录计划，在下一次配置 `Load`、正常加载与实例化之前处理，完整原文件备份成功后才提交。它不使用 `LoadDefaultConfigs` 的旧备份回退，也不在运行中替换对象。独立备份、启动准入、取消、崩溃幂等与部分失败语义由[存储清理与设置重置](./storage-maintenance.md)定义，不能将它与下面的滚动 `BackupConfigs` 混为一谈。
 
-`BackupConfigs` 使用 `<ConfigDIFileName>Backup_yyyyMMdd_HHmmss.json`，通过 `SaveConfigs(backupPath)` 保存当前已实例化快照；它不是直接复制主文件。清理目标是按文件名倒序保留最多 10 个匹配备份文件，并不先筛出有效 JSON。备份和清理异常分别记日志，调用方拿不到可靠的布尔成功结果。
+`BackupConfigs` 使用 `<ConfigDIFileName>Backup_yyyyMMdd_HHmmss.json`，通过 `SaveConfigs(backupPath)` 保存当前已实例化快照；它不是直接复制主文件。同一秒再次备份会合并写入同一个目标文件。清理目标是按文件名倒序保留最多 10 个匹配备份文件，并不先筛出有效 JSON。备份和清理异常分别记日志，调用方拿不到可靠的布尔成功结果。
 
 普通加载在文件缺失或 `TryReadConfigFile` 返回失败时，按备份文件名倒序寻找可解析的 JSON，跳过坏备份；找到后写回主 `ConfigFilePath` 并替换内存。取得文件锁等更早的异常仍会向外抛出，不保证进入回退。没有可用备份，或恢复尝试异常时，回退为空 `jsonObject` 并扫描当前程序集默认构造配置；这条默认回退不同于正常加载后的延迟实例化，类型扫描/构造失败会被跳过。
 

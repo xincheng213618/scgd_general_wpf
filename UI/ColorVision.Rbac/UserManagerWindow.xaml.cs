@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1822,CA1863
 using ColorVision.Rbac.ViewModels;
+using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,7 +18,7 @@ namespace ColorVision.Rbac
         public UserManagerWindow()
         {
             InitializeComponent();
-            
+            this.ApplyCaption();
         }
 
         private async void Window_Initialized(object sender, EventArgs e)

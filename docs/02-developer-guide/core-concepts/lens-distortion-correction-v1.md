@@ -9,11 +9,11 @@ test_paths: ["Test/ColorVision.UI.Tests/LensDistortionCorrectionV1Tests.cs"]
 related: ["algorithms.platform","algorithms.index"]
 ---
 
-# 镜头畸变校正 V1（M8.2）
+# 镜头畸变校正 V1
 
-## 阶段边界与已有能力盘点
+## 适用范围
 
-M8.2 提供稳定 ID `colorvision.geometry.lens-distortion-correction`，用显式相机内参和 Brown-Conrady 系数把畸变图像重采样到校正后的 pixel-center 坐标。仓库已有 FindCross 内部去畸变和 9 点畸变测量，但前者绑定该检测流程与 native JSON，后者测量畸变而不校正整幅图；它们不能替代统一 Descriptor/Invocation/Runner/Result。本阶段复用已验证的 Brown 系数顺序、OpenCV 映射能力、M7 的只读帧借用、提交、preset 与有效 mask 规则，不估计相机标定，也不实现鱼眼模型。
+`colorvision.geometry.lens-distortion-correction` 使用显式相机内参与 Brown-Conrady 系数，将畸变图像重采样到校正后的 pixel-center 坐标。它使用 OpenCV 映射能力，并复用[几何变换](./geometric-transform-v1.md)的只读帧、提交、preset 与有效 mask 规则；不估计标定参数，不支持鱼眼模型。
 
 ## 相机、坐标与参数契约
 
@@ -56,4 +56,4 @@ Preset 由 `LensDistortionCorrectionPresetSerializer` 保存，严格校验 Algo
 
 可选性能门禁 `LensDistortionCorrectionPipelineProbe` 在 4K Gray16/Bgra32 上执行非零畸变。管理内存预算只允许一份校正输出、一份 Gray8 mask 和固定 16 MiB 余量；native 侧仍需要两份 float map 与 OpenCV 输出工作区。取消在 map 前后、mask 每 32 行及 remap 前后检查；单次不可中断的 OpenCV 调用结束后会立即观察取消并释放临时 Mat。
 
-M8.2 不从棋盘格/圆点板估计标定，不自动改变输入尺寸的内参，不实现 fisheye/omnidir 模型，也不声称 CUDA/DirectML provider。
+镜头畸变校正不从棋盘格/圆点板估计标定，不自动改变输入尺寸的内参，不实现 fisheye/omnidir 模型，也不声称 CUDA/DirectML provider。

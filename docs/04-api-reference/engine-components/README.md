@@ -11,7 +11,7 @@ related: ["engine.host", "engine.devices", "engine.mqtt", "engine.rc-registratio
 
 # Engine 知识入口
 
-`Engine/` 承接设备、模板、Flow、服务消息与结果。按问题直接选择权威主题，再核对其中的源码和验证入口；新增功能和排查现有行为使用同一份契约，不再分别维护开发手册、对象总览和业务矩阵。
+`Engine/` 承接设备、模板、Flow、服务消息与结果。按问题直接选择权威主题，再核对其中的源码和验证入口；功能扩展与故障排查按下表进入同一份权威契约。
 
 ## 按问题检索
 
@@ -27,7 +27,7 @@ related: ["engine.host", "engine.devices", "engine.mqtt", "engine.rc-registratio
 | 新节点放哪里、哪些配置用 PropertyGrid | [Flow 节点入口](../flow_nodes_summary.md)、[节点扩展](../extensions/flow-node.md)、[PropertyGrid 契约](../ui-components/property-grid.md) | `STNode`、`FlowNodePropertyEditorAttribute`、`FlowPropertyEditorRegistry` |
 | 结果没有 handler、图像缺失、overlay 残留 | [结果交接链](./result-handoff-chain.md) | `ResultHandleRegistry`、`AlgorithmOverlayManager` |
 | 客户判定或 CSV/MES/Socket 字段不正确 | [项目知识入口](../projects/README.md)、[Socket 协议](../ui-components/ColorVision.SocketProtocol.md) | `Projects/` 的 `Process/Recipe/Fix` 与具体协议消费方 |
-| 数据库清理是否有预览、备份和回滚保证 | [维护窗口](./database-maintenance.md)、[MySQL 结果维护](./mysql-maintenance.md) | `DatabaseCleanupWindow`、`MySqlResultCleanupProvider`；与表浏览器、SQLite 工具分开 |
+| 数据库清理是否有预览、备份和回滚保证 | [维护窗口](./database-maintenance.md)、[MySQL 结果维护](./mysql-maintenance.md) | `DatabaseCleanupWindow`、`MySqlResultCleanupProvider`；与业务查询、SQLite 工具分开 |
 | SQL恢复失败但数据已变、重置为何没有保留结果 | [MySQL恢复、重置与资源保留](./mysql-recovery.md) | `MySqlDatabaseMaintenanceService`、`RestoreAndRestartAsync`；配置同步和服务重启有独立失败边界 |
 | 转换、图像转换、校准参数从哪来 | [转换与校准节点](./flow-conversion-calibration-nodes.md) | `Engine/FlowEngineLib/` |
 | FileServer 类型可见性或文件格式读写问题 | [FileServer 包装边界](../../01-user-guide/devices/file-server.md)、[CV 文件读写](./ColorVision.FileIO.md) | `DeviceFileServer` 不等同于本地格式读写库；不要根据包装类推断远程文件操作已实现 |
@@ -56,7 +56,7 @@ node docs/.vitepress/scripts/knowledge.mjs impact "Engine/ColorVision.Engine/Flo
 
 ## 待实施设计
 
-本地相机内存预览仍是 `planned`，不表示当前设备已支持该发布器或生命周期：[方案](../../02-developer-guide/engine-development/local-camera-memory-preview.md)、[显示与生命周期](../../02-developer-guide/engine-development/local-camera-memory-preview-runtime.md)、[实施与验证计划](../../02-developer-guide/engine-development/local-camera-memory-preview-validation.md)。
+本地相机内存预览仍是 `planned`，不表示当前设备已支持该发布器或生命周期；设计、生命周期与验收统一维护在[本地相机内存帧预览方案](../../02-developer-guide/engine-development/local-camera-memory-preview.md)。
 
 ## 验证入口与缺口
 

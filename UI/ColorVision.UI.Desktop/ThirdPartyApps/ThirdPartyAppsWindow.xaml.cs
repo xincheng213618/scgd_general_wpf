@@ -55,7 +55,6 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
             BtnAddApp.ToolTip = Properties.Resources.CustomApp_AddTooltip;
             BtnAddScript.ToolTip = Properties.Resources.CustomApp_AddScriptTooltip;
             BtnRefresh.ToolTip = Properties.Resources.Refresh;
-            GroupsLabelText.Text = Properties.Resources.CustomApp_Category;
 
             _allApps = ThirdPartyAppManager.GetInstance().Apps;
             await ReloadAllAppsAsync();

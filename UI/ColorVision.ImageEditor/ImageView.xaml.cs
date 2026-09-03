@@ -50,12 +50,14 @@ namespace ColorVision.ImageEditor
         private readonly List<Func<IEnumerable<ImageViewSettingsEntry>>> _settingsEntries = new();
         private int _disposed;
         private bool _suppressConfigClearDocumentMutation;
+        private ImageSource? _imageFrameSource;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
         public ImageViewConfig Config => EditorContext.Config;
         public IEditorToolFactory IEditorToolFactory => EditorContext.IEditorToolFactory;
         private PseudoColorEditorTool? PseudoColorTool => IEditorToolFactory.GetIEditorTool<PseudoColorEditorTool>();
+        public IRealtimePseudoColorService? RealtimePseudoColorService => PseudoColorTool?.RealtimeService;
         public bool EnableEditorImageServices { get; set; } = true;
         public ImageLayerDescriptor? SelectedLayer { get; private set; }
         public bool AutoFollowImageGroup { get; set; } = true;
@@ -1479,6 +1481,7 @@ namespace ColorVision.ImageEditor
 
         private void ApplyImageDocumentMutation(ImageDocumentMutationKind mutationKind)
         {
+            _imageFrameSource = null;
             long previousRevision = _imageFrameStore.Revision;
             long currentRevision = _imageFrameStore.Invalidate();
             ImageDocumentRevisionAdvancedHook?.Invoke(previousRevision, currentRevision);
@@ -1502,11 +1505,15 @@ namespace ColorVision.ImageEditor
         private ImageFrameLease? AcquireImageFrameCore()
         {
             Dispatcher.VerifyAccess();
-            return _imageFrameStore.AcquireOrCreate(() =>
-            {
-                ImageSource? source = ViewBitmapSource ?? ImageShow.Source;
-                return source is WriteableBitmap writeableBitmap ? writeableBitmap.ToHImage() : null;
-            });
+            ImageSource? source = ViewBitmapSource ?? ImageShow.Source;
+            if (_imageFrameSource != null && !ReferenceEquals(_imageFrameSource, source))
+                ApplyImageDocumentMutation(ImageDocumentMutationKind.ImageSourceReplaced);
+
+            ImageFrameLease? lease = _imageFrameStore.AcquireOrCreate(
+                () => source is WriteableBitmap writeableBitmap ? writeableBitmap.ToHImage() : null);
+            if (lease != null)
+                _imageFrameSource = source;
+            return lease;
         }
 
 
@@ -1613,6 +1620,8 @@ namespace ColorVision.ImageEditor
 
         public void SetLayerController(IImageLayerController? controller)
         {
+            if (!ReferenceEquals(_layerController, controller) && _layerController is IDisposable previous)
+                previous.Dispose();
             _layerController = controller;
             _isUpdatingLayerSelection = true;
             try

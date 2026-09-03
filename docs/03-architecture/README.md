@@ -24,15 +24,5 @@ related: ["platform.system","platform.runtime","flow.architecture"]
 | 模板编辑、新建和关闭意味着什么？ | [编辑与创建宿主](../04-api-reference/algorithms/templates/template-management.md) |
 | Flow 模板如何处理并发保存和关联包？ | [Flow 模板契约](../04-api-reference/engine-components/template-flow-chain.md) |
 | 哪些授权真正存在，哪些没有统一接入？ | [权限边界](./security/overview.md)、[RBAC](./security/rbac.md) |
-## 目录说明
 
-- `overview/` 关注系统级视角，例如启动、运行时和组件关系。
-- `components/engine/` 关注流程引擎与执行模型。
-- `components/templates/` 维护模板核心契约；旧分析地址仅作兼容跳转。
-- `security/` 关注权限模型和安全边界。
-
-## 建议怎么读
-
-- 不确定范围时先查[知识地图](../knowledge/index.md)，再核对主题关联的源码与测试。
-- 需要修改流程或模板时，再进入 `components/` 下的专题页。
-- 需要接口和类型细节时，从[生成的源码地图](../knowledge/index.md)直接定位主题及其源码。
+具体组件及源码关联见[生成的知识地图](../knowledge/index.md)。修改前核对目标主题的实现、测试和验证缺口；编号目录保留为稳定地址，不另规定阅读顺序。

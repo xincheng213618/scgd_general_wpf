@@ -85,7 +85,7 @@ manager 没有统一的宿主 Unregister/Dispose，也没有在 Window.Closed/�
 
 ActionType=Popup 且 factory 非空时走另一条分支：悬停两秒或点击可调用 PopupContentFactory，不检查 Command.CanExecute。factory 返回 null 则不显示，抛异常没有统一隔离。弹层可以带业务按钮，例如 Solution 的取消打开或打开 Explorer；不能把悬停工厂或点击视为纯状态读取。
 
-控件有悬停/离开定时器和弹层关闭处理，但没有在移除条目、全量清空或 Unloaded 时统一停止它们。悬停弹层的 anchor 与 popup 还各自持有关闭计时状态，不能仅凭“进入弹层取消计时”的注释承诺所有移动路径都不会提前关闭。上述生命周期限制来自源码核对，未运行输入复现，也未在本次文档工作中修复。
+控件有悬停/离开定时器和弹层关闭处理，但没有在移除条目、全量清空或 Unloaded 时统一停止它们。悬停弹层的 anchor 与 popup 还各自持有关闭计时状态，不能仅凭“进入弹层取消计时”的注释承诺所有移动路径都不会提前关闭。
 
 ## 验证入口与缺口
 
@@ -93,4 +93,4 @@ ActionType=Popup 且 factory 非空时走另一条分支：悬停两秒或点击
 
 `SystemMonitorLifecycleTests` 覆盖配置关闭时不创建 monitor、可见项目的 metadata、monitor 复用及配置重载等局部行为；不覆盖 StatusBarManager/Control。未找到本层发现缓存、多宿主、重复 ID、排序、增量失败、活动文档切换、隐藏持久化和关闭清理的专项测试。
 
-文档检索、路径和网站校验不能填补 WPF 运行时缺口。后续需用获授权的隔离宿主、合成 provider 与无害命令验证；不为文档验证连接 Socket、启动实际调度或运行设备操作。本次未运行上述产品行为。
+文档检索、路径和网站校验不能填补 WPF 运行时缺口。后续需用获授权的隔离宿主、合成 provider 与无害命令验证；不为文档验证连接 Socket、启动实际调度或运行设备操作。

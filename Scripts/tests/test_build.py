@@ -11,7 +11,6 @@ from Scripts.build import (
     publish_primary_release,
     validate_installer_runtime_dlls,
     validate_runtime_copy_integrity,
-    validate_shared_files_manifests,
 )
 from Scripts.service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS
 
@@ -72,34 +71,6 @@ class InstallerRuntimeValidationTests(unittest.TestCase):
         aip_path = self._write_aip(REQUIRED_SERVICE_HOST_RUNTIME_PATHS, (native_relative_path,))
 
         self.assertTrue(validate_installer_runtime_dlls(self.runtime_directory, aip_path, report=lambda _: None))
-
-    def test_shared_files_release_gate_accepts_matching_set(self) -> None:
-        manifest_path = self.root / "shared_files.json"
-        shared_files = sorted(
-            path.relative_to(self.runtime_directory).as_posix()
-            for path in self.runtime_directory.rglob("*")
-            if path.is_file()
-        )
-        manifest_path.write_text(json.dumps({
-            "generated_at": "2000-01-01T00:00:00+00:00",
-            "shared_files": list(reversed(shared_files)),
-        }), encoding="utf-8")
-
-        self.assertTrue(validate_shared_files_manifests(
-            self.runtime_directory,
-            manifest_paths=(manifest_path,),
-            report=lambda _: None,
-        ))
-
-    def test_shared_files_release_gate_rejects_drift(self) -> None:
-        manifest_path = self.root / "shared_files.json"
-        manifest_path.write_text(json.dumps({"shared_files": ["Old.dll"]}), encoding="utf-8")
-
-        self.assertFalse(validate_shared_files_manifests(
-            self.runtime_directory,
-            manifest_paths=(manifest_path,),
-            report=lambda _: None,
-        ))
 
     def test_runtime_copy_integrity_rejects_a_mismatched_dll(self) -> None:
         solution_root = self.root / "source"
@@ -182,6 +153,21 @@ class PrimaryReleasePublishTests(unittest.TestCase):
         self.installer.write_bytes(b"installer")
         self.changelog = self.root / "CHANGELOG.md"
         self.changelog.write_text("## 1.2.3.4\n- release", encoding="utf-8")
+        self.runtime = self.root / "runtime"
+        self.runtime.mkdir()
+        (self.runtime / "ColorVision.UI.dll").write_bytes(b"host")
+        self.aip = self.root / "ColorVision.aip"
+        self.aip.write_text('''<DOCUMENT>
+<COMPONENT cid="caphyon.advinst.msicomp.MsiDirsComponent">
+  <ROW Directory="APPDIR" Directory_Parent="TARGETDIR" DefaultDir="APPDIR:." />
+</COMPONENT>
+<COMPONENT cid="caphyon.advinst.msicomp.MsiCompsComponent">
+  <ROW Component="Host" Directory_="APPDIR" />
+</COMPONENT>
+<COMPONENT cid="caphyon.advinst.msicomp.MsiFilesComponent">
+  <ROW File="Host" Component_="Host" FileName="ColorVision.UI.dll" SourcePath="runtime/ColorVision.UI.dll" />
+</COMPONENT>
+</DOCUMENT>''', encoding="utf-8")
         self.settings = RemoteUploadSettings(
             base_url="http://example.test:9998",
             folder_name="ColorVision",
@@ -200,6 +186,13 @@ class PrimaryReleasePublishTests(unittest.TestCase):
             return True
 
         def upload_content(content, remote_filename, _settings):
+            if remote_filename.endswith(".json"):
+                manifest = json.loads(content)
+                self.assertEqual("1.2.3.4", manifest["host_version"])
+                self.assertEqual(["ColorVision.UI.dll"], manifest["shared_files"])
+                self.assertEqual("Tool/PluginKit/shared-files/1.2.3.4", _settings.folder_name)
+                events.append(("manifest", remote_filename))
+                return True
             events.append(("content", f"{remote_filename}:{content}"))
             return True
 
@@ -209,6 +202,8 @@ class PrimaryReleasePublishTests(unittest.TestCase):
                 self.installer,
                 self.changelog,
                 self.settings,
+                runtime_directory=self.runtime,
+                aip_path=self.aip,
                 upload_func=upload_file,
                 upload_content_func=upload_content,
             )
@@ -218,6 +213,7 @@ class PrimaryReleasePublishTests(unittest.TestCase):
             [
                 ("file", "ColorVision-1.2.3.4.exe"),
                 ("file", "CHANGELOG.md"),
+                ("manifest", "net10.0-windows-x64.json"),
                 ("content", "LATEST_RELEASE:1.2.3.4"),
             ],
             events,
@@ -235,12 +231,46 @@ class PrimaryReleasePublishTests(unittest.TestCase):
                 self.installer,
                 self.changelog,
                 self.settings,
+                runtime_directory=self.runtime,
+                aip_path=self.aip,
                 upload_func=upload_file,
                 upload_content_func=uploaded_content,
             )
 
         self.assertFalse(result)
         uploaded_content.assert_not_called()
+
+    def test_manifest_failure_does_not_publish_latest_release(self) -> None:
+        uploaded_content = mock.Mock(return_value=False)
+        with mock.patch("Scripts.build.backend_fetch_latest_version", return_value="1.2.3.3"):
+            result = publish_primary_release(
+                "1.2.3.4", self.installer, self.changelog, self.settings,
+                runtime_directory=self.runtime, aip_path=self.aip,
+                upload_func=mock.Mock(return_value=True), upload_content_func=uploaded_content,
+            )
+        self.assertFalse(result)
+        self.assertEqual(["net10.0-windows-x64.json"], [call.args[1] for call in uploaded_content.call_args_list])
+
+    def test_manifest_excludes_files_not_proven_in_both_installer_and_zip(self) -> None:
+        (self.runtime / "NotInstalled.dll").write_bytes(b"host output only")
+        (self.runtime / "ColorVisionServiceHost.exe").write_bytes(b"not shipped at root in zip")
+        aip_text = self.aip.read_text(encoding="utf-8")
+        aip_text = aip_text.replace(
+            '<ROW File="Host" Component_="Host" FileName="ColorVision.UI.dll" SourcePath="runtime/ColorVision.UI.dll" />',
+            '<ROW File="Host" Component_="Host" FileName="ColorVision.UI.dll" SourcePath="runtime/ColorVision.UI.dll" />'
+            '<ROW File="Service" Component_="Host" FileName="ColorVisionServiceHost.exe" SourcePath="runtime/ColorVisionServiceHost.exe" />',
+        )
+        self.aip.write_text(aip_text, encoding="utf-8")
+        uploaded_content = mock.Mock(return_value=True)
+        with mock.patch("Scripts.build.backend_fetch_latest_version", return_value="1.2.3.3"):
+            result = publish_primary_release(
+                "1.2.3.4", self.installer, self.changelog, self.settings,
+                runtime_directory=self.runtime, aip_path=self.aip,
+                upload_func=mock.Mock(return_value=True), upload_content_func=uploaded_content,
+            )
+        self.assertTrue(result)
+        manifest = json.loads(uploaded_content.call_args_list[0].args[0])
+        self.assertEqual(["ColorVision.UI.dll"], manifest["shared_files"])
 
 
 class InstallerSelectionTests(unittest.TestCase):

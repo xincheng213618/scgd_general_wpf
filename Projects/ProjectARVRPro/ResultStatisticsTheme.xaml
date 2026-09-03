@@ -1,0 +1,116 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Use the same palette as StartupRecoveryWindow without depending on the host assembly. -->
+    <SolidColorBrush x:Key="Statistics.Background" Color="{DynamicResource UpdateDialogBackgroundColor}"/>
+    <SolidColorBrush x:Key="Statistics.Surface" Color="{DynamicResource UpdateDialogSurfaceColor}"/>
+    <SolidColorBrush x:Key="Statistics.Border" Color="{DynamicResource UpdateDialogBorderColor}" Opacity="0.7"/>
+
+    <Style x:Key="StatisticsCard" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource Statistics.Surface}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Statistics.Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Padding" Value="18,14"/>
+    </Style>
+    <Style x:Key="SummaryCard" TargetType="Border" BasedOn="{StaticResource StatisticsCard}">
+        <Setter Property="Margin" Value="5"/>
+        <Setter Property="Padding" Value="18,12"/>
+    </Style>
+    <Style x:Key="SummaryLabel" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Margin" Value="0,0,0,5"/>
+    </Style>
+    <Style x:Key="SummaryValue" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        <Setter Property="FontSize" Value="26"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style x:Key="CompactQueryButton" TargetType="Button">
+        <Setter Property="MinHeight" Value="34"/>
+        <Setter Property="MinWidth" Value="54"/>
+        <Setter Property="Padding" Value="12,6"/>
+        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource Statistics.Background}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Statistics.Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="ButtonBorder" CornerRadius="7" Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                        <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.8"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="StatisticsPrimaryButton" TargetType="Button" BasedOn="{StaticResource CompactQueryButton}">
+        <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+        <Setter Property="Foreground" Value="White"/>
+    </Style>
+    <Style x:Key="StatisticsPageButton" TargetType="Button" BasedOn="{StaticResource CompactQueryButton}">
+        <Setter Property="Padding" Value="6,6"/>
+    </Style>
+    <Style x:Key="CompactQueryComboBox" TargetType="ComboBox" BasedOn="{StaticResource ComboBoxBaseStyle}">
+        <Setter Property="Height" Value="34"/>
+        <Setter Property="Padding" Value="9,4"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Background" Value="{DynamicResource Statistics.Background}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Statistics.Border}"/>
+        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+    </Style>
+    <Style x:Key="CompactQueryDatePicker" TargetType="DatePicker" BasedOn="{StaticResource DatePickerBaseStyle}">
+        <Setter Property="Height" Value="34"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Background" Value="{DynamicResource Statistics.Background}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Statistics.Border}"/>
+        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+    </Style>
+    <Style x:Key="StatisticsDataGrid" TargetType="DataGrid" BasedOn="{StaticResource DataGrid.Small}">
+        <Setter Property="Background" Value="{DynamicResource Statistics.Background}"/>
+        <Setter Property="RowBackground" Value="{DynamicResource Statistics.Background}"/>
+        <Setter Property="AlternatingRowBackground" Value="{DynamicResource Statistics.Surface}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="GridLinesVisibility" Value="None"/>
+        <Setter Property="RowHeight" Value="32"/>
+        <Setter Property="ColumnHeaderHeight" Value="36"/>
+        <Setter Property="EnableRowVirtualization" Value="True"/>
+        <Setter Property="EnableColumnVirtualization" Value="True"/>
+    </Style>
+    <Style x:Key="StatisticsSection" TargetType="GroupBox">
+        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="GroupBox">
+                    <Border Style="{StaticResource StatisticsCard}" Padding="12">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <ContentPresenter ContentSource="Header" Margin="4,0,4,12" TextElement.FontSize="14" TextElement.FontWeight="SemiBold"/>
+                            <ContentPresenter Grid.Row="1"/>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

@@ -9,11 +9,11 @@ test_paths: ["Test/ColorVision.UI.Tests/ImageRegistrationV1Tests.cs"]
 related: ["algorithms.platform","algorithms.index"]
 ---
 
-# 图像配准 V1（M8.1）
+# 图像配准 V1
 
-## 阶段边界与已有能力盘点
+## 适用范围
 
-M8.1 提供稳定 ID `colorvision.geometry.registration`，把一幅 `moving` 图像变换到 `reference` 的 pixel-center 坐标系。仓库原有的图像比较对齐预检只报告小范围平移，不修改图像；POI、相机标定和客户算法则绑定各自模板或专有文件，不能充当统一双输入 provider。本阶段复用 M7 的矩阵数值门禁、warp 和有效区域规则，但不实现镜头畸变参数，后者属于 M8.2。
+`colorvision.geometry.registration` 把 `moving` 图像变换到 `reference` 的 pixel-center 坐标系，复用[几何变换](./geometric-transform-v1.md)的矩阵数值校验、warp 和有效区域规则。镜头参数由[镜头畸变校正](./lens-distortion-correction-v1.md)处理。
 
 Descriptor、Invocation、preset 与 Result 保持宿主中立。OpenCV CPU provider 通过 `AlgorithmImageMatLease` 只读借用两幅输入；输入不复制为中间 `byte[]`。输出在 native warp 后复制一次进入 Result 所有的 `AlgorithmImageBuffer`，另生成一字节每像素的有效区域 mask。V1 不修改 reference 或 moving。
 
@@ -71,4 +71,4 @@ reference 与 moving 可以不同尺寸。provider 使用 ORB、双向最近邻�
 
 可选性能门禁 `ImageRegistrationPipelineProbe` 在 4K Gray16/Bgra32 上执行非 identity 相位相关，预算只允许一份配准输出、一份 mask 与固定 32 MiB 管理内存余量，并把延迟限制为 30 秒。仍不可消除的边界是 OpenCV 的归一化亮度/频域工作区、native warp 输出到 Result buffer 的一次复制，以及 mask；两幅输入均通过 lease 只读借用。
 
-M8.1 不估计相机内参/畸变系数，不执行径向或切向畸变校正，也不声称 CUDA/DirectML provider。镜头畸变校正在 M8.2 独立验收。
+图像配准不估计相机内参/畸变系数，不执行径向或切向畸变校正，也不声称 CUDA/DirectML provider。畸变处理见独立的[镜头畸变校正](./lens-distortion-correction-v1.md)。

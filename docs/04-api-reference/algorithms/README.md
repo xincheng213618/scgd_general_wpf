@@ -6,7 +6,7 @@ summary: "区分统一 Runner、ImageEditor 直接 native 分析与 Engine 模�
 aliases: ["算法代码在哪里","ColorVision.Algorithms","TemplateControl","MQTTAlgorithm"]
 code_paths: ["UI/ColorVision.Algorithms/AlgorithmCatalog.cs","Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/MQTTAlgorithm.cs"]
 test_paths: []
-related: ["algorithms.platform","algorithms.local-native-analysis","algorithms.template-overview","engine.template-design","algorithms.roi-routes","algorithms.poi-routes","engine.results"]
+related: ["algorithms.platform","algorithms.local-native-analysis","algorithms.find-cross","algorithms.template-overview","engine.template-design","algorithms.roi-routes","algorithms.poi-routes","engine.results"]
 ---
 
 # 算法与模板知识入口
@@ -19,6 +19,7 @@ related: ["algorithms.platform","algorithms.local-native-analysis","algorithms.t
 | --- | --- | --- |
 | 新算法如何定义输入、参数、结果、overlay 与执行入口 | [统一图像算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) | `UI/ColorVision.Algorithms/` |
 | FindLightBeads、GhostLocalAnalysis、旋转模板和双目调试实际走哪里 | [ImageEditor 本地 native 分析](./local-native-analysis.md) | `UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/` |
+| 本地十字定位如何设置参数、解释中心/倾角并诊断失败 | [本地 FindCross](./detectors/find-cross.md) | `FindCrossLocal.cs`、`LocalFindCrossNode.cs` |
 | ONNX 应接在哪里，是否已经实现 | [ONNX 接入方案](../../02-developer-guide/core-concepts/onnx-inference-future-design.md) | 以该页状态和实际源码为准 |
 | 模板如何发现、持久化、编辑与搜索 | [注册与持久化](../../03-architecture/components/templates/design.md)、[编辑与创建宿主](./templates/template-management.md) | `Templates/TemplateControl.cs` |
 | 模板体系和算法服务如何衔接 | [接入概览](./overview.md)、[通用构件](./primitives/common-modules.md) | `Engine/ColorVision.Engine/Templates/` |

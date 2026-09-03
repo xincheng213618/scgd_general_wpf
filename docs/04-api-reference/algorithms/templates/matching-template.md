@@ -47,7 +47,7 @@ related: ["algorithms.index","algorithms.template-primitives","engine.results"]
 2. `SendCommand` 发送 `ImgFileName`、`FileType`、`DeviceCode`、`DeviceType`、`TemplateFile`、`TemplateParam`。
 3. 当前手动 `Execute` 传入空设备 code/type；其他调用方可显式传值。图像路径对服务是否可访问仍须单独确认。
 
-当前选择链是 `Config.Template.SelectedIndex → SelectedValue → MatchParam`，不再使用旧 `TemplatePoiSelectedIndex` 与 `TemplateSelectedIndex` 绑定组合。排查模板选错时检查该配置对象和实际请求，不要按旧文档修复已移除的 ComboBox。
+选择链是 `Config.Template.SelectedIndex → SelectedValue → MatchParam`；排查模板选错时检查该配置对象和实际请求。
 
 ## Flow 请求
 
@@ -57,7 +57,7 @@ related: ["algorithms.index","algorithms.template-primitives","engine.results"]
 
 `ViewHandleMatching.Load` 在 `result.ViewResults == null` 时从 `AlgResultAoiDao.GetAllByPid(result.Id)` 加载明细。handler 取 AOI 四角，经 `GrahamScan.ComputeConvexHull` 计算凸包，用蓝色 `DVPolygon` 叠加，并生成分数、角度、中心与四角表格。
 
-当前末尾列分别为 `BottomLeftPointX` 和 `BottomLeftPointY`，不再是旧文档所述的重复 X 表头。源图恢复与 handler 选择遵循 [Engine 结果链](../../engine-components/result-handoff-chain.md)。
+末尾两列分别为 `BottomLeftPointX` 和 `BottomLeftPointY`。源图恢复与 handler 选择遵循 [Engine 结果链](../../engine-components/result-handoff-chain.md)。
 
 ## 排查与变更约束
 

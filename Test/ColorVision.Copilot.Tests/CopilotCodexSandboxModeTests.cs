@@ -57,7 +57,7 @@ public sealed class CopilotCodexSandboxModeTests
     }
 
     [Fact]
-    public void BroaderCodexModesDoNotGrantBeyondNativeModeAndDiagnosticsSaySo()
+    public void BroaderCodexModesDoNotGrantBeyondNativeMode()
     {
         var writeTool = new RecordingTool("WriteProbe", CopilotToolAccess.Write);
         var registry = new CopilotToolRegistry([writeTool]);
@@ -85,44 +85,6 @@ public sealed class CopilotCodexSandboxModeTests
             Assert.Empty(registry.FindTools(planRequest));
             Assert.Empty(registry.FindTools(explicitReadOnlyRequest));
         }
-
-        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
-        {
-            ConfiguredSandboxMode = CopilotCodexSandboxMode.DangerFullAccess,
-            HasSandboxModeOverride = true,
-            SandboxModeSource = CopilotProjectInstructionConfigSources.CodexHome,
-        };
-        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-            new CopilotProjectInstructionSnapshot(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                options,
-                Array.Empty<CopilotProjectInstructionDocument>()),
-            hasActiveAgentRun: false);
-        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
-        {
-            ProfileLabel = "Profile",
-            Mode = CopilotAgentMode.Code,
-            CodexSandboxMode = CopilotCodexSandboxMode.DangerFullAccess,
-            HasCodexSandboxModeOverride = true,
-            CodexSandboxModeSourceLabel = options.SandboxModeSourceLabel,
-        });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                ComposerMode = CopilotAgentMode.Code,
-                CodexConfigOptions = options,
-            });
-
-        Assert.Contains("Codex sandbox_mode：danger-full-access", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("不映射为提权", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("执行沙箱：danger-full-access", contextReport, StringComparison.Ordinal);
-        Assert.Contains("原生访问与审批边界", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex sandbox_mode：danger-full-access", debugReport, StringComparison.Ordinal);
-        Assert.Contains("不映射为提权", debugReport, StringComparison.Ordinal);
     }
 
     private sealed class RecordingTool : ICopilotTool

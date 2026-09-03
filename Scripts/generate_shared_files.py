@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
@@ -14,7 +15,8 @@ DEFAULT_OUTPUT_FILES = (
     DEFAULT_OUTPUT_FILE,
     REPO_ROOT / "SDK" / "ColorVision.PluginKit" / "scripts" / "shared_files.json",
 )
-EXCLUDED_DIR_NAMES = {"plugins", "log"}
+EXCLUDED_DIR_NAMES = {"plugins", "log", "window-resize-traces"}
+EXCLUDED_ROOT_FILE_NAMES = {"changelog.md", "window-resize-diagnostics.mode"}
 
 
 def normalize_relative_path(path: str | Path) -> str:
@@ -29,6 +31,8 @@ def collect_shared_files(root_dir: Path, *, excluded_files: Iterable[Path] = ())
         dir_names[:] = sorted(dir_name for dir_name in dir_names if dir_name.lower() not in EXCLUDED_DIR_NAMES)
         current_root_path = Path(current_root)
         for file_name in sorted(file_names):
+            if current_root_path == root_dir and file_name.lower() in EXCLUDED_ROOT_FILE_NAMES:
+                continue
             file_path = current_root_path / file_name
             if file_path.resolve() in resolved_excluded_files:
                 continue
@@ -41,6 +45,24 @@ def build_manifest(shared_files: list[str]) -> dict:
         "version": 1,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "shared_files": sorted(set(shared_files)),
+    }
+
+
+def build_release_manifest(root_dir: Path, host_version: str, *, delivered_files: Iterable[str]) -> dict:
+    """Describe one validated Release x64 host, independently of the SDK binary."""
+    if not re.fullmatch(r"[0-9]+(?:\.[0-9]+){3}", host_version):
+        raise ValueError("The host release manifest requires a four-part version.")
+    if not root_dir.is_dir():
+        raise FileNotFoundError(f"Host output directory not found: {root_dir}")
+    delivered_set = {normalize_relative_path(path).casefold() for path in delivered_files}
+    shared_files = [path for path in collect_shared_files(root_dir) if path.casefold() in delivered_set]
+    if not shared_files:
+        raise ValueError("Cannot publish an empty host shared-file manifest.")
+    return {
+        **build_manifest(shared_files),
+        "host_version": host_version,
+        "framework": "net10.0-windows",
+        "platform": "x64",
     }
 
 
@@ -158,7 +180,7 @@ def main() -> None:
         updated_outputs.append((output_file, write_manifest_if_changed(output_file, manifest)))
 
     print(f"Scanned host directory: {root_dir}")
-    print("Ignored directories: Plugins, Log")
+    print("Ignored directories: Plugins, Log, window-resize-traces")
     print(f"Shared file count: {len(shared_files)}")
     for output_file, was_updated in updated_outputs:
         action = "Generated manifest" if was_updated else "Manifest already current"

@@ -113,7 +113,11 @@ namespace ColorVision.Copilot
                     Owner = Application.Current.GetActiveWindow(),
                     WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 };
-                window.ShowDialog();
+                var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                window.Closed += (_, _) => closed.TrySetResult();
+                window.Show();
+                // Keep the conversation attachment until the modeless feedback window closes.
+                await closed.Task;
             }
             finally
             {

@@ -100,38 +100,6 @@ public sealed class CopilotCodexToolRegistryCollisionTests
         Assert.Equal(first[longToolName], second[longToolName]);
     }
 
-    [Fact]
-    public void DiagnosticsExposeTheFrozenCollisionPolicy()
-    {
-        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
-        {
-            ConfiguredErrorOnToolCollisions = true,
-            HasErrorOnToolCollisionsOverride = true,
-            ErrorOnToolCollisionsSource = CopilotProjectInstructionConfigSources.CodexHome,
-        };
-        string instructionReport = CopilotProjectInstructionDiagnostics.Format(
-            new CopilotProjectInstructionSnapshot(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                options,
-                Array.Empty<CopilotProjectInstructionDocument>()),
-            hasActiveAgentRun: false);
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                ComposerMode = CopilotAgentMode.Code,
-                CodexConfigOptions = options,
-            });
-
-        Assert.Contains("features.tool_registry.error_on_tool_collisions：true", instructionReport, StringComparison.Ordinal);
-        Assert.Contains("模型请求前终止本轮", instructionReport, StringComparison.Ordinal);
-        Assert.Contains("features.tool_registry.error_on_tool_collisions：true", debugReport, StringComparison.Ordinal);
-        Assert.Contains(options.ErrorOnToolCollisionsSourceLabel, debugReport, StringComparison.Ordinal);
-    }
-
     private static CopilotAgentRequest CreateAgentRequest(bool errorOnToolCollisions) => new()
     {
         Profile = CopilotProfileConfig.CreateDefault(),

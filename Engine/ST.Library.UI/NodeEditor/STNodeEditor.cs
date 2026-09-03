@@ -1051,6 +1051,11 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	protected override void OnRender(DrawingContext drawingContext)
 	{
+#if COLORVISION_WINDOW_RESIZE_DIAGNOSTICS
+		bool captureResizeDiagnostic = TryBeginResizeDiagnosticSample(out STRenderDiagnosticSample resizeDiagnostic);
+		try
+		{
+#endif
 		base.OnRender(drawingContext);
 		if (m_disposed)
 		{
@@ -1069,24 +1074,56 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		int pixelWidth = Math.Max(1, (int)Math.Ceiling(width * dpi.DpiScaleX));
 		int pixelHeight = Math.Max(1, (int)Math.Ceiling(height * dpi.DpiScaleY));
 
+#if COLORVISION_WINDOW_RESIZE_DIAGNOSTICS
+		Bitmap previousRenderBitmap = captureResizeDiagnostic ? m_render_bitmap : null;
+		if (captureResizeDiagnostic)
+		{
+			resizeDiagnostic.LogicalWidth = width;
+			resizeDiagnostic.LogicalHeight = height;
+			resizeDiagnostic.PixelWidth = pixelWidth;
+			resizeDiagnostic.PixelHeight = pixelHeight;
+			resizeDiagnostic.DpiScaleX = dpi.DpiScaleX;
+			resizeDiagnostic.DpiScaleY = dpi.DpiScaleY;
+			resizeDiagnostic.EnsureStartTicks = Stopwatch.GetTimestamp();
+		}
+#endif
 		EnsureRenderTarget(pixelWidth, pixelHeight, dpi.PixelsPerInchX, dpi.PixelsPerInchY);
+#if COLORVISION_WINDOW_RESIZE_DIAGNOSTICS
+		if (captureResizeDiagnostic)
+		{
+			resizeDiagnostic.EnsureEndTicks = Stopwatch.GetTimestamp();
+			resizeDiagnostic.BufferRecreated = !ReferenceEquals(previousRenderBitmap, m_render_bitmap);
+		}
+#endif
 		RenderToGraphics(
 			m_render_graphics,
 			clientSize.Width,
 			clientSize.Height,
 			(float)dpi.DpiScaleX,
 			(float)dpi.DpiScaleY);
+#if COLORVISION_WINDOW_RESIZE_DIAGNOSTICS
+		if (captureResizeDiagnostic)
+			resizeDiagnostic.DrawEndTicks = Stopwatch.GetTimestamp();
+#endif
 		BitmapData bitmapData = m_render_bitmap.LockBits(
 			new Rectangle(0, 0, pixelWidth, pixelHeight),
 			ImageLockMode.ReadOnly,
 			PixelFormat.Format32bppPArgb);
 		try
 		{
+#if COLORVISION_WINDOW_RESIZE_DIAGNOSTICS
+			if (captureResizeDiagnostic)
+				resizeDiagnostic.CopyStartTicks = Stopwatch.GetTimestamp();
+#endif
 			m_render_target.WritePixels(
 				new System.Windows.Int32Rect(0, 0, pixelWidth, pixelHeight),
 				bitmapData.Scan0,
 				Math.Abs(bitmapData.Stride) * pixelHeight,
 				bitmapData.Stride);
+#if COLORVISION_WINDOW_RESIZE_DIAGNOSTICS
+			if (captureResizeDiagnostic)
+				resizeDiagnostic.CopyEndTicks = Stopwatch.GetTimestamp();
+#endif
 		}
 		finally
 		{
@@ -1094,6 +1131,16 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		}
 
 		drawingContext.DrawImage(m_render_target, new WpfRect(0, 0, width, height));
+#if COLORVISION_WINDOW_RESIZE_DIAGNOSTICS
+		if (captureResizeDiagnostic)
+			resizeDiagnostic.Succeeded = true;
+		}
+		finally
+		{
+			if (captureResizeDiagnostic)
+				CompleteResizeDiagnosticSample(ref resizeDiagnostic);
+		}
+#endif
 	}
 
 	private void EnsureRenderTarget(int pixelWidth, int pixelHeight, double dpiX, double dpiY)
@@ -1229,13 +1276,6 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			}
 		}
 		NodeFindInfo nodeFindInfo = FindNodeFromPoint(m_pt_down_in_canvas);
-		if (nodeEvent.Button == STMouseButtons.Left
-			&& !_AutoSwitchCanvasDragBySelection
-			&& EnableBlankLeftDragCanvas
-			&& (!string.IsNullOrEmpty(nodeFindInfo.Mark) || nodeFindInfo.NodeOption != null || nodeFindInfo.Node != null))
-		{
-			EnableBlankLeftDragCanvas = false;
-		}
 		if (nodeFindInfo.Node != null && !ShouldActivateNodeFromMouse(nodeEvent.Button))
 		{
 			return;
@@ -1350,8 +1390,8 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	{
 		return button == STMouseButtons.Middle
 			|| button == STMouseButtons.Left
-			&& enableBlankLeftDragCanvasAtMouseDown
-			&& (modifiers & ModifierKeys.Control) != ModifierKeys.Control;
+			&& (enableBlankLeftDragCanvasAtMouseDown
+				|| (modifiers & ModifierKeys.Control) == ModifierKeys.Control);
 	}
 
 	protected internal static bool ShouldSelectNodeFromRectangle(bool intersectsSelectionRectangle, bool wasSelectedBeforeDrag)
@@ -3271,6 +3311,9 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			return;
 		}
 		m_disposed = true;
+#if COLORVISION_WINDOW_RESIZE_DIAGNOSTICS
+		DisposeResizeDiagnosticCapture();
+#endif
 		m_is_loaded = false;
 		DisposeEditing();
 		m_animation_timer.Stop();

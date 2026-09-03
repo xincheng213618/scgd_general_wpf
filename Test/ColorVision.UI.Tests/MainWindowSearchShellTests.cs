@@ -32,10 +32,6 @@ public sealed class MainWindowSearchShellTests
         XElement window = Assert.IsType<XElement>(document.Root);
         Assert.Equal(Presentation + "Window", window.Name);
         Assert.Equal("ColorVision.UI.Serach.SearchWindow", window.Attribute(Xaml + "Class")?.Value);
-        Assert.Equal("720", window.Attribute("Width")?.Value);
-        Assert.Equal("560", window.Attribute("Height")?.Value);
-        Assert.Equal("420", window.Attribute("MinWidth")?.Value);
-        Assert.Equal("320", window.Attribute("MinHeight")?.Value);
         Assert.Equal("CanResize", window.Attribute("ResizeMode")?.Value);
         Assert.Equal("SingleBorderWindow", window.Attribute("WindowStyle")?.Value);
         Assert.Equal("CenterOwner", window.Attribute("WindowStartupLocation")?.Value);
@@ -49,14 +45,14 @@ public sealed class MainWindowSearchShellTests
     }
 
     [Fact]
-    public void SearchRemainsAvailableThroughConfigurableMenuActions()
+    public void SearchRemainsAvailableThroughConfigurableHotkeysWithoutMenuEntries()
     {
         var search = new MenuCommandSearch();
         var find = new MenuContextualFind();
         Assert.IsAssignableFrom<IHotKey>(search);
         Assert.IsAssignableFrom<IHotKey>(find);
-        Assert.Equal(MenuItemConstants.Tool, search.OwnerGuid);
-        Assert.Equal(MenuItemConstants.Edit, find.OwnerGuid);
+        Assert.False(typeof(IMenuItem).IsAssignableFrom(search.GetType()));
+        Assert.False(typeof(IMenuItem).IsAssignableFrom(find.GetType()));
         Assert.Equal(new Hotkey(Key.P, ModifierKeys.Control | ModifierKeys.Shift), search.HotKeys.Hotkey);
         Assert.Equal(new Hotkey(Key.F, ModifierKeys.Control), find.HotKeys.Hotkey);
     }

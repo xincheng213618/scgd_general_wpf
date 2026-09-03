@@ -16,6 +16,7 @@ namespace System.ComponentModel
         public static readonly CommandDisplayAttribute Default;
         public string DisplayName { get; }
         public int Order { get; set; }
+        public int CategoryOrder { get; set; }
         public CommandType CommandType { get; set; } = CommandType.Normal;
         public CommandDisplayAttribute(string displayName) => DisplayName = displayName; 
     }

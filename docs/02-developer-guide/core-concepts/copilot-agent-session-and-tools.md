@@ -3,10 +3,10 @@ knowledge_id: "copilot.session-tools"
 knowledge_type: "topic"
 status: "current"
 summary: "Copilot 会话检查点、任务呈现、重试和内置工具的状态恢复与安全边界。"
-aliases: ["Copilot 会话如何恢复","工具失败能否重试","诊断模式会自动读取日志吗","CopilotAgentSessionCheckpoint","CopilotAgentTaskEventJournal","GetRecentLog","CopilotRecentLogSupport"]
-code_paths: ["ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs","ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.cs","ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.Builder.cs","ColorVision/Copilot/State/","ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs","ColorVision/Copilot/CopilotChatViewModel.AgentTaskCommands.cs","ColorVision/Copilot/CopilotChatViewModel.Conversations.cs","ColorVision/Copilot/CopilotChatViewModel.TurnExecution.cs","ColorVision/Copilot/CopilotChatViewModel.TurnEvents.cs","ColorVision/Copilot/CopilotChatViewModel.Permissions.cs","ColorVision/Copilot/Agent/CopilotQueuedFollowUpCoordinator.cs","ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs","ColorVision/Copilot/Agent/CopilotToolIntentPolicy.cs","ColorVision/Copilot/Agent/Tools/CopilotGetRecentLogTool.cs","ColorVision/Copilot/Capabilities/CopilotRecentLogSupport.cs","ColorVision/Copilot/Capabilities/CopilotAgentCapabilityServices.cs","ColorVision/Copilot/Agent/CopilotToolExecution.cs","ColorVision/Copilot/Agent/CopilotToolExecution.Support.cs","ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs","ColorVision/Copilot/CopilotChatViewModel.MessageInteraction.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs","Test/ColorVision.Copilot.Tests/CopilotCancelledToolJournalTests.cs","Test/ColorVision.Copilot.Tests/CopilotRetrySourceLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatStateRecoveryAttachmentTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatStateProfileReconciliationTests.cs","Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotSteeringCancellationRecoveryTests.cs","Test/ColorVision.Copilot.Tests/CopilotGoalQueueRecoveryTests.cs","Test/ColorVision.Copilot.Tests/CopilotPendingRecoveryConversationTests.cs","Test/ColorVision.Copilot.Tests/CopilotManagedAttachmentDeletionTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatViewModelProfileIsolationTests.cs","Test/ColorVision.Copilot.Tests/CopilotToolExecutionCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotSettledShellCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotExternalMcpToolOutcomeTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerRecoverySafetyTests.cs","Test/ColorVision.Copilot.Tests/CopilotQueuedLocalCommandSnapshotTests.cs"]
-related: ["copilot.runtime","copilot.tool-contracts","copilot.lifecycle","copilot.interactions"]
+aliases: ["Copilot 会话如何恢复","工具失败能否重试","诊断模式会自动读取日志吗","CopilotAgentSessionCheckpoint","CopilotAgentTaskEventJournal","GetRecentLog","CopilotRecentLogSupport","QueryFlowExecutionStats","QueryDatabaseSql","ExecuteDatabaseSql","rows_returned","data_tsv","SQL查询截断","数据库查询 JSON 脱敏","SQL审批预览","colorvision-database-operations","PreviewWorkspacePatchEnvelope","ApplyWorkspacePatchEnvelope","RunShellCommand"]
+code_paths: ["ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs","ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.cs","ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.Builder.cs","ColorVision/Copilot/State/","ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs","ColorVision/Copilot/CopilotChatViewModel.AgentTaskCommands.cs","ColorVision/Copilot/CopilotChatViewModel.Conversations.cs","ColorVision/Copilot/CopilotChatViewModel.TurnExecution.cs","ColorVision/Copilot/CopilotChatViewModel.TurnEvents.cs","ColorVision/Copilot/CopilotChatViewModel.Permissions.cs","ColorVision/Copilot/Agent/CopilotQueuedFollowUpCoordinator.cs","ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs","ColorVision/Copilot/Agent/CopilotToolIntentPolicy.cs","ColorVision/Copilot/Agent/Tools/CopilotGetRecentLogTool.cs","ColorVision/Copilot/Capabilities/CopilotRecentLogSupport.cs","ColorVision/Copilot/Capabilities/CopilotAgentCapabilityServices.cs","ColorVision/Copilot/Capabilities/CopilotDatabaseSqlCapability.cs","ColorVision/Copilot/Capabilities/CopilotFlowExecutionStatisticsCapability.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotDatabaseSqlTools.cs","ColorVision/Copilot/Skills/colorvision-database-operations","ColorVision/Copilot/Agent/CopilotToolExecution.cs","ColorVision/Copilot/Agent/CopilotToolExecution.Support.cs","ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs","ColorVision/Copilot/CopilotChatViewModel.MessageInteraction.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs","Test/ColorVision.Copilot.Tests/CopilotCancelledToolJournalTests.cs","Test/ColorVision.Copilot.Tests/CopilotRetrySourceLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatStateRecoveryAttachmentTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatStateProfileReconciliationTests.cs","Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotSteeringCancellationRecoveryTests.cs","Test/ColorVision.Copilot.Tests/CopilotGoalQueueRecoveryTests.cs","Test/ColorVision.Copilot.Tests/CopilotPendingRecoveryConversationTests.cs","Test/ColorVision.Copilot.Tests/CopilotManagedAttachmentDeletionTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatViewModelProfileIsolationTests.cs","Test/ColorVision.Copilot.Tests/CopilotToolExecutionCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotSettledShellCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotExternalMcpToolOutcomeTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerRecoverySafetyTests.cs","Test/ColorVision.Copilot.Tests/CopilotQueuedLocalCommandSnapshotTests.cs","Test/ColorVision.Copilot.Tests/CopilotDatabaseSqlPolicyTests.cs"]
+related: ["copilot.runtime","copilot.tool-contracts","copilot.lifecycle","copilot.interactions","engine.mysql-recovery"]
 ---
 
 # Copilot 任务、恢复与内置工具
@@ -124,13 +124,36 @@ Git 工作树由 `InspectGitWorkingTree` 提供。它接受当前请求搜索/�
 netstat -ano | findstr :6666
 ```
 
+### 数据库查询与写入
+
 业务数据库同时提供语义快捷能力和通用 SQL 能力。`QueryFlowExecutionStats` 只读聚合 `t_scgd_measure_batch`：接受 `today`、`yesterday` 或 `last7days`，按本机时区生成左闭右开的日历范围，返回执行尝试总数、各 `FlowStatus` 数量、完成率和平均耗时。它适合“今天执行了多少次流程”这类常见问题，不要求模型了解表结构。
 
-`QueryDatabaseSql` 是 Agent 模式的通用只读数据库工具，作为稳定 Schema 与其他内置能力一起提供；是否需要查询、应生成哪条 SQL 由模型结合当前对话决定，宿主不会通过关键词把系统问题改写成数据库查询。该工具接受一条只读 MySQL 语句，支持 `SELECT`、`SHOW`、`DESCRIBE`、`EXPLAIN`、`TABLE` 和最终落到只读语句的 CTE。默认最多返回 100 行，可在 1–500 行内调整；列数、单元格和总输出长度都有上限，密码、token、API key 等敏感列会统一显示为 `<redacted>`。`ExecuteDatabaseSql` 接受一条数据或结构变更，支持 `INSERT`、`UPDATE`、`DELETE`、`REPLACE`、`CREATE`、`ALTER`、`DROP`、`TRUNCATE` 和 `RENAME`，每次都必须经过 Agent Framework 原生审批；无 `WHERE` 的 `UPDATE` / `DELETE`、`TRUNCATE` 和 `DROP` 会在审批说明中给出加强警告。普通 DML 在事务内提交，DDL 遵循 MySQL 的隐式提交语义。服务设置表是版本托管的只读边界，即使进入审批也会在执行前拒绝变更；更新时由版本自带 SQL 重置原生设置。服务配置表由 Service Manager 在数据库重置前导出并回写，结果表不参与保留且可通过受审批的清理流程删除。
+`QueryDatabaseSql` 是 Agent 模式的通用只读数据库工具，作为稳定 Schema 与其他内置能力一起提供；是否需要查询、应生成哪条 SQL 由模型结合当前对话决定，宿主不会通过关键词把系统问题改写成数据库查询。该工具接受一条只读 MySQL 语句，支持 `SELECT`、`SHOW`、`DESCRIBE`、`DESC`、`EXPLAIN`、`TABLE` 和最终落到只读语句的 CTE。`maxRows` 范围 1–500、默认 100；`timeoutSeconds` 范围 1–30、默认 15。两个 SQL 工具的 `sql` 输入上限均为 20,000 字符。
+
+查询返回 `rows_returned`、`truncated` 和 `data_tsv`，是有界结果，不能作为完整导出：
+
+| 限制 | 返回含义 |
+| --- | --- |
+| 行与列 | 最多读取 `maxRows` 行、100 列；超过行或列限制时 `truncated: true` |
+| 单元格 | 文本换行和制表符被展平；超过 512 字符后加省略号，此项不改变 `truncated` |
+| 总输出 | 写入行内容前检查 32,000 字符预算；放不下时输出 `<output truncated at 32000 characters>`，但不回写先前的 `truncated` 或 `rows_returned` |
+| 脱敏 | 识别到敏感列名或 SQL 敏感标识符时显示 `<redacted>`，并对文本脱敏；任意 JSON、编码许可证或普通列名不因此保证安全 |
+
+因此 `rows_returned` 是缓冲区行数，可能大于最终显示行数；`truncated: false` 也不证明单元格或输出完整。需要总数时使用明确聚合，需要细节时缩小列和条件；不要仅凭有限列表推断全部记录。`txt_value`、许可证 `value` 等载荷应只提取已确认必需且非敏感的字段，不能通过别名绕过脱敏。
+
+`ExecuteDatabaseSql` 接受一条数据或结构变更，支持 `INSERT`、`UPDATE`、`DELETE`、`REPLACE`、`CREATE`、`ALTER`、`DROP`、`TRUNCATE` 和 `RENAME`；`timeoutSeconds` 范围 1–60、默认 30。执行必须经过原生审批和 SQL 校验，不表示每次调用都会弹窗或执行。审批说明中的 SQL 预览经过脱敏，超过 1,000 字符后截断；需要完整审视时应先呈现不含秘密的完整语句和范围，不能把片段当成完整批准依据。无 `WHERE` 的 `UPDATE` / `DELETE`、`TRUNCATE` 和 `DROP` 会给出加强警告，警告本身不是一律拒绝规则。
+
+普通 DML 在事务内提交，DDL 遵循 MySQL 的隐式提交语义。`affected_rows` 表示数据库操作结果，不证明设备配置已经载入或服务已经重启；直接 SQL 不调用应用的保存和通知流程，运行边界见[设备配置持久化](../../01-user-guide/devices/configuration.md#编辑、保存与远端应用)。错误或中断后先核对目标现状，不能假设全部回滚而自动重试。
+
+### 数据库工具权限与迁移保留
+
+`ExecuteDatabaseSql` 在执行前拒绝所有引用 `ServiceSettingTableNames` 的变更，即使调用已获原生审批。这是 Copilot 的写入边界，不表示重置应丢弃这些表的现场数据。
+
+数据库重置会对 `MigrationBackupTableNames` 中实际存在的服务设置表与服务配置表备份数据，执行版本 SQL 后再恢复；结果表不在这份保留清单内。具体表、字典依赖、重置顺序和失败边界见 [MySQL SQL 恢复、重置与资源保留](../../04-api-reference/engine-components/mysql-recovery.md#重置前保留什么)。不要将选择性迁移称为完整备份，也不要把原生审批解释为绕过表保护的权限。
+
+随程序交付的 `colorvision-database-operations` 技能保留工具选择、Schema 核对、表分类和清理步骤所需的本地参考。`QueryFlowExecutionStats` 使用应用所在机器的本地日历范围；手写 SQL 中的 `CURDATE()` 使用数据库会话日期。两端时区不一致时，应提供明确的起止时间，避免把同名“今天”当作同一统计范围。
 
 两个通用工具都只连接 ColorVision 当前配置的 MySQL，不接受连接字符串。解析层只允许单语句并拒绝 executable comment；账号与授权管理、创建/删除数据库、全局或会话设置、事务控制、锁、动态 SQL、存储过程调用、服务器关闭/终止、插件管理、文件导入导出以及延时函数不开放。审计只保存参数名和 SQL 指纹，错误结果不回显数据库异常或连接信息。只有宿主返回的真实 observation 才能支持当前数据库事实；但是否调用数据库工具仍由模型决定，宿主不在模型回答后用关键词补做查询。
-
-数据库浏览器还提供独立的只读动态上下文，用于回答“当前这张表”“这次查询结果有多少行”“当前字段结构是什么”一类依赖软件界面的追问。它在每次相关 Agent 请求开始时重新读取最近激活的浏览器窗口，包含数据源类型、数据库/表名、表注释、存储引擎、分页与匹配行数、是否启用搜索、排序、未保存行数和最多 60 个字段的类型/主键/可空性摘要。表切换和分页刷新开始时先把旧页标记为不可用，成功后再发布新快照；切到非表节点、加载失败或窗口关闭时清除旧对象。该上下文不包含连接字符串、用户名、密码、SQL 文本、搜索词、默认值或任何单元格值；名称与注释仍经过统一内联脱敏。需要读取真实数据时继续由模型显式调用 `QueryDatabaseSql`，需要修改时仍走 `ExecuteDatabaseSql` 的原生审批，不把浏览器快照提升为隐式数据库权限。
 
 检测结果历史与批次详情共用 `measurement-results` 动态来源。历史页只提供当前加载条数、是否启用筛选和选中批次的内部 ID、模板、状态、时间、归档状态；详情页额外提供取图/算法结果数量、失败与未知结果计数，以及当前选中结果的类型、内部 ID、结果码、耗时、时间和引用文件是否仍存在。页面导航、窗口激活、筛选、批次选择和结果选择都会刷新来源；导航离开或关闭最后一个结果页面后注销。批次 `Name/Code` 在实际流程中可承载序列号，因此一律不进入快照；文件路径、请求参数、原始结果消息、设备代码、算法 payload 和测量值同样不注入。正在运行的批次仍由 Flow 上下文负责，结果历史不会建立第二份运行状态。Flow 上下文中的批次序列号现在按字段级规则直接显示为 `<redacted>`，批次结果只报告消息是否存在，不再透传内容。
 

@@ -4,7 +4,6 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using DesktopResources = ColorVision.UI.Desktop.Properties.Resources;
 
@@ -170,85 +169,6 @@ public sealed class FeedbackWindowLayoutTests
             root.UpdateLayout();
             Assert.Equal(footerTop, BoundsIn(footer, root).Top, precision: 3);
         });
-    }
-
-    [Fact]
-    public void RenderPreviewsOnlyWhenAnOutputDirectoryIsRequested()
-    {
-        string? outputDirectory = Environment.GetEnvironmentVariable("COLORVISION_FEEDBACK_PREVIEW_DIRECTORY");
-        if (string.IsNullOrWhiteSpace(outputDirectory))
-            return;
-
-        Assert.True(Path.IsPathFullyQualified(outputDirectory), "The preview output directory must be an absolute path.");
-        Directory.CreateDirectory(outputDirectory);
-        using TemporaryAttachments files = new();
-        string packagePath = files.Create("ColorVision_Diagnostics_20260830_114319.zip");
-        foreach ((string name, bool expanded, bool dark, bool minimum) in new[]
-        {
-            ("feedback-collapsed.png", false, false, false),
-            ("feedback-expanded.png", true, false, false),
-            ("feedback-dark-collapsed-minimum.png", false, true, true),
-            ("feedback-dark-minimum.png", true, true, true),
-        })
-        {
-            WithWindow(window =>
-            {
-                Expander diagnostics = Element<Expander>(window, "DiagnosticsExpander");
-                diagnostics.IsExpanded = expanded;
-                foreach (string source in new[]
-                {
-                    $"/HandyControl;component/Themes/basic/colors/{(dark ? "colorsdark" : "colors")}.xaml",
-                    "/HandyControl;component/Themes/Theme.xaml",
-                    $"/ColorVision.Themes;component/Themes/{(dark ? "Dark" : "White")}.xaml",
-                    "/ColorVision.Themes;component/Themes/Base.xaml",
-                })
-                    window.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri(source, UriKind.Relative) });
-
-                Grid root = Assert.IsType<Grid>(window.Content);
-                ScrollViewer body = Element<ScrollViewer>(window, "FeedbackContentScrollViewer");
-                Brush background = Assert.IsAssignableFrom<Brush>(window.FindResource("GlobalBackground"));
-                window.Content = null;
-                Border preview = new() { Background = background, Child = root };
-                preview.Resources.MergedDictionaries.Add(window.Resources);
-                Size size = new(minimum ? window.MinWidth : window.Width, (minimum ? window.MinHeight : window.Height) - 40);
-                preview.Measure(size);
-                preview.Arrange(new Rect(size));
-                preview.UpdateLayout();
-                if (expanded)
-                {
-                    body.ScrollToVerticalOffset(Math.Max(0, diagnostics.TranslatePoint(new Point(), (UIElement)body.Content).Y - 12));
-                    preview.UpdateLayout();
-                }
-                SavePreview(preview, size, Path.Combine(outputDirectory, name));
-
-                if (expanded)
-                {
-                    body.ScrollToEnd();
-                    preview.UpdateLayout();
-                    SavePreview(preview, size, Path.Combine(outputDirectory, $"{Path.GetFileNameWithoutExtension(name)}-bottom.png"));
-                    if (!dark)
-                    {
-                        // A full-height overview also exposes collectors between the top and bottom captures.
-                        size.Height += body.ScrollableHeight;
-                        body.ScrollToTop();
-                        preview.Measure(size);
-                        preview.Arrange(new Rect(size));
-                        preview.UpdateLayout();
-                        SavePreview(preview, size, Path.Combine(outputDirectory, "feedback-expanded-full.png"));
-                    }
-                }
-            }, "打开检测流程后结果未更新。\n重新连接相机后仍可复现，请协助查看。", [packagePath]);
-        }
-    }
-
-    private static void SavePreview(Visual preview, Size size, string outputPath)
-    {
-        RenderTargetBitmap bitmap = new((int)Math.Ceiling(size.Width * 1.5), (int)Math.Ceiling(size.Height * 1.5), 144, 144, PixelFormats.Pbgra32);
-        bitmap.Render(preview);
-        PngBitmapEncoder encoder = new();
-        encoder.Frames.Add(BitmapFrame.Create(bitmap));
-        using FileStream output = File.Create(outputPath);
-        encoder.Save(output);
     }
 
     private static void WithWindow(Action<FeedbackWindow> action, string? initialMessage = null, IEnumerable<string>? initialAttachmentPaths = null)

@@ -4,10 +4,15 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.UI"
-        xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:properties ="clr-namespace:ColorVision.UI.Properties"
         mc:Ignorable="d"
         Title="{x:Static properties:Resources.PropertyEditorWindow}"  Height="450" Width="650" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+    <Window.InputBindings>
+        <KeyBinding Key="F" Modifiers="Control" Command="ApplicationCommands.Find" />
+    </Window.InputBindings>
+    <Window.CommandBindings>
+        <CommandBinding Command="ApplicationCommands.Find" Executed="Find_Executed" />
+    </Window.CommandBindings>
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -18,6 +23,34 @@
         <HierarchicalDataTemplate x:Key="TreeNodeTemplate" DataType="{x:Type local:PropertyTreeNode}" ItemsSource="{Binding Children}">
             <TextBlock Text="{Binding Header}"/>
         </HierarchicalDataTemplate>
+        <Style x:Key="PropertyEditorActionButton" TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
+            <Setter Property="MinHeight" Value="28"/>
+            <Setter Property="MinWidth" Value="60"/>
+            <Setter Property="Padding" Value="12,3"/>
+            <Setter Property="Margin" Value="3,0"/>
+        </Style>
+        <Style x:Key="PropertyEditorSearchBox" TargetType="TextBox" BasedOn="{StaticResource TextBoxBaseStyle}">
+            <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="SearchBorder" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5" SnapsToDevicePixels="True">
+                            <ScrollViewer x:Name="PART_ContentHost"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                <Setter TargetName="SearchBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="SearchBorder" Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -28,18 +61,18 @@
         <Border Background="{DynamicResource  SecondaryRegionBrush}" Grid.RowSpan="3" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" />
         
         <!-- Search Bar and Sort Options -->
-        <Grid Grid.Row="0" Margin="5,5,5,0">
+        <Grid Grid.Row="0" Margin="8,8,8,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             
-            <hc:TextBox x:Name="SearchBox" Grid.Column="0" Style="{DynamicResource TextBoxPlus.Small}" 
-                       Padding="20,1,2,1" BorderThickness="1" 
-                       hc:InfoElement.Placeholder="{x:Static properties:Resources.PropEditor_SearchPlaceholder}" 
-                       BorderBrush="#CCCEDB" VerticalContentAlignment="Center" 
-                       TextChanged="SearchBox_TextChanged" Margin="0,0,0,0" />
-            <Viewbox Width="12" Height="12" HorizontalAlignment="Left" Margin="4,0,0,0" Grid.Column="0">
+            <TextBox x:Name="SearchBox" Grid.Column="0" Style="{StaticResource PropertyEditorSearchBox}"
+                       Padding="30,4,34,4" Height="34" MinHeight="34" FontSize="14" BorderThickness="1"
+                       AutomationProperties.Name="{x:Static properties:Resources.PropEditor_SearchPlaceholder}"
+                       BorderBrush="{DynamicResource BorderBrush}" VerticalContentAlignment="Center"
+                       TextChanged="SearchBox_TextChanged" PreviewKeyDown="SearchBox_PreviewKeyDown" Margin="0,0,0,0" />
+            <Viewbox Width="14" Height="14" HorizontalAlignment="Left" Margin="10,0,0,0" Grid.Column="0" IsHitTestVisible="False">
                 <Rectangle Width="16" Height="16">
                     <Rectangle.Resources>
                         <SolidColorBrush x:Key="canvas" Opacity="0" />
@@ -59,18 +92,54 @@
                     </Rectangle.Fill>
                 </Rectangle>
             </Viewbox>
-            
+            <!-- Include the border and WPF text host's leading inset, matching actual input. -->
+            <TextBlock x:Name="SearchPlaceholder" Grid.Column="0" Margin="33,0,34,0" IsHitTestVisible="False"
+                       Text="{x:Static properties:Resources.PropEditor_SearchPlaceholder}" FontSize="{Binding FontSize, ElementName=SearchBox}"
+                       Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" ToolTip="{x:Null}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value="">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <Button x:Name="SearchClearButton" Grid.Column="0" Width="28" Height="28" Margin="0,0,4,0"
+                    HorizontalAlignment="Right" VerticalAlignment="Center" Click="ClearSearch_Click"
+                    AutomationProperties.Name="{x:Static properties:Resources.PropEditor_ClearSearch}"
+                    ToolTip="{x:Static properties:Resources.PropEditor_ClearSearch}">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value="">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+                <TextBlock Text="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="12" ToolTip="{x:Null}"
+                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+            </Button>
+
             <ComboBox x:Name="SortComboBox" Grid.Column="1" Width="150"  Visibility="Collapsed"
                      Style="{DynamicResource ComboBox.Small}"
                      SelectionChanged="SortComboBox_SelectionChanged"/>
         </Grid>
         
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="1" Margin="8,8,8,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <TreeView Name="treeView" SelectedItemChanged="TreeView_SelectedItemChanged" Margin="5,5,0,0" Width="150" ItemsSource="{Binding TreeNodes}" ItemTemplate="{StaticResource TreeNodeTemplate}">
+            <TreeView Name="treeView" SelectedItemChanged="TreeView_SelectedItemChanged" Padding="3" Width="150"
+                      Background="{DynamicResource GlobalBackground}" ItemsSource="{Binding TreeNodes}" ItemTemplate="{StaticResource TreeNodeTemplate}">
                 <TreeView.Resources>
                     <local:TreeViewItemMarginConverter x:Key="TreeViewItemMarginConverter" />
                     <Style x:Key="ExpandCollapseToggleStyle" TargetType="{x:Type ToggleButton}">
@@ -99,9 +168,14 @@
                         <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
                         <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
                         <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
-                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Padding" Value="4,0"/>
                         <Setter Property="Margin" Value="0"/>
-                        <Setter Property="MinHeight" Value="19"/>
+                        <Setter Property="MinHeight" Value="26"/>
+                        <Setter Property="BorderThickness" Value="1"/>
+                        <Setter Property="BorderBrush" Value="Transparent"/>
+                        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+                        <!-- A header-only focus outline below replaces the default dotted adorner. -->
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                         <EventSetter Event="RequestBringIntoView" Handler="TreeViewItem_RequestBringIntoView"/>
                         <Setter Property="Template">
                             <Setter.Value>
@@ -111,12 +185,15 @@
                                             <RowDefinition MinHeight="{TemplateBinding MinHeight}" />
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
-                                        <Border Name="Bd"  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true" CornerRadius="{Binding Path=(hc:BorderElement.CornerRadius), RelativeSource={RelativeSource TemplatedParent}}">
+                                        <Border Name="Bd" Margin="0,1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true" CornerRadius="4">
                                             <DockPanel LastChildFill="True" Margin="{Binding Converter={StaticResource TreeViewItemMarginConverter}, RelativeSource={RelativeSource TemplatedParent}}" >
                                                 <ToggleButton Name="Expander" ClickMode="Press" Margin="0,0,3,0" Style="{StaticResource ExpandCollapseToggleStyle}" IsChecked="{Binding IsExpanded , RelativeSource={RelativeSource TemplatedParent}}" />
                                                 <ContentPresenter Name="PART_Header" VerticalAlignment="Center" ContentSource="Header" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
                                             </DockPanel>
                                         </Border>
+                                        <Border x:Name="SelectionIndicator" Width="3" Margin="2,6,0,6" CornerRadius="1.5"
+                                                HorizontalAlignment="Left" Background="{DynamicResource PrimaryBrush}"
+                                                Visibility="Collapsed" IsHitTestVisible="False"/>
                                         <ItemsPresenter Name="ItemsHost" Grid.Row="1"/>
 
                                     </Grid>
@@ -131,17 +208,19 @@
                                             <Setter TargetName="Expander" Property="Visibility" Value="Hidden" />
                                         </Trigger>
                                         <Trigger Property="TreeViewItem.IsSelected" Value="true">
-                                            <Setter TargetName="Bd" Value="{DynamicResource PrimaryBrush}" Property="Background" />
-                                            <Setter Value="{DynamicResource TextIconBrush}" Property="Foreground" />
+                                            <Setter TargetName="Bd" Value="{DynamicResource SecondaryRegionBrush}" Property="Background" />
+                                            <Setter TargetName="SelectionIndicator" Property="Visibility" Value="Visible"/>
                                         </Trigger>
                                         <MultiTrigger>
                                             <MultiTrigger.Conditions>
                                                 <Condition Property="TreeViewItem.IsSelected" Value="true" />
                                                 <Condition Property="TreeViewItem.IsSelectionActive" Value="false" />
                                             </MultiTrigger.Conditions>
-                                            <Setter TargetName="Bd" Value="{DynamicResource DarkDefaultBrush}" Property="Background" />
-                                            <Setter Value="{DynamicResource PrimaryTextBrush}" Property="Foreground" />
+                                            <Setter TargetName="SelectionIndicator" Property="Opacity" Value="0.55"/>
                                         </MultiTrigger>
+                                        <Trigger Property="IsKeyboardFocused" Value="True">
+                                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                        </Trigger>
                                         <Trigger Property="IsEnabled" Value="false">
                                             <Setter Property="UIElement.Opacity" Value=".4" />
                                         </Trigger>
@@ -153,26 +232,51 @@
 
                 </TreeView.ItemContainerStyle>
             </TreeView>
-            <Border  Grid.Column="1" Margin="5,5,5,0"  Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5">
-                <ScrollViewer x:Name="PropertyScrollViewer" Margin="5">
-                    <StackPanel x:Name="PropertyPanel">
-
+            <Border x:Name="EditorSurface" Grid.Column="1" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Margin" Value="8,0,0,0"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Visibility, ElementName=treeView}" Value="Collapsed">
+                                <Setter Property="Margin" Value="0"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Grid>
+                    <ScrollViewer x:Name="PropertyScrollViewer" Margin="5">
+                        <StackPanel x:Name="PropertyPanel"/>
+                    </ScrollViewer>
+                    <StackPanel x:Name="SearchEmptyState" Visibility="Collapsed" Margin="20" VerticalAlignment="Center"
+                                AutomationProperties.LiveSetting="Polite">
+                        <TextBlock Text="{x:Static properties:Resources.PropEditor_NoSearchResults}" FontWeight="SemiBold"
+                                   TextAlignment="Center" TextWrapping="Wrap" TextTrimming="None" ToolTip="{x:Null}"/>
+                        <TextBlock Text="{x:Static properties:Resources.PropEditor_SearchEmptyHint}" Margin="0,6,0,14"
+                                   Foreground="{DynamicResource SecondaryTextBrush}" TextAlignment="Center"
+                                   TextWrapping="Wrap" TextTrimming="None" ToolTip="{x:Null}"/>
+                        <Button x:Name="EmptySearchClearButton" Content="{x:Static properties:Resources.PropEditor_ClearSearch}"
+                                Style="{StaticResource PropertyEditorActionButton}" HorizontalAlignment="Center" Click="ClearSearch_Click"/>
                     </StackPanel>
-                </ScrollViewer>
+                </Grid>
             </Border>
 
         </Grid>
 
-        <Grid Grid.Row="2" Margin="5">
-            <DockPanel>
-                <Button Content="{x:Static properties:Resources.Reset}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Reset_Click" Margin="5,0,0,0" />
-                <Button Content="{x:Static properties:Resources.PropEditor_ResetToDefault}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="ResetToFactory_Click" ToolTip="{x:Static properties:Resources.PropEditor_ResetTooltip}" Margin="5,0,0,0"/>
-                <StackPanel  Orientation="Horizontal" HorizontalAlignment="Right" >
-                    <Button Content="{x:Static properties:Resources.OK}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="OK_Click" Margin="5,0,0,0"/>
-                    <Button x:Name="CancelButton" Content="{x:Static properties:Resources.Cancel}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Cancel_Click" Margin="5,0,0,0"/>
-                </StackPanel>
-            </DockPanel>
-
+        <Grid Grid.Row="2" Margin="5,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                <Button x:Name="ResetButton" Content="{x:Static properties:Resources.Reset}" Style="{StaticResource PropertyEditorActionButton}" Click="Reset_Click"/>
+                <Button x:Name="ResetDefaultsButton" Content="{x:Static properties:Resources.PropEditor_ResetToDefault}" Style="{StaticResource PropertyEditorActionButton}"
+                        Click="ResetToFactory_Click" ToolTip="{x:Static properties:Resources.PropEditor_ResetTooltip}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button x:Name="ConfirmButton" Content="{x:Static properties:Resources.OK}" Style="{StaticResource PropertyEditorActionButton}"
+                        Foreground="White" Background="{DynamicResource PrimaryBrush}" BorderBrush="{DynamicResource PrimaryBrush}" Click="OK_Click"/>
+                <Button x:Name="CancelButton" Content="{x:Static properties:Resources.Cancel}" Style="{StaticResource PropertyEditorActionButton}" Click="Cancel_Click"/>
+            </StackPanel>
         </Grid>
     </Grid>
 

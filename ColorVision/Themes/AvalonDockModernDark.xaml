@@ -1,0 +1,24 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:reskeys="clr-namespace:AvalonDock.Themes.VS2013.Themes;assembly=AvalonDock.Themes.VS2013">
+    <SolidColorBrush x:Key="DockingChromeBackground" Color="#262626" />
+    <SolidColorBrush x:Key="DockingSurfaceBackground" Color="#1F1F1F" />
+    <SolidColorBrush x:Key="DockingBorderBrush" Color="#4B4B50" />
+    <SolidColorBrush x:Key="DockingAccentBrush" Color="#A58BFA" />
+    <SolidColorBrush x:Key="DockingTextBrush" Color="#F2F2F2" />
+    <SolidColorBrush x:Key="DockingMutedTextBrush" Color="#B8B8B8" />
+    <SolidColorBrush x:Key="DockingHoverBrush" Color="#383838" />
+    <SolidColorBrush x:Key="DockingPressedBrush" Color="#464646" />
+
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.Background}" Color="#262626" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.PanelBorderBrush}" Color="#4B4B50" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.TabBackground}" Color="#1F1F1F" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabDefaultBackground}" Color="#262626" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabDefaultBorder}" Color="#262626" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabDefaultText}" Color="#B8B8B8" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabHoveredBackground}" Color="#383838" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabHoveredBorder}" Color="#A58BFA" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabHoveredText}" Color="#F2F2F2" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.FloatingDocumentWindowBackground}" Color="#262626" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.FloatingDocumentWindowBorder}" Color="#4B4B50" />
+</ResourceDictionary>

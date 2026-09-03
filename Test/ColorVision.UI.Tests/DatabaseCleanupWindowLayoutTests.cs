@@ -9,7 +9,6 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
@@ -367,55 +366,6 @@ public sealed class DatabaseCleanupWindowLayoutTests
                 }
             }
         });
-    }
-
-    [Fact]
-    public void RenderPreviewsOnlyWhenAnOutputDirectoryIsRequested()
-    {
-        string? outputDirectory = Environment.GetEnvironmentVariable("COLORVISION_CLEANUP_PREVIEW_DIRECTORY");
-        if (string.IsNullOrWhiteSpace(outputDirectory))
-            return;
-
-        Assert.True(Path.IsPathFullyQualified(outputDirectory), "The preview directory must be an absolute path.");
-        Directory.CreateDirectory(outputDirectory);
-        foreach ((string name, bool scoped, string culture, bool dark, bool minimum) in new[]
-        {
-            ("cleanup-global.png", false, "zh-CN", false, false),
-            ("cleanup-socket.png", true, "zh-CN", false, false),
-            ("cleanup-global-dark-minimum.png", false, "zh-CN", true, true),
-            ("cleanup-socket-dark-minimum.png", true, "zh-CN", true, true),
-            ("cleanup-global-english-minimum.png", false, "en-US", false, true),
-            ("cleanup-socket-english-minimum.png", true, "en-US", false, true),
-        })
-        {
-            IDatabaseCleanupSourceProvider[] providers = scoped ? [new FakeSocketProvider()] :
-                [new FakeSelectionProvider(), new FakeSourceProvider("kb", "KB SQLite", 10),
-                    new FakeSourceProvider("arvr", "ARVRPro SQLite", 15), new FakeSourceProvider("flow", "流程诊断 SQLite", 20), new FakeSocketProvider()];
-            WithWindow(providers, scoped, (window, viewModel) =>
-            {
-                CompleteWithDispatcher(viewModel.RefreshAllAsync());
-                Grid root = RefreshLayout(window, minimum);
-                Size viewport = new(minimum ? window.MinWidth : window.Width, (minimum ? window.MinHeight : window.Height) - 40);
-                Brush background = Assert.IsAssignableFrom<Brush>(window.FindResource("GlobalBackground"));
-                VisualBrush content = new(root) { AutoLayoutContent = false, Stretch = Stretch.Fill };
-                DrawingVisual preview = new();
-                using (DrawingContext drawing = preview.RenderOpen())
-                {
-                    drawing.DrawRectangle(background, null, new Rect(viewport));
-                    drawing.DrawRectangle(content, null, new Rect(new Point(root.Margin.Left, root.Margin.Top), root.RenderSize));
-                }
-                RenderTargetBitmap bitmap = new((int)Math.Ceiling(viewport.Width * 1.5),
-                    (int)Math.Ceiling(viewport.Height * 1.5), 144, 144, PixelFormats.Pbgra32);
-                bitmap.Render(preview);
-                byte[] cornerPixel = new byte[4];
-                bitmap.CopyPixels(new Int32Rect(bitmap.PixelWidth - 1, bitmap.PixelHeight - 1, 1, 1), cornerPixel, 4, 0);
-                Assert.Equal((byte)255, cornerPixel[3]);
-                PngBitmapEncoder encoder = new();
-                encoder.Frames.Add(BitmapFrame.Create(bitmap));
-                using FileStream output = File.Create(Path.Combine(outputDirectory, name));
-                encoder.Save(output);
-            }, culture, dark);
-        }
     }
 
     private static void WithWindow(IEnumerable<IDatabaseCleanupSourceProvider> providers, bool scoped,

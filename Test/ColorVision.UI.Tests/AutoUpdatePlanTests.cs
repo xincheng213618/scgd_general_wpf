@@ -114,36 +114,51 @@ namespace ColorVision.UI.Tests
                 isInteractiveRequest: true));
         }
 
-        [Fact]
-        public void OfflineInstallerCommandDownloadsTheLatestFullInstallerToTheDesktop()
+        [Theory]
+        [InlineData("1.4.13.29", "1.4.13.29")]
+        [InlineData("1.4.13.28", "1.4.13.29")]
+        [InlineData("1.3.1.1", "1.4.13.29")]
+        public void ReinstallUsesTheLatestFullInstallerEvenWhenAlreadyUpToDate(string current, string latest)
         {
-            string command = AutoUpdater.BuildOfflineInstallerDownloadPowerShellCommand(
-                "https://updates.example.test/",
-                "user:password");
+            Version latestVersion = new(latest);
+            AutoUpdatePlan? plan = AutoUpdater.BuildReinstallPlan(
+                new Version(current), new LatestVersionCheckResult(latestVersion, UpdateServerCheckStatus.Success));
 
-            Assert.Contains("https://updates.example.test/api/app/latest-version", command);
-            Assert.Contains("$downloadUrl = 'https://updates.example.test/api/app/releases/{0}/download' -f $latest", command);
-            Assert.Contains("Invoke-WebRequest -Uri $downloadUrl", command);
-            Assert.DoesNotContain("-Uri 'https://updates.example.test/api/app/releases/$latest/download'", command);
-            Assert.Contains("[Environment]::GetFolderPath('Desktop')", command);
-            Assert.Contains("ColorVision-{0}.exe", command);
-            Assert.Contains("Basic dXNlcjpwYXNzd29yZA==", command);
-            Assert.DoesNotContain(".cvx", command, StringComparison.OrdinalIgnoreCase);
+            Assert.NotNull(plan);
+            Assert.False(plan.IsIncremental);
+            Assert.Equal(latestVersion, plan.TargetVersion);
+            Assert.Equal(new[] { latestVersion }, plan.VersionsToApply);
+        }
+
+        [Theory]
+        [InlineData((int)UpdateServerCheckStatus.NoInternetConnection, "1.4.13.29")]
+        [InlineData((int)UpdateServerCheckStatus.ServerUnavailable, "1.4.13.29")]
+        [InlineData((int)UpdateServerCheckStatus.Success, "0.0")]
+        public void ReinstallDoesNotUseStaleOrMissingVersionMetadata(int status, string latest)
+        {
+            Assert.Null(AutoUpdater.BuildReinstallPlan(new Version(1, 4, 13, 29),
+                new LatestVersionCheckResult(new Version(latest), (UpdateServerCheckStatus)status)));
         }
 
         [Fact]
-        public void OfflineInstallerCommandFileBypassesScriptPolicyAndPreservesTheCommand()
+        public void ReinstallRemainsAvailableWithoutUpdatesAndDisablesWhileBusy()
         {
-            const string command = "$value = 'ColorVision'; Write-Host $value";
+            UpdatePreviewDialogContext context = new() { IsChecking = true };
+            List<string?> changedProperties = new();
+            context.PropertyChanged += (_, e) => changedProperties.Add(e.PropertyName);
 
-            string commandFile = AutoUpdater.BuildOfflineInstallerDownloadCommandFileContent(command);
-            string encodedCommand = commandFile
-                .Split("-EncodedCommand ", StringSplitOptions.None)[1]
-                .Split('\r', '\n')[0]
-                .Trim();
+            Assert.False(context.CanReinstall);
+            context.IsChecking = false;
+            Assert.False(context.CanConfirm);
+            Assert.True(context.CanReinstall);
+            Assert.Contains(nameof(context.CanReinstall), changedProperties);
 
-            Assert.Contains("-ExecutionPolicy Bypass", commandFile);
-            Assert.Equal(command, System.Text.Encoding.Unicode.GetString(Convert.FromBase64String(encodedCommand)));
+            changedProperties.Clear();
+            context.IsUpdating = true;
+            Assert.False(context.CanReinstall);
+            Assert.Contains(nameof(context.CanReinstall), changedProperties);
+            context.IsUpdating = false;
+            Assert.True(context.CanReinstall);
         }
 
         [Fact]

@@ -675,26 +675,16 @@ namespace ColorVision.FileIO
         {
             int index = ReadCIEFileHeader(fileName, out fileOut);
             if (index < 0) return -1;
-            ReadCIEFileData(fileName, ref fileOut, index);
-            if (fileOut.Channels > 1)
-            {
-                fileOut.FileExtType = CVType.Raw;
-                fileOut.Channels = 1;
-                int len = fileOut.Cols * fileOut.Rows * fileOut.Bpp / 8;
-                try
-                {
-                    byte[] data = new byte[len];
-                    Buffer.BlockCopy(fileOut.Data, channel * len, data, 0, len);
-                    fileOut.Data = data;
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"[ReadCVCIEXYZ] Exception: {ex}");
-                    return -2;
-                }
-                return 0;
-            }
-            return -2;
+            if (fileOut.Channels <= 1) return -2;
+
+            // The former Cols * Rows * Bpp / 8 expression overflowed before division
+            // for large images, returning a short array with full-size metadata.
+            // Reuse the checked byte-count and complete-channel read boundary.
+            fileOut.Dispose();
+            if (!ReadCIEFileChannel(fileName, channel, out fileOut)) return -2;
+            fileOut.FileExtType = CVType.Raw;
+            fileOut.Channels = 1;
+            return 0;
         }
 
         #region Write Methods

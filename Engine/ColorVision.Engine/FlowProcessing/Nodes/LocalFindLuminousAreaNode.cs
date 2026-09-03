@@ -78,8 +78,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public required string DeviceCode { get; init; }
         public int ZIndex { get; init; }
         public int TotalTime { get; init; }
+        public int ResultCode { get; init; }
+        public string Result { get; init; } = "ok";
         public required object Parameters { get; init; }
-        public required IReadOnlyList<LocalLuminousAreaCorner> Corners { get; init; }
+        public IReadOnlyList<LocalLuminousAreaCorner> Corners { get; init; } = Array.Empty<LocalLuminousAreaCorner>();
 
         public IReadOnlyCollection<AlgResultLightAreaModel> CreateDetails(int masterId) =>
             LocalLuminousAreaResultPersistence.CreateDetails(masterId, Corners);
@@ -130,6 +132,21 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public int Persist(LocalFindLuminousAreaPersistenceRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
+            if (request.ResultCode != 0)
+            {
+                return LocalFlowResultPersistence.SaveAlgorithmResult(
+                    request.Action,
+                    ViewResultAlgType.FindLightArea,
+                    null,
+                    request.Algorithm,
+                    request.ImageFilePath,
+                    request.DeviceCode,
+                    request.ZIndex,
+                    request.TotalTime,
+                    request.Parameters,
+                    request.ResultCode,
+                    request.Result);
+            }
             return LocalFlowResultPersistence.SaveAlgorithmResultWithDetails(
                 request.Action,
                 ViewResultAlgType.FindLightArea,
@@ -191,6 +208,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     public sealed class LocalFindLuminousAreaNode : LocalFlowNodeBase
     {
         internal const double DefaultMinimumConfidence = 0.25;
+        internal const int DetectionFailureResultCode = -1;
         private static readonly string[] CornerNames = ["LT", "RT", "RB", "LB"];
 
         private string imageFilePath = string.Empty;
@@ -282,14 +300,67 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 LuminousAreaDetectionResult detection = services.Detect(image, roi, MinimumConfidence);
                 stopwatch.Stop();
-                LocalLuminousAreaCorner[] corners = ValidateDetection(detection, MinimumConfidence);
-                double confidence = detection.Confidence!.Value;
                 int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
+                string algorithmDeviceCode = ResolveAvailableDeviceCode<DeviceAlgorithm>();
+                LocalLuminousAreaCorner[] corners;
+                try
+                {
+                    corners = ValidateDetection(detection, MinimumConfidence);
+                }
+                catch (InvalidOperationException validationException)
+                {
+                    int failedMasterId = services.Persist(new LocalFindLuminousAreaPersistenceRequest
+                    {
+                        Action = action,
+                        Algorithm = detection.Algorithm,
+                        ImageFilePath = imageFile,
+                        DeviceCode = algorithmDeviceCode,
+                        ZIndex = ZIndex,
+                        TotalTime = totalTime,
+                        ResultCode = DetectionFailureResultCode,
+                        Result = validationException.Message,
+                        Parameters = new
+                        {
+                            Algorithm = detection.Algorithm,
+                            SourceMasterId = lease.MasterId,
+                            FrameId = lease.FrameId.ToString("N"),
+                            ImageFilePath = imageFile,
+                            SearchRegion = new { roi.X, roi.Y, roi.Width, roi.Height },
+                            MinimumConfidence,
+                            Success = false,
+                            detection.Confidence,
+                            detection.FailureReason,
+                            detection.NativeReturnCode,
+                            detection.Diagnostic,
+                            detection.SideQuality,
+                            detection.Warnings,
+                            PrimaryBufferKind = lease.Metadata.PrimaryBufferKind.ToString(),
+                            SourceFilePath = NullIfWhiteSpace(lease.Metadata.SourceFilePath),
+                            CvRawFilePath = NullIfWhiteSpace(frame.CvRawFilePath),
+                            CvCieFilePath = NullIfWhiteSpace(frame.CvCieFilePath),
+                            CalibrationTemplate = NullIfWhiteSpace(lease.Metadata.CalibrationTemplate),
+                            FlipMode = lease.Metadata.FlipMode.ToString(),
+                            FlipApplied = lease.IsFlipApplied,
+                            ImageRead = loadedFromFile,
+                            MemoryOnly = string.IsNullOrWhiteSpace(imageFile)
+                        }
+                    });
+                    services.Publish(new LocalFindLuminousAreaPublishRequest
+                    {
+                        DeviceCode = algorithmDeviceCode,
+                        OperatorCode = OperatorCode,
+                        SerialNumber = action.SerialNumber,
+                        NodeId = NodeID,
+                        ZIndex = ZIndex,
+                        MasterId = failedMasterId
+                    });
+                    throw;
+                }
+                double confidence = detection.Confidence!.Value;
                 string? savePoiTemplateName = string.IsNullOrWhiteSpace(SavePOITempName) ? null : SavePOITempName.Trim();
                 LocalLuminousAreaPoiTemplateShape? savePoiTemplateShape = savePoiTemplateName == null
                     ? null
                     : services.UpdatePoiTemplate(savePoiTemplateName, corners);
-                string algorithmDeviceCode = ResolveAvailableDeviceCode<DeviceAlgorithm>();
                 int masterId = services.Persist(new LocalFindLuminousAreaPersistenceRequest
                 {
                     Action = action,

@@ -65,7 +65,9 @@ namespace ColorVision.Solution.Explorer
                 Directory.CreateDirectory(newName);
                 DirectoryInfo directoryInfo = new DirectoryInfo(newName);
 
-                FolderNode folder = CreateFolderNode(directoryInfo, FindSolutionExplorer(parent));
+                FolderNode folder = parent is FileSystemFolderNode
+                    ? new FileSystemFolderNode(directoryInfo)
+                    : CreateFolderNode(directoryInfo, FindSolutionExplorer(parent));
                 parent.AddChild(folder);
                 parent.SortByName();
                 if (!parent.IsExpanded)
@@ -130,11 +132,12 @@ namespace ColorVision.Solution.Explorer
         internal static Task<IReadOnlyList<SolutionDirectoryEntrySnapshot>> CreateChildrenSnapshotAsync(
             DirectoryInfo directoryInfo,
             SolutionCache? cache,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool fileSystemView = false)
         {
             ArgumentNullException.ThrowIfNull(directoryInfo);
             return Task.Run<IReadOnlyList<SolutionDirectoryEntrySnapshot>>(
-                () => CreateChildrenSnapshot(directoryInfo, cache, cancellationToken),
+                () => CreateChildrenSnapshot(directoryInfo, cache, cancellationToken, fileSystemView),
                 cancellationToken);
         }
 
@@ -148,6 +151,7 @@ namespace ColorVision.Solution.Explorer
             cancellationToken.ThrowIfCancellationRequested();
 
             SolutionExplorer? solutionExplorer = FindSolutionExplorer(parent);
+            bool fileSystemView = parent is FileSystemFolderNode;
             var children = new List<SolutionNode>(entries.Count);
             bool completed = false;
             try
@@ -176,12 +180,14 @@ namespace ColorVision.Solution.Explorer
                                     var directory = new DirectoryInfo(entry.FullPath);
                                     if (solutionExplorer?.ShouldOmitPhysicalProjectDirectory(parent, directory) == true)
                                         continue;
-                                    children.Add(CreateFolderNode(directory, solutionExplorer));
+                                    children.Add(fileSystemView
+                                        ? new FileSystemFolderNode(directory)
+                                        : CreateFolderNode(directory, solutionExplorer));
                                     continue;
                                 }
 
                                 if (!File.Exists(entry.FullPath)
-                                    || IsInternalFile(Path.GetFileName(entry.FullPath))
+                                    || (!fileSystemView && IsInternalFile(Path.GetFileName(entry.FullPath)))
                                     || !ShouldIncludeProjectPath(parent, entry.FullPath))
                                 {
                                     continue;
@@ -190,7 +196,7 @@ namespace ColorVision.Solution.Explorer
                                 var file = new FileInfo(entry.FullPath);
                                 if (solutionExplorer?.ShouldOmitPhysicalSolutionItem(parent, file) == true)
                                     continue;
-                                if (file.Extension.Contains("lnk", StringComparison.OrdinalIgnoreCase))
+                                if (!fileSystemView && file.Extension.Contains("lnk", StringComparison.OrdinalIgnoreCase))
                                 {
                                     string targetPath = Common.NativeMethods.ShortcutCreator.GetShortcutTargetFile(file.FullName);
                                     file = new FileInfo(targetPath);
@@ -248,7 +254,8 @@ namespace ColorVision.Solution.Explorer
         private static IReadOnlyList<SolutionDirectoryEntrySnapshot> CreateChildrenSnapshot(
             DirectoryInfo directoryInfo,
             SolutionCache? cache,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool fileSystemView)
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (!directoryInfo.Exists)
@@ -256,7 +263,7 @@ namespace ColorVision.Solution.Explorer
 
             try
             {
-                if (cache?.HasCache() == true && cache.ValidateDirectory(directoryInfo.FullName))
+                if (!fileSystemView && cache?.HasCache() == true && cache.ValidateDirectory(directoryInfo.FullName))
                 {
                     List<FileTreeCacheEntry> cachedChildren = cache.GetChildren(directoryInfo.FullName);
                     if (cachedChildren.Count > 0)
@@ -271,7 +278,7 @@ namespace ColorVision.Solution.Explorer
                 foreach (DirectoryInfo directory in directoryInfo.EnumerateDirectories())
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    if ((directory.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
+                    if (!fileSystemView && (directory.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
                         continue;
                     entries.Add(new SolutionDirectoryEntrySnapshot(directory.FullName, IsDirectory: true));
                 }
@@ -279,7 +286,7 @@ namespace ColorVision.Solution.Explorer
                 foreach (FileInfo file in directoryInfo.EnumerateFiles())
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (!IsInternalFile(file.Name))
+                    if (fileSystemView || !IsInternalFile(file.Name))
                         entries.Add(new SolutionDirectoryEntrySnapshot(file.FullName, IsDirectory: false));
                 }
                 return entries;
@@ -384,6 +391,11 @@ namespace ColorVision.Solution.Explorer
 
         public static void AddFileNode(ISolutionNode parent, FileInfo fileInfo)
         {
+            if (parent is FileSystemFolderNode)
+            {
+                AddNode(parent, CreateFileNode(fileInfo));
+                return;
+            }
             if (IsInternalFile(fileInfo.Name)) return;
             if (!ShouldIncludeProjectPath(parent, fileInfo.FullName)) return;
             if (FindSolutionExplorer(parent)?.ShouldOmitPhysicalSolutionItem(parent, fileInfo) == true) return;
@@ -399,6 +411,11 @@ namespace ColorVision.Solution.Explorer
 
         public static void AddFolderNode(ISolutionNode parent, DirectoryInfo directoryInfo)
         {
+            if (parent is FileSystemFolderNode)
+            {
+                AddNode(parent, new FileSystemFolderNode(directoryInfo));
+                return;
+            }
             if (!ShouldIncludeProjectPath(parent, directoryInfo.FullName))
                 return;
 

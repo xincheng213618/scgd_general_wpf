@@ -40,8 +40,8 @@ namespace ColorVision.ImageEditor.Draw
         {
             return new CompactInspectorItem[]
             {
-                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.IsContinuous), Icon = CompactInspectorIcons.CreateText("∞"), Order = 10, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_ContinuousDraw },
-                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.IsLocked), Icon = CompactInspectorIcons.CreateGlyph("\uE72E"), Order = 20, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_LockDefaultRadius },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.IsContinuous), Icon = CompactInspectorIcons.CreateText("1×", 14), CheckedIcon = CompactInspectorIcons.CreateText("∞", 17, useAccent: true), ToggleMinWidth = 28, ToggleHeight = 26, Order = 10, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_ContinuousDraw },
+                new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.IsLocked), Icon = CompactInspectorIcons.CreateGlyph("\uE785", 16), CheckedIcon = CompactInspectorIcons.CreateGlyph("\uE72E", 16, useAccent: true), ToggleMinWidth = 28, ToggleHeight = 26, Order = 20, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_LockDefaultRadius },
                 new CompactInspectorPropertyItem { Source = Config, PropertyName = nameof(Config.DefalutRadius), Label = "R", ShowLabel = true, Width = 56, Order = 30, EditorKind = CompactInspectorEditorKind.Number },
             };
         }

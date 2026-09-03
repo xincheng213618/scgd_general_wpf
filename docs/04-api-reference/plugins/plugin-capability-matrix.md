@@ -3,84 +3,65 @@ knowledge_id: "plugins.capabilities"
 knowledge_type: "reference"
 status: "current"
 summary: "横向定位现存插件的菜单、状态、数据库、设备与管理员权限边界。"
-aliases: ["哪个插件负责系统监控","哪些插件会操作设备或服务","Conoscope","Spectrum","SystemMonitor","WindowsServicePlugin"]
-code_paths: ["Plugins/Conoscope/","Plugins/Spectrum/","Plugins/SystemMonitor/","Plugins/WindowsServicePlugin/"]
-test_paths: ["Test/Conoscope.Tests/Conoscope.Tests.csproj","Test/Spectrum.Tests/Spectrum.Tests.csproj","Test/ColorVision.UI.Tests/SystemMonitorLifecycleTests.cs"]
-related: ["plugins.index","plugins.model","plugins.getting-started","plugins.conoscope","plugins.spectrum","plugins.system-monitor","plugins.windows-service"]
+aliases: ["插件依赖","插件扩展点","插件权限","哪些插件会操作设备或服务","插件状态栏比较"]
+code_paths: ["Plugins/Conoscope/","Plugins/Spectrum/","Plugins/SystemMonitor/","Plugins/WindowsServicePlugin/","Plugins/Pattern/","Plugins/ImageProjector/"]
+test_paths: []
+related: ["plugins.index","plugins.model","plugins.getting-started","plugins.conoscope","plugins.spectrum","plugins.system-monitor","plugins.windows-service","plugins.pattern"]
 ---
 
 # 插件依赖与接入矩阵
 
-按菜单、状态栏、设置页、Socket、数据库、注册表、管理员权限或 native 依赖定位插件时检索本页。确定模块后转到 [现有插件能力](./README.md) 中的单插件页，并核对实际代码与测试；不需要先通读其余插件。
-
-本页比较当前 `Plugins/` 的接入点和外部边界，单插件业务契约由各自主题维护。这里重点回答：
-
-- 插件从哪里进入宿主。
-- 它依赖哪些 UI/Engine 模块。
-- 它有没有设备、Socket、数据库、注册表、Windows 服务等外部边界。
-- 发布时应该验收什么。
-- 哪些地方最容易被误判。
-
-如果你已经遇到具体问题，例如插件没有加载、菜单没出现、`.deps.json` 版本不满足、`.cvxp` 包缺文件、管理员权限或 Socket 指令异常，先回到 [现有插件能力说明](./README.md) 找对应插件页。发版或现场替换时，按本文的构建、打包和烟测矩阵核对，并保存 manifest、DLL 版本、`.cvxp` 和回退材料。
+本页用于按功能、宿主扩展点和外部影响选择插件。范围为 `Plugins/` 中的六个插件项目；每行插件名连接其操作、实现和验证主题。客户专用判定、MES 和项目流程见[项目知识入口](../projects/README.md)。
 
 ## 当前源码插件总表
 
-| 插件 | 源码目录 | 版本事实源 | 宿主入口 | 主要能力 | 关键风险 |
-| --- | --- | --- | --- | --- | --- |
-| Conoscope | `Plugins/Conoscope/` | DLL `FileVersion` / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Conoscope/Conoscope.csproj)；[manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Conoscope/manifest.json) 为同步副本 | Tool 菜单 `VAM`，ImageEditor 右键打开 | 锥镜/VAM 图像观察、关注点、参考轴、预处理、色域和对比度分析、MVS 观察相机 | MVS 依赖海康 `MvCameraControl.dll`；关注点逻辑是插件本地实现 |
-| Spectrum | `Plugins/Spectrum/` | DLL `FileVersion` / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Spectrum/Spectrum.csproj)；[manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Spectrum/manifest.json) 为同步副本 | Tool 菜单光谱窗口，Spectrum 窗口级菜单/状态栏，Socket JSON 指令 | 光谱仪连接、标定分组、测量、EQE、CIE、SQLite 结果、许可证、Socket 远程控制 | 依赖光谱仪 native DLL、OpenCV、串口、许可证；连接状态与标定可测量状态必须分开判断 |
-| SystemMonitor | `Plugins/SystemMonitor/` | [manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/SystemMonitor/manifest.json) / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/SystemMonitor/SystemMonitor.csproj) | Tool 菜单，设置页，主程序状态栏 | CPU/RAM/磁盘/网络/进程/GPU/缓存监控和状态栏投影 | 性能计数器可能初始化失败并降级；监控单例位于 `ColorVision.UI.Configs` 命名空间 |
-| WindowsServicePlugin | `Plugins/WindowsServicePlugin/` | [manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/WindowsServicePlugin/manifest.json) / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj) | 管理员应用提供器、安装向导；另有旧 `InstallTool` 菜单类型和主窗初始化器 | 本机服务管理、在线选包、完整包安装与数据库迁移；旧工具链另行存在 | 会改服务、数据库、进程和文件；新完整安装链不支持增量，下载与完成边界见[插件主题](./standard-plugins/windows-service.md) |
+| 插件与源码目录 | 主要用途 | 界面入口 | 外部依赖与操作影响 |
+| --- | --- | --- | --- |
+| [Pattern](./standard-plugins/pattern.md) · `Plugins/Pattern/` | 测试图卡生成、模板管理与文件导出 | 工具 → 图卡生成工具；功能启动器 | OpenCV、私有 ImageProjector 依赖；导入 ZIP 会替换模板目录，清空操作会删除对应目录内容 |
+| [ImageProjector](./standard-plugins/pattern.md#图片投影) · `Plugins/ImageProjector/` | 图片列表、多屏投影、缩放与全屏显示 | 工具 → 图片投影工具；Pattern 窗口内入口 | Windows 显示器及 DPI；投影会改变目标屏幕的显示内容 |
+| [Conoscope](./standard-plugins/conoscope.md) · `Plugins/Conoscope/` | VAM/锥镜图像、关注点、参考轴、预处理、色域与对比度分析 | 工具 → VAM；符合条件的 ImageEditor 右键入口；视图 → MVSVideo | 本地 CVCIE、Engine 测量采集和 MVS 观察相机是三种来源；MVS 另需海康驱动及 `MvCameraControl.dll`，采集可能操作设备与数据库 |
+| [Spectrum](./standard-plugins/spectrum.md) · `Plugins/Spectrum/` | 光谱测量、标定分组、EQE、CIE 与结果导出 | 工具中的光谱窗口；窗口菜单与状态栏 | 光谱仪、快门/滤光轮/SMU、串口、native DLL 和许可证；测量及校零会操作设备，结果保存到 SQLite |
+| [SystemMonitor](./standard-plugins/system-monitor.md) · `Plugins/SystemMonitor/` | CPU/RAM、磁盘、网络、进程、GPU 和缓存信息 | 工具 → 系统监控；同名设置页；可选状态栏项 | Windows 性能计数器、CUDA 信息和网卡；缓存统计与清理范围不同，清理会删除文件 |
+| [WindowsServicePlugin](./standard-plugins/windows-service.md) · `Plugins/WindowsServicePlugin/` | 本机服务管理、在线选包、安装、数据库与配置迁移 | 应用与工具 → 内部工具 → 服务管理器；安装向导 | Windows 服务、MySQL、MQTT、服务包及权限代理；安装/恢复会改文件、数据库、服务与进程 |
 
-表中的版本来源用于定位，不代表已经验证交付一致性。DLL `FileVersion`、包名、manifest 同步与安装门禁见[插件产物与交付](../../02-developer-guide/plugin-development/getting-started.md)；启动装载的实际依赖检查见[装载与扩展发现](../../02-developer-guide/plugin-development/overview.md)。不能从 manifest 的 `requires` 字段推断启动加载器已经执行该检查。
+应用内角色、Windows 权限和设备条件是不同前提。`ServiceManagerAppProvider` 声明应用内 `Administrator` 权限，但服务管理器还存在向导及旧工具入口；实际服务操作需要兼容的权限代理和目标资源权限。其余插件也不能仅凭窗口可打开就推断设备、路径或许可证已就绪。
 
-## 入口和扩展点矩阵
+## 按宿主扩展点定位
 
-| 插件 | 主菜单入口 | 窗口级菜单 | 状态栏 | 设置页 | Socket | 其他扩展点 |
-| --- | --- | --- | --- | --- | --- | --- |
-| Conoscope | `MenuConoscopeWindow` -> Tool / `VAM` | `ConoscopeWindow` Ribbon、View 菜单、`MenuMVSVideo` | 每标签页 `ConoscopeViewState` + `ConoscopeDocument`；全局 `ConoscopeConfig` / ReferenceStore | `ConoscopeConfigWindow`（含预处理页） | 无 | `ConoscopeImageViewContextMenu` 接入 ImageEditor 右键菜单 |
-| Spectrum | `MenuSpectrumWindow` -> Tool | `LoadMenuForWindow("Spectrum", menu)`，包含帮助、布局、许可证、原生日志等菜单 | `SpectrumStatusBarProvider`，目标窗口 `Spectrum` | 多个 `ConfigService` 配置对象 | 5 个 `ISocketJsonHandler` | Quartz 任务、SQLite 结果、许可证同步 |
-| SystemMonitor | `SystemMonitorProvider` -> Tool | 无独立复杂菜单 | `SystemMonitorIStatusBarProvider` | `IConfigSettingProvider` | 无 | `SystemMonitorControl` 同时用于设置页和窗口 |
-| WindowsServicePlugin | `ServiceManagerAppProvider` -> 应用与工具 / 内部工具（管理员）；旧 `InstallTool` 声明 `OwnerGuid=ServiceLog` | 服务管理窗口内部命令 | 无 | `ServiceManagerConfig`、`MySqlServiceConfig`、`MqttServiceConfig`、`CVWinSMSConfig` | 无 | `InstallServiceManager` 向导入口；`InstallTool : IMainWindowInitialized` |
-
-## 外部依赖和运行时边界
-
-| 插件 | 外部设备/服务 | 文件和数据库 | 系统权限 | 现场排查先看 |
-| --- | --- | --- | --- | --- |
-| Conoscope | MVS 观察相机、`MvCameraControl.dll` | 关注点/参考轴/预处理配置，CSV 导出 | 普通图像分析通常不需要管理员；相机驱动由系统环境决定 | MVS SDK 是否安装、图像是否可打开、关注点是否记录、导出文件是否生成 |
-| Spectrum | SP100/SP10/高利通光谱仪、Shutter、CFW、SMU、串口、native 光谱仪 DLL | `%APPDATA%\Spectromer\Config\Spectrum.db`、标定分组、许可证目录；CIE 图片来自宿主共享 ImageEditor 资源 | 通常不需要管理员；设备驱动和许可证要就绪 | 设备连接、标定 readiness、共享 native 会话、Socket 服务、SQLite 结果库 |
-| SystemMonitor | Windows 性能计数器、CUDA 信息、网络接口 | 应用缓存和日志目录统计 | 清理缓存取决于目标目录权限 | 性能计数器初始化、配置开关、状态栏 provider 是否刷新 |
-| WindowsServicePlugin | Windows 服务、MySQL、MQTT、服务包 ZIP | `BaseLocation`、`cfg/*.config`、MySQL ZIP、MQTT installer、服务数据库 SQL、备份目录 | 大部分操作需要管理员模式 | 服务状态、BaseLocation、安装包结构、MySQL/MQTT 状态、CFG 同步日志 |
-
-## 本地构建与授权发布矩阵
-
-“构建”列只编译并可能按 HostCopy 条件同步本地产物；“发布上传”列会更新远端包并按脚本规则清理本地包，仅在用户明确要求发布该插件时运行。普通 wrapper 不支持 `--no-upload`，不可作为只读或本地-only 校验步骤。
-
-| 插件 | 构建命令 | 发布上传命令（需授权） | 宿主镜像（条件） | 必带文件 |
-| --- | --- | --- | --- | --- |
-| Conoscope | `dotnet build Plugins/Conoscope/Conoscope.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat Conoscope` | solution/MSBuild 且 `SolutionDir` 有效时复制到宿主 `Plugins/Conoscope/` | `Conoscope.dll`、manifest、README、CHANGELOG；使用观察相机时再带 MVS/native 依赖 |
-| Spectrum | `dotnet build Plugins/Spectrum/Spectrum.csproj -c Release -p:Platform=x64` | 正式发布：`Scripts\Spectrum.bat --release-notes "..."` | 无 HostCopy；专用脚本从项目输出打包 | `Spectrum.dll`、manifest、README、CHANGELOG、`Magiude.dat`、`WavaLength.dat`、光谱仪 native DLL；另生成独立 ZIP |
-| SystemMonitor | `dotnet build Plugins/SystemMonitor/SystemMonitor.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat SystemMonitor` | solution/MSBuild 且 `SolutionDir` 有效时复制到宿主 `Plugins/SystemMonitor/` | `SystemMonitor.dll`、manifest、README、CHANGELOG |
-| WindowsServicePlugin | `dotnet build Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat WindowsServicePlugin` | solution/MSBuild 且 `SolutionDir` 有效时复制到宿主 `Plugins/WindowsServicePlugin/` | `WindowsServicePlugin.dll`、manifest、README、CHANGELOG |
-
-通用打包、HostCopy 条件、共享依赖剔除和安装替换统一维护在[插件产物契约](../../02-developer-guide/plugin-development/getting-started.md)。本表只保留各插件的差异，不复制另一份打包流程；具体文件是否必需还要按启用能力和对应模块页核验。
-
-## 发布后烟测矩阵
-
-| 插件 | 最小烟测 | 通过标准 |
+| 接入点 | 插件与实现 | 范围 |
 | --- | --- | --- |
-| Conoscope | 打开 Tool -> VAM；导入大 CVCIE；观察 Y 首屏与 XYZ 后台就绪；切通道；新增/移动关注点；执行色域或对比度分析；导出 CSV | readiness 与分阶段加载一致；新文档清关注点、同文档换通道保留关注点；结果窗口和 CSV 正常 |
-| Spectrum | 打开 Spectrum；检查状态栏；执行无设备状态查询；有设备时连接、确认标定就绪、校零、测量、导出；启用 Socket 后发送 `SpectrumStatus`/`SpectrumConnect` | 状态栏区分连接和标定 readiness；测量结果与画像同事务落库；Socket 返回正确 Code/Msg 和连接标定状态 |
-| SystemMonitor | 打开性能监控窗口；切换状态栏开关；刷新磁盘/网络/进程；执行清理缓存前确认目录 | 监控数据刷新，状态栏能动态增删，失败项不会拖垮整个插件 |
-| WindowsServicePlugin | 以管理员模式打开服务管理器；刷新服务状态；选择测试服务根目录；验证配置文件打开；在测试环境执行安装流程 | 服务状态可读，配置同步日志明确，失败时不会带旧配置继续启动 |
+| 主菜单 | Pattern `ExportTestPatternWpf`、ImageProjector `MenuImageProjector`、Conoscope `MenuConoscopeWindow`、Spectrum `MenuSpectrumWindow`；SystemMonitor 通过 `SystemMonitorProvider` 提供元数据 | 前四者继承 `MenuItemBase`，SystemMonitor 实现 `IMenuItemProvider` |
+| 窗口菜单 | Spectrum `LoadMenuForWindow("Spectrum", menu)` | 菜单按目标窗口加载；Conoscope 的 Ribbon、View 菜单和配置控件由其模块主题说明 |
+| 宿主状态栏 | `SystemMonitorIStatusBarProvider : IStatusBarProviderUpdatable`；`SpectrumStatusBarProvider : IStatusBarProvider` | 前者按配置开关增删监控项；后者的目标为 `Spectrum`。其余四个项目没有声明这两类状态栏提供器 |
+| 宿主设置页 | `SystemMonitorProvider : IConfigSettingProvider` | 设置页与菜单窗口共用 `SystemMonitorControl`；插件持有 `IConfig` 对象不等于注册了独立设置页 |
+| ImageEditor 右键 | `ConoscopeImageViewContextMenu : IIEditorToolContextMenu` | 由 `ConoscopeModuleService` 检查当前文件与通道条件后显示入口 |
+| 图卡扩展与启动 | Pattern 的 `IPattern` 发现、`PatternFeatureLauncher` | 从已装载程序集发现图卡；窗口可调用 `OpenImageProjectorCommand` 打开投影工具 |
+| 应用工具与向导 | `ServiceManagerAppProvider`、`InstallServiceManager` | 前者提供非模态窗口，后者是模态向导步骤；旧 `InstallTool` 仍声明 `ServiceLog` 菜单位置并实现主窗口初始化器 |
+| Socket 与调度 | Spectrum 的五个 `ISocketJsonHandler` 和 `Job/` 测量/校零任务 | 复用测量 Manager；传输服务与业务指令见 [Spectrum Socket](./standard-plugins/spectrum-socket.md)，需要服务启用与相应设备条件 |
 
-## 维护风险清单
+Conoscope 的 `ConoscopeViewState` / `ConoscopeDocument` 属于标签页和文档状态；全局配置、参考存储与窗口工作副本见[配置与持久化](./standard-plugins/conoscope.md#配置-working-copy、参考与持久化)。Pattern、ImageProjector、Spectrum 和服务管理器的配置也由各模块维护，不能把配置类型列表当作宿主设置页列表。
 
-| 风险 | 影响 | 处理方式 |
+## 构建与交付差异
+
+版本、manifest 身份、共享依赖剥离、安装和回退的共用规则见[插件产物与交付](../../02-developer-guide/plugin-development/getting-started.md)。发布版本来自编译产物；manifest 是发布时同步的元数据，不单独证明版本或 ABI 一致。
+
+| 插件 | 本地复制与交付差异 | 命令及资源清单 |
 | --- | --- | --- |
-| manifest 版本和 DLL 文件版本不一致 | 插件管理器、市场包、现场 DLL 版本互相对不上 | 发版前同时核对 `manifest.json`、`.csproj VersionPrefix`、输出 DLL `FileVersion`、`.cvxp` 文件名 |
-| PostBuild 复制 README/CHANGELOG 大小写不一致 | 构建成功但插件目录缺帮助文件 | 检查项目文件里的 `README.md`、`CHANGELOG.md` 与复制脚本大小写 |
-| 插件依赖宿主共享 DLL | 单独复制插件 DLL 后运行失败 | 打包时使用 `shared_files.json`，现场检查主程序目录 `ColorVision.*.dll` 版本 |
-| native DLL 未进入插件包 | Spectrum 或 Conoscope 设备链路运行时失败 | 抽检 `.cvxp` 内容，确认光谱仪 DLL、MVS DLL、OpenCV runtime 是否在正确位置 |
-| 需要管理员的插件按普通权限测试 | WindowsServicePlugin 操作失败 | 文档和烟测明确标注管理员模式，不把权限失败当成功能缺陷 |
-| Socket handler 已编译但服务未启用 | 外部客户端连不上 Spectrum 指令 | 检查 `ColorVision.SocketProtocol` 配置、端口、协议模式、插件程序集是否加载 |
+| Pattern / ImageProjector | HostCopy 默认关闭，需各自启用开关及有效 `SolutionDir`，只写当前配置；Pattern 包私有携带 ImageProjector。完整独立运行输出与剥离共享依赖的 `.cvxp` 用途不同 | [构建、独立运行与交付](./standard-plugins/pattern.md#构建、独立运行与交付) |
+| Conoscope | 有效 `SolutionDir` 下，通用 HostCopy 写两套宿主插件目录；额外 target 还向 Debug/Release 宿主根目录复制顶层项目引用 DLL 及存在的 PDB | [本地构建、宿主复制与发布](./standard-plugins/conoscope.md#本地构建、宿主复制与发布) |
+| SystemMonitor / WindowsServicePlugin | 使用通用 HostCopy 条件和 Debug/Release 双目录复制；WindowsServicePlugin 的插件 `.cvxp` 与业务服务 ZIP 分别发布 | [SystemMonitor 构建](./standard-plugins/system-monitor.md#本地构建与测试)、[服务插件交付](./standard-plugins/windows-service.md#构建、发布与验证) |
+| Spectrum | 没有项目 HostCopy；正式发布同时维护独立 ZIP 和插件 `.cvxp` 两个更新源，使用专用脚本 | [本地构建](./standard-plugins/spectrum.md#本地构建与测试)、[双通道发布](./standard-plugins/spectrum.md#双通道发布-需明确发布授权) |
+
+本地构建会写输出，也可能触发上述宿主复制；发布命令还会上传。运行对应发布命令前需明确发布对象和授权。文件齐全、复制成功或发布成功都不等于新进程已正确装载，运行发现和依赖诊断见[插件装载契约](../../02-developer-guide/plugin-development/overview.md)。
+
+## 按问题进入验证主题
+
+| 问题 | 对应检查与完成条件 |
+| --- | --- |
+| 图卡像素、颜色、模板或投影不符合预期 | [Pattern 图卡与配置](./standard-plugins/pattern.md#图卡入口与生成)、[图片投影](./standard-plugins/pattern.md#图片投影)及[验证范围](./standard-plugins/pattern.md#验证范围)；区分生成像素、多屏 DPI 和实际光学效果 |
+| Conoscope 采集后没有图，或分析点不匹配 | [采集完成](./standard-plugins/conoscope.md#采集完成、文件发现与打开不是一个信号)、[关注点与分析](./standard-plugins/conoscope.md#关注点模板与分析快照)；文件出现、通道就绪与分析对齐各有判据 |
+| Spectrum 已连接但不能测量，或远程结果不完整 | [设备与标定](./standard-plugins/spectrum.md#设备、标定和测量)、[模块验收](./standard-plugins/spectrum.md#验收)、[Socket 指令](./standard-plugins/spectrum-socket.md)；区分连接、标定 readiness、测量、落库与协议响应 |
+| 系统监控为空，关闭窗口后仍采样，或清理未归零 | [监控排障](./standard-plugins/system-monitor.md#异常与排查)和[验证范围](./standard-plugins/system-monitor.md#验证范围)；检查数据源、状态栏配置和实际清理范围 |
+| 服务安装、数据库迁移或恢复部分失败 | [安装顺序](./standard-plugins/windows-service.md#安装、数据库与配置顺序)和[恢复限制](./standard-plugins/windows-service.md#备份和恢复不等于自动回滚)；按文件、配置、数据库、服务逐层确认，不能以安装方法返回代替整体成功 |
+
+各模块主题维护对应测试的实际覆盖范围。真机采集、校零、投影、缓存删除及服务/数据库变更需要在获准环境验证；本矩阵不声明一套覆盖所有插件的统一运行测试。

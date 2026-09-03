@@ -4,9 +4,9 @@ knowledge_type: "topic"
 status: "current"
 summary: "ImageTools内置注册、多图列表中的单张预览、刷新与SQLite缩略图缓存；重选不保证重载，关窗不清缓存，缓存关闭也不等于零数据库访问。"
 aliases: ["多图查看", "缩略图缓存", "ColorVision.ImageTools", "ImageToolsModule", "MultiImageViewer", "MultiImageViewerEditor", "MultiImageViewerConfig", "ImageFileInfo", "ThumbnailCacheManager", "ThumbnailCache.db"]
-code_paths: ["UI/ColorVision.ImageTools/README.md", "UI/ColorVision.ImageTools/ImageToolsModule.cs", "UI/ColorVision.ImageTools/ColorVision.ImageTools.csproj", "UI/ColorVision.ImageTools/MultiImageViewer/MultiImageViewer.xaml", "UI/ColorVision.ImageTools/MultiImageViewer/MultiImageViewer.xaml.cs", "UI/ColorVision.ImageTools/MultiImageViewer/MultiImageViewerConfig.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ImageFileInfo.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheEntry.cs", "UI/ColorVision.Common/Interfaces/Assembly/ModuleCatalog.cs", "UI/ColorVision.Common/Interfaces/ThumbnailProviderFactory.cs", "Engine/ColorVision.Engine/Media/CVRawThumbnailProvider.cs", "ColorVision/BuiltInModules.cs"]
+code_paths: ["UI/ColorVision.ImageTools/README.md", "UI/ColorVision.ImageTools/ImageToolsModule.cs", "UI/ColorVision.ImageTools/ColorVision.ImageTools.csproj", "UI/ColorVision.ImageTools/MultiImageViewer/MultiImageViewer.xaml", "UI/ColorVision.ImageTools/MultiImageViewer/MultiImageViewer.xaml.cs", "UI/ColorVision.ImageTools/MultiImageViewer/MultiImageViewerConfig.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ImageFileInfo.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheManager.Maintenance.cs", "UI/ColorVision.ImageTools/MultiImageViewer/ThumbnailCacheEntry.cs", "UI/ColorVision.Common/Interfaces/Assembly/ModuleCatalog.cs", "UI/ColorVision.Common/Interfaces/ThumbnailProviderFactory.cs", "Engine/ColorVision.Engine/Media/CVRawThumbnailProvider.cs", "ColorVision/BuiltInModules.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/ModuleCatalogTests.cs", "Test/ColorVision.UI.Tests/ThumbnailCacheMaintenanceTests.cs"]
-related: ["ui.index", "ui.solution", "ui.image-editor", "ui.documents", "ui.image-fusion", "plugins.model"]
+related: ["ui.index", "ui.solution", "ui.image-editor", "ui.documents", "ui.image-fusion", "ui.storage-maintenance", "plugins.model"]
 ---
 
 # 多图查看、刷新与缩略图缓存
@@ -56,16 +56,16 @@ related: ["ui.index", "ui.solution", "ui.image-editor", "ui.documents", "ui.imag
 | viewer `Clear()` | 清列表、大图、当前目录和显式列表引用 | 不删 SQLite，也不取消缩略图任务或重置 `_currentOpeningFile` |
 | viewer `Dispose()` | 标记释放并调用 `ImageView.Dispose()` | 不清文件项缩略图引用、不释放缓存单例、不取消在途生成/写入 |
 | manager `RemoveCache(path)` | 删除该路径的缓存行，并推进维护代次，阻止此前启动的生成任务再写回 | 不清当前界面图像，不阻止此后新发起的生成 |
-| manager `ClearCache()` / 配置清缓存命令 | 调用维护快照与清理入口，删除确认缓存并执行 `VACUUM` | 不受当前窗口目录筛选，不删除源图；兼容 void 入口只记录结果，不提供 UI 聚合成功返回 |
+| manager `ClearCache()` / 配置清缓存命令 | 调用维护快照与清理入口，删除确认缓存并执行 `VACUUM` | 不受当前窗口目录筛选，不删除源图；void 入口不返回清理结果，仅对 `Succeeded=false` 写 Debug |
 | manager `Dispose()` | 在 owner 锁内关闭客户端、推进代次并重置单例 | 不删除数据库；下次访问仍可重新初始化 |
 
 当前没有容量上限、LRU 或自动淘汰。`GetCacheSize` 只报告主数据库文件长度，不是进程内位图内存；`GetCacheCount` 的零也可能来自查询失败。关窗、列表清空、客户端释放和持久缓存删除是四种不同状态。
 
-`ScanCacheForMaintenance()` 不初始化单例或新建缓存库，返回包含侧文件统计的只读维护快照；`ClearCacheForMaintenance(snapshot)` 复验记录签名、文件状态与写版本，变化时要求重扫。删除事务已提交而后续空间整理失败，不等于删除回滚。缓存读写经 owner 锁串行，锁不跨 Dispatcher 等待；旧生成任务通过维护代次停止写回。维护页的显示和失败分层见[存储清理与设置重置](./storage-maintenance.md)。
+缓存数据库读写经 owner 锁串行，图像解码和 Dispatcher 等待发生在锁外。维护页调用不初始化单例的静态扫描入口；配置页的清缓存命令则先访问 `ThumbnailCacheManager.Instance`。快照复验、维护代次和空间整理的结果由[存储清理与设置重置](./storage-maintenance.md#缩略图必须经-owner-清理)统一说明。
 
 ## 验证入口与缺口
 
-`ModuleCatalogTests.cs` 检查注册基础及内置模块 ID 包含 ImageTools。`ThumbnailCacheMaintenanceTests.cs` 使用隔离 SQLite 验证缺库不创建、变化后拒绝、清理结果、原图保留和旧生成写回失效；不证明实际图像浏览窗口、设备 provider、跨进程完整工作流已经验收。
+`ModuleCatalogTests.cs` 检查注册基础及内置模块 ID 包含 ImageTools。缩略图维护的隔离测试及其范围见[维护验证入口](./storage-maintenance.md#验证入口与缺口)；这些测试不覆盖实际图像浏览窗口、设备 provider 或跨进程完整工作流。
 
 构建需满足 [native 依赖前提](../../02-developer-guide/engine-development/opencv-integration.md)。以下仅本地构建，可能还原依赖并产生输出/NuGet 包，不启动窗口或发布：
 
@@ -73,4 +73,4 @@ related: ["ui.index", "ui.solution", "ui.image-editor", "ui.documents", "ui.imag
 dotnet build .\UI\ColorVision.ImageTools\ColorVision.ImageTools.csproj -c Release -p:Platform=x64
 ```
 
-行为验收应使用隔离账号/缓存和可丢弃图片，分别检查：同路径修改后重选/刷新；不同缩略图尺寸与损坏 PNG 缓存；开关缓存后的自定义格式；加载中清空/关闭；独立窗口与文档标签的释放差异。清缓存是整个用户缓存库的写入/删除操作，不是只读诊断，也不要在用户真实缓存上验证文档。
+行为验收应使用隔离账号/缓存和可丢弃图片，分别检查：同路径修改后重选/刷新；不同缩略图尺寸与损坏 PNG 缓存；开关缓存后的自定义格式；加载中清空/关闭；独立窗口与文档标签的释放差异。

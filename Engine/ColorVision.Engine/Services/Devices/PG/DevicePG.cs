@@ -16,7 +16,9 @@ namespace ColorVision.Engine.Services.Devices.PG
 
         public IDisplayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisplayConfigBase>(Config.Code);
 
-        [CommandDisplayAttribute("PgTemplateConfig",Order =100)]
+        [CommandDisplayAttribute("PgTemplateConfig",Order =100, CategoryOrder = 2)]
+        [Category("AcquisitionDisplay")]
+        [Description("CommandPgTemplateHint")]
         public RelayCommand EditPGTemplateCommand { get; set; }
 
 

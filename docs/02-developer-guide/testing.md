@@ -6,7 +6,7 @@ summary: "按改动范围选择managed、native、脚本、后端和知识验证
 aliases: ["怎么测试","验证命令","dotnet test","测试入口","PerformanceProbe","COLORVISION_IMAGE_ALGORITHM_PERF"]
 code_paths: ["Test","Scripts/tests","Web/Backend","package.json",".github/workflows/dotnet.yml"]
 test_paths: ["Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj","Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj","Test/ColorVision.UI.Tests/ImageAlgorithmPerformanceGateTests.cs","Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs"]
-related: ["delivery.index","delivery.prerequisites","governance.retrieval","copilot.configuration"]
+related: ["delivery.index","delivery.prerequisites","delivery.native-testing","governance.retrieval","copilot.configuration"]
 ---
 
 # 测试与验证
@@ -21,7 +21,7 @@ related: ["delivery.index","delivery.prerequisites","governance.retrieval","copi
 | UI 与主程序逻辑测试 | `Test/ColorVision.UI.Tests/` | xUnit、`net10.0-windows`、WPF | UI 基础设施、日志、Marketplace、PropertyGrid、终端缓冲、STNode、排序和编辑器辅助逻辑 | `dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64` |
 | Spectrum、Conoscope 与客户项目测试 | `Test/Spectrum.Tests/`、`Test/Conoscope.Tests/`、`Test/ProjectARVRPro.Tests/`、`Test/ProjectKB.Tests/`、`Test/ProjectLUX.Tests/` | xUnit、`net10.0-windows`、WPF | 光谱、Conoscope 和三个客户项目的可脱离设备运行的领域回归 | 分别对目标 `.csproj` 执行 `dotnet test -c Release -p:Platform=x64` |
 | 构建、发布和打包脚本测试 | `Scripts/tests/` | Python `unittest` | ABI、平台、安装器、更新包、插件包、后端客户端和发布编排的静态及合成制品门禁 | `python -m unittest discover -s Scripts/tests -p "test_*.py" -v` |
-| native OpenCV helper 验证 | `Test/opencv_helper_test/` | Visual C++、OpenCV、x64 | `opencv_helper` 侧函数，例如 `M_FindLuminousArea` | Visual Studio 2022 或 `msbuild opencv_helper_test.vcxproj` |
+| native OpenCV helper 验证 | `Test/opencv_helper_test/` | Visual C++、OpenCV、x64 | 图像缓冲、检测、校准/POI、SFR、P2、视频和日志等原生回归 | [原生测试与调试](./engine-development/native-testing.md)：按项目工具集、配置和专项参数运行 |
 | 插件市场后端测试 | `Web/Backend/` | Python/Flask | Marketplace API、release 记录、上传下载和存储行为 | `python test_app.py`、`python test_app_releases.py` |
 | 知识与文档验证 | `docs/` | Node、VitePress | 元数据、源码/测试引用、检索路由、导航、网页搜索 | `npm run docs:check`、`npm run docs:build` |
 
@@ -59,7 +59,7 @@ dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:
 
 这些命令会构建/运行测试并写入本地产物，不等同于纯文档校验。`ImageAlgorithmPerformanceGateTests` 中调用 `Enabled()` 的 4K/8K 探针，仅在 `COLORVISION_IMAGE_ALGORITHM_PERF=1` 时执行测量，否则记录说明后直接返回；不是这个分类里的所有测试都受同一个开关控制。测试整体通过不能证明所有大型性能测量已经执行，记录时需核对筛选、环境变量与实际输出。
 
-两个测试项目的 `AssemblyInfo.cs` 都禁用测试集合并行，原因是进程级注册器、状态和 WPF 服务共享。`UseWPF=true` 不会让所有测试线程自动成为 STA；需要 WPF 线程的个案按既有 `WpfTestHost` 等执行入口处理，不为提速取消这些边界。
+两个测试项目的 `AssemblyInfo.cs` 都禁用测试集合并行，原因是进程级注册器、状态和 WPF 服务共享。`UseWPF=true` 不会让所有测试线程自动成为 STA；两个项目通过源码链接共用 `Test/Shared/StaTest.cs`：只需独立 STA 的同步操作使用 `StaTest.Run`，有超时要求的测试保留各自时限和失败提示；需要共享 `Application` 和消息循环的操作使用 `WpfTestHost`。两者的线程生命周期不同，不为提速取消这些边界。
 
 ## `ColorVision.Copilot.Tests`
 
@@ -86,10 +86,23 @@ dotnet test .\Test\Conoscope.Tests\Conoscope.Tests.csproj -p:Platform=x64
 
 | 链路 | 命令 | 什么时候跑 |
 | --- | --- | --- |
-| native OpenCV helper | `msbuild Test/opencv_helper_test/opencv_helper_test.vcxproj /p:Configuration=Debug /p:Platform=x64`、`Test/opencv_helper_test/build_test_find_luminous.bat` | 改 `Native/`、`Engine/cvColorVision/`、`UI/ColorVision.Core/` 或 OpenCV DLL 输出 |
-| 后端 | `cd Web/Backend` 后运行 `python test_app.py`、`python test_app_releases.py` | 改插件市场 API、release、上传下载或存储 |
+| native OpenCV helper | 按[原生测试指南](./engine-development/native-testing.md)构建 `.vcxproj`，选择实际覆盖改动的专项；核对退出码和跳过信息 | 改 helper、其托管调用或 OpenCV DLL 输出；供应商 `cvColorVision` 另按该模块的真实入口验收 |
+| 后端 | 在 `Web/Backend` 中运行目标 unittest 模块；需要全量 discover 时用下方命令 | 改插件市场 API、release、上传下载或存储 |
 
-如果当前机器没有 Python 依赖，先按 [插件市场后端](./backend/README.md) 和 [构建与发布脚本](./scripts/README.md) 准备环境。不要把“依赖没装”误写成业务逻辑失败。
+后端测试从 Backend 目录发现模块；先按[后端测试边界](./backend/README.md#测试与边界)核对 Python 依赖、配置及每个测试的数据隔离。下例执行测试并可能生成本地产物：
+
+```powershell
+Push-Location .\Web\Backend
+try {
+    python -m unittest discover -p "test_*.py"
+    if ($LASTEXITCODE -ne 0) { throw '后端测试失败，检查首个失败及测试输出。' }
+}
+finally {
+    Pop-Location
+}
+```
+
+如果当前机器没有 Python 依赖，先按[插件市场后端](./backend/README.md)和[构建与发布脚本](./scripts/README.md)准备环境。不要把“依赖没装”误写成业务逻辑失败。
 
 仓库的 Windows `.NET` 工作流会运行两套公共 managed 测试、上表五套领域测试以及 `Scripts/tests` 的完整 discover。它仍不是“仓库全部测试”：需要 CUDA/OpenCV 或真实设备的 native 验证、插件市场后端测试、文档构建和现场硬件验收继续使用各自入口。
 

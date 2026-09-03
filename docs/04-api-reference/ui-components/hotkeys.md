@@ -48,7 +48,7 @@ related: ["ui.framework", "ui.menus", "ui.settings", "ui.configuration", "ui.com
 
 | 操作 | 默认组合 | 边界 |
 | --- | --- | --- |
-| 打开文件 | Ctrl+O | `MenuFileOpen` 选择文件并走统一资源打开路由，不再打开工作区列表 |
+| 打开文件 | Ctrl+O | `MenuFileOpen` 选择文件并走统一资源打开路由 |
 | 打开文件夹工作区 | Ctrl+Shift+O | 复用文件夹选择与工作区切换的保存/取消流程 |
 | 打开工作区列表 | Ctrl+Alt+O | 先显示最近工作区列表，不直接切换；与文件和文件夹入口区分 |
 | 保存当前文档 | Ctrl+S | 沿焦点路由 `ApplicationCommands.Save`，先检查 CanExecute；Copilot 输入框承接其草稿操作 |
@@ -64,7 +64,7 @@ related: ["ui.framework", "ui.menus", "ui.settings", "ui.configuration", "ui.com
 
 新分配的默认键不覆盖旧配置：有自定义组合或明确保存为空的操作仍保留原值；可在该行执行“恢复默认”采用新默认，而无需重置其它快捷键。这里的组合是产品内窗口级默认，不宣称独立编辑器、客户插件或外部程序中均无占用。
 
-剪切/复制/粘贴、撤销、全选、树内 F2、图像 F11 等仍由对应控件处理，未全部迁入全应用配置。正文查找保留局部命令，但应用的场景查找也可以调用它。Copilot 原来占用 Ctrl+O 的复制回答改为面板内 Ctrl+Shift+C，任务面板改为 Ctrl+Alt+T；其余上下文见 [Copilot 交互](../../02-developer-guide/core-concepts/copilot-local-interactions.md)。
+剪切/复制/粘贴、撤销、全选、树内 F2、图像 F11 等仍由对应控件处理，未全部迁入全应用配置。正文查找保留局部命令，但应用的场景查找也可以调用它。Copilot 面板内使用 Ctrl+Shift+C 复制回答、Ctrl+Alt+T 打开任务面板；其余上下文见 [Copilot 交互](../../02-developer-guide/core-concepts/copilot-local-interactions.md)。
 
 `ContextualFindRouter` 限制命令目标位于当前宿主内，优先执行可用的 `ApplicationCommands.Find`，其次执行焦点祖先上明确挂接的 `LocalFindCommand`。已有局部 Find 暂时不可用时仍由当前内容拥有，不改为搜索其他文档；没有公开 WPF Find 的普通文字/密码/native 输入区域也保守保留局部语义。Copilot 的现有会话查找在主窗口装配层适配，不合成按键；日志控制器提供标准 Find 并在 Detach 移除绑定。
 
@@ -101,7 +101,7 @@ related: ["ui.framework", "ui.menus", "ui.settings", "ui.configuration", "ui.com
 
 每个操作支持多组 `Key + Modifiers`，每组都能触发相同动作，可使用 Ctrl/Alt/Shift/Win 组合。同一操作共享一个 `Kinds`（应用内/全局），编辑弹窗明确说明全局开关影响其全部绑定；不支持逐组不同作用域、连续按键序列或鼠标绑定。页面没有独立帮助弹窗；“注释”是提供者声明的操作说明，不是用户可编辑备注。
 
-`HotKeys` / `HotkeySetting` 的 `Hotkey` 保留第一组，`AdditionalHotkeys` 保存后续组；调用 `GetBindings()` / `SetBindings()` 取得或替换有序完整列表。默认值由 `DefaultHotkey` / `DefaultAdditionalHotkeys` 及相应 Get/Set 方法提供，`HotkeyDefinition.AdditionalDefaultHotkeys` 声明附加默认组。集合为空代表明确未分配；首次没有配置覆盖时使用提供者默认值，已保存的空绑定载入后不会擅自恢复默认。本次不新增历史配置迁移流程。
+`HotKeys` / `HotkeySetting` 的 `Hotkey` 保留第一组，`AdditionalHotkeys` 保存后续组；调用 `GetBindings()` / `SetBindings()` 取得或替换有序完整列表。默认值由 `DefaultHotkey` / `DefaultAdditionalHotkeys` 及相应 Get/Set 方法提供，`HotkeyDefinition.AdditionalDefaultHotkeys` 声明附加默认组。集合为空代表明确未分配；首次没有配置覆盖时使用提供者默认值，已保存的空绑定载入后不会擅自恢复默认。
 
 已经成功应用的修改不能靠关闭设置窗口撤销。外层 `MenuOptions` 关闭后仍执行其普通配置保存流程，文件结果按[配置持久化](./configuration.md)核验。直接调用旧 `HotkeyService.SaveSettings()` 仍只更新配置内存，不能用方法名推断已经落盘。
 
@@ -153,7 +153,7 @@ manager 的 Closed 路径释放所记录句柄，清空条目的 `Registration` 
 
 上述相对路径均位于 `UI/ColorVision.UI/HotKey/`。`Test/ColorVision.UI.Tests/HotkeyServiceTests.cs` 通过隔离注册与持久化委托验证事前校验、最小句柄替换、注册/保存/补偿失败、未知插件配置保留、控件宿主与嵌套录入门禁；注入类型来源验证故障 provider 隔离和显式同 ID 替换的恢复。
 
-`Test/ColorVision.UI.Tests/HotkeySettingsTests.cs` 覆盖文本搜索、单项清除/恢复、失败后显示实际状态、未显示的编辑弹窗关闭不提交、输入限制，以及展示元数据不改持久化身份；另在注入独立元数据的真实设置框架中检查中英文、深浅主题、不同宽度、搜索结果和空状态。测试不加载生产配置，不执行真实业务回调。设置 `COLORVISION_HOTKEY_PREVIEW_DIRECTORY` 可将这些隔离页面渲染为本地 PNG，属于显式的本地文件输出。
+`Test/ColorVision.UI.Tests/HotkeySettingsTests.cs` 覆盖文本搜索、单项清除/恢复、失败后显示实际状态、未显示的编辑弹窗关闭不提交、输入限制，以及展示元数据不改持久化身份；另在注入独立元数据的真实设置框架中检查中英文、深浅主题、不同宽度、搜索结果和空状态。测试不加载生产配置，不执行真实业务回调。
 
 `Test/ColorVision.UI.Tests/HotkeyBackendTests.cs` 在测试进程自己的不可见 HWND 上真实注册临时 `Ctrl+Alt+Shift+F23/F24`，使用无害计数回调验证占用、释放重申、捕获恢复及恢复冲突，结束时释放所有注册。只向自有隐藏 HWND 发送 `WM_HOTKEY`，不注入桌面键盘事件；窗口路由使用独立控件，尾键与真实 DispatcherTimer 检查通过隔离的内部读键委托模拟按住/释放。初始组合已被外部占用时明确失败，不抢占它。
 

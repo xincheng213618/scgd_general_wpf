@@ -160,6 +160,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 更多标题栏操作 的本地化字符串。
+        /// </summary>
+        public static string CompactTitleBarMoreActions {
+            get {
+                return ResourceManager.GetString("CompactTitleBarMoreActions", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 COM 注册失败，请确认已授予管理员权限。 的本地化字符串。
         /// </summary>
         public static string ComRegistrationFailed {
@@ -285,6 +294,24 @@ namespace ColorVision.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 紧凑主窗口（重启生效） 的本地化字符串。
+        /// </summary>
+        public static string ConfigUseCompactMainWindow {
+            get {
+                return ResourceManager.GetString("ConfigUseCompactMainWindow", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 将菜单与快捷入口合并到标题栏，保留系统按钮和边框。全新安装或首次升级到此开关时默认开启，重启生效；关闭并重启可恢复旧主窗口，之后保留该选择。仅在兼容的 Windows 11 环境启用，不支持时保留原生标题栏。 的本地化字符串。
+        /// </summary>
+        public static string ConfigUseCompactMainWindowDescription {
+            get {
+                return ResourceManager.GetString("ConfigUseCompactMainWindowDescription", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 是否更新 的本地化字符串。
         /// </summary>
@@ -1390,24 +1417,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 复制离线下载命令 的本地化字符串。
-        /// </summary>
-        public static string UpdatePreviewCopyOfflineDownloadCommand {
-            get {
-                return ResourceManager.GetString("UpdatePreviewCopyOfflineDownloadCommand", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 左键复制 PowerShell 命令；右键选择保存路径，默认导出可直接运行的 .cmd 文件。 的本地化字符串。
-        /// </summary>
-        public static string UpdatePreviewCopyOfflineDownloadCommandDescription {
-            get {
-                return ResourceManager.GetString("UpdatePreviewCopyOfflineDownloadCommandDescription", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   查找类似 发现 {0} 个可用更新，可按需选择后立即安装。 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewDialogSummaryDefault {
@@ -1498,7 +1507,7 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 Windows 未检测到可用的互联网连接。可以复制上方的离线下载命令，在可联网的堡垒机上下载完整安装包。 的本地化字符串。
+        ///   查找类似 Windows 未检测到可用的互联网连接。请恢复网络连接后重试。 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewNoInternetConnectionMessage {
             get {
@@ -1534,42 +1543,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 离线下载命令已复制 的本地化字符串。
-        /// </summary>
-        public static string UpdatePreviewOfflineDownloadCommandCopied {
-            get {
-                return ResourceManager.GetString("UpdatePreviewOfflineDownloadCommandCopied", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 请在可联网的堡垒机上运行该 PowerShell 命令，下载后将安装包复制回本机并运行。 的本地化字符串。
-        /// </summary>
-        public static string UpdatePreviewOfflineDownloadCommandCopiedDescription {
-            get {
-                return ResourceManager.GetString("UpdatePreviewOfflineDownloadCommandCopiedDescription", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 离线下载启动器已保存 的本地化字符串。
-        /// </summary>
-        public static string UpdatePreviewOfflineDownloadCommandSaved {
-            get {
-                return ResourceManager.GetString("UpdatePreviewOfflineDownloadCommandSaved", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 已保存到：{0}。请直接运行此 .cmd 文件。 的本地化字符串。
-        /// </summary>
-        public static string UpdatePreviewOfflineDownloadCommandSavedDescriptionFormat {
-            get {
-                return ResourceManager.GetString("UpdatePreviewOfflineDownloadCommandSavedDescriptionFormat", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   查找类似 更新包下载失败，请稍后重试。 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewPackageDownloadFailed {
@@ -1577,7 +1550,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("UpdatePreviewPackageDownloadFailed", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   查找类似 完整安装包更新时，本轮不合并插件更新。 的本地化字符串。
         /// </summary>
@@ -1586,7 +1559,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("UpdatePreviewPluginDeferredByFullApplicationUpdate", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   查找类似 插件下载未成功完成，请稍后重试。 的本地化字符串。
         /// </summary>
@@ -1595,13 +1568,40 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("UpdatePreviewPluginDownloadFailed", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   查找类似 插件更新 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewPluginUpdateCategory {
             get {
                 return ResourceManager.GetString("UpdatePreviewPluginUpdateCategory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重新安装 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewReinstall {
+            get {
+                return ResourceManager.GetString("UpdatePreviewReinstall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在获取最新版本… 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewReinstallChecking {
+            get {
+                return ResourceManager.GetString("UpdatePreviewReinstallChecking", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下载最新完整安装包并启动安装，用于修复增量更新问题；当前已是最新版本时也可使用。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewReinstallDescription {
+            get {
+                return ResourceManager.GetString("UpdatePreviewReinstallDescription", resourceCulture);
             }
         }
         
@@ -1614,15 +1614,6 @@ namespace ColorVision.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 保存离线下载文件 的本地化字符串。
-        /// </summary>
-        public static string UpdatePreviewSaveOfflineDownloadCommand {
-            get {
-                return ResourceManager.GetString("UpdatePreviewSaveOfflineDownloadCommand", resourceCulture);
-            }
-        }
-
         /// <summary>
         ///   查找类似 正在扫描可用更新项 的本地化字符串。
         /// </summary>
@@ -1696,7 +1687,7 @@ namespace ColorVision.Properties {
         }
 
         /// <summary>
-        ///   查找类似 已尝试连接更新服务器，但未能取得版本信息。请检查网络或代理设置，也可以复制上方的离线下载命令，在可联网的堡垒机上下载完整安装包。 的本地化字符串。
+        ///   查找类似 已尝试连接更新服务器，但未能取得版本信息。请检查网络或代理设置后重试。 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewServerUnavailableMessage {
             get {

@@ -46,7 +46,7 @@ related: ["algorithms.index","algorithms.json-templates","engine.results"]
 | `IsDebug` | `false` | 是否开启调试输出。 |
 | `SaveName` | `binim.tif` | 调试/保存图路径。 |
 
-手动页面由 `Services/Devices/Algorithm/DisplayAlgorithmControl.xaml.cs` 生成，不再使用 `DisplayLEDStripDetection.xaml`。`Execute()` 校验 `Config.Template` 与图像输入；请求包括 `ImgFileName`、`FileType`、`DeviceCode`、`DeviceType`、`TemplateParam` 和 `Config.IsInversion`，当前手动入口设备 code/type 传空字符串。模板编辑入口见 [模板菜单与配置宿主](./template-menu-entries.md)。
+手动页面由 `Services/Devices/Algorithm/DisplayAlgorithmControl.xaml.cs` 生成。`Execute()` 校验 `Config.Template` 与图像输入；请求包括 `ImgFileName`、`FileType`、`DeviceCode`、`DeviceType`、`TemplateParam` 和 `Config.IsInversion`，当前手动入口设备 code/type 传空字符串。模板编辑入口见 [模板菜单与配置宿主](./template-menu-entries.md)。
 
 ## LedCheck 强类型链路
 
@@ -55,7 +55,7 @@ related: ["algorithms.index","algorithms.json-templates","engine.results"]
 | `TemplateLedCheck.cs` | 注册灯珠检测模板，`Code = FindLED`。 |
 | `LedCheckParam.cs` | 保存灯珠通道、固定半径、轮廓面积、二值化补正、灯珠网格数量等参数。 |
 | `AlgorithmLedCheck.cs` | 同时收集灯珠模板和 POI 模板，并发布 `Event_LED_Check_GetData`。 |
-| `DualTemplateDisplayAlgorithmConfig` | 通用宿主选择灯珠模板与 POI 模板；不再使用 `DisplayLedCheck.xaml`。 |
+| `DualTemplateDisplayAlgorithmConfig` | 通用宿主选择灯珠模板与 POI 模板； |
 | `ViewHandleMTF.cs` 内的 `ViewHandleLedCheck` | 从 POI 结果表恢复点位，以半径绘制灯珠结果；文件名与类名不同。 |
 | `ViewResultLedCheck.cs` | 保存点位和半径。 |
 

@@ -108,4 +108,4 @@ schema v6移除历史HEAD声明体积，v7给后续请求增加4xx/5xx字段且�
 
 现有 `test_access_analytics.py` 覆盖事件字段清洗、日报日界线、HTTP/SPA分开聚合、未知旧错误、日历标记、队列满、按提交数据库分组、保留窗口和HTTP入口；`test_performance_observability.py` 覆盖缓冲截断及最近任务筛选。`test_schema_version.py` 覆盖v6/v7/v8迁移，`test_contracts.py` 有overview/perf响应字段用例。
 
-本次未运行这些测试。现有HTTP入口用例使用TESTING同步写，不证明生产202后的持久化；未在此核验队列写失败/进程退出的部署行为、无长度4KiB请求、统计关闭时SPA仍入库、多worker合并或代理地址真实性，也不把每日key变化测试当成无法关联的安全证明。排查缺数先看口径、日界线、pending/dropped与页面旧结果，不应只按HTTP200或202断言数据完整。
+现有HTTP入口用例使用TESTING同步写，不证明生产202后的持久化。队列写失败/进程退出、无长度4KiB请求、统计关闭时SPA仍入库、多worker合并和代理地址真实性需要单独验证；每日key变化不保证无法关联。排查缺数先看口径、日界线、pending/dropped与页面旧结果，不应只按HTTP200或202断言数据完整。

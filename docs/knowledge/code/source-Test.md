@@ -18,3 +18,8 @@ next: false
 
 - [测试与验证](../../02-developer-guide/testing.md) — `delivery.testing`
   按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。
+
+## Test/opencv\_helper\_test {#module-546573742f6f70656e63765f68656c7065725f74657374}
+
+- [原生 helper 测试与调试](../../02-developer-guide/engine-development/native-testing.md) — `delivery.native-testing`
+  opencv\_helper\_test 的实际入口、工具集与配置映射、专项参数、DLL/样本前提和退出码边界；默认运行与真实样本验收不同。

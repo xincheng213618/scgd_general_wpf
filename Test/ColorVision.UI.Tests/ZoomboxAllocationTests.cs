@@ -1,5 +1,4 @@
 using ColorVision.ImageEditor;
-using System.Runtime.ExceptionServices;
 
 namespace ColorVision.UI.Tests;
 
@@ -8,7 +7,7 @@ public sealed class ZoomboxAllocationTests
     [Fact]
     public void MatrixChangeNotificationsReuseEventArgsEmpty()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             Zoombox zoombox = new();
             EventArgs? received = null;
@@ -18,29 +17,5 @@ public sealed class ZoomboxAllocationTests
 
             Assert.Same(EventArgs.Empty, received);
         });
-    }
-
-    private static void RunOnStaThread(Action action)
-    {
-        Exception? failure = null;
-        Thread thread = new(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-
-        if (failure != null)
-        {
-            ExceptionDispatchInfo.Capture(failure).Throw();
-        }
     }
 }

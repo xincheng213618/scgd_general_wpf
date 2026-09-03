@@ -6,7 +6,7 @@ summary: "设置窗口的元数据发现、全局搜索定位、侧栏筛选与�
 aliases: ["设置窗口", "选项", "设置搜索", "定位设置项", "自定义设置页", "启动检查更新", "SettingWindow", "SettingWindowController", "SettingRowFactory", "SettingMetadataResolver", "SettingEntryCatalog", "SettingSearchProvider", "SettingNavigation", "NavigateToSetting", "ConfigSettingManager", "IConfigSettingProvider", "ConfigSettingMetadata", "AggregatedBoolSetting", "MenuOptions"]
 code_paths: ["UI/ColorVision.UI.Desktop/Settings", "UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs", "UI/ColorVision.Common/Interfaces/ConfigSetting", "UI/ColorVision.UI/AssemblyHandler.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs", "Test/ColorVision.UI.Tests/ConfigServiceAdaptersTests.cs", "Test/ColorVision.UI.Tests/StorageMaintenanceTests.cs", "Test/ColorVision.UI.Tests/HotkeySettingsTests.cs", "Test/ColorVision.UI.Tests/SettingSearchProviderTests.cs"]
-related: ["ui.desktop", "ui.configuration", "ui.property-grid", "ui.discovery", "ui.hotkeys", "ui.search", "ui.localization", "operations.exports", "delivery.update", "ui.storage-maintenance"]
+related: ["ui.desktop", "ui.configuration", "ui.property-grid", "ui.discovery", "ui.hotkeys", "ui.search", "ui.localization", "operations.exports", "delivery.update", "ui.storage-maintenance", "ui.desktop-pet"]
 ---
 
 # 设置窗口：发现、编辑与关闭契约
@@ -26,6 +26,8 @@ related: ["ui.desktop", "ui.configuration", "ui.property-grid", "ui.discovery", 
 自定义页不能套用普通属性行的提交规则。例如[快捷键页](./hotkeys.md)使用可搜索的动作列表和单项编辑弹窗：弹窗候选是副本，确认后立即应用并保存；清除、单项恢复和确认全部恢复也各自提交。取消弹窗不应用候选，已成功应用的键位不能靠关闭设置窗口撤销；外层关窗保存不会自动提交未确认的快捷键草稿。
 
 [语言编辑器](./localization.md)又是不同边界：选择后立即请求确认，确认便保存配置并重启应用，不等普通选项窗口关闭；取消只处理该编辑器的文化属性，不是撤销所有选项。
+
+[桌面宠物](./desktop-pet.md)提供选择、创建/导入、显示开关与外观设置；素材选择和包写入有独立的提交时机，具体操作与格式在该主题统一维护。
 
 ## 发现来源与两层缓存
 

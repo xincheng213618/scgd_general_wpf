@@ -465,7 +465,7 @@ async function validateIndexedPage(page, expected, artifact) {
   if (/(^|\/)agents\.md$/iu.test(page.relativePath ?? '')) fail(`${artifact}: AGENTS instructions must not be indexed as product knowledge`)
   const source = expected.get(page.knowledge_id)
   if (!source) { fail(`${artifact}: unknown knowledge_id ${page.knowledge_id}`); return }
-  for (const field of ['status', 'knowledge_type', 'aliases', 'code_paths', 'test_paths', 'related', 'source_hash']) {
+  for (const field of ['status', 'knowledge_type', 'aliases', 'code_paths', 'test_paths', 'related']) {
     if (JSON.stringify(page[field]) !== JSON.stringify(source[field])) fail(`${artifact}: stale ${field} for ${page.knowledge_id}`)
   }
   if (page.sourcePath !== source.source || page.relativePath !== source.source.replace(/^docs\//u, '')) fail(`${artifact}: incorrect source mapping for ${page.knowledge_id}`)

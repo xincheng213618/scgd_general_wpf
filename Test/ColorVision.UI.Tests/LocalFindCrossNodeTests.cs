@@ -140,7 +140,7 @@ public sealed class LocalFindCrossNodeTests
             Assert.NotNull(persisted);
             Assert.Same(action, persisted!.Action);
             Assert.Equal(@"C:\results", persisted.ResultDirectory);
-            Assert.Equal("Point_1", persisted.Result.Name);
+            Assert.Equal("Point_1", persisted.Result!.Name);
             Assert.Equal(31, persisted.Result.CenterX);
             Assert.NotNull(published);
             Assert.Equal(73, published!.MasterId);
@@ -282,6 +282,53 @@ public sealed class LocalFindCrossNodeTests
     }
 
     [Fact]
+    public void DetectionFailurePersistsAndPublishesFailedMasterWithoutResultFileOrOutputMaster()
+    {
+        CVStartCFC action = CreateRawAction("local-find-cross-failure");
+        LocalFindCrossPersistenceRequest? persisted = null;
+        LocalFindCrossPublishRequest? published = null;
+        FakeNodeServices services = new()
+        {
+            DetectHandler = (_, _, _) => new LocalFindCrossDetection
+            {
+                FailureReason = "NoIntersection",
+                NativeReturnCode = -2,
+                Diagnostics = new { Stage = "FourEdgeFit" }
+            },
+            PersistHandler = request =>
+            {
+                persisted = request;
+                return new LocalFindCrossPersistenceResult { MasterId = 117 };
+            },
+            PublishHandler = request => published = request
+        };
+        try
+        {
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+                () => new LocalFindCrossNode(services).ExecuteSynchronously(action));
+
+            Assert.Contains("NoIntersection", exception.Message);
+            Assert.Equal(1, services.PersistCount);
+            Assert.Equal(1, services.PublishCount);
+            Assert.NotNull(persisted);
+            Assert.Equal(LocalFindCrossNode.DetectionFailureResultCode, persisted!.ResultCode);
+            Assert.Equal(exception.Message, persisted.ResultDescription);
+            Assert.Null(persisted.Result);
+            JObject parameters = JObject.FromObject(persisted.Parameters);
+            Assert.False(parameters.Value<bool>("Success"));
+            Assert.Equal("NoIntersection", parameters.Value<string>("FailureReason"));
+            Assert.NotNull(published);
+            Assert.Equal(117, published!.MasterId);
+            Assert.False(action.Data.ContainsKey("MasterId"));
+            Assert.False(action.Data.ContainsKey("LocalFindCrossResultFile"));
+        }
+        finally
+        {
+            action.RuntimeResources.Dispose();
+        }
+    }
+
+    [Fact]
     public void PersistenceContractIsVersionOneType63SingleDetailAndLegacyJson()
     {
         CVStartCFC action = new("persistence-contract");
@@ -318,6 +365,8 @@ public sealed class LocalFindCrossNodeTests
 
         Assert.Equal(ViewResultAlgType.FindCross, master.ImgFileType);
         Assert.Equal("1.0", master.version);
+        Assert.Equal(0, master.ResultCode);
+        Assert.Equal("ok", master.Result);
         Assert.Equal(9, master.BatchId);
         Assert.Equal(4, master.Zindex);
         Assert.Equal(27, detail.PId);
@@ -326,6 +375,37 @@ public sealed class LocalFindCrossNodeTests
         Assert.Equal(4712, persistedItem["center"]?.Value<int>("x"));
         Assert.Equal(3199, persistedItem["center"]?.Value<int>("y"));
         Assert.Equal(-0.60909968614578247, persistedItem["tilt"]!.Value<double>("tilt_x"), 14);
+    }
+
+    [Fact]
+    public void FailurePersistenceCreatesVersionOneMasterWithoutDetailFile()
+    {
+        CVStartCFC action = new("failure-persistence-contract");
+        LocalFindCrossPersistenceRequest request = new()
+        {
+            Action = action,
+            DeviceCode = "ALG-1",
+            ZIndex = 5,
+            TotalTime = 21,
+            ResultCode = LocalFindCrossNode.DetectionFailureResultCode,
+            ResultDescription = "本地 FindCross 定位失败：NoIntersection。",
+            Parameters = new { Success = false, FailureReason = "NoIntersection" }
+        };
+        AlgResultMasterModel master = LocalFindCrossResultPersistence.CreateMasterModel(request, 12);
+        AlgResultMasterModel? saved = null;
+
+        int masterId = LocalFindCrossResultPersistence.SaveMasterOnlyCore(master, model =>
+        {
+            saved = model;
+            return 308;
+        });
+
+        Assert.Equal(308, masterId);
+        Assert.Same(master, saved);
+        Assert.Equal(ViewResultAlgType.FindCross, master.ImgFileType);
+        Assert.Equal("1.0", master.version);
+        Assert.Equal(LocalFindCrossNode.DetectionFailureResultCode, master.ResultCode);
+        Assert.Equal(request.ResultDescription, master.Result);
     }
 
     [Fact]

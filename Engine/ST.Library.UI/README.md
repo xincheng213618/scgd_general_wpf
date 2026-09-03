@@ -7,12 +7,12 @@
 
 - `STNodeEditor` 直接继承 WPF `Control`，可在 XAML 中使用，不需要
   `WindowsFormsHost`。
-- 节点、端口和连线仍沿用 `System.Drawing` 绘制协议，因此已有节点的
+- 节点、端口和连线使用 `System.Drawing` 绘制协议，因此已有节点的
   `OnDrawNode` 自定义外观以及 `.stn`、`.cvflow` 数据保持兼容。
 - WPF 控件负责输入、焦点、拖放、调度和位图呈现。
 - `STNodeTreeView` 提供节点搜索、拖放和 WPF 预览；
   `STNodePropertyGrid` 使用 WPF 内联编辑器编辑节点属性。
-- `STNodeEditorPannel` 保留历史类型名，内部已改为 WPF `GridSplitter`
+- `STNodeEditorPannel` 使用 WPF `GridSplitter`
   组合布局。
 
 ## 在 XAML 中使用

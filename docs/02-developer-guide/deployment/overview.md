@@ -6,7 +6,7 @@ summary: "按源码输出、完整安装器、主程序更新包及插件项目�
 aliases: ["部署","交付制品","安装器","完整安装包","源码构建输出","增量更新包","项目包交付","启动恢复入口","Advanced Installer","ColorVision.aip","ColorVisionSetup","CombinedUpdateCoordinator","StartupRecoveryWindow"]
 code_paths: ["ColorVision/ColorVision.csproj","Scripts/release.bat","Scripts/build.py","ColorVision/Update/CombinedUpdateCoordinator.cs","ColorVision/Recovery/StartupRecoveryWindow.xaml.cs","src/ColorVisionSetup"]
 test_paths: []
-related: ["delivery.installation","delivery.prerequisites","delivery.update","delivery.scripts","plugins.getting-started","operations.first-run","delivery.backend"]
+related: ["delivery.installation","delivery.prerequisites","delivery.update","delivery.scripts","plugins.getting-started","operations.first-run","delivery.backend","delivery.web-deployment"]
 ---
 
 # 桌面交付制品与责任路由
@@ -32,7 +32,7 @@ related: ["delivery.installation","delivery.prerequisites","delivery.update","de
 
 `src/ColorVisionSetup/` 保留历史安装/更新程序源码，未被当前 `build.sln` 与 `Scripts/release.bat` 的主程序发布链引用，不作为新的安装器或更新入口。当前客户端更新位于 `ColorVision/Update/`，启动恢复位于 `ColorVision/Recovery/`；不要从旧目录仍存在推断其仍参与交付。
 
-[Web 后端部署](../backend/README.md)是独立责任链。Docker、云服务或集群方式不因后端存在就成为 Windows WPF 桌面程序的默认交付方式。
+[Web 本地启动与 NAS 部署](./web.md)是独立责任链。Docker、云服务或集群方式不因后端存在就成为 Windows WPF 桌面程序的默认交付方式。
 
 ## 验证边界
 

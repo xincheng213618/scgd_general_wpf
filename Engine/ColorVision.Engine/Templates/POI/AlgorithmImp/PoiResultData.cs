@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1859,CA2249,CS8602,CS8604,CS8629
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
@@ -239,9 +240,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             if (pOIPointResultModel.Value != null)
             {
                 POIResultDataCIEY pOIDataCIEY = JsonConvert.DeserializeObject<POIResultDataCIEY>(pOIPointResultModel.Value);
-                //这里是因为输出不会小于0所以做一个置位
-                //老板说，先改成>0试试
-                Y = pOIDataCIEY.Y > 0 ? pOIDataCIEY.Y : 0.0001;
+                Y = CVCIEShowConfig.Instance.CreateValueNormalizer()(pOIDataCIEY.Y);
             }
         }
 

@@ -17,29 +17,32 @@ next: false
 - [算法与模板知识入口](../../04-api-reference/algorithms/README.md) — `algorithms.index`
   区分统一 Runner、ImageEditor 直接 native 分析与 Engine 模板/MQTT 算法，并按任务定位专题。
 
-- [ROI](../../04-api-reference/algorithms/primitives/roi.md) — `algorithms.roi-routes`
-  区分发光区定位、JSON 裁剪、SFR 找 ROI 与统一算法 ROI 数据模型。
+- [ROI 模型与模板入口](../../04-api-reference/algorithms/primitives/roi.md) — `algorithms.roi-routes`
+  按用途定位发光区、传统与 JSON 裁剪、SFR 寻边和中立算法 ROI 模型；各分支参数与坐标契约分别维护。
 
 - [Engine 模板共享构件](../../04-api-reference/algorithms/primitives/common-modules.md) — `algorithms.template-primitives`
   路由 Engine 模板中的 ROI、POI、Matching 共享构件并区分统一算法平台。
 
 - [DataLoad 数据加载模板](../../04-api-reference/algorithms/templates/data-load-template.md) — `algorithms.data-load`
-  区分 DataLoad 模板与显式参数节点如何按设备、批次和 ZIndex 读取上游结果。
+  数据加载与数据加载2的模板选择、参数初值和请求格式；区分要读取的数据来源与本次 Flow 执行设备、流水号及 ZIndex。
 
-- [FindLightArea 发光区定位模板](../../04-api-reference/algorithms/templates/find-light-area.md) — `algorithms.find-light-area`
-  区分远端 FindLightArea 模板与本地原生亮区检测 RobustV2；四角点不等于成功，须核对置信度、失败原因和各调用层的结果契约。
+- [本地十字定位 FindCross](../../04-api-reference/algorithms/detectors/find-cross.md) — `algorithms.find-cross`
+  本地十字定位的图像菜单、Flow 节点、生产参数、全图坐标、原生返回值与失败诊断。
+
+- [发光区定位：远端模板与本地 V2](../../04-api-reference/algorithms/templates/find-light-area.md) — `algorithms.find-light-area`
+  发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布，并说明模板字典恢复不一致。
 
 - [FocusPoints 关注点模板](../../04-api-reference/algorithms/templates/focus-points-template.md) — `algorithms.focus-points`
-  说明 FocusPoints 传统模板参数、通用手动宿主与 Flow 发光区检测请求。
+  发光区1（FocusPoints）的模板选择、参数初值和图像输入；区分手动 MQTT 模板引用、Flow 算子与计算结果。
 
-- [Ghost Detection](../../04-api-reference/algorithms/detectors/ghost-detection.md) — `algorithms.ghost`
-  说明 ARVR Ghost 传统模板的参数、MQTT 事件、结果 DAO 和叠图。
+- [Ghost1.0 鬼影检测](../../04-api-reference/algorithms/detectors/ghost-detection.md) — `algorithms.ghost`
+  Ghost1.0 鬼影检测的模板、颜色和请求入口；说明数据库明细、首条结果叠图、全部明细 CSV 追加导出及读取失败边界。
 
 - [ImageCropping 图像裁剪模板](../../04-api-reference/algorithms/templates/image-cropping-template.md) — `algorithms.image-cropping`
   区分强类型 ImageCropping 的持久参数、运行时四点 ROI、Flow 双输入和图像结果。
 
-- [ImageEditor 直接 native 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
-  ImageEditor直接native灯珠与P2分析：Ghost/旋转模板/双目标定、缺失计数与完成边界；区别Engine/MQTT模板和统一Runner。
+- [本地灯珠与 P2 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
+  ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合的操作、参数与结果；灯珠暗区候选不完整，P2 运行失败后复制结果可能仍取上次 JSON。
 
 - [Matching 模板匹配](../../04-api-reference/algorithms/templates/matching-template.md) — `algorithms.matching`
   说明 Matching 通用配置宿主、运行时模板文件、Flow 请求和 AOI 结果绘制。
@@ -54,66 +57,63 @@ next: false
   TemplateEditorWindow与TemplateCreateView的共享参数、创建来源、预览、索引和关闭语义；关闭不是通用回滚，筛选后的操作目标需单独核对。
 
 - [模板编辑入口与菜单契约](../../04-api-reference/algorithms/templates/template-menu-entries.md) — `algorithms.template-menus`
-  区分现存模板主菜单、专用入口与通用算法配置中的模板编辑命令。
+  从模板菜单、算法面板或应用搜索打开模板；说明选择索引、流程设计器直达和菜单发现的边界。
 
 - [算法与模板接入概览](../../04-api-reference/algorithms/overview.md) — `algorithms.template-overview`
   说明 Engine 模板发现、手动算法宿主、MQTT 请求和 Flow 接入链。
 
-- [ARVR 模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
-  对照 ARVR 模板族、手动请求、Flow 算子和结果 handler 的版本边界。
+- [ARVR 算法与模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
+  ARVR 手动算法与流程节点的模板、POI 和请求对应关系；说明结果版本匹配及 SFR 曲线、查询和两种 CSV 导出的数据范围。
 
-- [Blob / 连通域 V1（M5.1）](../../02-developer-guide/core-concepts/blob-analysis-v1.md) — `algorithms.blob-analysis`
+- [Blob / 连通域 V1](../../02-developer-guide/core-concepts/blob-analysis-v1.md) — `algorithms.blob-analysis`
   BlobAnalysis 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
 
-- [圆拟合 V1（M6.3）](../../02-developer-guide/core-concepts/circle-fit-v1.md) — `algorithms.circle-fit`
+- [圆拟合 V1](../../02-developer-guide/core-concepts/circle-fit-v1.md) — `algorithms.circle-fit`
   CircleFit 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
 
-- [轮廓提取 V1（M5.2）](../../02-developer-guide/core-concepts/contour-analysis-v1.md) — `algorithms.contour-analysis`
+- [轮廓提取 V1](../../02-developer-guide/core-concepts/contour-analysis-v1.md) — `algorithms.contour-analysis`
   ContourAnalysis 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
 
-- [FFT / 频域分析 V1（M10）](../../02-developer-guide/core-concepts/frequency-spectrum-v1.md) — `algorithms.frequency-spectrum`
+- [FFT / 频域分析 V1](../../02-developer-guide/core-concepts/frequency-spectrum-v1.md) — `algorithms.frequency-spectrum`
   FrequencySpectrum 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
 
-- [几何变换 V1（M7）](../../02-developer-guide/core-concepts/geometric-transform-v1.md) — `algorithms.geometric-transform`
+- [几何变换 V1](../../02-developer-guide/core-concepts/geometric-transform-v1.md) — `algorithms.geometric-transform`
   GeometricTransform 的输入、参数、结果、宿主接入与定向验证契约。
 
-- [图像比较基础 V1（M3）](../../02-developer-guide/core-concepts/image-comparison-v1.md) — `algorithms.image-comparison`
-  ImageComparison 的输入、参数、结果、宿主接入与定向验证契约。
+- [图像比较：差分、SSIM 与对齐预检](../../02-developer-guide/core-concepts/image-comparison-v1.md) — `algorithms.image-comparison`
+  图像比较的操作、参数范围、ROI、差分/SSIM/对齐结果和PNG/JSON/CSV导出；预检不校正图像，192MiB仅限制图像输出，采样数存在狭长区域上限缺口。
 
-- [图像比较高级 V1（M4）](../../02-developer-guide/core-concepts/image-comparison-advanced-v1.md) — `algorithms.image-comparison-advanced`
-  ImageComparison 的输入、参数、结果、宿主接入与定向验证契约。
+- [灰度与颜色剖面：采样、曲线与数据导出](../../02-developer-guide/core-concepts/image-profile-v1.md) — `algorithms.image-profile`
+  灰度与颜色剖面的操作、采样/越界规则、2000行预览和完整JSON/CSV导出；多点入口受多边形选择器限制，MaximumSamples还受执行/字节预算限制，旧接口参数不同。
 
-- [灰度与颜色剖面 V1（M2）](../../02-developer-guide/core-concepts/image-profile-v1.md) — `algorithms.image-profile`
-  ImageProfile 的输入、参数、结果、宿主接入与定向验证契约。
-
-- [图像配准 V1（M8.1）](../../02-developer-guide/core-concepts/image-registration-v1.md) — `algorithms.image-registration`
+- [图像配准 V1](../../02-developer-guide/core-concepts/image-registration-v1.md) — `algorithms.image-registration`
   ImageRegistration 的输入、参数、结果、宿主接入与定向验证契约。
 
-- [成像校正 V1（M9）](../../02-developer-guide/core-concepts/imaging-correction-v1.md) — `algorithms.imaging-correction`
-  ImagingCorrection 的输入、参数、结果、宿主接入与定向验证契约。
+- [成像校正：参考图、执行与结果保存](../../02-developer-guide/core-concepts/imaging-correction-v1.md) — `algorithms.imaging-correction`
+  成像校正的参考图、固定阶段、参数/preset、执行并提交、mask与PNG/CSV/JSON保存；明确Alpha裁剪、无效样本、精确复制和批量只保存主图的边界。
 
 - [JSON 模板](../../04-api-reference/algorithms/templates/json-templates.md) — `algorithms.json-templates`
-  JSON模板数据库存储、编辑器与结果版本匹配；Schema优先读取程序集嵌入资源，再回退磁盘索引，不要求输出目录有散文件。
+  JSON模板的文本/属性编辑、数据库保存、默认参数与重置；校验Json按钮只同步模型，Schema提供字段提示而不补默认值或执行完整校验。
 
 - [LED 检测模板](../../04-api-reference/algorithms/templates/led-detection.md) — `algorithms.led`
   区分灯条、灯珠强类型与 JSON V2 模板、事件、POI 输入和结果限制。
 
-- [镜头畸变校正 V1（M8.2）](../../02-developer-guide/core-concepts/lens-distortion-correction-v1.md) — `algorithms.lens-distortion-correction`
+- [镜头畸变校正 V1](../../02-developer-guide/core-concepts/lens-distortion-correction-v1.md) — `algorithms.lens-distortion-correction`
   LensDistortionCorrection 的输入、参数、结果、宿主接入与定向验证契约。
 
-- [直线拟合 V1（M6.2）](../../02-developer-guide/core-concepts/line-fit-v1.md) — `algorithms.line-fit`
+- [直线拟合 V1](../../02-developer-guide/core-concepts/line-fit-v1.md) — `algorithms.line-fit`
   LineFit 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
 
-- [摩尔纹分析 V1（M11）](../../02-developer-guide/core-concepts/moire-analysis-v1.md) — `algorithms.moire-analysis`
+- [摩尔纹分析 V1](../../02-developer-guide/core-concepts/moire-analysis-v1.md) — `algorithms.moire-analysis`
   MoireAnalysis 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
 
 - [POI 模板](../../04-api-reference/algorithms/templates/poi-template.md) — `algorithms.poi-template`
   说明 POI 主从表、伴生模板、复制导入、运行事件与结果类型映射。
 
-- [ROI 统计 V1（M1）](../../02-developer-guide/core-concepts/roi-statistics-v1.md) — `algorithms.roi-statistics`
-  RoiStatistics 的输入、参数、结果、宿主接入与定向验证契约。
+- [ROI 统计：区域、直方图与坏点候选](../../02-developer-guide/core-concepts/roi-statistics-v1.md) — `algorithms.roi-statistics`
+  ROI统计的区域选择、百分位、直方图、坏点候选计数/返回上限及六文件CSV导出；说明Float32精确统计预算、列名精度限制和实际窗口操作。
 
-- [亚像素边缘 V1（M6.1）](../../02-developer-guide/core-concepts/subpixel-edge-v1.md) — `algorithms.subpixel-edge`
+- [亚像素边缘 V1](../../02-developer-guide/core-concepts/subpixel-edge-v1.md) — `algorithms.subpixel-edge`
   SubpixelEdge 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
 
 - [SysDictionary 系统字典兼容层](../../04-api-reference/algorithms/templates/sys-dictionary-template.md) — `algorithms.template-dictionary`

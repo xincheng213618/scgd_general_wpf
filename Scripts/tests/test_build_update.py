@@ -180,5 +180,40 @@ class CopilotSkillsPackageTests(unittest.TestCase):
             return {name: archive.read(name) for name in names}
 
 
+class RuntimeDiagnosticsPackageTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._temp_directory = tempfile.TemporaryDirectory(prefix="build-update-diagnostics-tests-")
+        self.root = Path(self._temp_directory.name)
+        self.old_directory = self.root / "old"
+        self.new_directory = self.root / "new"
+        self.old_directory.mkdir()
+        self.new_directory.mkdir()
+
+    def tearDown(self) -> None:
+        self._temp_directory.cleanup()
+
+    def test_full_and_incremental_packages_exclude_window_resize_diagnostics(self) -> None:
+        (self.new_directory / "Host.dll").write_bytes(b"host")
+        (self.new_directory / "window-resize-diagnostics.mode").write_text("compact", encoding="utf-8")
+        trace_directory = self.new_directory / "window-resize-traces"
+        trace_directory.mkdir()
+        (trace_directory / "resize.json").write_text("{}", encoding="utf-8")
+
+        old_zip = self.root / "old.zip"
+        create_full_zip(self.old_directory, old_zip)
+        full_zip = self.root / "full.zip"
+        create_full_zip(self.new_directory, full_zip)
+        incremental_zip = self.root / "incremental.cvx"
+        make_incremental_zip(old_zip, self.new_directory, incremental_zip)
+
+        self.assertEqual({"Host.dll": b"host"}, self._read_zip(full_zip))
+        self.assertEqual({"Host.dll": b"host"}, self._read_zip(incremental_zip))
+
+    @staticmethod
+    def _read_zip(path: Path) -> dict[str, bytes]:
+        with zipfile.ZipFile(path, "r") as archive:
+            return {name.replace("\\", "/"): archive.read(name) for name in archive.namelist()}
+
+
 if __name__ == "__main__":
     unittest.main()

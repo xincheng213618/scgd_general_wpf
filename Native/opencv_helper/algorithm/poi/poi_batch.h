@@ -28,6 +28,7 @@ struct ResultV1 {
 enum OptionsFlagsV2 : std::uint32_t {
     PercentThreshold = 1U,
     ApplyMnp = 2U,
+    PreserveNonPositiveValues = 4U,
 };
 
 struct OptionsV2 {

@@ -2,70 +2,43 @@
 knowledge_id: "platform.product"
 knowledge_type: "reference"
 status: "current"
-summary: "定位ColorVision视觉检测平台的业务场景和主要职责，不代替具体能力契约。"
-aliases: ["ColorVision是什么","视觉检测平台"]
-code_paths: ["ColorVision/ColorVision.csproj"]
+summary: "ColorVision 的设备、流程、图像分析、结果、插件与客户项目能力，以及从任务进入文档的方法。"
+aliases: ["ColorVision是什么","视觉检测平台","ColorVision有哪些功能","产品概览"]
+code_paths: ["ColorVision/ColorVision.csproj","Engine/ColorVision.Engine/ColorVision.Engine.csproj","UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj","UI/ColorVision.Algorithms/ColorVision.Algorithms.csproj"]
 test_paths: []
-related: ["platform.system"]
+related: ["platform.system","delivery.start","algorithms.index","engine.results","projects.index","plugins.index","copilot.runtime"]
 ---
 
-# 什么是 ColorVision？
+# ColorVision 概览
 
-## 概述
+ColorVision 是用于光电视觉检测的 Windows WPF 桌面平台，将设备接入、可视化流程、图像分析和结果处理组织在同一宿主中。插件提供扩展能力，客户项目提供专用流程、判定、协议与报表；实际可用功能取决于所安装模块、配置和设备环境。
 
-ColorVision 是一款基于 Windows WPF 的专业光电技术解决方案，为光电产品的研发、生产和质量控制提供全方位的软件支持。
+## 按任务查找功能
 
-## 核心价值
+| 要完成的工作 | 文档入口 |
+| --- | --- |
+| 安装、准备构建环境或首次打开图像 | [安装、构建与运行](./README.md) |
+| 连接相机并配置采集 | [相机服务](../01-user-guide/devices/camera.md)、[物理相机与许可证](../01-user-guide/devices/camera-management.md) |
+| 编排流程、选择节点并执行 | [流程设计](../01-user-guide/workflow/design.md)、[执行与结果](../01-user-guide/workflow/execution.md)、[节点入口](../04-api-reference/flow_nodes_summary.md) |
+| 查看图像、绘图、分析或导出图像 | [ImageEditor](../04-api-reference/ui-components/ColorVision.ImageEditor.md) |
+| 查找算法、参数、ROI、POI 或本地定位 | [算法与模板入口](../04-api-reference/algorithms/README.md) |
+| 查询历史结果、追踪图像与算法输出 | [Engine 结果链](../04-api-reference/engine-components/result-handoff-chain.md) |
+| 导入导出设置、流程或项目结果 | [导入导出](../01-user-guide/data-management/export-import.md) |
+| 安装插件、接入光谱或其他扩展模块 | [插件入口](../04-api-reference/plugins/README.md) |
+| 配置 ARVR、LUX、KB 等客户功能 | [客户项目](../04-api-reference/projects/README.md) |
+| 使用 Copilot 的模型、会话和工具能力 | [Copilot](../02-developer-guide/core-concepts/copilot-agent-runtime.md) |
+| 更新版本、重新安装或管理程序备份 | [检查更新与程序备份](../02-developer-guide/deployment/auto-update.md) |
 
-### 🎯 专业性
+这些入口指向各能力的当前说明：操作前提、参数、输入输出、故障定位及验证边界集中维护在所属主题，不需要通过版本修改记录拼接使用方法。
 
-- 专注于光电技术领域
-- 支持多种专业设备集成
-- 提供行业标准的测试流程
+## 理解运行范围
 
-### 🔧 灵活性
+图像编辑、本地算法、Engine 服务算法和客户检测流程有各自入口。部分功能在本机计算，部分依赖数据库、MQTT、外部算法服务或设备；本地图像能显示不意味着所有服务已就绪。
 
-- 可视化流程设计器
-- 灵活的插件扩展机制
-- 支持客户定制化需求
+设备类型与服务对象的存在也不保证任意型号都可用。型号、驱动、校准、协议、结果判定和报表字段应按对应设备或客户项目核对。平台提供这些连接和扩展机制，检测精度、节拍与生产验收由实际项目和样本验证。
 
-### ⚡ 高效性
+宿主、共享 UI、Engine、插件和客户项目的源码责任见[系统职责与调用边界](../03-architecture/overview/system-overview.md)。新增能力先沿已有扩展点定位；不能仅凭菜单或类名推断执行位置。
 
-- 自动化测试流程
-- 批量处理能力
-- 智能任务调度
+## 直接查找问题
 
-### 📊 可靠性
-
-- 完整的数据管理
-- 详细的日志记录
-- 稳定的设备通信
-
-## 主要应用
-
-### 设备集成
-
-支持相机、光谱仪、电机、传感器等多种光电设备的集成和控制。
-
-### 流程自动化
-
-通过可视化流程设计器，快速构建和执行复杂的测试流程。
-
-### 数据分析
-
-提供丰富的图像处理和数据分析算法，支持自定义算法开发。
-
-### 质量控制
-
-完整的测试报告和数据追溯，满足生产质量管理需求。
-
-## 技术架构
-
-ColorVision 采用分层模块化架构：
-
-- **UI 层** - 基于 WPF 的现代化用户界面
-- **引擎层** - 核心业务逻辑和流程引擎
-- **设备层** - 设备驱动和通信协议
-- **数据层** - 数据存储和管理
-
-详细的架构说明请参考 [系统架构概览](../03-architecture/overview/system-overview.md)。
+网站可按功能、界面名称、配置项、API 或错误信息搜索。本地使用[知识地图](../knowledge/index.md)或 `knowledge.mjs search`，读取命中的主题和源码；查询方法见[知识使用约定](../README.md)。索引是定位工具，尚未落地的方案会标为 `planned`，不会作为已有功能承诺。

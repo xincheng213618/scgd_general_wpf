@@ -44,7 +44,8 @@ public class OperationsWatchEvidenceMemoryTest {
         assertEquals(REVISION_2, OperationsWatchEvidenceMemory.evidence(
                 memory, "host_1", OperationsWatchPolicy.ATTENTION_CRITICAL).revision);
 
-        assertEquals("", OperationsWatchEvidenceMemory.removeHost(memory, "host_1"));
+        assertEquals("", OperationsWatchEvidenceMemory.update(
+                memory, "host_1", "", OperationsMonitorEvidenceRevision.Evidence.EMPTY));
     }
 
     @Test

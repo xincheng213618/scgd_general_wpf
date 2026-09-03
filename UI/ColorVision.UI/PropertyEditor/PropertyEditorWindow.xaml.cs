@@ -113,6 +113,10 @@ namespace ColorVision.UI
             _editMode = editMode;
             Config = config;
             InitializeComponent();
+            var type = config.GetType();
+            string objectName = PropertyEditorHelper.GetLocalizedString(PropertyEditorHelper.GetResourceManager(config),
+                type.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? type.Name);
+            Title = $"{Properties.Resources.Edit} {objectName}";
             this.ApplyCaption();
         }
         private void Window_Initialized(object sender, EventArgs e)
@@ -227,44 +231,57 @@ namespace ColorVision.UI
 
             foreach (var categoryGroup in categoryGroups)
             {
-                var border = CreateCategoryBorder(categoryGroup.Key, out var stackPanel);
+                bool showHeader = categoryGroups.Count > 1 || categoryGroup.Value.Any(property => property.GetCustomAttribute<CategoryAttribute>() != null);
+                var border = CreateCategoryBorder(categoryGroup.Key, showHeader, out var stackPanel);
                 var treeNode = new PropertyTreeNode(categoryGroup.Key, border);
+                bool hasProperties = false;
 
                 foreach (var property in categoryGroup.Value)
                 {
-                    TryAddPropertyEditor(source, property, stackPanel, treeNode);
+                    hasProperties |= TryAddPropertyEditor(source, property, stackPanel, treeNode);
                 }
 
-                if (stackPanel.Children.Count > 1)
+                if (!showHeader && treeNode.Children.Count > 0)
+                {
+                    // Match the nested card's 1 DIP border and 5 DIP content inset,
+                    // without changing the shared property editors or their vertical spacing.
+                    foreach (var row in stackPanel.Children.OfType<DockPanel>())
+                        row.Margin = new Thickness(row.Margin.Left + 6, row.Margin.Top, row.Margin.Right + 6, row.Margin.Bottom);
+                }
+
+                if (hasProperties)
                 {
                     TreeNodes.Add(treeNode);
                     PropertyPanel.Children.Add(border);
                 }
             }
 
-            UpdateTreeViewVisibility();
+            ApplySearchFilter();
         }
 
-        private Border CreateCategoryBorder(string category, out StackPanel stackPanel)
+        private Border CreateCategoryBorder(string category, bool showHeader, out StackPanel stackPanel)
         {
             var border = new Border
             {
-                Background = (Brush)FindResource("GlobalBorderBrush"),
-                BorderThickness = new Thickness(1),
+                Background = showHeader ? (Brush)FindResource("GlobalBorderBrush") : Brushes.Transparent,
+                BorderThickness = new Thickness(showHeader ? 1 : 0),
                 BorderBrush = (Brush)FindResource("BorderBrush"),
                 CornerRadius = new CornerRadius(5),
                 Margin = new Thickness(0, 0, 0, 5),
                 Tag = category
             };
 
-            stackPanel = new StackPanel { Margin = new Thickness(10, 5, 10, 0) };
-            stackPanel.Children.Add(new TextBlock
+            stackPanel = new StackPanel { Margin = showHeader ? new Thickness(10, 5, 10, 0) : new Thickness(5) };
+            if (showHeader)
             {
-                Text = category,
-                FontWeight = FontWeights.Bold,
-                Foreground = PropertyEditorHelper.GlobalTextBrush,
-                Margin = new Thickness(0, 0, 0, 5)
-            });
+                stackPanel.Children.Add(new TextBlock
+                {
+                    Text = category,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = PropertyEditorHelper.GlobalTextBrush,
+                    Margin = new Thickness(0, 0, 0, 5)
+                });
+            }
 
             border.Child = stackPanel;
             return border;
@@ -329,16 +346,38 @@ namespace ColorVision.UI
             }
         }
 
+        private void Find_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            SearchBox.Focus();
+            SearchBox.SelectAll();
+            e.Handled = true;
+        }
+
+        private void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape && Keyboard.Modifiers == ModifierKeys.None)
+            {
+                SearchBox.Clear();
+                e.Handled = true;
+            }
+        }
+
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             searchText = SearchBox.Text ?? string.Empty;
             ApplySearchFilter();
         }
 
+        private void ClearSearch_Click(object sender, RoutedEventArgs e)
+        {
+            SearchBox.Clear();
+            SearchBox.Focus();
+        }
+
         private void ApplySearchFilter()
         {
             // Check if UI is initialized (avoid race condition)
-            if (TreeNodes.Count == 0)
+            if (PropertyPanel == null || SearchEmptyState == null)
                 return;
             
             if (string.IsNullOrWhiteSpace(searchText))
@@ -352,6 +391,7 @@ namespace ColorVision.UI
                     node.ShowAll();
                 }
                 
+                SearchEmptyState.Visibility = Visibility.Collapsed;
                 UpdateTreeViewVisibility();
                 return;
             }
@@ -372,7 +412,9 @@ namespace ColorVision.UI
             {
                 node.SyncVisibilityFromBorder();
             }
-            
+
+            SearchEmptyState.Visibility = PropertyPanel.Children.OfType<Border>().Any(border => border.Visibility == Visibility.Visible)
+                ? Visibility.Collapsed : Visibility.Visible;
             UpdateTreeViewVisibility();
         }
 

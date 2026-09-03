@@ -23,7 +23,7 @@ related: ["delivery.backend", "delivery.artifact-delivery", "plugins.model", "pl
 | 单插件详情 | `get_plugin_info` 优先该插件的索引行及全部未删除的包行；缺行/读取失败时调用磁盘 `get_plugin_detail` |
 | 版本探针 | `MarketplaceCatalogService.latest_versions` 走下节独立的进程内版本缓存，不等同于重新查询详情 |
 
-磁盘回退可复用或写入 `cache_entry`、读取 manifest/README/CHANGELOG、枚举包；详情回退还可能读取包内元数据并计算文件 hash。它**不自动调用 `refresh_plugin_index` 或重建索引表**。旧 README 的“索引为空→扫描并写回索引”不是这条 GET 路径的真实契约。
+磁盘回退可复用或写入 `cache_entry`、读取 manifest/README/CHANGELOG、枚举包；详情回退还可能读取包内元数据并计算文件 hash。它**不自动调用 `refresh_plugin_index` 或重建索引表**。
 
 `RequestContext.values` 的缓存仅复用同一个请求内的数据。持久缓存、索引、进程版本缓存各有更新路径，不能因一次查询返回新数据就推断所有读模型已同步。已经有索引时普通详情不为缺失的 hash 读取包：返回 `fileHash=null` / `hashPending=true`，需刷新路径补齐；不能把这一点扩大成所有 GET 分支都没有文件或缓存写入。
 

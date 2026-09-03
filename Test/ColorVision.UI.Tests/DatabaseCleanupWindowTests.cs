@@ -6,6 +6,17 @@ namespace ColorVision.UI.Tests;
 public class DatabaseCleanupWindowTests
 {
     [Fact]
+    public void OpenWindow_PreservesParameterlessBinaryEntryPointForExistingPlugins()
+    {
+        var method = typeof(DatabaseCleanupWindow).GetMethod(nameof(DatabaseCleanupWindow.OpenWindow), Type.EmptyTypes);
+
+        Assert.NotNull(method);
+        Assert.True(method.IsStatic);
+        Assert.Equal(typeof(void), method.ReturnType);
+        Assert.NotNull(method.CreateDelegate<Action>());
+    }
+
+    [Fact]
     public void ValidateCleanupTableNames_RejectsTablesOutsideWhitelist()
     {
         Assert.Throws<ArgumentException>(() =>

@@ -165,7 +165,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         throw new InvalidOperationException(errorMessage ?? "校正模板无效。");
                     }
                     bool hasBasicCalibration = !LocalFrameCalibrationService.IsColorOnlyTemplate(calibrationFiles);
-                    LocalFrameCalibrationService.CalibrateInPlace(sourceFrame, device.LocalCalibrationCacheManager, calibrationFiles, calibration.Name);
+                    LocalFrameCalibrationService.CalibrateInPlace(
+                        sourceFrame,
+                        device.LocalCalibrationCacheManager,
+                        calibrationFiles,
+                        calibration.Name,
+                        LocalCalibrationRoi.Resolve(device.PhyCamera?.Config?.CameraCfg, sourceFrame.Metadata.Width, sourceFrame.Metadata.Height));
                     outputFrame = sourceFrame;
                     ownsOutputFrame = ownsSourceFrame;
                     ownsSourceFrame = false;
@@ -284,7 +289,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         private protected virtual string SourceImageFilePath => string.Empty;
 
-        private DeviceCamera ResolveDevice(string frameDeviceCode)
+        private protected DeviceCamera ResolveDevice(string frameDeviceCode)
         {
             string deviceCode = ResolveDeviceCode(frameDeviceCode);
             if (string.IsNullOrWhiteSpace(deviceCode)) throw new InvalidOperationException("校正 RAW 内存前必须选择本地相机设备。");

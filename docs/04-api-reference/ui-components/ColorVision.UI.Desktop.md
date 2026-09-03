@@ -41,6 +41,8 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 | 反馈诊断 | `Feedback/`、`Feedback/Collectors/WindowsEventLogCollector` | 打包应用日志、系统信息、Dump 和 Windows Application/System 警告或错误 |
 | 诊断窗口 | `ViewDllVersionsWindow` | 查看已加载程序集版本、产品版本和路径 |
 
+应用与工具窗口使用与更新、恢复窗口一致的主题资源，顶部提供搜索、添加应用、添加快捷脚本和刷新入口；分类以可换行的标签展示，应用以图标与名称组成的紧凑卡片展示。双击启动、右键操作、分类过滤与权限过滤沿用原入口；深浅主题同时覆盖窗口背景、文字和选择状态。
+
 ## 运行链路
 
 | 链路 | 关键路径 |
@@ -54,9 +56,11 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 | 菜单管理链 | [MenuItemManagerWindow → 草稿 → CommitEditingSnapshot → 运行时覆盖/重建 → 尝试保存](./menus.md) |
 | DLL 诊断链 | `ViewDllVersionsWindow` |
 
+反馈窗口从帮助菜单、启动恢复或 Copilot `/feedback` 打开时均使用非模态 `Show()`，保留 Owner 与居中定位。打包和上传期间可最小化反馈窗口、切回其他窗口继续操作；打包仍在后台任务中执行，HTTP 上传仍异步等待。Copilot 附带的临时会话文件保留到反馈窗口关闭，不能在 `Show()` 返回时提前清理。
+
 ## 新增功能检查
 
-窗口能打开只证明入口可用，不等于[配置已持久化和发布](./configuration.md)、[安装替换成功](../../02-developer-guide/plugin-development/getting-started.md)或插件已加载。下表也用于回答运行问题，不再另维护一份 UI 使用手册。观察下载日志、目标路径和包版本是诊断；下载替换、安装更新、修改配置和系统状态需要相应授权，不因为“验证”而自动执行。
+窗口能打开只证明入口可用，不等于[配置已持久化和发布](./configuration.md)、[安装替换成功](../../02-developer-guide/plugin-development/getting-started.md)或插件已加载。观察下载日志、目标路径和包版本是诊断；下载替换、安装更新、修改配置和系统状态需要相应授权，不因为“验证”而自动执行。
 
 | 要做什么 | 检查点 |
 | --- | --- |
@@ -83,8 +87,7 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 ## 边界
 
 - 本项目的 `App.xaml.cs` 为空实现，`App.xaml` 未设置 `StartupUri`；`MainWindow.xaml` 仅有空 `Grid`，构造器只调用 `InitializeComponent()`。声明 `WinExe` 不代表包含完整产品启动、单实例、首次向导或 AvalonDock 主窗口；真正的[宿主启动链](../../03-architecture/overview/runtime.md)在 `ColorVision/`。
-- 旧文档里的 `SystemInitializer` 不在当前 `UI/ColorVision.UI.Desktop` 目录中。
-- Windows 事件查看器直接由“第三方应用”启动 `eventvwr.msc`；不再维护 `EventWindow` 内嵌控件。
+- Windows 事件查看器直接由“第三方应用”启动 `eventvwr.msc`。
 - 普通用户模式下，写入或清除 `HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps` 由 `ColorVisionServiceHost` 执行；管理员模式可直接写入，手动保存 Dump 不修改系统配置。
 - 特权服务的 `registry-set-values` / `registry-delete-key` 是通用 HKLM 写入接口，不限制到 WER 路径，并支持显式选择 32/64 位注册表视图；所有调用仍须通过调用方身份校验、单次 Broker Ticket，并写入不含值数据的审计日志。
 - 这里是窗口和管理工具集合，不是所有菜单、插件或配置运行时的唯一中心。

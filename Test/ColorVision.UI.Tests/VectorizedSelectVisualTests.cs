@@ -3,7 +3,6 @@ using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Media;
@@ -15,7 +14,7 @@ public class VectorizedSelectVisualTests
     [Fact]
     public void GhostPixelsUseImageBoundsAndFrozenVectorGeometry()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             List<Point1> points = new()
             {
@@ -42,7 +41,7 @@ public class VectorizedSelectVisualTests
     [Fact]
     public void GhostPixelsFallBackToPointBoundsAndSkipEmptySets()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             List<Point1> points = new()
             {
@@ -60,7 +59,7 @@ public class VectorizedSelectVisualTests
     [Fact]
     public void BuildPoiUsesOneFrozenVectorForTheWholePointGrid()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             List<POIPointPosition> positions = new()
             {
@@ -100,27 +99,5 @@ public class VectorizedSelectVisualTests
                     yield return descendant;
             }
         }
-    }
-
-    private static void RunOnStaThread(Action action)
-    {
-        Exception? failure = null;
-        Thread thread = new(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-
-        if (failure != null)
-            ExceptionDispatchInfo.Capture(failure).Throw();
     }
 }

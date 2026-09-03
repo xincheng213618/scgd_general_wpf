@@ -1,6 +1,5 @@
 using ColorVision.Copilot;
 using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using WpfMath.Controls;
@@ -18,7 +17,7 @@ public sealed class CopilotMarkdownViewTests
     [InlineData("before\n\\[\nx^2")]
     public void DisplayMathInsideCodeFencesRemainsLiteralAndDoesNotConsumeFollowingBlocks(string code)
     {
-        RunOnSta(() =>
+        StaTest.Run(() =>
         {
             var view = new CopilotMarkdownView();
             var buildDocument = typeof(CopilotMarkdownView).GetMethod(
@@ -49,30 +48,6 @@ public sealed class CopilotMarkdownViewTests
             var formulaBlock = Assert.IsType<BlockUIContainer>(blocks[2]);
             var viewbox = Assert.IsType<Viewbox>(formulaBlock.Child);
             Assert.Equal("y^2", Assert.IsType<FormulaControl>(viewbox.Child).Formula);
-        });
-    }
-
-    private static void RunOnSta(Action action)
-    {
-        Exception? failure = null;
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception exception)
-            {
-                failure = exception;
-            }
-        })
-        {
-            IsBackground = true,
-        };
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        Assert.True(thread.Join(TimeSpan.FromSeconds(10)), "The STA Markdown document test did not finish.");
-        if (failure != null)
-            ExceptionDispatchInfo.Capture(failure).Throw();
+        }, TimeSpan.FromSeconds(10), "The STA Markdown document test did not finish.");
     }
 }

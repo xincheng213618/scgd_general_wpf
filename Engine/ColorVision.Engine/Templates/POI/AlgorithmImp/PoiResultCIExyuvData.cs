@@ -1,4 +1,6 @@
 ﻿#pragma warning disable CA1708,CA1859,CA2249,CS8602,CS8604
+using ColorVision.Engine.Media;
+using ColorVision.Engine.Services.POI;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System;
@@ -397,18 +399,35 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                 CCT = pOIDataCIExyuv.CCT;
                 Wave = pOIDataCIExyuv.Wave;
 
-                //这里是因为输出不会小于0所以做一个置位
-                //老板说，先改成>0试试
-                X = pOIDataCIExyuv.X > 0 ? pOIDataCIExyuv.X : 0.0001;
-                Y = pOIDataCIExyuv.Y > 0 ? pOIDataCIExyuv.Y : 0.0001;
-                Z = pOIDataCIExyuv.Z > 0 ? pOIDataCIExyuv.Z : 0.0001;
-                u = pOIDataCIExyuv.u > 0 ? pOIDataCIExyuv.u : 0.0001;
-                v = pOIDataCIExyuv.v > 0 ? pOIDataCIExyuv.v : 0.0001;
-                x = pOIDataCIExyuv.x > 0 ? pOIDataCIExyuv.x : 0.0001;
-                y = pOIDataCIExyuv.y > 0 ? pOIDataCIExyuv.y : 0.0001;
+                X = pOIDataCIExyuv.X;
+                Y = pOIDataCIExyuv.Y;
+                Z = pOIDataCIExyuv.Z;
+                u = pOIDataCIExyuv.u;
+                v = pOIDataCIExyuv.v;
+                x = pOIDataCIExyuv.x;
+                y = pOIDataCIExyuv.y;
+                NormalizeXyz(CVCIEShowConfig.Instance.CreateValueNormalizer());
             }
         }
 
+        internal void NormalizeXyz(Func<double, double> normalize)
+        {
+            double newX = normalize(X);
+            double newY = normalize(Y);
+            double newZ = normalize(Z);
+            if (newX.Equals(X) && newY.Equals(Y) && newZ.Equals(Z)) return;
+
+            X = newX;
+            Y = newY;
+            Z = newZ;
+            PoiMeasurementResult color = PoiMeasurementService.CalculateColorMetrics(X, Y, Z);
+            x = color.ChromaX;
+            y = color.ChromaY;
+            u = color.U;
+            v = color.V;
+            CCT = color.Cct;
+            Wave = color.Wave;
+        }
 
     }
 }

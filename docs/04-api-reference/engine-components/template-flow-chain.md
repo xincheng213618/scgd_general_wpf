@@ -2,9 +2,9 @@
 knowledge_id: "flow.templates"
 knowledge_type: "topic"
 status: "current"
-summary: "Flow 模板的数据库保存、文档基线、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。"
-aliases: ["Flow模板保存后参数为什么丢失","TemplateFlow","FlowPackageHelper","cvflow","FlowKey","FlowTemplateSaveCondition","FlowTemplateConcurrencyException","导入流程","关联模板"]
-code_paths: ["Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs","Engine/ColorVision.Engine/Templates/Flow/FlowParam.cs","Engine/ColorVision.Engine/Templates/Flow/FlowTemplateSaveCondition.cs","Engine/ColorVision.Engine/Templates/Flow/FlowPackageHelper.cs","Engine/ColorVision.Engine/Templates/Flow/Versioning","Engine/ColorVision.Engine/FlowProcessing/Compilation/FlowCanvasCatalogBuilder.cs"]
+summary: "Flow 模板的保存基线、导出/删除勾选范围、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。"
+aliases: ["Flow模板保存后参数为什么丢失","TemplateFlow","FlowPackageHelper","cvflow","FlowKey","FlowTemplateSaveCondition","FlowTemplateConcurrencyException","导入流程","关联模板","流程删除范围","流程多选导出","模板勾选项","StnV1NeutralCodec","动态端口索引","逻辑与索引警告"]
+code_paths: ["Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs","Engine/ColorVision.Engine/Templates/Flow/FlowParam.cs","Engine/ColorVision.Engine/Templates/Flow/FlowTemplateSaveCondition.cs","Engine/ColorVision.Engine/Templates/Flow/FlowPackageHelper.cs","Engine/ColorVision.Engine/Templates/Flow/Versioning","Engine/ColorVision.Engine/FlowProcessing/Compilation/FlowCanvasCatalogBuilder.cs","Engine/ColorVision.Engine/FlowProcessing/Compilation/StnV1NeutralCodec.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs","Test/ColorVision.UI.Tests/FlowTemplateIdentityTests.cs","Test/ColorVision.UI.Tests/FlowCanvasCatalogBuilderTests.cs","Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs"]
 related: ["flow.architecture","flow.workspace","flow.session","flow.headless","engine.template-design","engine.results"]
 ---
@@ -35,9 +35,25 @@ related: ["flow.architecture","flow.workspace","flow.session","flow.headless","e
 
 锁定已有资源行时使用 `FOR UPDATE`，加载基线不符时抛 `FlowTemplateConcurrencyException`；这些是 Flow 的专用保存规则，不扩展为普通 `ITemplate<T>` 的事务保证。`FlowParam` 的 `ResourceId`、`ResourceCode`、`FlowKey`、revision 和内容 hash 标为 `JsonIgnore`，属于运行时身份/基线，不是普通参数 JSON 序列化能完整迁移的字段。
 
-`Save2DB` 成功后更新运行身份和加载 hash，再尝试记录本地 catalog revision / 搜索投影。`TryRecordCatalogRevision` 的失败只记录日志并清空本次侧车 revision 信息，不能把已经成功的 MySQL/STN 保存伪报为失败。保存成功与“版本/搜索索引可用”是两个检查点。
+`Save2DB` 成功后更新运行身份和加载 hash，再尝试记录本地 catalog revision / 搜索投影。`TryRecordCatalogRevision` 的失败只记录 `WARN` 并清空本次侧车 revision 信息，明确提示流程已保存、仅版本历史/节点搜索索引未更新，不影响流程保存和执行。保存成功与“版本/搜索索引可用”是两个检查点；该警告不表示主存储保存失败，也不表示索引功能已恢复。
 
-`FlowCanvasCatalogBuilder` 从 STND v1 构建语义、布局和搜索投影，不修改源画布，也不建立 live editor graph；codec 可短暂实例化节点发现 option schema。catalog revision 是不可变记录。旧 Artifact 表不再由当前保存/运行链读写或迁移，既有表与数据按兼容保留，不要求手工清库。
+`FlowCanvasCatalogBuilder` 从 STND v1 构建语义、布局和搜索投影，不修改源画布，也不建立 live editor graph；codec 可短暂实例化节点发现默认 option schema。`STNodeInHub`、`STNodeOutHub`、`STNodeHub` 及其派生节点按各自保存的 `count` 扩展输入、输出或成对端口，保留空闲端口及原有端口顺序；类型缓存只保存默认结构，不把一个实例的端口数量套给另一个实例。索引恢复不调用 `OnLoadNode`、属性 setter 或真实连线事件，避免触发设备/MQTT行为。缺失、非四字节或非正数的动态数量会拒绝；整张画布最多分配 1,000,000 个端口，分配前检查预算。
+
+多路接线引起端口增长是正常行为，不需要删除重建节点。更新后的索引器能直接解析已有流程；重新保存可生成本次版本和节点搜索索引。catalog revision 是不可变记录。旧 Artifact 表不再由当前保存/运行链读写或迁移，既有表与数据按兼容保留，不要求手工清库。
+
+## 导出与删除的目标选择
+
+`TemplateFlow.Export(index)` 和 `Delete(index)` 都先统计共享 `TemplateFlow.Params` 中的 `IsSelected`，再决定目标；列表中高亮的当前行与勾选项不是同一状态：
+
+| 勾选数量 | 最终范围 |
+| --- | --- |
+| 0 | 使用调用方传入的索引 |
+| 1 | 使用唯一勾选项，覆盖传入索引 |
+| 多个 | 对所有勾选项执行多选导出或逐项删除 |
+
+`Load()` 复用既有 `TemplateModel`，不清除其勾选状态；关闭模板管理窗口时的重新加载也不清除勾选。主工作区 `ViewFlow` 虽按 active 模板传入索引，导出/删除前却未清除共享勾选。因此当前画布、列表高亮和删除确认框中的流程名都不能单独保证最终操作范围。操作前检查实际勾选，只保留目标模板；删除前另行保留需要恢复的流程包。
+
+删除直接修改主表、明细和对应资源，没有 `Save2DB` 的事务封装；不能把多项删除理解为全成或全败。导出读取模板保存的 `DataBase64`，不会自动保存当前编辑器画布。
 
 ## 单流程包与多选导出的区别
 
@@ -61,7 +77,9 @@ related: ["flow.architecture","flow.workspace","flow.session","flow.headless","e
 
 导入先完整校验包：限制条目数、模板数、单项和总解压大小，校验流程与模板载荷 SHA-256，并验证 STND v1 内容。未知未来大版本明确拒绝；v1/v2 manifest 内联模板仍可兼容导入。哈希一致不是唯一合法性条件，损坏或不支持的 STN 仍应拒绝。
 
-通过校验后，按“模板类型 + 规范化有效内容”匹配本地模板：
+通过校验后，当前环境未注册的模板类型，以及缺少序列化内容且不能从 Mod 数据重建的关联模板，只保留原模板名称，不强制创建、不生成冲突副本，也不阻止流程导入。本地已有同名模板时继续沿用；本地不存在时仍保留引用，供运行时生成或之后配置。导入成功不代表这些引用在运行时一定可用。
+
+其余可重建的模板按“模板类型 + 规范化有效内容”匹配本地模板：
 
 1. 同名同内容直接复用；异名同内容映射到已有模板。
 2. 同名不同内容创建带流程名的冲突副本；重复导入同包复用已创建的等价副本。
@@ -76,10 +94,11 @@ related: ["flow.architecture","flow.workspace","flow.session","flow.headless","e
 | 流程能打开但保存失败 | 画布验证、当前 active 文档、加载 hash、`Save2DB` 异常及数据库事务 |
 | 保存后重开没变化 | 保存目标是本地文件还是数据库；`ValueA` 是否指向实际更新资源 |
 | 保存成功但历史/搜索缺项 | catalog 日志、`FlowKey`、投影构建；不因侧车失败重写生产流程 |
+| 导出/删除对象与当前画布不同 | `TemplateFlow.Params` 的勾选项会优先于传入索引；核对列表勾选，而不只看高亮行 |
 | 导入后模板名找不到 | manifest、模板内容匹配、冲突副本和二级引用替换 |
 | 图正常但属性缺选择器 | [工作区](../../01-user-guide/workflow/design.md)及[PropertyGrid 契约](../ui-components/property-grid.md)，不是包格式问题 |
 | 引擎结束但业务结果未完成 | [执行会话](../../01-user-guide/workflow/execution.md)的最终化判据，不在模板保存层补等待 |
 
-`FlowPackageCompatibilityTests` 覆盖包完整性、旧版本、未来版本拒绝、模板去重和引用替换；`FlowTemplateIdentityTests` 覆盖身份及窗口保存条件；`FlowCanvasCatalogBuilderTests` / `FlowCatalogServiceTests` 覆盖投影与版本目录。这些局部测试不等于真实 MySQL 事务、全部旧流程语料或现场导入已通过。
+`FlowPackageCompatibilityTests` 覆盖包完整性、旧版本、未来版本拒绝、模板去重和引用替换；`FlowTemplateIdentityTests` 覆盖身份及窗口保存条件；`FlowCanvasCatalogBuilderTests` / `FlowCatalogServiceTests` 覆盖投影与版本目录，包括新建逻辑与节点多路接线、同类型不同端口数量、汇聚/分发节点往返、索引不执行加载/连线回调及非法数量拒绝。这些局部测试不等于真实 MySQL 事务、全部旧流程语料或现场导入已通过。
 
 授权验证至少核对：新增节点/参数保存后重开、并发窗口保存冲突、单流程包重导入不重复创建模板、冲突模板及二级引用正确、多选 zip 不被误认为完整迁移包。结果模型的历史 handler / 中立 overlay / 项目输出分流由[结果契约](./result-handoff-chain.md)维护。

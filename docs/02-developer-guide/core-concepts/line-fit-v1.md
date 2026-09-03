@@ -9,20 +9,18 @@ test_paths: ["Test/ColorVision.UI.Tests/LineFitV1Tests.cs","Test/ColorVision.UI.
 related: ["algorithms.platform","algorithms.index"]
 ---
 
-# 直线拟合 V1（M6.2）
+# 直线拟合 V1
 
 ## 当前发布边界
 
-当前默认 `ImageAlgorithmPlatform.CreateDefaultProviders()` 把本页 provider 包装在 `ExperimentalAlgorithmProviderGate` 中：菜单和 Batch 可执行投影隐藏该能力，直接调用默认 Runner 也返回 `provider_unavailable`，详情包含 `algorithm_experimental`。本页后面的参数、结果与宿主接入描述属于保留实现及测试契约，不是产品已开放的承诺；不得在调用方另建执行旁路来绕过门禁。
-
-本页 `status: current` 表示它记录当前源码事实，不代表算法已发布。M 编号是历史增量标识；其他增量是否可用以 [统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单) 为准。`Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs` 验证默认拒绝行为，专题测试覆盖实现细节；解除门禁还需完成对应数值、最坏资源与生产规模验证。
+此算法为 Experimental，默认不展示或执行；门禁和错误码见[统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单)。
 
 
-## 阶段边界与已有能力盘点
+## 适用范围
 
-M6.2 提供稳定 ID `colorvision.measurement.line-fit`。仓库此前的 Hough、FindCross 和客户专用线检测属于各自的图像检测链，没有一个可复用、可序列化的通用 point-set 拟合契约，因此本阶段没有复刻这些专用实现。
+`colorvision.measurement.line-fit` 对显式点集拟合直线；图像线检测由 Hough、FindCross 或对应业务算法负责。
 
-本算法只拟合显式点集：`Invocation.Roi` 必须是 `PolylineAlgorithmRoi`，其中每个顶点都是一个输入点。图像输入只提供文档/revision、宽高与 DPI 上下文；provider 不读取或复制像素。M6.1 的 `subpixel-edge-geometry` 中接受的边缘点可由调用方投影成这个 ROI，从而显式组合“找点”和“拟合”，二者不会被隐藏在一个难以单测的步骤里。
+本算法只拟合显式点集：`Invocation.Roi` 必须是 `PolylineAlgorithmRoi`，其中每个顶点都是一个输入点。图像输入只提供文档/revision、宽高与 DPI 上下文；provider 不读取或复制像素。亚像素边缘结果 `subpixel-edge-geometry` 中接受的边缘点可由调用方投影成这个 ROI，从而显式组合“找点”和“拟合”，二者不会被隐藏在一个难以单测的步骤里。
 
 ## 参数与数值规则
 
@@ -55,10 +53,10 @@ M6.2 提供稳定 ID `colorvision.measurement.line-fit`。仓库此前的 Hough�
 - ImageView：“算法调用 → 直线拟合...”选择点集、编辑统一参数、显示表格与 transient overlay，并可导出 CSV/JSON。关闭窗口、Clear、切图或 revision 改变均走统一 analysis session 与 overlay 生命周期。
 - Batch：使用 `BatchAlgorithmAnalysisProcessor` 和同一个 Invocation，输出结构化 JSON；它不是 Batch 图像格式转换菜单中的像素算法。
 - Flow：`LocalFlowImageAlgorithmAdapter` 可复用本地 Invocation/Result。当前没有宣称存在专用生产 STNode，也没有改变旧远端 MQTT execution plane。
-- Copilot：分析结果没有图像输出，本阶段不加入白名单；反射或 alias 不会使其自动暴露。
+- Copilot：分析结果没有图像输出，不在白名单内；反射或 alias 不会使其自动暴露。
 
 ## 验证范围与限制
 
 `LineFitV1Tests` 覆盖九种规范图像格式、稳健离群点 golden、垂直线、Physical/DPI、TLS/Huber、结构化拒绝、资源上限、取消、输入只读、成功/失败/取消释放、Batch/Flow 一致性，以及 ImageView 表格和实际 WPF Visual 回收。算法复杂度为 `O(iterations × points)`，内存为 `O(points)`。
 
-V1 不从图像自动提线、不隐式运行亚像素边缘、不拟合多条线，也不提供统计协方差。圆拟合属于 M6.3，保持独立阶段。
+V1 不从图像自动提线、不隐式运行亚像素边缘、不拟合多条线，也不提供统计协方差。需要拟合圆时使用独立的[圆拟合](./circle-fit-v1.md)参数和结果契约。

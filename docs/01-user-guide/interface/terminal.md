@@ -3,21 +3,23 @@ knowledge_id: "operations.terminal"
 knowledge_type: "topic"
 status: "current"
 summary: "定义内嵌ConPTY会话、编辑器Python运行与外部CMD入口，区分命令提交、脚本结束、shell退出和强制释放。"
-aliases: ["终端面板","终端乱码","运行Python","F5","脚本工作目录","在终端中打开","运行脚本","TerminalService","TerminalControl","ConPtyTerminal","ConPTY","TerminalScreenBuffer","AvalonEditControll","RunPythonCommand","TrySendCommand","BuildScriptStartupCommand"]
-code_paths: ["UI/ColorVision.Solution/Terminal","UI/ColorVision.Solution/Editor/TextEditor.cs","UI/ColorVision.Solution/Editor/AvalonEditor/AvalonEditControll.xaml.cs","UI/ColorVision.Solution/Editor/AvalonEditor/AvalonEditControll.xaml","UI/ColorVision.Solution/Workspace/EditorDocumentService.cs","UI/ColorVision.Solution/Workspace/DockLayoutManager.cs","UI/ColorVision.Solution/Explorer/ScriptFileSupport.cs","UI/ColorVision.Solution/Explorer/SolutionResourceCommands.cs","UI/ColorVision.Solution/TreeViewControl.Command.cs","UI/ColorVision.UI/Environments.cs"]
+aliases: ["终端面板","终端乱码","运行Python","F5","脚本工作目录","在终端中打开","运行脚本","新建 PowerShell","新建 CMD","进程已结束","终端已退出","启动终端失败","TerminalService","TerminalControl","ConPtyTerminal","ConPTY","TerminalScreenBuffer","AvalonEditControll","RunPythonCommand","TrySendCommand","BuildScriptStartupCommand"]
+code_paths: ["UI/ColorVision.Solution/Terminal","UI/ColorVision.Solution/Editor/TextEditor.cs","UI/ColorVision.Solution/Editor/AvalonEditor/AvalonEditControll.xaml.cs","UI/ColorVision.Solution/Editor/AvalonEditor/AvalonEditControll.xaml","UI/ColorVision.Solution/Workspace/EditorDocumentService.cs","UI/ColorVision.Solution/Workspace/DockLayoutManager.cs","UI/ColorVision.Solution/Workspace/ViewPanelMenuItems.cs","UI/ColorVision.Solution/Explorer/ScriptFileSupport.cs","UI/ColorVision.Solution/Explorer/SolutionResourceCommands.cs","UI/ColorVision.Solution/TreeViewControl.Command.cs","UI/ColorVision.UI/Environments.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/TerminalScreenBufferTests.cs","Test/ColorVision.UI.Tests/AvalonEditorSupportTests.cs","Test/ColorVision.UI.Tests/DockContentRegistrationTests.cs"]
-related: ["ui.solution","operations.index","operations.logs"]
+related: ["ui.solution","ui.documents","operations.index","operations.logs"]
 ---
 
 # 终端进程、会话与脚本运行
 
-`TerminalService` 把工作区请求交给 `TerminalControl`，后者用 `ConPtyTerminal` 启动 Windows 伪控制台进程。它不是任务结果存储、事务执行器或权限沙箱；命令可能改文件、联网、启动其他进程或控制设备，权限来自当前任务。
+内嵌终端用于执行 PowerShell/CMD 命令和运行磁盘上的脚本。手工命令使用“终端”标签，编辑器或资源树发起的脚本使用“运行”标签；脚本输出、shell 状态和外部业务结果需要分别确认。
 
-展开终端并非纯粹查看文本：控件会准备命令历史目录，可见后会启动 shell；PowerShell 启动还可能运行本机 profile。只要求源码问答或诊断时，不应为查阅本页而启动产品、重新执行脚本、结束现有进程或清理数据。
+打开终端会准备命令历史目录，可见后启动 shell；PowerShell 还可能执行本机 profile。命令继承宿主环境与权限，能够写文件、联网、启动进程或调用设备，不提供权限沙箱。执行前应确认工作目录、解释器及操作范围。
 
-## 入口与会话归属
+## 打开终端与运行入口
 
-`TerminalPanelProvider` 在底部注册默认隐藏的 `TerminalPanel`，创建两个独立 `TerminalControl`：“终端”用于手工命令，“运行”用于 `RunScript`。二者不共享 ConPTY 进程，但仍继承同一宿主环境，不构成安全隔离。
+选择“视图 > 终端”显示底部面板。在“终端”标签等待 shell 提示符后输入命令并回车；右键菜单底部显示当前 shell 和会话状态，例如 `PowerShell / Running`。这里的 `Running` 表示 shell 会话处于运行状态，不是某条命令的完成回执。
+
+`TerminalService` 把工作区请求交给 `TerminalControl`，由 `ConPtyTerminal` 启动伪控制台进程。`TerminalPanelProvider` 在底部以工厂注册默认隐藏的 `TerminalPanel`，首次物化时创建两个独立 `TerminalControl`：“终端”用于手工命令，“运行”用于 `RunScript`。二者不共享 ConPTY 进程，但仍继承同一宿主环境，不构成安全隔离。
 
 | 入口 | 执行对象与边界 |
 | --- | --- |
@@ -26,11 +28,11 @@ related: ["ui.solution","operations.index","operations.logs"]
 | `TerminalService.SendCommand` / `TrySendCommand` / `TrySendCommandBatch` | 激活“终端”标签，把命令文本发送给交互 shell，不创建独立的每命令任务对象 |
 | 资源树“在终端中打开” | `SolutionResourceShellPolicy.TryOpenTerminal` 用 `Process.Start` 启动外部 `cmd.exe /K cd /d ...`；不经过内嵌会话，也不受其 ConPTY Job 管理 |
 
-`RunScript` 会展开面板；若控件尚未物化，只保留最新一个待运行路径，不排队执行全部请求。无 `WorkspaceManager.LayoutManager` 时直接返回，`RunScript` 是 `void`，没有表示脚本成功的返回值。停靠宿主的注册与内容复用见 [ColorVision.Solution](../../04-api-reference/ui-components/ColorVision.Solution.md)。
+`RunScript` 会展开面板；若控件尚未物化，只保留最新一个待运行路径，不排队执行全部请求。无 `WorkspaceManager.LayoutManager` 时直接返回，`RunScript` 是 `void`，没有表示脚本成功的返回值。停靠工厂注册复用同一个延迟宿主及其中的终端标签控件，关闭重开或重建布局不把原控件转挂到新的父节点，也不主动重建两个终端实例；显式显示会同步物化，自动恢复仍惰性加载。所有权与失败边界见[停靠注册、布局恢复和重置](../../04-api-reference/ui-components/editor-document-lifecycle.md#停靠注册、布局恢复和重置)，不能据面板重新出现推断旧进程已停止或新进程已启动。
 
 ## Shell、工作目录与环境
 
-内嵌终端默认选择 `powershell`，实际启动 `powershell.exe -NoLogo -NoExit`，不是 `pwsh`，也没有默认 `-NoProfile`。CMD 模式启动 `cmd.exe`，带启动命令时使用 `/K`。切换“新建 PowerShell/CMD”是在当前控件内替换会话，不是再新增第三个标签。
+内嵌终端默认选择 `powershell`，实际启动 `powershell.exe -NoLogo -NoExit`，不是 `pwsh`，也没有默认 `-NoProfile`。CMD 模式启动 `cmd.exe`，带启动命令时使用 `/K`。右键“新建 PowerShell”或“新建 CMD”会结束当前标签的旧会话、清空该标签的输出并启动所选 shell；不会增加第三个标签。
 
 - 初次启动或显式新建 shell：优先当前解决方案资源管理器的有效 `DirectoryInfo`，否则使用用户配置文件目录。切换解决方案不会自动给已经运行的 shell 切目录。
 - `RunScript`：先检查文件存在，将路径规范化，再以脚本所在目录启动新会话；不使用工程根目录，也不保留上次运行 shell 的临时环境修改。
@@ -41,11 +43,13 @@ related: ["ui.solution","operations.index","operations.logs"]
 
 ## 编辑器保存与 Python/F5
 
-`Editor/TextEditor.cs` 只负责打开文件并创建 `AvalonEditControll`；按钮、F5 和保存门禁在 `Editor/AvalonEditor/AvalonEditControll.xaml.cs`。只有 `.py/.pyw` 显示 Python 运行按钮，命令还要求已有文件路径；普通文本、JSON 或其它代码文件没有同一 F5 运行入口。
+1. 在编辑器打开已有路径的 `.py` 或 `.pyw` 文件。只有这两类文件显示“运行 Python”按钮；普通文本、JSON 等文件没有同一 F5 入口。先确认“运行”标签没有需要保留的进程，新脚本会替换该标签的旧会话。
+2. 点击“运行 Python”，或在编辑器按无修饰键的 `F5`。文档有未保存修改时，先写回当前文件；保存失败会提示并停止运行请求。此步骤没有另存为或自动备份，也不会把编辑器缓冲直接送给解释器。
+3. 在自动展开的“运行”标签检查输出。脚本以所在目录为工作目录；出现“进程已结束，退出代码”表示本次脚本调用返回，后续 shell 保持打开，详见[脚本启动与完成语义](#脚本启动与完成语义)。
 
-`RunCurrentPythonDocument` 仅在 `IsDirty` 时先调用 `EditorDocumentService.TrySaveDocument(this)`；保存返回 `false` 或异常被转成保存失败提示时，不发送运行请求。保存通过 `textEditor.Save` 写回当前文件，不是把未保存缓冲直接传给解释器，也没有另存为或自动备份步骤。未修改文档不会先写回磁盘，执行仍读取磁盘文件，因此外部修改、文件删除和编辑器内容可能需要单独核对。
+保存与运行门禁位于 `AvalonEditControll.RunCurrentPythonDocument`，`Editor/TextEditor.cs` 负责创建该编辑器。未修改的文档不先保存，实际执行读取磁盘文件；遇到外部修改或删除，应先核对磁盘内容。`.pyw` 同样调用控制台 `python`，没有自动改用 `pythonw`、检查语法或安装依赖的步骤。
 
-运行并不验证 Python 语法、依赖或解释器版本；`.pyw` 也调用控制台 `python`，不是 `pythonw`。F5 可能写回文件并实际执行程序，不是预览或只读检查。关闭编辑器只释放编辑器本身的订阅/计时器，不等价于终止独立“运行”会话。
+关闭编辑器只释放编辑器自身的资源；停止脚本应在对应的“运行”会话操作，按下文[退出、取消与释放](#退出、取消与释放)区分控制字符中断与强制终止。
 
 ## 脚本启动与完成语义
 
@@ -81,6 +85,6 @@ ConPTY 用 UTF-8 编解码，通过带会话编号的输出队列交给 `Termina
 
 - `TerminalScreenBufferTests` 覆盖换行、退格、光标移动、清屏、颜色、长行、缩放与快照；不证明所有 VT/IME/交互程序兼容。
 - `AvalonEditorSupportTests` 覆盖 Python 扩展识别、路径编码包装和部分保存编码；其中批处理路径测试会真实启动 PowerShell，ConPTY Job 测试会真实启动 CMD 并调用 `Kill`，不属于纯解析测试。Job 测试断言看到就绪输出，没有断言所有后代进程均退出。
-- `DockContentRegistrationTests` 覆盖延迟物化和复用，不证明隐藏、关闭、退出时的进程生命周期。
+- `DockContentRegistrationTests` 检查延迟物化、关闭/隐藏重开及内存布局替换时的宿主和内容复用；使用合成内容，不启动 ConPTY，也不证明隐藏、关闭、退出时的进程生命周期。
 
 当前未声明 F5 保存失败后不运行、双标签并发隔离、待运行请求覆盖、批次失败短路、取消确认与应用退出后全部进程消失的端到端覆盖。文档核验只读源码；真实验证需获准的合成脚本与隔离目录，并分别检查磁盘内容、输出和进程状态，不运行产品脚本或设备命令代替测试。通用输出定位见[日志来源与筛选](./log-viewer.md)。

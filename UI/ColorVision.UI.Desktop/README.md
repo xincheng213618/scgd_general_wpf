@@ -11,6 +11,6 @@
 
 ## 源码知识入口
 
-[桌面辅助壳层主题](../../docs/04-api-reference/ui-components/ColorVision.UI.Desktop.md)维护各功能责任、源码与测试定位，并分流到设置、向导、菜单等独立契约。这里不再复制窗口清单、启动步骤或另一套使用手册。
+[桌面辅助壳层主题](../../docs/04-api-reference/ui-components/ColorVision.UI.Desktop.md)维护各功能责任、源码与测试定位，并分流到设置、向导、菜单等独立契约。
 
 本 README 作为 NuGet 包说明打包到包根目录。上面的相对链接只在源码仓库中有效；包使用者应在与包版本匹配的源码中读取对应主题，不能将当前网站或另一分支当成该包的行为保证。

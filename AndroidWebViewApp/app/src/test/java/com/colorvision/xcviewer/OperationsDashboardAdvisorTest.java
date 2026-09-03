@@ -123,7 +123,7 @@ public class OperationsDashboardAdvisorTest {
 
     private static void assertRecommendation(JSONObject monitor, String label, String action) {
         OperationsDashboardAdvisor.Recommendation recommendation =
-                OperationsDashboardAdvisor.fromMonitor(monitor);
+                OperationsDashboardAdvisor.fromMonitor(monitor, true);
         assertEquals(label, recommendation.label);
         assertEquals(action, recommendation.action);
     }

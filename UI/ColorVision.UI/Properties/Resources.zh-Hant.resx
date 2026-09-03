@@ -371,7 +371,10 @@
   <data name="Theme" xml:space="preserve">
     <value>主題</value>
   </data>
-  <data name="PropEditor_SearchPlaceholder" xml:space="preserve"><value>Search properties...</value></data>
+  <data name="PropEditor_SearchPlaceholder" xml:space="preserve"><value>搜尋屬性…（Ctrl+F）</value></data>
+  <data name="PropEditor_ClearSearch" xml:space="preserve"><value>清除搜尋</value></data>
+  <data name="PropEditor_NoSearchResults" xml:space="preserve"><value>沒有相符的屬性</value></data>
+  <data name="PropEditor_SearchEmptyHint" xml:space="preserve"><value>試試其他關鍵字，或清除搜尋以查看全部屬性。</value></data>
   <data name="PropEditor_ResetToDefault" xml:space="preserve"><value>Reset to Default</value></data>
   <data name="PropEditor_ResetTooltip" xml:space="preserve"><value>Reset to class default values</value></data>
   <data name="PropEditor_SortDefault" xml:space="preserve"><value>Default Sort</value></data>
@@ -481,4 +484,5 @@
   <data name="SettingsSectionAppearance" xml:space="preserve"><value>外觀與語言</value></data>
   <data name="SettingsSectionUpdates" xml:space="preserve"><value>更新與網路</value></data>
   <data name="SettingsSectionDiagnostics" xml:space="preserve"><value>日誌與診斷</value></data>
+  <data name="CommandOtherActions" xml:space="preserve"><value>其他操作</value></data>
 </root>

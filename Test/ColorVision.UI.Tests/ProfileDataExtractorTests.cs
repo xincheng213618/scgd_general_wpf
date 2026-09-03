@@ -1,5 +1,4 @@
 using ColorVision.ImageEditor.Draw.Line;
-using System.Runtime.ExceptionServices;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -11,7 +10,7 @@ public sealed class ProfileDataExtractorTests
     [Fact]
     public void ExtractAlongPathGray8OpenPathPreservesEverySample()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             WriteableBitmap bitmap = CreateBitmap(3, 1, PixelFormats.Gray8, new byte[] { 10, 20, 30 }, 3);
 
@@ -29,7 +28,7 @@ public sealed class ProfileDataExtractorTests
     [Fact]
     public void ExtractAlongPathBgr24OpenPathPreservesChannelOrderAndLuminance()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             WriteableBitmap bitmap = CreateBitmap(3, 1, PixelFormats.Bgr24,
                 new byte[]
@@ -54,7 +53,7 @@ public sealed class ProfileDataExtractorTests
     [Fact]
     public void ExtractAlongPathRgb48OpenPathPreservesSixteenBitChannels()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             ushort[] pixels =
             [
@@ -80,7 +79,7 @@ public sealed class ProfileDataExtractorTests
     [Fact]
     public void ExtractAlongPathClosedPathSamplesEachVertexWithoutRepeatingTheFirst()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             WriteableBitmap bitmap = CreateBitmap(2, 2, PixelFormats.Gray8, new byte[] { 10, 20, 30, 40 }, 2);
             Point[] points = [new Point(0, 0), new Point(1, 0), new Point(1, 1), new Point(0, 1)];
@@ -94,7 +93,7 @@ public sealed class ProfileDataExtractorTests
     [Fact]
     public void ExtractAlongPathOutOfBoundsSamplesAreSkipped()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             WriteableBitmap bitmap = CreateBitmap(3, 1, PixelFormats.Gray8, new byte[] { 10, 20, 30 }, 3);
 
@@ -123,30 +122,6 @@ public sealed class ProfileDataExtractorTests
         for (int i = 0; i < expected.Count; i++)
         {
             Assert.Equal(expected[i], actual[i], precision: 10);
-        }
-    }
-
-    private static void RunOnStaThread(Action action)
-    {
-        Exception? failure = null;
-        Thread thread = new(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-
-        if (failure != null)
-        {
-            ExceptionDispatchInfo.Capture(failure).Throw();
         }
     }
 }

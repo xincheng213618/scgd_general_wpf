@@ -59,7 +59,7 @@ dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=
 
 ## Code conventions
 
-- Preserve required runtime dependencies such as `DLL/CVCommCore.dll`, `DLL/MQTTMessageLib.dll`, and `OpenCvSharp4.runtime.win` in the relevant output.
+- Preserve the runtime dependencies declared by the actual projects and delivery packages, including vendor assets under `DLL/scgd_internal_dll/` and `OpenCvSharp4.runtime.win`. Current `CVCommCore.*` and `MQTTMessageLib.*` source types compile into `cvColorVision.dll`; retain matching standalone DLLs whenever a legacy or external plugin still references those assembly identities. See `docs/04-api-reference/engine-components/cvColorVision.md` for the namespace and assembly boundary.
 - Use `CopyToOutputDirectory` for runtime configuration or assets when needed.
 - Optimize for direct, maintainable code rather than line count. Keep simple calls on one line; split only when it materially improves readability.
 - Do not add a forwarding overload merely to let one or two internal callers omit a result or replace an `out` value with `out _`. Keep one only when it is a genuine, reused public API shape.

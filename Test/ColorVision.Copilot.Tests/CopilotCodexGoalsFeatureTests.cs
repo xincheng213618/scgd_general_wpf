@@ -41,47 +41,4 @@ public sealed class CopilotCodexGoalsFeatureTests
         Assert.Contains(command.Arguments!, argument => argument.Value == "history");
     }
 
-    [Fact]
-    public void DiagnosticsExplainThePausedLifecycleAndPreservedState()
-    {
-        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
-        {
-            ConfiguredGoalsEnabled = false,
-            HasGoalsEnabledOverride = true,
-            GoalsEnabledSource = CopilotProjectInstructionConfigSources.CodexHome,
-        };
-        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-            new CopilotProjectInstructionSnapshot(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                options,
-                Array.Empty<CopilotProjectInstructionDocument>()),
-            hasActiveAgentRun: false);
-        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
-        {
-            ProfileLabel = "Profile",
-            Mode = CopilotAgentMode.Code,
-            CodexGoalsEnabled = false,
-            HasCodexGoalsEnabledOverride = true,
-            CodexGoalsEnabledSourceLabel = options.GoalsEnabledSourceLabel,
-        });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                ComposerMode = CopilotAgentMode.Code,
-                CodexConfigOptions = options,
-            });
-
-        Assert.Contains("Codex features.goals：false", memoryReport, StringComparison.Ordinal);
-        Assert.Contains(options.GoalsEnabledSourceLabel, memoryReport, StringComparison.Ordinal);
-        Assert.Contains("已有目标记录保留", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("持续目标：暂停", contextReport, StringComparison.Ordinal);
-        Assert.Contains("不绑定、计数、评估或自动续作", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex features.goals：false", debugReport, StringComparison.Ordinal);
-        Assert.Contains("/goal 仍可查看、暂停或清除", debugReport, StringComparison.Ordinal);
-    }
-
 }

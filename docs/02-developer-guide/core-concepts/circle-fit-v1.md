@@ -9,20 +9,18 @@ test_paths: ["Test/ColorVision.UI.Tests/CircleFitV1Tests.cs","Test/ColorVision.U
 related: ["algorithms.platform","algorithms.index"]
 ---
 
-# 圆拟合 V1（M6.3）
+# 圆拟合 V1
 
 ## 当前发布边界
 
-当前默认 `ImageAlgorithmPlatform.CreateDefaultProviders()` 把本页 provider 包装在 `ExperimentalAlgorithmProviderGate` 中：菜单和 Batch 可执行投影隐藏该能力，直接调用默认 Runner 也返回 `provider_unavailable`，详情包含 `algorithm_experimental`。本页后面的参数、结果与宿主接入描述属于保留实现及测试契约，不是产品已开放的承诺；不得在调用方另建执行旁路来绕过门禁。
-
-本页 `status: current` 表示它记录当前源码事实，不代表算法已发布。M 编号是历史增量标识；其他增量是否可用以 [统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单) 为准。`Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs` 验证默认拒绝行为，专题测试覆盖实现细节；解除门禁还需完成对应数值、最坏资源与生产规模验证。
+此算法为 Experimental，默认不展示或执行；门禁和错误码见[统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单)。
 
 
-## 阶段边界与已有能力盘点
+## 适用范围
 
-M6.3 提供稳定 ID `colorvision.measurement.circle-fit`。仓库既有 Hough 圆、最小包围圆和客户专用圆检测都包含图像检测或特定业务规则，不能替代可序列化、可组合的通用 point-set 圆拟合。本阶段不复制这些实现，也不把找点和拟合隐藏在同一个算法中。
+`colorvision.measurement.circle-fit` 对显式点集拟合圆；图像找点与圆拟合分别调用。
 
-算法只拟合显式点集：`Invocation.Roi` 必须是 `PolylineAlgorithmRoi`，每个顶点都是一个输入点。图像输入仅提供 document/revision、宽高和 DPI 上下文；provider 不读取、复制或修改像素。M6.1 的亚像素边缘点可由调用方投影为该 ROI，从而与圆拟合显式组合。
+算法只拟合显式点集：`Invocation.Roi` 必须是 `PolylineAlgorithmRoi`，每个顶点都是一个输入点。图像输入仅提供 document/revision、宽高和 DPI 上下文；provider 不读取、复制或修改像素。亚像素边缘检测得到的点可由调用方投影为该 ROI，从而与圆拟合显式组合。
 
 ## 参数与数值规则
 
@@ -53,8 +51,8 @@ M6.3 提供稳定 ID `colorvision.measurement.circle-fit`。仓库既有 Hough �
 
 - ImageView：“算法调用 → 圆拟合...”选择点集、编辑统一参数、显示表格与 transient overlay，并导出 CSV/JSON。关闭窗口、Clear、切图或 revision 改变均复用统一 analysis session 与 overlay 生命周期。
 - Batch：`BatchAlgorithmAnalysisProcessor` 接受同一个 Invocation 并输出结构化 JSON；它不属于 Batch 图像格式转换菜单中的像素算法。
-- Flow：`LocalFlowImageAlgorithmAdapter` 可复用本地 Invocation/Result；本阶段没有宣称新增生产 STNode，也不改变旧远端 MQTT execution plane。
-- Copilot：该分析不输出图像，本阶段未进入显式白名单；稳定 alias 不会使其自动暴露。
+- Flow：`LocalFlowImageAlgorithmAdapter` 可复用本地 Invocation/Result；没有生产 STNode 入口。
+- Copilot：该分析不输出图像，不在显式白名单内；稳定 alias 不会使其自动暴露。
 
 ## 验证范围与限制
 

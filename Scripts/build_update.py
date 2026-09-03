@@ -2,8 +2,8 @@ import ctypes
 import os
 import filecmp
 import re
+import tempfile
 import zipfile
-import time
 from pathlib import PurePosixPath
 
 try:
@@ -17,7 +17,8 @@ ALLOWED_RUNTIME_PREFIXES = (
     'runtimes/win/',
     'runtimes/win-x64/',
 )
-EXCLUDED_OUTPUT_DIRECTORIES = {'log', 'plugins', 'publish'}
+EXCLUDED_OUTPUT_DIRECTORIES = {'log', 'plugins', 'publish', 'window-resize-traces'}
+EXCLUDED_ROOT_OUTPUT_FILES = {'changelog.md', 'window-resize-diagnostics.mode'}
 SHELL_EXTENSION_FILE_PREFIX = 'colorvision.shellextension'
 FULL_RELEASE_ZIP_RE = re.compile(
     r'^ColorVision-\[(\d+)\.(\d+)\.(\d+)\.(\d+)]\.zip$',
@@ -218,6 +219,8 @@ def get_all_files(directory, include_shell_extension=True):
 
             absolute_path = os.path.join(root, file)
             relative_path = os.path.relpath(absolute_path, directory)
+            if relative_path.lower() in EXCLUDED_ROOT_OUTPUT_FILES:
+                continue
             if not include_shell_extension and is_shell_extension_file(relative_path):
                 continue
             if is_root_service_host_file(relative_path):
@@ -242,61 +245,35 @@ def create_full_zip(version_dir, output_zip):
             zipf.write(str(file), str(os.path.relpath(file, version_dir)))
 
 
-def remove_directory_best_effort(directory, retries=5, delay_seconds=0.5):
-    """清理临时目录；短暂文件占用不应阻断增量包上传。"""
-    if not os.path.exists(directory):
-        return True
-
-    last_error = None
-    for attempt in range(retries):
-        try:
-            for root, dirs, files in os.walk(directory, topdown=False):
-                for name in files:
-                    os.remove(os.path.join(root, name))
-                for name in dirs:
-                    os.rmdir(os.path.join(root, name))
-            os.rmdir(directory)
-            return True
-        except OSError as exc:
-            last_error = exc
-            if attempt < retries - 1:
-                time.sleep(delay_seconds)
-
-    print(f"Warning: could not remove temporary directory {directory}: {last_error}")
-    return False
-
-
 def make_incremental_zip(old_zip, new_version_dir, incremental_zip):
     """制作增量更新包"""
     if not os.path.exists(old_zip):
         create_full_zip(new_version_dir, incremental_zip.replace('Update', ''))
         return
 
-    old_version_dir = f'temp_old_version_{os.getpid()}_{int(time.time())}'
-    with zipfile.ZipFile(old_zip, 'r') as zipf:
-        zipf.extractall(old_version_dir)
+    with tempfile.TemporaryDirectory(prefix='colorvision-old-version-', ignore_cleanup_errors=True) as old_version_dir:
+        with zipfile.ZipFile(old_zip, 'r') as zipf:
+            zipf.extractall(old_version_dir)
 
-    old_files = get_all_files(old_version_dir, include_shell_extension=False)
-    new_files = get_all_files(new_version_dir, include_shell_extension=False)
-    old_files_dict = {os.path.relpath(file, old_version_dir): file for file in old_files}
-    new_files_dict = {os.path.relpath(file, new_version_dir): file for file in new_files}
-    files_to_zip = {}
+        old_files = get_all_files(old_version_dir, include_shell_extension=False)
+        new_files = get_all_files(new_version_dir, include_shell_extension=False)
+        old_files_dict = {os.path.relpath(file, old_version_dir): file for file in old_files}
+        new_files_dict = {os.path.relpath(file, new_version_dir): file for file in new_files}
+        files_to_zip = {}
 
-    for rel_path, new_file in new_files_dict.items():
-        old_file = old_files_dict.get(rel_path)
-        if not old_file or not filecmp.cmp(old_file, new_file, shallow=False):
-            files_to_zip[rel_path] = new_file
+        for rel_path, new_file in new_files_dict.items():
+            old_file = old_files_dict.get(rel_path)
+            if not old_file or not filecmp.cmp(old_file, new_file, shallow=False):
+                files_to_zip[rel_path] = new_file
 
-    service_host_prefix = f'ServiceHost{os.sep}'.lower()
-    for rel_path, new_file in new_files_dict.items():
-        if rel_path.lower().startswith(service_host_prefix):
-            files_to_zip[rel_path] = new_file
+        service_host_prefix = f'ServiceHost{os.sep}'.lower()
+        for rel_path, new_file in new_files_dict.items():
+            if rel_path.lower().startswith(service_host_prefix):
+                files_to_zip[rel_path] = new_file
 
-    with zipfile.ZipFile(str(incremental_zip), 'w', zipfile.ZIP_DEFLATED) as zipf:
-        for rel_path, file in sorted(files_to_zip.items()):
-            zipf.write(str(file), str(rel_path))
-
-    remove_directory_best_effort(old_version_dir)
+        with zipfile.ZipFile(str(incremental_zip), 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for rel_path, file in sorted(files_to_zip.items()):
+                zipf.write(str(file), str(rel_path))
 
 
 def find_incremental_baseline(directory, version):

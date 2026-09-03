@@ -14,6 +14,10 @@
     <GenerateDocumentationFile>False</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(EnableWindowResizeDiagnostics)' == 'true'">
+    <DefineConstants>$(DefineConstants);COLORVISION_WINDOW_RESIZE_DIAGNOSTICS</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Update="Copilot\Skills\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Compile Remove="Plugins\**" />
@@ -148,7 +152,8 @@
 
   <ItemGroup>
     <None Include="..\CHANGELOG.md" Link="CHANGELOG.md">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </None>
   </ItemGroup>
 

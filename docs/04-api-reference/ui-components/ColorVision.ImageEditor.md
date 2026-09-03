@@ -3,9 +3,9 @@ knowledge_id: "ui.image-editor"
 knowledge_type: "topic"
 status: "current"
 summary: "图像/视频打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。"
-aliases: ["打开图像","看图","视频模式","标注","撤销标注","保存原图还是截图","图像叠加层为什么没有显示","像素数字显示","PixelValueOverlay","ColorVision.ImageEditor","ImageView","OpenImage","ImageSourceLoaded","ExternalRenderCompleted","TIFF","Gray32Float","ImageViewSnapshot","AlgorithmOverlayManager","3D高度图","3D模型查看器","ModelViewer3D","ModelViewer3DControl","ModelViewer3DModel","Window3D","HeightMapPixelSampler"]
-code_paths: ["UI/ColorVision.ImageEditor/ImageView.xaml.cs","UI/ColorVision.ImageEditor/ImageViewLifecycleEventArgs.cs","UI/ColorVision.ImageEditor/ImageView.Snapshot.cs","UI/ColorVision.ImageEditor/EditorContext.cs","UI/ColorVision.ImageEditor/EditorToolFactory.cs","UI/ColorVision.ImageEditor/DrawCanvas.cs","UI/ColorVision.ImageEditor/Draw/Annotations/AnnotationMapper.cs","UI/ColorVision.ImageEditor/Tif","UI/ColorVision.ImageEditor/Video/VideoOpen.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs","UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj","Engine/ColorVision.Engine/Media/CVRawOpen.cs","UI/ColorVision.ImageEditor/README.md","UI/ColorVision.ImageEditor/EditorTools/ThreeD","UI/ColorVision.ImageEditor/PixelValueOverlay.cs","UI/ColorVision.ImageEditor/Settings/DefaultImageViewDisplayConfig.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs","Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs","Test/ColorVision.UI.Tests/ImageViewSnapshotSaveTests.cs","Test/ColorVision.UI.Tests/EraseManagerUndoTests.cs","Test/ColorVision.UI.Tests/DrawShapeCompatibilityTests.cs","Test/ColorVision.UI.Tests/EditorToolFactoryLifecycleTests.cs","Test/ColorVision.UI.Tests/VideoLifecycleTests.cs","Test/ColorVision.UI.Tests/HeightMapPixelSamplerTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DStateTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DModelTests.cs"]
+aliases: ["打开图像","看图","视频模式","标注","撤销标注","绘图连续模式","绘图锁定","紧凑属性条","CompactInspector","保存原图还是截图","图像叠加层为什么没有显示","像素数字显示","PixelValueOverlay","ColorVision.ImageEditor","ImageView","OpenImage","ImageSourceLoaded","ExternalRenderCompleted","TIFF","Gray32Float","ImageViewSnapshot","AlgorithmOverlayManager","3D高度图","3D模型查看器","ModelViewer3D","ModelViewer3DControl","ModelViewer3DModel","Window3D","HeightMapPixelSampler"]
+code_paths: ["UI/ColorVision.ImageEditor/ImageView.xaml","UI/ColorVision.ImageEditor/ImageView.xaml.cs","UI/ColorVision.ImageEditor/ImageViewLifecycleEventArgs.cs","UI/ColorVision.ImageEditor/ImageView.Snapshot.cs","UI/ColorVision.ImageEditor/EditorContext.cs","UI/ColorVision.ImageEditor/EditorToolFactory.cs","UI/ColorVision.ImageEditor/CompactInspector.cs","UI/ColorVision.ImageEditor/DrawCanvas.cs","UI/ColorVision.ImageEditor/Draw/Circle/CircleManager.cs","UI/ColorVision.ImageEditor/Draw/Rectangle/RectangleManager.cs","UI/ColorVision.ImageEditor/Draw/Annotations/AnnotationMapper.cs","UI/ColorVision.ImageEditor/Tif","UI/ColorVision.ImageEditor/Video/VideoOpen.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs","UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj","Engine/ColorVision.Engine/Media/CVRawOpen.cs","UI/ColorVision.ImageEditor/README.md","UI/ColorVision.ImageEditor/EditorTools/ThreeD","UI/ColorVision.ImageEditor/PixelValueOverlay.cs","UI/ColorVision.ImageEditor/Settings/DefaultImageViewDisplayConfig.cs","UI/ColorVision.ImageEditor/Settings/ImageViewSettingsWindow.xaml.cs","UI/ColorVision.ImageEditor/Settings/ImageViewSettingsEntry.cs","Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs","Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs","Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs","Test/ColorVision.UI.Tests/ImageViewSnapshotSaveTests.cs","Test/ColorVision.UI.Tests/EraseManagerUndoTests.cs","Test/ColorVision.UI.Tests/DrawShapeCompatibilityTests.cs","Test/ColorVision.UI.Tests/EditorToolFactoryLifecycleTests.cs","Test/ColorVision.UI.Tests/VideoLifecycleTests.cs","Test/ColorVision.UI.Tests/HeightMapPixelSamplerTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DStateTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DModelTests.cs"]
 related: ["ui.discovery","ui.image-editor-context","ui.property-grid","engine.results","algorithms.platform","algorithms.local-native-analysis","operations.first-run","ui.publishing"]
 ---
 
@@ -32,9 +32,21 @@ related: ["ui.discovery","ui.image-editor-context","ui.property-grid","engine.re
 - 普通图片和 TIFF 打开器异步解码，以请求编号和当前文件路径拒绝过期结果。调用 `OpenImage` 返回不等于像素已经就绪；失败也不保证各打开器都有同样的弹窗或日志，TIFF 解码异常目前可直接返回。
 - `ImageSourceLoaded` 表示当前像素源已载入或更新；`ExternalRenderCompleted` 只在外部渲染者显式通知时发出。该事件也可携带 `Succeeded=false` 或空 `Source`，发生事件不等于渲染成功。需要导出结果叠图时，核对成功标志、当前任务 `Context` 与 `ImageRevision`，再在视图 Dispatcher 捕获；不能仅凭像素加载或事件名称判断标注已完整。快照 API 自身不会等待或校验外部渲染状态，事件字段见 `ImageViewLifecycleEventArgs.cs`。
 
+CVCIE 的全局默认显示在“图像设置 → 默认值 → CVCIE 显示”中配置，由 Engine 的 `CvcieDisplayConfig` 持久化，`CvcieDisplaySettingProvider` 注册到设置窗口，加载 Engine 后无需先打开 CVCIE 即可设置；开启“启用真彩显示”后新打开的 CVCIE 默认采用 XYZ 真彩 sRGB，关闭后默认原图；亮度可选择自动适配或固定参考白。图层下拉框允许临时切换当前图片，不改全局开关。XYZ 转换与原图/Y 灰度回退也由 Engine 提供，异常只记日志，详见 [CV 文件的显示与校正边界](../engine-components/ColorVision.FileIO.md)。
+
+`SetLayerController` 替换或清空控制器时会 Dispose 实现 `IDisposable` 的旧控制器，同一实例重设选择不释放。Engine 的 CVCIE 控制器借此取消后台切换并释放显示缓存；选择返回不表示新图层已显示，消费方仍以 `ImageSourceLoaded` 为完成信号。
+
+## 设置扩展与模块边界
+
+`ImageView.RegisterSettings` 接受返回 `ImageViewSettingsEntry` 的 provider，条目携带分组、标题、配置对象及可选保存委托。`ImageViewSettingsWindow` 按分组名复用内置或已创建的设置页，将扩展设置追加到该页；同名分组不会再生成一个重复导航项。保存或关闭窗口时执行条目的保存委托。扩展模块应通过此入口提供专有配置，ImageEditor 不反向依赖 Engine 的配置类型，FileIO 也不承担用户显示设置。
+
+`CvcieDisplaySettingsTests` 覆盖未打开 CVCIE 时的设置可用性、多个视图共享全局配置、合并默认值页和保存委托；测试入口不代表已经完成真实窗口交互验收。
+
 ## 绘图、选择与撤销
 
 缩放和平移定位图像区域；绘图工具向同一 `DrawCanvas` 添加矩形、圆、线、多边形、曲线或文本等对象。对象选不中时先确认当前绘图/选择状态和对象是否支持选择，再查命中测试与[属性编辑器](./property-grid.md)，不要先修改设备或算法配置。
+
+圆形和矩形绘图工具在底部紧凑属性条中提供持续选项。连续模式关闭时显示 `1×`，开启时显示 `∞`；尺寸锁定关闭时显示开锁，开启时显示闭锁。图标与点击热区应大于普通状态文字，使缩放画布上的高频切换仍容易命中。开启后的持久选中态必须通过稳定的背景、边框或前景反馈与未选中态区分；鼠标按下只提供瞬时反馈，不能与持续选中态共用唯一的视觉差异。`ImageView.xaml` 定义紧凑控件样式与承载区域，`CompactInspector.cs` 创建属性元素，圆形和矩形管理器提供连续、锁定及尺寸状态。
 
 `DrawCanvas` 的撤销/重做只覆盖登记到 `ActionCommand` 的操作；加入新命令会清空 redo，清空画布会清空两栈。不能把换图、任意像素处理或外部保存都视为可撤销。橡皮擦多对象删除是一笔撤销事务；临时框选图形不进入撤销历史。
 
@@ -42,7 +54,7 @@ related: ["ui.discovery","ui.image-editor-context","ui.property-grid","engine.re
 
 ## 保存前分清输出语义
 
-主窗口可配置的“另存为”（默认 Ctrl+Shift+S）沿焦点调用 SaveAs。图像保留其渲染 PNG 输出语义；3D 查看器新增同一命令接线到截图入口，模型未就绪、加载或导出中不可用。没有将它改成保存原图/模型源文件；独立查看器原有快捷键仍保留。
+主窗口可配置的“另存为”（默认 Ctrl+Shift+S）沿焦点调用 SaveAs。图像保留其渲染 PNG 输出语义；3D 查看器将同一命令接到截图入口，模型未就绪、加载或导出中不可用。
 
 | 操作或 API | 实际输出 |
 | --- | --- |

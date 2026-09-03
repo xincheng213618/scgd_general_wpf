@@ -12,7 +12,7 @@ public class OperationsDashboardStatusOrderTest {
     @Test
     public void operationalUrgencyMovesAttentionAndActiveRowsAheadOfStableRows() {
         List<OperationsDashboardStatusFormatter.Item> ordered =
-                OperationsDashboardStatusOrder.prioritized(Arrays.asList(
+                Arrays.asList(
                         OperationsDashboardStatusFormatter.application(
                                 true, "1.0", true, true, "Normal", 256),
                         OperationsDashboardStatusFormatter.flow(true, true, "running"),
@@ -24,7 +24,8 @@ public class OperationsDashboardStatusOrderTest {
                         OperationsDashboardStatusFormatter.performance(
                                 true, 18, "unresponsive"),
                         OperationsDashboardStatusFormatter.recovery(
-                                true, true, true, true)));
+                                true, true, true, true));
+        ordered.sort(OperationsDashboardStatusOrder::compare);
 
         assertEquals(Arrays.asList("性能", "消息", "设备", "告警", "检测", "应用", "恢复"),
                 titles(ordered));
@@ -34,13 +35,14 @@ public class OperationsDashboardStatusOrderTest {
     @Test
     public void stableRowsReturnToTheStandardOverviewOrder() {
         List<OperationsDashboardStatusFormatter.Item> ordered =
-                OperationsDashboardStatusOrder.prioritized(Arrays.asList(
+                Arrays.asList(
                         OperationsDashboardStatusFormatter.alerts(true, 0, 0, 0, ""),
                         OperationsDashboardStatusFormatter.devices(
                                 true, true, 4, 0, 0, 4, ""),
                         OperationsDashboardStatusFormatter.application(
                                 true, "1.0", true, true, "Normal", 256),
-                        OperationsDashboardStatusFormatter.flow(true, false, "idle")));
+                        OperationsDashboardStatusFormatter.flow(true, false, "idle"));
+        ordered.sort(OperationsDashboardStatusOrder::compare);
 
         assertEquals(Arrays.asList("应用", "检测", "设备", "告警"), titles(ordered));
         assertEquals(0, OperationsDashboardStatusOrder.attentionCount(ordered));

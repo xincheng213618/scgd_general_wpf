@@ -99,6 +99,6 @@ revision是有序 `(id, updatedAt)` 列表的SHA-256前24位，不是全字段�
 - 带device proof仍401/403：先看是否精确Bearer前缀抢先进入兼容分支；再区分版本key配置503、metadata/签名/时钟401和scope403。
 - 停用、删除或revision未变：确认后端筛选和默认项变化，再到桌面主题核对草稿/保存；不能假设已交付的key或运行中会话自动撤销。
 
-`test_copilot_config_api.py` 覆盖管理未认证、CRUD不回显provider key、空key更新保留、AES密文与同步解密、合法设备proof、缺失/坏签名/过期proof、缺版本key503、Bearer缺scope403、停用项不下发及远程HTTP显式允许。测试使用合成凭据，本次未运行。
+`test_copilot_config_api.py` 覆盖管理未认证、CRUD不回显provider key、空key更新保留、AES密文与同步解密、合法设备proof、缺失/坏签名/过期proof、缺版本key503、Bearer缺scope403、停用项不下发及远程HTTP显式允许。测试使用合成凭据。
 
 现有这些用例不证明nonce防重放、逐设备身份/吊销、Bearer与proof混合分支、future时钟边界、共享key轮换部署、secret_key变更后的恢复、坏行导致整批失败、revision例外或客户端落盘。本文按当前分支记录这些限制，不将普通成功用例当作安全认证或多端交付验收。

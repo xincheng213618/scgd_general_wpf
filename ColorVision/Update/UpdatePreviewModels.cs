@@ -23,6 +23,7 @@ namespace ColorVision.Update
     {
         None = 0,
         UpdateNow = 1,
+        Reinstall = 2,
     }
 
     public enum ApplicationUpdateMode
@@ -396,6 +397,7 @@ namespace ColorVision.Update
                 _isChecking = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(CheckingVisibility));
+                OnPropertyChanged(nameof(CanReinstall));
                 OnPropertyChanged(nameof(ItemsListVisibility));
                 OnPropertyChanged(nameof(EmptyStateCenteredVisibility));
                 OnPropertyChanged(nameof(CanConfirm));
@@ -451,6 +453,7 @@ namespace ColorVision.Update
                 OnPropertyChanged(nameof(ConfirmButtonText));
                 OnPropertyChanged(nameof(CanConfirm));
                 OnPropertyChanged(nameof(CanCancel));
+                OnPropertyChanged(nameof(CanReinstall));
             }
         }
         private bool _isUpdating;
@@ -592,6 +595,8 @@ namespace ColorVision.Update
             && (HasSelectableItems ? SelectedSelectableItemCount > 0 || HasAlwaysIncludedItems : HasAlwaysIncludedItems);
 
         public bool CanCancel => !IsUpdating;
+
+        public bool CanReinstall => !IsUpdating && !IsChecking;
 
         public Visibility ItemsListVisibility => !IsChecking && Items.Count > 0
             ? Visibility.Visible

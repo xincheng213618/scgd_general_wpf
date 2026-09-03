@@ -9,7 +9,6 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
@@ -584,31 +583,6 @@ public sealed class SearchPaletteTests
             AssertPaletteChromeLayout(control, width, maxHeight);
         }, maxHeight, withStatus);
 
-    [Fact]
-    public void RenderPreviewsWhenExplicitlyRequested()
-    {
-        string? directory = Environment.GetEnvironmentVariable("COLORVISION_SEARCH_PREVIEW_DIRECTORY");
-        if (string.IsNullOrWhiteSpace(directory)) return;
-        Assert.True(Path.IsPathFullyQualified(directory));
-        Directory.CreateDirectory(directory);
-        foreach ((bool dark, string culture, int width) in new[] { (false, "zh-CN", 720), (true, "zh-CN", 720), (true, "en-US", 400) })
-        {
-            WithPalette(dark, culture, width, control =>
-            {
-                RenderPalette(control, width, Path.Combine(directory, $"search-{(dark ? "dark" : "light")}-{culture}-{width}.png"));
-                if (culture == "zh-CN")
-                {
-                    var input = Assert.IsType<TextBox>(control.FindName("Searchbox"));
-                    SetInputFocusState(input, true);
-                    InvokePrivate(control, "CompositionStarted", input, null);
-                    SetUncommittedInput(control, input, "搜索");
-                    Assert.Equal(Visibility.Collapsed, Assert.IsType<TextBlock>(control.FindName("SearchPlaceholder")).Visibility);
-                    RenderPalette(control, width, Path.Combine(directory, $"search-input-focused-{(dark ? "dark" : "light")}-{culture}.png"));
-                }
-            });
-        }
-    }
-
     private static void SetInputFocusState(TextBox input, bool focused)
     {
         // Exercise the real XAML dependency-property binding without activating a window
@@ -768,57 +742,6 @@ public sealed class SearchPaletteTests
         Rect bounds = element.TransformToAncestor(ancestor).TransformBounds(new Rect(element.RenderSize));
         Assert.True(bounds.Left >= -1 && bounds.Top >= -1 && bounds.Right <= ancestor.ActualWidth + 1 && bounds.Bottom <= ancestor.ActualHeight + 1,
             $"{message} Element bounds={bounds}; ancestor={ancestor.RenderSize}.");
-    }
-
-    private static void RenderPalette(SearchControl control, int width, string path)
-    {
-        control.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
-        control.UpdateLayout();
-        AssertPaletteLayout(control, width);
-        Rect bounds = new(0, 0, control.ActualWidth, control.ActualHeight);
-        DrawingVisual visual = new();
-        using (DrawingContext context = visual.RenderOpen())
-        {
-            context.DrawRectangle((Brush)control.FindResource("GlobalBackground"), null, bounds);
-            // VisualBrush's default relative viewbox follows descendant drawing bounds,
-            // not the arranged control size. Fix both maps to the same DIP rectangle
-            // so the preview is 1:1 and cannot stretch/crop away the footer.
-            VisualBrush brush = new(control)
-            {
-                AutoLayoutContent = false,
-                Stretch = Stretch.None,
-                AlignmentX = AlignmentX.Left,
-                AlignmentY = AlignmentY.Top,
-                ViewboxUnits = BrushMappingMode.Absolute,
-                Viewbox = bounds,
-                ViewportUnits = BrushMappingMode.Absolute,
-                Viewport = bounds,
-                TileMode = TileMode.None
-            };
-            context.DrawRectangle(brush, null, bounds);
-        }
-        RenderTargetBitmap bitmap = new((int)Math.Ceiling(bounds.Width), (int)Math.Ceiling(bounds.Height), 96, 96, PixelFormats.Pbgra32);
-        bitmap.Render(visual);
-        Button footerSettings = Assert.Single(Descendants(control).OfType<Button>().Where(button => Equals(button.Content, SearchPaletteText.Settings)));
-        Rect footerBounds = footerSettings.TransformToAncestor(control).TransformBounds(new Rect(footerSettings.RenderSize));
-        Int32Rect footerPixels = new((int)Math.Floor(footerBounds.Left), (int)Math.Floor(footerBounds.Top),
-            (int)Math.Ceiling(footerBounds.Width), (int)Math.Ceiling(footerBounds.Height));
-        int stride = footerPixels.Width * 4;
-        byte[] pixels = new byte[stride * footerPixels.Height];
-        bitmap.CopyPixels(footerPixels, pixels, stride, 0);
-        Color foreground = Assert.IsType<SolidColorBrush>(footerSettings.Foreground).Color;
-        int foregroundPixels = 0;
-        for (int offset = 0; offset < pixels.Length; offset += 4)
-        {
-            if (pixels[offset + 3] == 255 && Math.Abs(pixels[offset] - foreground.B)
-                + Math.Abs(pixels[offset + 1] - foreground.G) + Math.Abs(pixels[offset + 2] - foreground.R) < 60)
-                foregroundPixels++;
-        }
-        Assert.True(foregroundPixels > 3, "The rendered preview must contain the footer label, not only an empty background at its layout coordinates.");
-        PngBitmapEncoder encoder = new();
-        encoder.Frames.Add(BitmapFrame.Create(bitmap));
-        using FileStream output = new(path, FileMode.Create, FileAccess.Write, FileShare.None);
-        encoder.Save(output);
     }
 
     private static void WithSearchCommandOwner(Action<Window> action)

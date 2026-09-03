@@ -6,7 +6,6 @@ using FlowEngineLib.Start;
 using ST.Library.UI.NodeContainer;
 using ST.Library.UI.NodeEditor;
 using System.Diagnostics;
-using System.Runtime.ExceptionServices;
 using Xunit.Abstractions;
 
 namespace ColorVision.UI.Tests;
@@ -27,7 +26,7 @@ public sealed class FlowHostPerformanceProbeTests
     [InlineData(500)]
     public void CompareEditorAndHeadlessRuntimeHosts(int passThroughNodeCount)
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             byte[] canvas = CreateCanvas(passThroughNodeCount);
             HostProbeResult editor = Measure(
@@ -236,27 +235,6 @@ public sealed class FlowHostPerformanceProbeTests
     {
         int index = (int)Math.Ceiling(sorted.Length * 0.95d) - 1;
         return sorted[Math.Clamp(index, 0, sorted.Length - 1)];
-    }
-
-    private static void RunInSta(Action action)
-    {
-        Exception? exception = null;
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                exception = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-        if (exception != null)
-            ExceptionDispatchInfo.Capture(exception).Throw();
     }
 
     private sealed record HostProbeResult(

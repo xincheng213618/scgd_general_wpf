@@ -34,47 +34,4 @@ public sealed class CopilotCodexReasoningVisibilityTests
             agentReasoning,
             CopilotReasoningVisibility.FilterForPresentation(agentReasoning, hideAgentReasoning: false));
     }
-
-    [Fact]
-    public void VisibilityDiagnosticsExposeValueSourceScopeAndFrozenBehavior()
-    {
-        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
-        {
-            ConfiguredHideAgentReasoning = true,
-            HasHideAgentReasoningOverride = true,
-            HideAgentReasoningSource = CopilotProjectInstructionConfigSources.CodexHome,
-        };
-        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-            new CopilotProjectInstructionSnapshot(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                options,
-                Array.Empty<CopilotProjectInstructionDocument>()),
-            hasActiveAgentRun: false);
-        string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
-        {
-            CodexHideAgentReasoning = true,
-            HasCodexHideAgentReasoningOverride = true,
-            CodexHideAgentReasoningSourceLabel = options.HideAgentReasoningSourceLabel,
-        });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                CodexConfigOptions = options,
-            });
-
-        Assert.Contains("Codex hide_agent_reasoning：true", memoryReport, StringComparison.Ordinal);
-        Assert.Contains(options.HideAgentReasoningSourceLabel, memoryReport, StringComparison.Ordinal);
-        Assert.Contains("推理事件展示：隐藏", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex hide_agent_reasoning：true", debugReport, StringComparison.Ordinal);
-        Assert.Contains("Chat/Agent", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("Chat/Agent", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Chat/Agent", debugReport, StringComparison.Ordinal);
-        Assert.Contains("Token 计量", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("Token 计量", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Token 计量", debugReport, StringComparison.Ordinal);
-    }
 }

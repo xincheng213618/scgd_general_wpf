@@ -331,17 +331,6 @@ namespace ProjectARVRPro
             _db.CodeFirst.InitTables<ProjectARVRReuslt, ObjectiveTestResultRecord>();
             ResultJsonPayloadStorage.EnsureSchema(_db);
             LoadAll(Config.Count);
-            DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
-    "sqlite.projectarvr",
-    "ARVR 结果",
-    () => SqliteDbPath,
-    dbPath => new SqlSugarClient(new ConnectionConfig
-    {
-        ConnectionString = $"Data Source={dbPath}",
-        DbType = DbType.Sqlite,
-        IsAutoCloseConnection = true,
-        InitKeyType = InitKeyType.Attribute
-    })));
         }
         public void SlectSqlLiteDb()
         {

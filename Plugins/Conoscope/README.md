@@ -6,7 +6,7 @@ Conoscope 是 ColorVision 的 VAM/锥镜图像分析插件，提供 CVCIE 显示
 
 ## 包内运行与操作前提
 
-- 使用匹配版本的 Windows/x64 宿主、`net10.0-windows` 运行环境及 ColorVision.Engine、ColorVision.ImageEditor、ColorVision.Solution 等依赖；保留所需 `CVCommCore.dll`、`MQTTMessageLib.dll` 和 OpenCV 原生运行库。仅有 `Conoscope.dll` 不代表完整运行环境。
+- 使用匹配版本的 Windows/x64 宿主、`net10.0-windows` 运行环境及 ColorVision.Engine、ColorVision.ImageEditor、ColorVision.Solution、cvColorVision 等依赖和所用 native 运行库。当前 `CVCommCore.*` / `MQTTMessageLib.*` 类型编入 cvColorVision；旧交付若仍引用独立同名程序集，须保留匹配 DLL。仅有 `Conoscope.dll` 不代表完整运行环境。
 - 普通 CVCIE 分析不要求相机硬件；MVS 观察相机另需海康驱动与 `MvCameraControl.dll`。Ribbon 的测量采集使用 Engine Flow 或 `DeviceCamera`，不是这条观察相机链。
 - 采集、设备操作、POI 数据库保存和文件导出各有副作用，须在相应授权范围内执行。Flow/相机报告成功、找到文件、图像首屏和完整 XYZ 就绪不能互相替代。
 - 有效 `SolutionDir` 下构建会同时写宿主 Debug/Release 插件目录；本项目还向两套宿主根目录复制项目引用 DLL 及存在的 PDB。不要把它当作只影响当前插件配置的隔离构建。

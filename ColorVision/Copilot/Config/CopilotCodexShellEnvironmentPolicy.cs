@@ -13,12 +13,6 @@ namespace ColorVision.Copilot
         None,
     }
 
-    internal enum CopilotCodexShellEnvironmentFilter
-    {
-        Include,
-        Exclude,
-    }
-
     internal sealed record CopilotCodexShellEnvironmentPolicy
     {
         private static readonly string[] WindowsCoreEnvironmentVariables =
@@ -241,88 +235,6 @@ namespace ColorVision.Copilot
             while (patternIndex < pattern.Length && pattern[patternIndex] == '*')
                 patternIndex++;
             return patternIndex == pattern.Length;
-        }
-    }
-
-    internal sealed record CopilotCodexShellEnvironmentPolicyLayer
-    {
-        public bool HasAssignment { get; init; }
-
-        public bool IsValid { get; init; } = true;
-
-        public string ErrorMessage { get; init; } = string.Empty;
-
-        public CopilotCodexShellEnvironmentInherit? Inherit { get; init; }
-
-        public bool? IgnoreDefaultExcludes { get; init; }
-
-        public bool HasLegacyExclude { get; init; }
-
-        public IReadOnlyList<string> LegacyExclude { get; init; } = Array.Empty<string>();
-
-        public bool HasLegacyIncludeOnly { get; init; }
-
-        public IReadOnlyList<string> LegacyIncludeOnly { get; init; } = Array.Empty<string>();
-
-        public IReadOnlyDictionary<string, CopilotCodexShellEnvironmentFilter> Filters { get; init; } =
-            new Dictionary<string, CopilotCodexShellEnvironmentFilter>(StringComparer.OrdinalIgnoreCase);
-
-        public IReadOnlyDictionary<string, string> Set { get; init; } =
-            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-        public static CopilotCodexShellEnvironmentPolicyLayer Empty { get; } = new();
-    }
-
-    internal static class CopilotCodexShellEnvironmentPolicyMerge
-    {
-        public static CopilotCodexShellEnvironmentPolicy Apply(
-            CopilotCodexShellEnvironmentPolicy current,
-            CopilotCodexShellEnvironmentPolicyLayer layer)
-        {
-            ArgumentNullException.ThrowIfNull(current);
-            ArgumentNullException.ThrowIfNull(layer);
-            if (!layer.HasAssignment)
-                return current;
-            if (!layer.IsValid)
-                return CopilotCodexShellEnvironmentPolicy.LockedDown;
-
-            var exclude = (layer.HasLegacyExclude
-                    ? layer.LegacyExclude
-                    : current.Exclude)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            var includeOnly = (layer.HasLegacyIncludeOnly
-                    ? layer.LegacyIncludeOnly
-                    : current.IncludeOnly)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            foreach (var pair in layer.Filters)
-            {
-                exclude.RemoveAll(pattern => string.Equals(
-                    pattern,
-                    pair.Key,
-                    StringComparison.OrdinalIgnoreCase));
-                includeOnly.RemoveAll(pattern => string.Equals(
-                    pattern,
-                    pair.Key,
-                    StringComparison.OrdinalIgnoreCase));
-                (pair.Value == CopilotCodexShellEnvironmentFilter.Exclude
-                    ? exclude
-                    : includeOnly).Add(pair.Key);
-            }
-
-            var set = new Dictionary<string, string>(current.Set, StringComparer.OrdinalIgnoreCase);
-            foreach (var pair in layer.Set)
-                set[pair.Key] = pair.Value;
-            return new CopilotCodexShellEnvironmentPolicy
-            {
-                Inherit = layer.Inherit ?? current.Inherit,
-                IgnoreDefaultExcludes = layer.IgnoreDefaultExcludes
-                    ?? current.IgnoreDefaultExcludes,
-                Exclude = exclude.ToArray(),
-                IncludeOnly = includeOnly.ToArray(),
-                Set = set,
-            };
         }
     }
 }

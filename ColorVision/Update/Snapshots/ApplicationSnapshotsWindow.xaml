@@ -5,201 +5,237 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:ColorVision.Properties"
         Title="{x:Static properties:Resources.UpdatePreviewApplicationSnapshotsLink}"
-        Width="940"
-        Height="610"
-        MinWidth="820"
-        MinHeight="520"
-        Background="{DynamicResource GlobalBackground}"
+        Width="960" Height="640" MinWidth="860" MinHeight="580"
+        Background="{DynamicResource UpdateDialog.WindowBorder}"
+        SnapsToDevicePixels="True" UseLayoutRounding="True"
         mc:Ignorable="d">
-    <Grid Margin="18">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="../UpdateDialogTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="SnapshotCellTextStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            </Style>
+            <Style x:Key="SnapshotCellStyle" TargetType="{x:Type DataGridCell}">
+                <Setter Property="Foreground" Value="{DynamicResource UpdateDialog.TextPrimary}" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Padding" Value="12,0" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type DataGridCell}">
+                            <ContentPresenter Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="SnapshotRowStyle" TargetType="{x:Type DataGridRow}">
+                <Setter Property="MinHeight" Value="48" />
+                <Setter Property="Margin" Value="0,0,0,6" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type DataGridRow}">
+                            <Border x:Name="RowSurface" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="7">
+                                <Grid>
+                                    <Border x:Name="SelectionMarker" Width="2" Margin="0,10,0,10"
+                                            HorizontalAlignment="Left" CornerRadius="1" Visibility="Collapsed"
+                                            Background="{DynamicResource UpdateDialog.Accent}" />
+                                    <DataGridCellsPresenter />
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="RowSurface" Property="Background" Value="{DynamicResource UpdateDialog.SurfaceHover}" />
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="RowSurface" Property="Background" Value="{DynamicResource UpdateDialog.SurfaceAlt}" />
+                                    <Setter TargetName="RowSurface" Property="BorderBrush" Value="{DynamicResource UpdateDialog.WeakBorder}" />
+                                    <Setter TargetName="SelectionMarker" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="SnapshotHeaderStyle" TargetType="{x:Type DataGridColumnHeader}">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Foreground" Value="{DynamicResource UpdateDialog.TextSecondary}" />
+                <Setter Property="Opacity" Value="0.6" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="Padding" Value="12,10" />
+                <Setter Property="BorderThickness" Value="0" />
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
 
-        <Grid Grid.Row="0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
+    <Border Background="{DynamicResource UpdateDialog.Background}">
+        <Grid Margin="30,30,30,22">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="1" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="1" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
-            <StackPanel>
-                <TextBlock FontSize="24"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource GlobalTextBrush}"
-                           Text="{x:Static properties:Resources.UpdatePreviewApplicationSnapshotsLink}" />
-                <TextBlock Margin="0,8,0,0"
-                           FontSize="13"
-                           Foreground="{DynamicResource GlobalTextBrush}"
-                           Opacity="0.72"
-                           Text="{Binding SnapshotDirectory}"
-                           TextTrimming="CharacterEllipsis" />
-            </StackPanel>
-
-            <StackPanel Grid.Column="1"
-                        VerticalAlignment="Top">
-                <CheckBox HorizontalAlignment="Right"
-                          Content="{x:Static properties:Resources.CreateSnapshotBeforeUpdate}"
-                          IsChecked="{Binding CreateSnapshotBeforeUpdate, Mode=TwoWay}"
-                          ToolTip="{x:Static properties:Resources.CreateSnapshotBeforeUpdateDescription}" />
-            </StackPanel>
-        </Grid>
-
-        <Border Grid.Row="1"
-                Margin="0,16,0,0"
-                Padding="14"
-                BorderBrush="{DynamicResource GlobalBorderBrush}"
-                BorderThickness="1"
-                CornerRadius="6">
-            <Grid>
+            <Grid Margin="0,0,0,20">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-
-                <StackPanel>
-                    <CheckBox FontSize="14"
-                              FontWeight="SemiBold"
-                              Content="正常启动后自动存档"
-                              IsChecked="{Binding CreateAutomaticSnapshotAfterHealthyStartup, Mode=TwoWay}" />
-                    <TextBlock Margin="24,6,0,0"
-                               FontSize="12"
-                               Foreground="{DynamicResource GlobalTextBrush}"
-                               Opacity="0.72"
-                               Text="新版本正常进入主界面后在后台保存，固定覆盖一份，不延长启动等待。" />
-                    <TextBlock Margin="24,8,18,0"
-                               FontSize="12"
-                               Foreground="{DynamicResource GlobalTextBrush}"
-                               Opacity="0.72"
-                               Text="{Binding AutomaticSnapshotDirectory}"
-                               TextTrimming="CharacterEllipsis"
-                               ToolTip="{Binding AutomaticSnapshotDirectory}" />
+                <StackPanel Margin="0,0,24,0">
+                    <TextBlock FontSize="30" FontWeight="SemiBold"
+                               Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                               Text="{x:Static properties:Resources.UpdatePreviewApplicationSnapshotsLink}" />
+                    <TextBlock Margin="0,10,0,0" FontSize="13"
+                               Foreground="{DynamicResource UpdateDialog.TextSecondary}" Opacity="0.64"
+                               Text="{Binding ProgramDirectory}" TextTrimming="CharacterEllipsis"
+                               ToolTip="{Binding ProgramDirectory}" />
                 </StackPanel>
-
-                <StackPanel Grid.Column="1"
-                            VerticalAlignment="Center"
-                            Orientation="Horizontal">
-                    <Button Margin="0,0,8,0"
-                            Click="ChooseAutomaticSnapshotDirectory_Click"
-                            Content="更改位置" />
-                    <Button Margin="0,0,8,0"
-                            Click="ResetAutomaticSnapshotDirectory_Click"
-                            Content="默认位置" />
-                    <Button Click="OpenAutomaticSnapshotDirectory_Click"
-                            Content="打开位置" />
+                <StackPanel Grid.Column="1" Margin="0,4,0,0" VerticalAlignment="Top">
+                    <TextBlock HorizontalAlignment="Right" FontSize="12" Text="当前版本"
+                               Foreground="{DynamicResource UpdateDialog.TextSecondary}" Opacity="0.6" />
+                    <TextBlock Margin="0,6,0,0" HorizontalAlignment="Right" FontSize="18"
+                               Foreground="{DynamicResource UpdateDialog.TextPrimary}" Text="{Binding CurrentVersion}" />
                 </StackPanel>
             </Grid>
-        </Border>
 
-        <Grid Grid.Row="2" Margin="0,14,0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
+            <Border Grid.Row="1" Background="{DynamicResource UpdateDialog.WeakBorder}" />
 
-            <TextBlock VerticalAlignment="Center"
-                       FontSize="13"
-                       Foreground="{DynamicResource GlobalTextBrush}"
-                       Opacity="0.72"
-                       Text="程序目录" />
-            <TextBlock Grid.Column="1"
-                       Margin="10,0,24,0"
-                       VerticalAlignment="Center"
-                       FontSize="13"
-                       Foreground="{DynamicResource GlobalTextBrush}"
-                       Opacity="0.72"
-                       Text="{Binding ProgramDirectory}"
-                       TextTrimming="CharacterEllipsis" />
-            <TextBlock Grid.Column="2"
-                       Margin="0,0,18,0"
-                       VerticalAlignment="Center"
-                       FontSize="13"
-                       Foreground="{DynamicResource GlobalTextBrush}"
-                       Opacity="0.72"
-                       Text="{Binding CurrentVersion}" />
+            <Border Grid.Row="2" Margin="0,20,0,0" Padding="18,16"
+                    Background="{DynamicResource UpdateDialog.Surface}"
+                    BorderBrush="{DynamicResource UpdateDialog.WeakBorder}" BorderThickness="1" CornerRadius="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <CheckBox FontSize="14" Content="正常启动后自动存档"
+                              Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                              IsChecked="{Binding CreateAutomaticSnapshotAfterHealthyStartup, Mode=TwoWay}" />
+                    <CheckBox Grid.Column="1" Margin="20,0,0,0" FontSize="12"
+                              Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                              Content="{x:Static properties:Resources.CreateSnapshotBeforeUpdate}"
+                              IsChecked="{Binding CreateSnapshotBeforeUpdate, Mode=TwoWay}"
+                              ToolTip="{x:Static properties:Resources.CreateSnapshotBeforeUpdateDescription}" />
+                    <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Margin="24,7,0,0" FontSize="12"
+                               Foreground="{DynamicResource UpdateDialog.TextSecondary}" Opacity="0.6"
+                               Text="新版本正常启动后在后台保存，自动保留一份最新存档。" TextWrapping="Wrap" />
+                    <TextBlock Grid.Row="2" Margin="24,12,20,0" VerticalAlignment="Center" FontSize="12"
+                               Foreground="{DynamicResource UpdateDialog.TextSecondary}" Opacity="0.6"
+                               Text="{Binding AutomaticSnapshotDirectory}" TextTrimming="CharacterEllipsis"
+                               ToolTip="{Binding AutomaticSnapshotDirectory}" />
+                    <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,10,0,0" Orientation="Horizontal">
+                        <Button Click="ChooseAutomaticSnapshotDirectory_Click" Content="更改位置"
+                                Style="{StaticResource UpdateDialogTextButtonStyle}" />
+                        <Button Margin="18,0,0,0" Click="ResetAutomaticSnapshotDirectory_Click" Content="默认位置"
+                                Style="{StaticResource UpdateDialogTextButtonStyle}" />
+                        <Button Margin="18,0,0,0" Click="OpenAutomaticSnapshotDirectory_Click" Content="打开位置"
+                                Style="{StaticResource UpdateDialogTextButtonStyle}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
 
-            <StackPanel Grid.Column="3"
-                        HorizontalAlignment="Right"
-                        Orientation="Horizontal">
-                <Button Margin="0,0,8,0"
-                        Click="CreateSnapshot_Click"
-                        Content="创建快照"
-                        IsEnabled="{Binding CanRunCommand}" />
-                <Button Margin="0,0,8,0"
-                        Click="RebuildDefault_Click"
-                        Content="重建默认"
-                        IsEnabled="{Binding CanRunCommand}" />
-                <Button Click="OpenFolder_Click"
-                        Content="打开目录" />
-            </StackPanel>
+            <Grid Grid.Row="3" Margin="0,22,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock FontSize="16" FontWeight="SemiBold" Text="备份记录"
+                               Foreground="{DynamicResource UpdateDialog.TextPrimary}" />
+                    <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" FontSize="12" Opacity="0.6"
+                               Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                               Text="{Binding Snapshots.Count, StringFormat=共 {0} 份}" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Click="Refresh_Click" Content="刷新" IsEnabled="{Binding CanRunCommand}"
+                            Style="{StaticResource UpdateDialogTextButtonStyle}" />
+                    <Button Margin="20,0,0,0" Click="OpenFolder_Click" Content="打开目录"
+                            ToolTip="{Binding SnapshotDirectory}" Style="{StaticResource UpdateDialogTextButtonStyle}" />
+                    <Button Margin="20,0,0,0" Click="RebuildDefault_Click" Content="重建默认"
+                            IsEnabled="{Binding CanRunCommand}" Style="{StaticResource UpdateDialogTextButtonStyle}" />
+                </StackPanel>
+            </Grid>
+
+            <Grid Grid.Row="4" Margin="0,0,0,18">
+                <DataGrid x:Name="SnapshotGrid" AutoGenerateColumns="False"
+                          Background="Transparent" BorderThickness="0" FontSize="13"
+                          Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                          CanUserAddRows="False" CanUserDeleteRows="False" CanUserReorderColumns="False"
+                          EnableColumnVirtualization="True" EnableRowVirtualization="True"
+                          GridLinesVisibility="None" HeadersVisibility="Column" IsReadOnly="True"
+                          CellStyle="{StaticResource SnapshotCellStyle}"
+                          RowStyle="{StaticResource SnapshotRowStyle}"
+                          ColumnHeaderStyle="{StaticResource SnapshotHeaderStyle}"
+                          ItemsSource="{Binding Snapshots}" SelectedItem="{Binding SelectedSnapshot, Mode=TwoWay}"
+                          SelectionMode="Single" SelectionUnit="FullRow">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Width="115" Header="类型" Binding="{Binding SnapshotTypeText}"
+                                            ElementStyle="{StaticResource SnapshotCellTextStyle}" />
+                        <DataGridTextColumn Width="170" Header="时间" Binding="{Binding CreatedAtText}"
+                                            ElementStyle="{StaticResource SnapshotCellTextStyle}" />
+                        <DataGridTextColumn Width="145" Header="版本" Binding="{Binding VersionText}"
+                                            ElementStyle="{StaticResource SnapshotCellTextStyle}" />
+                        <DataGridTextColumn Width="100" Header="大小" Binding="{Binding SizeText}"
+                                            ElementStyle="{StaticResource SnapshotCellTextStyle}" />
+                        <DataGridTextColumn Width="*" Header="文件" Binding="{Binding FileName}"
+                                            ElementStyle="{StaticResource SnapshotCellTextStyle}" />
+                    </DataGrid.Columns>
+                </DataGrid>
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
+                    <StackPanel.Style>
+                        <Style TargetType="{x:Type StackPanel}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding Snapshots.Count}" Value="0" />
+                                        <Condition Binding="{Binding IsBusy}" Value="False" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock HorizontalAlignment="Center" FontSize="18" Text="暂无程序备份"
+                               Foreground="{DynamicResource UpdateDialog.TextPrimary}" />
+                    <TextBlock Margin="0,8,0,0" FontSize="13" Text="创建快照，保存当前可用的程序版本。" Opacity="0.6"
+                               Foreground="{DynamicResource UpdateDialog.TextSecondary}" />
+                </StackPanel>
+            </Grid>
+
+            <Border Grid.Row="5" Background="{DynamicResource UpdateDialog.WeakBorder}" />
+            <Grid Grid.Row="6" Margin="0,18,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Margin="0,0,24,0" VerticalAlignment="Center" FontSize="13" Opacity="0.64"
+                           Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                           Text="{Binding StatusText}" TextTrimming="CharacterEllipsis" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Margin="0,0,24,0" Click="DeleteSnapshot_Click" Content="删除" IsEnabled="{Binding CanUseSelected}"
+                            Style="{StaticResource UpdateDialogTextButtonStyle}" />
+                    <Button Margin="0,0,12,0" Click="CreateSnapshot_Click" Content="创建快照" IsEnabled="{Binding CanRunCommand}"
+                            Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
+                    <Button Click="RestoreSnapshot_Click" Content="还原所选" IsEnabled="{Binding CanUseSelected}"
+                            Style="{StaticResource UpdateDialogPrimaryButtonStyle}" />
+                </StackPanel>
+            </Grid>
         </Grid>
-
-        <DataGrid x:Name="SnapshotGrid"
-                  Grid.Row="3"
-                  AutoGenerateColumns="False"
-                  Background="Transparent"
-                  BorderBrush="{DynamicResource GlobalBorderBrush}"
-                  CanUserAddRows="False"
-                  CanUserDeleteRows="False"
-                  EnableColumnVirtualization="True"
-                  EnableRowVirtualization="True"
-                  GridLinesVisibility="Horizontal"
-                  HeadersVisibility="Column"
-                  IsReadOnly="True"
-                  ItemsSource="{Binding Snapshots}"
-                  SelectedItem="{Binding SelectedSnapshot, Mode=TwoWay}"
-                  SelectionMode="Single">
-            <DataGrid.Columns>
-                <DataGridTextColumn Width="110"
-                                    Binding="{Binding SnapshotTypeText}"
-                                    Header="类型" />
-                <DataGridTextColumn Width="155"
-                                    Binding="{Binding CreatedAtText}"
-                                    Header="时间" />
-                <DataGridTextColumn Width="180"
-                                    Binding="{Binding VersionText}"
-                                    Header="版本" />
-                <DataGridTextColumn Width="90"
-                                    Binding="{Binding SizeText}"
-                                    Header="大小" />
-                <DataGridTextColumn Width="*"
-                                    Binding="{Binding FileName}"
-                                    Header="文件" />
-            </DataGrid.Columns>
-        </DataGrid>
-
-        <Grid Grid.Row="4" Margin="0,14,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-
-            <TextBlock VerticalAlignment="Center"
-                       FontSize="13"
-                       Foreground="{DynamicResource GlobalTextBrush}"
-                       Opacity="0.72"
-                       Text="{Binding StatusText}"
-                       TextTrimming="CharacterEllipsis" />
-
-            <StackPanel Grid.Column="1"
-                        Orientation="Horizontal">
-                <Button Margin="0,0,8,0"
-                        Click="Refresh_Click"
-                        Content="刷新"
-                        IsEnabled="{Binding CanRunCommand}" />
-                <Button Margin="0,0,8,0"
-                        Click="RestoreSnapshot_Click"
-                        Content="还原"
-                        IsEnabled="{Binding CanUseSelected}" />
-                <Button Click="DeleteSnapshot_Click"
-                        Content="删除"
-                        IsEnabled="{Binding CanUseSelected}" />
-            </StackPanel>
-        </Grid>
-    </Grid>
+    </Border>
 </Window>

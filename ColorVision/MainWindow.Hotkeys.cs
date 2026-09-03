@@ -1,5 +1,4 @@
 using ColorVision.UI.HotKey;
-using ColorVision.UI.Menus;
 using ColorVision.UI.Menus.Base.File;
 using ColorVision.Solution.Workspace;
 using AvalonDock;
@@ -115,35 +114,30 @@ public partial class MainWindow
 
 }
 
-public sealed class MenuCommandSearch : MenuItemBase, IHotKey
+// Keep the provider type names stable so saved hotkey overrides retain their IDs.
+public sealed class MenuCommandSearch : IHotKey
 {
-    public override string OwnerGuid => MenuItemConstants.Tool;
-    public override string GuidId => nameof(MenuCommandSearch);
-    public override string Header => BuiltInHotkeyDescriptions.SearchCommandsName;
-    public override int Order => 10;
-    public HotKeys HotKeys => new(Header, new Hotkey(Key.P, ModifierKeys.Control | ModifierKeys.Shift), Execute)
+    public HotKeys HotKeys => new(BuiltInHotkeyDescriptions.SearchCommandsName, new Hotkey(Key.P, ModifierKeys.Control | ModifierKeys.Shift), Execute)
     {
-        Description = BuiltInHotkeyDescriptions.SearchCommands
+        Description = BuiltInHotkeyDescriptions.SearchCommands,
+        Category = ColorVision.UI.Properties.Resources.MenuTool
     };
 
-    public override void Execute()
+    public void Execute()
     {
         if (Application.Current?.MainWindow is MainWindow window) window.FocusCommandSearch();
     }
 }
 
-public sealed class MenuContextualFind : MenuItemBase, IHotKey
+public sealed class MenuContextualFind : IHotKey
 {
-    public override string OwnerGuid => MenuItemConstants.Edit;
-    public override string GuidId => nameof(MenuContextualFind);
-    public override string Header => BuiltInHotkeyDescriptions.ContextualFindName;
-    public override int Order => 20;
-    public HotKeys HotKeys => new(Header, new Hotkey(Key.F, ModifierKeys.Control), Execute)
+    public HotKeys HotKeys => new(BuiltInHotkeyDescriptions.ContextualFindName, new Hotkey(Key.F, ModifierKeys.Control), Execute)
     {
-        Description = BuiltInHotkeyDescriptions.ContextualFind
+        Description = BuiltInHotkeyDescriptions.ContextualFind,
+        Category = ColorVision.UI.Properties.Resources.MenuEdit
     };
 
-    public override void Execute()
+    public void Execute()
     {
         if (Application.Current?.MainWindow is MainWindow window) window.FindInCurrentContext();
     }

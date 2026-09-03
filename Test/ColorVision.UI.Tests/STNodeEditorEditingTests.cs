@@ -3,7 +3,6 @@ using FlowEngineLib;
 using ST.Library.UI.NodeEditor;
 using System.IO;
 using System.IO.Compression;
-using System.Runtime.ExceptionServices;
 
 namespace ColorVision.UI.Tests;
 
@@ -12,7 +11,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void AddUndoRedo_PreservesNodeObjectAndIdentity()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = CreateEditor();
             var node = CreateNode<EditorHistorySourceNode>();
@@ -36,7 +35,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void CompoundMove_IsOneHistoryEntryAndReturnsToSavePoint()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = CreateEditor();
             var first = CreateNode<EditorHistorySourceNode>();
@@ -68,7 +67,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void ConnectionUndoRedo_UsesModelConnectionsBeforeRendering()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = CreateEditor();
             var source = CreateNode<EditorHistorySourceNode>();
@@ -90,7 +89,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void DynamicHubDisconnect_UndoRedoRestoresPortTopologyAndEdge()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = CreateEditor();
             var source = CreateNode<EditorHistorySourceNode>();
@@ -121,7 +120,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void DynamicHubDisconnect_FirstOfTwoEdges_UndoRestoresOriginalPorts()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = CreateEditor();
             var first = CreateNode<EditorHistorySourceNode>();
@@ -157,7 +156,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void DeleteMultiConnectedDynamicHub_UndoRestoresOriginalPortsAndEdges()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = CreateEditor();
             var first = CreateNode<EditorHistorySourceNode>();
@@ -202,7 +201,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void DeleteConnectedNode_UndoRestoresNodeOrderIdentityAndEdge()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = CreateEditor();
             var source = CreateNode<EditorHistorySourceNode>();
@@ -234,7 +233,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void DeleteLockedConnectedNode_DoesNotLeaveDanglingEdge()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = CreateEditor();
             var source = CreateNode<EditorHistorySourceNode>();
@@ -259,7 +258,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void ImportSelection_RegeneratesIdentityAndUndoRedoKeepsIt()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = CreateEditor();
             var source = CreateNode<EditorHistorySourceNode>();
@@ -297,7 +296,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void ImportCanvasAsModule_IsOneAtomicEditWithFreshIdentity()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var sourceEditor = CreateEditor();
             var source = CreateNode<EditorHistorySourceNode>();
@@ -336,7 +335,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void ImportSelection_CorruptDataIsAtomic()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = CreateEditor();
             var source = CreateNode<EditorHistorySourceNode>();
@@ -360,7 +359,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void ImportSelection_InvalidNodeOrConnectionPayloadIsAtomic()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = CreateEditor();
             var source = CreateNode<EditorHistorySourceNode>();
@@ -390,7 +389,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void SaveLoadBeforeRender_PreservesConnectionAndInstanceGuids()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = CreateEditor();
             var source = CreateNode<EditorHistorySourceNode>();
@@ -412,7 +411,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void LoadCanvas_LateCorruptionKeepsCurrentEditorGraphAndSelection()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = CreateEditor();
             var existing = CreateNode<EditorHistorySourceNode>();
@@ -441,7 +440,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void NodePropertyChange_IsUndoableAndCoalescesTyping()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = CreateEditor();
             var node = CreateNode<EditorHistorySourceNode>();
@@ -467,7 +466,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void PropertyEditAfterSave_DoesNotMergeAcrossSavePoint()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = CreateEditor();
             var node = CreateNode<EditorHistorySourceNode>();
@@ -489,7 +488,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void ExecuteEditTransaction_ExceptionRollsBackStateAndKeepsSavePoint()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = CreateEditor();
             var node = CreateNode<EditorHistorySourceNode>();
@@ -518,7 +517,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void ExecuteEditTransaction_ExceptionRollsBackNodesAndConnections()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = CreateEditor();
             var existing = CreateNode<EditorHistorySourceNode>();
@@ -549,7 +548,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void ManualConfirmImport_KeepsNodeIdSynchronizedWithNewGuid()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = CreateEditor();
             var node = CreateNode<ManualConfirmNode>();
@@ -568,7 +567,7 @@ public class STNodeEditorEditingTests
     [Fact]
     public void EditorOwnsStandardReusableEditCommandBindings()
     {
-        RunInSta(() =>
+        StaTest.Run(() =>
         {
             using var editor = CreateEditor();
             var commands = editor.CommandBindings
@@ -634,29 +633,6 @@ public class STNodeEditorEditingTests
     {
         byte[] bytes = BitConverter.GetBytes(value);
         stream.Write(bytes, 0, bytes.Length);
-    }
-
-    private static void RunInSta(Action action)
-    {
-        Exception? exception = null;
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                exception = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-        if (exception != null)
-        {
-            ExceptionDispatchInfo.Capture(exception).Throw();
-        }
     }
 }
 

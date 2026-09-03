@@ -9,16 +9,14 @@ test_paths: ["Test/ColorVision.UI.Tests/ContourAnalysisV1Tests.cs","Test/ColorVi
 related: ["algorithms.platform","algorithms.index"]
 ---
 
-# 轮廓提取 V1（M5.2）
+# 轮廓提取 V1
 
 ## 当前发布边界
 
-当前默认 `ImageAlgorithmPlatform.CreateDefaultProviders()` 把本页 provider 包装在 `ExperimentalAlgorithmProviderGate` 中：菜单和 Batch 可执行投影隐藏该能力，直接调用默认 Runner 也返回 `provider_unavailable`，详情包含 `algorithm_experimental`。本页后面的参数、结果与宿主接入描述属于保留实现及测试契约，不是产品已开放的承诺；不得在调用方另建执行旁路来绕过门禁。
-
-本页 `status: current` 表示它记录当前源码事实，不代表算法已发布。M 编号是历史增量标识；其他增量是否可用以 [统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单) 为准。`Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs` 验证默认拒绝行为，专题测试覆盖实现细节；解除门禁还需完成对应数值、最坏资源与生产规模验证。
+此算法为 Experimental，默认不展示或执行；门禁和错误码见[统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单)。
 
 
-M5.2 是 Blob / 连通域之后的独立工业测量切片。仓库原有 `opencv_helper` 和若干设备模板内部使用过 `findContours`，但这些实现服务于专用算法，没有统一的参数、ROI、结构化结果或宿主契约。本阶段复用 OpenCvSharp 的轮廓能力，不修改专用 native ABI，也不包含亚像素边缘、直线或圆拟合。
+轮廓提取使用 OpenCvSharp，提供独立的参数、ROI 和结构化结果契约。亚像素边缘、直线和圆拟合由各自算法提供。
 
 ## 稳定身份和宿主能力
 

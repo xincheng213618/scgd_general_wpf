@@ -1,3 +1,4 @@
+using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
@@ -6,12 +7,218 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.UI.Tests;
 
 public sealed class TransientRoiSelectionSessionTests
 {
+    [Theory]
+    [InlineData(SelectShapeType.Rectangle)]
+    [InlineData(SelectShapeType.Circle)]
+    [InlineData(SelectShapeType.Polygon)]
+    [InlineData(SelectShapeType.Quadrilateral)]
+    public void WhiteVectorCanvas_AllSelectionShapesCompleteWithoutRequiringPixels(SelectShapeType shape)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewTestResources();
+            using ImageView view = new();
+            DrawingImage canvas = ImageUtils.CreateSolidColorDrawing(9576, 6388, Colors.White);
+            view.SetImageSource(canvas, false, false);
+            DrawEditorContext draw = view.EditorContext.DrawEditorContext;
+            draw.IsImageEditMode = true;
+            draw.Zoombox.Cursor = Cursors.Hand;
+            draw.Zoombox.ActivateOn = ModifierKeys.Shift;
+            int visualCount = draw.DrawCanvas.Visuals.Count;
+            int undoCount = draw.DrawCanvas.UndoStack.Count;
+            TransientRoiSelectionSession session = new(draw, shape);
+            Task<SelectResult> completion = session.Start();
+
+            Assert.False(completion.IsCompleted);
+            Assert.False(draw.IsImageEditMode);
+            Assert.Equal(Cursors.Cross, draw.Zoombox.Cursor);
+            Assert.Equal(ModifierKeys.Control, draw.Zoombox.ActivateOn);
+
+            DrawingVisual temporary = new();
+            draw.DrawCanvas.AddVisual(temporary);
+            SetField(session, "_visual", temporary);
+            if (shape is SelectShapeType.Rectangle or SelectShapeType.Circle)
+                Invoke(session, "TryCompleteDrag", [new Point(10, 20), new Point(70, 90)]);
+            else
+            {
+                SetPoints(session, [new Point(10, 20), new Point(70, 20), new Point(70, 90), new Point(10, 90)]);
+                CompleteWithRightClick(session);
+            }
+
+            Assert.True(completion.IsCompletedSuccessfully);
+            SelectResult result = Assert.IsType<SelectResult>(completion.Result);
+            Assert.Equal(shape, result.ShapeType);
+            Assert.True(result.Rect.Width > 1 && result.Rect.Height > 1);
+            ImageSelectionScope scope = Assert.IsType<ImageSelectionScope>(result.SourceScope);
+            Assert.False(scope.HasPixels);
+            Assert.Equal((0, 0), (scope.PixelWidth, scope.PixelHeight));
+            Assert.Equal((9576d, 6388d), (scope.CanvasWidth, scope.CanvasHeight));
+            Assert.True(TransientRoiSelectionSession.IsSourceScopeCurrent(view.EditorContext.ProcessingContext, scope));
+            Assert.Same(canvas, view.ViewBitmapSource);
+            Assert.Equal(visualCount, draw.DrawCanvas.Visuals.Count);
+            Assert.Equal(undoCount, draw.DrawCanvas.UndoStack.Count);
+            Assert.True(draw.IsImageEditMode);
+            Assert.Equal(Cursors.Hand, draw.Zoombox.Cursor);
+            Assert.Equal(ModifierKeys.Shift, draw.Zoombox.ActivateOn);
+            Assert.Throws<InvalidOperationException>(() => ImageAlgorithmInputFactory.Acquire(view.EditorContext.ProcessingContext, scope));
+        });
+    }
+
+    [Theory]
+    [InlineData(SelectShapeType.Rectangle, false)]
+    [InlineData(SelectShapeType.Rectangle, true)]
+    [InlineData(SelectShapeType.Circle, false)]
+    [InlineData(SelectShapeType.Circle, true)]
+    [InlineData(SelectShapeType.Quadrilateral, false)]
+    [InlineData(SelectShapeType.Quadrilateral, true)]
+    public void PublicSelectionEntry_CancelsVectorSelectionWhenSourceIsReplaced(SelectShapeType shape, bool replaceWithBitmap)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewTestResources();
+            using ImageView view = new();
+            view.SetImageSource(ImageUtils.CreateSolidColorDrawing(100, 100, Colors.White), false, false);
+            DrawEditorContext draw = view.EditorContext.DrawEditorContext;
+            draw.Zoombox.Cursor = Cursors.Hand;
+            draw.Zoombox.ActivateOn = ModifierKeys.Shift;
+            Task<SelectResult> completion = view.BeginSelectAsync(shape);
+            Assert.False(completion.IsCompleted);
+
+            ImageSource replacement = replaceWithBitmap
+                ? new WriteableBitmap(100, 100, 96, 96, PixelFormats.Gray8, null)
+                : ImageUtils.CreateSolidColorDrawing(100, 100, Colors.White);
+            view.SetImageSource(replacement, false, false);
+
+            Assert.True(completion.IsCompletedSuccessfully);
+            Assert.Null(completion.Result);
+            Assert.False(draw.IsImageEditMode);
+            Assert.Equal(Cursors.Hand, draw.Zoombox.Cursor);
+            Assert.Equal(ModifierKeys.Shift, draw.Zoombox.ActivateOn);
+        });
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void InvalidInitialSource_DoesNotChangeInteractionState(bool useEmptyDrawing, bool editMode)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewTestResources();
+            using ImageView view = new();
+            view.ViewBitmapSource = useEmptyDrawing ? new DrawingImage() : null!;
+            DrawEditorContext draw = view.EditorContext.DrawEditorContext;
+            draw.IsImageEditMode = editMode;
+            draw.Zoombox.Cursor = Cursors.Hand;
+            draw.Zoombox.ActivateOn = ModifierKeys.Shift;
+
+            Task<SelectResult> completion = view.BeginSelectAsync(SelectShapeType.Rectangle);
+
+            Assert.True(completion.IsCompletedSuccessfully);
+            Assert.Null(completion.Result);
+            Assert.Equal(editMode, draw.IsImageEditMode);
+            Assert.Equal(Cursors.Hand, draw.Zoombox.Cursor);
+            Assert.Equal(ModifierKeys.Shift, draw.Zoombox.ActivateOn);
+        });
+    }
+
+    [Fact]
+    public void VectorScope_KeepsFractionalCanvasSizeAndRejectsReuseOnANewBitmap()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewTestResources();
+            using ImageView view = new();
+            DrawingImage source = new(new GeometryDrawing(Brushes.White, null, new RectangleGeometry(new Rect(0, 0, 100.5, 50.25))));
+            view.SetImageSource(source, false, false);
+            ImageProcessingContext context = view.EditorContext.ProcessingContext;
+            ImageSelectionScope scope = Assert.IsType<ImageSelectionScope>(TransientRoiSelectionSession.CaptureSourceScope(context));
+            Assert.Equal((100.5, 50.25), (scope.CanvasWidth, scope.CanvasHeight));
+            Assert.False(scope.HasPixels);
+
+            view.SetImageSource(new WriteableBitmap(100, 50, 96, 96, PixelFormats.Gray8, null), false, false);
+
+            Assert.False(TransientRoiSelectionSession.IsSourceScopeCurrent(context, scope));
+            Assert.Throws<InvalidOperationException>(() => ImageAlgorithmInputFactory.Acquire(context, scope));
+        });
+    }
+
+    [Fact]
+    public void BitmapScope_PreservesPixelDimensionsAndDpiSeparatelyFromCanvasSize()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewTestResources();
+            using ImageView view = new();
+            view.SetImageSource(new WriteableBitmap(120, 80, 192, 192, PixelFormats.Gray8, null), false, false);
+            ImageProcessingContext context = view.EditorContext.ProcessingContext;
+            ImageSelectionScope scope = Assert.IsType<ImageSelectionScope>(TransientRoiSelectionSession.CaptureSourceScope(context));
+
+            Assert.True(scope.HasPixels);
+            Assert.Equal((120, 80, 192d, 192d), (scope.PixelWidth, scope.PixelHeight, scope.DpiX, scope.DpiY));
+            Assert.Equal((60d, 40d), (scope.CanvasWidth, scope.CanvasHeight));
+            Assert.True(TransientRoiSelectionSession.IsSourceScopeCurrent(context, scope));
+            using var pixels = ImageAlgorithmInputFactory.Acquire(context, scope).Image;
+            Assert.Equal((120, 80), (pixels.Width, pixels.Height));
+        });
+    }
+
+    [Fact]
+    public void VectorSelection_RightClickCancelRestoresInteractionState()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewTestResources();
+            using ImageView view = new();
+            view.SetImageSource(ImageUtils.CreateSolidColorDrawing(100, 100, Colors.White), false, false);
+            DrawEditorContext draw = view.EditorContext.DrawEditorContext;
+            draw.IsImageEditMode = true;
+            draw.Zoombox.Cursor = Cursors.Hand;
+            draw.Zoombox.ActivateOn = ModifierKeys.Shift;
+            TransientRoiSelectionSession session = new(draw, SelectShapeType.Quadrilateral);
+            Task<SelectResult> completion = session.Start();
+            CompleteWithRightClick(session);
+
+            Assert.True(completion.IsCompletedSuccessfully);
+            Assert.Null(completion.Result);
+            Assert.True(draw.IsImageEditMode);
+            Assert.Equal(Cursors.Hand, draw.Zoombox.Cursor);
+            Assert.Equal(ModifierKeys.Shift, draw.Zoombox.ActivateOn);
+        });
+    }
+
+    [Fact]
+    public void VectorSelection_DisposeCancelsAndRemovesTemporaryVisual()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewTestResources();
+            using ImageView view = new();
+            view.SetImageSource(ImageUtils.CreateSolidColorDrawing(100, 100, Colors.White), false, false);
+            DrawEditorContext draw = view.EditorContext.DrawEditorContext;
+            TransientRoiSelectionSession session = new(draw, SelectShapeType.Polygon);
+            Task<SelectResult> completion = session.Start();
+            DrawingVisual temporary = new();
+            draw.DrawCanvas.AddVisual(temporary);
+            SetField(session, "_visual", temporary);
+
+            view.Dispose();
+
+            Assert.True(completion.IsCompletedSuccessfully);
+            Assert.Null(completion.Result);
+            Assert.DoesNotContain(temporary, draw.DrawCanvas.Visuals);
+        });
+    }
+
     [Fact]
     public void ExistingDrawingScopeRejectsARevisionChangedDuringParameterEditing()
     {
@@ -180,9 +387,10 @@ public sealed class TransientRoiSelectionSessionTests
     }
 
     private static void SetPoints(TransientRoiSelectionSession session, List<Point> points)
-        => typeof(TransientRoiSelectionSession)
-            .GetField("_polygonPoints", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .SetValue(session, points);
+        => SetField(session, "_polygonPoints", points);
+
+    private static void SetField(TransientRoiSelectionSession session, string field, object value)
+        => typeof(TransientRoiSelectionSession).GetField(field, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(session, value);
 
     private static void CompleteWithRightClick(TransientRoiSelectionSession session)
     {

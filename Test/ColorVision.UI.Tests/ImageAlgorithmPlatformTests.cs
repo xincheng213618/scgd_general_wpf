@@ -1,4 +1,5 @@
 using ColorVision.Algorithms;
+using ColorVision.Core;
 using ColorVision.Engine.FlowProcessing.Algorithms;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.ImageEditor;
@@ -778,6 +779,33 @@ public sealed class ImageAlgorithmPlatformTests
     }
 
     [Fact]
+    public void AcquireImageFrame_WhenCurrentSourceObjectChanged_RebuildsStaleFrameCache()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewTestResources();
+            using ImageView imageView = new();
+            WriteableBitmap firstBitmap = CreateSolidGrayBitmap(8, 6, 10);
+            WriteableBitmap currentBitmap = CreateSolidGrayBitmap(5, 4, 200);
+            imageView.SetImageSource(firstBitmap, enableEditorImageServices: false, configureDefaultLayerController: false);
+
+            using ImageFrameLease staleLease = Assert.IsType<ImageFrameLease>(imageView.AcquireImageFrame());
+            long staleRevision = staleLease.Revision;
+
+            imageView.ViewBitmapSource = currentBitmap;
+            imageView.ImageShow.Source = currentBitmap;
+
+            using ImageFrameLease currentLease = Assert.IsType<ImageFrameLease>(imageView.AcquireImageFrame());
+
+            Assert.False(imageView.IsCurrentImageRevision(staleRevision));
+            Assert.Equal(5, currentLease.Width);
+            Assert.Equal(4, currentLease.Height);
+            Assert.Equal(200, Marshal.ReadByte(currentLease.Image.pData));
+            Assert.Equal(10, Marshal.ReadByte(staleLease.Image.pData));
+        });
+    }
+
+    [Fact]
     public async Task ClearDuringInFlightAlgorithmWorkCancelsRunsAndRejectsLateResults()
     {
         ImageView imageView = WpfTestHost.Invoke(() =>
@@ -978,6 +1006,14 @@ public sealed class ImageAlgorithmPlatformTests
         const int width = 8;
         const int height = 6;
         byte[] pixels = Enumerable.Range(0, width * height).Select(value => (byte)value).ToArray();
+        WriteableBitmap bitmap = new(width, height, 96, 96, PixelFormats.Gray8, null);
+        bitmap.WritePixels(new Int32Rect(0, 0, width, height), pixels, width, 0);
+        return bitmap;
+    }
+
+    private static WriteableBitmap CreateSolidGrayBitmap(int width, int height, byte value)
+    {
+        byte[] pixels = Enumerable.Repeat(value, width * height).ToArray();
         WriteableBitmap bitmap = new(width, height, 96, 96, PixelFormats.Gray8, null);
         bitmap.WritePixels(new Int32Rect(0, 0, width, height), pixels, width, 0);
         return bitmap;

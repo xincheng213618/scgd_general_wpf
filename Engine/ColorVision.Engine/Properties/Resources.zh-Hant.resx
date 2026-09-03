@@ -3059,4 +3059,100 @@
   <data name="当前没有找到可清理数据表。" xml:space="preserve"><value>目前找不到可清理的資料表。</value></data>
   <data name="当前数据源不支持自动备份，请确认已有可恢复副本。" xml:space="preserve"><value>目前的資料來源不支援自動備份，請確認已有可還原的副本。</value></data>
   <data name="未启用清理前备份。" xml:space="preserve"><value>未啟用清理前備份。</value></data>
+  <data name="PoiAutoFitSize" xml:space="preserve"><value>自動適配尺寸</value></data>
+  <data name="PoiAutoFitSizeToolTip" xml:space="preserve"><value>根據四邊形與行列數估算圓半徑或矩形寬高，並切換為區域內布點。允許間隙、重疊與整數取整誤差；可繼續手動調整，按下繪製後產生點位。</value></data>
+  <data name="PoiAutoFitSizeFailed" xml:space="preserve"><value>無法自動適配尺寸：請確認四邊形有效、行列數至少為1，且區域足以容納整數像素的取樣窗。縮進為單點時請手動設定尺寸。</value></data>
+  <data name="SpectrumSettingsTitle" xml:space="preserve"><value>光譜儀設定</value></data>
+  <data name="SpectrumDeviceConnection" xml:space="preserve"><value>裝置與連線</value></data>
+  <data name="SpectrumCalibrationCorrection" xml:space="preserve"><value>校準與校正</value></data>
+  <data name="SpectrumAcquisitionDisplay" xml:space="preserve"><value>擷取與顯示</value></data>
+  <data name="SpectrumSearchDevices" xml:space="preserve"><value>搜尋光譜儀</value></data>
+  <data name="SpectrumSearchHint" xml:space="preserve"><value>遍歷所有支援的連線方式</value></data>
+  <data name="SpectrumRefreshHint" xml:space="preserve"><value>重新整理服務端裝置與授權</value></data>
+  <data name="SpectrumLicenseHint" xml:space="preserve"><value>匯入本機授權檔案</value></data>
+  <data name="CalibrationGroup" xml:space="preserve"><value>標定分組</value></data>
+  <data name="ApplyCalibrationGroup" xml:space="preserve"><value>套用目前分組</value></data>
+  <data name="SpectrumCalibrationGroupHint" xml:space="preserve"><value>管理波長、幅值與 ND 關聯</value></data>
+  <data name="SpectrumApplyGroupHint" xml:space="preserve"><value>載入標定檔案並重新啟動服務</value></data>
+  <data name="SpectrumCorrection" xml:space="preserve"><value>光譜校正</value></data>
+  <data name="SpectrumCorrectionHint" xml:space="preserve"><value>完整光譜或單獨亮度校正</value></data>
+  <data name="SpectrumDarkHint" xml:space="preserve"><value>執行自適應暗場校準</value></data>
+  <data name="SpectrumDarkSettingsHint" xml:space="preserve"><value>積分起點、步長與次數</value></data>
+  <data name="EmissionSP100Set" xml:space="preserve"><value>SP100 暗電流設定</value></data>
+  <data name="SpectrumSp100Hint" xml:space="preserve"><value>暗電流像素範圍與平均值閾值</value></data>
+  <data name="SpectrumDisplayHint" xml:space="preserve"><value>積分、平均次數與顯示模式</value></data>
+  <data name="SpectrumLog" xml:space="preserve"><value>光譜儀日誌</value></data>
+  <data name="SpectrumLogHint" xml:space="preserve"><value>檢視連線與量測服務日誌</value></data>
+  <data name="SpectrumDiscoveryFailed" xml:space="preserve"><value>查詢失敗，傳回碼：{0}</value></data>
+  <data name="SpectrumDiscoveryHint" xml:space="preserve"><value>已按連線方式搜尋。請使用偵測到裝置的連線方式與序號設定裝置。</value></data>
+  <data name="ConfigSpectrum" xml:space="preserve"><value>基本資訊</value></data>
+  <data name="SpectrumSN" xml:space="preserve"><value>裝置序號</value></data>
+  <data name="SpectrumComPort" xml:space="preserve"><value>序列埠</value></data>
+  <data name="SpectrumActiveGroup" xml:space="preserve"><value>目前標定分組</value></data>
+  <data name="SpectrumShutterEnabled" xml:space="preserve"><value>啟用快門</value></data>
+  <data name="SpectrumShutterSettings" xml:space="preserve"><value>快門設定</value></data>
+  <data name="SpectrumDarkSettings" xml:space="preserve"><value>自適應校零設定</value></data>
+  <data name="SpectrumNdSettings" xml:space="preserve"><value>ND 濾光輪設定</value></data>
+  <data name="SpectrumFileSettings" xml:space="preserve"><value>檔案儲存設定</value></data>
+  <data name="SpectrumAcquisitionSettings" xml:space="preserve"><value>擷取參數</value></data>
+  <data name="SpectrumGroupName" xml:space="preserve"><value>分組名稱</value></data>
+  <data name="SpectrumNdIndex" xml:space="preserve"><value>ND 孔位索引</value></data>
+  <data name="SpectrumStartWavelength" xml:space="preserve"><value>起始波長 (nm)</value></data>
+  <data name="SpectrumEndWavelength" xml:space="preserve"><value>結束波長 (nm)</value></data>
+  <data name="SpectrumNdEnabled" xml:space="preserve"><value>啟用 ND 濾光輪</value></data>
+  <data name="SpectrumNdBind" xml:space="preserve"><value>繫結濾光輪裝置</value></data>
+  <data name="SpectrumNdDevice" xml:space="preserve"><value>濾光輪裝置</value></data>
+  <data name="SpectrumNdReset" xml:space="preserve"><value>允許 ND 復位</value></data>
+  <data name="SpectrumNdMaxTime" xml:space="preserve"><value>ND 最大曝光時間 (ms)</value></data>
+  <data name="SpectrumNdMinTime" xml:space="preserve"><value>ND 最小曝光時間 (ms)</value></data>
+  <data name="SpectrumNdRates" xml:space="preserve"><value>ND 衰減倍率</value></data>
+  <data name="SpectrumNdGroups" xml:space="preserve"><value>ND 標定分組名稱</value></data>
+  <data name="SpectrumSp100Enabled" xml:space="preserve"><value>啟用暗電流補償</value></data>
+  <data name="SpectrumSp100Start" xml:space="preserve"><value>起始像素</value></data>
+  <data name="SpectrumSp100End" xml:space="preserve"><value>結束像素</value></data>
+  <data name="SpectrumSp100Threshold" xml:space="preserve"><value>平均值閾值</value></data>
+  <data name="SpectrumOpenShutter" xml:space="preserve"><value>開啟快門指令</value></data>
+  <data name="SpectrumCloseShutter" xml:space="preserve"><value>關閉快門指令</value></data>
+  <data name="SpectrumFluxMode" xml:space="preserve"><value>光通量模式</value></data>
+  <data name="SpectrumFluxDivisor" xml:space="preserve"><value>光通量換算係數</value></data>
+  <data name="SpectrumAutoDark" xml:space="preserve"><value>自動校零</value></data>
+  <data name="SpectrumUseShutter" xml:space="preserve"><value>使用快門</value></data>
+  <data name="SpectrumIntegrationTime" xml:space="preserve"><value>積分時間 (ms)</value></data>
+  <data name="SpectrumNdPosition" xml:space="preserve"><value>ND 孔位</value></data>
+  <data name="SpectrumVoltage" xml:space="preserve"><value>電壓 (V)</value></data>
+  <data name="SpectrumCurrent" xml:space="preserve"><value>電流 (A)</value></data>
+  <data name="SpectrumCalibrationFileSettingsHint" xml:space="preserve"><value>管理波長與幅值檔案；也可從標定分組視窗編輯。</value></data>
+  <data name="ShutterConfig" xml:space="preserve"><value>快門設定</value></data>
+  <data name="SelfAdaptionInitDark" xml:space="preserve"><value>自適應校零設定</value></data>
+  <data name="NDConfig" xml:space="preserve"><value>ND 濾光輪設定</value></data>
+  <data name="GetDataConfig" xml:space="preserve"><value>擷取參數</value></data>
+  <data name="DisplaySpectrumConfig" xml:space="preserve"><value>擷取與顯示</value></data>
+  <data name="SpectrumCalibrationGroup" xml:space="preserve"><value>標定分組</value></data>
+  <data name="DeviceConnection" xml:space="preserve"><value>裝置與連線</value></data>
+  <data name="CalibrationCorrection" xml:space="preserve"><value>校準與校正</value></data>
+  <data name="AcquisitionDisplay" xml:space="preserve"><value>擷取與顯示</value></data>
+  <data name="MaintenanceDiagnostics" xml:space="preserve"><value>服務與維護</value></data>
+  <data name="DataLogs" xml:space="preserve"><value>資料與日誌</value></data>
+  <data name="SpectrumCalibrationGroups" xml:space="preserve"><value>標定分組管理</value></data>
+  <data name="CameraLog" xml:space="preserve"><value>相機日誌</value></data>
+  <data name="EditCalibrationFile" xml:space="preserve"><value>校正檔案設定</value></data>
+  <data name="CommandEditConfigHint" xml:space="preserve"><value>連線、裝置參數與執行設定</value></data>
+  <data name="CommandRestartHint" xml:space="preserve"><value>儲存目前設定並重新啟動裝置服務</value></data>
+  <data name="CommandResetHint" xml:space="preserve"><value>還原裝置預設設定</value></data>
+  <data name="CommandSavePathHint" xml:space="preserve"><value>設定資料與檔案的儲存位置</value></data>
+  <data name="CommandDeleteHint" xml:space="preserve"><value>刪除目前裝置資源</value></data>
+  <data name="CommandCameraLogHint" xml:space="preserve"><value>檢視相機服務執行日誌</value></data>
+  <data name="CommandCalibrationCacheHint" xml:space="preserve"><value>檢視和釋放本機校正快取</value></data>
+  <data name="CommandCameraCalibrationHint" xml:space="preserve"><value>設定相機關聯的校正檔案</value></data>
+  <data name="CommandAutoExposureHint" xml:space="preserve"><value>管理自動曝光參數範本</value></data>
+  <data name="CommandAutoFocusHint" xml:space="preserve"><value>管理自動聚焦參數範本</value></data>
+  <data name="CommandCameraParametersHint" xml:space="preserve"><value>管理相機擷取參數範本</value></data>
+  <data name="CommandPhysicalCameraHint" xml:space="preserve"><value>檢視與設定實體相機</value></data>
+  <data name="CommandRefreshDevicesHint" xml:space="preserve"><value>重新整理服務端裝置清單</value></data>
+  <data name="CommandDisplayConfigHint" xml:space="preserve"><value>設定擷取與結果顯示選項</value></data>
+  <data name="SmuTemplateSettings" xml:space="preserve"><value>源表範本設定</value></data>
+  <data name="CommandSmuTemplateHint" xml:space="preserve"><value>管理源表量測參數範本</value></data>
+  <data name="CommandPgTemplateHint" xml:space="preserve"><value>管理 PG 影像與輸出範本</value></data>
+  <data name="CommandAlgorithmPluginHint" xml:space="preserve"><value>上傳服務端演算法外掛</value></data>
+  <data name="CommandAlgorithmConfigHint" xml:space="preserve"><value>管理第三方演算法設定</value></data>
 </root>

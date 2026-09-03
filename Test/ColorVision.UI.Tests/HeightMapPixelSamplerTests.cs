@@ -1,6 +1,5 @@
 using ColorVision.ImageEditor;
 using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -33,7 +32,7 @@ public sealed class HeightMapPixelSamplerTests
     [Fact]
     public void ConvertBitmapToGray_DoesNotUpscaleSmallOpaqueImages()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             byte[] source =
             [
@@ -55,7 +54,7 @@ public sealed class HeightMapPixelSamplerTests
     [Fact]
     public void ConvertBitmapToGray_UsesEdgeAlignedBilinearSampling()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             byte[] source =
             [
@@ -77,7 +76,7 @@ public sealed class HeightMapPixelSamplerTests
     [Fact]
     public void ConvertBitmapToGray_PreservesStraightColorAndAlphaSemantics()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             byte[] source =
             [
@@ -98,7 +97,7 @@ public sealed class HeightMapPixelSamplerTests
     [Fact]
     public void ConvertBitmapToGray_HandlesBgr32AsOpaqueColor()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             byte[] source =
             [
@@ -119,7 +118,7 @@ public sealed class HeightMapPixelSamplerTests
     [Fact]
     public void ConvertBitmapToGray_HandlesRgb48WithoutAFullSizeIntermediate()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             byte[] source =
             [
@@ -140,7 +139,7 @@ public sealed class HeightMapPixelSamplerTests
     [Fact]
     public void ConvertBitmapToGray_UnpremultipliesPbgra32BeforeSampling()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             byte[] source =
             [
@@ -200,29 +199,5 @@ public sealed class HeightMapPixelSamplerTests
         WriteableBitmap bitmap = new(width, height, 96, 96, format, null);
         bitmap.WritePixels(new Int32Rect(0, 0, width, height), pixels, stride, 0);
         return bitmap;
-    }
-
-    private static void RunOnStaThread(Action action)
-    {
-        Exception? failure = null;
-        Thread thread = new(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-
-        if (failure != null)
-        {
-            ExceptionDispatchInfo.Capture(failure).Throw();
-        }
     }
 }

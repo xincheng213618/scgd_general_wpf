@@ -66,15 +66,17 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public required string DeviceCode { get; init; }
         public int ZIndex { get; init; }
         public int TotalTime { get; init; }
+        public int ResultCode { get; init; }
+        public string ResultDescription { get; init; } = "ok";
         public required object Parameters { get; init; }
-        public required LocalFindCrossNodeItem Result { get; init; }
+        public LocalFindCrossNodeItem? Result { get; init; }
         public string ResultDirectory { get; init; } = string.Empty;
     }
 
     internal sealed class LocalFindCrossPersistenceResult
     {
         public int MasterId { get; init; }
-        public required string ResultFilePath { get; init; }
+        public string ResultFilePath { get; init; } = string.Empty;
     }
 
     internal sealed class LocalFindCrossPublishRequest
@@ -232,10 +234,18 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             ArgumentNullException.ThrowIfNull(request);
             MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(request.Action.SerialNumber)
                 ?? throw new InvalidOperationException($"找不到流程批次：{request.Action.SerialNumber}");
-            string resultFilePath = WriteResultFile(request.ResultDirectory, BuildLegacyResultJson(request.Result));
+            AlgResultMasterModel master = CreateMasterModel(request, batch.Id);
+            if (request.ResultCode != 0)
+            {
+                int failedMasterId = SaveMasterOnlyCore(master, AlgResultMasterDao.Instance.SaveAndReturnId);
+                return new LocalFindCrossPersistenceResult { MasterId = failedMasterId };
+            }
+
+            LocalFindCrossNodeItem result = request.Result
+                ?? throw new InvalidOperationException("成功的本地 FindCross 结果缺少十字明细。");
+            string resultFilePath = WriteResultFile(request.ResultDirectory, BuildLegacyResultJson(result));
             try
             {
-                AlgResultMasterModel master = CreateMasterModel(request, batch.Id);
                 int masterId = SaveDatabaseCore(
                     master,
                     resultFilePath,
@@ -290,6 +300,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         {
             ArgumentNullException.ThrowIfNull(request);
             if (batchId <= 0) throw new ArgumentOutOfRangeException(nameof(batchId), "流程批次 ID 无效。");
+            ArgumentException.ThrowIfNullOrWhiteSpace(request.ResultDescription);
             return new AlgResultMasterModel
             {
                 TId = null,
@@ -301,11 +312,25 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 Zindex = request.ZIndex,
                 Params = JsonConvert.SerializeObject(request.Parameters),
                 DeviceCode = NullIfWhiteSpace(request.DeviceCode),
-                ResultCode = 0,
-                Result = "ok",
+                ResultCode = request.ResultCode,
+                Result = request.ResultDescription,
                 TotalTime = request.TotalTime,
                 CreateDate = DateTime.Now
             };
+        }
+
+        internal static int SaveMasterOnlyCore(
+            AlgResultMasterModel master,
+            Func<AlgResultMasterModel, int> saveMaster)
+        {
+            ArgumentNullException.ThrowIfNull(master);
+            ArgumentNullException.ThrowIfNull(saveMaster);
+            if (master.ResultCode.GetValueOrDefault() == 0)
+                throw new InvalidOperationException("FindCross 成功结果不能省略结果明细。");
+            int masterId = saveMaster(master);
+            if (masterId <= 0)
+                throw new InvalidOperationException("保存本地 FindCross 失败主记录失败。");
+            return masterId;
         }
 
         internal static DetailCommonModel CreateDetail(int masterId, string resultFilePath)
@@ -408,6 +433,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     [STNode("Flow_CustomNodes", "本地十字定位")]
     public sealed class LocalFindCrossNode : LocalFlowNodeBase
     {
+        internal const int DetectionFailureResultCode = -1;
         internal const string DefaultParameterJson = """
             {
               "ExpectedAngleDegrees": 0,
@@ -508,9 +534,62 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 LocalFindCrossDetection detection = services.Detect(image, roi, ParameterJson);
                 stopwatch.Stop();
-                LocalFindCrossNodeItem result = ValidateDetection(detection, lease.Metadata.Width, lease.Metadata.Height);
                 int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
                 string algorithmDeviceCode = ResolveAvailableDeviceCode<DeviceAlgorithm>();
+                LocalFindCrossNodeItem result;
+                try
+                {
+                    result = ValidateDetection(detection, lease.Metadata.Width, lease.Metadata.Height);
+                }
+                catch (InvalidOperationException validationException)
+                {
+                    LocalFindCrossPersistenceResult failed = services.Persist(new LocalFindCrossPersistenceRequest
+                    {
+                        Action = action,
+                        ImageFilePath = imageFile,
+                        DeviceCode = algorithmDeviceCode,
+                        ZIndex = ZIndex,
+                        TotalTime = totalTime,
+                        ResultCode = DetectionFailureResultCode,
+                        ResultDescription = validationException.Message,
+                        Parameters = new
+                        {
+                            Algorithm = "LocalFindCross",
+                            SourceMasterId = lease.MasterId,
+                            FrameId = lease.FrameId.ToString("N"),
+                            ImageFilePath = imageFile,
+                            SearchRegion = new { roi.X, roi.Y, roi.Width, roi.Height },
+                            ParameterJson,
+                            Success = false,
+                            detection.FailureReason,
+                            detection.Diagnostics,
+                            detection.NativeReturnCode,
+                            RawJson = NullIfWhiteSpace(detection.RawJson),
+                            InteropDiagnostic = NullIfWhiteSpace(detection.InteropDiagnostic),
+                            PrimaryBufferKind = lease.Metadata.PrimaryBufferKind.ToString(),
+                            SourceFilePath = NullIfWhiteSpace(lease.Metadata.SourceFilePath),
+                            CvRawFilePath = NullIfWhiteSpace(frame.CvRawFilePath),
+                            CvCieFilePath = NullIfWhiteSpace(frame.CvCieFilePath),
+                            CalibrationTemplate = NullIfWhiteSpace(lease.Metadata.CalibrationTemplate),
+                            FlipMode = lease.Metadata.FlipMode.ToString(),
+                            FlipApplied = lease.IsFlipApplied,
+                            ImageRead = loadedFromFile,
+                            MemoryOnly = string.IsNullOrWhiteSpace(imageFile)
+                        }
+                    });
+                    if (failed.MasterId <= 0)
+                        throw new InvalidOperationException("本地 FindCross 失败持久化返回了无效主表 ID。");
+                    services.Publish(new LocalFindCrossPublishRequest
+                    {
+                        DeviceCode = algorithmDeviceCode,
+                        OperatorCode = OperatorCode,
+                        SerialNumber = action.SerialNumber,
+                        NodeId = NodeID,
+                        ZIndex = ZIndex,
+                        MasterId = failed.MasterId
+                    });
+                    throw;
+                }
                 object parameters = new
                 {
                     Algorithm = "LocalFindCross",

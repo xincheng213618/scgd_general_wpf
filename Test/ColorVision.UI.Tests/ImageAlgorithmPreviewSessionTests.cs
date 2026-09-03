@@ -2,7 +2,6 @@ using ColorVision.ImageEditor;
 using ColorVision.Core;
 using OpenCvSharp;
 using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Media;
@@ -15,7 +14,7 @@ public class ImageAlgorithmPreviewSessionTests
     [Fact]
     public void SessionConstructionDoesNotAllocatePixelSizedManagedSnapshot()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             WriteableBitmap warmup = new(1, 1, 96, 96, PixelFormats.Rgb48, null);
             _ = CreateSession(warmup, new WriteableBitmap(warmup));
@@ -34,7 +33,7 @@ public class ImageAlgorithmPreviewSessionTests
     [Fact]
     public void RepeatedApplyAlwaysStartsFromOriginalPixels()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             byte[] original = CreatePixels();
             WriteableBitmap bitmap = CreateBitmap(original);
@@ -51,7 +50,7 @@ public class ImageAlgorithmPreviewSessionTests
     [Fact]
     public void ShowOriginalRestoresPixelsExactly()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             byte[] original = CreatePixels();
             WriteableBitmap bitmap = CreateBitmap(original);
@@ -67,7 +66,7 @@ public class ImageAlgorithmPreviewSessionTests
     [Fact]
     public void FailedApplyUnlocksBitmapAndNextApplyStartsFromOriginal()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             byte[] original = CreatePixels();
             WriteableBitmap bitmap = CreateBitmap(original);
@@ -93,7 +92,7 @@ public class ImageAlgorithmPreviewSessionTests
     [Fact]
     public void ApplyAfterCompletionDoesNothing()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             byte[] original = CreatePixels();
             WriteableBitmap bitmap = CreateBitmap(original);
@@ -111,7 +110,7 @@ public class ImageAlgorithmPreviewSessionTests
     [Fact]
     public void SourceRevisionChangeAfterShowOriginalCancelsPreviewWithoutOverwritingNewSource()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             byte[] original = CreatePixels();
             WriteableBitmap source = CreateBitmap(original);
@@ -148,7 +147,7 @@ public class ImageAlgorithmPreviewSessionTests
     [Fact]
     public void SourceRevisionChangeCancelsCommitWithoutOverwritingNewSource()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             WriteableBitmap source = CreateBitmap(CreatePixels());
             WriteableBitmap newerSource = CreateBitmap(Enumerable.Repeat((byte)42, 40).ToArray());
@@ -289,29 +288,5 @@ public class ImageAlgorithmPreviewSessionTests
         byte[] pixels = new byte[bitmap.BackBufferStride * bitmap.PixelHeight];
         bitmap.CopyPixels(pixels, bitmap.BackBufferStride, 0);
         return pixels;
-    }
-
-    private static void RunOnStaThread(Action action)
-    {
-        Exception? failure = null;
-        Thread thread = new(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-
-        if (failure != null)
-        {
-            ExceptionDispatchInfo.Capture(failure).Throw();
-        }
     }
 }

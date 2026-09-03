@@ -6,7 +6,7 @@ summary: "Copilot 命令目录、输入与引用、会话导航及消息/桌宠�
 aliases: ["Copilot 快捷键", "Copilot 输入框", "Slash 命令", "@关联", "公式显示", "桌宠活动", "CopilotLocalCommandCatalog", "CopilotPermissionCommand", "/permissions", "/context", "/queue", "/tasks", "/mention", "/multiline", "/follow-up"]
 code_paths: ["ColorVision/Copilot/CopilotLocalCommandCatalog.cs","ColorVision/Copilot/CopilotLocalCommandAvailabilityPolicy.cs","ColorVision/Copilot/CopilotChatViewModel.LocalCommandWorkflows.cs","ColorVision/Copilot/CopilotChatViewModel.Composer.cs","ColorVision/Copilot/CopilotChatViewModel.ComposerReferences.cs","ColorVision/Copilot/CopilotChatViewModel.AttachmentCommands.cs","ColorVision/Copilot/Agent/CopilotWebPageToolSupport.cs","ColorVision/Copilot/Capabilities/CopilotBoundedHttpContentReader.cs","ColorVision/Copilot/CopilotChatViewModel.TurnExecution.cs","ColorVision/Copilot/CopilotChatViewModel.AttachmentLifecycle.cs","ColorVision/Copilot/Context/CopilotImageAttachmentAdmission.cs","ColorVision/Copilot/CopilotChatPanel.Composer.cs","ColorVision/Copilot/CopilotChatViewModel.DiagnosticsCommands.cs","ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs","ColorVision/Copilot/Presentation","ColorVision/Copilot/State/CopilotComposerStash.cs","ColorVision/Copilot/CopilotKeyboardShortcutHelp.cs","ColorVision/Copilot/CopilotMarkdownMath.cs","ColorVision/Copilot/CopilotMarkdownView.xaml.cs","ColorVision/Copilot/CopilotComposerReferences.cs","ColorVision/Copilot/CopilotMarkdownView.SpecialContent.cs","ColorVision/FloatingBall/DesktopPetCopilotBridge.cs","ColorVision/FloatingBall/DesktopPetCopilotActivityTracker.cs","ColorVision/FloatingBallWindow.xaml.cs","ColorVision/Copilot/CopilotChatViewModel.ConversationDataCommands.cs","ColorVision/Copilot/CopilotChatViewModel.Messages.cs","ColorVision/Copilot/CopilotChatViewModel.RequestAdmission.cs","ColorVision/Copilot/CopilotChatViewModel.MessageInteraction.cs","ColorVision/Copilot/Context/CopilotImageInputBudget.cs","ColorVision/Copilot/Context/CopilotImageUnderstandingService.cs","ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs"]
 test_paths: ["Test/ColorVision.Copilot.Tests/CopilotLocalCommandAvailabilityTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerPagingTests.cs","Test/ColorVision.Copilot.Tests/CopilotCodexMentionsV2FeatureTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatViewModelProfileIsolationTests.cs","Test/ColorVision.Copilot.Tests/DesktopPetCopilotActivityTrackerTests.cs","Test/ColorVision.Copilot.Tests/CopilotMarkdownViewTests.cs","Test/ColorVision.Copilot.Tests/CopilotImageAttachmentAdmissionTests.cs","Test/ColorVision.Copilot.Tests/CopilotAttachmentPathTests.cs","Test/ColorVision.Copilot.Tests/CopilotConversationDeletionPersistenceTests.cs","Test/ColorVision.Copilot.Tests/CopilotRequestAdmissionLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotMessageEditAdmissionTests.cs","Test/ColorVision.Copilot.Tests/CopilotWebPageDeadlineTests.cs","Test/ColorVision.Copilot.Tests/CopilotWebPageAttachmentAdmissionTests.cs","Test/ColorVision.Copilot.Tests/CopilotAttachmentRemovalEditLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotImagePayloadValidationTests.cs","Test/ColorVision.Copilot.Tests/CopilotImageInputBudgetTests.cs"]
-related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "copilot.lifecycle", "copilot.session-tools", "copilot.execution", "copilot.tool-contracts"]
+related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "copilot.lifecycle", "copilot.session-tools", "copilot.execution", "copilot.tool-contracts", "ui.desktop-pet"]
 ---
 
 # Copilot 输入、命令与活动呈现
@@ -88,7 +88,7 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 | `/archive`、`/unarchive`、`/delete` | 归档隐藏与永久删除不同；删除经过状态检查与原生确认，不能把“本地会话命令”当作可无确认清理 |
 | `/copy N`、Ctrl+Shift+C | 从最近开始选择有正文、非活动、非中断且非 display-only 的回答；部分流式回答不遮住上一条稳定回答，使用既有正文剪贴板格式；不再占用打开文件的 Ctrl+O |
 | `/export [文件名]` | 无参数复制可见 Markdown，有文件名则预填保存对话框，由用户选目录及覆盖；使用同目录临时文件与原子替换 |
-| `/feedback [说明]` | 打开现有 FeedbackWindow，附上有界可见会话快照；用户仍需选择诊断内容并显式 Send，打开窗口不等于上传 |
+| `/feedback [说明]` | 非模态打开 FeedbackWindow，附上有界可见会话快照；可最小化并继续操作主窗口，用户仍需选择诊断内容并显式 Send，打开窗口不等于上传 |
 
 导出和反馈共用 `CopilotConversationMarkdownExporter` 的 UI 快照：只包含已完成且有可见正文/附件引用的消息，排除活动回答、隐藏请求、reasoning、execution trace、附件正文和 composer 草稿。反馈说明最多4,000字符，会话附件最多200,000字符/最近50条已完成消息，单条和附件字段仍有独立上限；反馈临时附件随窗口关闭清理；该附件仍可能含用户实际可见内容，发送前应审阅。
 
@@ -102,7 +102,7 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 - 裸 `/tasks` 查看活动/队列和可恢复项；`stop N`、`resume N`、`dismiss N` 分别进入停止、恢复、放弃路径。stop/dismiss 有原生确认，resume 重新评估 checkpoint/能力兼容后才提交；Ctrl+Alt+T 只是折叠同一任务列表，不做这些操作，不再占用常见的新标签 Ctrl+T。
 - 裸 `/queue` 查看当前会话条目，编号是当时的全局队列位置，不是稳定ID。当前实现还有 `send|edit|up|down|delete N` 和 `clear`：send 提升下一项并请求停止当前任务；edit 取消排队并恢复输入/附件但不发送；delete 取消且可能暂停绑定目标；clear 经确认只清当前会话等待项。编号在命令执行时按当前队列重新解析，稍早看到的同一编号可能已对应同会话另一项，不能把数字当稳定身份。解析到对象后才由 Host 状态复查拒绝已开始或已离队对象；清空确认期间开始执行的项会被跳过，不把清理等待项变成停止当前任务，原子取消边界见[后续队列](./copilot-agent-session-and-tools.md#任务-ui、停止原因、运行中-steering-与后续队列)。
 - `/ps` 是 Copilot 后台命令登记表入口，stop 需确认；不是系统所有进程列表。`/agents` 的只读目录与 steer/stop 等控制子命令也须区分，不可整体标成只读。
-- `/init`、`/review`、`/verify`、`/plan`、`/compact` 和 Skill 可能进入真实模型/工具流程；`/rollback N` 会创建精确文件回滚审批。它们不能因为以 Slash 开头就绕过范围、预算、确认或执行证据。项目指令与 Skills 见[生命周期](./copilot-agent-lifecycle.md)，文件修改见[任务与内置工具](./copilot-agent-session-and-tools.md)。
+- `/init`、`/review`、`/verify`、`/plan`、`/compact` 和 Skill 可能进入真实模型/工具流程；`/rollback N` 会创建精确文件回滚审批。它们不能因为以 Slash 开头就绕过范围、预算、确认或执行证据。项目指令见[生命周期](./copilot-agent-lifecycle.md)，技能目录、开关与调用见 [Copilot 技能](./copilot-skills.md)，文件修改见[任务与内置工具](./copilot-agent-session-and-tools.md)。
 
 ## 消息显示与桌宠活动
 
@@ -115,6 +115,8 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 桌宠启用 `EnableCopilotIntegration` 后，`DesktopPetCopilotBridge` 从 `CopilotAgentTaskHost` 和 `CopilotMcpConfirmationStore` 投影多会话活动，Tracker 最多保留16项，优先级为 `NeedsInput → Blocked → Ready → Running`。徽标显示活动数量；单击打开最高优先级，右键活动菜单展示有界列表。打开 Ready/Blocked 项后移除其待查看状态，再展示下一项；NeedsInput 不因打开页面就消除。取消排队项不会覆盖正在运行会话的导航目标。
 
 桌宠确认卡仍经过同一 confirmation decision 和上下文复查；点击批准会先展示原生确认内容，不由活动图标授予执行权。桌宠投影不改变调度、工具审批或恢复语义。
+
+桌宠的启用、素材选择/创建、精灵表格式和通知配置见[桌面宠物](../../04-api-reference/ui-components/desktop-pet.md)。
 
 ## 验证范围
 

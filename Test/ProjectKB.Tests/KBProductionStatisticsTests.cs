@@ -1,14 +1,100 @@
 using ColorVision.Engine.FlowProcessing;
 using Microsoft.Data.Sqlite;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using ProjectKB;
 using SqlSugar;
 using System.IO;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace ProjectKB.Tests;
 
 public class KBProductionStatisticsTests
 {
+    [Fact]
+    public void NewStatisticsStateDefaultsToTodayFirstTabFirstPageAndEmptyFilters()
+    {
+        DateTime today = DateTime.Today;
+        var previousState = new KBProductionStatisticsWindowState
+        {
+            SelectedTabIndex = 2,
+            PeriodMode = KBProductionPeriodMode.Month,
+            AnchorDate = today.AddMonths(-2),
+            Model = "previous-model",
+            SN = "previous-sn",
+            ResultIndex = 2,
+            PageNumber = 7
+        };
+
+        var newState = new KBProductionStatisticsWindowState();
+
+        Assert.NotSame(previousState, newState);
+        AssertDefaultStatisticsState(newState, today);
+    }
+
+    [Fact]
+    public void SavedConfigurationIgnoresLegacyStatisticsStateAndDoesNotWriteItBack()
+    {
+        DateTime today = DateTime.Today;
+        var settings = new JsonSerializerSettings { ContractResolver = new StatisticsConfigContractResolver() };
+        const string legacyJson = """
+            {
+              "TemplateSelectedIndex": 7,
+              "ProductionStatisticsWindowState": {
+                "SelectedTabIndex": 2,
+                "PeriodMode": 2,
+                "AnchorDate": "2001-01-01T00:00:00",
+                "Model": "legacy-model",
+                "SN": "legacy-sn",
+                "ResultIndex": 2,
+                "PageNumber": 9
+              }
+            }
+            """;
+
+        ProjectKBConfig restored = JsonConvert.DeserializeObject<ProjectKBConfig>(legacyJson, settings)!;
+
+        Assert.Equal(7, restored.TemplateSelectedIndex);
+        AssertDefaultStatisticsState(restored.ProductionStatisticsWindowState, today);
+        string rewritten = JsonConvert.SerializeObject(restored, settings);
+        Assert.Contains(nameof(ProjectKBConfig.TemplateSelectedIndex), rewritten, StringComparison.Ordinal);
+        Assert.DoesNotContain(nameof(ProjectKBConfig.ProductionStatisticsWindowState), rewritten, StringComparison.Ordinal);
+        Assert.DoesNotContain("legacy-sn", rewritten, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SessionConfigurationReusesStatisticsStateButRecreatedConfigurationStartsFresh()
+    {
+        DateTime today = DateTime.Today;
+        ProjectKBConfig configuration = CreateStatisticsOnlyConfiguration();
+        KBProductionStatisticsWindowState firstAccess = configuration.ProductionStatisticsWindowState;
+        firstAccess.SelectedTabIndex = 2;
+        firstAccess.PeriodMode = KBProductionPeriodMode.Week;
+        firstAccess.AnchorDate = new DateTime(2026, 7, 20);
+        firstAccess.Model = "session-model";
+        firstAccess.SN = "session-sn";
+        firstAccess.ResultIndex = 1;
+        firstAccess.PageNumber = 4;
+
+        KBProductionStatisticsWindowState nextAccess = configuration.ProductionStatisticsWindowState;
+
+        Assert.Same(firstAccess, nextAccess);
+        Assert.Equal(2, nextAccess.SelectedTabIndex);
+        Assert.Equal(KBProductionPeriodMode.Week, nextAccess.PeriodMode);
+        Assert.Equal(new DateTime(2026, 7, 20), nextAccess.AnchorDate);
+        Assert.Equal("session-model", nextAccess.Model);
+        Assert.Equal("session-sn", nextAccess.SN);
+        Assert.Equal(1, nextAccess.ResultIndex);
+        Assert.Equal(4, nextAccess.PageNumber);
+
+        var settings = new JsonSerializerSettings { ContractResolver = new StatisticsConfigContractResolver() };
+        string savedConfiguration = JsonConvert.SerializeObject(configuration, settings);
+        ProjectKBConfig recreated = JsonConvert.DeserializeObject<ProjectKBConfig>(savedConfiguration, settings)!;
+        Assert.NotSame(firstAccess, recreated.ProductionStatisticsWindowState);
+        AssertDefaultStatisticsState(recreated.ProductionStatisticsWindowState, today);
+    }
+
     [Fact]
     public void CalculateSeparatesProductNgFromExecutionFailuresAndUsesCompletedCt()
     {
@@ -232,6 +318,87 @@ public class KBProductionStatisticsTests
     }
 
     [Fact]
+    public void DayQueriesIncludeMidnightAndExcludeNextMidnightForRecordsAndProductionTargets()
+    {
+        string databasePath = Path.Combine(Path.GetTempPath(), $"ProjectKB-Midnight-{Guid.NewGuid():N}.db");
+        try
+        {
+            var store = new KBProductionDataStore(databasePath);
+            store.InitializeSchema();
+            DateTime day = new(2026, 8, 5);
+            KBProductionPeriodRange range = KBProductionPeriod.GetRange(KBProductionPeriodMode.Day, day.AddHours(12));
+            Assert.Equal(day, range.From);
+            Assert.Equal(day.AddDays(1), range.ToExclusive);
+            int currentSessionId;
+            using (var db = new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = $"Data Source={databasePath}",
+                DbType = DbType.Sqlite,
+                IsAutoCloseConnection = true,
+                InitKeyType = InitKeyType.Attribute
+            }))
+            {
+                currentSessionId = db.Insertable(new KBProductionSession
+                {
+                    StartTime = day,
+                    Model = "AOI TEMP",
+                    TargetProduction = 120
+                }).ExecuteReturnIdentity();
+                db.Insertable(new[]
+                {
+                    new KBProductionSession { StartTime = day.AddSeconds(-1), TargetProduction = 900 },
+                    new KBProductionSession { StartTime = day.AddDays(1), TargetProduction = 900 }
+                }).ExecuteCommand();
+                db.Insertable(new[]
+                {
+                    CreateResult(0, null, day.AddSeconds(-1), FlowStatus.Completed, true, 9_000, "BEFORE"),
+                    CreateResult(0, currentSessionId, day, FlowStatus.Completed, true, 1_000, "SAME-SN"),
+                    CreateResult(0, currentSessionId, day.AddDays(1).AddSeconds(-1), FlowStatus.Completed, false, 2_000, "SAME-SN"),
+                    CreateResult(0, null, day.AddDays(1), FlowStatus.Completed, true, 9_000, "NEXT-MIDNIGHT")
+                }).ExecuteCommand();
+            }
+
+            var query = new KBProductionQuery
+            {
+                From = range.From,
+                ToExclusive = range.ToExclusive,
+                PeriodMode = KBProductionPeriodMode.Day
+            };
+
+            Assert.Equal(2, store.QueryRecordCount(query));
+            IReadOnlyList<KBProductionRecordRow> records = store.QueryRecords(query);
+            Assert.Equal(2, records.Count);
+            Assert.Contains(records, record => record.CreateTime == day);
+            Assert.Contains(records, record => record.CreateTime == day.AddDays(1).AddSeconds(-1));
+            Assert.All(records, record => Assert.Equal("SAME-SN", record.SN));
+
+            KBProductionStatistics statistics = store.QueryStatistics(query, day.AddHours(12));
+            Assert.Equal(2, statistics.TotalRuns);
+            Assert.Equal(2, statistics.ProductionCount);
+            Assert.Equal(2, statistics.TodayProduction);
+            Assert.Equal(1, statistics.GoodCount);
+            Assert.Equal(1, statistics.DefectiveCount);
+            Assert.Equal(1_500, statistics.AverageCtMilliseconds);
+            Assert.Equal(120, statistics.TargetProduction);
+            Assert.Equal(2, statistics.TrendRows.Count);
+            Assert.All(statistics.TrendRows, point => Assert.Equal(1, point.ProductionCount));
+            KBDailyProductionRow daily = Assert.Single(statistics.DailyRows);
+            Assert.Equal(day, daily.Date);
+            Assert.Equal(120, daily.TargetProduction);
+            KBProductionSessionRow session = Assert.Single(statistics.SessionRows);
+            Assert.Equal(currentSessionId, session.SessionId);
+            Assert.Equal(2, session.ProductionCount);
+            Assert.Equal(120, session.TargetProduction);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (File.Exists(databasePath))
+                File.Delete(databasePath);
+        }
+    }
+
+    [Fact]
     public void InitializeSchemaUpgradesALegacyResultTableWithoutLosingRows()
     {
         string databasePath = Path.Combine(Path.GetTempPath(), $"ProjectKB-Legacy-{Guid.NewGuid():N}.db");
@@ -288,6 +455,47 @@ public class KBProductionStatisticsTests
             SqliteConnection.ClearAllPools();
             if (File.Exists(databasePath))
                 File.Delete(databasePath);
+        }
+    }
+
+    private static void AssertDefaultStatisticsState(KBProductionStatisticsWindowState state, DateTime today)
+    {
+        Assert.Equal(0, state.SelectedTabIndex);
+        Assert.Equal(KBProductionPeriodMode.Day, state.PeriodMode);
+        Assert.Equal(today, state.AnchorDate);
+        Assert.Empty(state.Model);
+        Assert.Empty(state.SN);
+        Assert.Equal(0, state.ResultIndex);
+        Assert.Equal(1, state.PageNumber);
+    }
+
+    private static ProjectKBConfig CreateStatisticsOnlyConfiguration()
+    {
+        // The real constructor loads TemplateFlow metadata and the auth manager.
+        // Keep this fixture independent of runtime configuration and services.
+        var configuration = (ProjectKBConfig)RuntimeHelpers.GetUninitializedObject(typeof(ProjectKBConfig));
+        configuration.ProductionStatisticsWindowState = new KBProductionStatisticsWindowState();
+        return configuration;
+    }
+
+    private sealed class StatisticsConfigContractResolver : DefaultContractResolver
+    {
+        protected override JsonObjectContract CreateObjectContract(Type objectType)
+        {
+            JsonObjectContract contract = base.CreateObjectContract(objectType);
+            if (objectType == typeof(ProjectKBConfig))
+                contract.DefaultCreator = CreateStatisticsOnlyConfiguration;
+            return contract;
+        }
+
+        protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
+        {
+            IList<JsonProperty> properties = base.CreateProperties(type, memberSerialization);
+            // Preserve real JsonIgnore metadata while excluding unrelated getters
+            // that could initialize devices, auth, or runtime services.
+            return type == typeof(ProjectKBConfig)
+                ? properties.Where(property => property.PropertyName is nameof(ProjectKBConfig.ProductionStatisticsWindowState) or nameof(ProjectKBConfig.TemplateSelectedIndex)).ToList()
+                : properties;
         }
     }
 

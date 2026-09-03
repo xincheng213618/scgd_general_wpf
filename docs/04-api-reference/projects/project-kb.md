@@ -2,10 +2,10 @@
 knowledge_id: "projects.kb"
 knowledge_type: "reference"
 status: "current"
-summary: "ProjectKB 的宿主/独立启动依赖、Modbus/MES、Recipe 判定、背光修正与 CSV 输出边界。"
-aliases: ["Modbus 写 1 不触发 KB 测试","KB MES 返回 N 是成功吗","ProjectKB","ProjectKBWindow","KBItemMaster","KBItemMasterExtensions","KB CSV","KBLVSacle"]
+summary: "ProjectKB 的宿主/独立启动依赖、Modbus/MES、Recipe 判定、背光修正、CSV 与按天生产统计和运行内查询记忆。"
+aliases: ["Modbus 写 1 不触发 KB 测试","KB MES 返回 N 是成功吗","ProjectKB","ProjectKBWindow","KBItemMaster","KBItemMasterExtensions","KB CSV","KBLVSacle","KB生产统计","KB统计日期记忆","KBProductionStatisticsWindow","KB Socket","OpenSocketConfigCommand"]
 code_paths: ["Projects/ProjectKB/App.xaml.cs","Projects/ProjectKB/ProjectKBWindow.xaml.cs","Projects/ProjectKB/KBItemMasterExtensions.cs","Projects/ProjectKB/Modbus/","Projects/ProjectKB/MesDll.cs","Projects/ProjectKB/"]
-test_paths: ["Test/ProjectKB.Tests/ProjectKB.Tests.csproj"]
+test_paths: ["Test/ProjectKB.Tests/ProjectKB.Tests.csproj","Test/ProjectKB.Tests/KBProductionStatisticsTests.cs"]
 related: ["projects.index","projects.capabilities"]
 ---
 
@@ -40,9 +40,13 @@ related: ["projects.index","projects.capabilities"]
 
 | 通道 | 关键点 |
 | --- | --- |
-| Modbus TCP | 默认 host `127.0.0.1`、port `502`、register `0x00`；读到 `1` 自动触发，结束写回 `0` |
+| Modbus TCP | 默认 host `127.0.0.1`、port `502`、register `0x00`；读到 `1` 请求触发，回写 `0` 的分支见下文 |
 | MES DLL | 固定从 `Plugins/ProjectKB/FunTestDll.dll` P/Invoke |
-| TCP Socket | 可选 listener，消息必须包含 `#` 和 `*`，只作为轻量触发通道 |
+| TCP Socket | 状态栏提供配置入口，当前尚未接入检测启动链 |
+
+寄存器 `0` 不是检测成功标志：空 SN 触发被忽略时会请求回写，正常 `Processing()` 到达回写分支时也会请求回写；异常或提前返回可能未到达该分支。窗口不等待 `SetRegisterValue(0)` 的异步结果，需分别检查 PLC 实际值和本次检测结果。
+
+状态栏“Socket”由 `OpenSocketConfigCommand` 打开管理员配置编辑器，只编辑 `SocketConfig`。当前 ProjectKB 初始化和主窗口没有创建 `SocketControl`，也没有把它的 `StatusChanged` 绑定到检测流程；启用配置不会自动启动监听。`Services/SocketControl.cs` 中检查消息包含 `#` 和 `*` 的接收代码不能视为已经可用的客户触发协议。
 
 MES 调用约定：`CheckWIP(Stage, SN)` 在 SN 上传或自动上传 SN 时执行，当前代码把返回 `"N"` 视为通过；`Collect_test(...)` 在测试完成且 `Summary.UseMes`、`IsCheckWIP` 为 true 时执行，参数含站别、SN、PASS/NG、设备号、线别、工号。
 
@@ -63,6 +67,19 @@ MES 调用约定：`CheckWIP(Stage, SN)` 在 SN 上传或自动上传 SN 时执�
 `ProjectKBWindow.Processing()` 按 `EnableKeyLvLimit`、`EnableAvgLvLimit`、`EnableUniformityLimit`、`EnableKeyLcLimit` 分别启用判定；上下限使用 `>=` / `<=`，不是严格大于/小于。均匀性和局部对比度的 Recipe 百分数要除以 `100` 后比较。整体判定的最小亮度、平均亮度、均匀性通过 `BacklightAutotuneService.GetOriginal*` 取原始值，最大亮度与局部对比度则读取当前结果；不能把所有指标一概称为修正值判定。
 
 CSV 契约由 `KBItemMasterExtensions.SaveCsv()` 维护：除固定列外，按 `Items` 追加键名列；`KBCsvDataType.Lv` 的动态列导出键位亮度，`Lc` 导出局部对比度乘 `100`，两者共享固定汇总字段，限值来自结果携带的 Recipe 快照。当前新生成的数据行中 `ColorDifference` 和 `StrayLight` 两列为空，占位字段不代表已完成色差/杂光测量；同表头的既有数据行会保留，不能据此推断所有历史行也为空。排查列内容时核对这个实现，不从表头推断能力。
+
+## 生产统计与查询记忆
+
+`KBProductionStatisticsWindow` 的首页、小时产量、天产量、生产会话和检测记录共用一组周期、机种、SN 和结果筛选。界面采用启动恢复窗口及 ARVRPro 结果统计的标题层级、弱边框圆角卡片与浅色/深色配色；`ResultStatisticsTheme.xaml` 随 KB 程序集编译，不引用宿主或 ARVRPro 的资源文件。筛选组可随窗口宽度换行，“生产信息”入口位于标题右侧。
+
+- 每条 `KBItemMaster` 已是一次完整检测，不再聚合成 ARVRPro 的 CT 批次。有效产量计入 `FlowStatus.Completed` 的记录，同 SN 的重复检测仍逐条计数；流程失败单独显示。
+- 同一次软件运行内关闭、重新打开统计窗口，保留周期、日期、机种、SN、结果、标签和页码。软件重启后默认首页、按天、今天、第 1 页及空筛选（机种显示“全部机种”）。
+- `ProjectKBConfig.ProductionStatisticsWindowState` 标注 `[JsonIgnore]`，旧配置中的查询状态不再恢复，关闭统计窗口仅捕获内存状态。这个边界不涉及生产信息配置和数据库中的生产会话、目标产量、检测记录，不会清除历史数据。
+- 手动查询仍支持按天、按周、按月和全部。按天为所选日期 `00:00` 到次日 `00:00`，按周为周一到下周一，按月为月初到下月初，按 `KBItemMaster.CreateTime` 使用包含起点、不含终点的范围；不是滚动最近 24 小时或最近 7 天。
+- “今天／本周／本月”按当前周期返回本周期并查询第 1 页，不清空其它筛选；全部模式下日期导航隐藏，快捷按钮显示“全部”。首页图表及各页表格沿用同一组筛选，“今日／本小时产量”是所选范围中落入当前日期/小时的子集。
+- 列表及统计查询只投影统计所需字段，避免读取大体积 `ItemsJson`/压缩载荷；结果详情按需加载。
+
+验证入口：`KBProductionStatisticsTests.cs` 覆盖周期、会话与目标、逐条检测及分页，另验证旧 JSON 状态忽略、运行内复用、重建默认值和午夜边界。测试仅使用临时 SQLite，不能替代现场 Modbus/MES 验证。布局应另查浅色/深色、最小窗口、筛选换行、日期输入和分页；使用模拟数据的源 XAML 预览不执行真实查询或生产信息修改。
 
 ## 关键配置
 

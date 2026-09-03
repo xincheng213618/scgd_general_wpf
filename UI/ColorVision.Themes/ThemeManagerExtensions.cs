@@ -54,7 +54,8 @@ namespace ColorVision.Themes
 
         private static BitmapImage CreateDefaultIcon(Theme theme) => new(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{(theme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));
 
-        private static BitmapImage? TryLoadPackageIcon(Window window)
+        /// <summary>Loads and freezes a package-specific window icon without applying any native frame styling.</summary>
+        public static BitmapImage? TryLoadPackageIcon(Window window)
         {
             try
             {

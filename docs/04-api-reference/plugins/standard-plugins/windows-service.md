@@ -83,7 +83,7 @@ MySQL ZIP安装位置与服务根同级，默认业务用户cv。`MySqlServiceHe
 
 ## 旧CVWinSMS / InstallTool仍有实际入口
 
-当前源码与旧README“旧在线下载、外部工具、日志入口已经移除”的断言冲突：项目仍编译 `CVWinSMS/InstallTool.cs` 和Menus，未排除或标Obsolete。`InstallTool : MenuItemBase, IMainWindowInitialized` 的OwnerGuid为ServiceLog，ServiceLog挂在Help下，通用MenuManager可发现这些类型；实际可见性仍受[菜单规则与配置](../../ui-components/menus.md)影响，不保证所有环境必然显示。
+项目编译 `CVWinSMS/InstallTool.cs` 和 Menus。`InstallTool : MenuItemBase, IMainWindowInitialized` 的OwnerGuid为ServiceLog，ServiceLog挂在Help下，通用MenuManager可发现这些类型；实际可见性仍受[菜单规则与配置](../../ui-components/menus.md)影响，不保证所有环境必然显示。
 
 `MainWindow.LoadIMainWindowInitialized` 会调用已加载实现的Initialize；InstallTool在已有配置工具文件时读版本并查询 `UpdatePath/LATEST_RELEASE`，发现更新后询问。其ZIP URL仍硬编码旧9999站点的 `Tool/InstallTool/InstallTool[版本].zip`，不走 `/api/tool/cvwindowsservice`。确认下载/更新后可能关闭或杀掉CVWinSMS进程、覆盖/迁移目录与旧配置，并用runas启动外部工具；不能写成惰性的配置兼容读取，也不能以发现类为由执行它。
 

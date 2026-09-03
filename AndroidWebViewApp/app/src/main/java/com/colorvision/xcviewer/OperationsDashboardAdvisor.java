@@ -16,20 +16,12 @@ final class OperationsDashboardAdvisor {
     private OperationsDashboardAdvisor() {
     }
 
-    static Recommendation waiting() {
-        return new Recommendation("正在分析运行状态…", ACTION_NONE);
-    }
-
     static Recommendation staleRemoteSnapshot() {
         return new Recommendation("电脑未上线 · 运行连接自检", ACTION_CONNECTION_CHECK);
     }
 
     static Recommendation unavailable() {
         return new Recommendation("实时状态暂不可用 · 运行连接自检", ACTION_CONNECTION_CHECK);
-    }
-
-    static Recommendation fromMonitor(JSONObject monitor) {
-        return fromMonitor(monitor, true);
     }
 
     static Recommendation fromMonitor(JSONObject monitor, boolean remindersAvailable) {

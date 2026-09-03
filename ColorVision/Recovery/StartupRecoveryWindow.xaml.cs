@@ -584,7 +584,7 @@ namespace ColorVision.Recovery
             {
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            }.ShowDialog();
+            }.Show();
         }
 
         private void OpenApplicationLog_Click(object sender, RoutedEventArgs e)

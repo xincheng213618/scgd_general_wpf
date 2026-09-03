@@ -77,46 +77,6 @@ public sealed class CopilotCodexExecPolicyTests
         Assert.Equal(1, hook.PermissionRequestCount);
     }
 
-    [Fact]
-    public void DiagnosticsExposeRuleFileIssueAndFrozenPrecedenceContract()
-    {
-        var options = CopilotProjectInstructionDiscoveryConfig.CreateDefault() with
-        {
-            AppliedExecPolicyFilePaths = ["default.rules"],
-            ConfiguredExecPolicyRules =
-            [
-                CreateRule(["git"], CopilotCodexExecPolicyDecision.Allow, order: 0),
-            ],
-            ConfiguredExecPolicyIssues =
-            [
-                new CopilotCodexExecPolicyIssue("default.rules", "Invalid example."),
-            ],
-        };
-
-        string report = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                ComposerMode = CopilotAgentMode.Code,
-                CodexConfigOptions = options,
-            });
-        string memoryReport = CopilotProjectInstructionDiagnostics.Format(
-            new CopilotProjectInstructionSnapshot(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                options,
-                Array.Empty<CopilotProjectInstructionDocument>()),
-            hasActiveAgentRun: false);
-
-        Assert.Contains("Codex exec policy：已加载规则 1 个 / 来源文件 1 个 / 配置问题 1 个", report, StringComparison.Ordinal);
-        Assert.Contains("提交时冻结", report, StringComparison.Ordinal);
-        Assert.Contains("forbidden > prompt > allow", report, StringComparison.Ordinal);
-        Assert.Contains("Codex exec policy：已加载规则 1 个 / 来源文件 1 个 / 配置问题 1 个", memoryReport, StringComparison.Ordinal);
-        Assert.Contains("最严格决策优先", memoryReport, StringComparison.Ordinal);
-    }
-
     private static CopilotCodexExecPolicyEvaluation Evaluate(
         CopilotAgentRequest request,
         string command) => CopilotCodexExecPolicyEvaluator.Evaluate(

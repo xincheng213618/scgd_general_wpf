@@ -9,11 +9,11 @@ test_paths: ["Test/ColorVision.UI.Tests/GeometricTransformV1Tests.cs"]
 related: ["algorithms.platform","algorithms.index"]
 ---
 
-# 几何变换 V1（M7）
+# 几何变换 V1
 
-## 阶段边界与已有能力盘点
+## 适用范围
 
-M7 提供稳定 ID `colorvision.geometry.transform`。仓库此前只有 POI 子系统私有的四点单应点位重映射，它同时依赖模板、数据库和业务对象，不能作为统一图像算法 provider；Hough、对齐预检和客户算法也不执行通用 image warp。本阶段实现显式矩阵变换，不包含自动求配准对应点、特征/相关性配准或镜头畸变参数，这些仍属于 M8。
+`colorvision.geometry.transform` 按显式矩阵变换图像。自动估计图像间变换见[图像配准](./image-registration-v1.md)，相机内参与畸变参数见[镜头畸变校正](./lens-distortion-correction-v1.md)。
 
 Descriptor 与本地 OpenCV CPU provider 元数据分离。公共参数、Invocation、preset 和 Result 不依赖 WPF、OpenCvSharp、HImage、Flow 或设备类型。provider 通过 `AlgorithmImageMatLease` 只读借用输入缓冲区，不产生输入像素副本；OpenCV 输出在完成后复制一次进入由 Result 所有的 `AlgorithmImageBuffer`，有效区 mask 是独立的一字节每像素 artifact。
 
@@ -50,8 +50,8 @@ V1 支持最近邻/线性插值和常量/复制边界。常量边界以规范化
 
 - ImageView：“算法 → 几何变换...”可编辑 PropertyGrid 参数、加载/保存不覆盖已有文件的 JSON preset，并通过统一 preview session 执行和提交。结果窗口同时显示已提交图像、mask、正逆矩阵，可分别保存 PNG 或导出结构化 JSON。
 - Batch：Catalog 投影自动显示该算法，使用相同默认值、参数类和 primary image artifact；格式转换仍是独立输出策略。
-- Flow：`LocalFlowImageAlgorithmAdapter` 可复用同一 Invocation/Result；没有新增生产 STNode，也不改变旧远端 MQTT/device execution plane。
-- Copilot：M7 未加入显式白名单，alias、Catalog 或反射发现不会自动暴露执行入口。
+- Flow：`LocalFlowImageAlgorithmAdapter` 可复用同一 Invocation/Result；没有生产 STNode 入口。
+- Copilot：几何变换未加入显式白名单，alias、Catalog 或反射发现不会自动暴露执行入口。
 
 ## 验证与性能
 
@@ -59,4 +59,4 @@ V1 支持最近邻/线性插值和常量/复制边界。常量边界以规范化
 
 可选性能门禁 `GeometricTransformPipelineProbe` 在 4K Gray16/Bgra32 上验证 retained managed 图像只包含一份输出和一份 mask（另加固定 16 MiB 容差），并限制单次执行在 20 秒内。实际门禁使用的 native warp 读取 lease，无 `input → byte[] → Mat` 复制；剩余不可消除的边界是 native 输出到 Result-owned buffer 的一次复制，以及单字节 mask。
 
-V1 不自动估计矩阵、不处理镜头畸变、不输出相机标定误差，也不声称 DirectML/CUDA provider。配准与畸变校正在 M8 单独验收。
+V1 不自动估计矩阵、不处理镜头畸变、不输出相机标定误差，也不声称 DirectML/CUDA provider。[图像配准](./image-registration-v1.md)与[镜头畸变校正](./lens-distortion-correction-v1.md)有各自的输入及验收契约。

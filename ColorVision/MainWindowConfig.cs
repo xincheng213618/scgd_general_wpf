@@ -18,6 +18,13 @@ namespace ColorVision
         public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; OnPropertyChanged(); } }
         private bool _IsOpenStatusBar = true;
 
+        // A new persisted key opts existing installations into the released compact shell.
+        // Do not migrate the old experimental UseCompactTitleBar preference.
+        [DisplayName("ConfigUseCompactMainWindow")]
+        [Description("ConfigUseCompactMainWindowDescription")]
+        public bool UseCompactMainWindow { get => _useCompactMainWindow; set { _useCompactMainWindow = value; OnPropertyChanged(); } }
+        private bool _useCompactMainWindow = true;
+
         /// <summary>
         /// 记录上次打开时的应用版本，用于在更新后首次启动时显示变更日志。
         /// </summary>
@@ -94,6 +101,11 @@ namespace ColorVision
                 new ConfigSettingMetadata
                 {
                     BindingName = nameof(IsRestoreWindow),
+                    Source = Instance
+                },
+                new ConfigSettingMetadata
+                {
+                    BindingName = nameof(UseCompactMainWindow),
                     Source = Instance
                 }
             };

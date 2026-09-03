@@ -9,20 +9,18 @@ test_paths: ["Test/ColorVision.UI.Tests/FrequencySpectrumV1Tests.cs","Test/Color
 related: ["algorithms.platform","algorithms.index"]
 ---
 
-# FFT / 频域分析 V1（M10）
+# FFT / 频域分析 V1
 
 ## 当前发布边界
 
-当前默认 `ImageAlgorithmPlatform.CreateDefaultProviders()` 把本页 provider 包装在 `ExperimentalAlgorithmProviderGate` 中：菜单和 Batch 可执行投影隐藏该能力，直接调用默认 Runner 也返回 `provider_unavailable`，详情包含 `algorithm_experimental`。本页后面的参数、结果与宿主接入描述属于保留实现及测试契约，不是产品已开放的承诺；不得在调用方另建执行旁路来绕过门禁。
-
-本页 `status: current` 表示它记录当前源码事实，不代表算法已发布。M 编号是历史增量标识；其他增量是否可用以 [统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单) 为准。`Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs` 验证默认拒绝行为，专题测试覆盖实现细节；解除门禁还需完成对应数值、最坏资源与生产规模验证。
+此算法为 Experimental，默认不展示或执行；门禁和错误码见[统一平台发布清单](./image-algorithm-platform-v1.md#当前发布清单)。
 
 
 ## 阶段边界与仓库盘点
 
-M10 提供稳定 ID `colorvision.frequency.spectrum-analysis`，把二维频谱、径向/方向统计、峰值周期与方向估计以及逆变换验证接入统一 Catalog、Invocation、Runner 和 Result。仓库此前没有可复用的 DFT 平台实现；Native `M_RemoveMoire` 只是 Gaussian blur、pyrDown/pyrUp 与锐化的兼容路径，不计算频谱，M10 也不改变其既有 ID、ABI 或行为。
+频域分析提供稳定 ID `colorvision.frequency.spectrum-analysis`，把二维频谱、径向/方向统计、峰值周期与方向估计以及逆变换验证接入统一 Catalog、Invocation、Runner 和 Result。Native `M_RemoveMoire` 使用 Gaussian blur、pyrDown/pyrUp 与锐化，不属于频谱计算。
 
-本阶段只提供通用频域事实。摩尔纹评分、峰值的摩尔纹语义解释、notch 建议/滤波、逆滤波结果和热力图属于 M11，不能由本结果的“高峰值”自动推断；ONNX/AI 已延期，只在平台文档中保留未来接入设计，当前不引入运行时依赖。
+本算法提供通用频域测量。摩尔纹评分、峰值的摩尔纹语义解释、notch 建议/滤波、逆滤波结果和热力图属于[摩尔纹分析](./moire-analysis-v1.md)，不能由本结果的“高峰值”自动推断；ONNX/AI 已延期，只在平台文档中保留未来接入设计，当前不引入运行时依赖。
 
 ## 输入与数值契约
 
@@ -67,7 +65,7 @@ V1 接受九种 canonical format：Gray8/16/32F、Bgr24/48/96F、Bgra32/64/128F�
 - ImageView：“算法 → FFT / 频域分析...”使用统一 analysis session；Clear、切图、revision 变化或同 revision 的新 Invocation 会取消/淘汰旧结果。结果窗口显示幅度/功率图、径向/方向曲线和峰值表，可保存 PNG 或导出 CSV/JSON，关闭时释放 Result 图像。
 - Batch：`BatchAlgorithmAnalysisProcessor` 使用同一 Invocation/Runner，导出 JSON 或 CSV bundle；只有 Invocation 确实含 ROI 时才要求 `Roi` capability。
 - Flow：`LocalFlowImageAlgorithmAdapter.ExecuteRawAsync` 在本地帧执行同一 descriptor/provider；旧 MQTT/device `AlgorithmNode` 与 STN 仍在独立远端 execution plane。
-- Copilot：M10 未进入显式白名单，Catalog alias 或反射不会自动暴露该工具。
+- Copilot：频域分析未进入显式白名单，Catalog alias 或反射不会自动暴露该工具。
 
 Runner 在成功、结构化失败、异常和取消后释放 `Transferred` 输入；Result 拥有两张 Gray8 显示图并在 Dispose 时释放。provider 不修改 `Borrowed` 输入。OpenCV DFT 本身不是可抢占调用，因此取消在亮度扫描、加窗、DFT 前后、聚合、显示、峰值和逆变换误差循环的行级检查点生效。
 
@@ -77,4 +75,4 @@ Runner 在成功、结构化失败、异常和取消后释放 `Transferred` 输�
 
 可选 `FrequencySpectrumPipelineProbe` 在 4K Gray16、4K Bgra32 与 8K Gray16 上记录延迟、managed allocation、private-memory delta 和两张显示图的 retained bytes。实现只保留两张 Gray8 显示图；单通道 float spatial、双通道 complex spectrum 与 inverse Mat 都是执行期 native 工作集，结果中不复制整幅 float magnitude/power。管理分配预算是两张结果图加 64 MiB，private 工作集预算是 32 bytes/pixel 加 256 MiB，单次上限 120 秒。该预算是回归门禁，不是所有硬件的实时承诺。
 
-M10 不做多通道分别 DFT、非均匀 FFT、GPU provider、流式/分块近似、相位解包或频域编辑；这些能力需要各自的数值和坐标契约，不能以隐藏转换加入 V1。
+频域分析不做多通道分别 DFT、非均匀 FFT、GPU provider、流式/分块近似、相位解包或频域编辑；这些能力需要各自的数值和坐标契约，不能以隐藏转换加入 V1。

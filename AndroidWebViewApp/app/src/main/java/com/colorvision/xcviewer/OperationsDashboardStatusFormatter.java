@@ -23,10 +23,6 @@ final class OperationsDashboardStatusFormatter {
             this.priority = Math.max(0, priority);
         }
 
-        String accessibilityLabel() {
-            return accessibilityLabel("查看详情");
-        }
-
         String accessibilityLabel(String actionLabel) {
             String action = actionLabel == null || actionLabel.trim().isEmpty()
                     ? "查看详情"

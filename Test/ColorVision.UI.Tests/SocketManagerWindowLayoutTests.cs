@@ -10,7 +10,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using SocketResources = ColorVision.SocketProtocol.Properties.Resources;
 
@@ -348,62 +347,6 @@ public sealed class SocketManagerWindowLayoutTests
                 }
             }
         }, cultureName, dark);
-    }
-
-    [Fact]
-    public void RenderPreviewsOnlyWhenAnOutputDirectoryIsRequested()
-    {
-        string? outputDirectory = Environment.GetEnvironmentVariable("COLORVISION_SOCKET_PREVIEW_DIRECTORY");
-        if (string.IsNullOrWhiteSpace(outputDirectory))
-            return;
-
-        Assert.True(Path.IsPathFullyQualified(outputDirectory), "The preview directory must be an absolute path.");
-        Directory.CreateDirectory(outputDirectory);
-        foreach ((string name, string culture, bool dark, bool minimum, bool populated) in new[]
-        {
-            ("socket-messages.png", "zh-CN", false, false, true),
-            ("socket-empty.png", "zh-CN", false, false, false),
-            ("socket-dark-minimum.png", "zh-CN", true, true, true),
-            ("socket-english-minimum.png", "en-US", false, true, true),
-        })
-        {
-            SocketMessage[] messages = populated
-                ? Enumerable.Range(1, 8).Select(index => Message($"capture-{index:000}",
-                    index % 2 == 0 ? SocketMessageDirection.Sent : SocketMessageDirection.Received,
-                    $"{{\"EventName\":\"Capture\",\"MsgID\":\"capture-{index:000}\",\"Code\":0,\"data\":{{\"status\":\"ready\"}}}}")).ToArray()
-                : [];
-            WithWindow(messages, (window, _) =>
-            {
-                if (populated)
-                    Element<ListView>(window, "MessagesListView").SelectedIndex = 0;
-                Grid root = RefreshLayout(window, minimum);
-                Size viewport = new(minimum ? window.MinWidth : window.Width,
-                    (minimum ? window.MinHeight : window.Height) - 40);
-                Brush background = Assert.IsAssignableFrom<Brush>(window.FindResource("GlobalBackground"));
-                VisualBrush content = new(root)
-                {
-                    AutoLayoutContent = false,
-                    Stretch = Stretch.Fill,
-                };
-                DrawingVisual preview = new();
-                using (DrawingContext drawing = preview.RenderOpen())
-                {
-                    // Render the full client viewport, including the root's outer margin, on an opaque theme background.
-                    drawing.DrawRectangle(background, null, new Rect(viewport));
-                    drawing.DrawRectangle(content, null, new Rect(new Point(root.Margin.Left, root.Margin.Top), root.RenderSize));
-                }
-                RenderTargetBitmap bitmap = new((int)Math.Ceiling(viewport.Width * 1.5),
-                    (int)Math.Ceiling(viewport.Height * 1.5), 144, 144, PixelFormats.Pbgra32);
-                bitmap.Render(preview);
-                byte[] cornerPixel = new byte[4];
-                bitmap.CopyPixels(new Int32Rect(bitmap.PixelWidth - 1, bitmap.PixelHeight - 1, 1, 1), cornerPixel, 4, 0);
-                Assert.Equal((byte)255, cornerPixel[3]);
-                PngBitmapEncoder encoder = new();
-                encoder.Frames.Add(BitmapFrame.Create(bitmap));
-                using FileStream output = File.Create(Path.Combine(outputDirectory, name));
-                encoder.Save(output);
-            }, culture, dark);
-        }
     }
 
     private static void AssertNoSelection(SocketManagerWindow window)

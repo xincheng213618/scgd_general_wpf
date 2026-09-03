@@ -1,7 +1,6 @@
 using ColorVision.Core;
 using ColorVision.ImageEditor.Video;
 using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -17,7 +16,7 @@ public class VideoFrameCopyTests
     [Fact]
     public void UpdateWriteableBitmapFastCopiesContiguousFrames()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             AssertCopy(width: 4, height: 3, PixelFormats.Bgr24, channels: 3, depth: 8, sourcePadding: 0, expectTargetPadding: false);
             AssertCopy(width: 3, height: 3, PixelFormats.Bgra32, channels: 4, depth: 8, sourcePadding: 0, expectTargetPadding: false);
@@ -28,7 +27,7 @@ public class VideoFrameCopyTests
     [Fact]
     public void UpdateWriteableBitmapFastCopiesRowsWithSourcePadding()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             AssertCopy(width: 2, height: 3, PixelFormats.Bgra32, channels: 4, depth: 8, sourcePadding: 5, expectTargetPadding: false);
         });
@@ -37,7 +36,7 @@ public class VideoFrameCopyTests
     [Fact]
     public void UpdateWriteableBitmapFastCopiesRowsWithTargetPadding()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             AssertCopy(width: 1, height: 3, PixelFormats.Bgr24, channels: 3, depth: 8, sourcePadding: 0, expectTargetPadding: true);
         });
@@ -46,7 +45,7 @@ public class VideoFrameCopyTests
     [Fact]
     public void UpdateWriteableBitmapFastUnlocksBitmapWhenStrideIsInvalid()
     {
-        RunOnStaThread(() =>
+        StaTest.Run(() =>
         {
             const int width = 2;
             const int height = 2;
@@ -161,29 +160,5 @@ public class VideoFrameCopyTests
         }
 
         return activePixels;
-    }
-
-    private static void RunOnStaThread(Action action)
-    {
-        Exception? failure = null;
-        Thread thread = new(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-
-        if (failure != null)
-        {
-            ExceptionDispatchInfo.Capture(failure).Throw();
-        }
     }
 }

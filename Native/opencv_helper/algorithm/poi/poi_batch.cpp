@@ -257,7 +257,7 @@ bool calculateBatchV1(
 
 namespace {
 
-constexpr std::uint32_t kKnownOptionsFlags = PercentThreshold | ApplyMnp;
+constexpr std::uint32_t kKnownOptionsFlags = PercentThreshold | ApplyMnp | PreserveNonPositiveValues;
 
 bool isValidRequest(const RequestV1& request, std::int32_t width, std::int32_t height) noexcept
 {
@@ -494,9 +494,11 @@ ResultV1 makeResult(std::array<float, 3> averages, std::int32_t channels, const 
         result.Y = static_cast<float>(result.Y * options.scaleY);
         result.Z = static_cast<float>(result.Z * options.scaleZ);
     }
-    if (result.X <= 0.0F) result.X = 0.000001F;
-    if (result.Y <= 0.0F) result.Y = 0.000001F;
-    if (result.Z <= 0.0F) result.Z = 0.000001F;
+    if ((options.flags & PreserveNonPositiveValues) == 0) {
+        if (result.X <= 0.0F) result.X = 0.000001F;
+        if (result.Y <= 0.0F) result.Y = 0.000001F;
+        if (result.Z <= 0.0F) result.Z = 0.000001F;
+    }
 
     const float sum = result.X + result.Y + result.Z;
     result.x = result.X / sum;

@@ -169,6 +169,8 @@ def read_git_status(repo_root: Path) -> str:
         cwd=repo_root,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=15,
         check=False,
     )

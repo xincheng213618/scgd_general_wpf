@@ -47,6 +47,86 @@ namespace ColorVision.UI.Tests
             }
         }
 
+        [Theory]
+        [InlineData(null)]
+        [InlineData("AppData")]
+        [InlineData("Installation")]
+        [InlineData("Current")]
+        public void AppLogCollectorIncludesBothLocationsWithoutDuplicateDirectoriesOrEntryNames(string? currentSource)
+        {
+            string tempDirectory = Path.GetFullPath(Path.Combine(Path.GetTempPath(), $"ColorVision_AppLogSourcesTests_{Guid.NewGuid():N}"));
+            string appDataDirectory = Path.Combine(tempDirectory, "AppData");
+            string applicationDirectory = Path.Combine(tempDirectory, "Program Files", "ColorVision");
+            var directories = new Dictionary<string, string>
+            {
+                ["AppData"] = Path.Combine(appDataDirectory, "ColorVision", "Log"),
+                ["Installation"] = Path.Combine(applicationDirectory, "log"),
+                ["Current"] = Path.Combine(tempDirectory, "CustomLog"),
+            };
+
+            try
+            {
+                DateTime utcNow = new(2026, 9, 2, 4, 0, 0, DateTimeKind.Utc);
+                foreach (var (source, directory) in directories)
+                {
+                    Directory.CreateDirectory(directory);
+                    string recentPath = Path.Combine(directory, "20260902.txt");
+                    string oldPath = Path.Combine(directory, "old.log");
+                    File.WriteAllText(recentPath, source);
+                    File.WriteAllText(oldPath, "old");
+                    File.SetLastWriteTimeUtc(recentPath, utcNow.AddHours(-1));
+                    File.SetLastWriteTimeUtc(oldPath, utcNow.AddDays(-8));
+                }
+
+                string? currentDirectory = currentSource == null ? null : directories[currentSource].ToUpperInvariant() + Path.DirectorySeparatorChar;
+                var files = AppLogCollector.GetRecentApplicationLogFiles(currentDirectory, appDataDirectory, applicationDirectory, 7, utcNow);
+
+                string[] expectedSources = currentSource == "Current" ? ["AppData", "Installation", "Current"] : ["AppData", "Installation"];
+                Assert.Equal(expectedSources.Length, files.Count);
+                foreach (string source in expectedSources)
+                {
+                    var collected = Assert.Single(files, file => file.EntryPath == $"AppLogs/{source}/20260902.txt");
+                    Assert.Equal(source, File.ReadAllText(collected.File.FullName));
+                }
+            }
+            finally
+            {
+                if (Directory.Exists(tempDirectory)
+                    && tempDirectory.StartsWith(Path.GetFullPath(Path.GetTempPath()), StringComparison.OrdinalIgnoreCase))
+                    Directory.Delete(tempDirectory, true);
+            }
+        }
+
+        [Fact]
+        public void AppLogCollectorIncludesInstallationLogsWhenOtherDirectoriesAreMissing()
+        {
+            string tempDirectory = Path.GetFullPath(Path.Combine(Path.GetTempPath(), $"ColorVision_AppLogMissingSourcesTests_{Guid.NewGuid():N}"));
+            string applicationDirectory = Path.Combine(tempDirectory, "Program Files", "ColorVision");
+            string logDirectory = Path.Combine(applicationDirectory, "log");
+            Directory.CreateDirectory(logDirectory);
+
+            try
+            {
+                DateTime utcNow = new(2026, 9, 2, 4, 0, 0, DateTimeKind.Utc);
+                string logPath = Path.Combine(logDirectory, "20260902.txt");
+                File.WriteAllText(logPath, "update restart log");
+                File.SetLastWriteTimeUtc(logPath, utcNow);
+
+                var files = AppLogCollector.GetRecentApplicationLogFiles(
+                    Path.Combine(tempDirectory, "MissingCurrent"), Path.Combine(tempDirectory, "MissingAppData"), applicationDirectory, 7, utcNow);
+
+                var collected = Assert.Single(files);
+                Assert.Equal("AppLogs/Installation/20260902.txt", collected.EntryPath);
+                Assert.Equal(logPath, collected.File.FullName, ignoreCase: true);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDirectory)
+                    && tempDirectory.StartsWith(Path.GetFullPath(Path.GetTempPath()), StringComparison.OrdinalIgnoreCase))
+                    Directory.Delete(tempDirectory, true);
+            }
+        }
+
         [Fact]
         public void UpdateLogCollectorIncludesRecentPerInstallationLogs()
         {

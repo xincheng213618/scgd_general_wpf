@@ -1,5 +1,6 @@
 using ColorVision.Core;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Realtime;
 using ColorVision.ImageEditor.Settings;
 using System;
@@ -143,19 +144,23 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 return;
             }
 
-            if (TryCreateProcessingRequest(width, height, out VideoFrameProcessingRequest request))
+            bool enablePseudo = TryCreateProcessingRequest(imageView, width, height, out VideoFrameProcessingRequest request);
+            if (request.NeedsProcessing)
             {
                 EnsureProcessor().SubmitFrame(sourceBuffer, length, width, height, channels, bitsPerPixel, stride, request);
             }
 
-            imageView.Realtime.SubmitFrame(
-                sourceBuffer,
-                width,
-                height,
-                RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel),
-                stride,
-                length,
-                Transform);
+            if (!enablePseudo)
+            {
+                imageView.Realtime.SubmitFrame(
+                    sourceBuffer,
+                    width,
+                    height,
+                    RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel),
+                    stride,
+                    length,
+                    Transform);
+            }
             RecordFrameRate();
         }
 
@@ -172,31 +177,45 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 return;
             }
 
-            if (TryCreateProcessingRequest(width, height, out VideoFrameProcessingRequest request))
+            bool enablePseudo = TryCreateProcessingRequest(imageView, width, height, out VideoFrameProcessingRequest request);
+            if (request.NeedsProcessing)
             {
                 EnsureProcessor().SubmitFrame(sourcePointer, length, width, height, channels, bitsPerPixel, stride, request);
             }
 
-            imageView.Realtime.SubmitFrame(
-                sourcePointer,
-                width,
-                height,
-                RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel),
-                stride,
-                length,
-                Transform);
+            if (!enablePseudo)
+            {
+                imageView.Realtime.SubmitFrame(
+                    sourcePointer,
+                    width,
+                    height,
+                    RealtimeFramePresenter.GetPixelFormat(channels, bitsPerPixel),
+                    stride,
+                    length,
+                    Transform);
+            }
             RecordFrameRate();
         }
 
-        private bool TryCreateProcessingRequest(int width, int height, out VideoFrameProcessingRequest request)
+        private bool TryCreateProcessingRequest(ImageView imageView, int width, int height, out VideoFrameProcessingRequest request)
         {
-            request = default;
-            if (!IsArticulationEnabled) return false;
-
             Rect rect = _overlayVisual.GetProcessingRoi(width, height);
+            RealtimePseudoColorRequest? pseudoColor = null;
+            bool enablePseudo = false;
+            if (imageView.RealtimePseudoColorService is IRealtimePseudoColorService service
+                && service.TryCreateRequest(out RealtimePseudoColorRequest capturedRequest, 0))
+            {
+                enablePseudo = true;
+                pseudoColor = capturedRequest;
+            }
 
-            request = new VideoFrameProcessingRequest(_config.EvaFunc, new RoiRect(rect));
-            return true;
+            request = new VideoFrameProcessingRequest(
+                IsArticulationEnabled,
+                _config.EvaFunc,
+                new RoiRect(rect),
+                pseudoColor,
+                Transform);
+            return enablePseudo;
         }
 
         private bool IsArticulationEnabled => _config.IsCalArtculation;
@@ -228,18 +247,50 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         private void HandleProcessedFrame(VideoFrameProcessingResult result)
         {
-            Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
+            ImageView? targetView = _imageView;
+            if (!_isRunning || targetView == null || targetView.Dispatcher.HasShutdownStarted)
+            {
+                DisposePseudoImage(result.PseudoImage);
+                return;
+            }
+
+            targetView.Dispatcher.BeginInvoke(new Action(() =>
             {
                 ImageView? imageView = _imageView;
                 if (!_isRunning || imageView == null)
                 {
+                    DisposePseudoImage(result.PseudoImage);
                     return;
                 }
 
-                _articulation = result.Articulation;
+                if (result.Articulation is double articulation)
+                {
+                    _articulation = articulation;
+                }
+
+                if (result.PseudoImage is HImage pseudoImage && result.PseudoColorRequest is RealtimePseudoColorRequest pseudoRequest)
+                {
+                    IRealtimePseudoColorService? service = imageView.RealtimePseudoColorService;
+                    if (service != null)
+                    {
+                        service.ApplyProcessedImage(pseudoRequest, pseudoImage);
+                    }
+                    else
+                    {
+                        pseudoImage.Dispose();
+                    }
+                }
 
                 UpdateOverlayMetrics();
             }));
+        }
+
+        private static void DisposePseudoImage(HImage? image)
+        {
+            if (image is HImage pseudoImage)
+            {
+                pseudoImage.Dispose();
+            }
         }
 
         private void RecordFrameRate()
