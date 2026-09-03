@@ -671,6 +671,16 @@
     {"query":"注册中心连接配置按键后配置项消失","expected_any":["engine.rc-registration"],"include_planned":false},
     {"query":"RC新建配置文件保存在哪里","expected_any":["engine.rc-registration"],"include_planned":false},
     {"query":"RC测试连接300毫秒是总超时吗","expected_any":["engine.rc-registration"],"include_planned":false},
-    {"query":"RC设置会同步WinService.config吗","expected_any":["engine.rc-registration"],"include_planned":false}
+    {"query":"RC设置会同步WinService.config吗","expected_any":["engine.rc-registration"],"include_planned":false},
+    {"query":"结果交接","expected_any":["engine.results"],"include_planned":false},
+    {"query":"历史结果查询为什么出现其他设备","expected_any":["engine.results"],"include_planned":false},
+    {"query":"AutoSaveSideData开启但没有文件","expected_any":["engine.results"],"include_planned":false},
+    {"query":"保存数据列按钮可用却没有导出","expected_any":["engine.results"],"include_planned":false},
+    {"query":"结果CSV导出了全部列表","expected_any":["engine.results"],"include_planned":false},
+    {"query":"缺少原图怎样恢复结果尺寸","expected_any":["engine.results"],"include_planned":false},
+    {"query":"AlgorithmOverlayManager后台清理图元还在","expected_any":["engine.results"],"include_planned":false},
+    {"query":"persistent句柄Dispose后Remove不生效","expected_any":["engine.results"],"include_planned":false},
+    {"query":"ResultHandleRegistry构造失败","expected_any":["engine.results"],"include_planned":false},
+    {"query":"结果列表清空后查询又出现","expected_any":["engine.results"],"include_planned":false}
   ]
 }

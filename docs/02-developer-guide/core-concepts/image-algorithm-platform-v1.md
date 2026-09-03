@@ -107,7 +107,7 @@ ImageView 适配器通过 `ImageFrameStore`/`ImageFrameLease` 读取 source，�
 4. ImageView session 只在 document、source revision 和 invocation 三者仍匹配时显示或提交结果。新调用使旧调用过期；关闭、取消、切图和 source revision 改变都会阻止迟到结果。
 5. Preview 不改变 source revision；Commit 原子替换 `ViewBitmapSource` 后只递增一次 revision；Cancel 不改变 source。
 6. Batch 输出格式属于保存策略，不注册为图像算法。
-7. `Clear()`、`SetImageSource(...)` 和 `NotifySourcePixelsChanged()` 收口为同一文档变更边界：每次只推进一次 frame-store revision，取消/失效当前 preview 与 analysis，并拒绝旧 Invocation 提交、展示或打开窗口。非 WPF 的 `AlgorithmInvocationCoordinator` 按 `(DocumentInstanceId, SourceRevision)` 仲裁 preview 与 analysis；不同入口/owner 在同一 scope 中原子抢占并取消旧 run，不同文档或 revision 相互隔离，旧 claim 的完成、异常或释放不能清除后继；preview session 可在同 revision 被抢占后重新 claim，因此 PseudoColor 不会永久停在 `Superseded`。ImageView 的 `AlgorithmOverlayManager` 把 artifact、实际 WPF Visual、document、revision 和 registration token 作为一个所有权单元：原地提交清 transient 并把 persistent 关联到新 revision，换图/Clear/宿主释放清全部，窗口关闭只释放 transient，旧 session 不能删除同名后继。兼容的 `AlgorithmOverlays` façade 清理也同步移除其受管 Visual。
+7. `Clear()`、`SetImageSource(...)` 和 `NotifySourcePixelsChanged()` 收口为同一文档变更边界：每次只推进一次 frame-store revision，取消/失效当前 preview 与 analysis，并拒绝旧 Invocation 提交、展示或打开窗口。非 WPF 的 `AlgorithmInvocationCoordinator` 按 `(DocumentInstanceId, SourceRevision)` 仲裁 preview 与 analysis；不同入口/owner 在同一 scope 中原子抢占并取消旧 run，不同文档或 revision 相互隔离，旧 claim 的完成、异常或释放不能清除后继；preview session 可在同 revision 被抢占后重新 claim，因此 PseudoColor 不会永久停在 `Superseded`。ImageView 的 `AlgorithmOverlayManager` 负责结果 artifact、WPF Visual 与注册句柄的生命周期；兼容 `AlgorithmOverlays` façade 的后台清理会通过 Dispatcher 排队。清理时机、同名替换与旧会话保护统一见[结果交接](../../04-api-reference/engine-components/result-handoff-chain.md#统一算法-overlay-是另一条链)。
 
 ## 执行平面与兼容层
 

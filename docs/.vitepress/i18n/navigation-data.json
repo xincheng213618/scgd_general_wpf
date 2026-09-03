@@ -818,7 +818,7 @@
             },
             {
               "text": {
-                "root": "Engine 结果展示链路"
+                "root": "算法结果交接、展示与导出"
               },
               "link": "/04-api-reference/engine-components/result-handoff-chain"
             },
@@ -1196,7 +1196,7 @@
             },
             {
               "text": {
-                "root": "Engine 结果展示链路"
+                "root": "算法结果交接、展示与导出"
               },
               "link": "/04-api-reference/engine-components/result-handoff-chain"
             },
@@ -2264,7 +2264,7 @@
             },
             {
               "text": {
-                "root": "Engine 结果展示链路"
+                "root": "算法结果交接、展示与导出"
               },
               "link": "/04-api-reference/engine-components/result-handoff-chain"
             },
