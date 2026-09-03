@@ -569,6 +569,9 @@
     {"query":"应用管理员","expected_any":["platform.security"],"include_planned":false},
     {"query":"鉴权入口","expected_any":["platform.security"],"include_planned":false},
     {"query":"服务主机安装记录","expected_any":["platform.service-host"],"include_planned":false},
-    {"query":"ColorVision 服务主机","expected_any":["platform.service-host"],"include_planned":false}
+    {"query":"ColorVision 服务主机","expected_any":["platform.service-host"],"include_planned":false},
+    {"query":"扫描空间","expected_any":["ui.storage-maintenance"],"include_planned":false},
+    {"query":"配置恢复点","expected_any":["ui.storage-maintenance"],"include_planned":false},
+    {"query":"StorageMaintenanceViewModel.CleanupAsync","expected_any":["ui.storage-maintenance"],"include_planned":false}
   ]
 }
