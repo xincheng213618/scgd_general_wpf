@@ -601,6 +601,14 @@
     {"query":"Socket关闭窗口会停服务吗","expected_any":["ui.socket-protocol"],"include_planned":false},
     {"query":"Socket重发消息会发给哪个客户端","expected_any":["ui.socket-protocol"],"include_planned":false},
     {"query":"SocketRequest.Params","expected_any":["ui.socket-protocol"],"include_planned":false},
-    {"query":"FirewallCommandService","expected_any":["ui.socket-protocol"],"include_planned":false}
+    {"query":"FirewallCommandService","expected_any":["ui.socket-protocol"],"include_planned":false},
+    {"query":"创建工程选择否会取消吗","expected_any":["ui.solution"],"include_planned":false},
+    {"query":"工作区树搜索文件内容","expected_any":["ui.solution"],"include_planned":false},
+    {"query":"从解决方案移除会删除文件吗","expected_any":["ui.solution"],"include_planned":false},
+    {"query":"最近列表固定工作区","expected_any":["ui.solution"],"include_planned":false},
+    {"query":"DefaultCreatName","expected_any":["ui.solution"],"include_planned":false},
+    {"query":"NewCreateWindow","expected_any":["ui.solution"],"include_planned":false},
+    {"query":"清空最近列表包含固定项吗","expected_any":["ui.solution"],"include_planned":false},
+    {"query":"恢复cvsln会覆盖主文件吗","expected_any":["ui.solution"],"include_planned":false}
   ]
 }

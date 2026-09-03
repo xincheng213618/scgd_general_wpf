@@ -48,7 +48,7 @@ related: ["ui.framework", "ui.menus", "ui.settings", "ui.configuration", "ui.com
 
 | 操作 | 默认组合 | 边界 |
 | --- | --- | --- |
-| 打开文件 | Ctrl+O | `MenuFileOpen` 选择文件并走统一资源打开路由，不再打开工作区列表 |
+| 打开文件 | Ctrl+O | `MenuFileOpen` 选择文件并走统一资源打开路由 |
 | 打开文件夹工作区 | Ctrl+Shift+O | 复用文件夹选择与工作区切换的保存/取消流程 |
 | 打开工作区列表 | Ctrl+Alt+O | 先显示最近工作区列表，不直接切换；与文件和文件夹入口区分 |
 | 保存当前文档 | Ctrl+S | 沿焦点路由 `ApplicationCommands.Save`，先检查 CanExecute；Copilot 输入框承接其草稿操作 |
@@ -101,7 +101,7 @@ related: ["ui.framework", "ui.menus", "ui.settings", "ui.configuration", "ui.com
 
 每个操作支持多组 `Key + Modifiers`，每组都能触发相同动作，可使用 Ctrl/Alt/Shift/Win 组合。同一操作共享一个 `Kinds`（应用内/全局），编辑弹窗明确说明全局开关影响其全部绑定；不支持逐组不同作用域、连续按键序列或鼠标绑定。页面没有独立帮助弹窗；“注释”是提供者声明的操作说明，不是用户可编辑备注。
 
-`HotKeys` / `HotkeySetting` 的 `Hotkey` 保留第一组，`AdditionalHotkeys` 保存后续组；调用 `GetBindings()` / `SetBindings()` 取得或替换有序完整列表。默认值由 `DefaultHotkey` / `DefaultAdditionalHotkeys` 及相应 Get/Set 方法提供，`HotkeyDefinition.AdditionalDefaultHotkeys` 声明附加默认组。集合为空代表明确未分配；首次没有配置覆盖时使用提供者默认值，已保存的空绑定载入后不会擅自恢复默认。本次不新增历史配置迁移流程。
+`HotKeys` / `HotkeySetting` 的 `Hotkey` 保留第一组，`AdditionalHotkeys` 保存后续组；调用 `GetBindings()` / `SetBindings()` 取得或替换有序完整列表。默认值由 `DefaultHotkey` / `DefaultAdditionalHotkeys` 及相应 Get/Set 方法提供，`HotkeyDefinition.AdditionalDefaultHotkeys` 声明附加默认组。集合为空代表明确未分配；首次没有配置覆盖时使用提供者默认值，已保存的空绑定载入后不会擅自恢复默认。
 
 已经成功应用的修改不能靠关闭设置窗口撤销。外层 `MenuOptions` 关闭后仍执行其普通配置保存流程，文件结果按[配置持久化](./configuration.md)核验。直接调用旧 `HotkeyService.SaveSettings()` 仍只更新配置内存，不能用方法名推断已经落盘。
 
