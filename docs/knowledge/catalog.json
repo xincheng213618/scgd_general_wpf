@@ -1248,7 +1248,12 @@
         "IsSideHide",
         "TemplateSearchProvider",
         "TemplateSettingEdit",
-        "TemplatesExtension"
+        "TemplatesExtension",
+        "放弃修改",
+        "放弃更改",
+        "模板未保存",
+        "关闭模板窗口",
+        "创建副本"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs",

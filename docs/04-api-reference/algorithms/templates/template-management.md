@@ -3,7 +3,7 @@ knowledge_id: "algorithms.template-management"
 knowledge_type: "topic"
 status: "current"
 summary: "TemplateEditorWindow与TemplateCreateView的共享参数、创建来源、预览、索引和关闭语义；关闭不是通用回滚，筛选后的操作目标需单独核对。"
-aliases: ["模板类存在但列表不显示","模板编辑","模板创建","取消模板编辑","模板搜索后删除","TemplateEditorWindow","TemplateCreate","TemplateCreateView","TemplateCreateSourceKind","ApplyTemplateSource","IsUserControl","IsSideHide","TemplateSearchProvider","TemplateSettingEdit","TemplatesExtension"]
+aliases: ["模板类存在但列表不显示","模板编辑","模板创建","取消模板编辑","模板搜索后删除","TemplateEditorWindow","TemplateCreate","TemplateCreateView","TemplateCreateSourceKind","ApplyTemplateSource","IsUserControl","IsSideHide","TemplateSearchProvider","TemplateSettingEdit","TemplatesExtension","放弃修改","放弃更改","模板未保存","关闭模板窗口","创建副本"]
 code_paths: ["Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs","Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml","Engine/ColorVision.Engine/Templates/TemplateCreate.xaml.cs","Engine/ColorVision.Engine/Templates/TemplateCreateView.xaml.cs","Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/TemplateModel.cs","Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs","Engine/ColorVision.Engine/Templates/TemplateSettingEdit.xaml.cs","Engine/ColorVision.Engine/Templates/TemplatesExtension.cs"]
 test_paths: []
 related: ["engine.template-design","algorithms.template-menus","algorithms.json-templates","flow.workspace","ui.property-grid","ui.configuration"]
@@ -14,6 +14,14 @@ related: ["engine.template-design","algorithms.template-menus","algorithms.json-
 `TemplateEditorWindow` 是已有模板列表和编辑宿主；`TemplateCreateView` 负责准备创建来源与预览，`TemplateCreate` 只包装独立创建对话框。它们调用具体 `ITemplate`，不提供统一的数据库事务、撤销系统或隔离编辑会话。
 
 注册身份、参数加载和普通持久化的唯一说明在[模板注册、参数与持久化](../../../03-architecture/components/templates/design.md)。[模板菜单](./template-menu-entries.md)、[JSON 编辑器](./json-templates.md)和[Flow 工作区](../../../01-user-guide/workflow/design.md)各有独立入口与实现，不因共用模板窗口就拥有相同保存和运行语义。
+
+## 编辑已有模板
+
+1. 从[模板菜单、算法面板或应用搜索](./template-menu-entries.md)进入目标模板。普通模板在右侧显示参数，专用模板可能提供独立编辑控件或双击入口。
+2. 按名称和记录 ID 确认条目，再修改参数。准备重命名、删除、导出或设为默认时，先清空列表搜索、重新选中目标，并核对全部勾选项；下文说明筛选索引的限制。
+3. 点击 **保存**，窗口会在 `Save()` 返回后关闭；使用保存快捷命令时窗口保留。重新打开并核对实际参数，具体数据库保存规则取决于模板类型。
+
+普通属性面板直接编辑共享参数对象。**关闭窗口不是通用的“放弃更改”操作**：它会重新调用 `Load()`，但不撤销已经发生的创建、删除、排序或数据库写入；离线重新加载也不恢复旧值。
 
 ## 打开、选择、保存和关闭
 
@@ -28,7 +36,7 @@ related: ["engine.template-design","algorithms.template-menus","algorithms.json-
 
 普通属性面板收到的是共享参数对象，修改可立即被同一对象的其它持有者看见。重命名的 `TemplateModel<T>.Key` 也直接改 `Value.Name`；Enter、失焦或窗口停用只是退出名称编辑状态，不是名称校验、保存或回滚。普通保存索引是位置，不是稳定记录 ID。
 
-关闭时重新加载的具体效果取决于子类。普通泛型加载会替换既有包装项的 `Value`，但不移除数据库已不存在的条目；离线时不会恢复旧值。并行窗口、静态 `Params` 和旧参数引用不具备会话隔离，不能把关窗当作可靠的“放弃更改”。
+普通泛型 `Load()` 在数据库连接可用时替换既有包装项的 `Value`，但不移除数据库已不存在的条目。并行窗口、静态 `Params` 和旧参数引用不具备会话隔离；重新加载后的包装项与旧参数引用也可能指向不同对象。
 
 ## 编辑控件与创建预览是不同钩子
 
@@ -39,6 +47,10 @@ related: ["engine.template-design","algorithms.template-menus","algorithms.json-
 创建预览另用 `CreateDefault()`、`CreateUserControl()` 和可选的 `ITemplateUserControl.SetParam()`，不是复用 `GetUserControl()` / `SetUserControlDataContext()`。只实现已有模板编辑控件，并不保证新建预览也正确；基类 `CreateUserControl()` 仅返回空控件。
 
 ## 创建来源、预览与取消
+
+点击 **新建**，选择默认模板、现有模板副本或导入文件等可用来源；修改名称和预览参数后点击 **创建**。名称会去除首尾空白，必须非空且通过该模板的重名检查。来源列表表示当前实现提供的准备方式，最终内容以实际预览和具体模板的创建结果为准。
+
+已有条目的 **创建副本** 和列表底部的 **导入** 会先准备内容，再打开创建窗口。导入窗口隐藏来源选择；文件已选好仍需完成创建。创建后列表数量变化时，宿主清空搜索并选择新条目；应核对条目名称及参数，不能只看列表数量。
 
 `TemplateCreateView.Initialize` 构建来源列表；是否展示现有副本、文件导入，取决于反射判断 `CopyTo(int)` / `Import()` 是否被覆写，不是运行能力测试。默认来源始终列出，已有暂存内容时增加 Prepared；请求 Existing 时先找指定索引，找不到再找同类首项，请求类别不存在才回退 Prepared、Default。
 
@@ -61,7 +73,7 @@ related: ["engine.template-design","algorithms.template-menus","algorithms.json-
 
 编辑窗口的搜索把 `ListView.ItemsSource` 换成过滤结果。选择、鼠标双击、创建副本与拖动使用对象引用查找源索引；但当前删除、导出、部分重命名和“设为默认”入口仍直接使用可见 `SelectedIndex`，没有全部经过该映射。
 
-这是现有实现风险，不是推荐行为：筛选后的第零行未必是源集合第零项。再加上具体 `Delete/Export` 可能优先使用集合的 `IsSelected` 勾选项，不能宣称操作一定只作用于当前可见选中项。执行写入/删除前必须核对实际对象及记录 ID；文档验证不执行这些动作。
+这是现有实现风险，不是推荐行为：筛选后的第零行未必是源集合第零项。再加上具体 `Delete/Export` 可能优先使用集合的 `IsSelected` 勾选项，不能宣称操作一定只作用于当前可见选中项。执行写入或删除前，应清空筛选、重新选择，并核对记录 ID 与全部勾选项。搜索框的 Enter 入口也先清空筛选再读取 `SelectedIndex`，没有保持原对象的索引映射；需要打开已筛选条目时，鼠标双击会按对象找源索引。
 
 列头排序改变的是源集合顺序；拖动则逐步调用 `SwapTemplateOrder`，可能已经完成前面的交换后才失败。具体模板的排序可能写数据库甚至改变身份，不能把“整理列表”当作无副作用显示操作；普通基类边界见持久化主题。
 
@@ -69,7 +81,7 @@ related: ["engine.template-design","algorithms.template-menus","algorithms.json-
 
 ## 全局搜索和模板设置
 
-`TemplateSearchProvider.GetSearchItems()` 从当前注册模板取得名称，构造搜索项。执行时再按名称找到首个所属模板：`IsSideHide` 调用其双击入口，否则新建非模态 `TemplateEditorWindow`。这不是实时数据库搜索；注册、名称快照、全局搜索缓存和随后加载可能处于不同阶段。
+应用搜索按注册键与条目名称标识候选，执行时重新解析当前注册并查找索引；打开普通编辑器或专用入口的规则统一见[模板入口](./template-menu-entries.md)。搜索目录与窗口加载属于不同阶段，候选可见不代表数据库内容已经刷新。
 
 `TemplateSetting` 由 `ConfigService` 解析，是共享窗口配置，例如列表列可见性；取得配置对象不等于已保存文件，它也不同于数据库模板参数。该配置的保存与重载见[软件配置契约](../../ui-components/configuration.md)。
 
