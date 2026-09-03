@@ -4,7 +4,7 @@ knowledge_type: "guide"
 status: "current"
 summary: "主程序、插件和项目包的正式发布入口、只读校验与上传清理副作用。"
 aliases: ["发布","打包","release.bat","package_project.bat","只做本地构建","版本标签","auto-tag.yml"]
-code_paths: [".github/workflows/auto-tag.yml","Directory.Build.props","Scripts/release.bat","Scripts/build.py","Scripts/build_update.py","Scripts/generate_shared_files.py","Scripts/package_project.bat","Scripts/package_plugin.bat","Scripts/package_cvxp.py","Scripts/build_spectrum.py"]
+code_paths: [".github/workflows/auto-tag.yml","Directory.Build.props","Scripts/release.bat","Scripts/build.py","Scripts/build_update.py","Scripts/generate_shared_files.py","Scripts/installer_shared_files.py","Scripts/package_project.bat","Scripts/package_plugin.bat","Scripts/package_cvxp.py","Scripts/build_spectrum.py"]
 test_paths: ["Scripts/tests"]
 related: ["delivery.index","delivery.testing","delivery.backend","delivery.update","delivery.code-statistics","ui.publishing"]
 ---
@@ -17,7 +17,7 @@ related: ["delivery.index","delivery.testing","delivery.backend","delivery.updat
 
 | 场景 | 使用入口 | 说明 |
 | --- | --- | --- |
-| 主程序正式发布 | `Scripts\release.bat` | 唯一正常入口，会通过后端 HTTP 接口上传主包和 `CHANGELOG.md`，最后更新 `LATEST_RELEASE`，随后上传增量包并生成全量 zip |
+| 主程序正式发布 | `Scripts\release.bat` | 唯一正常入口，上传主包、`CHANGELOG.md` 和版本化宿主共享清单，最后更新 `LATEST_RELEASE`，随后上传增量包并生成全量 zip |
 | 发布插件包 | `Scripts\package_plugin.bat <PluginName>` | 面向 `Plugins/<PluginName>/`，上传尝试结束后删除本地 `.cvxp` |
 | 发布项目包 | `Scripts\package_project.bat <ProjectName>` | 面向 `Projects/<ProjectName>/`，上传尝试结束后删除本地 `.cvxp` |
 | 发布 Spectrum 独立包和插件包 | `Scripts\Spectrum.bat --release-notes "<说明>"` | 同时维护独立更新源和 ColorVision 插件更新源，完整远程验收后才删除本地 `.cvxp` |
@@ -41,6 +41,10 @@ Scripts\release.bat
 主程序发布不携带输出根目录的 `CHANGELOG.md`：`build_update.py` 在全量 ZIP 和增量 CVX 中排除该路径，`generate_shared_files.py` 也忽略该文件，避免旧输出副本重新进入共享清单。外部 `ColorVision.aip` 不应包含对应文件行及 `AI_ViewReadme` 对该本地日志的引用。仓库根目录原稿继续由 `build.py` 独立上传，插件自己的日志照常随插件包交付；这些规则不清理历史包或已有安装目录。
 
 发布成功时，控制台应依次看到主包上传、`CHANGELOG.md` 上传、`LATEST_RELEASE` 更新和增量包上传成功。最后 `verify_release.py` 会并行验证安装包 Authenticode 签名、远端 latest/changelog、安装包与更新包 Range 下载大小，并报告 Git 状态；只有这一阶段也返回零，wrapper 才算成功。后端 HTTP 接口是唯一发布通道，不再同步企业微信 WeDrive 或百度云；任一元数据上传失败都会阻止版本号更新。本地安装包、全量 zip、增量包是正常构建产物，不代表“本地-only 发布”。其中桌面 `History` 目录用于生成增量差分，不是额外分发渠道。客户端检查、缓存和元数据重试规则见[检查更新](../deployment/auto-update.md#检查复用与元数据新鲜度)。发布失败时先修复失败原因，再重新走 `release.bat`。
+
+提交 `LATEST_RELEASE` 前还必须上传该宿主版本的 PluginKit 共享文件清单，目的路径为 `Tool/PluginKit/shared-files/<宿主版本>/net10.0-windows-x64.json`。清单失败会阻止更新版本标记。文件复用现有公开 `/download/Tool/...` 下载通道，不需要启动新服务；客户端按精确目标版本获取并缓存，见 [PluginKit SDK 打包器](../plugin-development/sdk-packaging.md#远端版本化共享清单)。这不是每次重建 `cvplugin.exe`：共享清单随宿主发布，打包器逻辑可以独立升级。
+
+远端清单是“宿主共享集合、全量 ZIP 交付集合、安装器可证明的同路径交付集合”的交集，不直接公开整个编译目录。`installer_shared_files.py` 从 AIP 文件行、组件和目录树还原 APPDIR 下的安装位置；仅认可来源位于当前宿主输出且源/安装相对路径相同的文件。宏、重命名、目录循环或无法确定的映射不声明共享，插件保留这些依赖。原两份本地 `shared_files.json` 的生成/漂移门禁保持原有集合契约，不能把远端较小集合覆盖回本地镜像。元数据校验仍不是实际安装与运行验收。
 
 ### Git 版本标签
 

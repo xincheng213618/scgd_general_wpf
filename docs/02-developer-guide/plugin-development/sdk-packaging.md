@@ -3,9 +3,9 @@ knowledge_id: "plugins.sdk-packaging"
 knowledge_type: "topic"
 status: "current"
 summary: "独立 PluginKit 的项目命名、CLI/config 参数、构建与发布模式、包内容和失败排查；显式 config 的上传行为与无参数运行不同。"
-aliases: ["ColorVision.PluginKit","cvplugin","cvplugin.exe","pluginkit.config.json","插件 SDK","外部插件 SDK","PluginKit SDK打包","auto_mode","keepPackageAfterUpload","buildCommand","buildWorkingDir","pluginName","srcDir","sharedFiles","Plugin DLL not found","Cannot read version from","No .csproj file found under"]
-code_paths: ["SDK/ColorVision.Plugin.SDK.md","SDK/ColorVision.PluginKit/README.md","SDK/ColorVision.PluginKit/docs/ColorVision.Plugin.SDK.md","SDK/ColorVision.PluginKit/examples/YoloWpfDemo.Commands.md","SDK/ColorVision.PluginKit/scripts/package_cvxp.py","SDK/ColorVision.PluginKit/cvplugin.spec","SDK/ColorVision.PluginKit/build.bat"]
-test_paths: []
+aliases: ["ColorVision.PluginKit","cvplugin","cvplugin.exe","pluginkit.config.json","插件 SDK","外部插件 SDK","PluginKit SDK打包","auto_mode","keepPackageAfterUpload","buildCommand","buildWorkingDir","pluginName","srcDir","sharedFiles","targetHostVersion","远端共享清单","check-shared-files","Plugin DLL not found","Cannot read version from","No .csproj file found under"]
+code_paths: ["SDK/ColorVision.Plugin.SDK.md","SDK/ColorVision.PluginKit/README.md","SDK/ColorVision.PluginKit/docs/ColorVision.Plugin.SDK.md","SDK/ColorVision.PluginKit/examples/YoloWpfDemo.Commands.md","SDK/ColorVision.PluginKit/scripts/package_cvxp.py","SDK/ColorVision.PluginKit/scripts/shared_manifest.py","SDK/ColorVision.PluginKit/cvplugin.spec","SDK/ColorVision.PluginKit/build.bat"]
+test_paths: ["Scripts/tests/test_pluginkit_shared_manifest.py","Scripts/tests/test_pluginkit_executable.py"]
 related: ["plugins.getting-started","delivery.scripts"]
 ---
 
@@ -31,7 +31,7 @@ SDK 不以 manifest `id` 独立决定这些值，也不按嵌套 `dllpath` 定�
 
 `package_plugin` 复制编译输出，排除 PDB，`runtimes/` 下仅保留 `win/` 和 `win-x64/` 分支，再按共享清单中的相对路径剥离文件并写 `stripped_files.json`。不是按 `ColorVision.*` 前缀一律删除。项目目录的 README、CHANGELOG、manifest 和 PackageIcon 随后补齐/覆盖包内同名文件；配置中的 `pluginRoot` 因此会影响最终 metadata。
 
-SDK 不执行根打包器的 manifest 校验、版本同步或宿主共享清单新鲜度检查。输出 metadata 被复制、打包成功均不证明身份、版本、依赖或宿主兼容性正确；维护者须核对实际产物。
+SDK 不执行根打包器的插件 manifest 校验、版本同步或本地宿主输出集合检查。远端共享清单模式会校验目标宿主版本、框架、平台和清单路径，但不证明插件的 NuGet/API/native ABI 与该宿主兼容。输出 metadata 被复制、打包成功均不证明插件身份、依赖或宿主加载正确；维护者须核对实际产物。
 
 ## 无参数与显式 config 不是同一模式
 
@@ -44,6 +44,7 @@ SDK 不执行根打包器的 manifest 校验、版本同步或宿主共享清单
 | 显式 `--config <file>` | 不因 `buildEnabled=true` 自动构建；除 `--build-only` 提前退出外，打包后会上传，即使 `uploadEnabled=false` |
 | `--build` | 显式执行构建后继续打包/上传；不能当成仅构建参数 |
 | `--build-only` | 执行构建后退出，不打包/上传；构建本身仍会执行项目或配置中的命令 |
+| `--check-shared-files` | 仅解析并验证共享清单；远端模式可能下载并写本地缓存，不构建、不打包、不上传，即使同时传入 `--build` |
 | `--init-config` | 写配置后退出；不是对已有配置的只读校验 |
 
 `should_build = args.build or args.build_only or (auto_mode and config_build_enabled)`；`should_upload = not auto_mode or config_upload_enabled`。SDK 没有 `--validate-only` 和 `--no-upload` 参数，不能把根脚本的静态验证示例移来运行。上述差异是当前实现限制，不是推荐的安全默认设计。
@@ -63,7 +64,11 @@ SDK 不执行根打包器的 manifest 校验、版本同步或宿主共享清单
 | `srcDir` | `--src-dir` | 默认先找项目的 `bin/<platform>/<configuration>/<framework>`，不存在再找不含 platform 的路径；只选存在目录，不判断内容是否最新 |
 | `pluginRoot` | `--plugin-root` | 默认项目文件所在目录；无项目时取输出路径中名为 `bin` 的目录的父目录，否则用输出目录 |
 | `outputDir` | `--output-dir` | 配置向导写 `packages`；未提供值时直接调用的默认是脚本目录，并非总是当前工作目录 |
-| `sharedFiles` | `--shared-files` | 依次检查指定文件、脚本旁 `shared_files.json`、当前目录同名文件；指定文件不存在时仍会继续回退 |
+| `sharedFiles` | `--shared-files` | 显式本地清单，优先于远端；指定文件不存在立即失败，不静默回退 |
+| `targetHostVersion` | `--target-host-version` | 精确四段宿主版本，启用远端版本化清单；不是 NuGet 版本，不接受 `latest` |
+| `sharedFilesUrl` | `--shared-files-url` | 覆盖远端清单完整 URL，仍需 `targetHostVersion`；默认使用上传服务器的公共下载路径 |
+| `sharedFilesCacheDir` | `--shared-files-cache-dir` | 默认 `%LOCALAPPDATA%/ColorVision/PluginKit/shared-files`；相对路径基于配置目录 |
+| 无 | `--offline` | 不连接远端，只使用同源、同宿主版本、框架和平台的缓存；也可显式指定本地清单 |
 | `configuration` | `-c` / `--configuration` | `Release` |
 | `framework` | `-f` / `--framework` | `net10.0-windows` |
 | `platform` | `--platform` | `x64`；传给默认构建命令及输出目录推导 |
@@ -86,6 +91,23 @@ SDK 不执行根打包器的 manifest 校验、版本同步或宿主共享清单
 - `dotnet` 与 `buildCommand` 是可执行命令文本，不按配置目录自动拼成文件路径；自定义命令的相对文件由其工作目录解释。
 
 需要固定发布位置时显式配置 `outputDir`，并从日志核对 `Source directory`、`Plugin root`、`Shared files manifest` 和 `Packaged`。这些值帮助定位选错文件的问题，不代替后续上传或宿主加载结果。
+
+## 远端版本化共享清单
+
+在可信配置中加入 `"targetHostVersion": "1.4.14.1"`（示例版本，须换成插件实际支持的宿主版本）。没有 `sharedFiles` 本地覆盖时，SDK 从 `<uploadUrl>/download/Tool/PluginKit/shared-files/<宿主版本>/<framework>-<platform>.json` 下载清单。主程序正常发布链会生成并上传这个文件，失败时不提交 `LATEST_RELEASE`；旧版本不会自动补发，必须使用对应版本的已验证交付产物生成，不能把当前宿主清单改名冒充旧版。
+
+清单包含 `version: 1`（格式版本）、`host_version`、`framework`、`platform` 和非空 `shared_files` 数组。远端/目标版本已指定的本地清单必须全部匹配；不接受目录跳转、绝对路径、通配符、ADS 或非法路径。下载限 2 MiB、连接/读取超时为 5/15 秒，不跟随重定向，不携带上传凭据、不继承环境代理。推荐可信 HTTPS；为现有服务兼容 HTTP 时会显式警告，格式/版本验证不等于发布者签名认证。
+
+每次在线打包重新获取目标版本的清单，验证成功后原子替换本地缓存。缓存按完整来源 URL、宿主版本、框架和平台隔离。网络异常、5xx、408、429 可使用经过再次验证的同版本缓存；404、认证失败、重定向、无效 JSON、超限或元数据不匹配直接失败，不使用其它宿主版本，也不静默回退到内嵌清单。缓存不可写会阻断，不能把未缓存成功宣称为离线可用。
+
+以下命令只检查清单，不构建或发布插件，但可能连接指定服务器并写本地缓存：
+
+```powershell
+.\cvplugin.exe --config .\pluginkit.config.json --check-shared-files
+.\cvplugin.exe --config .\pluginkit.config.json --check-shared-files --offline
+```
+
+没有 `targetHostVersion`、没有远端 URL/离线选项的旧配置继续读取内嵌/脚本旁清单，再回退到当前目录，并输出兼容模式警告；它不会自动选择最新宿主。生成器/向导不猜测目标版本，配置远端模式后应先运行上述检查。只更新 NuGet 不会自动选择或更新清单；清单版本正确也不能代替 NuGet/宿主二进制兼容验证。
 
 ## 上传与成功清理
 
@@ -123,6 +145,6 @@ SDK 先上传 `.cvxp`，再上传 `LATEST_RELEASE`。任一步失败会抛错，
 
 ## 验证范围
 
-本主题未声明 SDK 专属自动化测试；根 `Scripts/tests/test_package_cvxp.py` 不等于覆盖这份 SDK 脚本。当前可先只读核对 `main`、`infer_project_name`、`package_plugin` 和 spec；构建 exe、执行配置、打包、上传与清理验收须分别取得授权，不为验证 Markdown 自动运行。
+`Scripts/tests/test_pluginkit_shared_manifest.py` 覆盖版本/路径校验、下载限制、缓存隔离、失败回退、显式本地清单、检查/构建模式以及共享/私有 DLL 的包内边界；远端请求使用替身。设置 `COLORVISION_TEST_CVPLUGIN_EXE` 为已构建 EXE 的绝对路径后，`Scripts/tests/test_pluginkit_executable.py` 使用临时目录和仅监听回环地址的 HTTP 服务验证真实 EXE 的在线刷新、离线读取和错误阻断；未设置时跳过。两者都不证明生产清单已经发布。根 `Scripts/tests/test_package_cvxp.py` 不等于覆盖这份 SDK 脚本。构建 exe、执行配置、打包、上传与清理验收须分别取得授权，不为验证 Markdown 自动运行。
 
 实际 exe 依赖打入情况、不同项目/程序集命名、配置模式组合、两段上传部分失败与清理结果，仍需隔离环境专项验收。文档构建与静态核对不证明插件已在目标宿主加载。

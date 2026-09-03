@@ -30,11 +30,24 @@ python -m pip install requests
 
 SDK 脚本与根目录 `Scripts/package_cvxp.py` 是不同实现。SDK 显式 `--config` 不会仅因 `buildEnabled=true` 就构建，却会在打包后上传，即使配置写了 `uploadEnabled=false`。需要构建后继续发布时加 `--build`；`--build-only` 构建后退出。SDK 没有 `--validate-only` / `--no-upload`。配置模式和完整参数见 SDK 使用说明及仓库参考。
 
+## 共享清单更新
+
+在配置中设置 `targetHostVersion` 为插件实际支持的四段主程序版本，打包器会从上传服务器下载该版本的共享清单，不再依赖 EXE 内嵌快照。主程序正式发布时自动上传清单；尚未发布清单的旧版本不会自动补齐。`sharedFilesUrl` 可指定可信 HTTP(S) 完整地址，推荐 HTTPS。
+
+`--check-shared-files` 仅检查清单，可能下载并写缓存，不构建/打包/上传；加 `--offline` 只读取匹配缓存。网络不可用时仅允许同来源、同版本、同框架和平台的有效缓存，404 或清单内容错误直接失败。显式 `sharedFiles` 本地文件优先，文件缺失不回退。未配置目标版本的旧配置保留内嵌清单行为并警告，不自动猜测最新宿主。
+
+```powershell
+.\cvplugin.exe --config .\pluginkit.config.json --target-host-version 1.4.14.1 --check-shared-files
+```
+
+示例版本必须换成实际目标；NuGet 包版本与主程序版本不是同一个版本号。验证清单不代表已经验证插件 ABI/运行兼容性。
+
 ## 源码入口与 exe 构建
 
 | 文件 | 用途 |
 | --- | --- |
 | `scripts/package_cvxp.py` | 与 exe 相同的主入口；无参数时发现当前目录配置或进入初始化 |
+| `scripts/shared_manifest.py` | 目标宿主版本清单的下载、验证与匹配缓存 |
 | `scripts/shared_files.json` | 宿主共享 DLL/资源清单；由根 `Scripts/generate_shared_files.py` 同步生成，不手工维护镜像 |
 | `examples/YoloWpfDemo.Commands.md` | 使用明确工程路径的构建、本地安装与发布组合 |
 | `cvplugin.spec` | PyInstaller 控制台单文件配置，嵌入共享清单和运行依赖 |

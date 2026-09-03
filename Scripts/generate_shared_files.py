@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
@@ -43,6 +44,24 @@ def build_manifest(shared_files: list[str]) -> dict:
         "version": 1,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "shared_files": sorted(set(shared_files)),
+    }
+
+
+def build_release_manifest(root_dir: Path, host_version: str, *, delivered_files: Iterable[str]) -> dict:
+    """Describe one validated Release x64 host, independently of the SDK binary."""
+    if not re.fullmatch(r"[0-9]+(?:\.[0-9]+){3}", host_version):
+        raise ValueError("The host release manifest requires a four-part version.")
+    if not root_dir.is_dir():
+        raise FileNotFoundError(f"Host output directory not found: {root_dir}")
+    delivered_set = {normalize_relative_path(path).casefold() for path in delivered_files}
+    shared_files = [path for path in collect_shared_files(root_dir) if path.casefold() in delivered_set]
+    if not shared_files:
+        raise ValueError("Cannot publish an empty host shared-file manifest.")
+    return {
+        **build_manifest(shared_files),
+        "host_version": host_version,
+        "framework": "net10.0-windows",
+        "platform": "x64",
     }
 
 

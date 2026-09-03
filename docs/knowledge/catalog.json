@@ -3425,6 +3425,7 @@
         "Scripts/build.py",
         "Scripts/build_update.py",
         "Scripts/generate_shared_files.py",
+        "Scripts/installer_shared_files.py",
         "Scripts/package_project.bat",
         "Scripts/package_plugin.bat",
         "Scripts/package_cvxp.py",
@@ -7407,6 +7408,9 @@
         "pluginName",
         "srcDir",
         "sharedFiles",
+        "targetHostVersion",
+        "远端共享清单",
+        "check-shared-files",
         "Plugin DLL not found",
         "Cannot read version from",
         "No .csproj file found under"
@@ -7417,10 +7421,14 @@
         "SDK/ColorVision.PluginKit/docs/ColorVision.Plugin.SDK.md",
         "SDK/ColorVision.PluginKit/examples/YoloWpfDemo.Commands.md",
         "SDK/ColorVision.PluginKit/scripts/package_cvxp.py",
+        "SDK/ColorVision.PluginKit/scripts/shared_manifest.py",
         "SDK/ColorVision.PluginKit/cvplugin.spec",
         "SDK/ColorVision.PluginKit/build.bat"
       ],
-      "test_paths": [],
+      "test_paths": [
+        "Scripts/tests/test_pluginkit_shared_manifest.py",
+        "Scripts/tests/test_pluginkit_executable.py"
+      ],
       "related": [
         "plugins.getting-started",
         "delivery.scripts"

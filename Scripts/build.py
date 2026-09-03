@@ -1,10 +1,11 @@
 import argparse
 import hashlib
+import json
 import os
 import re
 import shutil
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Callable
 from xml.etree import ElementTree
@@ -29,8 +30,9 @@ try:
         read_installer_source_paths,
         validate_service_host_runtime,
     )
-    from .generate_shared_files import DEFAULT_OUTPUT_FILES as SHARED_FILES_MANIFESTS, check_manifest
-    from .build_update import get_file_version
+    from .generate_shared_files import DEFAULT_OUTPUT_FILES as SHARED_FILES_MANIFESTS, build_release_manifest, check_manifest
+    from .build_update import get_all_files, get_file_version
+    from .installer_shared_files import collect_installer_shared_files
 except ImportError:
     from backend_client import (
         DEFAULT_CONNECT_TIMEOUT,
@@ -51,8 +53,9 @@ except ImportError:
         read_installer_source_paths,
         validate_service_host_runtime,
     )
-    from generate_shared_files import DEFAULT_OUTPUT_FILES as SHARED_FILES_MANIFESTS, check_manifest
-    from build_update import get_file_version
+    from generate_shared_files import DEFAULT_OUTPUT_FILES as SHARED_FILES_MANIFESTS, build_release_manifest, check_manifest
+    from build_update import get_all_files, get_file_version
+    from installer_shared_files import collect_installer_shared_files
 from tqdm import tqdm
 
 VERSION_RE = re.compile(r"(\d+\.\d+\.\d+\.\d+)")
@@ -351,6 +354,8 @@ def publish_primary_release(
     changelog_src: str | Path,
     remote_settings: RemoteUploadSettings,
     *,
+    runtime_directory: Path,
+    aip_path: Path,
     upload_func: Callable[[str | Path, RemoteUploadSettings], bool] = upload_file,
     upload_content_func: Callable[[str | bytes, str, RemoteUploadSettings], bool] = backend_upload_content,
 ) -> bool:
@@ -360,6 +365,14 @@ def publish_primary_release(
     if not changelog_src.is_file():
         print(f"Release changelog is missing: {changelog_src}")
         return False
+
+    installer_files = {path.casefold() for path in collect_installer_shared_files(aip_path, runtime_directory)}
+    delivered_files = [
+        Path(path).relative_to(runtime_directory).as_posix()
+        for path in get_all_files(runtime_directory)
+        if Path(path).relative_to(runtime_directory).as_posix().casefold() in installer_files
+    ]
+    shared_manifest = build_release_manifest(runtime_directory, latest_version, delivered_files=delivered_files)
 
     current_version = backend_fetch_latest_version(remote_settings)
     if not should_update_version(latest_version, current_version):
@@ -374,6 +387,13 @@ def publish_primary_release(
     print(f"Uploading release changelog: {changelog_src.name}")
     if not upload_func(changelog_src, remote_settings):
         print("CHANGELOG.md upload failed; LATEST_RELEASE will not be updated.")
+        return False
+
+    manifest_settings = replace(remote_settings, folder_name=f"Tool/PluginKit/shared-files/{latest_version}")
+    manifest_filename = f"{shared_manifest['framework']}-{shared_manifest['platform']}.json"
+    print(f"Uploading versioned host shared manifest: {latest_version}/{manifest_filename}")
+    if not upload_content_func(json.dumps(shared_manifest, ensure_ascii=False, indent=2), manifest_filename, manifest_settings):
+        print("Shared manifest upload failed; LATEST_RELEASE will not be updated.")
         return False
 
     print("Uploading release marker: LATEST_RELEASE")
@@ -514,6 +534,8 @@ def main() -> int:
         latest_file,
         project.changelog_src,
         remote_settings,
+        runtime_directory=runtime_executable.parent,
+        aip_path=project.aip_path,
     ):
         return 1
     return 0
