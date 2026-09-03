@@ -649,6 +649,14 @@
     {"query":"关闭开发工具管理下载还在继续","expected_any":["platform.developer-tools"],"include_planned":false},
     {"query":"开发工具管理安装器退出0是成功吗","expected_any":["platform.developer-tools"],"include_planned":false},
     {"query":"开发工具管理下载等待30分钟","expected_any":["platform.developer-tools"],"include_planned":false},
-    {"query":"DeveloperToolCatalogService","expected_any":["platform.developer-tools"],"include_planned":false}
+    {"query":"DeveloperToolCatalogService","expected_any":["platform.developer-tools"],"include_planned":false},
+    {"query":"本地帧租约会阻止CIE重新分配吗","expected_any":["operations.camera"],"include_planned":false},
+    {"query":"SetCurrentFrame会释放上一帧吗","expected_any":["operations.camera"],"include_planned":false},
+    {"query":"LocalFlowFrameLease","expected_any":["operations.camera"],"include_planned":false},
+    {"query":"SaveFiles=false设备视图没有图","expected_any":["operations.camera"],"include_planned":false},
+    {"query":"FullCie预览指针优化","expected_any":["engine.camera-preview-plan"],"include_planned":true},
+    {"query":"RAW预览行步长","expected_any":["engine.camera-preview-plan"],"include_planned":true},
+    {"query":"设备级内存预览怎么验收","expected_any":["engine.camera-preview-plan"],"include_planned":true},
+    {"query":"内存预览latest-wins","expected_any":["engine.camera-preview-plan"],"include_planned":true}
   ]
 }

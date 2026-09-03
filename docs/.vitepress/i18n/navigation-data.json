@@ -1346,7 +1346,7 @@
             },
             {
               "text": {
-                "root": "本地相机内存帧预览方案（待实施） [规划]"
+                "root": "设备视图内存预览设计（待实施） [规划]"
               },
               "link": "/02-developer-guide/engine-development/local-camera-memory-preview"
             }
@@ -2528,7 +2528,7 @@
             },
             {
               "text": {
-                "root": "本地相机内存帧预览方案（待实施） [规划]"
+                "root": "设备视图内存预览设计（待实施） [规划]"
               },
               "link": "/02-developer-guide/engine-development/local-camera-memory-preview"
             }
@@ -2612,6 +2612,12 @@
                 "root": "cvColorVision"
               },
               "link": "/04-api-reference/engine-components/cvColorVision"
+            },
+            {
+              "text": {
+                "root": "设备视图内存预览设计（待实施） [规划]"
+              },
+              "link": "/02-developer-guide/engine-development/local-camera-memory-preview"
             }
           ]
         },
@@ -2678,6 +2684,12 @@
             },
             {
               "text": {
+                "root": "相机服务、采集与结果视图"
+              },
+              "link": "/01-user-guide/devices/camera"
+            },
+            {
+              "text": {
                 "root": "电机命令与位置读回"
               },
               "link": "/01-user-guide/devices/motor"
@@ -2726,7 +2738,7 @@
             },
             {
               "text": {
-                "root": "本地相机内存帧预览方案（待实施） [规划]"
+                "root": "设备视图内存预览设计（待实施） [规划]"
               },
               "link": "/02-developer-guide/engine-development/local-camera-memory-preview"
             }

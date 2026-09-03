@@ -4108,27 +4108,41 @@
       "knowledge_id": "engine.camera-preview-plan",
       "knowledge_type": "decision",
       "status": "planned",
-      "summary": "待实施的设备级内存帧预览单一方案：发布器、租约、latest-wins、RAW/CIE 模式、内存预算、实施阶段与验收。",
+      "summary": "待实施的设备视图无文件预览：明确与本地手动窗口的区别、发布租约之外的读写同步、latest-wins、RAW/CIE显示副本及验收缺口。",
       "aliases": [
+        "本地相机内存预览设计",
         "不保存文件能在设备视图预览吗",
         "相机内存预览怎样验收",
         "内存预览租约何时释放",
-        "LocalCameraNode",
-        "LocalFlowFrame",
-        "LocalFlowFrameLease",
-        "SaveFiles",
-        "FullCie"
+        "设备级Preview Publisher",
+        "LocalFrameImagePresenter",
+        "latest-wins",
+        "FullCie",
+        "RAW预览行步长",
+        "预览与校正并发",
+        "内存帧过期"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowFrame.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameCalibrationService.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/CameraLocalWindow.xaml.cs",
         "Engine/FlowEngineLib/Base/CVStartCFC.cs",
+        "Engine/FlowEngineLib/Base/FlowRuntimeResources.cs",
         "Engine/ColorVision.Engine/Media/CVRawOpen.cs",
+        "Engine/ColorVision.Engine/Media/CvRawLayerController.cs",
+        "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs",
+        "Engine/cvColorVision/Color/ConvertXYZ.cs",
         "UI/ColorVision.ImageEditor/ImageView.xaml.cs"
       ],
-      "test_paths": [],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/LocalFlowNodePortTests.cs",
+        "Test/ColorVision.UI.Tests/LocalFrameMirrorTests.cs",
+        "Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"
+      ],
       "related": [
         "engine.index",
         "operations.camera"
@@ -4136,10 +4150,11 @@
       "code_scopes": [
         "Engine/ColorVision.Engine",
         "Engine/FlowEngineLib",
+        "Engine/cvColorVision",
         "UI/ColorVision.ImageEditor"
       ],
       "domain": "engine",
-      "title": "本地相机内存帧预览方案（待实施）",
+      "title": "设备视图内存预览设计（待实施）",
       "source": "docs/02-developer-guide/engine-development/local-camera-memory-preview.md",
       "url": "/02-developer-guide/engine-development/local-camera-memory-preview",
       "searchable": true
@@ -5867,7 +5882,7 @@
       "knowledge_id": "operations.camera",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "远程取图、本地相机管理与流程节点的操作和完成判据，以及结果查询、文件保存和实时预览的限制。",
+      "summary": "远程取图、本地手动/流程采集与结果视图；明确SaveFiles=false文件显示限制、RAW/CIE帧租约与校正读写、命令完成和设备释放边界。",
       "aliases": [
         "相机拍图",
         "相机服务",
@@ -5890,7 +5905,17 @@
         "LocalFrameFileService",
         "SaveFiles",
         "AutoRefreshView",
-        "本地相机尚未打开"
+        "本地相机尚未打开",
+        "LocalFlowFrame",
+        "LocalFlowFrameLease",
+        "LocalFlowFrameRuntime",
+        "SetCurrentFrame",
+        "TryAcquireCurrentFrame",
+        "FlowRuntimeResources",
+        "本地帧租约",
+        "流程帧内存",
+        "SaveFiles=false",
+        "CIE重新分配"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs",
@@ -5910,14 +5935,21 @@
         "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCameraConfig.cs",
         "Engine/ColorVision.Engine/Abstractions/ViewConfigBase.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Runtime/DisplayFlow.xaml.cs"
+        "Engine/ColorVision.Engine/FlowProcessing/Runtime/DisplayFlow.xaml.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowFrame.cs",
+        "Engine/FlowEngineLib/Base/FlowRuntimeResources.cs",
+        "Engine/FlowEngineLib/Base/CVStartCFC.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameCalibrationService.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/CameraViewLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs",
         "Test/ColorVision.UI.Tests/RealtimePseudoColorServiceTests.cs",
         "Test/ColorVision.UI.Tests/VideoProcessorResilienceTests.cs",
-        "Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs"
+        "Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs",
+        "Test/ColorVision.UI.Tests/LocalFlowNodePortTests.cs",
+        "Test/ColorVision.UI.Tests/LocalFrameMirrorTests.cs"
       ],
       "related": [
         "engine.devices",
@@ -5927,7 +5959,8 @@
         "engine.camera-preview-plan"
       ],
       "code_scopes": [
-        "Engine/ColorVision.Engine"
+        "Engine/ColorVision.Engine",
+        "Engine/FlowEngineLib"
       ],
       "domain": "operations",
       "title": "相机服务、采集与结果视图",

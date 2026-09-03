@@ -2,10 +2,10 @@
 knowledge_id: "operations.camera"
 knowledge_type: "topic"
 status: "current"
-summary: "远程取图、本地相机管理与流程节点的操作和完成判据，以及结果查询、文件保存和实时预览的限制。"
-aliases: ["相机拍图","相机服务","手动采集成功流程失败","采集超时","无文件预览","本地相机管理","本地相机取图","视频模式","相机结果查询","是否重启服务","CameraLog","DeviceCamera","MQTTCamera","DisplayCamera","ViewCamera","CameraLocalWindow","LocalCameraNode","LocalCameraSession","LocalFrameFileService","SaveFiles","AutoRefreshView","本地相机尚未打开"]
-code_paths: ["Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/MQTTCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Video/CameraRealtimeFramePipeline.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Video/VideoFrameProcessor.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml","Engine/ColorVision.Engine/Services/Devices/Camera/CameraLocalWindow.xaml","Engine/ColorVision.Engine/Services/Devices/Camera/CameraLocalWindow.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraSession.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml","Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCameraConfig.cs","Engine/ColorVision.Engine/Abstractions/ViewConfigBase.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/DisplayFlow.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CameraViewLifecycleTests.cs","Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs","Test/ColorVision.UI.Tests/RealtimePseudoColorServiceTests.cs","Test/ColorVision.UI.Tests/VideoProcessorResilienceTests.cs","Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs"]
+summary: "远程取图、本地手动/流程采集与结果视图；明确SaveFiles=false文件显示限制、RAW/CIE帧租约与校正读写、命令完成和设备释放边界。"
+aliases: ["相机拍图","相机服务","手动采集成功流程失败","采集超时","无文件预览","本地相机管理","本地相机取图","视频模式","相机结果查询","是否重启服务","CameraLog","DeviceCamera","MQTTCamera","DisplayCamera","ViewCamera","CameraLocalWindow","LocalCameraNode","LocalCameraSession","LocalFrameFileService","SaveFiles","AutoRefreshView","本地相机尚未打开","LocalFlowFrame","LocalFlowFrameLease","LocalFlowFrameRuntime","SetCurrentFrame","TryAcquireCurrentFrame","FlowRuntimeResources","本地帧租约","流程帧内存","SaveFiles=false","CIE重新分配"]
+code_paths: ["Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/MQTTCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Video/CameraRealtimeFramePipeline.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Video/VideoFrameProcessor.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml","Engine/ColorVision.Engine/Services/Devices/Camera/CameraLocalWindow.xaml","Engine/ColorVision.Engine/Services/Devices/Camera/CameraLocalWindow.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraSession.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml","Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCameraConfig.cs","Engine/ColorVision.Engine/Abstractions/ViewConfigBase.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/DisplayFlow.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowFrame.cs","Engine/FlowEngineLib/Base/FlowRuntimeResources.cs","Engine/FlowEngineLib/Base/CVStartCFC.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameCalibrationService.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CameraViewLifecycleTests.cs","Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs","Test/ColorVision.UI.Tests/RealtimePseudoColorServiceTests.cs","Test/ColorVision.UI.Tests/VideoProcessorResilienceTests.cs","Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs","Test/ColorVision.UI.Tests/LocalFlowNodePortTests.cs","Test/ColorVision.UI.Tests/LocalFrameMirrorTests.cs"]
 related: ["engine.devices","operations.device-configuration","operations.physical-camera","operations.camera-configuration","engine.camera-preview-plan"]
 ---
 
@@ -68,6 +68,16 @@ related: ["engine.devices","operations.device-configuration","operations.physica
 
 取帧后节点查找 `action.SerialNumber` 对应的流程批次，保存测量主记录，再经 `SetCurrentFrame` 交接内存帧并发布 `ResultMessageBus` 通知。找不到批次或保存主记录失败会使节点失败。**`SaveFiles=false` 只跳过图像文件保存，仍写数据库并向下游交接帧。**
 
+### 流程帧的寿命与读写限制
+
+`SetCurrentFrame` 把 `LocalFlowFrame` 的根引用交给 `FlowRuntimeResources`，键含 FrameId，并把当前 FrameId 写入 action.Data。更换当前帧只改变下游定位，不自动移除不同 FrameId 的旧资源；同一流程多次取图可能保留多帧，直到流程资源释放。不能把“当前帧”理解为全流程只有一个缓冲区。
+
+复制 `CVStartCFC` 会共享 RuntimeResources；流程进入 `DoFinishingCore` 后在 finally 中释放这些资源。消费者应在根引用仍有效时调用 `Acquire()`，持有并最终 Dispose `LocalFlowFrameLease`。已取得的租约延长共享存储寿命；根对象 Dispose 后不能再从该根 Acquire，即使其它租约仍存活。租约自己的 Dispose 幂等，之后访问其指针会抛 ObjectDisposedException。
+
+**租约不是不可变图像快照。** 下游 `LocalCalibrationNode` 可对同一帧执行 `CalibrateInPlace`：修改 RAW、重新分配 CIE、更新 Metadata，再处理方向。`ResizeCieBuffer` 会释放旧 CIE 地址，不等待其它租约归零；租约保留取得时的 Metadata/MasterId，而指针和长度读取共享存储。因此跨线程长期保留指针或同时执行预览和校正，不能仅靠 Acquire 保证数据一致或地址稳定；同步读写或生成独立快照的协议尚需由异步预览实现补齐。
+
+`IsMirrorReady` 与缓冲区各自的 flip 状态也要一起判断：有 CIE 时最终翻转可只作用于 CIE，RAW 仍保留传感器方向；无校正模板的节点可发布尚未应用方向的 RAW。不能仅凭 FlipMode 判断显示坐标已与 POI 一致。设备视图的异步接入与验收见[内存预览设计](../../02-developer-guide/engine-development/local-camera-memory-preview.md)。
+
 ### 本地文件保存位置
 
 本地测量的保存开关开启时，`LocalFrameFileService.SaveCapture` 按下列规则写文件：
@@ -115,5 +125,6 @@ related: ["engine.devices","operations.device-configuration","operations.physica
 - `DeviceCameraAssociationTests` 覆盖关联/解绑对象不改许可证中设备 ID 的断言；不覆盖 `Save()`、数据库写入和服务重启。
 - `CameraViewLifecycleTests` 覆盖结果列表解绑的幂等性、事件/绑定清理；不证明完整视频或硬件生命周期。
 - `LocalCameraSessionTests` 覆盖物理配置 JSON 的 14 个字段映射及全帧零 ROI，未实际打开相机。
+- `LocalFlowNodePortTests.LocalFrameLivesAcrossNodeCopiesAndEndsWithFlow` 检查节点副本共享帧及流程结束后不能再 Acquire；该用例在结束前已释放租约。`LocalFrameMirrorTests` 检查 RAW/CIE 各自的方向、校正准备及幂等翻转，不覆盖异步预览与校正并发。
 - `VideoProcessorResilienceTests` 覆盖后台帧处理异常后的继续运行，以及伪彩输出与实时原图一致的三个翻转方向；`RealtimePseudoColorServiceTests` 覆盖首帧基准源门禁、当前 generation 发布和旧 generation 丢弃。它们不调用真实相机或 native 伪彩 DLL。
 - 已授权设备环境中的远程完成消息、校准资源、超时结果归属、句柄互斥和文件显示仍需现场验收；源码核对与文档构建不能替代这些证据。

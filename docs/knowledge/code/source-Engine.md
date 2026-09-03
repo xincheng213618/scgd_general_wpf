@@ -137,7 +137,7 @@ next: false
   校准服务绑定物理相机并执行本地文件或MQTT校正；输出文件、结果显示、历史落库与缓存删除是不同完成边界。
 
 - [相机服务、采集与结果视图](../../01-user-guide/devices/camera.md) — `operations.camera`
-  远程取图、本地相机管理与流程节点的操作和完成判据，以及结果查询、文件保存和实时预览的限制。
+  远程取图、本地手动/流程采集与结果视图；明确SaveFiles=false文件显示限制、RAW/CIE帧租约与校正读写、命令完成和设备释放边界。
 
 - [相机参数来源、同步与保存](../../01-user-guide/devices/camera-configuration.md) — `operations.camera-configuration`
   相机参数的编辑入口、同步覆盖与保存；物理配置同步保留本地CameraID，路径移动失败或被拒绝不等于取消路径变更。
@@ -247,8 +247,8 @@ next: false
 - [ColorVision 概览](../../00-getting-started/what-is-colorvision.md) — `platform.product`
   ColorVision 的设备、流程、图像分析、结果、插件与客户项目能力，以及从任务进入文档的方法。
 
-- [本地相机内存帧预览方案（待实施） \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview.md) — `engine.camera-preview-plan`
-  待实施的设备级内存帧预览单一方案：发布器、租约、latest-wins、RAW/CIE 模式、内存预算、实施阶段与验收。
+- [设备视图内存预览设计（待实施） \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview.md) — `engine.camera-preview-plan`
+  待实施的设备视图无文件预览：明确与本地手动窗口的区别、发布租约之外的读写同步、latest-wins、RAW/CIE显示副本及验收缺口。
 
 ## Engine/ColorVision.FileIO {#module-456e67696e652f436f6c6f72566973696f6e2e46696c65494f}
 
@@ -283,6 +283,9 @@ next: false
 - [cvColorVision](../../04-api-reference/engine-components/cvColorVision.md) — `engine.native-bindings`
   定位供应商 native DLL 的相机、光谱、XYZ、OLED、PG 与源表绑定契约。
 
+- [设备视图内存预览设计（待实施） \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview.md) — `engine.camera-preview-plan`
+  待实施的设备视图无文件预览：明确与本地手动窗口的区别、发布租约之外的读写同步、latest-wins、RAW/CIE显示副本及验收缺口。
+
 ## Engine/FlowEngineLib {#module-456e67696e652f466c6f77456e67696e654c6962}
 
 - [Engine 知识入口](../../04-api-reference/engine-components/README.md) — `engine.index`
@@ -312,6 +315,9 @@ next: false
 - [Flow 隔离无界面执行](../../04-api-reference/algorithms/templates/flow-engine.md) — `flow.headless`
   隔离STN流程的加载、起始节点就绪、执行超时与诊断收尾；停止请求不证明设备停稳，默认执行不限时，批次与前后处理由调用方负责。
 
+- [相机服务、采集与结果视图](../../01-user-guide/devices/camera.md) — `operations.camera`
+  远程取图、本地手动/流程采集与结果视图；明确SaveFiles=false文件显示限制、RAW/CIE帧租约与校正读写、命令完成和设备释放边界。
+
 - [电机命令与位置读回](../../01-user-guide/devices/motor.md) — `operations.motor`
   电机设备配置、MQTT运动命令与位置读回契约；移动回包不会刷新位置，客户端参数不能代替现场限位与急停。
 
@@ -336,8 +342,8 @@ next: false
 - [FlowEngineLib](../../04-api-reference/engine-components/FlowEngineLib.md) — `flow.runtime`
   节点图加载、服务绑定、弃用节点兼容、完成事件和隔离 RuntimeHost 的执行边界。
 
-- [本地相机内存帧预览方案（待实施） \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview.md) — `engine.camera-preview-plan`
-  待实施的设备级内存帧预览单一方案：发布器、租约、latest-wins、RAW/CIE 模式、内存预算、实施阶段与验收。
+- [设备视图内存预览设计（待实施） \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview.md) — `engine.camera-preview-plan`
+  待实施的设备视图无文件预览：明确与本地手动窗口的区别、发布租约之外的读写同步、latest-wins、RAW/CIE显示副本及验收缺口。
 
 ## Engine/ST.Library.UI {#module-456e67696e652f53542e4c6962726172792e5549}
 
