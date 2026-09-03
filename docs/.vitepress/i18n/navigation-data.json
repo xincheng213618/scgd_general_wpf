@@ -710,6 +710,12 @@
             },
             {
               "text": {
+                "root": "插件产物、安装与交付"
+              },
+              "link": "/02-developer-guide/plugin-development/getting-started"
+            },
+            {
+              "text": {
                 "root": "快捷键：发现、注册、编辑与释放"
               },
               "link": "/04-api-reference/ui-components/hotkeys"

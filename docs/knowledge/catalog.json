@@ -3631,7 +3631,11 @@
         "ApplicationSnapshotsWindow",
         "自动存档位置",
         "autosave.zip",
-        "还原所选"
+        "还原所选",
+        ".cvx",
+        "离线升级",
+        "增量包版本链",
+        "IncrementalUpdatePackageFileProcessor"
       ],
       "code_paths": [
         "ColorVision/Update",
@@ -7278,17 +7282,21 @@
       "knowledge_id": "plugins.getting-started",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "插件构建产物、HostCopy、manifest包身份、安装替换和恢复契约；发布会上传，安装器返回不等于替换或重启后加载成功。",
+      "summary": "插件项目构建、HostCopy、市场与本地安装、备份回退和提取插件；DLL目录替换、依赖补回及重启后加载的完成条件，正式打包会上传。",
       "aliases": [
         "新插件怎么创建",
         "HostCopy 为什么没执行",
         "插件安装失败",
         "插件更新回滚",
+        "插件备份",
         "导出插件依赖",
+        "提取插件",
+        "浏览商店",
         "PluginProject.HostCopy.targets",
         "package_plugin.bat",
         "PluginUpdater",
         "PluginExtractor",
+        "PluginRecoveryBackupService",
         "stripped_files.json"
       ],
       "code_paths": [
@@ -7306,7 +7314,14 @@
         "UI/ColorVision.UI/Update/ExternalUpdateBatchScript.cs",
         "UI/ColorVision.UI.Desktop/Marketplace/MarketplacePackagePreflight.cs",
         "UI/ColorVision.UI.Desktop/Marketplace/MarketplacePackageDownloadService.cs",
-        "UI/ColorVision.UI.Desktop/Marketplace/MarketplaceClient.cs"
+        "UI/ColorVision.UI.Desktop/Marketplace/MarketplaceClient.cs",
+        "UI/ColorVision.UI.Desktop/Marketplace/MenuPluginManager.cs",
+        "UI/ColorVision.UI.Desktop/Marketplace/MarketplaceWindow.xaml",
+        "UI/ColorVision.UI.Desktop/Marketplace/MarketplaceManager.cs",
+        "UI/ColorVision.UI.Desktop/Marketplace/MarketplaceDetailContext.cs",
+        "UI/ColorVision.UI.Desktop/Marketplace/PluginInfoVM.cs",
+        "UI/ColorVision.UI.Desktop/Properties/Resources.resx",
+        "ColorVision/Update/UpdatePackageFileProcessors.cs"
       ],
       "test_paths": [
         "Scripts/tests/test_package_cvxp.py",
@@ -7318,10 +7333,12 @@
       "related": [
         "plugins.index",
         "plugins.model",
-        "delivery.scripts"
+        "delivery.scripts",
+        "delivery.update"
       ],
       "code_scopes": [
         ".",
+        "ColorVision/Update",
         "Plugins",
         "Plugins/SystemMonitor",
         "Scripts",

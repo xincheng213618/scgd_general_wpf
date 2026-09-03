@@ -3,7 +3,7 @@ knowledge_id: "delivery.update"
 knowledge_type: "topic"
 status: "current"
 summary: "检查更新、重新安装与程序备份入口，以及主程序和插件的检查复用、下载安装、失败回退与启动恢复。"
-aliases: ["检查更新","变更日志","程序备份","更新前创建程序快照","正常启动后自动存档","自动更新","更新失败","重新安装","最新完整安装包","插件回滚","重复检查更新","更新检查缓存","五分钟缓存","启动检查结果","PluginUpdater","CombinedUpdateCoordinator","UpdateCheckReuseState","LatestVersionCheckRequestCache","CanReuseUpdateCheckOptions","GetPluginUpdateMetadataAsync","ServerUnavailable","NoInternetConnection","forceRefresh","ApplicationSnapshotService","ApplicationSnapshotConfig","ApplicationSnapshotsWindow","自动存档位置","autosave.zip","还原所选"]
+aliases: ["检查更新","变更日志","程序备份","更新前创建程序快照","正常启动后自动存档","自动更新","更新失败","重新安装","最新完整安装包","插件回滚","重复检查更新","更新检查缓存","五分钟缓存","启动检查结果","PluginUpdater","CombinedUpdateCoordinator","UpdateCheckReuseState","LatestVersionCheckRequestCache","CanReuseUpdateCheckOptions","GetPluginUpdateMetadataAsync","ServerUnavailable","NoInternetConnection","forceRefresh","ApplicationSnapshotService","ApplicationSnapshotConfig","ApplicationSnapshotsWindow","自动存档位置","autosave.zip","还原所选",".cvx","离线升级","增量包版本链","IncrementalUpdatePackageFileProcessor"]
 code_paths: ["ColorVision/Update","ColorVision/Recovery","UI/ColorVision.UI/Update/","UI/ColorVision.UI/ServiceHost/ApplicationUpdatePrivilegeBroker.cs","UI/ColorVision.UI/Plugins/PluginUpdater.cs","UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceClient.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceManager.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/PluginRecoveryBackupServiceTests.cs","Test/ColorVision.UI.Tests/ServiceHostUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/AutoUpdatePlanTests.cs","Test/ColorVision.UI.Tests/ApplicationSnapshotServiceTests.cs","Test/ColorVision.UI.Tests/StartupRecoverySnapshotRuntimeTests.cs"]
 related: ["delivery.deployment","delivery.scripts","platform.service-host","delivery.update-scan-protection","platform.startup-integrity"]
@@ -97,9 +97,9 @@ flowchart LR
 
 ## 更新包与插件事务
 
-同一主次版本内使用增量包链，跨主次版本运行完整安装程序。主程序增量更新采用覆盖复制；`.cvx` 是在线计划使用的差异包，不支持双击或文件打开直接安装。离线升级使用完整安装包，以保留多版本差异链要求。
+同一主次版本内使用增量包链，跨主次版本运行完整安装程序。主程序增量更新采用覆盖复制。应用文件打开路由也接受 `.cvx`：`IncrementalUpdatePackageFileProcessor` 检查文件就绪后，把单个包直接交给增量更新入口；它不会补齐在线版本链，也不确认此包适用于当前基线。这是直接安装入口的校验缺口，不能把任意一个差异包当作完整离线升级包。常规离线升级使用完整安装包。
 
-带清单的 `.cvxp` 必须包含完整插件目录，带有效 `manifest.json` 的插件使用完整目录事务更新。客户端先把当前 `Plugins/<id>/` 完整复制到按安装目录隔离的恢复区，逐文件校验 SHA-256，并在备份验证完成后通过同卷目录事务精确替换插件目录；切换失败时批处理按相反顺序恢复原目录。每个插件最多保留最近 3 个已验证备份。无清单的旧式插件继续使用兼容覆盖路径，因此不承诺可靠回退；恢复窗口会明确显示其为旧式目录且没有可用备份。
+带清单的 `.cvxp` 必须包含完整插件目录。客户端先取得当前安装位置的插件恢复备份，再通过同卷目录事务替换 `Plugins/<id>/`；切换失败时尝试逆序回退。备份可以复用，不保证每次更新重新复制；无清单的旧式插件使用兼容覆盖路径。备份校验时机、保留策略和回退限制统一见[插件备份与恢复](../plugin-development/getting-started.md#插件备份与恢复)。
 
 主程序增量包可能只包含某个插件的变更文件。组合更新会先以已安装插件目录建立完整临时副本，再叠加主程序增量片段；若同时下载了完整 `.cvxp`，则以该完整插件包为准。随后才执行备份和目录事务，不能把差异片段直接当成完整插件目录替换。
 
@@ -109,7 +109,7 @@ flowchart LR
 
 用户可在[存储与维护](../../04-api-reference/ui-components/storage-maintenance.md)中另行扫描并确认清理过期安装包缓存。该类别默认不勾选，进行中或待安装的更新、未完成下载及续传文件受保护，`Recovery` 和程序快照不进入普通清理范围；这不改变上述正常更新结束时的缓存保留策略。
 
-最终安装入口重新校验全部 `.cvx`。插件市场、本地文件和最终暂存共用插件包可安装判断：带 `.aria2` 的下载中包、损坏包、空包和非 `.cvxp/.zip` 文件都会被拒绝；`.zip` 仅用于第三方插件兼容。组合更新按 `manifest.id` 暂存插件，根目录包、官方包和主程序包内的插件目录采用同一套覆盖规则。
+最终安装入口重新检查全部 `.cvx` 的就绪状态：存在、非空、无同名 `.aria2` 且 ZIP 可打开并包含条目；这不是签名或完整版本链校验。插件市场、本地文件和最终暂存共用插件包就绪判断：带 `.aria2` 的下载中包、损坏包、空包和非 `.cvxp/.zip` 文件都会被拒绝；`.zip` 仅用于第三方插件兼容。组合更新按 `manifest.id` 暂存插件，根目录包、官方包和主程序包内的插件目录采用同一套覆盖规则。
 
 更新脚本和解包中间文件位于暂存根目录，真正的覆盖复制源固定为其 `ColorVision/` 子目录；`update.bat`、`Packages/` 等辅助文件不会复制进程序目录，复制成功或失败后都会清理暂存根目录。
 

@@ -581,6 +581,10 @@
     {"query":"扩展开发","expected_any":["platform.extensibility"],"include_planned":false},
     {"query":"IResultHandleBase","expected_any":["engine.results"],"include_planned":false},
     {"query":"PropertyEditorType","expected_any":["ui.property-grid"],"include_planned":false},
-    {"query":"给配置字段增加自定义编辑器","expected_any":["ui.property-grid"],"include_planned":false}
+    {"query":"给配置字段增加自定义编辑器","expected_any":["ui.property-grid"],"include_planned":false},
+    {"query":"提取插件后 DLL 没有更新","expected_any":["plugins.getting-started"],"include_planned":false},
+    {"query":"插件包怎么离线安装","expected_any":["plugins.getting-started"],"include_planned":false},
+    {"query":"插件备份在列表里但恢复失败","expected_any":["plugins.getting-started"],"include_planned":false},
+    {"query":"直接打开 cvx 升级","expected_any":["delivery.update"],"include_planned":false}
   ]
 }
