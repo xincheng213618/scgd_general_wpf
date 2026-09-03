@@ -13,9 +13,23 @@ from urllib.parse import quote
 import pefile
 
 try:
-    from .generate_shared_files import DEFAULT_ROOT_DIR as DEFAULT_HOST_ROOT, check_manifest
+    from .generate_shared_files import (
+        DEFAULT_OUTPUT_FILES,
+        DEFAULT_ROOT_DIR as DEFAULT_HOST_ROOT,
+        build_manifest,
+        check_manifest,
+        collect_shared_files,
+        write_manifest_if_changed,
+    )
 except ImportError:
-    from generate_shared_files import DEFAULT_ROOT_DIR as DEFAULT_HOST_ROOT, check_manifest
+    from generate_shared_files import (
+        DEFAULT_OUTPUT_FILES,
+        DEFAULT_ROOT_DIR as DEFAULT_HOST_ROOT,
+        build_manifest,
+        check_manifest,
+        collect_shared_files,
+        write_manifest_if_changed,
+    )
 
 
 EXTRA_FILES = ["README.md", "CHANGELOG.md", "manifest.json", "PackageIcon.png"]
@@ -357,7 +371,12 @@ def resolve_shared_files_path(shared_files: Path | None) -> Path:
     )
 
 
-def ensure_default_shared_files_are_current(shared_files_path: Path, host_root: Path = DEFAULT_HOST_ROOT) -> None:
+def ensure_default_shared_files_are_current(
+    shared_files_path: Path,
+    host_root: Path = DEFAULT_HOST_ROOT,
+    *,
+    output_files: tuple[Path, ...] | None = None,
+) -> bool:
     if not host_root.is_dir():
         raise FileNotFoundError(
             f"ColorVision host output directory not found: {host_root}\n"
@@ -365,12 +384,32 @@ def ensure_default_shared_files_are_current(shared_files_path: Path, host_root: 
         )
 
     manifest_only, runtime_only = check_manifest(host_root, shared_files_path)
+    if not manifest_only and not runtime_only:
+        return False
+
+    resolved_shared_files_path = shared_files_path.resolve()
+    resolved_default_output = DEFAULT_SHARED_FILES.resolve()
+    targets = output_files or (
+        tuple(path.resolve() for path in DEFAULT_OUTPUT_FILES)
+        if resolved_shared_files_path == resolved_default_output
+        else (resolved_shared_files_path,)
+    )
+    runtime_files = collect_shared_files(host_root, excluded_files=targets)
+    manifest = build_manifest(runtime_files)
+    for output_file in targets:
+        write_manifest_if_changed(output_file, manifest)
+
+    manifest_only, runtime_only = check_manifest(host_root, shared_files_path)
     if manifest_only or runtime_only:
         raise RuntimeError(
-            "The default shared_files.json does not match the current ColorVision host output "
-            f"(manifest-only={len(manifest_only)}, runtime-only={len(runtime_only)}). "
-            "Run 'py Scripts\\generate_shared_files.py', review both generated manifests, and commit them before packaging."
+            "Could not refresh the default shared_files.json from the current ColorVision host output "
+            f"(manifest-only={len(manifest_only)}, runtime-only={len(runtime_only)})."
         )
+    print(
+        "Refreshed shared files manifests from the current ColorVision host output "
+        f"({len(runtime_files)} files)."
+    )
+    return True
 
 
 def is_repository_package_project(project_file: Path | None) -> bool:

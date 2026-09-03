@@ -20,14 +20,17 @@ class SharedFilesGeneratorTests(unittest.TestCase):
     def tearDown(self) -> None:
         self._temp_directory.cleanup()
 
-    def test_collect_is_deterministic_and_excludes_runtime_plugin_and_log_directories(self) -> None:
+    def test_collect_is_deterministic_and_excludes_runtime_generated_content(self) -> None:
         (self.root_dir / "nested").mkdir()
         (self.root_dir / "Plugins").mkdir()
         (self.root_dir / "LOG").mkdir()
+        (self.root_dir / "window-resize-traces").mkdir()
         (self.root_dir / "Host.dll").write_bytes(b"host")
+        (self.root_dir / "window-resize-diagnostics.mode").write_text("compact", encoding="utf-8")
         (self.root_dir / "nested" / "Resource.resources.dll").write_bytes(b"resource")
         (self.root_dir / "Plugins" / "Plugin.dll").write_bytes(b"plugin")
         (self.root_dir / "LOG" / "runtime.log").write_bytes(b"log")
+        (self.root_dir / "window-resize-traces" / "resize.json").write_text("{}", encoding="utf-8")
 
         self.assertEqual(
             ["Host.dll", "nested/Resource.resources.dll"],

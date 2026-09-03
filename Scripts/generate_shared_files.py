@@ -15,7 +15,8 @@ DEFAULT_OUTPUT_FILES = (
     DEFAULT_OUTPUT_FILE,
     REPO_ROOT / "SDK" / "ColorVision.PluginKit" / "scripts" / "shared_files.json",
 )
-EXCLUDED_DIR_NAMES = {"plugins", "log"}
+EXCLUDED_DIR_NAMES = {"plugins", "log", "window-resize-traces"}
+EXCLUDED_ROOT_FILE_NAMES = {"changelog.md", "window-resize-diagnostics.mode"}
 
 
 def normalize_relative_path(path: str | Path) -> str:
@@ -30,7 +31,7 @@ def collect_shared_files(root_dir: Path, *, excluded_files: Iterable[Path] = ())
         dir_names[:] = sorted(dir_name for dir_name in dir_names if dir_name.lower() not in EXCLUDED_DIR_NAMES)
         current_root_path = Path(current_root)
         for file_name in sorted(file_names):
-            if current_root_path == root_dir and file_name.lower() == "changelog.md":
+            if current_root_path == root_dir and file_name.lower() in EXCLUDED_ROOT_FILE_NAMES:
                 continue
             file_path = current_root_path / file_name
             if file_path.resolve() in resolved_excluded_files:
@@ -179,7 +180,7 @@ def main() -> None:
         updated_outputs.append((output_file, write_manifest_if_changed(output_file, manifest)))
 
     print(f"Scanned host directory: {root_dir}")
-    print("Ignored directories: Plugins, Log")
+    print("Ignored directories: Plugins, Log, window-resize-traces")
     print(f"Shared file count: {len(shared_files)}")
     for output_file, was_updated in updated_outputs:
         action = "Generated manifest" if was_updated else "Manifest already current"
