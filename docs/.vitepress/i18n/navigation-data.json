@@ -245,6 +245,12 @@
             },
             {
               "text": {
+                "root": "模板编辑入口与菜单契约"
+              },
+              "link": "/04-api-reference/algorithms/templates/template-menu-entries"
+            },
+            {
+              "text": {
                 "root": "Copilot 输入、命令与活动呈现"
               },
               "link": "/02-developer-guide/core-concepts/copilot-local-interactions"

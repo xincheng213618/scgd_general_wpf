@@ -71,7 +71,7 @@ next: false
   TemplateEditorWindow与TemplateCreateView的共享参数、创建来源、预览、索引和关闭语义；关闭不是通用回滚，筛选后的操作目标需单独核对。
 
 - [模板编辑入口与菜单契约](../../04-api-reference/algorithms/templates/template-menu-entries.md) — `algorithms.template-menus`
-  区分现存模板主菜单、专用入口与通用算法配置中的模板编辑命令。
+  从模板菜单、算法面板或应用搜索打开模板；说明选择索引、流程设计器直达和菜单发现的边界。
 
 - [算法与模板接入概览](../../04-api-reference/algorithms/overview.md) — `algorithms.template-overview`
   说明 Engine 模板发现、手动算法宿主、MQTT 请求和 Flow 接入链。

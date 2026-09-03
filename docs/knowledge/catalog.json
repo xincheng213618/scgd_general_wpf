@@ -1283,12 +1283,15 @@
       "knowledge_id": "algorithms.template-menus",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "区分现存模板主菜单、专用入口与通用算法配置中的模板编辑命令。",
+      "summary": "从模板菜单、算法面板或应用搜索打开模板；说明选择索引、流程设计器直达和菜单发现的边界。",
       "aliases": [
         "模板编辑入口在哪里",
         "MenuItemTemplateBase",
         "DisplayAlgorithmTemplateSelection",
-        "ShowTemplateWindow"
+        "ShowTemplateWindow",
+        "模板搜索入口",
+        "模板菜单没有算法",
+        "搜索模板打开流程设计器"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/Menus/MenuTemplate.cs",
@@ -1296,18 +1299,25 @@
         "Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmConfiguration.cs",
         "UI/ColorVision.UI/Menus/MenuManager.cs",
         "Engine/ColorVision.Engine/Templates/POI/MenuItemPoiParam.cs",
-        "Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs"
+        "Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs",
+        "Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmManager.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmControl.xaml.cs",
+        "ColorVision/MainWindow.Hotkeys.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/MenuDiscoveryExclusionTests.cs"
+        "Test/ColorVision.UI.Tests/MenuDiscoveryExclusionTests.cs",
+        "Test/ColorVision.UI.Tests/TemplateSearchProviderTests.cs"
       ],
       "related": [
         "algorithms.index",
         "algorithms.template-management",
         "ui.discovery",
-        "ui.menus"
+        "ui.menus",
+        "ui.search"
       ],
       "code_scopes": [
+        "ColorVision",
         "Engine/ColorVision.Engine",
         "UI/ColorVision.UI"
       ],

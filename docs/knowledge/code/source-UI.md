@@ -410,7 +410,7 @@ next: false
   按问题路由到 UI 模块、属性编辑契约、运行时发现与 DLL 发布证据。
 
 - [模板编辑入口与菜单契约](../../04-api-reference/algorithms/templates/template-menu-entries.md) — `algorithms.template-menus`
-  区分现存模板主菜单、专用入口与通用算法配置中的模板编辑命令。
+  从模板菜单、算法面板或应用搜索打开模板；说明选择索引、流程设计器直达和菜单发现的边界。
 
 - [Copilot 设置、持久化与连接诊断](../../02-developer-guide/core-concepts/copilot-configuration.md) — `copilot.configuration`
   ColorVision内置Copilot的设置草稿、配置保存与运行态发布、模型选择和联网诊断；保存失败可能已落盘，Local MCP测试核验会话握手与只读状态调用。

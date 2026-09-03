@@ -25,6 +25,9 @@ next: false
 - [架构设计](../../03-architecture/README.md) — `platform.architecture`
   按启动、跨模块调用、流程、模板与权限问题定位架构契约。
 
+- [模板编辑入口与菜单契约](../../04-api-reference/algorithms/templates/template-menu-entries.md) — `algorithms.template-menus`
+  从模板菜单、算法面板或应用搜索打开模板；说明选择索引、流程设计器直达和菜单发现的边界。
+
 - [Copilot 输入、命令与活动呈现](../../02-developer-guide/core-concepts/copilot-local-interactions.md) — `copilot.interactions`
   Copilot 命令目录、输入与引用、会话导航及消息/桌宠呈现；本地入口不等于无副作用。
 
