@@ -229,6 +229,9 @@ next: false
 - [POI 模板](../../04-api-reference/algorithms/templates/poi-template.md) — `algorithms.poi-template`
   说明 POI 主从表、伴生模板、复制导入、运行事件与结果类型映射。
 
+- [ROI 统计：区域、直方图与坏点候选](../../02-developer-guide/core-concepts/roi-statistics-v1.md) — `algorithms.roi-statistics`
+  ROI统计的区域选择、百分位、直方图、坏点候选计数/返回上限及六文件CSV导出；说明Float32精确统计预算、列名精度限制和实际窗口操作。
+
 - [SysDictionary 系统字典兼容层](../../04-api-reference/algorithms/templates/sys-dictionary-template.md) — `algorithms.template-dictionary`
   说明保留的系统字典 DAO 与模板默认值、传感器和旧流程兼容依赖。
 

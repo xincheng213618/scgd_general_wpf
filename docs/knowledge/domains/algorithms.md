@@ -110,8 +110,8 @@ next: false
 - [POI 模板](../../04-api-reference/algorithms/templates/poi-template.md) — `algorithms.poi-template`
   说明 POI 主从表、伴生模板、复制导入、运行事件与结果类型映射。
 
-- [ROI 统计 V1（M1）](../../02-developer-guide/core-concepts/roi-statistics-v1.md) — `algorithms.roi-statistics`
-  RoiStatistics 的输入、参数、结果、宿主接入与定向验证契约。
+- [ROI 统计：区域、直方图与坏点候选](../../02-developer-guide/core-concepts/roi-statistics-v1.md) — `algorithms.roi-statistics`
+  ROI统计的区域选择、百分位、直方图、坏点候选计数/返回上限及六文件CSV导出；说明Float32精确统计预算、列名精度限制和实际窗口操作。
 
 - [亚像素边缘 V1（M6.1）](../../02-developer-guide/core-concepts/subpixel-edge-v1.md) — `algorithms.subpixel-edge`
   SubpixelEdge 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。

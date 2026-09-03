@@ -625,6 +625,14 @@
     {"query":"ImageProfileParameters.MaximumSamples","expected_any":["algorithms.image-profile"],"include_planned":false},
     {"query":"切面图和剖面窗口有什么区别","expected_any":["algorithms.image-profile"],"include_planned":false},
     {"query":"ProfileDataExtractor返回空数据","expected_any":["algorithms.image-profile"],"include_planned":false},
-    {"query":"profile_result_budget_exceeded","expected_any":["algorithms.image-profile"],"include_planned":false}
+    {"query":"profile_result_budget_exceeded","expected_any":["algorithms.image-profile"],"include_planned":false},
+    {"query":"ROI统计怎么画圆形区域","expected_any":["algorithms.roi-statistics"],"include_planned":false},
+    {"query":"ROI坏点候选数量为什么和表格不同","expected_any":["algorithms.roi-statistics"],"include_planned":false},
+    {"query":"MaximumBadPixelCandidates为0是什么意思","expected_any":["algorithms.roi-statistics"],"include_planned":false},
+    {"query":"ROI统计导出几个CSV文件","expected_any":["algorithms.roi-statistics"],"include_planned":false},
+    {"query":"ROI百分位重复列名","expected_any":["algorithms.roi-statistics"],"include_planned":false},
+    {"query":"ROI浮点图缩小分箱数能省内存吗","expected_any":["algorithms.roi-statistics"],"include_planned":false},
+    {"query":"ROI直方图只有一行","expected_any":["algorithms.roi-statistics"],"include_planned":false},
+    {"query":"roi_exact_float_statistics_budget_exceeded","expected_any":["algorithms.roi-statistics"],"include_planned":false}
   ]
 }

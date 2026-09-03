@@ -45,6 +45,9 @@ next: false
 - [UI NuGet 包构建与发布](../../04-api-reference/ui-components/publishing.md) — `ui.publishing`
   UI NuGet整批与Algorithms单包发布、Release标签和版本预检；预检不预留版本，逐包上传没有整批回滚或逐条失败检查。
 
+- [ROI 统计：区域、直方图与坏点候选](../../02-developer-guide/core-concepts/roi-statistics-v1.md) — `algorithms.roi-statistics`
+  ROI统计的区域选择、百分位、直方图、坏点候选计数/返回上限及六文件CSV导出；说明Float32精确统计预算、列名精度限制和实际窗口操作。
+
 - [ColorVision 概览](../../00-getting-started/what-is-colorvision.md) — `platform.product`
   ColorVision 的设备、流程、图像分析、结果、插件与客户项目能力，以及从任务进入文档的方法。
 
@@ -106,6 +109,9 @@ next: false
 
 - [JSON 模板](../../04-api-reference/algorithms/templates/json-templates.md) — `algorithms.json-templates`
   JSON模板的文本/属性编辑、数据库保存、默认参数与重置；校验Json按钮只同步模型，Schema提供字段提示而不补默认值或执行完整校验。
+
+- [ROI 统计：区域、直方图与坏点候选](../../02-developer-guide/core-concepts/roi-statistics-v1.md) — `algorithms.roi-statistics`
+  ROI统计的区域选择、百分位、直方图、坏点候选计数/返回上限及六文件CSV导出；说明Float32精确统计预算、列名精度限制和实际窗口操作。
 
 - [系统监控（SystemMonitor）](../../04-api-reference/plugins/standard-plugins/system-monitor.md) — `plugins.system-monitor`
   系统监控的 CPU/RAM 采样、手动刷新与状态栏生命周期；缓存大小包含子目录，清理只删顶层文件，逐文件失败不会单独提示。
@@ -266,8 +272,8 @@ next: false
 - [摩尔纹分析 V1（M11）](../../02-developer-guide/core-concepts/moire-analysis-v1.md) — `algorithms.moire-analysis`
   MoireAnalysis 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
 
-- [ROI 统计 V1（M1）](../../02-developer-guide/core-concepts/roi-statistics-v1.md) — `algorithms.roi-statistics`
-  RoiStatistics 的输入、参数、结果、宿主接入与定向验证契约。
+- [ROI 统计：区域、直方图与坏点候选](../../02-developer-guide/core-concepts/roi-statistics-v1.md) — `algorithms.roi-statistics`
+  ROI统计的区域选择、百分位、直方图、坏点候选计数/返回上限及六文件CSV导出；说明Float32精确统计预算、列名精度限制和实际窗口操作。
 
 - [亚像素边缘 V1（M6.1）](../../02-developer-guide/core-concepts/subpixel-edge-v1.md) — `algorithms.subpixel-edge`
   SubpixelEdge 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。

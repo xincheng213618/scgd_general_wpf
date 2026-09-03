@@ -836,6 +836,12 @@
             },
             {
               "text": {
+                "root": "ROI 统计：区域、直方图与坏点候选"
+              },
+              "link": "/02-developer-guide/core-concepts/roi-statistics-v1"
+            },
+            {
+              "text": {
                 "root": "ColorVision 概览"
               },
               "link": "/00-getting-started/what-is-colorvision"
@@ -962,6 +968,12 @@
                 "root": "JSON 模板"
               },
               "link": "/04-api-reference/algorithms/templates/json-templates"
+            },
+            {
+              "text": {
+                "root": "ROI 统计：区域、直方图与坏点候选"
+              },
+              "link": "/02-developer-guide/core-concepts/roi-statistics-v1"
             },
             {
               "text": {
@@ -1298,7 +1310,7 @@
             },
             {
               "text": {
-                "root": "ROI 统计 V1（M1）"
+                "root": "ROI 统计：区域、直方图与坏点候选"
               },
               "link": "/02-developer-guide/core-concepts/roi-statistics-v1"
             },
@@ -2465,6 +2477,12 @@
                 "root": "POI 模板"
               },
               "link": "/04-api-reference/algorithms/templates/poi-template"
+            },
+            {
+              "text": {
+                "root": "ROI 统计：区域、直方图与坏点候选"
+              },
+              "link": "/02-developer-guide/core-concepts/roi-statistics-v1"
             },
             {
               "text": {
