@@ -287,18 +287,29 @@
       "knowledge_id": "algorithms.focus-points",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "说明 FocusPoints 传统模板参数、通用手动宿主与 Flow 发光区检测请求。",
+      "summary": "发光区1（FocusPoints）的模板选择、参数初值和图像输入；区分手动 MQTT 模板引用、Flow 算子与计算结果。",
       "aliases": [
         "FocusPoints和FindLightArea有什么区别",
         "TemplateFocusPoints",
         "AlgorithmFocusPoints",
-        "Event_LightArea_GetData"
+        "Event_LightArea_GetData",
+        "发光区1",
+        "FocusPoints模板",
+        "请先选择FocusPoints模板"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/FocusPoints/TemplateFocusPoints.cs",
         "Engine/ColorVision.Engine/Templates/FocusPoints/FocusPointsParam.cs",
         "Engine/ColorVision.Engine/Templates/FocusPoints/AlgorithmFocusPoints.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs"
+        "Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs",
+        "Engine/FlowEngineLib/Algorithm/AlgorithmNode.cs",
+        "Engine/FlowEngineLib/Node/Algorithm/AlgorithmLoopNode.cs",
+        "Engine/ColorVision.Engine/Abstractions/IDisplayAlgorithm.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmControl.xaml.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmConfiguration.cs",
+        "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs",
+        "Engine/ColorVision.Engine/Services/ServicesHelper.cs",
+        "Engine/ColorVision.Engine/Templates/ModelBase.cs"
       ],
       "test_paths": [],
       "related": [
@@ -307,7 +318,8 @@
         "algorithms.template-menus"
       ],
       "code_scopes": [
-        "Engine/ColorVision.Engine"
+        "Engine/ColorVision.Engine",
+        "Engine/FlowEngineLib"
       ],
       "domain": "algorithms",
       "title": "FocusPoints 关注点模板",

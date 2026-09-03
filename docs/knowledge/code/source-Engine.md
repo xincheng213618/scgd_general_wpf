@@ -50,7 +50,7 @@ next: false
   区分远端 FindLightArea 模板与本地原生亮区检测 RobustV2；四角点不等于成功，须核对置信度、失败原因和各调用层的结果契约。
 
 - [FocusPoints 关注点模板](../../04-api-reference/algorithms/templates/focus-points-template.md) — `algorithms.focus-points`
-  说明 FocusPoints 传统模板参数、通用手动宿主与 Flow 发光区检测请求。
+  发光区1（FocusPoints）的模板选择、参数初值和图像输入；区分手动 MQTT 模板引用、Flow 算子与计算结果。
 
 - [Ghost Detection](../../04-api-reference/algorithms/detectors/ghost-detection.md) — `algorithms.ghost`
   说明 ARVR Ghost 传统模板的参数、MQTT 事件、结果 DAO 和叠图。
@@ -287,6 +287,9 @@ next: false
 
 - [DataLoad 数据加载模板](../../04-api-reference/algorithms/templates/data-load-template.md) — `algorithms.data-load`
   区分 DataLoad 模板与显式参数节点如何按设备、批次和 ZIndex 读取上游结果。
+
+- [FocusPoints 关注点模板](../../04-api-reference/algorithms/templates/focus-points-template.md) — `algorithms.focus-points`
+  发光区1（FocusPoints）的模板选择、参数初值和图像输入；区分手动 MQTT 模板引用、Flow 算子与计算结果。
 
 - [ImageCropping 图像裁剪模板](../../04-api-reference/algorithms/templates/image-cropping-template.md) — `algorithms.image-cropping`
   区分强类型 ImageCropping 的持久参数、运行时四点 ROI、Flow 双输入和图像结果。

@@ -2546,6 +2546,12 @@
             },
             {
               "text": {
+                "root": "FocusPoints 关注点模板"
+              },
+              "link": "/04-api-reference/algorithms/templates/focus-points-template"
+            },
+            {
+              "text": {
                 "root": "ImageCropping 图像裁剪模板"
               },
               "link": "/04-api-reference/algorithms/templates/image-cropping-template"
