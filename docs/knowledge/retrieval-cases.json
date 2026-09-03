@@ -593,6 +593,14 @@
     {"query":"Pattern","expected_any":["plugins.pattern"],"include_planned":false},
     {"query":"ImageProjector","expected_any":["plugins.pattern"],"include_planned":false},
     {"query":"哪些插件提供状态栏","expected_any":["plugins.capabilities"],"include_planned":false},
-    {"query":"哪个插件负责系统监控","expected_any":["plugins.system-monitor"],"include_planned":false}
+    {"query":"哪个插件负责系统监控","expected_any":["plugins.system-monitor"],"include_planned":false},
+    {"query":"Socket 连接管理器","expected_any":["ui.socket-protocol"],"include_planned":false},
+    {"query":"网络通信防火墙已允许还是连不上","expected_any":["ui.socket-protocol"],"include_planned":false},
+    {"query":"Socket清空消息会删除数据库吗","expected_any":["ui.socket-protocol"],"include_planned":false},
+    {"query":"Socket搜索为什么找不到正文后半段","expected_any":["ui.socket-protocol"],"include_planned":false},
+    {"query":"Socket关闭窗口会停服务吗","expected_any":["ui.socket-protocol"],"include_planned":false},
+    {"query":"Socket重发消息会发给哪个客户端","expected_any":["ui.socket-protocol"],"include_planned":false},
+    {"query":"SocketRequest.Params","expected_any":["ui.socket-protocol"],"include_planned":false},
+    {"query":"FirewallCommandService","expected_any":["ui.socket-protocol"],"include_planned":false}
   ]
 }

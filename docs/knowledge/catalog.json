@@ -6953,7 +6953,8 @@
         "delivery.update-scan-protection",
         "plugins.windows-service",
         "engine.shell-extension",
-        "engine.mysql-recovery"
+        "engine.mysql-recovery",
+        "ui.socket-protocol"
       ],
       "code_scopes": [
         "ColorVision/ServiceHost",
@@ -9900,53 +9901,66 @@
       "knowledge_id": "ui.socket-protocol",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "TCP网络通信的监听快照、窗口关闭与服务停止、JSON/Text分发及消息记录；Sent不证明对端执行，重发可能换客户端并追加记录。",
+      "summary": "Socket连接管理器的监听配置、窗口关闭与服务停止、防火墙放行、消息查询和JSON/Text分发；清空消息只清列表，重发可能换客户端，Sent不证明对端执行。",
       "aliases": [
         "Socket端口连不上或消息没响应",
         "网络通信",
+        "Socket 连接管理器",
+        "Socket服务设置",
+        "通信协议",
         "文本模式",
         "发送消息记录",
         "消息重发",
+        "Socket消息搜索",
+        "关闭Socket窗口",
+        "停止Socket服务",
+        "清空消息",
+        "防火墙放行",
+        "防火墙专用公用",
         "ColorVision.SocketProtocol",
         "SocketManager",
+        "SocketManagerWindow",
         "SocketConfig",
         "SocketServerLifecycle",
         "SocketServerSettings",
+        "SocketManagerApplicationLifetime",
+        "SocketWorkerTracker",
         "SocketJsonDispatcher",
         "SocketTextDispatcher",
         "ISocketJsonHandler",
         "ISocketTextDispatcher",
-        "SocketMessageManager"
+        "SocketMessageManager",
+        "SocketMessageManagerConfig",
+        "SocketRequest",
+        "SocketResponse",
+        "SocketFirewallService",
+        "WindowsFirewallStatusReader",
+        "FirewallCommandService"
       ],
       "code_paths": [
-        "UI/ColorVision.SocketProtocol/SocketManager.cs",
-        "UI/ColorVision.SocketProtocol/SocketServerLifecycle.cs",
-        "UI/ColorVision.SocketProtocol/SocketInitializer.cs",
-        "UI/ColorVision.SocketProtocol/SocketConfig.cs",
-        "UI/ColorVision.SocketProtocol/SocketJsonDispatcher.cs",
-        "UI/ColorVision.SocketProtocol/SocketTextDispatcher.cs",
-        "UI/ColorVision.SocketProtocol/ISocketJsonHandler.cs",
-        "UI/ColorVision.SocketProtocol/ISocketTextDispatcher.cs",
-        "UI/ColorVision.SocketProtocol/SocketMessageManager.cs",
-        "UI/ColorVision.SocketProtocol/SocketMessagePayloadStorage.cs",
-        "UI/ColorVision.SocketProtocol/SocketManagerWindow.xaml.cs",
+        "UI/ColorVision.SocketProtocol",
+        "src/ColorVisionServiceHost/FirewallCommandService.cs",
         "ColorVision/App.xaml.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/SocketServerLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/SocketShutdownTests.cs",
         "Test/ColorVision.UI.Tests/SocketManagerProjectionTests.cs",
-        "Test/ColorVision.UI.Tests/SocketMessageStorageTests.cs"
+        "Test/ColorVision.UI.Tests/SocketMessageStorageTests.cs",
+        "Test/ColorVision.UI.Tests/SocketManagerWindowLayoutTests.cs"
       ],
       "related": [
         "ui.index",
         "ui.discovery",
         "ui.database-query",
-        "ui.sqlite-storage"
+        "ui.sqlite-storage",
+        "engine.database-maintenance",
+        "platform.service-host"
       ],
       "code_scopes": [
         "ColorVision",
-        "UI/ColorVision.SocketProtocol"
+        "UI/ColorVision.SocketProtocol",
+        "src/ColorVisionServiceHost"
       ],
       "domain": "ui",
       "title": "TCP 监听、协议分发与消息记录",

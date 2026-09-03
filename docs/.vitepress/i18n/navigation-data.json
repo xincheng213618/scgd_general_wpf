@@ -3749,6 +3749,12 @@
                 "root": "启动失败上报与缺依赖告警"
               },
               "link": "/03-architecture/components/startup-integrity"
+            },
+            {
+              "text": {
+                "root": "TCP 监听、协议分发与消息记录"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.SocketProtocol"
             }
           ]
         },

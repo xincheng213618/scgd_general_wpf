@@ -35,7 +35,7 @@ next: false
 | [Drivers](./code/source-Drivers.md) | 1 | 1 |
 | [packages](./code/source-packages.md) | 1 | 1 |
 | [SDK](./code/source-SDK.md) | 2 | 1 |
-| [src](./code/source-src.md) | 2 | 5 |
+| [src](./code/source-src.md) | 2 | 6 |
 | [仓库与知识基础设施](./code/repository.md) | 5 | 21 |
 
 ## 按能力领域补充检索
