@@ -27,7 +27,7 @@ next: false
   PluginLoader的manifest/依赖门禁、禁用缓存、程序集发现和失败边界；载入不等于provider可用，也不支持隔离卸载。
 
 - [图卡生成与图片投影](../../04-api-reference/plugins/standard-plugins/pattern.md) — `plugins.pattern`
-  Pattern 图卡生成、四象限线栅排列/视场、颜色与模板，及 ImageProjector 图片投影；源码同库维护但仍独立构建交付。
+  Pattern 图卡、用户默认值与模板文件管理，以及 ImageProjector 预览、全屏切换和独立交付；区分当前参数、已生成图片和实际投影。
 
 - [PluginKit SDK 打包器](../../02-developer-guide/plugin-development/sdk-packaging.md) — `plugins.sdk-packaging`
   独立 PluginKit 的项目命名、CLI/config 参数、构建与发布模式、包内容和失败排查；显式 config 的上传行为与无参数运行不同。

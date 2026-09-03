@@ -7944,7 +7944,7 @@
       "knowledge_id": "plugins.pattern",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Pattern 图卡生成、四象限线栅排列/视场、颜色与模板，及 ImageProjector 图片投影；源码同库维护但仍独立构建交付。",
+      "summary": "Pattern 图卡、用户默认值与模板文件管理，以及 ImageProjector 预览、全屏切换和独立交付；区分当前参数、已生成图片和实际投影。",
       "aliases": [
         "Pattern",
         "ImageProjector",
@@ -7955,7 +7955,16 @@
         "按数量排列",
         "按像素排列",
         "PatternBrushPropertiesEditor",
-        "PatternHostCopy"
+        "PatternHostCopy",
+        "PatternUserDefaultManager",
+        "保存到默认",
+        "重置默认配置",
+        "UserDefaults",
+        "生成所有模板图片",
+        "清空模板列表",
+        "投影图片不切换",
+        "ImageStretchMode",
+        "FullscreenImageWindow"
       ],
       "code_paths": [
         "Plugins/Pattern",

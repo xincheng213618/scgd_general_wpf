@@ -12,6 +12,8 @@ ImageProjector 是 ColorVision 的 Windows x64 / .NET 10 WPF 插件，同时保�
 dotnet build .\Plugins\ImageProjector\ImageProjector.csproj -c Release -p:Platform=x64
 ```
 
-从“工具 → 图片投影工具”或 Pattern 窗口的投影入口打开。图片列表、选中图片、显示器和显示方式通过 `ConfigService` 保存。
+从“工具 → 图片投影工具”或 Pattern 窗口的投影入口打开。添加图片、核对预览并选择屏幕后点击投影；“上一张/下一张”切换全屏图片，直接选择列表项只更新预览。更改显示器后重新投影才应用到新屏幕，使用“停止”或全屏窗口中的 Esc 结束。
+
+列表保存的是文件路径，移除列表项不删除图片，也不会自动停止已有投影。文件缺失或解码失败可能留下旧预览，出错后先核对图片。列表、索引、显示器和显示方式通过 `ConfigService` 尝试保存，保存异常记日志；正式插件包不包含这些用户图片。
 
 完整行为、开发 HostCopy、独立启动和发布入口见 [图卡生成与图片投影](../../docs/04-api-reference/plugins/standard-plugins/pattern.md)。此链接面向匹配版本的源码仓库，随包阅读时需另行取得该仓库文档。

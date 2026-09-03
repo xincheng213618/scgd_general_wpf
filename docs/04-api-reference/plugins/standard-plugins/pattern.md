@@ -2,8 +2,8 @@
 knowledge_id: "plugins.pattern"
 knowledge_type: "topic"
 status: "current"
-summary: "Pattern 图卡生成、四象限线栅排列/视场、颜色与模板，及 ImageProjector 图片投影；源码同库维护但仍独立构建交付。"
-aliases: ["Pattern", "ImageProjector", "图卡生成工具", "图片投影工具", "四象限线栅", "QuadrantGrating", "按数量排列", "按像素排列", "PatternBrushPropertiesEditor", "PatternHostCopy"]
+summary: "Pattern 图卡、用户默认值与模板文件管理，以及 ImageProjector 预览、全屏切换和独立交付；区分当前参数、已生成图片和实际投影。"
+aliases: ["Pattern", "ImageProjector", "图卡生成工具", "图片投影工具", "四象限线栅", "QuadrantGrating", "按数量排列", "按像素排列", "PatternBrushPropertiesEditor", "PatternHostCopy", "PatternUserDefaultManager", "保存到默认", "重置默认配置", "UserDefaults", "生成所有模板图片", "清空模板列表", "投影图片不切换", "ImageStretchMode", "FullscreenImageWindow"]
 code_paths: ["Plugins/Pattern", "Plugins/ImageProjector", "scgd_general_wpf.sln"]
 test_paths: ["Test/Pattern.Tests/Pattern.Tests.csproj", "Test/Pattern.Tests/PatternMigrationTests.cs"]
 related: ["plugins.index", "plugins.capabilities", "plugins.getting-started", "ui.property-grid", "ui.image-editor"]
@@ -21,7 +21,9 @@ related: ["plugins.index", "plugins.capabilities", "plugins.getting-started", "u
 
 当前源码有 11 类图案：纯色、隔行点亮、环形、线对 MTF、九点、点阵、十字网格、十字、棋盘格、噪声和四象限线栅。增加图案沿用 `IPatternBase<T>` 与属性编辑元数据；不要按历史文档中的 MTF/SFR 名称假定存在独立类。
 
-`Gen(height, width)` 的参数顺序先高后宽，返回调用方负责释放的 OpenCV `Mat`。窗口提供常用分辨率与宽高输入、生成预览和保存；支持 BMP 1/4/8/24 位、PNG、JPEG、TIFF。索引 BMP 路径先转灰度并量化，不能当作彩色原样保存。像素尺寸、缩放方式和显示器输出也不能替代真实光学测量。
+`Gen(height, width)` 的参数顺序先高后宽，返回调用方负责释放的 OpenCV `Mat`。选择图案、设置宽高和参数后点击“生成图卡”，再保存图片；修改参数或点击重置不会自动更新已生成的 `currentMat`，保存使用的是这份图片，需先重新生成。
+
+支持 BMP 1/4/8/24 位、PNG、JPEG、TIFF。格式由窗口的格式配置决定，保存对话框的扩展名选择不会反向修改该配置；索引 BMP 路径先转灰度并量化，不能当作彩色原样保存。单张保存对话框的建议位置使用模板路径；“图卡生成路径”用于批量输出。像素尺寸、缩放方式和显示器输出不能替代真实光学测量。
 
 ### 四象限线栅
 
@@ -43,19 +45,64 @@ related: ["plugins.index", "plugins.capabilities", "plugins.getting-started", "u
 
 `PatternBrushPropertiesEditor` 提供选色器和 R/G/B/W/K 按钮。G 对应 `Colors.Lime`；`ToColorTag` 将标准色编码为字母，其余为 ARGB 十六进制字符串。派生 Tag 属性不显示在属性表中，旧 JSON 的 Tag 字段不会覆盖当前颜色。
 
-配置仍按原类型全名由 `ConfigService` 管理。`PatternManagerConfig.PatternPath` 默认是用户文档的 `ColorVision\Pattern`；生成目录默认是桌面的 `Pattern`；`PatternUserDefaultManager` 固定使用文档 `ColorVision\Pattern\UserDefaults`，按图案类型全名保存 JSON。源码目录收回不改变这些路径、类型或文件名。
+颜色快选直接更新当前配置；选色窗口只有确认才复制所选颜色，取消或关闭不写回。Pattern 打开的通用属性窗口使用 `Immediate` 模式，字段编辑直接作用于传入对象；关闭不是整轮撤销。通用“重置”和“恢复到默认”的含义见[属性编辑会话](../../ui-components/property-grid.md#编辑与持久化不是同一动作)。
 
-独立启动保留 `Pattern` / `ImageProjector` 入口程序集名和 `Company=ColorVision`。共享 `ConfigHandler` 仍优先使用运行工作目录下已有的 `Config` 文件夹，否则写入 `%APPDATA%\ColorVision\Config`；在主宿主中运行时使用宿主的配置入口。切换启动工作目录或宿主/独立运行方式，可能改变实际配置文件选择，不能误诊为迁入丢失配置。
+### 用户默认值与当前参数
 
-导入 ZIP 会先删除现有模板目录，再解压，并非原子合并；清空模板/生成目录也会删除内容。`UserDefaults` 位于默认模板目录内，可能一起受影响。迁入保留该既有行为；导入/清空前必须备份，不应在普通烟测中执行。
+图案实例的 `IPatternBase<T>.Config` 初始为 `new T()`，并不是 `ConfigService` 中按类型查出的对象。管理器保留图案实例；切换图案只更换编辑器，不读取用户默认文件。当前参数、用户默认 JSON 和模板 JSON 是三种不同内容。
+
+| 入口 | 读取或写入 | 图片预览 |
+| --- | --- | --- |
+| 保存到默认 | 把当前图案配置直接写入该类型的用户默认 JSON；不包含窗口宽高 | 不重新生成 |
+| 重置 | 有可读取的用户默认文本时调用 `SetConfig`；不存在或读取失败时采用新图案的类默认配置 | 重建参数编辑器，不重新生成 |
+| 重置默认配置 | 先采用新图案的类默认配置，再覆盖该类型的用户默认 JSON；不是删除默认文件 | 重建参数编辑器，不重新生成 |
+| 属性窗口“恢复到默认” | 使用可构造的类默认对象更新当前编辑对象；不读写用户默认文件 | 不重新生成 |
+| 保存到模板 | 保存图案显示名称、窗口宽高及配置 JSON，供模板列表选择 | 不重新生成 |
+
+保存默认后，在所需图案上点击“重置”才会载入它；不能承诺下次选择或启动会自动应用。`LoadUserDefault` 只读文本，读取失败记日志并返回 null；文本存在但 JSON 损坏时，`SetConfig` 异常进入“重置失败”，没有第二次回退出厂值。保留损坏文件并核对格式；如要取消某类型的自定义默认，可在确认类型并备份后移除对应文件。保存一份类默认 JSON 与移除文件不同：以后类默认改变时，保存的旧 JSON 仍会参与重置。
+
+默认文件固定在用户文档的 `ColorVision\Pattern\UserDefaults`，不随 `PatternPath` 改动。文件名由图案类型全名生成，非法字符处理后截到 200 字符再加 `.json`；内置类型可分别保存，但不能据此保证任意扩展类型永不重名。首次解析该目录会尝试创建它。写入不是临时文件原子替换，失败会向保存入口报错，不保证保留旧默认内容。
+
+### 模板、目录与持久化
+
+`PatternManagerConfig`、窗口宽高 `PatternWindowConfig` 和投影配置由 `ConfigService` 管理。独立入口的程序集名为 `Pattern` / `ImageProjector`、`Company=ColorVision`；共享 `ConfigHandler` 优先使用运行工作目录下已有的 `Config` 文件夹，否则使用 `%APPDATA%\ColorVision\Config`。宿主运行使用宿主入口配置，切换工作目录或运行方式可能选中不同配置文件。
+
+`PatternPath` 默认是用户文档的 `ColorVision\Pattern`，批量生成目录默认是桌面的 `Pattern`。模板只从模板目录顶层 `.json` 文件加载，以 `PatternName` 匹配已发现图案的显示名称，再应用宽高和配置；类型显示名称不匹配时无法应用。`IsSwitchCreate` 默认 true，控制选择模板后是否生成图像，不控制普通图案切换或用户默认加载。
+
+“生成所有模板图片”遍历完整模板集合，不限于搜索结果，按模板文件名写到生成目录；异常记日志后继续，没有逐项成功汇总。`SetTemplatePattern` 自身捕获错误，外层批量循环仍可能用先前参数继续生成，不能把输出目录打开或有文件当作全部模板应用成功。核对每项模板、输出和日志后再使用批量结果。
+
+| 文件操作 | 实际范围与失败边界 |
+| --- | --- |
+| 导出 ZIP | 打包整个模板目录及子目录，默认位置下包括 `UserDefaults`；已有目标 ZIP 先删除 |
+| 导入 ZIP | 先递归删除当前模板目录，再解压；失败无原子恢复，可能只留下部分内容 |
+| 清空模板列表 | 工具栏提示虽为“列表”，命令会递归删除模板目录并重建，没有确认分支 |
+| 清空输出目录 | 确认后递归删除配置的生成目录并重建 |
+| 模板删除/重命名 | 直接删除或移动文件，不是只改列表 |
+
+**筛选下的操作存在实现冲突：** 列表使用 `ListCollectionView`，但复制、删除与重命名入口以视图 `SelectedIndex` 索引原集合，搜索后可能指向另一个文件。操作前清除筛选并核对真实文件路径；本页不宣称该缺陷已修复。导入和清空前应备份实际配置目录，默认目录内的用户默认文件也可能受影响。
 
 ## 图片投影
 
 宿主“工具 → 图片投影工具”由 `MenuImageProjector` 提供；Pattern 通过 `OpenImageProjectorCommand` 打开同一个 `ImageProjectorWindow`，不是复制另一份投影实现。独立 App 同样启动该窗口。
 
-图片列表支持添加、删除、排序和预览。配置保存图片列表、上次选中索引、显示器名称和 `ImageStretchMode`：适应为 `Uniform`、拉伸为 `Fill`、居中为 `None`、填充为 `UniformToFill`。投影中可切换图片，Esc 关闭全屏窗口。
+1. 添加图片并核对预览。列表保存的是文件路径，不复制图片；移除列表项不删除原文件。
+2. 选择目标显示器与显示模式。默认优先第一个非主屏，否则第一个屏幕；保存的显示器名称仍存在时恢复该选择。
+3. 点击投影，在所选屏幕创建全屏窗口；再次投影会关闭本窗口已有的全屏实例并重建。
+4. 投影中的“上一张/下一张”会更新全屏图片，到列表边界不循环。直接选中列表项只更新预览；更改显示器只影响下一次创建的全屏窗口，不迁移当前投影。
+5. 用“停止”、全屏窗口中的 Esc，或关闭控制窗口结束投影。清空列表不会自动关闭已有全屏窗口。
 
-`FullscreenImageWindow` 依据目标屏幕 bounds 与 DPI 布置窗口；它直接操作显示器上的窗口，不是离屏渲染。多屏混合 DPI、屏幕断开重连和实际投影尺寸需要真实显示器验收，单元测试不能证明这些场景。
+| 显示模式 | WPF Stretch | 效果 |
+| --- | --- | --- |
+| 适应 | `Uniform` | 保持比例完整显示，可能留边 |
+| 拉伸 | `Fill` | 填满目标，可改变比例 |
+| 居中 | `None` | 不缩放；受图片 DPI 与 WPF 布局影响，不承诺设备像素一比一 |
+| 填充 | `UniformToFill` | 保持比例铺满，可能裁剪 |
+
+改变显示模式会同步现有全屏窗口。列表、选中索引、显示器名称和模式通过 `ConfigService.SaveConfigs()` 尝试保存；捕获到的异常写日志，界面仍可继续使用，不保证保存成功。多个控制窗口共用配置集合，但各自持有预览和全屏实例。
+
+**加载失败可能留下旧图：** `LoadImage` 在文件缺失或解码失败时提示错误，但不清除先前的 `_currentImage`；选中项已经变化不证明预览/全屏已经加载新文件。先核对预览与错误，再重新投影，不把按钮可用或状态文字当成图片一致性的验收。
+
+`FullscreenImageWindow` 按目标屏幕 bounds 与 DPI 布置真实窗口。多屏混合 DPI、屏幕断开重连和实际投影尺寸需真实显示器验收；当前控制窗口没有屏幕变化的自动重载流程。
 
 ## 构建、独立运行与交付
 
@@ -79,6 +126,6 @@ Pattern 的 opt-in target 仅复制 `Pattern.dll`、私有 `ImageProjector.dll`�
 
 ## 验证范围
 
-`PatternMigrationTests` 覆盖默认 2×2 像素图、按数量/按像素分格、余边、两种视场模式与颜色、旧 JSON、当前属性编辑器及快选按钮、程序集/入口/配置身份和默认目录。测试不启动两个完整 App，不导入/清空模板，不写用户配置，不投影，不上传。
+`PatternMigrationTests` 覆盖默认 2×2 像素图、按数量/按像素分格、余边、两种视场模式与颜色、旧 JSON、当前属性编辑器及快选按钮、程序集/入口/配置身份和默认目录。测试不启动两个完整 App，不导入/清空模板，不写用户配置，不投影，不上传；不覆盖用户默认损坏、模板筛选后的文件操作、批量失败后继续生成或投影预览同步。
 
 本地构建和测试只验证代码与当前依赖。真实宿主发现菜单、不同版本 ABI、独立 App 生命周期、多屏 DPI、图卡导出后的光学效果仍是独立验收边界。

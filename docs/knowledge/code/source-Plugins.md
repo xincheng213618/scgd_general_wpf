@@ -39,7 +39,7 @@ next: false
 ## Plugins/ImageProjector {#module-506c7567696e732f496d61676550726f6a6563746f72}
 
 - [图卡生成与图片投影](../../04-api-reference/plugins/standard-plugins/pattern.md) — `plugins.pattern`
-  Pattern 图卡生成、四象限线栅排列/视场、颜色与模板，及 ImageProjector 图片投影；源码同库维护但仍独立构建交付。
+  Pattern 图卡、用户默认值与模板文件管理，以及 ImageProjector 预览、全屏切换和独立交付；区分当前参数、已生成图片和实际投影。
 
 - [插件依赖与接入矩阵](../../04-api-reference/plugins/plugin-capability-matrix.md) — `plugins.capabilities`
   横向定位现存插件的菜单、状态、数据库、设备与管理员权限边界。
@@ -47,7 +47,7 @@ next: false
 ## Plugins/Pattern {#module-506c7567696e732f5061747465726e}
 
 - [图卡生成与图片投影](../../04-api-reference/plugins/standard-plugins/pattern.md) — `plugins.pattern`
-  Pattern 图卡生成、四象限线栅排列/视场、颜色与模板，及 ImageProjector 图片投影；源码同库维护但仍独立构建交付。
+  Pattern 图卡、用户默认值与模板文件管理，以及 ImageProjector 预览、全屏切换和独立交付；区分当前参数、已生成图片和实际投影。
 
 - [插件依赖与接入矩阵](../../04-api-reference/plugins/plugin-capability-matrix.md) — `plugins.capabilities`
   横向定位现存插件的菜单、状态、数据库、设备与管理员权限边界。

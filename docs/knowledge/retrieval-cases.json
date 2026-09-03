@@ -735,6 +735,16 @@
     {"query":"t_scgd_sys_resource 禁用记录还会载入吗","expected_any":["engine.devices"],"include_planned":false},
     {"query":"t_scgd_sys_resource_group 的成员按什么条件载入","expected_any":["engine.devices"],"include_planned":false},
     {"query":"t_scgd_camera_license 过期时间与界面许可状态不一致","expected_any":["operations.physical-camera"],"include_planned":false},
-    {"query":"LicenseState 是依据 expired 列还是 ExpiryDateTime","expected_any":["operations.physical-camera"],"include_planned":false}
+    {"query":"LicenseState 是依据 expired 列还是 ExpiryDateTime","expected_any":["operations.physical-camera"],"include_planned":false},
+    {"query":"Pattern 保存到默认后再次选择图案会自动加载吗","expected_any":["plugins.pattern"],"include_planned":false},
+    {"query":"PatternUserDefaultManager 遇到损坏 JSON 会恢复类默认吗","expected_any":["plugins.pattern"],"include_planned":false},
+    {"query":"重置默认配置与保存到默认有什么区别","expected_any":["plugins.pattern"],"include_planned":false},
+    {"query":"Pattern 修改参数后保存图片为什么还是旧图","expected_any":["plugins.pattern"],"include_planned":false},
+    {"query":"Pattern 清空模板列表会删除 UserDefaults 吗","expected_any":["plugins.pattern"],"include_planned":false},
+    {"query":"Pattern 搜索模板后删除会指向哪个文件","expected_any":["plugins.pattern"],"include_planned":false},
+    {"query":"生成所有模板图片失败会停止吗","expected_any":["plugins.pattern"],"include_planned":false},
+    {"query":"ImageProjector 直接选择列表图片为什么投影不切换","expected_any":["plugins.pattern"],"include_planned":false},
+    {"query":"ImageProjector 文件加载失败仍然显示旧图","expected_any":["plugins.pattern"],"include_planned":false},
+    {"query":"ImageProjector 修改显示器会迁移正在投影的窗口吗","expected_any":["plugins.pattern"],"include_planned":false}
   ]
 }
