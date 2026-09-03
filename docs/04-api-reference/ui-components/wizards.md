@@ -15,7 +15,7 @@ related: ["ui.desktop", "operations.first-run", "platform.runtime", "ui.configur
 
 `ColorVision/App.xaml.cs` 在一次性维护参数要求进入向导、恢复选择要求重新配置，或 `WizardCompletionKey` 为 false 时显示非模态 `WizardWindow`，否则进入 `StartWindow`。完整启动和恢复分流见[主程序运行时](../../03-architecture/overview/runtime.md)与[首次启动](../../00-getting-started/first-steps.md)。
 
-运行中可通过[应用搜索](./search.md)查找“初始化向导／向导／setup”。这是搜索专用高级维护入口，不恢复普通菜单，也没有默认快捷键。检查管理员权限后直接以主窗口为 Owner 打开 `new WizardWindow(runInitializers: false)` 对话框，不确认或重启；入口不把 `WizardCompletionKey` 改为 false，也不清空现有配置。运行期维护动作与启动交接见[运行时维护入口](../../03-architecture/overview/runtime.md#搜索中的维护入口)。
+运行中可通过[应用搜索](./search.md)查找“初始化向导／向导／setup”。这是搜索专用高级维护入口，不恢复普通菜单，也没有默认快捷键。检查管理员权限后直接以主窗口为 Owner 打开 `new WizardWindow(runInitializers: false)` 对话框，不确认或重启；入口不把 `WizardCompletionKey` 改为 false，也不清空现有配置。运行期维护动作与启动交接见[运行时维护入口](../../03-architecture/overview/runtime.md#打开故障恢复与初始化向导)。
 
 ## 发现、排序与初始化
 

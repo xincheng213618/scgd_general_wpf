@@ -32,8 +32,8 @@ next: false
 - [RBAC：登录缓存、会话与权限边界](../../03-architecture/security/rbac.md) — `platform.rbac`
   本地RBAC的登录缓存、会话校验和权限同步限制，以及自动登录失败、登出撤销和用户中心统计的实际边界。
 
-- [架构运行时](../../03-architecture/overview/runtime.md) — `platform.runtime`
-  启动分支、配置初始化、插件装载和恢复流程的运行时顺序。
+- [启动、初始化与故障恢复](../../03-architecture/overview/runtime.md) — `platform.runtime`
+  启动顺序与故障恢复：初始化进度和ready不代表全部成功，运行期维护区分浏览、禁用、文档准备与重启，一次性插件跳过不绕过真实故障。
 
 - [安全与权限控制](../../03-architecture/security/overview.md) — `platform.security`
   区分全局粗粒度权限和独立RBAC模块，不承诺不存在的统一业务授权边界。

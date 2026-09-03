@@ -563,6 +563,8 @@
     {"query":"菜单管理器","expected_any":["ui.menus"],"include_planned":false},
     {"query":"菜单恢复默认","expected_any":["ui.menus"],"include_planned":false},
     {"query":"ReflectionTypeLoadException","expected_any":["ui.discovery"],"include_planned":false},
-    {"query":"AssemblyHandler.ClearCaches","expected_any":["ui.discovery"],"include_planned":false}
+    {"query":"AssemblyHandler.ClearCaches","expected_any":["ui.discovery"],"include_planned":false},
+    {"query":"StartupRegistryChecker","expected_any":["platform.runtime"],"include_planned":false},
+    {"query":"验证并回退","expected_any":["platform.runtime"],"include_planned":false}
   ]
 }

@@ -311,7 +311,7 @@
             },
             {
               "text": {
-                "root": "架构运行时"
+                "root": "启动、初始化与故障恢复"
               },
               "link": "/03-architecture/overview/runtime"
             },
@@ -599,7 +599,7 @@
             },
             {
               "text": {
-                "root": "架构运行时"
+                "root": "启动、初始化与故障恢复"
               },
               "link": "/03-architecture/overview/runtime"
             },
@@ -1739,7 +1739,7 @@
             },
             {
               "text": {
-                "root": "架构运行时"
+                "root": "启动、初始化与故障恢复"
               },
               "link": "/03-architecture/overview/runtime"
             },

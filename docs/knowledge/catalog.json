@@ -6802,18 +6802,45 @@
       "knowledge_id": "platform.runtime",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "启动分支、配置初始化、插件装载和恢复流程的运行时顺序。",
+      "summary": "启动顺序与故障恢复：初始化进度和ready不代表全部成功，运行期维护区分浏览、禁用、文档准备与重启，一次性插件跳过不绕过真实故障。",
       "aliases": [
         "启动链路",
-        "PluginLoader",
         "App.xaml.cs",
-        "启动恢复"
+        "启动恢复",
+        "故障恢复",
+        "初始化向导",
+        "安全启动",
+        "启动进度",
+        "初始化失败",
+        "StartupRegistryChecker",
+        "StartupMaintenanceController",
+        "StartupMaintenanceSearchProvider",
+        "StartupRecoveryWindow",
+        "StartupRecoveryPluginScanner",
+        "StartupInitializersCompleted",
+        "MainWindowInitializer",
+        "LoadingPlugin",
+        "startup-maintenance",
+        "startup-skip-plugins",
+        "wait-for-process",
+        "safe-start",
+        "skip-plugins",
+        "验证并回退"
       ],
       "code_paths": [
+        "ColorVision/EntryClass.cs",
         "ColorVision/App.xaml.cs",
+        "ColorVision/BuiltInModules.cs",
+        "ColorVision/ProgramTimer.cs",
+        "ColorVision/StartWindow.xaml.cs",
+        "ColorVision/MainWindow.xaml.cs",
+        "ColorVision/SingleInstanceStartupPolicy.cs",
+        "ColorVision/StartupFileOpenPolicy.cs",
+        "ColorVision/OperationsApplicationRestartController.cs",
         "ColorVision/App.StartupMaintenance.cs",
         "ColorVision/Recovery",
-        "UI/ColorVision.UI/Plugins/PluginLoader.cs"
+        "UI/ColorVision.UI/Plugins/PluginLoader.cs",
+        "UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs",
@@ -6822,16 +6849,21 @@
         "Test/ColorVision.UI.Tests/StartupMaintenanceWindowTests.cs",
         "Test/ColorVision.UI.Tests/WizardWindowRuntimeTests.cs",
         "Test/ColorVision.UI.Tests/StartupRecoveryWindowRuntimeTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotBackgroundShellMaintenanceGuardTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotBackgroundShellMaintenanceGuardTests.cs",
+        "Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs",
+        "Test/ColorVision.UI.Tests/StartupRegistryCheckerTests.cs"
       ],
       "related": [
         "platform.architecture",
         "platform.startup-integrity",
         "delivery.update",
+        "plugins.model",
+        "ui.discovery",
         "ui.wizards",
         "ui.localization",
+        "ui.search",
         "engine.rc-registration",
-        "ui.search"
+        "flow.architecture"
       ],
       "code_scopes": [
         "ColorVision",
@@ -6839,7 +6871,7 @@
         "UI/ColorVision.UI"
       ],
       "domain": "platform",
-      "title": "架构运行时",
+      "title": "启动、初始化与故障恢复",
       "source": "docs/03-architecture/overview/runtime.md",
       "url": "/03-architecture/overview/runtime",
       "searchable": true

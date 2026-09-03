@@ -58,8 +58,8 @@ next: false
 - [RBAC：登录缓存、会话与权限边界](../../03-architecture/security/rbac.md) — `platform.rbac`
   本地RBAC的登录缓存、会话校验和权限同步限制，以及自动登录失败、登出撤销和用户中心统计的实际边界。
 
-- [架构运行时](../../03-architecture/overview/runtime.md) — `platform.runtime`
-  启动分支、配置初始化、插件装载和恢复流程的运行时顺序。
+- [启动、初始化与故障恢复](../../03-architecture/overview/runtime.md) — `platform.runtime`
+  启动顺序与故障恢复：初始化进度和ready不代表全部成功，运行期维护区分浏览、禁用、文档准备与重启，一次性插件跳过不绕过真实故障。
 
 - [启动失败上报与缺依赖告警](../../03-architecture/components/startup-integrity.md) — `platform.startup-integrity`
   主程序启动失败识别、状态上报和后台缺依赖告警；十秒观察不强杀进程，已处理终态抑制重复弹窗，无告警不证明安装完整。
@@ -192,8 +192,8 @@ next: false
 - [跨模块运行问题定位](../../01-user-guide/README.md) — `operations.index`
   从启动、配置、日志、设备、流程和结果现象定位代码责任，区分已完成阶段与待验证阶段，避免用重启或改数据代替诊断。
 
-- [架构运行时](../../03-architecture/overview/runtime.md) — `platform.runtime`
-  启动分支、配置初始化、插件装载和恢复流程的运行时顺序。
+- [启动、初始化与故障恢复](../../03-architecture/overview/runtime.md) — `platform.runtime`
+  启动顺序与故障恢复：初始化进度和ready不代表全部成功，运行期维护区分浏览、禁用、文档准备与重启，一次性插件跳过不绕过真实故障。
 
 - [应用搜索：入口、候选与执行](../../04-api-reference/ui-components/search.md) — `ui.search`
   应用搜索窗口的入口、关键词匹配、候选来源、缓存刷新与命令执行；Ctrl+F 按焦点执行局部查找，Ctrl+Shift+P 打开应用搜索。

@@ -475,8 +475,8 @@ next: false
 - [扩展性开发](../../02-developer-guide/core-concepts/extensibility.md) — `platform.extensibility`
   菜单、插件、属性编辑器、算法模板和 Copilot 扩展的职责与源码入口。
 
-- [架构运行时](../../03-architecture/overview/runtime.md) — `platform.runtime`
-  启动分支、配置初始化、插件装载和恢复流程的运行时顺序。
+- [启动、初始化与故障恢复](../../03-architecture/overview/runtime.md) — `platform.runtime`
+  启动顺序与故障恢复：初始化进度和ready不代表全部成功，运行期维护区分浏览、禁用、文档准备与重启，一次性插件跳过不绕过真实故障。
 
 - [ColorVisionServiceHost：本机权限代理与生命周期](../../03-architecture/components/service-host.md) — `platform.service-host`
   ColorVisionServiceHost本机权限代理的身份、票据与就绪：客户端超时不取消命令，服务停止超过两分钟仍等待排空，服务启动成功日志不证明后台清理和启动完整性检查完成。
