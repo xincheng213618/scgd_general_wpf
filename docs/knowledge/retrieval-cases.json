@@ -557,6 +557,8 @@
     {"query":"SFR曲线","expected_any":["algorithms.arvr"],"include_planned":false},
     {"query":"ARVR屏幕缺陷检测","expected_any":["algorithms.arvr"],"include_planned":false},
     {"query":"POI保存模板","expected_any":["algorithms.find-light-area"],"include_planned":false},
-    {"query":"发光区定位1","expected_any":["algorithms.find-light-area"],"include_planned":false}
+    {"query":"发光区定位1","expected_any":["algorithms.find-light-area"],"include_planned":false},
+    {"query":"HeadlessStartupException","expected_any":["flow.headless"],"include_planned":false},
+    {"query":"无界面流程Started=false","expected_any":["flow.headless"],"include_planned":false}
   ]
 }
