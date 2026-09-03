@@ -2597,6 +2597,12 @@
           "items": [
             {
               "text": {
+                "root": "RC 注册、服务快照与连接测试"
+              },
+              "link": "/04-api-reference/engine-components/rc-registration"
+            },
+            {
+              "text": {
                 "root": "物理相机发现、许可证与资源管理"
               },
               "link": "/01-user-guide/devices/camera-management"

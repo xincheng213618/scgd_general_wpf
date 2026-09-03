@@ -663,6 +663,14 @@
     {"query":"设备组关联资源是否过滤禁用和租户","expected_any":["engine.devices"],"include_planned":false},
     {"query":"LoadServices完成但设备树是空的","expected_any":["engine.devices"],"include_planned":false},
     {"query":"LastSelectIndex会按设备Code恢复吗","expected_any":["engine.devices"],"include_planned":false},
-    {"query":"DeviceServiceFactoryRegistry重复注册","expected_any":["engine.devices"],"include_planned":false}
+    {"query":"DeviceServiceFactoryRegistry重复注册","expected_any":["engine.devices"],"include_planned":false},
+    {"query":"RC重复注册是不是都限制三秒","expected_any":["engine.rc-registration"],"include_planned":false},
+    {"query":"RC的AccessToken为空为什么显示已连接","expected_any":["engine.rc-registration"],"include_planned":false},
+    {"query":"MqttRCService.Dispose后还会注册吗","expected_any":["engine.rc-registration"],"include_planned":false},
+    {"query":"CVServiceType.Archived为什么中断服务目录更新","expected_any":["engine.rc-registration"],"include_planned":false},
+    {"query":"注册中心连接配置按键后配置项消失","expected_any":["engine.rc-registration"],"include_planned":false},
+    {"query":"RC新建配置文件保存在哪里","expected_any":["engine.rc-registration"],"include_planned":false},
+    {"query":"RC测试连接300毫秒是总超时吗","expected_any":["engine.rc-registration"],"include_planned":false},
+    {"query":"RC设置会同步WinService.config吗","expected_any":["engine.rc-registration"],"include_planned":false}
   ]
 }
