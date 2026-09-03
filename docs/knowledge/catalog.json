@@ -9192,9 +9192,12 @@
       "knowledge_id": "ui.image-fusion",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "景深融合的CPU/CUDA调用、HImage显示和计时；自动模式不做失败回退，关窗不取消计算，GPU少量图片存在未修复的越界风险。",
+      "summary": "景深融合的文件准备、CPU/CUDA执行、结果另存与计时；自动模式不做失败回退，关窗不取消计算，GPU的2–4张输入存在越界风险。",
       "aliases": [
         "景深融合",
+        "执行融合",
+        "融合结果",
+        "GPU 异步 (CUDA Async)",
         "焦点堆栈",
         "focus stacking",
         "FusionWindow",

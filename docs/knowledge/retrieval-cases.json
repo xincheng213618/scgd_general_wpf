@@ -114,6 +114,8 @@
     {"query":"在多图查看器里Ctrl选中两张之后再取消一张，已经显示的大图会一起移除吗？","expected_any":["ui.image-tools"],"include_planned":false},
     {"query":"景深融合选自动模式，GPU调用失败后会自动重试CPU吗？","expected_any":["ui.image-fusion"],"include_planned":false},
     {"query":"FusionWindow.Cancel_Click会停止正在执行的融合吗？","expected_any":["ui.image-fusion"],"include_planned":false},
+    {"query":"执行融合","expected_any":["ui.image-fusion"],"include_planned":false},
+    {"query":"GPU 异步 (CUDA Async)","expected_any":["ui.image-fusion"],"include_planned":false},
     {"query":"融合窗口里的加载耗时和融合耗时分别包含什么？","expected_any":["ui.image-fusion"],"include_planned":false},
     {"query":"关闭网络通信窗口或者关闭启用开关后，已有连接和正在处理的请求会一起停止吗？","expected_any":["ui.socket-protocol"],"include_planned":false},
     {"query":"发送成功的消息记录代表对端已经收到并执行了吗，重发会更新原记录吗？","expected_any":["ui.socket-protocol"],"include_planned":false},
