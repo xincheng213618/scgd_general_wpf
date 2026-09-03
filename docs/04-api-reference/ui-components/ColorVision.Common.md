@@ -68,7 +68,7 @@ Common 中的 `AssemblyService`、`ConfigService`、`MenuService` 是可由宿�
 
 `RequiresPermissionAttribute` 允许标在类或方法上，但上述 helper 只读取委托的方法，没有额外查询声明类；lambda 包装也不会自动继承被包装方法的特性。特性本身不拦截调用，直接调用方法不会自动执行权限检查。
 
-RBAC 的用户/角色/权限码校验在 `UI/ColorVision.Rbac/Services/PermissionChecker.cs`；它与全局模式并存，登录等具体路径会同步模式。`RbacManager` 无有效登录态时仍可把全局模式设为 Administrator，因此 **Administrator 模式不证明已登录或拥有某个 RBAC 权限码**。完整账户、会话和接入边界见[权限分层](../../03-architecture/security/overview.md)，不要把 Common 的 helper 当成全产品统一安全边界。
+RBAC 的用户/角色/权限码校验在 `UI/ColorVision.Rbac/Services/PermissionChecker.cs`；它与全局模式并存，登录等具体路径会同步模式。`RbacManager` 无有效登录态时仍可把全局模式设为 Administrator，因此 **Administrator 模式不证明已登录或拥有某个 RBAC 权限码**。完整账户、会话和接入边界见[RBAC 登录与会话](../../03-architecture/security/rbac.md)，不要把 Common 的 helper 当成全产品统一安全边界。
 
 ## 第三方工具：发现、可用状态与实际启动分开
 

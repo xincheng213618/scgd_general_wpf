@@ -565,6 +565,8 @@
     {"query":"ReflectionTypeLoadException","expected_any":["ui.discovery"],"include_planned":false},
     {"query":"AssemblyHandler.ClearCaches","expected_any":["ui.discovery"],"include_planned":false},
     {"query":"StartupRegistryChecker","expected_any":["platform.runtime"],"include_planned":false},
-    {"query":"验证并回退","expected_any":["platform.runtime"],"include_planned":false}
+    {"query":"验证并回退","expected_any":["platform.runtime"],"include_planned":false},
+    {"query":"应用管理员","expected_any":["platform.security"],"include_planned":false},
+    {"query":"鉴权入口","expected_any":["platform.security"],"include_planned":false}
   ]
 }

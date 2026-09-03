@@ -6880,28 +6880,40 @@
       "knowledge_id": "platform.security",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "区分全局粗粒度权限和独立RBAC模块，不承诺不存在的统一业务授权边界。",
+      "summary": "区分应用管理员、RBAC会话与权限码、Windows服务身份及远程/工具授权；登录缓存和界面状态不能替代执行入口的权限检查。",
       "aliases": [
         "权限边界",
         "安全架构",
-        "Authorization",
-        "PermissionMode"
+        "应用管理员",
+        "Windows管理员",
+        "身份与权限",
+        "授权入口",
+        "鉴权入口"
       ],
       "code_paths": [
-        "UI/ColorVision.Rbac",
-        "UI/ColorVision.Common"
+        "UI/ColorVision.Common/Authorizations",
+        "UI/ColorVision.Rbac/RbacManager.cs",
+        "UI/ColorVision.Rbac/Services/PermissionChecker.cs",
+        "UI/ColorVision.Rbac/Services/Auth/AuthService.cs",
+        "UI/ColorVision.Rbac/Services/SessionService.cs"
       ],
       "test_paths": [],
       "related": [
         "platform.architecture",
-        "platform.rbac"
+        "platform.rbac",
+        "ui.common",
+        "ui.menus",
+        "platform.service-host",
+        "copilot.mcp-server",
+        "delivery.backend-operations",
+        "copilot.execution"
       ],
       "code_scopes": [
         "UI/ColorVision.Common",
         "UI/ColorVision.Rbac"
       ],
       "domain": "platform",
-      "title": "安全与权限控制",
+      "title": "权限边界与鉴权入口",
       "source": "docs/03-architecture/security/overview.md",
       "url": "/03-architecture/security/overview",
       "searchable": true

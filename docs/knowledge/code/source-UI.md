@@ -68,8 +68,8 @@ next: false
 - [扩展性开发](../../02-developer-guide/core-concepts/extensibility.md) — `platform.extensibility`
   菜单、插件、属性编辑器、算法模板和 Copilot 扩展的职责与源码入口。
 
-- [安全与权限控制](../../03-architecture/security/overview.md) — `platform.security`
-  区分全局粗粒度权限和独立RBAC模块，不承诺不存在的统一业务授权边界。
+- [权限边界与鉴权入口](../../03-architecture/security/overview.md) — `platform.security`
+  区分应用管理员、RBAC会话与权限码、Windows服务身份及远程/工具授权；登录缓存和界面状态不能替代执行入口的权限检查。
 
 - [插件装载、依赖门禁与扩展发现](../../02-developer-guide/plugin-development/overview.md) — `plugins.model`
   PluginLoader的manifest/依赖门禁、禁用缓存、程序集发现和失败边界；载入不等于provider可用，也不支持隔离卸载。
@@ -303,8 +303,8 @@ next: false
 - [RBAC：登录缓存、会话与权限边界](../../03-architecture/security/rbac.md) — `platform.rbac`
   本地RBAC的登录缓存、会话校验和权限同步限制，以及自动登录失败、登出撤销和用户中心统计的实际边界。
 
-- [安全与权限控制](../../03-architecture/security/overview.md) — `platform.security`
-  区分全局粗粒度权限和独立RBAC模块，不承诺不存在的统一业务授权边界。
+- [权限边界与鉴权入口](../../03-architecture/security/overview.md) — `platform.security`
+  区分应用管理员、RBAC会话与权限码、Windows服务身份及远程/工具授权；登录缓存和界面状态不能替代执行入口的权限检查。
 
 - [共享接口、属性通知与粗粒度权限](../../04-api-reference/ui-components/ColorVision.Common.md) — `ui.common`
   共享接口的宿主接入、属性通知与命令的同步执行限制、粗粒度权限判据，以及第三方工具发现和启动边界。

@@ -875,7 +875,7 @@
             },
             {
               "text": {
-                "root": "安全与权限控制"
+                "root": "权限边界与鉴权入口"
               },
               "link": "/03-architecture/security/overview"
             },
@@ -1370,7 +1370,7 @@
             },
             {
               "text": {
-                "root": "安全与权限控制"
+                "root": "权限边界与鉴权入口"
               },
               "link": "/03-architecture/security/overview"
             },
