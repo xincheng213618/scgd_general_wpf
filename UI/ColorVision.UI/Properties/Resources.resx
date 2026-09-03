@@ -629,4 +629,5 @@
   <data name="SettingsSectionAppearance" xml:space="preserve"><value>外观与语言</value></data>
   <data name="SettingsSectionUpdates" xml:space="preserve"><value>更新与网络</value></data>
   <data name="SettingsSectionDiagnostics" xml:space="preserve"><value>日志与诊断</value></data>
+  <data name="CommandOtherActions" xml:space="preserve"><value>其他操作</value></data>
 </root>

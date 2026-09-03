@@ -14,6 +14,10 @@
     <GenerateDocumentationFile>False</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(EnableWindowResizeDiagnostics)' == 'true'">
+    <DefineConstants>$(DefineConstants);COLORVISION_WINDOW_RESIZE_DIAGNOSTICS</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Update="Copilot\Skills\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Compile Remove="Plugins\**" />

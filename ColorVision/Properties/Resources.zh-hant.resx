@@ -515,6 +515,15 @@
   <data name="ConfigEnableDesktopPetDescription" xml:space="preserve">
     <value>顯示或隱藏桌面寵物元件。</value>
   </data>
+  <data name="ConfigUseCompactTitleBar" xml:space="preserve">
+    <value>緊湊標題列（實驗，重新啟動後生效）</value>
+  </data>
+  <data name="CompactTitleBarMoreActions" xml:space="preserve">
+    <value>更多標題列操作</value>
+  </data>
+  <data name="ConfigUseCompactTitleBarDescription" xml:space="preserve">
+    <value>使用獨立緊湊主視窗，將功能表合併到標題列並保留系統按鈕。預設關閉，重新啟動後生效；僅在相容的 Windows 11 環境啟用，不支援時保留原生標題列。關閉並重新啟動可恢復舊主視窗。</value>
+  </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>不支持的文件格式</value>
   </data>

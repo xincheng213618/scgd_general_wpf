@@ -590,4 +590,5 @@
   <data name="SettingsSectionAppearance" xml:space="preserve"><value>Appearance and language</value></data>
   <data name="SettingsSectionUpdates" xml:space="preserve"><value>Updates and network</value></data>
   <data name="SettingsSectionDiagnostics" xml:space="preserve"><value>Logging and diagnostics</value></data>
+  <data name="CommandOtherActions" xml:space="preserve"><value>Other actions</value></data>
 </root>

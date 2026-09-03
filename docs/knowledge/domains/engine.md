@@ -50,6 +50,9 @@ next: false
 - [Explorer 缩略图读取与 COM 注册](../../04-api-reference/engine-components/ColorVision.ShellExtension.md) — `engine.shell-extension`
   Explorer 的 CVRAW/CVCIE COM provider 如何读取像素、生成非测量用途缩略图，以及源码脚本与 ServiceHost 注册的不同副作用和失败边界。
 
+- [主程序光谱仪搜索与配置](../../04-api-reference/engine-components/spectrum-device.md) — `engine.spectrum-device`
+  主程序光谱仪的全连接方式搜索、设备配置分类和许可证读取入口；区分本机搜索、服务端刷新与实际连接。
+
 - [模板注册、参数与持久化](../../03-architecture/components/templates/design.md) — `engine.template-design`
   TemplateControl注册与普通ITemplate\<T\>参数加载、保存、复制和删除契约；注册、内存变更和数据库成功是不同状态，JSON与Flow另有实现。
 

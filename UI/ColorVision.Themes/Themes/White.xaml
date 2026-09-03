@@ -83,6 +83,8 @@
 
     <SolidColorBrush x:Key="CaptionButtonBrush" Color="{StaticResource GlobalTextColor}"/>
     <SolidColorBrush x:Key="CaptionButtonForeground" Color="{StaticResource GlobalTextColor}"/>
+    <SolidColorBrush x:Key="TitleBarActionForeground" Color="#303030"/>
+    <SolidColorBrush x:Key="TitleBarActionInactiveForeground" Color="#808080"/>
     <SolidColorBrush x:Key="WindowIsNotActiveForeground">#d7d7d7</SolidColorBrush>
     <SolidColorBrush x:Key="CaptionButtonChoiceBrush">#C7CACF</SolidColorBrush>
     <SolidColorBrush x:Key="CaptionButtonChoiceBackgrouundBrush">#E5E5E5</SolidColorBrush>
@@ -90,14 +92,14 @@
 
     <!--MenuItem-->
     <SolidColorBrush x:Key="MenuBrushKey"   Color="{DynamicResource GlobalBackgroundColor}"/>
-    <SolidColorBrush x:Key="MenuHighBrushKey"   Color="#F6F6F6"/>
-    <SolidColorBrush x:Key="SubMenuBrushKey"   Color="#F6F6F6"/>
-    <SolidColorBrush x:Key="SubMenuBorderBrushKey"   Color="#CCCEDB"/>
+    <SolidColorBrush x:Key="MenuHighBrushKey"   Color="#EDEDED"/>
+    <SolidColorBrush x:Key="SubMenuBrushKey"   Color="#FAFAFA"/>
+    <SolidColorBrush x:Key="SubMenuBorderBrushKey"   Color="#DEDEDE"/>
 
 
     <SolidColorBrush x:Key="TransparentBrush" Color="Transparent" />
 
-    <SolidColorBrush x:Key="MenuItemSeparatorFillTop" Color="#BEC3CB" />
+    <SolidColorBrush x:Key="MenuItemSeparatorFillTop" Color="#E4E4E4" />
     <SolidColorBrush x:Key="MenuItemSeparatorFillBottom" Color="Transparent" />
 
     <SolidColorBrush x:Key="SystemColorsMenuText" Color="#FF000000" />
@@ -109,6 +111,7 @@
     <SolidColorBrush x:Key="menuitemglyphpanelborderbrush" Color="#F4F5F7" />
     <SolidColorBrush x:Key="MenuItemHighlightedInnerBorder" Color="#FFF5F5F5" />
     <SolidColorBrush x:Key="MenuItemDisabledForeground" Color="#808080" />
+    <SolidColorBrush x:Key="MenuItemSecondaryForeground" Color="#656565" />
     <SolidColorBrush x:Key="MenuItemDisabledGlyphPanelBackground" Color="#FFA2A4A5" />
 
     <SolidColorBrush x:Key="MenuItemDisabledGlyphFill" Color="#808080" />
@@ -119,12 +122,13 @@
     <SolidColorBrush x:Key="EnvironmentCommandBarCheckBox" Color="#FF000000" />
     <SolidColorBrush x:Key="EnvironmentCommandBarSelectedIcon" Color="#FFE9ECEE" />
     <SolidColorBrush x:Key="EnvironmentCommandBarCheckBoxMouseOver" Color="#FF000000" />
-    <SolidColorBrush x:Key="EnvironmentCommandBarHoverOverSelectedIcon" Color="#FFFFFCF4" />
-    <SolidColorBrush x:Key="EnvironmentCommandBarMenuItemMouseOver" Color="#F0F0F0" />
+    <SolidColorBrush x:Key="EnvironmentCommandBarHoverOverSelectedIcon" Color="#EDEDED" />
+    <SolidColorBrush x:Key="EnvironmentCommandBarMenuItemMouseOver" Color="#EDEDED" />
 
-    <SolidColorBrush x:Key="ContextMenuBackground" Color="#F6F6F6" />
-    <SolidColorBrush x:Key="ContextMenuBorderBrush" Color="#CCCEDB" />
-    <SolidColorBrush x:Key="ContextMenuRectangleFill" Color="#F6F6F6" />
+    <SolidColorBrush x:Key="ContextMenuBackground" Color="#FAFAFA" />
+    <SolidColorBrush x:Key="ContextMenuBorderBrush" Color="#DEDEDE" />
+    <SolidColorBrush x:Key="ContextMenuRectangleFill" Color="#FAFAFA" />
+    <DropShadowEffect x:Key="MenuPopupShadowEffect" Color="Black" BlurRadius="12" ShadowDepth="2" Direction="270" Opacity="0.16" RenderingBias="Performance"/>
 </ResourceDictionary>
 
 

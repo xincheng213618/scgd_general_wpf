@@ -1046,4 +1046,95 @@
   <data name="PoiAutoFitSize" xml:space="preserve"><value>自动适配尺寸</value></data>
   <data name="PoiAutoFitSizeToolTip" xml:space="preserve"><value>根据四边形和行列数估算圆半径或矩形宽高，并切换为区域内布点。允许间隙、重叠和整数取整误差；可继续手动调整，点击绘制后生成点位。</value></data>
   <data name="PoiAutoFitSizeFailed" xml:space="preserve"><value>无法自动适配尺寸：请确认四边形有效、行列数至少为1，且区域足够容纳整数像素的采样窗。缩进为单点时请手动设置尺寸。</value></data>
+  <data name="SpectrumSettingsTitle" xml:space="preserve"><value>光谱仪设置</value></data>
+  <data name="SpectrumDeviceConnection" xml:space="preserve"><value>设备与连接</value></data>
+  <data name="SpectrumCalibrationCorrection" xml:space="preserve"><value>校准与校正</value></data>
+  <data name="SpectrumAcquisitionDisplay" xml:space="preserve"><value>采集与显示</value></data>
+  <data name="SpectrumSearchDevices" xml:space="preserve"><value>搜索光谱仪</value></data>
+  <data name="SpectrumSearchHint" xml:space="preserve"><value>遍历所有支持的连接方式</value></data>
+  <data name="SpectrumRefreshHint" xml:space="preserve"><value>刷新服务端设备与许可证</value></data>
+  <data name="SpectrumLicenseHint" xml:space="preserve"><value>导入本地许可证文件</value></data>
+  <data name="CalibrationGroup" xml:space="preserve"><value>标定分组</value></data>
+  <data name="ApplyCalibrationGroup" xml:space="preserve"><value>应用当前分组</value></data>
+  <data name="SpectrumCalibrationGroupHint" xml:space="preserve"><value>管理波长、幅值与 ND 关联</value></data>
+  <data name="SpectrumApplyGroupHint" xml:space="preserve"><value>加载标定文件并重启服务</value></data>
+  <data name="SpectrumCorrection" xml:space="preserve"><value>光谱校正</value></data>
+  <data name="SpectrumCorrectionHint" xml:space="preserve"><value>完整光谱或单独亮度校正</value></data>
+  <data name="SpectrumDarkHint" xml:space="preserve"><value>执行自适应暗场校准</value></data>
+  <data name="SpectrumDarkSettingsHint" xml:space="preserve"><value>积分起点、步长与次数</value></data>
+  <data name="EmissionSP100Set" xml:space="preserve"><value>SP100 暗电流设置</value></data>
+  <data name="SpectrumSp100Hint" xml:space="preserve"><value>暗电流像素范围与均值阈值</value></data>
+  <data name="SpectrumDisplayHint" xml:space="preserve"><value>积分、平均次数与显示模式</value></data>
+  <data name="SpectrumLog" xml:space="preserve"><value>光谱仪日志</value></data>
+  <data name="SpectrumLogHint" xml:space="preserve"><value>查看连接与测量服务日志</value></data>
+  <data name="SpectrumDiscoveryFailed" xml:space="preserve"><value>查询失败，返回码：{0}</value></data>
+  <data name="SpectrumDiscoveryHint" xml:space="preserve"><value>已按连接方式搜索。请使用检测到设备的连接方式与序列号配置设备。</value></data>
+  <data name="ConfigSpectrum" xml:space="preserve"><value>基本信息</value></data>
+  <data name="SpectrumSN" xml:space="preserve"><value>设备序列号</value></data>
+  <data name="SpectrumComPort" xml:space="preserve"><value>串口</value></data>
+  <data name="SpectrumActiveGroup" xml:space="preserve"><value>当前标定分组</value></data>
+  <data name="SpectrumShutterEnabled" xml:space="preserve"><value>启用快门</value></data>
+  <data name="SpectrumShutterSettings" xml:space="preserve"><value>快门设置</value></data>
+  <data name="SpectrumDarkSettings" xml:space="preserve"><value>自适应校零设置</value></data>
+  <data name="SpectrumNdSettings" xml:space="preserve"><value>ND 滤光轮设置</value></data>
+  <data name="SpectrumFileSettings" xml:space="preserve"><value>文件保存设置</value></data>
+  <data name="SpectrumAcquisitionSettings" xml:space="preserve"><value>采集参数</value></data>
+  <data name="SpectrumGroupName" xml:space="preserve"><value>分组名称</value></data>
+  <data name="SpectrumNdIndex" xml:space="preserve"><value>ND 孔位索引</value></data>
+  <data name="SpectrumStartWavelength" xml:space="preserve"><value>起始波长 (nm)</value></data>
+  <data name="SpectrumEndWavelength" xml:space="preserve"><value>结束波长 (nm)</value></data>
+  <data name="SpectrumNdEnabled" xml:space="preserve"><value>启用 ND 滤光轮</value></data>
+  <data name="SpectrumNdBind" xml:space="preserve"><value>绑定滤光轮设备</value></data>
+  <data name="SpectrumNdDevice" xml:space="preserve"><value>滤光轮设备</value></data>
+  <data name="SpectrumNdReset" xml:space="preserve"><value>允许 ND 复位</value></data>
+  <data name="SpectrumNdMaxTime" xml:space="preserve"><value>ND 最大曝光时间 (ms)</value></data>
+  <data name="SpectrumNdMinTime" xml:space="preserve"><value>ND 最小曝光时间 (ms)</value></data>
+  <data name="SpectrumNdRates" xml:space="preserve"><value>ND 衰减倍率</value></data>
+  <data name="SpectrumNdGroups" xml:space="preserve"><value>ND 标定分组名称</value></data>
+  <data name="SpectrumSp100Enabled" xml:space="preserve"><value>启用暗电流补偿</value></data>
+  <data name="SpectrumSp100Start" xml:space="preserve"><value>起始像素</value></data>
+  <data name="SpectrumSp100End" xml:space="preserve"><value>结束像素</value></data>
+  <data name="SpectrumSp100Threshold" xml:space="preserve"><value>均值阈值</value></data>
+  <data name="SpectrumOpenShutter" xml:space="preserve"><value>打开快门指令</value></data>
+  <data name="SpectrumCloseShutter" xml:space="preserve"><value>关闭快门指令</value></data>
+  <data name="SpectrumFluxMode" xml:space="preserve"><value>光通量模式</value></data>
+  <data name="SpectrumFluxDivisor" xml:space="preserve"><value>光通量换算系数</value></data>
+  <data name="SpectrumAutoDark" xml:space="preserve"><value>自动校零</value></data>
+  <data name="SpectrumUseShutter" xml:space="preserve"><value>使用快门</value></data>
+  <data name="SpectrumIntegrationTime" xml:space="preserve"><value>积分时间 (ms)</value></data>
+  <data name="SpectrumNdPosition" xml:space="preserve"><value>ND 孔位</value></data>
+  <data name="SpectrumVoltage" xml:space="preserve"><value>电压 (V)</value></data>
+  <data name="SpectrumCurrent" xml:space="preserve"><value>电流 (A)</value></data>
+  <data name="SpectrumCalibrationFileSettingsHint" xml:space="preserve"><value>管理波长与幅值文件；也可从标定分组窗口编辑。</value></data>
+  <data name="ShutterConfig" xml:space="preserve"><value>快门设置</value></data>
+  <data name="SelfAdaptionInitDark" xml:space="preserve"><value>自适应校零设置</value></data>
+  <data name="NDConfig" xml:space="preserve"><value>ND 滤光轮设置</value></data>
+  <data name="GetDataConfig" xml:space="preserve"><value>采集参数</value></data>
+  <data name="DisplaySpectrumConfig" xml:space="preserve"><value>采集与显示</value></data>
+  <data name="SpectrumCalibrationGroup" xml:space="preserve"><value>标定分组</value></data>
+  <data name="DeviceConnection" xml:space="preserve"><value>设备与连接</value></data>
+  <data name="CalibrationCorrection" xml:space="preserve"><value>校准与校正</value></data>
+  <data name="AcquisitionDisplay" xml:space="preserve"><value>采集与显示</value></data>
+  <data name="MaintenanceDiagnostics" xml:space="preserve"><value>维护与诊断</value></data>
+  <data name="CameraLog" xml:space="preserve"><value>相机日志</value></data>
+  <data name="EditCalibrationFile" xml:space="preserve"><value>校正文件设置</value></data>
+  <data name="CommandEditConfigHint" xml:space="preserve"><value>连接、设备参数与运行配置</value></data>
+  <data name="CommandRestartHint" xml:space="preserve"><value>重新启动当前设备服务</value></data>
+  <data name="CommandResetHint" xml:space="preserve"><value>恢复设备默认配置</value></data>
+  <data name="CommandSavePathHint" xml:space="preserve"><value>配置数据与文件的保存位置</value></data>
+  <data name="CommandDeleteHint" xml:space="preserve"><value>删除当前设备资源</value></data>
+  <data name="CommandCameraLogHint" xml:space="preserve"><value>查看相机服务运行日志</value></data>
+  <data name="CommandCalibrationCacheHint" xml:space="preserve"><value>查看和释放本地校正缓存</value></data>
+  <data name="CommandCameraCalibrationHint" xml:space="preserve"><value>配置相机关联的校正文件</value></data>
+  <data name="CommandAutoExposureHint" xml:space="preserve"><value>管理自动曝光参数模板</value></data>
+  <data name="CommandAutoFocusHint" xml:space="preserve"><value>管理自动聚焦参数模板</value></data>
+  <data name="CommandCameraParametersHint" xml:space="preserve"><value>管理相机采集参数模板</value></data>
+  <data name="CommandPhysicalCameraHint" xml:space="preserve"><value>查看与配置物理相机</value></data>
+  <data name="CommandRefreshDevicesHint" xml:space="preserve"><value>刷新服务端设备列表</value></data>
+  <data name="CommandDisplayConfigHint" xml:space="preserve"><value>配置采集与结果显示选项</value></data>
+  <data name="SmuTemplateSettings" xml:space="preserve"><value>源表模板设置</value></data>
+  <data name="CommandSmuTemplateHint" xml:space="preserve"><value>管理源表测量参数模板</value></data>
+  <data name="CommandPgTemplateHint" xml:space="preserve"><value>管理 PG 图像与输出模板</value></data>
+  <data name="CommandAlgorithmPluginHint" xml:space="preserve"><value>上传服务端算法插件</value></data>
+  <data name="CommandAlgorithmConfigHint" xml:space="preserve"><value>管理第三方算法配置</value></data>
 </root>

@@ -160,6 +160,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 更多标题栏操作 的本地化字符串。
+        /// </summary>
+        public static string CompactTitleBarMoreActions {
+            get {
+                return ResourceManager.GetString("CompactTitleBarMoreActions", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 COM 注册失败，请确认已授予管理员权限。 的本地化字符串。
         /// </summary>
         public static string ComRegistrationFailed {
@@ -285,6 +294,24 @@ namespace ColorVision.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 紧凑标题栏（实验，重启生效） 的本地化字符串。
+        /// </summary>
+        public static string ConfigUseCompactTitleBar {
+            get {
+                return ResourceManager.GetString("ConfigUseCompactTitleBar", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 使用独立紧凑主窗口，将菜单合并到标题栏并保留系统按钮。默认关闭，重启生效；仅在兼容的 Windows 11 环境启用，不支持时保留原生标题栏。关闭并重启可恢复旧主窗口。 的本地化字符串。
+        /// </summary>
+        public static string ConfigUseCompactTitleBarDescription {
+            get {
+                return ResourceManager.GetString("ConfigUseCompactTitleBarDescription", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 是否更新 的本地化字符串。
         /// </summary>

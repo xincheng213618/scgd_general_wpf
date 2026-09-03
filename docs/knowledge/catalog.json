@@ -5268,6 +5268,44 @@
       "searchable": true
     },
     {
+      "knowledge_id": "engine.spectrum-device",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "主程序光谱仪的全连接方式搜索、设备配置分类和许可证读取入口；区分本机搜索、服务端刷新与实际连接。",
+      "aliases": [
+        "光谱仪搜不到",
+        "光谱仪连接方式",
+        "ConfigSpectrum",
+        "InfoSpectrum",
+        "GetSpectrSerialNumberAsync",
+        "SpectrumDeviceDiscovery",
+        "CMvSpectra",
+        "Gaolitong",
+        "光谱仪配置分类"
+      ],
+      "code_paths": [
+        "Engine/ColorVision.Engine/Services/Devices/Spectrum",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/LicenseManagerWindow.xaml.cs"
+      ],
+      "test_paths": [
+        "Test/Spectrum.Tests/SpectrumDeviceDiscoveryTests.cs"
+      ],
+      "related": [
+        "engine.devices",
+        "engine.native-bindings",
+        "ui.property-grid",
+        "plugins.spectrum"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine"
+      ],
+      "domain": "engine",
+      "title": "主程序光谱仪搜索与配置",
+      "source": "docs/04-api-reference/engine-components/spectrum-device.md",
+      "url": "/04-api-reference/engine-components/spectrum-device",
+      "searchable": true
+    },
+    {
       "knowledge_id": "engine.template-design",
       "knowledge_type": "topic",
       "status": "current",
@@ -5493,6 +5531,8 @@
         "Flow画布加载后节点丢失",
         "ST.Library.UI",
         "STNodeEditor",
+        "EnableWindowResizeDiagnostics",
+        "BeginResizeDiagnosticCapture",
         "STNodeTypeRegistry",
         "CVNodeContainer"
       ],
@@ -5500,18 +5540,21 @@
         "Engine/ST.Library.UI/README.md",
         "Engine/ST.Library.UI/ST.Library.UI.csproj",
         "Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs",
+        "Engine/ST.Library.UI/NodeEditor/STNodeEditor.ResizeDiagnostics.cs",
         "Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs",
         "Engine/ST.Library.UI/NodeContainer/CVNodeContainer.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/STNodeEditorWpfTests.cs",
         "Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs",
+        "Test/ColorVision.UI.Tests/STNodeEditorResizeDiagnosticsTests.cs",
         "Test/ColorVision.UI.Tests/STNodeTypeRegistryConcurrencyTests.cs"
       ],
       "related": [
         "flow.architecture",
         "flow.runtime",
-        "flow.workspace"
+        "flow.workspace",
+        "operations.main-window"
       ],
       "code_scopes": [
         "Engine/ST.Library.UI"
@@ -6676,13 +6719,32 @@
       "knowledge_id": "operations.main-window",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "主窗口如何挂接菜单、搜索、状态栏和工作区，以及现代停靠外观的主题覆盖与交互边界。",
+      "summary": "主窗口菜单、搜索、状态栏与工作区装配；紧凑标题栏为默认关闭、重启生效的 Windows 11 实验，停靠外观另有主题与交互边界。",
       "aliases": [
         "主窗口",
         "菜单不见了",
         "搜索框消失",
         "工作区",
         "MainWindow",
+        "CompactMainWindow",
+        "MainWindowFactory",
+        "紧凑标题栏",
+        "标题栏合并菜单",
+        "标题栏更多",
+        "标题栏按钮位置",
+        "标题栏图标颜色",
+        "MainWindowActionButtonStyle",
+        "TitleBarActionForeground",
+        "TitleBarActionInactiveForeground",
+        "EnableWindowResizeDiagnostics",
+        "MainWindowResizeDiagnostics",
+        "window-resize-diagnostics.mode",
+        "最大化闪烁",
+        "还原闪烁",
+        "UseCompactTitleBar",
+        "CompactTitleBarChrome",
+        "CompactTitleBarLayout",
+        "CompactTitleBarActions",
         "AvalonDock",
         "VS2026",
         "停靠标题",
@@ -6697,6 +6759,15 @@
         "ColorVision/MainWindow.xaml",
         "ColorVision/MainWindow.xaml.cs",
         "ColorVision/MainWindow.Hotkeys.cs",
+        "ColorVision/CompactMainWindow.cs",
+        "ColorVision/MainWindowFactory.cs",
+        "ColorVision/StartWindow.xaml.cs",
+        "ColorVision/MainWindowConfig.cs",
+        "ColorVision/Windowing/MainWindowResizeDiagnostics.cs",
+        "ColorVision/Windowing/CompactTitleBarChrome.cs",
+        "ColorVision/Windowing/CompactTitleBarVisibilityGuard.cs",
+        "ColorVision/Windowing/CompactTitleBarLayout.cs",
+        "ColorVision/Windowing/CompactTitleBarActions.cs",
         "ColorVision/Themes/AvalonDockTheme.cs",
         "ColorVision/Themes/AvalonDockModernLight.xaml",
         "ColorVision/Themes/AvalonDockModernDark.xaml",
@@ -6717,6 +6788,9 @@
         "Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs",
         "Test/ColorVision.UI.Tests/AvalonDockThemeBindingTests.cs",
         "Test/ColorVision.UI.Tests/MainWindowSearchShellTests.cs",
+        "Test/ColorVision.UI.Tests/WindowResizeDiagnosticsContractTests.cs",
+        "Test/ColorVision.UI.Tests/CompactTitleBarChromeTests.cs",
+        "Test/ColorVision.UI.Tests/CompactTitleBarIntegrationContractTests.cs",
         "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs",
         "Test/ColorVision.UI.Tests/SearchWindowHotkeyBridgeTests.cs",
         "Test/ColorVision.UI.Tests/SearchWindowHostTests.cs"
@@ -6729,6 +6803,7 @@
         "ui.status-bar",
         "ui.solution",
         "ui.documents",
+        "ui.themes",
         "platform.runtime",
         "operations.index",
         "ui.desktop-pet"
@@ -6736,6 +6811,7 @@
       "code_scopes": [
         "ColorVision",
         "ColorVision/Themes",
+        "ColorVision/Windowing",
         "UI/ColorVision.Solution",
         "UI/ColorVision.Themes",
         "UI/ColorVision.UI"
@@ -7301,6 +7377,9 @@
         "StartupRecoveryPluginScanner",
         "StartupInitializersCompleted",
         "MainWindowInitializer",
+        "MainWindowFactory",
+        "CompactMainWindow",
+        "UseCompactTitleBar",
         "LoadingPlugin",
         "startup-maintenance",
         "startup-skip-plugins",
@@ -7316,6 +7395,9 @@
         "ColorVision/ProgramTimer.cs",
         "ColorVision/StartWindow.xaml.cs",
         "ColorVision/MainWindow.xaml.cs",
+        "ColorVision/MainWindowFactory.cs",
+        "ColorVision/CompactMainWindow.cs",
+        "ColorVision/MainWindowConfig.cs",
         "ColorVision/SingleInstanceStartupPolicy.cs",
         "ColorVision/StartupFileOpenPolicy.cs",
         "ColorVision/OperationsApplicationRestartController.cs",
@@ -7344,6 +7426,7 @@
         "ui.wizards",
         "ui.localization",
         "ui.search",
+        "operations.main-window",
         "engine.rc-registration",
         "flow.architecture"
       ],
@@ -10072,7 +10155,11 @@
         "取消修改",
         "关闭回滚",
         "枚举下拉显示英文",
-        "EnumPropertiesEditor"
+        "EnumPropertiesEditor",
+        "命令自动生成",
+        "GenCommand",
+        "CommandDisplay",
+        "按钮分类"
       ],
       "code_paths": [
         "UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs",
@@ -10085,7 +10172,9 @@
         "UI/ColorVision.UI/PropertyEditor/Editor/EnumPropertiesEditor.cs",
         "UI/ColorVision.Common/Utilities/EnumUtils.cs",
         "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs",
-        "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"
+        "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs",
+        "UI/ColorVision.UI/PropertyEditor/PropertyEditorCommands.cs",
+        "UI/ColorVision.UI/PropertyEditor/CommandPanelStyles.xaml"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs",
@@ -10094,7 +10183,9 @@
         "Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs",
         "Test/ColorVision.UI.Tests/ListEditorTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs",
-        "Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs"
+        "Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs",
+        "Test/ColorVision.UI.Tests/CommandPanelTests.cs",
+        "Test/ColorVision.UI.Tests/DeviceCommandMetadataTests.cs"
       ],
       "related": [
         "ui.index",
@@ -10796,6 +10887,10 @@
         "XAML绑定失败",
         "ComboBoxItem",
         "GridViewColumnHeader",
+        "圆角菜单",
+        "右键菜单",
+        "MenuPopupCornerRadius",
+        "MenuItemSecondaryForeground",
         "ColorVision.Themes",
         "ThemeManager",
         "ThemeManager.Current",
@@ -10808,6 +10903,8 @@
         "CurrentThemeChanged",
         "CurrentUIThemeChanged",
         "ApplyCaption",
+        "TryLoadPackageIcon",
+        "PackageIcon.png",
         "ThemeConfig",
         "ThemePropertiesEditor",
         "AppsUseLightTheme"
@@ -10828,20 +10925,24 @@
         "UI/ColorVision.UI/DisPlayManager.cs",
         "ColorVision/App.xaml",
         "ColorVision/App.xaml.cs",
-        "ColorVision/StartWindow.xaml.cs"
+        "ColorVision/StartWindow.xaml.cs",
+        "ColorVision/CompactMainWindow.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ThemeSettingsTests.cs",
         "Test/ColorVision.UI.Tests/ThemeSubscriptionLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/GridViewColumnHeaderBindingTests.cs",
-        "Test/ColorVision.UI.Tests/ComboBoxItemBindingTests.cs"
+        "Test/ColorVision.UI.Tests/ComboBoxItemBindingTests.cs",
+        "Test/ColorVision.UI.Tests/CompactTitleBarIntegrationContractTests.cs",
+        "Test/ColorVision.UI.Tests/MenuThemeTests.cs"
       ],
       "related": [
         "ui.index",
         "ui.settings",
         "ui.property-grid",
-        "ui.configuration"
+        "ui.configuration",
+        "operations.main-window"
       ],
       "code_scopes": [
         "ColorVision",

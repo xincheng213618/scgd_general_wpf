@@ -742,6 +742,21 @@
         },
         {
           "text": {
+            "root": "ColorVision/Windowing"
+          },
+          "link": "/knowledge/code/source-ColorVision#module-436f6c6f72566973696f6e2f57696e646f77696e67",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "主窗口与入口装配"
+              },
+              "link": "/01-user-guide/interface/main-window"
+            }
+          ]
+        },
+        {
+          "text": {
             "root": "ColorVision/Wizards"
           },
           "link": "/knowledge/code/source-ColorVision#module-436f6c6f72566973696f6e2f57697a61726473",
@@ -2267,6 +2282,12 @@
                 "root": "算法结果交接、展示与导出"
               },
               "link": "/04-api-reference/engine-components/result-handoff-chain"
+            },
+            {
+              "text": {
+                "root": "主程序光谱仪搜索与配置"
+              },
+              "link": "/04-api-reference/engine-components/spectrum-device"
             },
             {
               "text": {

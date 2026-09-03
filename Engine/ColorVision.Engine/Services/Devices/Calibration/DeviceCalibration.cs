@@ -58,13 +58,19 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             ReleaseLocalCalibrationCacheCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
         }
 
-        [CommandDisplay("EditCalibration",Order =100)]
+        [CommandDisplay("EditCalibration",Order =100, CategoryOrder = 1)]
+        [Category("CalibrationCorrection")]
+        [Description("CommandCameraCalibrationHint")]
         public RelayCommand EditCalibrationCommand { get; set; }
 
-        [CommandDisplay("EditDisplayConfig", Order = -1)]
+        [CommandDisplay("EditDisplayConfig", Order = -1, CategoryOrder = 2)]
+        [Category("AcquisitionDisplay")]
+        [Description("CommandDisplayConfigHint")]
         public RelayCommand EditDisplayConfigCommand { get; }
 
-        [CommandDisplay("本地校正缓存管理")]
+        [CommandDisplay("本地校正缓存管理", CategoryOrder = 1)]
+        [Category("CalibrationCorrection")]
+        [Description("CommandCalibrationCacheHint")]
         public RelayCommand ReleaseLocalCalibrationCacheCommand { get; }
 
         private void EditDisplayConfig()
@@ -120,7 +126,9 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             }
         }
 
-        [CommandDisplay("ManagePhysicalCamera")]
+        [CommandDisplay("ManagePhysicalCamera", CategoryOrder = 0)]
+        [Category("DeviceConnection")]
+        [Description("CommandPhysicalCameraHint")]
         public RelayCommand OpenPhyCameraMangerCommand { get; set; }
 
         [RequiresPermission(PermissionMode.Administrator)]

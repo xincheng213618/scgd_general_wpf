@@ -1,8 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿using System;
 using ColorVision.UI;
-using cvColorVision;
-using System;
-using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
@@ -14,16 +11,16 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
     {
         public DeviceSpectrum Device { get; set; }
 
-        public InfoSpectrum(DeviceSpectrum mqttDeviceSp)
+        public InfoSpectrum(DeviceSpectrum device)
         {
-            Device = mqttDeviceSp;
+            Device = device;
             InitializeComponent();
         }
+
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
             PropertyEditorHelper.GenCommand(Device, CommandGrid);
-            Device.RefreshEmptySpectrum();
         }
 
         public void Dispose()

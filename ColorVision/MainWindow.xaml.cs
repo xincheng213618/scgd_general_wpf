@@ -25,6 +25,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -47,7 +48,11 @@ namespace ColorVision
         public DockViewManager DockViewManager => DockViewManager.GetInstance();
         public static MainWindowConfig Config => MainWindowConfig.Instance;
 
-        public MainWindow()
+        public MainWindow() : this(useStandardWindowAppearance: true)
+        {
+        }
+
+        protected MainWindow(bool useStandardWindowAppearance)
         {
             InitializeComponent();
             DockingManager1.PreviewMouseRightButtonDown += DockingManager1_PreviewMouseRightButtonDown;
@@ -56,10 +61,19 @@ namespace ColorVision
             var IsAdministrator = Tool.IsAdministrator();
             //Title += $"- {(IsAdministrator ? Properties.Resources.RunAsAdmin : Properties.Resources.NotRunAsAdmin)}";
             Title = "ColorVision";
-            this.ApplyCaption();
-            this.SetWindowFull(Config);
+            if (useStandardWindowAppearance)
+            {
+                this.ApplyCaption();
+                this.SetWindowFull(Config);
+            }
             HookUpdateNotification();
             
+        }
+
+        protected virtual void UpdateRightMenuVisibility()
+        {
+            RightMenuItemPanel.Visibility = ActualWidth < Menu1.ActualWidth + RightMenuItemPanel.ActualWidth + 100
+                ? Visibility.Collapsed : Visibility.Visible;
         }
 
         private void DockingManager1_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -130,7 +144,7 @@ namespace ColorVision
             Stopwatch phaseStopwatch = Stopwatch.StartNew();
             this.SizeChanged += (s, e) =>
             {
-                RightMenuItemPanel.Visibility = this.ActualWidth < Menu1.ActualWidth + RightMenuItemPanel.ActualWidth + 100 ? Visibility.Collapsed : Visibility.Visible;
+                UpdateRightMenuVisibility();
             };
 
             this.DataContext = Config;
@@ -322,6 +336,7 @@ namespace ColorVision
             UpdateNotificationButton.Visibility = CombinedUpdateCoordinator.HasPendingStartupUpdate
                 ? Visibility.Visible
                 : Visibility.Collapsed;
+            UpdateRightMenuVisibility();
         }
 
         private async void UpdateNotificationButton_Click(object sender, RoutedEventArgs e)
@@ -348,18 +363,27 @@ namespace ColorVision
             allSettings.Sort((a, b) => a.Order.CompareTo(b.Order));
             foreach (var item in allSettings)
             {
-                Button button = new Button
-                {
-                    Background = Brushes.Transparent,
-                    BorderThickness = new Thickness(0),
-                    Width = 20,
-                    Padding = new Thickness(0),
-                    Margin = new Thickness(0, 0, 5, 0)
-                };
-                button.Content = NormalizeRightMenuIcon(item.Icon);
-                button.Command = item.Command;
-                RightMenuItemPanel.Children.Add(button);
+                RightMenuItemPanel.Children.Add(CreateRightMenuButton(item));
             }
+        }
+
+        internal static Button CreateRightMenuButton(MenuItemMetadata item)
+        {
+            var button = new Button
+            {
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Width = 20,
+                Padding = new Thickness(0),
+                Margin = new Thickness(0, 0, 5, 0),
+                Content = NormalizeRightMenuIcon(item.Icon),
+                Command = item.Command,
+                ToolTip = item.Header,
+                Tag = item
+            };
+            if (!string.IsNullOrWhiteSpace(item.Header))
+                System.Windows.Automation.AutomationProperties.SetName(button, item.Header);
+            return button;
         }
 
         private static object? NormalizeRightMenuIcon(object? icon)
@@ -371,7 +395,10 @@ namespace ColorVision
                     textBlock.HorizontalAlignment = HorizontalAlignment.Center;
                     textBlock.VerticalAlignment = VerticalAlignment.Center;
                     textBlock.TextAlignment = TextAlignment.Center;
-                    textBlock.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+                    textBlock.SetBinding(TextBlock.ForegroundProperty, new Binding(nameof(Control.Foreground))
+                    {
+                        RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(Button), 1)
+                    });
                     break;
                 case Image image:
                     image.Width = RightMenuGlyphFontSize;

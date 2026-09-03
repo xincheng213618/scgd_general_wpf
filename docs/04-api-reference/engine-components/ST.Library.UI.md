@@ -3,10 +3,10 @@ knowledge_id: "flow.editor"
 knowledge_type: "reference"
 status: "current"
 summary: "说明 ST WPF 节点画布、端口、类型目录及 STN 兼容边界。"
-aliases: ["Flow画布加载后节点丢失","ST.Library.UI","STNodeEditor","STNodeTypeRegistry","CVNodeContainer"]
-code_paths: ["Engine/ST.Library.UI/README.md","Engine/ST.Library.UI/ST.Library.UI.csproj","Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/ST.Library.UI/NodeContainer/CVNodeContainer.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/STNodeEditorWpfTests.cs","Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs","Test/ColorVision.UI.Tests/STNodeTypeRegistryConcurrencyTests.cs"]
-related: ["flow.architecture","flow.runtime","flow.workspace"]
+aliases: ["Flow画布加载后节点丢失","ST.Library.UI","STNodeEditor","EnableWindowResizeDiagnostics","BeginResizeDiagnosticCapture","STNodeTypeRegistry","CVNodeContainer"]
+code_paths: ["Engine/ST.Library.UI/README.md","Engine/ST.Library.UI/ST.Library.UI.csproj","Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs","Engine/ST.Library.UI/NodeEditor/STNodeEditor.ResizeDiagnostics.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/ST.Library.UI/NodeContainer/CVNodeContainer.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/STNodeEditorWpfTests.cs","Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs","Test/ColorVision.UI.Tests/STNodeEditorResizeDiagnosticsTests.cs","Test/ColorVision.UI.Tests/STNodeTypeRegistryConcurrencyTests.cs"]
+related: ["flow.architecture","flow.runtime","flow.workspace","operations.main-window"]
 ---
 
 # ST.Library.UI
@@ -49,6 +49,14 @@ related: ["flow.architecture","flow.runtime","flow.workspace"]
 主/独立窗口命令与文档目标由[工作区契约](../../01-user-guide/workflow/design.md)维护，
 不是 ST 库职责。旧的 WinForms 编辑器、属性输入窗体、预览窗体和
 `STNodeEditorPannel` 是 WPF 组合控件。
+
+## 可选的绘制诊断
+
+开发构建显式传入 `EnableWindowResizeDiagnostics=true` 时，才编译 `STNodeEditor.ResizeDiagnostics.cs` 及原 `OnRender` 中的数值采样点。普通构建没有这些 API、数组或时间戳调用，也不改变正常节点绘制协议。
+
+诊断版每个编辑器默认仍不采样；宿主调用 `BeginResizeDiagnosticCapture(long untilTimestamp)` 开启或延长以 Stopwatch 时间戳为单位的采样期限。每实例最多保留 2048 个样本，容量满后只累计丢弃数，不自动扩大缓冲。记录逻辑/像素尺寸、DPI、画布缩放/偏移、节点数量、目标是否真实重建，以及 Ensure、GDI 绘制、WritePixels 和完整 OnRender 的时间边界；不记录节点名称、属性正文或业务结果。捕获不得改变渲染异常的传播。
+
+`StopResizeDiagnosticCapture()` 停止采样，`GetResizeDiagnosticCapture()` 为诊断导出取得复制快照；绘制期间不写文件或调用业务回调，编辑器 Dispose 后释放诊断缓冲。窗口层负责短时启用、匿名关联与本地导出，ST 库不依赖 MainWindow、Engine、全局配置或日志框架。真实主程序的入口和对照方法见[主窗口诊断构建](../../01-user-guide/interface/main-window.md#最大化与还原的诊断构建)。这些时间戳是调用耗时，不是 DWM/Present 或真实帧率。
 
 ## 与 ColorVision 的关系
 

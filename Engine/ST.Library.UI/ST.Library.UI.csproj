@@ -12,6 +12,9 @@
 		<Nullable>disable</Nullable>
 		<SignAssembly>False</SignAssembly>
 	</PropertyGroup>
+	<PropertyGroup Condition="'$(EnableWindowResizeDiagnostics)' == 'true'">
+		<DefineConstants>$(DefineConstants);COLORVISION_WINDOW_RESIZE_DIAGNOSTICS</DefineConstants>
+	</PropertyGroup>
 	<ItemGroup>
 	  <Compile Update="Properties\Resources.Designer.cs">
 	    <DesignTime>True</DesignTime>

@@ -484,4 +484,5 @@
   <data name="SettingsSectionAppearance" xml:space="preserve"><value>外觀與語言</value></data>
   <data name="SettingsSectionUpdates" xml:space="preserve"><value>更新與網路</value></data>
   <data name="SettingsSectionDiagnostics" xml:space="preserve"><value>日誌與診斷</value></data>
+  <data name="CommandOtherActions" xml:space="preserve"><value>其他操作</value></data>
 </root>

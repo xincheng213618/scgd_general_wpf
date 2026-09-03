@@ -35,6 +35,7 @@ namespace ColorVision.Rbac
             {
                 new MenuItemMetadata
                 {
+                    Header = ColorVision.Solution.Properties.Resources.UserCenter,
                     Order = 300,
                     Command = new RelayCommand(_ => new RbacManagerWindow
                     {

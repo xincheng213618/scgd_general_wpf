@@ -50,12 +50,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         /// <summary>
         /// 是否光通量模式
         /// </summary>
+        [DisplayName("SpectrumFluxMode")]
         public bool IsLuminousFluxMode { get => _IsLuminousFluxMode; set { if (_IsLuminousFluxMode == value) return; _IsLuminousFluxMode = value; OnPropertyChanged(); IsIsLuminousFluxModeChanged?.Invoke(this, value); } }
         private bool _IsLuminousFluxMode;
 
         public event EventHandler<bool> IsIsLuminousFluxModeChanged;
 
         [PropertyVisibility(nameof(IsLuminousFluxMode))]
+        [DisplayName("SpectrumFluxDivisor")]
         public double Divisor { get => _Divisor; set { _Divisor = value; OnPropertyChanged(); } }
         private double _Divisor = 1.0;
 
@@ -68,12 +70,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public bool IsWithND { get => _IsWithND; set { _IsWithND = value; OnPropertyChanged(); } }
         private bool _IsWithND;
 
+        [DisplayName("SpectrumAutoDark")]
         public bool IsAutoDark { get => _IsAutoDark; set { if (value) IsShutter = false; _IsAutoDark = value; OnPropertyChanged(); } }
         private bool _IsAutoDark;
+        [DisplayName("SpectrumUseShutter")]
         public bool IsShutter { get => _IsShutter; set { if (value) IsAutoDark = false; _IsShutter = value; OnPropertyChanged(); } }
         private bool _IsShutter;
 
 
+        [DisplayName("SpectrumIntegrationTime")]
         public double IntTime { get => _IntTime; set { _IntTime = value; OnPropertyChanged(); } }
         private double _IntTime = 100;
 
@@ -81,6 +86,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public double MaxIntTime { get => _MaxIntTime; set { _MaxIntTime = value; OnPropertyChanged(); } }
         private double _MaxIntTime = 6000;
 
+        [DisplayName("AverageTimes")]
         public int AveNum { get => _AveNum; set { _AveNum = value; OnPropertyChanged(); } }
         private int _AveNum = 1;
 
@@ -88,14 +94,17 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public int MaxAveNum { get => _MaxAveNum; set { _MaxAveNum = value; OnPropertyChanged(); } }
         private int _MaxAveNum = 10;
 
+        [DisplayName("SpectrumNdPosition")]
         public int PortNum { get => _PortNum; set { _PortNum = value; OnPropertyChanged(); } }
         private int _PortNum = 1;
 
 
 
 
+        [DisplayName("SpectrumVoltage")]
         public double V { get => _V; set { _V = value; OnPropertyChanged(); } }
         private double _V = 5;
+        [DisplayName("SpectrumCurrent")]
         public double I { get => _I; set { _I = value; OnPropertyChanged(); } }
         private double _I = 1;
 
@@ -127,35 +136,54 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public DisplaySpectrumConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplaySpectrumConfig>(Config.Code);
 
         public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; } = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
+
+        [CommandDisplay("RefreshDeviceList", Order = 1, CategoryOrder = 0)]
+        [Category("DeviceConnection")]
+        [Description("SpectrumRefreshHint")]
         public RelayCommand RefreshDeviceIdCommand { get; set; }
 
-        [CommandDisplay("UploadLic")]
+        [CommandDisplay("UploadLic", Order = 2, CategoryOrder = 0)]
+        [Category("DeviceConnection")]
+        [Description("SpectrumLicenseHint")]
         public RelayCommand UploadLincenseCommand { get; set; }
 
-        [CommandDisplay("AdaptiveZeroCalibration")]
+        [CommandDisplay("AdaptiveZeroCalibration", Order = 3, CategoryOrder = 1)]
 
+        [Category("CalibrationCorrection")]
+        [Description("SpectrumDarkHint")]
         public RelayCommand SelfAdaptionInitDarkCommand { get; set; }
 
-        [CommandDisplay("ApaptivezeroCaliSet")]
+        [CommandDisplay("ApaptivezeroCaliSet", Order = 4, CategoryOrder = 1)]
+        [Category("CalibrationCorrection")]
+        [Description("SpectrumDarkSettingsHint")]
         public RelayCommand SelfAdaptionInitDarkSettingCommand { get; set; }
 
-        [CommandDisplay("EmissionSP100Set")]
+        [CommandDisplay("EmissionSP100Set", Order = 5, CategoryOrder = 1)]
+        [Category("CalibrationCorrection")]
+        [Description("SpectrumSp100Hint")]
         public RelayCommand EmissionSP100SettingCommand { get; set; }
 
         public event Action SelfAdaptionInitDarkStarted;
         public event Action SelfAdaptionInitDarkCompleted;
 
-        [CommandDisplay("GetSpectrSerialNumber")]
+        [CommandDisplay("SpectrumSearchDevices", Order = 0, CategoryOrder = 0)]
+        [Category("DeviceConnection")]
+        [Description("SpectrumSearchHint")]
         public RelayCommand GetSpectrSerialNumberCommand { get; set; }
 
-        [CommandDisplay("CalibrationGroup", Order = -4)]
+        [CommandDisplay("CalibrationGroup", Order = 0, CategoryOrder = 1)]
+        [Category("CalibrationCorrection")]
+        [Description("SpectrumCalibrationGroupHint")]
         public RelayCommand OpenCalibrationGroupWindowCommand { get; set; }
 
-        [CommandDisplay("ApplyCalibrationGroup", Order = -5)]
+        [CommandDisplay("ApplyCalibrationGroup", Order = 1, CategoryOrder = 1)]
+        [Category("CalibrationCorrection")]
+        [Description("SpectrumApplyGroupHint")]
         public RelayCommand ApplyCalibrationGroupCommand { get; set; }
 
-        [CommandDisplay("光谱校正", Order = -3)]
-        [Description("使用服务测量结果进行完整光谱或单独亮度校正")]
+        [CommandDisplay("SpectrumCorrection", Order = 2, CategoryOrder = 1)]
+        [Category("CalibrationCorrection")]
+        [Description("SpectrumCorrectionHint")]
         public RelayCommand OpenSpectrumCorrectionCommand { get; set; }
 
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
@@ -202,15 +230,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             SelfAdaptionInitDarkSettingCommand = new RelayCommand(a => SelfAdaptionInitDarkSetting());
             EmissionSP100SettingCommand = new RelayCommand(a => EmissionSP100Setting());
 
-            GetSpectrSerialNumberCommand = new RelayCommand(a => GetSpectrSerialNumber());
+            GetSpectrSerialNumberCommand = new RelayCommand(async _ => await GetSpectrSerialNumberAsync(), _ => !IsDiscoveringSpectrometers);
             EditDisplayConfigCommand = new RelayCommand(a => EditDisplayConfig());
             OpenCalibrationGroupWindowCommand = new RelayCommand(a => OpenCalibrationGroupWindow());
             ApplyCalibrationGroupCommand = new RelayCommand(a => ApplyActiveCalibrationGroup(true));
             OpenSpectrumCorrectionCommand = new RelayCommand(async _ => await OpenSpectrumCorrectionAsync());
 
             OpenSpectrumLogCommand = new RelayCommand(a => OpenSpectrumLog());
-            ContextMenu.Items.Add(new MenuItem() { Header = "SpectrumLog", Command = OpenSpectrumLogCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "CalibrationGroup", Command = OpenCalibrationGroupWindowCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.SpectrumLog, Command = OpenSpectrumLogCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.CalibrationGroup, Command = OpenCalibrationGroupWindowCommand });
         }
 
         public async Task OpenSpectrumCorrectionAsync(CancellationToken cancellationToken = default)
@@ -838,7 +866,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 image);
         }
 
-        [CommandDisplay("SpectrumLog")]
+        [CommandDisplay("SpectrumLog", CategoryOrder = 3)]
+        [Category("MaintenanceDiagnostics")]
+        [Description("SpectrumLogHint")]
         public RelayCommand OpenSpectrumLogCommand { get; set; }
         public static void OpenSpectrumLog()
         {
@@ -862,7 +892,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             }
         }
 
-        [CommandDisplay("EditDisplayConfig", Order =-1)]
+        [CommandDisplay("EditDisplayConfig", Order =-1, CategoryOrder = 2)]
+        [Category("AcquisitionDisplay")]
+        [Description("SpectrumDisplayHint")]
         public RelayCommand EditDisplayConfigCommand { get; set; }
         public void EditDisplayConfig()
         {
@@ -993,63 +1025,27 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             return 0;
         }
 
-        public void GetSpectrSerialNumber()
+        public bool IsDiscoveringSpectrometers { get => _isDiscoveringSpectrometers; private set { _isDiscoveringSpectrometers = value; OnPropertyChanged(); } }
+        private bool _isDiscoveringSpectrometers;
+
+        public async Task GetSpectrSerialNumberAsync()
         {
-            int i = 0;
-            if (int.TryParse(Config.ComPort, out int z))
-            {
-                i = z;
-            }
-            int bufferLength = 1024;
-            StringBuilder stringBuilder = new StringBuilder(bufferLength);
-
-            int ret = Spectrometer.CM_Emission_GetAllSN((int)Config.SpectrometerType,i, stringBuilder, bufferLength);
-
-            string raw = stringBuilder.ToString();
-            string display = FormatSerialNumberResult(raw);
-            MessageBox1.Show(Application.Current.GetActiveWindow(), display, "Sprectrum");
-        }
-
-        /// <summary>
-        /// 将CM_Emission_GetAllSN返回的JSON格式化为用户友好的显示文本
-        /// </summary>
-        internal static string FormatSerialNumberResult(string raw)
-        {
-            if (string.IsNullOrWhiteSpace(raw))
-                return Properties.Resources.NoDeviceDetected;
-
+            if (IsDiscoveringSpectrometers)
+                return;
+            IsDiscoveringSpectrometers = true;
+            GetSpectrSerialNumberCommand.RaiseCanExecuteChanged();
+            int.TryParse(Config.ComPort, out int port);
             try
             {
-                var token = Newtonsoft.Json.Linq.JToken.Parse(raw);
-                var snList = new List<string>();
-
-                if (token is Newtonsoft.Json.Linq.JArray arr)
-                {
-                    foreach (var item in arr)
-                        snList.Add(item.ToString());
-                }
-                else if (token is Newtonsoft.Json.Linq.JObject obj)
-                {
-                    foreach (var prop in obj.Properties())
-                        snList.Add(prop.Value.ToString());
-                }
-                else
-                {
-                    snList.Add(token.ToString());
-                }
-
-                if (snList.Count == 0)
-                    return Properties.Resources.NoDeviceDetected;
-
-                if (snList.Count == 1)
-                    return string.Format(Properties.Resources.DeviceSerialNumber, snList[0]);
-
-                return string.Format(Properties.Resources.DevicesDetected, snList.Count) + "\n" + string.Join("\n", snList.Select((sn, idx) => $"  {idx + 1}. {sn}"));
+                var results = await Task.Run(() => SpectrumDeviceDiscovery.Discover(port, Spectrometer.CM_Emission_GetAllSN));
+                foreach (SpectrumDiscoveryResult result in results.Where(result => result.Error != null))
+                    log.Warn($"光谱仪搜索失败: Type={result.Type}, Port={result.ComPort}, NativeResult={result.NativeResult}, Error={result.Error}");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), SpectrumDeviceDiscovery.FormatResults(results), Properties.Resources.SpectrumSearchDevices);
             }
-            catch
+            finally
             {
-                // JSON解析失败，直接显示原始内容
-                return raw;
+                IsDiscoveringSpectrometers = false;
+                GetSpectrSerialNumberCommand.RaiseCanExecuteChanged();
             }
         }
 
@@ -1211,18 +1207,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     string result = string.Join(",", strings);
                     MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.AllSpectrumDeviceInfo + Environment.NewLine + result);
                 }
-                RefreshEmptySpectrum();
             };
 
         }
-        public void RefreshEmptySpectrum()
-        {
-             Count = SysResourceDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "type", 103 } }).Where(a => string.IsNullOrWhiteSpace(a.Value)).ToList().Count;
-        }
-
-        public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
-        private int _Count;
-
         public override UserControl GetDeviceInfo() => new InfoSpectrum(this);
 
         public Lazy<DisplaySpectrum> DisplayLazy { get; set; }

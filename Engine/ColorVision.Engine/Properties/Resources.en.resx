@@ -4929,4 +4929,95 @@ Please close camera or other programs using this serial port, or check device co
   <data name="PoiAutoFitSize" xml:space="preserve"><value>Auto-fit size</value></data>
   <data name="PoiAutoFitSizeToolTip" xml:space="preserve"><value>Estimate the circle radius or rectangle size from the quadrilateral and grid counts, and use Internal placement. Gaps, overlaps and integer rounding are allowed. You can adjust the values manually; click Draw to generate points.</value></data>
   <data name="PoiAutoFitSizeFailed" xml:space="preserve"><value>Cannot fit the sampling size. Check that the quadrilateral is valid, row and column counts are at least 1, and the area can contain a whole-pixel sampling window. Set the size manually for an area collapsed to a point.</value></data>
+  <data name="SpectrumSettingsTitle" xml:space="preserve"><value>Spectrometer settings</value></data>
+  <data name="SpectrumDeviceConnection" xml:space="preserve"><value>Device and connection</value></data>
+  <data name="SpectrumCalibrationCorrection" xml:space="preserve"><value>Calibration and correction</value></data>
+  <data name="SpectrumAcquisitionDisplay" xml:space="preserve"><value>Acquisition and display</value></data>
+  <data name="SpectrumSearchDevices" xml:space="preserve"><value>Find spectrometers</value></data>
+  <data name="SpectrumSearchHint" xml:space="preserve"><value>Search all supported drivers</value></data>
+  <data name="SpectrumRefreshHint" xml:space="preserve"><value>Refresh service devices and licenses</value></data>
+  <data name="SpectrumLicenseHint" xml:space="preserve"><value>Import local license files</value></data>
+  <data name="CalibrationGroup" xml:space="preserve"><value>Calibration groups</value></data>
+  <data name="ApplyCalibrationGroup" xml:space="preserve"><value>Apply active group</value></data>
+  <data name="SpectrumCalibrationGroupHint" xml:space="preserve"><value>Wavelength, magnitude and ND mapping</value></data>
+  <data name="SpectrumApplyGroupHint" xml:space="preserve"><value>Load calibration and restart service</value></data>
+  <data name="SpectrumCorrection" xml:space="preserve"><value>Spectrum correction</value></data>
+  <data name="SpectrumCorrectionHint" xml:space="preserve"><value>Spectrum or luminance correction</value></data>
+  <data name="SpectrumDarkHint" xml:space="preserve"><value>Run adaptive dark calibration</value></data>
+  <data name="SpectrumDarkSettingsHint" xml:space="preserve"><value>Integration start, interval and steps</value></data>
+  <data name="EmissionSP100Set" xml:space="preserve"><value>SP100 dark current</value></data>
+  <data name="SpectrumSp100Hint" xml:space="preserve"><value>Dark pixel range and mean threshold</value></data>
+  <data name="SpectrumDisplayHint" xml:space="preserve"><value>Integration, averaging and display</value></data>
+  <data name="SpectrumLog" xml:space="preserve"><value>Spectrometer log</value></data>
+  <data name="SpectrumLogHint" xml:space="preserve"><value>Connection and measurement logs</value></data>
+  <data name="SpectrumDiscoveryFailed" xml:space="preserve"><value>Discovery failed, return code: {0}</value></data>
+  <data name="SpectrumDiscoveryHint" xml:space="preserve"><value>Search results by driver. Configure the device with its detected driver and serial number.</value></data>
+  <data name="ConfigSpectrum" xml:space="preserve"><value>General</value></data>
+  <data name="SpectrumSN" xml:space="preserve"><value>Device serial number</value></data>
+  <data name="SpectrumComPort" xml:space="preserve"><value>Serial port</value></data>
+  <data name="SpectrumActiveGroup" xml:space="preserve"><value>Active calibration group</value></data>
+  <data name="SpectrumShutterEnabled" xml:space="preserve"><value>Enable shutter</value></data>
+  <data name="SpectrumShutterSettings" xml:space="preserve"><value>Shutter settings</value></data>
+  <data name="SpectrumDarkSettings" xml:space="preserve"><value>Adaptive dark settings</value></data>
+  <data name="SpectrumNdSettings" xml:space="preserve"><value>ND filter wheel settings</value></data>
+  <data name="SpectrumFileSettings" xml:space="preserve"><value>File storage settings</value></data>
+  <data name="SpectrumAcquisitionSettings" xml:space="preserve"><value>Acquisition settings</value></data>
+  <data name="SpectrumGroupName" xml:space="preserve"><value>Group name</value></data>
+  <data name="SpectrumNdIndex" xml:space="preserve"><value>ND position index</value></data>
+  <data name="SpectrumStartWavelength" xml:space="preserve"><value>Start wavelength (nm)</value></data>
+  <data name="SpectrumEndWavelength" xml:space="preserve"><value>End wavelength (nm)</value></data>
+  <data name="SpectrumNdEnabled" xml:space="preserve"><value>Enable ND filter wheel</value></data>
+  <data name="SpectrumNdBind" xml:space="preserve"><value>Bind filter wheel device</value></data>
+  <data name="SpectrumNdDevice" xml:space="preserve"><value>Filter wheel device</value></data>
+  <data name="SpectrumNdReset" xml:space="preserve"><value>Allow ND reset</value></data>
+  <data name="SpectrumNdMaxTime" xml:space="preserve"><value>ND maximum exposure (ms)</value></data>
+  <data name="SpectrumNdMinTime" xml:space="preserve"><value>ND minimum exposure (ms)</value></data>
+  <data name="SpectrumNdRates" xml:space="preserve"><value>ND attenuation ratios</value></data>
+  <data name="SpectrumNdGroups" xml:space="preserve"><value>ND calibration group names</value></data>
+  <data name="SpectrumSp100Enabled" xml:space="preserve"><value>Enable dark current compensation</value></data>
+  <data name="SpectrumSp100Start" xml:space="preserve"><value>Start pixel</value></data>
+  <data name="SpectrumSp100End" xml:space="preserve"><value>End pixel</value></data>
+  <data name="SpectrumSp100Threshold" xml:space="preserve"><value>Mean threshold</value></data>
+  <data name="SpectrumOpenShutter" xml:space="preserve"><value>Open shutter command</value></data>
+  <data name="SpectrumCloseShutter" xml:space="preserve"><value>Close shutter command</value></data>
+  <data name="SpectrumFluxMode" xml:space="preserve"><value>Luminous flux mode</value></data>
+  <data name="SpectrumFluxDivisor" xml:space="preserve"><value>Luminous flux divisor</value></data>
+  <data name="SpectrumAutoDark" xml:space="preserve"><value>Automatic dark calibration</value></data>
+  <data name="SpectrumUseShutter" xml:space="preserve"><value>Use shutter</value></data>
+  <data name="SpectrumIntegrationTime" xml:space="preserve"><value>Integration time (ms)</value></data>
+  <data name="SpectrumNdPosition" xml:space="preserve"><value>ND position</value></data>
+  <data name="SpectrumVoltage" xml:space="preserve"><value>Voltage (V)</value></data>
+  <data name="SpectrumCurrent" xml:space="preserve"><value>Current (A)</value></data>
+  <data name="SpectrumCalibrationFileSettingsHint" xml:space="preserve"><value>Manage wavelength and magnitude files in the calibration groups window.</value></data>
+  <data name="ShutterConfig" xml:space="preserve"><value>Shutter settings</value></data>
+  <data name="SelfAdaptionInitDark" xml:space="preserve"><value>Adaptive dark settings</value></data>
+  <data name="NDConfig" xml:space="preserve"><value>ND filter wheel settings</value></data>
+  <data name="GetDataConfig" xml:space="preserve"><value>Acquisition settings</value></data>
+  <data name="DisplaySpectrumConfig" xml:space="preserve"><value>Acquisition and display</value></data>
+  <data name="SpectrumCalibrationGroup" xml:space="preserve"><value>Calibration group</value></data>
+  <data name="DeviceConnection" xml:space="preserve"><value>Device and connection</value></data>
+  <data name="CalibrationCorrection" xml:space="preserve"><value>Calibration and correction</value></data>
+  <data name="AcquisitionDisplay" xml:space="preserve"><value>Acquisition and display</value></data>
+  <data name="MaintenanceDiagnostics" xml:space="preserve"><value>Maintenance and diagnostics</value></data>
+  <data name="CameraLog" xml:space="preserve"><value>Camera log</value></data>
+  <data name="EditCalibrationFile" xml:space="preserve"><value>Calibration files</value></data>
+  <data name="CommandEditConfigHint" xml:space="preserve"><value>Connection, device and runtime settings</value></data>
+  <data name="CommandRestartHint" xml:space="preserve"><value>Restart the current device service</value></data>
+  <data name="CommandResetHint" xml:space="preserve"><value>Restore default device settings</value></data>
+  <data name="CommandSavePathHint" xml:space="preserve"><value>Data and file storage location</value></data>
+  <data name="CommandDeleteHint" xml:space="preserve"><value>Delete the current device resource</value></data>
+  <data name="CommandCameraLogHint" xml:space="preserve"><value>View camera service logs</value></data>
+  <data name="CommandCalibrationCacheHint" xml:space="preserve"><value>Inspect and release local calibration cache</value></data>
+  <data name="CommandCameraCalibrationHint" xml:space="preserve"><value>Configure associated calibration files</value></data>
+  <data name="CommandAutoExposureHint" xml:space="preserve"><value>Manage auto exposure templates</value></data>
+  <data name="CommandAutoFocusHint" xml:space="preserve"><value>Manage auto focus templates</value></data>
+  <data name="CommandCameraParametersHint" xml:space="preserve"><value>Manage camera acquisition templates</value></data>
+  <data name="CommandPhysicalCameraHint" xml:space="preserve"><value>View and configure physical cameras</value></data>
+  <data name="CommandRefreshDevicesHint" xml:space="preserve"><value>Refresh the service device list</value></data>
+  <data name="CommandDisplayConfigHint" xml:space="preserve"><value>Acquisition and result display options</value></data>
+  <data name="SmuTemplateSettings" xml:space="preserve"><value>Source meter templates</value></data>
+  <data name="CommandSmuTemplateHint" xml:space="preserve"><value>Manage source meter measurement templates</value></data>
+  <data name="CommandPgTemplateHint" xml:space="preserve"><value>Manage PG image and output templates</value></data>
+  <data name="CommandAlgorithmPluginHint" xml:space="preserve"><value>Upload service algorithm plugins</value></data>
+  <data name="CommandAlgorithmConfigHint" xml:space="preserve"><value>Manage third party algorithm settings</value></data>
 </root>

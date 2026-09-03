@@ -29,9 +29,13 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         public IDisplayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisplayConfigBase>(Config.Code);
 
 
-        [CommandDisplay("UploadThridPartPlusIn")]
+        [CommandDisplay("UploadThridPartPlusIn", CategoryOrder = 3)]
+        [Category("MaintenanceDiagnostics")]
+        [Description("CommandAlgorithmPluginHint")]
         public RelayCommand UploadPluginCommand { get; set; }
-        [CommandDisplay("ThirdPartAlgorithmConfig")]
+        [CommandDisplay("ThirdPartAlgorithmConfig", CategoryOrder = 0)]
+        [Category("DeviceConnection")]
+        [Description("CommandAlgorithmConfigHint")]
         public RelayCommand ThirdPartyAlgorithmsManagerCommand { get; set; }
 
         public DeviceThirdPartyAlgorithms(SysResourceModel sysResourceModel) : base(sysResourceModel)

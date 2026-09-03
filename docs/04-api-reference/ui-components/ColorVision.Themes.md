@@ -3,10 +3,10 @@ knowledge_id: "ui.themes"
 knowledge_type: "topic"
 status: "current"
 summary: "在外观与语言中切换主题；ThemeManager 的资源应用、系统跟随、窗口外观和公共控件样式，以及即时预览与保存的区别。"
-aliases: ["切换深色主题","跟随系统","外观与语言","主题切换为什么不生效","跟随系统但标题栏没变","强制主题重复资源字典","主题预览会自动保存吗","主题系统事件订阅释放","XAML绑定失败","ComboBoxItem","GridViewColumnHeader","ColorVision.Themes","ThemeManager","ThemeManager.Current","Theme","ApplyTheme","ForceApplyTheme","ApplyThemeChanged","CurrentTheme","CurrentUITheme","CurrentThemeChanged","CurrentUIThemeChanged","ApplyCaption","ThemeConfig","ThemePropertiesEditor","AppsUseLightTheme"]
-code_paths: ["UI/ColorVision.Themes/README.md","UI/ColorVision.Themes/Theme.cs","UI/ColorVision.Themes/ThemeManager.cs","UI/ColorVision.Themes/ThemeManagerExtensions.cs","UI/ColorVision.Themes/Themes","UI/ColorVision.Themes/ColorVision.Themes.csproj","UI/ColorVision.UI/Themes/ThemeConfig.cs","UI/ColorVision.UI/Themes/ThemePropertiesEditor.cs","UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs","UI/ColorVision.UI.Desktop/Settings/MenuOptions.cs","UI/ColorVision.UI.Desktop/Settings/SettingSearchProvider.cs","UI/ColorVision.UI/Extension/IIconExtension.cs","UI/ColorVision.UI/DisPlayManager.cs","ColorVision/App.xaml","ColorVision/App.xaml.cs","ColorVision/StartWindow.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ThemeSettingsTests.cs","Test/ColorVision.UI.Tests/ThemeSubscriptionLifecycleTests.cs","Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs","Test/ColorVision.UI.Tests/GridViewColumnHeaderBindingTests.cs","Test/ColorVision.UI.Tests/ComboBoxItemBindingTests.cs"]
-related: ["ui.index","ui.settings","ui.property-grid","ui.configuration"]
+aliases: ["切换深色主题","跟随系统","外观与语言","主题切换为什么不生效","跟随系统但标题栏没变","强制主题重复资源字典","主题预览会自动保存吗","主题系统事件订阅释放","XAML绑定失败","ComboBoxItem","GridViewColumnHeader","圆角菜单","右键菜单","MenuPopupCornerRadius","MenuItemSecondaryForeground","ColorVision.Themes","ThemeManager","ThemeManager.Current","Theme","ApplyTheme","ForceApplyTheme","ApplyThemeChanged","CurrentTheme","CurrentUITheme","CurrentThemeChanged","CurrentUIThemeChanged","ApplyCaption","TryLoadPackageIcon","PackageIcon.png","ThemeConfig","ThemePropertiesEditor","AppsUseLightTheme"]
+code_paths: ["UI/ColorVision.Themes/README.md","UI/ColorVision.Themes/Theme.cs","UI/ColorVision.Themes/ThemeManager.cs","UI/ColorVision.Themes/ThemeManagerExtensions.cs","UI/ColorVision.Themes/Themes","UI/ColorVision.Themes/ColorVision.Themes.csproj","UI/ColorVision.UI/Themes/ThemeConfig.cs","UI/ColorVision.UI/Themes/ThemePropertiesEditor.cs","UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs","UI/ColorVision.UI.Desktop/Settings/MenuOptions.cs","UI/ColorVision.UI.Desktop/Settings/SettingSearchProvider.cs","UI/ColorVision.UI/Extension/IIconExtension.cs","UI/ColorVision.UI/DisPlayManager.cs","ColorVision/App.xaml","ColorVision/App.xaml.cs","ColorVision/StartWindow.xaml.cs","ColorVision/CompactMainWindow.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ThemeSettingsTests.cs","Test/ColorVision.UI.Tests/ThemeSubscriptionLifecycleTests.cs","Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs","Test/ColorVision.UI.Tests/GridViewColumnHeaderBindingTests.cs","Test/ColorVision.UI.Tests/ComboBoxItemBindingTests.cs","Test/ColorVision.UI.Tests/CompactTitleBarIntegrationContractTests.cs","Test/ColorVision.UI.Tests/MenuThemeTests.cs"]
+related: ["ui.index","ui.settings","ui.property-grid","ui.configuration","operations.main-window"]
 ---
 
 # 主题选择、资源应用与窗口外观
@@ -65,15 +65,19 @@ related: ["ui.index","ui.settings","ui.property-grid","ui.configuration"]
 
 `window.ApplyCaption(Icon: true)` 在下一次 `Loaded` 执行时取得 HWND，应用初始 `CurrentUITheme`，并建立后续订阅；正常完成后移除这次 Loaded 处理器，在 `Closed` 解除主题处理器。应在窗口首次加载前调用一次；它没有重复调用保护，也不会在已经 Loaded 时立即补执行。反复调用会建立多份处理器。
 
-图标优先读取窗口类型所在程序集目录的 `PackageIcon.png`，用 OnLoad 解码并冻结；读取失败且 `Icon=true` 时回退到主题库的默认图标。找到包图标时，即使 `Icon=false` 仍会赋值；这个参数只控制默认图标分支。默认图标为 `Assets/Image/ColorVision.ico`（非 Dark）或 `ColorVision1.ico`（Dark），不是任意窗口原图标的保留策略。
+公共只读辅助方法 `ThemeManagerExtensions.TryLoadPackageIcon(Window)` 从窗口实际类型所在程序集目录读取 `PackageIcon.png`，以 `BitmapCacheOption.OnLoad` 解码并冻结后返回 `BitmapImage`；目录或文件不可用、解码失败等异常返回 null。它不赋值 `Window.Icon`，不建立窗口事件订阅，也不调用 DWM 或设置标题色。调用方决定如何应用与缓存图标，不必为了复用图标读取而调用整套 `ApplyCaption`。
 
-关键限制：后续订阅是 `CurrentThemeChanged`，不是 `CurrentUIThemeChanged`。切换到 UseSystem 时它直接收到 UseSystem，按非深色处理；随后仅 Windows 应用主题变化，或仅强制应用资源，不会通知此处理器。因此当前不能承诺“跟随系统后标题栏/默认图标始终同步实际配色”。
+`ApplyCaption` 优先使用该方法读取的包图标；读取失败且 `Icon=true` 时回退到主题库的默认图标。找到包图标时，即使 `Icon=false` 仍会赋值；这个参数只控制默认图标分支。默认图标为 `Assets/Image/ColorVision.ico`（非 Dark）或 `ColorVision1.ico`（Dark），不是任意窗口原图标的保留策略。
+
+关键限制：`ApplyCaption` 的后续订阅是 `CurrentThemeChanged`，不是 `CurrentUIThemeChanged`。切换到 UseSystem 时它直接收到 UseSystem，按非深色处理；随后仅 Windows 应用主题变化，或仅强制应用资源，不会通知此处理器。因此通过该方法接入的窗口不能承诺“跟随系统后标题栏/默认图标始终同步实际配色”。
 
 `SetWindowTitleBarColor` 先把 caption/border 色恢复为 DWM 默认，再分别调用旧/新沉浸式暗色属性：Dark 为 1，其余为 0。DWM 返回码被丢弃，没有返回实际生效状态或兼容性重试保证。包图标读取的 catch 不覆盖整个窗口初始化；资源加载、事件或原生调用异常不具备统一降级事务。
 
 `BaseWindow` 不自动调用 `ApplyCaption`：它提供默认样式、窗口命令和 HWND hook。启用 `IsBlurEnabled` 时在首次 Loaded 初始化背景效果，订阅的是 `CurrentUIThemeChanged`；关闭时解除主题订阅和 HWND hook。默认未启用模糊，属性在 Loaded 后改变也没有自动初始化回调。不要把继承 BaseWindow 当成标题栏跟随的替代保证。
 
 `ApplyCaption` 和 BaseWindow 解除主题订阅时都重新读取 `ThemeManager.Current`，未保存最初的发布者；窗口存活期间替换全局实例可能使旧订阅留下。这与启动窗口显式保存 `_subscribedThemeManager` 的实现不同。
+
+默认主窗口 `MainWindow` 保留 `ApplyCaption`；启动工厂按默认关闭、重启生效的开关选择 `CompactMainWindow : MainWindow` 时，由派生窗口单独拥有紧凑标题栏主题。紧凑路径附加成功后缓存 `TryLoadPackageIcon` 的结果，后续切换主题仍优先保留包图标；没有包图标时才按实际主题创建并冻结默认图标。它捕获实际的主题管理器，订阅 `CurrentUIThemeChanged`，切回 UI 线程处理并在 Closed 向原发布者解绑；不同时调用 `ApplyCaption` 重置紧凑标题色。附加条件不满足或初始化失败时，同一窗口实例回到 `ApplyCaption` 原生外观路径。启动路由、非分层窗口、DWM 默认边框及实验验证边界见[主窗口与紧凑标题栏](../../01-user-guide/interface/main-window.md)。
 
 ## ThemeConfig、即时预览与落盘
 
@@ -106,6 +110,25 @@ related: ["ui.index","ui.settings","ui.property-grid","ui.configuration"]
 
 `ComboBoxItemBindingTests` 使用真实主题检查未挂载项、弹出层对齐的动态继承和关闭/刷新后的解绑。`GridViewColumnHeaderBindingTests` 检查未挂载列头，以及默认/`GridViewColumnHeaderBase` 列头的绑定诊断、字号继承与调整列宽模板；用户窗口中的鼠标拖动、排序和主题切换仍需单独验证。
 
+## 菜单的共享外观
+
+`Themes/Menu.xaml` 统一顶层下拉、级联子菜单和右键菜单的浮层外观：8 DIP 圆角、1 DIP 淡描边和 4 DIP 内边距；菜单项最小高度为 26 DIP，上下内边距为 2 DIP，悬停高亮使用 5 DIP 圆角。分隔线上下各留白 3 DIP。顶层菜单标题保留紧凑尺寸，不套用下拉项最小高度。
+
+同级菜单项按实际内容共享列宽：存在图标或勾选项时才保留图标列，普通 16 DIP 图标加右侧 6 DIP 留白、18 DIP 勾选框加右侧 4 DIP 留白均占 22 DIP；未勾选的可勾选项仍占位。存在快捷键时才保留标题与快捷键之间的 12 DIP 间距；存在子菜单时才保留箭头列，由 6 DIP 箭头及左侧 6 DIP 留白撑开。纯文字菜单自动收起这些空列，同级混合项目仍保持标题、快捷键和箭头对齐；自定义宽图标按实际测量扩展图标列。
+
+| 共享资源 | 用途与默认值 |
+| --- | --- |
+| `MenuPopupCornerRadius` | 浮层圆角，默认 8 |
+| `MenuItemCornerRadius` | 菜单项高亮圆角，默认 5 |
+| `MenuPopupPadding` | 浮层内部留白，默认 4 |
+| `MenuItemMinHeight` | 下拉与右键菜单项最小高度，默认 26 |
+| `MenuPopupShadowMargin`、`MenuPopupShadowEffect` | 阴影预留空间与效果；阴影由独立背景层绘制，不对文字与菜单内容整体施加效果 |
+| `MenuItemSecondaryForeground` | 快捷键等次要文字画刷，由浅色、深色字典分别提供 |
+
+面板背景、边框、悬停、分隔线与次要文字通过 `DynamicResource` 读取配色。浅色和深色使用各自的低对比分隔线；面板内部没有单独着色的图标侧栏。修改共享外观时应调整这些资源或公共模板；定义专用 `MenuItem` / `ContextMenu` 模板的消费者仍由自己的模板控制外观。
+
+实现保留 WPF 原生 `MenuItem`、`PART_Popup`、命令绑定、访问键、勾选与禁用状态；浮层保留透明背景以及承载长菜单的 `ScrollViewer`。圆角与阴影属于视觉模板，不能替代键盘导航、子菜单鼠标穿越或滚动交互的验证。验收应覆盖浅色/深色、顶层/多级/右键菜单、长菜单滚动与高 DPI 边缘；模板或构建检查不能证明真实桌面上的这些交互已验收。
+
 ## 包入口与验证范围
 
 `UI/ColorVision.Themes/ColorVision.Themes.csproj` 当前面向 `net8.0-windows7.0;net10.0-windows7.0`，引用 HandyControl，启用 NuGet/符号包生成并打包 README。目标框架后缀不是每个 DWM 属性在该 Windows 版本可用的保证。包使用/本地构建入口保留在源码旁 README；发布规则见 [NuGet 包发布](./publishing.md)。
@@ -115,5 +138,7 @@ related: ["ui.index","ui.settings","ui.property-grid","ui.configuration"]
 | `ThemeSettingsTests` | 仅支持 UseSystem/Light/Dark 的列表；历史枚举值 3、4 被 ThemeConfig 归一为 UseSystem |
 | `ThemeSubscriptionLifecycleTests` | `IIconExtension.SetIconResource`、`DisPlayManagerExtension.ApplyChangedSelectedColor` 的弱引用订阅不阻止目标 GC；不是 ApplyCaption 或全体窗口生命周期测试 |
 | `StartWindowThemeLifecycleTests` | 启动窗口关闭恢复 SystemTheme 订阅数，以及先解除启动日志 appender 后关闭的窗口可被 GC；不是全局系统事件解绑测试 |
+| `CompactTitleBarIntegrationContractTests` | 检查包图标读取的公共方法形状、OnLoad/冻结及不写 DWM 的源码契约；不替代真实包图标文件解码、运行期主题同步或原生按钮视觉验收 |
+| `MenuThemeTests` | 在真实离屏 WPF 窗口中加载浅/深色菜单，检查四种菜单角色、圆角与独立阴影、UI Automation 命令/勾选/禁用行为、快捷键列对齐及文本更新、纯文字空列收起、内容增减后的同级列对齐与宽度恢复、勾选切换的宽度稳定、长菜单滚动到末项，以及替换主题资源后既有菜单的背景色；不覆盖真实桌面鼠标穿越、键盘操作或系统高 DPI 视觉验收 |
 
 测试引用不代表本次执行。当前这些测试不能证明资源追加/失败恢复、选择/实际事件顺序、UseSystem 延迟与线程、预览持久化、ApplyCaption 重复/已加载调用和 DWM 真机表现；修改这些契约需补相应针对性验证，不应把“需要验收”改写成“已经支持并验证”。

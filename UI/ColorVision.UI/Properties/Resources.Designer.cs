@@ -196,6 +196,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 其他操作 的本地化字符串。
+        /// </summary>
+        public static string CommandOtherActions {
+            get {
+                return ResourceManager.GetString("CommandOtherActions", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 更新前创建程序快照 的本地化字符串。
         /// </summary>
         public static string CreateSnapshotBeforeUpdate {
@@ -1213,6 +1222,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 清空搜索 的本地化字符串。
+        /// </summary>
+        public static string PropEditor_ClearSearch {
+            get {
+                return ResourceManager.GetString("PropEditor_ClearSearch", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 JSON 生成错误： 的本地化字符串。
         /// </summary>
         public static string PropEditor_JsonGenerateError {
@@ -1249,6 +1267,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 没有匹配的属性 的本地化字符串。
+        /// </summary>
+        public static string PropEditor_NoSearchResults {
+            get {
+                return ResourceManager.GetString("PropEditor_NoSearchResults", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 恢复到默认 的本地化字符串。
         /// </summary>
         public static string PropEditor_ResetToDefault {
@@ -1266,24 +1293,6 @@ namespace ColorVision.UI.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 清空搜索 的本地化字符串。
-        /// </summary>
-        public static string PropEditor_ClearSearch {
-            get {
-                return ResourceManager.GetString("PropEditor_ClearSearch", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 没有匹配的属性 的本地化字符串。
-        /// </summary>
-        public static string PropEditor_NoSearchResults {
-            get {
-                return ResourceManager.GetString("PropEditor_NoSearchResults", resourceCulture);
-            }
-        }
-
         /// <summary>
         ///   查找类似 试试其他关键词，或清空搜索查看全部属性。 的本地化字符串。
         /// </summary>

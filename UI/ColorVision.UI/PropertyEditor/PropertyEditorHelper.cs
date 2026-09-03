@@ -32,7 +32,7 @@ namespace ColorVision.UI
         string? GetCategory(PropertyInfo propertyInfo);
     }
 
-    public static class PropertyEditorHelper
+    public static partial class PropertyEditorHelper
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(PropertyEditorHelper));
         private static readonly PropertyEditorRegistry EditorRegistry = new(Log);
@@ -218,90 +218,6 @@ namespace ColorVision.UI
             return lazyResourceManager.Value;
         }
 
-        public static void GenCommand(object obj, UniformGrid uniformGrid, bool compact = false)
-        {
-            if (uniformGrid == null) return;
-            uniformGrid.SizeChanged += (_, __) => uniformGrid.AutoUpdateLayout(compact ? 100 : 120);
-
-            var type = obj.GetType();
-            ResourceManager? rm = GetResourceManager(obj);
-
-            var commands = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Select(p => (Prop: p, Attr: p.GetCustomAttribute<CommandDisplayAttribute>(),
-                              Browsable: p.GetCustomAttribute<BrowsableAttribute>()))
-                .Where(x => x.Attr != null && (x.Browsable?.Browsable ?? true))
-                .OrderBy(x => x.Attr!.Order)
-                .ToList();
-
-            foreach (var item in commands)
-            {
-                if (item.Prop.GetValue(obj) is not ICommand command) continue;
-
-                string displayName = GetDisplayName(rm, item.Prop, item.Attr!.DisplayName);
-
-                var descriptionAttr = item.Prop.GetCustomAttribute<DescriptionAttribute>();
-                var description = GetLocalizedString(rm, descriptionAttr?.Description);
-                var button = new Button
-                {
-                    Margin = compact ? new Thickness(2, 0, 2, 0) : new Thickness(5),
-                    HorizontalContentAlignment = HorizontalAlignment.Center,
-                    VerticalContentAlignment = VerticalAlignment.Center,
-                    Command = command,
-                    ToolTip = string.IsNullOrWhiteSpace(description) ? displayName : $"{displayName}\n{description}",
-                    VerticalAlignment = VerticalAlignment.Stretch,
-                    HorizontalAlignment = compact ? HorizontalAlignment.Left : HorizontalAlignment.Stretch,
-                };
-
-                if (compact)
-                {
-                    button.SetResourceReference(FrameworkElement.StyleProperty, "ButtonDefault.Small");
-                    button.Content = displayName;
-                    if (item.Attr!.CommandType == CommandType.Highlighted)
-                        button.Foreground = Brushes.Red;
-                    uniformGrid.Children.Add(button);
-                    continue;
-                }
-
-                button.Padding = new Thickness(10, 8, 10, 8);
-                button.Background = (Brush)Application.Current.FindResource("GlobalBackground");
-                button.BorderBrush = (Brush)Application.Current.FindResource("BorderBrush");
-                button.BorderThickness = new Thickness(1);
-                button.Height = 70;
-
-                var stackPanel = new StackPanel();
-
-                var nameText = new TextBlock
-                {
-                    Text = displayName,
-                    FontSize = 12,
-                    FontWeight = FontWeights.Medium,
-                    Foreground = (Brush)Application.Current.FindResource("PrimaryTextBrush"),
-                    TextWrapping = TextWrapping.Wrap
-                };
-                stackPanel.Children.Add(nameText);
-
-                if (!string.IsNullOrWhiteSpace(description))
-                {
-                    var assemblyText = new TextBlock
-                    {
-                        Text = description,
-                        FontSize = 10,
-                        Foreground = (Brush)Application.Current.FindResource("SecondaryTextBrush"),
-                        Margin = new Thickness(0, 3, 0, 0),
-                        Opacity = 0.7
-                    };
-                    stackPanel.Children.Add(assemblyText);
-                }
-                button.Content = stackPanel;
-
-                if (item.Attr!.CommandType == CommandType.Highlighted)
-                {
-                    button.Foreground = Brushes.Red;
-                }
-                uniformGrid.Children.Add(button);
-            }
-
-        }
 
         public static void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {

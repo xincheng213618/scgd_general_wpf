@@ -51,15 +51,23 @@ namespace ColorVision.Engine.Services
         [CommandDisplayAttribute("Copy", Order = -10), BrowsableAttribute(false)]
         public RelayCommand CopyCommand { get; set; }
 
-        [CommandDisplayAttribute("Reset", CommandType = CommandType.Highlighted, Order = 9999)]
+        [CommandDisplayAttribute("Reset", CommandType = CommandType.Highlighted, Order = 9999, CategoryOrder = 3)]
+        [Category("MaintenanceDiagnostics")]
+        [Description("CommandResetHint")]
         public RelayCommand ResetCommand { get; set; }
-        [CommandDisplayAttribute("RestartService",Order =-2)]
+        [CommandDisplayAttribute("RestartService",Order =-2, CategoryOrder = 3)]
+        [Category("MaintenanceDiagnostics")]
+        [Description("CommandRestartHint")]
         public RelayCommand RefreshCommand { get; set; }
 
-        [CommandDisplayAttribute("ModifyConfiguration",Order =-3)]
+        [CommandDisplayAttribute("ModifyConfiguration",Order =-3, CategoryOrder = 0)]
+        [Category("DeviceConnection")]
+        [Description("CommandEditConfigHint")]
         public RelayCommand EditCommand { get; set; }
 
-        [CommandDisplay("FileSavePath",Order =-1)]
+        [CommandDisplay("FileSavePath",Order =-1, CategoryOrder = 2)]
+        [Category("AcquisitionDisplay")]
+        [Description("CommandSavePathHint")]
         public RelayCommand UpdateFilecfgCommand { get; set; }
 
         public virtual ImageSource Icon { get; set; }

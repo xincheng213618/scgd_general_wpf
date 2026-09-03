@@ -3,9 +3,9 @@ knowledge_id: "ui.property-grid"
 knowledge_type: "topic"
 status: "current"
 summary: "属性面板的字段生成、编辑器选择和 Flow 适配；区分直接修改、工作副本、关闭、重置与宿主持久化。"
-aliases: ["属性面板", "修改参数", "编辑器显示成文本", "如何新增属性编辑器", "自定义编辑器", "属性编辑器为什么不显示", "IPropertyEditor", "GenProperties", "PropertyEditorType", "PropertyVisibility", "PropertyEditSession", "PropertyEditorWindow", "FlowPropertyEditorRegistry", "FlowNodePropertyEditorRegistration", "FlowNodePropertyEditorAttribute", "取消修改", "关闭回滚", "枚举下拉显示英文", "EnumPropertiesEditor"]
-code_paths: ["UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorRegistry.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorTypeAttribute.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditSession.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml.cs", "UI/ColorVision.UI/PropertyEditor/Editor/EnumPropertiesEditor.cs", "UI/ColorVision.Common/Utilities/EnumUtils.cs", "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs", "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs", "Test/ColorVision.UI.Tests/EnumPropertiesEditorTests.cs", "Test/ColorVision.UI.Tests/PropertyEditorWindowTests.cs", "Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs", "Test/ColorVision.UI.Tests/ListEditorTests.cs", "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs", "Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs"]
+aliases: ["属性面板", "修改参数", "编辑器显示成文本", "如何新增属性编辑器", "自定义编辑器", "属性编辑器为什么不显示", "IPropertyEditor", "GenProperties", "PropertyEditorType", "PropertyVisibility", "PropertyEditSession", "PropertyEditorWindow", "FlowPropertyEditorRegistry", "FlowNodePropertyEditorRegistration", "FlowNodePropertyEditorAttribute", "取消修改", "关闭回滚", "枚举下拉显示英文", "EnumPropertiesEditor", "命令自动生成", "GenCommand", "CommandDisplay", "按钮分类"]
+code_paths: ["UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorRegistry.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorTypeAttribute.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditSession.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml.cs", "UI/ColorVision.UI/PropertyEditor/Editor/EnumPropertiesEditor.cs", "UI/ColorVision.Common/Utilities/EnumUtils.cs", "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs", "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorCommands.cs", "UI/ColorVision.UI/PropertyEditor/CommandPanelStyles.xaml"]
+test_paths: ["Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs", "Test/ColorVision.UI.Tests/EnumPropertiesEditorTests.cs", "Test/ColorVision.UI.Tests/PropertyEditorWindowTests.cs", "Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs", "Test/ColorVision.UI.Tests/ListEditorTests.cs", "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs", "Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs", "Test/ColorVision.UI.Tests/CommandPanelTests.cs", "Test/ColorVision.UI.Tests/DeviceCommandMetadataTests.cs"]
 related: ["ui.index", "ui.configuration", "ui.discovery", "flow.templates", "algorithms.template-management"]
 ---
 
@@ -24,6 +24,27 @@ ColorVision 的通用属性面板由属性元数据、`PropertyEditorHelper` 和
 | 编辑后原对象没变化 | `PropertyEditSession.Mode`、工作副本、`Commit()` 与宿主保存动作 |
 | 关闭或取消后参数仍然变化 | `PropertyEditorWindow` 默认 `Immediate`，关闭不执行回滚 |
 | Flow 模板选择器退化成文本 | `FlowNodePropertyEditorAttribute`、`FlowPropertyEditorRegistry` 与 Engine 注册入口 |
+
+## 命令属性页自动生成
+
+`PropertyEditorHelper.GenCommand(object, UniformGrid, bool compact = false)` 是设备属性页共用的命令入口。光谱仪、相机、PG、源表、校正、算法、滤光轮、传感器、照明控制器和第三方算法页都将设备对象交给该入口；页面只提供容器，不维护各自的按钮列表、分类卡片或特殊角标。
+
+生成器读取公开可读、非索引属性上的 `CommandDisplay`，包含基类命令，跳过 `Browsable(false)`、空命令和未标注属性。分类使用 `Category`，分类顺序使用 `CommandDisplay.CategoryOrder`，组内顺序使用 `Order`；名称和说明分别使用 `CommandDisplay.DisplayName` 与 `Description`，由对象资源管理器本地化。未分类命令独立归组，只有一个无分类组时省略分类标题。
+
+```csharp
+[CommandDisplay("RefreshDeviceList", Order = 1, CategoryOrder = 0)]
+[Category("DeviceConnection")]
+[Description("CommandRefreshDevicesHint")]
+public RelayCommand RefreshDeviceIdCommand { get; set; }
+```
+
+`DeviceConnection` 等字符串是资源键，资源缺失时回退到原文。设备通用分类为 **设备与连接、校准与校正、采集与显示、维护与诊断**，只显示实际有命令的分类。新增按钮应维护命令元数据及资源，不为某种设备增加一份手写界面。
+
+普通模式由 `PropertyEditorCommands.cs` 和 `CommandPanelStyles.xaml` 统一生成纵向分类及自适应按钮网格；分类高度由内容决定，按钮随宽度换列，主题颜色使用动态资源。名称和说明同时写入可访问名称、帮助文本和工具提示。按钮绑定原始命令并保留 `CanExecute` 禁用行为，标为 `Highlighted` 的操作使用警示色；`PropertyVisibility` 继续控制显示条件。生成界面不会执行命令。
+
+生成器拥有传入容器的内容，重新生成会替换旧按钮，宿主不要在容器中预置业务按钮。保留原有公开方法签名，现有调用端自动使用统一样式；Flow 节点检查器的 `compact: true` 保持平铺的小按钮工具栏，不加入分类卡片。
+
+`CommandPanelTests` 覆盖继承、分类/命令排序、本地化、隐藏/空命令、命令替换、禁用、重复生成、窄布局与动态主题；`DeviceCommandMetadataTests` 核对上述设备类型的分类和中文标签，不构建设备或操作硬件。
 
 ## 接口与注册
 

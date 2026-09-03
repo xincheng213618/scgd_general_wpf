@@ -130,10 +130,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
             cameraLocalWindow.Show();
         }
 
-        [CommandDisplay("CameraLog")]
+        [CommandDisplay("CameraLog", CategoryOrder = 3)]
+        [Category("MaintenanceDiagnostics")]
+        [Description("CommandCameraLogHint")]
         public RelayCommand OpenCameraLogCommand { get; set; }
 
-        [CommandDisplay("本地校正缓存管理")]
+        [CommandDisplay("本地校正缓存管理", Order = 1, CategoryOrder = 1)]
+        [Category("CalibrationCorrection")]
+        [Description("CommandCalibrationCacheHint")]
         public RelayCommand ReleaseLocalCalibrationCacheCommand { get; set; }
 
         public void OpenCameraLog()
@@ -148,7 +152,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
 
 
-        [CommandDisplay("EditCalibrationFile")]
+        [CommandDisplay("EditCalibrationFile", Order = 0, CategoryOrder = 1)]
+        [Category("CalibrationCorrection")]
+        [Description("CommandCameraCalibrationHint")]
         public RelayCommand EditCalibrationCommand { get; set; }
 
         public void EditCalibration()
@@ -164,7 +170,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
 
 
-        [CommandDisplay("AutoExploreTemplate", Order = 100)]
+        [CommandDisplay("AutoExploreTemplate", Order = 100, CategoryOrder = 2)]
+        [Category("AcquisitionDisplay")]
+        [Description("CommandAutoExposureHint")]
         public RelayCommand EditAutoExpTimeCommand { get; set; }
 
         public static void EditAutoExpTime()
@@ -172,14 +180,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
             var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTime()) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
-        [CommandDisplay("AutoFocusTemplate", Order = 100)]
+        [CommandDisplay("AutoFocusTemplate", Order = 100, CategoryOrder = 2)]
+        [Category("AcquisitionDisplay")]
+        [Description("CommandAutoFocusHint")]
         public RelayCommand EditAutoFocusCommand { get; set; }
         public static void EditAutoFocus()
         {
             var windowTemplate = new TemplateEditorWindow(new TemplateAutoFocus()) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
-        [CommandDisplay("CameraParameterTemplate", Order = 100)]
+        [CommandDisplay("CameraParameterTemplate", Order = 100, CategoryOrder = 2)]
+        [Category("AcquisitionDisplay")]
+        [Description("CommandCameraParametersHint")]
         public RelayCommand EditCameraExpousureCommand { get; set; }
 
         public static void EditCameraExpousure()
@@ -248,7 +260,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             window.ShowDialog();
         }
-        [CommandDisplay("ManagePhysicalCamera")]
+        [CommandDisplay("ManagePhysicalCamera", CategoryOrder = 0)]
+        [Category("DeviceConnection")]
+        [Description("CommandPhysicalCameraHint")]
         public RelayCommand OpenPhyCameraMangerCommand { get; set; }
 
         [RequiresPermission(PermissionMode.Administrator)]
@@ -269,7 +283,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             phyCameraManager.ShowDialog();
         }
 
-        [CommandDisplay("RefreshDeviceList")]
+        [CommandDisplay("RefreshDeviceList", CategoryOrder = 0)]
+        [Category("DeviceConnection")]
+        [Description("CommandRefreshDevicesHint")]
         public RelayCommand RefreshDeviceIdCommand { get; set; }
         public void RefreshDeviceId()
         {

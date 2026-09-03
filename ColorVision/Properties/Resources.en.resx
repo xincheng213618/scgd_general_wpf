@@ -536,6 +536,15 @@
   <data name="ConfigEnableDesktopPetDescription" xml:space="preserve">
     <value>Show or hide the desktop pet component.</value>
   </data>
+  <data name="ConfigUseCompactTitleBar" xml:space="preserve">
+    <value>Compact title bar (experimental, restart required)</value>
+  </data>
+  <data name="CompactTitleBarMoreActions" xml:space="preserve">
+    <value>More title bar actions</value>
+  </data>
+  <data name="ConfigUseCompactTitleBarDescription" xml:space="preserve">
+    <value>Use a separate compact main window that merges menus into the title bar and retains system buttons. Off by default; restart required. Enabled only on compatible Windows 11 systems; otherwise the native title bar is retained. Turn off and restart to return to the original main window.</value>
+  </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>Unsupported file format</value>
   </data>

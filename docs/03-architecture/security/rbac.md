@@ -116,6 +116,8 @@ RBAC 当前实现集中在独立项目 `UI/ColorVision.Rbac/`，并由 `ColorVis
 
 `UserManagerWindow` 使用角色管理与用户列表两个分区，保留角色创建、权限管理、用户搜索及行内账户操作。`RbacManagerWindow` 使用原生标题栏，按账户资料、运行指标、流程活动和详情组织内容，窗口可调整大小。两个窗口共享 Themes 的更新窗口资源，背景、表格和统计文字随深浅主题变化；外观与布局不改变以下统计范围或账户权限边界。
 
+主窗口右侧 `MenuRbacManager` 账户入口通过 `ColorVision.Solution.Properties.Resources.UserCenter` 提供本地化名称，供按钮提示、辅助功能名称及紧凑标题栏“更多”菜单使用；入口命名不改变权限、会话或统计行为。
+
 ## 用户中心统计：本机使用与业务库计数
 
 这部分不是身份认证审计，也不是当前用户的个人执行历史。`UserCenterStatisticsService.QueryAsync` 没有用户 ID 筛选，查询当前配置业务数据库的 `t_scgd_measure_batch`；不要根据“用户中心”标题把结果归属到登录用户。

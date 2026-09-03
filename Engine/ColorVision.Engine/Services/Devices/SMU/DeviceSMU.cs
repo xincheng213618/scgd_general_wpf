@@ -118,7 +118,9 @@ namespace ColorVision.Engine.Services.Devices.SMU
             EditDisplayConfigCommand =new RelayCommand(a => EditDisplayConfig());   
         }
 
-        [CommandDisplay("EditDisplayConfig", Order = -1)]
+        [CommandDisplay("EditDisplayConfig", Order = -1, CategoryOrder = 2)]
+        [Category("AcquisitionDisplay")]
+        [Description("CommandDisplayConfigHint")]
         public RelayCommand EditDisplayConfigCommand { get; set; }
         public void EditDisplayConfig()
         {
@@ -126,7 +128,9 @@ namespace ColorVision.Engine.Services.Devices.SMU
         }
 
 
-        [CommandDisplay("MenuSUM",Order =100)]
+        [CommandDisplay("SmuTemplateSettings",Order =100, CategoryOrder = 2)]
+        [Category("AcquisitionDisplay")]
+        [Description("CommandSmuTemplateHint")]
         public RelayCommand EditSMUTemplateCommand { get; set; }
 
         public static void EditSMUTemplate()

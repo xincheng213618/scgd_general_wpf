@@ -16,8 +16,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
         private int _BaudRate = 9600;
 
+        [DisplayName("SpectrumOpenShutter")]
         public string OpenCmd { get => _OpenCmd; set { _OpenCmd = value; OnPropertyChanged(); } }
         private string _OpenCmd = "a";
+        [DisplayName("SpectrumCloseShutter")]
         public string CloseCmd { get => _CloseCmd; set { _CloseCmd = value; OnPropertyChanged(); } }
         private string _CloseCmd = "b";
 

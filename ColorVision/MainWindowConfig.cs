@@ -18,6 +18,11 @@ namespace ColorVision
         public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; OnPropertyChanged(); } }
         private bool _IsOpenStatusBar = true;
 
+        [DisplayName("ConfigUseCompactTitleBar")]
+        [Description("ConfigUseCompactTitleBarDescription")]
+        public bool UseCompactTitleBar { get => _useCompactTitleBar; set { _useCompactTitleBar = value; OnPropertyChanged(); } }
+        private bool _useCompactTitleBar;
+
         /// <summary>
         /// 记录上次打开时的应用版本，用于在更新后首次启动时显示变更日志。
         /// </summary>
@@ -94,6 +99,11 @@ namespace ColorVision
                 new ConfigSettingMetadata
                 {
                     BindingName = nameof(IsRestoreWindow),
+                    Source = Instance
+                },
+                new ConfigSettingMetadata
+                {
+                    BindingName = nameof(UseCompactTitleBar),
                     Source = Instance
                 }
             };
