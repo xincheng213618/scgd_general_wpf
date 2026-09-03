@@ -274,20 +274,22 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        private (int Channels, PoiMeasurementResult[] Results) CalculatePoi(IReadOnlyList<PoiMeasurementPoint> points)
+        private (int Channels, PoiMeasurementResult[] Results) CalculatePoi(IReadOnlyList<PoiMeasurementPoint> points, bool preserveNonPositiveValues)
         {
             _loadBuffer?.Invoke();
             lock (_bufferSync)
             {
                 PoiMeasurementBuffer buffer = _measurementBuffer
                     ?? throw new InvalidOperationException("当前 CVCIE 视图没有可用的测量缓冲区。");
-                return (buffer.Channels, PoiMeasurementService.Calculate(buffer, points));
+                return (buffer.Channels, preserveNonPositiveValues
+                    ? PoiMeasurementService.CalculateRaw(buffer, points)
+                    : PoiMeasurementService.Calculate(buffer, points));
             }
         }
 
         private (int Channels, PoiMeasurementResult Result) CalculatePoi(PoiMeasurementPoint point)
         {
-            (int channels, PoiMeasurementResult[] results) = CalculatePoi(new[] { point });
+            (int channels, PoiMeasurementResult[] results) = CalculatePoi(new[] { point }, false);
             return (channels, results[0]);
         }
 
@@ -585,7 +587,7 @@ namespace ColorVision.Engine.Media
                 Height = height
             };
 
-        private static void SetLuminanceMessage(BaseProperties properties, float luminance, bool show)
+        private static void SetLuminanceMessage(BaseProperties properties, double luminance, bool show)
         {
             if (!show) return;
             string message = $"Y:{luminance:F1}";
@@ -664,13 +666,14 @@ namespace ColorVision.Engine.Media
                     Order = 303,
                     Command = new RelayCommand(a =>
                     {
+                        Func<double, double> normalize = CVCIEShowConfig.Instance.CreateValueNormalizer();
                         List<ViewPoiRequest> viewRequests = CreateViewPoiRequests();
                         PoiMeasurementPoint[] requests = new PoiMeasurementPoint[viewRequests.Count];
                         for (int index = 0; index < requests.Length; index++)
                         {
                             requests[index] = viewRequests[index].MeasurementPoint;
                         }
-                        (int channels, PoiMeasurementResult[] measurements) = CalculatePoi(requests);
+                        (int channels, PoiMeasurementResult[] measurements) = CalculatePoi(requests, true);
                         bool show = EditorContext.DrawingVisualLists.Count < 1000;
 
                         if (channels == 1)
@@ -682,9 +685,9 @@ namespace ColorVision.Engine.Media
                                 PoiResultCIEYData result = new()
                                 {
                                     Point = request.Point,
-                                    Y = measurements[index].Y
+                                    Y = normalize(measurements[index].Y)
                                 };
-                                SetLuminanceMessage(request.DrawProperties, measurements[index].Y, show);
+                                SetLuminanceMessage(request.DrawProperties, result.Y, show);
                                 results.Add(result);
                             }
                             new WindowCVCIE(results) { Owner = Application.Current.GetActiveWindow() }.Show();
@@ -709,6 +712,7 @@ namespace ColorVision.Engine.Media
                                     CCT = measurement.Cct,
                                     Wave = measurement.Wave
                                 };
+                                result.NormalizeXyz(normalize);
                                 SetColorMessage(request.DrawProperties, result, show);
                                 results.Add(result);
                             }

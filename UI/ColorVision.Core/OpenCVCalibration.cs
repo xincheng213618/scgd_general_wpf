@@ -72,6 +72,7 @@ namespace ColorVision.Core
         None = 0,
         PercentThreshold = 1,
         ApplyMnp = 2,
+        PreserveNonPositiveValues = 4,
     }
 
     [StructLayout(LayoutKind.Sequential)]

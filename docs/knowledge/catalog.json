@@ -4208,6 +4208,46 @@
       "searchable": true
     },
     {
+      "knowledge_id": "engine.cvcie-results",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "CVCIE POI 结果的 XYZ 非正值替换开关、可配置最小值，以及色坐标、色温和主波长重算。",
+      "aliases": [
+        "CVCIE计算负值",
+        "CVCIEShowConfig",
+        "WindowCVCIE",
+        "启用非正值替换",
+        "ClampNonPositiveValues",
+        "MinimumValue",
+        "0.0001"
+      ],
+      "code_paths": [
+        "Engine/ColorVision.Engine/Media/WindowCVCIE.xaml.cs",
+        "Engine/ColorVision.Engine/Media/CVRawOpen.cs",
+        "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs",
+        "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiResultCIExyuvData.cs",
+        "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiResultData.cs"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/CvcieResultValueTests.cs",
+        "Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"
+      ],
+      "related": [
+        "engine.file-io",
+        "algorithms.poi-routes",
+        "engine.opencv-helper-api",
+        "ui.property-grid"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine"
+      ],
+      "domain": "engine",
+      "title": "CVCIE POI 结果数值",
+      "source": "docs/04-api-reference/engine-components/cvcie-results.md",
+      "url": "/04-api-reference/engine-components/cvcie-results",
+      "searchable": true
+    },
+    {
       "knowledge_id": "engine.database-maintenance",
       "knowledge_type": "topic",
       "status": "current",

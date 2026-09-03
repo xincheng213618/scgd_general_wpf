@@ -23,7 +23,8 @@ namespace ColorVision.Engine.Media
 {
     public class CVCIEShowConfig : ViewModelBase, IConfig
     {
-        public static CVCIEShowConfig Instance => ConfigService.Instance.GetRequiredService<CVCIEShowConfig>();
+        private static readonly CVCIEShowConfig DefaultConfig = new();
+        public static CVCIEShowConfig Instance => ConfigService.Instance?.GetRequiredService<CVCIEShowConfig>() ?? DefaultConfig;
         public RelayCommand EditCommand { get; set; }
 
         public CVCIEShowConfig()
@@ -36,6 +37,33 @@ namespace ColorVision.Engine.Media
         [Display(Name = "Engine_PG_DataDisplayTemplate", ResourceType = typeof(Properties.Resources))]
         public string Template { get => _Template;set { _Template = value;  OnPropertyChanged(); } }
         private string _Template = "X:@X:F1 Y:@Y:F1 Z:@Z:F1\\nx:@x:F4 y:@y:F4 u:@u:F4 v:@v:F4\\nCCT:@CCT:F1 Wave:@Wave:F1";
+
+        [Category("计算结果"), DisplayName("启用非正值替换")]
+        [Description("替换非正 XYZ，并重算 xy、u′v′、CCT 和主波长；关闭后显示实际值。")]
+        public bool ClampNonPositiveValues { get => _clampNonPositiveValues; set { _clampNonPositiveValues = value; OnPropertyChanged(); } }
+        private bool _clampNonPositiveValues = true;
+
+        [Category("计算结果"), DisplayName("最小值")]
+        [Description("非正 XYZ 值的替换值，默认 0.0001，必须大于或等于 0。")]
+        [PropertyVisibility(nameof(ClampNonPositiveValues), true)]
+        public double MinimumValue
+        {
+            get => _minimumValue;
+            set
+            {
+                if (!double.IsFinite(value) || value < 0) return;
+                _minimumValue = value;
+                OnPropertyChanged();
+            }
+        }
+        private double _minimumValue = 0.0001;
+
+        internal Func<double, double> CreateValueNormalizer()
+        {
+            bool enabled = ClampNonPositiveValues;
+            double minimum = MinimumValue;
+            return value => enabled && !(value > 0) ? minimum : value;
+        }
     }
 
     /// <summary>

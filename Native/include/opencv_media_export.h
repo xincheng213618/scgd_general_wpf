@@ -369,6 +369,7 @@ struct MPoiResultV1 {
 enum MPoiOptionsFlagsV2 : std::uint32_t {
     M_POI_OPTION_PERCENT_THRESHOLD = 1U,
     M_POI_OPTION_APPLY_MNP = 2U,
+    M_POI_OPTION_PRESERVE_NON_POSITIVE_VALUES = 4U,
 };
 
 struct MPoiOptionsV2 {

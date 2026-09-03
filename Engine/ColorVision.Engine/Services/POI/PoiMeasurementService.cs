@@ -80,6 +80,24 @@ namespace ColorVision.Engine.Services.POI
     /// </summary>
     public static class PoiMeasurementService
     {
+        internal static PoiMeasurementResult[] CalculateRaw(PoiMeasurementBuffer buffer, IReadOnlyList<PoiMeasurementPoint> points)
+        {
+            ArgumentNullException.ThrowIfNull(buffer);
+            return buffer.Borrow((pointer, length) => CalculateCore(pointer, length, buffer.Width, buffer.Height,
+                buffer.BitsPerChannel, buffer.Channels, points, true));
+        }
+
+        internal static unsafe PoiMeasurementResult CalculateColorMetrics(double x, double y, double z)
+        {
+            double scale = Math.Max(x, Math.Max(y, z));
+            if (!double.IsFinite(scale) || scale <= 0)
+                return new(0, 0, 0, float.NaN, float.NaN, float.NaN, float.NaN, float.NaN, float.NaN);
+
+            float* xyz = stackalloc float[] { (float)(x / scale), (float)(y / scale), (float)(z / scale) };
+            return CalculateCore((IntPtr)xyz, 3 * sizeof(float), 1, 1, 32, 3,
+                new[] { new PoiMeasurementPoint(0, 0, 1, 1, PoiMeasurementShape.Point) }, true)[0];
+        }
+
         public static PoiMeasurementResult[] Calculate(
             PoiMeasurementBuffer buffer,
             IReadOnlyList<PoiMeasurementPoint> points)
@@ -111,6 +129,17 @@ namespace ColorVision.Engine.Services.POI
             int bitsPerChannel,
             int channels,
             IReadOnlyList<PoiMeasurementPoint> points)
+            => CalculateCore(cieData, cieByteLength, width, height, bitsPerChannel, channels, points, false);
+
+        private static PoiMeasurementResult[] CalculateCore(
+            IntPtr cieData,
+            long cieByteLength,
+            int width,
+            int height,
+            int bitsPerChannel,
+            int channels,
+            IReadOnlyList<PoiMeasurementPoint> points,
+            bool preserveNonPositiveValues)
         {
             ArgumentNullException.ThrowIfNull(points);
             ValidateLayout(width, height, bitsPerChannel, channels, cieByteLength);
@@ -134,6 +163,7 @@ namespace ColorVision.Engine.Services.POI
 
             PoiResultV1[] nativeResults = new PoiResultV1[points.Count];
             PoiOptionsV2 options = PoiOptionsV2.Create();
+            if (preserveNonPositiveValues) options.Flags = PoiOptionsFlagsV2.PreserveNonPositiveValues;
             int result = OpenCVCalibration.M_CalculatePoiBatchV2(
                 width,
                 height,

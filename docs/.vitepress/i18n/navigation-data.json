@@ -2210,6 +2210,12 @@
             },
             {
               "text": {
+                "root": "CVCIE POI 结果数值"
+              },
+              "link": "/04-api-reference/engine-components/cvcie-results"
+            },
+            {
+              "text": {
                 "root": "数据库清理窗口、能力接入与完成边界"
               },
               "link": "/04-api-reference/engine-components/database-maintenance"

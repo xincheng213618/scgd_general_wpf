@@ -231,6 +231,13 @@ to the caller-owned `MPoiResultV1` array.
 `M_CalculatePoiBatchV1` preserves the legacy unfiltered calculation exactly.
 `M_CalculatePoiBatchV2` adds a 48-byte `MPoiOptionsV2` structure for Value,
 XYZ-mask, and NoArea filters, percentage thresholds, and final XYZ scaling.
+The `M_POI_OPTION_PRESERVE_NON_POSITIVE_VALUES` flag (`4`, managed
+`PoiOptionsFlagsV2.PreserveNonPositiveValues`) retains non-positive XYZ and
+derives color metrics from those values. Without this flag, V1 and V2 retain
+their fixed `0.000001` replacement. Struct sizes and existing signatures are
+unchanged; older DLLs reject the new flag. CVCIE result settings use this path
+before applying their configurable replacement and color-metric recalculation;
+see [CVCIE POI results](./cvcie-results.md).
 Unknown flags and non-zero reserved fields are rejected so the ABI can evolve
 safely. Percentage thresholds use the mean of the highest `maxPercent` samples.
 XYZ-mask mode derives one deterministic common mask from the selected X, Y, or

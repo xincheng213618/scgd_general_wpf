@@ -5,6 +5,31 @@ namespace ColorVision.UI.Tests;
 public sealed class PoiMeasurementServiceTests
 {
     [Fact]
+    public void CalculateRawPreservesNonPositiveXyzWhileLegacyCalculationStillReplacesThem()
+    {
+        using PoiMeasurementBuffer buffer = new(CreateConstantPlanarData(5, 5, -1, 0, 3), 5, 5, 32, 3);
+        PoiMeasurementPoint[] points =
+        [
+            new(2, 2, 1, 1, PoiMeasurementShape.Point),
+            new(2, 2, 4, 4, PoiMeasurementShape.Circle),
+            new(2, 2, 2, 2, PoiMeasurementShape.Rect)
+        ];
+        foreach (PoiMeasurementResult raw in PoiMeasurementService.CalculateRaw(buffer, points))
+        {
+            Assert.Equal(-1, raw.X);
+            Assert.Equal(0, raw.Y);
+            Assert.Equal(3, raw.Z);
+            Assert.Equal(-0.5f, raw.ChromaX);
+            Assert.Equal(0, raw.ChromaY);
+            Assert.Equal(-0.5f, raw.U);
+        }
+        Assert.True(PoiMeasurementService.Calculate(buffer, points[0]).X > 0);
+        using PoiMeasurementBuffer luminance = new(CreateConstantPlanarData(1, 1, -2), 1, 1, 32, 1);
+        Assert.Equal(-2, PoiMeasurementService.CalculateRaw(luminance,
+            new[] { new PoiMeasurementPoint(0, 0, 1, 1, PoiMeasurementShape.Point) })[0].Y);
+    }
+
+    [Fact]
     public void Calculate_UsesManagedPlanarBufferForAllStandardShapes()
     {
         const int width = 7;
