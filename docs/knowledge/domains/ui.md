@@ -38,8 +38,8 @@ next: false
 - [桌面宠物](../../04-api-reference/ui-components/desktop-pet.md) — `ui.desktop-pet`
   桌面宠物的启用、选择、Codex 创建、本地素材导入、精灵表规格、配置与故障定位；创建结果由设置页限时发现。
 
-- [UI 运行时组件](../../04-api-reference/ui-components/ui-runtime-handoff.md) — `ui.discovery`
-  排查程序集加载后菜单、设置、PropertyGrid、工具和服务扩展的发现链。
+- [UI 运行时扩展发现与排查](../../04-api-reference/ui-components/ui-runtime-handoff.md) — `ui.discovery`
+  UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。
 
 - [编辑器选择、文档生命周期与停靠布局](../../04-api-reference/ui-components/editor-document-lifecycle.md) — `ui.documents`
   编辑器注册与选择、按路径和编辑器区分文档、保存重载关闭及外部变更；停靠布局不恢复未注册文件标签，重置也不预审脏文档。

@@ -347,6 +347,12 @@
             },
             {
               "text": {
+                "root": "UI 运行时扩展发现与排查"
+              },
+              "link": "/04-api-reference/ui-components/ui-runtime-handoff"
+            },
+            {
+              "text": {
                 "root": "编辑器选择、文档生命周期与停靠布局"
               },
               "link": "/04-api-reference/ui-components/editor-document-lifecycle"
@@ -893,6 +899,12 @@
             },
             {
               "text": {
+                "root": "UI 运行时扩展发现与排查"
+              },
+              "link": "/04-api-reference/ui-components/ui-runtime-handoff"
+            },
+            {
+              "text": {
                 "root": "多图查看、刷新与缩略图缓存"
               },
               "link": "/04-api-reference/ui-components/ColorVision.ImageTools"
@@ -1160,7 +1172,7 @@
             },
             {
               "text": {
-                "root": "UI 运行时组件"
+                "root": "UI 运行时扩展发现与排查"
               },
               "link": "/04-api-reference/ui-components/ui-runtime-handoff"
             },
@@ -1385,6 +1397,12 @@
           "items": [
             {
               "text": {
+                "root": "UI 运行时扩展发现与排查"
+              },
+              "link": "/04-api-reference/ui-components/ui-runtime-handoff"
+            },
+            {
+              "text": {
                 "root": "任务计划程序：创建、调度与执行历史"
               },
               "link": "/04-api-reference/ui-components/ColorVision.Scheduler"
@@ -1442,6 +1460,12 @@
             },
             {
               "text": {
+                "root": "UI 运行时扩展发现与排查"
+              },
+              "link": "/04-api-reference/ui-components/ui-runtime-handoff"
+            },
+            {
+              "text": {
                 "root": "TCP 监听、协议分发与消息记录"
               },
               "link": "/04-api-reference/ui-components/ColorVision.SocketProtocol"
@@ -1496,6 +1520,12 @@
                 "root": "终端进程、会话与脚本运行"
               },
               "link": "/01-user-guide/interface/terminal"
+            },
+            {
+              "text": {
+                "root": "UI 运行时扩展发现与排查"
+              },
+              "link": "/04-api-reference/ui-components/ui-runtime-handoff"
             },
             {
               "text": {
@@ -1757,7 +1787,7 @@
             },
             {
               "text": {
-                "root": "UI 运行时组件"
+                "root": "UI 运行时扩展发现与排查"
               },
               "link": "/04-api-reference/ui-components/ui-runtime-handoff"
             },
@@ -1913,6 +1943,12 @@
                 "root": "插件装载、依赖门禁与扩展发现"
               },
               "link": "/02-developer-guide/plugin-development/overview"
+            },
+            {
+              "text": {
+                "root": "UI 运行时扩展发现与排查"
+              },
+              "link": "/04-api-reference/ui-components/ui-runtime-handoff"
             },
             {
               "text": {

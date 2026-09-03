@@ -7373,9 +7373,7 @@
         "PluginManifest",
         "PluginLoader",
         "PluginLoaderrConfig",
-        "ModuleCatalog",
-        "AssemblyHandler",
-        "LoadImplementations"
+        "ModuleCatalog"
       ],
       "code_paths": [
         "ColorVision/App.xaml.cs",
@@ -8660,18 +8658,43 @@
       "knowledge_id": "ui.discovery",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "排查程序集加载后菜单、设置、PropertyGrid、工具和服务扩展的发现链。",
+      "summary": "UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。",
       "aliases": [
         "插件加载了但入口没有出现",
+        "UI运行时发现",
+        "扩展发现",
+        "程序集过滤",
+        "类型扫描",
         "AssemblyHandler",
         "AssemblyService",
+        "RegisterAssembly",
+        "RefreshAssemblies",
+        "ClearCaches",
+        "GetTypes",
+        "LoadImplementations",
+        "ReflectionTypeLoadException",
+        "Failed to load types from assembly",
+        "Failed to create instance",
         "MenuManager"
       ],
       "code_paths": [
+        "ColorVision/App.xaml.cs",
+        "ColorVision/BuiltInModules.cs",
+        "UI/ColorVision.Common/Interfaces/Assembly",
         "UI/ColorVision.UI/AssemblyHandler.cs",
         "UI/ColorVision.UI/Plugins/PluginLoader.cs",
         "UI/ColorVision.UI/Menus/MenuManager.cs",
-        "UI/ColorVision.ImageEditor/EditorToolFactory.cs"
+        "UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs",
+        "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs",
+        "UI/ColorVision.UI/StatusBar/StatusBarManager.cs",
+        "UI/ColorVision.UI/HotKey/HotkeyService.cs",
+        "UI/ColorVision.UI/Serach/SearchManager.cs",
+        "UI/ColorVision.UI.Desktop/Wizards/WizardWindow.xaml.cs",
+        "UI/ColorVision.ImageEditor/EditorToolFactory.cs",
+        "UI/ColorVision.SocketProtocol/SocketJsonDispatcher.cs",
+        "UI/ColorVision.SocketProtocol/SocketTextDispatcher.cs",
+        "UI/ColorVision.Scheduler/QuartzSchedulerManager.cs",
+        "UI/ColorVision.Solution/Editor/EditorManager.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/PluginLoaderTests.cs",
@@ -8680,6 +8703,7 @@
       ],
       "related": [
         "ui.index",
+        "ui.control-catalog",
         "ui.configuration",
         "ui.settings",
         "ui.wizards",
@@ -8689,16 +8713,24 @@
         "ui.status-bar",
         "plugins.model",
         "ui.property-grid",
-        "ui.image-editor",
+        "ui.image-editor-context",
         "ui.socket-protocol",
+        "ui.scheduler",
+        "ui.documents",
         "engine.results"
       ],
       "code_scopes": [
+        "ColorVision",
+        "UI/ColorVision.Common",
         "UI/ColorVision.ImageEditor",
-        "UI/ColorVision.UI"
+        "UI/ColorVision.Scheduler",
+        "UI/ColorVision.SocketProtocol",
+        "UI/ColorVision.Solution",
+        "UI/ColorVision.UI",
+        "UI/ColorVision.UI.Desktop"
       ],
       "domain": "ui",
-      "title": "UI 运行时组件",
+      "title": "UI 运行时扩展发现与排查",
       "source": "docs/04-api-reference/ui-components/ui-runtime-handoff.md",
       "url": "/04-api-reference/ui-components/ui-runtime-handoff",
       "searchable": true

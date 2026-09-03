@@ -80,6 +80,9 @@ next: false
 - [配置持久化、重载与对象所有权](../../04-api-reference/ui-components/configuration.md) — `ui.configuration`
   ConfigHandler的配置路径、延迟实例、文件合并保存和重载契约；单文件替换不等于内存发布成功，重载会使旧配置引用失效。
 
+- [UI 运行时扩展发现与排查](../../04-api-reference/ui-components/ui-runtime-handoff.md) — `ui.discovery`
+  UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。
+
 - [多图查看、刷新与缩略图缓存](../../04-api-reference/ui-components/ColorVision.ImageTools.md) — `ui.image-tools`
   ImageTools内置注册、多图列表中的单张预览、刷新与SQLite缩略图缓存；重选不保证重载，关窗不清缓存，缓存关闭也不等于零数据库访问。
 
@@ -206,8 +209,8 @@ next: false
 - [系统职责与跨模块边界](../../03-architecture/overview/system-overview.md) — `platform.system`
   宿主、UI、Engine、插件与项目的职责及调用边界：UI操作不必经过Engine，程序集依赖不是统一执行顺序，构建产物不等于交付制品。
 
-- [UI 运行时组件](../../04-api-reference/ui-components/ui-runtime-handoff.md) — `ui.discovery`
-  排查程序集加载后菜单、设置、PropertyGrid、工具和服务扩展的发现链。
+- [UI 运行时扩展发现与排查](../../04-api-reference/ui-components/ui-runtime-handoff.md) — `ui.discovery`
+  UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。
 
 - [ColorVision.ImageEditor：打开、绘制与输出](../../04-api-reference/ui-components/ColorVision.ImageEditor.md) — `ui.image-editor`
   图像/视频打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。
@@ -311,6 +314,9 @@ next: false
 
 ## UI/ColorVision.Scheduler {#module-55492f436f6c6f72566973696f6e2e5363686564756c6572}
 
+- [UI 运行时扩展发现与排查](../../04-api-reference/ui-components/ui-runtime-handoff.md) — `ui.discovery`
+  UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。
+
 - [任务计划程序：创建、调度与执行历史](../../04-api-reference/ui-components/ColorVision.Scheduler.md) — `ui.scheduler`
   任务计划程序的状态栏入口、创建步骤、调度参数、启动恢复和执行历史；暂停只限制后续触发，重启按保存的定义重新调度。
 
@@ -337,6 +343,9 @@ next: false
 - [通用查询、条件会话与整表操作](../../04-api-reference/ui-components/database-query.md) — `ui.database-query`
   实体驱动的通用查询窗口：条件参数化、执行时SQL预览、结果替换与进程内会话；关闭不取消查询，清空表/截断表作用于整表而非筛选结果。
 
+- [UI 运行时扩展发现与排查](../../04-api-reference/ui-components/ui-runtime-handoff.md) — `ui.discovery`
+  UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。
+
 - [TCP 监听、协议分发与消息记录](../../04-api-reference/ui-components/ColorVision.SocketProtocol.md) — `ui.socket-protocol`
   TCP网络通信的监听快照、窗口关闭与服务停止、JSON/Text分发及消息记录；Sent不证明对端执行，重发可能换客户端并追加记录。
 
@@ -362,6 +371,9 @@ next: false
 
 - [终端进程、会话与脚本运行](../../01-user-guide/interface/terminal.md) — `operations.terminal`
   定义内嵌ConPTY会话、编辑器Python运行与外部CMD入口，区分命令提交、脚本结束、shell退出和强制释放。
+
+- [UI 运行时扩展发现与排查](../../04-api-reference/ui-components/ui-runtime-handoff.md) — `ui.discovery`
+  UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。
 
 - [编辑器选择、文档生命周期与停靠布局](../../04-api-reference/ui-components/editor-document-lifecycle.md) — `ui.documents`
   编辑器注册与选择、按路径和编辑器区分文档、保存重载关闭及外部变更；停靠布局不恢复未注册文件标签，重置也不预审脏文档。
@@ -487,8 +499,8 @@ next: false
 - [配置持久化、重载与对象所有权](../../04-api-reference/ui-components/configuration.md) — `ui.configuration`
   ConfigHandler的配置路径、延迟实例、文件合并保存和重载契约；单文件替换不等于内存发布成功，重载会使旧配置引用失效。
 
-- [UI 运行时组件](../../04-api-reference/ui-components/ui-runtime-handoff.md) — `ui.discovery`
-  排查程序集加载后菜单、设置、PropertyGrid、工具和服务扩展的发现链。
+- [UI 运行时扩展发现与排查](../../04-api-reference/ui-components/ui-runtime-handoff.md) — `ui.discovery`
+  UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。
 
 - [编辑器选择、文档生命周期与停靠布局](../../04-api-reference/ui-components/editor-document-lifecycle.md) — `ui.documents`
   编辑器注册与选择、按路径和编辑器区分文档、保存重载关闭及外部变更；停靠布局不恢复未注册文件标签，重置也不预审脏文档。
@@ -563,6 +575,9 @@ next: false
 
 - [插件装载、依赖门禁与扩展发现](../../02-developer-guide/plugin-development/overview.md) — `plugins.model`
   PluginLoader的manifest/依赖门禁、禁用缓存、程序集发现和失败边界；载入不等于provider可用，也不支持隔离卸载。
+
+- [UI 运行时扩展发现与排查](../../04-api-reference/ui-components/ui-runtime-handoff.md) — `ui.discovery`
+  UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。
 
 - [快捷键：发现、注册、编辑与释放](../../04-api-reference/ui-components/hotkeys.md) — `ui.hotkeys`
   快捷键的发现、多组绑定、窗口/全局注册与搜索编辑；同一操作共享作用域，未分配操作保留展示，确认后立即保存，注册或持久化失败按结果补偿。
