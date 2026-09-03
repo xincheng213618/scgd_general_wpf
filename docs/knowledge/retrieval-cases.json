@@ -577,6 +577,10 @@
     {"query":"ColorVision 服务主机","expected_any":["platform.service-host"],"include_planned":false},
     {"query":"扫描空间","expected_any":["ui.storage-maintenance"],"include_planned":false},
     {"query":"配置恢复点","expected_any":["ui.storage-maintenance"],"include_planned":false},
-    {"query":"StorageMaintenanceViewModel.CleanupAsync","expected_any":["ui.storage-maintenance"],"include_planned":false}
+    {"query":"StorageMaintenanceViewModel.CleanupAsync","expected_any":["ui.storage-maintenance"],"include_planned":false},
+    {"query":"扩展开发","expected_any":["platform.extensibility"],"include_planned":false},
+    {"query":"IResultHandleBase","expected_any":["engine.results"],"include_planned":false},
+    {"query":"PropertyEditorType","expected_any":["ui.property-grid"],"include_planned":false},
+    {"query":"给配置字段增加自定义编辑器","expected_any":["ui.property-grid"],"include_planned":false}
   ]
 }

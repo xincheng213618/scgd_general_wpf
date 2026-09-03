@@ -5192,7 +5192,7 @@
         "Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs"
       ],
       "related": [
-        "platform.extensions",
+        "platform.extensibility",
         "flow.index",
         "flow.runtime",
         "ui.property-grid"
@@ -6563,33 +6563,42 @@
     },
     {
       "knowledge_id": "platform.extensibility",
-      "knowledge_type": "topic",
+      "knowledge_type": "index",
       "status": "current",
-      "summary": "菜单、插件、属性编辑器、算法模板和 Copilot 扩展的职责与源码入口。",
+      "summary": "按插件、菜单、属性面板、设备、Flow、算法和结果扩展任务定位实现与当前契约。",
       "aliases": [
+        "扩展开发",
+        "扩展入口",
         "增加扩展应放在哪一层",
-        "IPlugin",
-        "IResultHandleBase",
-        "PropertyEditorType",
-        "CopilotAgentExtensionRegistry"
+        "扩展功能应该实现哪个接口"
       ],
       "code_paths": [
         "UI/ColorVision.Common/Interfaces",
         "UI/ColorVision.UI/Plugins/PluginLoader.cs",
-        "Engine/ColorVision.Engine/Templates"
+        "UI/ColorVision.UI/PropertyEditor/PropertyEditorTypeAttribute.cs",
+        "UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs",
+        "Engine/FlowEngineLib/Base/CVBaseServerNode.cs",
+        "Engine/ColorVision.Engine/Templates",
+        "Engine/ColorVision.Engine/Abstractions/IResultHandlers.cs",
+        "Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs"
       ],
-      "test_paths": [
-        "Test/ColorVision.UI.Tests/PluginLoaderTests.cs"
-      ],
+      "test_paths": [],
       "related": [
         "plugins.index",
         "plugins.model",
         "engine.index",
+        "engine.results",
         "ui.index",
-        "ui.menus"
+        "ui.menus",
+        "ui.property-grid",
+        "algorithms.platform",
+        "flow.node-extension",
+        "engine.devices",
+        "engine.template-design"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine",
+        "Engine/FlowEngineLib",
         "UI/ColorVision.Common",
         "UI/ColorVision.UI"
       ],
@@ -6597,40 +6606,6 @@
       "title": "扩展性开发",
       "source": "docs/02-developer-guide/core-concepts/extensibility.md",
       "url": "/02-developer-guide/core-concepts/extensibility",
-      "searchable": true
-    },
-    {
-      "knowledge_id": "platform.extensions",
-      "knowledge_type": "index",
-      "status": "current",
-      "summary": "按 Flow 节点、属性编辑器、模板、设备和插件问题定位可复用扩展契约。",
-      "aliases": [
-        "扩展功能应该实现哪个接口",
-        "IPropertyEditor",
-        "CVBaseServerNode",
-        "ITemplate"
-      ],
-      "code_paths": [
-        "Engine/FlowEngineLib/Base/CVBaseServerNode.cs",
-        "UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs",
-        "Engine/ColorVision.Engine/Templates/ITemplate.cs"
-      ],
-      "test_paths": [],
-      "related": [
-        "flow.node-extension",
-        "ui.property-grid",
-        "engine.devices",
-        "engine.template-design"
-      ],
-      "code_scopes": [
-        "Engine/ColorVision.Engine",
-        "Engine/FlowEngineLib",
-        "UI/ColorVision.UI"
-      ],
-      "domain": "platform",
-      "title": "扩展任务入口",
-      "source": "docs/04-api-reference/extensions/README.md",
-      "url": "/04-api-reference/extensions/README",
       "searchable": true
     },
     {
@@ -9564,6 +9539,7 @@
         "修改参数",
         "编辑器显示成文本",
         "如何新增属性编辑器",
+        "自定义编辑器",
         "属性编辑器为什么不显示",
         "IPropertyEditor",
         "GenProperties",

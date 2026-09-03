@@ -6,7 +6,7 @@ summary: "说明服务节点基类、请求与响应扩展点、属性编辑和�
 aliases: ["如何新增Flow节点","CVCommonNode","CVBaseServerNode","getBaseEventData","CVEndNode"]
 code_paths: ["Engine/FlowEngineLib/Base/CVCommonNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs","Test/ColorVision.UI.Tests/LocalFlowNodePortTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs"]
-related: ["platform.extensions","flow.index","flow.runtime","ui.property-grid"]
+related: ["platform.extensibility","flow.index","flow.runtime","ui.property-grid"]
 ---
 
 # FlowEngineLib 节点扩展

@@ -37,8 +37,8 @@ next: false
 - [架构设计](../../03-architecture/README.md) — `platform.architecture`
   按启动、跨模块调用、流程、模板与权限问题定位架构契约。
 
-- [扩展任务入口](../../04-api-reference/extensions/README.md) — `platform.extensions`
-  按 Flow 节点、属性编辑器、模板、设备和插件问题定位可复用扩展契约。
+- [扩展性开发](../../02-developer-guide/core-concepts/extensibility.md) — `platform.extensibility`
+  按插件、菜单、属性面板、设备、Flow、算法和结果扩展任务定位实现与当前契约。
 
 - [DataLoad 数据加载模板](../../04-api-reference/algorithms/templates/data-load-template.md) — `algorithms.data-load`
   数据加载与数据加载2的模板选择、参数初值和请求格式；区分要读取的数据来源与本次 Flow 执行设备、流水号及 ZIndex。
@@ -166,9 +166,6 @@ next: false
 - [系统开发工具管理](../../02-developer-guide/core-concepts/developer-tools-manager.md) — `platform.developer-tools`
   独立开发工具窗口发现系统 Python、Node.js/npm，并由用户选择校验后启动官方安装向导；不托管项目环境，不自动改默认版本。
 
-- [扩展性开发](../../02-developer-guide/core-concepts/extensibility.md) — `platform.extensibility`
-  菜单、插件、属性编辑器、算法模板和 Copilot 扩展的职责与源码入口。
-
 - [系统职责与跨模块边界](../../03-architecture/overview/system-overview.md) — `platform.system`
   宿主、UI、Engine、插件与项目的职责及调用边界：UI操作不必经过Engine，程序集依赖不是统一执行顺序，构建产物不等于交付制品。
 
@@ -285,8 +282,8 @@ next: false
 - [Flow 节点检索入口](../../04-api-reference/flow_nodes_summary.md) — `flow.index`
   按节点用途与执行归属定位 FlowEngineLib、Engine 本地节点和属性编辑器。
 
-- [扩展任务入口](../../04-api-reference/extensions/README.md) — `platform.extensions`
-  按 Flow 节点、属性编辑器、模板、设备和插件问题定位可复用扩展契约。
+- [扩展性开发](../../02-developer-guide/core-concepts/extensibility.md) — `platform.extensibility`
+  按插件、菜单、属性面板、设备、Flow、算法和结果扩展任务定位实现与当前契约。
 
 - [DataLoad 数据加载模板](../../04-api-reference/algorithms/templates/data-load-template.md) — `algorithms.data-load`
   数据加载与数据加载2的模板选择、参数初值和请求格式；区分要读取的数据来源与本次 Flow 执行设备、流水号及 ZIndex。

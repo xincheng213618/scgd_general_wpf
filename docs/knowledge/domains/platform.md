@@ -17,14 +17,11 @@ next: false
 - [架构设计](../../03-architecture/README.md) — `platform.architecture`
   按启动、跨模块调用、流程、模板与权限问题定位架构契约。
 
-- [扩展任务入口](../../04-api-reference/extensions/README.md) — `platform.extensions`
-  按 Flow 节点、属性编辑器、模板、设备和插件问题定位可复用扩展契约。
+- [扩展性开发](../../02-developer-guide/core-concepts/extensibility.md) — `platform.extensibility`
+  按插件、菜单、属性面板、设备、Flow、算法和结果扩展任务定位实现与当前契约。
 
 - [系统开发工具管理](../../02-developer-guide/core-concepts/developer-tools-manager.md) — `platform.developer-tools`
   独立开发工具窗口发现系统 Python、Node.js/npm，并由用户选择校验后启动官方安装向导；不托管项目环境，不自动改默认版本。
-
-- [扩展性开发](../../02-developer-guide/core-concepts/extensibility.md) — `platform.extensibility`
-  菜单、插件、属性编辑器、算法模板和 Copilot 扩展的职责与源码入口。
 
 - [ColorVisionDriver：实验性内核驱动骨架](../../03-architecture/components/kernel-driver.md) — `platform.kernel-driver`
   ColorVisionDriver 实验性 WDM 驱动骨架的两个 IOCTL、WDK 构建输入与接入边界；尚未接入主程序、服务宿主或正式发布链。

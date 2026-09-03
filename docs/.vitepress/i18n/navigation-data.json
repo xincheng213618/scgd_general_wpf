@@ -851,6 +851,12 @@
           "items": [
             {
               "text": {
+                "root": "扩展性开发"
+              },
+              "link": "/02-developer-guide/core-concepts/extensibility"
+            },
+            {
+              "text": {
                 "root": "UI 组件目录"
               },
               "link": "/04-api-reference/ui-components/control-catalog"
@@ -866,12 +872,6 @@
                 "root": "模板注册、参数与持久化"
               },
               "link": "/03-architecture/components/templates/design"
-            },
-            {
-              "text": {
-                "root": "扩展性开发"
-              },
-              "link": "/02-developer-guide/core-concepts/extensibility"
             },
             {
               "text": {
@@ -1613,9 +1613,9 @@
             },
             {
               "text": {
-                "root": "扩展任务入口"
+                "root": "扩展性开发"
               },
-              "link": "/04-api-reference/extensions/README"
+              "link": "/02-developer-guide/core-concepts/extensibility"
             },
             {
               "text": {
@@ -1730,12 +1730,6 @@
                 "root": "系统开发工具管理"
               },
               "link": "/02-developer-guide/core-concepts/developer-tools-manager"
-            },
-            {
-              "text": {
-                "root": "扩展性开发"
-              },
-              "link": "/02-developer-guide/core-concepts/extensibility"
             },
             {
               "text": {
@@ -2078,9 +2072,9 @@
             },
             {
               "text": {
-                "root": "扩展任务入口"
+                "root": "扩展性开发"
               },
-              "link": "/04-api-reference/extensions/README"
+              "link": "/02-developer-guide/core-concepts/extensibility"
             },
             {
               "text": {
@@ -2336,12 +2330,6 @@
             },
             {
               "text": {
-                "root": "扩展性开发"
-              },
-              "link": "/02-developer-guide/core-concepts/extensibility"
-            },
-            {
-              "text": {
                 "root": "系统职责与跨模块边界"
               },
               "link": "/03-architecture/overview/system-overview"
@@ -2594,9 +2582,9 @@
             },
             {
               "text": {
-                "root": "扩展任务入口"
+                "root": "扩展性开发"
               },
-              "link": "/04-api-reference/extensions/README"
+              "link": "/02-developer-guide/core-concepts/extensibility"
             },
             {
               "text": {

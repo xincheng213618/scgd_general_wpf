@@ -56,6 +56,9 @@ next: false
 
 ## UI/ColorVision.Common {#module-55492f436f6c6f72566973696f6e2e436f6d6d6f6e}
 
+- [扩展性开发](../../02-developer-guide/core-concepts/extensibility.md) — `platform.extensibility`
+  按插件、菜单、属性面板、设备、Flow、算法和结果扩展任务定位实现与当前契约。
+
 - [UI 组件目录](../../04-api-reference/ui-components/control-catalog.md) — `ui.control-catalog`
   按控件、窗口和扩展接口定位对应 UI 源码与专题。
 
@@ -64,9 +67,6 @@ next: false
 
 - [模板注册、参数与持久化](../../03-architecture/components/templates/design.md) — `engine.template-design`
   TemplateControl注册与普通ITemplate\<T\>参数加载、保存、复制和删除契约；注册、内存变更和数据库成功是不同状态，JSON与Flow另有实现。
-
-- [扩展性开发](../../02-developer-guide/core-concepts/extensibility.md) — `platform.extensibility`
-  菜单、插件、属性编辑器、算法模板和 Copilot 扩展的职责与源码入口。
 
 - [权限边界与鉴权入口](../../03-architecture/security/overview.md) — `platform.security`
   区分应用管理员、RBAC会话与权限码、Windows服务身份及远程/工具授权；登录缓存和界面状态不能替代执行入口的权限检查。
@@ -412,8 +412,8 @@ next: false
 - [数据所有者与存储定位](../../01-user-guide/data-management/README.md) — `operations.data`
   按设置JSON、Engine MySQL、模块SQLite和结果文件定位数据所有者；有记录、有图片、已导出和已备份不是同一状态。
 
-- [扩展任务入口](../../04-api-reference/extensions/README.md) — `platform.extensions`
-  按 Flow 节点、属性编辑器、模板、设备和插件问题定位可复用扩展契约。
+- [扩展性开发](../../02-developer-guide/core-concepts/extensibility.md) — `platform.extensibility`
+  按插件、菜单、属性面板、设备、Flow、算法和结果扩展任务定位实现与当前契约。
 
 - [插件装配与模块知识入口](../../04-api-reference/plugins/README.md) — `plugins.index`
   从插件程序集装载、产物安装和具体模块能力定位源码；同一责任不再分开发手册与使用手册。
@@ -471,9 +471,6 @@ next: false
 
 - [系统开发工具管理](../../02-developer-guide/core-concepts/developer-tools-manager.md) — `platform.developer-tools`
   独立开发工具窗口发现系统 Python、Node.js/npm，并由用户选择校验后启动官方安装向导；不托管项目环境，不自动改默认版本。
-
-- [扩展性开发](../../02-developer-guide/core-concepts/extensibility.md) — `platform.extensibility`
-  菜单、插件、属性编辑器、算法模板和 Copilot 扩展的职责与源码入口。
 
 - [启动、初始化与故障恢复](../../03-architecture/overview/runtime.md) — `platform.runtime`
   启动顺序与故障恢复：初始化进度和ready不代表全部成功，运行期维护区分浏览、禁用、文档准备与重启，一次性插件跳过不绕过真实故障。
