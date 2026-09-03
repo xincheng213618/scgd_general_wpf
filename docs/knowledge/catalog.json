@@ -7035,13 +7035,17 @@
         "Conoscope",
         "Spectrum",
         "SystemMonitor",
-        "WindowsServicePlugin"
+        "WindowsServicePlugin",
+        "Pattern",
+        "ImageProjector"
       ],
       "code_paths": [
         "Plugins/Conoscope",
         "Plugins/Spectrum",
         "Plugins/SystemMonitor",
-        "Plugins/WindowsServicePlugin"
+        "Plugins/WindowsServicePlugin",
+        "Plugins/Pattern",
+        "Plugins/ImageProjector"
       ],
       "test_paths": [
         "Test/Conoscope.Tests/Conoscope.Tests.csproj",
@@ -7055,10 +7059,13 @@
         "plugins.conoscope",
         "plugins.spectrum",
         "plugins.system-monitor",
-        "plugins.windows-service"
+        "plugins.windows-service",
+        "plugins.pattern"
       ],
       "code_scopes": [
         "Plugins/Conoscope",
+        "Plugins/ImageProjector",
+        "Plugins/Pattern",
         "Plugins/Spectrum",
         "Plugins/SystemMonitor",
         "Plugins/WindowsServicePlugin"
@@ -7229,7 +7236,9 @@
         "Conoscope",
         "Spectrum",
         "SystemMonitor",
-        "WindowsServicePlugin"
+        "WindowsServicePlugin",
+        "Pattern",
+        "ImageProjector"
       ],
       "code_paths": [
         "Plugins",
@@ -7246,6 +7255,7 @@
         "plugins.spectrum",
         "plugins.system-monitor",
         "plugins.windows-service",
+        "plugins.pattern",
         "platform.extensibility"
       ],
       "code_scopes": [
@@ -7315,6 +7325,50 @@
       "title": "插件装载、依赖门禁与扩展发现",
       "source": "docs/02-developer-guide/plugin-development/overview.md",
       "url": "/02-developer-guide/plugin-development/overview",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "plugins.pattern",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "Pattern 图卡生成、四象限线栅排列/视场、颜色与模板，及 ImageProjector 图片投影；源码同库维护但仍独立构建交付。",
+      "aliases": [
+        "Pattern",
+        "ImageProjector",
+        "图卡生成工具",
+        "图片投影工具",
+        "四象限线栅",
+        "QuadrantGrating",
+        "按数量排列",
+        "按像素排列",
+        "PatternBrushPropertiesEditor",
+        "PatternHostCopy"
+      ],
+      "code_paths": [
+        "Plugins/Pattern",
+        "Plugins/ImageProjector",
+        "scgd_general_wpf.sln"
+      ],
+      "test_paths": [
+        "Test/Pattern.Tests/Pattern.Tests.csproj",
+        "Test/Pattern.Tests/PatternMigrationTests.cs"
+      ],
+      "related": [
+        "plugins.index",
+        "plugins.capabilities",
+        "plugins.getting-started",
+        "ui.property-grid",
+        "ui.image-editor"
+      ],
+      "code_scopes": [
+        ".",
+        "Plugins/ImageProjector",
+        "Plugins/Pattern"
+      ],
+      "domain": "plugins",
+      "title": "图卡生成与图片投影",
+      "source": "docs/04-api-reference/plugins/standard-plugins/pattern.md",
+      "url": "/04-api-reference/plugins/standard-plugins/pattern",
       "searchable": true
     },
     {

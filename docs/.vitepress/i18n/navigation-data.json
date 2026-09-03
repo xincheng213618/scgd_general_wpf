@@ -2875,6 +2875,48 @@
         },
         {
           "text": {
+            "root": "Plugins/ImageProjector"
+          },
+          "link": "/knowledge/code/source-Plugins#module-506c7567696e732f496d61676550726f6a6563746f72",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "图卡生成与图片投影"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/pattern"
+            },
+            {
+              "text": {
+                "root": "插件依赖与接入矩阵"
+              },
+              "link": "/04-api-reference/plugins/plugin-capability-matrix"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Plugins/Pattern"
+          },
+          "link": "/knowledge/code/source-Plugins#module-506c7567696e732f5061747465726e",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "图卡生成与图片投影"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/pattern"
+            },
+            {
+              "text": {
+                "root": "插件依赖与接入矩阵"
+              },
+              "link": "/04-api-reference/plugins/plugin-capability-matrix"
+            }
+          ]
+        },
+        {
+          "text": {
             "root": "Plugins/Spectrum"
           },
           "link": "/knowledge/code/source-Plugins#module-506c7567696e732f537065637472756d",
@@ -3740,6 +3782,12 @@
                 "root": "插件产物、安装与交付"
               },
               "link": "/02-developer-guide/plugin-development/getting-started"
+            },
+            {
+              "text": {
+                "root": "图卡生成与图片投影"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/pattern"
             },
             {
               "text": {

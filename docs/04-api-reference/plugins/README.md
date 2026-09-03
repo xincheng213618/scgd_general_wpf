@@ -3,10 +3,10 @@ knowledge_id: "plugins.index"
 knowledge_type: "index"
 status: "current"
 summary: "从插件程序集装载、产物安装和具体模块能力定位源码；同一责任不再分开发手册与使用手册。"
-aliases: ["当前有哪些通用插件", "插件功能在哪里", "新建插件", "插件不加载从哪里查", "Conoscope", "Spectrum", "SystemMonitor", "WindowsServicePlugin"]
+aliases: ["当前有哪些通用插件", "插件功能在哪里", "新建插件", "插件不加载从哪里查", "Conoscope", "Spectrum", "SystemMonitor", "WindowsServicePlugin", "Pattern", "ImageProjector"]
 code_paths: ["Plugins", "UI/ColorVision.UI/Plugins/PluginLoader.cs", "Plugins/Directory.Build.props", "PluginProject.HostCopy.targets"]
 test_paths: []
-related: ["plugins.model", "plugins.getting-started", "plugins.capabilities", "plugins.conoscope", "plugins.spectrum", "plugins.system-monitor", "plugins.windows-service", "platform.extensibility"]
+related: ["plugins.model", "plugins.getting-started", "plugins.capabilities", "plugins.conoscope", "plugins.spectrum", "plugins.system-monitor", "plugins.windows-service", "plugins.pattern", "platform.extensibility"]
 ---
 
 # 插件装配与模块知识入口

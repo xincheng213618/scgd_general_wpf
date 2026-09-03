@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <XunitRunnerVisualStudioVersion>4.0.0</XunitRunnerVisualStudioVersion>
+    <VSTestTestAdapterPath>$(NuGetPackageRoot)xunit.runner.visualstudio\$(XunitRunnerVisualStudioVersion)\build\net8.0</VSTestTestAdapterPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVisualStudioVersion)" PrivateAssets="all" />
+    <Using Include="Xunit" />
+    <None Include="$(VSTestTestAdapterPath)\*.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <Compile Include="..\ColorVision.UI.Tests\WpfTestHost.cs" Link="WpfTestHost.cs" />
+    <ProjectReference Include="..\..\Plugins\Pattern\Pattern.csproj" />
+  </ItemGroup>
+</Project>

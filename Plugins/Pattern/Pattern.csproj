@@ -1,0 +1,98 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+		<VersionPrefix>1.5.1.5</VersionPrefix>
+		<AssemblyOriginatorKeyFile>..\..\ColorVision.snk</AssemblyOriginatorKeyFile>
+		<SignAssembly Condition="Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
+		<CETCompat>false</CETCompat>
+	</PropertyGroup>
+	
+	<ItemGroup>
+		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260627" />
+		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260627" />
+		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260627" />
+	</ItemGroup>
+	
+	<ItemGroup>
+		<ProjectReference Include="..\..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
+		<ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
+		<ProjectReference Include="..\ImageProjector\ImageProjector.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="Checkerboard\CheckerboardEditor.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="CrossGrid\CrossGridEditor.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Cross\CrossEditor.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Dot\DotEditor.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="LinePairMTF\LinePairMTFEditor.xaml.cs">
+		  <SubType>Code</SubType>
+		</Compile>
+		<Compile Update="NineDot\NineDotEditor.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Noise\NoiseEditor.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Properties\Resources.Designer.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>Resources.resx</DependentUpon>
+		</Compile>
+		<Compile Update="Ring\RingEditor.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Stripe\StripeEditor.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Update="Properties\Resources.resx">
+	    <Generator>PublicResXFileCodeGenerator</Generator>
+	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+	  </EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="CHANGELOG.md">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Update="manifest.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Update="README.md">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
+	<!-- Referenced executables also publish README/manifest files. Always restore this package's identity. -->
+	<Target Name="RestorePatternPackageMetadata" AfterTargets="CopyFilesToOutputDirectory">
+		<Copy SourceFiles="manifest.json;README.md;CHANGELOG.md" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
+	</Target>
+
+	<!-- Opt-in only: development builds must not silently add plugins to the main release output. -->
+	<Target Name="CopyPatternToDevelopmentHost" AfterTargets="Build"
+			Condition="'$(EnablePatternHostCopy)' == 'true' and '$(SolutionDir)' != '' and '$(SolutionDir)' != '*Undefined*' and '$(TargetFramework)' != ''">
+		<PropertyGroup>
+			<_PatternHostDirectory>$(SolutionDir)ColorVision\bin\x64\$(Configuration)\net10.0-windows\Plugins\Pattern\</_PatternHostDirectory>
+		</PropertyGroup>
+		<ItemGroup>
+			<_PatternHostFile Include="$(TargetDir)Pattern.dll;$(TargetDir)ImageProjector.dll;$(MSBuildProjectDirectory)\manifest.json;$(MSBuildProjectDirectory)\README.md;$(MSBuildProjectDirectory)\CHANGELOG.md" />
+			<_PatternHostResource Include="$(TargetDir)**\Pattern.resources.dll;$(TargetDir)**\ImageProjector.resources.dll" />
+		</ItemGroup>
+		<Copy SourceFiles="@(_PatternHostFile)" DestinationFolder="$(_PatternHostDirectory)" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(_PatternHostResource)" DestinationFiles="@(_PatternHostResource->'$(_PatternHostDirectory)%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+	</Target>
+</Project>

@@ -3,10 +3,10 @@ knowledge_id: "plugins.capabilities"
 knowledge_type: "reference"
 status: "current"
 summary: "横向定位现存插件的菜单、状态、数据库、设备与管理员权限边界。"
-aliases: ["哪个插件负责系统监控","哪些插件会操作设备或服务","Conoscope","Spectrum","SystemMonitor","WindowsServicePlugin"]
-code_paths: ["Plugins/Conoscope/","Plugins/Spectrum/","Plugins/SystemMonitor/","Plugins/WindowsServicePlugin/"]
+aliases: ["哪个插件负责系统监控","哪些插件会操作设备或服务","Conoscope","Spectrum","SystemMonitor","WindowsServicePlugin","Pattern","ImageProjector"]
+code_paths: ["Plugins/Conoscope/","Plugins/Spectrum/","Plugins/SystemMonitor/","Plugins/WindowsServicePlugin/","Plugins/Pattern/","Plugins/ImageProjector/"]
 test_paths: ["Test/Conoscope.Tests/Conoscope.Tests.csproj","Test/Spectrum.Tests/Spectrum.Tests.csproj","Test/ColorVision.UI.Tests/SystemMonitorLifecycleTests.cs"]
-related: ["plugins.index","plugins.model","plugins.getting-started","plugins.conoscope","plugins.spectrum","plugins.system-monitor","plugins.windows-service"]
+related: ["plugins.index","plugins.model","plugins.getting-started","plugins.conoscope","plugins.spectrum","plugins.system-monitor","plugins.windows-service","plugins.pattern"]
 ---
 
 # 插件依赖与接入矩阵
@@ -19,6 +19,8 @@ related: ["plugins.index","plugins.model","plugins.getting-started","plugins.con
 
 | 插件 | 源码目录 | 版本事实源 | 宿主入口 | 主要能力 | 关键风险 |
 | --- | --- | --- | --- | --- | --- |
+| [Pattern](./standard-plugins/pattern.md) | `Plugins/Pattern/` | `Pattern.csproj VersionPrefix` / DLL `FileVersion` | Tool 菜单“图卡生成工具”，`PatternFeatureLauncher` | 11 类图卡、模板、导出，四象限线栅支持按数量/像素排列 | OpenCV 与宿主 UI ABI；私有 ImageProjector 依赖；导入 ZIP 会替换模板目录 |
+| [ImageProjector](./standard-plugins/pattern.md#图片投影) | `Plugins/ImageProjector/` | `ImageProjector.csproj VersionPrefix` / DLL `FileVersion` | Tool 菜单“图片投影工具”，Pattern 内入口 | 图片列表、多屏选择、全屏显示和四种缩放方式 | 直接影响目标显示器；混合 DPI 需真机验证 |
 | [Conoscope](./standard-plugins/conoscope.md) | `Plugins/Conoscope/` | DLL `FileVersion` / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Conoscope/Conoscope.csproj)；[manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Conoscope/manifest.json) 为同步副本 | Tool 菜单 `VAM`，ImageEditor 右键打开 | 锥镜/VAM 图像观察、关注点、参考轴、预处理、色域和对比度分析、MVS 观察相机 | MVS 依赖海康 `MvCameraControl.dll`；关注点逻辑是插件本地实现 |
 | [Spectrum](./standard-plugins/spectrum.md) | `Plugins/Spectrum/` | DLL `FileVersion` / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Spectrum/Spectrum.csproj)；[manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/Spectrum/manifest.json) 为同步副本 | Tool 菜单光谱窗口，Spectrum 窗口级菜单/状态栏，Socket JSON 指令 | 光谱仪连接、标定分组、测量、EQE、CIE、SQLite 结果、许可证、Socket 远程控制 | 依赖光谱仪 native DLL、OpenCV、串口、许可证；连接状态与标定可测量状态必须分开判断 |
 | [SystemMonitor](./standard-plugins/system-monitor.md) | `Plugins/SystemMonitor/` | [manifest](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/SystemMonitor/manifest.json) / [csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Plugins/SystemMonitor/SystemMonitor.csproj) | Tool 菜单，设置页，主程序状态栏 | CPU/RAM/磁盘/网络/进程/GPU/缓存监控和状态栏投影 | 性能计数器可能初始化失败并降级；监控单例位于 `ColorVision.UI.Configs` 命名空间 |
@@ -30,6 +32,8 @@ related: ["plugins.index","plugins.model","plugins.getting-started","plugins.con
 
 | 插件 | 主菜单入口 | 窗口级菜单 | 状态栏 | 设置页 | Socket | 其他扩展点 |
 | --- | --- | --- | --- | --- | --- | --- |
+| Pattern | `ExportTestPatternWpf` -> Tool | 图卡窗口与模板操作 | 无 | 图卡配置属性表、`PatternManagerConfig` | 无 | `PatternFeatureLauncher`、已装载程序集中的 `IPattern` 发现 |
+| ImageProjector | `MenuImageProjector` -> Tool | 图片/显示器/投影操作 | 无 | `ImageProjectorConfig` | 无 | `PatternManager.OpenImageProjectorCommand` |
 | Conoscope | `MenuConoscopeWindow` -> Tool / `VAM` | `ConoscopeWindow` Ribbon、View 菜单、`MenuMVSVideo` | 每标签页 `ConoscopeViewState` + `ConoscopeDocument`；全局 `ConoscopeConfig` / ReferenceStore | `ConoscopeConfigWindow`（含预处理页） | 无 | `ConoscopeImageViewContextMenu` 接入 ImageEditor 右键菜单 |
 | Spectrum | `MenuSpectrumWindow` -> Tool | `LoadMenuForWindow("Spectrum", menu)`，包含帮助、布局、许可证、原生日志等菜单 | `SpectrumStatusBarProvider`，目标窗口 `Spectrum` | 多个 `ConfigService` 配置对象 | 5 个 `ISocketJsonHandler` | Quartz 任务、SQLite 结果、许可证同步 |
 | SystemMonitor | `SystemMonitorProvider` -> Tool | 无独立复杂菜单 | `SystemMonitorIStatusBarProvider` | `IConfigSettingProvider` | 无 | `SystemMonitorControl` 同时用于设置页和窗口 |
@@ -39,6 +43,8 @@ related: ["plugins.index","plugins.model","plugins.getting-started","plugins.con
 
 | 插件 | 外部设备/服务 | 文件和数据库 | 系统权限 | 现场排查先看 |
 | --- | --- | --- | --- | --- |
+| Pattern | OpenCV native | 文档 `ColorVision/Pattern` 模板与默认值、图卡输出文件 | 通常无需管理员；导入/清空会删除目录内容 | UI/native ABI、模板路径、图像宽高及输出格式 |
+| ImageProjector | Windows 显示器 / DPI | `ConfigService` 图片列表、显示器和缩放方式 | 通常无需管理员 | 屏幕是否存在、图片路径、缩放模式、实际 DPI |
 | Conoscope | MVS 观察相机、`MvCameraControl.dll` | 关注点/参考轴/预处理配置，CSV 导出 | 普通图像分析通常不需要管理员；相机驱动由系统环境决定 | MVS SDK 是否安装、图像是否可打开、关注点是否记录、导出文件是否生成 |
 | Spectrum | SP100/SP10/高利通光谱仪、Shutter、CFW、SMU、串口、native 光谱仪 DLL | `%APPDATA%\Spectromer\Config\Spectrum.db`、标定分组、许可证目录；CIE 图片来自宿主共享 ImageEditor 资源 | 通常不需要管理员；设备驱动和许可证要就绪 | 设备连接、标定 readiness、共享 native 会话、Socket 服务、SQLite 结果库 |
 | SystemMonitor | Windows 性能计数器、CUDA 信息、网络接口 | 应用数据/日志的递归统计与顶层文件清理，详见[统计和清理范围](./standard-plugins/system-monitor.md#缓存大小与清理范围) | 删除取决于目标目录权限，逐文件失败会被忽略 | 性能计数器整组初始化、配置开关、状态栏 provider 是否刷新 |
@@ -50,6 +56,8 @@ related: ["plugins.index","plugins.model","plugins.getting-started","plugins.con
 
 | 插件 | 构建命令 | 发布上传命令（需授权） | 宿主镜像（条件） | 必带文件 |
 | --- | --- | --- | --- | --- |
+| Pattern | `dotnet build Plugins/Pattern/Pattern.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat Pattern` | 默认关闭；显式 `EnablePatternHostCopy` 与有效 `SolutionDir`，仅当前配置 | Pattern 与 ImageProjector DLL、两者卫星资源、Pattern 元数据 |
+| ImageProjector | `dotnet build Plugins/ImageProjector/ImageProjector.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat ImageProjector` | 默认关闭；显式 `EnableImageProjectorHostCopy` 与有效 `SolutionDir`，仅当前配置 | ImageProjector DLL、卫星资源及自身元数据 |
 | Conoscope | `dotnet build Plugins/Conoscope/Conoscope.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat Conoscope` | solution/MSBuild 且 `SolutionDir` 有效时复制到宿主 `Plugins/Conoscope/` | `Conoscope.dll`、manifest、README、CHANGELOG；使用观察相机时再带 MVS/native 依赖 |
 | Spectrum | `dotnet build Plugins/Spectrum/Spectrum.csproj -c Release -p:Platform=x64` | 正式发布：`Scripts\Spectrum.bat --release-notes "..."` | 无 HostCopy；专用脚本从项目输出打包 | `Spectrum.dll`、manifest、README、CHANGELOG、`Magiude.dat`、`WavaLength.dat`、光谱仪 native DLL；另生成独立 ZIP |
 | SystemMonitor | `dotnet build Plugins/SystemMonitor/SystemMonitor.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat SystemMonitor` | solution/MSBuild 且 `SolutionDir` 有效时复制到宿主 `Plugins/SystemMonitor/` | `SystemMonitor.dll`、manifest、README、CHANGELOG |
@@ -61,6 +69,8 @@ related: ["plugins.index","plugins.model","plugins.getting-started","plugins.con
 
 | 插件 | 最小烟测 | 通过标准 |
 | --- | --- | --- |
+| Pattern | 打开图卡窗口，生成默认 2×2 与自定义数量/像素线栅，改变线宽/颜色/视场，保存到测试目录 | 像素布局与配置一致，颜色及模板兼容；不以显示缩放证明真实光学结果 |
+| ImageProjector | 先确认测试屏幕，再添加合成图片、切换显示模式/图片、Esc 关闭 | 目标屏幕正确、切图成功、退出恢复；混合 DPI 另验证 |
 | Conoscope | 打开 Tool -> VAM；导入大 CVCIE；观察 Y 首屏与 XYZ 后台就绪；切通道；新增/移动关注点；执行色域或对比度分析；导出 CSV | readiness 与分阶段加载一致；新文档清关注点、同文档换通道保留关注点；结果窗口和 CSV 正常 |
 | Spectrum | 打开 Spectrum；检查状态栏；执行无设备状态查询；有设备时连接、确认标定就绪、校零、测量、导出；启用 Socket 后发送 `SpectrumStatus`/`SpectrumConnect` | 状态栏区分连接和标定 readiness；测量结果与画像同事务落库；Socket 返回正确 Code/Msg 和连接标定状态 |
 | SystemMonitor | 打开“系统监控”；切换状态栏开关；刷新磁盘/网络/进程；清理另按授权范围验证 | 核对采样来源、状态栏增删和停止条件；各数据源的失败边界见[监控排障](./standard-plugins/system-monitor.md#异常与排查) |
