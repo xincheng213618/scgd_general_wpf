@@ -53,7 +53,7 @@ next: false
   区分log4net输出、历史文件读取与UI筛选，说明刷新、截断和原生日志采集边界；没有显示不等于动作未发生。
 
 - [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
-  主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口默认启用并保留旧窗口开关，Windows 11 兼容门禁与实际交互边界仍适用。
+  主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口在 Windows build 22000 或更高版本默认启用并保留旧窗口开关，低版本直接使用普通主窗口。
 
 - [RBAC：登录缓存、会话与权限边界](../../03-architecture/security/rbac.md) — `platform.rbac`
   本地RBAC的登录缓存、会话校验和权限同步限制，以及自动登录失败、登出撤销和用户中心统计的实际边界。
@@ -217,7 +217,7 @@ next: false
 ## ColorVision/Themes {#module-436f6c6f72566973696f6e2f5468656d6573}
 
 - [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
-  主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口默认启用并保留旧窗口开关，Windows 11 兼容门禁与实际交互边界仍适用。
+  主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口在 Windows build 22000 或更高版本默认启用并保留旧窗口开关，低版本直接使用普通主窗口。
 
 ## ColorVision/ToolPlugins {#module-436f6c6f72566973696f6e2f546f6f6c506c7567696e73}
 
@@ -253,7 +253,7 @@ next: false
 ## ColorVision/Windowing {#module-436f6c6f72566973696f6e2f57696e646f77696e67}
 
 - [主窗口与入口装配](../../01-user-guide/interface/main-window.md) — `operations.main-window`
-  主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口默认启用并保留旧窗口开关，Windows 11 兼容门禁与实际交互边界仍适用。
+  主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口在 Windows build 22000 或更高版本默认启用并保留旧窗口开关，低版本直接使用普通主窗口。
 
 ## ColorVision/Wizards {#module-436f6c6f72566973696f6e2f57697a61726473}
 

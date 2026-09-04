@@ -169,7 +169,6 @@ namespace ColorVision
         {
             Version? version = Assembly.GetExecutingAssembly().GetName().Version;
             Topmost = true;
-            CloseButton.Focus();
             #if (DEBUG == true)
             TextBlockVision.Text = $"ColorVision{(DebugBuild(Assembly.GetExecutingAssembly())? " Debug " : "Release")}{(Debugger.IsAttached ? $" ({Properties.Resources.Debugging}) " : "")} {(IntPtr.Size == 4 ? "32" : "64")}{Properties.Resources.Bit}) - {version} -.NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy.MM.dd}";
 #else

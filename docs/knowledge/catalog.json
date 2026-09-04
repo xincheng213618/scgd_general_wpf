@@ -5664,11 +5664,13 @@
       "knowledge_id": "flow.node-extension",
       "knowledge_type": "guide",
       "status": "current",
-      "summary": "说明服务节点基类、请求与响应扩展点、属性编辑和流程完成的边界。",
+      "summary": "说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。",
       "aliases": [
         "如何新增Flow节点",
         "CVCommonNode",
         "CVBaseServerNode",
+        "LocalFlowNodeBase",
+        "CVStartCFC输入快照",
         "getBaseEventData",
         "CVEndNode"
       ],
@@ -5677,7 +5679,8 @@
         "Engine/FlowEngineLib/Base/CVBaseServerNode.cs",
         "Engine/FlowEngineLib/Start/BaseStartNode.cs",
         "Engine/FlowEngineLib/End/CVEndNode.cs",
-        "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs"
+        "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs",
@@ -5691,6 +5694,7 @@
         "ui.property-grid"
       ],
       "code_scopes": [
+        "Engine/ColorVision.Engine",
         "Engine/FlowEngineLib"
       ],
       "domain": "flow",
@@ -6719,7 +6723,7 @@
       "knowledge_id": "operations.main-window",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口默认启用并保留旧窗口开关，Windows 11 兼容门禁与实际交互边界仍适用。",
+      "summary": "主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口在 Windows build 22000 或更高版本默认启用并保留旧窗口开关，低版本直接使用普通主窗口。",
       "aliases": [
         "主窗口",
         "菜单不见了",
@@ -6735,6 +6739,8 @@
         "标题栏更多",
         "标题栏按钮位置",
         "标题栏图标颜色",
+        "Windows build 22000",
+        "低版本隐藏紧凑主窗口设置",
         "MainWindowActionButtonStyle",
         "TitleBarActionForeground",
         "TitleBarActionInactiveForeground",
@@ -8418,13 +8424,15 @@
         "Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml.cs",
         "Projects/ProjectARVRPro/ResultStatisticsTheme.xaml",
         "Projects/ProjectARVRPro/ResultStatistics.cs",
+        "Projects/ProjectARVRPro/ResultTimeline.cs",
         "Projects/ProjectARVRPro/ProjectARVRProConfig.cs"
       ],
       "test_paths": [
         "Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj",
         "Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs",
         "Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs",
-        "Test/ProjectARVRPro.Tests/ResultStatisticsTests.cs"
+        "Test/ProjectARVRPro.Tests/ResultStatisticsTests.cs",
+        "Test/ProjectARVRPro.Tests/FlowPhaseTimingPersistenceTests.cs"
       ],
       "related": [
         "projects.index",

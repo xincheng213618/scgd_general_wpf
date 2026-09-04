@@ -3,6 +3,7 @@ using ColorVision.FloatingBall;
 using ColorVision.UI;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
+using ColorVision.Windowing;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -102,13 +103,17 @@ namespace ColorVision
                 {
                     BindingName = nameof(IsRestoreWindow),
                     Source = Instance
-                },
-                new ConfigSettingMetadata
+                }
+            };
+
+            if (ShouldShowCompactMainWindowSetting(CompactTitleBarChrome.IsSupportedOperatingSystem))
+            {
+                list.Add(new ConfigSettingMetadata
                 {
                     BindingName = nameof(UseCompactMainWindow),
                     Source = Instance
-                }
-            };
+                });
+            }
 
             if (Tool.IsWin11)
             {
@@ -120,6 +125,9 @@ namespace ColorVision
             }
             return list;
         }
+
+        internal static bool ShouldShowCompactMainWindowSetting(bool operatingSystemSupported) =>
+            operatingSystemSupported;
     }
 
     public class ExportMenuViewStatusBar : MenuItemBase,IHotKey

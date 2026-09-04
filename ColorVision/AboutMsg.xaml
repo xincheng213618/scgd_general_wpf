@@ -8,7 +8,7 @@
                  xmlns:properties="clr-namespace:ColorVision.Properties"
                  mc:Ignorable="d" Width="550" Height="410" Background="Transparent" Initialized="Window_Initialized"
                  IsBlurEnabled="True" PreviewKeyDown="BaseWindow_PreviewKeyDown" ResizeMode="NoResize"
-                 ShowInTaskbar="False">
+                 ShowIcon="False" ShowInTaskbar="False" ShowTitle="False" Title="{x:Static properties:Resources.About}">
     <base:BaseWindow.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
@@ -24,7 +24,7 @@
             <StackPanel>
                 <Image x:Name="ImageLogo" Width="200" Margin="20" PreviewMouseDown="Image_PreviewMouseDown" Source="Assets/Image/ColorVision.png" />
                 <TextBlock x:Name="LogoText" Margin="5,15,5,20" HorizontalAlignment="Center" FontWeight="Bold" Text="" />
-                <Button x:Name="CloseButton" HorizontalAlignment="Center" Background="Transparent" BorderThickness="0" Click="Button_Click_1" MouseEnter="CloseButton_MouseEnter" MouseLeave="CloseButton_MouseLeave">
+                <Button x:Name="CloseButton" HorizontalAlignment="Center" Background="Transparent" BorderThickness="0" Click="Button_Click_1" Focusable="False" IsTabStop="False" MouseEnter="CloseButton_MouseEnter" MouseLeave="CloseButton_MouseLeave">
                     <Button.Content>
                         <Viewbox Width="200">
                             <Border Width="400" Height="80" Background="Transparent" BorderThickness="4" CornerRadius="10">
@@ -84,7 +84,7 @@
                 <TextBlock x:Name="TextBlockVision" HorizontalAlignment="Center" Text="ColorVision (64位) -  1.0.0.0" TextAlignment="Center" TextWrapping="Wrap" />
                 <TextBlock x:Name="TextCUDAVision" VerticalAlignment="Center" Text="CUDA" TextAlignment="Center" Visibility="Collapsed" />
                 <TextBox x:Name="TextBoxHardwareId" Margin="10,2,10,0" HorizontalAlignment="Stretch" Background="Transparent" BorderThickness="0" IsReadOnly="True" Text="-" TextAlignment="Center" TextWrapping="Wrap" />
-                <TextBlock VerticalAlignment="Center" Text="© 2023-2026 ColorVision All Rigths Reserved" TextAlignment="Center" />
+                <TextBlock VerticalAlignment="Center" Text="© 2023-2026 ColorVision All Rights Reserved" TextAlignment="Center" />
             </StackPanel>
 
 

@@ -17,6 +17,14 @@ namespace ColorVision.Windowing
     /// </summary>
     public sealed class CompactTitleBarChrome : IDisposable
     {
+        private static readonly Version MinimumSupportedWindowsVersion = new(10, 0, 22000);
+
+        internal static bool IsSupportedOperatingSystem =>
+            OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
+
+        internal static bool IsSupportedOperatingSystemVersion(Version version) =>
+            version >= MinimumSupportedWindowsVersion;
+
         private readonly Window window;
         private readonly FrameworkElement titleBar;
         private readonly FrameworkElement captionButtonsPlaceholder;
@@ -69,7 +77,7 @@ namespace ColorVision.Windowing
                 return false;
             if (IsAttached)
                 return true;
-            if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000) || window.AllowsTransparency ||
+            if (!IsSupportedOperatingSystem || window.AllowsTransparency ||
                 window.WindowStyle != WindowStyle.SingleBorderWindow || WindowChrome.GetWindowChrome(window) != null)
                 return false;
 

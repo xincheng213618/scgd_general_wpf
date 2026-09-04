@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 1.4.3.27 - 2026-09-04
+
+### Fixed
+
+- Restored the frequently used service manager shortcut under the Help menu
+  while keeping the existing Applications and Tools entry and administrator
+  permission requirement.
+
 ## 1.4.3.26 - 2026-08-19
 
 ### Changed

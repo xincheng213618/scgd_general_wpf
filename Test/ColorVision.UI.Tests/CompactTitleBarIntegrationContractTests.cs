@@ -118,6 +118,30 @@ public sealed class CompactTitleBarIntegrationContractTests
             < constructor.IndexOf("this.SetWindowFull(Config)", StringComparison.Ordinal));
     }
 
+    [Theory]
+    [InlineData(6, 3, 9600, false)]
+    [InlineData(10, 0, 19045, false)]
+    [InlineData(10, 0, 21999, false)]
+    [InlineData(10, 0, 22000, true)]
+    [InlineData(10, 0, 26100, true)]
+    public void CompactMainWindowSupportStartsAtWindowsBuild22000(int major, int minor, int build, bool expected)
+    {
+        Assert.Equal(expected, CompactTitleBarChrome.IsSupportedOperatingSystemVersion(new Version(major, minor, build)));
+    }
+
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, true, true)]
+    public void CompactSelectionRequiresBothConfigurationAndOperatingSystemSupport(
+        bool configured, bool operatingSystemSupported, bool expectedSelection)
+    {
+        Assert.Equal(expectedSelection, MainWindowFactory.ShouldUseCompactMainWindow(configured, operatingSystemSupported));
+        Assert.Equal(operatingSystemSupported,
+            MainWindowConfig.ShouldShowCompactMainWindowSetting(operatingSystemSupported));
+    }
+
     [Fact]
     public void StartupFactoryRoutesTheSettingWithoutChangingFeatureLaunchers()
     {
@@ -126,7 +150,23 @@ public sealed class CompactTitleBarIntegrationContractTests
         ParameterInfo parameter = Assert.Single(factory.GetParameters());
         Assert.Equal(typeof(bool), parameter.ParameterType);
         string factorySource = ReadRepositoryText("ColorVision/MainWindowFactory.cs");
-        Assert.Matches($@"{Regex.Escape(parameter.Name!)}\s*\?\s*new CompactMainWindow\(\)\s*:\s*new MainWindow\(\)", factorySource);
+        Assert.Equal(2, Regex.Matches(factorySource,
+            @"ShouldUseCompactMainWindow\([^\r\n]+CompactTitleBarChrome\.IsSupportedOperatingSystem\)").Count);
+        Assert.Equal(2, Regex.Matches(factorySource,
+            @"selected\s*\?\s*new CompactMainWindow\(\)\s*:\s*new MainWindow\(\)").Count);
+
+        string chromeSource = ReadRepositoryText("ColorVision/Windowing/CompactTitleBarChrome.cs");
+        string attachBody = MethodBody(chromeSource, "public bool TryAttach()");
+        Assert.Contains("if (!IsSupportedOperatingSystem ||", attachBody, StringComparison.Ordinal);
+        Assert.DoesNotContain("OperatingSystem.IsWindowsVersionAtLeast", attachBody, StringComparison.Ordinal);
+
+        string settingsBody = MethodBody(ReadRepositoryText("ColorVision/MainWindowConfig.cs"),
+            "public IEnumerable<ConfigSettingMetadata> GetConfigSettings()");
+        const string settingsGate = "if (ShouldShowCompactMainWindowSetting(CompactTitleBarChrome.IsSupportedOperatingSystem))";
+        Assert.Contains(settingsGate, settingsBody, StringComparison.Ordinal);
+        string supportedSettings = MethodBody(settingsBody, settingsGate);
+        Assert.Contains("BindingName = nameof(UseCompactMainWindow)", supportedSettings, StringComparison.Ordinal);
+        Assert.Equal(1, Regex.Matches(settingsBody, @"BindingName\s*=\s*nameof\(UseCompactMainWindow\)").Count);
 
         string startupBody = MethodBody(ReadRepositoryText("ColorVision/StartWindow.xaml.cs"), "private void ShowMainWindowAndClose()");
         Assert.Equal(2, Regex.Matches(startupBody, @"MainWindowFactory\.Create\(MainWindowConfig\.Instance\.UseCompactMainWindow\)").Count);

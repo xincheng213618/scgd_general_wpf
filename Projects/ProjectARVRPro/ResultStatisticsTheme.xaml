@@ -4,6 +4,12 @@
     <SolidColorBrush x:Key="Statistics.Background" Color="{DynamicResource UpdateDialogBackgroundColor}"/>
     <SolidColorBrush x:Key="Statistics.Surface" Color="{DynamicResource UpdateDialogSurfaceColor}"/>
     <SolidColorBrush x:Key="Statistics.Border" Color="{DynamicResource UpdateDialogBorderColor}" Opacity="0.7"/>
+    <SolidColorBrush x:Key="Statistics.TimelineTrack" Color="{DynamicResource UpdateDialogSurfaceColor}"/>
+    <SolidColorBrush x:Key="Statistics.TimelineSwitch" Color="#4F83E3"/>
+    <SolidColorBrush x:Key="Statistics.TimelinePrepare" Color="#D79A2B"/>
+    <SolidColorBrush x:Key="Statistics.TimelineFlow" Color="#2F9D68"/>
+    <SolidColorBrush x:Key="Statistics.TimelineProcess" Color="#8A68CC"/>
+    <SolidColorBrush x:Key="Statistics.TimelineUnknown" Color="#8A949F" Opacity="0.68"/>
 
     <Style x:Key="StatisticsCard" TargetType="Border">
         <Setter Property="Background" Value="{DynamicResource Statistics.Surface}"/>
@@ -89,8 +95,8 @@
         <Setter Property="AlternatingRowBackground" Value="{DynamicResource Statistics.Surface}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="GridLinesVisibility" Value="None"/>
-        <Setter Property="RowHeight" Value="32"/>
-        <Setter Property="ColumnHeaderHeight" Value="36"/>
+        <Setter Property="RowHeight" Value="27"/>
+        <Setter Property="ColumnHeaderHeight" Value="32"/>
         <Setter Property="EnableRowVirtualization" Value="True"/>
         <Setter Property="EnableColumnVirtualization" Value="True"/>
     </Style>

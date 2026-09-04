@@ -54,6 +54,54 @@ namespace ProjectARVRPro
         public DateTime CreateTime { get; set; } = DateTime.Now;
 
         /// <summary>
+        /// 首流程收到 ProjectARVRInit、后续流程发送 SwitchPG 的时间。RunAll 或旧记录可能为空。
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public DateTime? SwitchRequestedAt { get; set; }
+
+        /// <summary>
+        /// 外部系统回传 SwitchPGCompleted 的时间。RunAll 或旧记录可能为空。
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public DateTime? SwitchAcknowledgedAt { get; set; }
+
+        /// <summary>
+        /// 本地切图服务开始执行的时间；RunAll 使用该字段作为内部切图起点。
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public DateTime? PictureSwitchStartedAt { get; set; }
+
+        /// <summary>
+        /// 本地切图服务完成（包括配置的稳定等待）的时间。
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public DateTime? PictureSwitchCompletedAt { get; set; }
+
+        /// <summary>
+        /// 流程启动前预处理完成的时间。
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public DateTime? PreProcessingCompletedAt { get; set; }
+
+        /// <summary>
+        /// FlowControl 开始执行本流程的时间。
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public DateTime? FlowStartedAt { get; set; }
+
+        /// <summary>
+        /// FlowControl 返回本流程终态的时间。
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public DateTime? FlowCompletedAt { get; set; }
+
+        /// <summary>
+        /// 客户流程结果解析、结果记录持久化及可选快捷方式处理完成的时间。
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public DateTime? ResultProcessingCompletedAt { get; set; }
+
+        /// <summary>
         /// 执行此结果解析的 IProcess 完整类型名。
         /// 历史结果使用该字段恢复解析器，不依赖当前流程组中的模板映射。
         /// </summary>

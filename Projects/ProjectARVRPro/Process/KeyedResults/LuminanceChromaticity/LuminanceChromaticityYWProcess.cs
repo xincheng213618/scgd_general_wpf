@@ -59,8 +59,8 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
                     candidates.Add(new PoiCandidate(master, points));
                 }
 
-                PoiCandidate? candidate12X7 = SelectCandidate(candidates, Expected12X7PointCount, "12X7");
-                PoiCandidate? candidate8X7 = SelectCandidate(candidates, Expected8X7PointCount, "8X7", candidate12X7?.Master.Id);
+                PoiCandidate? candidate12X7 = SelectCandidate(candidates, Expected12X7PointCount);
+                PoiCandidate? candidate8X7 = SelectCandidate(candidates, Expected8X7PointCount, candidate12X7?.Master.Id);
                 if (candidate12X7 != null)
                 {
                     ReadPoiGroup(candidate12X7.Points, testResult.ViewPoixyuvDatas12X7);
@@ -103,17 +103,12 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
         private static PoiCandidate? SelectCandidate(
             IReadOnlyCollection<PoiCandidate> candidates,
             int expectedPointCount,
-            string groupName,
             int? excludedMasterId = null)
         {
-            List<PoiCandidate> byPointCount = candidates
+            return candidates
                 .Where(candidate => candidate.Master.Id != excludedMasterId && candidate.Points.Count == expectedPointCount)
-                .ToList();
-            if (byPointCount.Count == 1)
-                return byPointCount[0];
-            if (byPointCount.Count > 1)
-                throw new InvalidOperationException($"批次中存在多个{expectedPointCount}点的{groupName} POI结果: {FormatCandidates(byPointCount)}");
-            return null;
+                .OrderBy(candidate => candidate.Master.Id)
+                .LastOrDefault();
         }
 
         private static string FormatCandidates(IEnumerable<PoiCandidate> candidates) => string.Join(", ", candidates.Select(candidate =>

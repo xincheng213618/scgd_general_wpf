@@ -36,7 +36,7 @@ next: false
   流程编辑器的打开与保存步骤、导出/删除范围、切换提示和工作区隔离；区分当前画布与已保存模板。
 
 - [FlowEngineLib 节点扩展](../../04-api-reference/extensions/flow-node.md) — `flow.node-extension`
-  说明服务节点基类、请求与响应扩展点、属性编辑和流程完成的边界。
+  说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。
 
 - [Flow 转换与校准节点](../../04-api-reference/engine-components/flow-conversion-calibration-nodes.md) — `flow.conversion-calibration`
   定位 Flow 数据转换、图像转换、单双输入校准及属性选择器。

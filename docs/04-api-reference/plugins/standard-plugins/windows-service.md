@@ -19,7 +19,7 @@ related: ["plugins.index", "plugins.getting-started", "delivery.cvwindowsservice
 
 项目和 `Plugins/Directory.Build.props` 定义 Windows WPF、x64、`net10.0-windows` 及 Engine/UI 依赖。manifest身份为 `WindowsServicePlugin`，入口 `WindowsServicePlugin.dll`；插件发布版本取编译DLL的FileVersion。[插件产物与交付](../../../02-developer-guide/plugin-development/getting-started.md)负责HostCopy、manifest和.cvxp规则。
 
-- `ServiceManagerAppProvider` 在“应用与工具 > 内部工具”提供非模态窗口，要求应用内 `PermissionMode.Administrator`；这不是Windows提权、目录ACL或后台代理授权已通过的证明。
+- `MenuServiceManager` 在“帮助 > 服务管理器”提供常用快捷入口，`ServiceManagerAppProvider` 在“应用与工具 > 内部工具”提供另一入口；两者打开同一非模态窗口并要求应用内 `PermissionMode.Administrator`。这不是Windows提权、目录ACL或后台代理授权已通过的证明。
 - `InstallServiceManager` 是向导步骤，打开模态窗口；`ConfigurationStatus` 仅检查BaseLocation非空且目录存在，不检查数据库、服务安装或健康。首次向导另有 `ServiceManagerWizardInitializer` 的导入/手动/跳过选择。
 - `ServiceHostWindowsServiceController` 将安装/卸载/启停交给 `ColorVisionServiceHostClient`，返回bool并记录代理缺失、旧版本或失败。执行仍需兼容的代理及服务、文件、数据库权限。
 - 项目虽为WinExe，当前 `App.Application_Startup` 初始化配置/日志/主题、加载Engine后即Shutdown，不是另一套独立服务管理器交付入口。

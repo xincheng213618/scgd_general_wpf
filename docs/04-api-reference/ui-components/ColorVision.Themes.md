@@ -75,9 +75,11 @@ related: ["ui.index","ui.settings","ui.property-grid","ui.configuration","operat
 
 `BaseWindow` 不自动调用 `ApplyCaption`：它提供默认样式、窗口命令和 HWND hook。启用 `IsBlurEnabled` 时在首次 Loaded 初始化背景效果，订阅的是 `CurrentUIThemeChanged`；关闭时解除主题订阅和 HWND hook。默认未启用模糊，属性在 Loaded 后改变也没有自动初始化回调。不要把继承 BaseWindow 当成标题栏跟随的替代保证。
 
-`ApplyCaption` 和 BaseWindow 解除主题订阅时都重新读取 `ThemeManager.Current`，未保存最初的发布者；窗口存活期间替换全局实例可能使旧订阅留下。这与启动窗口显式保存 `_subscribedThemeManager` 的实现不同。
+`ApplyCaption` 解除主题订阅时仍重新读取 `ThemeManager.Current`，未保存最初的发布者；窗口存活期间替换全局实例可能使旧订阅留下。`BaseWindow` 已改为保存实际订阅的 `ThemeManager`，主题回调必要时切回窗口 Dispatcher，并在关闭时向同一个发布者解绑。它与紧凑主窗口复用的是生命周期处理方式，不共享主窗口专用的最大化显隐保护或按钮占位。
 
-保留的普通主窗口 `MainWindow` 使用 `ApplyCaption`；启动工厂按默认开启、重启生效的新开关 `UseCompactMainWindow` 选择 `CompactMainWindow : MainWindow` 时，由派生窗口单独拥有紧凑标题栏主题。紧凑路径附加成功后缓存 `TryLoadPackageIcon` 的结果，后续切换主题仍优先保留包图标；没有包图标时才按实际主题创建并冻结默认图标。它捕获实际的主题管理器，订阅 `CurrentUIThemeChanged`，切回 UI 线程处理并在 Closed 向原发布者解绑；不同时调用 `ApplyCaption` 重置紧凑标题色。附加条件不满足或初始化失败时，同一窗口实例回到 `ApplyCaption` 原生外观路径。启动路由、新旧配置字段的兼容策略、非分层窗口、DWM 默认边框及验证边界见[主窗口与紧凑标题栏](../../01-user-guide/interface/main-window.md)。
+保留的普通主窗口 `MainWindow` 使用 `ApplyCaption`。Windows build 22000 是启动工厂与 `CompactTitleBarChrome.TryAttach` 共用的门禁：低版本不显示 `UseCompactMainWindow` 设置，工厂直接创建普通 `MainWindow`；门禁通过后才按这个默认开启、重启生效的开关选择 `CompactMainWindow : MainWindow`，并由派生窗口单独拥有紧凑标题栏主题。紧凑路径附加成功后缓存 `TryLoadPackageIcon` 的结果，后续切换主题仍优先保留包图标；没有包图标时才按实际主题创建并冻结默认图标。它捕获实际的主题管理器，订阅 `CurrentUIThemeChanged`，切回 UI 线程处理并在 Closed 向原发布者解绑；不同时调用 `ApplyCaption` 重置紧凑标题色。版本已支持但其它附加条件不满足或初始化失败时，同一窗口实例回到 `ApplyCaption` 原生外观路径；`TryAttach` 重复版本检查作为直接构造等路径的二次防御。启动路由、新旧配置字段的兼容策略、非分层窗口、DWM 默认边框及验证边界见[主窗口与紧凑标题栏](../../01-user-guide/interface/main-window.md)。
+
+`BaseWindow` 继续拥有自己的 `WindowChrome` 与 WPF 标题栏按钮，关于窗口和解决方案窗口不会直接附加 `CompactTitleBarChrome`。它的 Windows 11 分支统一从 build 22000 开始；低版本继续走原有 Win10 模糊回退。关于窗口保持固定、不可缩放和仅关闭按钮的对话框形态，版本展示按钮不再接收初始键盘焦点，避免打开时出现焦点虚线。若以后需要原生 DWM 关闭按钮，应新增 BaseWindow 专用且显式启用的对话框 chrome，不能替换现有默认模板。
 
 ## ThemeConfig、即时预览与落盘
 

@@ -157,7 +157,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 return;
             }
 
-            BeginExecution(start, new[] { CaptureInput(start) });
+            LocalFlowInputSnapshot input = CaptureInput(start);
+            BeginExecution(input.Action, new[] { input });
         }
 
         protected bool TryGetInputMasterResult(CVStartCFC action, int inputIndex, out int masterId, out int masterResultType, out string? masterValue)

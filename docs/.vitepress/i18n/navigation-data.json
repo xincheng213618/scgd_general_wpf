@@ -2471,6 +2471,12 @@
             },
             {
               "text": {
+                "root": "FlowEngineLib 节点扩展"
+              },
+              "link": "/04-api-reference/extensions/flow-node"
+            },
+            {
+              "text": {
                 "root": "现场操作验收清单"
               },
               "link": "/01-user-guide/field-operation-acceptance"

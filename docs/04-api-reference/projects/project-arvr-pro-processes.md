@@ -74,7 +74,7 @@ Flow 执行、项目解析和最终判定分别有状态。`IProcess.Execute` �
 | 固定视场角 | `White51Process`，`W51/` | 读取 FOV 输出并写入 W51 结果 |
 | 黑场与 FOFO | `BlackProcess`，`Black/` | 对比度计算依赖聚合结果中已有的 W255 白场数据 |
 | 按 Key 亮色度 | `LuminanceChromaticityProcess`，`KeyedResults/LuminanceChromaticity/` | 独立输出 Key、中心点 Key；`Key=White` 同时写入 W255 兼容结果 |
-| YW 亮色度 | `LuminanceChromaticityYWProcess`，同上 | 12×7 与 8×7 两组 POI、均匀性及独立 Recipe |
+| YW 亮色度 | `LuminanceChromaticityYWProcess`，同上 | 12×7 与 8×7 两组 POI、均匀性及独立 Recipe；同批次同点数候选重复时取结果主表 Id 最大的后生成结果 |
 | 按 Key 视场角 | `FieldOfViewProcess`，`KeyedResults/FieldOfView/` | 水平、垂直、对角 FOV；`Key=White` 同时写入 W51 兼容结果 |
 | 棋盘格 | `ChessboardProcess` / `ChessboardDynamicProcess` | 固定或动态点位的棋盘格对比度 |
 | 畸变 | `DistortionProcess` / `DistortionDynamicProcess` | 固定或动态点位的几何结果 |

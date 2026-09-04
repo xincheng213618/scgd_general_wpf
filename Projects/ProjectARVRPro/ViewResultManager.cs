@@ -415,6 +415,21 @@ namespace ProjectARVRPro
                 AddViewResult(item);
         }
 
+        internal bool MarkResultProcessingCompleted(ProjectARVRReuslt item, DateTime completedAt)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            item.ResultProcessingCompletedAt = completedAt;
+            if (item.Id <= 0)
+                return false;
+
+            int updatedRows = ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
+                _db.Updateable<ProjectARVRReuslt>()
+                    .SetColumns(result => result.ResultProcessingCompletedAt == completedAt)
+                    .Where(result => result.Id == item.Id)
+                    .ExecuteCommand());
+            return updatedRows > 0;
+        }
+
         internal bool UpdateSavedImagePaths(
             ProjectARVRReuslt item,
             ResultImageExportPathUpdate update)

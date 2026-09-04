@@ -2,8 +2,8 @@
 knowledge_id: "operations.main-window"
 knowledge_type: "topic"
 status: "current"
-summary: "主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口默认启用并保留旧窗口开关，Windows 11 兼容门禁与实际交互边界仍适用。"
-aliases: ["主窗口","菜单不见了","搜索框消失","工作区","MainWindow","CompactMainWindow","MainWindowFactory","紧凑主窗口","紧凑标题栏","恢复旧主窗口","标题栏合并菜单","标题栏更多","标题栏按钮位置","标题栏图标颜色","MainWindowActionButtonStyle","TitleBarActionForeground","TitleBarActionInactiveForeground","EnableWindowResizeDiagnostics","MainWindowResizeDiagnostics","window-resize-diagnostics.mode","最大化闪烁","还原闪烁","UseCompactMainWindow","CompactTitleBarChrome","CompactTitleBarLayout","CompactTitleBarActions","AvalonDock","VS2026","停靠标题","文档标签","浮动窗口主题","工具面板三段色","标题右键菜单","单工具面板空白","ToolTabStrip"]
+summary: "主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口在 Windows build 22000 或更高版本默认启用并保留旧窗口开关，低版本直接使用普通主窗口。"
+aliases: ["主窗口","菜单不见了","搜索框消失","工作区","MainWindow","CompactMainWindow","MainWindowFactory","紧凑主窗口","紧凑标题栏","恢复旧主窗口","标题栏合并菜单","标题栏更多","标题栏按钮位置","标题栏图标颜色","Windows build 22000","低版本隐藏紧凑主窗口设置","MainWindowActionButtonStyle","TitleBarActionForeground","TitleBarActionInactiveForeground","EnableWindowResizeDiagnostics","MainWindowResizeDiagnostics","window-resize-diagnostics.mode","最大化闪烁","还原闪烁","UseCompactMainWindow","CompactTitleBarChrome","CompactTitleBarLayout","CompactTitleBarActions","AvalonDock","VS2026","停靠标题","文档标签","浮动窗口主题","工具面板三段色","标题右键菜单","单工具面板空白","ToolTabStrip"]
 code_paths: ["ColorVision/MainWindow.xaml","ColorVision/MainWindow.xaml.cs","ColorVision/MainWindow.Hotkeys.cs","ColorVision/CompactMainWindow.cs","ColorVision/MainWindowFactory.cs","ColorVision/StartWindow.xaml.cs","ColorVision/MainWindowConfig.cs","ColorVision/Windowing/MainWindowResizeDiagnostics.cs","ColorVision/Windowing/CompactTitleBarChrome.cs","ColorVision/Windowing/CompactTitleBarVisibilityGuard.cs","ColorVision/Windowing/CompactTitleBarLayout.cs","ColorVision/Windowing/CompactTitleBarActions.cs","ColorVision/Themes/AvalonDockTheme.cs","ColorVision/Themes/AvalonDockModernLight.xaml","ColorVision/Themes/AvalonDockModernDark.xaml","ColorVision/Themes/AvalonDockModernTemplates.xaml","ColorVision/Themes/AvalonDockGripTemplates.xaml","ColorVision/Themes/DockingSurfaceBorder.cs","ColorVision/Themes/DockingTabBorder.cs","UI/ColorVision.Themes/Themes/White.xaml","UI/ColorVision.Themes/Themes/Dark.xaml","UI/ColorVision.UI/Menus","UI/ColorVision.UI/Serach/ContextualFindRouter.cs","UI/ColorVision.UI/Serach/SearchWindow.xaml","UI/ColorVision.UI/Serach/SearchWindow.xaml.cs","UI/ColorVision.UI/Serach/SearchWindowHotkeyBridge.cs","UI/ColorVision.Solution/Workspace"]
 test_paths: ["Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs","Test/ColorVision.UI.Tests/AvalonDockThemeBindingTests.cs","Test/ColorVision.UI.Tests/MainWindowSearchShellTests.cs","Test/ColorVision.UI.Tests/WindowResizeDiagnosticsContractTests.cs","Test/ColorVision.UI.Tests/CompactTitleBarChromeTests.cs","Test/ColorVision.UI.Tests/CompactTitleBarIntegrationContractTests.cs","Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs","Test/ColorVision.UI.Tests/SearchWindowHotkeyBridgeTests.cs","Test/ColorVision.UI.Tests/SearchWindowHostTests.cs"]
 related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui.solution","ui.documents","ui.themes","platform.runtime","operations.index","ui.desktop-pet"]
@@ -18,7 +18,7 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 | 现象或行为 | 当前实现与检查点 |
 | --- | --- |
 | 主窗口布局 | `ColorVision/MainWindow.xaml` 定义菜单区、停靠区和状态栏；工作区内容由具体编辑器和扩展提供 |
-| 将菜单合并到标题栏 | `MainWindowConfig.UseCompactMainWindow` 默认开启、重启生效；启动工厂选择 `CompactMainWindow` 或保留的普通 `MainWindow`，两种类型复用同一套工作区实现，紧凑外观仍受 Windows 11 兼容门禁约束 |
+| 将菜单合并到标题栏 | Windows build 22000 或更高版本显示 `MainWindowConfig.UseCompactMainWindow`，默认开启、重启生效；启动工厂在该版本门禁通过后才按配置选择 `CompactMainWindow` 或普通 `MainWindow`，低版本不显示设置并直接创建普通 `MainWindow` |
 | 桌面宠物的显示与素材 | `MainWindowConfig.OpenFloatingBall` 控制独立窗口，启用、选择和创建入口见[桌面宠物](../../04-api-reference/ui-components/desktop-pet.md) |
 | 查找功能或当前内容 | Ctrl+Shift+P 打开应用搜索；Ctrl+F 按当前内容分流到局部查找或应用搜索 |
 | 搜索存在但找不到候选或执行不符合预期 | `MainWindow.Hotkeys.cs` 负责承载与聚焦；Ctrl+F 是场景查找，先交给当前内容，没有局部查找的普通页面才打开应用搜索。候选来源、排序、类型开关和执行检查归[产品搜索](../../04-api-reference/ui-components/search.md)，不是宿主布局问题 |
@@ -31,13 +31,13 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 
 ## 紧凑主窗口与标题栏
 
-紧凑主窗口保留系统按钮和原生外边框，把主窗口菜单和右侧入口放进原标题栏的高度范围，为工作区留出更多垂直空间。新配置或缺少 `UseCompactMainWindow` 字段的配置默认启用。旧字段 `UseCompactTitleBar` 不读取、不迁移：升级配置即使保留该旧字段的 false，也使用新开关的默认 true；新字段明确保存的 false 或 true 则继续保留，不在启动时强制覆盖。
+紧凑主窗口保留系统按钮和原生外边框，把主窗口菜单和右侧入口放进原标题栏的高度范围，为工作区留出更多垂直空间。`UseCompactMainWindow` 的持久化默认值为 true；在 Windows build 22000 或更高版本，新配置或缺少该字段的配置因此默认选择紧凑主窗口。旧字段 `UseCompactTitleBar` 不读取、不迁移：升级配置即使保留该旧字段的 false，也使用新开关的默认 true；新字段明确保存的 false 或 true 则继续保留，不在启动时强制覆盖。低于 build 22000 时不显示这个设置，启动工厂也忽略其已保存值并直接使用普通主窗口。
 
-打开 **工具 → 选项**，搜索 **紧凑主窗口**，切换 **紧凑主窗口（重启生效）**；关闭设置窗口保存后，重新启动 ColorVision 生效。需要旧窗口或遇到按钮、边框、拖动及兼容性问题时，关闭这个新开关并重启，下次启动回到普通 `MainWindow` 的标准标题栏和独立菜单行。改变设置不会在当前已打开的窗口上即时换框或改变窗口类型。默认启用不等于保证所有显示环境下完全消除最大化、还原时的瞬时帧闪。
+在 Windows build 22000 或更高版本，打开 **工具 → 选项**，搜索 **紧凑主窗口**，切换 **紧凑主窗口（重启生效）**；关闭设置窗口保存后，重新启动 ColorVision 生效。需要旧窗口或遇到按钮、边框、拖动及兼容性问题时，关闭这个新开关并重启，下次启动回到普通 `MainWindow` 的标准标题栏和独立菜单行。改变设置不会在当前已打开的窗口上即时换框或改变窗口类型。低版本没有这个选项，始终启动普通主窗口。默认启用不等于保证所有显示环境下完全消除最大化、还原时的瞬时帧闪。
 
-`StartWindow` 在无 `--feature` 或未找到匹配功能时调用 `MainWindowFactory.Create(MainWindowConfig.Instance.UseCompactMainWindow)`：false 创建原 `MainWindow`，true 创建独立类型 `CompactMainWindow : MainWindow`；已经匹配的 `IFeatureLauncher` 路径不变。普通 `MainWindow` 的公开构造函数始终走原生外观，不读取此开关。派生窗口调用受保护的基类构造函数复用 `MainWindow.xaml` 和初始化代码，再附加紧凑外观；没有第二份工作区 XAML，也不再次调用 `InitializeComponent`。菜单、状态栏、快捷键、文档和布局服务仍沿用同一套实现，不同时创建两个主窗口。
+`StartWindow` 在无 `--feature` 或未找到匹配功能时调用 `MainWindowFactory.Create(MainWindowConfig.Instance.UseCompactMainWindow)`。工厂先使用与标题栏控制器相同的系统版本门禁：低于 build 22000 时，无论配置是 true 还是 false，都直接创建原 `MainWindow`；门禁通过后，false 创建原 `MainWindow`，true 创建独立类型 `CompactMainWindow : MainWindow`。已经匹配的 `IFeatureLauncher` 路径不变。普通 `MainWindow` 的公开构造函数始终走原生外观，不读取此开关。派生窗口调用受保护的基类构造函数复用 `MainWindow.xaml` 和初始化代码，再附加紧凑外观；没有第二份工作区 XAML，也不再次调用 `InitializeComponent`。菜单、状态栏、快捷键、文档和布局服务仍沿用同一套实现，不同时创建两个主窗口。
 
-`CompactMainWindow` 在 `SourceInitialized` 已取得 HWND 后调用 `CompactTitleBarChrome.TryAttach`。该控制器仅接受 Windows 11（系统内部版本 22000 或更高）、DWM 合成已启用的普通 `SingleBorderWindow`，不接管已有 `WindowChrome`、`AllowsTransparency=true` 或无边框窗口。条件不满足或初始化抛出异常时，在同一个 `CompactMainWindow` 实例恢复原生外观并写入日志，不重新构造 `MainWindow`，避免重复初始化全局工作区和快捷键。开关值为 true、窗口类型为 `CompactMainWindow` 都不等于本次已经附加成功；DWM 属性请求的返回码不作为逐项视觉生效证明，仍需检查实际外观。
+只有系统版本门禁通过且配置选择紧凑外观时，工厂才构造 `CompactMainWindow`。它在 `SourceInitialized` 已取得 HWND 后调用 `CompactTitleBarChrome.TryAttach`；控制器再次检查 build 22000 门禁，作为直接构造该类型、测试或启动状态变化时的二次防御，而不是依赖工厂成为唯一保护。控制器还要求 DWM 合成已启用的普通 `SingleBorderWindow`，不接管已有 `WindowChrome`、`AllowsTransparency=true` 或无边框窗口。通过工厂启动的低版本不会先构造 `CompactMainWindow` 再回退；版本已支持但其它条件不满足，或初始化抛出异常时，才在同一个 `CompactMainWindow` 实例恢复原生外观并写入日志，不重新构造 `MainWindow`，避免重复初始化全局工作区和快捷键。开关值为 true、窗口类型为 `CompactMainWindow` 都不等于本次已经附加成功；DWM 属性请求的返回码不作为逐项视觉生效证明，仍需检查实际外观。
 
 紧凑外观复用 `Menu1`、`IRightMenuItemProvider` 入口及菜单命令，不改造 `BaseWindow`、关于窗口、搜索窗口或 AvalonDock 浮动窗口。标题栏只把菜单、更新入口、右侧按钮和“更多”标为客户区命中；空白区域交给 `WindowChrome` 的非客户区处理。附加成功后显示宽度为 120 DIP 的 `CompactDragRegion`，以 `GlobalBackground` 和更高绘制层级保留顶层不透明留白，阻止菜单或通知越界占用拖动命中区；保留 WPF 命中并将 `WindowChrome.IsHitTestVisibleInChrome` 设为 false，明确交给原生标题栏处理，而非把命中穿透给底下控件。菜单容器裁切越界绘制，系统按钮还有独立透明占位。最小化、最大化/还原、关闭按钮保留 DWM 绘制与命中，不以 WPF 按钮仿制；按钮占位按窗口 DPI 与可取得的 DWM 边界计算。实际 Snap 菜单、双击、拖动及键盘系统菜单仍需真机验收。
 

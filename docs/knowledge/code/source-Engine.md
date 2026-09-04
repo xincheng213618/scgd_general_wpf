@@ -208,6 +208,9 @@ next: false
 - [OpenCV 和 native 集成开发指南](../../02-developer-guide/engine-development/opencv-integration.md) — `engine.native-integration`
   native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。
 
+- [FlowEngineLib 节点扩展](../../04-api-reference/extensions/flow-node.md) — `flow.node-extension`
+  说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。
+
 - [现场操作验收清单](../../01-user-guide/field-operation-acceptance.md) — `operations.acceptance`
   按交付范围验收启动、设备、流程、数据和外部协议；明确通过、失败、未测和不适用，记录同一轮证据及回退材料与演练状态。
 
@@ -340,7 +343,7 @@ next: false
   Engine MQTT 的连接与订阅、异步发送、请求状态、迟到回包和 MsgID 复用限制；区分 Flow 客户端池与设备命令链。
 
 - [FlowEngineLib 节点扩展](../../04-api-reference/extensions/flow-node.md) — `flow.node-extension`
-  说明服务节点基类、请求与响应扩展点、属性编辑和流程完成的边界。
+  说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。
 
 - [ARVR 算法与模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
   ARVR 手动算法与流程节点的模板、POI 和请求对应关系；说明结果版本匹配及 SFR 曲线、查询和两种 CSV 导出的数据范围。

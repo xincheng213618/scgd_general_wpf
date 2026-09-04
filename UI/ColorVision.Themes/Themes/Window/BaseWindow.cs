@@ -27,6 +27,7 @@ namespace ColorVision.Themes.Controls
         private static readonly Uri BaseWindowResourceUri = new("/ColorVision.Themes;component/Themes/Window/BaseWindow.xaml", UriKind.Relative);
 
         private HwndSource? _hwndSource;
+        private ThemeManager? _subscribedThemeManager;
         private ThemeChangedHandler? _themeChangedHandler;
         private WindowAccentCompositor? _windowAccentCompositor;
 
@@ -88,8 +89,18 @@ namespace ColorVision.Themes.Controls
 
             ApplyBlurTheme();
 
-            _themeChangedHandler ??= _ => ApplyBlurTheme();
-            ThemeManager.Current.CurrentUIThemeChanged += _themeChangedHandler;
+            _themeChangedHandler ??= _ =>
+            {
+                if (Dispatcher.CheckAccess())
+                {
+                    ApplyBlurTheme();
+                    return;
+                }
+
+                Dispatcher.BeginInvoke(new Action(ApplyBlurTheme));
+            };
+            _subscribedThemeManager = ThemeManager.Current;
+            _subscribedThemeManager.CurrentUIThemeChanged += _themeChangedHandler;
         }
 
         private void ApplyBlurTheme()
@@ -114,8 +125,8 @@ namespace ColorVision.Themes.Controls
             Theme.UseSystem or Theme.Light or _ => Brushes.White,
         };
 
-        public static readonly bool IsWin11 = Environment.OSVersion.Version >= new Version(10, 0, 21996);
-        public static readonly bool IsWin10 = !(Environment.OSVersion.Version >= new Version(10, 0, 21996)) && Environment.OSVersion.Version >= new Version(10, 0);
+        public static readonly bool IsWin11 = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
+        public static readonly bool IsWin10 = OperatingSystem.IsWindowsVersionAtLeast(10) && !IsWin11;
 
 
         public static float Dpi { get => DpiX; }
@@ -233,10 +244,11 @@ namespace ColorVision.Themes.Controls
 
         protected override void OnClosed(EventArgs e)
         {
-            if (_themeChangedHandler != null)
+            if (_themeChangedHandler != null && _subscribedThemeManager != null)
             {
-                ThemeManager.Current.CurrentUIThemeChanged -= _themeChangedHandler;
+                _subscribedThemeManager.CurrentUIThemeChanged -= _themeChangedHandler;
                 _themeChangedHandler = null;
+                _subscribedThemeManager = null;
             }
 
             if (_hwndSource != null)

@@ -121,6 +121,89 @@ public sealed class ResultStatisticsTests
     }
 
     [Fact]
+    public void TimelineBuilderUsesMeasuredPhaseBoundariesAndLeavesOnlyRealGapsUnknown()
+    {
+        DateTime start = new(2026, 9, 4, 21, 25, 9);
+        var record = new ResultStatisticsRecordRow
+        {
+            StartTime = start,
+            EndTime = start.AddSeconds(10),
+        };
+        ProjectARVRReuslt[] details =
+        [
+            new()
+            {
+                Id = 1,
+                Model = "White51_Fast_Test",
+                CreateTime = start.AddSeconds(7),
+                RunTime = 4_000,
+                SwitchRequestedAt = start,
+                SwitchAcknowledgedAt = start.AddSeconds(1),
+                PictureSwitchStartedAt = start.AddMilliseconds(1_500),
+                PictureSwitchCompletedAt = start.AddMilliseconds(2_500),
+                PreProcessingCompletedAt = start.AddSeconds(3),
+                FlowStartedAt = start.AddSeconds(3),
+                FlowCompletedAt = start.AddSeconds(7),
+                ResultProcessingCompletedAt = start.AddSeconds(9),
+            },
+        ];
+
+        ResultTimelinePresentation timeline = ResultTimelineBuilder.Build(record, details);
+
+        ResultTimelineFlowRow row = Assert.Single(timeline.Rows);
+        Assert.True(timeline.HasMeasuredPhases);
+        Assert.Equal("White51_Fast_Test", row.FlowName);
+        Assert.Equal("4.000 s", row.ExecutionTimeText);
+        Assert.Equal(
+            [
+                ResultTimelinePhaseKind.ExternalPictureSwitch,
+                ResultTimelinePhaseKind.FlowPreparation,
+                ResultTimelinePhaseKind.DevicePictureSwitch,
+                ResultTimelinePhaseKind.PreProcessing,
+                ResultTimelinePhaseKind.FlowExecution,
+                ResultTimelinePhaseKind.ResultProcessing,
+                ResultTimelinePhaseKind.Unattributed,
+            ],
+            row.Segments.Select(item => item.Kind));
+        Assert.Equal(1_000, row.Segments[^1].DurationMilliseconds);
+        Assert.Contains("流程准备", row.Segments.Single(item => item.Kind == ResultTimelinePhaseKind.FlowPreparation).ToolTip, StringComparison.Ordinal);
+        Assert.Contains("PG→执行结束 7.000 s（含执行 4.000 s）", timeline.SummaryText, StringComparison.Ordinal);
+        Assert.Contains("执行后/空档 3.000 s", timeline.SummaryText, StringComparison.Ordinal);
+        Assert.Contains("PG发送→应答", row.Segments.Single(item => item.Kind == ResultTimelinePhaseKind.ExternalPictureSwitch).ToolTip, StringComparison.Ordinal);
+        Assert.Contains("执行后处理/保存", row.Segments.Single(item => item.Kind == ResultTimelinePhaseKind.ResultProcessing).ToolTip, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TimelineBuilderKeepsLegacyNonFlowTimeUnattributed()
+    {
+        DateTime start = new(2026, 9, 4, 21, 25, 9);
+        var record = new ResultStatisticsRecordRow
+        {
+            StartTime = start,
+            EndTime = start.AddSeconds(10),
+        };
+        ProjectARVRReuslt[] details =
+        [
+            new()
+            {
+                Id = 1,
+                Model = "White51_Fast_Test",
+                CreateTime = start.AddSeconds(6),
+                RunTime = 4_000,
+            },
+        ];
+
+        ResultTimelinePresentation timeline = ResultTimelineBuilder.Build(record, details);
+
+        ResultTimelineFlowRow row = Assert.Single(timeline.Rows);
+        Assert.False(timeline.HasMeasuredPhases);
+        Assert.Equal(4_000, row.Segments.Single(item => item.Kind == ResultTimelinePhaseKind.FlowExecution).DurationMilliseconds);
+        Assert.Equal(6_000, row.Segments.Where(item => item.Kind == ResultTimelinePhaseKind.Unattributed).Sum(item => item.DurationMilliseconds));
+        Assert.Contains("非流程间隔 6.000 s", timeline.SummaryText, StringComparison.Ordinal);
+        Assert.Contains("不能再细分", timeline.NoteText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void StatisticsWindowStateRoundTripsAllIndependentSearches()
     {
         var state = new ResultStatisticsWindowState
@@ -715,7 +798,7 @@ public sealed class ResultStatisticsTests
         IReadOnlyList<ProjectARVRReuslt> details = store.QueryFlowDetails(row);
 
         Assert.Equal(3, row.FlowCount);
-        Assert.Equal("3 个", row.FlowCountText);
+        Assert.Equal("3", row.FlowCountText);
         Assert.Equal(3_000, row.FlowRunTimeMilliseconds);
         Assert.Equal("3.000 s", row.FlowRunTimeText);
         Assert.Equal("5.000 s", row.CycleTimeText);
