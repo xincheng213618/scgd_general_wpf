@@ -4,8 +4,8 @@ knowledge_type: "reference"
 status: "current"
 summary: "ARVRPro 项目入口、Socket 自动化、输出与历史结果查询；流程组、实例 Recipe 和 Demura 各有对应操作主题。"
 aliases: ["ARVR 历史原图删了还能看结果吗","保存结果图会不会重复画标记","ProjectARVRPro","ResultImageFileCandidates","SavedSourceImageFileName","SavedResultImageFileName","结果统计","统计日期记忆","CycleTimeStatisticsWindow","ARVR 项目"]
-code_paths: ["Projects/ProjectARVRPro/ARVRWindow.xaml.cs","Projects/ProjectARVRPro/ResultImagePresentation.cs","Projects/ProjectARVRPro/ProjectARVRReuslt.cs","Projects/ProjectARVRPro/ViewResultManager.cs","Projects/ProjectARVRPro/Services/SocketControl.cs","Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs","Projects/ProjectARVRPro/Services/RunAllSocket.cs","Projects/ProjectARVRPro/SocketRelay/","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml.cs","Projects/ProjectARVRPro/ResultStatisticsTheme.xaml","Projects/ProjectARVRPro/ResultStatistics.cs","Projects/ProjectARVRPro/ResultTimeline.cs","Projects/ProjectARVRPro/ProjectARVRProConfig.cs"]
-test_paths: ["Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj","Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs","Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs","Test/ProjectARVRPro.Tests/ResultStatisticsTests.cs","Test/ProjectARVRPro.Tests/FlowPhaseTimingPersistenceTests.cs"]
+code_paths: ["Projects/ProjectARVRPro/ARVRWindow.xaml.cs","Projects/ProjectARVRPro/FlowRuntimeEstimateCache.cs","Projects/ProjectARVRPro/ResultImagePresentation.cs","Projects/ProjectARVRPro/ProjectARVRReuslt.cs","Projects/ProjectARVRPro/ViewResultManager.cs","Projects/ProjectARVRPro/Services/SocketControl.cs","Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs","Projects/ProjectARVRPro/Services/RunAllSocket.cs","Projects/ProjectARVRPro/SocketRelay/","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml.cs","Projects/ProjectARVRPro/ResultStatisticsTheme.xaml","Projects/ProjectARVRPro/ResultStatistics.cs","Projects/ProjectARVRPro/ResultTimeline.cs","Projects/ProjectARVRPro/ProjectARVRProConfig.cs"]
+test_paths: ["Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj","Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs","Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs","Test/ProjectARVRPro.Tests/ResultStatisticsTests.cs","Test/ProjectARVRPro.Tests/FlowPhaseTimingPersistenceTests.cs","Test/ProjectARVRPro.Tests/FlowRuntimeEstimateCacheTests.cs"]
 related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol","projects.arvr-pro-processes","projects.arvr-pro-demura","projects.capabilities"]
 ---
 
@@ -97,6 +97,14 @@ ARVRPro 通过 `ColorVision.SocketProtocol` 的 JSON 模式接入外部系统。
 
 ## 结果统计与查询记忆
 
+### 启动准备与预计时间
+
+自动切图确认、手动单步和 RunAll 启动均不为“上次执行 / 预计剩余时间”查询本地历史数据库。`FlowRuntimeEstimateCache` 只保存本窗口已经完成且耗时为正的流程，按模板名称匹配，并核对启动时捕获的模板内容；模板内容变化、名称变化或新窗口没有命中时，先只显示已经执行时间。该缓存只影响预计时间显示，不参与 PG 稳定等待、采集、超时、PASS/FAIL 或历史结果保存。
+
+流程图仍通过原 `Refresh` 路径加载，保留设备更新、节点事件解绑/挂接及已有图内容命中规则，不跨模板复用可变运行节点。`FlowRuntimeEstimateCacheTests` 覆盖首次无缓存、完成后更新、内容/名称/窗口隔离及无效耗时；实际 CT 收益还须使用相同方向、同一组模板的现场日志验证，不能从缓存命中推导固定节省秒数。
+
+### 统计口径与阶段归因
+
 `CycleTimeStatisticsWindow` 提供首页指标与 CT 趋势、批次记录及流程查询三个页面。界面使用与启动恢复窗口相同的主题调色板、标题层级和弱边框圆角卡片；样式在项目包本地的 `ResultStatisticsTheme.xaml` 中定义，不依赖宿主 `ColorVision` 程序集的资源。筛选区在窗口变窄时换行，表格保留分页、虚拟化、右键操作和详情入口。
 
 批次记录优先显示 SN、整组 CT、流程运行时间、结束时间和流程数；流程数显示为纯数字，测试次数放在末列。选中批次后，右侧下方时间轴以整组开始和最终化时间为同一横轴，按流程显示 PG 应答、本地切图与稳定等待、预处理、流程执行、执行后处理与保存，以及无法归因的间隔。鼠标悬停阶段条可查看起止时间和耗时。
@@ -107,8 +115,8 @@ ARVRPro 通过 `ColorVision.SocketProtocol` 的 JSON 模式接入外部系统。
 
 | 时间段 | 字段边界 | 时间轴含义 |
 | --- | --- | --- |
-| PG 应答（PG 周期子段） | `SwitchRequestedAt` → `SwitchAcknowledgedAt` | 发出 `SwitchPG` 到收到 `SwitchPGCompleted`；RunAll 可为空 |
-| 流程准备 | `SwitchAcknowledgedAt` → `PictureSwitchStartedAt` | 收到确认后刷新模板、查询上次运行等启动准备；缺任一边界时保持未归因 |
+| PG 应答（PG 周期子段） | `SwitchRequestedAt` → `SwitchAcknowledgedAt` | 发出 `SwitchPG` 到 ARVR 在 UI 线程处理 `SwitchPGCompleted`；包含接收后的存储、派发和 UI 调度，不是物理 PG 单独计时；RunAll 可为空 |
+| 流程准备 | `SwitchAcknowledgedAt` → `PictureSwitchStartedAt` | 确认后选择/刷新模板、捕获运行上下文和读取运行内预计时间缓存；缺任一边界时保持未归因 |
 | 本地切图/稳定 | `PictureSwitchStartedAt` → `PictureSwitchCompletedAt` | `PictureSwitchService` 调用和配置的稳定等待 |
 | 预处理/准备 | `PictureSwitchCompletedAt` → `PreProcessingCompletedAt` | Flow 启动前预处理；边界间没有记录的部分仍显示为未归因 |
 | 流程执行 | `FlowStartedAt` → `FlowCompletedAt` | 与流程运行 stopwatch 对应的主执行段 |
@@ -117,6 +125,21 @@ ARVRPro 通过 `ColorVision.SocketProtocol` 的 JSON 模式接入外部系统。
 每个成功流程还会输出一条 `ARVRFlowPhaseTiming` 结构化 INFO 日志，并携带 `SN`、`Model` 和 `BatchId`。其中 `SwitchWaitMs`、`SwitchPreparationMs`、`PictureSwitchMs`、`PreProcessingMs` 和 `FlowMs` 对应启动前与执行阶段；`FlowFinalizeMs`、`BatchLookupMs`、`ProcessExecuteMs`、`ViewResultSaveMs`、`ObjectiveResultSaveMs`、`LinkSaveMs` 和 `ResultProcessingTimestampPersistMs` 用于继续拆分流程结束后的约束路径。`ResultProcessingTimestampPersisted` 用于确认阶段终点是否写回 SQLite，`ImageExportIncludedInCt` 明确后台图像导出不属于该阶段的 CT 归因。后续反馈诊断应优先按同一 `SN + Model + BatchId` 汇总这些字段，而不是从相邻日志行估算。
 
 `ResultImageDimensionsFromProcessCache` 表示本次结果保存前已从解析阶段的 batch 图像查询中解析出有效宽高。正常内置流程该字段为 `true` 时，`ViewResultSaveMs` 不再包含第二次尺寸查询；若为 `false`，保存层可能因兼容回退仍访问 MySQL，应结合 `ViewResultSaveMs` 和尺寸数据继续诊断。
+
+启动软件段另有以下日志字段，单位为保留三位小数的毫秒，仅增加日志、不增加结果库列：
+
+| 字段 | 范围与相加规则 |
+| --- | --- |
+| `StartupWorkMs` | 进入本次单步启动方法或 RunAll 迭代，到本地切图开始；单步不含进入方法前的步骤选择，因此不强求等于 `SwitchPreparationMs` |
+| `RuntimeEstimateCacheHit` / `RuntimeEstimateLookupMs` | 显示用预计耗时是否命中，以及捕获模板身份/查运行内缓存耗时；不访问历史库 |
+| `RefreshServicesMs` | 服务查询请求的发送调用，不等于服务应答耗时 |
+| `RefreshDetachNodesMs` | 解绑旧节点显示与诊断事件 |
+| `RefreshLoadGraphMs` | 读取模板内容、加载流程图和更新设备信息 |
+| `RefreshAttachNodesMs` | 枚举新节点并挂接显示、诊断事件 |
+| `RefreshTotalMs` | 上述四项 Refresh 子段之和；不能再与其子段相加 |
+| `StartupOtherMs` | `StartupWorkMs - RefreshTotalMs - RuntimeEstimateLookupMs` 的非负余项；包括本轮上下文准备等，不能全部解释成线程等待 |
+
+原始回包到业务派发应结合宿主的 [Socket 计时](../ui-components/ColorVision.SocketProtocol.md#回包派发与界面刷新计时)，不能把消息列表后台排队时间重复计入 PG 或 CT。
 
 旧记录没有上述阶段字段时，时间轴只用 `CreateTime - RunTime` 推算流程执行段，并把剩余部分明确显示为“未归因间隔”；旧数据不能事后可靠拆分切图、预处理和结果保存。任何缺失、逆序或超出整组范围的阶段边界都不能被强行归类。
 

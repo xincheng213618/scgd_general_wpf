@@ -103,6 +103,15 @@ namespace ProjectARVRPro
         private long _currentPictureSwitchMilliseconds;
         private long _currentPreProcessingMilliseconds;
         private long _currentFlowFinalizeMilliseconds;
+        private readonly FlowRuntimeEstimateCache _flowRuntimeEstimates = new();
+        private FlowRuntimeEstimateKey _currentRuntimeEstimateKey;
+        private double _currentRuntimeEstimateLookupMs;
+        private double _currentStartupWorkMs;
+        private double _currentRefreshServicesMs;
+        private double _currentRefreshDetachNodesMs;
+        private double _currentRefreshLoadGraphMs;
+        private double _currentRefreshAttachNodesMs;
+        private double _currentRefreshTotalMs;
         private bool _isFlowStartPending;
         private bool _isFlowLifecycleActive;
         private bool _runAllSessionPrepared;
@@ -190,6 +199,13 @@ namespace ProjectARVRPro
             _currentPictureSwitchMilliseconds = 0;
             _currentPreProcessingMilliseconds = 0;
             _currentFlowFinalizeMilliseconds = 0;
+            _currentRuntimeEstimateLookupMs = 0;
+            _currentStartupWorkMs = 0;
+            _currentRefreshServicesMs = 0;
+            _currentRefreshDetachNodesMs = 0;
+            _currentRefreshLoadGraphMs = 0;
+            _currentRefreshAttachNodesMs = 0;
+            _currentRefreshTotalMs = 0;
         }
 
         private static long? GetElapsedMilliseconds(DateTime? startedAt, DateTime? completedAt)
@@ -232,6 +248,15 @@ namespace ProjectARVRPro
                 PersistedAt = persistedAt,
                 SwitchWaitMs = GetElapsedMilliseconds(result.SwitchRequestedAt, result.SwitchAcknowledgedAt),
                 SwitchPreparationMs = _currentSwitchPreparationMilliseconds,
+                StartupWorkMs = Math.Round(_currentStartupWorkMs, 3),
+                RuntimeEstimateCacheHit = LastFlowTime > 0,
+                RuntimeEstimateLookupMs = Math.Round(_currentRuntimeEstimateLookupMs, 3),
+                RefreshServicesMs = Math.Round(_currentRefreshServicesMs, 3),
+                RefreshDetachNodesMs = Math.Round(_currentRefreshDetachNodesMs, 3),
+                RefreshLoadGraphMs = Math.Round(_currentRefreshLoadGraphMs, 3),
+                RefreshAttachNodesMs = Math.Round(_currentRefreshAttachNodesMs, 3),
+                RefreshTotalMs = Math.Round(_currentRefreshTotalMs, 3),
+                StartupOtherMs = Math.Round(Math.Max(0, _currentStartupWorkMs - _currentRefreshTotalMs - _currentRuntimeEstimateLookupMs), 3),
                 PictureSwitchMs = _currentPictureSwitchMilliseconds,
                 PreProcessingMs = _currentPreProcessingMilliseconds,
                 FlowMs = Math.Max(0, result.RunTime),
@@ -580,13 +605,19 @@ namespace ProjectARVRPro
         {
             if (FlowTemplate.SelectedIndex < 0) return Task.CompletedTask;
 
+            Stopwatch refreshTiming = Stopwatch.StartNew();
             MqttRCService.GetInstance().QueryServices();
+            _currentRefreshServicesMs = refreshTiming.Elapsed.TotalMilliseconds;
             foreach (CVCommonNode node in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                 node.nodeRunEvent -= UpdateMsg;
             _flowNodeExecutionRecorder.DetachNodes();
+            double detachedAt = refreshTiming.Elapsed.TotalMilliseconds;
+            _currentRefreshDetachNodesMs = detachedAt - _currentRefreshServicesMs;
 
             string Refreshdata = TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64;
             flowEngine.LoadFromBase64(Refreshdata, MqttRCService.GetInstance().ServiceTokens);
+            double loadedAt = refreshTiming.Elapsed.TotalMilliseconds;
+            _currentRefreshLoadGraphMs = loadedAt - detachedAt;
 
             CVCommonNode[] flowNodes = STNodeEditorMain.Nodes.OfType<CVCommonNode>().ToArray();
             foreach (CVCommonNode item in flowNodes)
@@ -595,7 +626,17 @@ namespace ProjectARVRPro
                 item.nodeRunEvent += UpdateMsg;
             }
             _flowNodeExecutionRecorder.AttachNodes(flowNodes);
+            _currentRefreshTotalMs = refreshTiming.Elapsed.TotalMilliseconds;
+            _currentRefreshAttachNodesMs = _currentRefreshTotalMs - loadedAt;
             return Task.CompletedTask;
+        }
+
+        private void CaptureRuntimeEstimate(TemplateModel<FlowParam> template)
+        {
+            long startedAt = Stopwatch.GetTimestamp();
+            _currentRuntimeEstimateKey = new FlowRuntimeEstimateKey(template.Key, template.Value.DataBase64);
+            LastFlowTime = _flowRuntimeEstimates.GetElapsed(_currentRuntimeEstimateKey);
+            _currentRuntimeEstimateLookupMs = Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds;
         }
 
 
@@ -681,6 +722,7 @@ namespace ProjectARVRPro
             _isFlowStartPending = true;
             CurrentFlowResult = null!;
             bool flowStarted = false;
+            Stopwatch startupTiming = Stopwatch.StartNew();
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -719,18 +761,13 @@ namespace ProjectARVRPro
                 _currentFlowProcess = runProcessMeta?.Process ?? ProcessManager.CreateBlankProcess();
                 ResultProcessResolver.Capture(CurrentFlowResult, _currentFlowProcess);
 
-                LastFlowTime = await Task.Run(
-                    () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(
-                        new FlowIdentity(
-                            flowTemplate.Id,
-                            flowTemplate.Key,
-                            flowTemplate.Key)),
-                    cancellationToken);
+                CaptureRuntimeEstimate(flowTemplate);
 
                 await Refresh();
                 cancellationToken.ThrowIfCancellationRequested();
 
                 CurrentFlowResult.PictureSwitchStartedAt = DateTime.Now;
+                _currentStartupWorkMs = startupTiming.Elapsed.TotalMilliseconds;
                 _currentSwitchPreparationMilliseconds = GetElapsedMilliseconds(
                     CurrentFlowResult.SwitchAcknowledgedAt,
                     CurrentFlowResult.PictureSwitchStartedAt);
@@ -1193,6 +1230,7 @@ namespace ProjectARVRPro
 
             if (FlowControlData.EventName == "Completed")
             {
+                _flowRuntimeEstimates.RecordCompleted(_currentRuntimeEstimateKey, stopwatch.ElapsedMilliseconds);
                 CurrentFlowResult.Msg = "Completed";
                 bool processingSucceeded;
                 try
@@ -2527,6 +2565,7 @@ namespace ProjectARVRPro
 
                 for (int i = 0; i < enabledMetas.Count; i++)
                 {
+                    Stopwatch startupTiming = Stopwatch.StartNew();
                     ProcessMeta meta = enabledMetas[i];
                     _currentFlowProcess = meta.Process;
                     CurrentTestType = ProcessMetas.IndexOf(meta);
@@ -2552,6 +2591,7 @@ namespace ProjectARVRPro
                     CurrentFlowResult.Model = templateParam.Key;
                     FlowName = CurrentFlowResult.Model;
                     ResultProcessResolver.Capture(CurrentFlowResult, _currentFlowProcess);
+                    CaptureRuntimeEstimate(templateParam);
 
                     // 执行流程并等待完成
                     var tcs = new TaskCompletionSource<FlowControlData>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -2567,6 +2607,7 @@ namespace ProjectARVRPro
                     await Refresh();
 
                     CurrentFlowResult.PictureSwitchStartedAt = DateTime.Now;
+                    _currentStartupWorkMs = startupTiming.Elapsed.TotalMilliseconds;
                     Stopwatch pictureSwitchStopwatch = Stopwatch.StartNew();
                     bool pictureSwitchSucceeded = await _pictureSwitchService.ExecuteAsync(meta);
                     pictureSwitchStopwatch.Stop();
@@ -2618,13 +2659,6 @@ namespace ProjectARVRPro
                     CurrentFlowResult.PreProcessingCompletedAt = DateTime.Now;
 
                     CurrentFlowResult.FlowStatus = FlowStatus.Ready;
-
-                    LastFlowTime = await Task.Run(
-                        () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(
-                            new FlowIdentity(
-                                templateParam.Id,
-                                templateParam.Key,
-                                FlowName)));
 
                     CreateCurrentFlowBatch();
 
@@ -2692,6 +2726,7 @@ namespace ProjectARVRPro
 
                     if (flowResult.EventName == "Completed")
                     {
+                        _flowRuntimeEstimates.RecordCompleted(_currentRuntimeEstimateKey, stopwatch.ElapsedMilliseconds);
                         CurrentFlowResult.Msg = "Completed";
                         bool processingSucceeded = await Processing(flowResult.SerialNumber);
                         lastPersistedRunAllResult = CurrentFlowResult;
