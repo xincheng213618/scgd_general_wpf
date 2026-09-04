@@ -54,7 +54,7 @@ namespace ProjectARVRPro.Process.MTF.MTF07
             try
             {
                 var testResult = new TViewResult();
-                var images = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                var images = ctx.GetMeasureResults();
                 if (images.Count > 0)
                     ctx.Result.FileName = images[0].FileUrl;
 

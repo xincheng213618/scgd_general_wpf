@@ -34,6 +34,7 @@ public sealed class DatabaseCleanupWindowLayoutTests
         Assert.False(source.SupportsTableCleanup);
         Assert.True(source.SupportsBackup);
         Assert.True(source.SupportsMigration);
+        Assert.False(source.SupportsOptimization);
     }
 
     [Fact]
@@ -113,6 +114,7 @@ public sealed class DatabaseCleanupWindowLayoutTests
             Assert.Equal(Visibility.Collapsed, Element<FrameworkElement>(window, "SelectionToolbar").Visibility);
             Assert.Equal(Visibility.Collapsed, Element<DataGrid>(window, "CleanupTablesGrid").Columns[0].Visibility);
             Assert.True(IsEffectivelyVisible(Element<Button>(window, "CreateBackupButton")));
+            Assert.False(IsEffectivelyVisible(Element<Button>(window, "OptimizationButton")));
             Assert.True(IsEffectivelyVisible(Element<Button>(window, "MigrationButton")));
             Assert.True(IsEffectivelyVisible(Element<CheckBox>(window, "BackupBeforeCleanupCheckBox")));
             Assert.False(Element<Expander>(window, "DangerZoneExpander").IsExpanded);
@@ -135,6 +137,8 @@ public sealed class DatabaseCleanupWindowLayoutTests
             RefreshLayout(window);
             Assert.Equal(Visibility.Visible, Element<DataGrid>(window, "CleanupTablesGrid").Columns[0].Visibility);
             Assert.Equal(Visibility.Visible, Element<FrameworkElement>(window, "SelectionToolbar").Visibility);
+            Assert.True(viewModel.SelectedSource!.SupportsOptimization);
+            Assert.True(IsEffectivelyVisible(Element<Button>(window, "OptimizationButton")));
             Assert.False(IsEffectivelyVisible(Element<Button>(window, "MigrationButton")));
             Assert.False(Element<Expander>(window, "DangerZoneExpander").IsExpanded);
 
@@ -142,6 +146,8 @@ public sealed class DatabaseCleanupWindowLayoutTests
             RefreshLayout(window);
             Assert.Equal(Visibility.Collapsed, Element<DataGrid>(window, "CleanupTablesGrid").Columns[0].Visibility);
             Assert.Equal(Visibility.Collapsed, Element<FrameworkElement>(window, "SelectionToolbar").Visibility);
+            Assert.False(viewModel.SelectedSource!.SupportsOptimization);
+            Assert.False(IsEffectivelyVisible(Element<Button>(window, "OptimizationButton")));
             Assert.True(IsEffectivelyVisible(Element<Button>(window, "MigrationButton")));
             Assert.False(Element<Expander>(window, "DangerZoneExpander").IsExpanded);
         });
@@ -162,6 +168,7 @@ public sealed class DatabaseCleanupWindowLayoutTests
             Assert.False(viewModel.SelectedSource.CleanupSelectedCommand.CanExecute(null));
             Assert.False(string.IsNullOrWhiteSpace(Element<TextBlock>(window, "CleanupStatusText").Text));
             Assert.False(IsEffectivelyVisible(Element<Button>(window, "CreateBackupButton")));
+            Assert.False(IsEffectivelyVisible(Element<Button>(window, "OptimizationButton")));
             Assert.False(IsEffectivelyVisible(Element<Button>(window, "MigrationButton")));
         });
     }
@@ -187,7 +194,7 @@ public sealed class DatabaseCleanupWindowLayoutTests
             CommandManager.InvalidateRequerySuggested();
             RefreshLayout(window);
 
-            foreach (string buttonName in new[] { "HistoryCleanupButton", "CleanupAllButton", "CreateBackupButton", "MigrationButton", "CleanupSelectedButton" })
+            foreach (string buttonName in new[] { "HistoryCleanupButton", "CleanupAllButton", "CreateBackupButton", "OptimizationButton", "MigrationButton", "CleanupSelectedButton" })
             {
                 Button button = Element<Button>(window, buttonName);
                 Assert.False(button.Command.CanExecute(button.CommandParameter));
@@ -256,7 +263,7 @@ public sealed class DatabaseCleanupWindowLayoutTests
             foreach (TextBlock text in tableText)
                 AssertReadableForeground(window, text);
 
-            foreach (string buttonName in new[] { "CreateBackupButton", "MigrationButton" })
+            foreach (string buttonName in new[] { "CreateBackupButton", "OptimizationButton", "MigrationButton" })
             {
                 Button button = Element<Button>(window, buttonName);
                 if (IsEffectivelyVisible(button))
@@ -609,12 +616,14 @@ public sealed class DatabaseCleanupWindowLayoutTests
     }
 
     private sealed class FakeSelectionProvider() : FakeSourceProvider("mysql-results", "", 0),
-        IDatabaseCleanupBackupProvider, IDatabaseCleanupSelectionProvider
+        IDatabaseCleanupBackupProvider, IDatabaseCleanupSelectionProvider, IDatabaseCleanupOptimizationProvider
     {
         public override string DisplayName => EngineLocalization.Get("MySQL 结果表");
         public override string Description => CultureInfo.CurrentUICulture.Name.StartsWith("zh", StringComparison.Ordinal)
             ? "数据源：本地检测结果库 · 以下统计均为界面预览示例"
             : "Source: local inspection results · All statistics are preview examples";
+        public string OptimizationActionName => EngineLocalization.Get("补齐结果查询索引");
+        public string OptimizationConfirmationMessage => "Preview only — no optimization is allowed.";
 
         public override IReadOnlyList<DatabaseCleanupTableInfo> LoadTables()
         {
@@ -629,6 +638,7 @@ public sealed class DatabaseCleanupWindowLayoutTests
         }
 
         public DatabaseCleanupBackupResult CreateBackup() => throw new InvalidOperationException("Layout tests must never create a database backup.");
+        public DatabaseCleanupExecutionResult ExecuteOptimization() => throw new InvalidOperationException("Layout tests must never optimize a database.");
         public DatabaseCleanupExecutionResult CleanupTables(IReadOnlyCollection<string> tableNames)
             => throw new InvalidOperationException("Layout tests must never clean database tables.");
     }

@@ -3155,4 +3155,29 @@
   <data name="CommandPgTemplateHint" xml:space="preserve"><value>管理 PG 影像與輸出範本</value></data>
   <data name="CommandAlgorithmPluginHint" xml:space="preserve"><value>上傳服務端演算法外掛</value></data>
   <data name="CommandAlgorithmConfigHint" xml:space="preserve"><value>管理第三方演算法設定</value></data>
+  <data name="索引优化" xml:space="preserve"><value>索引最佳化</value></data>
+  <data name="优化结果关联索引" xml:space="preserve"><value>最佳化結果關聯索引</value></data>
+  <data name="此操作不会删除业务数据，也不会自动创建完整备份。" xml:space="preserve"><value>此操作不會刪除業務資料，也不會自動建立完整備份。</value></data>
+  <data name="正在执行 {0} 索引优化..." xml:space="preserve"><value>正在執行 {0} 索引最佳化...</value></data>
+  <data name="将为现存 MySQL 结果表的 batch_id / pid 关联列创建缺失索引。操作逐表执行，会占用数据库 I/O 和临时磁盘空间，并可能短暂等待元数据锁。请先暂停生产测试并确认 MySQL 临时目录与数据目录空间充足。" xml:space="preserve"><value>將為現有 MySQL 結果資料表的 batch_id / pid 關聯欄位建立缺少的索引。操作會逐表執行，將占用資料庫 I/O 與暫存磁碟空間，且可能短暫等待中繼資料鎖定。請先暫停生產測試，並確認 MySQL 暫存目錄與資料目錄有足夠空間。</value></data>
+  <data name="当前 MySQL 连接未选择数据库，未执行索引优化。" xml:space="preserve"><value>目前 MySQL 連線未選取資料庫，未執行索引最佳化。</value></data>
+  <data name="另一个 MySQL 结果索引优化正在执行，本次未做任何更改。" xml:space="preserve"><value>另一個 MySQL 結果索引最佳化正在執行，本次未進行任何變更。</value></data>
+  <data name="{0}: 未在结果表白名单中，已跳过索引优化" xml:space="preserve"><value>{0}: 未登錄於結果資料表允許清單，已略過索引最佳化</value></data>
+  <data name="{0}: 未找到，已跳过" xml:space="preserve"><value>{0}: 找不到，已略過</value></data>
+  <data name="{0}: 未找到 {1} 列，已跳过" xml:space="preserve"><value>{0}: 找不到 {1} 欄位，已略過</value></data>
+  <data name="{0}: 索引名 {1} 已被非等价定义占用（{2}）" xml:space="preserve"><value>{0}: 索引名稱 {1} 已由非等價定義使用（{2}）</value></data>
+  <data name="{0}: 已有等价索引 {1} ({2} 为首列)，已跳过" xml:space="preserve"><value>{0}: 已有等價索引 {1}（{2} 為第一個欄位），已略過</value></data>
+  <data name="{0}: 待建索引表的存储引擎为 {1}，只允许对 InnoDB 执行 INPLACE / LOCK=NONE" xml:space="preserve"><value>{0}: 待建立索引之資料表的儲存引擎為 {1}，僅允許對 InnoDB 執行 INPLACE / LOCK=NONE</value></data>
+  <data name="索引优化预检失败，未执行任何 DDL：" xml:space="preserve"><value>索引最佳化預先檢查失敗，未執行任何 DDL：</value></data>
+  <data name="{0}: 执行前已检测到等价索引 {1}，已跳过" xml:space="preserve"><value>{0}: 執行前偵測到等價索引 {1}，已略過</value></data>
+  <data name="{0} 创建索引 {1} 失败：{2}" xml:space="preserve"><value>{0} 建立索引 {1} 失敗：{2}</value></data>
+  <data name="{0}: 已由并发操作建立等价索引 {1}，用时 {2}" xml:space="preserve"><value>{0}: 等價索引 {1} 已由並行操作建立，耗時 {2}</value></data>
+  <data name="{0}: DDL 已返回，但未验证到 {1} 首列索引。" xml:space="preserve"><value>{0}: DDL 已回傳，但未驗證到以 {1} 為第一個欄位的索引。</value></data>
+  <data name="{0}: 已创建索引 {1} ({2})，用时 {3}" xml:space="preserve"><value>{0}: 已建立索引 {1}（{2}），耗時 {3}</value></data>
+  <data name="MySQL 结果关联索引优化完成：新建 {0:N0} 个，复用 {1:N0} 个，跳过 {2:N0} 张表，总用时 {3}。" xml:space="preserve"><value>MySQL 結果關聯索引最佳化完成：新建 {0:N0} 個、重用 {1:N0} 個、略過 {2:N0} 張資料表，總耗時 {3}。</value></data>
+  <data name="本次尚未创建任何索引。" xml:space="preserve"><value>本次尚未建立任何索引。</value></data>
+  <data name="本次已创建 {0:N0} 个索引：{1}。" xml:space="preserve"><value>本次已建立 {0:N0} 個索引：{1}。</value></data>
+  <data name=" 当前表：{0}。" xml:space="preserve"><value> 目前資料表：{0}。</value></data>
+  <data name="MySQL 结果关联索引优化失败。{0} {1} 用时 {2}。问题排除后可重新执行，已有等价索引会自动跳过。{3}{4}" xml:space="preserve"><value>MySQL 結果關聯索引最佳化失敗。{0} {1} 耗時 {2}。排除問題後可重新執行；已有等價索引將自動略過。{3}{4}</value></data>
+  <data name="不支持的结果关联列：{0}" xml:space="preserve"><value>不支援的結果關聯欄位：{0}</value></data>
 </root>

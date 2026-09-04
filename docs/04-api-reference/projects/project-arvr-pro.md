@@ -91,7 +91,9 @@ ARVRPro 通过 `ColorVision.SocketProtocol` 的 JSON 模式接入外部系统。
 
 `ARVRWindow.xaml.cs` 负责实际加载、请求版本仲裁和 `RenderResultImage` / `ShowSavedResultImage` 分流。两个保存路径是 `ProjectARVRReuslt` 的可空列；`ViewResultManager` 通过现有 `CodeFirst.InitTables<ProjectARVRReuslt, ObjectiveTestResultRecord>()` 为旧库补列，不能要求用户删库或手工编辑 SQLite。旧磁盘 PNG 不会被自动扫描回填；只有实际成功导出的通道才更新对应路径。
 
-验证入口：`Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs` 覆盖候选顺序、缺失/重复路径、首图加载失败后继续及标记图不重复绘制契约；`ResultJsonPayloadStorageTests.cs` 覆盖结果持久化相关兼容。自动测试不等于已验证现场历史文件仍存在，现场排查还须只读核对记录路径与文件可读性。
+内置结果解析器通过单次 `IProcessExecutionContext` 复用当前 batch 已读取的 `MeasureResultImgModel` 列表，并在 `Execute` 返回、最终 `FileName` 确定后从 `ImgFrameInfo` 写入 `ImageWidth` / `ImageHeight`。新结果已有两个正数尺寸时，`ViewResultManager.Save` 不再为读取尺寸重复查询 MySQL；尺寸缺失、无效、多尺寸无法唯一确定，或外部解析器既未写入有效尺寸也未使用该上下文缓存时，仍保留原数据库查询作为兼容回退。回退失败不会阻止结果保存，尺寸继续保持可空，也不需要现场数据库迁移。
+
+验证入口：`Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs` 覆盖候选顺序、缺失/重复路径、首图加载失败后继续、标记图不重复绘制，以及尺寸缓存、最终路径匹配和兼容回退短路契约；`ResultJsonPayloadStorageTests.cs` 覆盖结果持久化相关兼容。自动测试不等于已验证现场历史文件仍存在，现场排查还须只读核对记录路径与文件可读性。
 
 ## 结果统计与查询记忆
 
@@ -113,6 +115,8 @@ ARVRPro 通过 `ColorVision.SocketProtocol` 的 JSON 模式接入外部系统。
 | 执行后处理/保存 | `FlowCompletedAt` → `ResultProcessingCompletedAt` | 流程收尾、客户结果读取与解析、结果记录保存；旧日志不能把整段等同于纯解析耗时 |
 
 每个成功流程还会输出一条 `ARVRFlowPhaseTiming` 结构化 INFO 日志，并携带 `SN`、`Model` 和 `BatchId`。其中 `SwitchWaitMs`、`SwitchPreparationMs`、`PictureSwitchMs`、`PreProcessingMs` 和 `FlowMs` 对应启动前与执行阶段；`FlowFinalizeMs`、`BatchLookupMs`、`ProcessExecuteMs`、`ViewResultSaveMs`、`ObjectiveResultSaveMs`、`LinkSaveMs` 和 `ResultProcessingTimestampPersistMs` 用于继续拆分流程结束后的约束路径。`ResultProcessingTimestampPersisted` 用于确认阶段终点是否写回 SQLite，`ImageExportIncludedInCt` 明确后台图像导出不属于该阶段的 CT 归因。后续反馈诊断应优先按同一 `SN + Model + BatchId` 汇总这些字段，而不是从相邻日志行估算。
+
+`ResultImageDimensionsFromProcessCache` 表示本次结果保存前已从解析阶段的 batch 图像查询中解析出有效宽高。正常内置流程该字段为 `true` 时，`ViewResultSaveMs` 不再包含第二次尺寸查询；若为 `false`，保存层可能因兼容回退仍访问 MySQL，应结合 `ViewResultSaveMs` 和尺寸数据继续诊断。
 
 旧记录没有上述阶段字段时，时间轴只用 `CreateTime - RunTime` 推算流程执行段，并把剩余部分明确显示为“未归因间隔”；旧数据不能事后可靠拆分切图、预处理和结果保存。任何缺失、逆序或超出整组范围的阶段边界都不能被强行归类。
 

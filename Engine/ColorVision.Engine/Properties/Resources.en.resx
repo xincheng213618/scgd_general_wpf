@@ -5022,4 +5022,28 @@ Please close camera or other programs using this serial port, or check device co
   <data name="CommandPgTemplateHint" xml:space="preserve"><value>Manage PG image and output templates</value></data>
   <data name="CommandAlgorithmPluginHint" xml:space="preserve"><value>Upload service algorithm plugins</value></data>
   <data name="CommandAlgorithmConfigHint" xml:space="preserve"><value>Manage third party algorithm settings</value></data>
+  <data name="索引优化" xml:space="preserve"><value>Index optimization</value></data>
+  <data name="优化结果关联索引" xml:space="preserve"><value>Optimize result relation indexes</value></data>
+  <data name="此操作不会删除业务数据，也不会自动创建完整备份。" xml:space="preserve"><value>This operation will not delete business data or automatically create a full backup.</value></data>
+  <data name="正在执行 {0} 索引优化..." xml:space="preserve"><value>Optimizing indexes for {0}...</value></data>
+  <data name="将为现存 MySQL 结果表的 batch_id / pid 关联列创建缺失索引。操作逐表执行，会占用数据库 I/O 和临时磁盘空间，并可能短暂等待元数据锁。请先暂停生产测试并确认 MySQL 临时目录与数据目录空间充足。" xml:space="preserve"><value>Missing indexes will be created on the batch_id / pid relation columns of existing MySQL result tables. Tables are processed one at a time. This operation consumes database I/O and temporary disk space and may briefly wait for metadata locks. Pause production testing first, and make sure the MySQL temporary and data directories have sufficient free space.</value></data>
+  <data name="当前 MySQL 连接未选择数据库，未执行索引优化。" xml:space="preserve"><value>No database is selected by the current MySQL connection; index optimization was not run.</value></data>
+  <data name="另一个 MySQL 结果索引优化正在执行，本次未做任何更改。" xml:space="preserve"><value>Another MySQL result index optimization is running; no changes were made by this run.</value></data>
+  <data name="{0}: 未在结果表白名单中，已跳过索引优化" xml:space="preserve"><value>{0}: not registered in the result table allowlist; index optimization skipped</value></data>
+  <data name="{0}: 未找到 {1} 列，已跳过" xml:space="preserve"><value>{0}: column {1} not found, skipped</value></data>
+  <data name="{0}: 索引名 {1} 已被非等价定义占用（{2}）" xml:space="preserve"><value>{0}: index name {1} is already used by a non-equivalent definition ({2})</value></data>
+  <data name="{0}: 已有等价索引 {1} ({2} 为首列)，已跳过" xml:space="preserve"><value>{0}: equivalent index {1} already exists ({2} is the first column), skipped</value></data>
+  <data name="{0}: 待建索引表的存储引擎为 {1}，只允许对 InnoDB 执行 INPLACE / LOCK=NONE" xml:space="preserve"><value>{0}: the target table uses the {1} storage engine; index creation with INPLACE / LOCK=NONE is allowed only for InnoDB</value></data>
+  <data name="索引优化预检失败，未执行任何 DDL：" xml:space="preserve"><value>Index optimization preflight failed; no DDL was executed:</value></data>
+  <data name="{0}: 执行前已检测到等价索引 {1}，已跳过" xml:space="preserve"><value>{0}: equivalent index {1} was detected immediately before execution, skipped</value></data>
+  <data name="{0} 创建索引 {1} 失败：{2}" xml:space="preserve"><value>Failed to create index {1} on {0}: {2}</value></data>
+  <data name="{0}: 已由并发操作建立等价索引 {1}，用时 {2}" xml:space="preserve"><value>{0}: equivalent index {1} was created concurrently; elapsed time: {2}</value></data>
+  <data name="{0}: DDL 已返回，但未验证到 {1} 首列索引。" xml:space="preserve"><value>{0}: DDL returned successfully, but no index with {1} as its first column could be verified.</value></data>
+  <data name="{0}: 已创建索引 {1} ({2})，用时 {3}" xml:space="preserve"><value>{0}: created index {1} ({2}); elapsed time: {3}</value></data>
+  <data name="MySQL 结果关联索引优化完成：新建 {0:N0} 个，复用 {1:N0} 个，跳过 {2:N0} 张表，总用时 {3}。" xml:space="preserve"><value>MySQL result relation index optimization completed: {0:N0} created, {1:N0} reused, {2:N0} table(s) skipped; total elapsed time: {3}.</value></data>
+  <data name="本次尚未创建任何索引。" xml:space="preserve"><value>No indexes have been created in this run.</value></data>
+  <data name="本次已创建 {0:N0} 个索引：{1}。" xml:space="preserve"><value>This run created {0:N0} indexes: {1}.</value></data>
+  <data name=" 当前表：{0}。" xml:space="preserve"><value> Current table: {0}.</value></data>
+  <data name="MySQL 结果关联索引优化失败。{0} {1} 用时 {2}。问题排除后可重新执行，已有等价索引会自动跳过。{3}{4}" xml:space="preserve"><value>MySQL result relation index optimization failed.{0} {1} Elapsed time: {2}. Resolve the issue and run the operation again; existing equivalent indexes will be skipped automatically.{3}{4}</value></data>
+  <data name="不支持的结果关联列：{0}" xml:space="preserve"><value>Unsupported result relation column: {0}</value></data>
 </root>

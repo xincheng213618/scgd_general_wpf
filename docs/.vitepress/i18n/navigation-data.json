@@ -1118,7 +1118,7 @@
             },
             {
               "text": {
-                "root": "MySQL 结果清理、备份与失败边界"
+                "root": "MySQL 结果索引优化、清理、备份与失败边界"
               },
               "link": "/04-api-reference/engine-components/mysql-maintenance"
             },
@@ -2261,7 +2261,7 @@
             },
             {
               "text": {
-                "root": "MySQL 结果清理、备份与失败边界"
+                "root": "MySQL 结果索引优化、清理、备份与失败边界"
               },
               "link": "/04-api-reference/engine-components/mysql-maintenance"
             },

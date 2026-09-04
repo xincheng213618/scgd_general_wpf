@@ -208,7 +208,8 @@ namespace ProjectARVRPro
             long objectiveResultSaveMilliseconds,
             long linkSaveMilliseconds,
             long resultProcessingTimestampPersistMilliseconds,
-            bool resultProcessingTimestampPersisted)
+            bool resultProcessingTimestampPersisted,
+            bool resultImageDimensionsFromProcessCache)
         {
             DateTime persistedAt = DateTime.Now;
             long persistMilliseconds = Math.Max(0, viewResultSaveMilliseconds)
@@ -242,6 +243,7 @@ namespace ProjectARVRPro
                 LinkSaveMs = Math.Max(0, linkSaveMilliseconds),
                 ResultProcessingTimestampPersistMs = Math.Max(0, resultProcessingTimestampPersistMilliseconds),
                 ResultProcessingTimestampPersisted = resultProcessingTimestampPersisted,
+                ResultImageDimensionsFromProcessCache = resultImageDimensionsFromProcessCache,
                 PersistMs = persistMilliseconds,
                 FlowCompletionToResultProcessingCompleteMs = GetElapsedMilliseconds(result.FlowCompletedAt, result.ResultProcessingCompletedAt),
                 FlowCompletionToPersistedMs = GetElapsedMilliseconds(result.FlowCompletedAt, persistedAt),
@@ -1079,6 +1081,7 @@ namespace ProjectARVRPro
                 };
 
                 await process.ExecuteFailure(ctx);
+                ctx.TryPopulateResultImageDimensions();
             }
             catch (Exception ex)
             {
@@ -1114,7 +1117,8 @@ namespace ProjectARVRPro
                 int batchId = result.BatchId;
                 if (batchId <= 0) return;
 
-                var image = MeasureImgResultDao.Instance.GetAllByBatchId(batchId)
+                List<MeasureResultImgModel> images = MeasureImgResultDao.Instance.GetAllByBatchId(batchId);
+                MeasureResultImgModel? image = images
                     .Where(x => !string.IsNullOrWhiteSpace(x.FileUrl))
                     .OrderBy(x => x.ZIndex ?? int.MaxValue)
                     .ThenBy(x => x.Id)
@@ -1122,6 +1126,7 @@ namespace ProjectARVRPro
 
                 if (!string.IsNullOrWhiteSpace(image?.FileUrl))
                     result.FileName = image.FileUrl;
+                ResultImageDimensions.TryPopulate(result, _ => images);
             }
             catch (Exception ex)
             {
@@ -1325,6 +1330,7 @@ namespace ProjectARVRPro
                     log.Info($"使用本次流程解析器 {processTypeName} 处理 {result.Model}");
 
                     bool executed = false;
+                    bool resultImageDimensionsFromProcessCache = false;
                     Stopwatch processExecutionStopwatch = Stopwatch.StartNew();
                     try
                     {
@@ -1336,6 +1342,7 @@ namespace ProjectARVRPro
                             ImageView =ImageView,
                         };
                         executed = await process.Execute(ctx);
+                        resultImageDimensionsFromProcessCache = ctx.TryPopulateResultImageDimensions();
                     }
                     catch (Exception ex)
                     {
@@ -1427,7 +1434,8 @@ namespace ProjectARVRPro
                             objectiveResultSaveStopwatch.ElapsedMilliseconds,
                             linkSaveMilliseconds,
                             timestampPersistStopwatch.ElapsedMilliseconds,
-                            timestampPersisted);
+                            timestampPersisted,
+                            resultImageDimensionsFromProcessCache);
                         return true;
                     }
                     else
@@ -1808,6 +1816,7 @@ namespace ProjectARVRPro
                         ImageView = ImageView
                     };
                     bool executed = await process.Execute(ctx);
+                    ctx.TryPopulateResultImageDimensions();
                     if (!executed)
                     {
                         result.Result = false;

@@ -23,7 +23,7 @@ namespace ProjectARVRPro.Process.MTF.MTFHVDynamic
             try
             {
                 string outputName = GetOutputName();
-                var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                var values = ctx.GetMeasureResults();
                 if (values.Count > 0)
                 {
                     string? fileUrl = values[0].FileUrl;

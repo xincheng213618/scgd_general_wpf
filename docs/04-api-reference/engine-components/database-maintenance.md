@@ -2,8 +2,8 @@
 knowledge_id: "engine.database-maintenance"
 knowledge_type: "topic"
 status: "current"
-summary: "数据库清理窗口与provider能力：表统计不是删除预览，确认只固定部分参数；备份默认关闭、组合维护不是事务，关窗不取消，成功与统计刷新分开。"
-aliases: ["数据库清理", "数据维护窗口", "清理预览", "刷新统计", "清理前备份", "保留月数", "清空选中表", "清理取消", "DatabaseCleanupWindow", "DatabaseCleanupWindowViewModel", "DatabaseCleanupSourceViewModel", "DatabaseCleanupTableInfo", "IDatabaseCleanupSourceProvider", "IDatabaseCleanupSelectionProvider", "IDatabaseCleanupBackupProvider", "IDatabaseCleanupMaintenanceProvider", "IDatabaseCleanupMigrationProvider", "SocketDatabaseCleanupWindowLauncher"]
+summary: "数据库维护窗口与provider能力：表统计不是删除预览；备份默认关闭，备份和清理不是事务且失败不自动恢复；清理、手动优化和迁移边界彼此独立。"
+aliases: ["数据库清理", "数据维护窗口", "清理预览", "刷新统计", "清理前备份", "保留月数", "清空选中表", "清理取消", "索引优化", "结果关联索引", "DatabaseCleanupWindow", "DatabaseCleanupWindowViewModel", "DatabaseCleanupSourceViewModel", "DatabaseCleanupTableInfo", "IDatabaseCleanupSourceProvider", "IDatabaseCleanupSelectionProvider", "IDatabaseCleanupBackupProvider", "IDatabaseCleanupMaintenanceProvider", "IDatabaseCleanupMigrationProvider", "IDatabaseCleanupOptimizationProvider", "OptimizationCommand", "SocketDatabaseCleanupWindowLauncher"]
 code_paths: ["Engine/ColorVision.Engine/Mysql/DatabaseCleanupContracts.cs", "Engine/ColorVision.Engine/Mysql/DatabaseCleanupWindow.xaml", "Engine/ColorVision.Engine/Mysql/DatabaseCleanupWindow.xaml.cs", "Engine/ColorVision.Engine/Mysql/DatabaseCleanupWindowViewModel.cs", "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml.cs", "Engine/ColorVision.Engine/Services/DatabaseCleanup/SocketDatabaseCleanupWindowLauncher.cs", "UI/ColorVision.SocketProtocol/ISocketDatabaseCleanupWindowLauncher.cs", "UI/ColorVision.UI/AssemblyHandler.cs", "Projects/ProjectARVRPro/ArvrSqliteCleanupProvider.cs", "Projects/ProjectKB/KbSqliteCleanupProvider.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/DatabaseCleanupWindowTests.cs", "Test/ColorVision.UI.Tests/DatabaseCleanupWindowLayoutTests.cs"]
 related: ["engine.index", "engine.mysql-maintenance", "ui.sqlite-storage", "ui.database", "ui.discovery", "operations.data"]
@@ -11,11 +11,11 @@ related: ["engine.index", "engine.mysql-maintenance", "ui.sqlite-storage", "ui.d
 
 # 数据库清理窗口、能力接入与完成边界
 
-`DatabaseCleanupWindow` 是多数据源的统计、备份、清理和迁移宿主，实际文件位于 `Engine/ColorVision.Engine/Mysql/`，虽使用 `ColorVision.Database` 命名空间，却属于 Engine 的独立维护链路。宿主只调用 provider，不统一实现业务删除、事务、停写或恢复。
+`DatabaseCleanupWindow` 是多数据源的统计、备份、清理、优化和迁移宿主，实际文件位于 `Engine/ColorVision.Engine/Mysql/`，虽使用 `ColorVision.Database` 命名空间，却属于 Engine 的独立维护链路。宿主只调用 provider，不统一实现业务删除、事务、停写或恢复。
 
-本窗口没有 DatePicker、逐行删除预览或预览批准令牌。它提供表统计、保留月数、可选的选表清空和数据源迁移。若问题是“预览后只删除这些批次”，应先纠正这个功能前提，再读 [MySQL 结果维护](./mysql-maintenance.md) 或实际 SQLite owner；不能从表格行数推断删除范围。
+本窗口没有 DatePicker、逐行删除预览或预览批准令牌。它提供表统计、保留月数、可选的选表清空，以及 provider 专有的手动优化和数据迁移。若问题是“预览后只删除这些批次”，应先纠正这个功能前提，再读 [MySQL 结果维护](./mysql-maintenance.md) 或实际 SQLite owner；不能从表格行数推断删除范围。
 
-清理、迁移和备份会写真实数据库或文件。阅读本页不授权执行这些动作；必须先确定目标、业务停写、权限、备份与恢复条件。窗口构造、`OpenWindow` 和 provider 接口没有统一管理员鉴权，具体调用入口必须自行维护授权检查；调用入口可见或方法可调用不代表操作已经获准。
+清理、优化、迁移和备份会写真实数据库或文件。阅读本页不授权执行这些动作；必须先确定目标、业务停写、权限、备份与恢复条件。窗口构造、`OpenWindow` 和 provider 接口没有统一管理员鉴权，具体调用入口必须自行维护授权检查；调用入口可见或方法可调用不代表操作已经获准。
 
 ## 数据源发现与窗口范围
 
@@ -38,12 +38,13 @@ related: ["engine.index", "engine.mysql-maintenance", "ui.sqlite-storage", "ui.d
 | `IDatabaseCleanupBackupProvider` | 显示单独备份与“清理前备份”选项 | “完整”内容由实现决定，不包含自动还原承诺 |
 | `IDatabaseCleanupMaintenanceProvider` | 将备份和动作委托给 provider 的组合入口 | 同一维护锁不等于同一数据库事务，也不锁住其它进程 |
 | `IDatabaseCleanupMigrationProvider` | 显示 provider 的迁移按钮和确认文案 | 直接 API 不因宿主存在就自动备份或获得授权 |
+| `IDatabaseCleanupOptimizationProvider` | 显示 provider 的手动优化按钮和确认文案 | 不统一提供 dry-run、自动备份、事务回滚或低负载窗口 |
 
 当前实现入口如下；能否出现在全局窗口仍取决于程序集发现。项目 provider 不能按名字当成共享数据库实现。
 
 | 来源 ID | 实际 owner | 专有能力 |
 | --- | --- | --- |
-| `mysql-results` | `Mysql/MySqlResultCleanupProvider.cs` | 选表、备份、组合维护；结果表范围见 [MySQL 契约](./mysql-maintenance.md) |
+| `mysql-results` | `Mysql/MySqlResultCleanupProvider.cs` | 选表、备份、组合维护与手动结果关联索引优化；结果表范围和 DDL 边界见 [MySQL 契约](./mysql-maintenance.md) |
 | `socketmessages-sqlite` | `Mysql/SocketMessagesSqliteCleanupProvider.cs` | 备份、组合维护、旧正文迁移 |
 | `flow-diagnostics-sqlite` | `FlowProcessing/Diagnostics/FlowDiagnosticsSqliteCleanupProvider.cs` | 备份、组合维护、诊断消息迁移 |
 | `projectarvrpro-sqlite` | `Projects/ProjectARVRPro/ArvrSqliteCleanupProvider.cs` | 项目结果备份、组合维护与迁移 |
@@ -62,6 +63,7 @@ Socket/Flow 的锁与迁移实现见 [SQLite 正文存储](../ui-components/sqli
 | 保留月数清理 | 默认文本为 `3`；解析正整数，在确认前捕获 `keepMonths` | 没有统一最大月数；截止时间由 provider 计算，不保存待删除行集合，也不受当前选表限制 |
 | 清空选中表 | 确认前捕获存在且选中的表名数组，随后传给 `CleanupTables` | 未捕获表中记录、连接配置或主从依赖闭包 |
 | 清空当前库可清理表 | 弹窗使用当前快照的可用表数量 | 执行只调用 `CleanupAll()`，不传弹窗中的表名/行数；provider 可重新发现当前库 |
+| 优化 | provider 的说明，以及“不会删除业务数据、不会自动创建完整备份”的二次提示 | 没有通用 dry-run；不冻结连接、schema、已有索引、数据库负载或临时空间 |
 | 迁移 | provider 的说明及强制备份提示 | 没有通用 dry-run、版本批准或恢复协议 |
 
 确认与实际执行之间，provider 若重新读取可变连接配置、系统时间或 schema，宿主不会冻结这些值。XAML 提示“清理主表时需同时选择所有现存关联明细表”，但宿主只捕获选择，没有实现依赖校验；MySQL 当前缺少对应强制门禁的事实见专有契约，不能把提示当成代码保证。
@@ -70,7 +72,9 @@ Socket/Flow 的锁与迁移实现见 [SQLite 正文存储](../ui-components/sqli
 
 每个 source 的 `BackupBeforeCleanup` 默认 false，界面“推荐”文字不表示默认勾选或持久策略。普通清理可在没有自动备份的情况下继续；provider 不支持备份时会提示需已有可恢复副本，但宿主不验证副本。单独点击创建备份也不会登记一个后续清理必须匹配的批准记录。
 
-迁移入口不同：缺少 backup 能力直接拒绝；经用户确认后以 `forceBackup: true` 调用执行包装。备份和动作按以下方式运行：
+迁移入口不同：缺少 backup 能力直接拒绝；经用户确认后以 `forceBackup: true` 调用执行包装。优化入口则明确关闭可选备份路径：即使当前 source 勾选了“清理前备份”，宿主也不会为 `ExecuteOptimization()` 自动创建备份。优化确认中的“不删除业务数据”只描述该 provider 的动作范围，不代表 DDL 没有持久 schema 变更、可以事务回滚或无需按现场制度留存备份。
+
+备份和动作按以下方式运行：
 
 - 有 maintenance 能力：仅调用 provider 的 `ExecuteCleanupWithBackup(action)`；由它负责备份、锁和动作顺序，宿主不再额外重复备份。
 - 只有 backup 能力：先 `CreateBackup()`，正常返回才执行 action；两者之间没有宿主统一维护锁或数据库事务。
@@ -78,7 +82,7 @@ Socket/Flow 的锁与迁移实现见 [SQLite 正文存储](../ui-components/sqli
 
 备份阶段失败不会继续调用清理/迁移动作，但不能扩大为“整个入口绝无先前副作用”：初始化、描述读取或 provider 的备份本身可能已经触发动作。组合入口失败时宿主提示如已生成备份则保留，并要求重新确认现状；宿主没有自动恢复或补偿事务。
 
-动作成功后另行调用 `LoadTables` 刷新。刷新失败会保留动作成功结果并加警告，不把已经完成的清理回滚；操作失败分支直接报告错误，不自动刷新统计。因此成功文案、最新统计、备份可恢复和库健康是不同证据。`DatabaseCleanupExecutionResult` 只是状态文字/摘要，没有统一的提交凭据或跨库成功协议。
+普通清理和迁移动作成功后另行调用 `LoadTables` 刷新。刷新失败会保留动作成功结果并加警告，不把已经完成的动作回滚；操作失败分支直接报告错误，不自动刷新统计。优化成功后不自动重新统计表，索引大小等显示值仍是旧快照，需由用户显式“刷新统计”。因此成功文案、最新统计、备份可恢复和库健康是不同证据。`DatabaseCleanupExecutionResult` 只是状态文字/摘要，没有统一的提交凭据或跨库成功协议。
 
 ## 忙碌、关闭与并发
 
@@ -90,6 +94,6 @@ Socket/Flow 的锁与迁移实现见 [SQLite 正文存储](../ui-components/sqli
 
 ## 验证证据
 
-`DatabaseCleanupWindowTests.cs` 用 fake 覆盖能力开关、默认备份关闭、仅存在表可选、组合维护调用一次，以及 MySQL 白名单/排序/未知明细检测辅助方法；它没有执行真实清理事务。`DatabaseCleanupWindowLayoutTests.cs` 覆盖单源隔离、来源排序/切换、可见性和布局等，使用 fake 或不加载真实库的 provider 构造。
+`DatabaseCleanupWindowTests.cs` 用 fake 覆盖能力开关、默认备份关闭、仅存在表可选、组合维护调用一次，以及 MySQL 白名单/排序/未知明细检测辅助方法；它没有执行真实清理事务或在线索引 DDL。`DatabaseCleanupWindowLayoutTests.cs` 覆盖单源隔离、来源排序/切换、可见性和布局等，使用 fake 或不加载真实库的 provider 构造。
 
 例如布局测试显式刷新选中 source，不等于生产 Loaded 只刷新选中项；应读具体调用而不是仅凭测试名推断。现有测试不证明真实关闭时取消、备份故障恢复、主从完整性、跨窗口互斥或授权门禁。本次仅核对源码与测试内容，没有运行产品或操作用户数据库。

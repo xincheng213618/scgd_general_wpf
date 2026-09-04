@@ -20,7 +20,7 @@ namespace ProjectARVRPro.Process.Distortion
 
             try
             {
-                var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                var values = ctx.GetMeasureResults();
                 if (values.Count > 0)
                     ctx.Result.FileName = values[0].FileUrl;
 

@@ -376,12 +376,8 @@ namespace ProjectARVRPro
             if (item == null) return;
 
             bool isNew = item.Id <= 0;
-            if (isNew
-                && ResultImageDimensions.TryReadFromMeasureResults(item.BatchId, item.FileName, out int width, out int height))
-            {
-                item.ImageWidth = width;
-                item.ImageHeight = height;
-            }
+            if (isNew)
+                ResultImageDimensions.TryPopulate(item);
 
             bool savePayload = item.ViewResultJson != null;
             ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>

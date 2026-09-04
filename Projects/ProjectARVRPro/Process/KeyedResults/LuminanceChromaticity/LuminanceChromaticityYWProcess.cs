@@ -35,7 +35,7 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
                 var testResult = new LuminanceChromaticityYWViewTestResult();
                 bool found12X7 = false;
                 bool found8X7 = false;
-                var images = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                var images = ctx.GetMeasureResults();
                 if (images.Count > 0)
                 {
                     foreach (var image in images)

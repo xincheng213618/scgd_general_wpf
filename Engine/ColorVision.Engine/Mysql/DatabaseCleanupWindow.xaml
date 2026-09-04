@@ -160,6 +160,8 @@
                             <Button Content="{engine:EngineLang Key='刷新统计'}" Command="{Binding RefreshCommand}" Style="{StaticResource CleanupActionButtonStyle}" Margin="0,0,8,4"/>
                             <Button x:Name="CreateBackupButton" Content="{engine:EngineLang Key='创建完整备份'}" Command="{Binding BackupCommand}" Style="{StaticResource CleanupActionButtonStyle}"
                                     Margin="0,0,8,4" Visibility="{Binding SupportsBackup, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <Button x:Name="OptimizationButton" Content="{Binding OptimizationActionName}" Command="{Binding OptimizationCommand}" Style="{StaticResource CleanupActionButtonStyle}"
+                                    Margin="0,0,8,4" Visibility="{Binding SupportsOptimization, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             <Button x:Name="MigrationButton" Content="{Binding MigrationActionName}" Command="{Binding MigrationCommand}" Style="{StaticResource CleanupActionButtonStyle}"
                                     Margin="0,0,0,4" Visibility="{Binding SupportsMigration, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         </WrapPanel>

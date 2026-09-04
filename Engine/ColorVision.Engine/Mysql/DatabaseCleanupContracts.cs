@@ -164,4 +164,14 @@ namespace ColorVision.Database
         string MigrationConfirmationMessage { get; }
         DatabaseCleanupExecutionResult ExecuteMigration();
     }
+
+    /// <summary>
+    /// Optional capability for a source-specific, manually triggered maintenance optimization.
+    /// </summary>
+    public interface IDatabaseCleanupOptimizationProvider
+    {
+        string OptimizationActionName { get; }
+        string OptimizationConfirmationMessage { get; }
+        DatabaseCleanupExecutionResult ExecuteOptimization();
+    }
 }

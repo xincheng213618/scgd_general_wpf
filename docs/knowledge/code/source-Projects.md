@@ -25,7 +25,7 @@ next: false
   按设置JSON、Engine MySQL、模块SQLite和结果文件定位数据所有者；有记录、有图片、已导出和已备份不是同一状态。
 
 - [数据库清理窗口、能力接入与完成边界](../../04-api-reference/engine-components/database-maintenance.md) — `engine.database-maintenance`
-  数据库清理窗口与provider能力：表统计不是删除预览，确认只固定部分参数；备份默认关闭、组合维护不是事务，关窗不取消，成功与统计刷新分开。
+  数据库维护窗口与provider能力：表统计不是删除预览；备份默认关闭，备份和清理不是事务且失败不自动恢复；清理、手动优化和迁移边界彼此独立。
 
 - [配置 ARVRPro 流程、解析映射与 Recipe](../../04-api-reference/projects/project-arvr-pro-processes.md) — `projects.arvr-pro-processes`
   配置 ARVRPro 流程组、流程解析映射、实例 Recipe 与雷鸟切图，说明类型选择、结果快照、配置保存和有效迁移规则。
@@ -56,7 +56,7 @@ next: false
 ## Projects/ProjectKB {#module-50726f6a656374732f50726f6a6563744b42}
 
 - [数据库清理窗口、能力接入与完成边界](../../04-api-reference/engine-components/database-maintenance.md) — `engine.database-maintenance`
-  数据库清理窗口与provider能力：表统计不是删除预览，确认只固定部分参数；备份默认关闭、组合维护不是事务，关窗不取消，成功与统计刷新分开。
+  数据库维护窗口与provider能力：表统计不是删除预览；备份默认关闭，备份和清理不是事务且失败不自动恢复；清理、手动优化和迁移边界彼此独立。
 
 - [项目横向速查](../../04-api-reference/projects/project-capability-matrix.md) — `projects.capabilities`
   比较 ARVRPro、KB、LUX 和 IntegrationDemo 的检测触发、测试完成判据、流程配置与结果出口。
