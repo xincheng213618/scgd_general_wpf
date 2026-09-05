@@ -3875,6 +3875,7 @@
         ".github/workflows/dotnet.yml"
       ],
       "test_paths": [
+        "Test/ColorVision.Themes.Tests/ColorVision.Themes.Tests.csproj",
         "Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj",
         "Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj",
         "Test/ColorVision.UI.Tests/ImageAlgorithmPerformanceGateTests.cs",
@@ -10948,7 +10949,10 @@
         "UI/ColorVision.Themes/Theme.cs",
         "UI/ColorVision.Themes/ThemeManager.cs",
         "UI/ColorVision.Themes/ThemeManagerExtensions.cs",
-        "UI/ColorVision.Themes/WindowKeyboardNavigation.cs",
+        "UI/ColorVision.Themes/Behaviors",
+        "UI/ColorVision.Themes/Windowing",
+        "UI/ColorVision.Themes/ThemeResourceDictionary.cs",
+        "UI/ColorVision.Themes/HandyControlStyleResources.cs",
         "UI/ColorVision.Themes/Themes",
         "UI/ColorVision.Themes/ColorVision.Themes.csproj",
         "UI/ColorVision.UI/Themes/ThemeConfig.cs",
@@ -10964,13 +10968,13 @@
         "ColorVision/CompactMainWindow.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.Themes.Tests/ThemeResourceTests.cs",
         "Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs",
         "Test/ColorVision.UI.Tests/ThemeSettingsTests.cs",
         "Test/ColorVision.UI.Tests/ThemeSubscriptionLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/GridViewColumnHeaderBindingTests.cs",
         "Test/ColorVision.UI.Tests/ComboBoxItemBindingTests.cs",
-        "Test/ColorVision.UI.Tests/CompactTitleBarIntegrationContractTests.cs",
         "Test/ColorVision.UI.Tests/MenuThemeTests.cs"
       ],
       "related": [

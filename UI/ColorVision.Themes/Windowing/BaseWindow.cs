@@ -43,8 +43,9 @@ namespace ColorVision.Themes.Controls
                 return null;
             }
 
-            Application.Current.Resources.MergedDictionaries.Add(dictionary);
-            return Application.Current.FindResource(typeof(BaseWindow)) as Style;
+            // Type initialization can run while a replacement theme is being prepared.
+            // Keep the fallback local so it cannot mutate the active application's dictionaries.
+            return dictionary[typeof(BaseWindow)] as Style;
         }
 
 

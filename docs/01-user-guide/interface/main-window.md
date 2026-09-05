@@ -55,7 +55,7 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 
 标题区延伸采用仅顶部的 `WindowChrome.GlassFrameThickness`，不启用全窗模糊、Acrylic 或透明分层窗口。附加期间 `Window.Background` 临时为 Transparent，但 `AllowsTransparency` 保持 false；`Root`、顶栏容器和系统按钮占位不覆盖 DWM 按钮，菜单区域、停靠管理器和状态栏分别用 `GlobalBackground` 保持内容不透明。`CompactTitleBarChrome` 监听窗口背景属性变化，在紧凑模式下同步恢复透明值：WPF 属性或资源失效可能清除 `SetCurrentValue` 的覆盖值，且不一定触发主题变化事件，仅在 `ApplyTheme` 中恢复会使最小化、最大化/还原、关闭按钮被不透明背景遮住。该监听在全屏时暂停保护，释放时解除，保留原动态资源在全屏和原生回退后的更新能力，不使用逐帧轮询。紧凑路径把 `DockingManager1.Margin` 从普通窗口的 `-2,-3,-2,-2` 改为 0，隔开工作区与玻璃标题区，防止负外边距使内容绘制覆盖系统按钮；原生回退和进入全屏时恢复普通外边距。
 
-颜色由捕获的 `ThemeManager.CurrentUIThemeChanged` 驱动并切回 UI 线程；紧凑路径不并行运行普通 `ApplyCaption`，避免后者重置其标题色。图标通过公共只读辅助方法 `ThemeManagerExtensions.TryLoadPackageIcon` 读取并缓存，优先保留包图标；没有包图标时才按实际主题选用默认深浅图标，详见[窗口主题与图标](../../04-api-reference/ui-components/ColorVision.Themes.md#applycaption-与-basewindow-是不同生命周期)。外边框使用 DWM 默认颜色，不把窗口是否激活绑定到内部文档的选中或活动状态。控制器复用同一个 `WindowChrome`，普通最大化/还原时同步调整客户区内缩，不在下一轮 Loaded 后再改内容边距；标题高度、DPI 或系统设置变化仍合并刷新相关尺寸，不在普通位置变化时重建窗口或模板。窗口状态变化不重复写入 DWM 主题属性；这些实现约束不等于已测得生产工作区性能无退步。
+颜色由捕获的 `ThemeManager.CurrentUIThemeChanged` 驱动并切回 UI 线程；紧凑路径不并行运行普通 `ApplyCaption`，避免后者重置其标题色。图标通过公共只读辅助方法 `ThemeManagerExtensions.TryLoadPackageIcon` 读取并缓存，优先保留包图标；没有包图标时才按实际主题选用默认深浅图标，详见[窗口主题与图标](../../04-api-reference/ui-components/ColorVision.Themes.md#窗口外观与生命周期)。外边框使用 DWM 默认颜色，不把窗口是否激活绑定到内部文档的选中或活动状态。控制器复用同一个 `WindowChrome`，普通最大化/还原时同步调整客户区内缩，不在下一轮 Loaded 后再改内容边距；标题高度、DPI 或系统设置变化仍合并刷新相关尺寸，不在普通位置变化时重建窗口或模板。窗口状态变化不重复写入 DWM 主题属性；这些实现约束不等于已测得生产工作区性能无退步。
 
 在相同 DPI 与标题内容高度下，最大化/还原共用稳定的 `GlassFrameThickness.Top` 和 `CaptionHeight` 上界。改变这两个属性会让 WPF 重算非客户区并触发 `SWP_FRAMECHANGED`，因此不能随着普通/最大化的客户区内缩反复变化。普通窗口中，上界超出真实标题下沿的窄条属于工作区：控制器仅对此窄条的 `WM_NCHITTEST` 返回 `HTCLIENT`，并排除左右缩放边缘；真正标题留白、系统按钮和其余缩放行为继续交给 `WindowChrome`/DWM。全屏暂停时不做窄条修正，恢复 chrome 后重新建立 hook 顺序。边框重复刷新、内容布局次数和 GPU 实际黑帧是不同指标，消息计数下降不等于所有设备上的动画或黑帧已经验收通过。
 
@@ -101,7 +101,7 @@ dotnet build .\ColorVision\ColorVision.csproj -c Debug -p:Platform=x64 -p:Enable
 
 单工具页通过将 `ToolTabStrip.Height` 设为 0 隐藏标签栏的占位，保留该容器的 Visible 状态和 `IsItemsHost` 面板参与布局，仍让 WPF 生成 `TabItem` 并建立选择绑定。不能将包含 ItemsHost 的外层设为 Collapsed：首次布局尚未生成标签容器时，模型虽已选中，控件的 `SelectedContent` 和标题仍可能为空，延迟内容也无法进入 Loaded。恢复多个工具页后标签栏重新取得正常高度。面板内容在关闭重开和布局恢复之间的实例所有权另见[停靠注册、布局恢复和重置](../../04-api-reference/ui-components/editor-document-lifecycle.md#停靠注册、布局恢复和重置)。
 
-停靠主题为管理器、文档标签栏、工具面板模板底板、工具标题、选中底部标签和工具浮窗的标题/主体提供动态引用应用 `GlobalBackground` 的默认背景。`MainWindow.xaml` 中的停靠管理器、状态栏和设备控制 `ScrollViewerDisplay` 外层也显式引用该资源，不依赖窗口背景透出；启用紧凑标题栏时窗口背景暂为透明，业务内容仍有自己的不透明底色。颜色来源是 `UI/ColorVision.Themes/Themes/White.xaml` 和 `Dark.xaml` 的全局资源，不在停靠主题中复制一份全局配色。该统一只针对停靠外壳：选中文档标签及文档内容面板仍使用自身停靠配色，流程网格、图像画布、编辑器和设备卡片等内容继续保留各自的背景资源，不批量改写内容背景。
+停靠主题为管理器、文档标签栏、工具面板模板底板、工具标题、选中底部标签和工具浮窗的标题/主体提供动态引用应用 `GlobalBackground` 的默认背景。`MainWindow.xaml` 中的停靠管理器、状态栏和设备控制 `ScrollViewerDisplay` 外层也显式引用该资源，不依赖窗口背景透出；启用紧凑标题栏时窗口背景暂为透明，业务内容仍有自己的不透明底色。颜色来源是 `UI/ColorVision.Themes/Themes/Palettes/Light.xaml` 和 `Dark.xaml` 的全局资源（旧 White/Dark 入口保留兼容），不在停靠主题中复制一份全局配色。该统一只针对停靠外壳：选中文档标签及文档内容面板仍使用自身停靠配色，流程网格、图像画布、编辑器和设备卡片等内容继续保留各自的背景资源，不批量改写内容背景。
 
 文档标签最小高度为 26 DIP，内部原生标签布局最小高度为 25 DIP，标签圆角为 3 DIP；工具标签圆角仍为 4 DIP。`IsSelected` 只决定选中页的轮廓与背景，只有 `IsActive` 才给文档标签、标签栏主线和内容面板紫色边框，并令标题文字使用 `SemiBold`。焦点转到工具面板后，文档仍可保持选中及 `IsLastFocusedDocument`，但恢复中性边框和普通字重；多个文档分组也不同时强调各自选中页。这里只读取 AvalonDock 状态改变外观，不重新激活文档或抢回键盘焦点。标题字重仅设置在 `LayoutDocumentTabItem` 模板的 `DocumentHeader` 内容呈现器上，不设置整个 `TabItem` 的字重，避免右键菜单、菜单项及其他子控件继承粗体；原生菜单和命令继续复用。
 

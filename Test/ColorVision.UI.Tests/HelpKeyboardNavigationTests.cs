@@ -156,15 +156,14 @@ public sealed class HelpKeyboardNavigationTests
         XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
         XElement original = XDocument.Load(Path.Combine(repo, "ColorVision/Update/UpdatePreviewWindow.xaml")).Root!;
         var resources = new XElement(original.Element(ns + "Window.Resources")!);
-        foreach (XAttribute source in resources.Descendants().Attributes("Source"))
-            source.Value = Path.Combine(repo, "UI/ColorVision.Themes/Themes/UpdateDialogTheme.xaml");
         var buttons = original.Descendants(ns + "Button")
             .Where(button => (string?)button.Attribute(x + "Name") is "ConfirmButton" or "CancelButton")
             .Select(button => new XElement(button)).ToArray();
         foreach (XElement button in buttons)
             button.Attribute("Click")!.Remove();
         var root = new XElement(ns + "Window", new XAttribute(XNamespace.Xmlns + "x", x), resources, new XElement(ns + "StackPanel", buttons));
-        var window = (Window)XamlReader.Parse(root.ToString());
+        var parserContext = new ParserContext { BaseUri = new Uri("pack://application:,,,/ColorVision;component/Update/UpdatePreviewWindow.xaml") };
+        var window = (Window)XamlReader.Parse(root.ToString(), parserContext);
         window.DataContext = context;
         window.Width = 400;
         window.Height = 200;

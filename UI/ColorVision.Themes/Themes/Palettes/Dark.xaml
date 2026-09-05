@@ -1,0 +1,162 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Foundations/SemanticBrushes.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+
+    <Color x:Key="CV.Color.Text.Primary">White</Color>
+
+    <Color x:Key="CV.Color.Surface.Window">#262626</Color>
+
+    <Color x:Key="CV.Color.Surface.Control">#1C1C1C</Color>
+
+    <Color x:Key="CV.Color.Surface.ControlHover">#282828</Color>
+
+    <Color x:Key="CV.Color.Border.Control">#3F3F46</Color>
+
+    <Color x:Key="CV.Color.Accent.Primary">#4D8DFF</Color>
+
+    <Color x:Key="CV.Color.Accent.Hover">#6EA8FF</Color>
+
+    <Color x:Key="CV.Color.Status.Success">Green</Color>
+
+    <Color x:Key="CV.Color.Status.Error">Red</Color>
+
+    <Color x:Key="defaultgreyColor">#EFEFEF</Color>
+
+    <SolidColorBrush x:Key="IconSolidColorBrush" Color="#FFFFFFFF"/>
+
+    <SolidColorBrush x:Key="IconSolidColorBackgroundBrush" Color="#FF000000"/>
+
+    <Color x:Key="GlobalBackgroundColor">#262626</Color>
+
+    <Color x:Key="GlobalBroderBrushColor">#282828</Color>
+
+    <Color x:Key="GlobalTextColor">White</Color>
+
+    <Color x:Key="UpdateDialogBackgroundColor">#262626</Color>
+
+    <Color x:Key="UpdateDialogSurfaceColor">#1C1C1C</Color>
+
+    <Color x:Key="UpdateDialogSurfaceHoverColor">#282828</Color>
+
+    <Color x:Key="UpdateDialogBorderColor">#3F3F46</Color>
+
+    <Color x:Key="UpdateDialogTextPrimaryColor">White</Color>
+
+    <Color x:Key="UpdateDialogTextSecondaryColor">White</Color>
+
+    <Color x:Key="UpdateDialogAccentColor">#4D8DFF</Color>
+
+    <Color x:Key="UpdateDialogAccentHoverColor">#6EA8FF</Color>
+
+    <Color x:Key="SelectedBackgroundColor">#FFC5CBF9</Color>
+
+    <Color x:Key="SelectedUnfocusedColor">#FFDDDDDD</Color>
+
+    <SolidColorBrush x:Key="BordrBrush">#3D3D3D</SolidColorBrush>
+
+    <SolidColorBrush x:Key="GlobalBackground" Color="{StaticResource GlobalBackgroundColor}" />
+
+    <SolidColorBrush x:Key="GlobalBorderBrush" Color="{StaticResource GlobalBroderBrushColor}"/>
+
+    <SolidColorBrush x:Key="GlobalBorderBrush1" Color="#151515"/>
+
+    <SolidColorBrush x:Key="ButtonBackground" Color="#1C1C1C" />
+
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#3F3F46" />
+
+    <SolidColorBrush x:Key="GlobalTextBrush"  Color="{StaticResource GlobalTextColor}" />
+
+    <SolidColorBrush x:Key="BorderBackGroud1" Color="#F2F2F2"/>
+
+    <SolidColorBrush x:Key="BorderBackGroud2" Color="#F2F2F2"/>
+
+    <SolidColorBrush x:Key="StatusBarBackgroundBrush"  Color="{StaticResource CV.Color.Accent.Primary}"/>
+
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource CV.Color.Accent.Primary}"/>
+
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="{StaticResource GlobalTextColor}"/>
+
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#C0C0C0"/>
+
+    <SolidColorBrush x:Key="MeasureBackground" Color="{StaticResource GlobalBackgroundColor}"/>
+
+    <SolidColorBrush x:Key="MeasureBarBackgroundBrush" Color="#3F3F46"/>
+
+    <SolidColorBrush x:Key="CaptionButtonBrush">white</SolidColorBrush>
+
+    <SolidColorBrush x:Key="CaptionButtonForeground">white</SolidColorBrush>
+
+    <SolidColorBrush x:Key="TitleBarActionForeground" Color="#D8D8D8"/>
+
+    <SolidColorBrush x:Key="TitleBarActionInactiveForeground" Color="#808080"/>
+
+    <SolidColorBrush x:Key="WindowIsNotActiveForeground">#d7d7d7</SolidColorBrush>
+
+    <SolidColorBrush x:Key="CaptionButtonChoiceBrush">white</SolidColorBrush>
+
+    <SolidColorBrush x:Key="CaptionButtonChoiceBackgrouundBrush">#888888</SolidColorBrush>
+
+    <SolidColorBrush x:Key="CaptionButtonCloseBrush" Color="Red"/>
+
+    <SolidColorBrush x:Key="MenuBrushKey"   Color="{DynamicResource GlobalBackgroundColor}"/>
+
+    <SolidColorBrush x:Key="MenuHighBrushKey"   Color="#3B3B3B"/>
+
+    <SolidColorBrush x:Key="SubMenuBrushKey"   Color="#2D2D2D"/>
+
+    <SolidColorBrush x:Key="SubMenuBorderBrushKey"   Color="#464646"/>
+
+    <SolidColorBrush x:Key="TransparentBrush" Color="Transparent" />
+
+    <SolidColorBrush x:Key="MenuItemSeparatorFillTop" Color="#424242" />
+
+    <SolidColorBrush x:Key="MenuItemSeparatorFillBottom" Color="Transparent" />
+
+    <SolidColorBrush x:Key="SystemColorsMenuText" Color="White" />
+
+    <SolidColorBrush  x:Key="ControlShadow" Color="#71000000" />
+
+    <SolidColorBrush x:Key="toplevelmenuheaderhoverborder" Color="Transparent" />
+
+    <SolidColorBrush x:Key="toplevelmenuheaderhover" Color="#FF3E3E40" />
+
+    <SolidColorBrush x:Key="menuitemglyphpanelborderbrush" Color="#3E3E40" />
+
+    <SolidColorBrush x:Key="MenuItemHighlightedInnerBorder" Color="#3D3D3D" />
+
+    <SolidColorBrush x:Key="MenuItemDisabledForeground" Color="#898989" />
+
+    <SolidColorBrush x:Key="MenuItemSecondaryForeground" Color="#B0B0B0" />
+
+    <SolidColorBrush x:Key="MenuItemDisabledGlyphPanelBackground" Color="#FF656565" />
+
+    <SolidColorBrush x:Key="MenuItemDisabledGlyphFill" Color="#898989" />
+
+    <SolidColorBrush x:Key="environmentcommandbar"  Color="#FFCFD6E5"  />
+
+    <SolidColorBrush x:Key="environmentcommandbaricon" Color="#FF2D2D30" />
+
+    <SolidColorBrush x:Key="EnvironmentCommandBarMenuMouseOverSubmenuGlyph" Color="#FF007ACC" />
+
+    <SolidColorBrush x:Key="environmentcommandbarmenuseparator" Color="#FF000000" />
+
+    <SolidColorBrush x:Key="EnvironmentCommandBarCheckBox" Color="#FF999999" />
+
+    <SolidColorBrush x:Key="EnvironmentCommandBarSelectedIcon" Color="#FF2D2D30" />
+
+    <SolidColorBrush x:Key="EnvironmentCommandBarCheckBoxMouseOver" Color="#FFF1F1F1" />
+
+    <SolidColorBrush x:Key="EnvironmentCommandBarHoverOverSelectedIcon" Color="#3B3B3B" />
+
+    <SolidColorBrush x:Key="EnvironmentCommandBarMenuItemMouseOver" Color="#3B3B3B" />
+
+    <SolidColorBrush x:Key="ContextMenuBackground" Color="#2D2D2D" />
+
+    <SolidColorBrush x:Key="ContextMenuBorderBrush" Color="#464646" />
+
+    <SolidColorBrush x:Key="ContextMenuRectangleFill" Color="#2D2D2D" />
+
+    <DropShadowEffect x:Key="MenuPopupShadowEffect" Color="Black" BlurRadius="12" ShadowDepth="2" Direction="270" Opacity="0.28" RenderingBias="Performance"/>
+</ResourceDictionary>

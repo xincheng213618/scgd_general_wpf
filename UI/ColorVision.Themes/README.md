@@ -6,16 +6,14 @@ Windows WPF 主题资源与窗口外观支持包，附带基础控件和转换�
 
 ## 包接入
 
-使用 `ColorVision.Themes` 命名空间。已有宿主初始化资源时，通过 `Application.ApplyTheme` 选择主题，在窗口首次 Loaded 前调用一次 `Window.ApplyCaption` 接入标题栏；二者的选择/实际状态及失败语义见权威主题。
+使用 `ColorVision.Themes` 命名空间。已有宿主初始化资源时，通过 `Application.ApplyTheme` 选择主题，调用 `Window.ApplyCaption` 接入标题栏；二者的选择/实际状态及失败语义见权威主题。
 
-空白 WPF 宿主可以在 UI 线程启动阶段先建立资源，再选择跟随系统：
+在 App.xaml 合并 `/ColorVision.Themes;component/Themes/Theme.xaml` 可预载默认浅色资源。空白 WPF 宿主也可以直接选择跟随系统，由管理器完成首次初始化：
 
 ```csharp
 using ColorVision.Themes;
 using System.Windows;
 
-// 一次性初始化；不要放进反复刷新的事件处理器。
-Application.Current.ForceApplyTheme(Theme.Light);
 Application.Current.ApplyTheme(Theme.UseSystem);
 ```
 
