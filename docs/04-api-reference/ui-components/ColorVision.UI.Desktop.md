@@ -45,6 +45,8 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 
 ## 运行链路
 
+帮助菜单的插件市场与反馈入口支持菜单访问键，见[帮助菜单键盘入口](./menus.md#帮助菜单的键盘入口)。插件市场进入后聚焦列表，Esc 优先收起详情并回到列表，再次按下关闭窗口。反馈窗口初始聚焦正文输入框，保留多行 Enter 换行及原有默认发送、Esc 取消行为；Tab / Shift+Tab 在窗口内循环。
+
 | 链路 | 关键路径 |
 | --- | --- |
 | 设置链 | [MenuOptions → SettingWindow/controller → 元数据与编辑器 → 菜单返回后保存](./settings.md) |

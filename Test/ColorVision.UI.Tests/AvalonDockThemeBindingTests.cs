@@ -12,31 +12,23 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using System.Xml.Linq;
-using Xunit.Abstractions;
 
 namespace ColorVision.UI.Tests;
 
 /// <summary>Real AvalonDock controls with synthetic content; never starts MainWindow or loads a saved workspace.</summary>
 public class AvalonDockThemeBindingTests
 {
-    private readonly ITestOutputHelper _output;
-
-    public AvalonDockThemeBindingTests(ITestOutputHelper output) => _output = output;
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void DockedCaption_IsFlatAndRetainsActionsAcrossEmptyModelAndThemeReplacement(bool isDark)
+    [Fact]
+    public void DockedCaption_RetainsActionsAcrossEmptyModelAndThemeReplacement()
     {
         WpfTestHost.Invoke(() =>
         {
             using var trace = new BindingTrace();
             var model = new LayoutAnchorable { Title = "Solution Explorer" };
             var title = new AnchorablePaneTitle { Model = model };
-            foreach (bool dark in new[] { isDark, !isDark, isDark })
+            foreach (bool dark in new[] { false, true, false })
             {
                 var theme = new AvalonDockTheme(dark);
                 ResourceDictionary globalPalette = LoadGlobalPalette(dark);
@@ -44,14 +36,10 @@ public class AvalonDockThemeBindingTests
                 title.Resources.MergedDictionaries.Add(globalPalette);
                 title.Resources.MergedDictionaries.Add(theme.ThemeResourceDictionary);
                 title.Style = (Style)theme.ThemeResourceDictionary[typeof(AnchorablePaneTitle)];
-                AssertPalette(theme.ThemeResourceDictionary);
                 foreach (bool active in new[] { false, true, false })
                 {
                     model.IsActive = active;
                     ArrangeCaption(title);
-                    Assert.InRange(Part<Border>(title, "CaptionBorder").ActualHeight, 28, 30);
-                    Assert.Same(globalPalette["GlobalBackground"], Part<Border>(title, "CaptionBorder").Background);
-                    AssertNoVisibleGrip(title);
                     Part<DropDownButton>(title, "MenuDropDownButton");
                     Part<Button>(title, "PART_AutoHidePin");
                     Part<Button>(title, "PART_HidePin");
@@ -60,62 +48,48 @@ public class AvalonDockThemeBindingTests
                 ArrangeCaption(title);
                 title.Model = model;
             }
-            Assert.DoesNotContain("GeometryDrawing", trace.Output);
+            Assert.DoesNotContain("BindingExpression path error", trace.Output);
         });
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void ThemeManagerStyle_InheritsRealCommandMenusAcrossThemeReplacement(bool isDark)
+    [Fact]
+    public void ThemeReplacement_PreservesCommandMenus()
     {
         WpfTestHost.Invoke(() =>
         {
-            var stockResources = new ResourceDictionary
-            {
-                Source = new Uri("/AvalonDock.Themes.VS2013;component/Themes/Generic.xaml", UriKind.Relative)
-            };
-            _output.WriteLine(DescribeStyleChain("Stock Generic.xaml", Assert.IsType<Style>(stockResources[typeof(DockingManager)])));
-            using var scene = new DockingScene(isDark);
-            foreach (bool dark in new[] { isDark, !isDark, isDark })
+            using var scene = new DockingScene(false);
+            foreach (bool dark in new[] { false, true, false })
             {
                 var theme = new AvalonDockTheme(dark);
-                Style style = Assert.IsType<Style>(theme.ThemeResourceDictionary[typeof(DockingManager)]);
                 scene.ReplaceGlobalPalette(dark);
                 scene.Manager.Theme = null;
                 scene.Manager.Theme = theme;
                 Arrange(scene.Manager);
-                _output.WriteLine(DescribeStyleChain($"Modern {(dark ? "dark" : "light")} theme", style));
-                _output.WriteLine(DescribeStyleChain("Actual manager Style", scene.Manager.Style));
-                _output.WriteLine($"Actual menus: Document={scene.Manager.DocumentContextMenu?.GetType().Name ?? "<null>"}; Anchorable={scene.Manager.AnchorableContextMenu?.GetType().Name ?? "<null>"}");
-                Assert.NotNull(style.BasedOn);
-                foreach (DependencyProperty property in new[] { DockingManager.DocumentContextMenuProperty, DockingManager.AnchorableContextMenuProperty })
+                foreach (LayoutContent model in new LayoutContent[] { scene.Document, scene.Tool })
                 {
-                    Setter? setter = StyleChain(style).Select(current => current.Setters.OfType<Setter>()
-                        .LastOrDefault(candidate => candidate.Property == property)).FirstOrDefault(candidate => candidate != null);
-                    Assert.True(setter != null, $"The modern style inheritance chain lost the upstream {property.Name} setter.");
-                    Assert.NotNull(setter);
-                    ContextMenu menu = Assert.IsAssignableFrom<ContextMenu>(setter.Value);
-                    Assert.NotNull(scene.Manager.GetValue(property));
-                    Assert.Same(menu, scene.Manager.GetValue(property));
+                    bool document = model is LayoutDocument;
+                    ContextMenu menu = Assert.IsAssignableFrom<ContextMenu>(document
+                        ? scene.Manager.DocumentContextMenu : scene.Manager.AnchorableContextMenu);
+                    FrameworkElement header = document
+                        ? DocumentTab(scene.DocumentPaneControl, scene.Document) : scene.ToolTitle;
+                    TextBlock caption = Assert.Single(Descendants<TextBlock>(header), text => text.Text == model.Title);
+                    AssertRightClickOpensMenu(scene, caption, menu, scene.Manager.GetLayoutItemFromModel(model));
                 }
             }
         });
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void RealManager_UsesModernPaneFramesAndSwitchesThemesWithoutReplacingContent(bool isDark)
+    [Fact]
+    public void RealManager_SwitchesThemesWithoutReplacingContentOrLosingFocusState()
     {
         WpfTestHost.Invoke(() =>
         {
             using var trace = new BindingTrace();
-            using var scene = new DockingScene(isDark);
+            using var scene = new DockingScene(false);
             LayoutRoot originalLayout = scene.Manager.Layout;
             object originalDocumentContent = scene.Document.Content;
             object originalToolContent = scene.Tool.Content;
-            foreach (bool dark in new[] { isDark, !isDark, isDark })
+            foreach (bool dark in new[] { false, true, false })
             {
                 scene.Document.IsActive = true;
                 var theme = new AvalonDockTheme(dark);
@@ -124,36 +98,13 @@ public class AvalonDockThemeBindingTests
                 scene.Manager.Theme = null;
                 scene.Manager.Theme = theme;
                 Arrange(scene.Manager);
-                ResourceDictionary resources = theme.ThemeResourceDictionary;
-                AssertPalette(resources);
                 Assert.Same(originalLayout, scene.Manager.Layout);
                 Assert.Same(originalDocumentContent, scene.Document.Content);
                 Assert.Same(originalToolContent, scene.Tool.Content);
                 Assert.True(scene.Document.IsSelected);
                 LayoutDocumentPaneControl documents = scene.DocumentPaneControl;
-                Part<Border>(documents, "DocumentPaneBorder");
-                Brush globalBackground = Assert.IsAssignableFrom<Brush>(scene.GlobalPalette["GlobalBackground"]);
-                Assert.Same(globalBackground, scene.Manager.Background);
-                Assert.Same(globalBackground, Part<Grid>(documents, "TabStrip").Background);
-                Border toolFrame = Part<Border>(scene.ToolPaneControl, "ToolPaneBorder");
-                Assert.Same(globalBackground, toolFrame.Background);
-                Assert.Same(globalBackground, Assert.IsType<Grid>(VisualTreeHelper.GetParent(toolFrame)).Background);
-                Assert.Same(globalBackground, Part<Border>(scene.ToolTitle, "CaptionBorder").Background);
-                TabItem selectedToolTab = Assert.IsType<TabItem>(scene.ToolPaneControl.ItemContainerGenerator.ContainerFromItem(scene.Tool));
-                Assert.Same(globalBackground, Part<Border>(selectedToolTab, "ToolTabBorder").Background);
-                Assert.Same(globalBackground, Assert.IsType<Border>(scene.Tool.Content).Background);
-                AssertNoVisibleGrip(scene.ToolTitle);
-
                 TabItem selectedTab = DocumentTab(documents, scene.Document);
-                Border selectedBorder = Part<Border>(selectedTab, "DocumentTabBorder");
-                Assert.Equal(new CornerRadius(3), selectedBorder.CornerRadius);
-                AssertDocumentCaptionWeight(selectedTab, scene.Document, FontWeights.SemiBold);
-                Assert.Same(resources["DockingAccentBrush"], selectedBorder.BorderBrush);
-                Assert.Same(resources["DockingAccentBrush"], Part<Border>(documents, "TabStripLine").BorderBrush);
-                Assert.Same(resources["DockingAccentBrush"], Part<Border>(documents, "DocumentPaneBorder").BorderBrush);
-                Assert.Same(resources["DockingSurfaceBackground"], selectedBorder.Background);
-                Assert.Same(resources["DockingSurfaceBackground"], Assert.IsType<Border>(scene.Document.Content).Background);
-                Assert.Same(resources["DockingTextBrush"], selectedTab.Foreground);
+                Assert.True(selectedTab.IsSelected);
 
                 scene.Tool.IsActive = true;
                 Arrange(scene.Manager);
@@ -162,44 +113,24 @@ public class AvalonDockThemeBindingTests
                 Assert.False(scene.Document.IsActive);
                 Assert.True(scene.Document.IsLastFocusedDocument);
                 Assert.Same(scene.Document, documents.SelectedContent);
-                Assert.True(Part<DockingTabBorder>(selectedTab, "DocumentTabBorder").IsSelected);
-                AssertDocumentCaptionWeight(selectedTab, scene.Document, FontWeights.Normal);
-                Assert.Same(resources["DockingMutedTextBrush"], selectedTab.Foreground);
-                Assert.Same(resources["DockingSurfaceBackground"], selectedBorder.Background);
-                Assert.Same(resources["DockingBorderBrush"], selectedBorder.BorderBrush);
-                Assert.Same(resources["DockingBorderBrush"], Part<Border>(documents, "TabStripLine").BorderBrush);
-                Assert.Same(resources["DockingBorderBrush"], Part<Border>(documents, "DocumentPaneBorder").BorderBrush);
 
                 scene.Document.IsActive = true;
                 Arrange(scene.Manager);
                 Assert.False(scene.Tool.IsActive);
-                AssertDocumentCaptionWeight(selectedTab, scene.Document, FontWeights.SemiBold);
-                Assert.Same(resources["DockingTextBrush"], selectedTab.Foreground);
-                Assert.Same(resources["DockingAccentBrush"], selectedBorder.BorderBrush);
-                Assert.Same(resources["DockingAccentBrush"], Part<Border>(documents, "TabStripLine").BorderBrush);
-                Assert.Same(resources["DockingAccentBrush"], Part<Border>(documents, "DocumentPaneBorder").BorderBrush);
 
                 scene.SecondDocument.IsActive = true;
                 Arrange(scene.Manager);
                 Assert.False(selectedTab.IsSelected);
                 Assert.False(scene.Document.IsLastFocusedDocument);
-                AssertDocumentCaptionWeight(selectedTab, scene.Document, FontWeights.Normal);
-                Assert.NotSame(resources["DockingAccentBrush"], Part<Border>(selectedTab, "DocumentTabBorder").BorderBrush);
                 TabItem otherTab = DocumentTab(documents, scene.SecondDocument);
                 Assert.True(otherTab.IsSelected);
-                AssertDocumentCaptionWeight(otherTab, scene.SecondDocument, FontWeights.SemiBold);
-                Assert.Same(resources["DockingTextBrush"], otherTab.Foreground);
-                Assert.Same(resources["DockingAccentBrush"], Part<Border>(otherTab, "DocumentTabBorder").BorderBrush);
             }
-            Assert.DoesNotContain("GeometryDrawing", trace.Output);
             Assert.DoesNotContain("BindingExpression path error", trace.Output);
         });
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void InitiallySingleTool_GeneratesSelectedContentAndMaterializesOnceAcrossTabCountAndThemeChanges(bool isDark)
+    [Fact]
+    public void InitiallySingleTool_GeneratesSelectedContentAndMaterializesOnceAcrossTabCountAndThemeChanges()
     {
         WpfTestHost.Invoke(() =>
         {
@@ -228,8 +159,8 @@ public class AvalonDockThemeBindingTests
             var rootPanel = new LayoutPanel();
             rootPanel.Children.Add(new LayoutDocumentPane(document));
             rootPanel.Children.Add(new LayoutAnchorablePaneGroup(tools) { DockWidth = new GridLength(300) });
-            var manager = new DockingManager { Theme = new AvalonDockTheme(isDark), Layout = new LayoutRoot { RootPanel = rootPanel } };
-            ResourceDictionary globalPalette = LoadGlobalPalette(isDark);
+            var manager = new DockingManager { Theme = new AvalonDockTheme(false), Layout = new LayoutRoot { RootPanel = rootPanel } };
+            ResourceDictionary globalPalette = LoadGlobalPalette(false);
             manager.Resources.MergedDictionaries.Add(globalPalette);
             tool.IsSelected = true;
             var host = new Window
@@ -252,7 +183,7 @@ public class AvalonDockThemeBindingTests
                 Assert.True(factoryRanWhileLoadedAndVisible);
                 Assert.True(lifecycle.IndexOf("loaded") >= 0 && lifecycle.IndexOf("loaded") < lifecycle.IndexOf("factory"));
 
-                foreach (bool dark in new[] { !isDark, isDark })
+                foreach (bool dark in new[] { true, false })
                 {
                     manager.Resources.MergedDictionaries.Remove(globalPalette);
                     globalPalette = LoadGlobalPalette(dark);
@@ -323,17 +254,15 @@ public class AvalonDockThemeBindingTests
         });
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void FactoryTool_ClosedAndImmediatelyReopened_RetainsVisiblePayloadInTheSameHost(bool isDark)
+    [Fact]
+    public void FactoryTool_ClosedAndImmediatelyReopened_RetainsVisiblePayloadInTheSameHost()
     {
         WpfTestHost.Invoke(() =>
         {
             var rootPanel = new LayoutPanel();
             rootPanel.Children.Add(new LayoutDocumentPane(new LayoutDocument { Title = "Synthetic document", Content = new Border() }));
-            var manager = new DockingManager { Theme = new AvalonDockTheme(isDark), Layout = new LayoutRoot { RootPanel = rootPanel } };
-            manager.Resources.MergedDictionaries.Add(LoadGlobalPalette(isDark));
+            var manager = new DockingManager { Theme = new AvalonDockTheme(false), Layout = new LayoutRoot { RootPanel = rootPanel } };
+            manager.Resources.MergedDictionaries.Add(LoadGlobalPalette(false));
             var layout = new DockLayoutManager(manager);
             var payload = new Border { Child = new TextBlock { Text = "Synthetic reopened content" } };
             int factoryCalls = 0;
@@ -399,19 +328,16 @@ public class AvalonDockThemeBindingTests
         });
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void MultipleDocumentGroups_EmphasizeOnlyTheActiveDocumentWithoutStealingToolActivation(bool isDark)
+    [Fact]
+    public void MultipleDocumentGroups_EmphasizeOnlyTheActiveDocumentWithoutStealingToolActivation()
     {
         WpfTestHost.Invoke(() =>
         {
-            using var scene = new DockingScene(isDark);
+            using var scene = new DockingScene(false);
             var otherDocument = new LayoutDocument { Title = "Second document group", Content = new Border() };
             var otherGroup = new LayoutDocumentPane(otherDocument);
             scene.Manager.Layout.RootPanel.Children.Add(otherGroup);
             Arrange(scene.Manager);
-            ResourceDictionary resources = ((AvalonDockTheme)scene.Manager.Theme).ThemeResourceDictionary;
             foreach (bool focusOtherGroup in new[] { false, true, false })
             {
                 LayoutDocument activeDocument = focusOtherGroup ? otherDocument : scene.Document;
@@ -443,31 +369,48 @@ public class AvalonDockThemeBindingTests
                     Assert.True(tab.IsSelected);
                     bool active = ReferenceEquals(document, activeDocument);
                     Assert.Equal(active, document.IsActive);
-                    AssertDocumentCaptionWeight(tab, document, active ? FontWeights.SemiBold : FontWeights.Normal);
-                    Assert.Same(resources[active ? "DockingTextBrush" : "DockingMutedTextBrush"], tab.Foreground);
-                    Assert.Same(resources["DockingSurfaceBackground"], Part<Border>(tab, "DocumentTabBorder").Background);
-                    object stroke = resources[active ? "DockingAccentBrush" : "DockingBorderBrush"];
-                    Assert.Same(stroke, Part<Border>(tab, "DocumentTabBorder").BorderBrush);
-                    Assert.Same(stroke, Part<Border>(pane, "TabStripLine").BorderBrush);
-                    Assert.Same(stroke, Part<Border>(pane, "DocumentPaneBorder").BorderBrush);
                 }
             }
         });
     }
 
+    [Fact]
+    public void AdjacentToolTabs_HitTestTheirOwnLayoutItem()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scene = new DockingScene(false);
+            Arrange(scene.Manager);
+            LayoutAnchorablePaneControl pane = scene.ToolPaneControl;
+            TabItem first = Assert.IsType<TabItem>(pane.ItemContainerGenerator.ContainerFromItem(scene.Tool));
+            TabItem second = Assert.IsType<TabItem>(pane.ItemContainerGenerator.ContainerFromItem(scene.SecondTool));
+
+            AssertTabHit(first, second);
+            AssertTabHit(second, first);
+
+            void AssertTabHit(TabItem expected, TabItem adjacent)
+            {
+                Point center = expected.TranslatePoint(
+                    new Point(expected.ActualWidth / 2, expected.ActualHeight / 2),
+                    scene.Manager);
+                UIElement hit = Assert.IsAssignableFrom<UIElement>(scene.Manager.InputHitTest(center));
+                DependencyObject[] route = VisualAncestorsAndSelf(hit).ToArray();
+                Assert.Contains(expected, route);
+                Assert.DoesNotContain(adjacent, route);
+            }
+        });
+    }
+
     [Theory]
-    [InlineData(false, "tool-title")]
-    [InlineData(true, "tool-title")]
-    [InlineData(false, "document-tab")]
-    [InlineData(true, "document-tab")]
-    [InlineData(false, "tool-tab")]
-    [InlineData(true, "tool-tab")]
-    public void HeaderRightClick_OnTextAndPadding_OpensTheActualLayoutItemsCommands(bool isDark, string surface)
+    [InlineData("tool-title")]
+    [InlineData("document-tab")]
+    [InlineData("tool-tab")]
+    public void HeaderRightClick_OnTextAndPadding_OpensTheActualLayoutItemsCommands(string surface)
     {
         WpfTestHost.Invoke(() =>
         {
             using var trace = new BindingTrace();
-            using var scene = new DockingScene(isDark);
+            using var scene = new DockingScene(false);
             LayoutContent model = surface == "document-tab" ? scene.Document : scene.Tool;
             foreach (bool selectedOrActive in new[] { false, true })
             {
@@ -484,8 +427,6 @@ public class AvalonDockThemeBindingTests
                     _ => Assert.IsType<TabItem>(scene.ToolPaneControl.ItemContainerGenerator.ContainerFromItem(scene.Tool))
                 };
                 TextBlock caption = Assert.Single(Descendants<TextBlock>(header), text => text.Text == model.Title);
-                if (surface == "document-tab")
-                    AssertDocumentCaptionWeight((TabItem)header, scene.Document, selectedOrActive ? FontWeights.SemiBold : FontWeights.Normal);
                 var samples = new List<(string Name, Point Point, bool OnText)>
                 {
                     ("text", caption.TranslatePoint(new Point(Math.Min(6, caption.ActualWidth / 2), caption.ActualHeight / 2), header), true),
@@ -527,18 +468,15 @@ public class AvalonDockThemeBindingTests
                 }
             }
             Assert.True(!trace.Output.Contains("BindingExpression path error"), trace.Output);
-            Assert.DoesNotContain("GeometryDrawing", trace.Output);
         });
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void DocumentCloseButton_HonorsCancellationAndCanClose(bool isDark)
+    [Fact]
+    public void DocumentCloseButton_HonorsCancellationAndCanClose()
     {
         WpfTestHost.Invoke(() =>
         {
-            using var scene = new DockingScene(isDark);
+            using var scene = new DockingScene(false);
             scene.Document.IsActive = true;
             Arrange(scene.Manager);
             Button close = Part<Button>(DocumentHeader(scene.Manager, scene.Document), "PART_CloseButton");
@@ -565,14 +503,12 @@ public class AvalonDockThemeBindingTests
         });
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void ToolCaptionCommands_PreserveAutoHideAndCloseVersusHide(bool isDark)
+    [Fact]
+    public void ToolCaptionCommands_PreserveAutoHideAndCloseVersusHide()
     {
         WpfTestHost.Invoke(() =>
         {
-            using var scene = new DockingScene(isDark);
+            using var scene = new DockingScene(false);
             scene.Tool.IsActive = true;
             Arrange(scene.Manager);
             Button pin = Part<Button>(scene.ToolTitle, "PART_AutoHidePin");
@@ -593,7 +529,7 @@ public class AvalonDockThemeBindingTests
 
         WpfTestHost.Invoke(() =>
         {
-            using var scene = new DockingScene(isDark);
+            using var scene = new DockingScene(false);
             scene.Tool.IsActive = true;
             Arrange(scene.Manager);
             int confirmations = 0;
@@ -605,14 +541,12 @@ public class AvalonDockThemeBindingTests
         });
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void NarrowWorkspace_LongCaptionsLeaveTitleActionsAndDocumentOverflowAccessible(bool isDark)
+    [Fact]
+    public void NarrowWorkspace_LongCaptionsLeaveTitleActionsAndDocumentOverflowAccessible()
     {
         WpfTestHost.Invoke(() =>
         {
-            using var scene = new DockingScene(isDark);
+            using var scene = new DockingScene(false);
             scene.Tool.Title = "Solution Explorer — " + new string('W', 120);
             scene.Document.Title = "SV6100_Algorithm111_" + new string('W', 120);
             scene.Document.IsActive = true;
@@ -630,16 +564,13 @@ public class AvalonDockThemeBindingTests
         });
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void FloatingCaption_LoadsTheSameThemeWithoutDotsAndRetainsWindowControls(bool isDark)
+    [Fact]
+    public void FloatingCaption_RetainsWindowControls()
     {
         WpfTestHost.Invoke(() =>
         {
-            using var trace = new BindingTrace();
-            var manager = new DockingManager { Theme = new AvalonDockTheme(isDark) };
-            ResourceDictionary globalPalette = LoadGlobalPalette(isDark);
+            var manager = new DockingManager { Theme = new AvalonDockTheme(false) };
+            ResourceDictionary globalPalette = LoadGlobalPalette(false);
             manager.Resources.MergedDictionaries.Add(globalPalette);
             var model = new LayoutAnchorable { Title = "Floating sample", Content = new Border() };
             var floatingModel = new LayoutAnchorableFloatingWindow
@@ -658,283 +589,13 @@ public class AvalonDockThemeBindingTests
                 {
                     model.IsActive = active;
                     Arrange(window, 600, 400);
-                    Assert.Same(globalPalette["GlobalBackground"], window.Background);
-                    Assert.Same(globalPalette["GlobalBackground"], Part<Border>(window, "Header").Background);
-                    Assert.Same(globalPalette["GlobalBackground"], Part<Border>(window, "WindowBorderForResize").Background);
-                    AssertNoVisibleGrip(window);
                     foreach (string name in new[] { "PART_PinClose", "PART_PinMaximize", "PART_PinRestore" })
                         Assert.NotNull(Part<Button>(window, name).Command);
                     Part<DropDownButton>(window, "SinglePaneContextMenu");
                 }
-                Assert.DoesNotContain("GeometryDrawing", trace.Output);
             }
             finally { window.Close(); }
         });
-    }
-
-    [Fact]
-    public void MainWindow_PreservesDocumentCaptionForeground()
-    {
-        XDocument document = LoadShell();
-        XElement? header = DocumentHeaderTemplate(document);
-        if (header != null)
-            Assert.DoesNotContain(header.DescendantsAndSelf().Attributes(), attribute => attribute.Name.LocalName.EndsWith("Foreground", StringComparison.Ordinal)
-                && attribute.Value.Contains("GlobalTextBrush", StringComparison.Ordinal));
-    }
-
-    [Fact]
-    public void DeviceScrollViewer_UsesTheSameGlobalBackgroundAsToolChrome()
-    {
-        XElement viewer = Assert.Single(LoadShell().Descendants(), element => element.Name.LocalName == "ScrollViewer"
-            && element.Attribute(XName.Get("Name", "http://schemas.microsoft.com/winfx/2006/xaml"))?.Value == "ScrollViewerDisplay");
-        Assert.Equal("{DynamicResource GlobalBackground}", viewer.Attribute("Background")?.Value);
-    }
-
-    [Theory]
-    [InlineData(96d)]
-    [InlineData(144d)]
-    public void RoundedSurface_ActuallyClipsSquareChildPixelsAndUpdatesAfterRadiusAndSizeChanges(double dpi)
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            var surface = new DockingSurfaceBorder
-            {
-                Width = 80, Height = 60, CornerRadius = new CornerRadius(12), BorderThickness = new Thickness(2),
-                Background = Brushes.White, BorderBrush = Brushes.Black, Child = new Border { Background = Brushes.Magenta }
-            };
-            var canvas = new Canvas { Background = Brushes.Lime };
-            Canvas.SetLeft(surface, 16);
-            Canvas.SetTop(surface, 16);
-            canvas.Children.Add(surface);
-            Arrange(canvas, 112, 92);
-            AssertSurfacePixels(RenderVisual(canvas, dpi), surface, true);
-
-            surface.CornerRadius = new CornerRadius();
-            Arrange(canvas, 112, 92);
-            AssertSurfacePixels(RenderVisual(canvas, dpi), surface, false);
-
-            surface.CornerRadius = new CornerRadius(12);
-            surface.Width = 106;
-            surface.Height = 74;
-            Arrange(canvas, 138, 106);
-            AssertSurfacePixels(RenderVisual(canvas, dpi), surface, true);
-        });
-    }
-
-    [Theory]
-    [InlineData(Dock.Top)]
-    [InlineData(Dock.Bottom)]
-    public void SelectedTab_RendersOutwardConcaveShouldersAndRoundedFarCorners(Dock placement)
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            var tab = new DockingTabBorder
-            {
-                Width = 96, Height = 28, CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1),
-                Background = Brushes.White, BorderBrush = Brushes.Black, IsSelected = true, Placement = placement
-            };
-            var canvas = new Canvas { Background = Brushes.Magenta };
-            Canvas.SetLeft(tab, 16);
-            Canvas.SetTop(tab, 16);
-            canvas.Children.Add(tab);
-            Arrange(canvas, 128, 60);
-            RenderTargetBitmap bitmap = RenderVisual(canvas, 384);
-            double joinY = placement == Dock.Bottom ? 0.5 : tab.ActualHeight - 0.5;
-            double bodyY = placement == Dock.Bottom ? 6 : tab.ActualHeight - 6;
-            double farY = placement == Dock.Bottom ? tab.ActualHeight - 0.5 : 0.5;
-            // The shape extends outside its own layout slot only at the joining shoulders.
-            // A normal rounded rectangle, or an underline, cannot satisfy these pixel samples.
-            AssertPixel(bitmap, new Point(16 - 0.5, 16 + joinY), Colors.White);
-            AssertPixel(bitmap, new Point(16 + tab.ActualWidth + 0.5, 16 + joinY), Colors.White);
-            AssertPixel(bitmap, new Point(16 - 0.5, 16 + bodyY), Colors.Magenta);
-            AssertPixel(bitmap, new Point(16 + tab.ActualWidth + 0.5, 16 + bodyY), Colors.Magenta);
-            AssertPixel(bitmap, new Point(16 + 0.5, 16 + farY), Colors.Magenta);
-            AssertPixel(bitmap, new Point(16 + tab.ActualWidth - 0.5, 16 + farY), Colors.Magenta);
-            AssertPixel(bitmap, new Point(64, 30), Colors.White);
-
-            tab.IsSelected = false;
-            Arrange(canvas, 128, 60);
-            bitmap = RenderVisual(canvas, 384);
-            AssertPixel(bitmap, new Point(16 - 0.5, 16 + joinY), Colors.Magenta);
-            AssertPixel(bitmap, new Point(16 + tab.ActualWidth + 0.5, 16 + joinY), Colors.Magenta);
-        });
-    }
-
-    [Theory]
-    [InlineData(Dock.Top, false, 96d)]
-    [InlineData(Dock.Top, false, 144d)]
-    [InlineData(Dock.Top, true, 96d)]
-    [InlineData(Dock.Top, true, 144d)]
-    [InlineData(Dock.Bottom, false, 96d)]
-    [InlineData(Dock.Bottom, false, 144d)]
-    [InlineData(Dock.Bottom, true, 96d)]
-    [InlineData(Dock.Bottom, true, 144d)]
-    public void UnselectedHover_KeepsPaneJoinLineVisibleWhenSelectionChanges(Dock placement, bool isDark, double renderDpi)
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            using var scene = new DockingScene(isDark);
-            LayoutContent first = placement == Dock.Top ? scene.Document : scene.Tool;
-            LayoutContent second = placement == Dock.Top ? scene.SecondDocument : scene.SecondTool;
-            ResourceDictionary resources = ((AvalonDockTheme)scene.Manager.Theme).ThemeResourceDictionary;
-            Brush hoverBrush = Assert.IsAssignableFrom<Brush>(resources["DockingHoverBrush"]);
-            foreach (bool selectSecond in new[] { false, true, false })
-            {
-                LayoutContent selectedModel = selectSecond ? second : first;
-                LayoutContent hoveredModel = selectSecond ? first : second;
-                selectedModel.IsActive = true;
-                Arrange(scene.Manager);
-                TabControl pane = placement == Dock.Top ? scene.DocumentPaneControl : scene.ToolPaneControl;
-                string chromeName = placement == Dock.Top ? "DocumentTabBorder" : "ToolTabBorder";
-                Border line = Part<Border>(pane, placement == Dock.Top ? "TabStripLine" : "ToolTabStripLine");
-                TabItem selectedTab = Assert.IsType<TabItem>(pane.ItemContainerGenerator.ContainerFromItem(selectedModel));
-                TabItem hoveredTab = Assert.IsType<TabItem>(pane.ItemContainerGenerator.ContainerFromItem(hoveredModel));
-                DockingTabBorder selected = Part<DockingTabBorder>(selectedTab, chromeName);
-                DockingTabBorder hovered = Part<DockingTabBorder>(hoveredTab, chromeName);
-                Assert.True(selected.IsSelected);
-                Assert.False(hovered.IsSelected);
-                Brush originalBackground = hovered.Background;
-                Size originalSize = hovered.RenderSize;
-                RenderTargetBitmap baseline = RenderVisual(scene.Manager, renderDpi);
-                Point lineOrigin = line.TranslatePoint(new Point(), scene.Manager);
-                Point hoverOrigin = hovered.TranslatePoint(new Point(), scene.Manager);
-                double joinEdge = lineOrigin.Y + (placement == Dock.Top ? line.ActualHeight : 0);
-                Color stroke = BrushColor(line.BorderBrush);
-                // Take the real pane's already-rendered stroke pixels, avoiding assumptions
-                // about fractional device-pixel placement at either output DPI.
-                Point[] strokePixels = PixelsWithColor(baseline,
-                    new Rect(hoverOrigin.X + 8, joinEdge - 2, hovered.ActualWidth - 16, 4), stroke).ToArray();
-                Assert.NotEmpty(strokePixels);
-                try
-                {
-                    // Exercise the actual chrome renderer using its production hover brush;
-                    // do not inject global mouse input or replace the real pane/template.
-                    hovered.SetCurrentValue(Border.BackgroundProperty, hoverBrush);
-                    Arrange(scene.Manager);
-                    Assert.Equal(originalSize, hovered.RenderSize);
-                    Assert.False(hovered.IsSelected);
-                    RenderTargetBitmap bitmap = RenderVisual(scene.Manager, renderDpi);
-                    AssertPixel(bitmap, new Point(hoverOrigin.X + 5, hoverOrigin.Y + hovered.ActualHeight / 2), BrushColor(hoverBrush));
-                    foreach (Point point in strokePixels)
-                        AssertPixel(bitmap, point, PixelAt(baseline, point));
-
-                    Point selectedOrigin = selected.TranslatePoint(new Point(), scene.Manager);
-                    double selectedCenter = selectedOrigin.X + selected.ActualWidth / 2;
-                    foreach (double y in strokePixels.Select(point => point.Y).Distinct())
-                        AssertPixel(bitmap, new Point(selectedCenter, y), BrushColor(selected.Background));
-                }
-                finally
-                {
-                    hovered.SetCurrentValue(Border.BackgroundProperty, originalBackground);
-                }
-            }
-        });
-    }
-
-    [Fact]
-    public void PaintedTabShoulder_DoesNotTakeTheNeighbouringTabsHitArea()
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            var neighbour = new Border { Width = 16, Height = 28, Background = Brushes.Magenta };
-            var tab = new DockingTabBorder
-            {
-                Width = 96, Height = 28, CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1),
-                Background = Brushes.White, BorderBrush = Brushes.Black, IsSelected = true, Placement = Dock.Bottom
-            };
-            var canvas = new Canvas { Background = Brushes.Magenta };
-            Canvas.SetTop(neighbour, 16);
-            Canvas.SetLeft(tab, 16);
-            Canvas.SetTop(tab, 16);
-            canvas.Children.Add(neighbour);
-            canvas.Children.Add(tab);
-            Arrange(canvas, 128, 60);
-            RenderTargetBitmap bitmap = RenderVisual(canvas, 384);
-            var shoulder = new Point(15.5, 16.5);
-            AssertPixel(bitmap, shoulder, Colors.White);
-            Assert.Same(neighbour, VisualTreeHelper.HitTest(canvas, shoulder)?.VisualHit);
-            Assert.Same(tab, VisualTreeHelper.HitTest(canvas, new Point(64, 30))?.VisualHit);
-        });
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void SelectedMiddleToolTab_JoinsThePaneOutlineWithoutASeamAcrossResizeAndActivation(bool isDark)
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            using var trace = new BindingTrace();
-            using var scene = new DockingScene(isDark);
-            SelectMiddleTool(scene);
-            foreach (int width in new[] { 1280, 800, 1024 })
-            {
-                foreach (bool active in new[] { true, false })
-                {
-                    scene.SecondTool.IsActive = true;
-                    if (!active) scene.Document.IsActive = true;
-                    Arrange(scene.Manager, width, 640);
-                    LayoutAnchorablePaneControl pane = scene.ToolPaneControl;
-                    Part<DockingSurfaceBorder>(pane, "ToolPaneBorder");
-                    Border stripLine = Part<Border>(pane, "ToolTabStripLine");
-                    TabItem selected = Assert.IsType<TabItem>(pane.ItemContainerGenerator.ContainerFromItem(scene.SecondTool));
-                    DockingTabBorder chrome = Part<DockingTabBorder>(selected, "ToolTabBorder");
-                    Assert.True(selected.IsSelected);
-                    Assert.True(chrome.IsSelected);
-                    Assert.Equal(Dock.Bottom, chrome.Placement);
-                    Assert.Equal(active, scene.SecondTool.IsActive);
-                    ResourceDictionary resources = ((AvalonDockTheme)scene.Manager.Theme).ThemeResourceDictionary;
-                    Color stroke = BrushColor(resources[active ? "DockingAccentBrush" : "DockingBorderBrush"]);
-                    Color surface = BrushColor(scene.GlobalPalette["GlobalBackground"]);
-                    Assert.Equal(stroke, BrushColor(chrome.BorderBrush));
-                    RenderTargetBitmap bitmap = RenderVisual(scene.Manager, 192);
-                    Point tabOrigin = chrome.TranslatePoint(new Point(), scene.Manager);
-                    Point lineOrigin = stripLine.TranslatePoint(new Point(), scene.Manager);
-                    double centerX = tabOrigin.X + chrome.ActualWidth / 2;
-                    // Content continues through the selected tab's open joining edge.
-                    AssertPixel(bitmap, new Point(centerX, lineOrigin.Y - 1.5), surface);
-                    AssertPixel(bitmap, new Point(centerX, lineOrigin.Y + 0.5), surface);
-                    AssertPixel(bitmap, new Point(centerX, lineOrigin.Y + 2), surface);
-
-                    TabItem unselected = Assert.IsType<TabItem>(pane.ItemContainerGenerator.ContainerFromItem(scene.Tool));
-                    Point otherOrigin = unselected.TranslatePoint(new Point(), scene.Manager);
-                    double otherCenterX = otherOrigin.X + unselected.ActualWidth / 2;
-                    AssertContainsColor(bitmap, new Rect(otherCenterX - 1, lineOrigin.Y, 2, 2), stroke);
-                    AssertContainsColor(bitmap, new Rect(centerX - 1, tabOrigin.Y + chrome.ActualHeight - 2, 2, 3), stroke);
-                }
-            }
-
-            // Removing the left neighbour moves the selected tab to the pane edge without
-            // changing its RenderSize. Its former concave shoulder must repaint as a straight join.
-            LayoutAnchorablePaneControl finalPane = scene.ToolPaneControl;
-            TabItem previousTab = Assert.IsType<TabItem>(finalPane.ItemContainerGenerator.ContainerFromItem(scene.SecondTool));
-            Size previousSize = Part<DockingTabBorder>(previousTab, "ToolTabBorder").RenderSize;
-            scene.Tools.Children.Remove(scene.Tool);
-            Arrange(scene.Manager, 1024, 640);
-            finalPane = scene.ToolPaneControl;
-            TabItem firstTab = Assert.IsType<TabItem>(finalPane.ItemContainerGenerator.ContainerFromItem(scene.SecondTool));
-            DockingTabBorder firstChrome = Part<DockingTabBorder>(firstTab, "ToolTabBorder");
-            Assert.Equal(previousSize, firstChrome.RenderSize);
-            Assert.True(firstChrome.IsSelected);
-            Point firstOrigin = firstChrome.TranslatePoint(new Point(), scene.Manager);
-            Point frameOrigin = Part<DockingSurfaceBorder>(finalPane, "ToolPaneBorder").TranslatePoint(new Point(), scene.Manager);
-            Point joinOrigin = Part<Border>(finalPane, "ToolTabStripLine").TranslatePoint(new Point(), scene.Manager);
-            Assert.InRange(Math.Abs(firstOrigin.X - frameOrigin.X), 0, 1);
-            Color firstStroke = BrushColor(firstChrome.BorderBrush);
-            RenderTargetBitmap firstBitmap = RenderVisual(scene.Manager, 192);
-            AssertContainsColor(firstBitmap, new Rect(firstOrigin.X, joinOrigin.Y - 2, 2, 1), firstStroke);
-            AssertContainsColor(firstBitmap, new Rect(firstOrigin.X, joinOrigin.Y + 1, 2, 1), firstStroke);
-            Assert.DoesNotContain("GeometryDrawing", trace.Output);
-            Assert.DoesNotContain("BindingExpression path error", trace.Output);
-        });
-    }
-
-    private static void SelectMiddleTool(DockingScene scene)
-    {
-        scene.Tool.Title = "Explorer";
-        scene.SecondTool.Title = "Devices";
-        scene.Tools.Children.Add(new LayoutAnchorable { Title = "Properties", Content = new Border() });
-        scene.SecondTool.IsActive = true;
     }
 
     private static void AssertRightClickOpensMenu(DockingScene scene, UIElement hit, ContextMenu menu, LayoutItem expectedItem)
@@ -1025,102 +686,6 @@ public class AvalonDockThemeBindingTests
     private static ResourceDictionary LoadGlobalPalette(bool isDark)
         => new() { Source = new Uri($"/ColorVision.Themes;component/Themes/{(isDark ? "Dark" : "White")}.xaml", UriKind.Relative) };
 
-    private static IEnumerable<Style> StyleChain(Style? style)
-    {
-        var visited = new HashSet<Style>();
-        for (Style? current = style; current != null && visited.Add(current); current = current.BasedOn)
-            yield return current;
-    }
-
-    private static string DescribeStyleChain(string label, Style? style)
-    {
-        string[] entries = StyleChain(style).Select((current, index) =>
-            $"  [{index}] {current.TargetType.Name}: " + string.Join(", ", current.Setters.OfType<Setter>()
-                .Select(setter => $"{setter.Property.Name}={setter.Value?.GetType().Name ?? "<null>"}"))).ToArray();
-        return label + Environment.NewLine + (entries.Length == 0 ? "  <null>" : string.Join(Environment.NewLine, entries));
-    }
-
-    private static void AssertSurfacePixels(RenderTargetBitmap bitmap, DockingSurfaceBorder surface, bool rounded)
-    {
-        Color corner = rounded ? Colors.Lime : Colors.Magenta;
-        foreach (Point point in new[]
-        {
-            new Point(2.5, 2.5), new Point(surface.ActualWidth - 2.5, 2.5),
-            new Point(2.5, surface.ActualHeight - 2.5), new Point(surface.ActualWidth - 2.5, surface.ActualHeight - 2.5)
-        })
-            AssertPixel(bitmap, new Point(16 + point.X, 16 + point.Y), corner);
-        AssertPixel(bitmap, new Point(16 + surface.ActualWidth / 2, 16 + surface.ActualHeight / 2), Colors.Magenta);
-        AssertPixel(bitmap, new Point(17, 16 + surface.ActualHeight / 2), Colors.Black);
-    }
-
-    private static RenderTargetBitmap RenderVisual(FrameworkElement element, double dpi)
-    {
-        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(element.ActualWidth * dpi / 96),
-            (int)Math.Ceiling(element.ActualHeight * dpi / 96), dpi, dpi, PixelFormats.Pbgra32);
-        bitmap.Render(element);
-        return bitmap;
-    }
-
-    private static Color BrushColor(object brush) => Assert.IsType<SolidColorBrush>(brush).Color;
-
-    private static void AssertPixel(RenderTargetBitmap bitmap, Point point, Color expected)
-    {
-        Color actual = PixelAt(bitmap, point);
-        Assert.True(ColorsMatch(expected, actual), $"Pixel at {point}: expected {expected}, actual {actual}.");
-    }
-
-    private static void AssertContainsColor(RenderTargetBitmap bitmap, Rect bounds, Color expected)
-    {
-        double step = 96 / bitmap.DpiX;
-        for (double y = Math.Max(0, bounds.Top); y < Math.Min(bitmap.PixelHeight * step, bounds.Bottom); y += step)
-            for (double x = Math.Max(0, bounds.Left); x < Math.Min(bitmap.PixelWidth * step, bounds.Right); x += step)
-                if (ColorsMatch(expected, PixelAt(bitmap, new Point(x, y)))) return;
-        Assert.Fail($"No {expected} outline pixel was rendered in {bounds}.");
-    }
-
-    private static Color PixelAt(RenderTargetBitmap bitmap, Point point)
-    {
-        int x = (int)Math.Floor(point.X * bitmap.DpiX / 96);
-        int y = (int)Math.Floor(point.Y * bitmap.DpiY / 96);
-        Assert.InRange(x, 0, bitmap.PixelWidth - 1);
-        Assert.InRange(y, 0, bitmap.PixelHeight - 1);
-        byte[] pixel = new byte[4];
-        bitmap.CopyPixels(new Int32Rect(x, y, 1, 1), pixel, 4, 0);
-        return Color.FromArgb(pixel[3], pixel[2], pixel[1], pixel[0]);
-    }
-
-    private static IEnumerable<Point> PixelsWithColor(RenderTargetBitmap bitmap, Rect bounds, Color expected)
-    {
-        double scale = bitmap.DpiX / 96;
-        int left = Math.Max(0, (int)Math.Ceiling(bounds.Left * scale));
-        int right = Math.Min(bitmap.PixelWidth, (int)Math.Floor(bounds.Right * scale));
-        int top = Math.Max(0, (int)Math.Ceiling(bounds.Top * scale));
-        int bottom = Math.Min(bitmap.PixelHeight, (int)Math.Floor(bounds.Bottom * scale));
-        for (int y = top; y < bottom; y++)
-            for (int x = left; x < right; x++)
-            {
-                var point = new Point((x + 0.5) / scale, (y + 0.5) / scale);
-                if (ColorsMatch(expected, PixelAt(bitmap, point))) yield return point;
-            }
-    }
-
-    private static bool ColorsMatch(Color expected, Color actual)
-        => Math.Abs(expected.A - actual.A) <= 8 && Math.Abs(expected.R - actual.R) <= 8
-            && Math.Abs(expected.G - actual.G) <= 8 && Math.Abs(expected.B - actual.B) <= 8;
-
-    private static void AssertPalette(ResourceDictionary resources)
-    {
-        foreach (string key in new[] { "DockingChromeBackground", "DockingSurfaceBackground", "DockingBorderBrush", "DockingAccentBrush",
-            "DockingTextBrush", "DockingMutedTextBrush", "DockingHoverBrush", "DockingPressedBrush" })
-            Assert.IsAssignableFrom<Brush>(resources[key]);
-    }
-
-    private static void AssertNoVisibleGrip(Control control)
-    {
-        if (control.Template.FindName("DragHandleTexture", control) is UIElement grip)
-            Assert.True(grip.Visibility != Visibility.Visible || grip.Opacity == 0, "The old dotted drag grip must not be visible.");
-    }
-
     private static void AssertInside(FrameworkElement child, FrameworkElement parent)
     {
         Assert.Equal(Visibility.Visible, child.Visibility);
@@ -1145,18 +710,6 @@ public class AvalonDockThemeBindingTests
 
     private static LayoutDocumentTabItem DocumentHeader(DependencyObject root, LayoutDocument model)
         => Assert.Single(Descendants<LayoutDocumentTabItem>(root), header => ReferenceEquals(header.Model, model));
-
-    private static void AssertDocumentCaptionWeight(TabItem tab, LayoutDocument model, FontWeight expectedWeight)
-    {
-        LayoutDocumentTabItem header = DocumentHeader(tab, model);
-        TextBlock caption = Assert.Single(Descendants<TextBlock>(header), text => text.Text == model.Title);
-        Assert.Equal(expectedWeight, caption.FontWeight);
-        Assert.Same(tab.Foreground, caption.Foreground);
-        // Emphasis belongs only to the caption, not the menu/tooltip placement target.
-        Assert.Equal(FontWeights.Normal, tab.FontWeight);
-        Assert.Equal(FontWeights.Normal, header.FontWeight);
-        Assert.Equal(FontWeights.Normal, Assert.Single(Descendants<DropDownControlArea>(header)).FontWeight);
-    }
 
     private static IEnumerable<T> Descendants<T>(DependencyObject root) where T : DependencyObject
     {

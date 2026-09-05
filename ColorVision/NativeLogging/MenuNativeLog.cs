@@ -8,7 +8,7 @@ public sealed class MenuNativeLog : GlobalMenuBase
 
     public override int Order => 10006;
 
-    public override string Header => NativeLogText.Title;
+    public override string Header => $"{NativeLogText.Title}(_N)";
 
     public override void Execute() => NativeLogWindowService.Show();
 }

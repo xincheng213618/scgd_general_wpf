@@ -22,6 +22,8 @@ related: ["operations.index","ui.framework","ui.configuration","ui.core"]
 
 ## 日志从哪里来
 
+独立日志窗口进入后聚焦日志查看区域，Esc 先收起已打开的搜索栏，再关闭窗口。原生日志窗口进入后聚焦等级选择；下拉列表先处理 Esc，随后 Esc 可关闭窗口并释放原有采集会话。两个窗口的 Tab / Shift+Tab 均在窗口内循环，菜单访问键见[帮助菜单](../../04-api-reference/ui-components/menus.md#帮助菜单的键盘入口)。
+
 | 入口 | 数据来源与边界 |
 | --- | --- |
 | 帮助 > 日志（`WindowLog`，快捷键可配置） | 给 log4net 根 logger 附加 `LogViewerAppender` 接收新事件，并在初始化时读取当前文件历史；每次菜单执行创建新窗口 |

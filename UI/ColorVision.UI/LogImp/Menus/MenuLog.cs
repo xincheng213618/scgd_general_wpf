@@ -9,7 +9,7 @@ namespace ColorVision.UI.LogImp
     {
         public override string OwnerGuid => MenuItemConstants.Help;
         public override int Order => 10005;
-        public override string Header => Properties.Resources.Log;
+        public override string Header => $"{Properties.Resources.Log}(_L)";
         public static Hotkey Hotkey { get; set; } = new(Key.L, ModifierKeys.Control | ModifierKeys.Alt);
         public HotKeys HotKeys => new HotKeys(Properties.Resources.Log, Hotkey, Execute) { Description = BuiltInHotkeyDescriptions.OpenLog };
         public override void Execute() => new WindowLog() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();

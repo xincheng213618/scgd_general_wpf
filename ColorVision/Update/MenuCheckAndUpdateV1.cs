@@ -14,7 +14,7 @@ namespace ColorVision.Update
 
         public override Visibility Visibility => Visibility.Visible;
 
-        public override string Header => Properties.Resources.CheckForUpdates;
+        public override string Header => $"{Properties.Resources.CheckForUpdates}(_U)";
 
         public override void Execute() => _ = CombinedUpdateCoordinator.StartInteractiveAsync();
     }

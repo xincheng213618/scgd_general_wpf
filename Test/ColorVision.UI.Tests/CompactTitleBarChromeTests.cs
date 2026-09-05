@@ -439,10 +439,14 @@ public sealed class CompactTitleBarChromeTests
             {
                 [ChromeHost.BackgroundResourceKey] = Brushes.Beige
             });
-            // A real Loaded visual tree is needed for WPF's dynamic-resource invalidation walk.
-            host.Window.Show();
             using var controller = host.CreateController();
-            if (!AttachForCurrentSystem(host, controller))
+            bool attached = false;
+            host.Window.SourceInitialized += (_, _) => attached = AttachForCurrentSystem(host, controller);
+            host.Window.Show();
+            // Match the production SourceInitialized -> Loaded -> resource refresh order.
+            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+            Assert.True(host.Window.IsLoaded);
+            if (!attached)
                 return;
             WindowChrome chrome = WindowChrome.GetWindowChrome(host.Window);
 
@@ -469,6 +473,38 @@ public sealed class CompactTitleBarChromeTests
             controller.SetFullScreen(false);
             Assert.Same(Brushes.Transparent, host.Window.Background);
             controller.Dispose();
+            Assert.Same(Brushes.White, host.Window.Background);
+        });
+    }
+
+    [Fact]
+    public void BackgroundInvalidationCannotCoverNativeButtonsWhileChromeIsActive()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var host = new ChromeHost();
+            host.Window.Show();
+            using var controller = host.CreateController();
+            if (!AttachForCurrentSystem(host, controller))
+                return;
+            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+            WindowChrome chrome = WindowChrome.GetWindowChrome(host.Window);
+
+            // WPF can discard SetCurrentValue's override while the resource expression
+            // remains attached, without any CurrentUIThemeChanged notification.
+            host.Window.InvalidateProperty(Window.BackgroundProperty);
+
+            Assert.Same(Brushes.Transparent, host.Window.Background);
+            Assert.Same(chrome, WindowChrome.GetWindowChrome(host.Window));
+            controller.SetFullScreen(true);
+            Assert.Same(Brushes.Beige, host.Window.Background);
+            host.Window.Resources[ChromeHost.BackgroundResourceKey] = Brushes.Black;
+            Assert.Same(Brushes.Black, host.Window.Background);
+            controller.SetFullScreen(false);
+            host.Window.InvalidateProperty(Window.BackgroundProperty);
+            Assert.Same(Brushes.Transparent, host.Window.Background);
+            controller.Dispose();
+            host.Window.Resources[ChromeHost.BackgroundResourceKey] = Brushes.White;
             Assert.Same(Brushes.White, host.Window.Background);
         });
     }

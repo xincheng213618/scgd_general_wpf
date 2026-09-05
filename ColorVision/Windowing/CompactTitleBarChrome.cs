@@ -18,6 +18,8 @@ namespace ColorVision.Windowing
     public sealed class CompactTitleBarChrome : IDisposable
     {
         private static readonly Version MinimumSupportedWindowsVersion = new(10, 0, 22000);
+        private static readonly DependencyPropertyDescriptor BackgroundDescriptor =
+            DependencyPropertyDescriptor.FromProperty(Window.BackgroundProperty, typeof(Window));
 
         internal static bool IsSupportedOperatingSystem =>
             OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
@@ -106,6 +108,7 @@ namespace ColorVision.Windowing
             window.StateChanged += OnStateChanged;
             window.Closed += OnClosed;
             titleBar.SizeChanged += OnTitleBarSizeChanged;
+            BackgroundDescriptor.AddValueChanged(window, OnWindowBackgroundChanged);
 
             UpdateMetrics();
             window.SetCurrentValue(Window.BackgroundProperty, Brushes.Transparent);
@@ -172,6 +175,16 @@ namespace ColorVision.Windowing
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e) => QueueRefresh();
+
+        private void OnWindowBackgroundChanged(object? sender, EventArgs e)
+        {
+            // WPF property/resource invalidation can discard SetCurrentValue even
+            // when the theme has not changed. Restore transparency before rendering
+            // so the window background cannot paint over DWM's caption buttons.
+            if (IsAttached && !isFullScreen && !isDisposed && !ReferenceEquals(window.Background, Brushes.Transparent))
+                window.SetCurrentValue(Window.BackgroundProperty, Brushes.Transparent);
+        }
+
         private void OnStateChanged(object? sender, EventArgs e)
         {
             // WM_SIZE raises StateChanged before HwndSource lays out the new client
@@ -363,6 +376,7 @@ namespace ColorVision.Windowing
             window.StateChanged -= OnStateChanged;
             window.Closed -= OnClosed;
             titleBar.SizeChanged -= OnTitleBarSizeChanged;
+            BackgroundDescriptor.RemoveValueChanged(window, OnWindowBackgroundChanged);
             if (source != null && !source.IsDisposed)
                 source.RemoveHook(WindowProc);
             source = null;

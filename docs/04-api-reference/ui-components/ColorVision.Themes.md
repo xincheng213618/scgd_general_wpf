@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "在外观与语言中切换主题；ThemeManager 的资源应用、系统跟随、窗口外观和公共控件样式，以及即时预览与保存的区别。"
 aliases: ["切换深色主题","跟随系统","外观与语言","主题切换为什么不生效","跟随系统但标题栏没变","强制主题重复资源字典","主题预览会自动保存吗","主题系统事件订阅释放","XAML绑定失败","ComboBoxItem","GridViewColumnHeader","圆角菜单","右键菜单","MenuPopupCornerRadius","MenuItemSecondaryForeground","ColorVision.Themes","ThemeManager","ThemeManager.Current","Theme","ApplyTheme","ForceApplyTheme","ApplyThemeChanged","CurrentTheme","CurrentUITheme","CurrentThemeChanged","CurrentUIThemeChanged","ApplyCaption","TryLoadPackageIcon","PackageIcon.png","ThemeConfig","ThemePropertiesEditor","AppsUseLightTheme"]
-code_paths: ["UI/ColorVision.Themes/README.md","UI/ColorVision.Themes/Theme.cs","UI/ColorVision.Themes/ThemeManager.cs","UI/ColorVision.Themes/ThemeManagerExtensions.cs","UI/ColorVision.Themes/Themes","UI/ColorVision.Themes/ColorVision.Themes.csproj","UI/ColorVision.UI/Themes/ThemeConfig.cs","UI/ColorVision.UI/Themes/ThemePropertiesEditor.cs","UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs","UI/ColorVision.UI.Desktop/Settings/MenuOptions.cs","UI/ColorVision.UI.Desktop/Settings/SettingSearchProvider.cs","UI/ColorVision.UI/Extension/IIconExtension.cs","UI/ColorVision.UI/DisPlayManager.cs","ColorVision/App.xaml","ColorVision/App.xaml.cs","ColorVision/StartWindow.xaml.cs","ColorVision/CompactMainWindow.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ThemeSettingsTests.cs","Test/ColorVision.UI.Tests/ThemeSubscriptionLifecycleTests.cs","Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs","Test/ColorVision.UI.Tests/GridViewColumnHeaderBindingTests.cs","Test/ColorVision.UI.Tests/ComboBoxItemBindingTests.cs","Test/ColorVision.UI.Tests/CompactTitleBarIntegrationContractTests.cs","Test/ColorVision.UI.Tests/MenuThemeTests.cs"]
+code_paths: ["UI/ColorVision.Themes/README.md","UI/ColorVision.Themes/Theme.cs","UI/ColorVision.Themes/ThemeManager.cs","UI/ColorVision.Themes/ThemeManagerExtensions.cs","UI/ColorVision.Themes/WindowKeyboardNavigation.cs","UI/ColorVision.Themes/Themes","UI/ColorVision.Themes/ColorVision.Themes.csproj","UI/ColorVision.UI/Themes/ThemeConfig.cs","UI/ColorVision.UI/Themes/ThemePropertiesEditor.cs","UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs","UI/ColorVision.UI.Desktop/Settings/MenuOptions.cs","UI/ColorVision.UI.Desktop/Settings/SettingSearchProvider.cs","UI/ColorVision.UI/Extension/IIconExtension.cs","UI/ColorVision.UI/DisPlayManager.cs","ColorVision/App.xaml","ColorVision/App.xaml.cs","ColorVision/StartWindow.xaml.cs","ColorVision/CompactMainWindow.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs","Test/ColorVision.UI.Tests/ThemeSettingsTests.cs","Test/ColorVision.UI.Tests/ThemeSubscriptionLifecycleTests.cs","Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs","Test/ColorVision.UI.Tests/GridViewColumnHeaderBindingTests.cs","Test/ColorVision.UI.Tests/ComboBoxItemBindingTests.cs","Test/ColorVision.UI.Tests/CompactTitleBarIntegrationContractTests.cs","Test/ColorVision.UI.Tests/MenuThemeTests.cs"]
 related: ["ui.index","ui.settings","ui.property-grid","ui.configuration","operations.main-window"]
 ---
 
@@ -95,7 +95,11 @@ related: ["ui.index","ui.settings","ui.property-grid","ui.configuration","operat
 
 `Themes/UpdateDialogTheme.xaml` 提供 `UpdateDialog.*` 动态画刷以及主按钮、次按钮、文字按钮和卡片样式。配色来自 Dark / White 字典，次要文字使用 0.72 不透明度区分信息层级。更新、恢复、服务主机、应用与工具以及 RBAC 用户窗口共享这套资源；主程序的 `Update/UpdateDialogTheme.xaml` 是合并该字典的兼容入口。共享字典只定义外观，不引入更新或权限业务依赖。
 
+“检查更新”窗口的“变更日志”“程序备份”“重新安装”使用窗口内的 `UpdatePreviewActionButtonStyle`，继承共享文字按钮样式并采用主要文字色，浅色为黑色、深色为白色。说明文字沿用共享的次要文字画刷及控件原有透明度，两套主题使用相同的层级规则，保持操作入口比说明文字醒目。悬停强调色、按下和禁用反馈沿用共享模板；其他按钮和管理窗口仍使用原有共享资源。
+
 用户中心、用户管理和服务主机管理窗口通过 `ApplyCaption` 接入原生标题栏外观，具体系统跟随与订阅限制仍适用前述窗口外观契约。
+
+`WindowKeyboardNavigation.Attach` 是窗口按需接入的键盘行为：首次呈现时把焦点放到指定控件，Tab 在窗口内循环，未被子控件处理的无修饰 Esc 执行关闭或调用方指定的返回动作。日志搜索、ComboBox 下拉及上下文菜单可优先处理 Esc；它不全局改变 Window/BaseWindow，也不替调用方决定忙碌期间能否关闭。
 
 ## 公共控件样式
 
@@ -140,7 +144,7 @@ related: ["ui.index","ui.settings","ui.property-grid","ui.configuration","operat
 | `ThemeSettingsTests` | 仅支持 UseSystem/Light/Dark 的列表；历史枚举值 3、4 被 ThemeConfig 归一为 UseSystem |
 | `ThemeSubscriptionLifecycleTests` | `IIconExtension.SetIconResource`、`DisPlayManagerExtension.ApplyChangedSelectedColor` 的弱引用订阅不阻止目标 GC；不是 ApplyCaption 或全体窗口生命周期测试 |
 | `StartWindowThemeLifecycleTests` | 启动窗口关闭恢复 SystemTheme 订阅数，以及先解除启动日志 appender 后关闭的窗口可被 GC；不是全局系统事件解绑测试 |
-| `CompactTitleBarIntegrationContractTests` | 检查包图标读取的公共方法形状、OnLoad/冻结及不写 DWM 的源码契约；不替代真实包图标文件解码、运行期主题同步或原生按钮视觉验收 |
+| `CompactTitleBarIntegrationContractTests` | 真实按钮模板的点击区域、前景绑定及浅深主题刷新；不覆盖包图标文件解码或 DWM 原生按钮视觉验收 |
 | `MenuThemeTests` | 在真实离屏 WPF 窗口中加载浅/深色菜单，检查四种菜单角色、圆角与独立阴影、UI Automation 命令/勾选/禁用行为、快捷键列对齐及文本更新、纯文字空列收起、内容增减后的同级列对齐与宽度恢复、勾选切换的宽度稳定、长菜单滚动到末项，以及替换主题资源后既有菜单的背景色；不覆盖真实桌面鼠标穿越、键盘操作或系统高 DPI 视觉验收 |
 
 测试引用不代表本次执行。当前这些测试不能证明资源追加/失败恢复、选择/实际事件顺序、UseSystem 延迟与线程、预览持久化、ApplyCaption 重复/已加载调用和 DWM 真机表现；修改这些契约需补相应针对性验证，不应把“需要验收”改写成“已经支持并验证”。

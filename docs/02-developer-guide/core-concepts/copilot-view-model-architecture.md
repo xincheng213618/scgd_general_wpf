@@ -135,6 +135,6 @@ Approval store 发事件时，coordinator 立即捕获不可变 transition；Vie
 | 显示已排队或输入已清空，重启却未恢复 | 保存请求是否真正完成、Flush 是否失败；不要只看 TrySchedule 返回值 | `CopilotChatStatePersistenceCoordinatorTests` |
 | checkpoint 被拒绝或 steering 未消费 | 候选的接受结果与 changed、身份/时间、水位和仍保留的事件内容 | `CopilotTurnCheckpointLifecycleTests`、`CopilotAgentSessionCheckpointTests`、`CopilotAgentTaskEventJournalIntegrityTests` |
 | 审批数量不一致或 trace 串会话 | 作用域投影、事件捕获时刻与 Dispatcher 应用时刻 | `CopilotApprovalCoordinatorTests` |
-| 重构后按钮、快捷键或面板绑定失效 | 构造器、命令及 code-behind 依赖 | `CopilotChatViewModelContractTests` |
+| 快捷键帮助、状态栏入口或面板注册异常 | 入口元数据及实际注册实例 | `CopilotChatViewModelContractTests` |
 
 测试源码是定位与预期契约的依据，不代表当前已经执行。行为改动应选对应 owner 测试和必要的 ViewModel 交接测试；较宽的构建/测试入口见 [Runtime 验证](./copilot-agent-runtime.md#验证)。纯文档整理使用知识与站点检查，无需启动应用、模型或审批服务。

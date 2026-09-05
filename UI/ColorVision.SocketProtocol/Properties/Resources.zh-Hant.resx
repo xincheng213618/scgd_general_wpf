@@ -156,6 +156,9 @@
   <data name="SocketManagementWindow" xml:space="preserve">
     <value>Socket 連線管理器</value>
   </data>
+  <data name="MenuNetworkCommunication" xml:space="preserve">
+    <value>網路通訊(_C)</value>
+  </data>
   <data name="Query" xml:space="preserve">
     <value>查詢</value>
   </data>

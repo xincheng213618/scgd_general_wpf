@@ -736,6 +736,15 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
+        ///   查找类似 网络通信(_C) 的本地化字符串。
+        /// </summary>
+        public static string MenuNetworkCommunication {
+            get {
+                return ResourceManager.GetString("MenuNetworkCommunication", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 Socket 连接管理器 的本地化字符串。
         /// </summary>
         public static string SocketManagementWindow {

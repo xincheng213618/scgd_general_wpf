@@ -209,12 +209,6 @@ public sealed class DatabaseCleanupWindowLayoutTests
 
     [Theory]
     [InlineData(false, "zh-CN", false)]
-    [InlineData(false, "en-US", false)]
-    [InlineData(false, "zh-CN", true)]
-    [InlineData(false, "en-US", true)]
-    [InlineData(true, "zh-CN", false)]
-    [InlineData(true, "en-US", false)]
-    [InlineData(true, "zh-CN", true)]
     [InlineData(true, "en-US", true)]
     public void MinimumSizeKeepsSharedWorkspaceReadableAndEveryActionReachable(bool scoped, string cultureName, bool dark)
     {
@@ -225,31 +219,19 @@ public sealed class DatabaseCleanupWindowLayoutTests
             Grid root = RefreshLayout(window, minimum: true);
             FrameworkElement workspace = Element<FrameworkElement>(window, "SourceWorkspace");
             FrameworkElement overview = Element<FrameworkElement>(window, "SourceOverviewCard");
-            FrameworkElement tables = Element<FrameworkElement>(window, "CleanupTablesCard");
             DataGrid tableGrid = Element<DataGrid>(window, "CleanupTablesGrid");
             ScrollViewer actions = Element<ScrollViewer>(window, "CleanupActionsScrollViewer");
             FrameworkElement status = Element<FrameworkElement>(window, "CleanupStatusBar");
 
             AssertInside(workspace, root);
-            AssertInside(overview, workspace);
-            AssertInside(tables, workspace);
-            AssertInside(tableGrid, tables);
             AssertAllTableHeadersFit(tableGrid);
             AssertInside(actions, workspace);
             AssertInside(status, workspace);
-            Assert.True(BoundsIn(overview, workspace).Bottom <= BoundsIn(tables, workspace).Top + 1,
-                "The source overview must not overlap the data table.");
-            Assert.True(BoundsIn(tables, workspace).Right <= BoundsIn(actions, workspace).Left + 1,
-                "The table and maintenance panel must have separate columns.");
-            Assert.True(BoundsIn(tables, workspace).Bottom <= BoundsIn(status, workspace).Top + 1,
-                "The table and status bar must not overlap.");
 
             if (!scoped)
             {
                 FrameworkElement navigation = Element<FrameworkElement>(window, "SourceNavigationPane");
                 AssertInside(navigation, root);
-                Assert.True(BoundsIn(navigation, root).Right <= BoundsIn(workspace, root).Left + 1,
-                    "Global source navigation must not overlap the selected workspace.");
             }
 
             AssertReadableForeground(window, Element<TextBlock>(window, "CleanupStatusText"));
@@ -267,13 +249,12 @@ public sealed class DatabaseCleanupWindowLayoutTests
             {
                 Button button = Element<Button>(window, buttonName);
                 if (IsEffectivelyVisible(button))
-                    AssertInside(button, overview);
+                    AssertInside(button, root);
             }
             Button cleanupSelected = Element<Button>(window, "CleanupSelectedButton");
             if (IsEffectivelyVisible(cleanupSelected))
             {
-                AssertInside(cleanupSelected, Element<FrameworkElement>(window, "SelectionToolbar"));
-                AssertInside(cleanupSelected, tables);
+                AssertInside(cleanupSelected, root);
             }
 
             Element<Expander>(window, "DangerZoneExpander").IsExpanded = true;

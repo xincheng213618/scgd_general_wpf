@@ -5,7 +5,7 @@ status: "current"
 summary: "检查更新、重新安装与程序备份入口，以及主程序和插件的检查复用、下载安装、失败回退与启动恢复。"
 aliases: ["检查更新","变更日志","程序备份","更新前创建程序快照","正常启动后自动存档","自动更新","更新失败","重新安装","最新完整安装包","插件回滚","重复检查更新","更新检查缓存","五分钟缓存","启动检查结果","PluginUpdater","CombinedUpdateCoordinator","UpdateCheckReuseState","LatestVersionCheckRequestCache","CanReuseUpdateCheckOptions","GetPluginUpdateMetadataAsync","ServerUnavailable","NoInternetConnection","forceRefresh","ApplicationSnapshotService","ApplicationSnapshotConfig","ApplicationSnapshotsWindow","自动存档位置","autosave.zip","还原所选",".cvx","离线升级","增量包版本链","IncrementalUpdatePackageFileProcessor"]
 code_paths: ["ColorVision/Update","ColorVision/Recovery","UI/ColorVision.UI/Update/","UI/ColorVision.UI/ServiceHost/ApplicationUpdatePrivilegeBroker.cs","UI/ColorVision.UI/Plugins/PluginUpdater.cs","UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceClient.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceManager.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PluginRecoveryBackupServiceTests.cs","Test/ColorVision.UI.Tests/ServiceHostUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/AutoUpdatePlanTests.cs","Test/ColorVision.UI.Tests/ApplicationSnapshotServiceTests.cs","Test/ColorVision.UI.Tests/StartupRecoverySnapshotRuntimeTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs","Test/ColorVision.UI.Tests/PluginRecoveryBackupServiceTests.cs","Test/ColorVision.UI.Tests/ServiceHostUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/AutoUpdatePlanTests.cs","Test/ColorVision.UI.Tests/ApplicationSnapshotServiceTests.cs","Test/ColorVision.UI.Tests/StartupRecoverySnapshotRuntimeTests.cs"]
 related: ["delivery.deployment","delivery.scripts","platform.service-host","delivery.update-scan-protection","platform.startup-integrity"]
 ---
 
@@ -21,6 +21,8 @@ ColorVision 在“检查更新”窗口中统一查看主程序与插件更新�
 4. 右上角 **变更日志** 在浏览器打开在线日志及下载页面；**程序备份** 打开快照管理窗口。
 
 检查失败时先看错误状态与网络配置。窗口没有列出更新项不一定代表服务器已确认没有新版。
+
+键盘可按 `Alt+H` 打开帮助菜单，再按 `U` 进入检查更新。进入窗口时焦点落在当前可用的主要操作上；检查结束后，若焦点仍停在取消按钮，则移到“立即更新”或“关闭”，已经用 Tab 移到其他入口时不抢走焦点。有可执行的已选更新时，Enter 执行更新；没有更新项时，Enter 关闭窗口；存在更新项但全部取消选择时，不提供 Enter 默认动作。Esc 走取消/关闭入口，重新安装查询等忙碌状态保留 `CanCancel` 限制；Tab / Shift+Tab 在窗口内循环，空格切换当前更新项的勾选。
 
 ### 网络设置
 

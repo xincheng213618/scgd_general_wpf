@@ -110,8 +110,8 @@ finally {
 
 | 变更类型 | 至少验证 |
 | --- | --- |
-| UI 菜单、设置、PropertyGrid、列表编辑、日志或终端 | `dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64` |
-| Copilot/MCP、文档搜索、业务上下文 | `dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64` |
+| UI 菜单、设置、PropertyGrid、列表编辑、日志或终端 | 对 `ColorVision.UI.Tests` 使用 `--filter "FullyQualifiedName~相关测试类"`；共享基础设施变更扩大到直接受影响的测试 |
+| Copilot/MCP、文档搜索、业务上下文 | 对 `ColorVision.Copilot.Tests` 使用 `--filter "FullyQualifiedName~相关测试类"`；调度、恢复或持久化变更包含对应行为回归 |
 | 插件市场下载、包校验、临时目录 | `MarketplacePackageDownloadServiceTests`，再看 [现有插件能力](../04-api-reference/plugins/README.md) |
 | Flow 节点复制粘贴或 STNode 行为 | `STNodeCopyPasteTests`，再看 [模板与 Flow 链路](../04-api-reference/engine-components/template-flow-chain.md) |
 | native/OpenCV helper | `opencv_helper_test`，并确认 runtime DLL 输出 |
@@ -132,6 +132,8 @@ finally {
 
 ## 维护规则
 
+- 优先验证输入输出、用户操作及失败后的状态。不要为私有成员名称、完整命令清单、源码字符串或装饰布局建立固定基线；需要兼容检查时，明确实际外部消费者。ABI、交付清单等无法由普通行为测试替代的检查仍按对应契约保留。
+- 相同逻辑使用代表性参数案例，重复线程样板复用现有 `StaTest` / `WpfTestHost`；保留不同失败原因和生命周期边界，不以减少行数或测试数量作为通过标准。本地验证按改动选择，CI 继续运行现有完整套件。
 - 新增测试项目或关键测试类时，同步对应知识的 `test_paths` 和必要的验证说明，再生成目录；侧边栏自动派生，不手工维护。不要把 `Test/**/bin`、`Test/**/obj` 当成源码证据。
 - 修改 UI、Engine、插件或项目文档后，仍需运行 `npm run docs:build` 验证文档站。
 - 快速发布遵守根 `AGENTS.md` 的专用入口与范围，不因为本页列了测试就额外扩大发布流程。

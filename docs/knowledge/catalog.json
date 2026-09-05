@@ -3951,6 +3951,7 @@
         "UI/ColorVision.UI.Desktop/Marketplace/MarketplaceManager.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs",
         "Test/ColorVision.UI.Tests/PluginRecoveryBackupServiceTests.cs",
         "Test/ColorVision.UI.Tests/ServiceHostUpdateCompatibilityTests.cs",
         "Test/ColorVision.UI.Tests/AutoUpdatePlanTests.cs",
@@ -10069,6 +10070,7 @@
         "ColorVision/MainWindow.xaml.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs",
         "Test/ColorVision.UI.Tests/MenuDiscoveryExclusionTests.cs",
         "Test/ColorVision.UI.Tests/MenuItemManagerServiceTests.cs",
         "Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs",
@@ -10946,6 +10948,7 @@
         "UI/ColorVision.Themes/Theme.cs",
         "UI/ColorVision.Themes/ThemeManager.cs",
         "UI/ColorVision.Themes/ThemeManagerExtensions.cs",
+        "UI/ColorVision.Themes/WindowKeyboardNavigation.cs",
         "UI/ColorVision.Themes/Themes",
         "UI/ColorVision.Themes/ColorVision.Themes.csproj",
         "UI/ColorVision.UI/Themes/ThemeConfig.cs",
@@ -10961,6 +10964,7 @@
         "ColorVision/CompactMainWindow.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs",
         "Test/ColorVision.UI.Tests/ThemeSettingsTests.cs",
         "Test/ColorVision.UI.Tests/ThemeSubscriptionLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs",

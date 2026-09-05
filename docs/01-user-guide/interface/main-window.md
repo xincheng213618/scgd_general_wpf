@@ -53,7 +53,7 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 
 窄栏的宽度判断集中在内部辅助类 `CompactTitleBarLayout`，由 `CompactMainWindow` 和隔离的真实 XAML 布局测试共用。它测量菜单、图标、拖动区、快捷入口、待更新文字和“更多”的自然期望宽度；已折叠元素在测量期间暂用 Hidden，随后恢复，不依赖其零宽度或当前分配宽度判断能否显示。待更新状态独立传入，所以窗口变宽即可恢复被布局隐藏的提示，无需等待下一次更新事件；异步提示变化也使用同一套规则，不另加高频 Render 循环。
 
-标题区延伸采用仅顶部的 `WindowChrome.GlassFrameThickness`，不启用全窗模糊、Acrylic 或透明分层窗口。附加期间 `Window.Background` 临时为 Transparent，但 `AllowsTransparency` 保持 false；`Root`、顶栏容器和系统按钮占位不覆盖 DWM 按钮，菜单区域、停靠管理器和状态栏分别用 `GlobalBackground` 保持内容不透明。紧凑路径把 `DockingManager1.Margin` 从普通窗口的 `-2,-3,-2,-2` 改为 0，隔开工作区与玻璃标题区，防止负外边距使内容绘制覆盖系统按钮；原生回退和进入全屏时恢复普通外边距。
+标题区延伸采用仅顶部的 `WindowChrome.GlassFrameThickness`，不启用全窗模糊、Acrylic 或透明分层窗口。附加期间 `Window.Background` 临时为 Transparent，但 `AllowsTransparency` 保持 false；`Root`、顶栏容器和系统按钮占位不覆盖 DWM 按钮，菜单区域、停靠管理器和状态栏分别用 `GlobalBackground` 保持内容不透明。`CompactTitleBarChrome` 监听窗口背景属性变化，在紧凑模式下同步恢复透明值：WPF 属性或资源失效可能清除 `SetCurrentValue` 的覆盖值，且不一定触发主题变化事件，仅在 `ApplyTheme` 中恢复会使最小化、最大化/还原、关闭按钮被不透明背景遮住。该监听在全屏时暂停保护，释放时解除，保留原动态资源在全屏和原生回退后的更新能力，不使用逐帧轮询。紧凑路径把 `DockingManager1.Margin` 从普通窗口的 `-2,-3,-2,-2` 改为 0，隔开工作区与玻璃标题区，防止负外边距使内容绘制覆盖系统按钮；原生回退和进入全屏时恢复普通外边距。
 
 颜色由捕获的 `ThemeManager.CurrentUIThemeChanged` 驱动并切回 UI 线程；紧凑路径不并行运行普通 `ApplyCaption`，避免后者重置其标题色。图标通过公共只读辅助方法 `ThemeManagerExtensions.TryLoadPackageIcon` 读取并缓存，优先保留包图标；没有包图标时才按实际主题选用默认深浅图标，详见[窗口主题与图标](../../04-api-reference/ui-components/ColorVision.Themes.md#applycaption-与-basewindow-是不同生命周期)。外边框使用 DWM 默认颜色，不把窗口是否激活绑定到内部文档的选中或活动状态。控制器复用同一个 `WindowChrome`，普通最大化/还原时同步调整客户区内缩，不在下一轮 Loaded 后再改内容边距；标题高度、DPI 或系统设置变化仍合并刷新相关尺寸，不在普通位置变化时重建窗口或模板。窗口状态变化不重复写入 DWM 主题属性；这些实现约束不等于已测得生产工作区性能无退步。
 
@@ -126,7 +126,7 @@ WPF `Border.CornerRadius` 只约束边框自身绘制，不会自动裁切子内
 
 ## 验证范围
 
-`CompactTitleBarIntegrationContractTests` 检查新开关默认开启、缺少新字段及仅有旧字段时使用默认值、新字段明确 false/true 的保留、配置元数据及本地化提示、共享的普通 Window 标记与单份工作区、客户区命中标记、原生按钮透明占位、内容背景接线，以及包图标读取辅助方法的源码契约；还从真实主窗口 XAML 提取隔离标题布局，调用生产共用的 `CompactTitleBarLayout`，检查窄宽往返、异步更新提示变化、自动高度下的布局稳定性、快捷入口与更新文字的分级收纳、“更多”和拖动区的命中，以及仅变宽即可恢复仍有待更新内容的提示，不只断言静态摆放。`CompactTitleBarChromeTests` 使用隔离合成窗口和 HWND，检查附加前提、既有 chrome 不被替换、原生窗口 style 能力、非分层窗口、主题间实例复用、同主题资源刷新但无主题事件时不遮挡系统按钮、全屏暂停/恢复、关闭取消和 Dispose 后释放；不加载生产配置、工作区或设备。系统不满足门禁时，只检查保留普通窗口的分支，不代表紧凑路径已覆盖。测试引用不表示本次已经执行。
+`CompactTitleBarIntegrationContractTests` 检查开关默认值、旧字段忽略、新字段 false/true 的 JSON 往返、窗口选择与本地化提示；从真实主窗口 XAML 提取隔离标题布局，调用 `CompactTitleBarLayout`，检查窄宽往返、异步更新提示、自动高度、分级收纳及“更多”和拖动区命中。测试不固定启动源码写法、完整 XAML 层级或包图标缓存实现。`CompactTitleBarChromeTests` 使用隔离窗口和 HWND，检查附加前提、既有 chrome 保留、原生窗口能力、主题刷新、全屏往返、关闭取消及 Dispose 后释放，不加载生产配置、工作区或设备。系统不支持紧凑标题栏时，只覆盖普通窗口分支。测试引用不表示本次已经执行。
 
 `CompactTitleBarIntegrationContractTests` 还用 mock 命令检查原按钮与“更多”菜单的命令、参数、命令目标和禁用状态动态一致、RoutedCommand 仍经过原按钮路由、更新项只进入原更新按钮的 Click 管线，并加载真实按钮模板核对完整点击区域。普通与紧凑按钮使用真实 WPF 控件检查字形继承同一 `Foreground` 画刷、默认配色随浅深主题刷新，以及离屏窗口实际 `IsActive=false` 时的非活动前景与资源刷新；悬停、按下、键盘焦点的前景恢复和覆盖非活动状态的顺序属于模板触发器契约检查。深浅主题下的实际悬停、键盘焦点、蓝点和辅助功能体验仍需视觉与真实输入验收；不应实际执行下载、登录或更新来证明布局正确。
 
@@ -134,7 +134,7 @@ WPF `Border.CornerRadius` 只约束边框自身绘制，不会自动裁切子内
 
 启用前后的交互与性能验收应使用相同机器、显示器缩放、主题、窗口尺寸和已加载内容，分别比较普通移动、实时缩放、菜单打开、流程编辑与图像操作，而不是用空白窗口推断生产工作区。性能对照应排除 Visual Studio 调试器与 XAML Hot Reload 注入的额外工作，不能只折叠应用内调试工具栏；这并不表示所有闪烁都由调试器导致。至少检查深浅色 × 活动/非活动、最小化与恢复、最大化与还原、关闭被未保存确认取消、标题空白拖动/双击、Snap、系统菜单、窄窗口、全屏往返、多屏混合 DPI 与位置恢复、WebView2 文档，以及 AvalonDock 浮动/重新停靠。自动合约或 HWND 测试不证明这些真实输入、视觉和性能条件已经不退步；发现回归时可关闭“紧凑主窗口”并重启，回到保留的旧主窗口。
 
-关联的 `StartupFileOpenPolicyTests` 覆盖启动文件打开策略；`AvalonDockThemeBindingTests` 在隔离合成工作区中检查深浅色资源、现代面板与标题模板的实际应用、活动/选中状态、主题替换、命令绑定及绘图绑定诊断。像素级检查包括方形内容的圆角裁切、尺寸/圆角变化后裁切更新、上下标签凸角与凹肩、底部选中标签接缝和外绘凹肩的点击边界；布局验证还需覆盖首/尾贴边、关闭前方相邻标签、重排和窗口缩放，不能只检查 `CornerRadius` 属性值。合成渲染用于核对停靠外观，不启动生产主窗口或设备，不表示真机交互已通过。
+关联的 `StartupFileOpenPolicyTests` 覆盖启动文件打开策略；`AvalonDockThemeBindingTests` 在隔离合成工作区中检查主题切换不丢内容、活动/选中状态、延迟内容生命周期、真实命令菜单及绑定错误。不固定画刷对象、模板层级、圆角半径或接缝像素颜色；停靠外观及真实鼠标交互仍需视觉验收，合成工作区测试不启动生产主窗口或设备。
 
 单工具页回归使用真实主题与离屏 WPF 窗口，从首次布局就只有一个已选工具项开始，检查标签容器、`SelectedContent`、标题、延迟宿主 Loaded 和工厂仅创建一次；再覆盖同一管理器的 1→2→1 工具页变化与主题替换。不直接调用 `Materialize`、强设 UI 的 `SelectedIndex` 或改写测试中的标签栏属性来绕过容器生成问题。
 

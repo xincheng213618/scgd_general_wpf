@@ -11,7 +11,7 @@ namespace ColorVision.UI.Desktop.Feedback
     {
         public override string OwnerGuid => MenuItemConstants.Help;
         public override int Order => 8000;
-        public override string Header => Resources.SendFeedback;
+        public override string Header => $"{Resources.SendFeedback}(_F)";
 
         public override void Execute()
         {

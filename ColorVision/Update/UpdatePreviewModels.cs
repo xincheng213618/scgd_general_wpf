@@ -311,6 +311,7 @@ namespace ColorVision.Update
             OnPropertyChanged(nameof(ItemsListVisibility));
             OnPropertyChanged(nameof(EmptyStateCenteredVisibility));
             OnPropertyChanged(nameof(ConfirmButtonVisibility));
+            OnPropertyChanged(nameof(IsCloseDefault));
             OnPropertyChanged(nameof(FooterInfoVisibility));
             RefreshApplicationUpdateModeState();
             RefreshSelectionState();
@@ -397,6 +398,7 @@ namespace ColorVision.Update
                 _isChecking = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(CheckingVisibility));
+                OnPropertyChanged(nameof(IsCloseDefault));
                 OnPropertyChanged(nameof(CanReinstall));
                 OnPropertyChanged(nameof(ItemsListVisibility));
                 OnPropertyChanged(nameof(EmptyStateCenteredVisibility));
@@ -453,6 +455,7 @@ namespace ColorVision.Update
                 OnPropertyChanged(nameof(ConfirmButtonText));
                 OnPropertyChanged(nameof(CanConfirm));
                 OnPropertyChanged(nameof(CanCancel));
+                OnPropertyChanged(nameof(IsCloseDefault));
                 OnPropertyChanged(nameof(CanReinstall));
             }
         }
@@ -595,6 +598,8 @@ namespace ColorVision.Update
             && (HasSelectableItems ? SelectedSelectableItemCount > 0 || HasAlwaysIncludedItems : HasAlwaysIncludedItems);
 
         public bool CanCancel => !IsUpdating;
+
+        public bool IsCloseDefault => CanCancel && !IsChecking && Items.Count == 0;
 
         public bool CanReinstall => !IsUpdating && !IsChecking;
 

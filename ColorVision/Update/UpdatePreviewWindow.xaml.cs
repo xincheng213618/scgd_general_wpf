@@ -31,6 +31,7 @@ namespace ColorVision.Update
 
             InitializeComponent();
             this.ApplyCaption();
+            UpdatePreviewKeyboardNavigation.Attach(this, Context, ConfirmButton, CancelButton);
 
             ContentRendered += UpdatePreviewWindow_ContentRendered;
             Closing += (_, _) =>

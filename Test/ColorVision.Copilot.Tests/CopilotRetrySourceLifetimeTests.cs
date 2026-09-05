@@ -29,7 +29,9 @@ public sealed class CopilotRetrySourceLifetimeTests
         StaTest.Run(() =>
         {
             using var fixture = new Fixture();
-            using var context = new PausedAdmissionContext();
+            using var context = new CopilotPausedAdmissionContext(
+                TestTimeout,
+                "Retry admission did not finish.");
             var previousContext = SynchronizationContext.Current;
             Task? retry = null;
             try
@@ -298,32 +300,4 @@ public sealed class CopilotRetrySourceLifetimeTests
         Assert.InRange(stream.Length, 1, CopilotImagePayloadLoader.MaximumImageBytes);
     }
 
-    private sealed class PausedAdmissionContext : SynchronizationContext, IDisposable
-    {
-        private readonly ConcurrentQueue<(SendOrPostCallback Callback, object? State)> _callbacks = new();
-        private readonly AutoResetEvent _posted = new(false);
-        public override void Post(SendOrPostCallback callback, object? state)
-        {
-            _callbacks.Enqueue((callback, state));
-            _posted.Set();
-        }
-        public bool WaitForCallback(TimeSpan timeout) => _posted.WaitOne(timeout);
-        public void Complete(Task operation)
-        {
-            var deadline = DateTime.UtcNow + TestTimeout;
-            var waits = new[] { _posted, ((IAsyncResult)operation).AsyncWaitHandle };
-            while (!operation.IsCompleted)
-            {
-                if (_callbacks.TryDequeue(out var callback))
-                {
-                    callback.Callback(callback.State);
-                    continue;
-                }
-                var remaining = deadline - DateTime.UtcNow;
-                Assert.True(remaining > TimeSpan.Zero, "Retry admission did not finish.");
-                Assert.NotEqual(WaitHandle.WaitTimeout, WaitHandle.WaitAny(waits, remaining));
-            }
-        }
-        public void Dispose() => _posted.Dispose();
-    }
 }

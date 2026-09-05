@@ -11,7 +11,9 @@ related: ["ui.index", "ui.discovery", "ui.database-query", "ui.sqlite-storage", 
 
 # TCP 监听、协议分发与消息记录
 
-`ColorVision.SocketProtocol` 为桌面宿主提供 TCP 监听、JSON/Text 指令分发和收发记录。通过 **帮助 → Socket 连接管理器** 查看与管理；启用服务后，也可点击状态栏的 Socket 服务图标进入。MES、PLC 和客户设备的业务字段、权限及动作约束由各项目协议负责。
+`ColorVision.SocketProtocol` 为桌面宿主提供 TCP 监听、JSON/Text 指令分发和收发记录。通过 **帮助 → 网络通信**（`Alt+H` 后按 `C`）查看与管理，窗口保留完整标题“Socket 连接管理器”；启用服务后，也可点击状态栏的 Socket 服务图标进入。MES、PLC 和客户设备的业务字段、权限及动作约束由各项目协议负责。
+
+打开窗口后焦点位于消息搜索框，Tab / Shift+Tab 在窗口内循环。Ctrl+F 回到搜索，Esc 有筛选时先清除筛选，无筛选时关闭窗口；关闭仍只释放窗口订阅，不停止通信服务。
 
 ## 配置与启用服务
 

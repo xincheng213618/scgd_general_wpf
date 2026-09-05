@@ -1,7 +1,6 @@
 using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
 using System.IO;
-using System.Runtime.ExceptionServices;
 using System.Windows.Controls;
 
 namespace ColorVision.Copilot.Tests;
@@ -268,8 +267,7 @@ public sealed class CopilotApprovalReviewTests
     [Fact]
     public void ReviewWindowUsesReadOnlyScrollableDetailsAndRequiresAcknowledgement()
     {
-        Exception? failure = null;
-        var thread = new Thread(() =>
+        StaTest.Run(() =>
         {
             ConfirmableAction? action = null;
             CopilotActionReviewWindow? window = null;
@@ -310,25 +308,13 @@ public sealed class CopilotApprovalReviewTests
                 Assert.False(acknowledgement.IsEnabled);
                 Assert.Empty(action.ReviewDetails);
             }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
             finally
             {
                 window?.Close();
                 if (action != null)
                     CopilotMcpConfirmationStore.Instance.Cancel(action.ActionId, out _, "UI contract test cleanup.");
             }
-        });
-
-        thread.IsBackground = true;
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        Assert.True(thread.Join(TimeSpan.FromSeconds(10)), "The STA approval-window contract test did not finish.");
-
-        if (failure != null)
-            ExceptionDispatchInfo.Capture(failure).Throw();
+        }, TimeSpan.FromSeconds(10), "The STA approval-window contract test did not finish.");
     }
 
     private static CopilotAgentRequest CreateRequest(

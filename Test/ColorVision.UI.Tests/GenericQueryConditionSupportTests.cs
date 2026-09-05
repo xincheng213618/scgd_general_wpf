@@ -4,8 +4,6 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Reflection;
-using System.Runtime.ExceptionServices;
-using System.Threading;
 using System.Windows.Controls;
 
 namespace ColorVision.UI.Tests;
@@ -110,7 +108,7 @@ public sealed class GenericQueryConditionSupportTests : IDisposable
     [Fact]
     public void SessionState_RestoresLastAppliedConditionsAndSettings()
     {
-        RunOnSta(() =>
+        StaTest.Run(() =>
         {
             GenericQuerySessionStore.ClearAll();
             SqlSugarClient db = CreateDatabase();
@@ -142,7 +140,7 @@ public sealed class GenericQueryConditionSupportTests : IDisposable
     [Fact]
     public void InvalidCondition_DoesNotClearExistingResults()
     {
-        RunOnSta(() =>
+        StaTest.Run(() =>
         {
             SqlSugarClient db = CreateDatabase();
             var existing = new QueryEntity { Id = 99, Name = "keep" };
@@ -186,28 +184,6 @@ public sealed class GenericQueryConditionSupportTests : IDisposable
 
         if (Directory.Exists(_temporaryDirectory))
             Directory.Delete(_temporaryDirectory, recursive: true);
-    }
-
-    private static void RunOnSta(Action action)
-    {
-        Exception? failure = null;
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
-        });
-        Assert.True(thread.TrySetApartmentState(ApartmentState.STA));
-        thread.Start();
-        thread.Join();
-
-        if (failure != null)
-            ExceptionDispatchInfo.Capture(failure).Throw();
     }
 
     [SugarTable("generic_query_test")]

@@ -15,12 +15,18 @@
         Background="{DynamicResource UpdateDialog.WindowBorder}"
         SnapsToDevicePixels="True"
         UseLayoutRounding="True"
+        KeyboardNavigation.TabNavigation="Cycle"
         mc:Ignorable="d">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="UpdateDialogTheme.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="UpdatePreviewActionButtonStyle"
+                   TargetType="{x:Type Button}"
+                   BasedOn="{StaticResource UpdateDialogTextButtonStyle}">
+                <Setter Property="Foreground" Value="{DynamicResource UpdateDialog.TextPrimary}" />
+            </Style>
         </ResourceDictionary>
     </Window.Resources>
 
@@ -64,13 +70,13 @@
                             HorizontalAlignment="Right"
                             Click="ChangelogButton_Click"
                             Content="{x:Static properties:Resources.ChangeLog}"
-                            Style="{StaticResource UpdateDialogTextButtonStyle}" />
+                            Style="{StaticResource UpdatePreviewActionButtonStyle}" />
                     <Button Margin="0,0,0,4"
                             HorizontalAlignment="Right"
                             Click="ApplicationSnapshotsButton_Click"
                             Content="{x:Static properties:Resources.UpdatePreviewApplicationSnapshotsLink}"
                             IsEnabled="{Binding CanCancel}"
-                            Style="{StaticResource UpdateDialogTextButtonStyle}" />
+                            Style="{StaticResource UpdatePreviewActionButtonStyle}" />
                 </StackPanel>
             </Grid>
 
@@ -326,19 +332,22 @@
                             Content="{x:Static properties:Resources.UpdatePreviewReinstall}"
                             IsEnabled="{Binding CanReinstall}"
                             Visibility="{Binding EmptyStateCenteredVisibility}"
-                            Style="{StaticResource UpdateDialogTextButtonStyle}"
+                            Style="{StaticResource UpdatePreviewActionButtonStyle}"
                             ToolTip="{x:Static properties:Resources.UpdatePreviewReinstallDescription}" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="1"
                             Orientation="Horizontal"
                             HorizontalAlignment="Right">
-                    <Button Margin="0,0,12,0"
+                    <Button x:Name="CancelButton" Margin="0,0,12,0"
+                            IsCancel="True"
+                            IsDefault="{Binding IsCloseDefault}"
                             Click="CancelButton_Click"
                             Content="{Binding CancelButtonText}"
                             IsEnabled="{Binding CanCancel}"
                             Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
-                    <Button Click="ConfirmButton_Click"
+                    <Button x:Name="ConfirmButton" Click="ConfirmButton_Click"
+                            IsDefault="{Binding CanConfirm}"
                             Content="{Binding ConfirmButtonText}"
                             IsEnabled="{Binding CanConfirm}"
                             Visibility="{Binding ConfirmButtonVisibility}"
