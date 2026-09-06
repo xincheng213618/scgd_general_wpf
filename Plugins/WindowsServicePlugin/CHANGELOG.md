@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.4.3.29 - 2026-09-06
+
+### Changed
+
+- Rebuilt the service manager for the ColorVision 1.4.14.15 release, retaining the existing service-termination client API that routes to the shared process-termination implementation in the updated service host.
+
 ## 1.4.3.28 - 2026-09-06
 
 ### Changed
