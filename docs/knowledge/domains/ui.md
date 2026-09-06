@@ -111,4 +111,4 @@ next: false
   桌面辅助壳层而非产品主入口：定位设置、市场下载、第三方工具、反馈和特权崩溃诊断。
 
 - [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
-  UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，中立算法与窗口适配分层维护。
+  UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，ScottPlot与SkiaSharp保持已验证的资产组合。

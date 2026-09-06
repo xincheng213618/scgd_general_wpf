@@ -127,6 +127,9 @@ next: false
 - [ColorVision 概览](../../00-getting-started/what-is-colorvision.md) — `platform.product`
   ColorVision 的设备、流程、图像分析、结果、插件与客户项目能力，以及从任务进入文档的方法。
 
+- [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
+  UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，ScottPlot与SkiaSharp保持已验证的资产组合。
+
 ## ColorVision/Copilot {#module-436f6c6f72566973696f6e2f436f70696c6f74}
 
 - [Copilot Agent Runtime](../../02-developer-guide/core-concepts/copilot-agent-runtime.md) — `copilot.runtime`

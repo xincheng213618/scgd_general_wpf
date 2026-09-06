@@ -19,6 +19,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
 		<PackageReference Include="NPOI" Version="2.8.0" />
+		<!-- Compatibility freeze: keep ScottPlot.WPF 5.0.56; see docs/04-api-reference/ui-components/component-handbook.md. -->
 		<PackageReference Include="ScottPlot.WPF" Version="5.0.56" />
 	</ItemGroup>
 

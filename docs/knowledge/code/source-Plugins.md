@@ -66,6 +66,9 @@ next: false
 - [插件依赖与接入矩阵](../../04-api-reference/plugins/plugin-capability-matrix.md) — `plugins.capabilities`
   横向定位现存插件的菜单、状态、数据库、设备与管理员权限边界。
 
+- [UI 包职责与依赖边界](../../04-api-reference/ui-components/component-handbook.md) — `ui.package-boundaries`
+  UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，ScottPlot与SkiaSharp保持已验证的资产组合。
+
 ## Plugins/SystemMonitor {#module-506c7567696e732f53797374656d4d6f6e69746f72}
 
 - [插件产物、安装与交付](../../02-developer-guide/plugin-development/getting-started.md) — `plugins.getting-started`

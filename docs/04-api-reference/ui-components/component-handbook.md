@@ -2,9 +2,9 @@
 knowledge_id: "ui.package-boundaries"
 knowledge_type: "reference"
 status: "current"
-summary: "UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，中立算法与窗口适配分层维护。"
-aliases: ["应该改哪个UI类库","UI包依赖","UI类库版本","目标框架兼容","ColorVision.Algorithms","ColorVision.Common","ColorVision.Core","ColorVision.ImageTools"]
-code_paths: ["UI/Directory.Build.props","UI/ColorVision.Algorithms/ColorVision.Algorithms.csproj","UI/ColorVision.Common/ColorVision.Common.csproj","UI/ColorVision.Core/ColorVision.Core.csproj","UI/ColorVision.Database/ColorVision.Database.csproj","UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj","UI/ColorVision.ImageTools/ColorVision.ImageTools.csproj","UI/ColorVision.Rbac/ColorVision.Rbac.csproj","UI/ColorVision.Scheduler/ColorVision.Scheduler.csproj","UI/ColorVision.SocketProtocol/ColorVision.SocketProtocol.csproj","UI/ColorVision.Solution/ColorVision.Solution.csproj","UI/ColorVision.Themes/ColorVision.Themes.csproj","UI/ColorVision.UI/ColorVision.UI.csproj","UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj"]
+summary: "UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，ScottPlot与SkiaSharp保持已验证的资产组合。"
+aliases: ["应该改哪个UI类库","UI包依赖","UI类库版本","目标框架兼容","ColorVision.Algorithms","ColorVision.Common","ColorVision.Core","ColorVision.ImageTools","ScottPlot.WPF","SkiaSharp.Views.WPF","netcoreapp3.1","net462"]
+code_paths: ["ColorVision/ColorVision.csproj","Plugins/Spectrum/Spectrum.csproj","Projects/ProjectARVRPro/ProjectARVRPro.csproj","Projects/ProjectKB/ProjectKB.csproj","UI/Directory.Build.props","UI/ColorVision.Algorithms/ColorVision.Algorithms.csproj","UI/ColorVision.Common/ColorVision.Common.csproj","UI/ColorVision.Core/ColorVision.Core.csproj","UI/ColorVision.Database/ColorVision.Database.csproj","UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj","UI/ColorVision.ImageTools/ColorVision.ImageTools.csproj","UI/ColorVision.Rbac/ColorVision.Rbac.csproj","UI/ColorVision.Scheduler/ColorVision.Scheduler.csproj","UI/ColorVision.SocketProtocol/ColorVision.SocketProtocol.csproj","UI/ColorVision.Solution/ColorVision.Solution.csproj","UI/ColorVision.Themes/ColorVision.Themes.csproj","UI/ColorVision.UI/ColorVision.UI.csproj","UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj"]
 test_paths: ["Scripts/tests/test_algorithm_package_contract.py","Scripts/tests/test_verify_platform_policy.py"]
 related: ["ui.index","ui.publishing","algorithms.platform","delivery.index"]
 ---
@@ -50,6 +50,14 @@ related: ["ui.index","ui.publishing","algorithms.platform","delivery.index"]
 | 版本与签名 | 按根 props、`UI/Directory.Build.props` 和项目覆写后的最终值判断，`Themes` 有自己的版本；不要求 UI 包与主程序版本号相同。保留存在签名密钥时的强名称规则，公开签名变更另核对实际消费者 |
 | 资源与依赖 | 核对 NuGet 资产和宿主输出中需要的 XAML、图标、shader、CIE 数据及 native runtime；项目引用存在不证明依赖和资源已交付。插件共享文件去重由插件打包规则负责 |
 | 运行时装配 | 对应程序集加载后，菜单、设置、状态栏、图像工具或 Socket handler 仍要经过各自发现与过滤；包生成成功不代表入口可见 |
+
+### ScottPlot 与 SkiaSharp 兼容性冻结
+
+所有消费方暂时保持 `ScottPlot.WPF 5.0.56`，主程序同时保持直接引用的 `SkiaSharp 2.88.9`。当前组合为 `net10.0-windows` 消费方选择 `ScottPlot.WPF` 的 `lib/net6.0-windows7.0` 资产，并从 `SkiaSharp.Views.WPF 2.88.9` 选择 `lib/netcoreapp3.1`，不会回退到 .NET Framework DLL。
+
+不能把 `ScottPlot.WPF` 或 `SkiaSharp` 单独追到当前最新版。`ScottPlot.WPF 5.1.59` 会带入 `SkiaSharp.Views.WPF 3.119.0`；后者的 WPF 资产只有 `net462`，或最低要求 Windows 10.0.19041 的 `net6.0`/`net8.0`。仓库当前 Windows TFM 基线不能选择 Windows 10 资产时，NuGet 会回退选择 `net462`，改变现有 .NET Core 运行资产边界。
+
+在出现新解法前，不再把 ScottPlot/SkiaSharp 列为常规依赖升级候选。解除冻结至少需要满足以下一项：新包提供与当前 Windows TFM 兼容且不会回退到 `net4x` 的 WPF 资产；仓库明确提高 Windows 最低版本并完成安装环境核验；或替换绘图库。候选方案还必须在还原后检查 `obj/project.assets.json` 与实际编译引用，并覆盖主程序、`ColorVision.ImageEditor`、Spectrum、ProjectKB 和 ProjectARVRPro 的构建及代表性绘图运行验证。
 
 发布预检、包顺序、NuGet 版本占用及消费方验证统一见[发布契约](./publishing.md)。选择验证范围时先确认此次任务允许的操作：源码/包检查不需要启动主程序；窗口、设备与外部服务的验证使用对应主题的前提和完成条件。
 

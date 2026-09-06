@@ -446,6 +446,12 @@
                 "root": "ColorVision 概览"
               },
               "link": "/00-getting-started/what-is-colorvision"
+            },
+            {
+              "text": {
+                "root": "UI 包职责与依赖边界"
+              },
+              "link": "/04-api-reference/ui-components/component-handbook"
             }
           ]
         },
@@ -3104,6 +3110,12 @@
                 "root": "插件依赖与接入矩阵"
               },
               "link": "/04-api-reference/plugins/plugin-capability-matrix"
+            },
+            {
+              "text": {
+                "root": "UI 包职责与依赖边界"
+              },
+              "link": "/04-api-reference/ui-components/component-handbook"
             }
           ]
         },
@@ -3239,6 +3251,12 @@
                 "root": "项目横向速查"
               },
               "link": "/04-api-reference/projects/project-capability-matrix"
+            },
+            {
+              "text": {
+                "root": "UI 包职责与依赖边界"
+              },
+              "link": "/04-api-reference/ui-components/component-handbook"
             }
           ]
         },
@@ -3287,6 +3305,12 @@
                 "root": "ProjectKB"
               },
               "link": "/04-api-reference/projects/project-kb"
+            },
+            {
+              "text": {
+                "root": "UI 包职责与依赖边界"
+              },
+              "link": "/04-api-reference/ui-components/component-handbook"
             }
           ]
         },

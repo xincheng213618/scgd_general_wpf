@@ -10141,7 +10141,7 @@
       "knowledge_id": "ui.package-boundaries",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，中立算法与窗口适配分层维护。",
+      "summary": "UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，ScottPlot与SkiaSharp保持已验证的资产组合。",
       "aliases": [
         "应该改哪个UI类库",
         "UI包依赖",
@@ -10150,9 +10150,17 @@
         "ColorVision.Algorithms",
         "ColorVision.Common",
         "ColorVision.Core",
-        "ColorVision.ImageTools"
+        "ColorVision.ImageTools",
+        "ScottPlot.WPF",
+        "SkiaSharp.Views.WPF",
+        "netcoreapp3.1",
+        "net462"
       ],
       "code_paths": [
+        "ColorVision/ColorVision.csproj",
+        "Plugins/Spectrum/Spectrum.csproj",
+        "Projects/ProjectARVRPro/ProjectARVRPro.csproj",
+        "Projects/ProjectKB/ProjectKB.csproj",
         "UI/Directory.Build.props",
         "UI/ColorVision.Algorithms/ColorVision.Algorithms.csproj",
         "UI/ColorVision.Common/ColorVision.Common.csproj",
@@ -10179,6 +10187,10 @@
         "delivery.index"
       ],
       "code_scopes": [
+        "ColorVision",
+        "Plugins/Spectrum",
+        "Projects/ProjectARVRPro",
+        "Projects/ProjectKB",
         "UI",
         "UI/ColorVision.Algorithms",
         "UI/ColorVision.Common",
