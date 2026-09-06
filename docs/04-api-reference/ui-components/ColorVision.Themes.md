@@ -21,6 +21,8 @@ related: ["ui.index","ui.settings","ui.property-grid","ui.configuration","operat
 
 默认选择“跟随系统”，使用 Windows 的应用配色。三个选择对应 `UseSystem`、`Light`、`Dark`；`UseSystem` 是选择策略，实际资源仍为浅色或深色。即时变色与配置写盘是两个步骤，设置窗口的保存边界见 [设置入口与配置编辑](./settings.md)。
 
+主题选项使用紧凑预览卡片，示意图等比缩放，文字标签保留正常字号；键盘焦点与当前选择都有边框提示。卡片的尺寸与绘制由 `Themes/Components/ThemePreview.xaml` 统一维护，不改变主题值或即时预览的提交规则。
+
 以下说明面向主题接入与排障。独立宿主可以调整公开资源列表，但仍须遵循资源加载和事件约束。
 
 ## 资源入口与职责

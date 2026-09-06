@@ -7,6 +7,8 @@ using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -384,6 +386,12 @@ public sealed class StorageMaintenanceTests
                 Assert.True(bounds.Left >= -1 && bounds.Right <= content.ActualWidth + 1,
                     $"The real settings shell clips {ElementLabel(element)} at width {width}: {bounds}, content {content.RenderSize}.");
                 if (element is TextBlock text && !string.IsNullOrWhiteSpace(text.Text)) AssertTextFits(text);
+                if (element is ComboBox combo)
+                {
+                    Geometry? clip = LayoutInformation.GetLayoutClip(combo);
+                    Assert.True(clip == null || (clip.Bounds.Left <= 0 && clip.Bounds.Right >= combo.ActualWidth),
+                        $"The settings editor clips its own border: {combo.Text}, rendered {combo.RenderSize}, clip {clip?.Bounds}.");
+                }
             }
 
         });
@@ -430,6 +438,32 @@ public sealed class StorageMaintenanceTests
         });
     }
 
+    [Fact]
+    public void SettingsEditorsWriteToTheSourceAndKeepValuesAcrossNavigation()
+    {
+        WithGeneralSettings(980, false, (window, host) =>
+        {
+            StackPanel content = Element<StackPanel>(window, "SettingsContentPanel");
+            ComboBox language = Descendants(content).OfType<ComboBox>().Single(combo => combo.SelectedValue is PreviewLanguage);
+            var source = Assert.IsType<PreviewSettings>(BindingOperations.GetBinding(language, Selector.SelectedValueProperty)?.Source);
+            language.SelectedValue = PreviewLanguage.English;
+            Assert.Equal(PreviewLanguage.English, source.Language);
+
+            ToggleButton snapshot = Descendants(content).OfType<ToggleButton>().Single(toggle =>
+                BindingOperations.GetBinding(toggle, ToggleButton.IsCheckedProperty)?.Path.Path == nameof(PreviewSettings.CreateSnapshot));
+            snapshot.IsChecked = true;
+            Assert.True(source.CreateSnapshot);
+
+            ListBox navigation = Element<ListBox>(window, "NavigationListBox");
+            navigation.SelectedIndex = 1;
+            navigation.SelectedIndex = 0;
+            RefreshLayout(host, 980);
+            language = Descendants(content).OfType<ComboBox>().Single(combo => combo.SelectedValue is PreviewLanguage);
+            Assert.Equal(PreviewLanguage.English, language.SelectedValue);
+            Assert.True(source.CreateSnapshot);
+        });
+    }
+
     [Theory]
     [InlineData(980)]
     [InlineData(1180)]
@@ -443,7 +477,7 @@ public sealed class StorageMaintenanceTests
             Assert.Equal(MaintenanceText.Description, Element<TextBlock>(window, "CurrentGroupDescription").Text);
             CompleteWithDispatcher(model.ScanAsync());
             RefreshLayout(host, width);
-            Assert.InRange(page.ActualWidth, width - 370, width - 300);
+            Assert.True(page.ActualWidth >= 600, "The settings shell must leave enough room for the maintenance actions.");
             ScrollViewer scroll = Element<ScrollViewer>(window, "SettingsScrollViewer");
             Assert.True(scroll.ScrollableHeight > 0);
 

@@ -6432,24 +6432,18 @@
       "knowledge_id": "operations.exports",
       "knowledge_type": "guide",
       "status": "current",
-      "summary": "按设置、流程、图像和项目结果定位导入导出实现，说明配置覆盖、文件验收与迁移边界。",
+      "summary": "按配置备份、流程、图像和项目结果定位入口，说明文件验收与迁移边界。",
       "aliases": [
         "导入导出",
         "CSV",
         "Excel",
         "cvsettings",
         "导出图片",
-        "ConfigTransferSettingsProvider",
         "SaveSnapshotExportsAsync",
-        "导入和导出设置",
-        "导出设置",
-        "导入设置",
+        "配置备份",
         "打开配置文件夹"
       ],
       "code_paths": [
-        "UI/ColorVision.UI.Desktop/Settings/ExportAndImport/ConfigTransferSettingsProvider.cs",
-        "UI/ColorVision.UI.Desktop/Settings/ExportAndImport/ConfigTransferSettingsControl.xaml.cs",
-        "UI/ColorVision.UI.Desktop/Settings/ExportAndImport/ConfigTransferSettingsControl.xaml",
         "UI/ColorVision.UI/ConfigHandler.cs",
         "Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs",
         "UI/ColorVision.ImageEditor/ImageView.Snapshot.cs"
@@ -6462,6 +6456,7 @@
       "related": [
         "operations.data",
         "ui.configuration",
+        "ui.storage-maintenance",
         "engine.results",
         "flow.templates",
         "ui.image-editor",
@@ -6471,8 +6466,7 @@
       "code_scopes": [
         "Engine/ColorVision.Engine",
         "UI/ColorVision.ImageEditor",
-        "UI/ColorVision.UI",
-        "UI/ColorVision.UI.Desktop"
+        "UI/ColorVision.UI"
       ],
       "domain": "operations",
       "title": "设置、流程与结果的导入导出边界",

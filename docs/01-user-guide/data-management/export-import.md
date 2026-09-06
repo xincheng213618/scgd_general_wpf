@@ -2,16 +2,16 @@
 knowledge_id: "operations.exports"
 knowledge_type: "guide"
 status: "current"
-summary: "按设置、流程、图像和项目结果定位导入导出实现，说明配置覆盖、文件验收与迁移边界。"
-aliases: ["导入导出","CSV","Excel","cvsettings","导出图片","ConfigTransferSettingsProvider","SaveSnapshotExportsAsync","导入和导出设置","导出设置","导入设置","打开配置文件夹"]
-code_paths: ["UI/ColorVision.UI.Desktop/Settings/ExportAndImport/ConfigTransferSettingsProvider.cs","UI/ColorVision.UI.Desktop/Settings/ExportAndImport/ConfigTransferSettingsControl.xaml.cs","UI/ColorVision.UI.Desktop/Settings/ExportAndImport/ConfigTransferSettingsControl.xaml","UI/ColorVision.UI/ConfigHandler.cs","Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs","UI/ColorVision.ImageEditor/ImageView.Snapshot.cs"]
+summary: "按配置备份、流程、图像和项目结果定位入口，说明文件验收与迁移边界。"
+aliases: ["导入导出","CSV","Excel","cvsettings","导出图片","SaveSnapshotExportsAsync","配置备份","打开配置文件夹"]
+code_paths: ["UI/ColorVision.UI/ConfigHandler.cs","Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs","UI/ColorVision.ImageEditor/ImageView.Snapshot.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs","Test/ColorVision.UI.Tests/ConfigHandlerPersistenceTests.cs","Test/ColorVision.UI.Tests/ImageViewSnapshotSaveTests.cs"]
-related: ["operations.data","ui.configuration","engine.results","flow.templates","ui.image-editor","engine.cv-image-export","delivery.file-transfer"]
+related: ["operations.data","ui.configuration","ui.storage-maintenance","engine.results","flow.templates","ui.image-editor","engine.cv-image-export","delivery.file-transfer"]
 ---
 
 # 设置、流程与结果的导入导出边界
 
-按要保存、迁移或交付的对象选择入口：软件设置、流程包、图像、客户报表和协议输出分别由所属模块处理。本页提供入口与核对方法，并说明设置文件的导出和导入步骤；单项导出只覆盖该对象的内容。
+按要保存、迁移或交付的对象选择入口：配置备份、流程包、图像、客户报表和协议输出分别由所属模块处理。本页提供入口与核对方法；单项导出只覆盖该对象的内容。
 
 导出可能包含客户和设备数据，共享前须脱敏。导入可能覆盖配置、创建模板或改数据库，执行前确认精确目标及可用备份；仅查询方法不授权实际导入、运行流程或发送 Socket/MES 消息。
 
@@ -19,7 +19,7 @@ related: ["operations.data","ui.configuration","engine.results","flow.templates"
 
 | 对象 | 当前入口与实现 | 能力边界 |
 | --- | --- | --- |
-| 软件设置 `.cvsettings` | 设置页中的“导入和导出设置”；`ConfigTransferSettingsProvider` 注册 `ConfigTransferSettingsControl` TabItem | 序列化已实例化的配置节并合并目标文件，不是完整复制当前配置，更不包含全部数据库与结果图 |
+| 软件配置与备份 | “存储与维护”的配置/备份目录入口；配置服务提供保存、备份与重载 | 设置窗口不提供 `.cvsettings` 导入/导出；配置备份不包含全部数据库与结果图 |
 | 单流程及关联模板 `.cvflow` | `TemplateFlow` 调用 `FlowPackageHelper` | 带关联模板及引用处理；包兼容与导入规则见[模板与 Flow 链路](../../04-api-reference/engine-components/template-flow-chain.md) |
 | 多选流程 | `TemplateFlow` 多选导出 | 当前是 zip 内多个 `.stn`，不能等同于多个完整 `.cvflow` 包 |
 | 数据库记录 | 所属业务结果页或实体通用查询 | 用于确认源记录和范围，不能据此推断存在通用数据库迁移向导 |
@@ -29,30 +29,11 @@ related: ["operations.data","ui.configuration","engine.results","flow.templates"
 | 已有文件的网页传送与分享 | Web“文件中转”（`/transfer`） | 传送已有文件，不生成业务导出或导入内容；上传、续传与分享保留期见[文件中转](../../02-developer-guide/backend/file-transfer.md) |
 | Socket/MES 响应 | 项目 handler 和 `ColorVision.SocketProtocol` | 属于协议输出，不是文件导出；项目结果与关联字段见[结果链路](../../04-api-reference/engine-components/result-handoff-chain.md) |
 
-## 导出或导入软件设置
+## 配置文件与备份
 
-在设置中打开“导入和导出设置”。该页有“导出设置”“导入设置”“打开配置文件夹”三个按钮；“打开配置文件夹”在资源管理器中定位当前 `ConfigHandler.ConfigFilePath`，可先用它确认目标配置位置。
+在[存储与维护](../../04-api-reference/ui-components/storage-maintenance.md)中定位配置和备份目录。配置服务管理主文件的保存、备份与重载；已有 `.cvsettings` 文件不能通过设置窗口直接导入。
 
-### 导出设置
-
-1. 点击“导出设置”，选择保存位置。建议文件名为 `Exported-yyyy-MM-dd.cvsettings`，对话框也允许选择其它扩展名。
-2. 保存后核对所需模块的配置节。按钮调用 `SaveConfigs(fileName)`，序列化当前已实例化的配置对象；新目标文件可能缺少从未实例化的配置节，不能据此作为全部设置的完整副本。
-3. 若选择已有 JSON 文件，保存会合并它原有的配置节；未覆盖的其它节可能留下。为避免带入旧目标内容，可选择新文件，再核对需要迁移的节。保存校验、加密和写入规则见[配置持久化与重载](../../04-api-reference/ui-components/configuration.md)。
-
-### 导入设置
-
-1. 确认目标配置位置、要导入的内容和独立可用的原配置备份。对话框允许 `.cvsettings` 和所有文件，扩展名不证明内容有效。
-2. 点击“导入设置”并选择文件。确认文件选择后立即进入备份、覆盖和加载流程，没有配置差异预览或第二次导入确认；软件设置导入不同时恢复流程模板、数据库或图片。
-3. 导入后核对主文件、所需配置节和相关模块的实际值。重载后的配置按需实例化，已打开控件或持有旧引用的模块仍需核对其刷新结果。
-
-| 阶段 | 执行与失败边界 |
-| --- | --- |
-| `BackupConfigs()` | 用序列化快照生成备份，不是原文件字节副本；尝试按文件名保留最多 10 个匹配备份并清理更旧文件。备份或清理异常仅记日志，因此备份失败不会自动阻止覆盖 |
-| `File.Copy(..., overwrite: true)` | 直接覆盖主配置文件，复制前没有 JSON 或配置节校验；这次复制不使用核心保存函数的临时文件替换机制 |
-| `LoadConfigs()` | 加载主文件；无效输入可能触发备份恢复或默认配置，并非总以导入错误结束。正常 JSON 加载也不等于所有配置类型已验证 |
-| `InvalidateCache()` | 加载后使设置项缓存失效；前面的重载通知若抛错，这一步可能不执行。清缓存也不会自动重绑所有已打开控件 |
-
-上述按钮流程没有覆盖“备份、复制、加载、刷新”的整体事务或补偿回退。窗口仍可使用、没有异常提示或部分设置看起来正常，都不能代替第 3 步的核对。备份回退、重载通知与旧引用的具体契约由配置主题维护。
+`ConfigHandler.SaveConfigs(fileName)` 仍是底层保存接口：序列化当前已实例化的配置对象，并合并目标文件已有节。新目标可能缺少从未实例化的节，已有目标也可能保留其它旧节；该接口不构成全项目备份。保存校验、备份回退、重载通知与旧对象引用的边界统一见[配置持久化与重载](../../04-api-reference/ui-components/configuration.md)。
 
 ## 按对象核对导出结果
 
@@ -81,6 +62,6 @@ related: ["operations.data","ui.configuration","engine.results","flow.templates"
 
 ## 源码与验证边界
 
-`ConfigTransferSettingsProvider.cs` / `ConfigTransferSettingsControl.xaml.cs` 位于 `UI/ColorVision.UI.Desktop/Settings/ExportAndImport/`；配置保存、备份和加载在 `UI/ColorVision.UI/ConfigHandler.cs`；流程入口在 `Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs`；图像快照与原图保存入口在 `UI/ColorVision.ImageEditor/ImageView.Snapshot.cs`。
+配置保存、备份和加载在 `UI/ColorVision.UI/ConfigHandler.cs`；流程入口在 `Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs`；图像快照与原图保存入口在 `UI/ColorVision.ImageEditor/ImageView.Snapshot.cs`。
 
-`ConfigHandlerPersistenceTests.cs` 覆盖配置重载和持久化的局部契约，不等于设置导入按钮全链或所有模块迁移已验证；`FlowPackageCompatibilityTests.cs` 覆盖流程包兼容、完整性与模板引用；`ImageViewSnapshotSaveTests.cs` 覆盖快照/原图保存与格式限制。项目报表字段和 Socket/MES 交付仍需对应样例与项目测试。
+`ConfigHandlerPersistenceTests.cs` 覆盖配置重载和持久化的局部契约，不等于所有模块迁移已验证；`FlowPackageCompatibilityTests.cs` 覆盖流程包兼容、完整性与模板引用；`ImageViewSnapshotSaveTests.cs` 覆盖快照/原图保存与格式限制。项目报表字段和 Socket/MES 交付仍需对应样例与项目测试。

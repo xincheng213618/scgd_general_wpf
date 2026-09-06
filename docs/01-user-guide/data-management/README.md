@@ -58,7 +58,7 @@ MQTT/Flow 的 `SqliteDbPath` 是 `DirectoryPath` 加固定文件名的只读属�
 
 - `MessagesListManager.MsgRecordsClearCommand` 与 `SocketMessageManager.MessagesClearCommand` 只清当前内存列表，不等于删除数据库记录。
 - Engine 主结果中的图片路径不包含原始像素；有主记录不证明图片仍存在，有预览图也不证明全部明细成功落库。
-- `.cvsettings` 只覆盖配置服务管理的设置；`.cvflow`、项目数据库、原图及项目报告各自核对。导出一种对象不构成全项目备份。
+- 配置备份只覆盖配置服务管理的设置；`.cvflow`、项目数据库、原图及项目报告各自核对。导出一种对象不构成全项目备份。
 - 日志、MQTT/Socket 消息和 Flow 诊断帮助定位执行阶段，不能单独替代业务结果查询或外部系统的最终回执。
 
 ## 最小核验顺序
