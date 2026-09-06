@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "ColorVision 服务主机的状态刷新、安装修复、日志诊断、身份票据与就绪条件；自动刷新只更新日志，客户端超时不取消命令，服务停止超过两分钟仍等待排空，服务启动成功日志不证明后台清理和启动完整性检查完成。"
 aliases: ["ColorVisionServiceHost", "ColorVision 服务主机", "ColorVision Service Host", "服务主机安装记录", "ServiceHostLogReader", "后台权限代理", "本机特权服务", "服务宿主", "命名管道", "SCM停止预算", "broker ticket", "ServiceHostProtocol", "ColorVisionServiceHostClient", "IColorVisionServiceHostClient", "ServiceHostPipeClient", "ServiceHostCallerIdentity", "ServiceHostBrokerTicketService", "ServiceHostCommandHandler", "ServiceHostPipeServer", "ColorVisionServiceHostService", "ColorVisionServiceHostManager", "ServiceHostStatus", "ServiceHostRuntimeIntegrityChecker", "ServiceHostStartupUpdateChecker", "ServiceHostManagerWindow", "ColorVisionServiceHostWizardStep", "Program.BeginConsoleShutdown"]
-code_paths: ["src/ColorVisionServiceHost", "UI/ColorVision.UI/ServiceHost/ServiceHostProtocol.cs", "UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs", "ColorVision/ServiceHost"]
-test_paths: ["Test/ColorVision.UI.Tests/ServiceHostStatusTests.cs", "Test/ColorVision.UI.Tests/ServiceHostLogReaderTests.cs", "Test/ColorVision.UI.Tests/ServiceHostBrokerTicketTests.cs", "Test/ColorVision.UI.Tests/ServiceHostPipeServerTests.cs", "Test/ColorVision.UI.Tests/ColorVisionServiceHostServiceLifecycleTests.cs", "Test/ColorVision.UI.Tests/ServiceHostStartupStatusTests.cs", "Test/ColorVision.UI.Tests/ServiceHostApplicationUpdateAccessTests.cs"]
+code_paths: ["src/ColorVisionServiceHost", "UI/ColorVision.UI/ServiceHost/ServiceHostProtocol.cs", "UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs", "UI/ColorVision.UI/ServiceHost/ProcessTerminationBroker.cs", "ColorVision/ServiceHost"]
+test_paths: ["Test/ColorVision.UI.Tests/ServiceHostStatusTests.cs", "Test/ColorVision.UI.Tests/ServiceHostLogReaderTests.cs", "Test/ColorVision.UI.Tests/ServiceHostBrokerTicketTests.cs", "Test/ColorVision.UI.Tests/ServiceHostProcessTerminationTests.cs", "Test/ColorVision.UI.Tests/ProcessTerminationBrokerTests.cs", "Test/ColorVision.UI.Tests/ServiceHostPipeServerTests.cs", "Test/ColorVision.UI.Tests/ColorVisionServiceHostServiceLifecycleTests.cs", "Test/ColorVision.UI.Tests/ServiceHostStartupStatusTests.cs", "Test/ColorVision.UI.Tests/ServiceHostApplicationUpdateAccessTests.cs"]
 related: ["platform.system", "platform.startup-integrity", "delivery.update", "delivery.update-scan-protection", "plugins.windows-service", "engine.shell-extension", "engine.mysql-recovery", "ui.socket-protocol"]
 ---
 
@@ -69,6 +69,22 @@ related: ["platform.system", "platform.startup-integrity", "delivery.update", "d
 
 ## 客户端超时与服务停止
 
+### 通用进程终止
+
+`IColorVisionServiceHostClient.TerminateProcessAsync` 通过既有 `SendAsync`、管道身份验证和单次权限票据调用 `process-terminate`。接口接收 PID、启动时间和可执行文件路径；服务端只允许结束固定清单中的目标程序：`ColorVision.exe`、`RegWindowsService.exe`、`CVMainWindowsService_x64.exe`、`CVMainWindowsService_dev.exe`、`mysqld.exe`、`mysql.exe`、`mosquitto.exe`。业务服务程序名复用 `ServiceHostCommandHandler.ServiceExecutableNames`，另允许主程序和 MySQL 客户端。新增程序需修改代码并更新服务，清单不限制安装目录。调用方负责选择目标；服务固定目标进程句柄并复核启动时间和实际路径，只结束该 PID，不结束进程树。代理自身不能通过此接口结束。
+
+白名单限制的是被结束的目标程序，不是调用程序的安装目录。移动 ColorVision 或使用便携目录不需要新增授信；调用者准入、票据和服务更新入口沿用前述契约，不增加指纹登记、证书或逐次 UAC。目标白名单限制操作范围，并未把原有文件名准入升级为发布者身份认证。
+
+`ProcessCommandService` 发出强制结束请求后最多等待 5 秒，只有确认进程退出才返回成功。`process_target_not_allowed` 表示目标程序不在白名单；`process_identity_mismatch` 表示目标身份不匹配；`process_still_running` 表示请求已发出但进程仍存活。请求携带 `notAfterUtcTicks`，服务在执行前拒绝过期请求或超过 30 秒的执行期限，防止客户端超时后遗留很晚才执行的结束请求。共享终止方法在实际结束前再次检查目标程序名，MySQL 清理等内部调用也不能绕过该清单。
+
+共享客户端为每次终止请求设置 10 秒期限。发送前取消不调用服务；发送后等待响应或期限，再把控制权交回调用方，已经发出的结束请求不能撤回。服务版本较旧、返回未知命令时，客户端复用现有 `self-update` 更新随包提供的权限服务，最多观察就绪 30 秒，确认 `status.supportsProcessTermination=true` 后再发送一次目标终止请求。不会通过此接口安装不存在的服务；服务不可用、更新失败或结束失败交由调用方显示处理结果。
+
+单实例启动只是该能力的一个调用方：它在直接结束遭遇访问拒绝后调用通用接口；旧实例筛选、多实例选择及窗口行为见[单实例启动恢复](../../00-getting-started/first-steps.md#旧进程未退出时重新启动)。白名单内的程序复用相同服务命令，清单外程序必须先更新服务中的白名单。
+
+服务管理器已有的 `TerminateServiceAsync` / `service-terminate` 保留协议兼容入口，内部复用 `ProcessCommandService.TerminateProcess`，并使用既有 `ServiceExecutableNames` 检查服务名及其对应的可执行文件名；未知服务或不匹配的程序返回 `service_target_not_allowed`。已注册服务按系统报告的服务 PID 选择目标，并核对注册可执行路径，避免按同名进程误伤另一安装或其它服务；白名单内未注册的残留程序仍按调用方提供的完整可执行路径选择。该兼容入口保留结束进程树的行为，按 `timeoutSeconds` 等待每个目标退出（默认 20 秒，限制为 5–180 秒），并复核服务是否仍运行；“停止服务”仍是独立的正常停止命令。MySQL 安装清理也复用同一终止实现，其业务目标选择仍由安装流程负责。服务安装、启停等其它命令的准入契约不由进程终止接口改变。
+
+### 通用发送与停止排空
+
 `ColorVisionServiceHostClient.SendAsync` 把同步pipe发送放入任务，再用延时和调用方取消令牌控制等待。已经进入同步发送后，取消/超时不会向服务端handler传递取消令牌；票据申请与实际命令各自的连接超时也不是业务整体执行期限。当前客户端反序列化响应后没有核对响应 `RequestId` 与请求一致，不能把这个字段当作已完成关联校验的保证。
 
 `ServiceHostPipeServer` 将通过准入门的命令以 `CancellationToken.None` 执行。客户端断开、超时或服务取消pipe I/O，都不等于命令取消；传输层没有自己的业务超时、自动回滚或请求去重。收到超时后应先确认实际完成阶段和目标状态，不能自动重试注册、复制、SQL或服务操作。
@@ -103,6 +119,7 @@ SCM启动会启动更新扫描保护 `ApplicationUpdateScanProtectionService`、
 
 - `ServiceHostStatusTests` 测试状态/决策对象、安装脚本文本和临时运行时文件夹；`ServiceHostLogReaderTests` 测试日志末段读取、旧中文编码和安装结果识别。它们不执行真实SCM安装或UAC自更新，也不验证管理窗口的现场操作。
 - `ServiceHostBrokerTicketTests` 检查两端命令分类、单次票据重放、命令/PID变化等；没有逐项验证SID/OperationId/hash变化、真实过期等待、签名或生产管道身份准入。
+- `ServiceHostProcessTerminationTests` 使用隔离本机管道连接真实 UI 客户端、票据签发和服务命令分派，覆盖精确 PID 终止及旧接口未知服务拒绝；其它用例覆盖白名单内程序、未知程序拒绝和不同目标目录。旧接口的进程匹配与终止步骤仅传入测试自己创建的进程，确认另一安装目录存活，不枚举现场业务服务。调用者身份为注入的测试身份；未覆盖生产 ACL、LocalSystem 提权、真实 SCM/WMI 服务发现或旧接口完整残留清理链路。
 - `ServiceHostPipeServerTests` 使用真实本机命名管道，但大部分用例注入恒成功身份解析和fake handler，绕过生产ACL创建；当前进程token读取测试也不是端到端调用者鉴权。
 - `ColorVisionServiceHostServiceLifecycleTests` 使用fake SCM、pipe和扫描保护、手动时钟，验证停止所有权、预算及释放；没有真实服务安装、LocalSystem运行或完整性监视器验收。其中 `SelfUpdateCallerKeepsOwnershipUntilServiceReallyStops` 只模拟 `stopped → copy → restart` 事件与所有权变量，不替换真实文件或执行更新脚本。
 - `ServiceHostStartupStatusTests` 手工构造调用上下文；`ServiceHostApplicationUpdateAccessTests` 包含对临时目录实际执行 `icacls` 的用例，不能把全部相关产品测试视为纯只读检查。

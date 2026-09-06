@@ -223,16 +223,26 @@ namespace ColorVision
                 allowMultipleInstances) == SingleInstanceStartupAction.ReplaceEarlierInstances)
             {
                 int closedInstanceCount;
+                bool openAdditionalInstance;
                 try
                 {
-                    closedInstanceCount = Update.ApplicationUpdateProcessCoordinator.CloseEarlierApplicationProcesses(
-                        SingleInstanceReplacementListener.TryRequestShutdown);
-                    if (!TryAcquireSingleInstanceMutex())
-                        throw new InvalidOperationException("Unable to acquire the single-instance mutex after closing earlier instances.");
+                    SingleInstanceStartupResult result = ReplaceEarlierInstancesForStartup(out closedInstanceCount);
+                    if (result == SingleInstanceStartupResult.Cancel)
+                    {
+                        StartupRegistryChecker.CompleteForRecoveryRestart();
+                        Environment.Exit(0);
+                        return;
+                    }
+                    openAdditionalInstance = result == SingleInstanceStartupResult.OpenAdditional;
                 }
                 catch (Exception ex)
                 {
                     log.Error("Unable to replace the earlier ColorVision instance.", ex);
+                    MessageBox.Show(
+                        "无法完成旧 ColorVision 实例的关闭，本次启动已停止。\n\n" +
+                        "请在任务管理器中检查 ColorVision 进程。详细原因已写入日志。",
+                        "ColorVision 无法启动", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    StartupRegistryChecker.CompleteForRecoveryRestart();
                     Environment.Exit(-1);
                     return;
                 }
@@ -244,7 +254,7 @@ namespace ColorVision
                     return;
                 }
 
-                if (closedInstanceCount > 0 || !ownsMutex)
+                if (!openAdditionalInstance && (closedInstanceCount > 0 || !ownsMutex))
                 {
                     try
                     {
@@ -275,9 +285,9 @@ namespace ColorVision
                     }
                 }
 
-                log.Info(
-                    $"Multiple-instance mode is disabled. Closed {closedInstanceCount} earlier " +
-                    "ColorVision instance(s) from the current installation.");
+                log.Info(openAdditionalInstance
+                    ? "User chose to open an additional ColorVision instance for this launch only."
+                    : $"Multiple-instance mode is disabled. Closed {closedInstanceCount} earlier ColorVision instance(s) from the current installation.");
             }
 
             configHandler.IsAutoSave = enableAutoSave;
@@ -435,6 +445,49 @@ namespace ColorVision
                     appConfig.IsMute = true;
                     ConfigHandler.GetInstance().Save<APPConfig>();
                 }
+            }
+        }
+
+        private SingleInstanceStartupResult ReplaceEarlierInstancesForStartup(out int closedInstanceCount)
+        {
+            Update.ApplicationUpdateProcessCoordinator.StartupReplacement? replacement = null;
+            int targetCount = 0;
+            try
+            {
+                try { replacement = Update.ApplicationUpdateProcessCoordinator.PrepareStartupReplacement(); }
+                catch (Exception ex) { log.Warn("Unable to inspect earlier instances; opening startup recovery.", ex); }
+
+                if (replacement?.ProcessIds.Count == 0 && TryAcquireSingleInstanceMutex())
+                    return SingleInstanceStartupResult.ClosedEarlierInstances;
+
+                ShutdownMode previousShutdownMode = ShutdownMode;
+                Window previousMainWindow = MainWindow;
+                ShutdownMode = ShutdownMode.OnExplicitShutdown;
+                try
+                {
+                    var window = new SingleInstanceStartupWindow(async (progress, cancellationToken) =>
+                    {
+                        replacement ??= await Task.Run(Update.ApplicationUpdateProcessCoordinator.PrepareStartupReplacement, cancellationToken);
+                        targetCount = replacement.ProcessIds.Count;
+                        await Task.Run(() => replacement.ForceCloseAsync(progress, cancellationToken));
+                        cancellationToken.ThrowIfCancellationRequested();
+                        // Mutex ownership must stay on the startup UI thread.
+                        if (!TryAcquireSingleInstanceMutex())
+                            throw new InvalidOperationException("旧进程已检查，但单实例锁仍被占用。可重试结束或直接打开。");
+                    }, replacement == null ? string.Empty : string.Join("、", replacement.ProcessIds));
+                    window.ShowDialog();
+                    return window.Result;
+                }
+                finally
+                {
+                    MainWindow = previousMainWindow;
+                    ShutdownMode = previousShutdownMode;
+                }
+            }
+            finally
+            {
+                closedInstanceCount = targetCount;
+                replacement?.Dispose();
             }
         }
 

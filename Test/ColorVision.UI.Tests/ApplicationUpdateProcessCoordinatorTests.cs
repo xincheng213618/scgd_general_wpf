@@ -175,7 +175,8 @@ namespace ColorVision.UI.Tests
                     currentProcess.SessionId,
                     currentProcess.StartTime.ToUniversalTime(),
                     gracefulShutdownTimeout: TimeSpan.Zero,
-                    requestClose: _ => SingleInstanceCloseRequestResult.Rejected));
+                    requestClose: _ => SingleInstanceCloseRequestResult.Rejected,
+                    confirmTermination: _ => throw new InvalidOperationException("A declined close must not offer termination.")));
 
             Assert.Contains("declined", exception.Message);
             Assert.False(earlierProcess.HasExited);
@@ -239,6 +240,155 @@ namespace ColorVision.UI.Tests
             Assert.Contains("no safe close endpoint", exception.Message);
             Assert.False(earlierProcess.HasExited);
             Assert.False(currentProcess.HasExited);
+        }
+
+        [Theory]
+        [InlineData(SingleInstanceCloseRequestResult.Unavailable)]
+        [InlineData(SingleInstanceCloseRequestResult.TimedOut)]
+        [InlineData(SingleInstanceCloseRequestResult.Accepted)]
+        public void ConfirmedRecoveryOnlyTerminatesEarlierProcessFromSameInstallation(SingleInstanceCloseRequestResult response)
+        {
+            string installationA = Path.Combine(_rootDirectory, "InstallationA");
+            string installationB = Path.Combine(_rootDirectory, "InstallationB");
+            Directory.CreateDirectory(installationA);
+            Directory.CreateDirectory(installationB);
+            string executableA = Path.Combine(installationA, "ColorVisionProcessProbe.exe");
+            string executableB = Path.Combine(installationB, "ColorVisionProcessProbe.exe");
+            File.Copy(Path.Combine(Environment.SystemDirectory, "ping.exe"), executableA);
+            File.Copy(Path.Combine(Environment.SystemDirectory, "ping.exe"), executableB);
+            Process earlierProcess = StartProbe(executableA);
+            Process otherInstallationProcess = StartProbe(executableB);
+            Thread.Sleep(100);
+            Process currentProcess = StartProbe(executableA);
+            Thread.Sleep(100);
+            Process laterProcess = StartProbe(executableA);
+            int confirmations = 0;
+
+            int closed = ApplicationUpdateProcessCoordinator.CloseEarlierApplicationProcesses(
+                executableA, currentProcess.Id, currentProcess.SessionId, currentProcess.StartTime.ToUniversalTime(),
+                gracefulShutdownTimeout: TimeSpan.Zero, requestClose: _ => response,
+                confirmTermination: processId =>
+                {
+                    confirmations++;
+                    Assert.Equal(earlierProcess.Id, processId);
+                    Assert.False(earlierProcess.HasExited);
+                    return true;
+                });
+
+            Assert.Equal(1, closed);
+            Assert.Equal(1, confirmations);
+            Assert.True(earlierProcess.WaitForExit(5000));
+            Assert.False(currentProcess.HasExited);
+            Assert.False(laterProcess.HasExited);
+            Assert.False(otherInstallationProcess.HasExited);
+        }
+
+        [Fact]
+        public void DecliningRecoveryPreservesEarlierProcess()
+        {
+            string executablePath = Path.Combine(_rootDirectory, "ColorVisionProcessProbe.exe");
+            File.Copy(Path.Combine(Environment.SystemDirectory, "ping.exe"), executablePath);
+            Process earlierProcess = StartProbe(executablePath);
+            Thread.Sleep(100);
+            Process currentProcess = StartProbe(executablePath);
+
+            Assert.Throws<OperationCanceledException>(() => ApplicationUpdateProcessCoordinator.CloseEarlierApplicationProcesses(
+                executablePath, currentProcess.Id, currentProcess.SessionId, currentProcess.StartTime.ToUniversalTime(),
+                gracefulShutdownTimeout: TimeSpan.Zero, requestClose: _ => SingleInstanceCloseRequestResult.TimedOut,
+                confirmTermination: _ => false));
+
+            Assert.False(earlierProcess.HasExited);
+            Assert.False(currentProcess.HasExited);
+        }
+
+        [Fact]
+        public void RecoveryHandlesProcessExitingDuringConfirmation()
+        {
+            string executablePath = Path.Combine(_rootDirectory, "ColorVisionProcessProbe.exe");
+            File.Copy(Path.Combine(Environment.SystemDirectory, "ping.exe"), executablePath);
+            Process earlierProcess = StartProbe(executablePath);
+            Thread.Sleep(100);
+            Process currentProcess = StartProbe(executablePath);
+
+            int closed = ApplicationUpdateProcessCoordinator.CloseEarlierApplicationProcesses(
+                executablePath, currentProcess.Id, currentProcess.SessionId, currentProcess.StartTime.ToUniversalTime(),
+                gracefulShutdownTimeout: TimeSpan.Zero, requestClose: _ => SingleInstanceCloseRequestResult.TimedOut,
+                confirmTermination: _ =>
+                {
+                    earlierProcess.Kill();
+                    Assert.True(earlierProcess.WaitForExit(5000));
+                    return true;
+                });
+
+            Assert.Equal(1, closed);
+            Assert.False(currentProcess.HasExited);
+        }
+
+        [Fact]
+        public async Task InteractiveStartupForcesWindowlessOlderProcessesAndPreservesOtherInstances()
+        {
+            string executablePath = Path.Combine(_rootDirectory, "ColorVisionProcessProbe.exe");
+            File.Copy(Path.Combine(Environment.SystemDirectory, "ping.exe"), executablePath);
+            string otherDirectory = Path.Combine(_rootDirectory, "Other");
+            Directory.CreateDirectory(otherDirectory);
+            string otherExecutable = Path.Combine(otherDirectory, "ColorVisionProcessProbe.exe");
+            File.Copy(executablePath, otherExecutable);
+
+            Process old = StartProbe(executablePath);
+            Process other = StartProbe(otherExecutable);
+            Thread.Sleep(100);
+            Process current = StartProbe(executablePath);
+            Thread.Sleep(100);
+            Process newer = StartProbe(executablePath);
+            Assert.Equal(IntPtr.Zero, old.MainWindowHandle);
+
+            using var differentSession = ApplicationUpdateProcessCoordinator.PrepareStartupReplacement(
+                executablePath, current.Id, current.SessionId + 1, current.StartTime.ToUniversalTime());
+            Assert.Empty(differentSession.ProcessIds);
+            using var replacement = ApplicationUpdateProcessCoordinator.PrepareStartupReplacement(
+                executablePath, current.Id, current.SessionId, current.StartTime.ToUniversalTime());
+            Assert.Equal(old.Id, Assert.Single(replacement.ProcessIds));
+
+            await replacement.ForceCloseAsync(new Progress<string>(), CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(10));
+
+            Assert.True(old.HasExited);
+            Assert.False(current.HasExited);
+            Assert.False(newer.HasExited);
+            Assert.False(other.HasExited);
+        }
+
+        [Fact]
+        public async Task InteractiveStartupCancellationPreservesProcessesNotYetTerminated()
+        {
+            string executablePath = Path.Combine(_rootDirectory, "ColorVisionProcessProbe.exe");
+            File.Copy(Path.Combine(Environment.SystemDirectory, "ping.exe"), executablePath);
+            Process old = StartProbe(executablePath);
+            using var replacement = ApplicationUpdateProcessCoordinator.PrepareStartupReplacement(
+                executablePath, -1, old.SessionId, old.StartTime.ToUniversalTime().AddSeconds(1));
+            using var cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => replacement.ForceCloseAsync(new Progress<string>(), cancellation.Token));
+            Assert.False(old.HasExited);
+        }
+
+        [Fact]
+        public async Task TerminationWaitReportsTimeoutWhileTheProcessStillExists()
+        {
+            string executablePath = Path.Combine(_rootDirectory, "ColorVisionProcessProbe.exe");
+            File.Copy(Path.Combine(Environment.SystemDirectory, "ping.exe"), executablePath);
+            Process old = StartProbe(executablePath);
+
+            TimeoutException error = await Assert.ThrowsAsync<TimeoutException>(() =>
+                ApplicationUpdateProcessCoordinator.WaitForForcedExitAsync(old, TimeSpan.FromMilliseconds(100), CancellationToken.None));
+
+            Assert.Contains(old.Id.ToString(), error.Message);
+            Assert.False(old.HasExited);
+            using var cancellation = new CancellationTokenSource();
+            Task wait = ApplicationUpdateProcessCoordinator.WaitForForcedExitAsync(old, TimeSpan.FromSeconds(5), cancellation.Token);
+            cancellation.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => wait);
+            Assert.False(old.HasExited);
         }
 
         private Process StartProbe(string executablePath)

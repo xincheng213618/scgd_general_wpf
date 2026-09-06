@@ -3,9 +3,9 @@ knowledge_id: "operations.first-run"
 knowledge_type: "guide"
 status: "current"
 summary: "主程序启动的配置、实例和服务副作用，以及隔离测试环境中的最小本地图像验证。"
-aliases: ["首次启动","快速上手","试用","最小闭环","无硬件验证","打不开程序","插件未加载","普通图片启动","PNG","JPEG","TIFF","StartupFileOpenPolicy","WizardCompletionKey"]
-code_paths: ["ColorVision/App.xaml.cs","ColorVision/StartWindow.xaml.cs","ColorVision/StartupFileOpenPolicy.cs","ColorVision/SingleInstanceStartupPolicy.cs","UI/ColorVision.UI/Update/ApplicationUpdateProcessCoordinator.cs","UI/ColorVision.UI/ConfigHandler.cs","UI/ColorVision.UI/Plugins/PluginLoader.cs","UI/ColorVision.UI/FileProcessorFactory.cs","UI/ColorVision.Solution/Editor/ImageEditor.cs","Engine/ColorVision.Engine/MySqlInitializer.cs","Engine/ColorVision.Engine/MQTT/MqttInitializer.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/StartupRecoveryPluginScannerTests.cs","Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs","Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs","Test/ColorVision.UI.Tests/CommonImageOpenDecodeTests.cs"]
+aliases: ["首次启动","快速上手","试用","最小闭环","无硬件验证","打不开程序","旧进程卡死","单实例启动恢复","no safe close endpoint","SingleInstanceReplacementListener","插件未加载","普通图片启动","PNG","JPEG","TIFF","StartupFileOpenPolicy","WizardCompletionKey"]
+code_paths: ["ColorVision/App.xaml.cs","ColorVision/MainWindow.xaml.cs","ColorVision/StartWindow.xaml.cs","ColorVision/StartupFileOpenPolicy.cs","ColorVision/SingleInstanceStartupPolicy.cs", "ColorVision/SingleInstanceStartupCoordinator.cs", "ColorVision/SingleInstanceStartupWindow.xaml", "ColorVision/SingleInstanceStartupWindow.xaml.cs", "UI/ColorVision.UI/Update/ApplicationUpdateProcessCoordinator.Startup.cs","ColorVision/SingleInstanceReplacementListener.cs","UI/ColorVision.UI/Update/ApplicationUpdateProcessCoordinator.cs","UI/ColorVision.UI/ConfigHandler.cs","UI/ColorVision.UI/Plugins/PluginLoader.cs","UI/ColorVision.UI/FileProcessorFactory.cs","UI/ColorVision.Solution/Editor/ImageEditor.cs","Engine/ColorVision.Engine/MySqlInitializer.cs","Engine/ColorVision.Engine/MQTT/MqttInitializer.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/StartupRecoveryPluginScannerTests.cs","Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs", "Test/ColorVision.UI.Tests/SingleInstanceStartupCoordinatorTests.cs", "Test/ColorVision.UI.Tests/SingleInstanceStartupWindowTests.cs","Test/ColorVision.UI.Tests/ApplicationUpdateProcessCoordinatorTests.cs","Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs","Test/ColorVision.UI.Tests/CommonImageOpenDecodeTests.cs"]
 related: ["delivery.prerequisites","platform.runtime","ui.configuration","ui.wizards","ui.image-editor"]
 ---
 
@@ -21,6 +21,24 @@ related: ["delivery.prerequisites","platform.runtime","ui.configuration","ui.wiz
 - 启动还可能连接已配置的服务并产生系统级副作用：`MySqlInitializer` 会连接数据库，连接失败且主机为本地时可通过 `ColorVisionServiceHost` 尝试启动或修复 MySQL 服务；`MqttInitializer` 可连接 MQTT 并尝试启动本地 `mosquitto`。没有设备不代表没有这些副作用。
 
 若当前任务只允许阅读或本地构建，不执行后续启动步骤；文档示例本身不构成运行授权。
+
+## 旧进程未退出时重新启动
+
+未附加调试器且不允许多实例时，重新打开会直接强制结束同一 Windows 会话、同安装路径且启动时间较早的 ColorVision 进程，包括没有前台窗口的残留进程。存在旧进程时显示“正在关闭旧程序”，逐个结束并确认退出后继续当前新实例的启动，不再额外重开一个进程。允许多实例时跳过这一步。
+
+结束前重新核对 PID 和启动时间并固定进程句柄，只结束核对过的进程，不结束进程树、其它安装副本、其它会话或启动更晚的实例。强制结束会中断任务，可能丢失未保存数据；它不经过旧窗口的保存或取消确认。普通关闭按钮仍走原有关闭流程，不增加恢复窗口或清理工作。
+
+发出结束请求后，每个进程最多等待退出 5 秒。直接结束遭遇“拒绝访问”时，先通过现有 ColorVision 服务主机补救，窗口显示服务处理进度。服务复用通用进程终止接口，再核对 PID、启动时间和路径；旧版服务缺少该接口时先尝试随包自更新。服务也无法结束、服务不可用、检查失败或进程仍未退出时，窗口才显示最终失败原因和进程号，并记录日志。结束命令返回不代表进程已经退出，不能据此继续单实例接替。
+
+| 操作 | 结果 |
+| --- | --- |
+| 重试结束 | 再次结束仍存活的目标，确认全部退出并取得单实例锁后继续启动 |
+| 直接打开 | 停止后续结束操作并等待当前操作收尾，本次允许多开；不修改“允许多实例”设置。旧进程可能仍占用端口或设备 |
+| 取消启动或关闭窗口 | 停止后续结束操作，收尾后停止本次启动。已经发出的强制结束请求不能撤回 |
+
+权限代理失败时，先检查帮助菜单中的 ColorVision 服务主机，也可使用管理员任务管理器按 PID 结束旧进程后重试。若管理员任务管理器也无法结束，保存其它工作后重启 Windows；未完成或未取消的底层 I/O 可能阻止进程退出，参见 [Windows TerminateProcess 说明](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-terminateprocess)。这些是处理建议，服务不可用、身份检查失败等不等于 I/O 阻塞，具体阻塞原因仍需事发线程栈或 Dump，“布局已保存”不能证明进程已经退出。
+
+验证正常路径时，使用测试安装目录，关闭“允许多实例”，先启动一个实例再启动第二个，核对旧 PID 消失且新窗口继续打开。验证服务提权路径时，可先以管理员身份启动测试副本，再从普通权限的资源管理器打开同一路径；普通权限的新进程直接结束遭拒后应通过权限服务结束旧进程并继续启动。只有服务补救也失败才显示上述三个选项。此方法覆盖访问拒绝后的服务补救，不等于复现驱动或内核阻塞；服务故障和超时提示可用隔离替身测试。
 
 ## 进入主窗口
 

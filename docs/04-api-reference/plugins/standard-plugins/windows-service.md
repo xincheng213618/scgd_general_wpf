@@ -22,6 +22,7 @@ related: ["plugins.index", "plugins.getting-started", "delivery.cvwindowsservice
 - `MenuServiceManager` 在“帮助 > 服务管理器”提供常用快捷入口，`ServiceManagerAppProvider` 在“应用与工具 > 内部工具”提供另一入口；两者打开同一非模态窗口并要求应用内 `PermissionMode.Administrator`。这不是Windows提权、目录ACL或后台代理授权已通过的证明。
 - `InstallServiceManager` 是向导步骤，打开模态窗口；`ConfigurationStatus` 仅检查BaseLocation非空且目录存在，不检查数据库、服务安装或健康。首次向导另有 `ServiceManagerWizardInitializer` 的导入/手动/跳过选择。
 - `ServiceHostWindowsServiceController` 将安装/卸载/启停交给 `ColorVisionServiceHostClient`，返回bool并记录代理缺失、旧版本或失败。执行仍需兼容的代理及服务、文件、数据库权限。
+- “终止”沿用已有客户端入口，服务端已接入[通用进程终止](../../../03-architecture/components/service-host.md#通用进程终止)。服务端检查固定服务名和对应程序名白名单：已注册服务按系统 PID 和注册路径定位，清单内未注册残留仍按完整路径定位；进程树结束后仍核对服务状态，正常“停止”是另一条操作。白名单不固定程序所在目录，不增加调用方授信步骤。
 - 项目虽为WinExe，当前 `App.Application_Startup` 初始化配置/日志/主题、加载Engine后即Shutdown，不是另一套独立服务管理器交付入口。
 
 安装、SQL、备份恢复、外部工具启动和进程关闭均须明确目标与授权。查看主题或下载元数据不授权这些动作；配置和日志可能含敏感内容，不为排障打印实际密码或完整配置。
