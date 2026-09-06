@@ -44,7 +44,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.PropertyEditor
 {
-    internal static class FlowNodePropertyEditorRegistration
+    public static class FlowNodePropertyEditorRegistration
     {
         private const string SmuRangeNumberFormat = "0.0################";
 

@@ -4,7 +4,7 @@ knowledge_type: "reference"
 status: "current"
 summary: "说明 ST WPF 节点画布、端口、类型目录及 STN 兼容边界。"
 aliases: ["Flow画布加载后节点丢失","ST.Library.UI","STNodeEditor","EnableWindowResizeDiagnostics","BeginResizeDiagnosticCapture","STNodeTypeRegistry","CVNodeContainer"]
-code_paths: ["Engine/ST.Library.UI/README.md","Engine/ST.Library.UI/ST.Library.UI.csproj","Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs","Engine/ST.Library.UI/NodeEditor/STNodeEditor.ResizeDiagnostics.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/ST.Library.UI/NodeContainer/CVNodeContainer.cs"]
+code_paths: ["Engine/ST.Library.UI/README.md","Engine/ST.Library.UI/ST.Library.UI.csproj","Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs","Engine/ST.Library.UI/NodeEditor/STNodeCanvasSnapshot.cs","Engine/ST.Library.UI/NodeEditor/STNodeEditor.ResizeDiagnostics.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/ST.Library.UI/NodeContainer/CVNodeContainer.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/STNodeEditorWpfTests.cs","Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs","Test/ColorVision.UI.Tests/STNodeEditorResizeDiagnosticsTests.cs","Test/ColorVision.UI.Tests/STNodeTypeRegistryConcurrencyTests.cs"]
 related: ["flow.architecture","flow.runtime","flow.workspace","operations.main-window"]
 ---
@@ -36,6 +36,7 @@ related: ["flow.architecture","flow.runtime","flow.workspace","operations.main-w
 | WPF 节点目录 | `STNodeTreeView` | 节点类型发现、程序集加载、搜索、拖放、预览和过时类型过滤 |
 | WPF 组合面板 | `STNodeEditorPannel` | 用 `GridSplitter` 组合目录、画布和属性面板，保留历史类型名 |
 | 画布加载 | `CVNodeContainer.LoadCanvas(...)` | 从文件、`byte[]`、`Stream` 恢复节点、属性、位置和连线 |
+| 配置快照 | `STNodeEditor.ReadCanvasSnapshot(...)` | 构造节点并加载持久化属性，但不连接端口、不挂入编辑器、不调用 `OnEditorLoadCompleted()`；用后需释放快照 |
 
 ## WPF 呈现与兼容
 
@@ -100,6 +101,7 @@ related: ["flow.architecture","flow.runtime","flow.workspace","operations.main-w
 | 属性描述 | `NodeEditor/STNodePropertyGrid.cs` |
 | 节点目录 | `NodeEditor/STNodeTreeView.cs` |
 | 画布加载 | `NodeContainer/CVNodeContainer.cs` |
+| 脱离编辑器读取配置 | `NodeEditor/STNodeCanvasSnapshot.cs` |
 
 ## 验证入口与缺口
 

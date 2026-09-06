@@ -359,6 +359,9 @@ next: false
 
 ## Engine/ST.Library.UI {#module-456e67696e652f53542e4c6962726172792e5549}
 
+- [配置 ARVRPro 流程、解析映射与 Recipe](../../04-api-reference/projects/project-arvr-pro-processes.md) — `projects.arvr-pro-processes`
+  配置 ARVRPro 流程组、流程解析映射、实例 Recipe、外部相机参数与雷鸟切图，说明运行时覆盖、结果快照、配置保存和有效迁移规则。
+
 - [ST.Library.UI](../../04-api-reference/engine-components/ST.Library.UI.md) — `flow.editor`
   说明 ST WPF 节点画布、端口、类型目录及 STN 兼容边界。
 

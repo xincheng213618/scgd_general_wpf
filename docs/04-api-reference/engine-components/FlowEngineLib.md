@@ -42,6 +42,8 @@ related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","f
 
 `BaseStartNode.RequiresConnectionReady` 默认是 `false`，因此不能统一要求所有本地开始节点的 `Ready` 为真；要求连接的开始节点才通过 `Ready` 门禁。`CanAcceptStart` 还要求开始输出已连线。服务节点的 `getActionEvent` / `getBaseEvent` 构造请求，再由 `DoTransferToServer` 转交发送链；它不是通用的本地 `DoServerWork` / `GetInputData<T>` / `SetOutputData` 示例接口。扩展方式见[节点扩展契约](../extensions/flow-node.md)。
 
+`BaseStartNode` 实现 `IDisposable`；脱离 `FlowEngineControl` 构造开始节点的读取器也必须在读取后释放节点。
+
 ## 核心节点
 
 | 节点/基类 | 重点 |

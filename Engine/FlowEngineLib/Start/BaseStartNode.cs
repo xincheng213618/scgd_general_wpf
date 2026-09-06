@@ -13,7 +13,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Start;
 
-public abstract class BaseStartNode : CVCommonNode
+public abstract class BaseStartNode : CVCommonNode, IDisposable
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(BaseStartNode));
 
@@ -526,6 +526,7 @@ public abstract class BaseStartNode : CVCommonNode
 			Interlocked.Increment(ref topicSubscriptionVersion);
 		}
 		Ready = false;
+		GC.SuppressFinalize(this);
 	}
 
 	public void FireFinished(CVStartCFC startAction)

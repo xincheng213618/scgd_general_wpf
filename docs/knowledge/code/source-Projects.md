@@ -28,7 +28,7 @@ next: false
   数据库维护窗口与provider能力：表统计不是删除预览；备份默认关闭，备份和清理不是事务且失败不自动恢复；清理、手动优化和迁移边界彼此独立。
 
 - [配置 ARVRPro 流程、解析映射与 Recipe](../../04-api-reference/projects/project-arvr-pro-processes.md) — `projects.arvr-pro-processes`
-  配置 ARVRPro 流程组、流程解析映射、实例 Recipe 与雷鸟切图，说明类型选择、结果快照、配置保存和有效迁移规则。
+  配置 ARVRPro 流程组、流程解析映射、实例 Recipe、外部相机参数与雷鸟切图，说明运行时覆盖、结果快照、配置保存和有效迁移规则。
 
 - [ProjectARVRPro](../../04-api-reference/projects/project-arvr-pro.md) — `projects.arvr-pro`
   ARVRPro 项目入口、Socket 自动化、输出与历史结果查询；流程组、实例 Recipe 和 Demura 各有对应操作主题。

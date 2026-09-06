@@ -31,6 +31,24 @@ public sealed class FlowRuntimeEstimateCacheTests
     }
 
     [Fact]
+    public void RuntimeVariantsDoNotShareEstimateForTheSameTemplateAndCanvas()
+    {
+        var cache = new FlowRuntimeEstimateCache();
+        var first = new FlowRuntimeEstimateKey("White51", "canvas-v1", "exposure=15");
+        var second = new FlowRuntimeEstimateKey("White51", "canvas-v1", "exposure=100");
+
+        cache.RecordCompleted(first, 2000);
+
+        Assert.Equal(2000, cache.GetElapsed(first));
+        Assert.Equal(0, cache.GetElapsed(second));
+
+        cache.RecordCompleted(second, 3000);
+
+        Assert.Equal(0, cache.GetElapsed(first));
+        Assert.Equal(3000, cache.GetElapsed(second));
+    }
+
+    [Fact]
     public void InvalidDurationsDoNotReplaceTheLastCompletedEstimate()
     {
         var cache = new FlowRuntimeEstimateCache();

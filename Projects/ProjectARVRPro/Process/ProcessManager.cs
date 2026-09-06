@@ -779,7 +779,8 @@ namespace ProjectARVRPro.Process
                 Process = process,
                 IsEnabled = source.IsEnabled,
                 ConfigJson = configJson,
-                PictureSwitchConfig = source.PictureSwitchConfig.Clone()
+                PictureSwitchConfig = source.PictureSwitchConfig.Clone(),
+                FlowCameraParameterOverrideConfig = source.FlowCameraParameterOverrideConfig.Clone()
             };
         }
 
@@ -885,6 +886,9 @@ namespace ProjectARVRPro.Process
             }
 
             IProcess newProcessInstance = CreateConfiguredProcess(dialog.SelectedProcess, out string configJson);
+            if (!string.Equals(meta.FlowTemplate, dialog.SelectedTemplate.Key, StringComparison.OrdinalIgnoreCase))
+                meta.FlowCameraParameterOverrideConfig = new FlowCameraParameterOverrideConfig();
+
             meta.Name = dialog.MetaName;
             meta.FlowTemplate = dialog.SelectedTemplate.Key;
             meta.IsEnabled = dialog.IsMetaEnabled;
@@ -1015,6 +1019,16 @@ namespace ProjectARVRPro.Process
         public ProcessMeta? FindProcessMetaForTemplate(string flowTemplate)
         {
             return ResultProcessResolver.FindMapping(flowTemplate, ProcessMetas, ResultParserMetas);
+        }
+
+        public ProcessMeta? FindUniqueProcessMetaForTemplate(string flowTemplate)
+        {
+            ProcessMeta[] matches = ProcessMetas
+                .Where(meta => meta.Process != null
+                    && string.Equals(meta.FlowTemplate, flowTemplate, StringComparison.OrdinalIgnoreCase))
+                .Take(2)
+                .ToArray();
+            return matches.Length == 1 ? matches[0] : null;
         }
 
         public IEnumerable<ProcessMeta> GetResultProcessMappings()
@@ -1254,7 +1268,8 @@ namespace ProjectARVRPro.Process
                 Process = proc,
                 IsEnabled = item.IsEnabled,
                 ConfigJson = item.ConfigJson,
-                PictureSwitchConfig = item.PictureSwitchConfig ?? new PictureSwitchConfig()
+                PictureSwitchConfig = item.PictureSwitchConfig ?? new PictureSwitchConfig(),
+                FlowCameraParameterOverrideConfig = item.FlowCameraParameterOverrideConfig ?? new FlowCameraParameterOverrideConfig()
             };
 
             meta.ApplyConfig();
@@ -1381,7 +1396,8 @@ namespace ProjectARVRPro.Process
                 ProcessTypeFullName = meta.Process?.GetType().FullName ?? string.Empty,
                 IsEnabled = meta.IsEnabled,
                 ConfigJson = GetProcessConfigJson(meta),
-                PictureSwitchConfig = meta.PictureSwitchConfig.Clone()
+                PictureSwitchConfig = meta.PictureSwitchConfig.Clone(),
+                FlowCameraParameterOverrideConfig = meta.FlowCameraParameterOverrideConfig.Clone()
             };
         }
 

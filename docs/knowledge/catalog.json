@@ -5553,6 +5553,7 @@
         "Engine/ST.Library.UI/README.md",
         "Engine/ST.Library.UI/ST.Library.UI.csproj",
         "Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs",
+        "Engine/ST.Library.UI/NodeEditor/STNodeCanvasSnapshot.cs",
         "Engine/ST.Library.UI/NodeEditor/STNodeEditor.ResizeDiagnostics.cs",
         "Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs",
         "Engine/ST.Library.UI/NodeContainer/CVNodeContainer.cs"
@@ -8589,12 +8590,16 @@
       "knowledge_id": "projects.arvr-pro-processes",
       "knowledge_type": "guide",
       "status": "current",
-      "summary": "配置 ARVRPro 流程组、流程解析映射、实例 Recipe 与雷鸟切图，说明类型选择、结果快照、配置保存和有效迁移规则。",
+      "summary": "配置 ARVRPro 流程组、流程解析映射、实例 Recipe、外部相机参数与雷鸟切图，说明运行时覆盖、结果快照、配置保存和有效迁移规则。",
       "aliases": [
         "ARVR 流程组",
         "流程解析映射",
         "ARVR Recipe",
         "实例 Recipe",
+        "外部相机参数",
+        "相机参数覆盖",
+        "FlowCameraParameterOverrideConfig",
+        "ReadCanvasSnapshot",
         "雷鸟切图",
         "PictureSwitchConfig",
         "ProcessWithRecipeBase",
@@ -8611,9 +8616,11 @@
         "Projects/ProjectARVRPro/Process",
         "Projects/ProjectARVRPro/Recipe",
         "Projects/ProjectARVRPro/Services/PictureSwitchService.cs",
-        "Projects/ProjectARVRPro/ARVRWindow.xaml.cs"
+        "Projects/ProjectARVRPro/ARVRWindow.xaml.cs",
+        "Engine/ST.Library.UI/NodeEditor/STNodeCanvasSnapshot.cs"
       ],
       "test_paths": [
+        "Test/ProjectARVRPro.Tests/FlowCameraParameterOverrideServiceTests.cs",
         "Test/ProjectARVRPro.Tests/ProcessManagerPersistenceTests.cs",
         "Test/ProjectARVRPro.Tests/EmbeddedRecipeConfigTests.cs",
         "Test/ProjectARVRPro.Tests/LegacyRecipeImporterTests.cs",
@@ -8627,6 +8634,7 @@
         "ui.property-grid"
       ],
       "code_scopes": [
+        "Engine/ST.Library.UI",
         "Projects/ProjectARVRPro"
       ],
       "domain": "projects",

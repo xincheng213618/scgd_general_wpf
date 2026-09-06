@@ -61,6 +61,8 @@ public interface IPropertyEditor
 
 属性级选择使用 `[PropertyEditorType(typeof(MyEditor))]`；`MyEditor` 在此只是占位类型名，实际实现应从现有编辑器复制必要模式。可参考 `Editor/TextSelectFilePropertiesEditor.cs`：每次调用创建新面板，使用 `CreateLabel`、`CreateTwoWayBinding(obj, property)` 和共享小控件样式。
 
+`FlowCalibrationTemplateEditor` 等 Flow 占位编辑器的具体工厂由 Engine 注册。`FlowEditorCanvas` 会自动完成注册；其他宿主若直接复用这些编辑器，应先调用公开的 `FlowNodePropertyEditorRegistration.EnsureRegistered()`，否则代理会退回普通文本框。
+
 类型级注册通过 `PropertyEditorHelper.RegisterEditor<TEditor>(typeof(TargetType))` 或匹配谓词完成。注册不是给每个对象存一份编辑器实例；通用注册表按编辑器类型缓存实例，编辑器必须可构造并实现 `IPropertyEditor`。
 
 ## 选择顺序与失败行为

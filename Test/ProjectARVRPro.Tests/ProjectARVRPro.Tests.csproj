@@ -25,6 +25,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Shared\StaTest.cs" Link="StaTest.cs" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\Projects\ProjectARVRPro\ProjectARVRPro.csproj" />
   </ItemGroup>
 

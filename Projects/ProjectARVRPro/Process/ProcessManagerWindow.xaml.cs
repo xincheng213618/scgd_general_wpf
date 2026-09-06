@@ -1,8 +1,13 @@
 ﻿#pragma warning disable CA1822,CA1859,CS8622,CS8625
+using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.FlowProcessing.PreProcess;
+using ColorVision.Engine.PropertyEditor;
 using ColorVision.Themes;
 using ColorVision.UI;
+using FlowEngineLib;
+using FlowEngineLib.Start;
 using Newtonsoft.Json;
+using ST.Library.UI.NodeEditor;
 using System.ComponentModel;
 using System.Reflection;
 using System.Windows;
@@ -27,9 +32,15 @@ namespace ProjectARVRPro.Process
         private ProcessMeta? _draggedProcessMeta;
         private ScrollViewer? _processListScrollViewer;
 
+        private readonly record struct CameraOverrideSnapshot(
+            float ExposureTimeMs,
+            string CalibrationTemplateName,
+            string DeviceCode);
+
         public ProcessManagerWindow()
         {
             InitializeComponent();
+            FlowNodePropertyEditorRegistration.EnsureRegistered();
             this.ApplyCaption();
             Closing += Window_Closing;
         }
@@ -314,6 +325,7 @@ namespace ProjectARVRPro.Process
                 AddPlaceholderText(PictureSwitchPanel);
                 AddPlaceholderText(ResultRecipePanel, "请选择一个解析映射");
                 AddPlaceholderText(ResultProcessPanel, "请选择一个解析映射");
+                RefreshCameraOverridePanel(null);
                 return;
             }
 
@@ -329,6 +341,7 @@ namespace ProjectARVRPro.Process
             }
 
             bool isResultParser = ReferenceEquals(selectedMeta, manager?.SelectedResultParserMeta);
+            RefreshCameraOverridePanel(isResultParser ? null : selectedMeta);
             StackPanel processPanel = isResultParser ? ResultProcessPanel : ProcessPanel;
             StackPanel recipePanel = isResultParser ? ResultRecipePanel : RecipePanel;
 
@@ -368,6 +381,136 @@ namespace ProjectARVRPro.Process
                 AddPictureSwitchConfigToPanel(selectedMeta.PictureSwitchConfig, PictureSwitchPanel);
         }
 
+        private void CameraOverrideCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not ProcessManager manager || manager.SelectedProcessMeta is not ProcessMeta meta)
+                return;
+
+            if (CameraOverrideCheckBox.IsChecked == true)
+            {
+                var config = new FlowCameraParameterOverrideConfig { IsEnabled = true };
+                string? status = null;
+                if (TryReadCameraOverrideSnapshot(meta, out CameraOverrideSnapshot snapshot, out string reason))
+                {
+                    config.ExposureTimeMs = snapshot.ExposureTimeMs;
+                    config.CalibrationTemplateName = snapshot.CalibrationTemplateName;
+                    config.SetEditorDeviceCode(snapshot.DeviceCode);
+                }
+                else
+                {
+                    status = reason;
+                }
+
+                meta.FlowCameraParameterOverrideConfig = config;
+                UpdateCameraOverrideControls(meta, status);
+            }
+            else
+            {
+                meta.FlowCameraParameterOverrideConfig = new FlowCameraParameterOverrideConfig();
+                UpdateCameraOverrideControls(meta, null);
+            }
+        }
+
+        private void RefreshCameraOverridePanel(ProcessMeta? meta)
+        {
+            string? status = null;
+            if (meta?.FlowCameraParameterOverrideConfig.IsEnabled == true)
+            {
+                if (TryReadCameraOverrideSnapshot(meta, out CameraOverrideSnapshot snapshot, out string reason))
+                    meta.FlowCameraParameterOverrideConfig.SetEditorDeviceCode(snapshot.DeviceCode);
+                else
+                    status = reason;
+            }
+
+            UpdateCameraOverrideControls(meta, status);
+        }
+
+        private void UpdateCameraOverrideControls(ProcessMeta? meta, string? status)
+        {
+            if (!IsInitialized)
+                return;
+
+            bool isEnabled = meta?.FlowCameraParameterOverrideConfig.IsEnabled == true;
+            CameraOverrideCheckBox.IsEnabled = meta != null;
+            CameraOverrideCheckBox.Visibility = meta != null ? Visibility.Visible : Visibility.Collapsed;
+            CameraOverrideCheckBox.IsChecked = isEnabled;
+            CameraOverridePanel.Visibility = isEnabled ? Visibility.Visible : Visibility.Collapsed;
+            CameraOverrideEditorPanel.Children.Clear();
+            CameraOverrideStatusText.Text = status ?? string.Empty;
+            CameraOverrideStatusText.Visibility = string.IsNullOrEmpty(status) ? Visibility.Collapsed : Visibility.Visible;
+
+            if (!isEnabled || status != null || meta == null)
+                return;
+
+            FlowCameraParameterOverrideConfig config = meta.FlowCameraParameterOverrideConfig;
+            CameraOverrideEditorPanel.Children.Add(
+                PropertyEditorHelper.GenProperties(config, nameof(FlowCameraParameterOverrideConfig.ExposureTimeMs)));
+            CameraOverrideEditorPanel.Children.Add(
+                PropertyEditorHelper.GenProperties(config, nameof(FlowCameraParameterOverrideConfig.CalibrationTemplateName)));
+        }
+
+        private bool TryReadCameraOverrideSnapshot(
+            ProcessMeta meta,
+            out CameraOverrideSnapshot snapshot,
+            out string reason)
+        {
+            snapshot = default;
+            ProcessManager? manager = DataContext as ProcessManager;
+            var template = manager?.templateModels.FirstOrDefault(item =>
+                string.Equals(item.Key, meta.FlowTemplate, StringComparison.OrdinalIgnoreCase));
+            if (template == null)
+            {
+                reason = "未找到流程模板";
+                return false;
+            }
+
+            try
+            {
+                using STNodeCanvasSnapshot canvas = STNodeEditor.ReadCanvasSnapshot(
+                    Convert.FromBase64String(template.Value.DataBase64));
+                BaseStartNode? startNode = canvas.Nodes
+                    .OfType<BaseStartNode>()
+                    .FirstOrDefault(node => !string.IsNullOrEmpty(node.NodeName));
+                if (!FlowCameraParameterOverrideService.TryFindSingleCameraNode(
+                    canvas.Nodes,
+                    startNode?.NodeName,
+                    canvas.GetConnectedOutputNodes,
+                    out STNode? cameraNode,
+                    out reason))
+                {
+                    return false;
+                }
+
+                if (cameraNode is LVCameraNode lvCamera)
+                {
+                    snapshot = new CameraOverrideSnapshot(
+                        lvCamera.ExpTime,
+                        lvCamera.CaliTempName ?? string.Empty,
+                        lvCamera.DeviceCode ?? string.Empty);
+                }
+                else if (cameraNode is LocalCameraNode localCamera)
+                {
+                    snapshot = new CameraOverrideSnapshot(
+                        localCamera.ExpTime,
+                        localCamera.CalibTempName,
+                        localCamera.DeviceCode ?? string.Empty);
+                }
+                else
+                {
+                    reason = "未找到相机取图节点";
+                    return false;
+                }
+
+                reason = string.Empty;
+                return true;
+            }
+            catch
+            {
+                reason = "流程模板读取失败";
+                return false;
+            }
+        }
+
         private void AddPlaceholderText(StackPanel panel, string message = "请选择一个处理项")
         {
             var placeholder = new TextBlock
@@ -393,10 +536,13 @@ namespace ProjectARVRPro.Process
 
         private void SelectedMeta_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            // Refresh when Process changes (which may change the configs)
             if (e.PropertyName == nameof(ProcessMeta.Process))
             {
                 RefreshConfigPanels();
+            }
+            else if (e.PropertyName == nameof(ProcessMeta.FlowTemplate) && sender is ProcessMeta meta)
+            {
+                RefreshCameraOverridePanel(meta);
             }
         }
 

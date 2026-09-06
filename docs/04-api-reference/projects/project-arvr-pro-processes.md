@@ -2,10 +2,10 @@
 knowledge_id: "projects.arvr-pro-processes"
 knowledge_type: "guide"
 status: "current"
-summary: "配置 ARVRPro 流程组、流程解析映射、实例 Recipe 与雷鸟切图，说明类型选择、结果快照、配置保存和有效迁移规则。"
-aliases: ["ARVR 流程组", "流程解析映射", "ARVR Recipe", "实例 Recipe", "雷鸟切图", "PictureSwitchConfig", "ProcessWithRecipeBase", "ResultParserMetas", "ResultProcessResolver", "ProcessGroups.json", "MTFH07", "MTFV07", "MTFHV048", "W25", "导入旧版Recipe"]
-code_paths: ["Projects/ProjectARVRPro/Process/", "Projects/ProjectARVRPro/Recipe/", "Projects/ProjectARVRPro/Services/PictureSwitchService.cs", "Projects/ProjectARVRPro/ARVRWindow.xaml.cs"]
-test_paths: ["Test/ProjectARVRPro.Tests/ProcessManagerPersistenceTests.cs", "Test/ProjectARVRPro.Tests/EmbeddedRecipeConfigTests.cs", "Test/ProjectARVRPro.Tests/LegacyRecipeImporterTests.cs", "Test/ProjectARVRPro.Tests/ProcessStepProjectionTests.cs", "Test/ProjectARVRPro.Tests/MTF07DynamicResultBuilderTests.cs"]
+summary: "配置 ARVRPro 流程组、流程解析映射、实例 Recipe、外部相机参数与雷鸟切图，说明运行时覆盖、结果快照、配置保存和有效迁移规则。"
+aliases: ["ARVR 流程组", "流程解析映射", "ARVR Recipe", "实例 Recipe", "外部相机参数", "相机参数覆盖", "FlowCameraParameterOverrideConfig", "ReadCanvasSnapshot", "雷鸟切图", "PictureSwitchConfig", "ProcessWithRecipeBase", "ResultParserMetas", "ResultProcessResolver", "ProcessGroups.json", "MTFH07", "MTFV07", "MTFHV048", "W25", "导入旧版Recipe"]
+code_paths: ["Projects/ProjectARVRPro/Process/", "Projects/ProjectARVRPro/Recipe/", "Projects/ProjectARVRPro/Services/PictureSwitchService.cs", "Projects/ProjectARVRPro/ARVRWindow.xaml.cs", "Engine/ST.Library.UI/NodeEditor/STNodeCanvasSnapshot.cs"]
+test_paths: ["Test/ProjectARVRPro.Tests/FlowCameraParameterOverrideServiceTests.cs", "Test/ProjectARVRPro.Tests/ProcessManagerPersistenceTests.cs", "Test/ProjectARVRPro.Tests/EmbeddedRecipeConfigTests.cs", "Test/ProjectARVRPro.Tests/LegacyRecipeImporterTests.cs", "Test/ProjectARVRPro.Tests/ProcessStepProjectionTests.cs", "Test/ProjectARVRPro.Tests/MTF07DynamicResultBuilderTests.cs"]
 related: ["projects.arvr-pro", "projects.arvr-pro-demura", "flow.templates", "ui.property-grid"]
 ---
 
@@ -33,11 +33,12 @@ ARVRPro 用流程组组织测试顺序，用处理类型解释 Engine 输出，�
 
 1. 在流程管理中选择或新增流程组，按产品或场景命名。
 2. 新增步骤，选择 Flow 模板与处理类型。名称用于识别步骤，`FlowTemplate` 用于绑定引擎模板，两者各有用途。
-3. 在 **Process** 中配置解析 Key、输出 Key 及该处理类型的行为参数，在 **Recipe** 中填写限值和修正系数。
-4. 需要执行前切图时，在 **切图** 中启用并配置串口指令、期望返回值、超时和稳定时间。
-5. 用启用框决定 RunAll 是否包含该步骤；通过上移、下移或拖动调整顺序。复制步骤或流程组后重新核对模板、Key 和切图指令。
-6. 需要独立的模板解析规则时，切到 **流程解析映射** 添加映射，并编辑其自己的 Process/Recipe。不要用增加执行步骤的方式代替解析映射。
-7. 检查保存错误提示和日志，导出配置留存，再在授权环境验证实际顺序、解析值和结果输出。
+3. 需要让操作员在 Flow 外调整单相机曝光或校正模板时，在流程模板下勾选 **覆盖相机参数**。界面会从当前模板同步节点值，再显示可编辑项。
+4. 在 **Process** 中配置解析 Key、输出 Key 及该处理类型的行为参数，在 **Recipe** 中填写限值和修正系数。
+5. 需要执行前切图时，在 **切图** 中启用并配置串口指令、期望返回值、超时和稳定时间。
+6. 用启用框决定 RunAll 是否包含该步骤；通过上移、下移或拖动调整顺序。复制步骤或流程组后重新核对模板、外部相机值、Key 和切图指令。
+7. 需要独立的模板解析规则时，切到 **流程解析映射** 添加映射，并编辑其自己的 Process/Recipe。不要用增加执行步骤的方式代替解析映射。
+8. 检查保存错误提示和日志，导出配置留存，再在授权环境验证实际顺序、解析值和结果输出。
 
 流程组、步骤和解析映射的编辑会触发持久化。Recipe 编辑器直接修改当前实例；关闭窗口不能作为撤销操作。
 
@@ -51,8 +52,23 @@ ARVRPro 用流程组组织测试顺序，用处理类型解释 Engine 输出，�
 | `IsEnabled` | 是否进入启用步骤序列，默认 `true` |
 | `ConfigJson` | 当前处理实例的行为配置与内嵌 Recipe |
 | `PictureSwitchConfig` | 步骤启动前的切图配置 |
+| `FlowCameraParameterOverrideConfig` | 该步骤运行时使用的外部曝光和校正模板覆盖，默认关闭 |
 
 Flow 执行、项目解析和最终判定分别有状态。`IProcess.Execute` 返回的布尔值表示处理是否完成；测量项与聚合结果的 PASS/FAIL 仍由结果数据及 Recipe 决定，不能只看方法是否返回成功。
+
+## 外部相机参数覆盖
+
+**覆盖相机参数** 位于流程模板下方。勾选时，界面加载当前模板，从默认 Start 的执行链中找到唯一的 `LVCameraNode` 或 `LocalCameraNode`，把节点的曝光与校正模板同步到步骤配置，再显示节点同款的数值编辑器和校正模板选择器。取消勾选会隐藏编辑项，并恢复为关闭、曝光 `100 ms`、空模板；切换流程模板也会关闭旧覆盖，防止参数与新模板错配。仅切换流程步骤不会重新覆盖已经保存的外部值。
+
+单流程和 RunAll 都在 `Refresh()` 完成之后、切图和预处理之前，从本次默认 Start 沿输出连线查找可达的 `LVCameraNode`（L/BV 相机）与 `LocalCameraNode`（本地相机取图）。画布上的孤立测试节点不计入；只有当前执行链中二者合计恰好一个时才应用：L/BV 节点直接设置 `ExpTime` / `CaliTempName`，本地节点直接设置 `ExpTime` / `CalibTempName`。其他 Camera 分类节点不计入当前范围。
+
+关闭开关时不扫描节点。开启后如找不到执行入口或目标、存在多台受支持的取图节点、曝光值无效，或者本地相机节点找不到所填校正模板，只记录跳过原因，原 Flow 继续执行，不把这类条件当成检测失败，也不发生部分覆盖。L/BV 节点沿用既有语义，将模板名交给远端相机服务确认；本机模板列表不能作为远端能力的硬门禁。多相机的目标选择与逐节点参数留待后续扩展。
+
+修改只发生在已经加载的运行实例上；代码不调用 Flow 保存，也不改数据库模板。节点属性变化会清除 Flow 的已加载画布缓存，因此下次 `Refresh()` 会重新从模板装载原始值。配置界面的校正模板选择器复用节点编辑器，并按同步得到的 `DeviceCode` 读取对应相机模板；留空在两个节点上都表示本次不校正。本地节点执行前会按目标节点的 `DeviceCode` 校验归属，L/BV 节点由远端服务解释模板名。
+
+勾选时通过 `STNodeEditor.ReadCanvasSnapshot` 读取一次模板配置；快照会构造节点并还原持久化属性，但不连接端口、不挂入编辑器，也不调用 `OnEditorLoadCompleted()`，读取后立即释放。执行时直接使用 `Refresh()` 已加载的节点。关闭开关的运行开销是常量判断；开启时仅做连线可达性检查、本地模板归属查询和属性赋值，不增加数据库、MQTT 或相机调用。实际测试时间仍会随曝光和校正模板变化；历史预计时间缓存按外部参数指纹隔离。
+
+从流程下拉框手动执行时，只有该模板唯一对应一个处理项才使用其外部相机参数；同一模板对应多个处理项时保持原流程参数。批量执行始终使用当前处理项的配置。
 
 ## Recipe 的范围与修正
 
@@ -113,7 +129,7 @@ Flow 执行、项目解析和最终判定分别有状态。`IProcess.Execute` �
 
 ## 保存、导入与恢复
 
-默认文件为 `%APPDATA%\ColorVision\Config\ProcessGroups.json`，路径由 `ViewResultManager.DirectoryPath` 提供。版本 3 格式一起保存活动组序号、流程组、独立解析映射及兼容 Recipe 容器；每项 `ConfigJson` 保存自身配置和 Recipe。
+默认文件为 `%APPDATA%\ColorVision\Config\ProcessGroups.json`，路径由 `ViewResultManager.DirectoryPath` 提供。版本 3 格式一起保存活动组序号、流程组、独立解析映射及兼容 Recipe 容器；每项 `ConfigJson` 保存自身配置和 Recipe，相机覆盖作为流程项的可选同级字段保存。旧文件缺少该字段时恢复为默认关闭。
 
 写入先生成同目录临时文件，刷新后替换正式文件；目标已存在时保存前一版为 `.bak`。普通保存失败会记录 `保存ProcessGroups失败`；Recipe 编辑还会提示“Recipe 已修改，但保存 ProcessGroups.json 失败”。这时内存值可能已改变，磁盘仍是旧内容，应处理路径、权限或空间问题后重试，不能仅看界面值判断保存成功。
 
@@ -132,6 +148,7 @@ Flow 执行、项目解析和最终判定分别有状态。`IProcess.Execute` �
 ## 验证入口
 
 - `ProcessManagerPersistenceTests`：独立复制、顺序、保存重载、解析映射及导入失败保护。
+- `FlowCameraParameterOverrideServiceTests`：两种相机的直接修改、关闭开关、缺失/多相机/无效参数跳过，以及重新加载恢复模板原值。
 - `EmbeddedRecipeConfigTests`：实例 Recipe、空值兼容、配置快照、原子替换及备份。
 - `LegacyRecipeImporterTests`：旧 Recipe 导入；`ProcessStepProjectionTests`：启用步骤投影；`MTF07DynamicResultBuilderTests`：07 结果构建。
 

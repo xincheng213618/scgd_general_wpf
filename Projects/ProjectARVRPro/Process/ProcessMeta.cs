@@ -11,6 +11,7 @@ namespace ProjectARVRPro.Process
         public ProcessMeta()
         {
             PictureSwitchConfig = new PictureSwitchConfig();
+            FlowCameraParameterOverrideConfig = new FlowCameraParameterOverrideConfig();
         }
 
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
@@ -65,6 +66,29 @@ namespace ProjectARVRPro.Process
         private void PictureSwitchConfig_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             OnPropertyChanged(nameof(PictureSwitchConfig));
+        }
+
+        /// <summary>
+        /// 本流程项的相机参数覆盖；仅修改每次加载后的运行时流程图。
+        /// </summary>
+        public FlowCameraParameterOverrideConfig FlowCameraParameterOverrideConfig
+        {
+            get => _FlowCameraParameterOverrideConfig ??= new FlowCameraParameterOverrideConfig();
+            set
+            {
+                if (_FlowCameraParameterOverrideConfig != null)
+                    _FlowCameraParameterOverrideConfig.PropertyChanged -= FlowCameraParameterOverrideConfig_PropertyChanged;
+
+                _FlowCameraParameterOverrideConfig = value ?? new FlowCameraParameterOverrideConfig();
+                _FlowCameraParameterOverrideConfig.PropertyChanged += FlowCameraParameterOverrideConfig_PropertyChanged;
+                OnPropertyChanged();
+            }
+        }
+        private FlowCameraParameterOverrideConfig _FlowCameraParameterOverrideConfig;
+
+        private void FlowCameraParameterOverrideConfig_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            OnPropertyChanged(nameof(FlowCameraParameterOverrideConfig));
         }
 
         public string ProcessTypeName => Process?.GetType().Name ?? string.Empty;

@@ -733,5 +733,6 @@ public class MQTTStartNode : BaseStartNode
 		isDisposed = true;
 		EndMqttSession();
 		base.Dispose();
+		GC.SuppressFinalize(this);
 	}
 }

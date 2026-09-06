@@ -325,7 +325,7 @@ namespace ProjectARVRPro
                     ProcessMeta processMeta = ProcessMetas[nextTestType];
                     TemplateModel<FlowParam> template = SelectFlowTemplate(processMeta);
                     CurrentTestType = nextTestType;
-                    return await TryRunTemplate(template, processMeta, cancellationToken);
+                    return await TryRunTemplate(template, processMeta, cancellationToken: cancellationToken);
                 }
 
                 log.Info("没有可执行的 ARVR 流程");
@@ -631,12 +631,33 @@ namespace ProjectARVRPro
             return Task.CompletedTask;
         }
 
-        private void CaptureRuntimeEstimate(TemplateModel<FlowParam> template)
+        private void CaptureRuntimeEstimate(TemplateModel<FlowParam> template, ProcessMeta? processMeta)
         {
             long startedAt = Stopwatch.GetTimestamp();
-            _currentRuntimeEstimateKey = new FlowRuntimeEstimateKey(template.Key, template.Value.DataBase64);
+            _currentRuntimeEstimateKey = new FlowRuntimeEstimateKey(
+                template.Key,
+                template.Value.DataBase64,
+                processMeta?.FlowCameraParameterOverrideConfig.GetRuntimeSignature());
             LastFlowTime = _flowRuntimeEstimates.GetElapsed(_currentRuntimeEstimateKey);
             _currentRuntimeEstimateLookupMs = Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds;
+        }
+
+        private void ApplyFlowCameraParameterOverride(ProcessMeta? processMeta)
+        {
+            if (processMeta == null)
+                return;
+
+            long startedAt = Stopwatch.GetTimestamp();
+            FlowCameraParameterOverrideResult result = FlowCameraParameterOverrideService.ApplyToLoadedFlow(
+                processMeta.FlowCameraParameterOverrideConfig,
+                STNodeEditorMain.Nodes.Cast<STNode>(),
+                flowEngine.GetStartNodeName());
+            double elapsedMs = Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds;
+
+            if (result.Applied)
+                log.Info($"{result.Message} 参数覆盖耗时 {elapsedMs:F3} ms。");
+            else if (!string.IsNullOrWhiteSpace(result.Message))
+                log.Info($"{result.Message} 检查耗时 {elapsedMs:F3} ms。");
         }
 
 
@@ -705,12 +726,17 @@ namespace ProjectARVRPro
                 return;
 
             ProcessMeta? processMeta = ProcessManager.FindProcessMetaForTemplate(template.Key);
-            await TryRunTemplate(template, processMeta);
+            ProcessMeta? cameraOverrideMeta = ProcessManager.FindUniqueProcessMetaForTemplate(template.Key);
+            await TryRunTemplate(
+                template,
+                processMeta,
+                applyCameraParameterOverride: ReferenceEquals(processMeta, cameraOverrideMeta));
         }
 
         private async Task<bool> TryRunTemplate(
             TemplateModel<FlowParam> flowTemplate,
             ProcessMeta? runProcessMeta,
+            bool applyCameraParameterOverride = true,
             CancellationToken cancellationToken = default)
         {
             if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive || _isRunAllRunning)
@@ -761,10 +787,13 @@ namespace ProjectARVRPro
                 _currentFlowProcess = runProcessMeta?.Process ?? ProcessManager.CreateBlankProcess();
                 ResultProcessResolver.Capture(CurrentFlowResult, _currentFlowProcess);
 
-                CaptureRuntimeEstimate(flowTemplate);
+                ProcessMeta? cameraOverrideMeta = applyCameraParameterOverride ? runProcessMeta : null;
+                CaptureRuntimeEstimate(flowTemplate, cameraOverrideMeta);
 
                 await Refresh();
                 cancellationToken.ThrowIfCancellationRequested();
+
+                ApplyFlowCameraParameterOverride(cameraOverrideMeta);
 
                 CurrentFlowResult.PictureSwitchStartedAt = DateTime.Now;
                 _currentStartupWorkMs = startupTiming.Elapsed.TotalMilliseconds;
@@ -2591,7 +2620,7 @@ namespace ProjectARVRPro
                     CurrentFlowResult.Model = templateParam.Key;
                     FlowName = CurrentFlowResult.Model;
                     ResultProcessResolver.Capture(CurrentFlowResult, _currentFlowProcess);
-                    CaptureRuntimeEstimate(templateParam);
+                    CaptureRuntimeEstimate(templateParam, meta);
 
                     // 执行流程并等待完成
                     var tcs = new TaskCompletionSource<FlowControlData>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -2605,6 +2634,8 @@ namespace ProjectARVRPro
                     TryCount = 0;
 
                     await Refresh();
+
+                    ApplyFlowCameraParameterOverride(meta);
 
                     CurrentFlowResult.PictureSwitchStartedAt = DateTime.Now;
                     _currentStartupWorkMs = startupTiming.Elapsed.TotalMilliseconds;
