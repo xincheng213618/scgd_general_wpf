@@ -242,6 +242,23 @@ public sealed class ServiceHostProcessTerminationTests : IDisposable
             process.WaitForExit(5000);
             process.Dispose();
         }
-        Directory.Delete(_directory, true);
+
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        while (true)
+        {
+            try
+            {
+                Directory.Delete(_directory, recursive: true);
+                return;
+            }
+            catch (IOException) when (stopwatch.Elapsed < TimeSpan.FromSeconds(5))
+            {
+                Thread.Sleep(25);
+            }
+            catch (UnauthorizedAccessException) when (stopwatch.Elapsed < TimeSpan.FromSeconds(5))
+            {
+                Thread.Sleep(25);
+            }
+        }
     }
 }
