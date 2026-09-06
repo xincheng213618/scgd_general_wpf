@@ -370,24 +370,19 @@ namespace ProjectARVRPro.Process
 
         private void AddPlaceholderText(StackPanel panel, string message = "请选择一个处理项")
         {
-            panel.Children.Add(new TextBlock
+            var placeholder = new TextBlock
             {
                 Text = message,
-                Foreground = System.Windows.Media.Brushes.Gray,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Margin = new Thickness(0, 20, 0, 0)
-            });
+            };
+            placeholder.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
+            panel.Children.Add(placeholder);
         }
 
         private void AddNoConfigText(StackPanel panel, string message)
         {
-            panel.Children.Add(new TextBlock
-            {
-                Text = message,
-                Foreground = System.Windows.Media.Brushes.Gray,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 20, 0, 0)
-            });
+            AddPlaceholderText(panel, message);
         }
 
         private enum ConfigType

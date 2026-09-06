@@ -6,7 +6,9 @@
         xmlns:local="clr-namespace:ProjectLUX"
         mc:Ignorable="d"
         Title="TestResult View" Height="500" Width="900"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource GlobalBackground}"
+        Foreground="{DynamicResource GlobalTextBrush}">
     <Window.Resources>
         <local:BoolToPassFailConverter x:Key="BoolToPassFailConverter"/>
         <local:BoolToColorConverter x:Key="BoolToColorConverter"/>
@@ -27,8 +29,25 @@
                   CanUserAddRows="False"
                   CanUserDeleteRows="False"
                   HeadersVisibility="Column"
-                  GridLinesVisibility="All"
-                  AlternatingRowBackground="#F5F5F5">
+                  GridLinesVisibility="All" AlternationCount="2"
+                  Background="{DynamicResource GlobalBackground}"
+                  HorizontalGridLinesBrush="{DynamicResource BorderBrush}"
+                  VerticalGridLinesBrush="{DynamicResource BorderBrush}">
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRowStyle}">
+                    <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
+                    <Style.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="AlternationIndex" Value="1"/>
+                                <Condition Property="IsSelected" Value="False"/>
+                                <Condition Property="IsMouseOver" Value="False"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" Value="{DynamicResource CV.Surface.Alternate}"/>
+                        </MultiTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="200"/>
                 <DataGridTextColumn Header="TestValue" Binding="{Binding TestValue}" Width="150"/>
@@ -39,8 +58,18 @@
                 <DataGridTemplateColumn Header="Result" Width="80">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding TestResult, Converter={StaticResource BoolToPassFailConverter}}"
-                                       Foreground="{Binding TestResult, Converter={StaticResource BoolToColorConverter}}"/>
+                            <TextBlock Text="{Binding TestResult, Converter={StaticResource BoolToPassFailConverter}}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                        <Setter Property="Foreground" Value="{Binding TestResult, Converter={StaticResource BoolToColorConverter}}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="True">
+                                                <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=DataGridRow}}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>

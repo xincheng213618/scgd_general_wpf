@@ -135,13 +135,14 @@ namespace ProjectARVRPro.Process
             object? config = SelectedProcess?.GetProcessConfig();
             if (config == null)
             {
-                DraftProcessConfigPanel.Children.Add(new TextBlock
+                var placeholder = new TextBlock
                 {
                     Text = SelectedProcess == null ? "选择处理类型后显示配置" : "此处理类型无需额外配置",
-                    Foreground = System.Windows.Media.Brushes.Gray,
                     TextWrapping = TextWrapping.Wrap,
                     Margin = new Thickness(0, 10, 0, 0)
-                });
+                };
+                placeholder.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
+                DraftProcessConfigPanel.Children.Add(placeholder);
                 return;
             }
 

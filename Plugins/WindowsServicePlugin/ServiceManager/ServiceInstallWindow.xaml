@@ -5,178 +5,172 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WindowsServicePlugin.ServiceManager"
         xmlns:res="clr-namespace:WindowsServicePlugin.Properties"
-        xmlns:logControls="clr-namespace:ColorVision.UI.LogImp.Controls;assembly=ColorVision.UI"
-        xmlns:hc="https://handyorg.github.io/handycontrol"
-        mc:Ignorable="d"
-        Title="{x:Static res:Resources.ServiceInstallManager}" Height="780" Width="980"
-        d:DataContext="{d:DesignInstance local:ServiceInstallViewModel}"
-        Background="{DynamicResource GlobalBackground}"
-        Foreground="{DynamicResource GlobalTextBrush}"
-        WindowStartupLocation="CenterScreen">
+        mc:Ignorable="d" d:DataContext="{d:DesignInstance local:ServiceInstallViewModel}"
+        Title="{x:Static res:Resources.ServiceInstallManager}" Width="980" Height="780" MinWidth="900" MinHeight="740"
+        Background="{DynamicResource CV.Surface.Window}" Foreground="{DynamicResource CV.Text.Primary}"
+        FontSize="13" UseLayoutRounding="True" SnapsToDevicePixels="True" WindowStartupLocation="CenterScreen">
     <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ServiceManagerStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                <Setter Property="Padding" Value="12,5" />
+                <Setter Property="MinHeight" Value="30" />
+            </Style>
+            <Style x:Key="InstallSection" TargetType="Border" BasedOn="{StaticResource ServiceDivider}">
+                <Setter Property="Padding" Value="0,0,0,12" />
+                <Setter Property="Margin" Value="0,0,0,14" />
+            </Style>
+        </ResourceDictionary>
     </Window.Resources>
-
-    <Grid Margin="12">
+    <Grid Margin="24,20,24,18">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" MinHeight="150" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- 安装组件选择 -->
-        <Border Grid.Row="0" Padding="12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="0,0,0,8">
-            <StackPanel>
-                <TextBlock Text="{x:Static res:Resources.ServiceInstallManager}" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+        <StackPanel>
+            <StackPanel.Style>
+                <Style TargetType="StackPanel">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                            <Setter Property="IsEnabled" Value="False" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StackPanel.Style>
 
-                <Grid Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="{x:Static res:Resources.BaseInstallRootLabel}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <TextBox Grid.Column="1" Text="{Binding Config.BaseLocation, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Margin="0,0,8,0"/>
-                    <Button Grid.Column="2" Content="{x:Static res:Resources.OpenFolder}" Command="{Binding OpenBaseLocationCommand}" Padding="12,4" Margin="0,0,8,0"/>
-                    <Button Grid.Column="3" Content="{x:Static res:Resources.SetDirectory}" Command="{Binding SelectBaseLocationCommand}" Padding="12,4"/>
-                </Grid>
+            <Grid Margin="0,0,0,18">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{x:Static res:Resources.BaseInstallRootLabel}" VerticalAlignment="Center" Margin="0,0,14,0" />
+                <TextBox Grid.Column="1" Text="{Binding Config.BaseLocation, Mode=OneWay}" IsReadOnly="True" ToolTip="{Binding Config.BaseLocation}" Padding="10,6" />
+                <Button Grid.Column="2" Content="{x:Static res:Resources.OpenFolder}" Command="{Binding OpenBaseLocationCommand}" Margin="10,0,0,0" />
+                <Button Grid.Column="3" Content="{x:Static res:Resources.SetDirectory}" Command="{Binding SelectBaseLocationCommand}" Margin="8,0,0,0" />
+            </Grid>
 
-                <!-- 一键安装包 -->
-                <Border Padding="8" Background="{DynamicResource RegionBrush}" CornerRadius="3" Margin="0,0,0,8">
-                    <Grid>
+            <Border Style="{StaticResource InstallSection}">
+                <StackPanel Grid.IsSharedSizeScope="True">
+                    <Grid Margin="0,0,0,10">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="{x:Static res:Resources.OneKeyInstallHint}" VerticalAlignment="Center" Foreground="Gray" TextWrapping="Wrap"/>
+                        <TextBlock Text="{x:Static res:Resources.InstallComponents}" Style="{StaticResource ServiceSectionTitle}" VerticalAlignment="Center" Margin="0" />
                         <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <Button Content="{x:Static res:Resources.OnlineDownload}" Command="{Binding OnlineDownloadCommand}" Padding="16,6" Margin="0,0,8,0"/>
-                            <Button Content="{x:Static res:Resources.SelectOneKeyPackage}" Command="{Binding OneKeyInstallAllCommand}" Padding="16,6" Style="{StaticResource ButtonPrimary}"/>
+                            <Button Content="{x:Static res:Resources.OnlineDownload}" Command="{Binding OnlineDownloadCommand}" Margin="0,0,8,0" />
+                            <Button Content="{x:Static res:Resources.SelectOneKeyPackage}" Command="{Binding OneKeyInstallAllCommand}" ToolTip="{x:Static res:Resources.OneKeyInstallHint}" />
                         </StackPanel>
                     </Grid>
-                </Border>
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="ComponentLabel" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <CheckBox Content="{x:Static res:Resources.ServicePackage}" IsChecked="{Binding InstallServiceChecked}" VerticalAlignment="Center" Margin="0,0,16,0" MinWidth="100" />
+                            <ContentControl Grid.Column="1" Content="{Binding ServicePackagePath}" ContentTemplate="{StaticResource ServicePackagePath}" VerticalAlignment="Center" />
+                            <Button Grid.Column="2" Content="{x:Static res:Resources.Download}" Command="{Binding DownloadServicePackageCommand}" Margin="10,0,0,0" />
+                            <Button Grid.Column="3" Content="{x:Static res:Resources.Select}" Command="{Binding SelectServicePackageCommand}" Margin="8,0,0,0" />
+                        </Grid>
+                        <Grid Margin="0,0,0,6" Visibility="{Binding IsMySqlInstallVisible, Converter={StaticResource BoolToVis}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="ComponentLabel" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <CheckBox Content="{x:Static res:Resources.MySQL}" IsChecked="{Binding InstallMySqlChecked}" VerticalAlignment="Center" Margin="0,0,16,0" MinWidth="100" />
+                            <ContentControl Grid.Column="1" Content="{Binding MySqlPackagePath}" ContentTemplate="{StaticResource ServicePackagePath}" VerticalAlignment="Center" />
+                            <Button Grid.Column="2" Content="{x:Static res:Resources.Download}" Command="{Binding DownloadMySqlPackageCommand}" Margin="10,0,0,0" />
+                            <Button Grid.Column="3" Content="{x:Static res:Resources.Select}" Command="{Binding SelectMySqlZipCommand}" Margin="8,0,0,0" />
+                        </Grid>
+                        <Grid Margin="0,0,0,6" Visibility="{Binding IsVc2013InstallVisible, Converter={StaticResource BoolToVis}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="ComponentLabel" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <CheckBox Content="{x:Static res:Resources.Vc2013Runtime}" IsChecked="{Binding InstallVc2013Checked}" VerticalAlignment="Center" Margin="0,0,16,0" MinWidth="100" />
+                            <ContentControl Grid.Column="1" Content="{Binding Vc2013InstallerPath}" ContentTemplate="{StaticResource ServicePackagePath}" VerticalAlignment="Center" />
+                            <Button Grid.Column="2" Content="{x:Static res:Resources.Download}" Command="{Binding DownloadVc2013InstallerCommand}" Margin="10,0,0,0" />
+                            <Button Grid.Column="3" Content="{x:Static res:Resources.Select}" Command="{Binding SelectVc2013InstallerCommand}" Margin="8,0,0,0" />
+                        </Grid>
+                        <Grid Margin="0,0,0,6" Visibility="{Binding IsMqttInstallVisible, Converter={StaticResource BoolToVis}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="ComponentLabel" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <CheckBox Content="{x:Static res:Resources.MQTT}" IsChecked="{Binding InstallMqttChecked}" VerticalAlignment="Center" Margin="0,0,16,0" MinWidth="100" />
+                            <ContentControl Grid.Column="1" Content="{Binding MqttInstallerPath}" ContentTemplate="{StaticResource ServicePackagePath}" VerticalAlignment="Center" />
+                            <Button Grid.Column="2" Content="{x:Static res:Resources.Download}" Command="{Binding DownloadMqttInstallerCommand}" Margin="10,0,0,0" />
+                            <Button Grid.Column="3" Content="{x:Static res:Resources.Select}" Command="{Binding SelectMqttInstallerCommand}" Margin="8,0,0,0" />
+                        </Grid>
+                </StackPanel>
+            </Border>
 
-                <!-- 服务包 -->
-                <Grid Margin="0,0,0,6">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <CheckBox Grid.Column="0" Content="{x:Static res:Resources.ServicePackage}" IsChecked="{Binding InstallServiceChecked}" VerticalAlignment="Center" Margin="0,0,8,0" MinWidth="80"/>
-                    <TextBox Grid.Column="1" Text="{Binding ServicePackagePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Margin="0,0,8,0"/>
-                    <Button Grid.Column="2" Content="{x:Static res:Resources.Download}" Command="{Binding DownloadServicePackageCommand}" Padding="12,4" Margin="0,0,8,0"/>
-                    <Button Grid.Column="3" Content="{x:Static res:Resources.Select}" Command="{Binding SelectServicePackageCommand}" Padding="12,4"/>
-                </Grid>
+            <Border Style="{StaticResource InstallSection}">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,12">
+                        <TextBlock Text="{x:Static res:Resources.InstallOptions}" Style="{StaticResource ServiceSectionTitle}" Margin="0,0,24,0" />
+                        <CheckBox Content="{x:Static res:Resources.UpdateDatabaseLatest}" IsChecked="{Binding AutoUpdateDatabase}" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,20,0">
+                            <CheckBox Content="{x:Static res:Resources.BackupDatabaseBeforeInstall}" IsChecked="{Binding BackupBeforeInstall}" />
+                            <TextBlock Text="{x:Static res:Resources.DatabaseBackupLocationHint}" Style="{StaticResource ServiceSubtitle}" FontSize="12" Margin="22,5,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                            <Button Content="{x:Static res:Resources.BackupNow}" Command="{Binding BackupNowCommand}" Margin="0,0,8,0" />
+                            <Button Content="{x:Static res:Resources.RestoreBackup}" Command="{Binding RestoreBackupCommand}" />
+                        </StackPanel>
+                    </Grid>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,20,0">
+                            <CheckBox Content="{x:Static res:Resources.BackupServiceBeforeInstall}" IsChecked="{Binding BackupServiceBeforeInstall}" />
+                            <TextBlock Text="{x:Static res:Resources.ServiceBackupLocationHint}" Style="{StaticResource ServiceSubtitle}" FontSize="12" Margin="22,5,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                            <Button Content="{x:Static res:Resources.BackupServiceNow}" Command="{Binding BackupServiceNowCommand}" Margin="0,0,8,0" />
+                            <Button Content="{x:Static res:Resources.RestoreServiceBackup}" Command="{Binding RestoreServiceBackupCommand}" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
 
-                <!-- MySQL -->
-                <Grid Margin="0,0,0,6" Visibility="{Binding IsMySqlInstallVisible, Converter={StaticResource BoolToVis}}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <CheckBox Grid.Column="0" Content="{x:Static res:Resources.MySQL}" IsChecked="{Binding InstallMySqlChecked}" VerticalAlignment="Center" Margin="0,0,8,0" MinWidth="80"/>
-                    <TextBox Grid.Column="1" Text="{Binding MySqlPackagePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Margin="0,0,8,0"/>
-                    <Button Grid.Column="2" Content="{x:Static res:Resources.Download}" Command="{Binding DownloadMySqlPackageCommand}" Padding="12,4" Margin="0,0,8,0"/>
-                    <Button Grid.Column="3" Content="{x:Static res:Resources.Select}" Command="{Binding SelectMySqlZipCommand}" Padding="12,4"/>
-                </Grid>
+        <TextBlock Grid.Row="1" Text="{x:Static res:Resources.InstallLog}" Style="{StaticResource ServiceSectionTitle}" Margin="0,0,0,10" />
+        <local:ServiceOperationLog x:Name="OperationLog" Grid.Row="2" />
 
-                <!-- VC++ 2013 -->
-                <Grid Margin="0,0,0,6" Visibility="{Binding IsVc2013InstallVisible, Converter={StaticResource BoolToVis}}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <CheckBox Grid.Column="0" Content="{x:Static res:Resources.Vc2013Runtime}" IsChecked="{Binding InstallVc2013Checked}" VerticalAlignment="Center" Margin="0,0,8,0" MinWidth="80"/>
-                    <TextBox Grid.Column="1" Text="{Binding Vc2013InstallerPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Margin="0,0,8,0"/>
-                    <Button Grid.Column="2" Content="{x:Static res:Resources.Download}" Command="{Binding DownloadVc2013InstallerCommand}" Padding="12,4" Margin="0,0,8,0"/>
-                    <Button Grid.Column="3" Content="{x:Static res:Resources.Select}" Command="{Binding SelectVc2013InstallerCommand}" Padding="12,4"/>
-                </Grid>
-
-                <!-- MQTT -->
-                <Grid Margin="0,0,0,4" Visibility="{Binding IsMqttInstallVisible, Converter={StaticResource BoolToVis}}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <CheckBox Grid.Column="0" Content="{x:Static res:Resources.MQTT}" IsChecked="{Binding InstallMqttChecked}" VerticalAlignment="Center" Margin="0,0,8,0" MinWidth="80"/>
-                    <TextBox Grid.Column="1" Text="{Binding MqttInstallerPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Margin="0,0,8,0"/>
-                    <Button Grid.Column="2" Content="{x:Static res:Resources.Download}" Command="{Binding DownloadMqttInstallerCommand}" Padding="12,4" Margin="0,0,8,0"/>
-                    <Button Grid.Column="3" Content="{x:Static res:Resources.Select}" Command="{Binding SelectMqttInstallerCommand}" Padding="12,4"/>
-                </Grid>
+        <Grid Grid.Row="3" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel VerticalAlignment="Center" Margin="0,0,24,0" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="{Binding ProgressText}" Style="{StaticResource ServiceSubtitle}" Margin="0,0,0,6" />
+                <ProgressBar Value="{Binding Progress}" Style="{StaticResource ServiceProgress}" />
             </StackPanel>
-        </Border>
-
-        <!-- 安装选项 -->
-        <Border Grid.Row="1" Padding="12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="0,0,0,8">
-            <StackPanel>
-                <TextBlock Text="{x:Static res:Resources.InstallOptions}" FontWeight="Bold" Margin="0,0,0,6"/>
-                <WrapPanel>
-                    <CheckBox Content="{x:Static res:Resources.UpdateDatabaseLatest}" IsChecked="{Binding AutoUpdateDatabase}" Margin="0,2,20,2"/>
-                </WrapPanel>
-                
-                <!-- 数据库备份 -->
-                <TextBlock Text="{x:Static res:Resources.DatabaseBackup}" FontSize="12" Margin="0,8,0,4" Foreground="{DynamicResource GlobalTextBrush}"/>
-                <WrapPanel Margin="0,0,0,8">
-                    <CheckBox Content="{x:Static res:Resources.BackupDatabaseBeforeInstall}" IsChecked="{Binding BackupBeforeInstall}" Margin="0,0,20,0" VerticalAlignment="Center"/>
-                    <Button Content="{x:Static res:Resources.BackupNow}" Command="{Binding BackupNowCommand}" Padding="12,4" Margin="0,0,8,0"/>
-                    <Button Content="{x:Static res:Resources.RestoreBackup}" Command="{Binding RestoreBackupCommand}" Padding="12,4"/>
-                    <TextBlock Text="{x:Static res:Resources.DatabaseBackupLocationHint}" VerticalAlignment="Center" Foreground="Gray" Margin="8,0,0,0" FontSize="11"/>
-                </WrapPanel>
-                
-                <!-- 服务备份 -->
-                <TextBlock Text="{x:Static res:Resources.ServiceBackup}" FontSize="12" Margin="0,4,0,4" Foreground="{DynamicResource GlobalTextBrush}"/>
-                <WrapPanel>
-                    <CheckBox Content="{x:Static res:Resources.BackupServiceBeforeInstall}" IsChecked="{Binding BackupServiceBeforeInstall}" Margin="0,0,20,0" VerticalAlignment="Center"/>
-                    <Button Content="{x:Static res:Resources.BackupServiceNow}" Command="{Binding BackupServiceNowCommand}" Padding="12,4" Margin="0,0,8,0"/>
-                    <Button Content="{x:Static res:Resources.RestoreServiceBackup}" Command="{Binding RestoreServiceBackupCommand}" Padding="12,4"/>
-                    <TextBlock Text="{x:Static res:Resources.ServiceBackupLocationHint}" VerticalAlignment="Center" Foreground="Gray" Margin="8,0,0,0" FontSize="11"/>
-                </WrapPanel>
-            </StackPanel>
-        </Border>
-
-        <!-- 进度条 -->
-        <Grid Grid.Row="2" Margin="0,0,0,8" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
-            <StackPanel>
-                <TextBlock Text="{Binding ProgressText}" Margin="0,0,0,4"/>
-                <ProgressBar Value="{Binding Progress}" Height="16" Maximum="100"/>
-            </StackPanel>
+            <Button Grid.Column="1" Content="{x:Static res:Resources.InstallNow}" Command="{Binding DoInstallCommand}" Style="{StaticResource CV.Button.Primary}" MinWidth="140" />
         </Grid>
-
-        <!-- 安装日志 -->
-        <Border Grid.Row="4" Padding="12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Text="{x:Static res:Resources.InstallLog}" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,0,6"/>
-                <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="6">
-                    <logControls:LogViewerControl x:Name="LogViewer"
-                                                  TextWrapping="Wrap"
-                                                  ViewerMode="TextBox"
-                                                  MaxChars="100000"
-                                                  FontFamily="Consolas"
-                                                  FontSize="12"/>
-                </Border>
-            </Grid>
-        </Border>
-
-        <Border Grid.Row="5" Padding="10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="{x:Static res:Resources.InstallNow}" Command="{Binding DoInstallCommand}" Padding="40,5" FontSize="14" FontWeight="Bold" Style="{StaticResource ButtonPrimary}" Margin="0,0,8,0"/>
-            </StackPanel>
-        </Border>
     </Grid>
 </Window>

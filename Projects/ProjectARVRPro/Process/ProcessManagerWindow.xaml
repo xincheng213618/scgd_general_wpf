@@ -15,7 +15,7 @@
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
 
-        <Style x:Key="SideEditButtonStyle" TargetType="{x:Type Button}">
+        <Style x:Key="SideEditButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Width" Value="25"/>
             <Setter Property="Height" Value="23"/>
             <Setter Property="Padding" Value="4"/>
@@ -172,7 +172,7 @@
                                         <Button Grid.Column="1" Style="{StaticResource SideEditButtonStyle}" ToolTip="修改名称"
                                                 Command="{Binding EditMetaNameCommand}"
                                                 CommandParameter="{Binding SelectedProcessMeta}">
-                                            <Image Source="{StaticResource DrawingImageEdit}" Width="13"/>
+                                            <Image Source="{DynamicResource DrawingImageEdit}" Width="13"/>
                                         </Button>
                                     </Grid>
 
@@ -218,12 +218,12 @@
                                     <Button Grid.Column="2" Style="{StaticResource SideEditButtonStyle}" ToolTip="编辑当前流程模板"
                                             Command="{Binding OpenFlowTemplateEditorCommand}"
                                             CommandParameter="{Binding SelectedProcessMeta}">
-                                        <Image Source="{StaticResource DrawingImageFlow}" Width="13"/>
+                                        <Image Source="{DynamicResource DrawingImageFlow}" Width="13"/>
                                     </Button>
                                     <Button Grid.Column="3" Style="{StaticResource SideEditButtonStyle}" ToolTip="切换流程模板"
                                             Command="{Binding EditMetaTemplateCommand}"
                                             CommandParameter="{Binding SelectedProcessMeta}">
-                                        <Image Source="{StaticResource DrawingImageEdit}" Width="13"/>
+                                        <Image Source="{DynamicResource DrawingImageEdit}" Width="13"/>
                                     </Button>
                                 </Grid>
 
@@ -241,7 +241,7 @@
                                     <Button Grid.Column="2" Style="{StaticResource SideEditButtonStyle}" ToolTip="修改处理类型"
                                             Command="{Binding EditMetaProcessCommand}"
                                             CommandParameter="{Binding SelectedProcessMeta}">
-                                        <Image Source="{StaticResource DrawingImageEdit}" Width="13"/>
+                                        <Image Source="{DynamicResource DrawingImageEdit}" Width="13"/>
                                     </Button>
                                 </Grid>
                             </Grid>
@@ -251,7 +251,7 @@
                             <TabItem Header="Recipe">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                                     <StackPanel x:Name="RecipePanel">
-                                        <TextBlock Text="请选择一个处理项" Foreground="Gray"
+                                        <TextBlock Text="请选择一个处理项" Foreground="{DynamicResource SecondaryTextBrush}"
                                                    HorizontalAlignment="Center" Margin="0 20 0 0"/>
                                     </StackPanel>
                                 </ScrollViewer>
@@ -259,7 +259,7 @@
                             <TabItem Header="Process">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                                     <StackPanel x:Name="ProcessPanel">
-                                        <TextBlock Text="请选择一个处理项" Foreground="Gray"
+                                        <TextBlock Text="请选择一个处理项" Foreground="{DynamicResource SecondaryTextBrush}"
                                                    HorizontalAlignment="Center" Margin="0 20 0 0"/>
                                     </StackPanel>
                                 </ScrollViewer>
@@ -267,7 +267,7 @@
                             <TabItem Header="切图">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                                     <StackPanel x:Name="PictureSwitchPanel">
-                                        <TextBlock Text="请选择一个处理项" Foreground="Gray"
+                                        <TextBlock Text="请选择一个处理项" Foreground="{DynamicResource SecondaryTextBrush}"
                                                    HorizontalAlignment="Center" Margin="0 20 0 0"/>
                                     </StackPanel>
                                 </ScrollViewer>
@@ -361,7 +361,7 @@
                         <TabItem Header="Recipe">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                                 <StackPanel x:Name="ResultRecipePanel">
-                                    <TextBlock Text="请选择一个解析映射" Foreground="Gray"
+                                    <TextBlock Text="请选择一个解析映射" Foreground="{DynamicResource SecondaryTextBrush}"
                                                HorizontalAlignment="Center" Margin="0 20 0 0"/>
                                 </StackPanel>
                             </ScrollViewer>
@@ -369,7 +369,7 @@
                         <TabItem Header="Process">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                                 <StackPanel x:Name="ResultProcessPanel">
-                                    <TextBlock Text="请选择一个解析映射" Foreground="Gray"
+                                    <TextBlock Text="请选择一个解析映射" Foreground="{DynamicResource SecondaryTextBrush}"
                                                HorizontalAlignment="Center" Margin="0 20 0 0"/>
                                 </StackPanel>
                             </ScrollViewer>

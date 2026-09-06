@@ -8348,7 +8348,9 @@
         "DownloadLocation",
         "IsFullServicePackageZip",
         "FindCachedCvWindowsServicePackage",
-        "GetLatestCvWindowsServicePackageAsync"
+        "GetLatestCvWindowsServicePackageAsync",
+        "ServiceManagerWindow",
+        "ServiceOperationLog"
       ],
       "code_paths": [
         "Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj",
@@ -8377,7 +8379,13 @@
         "UI/ColorVision.UI/Menus/MenuManager.cs",
         "UI/ColorVision.UI/Marketplace/MarketplaceConfig.cs",
         "ColorVision/MainWindow.xaml.cs",
-        "Engine/ColorVision.Engine/Mysql/MySqlDatabaseMaintenanceService.cs"
+        "Engine/ColorVision.Engine/Mysql/MySqlDatabaseMaintenanceService.cs",
+        "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerWindow.xaml",
+        "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerWindow.xaml.cs",
+        "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerSetupChoiceWindow.xaml",
+        "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerStyles.xaml",
+        "Plugins/WindowsServicePlugin/ServiceManager/ServiceOperationLog.xaml",
+        "Plugins/WindowsServicePlugin/ServiceManager/ServiceOperationLog.xaml.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ServiceDatabaseVersionMapTests.cs",
@@ -8425,6 +8433,9 @@
         "ARVR 项目"
       ],
       "code_paths": [
+        "Projects/ProjectARVRPro/ARVRWindow.xaml",
+        "Projects/ProjectARVRPro/TestResultViewWindow.xaml",
+        "Projects/ProjectARVRPro/ThunderbirdSerialDebugWindow.xaml",
         "Projects/ProjectARVRPro/ARVRWindow.xaml.cs",
         "Projects/ProjectARVRPro/FlowRuntimeEstimateCache.cs",
         "Projects/ProjectARVRPro/ResultImagePresentation.cs",
@@ -8824,6 +8835,8 @@
         "LUX Fix"
       ],
       "code_paths": [
+        "Projects/ProjectLUX/LUXWindow.xaml",
+        "Projects/ProjectLUX/TestResultViewWindow.xaml",
         "Projects/ProjectLUX/LUXWindow.xaml.cs",
         "Projects/ProjectLUX/Services/SocketControl.cs",
         "Projects/ProjectLUX/Process",

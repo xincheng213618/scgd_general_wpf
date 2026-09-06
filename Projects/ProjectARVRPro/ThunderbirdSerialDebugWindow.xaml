@@ -49,7 +49,7 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock x:Name="ConnectionStatusText" Text="● 未连接" Foreground="Gray" VerticalAlignment="Center" FontWeight="Bold"/>
+                    <TextBlock x:Name="ConnectionStatusText" Text="● 未连接" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" FontWeight="Bold"/>
                     <TextBlock Grid.Column="1" Text="超时(ms):" VerticalAlignment="Center" Margin="5,0,3,0"/>
                     <TextBox Grid.Column="2" x:Name="TimeoutTextBox" Text="1000" Width="55" VerticalAlignment="Center" Margin="0,0,8,0"/>
                     <Button Grid.Column="4" x:Name="TogglePortButton" Content="连接" Click="TogglePort_Click"
@@ -81,7 +81,7 @@
                 </Grid>
 
                 <StackPanel Grid.Row="1" Margin="0,8,0,0">
-                    <TextBlock Text="指定切图" FontWeight="Bold" Foreground="Gray" Margin="0,0,0,4"/>
+                    <TextBlock Text="指定切图" FontWeight="Bold" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,0,4"/>
                     <WrapPanel x:Name="PictureSwitchPanel">
                         <Button Tag="1" Click="SwitchPicture_Click" Width="154" Height="44" Margin="0,0,6,6" IsEnabled="False">
                             <StackPanel>
@@ -178,7 +178,7 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="当前亮度:" VerticalAlignment="Center" FontWeight="Bold"/>
                     <TextBlock Grid.Column="1" x:Name="CurrentBrightnessText" Text="未知" VerticalAlignment="Center"
-                               FontSize="16" FontWeight="Bold" Foreground="#FF2196F3" Margin="8,0,0,0"/>
+                               FontSize="16" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" Margin="8,0,0,0"/>
                     <Button Grid.Column="2" x:Name="QueryBrightnessButton" Content="查询亮度" Click="QueryBrightness_Click"
                             Padding="10,3" IsEnabled="False"/>
                 </Grid>
@@ -206,9 +206,9 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="最小 0x20" Foreground="Gray" FontSize="11"/>
+                    <TextBlock Text="最小 0x20" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11"/>
                     <TextBlock Grid.Column="1" x:Name="SliderValueText" Text="档位 0 (0x20)" HorizontalAlignment="Center" FontSize="11"/>
-                    <TextBlock Grid.Column="2" Text="最大 0x30" Foreground="Gray" FontSize="11"/>
+                    <TextBlock Grid.Column="2" Text="最大 0x30" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11"/>
                 </Grid>
 
                 <!-- Direct set -->
@@ -234,7 +234,7 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="操作状态: " VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1" x:Name="StatusText" Text="请先连接串口" Foreground="Gray" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" x:Name="StatusText" Text="请先连接串口" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" VerticalAlignment="Center"/>
             </Grid>
         </Border>
 
@@ -250,7 +250,7 @@
                          TextWrapping="Wrap"
                          VerticalScrollBarVisibility="Auto"
                          FontFamily="Courier New" FontSize="11"
-                         Background="White"/>
+                         Background="{DynamicResource GlobalBackground}"/>
                 <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,0">
                     <Button Content="清除日志" Click="ClearReceive_Click" Padding="8,2"/>
                 </StackPanel>

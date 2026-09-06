@@ -462,4 +462,31 @@
   <data name="ServiceStatusUnknown" xml:space="preserve">
     <value>未知</value>
   </data>
+  <data name="ServiceManagerSubtitle" xml:space="preserve">
+    <value>檢視服務狀態，管理本機執行環境。</value>
+  </data>
+  <data name="ManagementSettings" xml:space="preserve">
+    <value>管理設定</value>
+  </data>
+  <data name="RefreshStatus" xml:space="preserve">
+    <value>重新整理狀態</value>
+  </data>
+  <data name="MoreActions" xml:space="preserve">
+    <value>更多操作</value>
+  </data>
+  <data name="InstallAndUpdate" xml:space="preserve">
+    <value>安裝與更新</value>
+  </data>
+  <data name="ConnectionSettings" xml:space="preserve">
+    <value>連線與資料庫設定</value>
+  </data>
+  <data name="ServiceMaintenance" xml:space="preserve">
+    <value>服務維護</value>
+  </data>
+  <data name="InstallComponents" xml:space="preserve">
+    <value>安裝元件</value>
+  </data>
+  <data name="PackageNotSelected" xml:space="preserve">
+    <value>尚未選擇安裝套件</value>
+  </data>
 </root>

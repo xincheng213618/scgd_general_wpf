@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 1.4.3.28 - 2026-09-06
+
+### Changed
+
+- Refreshed the service manager, setup choice and installation windows with consistent light and dark themes and simpler service actions.
+- Moved service logs to the last manager tab after MQTT, while preserving log capture across tab changes and simplifying installation-directory access.
+- Kept installation packages, configuration and backup options visible together with the installation log and progress.
+
 ## 1.4.3.27 - 2026-09-04
 
 ### Fixed

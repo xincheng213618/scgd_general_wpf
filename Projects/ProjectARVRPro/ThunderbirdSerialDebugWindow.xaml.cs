@@ -52,7 +52,7 @@ namespace ProjectARVRPro
                 TogglePortButton.Content = "连接";
                 TogglePortButton.Background = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
                 ConnectionStatusText.Text = "● 未连接";
-                ConnectionStatusText.Foreground = new SolidColorBrush(Colors.Gray);
+                ConnectionStatusText.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
                 SetControlButtonsEnabled(false);
                 return;
             }
@@ -206,7 +206,7 @@ namespace ProjectARVRPro
                 TogglePortButton.Content = "连接";
                 TogglePortButton.Background = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
                 ConnectionStatusText.Text = "● 未连接";
-                ConnectionStatusText.Foreground = new SolidColorBrush(Colors.Gray);
+                ConnectionStatusText.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
                 ComPortComboBox.IsEnabled = true;
                 BaudRateComboBox.IsEnabled = true;
                 SetControlButtonsEnabled(false);

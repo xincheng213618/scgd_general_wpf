@@ -4,7 +4,7 @@ knowledge_type: "reference"
 status: "current"
 summary: "ProjectLUX 流程组、Recipe/Fix 共享配置、处理类型与 CSV/SQLite 结果链；文本协议有独立参考主题。"
 aliases: ["T00XX 如何匹配 LUX 流程","LUX 结果和修正在哪里","ProjectLUX","LUXWindow","ProcessMeta.SocketCode","ARVRRecipe.json","ProjectARVRProFixConfig.json","ProjectLUXSummary.json","LUX Recipe","LUX Fix"]
-code_paths: ["Projects/ProjectLUX/LUXWindow.xaml.cs","Projects/ProjectLUX/Services/SocketControl.cs","Projects/ProjectLUX/Process/","Projects/ProjectLUX/ViewResultManager.cs","Projects/ProjectLUX/Recipe/","Projects/ProjectLUX/Fix/","Projects/ProjectLUX/Summary.cs"]
+code_paths: ["Projects/ProjectLUX/LUXWindow.xaml","Projects/ProjectLUX/TestResultViewWindow.xaml","Projects/ProjectLUX/LUXWindow.xaml.cs","Projects/ProjectLUX/Services/SocketControl.cs","Projects/ProjectLUX/Process/","Projects/ProjectLUX/ViewResultManager.cs","Projects/ProjectLUX/Recipe/","Projects/ProjectLUX/Fix/","Projects/ProjectLUX/Summary.cs"]
 test_paths: ["Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj"]
 related: ["projects.index","projects.capabilities","projects.lux-protocol","projects.arvr-pro-processes","ui.socket-protocol"]
 ---
@@ -38,6 +38,10 @@ related: ["projects.index","projects.capabilities","projects.lux-protocol","proj
 | 结果 | `ObjectiveTestResult.cs`、`ViewResultManager.cs` |
 
 普通流程由当前 `ProcessGroup` 和步骤的 `FlowTemplate` 绑定 Engine Flow。Flow 完成后读取批次和算法结果，`IProcess.Execute()` 应用 Fix 修正和 Recipe 限值，写入聚合结果与 SQLite，再导出 CSV 并返回客户响应。Socket 入口先解析命令和 SN，再分派到下表路径；`T0000` 仅握手，`T0001` 与 `T0031` 分别使用相机和光谱仪专用链，不能把所有命令都理解为初始化后运行同一条流程。
+
+## 界面主题
+
+主界面分隔线、结果明细表格、流程配置提示和 Recipe/Fix 编辑窗口使用 [ColorVision.Themes](../ui-components/ColorVision.Themes.md) 的动态画刷。清空结果或选择未完成记录后，结果区域恢复主题背景；窗口保持打开时切换黑白主题，背景、说明文字和操作按钮仍随主题更新。结果明细的隔行背景保留选中与悬停高亮，选中行的结果文字跟随行前景色，未选中时保留 PASS/FAIL 业务颜色。图像标记的业务颜色保持独立。
 
 ## 配置流程与外部命令
 

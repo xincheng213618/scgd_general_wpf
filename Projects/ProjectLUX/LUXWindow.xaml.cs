@@ -736,7 +736,7 @@ namespace ProjectLUX
             ViewResluts.Clear();
             ImageView.Clear();
             outputText.Document.Blocks.Clear();
-            outputText.Background = Brushes.White;
+            outputText.SetResourceReference(Control.BackgroundProperty, "GlobalBackground");
         }
 
         private void Button_Click_EditResultConfig(object sender, RoutedEventArgs e)
@@ -764,7 +764,7 @@ namespace ProjectLUX
                     }
                     else
                     {
-                        outputText.Background = Brushes.White;
+                        outputText.SetResourceReference(Control.BackgroundProperty, "GlobalBackground");
                         outputText.Document.Blocks.Clear(); // 清除之前的内容
                     }
 

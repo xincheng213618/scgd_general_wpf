@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
 		Microsoft ResX Schema
@@ -441,5 +441,32 @@
   </data>
   <data name="ServiceStatusUnknown" xml:space="preserve">
     <value>未知</value>
+  </data>
+  <data name="ServiceManagerSubtitle" xml:space="preserve">
+    <value>查看服务状态，管理本机运行环境。</value>
+  </data>
+  <data name="ManagementSettings" xml:space="preserve">
+    <value>管理设置</value>
+  </data>
+  <data name="RefreshStatus" xml:space="preserve">
+    <value>刷新状态</value>
+  </data>
+  <data name="MoreActions" xml:space="preserve">
+    <value>更多操作</value>
+  </data>
+  <data name="InstallAndUpdate" xml:space="preserve">
+    <value>安装与更新</value>
+  </data>
+  <data name="ConnectionSettings" xml:space="preserve">
+    <value>连接与数据库设置</value>
+  </data>
+  <data name="ServiceMaintenance" xml:space="preserve">
+    <value>服务维护</value>
+  </data>
+  <data name="InstallComponents" xml:space="preserve">
+    <value>安装组件</value>
+  </data>
+  <data name="PackageNotSelected" xml:space="preserve">
+    <value>尚未选择安装包</value>
   </data>
 </root>

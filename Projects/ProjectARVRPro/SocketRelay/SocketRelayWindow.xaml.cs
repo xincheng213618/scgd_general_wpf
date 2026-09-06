@@ -4,6 +4,7 @@ using ColorVision.SocketProtocol;
 using log4net;
 using ProjectARVRPro.Services;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace ProjectARVRPro.SocketRelay
@@ -81,7 +82,7 @@ namespace ProjectARVRPro.SocketRelay
             else
             {
                 ServerStatusText.Text = "● 服务器未启动";
-                ServerStatusText.Foreground = new SolidColorBrush(Colors.Gray);
+                ServerStatusText.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
                 StartButton.IsEnabled = true;
                 StopButton.IsEnabled = false;
                 ListenIPTextBox.IsEnabled = true;
@@ -98,7 +99,7 @@ namespace ProjectARVRPro.SocketRelay
             else
             {
                 FlowStatusText.Text = "● Flow未连接";
-                FlowStatusText.Foreground = new SolidColorBrush(Colors.Gray);
+                FlowStatusText.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
                 SendToFlowButton.IsEnabled = false;
             }
 
@@ -112,7 +113,7 @@ namespace ProjectARVRPro.SocketRelay
             else
             {
                 ClientStatusText.Text = "● 外部Client未连接";
-                ClientStatusText.Foreground = new SolidColorBrush(Colors.Gray);
+                ClientStatusText.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
                 SendToClientButton.IsEnabled = false;
             }
         }
