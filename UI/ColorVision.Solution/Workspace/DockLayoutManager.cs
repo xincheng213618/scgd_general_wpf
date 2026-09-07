@@ -2,7 +2,10 @@ using AvalonDock;
 using AvalonDock.Layout;
 using AvalonDock.Layout.Serialization;
 using ColorVision.UI;
+using ColorVision.UI.Docking;
 using log4net;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -699,13 +702,17 @@ namespace ColorVision.Solution.Workspace
     /// actually visible. ApplicationIdle runs after WPF's render priority, so a
     /// visible heavyweight panel no longer delays the main window's first frame.
     /// </summary>
-    internal sealed class DeferredDockContent : ContentControl
+    internal sealed class DeferredDockContent : ContentControl, IDockPanelTitleActionProvider
     {
         private readonly Func<object> _contentFactory;
         private readonly Action<long> _materialized;
         private readonly Action<Exception> _materializationFailed;
+        private readonly ObservableCollection<DockPanelTitleAction> _titleActions = [];
+        private INotifyCollectionChanged? _sourceTitleActions;
         private bool _isScheduled;
         private bool _materializationAttempted;
+
+        public IReadOnlyList<DockPanelTitleAction> TitleActions => _titleActions;
 
         public DeferredDockContent(
             Func<object> contentFactory,
@@ -729,6 +736,7 @@ namespace ColorVision.Solution.Workspace
             try
             {
                 Content = _contentFactory();
+                SynchronizeTitleActions();
                 stopwatch.Stop();
                 _materialized(stopwatch.ElapsedMilliseconds);
             }
@@ -740,6 +748,29 @@ namespace ColorVision.Solution.Workspace
 
             return Content;
         }
+
+        private void SynchronizeTitleActions()
+        {
+            if (_sourceTitleActions != null)
+                _sourceTitleActions.CollectionChanged -= SourceTitleActions_CollectionChanged;
+
+            _sourceTitleActions = null;
+            _titleActions.Clear();
+            if (Content is not IDockPanelTitleActionProvider provider)
+                return;
+
+            foreach (DockPanelTitleAction action in provider.TitleActions)
+                _titleActions.Add(action);
+
+            if (provider.TitleActions is INotifyCollectionChanged observable)
+            {
+                _sourceTitleActions = observable;
+                _sourceTitleActions.CollectionChanged += SourceTitleActions_CollectionChanged;
+            }
+        }
+
+        private void SourceTitleActions_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+            => SynchronizeTitleActions();
 
         private void ScheduleMaterialization()
         {

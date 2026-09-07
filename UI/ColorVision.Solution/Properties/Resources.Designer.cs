@@ -880,6 +880,24 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 固定选项卡 的本地化字符串。
+        /// </summary>
+        public static string Sol_DocumentTabPin {
+            get {
+                return ResourceManager.GetString("Sol_DocumentTabPin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 取消固定选项卡 的本地化字符串。
+        /// </summary>
+        public static string Sol_DocumentTabUnpin {
+            get {
+                return ResourceManager.GetString("Sol_DocumentTabUnpin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Hex文本编辑器 的本地化字符串。
         /// </summary>
         public static string Sol_Editor_Hex {
@@ -2176,6 +2194,186 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 账户概览 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_AccountOverview {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_AccountOverview", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 账户更新时间 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_AccountUpdated {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_AccountUpdated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 活跃天数 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_ActiveDays {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_ActiveDays", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 少 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_ActivityLess {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_ActivityLess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 多 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_ActivityMore {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_ActivityMore", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 平均流程时长 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_AverageFlowDuration {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_AverageFlowDuration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最活跃日期 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_BusiestDay {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_BusiestDay", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 本次运行 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_CurrentSession {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_CurrentSession", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 账户与使用概览 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_Description {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 首次使用记录 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_FirstUsage {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_FirstUsage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 流程活动 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_FlowActivity {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_FlowActivity", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 流程洞察 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_FlowInsights {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_FlowInsights", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 近 7 日完成率 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_Last7CompletionRate {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_Last7CompletionRate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 近 7 日执行 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_Last7Executions {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_Last7Executions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最近启动 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_LastLaunch {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_LastLaunch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 启动次数 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_LaunchCount {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_LaunchCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 个人资料 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_Profile {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_Profile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 刷新流程统计 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_RefreshStatistics {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_RefreshStatistics", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 流程执行总数 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_TotalFlowCount {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_TotalFlowCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 累计运行 的本地化字符串。
+        /// </summary>
+        public static string Sol_UserCenter_TotalRuntime {
+            get {
+                return ResourceManager.GetString("Sol_UserCenter_TotalRuntime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 系统管理员模式 的本地化字符串。
         /// </summary>
         public static string Sol_UserMgr_Admin {
@@ -2543,6 +2741,5 @@ namespace ColorVision.Solution.Properties {
                 return ResourceManager.GetString("UserName", resourceCulture);
             }
         }
-        
     }
 }

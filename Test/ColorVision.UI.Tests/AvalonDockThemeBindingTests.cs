@@ -401,6 +401,41 @@ public class AvalonDockThemeBindingTests
         });
     }
 
+    [Fact]
+    public void PaneTitle_LoadsActionsFromContentProviderAndLeavesBottomTabPlain()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var trace = new BindingTrace();
+            using var scene = new DockingScene(false);
+            scene.SecondTool.Content = new DisPlayControlPanel();
+            scene.SecondTool.IsSelected = true;
+            Arrange(scene.Manager);
+
+            AnchorablePaneTitle title = Assert.Single(Descendants<AnchorablePaneTitle>(scene.Manager),
+                candidate => ReferenceEquals(candidate.Model, scene.SecondTool));
+            Border caption = Part<Border>(title, "CaptionBorder");
+            Button action = Assert.Single(Descendants<Button>(title), button => button.Command == DisPlayManager.CreateGroupCommand);
+            DropDownButton menu = Part<DropDownButton>(title, "MenuDropDownButton");
+            TabItem secondTab = Assert.IsType<TabItem>(scene.ToolPaneControl.ItemContainerGenerator.ContainerFromItem(scene.SecondTool));
+            TextBlock glyph = Assert.Single(Descendants<TextBlock>(action));
+
+            Assert.Equal("PanelTitleActionButton", action.Name);
+            Assert.Equal(24, action.ActualWidth);
+            Assert.Equal(24, action.ActualHeight);
+            Assert.Equal("新建分组", action.ToolTip);
+            Assert.Equal("\uE710", glyph.Text);
+            AssertInside(action, caption);
+            Assert.True(action.TranslatePoint(new Point(), caption).X < menu.TranslatePoint(new Point(), caption).X);
+            Assert.DoesNotContain(Descendants<Button>(secondTab), button => button.Command == DisPlayManager.CreateGroupCommand);
+
+            scene.Tool.IsSelected = true;
+            Arrange(scene.Manager);
+            Assert.DoesNotContain(Descendants<Button>(scene.ToolTitle), button => button.Command == DisPlayManager.CreateGroupCommand);
+            Assert.DoesNotContain("BindingExpression path error", trace.Output);
+        });
+    }
+
     [Theory]
     [InlineData("tool-title")]
     [InlineData("document-tab")]
@@ -504,6 +539,101 @@ public class AvalonDockThemeBindingTests
     }
 
     [Fact]
+    public void FixedDocumentTab_MovesToFrontShowsPinnedGlyphAndCanBeUnpinnedFromTheContextMenu()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var trace = new BindingTrace();
+            using var scene = new DockingScene(false);
+            LayoutDocument document = scene.SecondDocument;
+            document.IsActive = true;
+            Arrange(scene.Manager);
+            LayoutDocumentTabItem header = DocumentHeader(scene.Manager, document);
+            Button pin = Part<Button>(header, "PART_PinButton");
+            Button close = Part<Button>(header, "PART_CloseButton");
+            TextBlock glyph = Part<TextBlock>(header, "PinGlyph");
+
+            Assert.Equal(1, scene.Documents.IndexOf(document));
+            Assert.False(DocumentTabPinManager.IsPinned(document));
+            Assert.True(document.CanMove);
+            Assert.Equal(Visibility.Visible, pin.Visibility);
+            Assert.Equal(Visibility.Visible, close.Visibility);
+            Assert.Equal("\uE718", glyph.Text);
+            Assert.Equal(DocumentTabPinManager.GetToggleText(document), pin.ToolTip);
+
+            Execute(pin);
+            Arrange(scene.Manager);
+            header = DocumentHeader(scene.Manager, document);
+            pin = Part<Button>(header, "PART_PinButton");
+            close = Part<Button>(header, "PART_CloseButton");
+            glyph = Part<TextBlock>(header, "PinGlyph");
+            Assert.Equal(0, scene.Documents.IndexOf(document));
+            Assert.True(document.IsActive);
+            Assert.True(DocumentTabPinManager.IsPinned(document));
+            Assert.False(document.CanMove);
+            Assert.Equal(Visibility.Visible, pin.Visibility);
+            Assert.Equal(Visibility.Visible, close.Visibility);
+            Assert.Equal("\uE841", glyph.Text);
+
+            ContextMenu menu = Assert.IsAssignableFrom<ContextMenu>(scene.Manager.DocumentContextMenu);
+            MainWindow.PrepareDocumentContextMenu(menu, document);
+            MenuItem pinMenu = Assert.Single(menu.Items.OfType<MenuItem>(),
+                item => item.Command == DocumentTabPinManager.ToggleCommand);
+            Assert.Equal(DocumentTabPinManager.GetToggleText(document), pinMenu.Header);
+            Assert.Same(document, pinMenu.CommandParameter);
+            Assert.True(pinMenu.Command.CanExecute(pinMenu.CommandParameter));
+            pinMenu.Command.Execute(pinMenu.CommandParameter);
+            Arrange(scene.Manager);
+            header = DocumentHeader(scene.Manager, document);
+            pin = Part<Button>(header, "PART_PinButton");
+            close = Part<Button>(header, "PART_CloseButton");
+            glyph = Part<TextBlock>(header, "PinGlyph");
+
+            Assert.Equal(0, scene.Documents.IndexOf(document));
+            Assert.False(DocumentTabPinManager.IsPinned(document));
+            Assert.True(document.CanMove);
+            Assert.Equal(Visibility.Visible, close.Visibility);
+            Assert.Equal("\uE718", glyph.Text);
+            MainWindow.PrepareDocumentContextMenu(menu, document);
+            Assert.Equal(DocumentTabPinManager.GetToggleText(document), pinMenu.Header);
+            Assert.Single(menu.Items.OfType<MenuItem>(), item => item.Command == DocumentTabPinManager.ToggleCommand);
+
+            document.CanMove = false;
+            Execute(pin);
+            Execute(pin);
+            Assert.False(document.CanMove);
+            Assert.False(DocumentTabPinManager.IsPinned(document));
+            Assert.DoesNotContain("BindingExpression path error", trace.Output);
+        });
+    }
+
+    [Fact]
+    public void FixedDocumentTabs_FormAStablePrefixAndUnpinMovesBehindIt()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var pane = new LayoutDocumentPane();
+            var first = new LayoutDocument { Title = "First" };
+            var second = new LayoutDocument { Title = "Second" };
+            var third = new LayoutDocument { Title = "Third" };
+            pane.Children.Add(first);
+            pane.Children.Add(second);
+            pane.Children.Add(third);
+
+            DocumentTabPinManager.ToggleCommand.Execute(third);
+            Assert.Equal(new[] { third, first, second }, pane.Children.OfType<LayoutDocument>());
+
+            DocumentTabPinManager.ToggleCommand.Execute(second);
+            Assert.Equal(new[] { third, second, first }, pane.Children.OfType<LayoutDocument>());
+
+            DocumentTabPinManager.ToggleCommand.Execute(third);
+            Assert.Equal(new[] { second, third, first }, pane.Children.OfType<LayoutDocument>());
+            Assert.True(third.CanMove);
+            Assert.False(second.CanMove);
+        });
+    }
+
+    [Fact]
     public void ToolCaptionCommands_PreserveAutoHideAndCloseVersusHide()
     {
         WpfTestHost.Invoke(() =>
@@ -560,6 +690,7 @@ public class AvalonDockThemeBindingTests
             AssertInside(Part<DropDownButton>(documents, "MenuDropDownButton"), documents);
             TabItem tab = DocumentTab(documents, scene.Document);
             Assert.True(tab.ActualWidth > 0 && tab.ActualWidth <= documents.ActualWidth);
+            AssertInside(Part<Button>(DocumentHeader(scene.Manager, scene.Document), "PART_PinButton"), documents);
             AssertInside(Part<Button>(DocumentHeader(scene.Manager, scene.Document), "PART_CloseButton"), documents);
         });
     }

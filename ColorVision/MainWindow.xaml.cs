@@ -41,6 +41,7 @@ namespace ColorVision
     public partial class MainWindow : Window
     {
         private const double RightMenuGlyphFontSize = 15;
+        private const string PinDocumentTabMenuUid = "ColorVision.PinDocumentTab";
         private const string OpenDocumentFolderMenuUid = "ColorVision.OpenDocumentFolder";
         private const string OpenDocumentFolderSeparatorUid = "ColorVision.OpenDocumentFolder.Separator";
 
@@ -83,6 +84,29 @@ namespace ColorVision
             if (tabItem?.Model is not LayoutDocument document || contextMenu == null)
                 return;
 
+            PrepareDocumentContextMenu(contextMenu, document);
+        }
+
+        internal static void PrepareDocumentContextMenu(ContextMenu contextMenu, LayoutDocument document)
+        {
+            ArgumentNullException.ThrowIfNull(contextMenu);
+            ArgumentNullException.ThrowIfNull(document);
+
+            var pinItem = contextMenu.Items
+                .OfType<MenuItem>()
+                .FirstOrDefault(item => item.Uid == PinDocumentTabMenuUid);
+            if (pinItem == null)
+            {
+                pinItem = new MenuItem
+                {
+                    Uid = PinDocumentTabMenuUid,
+                    Command = DocumentTabPinManager.ToggleCommand,
+                };
+                contextMenu.Items.Insert(0, pinItem);
+            }
+            pinItem.Header = DocumentTabPinManager.GetToggleText(document);
+            pinItem.CommandParameter = document;
+
             var openFolderItem = contextMenu.Items
                 .OfType<MenuItem>()
                 .FirstOrDefault(item => item.Uid == OpenDocumentFolderMenuUid);
@@ -98,8 +122,8 @@ namespace ColorVision
                 };
                 openFolderItem.Click += OpenDocumentFolder_Click;
                 separator = new Separator { Uid = OpenDocumentFolderSeparatorUid };
-                contextMenu.Items.Insert(0, separator);
-                contextMenu.Items.Insert(0, openFolderItem);
+                contextMenu.Items.Insert(Math.Min(1, contextMenu.Items.Count), openFolderItem);
+                contextMenu.Items.Insert(Math.Min(2, contextMenu.Items.Count), separator);
             }
 
             var visibility = EditorDocumentService.TryGetFilePath(document, out _)
@@ -108,7 +132,7 @@ namespace ColorVision
             openFolderItem.CommandParameter = document;
             openFolderItem.Visibility = visibility;
             if (separator != null)
-                separator.Visibility = visibility;
+                separator.Visibility = Visibility.Visible;
         }
 
         private static void OpenDocumentFolder_Click(object sender, RoutedEventArgs e)

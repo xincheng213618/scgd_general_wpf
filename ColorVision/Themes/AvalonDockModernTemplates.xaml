@@ -12,11 +12,16 @@
                     xmlns:chrome="clr-namespace:ColorVision.Themes"
                     xmlns:controls="clr-namespace:AvalonDock.Controls;assembly=AvalonDock"
                     xmlns:converters="clr-namespace:AvalonDock.Converters;assembly=AvalonDock"
-                    xmlns:properties="clr-namespace:AvalonDock.Properties;assembly=AvalonDock">
+                    xmlns:properties="clr-namespace:AvalonDock.Properties;assembly=AvalonDock"
+                    xmlns:uiDocking="clr-namespace:ColorVision.UI.Docking;assembly=ColorVision.UI"
+                    xmlns:workspace="clr-namespace:ColorVision.Solution.Workspace;assembly=ColorVision.Solution">
     <ResourceDictionary.MergedDictionaries>
         <!-- Supplies command menus, icons and the base manager style, not a second engine. -->
         <ResourceDictionary Source="/ColorVision;component/Themes/AvalonDockGripTemplates.xaml" />
     </ResourceDictionary.MergedDictionaries>
+
+    <workspace:DocumentTabPinStateConverter x:Key="DocumentTabPinStateConverter" />
+    <uiDocking:DockPanelTitleActionsConverter x:Key="DockPanelTitleActionsConverter" />
 
     <Style x:Key="DockingCaptionButtonStyle" TargetType="{x:Type primitives:ButtonBase}">
         <Setter Property="Width" Value="24" />
@@ -94,25 +99,46 @@
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <ContentPresenter x:Name="Header" Margin="0,0,4,0" VerticalAlignment="Center"
                                     Content="{Binding Model, RelativeSource={RelativeSource TemplatedParent}}"
                                     ContentTemplate="{Binding Model.Root.Manager.AnchorableTitleTemplate, RelativeSource={RelativeSource TemplatedParent}}"
                                     ContentTemplateSelector="{Binding Model.Root.Manager.AnchorableTitleTemplateSelector, RelativeSource={RelativeSource TemplatedParent}}"
                                     TextElement.Foreground="{TemplateBinding Foreground}" />
-                                <controls:DropDownButton x:Name="MenuDropDownButton" Grid.Column="1" Style="{StaticResource DockingDropDownButtonStyle}"
+                                <ItemsControl x:Name="PanelTitleActions" Grid.Column="1"
+                                    ItemsSource="{Binding Model.Content, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource DockPanelTitleActionsConverter}}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type uiDocking:DockPanelTitleAction}">
+                                            <Button x:Name="PanelTitleActionButton"
+                                                AutomationProperties.Name="{Binding ToolTip}"
+                                                Command="{Binding Command}"
+                                                CommandParameter="{Binding CommandParameter}"
+                                                Style="{StaticResource DockingCaptionButtonStyle}"
+                                                ToolTip="{Binding ToolTip}">
+                                                <TextBlock Style="{StaticResource DockingCaptionGlyphStyle}" Text="{Binding Glyph}" />
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <controls:DropDownButton x:Name="MenuDropDownButton" Grid.Column="2" Style="{StaticResource DockingDropDownButtonStyle}"
                                     DropDownContextMenu="{Binding Model.Root.Manager.AnchorableContextMenu, RelativeSource={RelativeSource TemplatedParent}}"
                                     DropDownContextMenuDataContext="{Binding LayoutItem, RelativeSource={RelativeSource TemplatedParent}}"
                                     ToolTip="{x:Static properties:Resources.Anchorable_CxMenu_Hint}">
                                     <TextBlock Style="{StaticResource DockingCaptionGlyphStyle}" Text="&#xE70D;" />
                                 </controls:DropDownButton>
-                                <Button x:Name="PART_AutoHidePin" Grid.Column="2" Style="{StaticResource DockingCaptionButtonStyle}"
+                                <Button x:Name="PART_AutoHidePin" Grid.Column="3" Style="{StaticResource DockingCaptionButtonStyle}"
                                     Command="{Binding LayoutItem.AutoHideCommand, RelativeSource={RelativeSource TemplatedParent}}"
                                     ToolTip="{x:Static properties:Resources.Anchorable_BtnAutoHide_Hint}"
                                     Visibility="{Binding IsEnabled, RelativeSource={RelativeSource Self}, Converter={converters:BoolToVisibilityConverter}}">
                                     <TextBlock x:Name="AutoHideGlyph" Style="{StaticResource DockingCaptionGlyphStyle}" Text="&#xE718;" />
                                 </Button>
-                                <Button x:Name="PART_HidePin" Grid.Column="3" Style="{StaticResource DockingCaptionButtonStyle}"
+                                <Button x:Name="PART_HidePin" Grid.Column="4" Style="{StaticResource DockingCaptionButtonStyle}"
                                     Command="{Binding LayoutItem.HideCommand, RelativeSource={RelativeSource TemplatedParent}}"
                                     ToolTip="{x:Static properties:Resources.Anchorable_BtnClose_Hint}"
                                     Visibility="{Binding IsEnabled, RelativeSource={RelativeSource Self}, Converter={converters:BoolToVisibilityConverter}}">
@@ -198,6 +224,7 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <!-- Emphasize only the caption, not the native menu owner. -->
                                 <ContentPresenter x:Name="DocumentHeader" Margin="0,0,5,0" VerticalAlignment="Center" TextElement.FontWeight="Normal"
@@ -205,8 +232,17 @@
                                     ContentTemplate="{Binding Model.Root.Manager.DocumentHeaderTemplate, RelativeSource={RelativeSource TemplatedParent}}"
                                     ContentTemplateSelector="{Binding Model.Root.Manager.DocumentHeaderTemplateSelector, RelativeSource={RelativeSource TemplatedParent}}"
                                     TextElement.Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type TabItem}}}" />
+                                <Button x:Name="PART_PinButton" Grid.Column="1" Width="22" Height="22" Visibility="Hidden"
+                                    Style="{StaticResource DockingCaptionButtonStyle}"
+                                    Tag="{Binding Converter={StaticResource DocumentTabPinStateConverter}}"
+                                    Command="{x:Static workspace:DocumentTabPinManager.ToggleCommand}"
+                                    CommandParameter="{Binding}"
+                                    ToolTip="{Binding Tag.ToggleText, RelativeSource={RelativeSource Self}}"
+                                    AutomationProperties.Name="{Binding Tag.ToggleText, RelativeSource={RelativeSource Self}}">
+                                    <TextBlock x:Name="PinGlyph" Style="{StaticResource DockingCaptionGlyphStyle}" Text="&#xE718;" />
+                                </Button>
                                 <!-- Hidden, not collapsed, for ordinary unselected tabs: hover never changes their width. -->
-                                <Button x:Name="PART_CloseButton" Grid.Column="1" Width="22" Height="22" Visibility="Hidden"
+                                <Button x:Name="PART_CloseButton" Grid.Column="2" Width="22" Height="22" Visibility="Hidden"
                                     Style="{StaticResource DockingCaptionButtonStyle}"
                                     Command="{Binding LayoutItem.CloseCommand, RelativeSource={RelativeSource TemplatedParent}}"
                                     ToolTip="{x:Static properties:Resources.Document_Close}">
@@ -217,16 +253,20 @@
                     </controls:DropDownControlArea>
                     <ControlTemplate.Triggers>
                         <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                            <Setter TargetName="PART_PinButton" Property="Visibility" Value="Visible" />
                             <Setter TargetName="PART_CloseButton" Property="Visibility" Value="Visible" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding IsActive}" Value="True">
+                            <Setter TargetName="PART_PinButton" Property="Visibility" Value="Visible" />
                             <Setter TargetName="PART_CloseButton" Property="Visibility" Value="Visible" />
                             <Setter TargetName="DocumentHeader" Property="TextElement.FontWeight" Value="SemiBold" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding IsLastFocusedDocument}" Value="True">
+                            <Setter TargetName="PART_PinButton" Property="Visibility" Value="Visible" />
                             <Setter TargetName="PART_CloseButton" Property="Visibility" Value="Visible" />
                         </DataTrigger>
                         <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="PART_PinButton" Property="Visibility" Value="Visible" />
                             <Setter TargetName="PART_CloseButton" Property="Visibility" Value="Visible" />
                         </Trigger>
                         <DataTrigger Binding="{Binding CanClose}" Value="False">
@@ -242,6 +282,13 @@
                             <Setter TargetName="PART_CloseButton" Property="ToolTip" Value="{x:Static properties:Resources.Anchorable_Hide}" />
                             <Setter TargetName="PART_CloseButton" Property="Visibility" Value="Visible" />
                         </MultiDataTrigger>
+                        <DataTrigger Binding="{Binding Tag.IsPinned, ElementName=PART_PinButton}" Value="True">
+                            <Setter TargetName="PART_PinButton" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="PinGlyph" Property="Text" Value="&#xE841;" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Tag, ElementName=PART_PinButton}" Value="{x:Null}">
+                            <Setter TargetName="PART_PinButton" Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

@@ -8,6 +8,7 @@
         xmlns:local="clr-namespace:ColorVision"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:ColorVision.Properties"
+        xmlns:ui="clr-namespace:ColorVision.UI;assembly=ColorVision.UI"
         xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindowConfig}"
@@ -150,14 +151,14 @@
                                 <Grid x:Name="ProjectPanelGrid" />
                             </xcad:LayoutAnchorable>
                             <xcad:LayoutAnchorable Title="{x:Static properties:Resources.DeviceControl}" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="AcquirePanel">
-                                <ScrollViewer x:Name="ScrollViewerDisplay"
-                                              Background="{DynamicResource GlobalBackground}"
-                                              HorizontalScrollBarVisibility="Disabled"
-                                              VerticalScrollBarVisibility="Auto">
+                                <ui:DisPlayControlPanel x:Name="ScrollViewerDisplay"
+                                                       Background="{DynamicResource GlobalBackground}"
+                                                       HorizontalScrollBarVisibility="Disabled"
+                                                       VerticalScrollBarVisibility="Auto">
                                     <StackPanel x:Name="StackPanelSPD"
                                                 Width="{Binding ViewportWidth, ElementName=ScrollViewerDisplay}"
                                                 Margin="-2,0,0,0" />
-                                </ScrollViewer>
+                                </ui:DisPlayControlPanel>
                             </xcad:LayoutAnchorable>
                         </xcad:LayoutAnchorablePane>
                     </xcad:LayoutAnchorablePaneGroup>

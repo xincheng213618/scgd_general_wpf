@@ -4449,7 +4449,9 @@
         "DeviceServiceFactoryRegistry",
         "ServiceTypes",
         "LoadServices",
-        "LastGenControl"
+        "LastGenControl",
+        "设备控制分组",
+        "CreateGroupCommand"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Dao/SysResourceModel.cs",
@@ -6779,11 +6781,18 @@
         "VS2026",
         "停靠标题",
         "文档标签",
+        "固定选项卡",
+        "固定标签",
+        "图钉",
+        "DocumentTabPinManager",
         "浮动窗口主题",
         "工具面板三段色",
         "标题右键菜单",
         "单工具面板空白",
-        "ToolTabStrip"
+        "ToolTabStrip",
+        "工具标签命令",
+        "DockPanelHeaderAction",
+        "AnchorableHeaderTemplate"
       ],
       "code_paths": [
         "ColorVision/MainWindow.xaml",
@@ -6812,7 +6821,10 @@
         "UI/ColorVision.UI/Serach/SearchWindow.xaml",
         "UI/ColorVision.UI/Serach/SearchWindow.xaml.cs",
         "UI/ColorVision.UI/Serach/SearchWindowHotkeyBridge.cs",
-        "UI/ColorVision.Solution/Workspace"
+        "UI/ColorVision.Solution/Workspace",
+        "UI/ColorVision.Solution/Workspace/DocumentTabPinManager.cs",
+        "UI/ColorVision.Solution/Workspace/DockPanelHeaderAction.cs",
+        "UI/ColorVision.Solution/Workspace/DockPanelHeaderTemplates.xaml"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs",
@@ -9450,6 +9462,7 @@
         "DockContentRegistration",
         "DeferredDockContent",
         "WorkspaceManager",
+        "DocumentTabPinManager",
         "TryCloseAllDocuments",
         "NotifyResourceRenamed",
         "ResetLayout",
@@ -9459,6 +9472,8 @@
         "保存文档",
         "重新加载文件",
         "文件被外部修改",
+        "固定选项卡",
+        "固定标签",
         "重置窗口布局",
         "停靠布局恢复",
         "关闭重开面板",
@@ -9475,6 +9490,7 @@
         "UI/ColorVision.Solution/Editor/SystemEditor.cs",
         "UI/ColorVision.Solution/Workspace/EditorDocumentService.cs",
         "UI/ColorVision.Solution/Workspace/IEditorDocumentContent.cs",
+        "UI/ColorVision.Solution/Workspace/DocumentTabPinManager.cs",
         "UI/ColorVision.Solution/Workspace/DockLayoutManager.cs",
         "UI/ColorVision.Solution/Workspace/WorkspaceManager.cs",
         "UI/ColorVision.Solution/Workspace/LayoutMenuItems.cs",
@@ -9485,7 +9501,8 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/DockContentRegistrationTests.cs",
-        "Test/ColorVision.UI.Tests/BuiltInShortcutDefaultsTests.cs"
+        "Test/ColorVision.UI.Tests/BuiltInShortcutDefaultsTests.cs",
+        "Test/ColorVision.UI.Tests/AvalonDockThemeBindingTests.cs"
       ],
       "related": [
         "ui.solution",

@@ -137,6 +137,7 @@ namespace ColorVision.UI
         private static DisPlayManager _instance;
         private static readonly object _locker = new();
         public static DisPlayManager GetInstance() { lock (_locker) { return _instance ??= new DisPlayManager(); } }
+        public static ICommand CreateGroupCommand { get; } = new RelayCommand(_ => GetInstance().CreateGroup());
         public ObservableCollection<IDisPlayControl> IDisPlayControls { get; private set; }
         private const string DragDataFormat = "ColorVision.UI.DisPlayControl";
         private static readonly TimeSpan DisplayDragPressDelay = TimeSpan.FromMilliseconds(260);
@@ -366,8 +367,6 @@ namespace ColorVision.UI
                     StackPanel.Children.Add(section);
                 }
             }
-
-            StackPanel.Children.Add(CreateGroupManagerFooter());
         }
 
         private void DetachDisplayControlsFromParents()
@@ -559,45 +558,6 @@ namespace ColorVision.UI
             }
 
             return contextMenu;
-        }
-
-        private Border CreateGroupManagerFooter()
-        {
-            var border = new Border
-            {
-                Margin = new Thickness(0, 2, 3, 2),
-                Padding = new Thickness(4, 3, 2, 3),
-                BorderThickness = new Thickness(0, 1, 0, 0)
-            };
-            border.SetResourceReference(Border.BorderBrushProperty, "GlobalBorderBrush");
-
-            var dockPanel = new DockPanel();
-            border.Child = dockPanel;
-
-            var button = new Button
-            {
-                Content = "+ 分组",
-                MinWidth = 56,
-                Height = 22,
-                HorizontalAlignment = HorizontalAlignment.Right
-            };
-            button.SetResourceReference(FrameworkElement.StyleProperty, "ButtonDefault.Small");
-            button.Click += (s, e) => CreateGroup();
-            DockPanel.SetDock(button, Dock.Right);
-            dockPanel.Children.Add(button);
-
-            int groupCount = DisPlayManagerConfig.Instance.Groups.Count(a => !IsDefaultGroup(a.Id));
-            var textBlock = new TextBlock
-            {
-                Text = groupCount > 0 ? $"{groupCount} 个分组" : "分组",
-                FontSize = 12,
-                VerticalAlignment = VerticalAlignment.Center,
-                Opacity = 0.55
-            };
-            textBlock.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
-            dockPanel.Children.Add(textBlock);
-
-            return border;
         }
 
         private void AddDisplayControl(StackPanel panel, IDisPlayControl item)

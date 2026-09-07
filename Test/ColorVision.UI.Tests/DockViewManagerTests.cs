@@ -145,6 +145,9 @@ public class DockViewManagerTests
 
                 Assert.Equal(new Thickness(3, 0, 4, 2), first.Margin);
                 Assert.Equal(new Thickness(0, 0, 0, 2), second.Margin);
+                Assert.Equal(2, panel.Children.Count);
+                Assert.DoesNotContain(panel.Children.OfType<Border>(), border =>
+                    border.Child is DockPanel dockPanel && dockPanel.Children.OfType<Button>().Any(button => Equals(button.Content, "+ 分组")));
                 Assert.False(first.IsSelected);
                 Assert.True(second.IsSelected);
                 Assert.Same(second, manager.SelectedControl);
