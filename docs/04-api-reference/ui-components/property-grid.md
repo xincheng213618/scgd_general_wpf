@@ -48,6 +48,12 @@ public RelayCommand RefreshDeviceIdCommand { get; set; }
 
 `CommandPanelTests` 覆盖继承、分类/命令排序、本地化、隐藏/空命令、命令替换、禁用、重复生成、窄布局与动态主题；`DeviceCommandMetadataTests` 核对上述设备类型的分类和中文标签，不构建设备或操作硬件。
 
+## 设置行呈现
+
+`SettingsPropertyPresenter.Create` 为设置页面复用现有 PropertyEditor，保留原编辑器绑定、验证和 `PropertyVisibility`，将名称/说明放在左侧、控件放在右侧。支持属性白名单及 `Display` 本地化元数据，后者优先于旧 `DisplayName / Description`。单控件的外边距和最小宽度由行容器统一处理，避免下拉框边框被固定列裁剪。
+
+该呈现器只负责布局，不负责配置保存或作用范围。当前用于[图像设置](../../02-developer-guide/core-concepts/image-editor-settings-plan.md)；Desktop 设置仍使用自己的呈现逻辑。
+
 ## 接口与注册
 
 `UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs` 在 `System.ComponentModel` 命名空间定义唯一入口：

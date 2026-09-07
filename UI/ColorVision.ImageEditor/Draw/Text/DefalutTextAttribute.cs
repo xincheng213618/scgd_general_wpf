@@ -2,6 +2,8 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+using ColorVision.ImageEditor.Settings;
 
 namespace ColorVision.ImageEditor.Draw
 {
@@ -39,14 +41,17 @@ namespace ColorVision.ImageEditor.Draw
         }
 
     [DisplayName("物理长度")]
-        public double ActualLength { get => _ActualLength; set { _ActualLength = value <= 0 ? 1 : value; OnPropertyChanged(); } }
+        [Display(Name = nameof(SettingsText.ActualLength), ResourceType = typeof(SettingsText))]
+        public double ActualLength { get => _ActualLength; set { _ActualLength = double.IsFinite(value) && value > 0 ? value : 1; OnPropertyChanged(); } }
         private double _ActualLength = 1;
 
     [DisplayName("物理单位")]
+        [Display(Name = nameof(SettingsText.PhysicalUnit), ResourceType = typeof(SettingsText))]
         public string PhysicalUnit { get => _PhysicalUnit; set { _PhysicalUnit = string.IsNullOrWhiteSpace(value) ? "Px" : value; OnPropertyChanged(); } }
         private string _PhysicalUnit = "Px";
 
     [DisplayName("启用物理单位")]
+        [Display(Name = nameof(SettingsText.IsUsePhysicalUnit), ResourceType = typeof(SettingsText))]
         public bool IsUsePhysicalUnit { get => _IsUsePhysicalUnit; set { _IsUsePhysicalUnit = value; OnPropertyChanged(); } }
         private bool _IsUsePhysicalUnit;
 

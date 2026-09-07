@@ -43,6 +43,9 @@ namespace ColorVision.ImageEditor.Draw
 
         internal ImageProcessingContext? ProcessingContext { get; set; }
 
+        private readonly DefalutTextAttribute _standaloneCalibration = new();
+        public DefalutTextAttribute Calibration => ProcessingContext?.Config.Calibration ?? _standaloneCalibration;
+
         public ImageMouseInfoProvider MouseInfoProvider { get; }
 
         public SelectEditorVisual SelectionVisual { get; set; } = null!;

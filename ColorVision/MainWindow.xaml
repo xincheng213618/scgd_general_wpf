@@ -127,8 +127,6 @@
                     </StackPanel>
                     <Border x:Name="CompactDragRegion" DockPanel.Dock="Right" Width="120" Visibility="Collapsed"
                             Panel.ZIndex="1" Background="{DynamicResource GlobalBackground}" WindowChrome.IsHitTestVisibleInChrome="False" />
-                    <Image x:Name="CompactWindowIcon" DockPanel.Dock="Left" Width="16" Height="16" Margin="6,0,8,0"
-                           Source="{Binding Icon, RelativeSource={RelativeSource AncestorType=Window}}" Visibility="Collapsed" IsHitTestVisible="False" />
                     <Menu x:Name="Menu1" Padding="2" HorizontalAlignment="Left" Background="Transparent" WindowChrome.IsHitTestVisibleInChrome="True" />
                     <Button x:Name="UpdateNotificationButton"
                             Click="UpdateNotificationButton_Click"
@@ -158,7 +156,7 @@
                                               VerticalScrollBarVisibility="Auto">
                                     <StackPanel x:Name="StackPanelSPD"
                                                 Width="{Binding ViewportWidth, ElementName=ScrollViewerDisplay}"
-                                                Margin="-2,5,0,0" />
+                                                Margin="-2,0,0,0" />
                                 </ScrollViewer>
                             </xcad:LayoutAnchorable>
                         </xcad:LayoutAnchorablePane>

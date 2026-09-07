@@ -259,6 +259,9 @@ next: false
 - [设备视图内存预览设计（待实施） \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview.md) — `engine.camera-preview-plan`
   待实施的设备视图无文件预览：明确与本地手动窗口的区别、发布租约之外的读写同步、latest-wins、RAW/CIE显示副本及验收缺口。
 
+- [图像设置：作用范围、保存和扩展](../../02-developer-guide/core-concepts/image-editor-settings-plan.md) — `ui.image-editor-settings-plan`
+  图像设置的作用范围、显式默认值与标定档案保存、当前视图隔离和扩展协议；主设置独立入口与旧接口清理仍待实施。
+
 ## Engine/ColorVision.FileIO {#module-456e67696e652f436f6c6f72566973696f6e2e46696c65494f}
 
 - [构建平台与制品边界](../../02-developer-guide/README.md) — `delivery.index`

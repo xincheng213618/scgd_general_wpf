@@ -6,14 +6,26 @@ namespace ColorVision.Windowing;
 /// <summary>Measures optional actions without consuming the native caption or explicit drag region.</summary>
 internal static class CompactTitleBarLayout
 {
+    internal static void SetOpticalAlignment(FrameworkElement element, bool compact,
+        Thickness ordinaryMargin, VerticalAlignment ordinaryVerticalAlignment)
+    {
+        element.SetCurrentValue(FrameworkElement.VerticalAlignmentProperty,
+            compact ? VerticalAlignment.Center : ordinaryVerticalAlignment);
+        // Centering a box with 4 DIP additional top margin lowers its visible center by 2 DIP.
+        // Apply the same optical offset to every text-bearing title-bar element.
+        element.SetCurrentValue(FrameworkElement.MarginProperty, compact
+            ? new Thickness(ordinaryMargin.Left, ordinaryMargin.Top + 4, ordinaryMargin.Right, ordinaryMargin.Bottom)
+            : ordinaryMargin);
+    }
+
     internal static void Update(FrameworkElement titleBar, Menu menu, StackPanel rightActions,
-        FrameworkElement updateNotice, FrameworkElement icon, FrameworkElement dragRegion,
+        FrameworkElement updateNotice, FrameworkElement dragRegion,
         FrameworkElement overflowButton, bool hasPendingUpdate)
     {
         // Always measure the natural widths, not the current collapsed/allocated widths.
         // Update availability is model state: a collapsed notice must be able to return
         // when the window grows, without waiting for another update notification.
-        double fixedWidth = MeasureNaturalWidth(menu) + MeasureNaturalWidth(icon) + MeasureNaturalWidth(dragRegion);
+        double fixedWidth = MeasureNaturalWidth(menu) + MeasureNaturalWidth(dragRegion);
         double actionsWidth = MeasureNaturalWidth(rightActions);
         double updateWidth = hasPendingUpdate ? MeasureNaturalWidth(updateNotice) : 0;
         bool showAllActions = titleBar.ActualWidth >= fixedWidth + actionsWidth + updateWidth;

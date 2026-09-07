@@ -276,6 +276,8 @@ namespace ColorVision.ImageEditor
             return left.DpiScaleX == right.DpiScaleX && left.DpiScaleY == right.DpiScaleY;
         }
 
+        internal ColorVision.ImageEditor.Draw.DefalutTextAttribute? Calibration { get; set; }
+
         private bool TryAddVisual(Visual? visual, int? index = null, bool raiseEvents = true, DrawingVisualScaleContext? scaleContext = null)
         {
             if (visual == null || !visualSet.Add(visual)) return false;
@@ -301,6 +303,8 @@ namespace ColorVision.ImageEditor
                 }
 
                 AddVisualTree(visual);
+                if (visual is ColorVision.ImageEditor.Draw.DrawingVisualRuler ruler && Calibration != null)
+                    ruler.Calibration = Calibration;
             }
             catch
             {

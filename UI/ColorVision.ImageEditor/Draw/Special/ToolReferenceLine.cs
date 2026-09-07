@@ -130,6 +130,7 @@ namespace ColorVision.ImageEditor.Draw.Special
     
     public class ReferenceLine: DrawingVisualBase<ReferenceLineParam>
     {
+        public DefalutTextAttribute? Calibration { get; set; }
         // Constants for shape approximations
         private const double FaceShapeWidthRatio = 0.8;
         
@@ -487,7 +488,8 @@ namespace ColorVision.ImageEditor.Draw.Special
             TextAttribute textAttribute = new();
             textAttribute.FontSize = 15 / ratio;
             double textOffset = 4 / ratio;
-            double actualLength = DefalutTextAttribute.Defalut.IsUsePhysicalUnit ? DefalutTextAttribute.Defalut.ActualLength : 1;
+            DefalutTextAttribute calibration = Calibration ?? DefalutTextAttribute.Defalut;
+            double actualLength = calibration.IsUsePhysicalUnit ? calibration.ActualLength : 1;
             Typeface typeface = new(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch);
 
             for (double y = Math.Max(0, Math.Floor(visible.Top / step) * step); y <= Math.Min(ActualHeight, visible.Bottom); y += step)
@@ -711,6 +713,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         public ToolReferenceLine(DrawEditorContext editorContext)
         {
             EditorContext = editorContext;
+            ReferenceLine.Calibration = editorContext.Calibration;
             ToolBarLocal = ToolBarLocal.Top;
             Order = 550;
             Icon = IEditorToolFactory.TryFindResource("ConcentricCirclesDrawImg");
@@ -745,7 +748,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                     Image.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
                     Image.PreviewMouseUp += PreviewMouseUp;
                     ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
-                    DefalutTextAttribute.Defalut.PropertyChanged += Defalut_PropertyChanged;
+                    EditorContext.Calibration.PropertyChanged += Defalut_PropertyChanged;
 
                 }
                 else
@@ -755,7 +758,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                     Image.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
                     Image.PreviewMouseUp -= PreviewMouseUp;
                     ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
-                    DefalutTextAttribute.Defalut.PropertyChanged -= Defalut_PropertyChanged;
+                    EditorContext.Calibration.PropertyChanged -= Defalut_PropertyChanged;
                     ReferenceLine.IsRMouseDown = false;
                     ReferenceLine.IsLMouseDown = false;
                 }
@@ -791,6 +794,7 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         private void UpdateReferenceLineView()
         {
+            ReferenceLine.Calibration = EditorContext.Calibration;
             Matrix matrix = ZoomboxSub.ContentMatrix;
             double ratio = Math.Max(matrix.M11, 0.0001);
             ReferenceLine.Ratio = ratio;

@@ -428,4 +428,100 @@
   <data name="Sched_ExecFail" xml:space="preserve">
     <value>Failed</value>
   </data>
+  <data name="Sched_EveryCalendarDay" xml:space="preserve">
+    <value>每個日曆日執行一次</value>
+  </data>
+  <data name="Sched_RunOnce" xml:space="preserve">
+    <value>執行一次</value>
+  </data>
+  <data name="Sched_RepeatSummary" xml:space="preserve">
+    <value>每 {0} · 共執行 {1} 次</value>
+  </data>
+  <data name="Sched_ForeverSummary" xml:space="preserve">
+    <value>每 {0} · 持續重複</value>
+  </data>
+  <data name="Sched_DelaySummary" xml:space="preserve">
+    <value>延遲 {0} 開始</value>
+  </data>
+  <data name="Sched_Running" xml:space="preserve">
+    <value>執行中</value>
+  </data>
+  <data name="Sched_Paused" xml:space="preserve">
+    <value>已暫停</value>
+  </data>
+  <data name="Sched_Ready" xml:space="preserve">
+    <value>就緒</value>
+  </data>
+  <data name="Sched_SelectTaskType" xml:space="preserve">
+    <value>選擇要執行的任務類型</value>
+  </data>
+  <data name="Sched_Overview" xml:space="preserve">
+    <value>{0} 個任務 · {1} 個執行中 · {2} 個已暫停</value>
+  </data>
+  <data name="Sched_OverviewHint" xml:space="preserve">
+    <value>查看執行計劃，管理每一項任務</value>
+  </data>
+  <data name="Sched_More" xml:space="preserve">
+    <value>更多</value>
+  </data>
+  <data name="Sched_Export" xml:space="preserve">
+    <value>匯出</value>
+  </data>
+  <data name="Sched_NextRun" xml:space="preserve">
+    <value>下次執行</value>
+  </data>
+  <data name="Sched_LastRun" xml:space="preserve">
+    <value>上次執行</value>
+  </data>
+  <data name="Sched_RunStats" xml:space="preserve">
+    <value>執行 {0} 次 · 成功 {1} · 失敗 {2}</value>
+  </data>
+  <data name="Sched_TaskConfiguration" xml:space="preserve">
+    <value>任務參數</value>
+  </data>
+  <data name="Sched_CreateHint" xml:space="preserve">
+    <value>選擇任務內容，再設定執行時間</value>
+  </data>
+  <data name="Sched_EditHint" xml:space="preserve">
+    <value>調整任務內容和執行計劃</value>
+  </data>
+  <data name="Sched_SaveChanges" xml:space="preserve">
+    <value>儲存修改</value>
+  </data>
+  <data name="Sched_RepeatMode" xml:space="preserve">
+    <value>重複方式</value>
+  </data>
+  <data name="Sched_AdditionalRuns" xml:space="preserve">
+    <value>追加次數</value>
+  </data>
+  <data name="Sched_RepeatHint" xml:space="preserve">
+    <value>在首次執行後追加；填 2 表示共執行 3 次</value>
+  </data>
+  <data name="Sched_TimeFormat" xml:space="preserve">
+    <value>格式：hh:mm:ss，例如 00:05:00</value>
+  </data>
+  <data name="Sched_CalendarHint" xml:space="preserve">
+    <value>按日曆日重複，間隔為 1 天</value>
+  </data>
+  <data name="Sched_PlanPreview" xml:space="preserve">
+    <value>計劃預覽</value>
+  </data>
+  <data name="Sched_ImmediateHint" xml:space="preserve">
+    <value>儲存後即可按計劃觸發任務</value>
+  </data>
+  <data name="Sched_InvalidInput" xml:space="preserve">
+    <value>請檢查標紅的輸入；時間使用 hh:mm:ss，次數和秒數使用整數。</value>
+  </data>
+  <data name="Sched_ConfigFailed" xml:space="preserve">
+    <value>無法載入任務參數：{0}</value>
+  </data>
+  <data name="Sched_NoTaskTypes" xml:space="preserve">
+    <value>暫未發現可用任務類型</value>
+  </data>
+  <data name="Sched_Working" xml:space="preserve">
+    <value>正在儲存…</value>
+  </data>
+  <data name="Sched_PauseHint" xml:space="preserve">
+    <value>暫停只影響後續觸發，正在執行的任務會繼續運行</value>
+  </data>
 </root>

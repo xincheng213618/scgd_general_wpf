@@ -618,7 +618,7 @@ namespace ColorVision.UI
             userControl.ContextMenuOpening += DisplayControl_ContextMenuOpening;
             userControl.Drop -= DisplayControl_Drop;
             userControl.Drop += DisplayControl_Drop;
-            userControl.Margin = new Thickness(userControl.Margin.Left, 1, userControl.Margin.Right, 1);
+            userControl.Margin = new Thickness(userControl.Margin.Left, 0, userControl.Margin.Right, 2);
             panel.Children.Add(userControl);
         }
 

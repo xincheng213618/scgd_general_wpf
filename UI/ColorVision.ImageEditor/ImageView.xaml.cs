@@ -182,6 +182,7 @@ namespace ColorVision.ImageEditor
         private EditorContext CreateEditorContext()
         {
             ImageViewConfig config = new();
+            ImageCalibrationService.ApplyToView(config);
             DrawEditorContext drawContext = new(ImageShow, Zoombox1);
             ImageProcessingContext processingContext = new(
                 config,
@@ -664,12 +665,37 @@ namespace ColorVision.ImageEditor
 
         public void RegisterSettings(Func<IEnumerable<ImageViewSettingsEntry>> getEntries)
         {
+            RegisterSettingsProvider(getEntries);
+        }
+
+        public IDisposable RegisterSettingsProvider(Func<IEnumerable<ImageViewSettingsEntry>> getEntries)
+        {
+            ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+            ArgumentNullException.ThrowIfNull(getEntries);
             _settingsEntries.Add(getEntries);
+            return new SettingsRegistration(_settingsEntries, getEntries);
         }
 
         internal IEnumerable<ImageViewSettingsEntry> GetRegisteredSettings()
         {
-            return _settingsEntries.SelectMany(getEntries => getEntries());
+            var entries = new List<ImageViewSettingsEntry>();
+            foreach (var provider in _settingsEntries.ToArray())
+            {
+                try { entries.AddRange(provider().Where(entry => entry != null && entry.Source != null).ToArray()); }
+                catch (Exception ex) { log.Warn("Image settings provider failed.", ex); }
+            }
+            return entries;
+        }
+
+        private sealed class SettingsRegistration(List<Func<IEnumerable<ImageViewSettingsEntry>>> providers, Func<IEnumerable<ImageViewSettingsEntry>> provider) : IDisposable
+        {
+            private bool _disposed;
+            public void Dispose()
+            {
+                if (_disposed) return;
+                _disposed = true;
+                providers.Remove(provider);
+            }
         }
 
         public void OpenSettingsWindow(string? initialGroup = null)
@@ -1586,19 +1612,16 @@ namespace ColorVision.ImageEditor
                 Config.SetImageMetadata(ImageViewPropertyKeys.Stride, stride, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_Stride);
                 Config.SetImageMetadata(ImageViewPropertyKeys.DpiX, writeableBitmap.DpiX, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_DpiX);
                 Config.SetImageMetadata(ImageViewPropertyKeys.DpiY, writeableBitmap.DpiY, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_DpiY);
-                if (enableEditorImageServices)
-                {
-                    PseudoColorTool?.ConfigureForImage();
-                }
             }
 
             if (enableEditorImageServices)
             {
-                ImageCalibrationService.ApplyToDefault(Config);
+                ImageCalibrationService.ApplyToView(Config);
             }
 
             ViewBitmapSource = imageSource;
             ImageShow.Source = ViewBitmapSource;
+            if (enableEditorImageServices && imageSource is WriteableBitmap) PseudoColorTool?.ConfigureForImage();
             if (configureDefaultLayerController)
             {
                 SetLayerController(BitmapImageLayerController.CreateForCurrentImage(this));
@@ -1825,6 +1848,7 @@ namespace ColorVision.ImageEditor
             _defaultDisplayConfig.PropertyChanged -= DefaultDisplayConfig_PropertyChanged;
             Config.Cleared -= Config_Cleared;
             IEditorToolFactory.Dispose();
+            _settingsEntries.Clear();
             EditorContext?.DrawEditorContext.MouseInfoProvider.Dispose();
             EditorContext?.CompactInspectorPresenter?.Dispose();
             EditorContext?.DrawEditorContext.DrawingVisualLists?.Clear();

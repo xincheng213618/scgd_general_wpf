@@ -25,6 +25,8 @@ public sealed class CompactMainWindow : MainWindow
     private Thickness _ordinaryDockingMargin;
     private Thickness _ordinaryMenuMargin;
     private VerticalAlignment _ordinaryMenuVerticalAlignment;
+    private Thickness _ordinaryUpdateNotificationMargin;
+    private VerticalAlignment _ordinaryUpdateNotificationVerticalAlignment;
     private BitmapImage? _compactTitleBarPackageIcon;
 
     public CompactMainWindow() : base(useStandardWindowAppearance: false)
@@ -33,6 +35,8 @@ public sealed class CompactMainWindow : MainWindow
         _ordinaryDockingMargin = DockingManager1.Margin;
         _ordinaryMenuMargin = Menu1.Margin;
         _ordinaryMenuVerticalAlignment = Menu1.VerticalAlignment;
+        _ordinaryUpdateNotificationMargin = UpdateNotificationButton.Margin;
+        _ordinaryUpdateNotificationVerticalAlignment = UpdateNotificationButton.VerticalAlignment;
         _compactTitleBarConfig.PropertyChanged += CompactTitleBarConfigChanged;
         SourceInitialized += AttachCompactTitleBar;
         MainWindowTitleBar.SizeChanged += CompactTitleBarSizeChanged;
@@ -60,8 +64,7 @@ public sealed class CompactMainWindow : MainWindow
             // The normal shell deliberately overlaps its menu row by 3 DIP. A glass caption
             // needs a strict content boundary so the workspace cannot paint over native buttons.
             DockingManager1.Margin = new Thickness(0);
-            SetCompactMenuAlignment(true);
-            CompactWindowIcon.Visibility = Visibility.Visible;
+            SetCompactHeaderAlignment(true);
             CompactDragRegion.Visibility = Visibility.Visible;
             _compactTitleBarPackageIcon = ThemeManagerExtensions.TryLoadPackageIcon(this);
             _compactTitleBarThemeManager = ThemeManager.Current;
@@ -81,8 +84,7 @@ public sealed class CompactMainWindow : MainWindow
             chrome.Dispose();
             _compactTitleBar = null;
             DockingManager1.Margin = _ordinaryDockingMargin;
-            SetCompactMenuAlignment(false);
-            CompactWindowIcon.Visibility = Visibility.Collapsed;
+            SetCompactHeaderAlignment(false);
             CompactDragRegion.Visibility = Visibility.Collapsed;
             CompactActionsOverflowButton.Visibility = Visibility.Collapsed;
             foreach (Button button in RightMenuItemPanel.Children.OfType<Button>())
@@ -105,14 +107,11 @@ public sealed class CompactMainWindow : MainWindow
         UpdateRightMenuVisibility();
     }
 
-    private void SetCompactMenuAlignment(bool compact)
+    private void SetCompactHeaderAlignment(bool compact)
     {
-        Menu1.SetCurrentValue(VerticalAlignmentProperty, compact ? VerticalAlignment.Center : _ordinaryMenuVerticalAlignment);
-        // Centering a box with 4 DIP additional top margin lowers its visible center by 2 DIP.
-        // Keep the workspace boundary unchanged instead of compensating with DockingManager.Margin.
-        Menu1.SetCurrentValue(MarginProperty, compact
-            ? new Thickness(_ordinaryMenuMargin.Left, _ordinaryMenuMargin.Top + 4, _ordinaryMenuMargin.Right, _ordinaryMenuMargin.Bottom)
-            : _ordinaryMenuMargin);
+        CompactTitleBarLayout.SetOpticalAlignment(Menu1, compact, _ordinaryMenuMargin, _ordinaryMenuVerticalAlignment);
+        CompactTitleBarLayout.SetOpticalAlignment(UpdateNotificationButton, compact,
+            _ordinaryUpdateNotificationMargin, _ordinaryUpdateNotificationVerticalAlignment);
     }
 
     private void ApplyCompactTitleBarTheme(Theme theme)
@@ -149,8 +148,7 @@ public sealed class CompactMainWindow : MainWindow
             // Registered before SetWindowFull: remove chrome before that helper sets WindowStyle.None.
             _compactTitleBar.SetFullScreen(true);
             DockingManager1.Margin = _ordinaryDockingMargin;
-            SetCompactMenuAlignment(false);
-            CompactWindowIcon.Visibility = Visibility.Collapsed;
+            SetCompactHeaderAlignment(false);
             CompactDragRegion.Visibility = Visibility.Collapsed;
             UpdateRightMenuVisibility();
         }
@@ -163,9 +161,8 @@ public sealed class CompactMainWindow : MainWindow
                 {
                     _compactTitleBar?.SetFullScreen(false);
                     DockingManager1.Margin = new Thickness(0);
-                    SetCompactMenuAlignment(_compactTitleBar?.IsAttached == true);
-                    CompactWindowIcon.Visibility = _compactTitleBar?.IsAttached == true ? Visibility.Visible : Visibility.Collapsed;
-                    CompactDragRegion.Visibility = CompactWindowIcon.Visibility;
+                    SetCompactHeaderAlignment(_compactTitleBar?.IsAttached == true);
+                    CompactDragRegion.Visibility = _compactTitleBar?.IsAttached == true ? Visibility.Visible : Visibility.Collapsed;
                     UpdateRightMenuVisibility();
                 }
             }, DispatcherPriority.Loaded);
@@ -198,7 +195,7 @@ public sealed class CompactMainWindow : MainWindow
         }
 
         CompactTitleBarLayout.Update(MainWindowTitleBar, Menu1, RightMenuItemPanel,
-            UpdateNotificationButton, CompactWindowIcon, CompactDragRegion, CompactActionsOverflowButton,
+            UpdateNotificationButton, CompactDragRegion, CompactActionsOverflowButton,
             CombinedUpdateCoordinator.HasPendingStartupUpdate);
         bool hiddenUpdate = CombinedUpdateCoordinator.HasPendingStartupUpdate && UpdateNotificationButton.Visibility != Visibility.Visible;
         CompactUpdateBadge.Visibility = hiddenUpdate ? Visibility.Visible : Visibility.Collapsed;

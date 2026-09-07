@@ -8,104 +8,104 @@ using Quartz.Impl.Matchers;
 using System.Collections.Specialized;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Text;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 
 namespace ColorVision.Scheduler
 {
-    /// <summary>
-    /// TaskViewerWindow.xaml 的交互逻辑
-    /// </summary>
     public partial class TaskViewerWindow : Window
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(TaskViewerWindow));
-        public ObservableCollection<SchedulerInfo> TaskInfos { get; set; }
-        private ICollectionView _taskInfosView;
-        private readonly HashSet<SchedulerInfo> _copilotTrackedTasks = new();
-        private readonly TaskExecutionListener? _listener;
+        private readonly ISchedulerService _schedulerService;
+        private readonly Task _initializationTask;
+        private readonly HashSet<SchedulerInfo> _trackedTasks = new();
+        private TaskExecutionListener? _listener;
         private CopilotDynamicContextSession? _copilotContextSession;
         private int _copilotPublishQueued;
         private bool _isClosed;
+        private bool _isOperating;
+        private bool _loaded;
 
+        public ObservableCollection<SchedulerInfo> TaskInfos { get; set; }
         public static QuartzSchedulerManager QuartzSchedulerManager => QuartzSchedulerManager.GetInstance();
 
-        public TaskViewerWindow()
-        {
-            InitializeComponent();
-            this.DataContext = QuartzSchedulerManager;
-            TaskInfos = QuartzSchedulerManager.GetInstance().TaskInfos;
-            
-            // 使用 CollectionView 以支持过滤
-            _taskInfosView = CollectionViewSource.GetDefaultView(TaskInfos);
-            _taskInfosView.Filter = FilterTasks;
-            ListViewTask.ItemsSource = _taskInfosView;
-            
-            if (QuartzSchedulerManager.Scheduler != null)
-            {
-                LoadTasks();
-            }
+        public TaskViewerWindow() : this(QuartzSchedulerManager, QuartzSchedulerManager.InitializationTask) { }
 
-            _listener = QuartzSchedulerManager.GetInstance().Listener;
-            if (_listener != null)
-            {
-                _listener.JobExecutedEvent += OnJobExecuted;
-            }
+        internal TaskViewerWindow(ISchedulerService schedulerService, Task? initializationTask = null)
+        {
+            _schedulerService = schedulerService;
+            _initializationTask = initializationTask ?? Task.CompletedTask;
+            TaskInfos = schedulerService.TaskInfos;
+            InitializeComponent();
+            MaxHeight = Math.Max(MinHeight, SystemParameters.WorkArea.Height - 48);
+            DataContext = schedulerService;
+            ListViewTask.ItemsSource = TaskInfos;
+            ListViewTask.ContextMenu = CreateTaskMenu(null);
+            CreateButton.IsEnabled = false;
             TaskInfos.CollectionChanged += TaskInfos_CollectionChanged;
-            RefreshCopilotTaskSubscriptions();
+            RefreshTaskSubscriptions();
+            UpdateOverview();
             Activated += TaskViewerWindow_Activated;
             EnsureCopilotContextRegistered();
             this.ApplyCaption();
-
-            // 添加右键菜单
-            var menuEdit = new MenuItem { Header = Properties.Resources.Sched_EditTask };
-            menuEdit.Click += MenuEdit_Click;
-            var menuView = new MenuItem { Header = Properties.Resources.Sched_ViewProps };
-            menuView.Click += MenuView_Click;
-            var menuPause = new MenuItem { Header = Properties.Resources.Sched_PauseTask };
-            menuPause.Click += MenuPause_Click;
-            var menuResume = new MenuItem { Header = Properties.Resources.Sched_ResumeTask };
-            menuResume.Click += MenuResume_Click;
-            var menuDelete = new MenuItem { Header = Properties.Resources.Sched_DeleteTask };
-            menuDelete.Click += MenuDelete_Click;
-            var menuTrigger = new MenuItem { Header = Properties.Resources.Sched_RunNow };
-            menuTrigger.Click += MenuTrigger_Click;
-            var menuHistory = new MenuItem { Header = Properties.Resources.Sched_ExecHistoryMenu };
-            menuHistory.Click += MenuHistory_Click;
-            var contextMenu = new ContextMenu();
-            contextMenu.Items.Add(menuEdit);
-            contextMenu.Items.Add(menuView);
-            contextMenu.Items.Add(new Separator());
-            contextMenu.Items.Add(menuPause);
-            contextMenu.Items.Add(menuResume);
-            contextMenu.Items.Add(menuTrigger);
-            contextMenu.Items.Add(new Separator());
-            contextMenu.Items.Add(menuHistory);
-            contextMenu.Items.Add(menuDelete);
-            ListViewTask.ContextMenu = contextMenu;
         }
 
-        private async void LoadTasks()
+        private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            await GetScheduledTasks();
+            if (_loaded)
+                return;
+            _loaded = true;
+            try
+            {
+                await _initializationTask;
+                if (_isClosed)
+                    return;
+                _listener = _schedulerService.Listener;
+                if (_listener != null)
+                    _listener.JobExecutedEvent += OnJobExecuted;
+                if (_schedulerService.Scheduler != null)
+                    await GetScheduledTasks();
+                CreateButton.IsEnabled = true;
+            }
+            catch (Exception ex)
+            {
+                ShowOperationError(ex);
+            }
         }
 
-        private void OnJobExecuted(IJobExecutionContext context)
+        private void UpdateOverview()
         {
-            _ = RefreshExecutedJobAsync(context);
+            if (_isClosed)
+                return;
+            OverviewText.Text = string.Format(CultureInfo.CurrentCulture, Properties.Resources.Sched_Overview,
+                TaskInfos.Count, TaskInfos.Count(task => task.Status == SchedulerStatus.Running),
+                TaskInfos.Count(task => task.Status == SchedulerStatus.Paused));
         }
+
+        private void OnJobExecuted(IJobExecutionContext context) => _ = RefreshExecutedJobAsync(context);
 
         private async Task RefreshExecutedJobAsync(IJobExecutionContext context)
         {
             try
             {
-                Func<Task> refreshAction = () => UpdateChangedTask(context);
-                Task refreshTask = await Dispatcher.InvokeAsync(refreshAction);
-                await refreshTask;
-                QueueCopilotContextPublish();
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    if (_isClosed)
+                        return;
+                    var task = TaskInfos.FirstOrDefault(task => task.JobName == context.JobDetail.Key.Name && task.GroupName == context.JobDetail.Key.Group);
+                    if (task != null)
+                    {
+                        // A one-shot trigger may already be gone; the execution context is authoritative.
+                        task.NextFireTime = context.NextFireTimeUtc?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
+                        task.PreviousFireTime = context.FireTimeUtc.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss");
+                    }
+                    QueueCopilotContextPublish();
+                });
             }
             catch (Exception ex)
             {
@@ -121,336 +121,191 @@ namespace ColorVision.Scheduler
 
         private async Task GetScheduledTasks()
         {
-            var scheduler = QuartzSchedulerManager.Scheduler;
-            var jobKeys = await scheduler.GetJobKeys(GroupMatcher<JobKey>.AnyGroup());
-
-            foreach (var jobKey in jobKeys)
+            var scheduler = _schedulerService.Scheduler;
+            foreach (var key in await scheduler.GetJobKeys(GroupMatcher<JobKey>.AnyGroup()))
             {
-                var triggers = await scheduler.GetTriggersOfJob(jobKey);
-
+                var triggers = await scheduler.GetTriggersOfJob(key);
+                if (_isClosed)
+                    return;
                 foreach (var trigger in triggers)
                 {
-                    var existingTaskInfo = TaskInfos.FirstOrDefault(t => t.JobName == jobKey.Name && t.GroupName == jobKey.Group);
-                    if (existingTaskInfo != null)
+                    var task = TaskInfos.FirstOrDefault(task => task.JobName == key.Name && task.GroupName == key.Group);
+                    if (task == null)
                     {
-                        existingTaskInfo.NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
-                        existingTaskInfo.PreviousFireTime = trigger.GetPreviousFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
+                        task = new SchedulerInfo { JobName = key.Name, GroupName = key.Group };
+                        TaskInfos.Add(task);
                     }
-                    else
-                    {
-                        var taskInfo = new SchedulerInfo
-                        {
-                            JobName = jobKey.Name,
-                            GroupName = jobKey.Group,
-                            NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A",
-                            PreviousFireTime = trigger.GetPreviousFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A"
-                        };
-                        TaskInfos.Add(taskInfo);
-                    }
-
+                    task.NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
+                    task.PreviousFireTime = trigger.GetPreviousFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
                 }
             }
         }
-        private Task UpdateChangedTask(IJobExecutionContext context)
+
+        private SchedulerInfo? ResolveTask(object sender)
         {
-            var jobKey = context.JobDetail.Key;
-            var existingTaskInfo = TaskInfos.FirstOrDefault(
-                task => task.JobName == jobKey.Name && task.GroupName == jobKey.Group);
-            if (existingTaskInfo != null)
+            var task = (sender as FrameworkElement)?.DataContext as SchedulerInfo ?? ListViewTask.SelectedItem as SchedulerInfo;
+            if (task != null)
+                ListViewTask.SelectedItem = task;
+            return task;
+        }
+
+        private ContextMenu CreateTaskMenu(SchedulerInfo? task)
+        {
+            var menu = new ContextMenu { DataContext = task };
+            void Add(string header, RoutedEventHandler handler)
             {
-                // The completed trigger/job may already have been removed for a
-                // one-shot schedule, so use the execution context as the source
-                // of truth instead of requiring GetTriggersOfJob to return one.
-                existingTaskInfo.NextFireTime =
-                    context.NextFireTimeUtc?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
-                existingTaskInfo.PreviousFireTime =
-                    context.FireTimeUtc.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss");
+                var item = new MenuItem { Header = header };
+                item.Click += handler;
+                menu.Items.Add(item);
             }
-
-            return Task.CompletedTask;
+            Add(Properties.Resources.Sched_EditTask, MenuEdit_Click);
+            Add(Properties.Resources.Sched_ViewProps, MenuView_Click);
+            menu.Items.Add(new Separator());
+            Add(Properties.Resources.Sched_PauseTask, MenuPause_Click);
+            Add(Properties.Resources.Sched_ResumeTask, MenuResume_Click);
+            Add(Properties.Resources.Sched_RunNow, MenuTrigger_Click);
+            menu.Items.Add(new Separator());
+            Add(Properties.Resources.Sched_ExecHistoryMenu, MenuHistory_Click);
+            Add(Properties.Resources.Sched_DeleteTask, MenuDelete_Click);
+            return menu;
         }
 
-
-        private void CreateTaskButton_Click(object sender, RoutedEventArgs e)
+        private void ListViewTask_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            CreateTask createTask = new CreateTask() { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation =WindowStartupLocation.CenterOwner };
-            createTask.ShowDialog();
+            if (e.OriginalSource is DependencyObject source && ItemsControl.ContainerFromElement(ListViewTask, source) is ListViewItem item)
+                ListViewTask.SelectedItem = item.DataContext;
         }
+
+        private void TaskMore_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && ResolveTask(sender) is SchedulerInfo task)
+            {
+                button.ContextMenu = CreateTaskMenu(task);
+                OpenButtonMenu_Click(button, e);
+            }
+        }
+
+        private void OpenButtonMenu_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button { ContextMenu: { } menu } button)
+            {
+                menu.PlacementTarget = button;
+                menu.Placement = PlacementMode.Bottom;
+                menu.IsOpen = true;
+            }
+        }
+
+        private void CreateTaskButton_Click(object sender, RoutedEventArgs e) =>
+            new CreateTask(_schedulerService, _initializationTask) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
 
         private void MenuEdit_Click(object sender, RoutedEventArgs e)
         {
-            if (ListViewTask.SelectedItem is SchedulerInfo info)
-            {
-                // 深拷贝一份用于编辑
-                var editInfo = JsonConvert.DeserializeObject<SchedulerInfo>(JsonConvert.SerializeObject(info, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All }), new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
-                if (editInfo != null)
-                {
-                    var win = new CreateTask { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner, SchedulerInfo = editInfo };
-                    win.ShowDialog();
-                }
-            }
+            if (ResolveTask(sender) is not SchedulerInfo info)
+                return;
+            var settings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All };
+            var draft = JsonConvert.DeserializeObject<SchedulerInfo>(JsonConvert.SerializeObject(info, settings), settings);
+            if (draft != null)
+                new CreateTask(_schedulerService, _initializationTask) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner, SchedulerInfo = draft }.ShowDialog();
         }
 
         private void MenuView_Click(object sender, RoutedEventArgs e)
         {
-            if (ListViewTask.SelectedItem is SchedulerInfo info)
+            if (ResolveTask(sender) is SchedulerInfo info)
+                new PropertyEditorWindow(info, PropertyEditorEditMode.Transactional) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        private async Task RunOperationAsync(Func<Task> operation)
+        {
+            if (_isOperating)
+                return;
+            _isOperating = true;
+            CreateButton.IsEnabled = false;
+            OperationError.Visibility = Visibility.Collapsed;
+            try { await operation(); }
+            catch (Exception ex) { ShowOperationError(ex); }
+            finally
             {
-                var win = new ColorVision.UI.PropertyEditorWindow(info, ColorVision.UI.PropertyEditorEditMode.Transactional) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                win.ShowDialog();
+                _isOperating = false;
+                if (!_isClosed)
+                    CreateButton.IsEnabled = true;
             }
+        }
+
+        private void ShowOperationError(Exception ex)
+        {
+            Log.Error("Scheduler window operation failed.", ex);
+            if (_isClosed)
+                return;
+            OperationError.Text = ex.Message;
+            OperationError.Visibility = Visibility.Visible;
+        }
+
+        private async void PauseAll_Click(object sender, RoutedEventArgs e) => await RunOperationAsync(_schedulerService.PauseAll);
+        private async void ResumeAll_Click(object sender, RoutedEventArgs e) => await RunOperationAsync(_schedulerService.ResumeAll);
+
+        private async void TogglePause_Click(object sender, RoutedEventArgs e)
+        {
+            if (ResolveTask(sender) is SchedulerInfo info)
+                await RunOperationAsync(() => info.Status == SchedulerStatus.Paused
+                    ? _schedulerService.ResumeJob(info.JobName, info.GroupName)
+                    : _schedulerService.StopJob(info.JobName, info.GroupName));
         }
 
         private async void MenuPause_Click(object sender, RoutedEventArgs e)
         {
-            if (ListViewTask.SelectedItem is SchedulerInfo info)
-            {
-                try
-                {
-                    await QuartzSchedulerManager.StopJob(info.JobName, info.GroupName);
-                    info.Status = SchedulerStatus.Paused;
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"暂停任务失败: {ex.Message}", Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
+            if (ResolveTask(sender) is SchedulerInfo info)
+                await RunOperationAsync(() => _schedulerService.StopJob(info.JobName, info.GroupName));
         }
 
         private async void MenuResume_Click(object sender, RoutedEventArgs e)
         {
-            if (ListViewTask.SelectedItem is SchedulerInfo info)
-            {
-                try
-                {
-                    await QuartzSchedulerManager.ResumeJob(info.JobName, info.GroupName);
-                    info.Status = SchedulerStatus.Ready;
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"恢复任务失败: {ex.Message}", Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
+            if (ResolveTask(sender) is SchedulerInfo info)
+                await RunOperationAsync(() => _schedulerService.ResumeJob(info.JobName, info.GroupName));
         }
 
         private async void MenuDelete_Click(object sender, RoutedEventArgs e)
         {
-            if (ListViewTask.SelectedItem is SchedulerInfo info)
-            {
-                try
-                {
-                    var result = MessageBox.Show($"确定要删除任务 {info.JobName}({info.GroupName}) 吗？",
-                        Properties.Resources.Sched_ConfirmDelete, MessageBoxButton.YesNo, MessageBoxImage.Question);
-                    if (result == MessageBoxResult.Yes)
-                    {
-                        await QuartzSchedulerManager.RemoveJob(info.JobName, info.GroupName);
-                        TaskInfos.Remove(info);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"删除任务失败: {ex.Message}", Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
+            if (ResolveTask(sender) is SchedulerInfo info &&
+                MessageBox.Show(this, $"确定要删除任务 {info.JobName}({info.GroupName}) 吗？", Properties.Resources.Sched_ConfirmDelete,
+                    MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                await RunOperationAsync(() => _schedulerService.RemoveJob(info.JobName, info.GroupName));
         }
 
         private async void MenuTrigger_Click(object sender, RoutedEventArgs e)
         {
-            if (ListViewTask.SelectedItem is SchedulerInfo info)
-            {
-                try
-                {
-                    var jobKey = new Quartz.JobKey(info.JobName, info.GroupName);
-                    await QuartzSchedulerManager.Scheduler.TriggerJob(jobKey);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"触发任务失败: {ex.Message}", Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
+            if (ResolveTask(sender) is SchedulerInfo info)
+                await RunOperationAsync(() => _schedulerService.Scheduler.TriggerJob(new JobKey(info.JobName, info.GroupName)));
         }
 
-        // 搜索和过滤功能
-        private bool FilterTasks(object obj)
-        {
-            if (obj is not SchedulerInfo task)
-                return false;
-
-
-            return true;
-        }
-
-        private void ViewAllHistory_Click(object sender, RoutedEventArgs e)
-        {
-            var win = new ExecutionHistoryWindow { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            win.Show();
-        }
+        private void ViewAllHistory_Click(object sender, RoutedEventArgs e) =>
+            new ExecutionHistoryWindow { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
 
         private void MenuHistory_Click(object sender, RoutedEventArgs e)
         {
-            if (ListViewTask.SelectedItem is SchedulerInfo info)
-            {
-                var win = new ExecutionHistoryWindow(info.JobName, info.GroupName) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                win.Show();
-            }
+            if (ResolveTask(sender) is SchedulerInfo info)
+                new ExecutionHistoryWindow(info.JobName, info.GroupName) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
-        // 导出功能
-        private void ExportCSV_Click(object sender, RoutedEventArgs e)
+        private void ExportCSV_Click(object sender, RoutedEventArgs e) =>
+            ExportTasks("CSV 文件|*.csv", $"Tasks_{DateTime.Now:yyyyMMdd_HHmmss}.csv", () => SchedulerTaskExporter.Csv(TaskInfos));
+
+        private void ExportJSON_Click(object sender, RoutedEventArgs e) =>
+            ExportTasks("JSON 文件|*.json", $"Tasks_{DateTime.Now:yyyyMMdd_HHmmss}.json", () => SchedulerTaskExporter.Json(TaskInfos));
+
+        private void ExportReport_Click(object sender, RoutedEventArgs e) =>
+            ExportTasks("文本报告|*.txt|Markdown 报告|*.md", $"TaskReport_{DateTime.Now:yyyyMMdd_HHmmss}.txt", () => SchedulerTaskExporter.Report(TaskInfos));
+
+        private void ExportTasks(string filter, string fileName, Func<string> format)
         {
             try
             {
-                var dialog = new SaveFileDialog
-                {
-                    Filter = "CSV 文件|*.csv",
-                    FileName = $"Tasks_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
-                };
-
-                if (dialog.ShowDialog() == true)
-                {
-                    var sb = new StringBuilder();
-                    // CSV 头部
-                    sb.AppendLine("任务名称,分组名称,优先级,运行次数,成功次数,失败次数,状态,最后执行时间(ms),平均执行时间(ms),最大执行时间(ms),最小执行时间(ms),最后执行结果,结果详情,下次执行时间,上次执行时间,创建时间");
-
-                    // 数据行
-                    foreach (var task in TaskInfos)
-                    {
-                        sb.AppendLine($"\"{task.JobName}\",\"{task.GroupName}\",{task.Priority},{task.RunCount},{task.SuccessCount},{task.FailureCount},\"{task.Status}\",{task.LastExecutionTimeMs},{task.AverageExecutionTimeMs},{task.MaxExecutionTimeMs},{task.MinExecutionTimeMs},\"{task.LastExecutionResult}\",\"{task.LastExecutionMessage}\",\"{task.NextFireTime}\",\"{task.PreviousFireTime}\",\"{task.CreateTime:yyyy-MM-dd HH:mm:ss}\"");
-                    }
-
-                    File.WriteAllText(dialog.FileName, sb.ToString(), Encoding.UTF8);
-                    MessageBox.Show($"成功导出 {TaskInfos.Count} 个任务到:\n{dialog.FileName}", Properties.Resources.Sched_ExportSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
-                }
+                var dialog = new SaveFileDialog { Filter = filter, FileName = fileName };
+                if (dialog.ShowDialog(this) != true)
+                    return;
+                File.WriteAllText(dialog.FileName, format(), Encoding.UTF8);
+                MessageBox.Show(this, dialog.FileName, Properties.Resources.Sched_ExportSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"导出CSV失败: {ex.Message}", Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void ExportJSON_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var dialog = new SaveFileDialog
-                {
-                    Filter = "JSON 文件|*.json",
-                    FileName = $"Tasks_{DateTime.Now:yyyyMMdd_HHmmss}.json"
-                };
-
-                if (dialog.ShowDialog() == true)
-                {
-                    var settings = new JsonSerializerSettings
-                    {
-                        Formatting = Formatting.Indented,
-                        TypeNameHandling = TypeNameHandling.Auto,
-                        NullValueHandling = NullValueHandling.Ignore
-                    };
-
-                    var json = JsonConvert.SerializeObject(TaskInfos, settings);
-                    File.WriteAllText(dialog.FileName, json, Encoding.UTF8);
-                    MessageBox.Show($"成功导出 {TaskInfos.Count} 个任务配置到:\n{dialog.FileName}", Properties.Resources.Sched_ExportSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"导出JSON失败: {ex.Message}", Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void ExportReport_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var dialog = new SaveFileDialog
-                {
-                    Filter = "文本报告|*.txt|Markdown 报告|*.md",
-                    FileName = $"TaskReport_{DateTime.Now:yyyyMMdd_HHmmss}.txt"
-                };
-
-                if (dialog.ShowDialog() == true)
-                {
-                    var sb = new StringBuilder();
-                    sb.AppendLine("╔════════════════════════════════════════════════════════════════╗");
-                    sb.AppendLine("║        ColorVision.Scheduler 任务执行统计报告                  ║");
-                    sb.AppendLine("╚════════════════════════════════════════════════════════════════╝");
-                    sb.AppendLine();
-                    sb.AppendLine($"生成时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                    sb.AppendLine($"任务总数: {TaskInfos.Count}");
-                    sb.AppendLine();
-
-                    // 总体统计
-                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
-                    sb.AppendLine("总体统计");
-                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
-                    var totalRuns = TaskInfos.Sum(t => t.RunCount);
-                    var totalSuccess = TaskInfos.Sum(t => t.SuccessCount);
-                    var totalFailure = TaskInfos.Sum(t => t.FailureCount);
-                    var avgExecutionTime = TaskInfos.Where(t => t.AverageExecutionTimeMs > 0).Average(t => (double?)t.AverageExecutionTimeMs) ?? 0;
-
-                    sb.AppendLine($"总执行次数: {totalRuns}");
-                    sb.AppendLine($"成功次数: {totalSuccess} ({(totalRuns > 0 ? (totalSuccess * 100.0 / totalRuns).ToString("F2") : "0.00")}%)");
-                    sb.AppendLine($"失败次数: {totalFailure} ({(totalRuns > 0 ? (totalFailure * 100.0 / totalRuns).ToString("F2") : "0.00")}%)");
-                    sb.AppendLine($"平均执行时间: {avgExecutionTime:F2} ms");
-                    sb.AppendLine();
-
-                    // 按状态分组统计
-                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
-                    sb.AppendLine("任务状态分布");
-                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
-                    var statusGroups = TaskInfos.GroupBy(t => t.Status);
-                    foreach (var group in statusGroups)
-                    {
-                        sb.AppendLine($"{group.Key}: {group.Count()} 个任务");
-                    }
-                    sb.AppendLine();
-
-                    // 详细任务列表
-                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
-                    sb.AppendLine("任务详细信息");
-                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
-                    foreach (var task in TaskInfos.OrderByDescending(t => t.RunCount))
-                    {
-                        sb.AppendLine();
-                        sb.AppendLine($"【{task.JobName}】({task.GroupName})");
-                        sb.AppendLine($"  优先级: {task.Priority}");
-                        sb.AppendLine($"  状态: {task.Status}");
-                        sb.AppendLine($"  执行统计: 总计 {task.RunCount} 次 (成功 {task.SuccessCount}, 失败 {task.FailureCount})");
-                        if (task.RunCount > 0)
-                        {
-                            sb.AppendLine($"  执行时间: 最后 {task.LastExecutionTimeMs}ms, 平均 {task.AverageExecutionTimeMs}ms, 最大 {task.MaxExecutionTimeMs}ms, 最小 {task.MinExecutionTimeMs}ms");
-                        }
-                        if (!string.IsNullOrEmpty(task.LastExecutionResult))
-                        {
-                            sb.AppendLine($"  最后执行结果: {task.LastExecutionResult}");
-                        }
-                        if (!string.IsNullOrEmpty(task.LastExecutionMessage))
-                        {
-                            sb.AppendLine($"  结果详情: {task.LastExecutionMessage}");
-                        }
-                        if (!string.IsNullOrEmpty(task.NextFireTime) && task.NextFireTime != "N/A")
-                        {
-                            sb.AppendLine($"  下次执行: {task.NextFireTime}");
-                        }
-                        if (!string.IsNullOrEmpty(task.PreviousFireTime))
-                        {
-                            sb.AppendLine($"  上次执行: {task.PreviousFireTime}");
-                        }
-                        sb.AppendLine($"  创建时间: {task.CreateTime:yyyy-MM-dd HH:mm:ss}");
-                    }
-
-                    sb.AppendLine();
-                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
-                    sb.AppendLine("报告结束");
-                    sb.AppendLine("═══════════════════════════════════════════════════════════════");
-
-                    File.WriteAllText(dialog.FileName, sb.ToString(), Encoding.UTF8);
-                    MessageBox.Show($"成功生成执行统计报告:\n{dialog.FileName}", Properties.Resources.Sched_ExportSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"生成报告失败: {ex.Message}", Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            catch (Exception ex) { ShowOperationError(ex); }
         }
 
         private void TaskViewerWindow_Activated(object? sender, EventArgs e)
@@ -461,31 +316,34 @@ namespace ColorVision.Scheduler
 
         private void TaskInfos_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            RefreshCopilotTaskSubscriptions();
+            RefreshTaskSubscriptions();
+            UpdateOverview();
             QueueCopilotContextPublish();
         }
 
-        private void RefreshCopilotTaskSubscriptions()
+        private void RefreshTaskSubscriptions()
         {
             var currentTasks = TaskInfos.ToHashSet();
-            foreach (var task in _copilotTrackedTasks.Where(task => !currentTasks.Contains(task)).ToArray())
+            foreach (var task in _trackedTasks.Where(task => !currentTasks.Contains(task)).ToArray())
             {
                 task.PropertyChanged -= SchedulerInfo_PropertyChanged;
-                _copilotTrackedTasks.Remove(task);
+                _trackedTasks.Remove(task);
             }
 
-            foreach (var task in currentTasks.Where(task => _copilotTrackedTasks.Add(task)))
+            foreach (var task in currentTasks.Where(task => _trackedTasks.Add(task)))
                 task.PropertyChanged += SchedulerInfo_PropertyChanged;
         }
 
         private void SchedulerInfo_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
+            if (e.PropertyName == nameof(SchedulerInfo.Status))
+                Dispatcher.InvokeAsync(UpdateOverview);
             QueueCopilotContextPublish();
         }
 
         private void EnsureCopilotContextRegistered()
         {
-            if (_copilotContextSession != null)
+            if (_copilotContextSession != null || _schedulerService is not global::ColorVision.Scheduler.QuartzSchedulerManager)
                 return;
 
             try
@@ -519,7 +377,7 @@ namespace ColorVision.Scheduler
 
         private CopilotSchedulerContextSnapshot CaptureCopilotSchedulerSnapshot()
         {
-            return QuartzSchedulerManager.CaptureCopilotSchedulerSnapshot(
+            return ((QuartzSchedulerManager)_schedulerService).CaptureCopilotSchedulerSnapshot(
                 surface: "Scheduled task viewer",
                 selectedTask: ListViewTask.SelectedItem as SchedulerInfo,
                 selectedTaskCount: ListViewTask.SelectedItems.Count);
@@ -563,9 +421,9 @@ namespace ColorVision.Scheduler
             TaskInfos.CollectionChanged -= TaskInfos_CollectionChanged;
             if (_listener != null)
                 _listener.JobExecutedEvent -= OnJobExecuted;
-            foreach (var task in _copilotTrackedTasks)
+            foreach (var task in _trackedTasks)
                 task.PropertyChanged -= SchedulerInfo_PropertyChanged;
-            _copilotTrackedTasks.Clear();
+            _trackedTasks.Clear();
 
             var wasCurrent = _copilotContextSession?.IsCurrent == true;
             _copilotContextSession?.Dispose();

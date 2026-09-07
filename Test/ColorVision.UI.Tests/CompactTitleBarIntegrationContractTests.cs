@@ -143,21 +143,23 @@ public sealed class CompactTitleBarIntegrationContractTests
     [InlineData(32)]
     [InlineData(40)]
     [InlineData(48)]
-    public void CompactMenuCenterMovesDownTwoDipsWithoutMovingTheWorkspaceBoundary(double headerHeight)
+    public void CompactMenuAndUpdateNoticeShareTheSameTwoDipOpticalCenter(double headerHeight)
     {
         WpfTestHost.Invoke(() =>
         {
             var fixture = CreateSyntheticHeader();
             fixture.Menu.Items.Add(new MenuItem { Header = "文件(_F)" });
+            fixture.Update.Visibility = Visibility.Visible;
             fixture.Header.Width = 1000;
             fixture.Header.Height = headerHeight;
             Thickness originalMargin = fixture.Menu.Margin;
             VerticalAlignment originalAlignment = fixture.Menu.VerticalAlignment;
+            Thickness originalUpdateMargin = fixture.Update.Margin;
+            VerticalAlignment originalUpdateAlignment = fixture.Update.VerticalAlignment;
             foreach (bool compact in new[] { true, false, true, false })
             {
-                fixture.Menu.SetCurrentValue(FrameworkElement.VerticalAlignmentProperty, compact ? VerticalAlignment.Center : originalAlignment);
-                fixture.Menu.SetCurrentValue(FrameworkElement.MarginProperty, compact
-                    ? new Thickness(originalMargin.Left, originalMargin.Top + 4, originalMargin.Right, originalMargin.Bottom) : originalMargin);
+                CompactTitleBarLayout.SetOpticalAlignment(fixture.Menu, compact, originalMargin, originalAlignment);
+                CompactTitleBarLayout.SetOpticalAlignment(fixture.Update, compact, originalUpdateMargin, originalUpdateAlignment);
                 fixture.Header.Measure(new Size(1000, headerHeight));
                 fixture.Header.Arrange(new Rect(0, 0, 1000, headerHeight));
                 fixture.Header.UpdateLayout();
@@ -167,17 +169,32 @@ public sealed class CompactTitleBarIntegrationContractTests
                 if (compact)
                 {
                     Point menuTop = fixture.Menu.TranslatePoint(new Point(), fixture.Header);
+                    Point updateTop = fixture.Update.TranslatePoint(new Point(), fixture.Header);
                     Assert.Equal(headerHeight / 2 + 2, menuTop.Y + fixture.Menu.ActualHeight / 2, 3);
+                    Assert.Equal(headerHeight / 2 + 2, updateTop.Y + fixture.Update.ActualHeight / 2, 3);
                     Assert.InRange(menuTop.Y, 0, headerHeight);
                     Assert.True(menuTop.Y + fixture.Menu.ActualHeight <= headerHeight);
+                    Assert.InRange(updateTop.Y, 0, headerHeight);
+                    Assert.True(updateTop.Y + fixture.Update.ActualHeight <= headerHeight);
                 }
                 else
                 {
                     Assert.Equal(originalMargin, fixture.Menu.Margin);
                     Assert.Equal(originalAlignment, fixture.Menu.VerticalAlignment);
+                    Assert.Equal(originalUpdateMargin, fixture.Update.Margin);
+                    Assert.Equal(originalUpdateAlignment, fixture.Update.VerticalAlignment);
                 }
             }
         });
+    }
+
+    [Fact]
+    public void CompactTitleBarOmitsTheSoftwareIcon()
+    {
+        XDocument document = LoadMainWindow();
+
+        Assert.Empty(document.Descendants().Where(element =>
+            (string?)element.Attribute(Xaml + "Name") == "CompactWindowIcon"));
     }
 
     [Theory]
@@ -188,9 +205,8 @@ public sealed class CompactTitleBarIntegrationContractTests
     {
         WpfTestHost.Invoke(() =>
         {
-            (Border header, Border drag, StackPanel tools, Image icon, Menu menu, Button update, Button overflow) = CreateSyntheticHeader();
+            (Border header, Border drag, StackPanel tools, Menu menu, Button update, Button overflow) = CreateSyntheticHeader();
             drag.Visibility = Visibility.Visible;
-            icon.Visibility = Visibility.Visible;
             // Known natural widths make the visibility threshold deterministic across system fonts/themes.
             menu.Width = 300;
             menu.Margin = new Thickness(0, 4, 0, 0);
@@ -210,7 +226,7 @@ public sealed class CompactTitleBarIntegrationContractTests
             void UpdateHeaderLayout()
             {
                 Assert.True(++layoutUpdates <= 256, "The real size-change/measurement path must not enter a layout feedback loop.");
-                CompactTitleBarLayout.Update(header, menu, tools, update, icon, drag, overflow, hasPendingUpdate);
+                CompactTitleBarLayout.Update(header, menu, tools, update, drag, overflow, hasPendingUpdate);
             }
             SizeChangedEventHandler sizeChanged = (_, _) => UpdateHeaderLayout();
             header.SizeChanged += sizeChanged;
@@ -246,10 +262,10 @@ public sealed class CompactTitleBarIntegrationContractTests
                         UpdateHeaderLayout();
                         SettleLayout();
 
-                        double requiredWidth = 300 + 100 + (hasUpdate ? 180 : 0) + 30 + 120;
+                        double requiredWidth = 300 + 100 + (hasUpdate ? 180 : 0) + 120;
                         Visibility expected = header.ActualWidth >= requiredWidth ? Visibility.Visible : Visibility.Collapsed;
                         Visibility expectedOverflow = expected == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
-                        Visibility expectedNotice = hasUpdate && (expected == Visibility.Visible || header.ActualWidth >= 662)
+                        Visibility expectedNotice = hasUpdate && (expected == Visibility.Visible || header.ActualWidth >= 632)
                             ? Visibility.Visible : Visibility.Collapsed;
                         Assert.Equal(expected, tools.Visibility);
                         Assert.Equal(expectedOverflow, overflow.Visibility);
@@ -281,9 +297,9 @@ public sealed class CompactTitleBarIntegrationContractTests
                     header.Width = width;
                     UpdateHeaderLayout();
                     SettleLayout();
-                    Assert.Equal(width >= 730 ? Visibility.Visible : Visibility.Collapsed, tools.Visibility);
-                    Assert.Equal(width >= 730 ? Visibility.Collapsed : Visibility.Visible, overflow.Visibility);
-                    Assert.Equal(width >= 662 ? Visibility.Visible : Visibility.Collapsed, update.Visibility);
+                    Assert.Equal(width >= 700 ? Visibility.Visible : Visibility.Collapsed, tools.Visibility);
+                    Assert.Equal(width >= 700 ? Visibility.Collapsed : Visibility.Visible, overflow.Visibility);
+                    Assert.Equal(width >= 632 ? Visibility.Visible : Visibility.Collapsed, update.Visibility);
                     AssertInteractiveOverflowIsReachable(header, overflow);
                     AssertActionsAdjoinCaptionBoundary(header, tools, overflow, drag);
                 }
@@ -301,9 +317,8 @@ public sealed class CompactTitleBarIntegrationContractTests
     {
         WpfTestHost.Invoke(() =>
         {
-            (Border header, Border drag, StackPanel tools, Image icon, Menu menu, Button update, Button overflow) = CreateSyntheticHeader();
+            (Border header, Border drag, StackPanel tools, Menu menu, Button update, Button overflow) = CreateSyntheticHeader();
             drag.Visibility = Visibility.Visible;
-            icon.Visibility = Visibility.Visible;
             header.MinHeight = 32;
             header.Width = 1000;
             menu.Margin = new Thickness(0, 4, 0, 0);
@@ -322,7 +337,7 @@ public sealed class CompactTitleBarIntegrationContractTests
             void UpdateHeaderLayout()
             {
                 Assert.True(++layoutUpdates <= 256, "Auto-sized controls must not feed continuous size changes back into measurement.");
-                CompactTitleBarLayout.Update(header, menu, tools, update, icon, drag, overflow, hasPendingUpdate);
+                CompactTitleBarLayout.Update(header, menu, tools, update, drag, overflow, hasPendingUpdate);
             }
             SizeChangedEventHandler sizeChanged = (_, _) => UpdateHeaderLayout();
             header.SizeChanged += sizeChanged;
@@ -635,7 +650,6 @@ public sealed class CompactTitleBarIntegrationContractTests
             fixture.Header.Width = 1000;
             fixture.Header.Height = 40;
             fixture.Drag.Visibility = Visibility.Visible;
-            fixture.Icon.Visibility = Visibility.Visible;
             fixture.Menu.Items.Add(new MenuItem { Header = "File" });
             var action = MainWindow.CreateRightMenuButton(new MenuItemMetadata { Header = "Account", Icon = new TextBlock { Text = "A" } });
             CompactTitleBarActions.ConfigureButton(action, (Style)fixture.Header.FindResource("CompactTitleBarActionButtonStyle"));
@@ -644,7 +658,7 @@ public sealed class CompactTitleBarIntegrationContractTests
             fixture.Header.Measure(new Size(1000, 40));
             fixture.Header.Arrange(new Rect(0, 0, 1000, 40));
             CompactTitleBarLayout.Update(fixture.Header, fixture.Menu, fixture.Tools, fixture.Update,
-                fixture.Icon, fixture.Drag, fixture.Overflow, hasPendingUpdate: true);
+                fixture.Drag, fixture.Overflow, hasPendingUpdate: true);
             fixture.Header.Measure(new Size(1000, 40));
             fixture.Header.Arrange(new Rect(0, 0, 1000, 40));
             fixture.Header.UpdateLayout();
@@ -668,7 +682,7 @@ public sealed class CompactTitleBarIntegrationContractTests
     private static XElement Named(XDocument document, string name)
         => Assert.Single(document.Descendants(), element => (string?)element.Attribute(Xaml + "Name") == name);
 
-    private static (Border Header, Border Drag, StackPanel Tools, Image Icon, Menu Menu, Button Update, Button Overflow) CreateSyntheticHeader()
+    private static (Border Header, Border Drag, StackPanel Tools, Menu Menu, Button Update, Button Overflow) CreateSyntheticHeader()
     {
         // Use the real header and button templates without constructing MainWindow or its services.
         XDocument document = LoadMainWindow();
@@ -685,8 +699,6 @@ public sealed class CompactTitleBarIntegrationContractTests
         XElement overflowMarkup = markup.Descendants().Single(element => (string?)element.Attribute(Xaml + "Name") == "CompactActionsOverflowButton");
         overflowMarkup.SetAttributeValue("ToolTip", "More actions");
         overflowMarkup.SetAttributeValue("AutomationProperties.Name", "More actions");
-        XElement iconMarkup = markup.Descendants().Single(element => (string?)element.Attribute(Xaml + "Name") == "CompactWindowIcon");
-        iconMarkup.Attribute("Source")!.Remove();
         var header = Assert.IsType<Border>(XamlReader.Parse(markup.ToString()));
         header.Resources["GlobalBackground"] = Brushes.White;
         header.Resources["BorderBrush"] = Brushes.Black;
@@ -695,7 +707,7 @@ public sealed class CompactTitleBarIntegrationContractTests
         header.Resources["TitleBarActionInactiveForeground"] = Brushes.Gray;
         Assert.IsType<DockPanel>(header.Child);
         return (header, Assert.IsType<Border>(header.FindName("CompactDragRegion")),
-            Assert.IsType<StackPanel>(header.FindName("RightMenuItemPanel")), Assert.IsType<Image>(header.FindName("CompactWindowIcon")),
+            Assert.IsType<StackPanel>(header.FindName("RightMenuItemPanel")),
             Assert.IsType<Menu>(header.FindName("Menu1")), Assert.IsType<Button>(header.FindName("UpdateNotificationButton")),
             Assert.IsType<Button>(header.FindName("CompactActionsOverflowButton")));
     }

@@ -67,7 +67,7 @@ related: ["engine.index","operations.device-configuration","engine.mqtt","engine
 
 `LoadServices()` 最后发布 `ServiceChanged`，但本身不调用 `GenDeviceDisplayControl()` 或 `ReplaceControls()`；释放设备、清空 `LastGenControl` 也不等于替换主显示集合。初始化器和 **进入采集窗口** 的 `Button_Click` 会另行生成显示区；`OnClosed()` 只处理上下文和窗口关闭。因此资源集合、主显示项和旧窗口引用可能处于不同轮次；新增资源后列表出现、主区域出现、Flow 能按正确 Code 绑定，应分别核对，不能只检查一个窗口。
 
-`ReplaceControls` 清空并重新填充显示集合，恢复分组和排序后按 `LastSelectIndex` 选择控件；索引越界时选第 0 项。它不按设备 Code 恢复原来的选中设备，也不调用旧控件的 Dispose。设备增减或排序变化后，应核对实际选中对象，不能仅凭界面仍有选中项推断身份未变。
+`ReplaceControls` 清空并重新填充显示集合，恢复分组和排序后按 `LastSelectIndex` 选择控件；索引越界时选第 0 项。显示控件装入设备控制面板时保留各自左右外边距，将统一的 2 DIP 项间距全部放在控件下方，上方不再额外留白。它不按设备 Code 恢复原来的选中设备，也不调用旧控件的 Dispose。设备增减或排序变化后，应核对实际选中对象，不能仅凭界面仍有选中项推断身份未变。
 
 ## 各模块的独立契约
 

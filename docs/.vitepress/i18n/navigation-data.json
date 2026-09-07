@@ -1376,6 +1376,12 @@
                 "root": "设备视图内存预览设计（待实施） [规划]"
               },
               "link": "/02-developer-guide/engine-development/local-camera-memory-preview"
+            },
+            {
+              "text": {
+                "root": "图像设置：作用范围、保存和扩展"
+              },
+              "link": "/02-developer-guide/core-concepts/image-editor-settings-plan"
             }
           ]
         },
@@ -1955,6 +1961,12 @@
                 "root": "UI 包职责与依赖边界"
               },
               "link": "/04-api-reference/ui-components/component-handbook"
+            },
+            {
+              "text": {
+                "root": "图像设置：作用范围、保存和扩展"
+              },
+              "link": "/02-developer-guide/core-concepts/image-editor-settings-plan"
             }
           ]
         },
@@ -2570,6 +2582,12 @@
                 "root": "设备视图内存预览设计（待实施） [规划]"
               },
               "link": "/02-developer-guide/engine-development/local-camera-memory-preview"
+            },
+            {
+              "text": {
+                "root": "图像设置：作用范围、保存和扩展"
+              },
+              "link": "/02-developer-guide/core-concepts/image-editor-settings-plan"
             }
           ]
         },

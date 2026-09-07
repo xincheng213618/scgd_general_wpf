@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="WindowTitle" xml:space="preserve"><value>Image settings</value></data>
+  <data name="Search" xml:space="preserve"><value>Search settings or image information</value></data>
+  <data name="CurrentView" xml:space="preserve"><value>Current view</value></data>
+  <data name="CurrentImage" xml:space="preserve"><value>Current image · Read only</value></data>
+  <data name="Application" xml:space="preserve"><value>Application preferences</value></data>
+  <data name="Defaults" xml:space="preserve"><value>Defaults for new items</value></data>
+  <data name="SourceProfile" xml:space="preserve"><value>Source profile</value></data>
+  <data name="Extension" xml:space="preserve"><value>Extension settings</value></data>
+  <data name="Information" xml:space="preserve"><value>Image information</value></data>
+  <data name="Display" xml:space="preserve"><value>Display and workspace</value></data>
+  <data name="Filters" xml:space="preserve"><value>Display filters</value></data>
+  <data name="PseudoColor" xml:space="preserve"><value>Pseudo color</value></data>
+  <data name="Calibration" xml:space="preserve"><value>Calibration and units</value></data>
+  <data name="GlobalDisplay" xml:space="preserve"><value>Display and performance</value></data>
+  <data name="NewItems" xml:space="preserve"><value>Display and annotation defaults</value></data>
+  <data name="FileOpening" xml:space="preserve"><value>File opening</value></data>
+  <data name="Realtime" xml:space="preserve"><value>Live images</value></data>
+  <data name="Diagnostics" xml:space="preserve"><value>Extensions and diagnostics</value></data>
+  <data name="CurrentOnly" xml:space="preserve"><value>Changes apply immediately to this view only.</value></data>
+  <data name="DefaultHint" xml:space="preserve"><value>Used for newly created items. Existing views keep their current settings.</value></data>
+  <data name="GlobalHint" xml:space="preserve"><value>Affects all applicable views and is saved in application configuration.</value></data>
+  <data name="FileHint" xml:space="preserve"><value>Used the next time a file is opened. The current image is not reloaded.</value></data>
+  <data name="RealtimeHint" xml:space="preserve"><value>Affects supported live camera views.</value></data>
+  <data name="ProfileHint" xml:space="preserve"><value>Adjustments affect this view. Save to the profile for future use with this source.</value></data>
+  <data name="ExternalHint" xml:space="preserve"><value>Persistence is managed by the host.</value></data>
+  <data name="InfoHint" xml:space="preserve"><value>Image details. Full technical data is available under Extensions and diagnostics.</value></data>
+  <data name="RestoreDefaults" xml:space="preserve"><value>Apply defaults</value></data>
+  <data name="SetAsDefault" xml:space="preserve"><value>Use current as defaults</value></data>
+  <data name="SaveProfile" xml:space="preserve"><value>Save to this source profile</value></data>
+  <data name="ReloadProfile" xml:space="preserve"><value>Reapply profile</value></data>
+  <data name="Save" xml:space="preserve"><value>Save changes</value></data>
+  <data name="Close" xml:space="preserve"><value>Done</value></data>
+  <data name="CloseWithoutSaving" xml:space="preserve"><value>Close without saving</value></data>
+  <data name="Pending" xml:space="preserve"><value>Defaults or application preferences have unsaved changes.</value></data>
+  <data name="Saved" xml:space="preserve"><value>Saved.</value></data>
+  <data name="Applied" xml:space="preserve"><value>Applied.</value></data>
+  <data name="Ready" xml:space="preserve"><value>Current view changes apply immediately.</value></data>
+  <data name="SessionOnly" xml:space="preserve"><value>This host has no configuration storage. Changes last for this session only.</value></data>
+  <data name="ConfigChanged" xml:space="preserve"><value>The configuration source changed. Reopen settings before saving.</value></data>
+  <data name="SaveFailed" xml:space="preserve"><value>Could not save: </value></data>
+  <data name="ValidationError" xml:space="preserve"><value>Correct the highlighted invalid values first.</value></data>
+  <data name="Unavailable" xml:space="preserve"><value>This setting is unavailable.</value></data>
+  <data name="Empty" xml:space="preserve"><value>No matching items</value></data>
+  <data name="NoImage" xml:space="preserve"><value>No image open</value></data>
+  <data name="Copy" xml:space="preserve"><value>Copy all information</value></data>
+  <data name="Refresh" xml:space="preserve"><value>Refresh information</value></data>
+  <data name="Provider" xml:space="preserve"><value>Provider</value></data>
+  <data name="Scope" xml:space="preserve"><value>Scope</value></data>
+  <data name="Toolbar" xml:space="preserve"><value>Toolbars</value></data>
+  <data name="ImageScaling" xml:space="preserve"><value>New view scaling</value></data>
+  <data name="TextStyle" xml:space="preserve"><value>New annotation text style</value></data>
+  <data name="DefaultShader" xml:space="preserve"><value>New view filters</value></data>
+  <data name="DefaultPseudo" xml:space="preserve"><value>Pseudo color defaults</value></data>
+  <data name="Tiff" xml:space="preserve"><value>TIFF loading</value></data>
+  <data name="ProfileName" xml:space="preserve"><value>Current profile: {0}</value></data>
+  <data name="ImageName" xml:space="preserve"><value>File name</value></data>
+  <data name="Dimensions" xml:space="preserve"><value>Pixel dimensions</value></data>
+  <data name="Format" xml:space="preserve"><value>Pixel format</value></data>
+  <data name="Depth" xml:space="preserve"><value>Bit depth</value></data>
+  <data name="Channels" xml:space="preserve"><value>Channels</value></data>
+  <data name="FileSize" xml:space="preserve"><value>File size</value></data>
+  <data name="FilePath" xml:space="preserve"><value>Full path</value></data>
+  <data name="Technical" xml:space="preserve"><value>Technical details</value></data>
+  <data name="PseudoHint" xml:space="preserve"><value>Palette and auto-range preferences stay with this view. Image changes reset the range and disable the effect.</value></data>
+  <data name="IsEnabled" xml:space="preserve"><value>Enable filter</value></data>
+  <data name="ChannelMode" xml:space="preserve"><value>Display channel</value></data>
+  <data name="RedGain" xml:space="preserve"><value>Red gain</value></data>
+  <data name="GreenGain" xml:space="preserve"><value>Green gain</value></data>
+  <data name="BlueGain" xml:space="preserve"><value>Blue gain</value></data>
+  <data name="RedOffset" xml:space="preserve"><value>Red offset</value></data>
+  <data name="GreenOffset" xml:space="preserve"><value>Green offset</value></data>
+  <data name="BlueOffset" xml:space="preserve"><value>Blue offset</value></data>
+  <data name="Brightness" xml:space="preserve"><value>Brightness</value></data>
+  <data name="Contrast" xml:space="preserve"><value>Contrast</value></data>
+  <data name="Gamma" xml:space="preserve"><value>Gamma</value></data>
+  <data name="Saturation" xml:space="preserve"><value>Saturation</value></data>
+  <data name="Invert" xml:space="preserve"><value>Invert</value></data>
+  <data name="ThresholdMode" xml:space="preserve"><value>Threshold mode</value></data>
+  <data name="Threshold" xml:space="preserve"><value>Threshold</value></data>
+  <data name="ThresholdLow" xml:space="preserve"><value>Threshold minimum</value></data>
+  <data name="ThresholdHigh" xml:space="preserve"><value>Threshold maximum</value></data>
+  <data name="RangeLow" xml:space="preserve"><value>Highlight minimum</value></data>
+  <data name="RangeHigh" xml:space="preserve"><value>Highlight maximum</value></data>
+  <data name="HighlightOpacity" xml:space="preserve"><value>Highlight opacity</value></data>
+  <data name="PseudoColorMode" xml:space="preserve"><value>Pseudo-color mode</value></data>
+  <data name="PseudoMin" xml:space="preserve"><value>Pseudo-color minimum</value></data>
+  <data name="PseudoMax" xml:space="preserve"><value>Pseudo-color maximum</value></data>
+  <data name="IsToolBarTopVisible" xml:space="preserve"><value>Top toolbar</value></data>
+  <data name="IsToolBarLeftVisible" xml:space="preserve"><value>Left toolbar</value></data>
+  <data name="IsToolBarRightVisible" xml:space="preserve"><value>Right toolbar</value></data>
+  <data name="IsToolBarAlVisible" xml:space="preserve"><value>Algorithm toolbar</value></data>
+  <data name="IsToolBarDrawVisible" xml:space="preserve"><value>Drawing toolbar</value></data>
+  <data name="IsLayoutUpdated" xml:space="preserve"><value>Auto refresh</value></data>
+  <data name="IsShowText" xml:space="preserve"><value>Show drawing text</value></data>
+  <data name="IsShowMsg" xml:space="preserve"><value>Show messages</value></data>
+  <data name="DrawingTextFontSize" xml:space="preserve"><value>Drawing text size</value></data>
+  <data name="ActualLength" xml:space="preserve"><value>Physical length per pixel</value></data>
+  <data name="PhysicalUnit" xml:space="preserve"><value>Physical unit</value></data>
+  <data name="IsUsePhysicalUnit" xml:space="preserve"><value>Use physical units</value></data>
+  <data name="FontSize" xml:space="preserve"><value>Font size</value></data>
+  <data name="Brush" xml:space="preserve"><value>Text color</value></data>
+  <data name="FontFamily" xml:space="preserve"><value>Font family</value></data>
+  <data name="FontStyle" xml:space="preserve"><value>Font style</value></data>
+  <data name="FontWeight" xml:space="preserve"><value>Font weight</value></data>
+  <data name="FontStretch" xml:space="preserve"><value>Font stretch</value></data>
+  <data name="FlowDirection" xml:space="preserve"><value>Text direction</value></data>
+</root>

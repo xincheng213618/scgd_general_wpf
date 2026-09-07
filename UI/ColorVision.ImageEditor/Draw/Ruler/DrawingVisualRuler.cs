@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
@@ -21,6 +22,25 @@ namespace ColorVision.ImageEditor.Draw
 
         public static double ActualLength { get => DefalutTextAttribute.Defalut.IsUsePhysicalUnit ? DefalutTextAttribute.Defalut.ActualLength :1; set { DefalutTextAttribute.Defalut.ActualLength = value;} }
         public static string PhysicalUnit { get => DefalutTextAttribute.Defalut.IsUsePhysicalUnit ? DefalutTextAttribute.Defalut.PhysicalUnit : "Px"; set { DefalutTextAttribute.Defalut.PhysicalUnit = value; } }
+
+        private DefalutTextAttribute? _calibration;
+        [Browsable(false), Newtonsoft.Json.JsonIgnore]
+        public DefalutTextAttribute? Calibration
+        {
+            get => _calibration;
+            set
+            {
+                if (ReferenceEquals(_calibration, value)) return;
+                if (_calibration != null) PropertyChangedEventManager.RemoveHandler(_calibration, CalibrationChanged, string.Empty);
+                _calibration = value;
+                if (_calibration != null) PropertyChangedEventManager.AddHandler(_calibration, CalibrationChanged, string.Empty);
+                Render();
+            }
+        }
+
+        public double EffectiveActualLength => Calibration is { } calibration ? (calibration.IsUsePhysicalUnit ? calibration.ActualLength : 1) : ActualLength;
+        public string EffectivePhysicalUnit => Calibration is { } calibration ? (calibration.IsUsePhysicalUnit ? calibration.PhysicalUnit : "Px") : PhysicalUnit;
+        private void CalibrationChanged(object? sender, PropertyChangedEventArgs e) => Render();
 
         public List<Point> Points { get => Attribute.Points;}
 
@@ -66,26 +86,26 @@ namespace ColorVision.ImageEditor.Draw
                 for (int i = 1; i < Points.Count-1; i++)
                 {
                     double len = GetDistance(Points[i], Points[i - 1]);
-                    len = len * ActualLength;
+                    len = len * EffectiveActualLength;
                     lenAll += len;
-                    FormattedText formattedText2 = new(len.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, fontSize, brush, pixelsPerDip);
+                    FormattedText formattedText2 = new(len.ToString("F2") + EffectivePhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, fontSize, brush, pixelsPerDip);
                     dc.DrawText(formattedText2, Points[i]);
                 }
 
                 if (Points.Count > 1)
                 {
                     double Lastlen = GetDistance(Points[^1], Points[^2]);
-                    Lastlen = Lastlen * ActualLength;
+                    Lastlen = Lastlen * EffectiveActualLength;
                     if (MovePoints == null)
                     {
                         lenAll += Lastlen;
 
-                        FormattedText formattedText2 = new(ColorVision.ImageEditor.Properties.Resources.Ruler_TotalLength + lenAll.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, fontSize, brush, pixelsPerDip);
+                        FormattedText formattedText2 = new(ColorVision.ImageEditor.Properties.Resources.Ruler_TotalLength + lenAll.ToString("F2") + EffectivePhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, fontSize, brush, pixelsPerDip);
                         dc.DrawText(formattedText2, Points[^1]);
                     }
                     else
                     {
-                        FormattedText formattedText2 = new(Lastlen.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, fontSize, brush, pixelsPerDip);
+                        FormattedText formattedText2 = new(Lastlen.ToString("F2") + EffectivePhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, fontSize, brush, pixelsPerDip);
                         dc.DrawText(formattedText2, Points[^1]);
                     }
                 }

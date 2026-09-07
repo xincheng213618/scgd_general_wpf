@@ -161,6 +161,11 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
         {
             IsEnabled = false;
             ApplyDefaults(defaults);
+            ResetImageRange();
+        }
+
+        internal void ResetImageRange()
+        {
             DataMin = 0;
             DataMax = 0;
             SliderMinimum = 0;

@@ -7,7 +7,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
 {
     public class ImageCalibrationProfile : ViewModelBase
     {
-        public double ActualLength { get => _ActualLength; set { _ActualLength = value <= 0 ? 1 : value; OnPropertyChanged(); } }
+        public double ActualLength { get => _ActualLength; set { _ActualLength = double.IsFinite(value) && value > 0 ? value : 1; OnPropertyChanged(); } }
         private double _ActualLength = 1;
 
         public string PhysicalUnit { get => _PhysicalUnit; set { _PhysicalUnit = string.IsNullOrWhiteSpace(value) ? "Px" : value; OnPropertyChanged(); } }
@@ -98,6 +98,13 @@ namespace ColorVision.ImageEditor.Draw.Ruler
             OnPropertyChanged(nameof(Profiles));
         }
 
+        public ImageCalibrationProfile ReadProfile(string? key)
+        {
+            if (Profiles != null && Profiles.TryGetValue(NormalizeKey(key), out var profile) && profile != null) return profile;
+            if (Profiles != null && Profiles.TryGetValue(DefaultKey, out var defaults) && defaults != null) return defaults;
+            return new ImageCalibrationProfile();
+        }
+
         public static string NormalizeKey(string? key)
         {
             return string.IsNullOrWhiteSpace(key) ? DefaultKey : key.Trim();
@@ -133,27 +140,24 @@ namespace ColorVision.ImageEditor.Draw.Ruler
 
         public static void ApplyToDefault(ImageViewConfig? config)
         {
-            var key = ResolveCalibrationKey(config);
-            config?.SetViewState(CalibrationSourceKeyProperty, key, nameof(ImageCalibrationConfig), "当前视窗使用的标定档案键");
+            if (config != null) ApplyToView(config);
+            else ImageCalibrationConfig.Instance.ReadProfile(null).ApplyTo(DefalutTextAttribute.Defalut);
+        }
 
-            var profile = ImageCalibrationConfig.Instance.GetOrCreateProfile(key);
-            profile.ApplyTo(DefalutTextAttribute.Defalut);
+        public static void ApplyToView(ImageViewConfig config, bool reload = false)
+        {
+            string key = ResolveCalibrationKey(config);
+            if (!reload && string.Equals(config.CalibrationProfileKey, key, StringComparison.OrdinalIgnoreCase)) return;
+            ImageCalibrationConfig.Instance.ReadProfile(key).ApplyTo(config.Calibration);
+            config.CalibrationProfileKey = key;
         }
 
         public static void SaveCurrent(ImageViewConfig? config)
         {
-            var key = ResolveCalibrationKey(config);
-            var attribute = DefalutTextAttribute.Defalut;
+            var key = config?.CalibrationProfileKey ?? ResolveCalibrationKey(config);
+            var attribute = config?.Calibration ?? DefalutTextAttribute.Defalut;
             ImageCalibrationConfig.Instance.SaveProfile(key, attribute);
-
-            try
-            {
-                ConfigService.Instance?.Save<ImageCalibrationConfig>();
-                ConfigService.Instance?.Save<DefalutTextAttribute>();
-            }
-            catch
-            {
-            }
+            Settings.ImageSettingsPersistence.Save(ImageCalibrationConfig.Instance);
         }
     }
 }

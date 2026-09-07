@@ -138,11 +138,13 @@ public class DockViewManagerTests
                 manager.IDisPlayControls.Clear();
                 var panel = new StackPanel();
                 manager.Init(new Window(), panel);
-                var first = new TestDisplayControl("First");
+                var first = new TestDisplayControl("First") { Margin = new Thickness(3, 8, 4, 9) };
                 var second = new TestDisplayControl("Second");
 
                 manager.ReplaceControls(new IDisPlayControl[] { first, second });
 
+                Assert.Equal(new Thickness(3, 0, 4, 2), first.Margin);
+                Assert.Equal(new Thickness(0, 0, 0, 2), second.Margin);
                 Assert.False(first.IsSelected);
                 Assert.True(second.IsSelected);
                 Assert.Same(second, manager.SelectedControl);

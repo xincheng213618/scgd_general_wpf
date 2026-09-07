@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Properties;
 using Newtonsoft.Json;
+using System.ComponentModel.DataAnnotations;
+using ColorVision.ImageEditor.Settings;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -33,6 +35,12 @@ namespace ColorVision.ImageEditor
 
             ClearCommand = new RelayCommand(o => Cleared?.Invoke(this,new EventArgs()));    
         }
+
+        [Browsable(false), JsonIgnore]
+        public Draw.DefalutTextAttribute Calibration { get; } = new();
+
+        [Browsable(false), JsonIgnore]
+        public string? CalibrationProfileKey { get; internal set; }
 
         public Dictionary<Type, IImageEditorConfig> Configs { get; set; }
 
@@ -190,6 +198,7 @@ namespace ColorVision.ImageEditor
 
         public event EventHandler<bool> LayoutUpdatedChanged;
         [DisplayName("自动刷新")]
+        [Display(Name = nameof(SettingsText.IsLayoutUpdated), ResourceType = typeof(SettingsText))]
         public bool IsLayoutUpdated
         {
             get => _IsLayoutUpdated;
@@ -205,33 +214,41 @@ namespace ColorVision.ImageEditor
 
         public event EventHandler<double> DrawingTextFontSizeChanged;
         [DisplayName("绘制文字大小")]
+        [Display(Name = nameof(SettingsText.DrawingTextFontSize), ResourceType = typeof(SettingsText))]
         public double DrawingTextFontSize { get => _DrawingTextFontSize; set { _DrawingTextFontSize = Math.Max(0, value); OnPropertyChanged(); DrawingTextFontSizeChanged?.Invoke(this, _DrawingTextFontSize); } }
         private double _DrawingTextFontSize;
 
 
         public event EventHandler<bool> ShowTextChanged;
         [DisplayName("显示文字")]
+        [Display(Name = nameof(SettingsText.IsShowText), ResourceType = typeof(SettingsText))]
         public bool IsShowText { get => _IsShowText; set { _IsShowText = value; OnPropertyChanged(); ShowTextChanged?.Invoke(this, _IsShowText); } }
         private bool _IsShowText = true;
 
         public event EventHandler<bool> ShowMsgChanged;
         [DisplayName("显示消息")]
+        [Display(Name = nameof(SettingsText.IsShowMsg), ResourceType = typeof(SettingsText))]
         public bool IsShowMsg { get => _IsShowMsg; set { _IsShowMsg = value; OnPropertyChanged(); ShowMsgChanged?.Invoke(this, _IsShowMsg); } }
         private bool _IsShowMsg = true;
 
         // Toolbar visibility properties
+        [Display(Name = nameof(SettingsText.IsToolBarAlVisible), ResourceType = typeof(SettingsText))]
         public bool IsToolBarAlVisible { get => _IsToolBarAlVisible; set { _IsToolBarAlVisible = value; OnPropertyChanged(); } }
         private bool _IsToolBarAlVisible = true;
 
+        [Display(Name = nameof(SettingsText.IsToolBarDrawVisible), ResourceType = typeof(SettingsText))]
         public bool IsToolBarDrawVisible { get => _IsToolBarDrawVisible; set { _IsToolBarDrawVisible = value; OnPropertyChanged(); } }
         private bool _IsToolBarDrawVisible;
 
+        [Display(Name = nameof(SettingsText.IsToolBarTopVisible), ResourceType = typeof(SettingsText))]
         public bool IsToolBarTopVisible { get => _IsToolBarTopVisible; set { _IsToolBarTopVisible = value; OnPropertyChanged(); } }
         private bool _IsToolBarTopVisible = true;
 
+        [Display(Name = nameof(SettingsText.IsToolBarLeftVisible), ResourceType = typeof(SettingsText))]
         public bool IsToolBarLeftVisible { get => _IsToolBarLeftVisible; set { _IsToolBarLeftVisible = value; OnPropertyChanged(); } }
         private bool _IsToolBarLeftVisible = true;
 
+        [Display(Name = nameof(SettingsText.IsToolBarRightVisible), ResourceType = typeof(SettingsText))]
         public bool IsToolBarRightVisible { get => _IsToolBarRightVisible; set { _IsToolBarRightVisible = value; OnPropertyChanged(); } }
         private bool _IsToolBarRightVisible = true;
 

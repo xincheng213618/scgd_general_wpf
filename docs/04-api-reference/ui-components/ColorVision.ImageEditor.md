@@ -32,15 +32,15 @@ related: ["ui.discovery","ui.image-editor-context","ui.property-grid","engine.re
 - 普通图片和 TIFF 打开器异步解码，以请求编号和当前文件路径拒绝过期结果。调用 `OpenImage` 返回不等于像素已经就绪；失败也不保证各打开器都有同样的弹窗或日志，TIFF 解码异常目前可直接返回。
 - `ImageSourceLoaded` 表示当前像素源已载入或更新；`ExternalRenderCompleted` 只在外部渲染者显式通知时发出。该事件也可携带 `Succeeded=false` 或空 `Source`，发生事件不等于渲染成功。需要导出结果叠图时，核对成功标志、当前任务 `Context` 与 `ImageRevision`，再在视图 Dispatcher 捕获；不能仅凭像素加载或事件名称判断标注已完整。快照 API 自身不会等待或校验外部渲染状态，事件字段见 `ImageViewLifecycleEventArgs.cs`。
 
-CVCIE 的全局默认显示在“图像设置 → 默认值 → CVCIE 显示”中配置，由 Engine 的 `CvcieDisplayConfig` 持久化，`CvcieDisplaySettingProvider` 注册到设置窗口，加载 Engine 后无需先打开 CVCIE 即可设置；开启“启用真彩显示”后新打开的 CVCIE 默认采用 XYZ 真彩 sRGB，关闭后默认原图；亮度可选择自动适配或固定参考白。图层下拉框允许临时切换当前图片，不改全局开关。XYZ 转换与原图/Y 灰度回退也由 Engine 提供，异常只记日志，详见 [CV 文件的显示与校正边界](../engine-components/ColorVision.FileIO.md)。
+CVCIE 的全局默认显示在“图像设置 → 文件打开 → CVCIE”中配置，由 Engine 的 `CvcieDisplayConfig` 持久化，`CvcieDisplaySettingProvider` 注册到设置窗口，加载 Engine 后无需先打开 CVCIE 即可设置；开启“启用真彩显示”后新打开的 CVCIE 默认采用 XYZ 真彩 sRGB，关闭后默认原图；亮度可选择自动适配或固定参考白。图层下拉框允许临时切换当前图片，不改全局开关。XYZ 转换与原图/Y 灰度回退也由 Engine 提供，异常只记日志，详见 [CV 文件的显示与校正边界](../engine-components/ColorVision.FileIO.md)。
 
 `SetLayerController` 替换或清空控制器时会 Dispose 实现 `IDisposable` 的旧控制器，同一实例重设选择不释放。Engine 的 CVCIE 控制器借此取消后台切换并释放显示缓存；选择返回不表示新图层已显示，消费方仍以 `ImageSourceLoaded` 为完成信号。
 
 ## 设置扩展与模块边界
 
-`ImageView.RegisterSettings` 接受返回 `ImageViewSettingsEntry` 的 provider，条目携带分组、标题、配置对象及可选保存委托。`ImageViewSettingsWindow` 按分组名复用内置或已创建的设置页，将扩展设置追加到该页；同名分组不会再生成一个重复导航项。保存或关闭窗口时执行条目的保存委托。扩展模块应通过此入口提供专有配置，ImageEditor 不反向依赖 Engine 的配置类型，FileIO 也不承担用户显示设置。
+`ImageView.RegisterSettings` 保留原有 provider 入口；`RegisterSettingsProvider` 还返回可注销的句柄。条目声明稳定 ID、作用范围、提供方、当前绑定对象及可选保存/默认动作。窗口按页面 ID 组织显示，只有应用偏好和默认值的实际改动在保存/完成时持久化；当前视图调整、信息浏览和标定档案不通过普通关闭隐式保存。旧条目需要显式调用其保存按钮。范围、兼容和错误语义见[图像设置](../../02-developer-guide/core-concepts/image-editor-settings-plan.md)。ImageEditor 不反向依赖 Engine 的配置类型，FileIO 也不承担用户显示设置。
 
-`CvcieDisplaySettingsTests` 覆盖未打开 CVCIE 时的设置可用性、多个视图共享全局配置、合并默认值页和保存委托；测试入口不代表已经完成真实窗口交互验收。
+`CvcieDisplaySettingsTests` 覆盖无图设置可用、多个视图共享全局配置、文件打开页归属及保存委托。`ImageSettingsScopeTests` 覆盖当前状态隔离、显式默认值和保存生命周期；测试入口不代表真实设备或跨显示器 DPI 验收。
 
 ## 绘图、选择与撤销
 

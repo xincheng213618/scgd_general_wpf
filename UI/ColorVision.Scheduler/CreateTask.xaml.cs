@@ -1,21 +1,27 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.Scheduler
 {
-    /// <summary>
-    /// EditTerminal.xaml 的交互逻辑
-    /// </summary>
     public partial class CreateTask : Window
     {
+        private readonly ISchedulerService _schedulerService;
+        private readonly Task _initializationTask;
         private SchedulerInfo _schedulerInfo = new();
         private string? _originalJobName;
         private string? _originalGroupName;
+        private string? _suggestedJobName;
+        private string? _suggestedGroupName;
+        private string? _configurationError;
         private bool _suppressSelectionChanged;
+        private bool _isSaving;
+        private bool _loaded;
+        private bool _isClosed;
 
         public SchedulerInfo SchedulerInfo
         {
@@ -24,15 +30,11 @@ namespace ColorVision.Scheduler
             {
                 ArgumentNullException.ThrowIfNull(value);
                 _schedulerInfo = value;
-
-                if (_originalJobName == null
-                    && QuartzSchedulerManager.GetInstance().TaskInfos.Any(info =>
-                        info.JobName == value.JobName && info.GroupName == value.GroupName))
+                if (_originalJobName == null && _schedulerService.TaskInfos.Any(info => info.JobName == value.JobName && info.GroupName == value.GroupName))
                 {
                     _originalJobName = value.JobName;
                     _originalGroupName = value.GroupName;
                 }
-
                 if (IsInitialized)
                     BindSchedulerInfo();
             }
@@ -40,141 +42,207 @@ namespace ColorVision.Scheduler
 
         private bool IsEditing => _originalJobName != null && _originalGroupName != null;
 
-        public CreateTask()
+        public CreateTask() : this(QuartzSchedulerManager.GetInstance(), QuartzSchedulerManager.GetInstance().InitializationTask) { }
+
+        internal CreateTask(ISchedulerService schedulerService, Task? initializationTask = null)
         {
+            _schedulerService = schedulerService;
+            _initializationTask = initializationTask ?? Task.CompletedTask;
             InitializeComponent();
+            MaxHeight = Math.Max(320, SystemParameters.WorkArea.Height - 48);
+            SubmitButton.IsEnabled = false;
+            BindSchedulerInfo();
             this.ApplyCaption();
         }
 
-        private void Window_Initialized(object sender, EventArgs e)
+        private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            _suppressSelectionChanged = true;
-            ComboBoxMode.ItemsSource = from mode in Enum.GetValues<JobExecutionMode>()
-                                       select new KeyValuePair<string, JobExecutionMode>(GetExecutionModeDisplay(mode), mode);
-            TaskComboBox.ItemsSource = QuartzSchedulerManager.GetInstance().Jobs;
-            DataContext = SchedulerInfo;
-            _suppressSelectionChanged = false;
-            RenderConfigurationEditor();
-        }
-
-        private static string GetExecutionModeDisplay(JobExecutionMode mode)
-        {
-            return mode == JobExecutionMode.Calendar
-                ? $"{mode.ToDescription()} ({Properties.Resources.Sched_Interval}: 24 h)"
-                : mode.ToDescription();
-        }
-
-
-        private void TaskComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-        {
-            if (_suppressSelectionChanged || !ReferenceEquals(sender, TaskComboBox) || SchedulerInfo.JobType == null)
+            if (_loaded)
                 return;
-
-            if (!IsEditing)
+            _loaded = true;
+            try
             {
-                SchedulerInfo.JobName = QuartzSchedulerManager.GetInstance().GetNewJobName(SchedulerInfo.JobType.Name);
-                SchedulerInfo.GroupName = QuartzSchedulerManager.GetInstance().GetNewGroupName(SchedulerInfo.JobType.Name);
+                await _initializationTask;
+                if (_isClosed)
+                    return;
+                _suppressSelectionChanged = true;
+                DataContext = null;
+                ComboBoxMode.ItemsSource = Enum.GetValues<JobExecutionMode>()
+                    .Select(mode => new KeyValuePair<string, JobExecutionMode>(mode.ToDescription(), mode));
+                RepeatModeComboBox.ItemsSource = Enum.GetValues<JobRepeatMode>()
+                    .Select(mode => new KeyValuePair<string, JobRepeatMode>(mode.ToDescription(), mode));
+                TaskComboBox.ItemsSource = _schedulerService.Jobs.OrderBy(entry => entry.Key).ToArray();
+                BindSchedulerInfo();
+                _suppressSelectionChanged = false;
+                SubmitButton.IsEnabled = _schedulerService.Jobs.Count > 0;
+                if (_schedulerService.Jobs.Count == 0)
+                    ShowError(Properties.Resources.Sched_NoTaskTypes);
+                else if (SchedulerInfo.JobType == null && _schedulerService.Jobs.Count == 1)
+                    TaskComboBox.SelectedIndex = 0;
+                TaskComboBox.Focus();
             }
-
-            RenderConfigurationEditor();
+            catch (Exception ex)
+            {
+                ShowError(ex.Message);
+            }
         }
 
         private void BindSchedulerInfo()
         {
             _suppressSelectionChanged = true;
             DataContext = SchedulerInfo;
+            Title = FormTitle.Text = IsEditing ? Properties.Resources.Sched_EditTask : Properties.Resources.CreateTask;
+            FormSubtitle.Text = IsEditing ? Properties.Resources.Sched_EditHint : Properties.Resources.Sched_CreateHint;
+            SubmitButton.Content = IsEditing ? Properties.Resources.Sched_SaveChanges : Properties.Resources.CreateTask;
+            AdvancedSettings.IsExpanded = SchedulerInfo.Priority != 5 || SchedulerInfo.TimeoutSeconds != 0;
             _suppressSelectionChanged = false;
+            RenderConfigurationEditor();
+        }
+
+        private void TaskComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_suppressSelectionChanged || TaskComboBox.SelectedValue is not Type type)
+                return;
+            SchedulerInfo.JobType = type;
+            if (!IsEditing)
+            {
+                // Suggestions must not overwrite a name the user has already entered.
+                if (string.IsNullOrWhiteSpace(SchedulerInfo.JobName) || SchedulerInfo.JobName == _suggestedJobName)
+                    SchedulerInfo.JobName = _suggestedJobName = _schedulerService.GetNewJobName(type.Name);
+                if (string.IsNullOrWhiteSpace(SchedulerInfo.GroupName) || SchedulerInfo.GroupName == _suggestedGroupName)
+                    SchedulerInfo.GroupName = _suggestedGroupName = _schedulerService.GetNewGroupName(type.Name);
+            }
             RenderConfigurationEditor();
         }
 
         private void RenderConfigurationEditor()
         {
             StackPanelConfig.Children.Clear();
-            if (SchedulerInfo.JobType == null || !typeof(IConfigurableJob).IsAssignableFrom(SchedulerInfo.JobType))
+            ConfigurationSection.Visibility = Visibility.Collapsed;
+            if (ErrorMessage.Text == _configurationError)
+                ErrorMessage.Visibility = Visibility.Collapsed;
+            _configurationError = null;
+            if (SchedulerInfo.JobType == null)
                 return;
-
+            if (!typeof(IConfigurableJob).IsAssignableFrom(SchedulerInfo.JobType))
+            {
+                SchedulerInfo.Config = null!;
+                return;
+            }
             try
             {
-                if (Activator.CreateInstance(SchedulerInfo.JobType) is IConfigurableJob jobInstance)
+                if (Activator.CreateInstance(SchedulerInfo.JobType) is IConfigurableJob job)
                 {
-                    if (SchedulerInfo.Config == null || SchedulerInfo.Config.GetType() != jobInstance.ConfigType)
-                        SchedulerInfo.Config = jobInstance.CreateDefaultConfig();
-
-                    if (SchedulerInfo.Config != null)
+                    if (SchedulerInfo.Config == null || SchedulerInfo.Config.GetType() != job.ConfigType)
+                        SchedulerInfo.Config = job.CreateDefaultConfig();
+                    if (SchedulerInfo.Config != null && PropertyEditorHelper.GenPropertyEditorControl(SchedulerInfo.Config) is { } editor)
                     {
-                        var configPanel = PropertyEditorHelper.GenPropertyEditorControl(SchedulerInfo.Config);
-                        if (configPanel != null)
-                            StackPanelConfig.Children.Add(configPanel);
+                        StackPanelConfig.Children.Add(editor);
+                        ConfigurationSection.Visibility = Visibility.Visible;
                     }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    $"Failed to create configuration for job type '{SchedulerInfo.JobType.Name}': {ex.Message}\n\nThe job will be created without custom configuration.",
-                    "Configuration Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                _configurationError = string.Format(Properties.Resources.Sched_ConfigFailed, ex.Message);
+                ShowError(_configurationError);
             }
         }
 
-        private async void Button_Click(object sender, RoutedEventArgs e)
+        private void DelayStart_Checked(object sender, RoutedEventArgs e)
         {
+            if (SchedulerInfo.Delay == TimeSpan.Zero)
+                SchedulerInfo.Delay = TimeSpan.FromMinutes(5);
+        }
+
+        private async void Submit_Click(object sender, RoutedEventArgs e)
+        {
+            if (await SaveAsync())
+                DialogResult = true;
+        }
+
+        internal async Task<bool> SaveAsync()
+        {
+            if (_isSaving || !SubmitButton.IsEnabled)
+                return false;
+            ErrorMessage.Visibility = Visibility.Collapsed;
+            SubmitButton.Focus();
+            if (FindInvalidInput(EditorForm) is UIElement invalidInput)
+            {
+                ShowError(Properties.Resources.Sched_InvalidInput);
+                invalidInput.Focus();
+                if (invalidInput is FrameworkElement element)
+                    element.BringIntoView();
+                return false;
+            }
+
+            string? error = _configurationError ?? SchedulerTriggerFactory.Validate(SchedulerInfo);
+            if (error != null)
+            {
+                ShowError(error);
+                return false;
+            }
+
+            _isSaving = true;
+            EditorForm.IsEnabled = CancelButton.IsEnabled = SubmitButton.IsEnabled = false;
+            SubmitButton.Content = Properties.Resources.Sched_Working;
             try
             {
-                QuartzSchedulerManager manager = QuartzSchedulerManager.GetInstance();
                 SchedulerOperationResult result = IsEditing
-                    ? await manager.UpdateJob(SchedulerInfo, _originalJobName!, _originalGroupName!)
-                    : await manager.CreateJob(SchedulerInfo);
-
+                    ? await _schedulerService.UpdateJob(SchedulerInfo, _originalJobName!, _originalGroupName!)
+                    : await _schedulerService.CreateJob(SchedulerInfo);
                 if (!result.Success)
-                {
-                    MessageBox.Show(
-                        result.Message,
-                        result.Error == SchedulerOperationError.Validation
-                            ? Properties.Resources.Sched_ParamError
-                            : Properties.Resources.Sched_Error,
-                        MessageBoxButton.OK,
-                        result.Error == SchedulerOperationError.Validation
-                            ? MessageBoxImage.Warning
-                            : MessageBoxImage.Error);
-                    return;
-                }
-
-                DialogResult = true;
+                    ShowError(result.Message);
+                return result.Success;
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    ex.Message,
-                    Properties.Resources.Sched_Error,
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                ShowError(ex.Message);
+                return false;
             }
-        }
-
-        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter)
+            finally
             {
-                Common.NativeMethods.Keyboard.PressKey(0x09);
-                e.Handled = true;
+                _isSaving = false;
+                EditorForm.IsEnabled = CancelButton.IsEnabled = SubmitButton.IsEnabled = true;
+                SubmitButton.Content = IsEditing ? Properties.Resources.Sched_SaveChanges : Properties.Resources.CreateTask;
             }
         }
 
-
-        private void ComboBoxRepeat_Initialized(object sender, EventArgs e)
+        private static UIElement? FindInvalidInput(DependencyObject root)
         {
-            if (sender is ComboBox comboBox)
+            if (root is UIElement { Visibility: not Visibility.Visible })
+                return null;
+            if (root is TextBox textBox)
+                textBox.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+            if (root is UIElement element && Validation.GetHasError(root))
+                return element;
+            for (int index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
             {
-                comboBox.ItemsSource = from e1 in Enum.GetValues<JobRepeatMode>().Cast<JobRepeatMode>()
-                                       select new KeyValuePair<string,JobRepeatMode>(e1.ToDescription(), e1);
+                if (FindInvalidInput(VisualTreeHelper.GetChild(root, index)) is { } invalid)
+                    return invalid;
             }
+            return null;
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
+        private void ShowError(string message)
         {
-            PlatformHelper.Open("https://cron.qqe2.com/");
+            ErrorMessage.Text = message;
+            ErrorMessage.Visibility = Visibility.Visible;
         }
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            if (_isSaving)
+                e.Cancel = true;
+            base.OnClosing(e);
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _isClosed = true;
+            base.OnClosed(e);
+        }
+
+        private void CronGenerator_Click(object sender, RoutedEventArgs e) => PlatformHelper.Open("https://cron.qqe2.com/");
     }
 }

@@ -43,7 +43,6 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
         public void ConfigureForImage()
         {
             DisposePreviewSession();
-            _state.ApplyDefaults(PseudoColorDefaultConfig.Current);
 
             var depth = _owner.Config.GetProperties<int>("Depth");
             if (depth == 16)
@@ -95,7 +94,8 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
         public void Reset()
         {
             Invalidate();
-            _state.ResetForNewImage(PseudoColorDefaultConfig.Current);
+            _state.IsEnabled = false;
+            _state.ResetImageRange();
             InvokeOnUiThread(() =>
             {
                 RestoreSource();

@@ -17,7 +17,7 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 
 | 现象或行为 | 当前实现与检查点 |
 | --- | --- |
-| 主窗口布局 | `ColorVision/MainWindow.xaml` 定义菜单区、停靠区和状态栏；工作区内容由具体编辑器和扩展提供 |
+| 主窗口布局 | `ColorVision/MainWindow.xaml` 定义菜单区、停靠区和状态栏；工作区内容由具体编辑器和扩展提供。设备控制列表宿主不另加顶部外边距，项目间距由显示控件装配层统一放在每项下方 |
 | 将菜单合并到标题栏 | Windows build 22000 或更高版本显示 `MainWindowConfig.UseCompactMainWindow`，默认开启、重启生效；启动工厂在该版本门禁通过后才按配置选择 `CompactMainWindow` 或普通 `MainWindow`，低版本不显示设置并直接创建普通 `MainWindow` |
 | 桌面宠物的显示与素材 | `MainWindowConfig.OpenFloatingBall` 控制独立窗口，启用、选择和创建入口见[桌面宠物](../../04-api-reference/ui-components/desktop-pet.md) |
 | 查找功能或当前内容 | Ctrl+Shift+P 打开应用搜索；Ctrl+F 按当前内容分流到局部查找或应用搜索 |
@@ -49,13 +49,13 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 
 快捷入口组紧靠右侧系统按钮占位，空间不足时由同位置的“更多”替代。120 DIP 拖动留白位于快捷入口组左边，不隔在快捷入口与最小化、最大化/还原、关闭按钮之间。DockPanel 先分配“更多”和快捷入口，再分配拖动区；各自有独立绘制层级，避免极窄布局中较长菜单覆盖右侧按钮。
 
-紧凑标题栏附加成功后，`CompactMainWindow.SetCompactMenuAlignment` 将 `Menu1` 在标题行内部垂直居中，并在原上外边距基础上增加 4 DIP，使可见中心相对居中位置下移约 2 DIP；不通过修改工作区外边距补偿菜单位置。它保存原菜单的外边距与垂直对齐，失败回退和全屏模式恢复原值，退出全屏后再接回紧凑对齐。普通 `MainWindow` 不应用该调整。
+紧凑标题栏附加成功后，`CompactMainWindow.SetCompactHeaderAlignment` 将 `Menu1` 和“发现更新”按钮使用同一条光学对齐规则：在标题行内部垂直居中，并在各自原上外边距基础上增加 4 DIP，使两者可见中心都相对居中位置下移约 2 DIP；不通过修改工作区外边距补偿文字位置。它分别保存菜单和更新按钮的原外边距与垂直对齐，失败回退和全屏模式恢复原值，退出全屏后再接回紧凑对齐。普通 `MainWindow` 不应用该调整。
 
-窄栏的宽度判断集中在内部辅助类 `CompactTitleBarLayout`，由 `CompactMainWindow` 和隔离的真实 XAML 布局测试共用。它测量菜单、图标、拖动区、快捷入口、待更新文字和“更多”的自然期望宽度；已折叠元素在测量期间暂用 Hidden，随后恢复，不依赖其零宽度或当前分配宽度判断能否显示。待更新状态独立传入，所以窗口变宽即可恢复被布局隐藏的提示，无需等待下一次更新事件；异步提示变化也使用同一套规则，不另加高频 Render 循环。
+窄栏的宽度判断集中在内部辅助类 `CompactTitleBarLayout`，由 `CompactMainWindow` 和隔离的真实 XAML 布局测试共用。它测量菜单、拖动区、快捷入口、待更新文字和“更多”的自然期望宽度；已折叠元素在测量期间暂用 Hidden，随后恢复，不依赖其零宽度或当前分配宽度判断能否显示。待更新状态独立传入，所以窗口变宽即可恢复被布局隐藏的提示，无需等待下一次更新事件；异步提示变化也使用同一套规则，不另加高频 Render 循环。
 
 标题区延伸采用仅顶部的 `WindowChrome.GlassFrameThickness`，不启用全窗模糊、Acrylic 或透明分层窗口。附加期间 `Window.Background` 临时为 Transparent，但 `AllowsTransparency` 保持 false；`Root`、顶栏容器和系统按钮占位不覆盖 DWM 按钮，菜单区域、停靠管理器和状态栏分别用 `GlobalBackground` 保持内容不透明。`CompactTitleBarChrome` 监听窗口背景属性变化，在紧凑模式下同步恢复透明值：WPF 属性或资源失效可能清除 `SetCurrentValue` 的覆盖值，且不一定触发主题变化事件，仅在 `ApplyTheme` 中恢复会使最小化、最大化/还原、关闭按钮被不透明背景遮住。该监听在全屏时暂停保护，释放时解除，保留原动态资源在全屏和原生回退后的更新能力，不使用逐帧轮询。紧凑路径把 `DockingManager1.Margin` 从普通窗口的 `-2,-3,-2,-2` 改为 0，隔开工作区与玻璃标题区，防止负外边距使内容绘制覆盖系统按钮；原生回退和进入全屏时恢复普通外边距。
 
-颜色由捕获的 `ThemeManager.CurrentUIThemeChanged` 驱动并切回 UI 线程；紧凑路径不并行运行普通 `ApplyCaption`，避免后者重置其标题色。图标通过公共只读辅助方法 `ThemeManagerExtensions.TryLoadPackageIcon` 读取并缓存，优先保留包图标；没有包图标时才按实际主题选用默认深浅图标，详见[窗口主题与图标](../../04-api-reference/ui-components/ColorVision.Themes.md#窗口外观与生命周期)。外边框使用 DWM 默认颜色，不把窗口是否激活绑定到内部文档的选中或活动状态。控制器复用同一个 `WindowChrome`，普通最大化/还原时同步调整客户区内缩，不在下一轮 Loaded 后再改内容边距；标题高度、DPI 或系统设置变化仍合并刷新相关尺寸，不在普通位置变化时重建窗口或模板。窗口状态变化不重复写入 DWM 主题属性；这些实现约束不等于已测得生产工作区性能无退步。
+颜色由捕获的 `ThemeManager.CurrentUIThemeChanged` 驱动并切回 UI 线程；紧凑路径不并行运行普通 `ApplyCaption`，避免后者重置其标题色。窗口与任务栏图标通过公共只读辅助方法 `ThemeManagerExtensions.TryLoadPackageIcon` 读取并缓存，优先保留包图标；没有包图标时才按实际主题选用默认深浅图标。紧凑标题栏不重复绘制软件图标，菜单直接从标题栏左侧开始；窗口图标与任务栏图标仍按原有主题和客户包图标逻辑设置。详见[窗口主题与图标](../../04-api-reference/ui-components/ColorVision.Themes.md#窗口外观与生命周期)。外边框使用 DWM 默认颜色，不把窗口是否激活绑定到内部文档的选中或活动状态。控制器复用同一个 `WindowChrome`，普通最大化/还原时同步调整客户区内缩，不在下一轮 Loaded 后再改内容边距；标题高度、DPI 或系统设置变化仍合并刷新相关尺寸，不在普通位置变化时重建窗口或模板。窗口状态变化不重复写入 DWM 主题属性；这些实现约束不等于已测得生产工作区性能无退步。
 
 在相同 DPI 与标题内容高度下，最大化/还原共用稳定的 `GlassFrameThickness.Top` 和 `CaptionHeight` 上界。改变这两个属性会让 WPF 重算非客户区并触发 `SWP_FRAMECHANGED`，因此不能随着普通/最大化的客户区内缩反复变化。普通窗口中，上界超出真实标题下沿的窄条属于工作区：控制器仅对此窄条的 `WM_NCHITTEST` 返回 `HTCLIENT`，并排除左右缩放边缘；真正标题留白、系统按钮和其余缩放行为继续交给 `WindowChrome`/DWM。全屏暂停时不做窄条修正，恢复 chrome 后重新建立 hook 顺序。边框重复刷新、内容布局次数和 GPU 实际黑帧是不同指标，消息计数下降不等于所有设备上的动画或黑帧已经验收通过。
 

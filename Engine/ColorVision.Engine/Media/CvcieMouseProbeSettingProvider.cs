@@ -10,15 +10,29 @@ namespace ColorVision.Engine.Media
         {
             imageView.RegisterSettings(() =>
             {
+                var defaults = CvcieMouseProbeOptions.CurrentDefaults;
+                ImageViewSettingsEntry defaultEntry = new(SettingsText.NewItems, Properties.Resources.CvcieProbe, defaults, () => ImageSettingsPersistence.Save(defaults))
+                {
+                    Id = "cvcie-probe-defaults", OwnerId = "Engine", CategoryId = ImageSettingsCategories.Defaults,
+                    Scope = ImageSettingsScope.Defaults, Order = 114, Description = SettingsText.DefaultHint
+                };
                 if (!imageView.Config.GetProperties<bool>("IsCVCIE"))
                 {
-                    return [];
+                    return [defaultEntry];
                 }
-
+                var current = CvcieMouseProbeOptions.GetOrCreate(imageView);
                 return
                 [
-                    new ImageViewSettingsEntry(Properties.Resources.CvcieProbe, Properties.Resources.CurrentView, CvcieMouseProbeOptions.GetOrCreate(imageView)),
-                    new ImageViewSettingsEntry(Properties.Resources.CvcieProbe, Properties.Resources.DefaultValue, CvcieMouseProbeOptions.CurrentDefaults, CvcieMouseProbeOptions.SaveDefaults),
+                    new ImageViewSettingsEntry(Properties.Resources.CvcieProbe, Properties.Resources.CvcieProbe, current)
+                    {
+                        Id = "cvcie-probe", OwnerId = "Engine", CategoryId = "view.cvcie-probe",
+                        Scope = ImageSettingsScope.CurrentView, Order = 50, Description = SettingsText.CurrentOnly,
+                        Actions = [
+                            new ImageSettingsAction(SettingsText.RestoreDefaults, () => current.CopyFrom(defaults)),
+                            new ImageSettingsAction(SettingsText.SetAsDefault, () => { defaults.CopyFrom(current); ImageSettingsPersistence.Save(defaults); }) { SavedSource = defaults }
+                        ]
+                    },
+                    defaultEntry,
                 ];
             });
         }

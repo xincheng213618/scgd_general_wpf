@@ -14,21 +14,21 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
         private readonly EditorContext _context;
         private readonly DisplayShaderFilterEffect? _effect;
         private readonly string _saveDebounceKey = $"{nameof(DisplayShaderFilterEditorTool)}_{Guid.NewGuid():N}";
-        private DisplayShaderFilterState _persistenceState;
+        private DisplayShaderFilterState? _persistenceState;
         private Action? _saveAction;
         private Effect? _previousEffect;
         private bool _effectAttached;
         private bool _isApplyingPersistenceState;
+        private bool _disposed;
+        private int _persistenceGeneration;
         private DisplayShaderFilterToolControl? _toolControl;
-        private DisplayShaderFilterWindow? _window;
+        private Settings.ImageViewSettingsWindow? _window;
 
         public DisplayShaderFilterEditorTool(EditorContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
-            _persistenceState = DisplayShaderFilterDefaultConfig.Current.State;
-            _saveAction = DisplayShaderFilterDefaultConfig.SaveCurrent;
             State = new DisplayShaderFilterState();
-            State.CopyFrom(_persistenceState);
+            State.CopyFrom(DisplayShaderFilterDefaultConfig.Current.State);
             OpenSettingsCommand = new RelayCommand(_ => OpenSettings());
             State.PropertyChanged += State_PropertyChanged;
             if (DisplayShaderFilterEnvironment.Current.CanUseShaderFilter)
@@ -43,6 +43,16 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
         public DisplayShaderFilterState State { get; }
         public ICommand OpenSettingsCommand { get; }
         public event EventHandler? StateChanged;
+        public bool HasExternalPersistence => _persistenceState != null;
+
+        public void RestoreDefaults() => State.CopyFrom(DisplayShaderFilterDefaultConfig.Current.State);
+
+        public void SaveAsDefault()
+        {
+            DisplayShaderFilterDefaultConfig defaults = DisplayShaderFilterDefaultConfig.Current;
+            defaults.UpdateFrom(State);
+            Settings.ImageSettingsPersistence.Save(defaults);
+        }
 
         public ToolBarLocal ToolBarLocal => ToolBarLocal.Right;
         public string? GuidId => nameof(DisplayShaderFilterEditorTool);
@@ -131,14 +141,13 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
                 return;
             }
 
-            _window = new DisplayShaderFilterWindow(State)
+            _window = new Settings.ImageViewSettingsWindow(_context.ImageView, Settings.ImageSettingsCategories.Filters)
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
             _window.Closed += (_, _) =>
             {
-                Save();
                 _window = null;
             };
             _window.Show();
@@ -151,6 +160,9 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
 
         public void AttachPersistence(DisplayShaderFilterState state, Action? saveAction)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            DebounceTimer.Cancel(_saveDebounceKey);
+            _persistenceGeneration++;
             _persistenceState = state ?? DisplayShaderFilterDefaultConfig.Current.State;
             _saveAction = saveAction ?? DisplayShaderFilterDefaultConfig.SaveCurrent;
             _isApplyingPersistenceState = true;
@@ -168,11 +180,18 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
 
         private void ScheduleSavePersistence()
         {
-            DebounceTimer.AddOrResetTimerDispatcher(_saveDebounceKey, 600, Save);
+            if (_persistenceState == null || _disposed) return;
+            int generation = _persistenceGeneration;
+            DebounceTimer.AddOrResetTimerDispatcher(_saveDebounceKey, 600, () =>
+            {
+                if (!_disposed && generation == _persistenceGeneration) Save();
+            });
         }
 
         public void Save()
         {
+            if (_persistenceState == null || _disposed) return;
+            DebounceTimer.Cancel(_saveDebounceKey);
             _persistenceState.CopyFrom(State);
             _saveAction?.Invoke();
         }
@@ -196,11 +215,21 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
 
         public void Dispose()
         {
-            _window?.Close();
-            Save();
-            State.PropertyChanged -= State_PropertyChanged;
-            DetachEffect();
-            GC.SuppressFinalize(this);
+            if (_disposed) return;
+            try
+            {
+                _window?.Close();
+                Save();
+            }
+            finally
+            {
+                _disposed = true;
+                _persistenceGeneration++;
+                DebounceTimer.Cancel(_saveDebounceKey);
+                State.PropertyChanged -= State_PropertyChanged;
+                DetachEffect();
+                GC.SuppressFinalize(this);
+            }
         }
     }
 }

@@ -6,7 +6,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using EditorResources = ColorVision.ImageEditor.Properties.Resources;
 
 namespace ColorVision.UI.Tests;
 
@@ -42,23 +41,24 @@ public sealed class CvcieDisplaySettingsTests
     }
 
     [Fact]
-    public void RegisteredCvcieSettingsAppearInsideTheExistingDefaultsPage()
+    public void RegisteredCvcieSettingsAppearWithFileOpeningDefaults()
     {
         WithIsolatedConfig(_ =>
         {
             using ImageView imageView = CreateImageView();
-            ImageViewSettingsWindow window = new(imageView, EditorResources.Settings_GroupDefaults);
+            ImageViewSettingsWindow window = new(imageView, ImageSettingsCategories.FileOpening);
             try
             {
                 ListBox settingsList = Assert.IsType<ListBox>(window.FindName("SettingsList"));
-                object defaultsPage = Assert.Single(settingsList.Items.Cast<object>().Where(page => GetPageTitle(page) == EditorResources.Settings_GroupDefaults));
+                object defaultsPage = Assert.Single(settingsList.Items.Cast<object>().Where(page => GetPageTitle(page) == SettingsText.FileOpening));
                 Assert.Same(defaultsPage, settingsList.SelectedItem);
 
                 ContentControl settingsContent = Assert.IsType<ContentControl>(window.FindName("SettingsContent"));
-                ScrollViewer defaultsContent = Assert.IsType<ScrollViewer>(settingsContent.Content);
-                TextBlock sectionTitle = Assert.Single(Descendants(defaultsContent).OfType<TextBlock>().Where(text => text.Text == "CVCIE 显示"));
+                StackPanel defaultsContent = Assert.IsType<StackPanel>(settingsContent.Content);
+                TextBlock sectionTitle = Assert.Single(Descendants(defaultsContent).OfType<TextBlock>().Where(text => text.Text == "CVCIE"));
                 Assert.Equal(Visibility.Visible, sectionTitle.Visibility);
-                Assert.Contains(Descendants(defaultsContent).OfType<TextBlock>(), text => text.Text == EditorResources.Settings_DefaultDisplayParams);
+                Assert.Contains(Descendants(defaultsContent).OfType<TextBlock>(), text => text.Text == SettingsText.Tiff);
+                Assert.Equal(ImageSettingsScope.Defaults, GetDisplayEntry(imageView).Scope);
             }
             finally
             {

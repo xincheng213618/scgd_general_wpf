@@ -5552,6 +5552,7 @@
       "code_paths": [
         "Engine/ST.Library.UI/README.md",
         "Engine/ST.Library.UI/ST.Library.UI.csproj",
+        "Engine/ST.Library.UI/NodeEditor/STNode.cs",
         "Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs",
         "Engine/ST.Library.UI/NodeEditor/STNodeCanvasSnapshot.cs",
         "Engine/ST.Library.UI/NodeEditor/STNodeEditor.ResizeDiagnostics.cs",
@@ -9794,6 +9795,63 @@
       "searchable": true
     },
     {
+      "knowledge_id": "ui.image-editor-settings-plan",
+      "knowledge_type": "decision",
+      "status": "current",
+      "summary": "图像设置的作用范围、显式默认值与标定档案保存、当前视图隔离和扩展协议；主设置独立入口与旧接口清理仍待实施。",
+      "aliases": [
+        "图像设置重构",
+        "图像设置规划",
+        "当前有效",
+        "全局与当前",
+        "外接设置",
+        "设置作用范围",
+        "设置提供方",
+        "ImageViewSettingsEntry",
+        "ImageViewSettingsWindow",
+        "标定状态隔离",
+        "ImageSettingsSession"
+      ],
+      "code_paths": [
+        "UI/ColorVision.ImageEditor/Settings",
+        "UI/ColorVision.ImageEditor/ImageView.xaml.cs",
+        "UI/ColorVision.ImageEditor/ImageViewConfig.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Filters",
+        "UI/ColorVision.ImageEditor/EditorTools/PseudoColor",
+        "UI/ColorVision.ImageEditor/Draw/Ruler",
+        "UI/ColorVision.ImageEditor/Draw/Text/DefalutTextAttribute.cs",
+        "UI/ColorVision.ImageEditor/Draw/Special/ToolReferenceLine.cs",
+        "UI/ColorVision.UI/PropertyEditor/SettingsPropertyPresenter.cs",
+        "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs",
+        "Engine/ColorVision.Engine/Media/CvcieMouseProbeSettingProvider.cs",
+        "Engine/ColorVision.Engine/Media/CvcieMouseProbeOptions.cs"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/ImageSettingsScopeTests.cs",
+        "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs",
+        "Test/ColorVision.UI.Tests/DrawingVisualScaleHostTests.cs",
+        "Test/ColorVision.UI.Tests/RealtimePseudoColorServiceTests.cs",
+        "Test/ColorVision.UI.Tests/SelectEditorRenderOptimizationTests.cs"
+      ],
+      "related": [
+        "ui.image-editor",
+        "ui.image-editor-context",
+        "ui.configuration",
+        "ui.property-grid",
+        "engine.file-io"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine",
+        "UI/ColorVision.ImageEditor",
+        "UI/ColorVision.UI"
+      ],
+      "domain": "ui",
+      "title": "图像设置：作用范围、保存和扩展",
+      "source": "docs/02-developer-guide/core-concepts/image-editor-settings-plan.md",
+      "url": "/02-developer-guide/core-concepts/image-editor-settings-plan",
+      "searchable": true
+    },
+    {
       "knowledge_id": "ui.image-frames",
       "knowledge_type": "topic",
       "status": "current",
@@ -10383,6 +10441,9 @@
         "UI/ColorVision.Scheduler/CreateTask.xaml",
         "UI/ColorVision.Scheduler/TaskViewerWindow.xaml",
         "UI/ColorVision.Scheduler/Properties/Resources.resx",
+        "UI/ColorVision.Scheduler/Presentation/SchedulerPresentation.cs",
+        "UI/ColorVision.Scheduler/Presentation/SchedulerStyles.xaml",
+        "UI/ColorVision.Scheduler/Presentation/SchedulerTaskExporter.cs",
         "UI/ColorVision.Scheduler/ExecutionHistoryWindow.xaml.cs",
         "UI/ColorVision.UI/Environments.cs",
         "Engine/ColorVision.Engine/Services/Devices/ScheduledDeviceJobHelper.cs",
@@ -10390,6 +10451,7 @@
         "Engine/ColorVision.Engine/FlowProcessing/Scheduling/HeadlessFlowJob.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/SchedulerWindowTests.cs",
         "Test/ColorVision.UI.Tests/SchedulerTriggerFactoryTests.cs",
         "Test/ColorVision.UI.Tests/SchedulerTaskSerializationTests.cs",
         "Test/ColorVision.UI.Tests/SchedulerHistoryQueryTests.cs",

@@ -1,119 +1,187 @@
 ﻿<Window x:Class="ColorVision.Scheduler.CreateTask"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.Scheduler"
-        xmlns:properties="clr-namespace:ColorVision.Scheduler.Properties"
-        xmlns:hc="https://handyorg.github.io/handycontrol"
-        mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance local:SchedulerInfo}"
-        Title="{x:Static properties:Resources.Create}" Background="{DynamicResource GlobalBackground}" Height="600" Width="500" Initialized="Window_Initialized">
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:properties="clr-namespace:ColorVision.Scheduler.Properties" xmlns:local="clr-namespace:ColorVision.Scheduler"
+        Title="{x:Static properties:Resources.CreateTask}" Width="620" MinWidth="540" SizeToContent="Height"
+        Background="{DynamicResource CV.Surface.Window}" Foreground="{DynamicResource CV.Text.Primary}"
+        UseLayoutRounding="True" Loaded="Window_Loaded">
     <Window.Resources>
-        <Style TargetType="{x:Type TextBlock}">
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
-        </Style>
-        <Style TargetType="TextBox" BasedOn="{StaticResource TextBoxBaseBaseStyle}">
-            <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Presentation/SchedulerStyles.xaml"/></ResourceDictionary.MergedDictionaries>
+            <Style x:Key="FormTextBox" TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}">
+                <Setter Property="MinHeight" Value="32"/><Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Style.Triggers>
+                    <Trigger Property="Validation.HasError" Value="True">
+                        <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource Self}, Path=(Validation.Errors)[0].ErrorContent}"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="FormComboBox" TargetType="ComboBox" BasedOn="{StaticResource ComboBox.Small}">
+                <Setter Property="MinHeight" Value="32"/><Setter Property="VerticalContentAlignment" Value="Center"/>
+            </Style>
+            <Style x:Key="FormLabel" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource CV.Text.Secondary}"/><Setter Property="Margin" Value="0,0,0,6"/>
+            </Style>
+        </ResourceDictionary>
     </Window.Resources>
-    <Grid Margin="5">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <Border Grid.Row="0" Background ="{DynamicResource RegionBrush}" CornerRadius="4">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-            <StackPanel>
-                <DockPanel Margin="2">
-                    <TextBlock Text="{x:Static properties:Resources.Sched_TaskType}" Width="100" />
-                    <ComboBox x:Name="TaskComboBox"  Style="{StaticResource ComboBox.Small}" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding JobType}"  SelectionChanged="TaskComboBox_SelectionChanged"/>
-                </DockPanel>
-                <DockPanel Margin="2" >
-                    <TextBlock Text="{x:Static properties:Resources.Sched_TaskName}" MinWidth="100" />
-                    <TextBox  Text="{Binding JobName}" Style="{StaticResource TextBox.Small}" />
-                </DockPanel>
-                <DockPanel Margin="2" >
-                    <TextBlock Text="{x:Static properties:Resources.Sched_Group}" MinWidth="100" />
-                    <TextBox  Text="{Binding GroupName}"  Style="{StaticResource TextBox.Small}" />
-                </DockPanel>
-                <DockPanel Margin="2">
-                    <TextBlock Text="{x:Static properties:Resources.Sched_ScheduleMode}" Width="100" />
-                    <ComboBox x:Name="ComboBoxMode" Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding Mode}"  SelectionChanged="TaskComboBox_SelectionChanged"/>
-                </DockPanel>
-                <DockPanel Margin="2">
-                    <TextBlock Text="{x:Static properties:Resources.Sched_DelayStart}" Width="100" />
-                    <CheckBox IsChecked="{Binding IsDelayed}" Width="50"/>
-                    <TextBox Text="{Binding Delay}"  Style="{StaticResource TextBox.Small}" Visibility="{Binding IsDelayed ,Converter={StaticResource bool2VisibilityConverter}}"/>
-                </DockPanel>
-
-                <StackPanel Visibility="{Binding IsJobInterval ,Converter={StaticResource bool2VisibilityConverter}}">
-                    <DockPanel Margin="2" >
-                        <TextBlock Text="{x:Static properties:Resources.Sched_RepeatCount}" Width="100" />
-                        <ComboBox Initialized="ComboBoxRepeat_Initialized"  Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding RepeatMode}"  Width="100" Margin="0,0,5,0"/>
-                        <TextBox Text="{Binding RepeatCount}" Style="{StaticResource TextBox.Small}"  Visibility="{Binding IsRepeatMultiple ,Converter={StaticResource bool2VisibilityConverter}}"/>
-                    </DockPanel>
-                    <DockPanel Margin="2"  Visibility="{Binding IsRepeatOnce ,Converter={StaticResource bool2VisibilityConverter1}}">
-                        <TextBlock Text="{x:Static properties:Resources.Sched_Interval}" Width="100" />
-                        <TextBox Text="{Binding Interval}"  Style="{StaticResource TextBox.Small}" />
-                    </DockPanel>
-                </StackPanel>
-                <StackPanel Visibility="{Binding IsSimple ,Converter={StaticResource bool2VisibilityConverter}}">
-                    <DockPanel Margin="2" >
-                        <TextBlock Text="{x:Static properties:Resources.Sched_RepeatCount}" Width="100" />
-                        <ComboBox  Initialized="ComboBoxRepeat_Initialized"  Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding RepeatMode}"  Width="100" Margin="0,0,5,0"/>
-                        <TextBox Text="{Binding RepeatCount}" Style="{StaticResource TextBox.Small}"  Visibility="{Binding IsRepeatMultiple ,Converter={StaticResource bool2VisibilityConverter}}"/>
-                    </DockPanel>
-                    <DockPanel Margin="2"  Visibility="{Binding IsRepeatOnce ,Converter={StaticResource bool2VisibilityConverter1}}">
-                        <TextBlock Text="{x:Static properties:Resources.Sched_Interval}" Width="100" />
-                        <TextBox Text="{Binding Interval}"  Style="{StaticResource TextBox.Small}" />
-                    </DockPanel>
-                </StackPanel>
-
-                <StackPanel Visibility="{Binding IsCron ,Converter={StaticResource bool2VisibilityConverter}}">
-                    <DockPanel Margin="2">
-                        <Button Content="{x:Static properties:Resources.Sched_CronGenerator}" DockPanel.Dock="Right"  Style="{StaticResource ButtonDefault.Small}" Click="Button_Click_1" Margin="5,0,0,0"/>
-                        <TextBlock Text="{x:Static properties:Resources.CronExpression}" Width="100" />
-                        <TextBox  Text="{Binding CronExpression}" Style="{StaticResource TextBox.Small}"/>
-                    </DockPanel>
-                </StackPanel>
-                <StackPanel x:Name="StackPanelConfig">
-                    
-                </StackPanel>
-
-                <!-- 第三阶段新增：优先级和超时设置 -->
-                <Separator Margin="2,10,2,5"/>
-                <TextBlock Text="{x:Static properties:Resources.Sched_Advanced}" FontWeight="Bold" Margin="2,5,2,2"/>
-                
-                <DockPanel Margin="2">
-                    <TextBlock Text="{x:Static properties:Resources.Sched_PriorityLabel}" Width="100" ToolTip="{x:Static properties:Resources.Sched_PriorityTooltip}"/>
-                    <Slider x:Name="PrioritySlider" Minimum="1" Maximum="10" Value="{Binding Priority}" 
-                            Width="150" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,0,10,0"/>
-                    <TextBlock Text="{Binding ElementName=PrioritySlider, Path=Value}" Width="30"/>
-                </DockPanel>
-                
-                <DockPanel Margin="2">
-                    <TextBlock Text="{x:Static properties:Resources.Sched_Timeout}" Width="100" ToolTip="{x:Static properties:Resources.Sched_TimeoutTooltip}"/>
-                    <TextBox Text="{Binding TimeoutSeconds}" Style="{StaticResource TextBox.Small}" Width="100"/>
-                    <TextBlock Text="{x:Static properties:Resources.Sched_NoLimit}" Margin="10,0,0,0" Foreground="Gray"/>
-                </DockPanel>
-
+    <Grid Margin="24,20,24,18">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel Margin="0,0,0,18">
+            <TextBlock x:Name="FormTitle" Text="{x:Static properties:Resources.CreateTask}" FontSize="23" FontWeight="SemiBold"/>
+            <TextBlock x:Name="FormSubtitle" Text="{x:Static properties:Resources.Sched_CreateHint}" Style="{StaticResource SchedulerSecondaryText}" Margin="0,6,0,0"/>
+        </StackPanel>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel x:Name="EditorForm">
+                <Border Style="{StaticResource SchedulerPanel}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="{x:Static properties:Resources.Sched_TaskType}" Style="{StaticResource SchedulerSectionTitle}"/>
+                        <Grid>
+                            <ComboBox x:Name="TaskComboBox" Style="{StaticResource FormComboBox}" DisplayMemberPath="Key" SelectedValuePath="Value"
+                                      SelectedValue="{Binding JobType, UpdateSourceTrigger=PropertyChanged}" SelectionChanged="TaskComboBox_SelectionChanged"
+                                      AutomationProperties.Name="{x:Static properties:Resources.Sched_TaskType}"/>
+                            <TextBlock Text="{x:Static properties:Resources.Sched_SelectTaskType}" IsHitTestVisible="False" Margin="10,0,28,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource SchedulerSecondaryText}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ElementName=TaskComboBox, Path=SelectedIndex}" Value="-1"><Setter Property="Visibility" Value="Visible"/></DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="2*"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="{x:Static properties:Resources.Sched_TaskName}" Style="{StaticResource FormLabel}"/>
+                                <TextBox x:Name="TaskNameTextBox" Style="{StaticResource FormTextBox}" Text="{Binding JobName, UpdateSourceTrigger=PropertyChanged}"
+                                         AutomationProperties.Name="{x:Static properties:Resources.Sched_TaskName}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="{x:Static properties:Resources.Sched_Group}" Style="{StaticResource FormLabel}"/>
+                                <TextBox Style="{StaticResource FormTextBox}" Text="{Binding GroupName, UpdateSourceTrigger=PropertyChanged}"
+                                         AutomationProperties.Name="{x:Static properties:Resources.Sched_Group}"/>
+                            </StackPanel>
+                        </Grid>
+                        <StackPanel x:Name="ConfigurationSection" Visibility="Collapsed" Margin="0,16,0,0">
+                            <TextBlock Text="{x:Static properties:Resources.Sched_TaskConfiguration}" Style="{StaticResource FormLabel}"/>
+                            <StackPanel x:Name="StackPanelConfig"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource SchedulerPanel}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="{x:Static properties:Resources.Sched_ScheduleMode}" Style="{StaticResource SchedulerSectionTitle}"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <ComboBox x:Name="ComboBoxMode" Style="{StaticResource FormComboBox}" DisplayMemberPath="Key" SelectedValuePath="Value"
+                                      SelectedValue="{Binding Mode, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static properties:Resources.Sched_ScheduleMode}"/>
+                            <ComboBox x:Name="RepeatModeComboBox" Grid.Column="2" DisplayMemberPath="Key" SelectedValuePath="Value"
+                                      SelectedValue="{Binding RepeatMode, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static properties:Resources.Sched_RepeatMode}"
+                                      ToolTip="{x:Static properties:Resources.Sched_RepeatMode}">
+                                <ComboBox.Style>
+                                    <Style TargetType="ComboBox" BasedOn="{StaticResource FormComboBox}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsSimple}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger>
+                                            <DataTrigger Binding="{Binding IsJobInterval}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ComboBox.Style>
+                            </ComboBox>
+                        </Grid>
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsSimple}" Value="True"/><Condition Binding="{Binding IsRepeatOnce}" Value="False"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                        <DataTrigger Binding="{Binding IsJobInterval}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <Grid Margin="0,12,0,0">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="{x:Static properties:Resources.Sched_Interval}" Style="{StaticResource FormLabel}"/>
+                                    <TextBox x:Name="IntervalTextBox" Style="{StaticResource FormTextBox}" Text="{Binding Interval, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                             AutomationProperties.Name="{x:Static properties:Resources.Sched_Interval}" ToolTip="{x:Static properties:Resources.Sched_TimeFormat}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Visibility="{Binding IsRepeatMultiple, Converter={StaticResource bool2VisibilityConverter}}">
+                                    <TextBlock Text="{x:Static properties:Resources.Sched_AdditionalRuns}" Style="{StaticResource FormLabel}"/>
+                                    <TextBox x:Name="RepeatCountTextBox" Style="{StaticResource FormTextBox}" Text="{Binding RepeatCount, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                             AutomationProperties.Name="{x:Static properties:Resources.Sched_AdditionalRuns}"/>
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Text="{x:Static properties:Resources.Sched_RepeatHint}" Style="{StaticResource SchedulerSecondaryText}" Margin="0,6,0,0"
+                                       Visibility="{Binding IsRepeatMultiple, Converter={StaticResource bool2VisibilityConverter}}"/>
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding IsCron, Converter={StaticResource bool2VisibilityConverter}}" Margin="0,12,0,0">
+                            <TextBlock Text="{x:Static properties:Resources.CronExpression}" Style="{StaticResource FormLabel}"/>
+                            <TextBox x:Name="CronTextBox" Style="{StaticResource FormTextBox}" Text="{Binding CronExpression, UpdateSourceTrigger=PropertyChanged}"
+                                     AutomationProperties.Name="{x:Static properties:Resources.CronExpression}"/>
+                            <Button Content="{x:Static properties:Resources.Sched_CronGenerator}" Style="{StaticResource CV.Button.Text}" Click="CronGenerator_Click" HorizontalAlignment="Left" Margin="0,6,0,0"/>
+                        </StackPanel>
+                        <TextBlock Text="{x:Static properties:Resources.Sched_CalendarHint}" Style="{StaticResource SchedulerSecondaryText}"
+                                   Visibility="{Binding IsCalendar, Converter={StaticResource bool2VisibilityConverter}}" Margin="0,12,0,0"/>
+                        <CheckBox Content="{x:Static properties:Resources.Sched_DelayStart}" IsChecked="{Binding IsDelayed, UpdateSourceTrigger=PropertyChanged}"
+                                  Checked="DelayStart_Checked" Margin="0,16,0,0"/>
+                        <StackPanel Visibility="{Binding IsDelayed, Converter={StaticResource bool2VisibilityConverter}}" Margin="0,8,0,0">
+                            <TextBox x:Name="DelayTextBox" Style="{StaticResource FormTextBox}" Text="{Binding Delay, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                     AutomationProperties.Name="{x:Static properties:Resources.Sched_DelayStart}"/>
+                            <TextBlock Text="{x:Static properties:Resources.Sched_TimeFormat}" Style="{StaticResource SchedulerSecondaryText}" Margin="0,6,0,0"/>
+                        </StackPanel>
+                        <Border Background="{DynamicResource CV.Tag.Background}" CornerRadius="6" Padding="12" Margin="0,14,0,0">
+                            <StackPanel>
+                                <TextBlock Text="{x:Static properties:Resources.Sched_PlanPreview}" Style="{StaticResource SchedulerSecondaryText}"/>
+                                <TextBlock x:Name="PlanSummaryText" TextWrapping="Wrap" Margin="0,5,0,0">
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{StaticResource SchedulerScheduleSummary}" Mode="OneWay">
+                                            <Binding/><Binding Path="Mode"/><Binding Path="RepeatMode"/><Binding Path="RepeatCount"/>
+                                            <Binding Path="Interval"/><Binding Path="IsDelayed"/><Binding Path="Delay"/><Binding Path="CronExpression"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+                <Expander x:Name="AdvancedSettings" Header="{x:Static properties:Resources.Sched_Advanced}" IsExpanded="False" Margin="0,0,0,8">
+                    <Border Style="{StaticResource SchedulerPanel}" Margin="0,8,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="{x:Static properties:Resources.Sched_PriorityLabel}" Style="{StaticResource FormLabel}" ToolTip="{x:Static properties:Resources.Sched_PriorityTooltip}"/>
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding Priority}" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                                    <Slider x:Name="PrioritySlider" Minimum="1" Maximum="10" Value="{Binding Priority}" TickFrequency="1" IsSnapToTickEnabled="True"
+                                            MinHeight="32" AutomationProperties.Name="{x:Static properties:Resources.Sched_PriorityLabel}"/>
+                                </DockPanel>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="{x:Static properties:Resources.Sched_Timeout}" Style="{StaticResource FormLabel}" ToolTip="{x:Static properties:Resources.Sched_TimeoutTooltip}"/>
+                                <TextBox x:Name="TimeoutTextBox" Text="{Binding TimeoutSeconds, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}" Style="{StaticResource FormTextBox}"
+                                         AutomationProperties.Name="{x:Static properties:Resources.Sched_Timeout}"/>
+                                <TextBlock Text="{x:Static properties:Resources.Sched_NoLimit}" Style="{StaticResource SchedulerSecondaryText}" Margin="0,6,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Expander>
             </StackPanel>
-            </ScrollViewer>
-        </Border>
-
-        <Border Grid.Row="1" Height="30">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="2*"/>
-                </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" Content="{x:Static properties:Resources.Sched_Cancel}" IsCancel="True" Margin="0,0,5,0"/>
-                <Button Grid.Column="1" Content="{x:Static properties:Resources.Create}" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click"/>
-            </Grid>
-        </Border>
+        </ScrollViewer>
+        <StackPanel Grid.Row="2" Margin="0,10,0,0">
+            <TextBlock x:Name="ErrorMessage" Foreground="{DynamicResource CV.Status.Error}" TextWrapping="Wrap" Visibility="Collapsed" Margin="0,0,0,10"/>
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button x:Name="CancelButton" Content="{x:Static properties:Resources.Sched_Cancel}" IsCancel="True" Style="{StaticResource SchedulerAction}" MinWidth="80" Margin="0,0,8,0"/>
+                    <Button x:Name="SubmitButton" Content="{x:Static properties:Resources.CreateTask}" Style="{StaticResource SchedulerPrimaryAction}" IsDefault="True" Click="Submit_Click"/>
+                </StackPanel>
+                <TextBlock Text="{x:Static properties:Resources.Sched_ImmediateHint}" Style="{StaticResource SchedulerSecondaryText}" Margin="0,0,18,0" MaxWidth="270"/>
+            </DockPanel>
+        </StackPanel>
     </Grid>
 </Window>
