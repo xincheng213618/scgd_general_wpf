@@ -14,7 +14,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="ServiceManagerStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
-            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Style TargetType="Button" BasedOn="{StaticResource ServiceSecondaryButton}">
                 <Setter Property="Padding" Value="12,5" />
                 <Setter Property="MinHeight" Value="30" />
             </Style>
@@ -170,7 +170,8 @@
                 <TextBlock Text="{Binding ProgressText}" Style="{StaticResource ServiceSubtitle}" Margin="0,0,0,6" />
                 <ProgressBar Value="{Binding Progress}" Style="{StaticResource ServiceProgress}" />
             </StackPanel>
-            <Button Grid.Column="1" Content="{x:Static res:Resources.InstallNow}" Command="{Binding DoInstallCommand}" Style="{StaticResource CV.Button.Primary}" MinWidth="140" />
+            <Button Grid.Column="1" Content="{x:Static res:Resources.InstallNow}" Command="{Binding DoInstallCommand}"
+                    Style="{StaticResource CV.Button.Primary}" Padding="18,7" FontWeight="SemiBold" />
         </Grid>
     </Grid>
 </Window>

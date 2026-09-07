@@ -72,8 +72,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
                 return;
 
             DetailGrid.DataContext = SelectedGroup;
-            if (SelectedGroup != null)
-                _device.Config.ActiveCalibrationGroupName = SelectedGroup.GroupName;
         }
 
         private void ComboBoxCfwService_SelectionChanged(object sender, SelectionChangedEventArgs e)

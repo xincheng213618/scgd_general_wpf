@@ -10,6 +10,16 @@
     <SolidColorBrush x:Key="DockingHoverBrush" Color="#383838" />
     <SolidColorBrush x:Key="DockingPressedBrush" Color="#464646" />
 
+    <!-- Dark docking feedback is intentionally neutral until a drop target is
+         chosen; the translucent preview remains blue to communicate placement. -->
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DockingButtonBackgroundBrushKey}" Color="#333337" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DockingButtonForegroundBrushKey}" Color="#8B8B90" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DockingButtonForegroundArrowBrushKey}" Color="#D0D0D0" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DockingButtonStarBorderBrushKey}" Color="#56565A" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DockingButtonStarBackgroundBrushKey}" Color="#242426" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.PreviewBoxBorderBrushKey}" Color="#4AA3DF" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.PreviewBoxBackgroundBrushKey}" Color="#0078D4" Opacity="0.34" />
+
     <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.Background}" Color="#262626" />
     <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.PanelBorderBrush}" Color="#4B4B50" />
     <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.TabBackground}" Color="#1F1F1F" />

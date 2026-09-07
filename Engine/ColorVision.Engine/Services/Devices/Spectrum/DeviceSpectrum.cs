@@ -193,13 +193,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 : Application.Current.Dispatcher.Invoke(() => new ViewSpectrum(this)));
             this.SetIconResource("DISpectrumIcon");
 
-            Config.EnsureCalibrationGroups();
+            Config.SynchronizeActiveCalibrationGroupFiles();
 
             SpectrumResourceParam.Load(SpectrumResourceParams, SysResourceModel.Id);
 
             EditCommand = new RelayCommand(a =>
             {
-                PropertyEditorWindow window = new PropertyEditorWindow(Config);
+                PropertyEditorWindow window = new PropertyEditorWindow(Config, PropertyEditorEditMode.Transactional);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.Submitted +=(s,e)=>

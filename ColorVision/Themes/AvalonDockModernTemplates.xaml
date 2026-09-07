@@ -307,21 +307,27 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
-                        <Grid x:Name="TabStrip" Panel.ZIndex="1" Background="{DynamicResource GlobalBackground}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <Border x:Name="TabStripLine" Grid.ColumnSpan="2" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource DockingBorderBrush}" />
-                            <controls:DocumentPaneTabPanel x:Name="HeaderPanel" IsItemsHost="True" KeyboardNavigation.TabIndex="1" />
-                            <controls:DropDownButton x:Name="MenuDropDownButton" Grid.Column="1" Margin="3,0,2,0"
-                                Style="{StaticResource DockingDropDownButtonStyle}">
-                                <controls:DropDownButton.DropDownContextMenu>
-                                    <controls:ContextMenuEx ItemsSource="{Binding Model.ChildrenSorted, RelativeSource={RelativeSource TemplatedParent}}" />
-                                </controls:DropDownButton.DropDownContextMenu>
-                                <TextBlock Style="{StaticResource DockingCaptionGlyphStyle}" Text="&#xE70D;" />
-                            </controls:DropDownButton>
-                        </Grid>
+                        <controls:DropDownControlArea x:Name="TabStrip" Panel.ZIndex="1"
+                            HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                            DropDownContextMenu="{Binding Model.Root.Manager.DocumentContextMenu, RelativeSource={RelativeSource TemplatedParent}}"
+                            DropDownContextMenuDataContext="{Binding SelectedItem.TabItem.LayoutItem, RelativeSource={RelativeSource TemplatedParent}}"
+                            Style="{DynamicResource DropDownControlArea}">
+                            <Grid x:Name="TabStripSurface" Background="{DynamicResource DockingChromeBackground}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border x:Name="TabStripLine" Grid.ColumnSpan="2" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource DockingBorderBrush}" />
+                                <chrome:StableDocumentPaneTabPanel x:Name="HeaderPanel" IsItemsHost="True" KeyboardNavigation.TabIndex="1" />
+                                <controls:DropDownButton x:Name="MenuDropDownButton" Grid.Column="1" Margin="3,0,2,0"
+                                    Style="{StaticResource DockingDropDownButtonStyle}">
+                                    <controls:DropDownButton.DropDownContextMenu>
+                                        <controls:ContextMenuEx ItemsSource="{Binding Model.ChildrenSorted, RelativeSource={RelativeSource TemplatedParent}}" />
+                                    </controls:DropDownButton.DropDownContextMenu>
+                                    <TextBlock Style="{StaticResource DockingCaptionGlyphStyle}" Text="&#xE70D;" />
+                                </controls:DropDownButton>
+                            </Grid>
+                        </controls:DropDownControlArea>
                         <chrome:DockingSurfaceBorder x:Name="DocumentPaneBorder" Grid.Row="1" Background="{TemplateBinding Background}"
                             BorderBrush="{DynamicResource DockingBorderBrush}" BorderThickness="1,0,1,1" CornerRadius="0,0,4,4"
                             KeyboardNavigation.DirectionalNavigation="Contained" KeyboardNavigation.TabIndex="2" KeyboardNavigation.TabNavigation="Cycle">
@@ -424,12 +430,12 @@
                             <RowDefinition Height="*" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <chrome:DockingSurfaceBorder x:Name="ToolPaneBorder" Background="{TemplateBinding Background}" CornerRadius="4,4,0,0"
-                            BorderThickness="1,1,1,0" BorderBrush="{DynamicResource DockingBorderBrush}">
+                        <chrome:DockingSurfaceBorder x:Name="ToolPaneBorder" Background="{TemplateBinding Background}"
+                            BorderBrush="{DynamicResource DockingBorderBrush}" BorderThickness="1,1,1,0" CornerRadius="4,4,0,0">
                             <ContentPresenter x:Name="PART_SelectedContentHost" ContentSource="SelectedContent"
                                 KeyboardNavigation.DirectionalNavigation="Contained" KeyboardNavigation.TabIndex="2" KeyboardNavigation.TabNavigation="Cycle" />
                         </chrome:DockingSurfaceBorder>
-                        <Grid x:Name="ToolTabStrip" Grid.Row="1">
+                        <Grid x:Name="ToolTabStrip" Grid.Row="1" Background="{DynamicResource DockingChromeBackground}">
                             <Border x:Name="ToolTabStripLine" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource DockingBorderBrush}" />
                             <controls:AnchorablePaneTabPanel x:Name="HeaderPanel" IsItemsHost="True" KeyboardNavigation.TabIndex="1" />
                         </Grid>
@@ -446,6 +452,16 @@
                             <Setter TargetName="ToolPaneBorder" Property="CornerRadius" Value="4" />
                             <Setter TargetName="ToolPaneBorder" Property="BorderThickness" Value="1" />
                         </DataTrigger>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding SelectedItem.IsFloating, RelativeSource={RelativeSource Self}}" Value="True" />
+                                <Condition Binding="{Binding SelectedItem.Parent.IsDirectlyHostedInFloatingWindow, RelativeSource={RelativeSource Self}}" Value="True" />
+                            </MultiDataTrigger.Conditions>
+                            <!-- The floating window owns the only visible frame. Keep this
+                                 last so it also wins for single-tool floating panes. -->
+                            <Setter TargetName="ToolPaneBorder" Property="BorderThickness" Value="0" />
+                            <Setter TargetName="ToolPaneBorder" Property="CornerRadius" Value="0" />
+                        </MultiDataTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

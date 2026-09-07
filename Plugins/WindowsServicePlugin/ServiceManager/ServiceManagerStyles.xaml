@@ -29,10 +29,11 @@
         <Setter Property="Padding" Value="0,0,0,20" />
         <Setter Property="Margin" Value="0,0,0,20" />
     </Style>
-    <Style TargetType="Button" BasedOn="{StaticResource CV.Button.Secondary}">
+    <Style x:Key="ServiceSecondaryButton" TargetType="Button" BasedOn="{StaticResource CV.Button.Secondary}">
         <Setter Property="MinWidth" Value="64" />
         <Setter Property="Padding" Value="14,7" />
     </Style>
+    <Style TargetType="Button" BasedOn="{StaticResource ServiceSecondaryButton}" />
     <Style x:Key="ServiceLink" TargetType="Button" BasedOn="{StaticResource CV.Button.Text}">
         <Setter Property="Padding" Value="0,7" />
     </Style>

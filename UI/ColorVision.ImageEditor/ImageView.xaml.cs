@@ -236,9 +236,9 @@ namespace ColorVision.ImageEditor
             PreviewKeyDown += ImageView_PreviewKeyDown;
             Loaded += ImageView_Loaded;
             Unloaded += ImageView_Unloaded;
-            ImageShow.ContextMenuOpening += HandleContextMenuOpening;
             ImageShow.ContextMenu = EditorContext.ContextMenu;
             ComboBoxLayers.SelectionChanged += ComboBoxLayers_SelectionChanged;
+            Zoombox1.ContextMenuOpening += HandleContextMenuOpening;
             Zoombox1.ContextMenu = EditorContext.ContextMenu;
             Zoombox1.ContentMatrixChanged += Zoombox1_ContentMatrixChanged;
             _crosshair = new Crosshair(EditorContext.DrawEditorContext);
@@ -461,11 +461,6 @@ namespace ColorVision.ImageEditor
             if (ImageEditMode)
             {
                 Visual? mouseVisual = ImageShow.GetVisual<Visual>(mouseDownPoint);
-                if (mouseVisual == null)
-                {
-                    return;
-                }
-
                 if (mouseVisual is SelectEditorVisual selectEditorVisual && selectEditorVisual.GetVisual(mouseDownPoint) is ISelectVisual selectVisual)
                 {
                     foreach (var provider in IEditorToolFactory.ContextMenuProviders)
@@ -492,7 +487,7 @@ namespace ColorVision.ImageEditor
                         }
                     }
                 }
-                else
+                else if (mouseVisual != null)
                 {
                     foreach (var provider in IEditorToolFactory.ContextMenuProviders)
                     {
@@ -506,16 +501,14 @@ namespace ColorVision.ImageEditor
                         }
                     }
                 }
-
-                if (EditorContext.ContextMenu.Items.Count == 0)
-                {
-                    CreateStandardContextMenu();
-                }
             }
-            else
+
+            if (EditorContext.ContextMenu.Items.Count == 0)
             {
                 CreateStandardContextMenu();
             }
+
+            e.Handled = EditorContext.ContextMenu.Items.Count == 0;
         }
 
         private bool TryCreateReferenceLineContextMenu()
@@ -1859,7 +1852,7 @@ namespace ColorVision.ImageEditor
             if (_shortcutWindow != null) _shortcutWindow.PreviewKeyDown -= ShortcutWindow_PreviewKeyDown;
             PreviewKeyDown -= ImageView_PreviewKeyDown;
             ImageShow.PreviewKeyDown -= HandleKeyDown;
-            ImageShow.ContextMenuOpening -= HandleContextMenuOpening;
+            Zoombox1.ContextMenuOpening -= HandleContextMenuOpening;
             ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
             ImageShow.VisualsRemove -= ImageShow_VisualsRemove;
             ComboBoxLayers.SelectionChanged -= ComboBoxLayers_SelectionChanged;

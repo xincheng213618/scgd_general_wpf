@@ -33,6 +33,7 @@ public sealed class MenuThemeTests
             Assert.InRange(fixture.Action.ActualHeight, 26, 27);
             Assert.InRange(fixture.Nested.ActualHeight, 26, 27);
             AssertMenuPopup(fixture.Root);
+            AssertRowFillsMenu(fixture.Action, fixture.Root);
 
             fixture.OpenNested();
             AssertMenuPopup(fixture.Nested);
@@ -40,6 +41,7 @@ public sealed class MenuThemeTests
             fixture.OpenContextMenu();
             AssertRoundedSurface(fixture.ContextMenu);
             Assert.InRange(fixture.ContextAction.ActualHeight, 26, 27);
+            AssertRowFillsMenu(fixture.ContextAction, fixture.ContextMenu);
         });
     }
 
@@ -263,6 +265,15 @@ public sealed class MenuThemeTests
         Assert.False(shadow.IsHitTestVisible);
     }
 
+    private static void AssertRowFillsMenu(MenuItem item, Control owner)
+    {
+        ItemsPresenter presenter = TemplatePart<ItemsPresenter>(owner, "ItemsPresenter");
+        Assert.InRange(Math.Abs(item.ActualWidth - presenter.ActualWidth), 0, 1);
+        IInputElement? hit = item.InputHitTest(new Point(item.ActualWidth - 2, item.ActualHeight / 2));
+        Assert.NotNull(hit);
+        Assert.True(AncestorsAndSelf((DependencyObject)hit).Contains(item));
+    }
+
     private static void AssertGestureAlignment(MenuItem first, MenuItem second, Border surface)
     {
         TextBlock firstLabel = GestureLabel(first);
@@ -344,6 +355,12 @@ public sealed class MenuThemeTests
             foreach (T descendant in Descendants<T>(child))
                 yield return descendant;
         }
+    }
+
+    private static IEnumerable<DependencyObject> AncestorsAndSelf(DependencyObject element)
+    {
+        for (DependencyObject? current = element; current != null; current = VisualTreeHelper.GetParent(current))
+            yield return current;
     }
 
     private static void PumpDispatcher()

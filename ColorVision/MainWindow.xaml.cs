@@ -79,9 +79,12 @@ namespace ColorVision
 
         private void DockingManager1_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            var tabItem = FindVisualAncestor<LayoutDocumentTabItem>(e.OriginalSource as DependencyObject);
+            var source = e.OriginalSource as DependencyObject;
+            var tabItem = FindVisualAncestor<LayoutDocumentTabItem>(source);
+            var document = tabItem?.Model as LayoutDocument
+                ?? FindVisualAncestor<LayoutDocumentPaneControl>(source)?.SelectedContent as LayoutDocument;
             var contextMenu = DockingManager1.DocumentContextMenu;
-            if (tabItem?.Model is not LayoutDocument document || contextMenu == null)
+            if (document == null || contextMenu == null)
                 return;
 
             PrepareDocumentContextMenu(contextMenu, document);

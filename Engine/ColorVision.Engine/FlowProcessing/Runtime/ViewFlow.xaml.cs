@@ -169,7 +169,7 @@ namespace ColorVision.Engine.FlowProcessing
             EditorCanvas.PropertyPanelMargin = new Thickness(0, 54, 10, 108);
             EditorCanvas.AttachEditCommandRouting(this);
             _executionNavigator = new FlowExecutionNavigator(STNodeEditorMain);
-            _nodeContextMenuService = new FlowNodeContextMenuService(STNodeEditorMain, _executionNavigator);
+            _nodeContextMenuService = new FlowNodeContextMenuService(STNodeEditorMain, _executionNavigator, ImportModule);
             _layoutService = new FlowGraphLayoutService(STNodeEditorMain);
             _executionSession = new FlowExecutionSession(flowEngineManager, this);
 

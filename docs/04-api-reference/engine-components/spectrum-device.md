@@ -5,7 +5,7 @@ status: "current"
 summary: "主程序光谱仪的全连接方式搜索、设备配置分类和许可证读取入口；区分本机搜索、服务端刷新与实际连接。"
 aliases: ["光谱仪搜不到", "光谱仪连接方式", "ConfigSpectrum", "InfoSpectrum", "GetSpectrSerialNumberAsync", "SpectrumDeviceDiscovery", "CMvSpectra", "Gaolitong", "光谱仪配置分类"]
 code_paths: ["Engine/ColorVision.Engine/Services/Devices/Spectrum", "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/LicenseManagerWindow.xaml.cs"]
-test_paths: ["Test/Spectrum.Tests/SpectrumDeviceDiscoveryTests.cs"]
+test_paths: ["Test/Spectrum.Tests/SpectrumDeviceDiscoveryTests.cs", "Test/Spectrum.Tests/SpectrumCalibrationGroupConfigTests.cs"]
 related: ["engine.devices", "engine.native-bindings", "ui.property-grid", "plugins.spectrum"]
 ---
 
@@ -36,6 +36,8 @@ related: ["engine.devices", "engine.native-bindings", "ui.property-grid", "plugi
 属性页与其他设备共用 [GenCommand 自动生成机制](../ui-components/property-grid.md#命令属性页自动生成)，通过 `CommandDisplay`、`Category` 和 `Description` 元数据定义入口，不单独维护光谱仪布局或刷新数字角标。入口复用原有命令及权限检查；重置和删除保留原有确认。分类之间使用细分隔线，紧凑操作项随可用宽度换列，窄窗口可纵向滚动；色彩和交互状态跟随更新窗口的浅色、深色主题。
 
 设备属性编辑器通过 `Category` 和 `DisplayName` 元数据组织连接、标定和采集参数，快门、ND、标定分组、SP100 和显示配置使用本地化名称。配置属性名、枚举数值、保存格式和默认值保持兼容。
+
+波长文件和幅值文件是当前标定分组的兼容镜像。属性窗口修改这两个文件时同步更新当前分组；分组窗口保存或应用分组时再把分组文件同步回这两个字段。加载已有配置时以非空的当前文件修复活动分组中的旧路径，避免 `Default` 分组在后续应用时恢复过期文件。切换分组窗口中的浏览选择不会在保存前改变活动分组。
 
 ## 验证边界
 

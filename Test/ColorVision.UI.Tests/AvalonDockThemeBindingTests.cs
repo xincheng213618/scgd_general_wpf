@@ -1,6 +1,7 @@
 using AvalonDock;
 using AvalonDock.Controls;
 using AvalonDock.Layout;
+using AvalonDock.Themes.VS2013.Themes;
 using ColorVision.Solution.Workspace;
 using ColorVision.Themes;
 using System.Diagnostics;
@@ -487,7 +488,9 @@ public class AvalonDockThemeBindingTests
                         _ => typeof(LayoutAnchorableTabItem)
                     };
                     Assert.True(route.Any(nativeHeaderType.IsInstanceOfType), $"{surface} {name} bypassed the native AvalonDock header.");
-                    DropDownControlArea area = Assert.Single(route.OfType<DropDownControlArea>());
+                    // Document tabs are nested inside the full-strip menu area;
+                    // the nearest native area must retain the tab-specific context.
+                    DropDownControlArea area = route.OfType<DropDownControlArea>().First();
                     string menuProperty = surface == "document-tab" ? nameof(DockingManager.DocumentContextMenu) : nameof(DockingManager.AnchorableContextMenu);
                     ContextMenu? menu = surface == "document-tab" ? scene.Manager.DocumentContextMenu : scene.Manager.AnchorableContextMenu;
                     // Identity alone accepts Same(null, null), hiding a missing production menu.
@@ -535,6 +538,105 @@ public class AvalonDockThemeBindingTests
             Assert.Equal(2, confirmations);
             Assert.DoesNotContain(scene.Document, scene.Documents.Children);
             Assert.Contains(scene.SecondDocument, scene.Documents.Children);
+        });
+    }
+
+    [Fact]
+    public void DocumentPaneBlankTabStrip_UsesChromeBackgroundAndSelectedDocumentMenu()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var trace = new BindingTrace();
+            using var scene = new DockingScene(false);
+            scene.Document.IsActive = true;
+            Arrange(scene.Manager);
+
+            LayoutDocumentPaneControl pane = scene.DocumentPaneControl;
+            DropDownControlArea tabStrip = Part<DropDownControlArea>(pane, "TabStrip");
+            Grid surface = Part<Grid>(pane, "TabStripSurface");
+            DropDownButton menuButton = Part<DropDownButton>(pane, "MenuDropDownButton");
+            TabItem[] visibleTabs = scene.Documents.Children
+                .OfType<LayoutDocument>()
+                .Select(document => DocumentTab(pane, document))
+                .Where(tab => tab.Visibility == Visibility.Visible)
+                .ToArray();
+            double tabsRight = visibleTabs.Max(tab => tab.TranslatePoint(new Point(tab.ActualWidth, 0), tabStrip).X);
+            double menuLeft = menuButton.TranslatePoint(new Point(), tabStrip).X;
+            var blankPoint = new Point((tabsRight + menuLeft) / 2, tabStrip.ActualHeight / 2);
+
+            Assert.Same(scene.Manager.FindResource("DockingChromeBackground"), surface.Background);
+            Assert.True(menuLeft - tabsRight > 10, "The scene must retain a real blank tab-strip region.");
+            UIElement hit = Assert.IsAssignableFrom<UIElement>(scene.Manager.InputHitTest(tabStrip.TranslatePoint(blankPoint, scene.Manager)));
+            DependencyObject[] route = VisualAncestorsAndSelf(hit).ToArray();
+            Assert.Contains(tabStrip, route);
+            Assert.DoesNotContain(route, item => item is LayoutDocumentTabItem);
+
+            ContextMenu menu = Assert.IsAssignableFrom<ContextMenu>(scene.Manager.DocumentContextMenu);
+            LayoutItem layoutItem = scene.Manager.GetLayoutItemFromModel(scene.Document);
+            Assert.Same(menu, tabStrip.DropDownContextMenu);
+            Assert.Same(layoutItem, tabStrip.DropDownContextMenuDataContext);
+            AssertRightClickOpensMenu(scene, hit, menu, layoutItem);
+            Assert.DoesNotContain("BindingExpression path error", trace.Output);
+        });
+    }
+
+    [Fact]
+    public void OverflowingDocumentTabs_KeepTheSelectedHeaderVisibleWithoutReorderingDocuments()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scene = new DockingScene(false);
+            for (int index = 0; index < 8; index++)
+            {
+                scene.Documents.Children.Add(new LayoutDocument
+                {
+                    Title = $"Long document {index} — 0123456789",
+                    Content = new Border()
+                });
+            }
+
+            LayoutDocument[] expectedOrder = scene.Documents.Children.OfType<LayoutDocument>().ToArray();
+            LayoutDocument target = expectedOrder[^1];
+            target.IsActive = true;
+            Arrange(scene.Manager, 760, 540);
+
+            LayoutDocumentPaneControl pane = scene.DocumentPaneControl;
+            StableDocumentPaneTabPanel panel = Part<StableDocumentPaneTabPanel>(pane, "HeaderPanel");
+            AssertTabInsidePanel(target);
+            Assert.Equal(expectedOrder, scene.Documents.Children.OfType<LayoutDocument>().ToArray());
+
+            scene.Document.IsActive = true;
+            Arrange(scene.Manager, 760, 540);
+            AssertTabInsidePanel(scene.Document);
+            Assert.Equal(expectedOrder, scene.Documents.Children.OfType<LayoutDocument>().ToArray());
+
+            void AssertTabInsidePanel(LayoutDocument document)
+            {
+                TabItem tab = DocumentTab(pane, document);
+                Assert.Equal(Visibility.Visible, tab.Visibility);
+                Point origin = tab.TranslatePoint(new Point(), panel);
+                Assert.True(origin.X >= -1 && origin.X + tab.ActualWidth <= panel.ActualWidth + 1,
+                    $"The selected tab '{document.Title}' is outside the visible tab strip.");
+            }
+        });
+    }
+
+    [Fact]
+    public void DevicePanel_ResolvesTheExistingImplicitScrollViewerTheme()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var scrollViewerStyle = new Style(typeof(ScrollViewer));
+            scrollViewerStyle.Setters.Add(new Setter(ScrollViewer.VerticalScrollBarVisibilityProperty, ScrollBarVisibility.Auto));
+            var host = new Grid();
+            host.Resources.Add(typeof(ScrollViewer), scrollViewerStyle);
+            var panel = new DisPlayControlPanel();
+            host.Children.Add(panel);
+
+            Arrange(host, 320, 480);
+
+            Assert.Same(scrollViewerStyle, panel.Style);
+            Assert.Equal(ScrollBarVisibility.Auto, panel.VerticalScrollBarVisibility);
         });
     }
 
@@ -696,7 +798,28 @@ public class AvalonDockThemeBindingTests
     }
 
     [Fact]
-    public void FloatingCaption_RetainsWindowControls()
+    public void DockingOverlayPalette_UsesDistinctLightAndDarkVisualFeedback()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            AssertPalette(false, Color.FromRgb(0xF2, 0xF3, 0xF5), Color.FromRgb(0x16, 0x89, 0xC9), 0.28);
+            AssertPalette(true, Color.FromRgb(0x24, 0x24, 0x26), Color.FromRgb(0x8B, 0x8B, 0x90), 0.34);
+
+            static void AssertPalette(bool isDark, Color starColor, Color glyphColor, double previewOpacity)
+            {
+                ResourceDictionary resources = new AvalonDockTheme(isDark).ThemeResourceDictionary;
+                SolidColorBrush star = Assert.IsType<SolidColorBrush>(resources[ResourceKeys.DockingButtonStarBackgroundBrushKey]);
+                SolidColorBrush glyph = Assert.IsType<SolidColorBrush>(resources[ResourceKeys.DockingButtonForegroundBrushKey]);
+                SolidColorBrush preview = Assert.IsType<SolidColorBrush>(resources[ResourceKeys.PreviewBoxBackgroundBrushKey]);
+                Assert.Equal(starColor, star.Color);
+                Assert.Equal(glyphColor, glyph.Color);
+                Assert.Equal(previewOpacity, preview.Opacity, 2);
+            }
+        });
+    }
+
+    [Fact]
+    public void FloatingCaption_UsesVsLikeNormalAndMaximizedChromeWithoutLosingWindowControls()
     {
         WpfTestHost.Invoke(() =>
         {
@@ -709,13 +832,31 @@ public class AvalonDockThemeBindingTests
                 RootPanel = new LayoutAnchorablePaneGroup(new LayoutAnchorablePane(model))
             };
             manager.Layout.FloatingWindows.Add(floatingModel);
-            // Float() shows a window. This exercises independent theme loading without displaying UI.
+            // Float() shows a window. Exercise the same lifecycle in an invisible,
+            // nonactivating host so WindowChrome and dynamic resources are materialized.
             var window = (LayoutAnchorableFloatingWindowControl)Activator.CreateInstance(
                 typeof(LayoutAnchorableFloatingWindowControl), BindingFlags.Instance | BindingFlags.NonPublic,
                 binder: null, args: new object[] { floatingModel }, culture: null)!;
             window.Resources.MergedDictionaries.Add(globalPalette);
+            var paneModel = (LayoutAnchorablePane)floatingModel.RootPanel.Children.Single();
+            var paneControl = (LayoutAnchorablePaneControl)Activator.CreateInstance(
+                typeof(LayoutAnchorablePaneControl), BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null, args: new object[] { paneModel, false }, culture: null)!;
+            paneControl.Style = (Style)window.FindResource("DockingToolPaneStyle");
+            window.Content = paneControl;
+            window.Width = 600;
+            window.Height = 400;
+            window.Left = -10000;
+            window.Top = -10000;
+            window.WindowStartupLocation = WindowStartupLocation.Manual;
+            window.ShowActivated = false;
+            window.ShowInTaskbar = false;
+            window.Opacity = 0;
             try
             {
+                window.Show();
+                Part<ContentPresenter>(window, "FloatingContent").Content = paneControl;
+                window.WindowState = WindowState.Normal;
                 foreach (bool active in new[] { false, true, false })
                 {
                     model.IsActive = active;
@@ -724,6 +865,37 @@ public class AvalonDockThemeBindingTests
                         Assert.NotNull(Part<Button>(window, name).Command);
                     Part<DropDownButton>(window, "SinglePaneContextMenu");
                 }
+
+                Border header = Part<Border>(window, "Header");
+                Border resizeBorder = Part<Border>(window, "WindowBorderForResize");
+                Border windowBorder = Part<Border>(window, "WindowBorder");
+                ContentPresenter content = Part<ContentPresenter>(window, "FloatingContent");
+                Assert.Equal(32, Microsoft.Windows.Shell.WindowChrome.GetWindowChrome(window).CaptionHeight);
+                Assert.Equal(new Thickness(1, 0, 1, 1), content.Margin);
+                Assert.Equal(new Thickness(5), resizeBorder.BorderThickness);
+                Assert.Equal(new CornerRadius(4), resizeBorder.CornerRadius);
+                Assert.Equal(new Thickness(1), windowBorder.BorderThickness);
+                Assert.Equal(28, Part<Button>(window, "PART_PinClose").Width);
+                Assert.Equal(28, Part<DropDownButton>(window, "SinglePaneContextMenu").Width);
+                model.IsActive = true;
+                Arrange(window, 600, 400);
+                Assert.Same(window.FindResource("DockingAccentBrush"), windowBorder.BorderBrush);
+
+                Arrange(paneControl, 600, 368);
+                LayoutAnchorablePaneControl pane = paneControl;
+                Assert.Equal(new Thickness(0), Part<Border>(pane, "ToolPaneBorder").BorderThickness);
+                Assert.Same(window.FindResource("DockingChromeBackground"), Part<Grid>(pane, "ToolTabStrip").Background);
+
+                window.WindowState = WindowState.Maximized;
+                Arrange(window, 600, 400);
+                Assert.Equal(new Thickness(0), content.Margin);
+                Assert.Equal(new Thickness(0), resizeBorder.BorderThickness);
+                Assert.Equal(new CornerRadius(0), resizeBorder.CornerRadius);
+                Assert.Equal(new CornerRadius(0), header.CornerRadius);
+                Assert.Equal(new Thickness(0), windowBorder.BorderThickness);
+                Assert.Equal(Visibility.Collapsed, Part<Button>(window, "PART_PinMaximize").Visibility);
+                Assert.Equal(Visibility.Visible, Part<Button>(window, "PART_PinRestore").Visibility);
+                Assert.Equal(new Thickness(0), Part<Border>(pane, "ToolPaneBorder").BorderThickness);
             }
             finally { window.Close(); }
         });

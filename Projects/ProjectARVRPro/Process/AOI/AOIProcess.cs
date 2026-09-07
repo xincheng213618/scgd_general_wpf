@@ -75,11 +75,16 @@ namespace ProjectARVRPro.Process.AOI
                 var values = ctx.GetMeasureResults();
                 if (values.Count > 0)
                 {
-                    string? firstFileUrl = values[0].FileUrl;
-                    if (!string.IsNullOrWhiteSpace(firstFileUrl))
+                    foreach (var item in values)
                     {
-                        ctx.Result.FileName = firstFileUrl;
+                        string? firstFileUrl = item.FileUrl;
+                        if (!string.IsNullOrWhiteSpace(firstFileUrl))
+                        {
+                            ctx.Result.FileName = firstFileUrl;
+                            break;
+                        }
                     }
+
                 }
 
                 string exportDir = GetExportDirectory(ctx.Batch.Name ?? ctx.Batch.Id.ToString());

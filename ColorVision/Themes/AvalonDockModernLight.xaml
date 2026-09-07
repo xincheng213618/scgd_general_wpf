@@ -11,6 +11,16 @@
     <SolidColorBrush x:Key="DockingHoverBrush" Color="#E5E5E8" />
     <SolidColorBrush x:Key="DockingPressedBrush" Color="#D7D7DD" />
 
+    <!-- Current Visual Studio-style docking feedback: a quiet opaque navigator
+         over busy content, with blue used for direction and the active preview. -->
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DockingButtonBackgroundBrushKey}" Color="#E1EFF8" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DockingButtonForegroundBrushKey}" Color="#1689C9" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DockingButtonForegroundArrowBrushKey}" Color="#40464D" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DockingButtonStarBorderBrushKey}" Color="#AEB4BA" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DockingButtonStarBackgroundBrushKey}" Color="#F2F3F5" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.PreviewBoxBorderBrushKey}" Color="#0078D4" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.PreviewBoxBackgroundBrushKey}" Color="#0078D4" Opacity="0.28" />
+
     <!-- Retained upstream surfaces (resizers, auto-hide tabs, floating documents). -->
     <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.Background}" Color="#F3F3F3" />
     <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.PanelBorderBrush}" Color="#B8B8BD" />

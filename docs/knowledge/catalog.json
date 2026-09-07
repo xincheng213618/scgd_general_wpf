@@ -4466,7 +4466,9 @@
         "Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs",
         "Engine/ColorVision.Engine/Services/Type/TypeService.cs",
         "Engine/ColorVision.Engine/Services/DeviceService.cs",
-        "UI/ColorVision.UI/DisPlayManager.cs"
+        "UI/ColorVision.UI/DisPlayManager.cs",
+        "UI/ColorVision.UI/DisPlayControlPanel.cs",
+        "UI/ColorVision.UI/Docking/DockPanelTitleAction.cs"
       ],
       "test_paths": [],
       "related": [
@@ -5303,7 +5305,8 @@
         "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/LicenseManagerWindow.xaml.cs"
       ],
       "test_paths": [
-        "Test/Spectrum.Tests/SpectrumDeviceDiscoveryTests.cs"
+        "Test/Spectrum.Tests/SpectrumDeviceDiscoveryTests.cs",
+        "Test/Spectrum.Tests/SpectrumCalibrationGroupConfigTests.cs"
       ],
       "related": [
         "engine.devices",
@@ -5916,14 +5919,18 @@
         "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml",
         "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEngineToolWindow.xaml.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorOperations.cs"
+        "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorOperations.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Editor/TemplateSelectionDialog.xaml",
+        "Engine/ColorVision.Engine/FlowProcessing/Editor/TemplateSelectionDialog.xaml.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/FlowTemplateWorkspaceControllerTests.cs",
         "Test/ColorVision.UI.Tests/ViewFlowDocumentBehaviorTests.cs",
         "Test/ColorVision.UI.Tests/FlowLocalShortcutTests.cs",
         "Test/ColorVision.UI.Tests/STNodeCopyPasteTests.cs",
-        "Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs"
+        "Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs",
+        "Test/ColorVision.UI.Tests/FlowNodeMenuPathTests.cs"
       ],
       "related": [
         "flow.architecture",
@@ -6786,13 +6793,22 @@
         "图钉",
         "DocumentTabPinManager",
         "浮动窗口主题",
+        "浮窗最大化",
+        "停靠导航器",
+        "停靠预览",
         "工具面板三段色",
         "标题右键菜单",
+        "菜单整行点击",
+        "标签栏空白背景",
+        "文档标签溢出",
+        "当前标签不可见",
+        "StableDocumentPaneTabPanel",
+        "设备控制滚动条",
         "单工具面板空白",
         "ToolTabStrip",
-        "工具标签命令",
-        "DockPanelHeaderAction",
-        "AnchorableHeaderTemplate"
+        "工具标题命令",
+        "IDockPanelTitleActionProvider",
+        "DockPanelTitleAction"
       ],
       "code_paths": [
         "ColorVision/MainWindow.xaml",
@@ -6814,21 +6830,24 @@
         "ColorVision/Themes/AvalonDockGripTemplates.xaml",
         "ColorVision/Themes/DockingSurfaceBorder.cs",
         "ColorVision/Themes/DockingTabBorder.cs",
+        "ColorVision/Themes/StableDocumentPaneTabPanel.cs",
         "UI/ColorVision.Themes/Themes/White.xaml",
         "UI/ColorVision.Themes/Themes/Dark.xaml",
+        "UI/ColorVision.Themes/Themes/Controls/Menu.xaml",
         "UI/ColorVision.UI/Menus",
         "UI/ColorVision.UI/Serach/ContextualFindRouter.cs",
         "UI/ColorVision.UI/Serach/SearchWindow.xaml",
         "UI/ColorVision.UI/Serach/SearchWindow.xaml.cs",
         "UI/ColorVision.UI/Serach/SearchWindowHotkeyBridge.cs",
+        "UI/ColorVision.UI/Docking/DockPanelTitleAction.cs",
+        "UI/ColorVision.UI/DisPlayControlPanel.cs",
         "UI/ColorVision.Solution/Workspace",
-        "UI/ColorVision.Solution/Workspace/DocumentTabPinManager.cs",
-        "UI/ColorVision.Solution/Workspace/DockPanelHeaderAction.cs",
-        "UI/ColorVision.Solution/Workspace/DockPanelHeaderTemplates.xaml"
+        "UI/ColorVision.Solution/Workspace/DocumentTabPinManager.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs",
         "Test/ColorVision.UI.Tests/AvalonDockThemeBindingTests.cs",
+        "Test/ColorVision.UI.Tests/MenuThemeTests.cs",
         "Test/ColorVision.UI.Tests/MainWindowSearchShellTests.cs",
         "Test/ColorVision.UI.Tests/WindowResizeDiagnosticsContractTests.cs",
         "Test/ColorVision.UI.Tests/CompactTitleBarChromeTests.cs",
@@ -9720,6 +9739,7 @@
         "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs",
         "Test/ColorVision.UI.Tests/ImageViewSnapshotSaveTests.cs",
+        "Test/ColorVision.UI.Tests/ImageViewContextMenuTests.cs",
         "Test/ColorVision.UI.Tests/EraseManagerUndoTests.cs",
         "Test/ColorVision.UI.Tests/DrawShapeCompatibilityTests.cs",
         "Test/ColorVision.UI.Tests/EditorToolFactoryLifecycleTests.cs",

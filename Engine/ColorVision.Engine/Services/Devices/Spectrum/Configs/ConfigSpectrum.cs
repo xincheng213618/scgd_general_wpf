@@ -129,13 +129,37 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         [DisplayName("WaveLengthFile")]
         [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         [Category("SpectrumCalibrationCorrection")]
-        public string WavelengthFile { get => _WavelengthFile; set { _WavelengthFile = value; OnPropertyChanged(); } }
+        public string WavelengthFile
+        {
+            get => _WavelengthFile;
+            set
+            {
+                if (string.Equals(_WavelengthFile, value, StringComparison.Ordinal))
+                    return;
+
+                _WavelengthFile = value;
+                OnPropertyChanged();
+                SynchronizeActiveCalibrationGroup(group => group.WavelengthFile = value);
+            }
+        }
         private string _WavelengthFile;
 
         [DisplayName("AmplitudeFile")]
         [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         [Category("SpectrumCalibrationCorrection")]
-        public string MaguideFile { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
+        public string MaguideFile
+        {
+            get => _MaguideFile;
+            set
+            {
+                if (string.Equals(_MaguideFile, value, StringComparison.Ordinal))
+                    return;
+
+                _MaguideFile = value;
+                OnPropertyChanged();
+                SynchronizeActiveCalibrationGroup(group => group.MaguideFile = value);
+            }
+        }
         private string _MaguideFile;
 
         [Category("SpectrumCalibrationCorrection")]
@@ -179,6 +203,34 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
             if (string.IsNullOrWhiteSpace(ActiveCalibrationGroupName) || CalibrationGroups.All(a => !string.Equals(a.GroupName, ActiveCalibrationGroupName, StringComparison.OrdinalIgnoreCase)))
                 ActiveCalibrationGroupName = CalibrationGroups.First().GroupName;
+        }
+
+        internal void SynchronizeActiveCalibrationGroupFiles()
+        {
+            EnsureCalibrationGroups();
+            SpectrumCalibrationGroup group = CalibrationGroups.First(
+                item => string.Equals(item.GroupName, ActiveCalibrationGroupName, StringComparison.OrdinalIgnoreCase));
+
+            if (string.IsNullOrWhiteSpace(WavelengthFile))
+                WavelengthFile = group.WavelengthFile;
+            else
+                group.WavelengthFile = WavelengthFile;
+
+            if (string.IsNullOrWhiteSpace(MaguideFile))
+                MaguideFile = group.MaguideFile;
+            else
+                group.MaguideFile = MaguideFile;
+        }
+
+        private void SynchronizeActiveCalibrationGroup(Action<SpectrumCalibrationGroup> synchronize)
+        {
+            if (CalibrationGroups.Count == 0)
+                return;
+
+            SpectrumCalibrationGroup? group = CalibrationGroups.FirstOrDefault(
+                item => string.Equals(item.GroupName, ActiveCalibrationGroupName, StringComparison.OrdinalIgnoreCase));
+            if (group != null)
+                synchronize(group);
         }
 
         public SpectrumCalibrationGroup? FindCalibrationGroupForND(int holeIndex, string? holeName)

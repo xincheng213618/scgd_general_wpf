@@ -11,5 +11,12 @@ public sealed class DisPlayControlPanel : ScrollViewer, IDockPanelTitleActionPro
         new(DisPlayManager.CreateGroupCommand, "\uE710", "新建分组")
     ];
 
+    public DisPlayControlPanel()
+    {
+        // An implicit ScrollViewer style is keyed by the exact base type. Keep
+        // the existing themed scrollbar after introducing this derived host.
+        SetResourceReference(StyleProperty, typeof(ScrollViewer));
+    }
+
     public IReadOnlyList<DockPanelTitleAction> TitleActions => Actions;
 }

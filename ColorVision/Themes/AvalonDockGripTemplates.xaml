@@ -34,8 +34,8 @@
     </Style>
 
     <Style x:Key="ColorVisionFloatingCaptionButtonStyle" TargetType="{x:Type Button}">
-        <Setter Property="Width" Value="24" />
-        <Setter Property="Height" Value="24" />
+        <Setter Property="Width" Value="28" />
+        <Setter Property="Height" Value="28" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="Focusable" Value="False" />
         <Setter Property="VerticalAlignment" Value="Center" />
@@ -67,8 +67,8 @@
     </Style>
 
     <Style x:Key="ColorVisionFloatingCaptionMenuStyle" TargetType="{x:Type avalonDockControls:DropDownButton}">
-        <Setter Property="Width" Value="24" />
-        <Setter Property="Height" Value="24" />
+        <Setter Property="Width" Value="28" />
+        <Setter Property="Height" Value="28" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="Focusable" Value="False" />
         <Setter Property="VerticalAlignment" Value="Center" />
@@ -111,20 +111,20 @@
         <Setter Property="BorderBrush" Value="{DynamicResource DockingBorderBrush}" />
         <Setter Property="shell:WindowChrome.WindowChrome">
             <Setter.Value>
-                <shell:WindowChrome CaptionHeight="28" CornerRadius="4" GlassFrameThickness="0" ResizeBorderThickness="5" />
+                <shell:WindowChrome CaptionHeight="32" CornerRadius="4" GlassFrameThickness="0" ResizeBorderThickness="5" />
             </Setter.Value>
         </Setter>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type avalonDockControls:LayoutAnchorableFloatingWindowControl}">
                     <Grid>
-                        <Border x:Name="WindowBorderForResize" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding Background}" BorderThickness="5" CornerRadius="4" />
+                        <Border x:Name="WindowBorderForResize" Background="{DynamicResource CV.Surface.Alternate}" BorderBrush="{DynamicResource CV.Surface.Alternate}" BorderThickness="5" CornerRadius="4" />
                         <Grid>
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="28" />
+                                <RowDefinition Height="32" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
-                            <Border x:Name="Header" Padding="6,0,2,0" Background="{TemplateBinding Background}" CornerRadius="4,4,0,0" TextElement.Foreground="{DynamicResource DockingTextBrush}">
+                            <Border x:Name="Header" Padding="6,0,2,0" Background="{DynamicResource CV.Surface.Alternate}" CornerRadius="4,4,0,0" TextElement.Foreground="{DynamicResource DockingTextBrush}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
@@ -178,17 +178,18 @@
                                     </Button>
                                 </Grid>
                             </Border>
-                            <ContentPresenter Grid.Row="1" Margin="5,0,5,5" Content="{TemplateBinding Content}" />
+                            <ContentPresenter x:Name="FloatingContent" Grid.Row="1" Margin="1,0,1,1" Content="{TemplateBinding Content}" />
                         </Grid>
                         <Border x:Name="WindowBorder" IsHitTestVisible="False" Background="Transparent" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="4" />
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="WindowState" Value="Maximized">
-                            <Setter TargetName="WindowBorder" Property="Padding" Value="8" />
                             <Setter TargetName="WindowBorder" Property="BorderThickness" Value="0" />
                             <Setter TargetName="WindowBorder" Property="CornerRadius" Value="0" />
+                            <Setter TargetName="WindowBorderForResize" Property="BorderThickness" Value="0" />
                             <Setter TargetName="WindowBorderForResize" Property="CornerRadius" Value="0" />
                             <Setter TargetName="Header" Property="CornerRadius" Value="0" />
+                            <Setter TargetName="FloatingContent" Property="Margin" Value="0" />
                         </Trigger>
                         <DataTrigger Binding="{Binding Model.SinglePane.SelectedContent.IsActive, RelativeSource={RelativeSource Self}}" Value="True">
                             <Setter TargetName="WindowBorder" Property="BorderBrush" Value="{DynamicResource DockingAccentBrush}" />

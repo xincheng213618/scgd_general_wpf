@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 1.4.3.30 - 2026-09-07
+
+### Changed
+
+- Restored the themed secondary-button treatment in the service installation window instead of falling back to gray hard-edged buttons.
+- Tightened the primary install action while retaining the default checkbox selection visuals.
+
 ## 1.4.3.29 - 2026-09-06
 
 ### Changed
