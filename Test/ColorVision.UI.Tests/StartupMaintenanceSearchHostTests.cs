@@ -49,7 +49,7 @@ public sealed class StartupMaintenanceSearchHostTests
                 root.Measure(new Size(720, 420));
                 root.Arrange(new Rect(0, 0, 720, 420));
                 root.UpdateLayout();
-                root.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+                root.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
                 var input = Assert.IsType<TextBox>(control.FindName("Searchbox"));
                 var binding = input.GetBindingExpression(TextBox.TextProperty)!;
                 Assert.Same(control.Model, input.DataContext);
@@ -64,7 +64,7 @@ public sealed class StartupMaintenanceSearchHostTests
                     root.Measure(new Size(720, 420));
                     root.Arrange(new Rect(0, 0, 720, 420));
                     root.UpdateLayout();
-                    root.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+                    root.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
                 }
                 SearchPaletteEntry entry = Assert.Single(control.Model.Results);
                 Assert.Equal(id, entry.Result.Source.GuidId);

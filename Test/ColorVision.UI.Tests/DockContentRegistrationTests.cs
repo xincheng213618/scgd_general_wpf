@@ -393,5 +393,5 @@ public class DockContentRegistrationTests
         return Assert.IsType<DeferredDockContent>(arguments[1]);
     }
 
-    private static void DrainDispatcher() => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+    private static void DrainDispatcher() => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
 }

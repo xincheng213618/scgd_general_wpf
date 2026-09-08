@@ -347,7 +347,7 @@ public sealed class MenuThemeTests
     }
 
     private static void PumpDispatcher()
-        => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+        => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
 
     private sealed class MenuFixture : IDisposable
     {
