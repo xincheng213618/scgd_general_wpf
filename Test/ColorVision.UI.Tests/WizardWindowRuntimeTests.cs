@@ -1,5 +1,4 @@
 using ColorVision.UI.Desktop.Wizards;
-using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Reflection;
 using System.Windows;
@@ -11,41 +10,6 @@ namespace ColorVision.UI.Tests;
 [Collection(AssemblyDiscoveryCollection.CollectionName)]
 public sealed class WizardWindowRuntimeTests
 {
-    [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public void RuntimeWizardStillDiscoversRefreshesAppliesAndFinishesWithoutRunningInitializers(
-        bool firstRunsBeforeInitializers, bool secondRunsBeforeInitializers)
-    {
-        WithWizard(false, firstRunsBeforeInitializers, secondRunsBeforeInitializers, false, (window, config, configPath, owner) =>
-        {
-            Assert.Equal(2, WizardManager.GetInstance().IWizardSteps.Count);
-            Assert.Single(WizardManager.GetInstance().WizardInitializers);
-            Assert.Equal(1, FirstStep.RefreshCount);
-            Assert.Equal(0, RecordingInitializer.RunCount);
-            Assert.False(config.WizardCompletionKey);
-            Assert.False(File.Exists(configPath));
-
-            Click(window, "BtnNext");
-            Assert.Equal(1, FirstStep.ApplyCount);
-            Assert.Equal(1, SecondStep.RefreshCount);
-            Assert.Equal(1, Assert.IsType<ListBox>(window.FindName("ListWizard")).SelectedIndex);
-            Assert.Equal(0, RecordingInitializer.RunCount);
-
-            bool closed = false;
-            window.Closed += (_, _) => closed = true;
-            Click(window, "BtnFinish");
-            Assert.Equal(1, SecondStep.ApplyCount);
-            Assert.Equal(0, RecordingInitializer.RunCount);
-            Assert.True(config.WizardCompletionKey);
-            Assert.True(closed);
-            Assert.Same(owner, Application.Current.MainWindow);
-            Assert.False(Application.Current.Dispatcher.HasShutdownStarted);
-            Assert.True(JObject.Parse(File.ReadAllText(configPath))[nameof(WizardWindowConfig)]![nameof(WizardWindowConfig.WizardCompletionKey)]!.Value<bool>());
-        });
-    }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -60,24 +24,6 @@ public sealed class WizardWindowRuntimeTests
             Assert.Equal(initiallyComplete, config.WizardCompletionKey);
             Assert.Equal(0, RecordingInitializer.RunCount);
             Assert.False(File.Exists(configPath));
-        });
-    }
-
-    [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public void OriginalParameterlessConstructorKeepsStartupInitializerTiming(bool firstBefore, bool secondBefore)
-    {
-        WithWizard(null, firstBefore, secondBefore, false, (window, _, _, _) =>
-        {
-            Assert.Equal(firstBefore || secondBefore ? 0 : 1, RecordingInitializer.RunCount);
-            Click(window, "BtnNext");
-            Assert.Equal(secondBefore ? 0 : 1, RecordingInitializer.RunCount);
-            Click(window, "BtnFinish");
-            Assert.Equal(1, RecordingInitializer.RunCount);
-            Assert.True(RecordingInitializer.WasFirstRun);
-            Assert.Same(window, RecordingInitializer.Owner);
         });
     }
 

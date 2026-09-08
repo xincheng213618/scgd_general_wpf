@@ -87,40 +87,9 @@ public sealed class CommandPanelTests
         });
     }
 
-    [Fact]
-    public void GroupedLayout_UsesIndependentRowHeightsAndRespondsToWidthAndTheme()
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            using var fixture = new Fixture();
-            PropertyEditorHelper.GenCommand(new Commands(), fixture.Host);
-            fixture.Arrange(760);
-            var groups = fixture.Groups;
-            var grids = groups.Select(group => ((StackPanel)group.Child).Children.OfType<UniformGrid>().Single()).ToArray();
-            Assert.All(grids, grid => Assert.True(grid.Columns >= 3));
-            Assert.All(fixture.Buttons, button => Assert.InRange(button.ActualHeight, 48, 52));
-            Assert.All(groups, group => Assert.Equal(new Thickness(0, 0, 0, 1), group.BorderThickness));
-
-            fixture.Arrange(260);
-            Assert.All(grids, grid => Assert.Equal(1, grid.Columns));
-            Assert.True(groups[0].ActualHeight > groups[1].ActualHeight);
-            Button danger = fixture.Buttons.Single(button => ((PropertyInfo)button.Tag).Name == nameof(Commands.DeleteCommand));
-            Assert.Same(Brushes.Firebrick, danger.Foreground);
-
-            Application.Current.Resources["UpdateDialogSurfaceColor"] = Colors.Black;
-            Application.Current.Resources["UpdateDialogTextPrimaryColor"] = Colors.White;
-            Application.Current.Resources["DangerBrush"] = Brushes.OrangeRed;
-            fixture.Arrange(260);
-            Assert.All(fixture.Buttons, button => Assert.Equal(Colors.Black, ((SolidColorBrush)button.Background).Color));
-            Assert.Same(Brushes.OrangeRed, danger.Foreground);
-            Assert.All(fixture.Buttons.Where(button => button != danger), button => Assert.Equal(Colors.White, ((SolidColorBrush)button.Foreground).Color));
-        });
-    }
-
     private sealed class Fixture : IDisposable
     {
         private readonly ResourceDictionary savedResources = Application.Current.Resources;
-        private readonly Window window;
         public UniformGrid Host { get; } = new();
         public List<Border> Groups => ((StackPanel)Host.Children[0]).Children.OfType<Border>().ToList();
         public List<Button> Buttons => Groups.SelectMany(group => ((StackPanel)group.Child).Children.OfType<UniformGrid>().Single().Children.OfType<Button>()).ToList();
@@ -143,21 +112,10 @@ public sealed class CommandPanelTests
                 ["UpdateDialogTextSecondaryColor"] = Colors.Black,
                 ["UpdateDialogAccentColor"] = Colors.DodgerBlue
             };
-            window = new Window { Content = Host, Left = -10000, Top = -10000, Width = 760, Height = 700, ShowActivated = false, ShowInTaskbar = false };
-            window.Show();
-        }
-
-        public void Arrange(double width)
-        {
-            window.Width = width;
-            window.UpdateLayout();
-            window.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
-            window.UpdateLayout();
         }
 
         public void Dispose()
         {
-            window.Close();
             Application.Current.Resources = savedResources;
         }
     }

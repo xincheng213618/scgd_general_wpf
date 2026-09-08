@@ -131,7 +131,7 @@ class SharedManifestTests(unittest.TestCase):
     def test_legacy_resolution_uses_embedded_runtime_path(self):
         self.seed_cache()
         with mock.patch.object(sdk, "DEFAULT_SHARED_FILES", self.cache):
-            self.assertEqual(self.cache, sdk.resolve_shared_files_path(None))
+            self.assertEqual(self.cache.resolve(), sdk.resolve_shared_files_path(None))
 
     def test_cli_check_only_has_no_build_package_or_upload(self):
         self.seed_cache()
@@ -147,7 +147,7 @@ class SharedManifestTests(unittest.TestCase):
         config.write_text(json.dumps({"targetHostVersion": self.version, "sharedFilesCacheDir": "cache", "uploadUrl": "https://example.test"}))
         with mock.patch.object(sys, "argv", ["cvplugin", "--config", str(config), "--check-shared-files", "--offline"]), mock.patch.object(sdk, "resolve_remote_manifest", return_value=self.cache) as remote:
             sdk.main()
-        remote.assert_called_once_with(self.url, self.root / "cache", self.version, self.framework, self.platform, offline=True)
+        remote.assert_called_once_with(self.url, (self.root / "cache").resolve(), self.version, self.framework, self.platform, offline=True)
 
     def test_cli_remote_url_without_target_is_rejected(self):
         with mock.patch.object(sys, "argv", ["cvplugin", "--shared-files-url", self.url, "--check-shared-files"]), self.assertRaises(ValueError):

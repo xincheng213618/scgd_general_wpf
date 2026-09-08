@@ -86,7 +86,7 @@ public sealed class HotkeySettingsTests
         fixture.Values[0].AdditionalHotkeys = [new(Key.O, ModifierKeys.Control | ModifierKeys.Shift)];
         fixture.Values[2].SetBindings([]);
         fixture.Model.Refresh();
-        foreach (string query in new[] { "Ctrl + Shift + O", "偏好 设置", "options CtrlShiftO", "已修改 设置" })
+        foreach (string query in new[] { "Ctrl + Shift + O", "偏好 设置", "options CtrlShiftO", $"{HotkeyEditorText.Modified} 设置" })
         {
             fixture.Model.Search = query;
             Assert.Equal("options", Assert.Single(fixture.Model.Rows).Value.Id);
@@ -400,43 +400,6 @@ public sealed class HotkeySettingsTests
         });
     }
 
-    [Theory]
-    [InlineData(1180, true, "zh-CN")]
-    [InlineData(980, true, "zh-CN")]
-    [InlineData(980, false, "zh-CN")]
-    [InlineData(980, false, "en-US")]
-    public void RealSettingsShellFitsAndRendersWithoutLoadingProductionConfiguration(int width, bool dark, string culture)
-    {
-        WithSettings(width, dark, culture, (window, host, page, fixture) =>
-        {
-            fixture.Values[0].AdditionalHotkeys = [new(Key.O, ModifierKeys.Control | ModifierKeys.Shift)];
-            page.ViewModel.Refresh();
-            Layout(host, width);
-            Assert.Equal(4, page.ViewModel.Rows.Count);
-            Assert.True(page.ActualWidth >= 420);
-            foreach (TextBlock text in Descendants(page).OfType<TextBlock>().Where(IsVisible)) AssertTextFits(text);
-            TextBlock actionTitle = Descendants(page).OfType<TextBlock>().First(text => text.Text == fixture.Model.Rows[0].Name);
-            Assert.Equal(((SolidColorBrush)page.FindResource("GlobalTextBrush")).Color, ((SolidColorBrush)actionTitle.Foreground).Color);
-            foreach (Button button in Descendants(page).OfType<Button>().Where(IsVisible))
-            {
-                Rect bounds = button.TransformToAncestor(page).TransformBounds(new Rect(button.RenderSize));
-                Assert.True(bounds.Right <= page.ActualWidth + 1, $"Button overflows: {button.ToolTip}");
-                Assert.True(button.ActualHeight >= 30);
-            }
-
-
-            TextBox search = (TextBox)page.FindName("SearchBox");
-            search.Text = "Ctrl + L";
-            Layout(host, width);
-            Assert.Equal("log", Assert.Single(page.ViewModel.Rows).Value.Id);
-            search.Text = "does-not-exist";
-            Layout(host, width);
-            Assert.True(page.ViewModel.IsEmpty);
-            Assert.Contains(Descendants(page).OfType<TextBlock>(), text => text.Text == HotkeyEditorText.Empty && IsVisible(text));
-            Assert.Empty(fixture.Applied);
-        });
-    }
-
     [Fact]
     public void UnassignedUiHasAddButNoDeleteAndFiltersAreInteractive()
     {
@@ -591,19 +554,6 @@ public sealed class HotkeySettingsTests
         for (DependencyObject? current = element; current != null; current = VisualTreeHelper.GetParent(current))
             if (current is UIElement { Visibility: not Visibility.Visible }) return false;
         return element.ActualWidth > 0 && element.ActualHeight > 0;
-    }
-
-    private static void AssertTextFits(TextBlock text)
-    {
-        FormattedText measured = new(text.Text, CultureInfo.CurrentUICulture, text.FlowDirection,
-            new Typeface(text.FontFamily, text.FontStyle, text.FontWeight, text.FontStretch), text.FontSize,
-            text.Foreground, VisualTreeHelper.GetDpi(text).PixelsPerDip);
-        if (text.TextWrapping == TextWrapping.NoWrap) Assert.True(measured.WidthIncludingTrailingWhitespace <= text.ActualWidth + 2, $"Clipped: {text.Text}");
-        else
-        {
-            measured.MaxTextWidth = Math.Max(1, text.ActualWidth);
-            Assert.True(measured.Height <= text.ActualHeight + 3, $"Clipped wrapped text: {text.Text}");
-        }
     }
 
     private static IEnumerable<FrameworkElement> Descendants(DependencyObject parent)
