@@ -40,7 +40,7 @@ public sealed class AboutWindowChromeTests
                 Assert.Equal(nint.Zero, new WindowInteropHelper(window).Handle);
                 window.Show();
                 window.UpdateLayout();
-                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
 
                 nint handle = new WindowInteropHelper(window).Handle;
                 Assert.True(GetWindowRect(handle, out NativeRect bounds));

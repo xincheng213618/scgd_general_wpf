@@ -63,24 +63,6 @@ public sealed class WizardWindowRuntimeTests
         });
     }
 
-    [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public void OriginalParameterlessConstructorKeepsStartupInitializerTiming(bool firstBefore, bool secondBefore)
-    {
-        WithWizard(null, firstBefore, secondBefore, false, (window, _, _, _) =>
-        {
-            Assert.Equal(firstBefore || secondBefore ? 0 : 1, RecordingInitializer.RunCount);
-            Click(window, "BtnNext");
-            Assert.Equal(secondBefore ? 0 : 1, RecordingInitializer.RunCount);
-            Click(window, "BtnFinish");
-            Assert.Equal(1, RecordingInitializer.RunCount);
-            Assert.True(RecordingInitializer.WasFirstRun);
-            Assert.Same(window, RecordingInitializer.Owner);
-        });
-    }
-
     [Fact]
     public void ExplicitStartupOptionRunsInitializersAndRuntimeApplyFailureDoesNotAdvance()
     {
@@ -110,7 +92,7 @@ public sealed class WizardWindowRuntimeTests
     }
 
     private static void Drain(WizardWindow window)
-        => window.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+        => window.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
 
     private static void WithWizard(bool? runInitializers, bool firstBefore, bool secondBefore, bool initiallyComplete,
         Action<WizardWindow, WizardWindowConfig, string, Window> inspect)

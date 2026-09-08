@@ -250,7 +250,7 @@ public sealed class WindowConfigDpiLifecycleTests
         Assert.InRange(Math.Abs(expected.Height - actual.Height), 0, 1);
     }
 
-    private static void DrainLayout() => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+    private static void DrainLayout() => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
 
     private sealed record ScreenSnapshot(string Name, Rect WorkingArea, Rect Bounds);
     private sealed class TestWindowConfig : WindowConfig { }

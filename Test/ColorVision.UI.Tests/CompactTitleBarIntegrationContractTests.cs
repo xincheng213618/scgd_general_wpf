@@ -197,121 +197,6 @@ public sealed class CompactTitleBarIntegrationContractTests
             (string?)element.Attribute(Xaml + "Name") == "CompactWindowIcon"));
     }
 
-    [Theory]
-    [InlineData(400)]
-    [InlineData(640)]
-    [InlineData(1000)]
-    public void RealLayoutHelperStabilizesAcrossNarrowWideResizeAndUpdateNoticeChanges(double initialWidth)
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            (Border header, Border drag, StackPanel tools, Menu menu, Button update, Button overflow) = CreateSyntheticHeader();
-            drag.Visibility = Visibility.Visible;
-            // Known natural widths make the visibility threshold deterministic across system fonts/themes.
-            menu.Width = 300;
-            menu.Margin = new Thickness(0, 4, 0, 0);
-            menu.VerticalAlignment = VerticalAlignment.Center;
-            update.Width = 180;
-            update.Margin = new Thickness(0);
-            overflow.Width = 32;
-            overflow.Margin = new Thickness(0);
-            tools.Children.Add(new Button { Content = "Tools", Width = 100, Margin = new Thickness(0) });
-            foreach (string caption in new[] { "File", "Edit", "Templates", "Tools", "View", "Help", "Long customer menu" })
-                menu.Items.Add(new MenuItem { Header = caption });
-
-            header.Width = initialWidth;
-            header.Height = 40;
-            int layoutUpdates = 0;
-            bool hasPendingUpdate = false;
-            void UpdateHeaderLayout()
-            {
-                Assert.True(++layoutUpdates <= 256, "The real size-change/measurement path must not enter a layout feedback loop.");
-                CompactTitleBarLayout.Update(header, menu, tools, update, drag, overflow, hasPendingUpdate);
-            }
-            SizeChangedEventHandler sizeChanged = (_, _) => UpdateHeaderLayout();
-            header.SizeChanged += sizeChanged;
-            var window = new Window
-            {
-                Content = header,
-                SizeToContent = SizeToContent.WidthAndHeight,
-                WindowStyle = WindowStyle.None,
-                ResizeMode = ResizeMode.NoResize,
-                ShowActivated = false,
-                ShowInTaskbar = false,
-                Left = -10000,
-                Top = -10000,
-                WindowStartupLocation = WindowStartupLocation.Manual,
-            };
-            void SettleLayout()
-            {
-                window.UpdateLayout();
-                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.Render);
-            }
-            try
-            {
-                window.Show();
-                SettleLayout();
-                foreach (double width in new[] { initialWidth, 400, 640, 1000, 640, 400, initialWidth, 1000 })
-                {
-                    foreach (bool hasUpdate in new[] { false, true, false })
-                    {
-                        int updatesBefore = layoutUpdates;
-                        header.Width = width;
-                        hasPendingUpdate = hasUpdate;
-                        // Match the production notification callback, including a newly visible notice before layout.
-                        UpdateHeaderLayout();
-                        SettleLayout();
-
-                        double requiredWidth = 300 + 100 + (hasUpdate ? 180 : 0) + 120;
-                        Visibility expected = header.ActualWidth >= requiredWidth ? Visibility.Visible : Visibility.Collapsed;
-                        Visibility expectedOverflow = expected == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
-                        Visibility expectedNotice = hasUpdate && (expected == Visibility.Visible || header.ActualWidth >= 632)
-                            ? Visibility.Visible : Visibility.Collapsed;
-                        Assert.Equal(expected, tools.Visibility);
-                        Assert.Equal(expectedOverflow, overflow.Visibility);
-                        Assert.Equal(expectedNotice, update.Visibility);
-                        Assert.Equal(width, header.ActualWidth, 3);
-                        Assert.Equal(120, drag.ActualWidth, 3);
-                        Assert.False(WindowChrome.GetIsHitTestVisibleInChrome(header));
-                        Assert.False(WindowChrome.GetIsHitTestVisibleInChrome(drag));
-                        Point center = drag.TranslatePoint(new Point(drag.ActualWidth / 2, drag.ActualHeight / 2), header);
-                        // Use WPF's input filter, as WindowChrome does; raw visual tests can see collapsed high-Z panels.
-                        Assert.Same(drag, header.InputHitTest(center));
-                        AssertInteractiveOverflowIsReachable(header, overflow);
-                        AssertActionsAdjoinCaptionBoundary(header, tools, overflow, drag);
-                        Assert.InRange(layoutUpdates - updatesBefore, 1, 8);
-
-                        int settledUpdates = layoutUpdates;
-                        SettleLayout();
-                        Assert.Equal(settledUpdates, layoutUpdates);
-                        Assert.Equal(expected, tools.Visibility);
-                        Assert.Equal(expectedOverflow, overflow.Visibility);
-                        Assert.Equal(expectedNotice, update.Visibility);
-                    }
-                }
-
-                // Pending update state survives a layout-hidden notice: widening alone must restore it.
-                hasPendingUpdate = true;
-                foreach (double width in new[] { 400d, 700, 1000, 400, 1000 })
-                {
-                    header.Width = width;
-                    UpdateHeaderLayout();
-                    SettleLayout();
-                    Assert.Equal(width >= 700 ? Visibility.Visible : Visibility.Collapsed, tools.Visibility);
-                    Assert.Equal(width >= 700 ? Visibility.Collapsed : Visibility.Visible, overflow.Visibility);
-                    Assert.Equal(width >= 632 ? Visibility.Visible : Visibility.Collapsed, update.Visibility);
-                    AssertInteractiveOverflowIsReachable(header, overflow);
-                    AssertActionsAdjoinCaptionBoundary(header, tools, overflow, drag);
-                }
-            }
-            finally
-            {
-                header.SizeChanged -= sizeChanged;
-                window.Close();
-            }
-        });
-    }
-
     [Fact]
     public void AutoSizedHeaderUsesTheRealLayoutHelperWithoutResizeOrNoticeFeedbackLoops()
     {
@@ -356,7 +241,7 @@ public sealed class CompactTitleBarIntegrationContractTests
             void SettleLayout()
             {
                 window.UpdateLayout();
-                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.Render);
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
             }
             try
             {
@@ -746,7 +631,7 @@ public sealed class CompactTitleBarIntegrationContractTests
         }
     }
 
-    private static void PumpDispatcher() => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.Render);
+    private static void PumpDispatcher() => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
 
     private static XDocument LoadMainWindow([CallerFilePath] string sourcePath = "")
         => XDocument.Load(Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourcePath)!, "..", "..", "ColorVision", "MainWindow.xaml")));

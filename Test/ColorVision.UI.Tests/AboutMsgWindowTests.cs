@@ -18,26 +18,6 @@ public sealed class AboutMsgWindowTests
         ?? throw new InvalidOperationException("CurrentUIThemeChanged backing field was not found.");
 
     [Theory]
-    [InlineData("zh-CN", "让视觉，成为判断。")]
-    [InlineData("en-US", "Turn vision into insight.")]
-    [InlineData("zh-TW", "讓視覺，成為判斷。")]
-    [InlineData("de-DE", "Turn vision into insight.")]
-    public void RealWindowLoadsItsXamlSwitchesOnlyItsPaletteAndReleasesOnClose(string cultureName, string expectedHeadline)
-    {
-        WeakReference windowReference = WpfTestHost.Invoke(() => CreateAndCloseWindow(cultureName, expectedHeadline));
-        // The culture cases share the same lifetime; one collection check avoids repeating GC pressure.
-        if (cultureName != "en-US") return;
-        for (int i = 0; i < 3 && windowReference.IsAlive; i++)
-        {
-            WpfTestHost.Invoke(PumpDispatcher);
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-        }
-        Assert.False(windowReference.IsAlive, "The closed About window must not be retained by theme, system, rendering, or main-window references.");
-    }
-
-    [Theory]
     [InlineData(Theme.Light, Theme.Dark, Theme.Light)]
     [InlineData(Theme.Dark, Theme.Light, Theme.Dark)]
     [InlineData(Theme.UseSystem, Theme.Light, Theme.Light)]

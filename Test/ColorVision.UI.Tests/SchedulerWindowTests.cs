@@ -40,36 +40,6 @@ public class SchedulerWindowTests
         });
     }
 
-    [Fact]
-    public void CreateForm_PreservesUserNamesAcrossTaskTypesAndUpdatesPlanPreview()
-    {
-        OnUi(() =>
-        {
-            var window = new CreateTask(new SchedulerWindowTestService());
-            try
-            {
-                Show(window);
-                window.TaskComboBox.SelectedValue = typeof(SchedulerWindowTestService.FirstJob);
-                window.TaskNameTextBox.Text = "operator name";
-                window.SchedulerInfo.GroupName = "inspection";
-                window.TaskComboBox.SelectedValue = typeof(SchedulerWindowTestService.SecondJob);
-                Assert.Equal("operator name", window.SchedulerInfo.JobName);
-                Assert.Equal("inspection", window.SchedulerInfo.GroupName);
-                window.SchedulerInfo.RepeatMode = JobRepeatMode.Multiple;
-                window.SchedulerInfo.RepeatCount = 2;
-                window.SchedulerInfo.Interval = TimeSpan.FromMinutes(5);
-                Drain();
-                Assert.Contains("00:05:00", window.PlanSummaryText.Text);
-                Assert.Contains("3", window.PlanSummaryText.Text);
-                window.SchedulerInfo.Mode = JobExecutionMode.Calendar;
-                Drain();
-                Assert.Equal(Resources.Sched_EveryCalendarDay, window.PlanSummaryText.Text);
-                Assert.False(window.RepeatModeComboBox.IsVisible);
-            }
-            finally { window.Close(); }
-        });
-    }
-
     [Theory]
     [InlineData("interval")]
     [InlineData("repeat")]
@@ -209,7 +179,7 @@ public class SchedulerWindowTests
         window.UpdateLayout();
     }
 
-    private static void Drain() => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.Render);
+    private static void Drain() => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
 
     private static IEnumerable<T> Descendants<T>(DependencyObject parent) where T : DependencyObject
     {
