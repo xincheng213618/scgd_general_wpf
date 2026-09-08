@@ -48,6 +48,7 @@ dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=
 - If verification is blocked by a running application, file lock, missing proprietary dependency, or unrelated concurrent edit, report the exact blocker and the checks that still ran. Do not terminate user processes unless the task authorizes it.
 - Treat current production behavior and explicit documented contracts as authoritative when a test disagrees. Never change product code solely to satisfy a stale test.
 - Do not loosen arbitrary timing, pixel, iteration-count, or scheduler thresholds to make a test pass. A passing tolerance may remain when it represents a confirmed product contract; once a temporary threshold or dispatcher-timing test fails after business behavior changes, remove or rewrite that test around deterministic behavior instead of accommodating it in production code.
+- Keep GitHub Actions focused on Release/x64 build and delivery-contract verification. Do not run managed, script, UI, or performance test suites in `.github/workflows/dotnet.yml`; run the relevant suites locally while developing or reviewing the affected code.
 
 ## Release and packaging
 
