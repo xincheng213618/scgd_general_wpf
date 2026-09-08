@@ -80,6 +80,14 @@ namespace ColorVision.Copilot
                         CopilotSharedAgentToolNames.InspectTemplateType));
         }
 
+        internal static bool CanUseFlowPatch(CopilotAgentRequest? request)
+        {
+            return NeedsFlowGraph(request)
+                && !string.IsNullOrWhiteSpace(request!.UserText)
+                && !ExplicitlyDisallowsWriteAccess(request)
+                && !ContainsAny(request.UserText, WorkspaceEditOptOutMarkers);
+        }
+
         public static bool NeedsFlowMutation(CopilotAgentRequest? request)
         {
             return NeedsFlowGraph(request)

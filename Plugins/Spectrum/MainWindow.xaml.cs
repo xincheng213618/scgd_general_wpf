@@ -218,7 +218,7 @@ namespace Spectrum
             Instance = this;
             Config.SetWindow(this);
             this.SizeChanged += (s, e) => Config.SetConfig(this);
-            this.ApplyCaption();
+            InitializeCompactTitleBar();
             this.SetWindowFull(Config);
             Closing += MainWindow_Closing;
             Closed += (_, _) =>
@@ -250,8 +250,9 @@ namespace Spectrum
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
 
-            ThemeManager.Current.CurrentUIThemeChanged += ApplyDockTheme;
-            ApplyDockTheme(ThemeManager.Current.CurrentUITheme);
+            windowThemeManager = ThemeManager.Current;
+            windowThemeManager.CurrentUIThemeChanged += ApplyDockTheme;
+            ApplyDockTheme(windowThemeManager.CurrentUITheme);
 
             // Initialize layout manager and register all panel content
             LayoutManager = new DockLayoutManager(DockingManager);
@@ -618,10 +619,43 @@ namespace Spectrum
 
         private void ApplyDockTheme(Theme theme)
         {
-            DockingManager.Theme = theme == Theme.Dark
-                ? new AvalonDock.Themes.Vs2013DarkTheme()
-                : new AvalonDock.Themes.Vs2013LightTheme();
+            if (!Dispatcher.CheckAccess())
+            {
+                _ = Dispatcher.BeginInvoke(() => ApplyDockTheme(theme));
+                return;
+            }
+            if (disposed)
+                return;
+
+            DockingManager.Theme = CreateSpectrumDockTheme(theme);
+            compactTitleBar?.ApplyTheme(theme == Theme.Dark);
+            ApplySpectrumPlotTheme(theme);
         }
+
+        private static AvalonDock.Themes.DictionaryTheme CreateSpectrumDockTheme(Theme theme)
+        {
+            // Released hosts already own the modern templates in ColorVision.dll.
+            // Standalone builds carry them in Solution; avoid requiring its new theme type
+            // when the plugin is loaded into a host with an older shared assembly.
+            string resourceAssembly = AppDomain.CurrentDomain.GetAssemblies()
+                .Any(assembly => assembly.GetName().Name == "ColorVision") ? "ColorVision" : "ColorVision.Solution";
+            bool isDark = theme == Theme.Dark;
+            var resources = new ResourceDictionary();
+            AvalonDock.Themes.Theme baseTheme = isDark
+                ? new AvalonDock.Themes.Vs2013DarkTheme() : new AvalonDock.Themes.Vs2013LightTheme();
+            resources.MergedDictionaries.Add(new ResourceDictionary { Source = baseTheme.GetResourceUri() });
+            resources.MergedDictionaries.Add(new ResourceDictionary
+            {
+                Source = new Uri($"/{resourceAssembly};component/Themes/AvalonDockModern{(isDark ? "Dark" : "Light")}.xaml", UriKind.Relative)
+            });
+            resources.MergedDictionaries.Add(new ResourceDictionary
+            {
+                Source = new Uri($"/{resourceAssembly};component/Themes/AvalonDockModernTemplates.xaml", UriKind.Relative)
+            });
+            return new SpectrumDockTheme(resources);
+        }
+
+        private sealed class SpectrumDockTheme(ResourceDictionary resources) : AvalonDock.Themes.DictionaryTheme(resources);
 
         private async void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
@@ -717,7 +751,6 @@ namespace Spectrum
 
                 try
                 {
-                    ThemeManager.Current.CurrentUIThemeChanged -= ApplyDockTheme;
                     ViewResultManager.ViewResluts.CollectionChanged -= ViewResults_CollectionChanged;
                     Config.PropertyChanged -= MainWindowConfig_PropertyChanged;
                     Manager.AutodarkParam.ExecuteAdaptiveAutoDark = null;
@@ -792,6 +825,7 @@ namespace Spectrum
             }
 
             disposed = true;
+            DisposeWindowAppearance();
             ContentRendered -= Window_ContentRendered;
             CancelWindowLifetime();
             continuousMeasurementCancellation?.Dispose();
@@ -1989,14 +2023,6 @@ namespace Spectrum
                 log.Warn("Failed to copy to clipboard", ex);
             }
         }
-
-        private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
-        {
-            ViewResultList.Height = ListRow2.ActualHeight - 32;
-            ListRow2.Height = GridLength.Auto;
-            ListRow1.Height = new GridLength(1, GridUnitType.Star);
-        }
-
 
         private async void Export_Click(object sender, RoutedEventArgs e)
         {

@@ -7,20 +7,28 @@ namespace ColorVision.Copilot
     {
         internal static readonly TimeSpan DefaultInterruptedTimeout = TimeSpan.FromSeconds(5);
 
-        private readonly CancellationTokenSource? _timeoutCancellation;
+        private CancellationTokenSource? _timeoutCancellation;
+        private readonly CancellationToken _runCancellationToken;
 
         private CopilotAgentRunFinalizationScope(
             CancellationTokenSource? timeoutCancellation,
             CancellationToken token)
         {
-            Token = token;
+            _runCancellationToken = token;
             _timeoutCancellation = timeoutCancellation;
         }
 
-        public CancellationToken Token { get; }
+        public CancellationToken Token => _timeoutCancellation?.Token ?? _runCancellationToken;
 
         public bool IsTimeoutCancellationRequested =>
             _timeoutCancellation?.IsCancellationRequested == true;
+
+        public void BeginInterruptedFinalization()
+        {
+            // A late pause/cancel must not reuse an already-cancelled run token,
+            // or restart the deadline when pause is subsequently upgraded to cancel.
+            _timeoutCancellation ??= new CancellationTokenSource(DefaultInterruptedTimeout);
+        }
 
         public static CopilotAgentRunFinalizationScope Create(
             CopilotAgentControlIntent controlIntent,

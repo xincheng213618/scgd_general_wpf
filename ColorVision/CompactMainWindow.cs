@@ -48,8 +48,17 @@ public sealed class CompactMainWindow : MainWindow
 
     private void AttachCompactTitleBar(object? sender, EventArgs e)
     {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         SourceInitialized -= AttachCompactTitleBar;
+        System.Diagnostics.Stopwatch? constructionTrace = Environment.GetEnvironmentVariable("COLORVISION_STARTUP_TRACE") == "1"
+            ? System.Diagnostics.Stopwatch.StartNew()
+            : null;
         var chrome = new CompactTitleBarChrome(this, MainWindowTitleBar, NativeCaptionButtonsPlaceholder, Root);
+        if (constructionTrace != null)
+        {
+            constructionTrace.Stop();
+            log.Info($"Startup trace compact chrome controller construction took {constructionTrace.Elapsed.TotalMilliseconds:0.###} ms.");
+        }
         try
         {
             if (!chrome.TryAttach())
@@ -61,6 +70,7 @@ public sealed class CompactMainWindow : MainWindow
             }
 
             _compactTitleBar = chrome;
+            log.Info($"Compact title bar native setup took {stopwatch.ElapsedMilliseconds} ms.");
             // The normal shell deliberately overlaps its menu row by 3 DIP. A glass caption
             // needs a strict content boundary so the workspace cannot paint over native buttons.
             DockingManager1.Margin = new Thickness(0);
@@ -98,6 +108,10 @@ public sealed class CompactMainWindow : MainWindow
             }
             this.ApplyCaption();
             log.Warn("Compact title bar initialization failed; retaining the native title bar.", ex);
+        }
+        finally
+        {
+            log.Info($"Compact title bar attachment completed in {stopwatch.ElapsedMilliseconds} ms.");
         }
     }
 

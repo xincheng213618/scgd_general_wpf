@@ -3,9 +3,9 @@ knowledge_id: "copilot.configuration"
 knowledge_type: "topic"
 status: "current"
 summary: "ColorVision内置Copilot的设置草稿、配置保存与运行态发布、模型选择和联网诊断；保存失败可能已落盘，Local MCP测试核验会话握手与只读状态调用。"
-aliases: ["Copilot配置", "Copilot 设置 Save / Apply / Cancel", "聊天配置", "模型设置", "Test Model", "Apply to Chat", "CopilotSettingsViewModel", "CopilotConfig", "推理模式保存失败", "MCP连接测试", "config.toml不生效"]
-code_paths: ["ColorVision/Copilot/Agent/CopilotProjectInstructionDiscoveryConfig.cs","ColorVision/Copilot/Agent/CopilotCodexExecPolicy.cs","ColorVision/Copilot/Config", "ColorVision/Copilot/CopilotSettingsWindow.xaml", "ColorVision/Copilot/CopilotSettingsWindow.xaml.cs", "ColorVision/Copilot/CopilotSettingsViewModel.cs", "ColorVision/Copilot/CopilotSettingsViewModel.ProfileManagement.cs", "ColorVision/Copilot/CopilotSettingsViewModel.BackendSync.cs", "ColorVision/Copilot/CopilotSettingsViewModel.ExternalMcp.cs", "ColorVision/Copilot/CopilotSettingsViewModel.Diagnostics.cs", "ColorVision/Copilot/CopilotSettingsViewModel.McpOperations.cs", "ColorVision/Copilot/CopilotSettingsViewModel.WebPageNetwork.cs", "ColorVision/Copilot/CopilotChatViewModel.ControlAndSettings.cs", "ColorVision/Copilot/CopilotChatViewModel.Composer.cs", "ColorVision/Copilot/CopilotChatViewModel.ConfigPersistence.cs", "ColorVision/Copilot/CopilotChatViewModel.ConversationCommands.cs", "ColorVision/Copilot/CopilotChatViewModel.Conversations.cs", "ColorVision/Copilot/CopilotChatViewModel.Lifecycle.cs", "ColorVision/Copilot/State/CopilotConversationSession.cs", "ColorVision/Copilot/State/CopilotChatStatePersistenceCoordinator.cs", "ColorVision/Copilot/CopilotModelConnectionDiagnostic.cs", "ColorVision/Copilot/CopilotMcpConnectionDiagnostic.cs", "ColorVision/Copilot/Mcp/CopilotMcpRequestHandler.cs", "UI/ColorVision.UI/ConfigHandler.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs", "Test/ColorVision.Copilot.Tests/CopilotBackendSyncTransactionTests.cs", "Test/ColorVision.Copilot.Tests/CopilotChatConfigPersistenceTests.cs", "Test/ColorVision.Copilot.Tests/CopilotMcpClientConfigurationTests.cs", "Test/ColorVision.Copilot.Tests/CopilotMcpConnectionDiagnosticTests.cs", "Test/ColorVision.Copilot.Tests/CopilotLocalMcpDiagnosticLifecycleTests.cs", "Test/ColorVision.Copilot.Tests/CopilotExternalMcpDiagnosticDraftTests.cs", "Test/ColorVision.Copilot.Tests/CopilotModelConnectionDiagnosticLifecycleTests.cs", "Test/ColorVision.Copilot.Tests/CopilotProfileConfigTests.cs", "Test/ColorVision.Copilot.Tests/CopilotConfigWebPageNetworkTests.cs"]
+aliases: ["有效配置诊断","/debug-config","/debug config","/context","/memory","Copilot配置","Copilot 设置 Save / Apply / Cancel","聊天配置","模型设置","Test Model","Apply to Chat","CopilotSettingsViewModel","CopilotConfig","推理模式保存失败","MCP连接测试","config.toml不生效"]
+code_paths: ["ColorVision/Copilot/Config/CopilotEffectiveConfigDiagnostics.cs","ColorVision/Copilot/CopilotChatViewModel.DiagnosticsCommands.cs","ColorVision/Copilot/CopilotContextDiagnostics.cs","ColorVision/Copilot/CopilotProjectInstructionDiagnostics.cs","ColorVision/Copilot/Agent/CopilotProjectInstructionDiscoveryConfig.cs","ColorVision/Copilot/Agent/CopilotCodexExecPolicy.cs","ColorVision/Copilot/Config","ColorVision/Copilot/CopilotSettingsWindow.xaml","ColorVision/Copilot/CopilotSettingsWindow.xaml.cs","ColorVision/Copilot/CopilotSettingsViewModel.cs","ColorVision/Copilot/CopilotSettingsViewModel.ProfileManagement.cs","ColorVision/Copilot/CopilotSettingsViewModel.BackendSync.cs","ColorVision/Copilot/CopilotSettingsViewModel.ExternalMcp.cs","ColorVision/Copilot/CopilotSettingsViewModel.Diagnostics.cs","ColorVision/Copilot/CopilotSettingsViewModel.McpOperations.cs","ColorVision/Copilot/CopilotSettingsViewModel.WebPageNetwork.cs","ColorVision/Copilot/CopilotChatViewModel.ControlAndSettings.cs","ColorVision/Copilot/CopilotChatViewModel.Composer.cs","ColorVision/Copilot/CopilotChatViewModel.ConfigPersistence.cs","ColorVision/Copilot/CopilotChatViewModel.ConversationCommands.cs","ColorVision/Copilot/CopilotChatViewModel.Conversations.cs","ColorVision/Copilot/CopilotChatViewModel.Lifecycle.cs","ColorVision/Copilot/State/CopilotConversationSession.cs","ColorVision/Copilot/State/CopilotChatStatePersistenceCoordinator.cs","ColorVision/Copilot/CopilotModelConnectionDiagnostic.cs","ColorVision/Copilot/CopilotMcpConnectionDiagnostic.cs","ColorVision/Copilot/Mcp/CopilotMcpRequestHandler.cs","UI/ColorVision.UI/ConfigHandler.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotEffectiveConfigDiagnosticsTests.cs","Test/ColorVision.Copilot.Tests/CopilotContextDiagnosticsTests.cs","Test/ColorVision.Copilot.Tests/CopilotProjectInstructionDiagnosticsTests.cs","Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs","Test/ColorVision.Copilot.Tests/CopilotBackendSyncTransactionTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatConfigPersistenceTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpClientConfigurationTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpConnectionDiagnosticTests.cs","Test/ColorVision.Copilot.Tests/CopilotLocalMcpDiagnosticLifecycleTests.cs","Test/ColorVision.Copilot.Tests/CopilotExternalMcpDiagnosticDraftTests.cs","Test/ColorVision.Copilot.Tests/CopilotModelConnectionDiagnosticLifecycleTests.cs","Test/ColorVision.Copilot.Tests/CopilotProfileConfigTests.cs","Test/ColorVision.Copilot.Tests/CopilotConfigWebPageNetworkTests.cs"]
 related: ["copilot.runtime", "copilot.interactions", "copilot.lifecycle", "copilot.extensions", "copilot.mcp-server", "copilot.view-model", "ui.configuration"]
 ---
 
@@ -27,6 +27,22 @@ related: ["copilot.runtime", "copilot.interactions", "copilot.lifecycle", "copil
 | `CopilotChatState` / `CopilotConversationRecord` | 活动 Profile ID、各会话选择、回答风格、消息与恢复状态；由独立的会话状态存储负责 |
 
 配置 JSON 路径、节合并、文件替换和重载导致的旧对象失效见[配置持久化与对象所有权](../../04-api-reference/ui-components/configuration.md)。Copilot 设置保存的是其中的 `CopilotConfig` 节，不另建一个 `config.toml` 或模型配置数据库。
+
+## 本地配置与上下文诊断
+
+三个命令各有明确的读取范围，均不调用模型、Agent 工具或外部 MCP，不保存配置，也不把诊断文本加入模型历史。它们预览当前设置与待提交上下文；正在运行的任务继续使用提交时冻结的 Profile、预算、指令及工具配置，不能用诊断中更新后的值反推在途任务已经切换。
+
+| 入口 | 实际报告范围 |
+| --- | --- |
+| `/debug-config` | 内置默认、应用配置文件元数据、状态文件加载／恢复来源、当前 Profile、AgentDefaults、会话覆盖和临时权限；显示实际宿主 sandbox／审批／Shell 策略，以及 Local MCP、外部 MCP 数量和 Web Pref64 状态 |
+| `/context` | 当前输入模式、历史与工具结果预算、压缩状态、持续目标、指令与 Skill 数量、业务扩展及当前策略；Chat 模式保留会话相关信息，省略不参与该模式的 Agent 扩展详情 |
+| `/memory [open N]` | 个人与项目指令的发现目标、文件顺序、截断与预算；`open N` 打开对应源文件，发现清单不是当前任务已经注入的回执 |
+
+这些输出不列出外部 `config.toml` 的模型或功能覆盖来源。Profile 模型与提示主体来自 ColorVision 配置，会话回答风格来自会话状态；内部策略快照仍用于说明实际权限，但不表示存在可编辑的外部 Codex 配置层。`/context` 的指令预览与 `/memory` 的发现结果，是否注入还取决于后续请求的本地证据需求、工作区补丁能力与模式。
+
+`/debug-config` 只探测主配置 JSON 的 `CopilotConfig` 节、schema、属性存在性及 Profile ID，文件大于 16 MiB 时不解析。文件缺失、节缺失、损坏或不可读取时保留运行期值，标明“当前文件来源未证实”；更高版本 schema 会报告写入被阻止。文件元数据只说明命令执行时的文件状态，不能证明每个运行期键的启动来源。状态来源保留主文件、临时快照、备份、恢复快照和未来版本等区别。
+
+诊断不输出 API Key、MCP token、系统提示或自动复核策略正文、Shell 环境变量值、后台／外部 MCP 地址及 Pref64 前缀。模型端点仅显示 origin，去掉用户信息、路径、查询和 fragment。设置变更后的诊断重新读取当前对象与文件元数据，不更改原配置文件；完整权限与审批执行边界见[工具契约](./copilot-agent-tool-contracts.md)。
 
 ## 设置窗口中的草稿与按钮
 
@@ -105,6 +121,7 @@ Local MCP 测试由 `CopilotMcpConnectionDiagnostic` 依次发送 `initialize`�
 
 ## 实现与验证入口
 
+- `Config/CopilotEffectiveConfigDiagnostics.cs`、`CopilotContextDiagnostics.cs`、`CopilotProjectInstructionDiagnostics.cs`：分别生成配置来源、上下文提交预览和指令发现报告。`CopilotEffectiveConfigDiagnosticsTests` 覆盖当前设置／会话变更、在途快照边界、脱敏、文件缺失／损坏／超限和未来 schema；`CopilotContextDiagnosticsTests`、`CopilotProjectInstructionDiagnosticsTests` 覆盖模式、实际策略与指令展示边界。
 - `CopilotSettingsViewModel.ProfileManagement.cs`、`CopilotSettingsWindow.xaml.cs`：按钮保存、Profile 草稿和模型诊断入口；`Config/CopilotConfig.cs`：规范化、候选发布、schema 与凭据边界。
 - `CopilotChatViewModel.ConfigPersistence.cs`、`Composer.cs`、`ConversationCommands.cs`：聊天中配置变更、三态反馈及命令回显；`State/CopilotConversationSession.cs`：只选择 Profile 的会话状态变化。
 - `CopilotModelConnectionDiagnostic.cs`、`CopilotMcpConnectionDiagnostic.cs`、`CopilotSettingsViewModel.ExternalMcp.cs` / `McpOperations.cs` / `BackendSync.cs`：真实联网入口；`Config/CopilotBackendSyncTransaction.cs`：托管 Profile 合并与发布。

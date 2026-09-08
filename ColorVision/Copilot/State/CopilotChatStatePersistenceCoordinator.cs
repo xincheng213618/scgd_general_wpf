@@ -92,8 +92,16 @@ namespace ColorVision.Copilot
                 var capture = await beginCaptureOperation.Task.ConfigureAwait(false);
                 while (!capture.IsComplete)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (_scheduler.RequestedVersion != captureVersion)
+                        return false;
+
                     var captureSliceOperation = dispatcher.InvokeAsync(
-                        () => CaptureSnapshotSlice(capture),
+                        () =>
+                        {
+                            if (_scheduler.RequestedVersion == captureVersion)
+                                CaptureSnapshotSlice(capture, cancellationToken);
+                        },
                         DispatcherPriority.Background,
                         cancellationToken);
                     await captureSliceOperation.Task.ConfigureAwait(false);
@@ -150,11 +158,14 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static void CaptureSnapshotSlice(CopilotChatStateSnapshotCapture capture)
+        private static void CaptureSnapshotSlice(
+            CopilotChatStateSnapshotCapture capture,
+            CancellationToken cancellationToken)
         {
             var startedAt = Stopwatch.GetTimestamp();
             do
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 capture.CaptureNextChunk();
             }
             while (!capture.IsComplete && Stopwatch.GetElapsedTime(startedAt) < SnapshotUiSliceBudget);

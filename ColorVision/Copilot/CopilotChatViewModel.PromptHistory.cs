@@ -78,16 +78,14 @@ namespace ColorVision.Copilot
                 return false;
 
             _promptHistorySearchScope = CopilotPromptHistorySearchScope.CurrentConversation;
-            var initialResults = CopilotPromptHistorySearch.Search(conversation.Messages, string.Empty);
-            if (initialResults.Count == 0)
+            static bool HasVisibleRequest(CopilotConversationRecord candidate) =>
+                candidate.Messages.Any(message => message?.IsUser == true && !string.IsNullOrWhiteSpace(message.Content));
+            if (!HasVisibleRequest(conversation))
             {
-                initialResults = CopilotPromptHistorySearch.SearchAll(
-                    CopilotConversationArchiveService.GetActive(Conversations),
-                    string.Empty);
+                if (!CopilotConversationArchiveService.GetActive(Conversations).Any(HasVisibleRequest))
+                    return false;
                 _promptHistorySearchScope = CopilotPromptHistorySearchScope.AllConversations;
             }
-            if (initialResults.Count == 0)
-                return false;
 
             _promptHistorySearchConversationId = conversation.Id;
             _promptHistorySearchQuery = string.Empty;
@@ -169,18 +167,25 @@ namespace ColorVision.Copilot
                     CopilotConversationArchiveService.GetActive(Conversations),
                     InputText)
                 : CopilotPromptHistorySearch.Search(conversation.Messages, InputText);
-            PromptHistorySearchResults.Clear();
-            foreach (var result in results)
-                PromptHistorySearchResults.Add(result);
+            var previousResults = PromptHistorySearchResults.ToDictionary(item => item.Text, StringComparer.Ordinal);
+            // Text is the deduplication key; record equality also checks the displayed source and preview.
+            var retainedResults = results.Select(result =>
+                previousResults.TryGetValue(result.Text, out var previous) && previous == result
+                    ? previous
+                    : result).ToArray();
+            UpdateProjection(PromptHistorySearchResults, retainedResults);
 
-            SelectedPromptHistorySearchResult = PromptHistorySearchResults.FirstOrDefault(item =>
+            var selectedResult = PromptHistorySearchResults.FirstOrDefault(item =>
                 string.Equals(item.Text, preferredText, StringComparison.Ordinal))
                 ?? PromptHistorySearchResults.FirstOrDefault();
+            if (!ReferenceEquals(SelectedPromptHistorySearchResult, selectedResult))
+                SelectedPromptHistorySearchResult = selectedResult;
             OnPropertyChanged(nameof(HasPromptHistorySearchResults));
             OnPropertyChanged(nameof(PromptHistorySearchHeader));
             OnPropertyChanged(nameof(PromptHistorySearchStatusText));
             OnPropertyChanged(nameof(PromptHistorySearchScopeLabel));
             OnPropertyChanged(nameof(InputPlaceholder));
+            OnPropertyChanged(nameof(PrimaryActionToolTip));
         }
 
         private void ClosePromptHistorySearch(string? replacementText)

@@ -5,13 +5,30 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <DefineConstants>$(DefineConstants);SPECTRUM_ABOUT</DefineConstants>
     <Company>Spectromer</Company>
 	<ApplicationIcon>pic.ico</ApplicationIcon>
-	<VersionPrefix>2.3.3.12</VersionPrefix>
+	<VersionPrefix>2.3.3.13</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Include="pic.ico" />
+  </ItemGroup>
+
+  <!-- Keep the tested native-caption implementation in sync with the main shell,
+       without taking a dependency on the ColorVision executable. -->
+  <ItemGroup>
+    <Compile Include="..\..\ColorVision\Windowing\CompactTitleBarChrome.cs" Link="Windowing\CompactTitleBarChrome.cs" />
+    <Compile Include="..\..\ColorVision\Windowing\CompactTitleBarVisibilityGuard.cs" Link="Windowing\CompactTitleBarVisibilityGuard.cs" />
+  </ItemGroup>
+
+  <!-- Share the presentation source while keeping the plugin compatible with released hosts. -->
+  <ItemGroup>
+    <Compile Include="..\..\UI\ColorVision.UI\Views\About\AboutArtScene.cs" Link="Help\Art\AboutArtScene.cs" />
+    <Compile Include="..\..\UI\ColorVision.UI\Views\About\AboutText.cs" Link="Help\Art\AboutText.cs" />
+    <Compile Include="..\..\UI\ColorVision.UI\Views\About\AboutWindowChrome.cs" Link="Help\Art\AboutWindowChrome.cs" />
+    <Compile Include="..\..\UI\ColorVision.UI\Views\About\VisionImageStudy.cs" Link="Help\Art\VisionImageStudy.cs" />
+    <EmbeddedResource Include="..\..\UI\ColorVision.UI\Views\About\AboutResources*.resx" Link="Help\Art\%(Filename)%(Extension)" LogicalName="Spectrum.Help.Art.%(Filename).resources" />
   </ItemGroup>
 
 	
@@ -82,6 +99,7 @@
     <ProjectReference Include="..\..\UI\ColorVision.Database\ColorVision.Database.csproj" />
     <ProjectReference Include="..\..\UI\ColorVision.Scheduler\ColorVision.Scheduler.csproj" />
     <ProjectReference Include="..\..\UI\ColorVision.SocketProtocol\ColorVision.SocketProtocol.csproj" />
+    <ProjectReference Include="..\..\UI\ColorVision.Solution\ColorVision.Solution.csproj" />
     <ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
   </ItemGroup>
 

@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Interop;
 using System.Windows.Media;
 
 namespace ColorVision.UI
@@ -173,8 +174,7 @@ namespace ColorVision.UI
         private static IEnumerable<DipScreen> GetDipScreens(Visual visual)
         {
             // 将 WinForms 的像素矩形转换成 WPF 的 DIP 矩形
-            var source = PresentationSource.FromVisual(visual);
-            var tf = source?.CompositionTarget?.TransformFromDevice ?? Matrix.Identity;
+            var tf = GetTransformFromDevice(visual);
 
             foreach (var s in Screen.AllScreens)
             {
@@ -233,8 +233,7 @@ namespace ColorVision.UI
 
         private static DipScreen GetPrimaryDipScreen(Visual visual)
         {
-            var source = PresentationSource.FromVisual(visual);
-            var tf = source?.CompositionTarget?.TransformFromDevice ?? Matrix.Identity;
+            var tf = GetTransformFromDevice(visual);
 
             var p = Screen.PrimaryScreen;
             var waTL = tf.Transform(new System.Windows.Point(p.WorkingArea.Left, p.WorkingArea.Top));
@@ -248,6 +247,21 @@ namespace ColorVision.UI
                 WorkingArea = new Rect(waTL, waBR),
                 Bounds = new Rect(bTL, bBR)
             };
+        }
+
+        private static Matrix GetTransformFromDevice(Visual visual)
+        {
+            var target = PresentationSource.FromVisual(visual)?.CompositionTarget;
+            if (target == null && visual is Window window)
+            {
+                // EnsureHandle raises SourceInitialized before attaching the window's root visual.
+                // Reuse the existing source without creating a handle as a side effect of reading geometry.
+                var handle = new WindowInteropHelper(window).Handle;
+                if (handle != IntPtr.Zero)
+                    target = HwndSource.FromHwnd(handle)?.CompositionTarget;
+            }
+
+            return target?.TransformFromDevice ?? Matrix.Identity;
         }
 
         private static double Clamp(double value, double min, double max)

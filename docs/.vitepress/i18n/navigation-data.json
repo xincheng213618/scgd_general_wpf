@@ -341,6 +341,12 @@
             },
             {
               "text": {
+                "root": "关于窗口：视觉展示与光谱展示"
+              },
+              "link": "/04-api-reference/ui-components/about-exhibition"
+            },
+            {
+              "text": {
                 "root": "桌面宠物"
               },
               "link": "/04-api-reference/ui-components/desktop-pet"
@@ -656,6 +662,21 @@
                 "root": "存储清理与选择性设置重置"
               },
               "link": "/04-api-reference/ui-components/storage-maintenance"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "ColorVision/Startup"
+          },
+          "link": "/knowledge/code/source-ColorVision#module-436f6c6f72566973696f6e2f53746172747570",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "启动、初始化与故障恢复"
+              },
+              "link": "/03-architecture/overview/runtime"
             }
           ]
         },
@@ -1574,6 +1595,12 @@
             },
             {
               "text": {
+                "root": "Engine 设备资源与运行装配"
+              },
+              "link": "/04-api-reference/engine-components/device-service-chain"
+            },
+            {
+              "text": {
                 "root": "主窗口与入口装配"
               },
               "link": "/01-user-guide/interface/main-window"
@@ -1829,6 +1856,12 @@
                 "root": "WindowsServicePlugin：选包、本机安装与恢复"
               },
               "link": "/04-api-reference/plugins/standard-plugins/windows-service"
+            },
+            {
+              "text": {
+                "root": "关于窗口：视觉展示与光谱展示"
+              },
+              "link": "/04-api-reference/ui-components/about-exhibition"
             },
             {
               "text": {
@@ -3122,6 +3155,12 @@
                 "root": "Spectrum Socket 业务指令与完成边界"
               },
               "link": "/04-api-reference/plugins/standard-plugins/spectrum-socket"
+            },
+            {
+              "text": {
+                "root": "关于窗口：视觉展示与光谱展示"
+              },
+              "link": "/04-api-reference/ui-components/about-exhibition"
             },
             {
               "text": {

@@ -23,6 +23,8 @@ related: ["engine.devices","operations.device-configuration","operations.physica
 | 流程节点“本地相机取图” | `LocalCameraNode` 取得本地测量帧，保存结果主记录，再交给流程下游 |
 | 设备结果视图 | `ViewCamera` 展示结果记录，选择记录后按 `FileUrl` 打开图像文件 |
 
+相机卡片和结果详情的登记、首次显示、首结果及提前释放边界见[设备详情视图按需初始化](../../04-api-reference/engine-components/device-service-chain.md#设备详情视图按需初始化)。
+
 “本地视频有画面”只说明该预览路径可用。排查手动取图与流程结果不一致时，先核对实际入口、设备、曝光参数、校准模板和结果文件。
 
 这些采集入口会访问硬件。自动曝光、ND/滤轮切换、对焦和电机移动还会改变设备状态，应在已授权的设备与操作范围内使用。

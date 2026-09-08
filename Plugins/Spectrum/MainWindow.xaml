@@ -7,34 +7,80 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:models="clr-namespace:Spectrum.Models"
         xmlns:properties="clr-namespace:Spectrum.Properties"
+        xmlns:uiProperties="clr-namespace:ColorVision.UI.Properties;assembly=ColorVision.UI"
         xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:SpectrometerManager}"
-        Title="{x:Static properties:Resources.SpectrumWindowTitle}" Width="1920" Height="1080"
+        Title="{x:Static properties:Resources.SpectrumWindowTitle}" Width="1920" Height="1080" MinWidth="1000" MinHeight="640"
         Background="{DynamicResource GlobalBackground}"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
         Initialized="Window_Initialized">
     <Window.Resources>
-        <Style TargetType="{x:Type TextBlock}">
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-        <Style TargetType="GroupBox">
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-            <Setter Property="Margin" Value="2,2,2,6" />
-            <Setter Property="Padding" Value="6,6" />
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Components/Dialog.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+            <Style TargetType="Expander">
+                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+                <Setter Property="IsExpanded" Value="True" />
+                <Setter Property="Margin" Value="0,2,0,8" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Expander">
+                            <StackPanel>
+                                <ToggleButton Content="{TemplateBinding Header}" FontSize="15"
+                                              IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                              Style="{StaticResource ButtonPageControl1}" />
+                                <Border x:Name="Panel" Margin="2,5,2,0" Padding="8" Style="{DynamicResource BorderModuleArea}">
+                                    <ContentPresenter />
+                                </Border>
+                            </StackPanel>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsExpanded" Value="False">
+                                    <Setter TargetName="Panel" Property="Visibility" Value="Collapsed" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style TargetType="Button" BasedOn="{StaticResource CV.Button.Secondary}">
+                <Setter Property="MinWidth" Value="0" />
+                <Setter Property="MinHeight" Value="28" />
+                <Setter Property="Padding" Value="10,4" />
+            </Style>
+            <Style x:Key="SpectrumPrimaryButton" TargetType="Button" BasedOn="{StaticResource CV.Button.Primary}">
+                <Setter Property="MinWidth" Value="0" />
+                <Setter Property="MinHeight" Value="32" />
+                <Setter Property="Padding" Value="12,5" />
+            </Style>
+        </ResourceDictionary>
     </Window.Resources>
-    <Grid>
+    <Grid x:Name="Root">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
-        <Grid>
-            <Menu x:Name="menu" Grid.Row="0" Padding="2" />
-            <Button Width="18" Height="18" Margin="5,0,5,0" Padding="2" HorizontalAlignment="Right" Click="EditEmissionSP100Config_Click">
+        <Grid x:Name="MainWindowTitleBar" MinHeight="36">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Border Grid.ColumnSpan="3" Background="{DynamicResource GlobalBackground}" />
+            <Menu x:Name="menu" Padding="4,2" Background="{DynamicResource GlobalBackground}" WindowChrome.IsHitTestVisibleInChrome="True" />
+            <Border Grid.Column="1" Background="{DynamicResource GlobalBackground}">
+                <Border x:Name="CompactDragRegion" MinWidth="48" Visibility="Collapsed" />
+            </Border>
+            <Button Grid.Column="2" Width="32" Height="32" Margin="4,0" Padding="7" VerticalAlignment="Center" WindowChrome.IsHitTestVisibleInChrome="True"
+                    Style="{StaticResource PanelIconButtonStyle}" ToolTip="{x:Static uiProperties:Resources.GeneralSettings}" Click="EditEmissionSP100Config_Click">
                 <Button.Triggers>
                     <EventTrigger RoutedEvent="Button.Click">
                         <BeginStoryboard>
@@ -50,8 +96,10 @@
                     </TextBlock.RenderTransform>
                 </TextBlock>
             </Button>
+            <Border x:Name="NativeCaptionButtonsPlaceholder" Grid.Column="3" Width="0" />
         </Grid>
 
+        <Border Grid.Row="1" Grid.RowSpan="3" Background="{DynamicResource GlobalBackground}" />
         <Border x:Name="ResourceInitializationBanner" Grid.Row="1" Padding="10,6" Background="#332196F3" BorderBrush="#802196F3" BorderThickness="0,1">
             <DockPanel>
                 <ProgressBar x:Name="ResourceInitializationProgress" Width="110" Height="6" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource PrimaryBrush}" IsIndeterminate="True" />
@@ -59,19 +107,19 @@
             </DockPanel>
         </Border>
 
-        <xcad:DockingManager x:Name="DockingManager" Grid.Row="2" Background="Transparent" BorderThickness="0" IsEnabled="False">
+        <xcad:DockingManager x:Name="DockingManager" Grid.Row="2" Margin="6,2,6,4" Background="Transparent" BorderThickness="0" IsEnabled="False">
             <xcad:LayoutRoot x:Name="_layoutRoot">
                 <xcad:LayoutPanel Orientation="Horizontal">
 
                     <!--  ═══ Left: Control Panel ═══  -->
-                    <xcad:LayoutAnchorablePaneGroup DockWidth="330">
+                    <xcad:LayoutAnchorablePaneGroup DockWidth="360" DockMinWidth="300">
                         <xcad:LayoutAnchorablePane>
                             <xcad:LayoutAnchorable x:Name="ControlPanelPane" Title="{x:Static properties:Resources.ControlPanel}" CanAutoHide="True" CanClose="False" CanFloat="True" ContentId="ControlPanel">
-                                <ScrollViewer Margin="3,0,3,5">
+                                <ScrollViewer Margin="4,2,4,5" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                                     <StackPanel>
 
                                         <!--  ═══ 光谱仪连接 (Spectrometer Connection) ═══  -->
-                                        <GroupBox x:Name="SpectrometerConnectionGroup" Header="{x:Static properties:Resources.SpectrometerConnection}" IsEnabled="False">
+                                        <Expander x:Name="SpectrometerConnectionGroup" Header="{x:Static properties:Resources.SpectrometerConnection}" IsEnabled="False">
                                             <StackPanel>
                                                 <StackPanel Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter1}}">
                                                     <Button Margin="0,0,0,4" Click="GetSpectrometerSerialNumbers_Click" Content="{x:Static properties:Resources.GetDeviceList}" />
@@ -86,20 +134,20 @@
                                                         </DockPanel>
                                                         <DockPanel Margin="8,0,0,0">
                                                             <TextBlock Width="45" VerticalAlignment="Center" Text="{x:Static properties:Resources.BaudRate}" />
-                                                            <ComboBox x:Name="ComboBoxSerial" Width="70" IsEditable="True" Style="{StaticResource ComboBox.Small}" Text="{Binding Config.BaudRate}" />
+                                                            <ComboBox x:Name="ComboBoxSerial" Width="90" IsEditable="True" Style="{StaticResource ComboBox.Small}" Text="{Binding Config.BaudRate}" />
                                                         </DockPanel>
                                                     </StackPanel>
                                                 </StackPanel>
 
                                                 <Grid Margin="0,4,0,0">
-                                                    <Button Padding="12,4" Background="{DynamicResource PrimaryBrush}" Click="Button_Click" Content="{x:Static properties:Resources.连接光谱仪}" Foreground="White" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter1}}" />
+                                                    <Button Style="{StaticResource SpectrumPrimaryButton}" Click="Button_Click" Content="{x:Static properties:Resources.连接光谱仪}" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter1}}" />
                                                     <Button Padding="12,4" Background="{DynamicResource DangerBrush}" Click="ButtonClose_Click" Content="{x:Static properties:Resources.断开光谱仪}" Foreground="White" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}" />
                                                 </Grid>
                                             </StackPanel>
-                                        </GroupBox>
+                                        </Expander>
 
                                         <!--  ═══ 标定文件 (Calibration Files) ═══  -->
-                                        <GroupBox Header="{x:Static properties:Resources.CalibrationFiles}">
+                                        <Expander Header="{x:Static properties:Resources.CalibrationFiles}">
                                             <StackPanel>
                                                 <DockPanel Margin="0,0,0,6">
                                                     <Button Margin="4,0,0,0" Padding="8,2" Click="OpenCalibrationGroupWindow_Click" Content="{x:Static properties:Resources.Manage}" DockPanel.Dock="Right" ToolTip="{x:Static properties:Resources.OpenCalibrationGroupTooltip}" />
@@ -130,15 +178,15 @@
                                                     </TextBlock.Style>
                                                 </TextBlock>
                                             </StackPanel>
-                                        </GroupBox>
+                                        </Expander>
 
                                         <!--  ═══ 测量参数 (Measurement Parameters) ═══  -->
-                                        <GroupBox Header="{x:Static properties:Resources.MeasurementParameters}" IsEnabled="{Binding IsCalibrationReady}" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}">
+                                        <Expander Header="{x:Static properties:Resources.MeasurementParameters}" IsEnabled="{Binding IsCalibrationReady}" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}">
                                             <StackPanel>
-                                                <StackPanel Margin="0,0,0,6" Orientation="Horizontal">
+                                                <WrapPanel Margin="0,0,0,6">
                                                     <TextBlock Width="110" Text="{x:Static properties:Resources.IntegrationTimeMs}" />
                                                     <TextBox Width="90" VerticalAlignment="Center" Style="{StaticResource TextBox.Small}" Text="{Binding IntTime}" TextWrapping="Wrap" />
-                                                    <Button Width="20" Height="20" Margin="4,0,4,0" Padding="0" HorizontalAlignment="Left" Click="EditMeasurementDataConfig_Click">
+                                                    <Button Width="28" Height="28" Margin="4,0,4,0" Padding="0" HorizontalAlignment="Left" Click="EditMeasurementDataConfig_Click">
                                                         <Button.Triggers>
                                                             <EventTrigger RoutedEvent="Button.Click">
                                                                 <BeginStoryboard>
@@ -155,21 +203,21 @@
                                                         </TextBlock>
                                                     </Button>
                                                     <Button x:Name="ButtonAutoInt" Padding="10,4" Background="{DynamicResource WarningBrush}" Click="AutoIntTime_Click" Content="{x:Static properties:Resources.自动积分}" Foreground="White" />
-                                                </StackPanel>
+                                                </WrapPanel>
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock Width="110" Text="{x:Static properties:Resources.平均次数}" />
                                                     <TextBox Width="90" VerticalAlignment="Center" Style="{StaticResource TextBox.Small}" Text="{Binding Average}" TextWrapping="Wrap" />
                                                 </StackPanel>
                                             </StackPanel>
-                                        </GroupBox>
+                                        </Expander>
 
                                         <!--  ═══ 测试 (Test & Calibration) ═══  -->
-                                        <GroupBox Header="{x:Static properties:Resources.TestSection}" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}">
+                                        <Expander Header="{x:Static properties:Resources.TestSection}" Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter}}">
                                             <StackPanel>
                                                 <TextBlock Margin="0,0,0,4" FontWeight="SemiBold" Text="{x:Static properties:Resources.ZeroCalibration}" />
                                                 <StackPanel Margin="0,0,0,6" Orientation="Horizontal">
                                                     <Button x:Name="button3" Margin="0,0,4,0" Padding="10,4" Background="{DynamicResource WarningBrush}" Click="Button3_Click" Content="{x:Static properties:Resources.单次校零}" Foreground="White" />
-                                                    <Button Width="20" Height="20" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Click="EditAutodarkParam_Click">
+                                                    <Button Width="28" Height="28" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Click="EditAutodarkParam_Click">
                                                         <Button.Triggers>
                                                             <EventTrigger RoutedEvent="Button.Click">
                                                                 <BeginStoryboard>
@@ -235,16 +283,16 @@
                                                     <Button x:Name="button7" Padding="10,6" HorizontalAlignment="Stretch" Background="{DynamicResource DangerBrush}" Click="Button7_Click" Content="{x:Static properties:Resources.停止}" FontWeight="SemiBold" Foreground="White" Visibility="Collapsed" />
                                                 </Grid>
                                             </StackPanel>
-                                        </GroupBox>
+                                        </Expander>
 
                                         <!--  ═══ 快门控制 (Shutter) ═══  -->
-                                        <GroupBox Header="{x:Static properties:Resources.Shutter}">
+                                        <Expander Header="{x:Static properties:Resources.Shutter}">
                                             <StackPanel>
                                                 <!--  Not connected: show connect button + gear  -->
                                                 <StackPanel Visibility="{Binding ShutterController.IsConnected, Converter={StaticResource bool2VisibilityConverter1}}">
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
                                                         <Button Padding="10,4" Background="{DynamicResource PrimaryBrush}" Command="{Binding ShutterController.ConnectCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{x:Static properties:Resources.Connect}" Foreground="White" />
-                                                        <Button Width="20" Height="20" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Click="EditShutterConfig_Click">
+                                                        <Button Width="28" Height="28" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Click="EditShutterConfig_Click">
                                                             <Button.Triggers>
                                                                 <EventTrigger RoutedEvent="Button.Click">
                                                                     <BeginStoryboard>
@@ -273,16 +321,16 @@
                                                 </StackPanel>
                                                 <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="{DynamicResource DangerBrush}" Text="{Binding ShutterController.LastErrorMessage}" TextWrapping="Wrap" />
                                             </StackPanel>
-                                        </GroupBox>
+                                        </Expander>
 
                                         <!--  ═══ 滤色轮 (Filter Wheel) ═══  -->
-                                        <GroupBox Header="{x:Static properties:Resources.FilterWheel}">
+                                        <Expander Header="{x:Static properties:Resources.FilterWheel}">
                                             <StackPanel>
                                                 <!--  Connection controls (visible when NOT connected)  -->
                                                 <StackPanel Visibility="{Binding FilterWheelController.IsConnected, Converter={StaticResource bool2VisibilityConverter1}}">
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
                                                         <Button Padding="10,4" Background="{DynamicResource PrimaryBrush}" Command="{Binding FilterWheelController.ConnectCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{x:Static properties:Resources.Connect}" Foreground="White" />
-                                                        <Button Width="20" Height="20" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Click="EditFilterWheelConfig_Click">
+                                                        <Button Width="28" Height="28" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Click="EditFilterWheelConfig_Click">
                                                             <Button.Triggers>
                                                                 <EventTrigger RoutedEvent="Button.Click">
                                                                     <BeginStoryboard>
@@ -332,10 +380,10 @@
                                                 </StackPanel>
                                                 <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="{DynamicResource DangerBrush}" Text="{Binding FilterWheelController.LastErrorMessage}" TextWrapping="Wrap" />
                                             </StackPanel>
-                                        </GroupBox>
+                                        </Expander>
 
                                         <!--  ═══ 光通量参数配置 ═══  -->
-                                        <GroupBox x:Name="EqeGroupBox" Header="{x:Static properties:Resources.EqeParameterConfig}" Visibility="Collapsed">
+                                        <Expander x:Name="EqeGroupBox" Header="{x:Static properties:Resources.EqeParameterConfig}" Visibility="Collapsed">
                                             <StackPanel>
                                                 <StackPanel x:Name="EqePanel">
                                                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
@@ -367,7 +415,7 @@
                                                                 </Style>
                                                             </Button.Style>
                                                         </Button>
-                                                        <Button Width="20" Height="20" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Click="EditSmuConfig_Click" IsEnabled="{Binding SmuController.CanEditConnectionSettings}" Visibility="{Binding SmuController.IsOpen, Converter={StaticResource bool2VisibilityConverter1}}">
+                                                        <Button Width="28" Height="28" Margin="4,0,0,0" Padding="0" HorizontalAlignment="Left" Click="EditSmuConfig_Click" IsEnabled="{Binding SmuController.CanEditConnectionSettings}" Visibility="{Binding SmuController.IsOpen, Converter={StaticResource bool2VisibilityConverter1}}">
                                                             <Button.Triggers>
                                                                 <EventTrigger RoutedEvent="Button.Click">
                                                                     <BeginStoryboard>
@@ -390,12 +438,16 @@
                                                         <CheckBox Margin="0,0,8,0" Content="{x:Static properties:Resources.VoltageSource}" IsChecked="{Binding SmuController.DisplayConfig.IsSourceV}" IsEnabled="{Binding SmuController.CanEditDisplaySettings}" />
                                                         <CheckBox Margin="0,0,8,0" Content="{x:Static properties:Resources.ChannelA}" IsChecked="{Binding SmuController.DisplayConfig.IsChannelA}" IsEnabled="{Binding SmuController.CanEditDisplaySettings}" />
                                                     </StackPanel>
-                                                    <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
-                                                        <TextBlock Width="68" Text="{Binding SmuController.MeasureValueLabel}" />
-                                                        <TextBox Width="70" Style="{StaticResource TextBox.Small}" Text="{Binding SmuController.DisplayConfig.MeasureVal, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding SmuController.CanEditDisplaySettings}" />
-                                                        <TextBlock Width="72" Margin="8,0,0,0" Text="{Binding SmuController.LimitValueLabel}" />
-                                                        <TextBox Width="70" Style="{StaticResource TextBox.Small}" Text="{Binding SmuController.DisplayConfig.LimitVal, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding SmuController.CanEditDisplaySettings}" />
-                                                    </StackPanel>
+                                                    <WrapPanel Margin="0,0,0,4">
+                                                        <StackPanel Margin="0,0,8,4" Orientation="Horizontal">
+                                                            <TextBlock Width="68" Text="{Binding SmuController.MeasureValueLabel}" />
+                                                            <TextBox Width="70" Style="{StaticResource TextBox.Small}" Text="{Binding SmuController.DisplayConfig.MeasureVal, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding SmuController.CanEditDisplaySettings}" />
+                                                        </StackPanel>
+                                                        <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
+                                                            <TextBlock Width="72" Text="{Binding SmuController.LimitValueLabel}" />
+                                                            <TextBox Width="70" Style="{StaticResource TextBox.Small}" Text="{Binding SmuController.DisplayConfig.LimitVal, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding SmuController.CanEditDisplaySettings}" />
+                                                        </StackPanel>
+                                                    </WrapPanel>
                                                     <StackPanel Margin="0,4,0,4" Orientation="Horizontal">
                                                         <Button x:Name="SmuMeasureButton" Width="84" Margin="0,0,4,0" Click="SmuMeasure_Click" Content="{x:Static properties:Resources.SmuMeasureOrSet}" IsEnabled="{Binding SmuController.CanMeasure}" />
                                                         <Button x:Name="SmuCloseOutputButton" Width="80" Click="SmuCloseOutput_Click" Content="{x:Static properties:Resources.CloseOutput}" IsEnabled="{Binding SmuController.CanCloseOutput}" />
@@ -408,7 +460,7 @@
                                                     </StackPanel>
                                                 </StackPanel>
                                             </StackPanel>
-                                        </GroupBox>
+                                        </Expander>
 
                                     </StackPanel>
                                 </ScrollViewer>
@@ -425,28 +477,27 @@
                                 <xcad:LayoutDocument Title="{x:Static properties:Resources.SpectrumChart}" CanClose="False" ContentId="SpectrumChart">
                                     <Grid>
                                         <Grid.RowDefinitions>
-                                            <RowDefinition x:Name="ListRow1" Height="*" />
+                                            <RowDefinition x:Name="ListRow1" Height="2*" MinHeight="160" />
                                             <RowDefinition Height="Auto" />
-                                            <RowDefinition x:Name="ListRow2" Height="Auto" />
+                                            <RowDefinition x:Name="ListRow2" Height="*" MinHeight="120" />
                                         </Grid.RowDefinitions>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="220" MinWidth="180" />
                                             </Grid.ColumnDefinitions>
                                             <ScottPlot:WpfPlot x:Name="wpfplot1" Panel.ZIndex="9" />
                                             <ScottPlot:WpfPlot x:Name="wpfplot2" Panel.ZIndex="9" Visibility="Collapsed" />
-                                            <ListView x:Name="listView2" Grid.Column="1" Padding="2,0,2,2" BorderThickness="0" SelectionChanged="listView2_SelectionChanged" Style="{StaticResource ListView.Small}">
+                                            <ListView x:Name="listView2" Grid.Column="1" Margin="5,6,4,6" Padding="2,0,2,2" BorderThickness="0" SelectionChanged="listView2_SelectionChanged" Style="{StaticResource ListView.Small}">
                                                 <ListView.Resources>
                                                     <ContextMenu x:Key="ItemContextMenu" />
                                                 </ListView.Resources>
                                                 <ListView.View>
                                                     <GridView>
                                                         <GridView.ColumnHeaderContainerStyle>
-                                                            <Style BasedOn="{StaticResource InputElementBaseStyle}" TargetType="{x:Type GridViewColumnHeader}">
+                                                            <Style BasedOn="{StaticResource {x:Type GridViewColumnHeader}}" TargetType="{x:Type GridViewColumnHeader}">
                                                                 <Setter Property="Visibility" Value="Visible" />
-                                                                <Setter Property="Background" Value="Transparent" />
-                                                                <Setter Property="BorderThickness" Value="0" />
+                                                                <Setter Property="Padding" Value="8,5" />
                                                                 <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
                                                             </Style>
                                                         </GridView.ColumnHeaderContainerStyle>
@@ -476,16 +527,21 @@
                                             </ListView>
 
                                         </Grid>
-                                        <GridSplitter Grid.Row="1" Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="{DynamicResource BorderBrush}" DragCompleted="GridSplitter_DragCompleted" />
+                                        <GridSplitter Grid.Row="1" Height="6" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="Transparent" ResizeBehavior="PreviousAndNext" />
                                         <Grid Grid.Row="2">
                                             <Grid.RowDefinitions>
-                                                <RowDefinition Height="32" />
                                                 <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="*" />
                                             </Grid.RowDefinitions>
-                                            <ToolBarTray Grid.Row="0" HorizontalAlignment="Left">
-                                                <ToolBar Padding="3,2">
+                                            <Grid MinHeight="40" Background="{DynamicResource CV.Surface.Window}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                            <ToolBarTray Grid.Row="0" IsLocked="True" HorizontalAlignment="Stretch" Background="Transparent">
+                                                <ToolBar Padding="3,4" HorizontalContentAlignment="Stretch" Background="Transparent">
                                                     <ToggleButton Margin="2,0,0,0" Click="ButtonMul_Click">
-                                                        <Image Source="{DynamicResource DrawingImageSwitch}" Stretch="Uniform" />
+                                                        <Image Width="18" Height="18" Source="{DynamicResource DrawingImageSwitch}" Stretch="Uniform" />
                                                     </ToggleButton>
                                                     <ToggleButton Margin="2,0,0,0" Click="ToggleSpectrumType_Click" ToolTip="{x:Static properties:Resources.ToggleSpectrumTypeTooltip}">
                                                         <TextBlock x:Name="SpectrumTypeText" Text="{x:Static properties:Resources.相对光谱}" />
@@ -501,14 +557,14 @@
                                                     <TextBox Width="50" VerticalAlignment="Center" Text="{Binding ViewResultManager.Config.Count, UpdateSourceTrigger=PropertyChanged}" ToolTip="{x:Static properties:Resources.LoadCountTooltip}" />
                                                 </ToolBar>
                                             </ToolBarTray>
-                                            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                                                    <Button Width="25" Height="25" Margin="0,1,5,0" Padding="2" Click="OpenCieWindow_Click" ToolTip="{x:Static properties:Resources.CieChromaticityDiagram}">
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
+                                                    <Button Width="30" Height="30" Margin="0,1,5,0" Padding="2" Click="OpenCieWindow_Click" ToolTip="{x:Static properties:Resources.CieChromaticityDiagram}">
                                                         <Image Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png" Stretch="Uniform" />
                                                     </Button>
-                                                    <Button Width="25" Height="25" Margin="0,1,5,0" Padding="2" Click="Export_Click">
+                                                    <Button Width="30" Height="30" Margin="0,1,5,0" Padding="2" Click="Export_Click">
                                                         <Rectangle Width="16" Height="16" Fill="{DynamicResource DISave}" />
                                                     </Button>
-                                                    <Button Width="25" Height="25" Margin="0,1,5,0" Padding="2" Click="Cleartable_Click" ToolTip="清空当前视图（不删除数据库记录）">
+                                                    <Button Width="30" Height="30" Margin="0,1,5,0" Padding="2" Click="Cleartable_Click" ToolTip="清空当前视图（不删除数据库记录）">
                                                         <Button.Triggers>
                                                             <EventTrigger RoutedEvent="Button.Click">
                                                                 <BeginStoryboard>
@@ -525,7 +581,7 @@
                                                             </Image.RenderTransform>
                                                         </Image>
                                                     </Button>
-                                                    <Button Grid.Column="1" Width="25" Height="25" Margin="0,1,5,0" Padding="2" HorizontalAlignment="Left" Command="{Binding ViewResultManager.EditConfigCommand}">
+                                                    <Button Grid.Column="1" Width="30" Height="30" Margin="0,1,5,0" Padding="2" HorizontalAlignment="Left" Command="{Binding ViewResultManager.EditConfigCommand}">
                                                         <Button.Triggers>
                                                             <EventTrigger RoutedEvent="Button.Click">
                                                                 <BeginStoryboard>
@@ -542,18 +598,18 @@
                                                         </TextBlock>
                                                     </Button>
                                             </StackPanel>
+                                            </Grid>
 
-                                            <ListView x:Name="ViewResultList" Grid.Row="1" Height="250" Padding="2" BorderThickness="0" PreviewKeyDown="listView1_PreviewKeyDown" SelectedIndex="{Binding ViewResultManager.ViewReslutsSelectedIndex}" SelectionChanged="listView1_SelectionChanged" SelectionMode="Extended" Style="{StaticResource ListView.Small}">
+                                            <ListView x:Name="ViewResultList" Grid.Row="1" Padding="2" BorderThickness="0" PreviewKeyDown="listView1_PreviewKeyDown" SelectedIndex="{Binding ViewResultManager.ViewReslutsSelectedIndex}" SelectionChanged="listView1_SelectionChanged" SelectionMode="Extended" Style="{StaticResource ListView.Small}">
                                                 <ListView.Resources>
                                                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                                                 </ListView.Resources>
                                                 <ListView.View>
                                                     <GridView>
                                                         <GridView.ColumnHeaderContainerStyle>
-                                                            <Style BasedOn="{StaticResource InputElementBaseStyle}" TargetType="{x:Type GridViewColumnHeader}">
+                                                            <Style BasedOn="{StaticResource {x:Type GridViewColumnHeader}}" TargetType="{x:Type GridViewColumnHeader}">
                                                                 <Setter Property="Visibility" Value="Visible" />
-                                                                <Setter Property="Background" Value="Transparent" />
-                                                                <Setter Property="BorderThickness" Value="0" />
+                                                                <Setter Property="Padding" Value="8,5" />
                                                                 <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
                                                                 <EventSetter Event="Click" Handler="GridViewColumnSort" />
                                                             </Style>
@@ -805,7 +861,7 @@
                         </xcad:LayoutDocumentPaneGroup>
 
                         <!--  ═══ Bottom: Log + Native Log ═══  -->
-                        <xcad:LayoutAnchorablePaneGroup DockHeight="250">
+                        <xcad:LayoutAnchorablePaneGroup DockHeight="180">
                             <xcad:LayoutAnchorablePane>
                                 <xcad:LayoutAnchorable Title="{x:Static properties:Resources.Log}" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="LogPanel">
                                     <Grid x:Name="LogGrid" />
@@ -822,7 +878,7 @@
             </xcad:LayoutRoot>
         </xcad:DockingManager>
 
-        <Grid x:Name="StatusBarGrid" Grid.Row="3" />
+        <Grid x:Name="StatusBarGrid" Grid.Row="3" MinHeight="30" />
 
     </Grid>
 </Window>

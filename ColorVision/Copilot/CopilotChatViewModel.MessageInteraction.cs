@@ -452,15 +452,24 @@ namespace ColorVision.Copilot
             CommandManager.InvalidateRequerySuggested();
         }
 
-        private bool CanRegenerateMessage(CopilotChatMessage? message)
+        private bool CanRegenerateMessage(CopilotChatMessage? message) =>
+            CanRegenerateConversationMessage(message, queuedCommandExecution: null);
+
+        private bool CanRegenerateConversationMessage(
+            CopilotChatMessage? message,
+            QueuedLocalCommandExecutionContext? queuedCommandExecution)
         {
-            var queuedFollowUp = _queuedLocalCommandExecution?.QueuedFollowUp;
+            var queuedFollowUp = queuedCommandExecution?.QueuedFollowUp;
             var selectedProfile = queuedFollowUp?.Profile ?? SelectedProfile;
-            if (IsBusy || IsEditingMessage || message == null || SelectedConversation == null || selectedProfile == null || !selectedProfile.IsConfigured)
+            var targetConversation = queuedCommandExecution?.Conversation ?? SelectedConversation;
+            if ((IsBusy && queuedCommandExecution == null)
+                || string.Equals(_editingConversationId, targetConversation?.Id, StringComparison.Ordinal)
+                || message == null || targetConversation == null || selectedProfile == null || !selectedProfile.IsConfigured)
                 return false;
 
             var discoveryOptions = queuedFollowUp?.SubmissionContext.ProjectInstructionDiscoveryOptions ?? _currentCodexConfigOptions;
-            return TryResolveLatestTurn(message, out var conversation, out _, out var assistantMessage)
+            return TryResolveLatestTurn(message, out var conversation, out _, out var assistantMessage, targetConversation)
+                && (queuedCommandExecution == null || CanContinueConversationRequestPreparation(conversation, message.RequestMode, queuedCommandExecution))
                 && !CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
                     conversation,
                     assistantMessage,
@@ -472,12 +481,19 @@ namespace ColorVision.Copilot
                         discoveryOptions.ConfiguredPluginsEnabled));
         }
 
-        private async Task RetryMessageAsync(CopilotChatMessage? message, bool refreshExternalContext)
+        private Task RetryMessageAsync(CopilotChatMessage? message, bool refreshExternalContext) =>
+            RetryConversationMessageAsync(message, refreshExternalContext, queuedCommandExecution: null);
+
+        private async Task RetryConversationMessageAsync(
+            CopilotChatMessage? message,
+            bool refreshExternalContext,
+            QueuedLocalCommandExecutionContext? queuedCommandExecution)
         {
-            if (!TryResolveLatestTurn(message, out var conversation, out var userMessage, out var assistantMessage))
+            if (!TryResolveLatestTurn(message, out var conversation, out var userMessage, out var assistantMessage,
+                    queuedCommandExecution?.Conversation)
+                || !CanContinueConversationRequestPreparation(conversation, userMessage.RequestMode, queuedCommandExecution))
                 return;
 
-            var queuedCommandExecution = _queuedLocalCommandExecution;
             var queuedFollowUp = queuedCommandExecution?.QueuedFollowUp;
             var selectedProfile = queuedFollowUp?.Profile ?? SelectedProfile;
             if (selectedProfile == null || !selectedProfile.IsConfigured)
@@ -524,7 +540,6 @@ namespace ColorVision.Copilot
             var requestProfile = queuedFollowUp?.Profile.Clone() ?? CreateConversationRequestProfile(
                 selectedProfile,
                 conversation,
-                userMessage.RequestMode,
                 turnSnapshot.ProjectInstructionDiscoveryOptions);
             if (!TryValidateComposerCharacterLimit(modelPrompt)
                 || !TryValidatePromptBudget(
@@ -532,7 +547,8 @@ namespace ColorVision.Copilot
                     userMessage.RequestMode,
                     requestProfile,
                     turnSnapshot.ProjectInstructionDiscoveryOptions,
-                    agentDefaultsSnapshot))
+                    agentDefaultsSnapshot,
+                    conversation))
             {
                 return;
             }
@@ -540,7 +556,7 @@ namespace ColorVision.Copilot
                 return;
             var admittedAttachments = await TryPersistImageAttachmentsAsync(turnSnapshot.Attachments);
             if (admittedAttachments == null
-                || !CanContinueConversationRequestPreparation(conversation, userMessage.RequestMode)
+                || !CanContinueConversationRequestPreparation(conversation, userMessage.RequestMode, queuedCommandExecution)
                 || !IsLatestTurnPair(conversation, userMessage, assistantMessage)
                 || string.Equals(_editingConversationId, conversation.Id, StringComparison.Ordinal)
                 || CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
@@ -555,8 +571,6 @@ namespace ColorVision.Copilot
                 return;
             turnSnapshot = turnSnapshot.WithAttachments(admittedAttachments);
 
-            conversation.ProfileId = requestProfile.Id;
-            conversation.ProfileDisplayName = requestProfile.DisplayLabel;
             conversation.SetAgentSessionCheckpoint(null);
             PersistState();
 
@@ -653,16 +667,21 @@ namespace ColorVision.Copilot
                 && (assistantMessage == null || ReferenceEquals(conversation.Messages[userIndex + 1], assistantMessage));
         }
 
-        private bool TryResolveLatestTurn(CopilotChatMessage? message, out CopilotConversationRecord conversation, out CopilotChatMessage userMessage, out CopilotChatMessage? assistantMessage)
+        private bool TryResolveLatestTurn(
+            CopilotChatMessage? message,
+            out CopilotConversationRecord conversation,
+            out CopilotChatMessage userMessage,
+            out CopilotChatMessage? assistantMessage,
+            CopilotConversationRecord? targetConversation = null)
         {
-            conversation = SelectedConversation!;
+            conversation = (targetConversation ?? SelectedConversation)!;
             userMessage = null!;
             assistantMessage = null;
 
-            if (message == null || SelectedConversation == null)
+            if (message == null || conversation == null)
                 return false;
 
-            var messages = SelectedConversation.Messages;
+            var messages = conversation.Messages;
             var targetIndex = messages.IndexOf(message);
             if (targetIndex < 0)
                 return false;
@@ -682,7 +701,6 @@ namespace ColorVision.Copilot
             if (turnEndIndex != messages.Count - 1)
                 return false;
 
-            conversation = SelectedConversation;
             userMessage = messages[userIndex];
             assistantMessage = resolvedAssistantIndex >= 0 ? messages[resolvedAssistantIndex] : null;
             return true;

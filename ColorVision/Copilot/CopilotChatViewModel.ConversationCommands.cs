@@ -277,7 +277,8 @@ namespace ColorVision.Copilot
 
         private void RetryLatestResponse(
             CopilotLocalCommand command,
-            string arguments)
+            string arguments,
+            QueuedLocalCommandExecutionContext? queuedCommandExecution = null)
         {
             if (!CopilotResponseRetryCommand.TryParse(
                     arguments,
@@ -289,13 +290,14 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var message = SelectedConversation?.Messages.LastOrDefault();
+            var targetConversation = queuedCommandExecution?.Conversation ?? SelectedConversation;
+            var message = targetConversation?.Messages.LastOrDefault();
             if (message == null)
             {
                 ShowLocalCommandResult(command, "当前会话还没有可重试的请求。");
                 return;
             }
-            var queuedFollowUp = _queuedLocalCommandExecution?.QueuedFollowUp;
+            var queuedFollowUp = queuedCommandExecution?.QueuedFollowUp;
             var selectedProfile = queuedFollowUp?.Profile ?? SelectedProfile;
             if (selectedProfile?.IsConfigured != true)
             {
@@ -304,14 +306,15 @@ namespace ColorVision.Copilot
                     "当前模型 Profile 尚未完成配置；请先使用 /settings models。");
                 return;
             }
-            if (!CanRegenerateMessage(message))
+            if (!CanRegenerateConversationMessage(message, queuedCommandExecution))
             {
                 var discoveryOptions = queuedFollowUp?.SubmissionContext.ProjectInstructionDiscoveryOptions ?? _currentCodexConfigOptions;
                 if (TryResolveLatestTurn(
                         message,
                         out var conversation,
                         out _,
-                        out var assistantMessage)
+                        out var assistantMessage,
+                        targetConversation)
                     && assistantMessage != null
                     && CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
                         conversation,
@@ -337,12 +340,13 @@ namespace ColorVision.Copilot
 
             DismissLocalCommandResult();
             RunUiOperation(
-                () => RetryMessageAsync(message, refreshExternalContext),
+                () => RetryConversationMessageAsync(message, refreshExternalContext, queuedCommandExecution),
                 refreshExternalContext
                     ? "刷新附件与网页后重新生成"
                     : message.RequestMode == CopilotAgentMode.Chat
                         ? "重新生成回复"
-                        : "重新运行 Agent");
+                        : "重新运行 Agent",
+                queuedCommandExecution: queuedCommandExecution);
         }
 
         private void SelectModelProfile(CopilotLocalCommand command, string query)

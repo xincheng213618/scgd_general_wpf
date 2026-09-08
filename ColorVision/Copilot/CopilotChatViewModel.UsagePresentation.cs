@@ -26,9 +26,16 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotChatViewModel
     {
+        private string _conversationContextSummary = "None";
+
         private void RefreshComposerTokenEstimate()
         {
             RefreshConversationContextState();
+            RefreshComposerTokenPresentation();
+        }
+
+        private void RefreshComposerTokenPresentation()
+        {
             RefreshProviderRateLimitStatus();
 
             string summary;
@@ -79,19 +86,23 @@ namespace ColorVision.Copilot
         {
             var codexConfigOptions = _currentCodexConfigOptions;
             var limits = ResolveConversationHistoryLimits(SelectedProfile, codexConfigOptions);
-            var selection = CopilotConversationRequestBuilder.CaptureHistorySelection(
-                SelectedConversation,
-                limits);
+            var conversation = SelectedConversation;
+            var history = conversation == null
+                ? Array.Empty<CopilotRequestMessage>()
+                : CopilotConversationCompactionContext.Build(conversation, stopBeforeMessage: null, useModelContent: true);
+            var selection = CopilotConversationHistoryWindow.SelectWithDiagnostics(history, limits);
+            _conversationContextSummary = FormatConversationContextSummary(selection);
             IsConversationContextReduced = selection.WasReduced;
             ConversationContextCompactionToolTip = selection.WasReduced
                 ? $"当前模型窗口只会发送 {selection.Messages.Length:N0}/{selection.SourceMessageCount:N0} 条历史消息、"
                     + $"{selection.RetainedCharacters:N0}/{selection.SourceCharacters:N0} 个字符。点击生成延续摘要；完整聊天记录不会删除。"
                 : string.Empty;
 
-            var usage = CopilotConversationAutoCompactionPolicy.Measure(
-                SelectedConversation,
+            var usage = CopilotConversationAutoCompactionPolicy.MeasureHistory(
+                history,
                 limits,
-                InputText);
+                _composerSession.Text,
+                conversation == null ? 0 : CopilotConversationCompactionContext.EstimateCarriedPrefixWeight(conversation));
             var presentation = CopilotConversationContextUsagePresenter.Create(
                 usage,
                 _config.AgentDefaults.AutoCompactConversationHistory,
@@ -104,11 +115,6 @@ namespace ColorVision.Copilot
             ConversationContextUsageLabel = presentation.Label;
             ConversationContextUsageToolTip = presentation.ToolTip;
             IsConversationContextUnderPressure = presentation.IsUnderPressure;
-        }
-
-        private void InvalidateChatAttachmentTokenEstimate()
-        {
-            RefreshComposerTokenEstimate();
         }
 
         private string BuildActualUsageSummary(CopilotTokenUsage usage)
@@ -174,7 +180,7 @@ namespace ColorVision.Copilot
             builder.AppendLine($"Model: {SelectedProfile?.DisplayLabel ?? "No model selected"}");
             builder.AppendLine($"Prompt: {BuildPromptSummary()}");
             builder.AppendLine($"Persistent goal: {BuildConversationGoalSummary()}");
-            builder.AppendLine($"Conversation context: {BuildConversationContextSummary()}");
+            builder.AppendLine($"Conversation context: {_conversationContextSummary}");
             builder.AppendLine($"Attachments: {BuildAttachmentSummary()}");
             builder.AppendLine($"Window context: {BuildWindowContextSummary()}");
 
@@ -184,15 +190,14 @@ namespace ColorVision.Copilot
 
         private string BuildPromptSummary()
         {
-            var text = (InputText ?? string.Empty).Trim();
+            var text = _composerSession.Text.Trim();
             return string.IsNullOrWhiteSpace(text)
                 ? "Empty"
                 : $"{text.Length} characters";
         }
 
-        private string BuildConversationContextSummary()
+        private static string FormatConversationContextSummary(CopilotConversationHistorySelection selection)
         {
-            var selection = CopilotConversationRequestBuilder.CaptureHistorySelection(SelectedConversation, ResolveConversationHistoryLimits(SelectedProfile));
             if (selection.SourceMessageCount == 0)
                 return "None";
 

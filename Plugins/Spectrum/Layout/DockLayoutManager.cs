@@ -19,8 +19,8 @@ namespace Spectrum.Layout
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DockLayoutManager));
 
-        private const int DefaultControlPanelWidth = 330;
-        private const int DefaultBottomPaneHeight = 250;
+        private const int DefaultControlPanelWidth = 360;
+        private const int DefaultBottomPaneHeight = 180;
 
         /// <summary>
         /// 布局文件存储在用户 AppData 目录，避免 Program Files 等受保护目录的权限问题。

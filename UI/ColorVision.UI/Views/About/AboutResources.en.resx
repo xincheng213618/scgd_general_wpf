@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="AboutCaption" xml:space="preserve"><value>THE SOFTWARE</value></data>
+  <data name="PaletteTooltip" xml:space="preserve"><value>Switch light / dark · this window only</value></data>
+  <data name="PaletteAutomation" xml:space="preserve"><value>Switch about appearance</value></data>
+  <data name="CloseTooltip" xml:space="preserve"><value>Close · Esc</value></data>
+  <data name="CloseAutomation" xml:space="preserve"><value>Close about window</value></data>
+  <data name="VisionDescriptor" xml:space="preserve"><value>OPTICAL VISION INSPECTION</value></data>
+  <data name="VisionHeadline" xml:space="preserve"><value>Turn vision into insight.</value></data>
+  <data name="VisionSubline" xml:space="preserve"><value>PRECISION IN EVERY PIXEL</value></data>
+  <data name="VisionCapabilities" xml:space="preserve"><value>Imaging  /  Color  /  Metrology  /  Flow</value></data>
+  <data name="SpectrumTitle" xml:space="preserve"><value>About Spectrum</value></data>
+  <data name="SpectrumEyebrow" xml:space="preserve"><value>THE SPECTRAL CONTINUUM</value></data>
+  <data name="SpectrumHeadline" xml:space="preserve"><value>Every wavelength. Infinite possibility.</value></data>
+  <data name="SpectrumSubline" xml:space="preserve"><value>A NEW PERSPECTIVE, IN EVERY WAVELENGTH.</value></data>
+  <data name="MainAboutTitle" xml:space="preserve"><value>About ColorVision</value></data>
+</root>

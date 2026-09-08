@@ -51,14 +51,51 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public DisplaySpectrumConfig DisplayConfig => Device.DisplayConfig;
         public DeviceSpectrum Device { get; set; }
-        public ViewSpectrum(DeviceSpectrum device)
+        private bool _initializationStarted;
+        private bool _isInitialized;
+
+        public ViewSpectrum(DeviceSpectrum device) : this(device, false) { }
+
+        internal ViewSpectrum(DeviceSpectrum device, bool deferInitialization)
         {
             Device = device;
+            Loaded += View_Loaded;
+            IsVisibleChanged += View_IsVisibleChanged;
+            if (!deferInitialization)
+                EnsureInitialized();
+        }
+
+        private void View_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (IsVisible) EnsureInitialized();
+        }
+
+        private void View_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (IsLoaded && IsVisible) EnsureInitialized();
+        }
+
+        internal void EnsureInitialized()
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(EnsureInitialized);
+                return;
+            }
+            if (_initializationStarted) return;
+            _initializationStarted = true;
+            Loaded -= View_Loaded;
+            IsVisibleChanged -= View_IsVisibleChanged;
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             InitializeComponent();
+            UserControl_Initialized(this, EventArgs.Empty);
+            log4net.LogManager.GetLogger(typeof(ViewSpectrum)).Info($"Device view initialized. View={nameof(ViewSpectrum)}, Duration={stopwatch.ElapsedMilliseconds}ms.");
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            if (_isInitialized) return;
+            _isInitialized = true;
             this.DataContext = this;
 
             TextBox TextBox1 = new() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };

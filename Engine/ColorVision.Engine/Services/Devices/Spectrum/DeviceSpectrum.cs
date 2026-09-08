@@ -132,7 +132,17 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public MQTTSpectrum DService { get; set; }
         private readonly Lazy<ViewSpectrum> _view;
-        public ViewSpectrum View => _view.Value;
+        internal ViewSpectrum ViewShell => Application.Current.Dispatcher.CheckAccess()
+            ? _view.Value : Application.Current.Dispatcher.Invoke(() => _view.Value);
+        public ViewSpectrum View
+        {
+            get
+            {
+                ViewSpectrum view = ViewShell;
+                view.EnsureInitialized();
+                return view;
+            }
+        }
         public DisplaySpectrumConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplaySpectrumConfig>(Config.Code);
 
         public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; } = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
@@ -188,9 +198,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSpectrum(this);
-            _view = new Lazy<ViewSpectrum>(() => Application.Current.Dispatcher.CheckAccess()
-                ? new ViewSpectrum(this)
-                : Application.Current.Dispatcher.Invoke(() => new ViewSpectrum(this)));
+            _view = new Lazy<ViewSpectrum>(() => new ViewSpectrum(this, true));
             this.SetIconResource("DISpectrumIcon");
 
             Config.SynchronizeActiveCalibrationGroupFiles();

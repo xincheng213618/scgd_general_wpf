@@ -1252,7 +1252,7 @@ public sealed class CopilotAgentProjectInstructionsTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void ModelInstructionsDiagnosticsExposeOnlySourceCountAndHostBoundary(bool usesFile)
+    public void DiagnosticsDoNotAdvertiseRetiredExternalModelInstructions(bool usesFile)
     {
         const string secretBody = "MODEL_INSTRUCTIONS_BODY_MUST_NOT_LEAK";
         string instructionsPath = Path.Combine(Path.GetTempPath(), "copilot-diagnostics", "model.md");
@@ -1277,11 +1277,7 @@ public sealed class CopilotAgentProjectInstructionsTests
             hasActiveAgentRun: false);
         string contextReport = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
         {
-            HasConfiguredModelInstructionsOverride = options.HasModelInstructionsOverride,
-            ConfiguredModelInstructionsCharacters = options.ModelInstructions.Length,
-            ConfiguredModelInstructionsSourceLabel = options.ModelInstructionsSourceLabel,
-            ConfiguredModelInstructionsUsesFile = options.ModelInstructionsUsesFile,
-            ConfiguredModelInstructionsApplied = true,
+            SystemPromptCharacters = 321,
         });
         string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
         {
@@ -1291,15 +1287,15 @@ public sealed class CopilotAgentProjectInstructionsTests
         });
 
         string settingLabel = usesFile ? "Codex model_instructions_file：" : "Codex instructions：";
-        Assert.Contains(settingLabel, memoryReport, StringComparison.Ordinal);
-        Assert.Contains(settingLabel, contextReport, StringComparison.Ordinal);
-        Assert.Contains(settingLabel, debugReport, StringComparison.Ordinal);
-        Assert.Contains(options.ModelInstructionsSourceLabel, debugReport, StringComparison.Ordinal);
-        Assert.Contains("宿主安全规则", contextReport, StringComparison.Ordinal);
+        Assert.DoesNotContain(settingLabel, memoryReport, StringComparison.Ordinal);
+        Assert.DoesNotContain(settingLabel, contextReport, StringComparison.Ordinal);
+        Assert.DoesNotContain(settingLabel, debugReport, StringComparison.Ordinal);
+        Assert.DoesNotContain(options.ModelInstructionsSourceLabel, debugReport, StringComparison.Ordinal);
+        Assert.Contains("已应用宿主响应规则", contextReport, StringComparison.Ordinal);
         if (usesFile)
         {
-            Assert.Contains(instructionsPath, memoryReport, StringComparison.OrdinalIgnoreCase);
-            Assert.Contains(instructionsPath, debugReport, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(instructionsPath, memoryReport, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(instructionsPath, debugReport, StringComparison.OrdinalIgnoreCase);
         }
         Assert.DoesNotContain(secretBody, memoryReport, StringComparison.Ordinal);
         Assert.DoesNotContain(secretBody, contextReport, StringComparison.Ordinal);
@@ -1324,7 +1320,7 @@ public sealed class CopilotAgentProjectInstructionsTests
 
         Assert.True(defaults.ConfiguredPersonalityEnabled);
         Assert.Equal(CopilotResponsePersonality.Pragmatic, defaultResolution.Personality);
-        Assert.Equal("Codex features.personality 稳定功能默认值", defaultResolution.SourceLabel);
+        Assert.Equal("ColorVision 默认", defaultResolution.SourceLabel);
         Assert.Equal(CopilotResponsePersonality.None, explicitNone.Personality);
     }
 

@@ -27,6 +27,23 @@ namespace ColorVision.Themes
         }
         private Theme _Theme = Theme.UseSystem;
 
+        [ConfigSetting(Order = -35, Section = ConfigSettingConstants.SectionAppearance, Description = "StartupThemeDescription")]
+        [DisplayName("StartupTheme"), Description("StartupThemeDescription")]
+        [PropertyEditorType(typeof(EnumPropertiesEditor))]
+        public StartupTheme StartupTheme
+        {
+            get => _StartupTheme;
+            set
+            {
+                StartupTheme normalizedTheme = value is StartupTheme.Dark or StartupTheme.Light or StartupTheme.FollowApplication
+                    ? value : StartupTheme.Dark;
+                if (_StartupTheme == normalizedTheme) return;
+                _StartupTheme = normalizedTheme;
+                OnPropertyChanged();
+            }
+        }
+        private StartupTheme _StartupTheme = StartupTheme.Dark;
+
         public bool TransparentWindow { get => _TransparentWindow; set { _TransparentWindow = value; OnPropertyChanged(); } }
         private bool _TransparentWindow = true;
     }

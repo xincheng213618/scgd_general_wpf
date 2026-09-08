@@ -33,7 +33,7 @@ namespace ColorVision.Copilot
         private static readonly Regex ThematicBreakRegex = new(@"^\s{0,3}((\*\s*){3,}|(-\s*){3,}|(_\s*){3,})$", RegexOptions.Compiled);
 
         private readonly DispatcherTimer _renderTimer;
-        private string _pendingMarkdown = string.Empty;
+        private string? _renderedMarkdown;
         private FlowDocument? _renderDocument;
         private double _lastRenderedWidth;
 
@@ -74,27 +74,31 @@ namespace ColorVision.Copilot
 
         private void CopilotMarkdownView_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            if (!e.WidthChanged || _lastRenderedWidth <= 0 || Math.Abs(e.NewSize.Width - _lastRenderedWidth) < 24)
-                return;
-
-            ScheduleRender();
+            if (e.WidthChanged)
+                ScheduleRender();
         }
 
         private void RenderTimer_Tick(object? sender, EventArgs e)
         {
             _renderTimer.Stop();
-            RenderMarkdown(_pendingMarkdown);
+            if (IsLoaded && NeedsRender())
+            {
+                RenderMarkdown(Markdown ?? string.Empty);
+                ScheduleRender();
+            }
         }
 
         private void ScheduleRender()
         {
-            _pendingMarkdown = Markdown ?? string.Empty;
-            if (!IsLoaded)
+            if (!IsLoaded || _renderTimer.IsEnabled || !NeedsRender())
                 return;
 
-            _renderTimer.Stop();
+            // Keep the first deadline so a continuous stream cannot postpone rendering indefinitely.
             _renderTimer.Start();
         }
+
+        private bool NeedsRender() => !string.Equals(Markdown ?? string.Empty, _renderedMarkdown, StringComparison.Ordinal)
+            || Math.Abs(ActualWidth - _lastRenderedWidth) >= 24;
 
         private void RenderMarkdown(string markdown)
         {
@@ -110,6 +114,8 @@ namespace ColorVision.Copilot
                 // Keep the chat usable by replacing the whole document with text.
                 DocumentViewer.Document = CreatePlainTextDocument(markdown);
             }
+
+            _renderedMarkdown = markdown;
         }
 
         private FlowDocument BuildMarkdownDocument(string markdown)

@@ -55,7 +55,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private readonly Lazy<ViewCamera> _view;
         private int _disposeState;
         private bool IsDisposed => Volatile.Read(ref _disposeState) != 0;
-        public ViewCamera View => _view.Value;
+        internal ViewCamera ViewShell => Application.Current.Dispatcher.CheckAccess()
+            ? _view.Value : Application.Current.Dispatcher.Invoke(() => _view.Value);
+        public ViewCamera View
+        {
+            get
+            {
+                ViewCamera view = ViewShell;
+                view.EnsureInitialized();
+                return view;
+            }
+        }
         public MQTTCamera DService { get; set; }
         public RelayCommand FetchLatestTemperatureCommand { get; set; }
 
@@ -70,9 +80,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             LocalCameraSession = new LocalCameraSession(this);
             LocalCalibrationCacheManager = new LocalCalibrationCacheManager(Config.Code);
             DService = new MQTTCamera(this);
-            _view = new Lazy<ViewCamera>(() => Application.Current.Dispatcher.CheckAccess()
-                ? new ViewCamera(this)
-                : Application.Current.Dispatcher.Invoke(() => new ViewCamera(this)));
+            _view = new Lazy<ViewCamera>(() => new ViewCamera(this, true));
             this.SetIconResource("DrawingImageCamera");
 
             EditCommand = new RelayCommand(a => EditCameraAction(), b => AccessControl.Check(EditCameraAction));

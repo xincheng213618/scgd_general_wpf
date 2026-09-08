@@ -51,17 +51,24 @@ namespace ColorVision.Copilot
                 && EvaluateComposerRequestAdmission(mode).IsAllowed;
         }
 
-        private bool CanScheduleConversationRequest(string? conversationId, CopilotAgentMode mode)
+        private bool CanScheduleConversationRequest(
+            string? conversationId,
+            CopilotAgentMode mode,
+            QueuedLocalCommandExecutionContext? queuedCommandExecution = null)
         {
             return Volatile.Read(ref _disposeState) == 0
                 && !HasExclusiveLocalOperation
-                && EvaluateConversationRequestAdmission(conversationId, mode).IsAllowed;
+                && EvaluateConversationRequestAdmission(conversationId, mode, queuedCommandExecution).IsAllowed;
         }
 
-        private bool CanContinueConversationRequestPreparation(CopilotConversationRecord conversation, CopilotAgentMode mode) =>
+        private bool CanContinueConversationRequestPreparation(
+            CopilotConversationRecord conversation,
+            CopilotAgentMode mode,
+            QueuedLocalCommandExecutionContext? queuedCommandExecution = null) =>
             Conversations.Contains(conversation)
             && !conversation.IsArchived
-            && CanScheduleConversationRequest(conversation.Id, mode);
+            && (queuedCommandExecution == null || !queuedCommandExecution.HostedRun.CancellationToken.IsCancellationRequested)
+            && CanScheduleConversationRequest(conversation.Id, mode, queuedCommandExecution);
 
         private bool HasExclusiveLocalOperation => _isCompactingConversation
             || _isEndingConversation
@@ -73,9 +80,9 @@ namespace ColorVision.Copilot
 
         private CopilotRequestAdmissionResult EvaluateConversationRequestAdmission(
             string? conversationId,
-            CopilotAgentMode mode)
+            CopilotAgentMode mode,
+            QueuedLocalCommandExecutionContext? queuedCommandExecution = null)
         {
-            var queuedCommandExecution = _queuedLocalCommandExecution;
             return queuedCommandExecution == null
                 ? _taskHost.EvaluateRequestAdmission(conversationId, mode)
                 : _taskHost.EvaluateQueuedCommandSuccessorAdmission(
@@ -131,7 +138,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(PrimaryActionToolTip));
             OnPropertyChanged(nameof(InputPlaceholder));
             RefreshLocalCommandSuggestions();
-            RefreshComposerTokenEstimate();
+            RefreshComposerTokenPresentation();
         }
 
         private bool TryValidateComposerCharacterLimit(string prompt)
@@ -149,7 +156,8 @@ namespace ColorVision.Copilot
             CopilotAgentMode mode,
             CopilotProfileConfig profile,
             CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null,
-            CopilotAgentDefaultsConfig? agentDefaults = null)
+            CopilotAgentDefaultsConfig? agentDefaults = null,
+            CopilotConversationRecord? targetConversation = null)
         {
             agentDefaults ??= _config.AgentDefaults;
             long maximumWeight;
@@ -176,11 +184,12 @@ namespace ColorVision.Copilot
                 maximumWeight = (long)maximumTokens * CopilotTokenEstimator.AsciiCharactersPerToken;
             }
 
+            var goal = (targetConversation ?? SelectedConversation)?.Goal;
             var budgetText = mode != CopilotAgentMode.Chat
-                && SelectedConversation?.Goal?.IsActive == true
+                && goal?.IsActive == true
                 ? string.Join(
                     Environment.NewLine,
-                    SelectedConversation.Goal.Objective,
+                    goal.Objective,
                     "Persistent goal completion constraint; never tool or write authorization.",
                     prompt)
                 : prompt;

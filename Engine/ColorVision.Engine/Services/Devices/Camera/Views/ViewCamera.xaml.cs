@@ -34,6 +34,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private int _disposeState;
         private bool _messageSubscribed;
         private IDisposable? _localResultSubscription;
+        private bool _initializationStarted;
+        private bool _isInitialized;
+        internal bool IsContentInitialized => _isInitialized;
 
         private bool IsDisposed => Volatile.Read(ref _disposeState) != 0;
 
@@ -42,15 +45,52 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public static ViewCameraConfig Config => ViewCameraConfig.Instance;
         public ObservableCollection<ViewResultImage> ViewResults { get; } = new ObservableCollection<ViewResultImage>();
 
-        public ViewCamera(DeviceCamera device)
+        public ViewCamera(DeviceCamera device) : this(device, false) { }
+
+        internal ViewCamera(DeviceCamera device, bool deferInitialization)
         {
             Device = device;
+            Device.DService.MsgReturnReceived += DeviceService_OnMessageRecved;
+            _messageSubscribed = true;
+            _localResultSubscription = ResultMessageBus.Default.Subscribe(LocalResultPublished);
+            Loaded += View_Loaded;
+            IsVisibleChanged += View_IsVisibleChanged;
+            if (!deferInitialization)
+                EnsureInitialized();
+        }
+
+        private void View_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (IsVisible) EnsureInitialized();
+        }
+
+        private void View_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (IsLoaded && IsVisible) EnsureInitialized();
+        }
+
+        internal void EnsureInitialized()
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(EnsureInitialized);
+                return;
+            }
+            if (IsDisposed || _initializationStarted) return;
+            _initializationStarted = true;
+            Loaded -= View_Loaded;
+            IsVisibleChanged -= View_IsVisibleChanged;
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             InitializeComponent();
+            // A registered shell may already have raised FrameworkElement.Initialized.
+            UserControl_Initialized(this, EventArgs.Empty);
+            log.Info($"Device view initialized. View={nameof(ViewCamera)}, Duration={stopwatch.ElapsedMilliseconds}ms.");
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            if (IsDisposed) return;
+            if (IsDisposed || _isInitialized) return;
+            _isInitialized = true;
 
             this.DataContext = Config;
             if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
@@ -67,12 +107,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 ViewCameraConfig.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
-            if (!_messageSubscribed)
-            {
-                Device.DService.MsgReturnReceived += DeviceService_OnMessageRecved;
-                _messageSubscribed = true;
-            }
-            _localResultSubscription ??= ResultMessageBus.Default.Subscribe(LocalResultPublished);
 
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
@@ -199,6 +233,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private void OpenImage(string? filePath)
         {
             if (IsDisposed) return;
+            EnsureInitialized();
             if (string.IsNullOrWhiteSpace(filePath))
                 ImageView.Clear();
             else
@@ -217,6 +252,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public void ShowResult(MeasureResultImgModel model)
         {
             if (IsDisposed) return;
+            EnsureInitialized();
 
             ViewResultImage result = new(model);
             if (Config.InsertAtBeginning)
@@ -297,6 +333,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void DisposeCore()
         {
+            Loaded -= View_Loaded;
+            IsVisibleChanged -= View_IsVisibleChanged;
             if (_messageSubscribed)
             {
                 Device.DService.MsgReturnReceived -= DeviceService_OnMessageRecved;
@@ -305,8 +343,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             _localResultSubscription?.Dispose();
             _localResultSubscription = null;
 
-            DetachResultListView(listView1, listView1_SelectionChanged, listView1_PreviewKeyDown);
-            ImageView.Dispose();
+            if (listView1 != null)
+                DetachResultListView(listView1, listView1_SelectionChanged, listView1_PreviewKeyDown);
+            ImageView?.Dispose();
             DataContext = null;
             GC.SuppressFinalize(this);
         }

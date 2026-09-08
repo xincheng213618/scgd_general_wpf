@@ -2,6 +2,7 @@
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,6 +20,7 @@ namespace ColorVision.Copilot
 
         private async Task<FinalAnswerRecoveryResult> RecoverFinalAnswerAsync(
             CopilotAgentRequest request,
+            IReadOnlyList<string> deliveredSteeringMessages,
             Action<CopilotAgentEvent> emit,
             HarnessToolBridge bridge,
             TodoProvider? todoProvider,
@@ -51,7 +53,9 @@ namespace ColorVision.Copilot
                 + CodeFindingEvidenceInstruction + "\n"
                 + FormatTaskLedgerDiagnostic("Current task ledger", repairLedger);
             var repairMessages = CopilotRequestMessageSequence
-                .Normalize(repairPrompt.Messages.Append(new CopilotRequestMessage("user", repairInstruction)))
+                .Normalize(repairPrompt.Messages
+                    .Concat(deliveredSteeringMessages.Select(message => new CopilotRequestMessage("user", message)))
+                    .Append(new CopilotRequestMessage("user", repairInstruction)))
                 .Select(ToFrameworkMessage)
                 .ToArray();
             var hasModelFinalAnswer = false;

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ColorVision.Copilot
@@ -56,15 +57,28 @@ namespace ColorVision.Copilot
                     conversation,
                     stopBeforeMessage: null,
                     useModelContent: true);
+            return MeasureHistory(
+                history,
+                limits,
+                pendingPrompt,
+                conversation == null ? 0 : CopilotConversationCompactionContext.EstimateCarriedPrefixWeight(conversation));
+        }
+
+        internal static CopilotConversationContextUsage MeasureHistory(
+            IReadOnlyList<CopilotRequestMessage> history,
+            CopilotConversationHistoryLimits limits,
+            string? pendingPrompt,
+            long carriedPrefixWeight)
+        {
+            ArgumentNullException.ThrowIfNull(history);
+            if (limits.MaximumMessages <= 0 || limits.MaximumCharacters <= 0)
+                return default;
+
             var prompt = (pendingPrompt ?? string.Empty).Trim();
             var activeMessageCount = history.Count + (prompt.Length == 0 ? 0 : 1);
             var activeWeight = history.Sum(message => CopilotTokenEstimator.EstimateTextWeight(message.Content));
             activeWeight = SaturatingAdd(activeWeight, CopilotTokenEstimator.EstimateTextWeight(prompt));
-            var carriedPrefixWeight = conversation == null
-                ? 0
-                : Math.Min(
-                    activeWeight,
-                    CopilotConversationCompactionContext.EstimateCarriedPrefixWeight(conversation));
+            carriedPrefixWeight = Math.Clamp(carriedPrefixWeight, 0, activeWeight);
             var bodyAfterPrefixWeight = Math.Max(0, activeWeight - carriedPrefixWeight);
             var weightUsagePercent = ResolveUsagePercent(activeWeight, limits.MaximumCharacters);
             var messageUsagePercent = ResolveUsagePercent(activeMessageCount, limits.MaximumMessages);

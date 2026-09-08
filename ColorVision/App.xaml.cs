@@ -113,6 +113,7 @@ namespace ColorVision
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            Stopwatch startupPhaseStopwatch = Stopwatch.StartNew();
             if (Update.ExitUpdateHandoff.TryDeferLaunchForActiveUpdate(AppDomain.CurrentDomain.BaseDirectory))
             {
                 Environment.Exit(0);
@@ -157,8 +158,13 @@ namespace ColorVision
             ConfigHandler configHandler = ConfigHandler.GetInstance();
             configHandler.IsAutoSave = false;
             LogConfig.Instance.SetLog();
+            log.Info($"Startup arguments, registry, built-in modules and configuration took {startupPhaseStopwatch.ElapsedMilliseconds} ms.");
+            startupPhaseStopwatch.Restart();
             this.ApplyTheme(ThemeConfig.Instance.Theme);
+            log.Info($"Startup theme application took {startupPhaseStopwatch.ElapsedMilliseconds} ms.");
+            startupPhaseStopwatch.Restart();
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
+            log.Info($"Startup language resolution took {startupPhaseStopwatch.ElapsedMilliseconds} ms.");
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("ja");
 
@@ -209,6 +215,7 @@ namespace ColorVision
 
             string executablePath = Environment.ProcessPath
                 ?? throw new InvalidOperationException("Unable to resolve the current ColorVision executable path.");
+            startupPhaseStopwatch.Restart();
             mutex = new Mutex(true, SingleInstanceMutexName.Create(executablePath), out bool ownsMutex);
             _ownsSingleInstanceMutex = ownsMutex;
             APPConfig appConfig = configHandler.GetRequiredService<APPConfig>();
@@ -297,6 +304,8 @@ namespace ColorVision
                 TryAcquireSingleInstanceMutex,
                 () => ConfigHandler.GetInstance().Save<APPConfig>());
             appConfig.PropertyChanged += AppConfig_PropertyChanged;
+            log.Info($"Startup single-instance coordination took {startupPhaseStopwatch.ElapsedMilliseconds} ms.");
+            startupPhaseStopwatch.Restart();
 
             Rbac.ApplicationUsageTracker.StartSession();
 
@@ -322,6 +331,7 @@ namespace ColorVision
                     applicationRestartHandoff,
                     () => _isSingleInstanceReplacement = true));
             LanRemoteControlService.Instance.ApplyConfig();
+            log.Info($"Startup RBAC, MCP and LAN host setup took {startupPhaseStopwatch.ElapsedMilliseconds} ms.");
 
             log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");
 
@@ -351,12 +361,14 @@ namespace ColorVision
 
             if (shouldLoadPlugins)
             {
+                startupPhaseStopwatch.Restart();
                 StartupRegistryChecker.MarkStage("LoadingPlugins");
                 PluginLoader.LoadPlugins(
                     _moduleCatalog,
                     skipOncePluginKeys,
                     pluginKey => StartupRegistryChecker.MarkStage("LoadingPlugin", pluginKey));
                 StartupRegistryChecker.MarkStage("PluginsLoaded");
+                log.Info($"Startup plugin loading took {startupPhaseStopwatch.ElapsedMilliseconds} ms.");
             }
             else
             {
@@ -368,10 +380,12 @@ namespace ColorVision
                 && PluginLoader.LastLoadCompletedWithoutFailures;
 
             _moduleCatalog.Seal();
+            startupPhaseStopwatch.Restart();
 
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
+            log.Info($"Startup WinForms setup took {startupPhaseStopwatch.ElapsedMilliseconds} ms.");
 
             //这里显示托盘控件
             //TrayIconManager.GetInstance();
@@ -389,8 +403,12 @@ namespace ColorVision
             else 
             {
                 ///正常进入窗口
+                startupPhaseStopwatch.Restart();
                 StartWindow StartWindow = new StartWindow();
+                log.Info($"Startup splash construction took {startupPhaseStopwatch.ElapsedMilliseconds} ms.");
+                startupPhaseStopwatch.Restart();
                 StartWindow.Show();
+                log.Info($"Startup splash Show took {startupPhaseStopwatch.ElapsedMilliseconds} ms.");
             }
         }
 

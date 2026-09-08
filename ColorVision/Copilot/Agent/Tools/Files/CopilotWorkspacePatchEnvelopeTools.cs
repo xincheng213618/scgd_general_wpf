@@ -71,7 +71,7 @@ namespace ColorVision.Copilot
             }));
     }
 
-    public sealed class CopilotPreviewWorkspacePatchEnvelopeTool : ICopilotTool
+    public sealed class CopilotPreviewWorkspacePatchEnvelopeTool : ICopilotTool, ICopilotAgentDrivenTool
     {
         private readonly CopilotWorkspacePatchStore _store;
 
@@ -90,8 +90,9 @@ namespace ColorVision.Copilot
 
         public CopilotToolInputSchema InputSchema => CopilotWorkspacePatchEnvelopeSchemas.Preview;
 
-        public bool CanHandle(CopilotAgentRequest request) => CopilotToolIntentPolicy.NeedsWorkspaceEdit(request)
-            || CopilotToolIntentPolicy.NeedsWorkspaceCreate(request);
+        public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
+
+        public bool IsAvailable(CopilotAgentRequest request) => CopilotToolIntentPolicy.CanUseWorkspacePatch(request);
 
         public Task<CopilotToolResult> ExecuteAsync(
             CopilotAgentRequest request,
@@ -102,7 +103,7 @@ namespace ColorVision.Copilot
         }
     }
 
-    public sealed class CopilotApplyWorkspacePatchEnvelopeTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation
+    public sealed class CopilotApplyWorkspacePatchEnvelopeTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation, ICopilotAgentDrivenTool
     {
         private readonly CopilotWorkspacePatchStore _store;
 
@@ -122,8 +123,9 @@ namespace ColorVision.Copilot
 
         public CopilotToolInputSchema InputSchema => CopilotWorkspacePatchEnvelopeSchemas.ChangeSetId;
 
-        public bool CanHandle(CopilotAgentRequest request) => CopilotToolIntentPolicy.NeedsWorkspaceEdit(request)
-            || CopilotToolIntentPolicy.NeedsWorkspaceCreate(request);
+        public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
+
+        public bool IsAvailable(CopilotAgentRequest request) => CopilotToolIntentPolicy.CanUseWorkspacePatch(request);
 
         public string GetConcurrencyKey(CopilotAgentRequest request, CopilotAgentToolInput toolInput) => CopilotWorkspacePatchStore.GetChangeSetConcurrencyKey(toolInput, Name);
 
@@ -153,7 +155,7 @@ namespace ColorVision.Copilot
         public CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput toolInput) => _store.CreateChangeSetApprovalPresentation(toolInput, rollback: false);
     }
 
-    public sealed class CopilotRollbackWorkspacePatchEnvelopeTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation
+    public sealed class CopilotRollbackWorkspacePatchEnvelopeTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation, ICopilotAgentDrivenTool
     {
         private readonly CopilotWorkspacePatchStore _store;
 
@@ -173,7 +175,9 @@ namespace ColorVision.Copilot
 
         public CopilotToolInputSchema InputSchema => CopilotWorkspacePatchEnvelopeSchemas.ChangeSetId;
 
-        public bool CanHandle(CopilotAgentRequest request) => CopilotToolIntentPolicy.NeedsWorkspaceRollback(request);
+        public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
+
+        public bool IsAvailable(CopilotAgentRequest request) => CopilotToolIntentPolicy.CanUseWorkspacePatch(request);
 
         public string GetConcurrencyKey(CopilotAgentRequest request, CopilotAgentToolInput toolInput) => CopilotWorkspacePatchStore.GetChangeSetConcurrencyKey(toolInput, Name);
 

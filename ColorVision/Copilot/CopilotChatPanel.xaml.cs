@@ -38,7 +38,10 @@ namespace ColorVision.Copilot
         private bool _isConversationSidebarExpanded = true;
         private bool _hasConversationSearchPreviewSelection;
         private bool _isScrollToBottomPending;
+        private bool _isFindNavigationPending;
         private bool _isThemeSubscriptionActive;
+        private long _messageNavigationVersion;
+        private DispatcherOperation? _messageNavigationOperation;
 
         public CopilotChatPanel()
         {
@@ -50,6 +53,8 @@ namespace ColorVision.Copilot
             SizeChanged += CopilotChatPanel_SizeChanged;
             Unloaded += CopilotChatPanel_Unloaded;
             DataObject.AddPastingHandler(PromptTextBox, PromptTextBox_Pasting);
+            PromptTextBox.SelectionChanged += PromptTextBox_SelectionChanged;
+            PromptTextBox.TextChanged += PromptTextBox_TextChanged;
             PromptTextBox.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save,
                 (_, e) => { SaveComposerDraft(); e.Handled = true; },
                 (_, e) => { e.CanExecute = DataContext is CopilotChatViewModel; e.Handled = true; }));
@@ -331,7 +336,7 @@ namespace ColorVision.Copilot
             _rewindEscapeGesture.Reset();
             DetachViewModel(e.OldValue as CopilotChatViewModel);
             AttachViewModel(e.NewValue as CopilotChatViewModel);
-            ScrollToBottom();
+            ScrollToBottom(isExplicitNavigation: true);
         }
 
         private void CopilotChatPanel_Unloaded(object sender, System.Windows.RoutedEventArgs e)
@@ -378,6 +383,7 @@ namespace ColorVision.Copilot
                 || viewModel != null && !ReferenceEquals(_attachedViewModel, viewModel))
                 return;
 
+            CancelPendingMessageNavigation();
             _attachedViewModel.ConversationSearchRequested -= ViewModel_ConversationSearchRequested;
             _attachedViewModel.ProfileSelectionRequested -= ViewModel_ProfileSelectionRequested;
             _attachedViewModel.ReasoningSelectionRequested -= ViewModel_ReasoningSelectionRequested;
@@ -425,10 +431,14 @@ namespace ColorVision.Copilot
             if (_attachedViewModel == null)
                 return;
 
+            if (e.PropertyName == nameof(CopilotChatViewModel.ComposerReferenceCaretIndex))
+                ApplyPromptCaret(_attachedViewModel.ComposerReferenceCaretIndex);
+
             if (e.PropertyName == nameof(CopilotChatViewModel.Messages))
             {
+                CancelPendingMessageNavigation();
                 ResetMessageSubscriptions(_attachedViewModel.Messages);
-                ScrollToBottom();
+                ScrollToBottom(isExplicitNavigation: true);
             }
 
             if (e.PropertyName == nameof(CopilotChatViewModel.Messages)
@@ -445,23 +455,51 @@ namespace ColorVision.Copilot
                 FocusConversationFind();
             }
 
+            if (_isFindNavigationPending
+                && (e.PropertyName == nameof(CopilotChatViewModel.IsConversationFindOpen)
+                    || e.PropertyName == nameof(CopilotChatViewModel.CurrentConversationFindMatch))
+                && (!_attachedViewModel.IsConversationFindOpen || _attachedViewModel.CurrentConversationFindMatch == null))
+            {
+                CancelPendingMessageNavigation();
+            }
+
             if (e.PropertyName == nameof(CopilotChatViewModel.CurrentConversationFindMatch)
                 && _attachedViewModel.CurrentConversationFindMatch is { } match)
             {
-                ScrollToMessage(match);
+                ScrollToMessage(match, isFindNavigation: true);
             }
         }
 
-        private void ScrollToMessage(CopilotChatMessage message)
+        private void ScrollToMessage(CopilotChatMessage message, bool isFindNavigation = false)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
-            {
-                if (_attachedViewModel?.Messages.Contains(message) != true)
-                    return;
+            var viewModel = _attachedViewModel;
+            if (viewModel == null)
+                return;
 
-                MessagesListBox.ScrollIntoView(message);
-                if (MessagesListBox.ItemContainerGenerator.ContainerFromItem(message) is FrameworkElement container)
-                    container.BringIntoView();
+            var messages = viewModel.Messages;
+            CancelPendingMessageNavigation();
+            _isFindNavigationPending = isFindNavigation;
+            var version = _messageNavigationVersion;
+            _messageNavigationOperation = Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
+            {
+                try
+                {
+                    if (version != _messageNavigationVersion
+                        || !ReferenceEquals(viewModel, _attachedViewModel)
+                        || !ReferenceEquals(messages, viewModel.Messages)
+                        || !messages.Contains(message)
+                        || (isFindNavigation && (!viewModel.IsConversationFindOpen
+                            || !ReferenceEquals(viewModel.CurrentConversationFindMatch, message))))
+                        return;
+
+                    MessagesListBox.ScrollIntoView(message);
+                    if (MessagesListBox.ItemContainerGenerator.ContainerFromItem(message) is FrameworkElement container)
+                        container.BringIntoView();
+                }
+                finally
+                {
+                    CompleteMessageNavigation(version);
+                }
             });
         }
 
@@ -483,19 +521,36 @@ namespace ColorVision.Copilot
 
         private void Messages_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            var shouldFollowNewMessage = _isScrollToBottomPending
-                || IsNearBottom()
-                || e.NewItems?.OfType<CopilotChatMessage>().Any(message => message.IsUser) == true;
-            SynchronizeMessageSubscriptions();
+            var hasNewUserMessage = e.NewItems?.OfType<CopilotChatMessage>().Any(message => message.IsUser) == true;
+            var shouldFollowNewMessage = _isScrollToBottomPending || IsNearBottom() || hasNewUserMessage;
+            SynchronizeMessageSubscriptions(e);
             if (shouldFollowNewMessage)
-                ScrollToBottom();
+                ScrollToBottom(isExplicitNavigation: hasNewUserMessage);
             else if (e.Action == NotifyCollectionChangedAction.Add)
                 ShowScrollToLatestButton();
             UpdateEmptyStateVisibility();
         }
 
-        private void SynchronizeMessageSubscriptions()
+        private void SynchronizeMessageSubscriptions(NotifyCollectionChangedEventArgs? change = null)
         {
+            if (change != null && change.Action != NotifyCollectionChangedAction.Reset)
+            {
+                if (change.Action == NotifyCollectionChangedAction.Move)
+                    return;
+
+                foreach (var message in change.OldItems?.OfType<CopilotChatMessage>() ?? [])
+                {
+                    if (_attachedMessages?.Contains(message) != true && _attachedMessageItems.Remove(message))
+                        message.PropertyChanged -= Message_PropertyChanged;
+                }
+                foreach (var message in change.NewItems?.OfType<CopilotChatMessage>() ?? [])
+                {
+                    if (_attachedMessageItems.Add(message))
+                        message.PropertyChanged += Message_PropertyChanged;
+                }
+                return;
+            }
+
             var currentMessages = _attachedMessages == null
                 ? new HashSet<CopilotChatMessage>()
                 : new HashSet<CopilotChatMessage>(_attachedMessages);
@@ -571,7 +626,7 @@ namespace ColorVision.Copilot
                 PromptTextBox.SelectionStart,
                 PromptTextBox.SelectionLength,
                 out var caretIndex);
-            viewModel.InputText = updated;
+            viewModel.SetComposerReferenceInput(updated, caretIndex);
             PromptTextBox.Focus();
             Keyboard.Focus(PromptTextBox);
             PromptTextBox.GetBindingExpression(TextBox.TextProperty)?.UpdateTarget();
@@ -598,7 +653,7 @@ namespace ColorVision.Copilot
 
         private void ScrollToLatestButton_Click(object sender, RoutedEventArgs e)
         {
-            ScrollToBottom();
+            ScrollToBottom(isExplicitNavigation: true);
         }
 
 

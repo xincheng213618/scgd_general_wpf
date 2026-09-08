@@ -1695,6 +1695,11 @@
       "status": "current",
       "summary": "ColorVision内置Copilot的设置草稿、配置保存与运行态发布、模型选择和联网诊断；保存失败可能已落盘，Local MCP测试核验会话握手与只读状态调用。",
       "aliases": [
+        "有效配置诊断",
+        "/debug-config",
+        "/debug config",
+        "/context",
+        "/memory",
         "Copilot配置",
         "Copilot 设置 Save / Apply / Cancel",
         "聊天配置",
@@ -1708,6 +1713,10 @@
         "config.toml不生效"
       ],
       "code_paths": [
+        "ColorVision/Copilot/Config/CopilotEffectiveConfigDiagnostics.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.DiagnosticsCommands.cs",
+        "ColorVision/Copilot/CopilotContextDiagnostics.cs",
+        "ColorVision/Copilot/CopilotProjectInstructionDiagnostics.cs",
         "ColorVision/Copilot/Agent/CopilotProjectInstructionDiscoveryConfig.cs",
         "ColorVision/Copilot/Agent/CopilotCodexExecPolicy.cs",
         "ColorVision/Copilot/Config",
@@ -1734,6 +1743,9 @@
         "UI/ColorVision.UI/ConfigHandler.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.Copilot.Tests/CopilotEffectiveConfigDiagnosticsTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotContextDiagnosticsTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotProjectInstructionDiagnosticsTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotBackendSyncTransactionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatConfigPersistenceTests.cs",
@@ -1777,6 +1789,16 @@
         "CopilotAgentExecutionContract"
       ],
       "code_paths": [
+        "ColorVision/Copilot/Agent/Tools/Files/CopilotWorkspaceValidationTool.cs",
+        "ColorVision/Copilot/Agent/CopilotToolIntentPolicy.cs",
+        "ColorVision/Copilot/Agent/CopilotToolIntentPolicy.Local.cs",
+        "ColorVision/Copilot/Agent/CopilotAgentRequestFactory.cs",
+        "ColorVision/Copilot/Agent/Tools/Files/CopilotWorkspacePatchEnvelopeTools.cs",
+        "ColorVision/Copilot/Agent/Tools/Files/CopilotReadLocalFileTool.cs",
+        "ColorVision/Copilot/Agent/Tools/Files/CopilotListDirectoryTool.cs",
+        "ColorVision/Copilot/Agent/Tools/Search/CopilotSearchFilesTool.cs",
+        "ColorVision/Copilot/Agent/Tools/Search/CopilotGrepTextTool.cs",
+        "ColorVision/Copilot/Agent/Tools/Application/CopilotFlowGraphTools.cs",
         "ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs",
         "ColorVision/Copilot/Agent/CopilotProviderRetryChatClient.cs",
         "ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.AgentStreamingLoop.cs",
@@ -1802,6 +1824,8 @@
         "ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.Copilot.Tests/CopilotWorkspaceValidationAdmissionTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotPatchToolAvailabilityTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAgentTaskHostQueueDispatchTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAnthropicProviderFailureTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAnthropicHttpFailureTests.cs",
@@ -1817,7 +1841,8 @@
         "Test/ColorVision.Copilot.Tests/CopilotOpenAiRequestIdTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotContextWindowRecoveryCancellationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotCompactionTerminalEvidenceRequestTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotConversationCompactionIntegrityTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotConversationCompactionIntegrityTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotLocalReadFollowUpAdmissionTests.cs"
       ],
       "related": [
         "copilot.runtime",
@@ -1919,10 +1944,13 @@
         "/follow-up"
       ],
       "code_paths": [
+        "ColorVision/Copilot/CopilotChatPanel.xaml.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.Conversations.cs",
         "ColorVision/Copilot/CopilotLocalCommandCatalog.cs",
         "ColorVision/Copilot/CopilotLocalCommandAvailabilityPolicy.cs",
         "ColorVision/Copilot/CopilotChatViewModel.LocalCommandWorkflows.cs",
         "ColorVision/Copilot/CopilotChatViewModel.Composer.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.PromptHistory.cs",
         "ColorVision/Copilot/CopilotChatViewModel.ComposerReferences.cs",
         "ColorVision/Copilot/CopilotChatViewModel.AttachmentCommands.cs",
         "ColorVision/Copilot/Agent/CopilotWebPageToolSupport.cs",
@@ -1949,9 +1977,14 @@
         "ColorVision/Copilot/CopilotChatViewModel.MessageInteraction.cs",
         "ColorVision/Copilot/Context/CopilotImageInputBudget.cs",
         "ColorVision/Copilot/Context/CopilotImageUnderstandingService.cs",
-        "ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs"
+        "ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs",
+        "ColorVision/Copilot/CopilotChatPanel.xaml",
+        "ColorVision/Copilot/CopilotChatPanel.AttachmentsAndScroll.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.Copilot.Tests/CopilotConversationFindNavigationTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotPromptHistorySearchBehaviorTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotPromptHistoryProjectionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotLocalCommandAvailabilityTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotComposerPagingTests.cs",
@@ -1968,7 +2001,12 @@
         "Test/ColorVision.Copilot.Tests/CopilotWebPageAttachmentAdmissionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAttachmentRemovalEditLifetimeTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotImagePayloadValidationTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotImageInputBudgetTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotImageInputBudgetTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotComposerMentionCaretTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotComposerMentionRangeTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotChatPanelScrollLifetimeTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotMarkdownRenderSchedulingTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotMarkdownScrollIntegrationTests.cs"
       ],
       "related": [
         "copilot.runtime",
@@ -2005,6 +2043,7 @@
         "CopilotProjectInitialization"
       ],
       "code_paths": [
+        "ColorVision/Copilot/Agent/CopilotAgentRunFinalizationScope.cs",
         "ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.cs",
         "ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.Rules.cs",
         "ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs",
@@ -2018,11 +2057,14 @@
         "ColorVision/Copilot/CopilotProjectInitialization.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.Copilot.Tests/CopilotLateFinalizationCancellationTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFinalCheckpointAwaitCancellationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAgentProjectInstructionsTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotTokenUsageMergeTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotNonStreamingUsageTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotFinalAnswerCancellationTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotFinalAnswerSteeringTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotFinalAnswerRecoverySafetyTests.cs"
       ],
       "related": [
@@ -2353,6 +2395,7 @@
         "Engine/ColorVision.Engine/Templates/Jsons/EditTemplateJson.xaml.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.Copilot.Tests/CopilotWriteToolAdmissionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotToolResultContractTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotTurnEventProtocolTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs",
@@ -2402,9 +2445,17 @@
         "CopilotTurnCheckpointLifecycleState"
       ],
       "code_paths": [
+        "ColorVision/Copilot/CopilotChatViewModel.RequestAdmission.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.AttachmentCommands.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.ComposerAndRuntimeState.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.UsagePresentation.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.AttachmentLifecycle.cs",
+        "ColorVision/Copilot/CopilotConversationCompaction.cs",
+        "ColorVision/Copilot/Context/CopilotConversationAutoCompactionPolicy.cs",
         "ColorVision/Copilot/CopilotChatViewModel.cs",
         "ColorVision/Copilot/CopilotChatViewModel.Conversations.cs",
         "ColorVision/Copilot/CopilotChatViewModel.TurnExecution.cs",
+        "ColorVision/Copilot/CopilotChatViewModel.MessageInteraction.cs",
         "ColorVision/Copilot/CopilotChatViewModel.TurnEvents.cs",
         "ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs",
         "ColorVision/Copilot/CopilotChatViewModel.Permissions.cs",
@@ -2413,6 +2464,7 @@
         "ColorVision/Copilot/State/CopilotComposerSession.cs",
         "ColorVision/Copilot/Agent/CopilotQueuedFollowUpCoordinator.cs",
         "ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs",
+        "ColorVision/Copilot/Agent/CopilotAgentTaskIndex.cs",
         "ColorVision/Copilot/Runtime/CopilotApprovalCoordinator.cs",
         "ColorVision/Copilot/Runtime/CopilotPreparedHostedTurn.cs",
         "ColorVision/Copilot/Runtime/CopilotTurnRuntimeConfigSnapshot.cs",
@@ -2421,21 +2473,34 @@
         "ColorVision/Copilot/Runtime/CopilotTurnCheckpointLifecycleState.cs",
         "ColorVision/Copilot/CopilotConversationRecord.cs",
         "ColorVision/Copilot/CopilotConversationRecord.Validation.cs",
+        "ColorVision/Copilot/State/CopilotChatStateContracts.cs",
         "ColorVision/Copilot/State/CopilotChatStatePersistenceCoordinator.cs",
-        "ColorVision/Copilot/State/CopilotChatStateSaveScheduler.cs"
+        "ColorVision/Copilot/State/CopilotChatStateSaveScheduler.cs",
+        "ColorVision/Copilot/CopilotChatPanel.xaml.cs",
+        "ColorVision/Copilot/Agent/CopilotHostedAgentRun.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.Copilot.Tests/CopilotPromptHistoryProjectionTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotComposerContextMeasurementTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotCodexAutoCompactionTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotConversationSurfaceProjectionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatViewModelContractTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotConversationSessionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAttachmentRemovalEditLifetimeTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotRequestAdmissionLifetimeTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotQueuedLocalCommandSnapshotTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpCoordinatorTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotPreparedHostedTurnTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotApprovalCoordinatorTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotChatStateSnapshotTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatStatePersistenceCoordinatorTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotTurnCheckpointLifecycleTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotConversationListProjectionTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotChatPanelMessageSubscriptionTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotQueuedCommandSuccessorCancellationTests.cs"
       ],
       "related": [
         "copilot.runtime",
@@ -4425,7 +4490,7 @@
       "knowledge_id": "engine.devices",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "设备工厂、资源重载与显示装配；旧对象释放、集合重建和显示替换并非一个事务，记录存在、默认可见、服务在线和动作完成分别判断。",
+      "summary": "设备工厂、资源重载、显示装配与详情视图按需初始化；旧对象释放、集合重建和显示替换并非一个事务，记录存在、界面可见、服务在线和动作完成分别判断。",
       "aliases": [
         "设备打不开",
         "设备服务",
@@ -4451,7 +4516,14 @@
         "LoadServices",
         "LastGenControl",
         "设备控制分组",
-        "CreateGroupCommand"
+        "CreateGroupCommand",
+        "设备详情按需初始化",
+        "ViewShell",
+        "EnsureInitialized",
+        "ViewCamera",
+        "ViewSpectrum",
+        "AlgorithmView",
+        "ViewCalibration"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Dao/SysResourceModel.cs",
@@ -4466,16 +4538,36 @@
         "Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs",
         "Engine/ColorVision.Engine/Services/Type/TypeService.cs",
         "Engine/ColorVision.Engine/Services/DeviceService.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Spectrum/DeviceSpectrum.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Spectrum/DisplaySpectrum.xaml.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Spectrum/Views/ViewSpectrum.xaml.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Algorithm/DeviceAlgorithm.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithm.xaml.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Calibration/DeviceCalibration.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Calibration/DisplayCalibration.xaml.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Calibration/Views/ViewCalibration.xaml.cs",
         "UI/ColorVision.UI/DisPlayManager.cs",
         "UI/ColorVision.UI/DisPlayControlPanel.cs",
-        "UI/ColorVision.UI/Docking/DockPanelTitleAction.cs"
+        "UI/ColorVision.UI/Docking/DockPanelTitleAction.cs",
+        "UI/ColorVision.UI/Views/DockViewManager.cs",
+        "UI/ColorVision.Solution/Workspace/DockViewManager.cs"
       ],
-      "test_paths": [],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/DeferredDeviceViewTests.cs",
+        "Test/ColorVision.UI.Tests/DockViewManagerTests.cs"
+      ],
       "related": [
         "engine.index",
+        "platform.runtime",
         "operations.device-configuration",
         "engine.mqtt",
         "engine.rc-registration",
+        "engine.results",
+        "engine.spectrum-device",
         "operations.camera",
         "operations.motor",
         "operations.smu",
@@ -4489,6 +4581,7 @@
       "code_scopes": [
         "Engine/ColorVision.Engine",
         "UI/ColorVision.Database",
+        "UI/ColorVision.Solution",
         "UI/ColorVision.UI"
       ],
       "domain": "engine",
@@ -6824,13 +6917,14 @@
         "ColorVision/Windowing/CompactTitleBarLayout.cs",
         "ColorVision/Windowing/CompactTitleBarActions.cs",
         "ColorVision/Themes/AvalonDockTheme.cs",
-        "ColorVision/Themes/AvalonDockModernLight.xaml",
-        "ColorVision/Themes/AvalonDockModernDark.xaml",
-        "ColorVision/Themes/AvalonDockModernTemplates.xaml",
-        "ColorVision/Themes/AvalonDockGripTemplates.xaml",
-        "ColorVision/Themes/DockingSurfaceBorder.cs",
-        "ColorVision/Themes/DockingTabBorder.cs",
-        "ColorVision/Themes/StableDocumentPaneTabPanel.cs",
+        "UI/ColorVision.Solution/Themes/AvalonDockTheme.cs",
+        "UI/ColorVision.Solution/Themes/AvalonDockModernLight.xaml",
+        "UI/ColorVision.Solution/Themes/AvalonDockModernDark.xaml",
+        "UI/ColorVision.Solution/Themes/AvalonDockModernTemplates.xaml",
+        "UI/ColorVision.Solution/Themes/AvalonDockGripTemplates.xaml",
+        "UI/ColorVision.Solution/Themes/DockingSurfaceBorder.cs",
+        "UI/ColorVision.Solution/Themes/DockingTabBorder.cs",
+        "UI/ColorVision.Solution/Themes/StableDocumentPaneTabPanel.cs",
         "UI/ColorVision.Themes/Themes/White.xaml",
         "UI/ColorVision.Themes/Themes/Dark.xaml",
         "UI/ColorVision.Themes/Themes/Controls/Menu.xaml",
@@ -7425,6 +7519,15 @@
       "aliases": [
         "启动链路",
         "App.xaml.cs",
+        "启动界面",
+        "启动动画",
+        "StartWindow",
+        "StartupScene",
+        "StartupUiTrace",
+        "COLORVISION_STARTUP_TRACE",
+        "StopAndReport",
+        "首帧耗时",
+        "首次使用耗时",
         "启动恢复",
         "故障恢复",
         "初始化向导",
@@ -7454,7 +7557,15 @@
         "ColorVision/App.xaml.cs",
         "ColorVision/BuiltInModules.cs",
         "ColorVision/ProgramTimer.cs",
+        "ColorVision/StartWindow.xaml",
         "ColorVision/StartWindow.xaml.cs",
+        "ColorVision/StartWindow.Presentation.cs",
+        "ColorVision/StartupScene.cs",
+        "ColorVision/StartupUiTrace.cs",
+        "ColorVision/Startup/StartupText.cs",
+        "ColorVision/Startup/StartupResources.resx",
+        "ColorVision/Startup/StartupResources.en.resx",
+        "ColorVision/Startup/StartupResources.zh-Hant.resx",
         "ColorVision/MainWindow.xaml.cs",
         "ColorVision/MainWindowFactory.cs",
         "ColorVision/CompactMainWindow.cs",
@@ -7472,9 +7583,15 @@
         "UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/StartupInitializerSequenceTests.cs",
+        "Test/ColorVision.UI.Tests/StartupUiTraceTests.cs",
+        "Test/ColorVision.UI.Tests/StartupThemeBootstrapTests.cs",
         "Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs",
         "Test/ColorVision.UI.Tests/SingleInstanceStartupCoordinatorTests.cs",
         "Test/ColorVision.UI.Tests/SingleInstanceStartupWindowTests.cs",
+        "Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs",
+        "Test/ColorVision.UI.Tests/StartupPresentationTests.cs",
+        "Test/ColorVision.UI.Tests/StartupSceneLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/StartupRecoveryPluginScannerTests.cs",
         "Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/StartupMaintenanceWindowTests.cs",
@@ -7492,14 +7609,17 @@
         "ui.discovery",
         "ui.wizards",
         "ui.localization",
+        "ui.themes",
         "ui.search",
         "operations.main-window",
+        "engine.devices",
         "engine.rc-registration",
         "flow.architecture"
       ],
       "code_scopes": [
         "ColorVision",
         "ColorVision/Recovery",
+        "ColorVision/Startup",
         "UI/ColorVision.UI"
       ],
       "domain": "platform",
@@ -8232,6 +8352,10 @@
         "Plugins/Spectrum/manifest.json",
         "Plugins/Spectrum/App.xaml.cs",
         "Plugins/Spectrum/MainWindow.xaml.cs",
+        "Plugins/Spectrum/MainWindow.Chrome.cs",
+        "Plugins/Spectrum/MainWindow.PlotTheme.cs",
+        "Plugins/Spectrum/MainWindowConfig.cs",
+        "Plugins/Spectrum/Layout",
         "Plugins/Spectrum/MainWindow.xaml",
         "Plugins/Spectrum/Properties/Resources.resx",
         "Plugins/Spectrum/SpectrometerManager.cs",
@@ -8258,7 +8382,10 @@
       "related": [
         "plugins.index",
         "plugins.capabilities",
-        "plugins.spectrum-socket"
+        "plugins.spectrum-socket",
+        "ui.documents",
+        "operations.main-window",
+        "ui.themes"
       ],
       "code_scopes": [
         "Plugins/Spectrum",
@@ -8389,6 +8516,8 @@
         "ServiceHostWindowsServiceController",
         "InstallServiceManager",
         "InstallTool",
+        "检查旧服务管理工具更新",
+        "CheckInstallToolUpdates",
         "CVWinSMS",
         "AutoUpdateDatabase",
         "BackupBeforeInstall",
@@ -8423,6 +8552,7 @@
         "Plugins/WindowsServicePlugin/ServiceManager/MySqlServiceHelper.cs",
         "Plugins/WindowsServicePlugin/ServiceManager/Mqtt/MqttServiceManager.cs",
         "Plugins/WindowsServicePlugin/CVWinSMS/InstallTool.cs",
+        "Plugins/WindowsServicePlugin/CVWinSMS/CheckInstallToolUpdates.cs",
         "Plugins/WindowsServicePlugin/CVWinSMS/CVWinSMSConfig.cs",
         "Plugins/WindowsServicePlugin/Menus",
         "UI/ColorVision.UI/Menus/MenuManager.cs",
@@ -8971,6 +9101,67 @@
       "searchable": true
     },
     {
+      "knowledge_id": "ui.about-exhibition",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "主程序的图像、色彩与测量展示，以及 Spectrum 的光谱关于页：独立品牌和版本、中英文与繁体资源、不透明深浅配色、原生圆角对齐与关闭释放约束。",
+      "aliases": [
+        "关于页面",
+        "关于窗口",
+        "炫技界面",
+        "光谱之间",
+        "关于窗口黑边",
+        "关于页中英文",
+        "AboutMsg",
+        "AboutMsgWindow",
+        "AboutArtScene",
+        "AboutArtwork",
+        "AboutWindowChrome",
+        "AboutText",
+        "AboutResources",
+        "VisionImageStudy",
+        "SpectrumAboutWindow",
+        "光谱粒子",
+        "NOCTURNE",
+        "OPALINE"
+      ],
+      "code_paths": [
+        "ColorVision/AboutMsg.xaml",
+        "ColorVision/AboutMsg.xaml.cs",
+        "UI/ColorVision.UI/Views/About/AboutArtScene.cs",
+        "UI/ColorVision.UI/Views/About/VisionImageStudy.cs",
+        "UI/ColorVision.UI/Views/About/AboutWindowChrome.cs",
+        "UI/ColorVision.UI/Views/About/AboutText.cs",
+        "UI/ColorVision.UI/Views/About/AboutResources.resx",
+        "UI/ColorVision.UI/Views/About/AboutResources.en.resx",
+        "UI/ColorVision.UI/Views/About/AboutResources.zh-Hant.resx",
+        "Plugins/Spectrum/Help/SpectrumAboutWindow.xaml",
+        "Plugins/Spectrum/Help/SpectrumAboutWindow.xaml.cs"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/AboutSpectralSceneLifecycleTests.cs",
+        "Test/ColorVision.UI.Tests/AboutWindowChromeTests.cs",
+        "Test/ColorVision.UI.Tests/AboutMsgWindowTests.cs",
+        "Test/ColorVision.UI.Tests/AboutTextTests.cs",
+        "Test/Spectrum.Tests/SpectrumAboutWindowTests.cs"
+      ],
+      "related": [
+        "ui.themes",
+        "ui.hotkeys",
+        "plugins.spectrum"
+      ],
+      "code_scopes": [
+        "ColorVision",
+        "Plugins/Spectrum",
+        "UI/ColorVision.UI"
+      ],
+      "domain": "ui",
+      "title": "关于窗口：视觉展示与光谱展示",
+      "source": "docs/04-api-reference/ui-components/about-exhibition.md",
+      "url": "/04-api-reference/ui-components/about-exhibition",
+      "searchable": true
+    },
+    {
       "knowledge_id": "ui.common",
       "knowledge_type": "topic",
       "status": "current",
@@ -8997,7 +9188,11 @@
         "RequiresPermissionAttribute",
         "ThirdPartyAppManager",
         "ThirdPartyAppInfo",
-        "IThirdPartyAppProvider"
+        "IThirdPartyAppProvider",
+        "WindowConfig",
+        "窗口恢复DPI",
+        "GetDipScreens",
+        "GetPrimaryDipScreen"
       ],
       "code_paths": [
         "UI/ColorVision.Common/ColorVision.Common.csproj",
@@ -9018,7 +9213,8 @@
       "test_paths": [
         "Test/ColorVision.UI.Tests/ThirdPartyAppInfoTests.cs",
         "Test/ColorVision.UI.Tests/ModuleCatalogTests.cs",
-        "Test/ColorVision.UI.Tests/ConfigHandlerPersistenceTests.cs"
+        "Test/ColorVision.UI.Tests/ConfigHandlerPersistenceTests.cs",
+        "Test/ColorVision.UI.Tests/WindowConfigDpiLifecycleTests.cs"
       ],
       "related": [
         "ui.index",
@@ -10804,6 +11000,7 @@
       "code_paths": [
         "UI/ColorVision.Solution/README.md",
         "UI/ColorVision.Solution/ColorVision.Solution.csproj",
+        "UI/ColorVision.Solution/Themes",
         "UI/ColorVision.Solution/SolutionManager.cs",
         "UI/ColorVision.Solution/SolutionManagerInitializer.cs",
         "UI/ColorVision.Solution/StartupResourceOpenInitializer.cs",
@@ -11057,11 +11254,17 @@
       "knowledge_id": "ui.themes",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "在外观与语言中切换主题；ThemeManager 的资源应用、系统跟随、窗口外观和公共控件样式，以及即时预览与保存的区别。",
+      "summary": "应用主题即时预览，启动页独立选择深色、浅色或跟随软件且下次启动生效；ThemeManager 的资源、系统跟随、窗口外观和保存边界。",
       "aliases": [
         "切换深色主题",
         "跟随系统",
         "外观与语言",
+        "启动页主题",
+        "启动页默认深色",
+        "跟随软件主题",
+        "StartupTheme",
+        "ThemeConfig.StartupTheme",
+        "FollowApplication",
         "主题切换为什么不生效",
         "跟随系统但标题栏没变",
         "强制主题重复资源字典",
@@ -11104,7 +11307,11 @@
         "UI/ColorVision.Themes/Themes",
         "UI/ColorVision.Themes/ColorVision.Themes.csproj",
         "UI/ColorVision.UI/Themes/ThemeConfig.cs",
+        "UI/ColorVision.UI/Themes/StartupTheme.cs",
         "UI/ColorVision.UI/Themes/ThemePropertiesEditor.cs",
+        "UI/ColorVision.UI/Properties/Resources.resx",
+        "UI/ColorVision.UI/Properties/Resources.en.resx",
+        "UI/ColorVision.UI/Properties/Resources.zh-Hant.resx",
         "UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs",
         "UI/ColorVision.UI.Desktop/Settings/MenuOptions.cs",
         "UI/ColorVision.UI.Desktop/Settings/SettingSearchProvider.cs",
@@ -11113,14 +11320,18 @@
         "ColorVision/App.xaml",
         "ColorVision/App.xaml.cs",
         "ColorVision/StartWindow.xaml.cs",
+        "ColorVision/StartWindow.Presentation.cs",
         "ColorVision/CompactMainWindow.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/StartupThemeBootstrapTests.cs",
         "Test/ColorVision.Themes.Tests/ThemeResourceTests.cs",
         "Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs",
         "Test/ColorVision.UI.Tests/ThemeSettingsTests.cs",
+        "Test/ColorVision.UI.Tests/StartupThemeSettingsTests.cs",
         "Test/ColorVision.UI.Tests/ThemeSubscriptionLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs",
+        "Test/ColorVision.UI.Tests/StartupPresentationTests.cs",
         "Test/ColorVision.UI.Tests/GridViewColumnHeaderBindingTests.cs",
         "Test/ColorVision.UI.Tests/ComboBoxItemBindingTests.cs",
         "Test/ColorVision.UI.Tests/MenuThemeTests.cs"
@@ -11130,6 +11341,7 @@
         "ui.settings",
         "ui.property-grid",
         "ui.configuration",
+        "platform.runtime",
         "operations.main-window"
       ],
       "code_scopes": [

@@ -316,12 +316,8 @@ public sealed class CopilotCodexApprovalsReviewerTests
         {
             ProfileLabel = "Profile",
             Mode = CopilotAgentMode.Code,
+            AgentContextEnabled = true,
             CodexApprovalsReviewer = CopilotCodexApprovalsReviewer.AutoReview,
-            HasCodexApprovalsReviewerOverride = true,
-            CodexApprovalsReviewerSourceLabel = options.ApprovalsReviewerSourceLabel,
-            CodexAutoReviewPolicyCharacters = privatePolicy.Length,
-            HasCodexAutoReviewPolicyOverride = true,
-            CodexAutoReviewPolicySourceLabel = options.AutoReviewPolicySourceLabel,
         });
         string effectiveReport = CopilotEffectiveConfigDiagnostics.Format(
             new CopilotEffectiveConfigDiagnosticContext
@@ -373,15 +369,9 @@ public sealed class CopilotCodexApprovalsReviewerTests
             {
                 ProfileLabel = "Profile",
                 Mode = CopilotAgentMode.Code,
+                AgentContextEnabled = true,
                 CodexApprovalsReviewer = CopilotCodexApprovalsReviewer.AutoReview,
-                HasCodexApprovalsReviewerOverride = true,
-                CodexApprovalsReviewerSourceLabel = options.ApprovalsReviewerSourceLabel,
                 CodexGuardianApprovalEnabled = false,
-                HasCodexGuardianApprovalEnabledOverride = true,
-                CodexGuardianApprovalEnabledSourceLabel = guardianDisabledOptions.GuardianApprovalEnabledSourceLabel,
-                CodexAutoReviewPolicyCharacters = privatePolicy.Length,
-                HasCodexAutoReviewPolicyOverride = true,
-                CodexAutoReviewPolicySourceLabel = options.AutoReviewPolicySourceLabel,
             });
         string guardianDisabledEffectiveReport = CopilotEffectiveConfigDiagnostics.Format(
             new CopilotEffectiveConfigDiagnosticContext
@@ -403,11 +393,12 @@ public sealed class CopilotCodexApprovalsReviewerTests
             taskLedgerEnabled: false,
             agentModeEnabled: true);
 
-        Assert.Contains("Codex approvals_reviewer：auto_review", projectReport, StringComparison.Ordinal);
-        Assert.Contains("审批复核者：auto_review", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex auto_review.policy：", projectReport, StringComparison.Ordinal);
-        Assert.Contains("自动审查策略：", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex auto_review.policy：", effectiveReport, StringComparison.Ordinal);
+        Assert.DoesNotContain("Codex approvals_reviewer", projectReport, StringComparison.Ordinal);
+        Assert.Contains("有效复核者 auto_review", contextReport, StringComparison.Ordinal);
+        Assert.DoesNotContain("Codex auto_review.policy", projectReport, StringComparison.Ordinal);
+        Assert.DoesNotContain("自动审查策略：", contextReport, StringComparison.Ordinal);
+        Assert.DoesNotContain("Codex auto_review.policy", effectiveReport, StringComparison.Ordinal);
+        Assert.Contains("自动复核策略：", effectiveReport, StringComparison.Ordinal);
         Assert.Contains("approvals_reviewer=auto_review is frozen", harness, StringComparison.Ordinal);
         Assert.Contains("materially safer path", harness, StringComparison.Ordinal);
         Assert.Contains("reviewer only", harness, StringComparison.Ordinal);
@@ -421,12 +412,12 @@ public sealed class CopilotCodexApprovalsReviewerTests
         Assert.Contains("Approve LOW or MEDIUM risk", defaultReviewerPrompt, StringComparison.Ordinal);
         Assert.Contains("Approve LOW or MEDIUM risk", invalidReviewerPrompt, StringComparison.Ordinal);
         Assert.DoesNotContain("PRIVATE\0POLICY", invalidReviewerPrompt, StringComparison.Ordinal);
-        Assert.Contains("Codex features.guardian_approval：false", guardianDisabledProjectReport, StringComparison.Ordinal);
-        Assert.Contains("auto_review → 有效 user", guardianDisabledProjectReport, StringComparison.Ordinal);
-        Assert.Contains("features.guardian_approval=false", guardianDisabledContextReport, StringComparison.Ordinal);
-        Assert.Contains("有效 user", guardianDisabledContextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex features.guardian_approval：false", guardianDisabledEffectiveReport, StringComparison.Ordinal);
-        Assert.Contains("auto_review → 有效 user", guardianDisabledEffectiveReport, StringComparison.Ordinal);
+        Assert.DoesNotContain("Codex features.guardian_approval", guardianDisabledProjectReport, StringComparison.Ordinal);
+        Assert.DoesNotContain("auto_review", guardianDisabledProjectReport, StringComparison.Ordinal);
+        Assert.Contains("自动审批复核：关闭", guardianDisabledContextReport, StringComparison.Ordinal);
+        Assert.Contains("有效复核者 user", guardianDisabledContextReport, StringComparison.Ordinal);
+        Assert.Contains("guardian_approval：false", guardianDisabledEffectiveReport, StringComparison.Ordinal);
+        Assert.Contains("approvals_reviewer（有效）：user", guardianDisabledEffectiveReport, StringComparison.Ordinal);
         Assert.Contains("features.guardian_approval=false is frozen", guardianDisabledHarness, StringComparison.Ordinal);
         Assert.DoesNotContain("approvals_reviewer=auto_review is frozen", guardianDisabledHarness, StringComparison.Ordinal);
         Assert.DoesNotContain(privatePolicy, guardianDisabledProjectReport, StringComparison.Ordinal);

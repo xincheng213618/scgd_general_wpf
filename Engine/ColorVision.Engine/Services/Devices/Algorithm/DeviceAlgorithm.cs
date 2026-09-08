@@ -16,7 +16,18 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         public MQTTAlgorithm DService { get; set; }
         private readonly Lazy<AlgorithmView> _view;
-        public AlgorithmView View => _view.Value;
+        internal AlgorithmView ViewShell => Application.Current.Dispatcher.CheckAccess()
+            ? _view.Value
+            : Application.Current.Dispatcher.Invoke(() => _view.Value);
+        public AlgorithmView View
+        {
+            get
+            {
+                AlgorithmView view = ViewShell;
+                view.EnsureInitialized();
+                return view;
+            }
+        }
 
         internal bool IsDisposed => _isDisposed;
 
@@ -25,9 +36,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         public DeviceAlgorithm(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTAlgorithm(Config);
-            _view = new Lazy<AlgorithmView>(() => Application.Current.Dispatcher.CheckAccess()
-                ? new AlgorithmView(this)
-                : Application.Current.Dispatcher.Invoke(() => new AlgorithmView(this)));
+            _view = new Lazy<AlgorithmView>(() => new AlgorithmView(this, deferInitialization: true));
             this.SetIconResource("DrawingImageAlgorithm");
 
             DisplayAlgorithmControlLazy = new Lazy<DisplayAlgorithm>(() => { DisplayAlgorithm ??= new DisplayAlgorithm(this); return DisplayAlgorithm; });

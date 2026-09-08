@@ -51,19 +51,18 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(conversation);
 
-            var surface = CaptureSurface(
-                conversation,
-                stopBeforeMessage);
-            var startIndex = surface.HasCompactionSummary
-                ? surface.BoundaryIndex + 1
+            var (boundaryIndex, endIndex) = ResolveHistoryBounds(conversation, stopBeforeMessage);
+            var hasCompactionSummary = boundaryIndex >= 0 && boundaryIndex < endIndex;
+            var startIndex = hasCompactionSummary
+                ? boundaryIndex + 1
                 : 0;
             var history = new List<CopilotRequestMessage>();
             var compaction = conversation.Compaction;
-            if (surface.HasCompactionSummary && compaction != null)
+            if (hasCompactionSummary && compaction != null)
                 history.Add(CreateSummaryMessage(compaction));
 
             for (var index = startIndex;
-                index < surface.EndIndexExclusive;
+                index < endIndex;
                 index++)
             {
                 var message = conversation.Messages[index];
@@ -86,18 +85,7 @@ namespace ColorVision.Copilot
             if (conversation == null)
                 return default;
 
-            var endIndex = stopBeforeMessage == null
-                ? conversation.Messages.Count
-                : conversation.Messages.IndexOf(stopBeforeMessage);
-            if (endIndex < 0)
-                endIndex = conversation.Messages.Count;
-
-            var compaction = conversation.Compaction;
-            var boundaryIndex = compaction?.IsStructurallyValid() == true
-                ? FindMessageIndex(
-                    conversation,
-                    compaction.ThroughMessageId)
-                : -1;
+            var (boundaryIndex, endIndex) = ResolveHistoryBounds(conversation, stopBeforeMessage);
             var hasCompactionSummary = boundaryIndex >= 0
                 && boundaryIndex < endIndex;
             var currentMessages = 0;
@@ -133,6 +121,23 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(compaction);
             return new CopilotRequestMessage("user", SummaryPreamble + compaction.Summary);
+        }
+
+        private static (int BoundaryIndex, int EndIndexExclusive) ResolveHistoryBounds(
+            CopilotConversationRecord conversation,
+            CopilotChatMessage? stopBeforeMessage)
+        {
+            var endIndex = stopBeforeMessage == null
+                ? conversation.Messages.Count
+                : conversation.Messages.IndexOf(stopBeforeMessage);
+            if (endIndex < 0)
+                endIndex = conversation.Messages.Count;
+
+            var compaction = conversation.Compaction;
+            var boundaryIndex = compaction?.IsStructurallyValid() == true
+                ? FindMessageIndex(conversation, compaction.ThroughMessageId)
+                : -1;
+            return (boundaryIndex, endIndex);
         }
 
         internal static long EstimateCarriedPrefixWeight(CopilotConversationRecord conversation)

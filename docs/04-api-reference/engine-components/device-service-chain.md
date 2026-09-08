@@ -2,11 +2,11 @@
 knowledge_id: "engine.devices"
 knowledge_type: "topic"
 status: "current"
-summary: "设备工厂、资源重载与显示装配；旧对象释放、集合重建和显示替换并非一个事务，记录存在、默认可见、服务在线和动作完成分别判断。"
-aliases: ["设备打不开","设备服务","设备连接","设备资源有记录却不出现","如何新增设备服务","设备资源重载","设备资源过滤","设备类型字典","组关联资源","空设备树","管理员服务配置","进入采集窗口","切换列表","LastSelectIndex","运行对象生命周期","显示集合","ServiceManager","t_scgd_sys_resource","t_scgd_sys_resource_group","DeviceServiceFactoryRegistry","ServiceTypes","LoadServices","LastGenControl","设备控制分组","CreateGroupCommand"]
-code_paths: ["Engine/ColorVision.Engine/Dao/SysResourceModel.cs","Engine/ColorVision.Engine/Dao/SysDictionaryModel.cs","Engine/ColorVision.Engine/Dao/SysResourceGoupModel.cs","Engine/ColorVision.Engine/Dao/VSysResourceDao.cs","UI/ColorVision.Database/BaseTableDao.cs","Engine/ColorVision.Engine/Services/ServiceManager.cs","Engine/ColorVision.Engine/Services/ServiceInitializer.cs","Engine/ColorVision.Engine/Services/WindowService.xaml.cs","Engine/ColorVision.Engine/Services/WindowService.xaml","Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs","Engine/ColorVision.Engine/Services/Type/TypeService.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","UI/ColorVision.UI/DisPlayManager.cs","UI/ColorVision.UI/DisPlayControlPanel.cs","UI/ColorVision.UI/Docking/DockPanelTitleAction.cs"]
-test_paths: []
-related: ["engine.index","operations.device-configuration","engine.mqtt","engine.rc-registration","operations.camera","operations.motor","operations.smu","operations.calibration","operations.file-server","operations.flow-device","flow.session","ui.property-grid","ui.database"]
+summary: "设备工厂、资源重载、显示装配与详情视图按需初始化；旧对象释放、集合重建和显示替换并非一个事务，记录存在、界面可见、服务在线和动作完成分别判断。"
+aliases: ["设备打不开","设备服务","设备连接","设备资源有记录却不出现","如何新增设备服务","设备资源重载","设备资源过滤","设备类型字典","组关联资源","空设备树","管理员服务配置","进入采集窗口","切换列表","LastSelectIndex","运行对象生命周期","显示集合","ServiceManager","t_scgd_sys_resource","t_scgd_sys_resource_group","DeviceServiceFactoryRegistry","ServiceTypes","LoadServices","LastGenControl","设备控制分组","CreateGroupCommand","设备详情按需初始化","ViewShell","EnsureInitialized","ViewCamera","ViewSpectrum","AlgorithmView","ViewCalibration"]
+code_paths: ["Engine/ColorVision.Engine/Dao/SysResourceModel.cs","Engine/ColorVision.Engine/Dao/SysDictionaryModel.cs","Engine/ColorVision.Engine/Dao/SysResourceGoupModel.cs","Engine/ColorVision.Engine/Dao/VSysResourceDao.cs","UI/ColorVision.Database/BaseTableDao.cs","Engine/ColorVision.Engine/Services/ServiceManager.cs","Engine/ColorVision.Engine/Services/ServiceInitializer.cs","Engine/ColorVision.Engine/Services/WindowService.xaml.cs","Engine/ColorVision.Engine/Services/WindowService.xaml","Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs","Engine/ColorVision.Engine/Services/Type/TypeService.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Spectrum/DeviceSpectrum.cs","Engine/ColorVision.Engine/Services/Devices/Spectrum/DisplaySpectrum.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Spectrum/Views/ViewSpectrum.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DeviceAlgorithm.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithm.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DeviceCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DisplayCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/Views/ViewCalibration.xaml.cs","UI/ColorVision.UI/DisPlayManager.cs","UI/ColorVision.UI/DisPlayControlPanel.cs","UI/ColorVision.UI/Docking/DockPanelTitleAction.cs","UI/ColorVision.UI/Views/DockViewManager.cs","UI/ColorVision.Solution/Workspace/DockViewManager.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/DeferredDeviceViewTests.cs","Test/ColorVision.UI.Tests/DockViewManagerTests.cs"]
+related: ["engine.index","platform.runtime","operations.device-configuration","engine.mqtt","engine.rc-registration","engine.results","engine.spectrum-device","operations.camera","operations.motor","operations.smu","operations.calibration","operations.file-server","operations.flow-device","flow.session","ui.property-grid","ui.database"]
 ---
 
 # Engine 设备资源与运行装配
@@ -69,6 +69,23 @@ related: ["engine.index","operations.device-configuration","engine.mqtt","engine
 
 `ReplaceControls` 清空并重新填充显示集合，恢复分组和排序后按 `LastSelectIndex` 选择控件；索引越界时选第 0 项。显示控件装入设备控制面板时保留各自左右外边距，将统一的 2 DIP 项间距全部放在控件下方，上方不再额外留白。分组标题、排序和拖入分组的能力继续保留，但滚动内容底部不再创建“分组 / + 分组”页脚；主程序和 Engine 独立宿主都使用实现 `IDockPanelTitleActionProvider` 的 `DisPlayControlPanel`，由它把 `DisPlayManager.CreateGroupCommand` 提供给上方停靠标题栏。该派生宿主显式解析原 `ScrollViewer` 的隐式主题，避免扩展标题动作后回退成系统默认的粗滚动条。各设备提供的 `IDisPlayControl` 无需实现该命令，也不会多出自己的标题按钮。`ReplaceControls` 不按设备 Code 恢复原来的选中设备，也不调用旧控件的 Dispose。设备增减或排序变化后，应核对实际选中对象，不能仅凭界面仍有选中项推断身份未变。
 
+### 设备详情视图按需初始化
+
+相机、光谱、算法和校准设备保留完整的真实设备卡片；设备区仍能同时显示多个展开面板，`IsSelected` 继续表示选择和上下文。按需初始化只作用于对应的 `ViewCamera`、`ViewSpectrum`、`AlgorithmView`、`ViewCalibration` 详情内容，不减少 `IDisPlayControls`，也不延迟设备服务或硬件初始化。
+
+| 入口 | 详情初始化与兼容契约 |
+| --- | --- |
+| 设备卡片登记 | `AddViewConfig` 使用内部 `Device.ViewShell`，取得同一个 Lazy 保存的真实详情控件，但不立即调用 `InitializeComponent`。详情按原设备遍历顺序登记到 Dock，保持控件身份、标题、标签顺序和 `DockView_N` 的分配顺序 |
+| 公开访问 | `Device.View` 先执行 `EnsureInitialized` 再返回；原公开详情构造函数也立即初始化。因此直接访问图像、列表和结果操作的既有调用方仍取得可用控件 |
+| 显示详情 | `Loaded` 仅在 `IsVisible` 为 true 时初始化；`IsVisibleChanged` 仅在 `IsLoaded && IsVisible` 时初始化。未选中的 Dock 标签也可能先收到 `Loaded`，不能只用 Loaded 判断用户正在查看详情 |
+| 重复显示 | `EnsureInitialized` 防止重入及重复初始化；初始化后解除两种显示事件订阅，切换标签或卸载后重新显示复用已有内容 |
+
+`ViewShell` 先切换到 UI Dispatcher，再取得 `Lazy.Value`，避免后台线程持有 Lazy 构造锁等待 UI、同时 UI 又请求同一 Lazy 的死锁。详情控件和内部图形内容始终在 UI 线程创建，不在 `Task.Run` 中构造后跨线程挂载。空详情控件可能在进入 Dock 树时已触发 WPF `Initialized`，因此 `EnsureInitialized` 在 `InitializeComponent` 后显式调用原初始化处理函数，由该处理函数的状态保护避免执行两次。
+
+相机、算法和校准详情在轻量构造时就订阅原有 MQTT 回包及 `ResultMessageBus`，无设备参数的 `AlgorithmView` 仍不订阅。消息沿各自原有设备、路由、结果类型及结果 ID 规则过滤；相关持久化记录经查询取得后，回到 UI Dispatcher，再在结果显示入口确保初始化。隐藏详情因此也能保留首条可显示结果，不需要先点击标签；不匹配消息不会因为这条路径构造详情。相机对焦中间图沿原有过滤进入 `OpenImage`，同样按需初始化。光谱结果继续由 `MQTTSpectrum` 经 UI Dispatcher 调用 `Device.View.AddViewResultSpectrum`，公开 View 的初始化保证覆盖首结果入口。各结果的持久化、过滤和失败含义仍分别由设备主题及[结果交接链](./result-handoff-chain.md)维护。
+
+`ViewCamera`、`AlgorithmView` 和 `ViewCalibration` 支持在内容未初始化时 Dispose：解除显示事件、MQTT 和本地结果订阅，对尚不存在的内部控件安全跳过；后续显示或已排队的结果回调不会重新初始化已释放详情。此保证只覆盖这些详情的实现，不代表设备所有资源已完整释放。`ViewSpectrum` 没有对应的 IDisposable 与设备详情释放契约，不能将上述三类的保证推广为全部设备的生命周期承诺。
+
 ## 各模块的独立契约
 
 | 问题 | 所属实现 | 主题 |
@@ -102,6 +119,8 @@ PG、Spectrum、Sensor 等设备从 `RegisterDefaults` 定位具体配置、命�
 | 显示在线但动作失败 | 通信身份、具体命令/返回、真实设备状态；在线不是动作成功 |
 | 手动成功但 Flow 失败 | 节点引用的设备 Code、模板版本和输入，再查共享会话完成条件 |
 | 保存后异常或重启未生效 | 配置持久化和 RC 重启是不同阶段，进入[配置契约](../../01-user-guide/devices/configuration.md) |
+
+`DeferredDeviceViewTests` 使用合成设备和 MQTT 对象、内存配置及真实 WPF/XAML，检查四类详情的登记身份、隐藏加载与首次可见初始化、WPF Initialized 已发生后的公开 View 访问；另检查相机、算法、校准未初始化详情的释放，以及相机和校准内存结果模型的首次显示。它不构造真实设备连接、不执行 DAO 结果回查，也不覆盖 Spectrum 完整释放。`DockViewManagerTests` 检查晚登记文档、标题更新、双击激活和显示集合替换后的选择恢复。测试引用不表示已执行或通过。
 
 本页未声明资源树、工厂与真实 MySQL 的自动化集成覆盖。`ServiceConfigTests` 只验证注册中心服务信息属性通知，不证明此装配链；具体设备测试从对应主题进入。验证应记录同一设备的资源 ID/Code、版本、父终端、配置来源和实际失败阶段，敏感配置须脱敏。
 

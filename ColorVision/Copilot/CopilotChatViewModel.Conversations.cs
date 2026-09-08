@@ -60,11 +60,7 @@ namespace ColorVision.Copilot
                 .Take(CompactHistoryLimit)
                 .ToArray();
 
-            CompactHistoryConversations.Clear();
-            foreach (var conversation in history)
-            {
-                CompactHistoryConversations.Add(conversation);
-            }
+            UpdateProjection(CompactHistoryConversations, history);
 
             OnPropertyChanged(nameof(HasCompactHistoryConversations));
             OnPropertyChanged(nameof(CanShowCompactHistory));
@@ -79,9 +75,6 @@ namespace ColorVision.Copilot
                 .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Take(MaximumConversationSearchTerms)
                 .ToArray();
-            foreach (var conversation in Conversations)
-                conversation.SetSearchMatchPreview(string.Empty);
-
             IEnumerable<CopilotConversationRecord> candidates =
                 CopilotConversationArchiveService.GetActive(Conversations);
             if (IsActivityViewOpen)
@@ -92,6 +85,7 @@ namespace ColorVision.Copilot
             }
 
             CopilotConversationRecord[] matches;
+            Dictionary<CopilotConversationRecord, string>? previews = null;
             if (terms.Length == 0)
             {
                 matches = candidates.ToArray();
@@ -99,6 +93,7 @@ namespace ColorVision.Copilot
             else
             {
                 var matchedConversations = new List<CopilotConversationRecord>();
+                previews = new Dictionary<CopilotConversationRecord, string>();
                 foreach (var conversation in candidates)
                 {
                     if (!CopilotConversationSearchPreview.TryBuild(
@@ -109,21 +104,61 @@ namespace ColorVision.Copilot
                         continue;
                     }
 
-                    conversation.SetSearchMatchPreview(preview);
+                    previews[conversation] = preview;
                     matchedConversations.Add(conversation);
                 }
                 matches = matchedConversations.ToArray();
             }
 
-            FilteredConversations.Clear();
-            foreach (var conversation in matches)
-                FilteredConversations.Add(conversation);
+            foreach (var conversation in Conversations)
+            {
+                var preview = previews?.GetValueOrDefault(conversation) ?? string.Empty;
+                if (!string.Equals(conversation.SearchMatchPreviewText, preview, StringComparison.Ordinal))
+                    conversation.SetSearchMatchPreview(preview);
+            }
+            UpdateProjection(FilteredConversations, matches);
 
             OnPropertyChanged(nameof(HasNoConversationSearchResults));
             OnPropertyChanged(nameof(HasNoActivityConversations));
             OnPropertyChanged(nameof(SelectedConversation));
             RefreshConversationBranchFamily();
             NotifyConversationActivitySummary();
+        }
+
+        private static void UpdateProjection<T>(
+            ObservableCollection<T> projection,
+            IReadOnlyList<T> desired) where T : class
+        {
+            if (projection.SequenceEqual(desired, ReferenceEqualityComparer.Instance))
+                return;
+
+            var retained = new HashSet<T>(desired, ReferenceEqualityComparer.Instance);
+            for (var index = projection.Count - 1; index >= 0; index--)
+            {
+                if (!retained.Contains(projection[index]))
+                    projection.RemoveAt(index);
+            }
+
+            for (var index = 0; index < desired.Count; index++)
+            {
+                var item = desired[index];
+                if (index < projection.Count && ReferenceEquals(projection[index], item))
+                    continue;
+
+                var previousIndex = -1;
+                for (var candidateIndex = index + 1; candidateIndex < projection.Count; candidateIndex++)
+                {
+                    if (ReferenceEquals(projection[candidateIndex], item))
+                    {
+                        previousIndex = candidateIndex;
+                        break;
+                    }
+                }
+                if (previousIndex >= 0)
+                    projection.Move(previousIndex, index);
+                else
+                    projection.Insert(index, item);
+            }
         }
 
         private int GetConversationActivityPriority(CopilotConversationRecord conversation)
@@ -228,8 +263,6 @@ namespace ColorVision.Copilot
             if (opened)
             {
                 OnPropertyChanged(nameof(IsConversationFindOpen));
-                OnPropertyChanged(nameof(CurrentConversationFindMatch));
-                CommandManager.InvalidateRequerySuggested();
             }
 
             if (!string.Equals(previousQuery, ConversationFindText, StringComparison.Ordinal))
@@ -248,8 +281,6 @@ namespace ColorVision.Copilot
 
             _conversationFindSession.Close(Messages);
             OnPropertyChanged(nameof(IsConversationFindOpen));
-            OnPropertyChanged(nameof(CurrentConversationFindMatch));
-            CommandManager.InvalidateRequerySuggested();
             NotifyConversationFindStateChanged();
         }
 
@@ -264,17 +295,19 @@ namespace ColorVision.Copilot
 
         internal void RefreshConversationFind()
         {
+            var previousMatch = CurrentConversationFindMatch;
             if (!_conversationFindSession.Refresh(Messages))
                 return;
 
-            NotifyConversationFindStateChanged();
+            NotifyConversationFindStateChanged(notifyCurrentMatch: !ReferenceEquals(previousMatch, CurrentConversationFindMatch));
         }
 
-        private void NotifyConversationFindStateChanged()
+        private void NotifyConversationFindStateChanged(bool notifyCurrentMatch = true)
         {
             OnPropertyChanged(nameof(HasConversationFindMatches));
             OnPropertyChanged(nameof(ConversationFindStatusText));
-            OnPropertyChanged(nameof(CurrentConversationFindMatch));
+            if (notifyCurrentMatch)
+                OnPropertyChanged(nameof(CurrentConversationFindMatch));
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -298,9 +331,23 @@ namespace ColorVision.Copilot
         {
             var tasks = CopilotAgentTaskIndex.Build(
                 CopilotConversationArchiveService.GetActive(Conversations));
-            AgentTasks.Clear();
+            var existingTasks = new Dictionary<(CopilotConversationRecord, CopilotChatMessage), CopilotAgentTaskSummary>();
+            foreach (var task in AgentTasks)
+                existingTasks.TryAdd((task.Conversation, task.Message), task);
+            var projectedTasks = new List<CopilotAgentTaskSummary>(tasks.Count);
             foreach (var task in tasks)
-                AgentTasks.Add(task);
+            {
+                if (existingTasks.TryGetValue((task.Conversation, task.Message), out var existing))
+                {
+                    existing.RefreshPresentation(task.AttentionKind);
+                    projectedTasks.Add(existing);
+                }
+                else
+                {
+                    projectedTasks.Add(task);
+                }
+            }
+            UpdateProjection(AgentTasks, projectedTasks);
 
             OnPropertyChanged(nameof(HasAgentTasks));
             OnPropertyChanged(nameof(IsAgentTaskPanelVisible));
@@ -319,13 +366,14 @@ namespace ColorVision.Copilot
 
         private void Attachments_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            InvalidateChatAttachmentTokenEstimate();
-            RefreshComposerTokenEstimate();
+            OnPropertyChanged(nameof(Attachments));
+            OnPropertyChanged(nameof(HasAttachments));
             RefreshCompactHistoryConversations();
             if (HasConversationSearchQuery)
                 RefreshFilteredConversations();
             OnCurrentLiveContextStateChanged();
             OnActiveDocumentStateChanged();
+            RefreshComposerTokenEstimate();
         }
 
         private void SelectConversation(CopilotConversationRecord? conversation, bool persist, string? preferredProfileId = null)
@@ -393,6 +441,7 @@ namespace ColorVision.Copilot
 
             _composerSession.Load(selectedConversation);
             SynchronizeSelectedConversationComposerDraft();
+            _ = CaptureHostedTurnSnapshot(Array.Empty<CopilotAttachmentItem>());
             NotifyComposerTextChanged(synchronizeDraft: false);
 
             OnPropertyChanged(nameof(SelectedConversation));
@@ -425,8 +474,6 @@ namespace ColorVision.Copilot
                 && EnsureAssistantHeaders(selectedConversation, selection.SelectedProfile))
                 shouldPersist = true;
 
-            InvalidateChatAttachmentTokenEstimate();
-            RefreshComposerTokenEstimate();
             OnCurrentLiveContextStateChanged();
             OnActiveDocumentStateChanged();
             RefreshComposerReferenceSuggestions();
@@ -597,23 +644,15 @@ namespace ColorVision.Copilot
         private static CopilotProfileConfig CreateConversationRequestProfile(
             CopilotProfileConfig profile,
             CopilotConversationRecord? conversation,
-            CopilotAgentMode mode,
             CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null)
         {
             var personality = CopilotResponsePersonalitySelection.Resolve(
                 conversation,
                 codexConfigOptions);
-            return CopilotReviewModelSelection.CreateRequestProfile(
+            return CopilotResponsePresentationGuidance.CreateRequestProfile(
                 profile,
-                mode,
                 personality.Personality,
-                codexConfigOptions?.ModelInstructions,
-                codexConfigOptions?.HasReviewModelOverride == true
-                    ? codexConfigOptions.ConfiguredReviewModel
-                    : null,
-                codexConfigOptions?.HasModelOverride == true
-                    ? codexConfigOptions.ConfiguredModel
-                    : null);
+                codexConfigOptions?.ModelInstructions);
         }
 
         private CopilotProfileConfig CreateCurrentConversationRequestProfile(
@@ -622,10 +661,7 @@ namespace ColorVision.Copilot
         {
             var codexConfigOptions = CaptureHostedTurnSnapshot(
                 Array.Empty<CopilotAttachmentItem>()).ProjectInstructionDiscoveryOptions;
-            var mode = conversation?.Messages
-                .LastOrDefault(candidate => candidate != null && candidate.IsUser)
-                ?.RequestMode ?? CopilotAgentMode.Auto;
-            return CreateConversationRequestProfile(profile, conversation, mode, codexConfigOptions);
+            return CreateConversationRequestProfile(profile, conversation, codexConfigOptions);
         }
 
         private void UpdateConversationMetadata(CopilotConversationRecord conversation, bool touch)
@@ -665,6 +701,7 @@ namespace ColorVision.Copilot
                 {
                     conversation.SetGeneratedTitle(result.Title!);
                     RefreshFilteredConversations();
+                    RefreshAgentTasks();
                 }
                 PersistState();
                 return shouldApplyTitle;
@@ -731,6 +768,7 @@ namespace ColorVision.Copilot
             _conversationTitleCoordinator.Cancel(conversation.Id);
             conversation.SetCustomTitle(normalizedTitle);
             RefreshFilteredConversations();
+            RefreshAgentTasks();
             PersistState();
             return true;
         }

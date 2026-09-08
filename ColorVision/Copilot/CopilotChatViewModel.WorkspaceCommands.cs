@@ -40,12 +40,15 @@ namespace ColorVision.Copilot
             }
 
             DismissLocalCommandResult();
-            InputText = mentionInput;
+            SetComposerReferenceInput(mentionInput, mentionInput.Length);
         }
 
-        private void StartWorkspaceReview(CopilotLocalCommand command, string focusInstructions)
+        private void StartWorkspaceReview(
+            CopilotLocalCommand command,
+            string focusInstructions,
+            QueuedLocalCommandExecutionContext? queuedCommandExecution = null)
         {
-            if (IsBusy)
+            if (IsBusy && queuedCommandExecution == null)
             {
                 ShowLocalCommandResult(command, "当前有请求正在执行，请完成或停止后再开始审查。");
                 return;
@@ -60,36 +63,59 @@ namespace ColorVision.Copilot
             }
 
             DismissLocalCommandResult();
+            if (queuedCommandExecution != null)
+            {
+                RunUiOperation(
+                    () => SendRequestAsync(reviewRequest.BuildPrompt(), CopilotAgentMode.Review, null,
+                        queuedCommandExecution, useQueuedComposerInputs: true,
+                        queuedReviewTarget: reviewRequest.CreateTargetContext()),
+                    "开始工作区审查", queuedCommandExecution: queuedCommandExecution);
+                return;
+            }
             SetPendingRequestModeOverride(CopilotAgentMode.Review);
             SetPendingWorkspaceReviewTarget(reviewRequest.CreateTargetContext());
             InputText = reviewRequest.BuildPrompt();
             RunUiOperation(SendAsync, "开始工作区审查");
         }
 
-        private void StartWorkspaceVerification(CopilotLocalCommand command, string focusInstructions)
+        private void StartWorkspaceVerification(
+            CopilotLocalCommand command,
+            string focusInstructions,
+            QueuedLocalCommandExecutionContext? queuedCommandExecution = null)
         {
-            if (IsBusy)
+            if (IsBusy && queuedCommandExecution == null)
             {
                 ShowLocalCommandResult(command, "当前有请求正在执行，请完成或停止后再验证工作区。");
                 return;
             }
 
             DismissLocalCommandResult();
+            if (queuedCommandExecution != null)
+            {
+                RunUiOperation(
+                    () => SendRequestAsync(CopilotWorkspaceVerification.BuildPrompt(focusInstructions), CopilotAgentMode.Review, null,
+                        queuedCommandExecution, useQueuedComposerInputs: true,
+                        queuedReviewTarget: CopilotWorkspaceReviewTargetContext.WorkingTree()),
+                    "验证工作区改动", queuedCommandExecution: queuedCommandExecution);
+                return;
+            }
             SetPendingRequestModeOverride(CopilotAgentMode.Review);
             SetPendingWorkspaceReviewTarget(CopilotWorkspaceReviewTargetContext.WorkingTree());
             InputText = CopilotWorkspaceVerification.BuildPrompt(focusInstructions);
             RunUiOperation(SendAsync, "验证工作区改动");
         }
 
-        private void StartProjectInitialization(CopilotLocalCommand command)
+        private void StartProjectInitialization(
+            CopilotLocalCommand command,
+            QueuedLocalCommandExecutionContext? queuedCommandExecution = null)
         {
-            if (IsBusy)
+            if (IsBusy && queuedCommandExecution == null)
             {
                 ShowLocalCommandResult(command, "当前有请求正在执行，请完成或停止后再初始化项目指令。");
                 return;
             }
 
-            var turnSnapshot = _queuedLocalCommandExecution?.QueuedFollowUp.SubmissionContext
+            var turnSnapshot = queuedCommandExecution?.QueuedFollowUp.SubmissionContext
                 ?? CaptureHostedTurnSnapshot(Attachments);
             var plan = CopilotProjectInitialization.Create(
                 turnSnapshot.SolutionDirectoryPath,
@@ -102,15 +128,28 @@ namespace ColorVision.Copilot
 
             DismissLocalCommandResult();
             RunUiOperation(
-                () => SendAsync(plan.VisiblePrompt, CopilotAgentMode.Code, plan.ModelPrompt),
-                "初始化项目指令");
+                () => SendRequestAsync(plan.VisiblePrompt, CopilotAgentMode.Code, plan.ModelPrompt, queuedCommandExecution),
+                "初始化项目指令", queuedCommandExecution: queuedCommandExecution);
         }
 
-        private void StartPlanRequest(CopilotLocalCommand command, string task)
+        private void StartPlanRequest(
+            CopilotLocalCommand command,
+            string task,
+            QueuedLocalCommandExecutionContext? queuedCommandExecution = null)
         {
-            if (IsBusy)
+            if (IsBusy && queuedCommandExecution == null)
             {
                 ShowLocalCommandResult(command, "当前有请求正在执行，请完成或停止后再进入计划模式。");
+                return;
+            }
+
+            if (queuedCommandExecution != null && !string.IsNullOrWhiteSpace(task))
+            {
+                DismissLocalCommandResult();
+                RunUiOperation(
+                    () => SendRequestAsync(task.Trim(), CopilotAgentMode.Plan, null,
+                        queuedCommandExecution, useQueuedComposerInputs: true),
+                    "生成执行计划", queuedCommandExecution: queuedCommandExecution);
                 return;
             }
 
@@ -270,7 +309,6 @@ namespace ColorVision.Copilot
             var requestProfile = CreateConversationRequestProfile(
                 profile,
                 conversation,
-                CopilotAgentMode.Auto,
                 submissionContext.ProjectInstructionDiscoveryOptions);
             if (!TryValidatePromptBudget(
                 goal.Objective,
@@ -456,12 +494,13 @@ namespace ColorVision.Copilot
             CopilotAgentDefaultsConfig? agentDefaults = null,
             CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null,
             CopilotConversationRecord? targetConversation = null,
-            CopilotProfileConfig? requestProfile = null)
+            CopilotProfileConfig? requestProfile = null,
+            QueuedLocalCommandExecutionContext? queuedCommandExecution = null)
         {
             agentDefaults ??= _config.AgentDefaults;
             var conversation = targetConversation ?? SelectedConversation;
             var profile = requestProfile ?? SelectedProfile;
-            if (IsBusy || _isCompactingConversation)
+            if ((IsBusy && queuedCommandExecution == null) || _isCompactingConversation)
             {
                 ShowLocalCommandResult(command, "当前有请求正在执行，请完成或停止后再压缩上下文。");
                 return false;
@@ -469,6 +508,15 @@ namespace ColorVision.Copilot
             if (conversation == null || profile?.IsConfigured != true)
             {
                 ShowLocalCommandResult(command, "请先选择并配置可用模型。");
+                return false;
+            }
+            if (queuedCommandExecution != null
+                && (!ReferenceEquals(conversation, queuedCommandExecution.Conversation)
+                    || !Conversations.Contains(conversation)
+                    || conversation.IsArchived
+                    || !ReferenceEquals(_taskHost.ActiveRun, queuedCommandExecution.HostedRun)
+                    || queuedCommandExecution.HostedRun.CancellationToken.IsCancellationRequested))
+            {
                 return false;
             }
             var compactionConfig = codexConfigOptions
@@ -540,6 +588,7 @@ namespace ColorVision.Copilot
                 .ToArray();
 
             using var cancellation = new CopilotNonBlockingCancellationSource();
+            using var queuedCancellation = queuedCommandExecution?.HostedRun.CancellationToken.Register(cancellation.RequestCancellation);
             _compactConversationCts = cancellation;
             _isCompactingConversation = true;
             IsBusy = true;
@@ -560,6 +609,7 @@ namespace ColorVision.Copilot
                     return false;
                 }
                 cancellation.Token.ThrowIfCancellationRequested();
+                queuedCommandExecution?.HostedRun.CancellationToken.ThrowIfCancellationRequested();
                 if (reply.IsIncomplete)
                     throw new InvalidOperationException(BuildIncompleteCompactionMessage(reply));
                 var summary = NormalizeCompactSummary(reply.Content, summaryMaximumWeight);
@@ -596,7 +646,8 @@ namespace ColorVision.Copilot
                 RefreshComposerTokenEstimate();
                 return true;
             }
-            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested
+                || queuedCommandExecution?.HostedRun.CancellationToken.IsCancellationRequested == true)
             {
                 ShowLocalCommandResult(
                     command,

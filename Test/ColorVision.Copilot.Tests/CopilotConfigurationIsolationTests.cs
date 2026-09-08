@@ -59,13 +59,10 @@ public sealed class CopilotConfigurationIsolationTests
                 Model = "deepseek-v4-flash",
                 ApiKey = "test-key",
             };
-            var requestProfile = CopilotReviewModelSelection.CreateRequestProfile(
+            var requestProfile = CopilotResponsePresentationGuidance.CreateRequestProfile(
                 selectedProfile,
-                mode,
                 CopilotResponsePersonality.None,
-                options.ModelInstructions,
-                options.HasReviewModelOverride ? options.ConfiguredReviewModel : null,
-                options.HasModelOverride ? options.ConfiguredModel : null);
+                options.ModelInstructions);
             var plan = CopilotAgentRequestFactory.Prepare($"Inspect the local implementation in {activeDocument}", mode, hostContext);
             var request = CopilotAgentRequestFactory.Create(plan, new CopilotAgentRequestBuildInput
             {

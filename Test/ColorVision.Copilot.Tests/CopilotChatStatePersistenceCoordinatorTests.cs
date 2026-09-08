@@ -123,10 +123,91 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
             Assert.Equal(2, store.BeginSnapshotCount);
             Assert.Equal(1, store.AsyncSaveCount);
             Assert.Equal(1, savedCount);
+            Assert.False(store.FirstIncrementalCapture!.IsComplete);
         }
         finally
         {
             store.ReleaseBlockedSnapshot();
+            dispatcher.BeginInvokeShutdown(DispatcherPriority.Send);
+            Assert.True(thread.Join(TimeSpan.FromSeconds(2)));
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DispatcherCanSupersedeOrCancelCaptureBetweenMessages(bool stop)
+    {
+        var dispatcherReady = new TaskCompletionSource<Dispatcher>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var thread = new Thread(() =>
+        {
+            dispatcherReady.TrySetResult(Dispatcher.CurrentDispatcher);
+            Dispatcher.Run();
+        }) { IsBackground = true };
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        var dispatcher = await dispatcherReady.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        using var releaseFirstMessage = new ManualResetEventSlim();
+        var firstMessageStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var converter = new ObservedMessageConverter(() =>
+        {
+            firstMessageStarted.TrySetResult();
+            if (!releaseFirstMessage.Wait(TimeSpan.FromSeconds(5)))
+                throw new TimeoutException("The first message capture was not released.");
+            // Force this atomic test message to exhaust the 4 ms slice without a timing assertion.
+            Thread.Sleep(10);
+        });
+        var store = new RecordingStateStore(dispatcher)
+        {
+            SerializeActualSnapshots = true,
+            SnapshotSerializerSettings = new JsonSerializerSettings { Converters = [converter] },
+        };
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        for (var index = 0; index < 64; index++)
+            conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Message " + index));
+        var state = new CopilotChatState { ActiveConversationId = "first-cut", Conversations = [conversation] };
+        using var coordinator = new CopilotChatStatePersistenceCoordinator(
+            store, () => state, () => dispatcher, _ => { }, () => { });
+        try
+        {
+            coordinator.RequestSave(immediate: true);
+            var flush = coordinator.FlushAsync();
+            await firstMessageStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var change = dispatcher.InvokeAsync(() =>
+            {
+                if (stop)
+                    coordinator.Dispose();
+                else
+                {
+                    state.ActiveConversationId = "latest-cut";
+                    coordinator.RequestSave(immediate: true);
+                }
+            }, DispatcherPriority.Send);
+            releaseFirstMessage.Set();
+            await change.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            if (stop)
+            {
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => flush.WaitAsync(TimeSpan.FromSeconds(5)));
+                Assert.Equal(1, converter.MessageCount);
+                Assert.Equal(0, store.SerializeCount);
+                Assert.Equal(0, store.AsyncSaveCount);
+            }
+            else
+            {
+                await flush.WaitAsync(TimeSpan.FromSeconds(5));
+                Assert.Equal(conversation.Messages.Count + 1, converter.MessageCount);
+                Assert.Equal(2, store.BeginSnapshotCount);
+                Assert.Equal(1, store.SerializeCount);
+                Assert.Equal(1, store.AsyncSaveCount);
+                Assert.Equal("latest-cut", JObject.Parse(store.SavedSerializedState)[nameof(CopilotChatState.ActiveConversationId)]!.Value<string>());
+            }
+            Assert.False(store.FirstIncrementalCapture!.IsComplete);
+        }
+        finally
+        {
+            releaseFirstMessage.Set();
+            coordinator.Dispose();
             dispatcher.BeginInvokeShutdown(DispatcherPriority.Send);
             Assert.True(thread.Join(TimeSpan.FromSeconds(2)));
         }
@@ -311,6 +392,25 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
         Assert.Equal(["async", "sync"], store.SaveOrder);
     }
 
+    private sealed class ObservedMessageConverter(Action onFirstMessage) : JsonConverter
+    {
+        private readonly JsonSerializer _serializer = JsonSerializer.CreateDefault();
+        public int MessageCount { get; private set; }
+        public override bool CanRead => false;
+
+        public override bool CanConvert(Type objectType) => objectType == typeof(CopilotChatMessage);
+
+        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+        {
+            if (++MessageCount == 1)
+                onFirstMessage();
+            _serializer.Serialize(writer, value);
+        }
+
+        public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer) =>
+            throw new NotSupportedException();
+    }
+
     private sealed class RecordingStateStore : IIncrementalCopilotChatStateStore
     {
         private readonly Dispatcher? _dispatcher;
@@ -354,6 +454,10 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
 
         public bool BeginSnapshotHadDispatcherAccess { get; private set; }
 
+        public CopilotChatStateSnapshotCapture? FirstIncrementalCapture { get; private set; }
+
+        public JsonSerializerSettings SnapshotSerializerSettings { get; init; } = new();
+
         public bool BlockFirstIncrementalSnapshot { get; init; }
 
         public bool SerializeActualSnapshots { get; init; }
@@ -394,7 +498,7 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
             CapturedState = state;
             if (SerializeActualSnapshots)
             {
-                var capture = new CopilotChatStateSnapshotCapture(state, new JsonSerializerSettings());
+                var capture = new CopilotChatStateSnapshotCapture(state, SnapshotSerializerSettings);
                 while (capture.CaptureNextChunk())
                 {
                 }
@@ -407,8 +511,9 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
         {
             CapturedState = state;
             BeginSnapshotHadDispatcherAccess = _dispatcher?.CheckAccess() == true;
-            var capture = new CopilotChatStateSnapshotCapture(state, new JsonSerializerSettings());
+            var capture = new CopilotChatStateSnapshotCapture(state, SnapshotSerializerSettings);
             BeginSnapshotCount++;
+            FirstIncrementalCapture ??= capture;
             if (BlockFirstIncrementalSnapshot && BeginSnapshotCount == 1)
             {
                 _firstIncrementalSnapshotStarted.TrySetResult();

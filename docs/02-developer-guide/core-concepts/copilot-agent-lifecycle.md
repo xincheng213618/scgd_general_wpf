@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "Copilot 任务生命周期、恢复预算与项目指令发现的契约；技能发现和调用见独立技能主题。"
 aliases: ["Copilot 如何加载 AGENTS.md","为什么不读取 config.toml","CopilotAgentProjectInstructions","/init","初始化项目指令","CopilotProjectInitialization"]
-code_paths: ["ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.cs","ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.Rules.cs","ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs","ColorVision/Copilot/Agent/CopilotAgentTokenBudget.cs","ColorVision/Copilot/Agent/CopilotAgentTokenBudget.Estimation.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.FinalAnswerRecovery.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.Recovery.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.Loop.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.AgentStreamingLoop.cs","ColorVision/Copilot/CopilotChatMessage.cs","ColorVision/Copilot/CopilotProjectInitialization.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentProjectInstructionsTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs","Test/ColorVision.Copilot.Tests/CopilotTokenUsageMergeTests.cs","Test/ColorVision.Copilot.Tests/CopilotNonStreamingUsageTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerRecoverySafetyTests.cs"]
+code_paths: ["ColorVision/Copilot/Agent/CopilotAgentRunFinalizationScope.cs","ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.cs","ColorVision/Copilot/Agent/CopilotAgentProjectInstructions.Rules.cs","ColorVision/Copilot/Agent/CopilotAgentSessionCheckpoint.cs","ColorVision/Copilot/Agent/CopilotAgentTokenBudget.cs","ColorVision/Copilot/Agent/CopilotAgentTokenBudget.Estimation.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.FinalAnswerRecovery.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.Recovery.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.Loop.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.AgentStreamingLoop.cs","ColorVision/Copilot/CopilotChatMessage.cs","ColorVision/Copilot/CopilotProjectInitialization.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotLateFinalizationCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalCheckpointAwaitCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentProjectInstructionsTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs","Test/ColorVision.Copilot.Tests/CopilotTokenUsageMergeTests.cs","Test/ColorVision.Copilot.Tests/CopilotNonStreamingUsageTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerSteeringTests.cs","Test/ColorVision.Copilot.Tests/CopilotFinalAnswerRecoverySafetyTests.cs"]
 related: ["copilot.runtime","copilot.execution","copilot.extensions","copilot.skills"]
 ---
 
@@ -38,6 +38,8 @@ Harness 不再关闭压缩。ColorVision 使用独立于模型 Profile 的 Agent
 
 Harness 正常结束但没有产生任何 `TextContent` 时，Runtime 不再把空 Todo 账本直接判为完成。它会通过同一 Token 与传输重试中间件发起一次非流式最终总结，`ChatOptions.Tools` 固定为空，并把有界工具观察与当前任务账本作为数据交给模型；因此这个阶段不能重放业务或 Framework 工具。总结仍为空或失败时会发出固定用户提示、记录 `IncompleteOutput` 与 `provider_empty_output` blocker，保存 checkpoint，并且绝不标记 `Completed`。
 
+本轮自动收尾请求还会在原请求之后，按交付顺序加入已确认进入 Provider 的有界 steering 补充指令，保留用户对语言、格式或任务约束的最新修正；这些指令不恢复任何工具权限。尚未交付的排队输入继续走 `SteeringRecovery`，不能因进入收尾阶段就标为已消费或加入最终回答请求。`CopilotFinalAnswerSteeringTests` 使用受控 Provider 验证长度截断与空正文收尾保留已交付顺序，并验证工具预算中断时恢复未交付输入、最终 Provider 调用不暴露工具；不调用真实模型。
+
 `CopilotAgentRecoveryMode.Finalize` 为这种状态以及“Provider 在任务已完成后断流”的状态提供独立恢复协议。Runtime 在验证 profile、checkpoint 和最后一次 `RunStopped` 后直接进入 no-tools Provider 调用，不发现外部 MCP、不创建 Harness、不恢复 Todo、不打开审批；不匹配的 Finalize 请求会在工具发现之前拒绝，不能降级成普通 Agent 执行。再次空输出或超时时会刷新原 session 的 journal 与对话记忆并继续保留 checkpoint；成功后旧 session checkpoint 会退役，因为旁路生成的最终回答并不存在于旧 Framework session 中，后续轮次应从包含新答案的可见历史创建新 session。
 
 只更新 journal 不会使旧执行会话重新变得可恢复。`CopilotAgentSessionCheckpoint.SessionResumeRestriction` 将未知工具结果或未闭合的 Provider 工具调用绑定到保留的 `SerializedSessionJson`；`CopyWithOutcome` 及其 journal 复制入口在替换 journal 前固化该限制，JSON 存储、快照、等价判断和 journal 裁剪继续保留它。非法限制值拒绝恢复。连续失败的 Finalize 不能靠新增无工具 run 清除限制；真正重新规划并创建新 Session 时不继承旧标记，也不会因历史 journal 中仍有未知结果而永久禁止恢复。`CopilotFinalAnswerRecoverySafetyTests` 覆盖实际恢复入口、两次失败、保存重开、复制与新 Session 对照，同时确认 Finalize 不发现或执行工具。本修复不自动迁移旧版本已经丢失会话关联限制的历史记录；这类记录仍需重新规划，不能根据缺失标记断言原操作安全。
@@ -51,6 +53,10 @@ Harness 正常结束但没有产生任何 `TextContent` 时，Runtime 不再把�
 总时长由与调用方取消令牌链接的运行级计时器约束。超时或业务工具越界都会返回结构化 `BudgetExhausted` 结果，并在可能时先完成任务账本和 Session 检查点；用户主动暂停或取消的语义优先于同时发生的超时。最终 Token、供应商调用、工具调用、pass 上限、已用时长、是否使用估算以及具体预算耗尽类型都会作为 `RuntimeDiagnostic` 和 `CopilotAgentBudgetSnapshot` 写入执行记录。
 
 无工具最终总结仍属于同一次运行，也使用同一取消和总时长结算路径。总结被 `RunControl` 暂停／取消或总时长超时打断时，不把已有工具记录、用量和预算重置为空；继续完成账本与检查点收尾，并将最终回答标为未完成。否则预算已发布后的空结果会违反 Turn 生命周期的单调性校验，把可解释的停止错误转成执行故障。未提供 `RunControl` 的集成调用仅取消 caller token 时，仍按原契约向调用方抛出 `OperationCanceledException`，不伪装为总时长耗尽。`CopilotFinalAnswerCancellationTests` 用受控 Provider 与取消源验证已发生工具调用、用量、预算、检查点和 Turn reducer 的一致性。
+
+最终账本和 Session 检查点收尾期间仍可接收暂停、取消或总时长耗尽；收尾前后重新识别来源，受控中断保留本轮已发生的工具、用量和预算，并在有限收尾期限内使用可用检查点。最后一个异步等待结束后才统一确定停止原因与 blocker、封存 journal 并发布完成事件；取消丢弃可执行 Session，暂停保留检查点及其原有恢复限制。只取消 caller token 的集成调用在封存前仍向上传播取消。封存后到达的取消不回写已完成终态。
+
+最终 Session 序列化的异步等待被受控中断时，Runtime 回退到已发布的最近增量检查点，不重新调用 Provider、工具或最终序列化。回退副本保留原始 Session、兼容性指纹和 `SessionResumeRestriction`，仅封存本轮终态 journal；未知工具结果不能因 journal 更新而变成可恢复会话。`CopilotLateFinalizationCancellationTests` 覆盖同步收尾边界和终态后对照；`CopilotFinalCheckpointAwaitCancellationTests` 在完整运行循环中，通过 Harness 装饰器在最终 Session 序列化入口挂起等待，验证暂停、取消、总时限、来源优先级、caller-only 传播、未知结果限制及正常释放对照。两组测试检查工具事实、用量、预算单调性及 Turn reducer；账本提供器内部异步等待期间的中断尚无直接注入覆盖。
 
 ## 原生任务账本与 plan/execute
 

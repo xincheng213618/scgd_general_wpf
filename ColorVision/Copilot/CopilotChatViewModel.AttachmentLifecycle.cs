@@ -30,13 +30,7 @@ namespace ColorVision.Copilot
         {
             conversation.RefreshSummary();
             RefreshFilteredConversations();
-            OnPropertyChanged(nameof(Attachments));
-            OnPropertyChanged(nameof(HasAttachments));
-            InvalidateChatAttachmentTokenEstimate();
-            RefreshComposerTokenEstimate();
             PersistState();
-            OnCurrentLiveContextStateChanged();
-            OnActiveDocumentStateChanged();
         }
 
         private void ConsumeCapturedComposerAttachments(

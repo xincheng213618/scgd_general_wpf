@@ -567,22 +567,24 @@ namespace ColorVision.Copilot
             if (capability.Access == CopilotToolAccess.ReadOnly)
                 return Task.FromResult(CopilotToolExecutionHookDecision.Proceed);
 
-            if (invocation.AgentRequest.Mode == CopilotAgentMode.Plan)
+            if (!CopilotToolRegistry.IsAllowedForMode(invocation.Tool, invocation.AgentRequest))
             {
-                return Task.FromResult(CopilotToolExecutionHookDecision.Deny(
-                    "Plan mode permits read-only tools only.",
-                    "plan_mode_write_denied"));
-            }
-
-            if (invocation.AgentRequest.Mode == CopilotAgentMode.Review)
-            {
-                if (invocation.Tool is not CopilotWorkspaceValidationTool
-                    || !CopilotToolIntentPolicy.NeedsWorkspaceValidation(invocation.AgentRequest))
+                if (invocation.AgentRequest.Mode == CopilotAgentMode.Plan)
+                {
+                    return Task.FromResult(CopilotToolExecutionHookDecision.Deny(
+                        "Plan mode permits read-only tools only.",
+                        "plan_mode_write_denied"));
+                }
+                if (invocation.AgentRequest.Mode == CopilotAgentMode.Review)
                 {
                     return Task.FromResult(CopilotToolExecutionHookDecision.Deny(
                         "Review mode permits read-only tools and explicitly requested bounded workspace validation only.",
                         "review_mode_write_denied"));
                 }
+
+                return Task.FromResult(CopilotToolExecutionHookDecision.Deny(
+                    "The submitted request permits read-only tools only.",
+                    "request_write_access_denied"));
             }
 
             if (capability.RiskLevel == CopilotToolRiskLevel.High

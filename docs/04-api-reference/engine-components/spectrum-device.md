@@ -13,6 +13,8 @@ related: ["engine.devices", "engine.native-bindings", "ui.property-grid", "plugi
 
 本页适用于 ColorVision 设备树中光谱仪的属性页和许可证管理窗口。独立光谱仪软件的连接、测量与标定见 [Spectrum 插件](../plugins/standard-plugins/spectrum.md)。
 
+主程序光谱卡片与 `ViewSpectrum` 结果详情的登记、首次显示和首结果入口见[设备详情视图按需初始化](./device-service-chain.md#设备详情视图按需初始化)。
+
 ## 搜索设备
 
 在光谱仪属性页的 **设备与连接 → 搜索光谱仪** 查询本机设备。搜索依次遍历 `CMvSpectra`、`LightModule`、`Gaolitong`，不受当前配置选中的连接方式限制。每种方式先查询 USB；配置串口大于 0 时，另对 `CMvSpectra` 和 `LightModule` 查询该串口。高利通只能通过 USB 枚举，连接时使用的串口不能传给其枚举接口。

@@ -29,7 +29,7 @@ related: ["ui.index","ui.publishing","algorithms.platform","delivery.index"]
 | `ColorVision.Scheduler.dll` | Quartz 调度、任务配置、执行历史、任务管理窗口 | 任务程序集未被发现、Cron/历史库不一致 | [ColorVision.Scheduler](./ColorVision.Scheduler.md) |
 | `ColorVision.ImageEditor.dll` | `ImageView`、绘图图元、工具发现、结果 overlay、伪彩、CIE、3D、实时图像 | 工具初始化副作用、overlay 坐标和图像缩放不一致 | [ColorVision.ImageEditor](./ColorVision.ImageEditor.md) |
 | `ColorVision.UI.Desktop` | 设置、向导、插件市场、下载器、第三方应用、反馈和诊断窗口 | 被误认为主程序入口；实际主程序仍在 `ColorVision/` | [ColorVision.UI.Desktop](./ColorVision.UI.Desktop.md) |
-| `ColorVision.Solution.dll` | 工作区、文件树、编辑器、AvalonDock、终端 | 把 Engine 流程或客户业务塞进工作区壳层 | [ColorVision.Solution](./ColorVision.Solution.md) |
+| `ColorVision.Solution.dll` | 工作区、文件树、编辑器、AvalonDock 公共主题、终端 | 把 Engine 流程或客户业务塞进工作区壳层 | [ColorVision.Solution](./ColorVision.Solution.md) |
 | `ColorVision.ImageTools.dll` | 多图查看、缩略图缓存、景深融合和 Solution 菜单贡献 | 把通用图像工具重新耦合进 Solution | [ColorVision.ImageTools](./ColorVision.ImageTools.md) |
 | `ColorVision.Rbac.dll` | 本地账户、角色、权限、会话和审计窗口 | 把细权限误写成全产品统一网关 | [RBAC 模块](../../03-architecture/security/rbac.md) |
 
@@ -39,7 +39,7 @@ related: ["ui.index","ui.publishing","algorithms.platform","delivery.index"]
 
 `Algorithms` 没有项目或第三方包引用，也不启用 WPF。框架中立契约由它维护，像素来源、窗口、图像适配与 overlay 渲染由宿主承担；具体分界见[算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)。客户判定、MES 与业务导出仍属于 `Projects/`，Engine 历史结果的 DAO/handler 不能进入中立算法包。
 
-依赖核对应读取当前 `.csproj` 的 `ProjectReference`、`PackageReference` 及其条件，不从示意关系推断直接引用。例如 `Themes` 引用 HandyControl，没有 `Common` 项目引用；`Core` 的 native 项目引用取决于 `UseProjectReference`，托管项目未引用 C++ 工程也不表示运行不需要 native DLL。底层库不应反向依赖高层窗口、Engine 业务或客户项目；确有共享能力时先确定接口、事件或 provider 边界。
+依赖核对应读取当前 `.csproj` 的 `ProjectReference`、`PackageReference` 及其条件，不从示意关系推断直接引用。例如 `Themes` 引用 HandyControl，没有 `Common` 项目引用；`Core` 的 native 项目引用取决于 `UseProjectReference`，托管项目未引用 C++ 工程也不表示运行不需要 native DLL。底层库不应反向依赖高层窗口、Engine 业务或客户项目；确有共享能力时先确定接口、事件或 provider 边界。Spectrum 通过 `ColorVision.Solution` 引用公共 AvalonDock 主题，独立包须随带该库及其声明依赖；不引用主程序 EXE。原生紧凑标题栏的两个自包含源码文件由 Spectrum 项目链接编译，主窗口与工具窗口各自管理 HWND 和事件生命周期。
 
 ## 框架、版本与产物检查
 

@@ -55,9 +55,14 @@ namespace ColorVision
 
         protected MainWindow(bool useStandardWindowAppearance)
         {
+            Stopwatch constructionStopwatch = Stopwatch.StartNew();
             InitializeComponent();
+            log.Info($"Main window XAML construction took {constructionStopwatch.ElapsedMilliseconds} ms (includes Initialized event).");
+            constructionStopwatch.Restart();
             DockingManager1.PreviewMouseRightButtonDown += DockingManager1_PreviewMouseRightButtonDown;
             Config.SetWindow(this);
+            log.Info($"Main window saved geometry setup took {constructionStopwatch.ElapsedMilliseconds} ms.");
+            constructionStopwatch.Restart();
 
             var IsAdministrator = Tool.IsAdministrator();
             //Title += $"- {(IsAdministrator ? Properties.Resources.RunAsAdmin : Properties.Resources.NotRunAsAdmin)}";
@@ -68,6 +73,7 @@ namespace ColorVision
                 this.SetWindowFull(Config);
             }
             HookUpdateNotification();
+            log.Info($"Main window remaining constructor setup took {constructionStopwatch.ElapsedMilliseconds} ms.");
             
         }
 
@@ -221,6 +227,7 @@ namespace ColorVision
             log.Info($"Main window dock panel registration took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
             // 初始化 DockViewManagerHost，注册 AvalonDock 回调等
+            phaseStopwatch.Restart();
             DockViewManagerHost.Initialize();
 
             // 初始化解决方案项目面板
@@ -230,6 +237,7 @@ namespace ColorVision
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
 
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
+            log.Info($"Main window project tree and device panel attachment took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
             // 加载已保存的布局
             phaseStopwatch.Restart();
@@ -238,7 +246,9 @@ namespace ColorVision
             log.Info($"Main window layout restore took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
             // 重新应用主题以修复 AvalonDock 问题，确保所有切换元素使用正确的主题
+            phaseStopwatch.Restart();
             ApplyAvalonDockTheme(ThemeManager.Current.CurrentUITheme);
+            log.Info($"Main window dock theme application took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
             // 将所有已注册的视图显示为文档标签页
             phaseStopwatch.Restart();
@@ -444,8 +454,11 @@ namespace ColorVision
 
         private void MainWindow_ContentRendered(object? sender, EventArgs e)
         {
+            StartupUiTrace? startupTrace = StartupUiTrace.Current;
+            startupTrace?.CaptureAndStop();
             ContentRendered -= MainWindow_ContentRendered;
             ProgramTimer.StopAndReport();
+            startupTrace?.WriteReport();
             StartupRegistryChecker.Clear();
             Update.ApplicationUpdateScanProtection.CompleteAfterUpdateRestart();
             PluginRecoveryBackupService.Instance.ScheduleHealthyStartupBackups();
@@ -462,7 +475,10 @@ namespace ColorVision
 
         public static async void LoadIMainWindowInitialized()
         {
+            Stopwatch totalStopwatch = Stopwatch.StartNew();
             List<IMainWindowInitialized> initializers = AssemblyHandler.GetInstance().LoadImplementations<IMainWindowInitialized>();
+            log.Info($"Main window initializer discovery took {totalStopwatch.ElapsedMilliseconds} ms. Count={initializers.Count}.");
+            int failures = 0;
             foreach (var componentInitialize in initializers.OrderBy(a => a.Order))
             {
                 StartupRegistryChecker.MarkStage("MainWindowInitializer", componentInitialize.Name);
@@ -473,6 +489,7 @@ namespace ColorVision
                 }
                 catch (Exception ex)
                 {
+                    failures++;
                     log.Error(ex);
                 }
                 finally
@@ -481,6 +498,7 @@ namespace ColorVision
                     log.Info($"Main window initializer {componentInitialize.Name} took {stopwatch.ElapsedMilliseconds} ms.");
                 }
             }
+            log.Info($"Main window initializers completed in {totalStopwatch.ElapsedMilliseconds} ms. Count={initializers.Count}, Failures={failures}.");
             StartupRegistryChecker.Clear();
         }
 

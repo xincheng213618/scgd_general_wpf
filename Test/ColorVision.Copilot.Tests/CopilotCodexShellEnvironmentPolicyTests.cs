@@ -135,9 +135,8 @@ public sealed class CopilotCodexShellEnvironmentPolicyTests
         {
             ProfileLabel = "Profile",
             Mode = CopilotAgentMode.Code,
+            AgentContextEnabled = true,
             CodexShellEnvironmentPolicySummary = options.ConfiguredShellEnvironmentPolicy.BuildRedactedSummary(),
-            HasCodexShellEnvironmentPolicyOverride = true,
-            CodexShellEnvironmentPolicySourceLabel = options.ShellEnvironmentPolicySourceLabel,
         });
         string effectiveReport = CopilotEffectiveConfigDiagnostics.Format(
             new CopilotEffectiveConfigDiagnosticContext
@@ -148,7 +147,7 @@ public sealed class CopilotCodexShellEnvironmentPolicyTests
                 CodexConfigOptions = options,
             });
 
-        Assert.Contains("set=1", projectReport, StringComparison.Ordinal);
+        Assert.DoesNotContain("set=1", projectReport, StringComparison.Ordinal);
         Assert.Contains("set=1", contextReport, StringComparison.Ordinal);
         Assert.Contains("set=1", effectiveReport, StringComparison.Ordinal);
         Assert.DoesNotContain(secretValue, projectReport, StringComparison.Ordinal);

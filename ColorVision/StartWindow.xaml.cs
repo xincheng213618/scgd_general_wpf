@@ -1,14 +1,11 @@
 ﻿using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.Startup;
 using ColorVision.ServiceHost;
 using ColorVision.UI.Shell;
-using ColorVision.UI.LogImp;
 using ColorVision.UI.Desktop.Operations;
 using Dm.util;
 using log4net;
-using log4net.Appender;
-using log4net.Core;
-using log4net.Layout;
 using log4net.Repository.Hierarchy;
 using System;
 using System.Collections.Generic;
@@ -16,11 +13,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
@@ -47,11 +41,7 @@ namespace ColorVision
             _startupProgressTimer.Interval = TimeSpan.FromMilliseconds(100);
             _startupProgressTimer.Tick += StartupProgressTimer_Tick;
             ContentRendered += StartWindow_ContentRendered;
-            Left = SystemParameters.WorkArea.Right - Width;
-            Top = SystemParameters.WorkArea.Bottom - Height;
         }
-        StartupTextBoxAppender TextBoxAppender { get; set; }
-        Hierarchy Hierarchy { get; set; }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -63,19 +53,17 @@ namespace ColorVision
             string info= $"{(DebugBuild(Assembly.GetExecutingAssembly()) ? "(Debug)" : "")}{(Debugger.IsAttached ? ColorVision.Properties.Resources.Debugging : "")}{(IntPtr.Size == 4 ? "32" : "64")} {ColorVision.Properties.Resources.Bit} -  {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} - .NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy/MM/dd}";
 #endif
             log.Info(info);
-            logTextBox.Text = ProgramTimer.InitAppender.Buffer.ToString();
-            Hierarchy = (Hierarchy)LogManager.GetRepository();
-            TextBoxAppender = new StartupTextBoxAppender(logTextBox);
-            TextBoxAppender.Layout = new PatternLayout("%date{HH:mm:ss;fff} %-5level %message%newline");
-            Hierarchy.Root.RemoveAppender(ProgramTimer.InitAppender);
-
-            Hierarchy.Root.AddAppender(TextBoxAppender);
-            log4net.Config.BasicConfigurator.Configure(Hierarchy);
+            if (ProgramTimer.InitAppender is { } startupAppender)
+            {
+                ((Hierarchy)LogManager.GetRepository()).Root.RemoveAppender(startupAppender);
+                startupAppender.Close();
+            }
 
             _subscribedThemeManager = ThemeManager.Current;
             _subscribedThemeManager.SystemThemeChanged += ThemeManager_SystemThemeChanged;
             if (_subscribedThemeManager.SystemTheme == Theme.Dark)
                 Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
+            InitializePresentation();
         }
 
         private void ThemeManager_SystemThemeChanged(Theme theme)
@@ -85,6 +73,7 @@ namespace ColorVision
 
         protected override void OnClosed(EventArgs e)
         {
+            ReleasePresentation();
             _startupProgressTimer.Stop();
             if (_subscribedThemeManager != null)
             {
@@ -98,21 +87,30 @@ namespace ColorVision
         private async void StartWindow_ContentRendered(object? sender, EventArgs e)
         {
             ContentRendered -= StartWindow_ContentRendered;
+            log.Info("Startup splash ContentRendered.");
+            Stopwatch handoffStopwatch = Stopwatch.StartNew();
             await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+            log.Info($"Startup splash ApplicationIdle handoff took {handoffStopwatch.ElapsedMilliseconds} ms.");
             try
             {
-                await Task.Run(RunStartupAsync);
+                handoffStopwatch.Restart();
+                await Task.Run(() =>
+                {
+                    log.Info($"Startup worker queue took {handoffStopwatch.ElapsedMilliseconds} ms. UI={Dispatcher.CheckAccess()}.");
+                    return RunStartupAsync();
+                });
+                handoffStopwatch.Restart();
                 await Dispatcher.InvokeAsync(() =>
                 {
-                    DetachStartupAppender();
+                    log.Info($"Startup main window queue took {handoffStopwatch.ElapsedMilliseconds} ms.");
                     ShowMainWindowAndClose();
                 }, DispatcherPriority.ContextIdle);
             }
             catch (Exception ex)
             {
+                log.Error("Startup failed.", ex);
                 await Dispatcher.InvokeAsync(() =>
                 {
-                    DetachStartupAppender();
                     MessageBox.Show("Startup Error:" + ex.Message);
                     Environment.Exit(-1);
                 }, DispatcherPriority.Send);
@@ -121,11 +119,13 @@ namespace ColorVision
 
         private async Task RunStartupAsync()
         {
+            Stopwatch discoveryStopwatch = Stopwatch.StartNew();
             _IComponentInitializers = CreateSortedInitializers();
+            log.Info($"Startup initializer discovery took {discoveryStopwatch.ElapsedMilliseconds} ms. Count={_IComponentInitializers.Count}.");
             _startupTotalSteps = _IComponentInitializers.Count;
             LoadStartupProgressProfile();
             UpdateStartupProgress(0);
-            await YieldToUiAsync();
+            await YieldToUiAsync("discovery");
             await InitializedOver();
         }
 
@@ -221,7 +221,7 @@ namespace ColorVision
             return $"{initializer.Name}|{initializer.GetType().FullName}";
         }
 
-        private void UpdateStartupProgress(double completedWeight, bool initializerRunning = false, double runningWeight = 0)
+        private void UpdateStartupProgress(double completedWeight, bool initializerRunning = false, double runningWeight = 0, string? stage = null)
         {
             Dispatcher.BeginInvoke(new Action(() =>
             {
@@ -229,6 +229,11 @@ namespace ColorVision
                 {
                     return;
                 }
+
+                // Reuse one status element and the existing progress dispatch. No per-log
+                // notifications, growing text buffer or extra status animation/timer.
+                if (stage != null && startupStatusText.Text != stage)
+                    startupStatusText.Text = stage;
 
                 double max = Math.Max(_startupTotalWeight, DefaultStartupStepWeight);
                 startupProgressBar.Maximum = max;
@@ -289,6 +294,8 @@ namespace ColorVision
             return false;
         }
 
+        private static string GetStartupStage(IInitializer initializer) => StartupText.GetStage(initializer.GetType().Name);
+
         private async Task InitializedOver()
         {
             Stopwatch stopwatch = new Stopwatch();
@@ -299,10 +306,10 @@ namespace ColorVision
             {
                 StartupRegistryChecker.MarkStage("StartupInitializer", initializer.Name);
                 double stepWeight = GetStartupStepWeight(initializer);
-                UpdateStartupProgress(completedWeight, initializerRunning: true, runningWeight: stepWeight);
+                UpdateStartupProgress(completedWeight, initializerRunning: true, runningWeight: stepWeight, stage: GetStartupStage(initializer));
                 stopwatch.Restart();
 
-                log.Info($"{Properties.Resources.Initializer} {initializer.GetType().Name}");
+                log.Info($"{Properties.Resources.Initializer} {initializer.GetType().Name}. UI={Dispatcher.CheckAccess()}.");
                 try
                 {
                     await initializer.InitializeAsync().ConfigureAwait(false);
@@ -317,7 +324,7 @@ namespace ColorVision
                 completedSteps++;
                 completedWeight += stepWeight;
                 UpdateStartupProgress(completedWeight);
-                await YieldToUiIfDueAsync();
+                await YieldToUiIfDueAsync(initializer.Name);
 
             }
             StartupRegistryChecker.MarkStage("StartupInitializersCompleted");
@@ -327,8 +334,11 @@ namespace ColorVision
 
         private Task CompleteStartupProgressAsync()
         {
+            // Keep completion behind the phase updates already queued at Normal priority.
+            // A higher-priority callback could otherwise be overwritten by an older phase.
             return Dispatcher.InvokeAsync(() =>
             {
+                startupStatusText.Text = StartupText.OpeningWorkspace;
                 if (startupProgressBar == null)
                 {
                     return;
@@ -341,10 +351,10 @@ namespace ColorVision
                 _startupProgressTarget = max;
                 _startupProgressSoftCap = max;
                 _startupProgressCreepEnabled = false;
-            }, DispatcherPriority.Send).Task;
+            }, DispatcherPriority.Normal).Task;
         }
 
-        private async Task YieldToUiIfDueAsync()
+        private async Task YieldToUiIfDueAsync(string initializerName)
         {
             long now = Stopwatch.GetTimestamp();
             if (_lastStartupYieldTimestamp != 0)
@@ -357,10 +367,10 @@ namespace ColorVision
             }
 
             _lastStartupYieldTimestamp = now;
-            await YieldToUiAsync();
+            await YieldToUiAsync(initializerName);
         }
 
-        private static Task YieldToUiAsync()
+        private static Task YieldToUiAsync(string stage)
         {
             var dispatcher = Application.Current?.Dispatcher;
             if (dispatcher == null || dispatcher.HasShutdownStarted)
@@ -368,20 +378,11 @@ namespace ColorVision
                 return Task.CompletedTask;
             }
 
-            return dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background).Task;
-        }
-
-        private void DetachStartupAppender()
-        {
-            if (Hierarchy == null || TextBoxAppender == null)
+            long queuedAt = Stopwatch.GetTimestamp();
+            return dispatcher.InvokeAsync(() =>
             {
-                return;
-            }
-
-            TextBoxAppender.FlushPendingLogs();
-            Hierarchy.Root.RemoveAppender(TextBoxAppender);
-            TextBoxAppender.Dispose();
-            log4net.Config.BasicConfigurator.Configure(Hierarchy);
+                log.Info($"Startup UI checkpoint '{stage}' queue took {Stopwatch.GetElapsedTime(queuedAt).TotalMilliseconds:0.###} ms.");
+            }, DispatcherPriority.Background).Task;
         }
 
         private void ShowMainWindowAndClose()
@@ -411,14 +412,12 @@ namespace ColorVision
                     else
                     {
                         log.Info($"Feature '{feature}' not found, starting main window.");
-                        Window mainWindow = MainWindowFactory.Create(MainWindowConfig.Instance.UseCompactMainWindow);
-                        mainWindow.Show();
+                        CreateAndShowMainWindow();
                     }
                 }
                 else
                 {
-                    Window mainWindow = MainWindowFactory.Create(MainWindowConfig.Instance.UseCompactMainWindow);
-                    mainWindow.Show();
+                    CreateAndShowMainWindow();
                 }
                 if (OperationsApplicationFailureWatchdog.TryStart())
                 {
@@ -434,8 +433,30 @@ namespace ColorVision
             }
             catch (Exception ex)
             {
+                log.Error("Main window creation failed.", ex);
                 MessageBox.Show("MainWindow Create Error:" + ex.Message);
                 Environment.Exit(-1);
+            }
+        }
+
+        private static void CreateAndShowMainWindow()
+        {
+            StartupUiTrace? trace = StartupUiTrace.Start(Application.Current.Dispatcher);
+            try
+            {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                Window mainWindow = MainWindowFactory.Create(MainWindowConfig.Instance.UseCompactMainWindow);
+                trace?.Observe(mainWindow);
+                log.Info($"Main window factory construction took {stopwatch.ElapsedMilliseconds} ms.");
+                stopwatch.Restart();
+                mainWindow.Show();
+                trace?.MarkShowReturned();
+                log.Info($"Main window Show took {stopwatch.ElapsedMilliseconds} ms (before ContentRendered).");
+            }
+            catch
+            {
+                trace?.Abort();
+                throw;
             }
         }
 
@@ -443,105 +464,6 @@ namespace ColorVision
         {
             Dispatcher dispatcher = Application.Current.Dispatcher;
             _ = dispatcher.BeginInvoke(async () => await ServiceHostStartupUpdateChecker.CheckAndUpdateAsync().ConfigureAwait(true), DispatcherPriority.ApplicationIdle);
-        }
-
-        private void TextBoxMsg_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            logTextBox.ScrollToEnd();
-        }
-
-        private sealed class StartupTextBoxAppender : AppenderSkeleton, IDisposable
-        {
-            private const int StartupLogFlushIntervalMs = 80;
-
-            private readonly TextBox _textBox;
-            private readonly StringBuilder _pendingLogs = new();
-            private readonly object _lock = new();
-            private readonly DispatcherTimer _flushTimer;
-            private bool _isClosed;
-
-            public StartupTextBoxAppender(TextBox textBox)
-            {
-                _textBox = textBox ?? throw new ArgumentNullException(nameof(textBox));
-                _flushTimer = new DispatcherTimer(DispatcherPriority.Background, _textBox.Dispatcher)
-                {
-                    Interval = TimeSpan.FromMilliseconds(StartupLogFlushIntervalMs)
-                };
-                _flushTimer.Tick += (s, e) => FlushPendingLogsOnUi();
-                _flushTimer.Start();
-            }
-
-            protected override void Append(LoggingEvent loggingEvent)
-            {
-                if (_isClosed)
-                {
-                    return;
-                }
-
-                string renderedMessage = RenderLoggingEvent(loggingEvent);
-                lock (_lock)
-                {
-                    _pendingLogs.Append(renderedMessage);
-                }
-            }
-
-            public void FlushPendingLogs()
-            {
-                if (_textBox.Dispatcher.CheckAccess())
-                {
-                    FlushPendingLogsOnUi();
-                    return;
-                }
-
-                _textBox.Dispatcher.Invoke(FlushPendingLogsOnUi, DispatcherPriority.Send);
-            }
-
-            private void FlushPendingLogsOnUi()
-            {
-                string logs;
-                lock (_lock)
-                {
-                    logs = _pendingLogs.ToString();
-                    _pendingLogs.Clear();
-                }
-
-                if (logs.Length == 0)
-                {
-                    return;
-                }
-
-                _textBox.AppendText(logs);
-                TrimTextBox();
-            }
-
-            private void TrimTextBox()
-            {
-                if (LogConfig.Instance.MaxChars <= LogConstants.MinMaxCharsForTrimming || _textBox.Text.Length <= LogConfig.Instance.MaxChars)
-                {
-                    return;
-                }
-
-                _textBox.Text = _textBox.Text.Substring(_textBox.Text.Length - LogConfig.Instance.MaxChars);
-            }
-
-            protected override void OnClose()
-            {
-                if (_isClosed)
-                {
-                    return;
-                }
-
-                _isClosed = true;
-                _flushTimer.Stop();
-                FlushPendingLogs();
-                base.OnClose();
-            }
-
-            public void Dispose()
-            {
-                Close();
-                GC.SuppressFinalize(this);
-            }
         }
 
     }

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Title" xml:space="preserve"><value>正在啟動 ColorVision</value></data>
+  <data name="Headline" xml:space="preserve"><value>讓每一束光，成為洞見。</value></data>
+  <data name="Capabilities" xml:space="preserve"><value>光學  /  色彩  /  機器視覺</value></data>
+  <data name="PreparingWorkspace" xml:space="preserve"><value>正在準備工作空間</value></data>
+  <data name="ConnectingServices" xml:space="preserve"><value>正在連接基礎服務</value></data>
+  <data name="LoadingWorkspace" xml:space="preserve"><value>正在載入工作空間</value></data>
+  <data name="LoadingTemplates" xml:space="preserve"><value>正在加載檢測模板</value></data>
+  <data name="PreparingDevicePanels" xml:space="preserve"><value>正在裝配設備面板</value></data>
+  <data name="PreparingCompute" xml:space="preserve"><value>正在準備計算資源</value></data>
+  <data name="LoadingExtensions" xml:space="preserve"><value>正在加載擴展組件</value></data>
+  <data name="OpeningWorkspace" xml:space="preserve"><value>正在打開工作空間</value></data>
+  <data name="ProgressAutomationName" xml:space="preserve"><value>啟動進度</value></data>
+</root>

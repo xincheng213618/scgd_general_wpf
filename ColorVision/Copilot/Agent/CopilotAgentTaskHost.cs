@@ -546,6 +546,8 @@ namespace ColorVision.Copilot
                 return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.HostShutdown);
             if (_activeWorkItem == null
                 || !_activeWorkItem.Run.IsQueuedLocalCommand
+                || _activeWorkItem.Run.State != CopilotHostedRunState.Running
+                || _activeWorkItem.Run.CancellationToken.IsCancellationRequested
                 || !string.Equals(_activeWorkItem.Run.Id, normalizedRunId, StringComparison.Ordinal))
             {
                 return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.NoActiveRun);
@@ -653,11 +655,13 @@ namespace ColorVision.Copilot
                     }
                 }
 
+                // Commit control under the same lock as successor admission and
+                // dispatch. Request token cancellation and publish only outside it.
+                if (run?.TryRequestCancel(deferExecutionCancellation: true) != true)
+                    return false;
             }
 
-            if (run?.TryRequestCancel() != true)
-                return false;
-
+            run.CancelExecutionToken();
             Publish(CopilotAgentTaskHostChangeKind.ControlRequested, run);
             if (wasQueued)
             {
@@ -851,11 +855,12 @@ namespace ColorVision.Copilot
             finally
             {
                 HostedRunWorkItem? nextWorkItem = null;
-                var completedNormally = error == null
-                    && workItem.Run.AllowsAutomaticFollowUpDispatch
-                    && !workItem.Run.CancellationToken.IsCancellationRequested;
                 lock (_gate)
                 {
+                    var completedNormally = error == null
+                        && workItem.Run.State == CopilotHostedRunState.Running
+                        && workItem.Run.AllowsAutomaticFollowUpDispatch
+                        && !workItem.Run.CancellationToken.IsCancellationRequested;
                     if (ReferenceEquals(_activeWorkItem, workItem))
                     {
                         _activeWorkItem = null;

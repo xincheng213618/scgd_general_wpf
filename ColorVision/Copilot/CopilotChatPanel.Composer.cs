@@ -19,6 +19,30 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotChatPanel
     {
+        private bool _isComposerSelectionRefreshPending;
+
+        private void SynchronizeComposerReferenceSelection()
+        {
+            if (DataContext is CopilotChatViewModel viewModel)
+                viewModel.UpdateComposerReferenceSelection(PromptTextBox.Text, PromptTextBox.SelectionStart, PromptTextBox.SelectionLength);
+        }
+
+        private void PromptTextBox_SelectionChanged(object sender, RoutedEventArgs e) => SynchronizeComposerReferenceSelection();
+
+        private void PromptTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_isComposerSelectionRefreshPending)
+                return;
+
+            _isComposerSelectionRefreshPending = true;
+            Dispatcher.BeginInvoke(DispatcherPriority.DataBind, () =>
+            {
+                _isComposerSelectionRefreshPending = false;
+                if (ReferenceEquals(DataContext, _attachedViewModel))
+                    SynchronizeComposerReferenceSelection();
+            });
+        }
+
         private void VoiceInputButton_Click(object sender, RoutedEventArgs e)
         {
             PromptTextBox.Focus();
@@ -54,6 +78,8 @@ namespace ColorVision.Copilot
 
         private async void PromptTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            SynchronizeComposerReferenceSelection();
+
             if (DataContext is CopilotChatViewModel promptHistoryViewModel
                 && promptHistoryViewModel.IsPromptHistorySearchOpen
                 && Keyboard.Modifiers == ModifierKeys.None)
@@ -130,7 +156,7 @@ namespace ColorVision.Copilot
                     if (referenceViewModel.HasComposerReferenceSuggestions
                         && referenceViewModel.TryCompleteComposerReference())
                     {
-                        MovePromptCaretToEnd();
+                        ApplyPromptCaret(referenceViewModel.ComposerReferenceCaretIndex);
                         e.Handled = true;
                         return;
                     }
@@ -341,7 +367,16 @@ namespace ColorVision.Copilot
 
         private void ComposerReferenceSuggestionButton_Click(object sender, RoutedEventArgs e)
         {
-            FocusPromptInput();
+            var viewModel = DataContext as CopilotChatViewModel;
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+            {
+                if (viewModel == null || !ReferenceEquals(viewModel, _attachedViewModel))
+                    return;
+
+                PromptTextBox.Focus();
+                Keyboard.Focus(PromptTextBox);
+                ApplyPromptCaret(viewModel.ComposerReferenceCaretIndex);
+            });
         }
 
         private void PromptHistorySearchResultButton_Click(object sender, RoutedEventArgs e)

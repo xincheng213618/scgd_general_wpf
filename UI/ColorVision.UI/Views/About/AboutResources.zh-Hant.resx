@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="AboutCaption" xml:space="preserve"><value>關 於</value></data>
+  <data name="PaletteTooltip" xml:space="preserve"><value>切換深淺配色 · 僅此視窗</value></data>
+  <data name="PaletteAutomation" xml:space="preserve"><value>切換關於頁面配色</value></data>
+  <data name="CloseTooltip" xml:space="preserve"><value>關閉 · Esc</value></data>
+  <data name="CloseAutomation" xml:space="preserve"><value>關閉關於視窗</value></data>
+  <data name="VisionDescriptor" xml:space="preserve"><value>光 電 視 覺 檢 測 平 台</value></data>
+  <data name="VisionHeadline" xml:space="preserve"><value>讓視覺，成為判斷。</value></data>
+  <data name="VisionSubline" xml:space="preserve"><value>FROM IMAGE TO INSIGHT</value></data>
+  <data name="VisionCapabilities" xml:space="preserve"><value>圖像  /  色彩  /  測量  /  流程</value></data>
+  <data name="SpectrumTitle" xml:space="preserve"><value>關於 Spectrum</value></data>
+  <data name="SpectrumEyebrow" xml:space="preserve"><value>光 譜 之 間</value></data>
+  <data name="SpectrumHeadline" xml:space="preserve"><value>每一束光，皆有無限。</value></data>
+  <data name="SpectrumSubline" xml:space="preserve"><value>E V E R Y   W A V E L E N G T H .   A   N E W   P E R S P E C T I V E .</value></data>
+  <data name="MainAboutTitle" xml:space="preserve"><value>關於 ColorVision</value></data>
+</root>
