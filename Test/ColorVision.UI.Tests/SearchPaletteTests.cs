@@ -202,7 +202,7 @@ public sealed class SearchPaletteTests
             Assert.False(control.SubmitSelection());
             InvokePrivate(control, "CompositionCompleted", control, null);
             InvokePrivate(control, "CompositionStarted", control, null);
-            control.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+            control.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
             Assert.False(control.SubmitSelection());
             Assert.Equal(0, calls);
             control.Close();
@@ -502,7 +502,7 @@ public sealed class SearchPaletteTests
             try
             {
                 owner.Show();
-                owner.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                owner.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
                 Assert.True(target.IsLoaded && target.IsVisible);
                 control.Open(target, owner);
                 Complete(control.Model.PendingSearch);
@@ -575,7 +575,7 @@ public sealed class SearchPaletteTests
             for (int pass = 0; pass < 2; pass++)
             {
                 control.UpdateLayout();
-                control.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                control.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
             }
             Assert.True(scroll.VerticalOffset > 0);
             var last = Assert.IsType<ListBoxItem>(list.ItemContainerGenerator.ContainerFromIndex(list.Items.Count - 1));
@@ -590,7 +590,7 @@ public sealed class SearchPaletteTests
         var key = Assert.IsType<DependencyPropertyKey>(typeof(UIElement)
             .GetField("IsKeyboardFocusWithinPropertyKey", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null));
         input.SetValue(key, focused);
-        input.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+        input.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
     }
 
     private static void SetUncommittedInput(SearchControl control, TextBox input, string text)
@@ -603,7 +603,7 @@ public sealed class SearchPaletteTests
             UpdateSourceTrigger = UpdateSourceTrigger.Explicit
         });
         input.SetCurrentValue(TextBox.TextProperty, text);
-        input.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+        input.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
     }
 
     private sealed class IsolatedInputSource : PresentationSource
@@ -659,7 +659,7 @@ public sealed class SearchPaletteTests
                     layoutRoot.Measure(new Size(width, 620));
                     layoutRoot.Arrange(new Rect(0, 0, width, 620));
                     layoutRoot.UpdateLayout();
-                    control.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                    control.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
                 }
                 action(control);
             }
@@ -753,7 +753,7 @@ public sealed class SearchPaletteTests
             try
             {
                 owner.Show();
-                owner.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                owner.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
                 Assert.True(owner.IsLoaded && owner.IsVisible);
                 action(owner);
             }

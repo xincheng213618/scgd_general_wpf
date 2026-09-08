@@ -145,7 +145,7 @@ public sealed class ComboBoxItemBindingTests
 
     private static void PumpDispatcher()
     {
-        Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+        Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
     }
 
     private static void WithThemeResources(Action action)

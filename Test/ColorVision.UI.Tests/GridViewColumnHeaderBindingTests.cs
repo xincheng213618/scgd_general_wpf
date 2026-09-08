@@ -69,7 +69,7 @@ public class GridViewColumnHeaderBindingTests
         element.Measure(new Size(600, 400));
         element.Arrange(new Rect(0, 0, 600, 400));
         element.UpdateLayout();
-        Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+        Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
     }
 
     private static IEnumerable<T> VisualDescendants<T>(DependencyObject parent) where T : DependencyObject

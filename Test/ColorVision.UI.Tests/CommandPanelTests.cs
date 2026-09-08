@@ -151,7 +151,7 @@ public sealed class CommandPanelTests
         {
             window.Width = width;
             window.UpdateLayout();
-            window.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            window.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ContextIdle);
             window.UpdateLayout();
         }
 
