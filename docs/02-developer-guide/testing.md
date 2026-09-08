@@ -51,7 +51,7 @@ dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64 --filter "FullyQualifiedN
 
 ### 普通回归与性能探针
 
-当前 `.github/workflows/dotnet.yml` 将 UI 普通回归与 `Category=PerformanceProbe` 分两次 `dotnet test` 启动，后者独立进程运行。无筛选的命令仍有效，但会把两个分类放进同一次运行，不能称为 CI 普通回归那一步的等价命令。只复现分类选择时，从仓库根目录运行：
+当前 `.github/workflows/dotnet.yml` 的 UI 普通回归在独立 managed-test job 中运行，自动排除 `Category=PerformanceProbe`。性能探针只在手动触发该工作流时使用独立进程运行，不随 push、pull request 或 release 自动执行。无筛选的本地命令仍有效，但会把两个分类放进同一次运行；只复现分类选择时，从仓库根目录运行：
 
 ```powershell
 dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --filter "Category!=PerformanceProbe"
@@ -105,7 +105,7 @@ finally {
 
 如果当前机器没有 Python 依赖，先按[插件市场后端](./backend/README.md)和[构建与发布脚本](./scripts/README.md)准备环境。不要把“依赖没装”误写成业务逻辑失败。
 
-仓库的 Windows `.NET` 工作流会运行两套公共 managed 测试、上表五套领域测试以及 `Scripts/tests` 的完整 discover。它仍不是“仓库全部测试”：需要 CUDA/OpenCV 或真实设备的 native 验证、插件市场后端测试、文档构建和现场硬件验收继续使用各自入口。
+仓库的 Windows `.NET` 工作流把职责拆成三类 job：`build` 只做 Release/x64 解决方案编译、共享清单和 native/包契约校验，并保留 release 事件的 NuGet 发布步骤；`script tests` 运行 `Scripts/tests` 的完整 discover；七个 `managed tests` matrix 项并行运行 UI、Copilot、Spectrum、Conoscope 与三个客户项目测试，且 `fail-fast` 关闭，因此一套失败不会跳过其他套。性能探针只在手动触发时追加运行。它仍不是“仓库全部测试”：需要 CUDA/OpenCV 或真实设备的 native 验证、插件市场后端测试、文档构建和现场硬件验收继续使用各自入口。
 
 ## 按变更选择验证
 
@@ -134,7 +134,7 @@ finally {
 ## 维护规则
 
 - 优先验证输入输出、用户操作及失败后的状态。不要为私有成员名称、完整命令清单、源码字符串或装饰布局建立固定基线；需要兼容检查时，明确实际外部消费者。ABI、交付清单等无法由普通行为测试替代的检查仍按对应契约保留。
-- 相同逻辑使用代表性参数案例，重复线程样板复用现有 `StaTest` / `WpfTestHost`；保留不同失败原因和生命周期边界，不以减少行数或测试数量作为通过标准。本地验证按改动选择，CI 继续运行现有完整套件。
+- 相同逻辑使用代表性参数案例，重复线程样板复用现有 `StaTest` / `WpfTestHost`；保留不同失败原因和生命周期边界，不以减少行数或测试数量作为通过标准。本地验证按改动选择，CI 的自动 managed matrix 运行普通回归，性能探针按需手动执行。
 - 新增测试项目或关键测试类时，同步对应知识的 `test_paths` 和必要的验证说明，再生成目录；侧边栏自动派生，不手工维护。不要把 `Test/**/bin`、`Test/**/obj` 当成源码证据。
 - 修改 UI、Engine、插件或项目文档后，仍需运行 `npm run docs:build` 验证文档站。
 - 快速发布遵守根 `AGENTS.md` 的专用入口与范围，不因为本页列了测试就额外扩大发布流程。
