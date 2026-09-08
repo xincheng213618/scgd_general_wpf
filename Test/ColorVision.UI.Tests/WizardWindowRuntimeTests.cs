@@ -110,7 +110,7 @@ public sealed class WizardWindowRuntimeTests
     }
 
     private static void Drain(WizardWindow window)
-        => window.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+        => window.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
 
     private static void WithWizard(bool? runInitializers, bool firstBefore, bool secondBefore, bool initiallyComplete,
         Action<WizardWindow, WizardWindowConfig, string, Window> inspect)

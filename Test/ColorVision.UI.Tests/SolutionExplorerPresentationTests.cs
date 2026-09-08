@@ -283,7 +283,7 @@ public sealed class SolutionExplorerPresentationTests
                 Control.Measure(new Size(320, 620));
                 Control.Arrange(new Rect(0, 0, 320, 620));
                 Control.UpdateLayout();
-                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
             }
         }
 

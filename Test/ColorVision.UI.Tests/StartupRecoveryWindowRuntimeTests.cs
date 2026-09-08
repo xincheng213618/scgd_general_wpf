@@ -52,7 +52,7 @@ public sealed class StartupRecoveryWindowRuntimeTests
             {
                 window.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
                 window.Close();
-                window.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                window.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
                 Assert.Empty(exceptions);
                 Assert.Empty(window.Plugins);
                 Assert.Empty(window.OperationStatusText);

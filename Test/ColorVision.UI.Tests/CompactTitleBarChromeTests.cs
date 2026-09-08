@@ -30,7 +30,7 @@ public sealed class CompactTitleBarChromeTests
             WeakReference reference = WpfTestHost.Invoke(() => CreateClosedEarlyChromeReference(host, titleContentHeight));
             for (int index = 0; index < 3 && reference.IsAlive; index++)
             {
-                WpfTestHost.Invoke(() => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle));
+                WpfTestHost.Invoke(() => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle));
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
@@ -111,7 +111,7 @@ public sealed class CompactTitleBarChromeTests
 
             host.Window.Show();
             Assert.True(SetWindowPos(handle, new IntPtr(1), 0, 0, 0, 0, 0x0013)); // HWND_BOTTOM; NOSIZE|NOMOVE|NOACTIVATE
-            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
             host.Window.UpdateLayout();
             Assert.Equal(1, sourceInitializedCount);
             Assert.Equal(1, contentRenderedCount);
@@ -140,7 +140,7 @@ public sealed class CompactTitleBarChromeTests
             }
 
             // Let any metric refresh finish; it must not manufacture a second first-render event.
-            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
             Assert.Equal(1, contentRenderedCount);
             host.Window.Close();
             Assert.False(controller.IsAttached);
@@ -289,7 +289,7 @@ public sealed class CompactTitleBarChromeTests
                 // Keep this synthetic HWND behind user windows; no desktop input or production window is used.
                 Assert.True(SetWindowPos(handle, new IntPtr(1), 0, 0, 0, 0, 0x0013)); // HWND_BOTTOM; NOSIZE|NOMOVE|NOACTIVATE
                 host.Window.UpdateLayout();
-                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
                 host.Window.UpdateLayout();
             }
 
@@ -381,7 +381,7 @@ public sealed class CompactTitleBarChromeTests
                         controller.SetFullScreen(true);
                         controller.SetFullScreen(false);
                     }
-                    Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                    Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
                     hiddenTransitions = 0;
                     for (int iteration = 0; iteration < 3; iteration++)
                     {
@@ -390,7 +390,7 @@ public sealed class CompactTitleBarChromeTests
                             frameChanges = 0;
                             SendMessage(handle, 0x0112, new IntPtr(maximize ? 0xF030 : 0xF120), IntPtr.Zero);
                             Assert.True(SetWindowPos(handle, new IntPtr(1), 0, 0, 0, 0, 0x0013));
-                            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
                             Assert.Equal(maximize ? WindowState.Maximized : WindowState.Normal, host.Window.WindowState);
                             Assert.True(IsWindowVisible(handle));
                             Assert.Equal(0, hiddenTransitions);
@@ -458,7 +458,7 @@ public sealed class CompactTitleBarChromeTests
             if (!AttachForCurrentSystem(host, controller))
                 return;
             IntPtr handle = new WindowInteropHelper(host.Window).Handle;
-            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
             bool requestedHide = false;
             void HideOnResize(object sender, SizeChangedEventArgs args)
             {
@@ -474,7 +474,7 @@ public sealed class CompactTitleBarChromeTests
                     SendMessage(handle, 0x0112, new IntPtr(0xF030), IntPtr.Zero);
                 else
                     host.Window.Width += 100;
-                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
                 Assert.True(requestedHide);
                 Assert.False(IsWindowVisible(handle));
             }
@@ -496,7 +496,7 @@ public sealed class CompactTitleBarChromeTests
                 return;
             IntPtr handle = new WindowInteropHelper(host.Window).Handle;
             HwndSource source = HwndSource.FromHwnd(handle);
-            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
             bool hideRequested = false;
             bool hiddenInsideMessage = false;
             IntPtr HideBeforeChrome(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -513,7 +513,7 @@ public sealed class CompactTitleBarChromeTests
             try
             {
                 SendMessage(handle, 0x0112, new IntPtr(0xF030), IntPtr.Zero);
-                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
                 Assert.True(hideRequested);
                 Assert.True(hiddenInsideMessage);
                 Assert.False(IsWindowVisible(handle));
@@ -590,7 +590,7 @@ public sealed class CompactTitleBarChromeTests
             host.Window.SourceInitialized += (_, _) => attached = AttachForCurrentSystem(host, controller);
             host.Window.Show();
             // Match the production SourceInitialized -> Loaded -> resource refresh order.
-            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
             Assert.True(host.Window.IsLoaded);
             if (!attached)
                 return;
@@ -602,7 +602,7 @@ public sealed class CompactTitleBarChromeTests
             {
                 [ChromeHost.BackgroundResourceKey] = Brushes.Black
             });
-            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
 
             Assert.Same(Brushes.Transparent, host.Window.Background);
             Assert.Same(chrome, WindowChrome.GetWindowChrome(host.Window));
@@ -613,7 +613,7 @@ public sealed class CompactTitleBarChromeTests
             {
                 [ChromeHost.BackgroundResourceKey] = Brushes.White
             });
-            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
             Assert.Same(Brushes.White, host.Window.Background);
 
             controller.SetFullScreen(false);
@@ -633,7 +633,7 @@ public sealed class CompactTitleBarChromeTests
             using var controller = host.CreateController();
             if (!AttachForCurrentSystem(host, controller))
                 return;
-            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
             WindowChrome chrome = WindowChrome.GetWindowChrome(host.Window);
 
             // WPF can discard SetCurrentValue's override while the resource expression
@@ -734,7 +734,7 @@ public sealed class CompactTitleBarChromeTests
         try
         {
             WeakReference reference = WpfTestHost.Invoke(() => CreateDisposedControllerReference(host));
-            WpfTestHost.Invoke(() => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle));
+            WpfTestHost.Invoke(() => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle));
             for (int index = 0; index < 3 && reference.IsAlive; index++)
             {
                 GC.Collect();

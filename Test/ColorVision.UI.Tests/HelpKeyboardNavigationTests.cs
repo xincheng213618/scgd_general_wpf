@@ -147,7 +147,7 @@ public sealed class HelpKeyboardNavigationTests
         Keyboard.PrimaryDevice, PresentationSource.FromVisual(window), Environment.TickCount, Key.Escape)
         { RoutedEvent = Keyboard.KeyDownEvent });
 
-    private static void Drain() => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+    private static void Drain() => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
 
     private static Window CreateUpdateButtonHost(UpdatePreviewDialogContext context, [CallerFilePath] string testPath = "")
     {

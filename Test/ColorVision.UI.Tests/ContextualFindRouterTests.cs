@@ -206,7 +206,7 @@ public sealed class ContextualFindRouterTests
                 owner.Content = new AdornerDecorator { Child = editor };
                 owner.Show();
                 owner.UpdateLayout();
-                owner.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                owner.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
                 Assert.NotNull(editor.Template);
                 Assert.True(ContextualFindRouter.IsWithin(editor.TextArea, owner));
                 Assert.NotNull(AdornerLayer.GetAdornerLayer(editor.TextArea));
