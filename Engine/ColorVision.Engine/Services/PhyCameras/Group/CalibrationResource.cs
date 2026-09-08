@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.Engine.Services.Types;
 using ColorVision.Solution.Editor.AvalonEditor;
 using ColorVision.UI.Authorizations;
 using cvColorVision;
@@ -57,67 +58,62 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         {
             get
             {
-                if (this.GetAncestor<PhyCamera>() is PhyCamera phyCamera)
-                {
-                    if (Directory.Exists(phyCamera.Config.FileServerCfg.FileBasePath))
-                    {
-                        string path = SysResourceModel.Value ?? string.Empty;
-                        string filepath = Path.Combine(phyCamera.Config.FileServerCfg.FileBasePath, phyCamera.Code, "cfg", path);
-                        return File.Exists(filepath);
-                    }
-                }
+                return TryGetFilePath(out _);
+            }
+        }
+
+        public bool CanEditText => SupportsTextEditing((ServiceTypes)SysResourceModel.Type) && IsValid;
+
+        internal static bool SupportsTextEditing(ServiceTypes type) => type is
+            ServiceTypes.DarkNoise or ServiceTypes.ColorShift or ServiceTypes.Distortion or
+            ServiceTypes.ColorDiff or ServiceTypes.AngleShift or ServiceTypes.Luminance or
+            ServiceTypes.LumOneColor or ServiceTypes.LumFourColor or ServiceTypes.LumMultiColor;
+
+        public bool TryGetFilePath(out string filePath)
+        {
+            filePath = string.Empty;
+            if (this.GetAncestor<PhyCamera>() is not PhyCamera phyCamera
+                || !Directory.Exists(phyCamera.Config.FileServerCfg.FileBasePath))
+            {
                 return false;
             }
+
+            string path = SysResourceModel.Value ?? string.Empty;
+            filePath = Path.Combine(phyCamera.Config.FileServerCfg.FileBasePath, phyCamera.Code, "cfg", path);
+            return File.Exists(filePath);
         }
 
         public CalibrationResource(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             CalibrationResources.Add(this);
             OpenCommand = new RelayCommand(a=> Open(),a => AccessControl.Check(PermissionMode.Administrator));
-            EditCommand = new RelayCommand(a => Edit(), a => AccessControl.Check(PermissionMode.Administrator));
+            EditCommand = new RelayCommand(a => Edit(), a => CanEditText && AccessControl.Check(PermissionMode.Administrator));
             Config = JsonConvert.DeserializeObject<CalibrationFileConfig>(sysResourceModel.Remark ?? string.Empty) ?? new CalibrationFileConfig();
         }
 
         public void Edit()
         {
+            if (!SupportsTextEditing((ServiceTypes)SysResourceModel.Type))
+                return;
 
-            if (this.GetAncestor<PhyCamera>() is PhyCamera phyCamera)
+            if (TryGetFilePath(out string filepath))
             {
-                log.Info(phyCamera.Config.FileServerCfg.FileBasePath);
-
-                if (Directory.Exists(phyCamera.Config.FileServerCfg.FileBasePath))
-                {
-                    string path = SysResourceModel.Value ?? string.Empty;
-
-                    string filepath = Path.Combine(phyCamera.Config.FileServerCfg.FileBasePath, phyCamera.Code, "cfg", path);
-                    log.Info(filepath);
-                    AvalonEditWindow avalonEditWindow = new AvalonEditWindow(filepath) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                    avalonEditWindow.ShowDialog();
-                }
-                else
-                {
-                    log.Info($"找不到phyCamera.Config.FileServerCfg.FileBasePath{phyCamera.Config.FileServerCfg.FileBasePath}");
-                }
+                log.Info(filepath);
+                AvalonEditWindow avalonEditWindow = new AvalonEditWindow(filepath) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                avalonEditWindow.ShowDialog();
             }
             else
             {
-                log.Info("找不到物理相机");
+                log.Info("找不到校正文件");
             }
         }
 
 
         public void Open()
         {
-            if (this.GetAncestor<PhyCamera>() is PhyCamera phyCamera)
+            if (TryGetFilePath(out string filepath))
             {
-                if (Directory.Exists(phyCamera.Config.FileServerCfg.FileBasePath))
-                {
-                    string path = SysResourceModel.Value ?? string.Empty;
-
-                    string filepath = Path.Combine(phyCamera.Config.FileServerCfg.FileBasePath, phyCamera.Code,"cfg", path);
-
-                    PlatformHelper.OpenFolderAndSelectFile(filepath);
-                }
+                PlatformHelper.OpenFolderAndSelectFile(filepath);
             }
         }
 

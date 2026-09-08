@@ -1,204 +1,179 @@
-<UserControl x:Class="ColorVision.Engine.Services.PhyCameras.Group.CalibrationControl"
+﻿<UserControl x:Class="ColorVision.Engine.Services.PhyCameras.Group.CalibrationControl"
+             x:Name="RootControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:hc="https://handyorg.github.io/handycontrol"
-             xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras.Group"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:phy="clr-namespace:ColorVision.Engine.Services.PhyCameras"
-             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d"
-             d:DataContext="{d:DesignInstance local:CalibrationParam}"
-             d:DesignHeight="520" d:DesignWidth="560"
-             MinWidth="420"
+             d:DesignHeight="640" d:DesignWidth="760"
+             MinWidth="520"
+             Background="{DynamicResource UpdateDialog.Background}"
              Initialized="UserControl_Initialized">
     <UserControl.Resources>
-        <Style TargetType="{x:Type TextBlock}">
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-            <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/UpdateDialogTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource UpdateDialog.TextPrimary}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
         </Style>
-        <Style BasedOn="{StaticResource TextBox.Small}" TargetType="TextBox"/>
-        <Style BasedOn="{StaticResource ComboBox.Small}" TargetType="hc:ComboBox">
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="IsEditable" Value="True"/>
+        <Style TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}" />
+        <Style x:Key="SectionCardStyle" TargetType="Border" BasedOn="{StaticResource UpdateDialogCardStyle}">
+            <Setter Property="Padding" Value="12" />
+            <Setter Property="Margin" Value="0,0,0,8" />
         </Style>
-        <Style x:Key="PanelBorderStyle" TargetType="{x:Type Border}">
-            <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="8"/>
+        <Style x:Key="IconActionButtonStyle" TargetType="Button" BasedOn="{StaticResource UpdateDialogTextButtonStyle}">
+            <Setter Property="Width" Value="30" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="2,0,0,0" />
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+            <Setter Property="FontSize" Value="13" />
         </Style>
-        <Style x:Key="SectionTitleStyle" TargetType="{x:Type TextBlock}">
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Margin" Value="0,0,0,8"/>
-        </Style>
-        <Style x:Key="CalibrationRowStyle" TargetType="{x:Type DockPanel}">
-            <Setter Property="Margin" Value="0,0,0,7"/>
-            <Setter Property="LastChildFill" Value="True"/>
-        </Style>
-        <Style x:Key="StatusDotStyle" TargetType="{x:Type Ellipse}">
-            <Setter Property="Width" Value="10"/>
-            <Setter Property="Height" Value="10"/>
-            <Setter Property="Margin" Value="10,0,4,0"/>
-            <Setter Property="Fill" Value="{DynamicResource GlobalBorderBrush1}"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="True">
-                    <Setter Property="Fill" Value="#FF2EAD4F"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
+        <DataTemplate x:Key="CalibrationRowTemplate">
+            <Border BorderBrush="{DynamicResource UpdateDialog.WeakBorder}" BorderThickness="0,0,0,1" Padding="0,5">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="86" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="72" />
+                        <ColumnDefinition Width="28" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Title}" FontSize="13" />
+                    <ComboBox Grid.Column="1" Height="30" Margin="0,0,8,0" IsEditable="True"
+                              ItemsSource="{Binding Resources}" DisplayMemberPath="Name"
+                              Text="{Binding FileReference, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                              ToolTip="{Binding FileReference}" />
+                    <Grid Grid.Column="2" Width="72" VerticalAlignment="Center">
+                        <TextBlock Text="本机缺失" FontSize="11" HorizontalAlignment="Center" Foreground="#B7791F" ToolTip="当前文件在本机不可用">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding FileStatus}" Value="本机缺失"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Calibration.IsExitFile}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <Button Style="{StaticResource IconActionButtonStyle}" Content="&#xE8E5;" ToolTip="在文件夹中显示" AutomationProperties.Name="定位校正文件" Click="OpenCalibrationItem_Click" />
+                            <Button Content="&#xE70F;" ToolTip="编辑文本校正文件" AutomationProperties.Name="编辑校正文件" Click="EditCalibrationItem_Click">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource IconActionButtonStyle}">
+                                        <Setter Property="Visibility" Value="Hidden" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Resource.CanEditText}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+
+                    <CheckBox Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center" AutomationProperties.Name="启用校正"
+                              IsChecked="{Binding Calibration.IsSelected, Mode=TwoWay}" ToolTip="参与当前校正" />
+                </Grid>
+            </Border>
+        </DataTemplate>
+        </ResourceDictionary>
     </UserControl.Resources>
 
-    <Grid>
-        <Border Style="{StaticResource PanelBorderStyle}"/>
-        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="12">
-                <Border Style="{StaticResource PanelBorderStyle}" Padding="12" Margin="0,0,0,10">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="12">
+            <Border Style="{StaticResource SectionCardStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="模板校正配置" FontSize="18" FontWeight="SemiBold" />
+                    <StackPanel x:Name="uploadbutton" d:DataContext="{d:DesignInstance phy:PhyCamera}"
+                                Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Style="{StaticResource UpdateDialogTextButtonStyle}" Margin="0,0,6,0"
+                                Command="{Binding UploadCalibrationCommand}" Content="上传校正组" />
+                        <Button Style="{StaticResource UpdateDialogTextButtonStyle}" Margin="0,0,6,0"
+                                Click="OpenCalibrationManager_Click" Content="校正组管理" />
+                        <Button Style="{StaticResource UpdateDialogTextButtonStyle}"
+                                Command="{Binding OpenSettingDirectoryCommand}" Content="打开配置文件夹" />
+                    </StackPanel>
+                    <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="0,8,0,0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="84" />
+                            <ColumnDefinition Width="58" />
+                            <ColumnDefinition Width="58" />
+                            <ColumnDefinition Width="58" />
+                            <ColumnDefinition Width="68" />
+                            <ColumnDefinition Width="76" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="{x:Static properties:Resources.CalibrationFileManagement}"
-                                       FontSize="16" FontWeight="SemiBold"/>
-                            <TextBlock Text="{x:Static properties:Resources.DescriptionCalibrationControl}"
-                                       FontSize="12" Opacity="0.62" Margin="0,4,0,0"/>
+                        <hc:ComboBox x:Name="ComboBoxList" Height="30" Margin="0,0,8,0" DisplayMemberPath="Name"
+                                     Text="{Binding CalibrationMode}" />
+                        <Border Grid.Column="1" Margin="0,0,8,0" Padding="8,0"
+                                Background="{DynamicResource UpdateDialog.TagBackground}"
+                                BorderBrush="{DynamicResource UpdateDialog.WeakBorder}" BorderThickness="1" CornerRadius="6">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="增益" FontSize="11" Margin="0,0,6,0" Foreground="{DynamicResource UpdateDialog.TagForeground}" />
+                                <TextBlock Text="{Binding SelectedItem.Config.Gain, ElementName=ComboBoxList, TargetNullValue=--}"
+                                           FontWeight="SemiBold" />
+                            </StackPanel>
+                        </Border>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="曝光" FontSize="10" Foreground="{DynamicResource UpdateDialog.TextSecondary}" />
+                            <TextBlock FontSize="11" Text="{Binding SelectedItem.Config.ExpTime, ElementName=ComboBoxList, TargetNullValue=--}" />
                         </StackPanel>
-                        <WrapPanel x:Name="uploadbutton"
-                                   d:DataContext="{d:DesignInstance phy:PhyCamera}"
-                                   Grid.Column="1"
-                                   HorizontalAlignment="Right"
-                                   VerticalAlignment="Center">
-                            <Button Margin="6,0,0,0"
-                                    Command="{Binding UploadCalibrationCommand}"
-                                    Content="{x:Static properties:Resources.UploadCalibrationGroup}"/>
-                            <Button Margin="6,0,0,0"
-                                    Click="Button_Click"
-                                    Content="{x:Static properties:Resources.CalibrationGroupManagement}"/>
-                            <Button Margin="6,0,0,0"
-                                    Command="{Binding OpenSettingDirectoryCommand}"
-                                    Content="{x:Static properties:Resources.OpenConfigFolder}"/>
-                        </WrapPanel>
-                        <hc:ComboBox x:Name="ComboBoxList"
-                                     Grid.Row="1"
-                                     Grid.ColumnSpan="2"
-                                     DisplayMemberPath="Name"
-                                     Text="{Binding CalibrationMode}"
-                                     Margin="0,12,0,0"/>
+                        <StackPanel Grid.Column="3">
+                            <TextBlock Text="ND" FontSize="10" Foreground="{DynamicResource UpdateDialog.TextSecondary}" />
+                            <TextBlock FontSize="11" Text="{Binding SelectedItem.Config.NDShow, ElementName=ComboBoxList, TargetNullValue=--}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Text="光圈" FontSize="10" Foreground="{DynamicResource UpdateDialog.TextSecondary}" />
+                            <TextBlock FontSize="11" Text="{Binding SelectedItem.Config.ApertureShow, ElementName=ComboBoxList, TargetNullValue=--}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="5">
+                            <TextBlock Text="焦距" FontSize="10" Foreground="{DynamicResource UpdateDialog.TextSecondary}" />
+                            <TextBlock FontSize="11" Text="{Binding SelectedItem.Config.FocalLengthShow, ElementName=ComboBoxList, TargetNullValue=--}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="6">
+                            <TextBlock Text="对焦距离" FontSize="10" Foreground="{DynamicResource UpdateDialog.TextSecondary}" />
+                            <TextBlock FontSize="11" Text="{Binding SelectedItem.Config.FocusDistanceShow, ElementName=ComboBoxList, TargetNullValue=--}" />
+                        </StackPanel>
                     </Grid>
-                </Border>
+                </Grid>
+            </Border>
 
-                <Border Style="{StaticResource PanelBorderStyle}" Padding="12" Margin="0,0,0,10">
-                    <StackPanel>
-                        <TextBlock Text="{x:Static properties:Resources.SectionBasicCalibration}" Style="{StaticResource SectionTitleStyle}"/>
+            <Border Style="{StaticResource SectionCardStyle}">
+                <StackPanel>
+                    <TextBlock Text="成像校正" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,5" />
+                    <ItemsControl ItemsSource="{Binding NormalRows, ElementName=RootControl}"
+                                  ItemTemplate="{StaticResource CalibrationRowTemplate}" />
+                </StackPanel>
+            </Border>
 
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipDarkNoise}">
-                            <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.DarkNoise.IsExitFile, Mode=OneWay}"/>
-                            <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.DarkNoise.IsSelected}"/>
-                            <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.DarkNoise}"/>
-                            <TextBox IsEnabled="False" Text="{Binding Normal.DarkNoise.FilePath}"/>
-                        </DockPanel>
-
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipDSNU}">
-                            <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.DSNU.IsExitFile, Mode=OneWay}"/>
-                            <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.DSNU.IsSelected}"/>
-                            <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.DSNU}"/>
-                            <TextBox IsEnabled="False" Text="{Binding Normal.DSNU.FilePath}"/>
-                        </DockPanel>
-
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipDefectPoint}">
-                            <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.DefectPoint.IsExitFile, Mode=OneWay}"/>
-                            <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.DefectPoint.IsSelected}"/>
-                            <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.DefectPoint}"/>
-                            <TextBox IsEnabled="False" Text="{Binding Normal.DefectPoint.FilePath}"/>
-                        </DockPanel>
-
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipColorShift}">
-                            <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.ColorShift.IsExitFile, Mode=OneWay}"/>
-                            <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.ColorShift.IsSelected}"/>
-                            <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.ColorShift}"/>
-                            <TextBox IsEnabled="False" Text="{Binding Normal.ColorShift.FilePath}"/>
-                        </DockPanel>
-
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipDistortion}">
-                            <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.Distortion.IsExitFile, Mode=OneWay}"/>
-                            <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.Distortion.IsSelected}"/>
-                            <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.Distortion}"/>
-                            <TextBox IsEnabled="False" Text="{Binding Normal.Distortion.FilePath}"/>
-                        </DockPanel>
-
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipUniformity}">
-                            <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.Uniformity.IsExitFile, Mode=OneWay}"/>
-                            <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.Uniformity.IsSelected}"/>
-                            <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.Uniformity}"/>
-                            <TextBox IsEnabled="False" Text="{Binding Normal.Uniformity.FilePath}"/>
-                        </DockPanel>
-
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipLineArity}">
-                            <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.LineArity.IsExitFile, Mode=OneWay}"/>
-                            <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.LineArity.IsSelected}"/>
-                            <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.LineArity}"/>
-                            <TextBox IsEnabled="False" Text="{Binding Normal.LineArity.FilePath}"/>
-                        </DockPanel>
-
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipColorDiff}">
-                            <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.ColorDiff.IsExitFile, Mode=OneWay}"/>
-                            <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.ColorDiff.IsSelected}"/>
-                            <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.ColorDiff}"/>
-                            <TextBox IsEnabled="False" Text="{Binding Normal.ColorDiff.FilePath}"/>
-                        </DockPanel>
-
-                        <DockPanel ToolTip="{x:Static properties:Resources.ToolTipAngleShift}">
-                            <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Normal.AngleShift.IsExitFile, Mode=OneWay}"/>
-                            <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Normal.AngleShift.IsSelected}"/>
-                            <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.AngleShift}"/>
-                            <TextBox IsEnabled="False" Text="{Binding Normal.AngleShift.FilePath}"/>
-                        </DockPanel>
-                    </StackPanel>
-                </Border>
-
-                <Border Style="{StaticResource PanelBorderStyle}" Padding="12">
-                    <StackPanel>
-                        <TextBlock Text="{x:Static properties:Resources.SectionColorCalibration}" Style="{StaticResource SectionTitleStyle}"/>
-
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipLuminance}">
-                            <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Color.Luminance.IsExitFile, Mode=OneWay}"/>
-                            <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Color.Luminance.IsSelected}"/>
-                            <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.Brightness}"/>
-                            <TextBox IsEnabled="False" Text="{Binding Color.Luminance.FilePath}"/>
-                        </DockPanel>
-
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipOneColor}">
-                            <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Color.LumOneColor.IsExitFile, Mode=OneWay}"/>
-                            <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Color.LumOneColor.IsSelected}"/>
-                            <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.OneColor}"/>
-                            <TextBox IsEnabled="False" Text="{Binding Color.LumOneColor.FilePath}"/>
-                        </DockPanel>
-
-                        <DockPanel Style="{StaticResource CalibrationRowStyle}" ToolTip="{x:Static properties:Resources.ToolTipFourColor}">
-                            <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Color.LumFourColor.IsExitFile, Mode=OneWay}"/>
-                            <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Color.LumFourColor.IsSelected}"/>
-                            <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.FourColor}"/>
-                            <TextBox IsEnabled="False" Text="{Binding Color.LumFourColor.FilePath}"/>
-                        </DockPanel>
-
-                        <DockPanel ToolTip="{x:Static properties:Resources.ToolTipMultiColor}">
-                            <Ellipse DockPanel.Dock="Right" Style="{StaticResource StatusDotStyle}" Tag="{Binding Color.LumMultiColor.IsExitFile, Mode=OneWay}"/>
-                            <CheckBox DockPanel.Dock="Right" Width="22" IsChecked="{Binding Color.LumMultiColor.IsSelected}"/>
-                            <TextBlock DockPanel.Dock="Left" Width="88" Text="{x:Static properties:Resources.MultiColor}"/>
-                            <TextBox IsEnabled="False" Text="{Binding Color.LumMultiColor.FilePath}"/>
-                        </DockPanel>
-                    </StackPanel>
-                </Border>
-            </StackPanel>
-        </ScrollViewer>
-    </Grid>
+            <Border Style="{StaticResource SectionCardStyle}" Margin="0">
+                <StackPanel>
+                    <TextBlock Text="色度校正" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,5" />
+                    <ItemsControl ItemsSource="{Binding PrimaryColorRows, ElementName=RootControl}"
+                                  ItemTemplate="{StaticResource CalibrationRowTemplate}" />
+                    <ItemsControl ItemsSource="{Binding SecondaryColorRows, ElementName=RootControl}"
+                                  ItemTemplate="{StaticResource CalibrationRowTemplate}" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>

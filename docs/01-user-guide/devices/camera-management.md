@@ -1,11 +1,11 @@
----
+﻿---
 knowledge_id: "operations.physical-camera"
 knowledge_type: "topic"
 status: "current"
 summary: "物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，创建/导入在唯一物理相机时可批量绑定服务。"
-aliases: ["物理相机","相机管理","相机许可证","导入lic","唯一相机自动绑定","校准文件上传","恢复点","PhyCameraManager","PhyCamera","SearchCameraIds","SetLicense","CreateRestore","LoadResotre","UploadDataAsync","扫描在线相机","添加未创建的相机","上传校正文件","创建还原点","加载还原点","CameraSearchResultViewModel","PhysicalCamera_Load","t_scgd_camera_license","LicenseState","ExpiryDateTime","许可证过期字段"]
-code_paths: ["Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManager.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraRestoreArchive.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadRunner.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadWorkspace.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchTypeWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchResultWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CreateWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml","Engine/ColorVision.Engine/Services/RC/RCFileUpload.cs","Engine/cvColorVision/Camera/cvCameraCSLib.Discovery.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PhyCameraLicenseImportPolicyTests.cs","Test/ColorVision.UI.Tests/PhyCameraRestoreArchiveTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadRunnerTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadWorkspaceTests.cs"]
+aliases: ["物理相机","相机管理","相机许可证","导入lic","唯一相机自动绑定","校准文件上传","校正文件管理","四色校正采集","四色校正文件修正","恢复点","PhyCameraManager","PhyCamera","SearchCameraIds","SetLicense","CreateRestore","LoadResotre","UploadDataAsync","CalibrationEdit","扫描在线相机","添加未创建的相机","上传校正文件","创建还原点","加载还原点","CameraSearchResultViewModel","PhysicalCamera_Load","t_scgd_camera_license","LicenseState","ExpiryDateTime","许可证过期字段"]
+code_paths: ["Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManager.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraRestoreArchive.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadRunner.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadWorkspace.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchTypeWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchResultWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CreateWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationEdit.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationEdit.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml","Engine/ColorVision.Engine/Services/RC/RCFileUpload.cs","Engine/cvColorVision/Camera/cvCameraCSLib.Discovery.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/PhyCameraLicenseImportPolicyTests.cs","Test/ColorVision.UI.Tests/PhyCameraRestoreArchiveTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadRunnerTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadWorkspaceTests.cs","Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs","Test/ColorVision.UI.Tests/CalibrationEditorInteractionTests.cs"]
 related: ["operations.camera","operations.camera-configuration","operations.calibration","engine.devices"]
 ---
 
@@ -74,6 +74,12 @@ related: ["operations.camera","operations.camera-configuration","operations.cali
 上传会创建目标目录，在独立临时工作区解包、读取 `Calibration.cfg`，覆盖目标同名文件并写入/更新数据库资源、分组。文件复制与数据库更新分步完成，失败不保证全部回滚；名称虽为“上传”，此入口的资源文件写入是本地文件系统操作。模板如何消费这些资源见[校准服务](./calibration.md)。
 
 不要把 `UploadData()` 返回、`UploadDataAsync` 结束或 `UploadClosed` 事件等同于全部成功：旧 `UploadData` 是 fire-and-forget，异步实现内部会捕获错误，失败路径也会发关闭事件。应检查 `UploadList` 的逐项状态、`Msg`、错误日志与目标资源；分组处理也可能单独报错。源码中的“上传完成”提示不是完整事务验收。
+
+## 管理校正组和修正四色文件
+
+“校正文件管理”按 C++ 实际处理链排列成像校正项。色度校正依次列出亮度、四色、单色和多色。顶部将当前组名与增益、曝光、ND、光圈、焦距和对焦距离排在一行，参数可直接编辑；后五项当前只维护与显示，不参与校正逻辑。左侧直接提供添加组和删除入口；每个资源行提供文件选择及紧凑操作区。定位/编辑与“本机缺失”共用一块空间：存在时显示定位及支持的文本编辑入口，缺失时仅显示提示，空资源留空。均匀场、DSNU、缺陷点和线性度为二进制文件，仅支持定位与上传，不提供文本编辑；组修改在关闭窗口时保存。
+
+“四色校正采集”可从四色资源行、窗口顶部或“应用与工具”进入。选择原四色文件、相机校正模板和光谱仪后，单点完成一组相机 POI 与光谱数据，RGBW 完成四组；相机侧和光谱侧不限制先后顺序。界面显示相机原始 XYZ/x/y 和光谱 Y/x/y/光谱点，全部完成后才能计算并另存；有限负数不裁剪。窗口不自动切换外部画面或 ND，现场按当前色块手动切换；无真机时可加载 CVCIE 验证相机侧步骤。“手动录入”保留原数值输入窗口。
 
 ## 恢复点的创建与载入并不对称
 

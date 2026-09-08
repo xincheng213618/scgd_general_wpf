@@ -4596,7 +4596,7 @@
       "knowledge_id": "engine.file-io",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "CVRAW/CVCIE 读取、内嵌 XYZ 真彩显示与原图回退、手动校正数值校验，以及版本写回和失败边界。",
+      "summary": "CVRAW/CVCIE 读取、内嵌 XYZ 真彩显示与原图回退、四色校正采集与数值校验，以及版本写回和失败边界。",
       "aliases": [
         "CVCIE文件为什么打不开",
         "ColorVision.FileIO",
@@ -4615,6 +4615,8 @@
         "CvcieSrgbRenderer",
         "CvcieDisplayConfig",
         "CVRawManualCieCalculator",
+        "LumFourColorCalibrationWorkflowWindow",
+        "四色校正采集",
         "校正文件异常"
       ],
       "code_paths": [
@@ -4631,6 +4633,11 @@
         "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs",
         "Engine/ColorVision.Engine/Media/CVRawManualCieCalculator.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCorrectionCalculator.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCorrectionWindow.xaml",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCorrectionWindow.xaml.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml.cs",
         "Engine/ColorVision.Engine/Media/CVRawManualCieWindow.xaml.cs",
         "UI/ColorVision.ImageEditor/Settings/ImageViewSettingsWindow.xaml.cs",
         "Plugins/Conoscope/ConoscopeDocument.cs"
@@ -4642,6 +4649,7 @@
         "Test/ColorVision.UI.Tests/CvcieDisplayIntegrationTests.cs",
         "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs",
         "Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs",
+        "Test/ColorVision.UI.Tests/CalibrationEditorInteractionTests.cs",
         "Test/ColorVision.UI.Tests/CvFilePixelSafetyTests.cs",
         "Test/ColorVision.UI.Tests/CvcieFloatChannelRendererTests.cs"
       ],
@@ -5384,10 +5392,13 @@
       "knowledge_id": "engine.spectrum-device",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "主程序光谱仪的全连接方式搜索、设备配置分类和许可证读取入口；区分本机搜索、服务端刷新与实际连接。",
+      "summary": "主程序光谱仪的全连接方式搜索、设备配置、许可证读取和四色校正单次采集入口；区分本机搜索、服务端刷新与实际连接。",
       "aliases": [
         "光谱仪搜不到",
         "光谱仪连接方式",
+        "光谱单次采集",
+        "SpectrumColorMeasurement",
+        "CaptureColorMeasurementAsync",
         "ConfigSpectrum",
         "InfoSpectrum",
         "GetSpectrSerialNumberAsync",
@@ -6229,12 +6240,17 @@
       "knowledge_id": "operations.calibration",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "校准服务绑定物理相机并执行本地文件或MQTT校正；输出文件、结果显示、历史落库与缓存删除是不同完成边界。",
+      "summary": "校准服务绑定物理相机并执行本地文件或MQTT校正；模板按Native执行链选用存在的校正文件，输出、显示、落库与缓存删除是不同完成边界。",
       "aliases": [
         "校准服务",
         "本地校正",
         "标定资源",
         "校准模板打不开",
+        "校正参数设置",
+        "四色校正采集",
+        "LumFourColorCalibrationSession",
+        "CalibrationControl",
+        "CalibrationSlotDefinitions",
         "清理校准缓存",
         "UseLocalCalibration",
         "DeviceCalibration",
@@ -6250,11 +6266,19 @@
         "Engine/ColorVision.Engine/Services/Devices/Calibration/Views/ViewCalibration.xaml.cs",
         "Engine/ColorVision.Engine/Services/Devices/Calibration/InfoCalibration.xaml.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationParam.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationSlotDefinitions.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheService.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheManagerWindow.xaml.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs"
       ],
-      "test_paths": [],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs",
+        "Test/ColorVision.UI.Tests/CalibrationEditorInteractionTests.cs"
+      ],
       "related": [
         "engine.devices",
         "operations.device-configuration",
@@ -7039,6 +7063,9 @@
         "导入lic",
         "唯一相机自动绑定",
         "校准文件上传",
+        "校正文件管理",
+        "四色校正采集",
+        "四色校正文件修正",
         "恢复点",
         "PhyCameraManager",
         "PhyCamera",
@@ -7047,6 +7074,7 @@
         "CreateRestore",
         "LoadResotre",
         "UploadDataAsync",
+        "CalibrationEdit",
         "扫描在线相机",
         "添加未创建的相机",
         "上传校正文件",
@@ -7072,6 +7100,10 @@
         "Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchResultWindow.xaml.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/CreateWindow.xaml.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationEdit.xaml",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationEdit.xaml.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml",
         "Engine/ColorVision.Engine/Services/RC/RCFileUpload.cs",
         "Engine/cvColorVision/Camera/cvCameraCSLib.Discovery.cs"
       ],
@@ -7079,7 +7111,9 @@
         "Test/ColorVision.UI.Tests/PhyCameraLicenseImportPolicyTests.cs",
         "Test/ColorVision.UI.Tests/PhyCameraRestoreArchiveTests.cs",
         "Test/ColorVision.UI.Tests/CalibrationUploadRunnerTests.cs",
-        "Test/ColorVision.UI.Tests/CalibrationUploadWorkspaceTests.cs"
+        "Test/ColorVision.UI.Tests/CalibrationUploadWorkspaceTests.cs",
+        "Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs",
+        "Test/ColorVision.UI.Tests/CalibrationEditorInteractionTests.cs"
       ],
       "related": [
         "operations.camera",

@@ -6,6 +6,27 @@ using System.Linq;
 
 namespace ColorVision.Engine.Services.PhyCameras.Group
 {
+    internal static class CalibrationSlotPresentation
+    {
+        public static string GetTitle(string key) => key switch
+        {
+            nameof(GroupResource.DarkNoise) => "暗噪声",
+            nameof(GroupResource.DefectPoint) => "缺陷点",
+            nameof(GroupResource.DSNU) => "DSNU",
+            nameof(GroupResource.Uniformity) => "均匀场",
+            nameof(GroupResource.ColorShift) => "色偏",
+            nameof(GroupResource.Distortion) => "畸变",
+            nameof(GroupResource.LineArity) => "线性度",
+            nameof(GroupResource.ColorDiff) => "ColorDiff",
+            nameof(GroupResource.AngleShift) => "角度偏移",
+            nameof(GroupResource.Luminance) => "亮度",
+            nameof(GroupResource.LumOneColor) => "单色",
+            nameof(GroupResource.LumFourColor) => "四色",
+            nameof(GroupResource.LumMultiColor) => "多色",
+            _ => key,
+        };
+    }
+
     internal sealed class CalibrationSlotDefinition
     {
         public CalibrationSlotDefinition(
@@ -34,11 +55,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public static IReadOnlyList<CalibrationSlotDefinition> NormalSlots { get; } = new CalibrationSlotDefinition[]
         {
             new(nameof(GroupResource.DarkNoise), ServiceTypes.DarkNoise, group => group.DarkNoise, (group, resource) => group.DarkNoise = resource, param => param.Normal.DarkNoise),
-            new(nameof(GroupResource.DSNU), ServiceTypes.DSNU, group => group.DSNU, (group, resource) => group.DSNU = resource, param => param.Normal.DSNU),
             new(nameof(GroupResource.DefectPoint), ServiceTypes.DefectPoint, group => group.DefectPoint, (group, resource) => group.DefectPoint = resource, param => param.Normal.DefectPoint),
+            new(nameof(GroupResource.DSNU), ServiceTypes.DSNU, group => group.DSNU, (group, resource) => group.DSNU = resource, param => param.Normal.DSNU),
             new(nameof(GroupResource.Uniformity), ServiceTypes.Uniformity, group => group.Uniformity, (group, resource) => group.Uniformity = resource, param => param.Normal.Uniformity),
-            new(nameof(GroupResource.Distortion), ServiceTypes.Distortion, group => group.Distortion, (group, resource) => group.Distortion = resource, param => param.Normal.Distortion),
             new(nameof(GroupResource.ColorShift), ServiceTypes.ColorShift, group => group.ColorShift, (group, resource) => group.ColorShift = resource, param => param.Normal.ColorShift),
+            new(nameof(GroupResource.Distortion), ServiceTypes.Distortion, group => group.Distortion, (group, resource) => group.Distortion = resource, param => param.Normal.Distortion),
             new(nameof(GroupResource.LineArity), ServiceTypes.LineArity, group => group.LineArity, (group, resource) => group.LineArity = resource, param => param.Normal.LineArity),
             new(nameof(GroupResource.ColorDiff), ServiceTypes.ColorDiff, group => group.ColorDiff, (group, resource) => group.ColorDiff = resource, param => param.Normal.ColorDiff),
             new(nameof(GroupResource.AngleShift), ServiceTypes.AngleShift, group => group.AngleShift, (group, resource) => group.AngleShift = resource, param => param.Normal.AngleShift),

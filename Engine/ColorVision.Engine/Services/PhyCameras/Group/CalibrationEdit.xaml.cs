@@ -1,5 +1,7 @@
 ﻿#pragma warning disable CA1863
+using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.Services.PhyCameras.Calibration;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Themes;
 using Newtonsoft.Json;
@@ -12,13 +14,46 @@ using System.IO.Compression;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 
 
 namespace ColorVision.Engine.Services.PhyCameras.Group
 {
-    /// <summary>
-    /// CalibrationEdit.xaml 的交互逻辑
-    /// </summary>
+    public sealed class CalibrationEditRow : ViewModelBase
+    {
+        private readonly CalibrationSlotDefinition slot;
+
+        internal CalibrationEditRow(CalibrationSlotDefinition slot, GroupResource group, ObservableCollection<CalibrationResource> resources)
+        {
+            this.slot = slot;
+            Group = group;
+            Resources = resources;
+            Title = CalibrationSlotPresentation.GetTitle(slot.Key);
+        }
+
+        public string SlotKey => slot.Key;
+        public GroupResource Group { get; }
+        public ObservableCollection<CalibrationResource> Resources { get; }
+        public string Title { get; }
+        public string FileStatus => SelectedResource == null ? "未配置" : SelectedResource.IsValid ? "本机存在" : "本机缺失";
+        public bool CanCorrect => slot.ServiceType == ServiceTypes.LumFourColor;
+
+        public CalibrationResource? SelectedResource
+        {
+            get => slot.GroupGetter(Group);
+            set
+            {
+                if (ReferenceEquals(slot.GroupGetter(Group), value))
+                    return;
+
+                slot.GroupSetter(Group, value!);
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(FileStatus));
+            }
+        }
+
+    }
+
     public partial class CalibrationEdit : Window
     {
         public PhyCamera PhyCamera { get; set; }
@@ -48,6 +83,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public ObservableCollection<CalibrationResource> ColorDiffList { get; set; } = new ObservableCollection<CalibrationResource>();
         public ObservableCollection<CalibrationResource> AngleShiftList { get; set; } = new ObservableCollection<CalibrationResource>();
         public ObservableCollection<CalibrationResource> LineArityList { get; set; } = new ObservableCollection<CalibrationResource>();
+
+        public ObservableCollection<CalibrationEditRow> NormalRows { get; } = new();
+        public ObservableCollection<CalibrationEditRow> PrimaryColorRows { get; } = new();
+        public ObservableCollection<CalibrationEditRow> SecondaryColorRows { get; } = new();
 
         private IReadOnlyDictionary<ServiceTypes, ObservableCollection<CalibrationResource>> CalibrationListsByServiceType => _CalibrationListsByServiceType ??= new Dictionary<ServiceTypes, ObservableCollection<CalibrationResource>>
         {
@@ -93,20 +132,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             ListView1.ItemsSource = groupResources;
             if (groupResources.Count > 0)
             {
-                ListView1.SelectedIndex = 0;
-                StackPanelCab.DataContext = groupResources[0];
+                ListView1.SelectedIndex = Math.Clamp(Index, 0, groupResources.Count - 1);
+                ShowGroup(groupResources[ListView1.SelectedIndex]);
             }
-
-            foreach (var slot in CalibrationSlotDefinitions.AllSlots)
+            else
             {
-                if (FindName($"ComboBox{slot.Key}") is ComboBox comboBox
-                    && CalibrationListsByServiceType.TryGetValue(slot.ServiceType, out var calibrationList))
-                {
-                    comboBox.ItemsSource = calibrationList;
-                }
+                ShowGroup(null);
             }
-
-            ListView1.SelectedIndex = Index;
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -118,10 +150,75 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (ListView1.SelectedIndex > -1)
+            Index = ListView1.SelectedIndex;
+            ShowGroup(ListView1.SelectedItem as GroupResource);
+        }
+
+        private void ShowGroup(GroupResource? group)
+        {
+            StackPanelCab.DataContext = group;
+            NormalRows.Clear();
+            PrimaryColorRows.Clear();
+            SecondaryColorRows.Clear();
+
+            if (group == null)
+                return;
+
+            foreach (var slot in CalibrationSlotDefinitions.NormalSlots)
             {
-                StackPanelCab.DataContext = groupResources[ListView1.SelectedIndex];
+                NormalRows.Add(CreateRow(slot, group));
             }
+
+            foreach (var slot in CalibrationSlotDefinitions.ColorSlots)
+            {
+                ObservableCollection<CalibrationEditRow> target = slot.ServiceType is ServiceTypes.Luminance or ServiceTypes.LumFourColor
+                    ? PrimaryColorRows
+                    : SecondaryColorRows;
+                target.Add(CreateRow(slot, group));
+            }
+        }
+
+        private CalibrationEditRow CreateRow(CalibrationSlotDefinition slot, GroupResource group)
+        {
+            return new CalibrationEditRow(slot, group, CalibrationListsByServiceType[slot.ServiceType]);
+        }
+
+        private void GroupManagement_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.ContextMenu is ContextMenu menu)
+            {
+                menu.PlacementTarget = button;
+                menu.Placement = PlacementMode.Bottom;
+                menu.IsOpen = true;
+            }
+        }
+
+        private void OpenCalibration_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.DataContext is CalibrationEditRow row)
+                row.SelectedResource?.Open();
+        }
+
+        private void EditCalibration_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.DataContext is CalibrationEditRow row)
+                row.SelectedResource?.Edit();
+        }
+
+        private void CorrectFourColor_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.DataContext is not CalibrationEditRow row)
+                return;
+
+            if (row.SelectedResource?.TryGetFilePath(out string filePath) == true)
+                LumFourColorCalibrationWorkflowWindow.ShowWindow(filePath);
+            else
+                LumFourColorCalibrationWorkflowWindow.ShowWindow();
+        }
+
+        private void LaunchFourColorCorrection_Click(object sender, RoutedEventArgs e)
+        {
+            LumFourColorCalibrationWorkflowWindow.ShowWindow();
         }
 
         private void Button_Add_Click(object sender, RoutedEventArgs e)

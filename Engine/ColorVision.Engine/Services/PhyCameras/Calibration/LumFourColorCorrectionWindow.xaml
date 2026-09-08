@@ -1,0 +1,147 @@
+<Window x:Class="ColorVision.Engine.Services.PhyCameras.Calibration.LumFourColorCorrectionWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="四色校正文件修正"
+        Width="940" Height="620" MinWidth="840" MinHeight="560"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource UpdateDialog.Background}"
+        Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/UpdateDialogTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="SectionLabelStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="15" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Foreground" Value="{DynamicResource UpdateDialog.TextPrimary}" />
+            </Style>
+            <Style x:Key="FieldTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}">
+                <Setter Property="Height" Value="34" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid Margin="30,26,30,22">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="1" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="1" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Margin="0,0,0,18" FontSize="28" FontWeight="SemiBold" Text="四色校正文件修正" />
+
+        <Border Grid.Row="1" Background="{DynamicResource UpdateDialog.Border}" />
+
+        <Border Grid.Row="2" Margin="0,18,0,12" Padding="16,14"
+                Style="{StaticResource UpdateDialogCardStyle}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="112" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource SectionLabelStyle}" Text="原校正文件" />
+                <TextBox x:Name="SourcePathBox" Grid.Column="1" Margin="0,0,12,0"
+                         Style="{StaticResource FieldTextBoxStyle}" />
+                <Button Grid.Column="2" Width="86" Click="BrowseSource_Click"
+                        Content="选择文件" Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="3" Margin="2,0,2,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <RadioButton x:Name="SinglePointMode" GroupName="CorrectionMode" Content="单点修正"
+                         VerticalAlignment="Center" Checked="CorrectionMode_Checked" />
+            <RadioButton x:Name="FourColorMode" Grid.Column="1" Margin="24,0,0,0"
+                         GroupName="CorrectionMode" Content="四色修正（RGBW）" IsChecked="True"
+                         VerticalAlignment="Center" Checked="CorrectionMode_Checked" />
+        </Grid>
+
+        <Grid Grid.Row="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="270" />
+            </Grid.ColumnDefinitions>
+
+            <Border Padding="14" Style="{StaticResource UpdateDialogCardStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Margin="2,0,0,12" Style="{StaticResource SectionLabelStyle}" Text="测量数据" />
+                    <DataGrid x:Name="MeasurementsGrid" Grid.Row="1"
+                              AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                              CanUserReorderColumns="False" CanUserResizeRows="False" CanUserSortColumns="False"
+                              HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                              RowHeight="42" ColumnHeaderHeight="36"
+                              BorderThickness="0" Background="Transparent"
+                              HorizontalGridLinesBrush="{DynamicResource UpdateDialog.WeakBorder}"
+                              VerticalGridLinesBrush="Transparent">
+                        <DataGrid.ColumnHeaderStyle>
+                            <Style TargetType="DataGridColumnHeader">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="Foreground" Value="{DynamicResource UpdateDialog.TextSecondary}" />
+                                <Setter Property="BorderBrush" Value="{DynamicResource UpdateDialog.WeakBorder}" />
+                                <Setter Property="BorderThickness" Value="0,0,0,1" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                            </Style>
+                        </DataGrid.ColumnHeaderStyle>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Width="54" Header="目标" IsReadOnly="True" Binding="{Binding Target}" />
+                            <DataGridTextColumn Width="*" Header="相机 Y" Binding="{Binding CameraY, UpdateSourceTrigger=PropertyChanged}" />
+                            <DataGridTextColumn Width="*" Header="相机 x" Binding="{Binding CameraX, UpdateSourceTrigger=PropertyChanged}" />
+                            <DataGridTextColumn Width="*" Header="相机 y" Binding="{Binding CameraYChromaticity, UpdateSourceTrigger=PropertyChanged}" />
+                            <DataGridTextColumn Width="*" Header="光谱 Y" Binding="{Binding ReferenceY, UpdateSourceTrigger=PropertyChanged}" />
+                            <DataGridTextColumn Width="*" Header="光谱 x" Binding="{Binding ReferenceX, UpdateSourceTrigger=PropertyChanged}" />
+                            <DataGridTextColumn Width="*" Header="光谱 y" Binding="{Binding ReferenceYChromaticity, UpdateSourceTrigger=PropertyChanged}" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="2" Padding="16" Style="{StaticResource UpdateDialogCardStyle}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionLabelStyle}" Text="计算结果" />
+                    <TextBox x:Name="ResultPreview" Margin="0,12,0,0" Height="184"
+                             Padding="12" IsReadOnly="True" AcceptsReturn="True"
+                             FontFamily="Cascadia Mono,Consolas" FontSize="12"
+                             VerticalScrollBarVisibility="Auto" />
+                    <TextBlock x:Name="StatusText" Margin="0,14,0,0" FontSize="12"
+                               Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="5" Margin="0,18,0,0" Background="{DynamicResource UpdateDialog.Border}" />
+
+        <Grid Grid.Row="6" Margin="0,18,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button Width="96" Click="Close_Click" Content="关闭"
+                        Style="{StaticResource UpdateDialogTextButtonStyle}" />
+                <Button Width="110" Margin="10,0,0,0" Click="Calculate_Click" Content="计算修正"
+                        Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
+                <Button x:Name="SaveButton" Width="110" Margin="10,0,0,0" Click="SaveAs_Click"
+                        Content="另存为" IsEnabled="False"
+                        Style="{StaticResource UpdateDialogPrimaryButtonStyle}" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

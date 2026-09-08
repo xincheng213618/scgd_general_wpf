@@ -3,8 +3,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.PhyCameras.Calibration
 {
@@ -32,19 +30,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         White
     }
 
-    /// <summary>
-    /// Supplies the camera Yxy, reference Yxy, and spectrum for a requested correction target.
-    /// Implementations own pattern display, camera capture, spectrometer selection, and ND switching.
-    /// </summary>
-    public interface ILumFourColorCorrectionMeasurementProvider
-    {
-        Task<ColorCorrectionMeasurement> CaptureAsync(LumFourColorCorrectionTarget target, CancellationToken cancellationToken = default);
-    }
-
-    /// <summary>
-    /// Converts single-point or RGBW Yxy measurements into LumFourColor calibration coefficients.
-    /// The equations intentionally accept finite negative source values and coefficients.
-    /// </summary>
     public static class LumFourColorCorrectionCalculator
     {
         public static CVRawManualCieConfig CorrectSinglePoint(CVRawManualCieConfig source, ColorCorrectionMeasurement measurement)

@@ -295,6 +295,87 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         private async Task<SpectrumMeasurementSnapshot> CaptureCorrectionMeasurementAsync(CancellationToken cancellationToken)
         {
+            SpectumResultEntity entity = await CaptureSingleResultAsync(cancellationToken);
+            double[] relativeSpectrum = LoadCorrectionRelativeSpectrum(entity);
+            (double start, double end, double interval, int pointCount) = ResolveCorrectionWavelengthMetadata(entity, relativeSpectrum.Length);
+            double[] croppedSpectrum = relativeSpectrum.Take(pointCount).ToArray();
+
+            if (croppedSpectrum.Any(value => !double.IsFinite(value) || value < 0))
+                throw new InvalidOperationException("服务返回的相对光谱包含无效或负数值，不能用于光谱校正。");
+
+            double absoluteScale = entity.fPlambda ?? double.NaN;
+            if (!double.IsFinite(absoluteScale) || absoluteScale <= 0)
+                throw new InvalidOperationException("服务返回的绝对光谱系数无效，不能用于光谱校正。");
+
+            double photometricValue = entity.DataType
+                ? entity.LuminousFlux ?? entity.fPh ?? double.NaN
+                : entity.fPh ?? double.NaN;
+
+            string magnitudeFilePath = ResolveActiveMagnitudeFilePath();
+            if (!File.Exists(magnitudeFilePath))
+                throw new InvalidOperationException($"当前幅值标定文件不存在：{magnitudeFilePath}");
+            string? sourceValidationError = ValidateCorrectionMagnitudeFile(magnitudeFilePath);
+            if (sourceValidationError != null)
+                throw new InvalidOperationException($"当前幅值标定文件不能用于校正：{sourceValidationError}");
+            string magnitudeFileSha256 = ComputeFileSha256(magnitudeFilePath);
+
+            DateTime measuredAt = entity.CreateDate == default ? DateTime.Now : entity.CreateDate;
+            return new SpectrumMeasurementSnapshot(
+                entity.Id,
+                entity.DeviceCode ?? Config.Code ?? string.Empty,
+                Config.SN ?? string.Empty,
+                new DateTimeOffset(measuredAt),
+                start,
+                end,
+                interval,
+                croppedSpectrum,
+                absoluteScale,
+                photometricValue,
+                entity.IntTime ?? DisplayConfig.IntTime,
+                entity.iAveNum ?? DisplayConfig.AveNum,
+                entity.DataType ? "LuminousFlux" : "Luminance",
+                Config.ActiveCalibrationGroupName ?? string.Empty,
+                magnitudeFilePath,
+                magnitudeFileSha256);
+        }
+
+        public async Task<SpectrumColorMeasurement> CaptureColorMeasurementAsync(CancellationToken cancellationToken = default)
+        {
+            if (!await correctionMeasurementGate.WaitAsync(0, cancellationToken))
+                throw new InvalidOperationException("光谱仪正在执行其他测量或校正操作。");
+
+            try
+            {
+                SpectumResultEntity entity = await CaptureSingleResultAsync(cancellationToken);
+                double y = entity.fPh ?? double.NaN;
+                double cieX = entity.fx ?? double.NaN;
+                double cieY = entity.fy ?? double.NaN;
+                if (!double.IsFinite(y) || !double.IsFinite(cieX) || !double.IsFinite(cieY))
+                    throw new InvalidOperationException("光谱服务返回的 Y、CIE x 或 CIE y 无效。");
+
+                double[] values = LoadCorrectionRelativeSpectrum(entity);
+                if (values.Any(value => !double.IsFinite(value)))
+                    throw new InvalidOperationException("光谱服务返回的光谱数据包含非有限数值。");
+
+                double start = entity.fSpect1 is float startValue && float.IsFinite(startValue) ? startValue : 380d;
+                double interval = entity.fInterval is float intervalValue && float.IsFinite(intervalValue) && intervalValue > 0
+                    ? intervalValue
+                    : values.Length > 1000 ? 0.1d : 1d;
+                SpectrumValuePoint[] spectrum = new SpectrumValuePoint[values.Length];
+                for (int index = 0; index < values.Length; index++)
+                    spectrum[index] = new SpectrumValuePoint(start + interval * index, values[index]);
+
+                DateTime measuredAt = entity.CreateDate == default ? DateTime.Now : entity.CreateDate;
+                return new SpectrumColorMeasurement(entity.Id, new DateTimeOffset(measuredAt), y, cieX, cieY, spectrum);
+            }
+            finally
+            {
+                correctionMeasurementGate.Release();
+            }
+        }
+
+        private async Task<SpectumResultEntity> CaptureSingleResultAsync(CancellationToken cancellationToken)
+        {
             Config.EnsureCalibrationGroups();
             DeviceStatusType deviceStatus = DService.DeviceStatus;
             if (!IsCorrectionCaptureReadyStatus(deviceStatus))
@@ -361,47 +442,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 throw new InvalidOperationException(
                     $"光谱结果设备不匹配：期望 {Config.Code}，实际 {entity.DeviceCode ?? "<空>"}。");
             }
-            double[] relativeSpectrum = LoadCorrectionRelativeSpectrum(entity);
-            (double start, double end, double interval, int pointCount) = ResolveCorrectionWavelengthMetadata(entity, relativeSpectrum.Length);
-            double[] croppedSpectrum = relativeSpectrum.Take(pointCount).ToArray();
-
-            if (croppedSpectrum.Any(value => !double.IsFinite(value) || value < 0))
-                throw new InvalidOperationException("服务返回的相对光谱包含无效或负数值，不能用于光谱校正。");
-
-            double absoluteScale = entity.fPlambda ?? double.NaN;
-            if (!double.IsFinite(absoluteScale) || absoluteScale <= 0)
-                throw new InvalidOperationException("服务返回的绝对光谱系数无效，不能用于光谱校正。");
-
-            double photometricValue = entity.DataType
-                ? entity.LuminousFlux ?? entity.fPh ?? double.NaN
-                : entity.fPh ?? double.NaN;
-
-            string magnitudeFilePath = ResolveActiveMagnitudeFilePath();
-            if (!File.Exists(magnitudeFilePath))
-                throw new InvalidOperationException($"当前幅值标定文件不存在：{magnitudeFilePath}");
-            string? sourceValidationError = ValidateCorrectionMagnitudeFile(magnitudeFilePath);
-            if (sourceValidationError != null)
-                throw new InvalidOperationException($"当前幅值标定文件不能用于校正：{sourceValidationError}");
-            string magnitudeFileSha256 = ComputeFileSha256(magnitudeFilePath);
-
-            DateTime measuredAt = entity.CreateDate == default ? DateTime.Now : entity.CreateDate;
-            return new SpectrumMeasurementSnapshot(
-                entity.Id,
-                entity.DeviceCode ?? Config.Code ?? string.Empty,
-                Config.SN ?? string.Empty,
-                new DateTimeOffset(measuredAt),
-                start,
-                end,
-                interval,
-                croppedSpectrum,
-                absoluteScale,
-                photometricValue,
-                entity.IntTime ?? DisplayConfig.IntTime,
-                entity.iAveNum ?? DisplayConfig.AveNum,
-                entity.DataType ? "LuminousFlux" : "Luminance",
-                Config.ActiveCalibrationGroupName ?? string.Empty,
-                magnitudeFilePath,
-                magnitudeFileSha256);
+            return entity;
         }
 
         private async Task<SpectrumCorrectionApplyResult> ApplyCorrectionMagnitudeFileAsync(

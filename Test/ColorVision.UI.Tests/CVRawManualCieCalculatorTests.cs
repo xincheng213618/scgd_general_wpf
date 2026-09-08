@@ -1,5 +1,7 @@
-using ColorVision.Engine.Media;
+﻿using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.PhyCameras.Calibration;
+using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Engine.Services.POI;
 using ColorVision.FileIO;
 using Newtonsoft.Json.Linq;
 using System.IO;
@@ -8,6 +10,39 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CVRawManualCieCalculatorTests
 {
+    [Fact]
+    public void CalibrationSlotsFollowNativeExecutionOrderInsteadOfEnumOrder()
+    {
+        string[] actual = CalibrationSlotDefinitions.NormalSlots.Select(slot => slot.Key).ToArray();
+
+        Assert.Equal(new[]
+        {
+            nameof(GroupResource.DarkNoise),
+            nameof(GroupResource.DefectPoint),
+            nameof(GroupResource.DSNU),
+            nameof(GroupResource.Uniformity),
+            nameof(GroupResource.ColorShift),
+            nameof(GroupResource.Distortion),
+            nameof(GroupResource.LineArity),
+            nameof(GroupResource.ColorDiff),
+            nameof(GroupResource.AngleShift),
+        }, actual);
+    }
+
+    [Fact]
+    public void MissingCalibrationFilePreservesTemplateSelection()
+    {
+        CalibrationBase calibration = new(new List<ColorVision.Engine.ModDetailModel>())
+        {
+            IsExitFile = true,
+            IsSelected = true,
+        };
+
+        calibration.IsExitFile = false;
+
+        Assert.True(calibration.IsSelected);
+    }
+
     [Fact]
     public void CorrectSinglePointMatchesProvidedMatlabEquationsAndPreservesNormalization()
     {
@@ -71,6 +106,111 @@ public sealed class CVRawManualCieCalculatorTests
         singular.I = 0;
         ColorCorrectionMeasurement valid = new(new ColorCorrectionYxy(1, 0.2, 0.3), new ColorCorrectionYxy(1, 0.2, 0.3));
         Assert.Throws<InvalidOperationException>(() => LumFourColorCorrectionCalculator.CorrectSinglePoint(singular, valid));
+    }
+
+    [Fact]
+    public void CalibrationSessionUsesSingleOrRgbwCaptureOrder()
+    {
+        LumFourColorCalibrationSession session = new();
+
+        session.SetMode(false);
+
+        Assert.False(session.IsSinglePoint);
+        Assert.Equal(new[] { "R", "G", "B", "W" }, session.Samples.Select(sample => sample.Name));
+
+        session.SetMode(true);
+
+        Assert.True(session.IsSinglePoint);
+        Assert.Equal("单点", Assert.Single(session.Samples).Name);
+    }
+
+    [Fact]
+    public void CalibrationSampleRetainsFiniteNegativeMeasurementsAndSpectrum()
+    {
+        LumFourColorCalibrationSession session = new();
+        session.SetMode(true);
+        LumFourColorCalibrationSample sample = session.Samples[0];
+        sample.SetSpectrumMeasurement(new LumFourColorSpectrumCapture(
+            new ColorCorrectionYxy(-4, -0.2, -0.4),
+            new[] { new ColorCorrectionSpectrumPoint(380, -0.01) },
+            12,
+            DateTimeOffset.UnixEpoch));
+        Assert.False(session.IsComplete);
+        sample.SetCameraMeasurement(
+            new PoiMeasurementPoint(10, 20, 30, 40, PoiMeasurementShape.Rect),
+            new PoiMeasurementResult(-1, -2, -3, -0.25f, -0.5f, 0, 0, 0, 0));
+
+        ColorCorrectionMeasurement measurement = sample.CreateMeasurement();
+
+        Assert.True(session.IsComplete);
+        Assert.Equal(-2, measurement.Camera.Y);
+        Assert.Equal(-0.25, measurement.Camera.CieX, 6);
+        Assert.Equal(-4, measurement.Reference.Y);
+        Assert.Equal(-0.01, Assert.Single(measurement.Spectrum!).Value);
+    }
+
+    [Fact]
+    public void RetakingImageInvalidatesPoiButPreservesSpectrumForThatSample()
+    {
+        LumFourColorCalibrationSession session = new();
+        session.SetMode(true);
+        LumFourColorCalibrationSample sample = session.Samples[0];
+        sample.SetCameraMeasurement(
+            new PoiMeasurementPoint(0, 0, 1, 1, PoiMeasurementShape.Rect),
+            new PoiMeasurementResult(1, 2, 3, 0.2f, 0.3f, 0, 0, 0, 0));
+        sample.SetSpectrumMeasurement(new LumFourColorSpectrumCapture(
+            new ColorCorrectionYxy(4, 0.2, 0.3),
+            new[] { new ColorCorrectionSpectrumPoint(380, 1) },
+            13,
+            DateTimeOffset.UnixEpoch));
+
+        sample.SetFrame(new LumFourColorCieCapture(new byte[12], 1, 1, 32, 3, 1, new[] { 1f }), null!);
+
+        Assert.True(sample.HasImage);
+        Assert.False(sample.HasCameraMeasurement);
+        Assert.True(sample.HasSpectrumMeasurement);
+        Assert.Equal(13, sample.SpectrumResultId);
+        Assert.False(session.IsComplete);
+    }
+
+    [Fact]
+    public void WorkflowLoadsEmbeddedCieInsteadOfFollowingAssociatedRawFile()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"FourColorCie-{Guid.NewGuid():N}");
+        string ciePath = Path.Combine(root, "sample.cvcie");
+        string sourcePath = Path.Combine(root, "sample.cvraw");
+        Directory.CreateDirectory(root);
+        File.WriteAllBytes(sourcePath, new byte[] { 1, 2, 3 });
+        float[] xyz = { -1, 2, 3 };
+        byte[] data = new byte[xyz.Length * sizeof(float)];
+        Buffer.BlockCopy(xyz, 0, data, 0, data.Length);
+        using CVCIEFile file = new()
+        {
+            Version = 1,
+            SrcFileName = Path.GetFileName(sourcePath),
+            Gain = 1,
+            Channels = 3,
+            Exp = new[] { 1f, 1f, 1f },
+            Cols = 1,
+            Rows = 1,
+            Bpp = 32,
+            Data = data,
+        };
+
+        try
+        {
+            Assert.True(CVFileUtil.WriteCIEFile(ciePath, file));
+
+            LumFourColorCieCapture capture = LumFourColorCieService.Load(ciePath);
+
+            Assert.Equal(32, capture.BitsPerChannel);
+            Assert.Equal(3, capture.Channels);
+            Assert.Equal(data, capture.Data);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
     }
 
     [Fact]
