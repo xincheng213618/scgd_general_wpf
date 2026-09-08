@@ -1,4 +1,5 @@
 using ColorVision.Engine.Media;
+using ColorVision.Engine.Services.PhyCameras.Calibration;
 using ColorVision.FileIO;
 using Newtonsoft.Json.Linq;
 using System.IO;
@@ -7,6 +8,97 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CVRawManualCieCalculatorTests
 {
+    [Fact]
+    public void CorrectSinglePointMatchesProvidedMatlabEquationsAndPreservesNormalization()
+    {
+        CVRawManualCieConfig source = CreateProvidedCalibration();
+        ColorCorrectionMeasurement measurement = new(
+            new ColorCorrectionYxy(1237.00537109375, 0.194746896624565, 0.875731885433197),
+            new ColorCorrectionYxy(1324, 0.218552, 0.742315));
+
+        CVRawManualCieConfig corrected = LumFourColorCorrectionCalculator.CorrectSinglePoint(source, measurement);
+
+        AssertMatrix(corrected,
+            2.297879633355055, 0.108451436541735, 0.761727111388546,
+            0.667226773253470, 1.135931797729968, -0.090521558009622,
+            0.109418026828470, -0.646927555640377, 4.661669659111825);
+        Assert.Equal(source.Gain_x, corrected.Gain_x);
+        Assert.Equal(source.Gain_y, corrected.Gain_y);
+        Assert.Equal(source.Gain_z, corrected.Gain_z);
+        Assert.Equal(source.Texp_x, corrected.Texp_x);
+        Assert.Equal(source.Texp_y, corrected.Texp_y);
+        Assert.Equal(source.Texp_z, corrected.Texp_z);
+    }
+
+    [Fact]
+    public void CorrectFourColorMatchesProvidedRgbwDataIncludingNegativeRawIntermediate()
+    {
+        CVRawManualCieConfig source = CreateProvidedCalibration();
+        LumFourColorCorrectionMeasurements measurements = new(
+            CreateMeasurement(126.78367, 0.6933417, 0.30602154, 89.2225, 0.6887435, 0.3085066),
+            CreateMeasurement(720.7425, 0.18320304, 0.62499464, 494.32455, 0.13895464, 0.7421502),
+            CreateMeasurement(46.2292, 0.1433485, 0.03912296, 49.398224, 0.14334978, 0.036007576),
+            CreateMeasurement(300.52304, 0.3194248, 0.3445272, 212.77502, 0.29537222, 0.34703013));
+
+        CVRawManualCieConfig corrected = LumFourColorCorrectionCalculator.CorrectFourColor(source, measurements);
+
+        AssertMatrix(corrected,
+            0.701621476635818, -0.034170929639462, 0.507551566230807,
+            0.197746016614588, 0.764889756012714, -0.036601927645408,
+            0.069169579223746, -0.692610255900422, 2.998908394068809);
+    }
+
+    [Fact]
+    public void CorrectSinglePointAcceptsFiniteNegativeYxyValues()
+    {
+        CVRawManualCieConfig source = CreateIdentityConfig();
+        ColorCorrectionMeasurement measurement = new(
+            new ColorCorrectionYxy(2, -0.25, 0.5),
+            new ColorCorrectionYxy(3, 0.25, -0.5));
+
+        CVRawManualCieConfig corrected = LumFourColorCorrectionCalculator.CorrectSinglePoint(source, measurement);
+
+        AssertMatrix(corrected, 1.5, 0, 0, 0, 1.5, 0, 0, 0, -2.5);
+    }
+
+    [Fact]
+    public void CorrectionRejectsZeroChromaticityYAndSingularCalibration()
+    {
+        ColorCorrectionMeasurement zeroY = new(new ColorCorrectionYxy(1, 0.2, 0), new ColorCorrectionYxy(1, 0.2, 0.3));
+        Assert.Throws<InvalidOperationException>(() => LumFourColorCorrectionCalculator.CorrectSinglePoint(CreateIdentityConfig(), zeroY));
+
+        CVRawManualCieConfig singular = CreateIdentityConfig();
+        singular.I = 0;
+        ColorCorrectionMeasurement valid = new(new ColorCorrectionYxy(1, 0.2, 0.3), new ColorCorrectionYxy(1, 0.2, 0.3));
+        Assert.Throws<InvalidOperationException>(() => LumFourColorCorrectionCalculator.CorrectSinglePoint(singular, valid));
+    }
+
+    [Fact]
+    public void SerializeCalibrationFileRoundTripsThroughExistingLoaderAndKeepsNegativeCoefficients()
+    {
+        CVRawManualCieConfig calibration = CreateIdentityConfig();
+        calibration.F = -0.25;
+        string jsonText = LumFourColorCorrectionCalculator.SerializeCalibrationFile(calibration);
+        JObject json = JObject.Parse(jsonText);
+        string path = Path.GetTempFileName();
+
+        try
+        {
+            File.WriteAllText(path, jsonText);
+            bool loaded = CVRawManualCieCalculator.TryLoadLumFourColorCalibrationDefaults(path, out CVRawManualCieConfig roundTripped, out string? error);
+
+            Assert.True(loaded, error);
+            Assert.Equal(-0.25, roundTripped.F);
+            Assert.Equal(-0.25, json.Value<double>("f"));
+            Assert.Equal(1, json.Value<double>("Gain_x"));
+            Assert.Null(json["F"]);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Theory]
     [InlineData(8)]
     [InlineData(16)]
@@ -171,6 +263,38 @@ public sealed class CVRawManualCieCalculatorTests
         D = 0, E = 1, F = 0,
         G = 0, H = 0, I = 1
     };
+
+    private static CVRawManualCieConfig CreateProvidedCalibration() => new()
+    {
+        Gain_x = 1,
+        Gain_y = 1,
+        Gain_z = 1,
+        A = 1.0215563462941002,
+        B = 0.10267037814756194,
+        C = 0.56726676658794128,
+        D = 0.29662551934032694,
+        E = 1.0753803303726448,
+        F = -0.067412428671903793,
+        G = 0.048643400227649437,
+        H = -0.61244273154421425,
+        I = 3.4715979294856516
+    };
+
+    private static ColorCorrectionMeasurement CreateMeasurement(
+        double cameraY, double cameraX, double cameraChromaticityY,
+        double referenceY, double referenceX, double referenceChromaticityY) => new(
+            new ColorCorrectionYxy(cameraY, cameraX, cameraChromaticityY),
+            new ColorCorrectionYxy(referenceY, referenceX, referenceChromaticityY));
+
+    private static void AssertMatrix(CVRawManualCieConfig actual, params double[] expected)
+    {
+        double[] values = [actual.A, actual.B, actual.C, actual.D, actual.E, actual.F, actual.G, actual.H, actual.I];
+        Assert.Equal(expected.Length, values.Length);
+        for (int index = 0; index < values.Length; index++)
+        {
+            Assert.InRange(Math.Abs(expected[index] - values[index]), 0, 1e-7 * Math.Max(1, Math.Abs(expected[index])));
+        }
+    }
 
     private static CVCIEFile CreateRaw(int bpp = 8)
     {

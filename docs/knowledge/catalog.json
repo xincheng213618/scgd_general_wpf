@@ -4630,6 +4630,7 @@
         "Engine/ColorVision.Engine/Media/CvcieDisplayConfig.cs",
         "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs",
         "Engine/ColorVision.Engine/Media/CVRawManualCieCalculator.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCorrectionCalculator.cs",
         "Engine/ColorVision.Engine/Media/CVRawManualCieWindow.xaml.cs",
         "UI/ColorVision.ImageEditor/Settings/ImageViewSettingsWindow.xaml.cs",
         "Plugins/Conoscope/ConoscopeDocument.cs"
@@ -7075,6 +7076,7 @@
         "Engine/cvColorVision/Camera/cvCameraCSLib.Discovery.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/PhyCameraLicenseImportPolicyTests.cs",
         "Test/ColorVision.UI.Tests/PhyCameraRestoreArchiveTests.cs",
         "Test/ColorVision.UI.Tests/CalibrationUploadRunnerTests.cs",
         "Test/ColorVision.UI.Tests/CalibrationUploadWorkspaceTests.cs"

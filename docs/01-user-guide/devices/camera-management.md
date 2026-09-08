@@ -5,7 +5,7 @@ status: "current"
 summary: "物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，创建/导入在唯一物理相机时可批量绑定服务。"
 aliases: ["物理相机","相机管理","相机许可证","导入lic","唯一相机自动绑定","校准文件上传","恢复点","PhyCameraManager","PhyCamera","SearchCameraIds","SetLicense","CreateRestore","LoadResotre","UploadDataAsync","扫描在线相机","添加未创建的相机","上传校正文件","创建还原点","加载还原点","CameraSearchResultViewModel","PhysicalCamera_Load","t_scgd_camera_license","LicenseState","ExpiryDateTime","许可证过期字段"]
 code_paths: ["Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManager.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraRestoreArchive.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadRunner.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadWorkspace.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchTypeWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchResultWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CreateWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml","Engine/ColorVision.Engine/Services/RC/RCFileUpload.cs","Engine/cvColorVision/Camera/cvCameraCSLib.Discovery.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PhyCameraRestoreArchiveTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadRunnerTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadWorkspaceTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/PhyCameraLicenseImportPolicyTests.cs","Test/ColorVision.UI.Tests/PhyCameraRestoreArchiveTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadRunnerTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadWorkspaceTests.cs"]
 related: ["operations.camera","operations.camera-configuration","operations.calibration","engine.devices"]
 ---
 
@@ -36,9 +36,9 @@ related: ["operations.camera","operations.camera-configuration","operations.cali
 
 | 位置与名称 | 用途 |
 | --- | --- |
-| 顶部“操作 > 许可证导入” | 批量读取 `.lic` / `.zip`；可能重置物理配置，见下文 |
+| 顶部“操作 > 许可证导入” | 批量读取 `.lic` / `.zip`；已有相机只替换许可证，未创建相机进入创建流程，见下文 |
 | 当前相机的许可证区域 | 使用当前相机的许可证更新入口；按相机代码匹配 |
-| 详情区“修改配置” | 编辑选中相机的物理配置；顶部“操作 > 修改配置”编辑的是管理器配置 |
+| 详情区“修改配置” | 编辑选中相机的物理配置 |
 | 详情区“打开配置文件” | 实际打开 `FileBasePath / Code` 文件夹，目录存在时才可用 |
 | 详情区“上传校正文件” | 解包校正资源到当前相机目录并更新数据库，见下文 |
 | 详情区“创建还原点” / “加载还原点” | 分别生成 `.cvcal` 和读取已展开的目录，两者不是直接对称的归档恢复入口 |
@@ -63,7 +63,7 @@ related: ["operations.camera","operations.camera-configuration","operations.cali
 | `PhyCameraManager.Import` | 支持 `.lic` / `.zip`；ZIP 中只处理 `.lic` 项，以文件名（不含扩展名）作为 `MacAddress`，解析许可证并保存许可证/物理资源 |
 | `PhyCamera.SetLicense` | 更新当前相机，文件名必须匹配该物理资源 `Code`；保存返回 `1` 时刷新许可证，并请求关联的校准服务和相机服务重启 |
 
-管理器批量导入的 `UpdateSysResource` 对新对象和已有对象都会写入默认 `new ConfigPhyCamera()`，已有物理配置可能被覆盖；保存后继续进入上面的目录请求和自动关联流程。应先核对这是要创建/更新物理资源，还是只给当前相机更新许可证，再选择入口。
+管理器批量导入会按许可证文件名与物理相机 `Code`（忽略大小写）匹配。已存在且已有配置的物理相机只更新许可证及界面状态，不覆盖物理配置，也不请求创建目录或重新执行唯一相机自动关联；没有对应资源或只有空配置候选时，才写入默认 `new ConfigPhyCamera()` 并进入创建流程。
 
 许可证解析/数据库保存与硬件运行授权是不同判据；不要因“导入成功”就宣称采集可用。执行导入、更新、创建或恢复前，确认目标相机代码、可覆盖配置/许可证的范围、关联服务和写入授权；不要把重导许可证作为默认排障步骤。
 

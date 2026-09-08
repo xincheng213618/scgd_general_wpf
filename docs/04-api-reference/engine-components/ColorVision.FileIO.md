@@ -4,7 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "CVRAW/CVCIE 读取、内嵌 XYZ 真彩显示与原图回退、手动校正数值校验，以及版本写回和失败边界。"
 aliases: ["CVCIE文件为什么打不开", "ColorVision.FileIO", "CVFileUtil", "CVCIEFile", "ReadCIEFileChannel", "ReadCVCIE", "WriteCIEFile", "NDPort", "内嵌XYZ通道", "CVCIE关联源文件", "CVCIE版本写回", "文件写入失败原文件", "CVCIE真彩显示", "三刺激值转sRGB", "CvcieSrgbRenderer", "CvcieDisplayConfig", "CVRawManualCieCalculator", "校正文件异常"]
-code_paths: ["Engine/ColorVision.FileIO/CVFileUtil.cs", "Engine/ColorVision.FileIO/CVCIEFile.cs", "Engine/ColorVision.FileIO/ColorVision.FileIO.csproj", "Engine/ColorVision.FileIO/README.md", "Engine/ColorVision.Engine/Media/MediaHelper.cs", "Engine/ColorVision.Engine/Media/CVRawBatchImageLoader.cs", "Engine/ColorVision.Engine/Media/CVRawOpen.cs", "Engine/ColorVision.Engine/Media/CvRawLayerController.cs", "Engine/ColorVision.Engine/Media/CvcieSrgbRenderer.cs", "Engine/ColorVision.Engine/Media/CvcieDisplayConfig.cs", "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs", "Engine/ColorVision.Engine/Media/CVRawManualCieCalculator.cs", "Engine/ColorVision.Engine/Media/CVRawManualCieWindow.xaml.cs", "UI/ColorVision.ImageEditor/Settings/ImageViewSettingsWindow.xaml.cs", "Plugins/Conoscope/ConoscopeDocument.cs"]
+code_paths: ["Engine/ColorVision.FileIO/CVFileUtil.cs", "Engine/ColorVision.FileIO/CVCIEFile.cs", "Engine/ColorVision.FileIO/ColorVision.FileIO.csproj", "Engine/ColorVision.FileIO/README.md", "Engine/ColorVision.Engine/Media/MediaHelper.cs", "Engine/ColorVision.Engine/Media/CVRawBatchImageLoader.cs", "Engine/ColorVision.Engine/Media/CVRawOpen.cs", "Engine/ColorVision.Engine/Media/CvRawLayerController.cs", "Engine/ColorVision.Engine/Media/CvcieSrgbRenderer.cs", "Engine/ColorVision.Engine/Media/CvcieDisplayConfig.cs", "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs", "Engine/ColorVision.Engine/Media/CVRawManualCieCalculator.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCorrectionCalculator.cs", "Engine/ColorVision.Engine/Media/CVRawManualCieWindow.xaml.cs", "UI/ColorVision.ImageEditor/Settings/ImageViewSettingsWindow.xaml.cs", "Plugins/Conoscope/ConoscopeDocument.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/ExportCieTests.cs", "Test/Conoscope.Tests/CvcieChannelReaderTests.cs", "Test/ColorVision.UI.Tests/CvcieSrgbRendererTests.cs", "Test/ColorVision.UI.Tests/CvcieDisplayIntegrationTests.cs", "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs", "Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs", "Test/ColorVision.UI.Tests/CvFilePixelSafetyTests.cs", "Test/ColorVision.UI.Tests/CvcieFloatChannelRendererTests.cs"]
 related: ["engine.index", "ui.image-editor", "engine.shell-extension", "plugins.conoscope", "delivery.index", "engine.cv-image-export"]
 ---
@@ -148,6 +148,15 @@ Engine 的显示原图加载入口是 `CvRawLayerController.LoadSourceFile`。�
 计算前检查 RAW 正尺寸、完整且恰好等长的 payload、有限矩阵系数、有限配置曝光/增益。已有的“有限且非正配置值表示使用源文件曝光/增益”规则保留，但实际选用的源值必须是正有限数；配置曝光还必须能表示为正 float。每个输出 XYZ 转为 float 时再次检查，拒绝非有限结果及 32 位浮点溢出。失败不会接入新的 CIE 测量结果；打开器记录日志并恢复原始 CVRAW，回退也失败则保留当前图像。此路径计算的是内存结果，不因此增加 CIE 文件写入。
 
 这些校验只能发现格式、缺失、非有限和数值溢出问题。**全部数值有限但设备不匹配、矩阵系数填错或标定本身失准的 XYZ，无法仅凭标准 XYZ→sRGB 转换可靠识别。** 真彩预览可能仍然偏色；也不能用负数或超出 sRGB 色域作为坏校正的通用判断。校正正确性仍需相应设备、校正文件来源及已知参考测量的验证，不由显示转换自动修复。
+
+### 四色校正系数转换
+
+`LumFourColorCorrectionCalculator` 将外部 MATLAB 的单点和 RGBW 两条修正路径收敛到同一份 `CVRawManualCieConfig`。输入统一为相机侧与光谱参考侧的 `Y/CIE x/CIE y`；`Yxy → XYZ` 使用原始有限数值，只要求作为分母的 CIE y 不为 0，不裁剪负 Y、负色度、中间反解通道或最终矩阵系数。
+
+- 单点修正分别用原 3×3 矩阵反解相机与参考 XYZ 的 RGB 响应，再按两个响应的逐通道比例缩放原矩阵的 R/G/B 三列。
+- RGBW 修正先反解四个画面的相机 RGB 响应，以四组参考 x/y、z/y 形成八个色度方程，并用 W 的参考 Y 形成唯一亮度方程，求得新的九个矩阵系数。这与当前 MATLAB 算法一致；R/G/B 的参考 Y 不参与方程，W 的参考 Y 决定整体亮度尺度。
+- `SerializeCalibrationFile` 输出现有四色校正 JSON 所需的 `Gain_x/Gain_y/Gain_z`、`Texp_x/Texp_y/Texp_z` 和小写 `a…i` 字段。当前阶段只生成内容，不覆盖文件。
+- `ILumFourColorCorrectionMeasurementProvider` 为后续自动采集保留一个窄接口，返回相机 Yxy、光谱参考 Yxy 和可选光谱点。画面切换、相机采集、光谱仪选择及 ND 切换由实现方负责；当前转换器不控制硬件。
 
 普通图像输出的窗口操作、命令行参数、通道命名与覆盖规则见 [CVRAW / CVCIE 图像导出](./cv-image-export.md)。文件解析成功不代表导出得到所需的完整通道集合。
 
