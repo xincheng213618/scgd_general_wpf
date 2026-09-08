@@ -86,7 +86,7 @@ public sealed class HotkeySettingsTests
         fixture.Values[0].AdditionalHotkeys = [new(Key.O, ModifierKeys.Control | ModifierKeys.Shift)];
         fixture.Values[2].SetBindings([]);
         fixture.Model.Refresh();
-        foreach (string query in new[] { "Ctrl + Shift + O", "偏好 设置", "options CtrlShiftO", "已修改 设置" })
+        foreach (string query in new[] { "Ctrl + Shift + O", "偏好 设置", "options CtrlShiftO", $"{HotkeyEditorText.Modified} 设置" })
         {
             fixture.Model.Search = query;
             Assert.Equal("options", Assert.Single(fixture.Model.Rows).Value.Id);
@@ -595,10 +595,12 @@ public sealed class HotkeySettingsTests
 
     private static void AssertTextFits(TextBlock text)
     {
+        TextFormattingMode formattingMode = TextOptions.GetTextFormattingMode(text);
         FormattedText measured = new(text.Text, CultureInfo.CurrentUICulture, text.FlowDirection,
             new Typeface(text.FontFamily, text.FontStyle, text.FontWeight, text.FontStretch), text.FontSize,
-            text.Foreground, VisualTreeHelper.GetDpi(text).PixelsPerDip);
-        if (text.TextWrapping == TextWrapping.NoWrap) Assert.True(measured.WidthIncludingTrailingWhitespace <= text.ActualWidth + 2, $"Clipped: {text.Text}");
+            text.Foreground, null, formattingMode, VisualTreeHelper.GetDpi(text).PixelsPerDip);
+        if (text.TextWrapping == TextWrapping.NoWrap) Assert.True(measured.WidthIncludingTrailingWhitespace <= text.ActualWidth + 2,
+            $"Clipped: {text.Text}; required={measured.WidthIncludingTrailingWhitespace:0.###}, actual={text.ActualWidth:0.###}, mode={formattingMode}");
         else
         {
             measured.MaxTextWidth = Math.Max(1, text.ActualWidth);
