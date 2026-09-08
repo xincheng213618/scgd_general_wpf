@@ -75,6 +75,220 @@ public sealed class StartupInitializerSequenceTests
     }
 
     [Fact]
+    public async Task PrerequisiteLanesOverlapAndJoinBeforeTemplate()
+    {
+        var calls = new ConcurrentQueue<string>();
+        var mysqlStarted = NewSignal();
+        var finishMysql = NewSignal();
+        var workspaceStarted = NewSignal();
+        var finishWorkspace = NewSignal();
+        var workspaceUiApplied = NewSignal();
+        var mqttStarted = NewSignal();
+        var finishMqtt = NewSignal();
+        var templateStarted = NewSignal();
+        var finishTemplate = NewSignal();
+        var rcStarted = NewSignal();
+        var finishRc = NewSignal();
+        var serviceStarted = NewSignal();
+
+        List<IInitializer> initializers =
+        [
+            new CallbackMySqlInitializer(async () =>
+            {
+                calls.Enqueue("mysql-start");
+                mysqlStarted.SetResult();
+                await finishMysql.Task.ConfigureAwait(false);
+                calls.Enqueue("mysql-end");
+            }),
+            new CallbackSolutionManagerInitializer(async () =>
+            {
+                calls.Enqueue("workspace-start");
+                workspaceStarted.SetResult();
+                await finishWorkspace.Task.ConfigureAwait(false);
+                calls.Enqueue("workspace-end");
+                _ = Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                {
+                    calls.Enqueue("workspace-ui");
+                    workspaceUiApplied.SetResult();
+                }));
+            }),
+            new CallbackMqttInitializer(async () =>
+            {
+                calls.Enqueue("mqtt-start");
+                mqttStarted.SetResult();
+                await finishMqtt.Task.ConfigureAwait(false);
+                calls.Enqueue("mqtt-failed");
+                throw new InvalidOperationException("Synthetic MQTT failure.");
+            }),
+            new CallbackRcInitializer(async () =>
+            {
+                calls.Enqueue("rc-start");
+                rcStarted.SetResult();
+                await finishRc.Task.ConfigureAwait(false);
+                calls.Enqueue("rc-end");
+            }),
+            new CallbackTemplateInitializer(async () =>
+            {
+                calls.Enqueue("template-start");
+                templateStarted.SetResult();
+                await finishTemplate.Task.ConfigureAwait(false);
+                calls.Enqueue("template-end");
+            }),
+            new CallbackServiceInitializer(() =>
+            {
+                calls.Enqueue("service-start");
+                serviceStarted.SetResult();
+                return Task.CompletedTask;
+            }),
+        ];
+
+        await WithIsolatedWindowAsync(initializers, async window =>
+        {
+            Task sequence = Task.Run(() => InvokeInitializerSequence(window));
+            try
+            {
+                await Task.WhenAll(mysqlStarted.Task, workspaceStarted.Task, mqttStarted.Task).WaitAsync(Timeout);
+                Assert.False(rcStarted.Task.IsCompleted);
+                Assert.False(templateStarted.Task.IsCompleted);
+
+                finishMqtt.SetResult();
+                await rcStarted.Task.WaitAsync(Timeout);
+                Assert.False(templateStarted.Task.IsCompleted);
+
+                finishMysql.SetResult();
+                finishWorkspace.SetResult();
+                Task prematureTemplate = await Task.WhenAny(templateStarted.Task, Task.Delay(100));
+                Assert.NotSame(templateStarted.Task, prematureTemplate);
+                Assert.False(serviceStarted.Task.IsCompleted);
+
+                finishRc.SetResult();
+                await workspaceUiApplied.Task.WaitAsync(Timeout);
+                await templateStarted.Task.WaitAsync(Timeout);
+                Assert.False(serviceStarted.Task.IsCompleted);
+
+                finishTemplate.SetResult();
+                await serviceStarted.Task.WaitAsync(Timeout);
+                await sequence.WaitAsync(Timeout);
+
+                string[] orderedCalls = calls.ToArray();
+                Assert.True(Array.IndexOf(orderedCalls, "mqtt-start") < Array.IndexOf(orderedCalls, "mysql-end"));
+                Assert.True(Array.IndexOf(orderedCalls, "workspace-start") < Array.IndexOf(orderedCalls, "mysql-end"));
+                Assert.True(Array.IndexOf(orderedCalls, "rc-start") > Array.IndexOf(orderedCalls, "mqtt-failed"));
+                Assert.True(Array.IndexOf(orderedCalls, "template-start") > Array.IndexOf(orderedCalls, "mysql-end"));
+                Assert.True(Array.IndexOf(orderedCalls, "template-start") > Array.IndexOf(orderedCalls, "workspace-end"));
+                Assert.True(Array.IndexOf(orderedCalls, "template-start") > Array.IndexOf(orderedCalls, "workspace-ui"));
+                Assert.True(Array.IndexOf(orderedCalls, "template-start") > Array.IndexOf(orderedCalls, "rc-end"));
+                Assert.True(Array.IndexOf(orderedCalls, "service-start") > Array.IndexOf(orderedCalls, "template-end"));
+                WpfTestHost.Invoke(() => AssertCompletedAfterPendingMessages(window, initializers.Count));
+            }
+            finally
+            {
+                finishMysql.TrySetResult();
+                finishWorkspace.TrySetResult();
+                finishMqtt.TrySetResult();
+                finishTemplate.TrySetResult();
+                finishRc.TrySetResult();
+                await sequence.WaitAsync(Timeout);
+            }
+        });
+    }
+
+    [Fact]
+    public async Task UnknownInitializersKeepTheKnownLanesSerial()
+    {
+        var calls = new ConcurrentQueue<string>();
+        var mysqlStarted = NewSignal();
+        var finishMysql = NewSignal();
+        var workspaceStarted = NewSignal();
+        var mqttStarted = NewSignal();
+        var finishMqtt = NewSignal();
+        var rcStarted = NewSignal();
+
+        List<IInitializer> initializers =
+        [
+            new CallbackMySqlInitializer(async () =>
+            {
+                calls.Enqueue("mysql-start");
+                mysqlStarted.SetResult();
+                await finishMysql.Task.ConfigureAwait(false);
+                calls.Enqueue("mysql-end");
+            }),
+            new CallbackInitializer("database-extension", () =>
+            {
+                calls.Enqueue("database-extension");
+                return Task.CompletedTask;
+            }),
+            new CallbackSolutionManagerInitializer(() =>
+            {
+                calls.Enqueue("workspace");
+                workspaceStarted.SetResult();
+                return Task.CompletedTask;
+            }),
+            new CallbackMqttInitializer(async () =>
+            {
+                calls.Enqueue("mqtt-start");
+                mqttStarted.SetResult();
+                await finishMqtt.Task.ConfigureAwait(false);
+                calls.Enqueue("mqtt-end");
+            }),
+            new CallbackInitializer("connectivity-extension", () =>
+            {
+                calls.Enqueue("connectivity-extension");
+                return Task.CompletedTask;
+            }),
+            new CallbackRcInitializer(() =>
+            {
+                calls.Enqueue("rc");
+                rcStarted.SetResult();
+                return Task.CompletedTask;
+            }),
+            new CallbackTemplateInitializer(() =>
+            {
+                calls.Enqueue("template");
+                return Task.CompletedTask;
+            }),
+        ];
+
+        await WithIsolatedWindowAsync(initializers, async window =>
+        {
+            Task sequence = Task.Run(() => InvokeInitializerSequence(window));
+            try
+            {
+                await mysqlStarted.Task.WaitAsync(Timeout);
+                await Task.Delay(100);
+                Assert.False(workspaceStarted.Task.IsCompleted);
+
+                finishMysql.SetResult();
+                await mqttStarted.Task.WaitAsync(Timeout);
+                Assert.False(rcStarted.Task.IsCompleted);
+
+                finishMqtt.SetResult();
+                await sequence.WaitAsync(Timeout);
+
+                Assert.Equal(
+                [
+                    "mysql-start",
+                    "mysql-end",
+                    "database-extension",
+                    "workspace",
+                    "mqtt-start",
+                    "mqtt-end",
+                    "connectivity-extension",
+                    "rc",
+                    "template",
+                ], calls.ToArray());
+                WpfTestHost.Invoke(() => AssertCompletedAfterPendingMessages(window, initializers.Count));
+            }
+            finally
+            {
+                finishMysql.TrySetResult();
+                finishMqtt.TrySetResult();
+                await sequence.WaitAsync(Timeout);
+            }
+        });
+    }
+
+    [Fact]
     public async Task PendingStageUpdatesCannotOverwriteTheFinalState()
     {
         List<IInitializer> initializers =
@@ -107,6 +321,9 @@ public sealed class StartupInitializerSequenceTests
 
     private static Task InvokeInitializerSequence(StartWindow window) =>
         Assert.IsAssignableFrom<Task>(RequiredMethod("InitializedOver").Invoke(window, null));
+
+    private static TaskCompletionSource NewSignal() =>
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private static void AssertCompletedAfterPendingMessages(StartWindow window, int stepCount)
     {
@@ -259,6 +476,42 @@ public sealed class StartupInitializerSequenceTests
     private sealed class CallbackInitializer(string name, Func<Task> initialize) : InitializerBase
     {
         public override string Name => name;
+        public override Task InitializeAsync() => initialize();
+    }
+
+    private sealed class CallbackSolutionManagerInitializer(Func<Task> initialize)
+        : global::ColorVision.Solution.SolutionManagerInitializer
+    {
+        public override Task InitializeAsync() => initialize();
+    }
+
+    private sealed class CallbackMySqlInitializer(Func<Task> initialize)
+        : global::ColorVision.Engine.MySqlInitializer
+    {
+        public override Task InitializeAsync() => initialize();
+    }
+
+    private sealed class CallbackMqttInitializer(Func<Task> initialize)
+        : global::ColorVision.Engine.MQTT.MqttInitializer
+    {
+        public override Task InitializeAsync() => initialize();
+    }
+
+    private sealed class CallbackRcInitializer(Func<Task> initialize)
+        : global::ColorVision.Engine.Services.RC.RCInitializer
+    {
+        public override Task InitializeAsync() => initialize();
+    }
+
+    private sealed class CallbackTemplateInitializer(Func<Task> initialize)
+        : global::ColorVision.Engine.Templates.TemplateInitializer
+    {
+        public override Task InitializeAsync() => initialize();
+    }
+
+    private sealed class CallbackServiceInitializer(Func<Task> initialize)
+        : global::ColorVision.Engine.Services.ServiceInitializer
+    {
         public override Task InitializeAsync() => initialize();
     }
 }

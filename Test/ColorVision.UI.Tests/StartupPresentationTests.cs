@@ -81,12 +81,8 @@ public sealed class StartupPresentationTests
                 AssertPalette(window, resolved);
                 Assert.Empty(Descendants(window).OfType<ButtonBase>());
                 var headline = Assert.IsType<TextBlock>(window.FindName("headlineText"));
-                Assert.Equal(cultureName switch
-                {
-                    "zh-CN" => "让每一束光，成为洞见。",
-                    "zh-TW" => "讓每一束光，成為洞見。",
-                    _ => "Turn every ray into insight."
-                }, headline.Text);
+                Assert.Contains(headline.Text, StartupText.Headlines);
+                Assert.DoesNotMatch(@"[。.]$", headline.Text);
                 Assert.Equal(StartupText.Title, window.Title);
                 Assert.Equal(StartupText.PreparingWorkspace, Assert.IsType<TextBlock>(window.FindName("startupStatusText")).Text);
                 Assert.Equal(StartupText.Capabilities, Assert.IsType<TextBlock>(window.FindName("capabilitiesText")).Text);
@@ -152,6 +148,30 @@ public sealed class StartupPresentationTests
                 }
             }
         });
+    }
+
+    [Theory]
+    [InlineData("zh-CN")]
+    [InlineData("zh-TW")]
+    [InlineData("en-US")]
+    public void StartupHeadlinePoolIsLocalizedDistinctAndPunctuationFree(string cultureName)
+    {
+        CultureInfo previous = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(cultureName);
+            IReadOnlyList<string> headlines = StartupText.Headlines;
+            Assert.Equal(6, headlines.Count);
+            Assert.Equal(headlines.Count, headlines.Distinct(StringComparer.Ordinal).Count());
+            Assert.All(headlines, headline =>
+            {
+                Assert.False(string.IsNullOrWhiteSpace(headline));
+                Assert.DoesNotMatch(@"[。.]$", headline);
+                if (cultureName == "en-US") AssertNoChinese(headline);
+                else Assert.Matches(@"[\u3400-\u9FFF]", headline);
+            });
+        }
+        finally { CultureInfo.CurrentUICulture = previous; }
     }
 
     [Theory]
@@ -229,14 +249,18 @@ public sealed class StartupPresentationTests
         var capabilities = Assert.IsType<TextBlock>(window.FindName("capabilitiesText"));
         // The template phase is longer than the initial English status and must still clear the right column.
         status.Text = StartupText.LoadingTemplates;
-        window.UpdateLayout();
-        Rect headlineBounds = TextBounds(headline, root);
-        Rect statusBounds = TextBounds(status, root);
-        Rect capabilitiesBounds = TextBounds(capabilities, root);
-        Assert.True(statusBounds.Right + 19 <= capabilitiesBounds.Left, "English startup status overlaps the capabilities column.");
-        Assert.True(headlineBounds.Bottom <= statusBounds.Top, "The English headline overlaps the status row.");
-        foreach (Rect bounds in new[] { headlineBounds, statusBounds, capabilitiesBounds })
-            Assert.True(bounds.Right <= root.ActualWidth - 37, "English splash text extends beyond the content margin.");
+        foreach (string candidate in StartupText.Headlines)
+        {
+            headline.Text = candidate;
+            window.UpdateLayout();
+            Rect headlineBounds = TextBounds(headline, root);
+            Rect statusBounds = TextBounds(status, root);
+            Rect capabilitiesBounds = TextBounds(capabilities, root);
+            Assert.True(statusBounds.Right + 19 <= capabilitiesBounds.Left, "English startup status overlaps the capabilities column.");
+            Assert.True(headlineBounds.Bottom <= statusBounds.Top, "The English headline overlaps the status row.");
+            foreach (Rect bounds in new[] { headlineBounds, statusBounds, capabilitiesBounds })
+                Assert.True(bounds.Right <= root.ActualWidth - 37, "English splash text extends beyond the content margin.");
+        }
     }
 
     private static Rect TextBounds(TextBlock text, Visual ancestor)

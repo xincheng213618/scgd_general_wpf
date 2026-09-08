@@ -44,7 +44,7 @@ related: ["platform.architecture", "platform.startup-integrity", "delivery.updat
 
 界面保留版本、单行状态和细进度条；默认状态为“正在准备工作空间”，初始化循环结束时显示“正在打开工作空间”。运行中按当前初始化器显示连接基础服务、载入工作空间、加载检测模板、装配设备面板、准备计算资源或加载扩展组件六类状态。状态复用 `UpdateStartupProgress` 的 Dispatcher 调度，仅在文字变化时更新同一个元素，不追加日志、不增加独立计时器。阶段更新与 `CompleteStartupProgressAsync` 的最终状态、进度完成操作都按 `Normal` 优先级投递，保持先入先出的顺序，防止此前排队的阶段状态覆盖“正在打开工作空间”。
 
-标题、主句、能力说明、阶段状态和进度辅助功能名称由 `StartupText` 与独立的 `StartupResources.resx`、`.en.resx`、`.zh-Hant.resx` 提供。界面文案在构造时通过 `x:Static` 读取 `CultureInfo.CurrentUICulture`，运行阶段在原有状态更新入口读取对应属性；`GetStage` 只按初始化器类型名选择文本，未知类型仍显示加载扩展组件。中文文化使用简繁父文化回退，其他文化仅在启动组件内回退英文，不修改全局语言、格式文化或语言配置，也不添加即时语言切换事件。资源读取不改变初始化器排序、执行或进度完成语义。
+标题、主句候选、能力说明、阶段状态和进度辅助功能名称由 `StartupText` 与独立的 `StartupResources.resx`、`.en.resx`、`.zh-Hant.resx` 提供。每次构造启动窗口时，从当前界面语言的六条主句中等概率选择一条；候选均采用视觉标题格式，不保留句末句号。其余构造期界面文案通过 `x:Static` 读取 `CultureInfo.CurrentUICulture`，运行阶段在原有状态更新入口读取对应属性；`GetStage` 只按初始化器类型名选择文本，未知类型仍显示加载扩展组件。中文文化使用简繁父文化回退，其他文化仅在启动组件内回退英文，不修改全局语言、格式文化或语言配置，也不添加即时语言切换事件。资源读取和主句选择不改变初始化器排序、执行或进度完成语义。
 
 `StartupScene.cs` 是纯 WPF 绘制控件，不依赖视频或外部位图素材。普通深浅模式建立五个 `DrawingLayer`，各层的 `DrawingGroup`、`StreamGeometry`、画笔和画刷冻结后复用，并分别使用 `BitmapCache` 缓存绘图。光场摆动、轨道旋转和扫描平移三个动画变换置于各层缓存外，通过 `RenderTransform` 移动已缓存的内容，目标帧率为 `30`，避免因为层内元素移动而逐帧重建整个场景缓存。没有逐帧回调、逐帧几何重建或布局动画。`IsDark` 或高对比度变化时停止动画、移除旧层与缓存，再重建配色并按当前状态恢复动画；高对比度仅保留一个系统背景层。系统关闭客户端区域动画或 WPF 渲染等级为 Tier 0 时显示静态画面；隐藏或 `Unloaded` 时停止动画，卸载时同时解除系统设置与渲染等级事件订阅。
 
@@ -56,13 +56,17 @@ related: ["platform.architecture", "platform.startup-integrity", "delivery.updat
 
 | 路径 | 执行与完成含义 |
 | --- | --- |
-| `StartWindow` 的 `IInitializer` | 首次渲染后在后台发现并构造实例；按 `--skip` 中逗号分隔的精确 Name 排除，再按 Order、Name 排序执行。单项 InitializeAsync 异常记录后继续，循环结束记录 `StartupInitializersCompleted`；这不表示每项成功 |
+| `StartWindow` 的 `IInitializer` | 首次渲染后在后台发现并构造实例；按 `--skip` 中逗号分隔的精确 Name 排除，再按 Order、Name 排序。已知内置前置链满足下述精确形状时分三路执行并在模板前汇合，其余初始化器保持排序后的串行执行。单项 InitializeAsync 异常记录后继续，循环结束记录 `StartupInitializersCompleted`；这不表示每项成功 |
 | 功能启动器 | `--feature` 先按 Header、再按类型名匹配 `IFeatureLauncher`；匹配后执行并清理启动记录，未找到则交给主窗口工厂。Execute 返回不证明该功能后续的异步业务完成 |
 | 主窗口选择 | 未指定 `--feature` 或未匹配功能时，`MainWindowFactory.Create` 先检查 Windows build 22000 门禁：低版本无论 `MainWindowConfig.UseCompactMainWindow` 的值为何都创建普通 `MainWindow`；门禁通过后才按该配置创建 `CompactMainWindow` 或普通 `MainWindow`。新开关默认开启，只在本次创建时选择，不原地切换现有窗口；旧 `UseCompactTitleBar` 字段不读取或迁移，新字段已保存的 false/true 则保留 |
 | 主窗口初始化 | 主窗口通过 Dispatcher 调用 `IMainWindowInitialized`，按 Order 执行并记录单项异常；该异步链和首次渲染各有完成入口 |
 | 启动健康标记 | 主窗口首次 `ContentRendered`、主窗口初始化链结束、功能启动器返回等路径均可调用 `StartupRegistryChecker.Clear()`。首次呈现可以先于某些异步初始化完成，因此 ready 不是设备、数据库或插件业务逐项验收 |
 
 `IInitializer` 的实例构造发生在 `--skip` 过滤之前，跳过其 InitializeAsync 不保证没有构造副作用。程序集过滤、provider 构造及各消费者缓存见[扩展发现与排查](../../04-api-reference/ui-components/ui-runtime-handoff.md)；插件的清单、条件依赖预检和装载失败规则只在[插件装载](../../02-developer-guide/plugin-development/overview.md)中维护。
+
+启动器只在排序结果中连续出现 `MySqlInitializer`、`SolutionManagerInitializer`、`MqttInitializer`、`RCInitializer`、`TemplateInitializer` 时启用前置并行。第一路只执行 MySQL；第二路执行方案管理器，并等待它先前以 `Normal` 优先级投递的工作区 UI 回调完成；第三路严格按 MQTT 后 RC 的顺序执行，因为 RC 复用 MQTT 连接。三路全部完成后才进入 `TemplateInitializer`，随后数据库模板、设备服务及其余 Engine 初始化仍按原顺序串行执行。任一位置插入未知或插件初始化器都会关闭该优化并回退完整串行顺序，避免跨过未声明的依赖。各路中的单项失败仍沿用记录异常后继续的启动策略。
+
+方案 UI 屏障只确认该初始化器在屏障之前投递的 Dispatcher 回调已经完成，不表示工作区发起的其它独立异步任务全部完成。它与三路汇合一起防止把已知方案构造债务藏到模板或主窗口之后；模板和服务仍可自行执行或等待 UI 工作。
 
 初始化器发现完成后，以及循环中满足 `180 ms` 让出间隔时，启动链仍等待一次 `Background` 优先级的 Dispatcher 回调。这不是固定时长的休眠，也不表示工作区恢复、服务响应等其他异步任务全部完成。真正依赖 UI 的初始化继续由各初始化器显式调度。
 
@@ -83,6 +87,9 @@ related: ["platform.architecture", "platform.startup-integrity", "delivery.updat
 | `Startup … took … ms` | 分别记录 App 构造与应用资源加载、基础配置、主题、语言、单实例协调、运维宿主、插件、WinForms、启动窗口构造与 Show；只记录边界内工作，启动恢复对话框及进程进入托管入口前的工作需另行区分 |
 | `Startup splash ContentRendered` / `Startup splash ApplicationIdle handoff` | 前者标记启动窗口的首次呈现事件；后者记录事件处理器等待 `ApplicationIdle` 后恢复执行的时间。它们不是主窗口首帧或初始化器执行时间 |
 | `Startup worker queue` | 从提交 `Task.Run` 到后台委托开始的等待，不包含随后发现、构造或执行初始化器的时间。此处及单项初始化开始日志中的 `UI` 表示当前入口是否位于 UI 线程，不表示初始化器内部没有 Dispatcher 调用 |
+| `Startup prerequisite lanes started/completed` | 标记 MySQL、方案管理器、MQTT→RC 三路前置工作的共同边界；完成耗时包含三路汇合后按需执行的进度 UI 检查点，不能与各路或单项耗时重复相加 |
+| `Startup connectivity initializer lane` / `Startup workspace UI barrier` | 前者覆盖 MQTT 后 RC 的顺序执行，后者只记录方案初始化器返回后等待既有 `Normal` Dispatcher 回调的时间；两者均不是设备或工作区业务就绪证明 |
+| `Startup initializers completed … Summed=…, ParallelOverlap=…` | `completed` 是整个初始化器调度墙钟时间，`Summed` 是单项耗时之和，`ParallelOverlap` 是两者的非负差；UI 检查点和调度间隙只进入墙钟时间，因此该差值用于定位并行，不等于首帧节省量 |
 | `Startup UI checkpoint '…' queue` | 从投递 `Background` 回调到该 UI 回调进入时的等待；不包含回调完成后后台 continuation 恢复的时间，也不证明队列外的异步任务完成 |
 | `Startup main window queue` | 从投递 `ContextIdle` 回调到该 UI 回调进入时的等待，不包含随后主窗口的构造、Show 和首次呈现 |
 | 主窗口构造分段 | `Main window XAML construction` 包含 Initialized 事件；后者另有停靠登记、项目树/设备挂载、布局、主题、视图、菜单等子段。`saved geometry setup` 只记录窗口几何事件登记，实际恢复发生在 Show 内的 SourceInitialized；`remaining constructor setup` 定位构造尾部。父子段不可重复相加 |
@@ -178,6 +185,7 @@ related: ["platform.architecture", "platform.startup-integrity", "delivery.updat
 
 ## 验证入口与缺口
 
+- 初始化器调度：`StartupInitializerSequenceTests` 使用可控的内置初始化器子类检查 MySQL、方案管理器和 MQTT 同时开始，RC 只在 MQTT 返回后开始，Template 等待三路完成，Service 等待 Template；在已知链之间插入未知初始化器时检查完整串行回退。替身不连接真实数据库、MQTT、RC 或设备，实际耗时与外部服务健康仍需独立 Release 启动测量。
 - UI 调度诊断：`StartupUiTraceTests` 使用实际 Dispatcher 与屏幕外合成窗口，检查默认关闭、真实 `ContentRendered` 的 Input 操作关联、合法 JSON 输出、停止后 Hooks 与窗口订阅可被回收，以及 Abort、提前关窗和输出失败的清理。受控跨线程投递验证 Started 之后才到达的 Posted 不产生负队列耗时；不覆盖记录上限、所有嵌套 Dispatcher 情形、真实主窗口完整启动性能或 GPU 呈现。
 - 启动窗口生命周期：`StartWindowThemeLifecycleTests` 在 STA WPF 宿主中构造并关闭窗口，检查早期日志缓冲释放、其他 appender 保留、`SystemThemeChanged` 与 `CurrentUIThemeChanged` 订阅恢复及窗口可被 GC；不显示窗口、不执行真实初始化。
 - 启动界面呈现：`StartupPresentationTests` 在显示前移除真实 `ContentRendered` 初始化处理器，再将产品窗口显示到屏幕外；覆盖默认深色、固定浅色独立于应用，以及跟随软件策略下的简英繁与明确深浅主题组合、英文 UseSystem 的两种解析结果。固定策略案例验证配置修改不改变当前窗口，关闭重开后读取新策略。检查后续应用主题变化、英文文字与较长阶段状态布局、辅助名称、无切换按钮、调色不改进度和关闭后主题订阅恢复。阶段文本测试检查类型名映射及未知扩展回退；不执行真实初始化、设备连接或启动流程。配置兼容及设置行验证由[启动页主题测试](../../04-api-reference/ui-components/ColorVision.Themes.md#包入口与验证范围)维护。

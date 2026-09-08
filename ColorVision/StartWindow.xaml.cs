@@ -38,6 +38,7 @@ namespace ColorVision
         {
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
             InitializeComponent();
+            headlineText.Text = StartupText.GetRandomHeadline();
             _startupProgressTimer.Interval = TimeSpan.FromMilliseconds(100);
             _startupProgressTimer.Tick += StartupProgressTimer_Tick;
             ContentRendered += StartWindow_ContentRendered;
@@ -296,37 +297,144 @@ namespace ColorVision
 
         private static string GetStartupStage(IInitializer initializer) => StartupText.GetStage(initializer.GetType().Name);
 
+        private sealed record StartupInitializerResult(IInitializer Initializer, long ElapsedMilliseconds);
+
+        private static bool IsDatabaseInitializer(IInitializer initializer) =>
+            initializer is global::ColorVision.Engine.MySqlInitializer;
+
+        private static bool IsWorkspaceInitializer(IInitializer initializer) =>
+            initializer is global::ColorVision.Solution.SolutionManagerInitializer;
+
+        private static bool IsMqttInitializer(IInitializer initializer) =>
+            initializer is global::ColorVision.Engine.MQTT.MqttInitializer;
+
+        private static bool IsRcInitializer(IInitializer initializer) =>
+            initializer is global::ColorVision.Engine.Services.RC.RCInitializer;
+
+        private static bool IsTemplateInitializer(IInitializer initializer) =>
+            initializer is global::ColorVision.Engine.Templates.TemplateInitializer;
+
+        private async Task<StartupInitializerResult> RunInitializerAsync(IInitializer initializer)
+        {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            log.Info($"{Properties.Resources.Initializer} {initializer.GetType().Name}. UI={Dispatcher.CheckAccess()}.");
+            try
+            {
+                await initializer.InitializeAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+
+            stopwatch.Stop();
+            log.Info($"Initializer {initializer.GetType().Name} took {stopwatch.ElapsedMilliseconds} ms.");
+            return new StartupInitializerResult(initializer, stopwatch.ElapsedMilliseconds);
+        }
+
+        private async Task<IReadOnlyList<StartupInitializerResult>> RunConnectivityInitializersAsync(
+            IReadOnlyList<IInitializer> initializers)
+        {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            log.Info($"Startup connectivity initializer lane started. Count={initializers.Count}.");
+            List<StartupInitializerResult> results = new(initializers.Count);
+            foreach (IInitializer initializer in initializers)
+                results.Add(await RunInitializerAsync(initializer).ConfigureAwait(false));
+
+            log.Info($"Startup connectivity initializer lane completed in {stopwatch.ElapsedMilliseconds} ms.");
+            return results;
+        }
+
+        private async Task<StartupInitializerResult> RunWorkspaceInitializerAsync(IInitializer initializer)
+        {
+            StartupInitializerResult result = await RunInitializerAsync(initializer).ConfigureAwait(false);
+            if (Dispatcher.HasShutdownStarted)
+                return result;
+
+            long queuedAt = Stopwatch.GetTimestamp();
+            await Dispatcher.InvokeAsync(static () => { }, DispatcherPriority.Normal).Task.ConfigureAwait(false);
+            log.Info($"Startup workspace UI barrier took {Stopwatch.GetElapsedTime(queuedAt).TotalMilliseconds:0.###} ms.");
+            return result;
+        }
+
         private async Task InitializedOver()
         {
-            Stopwatch stopwatch = new Stopwatch();
-            int completedSteps = 0;
+            Stopwatch executionStopwatch = Stopwatch.StartNew();
             double completedWeight = 0;
+            long summedInitializerMilliseconds = 0;
 
-            foreach (var initializer in _IComponentInitializers)
+            int databaseIndex = _IComponentInitializers.FindIndex(IsDatabaseInitializer);
+            bool canRunPrerequisiteLanes = databaseIndex >= 0
+                && databaseIndex + 4 < _IComponentInitializers.Count
+                && IsWorkspaceInitializer(_IComponentInitializers[databaseIndex + 1])
+                && IsMqttInitializer(_IComponentInitializers[databaseIndex + 2])
+                && IsRcInitializer(_IComponentInitializers[databaseIndex + 3])
+                && IsTemplateInitializer(_IComponentInitializers[databaseIndex + 4]);
+            int mqttIndex = databaseIndex + 2;
+            List<IInitializer> connectivityInitializers = canRunPrerequisiteLanes
+                ? [_IComponentInitializers[mqttIndex], _IComponentInitializers[mqttIndex + 1]]
+                : [];
+
+            async Task RecordCompletionAsync(StartupInitializerResult result)
             {
+                IInitializer initializer = result.Initializer;
+                _startupObservedDurationsMs[GetInitializerProfileKey(initializer)] =
+                    Math.Max(result.ElapsedMilliseconds, MinimumProfiledStepWeightMs);
+                summedInitializerMilliseconds += result.ElapsedMilliseconds;
+                completedWeight += GetStartupStepWeight(initializer);
+                UpdateStartupProgress(completedWeight);
+                await YieldToUiIfDueAsync(initializer.Name);
+            }
+
+            for (int index = 0; index < _IComponentInitializers.Count; index++)
+            {
+                IInitializer initializer = _IComponentInitializers[index];
+
+                if (canRunPrerequisiteLanes && index == databaseIndex)
+                {
+                    IInitializer workspaceInitializer = _IComponentInitializers[index + 1];
+                    string connectivityComponent = string.Join(" -> ", connectivityInitializers.Select(item => item.Name));
+                    string component = $"{initializer.Name} || {workspaceInitializer.Name} || ({connectivityComponent})";
+                    StartupRegistryChecker.MarkStage("StartupInitializerLane", component);
+                    UpdateStartupProgress(
+                        completedWeight,
+                        initializerRunning: true,
+                        runningWeight: GetStartupStepWeight(initializer)
+                            + GetStartupStepWeight(workspaceInitializer)
+                            + connectivityInitializers.Sum(GetStartupStepWeight),
+                        stage: GetStartupStage(initializer));
+
+                    Stopwatch laneStopwatch = Stopwatch.StartNew();
+                    log.Info($"Startup prerequisite lanes started. Component={component}.");
+                    Task<StartupInitializerResult> databaseTask = Task.Run(() => RunInitializerAsync(initializer));
+                    Task<StartupInitializerResult> workspaceTask = Task.Run(() => RunWorkspaceInitializerAsync(workspaceInitializer));
+                    Task<IReadOnlyList<StartupInitializerResult>> connectivityTask =
+                        Task.Run(() => RunConnectivityInitializersAsync(connectivityInitializers));
+
+                    StartupInitializerResult[] independentResults =
+                        await Task.WhenAll(databaseTask, workspaceTask).ConfigureAwait(false);
+                    IReadOnlyList<StartupInitializerResult> connectivityResults =
+                        await connectivityTask.ConfigureAwait(false);
+                    foreach (StartupInitializerResult result in independentResults)
+                        await RecordCompletionAsync(result);
+                    foreach (StartupInitializerResult result in connectivityResults)
+                        await RecordCompletionAsync(result);
+                    log.Info($"Startup prerequisite lanes completed in {laneStopwatch.ElapsedMilliseconds} ms.");
+
+                    index += 3;
+                    continue;
+                }
+
                 StartupRegistryChecker.MarkStage("StartupInitializer", initializer.Name);
                 double stepWeight = GetStartupStepWeight(initializer);
                 UpdateStartupProgress(completedWeight, initializerRunning: true, runningWeight: stepWeight, stage: GetStartupStage(initializer));
-                stopwatch.Restart();
-
-                log.Info($"{Properties.Resources.Initializer} {initializer.GetType().Name}. UI={Dispatcher.CheckAccess()}.");
-                try
-                {
-                    await initializer.InitializeAsync().ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex);
-                }
-                stopwatch.Stop();
-                log.Info($"Initializer {initializer.GetType().Name} took {stopwatch.ElapsedMilliseconds} ms.");
-                _startupObservedDurationsMs[GetInitializerProfileKey(initializer)] = Math.Max(stopwatch.ElapsedMilliseconds, MinimumProfiledStepWeightMs);
-                completedSteps++;
-                completedWeight += stepWeight;
-                UpdateStartupProgress(completedWeight);
-                await YieldToUiIfDueAsync(initializer.Name);
-
+                await RecordCompletionAsync(await RunInitializerAsync(initializer).ConfigureAwait(false));
             }
+
+            executionStopwatch.Stop();
+            long overlapMilliseconds = Math.Max(0, summedInitializerMilliseconds - executionStopwatch.ElapsedMilliseconds);
+            log.Info($"Startup initializers completed in {executionStopwatch.ElapsedMilliseconds} ms. " +
+                $"Summed={summedInitializerMilliseconds} ms, ParallelOverlap={overlapMilliseconds} ms.");
             StartupRegistryChecker.MarkStage("StartupInitializersCompleted");
             SaveStartupProgressProfile();
             await CompleteStartupProgressAsync();

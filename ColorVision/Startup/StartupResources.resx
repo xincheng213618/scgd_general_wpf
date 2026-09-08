@@ -5,7 +5,12 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
   <data name="Title" xml:space="preserve"><value>正在启动 ColorVision</value></data>
-  <data name="Headline" xml:space="preserve"><value>让每一束光，成为洞见。</value></data>
+  <data name="Headline" xml:space="preserve"><value>让每一束光，成为洞见</value></data>
+  <data name="Headline2" xml:space="preserve"><value>从光的细节，读懂品质</value></data>
+  <data name="Headline3" xml:space="preserve"><value>看见色彩，更看见真相</value></data>
+  <data name="Headline4" xml:space="preserve"><value>以光为尺，度量真实</value></data>
+  <data name="Headline5" xml:space="preserve"><value>捕捉微光，洞察毫厘</value></data>
+  <data name="Headline6" xml:space="preserve"><value>让不可见，成为可判断</value></data>
   <data name="Capabilities" xml:space="preserve"><value>光学  /  色彩  /  机器视觉</value></data>
   <data name="PreparingWorkspace" xml:space="preserve"><value>正在准备工作空间</value></data>
   <data name="ConnectingServices" xml:space="preserve"><value>正在连接基础服务</value></data>

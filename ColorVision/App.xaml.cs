@@ -424,6 +424,16 @@ namespace ColorVision
             }
         }
 
+        private static void TraceStartupHostPhase(Stopwatch? stopwatch, string phase)
+        {
+            if (stopwatch == null)
+                return;
+
+            stopwatch.Stop();
+            log.Info($"Startup trace host {phase} took {stopwatch.Elapsed.TotalMilliseconds:0.###} ms.");
+            stopwatch.Restart();
+        }
+
         private StartupRecoveryResult ShowStartupRecoveryWindow(bool manualRequest)
         {
             System.Windows.ShutdownMode previousShutdownMode = ShutdownMode;

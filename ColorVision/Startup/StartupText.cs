@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Resources;
 
@@ -7,6 +9,15 @@ namespace ColorVision.Startup;
 public static class StartupText
 {
     private static readonly ResourceManager Resources = new("ColorVision.Startup.StartupResources", typeof(StartupText).Assembly);
+    private static readonly string[] HeadlineResourceNames =
+    [
+        nameof(Headline),
+        "Headline2",
+        "Headline3",
+        "Headline4",
+        "Headline5",
+        "Headline6"
+    ];
 
     private static string Get(string name)
     {
@@ -18,6 +29,7 @@ public static class StartupText
 
     public static string Title => Get(nameof(Title));
     public static string Headline => Get(nameof(Headline));
+    public static IReadOnlyList<string> Headlines => Array.ConvertAll(HeadlineResourceNames, Get);
     public static string Capabilities => Get(nameof(Capabilities));
     public static string PreparingWorkspace => Get(nameof(PreparingWorkspace));
     public static string ConnectingServices => Get(nameof(ConnectingServices));
@@ -28,6 +40,12 @@ public static class StartupText
     public static string LoadingExtensions => Get(nameof(LoadingExtensions));
     public static string OpeningWorkspace => Get(nameof(OpeningWorkspace));
     public static string ProgressAutomationName => Get(nameof(ProgressAutomationName));
+
+    public static string GetRandomHeadline()
+    {
+        IReadOnlyList<string> headlines = Headlines;
+        return headlines[Random.Shared.Next(headlines.Count)];
+    }
 
     public static string GetStage(string initializerTypeName) => initializerTypeName switch
     {
