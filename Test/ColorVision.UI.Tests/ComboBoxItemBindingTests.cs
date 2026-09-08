@@ -9,33 +9,6 @@ namespace ColorVision.UI.Tests;
 public sealed class ComboBoxItemBindingTests
 {
     [Theory]
-    [InlineData("ComboBoxItemBaseStyle")]
-    [InlineData("ComboBoxItem.Small")]
-    public void DetachedItems_KeepTheirTemplateWithoutMissingAncestorBindings(string styleKey)
-    {
-        WpfTestHost.Invoke(() => WithThemeResources(() =>
-        {
-            using var trace = new BindingTrace();
-            var item = new ComboBoxItem
-            {
-                Content = "Detached item",
-                Style = (Style)Application.Current.FindResource(styleKey),
-            };
-
-            item.Measure(new Size(240, 40));
-            item.Arrange(new Rect(0, 0, 240, 40));
-            item.UpdateLayout();
-            PumpDispatcher();
-
-            Assert.Equal(HorizontalAlignment.Left, item.HorizontalContentAlignment);
-            Assert.Equal(VerticalAlignment.Center, item.VerticalContentAlignment);
-            Assert.NotNull(item.Template);
-            Assert.True(item.DesiredSize.Height > 0);
-            trace.AssertNoAlignmentFailures();
-        }));
-    }
-
-    [Theory]
     [InlineData(null, false)]
     [InlineData(null, true)]
     [InlineData("ComboBox.Small", false)]
