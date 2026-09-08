@@ -10,6 +10,7 @@ on:
     branches: [ "master","develop" ]
   release:
     types: [published]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -40,15 +41,7 @@ jobs:
       run: python -m pip install "pefile==2024.8.26" "requests==2.33.0" "tqdm==4.67.3"
 
     - name: Restore dependencies
-      run: |
-        dotnet restore build.sln -p:Configuration=Release -p:Platform=x64
-        dotnet restore Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -p:Configuration=Release -p:Platform=x64
-        dotnet restore Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj -p:Configuration=Release -p:Platform=x64
-        dotnet restore Test/Spectrum.Tests/Spectrum.Tests.csproj -p:Configuration=Release -p:Platform=x64
-        dotnet restore Test/Conoscope.Tests/Conoscope.Tests.csproj -p:Configuration=Release -p:Platform=x64
-        dotnet restore Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj -p:Configuration=Release -p:Platform=x64
-        dotnet restore Test/ProjectKB.Tests/ProjectKB.Tests.csproj -p:Configuration=Release -p:Platform=x64
-        dotnet restore Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj -p:Configuration=Release -p:Platform=x64
+      run: dotnet restore build.sln -p:Configuration=Release -p:Platform=x64
 
     - name: Setup MSBuild path
       uses: microsoft/setup-msbuild@v3
@@ -65,42 +58,6 @@ jobs:
       run: |
         python Scripts/verify_native_contracts.py --static-native-project-only --runtime ColorVision/bin/x64/Release/net10.0-windows/runtimes/win-x64/native/opencv_cuda.dll
         python Scripts/verify_platform_policy.py --fileio-package-directory Engine/ColorVision.FileIO/bin/Release
-
-    - name: Run Python tests
-      run: python -m unittest discover -s Scripts/tests -p "test_*.py" -v
-
-    - name: Run UI tests
-      run: dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --no-restore --filter "Category!=PerformanceProbe" --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=ColorVision.UI.Tests.trx"
-
-    - name: Run UI performance probes in an isolated process
-      run: dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --no-restore --filter "Category=PerformanceProbe" --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=ColorVision.UI.PerformanceProbe.Tests.trx"
-
-    - name: Run Copilot tests
-      run: dotnet test Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=ColorVision.Copilot.Tests.trx"
-
-    - name: Run Spectrum tests
-      run: dotnet test Test/Spectrum.Tests/Spectrum.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=Spectrum.Tests.trx"
-
-    - name: Run Conoscope tests
-      run: dotnet test Test/Conoscope.Tests/Conoscope.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=Conoscope.Tests.trx"
-
-    - name: Run ProjectARVRPro tests
-      run: dotnet test Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=ProjectARVRPro.Tests.trx"
-
-    - name: Run ProjectKB tests
-      run: dotnet test Test/ProjectKB.Tests/ProjectKB.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=ProjectKB.Tests.trx"
-
-    - name: Run ProjectLUX tests
-      run: dotnet test Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=ProjectLUX.Tests.trx"
-
-    - name: Upload test diagnostics
-      if: failure()
-      uses: actions/upload-artifact@v7
-      with:
-        name: dotnet-test-diagnostics-${{ github.run_id }}
-        path: TestResults
-        if-no-files-found: ignore
-        retention-days: 7
 
     - name: Verify NuGet package versions are unused
       if: github.event_name == 'release' && !startsWith(github.event.release.tag_name, 'algorithms-v')
@@ -178,3 +135,133 @@ jobs:
         ALGORITHMS_PACKAGE: ${{ steps.algorithms_package.outputs.package_path }}
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
       run: dotnet nuget push $env:ALGORITHMS_PACKAGE --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+
+  script-tests:
+    name: script tests
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      PYTHONUTF8: "1"
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Setup Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.14'
+
+    - name: Install test dependencies
+      run: python -m pip install "pefile==2024.8.26" "requests==2.33.0" "tqdm==4.67.3"
+
+    - name: Run script tests
+      run: python -m unittest discover -s Scripts/tests -p "test_*.py" -v
+
+  managed-tests:
+    name: managed tests (${{ matrix.name }})
+    runs-on: windows-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - name: UI
+          id: ui
+          project: Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj
+          filter: Category!=PerformanceProbe
+        - name: Copilot
+          id: copilot
+          project: Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj
+          filter: ''
+        - name: Spectrum
+          id: spectrum
+          project: Test/Spectrum.Tests/Spectrum.Tests.csproj
+          filter: ''
+        - name: Conoscope
+          id: conoscope
+          project: Test/Conoscope.Tests/Conoscope.Tests.csproj
+          filter: ''
+        - name: ProjectARVRPro
+          id: project-arvr-pro
+          project: Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj
+          filter: ''
+        - name: ProjectKB
+          id: project-kb
+          project: Test/ProjectKB.Tests/ProjectKB.Tests.csproj
+          filter: ''
+        - name: ProjectLUX
+          id: project-lux
+          project: Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj
+          filter: ''
+    env:
+      TEST_PROJECT: ${{ matrix.project }}
+      TEST_FILTER: ${{ matrix.filter }}
+      TEST_RESULT: ${{ matrix.id }}
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Restore test project
+      run: dotnet restore $env:TEST_PROJECT -p:Configuration=Release -p:Platform=x64
+
+    - name: Run managed tests
+      run: |
+        $testArguments = @(
+          'test', $env:TEST_PROJECT,
+          '-c', 'Release',
+          '-p:Platform=x64',
+          '--no-restore',
+          '--verbosity', 'minimal',
+          '--blame-hang',
+          '--blame-hang-timeout', '5m',
+          '--blame-hang-dump-type', 'none',
+          '--results-directory', 'TestResults',
+          '--logger', "trx;LogFileName=$($env:TEST_RESULT).trx"
+        )
+        if ($env:TEST_FILTER) {
+          $testArguments += @('--filter', $env:TEST_FILTER)
+        }
+        dotnet @testArguments
+
+    - name: Upload test diagnostics
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: dotnet-test-diagnostics-${{ matrix.id }}-${{ github.run_id }}
+        path: TestResults
+        if-no-files-found: ignore
+        retention-days: 7
+
+  performance-probes:
+    name: performance probes
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Restore UI tests
+      run: dotnet restore Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -p:Configuration=Release -p:Platform=x64
+
+    - name: Run UI performance probes in an isolated process
+      run: dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --no-restore --filter "Category=PerformanceProbe" --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=ColorVision.UI.PerformanceProbe.Tests.trx"
+
+    - name: Upload performance diagnostics
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: dotnet-performance-diagnostics-${{ github.run_id }}
+        path: TestResults
+        if-no-files-found: ignore
+        retention-days: 7
