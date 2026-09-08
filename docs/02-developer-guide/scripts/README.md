@@ -38,7 +38,7 @@ related: ["delivery.index","delivery.testing","delivery.backend","delivery.updat
 Scripts\release.bat
 ```
 
-主程序发布不携带输出根目录的 `CHANGELOG.md`：`build_update.py` 在全量 ZIP 和增量 CVX 中排除该路径，`generate_shared_files.py` 也忽略该文件，避免旧输出副本重新进入共享清单。窗口尺寸诊断使用的根目录 `window-resize-diagnostics.mode` 和 `window-resize-traces/` 同样属于本机诊断产物，不进入主程序包或插件共享清单。外部 `ColorVision.aip` 不应包含这些文件；仓库根目录的变更日志原稿继续由 `build.py` 独立上传，插件自己的日志照常随插件包交付。这些规则不清理历史包或已有安装目录。
+主程序发布不携带输出根目录的 `CHANGELOG.md`：`build_update.py` 在全量 ZIP 和增量 CVX 中排除该路径，`generate_shared_files.py` 也忽略该文件，避免旧输出副本重新进入共享清单。运行时 `Config/` 和窗口尺寸诊断使用的根目录 `window-resize-diagnostics.mode`、`window-resize-traces/` 属于本机产物，不进入主程序全量 ZIP 或增量 CVX；诊断文件也不进入插件共享清单。外部 `ColorVision.aip` 不应包含这些文件；仓库根目录的变更日志原稿继续由 `build.py` 独立上传，插件自己的日志照常随插件包交付。这些规则不清理历史包或已有安装目录。
 
 发布成功时，控制台应依次看到主包上传、`CHANGELOG.md` 上传、`LATEST_RELEASE` 更新和增量包上传成功。最后 `verify_release.py` 会并行验证安装包 Authenticode 签名、远端 latest/changelog、安装包与更新包 Range 下载大小，并报告 Git 状态；只有这一阶段也返回零，wrapper 才算成功。后端 HTTP 接口是唯一发布通道，不再同步企业微信 WeDrive 或百度云；任一元数据上传失败都会阻止版本号更新。本地安装包、全量 zip、增量包是正常构建产物，不代表“本地-only 发布”。其中桌面 `History` 目录用于生成增量差分，不是额外分发渠道；基线 ZIP 解压到系统临时目录并在打包结束后自动清理，不在仓库根目录创建 `temp_old_version_*`。客户端检查、缓存和元数据重试规则见[检查更新](../deployment/auto-update.md#检查复用与元数据新鲜度)。发布失败时先修复失败原因，再重新走 `release.bat`。
 

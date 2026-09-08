@@ -17,7 +17,7 @@ ALLOWED_RUNTIME_PREFIXES = (
     'runtimes/win/',
     'runtimes/win-x64/',
 )
-EXCLUDED_OUTPUT_DIRECTORIES = {'log', 'plugins', 'publish', 'window-resize-traces'}
+EXCLUDED_OUTPUT_DIRECTORIES = {'config', 'log', 'plugins', 'publish', 'window-resize-traces'}
 EXCLUDED_ROOT_OUTPUT_FILES = {'changelog.md', 'window-resize-diagnostics.mode'}
 SHELL_EXTENSION_FILE_PREFIX = 'colorvision.shellextension'
 FULL_RELEASE_ZIP_RE = re.compile(
