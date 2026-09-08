@@ -307,27 +307,31 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
-                        <controls:DropDownControlArea x:Name="TabStrip" Panel.ZIndex="1"
-                            HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                            DropDownContextMenu="{Binding Model.Root.Manager.DocumentContextMenu, RelativeSource={RelativeSource TemplatedParent}}"
-                            DropDownContextMenuDataContext="{Binding SelectedItem.TabItem.LayoutItem, RelativeSource={RelativeSource TemplatedParent}}"
-                            Style="{DynamicResource DropDownControlArea}">
-                            <Grid x:Name="TabStripSurface" Background="{DynamicResource DockingChromeBackground}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <Border x:Name="TabStripLine" Grid.ColumnSpan="2" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource DockingBorderBrush}" />
-                                <chrome:StableDocumentPaneTabPanel x:Name="HeaderPanel" IsItemsHost="True" KeyboardNavigation.TabIndex="1" />
-                                <controls:DropDownButton x:Name="MenuDropDownButton" Grid.Column="1" Margin="3,0,2,0"
-                                    Style="{StaticResource DockingDropDownButtonStyle}">
-                                    <controls:DropDownButton.DropDownContextMenu>
-                                        <controls:ContextMenuEx ItemsSource="{Binding Model.ChildrenSorted, RelativeSource={RelativeSource TemplatedParent}}" />
-                                    </controls:DropDownButton.DropDownContextMenu>
-                                    <TextBlock Style="{StaticResource DockingCaptionGlyphStyle}" Text="&#xE70D;" />
-                                </controls:DropDownButton>
-                            </Grid>
-                        </controls:DropDownControlArea>
+                        <Grid x:Name="TabStripSurface" Panel.ZIndex="1" Background="{DynamicResource DockingChromeBackground}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="TabStripLine" Grid.ColumnSpan="2" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource DockingBorderBrush}" />
+                            <!-- Keep the blank-strip menu behind the transparent tab panel. A document tab then routes
+                                 directly to its own DropDownControlArea instead of being intercepted by a parent area. -->
+                            <controls:DropDownControlArea x:Name="TabStrip" Grid.Column="0"
+                                HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                                DropDownContextMenu="{Binding Model.Root.Manager.DocumentContextMenu, RelativeSource={RelativeSource TemplatedParent}}"
+                                DropDownContextMenuDataContext="{Binding Model.SelectedContent, RelativeSource={RelativeSource TemplatedParent}, Converter={converters:LayoutItemFromLayoutModelConverter}}"
+                                Style="{DynamicResource DropDownControlArea}">
+                                <Border Background="Transparent" />
+                            </controls:DropDownControlArea>
+                            <chrome:StableDocumentPaneTabPanel x:Name="HeaderPanel" Grid.Column="0" Panel.ZIndex="1"
+                                IsItemsHost="True" KeyboardNavigation.TabIndex="1" />
+                            <controls:DropDownButton x:Name="MenuDropDownButton" Grid.Column="1" Margin="3,0,2,0"
+                                Style="{StaticResource DockingDropDownButtonStyle}">
+                                <controls:DropDownButton.DropDownContextMenu>
+                                    <controls:ContextMenuEx ItemsSource="{Binding Model.ChildrenSorted, RelativeSource={RelativeSource TemplatedParent}}" />
+                                </controls:DropDownButton.DropDownContextMenu>
+                                <TextBlock Style="{StaticResource DockingCaptionGlyphStyle}" Text="&#xE70D;" />
+                            </controls:DropDownButton>
+                        </Grid>
                         <chrome:DockingSurfaceBorder x:Name="DocumentPaneBorder" Grid.Row="1" Background="{TemplateBinding Background}"
                             BorderBrush="{DynamicResource DockingBorderBrush}" BorderThickness="1,0,1,1" CornerRadius="0,0,4,4"
                             KeyboardNavigation.DirectionalNavigation="Contained" KeyboardNavigation.TabIndex="2" KeyboardNavigation.TabNavigation="Cycle">
