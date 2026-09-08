@@ -403,7 +403,7 @@ public sealed class CompactTitleBarIntegrationContractTests
             void SettleLayout()
             {
                 window.UpdateLayout();
-                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.Render);
             }
             try
             {
@@ -515,7 +515,7 @@ public sealed class CompactTitleBarIntegrationContractTests
             void SettleLayout()
             {
                 window.UpdateLayout();
-                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.Render);
             }
             try
             {
@@ -954,7 +954,7 @@ public sealed class CompactTitleBarIntegrationContractTests
         }
     }
 
-    private static void PumpDispatcher() => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+    private static void PumpDispatcher() => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.Render);
 
     private static XDocument LoadMainWindow([CallerFilePath] string sourcePath = "")
         => XDocument.Load(Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourcePath)!, "..", "..", "ColorVision", "MainWindow.xaml")));
