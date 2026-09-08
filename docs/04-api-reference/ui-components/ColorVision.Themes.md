@@ -139,7 +139,7 @@ BaseWindow 拥有自己的 WindowChrome、窗口命令及 WPF 标题按钮。默
 
 排查 XAML 绑定失败时，按目标控件、目标属性和绑定来源定位共享样式。未挂载、隐藏或回收的容器可能没有可用祖先；Visual Studio 会按控件实例累计错误次数，同一种样式问题可能产生多条记录。
 
-`ComboBoxItemBindingTests` 使用真实主题检查未挂载项、弹出层对齐的动态继承和关闭/刷新后的解绑。`GridViewColumnHeaderBindingTests` 检查未挂载列头，以及默认/`GridViewColumnHeaderBase` 列头的绑定诊断、字号继承与调整列宽模板；用户窗口中的鼠标拖动、排序和主题切换仍需单独验证。
+`ComboBoxItemBindingTests` 使用真实主题检查弹出层对齐的动态继承和关闭/刷新后的解绑。`GridViewColumnHeaderBindingTests` 检查未挂载列头，以及默认/`GridViewColumnHeaderBase` 列头的绑定诊断、字号继承与调整列宽模板；用户窗口中的鼠标拖动、排序和主题切换仍需单独验证。
 
 ## 菜单的共享外观
 
