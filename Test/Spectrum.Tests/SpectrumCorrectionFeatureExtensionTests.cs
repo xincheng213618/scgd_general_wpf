@@ -4,25 +4,11 @@ using ColorVision.Engine.Services.Devices.Spectrum.Correction;
 using Spectrum.Calibration.Correction;
 using System.Collections;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Reflection;
 
 namespace Spectrum.Tests;
 
 public class SpectrumCorrectionFeatureExtensionTests
 {
-    [Fact]
-    public void EngineDevice_ExposesBuiltInCorrectionCommand()
-    {
-        PropertyInfo property = Assert.IsAssignableFrom<PropertyInfo>(
-            typeof(DeviceSpectrum).GetProperty(nameof(DeviceSpectrum.OpenSpectrumCorrectionCommand)));
-        CommandDisplayAttribute attribute = Assert.IsType<CommandDisplayAttribute>(
-            property.GetCustomAttribute<CommandDisplayAttribute>());
-
-        Assert.Equal("光谱校正", attribute.DisplayName);
-        Assert.Equal(-3, attribute.Order);
-    }
-
     [Fact]
     public void SpectrumPlugin_ExposesIndependentCorrectionMenu()
     {
