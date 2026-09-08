@@ -27,26 +27,37 @@ namespace ColorVision.UI
         // 入口：在窗口构造后调用
         public void SetWindow(Window window)
         {
-            // 在 SourceInitialized 之后恢复（此时有 CompositionTarget，可用于 DPI 转换）
             window.SourceInitialized -= OnSourceInitialized;
-            window.SourceInitialized += OnSourceInitialized;
-
             window.Closing -= Window_Closing;
-            window.Closing += Window_Closing;
-
             window.SizeChanged -= Window_LocationOrSizeChanged;
-            window.SizeChanged += Window_LocationOrSizeChanged;
-
             window.LocationChanged -= Window_LocationOrSizeChanged;
-            window.LocationChanged += Window_LocationOrSizeChanged;
+
+            // HWND creation can raise LocationChanged before SourceInitialized. Keep the saved
+            // bounds intact until restoration finishes, and never create a handle just to inspect it.
+            if (new WindowInteropHelper(window).Handle == IntPtr.Zero)
+                window.SourceInitialized += OnSourceInitialized;
+            else
+                TrackWindowChanges(window);
         }
 
         private void OnSourceInitialized(object? sender, EventArgs e)
         {
             if (sender is Window window)
             {
+                window.SourceInitialized -= OnSourceInitialized;
                 RestoreWindow(window);
+                TrackWindowChanges(window);
             }
+        }
+
+        private void TrackWindowChanges(Window window)
+        {
+            window.Closing -= Window_Closing;
+            window.Closing += Window_Closing;
+            window.SizeChanged -= Window_LocationOrSizeChanged;
+            window.SizeChanged += Window_LocationOrSizeChanged;
+            window.LocationChanged -= Window_LocationOrSizeChanged;
+            window.LocationChanged += Window_LocationOrSizeChanged;
         }
 
         private void Window_LocationOrSizeChanged(object? sender, EventArgs e)

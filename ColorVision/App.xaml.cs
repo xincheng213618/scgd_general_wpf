@@ -307,30 +307,42 @@ namespace ColorVision
             log.Info($"Startup single-instance coordination took {startupPhaseStopwatch.ElapsedMilliseconds} ms.");
             startupPhaseStopwatch.Restart();
 
+            Stopwatch? startupHostTrace = Environment.GetEnvironmentVariable("COLORVISION_STARTUP_TRACE") == "1"
+                ? Stopwatch.StartNew()
+                : null;
             Rbac.ApplicationUsageTracker.StartSession();
+            TraceStartupHostPhase(startupHostTrace, "RBAC usage tracking");
 
-            CopilotMcpServer.Instance.ApplyConfig();
+            CopilotMcpServer mcpServer = CopilotMcpServer.Instance;
+            TraceStartupHostPhase(startupHostTrace, "MCP singleton construction");
+            mcpServer.ApplyConfig();
+            TraceStartupHostPhase(startupHostTrace, "MCP configuration");
             FlowOperationsRuntimeStatusProvider flowOperations = new();
             OperationsApplicationRestartHandoff applicationRestartHandoff = new();
-            OperationsWorkStore operationsWorkStore = LanRemoteControlService.Instance.OperationsHost.WorkStore;
+            LanRemoteControlService lanRemoteControl = LanRemoteControlService.Instance;
+            TraceStartupHostPhase(startupHostTrace, "LAN singleton construction");
+            OperationsWorkStore operationsWorkStore = lanRemoteControl.OperationsHost.WorkStore;
             applicationRestartHandoff.CompletePending(
                 operationsWorkStore, OperationsApplicationRestartController.RestartJobId);
-            LanRemoteControlService.Instance.ConfigureOperationsServiceHealthProvider(new WindowsOperationsServiceHealthProvider());
-            LanRemoteControlService.Instance.ConfigureOperationsFlowRuntimeStatusProvider(flowOperations);
-            LanRemoteControlService.Instance.ConfigureOperationsDeviceHealthProvider(new EngineOperationsDeviceHealthProvider());
+            TraceStartupHostPhase(startupHostTrace, "LAN pending restart handoff");
+            lanRemoteControl.ConfigureOperationsServiceHealthProvider(new WindowsOperationsServiceHealthProvider());
+            lanRemoteControl.ConfigureOperationsFlowRuntimeStatusProvider(flowOperations);
+            lanRemoteControl.ConfigureOperationsDeviceHealthProvider(new EngineOperationsDeviceHealthProvider());
             EngineOperationsMessageChannelHealthProvider messageChannelOperations = new();
-            LanRemoteControlService.Instance.ConfigureOperationsMessageChannelHealthProvider(messageChannelOperations);
-            LanRemoteControlService.Instance.ConfigureOperationsMessageChannelRecoveryController(messageChannelOperations);
-            LanRemoteControlService.Instance.ConfigureOperationsFailureEvidenceProvider(new WindowsOperationsFailureEvidenceService());
-            LanRemoteControlService.Instance.ConfigureOperationsMqttRestartController(new ServiceHostOperationsMqttRestartController());
-            LanRemoteControlService.Instance.ConfigureOperationsApplicationRestartController(
+            lanRemoteControl.ConfigureOperationsMessageChannelHealthProvider(messageChannelOperations);
+            lanRemoteControl.ConfigureOperationsMessageChannelRecoveryController(messageChannelOperations);
+            lanRemoteControl.ConfigureOperationsFailureEvidenceProvider(new WindowsOperationsFailureEvidenceService());
+            lanRemoteControl.ConfigureOperationsMqttRestartController(new ServiceHostOperationsMqttRestartController());
+            lanRemoteControl.ConfigureOperationsApplicationRestartController(
                 new OperationsApplicationRestartController(
                     this,
                     flowOperations,
                     operationsWorkStore,
                     applicationRestartHandoff,
                     () => _isSingleInstanceReplacement = true));
-            LanRemoteControlService.Instance.ApplyConfig();
+            TraceStartupHostPhase(startupHostTrace, "LAN provider configuration");
+            lanRemoteControl.ApplyConfig();
+            TraceStartupHostPhase(startupHostTrace, "LAN listener configuration");
             log.Info($"Startup RBAC, MCP and LAN host setup took {startupPhaseStopwatch.ElapsedMilliseconds} ms.");
 
             log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");

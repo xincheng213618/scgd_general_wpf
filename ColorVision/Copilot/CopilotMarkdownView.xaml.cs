@@ -37,6 +37,8 @@ namespace ColorVision.Copilot
         private FlowDocument? _renderDocument;
         private double _lastRenderedWidth;
 
+        private readonly record struct MarkdownCodeFence(char Marker, int Length, int Indentation, string Info);
+
         public CopilotMarkdownView()
         {
             InitializeComponent();
@@ -143,6 +145,7 @@ namespace ColorVision.Copilot
             var displayMathBuilder = new StringBuilder();
             var inCodeBlock = false;
             var codeLanguage = string.Empty;
+            var codeFence = default(MarkdownCodeFence);
             var displayMathOpening = string.Empty;
             var displayMathClosing = string.Empty;
 
@@ -157,10 +160,10 @@ namespace ColorVision.Copilot
 
             void FlushCodeBlock()
             {
-                if (codeBuilder.Length == 0)
-                    return;
-
-                AddCodeBlock(codeBuilder.ToString().TrimEnd('\r', '\n'), codeLanguage);
+                var code = codeBuilder.ToString();
+                if (code.EndsWith(Environment.NewLine, StringComparison.Ordinal))
+                    code = code[..^Environment.NewLine.Length];
+                AddCodeBlock(code, codeLanguage);
                 codeBuilder.Clear();
             }
 
@@ -190,27 +193,27 @@ namespace ColorVision.Copilot
                     continue;
                 }
 
-                var trimmedStart = line.TrimStart();
-                if (trimmedStart.StartsWith("```", StringComparison.Ordinal))
+                if (inCodeBlock)
                 {
-                    FlushParagraph();
-                    if (inCodeBlock)
+                    if (IsClosingCodeFence(line, codeFence))
                     {
                         FlushCodeBlock();
+                        inCodeBlock = false;
                         codeLanguage = string.Empty;
+                        codeFence = default;
                     }
                     else
                     {
-                        codeLanguage = NormalizeCodeLanguage(trimmedStart[3..]);
+                        codeBuilder.AppendLine(RemoveCodeFenceIndentation(line, codeFence.Indentation));
                     }
-
-                    inCodeBlock = !inCodeBlock;
                     continue;
                 }
 
-                if (inCodeBlock)
+                if (TryParseOpeningCodeFence(line, out codeFence))
                 {
-                    codeBuilder.AppendLine(line);
+                    FlushParagraph();
+                    codeLanguage = NormalizeCodeLanguage(codeFence.Info);
+                    inCodeBlock = true;
                     continue;
                 }
 
@@ -291,7 +294,8 @@ namespace ColorVision.Copilot
             }
 
             FlushParagraph();
-            FlushCodeBlock();
+            if (inCodeBlock)
+                FlushCodeBlock();
             if (!string.IsNullOrEmpty(displayMathClosing))
             {
                 var rawFormula = displayMathOpening + displayMathBuilder.ToString().TrimEnd();
@@ -418,6 +422,84 @@ namespace ColorVision.Copilot
                 Margin = new Thickness(0, 2, 0, 10),
             };
             CurrentDocument.Blocks.Add(block);
+        }
+
+        private static bool TryParseOpeningCodeFence(string line, out MarkdownCodeFence fence)
+        {
+            fence = default;
+            var indentation = 0;
+            while (indentation < line.Length && line[indentation] == ' ')
+                indentation++;
+            if (indentation > 3 || indentation >= line.Length)
+                return false;
+
+            var marker = line[indentation];
+            if (marker is not ('`' or '~'))
+                return false;
+
+            var markerEnd = indentation;
+            while (markerEnd < line.Length && line[markerEnd] == marker)
+                markerEnd++;
+            var markerLength = markerEnd - indentation;
+            if (markerLength < 3)
+                return false;
+
+            var info = line[markerEnd..].Trim();
+            if (marker == '`' && info.Contains('`'))
+                return false;
+
+            fence = new MarkdownCodeFence(marker, markerLength, indentation, info);
+            return true;
+        }
+
+        private static bool IsClosingCodeFence(string line, MarkdownCodeFence fence)
+        {
+            var indentation = 0;
+            while (indentation < line.Length && line[indentation] == ' ')
+                indentation++;
+            if (indentation > 3 || indentation >= line.Length || line[indentation] != fence.Marker)
+                return false;
+
+            var markerEnd = indentation;
+            while (markerEnd < line.Length && line[markerEnd] == fence.Marker)
+                markerEnd++;
+            if (markerEnd - indentation < fence.Length)
+                return false;
+
+            for (var index = markerEnd; index < line.Length; index++)
+            {
+                if (line[index] is not (' ' or '\t'))
+                    return false;
+            }
+            return true;
+        }
+
+        private static string RemoveCodeFenceIndentation(string line, int indentation)
+        {
+            if (indentation <= 0 || line.Length == 0)
+                return line;
+
+            var index = 0;
+            var column = 0;
+            while (index < line.Length && column < indentation)
+            {
+                if (line[index] == ' ')
+                {
+                    index++;
+                    column++;
+                    continue;
+                }
+
+                if (line[index] != '\t')
+                    break;
+
+                var nextTabStop = column + 4 - column % 4;
+                index++;
+                if (nextTabStop > indentation)
+                    return new string(' ', nextTabStop - indentation) + line[index..];
+                column = nextTabStop;
+            }
+            return line[index..];
         }
 
         private static string NormalizeCodeLanguage(string? fenceInfo)

@@ -75,6 +75,8 @@ public sealed class WindowConfigDpiLifecycleTests
     {
         WithWindow(window =>
         {
+            // WPF rejects ShowActivated=false when a window is shown maximized.
+            window.ShowActivated = state == WindowState.Maximized;
             var config = new TestWindowConfig
             {
                 WindowStates = (int)state,
@@ -119,6 +121,56 @@ public sealed class WindowConfigDpiLifecycleTests
             config.SetConfig(window);
             AssertBoundsEqual(shownBounds, new Rect(config.Left, config.Top, config.Width, config.Height));
             Assert.Equal((int)state, config.WindowStates);
+        });
+    }
+
+    [Fact]
+    public void ExistingHandleRegistrationTracksChangesWithoutRestoringSavedBounds()
+    {
+        WithWindow(window =>
+        {
+            IntPtr handle = new WindowInteropHelper(window).EnsureHandle();
+            var config = new TestWindowConfig
+            {
+                WindowStates = (int)WindowState.Maximized,
+                Left = window.Left + 120,
+                Top = window.Top + 120,
+                Width = 640,
+                Height = 480
+            };
+            Rect originalBounds = GetNormalBounds(window);
+            config.SetWindow(window);
+            config.SetWindow(window);
+            Assert.Equal(handle, new WindowInteropHelper(window).Handle);
+            Assert.Equal(WindowState.Normal, window.WindowState);
+            AssertBoundsEqual(originalBounds, GetNormalBounds(window));
+            Assert.Equal((int)WindowState.Maximized, config.WindowStates);
+
+            window.Left += 20;
+            Assert.Equal(window.Left, config.Left);
+            Assert.Equal((int)WindowState.Normal, config.WindowStates);
+        });
+    }
+
+    [Fact]
+    public void ClosingBeforeHandleCreationPreservesSavedStateAndBounds()
+    {
+        WithWindow(window =>
+        {
+            var config = new TestWindowConfig
+            {
+                WindowStates = (int)WindowState.Maximized,
+                Left = 80,
+                Top = 90,
+                Width = 640,
+                Height = 480
+            };
+            config.SetWindow(window);
+            config.SetWindow(window);
+            Assert.Equal(IntPtr.Zero, new WindowInteropHelper(window).Handle);
+            window.Close();
+            Assert.Equal((int)WindowState.Maximized, config.WindowStates);
+            Assert.Equal(new Rect(80, 90, 640, 480), new Rect(config.Left, config.Top, config.Width, config.Height));
         });
     }
 

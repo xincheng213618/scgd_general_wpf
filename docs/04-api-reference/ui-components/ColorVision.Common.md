@@ -56,9 +56,11 @@ Common 中的 `AssemblyService`、`ConfigService`、`MenuService` 是可由宿�
 
 `Interfaces/Window/WindowConfig.cs` 在 `SourceInitialized` 恢复保存的 DIP 位置、正常尺寸与窗口状态；保存的最小化状态按正常窗口恢复。选屏优先保存的设备名，其次与保存矩形相交最多的屏幕，最后主屏；无有效保存边界时居中，并将正常窗口边界适配到工作区域。最大化窗口保存 `RestoreBounds`，关闭事件只更新内存配置，持久化仍由配置宿主负责。
 
+窗口尚无 HWND 时，`SetWindow` 只登记 `SourceInitialized`，恢复完成后才订阅位置、尺寸与关闭事件的配置回写。创建 HWND 期间的 `LocationChanged` 可能早于恢复事件，不能让它用临时普通窗口状态覆盖保存的最大化状态和边界；未创建 HWND 就关闭的窗口也保留原保存值。对已有 HWND 调用 `SetWindow` 只登记后续回写，不补做恢复；重复调用会先移除本配置已有订阅。
+
 屏幕像素到 DIP 的转换优先读取视觉树的 `PresentationSource.CompositionTarget`。调用方提前创建 HWND 时，`SourceInitialized` 可能发生在窗口根视觉尚未挂接的阶段；此时复用 `WindowInteropHelper.Handle` 对应 `HwndSource` 的转换矩阵。两者均不可用才回退单位矩阵，读取几何不会调用 `EnsureHandle`、创建窗口句柄或显示窗口。`GetDipScreens` 和主屏回退共用这条规则。当前仍以窗口源的矩阵换算屏幕集合，不承诺分别处理多屏混合缩放或显示配置热切换。
 
-`WindowConfigDpiLifecycleTests` 使用独立窗口和内存配置，检查无 HWND 的读取无副作用、`SourceInitialized` / `EnsureHandle` / `Show` 三阶段屏幕换算一致，以及正常/最大化窗口在有无保存边界时的恢复范围；测试不更改显示缩放。非单位缩放环境才能区分已有 HWND 转换与单位矩阵回退，100% 缩放下通过不能单独证明该分支修复。
+`WindowConfigDpiLifecycleTests` 使用独立窗口和内存配置，检查无 HWND 的读取无副作用、`SourceInitialized` / `EnsureHandle` / `Show` 三阶段屏幕换算一致，以及直接 Show 和预建 HWND 两条路径中，正常/最大化窗口在有无保存边界时的恢复范围。还检查已有 HWND 的登记不补恢复、后续位置变化回写，以及创建句柄前关闭保留保存值；测试不更改显示缩放。非单位缩放环境才能区分已有 HWND 转换与单位矩阵回退，100% 缩放下通过不能单独证明该分支修复。
 
 ## 粗粒度权限的判据不是统一授权拦截
 
