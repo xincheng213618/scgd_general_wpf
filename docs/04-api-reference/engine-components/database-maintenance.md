@@ -49,6 +49,7 @@ related: ["engine.index", "engine.mysql-maintenance", "ui.sqlite-storage", "ui.d
 | `flow-diagnostics-sqlite` | `FlowProcessing/Diagnostics/FlowDiagnosticsSqliteCleanupProvider.cs` | 备份、组合维护、诊断消息迁移 |
 | `projectarvrpro-sqlite` | `Projects/ProjectARVRPro/ArvrSqliteCleanupProvider.cs` | 项目结果备份、组合维护与迁移 |
 | `projectkb-sqlite` | `Projects/ProjectKB/KbSqliteCleanupProvider.cs` | KB 结果备份、组合维护与迁移 |
+| `projectlux-sqlite` | `Projects/ProjectLUX/LuxSqliteCleanupProvider.cs` | LUX 结果备份、组合维护与迁移；“结果统计”提供单源入口，兼容边界见 [ProjectLUX](../projects/project-lux.md) |
 
 Socket/Flow 的锁与迁移实现见 [SQLite 正文存储](../ui-components/sqlite-storage.md)。ARVR、KB 的迁移还涉及各自的模型兼容和历史内容重建，必须核对项目实现；这里的能力表不证明它们与通用 gzip 工具具有相同细节。
 

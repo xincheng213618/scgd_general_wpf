@@ -16,32 +16,35 @@ namespace ProjectLUX
     public class ProjectLUXReuslt : ViewEntity 
     {
         [SqlSugar.SugarColumn(IsIgnore = true)]
-        public ContextMenu ContextMenu { get; set; }
+        public ContextMenu ContextMenu { get => _contextMenu ??= CreateContextMenu(); set => _contextMenu = value; }
+        private ContextMenu? _contextMenu;
 
-        public ProjectLUXReuslt()
+        private ContextMenu CreateContextMenu()
         {
-            ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Command = System.Windows.Input.ApplicationCommands.Delete });
-            ContextMenu.Items.Add(new MenuItem() { Command = System.Windows.Input.ApplicationCommands.Copy, Header = "复制" });
+            var menu = new ContextMenu();
+            menu.Items.Add(new MenuItem() { Command = System.Windows.Input.ApplicationCommands.Delete });
+            menu.Items.Add(new MenuItem() { Command = System.Windows.Input.ApplicationCommands.Copy, Header = "复制" });
 
             RelayCommand openFolderAndSelectFile = new RelayCommand(a =>
             {
                 PlatformHelper.OpenFolderAndSelectFile(FileName);
             }, e => File.Exists(FileName));
 
-            ContextMenu.Items.Add(new MenuItem() { Command = openFolderAndSelectFile, Header = "OpenFolderAndSelectFile" });
+            menu.Items.Add(new MenuItem() { Command = openFolderAndSelectFile, Header = "OpenFolderAndSelectFile" });
 
             RelayCommand BatchDataHistoryCommand = new RelayCommand(a => BatchDataHistory(), e => BatchId > 0);
-            ContextMenu.Items.Add(new MenuItem() { Command = BatchDataHistoryCommand, Header = "流程结果查询" });
+            menu.Items.Add(new MenuItem() { Command = BatchDataHistoryCommand, Header = "流程结果查询" });
 
-            RelayCommand ViewTestResultCommand = new RelayCommand(a => ViewTestResult(), e => !string.IsNullOrEmpty(ViewResultJson));
-            ContextMenu.Items.Add(new MenuItem() { Command = ViewTestResultCommand, Header = "查看测试结果" });
+            RelayCommand ViewTestResultCommand = new RelayCommand(a => ViewTestResult(), e => Id > 0 || !string.IsNullOrEmpty(ViewResultJson));
+            menu.Items.Add(new MenuItem() { Command = ViewTestResultCommand, Header = "查看测试结果" });
 
+            return menu;
         }
 
 
         public void ViewTestResult()
         {
+            ViewResultManager.GetInstance().LoadViewResultJson(this);
             if (string.IsNullOrEmpty(ViewResultJson))
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "ViewResultJson为空", "ColorVision");
@@ -80,6 +83,7 @@ namespace ProjectLUX
 
         public string Model { get; set; } = string.Empty;
 
+        [SugarColumn(IsNullable = true)]
         public string FileName { get; set; } = string.Empty;
 
         /// <summary>
@@ -114,7 +118,7 @@ namespace ProjectLUX
         public DateTime CreateTime { get; set; } = DateTime.Now;
 
 
-        [SugarColumn(IsNullable = true)]
+        [SugarColumn(IsIgnore = true)]
         public string ViewResultJson { get; set; }
 
     }

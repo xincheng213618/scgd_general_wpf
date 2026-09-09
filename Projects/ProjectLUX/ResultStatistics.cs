@@ -1,0 +1,890 @@
+using SqlSugar;
+using System.Globalization;
+
+namespace ProjectLUX
+{
+    public enum ResultStatisticsPeriodMode
+    {
+        Day,
+        Week,
+        Month,
+        All,
+    }
+
+    public readonly record struct ResultStatisticsPeriodRange(DateTime From, DateTime ToExclusive)
+    {
+        public string ToDisplayText(ResultStatisticsPeriodMode mode)
+        {
+            return mode switch
+            {
+                ResultStatisticsPeriodMode.All => "全部记录",
+                ResultStatisticsPeriodMode.Week => $"{From:yyyy/MM/dd} - {ToExclusive.AddDays(-1):MM/dd}",
+                ResultStatisticsPeriodMode.Month => From.ToString("yyyy/MM"),
+                _ => From.ToString("yyyy/MM/dd"),
+            };
+        }
+    }
+
+    public static class ResultStatisticsPeriod
+    {
+        public static ResultStatisticsPeriodRange GetRange(ResultStatisticsPeriodMode mode, DateTime anchor)
+        {
+            DateTime day = anchor.Date;
+            return mode switch
+            {
+                ResultStatisticsPeriodMode.All => new ResultStatisticsPeriodRange(DateTime.MinValue, DateTime.MaxValue),
+                ResultStatisticsPeriodMode.Week => CreateWeekRange(day),
+                ResultStatisticsPeriodMode.Month => new ResultStatisticsPeriodRange(
+                    new DateTime(day.Year, day.Month, 1),
+                    new DateTime(day.Year, day.Month, 1).AddMonths(1)),
+                _ => new ResultStatisticsPeriodRange(day, day.AddDays(1)),
+            };
+        }
+
+        public static DateTime ShiftAnchor(ResultStatisticsPeriodMode mode, DateTime anchor, int offset)
+        {
+            return mode switch
+            {
+                ResultStatisticsPeriodMode.All => anchor.Date,
+                ResultStatisticsPeriodMode.Week => anchor.Date.AddDays(checked(offset * 7)),
+                ResultStatisticsPeriodMode.Month => anchor.Date.AddMonths(offset),
+                _ => anchor.Date.AddDays(offset),
+            };
+        }
+
+        private static ResultStatisticsPeriodRange CreateWeekRange(DateTime day)
+        {
+            int daysSinceMonday = ((int)day.DayOfWeek + 6) % 7;
+            DateTime from = day.AddDays(-daysSinceMonday);
+            return new ResultStatisticsPeriodRange(from, from.AddDays(7));
+        }
+    }
+
+    public sealed class ResultStatisticsQuery
+    {
+        public DateTime From { get; init; } = DateTime.Today;
+        public DateTime ToExclusive { get; init; } = DateTime.Today.AddDays(1);
+        public string? SN { get; init; }
+        public bool? Result { get; init; }
+        public int PageNumber { get; init; } = 1;
+        public int PageSize { get; init; } = 1000;
+    }
+
+    public sealed class FlowExecutionQuery
+    {
+        public DateTime From { get; init; } = DateTime.Today;
+        public DateTime ToExclusive { get; init; } = DateTime.Today.AddDays(1);
+        public string? Model { get; init; }
+        public bool? Result { get; init; }
+        public int PageNumber { get; init; } = 1;
+        public int PageSize { get; init; } = 1000;
+    }
+
+    public sealed class FlowExecutionRecordRow
+    {
+        public int Id { get; set; }
+        public string SN { get; set; } = string.Empty;
+        public string Model { get; set; } = string.Empty;
+        public DateTime CreateTime { get; set; }
+        public long RunTimeMilliseconds { get; set; }
+        public bool Result { get; set; }
+
+        public string RunTimeText => ResultStatisticsCalculator.FormatMilliseconds(RunTimeMilliseconds);
+        public string ResultText => Result ? "PASS" : "FAIL";
+    }
+
+    public sealed class ResultStatisticsSample
+    {
+        public int Id { get; set; }
+        public string SN { get; set; } = string.Empty;
+        public bool Result { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+
+        public double CycleTimeMilliseconds => Math.Max(0, (EndTime - StartTime).TotalMilliseconds);
+        public DateTime ProductionTime => EndTime >= StartTime ? EndTime : StartTime;
+    }
+
+    public sealed class ResultStatistics
+    {
+        public int TotalCount { get; init; }
+        public int PassCount { get; init; }
+        public int FailCount { get; init; }
+        public double PassRate { get; init; }
+        public double FailRate { get; init; }
+        public double AverageCtMilliseconds { get; init; }
+        public double MinimumCtMilliseconds { get; init; }
+        public double MaximumCtMilliseconds { get; init; }
+        public int CurrentHourCount { get; init; }
+        public int TodayCount { get; init; }
+        public IReadOnlyList<ResultStatisticsHourlyRow> HourlyRows { get; init; } = [];
+        public IReadOnlyList<ResultStatisticsDailyRow> DailyRows { get; init; } = [];
+
+        public int TotalProduction => TotalCount;
+        public int SuccessCount => PassCount;
+        public int FailureCount => FailCount;
+        public double SuccessRate => PassRate;
+        public double FailureRate => FailRate;
+        public int CurrentHourProduction => CurrentHourCount;
+        public int TodayProduction => TodayCount;
+        public string PassRateText => ResultStatisticsCalculator.FormatRate(PassRate);
+        public string FailRateText => ResultStatisticsCalculator.FormatRate(FailRate);
+        public string AverageCtText => TotalCount > 0 ? ResultStatisticsCalculator.FormatMilliseconds(AverageCtMilliseconds) : "-";
+        public string MinimumCtText => TotalCount > 0 ? ResultStatisticsCalculator.FormatMilliseconds(MinimumCtMilliseconds) : "-";
+        public string MaximumCtText => TotalCount > 0 ? ResultStatisticsCalculator.FormatMilliseconds(MaximumCtMilliseconds) : "-";
+    }
+
+    public sealed class ResultStatisticsHourlyRow
+    {
+        public DateTime Hour { get; init; }
+        public int TotalCount { get; init; }
+        public int PassCount { get; init; }
+        public int FailCount { get; init; }
+        public double PassRate { get; init; }
+        public double FailRate { get; init; }
+        public double AverageCtMilliseconds { get; init; }
+
+        public string HourText => Hour.ToString("yyyy/MM/dd HH:00");
+        public string PassRateText => ResultStatisticsCalculator.FormatRate(PassRate);
+        public string FailRateText => ResultStatisticsCalculator.FormatRate(FailRate);
+        public string AverageCtText => ResultStatisticsCalculator.FormatMilliseconds(AverageCtMilliseconds);
+    }
+
+    public sealed class ResultStatisticsDailyRow
+    {
+        public DateTime Date { get; init; }
+        public int TotalCount { get; init; }
+        public int PassCount { get; init; }
+        public int FailCount { get; init; }
+        public double PassRate { get; init; }
+        public double FailRate { get; init; }
+        public double AverageCtMilliseconds { get; init; }
+
+        public string DateText => Date.ToString("yyyy/MM/dd");
+        public string PassRateText => ResultStatisticsCalculator.FormatRate(PassRate);
+        public string FailRateText => ResultStatisticsCalculator.FormatRate(FailRate);
+        public string AverageCtText => ResultStatisticsCalculator.FormatMilliseconds(AverageCtMilliseconds);
+    }
+
+    public sealed class ResultStatisticsTrendPoint
+    {
+        public DateTime Time { get; init; }
+        public string Label { get; init; } = string.Empty;
+        public int TotalCount { get; init; }
+        public double AverageCtMilliseconds { get; init; }
+    }
+
+    public sealed class ResultStatisticsDashboard
+    {
+        public ResultStatistics Summary { get; init; } = new();
+        public IReadOnlyList<ResultStatisticsTrendPoint> Trend { get; init; } = [];
+    }
+
+    public static class ResultStatisticsTrendBuilder
+    {
+        public static IReadOnlyList<ResultStatisticsTrendPoint> BuildMonthly(ResultStatistics statistics)
+        {
+            ArgumentNullException.ThrowIfNull(statistics);
+
+            Dictionary<DateTime, ResultStatisticsTrendPoint> monthly = statistics.DailyRows
+                .GroupBy(item => new DateTime(item.Date.Year, item.Date.Month, 1))
+                .ToDictionary(group => group.Key, group => CreatePoint(group.Key, group));
+            if (monthly.Count == 0)
+                return [];
+
+            DateTime firstMonth = monthly.Keys.Min();
+            DateTime lastMonth = monthly.Keys.Max();
+            int monthCount = checked((lastMonth.Year - firstMonth.Year) * 12 + lastMonth.Month - firstMonth.Month + 1);
+            return Enumerable.Range(0, monthCount)
+                .Select(firstMonth.AddMonths)
+                .Select(month => monthly.TryGetValue(month, out ResultStatisticsTrendPoint? point)
+                    ? point
+                    : new ResultStatisticsTrendPoint { Time = month, Label = month.ToString("yyyy/MM") })
+                .ToList();
+        }
+
+        public static IReadOnlyList<ResultStatisticsTrendPoint> BuildDetails(
+            IEnumerable<ResultStatisticsSample> samples,
+            ResultStatisticsPeriodMode mode)
+        {
+            ArgumentNullException.ThrowIfNull(samples);
+            if (mode == ResultStatisticsPeriodMode.All)
+                throw new ArgumentOutOfRangeException(nameof(mode), mode, "全部周期必须使用月度聚合趋势。");
+
+            return samples
+                .OrderBy(item => item.EndTime)
+                .ThenBy(item => item.Id)
+                .Select(item => new ResultStatisticsTrendPoint
+                {
+                    Time = item.EndTime,
+                    Label = mode == ResultStatisticsPeriodMode.Day
+                        ? item.EndTime.ToString("HH:mm:ss")
+                        : item.EndTime.ToString("MM/dd HH:mm:ss"),
+                    TotalCount = 1,
+                    AverageCtMilliseconds = Math.Max(0, (item.EndTime - item.StartTime).TotalMilliseconds),
+                })
+                .ToList();
+        }
+
+        private static ResultStatisticsTrendPoint CreatePoint(DateTime month, IEnumerable<ResultStatisticsDailyRow> rows)
+        {
+            List<ResultStatisticsDailyRow> values = rows.ToList();
+            int totalCount = values.Sum(item => item.TotalCount);
+            double averageCtMilliseconds = totalCount == 0
+                ? 0
+                : values.Sum(item => item.AverageCtMilliseconds * item.TotalCount) / totalCount;
+            return new ResultStatisticsTrendPoint
+            {
+                Time = month,
+                Label = month.ToString("yyyy/MM"),
+                TotalCount = totalCount,
+                AverageCtMilliseconds = averageCtMilliseconds,
+            };
+        }
+    }
+
+    public sealed class ResultStatisticsRecordRow
+    {
+        public int Id { get; set; }
+        public int ExecutionIndex { get; set; }
+        public string SN { get; set; } = string.Empty;
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public bool Result { get; set; }
+        public string LastModel { get; set; } = string.Empty;
+        public int BatchId { get; set; }
+        public int ResultId { get; set; }
+        public string Msg { get; set; } = string.Empty;
+        public int PreviousResultId { get; set; }
+        public int FlowCount { get; set; }
+        public long FlowRunTimeMilliseconds { get; set; }
+
+        public double CycleTimeMilliseconds => Math.Max(0, (EndTime - StartTime).TotalMilliseconds);
+        public string ExecutionText => $"第 {ExecutionIndex} 次";
+        public string CycleTimeText => ResultStatisticsCalculator.FormatMilliseconds(CycleTimeMilliseconds);
+        public string FlowCountText => FlowCount > 0 ? FlowCount.ToString(CultureInfo.InvariantCulture) : "-";
+        public string FlowRunTimeText => FlowCount > 0 ? ResultStatisticsCalculator.FormatMilliseconds(FlowRunTimeMilliseconds) : "-";
+        public string ResultText => Result ? "PASS" : "FAIL";
+    }
+
+    public sealed class ResultStatisticsSnSummary
+    {
+        public string SN { get; init; } = string.Empty;
+        public int TotalCount { get; init; }
+        public int PassCount { get; init; }
+        public int FailCount { get; init; }
+        public double PassRate { get; init; }
+        public DateTime FirstTime { get; init; }
+        public DateTime LastTime { get; init; }
+
+        public string PassRateText => ResultStatisticsCalculator.FormatRate(PassRate);
+    }
+
+    public static class ResultStatisticsCalculator
+    {
+        public static ResultStatistics Calculate(
+            IEnumerable<ResultStatisticsSample> source,
+            DateTime from,
+            DateTime toExclusive,
+            DateTime now)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ValidateRange(from, toExclusive);
+
+            List<ResultStatisticsSample> samples = source
+                .Where(item => item.ProductionTime >= from && item.ProductionTime < toExclusive)
+                .OrderBy(item => item.ProductionTime)
+                .ThenBy(item => item.Id)
+                .ToList();
+            ResultStatisticsMetrics overall = CalculateMetrics(samples);
+
+            List<ResultStatisticsHourlyRow> hourlyRows = samples
+                .GroupBy(item => new DateTime(
+                    item.ProductionTime.Year,
+                    item.ProductionTime.Month,
+                    item.ProductionTime.Day,
+                    item.ProductionTime.Hour,
+                    0,
+                    0,
+                    item.ProductionTime.Kind))
+                .OrderByDescending(group => group.Key)
+                .Select(group =>
+                {
+                    ResultStatisticsMetrics metrics = CalculateMetrics(group);
+                    return new ResultStatisticsHourlyRow
+                    {
+                        Hour = group.Key,
+                        TotalCount = metrics.TotalCount,
+                        PassCount = metrics.PassCount,
+                        FailCount = metrics.FailCount,
+                        PassRate = metrics.PassRate,
+                        FailRate = metrics.FailRate,
+                        AverageCtMilliseconds = metrics.AverageCtMilliseconds,
+                    };
+                })
+                .ToList();
+
+            List<ResultStatisticsDailyRow> dailyRows = samples
+                .GroupBy(item => item.ProductionTime.Date)
+                .OrderByDescending(group => group.Key)
+                .Select(group =>
+                {
+                    ResultStatisticsMetrics metrics = CalculateMetrics(group);
+                    return new ResultStatisticsDailyRow
+                    {
+                        Date = group.Key,
+                        TotalCount = metrics.TotalCount,
+                        PassCount = metrics.PassCount,
+                        FailCount = metrics.FailCount,
+                        PassRate = metrics.PassRate,
+                        FailRate = metrics.FailRate,
+                        AverageCtMilliseconds = metrics.AverageCtMilliseconds,
+                    };
+                })
+                .ToList();
+
+            DateTime currentHour = new(now.Year, now.Month, now.Day, now.Hour, 0, 0, now.Kind);
+            return new ResultStatistics
+            {
+                TotalCount = overall.TotalCount,
+                PassCount = overall.PassCount,
+                FailCount = overall.FailCount,
+                PassRate = overall.PassRate,
+                FailRate = overall.FailRate,
+                AverageCtMilliseconds = overall.AverageCtMilliseconds,
+                MinimumCtMilliseconds = overall.MinimumCtMilliseconds,
+                MaximumCtMilliseconds = overall.MaximumCtMilliseconds,
+                CurrentHourCount = hourlyRows.FirstOrDefault(item => item.Hour == currentHour)?.TotalCount ?? 0,
+                TodayCount = dailyRows.FirstOrDefault(item => item.Date == now.Date)?.TotalCount ?? 0,
+                HourlyRows = hourlyRows,
+                DailyRows = dailyRows,
+            };
+        }
+
+        public static IReadOnlyList<ResultStatisticsSnSummary> CalculateSnSummaries(IEnumerable<ResultStatisticsSample> source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return source
+                .Where(item => !string.IsNullOrWhiteSpace(item.SN))
+                .GroupBy(item => item.SN.Trim(), StringComparer.Ordinal)
+                .Select(group =>
+                {
+                    ResultStatisticsMetrics metrics = CalculateMetrics(group);
+                    return new ResultStatisticsSnSummary
+                    {
+                        SN = group.Key,
+                        TotalCount = metrics.TotalCount,
+                        PassCount = metrics.PassCount,
+                        FailCount = metrics.FailCount,
+                        PassRate = metrics.PassRate,
+                        FirstTime = group.Min(item => item.StartTime),
+                        LastTime = group.Max(item => item.EndTime),
+                    };
+                })
+                .OrderByDescending(item => item.LastTime)
+                .ThenBy(item => item.SN, StringComparer.Ordinal)
+                .ToList();
+        }
+
+        public static string FormatMilliseconds(double milliseconds) => $"{Math.Max(0, milliseconds) / 1000d:F3} s";
+
+        public static string FormatRate(double rate) => $"{Math.Clamp(rate, 0, 1):P2}";
+
+        internal static void ValidateRange(DateTime from, DateTime toExclusive)
+        {
+            if (toExclusive <= from)
+                throw new ArgumentOutOfRangeException(nameof(toExclusive), "结束时间必须晚于开始时间。");
+        }
+
+        private static ResultStatisticsMetrics CalculateMetrics(IEnumerable<ResultStatisticsSample> source)
+        {
+            List<ResultStatisticsSample> samples = source.ToList();
+            int passCount = samples.Count(item => item.Result);
+            int failCount = samples.Count - passCount;
+            List<double> cycleTimes = samples.Select(item => item.CycleTimeMilliseconds).ToList();
+            return new ResultStatisticsMetrics(
+                samples.Count,
+                passCount,
+                failCount,
+                samples.Count > 0 ? passCount / (double)samples.Count : 0,
+                samples.Count > 0 ? failCount / (double)samples.Count : 0,
+                cycleTimes.Count > 0 ? cycleTimes.Average() : 0,
+                cycleTimes.Count > 0 ? cycleTimes.Min() : 0,
+                cycleTimes.Count > 0 ? cycleTimes.Max() : 0);
+        }
+
+        private sealed record ResultStatisticsMetrics(
+            int TotalCount,
+            int PassCount,
+            int FailCount,
+            double PassRate,
+            double FailRate,
+            double AverageCtMilliseconds,
+            double MinimumCtMilliseconds,
+            double MaximumCtMilliseconds);
+    }
+
+    internal static class ResultStatisticsSuggestionFilter
+    {
+        public static IReadOnlyList<string> Filter(IEnumerable<string> suggestions, string? text, int limit)
+        {
+            ArgumentNullException.ThrowIfNull(suggestions);
+            if (limit <= 0)
+                return [];
+
+            string filter = text?.Trim() ?? string.Empty;
+            IEnumerable<string> candidates = suggestions
+                .Where(item => !string.IsNullOrWhiteSpace(item))
+                .Select(item => item.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+            if (filter.Length == 0)
+                return candidates.Take(limit).ToList();
+
+            return candidates
+                .Where(item => item.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(item => item.StartsWith(filter, StringComparison.OrdinalIgnoreCase))
+                .ThenBy(item => item, StringComparer.OrdinalIgnoreCase)
+                .Take(limit)
+                .ToList();
+        }
+    }
+
+    public sealed class ResultStatisticsDataStore
+    {
+        private const string TableName = "ObjectiveTestResultRecord";
+        private static readonly Lazy<ResultStatisticsDataStore> LazyInstance = new(() => new ResultStatisticsDataStore());
+        private readonly string? _databasePath;
+        private readonly object _schemaGate = new();
+        private bool _schemaInitialized;
+
+        public static ResultStatisticsDataStore Instance => LazyInstance.Value;
+
+        public ResultStatisticsDataStore(string? databasePath = null)
+        {
+            _databasePath = databasePath;
+        }
+
+        private string DatabasePath => _databasePath ?? ViewResultManager.SqliteDbPath;
+
+        public void InitializeSchema()
+        {
+            if (_schemaInitialized)
+                return;
+
+            lock (_schemaGate)
+            {
+                if (_schemaInitialized)
+                    return;
+
+                using SqlSugarClient db = CreateClient();
+                db.Ado.ExecuteCommand("PRAGMA busy_timeout = 5000;");
+                db.Ado.ExecuteCommand("PRAGMA journal_mode = WAL;");
+                db.CodeFirst.InitTables<ObjectiveTestResultRecord, ProjectLUXReuslt>();
+                ResultJsonPayloadStorage.EnsureSchema(db);
+                db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{TableName}_SN\" ON \"{TableName}\" (\"SN\");");
+                db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{TableName}_CreateTime\" ON \"{TableName}\" (\"CreateTime\");");
+                db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{TableName}_UpdateTime\" ON \"{TableName}\" (\"UpdateTime\");");
+                db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{TableName}_TotalResult\" ON \"{TableName}\" (\"TotalResult\");");
+                db.Ado.ExecuteCommand("CREATE INDEX IF NOT EXISTS \"IX_ARVRReuslt_CreateTime\" ON \"ARVRReuslt\" (\"CreateTime\");");
+                db.Ado.ExecuteCommand("CREATE INDEX IF NOT EXISTS \"IX_ARVRReuslt_SN_CreateTime\" ON \"ARVRReuslt\" (\"SN\", \"CreateTime\");");
+                db.Ado.ExecuteCommand("CREATE INDEX IF NOT EXISTS \"IX_ARVRReuslt_SN_Id\" ON \"ARVRReuslt\" (\"SN\", \"Id\");");
+                _schemaInitialized = true;
+            }
+        }
+
+        public ResultStatistics QueryStatistics(ResultStatisticsQuery query, DateTime now)
+        {
+            ArgumentNullException.ThrowIfNull(query);
+            ResultStatisticsCalculator.ValidateRange(query.From, query.ToExclusive);
+            InitializeSchema();
+
+            using SqlSugarClient db = CreateClient();
+            List<ResultStatisticsSample> samples = ApplyFilters(db.Queryable<ObjectiveTestResultRecord>(), query)
+                .Select(item => new ResultStatisticsSample
+                {
+                    Id = item.Id,
+                    SN = item.SN,
+                    Result = item.TotalResult,
+                    StartTime = item.CreateTime,
+                    EndTime = item.UpdateTime,
+                })
+                .ToList();
+
+            return ResultStatisticsCalculator.Calculate(samples, query.From, query.ToExclusive, now);
+        }
+
+        public ResultStatisticsDashboard QueryDashboard(
+            ResultStatisticsQuery query,
+            ResultStatisticsPeriodMode mode,
+            DateTime now)
+        {
+            ArgumentNullException.ThrowIfNull(query);
+            ResultStatisticsCalculator.ValidateRange(query.From, query.ToExclusive);
+            InitializeSchema();
+
+            using SqlSugarClient db = CreateClient();
+            db.Ado.BeginTran();
+            try
+            {
+                const string cycleTimeExpression = "CASE WHEN julianday(\"UpdateTime\") >= julianday(\"CreateTime\") THEN (julianday(\"UpdateTime\") - julianday(\"CreateTime\")) * 86400000.0 ELSE 0.0 END";
+                string optionalFilter = string.Empty;
+                if (!string.IsNullOrWhiteSpace(query.SN))
+                    optionalFilter += " AND \"SN\" LIKE '%' || @SN || '%'";
+                if (query.Result.HasValue)
+                    optionalFilter += " AND \"TotalResult\" = @Result";
+                string summarySql = $$"""
+                    SELECT COUNT(*) AS "TotalCount",
+                           COALESCE(SUM(CASE WHEN "TotalResult" = 1 THEN 1 ELSE 0 END), 0) AS "PassCount",
+                           COALESCE(AVG({{cycleTimeExpression}}), 0.0) AS "AverageCtMilliseconds",
+                           COALESCE(MIN({{cycleTimeExpression}}), 0.0) AS "MinimumCtMilliseconds",
+                           COALESCE(MAX({{cycleTimeExpression}}), 0.0) AS "MaximumCtMilliseconds",
+                           COALESCE(SUM(CASE WHEN "UpdateTime" >= @CurrentHour AND "UpdateTime" < @NextHour THEN 1 ELSE 0 END), 0) AS "CurrentHourCount",
+                           COALESCE(SUM(CASE WHEN "UpdateTime" >= @Today AND "UpdateTime" < @Tomorrow THEN 1 ELSE 0 END), 0) AS "TodayCount"
+                    FROM "ObjectiveTestResultRecord"
+                    WHERE "UpdateTime" >= @From
+                      AND "UpdateTime" < @ToExclusive
+
+                      {{optionalFilter}};
+                    """;
+                ResultStatisticsAggregateRow aggregate = db.Ado.SqlQuery<ResultStatisticsAggregateRow>(
+                    summarySql,
+                    CreateDashboardParameters(query, now)).Single();
+
+                IReadOnlyList<ResultStatisticsTrendPoint> trend;
+                if (mode == ResultStatisticsPeriodMode.All)
+                {
+                    const string bucketExpression = "strftime('%Y-%m-01 00:00:00', \"UpdateTime\")";
+                    string trendSql = $$"""
+                        SELECT {{bucketExpression}} AS "Bucket",
+                               COUNT(*) AS "TotalCount",
+                               COALESCE(SUM(CASE WHEN "TotalResult" = 1 THEN 1 ELSE 0 END), 0) AS "PassCount",
+                               COALESCE(AVG({{cycleTimeExpression}}), 0.0) AS "AverageCtMilliseconds"
+                        FROM "ObjectiveTestResultRecord"
+                        WHERE "UpdateTime" >= @From
+                          AND "UpdateTime" < @ToExclusive
+
+                          {{optionalFilter}}
+                        GROUP BY {{bucketExpression}}
+                        ORDER BY {{bucketExpression}};
+                        """;
+                    List<ResultStatisticsAggregateBucketRow> buckets = db.Ado.SqlQuery<ResultStatisticsAggregateBucketRow>(
+                        trendSql,
+                        CreateDashboardParameters(query, now));
+                    ResultStatistics bucketStatistics = CreateBucketStatistics(buckets, mode);
+                    trend = ResultStatisticsTrendBuilder.BuildMonthly(bucketStatistics);
+                }
+                else
+                {
+                    List<ResultStatisticsSample> samples = ApplyFilters(db.Queryable<ObjectiveTestResultRecord>(), query)
+                        .OrderBy(item => item.UpdateTime)
+                        .OrderBy(item => item.Id)
+                        .Select(item => new ResultStatisticsSample
+                        {
+                            Id = item.Id,
+                            StartTime = item.CreateTime,
+                            EndTime = item.UpdateTime,
+                        })
+                        .ToList();
+                    trend = ResultStatisticsTrendBuilder.BuildDetails(samples, mode);
+                }
+
+                ResultStatistics summary = CreateStatistics(aggregate);
+                db.Ado.CommitTran();
+                return new ResultStatisticsDashboard { Summary = summary, Trend = trend };
+            }
+            catch
+            {
+                db.Ado.RollbackTran();
+                throw;
+            }
+        }
+
+        public IReadOnlyList<ResultStatisticsRecordRow> QueryRecords(ResultStatisticsQuery query)
+        {
+            ArgumentNullException.ThrowIfNull(query);
+            ResultStatisticsCalculator.ValidateRange(query.From, query.ToExclusive);
+            if (query.PageNumber <= 0)
+                throw new ArgumentOutOfRangeException(nameof(query), query.PageNumber, "页码必须大于零。");
+            if (query.PageSize <= 0)
+                throw new ArgumentOutOfRangeException(nameof(query), query.PageSize, "每页数量必须大于零。");
+
+            InitializeSchema();
+            using SqlSugarClient db = CreateClient();
+            int skip = checked((query.PageNumber - 1) * query.PageSize);
+            const string sql = """
+                WITH RankedRecords AS
+                (
+                    SELECT "Id",
+                           "SN",
+                           "CreateTime" AS "StartTime",
+                           "UpdateTime" AS "EndTime",
+                           "TotalResult" AS "Result",
+                           "LastModel",
+                           "BatchId",
+                           "ResultId",
+                           '' AS "Msg",
+                           COALESCE(LAG("ResultId") OVER (PARTITION BY TRIM("SN") ORDER BY "Id"), 0) AS "PreviousResultId",
+                           ROW_NUMBER() OVER (PARTITION BY TRIM("SN") ORDER BY "Id") AS "ExecutionIndex"
+                    FROM "ObjectiveTestResultRecord"
+
+                )
+                SELECT R."Id", R."ExecutionIndex", R."SN", R."StartTime", R."EndTime", R."Result",
+                       R."LastModel", R."BatchId", R."ResultId", R."Msg", R."PreviousResultId",
+                       CASE WHEN R."ResultId" > R."PreviousResultId" THEN
+                           (SELECT COUNT(*)
+                            FROM "ARVRReuslt" AS F
+                            WHERE F."SN" = R."SN"
+                              AND F."Id" > R."PreviousResultId"
+                              AND F."Id" <= R."ResultId")
+                           ELSE 0 END AS "FlowCount",
+                       CASE WHEN R."ResultId" > R."PreviousResultId" THEN
+                           COALESCE((SELECT SUM(F."RunTime")
+                                     FROM "ARVRReuslt" AS F
+                                     WHERE F."SN" = R."SN"
+                                       AND F."Id" > R."PreviousResultId"
+                                       AND F."Id" <= R."ResultId"), 0)
+                           ELSE 0 END AS "FlowRunTimeMilliseconds"
+                FROM RankedRecords AS R
+                WHERE R."EndTime" >= @From
+                  AND R."EndTime" < @ToExclusive
+                  AND (@SN IS NULL OR R."SN" LIKE '%' || @SN || '%')
+                  AND (@Result IS NULL OR R."Result" = @Result)
+                ORDER BY R."Id" DESC
+                LIMIT @PageSize OFFSET @Skip;
+                """;
+            return db.Ado.SqlQuery<ResultStatisticsRecordRow>(
+                sql,
+                new SugarParameter("@From", query.From),
+                new SugarParameter("@ToExclusive", query.ToExclusive),
+                new SugarParameter("@SN", string.IsNullOrWhiteSpace(query.SN) ? DBNull.Value : query.SN.Trim()),
+                new SugarParameter("@Result", query.Result.HasValue ? query.Result.Value : DBNull.Value),
+                new SugarParameter("@PageSize", query.PageSize),
+                new SugarParameter("@Skip", skip));
+        }
+
+        public int QueryRecordCount(ResultStatisticsQuery query)
+        {
+            ArgumentNullException.ThrowIfNull(query);
+            ResultStatisticsCalculator.ValidateRange(query.From, query.ToExclusive);
+            InitializeSchema();
+
+            using SqlSugarClient db = CreateClient();
+            return ApplyFilters(db.Queryable<ObjectiveTestResultRecord>(), query).Count();
+        }
+
+        public IReadOnlyList<ResultStatisticsSnSummary> QuerySnSummaries()
+        {
+            InitializeSchema();
+            using SqlSugarClient db = CreateClient();
+            List<ResultStatisticsSnAggregate> aggregates = db.Queryable<ObjectiveTestResultRecord>()
+                .Where(item => item.SN.Trim() != string.Empty )
+                .GroupBy(item => item.SN.Trim())
+                .Select(item => new ResultStatisticsSnAggregate
+                {
+                    SN = item.SN.Trim(),
+                    TotalCount = SqlFunc.AggregateCount(item.Id),
+                    PassCount = SqlFunc.AggregateSum(item.TotalResult ? 1 : 0),
+                    FirstTime = SqlFunc.AggregateMin(item.CreateTime),
+                    LastTime = SqlFunc.AggregateMax(item.UpdateTime),
+                })
+                .OrderBy(item => item.LastTime, OrderByType.Desc)
+                .ToList();
+
+            return aggregates.Select(item => new ResultStatisticsSnSummary
+            {
+                SN = item.SN,
+                TotalCount = item.TotalCount,
+                PassCount = item.PassCount,
+                FailCount = item.TotalCount - item.PassCount,
+                PassRate = item.TotalCount > 0 ? item.PassCount / (double)item.TotalCount : 0,
+                FirstTime = item.FirstTime,
+                LastTime = item.LastTime,
+            }).ToList();
+        }
+
+        public ObjectiveTestResultRecord? GetRecord(int id)
+        {
+            if (id <= 0)
+                return null;
+
+            InitializeSchema();
+            using SqlSugarClient db = CreateClient();
+            ObjectiveTestResultRecord? record = db.Queryable<ObjectiveTestResultRecord>().Where(item => item.Id == id).First();
+            if (record != null)
+                record.ObjectiveTestResultJson = ResultJsonPayloadStorage.LoadObjectiveTestResultJson(db, record.Id) ?? string.Empty;
+            return record;
+        }
+
+        public IReadOnlyList<ObjectiveTestResultRecord> GetRecords(IEnumerable<int> ids)
+        {
+            ArgumentNullException.ThrowIfNull(ids);
+            int[] recordIds = ids.Where(id => id > 0).Distinct().ToArray();
+            if (recordIds.Length == 0)
+                return [];
+
+            InitializeSchema();
+            using SqlSugarClient db = CreateClient();
+            List<ObjectiveTestResultRecord> records = db.Queryable<ObjectiveTestResultRecord>()
+                .Where(item => recordIds.Contains(item.Id))
+                .ToList();
+            ResultJsonPayloadStorage.LoadObjectiveTestResultJsons(db, records);
+            foreach (ObjectiveTestResultRecord record in records.Where(item => item.ObjectiveTestResultJson == null))
+                record.ObjectiveTestResultJson = string.Empty;
+            return records;
+        }
+
+        public string? LoadViewResultJson(ProjectLUXReuslt result)
+        {
+            ArgumentNullException.ThrowIfNull(result);
+            if (result.ViewResultJson != null || result.Id <= 0)
+                return result.ViewResultJson;
+
+            InitializeSchema();
+            using SqlSugarClient db = CreateClient();
+            result.ViewResultJson = ResultJsonPayloadStorage.LoadViewResultJson(db, result.Id) ?? string.Empty;
+            return result.ViewResultJson;
+        }
+
+        private static ISugarQueryable<ObjectiveTestResultRecord> ApplyFilters(
+            ISugarQueryable<ObjectiveTestResultRecord> queryable,
+            ResultStatisticsQuery query)
+        {
+            DateTime from = query.From;
+            DateTime toExclusive = query.ToExclusive;
+            ISugarQueryable<ObjectiveTestResultRecord> queryResult = queryable
+                .Where(item => item.UpdateTime >= from
+                    && item.UpdateTime < toExclusive);
+            string? sn = string.IsNullOrWhiteSpace(query.SN) ? null : query.SN.Trim();
+            if (sn != null)
+                queryResult = queryResult.Where(item => item.SN.Contains(sn));
+            if (query.Result.HasValue)
+            {
+                bool expectedResult = query.Result.Value;
+                queryResult = queryResult.Where(item => item.TotalResult == expectedResult);
+            }
+
+            return queryResult;
+        }
+
+        private static SugarParameter[] CreateDashboardParameters(ResultStatisticsQuery query, DateTime now)
+        {
+            DateTime currentHour = new(now.Year, now.Month, now.Day, now.Hour, 0, 0, now.Kind);
+            return
+            [
+                new SugarParameter("@From", query.From),
+                new SugarParameter("@ToExclusive", query.ToExclusive),
+                new SugarParameter("@SN", string.IsNullOrWhiteSpace(query.SN) ? DBNull.Value : query.SN.Trim()),
+                new SugarParameter("@Result", query.Result.HasValue ? query.Result.Value : DBNull.Value),
+                new SugarParameter("@CurrentHour", currentHour),
+                new SugarParameter("@NextHour", currentHour.AddHours(1)),
+                new SugarParameter("@Today", now.Date),
+                new SugarParameter("@Tomorrow", now.Date.AddDays(1)),
+            ];
+        }
+
+        private static ResultStatistics CreateStatistics(ResultStatisticsAggregateRow aggregate)
+        {
+            int failCount = aggregate.TotalCount - aggregate.PassCount;
+            return new ResultStatistics
+            {
+                TotalCount = aggregate.TotalCount,
+                PassCount = aggregate.PassCount,
+                FailCount = failCount,
+                PassRate = aggregate.TotalCount > 0 ? aggregate.PassCount / (double)aggregate.TotalCount : 0,
+                FailRate = aggregate.TotalCount > 0 ? failCount / (double)aggregate.TotalCount : 0,
+                AverageCtMilliseconds = aggregate.AverageCtMilliseconds,
+                MinimumCtMilliseconds = aggregate.MinimumCtMilliseconds,
+                MaximumCtMilliseconds = aggregate.MaximumCtMilliseconds,
+                CurrentHourCount = aggregate.CurrentHourCount,
+                TodayCount = aggregate.TodayCount,
+            };
+        }
+
+        private static ResultStatistics CreateBucketStatistics(
+            IEnumerable<ResultStatisticsAggregateBucketRow> buckets,
+            ResultStatisticsPeriodMode mode)
+        {
+            List<ResultStatisticsAggregateBucketRow> rows = buckets.ToList();
+            if (mode == ResultStatisticsPeriodMode.Day)
+            {
+                return new ResultStatistics
+                {
+                    HourlyRows = rows.Select(item => new ResultStatisticsHourlyRow
+                    {
+                        Hour = ParseBucket(item.Bucket),
+                        TotalCount = item.TotalCount,
+                        PassCount = item.PassCount,
+                        FailCount = item.TotalCount - item.PassCount,
+                        PassRate = item.TotalCount > 0 ? item.PassCount / (double)item.TotalCount : 0,
+                        FailRate = item.TotalCount > 0 ? (item.TotalCount - item.PassCount) / (double)item.TotalCount : 0,
+                        AverageCtMilliseconds = item.AverageCtMilliseconds,
+                    }).ToList(),
+                };
+            }
+
+            return new ResultStatistics
+            {
+                DailyRows = rows.Select(item => new ResultStatisticsDailyRow
+                {
+                    Date = ParseBucket(item.Bucket).Date,
+                    TotalCount = item.TotalCount,
+                    PassCount = item.PassCount,
+                    FailCount = item.TotalCount - item.PassCount,
+                    PassRate = item.TotalCount > 0 ? item.PassCount / (double)item.TotalCount : 0,
+                    FailRate = item.TotalCount > 0 ? (item.TotalCount - item.PassCount) / (double)item.TotalCount : 0,
+                    AverageCtMilliseconds = item.AverageCtMilliseconds,
+                }).ToList(),
+            };
+        }
+
+        private static DateTime ParseBucket(string value)
+        {
+            return DateTime.ParseExact(value, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+        }
+
+        private SqlSugarClient CreateClient()
+        {
+            return new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = $"Data Source={DatabasePath};Default Timeout=5",
+                DbType = DbType.Sqlite,
+                IsAutoCloseConnection = true,
+                InitKeyType = InitKeyType.Attribute,
+            });
+        }
+
+        private sealed class ResultStatisticsSnAggregate
+        {
+            public string SN { get; set; } = string.Empty;
+            public int TotalCount { get; set; }
+            public int PassCount { get; set; }
+            public DateTime FirstTime { get; set; }
+            public DateTime LastTime { get; set; }
+        }
+
+        private sealed class FlowExecutionNameRow
+        {
+            public string Model { get; set; } = string.Empty;
+        }
+
+        private sealed class ResultStatisticsAggregateRow
+        {
+            public int TotalCount { get; set; }
+            public int PassCount { get; set; }
+            public double AverageCtMilliseconds { get; set; }
+            public double MinimumCtMilliseconds { get; set; }
+            public double MaximumCtMilliseconds { get; set; }
+            public int CurrentHourCount { get; set; }
+            public int TodayCount { get; set; }
+        }
+
+        private sealed class ResultStatisticsAggregateBucketRow
+        {
+            public string Bucket { get; set; } = string.Empty;
+            public int TotalCount { get; set; }
+            public int PassCount { get; set; }
+            public double AverageCtMilliseconds { get; set; }
+        }
+    }
+}

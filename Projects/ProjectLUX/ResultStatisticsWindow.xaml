@@ -1,0 +1,68 @@
+<Window x:Class="ProjectLUX.ResultStatisticsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="LUX 结果统计" Width="1120" Height="760" MinWidth="850" MinHeight="540"
+        Background="{DynamicResource GlobalBackground}" Foreground="{DynamicResource GlobalForeground}"
+        Loaded="Window_Loaded">
+    <DockPanel Margin="16" Background="{DynamicResource GlobalBackground}">
+        <StackPanel DockPanel.Dock="Top">
+            <WrapPanel Margin="0,0,0,12">
+                <ComboBox x:Name="Period" Width="100" SelectedIndex="0" Margin="0,0,8,0">
+                    <ComboBoxItem Content="日"/><ComboBoxItem Content="周"/>
+                    <ComboBoxItem Content="月"/><ComboBoxItem Content="全部"/>
+                </ComboBox>
+                <DatePicker x:Name="Anchor" Width="145" Margin="0,0,8,0"/>
+                <TextBlock Text="SN" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <TextBox x:Name="SnFilter" Width="180" Margin="0,0,8,0"/>
+                <ComboBox x:Name="ResultFilter" Width="100" SelectedIndex="0" Margin="0,0,8,0">
+                    <ComboBoxItem Content="全部结果"/><ComboBoxItem Content="PASS"/><ComboBoxItem Content="FAIL"/>
+                </ComboBox>
+                <Button Content="查询" Click="Refresh_Click" Margin="0,0,8,0"/>
+                <Button Content="数据库维护" Click="Maintenance_Click"/>
+            </WrapPanel>
+            <TextBlock Text="按现有聚合结果记录统计；CT 为首次保存至最后更新的间隔，运行中的记录也会计入。"
+                       TextWrapping="Wrap" Margin="0,0,0,12"/>
+            <WrapPanel x:Name="SummaryPanel" Margin="0,0,0,12">
+                <StackPanel Width="145"><TextBlock Text="记录数"/><TextBlock Text="{Binding TotalCount}" FontSize="26"/></StackPanel>
+                <StackPanel Width="145"><TextBlock Text="PASS"/><TextBlock Text="{Binding PassCount}" FontSize="26"/></StackPanel>
+                <StackPanel Width="145"><TextBlock Text="FAIL"/><TextBlock Text="{Binding FailCount}" FontSize="26"/></StackPanel>
+                <StackPanel Width="145"><TextBlock Text="通过率"/><TextBlock Text="{Binding PassRateText}" FontSize="26"/></StackPanel>
+                <StackPanel Width="165"><TextBlock Text="平均 CT"/><TextBlock Text="{Binding AverageCtText}" FontSize="26"/></StackPanel>
+            </WrapPanel>
+        </StackPanel>
+        <TextBlock x:Name="Status" DockPanel.Dock="Bottom" Margin="0,10,0,0" TextWrapping="Wrap"/>
+        <TabControl>
+            <TabItem Header="结果记录">
+                <DockPanel Margin="8">
+                    <WrapPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                        <Button Content="上一页" Click="Previous_Click" Margin="0,0,8,0"/>
+                        <TextBlock x:Name="PageText" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <Button Content="下一页" Click="Next_Click" Margin="0,0,16,0"/>
+                        <Button Content="查看测试结果" Click="ViewResult_Click"/>
+                    </WrapPanel>
+                    <DataGrid x:Name="Records" IsReadOnly="True" AutoGenerateColumns="False" SelectionMode="Single"
+                              EnableRowVirtualization="True" MouseDoubleClick="ViewResult_Click">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Id" Binding="{Binding Id}" Width="75"/>
+                            <DataGridTextColumn Header="SN" Binding="{Binding SN}" Width="*" MinWidth="170"/>
+                            <DataGridTextColumn Header="次数" Binding="{Binding ExecutionText}" Width="90"/>
+                            <DataGridTextColumn Header="结果" Binding="{Binding ResultText}" Width="70"/>
+                            <DataGridTextColumn Header="CT" Binding="{Binding CycleTimeText}" Width="100"/>
+                            <DataGridTextColumn Header="最后流程" Binding="{Binding LastModel}" Width="*" MinWidth="170"/>
+                            <DataGridTextColumn Header="更新时间" Binding="{Binding EndTime, StringFormat=yyyy/MM/dd HH:mm:ss}" Width="170"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+            <TabItem Header="CT 趋势">
+                <DataGrid x:Name="Trend" Margin="8" IsReadOnly="True" AutoGenerateColumns="False" EnableRowVirtualization="True">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="时间" Binding="{Binding Label}" Width="*" MinWidth="180"/>
+                        <DataGridTextColumn Header="记录数" Binding="{Binding TotalCount}" Width="*" MinWidth="150"/>
+                        <DataGridTextColumn Header="平均 CT (ms)" Binding="{Binding AverageCtMilliseconds, StringFormat=F1}" Width="*" MinWidth="180"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>
