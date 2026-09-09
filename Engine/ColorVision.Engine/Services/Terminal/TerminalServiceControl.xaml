@@ -19,8 +19,8 @@
         </Style>
     </UserControl.Resources>
     <Grid>
-        <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
-        <Grid Margin="5">
+        <Border Background="{DynamicResource RegionBrush}" CornerRadius="5"/>
+        <Grid Margin="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -42,7 +42,7 @@
                                 <Grid  Height="18"   HorizontalAlignment="Left"  Margin="0,0,4,0">
                                     <Image Source="{Binding Icon}"/>
                                 </Grid>
-                                <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
+                                <TextBlock Text="{Binding Config.Name}" FontWeight="SemiBold" FontSize="16"/>
                             </DockPanel>
                         </StackPanel>
                     </Border>
@@ -63,7 +63,7 @@
                 <StackPanel Grid.Row="1">
 
                     <Border  Background ="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
-                        <GroupBox Header="{x:Static properties:Resources.BasicInformation}" Margin="5">
+                        <GroupBox Header="{x:Static properties:Resources.BasicInformation}" Margin="0,8" BorderThickness="0">
                             <StackPanel Margin="5">
                                 <DockPanel >
                                     <TextBlock Text="{x:Static properties:Resources.ServiceCode}" Width="120"/>
@@ -76,10 +76,6 @@
                                 <DockPanel >
                                     <TextBlock Text="{x:Static properties:Resources.ReceiveChannel}" Width="120"/>
                                     <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.SubscribeTopic}"/>
-                                </DockPanel>
-                                <DockPanel >
-                                    <TextBlock Text="{x:Static properties:Resources.HeartbeatTime}" Width="120"/>
-                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.HeartbeatTime}"/>
                                 </DockPanel>
                             </StackPanel>
                         </GroupBox>
@@ -98,24 +94,38 @@
                 </ListView.ItemContainerStyle>
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn  Header="{x:Static properties:Resources.DeviceIdentification}" Width="200">
+                        <GridViewColumn  Header="{x:Static properties:Resources.DeviceIdentification}" Width="170">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type device:DeviceService}">
                                     <TextBlock Text="{ Binding Code}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn  Header="{x:Static properties:Resources.DeviceName}" Width="200">
+                        <GridViewColumn  Header="{x:Static properties:Resources.DeviceName}" Width="170">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type device:DeviceService}">
                                     <TextBlock Text="{ Binding Name}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn  Header="{x:Static properties:Resources.Status}" Width="150">
+                        <GridViewColumn  Header="{x:Static properties:Resources.Status}" Width="85">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type device:DeviceService}">
-                                    <TextBlock Text="{ Binding  IsAlive}"/>
+                                    <TextBlock>
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="{x:Static properties:Resources.offline}"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+                                                <Setter Property="Opacity" Value="0.6"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsAlive}" Value="True">
+                                                        <Setter Property="Text" Value="{x:Static properties:Resources.Online}"/>
+                                                        <Setter Property="Opacity" Value="1"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>

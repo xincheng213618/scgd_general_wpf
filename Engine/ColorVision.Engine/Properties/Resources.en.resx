@@ -5046,4 +5046,5 @@ Please close camera or other programs using this serial port, or check device co
   <data name=" 当前表：{0}。" xml:space="preserve"><value> Current table: {0}.</value></data>
   <data name="MySQL 结果关联索引优化失败。{0} {1} 用时 {2}。问题排除后可重新执行，已有等价索引会自动跳过。{3}{4}" xml:space="preserve"><value>MySQL result relation index optimization failed.{0} {1} Elapsed time: {2}. Resolve the issue and run the operation again; existing equivalent indexes will be skipped automatically.{3}{4}</value></data>
   <data name="不支持的结果关联列：{0}" xml:space="preserve"><value>Unsupported result relation column: {0}</value></data>
+  <data name="WindowServiceTitle" xml:space="preserve"><value>Device configuration</value></data>
 </root>

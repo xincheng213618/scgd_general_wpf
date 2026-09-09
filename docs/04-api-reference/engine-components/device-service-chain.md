@@ -61,11 +61,11 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 1. 打开 **工具 → 管理员服务配置**（`WindowService`）。列表模式由 `ShowType2` 配置决定，初始值为设备；**切换列表** 按设备 → 类型 → 终端循环。
 2. 选择设备查看 `GetDeviceInfo()`；选择终端或类型节点查看 `GenDeviceControl()`。这里是信息/配置页，不是主界面的设备控制页。
-3. 点击底部 **进入采集窗口**，为当前资源树中的设备生成主显示区并关闭配置窗口，并非只打开刚才选中的设备。标题栏关闭只关闭窗口，不执行这次显示生成。
+3. 此窗口是纯配置页，不提供采集入口或独立设置齿轮。关闭时比较打开时与当前资源树的设备/终端配置、实例身份和顺序；有变化才重新生成主显示区，无变化直接关闭。切换列表、选择节点和在线心跳不属于配置变更。各配置编辑器保留原有保存语义，窗口关闭不会统一保存或重启所有设备；显示更新失败时保留窗口并显示错误。
 
 `GenDeviceDisplayControl()` 沿当前类型树生成主显示区；`GenControl(collection)` 使用指定设备集合。两者都先加入共享 `DisplayFlow`，只有设备 `GetDisplayControl()` 返回 `IDisPlayControl` 才追加该页，最后通过 `DisPlayManager.ReplaceControls` 替换显示集合。
 
-`LoadServices()` 最后发布 `ServiceChanged`，但本身不调用 `GenDeviceDisplayControl()` 或 `ReplaceControls()`；释放设备、清空 `LastGenControl` 也不等于替换主显示集合。初始化器和 **进入采集窗口** 的 `Button_Click` 会另行生成显示区；`OnClosed()` 只处理上下文和窗口关闭。因此资源集合、主显示项和旧窗口引用可能处于不同轮次；新增资源后列表出现、主区域出现、Flow 能按正确 Code 绑定，应分别核对，不能只检查一个窗口。
+`LoadServices()` 最后发布 `ServiceChanged`，但本身不调用 `GenDeviceDisplayControl()` 或 `ReplaceControls()`；释放设备、清空 `LastGenControl` 也不等于替换主显示集合。初始化器会另行生成显示区；配置窗口在 `OnClosing()` 检测到变化时生成显示区，`OnClosed()` 负责上下文清理。因此资源集合、主显示项和旧窗口引用可能处于不同轮次；新增资源后列表出现、主区域出现、Flow 能按正确 Code 绑定，应分别核对，不能只检查一个窗口。
 
 `ReplaceControls` 清空并重新填充显示集合，恢复分组和排序后按 `LastSelectIndex` 选择控件；索引越界时选第 0 项。显示控件装入设备控制面板时保留各自左右外边距，将统一的 2 DIP 项间距全部放在控件下方，上方不再额外留白。分组标题、排序和拖入分组的能力继续保留，但滚动内容底部不再创建“分组 / + 分组”页脚；主程序和 Engine 独立宿主都使用实现 `IDockPanelTitleActionProvider` 的 `DisPlayControlPanel`，由它把 `DisPlayManager.CreateGroupCommand` 提供给上方停靠标题栏。该派生宿主显式解析原 `ScrollViewer` 的隐式主题，避免扩展标题动作后回退成系统默认的粗滚动条。各设备提供的 `IDisPlayControl` 无需实现该命令，也不会多出自己的标题按钮。`ReplaceControls` 不按设备 Code 恢复原来的选中设备，也不调用旧控件的 Dispose。设备增减或排序变化后，应核对实际选中对象，不能仅凭界面仍有选中项推断身份未变。
 

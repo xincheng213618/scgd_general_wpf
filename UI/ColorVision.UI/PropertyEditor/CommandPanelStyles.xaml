@@ -9,20 +9,20 @@
     <Style x:Key="PropertyEditorCommandSection" TargetType="Border">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="{DynamicResource PropertyEditorCommandBorder}" />
-        <Setter Property="BorderThickness" Value="0,0,0,1" />
-        <Setter Property="Padding" Value="0,0,0,6" />
-        <Setter Property="Margin" Value="0,0,0,6" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Margin" Value="0,0,0,12" />
     </Style>
     <Style x:Key="PropertyEditorCommandHeading" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource PropertyEditorCommandTextPrimary}" />
-        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontSize" Value="12" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Margin" Value="2,0,2,4" />
+        <Setter Property="Margin" Value="3,0,3,6" />
     </Style>
     <Style x:Key="PropertyEditorCommandButton" TargetType="Button">
-        <Setter Property="MinHeight" Value="48" />
-        <Setter Property="Margin" Value="2" />
-        <Setter Property="Padding" Value="9,5" />
+        <Setter Property="MinHeight" Value="52" />
+        <Setter Property="Margin" Value="3" />
+        <Setter Property="Padding" Value="12,8" />
         <Setter Property="HorizontalContentAlignment" Value="Left" />
         <Setter Property="Foreground" Value="{DynamicResource PropertyEditorCommandTextPrimary}" />
         <Setter Property="Background" Value="{DynamicResource PropertyEditorCommandSurface}" />
@@ -33,7 +33,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4">
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
                         <ContentPresenter Margin="{TemplateBinding Padding}" Content="{TemplateBinding Content}"
                                           HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
                     </Border>

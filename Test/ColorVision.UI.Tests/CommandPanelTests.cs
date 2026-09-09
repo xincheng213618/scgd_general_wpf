@@ -82,9 +82,37 @@ public sealed class CommandPanelTests
             PropertyEditorHelper.GenCommand(new UncategorizedCommands(), fixture.Host);
             var content = Assert.IsType<StackPanel>(Assert.Single(fixture.Groups).Child);
             Assert.Single(content.Children.Cast<UIElement>());
-            Assert.IsType<UniformGrid>(content.Children[0]);
+            Assert.IsType<Grid>(content.Children[0]);
             Assert.Single(fixture.Buttons);
         });
+    }
+
+    [Fact]
+    public void CategoryLayout_FillsOddRowsAndStacksAtNarrowWidths()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var fixture = new Fixture();
+            PropertyEditorHelper.GenCommand(new ThreeCommands(), fixture.Host);
+            var grid = ((StackPanel)fixture.Groups[0].Child).Children.OfType<Grid>().Single();
+            fixture.Host.Measure(new Size(600, 1000));
+            fixture.Host.Arrange(new Rect(0, 0, 600, fixture.Host.DesiredSize.Height));
+            fixture.Host.UpdateLayout();
+            Assert.Equal(2, grid.ColumnDefinitions.Count);
+            Assert.Equal(2, Grid.GetColumnSpan(fixture.Buttons[2]));
+            fixture.Host.Measure(new Size(300, 1000));
+            fixture.Host.Arrange(new Rect(0, 0, 300, fixture.Host.DesiredSize.Height));
+            fixture.Host.UpdateLayout();
+            Assert.Single(grid.ColumnDefinitions);
+            Assert.Equal(3, grid.RowDefinitions.Count);
+        });
+    }
+
+    private sealed class ThreeCommands
+    {
+        [CommandDisplay("First")] public RelayCommand First { get; } = new(_ => { });
+        [CommandDisplay("Second")] public RelayCommand Second { get; } = new(_ => { });
+        [CommandDisplay("Third")] public RelayCommand Third { get; } = new(_ => { });
     }
 
     private sealed class Fixture : IDisposable
@@ -92,7 +120,7 @@ public sealed class CommandPanelTests
         private readonly ResourceDictionary savedResources = Application.Current.Resources;
         public UniformGrid Host { get; } = new();
         public List<Border> Groups => ((StackPanel)Host.Children[0]).Children.OfType<Border>().ToList();
-        public List<Button> Buttons => Groups.SelectMany(group => ((StackPanel)group.Child).Children.OfType<UniformGrid>().Single().Children.OfType<Button>()).ToList();
+        public List<Button> Buttons => Groups.SelectMany(group => ((StackPanel)group.Child).Children.OfType<Grid>().Single().Children.OfType<Button>()).ToList();
 
         public Fixture()
         {

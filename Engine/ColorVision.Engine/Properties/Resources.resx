@@ -1139,4 +1139,5 @@
   <data name="CommandPgTemplateHint" xml:space="preserve"><value>管理 PG 图像与输出模板</value></data>
   <data name="CommandAlgorithmPluginHint" xml:space="preserve"><value>上传服务端算法插件</value></data>
   <data name="CommandAlgorithmConfigHint" xml:space="preserve"><value>管理第三方算法配置</value></data>
+  <data name="WindowServiceTitle" xml:space="preserve"><value>设备配置</value></data>
 </root>

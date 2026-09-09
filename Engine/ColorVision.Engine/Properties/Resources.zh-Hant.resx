@@ -3180,4 +3180,5 @@
   <data name=" 当前表：{0}。" xml:space="preserve"><value> 目前資料表：{0}。</value></data>
   <data name="MySQL 结果关联索引优化失败。{0} {1} 用时 {2}。问题排除后可重新执行，已有等价索引会自动跳过。{3}{4}" xml:space="preserve"><value>MySQL 結果關聯索引最佳化失敗。{0} {1} 耗時 {2}。排除問題後可重新執行；已有等價索引將自動略過。{3}{4}</value></data>
   <data name="不支持的结果关联列：{0}" xml:space="preserve"><value>不支援的結果關聯欄位：{0}</value></data>
+  <data name="WindowServiceTitle" xml:space="preserve"><value>裝置設定</value></data>
 </root>

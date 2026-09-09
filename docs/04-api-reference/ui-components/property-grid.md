@@ -1,4 +1,4 @@
----
+﻿---
 knowledge_id: "ui.property-grid"
 knowledge_type: "topic"
 status: "current"
@@ -27,7 +27,7 @@ ColorVision 的通用属性面板由属性元数据、`PropertyEditorHelper` 和
 
 ## 命令属性页自动生成
 
-`PropertyEditorHelper.GenCommand(object, UniformGrid, bool compact = false)` 是设备属性页共用的命令入口。光谱仪、相机、PG、源表、校正、算法、滤光轮、传感器、照明控制器和第三方算法页都将设备对象交给该入口；页面只提供容器，不维护各自的按钮列表、分类卡片或特殊角标。
+`PropertyEditorHelper.GenCommand(object, UniformGrid, bool compact = false)` 是设备属性页共用的命令入口。光谱仪、相机、PG、源表、校正、算法、滤光轮、传感器、照明控制器和第三方算法页都将设备对象交给该入口；页面只提供容器，不维护各自的按钮列表、分类卡片或特殊角标。设备子页面统一使用零额外边距的滚动容器和命令网格，垂直滚动条按需显示，底色使用 `RegionBrush`；内容外边距由配置窗口管理，避免切换设备时标题和卡片错位。
 
 生成器读取公开可读、非索引属性上的 `CommandDisplay`，包含基类命令，跳过 `Browsable(false)`、空命令和未标注属性。分类使用 `Category`，分类顺序使用 `CommandDisplay.CategoryOrder`，组内顺序使用 `Order`；名称和说明分别使用 `CommandDisplay.DisplayName` 与 `Description`，由对象资源管理器本地化。未分类命令独立归组，只有一个无分类组时省略分类标题。
 
@@ -40,7 +40,7 @@ public RelayCommand RefreshDeviceIdCommand { get; set; }
 
 `DeviceConnection` 等字符串是资源键，资源缺失时回退到原文。设备通用分类为 **设备与连接、校准与校正、采集与显示、数据与日志、服务与维护**，只显示实际有命令的分类。保存位置和运行日志归入数据与日志；许可证、服务重启、配置重置和删除归入服务与维护。新增按钮应维护命令元数据及资源，不为某种设备增加一份手写界面。
 
-普通模式由 `PropertyEditorCommands.cs` 和 `CommandPanelStyles.xaml` 统一生成纵向分类及自适应按钮网格。分类使用细分隔线代替嵌套卡片，操作项高度压缩到 48 DIP，标题和说明减小间距；按钮仍随宽度换列，避免固定列数造成截断。底色、边框、正文、次级文字和交互强调色直接复用更新窗口的主题色值，浅色和深色主题保持一致。
+普通模式由 `PropertyEditorCommands.cs` 和 `CommandPanelStyles.xaml` 统一生成纵向分类及自适应按钮网格。分类通过标题与统一间距分组，不叠加外层卡片和分隔线。操作项最小高度为 52 DIP，说明自动换行；分类可用宽度低于 460 DIP 时为单列，其余为双列，末行单项跨满整行，隐藏操作不占布局位置。底色、边框、正文、次级文字和交互强调色直接复用更新窗口的主题色值，浅色和深色主题保持一致。
 
 名称和说明同时写入可访问名称、帮助文本和工具提示。按钮绑定原始命令并保留 `CanExecute` 禁用行为，标为 `Highlighted` 的操作使用警示色；`PropertyVisibility` 继续控制显示条件。生成界面不会执行命令。
 

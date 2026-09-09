@@ -71,10 +71,13 @@ namespace ColorVision.UI
                     content.Children.Add(heading);
                 }
 
-                var buttons = new UniformGrid { Columns = 3 };
+                var buttons = new Grid();
                 buttons.SizeChanged += CommandCategory_SizeChanged;
                 foreach (var item in group)
                     buttons.Children.Add(CreateCommandButton(obj, item.Property, item.Display!, resources, false));
+                ArrangeCategory(buttons, 2);
+                foreach (Button button in buttons.Children)
+                    button.IsVisibleChanged += (_, _) => ArrangeCategory(buttons, buttons.ActualWidth < 460 ? 1 : 2);
                 content.Children.Add(buttons);
 
                 var section = new Border { Child = content };
@@ -108,7 +111,7 @@ namespace ColorVision.UI
             {
                 button.SetResourceReference(FrameworkElement.StyleProperty, "PropertyEditorCommandButton");
                 var text = new StackPanel();
-                var title = new TextBlock { Text = name, FontSize = 13, FontWeight = FontWeights.Medium, TextWrapping = TextWrapping.Wrap };
+                var title = new TextBlock { Text = name, FontSize = 13, FontWeight = FontWeights.Normal, TextWrapping = TextWrapping.Wrap };
                 title.SetBinding(TextBlock.ForegroundProperty, new Binding(nameof(Button.Foreground))
                 {
                     RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(Button), 1)
@@ -116,7 +119,7 @@ namespace ColorVision.UI
                 text.Children.Add(title);
                 if (!string.IsNullOrWhiteSpace(description))
                 {
-                    var detail = new TextBlock { Text = description, FontSize = 10.5, Margin = new Thickness(0, 2, 0, 0), Opacity = 0.72, TextTrimming = TextTrimming.CharacterEllipsis };
+                    var detail = new TextBlock { Text = description, FontSize = 10.5, Margin = new Thickness(0, 2, 0, 0), Opacity = 0.72, TextWrapping = TextWrapping.Wrap };
                     detail.SetResourceReference(TextBlock.ForegroundProperty, "PropertyEditorCommandTextSecondary");
                     text.Children.Add(detail);
                 }
@@ -129,6 +132,25 @@ namespace ColorVision.UI
         }
 
         private static void CompactCommands_SizeChanged(object sender, SizeChangedEventArgs e) => ((UniformGrid)sender).AutoUpdateLayout(100);
-        private static void CommandCategory_SizeChanged(object sender, SizeChangedEventArgs e) => ((UniformGrid)sender).AutoUpdateLayout(180);
+        private static void CommandCategory_SizeChanged(object sender, SizeChangedEventArgs e)
+            => ArrangeCategory((Grid)sender, e.NewSize.Width < 460 ? 1 : 2);
+
+        private static void ArrangeCategory(Grid grid, int columns)
+        {
+            var buttons = grid.Children.OfType<Button>().Where(button => button.Visibility != Visibility.Collapsed).ToList();
+            columns = Math.Min(columns, Math.Max(1, buttons.Count));
+            grid.ColumnDefinitions.Clear();
+            grid.RowDefinitions.Clear();
+            for (int column = 0; column < columns; column++)
+                grid.ColumnDefinitions.Add(new ColumnDefinition());
+            for (int row = 0; row < (buttons.Count + columns - 1) / columns; row++)
+                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            for (int index = 0; index < buttons.Count; index++)
+            {
+                Grid.SetRow(buttons[index], index / columns);
+                Grid.SetColumn(buttons[index], index % columns);
+                Grid.SetColumnSpan(buttons[index], index == buttons.Count - 1 ? columns - index % columns : 1);
+            }
+        }
     }
 }

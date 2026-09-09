@@ -7,6 +7,10 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using Newtonsoft.Json;
 using System.Windows;
 
 namespace ColorVision.Engine.Services
@@ -44,6 +48,7 @@ namespace ColorVision.Engine.Services
     public partial class WindowService : Window
     {
         private string? _copilotContextSourceId;
+        private List<(ServiceObjectBase Service, string Configuration)>? _initialConfiguration;
 
         public WindowService()
         {
@@ -57,11 +62,21 @@ namespace ColorVision.Engine.Services
             WindowServiceConfig = WindowServiceConfig.Instance;
             this.DataContext = this;
             ApplyServiceListMode();
+            _initialConfiguration = CaptureConfiguration(ServiceManager.GetInstance().TypeServices);
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             StackPanelShow.Children.Clear();
+            DetailHeader.Visibility = TreeView1.SelectedItem is DeviceService ? Visibility.Visible : Visibility.Collapsed;
+            DetailTitle.Text = (TreeView1.SelectedItem as ServiceObjectBase)?.Name ?? Properties.Resources.WindowServiceTitle;
+            DetailSubtitle.Text = TreeView1.SelectedItem switch
+            {
+                DeviceService device => device.Code,
+                TerminalService terminal => terminal.Code,
+                _ => string.Empty
+            };
+            DetailSubtitle.Visibility = string.IsNullOrEmpty(DetailSubtitle.Text) ? Visibility.Collapsed : Visibility.Visible;
             if (TreeView1.SelectedItem is DeviceService baseObject)
             {
                 StackPanelShow.Children.Add(baseObject.GetDeviceInfo());
@@ -105,15 +120,39 @@ namespace ColorVision.Engine.Services
                 CopilotLiveContextRegistry.Clear(sourceId);
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        // Compare only configuration and resource identity, never heartbeat/selection/runtime status.
+        internal static List<(ServiceObjectBase Service, string Configuration)> CaptureConfiguration(IEnumerable<Types.TypeService> types)
         {
-            ServiceManager.GetInstance().GenDeviceDisplayControl();
-            Close();
+            var result = new List<(ServiceObjectBase, string)>();
+            foreach (var type in types)
+            {
+                result.Add((type, type.Name));
+                foreach (var terminal in type.VisualChildren.OfType<TerminalService>())
+                {
+                    result.Add((terminal, JsonConvert.SerializeObject(terminal.Config)));
+                    foreach (var device in terminal.VisualChildren.OfType<DeviceService>())
+                        result.Add((device, JsonConvert.SerializeObject(device.GetConfig())));
+                }
+            }
+            return result;
         }
 
-        private void TreeView1_Loaded(object sender, RoutedEventArgs e)
+        protected override void OnClosing(CancelEventArgs e)
         {
-
+            base.OnClosing(e);
+            if (e.Cancel || _initialConfiguration == null) return;
+            try
+            {
+                var current = CaptureConfiguration(ServiceManager.GetInstance().TypeServices);
+                if (!_initialConfiguration.SequenceEqual(current))
+                    ServiceManager.GetInstance().GenDeviceDisplayControl();
+                _initialConfiguration = current;
+            }
+            catch (Exception exception)
+            {
+                e.Cancel = true;
+                MessageBox.Show(this, exception.Message, Properties.Resources.MenuService, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void ButtonToggleList_Click(object sender, RoutedEventArgs e)
