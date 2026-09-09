@@ -33,6 +33,10 @@ try:
     from .generate_shared_files import build_release_manifest
     from .build_update import get_all_files, get_file_version
     from .installer_shared_files import collect_installer_shared_files
+    from .operations_watchdog_runtime import (
+        REQUIRED_OPERATIONS_WATCHDOG_RUNTIME_PATHS,
+        validate_operations_watchdog_runtime,
+    )
 except ImportError:
     from backend_client import (
         DEFAULT_CONNECT_TIMEOUT,
@@ -56,6 +60,10 @@ except ImportError:
     from generate_shared_files import build_release_manifest
     from build_update import get_all_files, get_file_version
     from installer_shared_files import collect_installer_shared_files
+    from operations_watchdog_runtime import (
+        REQUIRED_OPERATIONS_WATCHDOG_RUNTIME_PATHS,
+        validate_operations_watchdog_runtime,
+    )
 from tqdm import tqdm
 
 VERSION_RE = re.compile(r"(\d+\.\d+\.\d+\.\d+)")
@@ -189,6 +197,7 @@ def validate_installer_runtime_dlls(
     try:
         installer_source_paths = read_installer_source_paths(aip_path)
         validate_service_host_runtime(runtime_path)
+        validate_operations_watchdog_runtime(runtime_path)
     except (ElementTree.ParseError, OSError) as exc:
         report(f"Could not validate Advanced Installer runtime: {exc}")
         return False
@@ -217,7 +226,16 @@ def validate_installer_runtime_dlls(
         report("Advanced Installer does not include ServiceHost runtime files: " + ", ".join(missing_service_host_paths))
         return False
 
-    report("Verified root and win-x64 native runtime DLLs plus the complete ServiceHost runtime in Advanced Installer.")
+    missing_operations_watchdog_paths = [
+        relative_path
+        for relative_path in REQUIRED_OPERATIONS_WATCHDOG_RUNTIME_PATHS
+        if not installer_contains_relative_path(installer_source_paths, relative_path)
+    ]
+    if missing_operations_watchdog_paths:
+        report("Advanced Installer does not include OperationsWatchdog runtime files: " + ", ".join(missing_operations_watchdog_paths))
+        return False
+
+    report("Verified root and win-x64 native runtime DLLs plus the complete ServiceHost and OperationsWatchdog runtimes in Advanced Installer.")
     return True
 
 

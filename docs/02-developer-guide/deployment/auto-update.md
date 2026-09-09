@@ -164,8 +164,8 @@ flowchart LR
 ## 开发与交付约束
 
 - 正式发布由 `Scripts\release.bat` 负责，不增加本地-only 发布捷径；版本号读取 `Directory.Build.props`，版本变化记录在 `CHANGELOG.md`。
-- `Scripts\build_update.py` 在增量包上传失败时必须返回失败码；增量包始终携带完整 `ServiceHost/`，不能仅打入其中的变更文件。
-- 构建完整安装包前，必须确认顶层运行时 DLL 和完整 `ServiceHost/` 已进入 Advanced Installer 项目。
+- `Scripts\build_update.py` 在增量包上传失败时必须返回失败码；增量包始终携带完整 `ServiceHost/` 和 `OperationsWatchdog/`，不能仅打入其中的变更文件。
+- 构建完整安装包前，必须确认顶层运行时 DLL、完整 `ServiceHost/` 和完整 `OperationsWatchdog/` 已进入 Advanced Installer 项目。
 - 修改检查、包结构、安装或交付命令时，在对应主题原位更新，并同步受影响的部署概览、脚本文档与版本日志。
 
 ## 检查复用的验证入口与缺口

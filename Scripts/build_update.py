@@ -8,9 +8,17 @@ from pathlib import PurePosixPath
 
 try:
     from .backend_client import upload_file_to_folder
+    from .operations_watchdog_runtime import (
+        REQUIRED_OPERATIONS_WATCHDOG_RUNTIME_PATHS,
+        validate_operations_watchdog_runtime,
+    )
     from .service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS, validate_service_host_runtime
 except ImportError:
     from backend_client import upload_file_to_folder
+    from operations_watchdog_runtime import (
+        REQUIRED_OPERATIONS_WATCHDOG_RUNTIME_PATHS,
+        validate_operations_watchdog_runtime,
+    )
     from service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS, validate_service_host_runtime
 
 ALLOWED_RUNTIME_PREFIXES = (
@@ -267,8 +275,10 @@ def make_incremental_zip(old_zip, new_version_dir, incremental_zip):
                 files_to_zip[rel_path] = new_file
 
         service_host_prefix = f'ServiceHost{os.sep}'.lower()
+        operations_watchdog_prefix = f'OperationsWatchdog{os.sep}'.lower()
         for rel_path, new_file in new_files_dict.items():
-            if rel_path.lower().startswith(service_host_prefix):
+            normalized_path = rel_path.lower()
+            if normalized_path.startswith(service_host_prefix) or normalized_path.startswith(operations_watchdog_prefix):
                 files_to_zip[rel_path] = new_file
 
         with zipfile.ZipFile(str(incremental_zip), 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -312,6 +322,7 @@ def main() -> int:
 
     try:
         validate_service_host_runtime(new_version_dir)
+        validate_operations_watchdog_runtime(new_version_dir)
     except FileNotFoundError as exc:
         print(str(exc))
         return 1

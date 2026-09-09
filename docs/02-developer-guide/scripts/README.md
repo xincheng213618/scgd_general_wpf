@@ -32,7 +32,7 @@ related: ["delivery.index","delivery.testing","delivery.backend","delivery.updat
 
 以下命令会签名、打包并修改远端发布状态，只在用户明确要求发布时执行；文档或代码审阅不授予发布权限。
 
-主程序和 ServiceHost 共用仓库根目录 `Directory.Build.props` 中的 `VersionPrefix`。每个增量包都必须携带完整的 `ServiceHost/` 运行时，确保 ZIP 部署机器可从空的 ProgramData 目录完成首次安装。发布前提升这个版本号并更新根 `CHANGELOG.md`，然后运行：
+主程序、ServiceHost 和 OperationsWatchdog 共用仓库根目录 `Directory.Build.props` 中的 `VersionPrefix`。每个增量包都必须携带完整的 `ServiceHost/` 和 `OperationsWatchdog/` 运行时：前者确保 ZIP 部署机器可从空的 ProgramData 目录完成首次安装，后者确保完整安装器漏项或旧安装损坏后也能由下一次增量更新自修复。发布前提升这个版本号并更新根 `CHANGELOG.md`，然后运行：
 
 ```powershell
 Scripts\release.bat
