@@ -44,4 +44,10 @@
     <SolidColorBrush x:Key="EditorSyntaxAddedBrush" Color="#B5CEA8"/>
 
     <SolidColorBrush x:Key="EditorSyntaxBackgroundBrush" Color="#2D2D30"/>
+    <SolidColorBrush x:Key="EditorIndentGuideBrush" Color="#363A40"/>
+    <SolidColorBrush x:Key="EditorOverviewBackgroundBrush" Color="#252526"/>
+    <SolidColorBrush x:Key="EditorOverviewViewportBrush" Color="#28FFFFFF"/>
+    <SolidColorBrush x:Key="EditorOverviewBorderBrush" Color="#686868"/>
+    <SolidColorBrush x:Key="EditorSearchMatchBrush" Color="#665E4B00"/>
+    <SolidColorBrush x:Key="EditorSearchMarkerBrush" Color="#D7BA7D"/>
 </ResourceDictionary>

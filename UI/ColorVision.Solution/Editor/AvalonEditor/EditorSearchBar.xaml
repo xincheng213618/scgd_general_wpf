@@ -1,0 +1,37 @@
+<UserControl x:Class="ColorVision.Solution.Editor.AvalonEditor.EditorSearchBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Visibility="Collapsed" PreviewKeyDown="Search_PreviewKeyDown">
+    <UserControl.Resources>
+        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="MinHeight" Value="28"/>
+        </Style>
+        <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="6,0"/>
+        </Style>
+    </UserControl.Resources>
+    <Border Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
+        <Grid>
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <TextBox x:Name="QueryBox" MinWidth="100" MinHeight="28" Padding="6,3" TextChanged="Query_Changed" ToolTip="查找 (Ctrl+F)" AutomationProperties.Name="查找内容"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="5,0,0,0">
+                <CheckBox x:Name="CaseBox" Content="Aa" ToolTip="区分大小写" Click="Options_Changed" AutomationProperties.Name="区分大小写"/>
+                <CheckBox x:Name="WordBox" Content="词" ToolTip="全字匹配" Click="Options_Changed" AutomationProperties.Name="全字匹配"/>
+                <CheckBox x:Name="RegexBox" Content=".*" ToolTip="正则表达式" Click="Options_Changed" AutomationProperties.Name="正则表达式"/>
+                <Button Content="↑" Click="Previous_Click" ToolTip="上一个 (Shift+Enter / Shift+F3)" AutomationProperties.Name="上一个匹配"/>
+                <Button Content="↓" Click="Next_Click" ToolTip="下一个 (Enter / F3)" AutomationProperties.Name="下一个匹配"/>
+                <Button Content="×" Click="Close_Click" ToolTip="关闭 (Esc)" AutomationProperties.Name="关闭查找"/>
+            </StackPanel>
+            <TextBox x:Name="ReplacementBox" Grid.Row="1" MinHeight="28" Padding="6,3" Margin="0,5,0,0" Visibility="Collapsed" ToolTip="替换内容；正则模式支持 $1 等分组引用" AutomationProperties.Name="替换内容"/>
+            <StackPanel x:Name="ReplaceActions" Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="5,5,0,0" Visibility="Collapsed">
+                <Button x:Name="ReplaceButton" Content="替换" Click="Replace_Click"/>
+                <Button x:Name="ReplaceAllButton" Content="全部替换" Click="ReplaceAll_Click"/>
+            </StackPanel>
+            <TextBlock x:Name="ResultText" Grid.Row="2" Grid.ColumnSpan="2" Margin="2,4,0,0" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap"/>
+        </Grid>
+    </Border>
+</UserControl>

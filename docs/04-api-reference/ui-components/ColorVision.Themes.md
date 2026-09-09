@@ -13,6 +13,8 @@ related: ["ui.index","ui.settings","ui.property-grid","ui.configuration","platfo
 
 `ColorVision.Themes` 负责 WPF 主题资源与窗口外观；`ColorVision.UI` 中的 `ThemeConfig` / `ThemePropertiesEditor` 负责配置对象和选项编辑。主题选择、资源应用、标题栏更新、配置落盘是不同完成条件，不能用一次 `ApplyTheme` 返回统一代表。
 
+文本编辑器的正文、代码地图、悬停预览、缩进参考线与搜索标记共用 `Themes/Integrations/Editor.Light.xaml` / `Editor.Dark.xaml` 中的语义颜色。字体和文字字重由编辑器设置控制，交互与订阅生命周期见[文本编辑器](./text-editor.md)。
+
 ## 切换应用主题
 
 1. 打开 **工具 → 选项**（默认快捷键 **Ctrl+,**）。

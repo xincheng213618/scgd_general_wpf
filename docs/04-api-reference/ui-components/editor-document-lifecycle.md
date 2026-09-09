@@ -6,12 +6,14 @@ summary: "编辑器注册与选择、按路径和编辑器区分文档、保存�
 aliases: ["EditorManager", "EditorDescriptor", "EditorDocumentService", "IEditorDocumentContent", "IReloadableEditorDocumentContent", "IResourcePathAwareDocumentContent", "DockLayoutManager", "DockContentRegistration", "DeferredDockContent", "WorkspaceManager", "DocumentTabPinManager", "TryCloseAllDocuments", "NotifyResourceRenamed", "ResetLayout", "DefaultEditorUpdated", "默认编辑器", "重复打开文件", "保存文档", "重新加载文件", "文件被外部修改", "固定选项卡", "固定标签", "重置窗口布局", "停靠布局恢复", "关闭重开面板", "面板内容双父节点"]
 code_paths: ["UI/ColorVision.Solution/Editor/EditorManager.cs", "UI/ColorVision.Solution/Editor/EditorDescriptor.cs", "UI/ColorVision.Solution/Editor/IEditor.cs", "UI/ColorVision.Solution/Editor/EditorForExtensionAttribute.cs", "UI/ColorVision.Solution/Editor/GenericEditorAttribute.cs", "UI/ColorVision.Solution/Editor/TextEditor.cs", "UI/ColorVision.Solution/Editor/ImageEditor.cs", "UI/ColorVision.Solution/Editor/SystemEditor.cs", "UI/ColorVision.Solution/Workspace/EditorDocumentService.cs", "UI/ColorVision.Solution/Workspace/IEditorDocumentContent.cs", "UI/ColorVision.Solution/Workspace/DocumentTabPinManager.cs", "UI/ColorVision.Solution/Workspace/DockLayoutManager.cs", "UI/ColorVision.Solution/Workspace/WorkspaceManager.cs", "UI/ColorVision.Solution/Workspace/LayoutMenuItems.cs", "UI/ColorVision.Solution/CommandInitializer.cs", "ColorVision/MainWindow.xaml.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI/Environments.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/DockContentRegistrationTests.cs", "Test/ColorVision.UI.Tests/BuiltInShortcutDefaultsTests.cs", "Test/ColorVision.UI.Tests/AvalonDockThemeBindingTests.cs"]
-related: ["ui.solution", "ui.configuration", "ui.image-editor", "operations.terminal"]
+related: ["ui.solution", "ui.configuration", "ui.image-editor", "ui.text-editor", "operations.terminal"]
 ---
 
 # 编辑器选择、文档生命周期与停靠布局
 
 `EditorManager` 选择并调用编辑器，`EditorDocumentService` 为接入它的内容提供文档身份和保存/关闭协议，`DockLayoutManager` 管理停靠内容注册与布局。三者不是同一个持久化层：打开返回、文档保存成功、布局保存成功有各自的完成边界。
+
+文本内容中的代码地图、字体、查找替换、折叠与快捷键见[文本编辑器](./text-editor.md)。文件 JSON 的打开保持原文，格式化由用户显式执行。
 
 本主题不定义文件与工作区的打开分流、批量打开或工作区切换，见[资源打开与单工作区切换](./ColorVision.Solution.md)。终端面板的进程、脚本及退出责任见[终端契约](../../01-user-guide/interface/terminal.md)；图像内容加载和保存见[图像编辑器](./ColorVision.ImageEditor.md)。
 
