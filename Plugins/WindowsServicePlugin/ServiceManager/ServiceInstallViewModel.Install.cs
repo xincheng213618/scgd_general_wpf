@@ -190,8 +190,17 @@ namespace WindowsServicePlugin.ServiceManager
                                 DeleteCommonDllAfterUpdate(installRoot);
 
                                 SetProgress(progress += 5, "注册/更新服务...");
-                                InstallOrUpdatePackagedServices(installRoot);
-                                ReinstallArchiveServiceAfterPackageUpdate(installRoot, archiveServiceState);
+                                var serviceInstallFailures = new List<string>(InstallOrUpdatePackagedServices(installRoot));
+                                try
+                                {
+                                    ReinstallArchiveServiceAfterPackageUpdate(installRoot, archiveServiceState);
+                                }
+                                catch (Exception ex)
+                                {
+                                    log.Info($"服务安装失败: {ArchiveServiceName}, {ex.Message}");
+                                    serviceInstallFailures.Add($"{ArchiveServiceDisplayName} ({ArchiveServiceName})");
+                                }
+                                ThrowIfRequiredServiceOperationsFailed("安装", serviceInstallFailures);
                             }
                             catch
                             {
@@ -245,7 +254,8 @@ namespace WindowsServicePlugin.ServiceManager
                         if (hasServiceWork)
                         {
                             SetProgress(progress += 10, "启动服务...");
-                            StartInstalledServicesAfterInstall();
+                            IReadOnlyList<string> serviceStartFailures = StartInstalledServicesAfterInstall();
+                            ThrowIfRequiredServiceOperationsFailed("启动", serviceStartFailures);
                         }
 
                         if (!string.IsNullOrWhiteSpace(basePath))
@@ -987,9 +997,10 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private void StartPackagedServices()
+        private IReadOnlyList<string> StartPackagedServices()
         {
             var entries = ServiceManagerConfig.GetDefaultServiceEntries();
+            var failures = new List<string>();
             foreach (var svc in entries)
             {
                 try
@@ -997,47 +1008,78 @@ namespace WindowsServicePlugin.ServiceManager
                     if (WinServiceHelper.IsServiceExisted(svc.ServiceName))
                     {
                         log.Info($"启动服务: {svc.ServiceName}");
-                        ServiceHostWindowsServiceController
+                        bool started = ServiceHostWindowsServiceController
                             .ExecuteAsync(svc.ServiceName, ServiceHostServiceOperation.Start, log.Info, svc.DisplayName)
                             .GetAwaiter()
                             .GetResult();
+                        if (!started)
+                        {
+                            failures.Add($"{svc.DisplayName} ({svc.ServiceName})");
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
                     log.Info($"启动服务失败: {svc.ServiceName}, {ex.Message}");
+                    failures.Add($"{svc.DisplayName} ({svc.ServiceName})");
                 }
                 Application.Current.Dispatcher.Invoke(() => ServiceManagerViewModel.Instance.RefreshAll());
             }
 
+            return failures;
         }
 
-        private void StartInstalledServicesAfterInstall()
+        private IReadOnlyList<string> StartInstalledServicesAfterInstall()
         {
             var serviceManager = ServiceManagerViewModel.Instance;
+            var failures = new List<string>();
             Application.Current.Dispatcher.Invoke(() => serviceManager.RefreshAll());
 
-            serviceManager.MySqlManager.RefreshStatus(serviceManager.Services, serviceManager.Config.MySqlPort);
-            if (serviceManager.MySqlManager.Config.IsInstalled && !serviceManager.MySqlManager.Config.IsRunning)
+            try
             {
-                log.Info($"启动 MySQL 服务: {serviceManager.MySqlManager.Helper.ServiceName}");
-                serviceManager.MySqlManager.StartViaServiceHostAsync(log.Info).GetAwaiter().GetResult();
+                serviceManager.MySqlManager.RefreshStatus(serviceManager.Services, serviceManager.Config.MySqlPort);
+                if (serviceManager.MySqlManager.Config.IsInstalled && !serviceManager.MySqlManager.Config.IsRunning)
+                {
+                    log.Info($"启动 MySQL 服务: {serviceManager.MySqlManager.Helper.ServiceName}");
+                    if (!serviceManager.MySqlManager.StartViaServiceHostAsync(log.Info).GetAwaiter().GetResult())
+                    {
+                        failures.Add($"MySQL ({serviceManager.MySqlManager.Helper.ServiceName})");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Info($"启动 MySQL 服务失败: {ex.Message}");
+                failures.Add($"MySQL ({serviceManager.MySqlManager.Helper.ServiceName})");
             }
 
-            serviceManager.MqttManager.RefreshStatus(serviceManager.Services);
-            if (serviceManager.MqttManager.Config.IsInstalled && !serviceManager.MqttManager.Config.IsRunning)
+            try
             {
-                log.Info($"启动 MQTT 服务: {serviceManager.MqttManager.Config.ServiceName}");
-                serviceManager.MqttManager.StartViaServiceHostAsync(log.Info).GetAwaiter().GetResult();
+                serviceManager.MqttManager.RefreshStatus(serviceManager.Services);
+                if (serviceManager.MqttManager.Config.IsInstalled && !serviceManager.MqttManager.Config.IsRunning)
+                {
+                    log.Info($"启动 MQTT 服务: {serviceManager.MqttManager.Config.ServiceName}");
+                    if (!serviceManager.MqttManager.StartViaServiceHostAsync(log.Info).GetAwaiter().GetResult())
+                    {
+                        failures.Add($"MQTT ({serviceManager.MqttManager.Config.ServiceName})");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Info($"启动 MQTT 服务失败: {ex.Message}");
+                failures.Add($"MQTT ({serviceManager.MqttManager.Config.ServiceName})");
             }
 
-            StartPackagedServices();
+            failures.AddRange(StartPackagedServices());
             Application.Current.Dispatcher.Invoke(() => serviceManager.RefreshAll());
+            return failures;
         }
 
-        private void InstallOrUpdatePackagedServices(string basePath)
+        private IReadOnlyList<string> InstallOrUpdatePackagedServices(string basePath)
         {
             var entries = ServiceManagerConfig.GetDefaultServiceEntries();
+            var failures = new List<string>();
             foreach (var svc in entries)
             {
                 if (!svc.IsPackaged)
@@ -1046,7 +1088,8 @@ namespace WindowsServicePlugin.ServiceManager
                 string exePath = Path.Combine(basePath, svc.FolderName, svc.GetExecutableName());
                 if (!File.Exists(exePath))
                 {
-                    log.Info($"跳过服务（未找到可执行文件）: {svc.ServiceName}");
+                    log.Info($"服务安装失败（未找到可执行文件）: {svc.ServiceName}, {exePath}");
+                    failures.Add($"{svc.DisplayName} ({svc.ServiceName})");
                     continue;
                 }
 
@@ -1058,6 +1101,24 @@ namespace WindowsServicePlugin.ServiceManager
                 log.Info(ok
                     ? $"服务安装成功: {svc.ServiceName}"
                     : $"服务安装失败: {svc.ServiceName}");
+                if (!ok)
+                {
+                    failures.Add($"{svc.DisplayName} ({svc.ServiceName})");
+                }
+            }
+
+            return failures;
+        }
+
+        private static void ThrowIfRequiredServiceOperationsFailed(string operation, IEnumerable<string> failedServices)
+        {
+            string[] failures = failedServices
+                .Where(item => !string.IsNullOrWhiteSpace(item))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (failures.Length > 0)
+            {
+                throw new InvalidOperationException($"必需服务{operation}失败: {string.Join("、", failures)}");
             }
         }
 

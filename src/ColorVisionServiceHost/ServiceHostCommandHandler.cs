@@ -22,7 +22,7 @@ internal sealed class ServiceHostCommandHandler
         ["RegistrationCenterService"] = ["RegWindowsService.exe"],
         ["CVMainService_x64"] = ["CVMainWindowsService_x64.exe"],
         ["CVMainService_dev"] = ["CVMainWindowsService_dev.exe"],
-        ["CVArchService"] = ["RegWindowsService.exe"],
+        ["CVArchService"] = ["ArchivedWindowsService.exe", "RegWindowsService.exe"],
         ["MySQL"] = ["mysqld.exe"],
         ["MySQL57"] = ["mysqld.exe"],
         ["MySQL80"] = ["mysqld.exe"],

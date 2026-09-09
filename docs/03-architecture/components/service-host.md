@@ -5,7 +5,7 @@ status: "current"
 summary: "ColorVision 服务主机的状态刷新、安装修复、日志诊断、身份票据与就绪条件；自动刷新只更新日志，客户端超时不取消命令，服务停止超过两分钟仍等待排空，服务启动成功日志不证明后台清理和启动完整性检查完成。"
 aliases: ["ColorVisionServiceHost", "ColorVision 服务主机", "ColorVision Service Host", "服务主机安装记录", "ServiceHostLogReader", "后台权限代理", "本机特权服务", "服务宿主", "命名管道", "SCM停止预算", "broker ticket", "ServiceHostProtocol", "ColorVisionServiceHostClient", "IColorVisionServiceHostClient", "ServiceHostPipeClient", "ServiceHostCallerIdentity", "ServiceHostBrokerTicketService", "ServiceHostCommandHandler", "ServiceHostPipeServer", "ColorVisionServiceHostService", "ColorVisionServiceHostManager", "ServiceHostStatus", "ServiceHostRuntimeIntegrityChecker", "ServiceHostStartupUpdateChecker", "ServiceHostManagerWindow", "ColorVisionServiceHostWizardStep", "Program.BeginConsoleShutdown"]
 code_paths: ["src/ColorVisionServiceHost", "UI/ColorVision.UI/ServiceHost/ServiceHostProtocol.cs", "UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs", "UI/ColorVision.UI/ServiceHost/ProcessTerminationBroker.cs", "ColorVision/ServiceHost"]
-test_paths: ["Test/ColorVision.UI.Tests/ServiceHostStatusTests.cs", "Test/ColorVision.UI.Tests/ServiceHostLogReaderTests.cs", "Test/ColorVision.UI.Tests/ServiceHostBrokerTicketTests.cs", "Test/ColorVision.UI.Tests/ServiceHostProcessTerminationTests.cs", "Test/ColorVision.UI.Tests/ProcessTerminationBrokerTests.cs", "Test/ColorVision.UI.Tests/ServiceHostPipeServerTests.cs", "Test/ColorVision.UI.Tests/ColorVisionServiceHostServiceLifecycleTests.cs", "Test/ColorVision.UI.Tests/ServiceHostStartupStatusTests.cs", "Test/ColorVision.UI.Tests/ServiceHostApplicationUpdateAccessTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ServiceHostStatusTests.cs", "Test/ColorVision.UI.Tests/ServiceHostLogReaderTests.cs", "Test/ColorVision.UI.Tests/ServiceHostBrokerTicketTests.cs", "Test/ColorVision.UI.Tests/ServiceHostProcessTerminationTests.cs", "Test/ColorVision.UI.Tests/ProcessTerminationBrokerTests.cs", "Test/ColorVision.UI.Tests/ServiceHostPipeServerTests.cs", "Test/ColorVision.UI.Tests/ColorVisionServiceHostServiceLifecycleTests.cs", "Test/ColorVision.UI.Tests/ServiceHostStartupStatusTests.cs", "Test/ColorVision.UI.Tests/ServiceHostApplicationUpdateAccessTests.cs", "Test/ColorVision.UI.Tests/ServiceHostServicePolicyTests.cs"]
 related: ["platform.system", "platform.startup-integrity", "delivery.update", "delivery.update-scan-protection", "plugins.windows-service", "engine.shell-extension", "engine.mysql-recovery", "ui.socket-protocol"]
 ---
 
@@ -81,7 +81,7 @@ related: ["platform.system", "platform.startup-integrity", "delivery.update", "d
 
 单实例启动只是该能力的一个调用方：它在直接结束遭遇访问拒绝后调用通用接口；旧实例筛选、多实例选择及窗口行为见[单实例启动恢复](../../00-getting-started/first-steps.md#旧进程未退出时重新启动)。白名单内的程序复用相同服务命令，清单外程序必须先更新服务中的白名单。
 
-服务管理器已有的 `TerminateServiceAsync` / `service-terminate` 保留协议兼容入口，内部复用 `ProcessCommandService.TerminateProcess`，并使用既有 `ServiceExecutableNames` 检查服务名及其对应的可执行文件名；未知服务或不匹配的程序返回 `service_target_not_allowed`。已注册服务按系统报告的服务 PID 选择目标，并核对注册可执行路径，避免按同名进程误伤另一安装或其它服务；白名单内未注册的残留程序仍按调用方提供的完整可执行路径选择。该兼容入口保留结束进程树的行为，按 `timeoutSeconds` 等待每个目标退出（默认 20 秒，限制为 5–180 秒），并复核服务是否仍运行；“停止服务”仍是独立的正常停止命令。MySQL 安装清理也复用同一终止实现，其业务目标选择仍由安装流程负责。服务安装、启停等其它命令的准入契约不由进程终止接口改变。
+服务管理器已有的 `TerminateServiceAsync` / `service-terminate` 保留协议兼容入口，内部复用 `ProcessCommandService.TerminateProcess`，并使用既有 `ServiceExecutableNames` 检查服务名及其对应的可执行文件名；未知服务或不匹配的程序返回 `service_target_not_allowed`。`CVArchService` 的当前程序名为 `ArchivedWindowsService.exe`，同时保留旧包 `RegWindowsService.exe` 的兼容准入，其它业务服务程序不能借用该服务名通过检查。已注册服务按系统报告的服务 PID 选择目标，并核对注册可执行路径，避免按同名进程误伤另一安装或其它服务；白名单内未注册的残留程序仍按调用方提供的完整可执行路径选择。该兼容入口保留结束进程树的行为，按 `timeoutSeconds` 等待每个目标退出（默认 20 秒，限制为 5–180 秒），并复核服务是否仍运行；“停止服务”仍是独立的正常停止命令。MySQL 安装清理也复用同一终止实现，其业务目标选择仍由安装流程负责。服务安装、启停等其它命令的准入契约不由进程终止接口改变。
 
 ### 通用发送与停止排空
 
@@ -119,7 +119,7 @@ SCM启动会启动更新扫描保护 `ApplicationUpdateScanProtectionService`、
 
 - `ServiceHostStatusTests` 测试状态/决策对象、安装脚本文本和临时运行时文件夹；`ServiceHostLogReaderTests` 测试日志末段读取、旧中文编码和安装结果识别。它们不执行真实SCM安装或UAC自更新，也不验证管理窗口的现场操作。
 - `ServiceHostBrokerTicketTests` 检查两端命令分类、单次票据重放、命令/PID变化等；没有逐项验证SID/OperationId/hash变化、真实过期等待、签名或生产管道身份准入。
-- `ServiceHostProcessTerminationTests` 使用隔离本机管道连接真实 UI 客户端、票据签发和服务命令分派，覆盖精确 PID 终止及旧接口未知服务拒绝；其它用例覆盖白名单内程序、未知程序拒绝和不同目标目录。旧接口的进程匹配与终止步骤仅传入测试自己创建的进程，确认另一安装目录存活，不枚举现场业务服务。调用者身份为注入的测试身份；未覆盖生产 ACL、LocalSystem 提权、真实 SCM/WMI 服务发现或旧接口完整残留清理链路。
+- `ServiceHostProcessTerminationTests` 使用隔离本机管道连接真实 UI 客户端、票据签发和服务命令分派，覆盖精确 PID 终止及旧接口未知服务拒绝；其它用例覆盖白名单内程序、未知程序拒绝和不同目标目录。`ServiceHostServicePolicyTests` 额外固定 `CVArchService` 对当前 `ArchivedWindowsService.exe`、旧 `RegWindowsService.exe` 的准入，并拒绝其它服务程序。旧接口的进程匹配与终止步骤仅传入测试自己创建的进程，确认另一安装目录存活，不枚举现场业务服务。调用者身份为注入的测试身份；未覆盖生产 ACL、LocalSystem 提权、真实 SCM/WMI 服务发现或旧接口完整残留清理链路。
 - `ServiceHostPipeServerTests` 使用真实本机命名管道，但大部分用例注入恒成功身份解析和fake handler，绕过生产ACL创建；当前进程token读取测试也不是端到端调用者鉴权。
 - `ColorVisionServiceHostServiceLifecycleTests` 使用fake SCM、pipe和扫描保护、手动时钟，验证停止所有权、预算及释放；没有真实服务安装、LocalSystem运行或完整性监视器验收。其中 `SelfUpdateCallerKeepsOwnershipUntilServiceReallyStops` 只模拟 `stopped → copy → restart` 事件与所有权变量，不替换真实文件或执行更新脚本。
 - `ServiceHostStartupStatusTests` 手工构造调用上下文；`ServiceHostApplicationUpdateAccessTests` 包含对临时目录实际执行 `icacls` 的用例，不能把全部相关产品测试视为纯只读检查。
