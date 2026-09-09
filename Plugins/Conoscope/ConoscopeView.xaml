@@ -124,9 +124,11 @@
             <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10" Padding="8,5" Background="#DD1E1E1E" BorderBrush="#66FFFFFF" BorderThickness="1" CornerRadius="5">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="{x:Static properties:Resources.Con_Category_CoordAxis}" Foreground="White" VerticalAlignment="Center" Margin="0,0,7,0"/>
-                    <ComboBox x:Name="cbImageCoordinateSystem" Width="116" Height="26" SelectedIndex="0" SelectionChanged="cbImageCoordinateSystem_SelectionChanged">
+                    <ComboBox x:Name="cbImageCoordinateSystem" Width="126" Height="26" SelectedIndex="0" SelectionChanged="cbImageCoordinateSystem_SelectionChanged">
                         <ComboBoxItem Content="{x:Static properties:Resources.BtnPolarCoord}" Tag="Polar"/>
                         <ComboBoxItem Content="H/V" Tag="HorizontalVertical"/>
+                        <ComboBoxItem Content="North Polar" Tag="NorthPolar"/>
+                        <ComboBoxItem Content="East Polar" Tag="EastPolar"/>
                     </ComboBox>
                 </StackPanel>
             </Border>

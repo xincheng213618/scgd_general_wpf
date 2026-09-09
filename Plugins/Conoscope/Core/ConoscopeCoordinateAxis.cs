@@ -221,7 +221,7 @@ namespace Conoscope.Core
             Pen referencePen = new Pen(Attribute.ReferenceBrush, Attribute.ReferenceLineWidth / ratio);
             Point center = Center;
 
-            if (Attribute.CoordinateSystem == ConoscopeCoordinateSystem.HorizontalVertical)
+            if (ConoscopeHorizontalVerticalProjection.IsProjectedCoordinateSystem(Attribute.CoordinateSystem))
             {
                 StreamGeometry domain = CreateHorizontalVerticalDomainGeometry(center);
                 DrawMask(dc, domain);
@@ -243,10 +243,11 @@ namespace Conoscope.Core
         public bool ContainsInteractivePoint(Point point)
         {
             double tolerance = HitTolerance / Math.Max(Ratio, 1);
-            if (Attribute.CoordinateSystem == ConoscopeCoordinateSystem.HorizontalVertical)
+            if (ConoscopeHorizontalVerticalProjection.IsProjectedCoordinateSystem(Attribute.CoordinateSystem))
             {
                 return TryGetHorizontalVerticalAngles(point, tolerance, out double horizontalAngle, out double verticalAngle)
                     && ConoscopeHorizontalVerticalProjection.TryConvertHorizontalVerticalToPolar(
+                        Attribute.CoordinateSystem,
                         horizontalAngle,
                         verticalAngle,
                         Attribute.MaxAngle,
@@ -266,10 +267,11 @@ namespace Conoscope.Core
 
             double angle;
             double radiusAngle;
-            if (Attribute.CoordinateSystem == ConoscopeCoordinateSystem.HorizontalVertical)
+            if (ConoscopeHorizontalVerticalProjection.IsProjectedCoordinateSystem(Attribute.CoordinateSystem))
             {
                 if (!TryGetHorizontalVerticalAngles(point, 0, out double horizontalAngle, out double verticalAngle)
                     || !ConoscopeHorizontalVerticalProjection.TryConvertHorizontalVerticalToPolar(
+                        Attribute.CoordinateSystem,
                         horizontalAngle,
                         verticalAngle,
                         Attribute.MaxAngle,
@@ -462,6 +464,7 @@ namespace Conoscope.Core
         private Point GetHorizontalVerticalPoint(Point center, double polarAngle, double azimuthAngle)
         {
             if (!ConoscopeHorizontalVerticalProjection.TryConvertPolarToHorizontalVertical(
+                Attribute.CoordinateSystem,
                 polarAngle,
                 azimuthAngle,
                 Attribute.MaxAngle,

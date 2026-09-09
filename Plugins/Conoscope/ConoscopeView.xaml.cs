@@ -883,7 +883,7 @@ namespace Conoscope
             ExportChannel displayChannel = GetSelectedDisplayChannel();
             OpenCvSharp.Mat displayBaseMat = YMat!;
             OpenCvSharp.Mat? rangeMask = GetPseudoColorRangeMask(displayBaseMat.Width, displayBaseMat.Height);
-            ConoscopeHorizontalVerticalProjection? projection = State.CoordinateSystem == ConoscopeCoordinateSystem.HorizontalVertical
+            ConoscopeHorizontalVerticalProjection? projection = ConoscopeHorizontalVerticalProjection.IsProjectedCoordinateSystem(State.CoordinateSystem)
                 ? GetOrCreateHorizontalVerticalProjection(displayBaseMat.Width, displayBaseMat.Height)
                 : null;
             ConoscopePseudoColorRenderResult renderResult = ConoscopePseudoColorRenderer.Render(
@@ -924,7 +924,8 @@ namespace Conoscope
                 && horizontalVerticalProjection.SourceHeight == sourceHeight
                 && horizontalVerticalProjection.SourceCenter == center
                 && Math.Abs(horizontalVerticalProjection.SourcePixelsPerDegree - pixelsPerDegree) < 0.000001
-                && Math.Abs(horizontalVerticalProjection.MaxPolarAngle - MaxAngle) < 0.000001)
+                && Math.Abs(horizontalVerticalProjection.MaxPolarAngle - MaxAngle) < 0.000001
+                && horizontalVerticalProjection.CoordinateSystem == State.CoordinateSystem)
             {
                 return horizontalVerticalProjection;
             }
@@ -935,7 +936,8 @@ namespace Conoscope
                 sourceHeight,
                 center,
                 pixelsPerDegree,
-                MaxAngle);
+                MaxAngle,
+                State.CoordinateSystem);
             return horizontalVerticalProjection;
         }
 
@@ -952,20 +954,21 @@ namespace Conoscope
                 return;
             }
 
-            ConoscopeCoordinateSystem requestedSystem = string.Equals(selectedItem.Tag?.ToString(), nameof(ConoscopeCoordinateSystem.HorizontalVertical), StringComparison.Ordinal)
-                ? ConoscopeCoordinateSystem.HorizontalVertical
+            ConoscopeCoordinateSystem requestedSystem = Enum.TryParse(selectedItem.Tag?.ToString(), out ConoscopeCoordinateSystem parsedSystem)
+                && Enum.IsDefined(parsedSystem)
+                ? parsedSystem
                 : ConoscopeCoordinateSystem.Polar;
             if (requestedSystem == State.CoordinateSystem)
             {
                 return;
             }
 
-            if (requestedSystem == ConoscopeCoordinateSystem.HorizontalVertical && ImageView?.FocusCircles.Count > 0)
+            if (ConoscopeHorizontalVerticalProjection.IsProjectedCoordinateSystem(requestedSystem) && ImageView?.FocusCircles.Count > 0)
             {
                 isUpdatingCoordinateSystemControl = true;
                 try
                 {
-                    cbImageCoordinateSystem.SelectedIndex = 0;
+                    cbImageCoordinateSystem.SelectedIndex = GetCoordinateSystemSelectedIndex(State.CoordinateSystem);
                 }
                 finally
                 {
@@ -1003,7 +1006,7 @@ namespace Conoscope
                 isUpdatingCoordinateSystemControl = true;
                 try
                 {
-                    cbImageCoordinateSystem.SelectedIndex = previousSystem == ConoscopeCoordinateSystem.HorizontalVertical ? 1 : 0;
+                    cbImageCoordinateSystem.SelectedIndex = GetCoordinateSystemSelectedIndex(previousSystem);
                 }
                 finally
                 {
@@ -1022,6 +1025,27 @@ namespace Conoscope
 
                 MessageBox.Show(ex.Message, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private static int GetCoordinateSystemSelectedIndex(ConoscopeCoordinateSystem coordinateSystem)
+        {
+            return coordinateSystem switch
+            {
+                ConoscopeCoordinateSystem.HorizontalVertical => 1,
+                ConoscopeCoordinateSystem.NorthPolar => 2,
+                ConoscopeCoordinateSystem.EastPolar => 3,
+                _ => 0
+            };
+        }
+
+        private static string GetCoordinateSystemDisplayName(ConoscopeCoordinateSystem coordinateSystem)
+        {
+            return coordinateSystem switch
+            {
+                ConoscopeCoordinateSystem.NorthPolar => "North Polar",
+                ConoscopeCoordinateSystem.EastPolar => "East Polar",
+                _ => "H/V"
+            };
         }
 
         private void UpdatePseudoColorLegend(ExportChannel channel, double minValue, double maxValue)
@@ -1868,9 +1892,9 @@ namespace Conoscope
             builder.AppendLine(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.ReferenceFormat, GetReferenceValueText(e.Mode, e.Angle, e.RadiusAngle)));
             builder.AppendLine(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.PixelCoordFormat, sample.XyzX, sample.XyzY));
             builder.AppendLine(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.PolarCoordFormat, azimuthAngle.ToString("F2"), polarAngle.ToString("F2")));
-            if (State.CoordinateSystem == ConoscopeCoordinateSystem.HorizontalVertical)
+            if (ConoscopeHorizontalVerticalProjection.IsProjectedCoordinateSystem(State.CoordinateSystem))
             {
-                builder.AppendLine($"H/V: H={horizontalAngle:F2}°, V={verticalAngle:F2}°");
+                builder.AppendLine($"{GetCoordinateSystemDisplayName(State.CoordinateSystem)}: H={horizontalAngle:F2}°, V={verticalAngle:F2}°");
             }
             builder.AppendLine($"{ConoscopeChannelDisplayFormatter.GetLabel(displayChannel)}: {ConoscopeChannelDisplayFormatter.FormatValue(displayValue, displayChannel)}");
             builder.AppendLine($"XYZ: X={sample.X:F4}, Y={sample.Y:F4}, Z={sample.Z:F4}");
@@ -1908,7 +1932,7 @@ namespace Conoscope
             }
 
             Point sourcePoint = position;
-            if (State.CoordinateSystem == ConoscopeCoordinateSystem.HorizontalVertical)
+            if (ConoscopeHorizontalVerticalProjection.IsProjectedCoordinateSystem(State.CoordinateSystem))
             {
                 if (horizontalVerticalProjection == null
                     || !horizontalVerticalProjection.TryMapDisplayPointToSource(position, out sourcePoint, out _, out _, out _, out _))
@@ -1938,7 +1962,7 @@ namespace Conoscope
             verticalAngle = double.NaN;
             polarAngle = double.NaN;
             azimuthAngle = double.NaN;
-            if (State.CoordinateSystem == ConoscopeCoordinateSystem.HorizontalVertical)
+            if (ConoscopeHorizontalVerticalProjection.IsProjectedCoordinateSystem(State.CoordinateSystem))
             {
                 return horizontalVerticalProjection != null
                     && horizontalVerticalProjection.TryMapDisplayPointToSource(
@@ -1958,6 +1982,7 @@ namespace Conoscope
             azimuthAngle = FocusPointMeasurementService.GetFullAzimuthAngle(position, currentImageCenter);
             polarAngle = FocusPointMeasurementService.GetPolarRadiusAngle(position, currentImageCenter, currentImageRadius, MaxAngle);
             if (!ConoscopeHorizontalVerticalProjection.TryConvertPolarToHorizontalVertical(
+                ConoscopeCoordinateSystem.HorizontalVertical,
                 polarAngle,
                 azimuthAngle,
                 MaxAngle,
@@ -2085,7 +2110,7 @@ namespace Conoscope
 
                 Point center;
                 int radius;
-                if (State.CoordinateSystem == ConoscopeCoordinateSystem.HorizontalVertical && horizontalVerticalProjection != null)
+                if (ConoscopeHorizontalVerticalProjection.IsProjectedCoordinateSystem(State.CoordinateSystem) && horizontalVerticalProjection != null)
                 {
                     center = horizontalVerticalProjection.OutputCenter;
                     radius = (int)Math.Round(horizontalVerticalProjection.OutputRadius);

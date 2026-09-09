@@ -9,11 +9,13 @@ namespace Conoscope.Core
     public enum ConoscopeCoordinateSystem
     {
         Polar = 0,
-        HorizontalVertical = 1
+        HorizontalVertical = 1,
+        NorthPolar = 2,
+        EastPolar = 3
     }
 
     /// <summary>
-    /// Cached reverse map from an H/V angular preview to the source polar image.
+    /// Cached reverse map from an Azimuthal, North Polar, or East Polar H/V preview to the source polar image.
     /// Source pixels remain authoritative; this object owns preview-only maps.
     /// </summary>
     internal sealed class ConoscopeHorizontalVerticalProjection : IDisposable
@@ -30,6 +32,7 @@ namespace Conoscope.Core
             Point sourceCenter,
             double sourcePixelsPerDegree,
             double maxPolarAngle,
+            ConoscopeCoordinateSystem coordinateSystem,
             int outputSize)
         {
             SourceWidth = sourceWidth;
@@ -37,6 +40,7 @@ namespace Conoscope.Core
             SourceCenter = sourceCenter;
             SourcePixelsPerDegree = sourcePixelsPerDegree;
             MaxPolarAngle = maxPolarAngle;
+            CoordinateSystem = coordinateSystem;
             OutputSize = outputSize;
             OutputCenter = new Point((outputSize - 1) / 2.0, (outputSize - 1) / 2.0);
             OutputRadius = (outputSize - 1) / 2.0;
@@ -63,6 +67,7 @@ namespace Conoscope.Core
         public Point SourceCenter { get; }
         public double SourcePixelsPerDegree { get; }
         public double MaxPolarAngle { get; }
+        public ConoscopeCoordinateSystem CoordinateSystem { get; }
         public int OutputSize { get; }
         public Point OutputCenter { get; }
         public double OutputRadius { get; }
@@ -75,6 +80,7 @@ namespace Conoscope.Core
             Point sourceCenter,
             double sourcePixelsPerDegree,
             double maxPolarAngle,
+            ConoscopeCoordinateSystem coordinateSystem,
             int maximumPreviewSide = DefaultMaximumPreviewSide)
         {
             if (sourceWidth <= 0 || sourceHeight <= 0)
@@ -90,6 +96,11 @@ namespace Conoscope.Core
             if (!double.IsFinite(maxPolarAngle) || maxPolarAngle <= 0 || maxPolarAngle >= 90)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxPolarAngle));
+            }
+
+            if (!IsProjectedCoordinateSystem(coordinateSystem))
+            {
+                throw new ArgumentOutOfRangeException(nameof(coordinateSystem));
             }
 
             int normalizedMaximum = Math.Max(3, maximumPreviewSide);
@@ -111,6 +122,7 @@ namespace Conoscope.Core
                 sourceCenter,
                 sourcePixelsPerDegree,
                 maxPolarAngle,
+                coordinateSystem,
                 Math.Max(3, outputSize));
         }
 
@@ -142,6 +154,7 @@ namespace Conoscope.Core
             horizontalAngle = (displayPoint.X - OutputCenter.X) / OutputPixelsPerDegree;
             verticalAngle = (OutputCenter.Y - displayPoint.Y) / OutputPixelsPerDegree;
             return TryMapHorizontalVerticalToSource(
+                CoordinateSystem,
                 horizontalAngle,
                 verticalAngle,
                 SourceCenter,
@@ -155,6 +168,7 @@ namespace Conoscope.Core
         }
 
         public static bool TryConvertHorizontalVerticalToPolar(
+            ConoscopeCoordinateSystem coordinateSystem,
             double horizontalAngle,
             double verticalAngle,
             double maxPolarAngle,
@@ -163,7 +177,8 @@ namespace Conoscope.Core
         {
             polarAngle = double.NaN;
             azimuthAngle = double.NaN;
-            if (!double.IsFinite(horizontalAngle)
+            if (!IsProjectedCoordinateSystem(coordinateSystem)
+                || !double.IsFinite(horizontalAngle)
                 || !double.IsFinite(verticalAngle)
                 || !double.IsFinite(maxPolarAngle)
                 || maxPolarAngle <= 0
@@ -174,14 +189,37 @@ namespace Conoscope.Core
                 return false;
             }
 
-            double tanHorizontal = Math.Tan(DegreesToRadians(horizontalAngle));
-            double tanVertical = Math.Tan(DegreesToRadians(verticalAngle));
-            polarAngle = RadiansToDegrees(Math.Atan(Math.Sqrt(tanHorizontal * tanHorizontal + tanVertical * tanVertical)));
-            azimuthAngle = NormalizeFullAngle(RadiansToDegrees(Math.Atan2(tanVertical, tanHorizontal)));
+            double horizontal = DegreesToRadians(horizontalAngle);
+            double vertical = DegreesToRadians(verticalAngle);
+            double x;
+            double y;
+            double z;
+            switch (coordinateSystem)
+            {
+                case ConoscopeCoordinateSystem.NorthPolar:
+                    x = Math.Cos(vertical) * Math.Sin(horizontal);
+                    y = Math.Sin(vertical);
+                    z = Math.Cos(vertical) * Math.Cos(horizontal);
+                    break;
+                case ConoscopeCoordinateSystem.EastPolar:
+                    x = Math.Sin(horizontal);
+                    y = Math.Cos(horizontal) * Math.Sin(vertical);
+                    z = Math.Cos(horizontal) * Math.Cos(vertical);
+                    break;
+                default:
+                    x = Math.Tan(horizontal);
+                    y = Math.Tan(vertical);
+                    z = 1;
+                    break;
+            }
+
+            polarAngle = RadiansToDegrees(Math.Atan2(Math.Sqrt(x * x + y * y), z));
+            azimuthAngle = NormalizeFullAngle(RadiansToDegrees(Math.Atan2(y, x)));
             return polarAngle <= maxPolarAngle + 0.000001;
         }
 
         public static bool TryConvertPolarToHorizontalVertical(
+            ConoscopeCoordinateSystem coordinateSystem,
             double polarAngle,
             double azimuthAngle,
             double maxPolarAngle,
@@ -190,7 +228,8 @@ namespace Conoscope.Core
         {
             horizontalAngle = double.NaN;
             verticalAngle = double.NaN;
-            if (!double.IsFinite(polarAngle)
+            if (!IsProjectedCoordinateSystem(coordinateSystem)
+                || !double.IsFinite(polarAngle)
                 || !double.IsFinite(azimuthAngle)
                 || !double.IsFinite(maxPolarAngle)
                 || polarAngle < 0
@@ -203,10 +242,33 @@ namespace Conoscope.Core
 
             double theta = DegreesToRadians(polarAngle);
             double phi = DegreesToRadians(azimuthAngle);
-            double tanTheta = Math.Tan(theta);
-            horizontalAngle = RadiansToDegrees(Math.Atan(tanTheta * Math.Cos(phi)));
-            verticalAngle = RadiansToDegrees(Math.Atan(tanTheta * Math.Sin(phi)));
+            double x = Math.Sin(theta) * Math.Cos(phi);
+            double y = Math.Sin(theta) * Math.Sin(phi);
+            double z = Math.Cos(theta);
+            switch (coordinateSystem)
+            {
+                case ConoscopeCoordinateSystem.NorthPolar:
+                    horizontalAngle = RadiansToDegrees(Math.Atan2(x, z));
+                    verticalAngle = RadiansToDegrees(Math.Asin(Math.Clamp(y, -1, 1)));
+                    break;
+                case ConoscopeCoordinateSystem.EastPolar:
+                    horizontalAngle = RadiansToDegrees(Math.Asin(Math.Clamp(x, -1, 1)));
+                    verticalAngle = RadiansToDegrees(Math.Atan2(y, z));
+                    break;
+                default:
+                    horizontalAngle = RadiansToDegrees(Math.Atan2(x, z));
+                    verticalAngle = RadiansToDegrees(Math.Atan2(y, z));
+                    break;
+            }
+
             return double.IsFinite(horizontalAngle) && double.IsFinite(verticalAngle);
+        }
+
+        public static bool IsProjectedCoordinateSystem(ConoscopeCoordinateSystem coordinateSystem)
+        {
+            return coordinateSystem is ConoscopeCoordinateSystem.HorizontalVertical
+                or ConoscopeCoordinateSystem.NorthPolar
+                or ConoscopeCoordinateSystem.EastPolar;
         }
 
         public void Dispose()
@@ -235,6 +297,7 @@ namespace Conoscope.Core
                 {
                     double horizontalAngle = (column - OutputCenter.X) / OutputPixelsPerDegree;
                     bool isValid = TryMapHorizontalVerticalToSource(
+                        CoordinateSystem,
                         horizontalAngle,
                         verticalAngle,
                         SourceCenter,
@@ -254,6 +317,7 @@ namespace Conoscope.Core
         }
 
         private static bool TryMapHorizontalVerticalToSource(
+            ConoscopeCoordinateSystem coordinateSystem,
             double horizontalAngle,
             double verticalAngle,
             Point sourceCenter,
@@ -266,7 +330,7 @@ namespace Conoscope.Core
             out double azimuthAngle)
         {
             sourcePoint = default;
-            if (!TryConvertHorizontalVerticalToPolar(horizontalAngle, verticalAngle, maxPolarAngle, out polarAngle, out azimuthAngle))
+            if (!TryConvertHorizontalVerticalToPolar(coordinateSystem, horizontalAngle, verticalAngle, maxPolarAngle, out polarAngle, out azimuthAngle))
             {
                 return false;
             }
