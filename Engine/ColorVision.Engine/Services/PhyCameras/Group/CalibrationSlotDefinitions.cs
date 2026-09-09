@@ -48,6 +48,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public Func<GroupResource, CalibrationResource> GroupGetter { get; }
         public Action<GroupResource, CalibrationResource> GroupSetter { get; }
         public Func<CalibrationParam, CalibrationBase> ParamGetter { get; }
+
+        internal CalibrationResource? FindTemplateResource(CalibrationParam param, IEnumerable<CalibrationResource> resources)
+        {
+            string reference = ParamGetter(param).FilePath;
+            if (string.IsNullOrWhiteSpace(reference)) return null;
+            return resources.FirstOrDefault(resource => resource.SysResourceModel.Type == (int)ServiceType && resource.Name == reference);
+        }
     }
 
     internal static class CalibrationSlotDefinitions

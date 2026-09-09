@@ -114,6 +114,36 @@ public sealed class CompactTitleBarIntegrationContractTests
             MainWindowConfig.ShouldShowCompactMainWindowSetting(operatingSystemSupported));
     }
 
+    [Fact]
+    public void MainWindowAppearanceSettingsShareTheAppearanceSection()
+    {
+        var settings = MainWindowConfig.CreateWindowAppearanceSettings(
+            new MainWindowConfig(), showCompactMainWindow: true, showWindows10ContextMenu: true).ToList();
+
+        Assert.Equal(new[] {
+            nameof(MainWindowConfig.IsRestoreWindow),
+            nameof(MainWindowConfig.UseCompactMainWindow),
+            nameof(MainWindowConfig.IsWindows10ContextMenu)
+        }, settings.OrderBy(setting => setting.Order).Select(setting => setting.BindingName));
+        Assert.All(settings, setting => Assert.Equal(ConfigSettingConstants.SectionAppearance, setting.Section));
+    }
+
+    [Theory]
+    [InlineData("zh-CN", "启动时恢复窗口", "位置、大小和状态")]
+    [InlineData("zh-Hant", "啟動時還原視窗", "位置、大小與狀態")]
+    [InlineData("en", "Restore window at startup", "position, size, and state")]
+    public void RestoreWindowSettingHasLocalizedTitleAndDescription(string cultureName, string expectedTitle, string descriptionText)
+    {
+        PropertyInfo property = typeof(MainWindowConfig).GetProperty(nameof(MainWindowConfig.IsRestoreWindow))!;
+        string titleKey = property.GetCustomAttribute<DisplayNameAttribute>()!.DisplayName;
+        string descriptionKey = property.GetCustomAttribute<DescriptionAttribute>()!.Description;
+        var culture = new CultureInfo(cultureName);
+
+        Assert.Equal(expectedTitle, global::ColorVision.Properties.Resources.ResourceManager.GetString(titleKey, culture));
+        Assert.Contains(descriptionText,
+            global::ColorVision.Properties.Resources.ResourceManager.GetString(descriptionKey, culture));
+    }
+
     [Theory]
     [InlineData("zh-CN", "重启", "默认", "关闭", "旧主窗口", "实验")]
     [InlineData("zh-Hant", "重新啟動", "預設", "關閉", "舊主視窗", "實驗")]

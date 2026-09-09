@@ -25,13 +25,32 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         int BitsPerChannel,
         int Channels,
         float Gain,
-        float[] Exposure);
+        float[] Exposure)
+    {
+        public string Source { get; init; } = string.Empty;
+        public string? CalibrationHash { get; init; }
+    }
 
     public sealed record LumFourColorSpectrumCapture(
         ColorCorrectionYxy Measurement,
         IReadOnlyList<ColorCorrectionSpectrumPoint> Spectrum,
         int ResultId,
-        DateTimeOffset CapturedAt);
+        DateTimeOffset CapturedAt)
+    {
+        public double? PeakAd { get; init; }
+        public double? IntegrationTime { get; init; }
+        public int? NdPort { get; init; }
+        public string Source { get; init; } = string.Empty;
+
+        public static LumFourColorSpectrumCapture FromMeasurement(SpectrumColorMeasurement result) => new(
+            new ColorCorrectionYxy(result.Y, result.CieX, result.CieY),
+            result.Spectrum.Select(point => new ColorCorrectionSpectrumPoint(point.Wavelength, point.Value)).ToArray(),
+            result.ResultId, result.CapturedAt)
+        {
+            PeakAd = result.PeakAd, IntegrationTime = result.IntegrationTime,
+            NdPort = result.NdPort, Source = result.DeviceCode,
+        };
+    }
 
     public interface ILumFourColorCameraCaptureProvider
     {
@@ -50,6 +69,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             return Task.Run(() =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                if (!device.TryGetCalibrationTemplateFiles(calibration, out var files, out string? error))
+                    throw new InvalidOperationException(error ?? "无法解析相机校正模板。");
+                string? colorPath = files.SingleOrDefault(file => file.CalibrationType == CalibrationType.LumFourColor)?.FullPath;
+                if (colorPath == null)
+                    throw new InvalidOperationException("请选择启用了四色校正文件的相机模板。");
+                var calibrationSource = LumFourColorSourceSnapshot.Load(colorPath);
                 EnsureCameraConnected();
                 LocalCameraCaptureResult result = LocalCameraCaptureService.Capture(new LocalCameraCaptureRequest
                 {
@@ -65,6 +90,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
                 byte[] data = lease.CopyCieToArray();
                 cancellationToken.ThrowIfCancellationRequested();
+                calibrationSource.EnsureUnchanged();
                 return new LumFourColorCieCapture(
                     data,
                     lease.Metadata.Width,
@@ -72,7 +98,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                     lease.Metadata.CieBpp,
                     lease.Metadata.Channels,
                     lease.Metadata.Gain,
-                    lease.Metadata.Exposure.ToArray());
+                    lease.Metadata.Exposure.ToArray())
+                {
+                    Source = $"{device.Name} · {calibration.Name}",
+                    CalibrationHash = calibrationSource.Hash,
+                };
             }, cancellationToken);
         }
 
@@ -105,14 +135,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         public async Task<LumFourColorSpectrumCapture> CaptureAsync(LumFourColorCorrectionTarget target, CancellationToken cancellationToken = default)
         {
             SpectrumColorMeasurement result = await device.CaptureColorMeasurementAsync(cancellationToken);
-            ColorCorrectionSpectrumPoint[] spectrum = result.Spectrum
-                .Select(point => new ColorCorrectionSpectrumPoint(point.Wavelength, point.Value))
-                .ToArray();
-            return new LumFourColorSpectrumCapture(
-                new ColorCorrectionYxy(result.Y, result.CieX, result.CieY),
-                spectrum,
-                result.ResultId,
-                result.CapturedAt);
+            return LumFourColorSpectrumCapture.FromMeasurement(result);
         }
     }
 
@@ -124,6 +147,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         }
 
         public LumFourColorCorrectionTarget Target { get; }
+        public event EventHandler? Changed;
         public string Name => Target switch
         {
             LumFourColorCorrectionTarget.SinglePoint => "单点",
@@ -149,15 +173,42 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         public double? ReferenceY { get; private set; }
         public double? ReferenceCieX { get; private set; }
         public double? ReferenceCieY { get; private set; }
+        private string referenceYInput = string.Empty, referenceCieXInput = string.Empty, referenceCieYInput = string.Empty;
+        private ColorCorrectionYxy? acquiredReference;
+        public string ReferenceYInput { get => referenceYInput; set { if (referenceYInput == value) return; referenceYInput = value; OnPropertyChanged(); UpdateManualReference(); } }
+        public string ReferenceCieXInput { get => referenceCieXInput; set { if (referenceCieXInput == value) return; referenceCieXInput = value; OnPropertyChanged(); UpdateManualReference(); } }
+        public string ReferenceCieYInput { get => referenceCieYInput; set { if (referenceCieYInput == value) return; referenceCieYInput = value; OnPropertyChanged(); UpdateManualReference(); } }
+        public bool IsReferenceEdited { get; private set; }
+        public string ReferenceInputError { get; private set; } = string.Empty;
+        public bool CanRestoreReference => IsReferenceEdited && acquiredReference.HasValue;
         public IReadOnlyList<ColorCorrectionSpectrumPoint> Spectrum { get; private set; } = Array.Empty<ColorCorrectionSpectrumPoint>();
         public int? SpectrumResultId { get; private set; }
         public DateTimeOffset? SpectrumCapturedAt { get; private set; }
+        public double? SpectrumPeakAd { get; private set; }
+        public double? SpectrumIpPercent => LumFourColorDataChecks.IpPercent(SpectrumPeakAd);
+        public double? SpectrumIntegrationTime { get; private set; }
+        public int? SpectrumNdPort { get; private set; }
+        public string SpectrumSource { get; private set; } = string.Empty;
+        public string CameraSource => Frame?.Source ?? string.Empty;
+        public string SpectrumSourceDescription => IsReferenceEdited
+            ? acquiredReference.HasValue ? $"手动修改 · 原始来源：{SpectrumSource}" : "手动录入 · 无原始采集记录"
+            : SpectrumSource;
+        public string SpectrumDetailsHeading => IsReferenceEdited ? "原始光谱明细（仅供核对）" : "光谱明细";
+        public string SpectrumMetadataHeading => IsReferenceEdited ? "原始记录（仅供核对）" : "测量记录";
+        public string SpectrumQuality => IsReferenceEdited
+            ? HasSpectrumMeasurement ? "手动参考 · 计算前请核对数值和测量来源。" : ReferenceInputError
+            : !HasSpectrumMeasurement ? "待采集、选择或手动输入参考值" :
+            LumFourColorDataChecks.SpectrumWarning(SpectrumPeakAd) ?? $"IP {SpectrumIpPercent:F2}% · 合格（30%～95%）";
+        public string CameraState => HasCameraMeasurement ? "POI 已测量" : HasImage ? "待框选 POI" : "待取图或选图";
+        public string SpectrumState => IsReferenceEdited ? HasSpectrumMeasurement ? "手动参考待复核" : "手动输入待完善" : !HasSpectrumMeasurement ? "待采集或输入参考" :
+            LumFourColorDataChecks.SpectrumWarning(SpectrumPeakAd) == null ? "光谱 IP 合格" : "光谱待复核";
+        public string PoiDescription => Poi is PoiMeasurementPoint poi ? $"{(poi.Shape == PoiMeasurementShape.Circle ? "圆形" : "矩形")} · 中心 ({poi.X}, {poi.Y}) · {poi.Width} × {poi.Height} px" : "尚未绘制";
         public bool HasImage => Frame != null;
         public bool HasCameraMeasurement => CameraY.HasValue && CameraCieX.HasValue && CameraCieY.HasValue;
-        public bool HasSpectrumMeasurement => ReferenceY.HasValue && ReferenceCieX.HasValue && ReferenceCieY.HasValue && Spectrum.Count > 0;
+        public bool HasSpectrumMeasurement => ReferenceY.HasValue && ReferenceCieX.HasValue && ReferenceCieY.HasValue && (IsReferenceEdited || Spectrum.Count > 0);
         public bool IsComplete => HasCameraMeasurement && HasSpectrumMeasurement;
         public string Progress => IsComplete
-            ? "已完成"
+            ? IsReferenceEdited ? "手动参考待复核" : LumFourColorDataChecks.SpectrumWarning(SpectrumPeakAd) == null ? "数据齐全" : "光谱待复核"
             : HasCameraMeasurement
                 ? "待采集光谱"
                 : HasSpectrumMeasurement
@@ -175,11 +226,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
         public void SetCameraMeasurement(PoiMeasurementPoint poi, PoiMeasurementResult result)
         {
+            ClearCameraMeasurement();
             if (!float.IsFinite(result.X) || !float.IsFinite(result.Y) || !float.IsFinite(result.Z) ||
                 !float.IsFinite(result.ChromaX) || !float.IsFinite(result.ChromaY))
             {
                 throw new InvalidOperationException("POI 返回的 XYZ 或 CIE x/y 无效。");
             }
+            LumFourColorDataChecks.ValidateYxy(new ColorCorrectionYxy(result.Y, result.ChromaX, result.ChromaY), "相机 POI");
 
             Poi = poi;
             CameraX = result.X;
@@ -192,6 +245,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
         public void SetSpectrumMeasurement(LumFourColorSpectrumCapture result)
         {
+            ClearSpectrum();
             ArgumentNullException.ThrowIfNull(result);
             if (!double.IsFinite(result.Measurement.Y) || !double.IsFinite(result.Measurement.CieX) ||
                 !double.IsFinite(result.Measurement.CieY) || result.Spectrum == null || result.Spectrum.Count == 0 ||
@@ -199,14 +253,122 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             {
                 throw new InvalidOperationException("光谱仪返回的 Y、CIE x/y 或光谱数据无效。");
             }
+            LumFourColorDataChecks.ValidateYxy(result.Measurement, "光谱测量值");
+            _ = LumFourColorDataChecks.SpectrumWarning(result.PeakAd);
+            for (int i = 0; i < result.Spectrum.Count; i++)
+            {
+                if (result.Spectrum[i].Wavelength <= 0 || (i > 0 && result.Spectrum[i].Wavelength <= result.Spectrum[i - 1].Wavelength))
+                    throw new InvalidOperationException("光谱波长必须为正数并严格递增，不能重复或错序。");
+            }
 
             ReferenceY = result.Measurement.Y;
             ReferenceCieX = result.Measurement.CieX;
             ReferenceCieY = result.Measurement.CieY;
-            Spectrum = result.Spectrum;
+            Spectrum = Array.AsReadOnly(result.Spectrum.ToArray());
             SpectrumResultId = result.ResultId;
-            SpectrumCapturedAt = result.CapturedAt;
+            SpectrumCapturedAt = result.CapturedAt == default ? null : result.CapturedAt;
+            SpectrumPeakAd = result.PeakAd;
+            SpectrumIntegrationTime = result.IntegrationTime;
+            SpectrumNdPort = result.NdPort;
+            SpectrumSource = result.Source;
+            acquiredReference = result.Measurement;
+            SetReferenceInputs(result.Measurement);
             RaiseStateChanged();
+        }
+
+        private void SetReferenceInputs(ColorCorrectionYxy? values)
+        {
+            referenceYInput = values?.Y.ToString("R", CultureInfo.CurrentCulture) ?? string.Empty;
+            referenceCieXInput = values?.CieX.ToString("R", CultureInfo.CurrentCulture) ?? string.Empty;
+            referenceCieYInput = values?.CieY.ToString("R", CultureInfo.CurrentCulture) ?? string.Empty;
+            OnPropertyChanged(nameof(ReferenceYInput));
+            OnPropertyChanged(nameof(ReferenceCieXInput));
+            OnPropertyChanged(nameof(ReferenceCieYInput));
+        }
+
+        private void UpdateManualReference()
+        {
+            IsReferenceEdited = true;
+            ReferenceY = ReferenceCieX = ReferenceCieY = null;
+            ReferenceInputError = string.Empty;
+            try
+            {
+                if (string.IsNullOrWhiteSpace(referenceYInput) || string.IsNullOrWhiteSpace(referenceCieXInput) || string.IsNullOrWhiteSpace(referenceCieYInput))
+                    throw new InvalidOperationException("请完整填写参考 Y、CIE x、CIE y。");
+                var value = new ColorCorrectionYxy(ParseReferenceNumber(referenceYInput, "Y"), ParseReferenceNumber(referenceCieXInput, "CIE x"), ParseReferenceNumber(referenceCieYInput, "CIE y"));
+                LumFourColorDataChecks.ValidateYxy(value, "手动参考值");
+                ReferenceY = value.Y;
+                ReferenceCieX = value.CieX;
+                ReferenceCieY = value.CieY;
+            }
+            catch (InvalidOperationException ex) { ReferenceInputError = ex.Message; }
+            RaiseStateChanged();
+        }
+
+        private static double ParseReferenceNumber(string text, string name)
+        {
+            if ((!double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out double value)
+                && !double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value)) || !double.IsFinite(value))
+                throw new InvalidOperationException($"参考 {name} 必须是有限数值。");
+            return value;
+        }
+
+        public void RestoreReference()
+        {
+            if (acquiredReference is not ColorCorrectionYxy original) return;
+            ReferenceY = original.Y;
+            ReferenceCieX = original.CieX;
+            ReferenceCieY = original.CieY;
+            IsReferenceEdited = false;
+            ReferenceInputError = string.Empty;
+            SetReferenceInputs(original);
+            RaiseStateChanged();
+        }
+
+        public void ClearCameraMeasurement()
+        {
+            Poi = null;
+            CameraX = CameraY = CameraZ = CameraCieX = CameraCieY = null;
+            RaiseStateChanged();
+        }
+
+        public void ClearCamera()
+        {
+            Frame = null;
+            Preview = null;
+            ClearCameraMeasurement();
+        }
+
+        public void ClearSpectrum()
+        {
+            ReferenceY = ReferenceCieX = ReferenceCieY = null;
+            acquiredReference = null;
+            IsReferenceEdited = false;
+            ReferenceInputError = string.Empty;
+            SetReferenceInputs(null);
+            Spectrum = Array.Empty<ColorCorrectionSpectrumPoint>();
+            SpectrumResultId = null;
+            SpectrumCapturedAt = null;
+            SpectrumPeakAd = SpectrumIntegrationTime = null;
+            SpectrumNdPort = null;
+            SpectrumSource = string.Empty;
+            RaiseStateChanged();
+        }
+
+        internal IReadOnlyList<string> GetWarnings(string sourceHash)
+        {
+            List<string> warnings = new();
+            if (Frame?.CalibrationHash == null)
+                warnings.Add($"{Name}：导入图像未记录校正模板，请核对使用的是当前原校正文件");
+            else if (Frame.CalibrationHash != sourceHash)
+                warnings.Add($"{Name}：图像使用的四色校正文件与当前原文件不一致");
+            if (HasSpectrumMeasurement && IsReferenceEdited)
+                warnings.Add($"{Name}：参考 Y / x / y 已手动录入或修改，请核对数值、色块和测量来源；原始记录的 IP 不能验证手动参考值");
+            if (HasSpectrumMeasurement && !IsReferenceEdited && LumFourColorDataChecks.SpectrumWarning(SpectrumPeakAd) is string warning)
+                warnings.Add($"{Name}：{warning}");
+            if (HasSpectrumMeasurement && !IsReferenceEdited && !SpectrumCapturedAt.HasValue)
+                warnings.Add($"{Name}：缺少光谱采集时间，请核对是否为当前色块的数据");
+            return warnings;
         }
 
         public ColorCorrectionMeasurement CreateMeasurement()
@@ -217,7 +379,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             return new ColorCorrectionMeasurement(
                 new ColorCorrectionYxy(CameraY!.Value, CameraCieX!.Value, CameraCieY!.Value),
                 new ColorCorrectionYxy(ReferenceY!.Value, ReferenceCieX!.Value, ReferenceCieY!.Value),
-                Spectrum);
+                IsReferenceEdited ? null : Spectrum);
         }
 
         private void RaiseStateChanged()
@@ -235,6 +397,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             OnPropertyChanged(nameof(ReferenceY));
             OnPropertyChanged(nameof(ReferenceCieX));
             OnPropertyChanged(nameof(ReferenceCieY));
+            OnPropertyChanged(nameof(IsReferenceEdited));
+            OnPropertyChanged(nameof(ReferenceInputError));
+            OnPropertyChanged(nameof(CanRestoreReference));
+            OnPropertyChanged(nameof(SpectrumSourceDescription));
+            OnPropertyChanged(nameof(SpectrumMetadataHeading));
+            OnPropertyChanged(nameof(SpectrumDetailsHeading));
             OnPropertyChanged(nameof(Spectrum));
             OnPropertyChanged(nameof(SpectrumResultId));
             OnPropertyChanged(nameof(SpectrumCapturedAt));
@@ -243,6 +411,17 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             OnPropertyChanged(nameof(HasSpectrumMeasurement));
             OnPropertyChanged(nameof(IsComplete));
             OnPropertyChanged(nameof(Progress));
+            OnPropertyChanged(nameof(CameraSource));
+            OnPropertyChanged(nameof(CameraState));
+            OnPropertyChanged(nameof(PoiDescription));
+            OnPropertyChanged(nameof(SpectrumSource));
+            OnPropertyChanged(nameof(SpectrumPeakAd));
+            OnPropertyChanged(nameof(SpectrumIpPercent));
+            OnPropertyChanged(nameof(SpectrumIntegrationTime));
+            OnPropertyChanged(nameof(SpectrumNdPort));
+            OnPropertyChanged(nameof(SpectrumQuality));
+            OnPropertyChanged(nameof(SpectrumState));
+            Changed?.Invoke(this, EventArgs.Empty);
         }
     }
 
@@ -273,6 +452,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             if (!IsComplete)
                 throw new InvalidOperationException("请先完成全部相机和光谱采集。");
 
+            var duplicate = Samples.Where(sample => sample.SpectrumResultId > 0 && !sample.IsReferenceEdited)
+                .GroupBy(sample => (sample.SpectrumSource, sample.SpectrumResultId))
+                .FirstOrDefault(group => group.Count() > 1);
+            if (duplicate != null)
+                throw new InvalidOperationException($"{string.Join("、", duplicate.Select(sample => sample.Name))} 使用了同一条光谱结果，请为每个色块选择对应的测量数据。");
+
             if (IsSinglePoint)
                 return LumFourColorCorrectionCalculator.CorrectSinglePoint(source, Samples[0].CreateMeasurement());
 
@@ -296,7 +481,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             using (file)
             {
                 byte[] data = file.Data?.ToArray() ?? throw new InvalidOperationException("CVCIE 文件没有图像数据。");
-                return new LumFourColorCieCapture(data, file.Cols, file.Rows, file.Bpp, file.Channels, file.Gain, file.Exp?.ToArray() ?? Array.Empty<float>());
+                return new LumFourColorCieCapture(data, file.Cols, file.Rows, file.Bpp, file.Channels, file.Gain, file.Exp?.ToArray() ?? Array.Empty<float>()) { Source = System.IO.Path.GetFullPath(filePath) };
             }
         }
 

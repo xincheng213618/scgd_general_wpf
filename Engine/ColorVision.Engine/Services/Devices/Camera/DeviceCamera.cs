@@ -403,7 +403,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     continue;
                 }
 
-                CalibrationResource? resource = slot.GroupGetter(groupResource);
+                CalibrationResource? resource = GetCalibrationTemplateResource(param, slot);
                 if (resource == null || !TryResolveCalibrationFilePath(resource, out string fullPath, out string relativePath))
                 {
                     string displayName = resource?.Name ?? slot.Key;
@@ -421,6 +421,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             calibrationFiles = resolvedFiles;
             return true;
+        }
+
+        internal CalibrationResource? GetCalibrationTemplateResource(CalibrationParam param, CalibrationSlotDefinition slot)
+        {
+            if (PhyCamera == null) return null;
+            var resources = PhyCamera.VisualChildren.OfType<CalibrationResource>()
+                .Concat(PhyCamera.VisualChildren.OfType<GroupResource>().SelectMany(group => group.VisualChildren.OfType<CalibrationResource>()));
+            return slot.FindTemplateResource(param, resources);
         }
 
         internal bool TryResolveCalibrationFilePath(CalibrationResource resource, out string fullPath, out string relativePath)

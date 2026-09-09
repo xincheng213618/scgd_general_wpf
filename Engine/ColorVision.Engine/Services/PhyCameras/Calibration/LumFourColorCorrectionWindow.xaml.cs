@@ -1,4 +1,5 @@
 using ColorVision.Common.ThirdPartyApps;
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Media;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
@@ -9,32 +10,42 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.PhyCameras.Calibration
 {
-    public sealed class CorrectionMeasurementRow
+    public sealed class CorrectionMeasurementRow : ViewModelBase
     {
         public string Target { get; init; } = string.Empty;
-        public string CameraY { get; set; } = string.Empty;
-        public string CameraX { get; set; } = string.Empty;
-        public string CameraYChromaticity { get; set; } = string.Empty;
-        public string ReferenceY { get; set; } = string.Empty;
-        public string ReferenceX { get; set; } = string.Empty;
-        public string ReferenceYChromaticity { get; set; } = string.Empty;
+        private string cameraY = "", cameraX = "", cameraYChromaticity = "", referenceY = "", referenceX = "", referenceYChromaticity = "";
+        public string CameraY { get => cameraY; set { if (cameraY == value) return; cameraY = value; OnPropertyChanged(); } }
+        public string CameraX { get => cameraX; set { if (cameraX == value) return; cameraX = value; OnPropertyChanged(); } }
+        public string CameraYChromaticity { get => cameraYChromaticity; set { if (cameraYChromaticity == value) return; cameraYChromaticity = value; OnPropertyChanged(); } }
+        public string ReferenceY { get => referenceY; set { if (referenceY == value) return; referenceY = value; OnPropertyChanged(); } }
+        public string ReferenceX { get => referenceX; set { if (referenceX == value) return; referenceX = value; OnPropertyChanged(); } }
+        public string ReferenceYChromaticity { get => referenceYChromaticity; set { if (referenceYChromaticity == value) return; referenceYChromaticity = value; OnPropertyChanged(); } }
     }
 
     public partial class LumFourColorCorrectionWindow : Window
     {
         private readonly ObservableCollection<CorrectionMeasurementRow> rows = new();
         private CVRawManualCieConfig? correctedConfig;
+        private LumFourColorSourceSnapshot? sourceSnapshot;
 
         public LumFourColorCorrectionWindow(string? sourcePath = null)
         {
             InitializeComponent();
             this.ApplyCaption();
+            rows.CollectionChanged += (_, e) =>
+            {
+                if (e.NewItems != null)
+                    foreach (CorrectionMeasurementRow row in e.NewItems)
+                        row.PropertyChanged += (_, _) => ResetResult();
+            };
             MeasurementsGrid.ItemsSource = rows;
+            CommandManager.AddPreviewExecutedHandler(MeasurementsGrid, GridPreviewExecuted);
             SourcePathBox.Text = sourcePath ?? string.Empty;
             ShowFourColorRows();
         }
@@ -110,17 +121,71 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             rows.Add(new CorrectionMeasurementRow { Target = "W" });
         }
 
-        private void Calculate_Click(object sender, RoutedEventArgs e)
+        private void GridPreviewExecuted(object sender, ExecutedRoutedEventArgs e)
         {
-            if (!CVRawManualCieCalculator.TryLoadLumFourColorCalibrationDefaults(
-                    SourcePathBox.Text.Trim(), out CVRawManualCieConfig source, out string? errorMessage))
-            {
-                ShowError(errorMessage ?? "无法读取原四色校正文件。");
-                return;
-            }
+            if (e.Command != ApplicationCommands.Paste) return;
+            e.Handled = true;
+            Paste_Click(sender, e);
+        }
 
+        private void MeasurementsGrid_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (Keyboard.Modifiers != ModifierKeys.Control) return;
+            if (e.Key == Key.V)
+            {
+                e.Handled = true;
+                Paste_Click(sender, e);
+            }
+            else if (e.Key == Key.C)
+            {
+                MeasurementsGrid.CommitEdit(DataGridEditingUnit.Cell, true);
+                MeasurementsGrid.CommitEdit(DataGridEditingUnit.Row, true);
+                e.Handled = true;
+                ApplicationCommands.Copy.Execute(null, MeasurementsGrid);
+            }
+        }
+
+        internal void PasteMeasurements(string text)
+        {
+            int row = MeasurementsGrid.CurrentCell.Item is CorrectionMeasurementRow current ? rows.IndexOf(current) : 0;
+            int column = MeasurementsGrid.CurrentCell.Column?.DisplayIndex ?? 1;
+            MeasurementsGrid.CommitEdit(DataGridEditingUnit.Cell, true);
+            MeasurementsGrid.CommitEdit(DataGridEditingUnit.Row, true);
+            LumFourColorMeasurementClipboard.Paste(rows, text, row, column);
+            ResetResult();
+            StatusText.Text = "已粘贴，请核对色块顺序与测量来源。";
+        }
+
+        private void Paste_Click(object sender, RoutedEventArgs e)
+        {
+            try { PasteMeasurements(Clipboard.GetText()); }
+            catch (Exception ex) { StatusText.Text = ex.Message; }
+        }
+
+        private void CopyAll_Click(object sender, RoutedEventArgs e)
+        {
             try
             {
+                MeasurementsGrid.CommitEdit(DataGridEditingUnit.Cell, true);
+                MeasurementsGrid.CommitEdit(DataGridEditingUnit.Row, true);
+                Clipboard.SetText(LumFourColorMeasurementClipboard.CopyAll(rows));
+                StatusText.Text = "已复制表头及全部测量数据，可直接粘贴到 Excel。";
+            }
+            catch (Exception ex) { StatusText.Text = ex.Message; }
+        }
+
+        private void Calculate_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                correctedConfig = null;
+                SaveButton.IsEnabled = false;
+                MeasurementsGrid.CommitEdit(System.Windows.Controls.DataGridEditingUnit.Cell, true);
+                MeasurementsGrid.CommitEdit(System.Windows.Controls.DataGridEditingUnit.Row, true);
+                if (ManualDataConfirmed.IsChecked != true)
+                    throw new InvalidOperationException("请先核对输入来源、色块及光谱 IP。");
+                sourceSnapshot = LumFourColorSourceSnapshot.Load(SourcePathBox.Text.Trim());
+                CVRawManualCieConfig source = sourceSnapshot.Config;
                 if (SinglePointMode.IsChecked == true)
                 {
                     correctedConfig = LumFourColorCorrectionCalculator.CorrectSinglePoint(source, CreateMeasurement(rows[0]));
@@ -173,7 +238,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
             try
             {
-                File.WriteAllText(dialog.FileName, LumFourColorCorrectionCalculator.SerializeCalibrationFile(correctedConfig), new UTF8Encoding(false));
+                sourceSnapshot!.SaveCopy(dialog.FileName, correctedConfig);
                 StatusText.Text = $"已保存：{dialog.FileName}";
             }
             catch (Exception ex)
@@ -197,7 +262,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
         private static double ParseNumber(string text, string name)
         {
-            const NumberStyles styles = NumberStyles.Float | NumberStyles.AllowThousands;
+            const NumberStyles styles = NumberStyles.Float;
             if ((!double.TryParse(text, styles, CultureInfo.CurrentCulture, out double value)
                     && !double.TryParse(text, styles, CultureInfo.InvariantCulture, out value))
                 || !double.IsFinite(value))
@@ -223,6 +288,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         private void ResetResult()
         {
             correctedConfig = null;
+            sourceSnapshot = null;
+            if (ManualDataConfirmed != null) ManualDataConfirmed.IsChecked = false;
             if (ResultPreview != null)
                 ResultPreview.Text = string.Empty;
             if (StatusText != null)
@@ -233,13 +300,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
         private void ShowError(string message)
         {
-            correctedConfig = null;
-            ResultPreview.Text = string.Empty;
+            ResetResult();
             StatusText.Text = message;
             SaveButton.IsEnabled = false;
         }
 
         private void Close_Click(object sender, RoutedEventArgs e) => Close();
+        private void InputChanged(object sender, RoutedEventArgs e) => ResetResult();
     }
 
     public sealed class LumFourColorCorrectionAppProvider : IThirdPartyAppProvider

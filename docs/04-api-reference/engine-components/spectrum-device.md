@@ -41,7 +41,11 @@ related: ["engine.devices", "engine.native-bindings", "ui.property-grid", "plugi
 
 ## 四色校正的单次采集
 
-`DeviceSpectrum.CaptureColorMeasurementAsync` 复用现有 `GetData` 指令、设备状态检查、动态超时和本次 `MasterId` 数据库查询，一次返回 `fPh`、`fx`、`fy` 以及相对光谱。它与普通测量、连续测量和光谱校正共用设备测量门禁；忙碌时拒绝并发，不另发第二次采集。输出只拒绝非有限的 Y/x/y 或光谱值，有限负数原样保留。波长优先使用结果中的起始波长和正间隔，缺少时按点数回退 380 nm 与 0.1/1 nm。
+`DeviceSpectrum.CaptureColorMeasurementAsync` 复用现有 `GetData` 指令、设备状态检查、动态超时和本次 `MasterId` 数据库查询，一次返回原始 `fPh`、`fx`、`fy`、相对光谱及 `fIp` 峰值 AD、积分时间、ND、设备 Code、结果 ID 与时间。它与普通测量、连续测量和光谱校正共用设备测量门禁；忙碌时拒绝并发，不另发第二次采集。该色度接口拒绝光通量 / EQE 结果与非有限的 Y/x/y 或光谱值，有限负数原样保留。波长优先使用结果中的起始波长和正间隔，缺少时按点数回退 380 nm 与 0.1/1 nm。
+
+`GetRecentColorMeasurementsAsync` 只读查询当前设备最近 100 条非光通量结果的摘要；`LoadColorMeasurementAsync` 再次按设备 Code、ID 和测量类型读取原始值及完整光谱。两者不触发硬件采集，已有结果和现场采集共用 `CreateColorMeasurement` 转换，不从已做亮度 / 负值裁剪的显示字符串回读数据。当前提供数据库历史选择，不解析外部 CSV / Excel。
+
+历史结果缺少采集时间时保留未知状态，不以当前时间补齐；窗口要求核对其色块归属。峰值 AD 缺失保持 null；四色校正窗口按 AD / 65535 × 100% 检查 IP 30%～95%，非法 AD 拒绝，缺失或范围异常需复核，详见[四色校正采集](../../01-user-guide/devices/calibration.md#四色校正采集)。
 
 该接口只完成光谱仪的一次采集，不切换 ND、画面或外部机构。四色校正窗口负责将结果绑定到当前 R/G/B/W 样本；现场仍需核对设备连接、当前 ND、被测画面与数据库结果归属。
 

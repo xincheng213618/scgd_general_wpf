@@ -28,7 +28,7 @@ related: ["platform.architecture", "platform.startup-integrity", "delivery.updat
 | 恢复选择 | 上次尝试未完成，或显式请求 `recovery` 时，在外部插件装载前显示恢复窗口；退出则不继续，继续时采用用户选定的插件跳过和向导策略 |
 | 外部扩展与窗口 | 装载允许的插件，或记录 `PluginsSkipped`；封存模块目录，初始化 WinForms 视觉样式，再显示 `WizardWindow` 或 `StartWindow` |
 
-单实例判断使用 `Debugger.IsAttached` 和 `APPConfig.IsMute`（“允许多实例”）。未附加调试器且不允许多实例时，新启动会直接强制结束同会话、同安装路径的较早实例，不限于异常进程；`--debug` 不参与这个判断。`SingleInstanceStartupWindow` 展示退出进度，`SingleInstanceStartupCoordinator` 在失败后等待用户重试、仅本次直接多开或取消；[单实例启动恢复](../../00-getting-started/first-steps.md#旧进程未退出时重新启动)维护完整操作契约。取消或直接打开会先取消并等待当前结束操作收尾，避免新实例启动后继续结束其它旧进程。窗口期间临时使用显式关闭模式，返回时恢复原有 MainWindow 与 ShutdownMode，防止辅助窗口关闭导致整个应用退出。确认旧实例退出并取得单实例锁后才重载磁盘配置；重载失败保留自动保存关闭并记录错误。直接打开分支不要求取得单实例锁，也不改写多实例设置。旧版命名管道关闭协议继续保留兼容入口，普通窗口关闭仍使用既有流程。真实启动可能更改配置、替换旧实例并按设置启动功能，文档核验不需要执行它。
+单实例判断使用 `Debugger.IsAttached` 和 `APPConfig.AllowMultipleInstances`（“允许程序多开”，默认 `false`）。旧的 `IsMute` 持久化键不迁移，升级后按默认关闭多开并在下次保存时写入语义明确的新键。未附加调试器且不允许多实例时，新启动会直接强制结束同会话、同安装路径的较早实例，不限于异常进程；`--debug` 不参与这个判断。`SingleInstanceStartupWindow` 展示退出进度，`SingleInstanceStartupCoordinator` 在失败后等待用户重试、仅本次直接多开或取消；[单实例启动恢复](../../00-getting-started/first-steps.md#旧进程未退出时重新启动)维护完整操作契约。取消或直接打开会先取消并等待当前结束操作收尾，避免新实例启动后继续结束其它旧进程。窗口期间临时使用显式关闭模式，返回时恢复原有 MainWindow 与 ShutdownMode，防止辅助窗口关闭导致整个应用退出。确认旧实例退出并取得单实例锁后才重载磁盘配置；重载失败保留自动保存关闭并记录错误。直接打开分支不要求取得单实例锁，也不改写多实例设置。旧版命名管道关闭协议继续保留兼容入口，普通窗口关闭仍使用既有流程。真实启动可能更改配置、替换旧实例并按设置启动功能，文档核验不需要执行它。
 
 普通启动在 `WizardCompletionKey=false` 时进入向导；维护请求或恢复选择也可要求显示向导。向导步骤、保存与重启见[配置向导](../../04-api-reference/ui-components/wizards.md)。启动语言读取及设置中更换语言的区别见[界面语言](../../04-api-reference/ui-components/localization.md)。
 

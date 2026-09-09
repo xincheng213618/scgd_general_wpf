@@ -33,19 +33,19 @@ namespace ColorVision
         [ConfigSetting]
         [DisplayName("AllowMultipleInstances")]
         [Description("AllowMultipleInstancesDescription")]
-        public bool IsMute
+        public bool AllowMultipleInstances
         {
-            get => _IsMute;
+            get => _allowMultipleInstances;
             set
             {
-                if (_IsMute == value)
+                if (_allowMultipleInstances == value)
                     return;
 
-                _IsMute = value;
+                _allowMultipleInstances = value;
                 OnPropertyChanged();
             }
         }
-        private bool _IsMute = true;
+        private bool _allowMultipleInstances;
     }
 
     /// <summary>
@@ -224,7 +224,7 @@ namespace ColorVision
                 TryCloseSingleInstanceReplacement,
                 FinalizeSingleInstanceReplacementShutdown);
             bool enableAutoSave = true;
-            bool allowMultipleInstances = appConfig.IsMute;
+            bool allowMultipleInstances = appConfig.AllowMultipleInstances;
             if (SingleInstanceStartupPolicy.Decide(
                 Debugger.IsAttached,
                 allowMultipleInstances) == SingleInstanceStartupAction.ReplaceEarlierInstances)
@@ -267,7 +267,7 @@ namespace ColorVision
                     {
                         configHandler.ReloadFromDisk();
                         appConfig = configHandler.GetRequiredService<APPConfig>();
-                        appConfig.IsMute = false;
+                        appConfig.AllowMultipleInstances = false;
                         configHandler.Save<APPConfig>();
                         ((log4net.Repository.Hierarchy.Hierarchy)log4net.LogManager.GetRepository()).Root.Level = LogConfig.Instance.LogLevel;
                         this.ApplyTheme(ThemeConfig.Instance.Theme);
@@ -283,7 +283,7 @@ namespace ColorVision
                         try
                         {
                             appConfig = configHandler.GetRequiredService<APPConfig>();
-                            appConfig.IsMute = false;
+                            appConfig.AllowMultipleInstances = false;
                         }
                         catch (Exception recoveryException)
                         {
@@ -458,9 +458,9 @@ namespace ColorVision
 
         private async void AppConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName != nameof(APPConfig.IsMute)
+            if (e.PropertyName != nameof(APPConfig.AllowMultipleInstances)
                 || sender is not APPConfig appConfig
-                || appConfig.IsMute
+                || appConfig.AllowMultipleInstances
                 || _isSingleInstanceReplacement
                 || _singleInstanceRuntimeCoordinator == null)
             {
@@ -480,9 +480,9 @@ namespace ColorVision
             catch (Exception ex)
             {
                 log.Error("Unable to disable multiple-instance mode. Restoring the previous setting.", ex);
-                if (!appConfig.IsMute)
+                if (!appConfig.AllowMultipleInstances)
                 {
-                    appConfig.IsMute = true;
+                    appConfig.AllowMultipleInstances = true;
                     ConfigHandler.GetInstance().Save<APPConfig>();
                 }
             }
@@ -584,7 +584,7 @@ namespace ColorVision
                         try
                         {
                             APPConfig appConfig = ConfigHandler.GetInstance().GetRequiredService<APPConfig>();
-                            appConfig.IsMute = false;
+                            appConfig.AllowMultipleInstances = false;
                             ConfigHandler.GetInstance().Save<APPConfig>();
                         }
                         catch (Exception ex)

@@ -515,6 +515,12 @@
   <data name="ConfigEnableDesktopPetDescription" xml:space="preserve">
     <value>顯示或隱藏桌面寵物元件。</value>
   </data>
+  <data name="StartRecoverUILayout" xml:space="preserve">
+    <value>啟動時還原視窗</value>
+  </data>
+  <data name="StartRecoverUILayoutDescription" xml:space="preserve">
+    <value>啟動時還原上次儲存的主視窗位置、大小與狀態。</value>
+  </data>
   <data name="ConfigUseCompactMainWindow" xml:space="preserve">
     <value>緊湊主視窗（重新啟動後生效）</value>
   </data>

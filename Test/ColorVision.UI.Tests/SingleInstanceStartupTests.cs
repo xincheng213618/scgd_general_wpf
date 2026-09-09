@@ -1,4 +1,5 @@
 using ColorVision.Update;
+using Newtonsoft.Json;
 using System.IO;
 using System.IO.Pipes;
 
@@ -6,6 +7,20 @@ namespace ColorVision.UI.Tests
 {
     public sealed class SingleInstanceStartupTests
     {
+        [Fact]
+        public void AppConfigDefaultsToSingleInstanceAndIgnoresTheLegacyIsMuteKey()
+        {
+            Assert.False(new APPConfig().AllowMultipleInstances);
+
+            APPConfig upgraded = JsonConvert.DeserializeObject<APPConfig>("""{"IsMute":true}""")!;
+            Assert.False(upgraded.AllowMultipleInstances);
+
+            upgraded.AllowMultipleInstances = true;
+            string persisted = JsonConvert.SerializeObject(upgraded);
+            Assert.Contains("\"AllowMultipleInstances\":true", persisted);
+            Assert.DoesNotContain("\"IsMute\"", persisted);
+        }
+
         [Theory]
         [InlineData(false, false, true)]
         [InlineData(true, false, false)]

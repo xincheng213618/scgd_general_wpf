@@ -99,32 +99,30 @@ namespace ColorVision
                     ViewType = typeof(DesktopPetSettingsControl),
                     Order = 20,
                 },
-                new ConfigSettingMetadata
-                {
-                    BindingName = nameof(IsRestoreWindow),
-                    Source = Instance
-                }
             };
 
-            if (ShouldShowCompactMainWindowSetting(CompactTitleBarChrome.IsSupportedOperatingSystem))
-            {
-                list.Add(new ConfigSettingMetadata
-                {
-                    BindingName = nameof(UseCompactMainWindow),
-                    Source = Instance
-                });
-            }
-
-            if (Tool.IsWin11)
-            {
-                list.Add(new ConfigSettingMetadata
-                {
-                    BindingName = nameof(IsWindows10ContextMenu),
-                    Source = Instance,
-                });
-            }
+            list.AddRange(CreateWindowAppearanceSettings(Instance,
+                ShouldShowCompactMainWindowSetting(CompactTitleBarChrome.IsSupportedOperatingSystem), Tool.IsWin11));
             return list;
         }
+
+        internal static IEnumerable<ConfigSettingMetadata> CreateWindowAppearanceSettings(
+            MainWindowConfig source, bool showCompactMainWindow, bool showWindows10ContextMenu)
+        {
+            yield return CreateAppearanceSetting(nameof(IsRestoreWindow), source, -20);
+            if (showCompactMainWindow)
+                yield return CreateAppearanceSetting(nameof(UseCompactMainWindow), source, -10);
+            if (showWindows10ContextMenu)
+                yield return CreateAppearanceSetting(nameof(IsWindows10ContextMenu), source, 0);
+        }
+
+        private static ConfigSettingMetadata CreateAppearanceSetting(string bindingName, MainWindowConfig source, int order) => new()
+        {
+            BindingName = bindingName,
+            Source = source,
+            Section = ConfigSettingConstants.SectionAppearance,
+            Order = order,
+        };
 
         internal static bool ShouldShowCompactMainWindowSetting(bool operatingSystemSupported) =>
             operatingSystemSupported;

@@ -50,6 +50,7 @@ public class CalibrationEditorInteractionTests
                     "/HandyControl;component/Themes/Theme.xaml",
                     "/ColorVision.Themes;component/Themes/White.xaml",
                     "/ColorVision.Themes;component/Themes/Base.xaml",
+                    "/ColorVision.Themes;component/Themes/Icons/Images.xaml",
                 })
                 {
                     ResourceDictionary dictionary = new() { Source = new Uri(source, UriKind.Relative) };

@@ -1,11 +1,11 @@
-﻿---
+---
 knowledge_id: "operations.calibration"
 knowledge_type: "topic"
 status: "current"
 summary: "校准服务绑定物理相机并执行本地文件或MQTT校正；模板按Native执行链选用存在的校正文件，输出、显示、落库与缓存删除是不同完成边界。"
 aliases: ["校准服务","本地校正","标定资源","校准模板打不开","校正参数设置","四色校正采集","LumFourColorCalibrationSession","CalibrationControl","CalibrationSlotDefinitions","清理校准缓存","UseLocalCalibration","DeviceCalibration","LocalFileCalibrationService","MQTTCalibration"]
-code_paths: ["Engine/ColorVision.Engine/Services/Devices/Calibration/DeviceCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/ConfigCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DisplayCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/LocalFileCalibrationService.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/MQTTCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/Views/ViewCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/InfoCalibration.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationParam.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationSlotDefinitions.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheManagerWindow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs","Test/ColorVision.UI.Tests/CalibrationEditorInteractionTests.cs"]
+code_paths: ["Engine/ColorVision.Engine/Services/Devices/Calibration/DeviceCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/ConfigCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DisplayCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/LocalFileCalibrationService.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/MQTTCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/Views/ViewCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/InfoCalibration.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationParam.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationSlotDefinitions.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorPoiEditor.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheManagerWindow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs","Test/ColorVision.UI.Tests/CalibrationEditorInteractionTests.cs","Test/ColorVision.UI.Tests/LumFourColorWorkflowSafetyTests.cs"]
 related: ["engine.devices","operations.device-configuration","operations.physical-camera","flow.session"]
 ---
 
@@ -23,15 +23,26 @@ related: ["engine.devices","operations.device-configuration","operations.physica
 
 模板中的“模板校正配置”仅显示文件引用非空的校正项（未启用但已配置的项仍显示），可从当前相机同类型资源中选择或手工输入文件引用，只修改当前模板的文件名和资源 ID，不改写校正组。切换模板保留已保存引用；切换校正组时使用该组的默认文件。顶部“校正组管理”可修改组资源，返回后刷新本机状态。参数区展示当前组增益及曝光、ND、光圈、焦距和对焦距离，后五项不参与模板校正逻辑。
 
-模板行将文件状态和定位/编辑操作共用同一位置：文件缺失时显示“本机缺失”，存在时显示定位与适用的编辑图标，不再额外展示存在状态。悬停文件引用可查看完整文本。空引用项在加载或切换时隐藏；新增组资源仍从“校正组管理”进入。文件状态与启用选择相互独立：“未配置”表示引用为空，“本机缺失”表示当前引用未匹配到本机可访问的资源文件，“本机存在”仅证明文件存在，不证明内容有效或远端服务能访问。状态检查不会取消已保存的勾选；缺失时仍可更换引用、开启或关闭校正项。定位只对本机存在的资源可用；均匀场、DSNU、缺陷点和线性度采用二进制格式，不显示文本编辑入口，`CalibrationResource.Edit` 同样禁止这四类及未知类型。暗噪声、色偏、畸变、ColorDiff、角度偏移及亮度/单色/四色/多色为文本校正类型，可在文件存在时编辑，不按 `.txt` 后缀判断。执行前需要核对所启用文件的实际可用性，模板修改仍需点击模板列表下方“保存”。
+模板行将文件状态和定位/编辑操作共用同一位置：文件缺失时显示“本机缺失”，存在时显示定位与适用的编辑图标，不再额外展示存在状态。悬停文件引用可查看完整文本。空引用项在加载或切换时隐藏；新增组资源仍从“校正组管理”进入。文件状态与启用选择相互独立：“未配置”表示引用为空，“本机缺失”表示当前引用未匹配到本机可访问的资源文件，“本机存在”仅证明文件存在，不证明内容有效或远端服务能访问。状态检查不会取消已保存的勾选；缺失时仍可更换引用、开启或关闭校正项。定位只对本机存在的资源可用；均匀场、DSNU、缺陷点和线性度采用二进制格式，不显示文本编辑入口，`CalibrationResource.Edit` 同样禁止这四类及未知类型。暗噪声、色偏、畸变、ColorDiff、角度偏移及亮度/单色/四色/多色为文本校正类型，可在文件存在时编辑，不按 `.txt` 后缀判断。本地取图和四色窗口带入文件按模板保存的文件引用、校正类型查找资源，不退回校正组默认文件；引用缺失时提示失败。执行前需要核对所启用文件的实际可用性，模板修改仍需点击模板列表下方“保存”。
 
 成像校正的显示、分组保存与 Native 加载共用 `CalibrationSlotDefinitions.NormalSlots`，顺序表示实际执行链而不是 `CalibrationType` 枚举编号：`DarkNoise → DefectPoint → DSNU → Uniformity → ColorShift → Distortion → LineArity → ColorDiff → AngleShift`。Native `CalibrationContext` 按加载顺序执行非色度项，并把互斥的亮度/色度转换延迟到最后；亮度与四色优先显示，单色和多色弱化显示但仍可选择。
 
 ## 四色校正采集
 
-完整采集窗口把计算器外的业务步骤拆成相机采集和光谱采集两个提供方。单点包含一个样本；RGBW 固定按 R、G、B、W 建立四个样本。相机侧用选中的校正模板取得内存 CIE，操作员在预览上绘制矩形 POI，程序通过标准 `PoiMeasurementService.CalculateRaw` 得到原始 XYZ/x/y；光谱侧调用选中光谱仪的一次 `GetData`，读取本次数据库结果的 Y/x/y 和相对光谱。两侧可以按现场条件任意先后采集，全部样本完成后才允许调用现有系数计算器。
+“四色校正”默认使用较大的窗口（1600×1060，受屏幕工作区限制），图像与光谱参考并排显示，相机测量值放在侧栏，为 9566×6548 等横向图像保留显示空间。图像等比缩放，横向色块列出两侧状态。单点只需一组；RGBW 需要四组，采集顺序不限。
 
-测量和转换只拒绝 NaN/Infinity 及 CIE y 为 0，不把有限负数裁剪为 0。重新取图只清除该样本的 POI 和相机测量值，已经采集的光谱继续保留；切换单点/RGBW 会重建整个会话。保存沿用另存副本，不直接覆盖原校正文件。窗口当前不控制 PG 画面、ND 或外部机构，操作员需在每个样本间完成现场切换。
+1. 选择相机和校正模板时，模板中配置的四色校正文件会自动填入原文件栏；也可点击“选择文件”手动指定。文件不存在或无法读取会提示，不能静默使用之前模板带入的文件。多设备时不默认选择第一台，模板需显式选择；真机取图要求模板启用四色校正。
+2. 选中色块，点击“相机取图”或“选择 CIE”。图像使用 `ImageView`，默认圆形 POI，可切换矩形；拖动绘制后自动读取原始 XYZ/x/y。选中区域后可拖动位置、调整尺寸，也可用图像内的尺寸面板设置半径或宽高。“重画 POI”重新绘制，每个色块只保留一个区域。形状及绘图默认尺寸通过 `LumFourColorPoiOptions` 保存；区域超出图像或尺寸无效时清除旧测量并提示调整。
+3. 参考 Y、CIE x、CIE y 可直接输入或修改，不需要先连接光谱仪。也可点击“采集光谱”，或在“选择已有…”中选择当前光谱仪最近 100 条亮度测量中的一条。历史列表按时间、ID、Y/x/y、IP 和 ND 展示，不默认选中记录；导入前后都限定设备归属，光通量 / EQE 数据不能作为亮度 Y。
+4. 全部数据齐全后点击“计算校正”。通过核对或明确确认待复核项后，才允许“另存校正文件”。
+
+手动录入或修改后标为“手动参考待复核”，原始结果 ID、时间、IP 与波形仅供核对，不代表修改后的参考值已验证，也不写回设备、数据库或源记录。“恢复原值”可恢复本次采集/选择记录的 Y/x/y；重新采集或选择记录会替换手动值。每个色块保存自己的输入，未填完整或包含无效数值时不能计算。手动参考只向算法提供当前 Y/x/y，不虚构光谱曲线；计算前仍通过现有集中确认核对。
+
+光谱 IP 使用原始峰值 AD / 65535 × 100%，工艺范围为 **30%～95%，含端点**。低于范围提示增加积分时间或调整 ND，高于范围提示降低积分时间或调整 ND；缺失 IP 标为无法判断，不补 0 或视为合格。真实取图记录所用四色校正文件的内容指纹，计算时与原文件核对；导入 CVCIE 不含校正模板身份，显示“模板待核对”。范围异常、缺失 IP / 采集时间和模板未核实 / 不一致在计算前集中确认一次，默认取消；选择继续仅表示操作员接受本次风险，不表示程序已验证数据正确。自动亮度预览不能判断相机过曝，仍须核对原图曝光、当前色块、测量位置和 ND。
+
+NaN/Infinity、零 CIE y、XYZ 换算溢出、采集/导入中的非法峰值 AD、空光谱、波长重复 / 倒序，以及 RGBW 未修改参考值时重复使用同一设备同一结果 ID 会阻止完成或计算。有限负 XYZ、Y/x/y、光谱和矩阵系数原样保留。重采 / 重选一侧会先撤销该侧旧值；失败后不能回用。重画开始即清除旧 POI 读数。更换原文件、相机或相机模板清空相机侧；更换光谱仪清空光谱侧；另一侧保留。切换单点 / RGBW 重建会话。任一输入改变或计算失败都会使旧结果失效。
+
+计算与另存前重新核对原文件指纹，源文件被外部修改时须重新选择文件并采集。另存禁止使用原文件路径，临时文件写入并读回校验后再替换目标副本；不自动启用新文件、不重启设备、不切换 PG / ND。“手工数值”使用按单元格选择的 DataGrid：从起始单元格 Ctrl+V 可粘贴 Excel 连续区域，Ctrl+C 复制所选单元格，“复制全部”包含表头与目标名称。数值列按相机 Y/x/y、光谱 Y/x/y 排列，可带相同表头及目标列；带目标时必须与当前行色块一致。超出范围、列数不一致或包含非有限数值时整次拒绝；空单元格用于清空数值，不能直接计算。操作员须先核对色块、原文件和 IP；修改数值或文件路径会撤销确认和旧结果。该入口没有原始采集元数据，不能代替采集窗口的自动核对。
 
 设备连接配置走[公共设备配置持久化](./configuration.md)；`DisplayCalibrationConfig` 则按设备 Code 保存本地显示选择，例如后端和曝光模式。物理相机与标定资源归属见[物理相机](./camera-management.md)，不要以重开编辑器替代资源/数据库核对。
 

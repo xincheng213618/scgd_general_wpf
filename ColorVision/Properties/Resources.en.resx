@@ -536,6 +536,12 @@
   <data name="ConfigEnableDesktopPetDescription" xml:space="preserve">
     <value>Show or hide the desktop pet component.</value>
   </data>
+  <data name="StartRecoverUILayout" xml:space="preserve">
+    <value>Restore window at startup</value>
+  </data>
+  <data name="StartRecoverUILayoutDescription" xml:space="preserve">
+    <value>Restore the main window's last saved position, size, and state at startup.</value>
+  </data>
   <data name="ConfigUseCompactMainWindow" xml:space="preserve">
     <value>Compact main window (restart required)</value>
   </data>

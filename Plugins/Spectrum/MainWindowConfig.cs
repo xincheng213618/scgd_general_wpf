@@ -24,12 +24,6 @@ namespace Spectrum
         public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility  =value;OnPropertyChanged(); } }
         private bool _LogControlVisibility = true;
 
-        [ConfigSetting(Order = 2)]
-        [DisplayName("紧凑标题栏")]
-        [Description("将菜单与原生窗口按钮合并显示，重启窗口后生效；不支持的 Windows 自动保留原生标题栏。")]
-        public bool UseCompactTitleBar { get => _useCompactTitleBar; set { _useCompactTitleBar = value; OnPropertyChanged(); } }
-        private bool _useCompactTitleBar = true;
-
         public bool EqeEnabled { get => _EqeEnabled; set { _EqeEnabled = value; OnPropertyChanged(); } }
         private bool _EqeEnabled;
 

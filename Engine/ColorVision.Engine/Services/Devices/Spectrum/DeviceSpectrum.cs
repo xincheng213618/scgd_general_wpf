@@ -347,31 +347,77 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             try
             {
                 SpectumResultEntity entity = await CaptureSingleResultAsync(cancellationToken);
-                double y = entity.fPh ?? double.NaN;
-                double cieX = entity.fx ?? double.NaN;
-                double cieY = entity.fy ?? double.NaN;
-                if (!double.IsFinite(y) || !double.IsFinite(cieX) || !double.IsFinite(cieY))
-                    throw new InvalidOperationException("光谱服务返回的 Y、CIE x 或 CIE y 无效。");
-
-                double[] values = LoadCorrectionRelativeSpectrum(entity);
-                if (values.Any(value => !double.IsFinite(value)))
-                    throw new InvalidOperationException("光谱服务返回的光谱数据包含非有限数值。");
-
-                double start = entity.fSpect1 is float startValue && float.IsFinite(startValue) ? startValue : 380d;
-                double interval = entity.fInterval is float intervalValue && float.IsFinite(intervalValue) && intervalValue > 0
-                    ? intervalValue
-                    : values.Length > 1000 ? 0.1d : 1d;
-                SpectrumValuePoint[] spectrum = new SpectrumValuePoint[values.Length];
-                for (int index = 0; index < values.Length; index++)
-                    spectrum[index] = new SpectrumValuePoint(start + interval * index, values[index]);
-
-                DateTime measuredAt = entity.CreateDate == default ? DateTime.Now : entity.CreateDate;
-                return new SpectrumColorMeasurement(entity.Id, new DateTimeOffset(measuredAt), y, cieX, cieY, spectrum);
+                return CreateColorMeasurement(entity);
             }
             finally
             {
                 correctionMeasurementGate.Release();
             }
+        }
+
+        public async Task<IReadOnlyList<SpectrumColorMeasurementSummary>> GetRecentColorMeasurementsAsync()
+        {
+            using var db = new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = MySqlControl.GetConnectionString(),
+                DbType = SqlSugar.DbType.MySql,
+                IsAutoCloseConnection = true,
+            });
+            string deviceCode = Config.Code;
+            return await db.Queryable<SpectumResultEntity>()
+                .Where(item => item.DeviceCode == deviceCode && !item.DataType)
+                .OrderBy(item => item.Id, OrderByType.Desc).Take(100)
+                .Select(item => new SpectrumColorMeasurementSummary
+                {
+                    ResultId = item.Id, CapturedAt = item.CreateDate, Y = item.fPh,
+                    CieX = item.fx, CieY = item.fy, PeakAd = item.fIp, NdPort = item.NDPort,
+                }).ToListAsync();
+        }
+
+        public async Task<SpectrumColorMeasurement> LoadColorMeasurementAsync(int resultId)
+        {
+            using var db = new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = MySqlControl.GetConnectionString(),
+                DbType = SqlSugar.DbType.MySql,
+                IsAutoCloseConnection = true,
+            });
+            string deviceCode = Config.Code;
+            SpectumResultEntity? entity = await db.Queryable<SpectumResultEntity>()
+                .Where(item => item.Id == resultId && item.DeviceCode == deviceCode && !item.DataType).FirstAsync();
+            if (entity == null)
+                throw new InvalidOperationException("未找到所选光谱仪的亮度测量结果，请重新选择。");
+            return CreateColorMeasurement(entity);
+        }
+
+        internal SpectrumColorMeasurement CreateColorMeasurement(SpectumResultEntity entity)
+        {
+            if (entity.DataType)
+                throw new InvalidOperationException("四色校正需要亮度 Y，不能使用光通量 / EQE 测量结果。");
+            double y = entity.fPh ?? double.NaN;
+            double cieX = entity.fx ?? double.NaN;
+            double cieY = entity.fy ?? double.NaN;
+            if (!double.IsFinite(y) || !double.IsFinite(cieX) || !double.IsFinite(cieY))
+                throw new InvalidOperationException("光谱服务返回的 Y、CIE x 或 CIE y 无效。");
+
+            double[] values = LoadCorrectionRelativeSpectrum(entity);
+            if (values.Any(value => !double.IsFinite(value)))
+                throw new InvalidOperationException("光谱服务返回的光谱数据包含非有限数值。");
+
+            double start = entity.fSpect1 is float startValue && float.IsFinite(startValue) ? startValue : 380d;
+            double interval = entity.fInterval is float intervalValue && float.IsFinite(intervalValue) && intervalValue > 0
+                ? intervalValue
+                : values.Length > 1000 ? 0.1d : 1d;
+            SpectrumValuePoint[] spectrum = new SpectrumValuePoint[values.Length];
+            for (int index = 0; index < values.Length; index++)
+                spectrum[index] = new SpectrumValuePoint(start + interval * index, values[index]);
+
+            DateTimeOffset measuredAt = entity.CreateDate == default ? default : new DateTimeOffset(entity.CreateDate);
+            return new SpectrumColorMeasurement(entity.Id, measuredAt, y, cieX, cieY, spectrum)
+            {
+                PeakAd = entity.fIp, IntegrationTime = entity.IntTime,
+                NdPort = entity.NDPort, DeviceCode = entity.DeviceCode ?? string.Empty,
+            };
         }
 
         private async Task<SpectumResultEntity> CaptureSingleResultAsync(CancellationToken cancellationToken)

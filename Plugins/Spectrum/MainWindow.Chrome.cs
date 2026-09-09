@@ -16,7 +16,7 @@ public partial class MainWindow
 
     private void InitializeCompactTitleBar()
     {
-        if (!Config.UseCompactTitleBar || !CompactTitleBarChrome.IsSupportedOperatingSystem)
+        if (!ShouldUseCompactTitleBar(CompactTitleBarChrome.IsSupportedOperatingSystem))
         {
             this.ApplyCaption();
             return;
@@ -30,6 +30,8 @@ public partial class MainWindow
         chromeConfig.PropertyChanged += CompactTitleBarConfigChanged;
         SourceInitialized += AttachCompactTitleBar;
     }
+
+    internal static bool ShouldUseCompactTitleBar(bool operatingSystemSupported) => operatingSystemSupported;
 
     private void AttachCompactTitleBar(object? sender, EventArgs e)
     {
