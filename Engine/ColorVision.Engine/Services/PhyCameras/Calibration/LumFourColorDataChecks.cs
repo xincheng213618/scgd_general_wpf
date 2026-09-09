@@ -35,17 +35,17 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         }
     }
 
-    internal sealed record LumFourColorSourceSnapshot(string Path, string Hash, CVRawManualCieConfig Config)
+    internal sealed record LumFourColorSourceSnapshot(string Path, string Hash, LumFourColorCalibrationFile CalibrationFile)
     {
+        public CVRawManualCieConfig Config => CalibrationFile.Config;
+
         public static string ComputeHash(string path) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
 
         public static LumFourColorSourceSnapshot Load(string path)
         {
             string fullPath = System.IO.Path.GetFullPath(path);
             string hash = ComputeHash(fullPath);
-            if (!CVRawManualCieCalculator.TryLoadLumFourColorCalibrationDefaults(fullPath, out var config, out string? error))
-                throw new InvalidOperationException(error ?? "无法读取原四色校正文件。");
-            var result = new LumFourColorSourceSnapshot(fullPath, hash, config);
+            var result = new LumFourColorSourceSnapshot(fullPath, hash, LumFourColorCalibrationFile.Load(fullPath));
             result.EnsureUnchanged();
             return result;
         }
@@ -56,8 +56,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 throw new InvalidOperationException("原校正文件已被修改或移除，请重新选择文件并采集，避免使用旧数据。");
         }
 
-        public void SaveCopy(string destination, CVRawManualCieConfig corrected)
+        public void SaveCopy(string destination, CVRawManualCieConfig corrected, LumFourColorCorrectionMode mode = LumFourColorCorrectionMode.MatlabRgbw)
         {
+            if (!Enum.IsDefined(mode)) throw new ArgumentOutOfRangeException(nameof(mode));
             string fullPath = System.IO.Path.GetFullPath(destination);
             if (string.Equals(fullPath, Path, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("请选择新的文件名，保留原校正文件。");
@@ -65,7 +66,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             string temporary = fullPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
             try
             {
-                File.WriteAllText(temporary, LumFourColorCorrectionCalculator.SerializeCalibrationFile(corrected), new UTF8Encoding(false));
+                string contents = mode == LumFourColorCorrectionMode.PythonRgb
+                    ? LumFourColorCorrectionCalculator.SerializeCalibrationFile(corrected)
+                    : CalibrationFile.SerializeCorrection(corrected);
+                File.WriteAllText(temporary, contents, new UTF8Encoding(false));
                 _ = Load(temporary);
                 EnsureUnchanged();
                 if (File.Exists(fullPath))

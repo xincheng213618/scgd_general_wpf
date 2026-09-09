@@ -36,8 +36,6 @@
             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="四色校正" FontSize="26" FontWeight="SemiBold" />
-                <TextBlock Margin="18,0,0,0" VerticalAlignment="Center" Style="{StaticResource CaptionStyle}"
-                           Text="同一色块配对相机与光谱，采集顺序不限" />
             </StackPanel>
             <Button Grid.Column="1" Click="OpenManual_Click" Content="手工数值…" Height="32"
                     Style="{StaticResource UpdateDialogTextButtonStyle}" />
@@ -51,7 +49,15 @@
                          VerticalContentAlignment="Center" Style="{StaticResource TextBox.Small}" TextChanged="SourcePathBox_TextChanged" />
                 <Button x:Name="BrowseSourceButton" Grid.Column="2" Content="选择文件" Click="BrowseSource_Click" Width="96" Height="32"
                         Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
-                <TextBlock x:Name="SourceStateText" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,5,0,0" Style="{StaticResource CaptionStyle}" Text="选择校正模板可带入四色文件，也可手动选择文件。" />
+                <TextBlock x:Name="SourceStateText" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,5,0,0" Text="">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource CaptionStyle}">
+                            <Style.Triggers>
+                                <Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed" /></Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
                 <Grid Grid.Row="2" Grid.ColumnSpan="3" Margin="0,10,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="74" /><ColumnDefinition Width="*" /><ColumnDefinition Width="78" />
@@ -69,8 +75,9 @@
         <Grid Grid.Row="2" Margin="0,12">
             <Grid.ColumnDefinitions><ColumnDefinition Width="150" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
             <StackPanel VerticalAlignment="Center">
-                <RadioButton x:Name="FourColorMode" GroupName="Mode" Content="RGBW 四色" IsChecked="True" Checked="CorrectionMode_Checked" />
-                <RadioButton x:Name="SinglePointMode" GroupName="Mode" Content="单点" Margin="0,10,0,0" Checked="CorrectionMode_Checked" />
+                <RadioButton x:Name="FourColorMode" GroupName="Mode" Content="RGBW（MATLAB）" HorizontalAlignment="Left" IsChecked="True" Checked="CorrectionMode_Checked" />
+                <RadioButton x:Name="PythonRgbMode" GroupName="Mode" Content="RGB（Python）" HorizontalAlignment="Left" Margin="0,6,0,0" Checked="CorrectionMode_Checked" ToolTip="仅使用 R/G/B，输出 XYZ→XYZ 修正矩阵，不与原矩阵合成。" />
+                <RadioButton x:Name="SinglePointMode" GroupName="Mode" Content="单点" HorizontalAlignment="Left" Margin="0,6,0,0" Checked="CorrectionMode_Checked" />
             </StackPanel>
             <ListBox x:Name="SampleList" Grid.Column="1" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      SelectionChanged="SampleList_SelectionChanged">
@@ -119,19 +126,22 @@
                             </ComboBox>
                         </StackPanel>
                     </Grid>
-                    <TextBlock x:Name="CameraQualityText" Grid.Row="1" Margin="0,5,0,8" Style="{StaticResource CaptionStyle}" />
+                    <DockPanel Grid.Row="1" Margin="0,10,0,10">
+                        <Button x:Name="ApplyPoiTemplateButton" DockPanel.Dock="Right" Content="应用" Width="62" Height="32" Margin="8,0,0,0" Click="ApplyPoiTemplate_Click" Style="{StaticResource UpdateDialogSecondaryButtonStyle}" ToolTip="使用模板中的第一个 POI" />
+                        <TextBlock Text="POI 模板" VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <ComboBox x:Name="PoiTemplateCombo" DisplayMemberPath="Key" Style="{StaticResource FieldComboStyle}" SelectionChanged="PoiTemplateCombo_SelectionChanged" ToolTip="选择模板后应用第一个 POI；也可手动绘制" />
+                    </DockPanel>
                     <Grid x:Name="ImageSurface" Grid.Row="2" ClipToBounds="True" Background="#151515">
                         <editor:ImageView x:Name="CieImageView" />
                         <StackPanel x:Name="EmptyImagePanel" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <TextBlock Text="取图或选择 CVCIE 文件" Foreground="#DDDDDD" FontSize="16" HorizontalAlignment="Center" />
-                            <TextBlock Text="拖动绘制圆形或矩形 POI，可调整位置和尺寸" Foreground="#AAAAAA" Margin="0,8,0,0" HorizontalAlignment="Center" />
+                            <TextBlock Text="暂无图像" Foreground="#AAAAAA" FontSize="16" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Grid>
                     <Grid Grid.Row="3" Margin="0,10,0,0">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                         <Button x:Name="CaptureCameraButton" Content="相机取图" Height="34" Margin="0,0,6,0" Click="CaptureCamera_Click" Style="{StaticResource UpdateDialogPrimaryButtonStyle}" />
                         <Button x:Name="LoadCieButton" Grid.Column="1" Content="选择 CIE" Height="34" Margin="0,0,6,0" Click="LoadCie_Click" Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
-                        <Button x:Name="DrawPoiButton" Grid.Column="2" Content="重画 POI" Height="34" Margin="0,0,6,0" Click="DrawPoi_Click" Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
+                        <Button x:Name="DrawPoiButton" Grid.Column="2" Content="绘制 POI" Height="34" Margin="0,0,6,0" Click="DrawPoi_Click" Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
                         <Button x:Name="NextSampleButton" Grid.Column="3" Content="下个未完成" Height="34" Padding="10,0" Click="NextSample_Click" Style="{StaticResource UpdateDialogTextButtonStyle}" />
                     </Grid>
                 </Grid>
@@ -139,62 +149,65 @@
             <Border Grid.Column="2" Padding="14" Style="{StaticResource UpdateDialogCardStyle}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel>
-                        <TextBlock Text="光谱参考" FontSize="17" FontWeight="SemiBold" />
-                        <UniformGrid Columns="2" Margin="0,12,0,14">
+                        <TextBlock Text="测量数据" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,10" />
+                        <StackPanel x:Name="CameraInputsPanel">
+                            <DockPanel Margin="0,0,0,4">
+                                <Button x:Name="RestoreCameraButton" DockPanel.Dock="Right" Content="恢复" Click="RestoreCamera_Click" IsEnabled="{Binding CanRestoreCamera}" Height="26" Padding="8,0" Style="{StaticResource UpdateDialogTextButtonStyle}" ToolTip="恢复原始 POI 测量值" />
+                                <TextBlock Text="相机" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <UniformGrid Columns="3">
+                                <StackPanel Margin="0,0,4,0"><TextBlock Text="Y" Style="{StaticResource CaptionStyle}" /><TextBox x:Name="CameraYBox" Text="{Binding CameraYInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBox.Small}" Margin="0,4,0,0" Height="32" VerticalContentAlignment="Center" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" /></StackPanel>
+                                <StackPanel Margin="2,0,2,0"><TextBlock Text="CIE x" Style="{StaticResource CaptionStyle}" /><TextBox x:Name="CameraCieXBox" Text="{Binding CameraCieXInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBox.Small}" Margin="0,4,0,0" Height="32" VerticalContentAlignment="Center" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" /></StackPanel>
+                                <StackPanel Margin="4,0,0,0"><TextBlock Text="CIE y" Style="{StaticResource CaptionStyle}" /><TextBox x:Name="CameraCieYBox" Text="{Binding CameraCieYInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBox.Small}" Margin="0,4,0,0" Height="32" VerticalContentAlignment="Center" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" /></StackPanel>
+                            </UniformGrid>
+                            <TextBlock Text="{Binding CameraQuality}" Style="{StaticResource CaptionStyle}" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <StackPanel x:Name="ReferenceInputsPanel" Margin="0,10,0,0">
+                            <DockPanel Margin="0,0,0,4">
+                                <Button x:Name="RestoreReferenceButton" DockPanel.Dock="Right" Content="恢复" Click="RestoreReference_Click" IsEnabled="{Binding CanRestoreReference}" Height="26" Padding="8,0" Style="{StaticResource UpdateDialogTextButtonStyle}" ToolTip="恢复原始光谱参考值" />
+                                <TextBlock Text="光谱" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <UniformGrid Columns="3">
+                                <StackPanel Margin="0,0,4,0"><TextBlock Text="Y" Style="{StaticResource CaptionStyle}" /><TextBox x:Name="ReferenceYBox" Text="{Binding ReferenceYInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBox.Small}" Margin="0,4,0,0" Height="32" VerticalContentAlignment="Center" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" /></StackPanel>
+                                <StackPanel Margin="2,0,2,0"><TextBlock Text="CIE x" Style="{StaticResource CaptionStyle}" /><TextBox x:Name="ReferenceCieXBox" Text="{Binding ReferenceCieXInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBox.Small}" Margin="0,4,0,0" Height="32" VerticalContentAlignment="Center" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" /></StackPanel>
+                                <StackPanel Margin="4,0,0,0"><TextBlock Text="CIE y" Style="{StaticResource CaptionStyle}" /><TextBox x:Name="ReferenceCieYBox" Text="{Binding ReferenceCieYInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBox.Small}" Margin="0,4,0,0" Height="32" VerticalContentAlignment="Center" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" /></StackPanel>
+                            </UniformGrid>
+                        </StackPanel>
+                        <TextBlock Text="{Binding SpectrumQuality}" Style="{StaticResource CaptionStyle}" Margin="0,3,0,0" ToolTip="光谱 IP 合格范围：30%～95%" />
+                        <UniformGrid Columns="2" Margin="0,8,0,12">
                             <Button x:Name="CaptureSpectrumButton" Content="采集光谱" Height="34" Margin="0,0,4,0" Click="CaptureSpectrum_Click" Style="{StaticResource UpdateDialogPrimaryButtonStyle}" />
                             <Button x:Name="SelectSpectrumButton" Content="选择已有…" Height="34" Margin="4,0,0,0" Click="SelectSpectrum_Click" Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
                         </UniformGrid>
-                        <StackPanel x:Name="ReferenceInputsPanel">
-                            <UniformGrid Columns="3">
-                                <StackPanel Margin="0,0,4,0"><TextBlock Text="Y" Style="{StaticResource CaptionStyle}" /><TextBox x:Name="ReferenceYBox" Text="{Binding ReferenceYInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBox.Small}" Margin="0,4,0,0" Height="32" VerticalContentAlignment="Center" /></StackPanel>
-                                <StackPanel Margin="2,0,2,0"><TextBlock Text="CIE x" Style="{StaticResource CaptionStyle}" /><TextBox x:Name="ReferenceCieXBox" Text="{Binding ReferenceCieXInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBox.Small}" Margin="0,4,0,0" Height="32" VerticalContentAlignment="Center" /></StackPanel>
-                                <StackPanel Margin="4,0,0,0"><TextBlock Text="CIE y" Style="{StaticResource CaptionStyle}" /><TextBox x:Name="ReferenceCieYBox" Text="{Binding ReferenceCieYInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBox.Small}" Margin="0,4,0,0" Height="32" VerticalContentAlignment="Center" /></StackPanel>
-                            </UniformGrid>
-                            <DockPanel Margin="0,6,0,0">
-                                <Button x:Name="RestoreReferenceButton" DockPanel.Dock="Right" Content="恢复原值" Click="RestoreReference_Click" IsEnabled="{Binding CanRestoreReference}" Height="28" Padding="8,0" Style="{StaticResource UpdateDialogTextButtonStyle}" ToolTip="恢复本次采集或选择记录中的原始 Y / x / y" />
-                                <TextBlock Text="可直接输入或修改" Style="{StaticResource CaptionStyle}" VerticalAlignment="Center" />
-                            </DockPanel>
-                        </StackPanel>
-                        <Border Margin="0,14,0,12" Padding="10" CornerRadius="5" Background="{DynamicResource UpdateDialog.TagBackground}">
-                            <TextBlock Text="{Binding SpectrumQuality}" TextWrapping="Wrap" FontWeight="SemiBold" />
-                        </Border>
-                        <TextBlock Text="{Binding SpectrumSourceDescription}" Style="{StaticResource CaptionStyle}" />
-                        <TextBlock Text="{Binding SpectrumMetadataHeading}" Style="{StaticResource CaptionStyle}" Margin="0,5,0,3" />
-                        <TextBlock Text="{Binding SpectrumResultId, StringFormat=结果 ID：{0}}" Style="{StaticResource CaptionStyle}" />
-                        <TextBlock Text="{Binding SpectrumCapturedAt, StringFormat=时间：{0:yyyy-MM-dd HH:mm:ss}}" Style="{StaticResource CaptionStyle}" />
-                        <TextBlock Text="{Binding SpectrumPeakAd, StringFormat=峰值 AD：{0:G9}}" Style="{StaticResource CaptionStyle}" />
-                        <TextBlock Text="{Binding SpectrumIntegrationTime, StringFormat=积分时间：{0:G7} ms}" Style="{StaticResource CaptionStyle}" />
-                        <TextBlock Text="{Binding SpectrumNdPort, StringFormat=ND 档位：{0}}" Style="{StaticResource CaptionStyle}" />
-                        <Expander Header="{Binding SpectrumDetailsHeading}" Margin="0,12,0,0">
-                            <StackPanel>
-                                <TextBlock x:Name="SpectrumCountText" Style="{StaticResource CaptionStyle}" />
-                                <DataGrid x:Name="SpectrumGrid" Height="150" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column" BorderThickness="0" RowHeight="25">
-                                    <DataGrid.Columns>
-                                        <DataGridTextColumn Width="*" Header="波长 (nm)" Binding="{Binding Wavelength, StringFormat={}{0:F1}}" />
-                                        <DataGridTextColumn Width="*" Header="值" Binding="{Binding Value, StringFormat={}{0:G8}}" />
-                                    </DataGrid.Columns>
-                                </DataGrid>
-                            </StackPanel>
-                        </Expander>
-                    <StackPanel Margin="0,18,0,0">
-                        <TextBlock Text="相机 POI" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,8" />
-                        <UniformGrid Columns="3">
-                            <StackPanel><TextBlock Text="X" Style="{StaticResource CaptionStyle}" /><TextBlock Text="{Binding CameraX, StringFormat={}{0:G7}}" Style="{StaticResource DataValueStyle}" /></StackPanel>
-                            <StackPanel><TextBlock Text="Y" Style="{StaticResource CaptionStyle}" /><TextBlock Text="{Binding CameraY, StringFormat={}{0:G7}}" Style="{StaticResource DataValueStyle}" /></StackPanel>
-                            <StackPanel><TextBlock Text="Z" Style="{StaticResource CaptionStyle}" /><TextBlock Text="{Binding CameraZ, StringFormat={}{0:G7}}" Style="{StaticResource DataValueStyle}" /></StackPanel>
-                            <StackPanel><TextBlock Text="CIE x" Style="{StaticResource CaptionStyle}" /><TextBlock Text="{Binding CameraCieX, StringFormat={}{0:G7}}" Style="{StaticResource DataValueStyle}" /></StackPanel>
-                            <StackPanel><TextBlock Text="CIE y" Style="{StaticResource CaptionStyle}" /><TextBlock Text="{Binding CameraCieY, StringFormat={}{0:G7}}" Style="{StaticResource DataValueStyle}" /></StackPanel>
-                        </UniformGrid>
-                        <Expander Header="POI、图像来源与曝光" Margin="0,6,0,0">
-                            <StackPanel><TextBlock Text="{Binding CameraSource}" Style="{StaticResource CaptionStyle}" />
-                                <TextBlock Style="{StaticResource CaptionStyle}" Text="{Binding PoiDescription, StringFormat=POI：{0}}" />
+                        <Expander x:Name="MeasurementDetailsExpander" Header="测量详情" IsExpanded="False">
+                            <StackPanel Margin="0,10,0,0">
+                                <TextBlock Text="相机记录" FontWeight="SemiBold" />
+                                <TextBlock x:Name="CameraQualityText" Style="{StaticResource CaptionStyle}" />
+                                <TextBlock Text="{Binding CameraSource}" Style="{StaticResource CaptionStyle}" />
+                                <TextBlock Text="{Binding PoiDescription}" Style="{StaticResource CaptionStyle}" />
                                 <TextBlock Text="{Binding CameraGain, StringFormat=增益：{0:G7}}" Style="{StaticResource CaptionStyle}" />
                                 <TextBlock Text="{Binding CameraExposure, StringFormat=曝光：{0}}" Style="{StaticResource CaptionStyle}" />
-                                <TextBlock Style="{StaticResource CaptionStyle}" Text="自动亮度预览不能判断相机是否过曝。POI 和计算保留原始负值。" />
+                                <TextBlock Text="{Binding CameraX, StringFormat=X：{0:G9}}" Style="{StaticResource CaptionStyle}" />
+                                <TextBlock Text="{Binding CameraZ, StringFormat=Z：{0:G9}}" Style="{StaticResource CaptionStyle}" />
+                                <TextBlock Text="{Binding SpectrumMetadataHeading}" FontWeight="SemiBold" Margin="0,14,0,5" />
+                                <TextBlock Text="{Binding SpectrumSourceDescription}" Style="{StaticResource CaptionStyle}" />
+                                <TextBlock Text="{Binding SpectrumResultId, StringFormat=结果 ID：{0}}" Style="{StaticResource CaptionStyle}" />
+                                <TextBlock Text="{Binding SpectrumCapturedAt, StringFormat=时间：{0:yyyy-MM-dd HH:mm:ss}}" Style="{StaticResource CaptionStyle}" />
+                                <TextBlock Text="{Binding SpectrumPeakAd, StringFormat=峰值 AD：{0:G9}}" Style="{StaticResource CaptionStyle}" />
+                                <TextBlock Text="{Binding SpectrumIntegrationTime, StringFormat=积分时间：{0:G7} ms}" Style="{StaticResource CaptionStyle}" />
+                                <TextBlock Text="{Binding SpectrumNdPort, StringFormat=ND：{0}}" Style="{StaticResource CaptionStyle}" />
+                                <Expander Header="{Binding SpectrumDetailsHeading}" Margin="0,10,0,0">
+                                    <StackPanel>
+                                        <TextBlock x:Name="SpectrumCountText" Style="{StaticResource CaptionStyle}" />
+                                        <DataGrid x:Name="SpectrumGrid" Height="150" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column" BorderThickness="0" RowHeight="25">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Width="*" Header="波长 (nm)" Binding="{Binding Wavelength, StringFormat={}{0:F1}}" />
+                                                <DataGridTextColumn Width="*" Header="值" Binding="{Binding Value, StringFormat={}{0:G8}}" />
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </StackPanel>
+                                </Expander>
                             </StackPanel>
                         </Expander>
-                    </StackPanel>
-                        <TextBlock Margin="0,14,0,0" Text="请保持当前色块、测量位置和现场条件一致。RGBW 的 W 决定亮度尺度。" Style="{StaticResource CaptionStyle}" />
                     </StackPanel>
                 </ScrollViewer>
             </Border>

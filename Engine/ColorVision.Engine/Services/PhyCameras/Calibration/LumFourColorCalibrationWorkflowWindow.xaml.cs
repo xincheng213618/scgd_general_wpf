@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes;
 using Microsoft.Win32;
 using System;
@@ -51,6 +52,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             Width = Math.Min(Width, SystemParameters.WorkArea.Width * 0.96);
             Height = Math.Min(Height, SystemParameters.WorkArea.Height * 0.96);
             poiEditor = new LumFourColorPoiEditor(CieImageView, poiOptions, message => StatusText.Text = message);
+            poiEditor.TemplateRequested += OpenPoiTemplates;
+            poiEditor.DrawRequested += ChoosePoiShape;
+            PoiTemplateCombo.ItemsSource = TemplatePoi.Params;
             PoiShapeCombo.SelectedIndex = poiOptions.UseRectangle ? 1 : 0;
             this.ApplyCaption();
             SourcePathBox.Text = sourcePath ?? string.Empty;
@@ -59,7 +63,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             SpectrumCombo.ItemsSource = spectrums.ToList();
             CameraCombo.SelectedIndex = CameraCombo.Items.Count == 1 ? 0 : -1;
             SpectrumCombo.SelectedIndex = SpectrumCombo.Items.Count == 1 ? 0 : -1;
-            SetMode(false);
+            SetMode(LumFourColorCorrectionMode.MatlabRgbw);
         }
 
         public static void ShowWindow(string? sourcePath = null)
@@ -93,8 +97,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         {
             OpenFileDialog dialog = new()
             {
-                Title = "选择原四色校正文件",
-                Filter = "四色校正文件 (*.dat;*.json)|*.dat;*.json|所有文件 (*.*)|*.*",
+                Title = "选择原色度校正文件",
+                Filter = "四色 / 多色校正文件 (*.dat;*.json)|*.dat;*.json|所有文件 (*.*)|*.*",
                 CheckFileExists = true,
                 Multiselect = false,
             };
@@ -122,11 +126,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             try
             {
                 if (string.IsNullOrWhiteSpace(SourcePathBox.Text))
-                    SourceStateText.Text = "选择校正模板可带入四色文件，也可手动选择文件。";
+                    SourceStateText.Text = "";
                 else
                 {
                     sourceSnapshot = LumFourColorSourceSnapshot.Load(SourcePathBox.Text.Trim());
-                    SourceStateText.Text = "文件已读取 · 更换文件会清除相机数据 · 结果另存副本";
+                    SourceStateText.Text = $"已读取{sourceSnapshot.CalibrationFile.FormatDescription}";
                 }
             }
             catch (Exception ex)
@@ -141,20 +145,22 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         {
             if (!IsInitialized || SampleList == null)
                 return;
-            SetMode(SinglePointMode.IsChecked == true);
+            SetMode(SinglePointMode.IsChecked == true ? LumFourColorCorrectionMode.SinglePoint
+                : PythonRgbMode.IsChecked == true ? LumFourColorCorrectionMode.PythonRgb : LumFourColorCorrectionMode.MatlabRgbw);
         }
 
-        private void SetMode(bool singlePoint)
+        private void SetMode(LumFourColorCorrectionMode mode)
         {
             foreach (var sample in session.Samples)
                 sample.Changed -= Sample_Changed;
             CancelDrawMode();
-            session.SetMode(singlePoint);
+            session.SetMode(mode);
             foreach (var sample in session.Samples)
                 sample.Changed += Sample_Changed;
             InvalidateCalculation();
             SampleList.SelectedIndex = 0;
-            StatusText.Text = singlePoint ? "完成一次相机与光谱采集，顺序不限。" : "按现场顺序完成 R、G、B、W。";
+            StatusText.Text = "";
+            SaveButton.Content = mode == LumFourColorCorrectionMode.PythonRgb ? "导出 XYZ 矩阵" : "另存校正文件";
             RefreshSelectedSample();
         }
 
@@ -183,13 +189,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                     sourceFromTemplate = true;
                     if (string.Equals(SourcePathBox.Text, path, StringComparison.OrdinalIgnoreCase)) ReloadSource();
                     else SourcePathBox.Text = path;
-                    if (sourceSnapshot != null) SourceStateText.Text = $"已从模板「{template.Key}」带入四色校正文件 · 可重新选择文件";
+                    if (sourceSnapshot != null) SourceStateText.Text = $"{sourceSnapshot.CalibrationFile.FormatDescription} · {template.Key}";
                 }
                 else
                 {
                     if (sourceFromTemplate) SourcePathBox.Text = string.Empty;
                     sourceFromTemplate = false;
-                    StatusText.Text = "该模板未配置四色校正文件，可手动选择原文件。";
+                    StatusText.Text = "该模板未配置四色 / 多色校正文件，可手动选择原文件。";
                 }
             }
             catch (Exception ex)
@@ -202,10 +208,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
         internal static string? ResolveTemplateSource(DeviceCamera camera, CalibrationParam template)
         {
-            if (string.IsNullOrWhiteSpace(template.Color.LumFourColor.FilePath)) return null;
-            var resource = camera.GetCalibrationTemplateResource(template, CalibrationSlotDefinitions.ByKey[nameof(GroupResource.LumFourColor)]);
+            string key = template.Color.LumMultiColor.IsSelected
+                || (!template.Color.LumFourColor.IsSelected && string.IsNullOrWhiteSpace(template.Color.LumFourColor.FilePath))
+                ? nameof(GroupResource.LumMultiColor) : nameof(GroupResource.LumFourColor);
+            var slot = CalibrationSlotDefinitions.ByKey[key];
+            if (string.IsNullOrWhiteSpace(slot.ParamGetter(template).FilePath)) return null;
+            var resource = camera.GetCalibrationTemplateResource(template, slot);
             if (resource == null || !camera.TryResolveCalibrationFilePath(resource, out string path, out _))
-                throw new InvalidOperationException("模板的四色校正文件不存在或尚未同步，请检查模板，或手动选择文件。");
+                throw new InvalidOperationException("模板的色度校正文件不存在或尚未同步，请检查模板，或手动选择文件。");
             return path;
         }
 
@@ -240,7 +250,53 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         {
             if (busy || SelectedSample?.CanRestoreReference != true) return;
             SelectedSample.RestoreReference();
-            StatusText.Text = "已恢复原始参考值，请重新计算校正。";
+            StatusText.Text = "已恢复光谱原值";
+        }
+
+        private void RestoreCamera_Click(object sender, RoutedEventArgs e)
+        {
+            if (busy || SelectedSample?.CanRestoreCamera != true) return;
+            SelectedSample.RestoreCamera();
+            StatusText.Text = "已恢复相机原值";
+        }
+
+        private void OpenPoiTemplates()
+        {
+            if (busy) return;
+            PoiTemplateCombo.Focus();
+            PoiTemplateCombo.IsDropDownOpen = true;
+        }
+
+        private void PoiTemplateCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshActions();
+
+        private void ChoosePoiShape(bool useRectangle)
+        {
+            if (busy) return;
+            int index = useRectangle ? 1 : 0;
+            if (PoiShapeCombo.SelectedIndex != index) PoiShapeCombo.SelectedIndex = index;
+            else BeginDrawMode();
+        }
+
+        private async void ApplyPoiTemplate_Click(object sender, RoutedEventArgs e)
+        {
+            if (busy || SelectedSample?.HasImage != true || PoiTemplateCombo.SelectedItem == null) return;
+            SetBusy(true, "读取 POI 模板…");
+            try { await ApplySelectedPoiTemplateAsync(); }
+            catch (Exception ex) { if (!closed) ShowError(ex.Message); }
+            finally { if (!closed) SetBusy(false, null); }
+        }
+
+        private async Task ApplySelectedPoiTemplateAsync()
+        {
+            if (PoiTemplateCombo.SelectedItem is not TemplateModel<PoiParam> selected) { BeginDrawMode(); return; }
+            poiEditor!.ClearPoi();
+            PoiParam source = selected.Value;
+            var points = source.Id > 0 ? await PoiParam.LoadPoiDetailsFromDBAsync(source.Id) : source.PoiPoints.ToList();
+            if (closed) return;
+            PoiParam snapshot = new() { Width = source.Width, Height = source.Height };
+            if (points.Count > 0) snapshot.PoiPoints.Add(points[0]);
+            poiEditor.ApplyTemplate(snapshot);
+            StatusText.Text = $"{selected.Key} · 第一个 POI";
         }
 
         private void SampleList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -272,15 +328,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 token.ThrowIfCancellationRequested();
                 sample.SetFrame(frame, LumFourColorCieService.Render(frame));
                 InvalidateCalculation();
-                StatusText.Text = sample.HasSpectrumMeasurement
-                    ? $"{sample.Name} 取图完成，请绘制 POI；光谱数据已保留。"
-                    : $"{sample.Name} 取图完成，请绘制 POI。";
+                StatusText.Text = "";
                 RefreshSelectedSample();
-                BeginDrawMode();
+                await ApplySelectedPoiTemplateAsync();
             });
         }
 
-        private void LoadCie_Click(object sender, RoutedEventArgs e)
+        private async void LoadCie_Click(object sender, RoutedEventArgs e)
         {
             if (busy)
                 return;
@@ -298,6 +352,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             if (dialog.ShowDialog(this) != true)
                 return;
 
+            SetBusy(true, "加载图像…");
             try
             {
                 CancelDrawMode();
@@ -306,16 +361,15 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 LumFourColorCieCapture frame = LumFourColorCieService.Load(dialog.FileName);
                 sample.SetFrame(frame, LumFourColorCieService.Render(frame));
                 InvalidateCalculation();
-                StatusText.Text = sample.HasSpectrumMeasurement
-                    ? $"已加载 {sample.Name} 的 CIE 图像，请绘制 POI；光谱数据已保留。"
-                    : $"已加载 {sample.Name} 的 CIE 图像，请绘制 POI。";
+                StatusText.Text = "";
                 RefreshSelectedSample();
-                BeginDrawMode();
+                await ApplySelectedPoiTemplateAsync();
             }
             catch (Exception ex)
             {
                 ShowError(ex.Message);
             }
+            finally { if (!closed) SetBusy(false, null); }
         }
 
         private void DrawPoi_Click(object sender, RoutedEventArgs e)
@@ -357,11 +411,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 token.ThrowIfCancellationRequested();
                 sample.SetSpectrumMeasurement(result);
                 InvalidateCalculation();
-                StatusText.Text = sample.IsComplete
-                    ? "采集完成，可以计算校正。"
-                    : sample.HasImage
-                        ? $"{sample.Name} 光谱采集完成，请绘制 POI。"
-                        : $"{sample.Name} 光谱采集完成，可以继续相机取图。";
+                StatusText.Text = "采集完成";
                 RefreshSelectedSample();
             });
         }
@@ -400,7 +450,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             try
             {
                 if (sourceSnapshot == null)
-                    throw new InvalidOperationException("请先选择有效的原四色校正文件。");
+                    throw new InvalidOperationException("请先选择有效的原色度校正文件。");
                 sourceSnapshot.EnsureUnchanged();
                 if (!session.IsComplete)
                     throw new InvalidOperationException("请先完成全部色块的相机 POI 和光谱数据。");
@@ -415,7 +465,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 sourceSnapshot.EnsureUnchanged();
                 correctedConfig = session.Calculate(sourceSnapshot.Config);
                 SaveButton.IsEnabled = true;
-                StatusText.Text = warnings.Length == 0 ? "校正计算完成，可以另存文件。" : "已按本次确认继续计算（含待复核数据），可另存副本。";
+                StatusText.Text = session.Mode == LumFourColorCorrectionMode.PythonRgb ? "XYZ 修正矩阵已计算" : "计算完成";
             }
             catch (Exception ex)
             {
@@ -437,10 +487,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
             SaveFileDialog dialog = new()
             {
-                Title = "保存校正后的四色校正文件",
-                Filter = "四色校正文件 (*.dat)|*.dat|JSON 文件 (*.json)|*.json|所有文件 (*.*)|*.*",
+                Title = session.Mode == LumFourColorCorrectionMode.PythonRgb ? "导出 Python RGB 的 XYZ 修正矩阵" : "保存修正后的校正文件（保持原格式）",
+                Filter = "校正文件 (*.dat)|*.dat|JSON 文件 (*.json)|*.json|所有文件 (*.*)|*.*",
                 InitialDirectory = Directory.Exists(sourceDirectory) ? sourceDirectory : Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-                FileName = $"{sourceName}_Corrected{extension}",
+                FileName = session.Mode == LumFourColorCorrectionMode.PythonRgb ? $"{sourceName}_PythonRGB_XYZ.dat" : $"{sourceName}_Corrected{extension}",
                 AddExtension = true,
                 DefaultExt = extension.TrimStart('.'),
             };
@@ -449,7 +499,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
             try
             {
-                sourceSnapshot!.SaveCopy(dialog.FileName, correctedConfig);
+                sourceSnapshot!.SaveCopy(dialog.FileName, correctedConfig, session.Mode);
                 StatusText.Text = $"已保存：{dialog.FileName}";
             }
             catch (Exception ex)
@@ -466,10 +516,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             MeasurementPanel.DataContext = sample;
             poiEditor?.ShowSample(sample);
             CurrentTargetText.Text = sample == null ? "相机图像" : $"{sample.Name} · 相机图像与 POI";
-            CameraQualityText.Text = sample?.Frame == null ? "取图后直接框选；选择文件时请核对色块。" :
+            CameraQualityText.Text = sample?.Frame == null ? "" :
                 sample.Frame.CalibrationHash == null ? "模板待核对：CVCIE 未记录所用校正文件。" :
-                sample.Frame.CalibrationHash == sourceSnapshot?.Hash ? "图像所用四色校正文件与原文件一致。" : "模板不一致：当前图像使用了另一份四色校正文件。";
-            if (sample?.Frame != null) CameraQualityText.Text += " 请核对原图曝光。";
+                sample.Frame.CalibrationHash == sourceSnapshot?.Hash ? "图像所用色度校正文件与原文件一致。" : "模板不一致：当前图像使用了另一份色度校正文件。";
             EmptyImagePanel.Visibility = sample?.HasImage == true ? Visibility.Collapsed : Visibility.Visible;
             SpectrumGrid.ItemsSource = sample?.Spectrum;
             SpectrumCountText.Text = sample == null ? string.Empty : $"{sample.Spectrum.Count} 点";
@@ -488,18 +537,20 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             CaptureSpectrumButton.IsEnabled = !busy && sample != null && SpectrumCombo.SelectedItem != null;
             SelectSpectrumButton.IsEnabled = !busy && sample != null && SpectrumCombo.SelectedItem != null;
             ReferenceInputsPanel.IsEnabled = !busy && sample != null;
+            CameraInputsPanel.IsEnabled = !busy && sample != null;
+            ApplyPoiTemplateButton.IsEnabled = !busy && sample?.HasImage == true && PoiTemplateCombo.SelectedItem != null;
             NextSampleButton.IsEnabled = !busy && session.Samples.Any(item => item != sample && !item.IsComplete);
             CalculateButton.IsEnabled = !busy && session.IsComplete && sourceSnapshot != null;
             SaveButton.IsEnabled = !busy && correctedConfig != null;
             int complete = session.Samples.Count(item => item.IsComplete);
-            ProgressText.Text = $"{complete} / {session.Samples.Count} 组数据齐全" +
-                (sourceSnapshot == null ? " · 请选择有效原文件" : session.IsComplete ? " · 可计算，待复核项会先提示" : " · 继续完成缺少的相机 / 光谱");
+            ProgressText.Text = $"已完成 {complete} / {session.Samples.Count}";
         }
 
         private void SetBusy(bool value, string? message)
         {
             busy = value;
             FourColorMode.IsEnabled = !value;
+            PythonRgbMode.IsEnabled = !value;
             SinglePointMode.IsEnabled = !value;
             CameraCombo.IsEnabled = !value;
             CalibrationCombo.IsEnabled = !value;
@@ -509,6 +560,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             SourcePathBox.IsEnabled = !value;
             CieImageView.IsEnabled = !value;
             PoiShapeCombo.IsEnabled = !value;
+            PoiTemplateCombo.IsEnabled = !value;
             if (message != null)
                 StatusText.Text = message;
             RefreshActions();
@@ -525,7 +577,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             if (hadResult && StatusText != null) StatusText.Text = "数据已变化，请重新计算。";
         }
 
-        private void OpenManual_Click(object sender, RoutedEventArgs e) => LumFourColorCorrectionWindow.ShowWindow(SourcePathBox.Text.Trim());
+        private void OpenManual_Click(object sender, RoutedEventArgs e) => LumFourColorCorrectionWindow.ShowWindow(SourcePathBox.Text.Trim(), session.Mode);
 
         private void ShowError(string message)
         {
@@ -556,7 +608,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 var result = await device.LoadColorMeasurementAsync(dialog.SelectedResult.ResultId);
                 if (closed) return;
                 sample.SetSpectrumMeasurement(LumFourColorSpectrumCapture.FromMeasurement(result));
-                StatusText.Text = $"已将光谱结果 {result.ResultId} 配对到 {sample.Name}，请核对现场色块与采集时间。";
+                StatusText.Text = "已选择光谱";
                 RefreshSelectedSample();
             }
             catch (Exception ex)

@@ -33,8 +33,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         private readonly ObservableCollection<CorrectionMeasurementRow> rows = new();
         private CVRawManualCieConfig? correctedConfig;
         private LumFourColorSourceSnapshot? sourceSnapshot;
+        private LumFourColorCorrectionMode SelectedMode => SinglePointMode.IsChecked == true ? LumFourColorCorrectionMode.SinglePoint
+            : PythonRgbMode.IsChecked == true ? LumFourColorCorrectionMode.PythonRgb : LumFourColorCorrectionMode.MatlabRgbw;
 
-        public LumFourColorCorrectionWindow(string? sourcePath = null)
+        public LumFourColorCorrectionWindow(string? sourcePath = null, LumFourColorCorrectionMode mode = LumFourColorCorrectionMode.MatlabRgbw)
         {
             InitializeComponent();
             this.ApplyCaption();
@@ -47,16 +49,18 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             MeasurementsGrid.ItemsSource = rows;
             CommandManager.AddPreviewExecutedHandler(MeasurementsGrid, GridPreviewExecuted);
             SourcePathBox.Text = sourcePath ?? string.Empty;
-            ShowFourColorRows();
+            SelectMode(mode);
+            ShowMeasurementRows();
         }
 
-        public static void ShowWindow(string? sourcePath = null)
+        public static void ShowWindow(string? sourcePath = null, LumFourColorCorrectionMode mode = LumFourColorCorrectionMode.MatlabRgbw)
         {
             LumFourColorCorrectionWindow? existing = Application.Current.Windows
                 .OfType<LumFourColorCorrectionWindow>()
                 .FirstOrDefault();
             if (existing != null)
             {
+                existing.SelectMode(mode);
                 if (!string.IsNullOrWhiteSpace(sourcePath))
                 {
                     existing.SourcePathBox.Text = sourcePath;
@@ -71,7 +75,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             }
 
             Window? owner = Application.Current.GetActiveWindow();
-            LumFourColorCorrectionWindow window = new(sourcePath)
+            LumFourColorCorrectionWindow window = new(sourcePath, mode)
             {
                 Owner = owner,
                 WindowStartupLocation = owner == null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner,
@@ -83,8 +87,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         {
             OpenFileDialog dialog = new()
             {
-                Title = "选择原四色校正文件",
-                Filter = "四色校正文件 (*.dat;*.json)|*.dat;*.json|所有文件 (*.*)|*.*",
+                Title = "选择原色度校正文件",
+                Filter = "四色 / 多色校正文件 (*.dat;*.json)|*.dat;*.json|所有文件 (*.*)|*.*",
                 CheckFileExists = true,
                 Multiselect = false,
             };
@@ -100,25 +104,37 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             if (!IsInitialized || MeasurementsGrid == null)
                 return;
 
-            if (SinglePointMode.IsChecked == true)
-            {
-                rows.Clear();
-                rows.Add(new CorrectionMeasurementRow { Target = "单点" });
-            }
-            else
-            {
-                ShowFourColorRows();
-            }
+            ShowMeasurementRows();
             ResetResult();
         }
 
-        private void ShowFourColorRows()
+        private void SelectMode(LumFourColorCorrectionMode mode)
         {
+            RadioButton option = mode switch
+            {
+                LumFourColorCorrectionMode.SinglePoint => SinglePointMode,
+                LumFourColorCorrectionMode.MatlabRgbw => FourColorMode,
+                LumFourColorCorrectionMode.PythonRgb => PythonRgbMode,
+                _ => throw new ArgumentOutOfRangeException(nameof(mode)),
+            };
+            option.IsChecked = true;
+        }
+
+        private void ShowMeasurementRows()
+        {
+            SaveButton.Content = SelectedMode == LumFourColorCorrectionMode.PythonRgb ? "导出 XYZ 矩阵" : "另存为";
+            ResultTitle.Text = SelectedMode == LumFourColorCorrectionMode.PythonRgb ? "XYZ 修正矩阵" : "计算结果";
             rows.Clear();
+            if (SelectedMode == LumFourColorCorrectionMode.SinglePoint)
+            {
+                rows.Add(new CorrectionMeasurementRow { Target = "单点" });
+                return;
+            }
             rows.Add(new CorrectionMeasurementRow { Target = "R" });
             rows.Add(new CorrectionMeasurementRow { Target = "G" });
             rows.Add(new CorrectionMeasurementRow { Target = "B" });
-            rows.Add(new CorrectionMeasurementRow { Target = "W" });
+            if (SelectedMode == LumFourColorCorrectionMode.MatlabRgbw)
+                rows.Add(new CorrectionMeasurementRow { Target = "W" });
         }
 
         private void GridPreviewExecuted(object sender, ExecutedRoutedEventArgs e)
@@ -186,9 +202,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                     throw new InvalidOperationException("请先核对输入来源、色块及光谱 IP。");
                 sourceSnapshot = LumFourColorSourceSnapshot.Load(SourcePathBox.Text.Trim());
                 CVRawManualCieConfig source = sourceSnapshot.Config;
-                if (SinglePointMode.IsChecked == true)
+                if (SelectedMode == LumFourColorCorrectionMode.SinglePoint)
                 {
                     correctedConfig = LumFourColorCorrectionCalculator.CorrectSinglePoint(source, CreateMeasurement(rows[0]));
+                }
+                else if (SelectedMode == LumFourColorCorrectionMode.PythonRgb)
+                {
+                    if (rows.Count != 3) throw new InvalidOperationException("Python RGB 需要 R、G、B 三组测量值。");
+                    correctedConfig = LumFourColorCorrectionCalculator.CorrectPythonRgb(CreateMeasurement(rows[0]), CreateMeasurement(rows[1]), CreateMeasurement(rows[2]));
                 }
                 else
                 {
@@ -203,7 +224,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 }
 
                 ResultPreview.Text = FormatMatrix(correctedConfig);
-                StatusText.Text = "计算完成";
+                StatusText.Text = SelectedMode == LumFourColorCorrectionMode.PythonRgb ? "XYZ 修正矩阵已计算" : $"计算完成 · 按原{sourceSnapshot.CalibrationFile.FormatDescription}另存";
                 SaveButton.IsEnabled = true;
             }
             catch (Exception ex)
@@ -226,10 +247,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
             SaveFileDialog dialog = new()
             {
-                Title = "保存修正后的四色校正文件",
-                Filter = "四色校正文件 (*.dat)|*.dat|JSON 文件 (*.json)|*.json|所有文件 (*.*)|*.*",
+                Title = SelectedMode == LumFourColorCorrectionMode.PythonRgb ? "导出 Python RGB 的 XYZ 修正矩阵" : "保存修正后的校正文件（保持原格式）",
+                Filter = "校正文件 (*.dat)|*.dat|JSON 文件 (*.json)|*.json|所有文件 (*.*)|*.*",
                 InitialDirectory = Directory.Exists(sourceDirectory) ? sourceDirectory : Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-                FileName = $"{sourceName}_Corrected{extension}",
+                FileName = SelectedMode == LumFourColorCorrectionMode.PythonRgb ? $"{sourceName}_PythonRGB_XYZ.dat" : $"{sourceName}_Corrected{extension}",
                 AddExtension = true,
                 DefaultExt = extension.TrimStart('.'),
             };
@@ -238,7 +259,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
             try
             {
-                sourceSnapshot!.SaveCopy(dialog.FileName, correctedConfig);
+                sourceSnapshot!.SaveCopy(dialog.FileName, correctedConfig, SelectedMode);
                 StatusText.Text = $"已保存：{dialog.FileName}";
             }
             catch (Exception ex)
@@ -282,7 +303,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
         private static string FormatRow(double first, double second, double third)
         {
-            return $"{first,16:G10}  {second,16:G10}  {third,16:G10}";
+            return $"{first:G10}\t{second:G10}\t{third:G10}";
         }
 
         private void ResetResult()

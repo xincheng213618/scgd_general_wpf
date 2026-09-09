@@ -1,4 +1,5 @@
 using ColorVision.Engine.Services.POI;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
@@ -7,6 +8,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -31,7 +33,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         private LumFourColorCieCapture? frame;
         private IDrawingVisual? drawing;
         private bool updating, disposed;
+        private bool measurementRequested;
         private DispatcherOperation? pending;
+        public event Action? TemplateRequested;
+        public event Action<bool>? DrawRequested;
 
         public LumFourColorPoiEditor(ImageView view, LumFourColorPoiOptions options, Action<string> status)
         {
@@ -55,10 +60,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             view.PreviewDrop += BlockDrop;
             // Opening an unrelated bitmap here would separate the preview from the CIE being measured.
             CommandManager.AddPreviewExecutedHandler(view, BlockImageCommands);
-            view.ContextMenuOpening += BlockContextMenu;
+            view.AddHandler(FrameworkElement.ContextMenuOpeningEvent, new ContextMenuEventHandler(OpenContextMenu), true);
             view.EditorContext.DrawingVisualLists.CollectionChanged += DrawingsChanged;
             view.ImageShow.LostMouseCapture += DrawingFinished;
             view.ImageSourceLoaded += ImageSourceLoaded;
+            view.SizeChanged += ViewSizeChanged;
         }
 
         private static void BlockDrop(object sender, DragEventArgs e) { e.Effects = DragDropEffects.None; e.Handled = true; }
@@ -66,7 +72,32 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         {
             if (e.Command == ApplicationCommands.Open || e.Command == ApplicationCommands.Close) e.Handled = true;
         }
-        private static void BlockContextMenu(object sender, System.Windows.Controls.ContextMenuEventArgs e) => e.Handled = true;
+        private void OpenContextMenu(object sender, ContextMenuEventArgs e)
+        {
+            PopulateContextMenu();
+            e.Handled = !view.IsEnabled;
+        }
+
+        private void PopulateContextMenu()
+        {
+            var menu = view.EditorContext.ContextMenu;
+            menu.Items.Clear();
+            if (drawing is DrawingVisualBase visual)
+            {
+                foreach (MenuItem item in new DrawingVisualBaseDVContextMenu(view.EditorContext.DrawEditorContext).GetContextMenuItems(visual))
+                    if (!Equals(item.Header, "Top")) menu.Items.Add(item);
+                menu.Items.Add(new Separator());
+            }
+            MenuItem circleItem = new() { Header = "绘制圆形", IsEnabled = frame != null };
+            circleItem.Click += (_, _) => DrawRequested?.Invoke(false);
+            menu.Items.Add(circleItem);
+            MenuItem rectangleItem = new() { Header = "绘制矩形", IsEnabled = frame != null };
+            rectangleItem.Click += (_, _) => DrawRequested?.Invoke(true);
+            menu.Items.Add(rectangleItem);
+            MenuItem templateItem = new() { Header = "选择 POI 模板…" };
+            templateItem.Click += (_, _) => TemplateRequested?.Invoke();
+            menu.Items.Add(templateItem);
+        }
 
         private void ImageSourceLoaded(object? sender, ImageViewImageSourceLoadedEventArgs e)
         {
@@ -75,6 +106,15 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 sample.ClearCamera();
                 status("显示图像已改变，请重新选择 CIE 或取图。");
             }
+        }
+
+        private void ViewSizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (disposed || frame == null) return;
+            view.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+            {
+                if (!disposed && frame != null) view.UpdateZoomAndScale();
+            }));
         }
 
         public void ShowSample(LumFourColorCalibrationSample? value)
@@ -119,6 +159,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         {
             pending?.Abort();
             pending = null;
+            measurementRequested = false;
             circle.IsChecked = false;
             rectangle.IsChecked = false;
         }
@@ -160,25 +201,77 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName is "Center" or "Radius" or "RadiusY" or "Rect") RequestMeasurement();
         }
 
-        private void DrawingFinished(object sender, MouseEventArgs e) => RequestMeasurement();
+        private void DrawingFinished(object sender, MouseEventArgs e) { if (measurementRequested) RequestMeasurement(); }
 
         private void RequestMeasurement()
         {
             if (updating || disposed) return;
+            measurementRequested = true;
             sample?.ClearCameraMeasurement();
             pending?.Abort();
             pending = view.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
             {
                 pending = null;
                 if (disposed || view.ImageShow.IsMouseCaptured || sample?.Frame == null || drawing == null) return;
+                measurementRequested = false;
                 try
                 {
                     PoiMeasurementPoint point = GetMeasurementPoint(drawing.BaseAttribute, sample.Frame.Width, sample.Frame.Height);
                     sample.SetCameraMeasurement(point, LumFourColorCieService.Measure(sample.Frame, point));
-                    status($"{sample.Name} 的 POI 已更新，可拖动或调整尺寸。");
+                    view.EditorContext.SelectionVisual.SetRender((ISelectVisual)drawing);
+                    status("");
                 }
                 catch (Exception ex) { status(ex.Message); }
             }));
+        }
+
+        public void ClearPoi()
+        {
+            Cancel();
+            updating = true;
+            try
+            {
+                DetachDrawing();
+                view.EditorContext.SelectionVisual.ClearRender();
+                foreach (var item in view.EditorContext.DrawingVisualLists.ToArray()) view.ImageShow.RemoveVisual((Visual)item);
+                sample?.ClearCameraMeasurement();
+            }
+            finally { updating = false; }
+        }
+
+        public void ApplyTemplate(PoiParam template)
+        {
+            ClearPoi();
+            if (sample?.Frame == null) throw new InvalidOperationException("请先取图。");
+            PoiMeasurementPoint point = GetTemplatePoint(template, sample.Frame.Width, sample.Frame.Height);
+            PoiMeasurementResult result = LumFourColorCieService.Measure(sample.Frame, point);
+            updating = true;
+            try
+            {
+                IDrawingVisual visual = point.Shape == PoiMeasurementShape.Circle
+                    ? new DVCircleText(new CircleTextProperties { Center = new Point(point.X, point.Y), Radius = point.Width / 2d, Text = "POI" })
+                    : new DVRectangleText(new RectangleTextProperties { Rect = new Rect(point.X - point.Width / 2d, point.Y - point.Height / 2d, point.Width, point.Height), Text = "POI" });
+                view.ImageShow.AddVisual((Visual)visual);
+                AttachDrawing(visual);
+                view.EditorContext.SelectionVisual.SetRender((ISelectVisual)visual);
+                sample.SetCameraMeasurement(point, result);
+            }
+            finally { updating = false; }
+        }
+
+        internal static PoiMeasurementPoint GetTemplatePoint(PoiParam template, int width, int height)
+        {
+            if ((template.Width > 0 && template.Width != width) || (template.Height > 0 && template.Height != height))
+                throw new InvalidOperationException("POI 模板与图像尺寸不匹配。");
+            PoiPoint first = template.PoiPoints.FirstOrDefault() ?? throw new InvalidOperationException("POI 模板没有关注点。");
+            BaseProperties properties = first.PointType switch
+            {
+                PoiShape.Circle => new CircleProperties { Center = new Point(first.PixX, first.PixY), Radius = first.Radius },
+                PoiShape.Rect => new RectangleProperties { Rect = new Rect(first.PixX - first.PixWidth / 2d, first.PixY - first.PixHeight / 2d, first.PixWidth, first.PixHeight) },
+                PoiShape.LeftTopRect => new RectangleProperties { Rect = new Rect(first.PixX, first.PixY, first.PixWidth, first.PixHeight) },
+                _ => throw new InvalidOperationException("模板的第一个 POI 须为圆形或矩形。"),
+            };
+            return GetMeasurementPoint(properties, width, height);
         }
 
         internal static PoiMeasurementPoint GetMeasurementPoint(BaseProperties properties, int imageWidth, int imageHeight)
@@ -216,10 +309,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             view.EditorContext.DrawingVisualLists.CollectionChanged -= DrawingsChanged;
             view.ImageShow.LostMouseCapture -= DrawingFinished;
             view.ImageSourceLoaded -= ImageSourceLoaded;
+            view.SizeChanged -= ViewSizeChanged;
             view.PreviewDragOver -= BlockDrop;
             view.PreviewDrop -= BlockDrop;
             CommandManager.RemovePreviewExecutedHandler(view, BlockImageCommands);
-            view.ContextMenuOpening -= BlockContextMenu;
+            view.RemoveHandler(FrameworkElement.ContextMenuOpeningEvent, new ContextMenuEventHandler(OpenContextMenu));
             view.Dispose();
         }
     }

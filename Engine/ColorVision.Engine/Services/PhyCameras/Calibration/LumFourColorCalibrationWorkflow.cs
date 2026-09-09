@@ -71,10 +71,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 cancellationToken.ThrowIfCancellationRequested();
                 if (!device.TryGetCalibrationTemplateFiles(calibration, out var files, out string? error))
                     throw new InvalidOperationException(error ?? "无法解析相机校正模板。");
-                string? colorPath = files.SingleOrDefault(file => file.CalibrationType == CalibrationType.LumFourColor)?.FullPath;
-                if (colorPath == null)
-                    throw new InvalidOperationException("请选择启用了四色校正文件的相机模板。");
-                var calibrationSource = LumFourColorSourceSnapshot.Load(colorPath);
+                var colorFile = files.SingleOrDefault(file => file.CalibrationType is CalibrationType.LumFourColor or CalibrationType.LumMultiColor);
+                if (colorFile == null)
+                    throw new InvalidOperationException("请选择启用了四色或多色校正文件的相机模板。");
+                var calibrationSource = LumFourColorSourceSnapshot.Load(colorFile.FullPath);
+                if (calibrationSource.CalibrationFile.CalibrationType != colorFile.CalibrationType)
+                    throw new InvalidOperationException("模板的校正类型与文件格式不一致：a…i 文件应选择四色校正，Gain/pa 文件应选择多色校正。");
                 EnsureCameraConnected();
                 LocalCameraCaptureResult result = LocalCameraCaptureService.Capture(new LocalCameraCaptureRequest
                 {
@@ -166,6 +168,15 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         public double? CameraZ { get; private set; }
         public double? CameraCieX { get; private set; }
         public double? CameraCieY { get; private set; }
+        private string cameraYInput = string.Empty, cameraCieXInput = string.Empty, cameraCieYInput = string.Empty;
+        private PoiMeasurementResult? acquiredCamera;
+        public string CameraYInput { get => cameraYInput; set { if (cameraYInput == value) return; cameraYInput = value; OnPropertyChanged(); UpdateManualCamera(); } }
+        public string CameraCieXInput { get => cameraCieXInput; set { if (cameraCieXInput == value) return; cameraCieXInput = value; OnPropertyChanged(); UpdateManualCamera(); } }
+        public string CameraCieYInput { get => cameraCieYInput; set { if (cameraCieYInput == value) return; cameraCieYInput = value; OnPropertyChanged(); UpdateManualCamera(); } }
+        public bool IsCameraEdited { get; private set; }
+        public string CameraInputError { get; private set; } = string.Empty;
+        public bool CanRestoreCamera => IsCameraEdited && acquiredCamera.HasValue;
+        public string CameraQuality => IsCameraEdited ? HasCameraMeasurement ? "手动值" : CameraInputError : HasCameraMeasurement ? "POI 测量" : "";
         public float? CameraGain => Frame?.Gain;
         public string CameraExposure => Frame == null
             ? string.Empty
@@ -196,12 +207,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         public string SpectrumDetailsHeading => IsReferenceEdited ? "原始光谱明细（仅供核对）" : "光谱明细";
         public string SpectrumMetadataHeading => IsReferenceEdited ? "原始记录（仅供核对）" : "测量记录";
         public string SpectrumQuality => IsReferenceEdited
-            ? HasSpectrumMeasurement ? "手动参考 · 计算前请核对数值和测量来源。" : ReferenceInputError
-            : !HasSpectrumMeasurement ? "待采集、选择或手动输入参考值" :
-            LumFourColorDataChecks.SpectrumWarning(SpectrumPeakAd) ?? $"IP {SpectrumIpPercent:F2}% · 合格（30%～95%）";
-        public string CameraState => HasCameraMeasurement ? "POI 已测量" : HasImage ? "待框选 POI" : "待取图或选图";
-        public string SpectrumState => IsReferenceEdited ? HasSpectrumMeasurement ? "手动参考待复核" : "手动输入待完善" : !HasSpectrumMeasurement ? "待采集或输入参考" :
-            LumFourColorDataChecks.SpectrumWarning(SpectrumPeakAd) == null ? "光谱 IP 合格" : "光谱待复核";
+            ? HasSpectrumMeasurement ? "手动值" : ReferenceInputError
+            : !HasSpectrumMeasurement ? "" :
+            !SpectrumPeakAd.HasValue ? "IP 未知" : $"IP {SpectrumIpPercent:F2}% · {(LumFourColorDataChecks.SpectrumWarning(SpectrumPeakAd) == null ? "合格" : "待复核")}";
+        public string CameraState => HasCameraMeasurement ? IsCameraEdited ? "相机 · 手动" : "相机 ✓" : "相机 —";
+        public string SpectrumState => HasSpectrumMeasurement ? IsReferenceEdited ? "光谱 · 手动" : "光谱 ✓" : "光谱 —";
         public string PoiDescription => Poi is PoiMeasurementPoint poi ? $"{(poi.Shape == PoiMeasurementShape.Circle ? "圆形" : "矩形")} · 中心 ({poi.X}, {poi.Y}) · {poi.Width} × {poi.Height} px" : "尚未绘制";
         public bool HasImage => Frame != null;
         public bool HasCameraMeasurement => CameraY.HasValue && CameraCieX.HasValue && CameraCieY.HasValue;
@@ -219,9 +229,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         {
             Frame = frame;
             Preview = preview;
-            Poi = null;
-            CameraX = CameraY = CameraZ = CameraCieX = CameraCieY = null;
-            RaiseStateChanged();
+            ClearCameraMeasurement();
         }
 
         public void SetCameraMeasurement(PoiMeasurementPoint poi, PoiMeasurementResult result)
@@ -240,6 +248,56 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             CameraZ = result.Z;
             CameraCieX = result.ChromaX;
             CameraCieY = result.ChromaY;
+            acquiredCamera = result;
+            SetCameraInputs(result);
+            RaiseStateChanged();
+        }
+
+        private void SetCameraInputs(PoiMeasurementResult? value)
+        {
+            cameraYInput = value?.Y.ToString("R", CultureInfo.CurrentCulture) ?? string.Empty;
+            cameraCieXInput = value?.ChromaX.ToString("R", CultureInfo.CurrentCulture) ?? string.Empty;
+            cameraCieYInput = value?.ChromaY.ToString("R", CultureInfo.CurrentCulture) ?? string.Empty;
+            OnPropertyChanged(nameof(CameraYInput));
+            OnPropertyChanged(nameof(CameraCieXInput));
+            OnPropertyChanged(nameof(CameraCieYInput));
+        }
+
+        private void UpdateManualCamera()
+        {
+            IsCameraEdited = true;
+            CameraX = CameraY = CameraZ = CameraCieX = CameraCieY = null;
+            CameraInputError = string.Empty;
+            try
+            {
+                if (string.IsNullOrWhiteSpace(cameraYInput) || string.IsNullOrWhiteSpace(cameraCieXInput) || string.IsNullOrWhiteSpace(cameraCieYInput))
+                    throw new InvalidOperationException("请完整填写相机 Y、x、y。");
+                var value = new ColorCorrectionYxy(ReadCameraInput(cameraYInput, acquiredCamera?.Y, "相机 Y"), ReadCameraInput(cameraCieXInput, acquiredCamera?.ChromaX, "相机 x"), ReadCameraInput(cameraCieYInput, acquiredCamera?.ChromaY, "相机 y"));
+                LumFourColorDataChecks.ValidateYxy(value, "相机值");
+                CameraY = value.Y;
+                CameraCieX = value.CieX;
+                CameraCieY = value.CieY;
+                CameraX = value.Y * (value.CieX / value.CieY);
+                CameraZ = value.Y * ((1 - value.CieX - value.CieY) / value.CieY);
+            }
+            catch (InvalidOperationException ex) { CameraInputError = ex.Message; }
+            RaiseStateChanged();
+        }
+
+        private static double ReadCameraInput(string text, float? original, string name) => original.HasValue
+            && text == original.Value.ToString("R", CultureInfo.CurrentCulture) ? original.Value : ParseInputNumber(text, name);
+
+        public void RestoreCamera()
+        {
+            if (acquiredCamera is not PoiMeasurementResult original) return;
+            CameraX = original.X;
+            CameraY = original.Y;
+            CameraZ = original.Z;
+            CameraCieX = original.ChromaX;
+            CameraCieY = original.ChromaY;
+            IsCameraEdited = false;
+            CameraInputError = string.Empty;
+            SetCameraInputs(original);
             RaiseStateChanged();
         }
 
@@ -295,7 +353,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             {
                 if (string.IsNullOrWhiteSpace(referenceYInput) || string.IsNullOrWhiteSpace(referenceCieXInput) || string.IsNullOrWhiteSpace(referenceCieYInput))
                     throw new InvalidOperationException("请完整填写参考 Y、CIE x、CIE y。");
-                var value = new ColorCorrectionYxy(ParseReferenceNumber(referenceYInput, "Y"), ParseReferenceNumber(referenceCieXInput, "CIE x"), ParseReferenceNumber(referenceCieYInput, "CIE y"));
+                var value = new ColorCorrectionYxy(ParseInputNumber(referenceYInput, "光谱 Y"), ParseInputNumber(referenceCieXInput, "光谱 x"), ParseInputNumber(referenceCieYInput, "光谱 y"));
                 LumFourColorDataChecks.ValidateYxy(value, "手动参考值");
                 ReferenceY = value.Y;
                 ReferenceCieX = value.CieX;
@@ -305,11 +363,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             RaiseStateChanged();
         }
 
-        private static double ParseReferenceNumber(string text, string name)
+        private static double ParseInputNumber(string text, string name)
         {
             if ((!double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out double value)
                 && !double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value)) || !double.IsFinite(value))
-                throw new InvalidOperationException($"参考 {name} 必须是有限数值。");
+                throw new InvalidOperationException($"{name} 必须是有限数值。");
             return value;
         }
 
@@ -328,6 +386,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         public void ClearCameraMeasurement()
         {
             Poi = null;
+            acquiredCamera = null;
+            IsCameraEdited = false;
+            CameraInputError = string.Empty;
+            SetCameraInputs(null);
             CameraX = CameraY = CameraZ = CameraCieX = CameraCieY = null;
             RaiseStateChanged();
         }
@@ -358,7 +420,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         internal IReadOnlyList<string> GetWarnings(string sourceHash)
         {
             List<string> warnings = new();
-            if (Frame?.CalibrationHash == null)
+            if (IsCameraEdited)
+                warnings.Add($"{Name}：相机 Y / x / y 已手动录入或修改，请核对数值与原校正文件");
+            else if (Frame?.CalibrationHash == null)
                 warnings.Add($"{Name}：导入图像未记录校正模板，请核对使用的是当前原校正文件");
             else if (Frame.CalibrationHash != sourceHash)
                 warnings.Add($"{Name}：图像使用的四色校正文件与当前原文件不一致");
@@ -392,6 +456,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             OnPropertyChanged(nameof(CameraZ));
             OnPropertyChanged(nameof(CameraCieX));
             OnPropertyChanged(nameof(CameraCieY));
+            OnPropertyChanged(nameof(IsCameraEdited));
+            OnPropertyChanged(nameof(CameraInputError));
+            OnPropertyChanged(nameof(CanRestoreCamera));
+            OnPropertyChanged(nameof(CameraQuality));
             OnPropertyChanged(nameof(CameraGain));
             OnPropertyChanged(nameof(CameraExposure));
             OnPropertyChanged(nameof(ReferenceY));
@@ -428,14 +496,16 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
     public sealed class LumFourColorCalibrationSession
     {
         public ObservableCollection<LumFourColorCalibrationSample> Samples { get; } = new();
-        public bool IsSinglePoint { get; private set; }
+        public LumFourColorCorrectionMode Mode { get; private set; }
+        public bool IsSinglePoint => Mode == LumFourColorCorrectionMode.SinglePoint;
         public bool IsComplete => Samples.Count > 0 && Samples.All(sample => sample.IsComplete);
 
-        public void SetMode(bool singlePoint)
+        public void SetMode(LumFourColorCorrectionMode mode)
         {
-            IsSinglePoint = singlePoint;
+            if (!Enum.IsDefined(mode)) throw new ArgumentOutOfRangeException(nameof(mode));
+            Mode = mode;
             Samples.Clear();
-            if (singlePoint)
+            if (IsSinglePoint)
             {
                 Samples.Add(new LumFourColorCalibrationSample(LumFourColorCorrectionTarget.SinglePoint));
                 return;
@@ -444,7 +514,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             Samples.Add(new LumFourColorCalibrationSample(LumFourColorCorrectionTarget.Red));
             Samples.Add(new LumFourColorCalibrationSample(LumFourColorCorrectionTarget.Green));
             Samples.Add(new LumFourColorCalibrationSample(LumFourColorCorrectionTarget.Blue));
-            Samples.Add(new LumFourColorCalibrationSample(LumFourColorCorrectionTarget.White));
+            if (mode == LumFourColorCorrectionMode.MatlabRgbw)
+                Samples.Add(new LumFourColorCalibrationSample(LumFourColorCorrectionTarget.White));
         }
 
         public CVRawManualCieConfig Calculate(CVRawManualCieConfig source)
@@ -460,6 +531,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
             if (IsSinglePoint)
                 return LumFourColorCorrectionCalculator.CorrectSinglePoint(source, Samples[0].CreateMeasurement());
+
+            if (Mode == LumFourColorCorrectionMode.PythonRgb)
+                return LumFourColorCorrectionCalculator.CorrectPythonRgb(Samples[0].CreateMeasurement(), Samples[1].CreateMeasurement(), Samples[2].CreateMeasurement());
 
             return LumFourColorCorrectionCalculator.CorrectFourColor(source, new LumFourColorCorrectionMeasurements(
                 Samples[0].CreateMeasurement(),

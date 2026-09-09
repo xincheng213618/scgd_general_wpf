@@ -8,10 +8,13 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.PhyCameras.Calibration;
 using ColorVision.Engine.Services.POI;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.POI;
 using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -110,7 +113,7 @@ public sealed class LumFourColorWorkflowSafetyTests
     public void DifferentColorBlocksCannotReuseOneSpectrumResult()
     {
         var session = new LumFourColorCalibrationSession();
-        session.SetMode(false);
+        session.SetMode(LumFourColorCorrectionMode.MatlabRgbw);
         foreach (var sample in session.Samples)
             FillSample(sample, "source", 123);
         Assert.Contains("同一条光谱", Assert.Throws<InvalidOperationException>(() => session.Calculate(Identity())).Message);
@@ -249,7 +252,7 @@ public sealed class LumFourColorWorkflowSafetyTests
     public void ManualReferenceWithoutInstrumentOrWaveformCanCalculate()
     {
         var session = new LumFourColorCalibrationSession();
-        session.SetMode(true);
+        session.SetMode(LumFourColorCorrectionMode.SinglePoint);
         var sample = session.Samples[0];
         sample.SetCameraMeasurement(new(0, 0, 1, 1, PoiMeasurementShape.Rect), new(1, 2, 3, 0.2f, 0.3f, 0, 0, 0, 0));
         sample.ReferenceYInput = "4";
@@ -317,7 +320,7 @@ public sealed class LumFourColorWorkflowSafetyTests
     public void ManuallyOverriddenReferencesDoNotReuseOriginalWaveformsOrBlockOnOriginalIds()
     {
         var session = new LumFourColorCalibrationSession();
-        session.SetMode(false);
+        session.SetMode(LumFourColorCorrectionMode.MatlabRgbw);
         var colors = new[] { (2f, 0.6f, 0.3f), (3f, 0.25f, 0.6f), (1f, 0.15f, 0.06f), (4f, 0.3f, 0.3f) };
         for (int i = 0; i < session.Samples.Count; i++)
         {
@@ -380,6 +383,13 @@ public sealed class LumFourColorWorkflowSafetyTests
                     Assert.False(sample.IsReferenceEdited);
                     Click(window, "CalculateButton");
                     Assert.True(Control<Button>(window, "SaveButton").IsEnabled);
+                    Control<TextBox>(window, "CameraYBox").Text = "4";
+                    Assert.True(sample.IsCameraEdited);
+                    Assert.False(Control<Button>(window, "SaveButton").IsEnabled);
+                    Click(window, "RestoreCameraButton");
+                    Assert.False(sample.IsCameraEdited);
+                    Click(window, "CalculateButton");
+                    Assert.True(Control<Button>(window, "SaveButton").IsEnabled);
                     Control<TextBox>(window, "ReferenceYBox").Text = "4";
                     Assert.True(sample.IsReferenceEdited);
                     Assert.Equal(4, sample.ReferenceY);
@@ -403,6 +413,7 @@ public sealed class LumFourColorWorkflowSafetyTests
                     Assert.False(((LumFourColorCalibrationSample)list.Items[1]).HasSpectrumMeasurement);
                     Invoke(window, "SetBusy", true, "测试采集中");
                     Assert.False(Control<TextBox>(window, "ReferenceYBox").IsEnabled);
+                    Assert.False(Control<TextBox>(window, "CameraYBox").IsEnabled);
                     Invoke(window, "SetBusy", false, "");
                 }
                 finally { window.Close(); }
@@ -571,6 +582,197 @@ public sealed class LumFourColorWorkflowSafetyTests
     }
 
     private static void Drain() => Application.Current.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle, System.Threading.CancellationToken.None, TimeSpan.FromSeconds(5));
+
+    [Fact]
+    public void SixManualValuesCanCalculateWithoutImageAndRestoreExactPoiMeasurement()
+    {
+        var sample = new LumFourColorCalibrationSample(LumFourColorCorrectionTarget.SinglePoint);
+        sample.CameraYInput = "2"; sample.CameraCieXInput = "0.2"; sample.CameraCieYInput = "0.3";
+        sample.ReferenceYInput = "4"; sample.ReferenceCieXInput = "0.2"; sample.ReferenceCieYInput = "0.3";
+        Assert.True(sample.IsComplete);
+        Assert.Null(sample.Frame);
+        Assert.Equal(2, LumFourColorCorrectionCalculator.CorrectSinglePoint(Identity(), sample.CreateMeasurement()).A, 10);
+        Assert.Contains(sample.GetWarnings("hash"), message => message.Contains("相机 Y / x / y"));
+        sample.CameraCieYInput = "0";
+        Assert.False(sample.HasCameraMeasurement);
+        Assert.Null(sample.CameraX);
+        Assert.True(sample.HasSpectrumMeasurement);
+        Assert.Throws<InvalidOperationException>(() => sample.CreateMeasurement());
+        sample.CameraCieYInput = "-0.3";
+        Assert.True(sample.HasCameraMeasurement);
+        Assert.True(sample.CameraX < 0);
+
+        var poi = new PoiMeasurementPoint(4, 4, 2, 2, PoiMeasurementShape.Circle);
+        var raw = new PoiMeasurementResult(-1, 2, -3, -.25f, -.5f, 0, 0, 0, 0);
+        sample.SetCameraMeasurement(poi, raw);
+        sample.CameraYInput = "7";
+        Assert.Equal(poi, sample.Poi);
+        Assert.True(sample.CanRestoreCamera);
+        sample.RestoreCamera();
+        Assert.Equal(raw.X, sample.CameraX); Assert.Equal(raw.Z, sample.CameraZ);
+        Assert.False(sample.IsCameraEdited);
+        sample.CameraYInput = "NaN";
+        Assert.False(sample.HasCameraMeasurement);
+        sample.ClearCameraMeasurement();
+        Assert.False(sample.CanRestoreCamera);
+        Assert.Equal("", sample.CameraYInput);
+    }
+
+    [Fact]
+    public void PoiTemplateUsesFirstPointAndRejectsWrongSizeOrUnsupportedFirstShape()
+    {
+        var template = new PoiParam { Width = 20, Height = 16 };
+        template.PoiPoints.Add(new PoiPoint { PointType = PoiShape.Circle, PixX = 10, PixY = 8, PixWidth = 4 });
+        template.PoiPoints.Add(new PoiPoint { PointType = PoiShape.Rect, PixX = 5, PixY = 5, PixWidth = 2, PixHeight = 2 });
+        Assert.Equal(new PoiMeasurementPoint(10, 8, 4, 4, PoiMeasurementShape.Circle), LumFourColorPoiEditor.GetTemplatePoint(template, 20, 16));
+        Assert.Throws<InvalidOperationException>(() => LumFourColorPoiEditor.GetTemplatePoint(template, 40, 32));
+        template.PoiPoints[0].PointType = PoiShape.LeftTopRect;
+        template.PoiPoints[0].PixHeight = 2;
+        Assert.Equal(new PoiMeasurementPoint(12, 9, 4, 2, PoiMeasurementShape.Rect), LumFourColorPoiEditor.GetTemplatePoint(template, 20, 16));
+        template.PoiPoints[0].PixX = 19;
+        Assert.Throws<InvalidOperationException>(() => LumFourColorPoiEditor.GetTemplatePoint(template, 20, 16));
+        template.PoiPoints[0].PointType = PoiShape.Point;
+        Assert.Throws<InvalidOperationException>(() => LumFourColorPoiEditor.GetTemplatePoint(template, 20, 16));
+    }
+
+    [Fact]
+    public void WorkflowAppliesPoiTemplateOpensDrawingMenuAndKeepsSixEditableValues()
+    {
+        WithTheme(() =>
+        {
+            var template = new PoiParam { Id = -1, Name = "校正 POI", Width = 956, Height = 654 };
+            template.PoiPoints.Add(new PoiPoint { PointType = PoiShape.Circle, PixX = 478, PixY = 327, PixWidth = 120 });
+            template.PoiPoints.Add(new PoiPoint { PointType = PoiShape.Rect, PixX = 100, PixY = 100, PixWidth = 20, PixHeight = 20 });
+            var model = new TemplateModel<PoiParam>(template.Name, template);
+            var window = new LumFourColorCalibrationWorkflowWindow(Array.Empty<DeviceCamera>(), Array.Empty<DeviceSpectrum>());
+            try
+            {
+                Control<ComboBox>(window, "PoiTemplateCombo").ItemsSource = new[] { model };
+                Render(window, 1556, 976, "workflow-six-empty");
+                var sample = (LumFourColorCalibrationSample)Control<ListBox>(window, "SampleList").Items[0];
+                var frame = SyntheticFrame(956, 654);
+                sample.SetFrame(frame, LumFourColorCieService.Render(frame));
+                Invoke(window, "RefreshSelectedSample");
+                Control<ComboBox>(window, "PoiTemplateCombo").SelectedIndex = 0;
+                Click(window, "ApplyPoiTemplateButton");
+                Drain();
+                Assert.Equal(new PoiMeasurementPoint(478, 327, 120, 120, PoiMeasurementShape.Circle), sample.Poi);
+                var view = Control<ImageView>(window, "CieImageView");
+                // External app menu providers require the main application's config startup.
+                // This window replaces those entries with its own POI menu.
+                view.IEditorToolFactory.IIEditorToolContextMenus.Clear();
+                var circle = Assert.IsType<DVCircleText>(Assert.Single(view.EditorContext.DrawingVisualLists));
+                double measuredY = sample.CameraY!.Value;
+                Control<TextBox>(window, "CameraYBox").Text = "30";
+                Assert.True(sample.IsCameraEdited);
+                Assert.Equal(30, sample.CameraY);
+                Assert.True(Control<Button>(window, "RestoreCameraButton").IsEnabled);
+                Click(window, "RestoreCameraButton");
+                Assert.Equal(measuredY, sample.CameraY);
+                circle.Attribute.Center = new Point(350, 300);
+                Assert.False(sample.HasCameraMeasurement);
+                Drain();
+                Assert.True(sample.HasCameraMeasurement);
+                Assert.Equal(478, template.PoiPoints[0].PixX);
+                Control<TextBox>(window, "ReferenceYBox").Text = "40";
+                Control<TextBox>(window, "ReferenceCieXBox").Text = "0.2";
+                Control<TextBox>(window, "ReferenceCieYBox").Text = "0.3";
+                foreach (string name in new[] { "CameraYBox", "CameraCieXBox", "CameraCieYBox", "ReferenceYBox", "ReferenceCieXBox", "ReferenceCieYBox" })
+                    Assert.False(Control<TextBox>(window, name).IsReadOnly);
+                Assert.False(Control<Expander>(window, "MeasurementDetailsExpander").IsExpanded);
+                Render(window, 1556, 976, "workflow-six-poi");
+                Render(window, 1076, 656, "workflow-six-compact");
+                foreach (UIElement surface in new UIElement[] { view.ImageShow, view.Zoombox1 })
+                {
+                    var opening = (ContextMenuEventArgs)Activator.CreateInstance(typeof(ContextMenuEventArgs), BindingFlags.Instance | BindingFlags.NonPublic,
+                        binder: null, args: new object[] { surface, true }, culture: null)!;
+                    surface.RaiseEvent(opening);
+                    Assert.False(opening.Handled);
+                    Assert.Contains(view.EditorContext.ContextMenu.Items.OfType<MenuItem>(), item => Equals(item.Header, ColorVision.ImageEditor.Properties.Resources.Draw_Edit));
+                    Assert.DoesNotContain(view.EditorContext.ContextMenu.Items.OfType<MenuItem>(), item => ReferenceEquals(item.Command, ApplicationCommands.Open));
+                }
+                var items = view.EditorContext.ContextMenu.Items.OfType<MenuItem>().ToArray();
+                Assert.Contains(items, item => Equals(item.Header, ColorVision.ImageEditor.Properties.Resources.Draw_Edit));
+                Assert.Contains(items, item => Equals(item.Header, "选择 POI 模板…"));
+                items.Single(item => Equals(item.Header, ColorVision.ImageEditor.Properties.Resources.Draw_Delete)).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+                Assert.False(sample.HasCameraMeasurement);
+                Assert.Empty(view.EditorContext.DrawingVisualLists);
+                items.Single(item => Equals(item.Header, "绘制矩形")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+                Assert.Equal(1, Control<ComboBox>(window, "PoiShapeCombo").SelectedIndex);
+                Assert.IsType<RectangleManager>(view.EditorContext.DrawEditorManager.Current);
+                items.Single(item => Equals(item.Header, "绘制圆形")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+                Assert.Equal(0, Control<ComboBox>(window, "PoiShapeCombo").SelectedIndex);
+                Click(window, "DrawPoiButton");
+                Assert.IsType<CircleManager>(view.EditorContext.DrawEditorManager.Current);
+            }
+            finally { window.Close(); }
+        });
+    }
+
+    [Fact]
+    public void PythonRgbModeUsesThreeRowsAndInvalidatesResultsWhenSwitchingModes()
+    {
+        string path = Path.GetTempFileName();
+        WriteSource(path);
+        try
+        {
+            WithTheme(() =>
+            {
+                var window = new LumFourColorCalibrationWorkflowWindow(Array.Empty<DeviceCamera>(), Array.Empty<DeviceSpectrum>(), path);
+                var manual = new LumFourColorCorrectionWindow(path, LumFourColorCorrectionMode.PythonRgb);
+                try
+                {
+                    Control<RadioButton>(window, "PythonRgbMode").IsChecked = true;
+                    var list = Control<ListBox>(window, "SampleList");
+                    Assert.Equal(new[] { "R", "G", "B" }, list.Items.Cast<LumFourColorCalibrationSample>().Select(sample => sample.Name));
+                    Assert.Equal("导出 XYZ 矩阵", Control<Button>(window, "SaveButton").Content);
+                    Assert.False(Control<Button>(window, "CalculateButton").IsEnabled);
+                    int id = 0;
+                    foreach (var sample in list.Items.Cast<LumFourColorCalibrationSample>())
+                    {
+                        FillSample(sample, LumFourColorSourceSnapshot.ComputeHash(path), ++id);
+                        float x = id == 1 ? .64f : id == 2 ? .3f : .15f;
+                        float y = id == 1 ? .33f : id == 2 ? .6f : .06f;
+                        sample.SetCameraMeasurement(new(0, 0, 1, 1, PoiMeasurementShape.Rect), new(2 * x / y, 2, 2 * (1 - x - y) / y, x, y, 0, 0, 0, 0));
+                        sample.SetSpectrumMeasurement(new(new(2, x, y), [new(400, 1), new(500, 2)], id, DateTimeOffset.Now) { PeakAd = 32767, Source = "test" });
+                    }
+                    Invoke(window, "RefreshSelectedSample");
+                    Assert.True(Control<Button>(window, "CalculateButton").IsEnabled);
+                    Click(window, "CalculateButton");
+                    Assert.True(Control<Button>(window, "SaveButton").IsEnabled);
+                    Render(window, 1076, 656, "workflow-python-rgb");
+                    Invoke(window, "SetBusy", true, "");
+                    Assert.False(Control<RadioButton>(window, "PythonRgbMode").IsEnabled);
+                    Invoke(window, "SetBusy", false, "");
+                    Control<RadioButton>(window, "FourColorMode").IsChecked = true;
+                    Assert.Equal(4, list.Items.Count);
+                    Assert.False(Control<Button>(window, "SaveButton").IsEnabled);
+                    Assert.All(list.Items.Cast<LumFourColorCalibrationSample>(), sample => Assert.False(sample.IsComplete));
+
+                    Assert.True(Control<RadioButton>(manual, "PythonRgbMode").IsChecked);
+                    var grid = Control<DataGrid>(manual, "MeasurementsGrid");
+                    Assert.Equal(3, grid.Items.Count);
+                    manual.PasteMeasurements("2\t0.64\t0.33\t2\t0.64\t0.33\n2\t0.3\t0.6\t2\t0.3\t0.6\n2\t0.15\t0.06\t2\t0.15\t0.06");
+                    Control<CheckBox>(manual, "ManualDataConfirmed").IsChecked = true;
+                    Invoke(manual, "Calculate_Click", manual, new RoutedEventArgs());
+                    Assert.True(Control<Button>(manual, "SaveButton").IsEnabled);
+                    Assert.Equal("XYZ 修正矩阵", Control<TextBlock>(manual, "ResultTitle").Text);
+                    Render(manual, 1076, 576, "manual-python-rgb");
+                    ((CorrectionMeasurementRow)grid.Items[0]).CameraYChromaticity = "0";
+                    Assert.False(Control<Button>(manual, "SaveButton").IsEnabled);
+                    Control<CheckBox>(manual, "ManualDataConfirmed").IsChecked = true;
+                    Invoke(manual, "Calculate_Click", manual, new RoutedEventArgs());
+                    Assert.False(Control<Button>(manual, "SaveButton").IsEnabled);
+                    Assert.Empty(Control<TextBox>(manual, "ResultPreview").Text);
+                    Control<RadioButton>(manual, "FourColorMode").IsChecked = true;
+                    Assert.Equal(4, grid.Items.Count);
+                    Assert.False(Control<CheckBox>(manual, "ManualDataConfirmed").IsChecked);
+                }
+                finally { manual.Close(); window.Close(); }
+            });
+        }
+        finally { File.Delete(path); }
+    }
 
     private static LumFourColorCieCapture SyntheticFrame(int width, int height)
     {

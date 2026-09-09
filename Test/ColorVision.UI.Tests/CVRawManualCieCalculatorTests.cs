@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Media;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.PhyCameras.Calibration;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.POI;
@@ -113,12 +113,12 @@ public sealed class CVRawManualCieCalculatorTests
     {
         LumFourColorCalibrationSession session = new();
 
-        session.SetMode(false);
+        session.SetMode(LumFourColorCorrectionMode.MatlabRgbw);
 
         Assert.False(session.IsSinglePoint);
         Assert.Equal(new[] { "R", "G", "B", "W" }, session.Samples.Select(sample => sample.Name));
 
-        session.SetMode(true);
+        session.SetMode(LumFourColorCorrectionMode.SinglePoint);
 
         Assert.True(session.IsSinglePoint);
         Assert.Equal("单点", Assert.Single(session.Samples).Name);
@@ -128,7 +128,7 @@ public sealed class CVRawManualCieCalculatorTests
     public void CalibrationSampleRetainsFiniteNegativeMeasurementsAndSpectrum()
     {
         LumFourColorCalibrationSession session = new();
-        session.SetMode(true);
+        session.SetMode(LumFourColorCorrectionMode.SinglePoint);
         LumFourColorCalibrationSample sample = session.Samples[0];
         sample.SetSpectrumMeasurement(new LumFourColorSpectrumCapture(
             new ColorCorrectionYxy(-4, -0.2, -0.4),
@@ -153,7 +153,7 @@ public sealed class CVRawManualCieCalculatorTests
     public void RetakingImageInvalidatesPoiButPreservesSpectrumForThatSample()
     {
         LumFourColorCalibrationSession session = new();
-        session.SetMode(true);
+        session.SetMode(LumFourColorCorrectionMode.SinglePoint);
         LumFourColorCalibrationSample sample = session.Samples[0];
         sample.SetCameraMeasurement(
             new PoiMeasurementPoint(0, 0, 1, 1, PoiMeasurementShape.Rect),

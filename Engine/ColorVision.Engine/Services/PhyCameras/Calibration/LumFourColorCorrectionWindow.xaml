@@ -38,7 +38,6 @@
 
         <StackPanel Margin="0,0,0,18">
             <TextBlock FontSize="26" FontWeight="SemiBold" Text="四色校正 · 手工数值" />
-            <TextBlock Margin="0,5,0,0" Text="已有 Y / CIE x / CIE y 时使用；取图、选图及光谱质量校验请使用采集窗口。" />
         </StackPanel>
 
         <Border Grid.Row="1" Background="{DynamicResource UpdateDialog.Border}" />
@@ -63,12 +62,15 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <RadioButton x:Name="SinglePointMode" GroupName="CorrectionMode" Content="单点修正"
                          VerticalAlignment="Center" Checked="CorrectionMode_Checked" />
             <RadioButton x:Name="FourColorMode" Grid.Column="1" Margin="24,0,0,0"
-                         GroupName="CorrectionMode" Content="四色修正（RGBW）" IsChecked="True"
+                         GroupName="CorrectionMode" Content="RGBW（MATLAB）" IsChecked="True"
                          VerticalAlignment="Center" Checked="CorrectionMode_Checked" />
+            <RadioButton x:Name="PythonRgbMode" Grid.Column="2" Margin="24,0,0,0" GroupName="CorrectionMode" Content="RGB（Python）"
+                         VerticalAlignment="Center" Checked="CorrectionMode_Checked" ToolTip="仅使用 R/G/B，输出 XYZ→XYZ 修正矩阵，不与原矩阵合成。" />
         </Grid>
 
         <Grid Grid.Row="4">
@@ -91,12 +93,11 @@
                             <Button Content="复制全部" Width="86" Click="CopyAll_Click" Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
                         </StackPanel>
                         <StackPanel><TextBlock Style="{StaticResource SectionLabelStyle}" Text="测量数据" />
-                            <TextBlock Text="选中起始单元格后 Ctrl+V；框选单元格后 Ctrl+C，可与 Excel 互相复制。" FontSize="12" Margin="0,5,6,0" TextWrapping="Wrap" />
                         </StackPanel>
                     </DockPanel>
                     <DataGrid x:Name="MeasurementsGrid" Grid.Row="1"
                               Style="{x:Null}" SelectionUnit="Cell" SelectionMode="Extended" ClipboardCopyMode="ExcludeHeader"
-                              PreviewKeyDown="MeasurementsGrid_PreviewKeyDown"
+                              PreviewKeyDown="MeasurementsGrid_PreviewKeyDown" ToolTip="Ctrl+V 粘贴；Ctrl+C 复制选区"
                               AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
                               CanUserReorderColumns="False" CanUserResizeRows="False" CanUserSortColumns="False"
                               HeadersVisibility="Column" GridLinesVisibility="All"
@@ -134,18 +135,19 @@
                         </DataGrid.Columns>
                     </DataGrid>
                     <CheckBox x:Name="ManualDataConfirmed" Grid.Row="2" Margin="0,12,0,0" Unchecked="InputChanged">
-                        <TextBlock Text="已核对色块、原校正文件与光谱 IP（30%～95%）。修改数值后需重新核对。" TextWrapping="Wrap" />
+                        <TextBlock Text="已核对测量数据" ToolTip="核对色块、原校正文件及光谱 IP（30%～95%）；修改数据后需重新确认。" />
                     </CheckBox>
                 </Grid>
             </Border>
 
             <Border Grid.Column="2" Padding="16" Style="{StaticResource UpdateDialogCardStyle}">
                 <StackPanel>
-                    <TextBlock Style="{StaticResource SectionLabelStyle}" Text="计算结果" />
+                    <TextBlock x:Name="ResultTitle" Style="{StaticResource SectionLabelStyle}" Text="计算结果" />
                     <TextBox x:Name="ResultPreview" Margin="0,12,0,0" Height="184"
                              Padding="12" IsReadOnly="True" AcceptsReturn="True"
                              FontFamily="Cascadia Mono,Consolas" FontSize="12"
-                             VerticalScrollBarVisibility="Auto" />
+                             VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                             HorizontalContentAlignment="Left" VerticalContentAlignment="Top" />
                     <TextBlock x:Name="StatusText" Margin="0,14,0,0" FontSize="12"
                                Foreground="{DynamicResource UpdateDialog.TextSecondary}"
                                TextWrapping="Wrap" />
@@ -166,7 +168,7 @@
                 <Button Width="110" Margin="10,0,0,0" Click="Calculate_Click" Content="计算修正"
                         IsEnabled="{Binding IsChecked, ElementName=ManualDataConfirmed}"
                         Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
-                <Button x:Name="SaveButton" Width="110" Margin="10,0,0,0" Click="SaveAs_Click"
+                <Button x:Name="SaveButton" Width="132" Margin="10,0,0,0" Click="SaveAs_Click"
                         Content="另存为" IsEnabled="False"
                         Style="{StaticResource UpdateDialogPrimaryButtonStyle}" />
             </StackPanel>

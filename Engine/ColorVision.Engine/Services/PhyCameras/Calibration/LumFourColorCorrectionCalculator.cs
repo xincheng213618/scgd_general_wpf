@@ -6,6 +6,13 @@ using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.PhyCameras.Calibration
 {
+    public enum LumFourColorCorrectionMode
+    {
+        MatlabRgbw,
+        SinglePoint,
+        PythonRgb,
+    }
+
     public readonly record struct ColorCorrectionYxy(double Y, double CieX, double CieY);
 
     public readonly record struct ColorCorrectionSpectrumPoint(double Wavelength, double Value);
@@ -106,6 +113,42 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
             double[] correctedMatrix = Solve(equations, rightHandSide, "四色修正方程");
             return CloneWithMatrix(source, correctedMatrix);
+        }
+
+        // calibration_pro/main.py run_fr_adv: M_reference * inverse(M_camera).
+        // The result maps measured XYZ to reference XYZ; it is not a replacement
+        // RGB-to-XYZ calibration matrix composed with the original file.
+        public static CVRawManualCieConfig CorrectPythonRgb(ColorCorrectionMeasurement red, ColorCorrectionMeasurement green, ColorCorrectionMeasurement blue)
+        {
+            ColorCorrectionMeasurement[] samples = [red, green, blue];
+            double[,] camera = new double[3, 3];
+            double[,] reference = new double[3, 3];
+            for (int sampleIndex = 0; sampleIndex < samples.Length; sampleIndex++)
+            {
+                var sample = samples[sampleIndex] ?? throw new ArgumentException("RGB 测量值不能为空。");
+                double[] measuredXyz = ToXyz(sample.Camera, $"RGB 第 {sampleIndex + 1} 组相机值");
+                double[] referenceXyz = ToXyz(sample.Reference, $"RGB 第 {sampleIndex + 1} 组参考值");
+                for (int axis = 0; axis < 3; axis++)
+                {
+                    camera[sampleIndex, axis] = measuredXyz[axis];
+                    reference[sampleIndex, axis] = referenceXyz[axis];
+                }
+            }
+            double determinant = camera[0, 0] * (camera[1, 1] * camera[2, 2] - camera[1, 2] * camera[2, 1])
+                - camera[0, 1] * (camera[1, 0] * camera[2, 2] - camera[1, 2] * camera[2, 0])
+                + camera[0, 2] * (camera[1, 0] * camera[2, 1] - camera[1, 1] * camera[2, 0]);
+            EnsureFinite(determinant, "RGB 实测矩阵行列式");
+            if (Math.Abs(determinant) < 1e-12)
+                throw new InvalidOperationException("RGB 实测数据线性相关，无法计算 XYZ 修正矩阵。");
+
+            double[] transform = new double[9];
+            for (int axis = 0; axis < 3; axis++)
+            {
+                // Solve the transposed system to obtain each row without forming an inverse.
+                double[] row = Solve(camera, [reference[0, axis], reference[1, axis], reference[2, axis]], "RGB 实测矩阵");
+                Array.Copy(row, 0, transform, axis * 3, 3);
+            }
+            return CloneWithMatrix(new CVRawManualCieConfig(), transform);
         }
 
         public static string SerializeCalibrationFile(CVRawManualCieConfig calibration)
