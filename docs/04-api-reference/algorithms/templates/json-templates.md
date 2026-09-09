@@ -2,10 +2,10 @@
 knowledge_id: "algorithms.json-templates"
 knowledge_type: "reference"
 status: "current"
-summary: "JSON模板的文本/属性编辑、数据库保存、默认参数与重置；校验Json按钮只同步模型，Schema提供字段提示而不补默认值或执行完整校验。"
+summary: "JSON模板的分组参数与文本编辑、语法检查、输入草稿、保存保护和默认参数；Schema提供字段提示而不补默认值或执行完整校验。"
 aliases: ["JSON模板","JSON模板保存和V2结果如何对应","属性编辑","文本编辑","校验Json","设置为默认参数","无法重置，请检查数据库相关配置","JSON Schema默认值","Schema default","JSON模板重置","HDR参数Schema","ITemplateJson","TemplateJsonParam","EditTemplateJson","JsonPropertyEditorControl","JsonEditorSchemaDocument","CanHandle1","SchemaIndexResourceName","TryLoadTemplateSchema"]
 code_paths: ["Engine/ColorVision.Engine/Templates/Jsons","Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Templates/HDR/TemplateHDR.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Templates/HDR/Camera.RunParams.schema.json","UI/ColorVision.UI/PropertyEditor/Json","UI/ColorVision.UI/Utilities/JsonHelper.cs","UI/ColorVision.Common/Utilities/DebounceTimer.cs"]
-test_paths: []
+test_paths: ["Test/ColorVision.UI.Tests/JsonTemplateEditorTests.cs"]
 related: ["algorithms.index","algorithms.template-management","engine.host","engine.template-design","engine.results","copilot.tool-contracts"]
 ---
 
@@ -17,29 +17,31 @@ JSON 模板将一条参数保存为数据库 `ModMasterModel.JsonVal`，由 `ITe
 
 ## 编辑并保存参数
 
-1. 在对应模板窗口选择一条参数。通用编辑器默认使用属性模式，之后记住上次模式；底部“文本编辑”或“属性编辑”用于切换到另一种模式。
-2. 在属性模式按参数名称、路径或值搜索，展开对象或数组后编辑。字符串和数值输入框在失去焦点时提交，布尔值和枚举在选择变化时提交。需要增加字段、修改空数组或复杂原始载荷时，使用文本模式。
-3. 文本模式修改后稍候再保存；它通过 50 ms 防抖把内容写入参数对象。对象 `{...}` 和数组 `[...]` 可通过 `JsonValue` 的语法检查，单个字符串、数字等顶层标量不能；属性模式只接受对象。
-4. 确认修改已经进入参数对象，再使用宿主“保存”或 `Ctrl+S` 写数据库。编辑器内的“校验Json”不执行保存。批量保存和关闭的限制见下文。
+1. 在模板窗口选择一条记录。右上角 **参数 / JSON** 切换编辑方式，记住上次选择；顶层数组自动使用 JSON 视图。
+2. 参数视图按实际对象结构分组。打开或切换模板时默认显示**全部分组**，分组菜单显示各组项数；普通数值/字符串数组算一个编辑项，布尔数组按下标逐项勾选。没有分页。
+3. 搜索始终覆盖全部参数的字段名、完整路径、说明和值。搜索时暂停分组筛选，清除后回到原分组；搜索结果和深层字段显示完整路径，字段旁保留说明；需要完整说明、范围与示例时，点击工具栏的**说明**展开底部面板（默认收起）。
+4. 输入变化立即尝试应用到内存对象。错误数值或数组保留原始输入并就地显示错误，搜索或换组后仍保留草稿；**定位错误输入** 返回首个错误字段。有效字段可继续编辑。
+5. 使用宿主 **保存** 或 `Ctrl+S` 写数据库。现有编辑宿主会在保存、切换记录前调用 `ITemplateEditorValidation.TryCommitPendingEdits()`；创建宿主在最终创建前调用同一接口。错误输入阻止这些操作，也阻止切换到另一种编辑视图。成功保存返回后更新当前编辑器的修改基线。
 
-界面只有文本和属性两种视图。模板类传入的 `Description` 不是第三种注释视图；字段说明来自可选 Schema。
+标题与操作共用一行，分组与搜索共用一行；窄窗口下操作按钮自动换行。参数行使用紧凑间距，说明区按需展开，错误提示仍独立显示。
 
-### 校验、重置和辅助入口
+编辑器的状态栏区分“无新修改”“已修改”和“错误输入尚未应用”。它比较当前内容与本次加载/保存的快照，不是数据库持久化成功的独立证据；具体保存仍受下文数据库边界限制。
+
+### 语法检查、重置和辅助入口
 
 | 入口 | 实际作用 |
 | --- | --- |
-| **校验Json** | `CheckCommand` 触发 `JsonValueChanged`，编辑器从当前参数对象重写文本；不执行完整 Schema 校验，也不调用算法。无效文本草稿没有进入模型时，点击会用上次有效内容覆盖草稿 |
-| **重置** | 按当前记录的 `Pid` 查询字典 `SysDictionaryModModel.JsonVal`，尝试替换内存参数；需要另行保存才写回当前模板。字典缺失或没有字符串默认值时提示“无法重置，请检查数据库相关配置”；默认字符串语法无效时，参数 setter 拒绝赋值并保留当前值 |
-| **json** | 用系统浏览器打开 `json.cn`，并把当前模型 JSON 放入剪贴板；代码不自动粘贴或上传文本 |
-| **询问Copilot** | 将当前模板上下文交给 Copilot；解释与参数建议快捷项直接发起任务，“发送到Copilot”只预填。补丁预览、应用和保存是不同操作，见[模板 JSON 预览与应用](../../../02-developer-guide/core-concepts/copilot-agent-tool-contracts.md#模板-json-预览与应用) |
+| **检查语法** | 检查当前草稿是否为语法有效的 JSON 对象/数组，显示错误行和 UTF-8 字节位置。失败时保留原文，不再用上次有效模型覆盖草稿；不执行完整 Schema 校验或算法 |
+| **格式化** | JSON 视图中格式化有效文本，通过 AvalonEdit 文档修改保留撤销记录 |
+| **查找** / `Ctrl+F` | JSON 视图使用 AvalonEdit 搜索面板；参数视图快捷键聚焦全局参数搜索 |
+| **更多 → 复制当前 JSON** | 校验当前输入后复制到剪贴板 |
+| **更多 → 恢复默认参数** | 确认后按当前记录的 `Pid` 查询字典 `SysDictionaryModModel.JsonVal`，替换内存参数并同步两个视图；需要另行保存。字典缺失或没有字符串默认值时提示“无法重置，请检查数据库相关配置” |
+| **更多 → 在 json.cn 中打开** | 检查当前输入后打开网站并复制当前 JSON；代码不自动粘贴或上传文本 |
+| **询问Copilot** | 保持现有模板上下文、说明、诊断和发送入口；有错误属性输入时拒绝应用补丁。预览、应用和保存仍是不同操作，见[模板 JSON 预览与应用](../../../02-developer-guide/core-concepts/copilot-agent-tool-contracts.md#模板-json-预览与应用) |
 
-### 当前同步限制
+文本输入不使用跨实例防抖键，有效输入在本次事件内提交。参数对象发出 `JsonValueChanged` 时同时刷新文本和可见属性视图；解析新对象失败会清空旧字段，不能继续把旧对象当成新内容编辑。
 
-- **重置后属性区可能仍显示旧值。** 重置和“校验Json”的事件只刷新文本，不重建属性区；继续改旧属性会把旧对象内容写回模型。需要重置时先切到文本模式，再重置并确认内容，最后切回属性模式。
-- **解析失败不保证清空旧属性。** `JsonPropertyEditorControl.SetJson` 在解析新对象失败时保留上次对象及控件，显示错误提示。此时不要把仍可见的旧字段当成新文本已加载；再次切回文本可能取回旧对象，覆盖草稿。
-- **快速保存或多个编辑器会遇到防抖边界。** 所有实例共用 `EditTemplateJsonChanged` 计时器键，后一次输入可以取消另一个实例的待处理回调；回调读取执行时的当前参数和文本。保存、切换模板、卸载控件没有显式冲刷或取消机制，不能保证尚未提交的输入已保存。
-
-这些是当前实现的缺口，不是预期的数据丢失契约。修改同步链时应验证上述场景，不能以切换视图未抛异常或“保存成功”提示代替内容核对。
+关闭窗口、重新选择创建来源或外部调用 `SetParam` 不是草稿恢复机制；未保存内容不承诺跨关闭保留。宿主取消/重载的共享对象边界见[模板编辑与创建宿主](./template-management.md)。
 
 ## 默认参数从哪里来
 
@@ -61,7 +63,7 @@ JSON 模板将一条参数保存为数据库 `ModMasterModel.JsonVal`，由 `ITe
 | `properties`、`items` | 按对象路径和数组路径匹配说明；不会创建 JSON 中不存在的字段 |
 | `title`、`description`、`unit`、`examples` | 参数标签、提示和检索信息 |
 | `enum`、`x-enumDescriptions` | 枚举选择及说明；已有值不在枚举中时可显示为未选中，不会自动改成第一项 |
-| `minimum`、`maximum` | 数值输入框失去焦点时检查范围；不扫描文本模式的所有值，也不逐项验证简单数组 |
+| `minimum`、`maximum` | 数值输入变化时检查范围；不扫描文本模式的所有值，也不逐项验证简单数组 |
 | `x-provider.jsonPath`、`x-colorvision` 来源信息 | 路径匹配与来源/维护状态说明；不是 DLL 版本或参数兼容性验证 |
 | `default`、`type`、`required`、`additionalProperties`、`exclusiveMinimum` / `exclusiveMaximum`、`$ref` | 不作为完整约束执行；不补默认值、不解析外部引用，输入控件类型仍来自现有 JSON 值 |
 | `x-ui.group` / `order` / `advanced` | 当前控件不消费这些分组、排序或高级选项声明 |
@@ -70,12 +72,13 @@ JSON 模板将一条参数保存为数据库 `ModMasterModel.JsonVal`，由 `ITe
 
 | 输入 | 当前限制 |
 | --- | --- |
-| 整数输入框 | 用 `Int32` 解析；较大整数应在文本模式维护 |
-| 简单数组 | 用逗号分隔文本，按原数组首项类型解析全部项目；空项及无法解析的数值/布尔值会被跳过，字符串中的逗号会被拆开。混合类型或含逗号字符串应在文本模式维护 |
-| 空数组、`null` | 属性模式没有可直接补内容的编辑器，使用文本模式 |
-| 字段名本身含 `.` 或 `[...]` | 更新逻辑把这些符号当嵌套路径，不能保证写回原字面键；使用文本模式 |
+| 整数输入框 | 使用整数解析，支持超过 Int64 的整数，不经浮点转换写回 |
+| 简单数组 | 使用完整 JSON 数组文本，例如 `[60, 40]` 或 `["a,b", "c"]`；错误输入整体拒绝，不跳过项目。布尔数组显示带下标的勾选项 |
+| 空数组、空对象、`null` | 可用 JSON 值文本编辑；新增复杂结构后可重新进入参数视图生成对应字段 |
+| 字段名本身含 `.` 或 `[...]` | 使用原始 token 的转义路径更新，不把字面键误当成嵌套字段 |
+| 日期形式字符串 | 属性解析关闭自动日期转换，仍按字符串维护 |
 
-`JsonPropertyEditorControl.ValidateJson()` 也只是对当前输出做对象语法解析，且没有接到 Engine 的“校验Json”按钮。语法有效不代表字段完整、范围全部合规或算法可执行。
+`JsonPropertyEditorControl.ValidateJson()` 检查是否加载了对象以及是否存在尚未通过的属性输入。Engine 的“检查语法”检查原始 JSON 草稿；语法有效不代表字段完整、范围全部合规或算法可执行。
 
 ## Schema 查找与发布边界
 
@@ -141,6 +144,6 @@ JSON 模板将一条参数保存为数据库 `ModMasterModel.JsonVal`，由 `ITe
 
 ## 验证入口与缺口
 
-目前没有声明直接覆盖 `ITemplateJson`、`TemplateJsonParam`、`EditTemplateJson` 或属性 Schema 控件的自动化测试。流程包测试不能替代这些编辑、数据库与控件同步检查。
+直接回归入口为 `Test/ColorVision.UI.Tests/JsonTemplateEditorTests.cs`，覆盖无效文档清空旧字段、大整数、带逗号字符串数组、字面路径键、50 项参数的分组/全局搜索与错误草稿保留、编辑模式/提交保护、外部模型刷新及多编辑器输入隔离。测试可以通过 `JSON_EDITOR_PREVIEW_DIR` 输出鬼影 Schema 默认参数的浅色、深色和窄窗口 WPF 渲染图。
 
-修改此链路时，应在隔离数据中验证有效/无效文本、顶层数组、属性失焦、重置、连续切换、多窗口防抖、保存后重新读取，以及大整数/简单数组/字面路径键等边界。Schema 另核对 Code、索引、实际文件、程序集逻辑资源名及无 Schema 回退；导入导出需比较有效载荷和目标字典身份，结果链需实际事件/版本样本。源码审查和文档构建通过不代表上述运行行为已经验证。
+本地示例和内存参数验证不替代真实数据库保存后重新读取、默认字典查询或算法执行。Schema 交付另核对 Code、索引、实际文件、程序集资源名及无 Schema 回退；导入导出需比较有效载荷和目标字典身份，结果链需实际事件/版本样本。

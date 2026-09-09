@@ -1,129 +1,97 @@
 <UserControl x:Class="ColorVision.UI.PropertyEditor.Json.JsonPropertyEditorControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision.UI.PropertyEditor.Json"
-             mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="400">
+             FontSize="13" UseLayoutRounding="True" SnapsToDevicePixels="True">
     <UserControl.Resources>
-        <Style TargetType="{x:Type TextBlock}">
+        <BooleanToVisibilityConverter x:Key="VisibleWhenTrue"/>
+        <Style TargetType="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-            <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+        </Style>
+        <Style x:Key="ParameterGroup" TargetType="Expander">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Expander">
+                        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Background="{DynamicResource GlobalBackground}">
+                            <StackPanel>
+                                <ToggleButton Style="{x:Null}" HorizontalAlignment="Stretch" MinHeight="32" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}"
+                                              HorizontalContentAlignment="Stretch">
+                                    <ToggleButton.Template>
+                                        <ControlTemplate TargetType="ToggleButton">
+                                            <Border x:Name="HeaderBorder" Background="{DynamicResource SecondaryRegionBrush}" Padding="10,6" CornerRadius="5">
+                                                <DockPanel>
+                                                    <TextBlock Foreground="{DynamicResource GlobalTextBrush}" x:Name="Chevron" DockPanel.Dock="Right" Text="›" FontSize="18" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                                                    <ContentPresenter/>
+                                                </DockPanel>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsChecked" Value="True"><Setter TargetName="Chevron" Property="Text" Value="⌄"/></Trigger>
+                                                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="HeaderBorder" Property="Background" Value="{DynamicResource GlobalBorderBrush1}"/></Trigger>
+                                                <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="HeaderBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/><Setter TargetName="HeaderBorder" Property="BorderThickness" Value="1"/></Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </ToggleButton.Template>
+                                    <ContentPresenter Content="{TemplateBinding Header}"/>
+                                </ToggleButton>
+                                <ContentPresenter x:Name="Body" ContentSource="Content" Visibility="Collapsed" Margin="12,0"/>
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="True"><Setter TargetName="Body" Property="Visibility" Value="Visible"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </UserControl.Resources>
     <Grid>
-        <Border Background="{DynamicResource SecondaryRegionBrush}"
-                BorderBrush="{DynamicResource BorderBrush}"
-                BorderThickness="1"
-                CornerRadius="5"
-                Padding="6">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <Grid Margin="0,0,0,5">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-
-                    <Grid Grid.Column="0" Margin="0,0,5,0">
-                        <TextBox x:Name="SearchTextBox"
-                                 MinWidth="140"
-                                 Height="24"
-                                 Padding="6,0,28,0"
-                                 VerticalContentAlignment="Center"
-                                 ToolTip="搜索参数、路径或值"
-                                 Style="{DynamicResource TextBox.Small}"
-                                 TextChanged="SearchTextBox_TextChanged"/>
-                        <TextBlock x:Name="SearchPlaceholder"
-                                   Text="搜索参数、路径或值"
-                                   Margin="8,0,28,0"
-                                   Opacity="0.45"
-                                   IsHitTestVisible="False"/>
-                        <Button x:Name="ClearSearchButton"
-                                Content="清"
-                                Width="24"
-                                Height="22"
-                                Padding="0"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Center"
-                                ToolTip="清除搜索"
-                                Visibility="Collapsed"
-                                Click="ClearSearchButton_Click"/>
-                    </Grid>
-                    <Button x:Name="ExpandAllButton"
-                            Grid.Column="1"
-                            Content="展开"
-                            MinWidth="48"
-                            Padding="8,1"
-                            Margin="0,0,4,0"
-                            Click="ExpandAllButton_Click"/>
-                    <Button x:Name="CollapseAllButton"
-                            Grid.Column="2"
-                            Content="收起"
-                            MinWidth="48"
-                            Padding="8,1"
-                            Click="CollapseAllButton_Click"/>
-                </Grid>
-
-                <Border x:Name="SchemaInfoBorder"
-                        Grid.Row="1"
-                        Visibility="Collapsed"
-                        Background="{DynamicResource GlobalBorderBrush1}"
-                        BorderBrush="{DynamicResource BorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="4"
-                        Padding="7,4"
-                        Margin="0,0,0,5">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock x:Name="SchemaTitleText"
-                                       FontWeight="SemiBold"/>
-                            <TextBlock x:Name="SchemaDetailText"
-                                       FontSize="11"
-                                       Opacity="0.72"
-                                       Margin="0,1,0,0"/>
-                        </StackPanel>
-                        <TextBlock x:Name="SchemaBadgeText"
-                                   Grid.Column="1"
-                                   Margin="8,0,0,0"
-                                   FontSize="11"
-                                   FontWeight="SemiBold"
-                                   VerticalAlignment="Top"/>
-                    </Grid>
-                </Border>
-
-                <ScrollViewer Grid.Row="2"
-                              VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel x:Name="PropertyPanel"/>
-                </ScrollViewer>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid Margin="12,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <ComboBox x:Name="GroupSelector" Width="140" Height="30" Margin="0,0,8,0"
+                      ToolTip="{Binding SelectedItem.Content, RelativeSource={RelativeSource Self}}"
+                      SelectionChanged="GroupSelector_SelectionChanged" AutomationProperties.Name="参数分组"/>
+            <Grid Grid.Column="1">
+                <TextBox Style="{DynamicResource TextBox.Small}" x:Name="SearchTextBox" Height="30" Padding="8,3,26,3" VerticalContentAlignment="Center"
+                         TextChanged="SearchTextBox_TextChanged" AutomationProperties.Name="搜索参数"/>
+                <TextBlock x:Name="SearchPlaceholder" Text="搜索全部参数：名称、说明或值…" Margin="10,0,26,0" Opacity="0.5"
+                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                <Button x:Name="ClearSearchButton" Content="×" Width="24" Height="24" Padding="0" Margin="0,0,3,0" HorizontalAlignment="Right"
+                        Background="Transparent" BorderThickness="0" Visibility="Collapsed" ToolTip="清除搜索" Click="ClearSearchButton_Click"/>
             </Grid>
-        </Border>
-
-        <Border x:Name="ErrorBorder"
-                Background="{DynamicResource DangerBrush}"
-                Padding="10"
-                Margin="10"
-                CornerRadius="5"
-                Visibility="Collapsed"
-                VerticalAlignment="Top">
-            <TextBlock x:Name="ErrorText" 
-                       Foreground="White" 
-                       TextWrapping="Wrap"
-                       FontWeight="Bold"/>
-        </Border>
+            <TextBlock x:Name="ResultCountText" Grid.Column="2" Margin="8,0" Opacity="0.6" FontSize="12" VerticalAlignment="Center"/>
+            <Button Grid.Column="3" Content="⋯" Width="30" Height="30" Padding="0" ToolTip="展开或收起全部分组" AutomationProperties.Name="折叠选项" Click="GroupOptions_Click">
+                <Button.ContextMenu><ContextMenu>
+                    <MenuItem Header="展开全部分组" Click="ExpandAllButton_Click"/>
+                    <MenuItem Header="收起全部分组" Click="CollapseAllButton_Click"/>
+                </ContextMenu></Button.ContextMenu>
+            </Button>
+            <ToggleButton x:Name="DetailsToggle" Grid.Column="4" Content="说明" MinHeight="30" Margin="6,0,0,0" Padding="6,2"
+                          ToolTip="展开当前参数的完整说明、范围与示例"/>
+        </Grid>
+        <ScrollViewer x:Name="PropertyScroller" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="12,0,12,4">
+            <StackPanel x:Name="PropertyPanel"/>
+        </ScrollViewer>
+        <StackPanel Grid.Row="2">
+            <Border x:Name="DetailsPanel" Visibility="{Binding IsChecked, ElementName=DetailsToggle, Converter={StaticResource VisibleWhenTrue}}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="12,6">
+                <StackPanel>
+                    <TextBlock x:Name="DetailPathText" Text="选择参数查看完整说明" FontFamily="Consolas, Microsoft YaHei UI" FontSize="12" Opacity="0.65" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock x:Name="DetailText" Text="按 Tab 切换参数，修改后使用窗口的“保存”。" Margin="0,3,0,0" TextWrapping="Wrap" MaxHeight="76"/>
+                </StackPanel>
+            </Border>
+            <Border Visibility="{Binding Visibility, ElementName=ErrorText}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="12,6">
+                <DockPanel>
+                    <Button x:Name="LocateErrorButton" DockPanel.Dock="Right" Content="定位错误输入" Click="LocateError_Click" Visibility="Collapsed" Margin="8,0,0,0"/>
+                    <TextBlock x:Name="ErrorText" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" TextWrapping="Wrap" Visibility="Collapsed"/>
+                </DockPanel>
+            </Border>
+        </StackPanel>
     </Grid>
 </UserControl>
