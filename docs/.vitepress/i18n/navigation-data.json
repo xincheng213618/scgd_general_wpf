@@ -677,6 +677,12 @@
                 "root": "启动、初始化与故障恢复"
               },
               "link": "/03-architecture/overview/runtime"
+            },
+            {
+              "text": {
+                "root": "主程序启动与最小图像验证"
+              },
+              "link": "/00-getting-started/first-steps"
             }
           ]
         },
@@ -1643,6 +1649,12 @@
             },
             {
               "text": {
+                "root": "文本编辑器"
+              },
+              "link": "/04-api-reference/ui-components/text-editor"
+            },
+            {
+              "text": {
                 "root": "主程序启动与最小图像验证"
               },
               "link": "/00-getting-started/first-steps"
@@ -1667,6 +1679,12 @@
                 "root": "主窗口与入口装配"
               },
               "link": "/01-user-guide/interface/main-window"
+            },
+            {
+              "text": {
+                "root": "文本编辑器"
+              },
+              "link": "/04-api-reference/ui-components/text-editor"
             },
             {
               "text": {

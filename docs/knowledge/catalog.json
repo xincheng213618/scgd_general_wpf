@@ -858,7 +858,7 @@
       "knowledge_id": "algorithms.json-templates",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "JSON模板的文本/属性编辑、数据库保存、默认参数与重置；校验Json按钮只同步模型，Schema提供字段提示而不补默认值或执行完整校验。",
+      "summary": "JSON模板的分组参数与文本编辑、语法检查、输入草稿、保存保护和默认参数；Schema提供字段提示而不补默认值或执行完整校验。",
       "aliases": [
         "JSON模板",
         "JSON模板保存和V2结果如何对应",
@@ -889,7 +889,9 @@
         "UI/ColorVision.UI/Utilities/JsonHelper.cs",
         "UI/ColorVision.Common/Utilities/DebounceTimer.cs"
       ],
-      "test_paths": [],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/JsonTemplateEditorTests.cs"
+      ],
       "related": [
         "algorithms.index",
         "algorithms.template-management",
@@ -4643,6 +4645,7 @@
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCorrectionWindow.xaml.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorDataChecks.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationFile.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorPoiEditor.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorMeasurementClipboard.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorSpectrumSelectionWindow.xaml",
@@ -4662,6 +4665,7 @@
         "Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs",
         "Test/ColorVision.UI.Tests/CalibrationEditorInteractionTests.cs",
         "Test/ColorVision.UI.Tests/LumFourColorWorkflowSafetyTests.cs",
+        "Test/ColorVision.UI.Tests/LumFourColorFileCompatibilityTests.cs",
         "Test/ColorVision.UI.Tests/CvFilePixelSafetyTests.cs",
         "Test/ColorVision.UI.Tests/CvcieFloatChannelRendererTests.cs"
       ],
@@ -6663,7 +6667,7 @@
       "knowledge_id": "operations.first-run",
       "knowledge_type": "guide",
       "status": "current",
-      "summary": "主程序启动的配置、实例和服务副作用，以及隔离测试环境中的最小本地图像验证。",
+      "summary": "主程序启动的配置、实例和服务副作用，远程白屏的软件渲染兼容入口，以及隔离测试环境中的最小本地图像验证。",
       "aliases": [
         "首次启动",
         "快速上手",
@@ -6681,10 +6685,16 @@
         "JPEG",
         "TIFF",
         "StartupFileOpenPolicy",
-        "WizardCompletionKey"
+        "WizardCompletionKey",
+        "ToDesk白屏",
+        "远程窗口白屏",
+        "software-rendering",
+        "软件渲染兼容模式"
       ],
       "code_paths": [
+        "ColorVision/EntryClass.cs",
         "ColorVision/App.xaml.cs",
+        "ColorVision/Startup/StartupRenderingMode.cs",
         "ColorVision/MainWindow.xaml.cs",
         "ColorVision/StartWindow.xaml.cs",
         "ColorVision/StartupFileOpenPolicy.cs",
@@ -6703,6 +6713,7 @@
         "Engine/ColorVision.Engine/MQTT/MqttInitializer.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/StartupRenderingModeTests.cs",
         "Test/ColorVision.UI.Tests/StartupRecoveryPluginScannerTests.cs",
         "Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs",
         "Test/ColorVision.UI.Tests/SingleInstanceStartupCoordinatorTests.cs",
@@ -6720,6 +6731,7 @@
       ],
       "code_scopes": [
         "ColorVision",
+        "ColorVision/Startup",
         "Engine/ColorVision.Engine",
         "UI/ColorVision.Solution",
         "UI/ColorVision.UI"
@@ -7567,7 +7579,7 @@
       "knowledge_id": "platform.runtime",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "启动顺序与故障恢复：初始化进度和ready不代表全部成功，运行期维护区分浏览、禁用、文档准备与重启，一次性插件跳过不绕过真实故障。",
+      "summary": "启动顺序与故障恢复：软件渲染兼容参数在 WPF 窗口前生效；初始化进度和ready不代表全部成功，一次性插件跳过不绕过真实故障。",
       "aliases": [
         "启动链路",
         "App.xaml.cs",
@@ -7602,11 +7614,16 @@
         "wait-for-process",
         "safe-start",
         "skip-plugins",
+        "software-rendering",
+        "StartupRenderingMode",
+        "WPF软件渲染",
+        "ToDesk白屏",
         "验证并回退"
       ],
       "code_paths": [
         "ColorVision/EntryClass.cs",
         "ColorVision/App.xaml.cs",
+        "ColorVision/Startup/StartupRenderingMode.cs",
         "ColorVision/BuiltInModules.cs",
         "ColorVision/ProgramTimer.cs",
         "ColorVision/StartWindow.xaml",
@@ -7635,6 +7652,7 @@
         "UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/StartupRenderingModeTests.cs",
         "Test/ColorVision.UI.Tests/StartupInitializerSequenceTests.cs",
         "Test/ColorVision.UI.Tests/StartupUiTraceTests.cs",
         "Test/ColorVision.UI.Tests/StartupThemeBootstrapTests.cs",
@@ -7772,7 +7790,8 @@
         "Test/ColorVision.UI.Tests/ServiceHostPipeServerTests.cs",
         "Test/ColorVision.UI.Tests/ColorVisionServiceHostServiceLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/ServiceHostStartupStatusTests.cs",
-        "Test/ColorVision.UI.Tests/ServiceHostApplicationUpdateAccessTests.cs"
+        "Test/ColorVision.UI.Tests/ServiceHostApplicationUpdateAccessTests.cs",
+        "Test/ColorVision.UI.Tests/ServiceHostServicePolicyTests.cs"
       ],
       "related": [
         "platform.system",
@@ -8017,7 +8036,7 @@
       "knowledge_id": "plugins.conoscope",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Conoscope 的采集、CVCIE 首屏/XYZ 就绪、Polar/HV 显示、Mat 与分析快照契约；按钮成功不代表文档加载完成。",
+      "summary": "Conoscope 的采集、CVCIE 首屏/XYZ 就绪、Polar 与三种 H/V 显示、Mat 与分析快照契约；按钮成功不代表文档加载完成。",
       "aliases": [
         "锥镜图像怎么看",
         "Conoscope 依赖哪些 DLL",
@@ -8027,6 +8046,10 @@
         "H/V 坐标",
         "Horizontal-Vertical Coordinates",
         "笛卡尔角度坐标",
+        "North Polar",
+        "East Polar",
+        "HV North Polar",
+        "HV East Polar",
         "ConoscopeCaptureWorkflow",
         "ConoscopeFlowCaptureResult",
         "ConoscopeCameraCaptureResult",
@@ -8631,7 +8654,8 @@
         "Test/ColorVision.UI.Tests/ServiceDatabaseVersionMapTests.cs",
         "Test/ColorVision.UI.Tests/InstallToolAsyncCommandTests.cs",
         "Test/ColorVision.UI.Tests/MySqlBackupRestoreSafetyTests.cs",
-        "Test/ColorVision.UI.Tests/ThirdPartyAppInfoTests.cs"
+        "Test/ColorVision.UI.Tests/ThirdPartyAppInfoTests.cs",
+        "Test/ColorVision.UI.Tests/ServiceHostServicePolicyTests.cs"
       ],
       "related": [
         "plugins.index",
@@ -9088,12 +9112,19 @@
         "Projects/ProjectLUX/Services/SocketControl.cs",
         "Projects/ProjectLUX/Process",
         "Projects/ProjectLUX/ViewResultManager.cs",
+        "Projects/ProjectLUX/ResultStatistics.cs",
+        "Projects/ProjectLUX/ResultStatisticsWindow.xaml",
+        "Projects/ProjectLUX/ResultStatisticsWindow.xaml.cs",
+        "Projects/ProjectLUX/ResultJsonPayloadStorage.cs",
+        "Projects/ProjectLUX/LegacyResultJsonMigration.cs",
+        "Projects/ProjectLUX/LuxSqliteCleanupProvider.cs",
         "Projects/ProjectLUX/Recipe",
         "Projects/ProjectLUX/Fix",
         "Projects/ProjectLUX/Summary.cs"
       ],
       "test_paths": [
-        "Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj"
+        "Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj",
+        "Test/ProjectLUX.Tests/ResultJsonPayloadStorageTests.cs"
       ],
       "related": [
         "projects.index",
@@ -9784,6 +9815,7 @@
         "ui.solution",
         "ui.configuration",
         "ui.image-editor",
+        "ui.text-editor",
         "operations.terminal"
       ],
       "code_scopes": [
@@ -11310,6 +11342,61 @@
       "title": "存储清理与选择性设置重置",
       "source": "docs/04-api-reference/ui-components/storage-maintenance.md",
       "url": "/04-api-reference/ui-components/storage-maintenance",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "ui.text-editor",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "AvalonEdit 编辑器的代码地图、字体、查找替换、自动配对、文档内补全与符号导航，以及后台分析和 JSON 诊断边界。",
+      "aliases": [
+        "文本编辑器",
+        "代码地图",
+        "代码缩略图",
+        "Minimap",
+        "Map Mode",
+        "悬停代码预览",
+        "AvalonEditControll",
+        "EditorMinimap",
+        "EditorPreferences",
+        "EditorSearchBar",
+        "EditorFoldingStrategy",
+        "EditorCodeAnalysis",
+        "EditorTypingAssistance",
+        "字体缩放",
+        "Python折叠",
+        "查找替换",
+        "跳转到行",
+        "自动配对",
+        "代码补全",
+        "代码片段",
+        "符号导航",
+        "JSON诊断"
+      ],
+      "code_paths": [
+        "UI/ColorVision.Solution/Editor/AvalonEditor",
+        "UI/ColorVision.Solution/Editor/TextEditor.cs",
+        "UI/ColorVision.Themes/Themes/Integrations/Editor.Dark.xaml",
+        "UI/ColorVision.Themes/Themes/Integrations/Editor.Light.xaml"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/ProfessionalEditorTests.cs",
+        "Test/ColorVision.UI.Tests/AvalonEditorSupportTests.cs"
+      ],
+      "related": [
+        "ui.documents",
+        "ui.themes",
+        "ui.configuration",
+        "operations.terminal"
+      ],
+      "code_scopes": [
+        "UI/ColorVision.Solution",
+        "UI/ColorVision.Themes"
+      ],
+      "domain": "ui",
+      "title": "文本编辑器",
+      "source": "docs/04-api-reference/ui-components/text-editor.md",
+      "url": "/04-api-reference/ui-components/text-editor",
       "searchable": true
     },
     {
