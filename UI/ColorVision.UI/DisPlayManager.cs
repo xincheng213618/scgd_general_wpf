@@ -100,6 +100,9 @@ namespace ColorVision.UI
                 if (e.ChangedButton != MouseButton.Left)
                     return;
 
+                if (DisplayPinButton.IsPinInput(e.OriginalSource as DependencyObject))
+                    return;
+
                 manager.ActiveView(viewControl);
                 e.Handled = true;
             };
@@ -123,6 +126,7 @@ namespace ColorVision.UI
         public static DisPlayManagerConfig Instance => ConfigService.Instance.GetRequiredService<DisPlayManagerConfig>();
 
         public Dictionary<string, int> StoreIndex { get; set; } = new Dictionary<string, int>();
+        public HashSet<string> PinnedControls { get; set; } = new();
         public Dictionary<string, string> ControlGroups { get; set; } = new Dictionary<string, string>();
         public ObservableCollection<DisPlayGroupConfig> Groups { get; set; } = new ObservableCollection<DisPlayGroupConfig>();
 
@@ -250,6 +254,7 @@ namespace ColorVision.UI
         {
             var config = DisPlayManagerConfig.Instance;
             config.StoreIndex ??= new Dictionary<string, int>();
+            config.PinnedControls ??= new HashSet<string>();
             config.ControlGroups ??= new Dictionary<string, string>();
             config.Groups ??= new ObservableCollection<DisPlayGroupConfig>();
         }
@@ -321,6 +326,10 @@ namespace ColorVision.UI
             if (groupCompare != 0)
                 return groupCompare;
 
+            int pinCompare = IsPinned(b).CompareTo(IsPinned(a));
+            if (pinCompare != 0)
+                return pinCompare;
+
             int indexCompare = GetStoredIndex(a).CompareTo(GetStoredIndex(b));
             if (indexCompare != 0)
                 return indexCompare;
@@ -328,13 +337,33 @@ namespace ColorVision.UI
             return string.Compare(a.DisPlayName, b.DisPlayName, StringComparison.OrdinalIgnoreCase);
         }
 
-        private List<IDisPlayControl> GetControlsInGroup(string groupId)
+        private List<IDisPlayControl> GetControlsInGroup(string groupId, bool applyPins = true)
         {
             return IDisPlayControls
                 .Where(a => GetGroupKey(a) == groupId)
-                .OrderBy(GetStoredIndex)
-                .ThenBy(a => a.DisPlayName)
+                .OrderBy(a => applyPins && IsPinned(a) ? 0 : 1)
+                .ThenBy(GetStoredIndex)
+                .ThenBy(a => a.DisPlayName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
+        }
+
+        public static bool IsPinned(IDisPlayControl control) =>
+            DisPlayManagerConfig.Instance.PinnedControls?.Contains(control.DisPlayName) == true;
+
+        public void SetPinned(IDisPlayControl control, bool pinned)
+        {
+            if (!IDisPlayControls.Contains(control))
+                return;
+
+            EnsureConfigCollections();
+            bool changed = pinned
+                ? DisPlayManagerConfig.Instance.PinnedControls.Add(control.DisPlayName)
+                : DisPlayManagerConfig.Instance.PinnedControls.Remove(control.DisPlayName);
+            if (!changed)
+                return;
+
+            ArrangeCollectionByConfig();
+            RebuildPanel();
         }
 
         private void RebuildPanel()
@@ -734,13 +763,21 @@ namespace ColorVision.UI
             string oldGroupId = GetGroupKey(draggedControl);
             config.ControlGroups[displayName] = groupId;
 
-            var targetControls = GetControlsInGroup(groupId).Where(a => a.DisPlayName != displayName).ToList();
-            insertIndex = Math.Clamp(insertIndex, 0, targetControls.Count);
-            targetControls.Insert(insertIndex, draggedControl);
+            var visibleControls = GetControlsInGroup(groupId).Where(a => a.DisPlayName != displayName).ToList();
+            insertIndex = Math.Clamp(insertIndex, 0, visibleControls.Count);
+            // Translate the visible drop position back into the base order. Pinning
+            // must never bake the pinned partition into the saved field order.
+            bool pinned = IsPinned(draggedControl);
+            var next = visibleControls.Skip(insertIndex).FirstOrDefault(a => IsPinned(a) == pinned);
+            var previous = visibleControls.Take(insertIndex).LastOrDefault(a => IsPinned(a) == pinned);
+            var targetControls = GetControlsInGroup(groupId, applyPins: false).Where(a => a.DisPlayName != displayName).ToList();
+            int baseIndex = next != null ? targetControls.IndexOf(next)
+                : previous != null ? targetControls.IndexOf(previous) + 1 : targetControls.Count;
+            targetControls.Insert(baseIndex, draggedControl);
             UpdateGroupIndexes(targetControls);
 
             if (oldGroupId != groupId)
-                UpdateGroupIndexes(GetControlsInGroup(oldGroupId).ToList());
+                UpdateGroupIndexes(GetControlsInGroup(oldGroupId, applyPins: false));
 
             ArrangeCollectionByConfig();
             RebuildPanel();
@@ -763,6 +800,8 @@ namespace ColorVision.UI
             {
                 _suppressCollectionChanged = false;
             }
+            if (_selectedControl != null && IDisPlayControls.Contains(_selectedControl))
+                DisPlayManagerConfig.Instance.LastSelectIndex = IDisPlayControls.IndexOf(_selectedControl);
         }
 
         private void CreateGroup()
@@ -872,7 +911,7 @@ namespace ColorVision.UI
             ArrangeCollectionByConfig();
 
             foreach (var group in GetGroupsInOrder())
-                UpdateGroupIndexes(GetControlsInGroup(group.Id).ToList());
+                UpdateGroupIndexes(GetControlsInGroup(group.Id, applyPins: false));
 
             if (_isInitialized)
                 RebuildPanel();

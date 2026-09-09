@@ -287,7 +287,7 @@ next: false
   物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，创建/导入在唯一物理相机时可批量绑定服务。
 
 - [Conoscope 图像、采集与分析](../../04-api-reference/plugins/standard-plugins/conoscope.md) — `plugins.conoscope`
-  Conoscope 的采集、CVCIE 首屏/XYZ 就绪、Mat 与分析快照契约；按钮成功不代表文档加载完成，联合灰尘预处理不走 Y-first。
+  Conoscope 的采集、CVCIE 首屏/XYZ 就绪、Polar/HV 显示、Mat 与分析快照契约；按钮成功不代表文档加载完成。
 
 - [系统要求与首次构建](../../00-getting-started/prerequisites.md) — `delivery.prerequisites`
   Windows x64 运行与源码构建前提：Desktop Runtime、SDK、C++ 工具集及已有 native DLL 的选择。

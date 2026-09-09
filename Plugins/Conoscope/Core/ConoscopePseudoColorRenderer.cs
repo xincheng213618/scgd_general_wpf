@@ -42,6 +42,33 @@ namespace Conoscope.Core
             OpenCvSharp.Mat? rangeMask = null,
             OpenCvSharp.Mat? rangeOutsideMask = null)
         {
+            return Render(
+                xMat,
+                yMat,
+                zMat,
+                channel,
+                colormap,
+                createColorDifferenceMat,
+                createContrastMat,
+                usePseudoColor,
+                rangeMask,
+                rangeOutsideMask,
+                null);
+        }
+
+        internal static ConoscopePseudoColorRenderResult Render(
+            OpenCvSharp.Mat xMat,
+            OpenCvSharp.Mat yMat,
+            OpenCvSharp.Mat zMat,
+            ExportChannel channel,
+            ColormapTypes colormap,
+            Func<OpenCvSharp.Mat> createColorDifferenceMat,
+            Func<OpenCvSharp.Mat> createContrastMat,
+            bool usePseudoColor,
+            OpenCvSharp.Mat? rangeMask,
+            OpenCvSharp.Mat? rangeOutsideMask,
+            ConoscopeHorizontalVerticalProjection? horizontalVerticalProjection)
+        {
             OpenCvSharp.Mat channelMat = GetDisplayChannelMat(xMat, yMat, zMat, channel, createColorDifferenceMat, createContrastMat, out bool ownsChannelMat);
             try
             {
@@ -52,12 +79,19 @@ namespace Conoscope.Core
                 GetDisplayRange(channelMat, channel, effectiveRangeMask, out double minValue, out double maxValue);
                 ConvertToGray8(channelMat, gray8, minValue, maxValue, effectiveOutsideMask);
 
+                using OpenCvSharp.Mat? projectedGray8 = horizontalVerticalProjection?.RemapGray8(gray8);
+                OpenCvSharp.Mat bitmapSource = projectedGray8 ?? gray8;
+
                 WriteableBitmap bitmap;
                 if (usePseudoColor)
                 {
                     using OpenCvSharp.Mat pseudoColor = new OpenCvSharp.Mat();
-                    OpenCvSharp.Cv2.ApplyColorMap(gray8, pseudoColor, ResolveOpenCvColormap(colormap));
-                    if (effectiveOutsideMask != null)
+                    OpenCvSharp.Cv2.ApplyColorMap(bitmapSource, pseudoColor, ResolveOpenCvColormap(colormap));
+                    if (horizontalVerticalProjection != null)
+                    {
+                        pseudoColor.SetTo(OpenCvSharp.Scalar.All(0), horizontalVerticalProjection.InvalidMask);
+                    }
+                    else if (effectiveOutsideMask != null)
                     {
                         pseudoColor.SetTo(OpenCvSharp.Scalar.All(0), effectiveOutsideMask);
                     }
@@ -66,7 +100,7 @@ namespace Conoscope.Core
                 }
                 else
                 {
-                    bitmap = gray8.ToWriteableBitmap();
+                    bitmap = bitmapSource.ToWriteableBitmap();
                 }
 
                 bitmap.Freeze();

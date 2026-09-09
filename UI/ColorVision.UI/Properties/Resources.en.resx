@@ -596,4 +596,6 @@
   <data name="StartupThemeDark" xml:space="preserve"><value>Dark</value></data>
   <data name="StartupThemeLight" xml:space="preserve"><value>Light</value></data>
   <data name="StartupThemeFollowApplication" xml:space="preserve"><value>Follow application theme</value></data>
+  <data name="DisplayPin" xml:space="preserve"><value>Pin to top</value></data>
+  <data name="DisplayUnpin" xml:space="preserve"><value>Unpin</value></data>
 </root>

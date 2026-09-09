@@ -1752,6 +1752,9 @@ namespace ColorVision.UI.Properties {
             }
         }
         
+        public static string DisplayPin => ResourceManager.GetString("DisplayPin", resourceCulture);
+        public static string DisplayUnpin => ResourceManager.GetString("DisplayUnpin", resourceCulture);
+
         /// <summary>
         ///   查找类似 简体中文 的本地化字符串。
         /// </summary>

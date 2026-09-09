@@ -71,6 +71,7 @@ namespace Conoscope
         private bool hasDisplayData;
         private bool canUseDerivedChannels;
         private bool canUseContrastChannel;
+        private ConoscopeCoordinateSystem coordinateSystem;
 
         public ExportChannel DisplayChannel { get => displayChannel; set => Set(ref displayChannel, value); }
         public ColormapTypes PseudoColorMap { get => pseudoColorMap; set => Set(ref pseudoColorMap, value); }
@@ -97,6 +98,7 @@ namespace Conoscope
         public bool HasDisplayData { get => hasDisplayData; private set => Set(ref hasDisplayData, value); }
         public bool CanUseDerivedChannels { get => canUseDerivedChannels; private set => Set(ref canUseDerivedChannels, value); }
         public bool CanUseContrastChannel { get => canUseContrastChannel; private set => Set(ref canUseContrastChannel, value); }
+        public ConoscopeCoordinateSystem CoordinateSystem { get => coordinateSystem; set => Set(ref coordinateSystem, value); }
         public ConoscopeCoordinateAxisParam CoordinateAxis { get; } = new();
 
         internal void SetCapabilities(bool displayDataAvailable, bool derivedChannelsAvailable, bool contrastChannelAvailable)
@@ -141,6 +143,10 @@ namespace Conoscope
         private Point currentImageCenter;
         private int currentImageRadius;
         private double currentPixelsPerDegree;
+        private Point sourceImageCenter;
+        private int sourceImageRadius;
+        private double sourcePixelsPerDegree;
+        private ConoscopeHorizontalVerticalProjection? horizontalVerticalProjection;
         private ConoscopeUvReference? imageCenterColorDifferenceReference;
         private int imageCenterColorDifferenceReferenceVersion = -1;
         private ExportChannel currentReferenceScaleChannel = ExportChannel.Y;
@@ -160,6 +166,7 @@ namespace Conoscope
         private ConoscopeImageZoomMode imageZoomMode = ConoscopeImageZoomMode.Fit;
         private bool applyCircleFitOnNextRefresh;
         private bool isApplyingImageZoomMode;
+        private bool isUpdatingCoordinateSystemControl;
         internal ConoscopeViewState State { get; } = new();
 
         public event EventHandler StatusBarItemsChanged;
@@ -324,7 +331,11 @@ namespace Conoscope
             HideCoordinateDragOverlay();
             DisposeCoordinateAxis();
             DisposePseudoColorRangeMasks();
+            DisposeHorizontalVerticalProjection();
             currentBitmapSource = null;
+            sourceImageCenter = default;
+            sourceImageRadius = 0;
+            sourcePixelsPerDegree = 0;
             imageCenterColorDifferenceReference = null;
             imageCenterColorDifferenceReferenceVersion = -1;
             ImageView.ResetDocument();
@@ -632,6 +643,11 @@ namespace Conoscope
                 DisposeCoordinateAxis();
             }
 
+            if (geometryChanged)
+            {
+                DisposeHorizontalVerticalProjection();
+            }
+
             InitializeLocalCoordinateAxisState(preserveReferenceState: true);
             appliedProfileMaxAngle = CurrentModelProfile.MaxAngle;
             appliedProfileCalculationDiameterPixels = CurrentModelProfile.CalculationDiameterPixels;
@@ -701,14 +717,13 @@ namespace Conoscope
             cieWindow = null;
             document.Dispose();
             DisposePseudoColorRangeMasks();
+            DisposeHorizontalVerticalProjection();
             DisposeCoordinateAxis();
             ImageView?.Dispose();
             GC.SuppressFinalize(this);
         }
 
         private readonly record struct PixelChromaticitySample(
-            int ImageX,
-            int ImageY,
             int XyzX,
             int XyzY,
             double X,
@@ -868,6 +883,9 @@ namespace Conoscope
             ExportChannel displayChannel = GetSelectedDisplayChannel();
             OpenCvSharp.Mat displayBaseMat = YMat!;
             OpenCvSharp.Mat? rangeMask = GetPseudoColorRangeMask(displayBaseMat.Width, displayBaseMat.Height);
+            ConoscopeHorizontalVerticalProjection? projection = State.CoordinateSystem == ConoscopeCoordinateSystem.HorizontalVertical
+                ? GetOrCreateHorizontalVerticalProjection(displayBaseMat.Width, displayBaseMat.Height)
+                : null;
             ConoscopePseudoColorRenderResult renderResult = ConoscopePseudoColorRenderer.Render(
                 XMat ?? displayBaseMat,
                 YMat!,
@@ -878,7 +896,8 @@ namespace Conoscope
                 () => CreateContrastMat() ?? throw new InvalidOperationException(GetChannelNotReadyReason(ExportChannel.Contrast) ?? Properties.Resources.MsgLoadImageFirst),
                 State.UsePseudoColor,
                 rangeMask,
-                rangeMask == null ? null : pseudoColorRangeOutsideMask);
+                rangeMask == null ? null : pseudoColorRangeOutsideMask,
+                projection);
 
             UpdateReferenceScale(renderResult.Channel, renderResult.MaxValue);
             if (State.UsePseudoColor)
@@ -894,6 +913,115 @@ namespace Conoscope
             ImageView.ReplaceDisplayedImage(renderResult.Bitmap);
             CreateAndAnalyzePolarLines();
             ApplyZoomAfterDisplayRefresh();
+        }
+
+        private ConoscopeHorizontalVerticalProjection GetOrCreateHorizontalVerticalProjection(int sourceWidth, int sourceHeight)
+        {
+            Point center = new Point(sourceWidth / 2.0, sourceHeight / 2.0);
+            double pixelsPerDegree = CurrentModelProfile.GetConoscopeCoefficient(sourceWidth, sourceHeight);
+            if (horizontalVerticalProjection != null
+                && horizontalVerticalProjection.SourceWidth == sourceWidth
+                && horizontalVerticalProjection.SourceHeight == sourceHeight
+                && horizontalVerticalProjection.SourceCenter == center
+                && Math.Abs(horizontalVerticalProjection.SourcePixelsPerDegree - pixelsPerDegree) < 0.000001
+                && Math.Abs(horizontalVerticalProjection.MaxPolarAngle - MaxAngle) < 0.000001)
+            {
+                return horizontalVerticalProjection;
+            }
+
+            DisposeHorizontalVerticalProjection();
+            horizontalVerticalProjection = ConoscopeHorizontalVerticalProjection.Create(
+                sourceWidth,
+                sourceHeight,
+                center,
+                pixelsPerDegree,
+                MaxAngle);
+            return horizontalVerticalProjection;
+        }
+
+        private void DisposeHorizontalVerticalProjection()
+        {
+            horizontalVerticalProjection?.Dispose();
+            horizontalVerticalProjection = null;
+        }
+
+        private void cbImageCoordinateSystem_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (isUpdatingCoordinateSystemControl || cbImageCoordinateSystem?.SelectedItem is not ComboBoxItem selectedItem)
+            {
+                return;
+            }
+
+            ConoscopeCoordinateSystem requestedSystem = string.Equals(selectedItem.Tag?.ToString(), nameof(ConoscopeCoordinateSystem.HorizontalVertical), StringComparison.Ordinal)
+                ? ConoscopeCoordinateSystem.HorizontalVertical
+                : ConoscopeCoordinateSystem.Polar;
+            if (requestedSystem == State.CoordinateSystem)
+            {
+                return;
+            }
+
+            if (requestedSystem == ConoscopeCoordinateSystem.HorizontalVertical && ImageView?.FocusCircles.Count > 0)
+            {
+                isUpdatingCoordinateSystemControl = true;
+                try
+                {
+                    cbImageCoordinateSystem.SelectedIndex = 0;
+                }
+                finally
+                {
+                    isUpdatingCoordinateSystemControl = false;
+                }
+
+                MessageBox.Show(Properties.Resources.MsgHorizontalVerticalFocusPointsUnsupported, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            ConoscopeCoordinateSystem previousSystem = State.CoordinateSystem;
+            State.CoordinateSystem = requestedSystem;
+            isFocusCircleModeEnabled = false;
+            if (tglFocusCircleMode != null)
+            {
+                tglFocusCircleMode.IsChecked = false;
+            }
+
+            UpdateFocusCircleModeState();
+            if (!HasDisplayData())
+            {
+                return;
+            }
+
+            try
+            {
+                applyCircleFitOnNextRefresh = true;
+                RefreshDisplayedImage();
+                SyncCieWindowFromCurrentPointer();
+            }
+            catch (Exception ex)
+            {
+                log.Error($"切换 Conoscope 坐标显示失败: {ex.Message}", ex);
+                State.CoordinateSystem = previousSystem;
+                isUpdatingCoordinateSystemControl = true;
+                try
+                {
+                    cbImageCoordinateSystem.SelectedIndex = previousSystem == ConoscopeCoordinateSystem.HorizontalVertical ? 1 : 0;
+                }
+                finally
+                {
+                    isUpdatingCoordinateSystemControl = false;
+                }
+
+                UpdateFocusCircleModeState();
+                try
+                {
+                    RefreshDisplayedImage();
+                }
+                catch (Exception restoreException)
+                {
+                    log.Error($"恢复 Conoscope 坐标显示失败: {restoreException.Message}", restoreException);
+                }
+
+                MessageBox.Show(ex.Message, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void UpdatePseudoColorLegend(ExportChannel channel, double minValue, double maxValue)
@@ -1229,8 +1357,8 @@ namespace Conoscope
                     channel,
                     () => CreateColorDifferenceMat() ?? throw new InvalidOperationException(GetChannelNotReadyReason(ExportChannel.ColorDifference) ?? Properties.Resources.MsgLoadImageFirstColorDiff),
                     () => CreateContrastMat() ?? throw new InvalidOperationException(GetChannelNotReadyReason(ExportChannel.Contrast) ?? Properties.Resources.MsgLoadImageFirst),
-                    currentImageCenter,
-                    currentImageRadius);
+                    sourceImageCenter,
+                    sourceImageRadius);
                 Window3D window3D = new(heightBitmap, Conoscope3DInitialHeightScale)
                 {
                     Owner = Window.GetWindow(this)
@@ -1631,6 +1759,7 @@ namespace Conoscope
             axisParam.PropertyChanged += CoordinateAxisParam_PropertyChanged;
             axisParam.MaxAngle = MaxAngle;
             axisParam.ConoscopeCoefficient = currentPixelsPerDegree;
+            axisParam.CoordinateSystem = State.CoordinateSystem;
             axisParam.CenterX = center.X;
             axisParam.CenterY = center.Y;
             axisParam.AxisRadius = radius;
@@ -1730,13 +1859,19 @@ namespace Conoscope
 
             ExportChannel displayChannel = GetSelectedDisplayChannel();
             double displayValue = GetChannelValue(sample.XyzX, sample.XyzY, sample.X, sample.Y, sample.Z, displayChannel);
-            double azimuthAngle = FocusPointMeasurementService.GetFullAzimuthAngle(e.Position, currentImageCenter);
-            double polarAngle = FocusPointMeasurementService.GetPolarRadiusAngle(e.Position, currentImageCenter, currentImageRadius, MaxAngle);
+            if (!TryGetAngularCoordinatesAtPosition(e.Position, out double horizontalAngle, out double verticalAngle, out double polarAngle, out double azimuthAngle))
+            {
+                return GetReferenceValueText(e.Mode, e.Angle, e.RadiusAngle);
+            }
 
             StringBuilder builder = new StringBuilder();
             builder.AppendLine(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.ReferenceFormat, GetReferenceValueText(e.Mode, e.Angle, e.RadiusAngle)));
-            builder.AppendLine(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.PixelCoordFormat, sample.ImageX, sample.ImageY));
+            builder.AppendLine(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.PixelCoordFormat, sample.XyzX, sample.XyzY));
             builder.AppendLine(Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.PolarCoordFormat, azimuthAngle.ToString("F2"), polarAngle.ToString("F2")));
+            if (State.CoordinateSystem == ConoscopeCoordinateSystem.HorizontalVertical)
+            {
+                builder.AppendLine($"H/V: H={horizontalAngle:F2}°, V={verticalAngle:F2}°");
+            }
             builder.AppendLine($"{ConoscopeChannelDisplayFormatter.GetLabel(displayChannel)}: {ConoscopeChannelDisplayFormatter.FormatValue(displayValue, displayChannel)}");
             builder.AppendLine($"XYZ: X={sample.X:F4}, Y={sample.Y:F4}, Z={sample.Z:F4}");
             builder.AppendLine($"xy: x={sample.Chromaticity.x:F6}, y={sample.Chromaticity.y:F6}");
@@ -1772,8 +1907,15 @@ namespace Conoscope
                 return false;
             }
 
-            int imageX = ConoscopeNumericHelper.ClampToInt((int)Math.Round(position.X), 0, imageWidth - 1);
-            int imageY = ConoscopeNumericHelper.ClampToInt((int)Math.Round(position.Y), 0, imageHeight - 1);
+            Point sourcePoint = position;
+            if (State.CoordinateSystem == ConoscopeCoordinateSystem.HorizontalVertical)
+            {
+                if (horizontalVerticalProjection == null
+                    || !horizontalVerticalProjection.TryMapDisplayPointToSource(position, out sourcePoint, out _, out _, out _, out _))
+                {
+                    return false;
+                }
+            }
 
             int xyzWidth = YMat?.Width ?? XMat?.Width ?? ZMat?.Width ?? imageWidth;
             int xyzHeight = YMat?.Height ?? XMat?.Height ?? ZMat?.Height ?? imageHeight;
@@ -1782,12 +1924,51 @@ namespace Conoscope
                 return false;
             }
 
-            int xyzX = ConoscopeNumericHelper.ClampToInt(imageX, 0, xyzWidth - 1);
-            int xyzY = ConoscopeNumericHelper.ClampToInt(imageY, 0, xyzHeight - 1);
+            int xyzX = ConoscopeNumericHelper.ClampToInt((int)Math.Round(sourcePoint.X), 0, xyzWidth - 1);
+            int xyzY = ConoscopeNumericHelper.ClampToInt((int)Math.Round(sourcePoint.Y), 0, xyzHeight - 1);
             ExtractXYZValues(xyzX, xyzY, out double X, out double Y, out double Z);
             ConoscopeChromaticity chromaticity = ConoscopeColorimetry.Calculate(X, Y, Z);
-            sample = new PixelChromaticitySample(imageX, imageY, xyzX, xyzY, X, Y, Z, chromaticity);
+            sample = new PixelChromaticitySample(xyzX, xyzY, X, Y, Z, chromaticity);
             return true;
+        }
+
+        private bool TryGetAngularCoordinatesAtPosition(Point position, out double horizontalAngle, out double verticalAngle, out double polarAngle, out double azimuthAngle)
+        {
+            horizontalAngle = double.NaN;
+            verticalAngle = double.NaN;
+            polarAngle = double.NaN;
+            azimuthAngle = double.NaN;
+            if (State.CoordinateSystem == ConoscopeCoordinateSystem.HorizontalVertical)
+            {
+                return horizontalVerticalProjection != null
+                    && horizontalVerticalProjection.TryMapDisplayPointToSource(
+                        position,
+                        out _,
+                        out horizontalAngle,
+                        out verticalAngle,
+                        out polarAngle,
+                        out azimuthAngle);
+            }
+
+            if (currentImageRadius <= 0)
+            {
+                return false;
+            }
+
+            azimuthAngle = FocusPointMeasurementService.GetFullAzimuthAngle(position, currentImageCenter);
+            polarAngle = FocusPointMeasurementService.GetPolarRadiusAngle(position, currentImageCenter, currentImageRadius, MaxAngle);
+            if (!ConoscopeHorizontalVerticalProjection.TryConvertPolarToHorizontalVertical(
+                polarAngle,
+                azimuthAngle,
+                MaxAngle,
+                out horizontalAngle,
+                out verticalAngle))
+            {
+                horizontalAngle = double.NaN;
+                verticalAngle = double.NaN;
+            }
+
+            return polarAngle <= MaxAngle + 0.000001;
         }
 
         private void HideCoordinateDragOverlay()
@@ -1830,7 +2011,7 @@ namespace Conoscope
             curve.Angle = angle;
             curve.Samples.Clear();
 
-            (Point Start, Point End) endpoints = ConoscopeCoordinateAxisVisual.GetAzimuthLineEndpoints(currentImageCenter, currentImageRadius, angle);
+            (Point Start, Point End) endpoints = ConoscopeCoordinateAxisVisual.GetAzimuthLineEndpoints(sourceImageCenter, sourceImageRadius, angle);
             ExtractRgbAlongLine(curve, endpoints.End, endpoints.Start);
 
             coordinateAxisReferenceCurve = curve;
@@ -1852,7 +2033,7 @@ namespace Conoscope
             ConcentricCircleLine curve = coordinateAxisReferenceCurve as ConcentricCircleLine ?? new ConcentricCircleLine();
             curve.RadiusAngle = radiusAngle;
             curve.Samples.Clear();
-            ExtractRgbAlongCircle(curve, currentImageCenter, radiusAngle);
+            ExtractRgbAlongCircle(curve, sourceImageCenter, radiusAngle);
 
             coordinateAxisReferenceCurve = curve;
             selectedReferenceCurve = curve;
@@ -1896,21 +2077,43 @@ namespace Conoscope
 
                 int imageWidth = bitmapSource.PixelWidth;
                 int imageHeight = bitmapSource.PixelHeight;
+                int sourceWidth = YMat?.Width ?? imageWidth;
+                int sourceHeight = YMat?.Height ?? imageHeight;
+                sourcePixelsPerDegree = CurrentModelProfile.GetConoscopeCoefficient(sourceWidth, sourceHeight);
+                sourceImageRadius = (int)Math.Round(MaxAngle * sourcePixelsPerDegree);
+                sourceImageCenter = new Point(sourceWidth / 2.0, sourceHeight / 2.0);
 
-                currentPixelsPerDegree = CurrentModelProfile.GetConoscopeCoefficient(imageWidth, imageHeight);
-                int radius = (int)Math.Round(MaxAngle * currentPixelsPerDegree);
-
-                Point center = new Point(imageWidth / 2.0, imageHeight / 2.0);
+                Point center;
+                int radius;
+                if (State.CoordinateSystem == ConoscopeCoordinateSystem.HorizontalVertical && horizontalVerticalProjection != null)
+                {
+                    center = horizontalVerticalProjection.OutputCenter;
+                    radius = (int)Math.Round(horizontalVerticalProjection.OutputRadius);
+                    currentPixelsPerDegree = horizontalVerticalProjection.OutputPixelsPerDegree;
+                }
+                else
+                {
+                    center = new Point(imageWidth / 2.0, imageHeight / 2.0);
+                    currentPixelsPerDegree = CurrentModelProfile.GetConoscopeCoefficient(imageWidth, imageHeight);
+                    radius = (int)Math.Round(MaxAngle * currentPixelsPerDegree);
+                }
 
                 currentBitmapSource = bitmapSource;
                 currentImageCenter = center;
                 currentImageRadius = radius;
 
-                ImageView.SetFocusCircleBoundary(center, radius);
+                if (State.CoordinateSystem == ConoscopeCoordinateSystem.Polar)
+                {
+                    ImageView.SetFocusCircleBoundary(center, radius);
+                }
+                else
+                {
+                    ImageView.ClearFocusCircleBoundary();
+                }
 
                 InitializeCoordinateAxis(center, radius);
 
-                log.Info($"图像尺寸: {imageWidth}x{imageHeight}, 中心: ({center.X}, {center.Y}), 半径: {radius}, 系数: {currentPixelsPerDegree:F6}px/deg");
+                log.Info($"图像尺寸: {imageWidth}x{imageHeight}, 坐标: {State.CoordinateSystem}, 中心: ({center.X}, {center.Y}), 半径: {radius}, 系数: {currentPixelsPerDegree:F6}px/deg");
 
                 selectedReferenceCurve = null;
                 coordinateAxisReferenceCurve = null;
@@ -2177,7 +2380,7 @@ namespace Conoscope
 
                 int imageWidth = YMat.Width;
                 int imageHeight = YMat.Height;
-                double radiusPixels = radiusAngle * currentPixelsPerDegree;
+                double radiusPixels = radiusAngle * sourcePixelsPerDegree;
 
                 const int numSamples = 360;
                 curve.Samples.EnsureCapacity(numSamples);
@@ -2506,29 +2709,41 @@ namespace Conoscope
                 return;
             }
 
+            bool supportsFocusCircles = State.CoordinateSystem == ConoscopeCoordinateSystem.Polar;
+            if (!supportsFocusCircles)
+            {
+                isFocusCircleModeEnabled = false;
+            }
+
             SyncReferenceInteractionToggle();
-            ImageView.InteractionMode = isFocusCircleModeEnabled
+            ImageView.InteractionMode = supportsFocusCircles && isFocusCircleModeEnabled
                 ? selectedFocusCircleTool
                 : FocusCircleInteractionMode.Browse;
+            if (FocusToolbarPanel != null)
+            {
+                FocusToolbarPanel.IsEnabled = supportsFocusCircles;
+                FocusToolbarPanel.ToolTip = supportsFocusCircles ? null : Properties.Resources.TipHorizontalVerticalFocusPointsUnsupported;
+            }
             UpdateFocusCircleToolbarState();
             UpdatePanModeState();
         }
 
         private void UpdateFocusCircleToolbarState()
         {
+            bool supportsFocusCircles = State.CoordinateSystem == ConoscopeCoordinateSystem.Polar;
             if (tglFocusCircleDrawTool != null)
             {
-                tglFocusCircleDrawTool.IsEnabled = isFocusCircleModeEnabled;
+                tglFocusCircleDrawTool.IsEnabled = supportsFocusCircles && isFocusCircleModeEnabled;
             }
 
             if (tglFocusCircleSelectTool != null)
             {
-                tglFocusCircleSelectTool.IsEnabled = isFocusCircleModeEnabled;
+                tglFocusCircleSelectTool.IsEnabled = supportsFocusCircles && isFocusCircleModeEnabled;
             }
 
             if (tglFocusCircleEraseTool != null)
             {
-                tglFocusCircleEraseTool.IsEnabled = isFocusCircleModeEnabled;
+                tglFocusCircleEraseTool.IsEnabled = supportsFocusCircles && isFocusCircleModeEnabled;
             }
 
             bool hasFocusCircles = ImageView.FocusCircles.Count > 0;

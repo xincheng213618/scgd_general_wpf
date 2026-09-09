@@ -823,6 +823,12 @@
   <data name="MsgFocusPointsUnavailable" xml:space="preserve">
     <value>當前關注點不可用。</value>
   </data>
+  <data name="MsgHorizontalVerticalFocusPointsUnsupported" xml:space="preserve">
+    <value>H/V 預覽暫不轉換關注點，請先清空關注點後再切換。</value>
+  </data>
+  <data name="TipHorizontalVerticalFocusPointsUnsupported" xml:space="preserve">
+    <value>H/V 預覽暫不支援關注點編輯</value>
+  </data>
   <data name="MsgPolarLineCreateFailed" xml:space="preserve">
     <value>創建極角線失敗: {0}</value>
   </data>

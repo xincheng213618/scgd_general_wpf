@@ -635,4 +635,6 @@
   <data name="StartupThemeDark" xml:space="preserve"><value>深色</value></data>
   <data name="StartupThemeLight" xml:space="preserve"><value>浅色</value></data>
   <data name="StartupThemeFollowApplication" xml:space="preserve"><value>跟随软件主题</value></data>
+  <data name="DisplayPin" xml:space="preserve"><value>置顶</value></data>
+  <data name="DisplayUnpin" xml:space="preserve"><value>取消置顶</value></data>
 </root>
