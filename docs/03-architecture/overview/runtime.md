@@ -2,10 +2,10 @@
 knowledge_id: "platform.runtime"
 knowledge_type: "topic"
 status: "current"
-summary: "启动顺序与故障恢复：初始化进度和ready不代表全部成功，运行期维护区分浏览、禁用、文档准备与重启，一次性插件跳过不绕过真实故障。"
-aliases: ["启动链路", "App.xaml.cs", "启动界面", "启动动画", "StartWindow", "StartupScene", "StartupUiTrace", "COLORVISION_STARTUP_TRACE", "StopAndReport", "首帧耗时", "首次使用耗时", "启动恢复", "故障恢复", "初始化向导", "安全启动", "启动进度", "初始化失败", "StartupRegistryChecker", "StartupMaintenanceController", "StartupMaintenanceSearchProvider", "StartupRecoveryWindow", "StartupRecoveryPluginScanner", "StartupInitializersCompleted", "MainWindowInitializer", "MainWindowFactory", "CompactMainWindow", "UseCompactMainWindow", "LoadingPlugin", "startup-maintenance", "startup-skip-plugins", "wait-for-process", "safe-start", "skip-plugins", "验证并回退"]
-code_paths: ["ColorVision/EntryClass.cs", "ColorVision/App.xaml.cs", "ColorVision/BuiltInModules.cs", "ColorVision/ProgramTimer.cs", "ColorVision/StartWindow.xaml", "ColorVision/StartWindow.xaml.cs", "ColorVision/StartWindow.Presentation.cs", "ColorVision/StartupScene.cs", "ColorVision/StartupUiTrace.cs", "ColorVision/Startup/StartupText.cs", "ColorVision/Startup/StartupResources.resx", "ColorVision/Startup/StartupResources.en.resx", "ColorVision/Startup/StartupResources.zh-Hant.resx", "ColorVision/MainWindow.xaml.cs", "ColorVision/MainWindowFactory.cs", "ColorVision/CompactMainWindow.cs", "ColorVision/MainWindowConfig.cs", "ColorVision/SingleInstanceStartupPolicy.cs", "ColorVision/SingleInstanceStartupCoordinator.cs", "ColorVision/SingleInstanceStartupWindow.xaml", "ColorVision/SingleInstanceStartupWindow.xaml.cs", "UI/ColorVision.UI/Update/ApplicationUpdateProcessCoordinator.Startup.cs", "ColorVision/StartupFileOpenPolicy.cs", "ColorVision/OperationsApplicationRestartController.cs", "ColorVision/App.StartupMaintenance.cs", "ColorVision/Recovery", "UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/StartupInitializerSequenceTests.cs", "Test/ColorVision.UI.Tests/StartupUiTraceTests.cs", "Test/ColorVision.UI.Tests/StartupThemeBootstrapTests.cs", "Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs", "Test/ColorVision.UI.Tests/SingleInstanceStartupCoordinatorTests.cs", "Test/ColorVision.UI.Tests/SingleInstanceStartupWindowTests.cs", "Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs", "Test/ColorVision.UI.Tests/StartupPresentationTests.cs", "Test/ColorVision.UI.Tests/StartupSceneLifecycleTests.cs", "Test/ColorVision.UI.Tests/StartupRecoveryPluginScannerTests.cs", "Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs", "Test/ColorVision.UI.Tests/StartupMaintenanceWindowTests.cs", "Test/ColorVision.UI.Tests/WizardWindowRuntimeTests.cs", "Test/ColorVision.UI.Tests/StartupRecoveryWindowRuntimeTests.cs", "Test/ColorVision.Copilot.Tests/CopilotBackgroundShellMaintenanceGuardTests.cs", "Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs", "Test/ColorVision.UI.Tests/StartupRegistryCheckerTests.cs"]
+summary: "启动顺序与故障恢复：软件渲染兼容参数在 WPF 窗口前生效；初始化进度和ready不代表全部成功，一次性插件跳过不绕过真实故障。"
+aliases: ["启动链路", "App.xaml.cs", "启动界面", "启动动画", "StartWindow", "StartupScene", "StartupUiTrace", "COLORVISION_STARTUP_TRACE", "StopAndReport", "首帧耗时", "首次使用耗时", "启动恢复", "故障恢复", "初始化向导", "安全启动", "启动进度", "初始化失败", "StartupRegistryChecker", "StartupMaintenanceController", "StartupMaintenanceSearchProvider", "StartupRecoveryWindow", "StartupRecoveryPluginScanner", "StartupInitializersCompleted", "MainWindowInitializer", "MainWindowFactory", "CompactMainWindow", "UseCompactMainWindow", "LoadingPlugin", "startup-maintenance", "startup-skip-plugins", "wait-for-process", "safe-start", "skip-plugins", "software-rendering", "StartupRenderingMode", "WPF软件渲染", "ToDesk白屏", "验证并回退"]
+code_paths: ["ColorVision/EntryClass.cs", "ColorVision/App.xaml.cs", "ColorVision/Startup/StartupRenderingMode.cs", "ColorVision/BuiltInModules.cs", "ColorVision/ProgramTimer.cs", "ColorVision/StartWindow.xaml", "ColorVision/StartWindow.xaml.cs", "ColorVision/StartWindow.Presentation.cs", "ColorVision/StartupScene.cs", "ColorVision/StartupUiTrace.cs", "ColorVision/Startup/StartupText.cs", "ColorVision/Startup/StartupResources.resx", "ColorVision/Startup/StartupResources.en.resx", "ColorVision/Startup/StartupResources.zh-Hant.resx", "ColorVision/MainWindow.xaml.cs", "ColorVision/MainWindowFactory.cs", "ColorVision/CompactMainWindow.cs", "ColorVision/MainWindowConfig.cs", "ColorVision/SingleInstanceStartupPolicy.cs", "ColorVision/SingleInstanceStartupCoordinator.cs", "ColorVision/SingleInstanceStartupWindow.xaml", "ColorVision/SingleInstanceStartupWindow.xaml.cs", "UI/ColorVision.UI/Update/ApplicationUpdateProcessCoordinator.Startup.cs", "ColorVision/StartupFileOpenPolicy.cs", "ColorVision/OperationsApplicationRestartController.cs", "ColorVision/App.StartupMaintenance.cs", "ColorVision/Recovery", "UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/StartupRenderingModeTests.cs", "Test/ColorVision.UI.Tests/StartupInitializerSequenceTests.cs", "Test/ColorVision.UI.Tests/StartupUiTraceTests.cs", "Test/ColorVision.UI.Tests/StartupThemeBootstrapTests.cs", "Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs", "Test/ColorVision.UI.Tests/SingleInstanceStartupCoordinatorTests.cs", "Test/ColorVision.UI.Tests/SingleInstanceStartupWindowTests.cs", "Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs", "Test/ColorVision.UI.Tests/StartupPresentationTests.cs", "Test/ColorVision.UI.Tests/StartupSceneLifecycleTests.cs", "Test/ColorVision.UI.Tests/StartupRecoveryPluginScannerTests.cs", "Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs", "Test/ColorVision.UI.Tests/StartupMaintenanceWindowTests.cs", "Test/ColorVision.UI.Tests/WizardWindowRuntimeTests.cs", "Test/ColorVision.UI.Tests/StartupRecoveryWindowRuntimeTests.cs", "Test/ColorVision.Copilot.Tests/CopilotBackgroundShellMaintenanceGuardTests.cs", "Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs", "Test/ColorVision.UI.Tests/StartupRegistryCheckerTests.cs"]
 related: ["platform.architecture", "platform.startup-integrity", "delivery.update", "plugins.model", "ui.discovery", "ui.wizards", "ui.localization", "ui.themes", "ui.search", "operations.main-window", "engine.devices", "engine.rc-registration", "flow.architecture"]
 ---
 
@@ -19,7 +19,7 @@ related: ["platform.architecture", "platform.startup-integrity", "delivery.updat
 
 | 阶段 | 行为与分支 |
 | --- | --- |
-| 进程入口 | 消费故障重启参数及 `--wait-for-process`，等待原进程退出后才创建 App、读取应用配置或获取单实例锁；随后建立计时、参数和早期日志 |
+| 进程入口 | 消费故障重启参数及 `--wait-for-process`，等待原进程退出后才读取一次性渲染参数；`--software-rendering` 在创建 App 和任何 WPF 窗口之前设置进程渲染模式，随后建立计时、其余参数和早期日志 |
 | 更新交接 | App 先检查同安装目录的活动更新；已有交接可推迟本次启动。解析维护参数后，将当前工作目录设为应用基础目录，再处理 `input` 中的更新包 |
 | 本次启动记录 | `StartupRegistryChecker.CheckAndSet()` 收集未完成尝试并创建当前记录；此时还没有加载主配置和内置模块 |
 | 基础装配 | 配置维护重置规则，创建 `ModuleCatalog`，由 `BuiltInModules.Register` 显式登记内置模块；随后加载主配置、暂关自动保存，应用日志、主题和界面语言 |
@@ -160,18 +160,19 @@ related: ["platform.architecture", "platform.startup-integrity", "delivery.updat
 
 已提交的维护退出不附带安装预取更新，即使创建新进程失败也如此。正常退出时的更新交接仍按更新主题处理。
 
-### 一次性维护参数
+### 一次性启动参数
 
-参数由维护流程生成，无需用户在重启后重复选择；它们不修改向导完成标记、多实例设置，也不伪造启动失败记录。
+渲染兼容参数可由用户快捷方式显式传入；其余参数由维护流程生成，无需用户在重启后重复选择。这些参数不修改向导完成标记、多实例设置，也不伪造启动失败记录。
 
 | 参数值 | 行为 |
 | --- | --- |
+| `--software-rendering` | 在 `App` 构造和资源初始化前将当前进程的 `RenderOptions.ProcessRenderMode` 设为 `SoftwareOnly`；不写注册表或配置，普通启动仍使用 WPF 默认的硬件优先模式。用户入口与远程白屏判断见[主程序启动](../../00-getting-started/first-steps.md#远程白屏时使用软件渲染兼容模式) |
 | `--startup-maintenance safe-start` | 本次跳过全部外部插件 |
 | `--startup-maintenance skip-plugins` 与 `--startup-skip-plugins` | 后者为一个 JSON 字符串数组参数，保留精确插件键；解析失败或空列表改走恢复页，不静默加载全部插件 |
 | `--startup-maintenance setup` / `recovery` | 兼容的显式向导 / 恢复启动分支 |
 | `--wait-for-process` | 在入口消费并等待指定旧进程，最多 30 秒；超时退出，后续常规启动不继续 |
 
-真实的未完成启动记录仍会触发恢复页，safe-start / skip-plugins 不绕过它；非空跳过键按插件加载器的匹配规则处理。参数只是本机启动意图，不是远程维护授权或新进程健康凭据。
+真实的未完成启动记录仍会触发恢复页，safe-start / skip-plugins 不绕过它；非空跳过键按插件加载器的匹配规则处理。软件渲染只改变 WPF 当前进程的呈现路径，不改变插件、初始化、设备或业务完成语义。参数只是本机启动意图，不是远程维护授权或新进程健康凭据。
 
 ## 进入业务后的排查
 

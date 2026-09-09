@@ -2,10 +2,10 @@
 knowledge_id: "operations.first-run"
 knowledge_type: "guide"
 status: "current"
-summary: "主程序启动的配置、实例和服务副作用，以及隔离测试环境中的最小本地图像验证。"
-aliases: ["首次启动","快速上手","试用","最小闭环","无硬件验证","打不开程序","旧进程卡死","单实例启动恢复","no safe close endpoint","SingleInstanceReplacementListener","插件未加载","普通图片启动","PNG","JPEG","TIFF","StartupFileOpenPolicy","WizardCompletionKey"]
-code_paths: ["ColorVision/App.xaml.cs","ColorVision/MainWindow.xaml.cs","ColorVision/StartWindow.xaml.cs","ColorVision/StartupFileOpenPolicy.cs","ColorVision/SingleInstanceStartupPolicy.cs", "ColorVision/SingleInstanceStartupCoordinator.cs", "ColorVision/SingleInstanceStartupWindow.xaml", "ColorVision/SingleInstanceStartupWindow.xaml.cs", "UI/ColorVision.UI/Update/ApplicationUpdateProcessCoordinator.Startup.cs","ColorVision/SingleInstanceReplacementListener.cs","UI/ColorVision.UI/Update/ApplicationUpdateProcessCoordinator.cs","UI/ColorVision.UI/ConfigHandler.cs","UI/ColorVision.UI/Plugins/PluginLoader.cs","UI/ColorVision.UI/FileProcessorFactory.cs","UI/ColorVision.Solution/Editor/ImageEditor.cs","Engine/ColorVision.Engine/MySqlInitializer.cs","Engine/ColorVision.Engine/MQTT/MqttInitializer.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/StartupRecoveryPluginScannerTests.cs","Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs", "Test/ColorVision.UI.Tests/SingleInstanceStartupCoordinatorTests.cs", "Test/ColorVision.UI.Tests/SingleInstanceStartupWindowTests.cs","Test/ColorVision.UI.Tests/ApplicationUpdateProcessCoordinatorTests.cs","Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs","Test/ColorVision.UI.Tests/CommonImageOpenDecodeTests.cs"]
+summary: "主程序启动的配置、实例和服务副作用，远程白屏的软件渲染兼容入口，以及隔离测试环境中的最小本地图像验证。"
+aliases: ["首次启动","快速上手","试用","最小闭环","无硬件验证","打不开程序","旧进程卡死","单实例启动恢复","no safe close endpoint","SingleInstanceReplacementListener","插件未加载","普通图片启动","PNG","JPEG","TIFF","StartupFileOpenPolicy","WizardCompletionKey","ToDesk白屏","远程窗口白屏","software-rendering","软件渲染兼容模式"]
+code_paths: ["ColorVision/EntryClass.cs","ColorVision/App.xaml.cs","ColorVision/Startup/StartupRenderingMode.cs","ColorVision/MainWindow.xaml.cs","ColorVision/StartWindow.xaml.cs","ColorVision/StartupFileOpenPolicy.cs","ColorVision/SingleInstanceStartupPolicy.cs", "ColorVision/SingleInstanceStartupCoordinator.cs", "ColorVision/SingleInstanceStartupWindow.xaml", "ColorVision/SingleInstanceStartupWindow.xaml.cs", "UI/ColorVision.UI/Update/ApplicationUpdateProcessCoordinator.Startup.cs","ColorVision/SingleInstanceReplacementListener.cs","UI/ColorVision.UI/Update/ApplicationUpdateProcessCoordinator.cs","UI/ColorVision.UI/ConfigHandler.cs","UI/ColorVision.UI/Plugins/PluginLoader.cs","UI/ColorVision.UI/FileProcessorFactory.cs","UI/ColorVision.Solution/Editor/ImageEditor.cs","Engine/ColorVision.Engine/MySqlInitializer.cs","Engine/ColorVision.Engine/MQTT/MqttInitializer.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/StartupRenderingModeTests.cs","Test/ColorVision.UI.Tests/StartupRecoveryPluginScannerTests.cs","Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs", "Test/ColorVision.UI.Tests/SingleInstanceStartupCoordinatorTests.cs", "Test/ColorVision.UI.Tests/SingleInstanceStartupWindowTests.cs","Test/ColorVision.UI.Tests/ApplicationUpdateProcessCoordinatorTests.cs","Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs","Test/ColorVision.UI.Tests/CommonImageOpenDecodeTests.cs"]
 related: ["delivery.prerequisites","platform.runtime","ui.configuration","ui.wizards","ui.image-editor"]
 ---
 
@@ -52,6 +52,18 @@ related: ["delivery.prerequisites","platform.runtime","ui.configuration","ui.wiz
 
 带文件参数也不等于绕过正常启动：`StartupFileOpenPolicy` 仅让 `.cvraw` / `.cvcie` 进入主窗口前的独立打开分支，普通 PNG、JPEG、TIFF 不属于该分支；独立打开也不应被描述为无副作用沙箱。
 
+## 远程白屏时使用软件渲染兼容模式
+
+当 ColorVision 在本地显示器上正常，但通过 ToDesk 等远程控制软件查看时只有 WPF 客户区白屏，窗口仍能响应点击、系统标题栏或右键菜单仍可见，可使用一次性启动参数 `--software-rendering`。该参数在创建 `App` 和任何 WPF 窗口之前把当前 ColorVision 进程切换为 CPU 软件渲染；它不写注册表、不保存为应用设置，也不影响其它 WPF 程序。大图缩放、动画、3D 和显示滤镜可能比普通 GPU 模式慢。
+
+兼容模式仍使用同一个 `ColorVision.exe`，不是另一套程序，安装时也不会额外创建兼容版入口。需要时手动打开现有 ColorVision 快捷方式的“属性”，在“目标”中已带引号的可执行文件路径后追加参数；如果希望同时保留普通入口，也可以先复制快捷方式并命名为“ColorVision（兼容模式）”：
+
+```text
+"C:\Program Files\ColorVision\ColorVision.exe" --software-rendering
+```
+
+实际安装目录不同时保留快捷方式原有路径，只追加空格和 `--software-rendering`。完全退出已有 ColorVision 进程后再启动；日志出现 `WPF software rendering was enabled by --software-rendering.` 表示参数已生效。需要恢复普通 GPU 渲染时，从快捷方式目标中删除该参数并重新启动即可。该模式用于绕过远程捕获、虚拟显示器或显卡驱动兼容问题，不表示数据库、插件或设备已经恢复；若普通本地窗口也白屏，仍需按日志和显卡环境继续定位。
+
 ## 最小本地图像检查
 
 在已满足运行前提、已进入主窗口的测试环境中：
@@ -73,6 +85,7 @@ related: ["delivery.prerequisites","platform.runtime","ui.configuration","ui.wiz
 | 插件未加载 | 正常扫描默认位于可执行文件目录下的 `Plugins/`；核对恢复时是否跳过、插件启用状态、`manifest.json` 的 `id` / `dllpath`、DLL 与依赖，入口为 `PluginLoader` |
 | 数据库或 MQTT 连接失败 | 实际配置的主机、端口、凭据权限及服务日志；修复、注册或启动服务需要相应授权，不把它们当成只读诊断 |
 | 图片无法显示 | 实际文件格式、文件访问错误、编辑器路由和图像解码日志；只有错误指向 native 依赖时才沿输出 DLL / OpenCV runtime 排查 |
+| 本地正常但远程客户区白屏 | 先核对被控显示器、虚拟屏、远控硬件/渲染加速及显卡驱动；用 `--software-rendering` 只验证 WPF 硬件合成兼容性，不把兼容模式生效当作业务功能验证 |
 
 反馈问题时提供版本、复现步骤、启动阶段和脱敏错误；不要上传配置中的凭据或未经授权的客户图片。
 
