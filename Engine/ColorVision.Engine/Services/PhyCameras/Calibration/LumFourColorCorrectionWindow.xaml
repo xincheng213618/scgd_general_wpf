@@ -36,13 +36,18 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <StackPanel Margin="0,0,0,18">
+        <DockPanel Margin="0,0,0,18">
+            <StackPanel x:Name="CalculationActions" DockPanel.Dock="Right">
+                <Button x:Name="CalculateButton" Width="110" Click="Calculate_Click" Content="计算校正"
+                        IsEnabled="{Binding IsChecked, ElementName=ManualDataConfirmed}"
+                        Style="{StaticResource UpdateDialogPrimaryButtonStyle}" />
+            </StackPanel>
             <TextBlock FontSize="26" FontWeight="SemiBold" Text="四色校正 · 手工数值" />
-        </StackPanel>
+        </DockPanel>
 
         <Border Grid.Row="1" Background="{DynamicResource UpdateDialog.Border}" />
 
-        <Border Grid.Row="2" Margin="0,18,0,12" Padding="16,14"
+        <Border x:Name="SourcePanel" Grid.Row="2" Margin="0,18,0,12" Padding="16,14"
                 Style="{StaticResource UpdateDialogCardStyle}">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -58,7 +63,7 @@
             </Grid>
         </Border>
 
-        <Grid Grid.Row="3" Margin="2,0,2,12">
+        <Grid x:Name="ModePanel" Grid.Row="3" Margin="2,0,2,12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
@@ -80,7 +85,7 @@
                 <ColumnDefinition Width="220" />
             </Grid.ColumnDefinitions>
 
-            <Border Padding="14" Style="{StaticResource UpdateDialogCardStyle}">
+            <Border x:Name="MeasurementPanel" Padding="14" Style="{StaticResource UpdateDialogCardStyle}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -162,14 +167,18 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
+            <TextBlock x:Name="BackupPathText" Visibility="Collapsed" Margin="0,0,16,0" VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"
+                       Foreground="{DynamicResource UpdateDialog.TextSecondary}" />
             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <Button Width="96" Click="Close_Click" Content="关闭"
+                <Button x:Name="CloseButton" Width="96" Click="Close_Click" Content="关闭"
                         Style="{StaticResource UpdateDialogTextButtonStyle}" />
-                <Button Width="110" Margin="10,0,0,0" Click="Calculate_Click" Content="计算修正"
-                        IsEnabled="{Binding IsChecked, ElementName=ManualDataConfirmed}"
-                        Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
                 <Button x:Name="SaveButton" Width="132" Margin="10,0,0,0" Click="SaveAs_Click"
                         Content="另存为" IsEnabled="False"
+                        Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
+                <Button x:Name="ReplaceButton" Width="216" Margin="10,0,0,0" Click="ReplaceCurrent_Click"
+                        Content="替换当前文件并重启服务" IsEnabled="False" ToolTipService.ShowOnDisabled="True"
+                        ToolTip="备份原校正文件后替换，并重启 ColorVision 服务。"
                         Style="{StaticResource UpdateDialogPrimaryButtonStyle}" />
             </StackPanel>
         </Grid>

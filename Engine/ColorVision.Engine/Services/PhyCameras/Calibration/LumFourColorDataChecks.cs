@@ -56,6 +56,36 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 throw new InvalidOperationException("原校正文件已被修改或移除，请重新选择文件并采集，避免使用旧数据。");
         }
 
+        public string ReplaceOriginal(CVRawManualCieConfig corrected, LumFourColorCorrectionMode mode)
+        {
+            if (!Enum.IsDefined(mode)) throw new ArgumentOutOfRangeException(nameof(mode));
+            if (mode == LumFourColorCorrectionMode.PythonRgb)
+                throw new InvalidOperationException("Python RGB 输出独立 XYZ 矩阵，请使用导出，不能直接替换原校正文件。");
+            EnsureUnchanged();
+            string temporary = Path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            string directory = System.IO.Path.GetDirectoryName(Path)!;
+            string name = System.IO.Path.GetFileNameWithoutExtension(Path);
+            string extension = System.IO.Path.GetExtension(Path);
+            string backup = System.IO.Path.Combine(directory, $"{name}_{DateTime.Now:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}_backup{extension}");
+            try
+            {
+                File.WriteAllText(temporary, CalibrationFile.SerializeCorrection(corrected), new UTF8Encoding(false));
+                _ = Load(temporary);
+                EnsureUnchanged();
+                // Create and verify the backup before touching the original. Never overwrite an earlier backup.
+                File.Copy(Path, backup, overwrite: false);
+                if (ComputeHash(backup) != Hash)
+                    throw new InvalidOperationException("备份与原校正文件不一致，未执行替换，请重新选择原文件。");
+                EnsureUnchanged();
+                File.Replace(temporary, Path, null);
+                return backup;
+            }
+            finally
+            {
+                if (File.Exists(temporary)) File.Delete(temporary);
+            }
+        }
+
         public void SaveCopy(string destination, CVRawManualCieConfig corrected, LumFourColorCorrectionMode mode = LumFourColorCorrectionMode.MatlabRgbw)
         {
             if (!Enum.IsDefined(mode)) throw new ArgumentOutOfRangeException(nameof(mode));

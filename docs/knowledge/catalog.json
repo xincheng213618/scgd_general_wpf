@@ -4543,6 +4543,8 @@
         "Engine/ColorVision.Engine/Services/ServiceInitializer.cs",
         "Engine/ColorVision.Engine/Services/WindowService.xaml.cs",
         "Engine/ColorVision.Engine/Services/WindowService.xaml",
+        "Engine/ColorVision.Engine/Services/DevicePropertyWindow.xaml",
+        "Engine/ColorVision.Engine/Services/DevicePropertyWindow.xaml.cs",
         "Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs",
         "Engine/ColorVision.Engine/Services/Type/TypeService.cs",
         "Engine/ColorVision.Engine/Services/DeviceService.cs",
@@ -4568,7 +4570,8 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/DeferredDeviceViewTests.cs",
-        "Test/ColorVision.UI.Tests/DockViewManagerTests.cs"
+        "Test/ColorVision.UI.Tests/DockViewManagerTests.cs",
+        "Test/ColorVision.UI.Tests/WindowServicePresentationTests.cs"
       ],
       "related": [
         "engine.index",
@@ -4625,7 +4628,9 @@
         "CVRawManualCieCalculator",
         "LumFourColorCalibrationWorkflowWindow",
         "四色校正采集",
-        "校正文件异常"
+        "校正文件异常",
+        "替换当前文件并重启服务",
+        "校正文件备份"
       ],
       "code_paths": [
         "Engine/ColorVision.FileIO/CVFileUtil.cs",
@@ -4645,6 +4650,7 @@
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCorrectionWindow.xaml.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorDataChecks.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationReplacement.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationFile.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorPoiEditor.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorMeasurementClipboard.cs",
@@ -4666,6 +4672,7 @@
         "Test/ColorVision.UI.Tests/CalibrationEditorInteractionTests.cs",
         "Test/ColorVision.UI.Tests/LumFourColorWorkflowSafetyTests.cs",
         "Test/ColorVision.UI.Tests/LumFourColorFileCompatibilityTests.cs",
+        "Test/ColorVision.UI.Tests/LumFourColorReplacementTests.cs",
         "Test/ColorVision.UI.Tests/CvFilePixelSafetyTests.cs",
         "Test/ColorVision.UI.Tests/CvcieFloatChannelRendererTests.cs"
       ],

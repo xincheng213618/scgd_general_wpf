@@ -1,15 +1,18 @@
 using ColorVision.Common.ThirdPartyApps;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Media;
+using ColorVision.Engine.FlowProcessing;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -33,6 +36,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         private readonly ObservableCollection<CorrectionMeasurementRow> rows = new();
         private CVRawManualCieConfig? correctedConfig;
         private LumFourColorSourceSnapshot? sourceSnapshot;
+        private bool busy;
         private LumFourColorCorrectionMode SelectedMode => SinglePointMode.IsChecked == true ? LumFourColorCorrectionMode.SinglePoint
             : PythonRgbMode.IsChecked == true ? LumFourColorCorrectionMode.PythonRgb : LumFourColorCorrectionMode.MatlabRgbw;
 
@@ -60,6 +64,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 .FirstOrDefault();
             if (existing != null)
             {
+                if (existing.busy) { existing.Activate(); return; }
                 existing.SelectMode(mode);
                 if (!string.IsNullOrWhiteSpace(sourcePath))
                 {
@@ -124,6 +129,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         {
             SaveButton.Content = SelectedMode == LumFourColorCorrectionMode.PythonRgb ? "导出 XYZ 矩阵" : "另存为";
             ResultTitle.Text = SelectedMode == LumFourColorCorrectionMode.PythonRgb ? "XYZ 修正矩阵" : "计算结果";
+            ReplaceButton.ToolTip = SelectedMode == LumFourColorCorrectionMode.PythonRgb
+                ? "Python RGB 输出独立 XYZ 矩阵，请使用导出，不能直接替换原校正文件。"
+                : "备份原校正文件后替换，并重启 ColorVision 服务。";
             rows.Clear();
             if (SelectedMode == LumFourColorCorrectionMode.SinglePoint)
             {
@@ -192,10 +200,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
         private void Calculate_Click(object sender, RoutedEventArgs e)
         {
+            if (busy) return;
             try
             {
                 correctedConfig = null;
                 SaveButton.IsEnabled = false;
+                ReplaceButton.IsEnabled = false;
                 MeasurementsGrid.CommitEdit(System.Windows.Controls.DataGridEditingUnit.Cell, true);
                 MeasurementsGrid.CommitEdit(System.Windows.Controls.DataGridEditingUnit.Row, true);
                 if (ManualDataConfirmed.IsChecked != true)
@@ -224,8 +234,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 }
 
                 ResultPreview.Text = FormatMatrix(correctedConfig);
-                StatusText.Text = SelectedMode == LumFourColorCorrectionMode.PythonRgb ? "XYZ 修正矩阵已计算" : $"计算完成 · 按原{sourceSnapshot.CalibrationFile.FormatDescription}另存";
+                StatusText.Text = SelectedMode == LumFourColorCorrectionMode.PythonRgb ? "XYZ 修正矩阵已计算" : "计算完成";
                 SaveButton.IsEnabled = true;
+                ReplaceButton.IsEnabled = SelectedMode != LumFourColorCorrectionMode.PythonRgb;
             }
             catch (Exception ex)
             {
@@ -235,7 +246,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
         private void SaveAs_Click(object sender, RoutedEventArgs e)
         {
-            if (correctedConfig == null)
+            if (busy || correctedConfig == null)
                 return;
 
             string sourcePath = SourcePathBox.Text.Trim();
@@ -266,6 +277,36 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             {
                 ShowError($"保存失败：{ex.Message}");
             }
+        }
+
+        private async void ReplaceCurrent_Click(object sender, RoutedEventArgs e) => await ReplaceCurrentAsync(DisplayFlow.RestartColorVisionServicesAsync);
+
+        internal async Task ReplaceCurrentAsync(Func<Task> restartServices)
+        {
+            if (busy || correctedConfig == null || sourceSnapshot == null) return;
+            SetBusy(true);
+            StatusText.Text = "正在替换文件并重启服务…";
+            try
+            {
+                var result = await LumFourColorCalibrationReplacement.ReplaceAndRestartAsync(sourceSnapshot, correctedConfig, SelectedMode, restartServices);
+                // Reusing the same manual data against the replaced matrix would apply the correction twice.
+                ShowMeasurementRows();
+                ResetResult();
+                BackupPathText.Text = $"备份：{result.BackupPath}";
+                BackupPathText.Visibility = Visibility.Visible;
+                StatusText.Text = result.Message;
+            }
+            catch (Exception ex) { ShowError($"替换失败，未重启服务：{ex.Message}"); }
+            finally { SetBusy(false); }
+        }
+
+        private void SetBusy(bool value)
+        {
+            busy = value;
+            SourcePanel.IsEnabled = ModePanel.IsEnabled = MeasurementPanel.IsEnabled = CalculationActions.IsEnabled = !value;
+            CloseButton.IsEnabled = !value;
+            SaveButton.IsEnabled = !value && correctedConfig != null;
+            ReplaceButton.IsEnabled = !value && correctedConfig != null && SelectedMode != LumFourColorCorrectionMode.PythonRgb;
         }
 
         private static ColorCorrectionMeasurement CreateMeasurement(CorrectionMeasurementRow row)
@@ -317,6 +358,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 StatusText.Text = string.Empty;
             if (SaveButton != null)
                 SaveButton.IsEnabled = false;
+            if (ReplaceButton != null) ReplaceButton.IsEnabled = false;
         }
 
         private void ShowError(string message)
@@ -327,6 +369,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         }
 
         private void Close_Click(object sender, RoutedEventArgs e) => Close();
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            base.OnClosing(e);
+            if (busy) e.Cancel = true;
+        }
         private void InputChanged(object sender, RoutedEventArgs e) => ResetResult();
     }
 

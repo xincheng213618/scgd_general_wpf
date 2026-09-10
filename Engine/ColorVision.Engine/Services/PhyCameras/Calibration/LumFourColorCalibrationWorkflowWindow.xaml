@@ -37,8 +37,12 @@
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="四色校正" FontSize="26" FontWeight="SemiBold" />
             </StackPanel>
-            <Button Grid.Column="1" Click="OpenManual_Click" Content="手工数值…" Height="32"
-                    Style="{StaticResource UpdateDialogTextButtonStyle}" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button x:Name="ManualInputButton" Click="OpenManual_Click" Content="手工数值…" Height="32"
+                        Style="{StaticResource UpdateDialogTextButtonStyle}" />
+                <Button x:Name="CalculateButton" Width="112" Margin="12,0,0,0" Content="计算校正" Click="Calculate_Click" IsEnabled="False"
+                        Style="{StaticResource UpdateDialogPrimaryButtonStyle}" />
+            </StackPanel>
         </Grid>
         <Border Grid.Row="1" Padding="14,12" Style="{StaticResource UpdateDialogCardStyle}">
             <Grid>
@@ -217,11 +221,15 @@
             <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                 <TextBlock x:Name="ProgressText" FontWeight="SemiBold" />
                 <TextBlock x:Name="StatusText" Margin="0,4,0,0" Style="{StaticResource CaptionStyle}" />
+                <TextBlock x:Name="BackupPathText" Margin="0,4,0,0" Visibility="Collapsed" TextTrimming="CharacterEllipsis"
+                           ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" Foreground="{DynamicResource UpdateDialog.TextSecondary}" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button Width="72" Content="关闭" Click="Close_Click" Style="{StaticResource UpdateDialogTextButtonStyle}" />
-                <Button x:Name="CalculateButton" Width="112" Margin="8,0,0,0" Content="计算校正" Click="Calculate_Click" IsEnabled="False" Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
-                <Button x:Name="SaveButton" Width="112" Margin="8,0,0,0" Content="另存校正文件" Click="SaveAs_Click" IsEnabled="False" Style="{StaticResource UpdateDialogPrimaryButtonStyle}" />
+                <Button x:Name="CloseButton" Width="72" Content="关闭" Click="Close_Click" Style="{StaticResource UpdateDialogTextButtonStyle}" />
+                <Button x:Name="SaveButton" Width="112" Margin="8,0,0,0" Content="另存为" Click="SaveAs_Click" IsEnabled="False" Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
+                <Button x:Name="ReplaceButton" Width="216" Margin="8,0,0,0" Content="替换当前文件并重启服务" Click="ReplaceCurrent_Click" IsEnabled="False"
+                        ToolTipService.ShowOnDisabled="True" ToolTip="备份原校正文件后替换，并重启 ColorVision 服务。"
+                        Style="{StaticResource UpdateDialogPrimaryButtonStyle}" />
             </StackPanel>
         </Grid>
     </Grid>

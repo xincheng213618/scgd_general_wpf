@@ -111,18 +111,12 @@ namespace ColorVision.UI
             {
                 button.SetResourceReference(FrameworkElement.StyleProperty, "PropertyEditorCommandButton");
                 var text = new StackPanel();
-                var title = new TextBlock { Text = name, FontSize = 13, FontWeight = FontWeights.Normal, TextWrapping = TextWrapping.Wrap };
+                var title = new TextBlock { Text = name, FontSize = 12, FontWeight = FontWeights.Normal, TextWrapping = TextWrapping.Wrap };
                 title.SetBinding(TextBlock.ForegroundProperty, new Binding(nameof(Button.Foreground))
                 {
                     RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(Button), 1)
                 });
                 text.Children.Add(title);
-                if (!string.IsNullOrWhiteSpace(description))
-                {
-                    var detail = new TextBlock { Text = description, FontSize = 10.5, Margin = new Thickness(0, 2, 0, 0), Opacity = 0.72, TextWrapping = TextWrapping.Wrap };
-                    detail.SetResourceReference(TextBlock.ForegroundProperty, "PropertyEditorCommandTextSecondary");
-                    text.Children.Add(detail);
-                }
                 button.Content = text;
             }
 

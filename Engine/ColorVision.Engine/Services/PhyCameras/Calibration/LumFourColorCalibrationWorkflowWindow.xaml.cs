@@ -1,5 +1,6 @@
 #pragma warning disable CA1001
 using ColorVision.Engine.Media;
+using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Spectrum;
@@ -10,6 +11,7 @@ using ColorVision.Themes;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -31,6 +33,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         private readonly LumFourColorPoiOptions poiOptions;
         private bool sourceFromTemplate;
         private bool busy;
+        private bool replacing;
 
         private LumFourColorCalibrationSample? SelectedSample => SampleList.SelectedItem as LumFourColorCalibrationSample;
 
@@ -160,7 +163,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             InvalidateCalculation();
             SampleList.SelectedIndex = 0;
             StatusText.Text = "";
-            SaveButton.Content = mode == LumFourColorCorrectionMode.PythonRgb ? "导出 XYZ 矩阵" : "另存校正文件";
+            SaveButton.Content = mode == LumFourColorCorrectionMode.PythonRgb ? "导出 XYZ 矩阵" : "另存为";
+            ReplaceButton.ToolTip = mode == LumFourColorCorrectionMode.PythonRgb
+                ? "Python RGB 输出独立 XYZ 矩阵，请使用导出，不能直接替换原校正文件。"
+                : "备份原校正文件后替换，并重启 ColorVision 服务。";
             RefreshSelectedSample();
         }
 
@@ -464,7 +470,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 }
                 sourceSnapshot.EnsureUnchanged();
                 correctedConfig = session.Calculate(sourceSnapshot.Config);
-                SaveButton.IsEnabled = true;
+                RefreshActions();
                 StatusText.Text = session.Mode == LumFourColorCorrectionMode.PythonRgb ? "XYZ 修正矩阵已计算" : "计算完成";
             }
             catch (Exception ex)
@@ -475,7 +481,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
         private void SaveAs_Click(object sender, RoutedEventArgs e)
         {
-            if (correctedConfig == null)
+            if (busy || correctedConfig == null)
                 return;
 
             string sourcePath = SourcePathBox.Text.Trim();
@@ -505,6 +511,31 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             catch (Exception ex)
             {
                 ShowError($"保存失败：{ex.Message}");
+            }
+        }
+
+        private async void ReplaceCurrent_Click(object sender, RoutedEventArgs e) => await ReplaceCurrentAsync(DisplayFlow.RestartColorVisionServicesAsync);
+
+        internal async Task ReplaceCurrentAsync(Func<Task> restartServices)
+        {
+            if (busy || correctedConfig == null || sourceSnapshot == null) return;
+            replacing = true;
+            CancelDrawMode();
+            SetBusy(true, "正在替换文件并重启服务…");
+            try
+            {
+                var result = await LumFourColorCalibrationReplacement.ReplaceAndRestartAsync(sourceSnapshot, correctedConfig, session.Mode, restartServices);
+                // The old camera values were measured against the previous matrix, even if restarting failed.
+                ReloadSource();
+                BackupPathText.Text = $"备份：{result.BackupPath}";
+                BackupPathText.Visibility = Visibility.Visible;
+                StatusText.Text = result.Message;
+            }
+            catch (Exception ex) { ShowError($"替换失败，未重启服务：{ex.Message}"); }
+            finally
+            {
+                replacing = false;
+                SetBusy(false, null);
             }
         }
 
@@ -542,6 +573,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             NextSampleButton.IsEnabled = !busy && session.Samples.Any(item => item != sample && !item.IsComplete);
             CalculateButton.IsEnabled = !busy && session.IsComplete && sourceSnapshot != null;
             SaveButton.IsEnabled = !busy && correctedConfig != null;
+            ReplaceButton.IsEnabled = !busy && correctedConfig != null && session.Mode != LumFourColorCorrectionMode.PythonRgb;
             int complete = session.Samples.Count(item => item.IsComplete);
             ProgressText.Text = $"已完成 {complete} / {session.Samples.Count}";
         }
@@ -561,6 +593,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             CieImageView.IsEnabled = !value;
             PoiShapeCombo.IsEnabled = !value;
             PoiTemplateCombo.IsEnabled = !value;
+            ManualInputButton.IsEnabled = !value;
+            CloseButton.IsEnabled = !replacing;
             if (message != null)
                 StatusText.Text = message;
             RefreshActions();
@@ -574,6 +608,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             bool hadResult = correctedConfig != null;
             correctedConfig = null;
             if (SaveButton != null) SaveButton.IsEnabled = false;
+            if (ReplaceButton != null) ReplaceButton.IsEnabled = false;
             if (hadResult && StatusText != null) StatusText.Text = "数据已变化，请重新计算。";
         }
 
@@ -622,6 +657,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         }
 
         private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            base.OnClosing(e);
+            if (replacing) e.Cancel = true;
+        }
 
         private void Window_Closed(object? sender, EventArgs e)
         {

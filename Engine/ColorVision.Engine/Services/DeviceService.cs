@@ -181,12 +181,11 @@ namespace ColorVision.Engine.Services
 
             PropertyCommand = new RelayCommand((e) =>
             {
-                Window window = new() { Width = 700, Height = 500, Icon = Icon, Title = Properties.Resources.Property };
-                window.Content = GetDeviceInfo();
-                window.Owner = Application.Current.GetActiveWindow();
-                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ApplyCaption();
-                window.ShowDialog();
+                new DevicePropertyWindow(Icon, Name, Code, GetDeviceInfo())
+                {
+                    Owner = Application.Current.GetActiveWindow(),
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                }.ShowDialog();
             });
             AskCopilotCommand = new RelayCommand(_ => AskCopilotAboutDevice());
             RefreshCommand = new RelayCommand(a => Save());

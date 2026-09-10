@@ -14,6 +14,22 @@ namespace ColorVision.UI.Tests;
 public sealed class WindowServicePresentationTests
 {
     [Fact]
+    public void DevicePropertyWindow_WrapsTheSharedDevicePage()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var content = new UserControl();
+            var window = new ColorVision.Engine.Services.DevicePropertyWindow(null, "SV6100_Camera", "DEV.Camera.Default", content);
+
+            Assert.Equal("SV6100_Camera", ((TextBlock)window.FindName("DeviceTitle")).Text);
+            Assert.Equal("DEV.Camera.Default", ((TextBlock)window.FindName("DeviceCode")).Text);
+            Assert.Same(content, ((ContentControl)window.FindName("DeviceContent")).Content);
+            Assert.Equal(new Thickness(20, 16, 20, 20), ((Grid)window.Content).Margin);
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void RenderConfigurationShellWithSyntheticCommands()
     {
         string? output = Environment.GetEnvironmentVariable("COLORVISION_SERVICE_PREVIEW");
@@ -98,6 +114,29 @@ public sealed class WindowServicePresentationTests
                         encoder.Save(stream);
                     }
                     }
+
+                    var propertyMarkup = XDocument.Load(Path.Combine(repository.FullName, "Engine/ColorVision.Engine/Services/Devices/Camera/InfoCamera.xaml"));
+                    var propertyScroll = (ScrollViewer)XamlReader.Parse(propertyMarkup.Root!.Element(p + "ScrollViewer")!.ToString());
+                    PropertyEditorHelper.GenCommand(new PreviewCommands(), (UniformGrid)propertyScroll.Content);
+                    var propertyWindow = new ColorVision.Engine.Services.DevicePropertyWindow(null, "SV6100_Camera", "DEV.Camera.Default", new UserControl { Content = propertyScroll });
+                    var propertyShell = (Grid)propertyWindow.Content;
+                    TextElementFont(propertyShell);
+                    for (int i = 0; i < 3; i++)
+                    {
+                        propertyShell.Measure(new Size(720, 540));
+                        propertyShell.Arrange(new Rect(0, 0, 720, 540));
+                        propertyShell.UpdateLayout();
+                    }
+                    var propertyBitmap = new RenderTargetBitmap(720, 540, 96, 96, PixelFormats.Pbgra32);
+                    propertyBitmap.Render(propertyShell);
+                    Directory.CreateDirectory(output);
+                    using (var stream = File.Create(Path.Combine(output, $"device-property-{(dark ? "dark" : "light")}-720.png")))
+                    {
+                        var encoder = new PngBitmapEncoder();
+                        encoder.Frames.Add(BitmapFrame.Create(propertyBitmap));
+                        encoder.Save(stream);
+                    }
+                    propertyWindow.Close();
                 }
             }
             finally { Application.Current.Resources = saved; }

@@ -193,6 +193,7 @@ public sealed class LumFourColorWorkflowSafetyTests
                     FillSample(sample, LumFourColorSourceSnapshot.ComputeHash(path), 1);
                     Click(window, "CalculateButton");
                     Assert.True(Control<Button>(window, "SaveButton").IsEnabled);
+                    Assert.True(Control<Button>(window, "ReplaceButton").IsEnabled);
                     File.WriteAllText(path, "{}");
                     Click(window, "CalculateButton");
                     Assert.False(Control<Button>(window, "SaveButton").IsEnabled);
@@ -741,6 +742,7 @@ public sealed class LumFourColorWorkflowSafetyTests
                     Click(window, "CalculateButton");
                     Assert.True(Control<Button>(window, "SaveButton").IsEnabled);
                     Render(window, 1076, 656, "workflow-python-rgb");
+                    Assert.False(Control<Button>(window, "ReplaceButton").IsEnabled);
                     Invoke(window, "SetBusy", true, "");
                     Assert.False(Control<RadioButton>(window, "PythonRgbMode").IsEnabled);
                     Invoke(window, "SetBusy", false, "");
@@ -756,6 +758,7 @@ public sealed class LumFourColorWorkflowSafetyTests
                     Control<CheckBox>(manual, "ManualDataConfirmed").IsChecked = true;
                     Invoke(manual, "Calculate_Click", manual, new RoutedEventArgs());
                     Assert.True(Control<Button>(manual, "SaveButton").IsEnabled);
+                    Assert.False(Control<Button>(manual, "ReplaceButton").IsEnabled);
                     Assert.Equal("XYZ 修正矩阵", Control<TextBlock>(manual, "ResultTitle").Text);
                     Render(manual, 1076, 576, "manual-python-rgb");
                     ((CorrectionMeasurementRow)grid.Items[0]).CameraYChromaticity = "0";
@@ -772,6 +775,94 @@ public sealed class LumFourColorWorkflowSafetyTests
             });
         }
         finally { File.Delete(path); }
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void ReplaceLocksEditingAndClearsOldMeasurementsEvenWhenRestartFails(bool manualInput, bool restartFails)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "lum-replace-ui-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        string path = Path.Combine(directory, "source.dat");
+        WriteSource(path);
+        try
+        {
+            WithTheme(() =>
+            {
+                Window window = manualInput
+                    ? new LumFourColorCorrectionWindow(path, LumFourColorCorrectionMode.SinglePoint)
+                    : new LumFourColorCalibrationWorkflowWindow(Array.Empty<DeviceCamera>(), Array.Empty<DeviceSpectrum>(), path);
+                var restart = new TaskCompletionSource();
+                Task? operation = null;
+                try
+                {
+                    LumFourColorCalibrationSample? sample = null;
+                    Func<Func<Task>, Task> replace;
+                    if (window is LumFourColorCorrectionWindow manual)
+                    {
+                        manual.PasteMeasurements("2\t0.2\t0.3\t4\t0.2\t0.3");
+                        Control<CheckBox>(manual, "ManualDataConfirmed").IsChecked = true;
+                        replace = manual.ReplaceCurrentAsync;
+                    }
+                    else
+                    {
+                        var workflow = (LumFourColorCalibrationWorkflowWindow)window;
+                        Control<RadioButton>(workflow, "SinglePointMode").IsChecked = true;
+                        sample = (LumFourColorCalibrationSample)Control<ListBox>(workflow, "SampleList").Items[0];
+                        FillSample(sample, LumFourColorSourceSnapshot.ComputeHash(path), 1);
+                        sample.SetSpectrumMeasurement(new(new(4, .2, .3), [new(400, 1)], 1, DateTimeOffset.Now) { PeakAd = 32767, Source = "test" });
+                        replace = workflow.ReplaceCurrentAsync;
+                    }
+                    Click(window, "CalculateButton");
+                    Assert.True(Control<Button>(window, "ReplaceButton").IsEnabled);
+                    Render(window, 1076, manualInput ? 576 : 656, manualInput ? "manual-replace-ready" : "workflow-replace-ready");
+                    Assert.True(Control<Button>(window, "CalculateButton").TranslatePoint(new Point(), window).Y
+                        < Control<Button>(window, "ReplaceButton").TranslatePoint(new Point(), window).Y);
+                    operation = replace(() => restart.Task);
+                    Assert.False(operation.IsCompleted);
+                    foreach (string name in new[] { "SaveButton", "ReplaceButton", "CalculateButton", "CloseButton" })
+                        Assert.False(Control<Button>(window, name).IsEnabled);
+                    Assert.False(Control<TextBox>(window, "SourcePathBox").IsEnabled);
+                    Assert.False(Control<RadioButton>(window, "PythonRgbMode").IsEnabled);
+                    window.Close();
+                    Assert.True(window.IsVisible);
+                    if (restartFails) restart.SetException(new IOException("测试服务不可用"));
+                    else restart.SetResult();
+                    Drain();
+                    Assert.True(operation.IsCompletedSuccessfully);
+                    Assert.False(Control<Button>(window, "SaveButton").IsEnabled);
+                    Assert.False(Control<Button>(window, "ReplaceButton").IsEnabled);
+                    Assert.False(Control<Button>(window, "CalculateButton").IsEnabled);
+                    Assert.True(Control<Button>(window, "CloseButton").IsEnabled);
+                    Assert.Contains(restartFails ? "服务重启失败" : "服务重启完成", Control<TextBlock>(window, "StatusText").Text);
+                    string backup = Assert.Single(Directory.GetFiles(directory, "*_backup.dat"));
+                    Assert.Contains(backup, Control<TextBlock>(window, "BackupPathText").Text);
+                    if (manualInput)
+                    {
+                        var row = (CorrectionMeasurementRow)Control<DataGrid>(window, "MeasurementsGrid").Items[0];
+                        Assert.Empty(row.CameraY);
+                        Assert.False(Control<CheckBox>(window, "ManualDataConfirmed").IsChecked);
+                        Assert.Empty(Control<TextBox>(window, "ResultPreview").Text);
+                    }
+                    else
+                    {
+                        Assert.False(sample!.HasCameraMeasurement);
+                        Assert.True(sample.HasSpectrumMeasurement);
+                    }
+                    Render(window, 1076, manualInput ? 576 : 656, $"{(manualInput ? "manual" : "workflow")}-replace-{(restartFails ? "failed" : "complete")}");
+                }
+                finally
+                {
+                    restart.TrySetResult();
+                    Drain();
+                    window.Close();
+                }
+            });
+        }
+        finally { Directory.Delete(directory, true); }
     }
 
     private static LumFourColorCieCapture SyntheticFrame(int width, int height)
