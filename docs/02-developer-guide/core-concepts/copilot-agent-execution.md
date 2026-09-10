@@ -55,6 +55,8 @@ Flow patch 仍要求当前请求或上下文与流程相关；修改工具不因
 
 `CopilotAgentRuntimeRouter` 将配置完整的 OpenAI-compatible 和 Anthropic-compatible Profile 送入 Agent Framework。运行时不会在失败后自动切换执行器，也不会重放已经产生文本或工具调用的请求，避免写操作被重复执行。模型设置不暴露运行时开关。输入框的访问状态通过同一个可变 `CopilotAgentAccessContext` 进入 `CopilotTurnRequest`、`CopilotAgentRequest` 和正在运行的 Framework Session，但不会写入会话状态。
 
+官方 `api.openai.com` Profile 的普通 Chat、图片理解、连接诊断、标题／压缩辅助请求和 Agent 均统一使用 Responses API；第三方 OpenAI-compatible Profile 仍走 Chat Completions，Anthropic-compatible Profile 仍走 Messages。原始 Chat 请求使用 `/responses`、`instructions`、`input`、`max_output_tokens` 与 `store=false`，图片块使用 `input_image` 数据 URL；GPT-6 Astra 不发送 `temperature`，推理通过 `reasoning.effort` 发送。流式读取识别 `response.output_text.delta`、`response.completed` 和 `response.incomplete`，并从完成事件内的 `response.usage` 合并用量；非流式读取只收集 `output` 中的 `output_text`。完成事件的整份正文不会在已发布 delta 后重复追加。
+
 Anthropic 官方适配器的 `AnthropicSseException` 进入同一供应商错误处理边界。尚未输出内容或工具调用时，只有 SDK 明确分类的 `overloaded_error`、`rate_limit_error`、`api_error` 和 `timeout_error` 可按现有次数／退避限制重试；认证、请求及未知错误不自动重试。SSE 错误不是 HTTP 错误状态，重试诊断保留固定错误类型，不伪造 429 等状态码。已经产生正文或工具执行记录后，任何该类 SSE 中断都保留进展，以 `ProviderFailure` 完成账本与检查点收尾，不重发已产生内容的调用。`CopilotAnthropicProviderFailureTests` 使用安装版本的正式适配器和受控 SSE，覆盖错误分类、正文后不重发、实际工具完成后的恢复，以及严格 Turn 终态；失败流未由适配器发布正式 usage 时仍按预算估算处理，不把底层 `message_start` 字段冒充已返回的完整用量。
 
 内部兼容枚举名 `FullAccess` 表示最长 15 分钟、绑定 conversation、task 和当前 workspace 的临时授权，不是任意工具免审。`CanAutoApprove` 的直接批准分支目前只允许声明 `AllowsTemporaryFullAccess` 的 `ApplyWorkspacePatchEnvelope` 与 `RollbackWorkspacePatchEnvelope`，并复核可写范围；其他受保护工具可以在 `CanAutoReview` 条件成立时交独立权限审查器逐次复核，因此不能写成“Shell、模板、Flow、菜单和数据库一律每次人工确认”。临时任务复核与显式 `approvals_reviewer=auto_review` 的条件、未批准后的不同处理，以及 `/approve` 精确重试边界统一见[原生审批、自动复核与参数快照](./copilot-agent-tool-contracts.md#原生审批与参数快照)。`ConfirmProtectedActions` 也不等于禁止显式配置的自动复核。
@@ -69,7 +71,7 @@ Anthropic 官方适配器的 `AnthropicSseException` 进入同一供应商错误
 
 ### OpenAI HTTP 重试预算
 
-`CopilotOpenAiAgentChatClientFactory` 为 Chat Completions 和 Responses 共用的 `OpenAIClientOptions` 设置 `ClientRetryPolicy(0)`，关闭 SDK 内部重试。重试只由 ColorVision 的供应商重试层执行，因此一次预算尝试对应一次 HTTP 请求，不会被 SDK 再放大为四次。429/503 等瞬态失败按宿主上限重试，401 等永久失败不重试；正文、推理内容或工具调用已经发布后，不重放这一模型调用。已完成工具后发起的下一次模型调用可以在尚无新输出时有限重试，但不会重新执行此前工具。`CopilotOpenAiProviderRetryTests` 使用正式工厂、正式适配器和受控回环 HTTP，核验两条路由的实际请求数、`ProviderCalls`、估算用量及工具完成后的 `ProviderFailure` 检查点，不连接真实供应商账户。
+`CopilotOpenAiAgentChatClientFactory` 为第三方 Chat Completions 和官方 Responses 共用的 `OpenAIClientOptions` 设置 `ClientRetryPolicy(0)`，关闭 SDK 内部重试。重试只由 ColorVision 的供应商重试层执行，因此一次预算尝试对应一次 HTTP 请求，不会被 SDK 再放大为四次。429/503 等瞬态失败按宿主上限重试，401 等永久失败不重试；正文、推理内容或工具调用已经发布后，不重放这一模型调用。已完成工具后发起的下一次模型调用可以在尚无新输出时有限重试，但不会重新执行此前工具。`CopilotOpenAiProviderRetryTests` 使用正式工厂、正式适配器和受控回环 HTTP，核验两条路由的实际请求数、`ProviderCalls`、估算用量及工具完成后的 `ProviderFailure` 检查点，不连接真实供应商账户。
 
 `CopilotOpenAiRequestIdChatClient` 为两条路由补充同一次失败响应的请求 ID：只读取 SDK 异常中的 `x-request-id`、`request-id` 或 `x-amzn-requestid` 响应头，使用创建客户端时与凭据相同的 API key 快照去除凭据回显，再规范化并保存到原异常的安全元数据。它不读取错误正文，不更改 SDK 异常类型、原始响应或 `Retry-After`，也不保存全局“最近请求 ID”。重试事件使用对应尝试的 ID；已有工具进展后的中断诊断附加最后失败尝试的 ID，不误用前一次重试的 ID。头缺失或读取失败时仍保留原错误。`CopilotOpenAiRequestIdTests` 通过正式工厂和受控 HTTP 核验两路头名、长凭据脱敏、创建后的配置变化、并发隔离、退避和终态诊断。
 

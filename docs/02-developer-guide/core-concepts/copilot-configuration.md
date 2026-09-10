@@ -75,11 +75,19 @@ related: ["copilot.runtime", "copilot.interactions", "copilot.lifecycle", "copil
 
 从聊天面板打开设置时，`OpenSettings` 在窗口关闭后只要发现成功结果或 `HasAppliedChanges`，就会 `ReloadStateFromConfig(window.ActiveProfileId)`，重绑定 Profile、会话选择并请求会话状态保存；所以 Apply 后再 Cancel 仍会触发重载。Local MCP 的 `ApplySettings` 则在设置保存的刷新阶段执行，启停监听或变更 token 不是纯文件操作。协议和会话失效条件见[Local MCP](./colorvision-mcp.md)。
 
+## 新建 Profile 的模型预设
+
+`CopilotVendorCatalog` 只为新建或编辑 Profile 提供当前模型名候选，不自动改写已经保存的模型、地址、凭据或默认 Profile。当前候选为：OpenAI `gpt-6-astra`、`gpt-5.6`、`gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna`；DeepSeek `deepseek-v4-pro`、`deepseek-v4-flash`、`deepseek-v4-flash-vision-exp`；Claude `claude-fable-5`、`claude-mythos-5`、`claude-opus-5`、`claude-sonnet-5`、`claude-haiku-4-5-20251001`；Grok `grok-4.6`、`grok-4.5`、`grok-4.20`；Gemini `gemini-3.1-pro-preview`、`gemini-3.8-flash`、`gemini-3.7-flash`、`gemini-3.6-flash`、`gemini-3.5-flash`、`gemini-3.5-flash-lite`；GLM `glm-5.2`、`glm-5-turbo`、`glm-4.7-flash`、`glm-4.5-air`；MiniMax `MiniMax-M2.7`、`MiniMax-M2.7-highspeed`、`MiniMax-M2.5`、`MiniMax-M2.5-highspeed`；MiMo `mimo-v2.5-pro`、`mimo-v2.5`；SenseNova `sensenova-6.7-flash-lite`。
+
+目录移除已退役或已被当前系列替代的旧候选，但兼容读取手工填写或既有保存值。模型名出现在候选中不等于账号已获权限、端点兼容或模型可连接；仍应通过 Profile 的实际连接测试验证。
+
 ## `/model` 与 `/reasoning` 不是同一种保存
 
 `/model` 选择一个已经存在的 Profile，不改写其 provider、模型地址或凭据。`SelectModelProfile` 通过 `SelectedProfile` → `CopilotConversationSession.SelectProfile` 更新运行期选择、`ActiveProfileId` 和当前会话的 `ProfileId`，再由 `PersistState()` 请求保存会话状态。选择先在内存生效，状态保存由 `CopilotChatStatePersistenceCoordinator` 异步完成；命令的“后续请求将使用”不是耐久化回执，保存故障也没有在此选择方法中回滚。会话保存通知、重试与 Flush 属于[状态所有权](./copilot-view-model-architecture.md)。
 
 `/reasoning`（兼容 `/effort`）才会修改当前 Profile 的 `ReasoningMode`。只接受 `CopilotReasoningCapabilities` 为该 Profile 声明的级别，归一化后通过 `TryPersistConfigMutation` 克隆候选并使用上述三态提交；`NotPersisted` 保留原 Profile 并显示“推理模式未更改”，`PersistedButPublishFailed` 显示“已保存，但当前聊天界面未能刷新”。成功后重新绑定发布的 Profile，而不是原地修改旧对象；使用同一个 Profile 的后续请求会读取这个配置，不应描述成仅本会话风格。
+
+官方 `api.openai.com` 上的 GPT-6 Astra 提供 `Default/Low/Medium/High/XHigh/Max`，不提供 `Disabled/Enabled`；历史 `Disabled` 配置或 Codex `none/minimal` 覆盖发送前收敛为 `low`，`ultra` 收敛为 `max`。枚举新增值追加在已有数值之后，避免改变旧 JSON 中 `Default/Disabled/Enabled/High/Max` 的数字含义。伪装成 OpenAI vendor 的第三方兼容端点不会因此获得官方推理档位。
 
 `SetSelectedProfileReasoningMode` 返回是否完成设置（或已是所选值）；`SelectReasoningMode` 只有成功时才回显“已设置／保持”，否则展示同一保存失败或刷新失败说明。已是所选值时不重复保存。测试专用的无 `ConfigHandler` 构造路径只提交内存，即使内部复用 `PersistedAndPublished` 枚举也不代表写了磁盘。
 
