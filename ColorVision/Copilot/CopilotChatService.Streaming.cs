@@ -226,6 +226,12 @@ namespace ColorVision.Copilot
                     return finishReason;
 
                 if (providerType == CopilotProviderType.OpenAICompatible
+                    && TryReadOpenAiResponsesFinishReason(root, out finishReason))
+                {
+                    return finishReason;
+                }
+
+                if (providerType == CopilotProviderType.OpenAICompatible
                     && root.TryGetProperty("choices", out var choices)
                     && choices.ValueKind == JsonValueKind.Array
                     && choices.GetArrayLength() > 0
@@ -280,6 +286,46 @@ namespace ColorVision.Copilot
             return false;
         }
 
+        private static bool TryReadOpenAiResponsesFinishReason(
+            JsonElement element,
+            out string finishReason)
+        {
+            finishReason = string.Empty;
+            if (element.ValueKind != JsonValueKind.Object)
+                return false;
+
+            var response = element;
+            if (element.TryGetProperty("response", out var nestedResponse)
+                && nestedResponse.ValueKind == JsonValueKind.Object)
+            {
+                response = nestedResponse;
+            }
+
+            if (response.TryGetProperty("status", out var statusElement)
+                && statusElement.ValueKind == JsonValueKind.String)
+            {
+                var status = statusElement.GetString() ?? string.Empty;
+                if (string.Equals(status, "incomplete", StringComparison.OrdinalIgnoreCase)
+                    && response.TryGetProperty("incomplete_details", out var details)
+                    && details.ValueKind == JsonValueKind.Object
+                    && details.TryGetProperty("reason", out var reasonElement)
+                    && reasonElement.ValueKind == JsonValueKind.String
+                    && !string.IsNullOrWhiteSpace(reasonElement.GetString()))
+                {
+                    finishReason = reasonElement.GetString()!;
+                    return true;
+                }
+
+                if (string.Equals(status, "completed", StringComparison.OrdinalIgnoreCase))
+                {
+                    finishReason = status;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static bool IsTerminalStreamingEvent(CopilotProviderType providerType, string payload)
         {
             try
@@ -297,6 +343,7 @@ namespace ColorVision.Copilot
                 return providerType == CopilotProviderType.AnthropicCompatible
                     ? string.Equals(type, "message_stop", StringComparison.OrdinalIgnoreCase)
                     : string.Equals(type, "response.completed", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(type, "response.incomplete", StringComparison.OrdinalIgnoreCase)
                         || string.Equals(type, "response.done", StringComparison.OrdinalIgnoreCase);
             }
             catch (JsonException)
@@ -378,6 +425,19 @@ namespace ColorVision.Copilot
                 using var document = JsonDocument.Parse(payload);
                 var root = document.RootElement;
                 var usage = ExtractOpenAiUsage(root);
+                if (root.TryGetProperty("type", out var typeElement)
+                    && typeElement.ValueKind == JsonValueKind.String
+                    && string.Equals(
+                        typeElement.GetString(),
+                        "response.output_text.delta",
+                        StringComparison.OrdinalIgnoreCase)
+                    && root.TryGetProperty("delta", out var responseDelta))
+                {
+                    return new CopilotChatReply(
+                        new CopilotStreamDelta(string.Empty, ExtractStringFromElement(responseDelta)),
+                        usage);
+                }
+
                 if (!root.TryGetProperty("choices", out var choices)
                     || choices.ValueKind != JsonValueKind.Array
                     || choices.GetArrayLength() == 0)

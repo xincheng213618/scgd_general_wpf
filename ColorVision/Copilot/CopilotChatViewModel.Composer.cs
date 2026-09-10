@@ -41,7 +41,7 @@ namespace ColorVision.Copilot
             if (profile == null || !HasConfigurableReasoning)
                 return false;
 
-            var normalized = CopilotReasoningCapabilities.Normalize(profile.VendorType, mode);
+            var normalized = CopilotReasoningCapabilities.Normalize(profile, mode);
             if (profile.ReasoningMode == normalized)
                 return true;
 

@@ -312,7 +312,7 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
         var profile = CreateProfile(
             CopilotVendorType.OpenAI,
             "https://api.openai.com/v1",
-            "gpt-5.5");
+            "gpt-6-astra");
         using var client = CopilotOpenAiAgentChatClientFactory.Create(profile, httpClient);
         var request = new CopilotAgentRequest
         {
@@ -337,7 +337,7 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
         Assert.Equal(
             expectedVerbosity,
             root.GetProperty("text").GetProperty("verbosity").GetString());
-        Assert.Equal("minimal", root.GetProperty("reasoning").GetProperty("effort").GetString());
+        Assert.Equal("low", root.GetProperty("reasoning").GetProperty("effort").GetString());
         Assert.Equal("concise", root.GetProperty("reasoning").GetProperty("summary").GetString());
     }
 
@@ -371,16 +371,16 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
     }
 
     [Theory]
-    [InlineData(null, "minimal", "concise", "minimal", "concise")]
-    [InlineData(null, "none", null, "none", null)]
+    [InlineData(null, "minimal", "concise", "low", "concise")]
+    [InlineData(null, "none", null, "low", null)]
     [InlineData(null, "xhigh", "detailed", "xhigh", "detailed")]
     [InlineData(null, "max", "concise", "max", "concise")]
-    [InlineData(null, "ultra", "auto", "ultra", "auto")]
+    [InlineData(null, "ultra", "auto", "max", "auto")]
     [InlineData(null, "high", "none", "high", null)]
     [InlineData(null, null, "auto", null, "auto")]
     [InlineData(null, null, "none", null, null)]
-    [InlineData(false, "minimal", "concise", null, null)]
-    [InlineData(true, "minimal", null, "minimal", "auto")]
+    [InlineData(false, "minimal", "concise", "low", null)]
+    [InlineData(true, "minimal", null, "low", "auto")]
     [InlineData(true, "high", "none", "high", null)]
     public async Task OfficialOpenAiAgentHonorsCodexReasoningOptionsOnTheResponsesWire(
         bool? supportsReasoningSummaries,
@@ -403,7 +403,7 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
         var profile = CreateProfile(
             CopilotVendorType.OpenAI,
             "https://api.openai.com/v1",
-            "gpt-5.5");
+            "gpt-6-astra");
         using var client = CopilotOpenAiAgentChatClientFactory.Create(profile, httpClient);
         var request = new CopilotAgentRequest
         {
@@ -434,6 +434,33 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
             Assert.False(reasoning.TryGetProperty("summary", out _));
         else
             Assert.Equal(expectedSummary, reasoning.GetProperty("summary").GetString());
+    }
+
+    [Fact]
+    public async Task AstraProfileMaxEffortIsPreservedOnTheResponsesWire()
+    {
+        using var handler = new CapturingHandler(
+            HttpStatusCode.OK,
+            TextResponseStream,
+            "text/event-stream");
+        using var httpClient = new HttpClient(handler);
+        var profile = CreateProfile(
+            CopilotVendorType.OpenAI,
+            "https://api.openai.com/v1",
+            "gpt-6-astra");
+        profile.ReasoningMode = CopilotReasoningMode.Max;
+        using var client = CopilotOpenAiAgentChatClientFactory.Create(profile, httpClient);
+        var request = new CopilotAgentRequest { Profile = profile };
+
+        await client.GetStreamingResponseAsync(
+                [new ChatMessage(ChatRole.User, "Use maximum Astra reasoning.")],
+                CopilotMicrosoftAgentFrameworkRuntime.BuildChatOptions(request, []))
+            .ToChatResponseAsync();
+
+        using var payload = JsonDocument.Parse(handler.LastPayload);
+        Assert.Equal(
+            "max",
+            payload.RootElement.GetProperty("reasoning").GetProperty("effort").GetString());
     }
 
     [Fact]

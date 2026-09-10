@@ -6,11 +6,14 @@ namespace ColorVision.Copilot
 {
     public enum CopilotReasoningMode
     {
-        Default,
-        Disabled,
-        Enabled,
-        High,
-        Max,
+        Default = 0,
+        Disabled = 1,
+        Enabled = 2,
+        High = 3,
+        Max = 4,
+        Low = 5,
+        Medium = 6,
+        XHigh = 7,
     }
 
     public sealed class CopilotReasoningOption
@@ -37,23 +40,50 @@ namespace ColorVision.Copilot
         public static IReadOnlyList<CopilotReasoningOption> GetOptions(CopilotProfileConfig? profile)
         {
             var selected = GetEffectiveMode(profile);
-            var modes = profile?.VendorType switch
+            CopilotReasoningMode[] modes;
+            if (profile != null && CopilotOpenAiRequestPolicy.IsOfficialOpenAiReasoningModel(profile))
             {
-                CopilotVendorType.DeepSeek => new[]
+                modes = CopilotOpenAiRequestPolicy.IsGpt6Astra(profile)
+                    ? new[]
+                    {
+                        CopilotReasoningMode.Default,
+                        CopilotReasoningMode.Low,
+                        CopilotReasoningMode.Medium,
+                        CopilotReasoningMode.High,
+                        CopilotReasoningMode.XHigh,
+                        CopilotReasoningMode.Max,
+                    }
+                    : new[]
+                    {
+                        CopilotReasoningMode.Default,
+                        CopilotReasoningMode.Disabled,
+                        CopilotReasoningMode.Low,
+                        CopilotReasoningMode.Medium,
+                        CopilotReasoningMode.High,
+                        CopilotReasoningMode.XHigh,
+                        CopilotReasoningMode.Max,
+                    };
+            }
+            else
+            {
+                modes = profile?.VendorType switch
                 {
-                    CopilotReasoningMode.Default,
-                    CopilotReasoningMode.Disabled,
-                    CopilotReasoningMode.High,
-                    CopilotReasoningMode.Max,
-                },
-                CopilotVendorType.Xiaomi => new[]
-                {
-                    CopilotReasoningMode.Default,
-                    CopilotReasoningMode.Disabled,
-                    CopilotReasoningMode.Enabled,
-                },
-                _ => new[] { CopilotReasoningMode.Default },
-            };
+                    CopilotVendorType.DeepSeek => new[]
+                    {
+                        CopilotReasoningMode.Default,
+                        CopilotReasoningMode.Disabled,
+                        CopilotReasoningMode.High,
+                        CopilotReasoningMode.Max,
+                    },
+                    CopilotVendorType.Xiaomi => new[]
+                    {
+                        CopilotReasoningMode.Default,
+                        CopilotReasoningMode.Disabled,
+                        CopilotReasoningMode.Enabled,
+                    },
+                    _ => new[] { CopilotReasoningMode.Default },
+                };
+            }
 
             var options = new List<CopilotReasoningOption>(modes.Length);
             foreach (var mode in modes)
@@ -66,7 +96,31 @@ namespace ColorVision.Copilot
         {
             return profile == null
                 ? CopilotReasoningMode.Default
-                : Normalize(profile.VendorType, profile.ReasoningMode);
+                : Normalize(profile, profile.ReasoningMode);
+        }
+
+        public static CopilotReasoningMode Normalize(CopilotProfileConfig profile, CopilotReasoningMode mode)
+        {
+            ArgumentNullException.ThrowIfNull(profile);
+            var normalized = Normalize(profile.VendorType, mode);
+            if (!CopilotOpenAiRequestPolicy.IsOfficialOpenAiReasoningModel(profile))
+                return profile.VendorType == CopilotVendorType.OpenAI
+                    ? CopilotReasoningMode.Default
+                    : normalized;
+
+            if (CopilotOpenAiRequestPolicy.IsGpt6Astra(profile))
+            {
+                return normalized switch
+                {
+                    CopilotReasoningMode.Disabled => CopilotReasoningMode.Low,
+                    CopilotReasoningMode.Enabled => CopilotReasoningMode.Medium,
+                    _ => normalized,
+                };
+            }
+
+            return normalized == CopilotReasoningMode.Enabled
+                ? CopilotReasoningMode.Medium
+                : normalized;
         }
 
         public static CopilotReasoningMode Normalize(CopilotVendorType vendorType, CopilotReasoningMode mode)
@@ -88,6 +142,18 @@ namespace ColorVision.Copilot
                     _ when mode is CopilotReasoningMode.Default or CopilotReasoningMode.Disabled or CopilotReasoningMode.Enabled => mode,
                     _ => CopilotReasoningMode.Default,
                 },
+                CopilotVendorType.OpenAI => mode switch
+                {
+                    CopilotReasoningMode.Enabled => CopilotReasoningMode.Medium,
+                    _ when mode is CopilotReasoningMode.Default
+                        or CopilotReasoningMode.Disabled
+                        or CopilotReasoningMode.Low
+                        or CopilotReasoningMode.Medium
+                        or CopilotReasoningMode.High
+                        or CopilotReasoningMode.XHigh
+                        or CopilotReasoningMode.Max => mode,
+                    _ => CopilotReasoningMode.Default,
+                },
                 _ => CopilotReasoningMode.Default,
             };
         }
@@ -98,7 +164,10 @@ namespace ColorVision.Copilot
             {
                 CopilotReasoningMode.Disabled => "关闭",
                 CopilotReasoningMode.Enabled => "开启",
+                CopilotReasoningMode.Low => "低",
+                CopilotReasoningMode.Medium => "中",
                 CopilotReasoningMode.High => "高",
+                CopilotReasoningMode.XHigh => "极高",
                 CopilotReasoningMode.Max => "最高",
                 _ => "默认",
             };
@@ -115,7 +184,8 @@ namespace ColorVision.Copilot
 
         public static bool HasConfigurableReasoning(CopilotProfileConfig? profile)
         {
-            return profile?.VendorType is CopilotVendorType.DeepSeek or CopilotVendorType.Xiaomi;
+            return profile?.VendorType is CopilotVendorType.DeepSeek or CopilotVendorType.Xiaomi
+                || profile != null && CopilotOpenAiRequestPolicy.IsOfficialOpenAiReasoningModel(profile);
         }
 
         public static CopilotReasoningOption? FindCommandOption(
@@ -169,7 +239,10 @@ namespace ColorVision.Copilot
                 CopilotReasoningMode.Default => "auto",
                 CopilotReasoningMode.Disabled => "off",
                 CopilotReasoningMode.Enabled => "on",
+                CopilotReasoningMode.Low => "low",
+                CopilotReasoningMode.Medium => "medium",
                 CopilotReasoningMode.High => "high",
+                CopilotReasoningMode.XHigh => "xhigh",
                 CopilotReasoningMode.Max => "max",
                 _ => "auto",
             };
@@ -198,6 +271,20 @@ namespace ColorVision.Copilot
                 };
             }
 
+            if (vendorType == CopilotVendorType.OpenAI)
+            {
+                return mode switch
+                {
+                    CopilotReasoningMode.Disabled => "关闭支持该档位的 OpenAI 推理模型的显式推理。",
+                    CopilotReasoningMode.Low => "使用 OpenAI 低推理强度；GPT-6 Astra 的最低可选档位。",
+                    CopilotReasoningMode.Medium => "使用 OpenAI 中等推理强度。",
+                    CopilotReasoningMode.High => "使用 OpenAI 高推理强度。",
+                    CopilotReasoningMode.XHigh => "使用 OpenAI 极高推理强度。",
+                    CopilotReasoningMode.Max => "使用 OpenAI 最高推理强度，通常耗时更长并消耗更多 Token。",
+                    _ => "由 OpenAI 使用模型默认的推理强度。",
+                };
+            }
+
             return "当前供应商没有声明可配置的推理强度，使用服务端默认值。";
         }
     }
@@ -209,6 +296,23 @@ namespace ColorVision.Copilot
             var mode = CopilotReasoningCapabilities.GetEffectiveMode(profile);
             if (mode == CopilotReasoningMode.Default)
                 return;
+
+            if (CopilotOpenAiRequestPolicy.IsOfficialOpenAiReasoningModel(profile))
+            {
+                var effort = mode switch
+                {
+                    CopilotReasoningMode.Disabled => "none",
+                    CopilotReasoningMode.Low => "low",
+                    CopilotReasoningMode.Enabled or CopilotReasoningMode.Medium => "medium",
+                    CopilotReasoningMode.High => "high",
+                    CopilotReasoningMode.XHigh => "xhigh",
+                    CopilotReasoningMode.Max => "max",
+                    _ => string.Empty,
+                };
+                if (effort.Length > 0)
+                    payload["reasoning"] = new Dictionary<string, object?> { ["effort"] = effort };
+                return;
+            }
 
             if (profile.VendorType == CopilotVendorType.DeepSeek)
             {

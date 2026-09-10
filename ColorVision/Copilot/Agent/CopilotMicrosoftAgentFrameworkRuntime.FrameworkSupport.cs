@@ -95,8 +95,10 @@ namespace ColorVision.Copilot
             {
                 CopilotReasoningMode.Disabled => new ReasoningOptions { Effort = ReasoningEffort.None, Output = ReasoningOutput.None },
                 CopilotReasoningMode.Enabled => new ReasoningOptions { Effort = ReasoningEffort.Medium, Output = ReasoningOutput.Full },
+                CopilotReasoningMode.Low => new ReasoningOptions { Effort = ReasoningEffort.Low, Output = ReasoningOutput.Full },
+                CopilotReasoningMode.Medium => new ReasoningOptions { Effort = ReasoningEffort.Medium, Output = ReasoningOutput.Full },
                 CopilotReasoningMode.High => new ReasoningOptions { Effort = ReasoningEffort.High, Output = ReasoningOutput.Full },
-                CopilotReasoningMode.Max => new ReasoningOptions { Effort = ReasoningEffort.ExtraHigh, Output = ReasoningOutput.Full },
+                CopilotReasoningMode.XHigh or CopilotReasoningMode.Max => new ReasoningOptions { Effort = ReasoningEffort.ExtraHigh, Output = ReasoningOutput.Full },
                 _ => null,
             };
         }
@@ -113,6 +115,8 @@ namespace ColorVision.Copilot
             var hasSummaryOverride = request.CodexReasoningSummary !=
                 CopilotCodexReasoningSummary.Unspecified;
             var hasReasoningSupportOverride = request.CodexModelSupportsReasoningSummaries.HasValue;
+            var hasProfileRawEffort = CopilotReasoningCapabilities.GetEffectiveMode(request.Profile)
+                == CopilotReasoningMode.Max;
             var serviceTier = request.CodexFastModeEnabled
                 ? CopilotCodexServiceTierSelection.GetRequestToken(request.CodexServiceTier)
                 : string.Empty;
@@ -122,6 +126,7 @@ namespace ColorVision.Copilot
             if (!hasEffortOverride
                     && !hasSummaryOverride
                     && !hasReasoningSupportOverride
+                    && !hasProfileRawEffort
                     && serviceTier.Length == 0
                     && !hasVerbosityOverride
                     && safetyIdentifier.Length == 0)
@@ -129,7 +134,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            if (hasEffortOverride || hasSummaryOverride || hasReasoningSupportOverride)
+            if (hasEffortOverride || hasSummaryOverride || hasReasoningSupportOverride || hasProfileRawEffort)
                 options.Reasoning = null;
             options.RawRepresentationFactory = _ => BuildCodexResponseOptions(
                 request,
@@ -164,10 +169,18 @@ namespace ColorVision.Copilot
         private static ResponseReasoningOptions? BuildCodexResponseReasoningOptions(
             CopilotAgentRequest request)
         {
-            if (request.CodexModelSupportsReasoningSummaries == false)
-                return null;
+            var configuredEffort = request.CodexReasoningEffort;
+            if (CopilotOpenAiRequestPolicy.IsGpt6Astra(request.Profile))
+            {
+                configuredEffort = configuredEffort switch
+                {
+                    CopilotCodexReasoningEffort.None or CopilotCodexReasoningEffort.Minimal => CopilotCodexReasoningEffort.Low,
+                    CopilotCodexReasoningEffort.Ultra => CopilotCodexReasoningEffort.Max,
+                    _ => configuredEffort,
+                };
+            }
 
-            ResponseReasoningEffortLevel? effort = request.CodexReasoningEffort switch
+            ResponseReasoningEffortLevel? effort = configuredEffort switch
             {
                 CopilotCodexReasoningEffort.None => new ResponseReasoningEffortLevel("none"),
                 CopilotCodexReasoningEffort.Minimal => ResponseReasoningEffortLevel.Minimal,
@@ -179,10 +192,18 @@ namespace ColorVision.Copilot
                 CopilotCodexReasoningEffort.Ultra => new ResponseReasoningEffortLevel("ultra"),
                 _ => (ResponseReasoningEffortLevel?)null,
             };
+            if (!effort.HasValue
+                && CopilotReasoningCapabilities.GetEffectiveMode(request.Profile) == CopilotReasoningMode.Max)
+            {
+                effort = new ResponseReasoningEffortLevel("max");
+            }
+
             var effectiveSummary = CopilotCodexReasoningSummarySupportSelection.ResolveSummary(
                 request.CodexModelSupportsReasoningSummaries,
                 request.CodexReasoningSummary);
-            ResponseReasoningSummaryVerbosity? summary = effectiveSummary switch
+            ResponseReasoningSummaryVerbosity? summary = request.CodexModelSupportsReasoningSummaries == false
+                ? null
+                : effectiveSummary switch
             {
                 CopilotCodexReasoningSummary.Auto => ResponseReasoningSummaryVerbosity.Auto,
                 CopilotCodexReasoningSummary.Concise => ResponseReasoningSummaryVerbosity.Concise,

@@ -41,6 +41,10 @@ namespace ColorVision.Copilot
                         return new CopilotChatReply(ExtractOpenAiDeltaFromElement(delta), usage);
                 }
 
+                var responsesDelta = ExtractOpenAiResponsesDelta(root);
+                if (responsesDelta.HasAny)
+                    return new CopilotChatReply(responsesDelta, ExtractOpenAiUsage(root));
+
                 return new CopilotChatReply(ExtractOpenAiDeltaFromElement(root), ExtractOpenAiUsage(root));
             }
             catch (JsonException)
@@ -66,6 +70,48 @@ namespace ColorVision.Copilot
                     : string.Empty;
 
             return new CopilotStreamDelta(reasoning, content);
+        }
+
+        private static CopilotStreamDelta ExtractOpenAiResponsesDelta(JsonElement root)
+        {
+            if (root.ValueKind != JsonValueKind.Object)
+                return CopilotStreamDelta.Empty;
+
+            if (root.TryGetProperty("output_text", out var directOutputText))
+                return new CopilotStreamDelta(string.Empty, ExtractStringFromElement(directOutputText));
+
+            if (!root.TryGetProperty("output", out var output)
+                || output.ValueKind != JsonValueKind.Array)
+            {
+                return CopilotStreamDelta.Empty;
+            }
+
+            var contentBuilder = new StringBuilder();
+            foreach (var item in output.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.Object
+                    || !item.TryGetProperty("content", out var content)
+                    || content.ValueKind != JsonValueKind.Array)
+                {
+                    continue;
+                }
+
+                foreach (var part in content.EnumerateArray())
+                {
+                    if (part.ValueKind != JsonValueKind.Object
+                        || !part.TryGetProperty("type", out var typeElement)
+                        || typeElement.ValueKind != JsonValueKind.String
+                        || !string.Equals(typeElement.GetString(), "output_text", StringComparison.OrdinalIgnoreCase)
+                        || !part.TryGetProperty("text", out var textElement))
+                    {
+                        continue;
+                    }
+
+                    contentBuilder.Append(ExtractStringFromElement(textElement));
+                }
+            }
+
+            return new CopilotStreamDelta(string.Empty, contentBuilder.ToString());
         }
 
         private static CopilotStreamDelta ExtractAnthropicDeltaFromMessage(JsonElement element)
@@ -175,8 +221,13 @@ namespace ColorVision.Copilot
 
         internal static CopilotTokenUsage ExtractOpenAiUsage(JsonElement element)
         {
-            if (!TryGetUsageElement(element, out var usageElement))
+            if (!TryGetUsageElement(element, out var usageElement)
+                && !(element.ValueKind == JsonValueKind.Object
+                    && element.TryGetProperty("response", out var responseElement)
+                    && TryGetUsageElement(responseElement, out usageElement)))
+            {
                 return CopilotTokenUsage.Empty;
+            }
 
             var usage = ExtractUsage(
                 usageElement,

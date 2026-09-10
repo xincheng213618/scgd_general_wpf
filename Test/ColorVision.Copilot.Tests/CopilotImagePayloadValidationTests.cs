@@ -150,7 +150,7 @@ public sealed class CopilotImagePayloadValidationTests
         ProviderType = CopilotProviderType.OpenAICompatible,
         ApiKey = "image-validation-test-key",
         BaseUrl = "https://api.openai.com/v1",
-        Model = "gpt-4o",
+        Model = "gpt-6-astra",
         SupportsImageInput = true,
         MaxTokens = 4_096,
     };
@@ -164,21 +164,21 @@ public sealed class CopilotImagePayloadValidationTests
         {
             RequestCount++;
             using var payload = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(cancellationToken));
-            foreach (var message in payload.RootElement.GetProperty("messages").EnumerateArray())
+            foreach (var message in payload.RootElement.GetProperty("input").EnumerateArray())
             {
                 if (!message.TryGetProperty("content", out var content) || content.ValueKind != JsonValueKind.Array)
                     continue;
                 foreach (var item in content.EnumerateArray())
                 {
                     if (item.TryGetProperty("image_url", out var image))
-                        ImageUrls.Add(image.GetProperty("url").GetString()!);
+                        ImageUrls.Add(image.GetString()!);
                 }
             }
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(
                     """
-                    {"choices":[{"message":{"role":"assistant","content":"Visible image evidence."},"finish_reason":"stop"}]}
+                    {"id":"resp_image","object":"response","status":"completed","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Visible image evidence."}]}]}
                     """, Encoding.UTF8, "application/json"),
             };
         }

@@ -97,7 +97,7 @@ public sealed class CopilotImageInputBudgetTests
                 ProviderType = CopilotProviderType.OpenAICompatible,
                 ApiKey = "test-key",
                 BaseUrl = "https://api.openai.com/v1",
-                Model = "gpt-4o",
+                Model = "gpt-6-astra",
                 SupportsImageInput = true,
                 MaxTokens = 4_096,
             };
@@ -186,15 +186,14 @@ public sealed class CopilotImageInputBudgetTests
             const string response =
                 """
                 {
-                  "choices": [
-                    {
-                      "message": {
-                        "role": "assistant",
-                        "content": "Visible chart evidence."
-                      },
-                      "finish_reason": "stop"
-                    }
-                  ]
+                  "id": "resp_image",
+                  "object": "response",
+                  "status": "completed",
+                  "output": [{
+                    "type": "message",
+                    "role": "assistant",
+                    "content": [{"type": "output_text", "text": "Visible chart evidence."}]
+                  }]
                 }
                 """;
             return new HttpResponseMessage(HttpStatusCode.OK)
