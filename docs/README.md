@@ -13,7 +13,7 @@ related: ["governance.maintenance", "governance.retrieval", "platform.system", "
 
 `docs/` 是 ColorVision 的版本化知识层，不是必须顺序阅读的手册。AI 从根目录和最近的 `AGENTS.md` 取得工作规则，再按问题读取主题、关联源码和测试；网页只是同一正文的派生展示。
 
-`docs/_history/` 是例外的仓库内历史存档，不属于当前知识或公开文档站点。它不进入知识目录、搜索、导航和 VitePress 构建；主程序的完整发布记录由 changelog 归档脚本维护在这里，仅在需要回顾历史时直接从源码仓库打开。
+`docs/_history/` 是例外的仓库内历史存档，不属于当前知识或公开文档站点。它不进入知识目录、搜索、导航和 VitePress 构建；截至 `1.4.14.37` 的主程序完整旧版发布记录保存在这里，仅在需要回顾历史时直接从源码仓库打开。
 
 ## 从问题到实现
 

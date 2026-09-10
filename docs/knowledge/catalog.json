@@ -3861,7 +3861,6 @@
         "Scripts/release.bat",
         "Scripts/build.py",
         "Scripts/build_update.py",
-        "Scripts/regroup_changelog.py",
         "Scripts/generate_shared_files.py",
         "Scripts/installer_shared_files.py",
         "Scripts/package_project.bat",

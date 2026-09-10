@@ -4,7 +4,7 @@ knowledge_type: "guide"
 status: "current"
 summary: "主程序、插件和项目包的正式发布入口、只读校验与上传清理副作用。"
 aliases: ["发布","打包","release.bat","package_project.bat","只做本地构建","版本标签","auto-tag.yml"]
-code_paths: [".github/workflows/auto-tag.yml","Directory.Build.props","Scripts/release.bat","Scripts/build.py","Scripts/build_update.py","Scripts/regroup_changelog.py","Scripts/generate_shared_files.py","Scripts/installer_shared_files.py","Scripts/package_project.bat","Scripts/package_plugin.bat","Scripts/package_cvxp.py","Scripts/build_spectrum.py"]
+code_paths: [".github/workflows/auto-tag.yml","Directory.Build.props","Scripts/release.bat","Scripts/build.py","Scripts/build_update.py","Scripts/generate_shared_files.py","Scripts/installer_shared_files.py","Scripts/package_project.bat","Scripts/package_plugin.bat","Scripts/package_cvxp.py","Scripts/build_spectrum.py"]
 test_paths: ["Scripts/tests"]
 related: ["delivery.index","delivery.testing","delivery.backend","delivery.update","delivery.code-statistics","ui.publishing"]
 ---
@@ -25,7 +25,6 @@ related: ["delivery.index","delivery.testing","delivery.backend","delivery.updat
 | 只校验插件清单 | `py Scripts\package_cvxp.py --project-file <插件.csproj> --validate-only` | 不构建、不打包、不上传 |
 | 刷新两份共享文件表 | `py Scripts\generate_shared_files.py` | 从当前 Release x64 宿主输出一次扫描，同时更新仓库与 Plugin Kit 镜像 |
 | 校验共享文件表 | `py Scripts\generate_shared_files.py --check` | 只比较 `shared_files` 集合，忽略时间戳、顺序和重复项 |
-| 归档并精简主程序变更日志 | `python Scripts\regroup_changelog.py --write` | 先将每个准确版本归档到不参与公开文档构建的 `docs/_history/CHANGELOG.md`，再让发布用根日志只保留最新版本 |
 
 `build.py`、`build_update.py` 和 `verify_release.py` 是 `release.bat` 的内部步骤。正式发布不要绕过 `release.bat` 单独跑它们；`build_update.py` 没有安全的 `--help` 查询模式，直接执行会进入增量包生成和上传流程。
 
@@ -33,11 +32,13 @@ related: ["delivery.index","delivery.testing","delivery.backend","delivery.updat
 
 以下命令会签名、打包并修改远端发布状态，只在用户明确要求发布时执行；文档或代码审阅不授予发布权限。
 
-主程序、ServiceHost 和 OperationsWatchdog 共用仓库根目录 `Directory.Build.props` 中的 `VersionPrefix`。每个增量包都必须携带完整的 `ServiceHost/` 和 `OperationsWatchdog/` 运行时：前者确保 ZIP 部署机器可从空的 ProgramData 目录完成首次安装，后者确保完整安装器漏项或旧安装损坏后也能由下一次增量更新自修复。发布前提升这个版本号，并在根 `CHANGELOG.md` 顶部新增只描述本次版本的一至三条用户可感知变化，再运行 `python Scripts\regroup_changelog.py --write`。脚本先把根日志中的准确版本并入不可改写的 `docs/_history/CHANGELOG.md`，随后让根日志只保留最新版本。下划线目录仅供仓库内回顾，会从公开文档构建中排除，也不作为主程序 changelog 上传。然后运行：
+主程序、ServiceHost 和 OperationsWatchdog 共用仓库根目录 `Directory.Build.props` 中的 `VersionPrefix`。每个增量包都必须携带完整的 `ServiceHost/` 和 `OperationsWatchdog/` 运行时：前者确保 ZIP 部署机器可从空的 ProgramData 目录完成首次安装，后者确保完整安装器漏项或旧安装损坏后也能由下一次增量更新自修复。发布前提升这个版本号，并将根 `CHANGELOG.md` 替换为只描述本次版本的一至三条用户可感知变化，然后运行：
 
 ```powershell
 Scripts\release.bat
 ```
+
+`docs/_history/CHANGELOG.md` 保存截至 `1.4.14.37` 的完整旧版记录，仅供仓库内回顾；它是固定历史快照，不在日常发布时更新，也不作为主程序 changelog 上传。下划线目录会从公开文档构建中排除。
 
 主程序发布不携带输出根目录的 `CHANGELOG.md`：`build_update.py` 在全量 ZIP 和增量 CVX 中排除该路径，`generate_shared_files.py` 也忽略该文件，避免旧输出副本重新进入共享清单。运行时 `Config/` 和窗口尺寸诊断使用的根目录 `window-resize-diagnostics.mode`、`window-resize-traces/` 属于本机产物，不进入主程序全量 ZIP 或增量 CVX；诊断文件也不进入插件共享清单。外部 `ColorVision.aip` 不应包含这些文件；仓库根目录的变更日志原稿继续由 `build.py` 独立上传，插件自己的日志照常随插件包交付。这些规则不清理历史包或已有安装目录。
 
