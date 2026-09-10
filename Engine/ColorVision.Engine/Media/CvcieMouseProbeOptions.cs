@@ -1,4 +1,6 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.POI;
+using System;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using System.ComponentModel;
@@ -83,20 +85,33 @@ namespace ColorVision.Engine.Media
             MagnigifierType = source.MagnigifierType;
         }
 
+        public PoiMeasurementPoint CreateMeasurementPoint(int x, int y)
+        {
+            int diameter = Math.Max(1, checked((int)Math.Round(Radius * 2, MidpointRounding.AwayFromZero)));
+            return MagnigifierType switch
+            {
+                MagnigifierType.Circle => new(x, y, diameter, diameter, PoiMeasurementShape.Circle),
+                MagnigifierType.Rect => new(x, y, RectWidth, RectHeight, PoiMeasurementShape.Rect),
+                MagnigifierType.Ellipse => new(x, y, RectWidth, RectHeight, PoiMeasurementShape.Ellipse),
+                _ => throw new ArgumentOutOfRangeException(nameof(MagnigifierType))
+            };
+        }
+
         [Display(Name = "Engine_PG_SampleShape", ResourceType = typeof(Properties.Resources))]
         public MagnigifierType MagnigifierType { get => _magnigifierType; set { _magnigifierType = value; OnPropertyChanged(); } }
         private MagnigifierType _magnigifierType = MagnigifierType.Circle;
 
-        [Display(Name = "Engine_PG_SampleRadius", ResourceType = typeof(Properties.Resources))]
-        public double Radius { get => _radius; set { _radius = value; OnPropertyChanged(); } }
+        [DisplayName("圆半径（px）")]
+        [PropertyVisibility(nameof(MagnigifierType), MagnigifierType.Circle)]
+        public double Radius { get => _radius; set { if (!double.IsFinite(value) || value < 0.5 || value > 1000000) return; _radius = value; OnPropertyChanged(); } }
         private double _radius = 100;
 
-        [Display(Name = "Engine_PG_RectWidth", ResourceType = typeof(Properties.Resources))]
-        public int RectWidth { get => _rectWidth; set { _rectWidth = value; OnPropertyChanged(); } }
+        [DisplayName("区域宽度（px）")]
+        public int RectWidth { get => _rectWidth; set { if (value < 1 || value > 2000000) return; _rectWidth = value; OnPropertyChanged(); } }
         private int _rectWidth = 120;
 
-        [Display(Name = "Engine_PG_RectHeight", ResourceType = typeof(Properties.Resources))]
-        public int RectHeight { get => _rectHeight; set { _rectHeight = value; OnPropertyChanged(); } }
+        [DisplayName("区域高度（px）")]
+        public int RectHeight { get => _rectHeight; set { if (value < 1 || value > 2000000) return; _rectHeight = value; OnPropertyChanged(); } }
         private int _rectHeight = 120;
     }
 }

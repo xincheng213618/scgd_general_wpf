@@ -421,8 +421,8 @@ namespace ColorVision.ImageEditor
             {
                 TextBlockSelectedXy.Text = "xy: --";
                 TextBlockSelectedUv1960.Text = "uv: --";
-                TextBlockSelectedUv1976.Text = "u'v': --";
-                TextBlockSelectedCct.Text = "CCT: --";
+                TextBlockSelectedUv1976.Text = "CIE 1976 u′v′: --";
+                TextBlockSelectedCct.Text = "相关色温 CCT: --";
                 return;
             }
 
@@ -436,11 +436,11 @@ namespace ColorVision.ImageEditor
                 ? $"uv: u={uv1960.X:F5}  v={uv1960.Y:F5}"
                 : "uv: --";
             TextBlockSelectedUv1976.Text = uv1976.IsFinite
-                ? $"u'v': u'={uv1976.X:F5}  v'={uv1976.Y:F5}"
-                : "u'v': --";
+                ? $"CIE 1976 u′v′: u'={uv1976.X:F5}  v'={uv1976.Y:F5}"
+                : "CIE 1976 u′v′: --";
             TextBlockSelectedCct.Text = cct.IsFinite
-                ? $"CCT: {cct.TemperatureKelvin:F0}K  Duv={cct.Duv:+0.00000;-0.00000;0.00000}"
-                : "CCT: --";
+                ? $"相关色温 CCT: {cct.TemperatureKelvin:F0}K  Duv={cct.Duv:+0.00000;-0.00000;0.00000}"
+                : "相关色温 CCT: --";
         }
     }
 }

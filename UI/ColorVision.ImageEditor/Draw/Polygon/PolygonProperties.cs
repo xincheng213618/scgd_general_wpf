@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class PolygonProperties : BaseProperties, ICompactInspectorProvider
+    public class PolygonProperties : RegionProperties, ICompactInspectorProvider
     {
         [Browsable(false)]
         public Pen Pen
@@ -61,12 +61,27 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
 
-        public List<Point> Points { get; set; }
+        [DisplayName("闭合区域")]
+        public bool IsClosed
+        {
+            get => _isClosed;
+            set { if (_isClosed == value) return; _isClosed = value; InvalidateMeasurementMessage(); OnPropertyChanged(); }
+        }
+        private bool _isClosed;
+
+        public List<Point> Points
+        {
+            get => _points;
+            set { _points = value ?? new(); InvalidateMeasurementMessage(); OnPropertyChanged(); }
+        }
+        private List<Point> _points = new();
 
         public IEnumerable<CompactInspectorItem> GetCompactInspectorItems()
         {
             return new CompactInspectorItem[]
             {
+                new CompactInspectorPropertyItem { Source = this, PropertyName = nameof(this.Rotation), Label = "θ°", ShowLabel = true, Width = 65, Order = 45, EditorKind = CompactInspectorEditorKind.Number, ToolTip = "旋转角度" },
+                new CompactInspectorPropertyItem { Source = this, PropertyName = nameof(IsClosed), Label = "闭合", ShowLabel = true, Order = 0, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = "闭合区域可计算 POI" },
                 new CompactInspectorPropertyItem { Source = this, PropertyName = nameof(Brush), Order = 10, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_LineColor },
                 new CompactInspectorPropertyItem { Source = this, PropertyName = nameof(StrokeThickness), Icon = CompactInspectorIcons.CreateText("━"), Width = 56, Order = 20, EditorKind = CompactInspectorEditorKind.Number, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_LineWidth },
             };

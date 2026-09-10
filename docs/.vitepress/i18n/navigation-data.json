@@ -1238,6 +1238,12 @@
             },
             {
               "text": {
+                "root": "CVCIE POI 结果数值"
+              },
+              "link": "/04-api-reference/engine-components/cvcie-results"
+            },
+            {
+              "text": {
                 "root": "CV 文件读取、通道与写回契约"
               },
               "link": "/04-api-reference/engine-components/ColorVision.FileIO"

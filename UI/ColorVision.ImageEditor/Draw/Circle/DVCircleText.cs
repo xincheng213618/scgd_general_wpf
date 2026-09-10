@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Globalization;
 using System.Collections.Generic;
@@ -115,10 +115,12 @@ namespace ColorVision.ImageEditor.Draw
             if (!ShapeGeometry.TryGetEllipseBounds(Attribute.Center, Attribute.Radius, Attribute.RadiusY, out Rect bounds))
                 return;
 
+            dc.PushTransform(RegionGeometry.Transform(Attribute));
             dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, bounds.Width / 2, bounds.Height / 2);
+            dc.Pop();
 
             double size = 0;
-            if (Attribute.IsShowText)
+            if (Attribute.IsShowText && !(Attribute.IsMeasurementMessage && IsMessageVisible && !string.IsNullOrWhiteSpace(Attribute.Msg)))
             {
                 FormattedText formattedText = CreateFormattedText(TextAttribute.Text, TextAttribute.Brush);
                 size = formattedText.Width / 2;
@@ -131,7 +133,9 @@ namespace ColorVision.ImageEditor.Draw
             if (IsMessageVisible && !string.IsNullOrWhiteSpace(Attribute.Msg))
             {
                 FormattedText formattedText = CreateFormattedText(Attribute.Msg, TextAttribute.Brush);
-                dc.DrawText(formattedText, new Point(Attribute.Center.X + size + bounds.Width / 4, Attribute.Center.Y - formattedText.Height / 2));
+                formattedText.TextAlignment = Attribute.IsMeasurementMessage ? TextAlignment.Center : TextAlignment.Left;
+                double x = Attribute.IsMeasurementMessage ? Attribute.Center.X : Attribute.Center.X + size + bounds.Width / 4;
+                dc.DrawText(formattedText, new Point(x, Attribute.Center.Y - formattedText.Height / 2));
             }
         }
 
@@ -147,16 +151,14 @@ namespace ColorVision.ImageEditor.Draw
                 TextRenderCore.NormalizePixelsPerDip(VisualTreeHelper.GetDpi(this).PixelsPerDip));
         }
 
-        public override Rect GetRect()
-        {
-            return ShapeGeometry.TryGetEllipseBounds(Attribute.Center, Attribute.Radius, Attribute.RadiusY, out Rect bounds)
-                ? bounds
-                : Rect.Empty;
-        }
+        public override Rect GetRect() => RegionGeometry.Bounds(Attribute);
+
         public override void SetRect(Rect rect)
         {
             if (!ShapeGeometry.IsFinite(rect))
                 return;
+
+            rect = RegionGeometry.ResizeLocalBounds(Attribute, rect);
 
             bool wasDeferred = _deferAttributeRender;
             _deferAttributeRender = true;
@@ -179,6 +181,9 @@ namespace ColorVision.ImageEditor.Draw
         {
             return new CompactInspectorItem[]
             {
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.RadiusX), Label = "Rx", ShowLabel = true, Width = 65, Order = 40, EditorKind = CompactInspectorEditorKind.Number },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.RadiusY), Label = "Ry", ShowLabel = true, Width = 65, Order = 41, EditorKind = CompactInspectorEditorKind.Number },
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Rotation), Label = "θ°", ShowLabel = true, Width = 65, Order = 45, EditorKind = CompactInspectorEditorKind.Number, ToolTip = "旋转角度" },
                 new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Brush), Order = 10, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_Fill },
                 new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Text), Icon = CompactInspectorIcons.CreateText("T"), Order = 20, Width = 120, EditorKind = CompactInspectorEditorKind.Text, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_Text },
                 new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.FontSize), Icon = CompactInspectorIcons.CreateText("A"), Width = 56, Order = 30, EditorKind = CompactInspectorEditorKind.Number, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_FontSize },

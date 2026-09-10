@@ -33,6 +33,14 @@ namespace ColorVision.ImageEditor.Draw.Polygon
             List<MenuItem> MenuItems = new List<MenuItem>();
             if (obj is DVPolygon dvPolygon)
             {
+                MenuItem close = new() { Header = "闭合区域", IsCheckable = true, IsChecked = dvPolygon.IsComple, IsEnabled = dvPolygon.Points.Count >= 3 };
+                close.Click += (_, _) =>
+                {
+                    bool before = dvPolygon.IsComple;
+                    dvPolygon.IsComple = !before;
+                    _drawCanvas.AddActionCommand(new ColorVision.Common.MVVM.ActionCommand(() => dvPolygon.IsComple = before, () => dvPolygon.IsComple = !before));
+                };
+                MenuItems.Add(close);
                 MenuItem menuItem = new() { Header = ColorVision.ImageEditor.Properties.Resources.SectionalDrawing };
                 menuItem.Click += (s, e) =>
                 {

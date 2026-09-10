@@ -4376,7 +4376,7 @@
       "knowledge_id": "engine.cvcie-results",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "CVCIE POI 的非正值替换、色值重算与生效时机；区分本地测量、历史结果缓存、鼠标探针和原始文件。",
+      "summary": "ImageView 封闭区域 POI、椭圆探针、结果显示精度与非正值重算；保留传统节点和导出边界。",
       "aliases": [
         "CVCIE计算负值",
         "CVCIEShowConfig",
@@ -4392,9 +4392,16 @@
         "XYZ重算",
         "结果数值替换",
         "NormalizeXyz",
-        "CalculateColorMetrics"
+        "CalculateColorMetrics",
+        "椭圆POI",
+        "多边形POI",
+        "自由套索",
+        "旋转区域",
+        "DecimalPlaces"
       ],
       "code_paths": [
+        "Engine/ColorVision.Engine/Media/CvcieMouseProbeOptions.cs",
+        "UI/ColorVision.ImageEditor/Draw/ClosedPixelRegion.cs",
         "Engine/ColorVision.Engine/Media/WindowCVCIE.xaml.cs",
         "Engine/ColorVision.Engine/Media/WindowCVCIE.xaml",
         "Engine/ColorVision.Engine/Media/CVRawOpen.cs",
@@ -4405,6 +4412,7 @@
         "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ViewHanlePOIY.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CvcieRegionTests.cs",
         "Test/ColorVision.UI.Tests/CvcieResultValueTests.cs",
         "Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"
       ],
@@ -4417,7 +4425,8 @@
         "ui.configuration"
       ],
       "code_scopes": [
-        "Engine/ColorVision.Engine"
+        "Engine/ColorVision.Engine",
+        "UI/ColorVision.ImageEditor"
       ],
       "domain": "engine",
       "title": "CVCIE POI 结果数值",
@@ -9979,6 +9988,9 @@
         "视频模式",
         "标注",
         "撤销标注",
+        "自由套索",
+        "闭合多边形",
+        "图形旋转",
         "绘图连续模式",
         "绘图锁定",
         "紧凑属性条",
@@ -10013,6 +10025,9 @@
         "UI/ColorVision.ImageEditor/EditorToolFactory.cs",
         "UI/ColorVision.ImageEditor/CompactInspector.cs",
         "UI/ColorVision.ImageEditor/DrawCanvas.cs",
+        "UI/ColorVision.ImageEditor/Draw/SelectEditorVisual.cs",
+        "UI/ColorVision.ImageEditor/Draw/RegionProperties.cs",
+        "UI/ColorVision.ImageEditor/Draw/Polygon",
         "UI/ColorVision.ImageEditor/Draw/Circle/CircleManager.cs",
         "UI/ColorVision.ImageEditor/Draw/Rectangle/RectangleManager.cs",
         "UI/ColorVision.ImageEditor/Draw/Annotations/AnnotationMapper.cs",

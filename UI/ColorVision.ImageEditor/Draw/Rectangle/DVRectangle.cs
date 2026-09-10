@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Windows;
 using System.ComponentModel;
 using System.Windows.Media;
@@ -56,23 +56,29 @@ namespace ColorVision.ImageEditor.Draw
             if (Attribute.Rect.IsEmpty || !ShapeGeometry.IsFinite(Attribute.Rect))
                 return;
 
+            dc.PushTransform(RegionGeometry.Transform(Attribute));
             dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);
+            dc.Pop();
 
             if (IsMessageVisible && !string.IsNullOrWhiteSpace(Attribute.Msg))
             {
                 TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
                 FormattedText formattedText = new FormattedText(Attribute.Msg, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                dc.DrawText(formattedText, new Point(Attribute.Rect.X + formattedText.Width / 2 + Attribute.Rect.Width / 2, Attribute.Rect.Y + Attribute.Rect.Height / 2));
+                formattedText.TextAlignment = Attribute.IsMeasurementMessage ? TextAlignment.Center : TextAlignment.Left;
+                Point position = Attribute.IsMeasurementMessage
+                    ? new Point(Attribute.Rect.X + Attribute.Rect.Width / 2, Attribute.Rect.Y + Attribute.Rect.Height / 2 - formattedText.Height / 2)
+                    : new Point(Attribute.Rect.X + formattedText.Width / 2 + Attribute.Rect.Width / 2, Attribute.Rect.Y + Attribute.Rect.Height / 2);
+                dc.DrawText(formattedText, position);
             }
         }
-        public override Rect GetRect()
-        {
-            return Rect.IsEmpty || ShapeGeometry.IsFinite(Rect) ? Rect : System.Windows.Rect.Empty;
-        }
+        public override Rect GetRect() => RegionGeometry.Bounds(Attribute);
+
         public override void SetRect(Rect rect)
         {
             if (!rect.IsEmpty && !ShapeGeometry.IsFinite(rect))
                 return;
+
+            rect = RegionGeometry.ResizeLocalBounds(Attribute, rect);
 
             bool wasDeferred = _deferAttributeRender;
             _deferAttributeRender = true;

@@ -19,7 +19,7 @@ namespace ColorVision.ImageEditor.Draw.Annotations
             {
                 Points = AnnotationMappingHelper.ToAnnotationPoints(polygonVisual.Attribute.Points),
                 Style = AnnotationMappingHelper.CreateShapeStyle(polygonVisual.Attribute.Brush ?? polygonVisual.Attribute.Pen?.Brush ?? Brushes.Transparent, polygonVisual.Attribute.Pen),
-                IsClosed = visual is DVPolygon dvPolygon && dvPolygon.IsComple,
+                IsClosed = polygonVisual.Attribute.IsClosed,
             };
             AnnotationMappingHelper.CopyBaseProperties(polygonVisual.Attribute, item);
             return item;
@@ -44,7 +44,7 @@ namespace ColorVision.ImageEditor.Draw.Annotations
             {
                 Points = AnnotationMappingHelper.ToAnnotationPoints(polygonProperties.Points),
                 Style = AnnotationMappingHelper.CreateShapeStyle(polygonProperties.Brush ?? polygonProperties.Pen?.Brush ?? Brushes.Transparent, polygonProperties.Pen),
-                IsClosed = false,
+                IsClosed = polygonProperties.IsClosed,
             };
             AnnotationMappingHelper.CopyBaseProperties(polygonProperties, item);
             return item;
@@ -57,6 +57,7 @@ namespace ColorVision.ImageEditor.Draw.Annotations
 
             PolygonProperties properties = new();
             AnnotationMappingHelper.ApplyBaseProperties(polygonItem, properties);
+            properties.IsClosed = polygonItem.IsClosed;
             properties.Points = AnnotationMappingHelper.ToFinitePoints(polygonItem.Points, "Polygon");
             AnnotationMappingHelper.ApplyShapeStyle(polygonItem.Style, properties.Brush ?? Brushes.Transparent, properties.Pen, brush => properties.Brush = brush, pen => properties.Pen = pen);
             if (properties.Pen != null)

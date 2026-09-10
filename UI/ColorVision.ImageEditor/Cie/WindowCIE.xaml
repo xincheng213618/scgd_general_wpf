@@ -257,10 +257,10 @@
                                            Text="uv: --" />
                                 <TextBlock x:Name="TextBlockSelectedUv1976"
                                            Style="{StaticResource ReadoutText}"
-                                           Text="u'v': --" />
+                                           Text="CIE 1976 u′v′: --" />
                                 <TextBlock x:Name="TextBlockSelectedCct"
                                            Style="{StaticResource ReadoutText}"
-                                           Text="CCT: --" />
+                                           Text="相关色温 CCT: --" />
                             </StackPanel>
                         </GroupBox>
                     </StackPanel>

@@ -41,6 +41,8 @@ namespace ColorVision.ImageEditor.Draw.Annotations
 
     public abstract class AnnotationItem
     {
+        public double Rotation { get; set; }
+
         [JsonProperty(Order = -10)]
         public abstract AnnotationKind Kind { get; }
 

@@ -1,10 +1,10 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class RectangleProperties : BaseProperties ,IRectangle
+    public class RectangleProperties : RegionProperties ,IRectangle
     {
 
         [DisplayName("笔刷")]
@@ -16,7 +16,7 @@ namespace ColorVision.ImageEditor.Draw
         private Brush _Brush = DefaultBrush;
 
         [DisplayName("矩形")]
-        public Rect Rect { get => _Rect; set { _Rect = value; OnPropertyChanged(); } }
+        public Rect Rect { get => _Rect; set { _Rect = value; InvalidateMeasurementMessage(); OnPropertyChanged(); } }
         private Rect _Rect = new Rect(50, 50, 100, 100);
     }
 
