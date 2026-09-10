@@ -31,7 +31,16 @@ VENDOR_TYPES = {
     "SenseNova",
 }
 PROVIDER_TYPES = {"OpenAICompatible", "AnthropicCompatible"}
-REASONING_MODES = {"Default", "Disabled", "Enabled", "High", "Max"}
+REASONING_MODES = {
+    "Default",
+    "Disabled",
+    "Enabled",
+    "Low",
+    "Medium",
+    "High",
+    "XHigh",
+    "Max",
+}
 _ENCRYPTION_PREFIX = "aesgcm:v1:"
 _ENCRYPTION_CONTEXT = b"ColorVision.Copilot.Profile.ApiKey.v1"
 

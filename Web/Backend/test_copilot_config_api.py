@@ -151,6 +151,35 @@ class CopilotConfigApiTests(unittest.TestCase):
         )
         self.assertEqual(deleted.status_code, 200)
 
+    def test_openai_reasoning_efforts_accept_astra_levels(self):
+        for index, mode in enumerate(
+            ["Default", "Low", "Medium", "High", "XHigh", "Max"]
+        ):
+            created = self.create_profile(
+                name=f"OpenAI Astra {mode}",
+                vendorType="OpenAI",
+                providerType="OpenAICompatible",
+                baseUrl="https://api.openai.com/v1",
+                model="gpt-6-astra",
+                reasoningMode=mode,
+                isDefault=False,
+                sortOrder=index,
+            )
+            self.assertEqual(created.status_code, 201)
+            self.assertEqual(created.get_json()["reasoningMode"], mode)
+
+        invalid = self.create_profile(
+            name="OpenAI Astra Invalid",
+            vendorType="OpenAI",
+            providerType="OpenAICompatible",
+            baseUrl="https://api.openai.com/v1",
+            model="gpt-6-astra",
+            reasoningMode="Ultra",
+            isDefault=False,
+        )
+        self.assertEqual(invalid.status_code, 400)
+        self.assertIn("reasoningMode", invalid.get_json()["error"])
+
     def test_scoped_sync_returns_enabled_profile_and_decrypted_key(self):
         created = self.create_profile()
         self.assertEqual(created.status_code, 201)
