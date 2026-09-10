@@ -52,7 +52,7 @@ namespace ColorVision.Copilot
                 DefaultProviderType = CopilotProviderType.AnthropicCompatible,
                 OpenAICompatibleBaseUrl = "https://api.deepseek.com/v1",
                 AnthropicCompatibleBaseUrl = "https://api.deepseek.com/anthropic",
-                ModelPresets = new[] { "deepseek-v4-flash", "deepseek-v4-pro" },
+                ModelPresets = new[] { "deepseek-v4-pro", "deepseek-v4-flash", "deepseek-v4-flash-vision-exp" },
             },
             new CopilotVendorPreset
             {
@@ -60,7 +60,7 @@ namespace ColorVision.Copilot
                 Label = "OpenAI",
                 DefaultProviderType = CopilotProviderType.OpenAICompatible,
                 OpenAICompatibleBaseUrl = "https://api.openai.com/v1",
-                ModelPresets = new[] { "gpt-5.6", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.5", "gpt-4o" },
+                ModelPresets = new[] { "gpt-6-astra", "gpt-5.6", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna" },
             },
             new CopilotVendorPreset
             {
@@ -68,7 +68,7 @@ namespace ColorVision.Copilot
                 Label = "Claude",
                 DefaultProviderType = CopilotProviderType.AnthropicCompatible,
                 AnthropicCompatibleBaseUrl = "https://api.anthropic.com",
-                ModelPresets = new[] { "claude-sonnet-4-7", "claude-opus-4-7" },
+                ModelPresets = new[] { "claude-fable-5", "claude-mythos-5", "claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5-20251001" },
             },
             new CopilotVendorPreset
             {
@@ -76,7 +76,7 @@ namespace ColorVision.Copilot
                 Label = "Grok / xAI",
                 DefaultProviderType = CopilotProviderType.OpenAICompatible,
                 OpenAICompatibleBaseUrl = "https://api.x.ai/v1",
-                ModelPresets = new[] { "grok-4", "grok-3", "grok-3-mini" },
+                ModelPresets = new[] { "grok-4.6", "grok-4.5", "grok-4.20" },
             },
             new CopilotVendorPreset
             {
@@ -84,7 +84,7 @@ namespace ColorVision.Copilot
                 Label = "Gemini",
                 DefaultProviderType = CopilotProviderType.OpenAICompatible,
                 OpenAICompatibleBaseUrl = "https://generativelanguage.googleapis.com/v1beta/openai",
-                ModelPresets = new[] { "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash" },
+                ModelPresets = new[] { "gemini-3.1-pro-preview", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite" },
             },
             new CopilotVendorPreset
             {
@@ -92,7 +92,7 @@ namespace ColorVision.Copilot
                 Label = "Zhipu GLM",
                 DefaultProviderType = CopilotProviderType.OpenAICompatible,
                 OpenAICompatibleBaseUrl = "https://open.bigmodel.cn/api/paas/v4",
-                ModelPresets = new[] { "glm-4.5", "glm-4.5-air", "glm-4-flash" },
+                ModelPresets = new[] { "glm-5.2", "glm-5-turbo", "glm-4.7-flash", "glm-4.5-air" },
             },
             new CopilotVendorPreset
             {
@@ -100,7 +100,7 @@ namespace ColorVision.Copilot
                 Label = "MiniMax",
                 DefaultProviderType = CopilotProviderType.AnthropicCompatible,
                 AnthropicCompatibleBaseUrl = "https://api.minimaxi.com/anthropic",
-                ModelPresets = new[] { "MiniMax-M2.7", "MiniMax-M1", "MiniMax-Text-01" },
+                ModelPresets = new[] { "MiniMax-M2.7", "MiniMax-M2.7-highspeed", "MiniMax-M2.5", "MiniMax-M2.5-highspeed" },
             },
             new CopilotVendorPreset
             {
