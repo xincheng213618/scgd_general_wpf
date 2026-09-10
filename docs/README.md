@@ -4,7 +4,7 @@ knowledge_type: "index"
 status: "current"
 summary: "说明仓库知识入口、按需检索、源码核对和文档与代码同步维护的共同规则。"
 aliases: ["文档怎么用", "AI共治", "AI知识库", "AGENTS.md", "documentation", "版本历史入口", "CHANGELOG.md"]
-code_paths: ["README.md", "AGENTS.md", "CHANGELOG.md", "docs/AGENTS.md", "docs/.vitepress/scripts"]
+code_paths: ["README.md", "AGENTS.md", "CHANGELOG.md", "docs/AGENTS.md", "docs/.vitepress/config.mts", "docs/.vitepress/scripts"]
 test_paths: ["docs/.vitepress/scripts/knowledge.test.mjs"]
 related: ["governance.maintenance", "governance.retrieval", "platform.system", "platform.license"]
 ---
@@ -12,6 +12,8 @@ related: ["governance.maintenance", "governance.retrieval", "platform.system", "
 # 仓库知识使用约定
 
 `docs/` 是 ColorVision 的版本化知识层，不是必须顺序阅读的手册。AI 从根目录和最近的 `AGENTS.md` 取得工作规则，再按问题读取主题、关联源码和测试；网页只是同一正文的派生展示。
+
+`docs/_history/` 是例外的仓库内历史存档，不属于当前知识或公开文档站点。它不进入知识目录、搜索、导航和 VitePress 构建；主程序的完整发布记录由 changelog 归档脚本维护在这里，仅在需要回顾历史时直接从源码仓库打开。
 
 ## 从问题到实现
 
