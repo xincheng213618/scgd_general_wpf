@@ -73,7 +73,6 @@ namespace ColorVision
                 this.SetWindowFull(Config);
             }
             HookUpdateNotification();
-            NewUserGuideOverlay.GuideDismissed += NewUserGuideOverlay_GuideDismissed;
             PreviewKeyDown += MainWindow_NewUserGuidePreviewKeyDown;
             log.Info($"Main window remaining constructor setup took {constructionStopwatch.ElapsedMilliseconds} ms.");
             

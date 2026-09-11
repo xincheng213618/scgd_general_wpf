@@ -6988,7 +6988,7 @@
         "产品导览",
         "首次欢迎",
         "NewUserGuideOverlay",
-        "LastSeenNewUserGuideVersion"
+        "HasShownNewUserGuide"
       ],
       "code_paths": [
         "ColorVision/MainWindow.xaml",

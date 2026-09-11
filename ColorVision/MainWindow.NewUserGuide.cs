@@ -10,19 +10,15 @@ namespace ColorVision;
 
 public partial class MainWindow
 {
-    internal const int CurrentNewUserGuideVersion = 1;
     private bool _newUserGuideScheduled;
-
-    internal static bool ShouldOfferNewUserGuide(int lastSeenVersion) =>
-        lastSeenVersion < CurrentNewUserGuideVersion;
 
     internal static bool TryRecordNewUserGuideOffer(MainWindowConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);
-        if (!ShouldOfferNewUserGuide(config.LastSeenNewUserGuideVersion))
+        if (config.HasShownNewUserGuide)
             return false;
 
-        config.LastSeenNewUserGuideVersion = CurrentNewUserGuideVersion;
+        config.HasShownNewUserGuide = true;
         return true;
     }
 
@@ -56,38 +52,28 @@ public partial class MainWindow
 
     private void ScheduleNewUserGuideAfterFirstRender()
     {
-        if (_newUserGuideScheduled || !ShouldOfferNewUserGuide(Config.LastSeenNewUserGuideVersion))
+        if (_newUserGuideScheduled || Config.HasShownNewUserGuide)
             return;
 
         _newUserGuideScheduled = true;
         _ = Dispatcher.BeginInvoke(new Action(() =>
         {
-            if (!IsVisible || !TryRecordNewUserGuideOffer(Config))
+            if (!IsVisible)
                 return;
 
-            PersistNewUserGuideOffer();
-            ShowNewUserGuide();
+            try
+            {
+                if (!TryRecordNewUserGuideOffer(Config))
+                    return;
+
+                ConfigService.Instance.Save<MainWindowConfig>();
+                ShowNewUserGuide();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Failed to persist the one-time new-user guide state; automatic display was suppressed.", ex);
+            }
         }), DispatcherPriority.ContextIdle);
-    }
-
-    private void NewUserGuideOverlay_GuideDismissed(object? sender, EventArgs e)
-    {
-        if (!TryRecordNewUserGuideOffer(Config))
-            return;
-
-        PersistNewUserGuideOffer();
-    }
-
-    private void PersistNewUserGuideOffer()
-    {
-        try
-        {
-            ConfigService.Instance.Save<MainWindowConfig>();
-        }
-        catch (Exception ex)
-        {
-            log.Warn("Failed to persist the new-user guide state.", ex);
-        }
     }
 
     private void MainWindow_NewUserGuidePreviewKeyDown(object sender, KeyEventArgs e)

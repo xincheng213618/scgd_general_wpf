@@ -18,27 +18,18 @@ public sealed class NewUserGuideTests
     private static readonly XNamespace Xaml = "http://schemas.microsoft.com/winfx/2006/xaml";
 
     [Fact]
-    public void FreshConfigurationOffersTheCurrentGuideAndPreservesAnExplicitSeenVersion()
-    {
-        Assert.True(MainWindow.ShouldOfferNewUserGuide(new MainWindowConfig().LastSeenNewUserGuideVersion));
-        Assert.False(MainWindow.ShouldOfferNewUserGuide(MainWindow.CurrentNewUserGuideVersion));
-
-        var handler = new ConfigHandler();
-        JsonSerializerSettings settings = handler.JsonSerializerSettings;
-        var config = new MainWindowConfig { LastSeenNewUserGuideVersion = MainWindow.CurrentNewUserGuideVersion };
-        JObject saved = JObject.FromObject(config, JsonSerializer.Create(settings));
-        JProperty property = Assert.IsType<JProperty>(saved.Property(nameof(MainWindowConfig.LastSeenNewUserGuideVersion)));
-        Assert.Equal(MainWindow.CurrentNewUserGuideVersion, property.Value.Value<int>());
-    }
-
-    [Fact]
-    public void AutomaticOfferIsRecordedBeforeTheUserInteractsWithTheGuide()
+    public void AutomaticGuideUsesOneBooleanState()
     {
         var config = new MainWindowConfig();
 
+        Assert.False(config.HasShownNewUserGuide);
         Assert.True(MainWindow.TryRecordNewUserGuideOffer(config));
-        Assert.Equal(MainWindow.CurrentNewUserGuideVersion, config.LastSeenNewUserGuideVersion);
+        Assert.True(config.HasShownNewUserGuide);
         Assert.False(MainWindow.TryRecordNewUserGuideOffer(config));
+
+        var handler = new ConfigHandler();
+        JObject saved = JObject.FromObject(config, JsonSerializer.Create(handler.JsonSerializerSettings));
+        Assert.True(saved.Value<bool>(nameof(MainWindowConfig.HasShownNewUserGuide)));
     }
 
     [Fact]

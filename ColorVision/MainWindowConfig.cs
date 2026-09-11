@@ -27,8 +27,8 @@ namespace ColorVision
         private bool _useCompactMainWindow = true;
 
         [Browsable(false)]
-        public int LastSeenNewUserGuideVersion { get => _lastSeenNewUserGuideVersion; set { _lastSeenNewUserGuideVersion = value; OnPropertyChanged(); } }
-        private int _lastSeenNewUserGuideVersion;
+        public bool HasShownNewUserGuide { get => _hasShownNewUserGuide; set { _hasShownNewUserGuide = value; OnPropertyChanged(); } }
+        private bool _hasShownNewUserGuide;
 
         [JsonIgnore]
         public bool IsFull { get => _IsFull; set { _IsFull = value; OnPropertyChanged(); } }
