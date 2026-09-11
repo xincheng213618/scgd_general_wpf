@@ -255,12 +255,14 @@ public class AvalonDockThemeBindingTests
         });
     }
 
-    [Fact]
-    public void MultipleDocumentGroups_EmphasizeOnlyTheActiveDocumentWithoutStealingToolActivation()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MultipleDocumentGroups_EmphasizeOnlyTheActiveDocumentWithoutStealingToolActivation(bool isDark)
     {
         WpfTestHost.Invoke(() =>
         {
-            using var scene = new DockingScene(false);
+            using var scene = new DockingScene(isDark);
             var otherDocument = new LayoutDocument { Title = "Second document group", Content = new Border() };
             var otherGroup = new LayoutDocumentPane(otherDocument);
             scene.Manager.Layout.RootPanel.Children.Add(otherGroup);
