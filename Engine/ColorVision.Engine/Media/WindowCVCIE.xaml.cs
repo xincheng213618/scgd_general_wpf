@@ -18,7 +18,6 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Documents;
 
 namespace ColorVision.Engine.Media
 {
@@ -201,13 +200,15 @@ namespace ColorVision.Engine.Media
             foreach (var column in columns)
             {
                 if (!IsPoiResultCIExyuvDatas && column.Path is not ("Name" or "Point" or "Shapes" or "Y")) continue;
-                var binding = new Binding(column.Path);
+                var binding = new Binding(column.Path) { Mode = BindingMode.OneWay };
                 if (column.Path == "Point") binding.Converter = new CvciePointDisplayConverter(column.Header.StartsWith("尺寸"), format);
                 else if (column.Path is not ("Name" or "Shapes")) binding.StringFormat = format;
-                var text = new FrameworkElementFactory(typeof(TextBlock));
-                text.SetBinding(TextBlock.TextProperty, binding);
+                var text = new FrameworkElementFactory(typeof(TextBox));
+                text.SetValue(StyleProperty, FindResource("SelectableResultText"));
+                text.SetBinding(TextBox.TextProperty, binding);
+                text.SetBinding(ForegroundProperty, new Binding(nameof(Foreground)) { RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(ListViewItem), 1) });
                 text.SetBinding(ToolTipProperty, new Binding(column.Path == "Point" ? (column.Header.StartsWith("尺寸") ? "PixelSize" : "PixelPos") : column.Path));
-                text.SetValue(TextBlock.TextAlignmentProperty, column.Path is "Name" or "Shapes" ? TextAlignment.Left : TextAlignment.Right);
+                text.SetValue(TextBox.TextAlignmentProperty, column.Path is "Name" or "Shapes" ? TextAlignment.Left : TextAlignment.Right);
                 text.SetValue(MarginProperty, new Thickness(4, 3, 6, 3));
                 text.SetValue(MinWidthProperty, (double)column.Width - 14);
                 var viewColumn = new GridViewColumn
@@ -271,9 +272,15 @@ namespace ColorVision.Engine.Media
             {
                 var content = new StackPanel { Margin = new Thickness(8, 3, 12, 3), MinWidth = collapsible ? 130 : 0 };
                 content.Children.Add(new TextBlock { Text = item.Label + (collapsible ? "" : "亮度"), Opacity = 0.65, FontSize = 12 });
-                var value = new TextBlock { FontSize = collapsible ? 13 : 17, FontWeight = FontWeights.SemiBold, ToolTip = "右键复制数值或全部统计" };
+                var value = new TextBox
+                {
+                    Style = (Style)FindResource("SelectableResultText"), Text = Number(item.Value),
+                    FontSize = collapsible ? 13 : 17, FontWeight = FontWeights.SemiBold,
+                    ToolTip = "选中文字后 Ctrl+C；右键复制数值或全部统计"
+                };
                 statisticsClipboard.Add(title + " · " + item.Label + "\t" + Number(item.Value) + "\t" + item.Unit);
                 var menu = new ContextMenu();
+                menu.Items.Add(new MenuItem { Header = "复制选中文字", Command = ApplicationCommands.Copy, CommandTarget = value });
                 var copyValue = new MenuItem { Header = "复制数值" };
                 copyValue.Click += (_, _) => ColorVision.Common.Clipboard.SetText(Number(item.Value));
                 var copyStats = new MenuItem { Header = "复制全部统计" };
@@ -281,9 +288,10 @@ namespace ColorVision.Engine.Media
                 menu.Items.Add(copyValue);
                 menu.Items.Add(copyStats);
                 value.ContextMenu = menu;
-                value.Inlines.Add(new Run(Number(item.Value)));
-                if (item.Unit.Length > 0) value.Inlines.Add(new Run(" " + item.Unit) { FontSize = 12, FontWeight = FontWeights.Normal });
-                content.Children.Add(value);
+                var valuePanel = new StackPanel { Orientation = Orientation.Horizontal };
+                valuePanel.Children.Add(value);
+                if (item.Unit.Length > 0) valuePanel.Children.Add(new TextBlock { Text = " " + item.Unit, FontSize = 12, VerticalAlignment = VerticalAlignment.Bottom, ContextMenu = menu });
+                content.Children.Add(valuePanel);
                 panel.Children.Add(content);
             }
             if (collapsible)
