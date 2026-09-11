@@ -8,7 +8,7 @@ namespace ColorVision.UI.LogImp
     /// <summary>
     /// Collects the local log4net application log files for the feedback system.
     /// </summary>
-    public class AppLogCollector : IFeedbackLogCollector, IFeedbackLogTimeRangeCollector
+    public class AppLogCollector : IFeedbackLogCollector, IFeedbackLogTimeRangeCollector, IFeedbackDiagnosticCleanupSource
     {
         private const long MaxFileBytes = 50L * 1024 * 1024;
         private static readonly ILog log = LogManager.GetLogger(typeof(AppLogCollector));
@@ -41,6 +41,16 @@ namespace ColorVision.UI.LogImp
             }
 
             return results;
+        }
+
+        public IEnumerable<string> GetHistoricalDiagnosticFiles(DateTime preserveFromUtc)
+        {
+            return GetHistoricalApplicationLogFiles(
+                    LogDirectory,
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    preserveFromUtc)
+                .Select(file => file.FullName);
         }
 
         internal static IReadOnlyList<(string EntryPath, FileInfo File)> GetRecentApplicationLogFiles(
@@ -86,6 +96,55 @@ namespace ColorVision.UI.LogImp
                 log.Debug($"Could not enumerate app log directory {logDir}: {ex.Message}");
                 return Array.Empty<FileInfo>();
             }
+        }
+
+        internal static IReadOnlyList<FileInfo> GetHistoricalApplicationLogFiles(
+            string? currentLogDirectory,
+            string applicationDataDirectory,
+            string applicationDirectory,
+            DateTime preserveFromUtc)
+        {
+            string? currentFullDirectory = string.IsNullOrWhiteSpace(currentLogDirectory)
+                ? null
+                : Path.TrimEndingDirectorySeparator(Path.GetFullPath(currentLogDirectory));
+            string[] directories =
+            [
+                Path.Combine(applicationDataDirectory, "ColorVision", "Log"),
+                Path.Combine(applicationDirectory, "log"),
+                currentLogDirectory ?? string.Empty,
+            ];
+            var results = new List<FileInfo>();
+            var visitedDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (string directory in directories)
+            {
+                if (string.IsNullOrWhiteSpace(directory))
+                    continue;
+
+                try
+                {
+                    string fullDirectory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
+                    if (!visitedDirectories.Add(fullDirectory) || !Directory.Exists(fullDirectory))
+                        continue;
+
+                    List<FileInfo> files = new DirectoryInfo(fullDirectory)
+                        .EnumerateFiles("*", SearchOption.TopDirectoryOnly)
+                        .OrderByDescending(file => file.LastWriteTimeUtc)
+                        .ToList();
+                    FileInfo? activeFile = string.Equals(fullDirectory, currentFullDirectory, StringComparison.OrdinalIgnoreCase)
+                        ? files.FirstOrDefault()
+                        : null;
+                    results.AddRange(files.Where(file =>
+                        file.LastWriteTimeUtc < preserveFromUtc
+                        && !string.Equals(file.FullName, activeFile?.FullName, StringComparison.OrdinalIgnoreCase)));
+                }
+                catch (Exception ex)
+                {
+                    log.Debug($"Could not enumerate historical app logs in {directory}: {ex.Message}");
+                }
+            }
+
+            return results;
         }
 
         private static string? GetLogDirectory()

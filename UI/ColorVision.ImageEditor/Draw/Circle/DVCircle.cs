@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
@@ -57,11 +57,13 @@ namespace ColorVision.ImageEditor.Draw
         public override void Render()
         {
             using DrawingContext dc = RenderOpen();
-            if (!ShapeGeometry.TryGetEllipseBounds(Attribute.Center, Attribute.Radius, Attribute.Radius, out Rect bounds))
+            if (!ShapeGeometry.TryGetEllipseBounds(Attribute.Center, Attribute.Radius, Attribute.RadiusY, out Rect bounds))
                 return;
 
             TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
+            dc.PushTransform(RegionGeometry.Transform(Attribute));
             dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, bounds.Width / 2, bounds.Height / 2);
+            dc.Pop();
 
             if (IsDrawing || (IsMessageVisible && !string.IsNullOrWhiteSpace(Attribute.Msg)))
             {
@@ -79,29 +81,28 @@ namespace ColorVision.ImageEditor.Draw
                 if (IsMessageVisible && !string.IsNullOrWhiteSpace(Attribute.Msg))
                 {
                     FormattedText formattedText = new(Attribute.Msg, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, typeface, TextAttribute.FontSize, TextAttribute.Brush, pixelsPerDip);
-                    dc.DrawText(formattedText, new Point(Attribute.Center.X - formattedText.Width / 2, Attribute.Center.Y - formattedText.Height / 2));
+                    formattedText.TextAlignment = Attribute.IsMeasurementMessage ? TextAlignment.Center : TextAlignment.Left;
+                    dc.DrawText(formattedText, new Point(Attribute.Center.X - (Attribute.IsMeasurementMessage ? 0 : formattedText.Width / 2), Attribute.Center.Y - formattedText.Height / 2));
                 }
             }
         }
 
-        public override Rect GetRect()
-        {
-            return ShapeGeometry.TryGetEllipseBounds(Attribute.Center, Attribute.Radius, Attribute.Radius, out Rect bounds)
-                ? bounds
-                : Rect.Empty;
-        }
+        public override Rect GetRect() => RegionGeometry.Bounds(Attribute);
 
         public override void SetRect(Rect rect)
         {
             if (!ShapeGeometry.IsFinite(rect))
                 return;
 
+            rect = RegionGeometry.ResizeLocalBounds(Attribute, rect);
+
             bool wasDeferred = _deferAttributeRender;
             _deferAttributeRender = true;
             try
             {
                 Attribute.Center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
-                Attribute.Radius = Math.Min(rect.Width, rect.Height) / 2;
+                Attribute.Radius = rect.Width / 2;
+                Attribute.RadiusY = rect.Height / 2;
             }
             finally
             {

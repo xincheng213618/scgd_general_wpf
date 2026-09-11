@@ -10,14 +10,12 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Shell;
 using System.Windows.Threading;
 using System.Xml.Linq;
@@ -92,49 +90,58 @@ public sealed class CompactTitleBarIntegrationContractTests
         Assert.Equal(value, restored.UseCompactMainWindow);
     }
 
-    [Fact]
-    public void CompactShellIsASeparateSubclassAndDirectMainWindowConstructionStaysNative()
+    [Theory]
+    [InlineData(6, 3, 9600, false)]
+    [InlineData(10, 0, 19045, false)]
+    [InlineData(10, 0, 21999, false)]
+    [InlineData(10, 0, 22000, true)]
+    [InlineData(10, 0, 26100, true)]
+    public void CompactMainWindowSupportStartsAtWindowsBuild22000(int major, int minor, int build, bool expected)
     {
-        Assert.Equal(typeof(MainWindow), typeof(CompactMainWindow).BaseType);
-        Assert.True(typeof(CompactMainWindow).IsSealed);
-        Assert.NotNull(typeof(MainWindow).GetConstructor(Type.EmptyTypes));
-        Assert.NotNull(typeof(CompactMainWindow).GetConstructor(Type.EmptyTypes));
+        Assert.Equal(expected, CompactTitleBarChrome.IsSupportedOperatingSystemVersion(new Version(major, minor, build)));
+    }
 
-        string ordinarySource = ReadRepositoryText("ColorVision/MainWindow.xaml.cs");
-        Assert.Contains("public MainWindow() : this(useStandardWindowAppearance: true)", ordinarySource, StringComparison.Ordinal);
-        Assert.DoesNotContain("UseCompactMainWindow", ordinarySource, StringComparison.Ordinal);
-        Assert.DoesNotContain("UseCompactTitleBar", ordinarySource, StringComparison.Ordinal);
-        string baseConstructor = MethodBody(ordinarySource, "protected MainWindow(bool useStandardWindowAppearance)");
-        Assert.Contains("if (useStandardWindowAppearance)", baseConstructor, StringComparison.Ordinal);
-        Assert.Contains("this.ApplyCaption()", baseConstructor, StringComparison.Ordinal);
-        Assert.Contains("this.SetWindowFull(Config)", baseConstructor, StringComparison.Ordinal);
-
-        string compactSource = ReadRepositoryText("ColorVision/CompactMainWindow.cs");
-        Assert.Contains("public CompactMainWindow() : base(useStandardWindowAppearance: false)", compactSource, StringComparison.Ordinal);
-        Assert.DoesNotContain("InitializeComponent()", compactSource, StringComparison.Ordinal);
-        Assert.DoesNotContain("new DockingManager", compactSource, StringComparison.Ordinal);
-        string constructor = MethodBody(compactSource, "public CompactMainWindow()");
-        Assert.True(constructor.IndexOf("PropertyChanged += CompactTitleBarConfigChanged", StringComparison.Ordinal)
-            < constructor.IndexOf("this.SetWindowFull(Config)", StringComparison.Ordinal));
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, true, true)]
+    public void CompactSelectionRequiresBothConfigurationAndOperatingSystemSupport(
+        bool configured, bool operatingSystemSupported, bool expectedSelection)
+    {
+        Assert.Equal(expectedSelection, MainWindowFactory.ShouldUseCompactMainWindow(configured, operatingSystemSupported));
+        Assert.Equal(operatingSystemSupported,
+            MainWindowConfig.ShouldShowCompactMainWindowSetting(operatingSystemSupported));
     }
 
     [Fact]
-    public void StartupFactoryRoutesTheSettingWithoutChangingFeatureLaunchers()
+    public void MainWindowAppearanceSettingsShareTheAppearanceSection()
     {
-        MethodInfo factory = Assert.IsAssignableFrom<MethodInfo>(typeof(MainWindowFactory).GetMethod("Create", BindingFlags.NonPublic | BindingFlags.Static));
-        Assert.Equal(typeof(MainWindow), factory.ReturnType);
-        ParameterInfo parameter = Assert.Single(factory.GetParameters());
-        Assert.Equal(typeof(bool), parameter.ParameterType);
-        string factorySource = ReadRepositoryText("ColorVision/MainWindowFactory.cs");
-        Assert.Matches($@"{Regex.Escape(parameter.Name!)}\s*\?\s*new CompactMainWindow\(\)\s*:\s*new MainWindow\(\)", factorySource);
+        var settings = MainWindowConfig.CreateWindowAppearanceSettings(
+            new MainWindowConfig(), showCompactMainWindow: true, showWindows10ContextMenu: true).ToList();
 
-        string startupBody = MethodBody(ReadRepositoryText("ColorVision/StartWindow.xaml.cs"), "private void ShowMainWindowAndClose()");
-        Assert.Equal(2, Regex.Matches(startupBody, @"MainWindowFactory\.Create\(MainWindowConfig\.Instance\.UseCompactMainWindow\)").Count);
-        Assert.DoesNotContain("UseCompactTitleBar", startupBody, StringComparison.Ordinal);
-        Assert.DoesNotContain("new MainWindow()", startupBody, StringComparison.Ordinal);
-        Assert.DoesNotContain("new CompactMainWindow()", startupBody, StringComparison.Ordinal);
-        Assert.Contains("project1.Execute()", startupBody, StringComparison.Ordinal);
-        Assert.Contains("project2.Execute()", startupBody, StringComparison.Ordinal);
+        Assert.Equal(new[] {
+            nameof(MainWindowConfig.IsRestoreWindow),
+            nameof(MainWindowConfig.UseCompactMainWindow),
+            nameof(MainWindowConfig.IsWindows10ContextMenu)
+        }, settings.OrderBy(setting => setting.Order).Select(setting => setting.BindingName));
+        Assert.All(settings, setting => Assert.Equal(ConfigSettingConstants.SectionAppearance, setting.Section));
+    }
+
+    [Theory]
+    [InlineData("zh-CN", "启动时恢复窗口", "位置、大小和状态")]
+    [InlineData("zh-Hant", "啟動時還原視窗", "位置、大小與狀態")]
+    [InlineData("en", "Restore window at startup", "position, size, and state")]
+    public void RestoreWindowSettingHasLocalizedTitleAndDescription(string cultureName, string expectedTitle, string descriptionText)
+    {
+        PropertyInfo property = typeof(MainWindowConfig).GetProperty(nameof(MainWindowConfig.IsRestoreWindow))!;
+        string titleKey = property.GetCustomAttribute<DisplayNameAttribute>()!.DisplayName;
+        string descriptionKey = property.GetCustomAttribute<DescriptionAttribute>()!.Description;
+        var culture = new CultureInfo(cultureName);
+
+        Assert.Equal(expectedTitle, global::ColorVision.Properties.Resources.ResourceManager.GetString(titleKey, culture));
+        Assert.Contains(descriptionText,
+            global::ColorVision.Properties.Resources.ResourceManager.GetString(descriptionKey, culture));
     }
 
     [Theory]
@@ -162,176 +169,27 @@ public sealed class CompactTitleBarIntegrationContractTests
         Assert.Contains(originalWindowText, localizedDescription, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    public void MainWindowRemainsAStandardWindowWithOneExistingWorkspace()
-    {
-        XDocument document = LoadMainWindow();
-        XElement root = document.Root!;
-
-        Assert.Equal(Presentation + "Window", root.Name);
-        Assert.Equal("ColorVision.MainWindow", (string?)root.Attribute(Xaml + "Class"));
-        Assert.NotEqual("True", (string?)root.Attribute(nameof(Window.AllowsTransparency)));
-        Assert.NotEqual("None", (string?)root.Attribute(nameof(Window.WindowStyle)));
-        Assert.DoesNotContain(document.Descendants(), element => element.Name.LocalName == nameof(System.Windows.Shell.WindowChrome));
-        Assert.Single(document.Descendants(), element => (string?)element.Attribute(Xaml + "Name") == "DockingManager1");
-        Assert.Equal("{DynamicResource GlobalBackground}", (string?)Named(document, "DockingManager1").Attribute("Background"));
-        Assert.Equal("{DynamicResource GlobalBackground}", (string?)Named(document, "StatusBarGrid").Attribute("Background"));
-    }
-
-    [Fact]
-    public void OnlyInteractiveHeaderControlsOptIntoClientHitTesting()
-    {
-        XDocument document = LoadMainWindow();
-        foreach (string name in new[] { "Menu1", "RightMenuItemPanel", "UpdateNotificationButton", "CompactActionsOverflowButton" })
-            Assert.Equal("True", (string?)Named(document, name).Attribute("WindowChrome.IsHitTestVisibleInChrome"));
-
-        foreach (string name in new[] { "Root", "TopBarGrid", "MainWindowTitleBar" })
-            Assert.NotEqual("True", (string?)Named(document, name).Attribute("WindowChrome.IsHitTestVisibleInChrome"));
-
-        XElement captionButtons = Named(document, "NativeCaptionButtonsPlaceholder");
-        Assert.Equal("0", (string?)captionButtons.Attribute("Width"));
-        Assert.Equal("False", (string?)captionButtons.Attribute("IsHitTestVisible"));
-        Assert.Null(captionButtons.Attribute("Background"));
-        Assert.Empty(captionButtons.Elements());
-        Assert.Same(Named(document, "TopBarGrid"), captionButtons.Parent);
-    }
-
-    [Fact]
-    public void CompactHeaderReservesARealDragRegionBeforeMeasuringInteractiveControls()
-    {
-        XDocument document = LoadMainWindow();
-        XElement dragRegion = Named(document, "CompactDragRegion");
-        Assert.Equal("120", (string?)dragRegion.Attribute("Width"));
-        Assert.Equal("Collapsed", (string?)dragRegion.Attribute("Visibility"));
-        Assert.NotEqual("False", (string?)dragRegion.Attribute("IsHitTestVisible"));
-        Assert.Equal("Right", (string?)dragRegion.Attribute("DockPanel.Dock"));
-        Assert.Equal("False", (string?)dragRegion.Attribute("WindowChrome.IsHitTestVisibleInChrome"));
-        Assert.Equal("{DynamicResource GlobalBackground}", (string?)dragRegion.Attribute("Background"));
-        Assert.Equal("1", (string?)dragRegion.Attribute("Panel.ZIndex"));
-        XElement dock = dragRegion.Parent!;
-        Assert.Equal(Presentation + "DockPanel", dock.Name);
-        Assert.Equal(["CompactActionsOverflowButton", "RightMenuItemPanel", "CompactDragRegion"],
-            dock.Elements().Take(3).Select(element => (string?)element.Attribute(Xaml + "Name")));
-        Assert.Equal("True", (string?)dock.Attribute("ClipToBounds"));
-        Assert.Equal("2", (string?)Named(document, "RightMenuItemPanel").Attribute("Panel.ZIndex"));
-        Assert.Equal("{DynamicResource GlobalBackground}", (string?)Named(document, "RightMenuItemPanel").Attribute("Background"));
-        XElement topBar = Named(document, "TopBarGrid");
-        Assert.Equal(["*", "Auto"], topBar.Element(Presentation + "Grid.ColumnDefinitions")!.Elements()
-            .Select(element => (string?)element.Attribute("Width")));
-        Assert.Equal("1", (string?)Named(document, "NativeCaptionButtonsPlaceholder").Attribute("Grid.Column"));
-        Assert.Equal(2, topBar.Elements().Count(element => element.Name.LocalName != "Grid.ColumnDefinitions"));
-
-        string compactSource = ReadRepositoryText("ColorVision/CompactMainWindow.cs");
-        Assert.Contains("CompactDragRegion.Visibility = Visibility.Visible", MethodBody(compactSource, "private void AttachCompactTitleBar("), StringComparison.Ordinal);
-        Assert.Contains("CompactDragRegion.Visibility = Visibility.Collapsed", MethodBody(compactSource, "private void CompactTitleBarConfigChanged("), StringComparison.Ordinal);
-        string overrideBody = MethodBody(compactSource, "protected override void UpdateRightMenuVisibility()");
-        Assert.Contains("CompactTitleBarLayout.Update(", overrideBody, StringComparison.Ordinal);
-        Assert.Contains("base.UpdateRightMenuVisibility()", overrideBody, StringComparison.Ordinal);
-        string layoutBody = MethodBody(ReadRepositoryText("ColorVision/Windowing/CompactTitleBarLayout.cs"), "internal static void Update(");
-        Assert.Contains("MeasureNaturalWidth(updateNotice)", layoutBody, StringComparison.Ordinal);
-        Assert.Contains("hasPendingUpdate", layoutBody, StringComparison.Ordinal);
-        Assert.DoesNotContain("updateNotice.Visibility == Visibility.Visible", layoutBody, StringComparison.Ordinal);
-        Assert.Contains("MeasureNaturalWidth(dragRegion)", layoutBody, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void OverflowStaysOptInAndHiddenPendingUpdatesRemainAccessible()
-    {
-        XDocument document = LoadMainWindow();
-        XElement overflow = Named(document, "CompactActionsOverflowButton");
-        XElement badge = Named(document, "CompactUpdateBadge");
-        Assert.Equal("Collapsed", (string?)overflow.Attribute("Visibility"));
-        Assert.Equal("Collapsed", (string?)badge.Attribute("Visibility"));
-        Assert.Equal("False", (string?)badge.Attribute("IsHitTestVisible"));
-        Assert.Contains(overflow.Descendants(), element => ReferenceEquals(element, badge));
-        Assert.Equal("3", (string?)overflow.Attribute("Panel.ZIndex"));
-        Assert.Equal("{DynamicResource GlobalBackground}", (string?)overflow.Attribute("Background"));
-        Assert.Null(overflow.Attribute("Click"));
-        Assert.NotNull(overflow.Attribute("AutomationProperties.Name"));
-        XElement actionStyle = document.Descendants().Single(element => (string?)element.Attribute(Xaml + "Key") == "MainWindowActionButtonStyle");
-        XElement focusBorder = actionStyle.Descendants().Single(element => element.Name.LocalName == "Trigger" && (string?)element.Attribute("Property") == "IsKeyboardFocused")
-            .Elements().Single(element => (string?)element.Attribute("Property") == "BorderBrush");
-        Assert.Equal("{DynamicResource PrimaryBrush}", (string?)focusBorder.Attribute("Value"));
-
-        List<XElement> actionTriggers = actionStyle.Descendants(Presentation + "ControlTemplate.Triggers").Single().Elements().ToList();
-        XElement inactiveTrigger = actionTriggers.Single(element => element.Name.LocalName == "DataTrigger");
-        Assert.Contains("IsActive", (string?)inactiveTrigger.Attribute("Binding"), StringComparison.Ordinal);
-        Assert.Contains("Window", (string?)inactiveTrigger.Attribute("Binding"), StringComparison.Ordinal);
-        Assert.Equal("False", (string?)inactiveTrigger.Attribute("Value"));
-        Assert.Equal("{DynamicResource TitleBarActionInactiveForeground}", (string?)inactiveTrigger.Elements().Single().Attribute("Value"));
-        foreach (string state in new[] { "IsMouseOver", "IsPressed", "IsKeyboardFocused" })
-        {
-            XElement trigger = actionTriggers.Single(element => (string?)element.Attribute("Property") == state);
-            XElement foreground = trigger.Elements().Single(element => (string?)element.Attribute("Property") == "Foreground");
-            Assert.Equal("{DynamicResource GlobalTextBrush}", (string?)foreground.Attribute("Value"));
-            Assert.True(actionTriggers.IndexOf(inactiveTrigger) < actionTriggers.IndexOf(trigger), "Direct interaction must take precedence over inactive-window dimming.");
-        }
-
-        string compactSource = ReadRepositoryText("ColorVision/CompactMainWindow.cs");
-        Assert.Contains("CompactActionsOverflowButton.Click += CompactActionsOverflowButton_Click",
-            MethodBody(compactSource, "public CompactMainWindow()"), StringComparison.Ordinal);
-        string closeBody = MethodBody(compactSource, "private void CloseCompactTitleBar(");
-        Assert.Contains("CompactActionsOverflowButton.Click -= CompactActionsOverflowButton_Click", closeBody, StringComparison.Ordinal);
-        Assert.Contains("CompactActionsOverflowButton.ContextMenu = null", closeBody, StringComparison.Ordinal);
-        string layoutBody = MethodBody(compactSource, "protected override void UpdateRightMenuVisibility()");
-        Assert.Contains("CombinedUpdateCoordinator.HasPendingStartupUpdate", layoutBody, StringComparison.Ordinal);
-        Assert.Contains("CompactUpdateBadge.Visibility", layoutBody, StringComparison.Ordinal);
-        Assert.Contains("AutomationProperties.SetName(CompactActionsOverflowButton", layoutBody, StringComparison.Ordinal);
-        Assert.Contains("UpdateNotificationButton.Content", layoutBody, StringComparison.Ordinal);
-        int fallbackReturn = layoutBody.IndexOf("return;", StringComparison.Ordinal);
-        Assert.Contains("inactiveMenu.IsOpen = false", layoutBody[..fallbackReturn], StringComparison.Ordinal);
-        string fullScreenBody = MethodBody(compactSource, "private void CompactTitleBarConfigChanged(");
-        int resumeBranch = fullScreenBody.IndexOf("else", StringComparison.Ordinal);
-        Assert.Contains("UpdateRightMenuVisibility();", fullScreenBody[..resumeBranch], StringComparison.Ordinal);
-        string clickBody = MethodBody(compactSource, "private void CompactActionsOverflowButton_Click(");
-        Assert.Contains("CompactTitleBarActions.CreateMenu(", clickBody, StringComparison.Ordinal);
-        Assert.Contains("CombinedUpdateCoordinator.HasPendingStartupUpdate", clickBody, StringComparison.Ordinal);
-        Assert.DoesNotContain("ConfigureButton(", ReadRepositoryText("ColorVision/MainWindow.xaml.cs"), StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void CompactMenuAlignmentIsOptInAndRestoresTheOriginalLayoutOnFallbackAndFullScreen()
-    {
-        XElement menu = Named(LoadMainWindow(), "Menu1");
-        Assert.Null(menu.Attribute("VerticalAlignment"));
-        Assert.Null(menu.Attribute("Margin"));
-        string source = ReadRepositoryText("ColorVision/CompactMainWindow.cs");
-        string constructor = MethodBody(source, "public CompactMainWindow()");
-        Assert.Contains("_ordinaryMenuMargin = Menu1.Margin", constructor, StringComparison.Ordinal);
-        Assert.Contains("_ordinaryMenuVerticalAlignment = Menu1.VerticalAlignment", constructor, StringComparison.Ordinal);
-        string alignBody = MethodBody(source, "private void SetCompactMenuAlignment(");
-        Assert.Contains("compact ? VerticalAlignment.Center : _ordinaryMenuVerticalAlignment", alignBody, StringComparison.Ordinal);
-        Assert.Contains("_ordinaryMenuMargin.Top + 4", alignBody, StringComparison.Ordinal);
-        Assert.Contains(": _ordinaryMenuMargin", alignBody, StringComparison.Ordinal);
-        Assert.DoesNotMatch(@"DockingManager1\.Margin\s*=", alignBody);
-        string attachBody = MethodBody(source, "private void AttachCompactTitleBar(");
-        Assert.Contains("SetCompactMenuAlignment(true)", attachBody, StringComparison.Ordinal);
-        Assert.Contains("SetCompactMenuAlignment(false)", attachBody[attachBody.IndexOf("catch", StringComparison.Ordinal)..], StringComparison.Ordinal);
-        string fullBody = MethodBody(source, "private void CompactTitleBarConfigChanged(");
-        Assert.Contains("SetCompactMenuAlignment(false)", fullBody, StringComparison.Ordinal);
-        Assert.Contains("SetCompactMenuAlignment(_compactTitleBar?.IsAttached == true)", fullBody, StringComparison.Ordinal);
-        Assert.DoesNotContain("SetCompactMenuAlignment", ReadRepositoryText("ColorVision/MainWindow.xaml.cs"), StringComparison.Ordinal);
-    }
-
     [Theory]
     [InlineData(32)]
     [InlineData(40)]
     [InlineData(48)]
-    public void CompactMenuCenterMovesDownTwoDipsWithoutMovingTheWorkspaceBoundary(double headerHeight)
+    public void CompactMenuAndUpdateNoticeShareTheSameTwoDipOpticalCenter(double headerHeight)
     {
         WpfTestHost.Invoke(() =>
         {
             var fixture = CreateSyntheticHeader();
             fixture.Menu.Items.Add(new MenuItem { Header = "文件(_F)" });
+            fixture.Update.Visibility = Visibility.Visible;
             fixture.Header.Width = 1000;
             fixture.Header.Height = headerHeight;
             Thickness originalMargin = fixture.Menu.Margin;
             VerticalAlignment originalAlignment = fixture.Menu.VerticalAlignment;
+            Thickness originalUpdateMargin = fixture.Update.Margin;
+            VerticalAlignment originalUpdateAlignment = fixture.Update.VerticalAlignment;
             foreach (bool compact in new[] { true, false, true, false })
             {
-                fixture.Menu.SetCurrentValue(FrameworkElement.VerticalAlignmentProperty, compact ? VerticalAlignment.Center : originalAlignment);
-                fixture.Menu.SetCurrentValue(FrameworkElement.MarginProperty, compact
-                    ? new Thickness(originalMargin.Left, originalMargin.Top + 4, originalMargin.Right, originalMargin.Bottom) : originalMargin);
+                CompactTitleBarLayout.SetOpticalAlignment(fixture.Menu, compact, originalMargin, originalAlignment);
+                CompactTitleBarLayout.SetOpticalAlignment(fixture.Update, compact, originalUpdateMargin, originalUpdateAlignment);
                 fixture.Header.Measure(new Size(1000, headerHeight));
                 fixture.Header.Arrange(new Rect(0, 0, 1000, headerHeight));
                 fixture.Header.UpdateLayout();
@@ -341,17 +199,32 @@ public sealed class CompactTitleBarIntegrationContractTests
                 if (compact)
                 {
                     Point menuTop = fixture.Menu.TranslatePoint(new Point(), fixture.Header);
+                    Point updateTop = fixture.Update.TranslatePoint(new Point(), fixture.Header);
                     Assert.Equal(headerHeight / 2 + 2, menuTop.Y + fixture.Menu.ActualHeight / 2, 3);
+                    Assert.Equal(headerHeight / 2 + 2, updateTop.Y + fixture.Update.ActualHeight / 2, 3);
                     Assert.InRange(menuTop.Y, 0, headerHeight);
                     Assert.True(menuTop.Y + fixture.Menu.ActualHeight <= headerHeight);
+                    Assert.InRange(updateTop.Y, 0, headerHeight);
+                    Assert.True(updateTop.Y + fixture.Update.ActualHeight <= headerHeight);
                 }
                 else
                 {
                     Assert.Equal(originalMargin, fixture.Menu.Margin);
                     Assert.Equal(originalAlignment, fixture.Menu.VerticalAlignment);
+                    Assert.Equal(originalUpdateMargin, fixture.Update.Margin);
+                    Assert.Equal(originalUpdateAlignment, fixture.Update.VerticalAlignment);
                 }
             }
         });
+    }
+
+    [Fact]
+    public void CompactTitleBarOmitsTheSoftwareIcon()
+    {
+        XDocument document = LoadMainWindow();
+
+        Assert.Empty(document.Descendants().Where(element =>
+            (string?)element.Attribute(Xaml + "Name") == "CompactWindowIcon"));
     }
 
     [Fact]
@@ -359,9 +232,8 @@ public sealed class CompactTitleBarIntegrationContractTests
     {
         WpfTestHost.Invoke(() =>
         {
-            (Border header, Border drag, StackPanel tools, Image icon, Menu menu, Button update, Button overflow) = CreateSyntheticHeader();
+            (Border header, Border drag, StackPanel tools, Menu menu, Button update, Button overflow) = CreateSyntheticHeader();
             drag.Visibility = Visibility.Visible;
-            icon.Visibility = Visibility.Visible;
             header.MinHeight = 32;
             header.Width = 1000;
             menu.Margin = new Thickness(0, 4, 0, 0);
@@ -380,7 +252,7 @@ public sealed class CompactTitleBarIntegrationContractTests
             void UpdateHeaderLayout()
             {
                 Assert.True(++layoutUpdates <= 256, "Auto-sized controls must not feed continuous size changes back into measurement.");
-                CompactTitleBarLayout.Update(header, menu, tools, update, icon, drag, overflow, hasPendingUpdate);
+                CompactTitleBarLayout.Update(header, menu, tools, update, drag, overflow, hasPendingUpdate);
             }
             SizeChangedEventHandler sizeChanged = (_, _) => UpdateHeaderLayout();
             header.SizeChanged += sizeChanged;
@@ -693,7 +565,6 @@ public sealed class CompactTitleBarIntegrationContractTests
             fixture.Header.Width = 1000;
             fixture.Header.Height = 40;
             fixture.Drag.Visibility = Visibility.Visible;
-            fixture.Icon.Visibility = Visibility.Visible;
             fixture.Menu.Items.Add(new MenuItem { Header = "File" });
             var action = MainWindow.CreateRightMenuButton(new MenuItemMetadata { Header = "Account", Icon = new TextBlock { Text = "A" } });
             CompactTitleBarActions.ConfigureButton(action, (Style)fixture.Header.FindResource("CompactTitleBarActionButtonStyle"));
@@ -702,7 +573,7 @@ public sealed class CompactTitleBarIntegrationContractTests
             fixture.Header.Measure(new Size(1000, 40));
             fixture.Header.Arrange(new Rect(0, 0, 1000, 40));
             CompactTitleBarLayout.Update(fixture.Header, fixture.Menu, fixture.Tools, fixture.Update,
-                fixture.Icon, fixture.Drag, fixture.Overflow, hasPendingUpdate: true);
+                fixture.Drag, fixture.Overflow, hasPendingUpdate: true);
             fixture.Header.Measure(new Size(1000, 40));
             fixture.Header.Arrange(new Rect(0, 0, 1000, 40));
             fixture.Header.UpdateLayout();
@@ -723,56 +594,10 @@ public sealed class CompactTitleBarIntegrationContractTests
         });
     }
 
-    [Fact]
-    public void HeaderDoesNotPaintOverNativeButtonsOrRecreateSystemCaptionCommands()
-    {
-        XDocument document = LoadMainWindow();
-        Assert.Null(Named(document, "Root").Attribute("Background"));
-        Assert.Null(Named(document, "TopBarGrid").Attribute("Background"));
-        Assert.Equal("Collapsed", (string?)Named(document, "CompactWindowIcon").Attribute("Visibility"));
-
-        string[] nativeCommands = ["CloseWindowCommand", "MinimizeWindowCommand", "MaximizeWindowCommand", "RestoreWindowCommand"];
-        Assert.DoesNotContain(Named(document, "TopBarGrid").DescendantsAndSelf().Attributes(),
-            attribute => nativeCommands.Any(command => attribute.Value.Contains(command, StringComparison.Ordinal)));
-    }
-
-    [Fact]
-    public void PackageIconLoaderIsSharedAndDoesNotApplyNativeCaptionStyling()
-    {
-        MethodInfo loader = Assert.IsAssignableFrom<MethodInfo>(typeof(ThemeManagerExtensions).GetMethod(
-            nameof(ThemeManagerExtensions.TryLoadPackageIcon), BindingFlags.Public | BindingFlags.Static));
-        Assert.Equal(typeof(BitmapImage), loader.ReturnType);
-        Assert.Equal(typeof(Window), Assert.Single(loader.GetParameters()).ParameterType);
-
-        string source = ReadRepositoryText("UI/ColorVision.Themes/ThemeManagerExtensions.cs");
-        string loaderBody = MethodBody(source, "public static BitmapImage? TryLoadPackageIcon(");
-        Assert.Contains("BitmapCacheOption.OnLoad", loaderBody, StringComparison.Ordinal);
-        Assert.Contains("image.Freeze()", loaderBody, StringComparison.Ordinal);
-        Assert.Contains("PackageIcon.png", loaderBody, StringComparison.Ordinal);
-        Assert.DoesNotContain("DwmSetWindowAttribute", loaderBody, StringComparison.Ordinal);
-        Assert.DoesNotContain("SetWindowTitleBarColor", loaderBody, StringComparison.Ordinal);
-        Assert.DoesNotContain("ApplyCaption", loaderBody, StringComparison.Ordinal);
-        Assert.Contains("TryLoadPackageIcon(window)", MethodBody(source, "public static void ApplyCaption("), StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void CompactWindowLoadsPackageIconOnceAndThemeChangesUseTheCachedImage()
-    {
-        string source = ReadRepositoryText("ColorVision/CompactMainWindow.cs");
-        Assert.Equal(1, Regex.Matches(source, @"ThemeManagerExtensions\.TryLoadPackageIcon\(").Count);
-        Assert.Contains("_compactTitleBarPackageIcon = ThemeManagerExtensions.TryLoadPackageIcon(this)",
-            MethodBody(source, "private void AttachCompactTitleBar("), StringComparison.Ordinal);
-        string themeBody = MethodBody(source, "private void ApplyCompactTitleBarTheme(");
-        Assert.Contains("if (_compactTitleBarPackageIcon != null)", themeBody, StringComparison.Ordinal);
-        Assert.Contains("Icon = _compactTitleBarPackageIcon", themeBody, StringComparison.Ordinal);
-        Assert.DoesNotContain("TryLoadPackageIcon", themeBody, StringComparison.Ordinal);
-        Assert.DoesNotContain("File.", themeBody, StringComparison.Ordinal);
-    }
-
     private static XElement Named(XDocument document, string name)
         => Assert.Single(document.Descendants(), element => (string?)element.Attribute(Xaml + "Name") == name);
 
-    private static (Border Header, Border Drag, StackPanel Tools, Image Icon, Menu Menu, Button Update, Button Overflow) CreateSyntheticHeader()
+    private static (Border Header, Border Drag, StackPanel Tools, Menu Menu, Button Update, Button Overflow) CreateSyntheticHeader()
     {
         // Use the real header and button templates without constructing MainWindow or its services.
         XDocument document = LoadMainWindow();
@@ -789,8 +614,6 @@ public sealed class CompactTitleBarIntegrationContractTests
         XElement overflowMarkup = markup.Descendants().Single(element => (string?)element.Attribute(Xaml + "Name") == "CompactActionsOverflowButton");
         overflowMarkup.SetAttributeValue("ToolTip", "More actions");
         overflowMarkup.SetAttributeValue("AutomationProperties.Name", "More actions");
-        XElement iconMarkup = markup.Descendants().Single(element => (string?)element.Attribute(Xaml + "Name") == "CompactWindowIcon");
-        iconMarkup.Attribute("Source")!.Remove();
         var header = Assert.IsType<Border>(XamlReader.Parse(markup.ToString()));
         header.Resources["GlobalBackground"] = Brushes.White;
         header.Resources["BorderBrush"] = Brushes.Black;
@@ -799,7 +622,7 @@ public sealed class CompactTitleBarIntegrationContractTests
         header.Resources["TitleBarActionInactiveForeground"] = Brushes.Gray;
         Assert.IsType<DockPanel>(header.Child);
         return (header, Assert.IsType<Border>(header.FindName("CompactDragRegion")),
-            Assert.IsType<StackPanel>(header.FindName("RightMenuItemPanel")), Assert.IsType<Image>(header.FindName("CompactWindowIcon")),
+            Assert.IsType<StackPanel>(header.FindName("RightMenuItemPanel")),
             Assert.IsType<Menu>(header.FindName("Menu1")), Assert.IsType<Button>(header.FindName("UpdateNotificationButton")),
             Assert.IsType<Button>(header.FindName("CompactActionsOverflowButton")));
     }
@@ -843,22 +666,4 @@ public sealed class CompactTitleBarIntegrationContractTests
     private static XDocument LoadMainWindow([CallerFilePath] string sourcePath = "")
         => XDocument.Load(Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourcePath)!, "..", "..", "ColorVision", "MainWindow.xaml")));
 
-    private static string ReadRepositoryText(string repositoryPath, [CallerFilePath] string sourcePath = "")
-        => File.ReadAllText(Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourcePath)!, "..", "..", repositoryPath)));
-
-    private static string MethodBody(string source, string declaration)
-    {
-        int declarationIndex = source.IndexOf(declaration, StringComparison.Ordinal);
-        Assert.True(declarationIndex >= 0, $"Method declaration not found: {declaration}");
-        int openingBrace = source.IndexOf('{', declarationIndex);
-        Assert.True(openingBrace >= 0);
-        int depth = 0;
-        for (int index = openingBrace; index < source.Length; index++)
-        {
-            if (source[index] == '{') depth++;
-            if (source[index] == '}' && --depth == 0)
-                return source[(openingBrace + 1)..index];
-        }
-        throw new InvalidOperationException($"Method body not found: {declaration}");
-    }
 }

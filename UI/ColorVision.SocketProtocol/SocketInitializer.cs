@@ -1,12 +1,10 @@
 ﻿using ColorVision.UI;
-using log4net;
 
 namespace ColorVision.SocketProtocol
 {
 
     public class SocketInitializer : InitializerBase
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(SocketInitializer));
         private readonly SocketConfig? _config;
         private readonly Func<SocketManager>? _getManager;
 
@@ -29,7 +27,6 @@ namespace ColorVision.SocketProtocol
             Func<SocketManager> getManager = _getManager ?? SocketManager.GetInstance;
             if (config.IsServerEnabled)
             {
-                log.Info("启动通讯协议");
                 getManager().StartServer();
             }
             config.ServerEnabledChanged += (s, e) =>

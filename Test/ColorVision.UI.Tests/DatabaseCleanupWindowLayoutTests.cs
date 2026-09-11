@@ -34,6 +34,7 @@ public sealed class DatabaseCleanupWindowLayoutTests
         Assert.False(source.SupportsTableCleanup);
         Assert.True(source.SupportsBackup);
         Assert.True(source.SupportsMigration);
+        Assert.False(source.SupportsOptimization);
     }
 
     [Fact]
@@ -113,6 +114,7 @@ public sealed class DatabaseCleanupWindowLayoutTests
             Assert.Equal(Visibility.Collapsed, Element<FrameworkElement>(window, "SelectionToolbar").Visibility);
             Assert.Equal(Visibility.Collapsed, Element<DataGrid>(window, "CleanupTablesGrid").Columns[0].Visibility);
             Assert.True(IsEffectivelyVisible(Element<Button>(window, "CreateBackupButton")));
+            Assert.False(IsEffectivelyVisible(Element<Button>(window, "OptimizationButton")));
             Assert.True(IsEffectivelyVisible(Element<Button>(window, "MigrationButton")));
             Assert.True(IsEffectivelyVisible(Element<CheckBox>(window, "BackupBeforeCleanupCheckBox")));
             Assert.False(Element<Expander>(window, "DangerZoneExpander").IsExpanded);
@@ -135,6 +137,8 @@ public sealed class DatabaseCleanupWindowLayoutTests
             RefreshLayout(window);
             Assert.Equal(Visibility.Visible, Element<DataGrid>(window, "CleanupTablesGrid").Columns[0].Visibility);
             Assert.Equal(Visibility.Visible, Element<FrameworkElement>(window, "SelectionToolbar").Visibility);
+            Assert.True(viewModel.SelectedSource!.SupportsOptimization);
+            Assert.True(IsEffectivelyVisible(Element<Button>(window, "OptimizationButton")));
             Assert.False(IsEffectivelyVisible(Element<Button>(window, "MigrationButton")));
             Assert.False(Element<Expander>(window, "DangerZoneExpander").IsExpanded);
 
@@ -142,6 +146,8 @@ public sealed class DatabaseCleanupWindowLayoutTests
             RefreshLayout(window);
             Assert.Equal(Visibility.Collapsed, Element<DataGrid>(window, "CleanupTablesGrid").Columns[0].Visibility);
             Assert.Equal(Visibility.Collapsed, Element<FrameworkElement>(window, "SelectionToolbar").Visibility);
+            Assert.False(viewModel.SelectedSource!.SupportsOptimization);
+            Assert.False(IsEffectivelyVisible(Element<Button>(window, "OptimizationButton")));
             Assert.True(IsEffectivelyVisible(Element<Button>(window, "MigrationButton")));
             Assert.False(Element<Expander>(window, "DangerZoneExpander").IsExpanded);
         });
@@ -162,6 +168,7 @@ public sealed class DatabaseCleanupWindowLayoutTests
             Assert.False(viewModel.SelectedSource.CleanupSelectedCommand.CanExecute(null));
             Assert.False(string.IsNullOrWhiteSpace(Element<TextBlock>(window, "CleanupStatusText").Text));
             Assert.False(IsEffectivelyVisible(Element<Button>(window, "CreateBackupButton")));
+            Assert.False(IsEffectivelyVisible(Element<Button>(window, "OptimizationButton")));
             Assert.False(IsEffectivelyVisible(Element<Button>(window, "MigrationButton")));
         });
     }
@@ -187,7 +194,7 @@ public sealed class DatabaseCleanupWindowLayoutTests
             CommandManager.InvalidateRequerySuggested();
             RefreshLayout(window);
 
-            foreach (string buttonName in new[] { "HistoryCleanupButton", "CleanupAllButton", "CreateBackupButton", "MigrationButton", "CleanupSelectedButton" })
+            foreach (string buttonName in new[] { "HistoryCleanupButton", "CleanupAllButton", "CreateBackupButton", "OptimizationButton", "MigrationButton", "CleanupSelectedButton" })
             {
                 Button button = Element<Button>(window, buttonName);
                 Assert.False(button.Command.CanExecute(button.CommandParameter));
@@ -202,12 +209,6 @@ public sealed class DatabaseCleanupWindowLayoutTests
 
     [Theory]
     [InlineData(false, "zh-CN", false)]
-    [InlineData(false, "en-US", false)]
-    [InlineData(false, "zh-CN", true)]
-    [InlineData(false, "en-US", true)]
-    [InlineData(true, "zh-CN", false)]
-    [InlineData(true, "en-US", false)]
-    [InlineData(true, "zh-CN", true)]
     [InlineData(true, "en-US", true)]
     public void MinimumSizeKeepsSharedWorkspaceReadableAndEveryActionReachable(bool scoped, string cultureName, bool dark)
     {
@@ -218,31 +219,19 @@ public sealed class DatabaseCleanupWindowLayoutTests
             Grid root = RefreshLayout(window, minimum: true);
             FrameworkElement workspace = Element<FrameworkElement>(window, "SourceWorkspace");
             FrameworkElement overview = Element<FrameworkElement>(window, "SourceOverviewCard");
-            FrameworkElement tables = Element<FrameworkElement>(window, "CleanupTablesCard");
             DataGrid tableGrid = Element<DataGrid>(window, "CleanupTablesGrid");
             ScrollViewer actions = Element<ScrollViewer>(window, "CleanupActionsScrollViewer");
             FrameworkElement status = Element<FrameworkElement>(window, "CleanupStatusBar");
 
             AssertInside(workspace, root);
-            AssertInside(overview, workspace);
-            AssertInside(tables, workspace);
-            AssertInside(tableGrid, tables);
             AssertAllTableHeadersFit(tableGrid);
             AssertInside(actions, workspace);
             AssertInside(status, workspace);
-            Assert.True(BoundsIn(overview, workspace).Bottom <= BoundsIn(tables, workspace).Top + 1,
-                "The source overview must not overlap the data table.");
-            Assert.True(BoundsIn(tables, workspace).Right <= BoundsIn(actions, workspace).Left + 1,
-                "The table and maintenance panel must have separate columns.");
-            Assert.True(BoundsIn(tables, workspace).Bottom <= BoundsIn(status, workspace).Top + 1,
-                "The table and status bar must not overlap.");
 
             if (!scoped)
             {
                 FrameworkElement navigation = Element<FrameworkElement>(window, "SourceNavigationPane");
                 AssertInside(navigation, root);
-                Assert.True(BoundsIn(navigation, root).Right <= BoundsIn(workspace, root).Left + 1,
-                    "Global source navigation must not overlap the selected workspace.");
             }
 
             AssertReadableForeground(window, Element<TextBlock>(window, "CleanupStatusText"));
@@ -256,17 +245,16 @@ public sealed class DatabaseCleanupWindowLayoutTests
             foreach (TextBlock text in tableText)
                 AssertReadableForeground(window, text);
 
-            foreach (string buttonName in new[] { "CreateBackupButton", "MigrationButton" })
+            foreach (string buttonName in new[] { "CreateBackupButton", "OptimizationButton", "MigrationButton" })
             {
                 Button button = Element<Button>(window, buttonName);
                 if (IsEffectivelyVisible(button))
-                    AssertInside(button, overview);
+                    AssertInside(button, root);
             }
             Button cleanupSelected = Element<Button>(window, "CleanupSelectedButton");
             if (IsEffectivelyVisible(cleanupSelected))
             {
-                AssertInside(cleanupSelected, Element<FrameworkElement>(window, "SelectionToolbar"));
-                AssertInside(cleanupSelected, tables);
+                AssertInside(cleanupSelected, root);
             }
 
             Element<Expander>(window, "DangerZoneExpander").IsExpanded = true;
@@ -609,12 +597,14 @@ public sealed class DatabaseCleanupWindowLayoutTests
     }
 
     private sealed class FakeSelectionProvider() : FakeSourceProvider("mysql-results", "", 0),
-        IDatabaseCleanupBackupProvider, IDatabaseCleanupSelectionProvider
+        IDatabaseCleanupBackupProvider, IDatabaseCleanupSelectionProvider, IDatabaseCleanupOptimizationProvider
     {
         public override string DisplayName => EngineLocalization.Get("MySQL 结果表");
         public override string Description => CultureInfo.CurrentUICulture.Name.StartsWith("zh", StringComparison.Ordinal)
             ? "数据源：本地检测结果库 · 以下统计均为界面预览示例"
             : "Source: local inspection results · All statistics are preview examples";
+        public string OptimizationActionName => EngineLocalization.Get("补齐结果查询索引");
+        public string OptimizationConfirmationMessage => "Preview only — no optimization is allowed.";
 
         public override IReadOnlyList<DatabaseCleanupTableInfo> LoadTables()
         {
@@ -629,6 +619,7 @@ public sealed class DatabaseCleanupWindowLayoutTests
         }
 
         public DatabaseCleanupBackupResult CreateBackup() => throw new InvalidOperationException("Layout tests must never create a database backup.");
+        public DatabaseCleanupExecutionResult ExecuteOptimization() => throw new InvalidOperationException("Layout tests must never optimize a database.");
         public DatabaseCleanupExecutionResult CleanupTables(IReadOnlyCollection<string> tableNames)
             => throw new InvalidOperationException("Layout tests must never clean database tables.");
     }

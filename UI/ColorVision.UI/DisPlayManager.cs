@@ -100,6 +100,9 @@ namespace ColorVision.UI
                 if (e.ChangedButton != MouseButton.Left)
                     return;
 
+                if (DisplayPinButton.IsPinInput(e.OriginalSource as DependencyObject))
+                    return;
+
                 manager.ActiveView(viewControl);
                 e.Handled = true;
             };
@@ -123,6 +126,7 @@ namespace ColorVision.UI
         public static DisPlayManagerConfig Instance => ConfigService.Instance.GetRequiredService<DisPlayManagerConfig>();
 
         public Dictionary<string, int> StoreIndex { get; set; } = new Dictionary<string, int>();
+        public HashSet<string> PinnedControls { get; set; } = new();
         public Dictionary<string, string> ControlGroups { get; set; } = new Dictionary<string, string>();
         public ObservableCollection<DisPlayGroupConfig> Groups { get; set; } = new ObservableCollection<DisPlayGroupConfig>();
 
@@ -137,6 +141,7 @@ namespace ColorVision.UI
         private static DisPlayManager _instance;
         private static readonly object _locker = new();
         public static DisPlayManager GetInstance() { lock (_locker) { return _instance ??= new DisPlayManager(); } }
+        public static ICommand CreateGroupCommand { get; } = new RelayCommand(_ => GetInstance().CreateGroup());
         public ObservableCollection<IDisPlayControl> IDisPlayControls { get; private set; }
         private const string DragDataFormat = "ColorVision.UI.DisPlayControl";
         private static readonly TimeSpan DisplayDragPressDelay = TimeSpan.FromMilliseconds(260);
@@ -249,6 +254,7 @@ namespace ColorVision.UI
         {
             var config = DisPlayManagerConfig.Instance;
             config.StoreIndex ??= new Dictionary<string, int>();
+            config.PinnedControls ??= new HashSet<string>();
             config.ControlGroups ??= new Dictionary<string, string>();
             config.Groups ??= new ObservableCollection<DisPlayGroupConfig>();
         }
@@ -320,6 +326,10 @@ namespace ColorVision.UI
             if (groupCompare != 0)
                 return groupCompare;
 
+            int pinCompare = IsPinned(b).CompareTo(IsPinned(a));
+            if (pinCompare != 0)
+                return pinCompare;
+
             int indexCompare = GetStoredIndex(a).CompareTo(GetStoredIndex(b));
             if (indexCompare != 0)
                 return indexCompare;
@@ -327,13 +337,33 @@ namespace ColorVision.UI
             return string.Compare(a.DisPlayName, b.DisPlayName, StringComparison.OrdinalIgnoreCase);
         }
 
-        private List<IDisPlayControl> GetControlsInGroup(string groupId)
+        private List<IDisPlayControl> GetControlsInGroup(string groupId, bool applyPins = true)
         {
             return IDisPlayControls
                 .Where(a => GetGroupKey(a) == groupId)
-                .OrderBy(GetStoredIndex)
-                .ThenBy(a => a.DisPlayName)
+                .OrderBy(a => applyPins && IsPinned(a) ? 0 : 1)
+                .ThenBy(GetStoredIndex)
+                .ThenBy(a => a.DisPlayName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
+        }
+
+        public static bool IsPinned(IDisPlayControl control) =>
+            DisPlayManagerConfig.Instance.PinnedControls?.Contains(control.DisPlayName) == true;
+
+        public void SetPinned(IDisPlayControl control, bool pinned)
+        {
+            if (!IDisPlayControls.Contains(control))
+                return;
+
+            EnsureConfigCollections();
+            bool changed = pinned
+                ? DisPlayManagerConfig.Instance.PinnedControls.Add(control.DisPlayName)
+                : DisPlayManagerConfig.Instance.PinnedControls.Remove(control.DisPlayName);
+            if (!changed)
+                return;
+
+            ArrangeCollectionByConfig();
+            RebuildPanel();
         }
 
         private void RebuildPanel()
@@ -366,8 +396,6 @@ namespace ColorVision.UI
                     StackPanel.Children.Add(section);
                 }
             }
-
-            StackPanel.Children.Add(CreateGroupManagerFooter());
         }
 
         private void DetachDisplayControlsFromParents()
@@ -561,45 +589,6 @@ namespace ColorVision.UI
             return contextMenu;
         }
 
-        private Border CreateGroupManagerFooter()
-        {
-            var border = new Border
-            {
-                Margin = new Thickness(0, 2, 3, 2),
-                Padding = new Thickness(4, 3, 2, 3),
-                BorderThickness = new Thickness(0, 1, 0, 0)
-            };
-            border.SetResourceReference(Border.BorderBrushProperty, "GlobalBorderBrush");
-
-            var dockPanel = new DockPanel();
-            border.Child = dockPanel;
-
-            var button = new Button
-            {
-                Content = "+ 分组",
-                MinWidth = 56,
-                Height = 22,
-                HorizontalAlignment = HorizontalAlignment.Right
-            };
-            button.SetResourceReference(FrameworkElement.StyleProperty, "ButtonDefault.Small");
-            button.Click += (s, e) => CreateGroup();
-            DockPanel.SetDock(button, Dock.Right);
-            dockPanel.Children.Add(button);
-
-            int groupCount = DisPlayManagerConfig.Instance.Groups.Count(a => !IsDefaultGroup(a.Id));
-            var textBlock = new TextBlock
-            {
-                Text = groupCount > 0 ? $"{groupCount} 个分组" : "分组",
-                FontSize = 12,
-                VerticalAlignment = VerticalAlignment.Center,
-                Opacity = 0.55
-            };
-            textBlock.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
-            dockPanel.Children.Add(textBlock);
-
-            return border;
-        }
-
         private void AddDisplayControl(StackPanel panel, IDisPlayControl item)
         {
             if (item is not UserControl userControl)
@@ -618,7 +607,7 @@ namespace ColorVision.UI
             userControl.ContextMenuOpening += DisplayControl_ContextMenuOpening;
             userControl.Drop -= DisplayControl_Drop;
             userControl.Drop += DisplayControl_Drop;
-            userControl.Margin = new Thickness(userControl.Margin.Left, 1, userControl.Margin.Right, 1);
+            userControl.Margin = new Thickness(userControl.Margin.Left, 0, userControl.Margin.Right, 2);
             panel.Children.Add(userControl);
         }
 
@@ -774,13 +763,21 @@ namespace ColorVision.UI
             string oldGroupId = GetGroupKey(draggedControl);
             config.ControlGroups[displayName] = groupId;
 
-            var targetControls = GetControlsInGroup(groupId).Where(a => a.DisPlayName != displayName).ToList();
-            insertIndex = Math.Clamp(insertIndex, 0, targetControls.Count);
-            targetControls.Insert(insertIndex, draggedControl);
+            var visibleControls = GetControlsInGroup(groupId).Where(a => a.DisPlayName != displayName).ToList();
+            insertIndex = Math.Clamp(insertIndex, 0, visibleControls.Count);
+            // Translate the visible drop position back into the base order. Pinning
+            // must never bake the pinned partition into the saved field order.
+            bool pinned = IsPinned(draggedControl);
+            var next = visibleControls.Skip(insertIndex).FirstOrDefault(a => IsPinned(a) == pinned);
+            var previous = visibleControls.Take(insertIndex).LastOrDefault(a => IsPinned(a) == pinned);
+            var targetControls = GetControlsInGroup(groupId, applyPins: false).Where(a => a.DisPlayName != displayName).ToList();
+            int baseIndex = next != null ? targetControls.IndexOf(next)
+                : previous != null ? targetControls.IndexOf(previous) + 1 : targetControls.Count;
+            targetControls.Insert(baseIndex, draggedControl);
             UpdateGroupIndexes(targetControls);
 
             if (oldGroupId != groupId)
-                UpdateGroupIndexes(GetControlsInGroup(oldGroupId).ToList());
+                UpdateGroupIndexes(GetControlsInGroup(oldGroupId, applyPins: false));
 
             ArrangeCollectionByConfig();
             RebuildPanel();
@@ -803,6 +800,8 @@ namespace ColorVision.UI
             {
                 _suppressCollectionChanged = false;
             }
+            if (_selectedControl != null && IDisPlayControls.Contains(_selectedControl))
+                DisPlayManagerConfig.Instance.LastSelectIndex = IDisPlayControls.IndexOf(_selectedControl);
         }
 
         private void CreateGroup()
@@ -912,7 +911,7 @@ namespace ColorVision.UI
             ArrangeCollectionByConfig();
 
             foreach (var group in GetGroupsInOrder())
-                UpdateGroupIndexes(GetControlsInGroup(group.Id).ToList());
+                UpdateGroupIndexes(GetControlsInGroup(group.Id, applyPins: false));
 
             if (_isInitialized)
                 RebuildPanel();

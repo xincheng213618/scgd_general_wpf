@@ -4,14 +4,16 @@ knowledge_type: "topic"
 status: "current"
 summary: "光谱仪软件 Spectrum 的连接、标定、单次测量和 CSV 导出；标定状态与测量前文件复核、EQE 输入及独立 ZIP/cvxp 发布版本来源。"
 aliases: ["Spectrum 如何校准和发布","光谱测量结果不一致","Spectrum","Spectrum.bat","SpectrometerManager","SpectrumMeasurementResult","ViewResultManagerConfig","ViewResultSpectrum","SpectrumMeasurementProfile","光谱仪软件","连接光谱仪","单次测试","IsCalibrationReady","设备序列号未知，无法保存标定配置"]
-code_paths: ["Plugins/Spectrum/README.md","Plugins/Spectrum/Spectrum.csproj","Plugins/Spectrum/manifest.json","Plugins/Spectrum/App.xaml.cs","Plugins/Spectrum/MainWindow.xaml.cs","Plugins/Spectrum/MainWindow.xaml","Plugins/Spectrum/Properties/Resources.resx","Plugins/Spectrum/SpectrometerManager.cs","Plugins/Spectrum/Calibration/","Plugins/Spectrum/Configs/","Plugins/Spectrum/Data/","Plugins/Spectrum/Models/ViewResultSpectrum.cs","Plugins/Spectrum/SpectrumCsvExporter.cs","Plugins/Spectrum/DirectSpectrometer/","Plugins/Spectrum/Job/","Plugins/Spectrum/License/","Plugins/Spectrum/Update/","Scripts/Spectrum.bat","Scripts/build_spectrum.py"]
+code_paths: ["Plugins/Spectrum/README.md","Plugins/Spectrum/Spectrum.csproj","Plugins/Spectrum/manifest.json","Plugins/Spectrum/App.xaml.cs","Plugins/Spectrum/MainWindow.xaml.cs","Plugins/Spectrum/MainWindow.Chrome.cs","Plugins/Spectrum/MainWindow.PlotTheme.cs","Plugins/Spectrum/MainWindowConfig.cs","Plugins/Spectrum/Layout/","Plugins/Spectrum/MainWindow.xaml","Plugins/Spectrum/Properties/Resources.resx","Plugins/Spectrum/SpectrometerManager.cs","Plugins/Spectrum/Calibration/","Plugins/Spectrum/Configs/","Plugins/Spectrum/Data/","Plugins/Spectrum/Models/ViewResultSpectrum.cs","Plugins/Spectrum/SpectrumCsvExporter.cs","Plugins/Spectrum/DirectSpectrometer/","Plugins/Spectrum/Job/","Plugins/Spectrum/License/","Plugins/Spectrum/Update/","Scripts/Spectrum.bat","Scripts/build_spectrum.py"]
 test_paths: ["Test/Spectrum.Tests/Spectrum.Tests.csproj","Test/Spectrum.Tests/ViewResultSpectrumTests.cs","Test/Spectrum.Tests/SpectrumArchitectureBoundaryTests.cs","Test/Spectrum.Tests/SpectrumCalibrationStateTests.cs","Test/Spectrum.Tests/SpectrumCsvExporterTests.cs","Scripts/tests/test_build_spectrum.py"]
-related: ["plugins.index","plugins.capabilities","plugins.spectrum-socket"]
+related: ["plugins.index","plugins.capabilities","plugins.spectrum-socket","ui.documents","operations.main-window","ui.themes"]
 ---
 
 # Spectrum 插件
 
 Spectrum 提供光谱仪连接、标定分组、光谱测量、EQE 计算和结果导出。在 ColorVision 中从 **工具 → 光谱仪软件** 打开，也可运行完整独立包中的 `Spectrum.exe`；再次点击宿主菜单会激活已有窗口。
+
+Spectrum 窗口的 **帮助 → 关于 Spectrum** 打开光谱展示页 `Help/SpectrumAboutWindow.xaml`。它使用插件自身版本、固定不透明背景和窗口内深浅配色，展示扭转光谱环与粒子，不连接设备。`MenuSpectrumAbout` 继承 `SpectrumMenuIBase`，只加入 Spectrum 菜单。共享渲染、动画暂停与关闭释放约束见[关于窗口展示](../../ui-components/about-exhibition.md)。
 
 运行需要匹配的 Windows/x64 环境、ColorVision 公共库、原生 DLL、设备驱动、许可证和标定文件。项目与依赖以 `Spectrum.csproj`、`Plugins/Directory.Build.props` 为准，最低宿主要求见 `manifest.json`。连接、校零、快门、滤光轮、源表和测量会操作真实设备，以下步骤适用于已获授权的现场环境。
 
@@ -24,6 +26,16 @@ Spectrum 提供光谱仪连接、标定分组、光谱测量、EQE 计算和结�
 5. 在结果列表选中需要导出的记录，点击列表右上方的保存图标，选择 CSV 路径。没有选中记录会提示先选择数据；导出使用当前 Normal/EQE 模式的固定字段。
 
 连续测试在同一区域设置间隔与次数；远程调用见 [Spectrum Socket](./spectrum-socket.md)，定时调用见下文“Socket 和调度”。
+
+## 窗口与工作区
+
+Spectrum 使用与主程序相同的现代 AvalonDock 主题，资源与停靠控件由 `ColorVision.Solution/Themes` 统一维护；独立版通过项目引用随包携带该公共库及其传递依赖，不需要安装或启动 ColorVision 主程序。插件模式通过已加载主程序的 `ColorVision;component/Themes/` 资源入口装配主题，兼容资源尚未迁入公共库的已发布宿主 `1.4.14.23`；独立模式读取 `ColorVision.Solution;component/Themes/`。主题装配不直接引用新增的公共主题类型，避免宿主已加载旧版同名程序集时发生类型加载失败。manifest 最低宿主版本为 `1.4.14.23`。面板的停靠、浮动、自动隐藏和原有布局恢复入口保持可用。
+
+Windows build 22000 或更高版本固定尝试将菜单与原生最小化、最大化和关闭按钮合并到同一行，不再向设置发现公开独立开关；旧配置中的 `UseCompactTitleBar` 字段不再影响窗口选择。系统、DWM 或窗口条件不满足时保留原生标题栏。Spectrum 以源码链接复用主程序的 `CompactTitleBarChrome` 与可见性保护逻辑，不加载主程序可执行程序集；全屏时暂停紧凑外观，退出全屏后恢复。
+
+左侧控制分组使用公共分组标题、圆角面板和按钮样式，可单独折叠，折叠不改变设备连接或测量状态。默认控制区宽度为 360 DIP，底部日志高度为 180 DIP；已有保存布局继续恢复，使用重置布局才应用新的默认尺寸。曲线与结果列表之间的分隔条直接调整可用空间比例，结果工具栏为右侧操作预留独立列，查询等按钮在宽度不足时进入工具栏溢出菜单。
+
+相对和绝对光谱的背景、坐标、网格与图例跟随全局深浅主题；换主题只更新现有绘图颜色，不重建曲线、重置坐标范围或清除选择。光谱色条与测量曲线配色保留。外观事件在窗口关闭时解除，设备、标定、数据库和测量生命周期仍由各自原有入口管理。
 
 ## 先查什么
 

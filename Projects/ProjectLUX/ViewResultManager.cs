@@ -276,7 +276,11 @@ namespace ProjectLUX
                 IsAutoCloseConnection = true
             });
             // 确保表存在
-            _db.CodeFirst.InitTables<ProjectLUXReuslt, ObjectiveTestResultRecord>();
+            ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
+            {
+                _db.CodeFirst.InitTables<ProjectLUXReuslt, ObjectiveTestResultRecord>();
+                ResultJsonPayloadStorage.EnsureSchema(_db);
+            });
             LoadAll(Config.Count);
 
             try
@@ -353,8 +357,23 @@ namespace ProjectLUX
                 item.ImageHeight = height;
             }
 
-            int id = _db.Insertable(item).ExecuteReturnIdentity();
-            item.Id = id; // 更新ID
+            ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
+            {
+                int originalId = item.Id;
+                _db.Ado.BeginTran();
+                try
+                {
+                    item.Id = _db.Insertable(item).ExecuteReturnIdentity();
+                    ResultJsonPayloadStorage.SaveViewResultJson(_db, item.Id, item.ViewResultJson);
+                    _db.Ado.CommitTran();
+                }
+                catch
+                {
+                    _db.Ado.RollbackTran();
+                    item.Id = originalId;
+                    throw;
+                }
+            });
 
             if (Config.OrderByType == OrderByType.Desc)
             {
@@ -382,14 +401,14 @@ namespace ProjectLUX
             ArgumentNullException.ThrowIfNull(item);
             return ApplySavedImagePathUpdate(item, update, (savedResultImageFileName, savedSourceImageFileName) =>
             {
-                int updatedRows = _db.Updateable<ProjectLUXReuslt>()
+                int updatedRows = ResultJsonPayloadStorage.RunDatabaseMaintenance(() => _db.Updateable<ProjectLUXReuslt>()
                     .SetColumns(result => new ProjectLUXReuslt
                     {
                         SavedResultImageFileName = savedResultImageFileName,
                         SavedSourceImageFileName = savedSourceImageFileName,
                     })
                     .Where(result => result.Id == item.Id)
-                    .ExecuteCommand();
+                    .ExecuteCommand());
                 if (updatedRows != 1)
                     throw new InvalidOperationException($"未能更新结果图像路径：resultId={item.Id}, affectedRows={updatedRows}");
             });
@@ -429,20 +448,43 @@ namespace ProjectLUX
             if (result == null || objectiveTestResult == null) return currentRecordId;
 
             var record = ObjectiveTestResultRecord.Create(result, objectiveTestResult);
-            if (currentRecordId > 0)
+            return ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
             {
-                var oldRecord = _db.Queryable<ObjectiveTestResultRecord>().Where(x => x.Id == currentRecordId).First();
-                if (oldRecord != null)
+                _db.Ado.BeginTran();
+                try
                 {
-                    record.Id = currentRecordId;
-                    record.CreateTime = oldRecord.CreateTime;
-                    _db.Updateable(record).Where(x => x.Id == record.Id).ExecuteCommand();
+                    if (currentRecordId > 0)
+                    {
+                        var oldRecord = _db.Queryable<ObjectiveTestResultRecord>().InSingle(currentRecordId);
+                        if (oldRecord != null)
+                        {
+                            record.Id = currentRecordId;
+                            record.CreateTime = oldRecord.CreateTime;
+                        }
+                    }
+                    if (record.Id > 0)
+                        _db.Updateable(record).ExecuteCommand();
+                    else
+                        record.Id = _db.Insertable(record).ExecuteReturnIdentity();
+                    ResultJsonPayloadStorage.SaveObjectiveTestResultJson(_db, record.Id, record.ObjectiveTestResultJson);
+                    _db.Ado.CommitTran();
                     return record.Id;
                 }
-            }
+                catch
+                {
+                    _db.Ado.RollbackTran();
+                    throw;
+                }
+            });
+        }
 
-            record.Id = _db.Insertable(record).ExecuteReturnIdentity();
-            return record.Id;
+        public string? LoadViewResultJson(ProjectLUXReuslt item)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            if (item.ViewResultJson == null && item.Id > 0)
+                item.ViewResultJson = ResultJsonPayloadStorage.RunDatabaseMaintenance(
+                    () => ResultJsonPayloadStorage.LoadViewResultJson(_db, item.Id)) ?? string.Empty;
+            return item.ViewResultJson;
         }
 
         public List<ObjectiveTestResultRecord> QueryObjectiveTestResultRecords(string sn = null, int count = 100)
@@ -454,7 +496,14 @@ namespace ProjectLUX
             }
 
             query = query.OrderBy(x => x.Id, OrderByType.Desc);
-            return count > 0 ? query.Take(count).ToList() : query.ToList();
+            return ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
+            {
+                var records = count > 0 ? query.Take(count).ToList() : query.ToList();
+                ResultJsonPayloadStorage.LoadObjectiveTestResultJsons(_db, records);
+                foreach (var record in records)
+                    record.ObjectiveTestResultJson ??= string.Empty;
+                return records;
+            });
         }
 
         public void GenericQuery()

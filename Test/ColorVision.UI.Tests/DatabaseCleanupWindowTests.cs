@@ -63,6 +63,83 @@ public class DatabaseCleanupWindowTests
     }
 
     [Fact]
+    public void MySqlResultProvider_ExposesManualOptimizationCapability()
+    {
+        var provider = new MySqlResultCleanupProvider();
+
+        Assert.IsAssignableFrom<IDatabaseCleanupOptimizationProvider>(provider);
+    }
+
+    [Fact]
+    public void ResultIndexOptimization_CoversEveryRegisteredRelationshipAndSkipsMeasureBatch()
+    {
+        var definitions = MySqlResultCleanupProvider.GetOptimizationIndexDefinitions();
+
+        Assert.Equal(21, definitions.Count);
+        Assert.Equal(14, definitions.Count(definition => definition.ColumnName == "pid"));
+        Assert.Equal(7, definitions.Count(definition => definition.ColumnName == "batch_id"));
+        Assert.DoesNotContain(definitions, definition => definition.TableName == "t_scgd_measure_batch");
+        Assert.All(definitions, definition => Assert.True(definition.IndexName.Length <= 64));
+    }
+
+    [Fact]
+    public void ResultIndexOptimization_AcceptsOnlyBtreeIndexesWithRelationshipColumnFirst()
+    {
+        MySqlResultCleanupProvider.DatabaseIndexRow[] rows =
+        [
+            new() { IndexName = "idx_other", SeqInIndex = 1, ColumnName = "created_at", IndexType = "BTREE" },
+            new() { IndexName = "idx_other", SeqInIndex = 2, ColumnName = "pid", IndexType = "BTREE" },
+            new() { IndexName = "idx_hash", SeqInIndex = 1, ColumnName = "pid", IndexType = "HASH" },
+            new() { IndexName = "idx_composite", SeqInIndex = 1, ColumnName = "pid", IndexType = "BTREE" },
+            new() { IndexName = "idx_composite", SeqInIndex = 2, ColumnName = "result_type", IndexType = "BTREE" },
+        ];
+
+        Assert.Equal("idx_composite", MySqlResultCleanupProvider.FindEquivalentIndexName(rows, "pid"));
+        Assert.Null(MySqlResultCleanupProvider.FindEquivalentIndexName(rows, "batch_id"));
+    }
+
+    [Fact]
+    public void ResultIndexOptimization_RejectsAConflictingManagedIndexName()
+    {
+        var definition = new MySqlResultCleanupProvider.OptimizationIndexDefinition(
+            "t_scgd_measure_result_img", "batch_id", "idx_cv_batch_id");
+        MySqlResultCleanupProvider.DatabaseIndexRow[] rows =
+        [
+            new() { IndexName = "idx_cv_batch_id", SeqInIndex = 1, ColumnName = "create_date", IndexType = "BTREE" },
+        ];
+
+        Assert.Throws<InvalidOperationException>(() =>
+            MySqlResultCleanupProvider.EnsureTargetIndexNameAvailable(rows, definition));
+    }
+
+    [Fact]
+    public void ResultIndexOptimization_AcceptsItsManagedIndexOnRepeat()
+    {
+        var definition = new MySqlResultCleanupProvider.OptimizationIndexDefinition(
+            "t_scgd_measure_result_img", "batch_id", "idx_cv_batch_id");
+        MySqlResultCleanupProvider.DatabaseIndexRow[] rows =
+        [
+            new() { IndexName = "idx_cv_batch_id", SeqInIndex = 1, ColumnName = "batch_id", IndexType = "BTREE" },
+        ];
+
+        MySqlResultCleanupProvider.EnsureTargetIndexNameAvailable(rows, definition);
+        Assert.Equal("idx_cv_batch_id", MySqlResultCleanupProvider.FindEquivalentIndexName(rows, "batch_id"));
+    }
+
+    [Fact]
+    public void ResultIndexOptimization_DdlRequiresOnlineInplaceExecution()
+    {
+        var definition = new MySqlResultCleanupProvider.OptimizationIndexDefinition(
+            "t_scgd_measure_result_img", "batch_id", "idx_cv_batch_id");
+
+        string ddl = MySqlResultCleanupProvider.BuildOptimizationDdl("color_vision_4xx", definition);
+
+        Assert.Equal(
+            "ALTER TABLE `color_vision_4xx`.`t_scgd_measure_result_img` ADD INDEX `idx_cv_batch_id` (`batch_id`), ALGORITHM=INPLACE, LOCK=NONE;",
+            ddl);
+    }
+
+    [Fact]
     public void ExecuteBackupAndCleanup_UsesOptionalMaintenanceProviderAsOneCombination()
     {
         var provider = new TestMaintenanceProvider();
@@ -109,6 +186,7 @@ public class DatabaseCleanupWindowTests
         viewModel.SelectAllCommand.Execute(null);
 
         Assert.True(viewModel.SupportsBackup);
+        Assert.True(viewModel.SupportsOptimization);
         Assert.False(viewModel.BackupBeforeCleanup);
         viewModel.BackupBeforeCleanup = true;
         Assert.True(viewModel.BackupBeforeCleanup);
@@ -119,12 +197,15 @@ public class DatabaseCleanupWindowTests
         Assert.False(viewModel.Tables.Single(table => !table.Exists).IsSelected);
     }
 
-    private sealed class TestCleanupProvider : IDatabaseCleanupSourceProvider, IDatabaseCleanupSelectionProvider, IDatabaseCleanupBackupProvider
+    private sealed class TestCleanupProvider : IDatabaseCleanupSourceProvider, IDatabaseCleanupSelectionProvider,
+        IDatabaseCleanupBackupProvider, IDatabaseCleanupOptimizationProvider
     {
         public string Id => "test";
         public string DisplayName => "测试数据源";
         public string Description => "测试";
         public int Order => 0;
+        public string OptimizationActionName => "优化索引";
+        public string OptimizationConfirmationMessage => "测试不得执行优化。";
 
         public IReadOnlyList<DatabaseCleanupTableInfo> LoadTables()
         {
@@ -140,6 +221,7 @@ public class DatabaseCleanupWindowTests
         public DatabaseCleanupExecutionResult CleanupAll() => throw new NotSupportedException();
         public DatabaseCleanupExecutionResult CleanupTables(IReadOnlyCollection<string> tableNames) => throw new NotSupportedException();
         public DatabaseCleanupBackupResult CreateBackup() => throw new NotSupportedException();
+        public DatabaseCleanupExecutionResult ExecuteOptimization() => throw new NotSupportedException();
     }
 
     private sealed class TestMaintenanceProvider : IDatabaseCleanupBackupProvider, IDatabaseCleanupMaintenanceProvider

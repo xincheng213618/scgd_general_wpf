@@ -30,11 +30,13 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 - `ClearProperties` 清空文件路径、全部属性及分类记录，再触发 `Cleared`，不是只清 `ImageMetadata`。`ClearCommand` 本身只发 `Cleared` 通知，并不调用 `ClearProperties`；实际后果还取决于订阅者。
 - `Configs` 是另一份按精确 `Type` 缓存的 `IImageEditorConfig` 字典，`GetRequiredService<T>` 缺项时构造并缓存。`ClearProperties` 不清这份字典；它也不等于全局 `ConfigService` 的配置实例或保存入口。`Properties` 与分类记录标了 `JsonIgnore`，不能把临时属性写入当成已保存。
 
+`ImageViewConfig.Calibration` 是当前视图的独立标定状态，比例尺、尺子和参考网格从同一上下文读取。显示滤镜在构造时复制默认值，普通调整不回写默认；CVCIE 探针缓存于 `Configs`。设置的范围、保存和兼容契约见[图像设置](../../02-developer-guide/core-concepts/image-editor-settings-plan.md)。
+
 ### 关闭编辑服务也会改变图像文档
 
-`SetImageSource(source)` 使用视图的 `EnableEditorImageServices`，并启用默认图层控制器；三参入口 `(source, enableEditorImageServices, configureDefaultLayerController)` 可分别指定这两个行为。它总会先登记 `ImageSourceReplaced`、重置伪彩并清旧源，再检查/设置新像素源。`enableEditorImageServices=false` 主要关闭图层选择以及本次伪彩图像配置和默认图像校准应用，不会跳过文档版本推进、源替换、像素元数据、加载通知或状态栏刷新。不支持的像素格式可能在旧源已清除后抛出异常。
+`SetImageSource(source)` 使用视图的 `EnableEditorImageServices`，并启用默认图层控制器；三参入口 `(source, enableEditorImageServices, configureDefaultLayerController)` 可分别指定这两个行为。它总会先登记 `ImageSourceReplaced`、重置伪彩并清旧源，再检查/设置新像素源。`enableEditorImageServices=false` 主要关闭图层选择以及本次伪彩图像配置和当前视图标定应用，不会跳过文档版本推进、源替换、像素元数据、加载通知或状态栏刷新。不支持的像素格式可能在旧源已清除后抛出异常。
 
-伪彩由 `PseudoColorEditorTool` 持有 state/controller，并通过工具工厂查找；视图初始化时即创建这些工具。相机实时显示通过 `ImageView.RealtimePseudoColorService` 暴露的 `IRealtimePseudoColorService` 捕获不可变参数和 generation，并把已处理帧交还同一 controller。实时请求要求已有 `ViewBitmapSource`，第一帧仍由实时 presenter 建立基准源；发布前再次核对启用状态和 generation，状态变化后的旧 native 结果只释放、不覆盖当前画面。
+伪彩换图保留配色与自动范围偏好，关闭效果并重新计算图像相关范围；自动范围在新源赋值后计算。伪彩由 `PseudoColorEditorTool` 持有 state/controller，并通过工具工厂查找；视图初始化时即创建这些工具。相机实时显示通过 `ImageView.RealtimePseudoColorService` 暴露的 `IRealtimePseudoColorService` 捕获不可变参数和 generation，并把已处理帧交还同一 controller。实时请求要求已有 `ViewBitmapSource`，第一帧仍由实时 presenter 建立基准源；发布前再次核对启用状态和 generation，状态变化后的旧 native 结果只释放、不覆盖当前画面。
 
 ## 扩展发现、构造与刷新
 

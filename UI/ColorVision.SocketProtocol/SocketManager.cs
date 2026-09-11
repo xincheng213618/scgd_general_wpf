@@ -649,6 +649,7 @@ namespace ColorVision.SocketProtocol
                 byte[] buffer = settings.SocketBufferSize > 1024 ? new byte[settings.SocketBufferSize] : new byte[1024];
                 while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
                 {
+                    Stopwatch receiveTiming = Stopwatch.StartNew();
                     string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
                     // 创建接收消息记录并持久化
@@ -672,7 +673,21 @@ namespace ColorVision.SocketProtocol
                                 receivedMsg.MsgID = request?.MsgID;
 
                                 // 持久化接收消息
+                                double deserializeCompletedAt = receiveTiming.Elapsed.TotalMilliseconds;
                                 MessageManager.AddMessage(receivedMsg);
+                                double recordCompletedAt = receiveTiming.Elapsed.TotalMilliseconds;
+                                log.Info(JsonConvert.SerializeObject(new
+                                {
+                                    Event = "SocketReceiveDispatchTiming",
+                                    MessageId = receivedMsg.Id,
+                                    receivedMsg.EventName,
+                                    receivedMsg.MsgID,
+                                    ReceivedAt = receivedMsg.MessageTime,
+                                    DispatchRequestedAt = DateTime.Now,
+                                    DecodeAndDeserializeMs = Math.Round(deserializeCompletedAt, 3),
+                                    RecordMessageMs = Math.Round(recordCompletedAt - deserializeCompletedAt, 3),
+                                    ReceiveToDispatchMs = Math.Round(recordCompletedAt, 3),
+                                }));
 
                                 var response = JsonDispatcher.Dispatch(stream, request);
 

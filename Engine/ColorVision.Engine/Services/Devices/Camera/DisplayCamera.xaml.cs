@@ -212,7 +212,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public MQTTCamera DService { get => Device.DService; }
         public DisplayCameraConfig DisplayCameraConfig => Device.DisplayConfig;
 
-        public ViewCamera View { get; set; }
+        private ViewCamera _view;
+        public ViewCamera View
+        {
+            get { _view.EnsureInitialized(); return _view; }
+            set => _view = value;
+        }
         public string DisPlayName => Device.Config.Name;
 
         private readonly ObservableCollection<AutoExpTimeTemplateOption> _autoExpTimeTemplateOptions = new();
@@ -252,7 +257,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public DisplayCamera(DeviceCamera device)
         {
             Device = device;
-            View = Device.View;
+            View = Device.ViewShell;
             _localRealtimePipeline = new CameraRealtimeFramePipeline();
             _crossGuideProcessor = new VideoCrossGuideProcessor(HandleCrossGuideResult);
             _crossGuideOverlayVisual = new CrossGuideOverlayVisual();
@@ -265,7 +270,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _isInitialized = true;
 
             DataContext = Device;
-            this.AddViewConfig(View, DisPlayName);
+            this.AddViewConfig(Device.ViewShell, DisPlayName);
             EnsureTimedButtonOperations();
 
             UpdateCalibrationTemplates();
@@ -653,6 +658,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void RemoveLocalVideoRoiVisual(bool restoreImageEditMode)
         {
+            if (!Device.ViewShell.IsContentInitialized) return;
             var imageView = Device.View.ImageView;
             if (!imageView.Dispatcher.CheckAccess())
             {
@@ -764,6 +770,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void RemoveCrossGuideOverlay()
         {
+            if (!Device.ViewShell.IsContentInitialized) return;
             var imageView = Device.View.ImageView;
             if (!imageView.Dispatcher.CheckAccess())
             {
@@ -1831,6 +1838,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void SetLocalVideoPoiTemplateSupported(bool isSupported)
         {
+            if (!Device.ViewShell.IsContentInitialized && !Device.DisplayConfig.IsLocalVideoOpen) return;
             var imageView = Device.View.ImageView;
 
             void Apply()

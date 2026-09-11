@@ -180,7 +180,7 @@ namespace ProjectARVRPro.Process.DemuraAOI
         private static void SetPreviewFile(IProcessExecutionContext ctx)
         {
             if (!string.IsNullOrWhiteSpace(ctx.Result.FileName)) return;
-            string? fileName = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id).FirstOrDefault()?.FileUrl;
+            string? fileName = ctx.GetMeasureResults().FirstOrDefault()?.FileUrl;
             if (!string.IsNullOrWhiteSpace(fileName)) ctx.Result.FileName = fileName;
         }
     }

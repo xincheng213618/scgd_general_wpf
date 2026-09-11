@@ -1,12 +1,13 @@
 using ColorVision.Solution.Terminal;
 using ColorVision.Solution.Workspace;
+using ColorVision.UI;
 using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
-using ICSharpCode.AvalonEdit.Search;
 using Microsoft.Win32;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
+using System.ComponentModel;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -28,8 +29,14 @@ namespace ColorVision.Solution.Editor.AvalonEditor
 
         private DispatcherTimer? _foldingUpdateTimer;
         private AvalonEditorThemeController? _themeController;
+        private EditorTypingAssistance? _typingAssistance;
         private FoldingManager? _foldingManager;
-        private object? _foldingStrategy;
+        private IHighlightingDefinition? _highlightingDefinition;
+        private bool _foldingPending;
+        private CancellationTokenSource? _foldingCancellation;
+        private readonly EditorPreferences _preferences;
+        private readonly EditorIndentGuides _indentGuides = new();
+        private double _zoom = 1;
         private string? _currentFileName;
         private bool _isUpdatingHighlightingSelection;
         private bool _isFormatted;
@@ -43,7 +50,13 @@ namespace ColorVision.Solution.Editor.AvalonEditor
         public event EventHandler? DocumentStateChanged;
 
         public AvalonEditControll()
+            : this(ConfigService.Instance?.GetRequiredService<EditorPreferences>() ?? new EditorPreferences())
         {
+        }
+
+        internal AvalonEditControll(EditorPreferences preferences)
+        {
+            _preferences = preferences;
             InitializeComponent();
             InitializeEditor();
         }
@@ -70,14 +83,29 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             textEditor.TextChanged += TextEditor_TextChanged;
             UndoButton.CommandTarget = textEditor.TextArea;
             RedoButton.CommandTarget = textEditor.TextArea;
-            SearchPanel.Install(textEditor);
+            SearchBar.Initialize(textEditor);
+            textEditor.TextArea.TextView.BackgroundRenderers.Add(_indentGuides);
+            textEditor.Document.UndoStack.PropertyChanged += UndoStateChanged;
 
             _themeController = new AvalonEditorThemeController(textEditor);
+            _themeController.ColorsChanged += ThemeColorsChanged;
+            Minimap.Initialize(textEditor, () => _highlightingDefinition);
+            _typingAssistance = new EditorTypingAssistance(textEditor, _preferences, () => _highlightingDefinition?.Name);
+            SearchBar.MatchesChanged += SearchMatchesChanged;
             SetSyntaxHighlighting(null);
 
-            _foldingUpdateTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            _foldingUpdateTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(300) };
             _foldingUpdateTimer.Tick += FoldingUpdateTimer_Tick;
-            _foldingUpdateTimer.Start();
+            Loaded += Editor_Loaded;
+            Unloaded += Editor_Unloaded;
+            IsVisibleChanged += Editor_IsVisibleChanged;
+            PreviewMouseWheel += Editor_PreviewMouseWheel;
+            PropertyChangedEventManager.AddHandler(_preferences, PreferencesChanged, string.Empty);
+            DataContext = _preferences;
+            ApplyPreferences();
+            InstallContextMenu();
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (_, e) => { EditorDocumentService.TrySaveDocument(this); e.Handled = true; },
+                (_, e) => { e.CanExecute = CanSave && IsDirty; e.Handled = true; }));
 
             AddHandler(
                 Keyboard.PreviewKeyDownEvent,
@@ -129,6 +157,7 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             int targetLineNumber = Math.Clamp(lineNumber, 1, textEditor.Document.LineCount);
             var targetLine = textEditor.Document.GetLineByNumber(targetLineNumber);
             int targetColumn = Math.Clamp(columnNumber, 1, targetLine.Length + 1);
+            RememberNavigation();
             textEditor.TextArea.Caret.Offset = targetLine.Offset + targetColumn - 1;
             textEditor.ScrollToLine(targetLineNumber);
             textEditor.Focus();
@@ -168,24 +197,10 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             if (string.IsNullOrWhiteSpace(_currentFileName) || !File.Exists(_currentFileName))
                 return false;
 
+            ResetCodeNavigation();
             textEditor.Load(_currentFileName);
             string text = textEditor.Text;
             OriginalText = text;
-            if (IsJsonDocument(_currentFileName) && text.Length < 10000)
-            {
-                try
-                {
-                    textEditor.Text = JToken.Parse(text).ToString(Formatting.Indented);
-                }
-                catch (JsonReaderException)
-                {
-                    textEditor.Text = text;
-                }
-            }
-            else
-            {
-                textEditor.Text = text;
-            }
 
             ApplyFileSyntaxHighlighting();
             textEditor.Document.UndoStack.MarkAsOriginalFile();
@@ -211,13 +226,6 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             };
         }
 
-        private static bool IsJsonDocument(string filePath)
-        {
-            string extension = Path.GetExtension(filePath);
-            return extension.Equals(".json", StringComparison.OrdinalIgnoreCase)
-                || extension.Equals(".cvproj", StringComparison.OrdinalIgnoreCase);
-        }
-
         internal static bool IsPythonDocument(string? filePath)
         {
             string extension = Path.GetExtension(filePath ?? string.Empty);
@@ -227,8 +235,11 @@ namespace ColorVision.Solution.Editor.AvalonEditor
 
         private void SetSyntaxHighlighting(IHighlightingDefinition? highlightingDefinition, bool updateSelection = true)
         {
+            _typingAssistance?.Reset();
+            _highlightingDefinition = highlightingDefinition;
             _themeController?.SetHighlighting(highlightingDefinition);
             ConfigureFolding(highlightingDefinition);
+            Minimap.InvalidateDocument();
 
             if (updateSelection)
             {
@@ -238,6 +249,7 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             }
 
             highlightingComboBox.Text = highlightingDefinition?.Name ?? "纯文本";
+            ScheduleFoldings();
         }
 
         private void HighlightingComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -250,29 +262,16 @@ namespace ColorVision.Solution.Editor.AvalonEditor
 
         private void ConfigureFolding(IHighlightingDefinition? highlightingDefinition)
         {
-            switch (highlightingDefinition?.Name)
-            {
-                case "XML":
-                    _foldingStrategy = new XmlFoldingStrategy();
-                    textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.DefaultIndentationStrategy();
-                    break;
-                case "C#":
-                case "C++":
-                case "PHP":
-                case "Java":
-                    _foldingStrategy = new BraceFoldingStrategy();
-                    textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.CSharp.CSharpIndentationStrategy(textEditor.Options);
-                    break;
-                default:
-                    _foldingStrategy = null;
-                    textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.DefaultIndentationStrategy();
-                    break;
-            }
-
-            if (_foldingStrategy != null)
+            string? language = highlightingDefinition?.Name;
+            textEditor.TextArea.IndentationStrategy = language == "Python"
+                ? new PythonIndentationStrategy(() => textEditor.Options.IndentationString, () => textEditor.TextArea.GetService(typeof(IHighlighter)) as IHighlighter)
+                : language is "C#" or "C++" or "Java" or "JavaScript" or "PHP"
+                    ? new ICSharpCode.AvalonEdit.Indentation.CSharp.CSharpIndentationStrategy(textEditor.Options)
+                    : new ICSharpCode.AvalonEdit.Indentation.DefaultIndentationStrategy();
+            if ((EditorFoldingStrategy.Supports(language) || language == "XML") && textEditor.Document.TextLength <= 2_000_000)
             {
                 _foldingManager ??= FoldingManager.Install(textEditor.TextArea);
-                UpdateFoldings();
+                ScheduleFoldings();
             }
             else if (_foldingManager != null)
             {
@@ -281,15 +280,63 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             }
         }
 
-        private void UpdateFoldings()
+        private async Task UpdateFoldingsAsync()
         {
-            if (_foldingManager == null)
-                return;
+            if (!_foldingPending || _disposed) return;
+            _foldingPending = false;
+            if (textEditor.Document.TextLength > 2_000_000) { _foldingManager?.Clear(); ApplyCodeModel(EditorCodeModel.Empty); return; }
+            if (_foldingManager == null && (EditorFoldingStrategy.Supports(_highlightingDefinition?.Name) || _highlightingDefinition?.Name == "XML"))
+            {
+                _foldingManager = FoldingManager.Install(textEditor.TextArea);
+            }
+            _foldingCancellation?.Cancel();
+            using var cancellation = new CancellationTokenSource();
+            _foldingCancellation = cancellation;
+            var document = textEditor.Document;
+            var version = document.Version;
+            var snapshot = document.CreateSnapshot();
+            var definition = _highlightingDefinition;
+            if (definition != null) _ = definition.MainRuleSet;
+            int indentationSize = _preferences.IndentationSize;
+            try
+            {
+                var result = await Task.Run(() =>
+                {
+                    cancellation.Token.ThrowIfCancellationRequested();
+                    var workingDocument = new ICSharpCode.AvalonEdit.Document.TextDocument(snapshot);
+                    var analysis = new EditorCodeAnalysis(definition?.Name);
+                    int errorOffset = -1;
+                    NewFolding[] foldings;
+                    if (definition != null)
+                    {
+                        foldings = EditorFoldingStrategy.CreateFoldings(workingDocument, definition, indentationSize, analysis, cancellation.Token).ToArray();
+                        if (definition.Name == "XML") foldings = new XmlFoldingStrategy().CreateNewFoldings(workingDocument, out errorOffset).ToArray();
+                    }
+                    else
+                    {
+                        foldings = [];
+                        foreach (var line in workingDocument.Lines) { cancellation.Token.ThrowIfCancellationRequested(); analysis.ReadLine(line, workingDocument.GetText(line)); }
+                    }
+                    return (Foldings: foldings, ErrorOffset: errorOffset, Code: analysis.Complete(workingDocument));
+                }, cancellation.Token);
+                if (!_disposed && !cancellation.IsCancellationRequested && ReferenceEquals(document, textEditor.Document)
+                    && ReferenceEquals(version, document.Version) && ReferenceEquals(definition, _highlightingDefinition))
+                {
+                    _foldingManager?.UpdateFoldings(result.Foldings, result.ErrorOffset);
+                    ApplyCodeModel(result.Code);
+                }
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
+            catch (Exception ex) { log4net.LogManager.GetLogger(typeof(AvalonEditControll)).Warn("Unable to update editor foldings.", ex); }
+            finally { if (ReferenceEquals(_foldingCancellation, cancellation)) _foldingCancellation = null; }
+        }
 
-            if (_foldingStrategy is BraceFoldingStrategy braceFoldingStrategy)
-                braceFoldingStrategy.UpdateFoldings(_foldingManager, textEditor.Document);
-            else if (_foldingStrategy is XmlFoldingStrategy xmlFoldingStrategy)
-                xmlFoldingStrategy.UpdateFoldings(_foldingManager, textEditor.Document);
+        private void ScheduleFoldings()
+        {
+            _foldingPending = true;
+            _foldingCancellation?.Cancel();
+            _foldingUpdateTimer?.Stop();
+            if (IsLoaded && IsVisible) _foldingUpdateTimer?.Start();
         }
 
         private void UpdateRunButtonVisibility()
@@ -315,6 +362,38 @@ namespace ColorVision.Solution.Editor.AvalonEditor
 
         private void AvalonEditControll_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (e.Handled) return;
+            Minimap.HidePreview();
+            var modifiers = Keyboard.Modifiers;
+            if (HandleCodeNavigationKey(e, modifiers)) return;
+            if (modifiers == ModifierKeys.Control)
+            {
+                switch (e.Key)
+                {
+                    case Key.F: _typingAssistance?.CloseCompletion(); SearchBar.Open(false); break;
+                    case Key.H: _typingAssistance?.CloseCompletion(); SearchBar.Open(true); break;
+                    case Key.G: OpenGoTo(); break;
+                    case Key.D0: SetZoom(1); break;
+                    case Key.OemPlus: case Key.Add: SetZoom(_zoom + .1); break;
+                    case Key.OemMinus: case Key.Subtract: SetZoom(_zoom - .1); break;
+                    default:
+                        if (!textEditor.IsKeyboardFocusWithin) return;
+                        if (e.Key == Key.D) EditorTextOperations.Duplicate(textEditor);
+                        else if (e.Key == Key.OemQuestion && EditorTextOperations.CommentPrefix(_highlightingDefinition?.Name) is { } prefix) EditorTextOperations.ToggleComment(textEditor, prefix);
+                        else return;
+                        break;
+                }
+                e.Handled = true;
+                return;
+            }
+            if (e.Key == Key.F3 && (modifiers == ModifierKeys.None || modifiers == ModifierKeys.Shift))
+            {
+                SearchBar.FindNext(modifiers == ModifierKeys.Shift); e.Handled = true; return;
+            }
+            if (textEditor.IsKeyboardFocusWithin && modifiers == ModifierKeys.Alt && (e.SystemKey is Key.Up or Key.Down))
+            {
+                EditorTextOperations.MoveLines(textEditor, e.SystemKey == Key.Up ? -1 : 1); e.Handled = true; return;
+            }
             if (e.Key != Key.F5 || Keyboard.Modifiers != ModifierKeys.None
                 || !CanSave || !IsPythonDocument(_currentFileName))
             {
@@ -334,7 +413,15 @@ namespace ColorVision.Solution.Editor.AvalonEditor
         private void UpdateDocumentMetadata()
         {
             EncodingText.Text = GetEncodingLabel(textEditor.Encoding);
-            LineEndingText.Text = GetLineEndingLabel(textEditor.Text);
+            string label = "—";
+            foreach (var line in textEditor.Document.Lines)
+            {
+                if (line.DelimiterLength == 0) continue;
+                string next = GetLineEndingLabel(textEditor.Document.GetText(line.EndOffset, line.DelimiterLength));
+                if (label != "—" && label != next) { label = "混合"; break; }
+                label = next;
+            }
+            LineEndingText.Text = label;
         }
 
         internal static string GetEncodingLabel(Encoding? encoding)
@@ -368,11 +455,17 @@ namespace ColorVision.Solution.Editor.AvalonEditor
         private void TextEditor_TextChanged(object? sender, EventArgs e)
         {
             SetDirty(!textEditor.Document.UndoStack.IsOriginalFile);
+            DiagnosticButton.Visibility = Visibility.Collapsed;
+            Minimap.ErrorLine = null;
+            if (SymbolPanel.Visibility == Visibility.Visible) { SymbolList.ItemsSource = null; SymbolHint.Text = "正在更新文档声明…"; }
+            ScheduleFoldings();
         }
 
-        private void FoldingUpdateTimer_Tick(object? sender, EventArgs e)
+        private async void FoldingUpdateTimer_Tick(object? sender, EventArgs e)
         {
-            UpdateFoldings();
+            _foldingUpdateTimer?.Stop();
+            UpdateDocumentMetadata();
+            await UpdateFoldingsAsync();
         }
 
         private void SetDirty(bool value)
@@ -390,6 +483,19 @@ namespace ColorVision.Solution.Editor.AvalonEditor
                 return;
 
             _disposed = true;
+            _typingAssistance?.Dispose();
+            SearchBar.MatchesChanged -= SearchMatchesChanged;
+            ResetCodeNavigation();
+            _foldingCancellation?.Cancel();
+            Loaded -= Editor_Loaded;
+            Unloaded -= Editor_Unloaded;
+            IsVisibleChanged -= Editor_IsVisibleChanged;
+            PreviewMouseWheel -= Editor_PreviewMouseWheel;
+            PropertyChangedEventManager.RemoveHandler(_preferences, PreferencesChanged, string.Empty);
+            textEditor.Document.UndoStack.PropertyChanged -= UndoStateChanged;
+            Minimap.Dispose();
+            SearchBar.Dispose();
+            textEditor.TextArea.TextView.BackgroundRenderers.Remove(_indentGuides);
             _foldingUpdateTimer?.Stop();
             if (_foldingUpdateTimer != null)
                 _foldingUpdateTimer.Tick -= FoldingUpdateTimer_Tick;

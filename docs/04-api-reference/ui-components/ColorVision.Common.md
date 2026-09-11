@@ -3,9 +3,9 @@ knowledge_id: "ui.common"
 knowledge_type: "topic"
 status: "current"
 summary: "共享接口的宿主接入、属性通知与命令的同步执行限制、粗粒度权限判据，以及第三方工具发现和启动边界。"
-aliases: ["共享接口应该放在哪里", "属性相同仍然通知", "按钮禁用仍被调用", "方法权限特性与自动鉴权", "ColorVision.Common", "ViewModelBase", "SetProperty", "RelayCommand", "CanExecute", "RaiseCanExecuteChanged", "ActionCommand", "IConfig", "IAssemblyService", "ModuleCatalog", "Authorization", "AccessControl", "ExecuteWithPermissionCheck", "PermissionMode", "RequiresPermissionAttribute", "ThirdPartyAppManager", "ThirdPartyAppInfo", "IThirdPartyAppProvider"]
+aliases: ["共享接口应该放在哪里", "属性相同仍然通知", "按钮禁用仍被调用", "方法权限特性与自动鉴权", "ColorVision.Common", "ViewModelBase", "SetProperty", "RelayCommand", "CanExecute", "RaiseCanExecuteChanged", "ActionCommand", "IConfig", "IAssemblyService", "ModuleCatalog", "Authorization", "AccessControl", "ExecuteWithPermissionCheck", "PermissionMode", "RequiresPermissionAttribute", "ThirdPartyAppManager", "ThirdPartyAppInfo", "IThirdPartyAppProvider", "WindowConfig", "窗口恢复DPI", "GetDipScreens", "GetPrimaryDipScreen"]
 code_paths: ["UI/ColorVision.Common/ColorVision.Common.csproj", "UI/ColorVision.Common/README.md", "UI/ColorVision.Common/MVVM/ViewModelBase.cs", "UI/ColorVision.Common/MVVM/RelayCommand.cs", "UI/ColorVision.Common/MVVM/ActionCommand.cs", "UI/ColorVision.Common/Interfaces", "UI/ColorVision.Common/Authorizations", "UI/ColorVision.Common/ThirdPartyApps", "UI/ColorVision.Common/NativeMethods", "UI/ColorVision.Common/Utilities", "UI/ColorVision.UI/AssemblyHandler.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.Rbac/RbacManager.cs", "UI/ColorVision.Rbac/Services/PermissionChecker.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ThirdPartyAppInfoTests.cs", "Test/ColorVision.UI.Tests/ModuleCatalogTests.cs", "Test/ColorVision.UI.Tests/ConfigHandlerPersistenceTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ThirdPartyAppInfoTests.cs", "Test/ColorVision.UI.Tests/ModuleCatalogTests.cs", "Test/ColorVision.UI.Tests/ConfigHandlerPersistenceTests.cs", "Test/ColorVision.UI.Tests/WindowConfigDpiLifecycleTests.cs"]
 related: ["ui.index", "ui.framework", "ui.configuration", "ui.menus", "platform.extensibility", "plugins.model", "platform.security"]
 ---
 
@@ -51,6 +51,16 @@ Common 中的 `AssemblyService`、`ConfigService`、`MenuService` 是可由宿�
 `AssemblyHandler.LoadImplementations<T>` 是上层发现实现：缓存类型而不是共享所有实例，每次调用仍尝试构造；构造失败可能被记录并跳过。其程序集过滤、构造门禁和宿主二级缓存已归[插件发现契约](../../02-developer-guide/plugin-development/overview.md#loaded-不等于-provider-可见)，不要在 Common 另写一套“实现接口即可自动生效”的规则。
 
 新增共享类型应保持依赖方向：客户字段、设备操作和具体业务窗口留在各自模块。需要上层能力时扩展现有共享接口并核对真实装配点，不在 Common 引用高层项目来闭合调用链。
+
+## 窗口恢复使用已有窗口源的 DPI
+
+`Interfaces/Window/WindowConfig.cs` 在 `SourceInitialized` 恢复保存的 DIP 位置、正常尺寸与窗口状态；保存的最小化状态按正常窗口恢复。选屏优先保存的设备名，其次与保存矩形相交最多的屏幕，最后主屏；无有效保存边界时居中，并将正常窗口边界适配到工作区域。最大化窗口保存 `RestoreBounds`，关闭事件只更新内存配置，持久化仍由配置宿主负责。
+
+窗口尚无 HWND 时，`SetWindow` 只登记 `SourceInitialized`，恢复完成后才订阅位置、尺寸与关闭事件的配置回写。创建 HWND 期间的 `LocationChanged` 可能早于恢复事件，不能让它用临时普通窗口状态覆盖保存的最大化状态和边界；未创建 HWND 就关闭的窗口也保留原保存值。对已有 HWND 调用 `SetWindow` 只登记后续回写，不补做恢复；重复调用会先移除本配置已有订阅。
+
+屏幕像素到 DIP 的转换优先读取视觉树的 `PresentationSource.CompositionTarget`。调用方提前创建 HWND 时，`SourceInitialized` 可能发生在窗口根视觉尚未挂接的阶段；此时复用 `WindowInteropHelper.Handle` 对应 `HwndSource` 的转换矩阵。两者均不可用才回退单位矩阵，读取几何不会调用 `EnsureHandle`、创建窗口句柄或显示窗口。`GetDipScreens` 和主屏回退共用这条规则。当前仍以窗口源的矩阵换算屏幕集合，不承诺分别处理多屏混合缩放或显示配置热切换。
+
+`WindowConfigDpiLifecycleTests` 使用独立窗口和内存配置，检查无 HWND 的读取无副作用、`SourceInitialized` / `EnsureHandle` / `Show` 三阶段屏幕换算一致，以及直接 Show 和预建 HWND 两条路径中，正常/最大化窗口在有无保存边界时的恢复范围。还检查已有 HWND 的登记不补恢复、后续位置变化回写，以及创建句柄前关闭保留保存值；测试不更改显示缩放。非单位缩放环境才能区分已有 HWND 转换与单位矩阵回退，100% 缩放下通过不能单独证明该分支修复。
 
 ## 粗粒度权限的判据不是统一授权拦截
 

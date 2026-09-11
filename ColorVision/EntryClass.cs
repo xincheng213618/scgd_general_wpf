@@ -10,6 +10,7 @@ using System.CodeDom.Compiler;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Windows.Media;
 
 [assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
 namespace ColorVision
@@ -33,6 +34,11 @@ namespace ColorVision
             bool automaticRecoveryRegistered = WindowsApplicationRestartRegistration.TryRegister();
             ProgramTimer.Start();
             ArgumentParser.GetInstance().CommandLineArgs = args;
+            if (StartupRenderingMode.Resolve(args) is { } renderMode)
+            {
+                RenderOptions.ProcessRenderMode = renderMode;
+                log.Warn("WPF software rendering was enabled by --software-rendering.");
+            }
             log.Debug("args" + string.Join(", ", args));
             if (!automaticRecoveryRegistered)
                 log.Warn("Windows application failure restart could not be registered.");

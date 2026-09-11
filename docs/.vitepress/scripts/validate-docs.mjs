@@ -12,7 +12,7 @@ const configPath = path.join(docsRoot, '.vitepress', 'config.mts')
 const manifestPath = path.join(distRoot, 'docs-manifest.json')
 const searchIndexPath = path.join(distRoot, 'docs-search-index.json')
 
-const skippedDirectoryNames = new Set(['.vitepress', 'node_modules'])
+const skippedDirectoryNames = new Set(['.vitepress', '_history', 'node_modules'])
 const skippedMarkdownFileNames = new Set(['agents.md'])
 const archivedLocaleDirectories = ['en', 'zh-tw', 'ja', 'ko']
 const genericSearchSectionTitles = new Set([

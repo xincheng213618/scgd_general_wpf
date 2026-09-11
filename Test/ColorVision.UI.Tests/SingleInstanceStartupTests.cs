@@ -1,4 +1,5 @@
 using ColorVision.Update;
+using Newtonsoft.Json;
 using System.IO;
 using System.IO.Pipes;
 
@@ -6,6 +7,20 @@ namespace ColorVision.UI.Tests
 {
     public sealed class SingleInstanceStartupTests
     {
+        [Fact]
+        public void AppConfigDefaultsToSingleInstanceAndIgnoresTheLegacyIsMuteKey()
+        {
+            Assert.False(new APPConfig().AllowMultipleInstances);
+
+            APPConfig upgraded = JsonConvert.DeserializeObject<APPConfig>("""{"IsMute":true}""")!;
+            Assert.False(upgraded.AllowMultipleInstances);
+
+            upgraded.AllowMultipleInstances = true;
+            string persisted = JsonConvert.SerializeObject(upgraded);
+            Assert.Contains("\"AllowMultipleInstances\":true", persisted);
+            Assert.DoesNotContain("\"IsMute\"", persisted);
+        }
+
         [Theory]
         [InlineData(false, false, true)]
         [InlineData(true, false, false)]
@@ -28,7 +43,7 @@ namespace ColorVision.UI.Tests
         [Theory]
         [InlineData(true, SingleInstanceCloseRequestResult.Accepted)]
         [InlineData(false, SingleInstanceCloseRequestResult.Rejected)]
-        public void ReplacementListenerReturnsTheFinalCloseDecision(
+        public async Task ReplacementListenerReturnsTheFinalCloseDecision(
             bool closeAccepted,
             SingleInstanceCloseRequestResult expectedResult)
         {
@@ -45,8 +60,9 @@ namespace ColorVision.UI.Tests
                 () => Interlocked.Increment(ref finalizeCount));
 
             SingleInstanceCloseRequestResult result =
-                SingleInstanceReplacementListener.TryRequestShutdown(
+                await SingleInstanceReplacementListener.TryRequestShutdownAsync(
                     processId,
+                    TimeSpan.FromSeconds(2),
                     TimeSpan.FromSeconds(2));
 
             Assert.Equal(expectedResult, result);
@@ -64,14 +80,15 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
-        public void ReplacementRequestReportsUnavailableWhenNoListenerExists()
+        public async Task ReplacementRequestReportsUnavailableWhenNoListenerExists()
         {
             int processId = Random.Shared.Next(100_000_000, 2_000_000_000);
 
             Assert.Equal(
                 SingleInstanceCloseRequestResult.Unavailable,
-                SingleInstanceReplacementListener.TryRequestShutdown(
+                await SingleInstanceReplacementListener.TryRequestShutdownAsync(
                     processId,
+                    TimeSpan.FromMilliseconds(100),
                     TimeSpan.FromMilliseconds(100)));
         }
 
@@ -92,12 +109,47 @@ namespace ColorVision.UI.Tests
             });
 
             SingleInstanceCloseRequestResult result =
-                SingleInstanceReplacementListener.TryRequestShutdown(
+                await SingleInstanceReplacementListener.TryRequestShutdownAsync(
                     processId,
+                    TimeSpan.FromSeconds(2),
                     TimeSpan.FromSeconds(2));
 
             Assert.Equal(SingleInstanceCloseRequestResult.Indeterminate, result);
             await server.WaitAsync(TimeSpan.FromSeconds(2));
+        }
+
+        [Fact]
+        public async Task ReplacementRequestTimesOutWhenConnectedPeerDoesNotRespond()
+        {
+            int processId = Random.Shared.Next(100_000_000, 2_000_000_000);
+            using var pipe = new NamedPipeServerStream(
+                SingleInstanceReplacementListener.CreatePipeName(processId),
+                PipeDirection.Out, 1, PipeTransmissionMode.Byte,
+                PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+
+            Task<SingleInstanceCloseRequestResult> request = SingleInstanceReplacementListener.TryRequestShutdownAsync(
+                processId, TimeSpan.FromSeconds(2), TimeSpan.FromMilliseconds(100));
+            await pipe.WaitForConnectionAsync().WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Equal(SingleInstanceCloseRequestResult.TimedOut, await request.WaitAsync(TimeSpan.FromSeconds(5)));
+        }
+
+        [Fact]
+        public async Task ReplacementRequestAllowsResponseAfterConnectionTimeoutHasElapsed()
+        {
+            int processId = Random.Shared.Next(100_000_000, 2_000_000_000);
+            using var pipe = new NamedPipeServerStream(
+                SingleInstanceReplacementListener.CreatePipeName(processId),
+                PipeDirection.Out, 1, PipeTransmissionMode.Byte,
+                PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+
+            Task<SingleInstanceCloseRequestResult> request = SingleInstanceReplacementListener.TryRequestShutdownAsync(
+                processId, TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(5));
+            await pipe.WaitForConnectionAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            await Task.Delay(200);
+            await pipe.WriteAsync(new byte[] { 0 });
+
+            Assert.Equal(SingleInstanceCloseRequestResult.Rejected, await request.WaitAsync(TimeSpan.FromSeconds(5)));
         }
 
         [Fact]

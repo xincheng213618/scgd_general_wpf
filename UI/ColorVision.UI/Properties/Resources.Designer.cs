@@ -203,7 +203,7 @@ namespace ColorVision.UI.Properties {
                 return ResourceManager.GetString("CommandOtherActions", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 更新前创建程序快照 的本地化字符串。
         /// </summary>
@@ -1229,7 +1229,7 @@ namespace ColorVision.UI.Properties {
                 return ResourceManager.GetString("PropEditor_ClearSearch", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 JSON 生成错误： 的本地化字符串。
         /// </summary>
@@ -1274,7 +1274,7 @@ namespace ColorVision.UI.Properties {
                 return ResourceManager.GetString("PropEditor_NoSearchResults", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 恢复到默认 的本地化字符串。
         /// </summary>
@@ -1301,7 +1301,7 @@ namespace ColorVision.UI.Properties {
                 return ResourceManager.GetString("PropEditor_SearchEmptyHint", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 搜索属性…（Ctrl+F） 的本地化字符串。
         /// </summary>
@@ -1589,7 +1589,7 @@ namespace ColorVision.UI.Properties {
                 return ResourceManager.GetString("SettingsSectionAppearance", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 日志与诊断 的本地化字符串。
         /// </summary>
@@ -1598,7 +1598,7 @@ namespace ColorVision.UI.Properties {
                 return ResourceManager.GetString("SettingsSectionDiagnostics", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 更新与网络 的本地化字符串。
         /// </summary>
@@ -1607,7 +1607,52 @@ namespace ColorVision.UI.Properties {
                 return ResourceManager.GetString("SettingsSectionUpdates", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   查找类似 启动页主题 的本地化字符串。
+        /// </summary>
+        public static string StartupTheme {
+            get {
+                return ResourceManager.GetString("StartupTheme", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 深色 的本地化字符串。
+        /// </summary>
+        public static string StartupThemeDark {
+            get {
+                return ResourceManager.GetString("StartupThemeDark", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 选择启动页的颜色主题，下次启动生效。 的本地化字符串。
+        /// </summary>
+        public static string StartupThemeDescription {
+            get {
+                return ResourceManager.GetString("StartupThemeDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 跟随软件主题 的本地化字符串。
+        /// </summary>
+        public static string StartupThemeFollowApplication {
+            get {
+                return ResourceManager.GetString("StartupThemeFollowApplication", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 浅色 的本地化字符串。
+        /// </summary>
+        public static string StartupThemeLight {
+            get {
+                return ResourceManager.GetString("StartupThemeLight", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   查找类似 主题 的本地化字符串。
         /// </summary>
@@ -1707,6 +1752,9 @@ namespace ColorVision.UI.Properties {
             }
         }
         
+        public static string DisplayPin => ResourceManager.GetString("DisplayPin", resourceCulture);
+        public static string DisplayUnpin => ResourceManager.GetString("DisplayUnpin", resourceCulture);
+
         /// <summary>
         ///   查找类似 简体中文 的本地化字符串。
         /// </summary>

@@ -418,6 +418,24 @@
   <data name="PackLogs" xml:space="preserve">
     <value>Pack Logs</value>
   </data>
+  <data name="ClearDiagnostics" xml:space="preserve">
+    <value>Clear History</value>
+  </data>
+  <data name="ClearDiagnosticsConfirm" xml:space="preserve">
+    <value>This removes old ColorVision application, update, service log, and crash dump files. Active logs, configuration, databases, and attachments are preserved. Continue?</value>
+  </data>
+  <data name="ClearDiagnosticsTitle" xml:space="preserve">
+    <value>Clear Diagnostic History</value>
+  </data>
+  <data name="ClearingDiagnostics" xml:space="preserve">
+    <value>Clearing historical diagnostic files...</value>
+  </data>
+  <data name="ClearDiagnosticsCompleted" xml:space="preserve">
+    <value>Removed {0} historical diagnostic files and freed {1}; skipped {2} files that were in use or inaccessible.</value>
+  </data>
+  <data name="ClearDiagnosticsNone" xml:space="preserve">
+    <value>No historical diagnostic files are available to clear.</value>
+  </data>
   <data name="ScreenshotCaptured" xml:space="preserve">
     <value>Screenshot captured</value>
   </data>

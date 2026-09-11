@@ -77,6 +77,8 @@ namespace ColorVision.ImageEditor.Draw
         private bool _isMouseDown;
         private bool _ownsMouseCapture;
 
+        protected virtual bool IsFreehand => false;
+        protected virtual bool CompletesAtPoint(TVisual visual, Point point) => false;
         protected virtual bool SupportsKeyboardCompletion => false;
         protected virtual bool CompleteOnMouseUp => false;
         protected virtual bool SelectOnMouseUp => false;
@@ -286,6 +288,13 @@ namespace ColorVision.ImageEditor.Draw
             }
             else
             {
+                if (CompletesAtPoint(ActiveVisual, point))
+                {
+                    CompleteCurrentVisual(trimPreviewPoint: true);
+                    IsChecked = false;
+                    e.Handled = true;
+                    return;
+                }
                 GetPoints(ActiveVisual).Add(point);
                 RenderVisual(ActiveVisual);
             }
@@ -330,7 +339,15 @@ namespace ColorVision.ImageEditor.Draw
             if (ActiveVisual == null)
                 return;
 
-            ReplacePreviewPoint(ActiveVisual, e.GetPosition(DrawCanvas));
+            Point point = e.GetPosition(DrawCanvas);
+            if (IsFreehand)
+            {
+                if (!_isMouseDown) return;
+                IList<Point> points = GetPoints(ActiveVisual);
+                if (points.Count >= 2 && (point - points[points.Count - 2]).Length >= 1 / GetSafeZoomRatio())
+                    points.Add(point);
+            }
+            ReplacePreviewPoint(ActiveVisual, point);
             RenderVisual(ActiveVisual);
             e.Handled = true;
         }

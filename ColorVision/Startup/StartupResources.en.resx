@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Starting ColorVision</value></data>
+  <data name="Headline" xml:space="preserve"><value>Turn every ray into insight</value></data>
+  <data name="Headline2" xml:space="preserve"><value>Read quality in every detail of light</value></data>
+  <data name="Headline3" xml:space="preserve"><value>See beyond color to what is true</value></data>
+  <data name="Headline4" xml:space="preserve"><value>Measure reality with light</value></data>
+  <data name="Headline5" xml:space="preserve"><value>Capture faint light, reveal fine detail</value></data>
+  <data name="Headline6" xml:space="preserve"><value>Make the unseen measurable</value></data>
+  <data name="Capabilities" xml:space="preserve"><value>Optics  /  Color  /  Machine vision</value></data>
+  <data name="PreparingWorkspace" xml:space="preserve"><value>Preparing your workspace</value></data>
+  <data name="ConnectingServices" xml:space="preserve"><value>Connecting services</value></data>
+  <data name="LoadingWorkspace" xml:space="preserve"><value>Loading your workspace</value></data>
+  <data name="LoadingTemplates" xml:space="preserve"><value>Loading inspection templates</value></data>
+  <data name="PreparingDevicePanels" xml:space="preserve"><value>Preparing device panels</value></data>
+  <data name="PreparingCompute" xml:space="preserve"><value>Preparing compute resources</value></data>
+  <data name="LoadingExtensions" xml:space="preserve"><value>Loading extensions</value></data>
+  <data name="OpeningWorkspace" xml:space="preserve"><value>Opening your workspace</value></data>
+  <data name="ProgressAutomationName" xml:space="preserve"><value>Startup progress</value></data>
+</root>

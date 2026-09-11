@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "Copilot 界面状态的所有权、异步输入交接、检查点提交及会话保存完成边界。"
 aliases: ["CopilotChatViewModel 太大从哪里改","聊天状态属于哪个对象","CopilotConversationSession","CopilotComposerSession","CopilotComposerCaptureToken","CommitScheduled","CopilotPreparedHostedTurn","ICopilotTurnRuntime","CopilotApprovalCoordinator","CopilotChatStatePersistenceCoordinator","SaveSynchronouslyAndStop","TrySetAgentSessionCheckpoint","TryCommitAgentRunState","CurrentAgentTaskEventJournal","CopilotTurnCheckpointLifecycleState"]
-code_paths: ["ColorVision/Copilot/CopilotChatViewModel.cs","ColorVision/Copilot/CopilotChatViewModel.Conversations.cs","ColorVision/Copilot/CopilotChatViewModel.TurnExecution.cs","ColorVision/Copilot/CopilotChatViewModel.TurnEvents.cs","ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs","ColorVision/Copilot/CopilotChatViewModel.Permissions.cs","ColorVision/Copilot/CopilotChatViewModel.Lifecycle.cs","ColorVision/Copilot/State/CopilotConversationSession.cs","ColorVision/Copilot/State/CopilotComposerSession.cs","ColorVision/Copilot/Agent/CopilotQueuedFollowUpCoordinator.cs","ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs","ColorVision/Copilot/Runtime/CopilotApprovalCoordinator.cs","ColorVision/Copilot/Runtime/CopilotPreparedHostedTurn.cs","ColorVision/Copilot/Runtime/CopilotTurnRuntimeConfigSnapshot.cs","ColorVision/Copilot/Runtime/ICopilotTurnRuntime.cs","ColorVision/Copilot/Runtime/CopilotTurnRuntime.cs","ColorVision/Copilot/Runtime/CopilotTurnCheckpointLifecycleState.cs","ColorVision/Copilot/CopilotConversationRecord.cs","ColorVision/Copilot/CopilotConversationRecord.Validation.cs","ColorVision/Copilot/State/CopilotChatStatePersistenceCoordinator.cs","ColorVision/Copilot/State/CopilotChatStateSaveScheduler.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotChatViewModelContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotConversationSessionTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs","Test/ColorVision.Copilot.Tests/CopilotAttachmentRemovalEditLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpCoordinatorTests.cs","Test/ColorVision.Copilot.Tests/CopilotPreparedHostedTurnTests.cs","Test/ColorVision.Copilot.Tests/CopilotApprovalCoordinatorTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatStatePersistenceCoordinatorTests.cs","Test/ColorVision.Copilot.Tests/CopilotTurnCheckpointLifecycleTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs"]
+code_paths: ["ColorVision/Copilot/CopilotChatViewModel.RequestAdmission.cs","ColorVision/Copilot/CopilotChatViewModel.AttachmentCommands.cs","ColorVision/Copilot/CopilotChatViewModel.ComposerAndRuntimeState.cs","ColorVision/Copilot/CopilotChatViewModel.UsagePresentation.cs","ColorVision/Copilot/CopilotChatViewModel.AttachmentLifecycle.cs","ColorVision/Copilot/CopilotConversationCompaction.cs","ColorVision/Copilot/Context/CopilotConversationAutoCompactionPolicy.cs","ColorVision/Copilot/CopilotChatViewModel.cs","ColorVision/Copilot/CopilotChatViewModel.Conversations.cs","ColorVision/Copilot/CopilotChatViewModel.TurnExecution.cs","ColorVision/Copilot/CopilotChatViewModel.MessageInteraction.cs","ColorVision/Copilot/CopilotChatViewModel.TurnEvents.cs","ColorVision/Copilot/CopilotChatViewModel.QueuedFollowUps.cs","ColorVision/Copilot/CopilotChatViewModel.Permissions.cs","ColorVision/Copilot/CopilotChatViewModel.Lifecycle.cs","ColorVision/Copilot/State/CopilotConversationSession.cs","ColorVision/Copilot/State/CopilotComposerSession.cs","ColorVision/Copilot/Agent/CopilotQueuedFollowUpCoordinator.cs","ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs","ColorVision/Copilot/Agent/CopilotAgentTaskIndex.cs","ColorVision/Copilot/Runtime/CopilotApprovalCoordinator.cs","ColorVision/Copilot/Runtime/CopilotPreparedHostedTurn.cs","ColorVision/Copilot/Runtime/CopilotTurnRuntimeConfigSnapshot.cs","ColorVision/Copilot/Runtime/ICopilotTurnRuntime.cs","ColorVision/Copilot/Runtime/CopilotTurnRuntime.cs","ColorVision/Copilot/Runtime/CopilotTurnCheckpointLifecycleState.cs","ColorVision/Copilot/CopilotConversationRecord.cs","ColorVision/Copilot/CopilotConversationRecord.Validation.cs","ColorVision/Copilot/State/CopilotChatStateContracts.cs","ColorVision/Copilot/State/CopilotChatStatePersistenceCoordinator.cs","ColorVision/Copilot/State/CopilotChatStateSaveScheduler.cs","ColorVision/Copilot/CopilotChatPanel.xaml.cs","ColorVision/Copilot/Agent/CopilotHostedAgentRun.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotPromptHistoryProjectionTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerContextMeasurementTests.cs","Test/ColorVision.Copilot.Tests/CopilotCodexAutoCompactionTests.cs","Test/ColorVision.Copilot.Tests/CopilotConversationSurfaceProjectionTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatViewModelContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotConversationSessionTests.cs","Test/ColorVision.Copilot.Tests/CopilotComposerSessionTests.cs","Test/ColorVision.Copilot.Tests/CopilotAttachmentRemovalEditLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotRequestAdmissionLifetimeTests.cs","Test/ColorVision.Copilot.Tests/CopilotQueuedLocalCommandSnapshotTests.cs","Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpCoordinatorTests.cs","Test/ColorVision.Copilot.Tests/CopilotPreparedHostedTurnTests.cs","Test/ColorVision.Copilot.Tests/CopilotApprovalCoordinatorTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatStateSnapshotTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatStatePersistenceCoordinatorTests.cs","Test/ColorVision.Copilot.Tests/CopilotTurnCheckpointLifecycleTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs","Test/ColorVision.Copilot.Tests/CopilotConversationListProjectionTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatPanelMessageSubscriptionTests.cs","Test/ColorVision.Copilot.Tests/CopilotQueuedCommandSuccessorCancellationTests.cs"]
 related: ["copilot.runtime","copilot.interactions","copilot.session-tools","copilot.configuration","copilot.tool-contracts"]
 ---
 
@@ -45,6 +45,30 @@ ViewModel 对选择分两条路径处理：
 
 `Load` 会推进 Composer 版本，因此“切出去再切回来”也不能重新使用旧 token。异步任务始终更新捕获的原 conversation 和消息；完成时重新读取 `SelectedConversation` 或 `SelectedProfile` 会把用户当前正在看的会话误当成任务所属会话。
 
+会话的 `ProfileId` / `ProfileDisplayName` 表示当前模型选择，由会话选择、Profile 变更通知和配置归一化维护。发送、重试、自动压缩及排队请求使用各自捕获的 Profile，不在准备完成后把旧快照写回会话；准备期间选择其他模型后，本次请求仍使用原模型，后续选择与切回会话仍保留新模型。`CopilotRequestAdmissionLifetimeTests` 和 `CopilotQueuedLocalCommandSnapshotTests` 覆盖这些交接。
+
+## 列表刷新与消息订阅
+
+会话侧栏和紧凑历史是已有 conversation 对象的投影。刷新先计算当前筛选与排序，列表内容未变时不发送集合重置；有差异时只删除、插入或移动受影响项。搜索预览直接更新为本次匹配结果，不先清空再恢复同一文本。归档、活动优先级、置顶和历史窗口仍按原规则计算，投影不成为第二份会话数据源。`CopilotConversationListProjectionTests` 验证追加消息、排序、搜索和活动变化后的集合通知与选择归属。
+
+任务列表按同一 conversation 和 assistant 消息的对象身份保留 `CopilotAgentTaskSummary`，状态变化后显式刷新属性绑定。标题、待办数、阻塞说明和 checkpoint 可恢复性继续读取原对象，不保存另一套任务状态；新的 assistant 消息使用新的投影项。排序、归档、放弃恢复及终态筛选仍由 `CopilotAgentTaskIndex` 计算，再增量更新列表。该路径仍会构建索引和排序，优化的是列表重置与控件重建。上述投影测试通过真实 WPF Binding 检查保留行的显示更新。
+
+正文列表直接绑定选中会话的 `Messages`，使用 WPF recycling 虚拟化。面板收到追加事件时只订阅新消息；移动不改变订阅，移除／替换在同一消息对象已无剩余引用时退订，Reset 和会话切换才重新核对全体消息。滚动跟随与查找逻辑继续使用原入口。`CopilotChatPanelMessageSubscriptionTests` 验证重复引用、替换、清空、切换以及长历史追加时的订阅分配量；它不代表整个界面的渲染耗时基准。
+
+这些优化减少 WPF 集合重置与消息订阅的重复工作，没有缓存整个历史的事实副本。关键词搜索、上下文计量及打开的会话查找仍会扫描相关消息，不能将局部增量刷新解释为所有长会话操作均为常数时间。
+
+## 输入时的上下文计量
+
+`RefreshComposerTokenEstimate` 每次从当前会话构造一次模型历史，在该次刷新内共用于窗口裁剪诊断和历史压力计量，再调用 `RefreshComposerTokenPresentation` 更新实际用量说明、速率提示和请求预览。模型历史构造只解析压缩边界并读取有效区段；完整的 current／shadowed／log-only 计数仍由诊断用 `CaptureSurface` 单独计算。模式切换只更新展示，不重新扫描相同历史；输入、Profile、消息和压缩完成仍按实际变化重新计量。
+
+普通会话切换先加载目标草稿并取得项目指令发现选项，再由输入刷新链计量一次；后续文档、窗口上下文和模式通知不重复计量。选中会话的附件集合每次 Add／Replace／Remove／Reset 负责一次计量及附件可用性通知，`UpdateAttachmentsState` 只更新会话摘要、侧栏与持久化，后台会话附件更新不重算当前输入框。多文件操作仍按实际集合事件刷新，没有跨事件缓存或延迟批处理。真实活动文档和 Live Context 变更在各自外层入口刷新计量；文档路径改变时先更新项目选项，再更新引用候选和预览。`CopilotComposerContextMeasurementTests` 通过真实 ViewModel 操作检查刷新次数、最终草稿／Profile／附件和外部上下文通知。
+
+发送按钮工具提示读取最近一次刷新得到的格式化历史摘要，不因读取属性再扫描整段历史。这里保留的是展示文本，没有跨刷新保存历史数组。任意直接修改消息 DTO 不会自动刷新该摘要，下一次界面刷新会重新取值；真实发送的预算准入和自动压缩仍现场读取原会话，不用展示文本作决策。`CopilotComposerContextMeasurementTests` 验证刷新归属和发送前预算复核，`CopilotCodexAutoCompactionTests` 与 `CopilotConversationSurfaceProjectionTests` 验证共享计量及压缩边界。
+
+历史搜索的查询词只用于筛选，不属于 Composer 草稿。弹层内输入和切换搜索范围只刷新搜索结果、选择项及按钮提示，不触发模型历史计量；Profile 或消息变化仍重新计量 `CopilotComposerSession.Text`。确认历史结果后按完整恢复正文刷新计量，取消后按保留的原草稿刷新；普通草稿输入继续即时计量。`CopilotPromptHistoryProjectionTests` 验证这些边界。
+
+未压缩的历史在普通草稿计量时仍需遍历正文计算本地权重，不能据此宣称输入开销与历史长度无关。历史压力是本地预算估计；实际用量面板继续以 Provider 返回的 usage 为依据。
+
 ## 输入捕获与成功排程后的提交
 
 正常模型请求沿 `CopilotChatViewModel.TurnExecution.cs::SendAsync` 处理：先捕获输入和原会话，再做准入、上下文准备和异步附件处理，最后建立消息并交给 TaskHost。异步准备后会重查准入及消息编辑是否仍有效；排程失败则回滚本次建立的消息，保留输入。
@@ -63,6 +87,10 @@ ViewModel 对选择分两条路径处理：
 ### 排队请求
 
 普通 follow-up 入队时捕获 Profile、运行配置、附件、Skill/审查目标和项目上下文；实际执行前才重新捕获该会话历史，以包含前一轮已经完成的消息。Steering 是发给运行中任务的消息，不是新建 turn；取消、重启恢复和排队本地命令规则见[会话与工具](./copilot-agent-session-and-tools.md)。
+
+排队的 `/init`、`/review`、`/verify`、`/retry`、`/compact` 和带任务参数的 `/plan` 显式传递执行上下文，不临时切换选中会话、清除忙碌状态或借用当前 Composer。预算中的 Goal 也取自目标会话。异步准备后复核原会话、宿主准入和取消；后继任务准入只由明确传入的队列执行上下文获得，普通发送和重试不能借用正在等待的队列命令。无参数 `/plan` 及仍依赖界面的本地命令保留同步选择适配，在执行时保留目标会话当前的模型选择；该适配不是跨 `await` 的隐式请求上下文。
+
+TaskHost 在同一调度锁内提交取消状态、复核本地命令的后继准入及判断正常完成后的自动分派。取消中的命令即使尚未退出，也不能再接受新的后继；取消令牌请求和事件发布留在锁外。取消前已经获准的后继及独立排队请求继续遵循原有调度规则，不把取消父命令解释为撤销全部队列。`CopilotQueuedCommandSuccessorCancellationTests` 用实际宿主和受控收尾验证预览准入、实际执行及两类对照。
 
 `FollowUpCoordinator.TrySchedule` 成功后，恢复记录先存在 `CopilotChatState.QueuedFollowUpRecoveries` 的内存集合中。ViewModel 提交匹配的输入 token，并请求立即保存；这里没有等待 Flush，所以不能把“已排队”当成磁盘耐久化回执。
 
@@ -112,7 +140,9 @@ checkpoint 与恢复记录的内存变更一起进入后续状态快照；“候
 | `SaveSynchronouslyAndStop()` | 停止 scheduler，等待提交锁，再保存当前状态；失败通过回调报告，较新 state schema 阻止覆盖。普通应用退出调用此路径 |
 | `Dispose()` | 停止调度并释放接线；不等同于 Flush 或同步退出保存 |
 
-快照捕获以保存请求版本为水位线。支持分片的 store 从后台请求时，在 UI Dispatcher 的 Background 优先级分片复制，单片以 4 ms 为工作预算，然后后台序列化；这不是每片耗时的硬上限。捕获后、序列化后和进入提交锁后都会复核版本，已过时的快照不在该检查点继续提交。
+快照捕获以保存请求版本为水位线。支持分片的 store 从后台请求时，在 UI Dispatcher 的 Background 优先级分片复制，单片以 4 ms 为工作预算，然后后台序列化。`CopilotChatStateSnapshotCapture` 沿用 Json.NET 的属性、转换器及条件保存合同，先捕获对象元数据和集合成员引用，再逐项捕获集合；每条消息及其 trace 等内部数据仍作为一个原子单元序列化。大消息、元数据和 GC 仍可能超过预算，4 ms 不是耗时硬上限。
+
+每次调度分片前及进入 UI 回调时复核请求版本，片内逐项检查取消；捕获后、序列化后和进入提交锁后也复核版本，过时快照不在这些检查点继续处理。已开始捕获的集合固定成员，但尚未捕获的对象仍在其分片执行时取值。`CopilotChatStateSnapshotTests` 覆盖完整保存合同及分片间修改，`CopilotChatStatePersistenceCoordinatorTests` 通过真实 Dispatcher 验证新保存请求和关闭会淘汰未完成捕获。
 
 这一机制依赖状态修改方请求保存，不能把任意未经通知的可变对象变更变成事务。新请求若发生在文件写入已经开始后，较旧批次仍可能先完成，之后再保存新批次；不能承诺磁盘从未短暂出现旧批次。退出同步保存共用提交锁，避免被正在写入的较旧异步保存反向覆盖。
 
@@ -135,6 +165,6 @@ Approval store 发事件时，coordinator 立即捕获不可变 transition；Vie
 | 显示已排队或输入已清空，重启却未恢复 | 保存请求是否真正完成、Flush 是否失败；不要只看 TrySchedule 返回值 | `CopilotChatStatePersistenceCoordinatorTests` |
 | checkpoint 被拒绝或 steering 未消费 | 候选的接受结果与 changed、身份/时间、水位和仍保留的事件内容 | `CopilotTurnCheckpointLifecycleTests`、`CopilotAgentSessionCheckpointTests`、`CopilotAgentTaskEventJournalIntegrityTests` |
 | 审批数量不一致或 trace 串会话 | 作用域投影、事件捕获时刻与 Dispatcher 应用时刻 | `CopilotApprovalCoordinatorTests` |
-| 重构后按钮、快捷键或面板绑定失效 | 构造器、命令及 code-behind 依赖 | `CopilotChatViewModelContractTests` |
+| 快捷键帮助、状态栏入口或面板注册异常 | 入口元数据及实际注册实例 | `CopilotChatViewModelContractTests` |
 
 测试源码是定位与预期契约的依据，不代表当前已经执行。行为改动应选对应 owner 测试和必要的 ViewModel 交接测试；较宽的构建/测试入口见 [Runtime 验证](./copilot-agent-runtime.md#验证)。纯文档整理使用知识与站点检查，无需启动应用、模型或审批服务。

@@ -15,7 +15,7 @@
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
 
-        <Style x:Key="SideEditButtonStyle" TargetType="{x:Type Button}">
+        <Style x:Key="SideEditButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Width" Value="25"/>
             <Setter Property="Height" Value="23"/>
             <Setter Property="Padding" Value="4"/>
@@ -148,6 +148,8 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
                                 <Grid>
@@ -172,7 +174,7 @@
                                         <Button Grid.Column="1" Style="{StaticResource SideEditButtonStyle}" ToolTip="修改名称"
                                                 Command="{Binding EditMetaNameCommand}"
                                                 CommandParameter="{Binding SelectedProcessMeta}">
-                                            <Image Source="{StaticResource DrawingImageEdit}" Width="13"/>
+                                            <Image Source="{DynamicResource DrawingImageEdit}" Width="13"/>
                                         </Button>
                                     </Grid>
 
@@ -208,6 +210,24 @@
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="处理类型：" Foreground="{DynamicResource SecondaryTextBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding SelectedProcessMeta.ProcessTypeName, Mode=OneWay, TargetNullValue=—}"
+                                             Style="{StaticResource CopyableTextBoxStyle}"/>
+                                    <Button Grid.Column="2" Style="{StaticResource SideEditButtonStyle}" ToolTip="修改处理类型"
+                                            Command="{Binding EditMetaProcessCommand}"
+                                            CommandParameter="{Binding SelectedProcessMeta}">
+                                        <Image Source="{DynamicResource DrawingImageEdit}" Width="13"/>
+                                    </Button>
+                                </Grid>
+
+                                <Grid Grid.Row="2" Margin="0 3 0 0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="流程模板：" Foreground="{DynamicResource SecondaryTextBrush}"
@@ -218,32 +238,26 @@
                                     <Button Grid.Column="2" Style="{StaticResource SideEditButtonStyle}" ToolTip="编辑当前流程模板"
                                             Command="{Binding OpenFlowTemplateEditorCommand}"
                                             CommandParameter="{Binding SelectedProcessMeta}">
-                                        <Image Source="{StaticResource DrawingImageFlow}" Width="13"/>
+                                        <Image Source="{DynamicResource DrawingImageFlow}" Width="13"/>
                                     </Button>
                                     <Button Grid.Column="3" Style="{StaticResource SideEditButtonStyle}" ToolTip="切换流程模板"
                                             Command="{Binding EditMetaTemplateCommand}"
                                             CommandParameter="{Binding SelectedProcessMeta}">
-                                        <Image Source="{StaticResource DrawingImageEdit}" Width="13"/>
+                                        <Image Source="{DynamicResource DrawingImageEdit}" Width="13"/>
                                     </Button>
                                 </Grid>
 
-                                <Grid Grid.Row="2" Margin="0 3 0 0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="处理类型：" Foreground="{DynamicResource SecondaryTextBrush}"
-                                               VerticalAlignment="Center"/>
-                                    <TextBox Grid.Column="1"
-                                             Text="{Binding SelectedProcessMeta.ProcessTypeName, Mode=OneWay, TargetNullValue=—}"
-                                             Style="{StaticResource CopyableTextBoxStyle}"/>
-                                    <Button Grid.Column="2" Style="{StaticResource SideEditButtonStyle}" ToolTip="修改处理类型"
-                                            Command="{Binding EditMetaProcessCommand}"
-                                            CommandParameter="{Binding SelectedProcessMeta}">
-                                        <Image Source="{StaticResource DrawingImageEdit}" Width="13"/>
-                                    </Button>
-                                </Grid>
+                                <CheckBox x:Name="CameraOverrideCheckBox" Grid.Row="3"
+                                          Content="覆盖相机参数" Margin="0 7 0 0"
+                                          Click="CameraOverrideCheckBox_Click"/>
+
+                                <StackPanel x:Name="CameraOverridePanel" Grid.Row="4"
+                                            Margin="0 6 0 0" Visibility="Collapsed">
+                                    <TextBlock x:Name="CameraOverrideStatusText"
+                                               Foreground="{DynamicResource SecondaryTextBrush}"
+                                               Margin="5 2" Visibility="Collapsed"/>
+                                    <StackPanel x:Name="CameraOverrideEditorPanel"/>
+                                </StackPanel>
                             </Grid>
                         </Border>
 
@@ -251,7 +265,7 @@
                             <TabItem Header="Recipe">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                                     <StackPanel x:Name="RecipePanel">
-                                        <TextBlock Text="请选择一个处理项" Foreground="Gray"
+                                        <TextBlock Text="请选择一个处理项" Foreground="{DynamicResource SecondaryTextBrush}"
                                                    HorizontalAlignment="Center" Margin="0 20 0 0"/>
                                     </StackPanel>
                                 </ScrollViewer>
@@ -259,7 +273,7 @@
                             <TabItem Header="Process">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                                     <StackPanel x:Name="ProcessPanel">
-                                        <TextBlock Text="请选择一个处理项" Foreground="Gray"
+                                        <TextBlock Text="请选择一个处理项" Foreground="{DynamicResource SecondaryTextBrush}"
                                                    HorizontalAlignment="Center" Margin="0 20 0 0"/>
                                     </StackPanel>
                                 </ScrollViewer>
@@ -267,7 +281,7 @@
                             <TabItem Header="切图">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                                     <StackPanel x:Name="PictureSwitchPanel">
-                                        <TextBlock Text="请选择一个处理项" Foreground="Gray"
+                                        <TextBlock Text="请选择一个处理项" Foreground="{DynamicResource SecondaryTextBrush}"
                                                    HorizontalAlignment="Center" Margin="0 20 0 0"/>
                                     </StackPanel>
                                 </ScrollViewer>
@@ -361,7 +375,7 @@
                         <TabItem Header="Recipe">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                                 <StackPanel x:Name="ResultRecipePanel">
-                                    <TextBlock Text="请选择一个解析映射" Foreground="Gray"
+                                    <TextBlock Text="请选择一个解析映射" Foreground="{DynamicResource SecondaryTextBrush}"
                                                HorizontalAlignment="Center" Margin="0 20 0 0"/>
                                 </StackPanel>
                             </ScrollViewer>
@@ -369,7 +383,7 @@
                         <TabItem Header="Process">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
                                 <StackPanel x:Name="ResultProcessPanel">
-                                    <TextBlock Text="请选择一个解析映射" Foreground="Gray"
+                                    <TextBlock Text="请选择一个解析映射" Foreground="{DynamicResource SecondaryTextBrush}"
                                                HorizontalAlignment="Center" Margin="0 20 0 0"/>
                                 </StackPanel>
                             </ScrollViewer>

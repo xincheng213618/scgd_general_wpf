@@ -595,13 +595,18 @@ namespace ColorVision.Database
 
             try
             {
+                string currentStage = "校验备份";
+                bool databaseImported = false;
                 try
                 {
                     Report("校验备份", $"正在校验 SQL 文件：{backupFile}", 5);
+                    currentStage = "导入数据库";
                     Report("导入数据库", $"使用业务账号导入到数据库 {MySqlSetting.Instance.MySqlConfig.Database}", 15);
                     await RestoreMysqlCoreAsync(backupFile).ConfigureAwait(false);
+                    databaseImported = true;
                     Report("导入数据库", "SQL 数据导入完成", 65);
 
+                    currentStage = "同步服务配置";
                     Report("同步服务配置", "同步注册中心、x64 主服务和 dev 主服务的 MySql.config", 72);
                     IReadOnlyList<string> synchronizedFiles = await Task.Run(() =>
                         MySqlDatabaseMaintenanceService.SynchronizeInstalledServiceConfigs(
@@ -611,6 +616,7 @@ namespace ColorVision.Database
                         throw new InvalidOperationException("未找到任何已安装服务的 MySql.config，数据库已导入，但已停止服务重启。");
                     Report("同步服务配置", $"服务配置同步完成，共更新 {synchronizedFiles.Count} 个文件", 82);
 
+                    currentStage = "重启注册中心服务";
                     Report("重启服务", $"正在重启 {RegistrationCenterServiceName}", 88);
                     ServiceHostResponse response = await ColorVisionServiceHostClient.Default.RestartServiceAsync(
                         RegistrationCenterServiceName,
@@ -624,8 +630,9 @@ namespace ColorVision.Database
                 }
                 catch (Exception ex)
                 {
-                    log.Error($"加载MySQL备份失败：{backupFile}", ex);
-                    progressWindow?.Complete(false, $"执行失败：{ex.Message}");
+                    string failureSummary = BuildRestoreFailureSummary(databaseImported, currentStage);
+                    log.Error($"MySQL 备份恢复失败：{failureSummary}：{backupFile}", ex);
+                    progressWindow?.Complete(false, $"{failureSummary}：{ex.Message}");
                 }
             }
             finally
@@ -636,8 +643,12 @@ namespace ColorVision.Database
             }
         }
 
-
-
+        internal static string BuildRestoreFailureSummary(bool databaseImported, string currentStage)
+        {
+            return databaseImported
+                ? $"SQL 已导入，但{currentStage}失败"
+                : $"SQL 未完成导入，{currentStage}失败";
+        }
 
         bool FindMySQLPath(string serviceName)
         {

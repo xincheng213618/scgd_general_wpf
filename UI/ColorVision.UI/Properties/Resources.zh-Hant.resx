@@ -485,4 +485,11 @@
   <data name="SettingsSectionUpdates" xml:space="preserve"><value>更新與網路</value></data>
   <data name="SettingsSectionDiagnostics" xml:space="preserve"><value>日誌與診斷</value></data>
   <data name="CommandOtherActions" xml:space="preserve"><value>其他操作</value></data>
+  <data name="StartupTheme" xml:space="preserve"><value>啟動頁主題</value></data>
+  <data name="StartupThemeDescription" xml:space="preserve"><value>選擇啟動頁的顏色主題，下次啟動生效。</value></data>
+  <data name="StartupThemeDark" xml:space="preserve"><value>深色</value></data>
+  <data name="StartupThemeLight" xml:space="preserve"><value>淺色</value></data>
+  <data name="StartupThemeFollowApplication" xml:space="preserve"><value>跟隨軟體主題</value></data>
+  <data name="DisplayPin" xml:space="preserve"><value>置頂</value></data>
+  <data name="DisplayUnpin" xml:space="preserve"><value>取消置頂</value></data>
 </root>

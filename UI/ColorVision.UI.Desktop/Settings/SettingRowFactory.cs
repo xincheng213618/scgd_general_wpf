@@ -20,7 +20,7 @@ namespace ColorVision.UI.Desktop.Settings
             {
                 CornerRadius = new CornerRadius(8),
                 BorderThickness = new Thickness(1),
-                Margin = new Thickness(0, 0, 0, 16),
+                Margin = new Thickness(0, 0, 0, 20),
                 Padding = new Thickness(0),
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
@@ -36,7 +36,7 @@ namespace ColorVision.UI.Desktop.Settings
             {
                 var entry = entries[i];
                 bool isLast = i == entries.Count - 1;
-                FrameworkElement row = CreatePropertySettingRow(entry, isLast, i);
+                FrameworkElement row = CreatePropertySettingRow(entry, isLast);
 
                 stackPanel.Children.Add(row);
             }
@@ -48,7 +48,7 @@ namespace ColorVision.UI.Desktop.Settings
                 Text = sectionName,
                 FontSize = 13,
                 FontWeight = FontWeights.SemiBold,
-                Margin = new Thickness(2, 4, 0, 10)
+                Margin = new Thickness(0, 0, 0, 8)
             };
             heading.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
             section.Children.Add(heading);
@@ -93,11 +93,11 @@ namespace ColorVision.UI.Desktop.Settings
             return border;
         }
 
-        private static Border CreatePropertySettingRow(SettingEntry entry, bool isLast, int rowIndex)
+        private static Border CreatePropertySettingRow(SettingEntry entry, bool isLast)
         {
             Border row = entry.Metadata.Layout == ConfigSettingLayout.Wide
-                ? CreateWidePropertySettingRow(entry, isLast, rowIndex)
-                : CreateInlinePropertySettingRow(entry, isLast, rowIndex);
+                ? CreateWidePropertySettingRow(entry, isLast)
+                : CreateInlinePropertySettingRow(entry, isLast);
 
             if (entry.PropertyInfo != null && entry.Metadata.Source != null)
                 PropertyEditorHelper.ApplyVisibilityBinding(row, entry.PropertyInfo, entry.Metadata.Source);
@@ -107,26 +107,25 @@ namespace ColorVision.UI.Desktop.Settings
             return row;
         }
 
-        private static Border CreateInlinePropertySettingRow(SettingEntry entry, bool isLast, int rowIndex)
+        private static Border CreateInlinePropertySettingRow(SettingEntry entry, bool isLast)
         {
             var row = new Grid
             {
-                MinHeight = 50,
+                MinHeight = 36,
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MinWidth = 220 });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
             var textPanel = CreateSettingTextPanel(entry);
-            textPanel.Margin = new Thickness(0, 0, 20, 0);
+            textPanel.Margin = new Thickness(0, 0, 24, 0);
             Grid.SetColumn(textPanel, 0);
             row.Children.Add(textPanel);
 
             bool useCompactEditor = UsesCompactInlineEditor(entry);
             var editorHost = new Border
             {
-                Width = useCompactEditor ? double.NaN : 220,
-                MinWidth = useCompactEditor ? 0 : 180,
+                Width = useCompactEditor ? double.NaN : 200,
                 HorizontalAlignment = HorizontalAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Center,
                 Child = CreatePropertyEditor(entry)
@@ -134,7 +133,7 @@ namespace ColorVision.UI.Desktop.Settings
             Grid.SetColumn(editorHost, 1);
             row.Children.Add(editorHost);
 
-            return CreateRowShell(row, isLast, rowIndex);
+            return CreateRowShell(row, isLast);
         }
 
         private static bool UsesCompactInlineEditor(SettingEntry entry)
@@ -143,7 +142,7 @@ namespace ColorVision.UI.Desktop.Settings
             return propertyType != null && (Nullable.GetUnderlyingType(propertyType) ?? propertyType) == typeof(bool);
         }
 
-        private static Border CreateWidePropertySettingRow(SettingEntry entry, bool isLast, int rowIndex)
+        private static Border CreateWidePropertySettingRow(SettingEntry entry, bool isLast)
         {
             var row = new StackPanel
             {
@@ -151,14 +150,14 @@ namespace ColorVision.UI.Desktop.Settings
             };
 
             var textPanel = CreateSettingTextPanel(entry);
-            textPanel.Margin = new Thickness(0, 0, 0, 12);
+            textPanel.Margin = new Thickness(0, 0, 0, 10);
             row.Children.Add(textPanel);
 
             var editor = CreatePropertyEditor(entry, useWideLayout: true);
             editor.HorizontalAlignment = HorizontalAlignment.Stretch;
             row.Children.Add(editor);
 
-            return CreateRowShell(row, isLast, rowIndex);
+            return CreateRowShell(row, isLast);
         }
 
         private static StackPanel CreateSettingTextPanel(SettingEntry entry)
@@ -171,8 +170,8 @@ namespace ColorVision.UI.Desktop.Settings
             var title = new TextBlock
             {
                 Text = entry.Title,
-                FontSize = 14,
-                FontWeight = FontWeights.Normal,
+                FontSize = 13,
+                FontWeight = FontWeights.SemiBold,
                 TextWrapping = TextWrapping.Wrap
             };
             title.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
@@ -183,35 +182,29 @@ namespace ColorVision.UI.Desktop.Settings
                 var description = new TextBlock
                 {
                     Text = entry.Description,
-                    Margin = new Thickness(0, 4, 0, 0),
-                    FontSize = 12.5,
-                    Opacity = 0.76,
+                    Margin = new Thickness(0, 3, 0, 0),
+                    FontSize = 12,
                     TextWrapping = TextWrapping.Wrap
                 };
-                description.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+                description.SetResourceReference(TextBlock.ForegroundProperty, "CV.Text.Secondary");
                 stackPanel.Children.Add(description);
             }
 
             return stackPanel;
         }
 
-        private static Border CreateRowShell(UIElement child, bool isLast, int rowIndex)
+        private static Border CreateRowShell(UIElement child, bool isLast)
         {
             var border = new Border
             {
-                Padding = new Thickness(18, 10, 18, 10),
+                Padding = new Thickness(0, 10, 0, 10),
+                Margin = new Thickness(16, 0, 16, 0),
                 BorderThickness = new Thickness(0, 0, 0, isLast ? 0 : 1),
                 Child = child,
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
-            border.SetResourceReference(Border.BorderBrushProperty, "ButtonBorderBrush");
-            SetRowBackground(border, rowIndex);
+            border.SetResourceReference(Border.BorderBrushProperty, "CV.Border.Weak");
             return border;
-        }
-
-        private static void SetRowBackground(Border border, int rowIndex)
-        {
-            border.Background = null;
         }
 
         private static FrameworkElement CreateClassSettingsPage(SettingEntry entry, ViewModelBase viewModel, bool showTitle)
@@ -313,7 +306,7 @@ namespace ColorVision.UI.Desktop.Settings
 
             for (int index = 0; index < entries.Count; index++)
             {
-                stackPanel.Children.Add(CreatePropertySettingRow(entries[index], index == entries.Count - 1, index));
+                stackPanel.Children.Add(CreatePropertySettingRow(entries[index], index == entries.Count - 1));
             }
 
             card.Child = stackPanel;
@@ -362,7 +355,13 @@ namespace ColorVision.UI.Desktop.Settings
                 }
                 else
                 {
-                    ApplyEditorSizing(dockPanel);
+                    // Only normalize the standalone editor. Composite editors own their child layout.
+                    if (dockPanel.Children.Count == 1 && dockPanel.Children[0] is FrameworkElement editor)
+                    {
+                        editor.Margin = new Thickness(0);
+                        ApplyEditorSizing(editor);
+                        System.Windows.Automation.AutomationProperties.SetName(editor, entry.Title);
+                    }
                 }
                 return dockPanel;
             }
@@ -445,22 +444,24 @@ namespace ColorVision.UI.Desktop.Settings
         private static bool ShouldFillLastChild(DockPanel dockPanel)
         {
             if (dockPanel.Children.Count != 1) return true;
-            return dockPanel.Children[0] is TextBox or Panel;
+            return dockPanel.Children[0] is TextBox or ComboBox or Panel;
         }
 
-        private static void ApplyEditorSizing(DependencyObject element)
+        private static void ApplyEditorSizing(FrameworkElement element)
         {
             switch (element)
             {
                 case TextBox textBox:
-                    textBox.MinWidth = Math.Max(textBox.MinWidth, 200);
+                    textBox.SetResourceReference(FrameworkElement.StyleProperty, "SettingsEditorTextBoxStyle");
+                    textBox.Width = double.NaN;
+                    textBox.MinWidth = 0;
                     textBox.HorizontalAlignment = HorizontalAlignment.Stretch;
                     break;
                 case ComboBox comboBox:
                     comboBox.SetResourceReference(FrameworkElement.StyleProperty, "SettingsEditorComboBoxStyle");
-                    comboBox.MinHeight = Math.Max(comboBox.MinHeight, 32);
-                    comboBox.MinWidth = Math.Max(comboBox.MinWidth, 220);
-                    comboBox.HorizontalAlignment = HorizontalAlignment.Right;
+                    comboBox.Width = double.NaN;
+                    comboBox.MinWidth = 0;
+                    comboBox.HorizontalAlignment = HorizontalAlignment.Stretch;
                     break;
                 case ToggleButton toggleButton:
                     toggleButton.HorizontalAlignment = HorizontalAlignment.Right;
@@ -469,14 +470,6 @@ namespace ColorVision.UI.Desktop.Settings
                 case ButtonBase button:
                     button.VerticalAlignment = VerticalAlignment.Center;
                     break;
-            }
-
-            foreach (object child in LogicalTreeHelper.GetChildren(element))
-            {
-                if (child is DependencyObject dependencyObject)
-                {
-                    ApplyEditorSizing(dependencyObject);
-                }
             }
         }
 

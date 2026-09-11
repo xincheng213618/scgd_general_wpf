@@ -62,7 +62,7 @@
 		<PackageReference Include="HelixToolkit.Core.Wpf" Version="2.27.3" />
 		<PackageReference Include="HelixToolkit.Wpf.SharpDX" Version="3.1.2" />
 		<PackageReference Include="HelixToolkit.SharpDX.Assimp" Version="3.1.2" />
-		<!-- Newer versions pull SkiaSharp.Views.WPF assets that require Windows 10.0.19041 while ColorVision targets windows7.0. -->
+		<!-- Compatibility freeze: keep ScottPlot.WPF 5.0.56; see component-handbook.md for the SkiaSharp asset-selection constraint. -->
 		<PackageReference Include="ScottPlot.WPF" Version="5.0.56" />
 	</ItemGroup>
 

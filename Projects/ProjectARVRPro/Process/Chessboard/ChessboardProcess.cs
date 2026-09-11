@@ -35,7 +35,7 @@ namespace ProjectARVRPro.Process.Chessboard
             {
                 log?.Info("开始 Chessboard 流程解析");
 
-                var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                var values = ctx.GetMeasureResults();
                 if (values.Count > 0)
                     ctx.Result.FileName = values[0].FileUrl;
 

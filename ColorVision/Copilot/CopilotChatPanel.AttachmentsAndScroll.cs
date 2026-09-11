@@ -19,6 +19,8 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotChatPanel
     {
+        private const double MessageBottomThreshold = 36;
+
         private async void PromptTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
         {
             if (DataContext is not CopilotChatViewModel viewModel)
@@ -81,30 +83,59 @@ namespace ColorVision.Copilot
 
         private bool IsNearBottom()
         {
-            const double threshold = 36;
             var scrollViewer = GetMessagesScrollViewer();
-            return scrollViewer == null || scrollViewer.ScrollableHeight - scrollViewer.VerticalOffset <= threshold;
+            return scrollViewer == null || scrollViewer.ScrollableHeight - scrollViewer.VerticalOffset <= MessageBottomThreshold;
         }
 
-        private void ScrollToBottom()
+        private void CancelPendingMessageNavigation()
         {
-            if (_isScrollToBottomPending)
+            _messageNavigationVersion++;
+            _messageNavigationOperation?.Abort();
+            _messageNavigationOperation = null;
+            _isScrollToBottomPending = false;
+            _isFindNavigationPending = false;
+        }
+
+        private void CompleteMessageNavigation(long version)
+        {
+            if (version != _messageNavigationVersion)
                 return;
 
+            _messageNavigationOperation = null;
+            _isScrollToBottomPending = false;
+            _isFindNavigationPending = false;
+            if (IsNearBottom())
+                HideScrollToLatestButton();
+            else
+                ShowScrollToLatestButton();
+        }
+
+        private void ScrollToBottom(bool isExplicitNavigation = false)
+        {
+            var viewModel = _attachedViewModel;
+            if (viewModel == null || !isExplicitNavigation && _messageNavigationOperation != null)
+                return;
+
+            CancelPendingMessageNavigation();
+            var messages = viewModel.Messages;
+            var version = _messageNavigationVersion;
             _isScrollToBottomPending = true;
             HideScrollToLatestButton();
-            Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
+            _messageNavigationOperation = Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
             {
                 try
                 {
-                    if (MessagesListBox.Items.Count > 0)
-                        MessagesListBox.ScrollIntoView(MessagesListBox.Items[MessagesListBox.Items.Count - 1]);
+                    if (version != _messageNavigationVersion
+                        || !ReferenceEquals(viewModel, _attachedViewModel)
+                        || !ReferenceEquals(messages, viewModel.Messages))
+                        return;
+
+                    // ScrollIntoView would anchor a tall last row at its top and can override the end offset.
                     GetMessagesScrollViewer()?.ScrollToEnd();
                 }
                 finally
                 {
-                    _isScrollToBottomPending = false;
-                    HideScrollToLatestButton();
+                    CompleteMessageNavigation(version);
                 }
             });
         }
@@ -125,6 +156,30 @@ namespace ColorVision.Copilot
             var scrollViewer = GetMessagesScrollViewer();
             if (scrollViewer == null || !ReferenceEquals(e.OriginalSource, scrollViewer))
                 return;
+
+            if (_isScrollToBottomPending
+                && _messageNavigationOperation?.Status == DispatcherOperationStatus.Pending
+                && e.VerticalChange < 0
+                && e.ExtentHeightChange >= 0
+                && e.ViewportHeightChange == 0
+                && !IsNearBottom())
+            {
+                CancelPendingMessageNavigation();
+            }
+
+            // Markdown can finish layout after its Content-triggered follow has run.
+            // Use the previous viewport, and never treat an upward scroll as new content.
+            var previousViewportHeight = e.ViewportHeight - e.ViewportHeightChange;
+            var previousScrollableHeight = Math.Max(0, e.ExtentHeight - e.ExtentHeightChange - previousViewportHeight);
+            var previousOffset = e.VerticalOffset - e.VerticalChange;
+            if (e.ExtentHeightChange > 0
+                && e.VerticalChange >= 0
+                && previousViewportHeight > 0
+                && e.ViewportHeight > 0
+                && previousScrollableHeight - previousOffset <= MessageBottomThreshold)
+            {
+                ScrollToBottom();
+            }
 
             if (IsNearBottom())
                 HideScrollToLatestButton();

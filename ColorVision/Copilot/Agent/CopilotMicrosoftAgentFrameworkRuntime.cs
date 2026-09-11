@@ -35,6 +35,7 @@ namespace ColorVision.Copilot
         private readonly CopilotAgentContextBuilder _contextBuilder;
         private readonly CopilotToolExecutor _toolExecutor;
         private readonly Func<CopilotProfileConfig, IChatClient> _chatClientFactory;
+        private readonly Func<AIAgent, AIAgent>? _decorateHarnessAgent;
         private readonly ICopilotExternalToolProvider _externalToolProvider;
         private readonly CopilotCapabilityCatalog _capabilityCatalog;
         private readonly CopilotAgentSkillUsageStore _skillUsageStore;
@@ -114,12 +115,14 @@ namespace ColorVision.Copilot
             ICopilotAutomaticApprovalReviewer automaticApprovalReviewer,
             CopilotAutomaticApprovalOverrideStore? automaticApprovalOverrideStore = null,
             Func<string?, IReadOnlyList<CopilotBackgroundShellCommandSnapshot>>?
-                backgroundShellCommandSnapshotProvider = null)
+                backgroundShellCommandSnapshotProvider = null,
+            Func<AIAgent, AIAgent>? decorateHarnessAgent = null)
         {
             _toolRegistry = toolRegistry ?? throw new ArgumentNullException(nameof(toolRegistry));
             _contextBuilder = contextBuilder ?? throw new ArgumentNullException(nameof(contextBuilder));
             _toolExecutor = toolExecutor ?? throw new ArgumentNullException(nameof(toolExecutor));
             _chatClientFactory = chatClientFactory ?? throw new ArgumentNullException(nameof(chatClientFactory));
+            _decorateHarnessAgent = decorateHarnessAgent;
             _externalToolProvider = externalToolProvider ?? throw new ArgumentNullException(nameof(externalToolProvider));
             _capabilityCatalog = capabilityCatalog ?? CopilotCapabilityCatalog.Shared;
             _skillUsageStore = skillUsageStore ?? CopilotAgentSkillUsageStore.Shared;

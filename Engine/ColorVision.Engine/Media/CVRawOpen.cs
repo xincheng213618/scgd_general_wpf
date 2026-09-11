@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1863,CS8604
+#pragma warning disable CA1863,CS8604
 #pragma warning disable CA1001
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
@@ -506,7 +506,8 @@ namespace ColorVision.Engine.Media
         {
             public required BaseProperties DrawProperties { get; init; }
             public required PoiPoint Point { get; init; }
-            public required PoiMeasurementPoint MeasurementPoint { get; init; }
+            public PoiMeasurementPoint MeasurementPoint { get; init; }
+            public ClosedPixelRegion? Region { get; init; }
         }
 
         private List<ViewPoiRequest> CreateViewPoiRequests()
@@ -515,6 +516,33 @@ namespace ColorVision.Engine.Media
             foreach (var drawing in EditorContext.DrawingVisualLists)
             {
                 BaseProperties properties = drawing.BaseAttribute;
+                if (properties is PolygonProperties { IsClosed: false })
+                    throw new ArgumentException($"多边形 {properties.Id} 尚未闭合，请在图形属性或右键菜单中启用“闭合区域”。");
+                ClosedPixelRegion? region = properties switch
+                {
+                    CircleProperties ellipse when ellipse.Radius != ellipse.RadiusY => ClosedPixelRegion.Ellipse(ellipse.Center, ellipse.Radius, ellipse.RadiusY, ellipse.Rotation),
+                    RectangleProperties rectangle when rectangle.Rotation != 0 => ClosedPixelRegion.Polygon(new[] { rectangle.Rect.TopLeft, rectangle.Rect.TopRight, rectangle.Rect.BottomRight, rectangle.Rect.BottomLeft }, rectangle.Rotation),
+                    PolygonProperties polygon when polygon.IsClosed => ClosedPixelRegion.Polygon(polygon.Points, polygon.Rotation),
+                    _ => null
+                };
+                if (region != null)
+                {
+                    Rect bounds = RegionGeometry.LocalBounds((RegionProperties)properties);
+                    requests.Add(new ViewPoiRequest
+                    {
+                        DrawProperties = properties,
+                        Region = region,
+                        Point = new PoiPoint
+                        {
+                            Name = properties is ITextProperties text ? text.Text : properties.Id.ToString(),
+                            PixelX = bounds.X + bounds.Width / 2, PixelY = bounds.Y + bounds.Height / 2,
+                            Width = bounds.Width, Height = bounds.Height,
+                            PointType = region.IsEllipse ? PoiShape.Circle : properties is RectangleProperties ? PoiShape.Rect : PoiShape.Polygon,
+                            RegionShapeName = region.IsEllipse ? "椭圆" : properties is RectangleProperties ? "矩形" : "多边形"
+                        }
+                    });
+                    continue;
+                }
                 PoiPoint? point = properties switch
                 {
                     CircleTextProperties circle => CreateCirclePoint(
@@ -565,6 +593,31 @@ namespace ColorVision.Engine.Media
             return requests;
         }
 
+        private (int Channels, PoiMeasurementResult[] Results) CalculateViewPoi(List<ViewPoiRequest> requests)
+        {
+            if (requests.Count == 0) throw new ArgumentException("请先绘制圆、椭圆、矩形或闭合多边形；开放折线需要先闭合。");
+            _loadBuffer?.Invoke();
+            lock (_bufferSync)
+            {
+                PoiMeasurementBuffer buffer = _measurementBuffer ?? throw new InvalidOperationException("当前图像没有可用的 CIE 测量数据。");
+                var results = new PoiMeasurementResult[requests.Count];
+                var standard = new List<PoiMeasurementPoint>();
+                var indices = new List<int>();
+                for (int i = 0; i < requests.Count; i++)
+                {
+                    if (requests[i].Region is ClosedPixelRegion region)
+                    {
+                        try { results[i] = PoiMeasurementService.CalculateRegion(buffer, region, true); }
+                        catch (ArgumentException error) { throw new ArgumentException($"区域 {requests[i].Point.Name}：{error.Message}", error); }
+                    }
+                    else { standard.Add(requests[i].MeasurementPoint); indices.Add(i); }
+                }
+                PoiMeasurementResult[] legacy = PoiMeasurementService.CalculateRaw(buffer, standard);
+                for (int i = 0; i < legacy.Length; i++) results[indices[i]] = legacy[i];
+                return (buffer.Channels, results);
+            }
+        }
+
         private static PoiPoint CreateCirclePoint(string name, int x, int y, int diameter)
             => new()
             {
@@ -591,42 +644,15 @@ namespace ColorVision.Engine.Media
         {
             if (!show) return;
             string message = $"Y:{luminance:F1}";
-            switch (properties)
-            {
-                case CircleTextProperties circle:
-                    circle.Msg = message;
-                    break;
-                case CircleProperties circle:
-                    circle.Msg = message;
-                    break;
-                case RectangleTextProperties rectangle:
-                    rectangle.Msg = message;
-                    break;
-                case RectangleProperties rectangle:
-                    rectangle.Msg = message;
-                    break;
-            }
+            properties.IsMeasurementMessage = true;
+            properties.Msg = message;
         }
 
         private static void SetColorMessage(BaseProperties properties, PoiResultCIExyuvData result, bool show)
         {
             if (!show || !CVCIEShowConfig.Instance.IsShowString) return;
-            string message = FormatMessage(CVCIEShowConfig.Instance.Template, result);
-            switch (properties)
-            {
-                case CircleTextProperties circle:
-                    circle.Msg = message;
-                    break;
-                case CircleProperties circle:
-                    circle.Msg = message;
-                    break;
-                case RectangleTextProperties rectangle:
-                    rectangle.Msg = message;
-                    break;
-                case RectangleProperties rectangle:
-                    rectangle.Msg = message;
-                    break;
-            }
+            properties.IsMeasurementMessage = true;
+            properties.Msg = FormatMessage(CVCIEShowConfig.Instance.Template, result);
         }
 
         public List<MenuItemMetadata> GetContextMenuItems()
@@ -666,57 +692,60 @@ namespace ColorVision.Engine.Media
                     Order = 303,
                     Command = new RelayCommand(a =>
                     {
-                        Func<double, double> normalize = CVCIEShowConfig.Instance.CreateValueNormalizer();
-                        List<ViewPoiRequest> viewRequests = CreateViewPoiRequests();
-                        PoiMeasurementPoint[] requests = new PoiMeasurementPoint[viewRequests.Count];
-                        for (int index = 0; index < requests.Length; index++)
+                        try
                         {
-                            requests[index] = viewRequests[index].MeasurementPoint;
-                        }
-                        (int channels, PoiMeasurementResult[] measurements) = CalculatePoi(requests, true);
-                        bool show = EditorContext.DrawingVisualLists.Count < 1000;
+                            Func<double, double> normalize = CVCIEShowConfig.Instance.CreateValueNormalizer();
+                            List<ViewPoiRequest> viewRequests = CreateViewPoiRequests();
+                            (int channels, PoiMeasurementResult[] measurements) = CalculateViewPoi(viewRequests);
+                            bool show = EditorContext.DrawingVisualLists.Count < 1000;
 
-                        if (channels == 1)
-                        {
-                            ObservableCollection<PoiResultCIEYData> results = new();
-                            for (int index = 0; index < measurements.Length; index++)
+                            if (channels == 1)
                             {
-                                ViewPoiRequest request = viewRequests[index];
-                                PoiResultCIEYData result = new()
+                                ObservableCollection<PoiResultCIEYData> results = new();
+                                for (int index = 0; index < measurements.Length; index++)
                                 {
-                                    Point = request.Point,
-                                    Y = normalize(measurements[index].Y)
-                                };
-                                SetLuminanceMessage(request.DrawProperties, result.Y, show);
-                                results.Add(result);
+                                    ViewPoiRequest request = viewRequests[index];
+                                    PoiResultCIEYData result = new()
+                                    {
+                                        Point = request.Point,
+                                        Y = normalize(measurements[index].Y)
+                                    };
+                                    SetLuminanceMessage(request.DrawProperties, result.Y, show);
+                                    results.Add(result);
+                                }
+                                new WindowCVCIE(results) { Owner = Application.Current.GetActiveWindow() }.Show();
                             }
-                            new WindowCVCIE(results) { Owner = Application.Current.GetActiveWindow() }.Show();
+                            else
+                            {
+                                ObservableCollection<PoiResultCIExyuvData> results = new();
+                                for (int index = 0; index < measurements.Length; index++)
+                                {
+                                    ViewPoiRequest request = viewRequests[index];
+                                    PoiMeasurementResult measurement = measurements[index];
+                                    PoiResultCIExyuvData result = new()
+                                    {
+                                        Point = request.Point,
+                                        X = measurement.X,
+                                        Y = measurement.Y,
+                                        Z = measurement.Z,
+                                        x = measurement.ChromaX,
+                                        y = measurement.ChromaY,
+                                        u = measurement.U,
+                                        v = measurement.V,
+                                        CCT = measurement.Cct,
+                                        Wave = measurement.Wave
+                                    };
+                                    result.NormalizeXyz(normalize);
+                                    SetColorMessage(request.DrawProperties, result, show);
+                                    results.Add(result);
+                                }
+                                new WindowCVCIE(results) { Owner = Application.Current.GetActiveWindow() }.Show();
+                            }
                         }
-                        else
+                        catch (Exception error)
                         {
-                            ObservableCollection<PoiResultCIExyuvData> results = new();
-                            for (int index = 0; index < measurements.Length; index++)
-                            {
-                                ViewPoiRequest request = viewRequests[index];
-                                PoiMeasurementResult measurement = measurements[index];
-                                PoiResultCIExyuvData result = new()
-                                {
-                                    Point = request.Point,
-                                    X = measurement.X,
-                                    Y = measurement.Y,
-                                    Z = measurement.Z,
-                                    x = measurement.ChromaX,
-                                    y = measurement.ChromaY,
-                                    u = measurement.U,
-                                    v = measurement.V,
-                                    CCT = measurement.Cct,
-                                    Wave = measurement.Wave
-                                };
-                                result.NormalizeXyz(normalize);
-                                SetColorMessage(request.DrawProperties, result, show);
-                                results.Add(result);
-                            }
-                            new WindowCVCIE(results) { Owner = Application.Current.GetActiveWindow() }.Show();
+                            log.Error("CVCIE POI calculation failed.", error);
+                            MessageBox.Show(error.Message, "POI 区域测量", MessageBoxButton.OK, MessageBoxImage.Warning);
                         }
                     })
                 };

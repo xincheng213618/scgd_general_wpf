@@ -225,7 +225,10 @@ namespace ProjectKB
 
             SelectedTemplateTextBlock.Text = _selectedRecipeRow.TemplateName;
             RecipeStatusTextBlock.Text = _selectedRecipeRow.HasLimit ? "当前模板已配置Recipe判定或背光自动修正项" : "当前模板未配置任何Recipe判定或背光自动修正项";
-            RecipeStatusTextBlock.Foreground = _selectedRecipeRow.HasLimit ? FindResource("GlobalTextBrush") as Brush : Brushes.OrangeRed;
+            if (_selectedRecipeRow.HasLimit)
+                RecipeStatusTextBlock.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+            else
+                RecipeStatusTextBlock.Foreground = Brushes.OrangeRed;
         }
 
         private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)

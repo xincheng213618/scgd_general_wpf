@@ -1,4 +1,5 @@
 using ColorVision.Update;
+using log4net;
 using System;
 using System.IO;
 using System.IO.Pipes;
@@ -13,6 +14,8 @@ namespace ColorVision
         private const byte AcceptedResponse = 1;
         private const string PipeNamePrefix = "ColorVision.SingleInstanceReplacement.";
         private static readonly TimeSpan DefaultConnectTimeout = TimeSpan.FromSeconds(2);
+        private static readonly TimeSpan DefaultResponseTimeout = TimeSpan.FromSeconds(15);
+        private static readonly ILog Log = LogManager.GetLogger(typeof(SingleInstanceReplacementListener));
 
         private readonly CancellationTokenSource _cancellationTokenSource = new();
         private readonly Action _finalizeShutdown;
@@ -37,14 +40,16 @@ namespace ColorVision
         }
 
         public static SingleInstanceCloseRequestResult TryRequestShutdown(int processId) =>
-            TryRequestShutdown(processId, DefaultConnectTimeout);
+            TryRequestShutdownAsync(processId, DefaultConnectTimeout, DefaultResponseTimeout).GetAwaiter().GetResult();
 
-        internal static SingleInstanceCloseRequestResult TryRequestShutdown(
+        internal static async Task<SingleInstanceCloseRequestResult> TryRequestShutdownAsync(
             int processId,
-            TimeSpan connectTimeout)
+            TimeSpan connectTimeout,
+            TimeSpan responseTimeout)
         {
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(processId);
             ArgumentOutOfRangeException.ThrowIfLessThan(connectTimeout, TimeSpan.Zero);
+            ArgumentOutOfRangeException.ThrowIfLessThan(responseTimeout, TimeSpan.Zero);
 
             bool connected = false;
             try
@@ -53,16 +58,24 @@ namespace ColorVision
                     ".",
                     CreatePipeName(processId),
                     PipeDirection.In,
-                    PipeOptions.None);
-                pipe.Connect(checked((int)Math.Ceiling(connectTimeout.TotalMilliseconds)));
+                    PipeOptions.Asynchronous);
+                await pipe.ConnectAsync(checked((int)Math.Ceiling(connectTimeout.TotalMilliseconds))).ConfigureAwait(false);
                 connected = true;
 
-                return pipe.ReadByte() switch
+                using var responseCancellation = new CancellationTokenSource(responseTimeout);
+                byte[] response = new byte[1];
+                int bytesRead = await pipe.ReadAsync(response.AsMemory(), responseCancellation.Token).ConfigureAwait(false);
+                return (bytesRead == 1 ? response[0] : -1) switch
                 {
                     AcceptedResponse => SingleInstanceCloseRequestResult.Accepted,
                     RejectedResponse => SingleInstanceCloseRequestResult.Rejected,
                     _ => SingleInstanceCloseRequestResult.Indeterminate,
                 };
+            }
+            catch (OperationCanceledException) when (connected)
+            {
+                Log.Warn($"Earlier ColorVision process {processId} did not answer the shutdown request within {responseTimeout.TotalSeconds:0.###} seconds.");
+                return SingleInstanceCloseRequestResult.TimedOut;
             }
             catch (Exception ex) when (ex is IOException
                 or TimeoutException

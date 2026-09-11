@@ -380,6 +380,12 @@ namespace ColorVision.Engine.Templates
             if (!ReferenceEquals(_selectedSource, _appliedSource) && !ApplyTemplateSource(_selectedSource))
                 return;
 
+            if (CustomPreviewHost.Children.OfType<ITemplateEditorValidation>().Any(editor => !editor.TryCommitPendingEdits()))
+            {
+                ShowValidation("请先修正参数编辑器中的错误输入。");
+                return;
+            }
+
             if (!_template.TryCreateTemplate(templateName, out string message))
             {
                 ShowValidation(message);

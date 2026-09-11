@@ -2,7 +2,10 @@ using AvalonDock;
 using AvalonDock.Layout;
 using AvalonDock.Layout.Serialization;
 using ColorVision.UI;
+using ColorVision.UI.Docking;
 using log4net;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -146,19 +149,18 @@ namespace ColorVision.Solution.Workspace
                 {
                     // 当所有动态文档被取消后，LayoutDocumentPane 可能被移除。
                     // 创建一个新的 LayoutDocumentPane 以确保视图标签页有地方添加。
-                    log.Warn("加载的布局中未找到 LayoutDocumentPane，正在创建新的文档窗格");
+                    log.Warn("The saved layout did not contain a LayoutDocumentPane; creating a replacement pane.");
                     EnsureDocumentPane();
                 }
 
                 // 清除旧的视图文档缓存，以便 ShowAllViews 能重新创建
                 DockViewManagerHost.ClearViewDocuments();
 
-                log.Info("主窗口布局已加载");
                 return true;
             }
             catch (Exception ex)
             {
-                log.Warn("加载主窗口布局失败, 将使用默认布局", ex);
+                log.Warn("Failed to load the saved main-window layout; the default layout will be used.", ex);
                 return false;
             }
         }
@@ -699,13 +701,17 @@ namespace ColorVision.Solution.Workspace
     /// actually visible. ApplicationIdle runs after WPF's render priority, so a
     /// visible heavyweight panel no longer delays the main window's first frame.
     /// </summary>
-    internal sealed class DeferredDockContent : ContentControl
+    internal sealed class DeferredDockContent : ContentControl, IDockPanelTitleActionProvider
     {
         private readonly Func<object> _contentFactory;
         private readonly Action<long> _materialized;
         private readonly Action<Exception> _materializationFailed;
+        private readonly ObservableCollection<DockPanelTitleAction> _titleActions = [];
+        private INotifyCollectionChanged? _sourceTitleActions;
         private bool _isScheduled;
         private bool _materializationAttempted;
+
+        public IReadOnlyList<DockPanelTitleAction> TitleActions => _titleActions;
 
         public DeferredDockContent(
             Func<object> contentFactory,
@@ -729,6 +735,7 @@ namespace ColorVision.Solution.Workspace
             try
             {
                 Content = _contentFactory();
+                SynchronizeTitleActions();
                 stopwatch.Stop();
                 _materialized(stopwatch.ElapsedMilliseconds);
             }
@@ -740,6 +747,29 @@ namespace ColorVision.Solution.Workspace
 
             return Content;
         }
+
+        private void SynchronizeTitleActions()
+        {
+            if (_sourceTitleActions != null)
+                _sourceTitleActions.CollectionChanged -= SourceTitleActions_CollectionChanged;
+
+            _sourceTitleActions = null;
+            _titleActions.Clear();
+            if (Content is not IDockPanelTitleActionProvider provider)
+                return;
+
+            foreach (DockPanelTitleAction action in provider.TitleActions)
+                _titleActions.Add(action);
+
+            if (provider.TitleActions is INotifyCollectionChanged observable)
+            {
+                _sourceTitleActions = observable;
+                _sourceTitleActions.CollectionChanged += SourceTitleActions_CollectionChanged;
+            }
+        }
+
+        private void SourceTitleActions_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+            => SynchronizeTitleActions();
 
         private void ScheduleMaterialization()
         {

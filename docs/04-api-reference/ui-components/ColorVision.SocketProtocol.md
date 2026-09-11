@@ -5,13 +5,15 @@ status: "current"
 summary: "Socket连接管理器的监听配置、窗口关闭与服务停止、防火墙放行、消息查询和JSON/Text分发；清空消息只清列表，重发可能换客户端，Sent不证明对端执行。"
 aliases: ["Socket端口连不上或消息没响应", "网络通信", "Socket 连接管理器", "Socket服务设置", "通信协议", "文本模式", "发送消息记录", "消息重发", "Socket消息搜索", "关闭Socket窗口", "停止Socket服务", "清空消息", "防火墙放行", "防火墙专用公用", "ColorVision.SocketProtocol", "SocketManager", "SocketManagerWindow", "SocketConfig", "SocketServerLifecycle", "SocketServerSettings", "SocketManagerApplicationLifetime", "SocketWorkerTracker", "SocketJsonDispatcher", "SocketTextDispatcher", "ISocketJsonHandler", "ISocketTextDispatcher", "SocketMessageManager", "SocketMessageManagerConfig", "SocketRequest", "SocketResponse", "SocketFirewallService", "WindowsFirewallStatusReader", "FirewallCommandService"]
 code_paths: ["UI/ColorVision.SocketProtocol", "src/ColorVisionServiceHost/FirewallCommandService.cs", "ColorVision/App.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/SocketServerLifecycleTests.cs", "Test/ColorVision.UI.Tests/SocketShutdownTests.cs", "Test/ColorVision.UI.Tests/SocketManagerProjectionTests.cs", "Test/ColorVision.UI.Tests/SocketMessageStorageTests.cs", "Test/ColorVision.UI.Tests/SocketManagerWindowLayoutTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/SocketServerLifecycleTests.cs", "Test/ColorVision.UI.Tests/SocketShutdownTests.cs", "Test/ColorVision.UI.Tests/SocketManagerProjectionTests.cs", "Test/ColorVision.UI.Tests/SocketMessageStorageTests.cs", "Test/ColorVision.UI.Tests/SocketMessageAsyncProjectionTests.cs", "Test/ColorVision.UI.Tests/SocketManagerWindowLayoutTests.cs"]
 related: ["ui.index", "ui.discovery", "ui.database-query", "ui.sqlite-storage", "engine.database-maintenance", "platform.service-host"]
 ---
 
 # TCP 监听、协议分发与消息记录
 
-`ColorVision.SocketProtocol` 为桌面宿主提供 TCP 监听、JSON/Text 指令分发和收发记录。通过 **帮助 → Socket 连接管理器** 查看与管理；启用服务后，也可点击状态栏的 Socket 服务图标进入。MES、PLC 和客户设备的业务字段、权限及动作约束由各项目协议负责。
+`ColorVision.SocketProtocol` 为桌面宿主提供 TCP 监听、JSON/Text 指令分发和收发记录。通过 **帮助 → 网络通信**（`Alt+H` 后按 `C`）查看与管理，窗口保留完整标题“Socket 连接管理器”；启用服务后，也可点击状态栏的 Socket 服务图标进入。MES、PLC 和客户设备的业务字段、权限及动作约束由各项目协议负责。
+
+打开窗口后焦点位于消息搜索框，Tab / Shift+Tab 在窗口内循环。Ctrl+F 回到搜索，Esc 有筛选时先清除筛选，无筛选时关闭窗口；关闭仍只释放窗口订阅，不停止通信服务。
 
 ## 配置与启用服务
 
@@ -122,7 +124,21 @@ dispatcher 不统一回填响应关联字段。内置空请求/空事件错误 `
 
 正常 JSON/Text 及错误响应路径均先调用 `MessageManager.AddMessage` 创建 `Sent` 行，再写入网络。**有 Sent 不证明网络写入成功或对端已执行**；`ResponseCode` 是生成的响应内容，不是对端 ACK。接收行按读取片段登记，也不能直接用于统计业务操作次数。
 
-`AddMessage` 在同一数据库事务内写入元数据和压缩正文，提交后才发布到 WPF 集合。数据库及 UI 发布异常被捕获记入日志，方法不返回可区分结果：返回不证明已落库，界面未出现也不证明事务未提交。JSON 正常分支出错后进入异常分支，还可能再次登记同一接收内容。
+`AddMessage` 在同一数据库事务内同步写入元数据和压缩正文，提交后将 WPF 集合更新以 `Background` 优先级投递给 UI，不等待列表刷新再派发协议或发送响应。投递在存储锁内按提交顺序进行，但从不在锁内同步等待 UI。数据库及 UI 发布异常被捕获记入日志，方法不返回可区分结果：返回不证明已落库，界面未出现也不证明事务未提交。JSON 正常分支出错后进入异常分支，还可能再次登记同一接收内容。
+
+清空消息、重新查询和高级查询/整表操作使之前待投递的列表更新失效，防止旧消息重新冒出或查询结果重复插入；后续提交的消息仍可实时显示。这不是数据库删除或保留策略。管理器释放或 UI Dispatcher 退出后不再追加列表，但已经提交的记录仍可在下次查询或启动时读取。
+
+### 回包派发与界面刷新计时
+
+INFO 结构化日志以数据库 `MessageId` 关联，`EventName` / `MsgID` 只作补充，不能假设客户 `MsgID` 唯一：
+
+| 事件 | 字段与边界 |
+| --- | --- |
+| `SocketMessageTiming` | `StorageGateWaitMs` 是存储锁排队，`StorageWriteMs` 是事务写入/正文压缩，`PersistMs` 包含前缀准备、排队和提交；它们不是三个互不重叠的阶段。`UiUpdateAwaited=false` 表示返回前未等待界面追加 |
+| `SocketReceiveDispatchTiming` | JSON 正常解析路径中，`DecodeAndDeserializeMs` 包含字节解码、原始消息日志及反序列化；`RecordMessageMs` 包含 `AddMessage` 的整个调用；二者之和为 `ReceiveToDispatchMs`，不含 handler 内部执行/等待。`DispatchRequestedAt` 位于诊断日志写出之前，不是实际 handler 已开始的证明 |
+| `SocketMessageUiTiming` | `UiQueueMs` 是后台 UI 投递到开始执行的间隔，`UiUpdateMs` 是列表追加/集合通知耗时；两者发生在独立 UI 路径，不能再次相加到同步回包派发或 PG 耗时 |
+
+UI 仍可能因其它绘图工作延迟业务 handler 的 Dispatcher 调用；这些日志仅移除并标出消息列表的同步依赖，不承诺消除所有调度或磁盘抖动。
 
 ### 重新发送一条记录
 
@@ -160,5 +176,6 @@ dispatcher 不统一回填响应关联字段。内置空请求/空事件错误 `
 | `SocketManagerProjectionTests` | WPF 状态投影、旧状态抑制、停止错误不被禁用配置掩盖 |
 | `SocketManagerWindowLayoutTests` | 筛选与空状态、详情格式化、多窗口独立筛选/关闭、维护入口及布局 |
 | `SocketMessageStorageTests` | 临时库的 gzip 写入、列表不取正文、按 ID 读取和旧 TEXT 迁移 |
+| `SocketMessageAsyncProjectionTests` | UI 不泵消息时持久化与返回仍完成、提交顺序、重新查询不重复、清空不复活、释放/Dispatcher 退出后保留数据库记录 |
 
 尚缺直接覆盖 JSON 大小写/重复名、Text 多处理器分发、TCP 分帧、网络写失败后的 Sent、重发目标与回执、防火墙规则修改的专项验证。补充验证应使用临时库、隔离客户端和无设备副作用的 handler；系统规则修改需独立验证环境。现有测试覆盖范围不等于现场业务已验收。

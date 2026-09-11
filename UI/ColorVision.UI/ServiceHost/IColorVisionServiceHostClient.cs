@@ -52,6 +52,8 @@ namespace ColorVision.UI.ServiceHost
 
         Task<ServiceHostResponse> TerminateServiceAsync(string serviceName, string? executablePath = null, int timeoutSeconds = 20, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
+        Task TerminateProcessAsync(int processId, DateTime startTimeUtc, string executablePath, IProgress<string> progress, CancellationToken cancellationToken = default);
+
         Task<ServiceHostResponse> GetCom0ComStatusAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
         Task<ServiceHostResponse> ListCom0ComPairsAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default);
@@ -71,6 +73,13 @@ namespace ColorVision.UI.ServiceHost
         public ColorVisionServiceHostClient(string pipeName = ServiceHostProtocol.PipeName)
         {
             _pipeName = string.IsNullOrWhiteSpace(pipeName) ? ServiceHostProtocol.PipeName : pipeName;
+        }
+
+        public Task TerminateProcessAsync(int processId, DateTime startTimeUtc, string executablePath, IProgress<string> progress, CancellationToken cancellationToken = default)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(processId);
+            ArgumentException.ThrowIfNullOrWhiteSpace(executablePath);
+            return new ProcessTerminationBroker(SendAsync).TerminateAsync(processId, startTimeUtc, Path.GetFullPath(executablePath), progress, cancellationToken);
         }
 
         public Task<ServiceHostResponse> SendAsync(string command, TimeSpan timeout, CancellationToken cancellationToken = default)

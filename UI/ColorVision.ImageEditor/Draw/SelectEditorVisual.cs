@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1852,CS0067,CS0103,CS8602,CS8607,CS8625
+#pragma warning disable CA1852,CS0067,CS0103,CS8602,CS8607,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Draw.Rasterized;
 using System;
@@ -120,6 +120,19 @@ namespace ColorVision.ImageEditor.Draw
                 Rect Rect = selectVisual.rect;
 
                 OldRect = new Rect(Rect.X, Rect.Y, Rect.Width, Rect.Height);
+
+                if (selectVisual.rotationHandle.Contains(point) && selectVisual.ISelectVisual is DrawingVisualBase { BaseAttribute: RegionProperties region })
+                {
+                    SetCursor(Cursors.Hand);
+                    if (IsMouseDown && rotatingRegion == null)
+                    {
+                        rotatingRegion = region;
+                        rotationBefore = region.Rotation;
+                        Rect local = RegionGeometry.LocalBounds(region);
+                        rotationCenter = new(local.X + local.Width / 2, local.Y + local.Height / 2);
+                    }
+                    return true;
+                }
 
                 // 检查点在哪个小矩形内
                 if (selectVisual.topLeft.Contains(point))
@@ -335,6 +348,7 @@ namespace ColorVision.ImageEditor.Draw
             internal Rect middleBottom;
             internal Rect middleLeft;
             internal Rect middleRight;
+            internal Rect rotationHandle = Rect.Empty;
 
             public void Dispose()
             {
@@ -455,6 +469,8 @@ namespace ColorVision.ImageEditor.Draw
                 Point start = new Point(middleTop.Left + middleTop.Width / 2, middleTop.Top + middleTop.Height / 2);
                 Point end = start + new Vector(0, -40 * thickness);
 
+                if (selectVisual is not DrawingVisualBase { BaseAttribute: RegionProperties }) return;
+                selectRect.rotationHandle = new Rect(end.X - 8 * thickness, end.Y - 8 * thickness, 16 * thickness, 16 * thickness);
                 // Draw line
                 dc.DrawLine(blackPen, start, end);
                 dc.DrawLine(whitePen, start, end);
@@ -623,6 +639,9 @@ namespace ColorVision.ImageEditor.Draw
         }
 
 
+        private RegionProperties? rotatingRegion;
+        private double rotationBefore;
+        private Point rotationCenter;
         private bool IsMouseDown;
         private Point MouseDownP;
         Point LastMouseMove;
@@ -733,6 +752,16 @@ namespace ColorVision.ImageEditor.Draw
 
                     if (SelectVisuals.Count != 0)
                     {
+                        if (rotatingRegion != null)
+                        {
+                            double initial = Math.Atan2(MouseDownP.Y - rotationCenter.Y, MouseDownP.X - rotationCenter.X);
+                            double current = Math.Atan2(point.Y - rotationCenter.Y, point.X - rotationCenter.X);
+                            double angle = rotationBefore + (current - initial) * 180 / Math.PI;
+                            rotatingRegion.Rotation = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) ? Math.Round(angle / 15) * 15 : angle;
+                            Render();
+                            LastMouseMove = point;
+                            return;
+                        }
                         if (ZoomboxSub.Cursor == Cursors.SizeAll)
                         {
                             Vector delta = point - LastMouseMove;
@@ -822,6 +851,12 @@ namespace ColorVision.ImageEditor.Draw
                     drawCanvas.RemoveOverlayVisual(SelectRect);
                 }
 
+                if (rotatingRegion is RegionProperties region)
+                {
+                    double before = rotationBefore, after = region.Rotation;
+                    if (before != after) drawCanvas.AddActionCommand(new ActionCommand(() => region.Rotation = before, () => region.Rotation = after));
+                    rotatingRegion = null;
+                }
                 IsMouseDown = false;
                 ISelectVisual = null;
                 drawCanvas.ReleaseMouseCapture();

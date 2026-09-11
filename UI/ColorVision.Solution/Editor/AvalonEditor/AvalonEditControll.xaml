@@ -10,7 +10,7 @@
              mc:Ignorable="d"
              d:DesignHeight="450"
              d:DesignWidth="800"
-             Background="{DynamicResource GlobalBackground}">
+             Background="{DynamicResource GlobalBackground}" UseLayoutRounding="True" SnapsToDevicePixels="True">
     <UserControl.CommandBindings>
         <CommandBinding Command="{x:Static local:AvalonEditControll.RunPythonCommand}"
                         CanExecute="RunPython_CanExecute"
@@ -90,6 +90,7 @@
     <Grid Background="{DynamicResource EditorBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="36"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="24"/>
         </Grid.RowDefinitions>
@@ -100,12 +101,11 @@
                 BorderThickness="0,0,0,1">
             <Grid Margin="4,2">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                <ToolBar Grid.Column="0" Background="Transparent" BorderThickness="0" Padding="0" ToolBarTray.IsLocked="True">
                     <Button Style="{StaticResource EditorCommandButtonStyle}"
                             Click="openFileClick"
                             ToolTip="打开文件"
@@ -122,7 +122,7 @@
                             Command="{x:Static workspace:SolutionDocumentCommands.Reload}"
                             ToolTip="{x:Static properties:Resources.Refresh}"
                             AutomationProperties.Name="重新加载">
-                        <TextBlock Text="↻" FontSize="19" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Viewbox Width="16" Height="16"><TextBlock Text="↻" FontSize="19" TextTrimming="None"/></Viewbox>
                     </Button>
 
                     <Border Width="1" Height="18" Margin="5,0" Background="{DynamicResource ButtonBorderBrush}"/>
@@ -145,27 +145,40 @@
                     <Border Width="1" Height="18" Margin="5,0" Background="{DynamicResource ButtonBorderBrush}"/>
 
                     <CheckBox Style="{StaticResource EditorToggleButtonStyle}"
-                              IsChecked="{Binding ElementName=textEditor, Path=WordWrap}"
+                              x:Name="WordWrapToggle" IsChecked="{Binding WordWrap}" Click="ViewOption_Click"
                               ToolTip="自动换行"
                               AutomationProperties.Name="自动换行">
                         <Rectangle Width="16" Height="16" Fill="{DynamicResource DIWordWrap}"/>
                     </CheckBox>
                     <CheckBox Style="{StaticResource EditorToggleButtonStyle}"
-                              IsChecked="{Binding ElementName=textEditor, Path=ShowLineNumbers}"
+                              IsChecked="{Binding ShowLineNumbers}" Click="ViewOption_Click"
                               ToolTip="显示行号"
                               AutomationProperties.Name="显示行号">
                         <TextBlock Width="16" Text="#" TextAlignment="Center"/>
                     </CheckBox>
                     <CheckBox Style="{StaticResource EditorToggleButtonStyle}"
-                              IsChecked="{Binding ElementName=textEditor, Path=Options.ShowEndOfLine}"
-                              ToolTip="显示换行符"
-                              AutomationProperties.Name="显示换行符">
+                              IsChecked="{Binding ShowWhitespace}" Click="ViewOption_Click"
+                              ToolTip="显示空白字符"
+                              AutomationProperties.Name="显示空白字符">
                         <TextBlock Width="16" Text="¶" TextAlignment="Center"/>
                     </CheckBox>
-                </StackPanel>
+                    <CheckBox Style="{StaticResource EditorToggleButtonStyle}" IsChecked="{Binding ShowMinimap}" Click="ViewOption_Click" ToolTip="代码地图" AutomationProperties.Name="显示代码地图">
+                        <TextBlock Text="▤" FontSize="17"/>
+                    </CheckBox>
+                    <Border Width="1" Height="18" Margin="5,0" Background="{DynamicResource ButtonBorderBrush}"/>
+                    <Button x:Name="FindButton" Style="{StaticResource EditorCommandButtonStyle}" Click="Find_Click" ToolTip="查找 / 替换 (Ctrl+F / Ctrl+H)" AutomationProperties.Name="查找">
+                        <Rectangle Width="16" Height="16" Fill="{DynamicResource DISearch}"/>
+                    </Button>
+                    <Button Style="{StaticResource EditorCommandButtonStyle}" Click="Settings_Click" ToolTip="编辑器设置" AutomationProperties.Name="编辑器设置">
+                        <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16"/>
+                    </Button>
+                    <Button x:Name="SymbolsButton" Style="{StaticResource EditorCommandButtonStyle}" Click="Symbols_Click" ToolTip="文档符号 (Ctrl+F12 / Ctrl+Shift+O)" AutomationProperties.Name="文档符号">
+                        <Viewbox Width="16" Height="16"><TextBlock Text="{}{}" FontFamily="Consolas" FontSize="16" TextTrimming="None"/></Viewbox>
+                    </Button>
+                </ToolBar>
 
                 <Button x:Name="RunPythonButton"
-                        Grid.Column="2"
+                        Grid.Column="1"
                         Visibility="Collapsed"
                         Style="{StaticResource EditorRunButtonStyle}"
                         Command="{x:Static local:AvalonEditControll.RunPythonCommand}"
@@ -180,23 +193,47 @@
             </Grid>
         </Border>
 
-        <avalonEdit:TextEditor x:Name="textEditor"
-                               Grid.Row="1"
+        <local:EditorSearchBar x:Name="SearchBar" Grid.Row="1"/>
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <avalonEdit:TextEditor x:Name="textEditor" Padding="6,4,0,4"
                                Background="{DynamicResource EditorBackgroundBrush}"
                                Foreground="{DynamicResource EditorForegroundBrush}"
                                LineNumbersForeground="{DynamicResource EditorLineNumberBrush}"
-                               FontFamily="Cascadia Mono, Consolas"
+                               FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI"
                                FontSize="14"
                                ShowLineNumbers="True"
                                HorizontalScrollBarVisibility="Auto"
                                VerticalScrollBarVisibility="Auto"/>
+            <local:EditorMinimap x:Name="Minimap" Grid.Column="1" Width="104" Margin="0,4,0,4"/>
+            <Border x:Name="SymbolPanel" Visibility="Collapsed" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,12,0" Padding="10" CornerRadius="4"
+                    Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" Width="420" PreviewKeyDown="SymbolPanel_PreviewKeyDown">
+                <StackPanel>
+                    <TextBlock Text="文档符号" Foreground="{DynamicResource GlobalTextBrush}" Margin="0,0,0,6"/>
+                    <TextBox x:Name="SymbolQuery" Padding="6,4" TextChanged="SymbolQuery_TextChanged" AutomationProperties.Name="筛选文档符号"/>
+                    <ListBox x:Name="SymbolList" DisplayMemberPath="Label" MaxHeight="280" Margin="0,6,0,0" MouseDoubleClick="SymbolList_MouseDoubleClick" AutomationProperties.Name="文档声明" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                    <TextBlock x:Name="SymbolHint" FontSize="12" Margin="0,6,0,0" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                </StackPanel>
+            </Border>
+            <Border x:Name="GoToPanel" Visibility="Collapsed" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,12,0" Padding="12,8" CornerRadius="4"
+                    Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="跳转到行 : 列" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,0,5"/>
+                    <TextBox x:Name="GoToBox" Width="190" Padding="6,4" PreviewKeyDown="GoToBox_PreviewKeyDown" AutomationProperties.Name="跳转到行"/>
+                    <TextBlock x:Name="GoToHint" Text="Enter 跳转 · Esc 取消" FontSize="12" Margin="0,5,0,0" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                </StackPanel>
+            </Border>
+        </Grid>
 
-        <Border Grid.Row="2"
+        <Border Grid.Row="3"
                 Background="{DynamicResource GlobalBackground}"
                 BorderBrush="{DynamicResource ButtonBorderBrush}"
                 BorderThickness="0,1,0,0">
             <DockPanel LastChildFill="True">
+                <Button x:Name="ZoomButton" DockPanel.Dock="Left" Width="58" Padding="4,0" Background="Transparent" BorderThickness="0" Content="100%" Click="Zoom_Click" ToolTip="缩放；Ctrl+滚轮，Ctrl+0 重置" AutomationProperties.Name="编辑器缩放"/>
+                <Button x:Name="DiagnosticButton" DockPanel.Dock="Left" Visibility="Collapsed" Padding="6,0" Background="Transparent" BorderThickness="0" Foreground="{DynamicResource EditorSyntaxErrorBrush}" Click="Diagnostic_Click" AutomationProperties.Name="定位 JSON 语法问题"/>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <TextBlock x:Name="IndentationText" Margin="8,0,2,0" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
                     <TextBlock x:Name="LineEndingText"
                                MinWidth="42"
                                Margin="8,0,2,0"

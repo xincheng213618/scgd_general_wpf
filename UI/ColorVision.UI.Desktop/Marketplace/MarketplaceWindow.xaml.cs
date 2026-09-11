@@ -54,6 +54,13 @@ namespace ColorVision.UI.Desktop.Marketplace
             InitializeComponent();
             _compactMinWidth = MinWidth;
             this.ApplyCaption();
+            WindowKeyboardNavigation.Attach(this, ListViewPlugins, () =>
+            {
+                if (_manager?.HasCurrentSelection == true)
+                    CloseDetailButton_Click(this, new RoutedEventArgs());
+                else
+                    Close();
+            });
             SizeChanged += Window_BoundsChanged;
             LocationChanged += Window_BoundsChanged;
             Loaded += (_, _) =>

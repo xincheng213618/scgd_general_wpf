@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8602,CS8604
+#pragma warning disable CS8602,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor;
@@ -21,22 +21,36 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Media
 {
+    [DisplayName("CVCIE 结果设置")]
     public class CVCIEShowConfig : ViewModelBase, IConfig
     {
         private static readonly CVCIEShowConfig DefaultConfig = new();
         public static CVCIEShowConfig Instance => ConfigService.Instance?.GetRequiredService<CVCIEShowConfig>() ?? DefaultConfig;
+        [Browsable(false)]
         public RelayCommand EditCommand { get; set; }
 
         public CVCIEShowConfig()
         {
-            EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) { Title = "CVCIE 结果设置", Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
-        [Display(Name = "Engine_PG_ShowRecordData", ResourceType = typeof(Properties.Resources))]
+        [Category("图形回显"), DisplayName("显示测量结果")]
+        [Description("在图形中央显示计算结果；修改后重新计算 POI 生效。")]
         public bool IsShowString { get => _IsShowString; set { _IsShowString = value; OnPropertyChanged(); } }
         private bool _IsShowString = true;
-        [Display(Name = "Engine_PG_DataDisplayTemplate", ResourceType = typeof(Properties.Resources))]
+
+        [Category("结果显示"), DisplayName("表格与统计小数位数")]
+        [Description("仅控制界面显示，不改变计算值及 CSV 导出。")]
+        public int DecimalPlaces
+        {
+            get => _decimalPlaces;
+            set { if (value < 0 || value > 9 || value == _decimalPlaces) return; _decimalPlaces = value; OnPropertyChanged(); }
+        }
+        private int _decimalPlaces = 3;
+        [Category("图形回显"), DisplayName("显示内容")]
+        [Description("勾选回显字段并分别设置小数位；高级模板保留自定义排版。仅影响三通道图形回显，重新计算 POI 生效。")]
+        [PropertyEditorType(typeof(CvcieTemplatePropertiesEditor))]
         public string Template { get => _Template;set { _Template = value;  OnPropertyChanged(); } }
-        private string _Template = "X:@X:F1 Y:@Y:F1 Z:@Z:F1\\nx:@x:F4 y:@y:F4 u:@u:F4 v:@v:F4\\nCCT:@CCT:F1 Wave:@Wave:F1";
+        private string _Template = "X:@X:F3  Y:@Y:F3  Z:@Z:F3\\nx:@x:F3  y:@y:F3\\nu′:@u:F3  v′:@v:F3\\nCCT:@CCT:F3 K  λd:@Wave:F3 nm";
 
         [Category("计算结果"), DisplayName("启用非正值替换")]
         [Description("替换非正 XYZ，并重算 xy、u′v′、CCT 和主波长；关闭后显示实际值。")]
@@ -99,17 +113,8 @@ namespace ColorVision.Engine.Media
             InitializeComponent();
             this.ApplyCaption();
 
-            var cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
-            var cieHeader = new List<string> { Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, "CCT", "Wave", "X", "Y", "Z", "u'", "v'", "x", "y" };
-
-            if (listViewSide.View is GridView gridViewPOI_XY_UV)
-            {
-                LeftGridViewColumnVisibilitys.Clear();
-                gridViewPOI_XY_UV.Columns.Clear();
-                for (int i = 0; i < cieHeader.Count; i++)
-                    gridViewPOI_XY_UV.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
-            }
             listViewSide.ItemsSource = PoiResultCIExyuvDatas;
+            ConfigureResultView();
             ButtonShowOnCieDiagram.IsEnabled = true;
         }
         public ObservableCollection<PoiResultCIEYData> PoiResultCIEYDatas { get; set; }
@@ -126,137 +131,176 @@ namespace ColorVision.Engine.Media
             InitializeComponent();
             this.ApplyCaption();
               
-            var cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "Y"};
-            var cieHeader = new List<string> { Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, "Y" };
-
-            if (listViewSide.View is GridView gridViewPOI_XY_UV)
-            {
-                LeftGridViewColumnVisibilitys.Clear();
-                gridViewPOI_XY_UV.Columns.Clear();
-                for (int i = 0; i < cieHeader.Count; i++)
-                    gridViewPOI_XY_UV.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
-            }
             listViewSide.ItemsSource = poiResultCIEYDatas;
+            ConfigureResultView();
             ButtonShowOnCieDiagram.IsEnabled = false;
             ButtonShowOnCieDiagram.ToolTip = "仅包含 xy 色坐标的结果可显示到 CIE 色度图";
         }
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = CVCIEShowConfig.Instance;
+            PrecisionCombo.ItemsSource = Enumerable.Range(0, 10);
 
             listViewSide.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listViewSide.SelectAll(), (s, e) => e.CanExecute = true));
-            listViewSide.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
+            listViewSide.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (_, _) => ColorVision.Common.Clipboard.SetText(CreateClipboardText()), (_, e) => e.CanExecute = listViewSide.SelectedItems.Count > 0));
 
             // Populate statistics panel
             PopulateStatisticsPanel();
         }
 
+        private void ConfigureResultView()
+        {
+            RebuildColumns();
+            PopulateStatisticsPanel();
+            CVCIEShowConfig config = (CVCIEShowConfig)DataContext;
+            config.PropertyChanged += DisplayConfigChanged;
+            Closed += (_, _) => config.PropertyChanged -= DisplayConfigChanged;
+            ResultCount.Text = $"{listViewSide.Items.Count} 个区域";
+        }
+
+        private void DisplayConfigChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(CVCIEShowConfig.DecimalPlaces)) return;
+            RebuildColumns();
+            PopulateStatisticsPanel();
+        }
+
+        private readonly Dictionary<GridViewColumn, Func<object, string>> clipboardColumns = new();
+
+        internal string CreateClipboardText()
+        {
+            if (listViewSide.View is not GridView grid) return "";
+            var columns = grid.Columns.Where(c => c.Width != 0).ToArray();
+            var selected = listViewSide.SelectedItems.Cast<object>().ToHashSet();
+            var lines = new List<string> { string.Join("\t", columns.Select(c => ClipboardCell(c.Header.ToString() ?? ""))) };
+            foreach (object row in listViewSide.Items)
+                if (selected.Contains(row)) lines.Add(string.Join("\t", columns.Select(c => ClipboardCell(clipboardColumns[c](row)))));
+            return string.Join(Environment.NewLine, lines);
+        }
+
+        private static string ClipboardCell(string value) => value.IndexOfAny(['\t', '\r', '\n', '"']) >= 0 ? "\"" + value.Replace("\"", "\"\"") + "\"" : value;
+
+        private void RebuildColumns()
+        {
+            if (listViewSide.View is not GridView grid) return;
+            var visibility = grid.Columns.ToDictionary(c => c.Header.ToString() ?? "", c => c.Width == 0);
+            grid.Columns.Clear();
+            clipboardColumns.Clear();
+            LeftGridViewColumnVisibilitys.Clear();
+            string format = "F" + ((CVCIEShowConfig)DataContext).DecimalPlaces;
+            (string Header, string Path, int Width, string Hint)[] columns =
+            {
+                ("名称", "Name", 90, "区域名称"), ("中心坐标 (px)", "Point", 130, "图形中心；多边形为外接框中心"),
+                ("尺寸 (px)", "Point", 125, "旋转前宽度、高度"), ("形状", "Shapes", 65, "测量区域形状"),
+                ("CIE X", "X", 90, "CIE X 三刺激值"), ("CIE Y", "Y", 90, "亮度（cd/m²）"), ("CIE Z", "Z", 90, "CIE Z 三刺激值"),
+                ("CIE x", "x", 70, "CIE 1931 x 色度坐标"), ("CIE y", "y", 70, "CIE 1931 y 色度坐标"),
+                ("CIE u′", "u", 70, "CIE 1976 u′ 色度坐标"), ("CIE v′", "v", 70, "CIE 1976 v′ 色度坐标"),
+                ("CCT (K)", "CCT", 90, "相关色温"), ("λd (nm)", "Wave", 90, "主波长")
+            };
+            foreach (var column in columns)
+            {
+                if (!IsPoiResultCIExyuvDatas && column.Path is not ("Name" or "Point" or "Shapes" or "Y")) continue;
+                var binding = new Binding(column.Path) { Mode = BindingMode.OneWay };
+                if (column.Path == "Point") binding.Converter = new CvciePointDisplayConverter(column.Header.StartsWith("尺寸"), format);
+                else if (column.Path is not ("Name" or "Shapes")) binding.StringFormat = format;
+                var text = new FrameworkElementFactory(typeof(TextBox));
+                text.SetValue(StyleProperty, FindResource("SelectableResultText"));
+                text.SetBinding(TextBox.TextProperty, binding);
+                text.SetBinding(ForegroundProperty, new Binding(nameof(Foreground)) { RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(ListViewItem), 1) });
+                text.SetBinding(ToolTipProperty, new Binding(column.Path == "Point" ? (column.Header.StartsWith("尺寸") ? "PixelSize" : "PixelPos") : column.Path));
+                text.SetValue(TextBox.TextAlignmentProperty, column.Path is "Name" or "Shapes" ? TextAlignment.Left : TextAlignment.Right);
+                text.SetValue(MarginProperty, new Thickness(4, 3, 6, 3));
+                text.SetValue(MinWidthProperty, (double)column.Width - 14);
+                var viewColumn = new GridViewColumn
+                {
+                    Header = column.Header,
+                    Width = visibility.TryGetValue(column.Header, out bool hidden) && hidden ? 0 : double.NaN,
+                    CellTemplate = new DataTemplate { VisualTree = text },
+                    HeaderContainerStyle = new Style(typeof(GridViewColumnHeader), grid.ColumnHeaderContainerStyle)
+                    { Setters = { new Setter(ToolTipProperty, column.Hint) } }
+                };
+                grid.Columns.Add(viewColumn);
+                clipboardColumns[viewColumn] = row =>
+                {
+                    object? value = row.GetType().GetProperty(column.Path)?.GetValue(row);
+                    if (binding.Converter != null) return binding.Converter.Convert(value, typeof(string), null, System.Globalization.CultureInfo.CurrentCulture)?.ToString() ?? "";
+                    return value is IFormattable number ? number.ToString(format, System.Globalization.CultureInfo.CurrentCulture) : value?.ToString() ?? "";
+                };
+            }
+        }
+
+        private string Number(double value) => value.ToString("F" + ((CVCIEShowConfig)DataContext).DecimalPlaces, System.Globalization.CultureInfo.CurrentCulture);
+
+        private StackPanel statisticsDetails = new();
+        private Expander? statisticsExpander;
+        private readonly List<string> statisticsClipboard = new();
+
         private void PopulateStatisticsPanel()
         {
+            bool expanded = statisticsExpander?.IsExpanded == true;
             StatisticsPanel.Children.Clear();
-
+            statisticsDetails = new StackPanel();
+            statisticsClipboard.Clear();
+            statisticsClipboard.Add("统计项\t数值\t单位");
             if (IsPoiResultCIExyuvDatas && CIExyuvStats != null)
             {
-                // Create WrapPanel for better layout
-                var wrapPanel = new WrapPanel { Orientation = Orientation.Horizontal };
-
-                // Luminance statistics
-                AddStatisticItem(wrapPanel, "Center Luminance:", $"{CIExyuvStats.CenterLuminance:F2} cd/m²");
-                AddStatisticItem(wrapPanel, "Average Luminance:", $"{CIExyuvStats.AverageLuminance:F2} cd/m²");
-                AddStatisticItem(wrapPanel, "Max Luminance:", $"{CIExyuvStats.MaxLuminance:F2} cd/m²");
-                AddStatisticItem(wrapPanel, "Min Luminance:", $"{CIExyuvStats.MinLuminance:F2} cd/m²");
-                
-                // Uniformity
-                AddStatisticItem(wrapPanel, "Uniformity (Min/Max):", $"{CIExyuvStats.UniformityMinDivMax:F2}%");
-                AddStatisticItem(wrapPanel, "Uniformity ((Max-Min)/Avg):", $"{CIExyuvStats.UniformityDiffDivAvg:F2}%");
-                AddStatisticItem(wrapPanel, "Uniformity ((Max-Min)/Max):", $"{CIExyuvStats.UniformityDiffDivMax:F2}%");
-                AddStatisticItem(wrapPanel, "Uniformity 1-((Max-Avg)/Avg):", $"{CIExyuvStats.Uniformity:F2}%");
-
-                // Standard Deviation
-                if (!double.IsNaN(CIExyuvStats.StandardDeviation))
-                {
-                    AddStatisticItem(wrapPanel, "Standard Deviation:", $"{CIExyuvStats.StandardDeviation:F4}");
-                    if (!double.IsNaN(CIExyuvStats.StandardDeviationPercent))
-                        AddStatisticItem(wrapPanel, "Standard Deviation (%):", $"{CIExyuvStats.StandardDeviationPercent:F2}%");
-                }
-
-                // Color uniformity
-                AddStatisticItem(wrapPanel, "Color Uniformity (Δuv):", $"{CIExyuvStats.ColorUniformityDeltaUv:F6}");
-                AddStatisticItem(wrapPanel, "Color Uniformity (Δx):", $"{CIExyuvStats.ColorUniformityDeltaX:F6}");
-                AddStatisticItem(wrapPanel, "Color Uniformity (Δy):", $"{CIExyuvStats.ColorUniformityDeltaY:F6}");
-
-                // Center color coordinates
-                if (CIExyuvStats.CenterLuminance > 0)
-                {
-                    AddStatisticItem(wrapPanel, "Center x:", $"{CIExyuvStats.CenterX:F4}");
-                    AddStatisticItem(wrapPanel, "Center y:", $"{CIExyuvStats.CenterY:F4}");
-                    AddStatisticItem(wrapPanel, "Center u':", $"{CIExyuvStats.CenterU:F4}");
-                    AddStatisticItem(wrapPanel, "Center v':", $"{CIExyuvStats.CenterV:F4}");
-                    AddStatisticItem(wrapPanel, "Center CCT:", $"{CIExyuvStats.CenterCCT:F1} K");
-                    AddStatisticItem(wrapPanel, "Center Wave:", $"{CIExyuvStats.CenterWave:F1} nm");
-                }
-
-                AddStatisticItem(wrapPanel, "Delta Wave:", $"{CIExyuvStats.DeltaWave:F1} nm");
-
-                StatisticsPanel.Children.Add(wrapPanel);
+                var s = CIExyuvStats;
+                AddStatisticsGroup("亮度", false, ("中心", s.CenterLuminance, "cd/m²"), ("平均", s.AverageLuminance, "cd/m²"), ("最大", s.MaxLuminance, "cd/m²"), ("最小", s.MinLuminance, "cd/m²"));
+                AddStatisticsGroup("均匀性", true, ("Min/Max", s.UniformityMinDivMax, "%"), ("(Max−Min)/Avg", s.UniformityDiffDivAvg, "%"), ("(Max−Min)/Max", s.UniformityDiffDivMax, "%"), ("1−(Max−Avg)/Avg", s.Uniformity, "%"), ("标准差", s.StandardDeviation, ""), ("标准差/平均", s.StandardDeviationPercent, "%"), ("色度差 Δu′v′", s.ColorUniformityDeltaUv, ""), ("色度差 Δx", s.ColorUniformityDeltaX, ""), ("色度差 Δy", s.ColorUniformityDeltaY, ""));
+                AddStatisticsGroup("中心色度", true, ("CIE 1931 x", s.CenterX, ""), ("CIE 1931 y", s.CenterY, ""), ("CIE 1976 u′", s.CenterU, ""), ("CIE 1976 v′", s.CenterV, ""), ("相关色温 CCT", s.CenterCCT, "K"), ("主波长 λd", s.CenterWave, "nm"), ("波长差 Δλd", s.DeltaWave, "nm"));
             }
-            else if (!IsPoiResultCIExyuvDatas && CIEYStats != null)
+            else if (CIEYStats != null)
             {
-                // Create WrapPanel for better layout
-                var wrapPanel = new WrapPanel { Orientation = Orientation.Horizontal };
-
-                // Luminance statistics
-                AddStatisticItem(wrapPanel, "Center Luminance:", $"{CIEYStats.CenterLuminance:F2} cd/m²");
-                AddStatisticItem(wrapPanel, "Average Luminance:", $"{CIEYStats.AverageLuminance:F2} cd/m²");
-                AddStatisticItem(wrapPanel, "Max Luminance:", $"{CIEYStats.MaxLuminance:F2} cd/m²");
-                AddStatisticItem(wrapPanel, "Min Luminance:", $"{CIEYStats.MinLuminance:F2} cd/m²");
-                
-                // Uniformity
-                AddStatisticItem(wrapPanel, "Uniformity (Min/Max):", $"{CIEYStats.UniformityMinDivMax:F2}%");
-                AddStatisticItem(wrapPanel, "Uniformity ((Max-Min)/Avg):", $"{CIEYStats.UniformityDiffDivAvg:F2}%");
-                AddStatisticItem(wrapPanel, "Uniformity ((Max-Min)/Max):", $"{CIEYStats.UniformityDiffDivMax:F2}%");
-                
-                // Standard Deviation
-                AddStatisticItem(wrapPanel, "Standard Deviation:", $"{CIEYStats.StandardDeviation:F4}");
-                AddStatisticItem(wrapPanel, "Standard Deviation (%):", $"{CIEYStats.StandardDeviationPercent:F2}%");
-
-                StatisticsPanel.Children.Add(wrapPanel);
+                var s = CIEYStats;
+                AddStatisticsGroup("亮度", false, ("中心", s.CenterLuminance, "cd/m²"), ("平均", s.AverageLuminance, "cd/m²"), ("最大", s.MaxLuminance, "cd/m²"), ("最小", s.MinLuminance, "cd/m²"));
+                AddStatisticsGroup("均匀性", true, ("Min/Max", s.UniformityMinDivMax, "%"), ("(Max−Min)/Avg", s.UniformityDiffDivAvg, "%"), ("(Max−Min)/Max", s.UniformityDiffDivMax, "%"), ("标准差", s.StandardDeviation, ""), ("标准差/平均", s.StandardDeviationPercent, "%"));
             }
+            statisticsExpander = new Expander
+            {
+                Header = "统计详情 · 均匀性 / 色度", IsExpanded = expanded,
+                Content = new ScrollViewer { Content = statisticsDetails, MaxHeight = 220, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
+                Margin = new Thickness(8, 0, 8, 2)
+            };
+            StatisticsPanel.Children.Add(statisticsExpander);
         }
 
-        private static void AddStatisticItem(WrapPanel parent, string label, string value)
+        private void AddStatisticsGroup(string title, bool collapsible, params (string Label, double Value, string Unit)[] values)
         {
-            var border = new Border
+            Panel panel = collapsible ? new WrapPanel() : new System.Windows.Controls.Primitives.UniformGrid { Columns = 4 };
+            panel.Margin = new Thickness(0, 0, 0, 2);
+            foreach (var item in values)
             {
-                Margin = new Thickness(0, 2, 10, 2),
-                Padding = new Thickness(5, 2, 5, 2)
-            };
-
-            var stackPanel = new StackPanel
+                var content = new StackPanel { Margin = new Thickness(8, 3, 12, 3), MinWidth = collapsible ? 130 : 0 };
+                content.Children.Add(new TextBlock { Text = item.Label + (collapsible ? "" : "亮度"), Opacity = 0.65, FontSize = 12 });
+                var value = new TextBox
+                {
+                    Style = (Style)FindResource("SelectableResultText"), Text = Number(item.Value),
+                    FontSize = collapsible ? 13 : 17, FontWeight = FontWeights.SemiBold,
+                    ToolTip = "选中文字后 Ctrl+C；右键复制数值或全部统计"
+                };
+                statisticsClipboard.Add(title + " · " + item.Label + "\t" + Number(item.Value) + "\t" + item.Unit);
+                var menu = new ContextMenu();
+                menu.Items.Add(new MenuItem { Header = "复制选中文字", Command = ApplicationCommands.Copy, CommandTarget = value });
+                var copyValue = new MenuItem { Header = "复制数值" };
+                copyValue.Click += (_, _) => ColorVision.Common.Clipboard.SetText(Number(item.Value));
+                var copyStats = new MenuItem { Header = "复制全部统计" };
+                copyStats.Click += (_, _) => ColorVision.Common.Clipboard.SetText(string.Join(Environment.NewLine, statisticsClipboard));
+                menu.Items.Add(copyValue);
+                menu.Items.Add(copyStats);
+                value.ContextMenu = menu;
+                var valuePanel = new StackPanel { Orientation = Orientation.Horizontal };
+                valuePanel.Children.Add(value);
+                if (item.Unit.Length > 0) valuePanel.Children.Add(new TextBlock { Text = " " + item.Unit, FontSize = 12, VerticalAlignment = VerticalAlignment.Bottom, ContextMenu = menu });
+                content.Children.Add(valuePanel);
+                panel.Children.Add(content);
+            }
+            if (collapsible)
             {
-                Orientation = Orientation.Horizontal
-            };
-
-            var labelText = new TextBlock
-            {
-                Text = label,
-                FontWeight = FontWeights.SemiBold,
-                Margin = new Thickness(0, 0, 5, 0),
-                Foreground = System.Windows.Media.Brushes.Gray
-            };
-
-            var valueText = new TextBlock
-            {
-                Text = value,
-                FontWeight = FontWeights.Normal
-            };
-
-            stackPanel.Children.Add(labelText);
-            stackPanel.Children.Add(valueText);
-            border.Child = stackPanel;
-            parent.Children.Add(border);
+                statisticsDetails.Children.Add(new TextBlock { Text = title, FontWeight = FontWeights.SemiBold, Margin = new Thickness(8, 5, 0, 0) });
+                statisticsDetails.Children.Add(panel);
+            }
+            else StatisticsPanel.Children.Add(panel);
         }
-
 
         public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 

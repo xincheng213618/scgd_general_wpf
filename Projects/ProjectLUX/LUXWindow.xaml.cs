@@ -736,7 +736,7 @@ namespace ProjectLUX
             ViewResluts.Clear();
             ImageView.Clear();
             outputText.Document.Blocks.Clear();
-            outputText.Background = Brushes.White;
+            outputText.SetResourceReference(Control.BackgroundProperty, "GlobalBackground");
         }
 
         private void Button_Click_EditResultConfig(object sender, RoutedEventArgs e)
@@ -758,13 +758,14 @@ namespace ProjectLUX
                 listView.ScrollIntoView(result);
                 try
                 {
+                    ViewResultManager.LoadViewResultJson(result);
                     if (result.FlowStatus == FlowStatus.Completed)
                     {
                         GenoutputText(result);
                     }
                     else
                     {
-                        outputText.Background = Brushes.White;
+                        outputText.SetResourceReference(Control.BackgroundProperty, "GlobalBackground");
                         outputText.Document.Blocks.Clear(); // 清除之前的内容
                     }
 
@@ -1421,6 +1422,11 @@ namespace ProjectLUX
                 log.Error("手动导出 ObjectiveTestResult 失败", ex);
                 MessageBox.Show(this, "导出失败：" + ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private void ResultStatistics_Click(object sender, RoutedEventArgs e)
+        {
+            new ResultStatisticsWindow { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
         private void ObjectiveTestResultRecord_Click(object sender, RoutedEventArgs e)

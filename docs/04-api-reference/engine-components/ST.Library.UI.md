@@ -4,7 +4,7 @@ knowledge_type: "reference"
 status: "current"
 summary: "说明 ST WPF 节点画布、端口、类型目录及 STN 兼容边界。"
 aliases: ["Flow画布加载后节点丢失","ST.Library.UI","STNodeEditor","EnableWindowResizeDiagnostics","BeginResizeDiagnosticCapture","STNodeTypeRegistry","CVNodeContainer"]
-code_paths: ["Engine/ST.Library.UI/README.md","Engine/ST.Library.UI/ST.Library.UI.csproj","Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs","Engine/ST.Library.UI/NodeEditor/STNodeEditor.ResizeDiagnostics.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/ST.Library.UI/NodeContainer/CVNodeContainer.cs"]
+code_paths: ["Engine/ST.Library.UI/README.md","Engine/ST.Library.UI/ST.Library.UI.csproj","Engine/ST.Library.UI/NodeEditor/STNode.cs","Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs","Engine/ST.Library.UI/NodeEditor/STNodeCanvasSnapshot.cs","Engine/ST.Library.UI/NodeEditor/STNodeEditor.ResizeDiagnostics.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/ST.Library.UI/NodeContainer/CVNodeContainer.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/STNodeEditorWpfTests.cs","Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs","Test/ColorVision.UI.Tests/STNodeEditorResizeDiagnosticsTests.cs","Test/ColorVision.UI.Tests/STNodeTypeRegistryConcurrencyTests.cs"]
 related: ["flow.architecture","flow.runtime","flow.workspace","operations.main-window"]
 ---
@@ -31,11 +31,12 @@ related: ["flow.architecture","flow.runtime","flow.workspace","operations.main-w
 | --- | --- | --- |
 | WPF 画布控件 | `STNodeEditor` | 直接继承 WPF `Control`，不需要 `WindowsFormsHost` |
 | 节点模型 | `STNode` | 标题、尺寸、位置、输入输出端口、选中态和自定义绘制 |
-| 端口模型 | `STNodeOption` | 端口文本、数据类型、连接限制、连接集合和数据传递事件 |
+| 端口模型 | `STNodeOption` | 端口文本值、数据类型、连接限制、连接集合和数据传递事件；画布仅显示多输入节点的输入名称，单输入名称和所有输出名称不绘制 |
 | WPF 属性面板 | `STNodePropertyGrid`、`STNodePropertyDescriptor` | 内联编辑节点属性，保留自定义描述符入口和错误状态 |
 | WPF 节点目录 | `STNodeTreeView` | 节点类型发现、程序集加载、搜索、拖放、预览和过时类型过滤 |
 | WPF 组合面板 | `STNodeEditorPannel` | 用 `GridSplitter` 组合目录、画布和属性面板，保留历史类型名 |
 | 画布加载 | `CVNodeContainer.LoadCanvas(...)` | 从文件、`byte[]`、`Stream` 恢复节点、属性、位置和连线 |
+| 配置快照 | `STNodeEditor.ReadCanvasSnapshot(...)` | 构造节点并加载持久化属性，但不连接端口、不挂入编辑器、不调用 `OnEditorLoadCompleted()`；用后需释放快照 |
 
 ## WPF 呈现与兼容
 
@@ -43,6 +44,11 @@ related: ["flow.architecture","flow.runtime","flow.workspace","operations.main-w
 已有节点仍使用 `System.Drawing` 的 `OnDrawNode(...)` 协议绘制，编辑器把结果
 呈现到 WPF 位图，因此不需要重写现有业务节点，也不会改变 `.stn`、`.cvflow`
 的序列化格式。
+
+默认端口文字采用紧凑显示：只有节点存在两个或更多可见输入端口时才绘制输入名称；
+单输入节点不绘制输入名称，输出名称无论端口数量都不绘制。端口圆点、连接命中区、
+`STNodeOption.Text` 值及端口顺序保持不变，因此该规则只释放节点正文的显示空间，
+不改变连线、执行或保存兼容性。自动尺寸计算也只计入实际绘制的端口文字。
 
 当前由 `FlowProcessing/Editor/FlowEditorCanvas.xaml` 声明 `<st:STNodeEditor />`，
 `ViewFlow` 组合 Canvas，`FlowEngineToolWindow` 再承载 standalone `ViewFlow`。
@@ -100,6 +106,7 @@ related: ["flow.architecture","flow.runtime","flow.workspace","operations.main-w
 | 属性描述 | `NodeEditor/STNodePropertyGrid.cs` |
 | 节点目录 | `NodeEditor/STNodeTreeView.cs` |
 | 画布加载 | `NodeContainer/CVNodeContainer.cs` |
+| 脱离编辑器读取配置 | `NodeEditor/STNodeCanvasSnapshot.cs` |
 
 ## 验证入口与缺口
 

@@ -39,7 +39,9 @@ namespace ColorVision.Copilot
                 return;
 
             _activeDocumentPath = activeDocumentPath;
+            _ = CaptureHostedTurnSnapshot(Array.Empty<CopilotAttachmentItem>());
             OnActiveDocumentStateChanged();
+            RefreshComposerTokenEstimate();
         }
 
         private static string TryGetActiveDocumentPath()
@@ -77,10 +79,8 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(CanAttachActiveDocument));
             OnPropertyChanged(nameof(ActiveDocumentAttachmentMenuText));
             RefreshLocalCommandSuggestions();
-            if (CopilotComposerReferenceCatalog.TryParseMention(InputText, out _))
+            if (TryParseComposerReferenceMention(out _))
                 RefreshComposerReferenceSuggestions();
-            _ = CaptureHostedTurnSnapshot(Array.Empty<CopilotAttachmentItem>());
-            RefreshComposerTokenEstimate();
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -94,6 +94,7 @@ namespace ColorVision.Copilot
 
             _currentLiveContext = CopilotLiveContextRegistry.Current;
             OnCurrentLiveContextStateChanged();
+            RefreshComposerTokenEstimate();
         }
 
 
@@ -106,7 +107,6 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(CanAttachCurrentLiveContext));
             OnPropertyChanged(nameof(IsCurrentLiveContextAttached));
             OnPropertyChanged(nameof(CurrentLiveContextAttachmentLabel));
-            RefreshComposerTokenEstimate();
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -144,7 +144,7 @@ namespace ColorVision.Copilot
                 OnPropertyChanged(nameof(ComposerReferenceHeader));
                 OnPropertyChanged(nameof(ComposerReferenceMenuHeader));
                 OnPropertyChanged(nameof(ComposerReferenceMenuToolTip));
-                if (CopilotComposerReferenceCatalog.TryParseMention(InputText, out _))
+                if (TryParseComposerReferenceMention(out _))
                     RefreshComposerReferenceSuggestions();
             }
             return snapshot;

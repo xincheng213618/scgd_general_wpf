@@ -37,7 +37,7 @@ related: ["delivery.backend", "delivery.backend-auth", "copilot.configuration"]
 
 ID是32位十六进制，服务会trim并转小写；非法ID返回400，合法但不存在返回404。写接口捕获输入 `ValueError` 为400，数据库或密钥处理失败不能假定都是参数错误。管理列表、创建和更新正常响应显式设置 `Cache-Control: no-store`。
 
-`CopilotProfileInput.from_payload` 的必要约束：name非空且最多200字符，model非空且最多300，baseUrl最多2048，非空apiKey最多8192；文本会trim。vendorType取 `VENDOR_TYPES`，providerType仅OpenAICompatible/AnthropicCompatible，reasoningMode仅Default/Disabled/Enabled/High/Max，枚举忽略大小写归一化。sortOrder经 `int()` 转换后须在-100000至100000。
+`CopilotProfileInput.from_payload` 的必要约束：name非空且最多200字符，model非空且最多300，baseUrl最多2048，非空apiKey最多8192；文本会trim。vendorType取 `VENDOR_TYPES`，providerType仅OpenAICompatible/AnthropicCompatible，reasoningMode仅Default/Disabled/Enabled/Low/Medium/High/XHigh/Max，枚举忽略大小写归一化。sortOrder经 `int()` 转换后须在-100000至100000。
 
 PUT不是部分PATCH：name/vendorType/providerType/baseUrl/model仍必需；省略reasoningMode、enabled、isDefault、allowInsecureHttp、sortOrder分别使用Default、true、false、false、0，而非保留旧值。布尔字段当前使用Python `bool(...)`，不是严格JSON布尔验证，字符串 `"false"` 会被当成true；调用方应使用真实布尔值。
 
@@ -99,6 +99,6 @@ revision是有序 `(id, updatedAt)` 列表的SHA-256前24位，不是全字段�
 - 带device proof仍401/403：先看是否精确Bearer前缀抢先进入兼容分支；再区分版本key配置503、metadata/签名/时钟401和scope403。
 - 停用、删除或revision未变：确认后端筛选和默认项变化，再到桌面主题核对草稿/保存；不能假设已交付的key或运行中会话自动撤销。
 
-`test_copilot_config_api.py` 覆盖管理未认证、CRUD不回显provider key、空key更新保留、AES密文与同步解密、合法设备proof、缺失/坏签名/过期proof、缺版本key503、Bearer缺scope403、停用项不下发及远程HTTP显式允许。测试使用合成凭据。
+`test_copilot_config_api.py` 覆盖管理未认证、CRUD不回显provider key、空key更新保留、AES密文与同步解密、Astra六档reasoning值与非法Ultra拒绝、合法设备proof、缺失/坏签名/过期proof、缺版本key503、Bearer缺scope403、停用项不下发及远程HTTP显式允许。测试使用合成凭据。
 
 现有这些用例不证明nonce防重放、逐设备身份/吊销、Bearer与proof混合分支、future时钟边界、共享key轮换部署、secret_key变更后的恢复、坏行导致整批失败、revision例外或客户端落盘。本文按当前分支记录这些限制，不将普通成功用例当作安全认证或多端交付验收。

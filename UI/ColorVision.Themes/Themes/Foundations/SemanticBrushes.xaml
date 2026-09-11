@@ -1,0 +1,53 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <SolidColorBrush x:Key="CV.Surface.Window"
+                     Color="{DynamicResource CV.Color.Surface.Window}" />
+
+    <SolidColorBrush x:Key="CV.Surface.Control"
+                     Color="{DynamicResource CV.Color.Surface.Control}" />
+
+    <SolidColorBrush x:Key="CV.Surface.Alternate"
+                     Color="{DynamicResource CV.Color.Surface.ControlHover}" />
+
+    <SolidColorBrush x:Key="CV.Surface.ControlHover"
+                     Color="{DynamicResource CV.Color.Surface.ControlHover}" />
+
+    <SolidColorBrush x:Key="CV.Border.Window"
+                     Color="{DynamicResource CV.Color.Border.Control}" />
+
+    <SolidColorBrush x:Key="CV.Border.Control"
+                     Color="{DynamicResource CV.Color.Border.Control}" />
+
+    <SolidColorBrush x:Key="CV.Border.Weak"
+                     Color="{DynamicResource CV.Color.Border.Control}"
+                     Opacity="0.5" />
+
+    <SolidColorBrush x:Key="CV.Text.Primary"
+                     Color="{DynamicResource CV.Color.Text.Primary}" />
+
+    <SolidColorBrush x:Key="CV.Text.Secondary"
+                     Color="{DynamicResource CV.Color.Text.Primary}"
+                     Opacity="0.72" />
+
+    <SolidColorBrush x:Key="CV.Accent.Primary"
+                     Color="{DynamicResource CV.Color.Accent.Primary}" />
+
+    <SolidColorBrush x:Key="CV.Accent.Hover"
+                     Color="{DynamicResource CV.Color.Accent.Hover}" />
+
+    <SolidColorBrush x:Key="CV.Tag.Background"
+                     Color="{DynamicResource CV.Color.Accent.Primary}"
+                     Opacity="0.14" />
+
+    <SolidColorBrush x:Key="CV.Tag.Foreground"
+                     Color="{DynamicResource CV.Color.Accent.Primary}" />
+
+    <SolidColorBrush x:Key="CV.Action.Foreground" Color="{DynamicResource CV.Color.Text.Primary}" />
+
+    <SolidColorBrush x:Key="CV.Text.Disabled" Color="{DynamicResource CV.Color.Text.Primary}" Opacity="0.45" />
+
+    <SolidColorBrush x:Key="CV.Status.Success" Color="{DynamicResource CV.Color.Status.Success}" />
+
+    <SolidColorBrush x:Key="CV.Status.Error" Color="{DynamicResource CV.Color.Status.Error}" />
+</ResourceDictionary>

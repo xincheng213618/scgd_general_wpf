@@ -93,7 +93,7 @@ namespace ColorVision.Copilot
 
             return new Resolution(
                 CopilotResponsePersonality.Pragmatic,
-                "Codex features.personality 稳定功能默认值");
+                "ColorVision 默认");
         }
     }
 }

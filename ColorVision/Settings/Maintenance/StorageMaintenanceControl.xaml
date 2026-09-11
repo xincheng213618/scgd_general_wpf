@@ -120,11 +120,11 @@
             <StackPanel>
                 <TextBlock Text="{x:Static local:MaintenanceText.ResetDescription}" Style="{StaticResource SecondaryText}"/>
                 <WrapPanel x:Name="ResetOptions" Margin="0,14,0,14">
-                    <CheckBox Content="{x:Static local:MaintenanceText.Appearance}" Tag="ThemeConfig,LanguageConfig" IsChecked="True" Margin="0,0,20,10"/>
-                    <CheckBox Content="{x:Static local:MaintenanceText.Window}" Tag="MainWindowConfig" IsChecked="True" Margin="0,0,20,10"/>
-                    <CheckBox Content="{x:Static local:MaintenanceText.Hotkeys}" Tag="HotKeyConfig" Margin="0,0,20,10"/>
-                    <CheckBox Content="{x:Static local:MaintenanceText.Search}" Tag="SearchConfig" Margin="0,0,20,10"/>
-                    <CheckBox Content="{x:Static local:MaintenanceText.Viewer}" Tag="MultiImageViewerConfig" Margin="0,0,20,10"/>
+                    <CheckBox Content="{x:Static local:MaintenanceText.Appearance}" Tag="ColorVision.Themes.ThemeConfig,ThemeConfig,ColorVision.UI.Languages.LanguageConfig,LanguageConfig" IsChecked="True" Margin="0,0,20,10"/>
+                    <CheckBox Content="{x:Static local:MaintenanceText.Window}" Tag="ColorVision.MainWindowConfig,MainWindowConfig" IsChecked="True" Margin="0,0,20,10"/>
+                    <CheckBox Content="{x:Static local:MaintenanceText.Hotkeys}" Tag="ColorVision.UI.HotKey.HotKeyConfig,HotKeyConfig" Margin="0,0,20,10"/>
+                    <CheckBox Content="{x:Static local:MaintenanceText.Search}" Tag="ColorVision.UI.Serach.SearchConfig,SearchConfig" Margin="0,0,20,10"/>
+                    <CheckBox Content="{x:Static local:MaintenanceText.Viewer}" Tag="ColorVision.Solution.MultiImageViewer.MultiImageViewerConfig,MultiImageViewerConfig" Margin="0,0,20,10"/>
                 </WrapPanel>
                 <TextBlock x:Name="ResetStatus" TextWrapping="Wrap" FontSize="12" Margin="0,0,0,12"/>
                 <Border HorizontalAlignment="Right">

@@ -107,7 +107,6 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         public MarketplaceManager()
         {
-            log.Info(UI.Properties.Resources.CheckingForAdditionalProjects);
             Catalog = new MarketplaceCatalogViewModel(FindInstalledPlugin, SetMarketplaceDetailContext);
             Catalog.PropertyChanged += (_, e) =>
             {

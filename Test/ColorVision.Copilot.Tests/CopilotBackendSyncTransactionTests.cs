@@ -138,7 +138,7 @@ public sealed class CopilotBackendSyncTransactionTests : IDisposable
 
         JObject persisted = JObject.Parse(File.ReadAllText(configFilePath));
         Assert.Equal("preserved", persisted["UnrelatedSection"]!["Value"]);
-        JArray persistedProfiles = Assert.IsType<JArray>(persisted[nameof(CopilotConfig)]![nameof(CopilotConfig.Profiles)]);
+        JArray persistedProfiles = Assert.IsType<JArray>(persisted[typeof(CopilotConfig).FullName!]![nameof(CopilotConfig.Profiles)]);
         JObject persistedLocalProfile = persistedProfiles
             .Children<JObject>()
             .Single(profile => (string?)profile[nameof(CopilotProfileConfig.Id)] == "local-profile");
@@ -225,7 +225,7 @@ public sealed class CopilotBackendSyncTransactionTests : IDisposable
         Assert.Equal("local-secret", Assert.Single(candidate.Profiles).ApiKey);
         Assert.Equal("test-mcp-token", candidate.McpBearerToken);
         JObject persisted = JObject.Parse(File.ReadAllText(configFilePath));
-        JToken persistedConfig = persisted[nameof(CopilotConfig)]!;
+        JToken persistedConfig = persisted[typeof(CopilotConfig).FullName!]!;
         Assert.True(CopilotCredentialProtector.IsProtected(
             (string?)persistedConfig[nameof(CopilotConfig.McpBearerToken)]));
         Assert.True(CopilotCredentialProtector.IsProtected(
@@ -301,7 +301,7 @@ public sealed class CopilotBackendSyncTransactionTests : IDisposable
 
         JObject persisted = JObject.Parse(File.ReadAllText(configFilePath));
         JArray persistedProfiles = Assert.IsType<JArray>(
-            persisted[nameof(CopilotConfig)]![nameof(CopilotConfig.Profiles)]);
+            persisted[typeof(CopilotConfig).FullName!]![nameof(CopilotConfig.Profiles)]);
         Assert.Equal(localProfile.Id, (string?)Assert.Single(persistedProfiles)[nameof(CopilotProfileConfig.Id)]);
     }
 
@@ -331,7 +331,7 @@ public sealed class CopilotBackendSyncTransactionTests : IDisposable
 
         JObject persisted = JObject.Parse(File.ReadAllText(configFilePath));
         JArray persistedProfiles = Assert.IsType<JArray>(
-            persisted[nameof(CopilotConfig)]![nameof(CopilotConfig.Profiles)]);
+            persisted[typeof(CopilotConfig).FullName!]![nameof(CopilotConfig.Profiles)]);
         Assert.Equal(
             liveConfig.Profiles.Select(profile => profile.Id),
             persistedProfiles.Select(profile => (string?)profile[nameof(CopilotProfileConfig.Id)]));
@@ -362,7 +362,7 @@ public sealed class CopilotBackendSyncTransactionTests : IDisposable
 
         JObject persisted = JObject.Parse(File.ReadAllText(configFilePath));
         JArray persistedProfiles = Assert.IsType<JArray>(
-            persisted[nameof(CopilotConfig)]![nameof(CopilotConfig.Profiles)]);
+            persisted[typeof(CopilotConfig).FullName!]![nameof(CopilotConfig.Profiles)]);
         Assert.Contains(
             persistedProfiles.Children<JObject>(),
             profile => (string?)profile[nameof(CopilotProfileConfig.SyncProfileId)] == "managed-default");
@@ -405,7 +405,7 @@ public sealed class CopilotBackendSyncTransactionTests : IDisposable
 
         JObject persisted = JObject.Parse(File.ReadAllText(configFilePath));
         JArray persistedProfiles = Assert.IsType<JArray>(
-            persisted[nameof(CopilotConfig)]![nameof(CopilotConfig.Profiles)]);
+            persisted[typeof(CopilotConfig).FullName!]![nameof(CopilotConfig.Profiles)]);
         Assert.Equal(
             ["remote-b", "remote-a"],
             persistedProfiles.Select(profile => (string?)profile[nameof(CopilotProfileConfig.SyncProfileId)]));

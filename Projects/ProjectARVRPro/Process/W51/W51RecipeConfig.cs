@@ -16,11 +16,11 @@ namespace ProjectARVRPro.Process.W51
         [Category("FOV")]
         [DisplayName("Vertical Field of View Angle(°)")]
         public RecipeBase VerticalFieldOfViewAngle { get => _VerticalFieldOfViewAngle; set { _VerticalFieldOfViewAngle = value; OnPropertyChanged(); } }
-        private RecipeBase _VerticalFieldOfViewAngle = new RecipeBase(21.5, 22.5);
+        private RecipeBase _VerticalFieldOfViewAngle = new RecipeBase(17.5, 18.5);
 
         [Category("FOV")]
         [DisplayName("Diagonal  Field of View Angle(°)")]
         public RecipeBase DiagonalFieldOfViewAngle { get => _DiagonalFieldOfViewAngle; set { _DiagonalFieldOfViewAngle = value; OnPropertyChanged(); } }
-        private RecipeBase _DiagonalFieldOfViewAngle = new RecipeBase(11.5, 12.5);
+        private RecipeBase _DiagonalFieldOfViewAngle = new RecipeBase(29.5, 30.5);
     }
 }

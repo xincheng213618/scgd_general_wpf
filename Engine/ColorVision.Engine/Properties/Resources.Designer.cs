@@ -13705,6 +13705,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 设备配置 的本地化字符串。
+        /// </summary>
+        public static string WindowServiceTitle {
+            get {
+                return ResourceManager.GetString("WindowServiceTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 工作流程 的本地化字符串。
         /// </summary>
         public static string Workflow {

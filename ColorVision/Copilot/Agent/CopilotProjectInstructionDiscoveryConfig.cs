@@ -250,20 +250,6 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources AutoReviewPolicySource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
-        public string ConfiguredModel { get; init; } = string.Empty;
-
-        public bool HasModelOverride { get; init; }
-
-        public CopilotProjectInstructionConfigSources ModelSource { get; init; } =
-            CopilotProjectInstructionConfigSources.None;
-
-        public string ConfiguredReviewModel { get; init; } = string.Empty;
-
-        public bool HasReviewModelOverride { get; init; }
-
-        public CopilotProjectInstructionConfigSources ReviewModelSource { get; init; } =
-            CopilotProjectInstructionConfigSources.None;
-
         public bool ConfiguredPreventIdleSleep { get; init; }
 
         public bool HasPreventIdleSleepOverride { get; init; }
@@ -630,8 +616,6 @@ namespace ColorVision.Copilot
             || HasApprovalsReviewerOverride
             || HasGuardianApprovalEnabledOverride
             || HasAutoReviewPolicyOverride
-            || HasModelOverride
-            || HasReviewModelOverride
             || HasPreventIdleSleepOverride
             || HasShellToolEnabledOverride
             || HasHooksEnabledOverride
@@ -706,10 +690,6 @@ namespace ColorVision.Copilot
         public string GuardianApprovalEnabledSourceLabel => FormatSourceLabel(GuardianApprovalEnabledSource, "features.guardian_approval");
 
         public string AutoReviewPolicySourceLabel => FormatSourceLabel(AutoReviewPolicySource, "auto_review.policy");
-
-        public string ModelSourceLabel => FormatSourceLabel(ModelSource, "model");
-
-        public string ReviewModelSourceLabel => FormatSourceLabel(ReviewModelSource, "review_model");
 
         public string PreventIdleSleepSourceLabel => FormatSourceLabel(PreventIdleSleepSource, "features.prevent_idle_sleep");
 

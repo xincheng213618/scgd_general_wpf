@@ -220,7 +220,7 @@ namespace ColorVision.Copilot
             return true;
         }
 
-        internal bool TryRequestCancel()
+        internal bool TryRequestCancel(bool deferExecutionCancellation = false)
         {
             while (true)
             {
@@ -232,7 +232,8 @@ namespace ColorVision.Copilot
             }
 
             RunControl?.RequestCancel();
-            CancelExecutionToken();
+            if (!deferExecutionCancellation)
+                CancelExecutionToken();
             return true;
         }
 
@@ -251,7 +252,7 @@ namespace ColorVision.Copilot
             return true;
         }
 
-        private void CancelExecutionToken()
+        internal void CancelExecutionToken()
         {
             _cancellation.RequestCancellation();
         }

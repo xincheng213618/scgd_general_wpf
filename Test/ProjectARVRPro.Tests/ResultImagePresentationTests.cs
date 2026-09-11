@@ -1,5 +1,7 @@
 using ColorVision.ImageEditor;
+using ColorVision.Engine;
 using ProjectARVRPro.ImageExport;
+using ProjectARVRPro.Process;
 using System.IO;
 using System.Windows.Media;
 using Xunit;
@@ -322,6 +324,103 @@ public sealed class ResultImagePresentationTests
     public void FrameInfoReaderRejectsUnknownOrInvalidDimensions(string? json)
     {
         Assert.False(ResultImageDimensions.TryReadFrameInfo(json, out _, out _));
+    }
+
+    [Fact]
+    public void ValidDimensionsSkipFallbackLookup()
+    {
+        ProjectARVRReuslt result = new()
+        {
+            BatchId = 7,
+            ImageWidth = 9680,
+            ImageHeight = 5460,
+        };
+        int lookupCount = 0;
+
+        bool populated = ResultImageDimensions.TryPopulate(result, _ =>
+        {
+            lookupCount++;
+            throw new InvalidOperationException("fallback lookup should not run");
+        });
+
+        Assert.True(populated);
+        Assert.Equal(0, lookupCount);
+        Assert.Equal(9680, result.ImageWidth);
+        Assert.Equal(5460, result.ImageHeight);
+    }
+
+    [Fact]
+    public void MissingDimensionsUseFallbackOnceAndMatchFinalFile()
+    {
+        ProjectARVRReuslt result = new()
+        {
+            BatchId = 8,
+            FileName = @"C:\images\selected.cvraw",
+            ImageWidth = 1,
+        };
+        int lookupCount = 0;
+
+        bool populated = ResultImageDimensions.TryPopulate(result, _ =>
+        {
+            lookupCount++;
+            return
+            [
+                new MeasureResultImgModel { FileUrl = @"C:\images\first.cvraw", ImgFrameInfo = "{\"width\":100,\"height\":50}" },
+                new MeasureResultImgModel { FileUrl = @"C:\images\selected.cvraw", ImgFrameInfo = "{\"width\":9680,\"height\":5460}" },
+            ];
+        });
+
+        Assert.True(populated);
+        Assert.Equal(1, lookupCount);
+        Assert.Equal(9680, result.ImageWidth);
+        Assert.Equal(5460, result.ImageHeight);
+    }
+
+    [Fact]
+    public void FallbackFailurePreservesExistingPartialDimensions()
+    {
+        ProjectARVRReuslt result = new()
+        {
+            BatchId = 9,
+            ImageWidth = 9680,
+        };
+
+        bool populated = ResultImageDimensions.TryPopulate(
+            result,
+            _ => throw new InvalidOperationException("database unavailable"));
+
+        Assert.False(populated);
+        Assert.Equal(9680, result.ImageWidth);
+        Assert.Null(result.ImageHeight);
+    }
+
+    [Fact]
+    public void ExecutionContextCachesMeasureResultsAndUsesFinalFileForDimensions()
+    {
+        int lookupCount = 0;
+        var context = new IProcessExecutionContext(_ =>
+        {
+            lookupCount++;
+            return
+            [
+                new MeasureResultImgModel { FileUrl = @"C:\images\first.cvraw", ImgFrameInfo = "{\"width\":100,\"height\":50}" },
+                new MeasureResultImgModel { FileUrl = @"C:\images\selected.cvraw", ImgFrameInfo = "{\"width\":9680,\"height\":5460}" },
+            ];
+        })
+        {
+            Batch = new MeasureBatchModel { Id = 10 },
+            Result = new ProjectARVRReuslt { BatchId = 10 },
+        };
+
+        List<MeasureResultImgModel> first = context.GetMeasureResults();
+        List<MeasureResultImgModel> second = context.GetMeasureResults();
+        context.Result.FileName = @"C:\images\selected.cvraw";
+
+        Assert.Same(first, second);
+        Assert.True(context.TryPopulateResultImageDimensions());
+        Assert.Equal(1, lookupCount);
+        Assert.Equal(9680, context.Result.ImageWidth);
+        Assert.Equal(5460, context.Result.ImageHeight);
     }
 
     private static ImageViewSnapshot CreateRenderedOnlySnapshot()

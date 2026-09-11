@@ -1,0 +1,11 @@
+<UserControl x:Class="WindowsServicePlugin.ServiceManager.ServiceOperationLog"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:logControls="clr-namespace:ColorVision.UI.LogImp.Controls;assembly=ColorVision.UI"
+             HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+    <Border Background="{DynamicResource CV.Surface.Control}" BorderBrush="{DynamicResource CV.Border.Weak}"
+            BorderThickness="1" CornerRadius="8" Padding="10">
+        <logControls:LogViewerControl x:Name="LogViewer" TextWrapping="Wrap" ViewerMode="TextBox"
+                                      MaxChars="100000" FontFamily="Consolas" FontSize="12" />
+    </Border>
+</UserControl>

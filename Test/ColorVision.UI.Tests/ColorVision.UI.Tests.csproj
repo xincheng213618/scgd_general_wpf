@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <Compile Include="..\Shared\StaTest.cs" Link="StaTest.cs" />
+    <Compile Include="..\..\Plugins\Spectrum\MainWindowConfig.cs" Link="TestData\Spectrum\MainWindowConfig.cs" />
     <Using Include="ColorVision.Testing" />
     <Using Include="Xunit" />
   </ItemGroup>

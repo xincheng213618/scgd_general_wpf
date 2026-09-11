@@ -280,7 +280,7 @@ namespace ColorVision.Copilot
             emit(CopilotAgentEvent.RuntimeDiagnostic(
                 $"Request prompt surface · {providerPipeline.ToolSurface.AvailableToolDefinitionCharacters:N0} tool-definition character(s)"
                 + $" · {providerPipeline.ToolSurface.HarnessInstructionCharacters:N0} harness-instruction character(s)."));
-            var agent = trackingChatClient.AsHarnessAgent(new HarnessAgentOptions
+            AIAgent agent = trackingChatClient.AsHarnessAgent(new HarnessAgentOptions
             {
                 Name = "ColorVisionCopilot",
                 HarnessInstructions = harnessInstructions,
@@ -326,6 +326,9 @@ namespace ColorVision.Copilot
                 DisableOpenTelemetry = true,
                 ChatOptions = BuildChatOptions(request, frameworkTools),
             });
+            if (_decorateHarnessAgent != null)
+                agent = _decorateHarnessAgent(agent)
+                    ?? throw new InvalidOperationException("The Harness decorator returned no Agent.");
             TodoProvider? todoProvider = null;
             if (taskLedgerEnabled)
             {
@@ -536,6 +539,7 @@ namespace ColorVision.Copilot
                     {
                         var recoveredFinalAnswer = await RecoverFinalAnswerAsync(
                             request,
+                            steeringRegistration.GetDeliveredSteeringMessages(),
                             emit,
                             bridge,
                             todoProvider,
@@ -639,6 +643,28 @@ namespace ColorVision.Copilot
                 controlIntent,
                 timeBudgetExhausted,
                 cancellationToken);
+            bool IsControlledFinalizationInterruption() =>
+                request.RunControl?.Intent is CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel
+                || (timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested);
+
+            void ObserveFinalizationInterruption()
+            {
+                if (!IsControlledFinalizationInterruption())
+                    return;
+
+                var latestIntent = request.RunControl?.Intent ?? CopilotAgentControlIntent.None;
+                var latestTimeBudgetExhausted = latestIntent == CopilotAgentControlIntent.None
+                    && timeBudgetCancellation.IsCancellationRequested
+                    && !callerCancellationToken.IsCancellationRequested;
+                if (latestIntent != controlIntent || latestTimeBudgetExhausted != timeBudgetExhausted)
+                {
+                    (controlIntent, timeBudgetExhausted) = HandleRunCancellation(
+                        request, timeBudgetCancellation, callerCancellationToken, stopwatch, taskEventJournalBuilder, emit);
+                }
+                finalization.BeginInterruptedFinalization();
+            }
+
+            ObserveFinalizationInterruption();
             var taskLedger = liveCheckpointPublisher.LatestTaskLedger ?? recoveredTaskLedger;
             if (controlIntent != CopilotAgentControlIntent.Cancel)
             {
@@ -657,7 +683,77 @@ namespace ColorVision.Copilot
                     emit(CopilotAgentEvent.RuntimeDiagnostic(
                         $"Agent finalization exceeded {FormatDuration(CopilotAgentRunFinalizationScope.DefaultInterruptedTimeout)} while capturing the task ledger; the latest incremental ledger was retained."));
                 }
+                catch (OperationCanceledException) when (IsControlledFinalizationInterruption())
+                {
+                    ObserveFinalizationInterruption();
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(
+                        "Agent control or total-time cancellation interrupted final task-ledger capture; the latest incremental ledger was retained."));
+                }
             }
+            ObserveFinalizationInterruption();
+            taskEventJournalBuilder.RecordTaskLedger(taskLedger, "final");
+            emit(CopilotAgentEvent.RuntimeDiagnostic(FormatTaskLedgerDiagnostic("Agent task ledger", taskLedger)));
+            IReadOnlyList<CopilotAgentEvidenceArtifact> evidenceArtifacts = previousEvidenceArtifacts
+                .Where(artifact => artifact?.IsStructurallyValid() == true)
+                .TakeLast(CopilotAgentEvidenceArtifact.MaxArtifacts)
+                .ToArray();
+            try
+            {
+                var capturedAtUtc = DateTimeOffset.UtcNow;
+                evidenceArtifacts = CopilotAgentEvidenceArtifacts.Merge(previousEvidenceArtifacts, bridge.StepRecords, capabilitySnapshot, capturedAtUtc);
+                var currentCallKeys = bridge.StepRecords
+                    .Select(step => CopilotAgentTaskEventIds.ForCall(step.Execution.CallId))
+                    .ToHashSet(StringComparer.Ordinal);
+                foreach (var artifact in evidenceArtifacts.Where(artifact => currentCallKeys.Contains(artifact.SourceCallKey)))
+                    taskEventJournalBuilder.RecordEvidence(artifact);
+            }
+            catch (Exception ex)
+            {
+                emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent evidence checkpoint could not be updated ({CopilotUserFacingErrorFormatter.Sanitize(ex.Message)})."));
+            }
+            ObserveFinalizationInterruption();
+            CopilotAgentSessionCheckpoint? sessionCheckpoint;
+            try
+            {
+                sessionCheckpoint = await SaveFinalSessionCheckpointAsync(
+                    request,
+                    requestedCheckpoint,
+                    agent,
+                    session,
+                    finalization,
+                    capabilitySnapshot,
+                    evidenceArtifacts,
+                    taskEventJournalBuilder.Snapshot(),
+                    checkpointToolNames,
+                    checkpointEnvironmentContext,
+                    hookSurfaceSnapshot,
+                    steeringRegistration,
+                    liveCheckpointPublisher,
+                    answerText.ToString(),
+                    controlIntent,
+                    emit);
+            }
+            catch (OperationCanceledException) when (IsControlledFinalizationInterruption())
+            {
+                ObserveFinalizationInterruption();
+                sessionCheckpoint = liveCheckpointPublisher.LatestCheckpoint;
+                emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    "Agent control or total-time cancellation interrupted final checkpoint capture; the latest incremental checkpoint was retained."));
+            }
+
+            // Commit the outcome only after the final await. No provider/tool work or
+            // further cancellation observation occurs after this terminal decision.
+            ObserveFinalizationInterruption();
+            if (controlIntent == CopilotAgentControlIntent.None && !timeBudgetExhausted)
+                callerCancellationToken.ThrowIfCancellationRequested();
+            budgetSnapshot = runBudget.CreateSnapshot(
+                chatClient.Snapshot,
+                stopwatch.Elapsed,
+                bridge.StepRecords.Count,
+                timeBudgetExhausted,
+                bridge.ToolBudgetExhausted,
+                providerPipeline.UsedDelegatedDirectAnswer,
+                providerPipeline.ToolSurface);
             var executionContractEvaluation = executionContract.Evaluate(bridge.StepRecords);
             var stopReason = controlIntent switch
             {
@@ -749,48 +845,14 @@ namespace ColorVision.Copilot
             }
             if (stopReason == CopilotAgentStopReason.TaskPassLimit && blockers.Any(blocker => blocker.Kind == CopilotAgentBlockerKind.ToolFailure))
                 stopReason = CopilotAgentStopReason.Blocked;
-            taskEventJournalBuilder.RecordTaskLedger(taskLedger, "final");
             foreach (var blocker in blockers)
                 taskEventJournalBuilder.RecordBlocker(blocker);
-            emit(CopilotAgentEvent.RuntimeDiagnostic(FormatTaskLedgerDiagnostic("Agent task ledger", taskLedger)));
-            emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent stop reason · {stopReason}."));
-            IReadOnlyList<CopilotAgentEvidenceArtifact> evidenceArtifacts = previousEvidenceArtifacts
-                .Where(artifact => artifact?.IsStructurallyValid() == true)
-                .TakeLast(CopilotAgentEvidenceArtifact.MaxArtifacts)
-                .ToArray();
-            try
-            {
-                var capturedAtUtc = DateTimeOffset.UtcNow;
-                evidenceArtifacts = CopilotAgentEvidenceArtifacts.Merge(previousEvidenceArtifacts, bridge.StepRecords, capabilitySnapshot, capturedAtUtc);
-                var currentCallKeys = bridge.StepRecords
-                    .Select(step => CopilotAgentTaskEventIds.ForCall(step.Execution.CallId))
-                    .ToHashSet(StringComparer.Ordinal);
-                foreach (var artifact in evidenceArtifacts.Where(artifact => currentCallKeys.Contains(artifact.SourceCallKey)))
-                    taskEventJournalBuilder.RecordEvidence(artifact);
-            }
-            catch (Exception ex)
-            {
-                emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent evidence checkpoint could not be updated ({CopilotUserFacingErrorFormatter.Sanitize(ex.Message)})."));
-            }
             taskEventJournalBuilder.RecordStop(stopReason);
             var taskEventJournal = taskEventJournalBuilder.Snapshot();
-            var sessionCheckpoint = await SaveFinalSessionCheckpointAsync(
-                request,
-                requestedCheckpoint,
-                agent,
-                session,
-                finalization,
-                capabilitySnapshot,
-                evidenceArtifacts,
-                taskEventJournal,
-                checkpointToolNames,
-                checkpointEnvironmentContext,
-                hookSurfaceSnapshot,
-                steeringRegistration,
-                liveCheckpointPublisher,
-                answerText.ToString(),
-                controlIntent,
-                emit);
+            sessionCheckpoint = controlIntent == CopilotAgentControlIntent.Cancel
+                ? null
+                : sessionCheckpoint?.CopyWithTaskEventJournal(taskEventJournal);
+            emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent stop reason · {stopReason}."));
             emit(CopilotAgentEvent.Completed());
             return new CopilotAgentRunResult
             {

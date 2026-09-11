@@ -462,4 +462,43 @@
   <data name="ServiceStatusUnknown" xml:space="preserve">
     <value>Unknown</value>
   </data>
+  <data name="ServiceManagerSubtitle" xml:space="preserve">
+    <value>View service status and manage the local environment.</value>
+  </data>
+  <data name="ManagementSettings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="RefreshStatus" xml:space="preserve">
+    <value>Refresh status</value>
+  </data>
+  <data name="MoreActions" xml:space="preserve">
+    <value>More actions</value>
+  </data>
+  <data name="InstallAndUpdate" xml:space="preserve">
+    <value>Install and update</value>
+  </data>
+  <data name="ConnectionSettings" xml:space="preserve">
+    <value>Connection and database settings</value>
+  </data>
+  <data name="ServiceMaintenance" xml:space="preserve">
+    <value>Service maintenance</value>
+  </data>
+  <data name="InstallComponents" xml:space="preserve">
+    <value>Components</value>
+  </data>
+  <data name="PackageNotSelected" xml:space="preserve">
+    <value>No package selected</value>
+  </data>
+  <data name="ClearCurrentLogRecords" xml:space="preserve">
+    <value>Clear current records</value>
+  </data>
+  <data name="ClearServiceLogs" xml:space="preserve">
+    <value>Clear this service log</value>
+  </data>
+  <data name="ClearAllServiceLogs" xml:space="preserve">
+    <value>Clear all service logs</value>
+  </data>
+  <data name="ClearAllServiceLogsToolTip" xml:space="preserve">
+    <value>Clear all CVWindowsService logs; running services are briefly stopped and restored</value>
+  </data>
 </root>

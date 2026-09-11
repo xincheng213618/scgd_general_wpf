@@ -5,7 +5,7 @@ status: "current"
 summary: "按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。"
 aliases: ["怎么测试","验证命令","dotnet test","测试入口","PerformanceProbe","COLORVISION_IMAGE_ALGORITHM_PERF"]
 code_paths: ["Test","Scripts/tests","Web/Backend","package.json",".github/workflows/dotnet.yml"]
-test_paths: ["Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj","Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj","Test/ColorVision.UI.Tests/ImageAlgorithmPerformanceGateTests.cs","Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs"]
+test_paths: ["Test/ColorVision.Themes.Tests/ColorVision.Themes.Tests.csproj","Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj","Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj","Test/ColorVision.UI.Tests/ImageAlgorithmPerformanceGateTests.cs","Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs"]
 related: ["delivery.index","delivery.prerequisites","delivery.native-testing","governance.retrieval","copilot.configuration"]
 ---
 
@@ -18,6 +18,7 @@ related: ["delivery.index","delivery.prerequisites","delivery.native-testing","g
 | 测试区域 | 目录 | 技术栈 | 主要验证内容 | 运行入口 |
 | --- | --- | --- | --- | --- |
 | Copilot 与 Agent 测试 | `Test/ColorVision.Copilot.Tests/` | xUnit、`net10.0-windows`、WPF | Copilot、ColorVision 配置与外部 TOML 隔离、Agent、MCP、审批、Hook、Skill、会话恢复与工作区安全边界 | `dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64` |
+| 主题资源与窗口基础测试 | `Test/ColorVision.Themes.Tests/` | xUnit、WPF | 独立宿主中的主题切换、资源兼容、控件模板和窗口订阅；不依赖主程序或设备 | `dotnet test Test/ColorVision.Themes.Tests/ -c Release -p:Platform=x64` |
 | UI 与主程序逻辑测试 | `Test/ColorVision.UI.Tests/` | xUnit、`net10.0-windows`、WPF | UI 基础设施、日志、Marketplace、PropertyGrid、终端缓冲、STNode、排序和编辑器辅助逻辑 | `dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64` |
 | Spectrum、Conoscope 与客户项目测试 | `Test/Spectrum.Tests/`、`Test/Conoscope.Tests/`、`Test/ProjectARVRPro.Tests/`、`Test/ProjectKB.Tests/`、`Test/ProjectLUX.Tests/` | xUnit、`net10.0-windows`、WPF | 光谱、Conoscope 和三个客户项目的可脱离设备运行的领域回归 | 分别对目标 `.csproj` 执行 `dotnet test -c Release -p:Platform=x64` |
 | 构建、发布和打包脚本测试 | `Scripts/tests/` | Python `unittest` | ABI、平台、安装器、更新包、插件包、后端客户端和发布编排的静态及合成制品门禁 | `python -m unittest discover -s Scripts/tests -p "test_*.py" -v` |
@@ -110,8 +111,8 @@ finally {
 
 | 变更类型 | 至少验证 |
 | --- | --- |
-| UI 菜单、设置、PropertyGrid、列表编辑、日志或终端 | `dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64` |
-| Copilot/MCP、文档搜索、业务上下文 | `dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64` |
+| UI 菜单、设置、PropertyGrid、列表编辑、日志或终端 | 对 `ColorVision.UI.Tests` 使用 `--filter "FullyQualifiedName~相关测试类"`；共享基础设施变更扩大到直接受影响的测试 |
+| Copilot/MCP、文档搜索、业务上下文 | 对 `ColorVision.Copilot.Tests` 使用 `--filter "FullyQualifiedName~相关测试类"`；调度、恢复或持久化变更包含对应行为回归 |
 | 插件市场下载、包校验、临时目录 | `MarketplacePackageDownloadServiceTests`，再看 [现有插件能力](../04-api-reference/plugins/README.md) |
 | Flow 节点复制粘贴或 STNode 行为 | `STNodeCopyPasteTests`，再看 [模板与 Flow 链路](../04-api-reference/engine-components/template-flow-chain.md) |
 | native/OpenCV helper | `opencv_helper_test`，并确认 runtime DLL 输出 |

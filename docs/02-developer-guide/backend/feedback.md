@@ -13,6 +13,8 @@ related: ["delivery.backend", "delivery.backend-auth", "delivery.artifact-delive
 
 公开 `POST /api/feedback` 把反馈保存到制品根的 `Feedback/<feedback_id>/`；管理API实时读取这些目录，不把SQLite当反馈正文事实源。`feedback_service.py` 负责接收与落文件，`services/feedback_admin.py` 负责收件箱、状态和附件定位，`routes/admin_api.py` 负责授权后的HTTP响应及审计。
 
+反馈目录位于 **Backend 所在服务器**，不是提交反馈的客户端。先从 Backend 启动输出的 `Storage path: ...` 确认当前制品根，再进入其 `Feedback/` 子目录；不要在客户端安装目录或 `%APPDATA%` 中查找服务端收件箱。制品根由部署配置决定，迁移磁盘或切换配置后路径会变化，因此文档不固定某台服务器的绝对盘符。
+
 桌面端如何选择日志、机器信息或Dump并提交，统一见[桌面辅助壳层](../../04-api-reference/ui-components/ColorVision.UI.Desktop.md)；本页不复制采集器或桌面权限流程。提交、改状态、下载附件都会写文件或可能写审计，不是文档验证授权；不能为核验本页读取真实反馈、启动服务或发上传请求。实际storage/数据库路径见[Backend组成](./README.md)。
 
 ## 公开提交接受什么

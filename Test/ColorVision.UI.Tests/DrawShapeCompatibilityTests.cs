@@ -57,7 +57,7 @@ public sealed class DrawShapeCompatibilityTests
     }
 
     [Fact]
-    public void CircleBoundsKeepCircleAndEllipseSemantics()
+    public void CircleAndCircleTextShareIndependentEllipseAxes()
     {
         WpfTestHost.Invoke(() =>
         {
@@ -68,7 +68,7 @@ public sealed class DrawShapeCompatibilityTests
                 RadiusY = 12,
             };
             DVCircle circle = new(circleProperties);
-            Assert.Equal(new Rect(70, 50, 60, 60), circle.GetRect());
+            Assert.Equal(new Rect(70, 68, 60, 24), circle.GetRect());
 
             CircleTextProperties ellipseProperties = new()
             {
@@ -82,9 +82,9 @@ public sealed class DrawShapeCompatibilityTests
             Rect target = new(10, 20, 80, 40);
             circle.SetRect(target);
             Assert.Equal(new Point(50, 40), circle.Attribute.Center);
-            Assert.Equal(20, circle.Attribute.Radius);
+            Assert.Equal(40, circle.Attribute.Radius);
             Assert.Equal(20, circle.Attribute.RadiusY);
-            Assert.Equal(new Rect(30, 20, 40, 40), circle.GetRect());
+            Assert.Equal(target, circle.GetRect());
 
             ellipse.SetRect(target);
             Assert.Equal(new Point(50, 40), ellipse.Attribute.Center);
@@ -132,6 +132,8 @@ public sealed class DrawShapeCompatibilityTests
                 nameof(CircleTextProperties.Center),
                 nameof(CircleTextProperties.Radius),
                 nameof(CircleTextProperties.RadiusY),
+                nameof(CircleTextProperties.RadiusX),
+                nameof(CircleTextProperties.RadiusY),
                 nameof(CircleTextProperties.Text),
                 nameof(CircleTextProperties.Id),
             },
@@ -156,7 +158,7 @@ public sealed class DrawShapeCompatibilityTests
     }
 
     [Fact]
-    public void RadiusSetterContinuesToSynchronizeRadiusYWithoutAnExtraNotification()
+    public void LegacyRadiusSetterSynchronizesAndNotifiesBothEllipseAxes()
     {
         CircleProperties properties = new() { RadiusY = 8 };
         List<string?> changes = new();
@@ -166,7 +168,7 @@ public sealed class DrawShapeCompatibilityTests
 
         Assert.Equal(27, properties.Radius);
         Assert.Equal(27, properties.RadiusY);
-        Assert.Equal(new[] { nameof(CircleProperties.Radius) }, changes);
+        Assert.Equal(new[] { nameof(CircleProperties.Radius), nameof(CircleProperties.RadiusY), nameof(CircleProperties.RadiusX) }, changes);
     }
 
     [Fact]

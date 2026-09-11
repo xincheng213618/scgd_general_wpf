@@ -65,6 +65,7 @@ namespace ProjectARVRPro
             RecordDataGrid.ItemsSource = _recordRows;
             FlowDataGrid.ItemsSource = _flowRows;
             DetailList.ItemsSource = _details;
+            TimelinePanel.DataContext = CreateEmptyTimeline("选择左侧批次后显示整组时间轴。");
             RecordDataGrid.SelectionChanged += RecordDataGrid_SelectionChanged;
             BuildDetailContextMenu();
             ConfigureHomeTrendPlot();
@@ -405,6 +406,7 @@ namespace ProjectARVRPro
             UpdateStatusText();
             DetailHeader.Text = "流程 CT 明细";
             _details.Clear();
+            TimelinePanel.DataContext = CreateEmptyTimeline("正在查询批次记录...");
 
             try
             {
@@ -1340,6 +1342,7 @@ namespace ProjectARVRPro
                 ++_detailLoadVersion;
                 _details.Clear();
                 DetailHeader.Text = "流程 CT 明细";
+                TimelinePanel.DataContext = CreateEmptyTimeline("选择左侧批次后显示整组时间轴。");
                 return;
             }
 
@@ -1350,6 +1353,7 @@ namespace ProjectARVRPro
         {
             int loadVersion = ++_detailLoadVersion;
             DetailHeader.Text = $"{row.SN} - 正在读取流程 CT 明细...";
+            TimelinePanel.DataContext = CreateEmptyTimeline("正在生成整组时间轴...");
             try
             {
                 IReadOnlyList<ProjectARVRReuslt> details = await Task.Run(() => _statisticsStore.QueryFlowDetails(row));
@@ -1358,7 +1362,8 @@ namespace ProjectARVRPro
 
                 ReplaceItems(_details, details);
                 double flowMilliseconds = details.Sum(item => Convert.ToDouble(item.RunTime));
-                DetailHeader.Text = $"{row.SN} - 整组 CT {row.CycleTimeText}（含切图）- {details.Count:N0} 个流程，流程耗时合计 {ResultStatisticsCalculator.FormatMilliseconds(flowMilliseconds)}";
+                TimelinePanel.DataContext = ResultTimelineBuilder.Build(row, details);
+                DetailHeader.Text = $"{row.SN} · CT {row.CycleTimeText} · 运行 {ResultStatisticsCalculator.FormatMilliseconds(flowMilliseconds)} · {details.Count:N0} 个流程";
             }
             catch (Exception ex)
             {
@@ -1367,8 +1372,18 @@ namespace ProjectARVRPro
 
                 _details.Clear();
                 DetailHeader.Text = $"{row.SN} - 流程 CT 明细读取失败";
+                TimelinePanel.DataContext = CreateEmptyTimeline("时间轴读取失败。");
                 MessageBox.Show(this, $"读取流程 CT 明细失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private static ResultTimelinePresentation CreateEmptyTimeline(string note)
+        {
+            return new ResultTimelinePresentation
+            {
+                SummaryText = "CT - · 流程 -",
+                NoteText = note,
+            };
         }
 
         private void BuildDetailContextMenu()

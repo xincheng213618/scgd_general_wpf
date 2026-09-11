@@ -919,6 +919,12 @@ Count: {2}</value>
   <data name="MsgFocusPointsUnavailable" xml:space="preserve">
     <value>Current focus points unavailable.</value>
   </data>
+  <data name="MsgHorizontalVerticalFocusPointsUnsupported" xml:space="preserve">
+    <value>The H/V preview does not currently transform focus points. Clear the focus points before switching.</value>
+  </data>
+  <data name="TipHorizontalVerticalFocusPointsUnsupported" xml:space="preserve">
+    <value>Focus-point editing is not available in the H/V preview</value>
+  </data>
   <data name="MsgPolarLineCreateFailed" xml:space="preserve">
     <value>Failed to create polar angle line: {0}</value>
   </data>

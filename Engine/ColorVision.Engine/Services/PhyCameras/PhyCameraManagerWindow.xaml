@@ -163,8 +163,6 @@
                             <Separator/>
                             <MenuItem Header="{x:Static properties:Resources.OpenDeviceManager}" Command="{Binding OpenDeviceManagerCommand}"/>
                             <MenuItem Header="{x:Static properties:Resources.PhyCamera_MvsLog}" Command="{Binding OpenMVSLogViewerCommand}"/>
-                            <Separator/>
-                            <MenuItem Header="{x:Static properties:Resources.ModifyConfiguration}" Command="{Binding EditCofigCommand}"/>
                         </ContextMenu>
                     </Button.ContextMenu>
                     <StackPanel Orientation="Horizontal">

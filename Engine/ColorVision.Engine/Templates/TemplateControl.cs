@@ -21,15 +21,12 @@ namespace ColorVision.Engine.Templates
     /// </summary>
     public class TemplateInitializer : InitializerBase
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(TemplateInitializer));
-
         public override int Order => 4;
 
         public override string Name => nameof(TemplateInitializer);
 
         public override async Task InitializeAsync()
         {
-            log.Info("Loading template");
             Application.Current.Dispatcher.Invoke(() => TemplateControl.GetInstance());
         }
     }

@@ -125,6 +125,7 @@ public sealed class CopilotRequestAdmissionLifetimeTests
     [InlineData("unchanged")]
     [InlineData("switch")]
     [InlineData("switch-profile")]
+    [InlineData("select-profile")]
     [InlineData("edit-model")]
     [InlineData("clear-key")]
     public void AutomaticCompactionUsesTheAdmittedConversationAndProfile(string transition)
@@ -206,6 +207,8 @@ public sealed class CopilotRequestAdmissionLifetimeTests
                 Assert.Empty(handler.Payloads);
                 if (transition.StartsWith("switch", StringComparison.Ordinal))
                     Assert.True(viewModel.TrySelectConversation(other.Id));
+                else if (transition == "select-profile")
+                    viewModel.SelectedProfile = otherProfile;
                 else if (transition == "edit-model")
                     profile.Model = "changed-model";
                 else if (transition == "clear-key")
@@ -233,6 +236,16 @@ public sealed class CopilotRequestAdmissionLifetimeTests
                 {
                     Assert.Same(other, viewModel.SelectedConversation);
                     Assert.Equal("Unrelated draft", viewModel.InputText);
+                }
+                else if (transition == "select-profile")
+                {
+                    Assert.Same(otherProfile, viewModel.SelectedProfile);
+                    Assert.Equal(otherProfile.Id, origin.ProfileId);
+                    Assert.Equal(otherProfile.DisplayLabel, origin.ProfileDisplayName);
+                    Assert.Equal(otherProfile.Id, state.ActiveProfileId);
+                    Assert.True(viewModel.TrySelectConversation(other.Id));
+                    Assert.True(viewModel.TrySelectConversation(origin.Id));
+                    Assert.Same(otherProfile, viewModel.SelectedProfile);
                 }
             }
             finally
@@ -273,10 +286,12 @@ public sealed class CopilotRequestAdmissionLifetimeTests
     [InlineData(false, "archive")]
     [InlineData(false, "dispose")]
     [InlineData(false, "switch")]
+    [InlineData(false, "select-profile")]
     [InlineData(true, "delete")]
     [InlineData(true, "archive")]
     [InlineData(true, "dispose")]
     [InlineData(true, "switch")]
+    [InlineData(true, "select-profile")]
     public void CompletedImageAdmissionHonorsCapturedConversationLifetime(bool retry, string transition)
     {
         StaTest.Run(() =>
@@ -296,6 +311,10 @@ public sealed class CopilotRequestAdmissionLifetimeTests
                 Model = "image-test-model",
                 SupportsImageInput = true,
             };
+            var laterProfile = profile.Clone();
+            laterProfile.Id = "later-image-profile";
+            laterProfile.Name = "Later selected profile";
+            laterProfile.Model = "later-image-test-model";
             var origin = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
             origin.Id = "origin-conversation";
             origin.DraftText = "Inspect the captured image";
@@ -324,7 +343,7 @@ public sealed class CopilotRequestAdmissionLifetimeTests
             {
                 SchemaVersion = CopilotConfig.CurrentSchemaVersion,
                 McpBearerToken = "admission-lifetime-test-token",
-                Profiles = [profile],
+                Profiles = [profile, laterProfile],
             };
             var state = new CopilotChatState
             {
@@ -363,6 +382,11 @@ public sealed class CopilotRequestAdmissionLifetimeTests
                 {
                     viewModel.Dispose();
                 }
+                else if (transition == "select-profile")
+                {
+                    Assert.True(viewModel.CanSelectProfile);
+                    viewModel.SelectedProfile = laterProfile;
+                }
                 else
                 {
                     if (transition == "delete")
@@ -377,16 +401,32 @@ public sealed class CopilotRequestAdmissionLifetimeTests
                 context.Complete(operation);
                 operation.GetAwaiter().GetResult();
 
-                if (transition == "switch")
+                if (transition is "switch" or "select-profile")
                 {
                     var request = Assert.Single(runtime.Requests);
                     Assert.Equal(origin.Id, request.ConversationId);
+                    Assert.Equal(profile.Id, request.Profile.Id);
+                    Assert.Equal(profile.Model, request.Profile.Model);
                     Assert.Equal("Inspect the captured image", request.UserText);
                     Assert.Equal(storedPath, Assert.Single(request.HostContext.Attachments).Value);
                     Assert.True(messageMutationsAfterTransition > 0);
                     Assert.Equal(2, origin.Messages.Count);
-                    Assert.Same(other, viewModel.SelectedConversation);
-                    Assert.Equal("Unrelated draft", viewModel.InputText);
+                    if (transition == "switch")
+                    {
+                        Assert.Same(other, viewModel.SelectedConversation);
+                        Assert.Equal("Unrelated draft", viewModel.InputText);
+                    }
+                    else
+                    {
+                        Assert.Same(origin, viewModel.SelectedConversation);
+                        Assert.Same(laterProfile, viewModel.SelectedProfile);
+                        Assert.Equal(laterProfile.Id, origin.ProfileId);
+                        Assert.Equal(laterProfile.DisplayLabel, origin.ProfileDisplayName);
+                        Assert.Equal(laterProfile.Id, state.ActiveProfileId);
+                        Assert.True(viewModel.TrySelectConversation(other.Id));
+                        Assert.True(viewModel.TrySelectConversation(origin.Id));
+                        Assert.Same(laterProfile, viewModel.SelectedProfile);
+                    }
                 }
                 else
                 {

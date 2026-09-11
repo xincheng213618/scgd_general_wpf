@@ -107,6 +107,8 @@ namespace ColorVision.Copilot
             var values = new List<string>();
             var builder = new StringBuilder();
             var inCodeSpan = false;
+            var hasLeadingDelimiter = false;
+            var hasTrailingDelimiter = false;
             for (var index = 0; index < trimmed.Length; index++)
             {
                 var character = trimmed[index];
@@ -126,6 +128,10 @@ namespace ColorVision.Copilot
 
                 if (character == '|' && !inCodeSpan)
                 {
+                    if (index == 0)
+                        hasLeadingDelimiter = true;
+                    if (index == trimmed.Length - 1)
+                        hasTrailingDelimiter = true;
                     values.Add(builder.ToString().Trim());
                     builder.Clear();
                     continue;
@@ -135,9 +141,9 @@ namespace ColorVision.Copilot
             }
             values.Add(builder.ToString().Trim());
 
-            if (trimmed.StartsWith('|') && values.Count > 0)
+            if (hasLeadingDelimiter && values.Count > 0)
                 values.RemoveAt(0);
-            if (trimmed.EndsWith('|') && values.Count > 0)
+            if (hasTrailingDelimiter && values.Count > 0)
                 values.RemoveAt(values.Count - 1);
             if (values.Count < 2)
                 return false;

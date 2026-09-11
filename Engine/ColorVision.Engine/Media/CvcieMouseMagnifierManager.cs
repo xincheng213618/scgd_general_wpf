@@ -12,8 +12,12 @@ namespace ColorVision.Engine.Media
 {
     public enum MagnigifierType
     {
+        [System.ComponentModel.Description("圆形")]
         Circle,
-        Rect
+        [System.ComponentModel.Description("矩形")]
+        Rect,
+        [System.ComponentModel.Description("椭圆")]
+        Ellipse
     }
 
 
@@ -100,22 +104,8 @@ namespace ColorVision.Engine.Media
             double radius = Math.Max(1, options.Radius);
             int rectWidth = Math.Max(1, options.RectWidth);
             int rectHeight = Math.Max(1, options.RectHeight);
-            PoiMeasurementPoint point = options.MagnigifierType switch
-            {
-                MagnigifierType.Circle => new PoiMeasurementPoint(
-                    pixelSample.PixelX,
-                    pixelSample.PixelY,
-                    Math.Max(1, checked((int)Math.Round(radius * 2, MidpointRounding.AwayFromZero))),
-                    Math.Max(1, checked((int)Math.Round(radius * 2, MidpointRounding.AwayFromZero))),
-                    PoiMeasurementShape.Circle),
-                MagnigifierType.Rect => new PoiMeasurementPoint(
-                    pixelSample.PixelX,
-                    pixelSample.PixelY,
-                    rectWidth,
-                    rectHeight,
-                    PoiMeasurementShape.Rect),
-                _ => default
-            };
+            PoiMeasurementPoint point = options.CreateMeasurementPoint(pixelSample.PixelX, pixelSample.PixelY);
+            radius = point.Width / 2.0;
             if (point.Width <= 0) return false;
 
             (int channels, PoiMeasurementResult measurement) = _calculatePoi(point);
@@ -148,10 +138,10 @@ namespace ColorVision.Engine.Media
 
             using DrawingContext dc = DrawVisualImage.RenderOpen();
 
-            if (magnigifierType == MagnigifierType.Circle)
+            if (magnigifierType is MagnigifierType.Circle or MagnigifierType.Ellipse)
             {
-                dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Point(viewPosition.X, viewPosition.Y), radius, radius);
-                dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11), new Point(viewPosition.X, viewPosition.Y), radius, radius);
+                dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Point(viewPosition.X, viewPosition.Y), radius, magnigifierType == MagnigifierType.Ellipse ? rectHeight / 2 : radius);
+                dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11), new Point(viewPosition.X, viewPosition.Y), radius, magnigifierType == MagnigifierType.Ellipse ? rectHeight / 2 : radius);
             }
             else if (magnigifierType == MagnigifierType.Rect)
             {

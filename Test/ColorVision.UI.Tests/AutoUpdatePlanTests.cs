@@ -73,47 +73,6 @@ namespace ColorVision.UI.Tests
             Assert.Equal(2, requestCount);
         }
 
-        [Fact]
-        public void FirstInteractiveCheckConsumesTheCompletedStartupResultOnlyOnce()
-        {
-            UpdateCheckReuseState reuseState = new(isStartupCheck: true);
-
-            Assert.True(reuseState.TryReuse(
-                isCompleted: true,
-                isCompletedSuccessfully: true,
-                isInteractiveRequest: true));
-            Assert.False(reuseState.TryReuse(
-                isCompleted: true,
-                isCompletedSuccessfully: true,
-                isInteractiveRequest: true));
-        }
-
-        [Fact]
-        public void InteractiveCheckSharesAnInFlightStartupRequestWithoutCachingItsResult()
-        {
-            UpdateCheckReuseState reuseState = new(isStartupCheck: true);
-
-            Assert.True(reuseState.TryReuse(
-                isCompleted: false,
-                isCompletedSuccessfully: false,
-                isInteractiveRequest: true));
-            Assert.False(reuseState.TryReuse(
-                isCompleted: true,
-                isCompletedSuccessfully: true,
-                isInteractiveRequest: true));
-        }
-
-        [Fact]
-        public void CompletedInteractiveCheckIsNeverReused()
-        {
-            UpdateCheckReuseState reuseState = new(isStartupCheck: false);
-
-            Assert.False(reuseState.TryReuse(
-                isCompleted: true,
-                isCompletedSuccessfully: true,
-                isInteractiveRequest: true));
-        }
-
         [Theory]
         [InlineData("1.4.13.29", "1.4.13.29")]
         [InlineData("1.4.13.28", "1.4.13.29")]

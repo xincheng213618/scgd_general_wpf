@@ -3,9 +3,9 @@ knowledge_id: "delivery.update"
 knowledge_type: "topic"
 status: "current"
 summary: "检查更新、重新安装与程序备份入口，以及主程序和插件的检查复用、下载安装、失败回退与启动恢复。"
-aliases: ["检查更新","变更日志","程序备份","更新前创建程序快照","正常启动后自动存档","自动更新","更新失败","重新安装","最新完整安装包","插件回滚","重复检查更新","更新检查缓存","五分钟缓存","启动检查结果","PluginUpdater","CombinedUpdateCoordinator","UpdateCheckReuseState","LatestVersionCheckRequestCache","CanReuseUpdateCheckOptions","GetPluginUpdateMetadataAsync","ServerUnavailable","NoInternetConnection","forceRefresh","ApplicationSnapshotService","ApplicationSnapshotConfig","ApplicationSnapshotsWindow","自动存档位置","autosave.zip","还原所选",".cvx","离线升级","增量包版本链","IncrementalUpdatePackageFileProcessor"]
+aliases: ["检查更新","变更日志","程序备份","更新前创建程序快照","正常启动后自动存档","自动更新","更新失败","重新安装","最新完整安装包","插件回滚","重复检查更新","更新检查缓存","十分钟缓存","空结果不缓存","启动检查结果","PluginUpdater","CombinedUpdateCoordinator","UpdateCheckReuseState","LatestVersionCheckRequestCache","CanReuseUpdateCheckOptions","GetPluginUpdateMetadataAsync","ServerUnavailable","NoInternetConnection","forceRefresh","ApplicationSnapshotService","ApplicationSnapshotConfig","ApplicationSnapshotsWindow","自动存档位置","autosave.zip","还原所选",".cvx","离线升级","增量包版本链","IncrementalUpdatePackageFileProcessor"]
 code_paths: ["ColorVision/Update","ColorVision/Recovery","UI/ColorVision.UI/Update/","UI/ColorVision.UI/ServiceHost/ApplicationUpdatePrivilegeBroker.cs","UI/ColorVision.UI/Plugins/PluginUpdater.cs","UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceClient.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceManager.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PluginRecoveryBackupServiceTests.cs","Test/ColorVision.UI.Tests/ServiceHostUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/AutoUpdatePlanTests.cs","Test/ColorVision.UI.Tests/ApplicationSnapshotServiceTests.cs","Test/ColorVision.UI.Tests/StartupRecoverySnapshotRuntimeTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs","Test/ColorVision.UI.Tests/PluginRecoveryBackupServiceTests.cs","Test/ColorVision.UI.Tests/ServiceHostUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/AutoUpdatePlanTests.cs","Test/ColorVision.UI.Tests/ApplicationSnapshotServiceTests.cs","Test/ColorVision.UI.Tests/StartupRecoverySnapshotRuntimeTests.cs"]
 related: ["delivery.deployment","delivery.scripts","platform.service-host","delivery.update-scan-protection","platform.startup-integrity"]
 ---
 
@@ -21,6 +21,8 @@ ColorVision 在“检查更新”窗口中统一查看主程序与插件更新�
 4. 右上角 **变更日志** 在浏览器打开在线日志及下载页面；**程序备份** 打开快照管理窗口。
 
 检查失败时先看错误状态与网络配置。窗口没有列出更新项不一定代表服务器已确认没有新版。
+
+键盘可按 `Alt+H` 打开帮助菜单，再按 `U` 进入检查更新。进入窗口时焦点落在当前可用的主要操作上；检查结束后，若焦点仍停在取消按钮，则移到“立即更新”或“关闭”，已经用 Tab 移到其他入口时不抢走焦点。有可执行的已选更新时，Enter 执行更新；没有更新项时，Enter 关闭窗口；存在更新项但全部取消选择时，不提供 Enter 默认动作。Esc 走取消/关闭入口，重新安装查询等忙碌状态保留 `CanCancel` 限制；Tab / Shift+Tab 在窗口内循环，空格切换当前更新项的勾选。
 
 ### 网络设置
 
@@ -127,18 +129,18 @@ flowchart LR
 
 ## 检查复用与元数据新鲜度
 
-当前没有“检查成功后五分钟内重复打开窗口直接用完成结果”的规则。`CombinedUpdateCoordinator` 的检查任务、HTTP 的最后成功响应和磁盘下载包是不同状态。
+第一次手动打开窗口可复用一次启动自动检查的非空成功结果，有效期为检查完成后 10 分钟；空结果、失败、过期结果及后续手动检查结果均不复用。
 
 | 层次 | 当前复用条件 |
 | --- | --- |
 | 组合检查任务 `SharedUpdateCheck` | 主程序/插件检查开关必须相同，且已包含请求需要的当前宿主插件范围；范围不兼容会另建检查 |
-| 尚在进行的组合检查 | 兼容范围可等待同一任务；交互请求一旦复用启动任务，就消耗它的启动结果消费资格 |
-| 已完成的启动检查 | 任务正常完成、结果尚未被交互请求消费且范围兼容时，只允许一个交互请求消费；不是每次打开都复用，也没有五分钟有效期 |
-| 已完成的交互检查，或已消费的启动检查 | 不再复用完成结果，后续调用发起新的检查；`Refresh` 请求也不消费已完成的启动结果 |
+| 尚在进行的组合检查 | 兼容范围可等待同一任务；交互请求复用启动任务时消耗其结果消费资格 |
+| 已完成的启动检查 | 仅非空成功结果可在 10 分钟内由第一次手动打开消费；其余情况重新检查 |
+| 已完成的手动检查或 `Refresh` 检查 | 不复用，后续打开窗口重新检查 |
 | 主程序版本 HTTP 请求 | `LatestVersionCheckRequestCache` 只共享同 URL 的进行中请求；完成后新建请求。因此组合范围不同仍可能共享正在进行的主程序版本请求 |
 | 插件更新元数据 HTTP 请求 | 按服务地址与插件 ID 共享进行中请求；批量版本查询使用信号量串行执行，不等于复用一个已完成批量结果 |
 
-组合检查和上述共享 HTTP 请求用调用方的 `WaitAsync(cancellationToken)` 等待；关闭窗口可取消自己的等待，不会取消共享底层请求。启动结果的消费资格在选择复用任务时就改变，不以窗口成功显示或安装成功为条件；取消等待也不会恢复这个资格。
+组合检查和上述共享 HTTP 请求用调用方的 `WaitAsync(cancellationToken)` 等待；关闭窗口可取消自己的等待，不会取消共享底层请求。有效期只在打开窗口时按完成时间比较，不使用定时器或后台轮询。
 
 客户端使用 `GET /api/app/latest-version`、`POST /api/plugins/batch-version-check` 和插件更新元数据接口 `GET /api/plugins/{id}?view=update`。主程序版本与插件批量版本并发查询，插件管理器再按 `HasUpdate` 选择候选并读取元数据以筛选兼容版本。插件更新元数据请求采用 2 秒单次超时，并以 300 ms、900 ms 间隔最多建立 3 次新请求。任一候选插件的元数据在重试和可用旧结果回退后仍未取得时，本轮主程序与插件更新计划整体延期，不把本应组合的更新拆成两次。
 
@@ -162,13 +164,13 @@ flowchart LR
 ## 开发与交付约束
 
 - 正式发布由 `Scripts\release.bat` 负责，不增加本地-only 发布捷径；版本号读取 `Directory.Build.props`，版本变化记录在 `CHANGELOG.md`。
-- `Scripts\build_update.py` 在增量包上传失败时必须返回失败码；增量包始终携带完整 `ServiceHost/`，不能仅打入其中的变更文件。
-- 构建完整安装包前，必须确认顶层运行时 DLL 和完整 `ServiceHost/` 已进入 Advanced Installer 项目。
+- `Scripts\build_update.py` 在增量包上传失败时必须返回失败码；增量包始终携带完整 `ServiceHost/` 和 `OperationsWatchdog/`，不能仅打入其中的变更文件。
+- 构建完整安装包前，必须确认顶层运行时 DLL、完整 `ServiceHost/` 和完整 `OperationsWatchdog/` 已进入 Advanced Installer 项目。
 - 修改检查、包结构、安装或交付命令时，在对应主题原位更新，并同步受影响的部署概览、脚本文档与版本日志。
 
 ## 检查复用的验证入口与缺口
 
-`AutoUpdatePlanTests` 中的 `LatestVersionChecksReuseOnlyTheSameInFlightRequest` 验证请求对象只复用同 URL 的进行中任务；`FirstInteractiveCheckConsumesTheCompletedStartupResultOnlyOnce`、`InteractiveCheckSharesAnInFlightStartupRequestWithoutCachingItsResult`、`CompletedInteractiveCheckIsNeverReused` 验证消费状态；`UpdateCheckReuseRequiresTheSameScopeAndCompatiblePluginCoverage` 与 `InteractiveUpdateCheckRetriesOnlyTransientServerFailures` 验证范围及状态判定。这些是请求缓存/状态辅助器的直接测试，不等于真实窗口、HTTP 或安装流程已经验收。
+现有测试只保留进行中请求共享、范围兼容和失败重试等通用约束；启动结果的消费与时效不设置实现级长期门禁。辅助器测试不等于真实窗口、HTTP 或安装流程已经验收。
 
 当前没有据此声明 ETag/304、超时后旧元数据、服务地址切换、取消窗口与共享请求并发、真实主程序/插件组合更新的端到端覆盖。验证这些行为需要隔离网络和安装环境；文档检查不授权发起更新、安装或发布。
 

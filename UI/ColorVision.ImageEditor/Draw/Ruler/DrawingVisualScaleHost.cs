@@ -27,7 +27,8 @@ namespace ColorVision.ImageEditor.Draw.Ruler
         public DrawingVisualScaleHost()
         {
             visual = new DrawingVisual();
-            PropertyChangedEventManager.AddHandler(DefalutTextAttribute.Defalut, Defalut_PropertyChanged, string.Empty);
+            _calibration = DefalutTextAttribute.Defalut;
+            PropertyChangedEventManager.AddHandler(_calibration, Defalut_PropertyChanged, string.Empty);
         }
 
         public DrawingVisualScaleHost(ImageViewConfig config) : this()
@@ -35,16 +36,31 @@ namespace ColorVision.ImageEditor.Draw.Ruler
             Config = config;
         }
 
-        public ImageViewConfig? Config { get; set; }
+        private ImageViewConfig? _config;
+        private DefalutTextAttribute _calibration;
+        public ImageViewConfig? Config
+        {
+            get => _config;
+            set
+            {
+                if (ReferenceEquals(_config, value)) return;
+                PropertyChangedEventManager.RemoveHandler(_calibration, Defalut_PropertyChanged, string.Empty);
+                _config = value;
+                _calibration = value?.Calibration ?? DefalutTextAttribute.Defalut;
+                PropertyChangedEventManager.AddHandler(_calibration, Defalut_PropertyChanged, string.Empty);
+                NotifyPropertyChanged(string.Empty);
+                Render();
+            }
+        }
 
         public double ParentWidth { get; set; }
         public double ParentHeight { get; set; }
 
         public ScaleLocation ScaleLocation { get; set; } = ScaleLocation.lowerright;
 
-        public double ActualLength { get => DefalutTextAttribute.Defalut.ActualLength; set { DefalutTextAttribute.Defalut.ActualLength = value; SaveCalibration(); NotifyPropertyChanged(); } }
-        public string PhysicalUnit { get => DefalutTextAttribute.Defalut.PhysicalUnit; set { DefalutTextAttribute.Defalut.PhysicalUnit = value; SaveCalibration(); NotifyPropertyChanged(); } }
-        public bool IsUsePhysicalUnit { get => DefalutTextAttribute.Defalut.IsUsePhysicalUnit; set { DefalutTextAttribute.Defalut.IsUsePhysicalUnit = value; SaveCalibration(); NotifyPropertyChanged(); } }
+        public double ActualLength { get => _calibration.ActualLength; set => _calibration.ActualLength = value; }
+        public string PhysicalUnit { get => _calibration.PhysicalUnit; set => _calibration.PhysicalUnit = value; }
+        public bool IsUsePhysicalUnit { get => _calibration.IsUsePhysicalUnit; set => _calibration.IsUsePhysicalUnit = value; }
 
         private void Defalut_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
@@ -53,11 +69,6 @@ namespace ColorVision.ImageEditor.Draw.Ruler
                 NotifyPropertyChanged(e.PropertyName);
                 Render();
             }
-        }
-
-        private void SaveCalibration()
-        {
-            ImageCalibrationService.SaveCurrent(Config);
         }
 
         private double Lastlength = 1;
@@ -91,7 +102,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
                     dc.DrawLine(new Pen(Brushes.Black, 2), new Point(X + 100 * result / length, Y + 1), new Point(X + 100 * result / length, Y - 8));
                     dc.DrawLine(new Pen(Brushes.Black, 2), new Point(X, Y), new Point(X + 100 * result / length, Y));
 
-                    FormattedText formattedText1 = new((result * ActualLength).ToString("F0") + " " + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                    FormattedText formattedText1 = new((result * (IsUsePhysicalUnit ? ActualLength : 1)).ToString("F0") + " " + (IsUsePhysicalUnit ? PhysicalUnit : "Px"), CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                     formattedText1.TextAlignment = TextAlignment.Center;
                     formattedText1.MaxTextWidth = 100 * result / length;
                     dc.DrawText(formattedText1, new Point(X, Y - 20));

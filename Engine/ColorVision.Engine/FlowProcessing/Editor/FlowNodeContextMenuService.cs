@@ -2,10 +2,8 @@ using ColorVision.Engine.MQTT;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Templates.Flow;
 using FlowEngineLib.Base;
 using FlowEngineLib.Start;
-using log4net;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
@@ -19,7 +17,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 {
     internal sealed class FlowNodeContextMenuService : IDisposable
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(FlowNodeContextMenuService));
         private static readonly string[] CoreNodeMenuAssemblyPrefixes =
         {
             "FlowEngineLib/",
@@ -29,15 +26,20 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         private static STNodeTreeView? _nodeTreeView;
         private readonly STNodeEditor _nodeEditor;
         private readonly FlowExecutionNavigator _executionNavigator;
+        private readonly Action _importModule;
         private readonly ContextMenu _contextMenu;
         private System.Drawing.Point _contextCanvasPoint;
 
         private static STNodeTreeView NodeTreeView => _nodeTreeView ??= new STNodeTreeView();
 
-        public FlowNodeContextMenuService(STNodeEditor nodeEditor, FlowExecutionNavigator executionNavigator)
+        public FlowNodeContextMenuService(
+            STNodeEditor nodeEditor,
+            FlowExecutionNavigator executionNavigator,
+            Action importModule)
         {
             _nodeEditor = nodeEditor;
             _executionNavigator = executionNavigator;
+            _importModule = importModule;
             _contextMenu = new ContextMenu();
             _nodeEditor.ContextMenu = _contextMenu;
             _nodeEditor.ContextMenuOpening += NodeEditor_ContextMenuOpening;
@@ -59,6 +61,15 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             }
 
             return string.Join("/", displayPath.Split('/', StringSplitOptions.RemoveEmptyEntries).Select(LocalizeNodeMenuText));
+        }
+
+        internal static MenuItem CreateImportModuleMenuItem(Action importModule)
+        {
+            ArgumentNullException.ThrowIfNull(importModule);
+
+            var item = new MenuItem { Header = Properties.Resources.Flow_ImportTemplateAsModule };
+            item.Click += (_, _) => importModule();
+            return item;
         }
 
         private static string LocalizeNodeMenuText(string text)
@@ -231,44 +242,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         private void AddImportModuleContextMenu(ItemCollection items)
         {
             items.Add(new Separator());
-            var importModuleItem = new MenuItem { Header = Properties.Resources.Flow_ImportTemplateAsModule };
-            importModuleItem.SubmenuOpened += (_, _) =>
-            {
-                importModuleItem.Items.Clear();
-                foreach (var template in TemplateFlow.Params)
-                {
-                    string name = template.Key;
-                    FlowParam param = template.Value;
-                    var templateItem = new MenuItem { Header = name };
-                    templateItem.Click += (_, _) =>
-                    {
-                        if (string.IsNullOrEmpty(param.DataBase64))
-                            return;
-
-                        try
-                        {
-                            FlowEditorOperations.ImportCanvasAsModule(
-                                _nodeEditor,
-                                Convert.FromBase64String(param.DataBase64));
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Error($"Import module '{name}' failed", ex);
-                        }
-                    };
-                    importModuleItem.Items.Add(templateItem);
-                }
-
-                if (importModuleItem.Items.Count == 0)
-                {
-                    importModuleItem.Items.Add(new MenuItem
-                    {
-                        Header = Properties.Resources.Flow_NoTemplateAvailable,
-                        IsEnabled = false
-                    });
-                }
-            };
-            items.Add(importModuleItem);
+            items.Add(CreateImportModuleMenuItem(_importModule));
         }
 
         public void Dispose()

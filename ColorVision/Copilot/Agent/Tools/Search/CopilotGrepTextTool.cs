@@ -19,7 +19,8 @@ namespace ColorVision.Copilot
         {
             return request?.SearchRootPaths?.Count > 0
                 && request.Mode != CopilotAgentMode.Chat
-                && CopilotToolIntentPolicy.NeedsLocalEvidence(request);
+                && (CopilotToolIntentPolicy.CanUseWorkspaceEvidence(request)
+                    || CopilotToolIntentPolicy.CanRetainForFollowUp(request, this));
         }
 
         public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);

@@ -16,6 +16,7 @@ using MQTTMessageLib.Calibration;
 using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -34,6 +35,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewCalibration));
         private bool _isInitialized;
+        private bool _isInitializing;
         private bool _isDisposed;
         private bool _messageSubscribed;
         private IDisposable? _localResultSubscription;
@@ -41,10 +43,65 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         public  MQTTCalibration DeviceService => Device.DService;
         public DeviceCalibration Device { get; set; }
 
-        public ViewCalibration(DeviceCalibration device)
+        public ViewCalibration(DeviceCalibration device) : this(device, deferInitialization: false)
+        {
+        }
+
+        internal ViewCalibration(DeviceCalibration device, bool deferInitialization)
         {
             Device = device;
-            InitializeComponent();
+            DeviceService.MsgReturnReceived += DeviceService_OnMessageRecved;
+            _messageSubscribed = true;
+            _localResultSubscription = ResultMessageBus.Default.Subscribe(LocalResultPublished);
+
+            if (deferInitialization)
+            {
+                Loaded += View_Loaded;
+                IsVisibleChanged += View_IsVisibleChanged;
+            }
+            else
+                EnsureInitialized();
+        }
+
+        private void View_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (IsVisible)
+                EnsureInitialized();
+        }
+
+        private void View_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (IsLoaded && IsVisible)
+                EnsureInitialized();
+        }
+
+        internal void EnsureInitialized()
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(EnsureInitialized);
+                return;
+            }
+
+            if (_isInitialized || _isInitializing || _isDisposed)
+                return;
+
+            _isInitializing = true;
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            try
+            {
+                InitializeComponent();
+                // A deferred shell may already have raised WPF Initialized before its XAML was loaded.
+                UserControl_Initialized(this, EventArgs.Empty);
+                Loaded -= View_Loaded;
+                IsVisibleChanged -= View_IsVisibleChanged;
+                stopwatch.Stop();
+                log.Info($"Device view initialized. View={nameof(ViewCalibration)}, Duration={stopwatch.ElapsedMilliseconds}ms.");
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
         }
         public static ViewCalibrationConfig Config => ViewCalibrationConfig.Instance;
         public ObservableCollection<ViewResultImage> ViewResults { get; } = new ObservableCollection<ViewResultImage>();
@@ -65,10 +122,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 Config.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
-            DeviceService.MsgReturnReceived += DeviceService_OnMessageRecved;
-            _messageSubscribed = true;
-            _localResultSubscription ??= ResultMessageBus.Default.Subscribe(LocalResultPublished);
-
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
@@ -138,6 +191,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             if (_isDisposed)
                 return;
 
+            EnsureInitialized();
             ViewResultImage result = new(model);
             if (Config.InsertAtBeginning)
                 ViewResults.Insert(0, result);
@@ -201,6 +255,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             if (_isDisposed)
                 return;
 
+            EnsureInitialized();
             ImageView.Clear();
             ImageView.OpenImage(fileData.ToWriteableBitmap());
         }
@@ -249,6 +304,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 return;
 
             _isDisposed = true;
+            Loaded -= View_Loaded;
+            IsVisibleChanged -= View_IsVisibleChanged;
 
             if (_messageSubscribed)
             {
@@ -258,11 +315,14 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             _localResultSubscription?.Dispose();
             _localResultSubscription = null;
 
-            listView1.SelectionChanged -= listView1_SelectionChanged;
-            listView1.PreviewKeyDown -= listView1_PreviewKeyDown;
-            listView1.ItemsSource = null;
-            listView1.CommandBindings.Clear();
-            ImageView.Dispose();
+            if (listView1 != null)
+            {
+                listView1.SelectionChanged -= listView1_SelectionChanged;
+                listView1.PreviewKeyDown -= listView1_PreviewKeyDown;
+                listView1.ItemsSource = null;
+                listView1.CommandBindings.Clear();
+            }
+            ImageView?.Dispose();
             DataContext = null;
             GC.SuppressFinalize(this);
         }

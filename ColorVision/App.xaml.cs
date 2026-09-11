@@ -33,19 +33,19 @@ namespace ColorVision
         [ConfigSetting]
         [DisplayName("AllowMultipleInstances")]
         [Description("AllowMultipleInstancesDescription")]
-        public bool IsMute
+        public bool AllowMultipleInstances
         {
-            get => _IsMute;
+            get => _allowMultipleInstances;
             set
             {
-                if (_IsMute == value)
+                if (_allowMultipleInstances == value)
                     return;
 
-                _IsMute = value;
+                _allowMultipleInstances = value;
                 OnPropertyChanged();
             }
         }
-        private bool _IsMute = true;
+        private bool _allowMultipleInstances;
     }
 
     /// <summary>
@@ -113,6 +113,7 @@ namespace ColorVision
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            Stopwatch startupPhaseStopwatch = Stopwatch.StartNew();
             if (Update.ExitUpdateHandoff.TryDeferLaunchForActiveUpdate(AppDomain.CurrentDomain.BaseDirectory))
             {
                 Environment.Exit(0);
@@ -159,6 +160,8 @@ namespace ColorVision
             LogConfig.Instance.SetLog();
             this.ApplyTheme(ThemeConfig.Instance.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
+            log.Info($"Startup core setup completed in {startupPhaseStopwatch.ElapsedMilliseconds} ms.");
+            startupPhaseStopwatch.Restart();
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("ja");
 
@@ -209,6 +212,7 @@ namespace ColorVision
 
             string executablePath = Environment.ProcessPath
                 ?? throw new InvalidOperationException("Unable to resolve the current ColorVision executable path.");
+            startupPhaseStopwatch.Restart();
             mutex = new Mutex(true, SingleInstanceMutexName.Create(executablePath), out bool ownsMutex);
             _ownsSingleInstanceMutex = ownsMutex;
             APPConfig appConfig = configHandler.GetRequiredService<APPConfig>();
@@ -217,22 +221,32 @@ namespace ColorVision
                 TryCloseSingleInstanceReplacement,
                 FinalizeSingleInstanceReplacementShutdown);
             bool enableAutoSave = true;
-            bool allowMultipleInstances = appConfig.IsMute;
+            bool allowMultipleInstances = appConfig.AllowMultipleInstances;
             if (SingleInstanceStartupPolicy.Decide(
                 Debugger.IsAttached,
                 allowMultipleInstances) == SingleInstanceStartupAction.ReplaceEarlierInstances)
             {
                 int closedInstanceCount;
+                bool openAdditionalInstance;
                 try
                 {
-                    closedInstanceCount = Update.ApplicationUpdateProcessCoordinator.CloseEarlierApplicationProcesses(
-                        SingleInstanceReplacementListener.TryRequestShutdown);
-                    if (!TryAcquireSingleInstanceMutex())
-                        throw new InvalidOperationException("Unable to acquire the single-instance mutex after closing earlier instances.");
+                    SingleInstanceStartupResult result = ReplaceEarlierInstancesForStartup(out closedInstanceCount);
+                    if (result == SingleInstanceStartupResult.Cancel)
+                    {
+                        StartupRegistryChecker.CompleteForRecoveryRestart();
+                        Environment.Exit(0);
+                        return;
+                    }
+                    openAdditionalInstance = result == SingleInstanceStartupResult.OpenAdditional;
                 }
                 catch (Exception ex)
                 {
                     log.Error("Unable to replace the earlier ColorVision instance.", ex);
+                    MessageBox.Show(
+                        "无法完成旧 ColorVision 实例的关闭，本次启动已停止。\n\n" +
+                        "请在任务管理器中检查 ColorVision 进程。详细原因已写入日志。",
+                        "ColorVision 无法启动", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    StartupRegistryChecker.CompleteForRecoveryRestart();
                     Environment.Exit(-1);
                     return;
                 }
@@ -244,13 +258,13 @@ namespace ColorVision
                     return;
                 }
 
-                if (closedInstanceCount > 0 || !ownsMutex)
+                if (!openAdditionalInstance && (closedInstanceCount > 0 || !ownsMutex))
                 {
                     try
                     {
                         configHandler.ReloadFromDisk();
                         appConfig = configHandler.GetRequiredService<APPConfig>();
-                        appConfig.IsMute = false;
+                        appConfig.AllowMultipleInstances = false;
                         configHandler.Save<APPConfig>();
                         ((log4net.Repository.Hierarchy.Hierarchy)log4net.LogManager.GetRepository()).Root.Level = LogConfig.Instance.LogLevel;
                         this.ApplyTheme(ThemeConfig.Instance.Theme);
@@ -266,7 +280,7 @@ namespace ColorVision
                         try
                         {
                             appConfig = configHandler.GetRequiredService<APPConfig>();
-                            appConfig.IsMute = false;
+                            appConfig.AllowMultipleInstances = false;
                         }
                         catch (Exception recoveryException)
                         {
@@ -275,9 +289,9 @@ namespace ColorVision
                     }
                 }
 
-                log.Info(
-                    $"Multiple-instance mode is disabled. Closed {closedInstanceCount} earlier " +
-                    "ColorVision instance(s) from the current installation.");
+                log.Info(openAdditionalInstance
+                    ? "User chose to open an additional ColorVision instance for this launch only."
+                    : $"Multiple-instance mode is disabled. Closed {closedInstanceCount} earlier ColorVision instance(s) from the current installation.");
             }
 
             configHandler.IsAutoSave = enableAutoSave;
@@ -287,33 +301,49 @@ namespace ColorVision
                 TryAcquireSingleInstanceMutex,
                 () => ConfigHandler.GetInstance().Save<APPConfig>());
             appConfig.PropertyChanged += AppConfig_PropertyChanged;
+            startupPhaseStopwatch.Restart();
 
+            Stopwatch? startupHostTrace = Environment.GetEnvironmentVariable("COLORVISION_STARTUP_TRACE") == "1"
+                ? Stopwatch.StartNew()
+                : null;
             Rbac.ApplicationUsageTracker.StartSession();
+            TraceStartupHostPhase(startupHostTrace, "RBAC usage tracking");
 
-            CopilotMcpServer.Instance.ApplyConfig();
+            CopilotMcpServer mcpServer = CopilotMcpServer.Instance;
+            TraceStartupHostPhase(startupHostTrace, "MCP singleton construction");
+            mcpServer.ApplyConfig();
+            TraceStartupHostPhase(startupHostTrace, "MCP configuration");
             FlowOperationsRuntimeStatusProvider flowOperations = new();
             OperationsApplicationRestartHandoff applicationRestartHandoff = new();
-            OperationsWorkStore operationsWorkStore = LanRemoteControlService.Instance.OperationsHost.WorkStore;
+            LanRemoteControlService lanRemoteControl = LanRemoteControlService.Instance;
+            TraceStartupHostPhase(startupHostTrace, "LAN singleton construction");
+            OperationsWorkStore operationsWorkStore = lanRemoteControl.OperationsHost.WorkStore;
             applicationRestartHandoff.CompletePending(
                 operationsWorkStore, OperationsApplicationRestartController.RestartJobId);
-            LanRemoteControlService.Instance.ConfigureOperationsServiceHealthProvider(new WindowsOperationsServiceHealthProvider());
-            LanRemoteControlService.Instance.ConfigureOperationsFlowRuntimeStatusProvider(flowOperations);
-            LanRemoteControlService.Instance.ConfigureOperationsDeviceHealthProvider(new EngineOperationsDeviceHealthProvider());
+            TraceStartupHostPhase(startupHostTrace, "LAN pending restart handoff");
+            lanRemoteControl.ConfigureOperationsServiceHealthProvider(new WindowsOperationsServiceHealthProvider());
+            lanRemoteControl.ConfigureOperationsFlowRuntimeStatusProvider(flowOperations);
+            lanRemoteControl.ConfigureOperationsDeviceHealthProvider(new EngineOperationsDeviceHealthProvider());
             EngineOperationsMessageChannelHealthProvider messageChannelOperations = new();
-            LanRemoteControlService.Instance.ConfigureOperationsMessageChannelHealthProvider(messageChannelOperations);
-            LanRemoteControlService.Instance.ConfigureOperationsMessageChannelRecoveryController(messageChannelOperations);
-            LanRemoteControlService.Instance.ConfigureOperationsFailureEvidenceProvider(new WindowsOperationsFailureEvidenceService());
-            LanRemoteControlService.Instance.ConfigureOperationsMqttRestartController(new ServiceHostOperationsMqttRestartController());
-            LanRemoteControlService.Instance.ConfigureOperationsApplicationRestartController(
+            lanRemoteControl.ConfigureOperationsMessageChannelHealthProvider(messageChannelOperations);
+            lanRemoteControl.ConfigureOperationsMessageChannelRecoveryController(messageChannelOperations);
+            lanRemoteControl.ConfigureOperationsFailureEvidenceProvider(new WindowsOperationsFailureEvidenceService());
+            lanRemoteControl.ConfigureOperationsMqttRestartController(new ServiceHostOperationsMqttRestartController());
+            lanRemoteControl.ConfigureOperationsApplicationRestartController(
                 new OperationsApplicationRestartController(
                     this,
                     flowOperations,
                     operationsWorkStore,
                     applicationRestartHandoff,
                     () => _isSingleInstanceReplacement = true));
-            LanRemoteControlService.Instance.ApplyConfig();
+            TraceStartupHostPhase(startupHostTrace, "LAN provider configuration");
+            lanRemoteControl.ApplyConfig();
+            TraceStartupHostPhase(startupHostTrace, "LAN listener configuration");
+            log.Info($"Startup RBAC, MCP and LAN host setup took {startupPhaseStopwatch.ElapsedMilliseconds} ms.");
 
-            log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");
+            log.Info($"ColorVision startup context. Version={Assembly.GetExecutingAssembly().GetName().Version}; " +
+                $"Architecture={(Environment.Is64BitProcess ? "x64" : "x86")}; Runtime=.NET {Environment.Version}; " +
+                $"Build={File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy-MM-dd}.");
 
             bool shouldLoadPlugins = maintenanceMode != StartupMaintenanceMode.SafeStart;
             bool shouldShowSetupWizard = maintenanceMode == StartupMaintenanceMode.SetupWizard;
@@ -341,12 +371,14 @@ namespace ColorVision
 
             if (shouldLoadPlugins)
             {
+                startupPhaseStopwatch.Restart();
                 StartupRegistryChecker.MarkStage("LoadingPlugins");
                 PluginLoader.LoadPlugins(
                     _moduleCatalog,
                     skipOncePluginKeys,
                     pluginKey => StartupRegistryChecker.MarkStage("LoadingPlugin", pluginKey));
                 StartupRegistryChecker.MarkStage("PluginsLoaded");
+                log.Info($"Startup plugin loading took {startupPhaseStopwatch.ElapsedMilliseconds} ms.");
             }
             else
             {
@@ -384,6 +416,16 @@ namespace ColorVision
             }
         }
 
+        private static void TraceStartupHostPhase(Stopwatch? stopwatch, string phase)
+        {
+            if (stopwatch == null)
+                return;
+
+            stopwatch.Stop();
+            log.Info($"Startup trace host {phase} took {stopwatch.Elapsed.TotalMilliseconds:0.###} ms.");
+            stopwatch.Restart();
+        }
+
         private StartupRecoveryResult ShowStartupRecoveryWindow(bool manualRequest)
         {
             System.Windows.ShutdownMode previousShutdownMode = ShutdownMode;
@@ -408,9 +450,9 @@ namespace ColorVision
 
         private async void AppConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName != nameof(APPConfig.IsMute)
+            if (e.PropertyName != nameof(APPConfig.AllowMultipleInstances)
                 || sender is not APPConfig appConfig
-                || appConfig.IsMute
+                || appConfig.AllowMultipleInstances
                 || _isSingleInstanceReplacement
                 || _singleInstanceRuntimeCoordinator == null)
             {
@@ -430,11 +472,54 @@ namespace ColorVision
             catch (Exception ex)
             {
                 log.Error("Unable to disable multiple-instance mode. Restoring the previous setting.", ex);
-                if (!appConfig.IsMute)
+                if (!appConfig.AllowMultipleInstances)
                 {
-                    appConfig.IsMute = true;
+                    appConfig.AllowMultipleInstances = true;
                     ConfigHandler.GetInstance().Save<APPConfig>();
                 }
+            }
+        }
+
+        private SingleInstanceStartupResult ReplaceEarlierInstancesForStartup(out int closedInstanceCount)
+        {
+            Update.ApplicationUpdateProcessCoordinator.StartupReplacement? replacement = null;
+            int targetCount = 0;
+            try
+            {
+                try { replacement = Update.ApplicationUpdateProcessCoordinator.PrepareStartupReplacement(); }
+                catch (Exception ex) { log.Warn("Unable to inspect earlier instances; opening startup recovery.", ex); }
+
+                if (replacement?.ProcessIds.Count == 0 && TryAcquireSingleInstanceMutex())
+                    return SingleInstanceStartupResult.ClosedEarlierInstances;
+
+                ShutdownMode previousShutdownMode = ShutdownMode;
+                Window previousMainWindow = MainWindow;
+                ShutdownMode = ShutdownMode.OnExplicitShutdown;
+                try
+                {
+                    var window = new SingleInstanceStartupWindow(async (progress, cancellationToken) =>
+                    {
+                        replacement ??= await Task.Run(Update.ApplicationUpdateProcessCoordinator.PrepareStartupReplacement, cancellationToken);
+                        targetCount = replacement.ProcessIds.Count;
+                        await Task.Run(() => replacement.ForceCloseAsync(progress, cancellationToken));
+                        cancellationToken.ThrowIfCancellationRequested();
+                        // Mutex ownership must stay on the startup UI thread.
+                        if (!TryAcquireSingleInstanceMutex())
+                            throw new InvalidOperationException("旧进程已检查，但单实例锁仍被占用。可重试结束或直接打开。");
+                    }, replacement == null ? string.Empty : string.Join("、", replacement.ProcessIds));
+                    window.ShowDialog();
+                    return window.Result;
+                }
+                finally
+                {
+                    MainWindow = previousMainWindow;
+                    ShutdownMode = previousShutdownMode;
+                }
+            }
+            finally
+            {
+                closedInstanceCount = targetCount;
+                replacement?.Dispose();
             }
         }
 
@@ -491,7 +576,7 @@ namespace ColorVision
                         try
                         {
                             APPConfig appConfig = ConfigHandler.GetInstance().GetRequiredService<APPConfig>();
-                            appConfig.IsMute = false;
+                            appConfig.AllowMultipleInstances = false;
                             ConfigHandler.GetInstance().Save<APPConfig>();
                         }
                         catch (Exception ex)

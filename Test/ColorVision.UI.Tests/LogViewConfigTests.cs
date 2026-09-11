@@ -1,19 +1,16 @@
 using ColorVision.UI.LogImp;
 using ColorVision.UI.LogImp.Controls;
-using System.Runtime.ExceptionServices;
-using System.Threading;
 
 namespace ColorVision.UI.Tests
 {
     public class LogViewConfigTests
     {
         [Fact]
-        public void LogPanelUsesIndependentOneThousandEntryLimit()
+        public void LogPanelLimitDoesNotChangeFullLogLimit()
         {
             var completeLogConfig = new LogConfig();
             var logPanelConfig = new LogPanelConfig();
 
-            Assert.Equal(10000, LogConstants.DefaultMaxEntries);
             Assert.Equal(LogConstants.DefaultMaxEntries, completeLogConfig.MaxEntries);
             Assert.Equal(LogConstants.DefaultLogPanelMaxEntries, logPanelConfig.MaxEntries);
 
@@ -40,22 +37,12 @@ namespace ColorVision.UI.Tests
             Assert.Equal(LogConstants.DefaultRealtimeLogMaxEntries, second.MaxEntries);
             Assert.False(first.AutoRefresh);
             Assert.True(second.AutoRefresh);
-            Assert.Null(typeof(TestRealtimeLogConfig).GetProperty(nameof(LogConfig.LogLevel)));
-        }
-
-        [Fact]
-        public void LogPanelViewConfigDoesNotContainGlobalLogLevel()
-        {
-            Assert.Null(typeof(LogPanelConfig).GetProperty(nameof(LogConfig.LogLevel)));
         }
 
         [Fact]
         public void ExistingRealtimeViewerConstructorsUseSafeLocalDefaults()
         {
-            Assert.NotNull(typeof(LogOutput).GetConstructor(new[] { typeof(string) }));
-            Assert.NotNull(typeof(LogViewerAppender).GetConstructor(new[] { typeof(LogViewerControl) }));
-
-            RunInSta(() =>
+            StaTest.Run(() =>
             {
                 var firstViewer = new LogViewerControl();
                 var secondViewer = new LogViewerControl();
@@ -69,37 +56,12 @@ namespace ColorVision.UI.Tests
 
                 Assert.Equal(250, firstViewer.MaxEntries);
                 Assert.Equal(LogConstants.DefaultRealtimeLogMaxEntries, secondViewer.MaxEntries);
-            });
+            }, TimeSpan.FromSeconds(10), "The STA log-view configuration test did not finish.");
         }
 
         private sealed class TestRealtimeLogConfig : RealtimeLogViewConfig
         {
         }
 
-        private static void RunInSta(Action action)
-        {
-            Exception? failure = null;
-            var thread = new Thread(() =>
-            {
-                try
-                {
-                    action();
-                }
-                catch (Exception ex)
-                {
-                    failure = ex;
-                }
-            });
-
-            thread.IsBackground = true;
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
-            Assert.True(thread.Join(TimeSpan.FromSeconds(10)), "The STA log-view configuration test did not finish.");
-
-            if (failure != null)
-            {
-                ExceptionDispatchInfo.Capture(failure).Throw();
-            }
-        }
     }
 }

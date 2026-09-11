@@ -1,5 +1,6 @@
 using ColorVision.Common.ThirdPartyApps;
 using ColorVision.UI.Authorizations;
+using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace WindowsServicePlugin.ServiceManager
@@ -18,17 +19,29 @@ namespace WindowsServicePlugin.ServiceManager
                     RequiredPermission = PermissionMode.Administrator,
                     Order = 3,
                     IconGlyph = ThirdPartyAppIconGlyphs.ServiceManager,
-                    LaunchAction = () =>
-                    {
-                        new ServiceManagerWindow
-                        {
-                            Owner = Application.Current.GetActiveWindow(),
-                            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                        }.Show();
-                    },
+                    LaunchAction = OpenServiceManagerWindow,
                 }
             };
         }
+
+        internal static void OpenServiceManagerWindow()
+        {
+            new ServiceManagerWindow
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            }.Show();
+        }
     }
 
+    public class MenuServiceManager : MenuItemBase
+    {
+        public override string OwnerGuid => MenuItemConstants.Help;
+        public override string GuidId => "ServiceManager";
+        public override int Order => 0;
+        public override string Header => WindowsServicePlugin.Properties.Resources.ServiceManager;
+
+        [RequiresPermission(PermissionMode.Administrator)]
+        public override void Execute() => ServiceManagerAppProvider.OpenServiceManagerWindow();
+    }
 }

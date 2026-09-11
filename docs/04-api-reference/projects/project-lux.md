@@ -4,8 +4,8 @@ knowledge_type: "reference"
 status: "current"
 summary: "ProjectLUX 流程组、Recipe/Fix 共享配置、处理类型与 CSV/SQLite 结果链；文本协议有独立参考主题。"
 aliases: ["T00XX 如何匹配 LUX 流程","LUX 结果和修正在哪里","ProjectLUX","LUXWindow","ProcessMeta.SocketCode","ARVRRecipe.json","ProjectARVRProFixConfig.json","ProjectLUXSummary.json","LUX Recipe","LUX Fix"]
-code_paths: ["Projects/ProjectLUX/LUXWindow.xaml.cs","Projects/ProjectLUX/Services/SocketControl.cs","Projects/ProjectLUX/Process/","Projects/ProjectLUX/ViewResultManager.cs","Projects/ProjectLUX/Recipe/","Projects/ProjectLUX/Fix/","Projects/ProjectLUX/Summary.cs"]
-test_paths: ["Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj"]
+code_paths: ["Projects/ProjectLUX/LUXWindow.xaml","Projects/ProjectLUX/TestResultViewWindow.xaml","Projects/ProjectLUX/LUXWindow.xaml.cs","Projects/ProjectLUX/Services/SocketControl.cs","Projects/ProjectLUX/Process/","Projects/ProjectLUX/ViewResultManager.cs","Projects/ProjectLUX/ResultStatistics.cs","Projects/ProjectLUX/ResultStatisticsWindow.xaml","Projects/ProjectLUX/ResultStatisticsWindow.xaml.cs","Projects/ProjectLUX/ResultJsonPayloadStorage.cs","Projects/ProjectLUX/LegacyResultJsonMigration.cs","Projects/ProjectLUX/LuxSqliteCleanupProvider.cs","Projects/ProjectLUX/Recipe/","Projects/ProjectLUX/Fix/","Projects/ProjectLUX/Summary.cs"]
+test_paths: ["Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj","Test/ProjectLUX.Tests/ResultJsonPayloadStorageTests.cs"]
 related: ["projects.index","projects.capabilities","projects.lux-protocol","projects.arvr-pro-processes","ui.socket-protocol"]
 ---
 
@@ -38,6 +38,10 @@ related: ["projects.index","projects.capabilities","projects.lux-protocol","proj
 | 结果 | `ObjectiveTestResult.cs`、`ViewResultManager.cs` |
 
 普通流程由当前 `ProcessGroup` 和步骤的 `FlowTemplate` 绑定 Engine Flow。Flow 完成后读取批次和算法结果，`IProcess.Execute()` 应用 Fix 修正和 Recipe 限值，写入聚合结果与 SQLite，再导出 CSV 并返回客户响应。Socket 入口先解析命令和 SN，再分派到下表路径；`T0000` 仅握手，`T0001` 与 `T0031` 分别使用相机和光谱仪专用链，不能把所有命令都理解为初始化后运行同一条流程。
+
+## 界面主题
+
+主界面分隔线、结果明细表格、流程配置提示和 Recipe/Fix 编辑窗口使用 [ColorVision.Themes](../ui-components/ColorVision.Themes.md) 的动态画刷。清空结果或选择未完成记录后，结果区域恢复主题背景；窗口保持打开时切换黑白主题，背景、说明文字和操作按钮仍随主题更新。结果明细的隔行背景保留选中与悬停高亮，选中行的结果文字跟随行前景色，未选中时保留 PASS/FAIL 业务颜色。图像标记的业务颜色保持独立。
 
 ## 配置流程与外部命令
 
@@ -97,6 +101,18 @@ CSV 写入 `ProjectLUXConfig.ResultSavePath`，普通流程、VID 和光通量�
 流程配置只在 `ProcessGroups.json` 不存在时从 `ProcessMetas.json` 迁移；新格式损坏不会自动回退旧文件。LUX 与 ARVRPro 默认使用同名的 `ProcessGroups.json`，内容和类型属于各自项目，不能直接跨项目互换。
 
 这些管理器使用直接文件写入，保存异常主要记入日志，不提供跨文件事务。界面值改变或编辑窗口关闭不证明所有文件已保存。Recipe/Fix 初始化时若发现已存配置数量与当前发现的类型数量不同，会在内存中重建整组默认配置；升级后限值异常时应先保留原文件并核对类型及日志，不以“文件存在”判断原限值已成功加载。
+
+## 结果统计与数据库维护
+
+主窗口“结果统计”按本地 `ObjectiveTestResultRecord` 聚合记录查询日、周、月或全部周期，支持 SN、PASS/FAIL 筛选、每页 1000 条记录及按需查看测试结果。通过率、CT 计算、周期边界和全部周期的月度趋势沿用 ARVRPro 统计模块；统计不解析完整 JSON，也不按单流程行数计算产量。周从周一开始，日期上界不包含在查询内。
+
+LUX 保留原有 `ObjectiveTestResult`、累计结果保存和客户 CSV 导出逻辑。每个聚合记录 Id 计一次，更新同一条记录不会增加计数，同一 SN 的多次记录分别计数。LUX 没有 ARVRPro 的结束标记和会话起始时间契约，运行中的已保存记录也会计入；CT 为记录 `CreateTime` 到 `UpdateTime` 的非负间隔，即首次保存至最后更新，不代表完整检测耗时。
+
+`ResultJsonPayloadStorage` 使用与 ARVRPro 相同的 `ViewResultJsonGzip`、`ObjectiveTestResultJsonGzip` 同表 BLOB 字段。启动补齐字段，新正文压缩保存，元数据与正文写入同一事务。历史流程列表只读元数据，在选中后按 Id 读取正文；原“结果记录”窗口在查询时加载正文，保持其现有查看与定制导出入口。旧 TEXT 在未迁移前仍可回退读取；存在压缩值时优先解压，损坏压缩值会报错，不能用旧 TEXT 静默掩盖。更新某条正文后清空该条旧 TEXT，避免之后迁移发生新旧值冲突。
+
+“数据库维护”只打开 `LuxSqliteCleanupProvider` 所属的 `ProjectLUX.db`，展示两张结果表的行数和数据库文件大小，并提供备份、清理、迁移压缩。全局数据库维护窗口也可发现该来源。批量“迁移并压缩历史结果”由用户手动执行，维护窗口先做完整 SQLite 备份，再逐批校验迁移、清空旧 TEXT、调整旧表 FileName 可空约束和执行 VACUUM；不自动运行，不删除图片，不修复 MySQL 的图片记录或空路径。迁移后旧版插件无法读取已压缩正文，新版新增正文同样不兼容旧版插件读取。具体备份、停写要求和失败后的非原子边界见[数据库维护](../engine-components/database-maintenance.md)。
+
+`ResultJsonPayloadStorageTests` 使用隔离 SQLite 验证新库、旧 TEXT 混读、压缩往返、迁移重跑、约束/索引/路径保留及聚合统计。现场生产库、MySQL 图片读取和硬件运行需单独验证。
 
 ## 内置处理类型
 

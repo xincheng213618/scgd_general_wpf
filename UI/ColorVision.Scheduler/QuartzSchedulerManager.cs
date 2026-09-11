@@ -238,7 +238,6 @@ namespace ColorVision.Scheduler
             {
                 if (File.Exists(ConfigFile))
                 {
-                    _logger.Info($"Loading tasks from {ConfigFile}");
                     var list = SchedulerTaskSerializer.LoadFromFile(ConfigFile);
                     if (list != null)
                     {
@@ -290,16 +289,11 @@ namespace ColorVision.Scheduler
                                 MessageBoxButton.OK,
                                 MessageBoxImage.Warning);
                         }
-                        _logger.Info($"Loaded {TaskInfos.Count} tasks successfully");
                     }
                     else
                     {
                         _logger.Warn("Deserialized task list is null");
                     }
-                }
-                else
-                {
-                    _logger.Info($"Config file not found: {ConfigFile}");
                 }
             }
             catch (Exception ex)
@@ -394,7 +388,6 @@ namespace ColorVision.Scheduler
         {
             try
             {
-                _logger.Info("Starting Quartz Scheduler");
                 Scheduler = await StdSchedulerFactory.GetDefaultScheduler();
                 PauseAllCommand = new RelayCommand(async _ =>
                 {
@@ -443,10 +436,7 @@ namespace ColorVision.Scheduler
                         }
                     }
                 }
-                _logger.Info($"Discovered {Jobs.Count} job types");
-
                 var failedJobs = new List<string>();
-                _logger.Info($"Recovering {TaskInfos.Count} tasks");
                 foreach (var item in TaskInfos)
                 {
                     try
@@ -467,7 +457,7 @@ namespace ColorVision.Scheduler
                         }
                         else
                         {
-                            var errorMsg = $"{item.JobName}({item.GroupName}) 类型丢失";
+                            var errorMsg = $"{item.JobName}({item.GroupName}): job type is missing";
                             failedJobs.Add(errorMsg);
                             _logger.Warn(errorMsg);
                         }
@@ -484,15 +474,10 @@ namespace ColorVision.Scheduler
                     _logger.Warn($"{failedJobs.Count} tasks failed to recover");
                     MessageBox.Show(string.Format(Properties.Resources.Sched_RestoreWarning, string.Join("\n", failedJobs)), Properties.Resources.Sched_RestoreWarningTitle);
                 }
-                else
-                {
-                    _logger.Info("All tasks recovered successfully");
-                }
-
                 // Restore definitions (including paused intent) before allowing
                 // immediate triggers to fire.
                 await Scheduler.Start();
-                _logger.Info("Scheduler started successfully");
+                _logger.Info($"Scheduler initialization completed. Tasks={TaskInfos.Count}, JobTypes={Jobs.Count}, RecoveryFailures={failedJobs.Count}.");
             }
             catch (Exception ex)
             {
@@ -1069,7 +1054,6 @@ namespace ColorVision.Scheduler
                         task.LastExecutionMessage = stats.LastMessage ?? string.Empty;
                     }
                 }
-                _logger.Info($"Restored stats for {TaskInfos.Count} tasks from database");
             }
             catch (Exception ex)
             {

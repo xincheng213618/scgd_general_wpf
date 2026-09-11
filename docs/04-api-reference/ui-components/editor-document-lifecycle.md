@@ -3,15 +3,17 @@ knowledge_id: "ui.documents"
 knowledge_type: "topic"
 status: "current"
 summary: "编辑器注册与选择、按路径和编辑器区分文档、保存重载关闭及外部变更；停靠布局不恢复未注册文件标签，重置也不预审脏文档。"
-aliases: ["EditorManager", "EditorDescriptor", "EditorDocumentService", "IEditorDocumentContent", "IReloadableEditorDocumentContent", "IResourcePathAwareDocumentContent", "DockLayoutManager", "DockContentRegistration", "DeferredDockContent", "WorkspaceManager", "TryCloseAllDocuments", "NotifyResourceRenamed", "ResetLayout", "DefaultEditorUpdated", "默认编辑器", "重复打开文件", "保存文档", "重新加载文件", "文件被外部修改", "重置窗口布局", "停靠布局恢复", "关闭重开面板", "面板内容双父节点"]
-code_paths: ["UI/ColorVision.Solution/Editor/EditorManager.cs", "UI/ColorVision.Solution/Editor/EditorDescriptor.cs", "UI/ColorVision.Solution/Editor/IEditor.cs", "UI/ColorVision.Solution/Editor/EditorForExtensionAttribute.cs", "UI/ColorVision.Solution/Editor/GenericEditorAttribute.cs", "UI/ColorVision.Solution/Editor/TextEditor.cs", "UI/ColorVision.Solution/Editor/ImageEditor.cs", "UI/ColorVision.Solution/Editor/SystemEditor.cs", "UI/ColorVision.Solution/Workspace/EditorDocumentService.cs", "UI/ColorVision.Solution/Workspace/IEditorDocumentContent.cs", "UI/ColorVision.Solution/Workspace/DockLayoutManager.cs", "UI/ColorVision.Solution/Workspace/WorkspaceManager.cs", "UI/ColorVision.Solution/Workspace/LayoutMenuItems.cs", "UI/ColorVision.Solution/CommandInitializer.cs", "ColorVision/MainWindow.xaml.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI/Environments.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/DockContentRegistrationTests.cs", "Test/ColorVision.UI.Tests/BuiltInShortcutDefaultsTests.cs"]
-related: ["ui.solution", "ui.configuration", "ui.image-editor", "operations.terminal"]
+aliases: ["EditorManager", "EditorDescriptor", "EditorDocumentService", "IEditorDocumentContent", "IReloadableEditorDocumentContent", "IResourcePathAwareDocumentContent", "DockLayoutManager", "DockContentRegistration", "DeferredDockContent", "WorkspaceManager", "DocumentTabPinManager", "TryCloseAllDocuments", "NotifyResourceRenamed", "ResetLayout", "DefaultEditorUpdated", "默认编辑器", "重复打开文件", "保存文档", "重新加载文件", "文件被外部修改", "固定选项卡", "固定标签", "重置窗口布局", "停靠布局恢复", "关闭重开面板", "面板内容双父节点"]
+code_paths: ["UI/ColorVision.Solution/Editor/EditorManager.cs", "UI/ColorVision.Solution/Editor/EditorDescriptor.cs", "UI/ColorVision.Solution/Editor/IEditor.cs", "UI/ColorVision.Solution/Editor/EditorForExtensionAttribute.cs", "UI/ColorVision.Solution/Editor/GenericEditorAttribute.cs", "UI/ColorVision.Solution/Editor/TextEditor.cs", "UI/ColorVision.Solution/Editor/ImageEditor.cs", "UI/ColorVision.Solution/Editor/SystemEditor.cs", "UI/ColorVision.Solution/Workspace/EditorDocumentService.cs", "UI/ColorVision.Solution/Workspace/IEditorDocumentContent.cs", "UI/ColorVision.Solution/Workspace/DocumentTabPinManager.cs", "UI/ColorVision.Solution/Workspace/DockLayoutManager.cs", "UI/ColorVision.Solution/Workspace/WorkspaceManager.cs", "UI/ColorVision.Solution/Workspace/LayoutMenuItems.cs", "UI/ColorVision.Solution/CommandInitializer.cs", "ColorVision/MainWindow.xaml.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI/Environments.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/DockContentRegistrationTests.cs", "Test/ColorVision.UI.Tests/BuiltInShortcutDefaultsTests.cs", "Test/ColorVision.UI.Tests/AvalonDockThemeBindingTests.cs"]
+related: ["ui.solution", "ui.configuration", "ui.image-editor", "ui.text-editor", "operations.terminal"]
 ---
 
 # 编辑器选择、文档生命周期与停靠布局
 
 `EditorManager` 选择并调用编辑器，`EditorDocumentService` 为接入它的内容提供文档身份和保存/关闭协议，`DockLayoutManager` 管理停靠内容注册与布局。三者不是同一个持久化层：打开返回、文档保存成功、布局保存成功有各自的完成边界。
+
+文本内容中的代码地图、字体、查找替换、折叠与快捷键见[文本编辑器](./text-editor.md)。文件 JSON 的打开保持原文，格式化由用户显式执行。
 
 本主题不定义文件与工作区的打开分流、批量打开或工作区切换，见[资源打开与单工作区切换](./ColorVision.Solution.md)。终端面板的进程、脚本及退出责任见[终端契约](../../01-user-guide/interface/terminal.md)；图像内容加载和保存见[图像编辑器](./ColorVision.ImageEditor.md)。
 
@@ -64,6 +66,12 @@ related: ["ui.solution", "ui.configuration", "ui.image-editor", "operations.term
 
 Reload 要求受管理内容支持重载且 `File.Exists(ResourcePath)`。有未保存修改时询问是否放弃，拒绝则不调用 `ReloadFromDisk()`；接受后由内容实现替换，false 或异常按失败处理。它不是合并外部修改，也不是先自动保存再读。服务层的 true 只沿用内容返回值，不能代替对特定编辑器加载/渲染完成的判断。
 
+## 固定选项卡
+
+文档标签的图钉和标签右键菜单都调用 `DocumentTabPinManager.ToggleCommand`。固定时，管理器把该 `LayoutDocument` 移到当前 `LayoutDocumentPane` 已固定前缀的末尾，并暂存原 `CanMove` 后设为 false；固定标签因此位于普通标签之前，不能拖出或浮动。取消固定时恢复原 `CanMove`，并将文档放在仍固定的标签之后。各文档窗格独立排序，不把标签移动到另一窗格。
+
+固定不改变 `CanClose`，不替换 `EditorDocumentService` 会话，也不跳过 Closing、脏文档确认或 Closed 清理。标签上的实心图钉只表示当前 `LayoutDocument` 实例在进程内已固定；状态由弱关联对象持有，不写入内容模型、资源文件或布局 XML。关闭并重新创建动态文档，或重启后按布局恢复，均不会自动恢复该状态。
+
 ## 关闭、资源重命名与释放
 
 主窗口用独立的 `MenuClose.CloseDocumentCommand` 关闭活动标签（默认 Ctrl+W / Ctrl+F4），CanClose=false 时不执行，也不回退到图像 `ApplicationCommands.Close` 的清空操作。独立窗口若没有声明这条文档命令，则通用关闭菜单按该窗口当前/记忆焦点保留原生 Close 路由；并非所有窗口都关闭标签。
@@ -102,7 +110,7 @@ Reload 要求受管理内容支持重载且 `File.Exists(ResourcePath)`。有未
 
 `DockLayoutManager` 的注册表按 ContentId 保存内容与元数据，独立于 `EditorDocumentService` 的动态文档会话。主窗口先注册自身面板和各 `IDockPanelProvider`，再加载布局；只有已经注册的内容才有恢复入口。
 
-布局位置为 `Environments.DirStateLayout/MainWindowDockLayout.xml`，通常来自 `DirAppData/State/Layout`，不是工作区 `.cvsln` 内的文件标签清单。`SaveLayout()` 建目录后用 `StreamWriter` 直接序列化 XML，捕获异常记警告，不返回失败状态；这里没有配置存储那样的临时文件原子替换、备份或写后验证，返回不证明布局文件完整落盘。
+布局位置为 `Environments.DirStateLayout/MainWindowDockLayout.xml`，通常来自 `DirAppData/State/Layout`，不是工作区 `.cvsln` 内的文件标签清单，也不序列化 `DocumentTabPinManager` 的固定状态。`SaveLayout()` 建目录后用 `StreamWriter` 直接序列化 XML，捕获异常记警告，不返回失败状态；这里没有配置存储那样的临时文件原子替换、备份或写后验证，返回不证明布局文件完整落盘。
 
 `LoadLayout()` 文件不存在或异常时返回 false。序列化回调只按注册 ContentId 绑定内容，其余项取消，包括未注册的动态编辑器标签；不会从 XML 中的路径重新调用编辑器。成功后刷新注册标题，替换 `WorkspaceManager` 的布局/文档窗格引用，必要时补建文档窗格，并清除 DockView 缓存。方法自身失败时不保证回滚反序列化的中间状态；主窗口调用方在 false 后执行 `ResetLayout()`。
 
@@ -121,5 +129,9 @@ Reload 要求受管理内容支持重载且 `File.Exists(ResourcePath)`。有未
 这些用例通过实际注册内容恢复入口取得宿主，再替换内存 `LayoutRoot`；不调用 `SaveLayout` / `LoadLayout` / `ResetLayout`，不读写用户 XML 或配置。因此它们不覆盖完整布局文件保存恢复、带脏文档重置、默认编辑器配置落盘失败、文档关闭取消、外部文件事件或路径更新失败，不能据此推断完整生命周期已验证。
 
 `BuiltInShortcutDefaultsTests` 用注入的确认和重置回调检查菜单/快捷键取消后不执行、确认后仅执行一次；不重建真实布局或写入用户布局文件，也不证明未保存文档已被自动保护。
+
+主程序与 Spectrum 的停靠模板统一由 `ColorVision.Solution.Themes.AvalonDockTheme` 提供；模板只读取文档和面板状态，不创建工作区，不替代各窗口的内容注册或保存关闭逻辑。共享资源入口及兼容字典见[停靠外观与主题边界](../../01-user-guide/interface/main-window.md#停靠外观与主题边界)。
+
+`AvalonDockThemeBindingTests` 在离屏真实 AvalonDock 主题中检查固定标签移动到前侧固定组、图钉状态与关闭按钮共存、右键菜单复用同一命令、取消固定恢复原 `CanMove`，并检查多个固定标签形成稳定前缀。它不写布局 XML，因此不把“固定状态不持久化”当作序列化实测，也不代替生产窗口中的真实鼠标拖动与视觉验收。
 
 后续改动应围绕受影响的选择、保存/取消、外部变更或布局恢复分支取得针对性证据；启动产品、写布局/配置、保存编辑内容及调用资源操作仍需要任务授权，不是只读查阅文档的必要步骤。

@@ -218,7 +218,7 @@ namespace ProjectARVRPro.Process.ScreenDefects
 
         private static void SetPreviewFile(IProcessExecutionContext ctx)
         {
-            string? fileName = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id).FirstOrDefault()?.FileUrl;
+            string? fileName = ctx.GetMeasureResults().FirstOrDefault()?.FileUrl;
             if (!string.IsNullOrWhiteSpace(fileName))
                 ctx.Result.FileName = fileName;
         }

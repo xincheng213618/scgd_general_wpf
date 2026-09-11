@@ -1,0 +1,33 @@
+<Window x:Class="ColorVision.Engine.Services.DevicePropertyWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        Title="{x:Static properties:Resources.Property}"
+        Height="540" Width="720" MinHeight="420" MinWidth="620"
+        FontFamily="Segoe UI, Microsoft YaHei UI" FontSize="13"
+        UseLayoutRounding="True" Background="{DynamicResource GlobalBackground}">
+    <Grid Margin="20,16,20,20" Background="{DynamicResource GlobalBackground}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <DockPanel Margin="2,0,2,14">
+            <Image x:Name="DeviceIcon" Width="28" Height="28" Margin="0,0,10,0"
+                   VerticalAlignment="Center" Stretch="Uniform"/>
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock x:Name="DeviceTitle" FontSize="22" FontWeight="SemiBold"
+                           Foreground="{DynamicResource GlobalTextBrush}" TextWrapping="Wrap"/>
+                <TextBlock x:Name="DeviceCode" FontSize="12" Margin="0,3,0,0" Opacity="0.65"
+                           Foreground="{DynamicResource GlobalTextBrush}" TextWrapping="Wrap"/>
+            </StackPanel>
+        </DockPanel>
+
+        <Border Grid.Row="1" Background="{DynamicResource RegionBrush}"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                CornerRadius="8" Padding="16">
+            <ContentControl x:Name="DeviceContent"
+                            HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+        </Border>
+    </Grid>
+</Window>

@@ -1,4 +1,6 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.POI;
+using System;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using System.ComponentModel;
@@ -6,7 +8,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace ColorVision.Engine.Media
 {
-    public sealed class CvcieMouseProbeOptions : ViewModelBase, IConfig
+    public sealed class CvcieMouseProbeOptions : ViewModelBase, IConfig, IImageEditorConfig
     {
         public const string ViewStateKey = "CvcieMouseProbeOptions";
 
@@ -61,12 +63,16 @@ namespace ColorVision.Engine.Media
 
         public static CvcieMouseProbeOptions GetOrCreate(ImageView imageView)
         {
+            if (imageView.Config.Configs.TryGetValue(typeof(CvcieMouseProbeOptions), out var existing) && existing is CvcieMouseProbeOptions current)
+                return current;
             if (imageView.Config.Properties.TryGetValue(ViewStateKey, out object? optionsObj) && optionsObj is CvcieMouseProbeOptions options)
             {
+                imageView.Config.Configs[typeof(CvcieMouseProbeOptions)] = options;
                 return options;
             }
 
             CvcieMouseProbeOptions created = CreateForView();
+            imageView.Config.Configs[typeof(CvcieMouseProbeOptions)] = created;
             imageView.Config.SetViewState(ViewStateKey, created, nameof(CvcieMouseProbeOptions), "当前 CVCIE 视窗的放大镜探针设置");
             return created;
         }
@@ -79,20 +85,33 @@ namespace ColorVision.Engine.Media
             MagnigifierType = source.MagnigifierType;
         }
 
-        [Display(Name = "Engine_PG_SampleShape", Description = "Engine_PG_SampleShapeDesc", ResourceType = typeof(Properties.Resources))]
+        public PoiMeasurementPoint CreateMeasurementPoint(int x, int y)
+        {
+            int diameter = Math.Max(1, checked((int)Math.Round(Radius * 2, MidpointRounding.AwayFromZero)));
+            return MagnigifierType switch
+            {
+                MagnigifierType.Circle => new(x, y, diameter, diameter, PoiMeasurementShape.Circle),
+                MagnigifierType.Rect => new(x, y, RectWidth, RectHeight, PoiMeasurementShape.Rect),
+                MagnigifierType.Ellipse => new(x, y, RectWidth, RectHeight, PoiMeasurementShape.Ellipse),
+                _ => throw new ArgumentOutOfRangeException(nameof(MagnigifierType))
+            };
+        }
+
+        [Display(Name = "Engine_PG_SampleShape", ResourceType = typeof(Properties.Resources))]
         public MagnigifierType MagnigifierType { get => _magnigifierType; set { _magnigifierType = value; OnPropertyChanged(); } }
         private MagnigifierType _magnigifierType = MagnigifierType.Circle;
 
-        [Display(Name = "Engine_PG_SampleRadius", Description = "Engine_PG_SampleRadiusDesc", ResourceType = typeof(Properties.Resources))]
-        public double Radius { get => _radius; set { _radius = value; OnPropertyChanged(); } }
+        [DisplayName("圆半径（px）")]
+        [PropertyVisibility(nameof(MagnigifierType), MagnigifierType.Circle)]
+        public double Radius { get => _radius; set { if (!double.IsFinite(value) || value < 0.5 || value > 1000000) return; _radius = value; OnPropertyChanged(); } }
         private double _radius = 100;
 
-        [Display(Name = "Engine_PG_RectWidth", Description = "Engine_PG_RectWidthDesc", ResourceType = typeof(Properties.Resources))]
-        public int RectWidth { get => _rectWidth; set { _rectWidth = value; OnPropertyChanged(); } }
+        [DisplayName("区域宽度（px）")]
+        public int RectWidth { get => _rectWidth; set { if (value < 1 || value > 2000000) return; _rectWidth = value; OnPropertyChanged(); } }
         private int _rectWidth = 120;
 
-        [Display(Name = "Engine_PG_RectHeight", Description = "Engine_PG_RectHeightDesc", ResourceType = typeof(Properties.Resources))]
-        public int RectHeight { get => _rectHeight; set { _rectHeight = value; OnPropertyChanged(); } }
+        [DisplayName("区域高度（px）")]
+        public int RectHeight { get => _rectHeight; set { if (value < 1 || value > 2000000) return; _rectHeight = value; OnPropertyChanged(); } }
         private int _rectHeight = 120;
     }
 }

@@ -1,0 +1,51 @@
+<Window x:Class="ColorVision.Engine.Media.CvcieTemplateWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ColorVision.Engine.Media"
+        Title="图形回显内容" Width="740" Height="600" MinWidth="620" MinHeight="460"
+        Background="{DynamicResource GlobalBackground}">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolVisibility" />
+    </Window.Resources>
+    <DockPanel Margin="16">
+        <StackPanel DockPanel.Dock="Bottom">
+            <TextBlock Text="仅修改图形回显，重新计算 POI 后生效。表格和 CSV 不受影响。" Opacity="0.65" FontSize="12" TextWrapping="Wrap" Margin="0,12,0,8" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="取消" IsCancel="True" MinWidth="88" Margin="0,0,8,0" Padding="12,5" />
+                <Button Content="应用" IsEnabled="{Binding CanApply}" Click="Apply_Click" MinWidth="88" Padding="12,5" />
+            </StackPanel>
+        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+                <TextBlock Text="选择显示字段" FontSize="18" FontWeight="SemiBold" />
+                <TextBlock Text="勾选需要显示的数值，并分别设置小数位。" Opacity="0.65" Margin="0,4,0,10" />
+                <TextBlock Text="当前模板包含自定义排版，未修改时完整保留。调整勾选或小数位后将按标准分组排版。"
+                           Visibility="{Binding HasCustomLayout, Converter={StaticResource BoolVisibility}}" TextWrapping="Wrap" Margin="0,0,0,10" />
+                <ItemsControl ItemsSource="{Binding Fields}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,0,16,6">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="64"/></Grid.ColumnDefinitions>
+                                <CheckBox Content="{Binding Label}" IsChecked="{Binding Enabled}" VerticalAlignment="Center" ToolTip="{Binding Label}" />
+                                <TextBlock Grid.Column="1" Text="小数位" FontSize="12" Opacity="0.65" Margin="8,0" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="2" ItemsSource="{x:Static local:CvcieTemplateDraft.PrecisionChoices}" SelectedItem="{Binding DecimalPlaces}" IsEnabled="{Binding Enabled}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="回显预览 · 示例数值" FontWeight="SemiBold" Margin="0,10,0,6" />
+                <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="12" MinHeight="100">
+                    <TextBox Text="{Binding Preview, Mode=OneWay}" IsReadOnly="True" BorderThickness="0" Background="Transparent" TextAlignment="Center" VerticalContentAlignment="Center" TextWrapping="Wrap" />
+                </Border>
+                <TextBlock Text="{Binding Error}" Foreground="{DynamicResource EditorSyntaxErrorBrush}" TextWrapping="Wrap" Margin="0,4" />
+                <Expander Header="高级 · 自定义模板" Margin="0,8,0,0">
+                    <StackPanel Margin="0,8,0,0">
+                        <TextBlock Text="保留自定义文字、单位与换行，例如 Y:@Y:F1。可用字段：X、Y、Z、x、y、u、v、CCT、Wave。" Opacity="0.65" TextWrapping="Wrap" Margin="0,0,0,6" />
+                        <TextBox Text="{Binding AdvancedText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" AcceptsTab="True" MinHeight="95" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" FontFamily="Consolas" />
+                    </StackPanel>
+                </Expander>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

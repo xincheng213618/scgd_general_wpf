@@ -72,14 +72,19 @@ namespace ProjectARVRPro.Process.AOI
 
             try
             {
-                var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                var values = ctx.GetMeasureResults();
                 if (values.Count > 0)
                 {
-                    string? firstFileUrl = values[0].FileUrl;
-                    if (!string.IsNullOrWhiteSpace(firstFileUrl))
+                    foreach (var item in values)
                     {
-                        ctx.Result.FileName = firstFileUrl;
+                        string? firstFileUrl = item.FileUrl;
+                        if (!string.IsNullOrWhiteSpace(firstFileUrl))
+                        {
+                            ctx.Result.FileName = firstFileUrl;
+                            break;
+                        }
                     }
+
                 }
 
                 string exportDir = GetExportDirectory(ctx.Batch.Name ?? ctx.Batch.Id.ToString());
@@ -190,7 +195,7 @@ namespace ProjectARVRPro.Process.AOI
 
             if (ctx.Batch?.Id > 0)
             {
-                var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                var values = ctx.GetMeasureResults();
                 string? firstFileUrl = values.FirstOrDefault()?.FileUrl;
                 if (!string.IsNullOrWhiteSpace(firstFileUrl))
                     ctx.Result.FileName = firstFileUrl;

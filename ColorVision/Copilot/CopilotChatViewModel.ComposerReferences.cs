@@ -11,6 +11,82 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotChatViewModel
     {
+        private long _composerReferenceSelectionVersion = -1;
+        private int _composerReferenceSelectionStart;
+        private int _composerReferenceSelectionLength;
+        private bool _isUpdatingComposerReferenceInput;
+
+        internal int ComposerReferenceCaretIndex => _composerReferenceSelectionVersion == _composerSession.Version
+            ? Math.Clamp(_composerReferenceSelectionStart, 0, InputText.Length)
+            : InputText.Length;
+
+        internal void UpdateComposerReferenceSelection(string text, int selectionStart, int selectionLength)
+        {
+            if (_isUpdatingComposerReferenceInput
+                || IsPromptHistorySearchOpen
+                || !string.Equals(text, InputText, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            var start = Math.Clamp(selectionStart, 0, text.Length);
+            var length = Math.Clamp(selectionLength, 0, text.Length - start);
+            if (_composerReferenceSelectionVersion == _composerSession.Version
+                && _composerReferenceSelectionStart == start
+                && _composerReferenceSelectionLength == length)
+            {
+                return;
+            }
+
+            RecordComposerReferenceSelection(start, length);
+            if (IsComposerReferenceMentionActive || IsComposerReferenceSearchPending || TryParseComposerReferenceMention(out _))
+                RefreshComposerReferenceSuggestions();
+        }
+
+        internal void SetComposerReferenceInput(string text, int caretIndex)
+        {
+            if (IsPromptHistorySearchOpen)
+            {
+                InputText = text;
+                return;
+            }
+
+            _isUpdatingComposerReferenceInput = true;
+            try
+            {
+                var changed = _composerSession.SetText(text);
+                RecordComposerReferenceSelection(Math.Clamp(caretIndex, 0, _composerSession.Text.Length), 0);
+                if (changed)
+                    NotifyComposerTextChanged(synchronizeDraft: true);
+                else
+                    RefreshComposerReferenceSuggestions();
+                OnPropertyChanged(nameof(ComposerReferenceCaretIndex));
+            }
+            finally
+            {
+                _isUpdatingComposerReferenceInput = false;
+            }
+        }
+
+        private void RecordComposerReferenceSelection(int selectionStart, int selectionLength)
+        {
+            _composerReferenceSelectionVersion = _composerSession.Version;
+            _composerReferenceSelectionStart = selectionStart;
+            _composerReferenceSelectionLength = selectionLength;
+        }
+
+        private bool TryParseComposerReferenceMention(out CopilotComposerMention mention)
+        {
+            if (IsPromptHistorySearchOpen
+                || (_composerReferenceSelectionVersion == _composerSession.Version && _composerReferenceSelectionLength > 0))
+            {
+                mention = default;
+                return false;
+            }
+
+            return CopilotComposerReferenceCatalog.TryParseMention(InputText, out mention, ComposerReferenceCaretIndex);
+        }
+
         public bool HasComposerReferenceSuggestions => ComposerReferenceSuggestions.Count > 0;
 
         public bool IsComposerReferenceMentionActive
@@ -92,7 +168,7 @@ namespace ColorVision.Copilot
         {
             reference ??= SelectedComposerReference ?? ComposerReferenceSuggestions.FirstOrDefault();
             if (reference == null
-                || !CopilotComposerReferenceCatalog.TryParseMention(InputText, out var mention))
+                || !TryParseComposerReferenceMention(out var mention))
             {
                 return false;
             }
@@ -103,11 +179,16 @@ namespace ColorVision.Copilot
                 if (reference.AgentSkillReference?.IsStructurallyValid() != true)
                     return false;
 
-                InputText = CopilotComposerReferenceCatalog.CompleteSkillMention(
-                    InputText,
+                var input = InputText;
+                var completed = CopilotComposerReferenceCatalog.CompleteSkillMention(
+                    input,
                     mention,
                     reference.AgentSkillReference.Name);
+                var caretIndex = completed.Length - (input.Length - mention.EndIndex);
+                SetComposerReferenceInput(completed, caretIndex);
                 SetPendingAgentSkillReference(reference.AgentSkillReference);
+                // Selecting the structured Skill advances the composer version without changing its text.
+                RecordComposerReferenceSelection(caretIndex, 0);
                 return true;
             }
 
@@ -130,7 +211,9 @@ namespace ColorVision.Copilot
             if (!associated)
                 return false;
 
-            InputText = CopilotComposerReferenceCatalog.CompleteMention(InputText, mention, reference.Title);
+            var originalInput = InputText;
+            var completedInput = CopilotComposerReferenceCatalog.CompleteMention(originalInput, mention, reference.Title);
+            SetComposerReferenceInput(completedInput, completedInput.Length - (originalInput.Length - mention.EndIndex));
             return true;
         }
 
@@ -159,7 +242,7 @@ namespace ColorVision.Copilot
             }
 
             var input = InputText;
-            if (!CopilotComposerReferenceCatalog.TryParseMention(input, out var mention))
+            if (!TryParseComposerReferenceMention(out var mention))
             {
                 DismissComposerReferenceSuggestions();
                 return;

@@ -1,4 +1,4 @@
-﻿<Window x:Class="ColorVision.Engine.Media.WindowCVCIE"
+<Window x:Class="ColorVision.Engine.Media.WindowCVCIE"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -6,41 +6,42 @@
         xmlns:local="clr-namespace:ColorVision.Engine.Media"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="WindowCVCIE" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="CVCIE 区域测量" Height="720" Width="1380" MinWidth="800" MinHeight="420" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style x:Key="SelectableResultText" TargetType="TextBox">
+            <Setter Property="IsReadOnly" Value="True" />
+            <Setter Property="IsReadOnlyCaretVisible" Value="True" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <ScrollViewer x:Name="PART_ContentHost" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
-            <Button Click="Button_Click" Margin="2,0,0,0" Height="25" >
-                <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
-            </Button>
-            <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="25" Width="25" >
-                <Button.Triggers>
-                    <EventTrigger RoutedEvent="Button.Click">
-                        <BeginStoryboard>
-                            <Storyboard>
-                                <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                            </Storyboard>
-                        </BeginStoryboard>
-                    </EventTrigger>
-                </Button.Triggers>
-                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
-                    <TextBlock.RenderTransform>
-                        <RotateTransform x:Name="rotateTransform2"/>
-                    </TextBlock.RenderTransform>
-                </TextBlock>
-            </Button>
-            <Button x:Name="ButtonShowOnCieDiagram"
-                    Click="ButtonShowOnCieDiagram_Click"
-                    Margin="0,1,5,0"
-                    Padding="8,2"
-                    Height="25"
-                    Content="{x:Static properties:Resources.ShowOnCieDiagram}"
-                    ToolTip="{x:Static properties:Resources.ShowOnCieDiagramToolTip}" />
-        </StackPanel>
+        <DockPanel Margin="12,8">
+            <TextBlock x:Name="ResultCount" DockPanel.Dock="Right" VerticalAlignment="Center" Opacity="0.65" />
+            <StackPanel Orientation="Horizontal">
+                <Button Click="Button_Click" Content="导出 CSV" Padding="12,4" Margin="0,0,8,0" ToolTip="导出完整计算值" />
+                <Button Content="复制选中行" Command="Copy" CommandTarget="{Binding ElementName=listViewSide}" Padding="10,4" Margin="0,0,8,0" ToolTip="Ctrl+C · 多选复制，包含表头，按当前显示精度" />
+                <Button Command="{Binding EditCommand}" Content="设置" Padding="12,4" Margin="0,0,8,0" />
+                <Button x:Name="ButtonShowOnCieDiagram" Click="ButtonShowOnCieDiagram_Click" Content="显示到 CIE 图" Padding="12,4" Margin="0,0,24,0" />
+                <TextBlock Text="小数位" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <ComboBox x:Name="PrecisionCombo" Width="64" SelectedItem="{Binding DecimalPlaces, Mode=TwoWay}" VerticalContentAlignment="Center" ToolTip="仅调整显示精度；悬停数值可查看完整值" />
+            </StackPanel>
+        </DockPanel>
 
         <!-- Statistics Panel -->
         <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,1" Padding="5" Margin="2">
@@ -49,7 +50,32 @@
             </StackPanel>
         </Border>
       
-        <ListView x:Name="listViewSide" BorderThickness="0" Padding="0" Grid.Row="2" SelectionChanged="ListViewSide_SelectionChanged">
+        <ListView x:Name="listViewSide" FontSize="12" BorderThickness="0" Padding="0" Grid.Row="2" SelectionMode="Extended" SelectionChanged="ListViewSide_SelectionChanged" ScrollViewer.HorizontalScrollBarVisibility="Auto" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                    <Setter Property="MinHeight" Value="28" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListViewItem">
+                                <Border x:Name="RowBorder" Background="Transparent" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+                                    <GridViewRowPresenter Content="{TemplateBinding Content}" Columns="{Binding View.Columns, RelativeSource={RelativeSource AncestorType=ListView}}" VerticalAlignment="Center" />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" />
+                                    </Trigger>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+                                        <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListView.ItemContainerStyle>
             <ListView.Resources >
                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" />
             </ListView.Resources>
@@ -60,6 +86,8 @@
                             <Setter Property="Visibility" Value="Visible"/>
                             <Setter Property="Background" Value="Transparent"/>
                             <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Padding" Value="6,5"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Left"/>
                             <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
                         </Style>
                     </GridView.ColumnHeaderContainerStyle>

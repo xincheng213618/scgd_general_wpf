@@ -1,4 +1,5 @@
 using ColorVision.Core;
+using ColorVision.ImageEditor.Draw;
 using System;
 using System.Collections.Generic;
 
@@ -8,7 +9,8 @@ namespace ColorVision.Engine.Services.POI
     {
         Point,
         Circle,
-        Rect
+        Rect,
+        Ellipse
     }
 
     public readonly record struct PoiMeasurementPoint(
@@ -80,6 +82,45 @@ namespace ColorVision.Engine.Services.POI
     /// </summary>
     public static class PoiMeasurementService
     {
+        internal static unsafe PoiMeasurementResult CalculateRegion(PoiMeasurementBuffer buffer, ClosedPixelRegion region, bool preserveNonPositiveValues)
+        {
+            ArgumentNullException.ThrowIfNull(buffer);
+            ArgumentNullException.ThrowIfNull(region);
+            return buffer.Borrow((pointer, length) => CalculateRegionCore(pointer, buffer.Width, buffer.Height, buffer.Channels, region, preserveNonPositiveValues));
+        }
+
+        private static unsafe PoiMeasurementResult CalculateRegionCore(IntPtr pointer, int width, int height, int channels, ClosedPixelRegion region, bool preserveNonPositiveValues)
+        {
+            float* source = (float*)pointer;
+            long plane = (long)width * height;
+            double x = 0, y = 0, z = 0;
+            long count = 0;
+            foreach (PixelRowRun run in region.GetRuns(width, height))
+            {
+                long offset = (long)run.Y * width;
+                for (int column = run.StartX; column < run.EndX; column++)
+                {
+                    long index = offset + column;
+                    if (channels == 1) y += source[index];
+                    else
+                    {
+                        x += source[index];
+                        y += source[plane + index];
+                        z += source[plane * 2 + index];
+                    }
+                    count++;
+                }
+            }
+            if (count == 0) throw new ArgumentException("该封闭区域内没有可测量的图像像素。");
+            // Reuse the native POI color formulas and non-positive policy without changing its ABI.
+            float* averages = stackalloc float[3];
+            averages[0] = (float)((channels == 1 ? y : x) / count);
+            averages[1] = (float)(y / count);
+            averages[2] = (float)(z / count);
+            return CalculateCore((IntPtr)averages, channels * sizeof(float), 1, 1, 32, channels,
+                new[] { new PoiMeasurementPoint(0, 0, 1, 1, PoiMeasurementShape.Point) }, preserveNonPositiveValues)[0];
+        }
+
         internal static PoiMeasurementResult[] CalculateRaw(PoiMeasurementBuffer buffer, IReadOnlyList<PoiMeasurementPoint> points)
         {
             ArgumentNullException.ThrowIfNull(buffer);
@@ -145,6 +186,21 @@ namespace ColorVision.Engine.Services.POI
             ValidateLayout(width, height, bitsPerChannel, channels, cieByteLength);
             if (cieData == IntPtr.Zero) throw new ArgumentException("CIE data pointer cannot be null.", nameof(cieData));
             if (points.Count == 0) return Array.Empty<PoiMeasurementResult>();
+
+            if (System.Linq.Enumerable.Any(points, point => point.Shape == PoiMeasurementShape.Ellipse))
+            {
+                var mixed = new PoiMeasurementResult[points.Count];
+                for (int i = 0; i < points.Count; i++)
+                {
+                    PoiMeasurementPoint point = points[i];
+                    ValidatePoint(point, width, height, i);
+                    mixed[i] = point.Shape == PoiMeasurementShape.Ellipse
+                        ? CalculateRegionCore(cieData, width, height, channels,
+                            ClosedPixelRegion.Ellipse(new System.Windows.Point(point.X, point.Y), point.Width / 2.0, point.Height / 2.0), preserveNonPositiveValues)
+                        : CalculateCore(cieData, cieByteLength, width, height, bitsPerChannel, channels, new[] { point }, preserveNonPositiveValues)[0];
+                }
+                return mixed;
+            }
 
             PoiRequestV1[] requests = new PoiRequestV1[points.Count];
             for (int index = 0; index < points.Count; index++)

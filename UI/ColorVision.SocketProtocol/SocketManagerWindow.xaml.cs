@@ -20,7 +20,7 @@ namespace ColorVision.SocketProtocol
     {
         public override string OwnerGuid => MenuItemConstants.Help;
         public override int Order => 9000;
-        public override string Header => Properties.Resources.SocketManagementWindow;
+        public override string Header => Properties.Resources.MenuNetworkCommunication;
 
         public override void Execute()
         {
@@ -57,6 +57,7 @@ namespace ColorVision.SocketProtocol
                 _socketManager.MessageManager.LoadAll(_socketManager.MessageManager.Config.Count);
             InitializeComponent();
             this.ApplyCaption();
+            WindowKeyboardNavigation.Attach(this, SearchTextBox);
         }
 
         private void DatabaseCleanupButton_Click(object sender, RoutedEventArgs e)
@@ -465,7 +466,7 @@ namespace ColorVision.SocketProtocol
                 return;
             }
 
-            if (e.Key == Key.Escape && ClearFilterButton.IsEnabled)
+            if (Keyboard.Modifiers == ModifierKeys.None && e.Key == Key.Escape && ClearFilterButton.IsEnabled)
             {
                 ClearFilterButton_Click(sender, e);
                 e.Handled = true;

@@ -36,6 +36,7 @@ public partial class NativeLogWindow : Window, IDisposable
 
         InitializeComponent();
         this.ApplyCaption();
+        WindowKeyboardNavigation.Attach(this, LevelComboBox);
         Title = NativeLogText.Title;
         LevelComboBox.ItemsSource = Enum.GetValues<NativeLogSeverity>();
         LevelComboBox.SelectedItem = NativeLogSeverity.Info;

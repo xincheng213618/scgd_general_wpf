@@ -948,7 +948,10 @@ public abstract class STNode : INotifyPropertyChanged
 			if (inputOption != STNodeOption.Empty)
 			{
 				OnDrawOptionDot(dt, inputOption);
-				OnDrawOptionText(dt, inputOption);
+				if (ShouldDrawOptionText(inputOption))
+				{
+					OnDrawOptionText(dt, inputOption);
+				}
 			}
 		}
 		foreach (STNodeOption outputOption in _OutputOptions)
@@ -956,7 +959,10 @@ public abstract class STNode : INotifyPropertyChanged
 			if (outputOption != STNodeOption.Empty)
 			{
 				OnDrawOptionDot(dt, outputOption);
-				OnDrawOptionText(dt, outputOption);
+				if (ShouldDrawOptionText(outputOption))
+				{
+					OnDrawOptionText(dt, outputOption);
+				}
 			}
 		}
 		if (!_ShowControls || _Controls.Count == 0)
@@ -1061,6 +1067,11 @@ public abstract class STNode : INotifyPropertyChanged
 
 	protected virtual void OnDrawOptionText(DrawingTools dt, STNodeOption op)
 	{
+		if (!ShouldDrawOptionText(op))
+		{
+			return;
+		}
+
 		Graphics graphics = dt.Graphics;
 		SolidBrush solidBrush = dt.SolidBrush;
 		if (op.IsInput)
@@ -1073,6 +1084,24 @@ public abstract class STNode : INotifyPropertyChanged
 		}
 		solidBrush.Color = op.TextColor;
 		graphics.DrawString(op.Text, Font, solidBrush, op.TextRectangle, m_sf);
+	}
+
+	protected virtual bool ShouldDrawOptionText(STNodeOption op)
+	{
+		if (op == null || !op.IsInput)
+		{
+			return false;
+		}
+
+		int visibleInputCount = 0;
+		foreach (STNodeOption inputOption in _InputOptions)
+		{
+			if (inputOption != STNodeOption.Empty && ++visibleInputCount > 1)
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 	protected virtual Point OnSetOptionDotLocation(STNodeOption op, Point pt, int nIndex)
@@ -1102,7 +1131,7 @@ public abstract class STNode : INotifyPropertyChanged
 		SizeF sizeF2 = SizeF.Empty;
 		foreach (STNodeOption inputOption2 in _InputOptions)
 		{
-			if (!string.IsNullOrEmpty(inputOption2.Text))
+			if (ShouldDrawOptionText(inputOption2) && !string.IsNullOrEmpty(inputOption2.Text))
 			{
 				SizeF sizeF3 = g.MeasureString(inputOption2.Text, _Font);
 				if (sizeF3.Width > sizeF.Width)
@@ -1113,7 +1142,7 @@ public abstract class STNode : INotifyPropertyChanged
 		}
 		foreach (STNodeOption outputOption2 in _OutputOptions)
 		{
-			if (!string.IsNullOrEmpty(outputOption2.Text))
+			if (ShouldDrawOptionText(outputOption2) && !string.IsNullOrEmpty(outputOption2.Text))
 			{
 				SizeF sizeF4 = g.MeasureString(outputOption2.Text, _Font);
 				if (sizeF4.Width > sizeF2.Width)

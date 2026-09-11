@@ -35,27 +35,55 @@ namespace ColorVision.Update
 
     internal sealed class UpdateCheckReuseState
     {
+        private static readonly TimeSpan CompletedResultLifetime = TimeSpan.FromMinutes(10);
+        private readonly object _lock = new();
         private bool _startupResultAvailable;
+        private DateTimeOffset? _completedAtUtc;
+        private bool _hasUpdates;
 
         public UpdateCheckReuseState(bool isStartupCheck)
         {
             _startupResultAvailable = isStartupCheck;
         }
 
-        public bool TryReuse(bool isCompleted, bool isCompletedSuccessfully, bool isInteractiveRequest)
+        public void RecordCompleted(bool hasUpdates, DateTimeOffset completedAtUtc)
+        {
+            lock (_lock)
+            {
+                _hasUpdates = hasUpdates;
+                _completedAtUtc = completedAtUtc;
+            }
+        }
+
+        public bool TryReuse(bool isCompleted, bool isCompletedSuccessfully, bool isInteractiveRequest, DateTimeOffset nowUtc)
         {
             if (!isCompleted)
             {
                 if (isInteractiveRequest)
-                    _startupResultAvailable = false;
+                {
+                    lock (_lock)
+                    {
+                        _startupResultAvailable = false;
+                    }
+                }
                 return true;
             }
 
-            if (!isCompletedSuccessfully || !isInteractiveRequest || !_startupResultAvailable)
+            if (!isCompletedSuccessfully || !isInteractiveRequest)
                 return false;
 
-            _startupResultAvailable = false;
-            return true;
+            lock (_lock)
+            {
+                if (!_startupResultAvailable || !_hasUpdates || !_completedAtUtc.HasValue)
+                    return false;
+
+                TimeSpan age = nowUtc - _completedAtUtc.Value;
+                if (age < TimeSpan.Zero || age >= CompletedResultLifetime)
+                    return false;
+
+                _startupResultAvailable = false;
+                return true;
+            }
         }
     }
 
@@ -584,21 +612,23 @@ namespace ColorVision.Update
                 }
                 else
                 {
+                    UpdateCheckReuseState reuseState = new(requestKind == UpdateCheckRequestKind.Startup);
                     sharedCheck = new SharedUpdateCheck(
                         includeApplicationUpdates,
                         includePluginUpdates,
                         includeCurrentHostPlugins,
-                        new UpdateCheckReuseState(requestKind == UpdateCheckRequestKind.Startup),
+                        reuseState,
                         BuildSharedUpdateCheckAsync(
                             includeApplicationUpdates,
                             includePluginUpdates,
-                            includeCurrentHostPlugins));
+                            includeCurrentHostPlugins,
+                            reuseState));
                     _sharedUpdateCheck = sharedCheck;
                 }
             }
 
             if (reused)
-                log.Info("Reusing the update check already in progress or the unconsumed startup result.");
+                log.Info("Reusing the update check already in progress or the unconsumed recent startup result.");
 
             UpdatePlanCheckResult result = await sharedCheck.Task.WaitAsync(cancellationToken);
             return CopyUpdatePlansForConsumer(
@@ -611,13 +641,18 @@ namespace ColorVision.Update
         private static async Task<UpdatePlanCheckResult> BuildSharedUpdateCheckAsync(
             bool includeApplicationUpdates,
             bool includePluginUpdates,
-            bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate)
+            bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate,
+            UpdateCheckReuseState reuseState)
         {
             UpdatePlansResult plansResult = await BuildUpdatePlansAsync(
                 includeApplicationUpdates,
                 includePluginUpdates,
                 includeCurrentHostPluginUpdatesWhenFullApplicationUpdate,
                 CancellationToken.None);
+            reuseState.RecordCompleted(
+                plansResult.ServerCheckStatus == UpdateServerCheckStatus.Success
+                    && HasUpdates(plansResult.ApplicationPlan, plansResult.PluginPlan),
+                DateTimeOffset.UtcNow);
             return new UpdatePlanCheckResult(
                 plansResult.ApplicationPlan,
                 plansResult.PluginPlan,
@@ -645,7 +680,8 @@ namespace ColorVision.Update
             return sharedCheck.ReuseState.TryReuse(
                 sharedCheck.Task.IsCompleted,
                 sharedCheck.Task.IsCompletedSuccessfully,
-                requestKind == UpdateCheckRequestKind.Interactive);
+                requestKind == UpdateCheckRequestKind.Interactive,
+                DateTimeOffset.UtcNow);
         }
 
         internal static bool CanReuseUpdateCheckOptions(

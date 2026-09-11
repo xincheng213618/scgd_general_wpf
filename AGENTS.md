@@ -52,13 +52,13 @@ dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=
 
 ## Release and packaging
 
-- `Scripts\release.bat` is the only normal main-release entry point. Bump `Directory.Build.props` `VersionPrefix` first, then run the wrapper.
-- Use quick release by default when the user says “发布”, “打包发布”, “直接打包”, or “快速发布”: update `VersionPrefix` and `CHANGELOG.md`, run `Scripts\release.bat` once from the canonical worktree, then report its result. The wrapper owns build, installer validation, upload, and one compact parallel acceptance check for the installer signature, remote version/changelog, installer/update download sizes, and Git status.
-- Do not add standalone tests, pre-builds, deep history review, a second remote/download verification pass, an isolated release worktree, or another packaging entry point to a quick release. The external Advanced Installer project synchronizes its version and files from the canonical worktree.
-- If the wrapper fails, inspect only the reported failing stage. Make one evidence-backed correction and rerun the wrapper once; do not expand into an open-ended repository or release audit unless the user asks for one.
-- Treat a zero exit code from `Scripts\release.bat` as the normal release completion signal. Git commit or push is separate work unless the user explicitly requests it or selects “完整发布”.
-- Only when the user explicitly says “完整发布” should the workflow add standalone tests, deeper changed-scope review, full artifact hashing/download, release commit/push, and remote branch synchronization beyond the wrapper's quick acceptance check. This mode is intentionally slower than quick release.
-- `Scripts\build.py` and `Scripts\build_update.py` are internal release steps; do not turn them into local-only release shortcuts.
+- Choose the artifact from the active task first: an explicitly named target wins; after work scoped to one `Plugins/<Name>/` or `Projects/<Name>/`, bare “发布” publishes only that artifact using its nearest `AGENTS.md`.
+- `Scripts\release.bat` is the only normal main-release entry point. For main-app/repository-wide “发布”, “打包发布”, “直接打包”, or “快速发布”, use an explicitly requested version when provided; otherwise increment the final numeric component of the current local `Directory.Build.props` `VersionPrefix` by one. Do not query the remote version first.
+- Keep quick-release preparation minimal: update `VersionPrefix`, replace the root `CHANGELOG.md` with one section for the current release containing one to three short user-facing items, then run `Scripts\release.bat` once and report its result. The immutable legacy archive in `docs/_history/CHANGELOG.md` is for internal review only; do not update it during routine releases. It is excluded from the public documentation build and is not uploaded as the main application changelog. Omit tests, documentation, internal implementation details, file/class names, refactoring mechanics, and commit-by-commit narration from new public release notes.
+- The wrapper owns build, installer validation, upload and compact parallel acceptance (signature, remote version/changelog, installer/update download sizes, Git status). Do not add standalone tests, pre-builds, knowledge/impact searches, deep diff or history review, duplicate remote/download checks, an isolated release worktree, or another packaging entry point. `Scripts\build.py` and `Scripts\build_update.py` are internal steps, never local-only shortcuts.
+- A quick release does not create commits or tags and does not push. Perform those actions only when the user explicitly requests them.
+- If the wrapper fails, inspect only that stage, make one evidence-backed correction, and rerun once; expand the audit only if requested.
+- Only explicit “完整发布” adds standalone tests, deeper changed-scope review, full artifact hashing/download, and remote branch/tag synchronization beyond quick acceptance.
 
 ## Code conventions
 

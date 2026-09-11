@@ -25,6 +25,7 @@ namespace ColorVision.UI
             _config = LogConfig.Instance;
             InitializeComponent();
             this.ApplyCaption();
+            WindowKeyboardNavigation.Attach(this, LogViewer);
         }
         LogViewerAppender LogViewerAppender { get; set; }
         Hierarchy Hierarchy { get; set; }

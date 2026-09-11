@@ -10,7 +10,7 @@ public sealed class ConfigMaintenanceResetTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), $"ColorVisionMaintenanceReset-{Guid.NewGuid():N}");
     private string ConfigPath => Path.Combine(_root, "ColorVisionConfig.json");
-    private ConfigMaintenanceResetService Service => new(ConfigPath, [nameof(AppearanceConfig), "LayoutConfig"]);
+    private ConfigMaintenanceResetService Service => new(ConfigPath, [typeof(AppearanceConfig).FullName!, nameof(AppearanceConfig), "LayoutConfig"]);
 
     public ConfigMaintenanceResetTests() => Directory.CreateDirectory(_root);
 
@@ -38,7 +38,7 @@ public sealed class ConfigMaintenanceResetTests : IDisposable
         var earlier = new ConfigHandler { ConfigFilePath = ConfigPath };
         earlier.LoadConfigs();
         var appearance = earlier.GetRequiredService<AppearanceConfig>();
-        Schedule();
+        Assert.True(Service.Schedule(Service.Prepare([typeof(AppearanceConfig).FullName!, nameof(AppearanceConfig)])).Succeeded);
         byte[] original = File.ReadAllBytes(ConfigPath);
         byte[] pending = File.ReadAllBytes(Service.PendingFilePath);
 
@@ -61,6 +61,7 @@ public sealed class ConfigMaintenanceResetTests : IDisposable
         Assert.True(applied.ConfigurationChanged);
         Assert.Equal(finalSave, File.ReadAllBytes(applied.BackupPath!));
         Assert.Null(ReadJson()[nameof(AppearanceConfig)]);
+        Assert.Null(ReadJson()[typeof(AppearanceConfig).FullName!]);
     }
 
     [Fact]
@@ -142,7 +143,7 @@ public sealed class ConfigMaintenanceResetTests : IDisposable
         var liveConfig = handler.GetRequiredService<AppearanceConfig>();
         var service = Service;
 
-        Assert.True(service.Schedule(service.Prepare([nameof(AppearanceConfig)])).Succeeded);
+        Assert.True(service.Schedule(service.Prepare([typeof(AppearanceConfig).FullName!, nameof(AppearanceConfig)])).Succeeded);
         Assert.Equal(before, File.ReadAllBytes(ConfigPath));
         Assert.Same(liveConfig, handler.GetRequiredService<AppearanceConfig>());
         Assert.False(Directory.Exists(service.BackupDirectoryPath));
@@ -158,6 +159,7 @@ public sealed class ConfigMaintenanceResetTests : IDisposable
         Assert.Equal(finalSave, File.ReadAllBytes(result.BackupPath!));
         JObject reset = ReadJson();
         Assert.Null(reset[nameof(AppearanceConfig)]);
+        Assert.Null(reset[typeof(AppearanceConfig).FullName!]);
         Assert.Equal("keep-layout", (string?)reset["LayoutConfig"]?["Value"]);
         Assert.Equal("untouched-secret", (string?)reset["Authorization"]?["Secret"]);
         Assert.Equal("keep-lazy", (string?)reset["NotMaterializedPluginConfig"]?["Value"]);

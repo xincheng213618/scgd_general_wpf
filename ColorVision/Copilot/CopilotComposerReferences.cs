@@ -51,7 +51,7 @@ namespace ColorVision.Copilot
         internal string SearchText => string.Join(" ", Title, Subtitle, Value);
     }
 
-    internal readonly record struct CopilotComposerMention(int StartIndex, string Query);
+    internal readonly record struct CopilotComposerMention(int StartIndex, int EndIndex, string Query);
 
     internal static class CopilotComposerReferenceCatalog
     {
@@ -77,25 +77,30 @@ namespace ColorVision.Copilot
         private static bool _hasCachedWorkspaceFileIndex;
         private static long _workspaceFileIndexGeneration;
 
-        public static bool TryParseMention(string? input, out CopilotComposerMention mention)
+        public static bool TryParseMention(string? input, out CopilotComposerMention mention, int? caretIndex = null)
         {
             var text = input ?? string.Empty;
-            for (var index = text.Length - 1; index >= 0; index--)
+            var endIndex = Math.Clamp(caretIndex ?? text.Length, 0, text.Length);
+            for (var index = endIndex - 1; index >= 0; index--)
             {
                 if (text[index] != '@')
                     continue;
                 if (index > 0 && !char.IsWhiteSpace(text[index - 1]))
                     continue;
 
-                var suffix = text[(index + 1)..];
+                var suffix = text[(index + 1)..endIndex];
                 if (suffix.Contains('\r')
                     || suffix.Contains('\n')
                     || suffix.Length > MaximumMentionQueryCharacters)
                     break;
-                if (suffix.StartsWith('[') && suffix.Contains(']'))
+                var fullSuffix = text.AsSpan(index + 1);
+                var lineBreakIndex = fullSuffix.IndexOfAny('\r', '\n');
+                if (lineBreakIndex >= 0)
+                    fullSuffix = fullSuffix[..lineBreakIndex];
+                if (fullSuffix.StartsWith("[", StringComparison.Ordinal) && fullSuffix.Contains(']'))
                     break;
 
-                mention = new CopilotComposerMention(index, suffix.Trim());
+                mention = new CopilotComposerMention(index, endIndex, suffix.Trim());
                 return true;
             }
 
@@ -136,7 +141,7 @@ namespace ColorVision.Copilot
         public static string CompleteMention(string? input, CopilotComposerMention mention, string title)
         {
             var text = input ?? string.Empty;
-            if (mention.StartIndex < 0 || mention.StartIndex > text.Length)
+            if (mention.StartIndex < 0 || mention.EndIndex < mention.StartIndex || mention.EndIndex > text.Length)
                 return text;
 
             var safeTitle = (title ?? string.Empty)
@@ -145,7 +150,7 @@ namespace ColorVision.Copilot
                 .Replace('\r', ' ')
                 .Replace('\n', ' ')
                 .Trim();
-            return text[..mention.StartIndex] + $"@[{safeTitle}] ";
+            return text[..mention.StartIndex] + $"@[{safeTitle}] " + text[mention.EndIndex..];
         }
 
         internal static string CompleteSkillMention(
@@ -156,13 +161,14 @@ namespace ColorVision.Copilot
             var text = input ?? string.Empty;
             var normalizedName = CopilotAgentSkillOverrideConfig.NormalizeName(skillName);
             if (mention.StartIndex < 0
-                || mention.StartIndex > text.Length
+                || mention.EndIndex < mention.StartIndex
+                || mention.EndIndex > text.Length
                 || normalizedName.Length == 0)
             {
                 return text;
             }
 
-            return text[..mention.StartIndex] + '$' + normalizedName + ' ';
+            return text[..mention.StartIndex] + '$' + normalizedName + ' ' + text[mention.EndIndex..];
         }
 
         internal static string InsertMention(
@@ -172,14 +178,14 @@ namespace ColorVision.Copilot
             out int caretIndex)
         {
             var text = input ?? string.Empty;
-            if (TryParseMention(text, out _))
+            var start = Math.Clamp(selectionStart, 0, text.Length);
+            var length = Math.Clamp(selectionLength, 0, text.Length - start);
+            if (length == 0 && TryParseMention(text, out _, start))
             {
-                caretIndex = text.Length;
+                caretIndex = start;
                 return text;
             }
 
-            var start = Math.Clamp(selectionStart, 0, text.Length);
-            var length = Math.Clamp(selectionLength, 0, text.Length - start);
             var prefix = text[..start];
             var suffix = text[(start + length)..];
             var leadingSpace = prefix.Length > 0 && !char.IsWhiteSpace(prefix[^1])

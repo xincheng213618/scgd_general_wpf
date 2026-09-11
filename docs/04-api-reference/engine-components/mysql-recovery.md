@@ -28,7 +28,7 @@ related: ["engine.mysql-maintenance", "engine.database-maintenance", "plugins.wi
 
 ## 手动恢复的阶段与完成含义
 
-`RestoreAndRestartAsync` 首先非阻塞尝试进入进程内维护门，已有其它维护任务时提示并返回；同调用链允许嵌套。取得门后打开进度窗口，执行 SQL，然后同步配置；同步返回的文件数为0时抛错，提示“数据库已导入，但已停止服务重启”。只有配置同步通过才调用 ServiceHost 重启固定的 `RegistrationCenterService`（服务超时60秒、请求等待90秒）。请求等待超时不代表代理动作取消，见[本机权限代理](../../03-architecture/components/service-host.md)。
+`RestoreAndRestartAsync` 首先非阻塞尝试进入进程内维护门，已有其它维护任务时提示并返回；同调用链允许嵌套。取得门后打开进度窗口，执行 SQL，然后同步配置；同步返回的文件数为0时抛错，提示“数据库已导入，但已停止服务重启”。只有配置同步通过才调用 ServiceHost 重启固定的 `RegistrationCenterService`（服务超时60秒、请求等待90秒）。请求等待超时不代表代理动作取消，见[本机权限代理](../../03-architecture/components/service-host.md)。恢复编排跟踪校验、SQL导入、配置同步和服务重启阶段：SQL尚未成功返回时显示“SQL 未完成导入，…失败”；SQL已成功返回而后续同步或重启失败时明确显示“SQL 已导入，但…失败”，不再把后者统称为加载备份失败。
 
 这个顺序没有导入前自动完整备份、停止采集/流程或停服务步骤，也没有额外“确认后再导入”的弹窗。管理器维护门只约束使用该门的进程内动作，不阻止其它 DAO、直接 SQL 或外部进程写入；门的机制与完整备份边界见[结果维护](./mysql-maintenance.md)。底层恢复和重置接口不会自动加入该门。
 
@@ -82,7 +82,7 @@ SQL导入、配置写入和注册中心重启不在同一事务中。执行阶�
 
 底层导入只检查路径、`.sql`扩展名、存在和非空，按流输入 `mysql.exe`；默认库参数不会限制脚本中的 `USE`、DDL或跨库语句。成功返回脚本完整路径，不返回业务行数校验结果；进程非零/流失败可能发生在部分SQL已经执行之后。字符集、密码传递、两小时预算及尝试终止子进程树的规则见[外部工具边界](./mysql-maintenance.md#外部工具与错误边界)，终止客户端不构成数据库回滚。
 
-- `MySqlBackupRestoreSafetyTests` 包括进程参数、维护门、入口源码检查及临时XML更新；返回路径用例实际只检查方法返回类型，不能按测试名推断做过真实恢复。
+- `MySqlBackupRestoreSafetyTests` 包括进程参数、维护门、入口源码检查、恢复阶段失败摘要及临时XML更新；返回路径用例实际只检查方法返回类型，阶段摘要用例也不执行真实恢复或服务重启。
 - `MySqlMigrationBackupTableTests` 检查九张保留表组合及其与结果清理表分离，不验证真库存在、导出内容或schema兼容。
 - `SensorTemplateMigrationTests` 对合成数据生成SQL，检查业务code推导、ID冲突重映射和健康命令保留的字符串；没有在MySQL中执行生成脚本。
 

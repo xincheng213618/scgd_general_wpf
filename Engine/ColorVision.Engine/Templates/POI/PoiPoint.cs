@@ -35,6 +35,9 @@ namespace ColorVision.Engine.Templates.POI
         public int Id { set; get; }
         public int Pid { set; get; } = -1;
         public string Name { set; get; } = string.Empty;
+        [Newtonsoft.Json.JsonIgnore]
+        internal string? RegionShapeName { get; init; }
+
         public PoiShape PointType { set; get; }
         public double PixX { set; get; }
         public double PixY { set; get; }

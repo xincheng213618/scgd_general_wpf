@@ -1,4 +1,5 @@
 using ColorVision.Database;
+using MySqlConnector;
 using System.IO;
 using System.Windows;
 using System.Xml.Linq;
@@ -10,6 +11,8 @@ namespace WindowsServicePlugin.ServiceManager
     /// </summary>
     public partial class ServiceManagerViewModel
     {
+        private const string BaseMonitorServices = "MySQL,CVMainService_x64,CVMainService_dev";
+
         private void UpdateConfig()
         {
             try
@@ -77,8 +80,13 @@ namespace WindowsServicePlugin.ServiceManager
             if (string.IsNullOrWhiteSpace(baseLocation) || !Directory.Exists(baseLocation))
                 return;
 
+            string monitorServices = BuildRegistrationCenterMonitorServices(WinServiceHelper.IsServiceExisted("CVArchService"));
             string regDir = Path.Combine(baseLocation, "RegWindowsService");
-            if (Directory.Exists(regDir)) UpdateServiceConfigFiles(regDir, isRC: true);
+            if (Directory.Exists(regDir))
+            {
+                UpdateRegistrationCenterMonitorServices(monitorServices);
+                UpdateServiceConfigFiles(regDir, isRC: true, monitorServices: monitorServices);
+            }
 
             string[] serviceFolders = ["CVMainWindowsService_x64", "CVMainWindowsService_dev", "TPAWindowsService", "TPAWindowsService32", "CVFlowWindowsService"];
             foreach (var folderName in serviceFolders)
@@ -86,16 +94,53 @@ namespace WindowsServicePlugin.ServiceManager
                 string svcDir = Path.Combine(baseLocation, folderName);
                 if (!Directory.Exists(svcDir)) continue;
 
-                UpdateServiceConfigFiles(svcDir, isRC: false);
+                UpdateServiceConfigFiles(svcDir, isRC: false, monitorServices: null);
             }
         }
 
-        private void UpdateServiceConfigFiles(string serviceDir, bool isRC)
+        internal static string BuildRegistrationCenterMonitorServices(bool archiveServiceInstalled) =>
+            archiveServiceInstalled ? $"{BaseMonitorServices},CVArchService" : BaseMonitorServices;
+
+        private void UpdateRegistrationCenterMonitorServices(string monitorServices)
+        {
+            string rcCode = ColorVision.Engine.Services.RC.RCSetting.Instance.Config.RCName;
+            if (string.IsNullOrWhiteSpace(rcCode))
+                throw new InvalidDataException("注册中心配置缺少 RCName，无法同步监控服务列表");
+
+            using var connection = new MySqlConnection(MySqlControl.GetConnectionString(MySqlSetting.Instance.MySqlConfig, timeout: 5));
+            connection.Open();
+
+            using var lookupCommand = connection.CreateCommand();
+            lookupCommand.CommandText = """
+                SELECT COUNT(DISTINCT monitor.id)
+                FROM t_scgd_sys_config_monitor AS monitor
+                INNER JOIN t_scgd_sys_config_rc AS rc ON rc.monitor_id = monitor.id
+                WHERE rc.code = @rcCode;
+                """;
+            lookupCommand.Parameters.AddWithValue("@rcCode", rcCode);
+            int monitorCount = Convert.ToInt32(lookupCommand.ExecuteScalar());
+            if (monitorCount == 0)
+                throw new InvalidDataException($"数据库中未找到注册中心 {rcCode} 对应的监控配置");
+
+            using var updateCommand = connection.CreateCommand();
+            updateCommand.CommandText = """
+                UPDATE t_scgd_sys_config_monitor AS monitor
+                INNER JOIN t_scgd_sys_config_rc AS rc ON rc.monitor_id = monitor.id
+                SET monitor.services = @services
+                WHERE rc.code = @rcCode;
+                """;
+            updateCommand.Parameters.AddWithValue("@services", monitorServices);
+            updateCommand.Parameters.AddWithValue("@rcCode", rcCode);
+            updateCommand.ExecuteNonQuery();
+            log.Info($"更新注册中心数据库监控服务: {monitorServices}");
+        }
+
+        private void UpdateServiceConfigFiles(string serviceDir, bool isRC, string? monitorServices)
         {
             string cfgDir = Path.Combine(serviceDir, "cfg");
             UpdateMysqlCfgFile(Path.Combine(cfgDir, "MySql.config"));
             UpdateMqttCfgFile(Path.Combine(cfgDir, "MQTT.config"));
-            UpdateWinServiceCfgFile(Path.Combine(cfgDir, "WinService.config"), isRC);
+            UpdateWinServiceCfgFile(Path.Combine(cfgDir, "WinService.config"), isRC, monitorServices);
             UpdateLog4NetConfigFiles(serviceDir);
         }
 
@@ -249,7 +294,7 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private void UpdateWinServiceCfgFile(string configPath, bool isRC)
+        private void UpdateWinServiceCfgFile(string configPath, bool isRC, string? monitorServices)
         {
             if (!File.Exists(configPath)) return;
             try
@@ -270,7 +315,7 @@ namespace WindowsServicePlugin.ServiceManager
                         "NodeName" when isRC => rcConfig.RCName,
                         "NodeAppId" => rcConfig.AppId,
                         "NodeKey" => rcConfig.AppSecret,
-                        "Monitor.Services" when isRC => "MySQL,CVMainService_x64,CVMainService_dev",
+                        "Monitor.Services" when isRC => monitorServices,
                         "Monitor.UIServices" when isRC => string.Empty,
                         _ => null
                     };

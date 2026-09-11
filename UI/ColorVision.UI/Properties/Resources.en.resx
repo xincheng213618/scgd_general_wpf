@@ -591,4 +591,11 @@
   <data name="SettingsSectionUpdates" xml:space="preserve"><value>Updates and network</value></data>
   <data name="SettingsSectionDiagnostics" xml:space="preserve"><value>Logging and diagnostics</value></data>
   <data name="CommandOtherActions" xml:space="preserve"><value>Other actions</value></data>
+  <data name="StartupTheme" xml:space="preserve"><value>Startup screen theme</value></data>
+  <data name="StartupThemeDescription" xml:space="preserve"><value>Choose the startup screen color theme. Takes effect on the next launch.</value></data>
+  <data name="StartupThemeDark" xml:space="preserve"><value>Dark</value></data>
+  <data name="StartupThemeLight" xml:space="preserve"><value>Light</value></data>
+  <data name="StartupThemeFollowApplication" xml:space="preserve"><value>Follow application theme</value></data>
+  <data name="DisplayPin" xml:space="preserve"><value>Pin to top</value></data>
+  <data name="DisplayUnpin" xml:space="preserve"><value>Unpin</value></data>
 </root>

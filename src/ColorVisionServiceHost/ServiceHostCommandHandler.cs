@@ -17,23 +17,12 @@ internal sealed class ServiceHostCommandHandler
         ["register-thumbnail"] = "RegisterThumbnail.ps1",
         ["unregister-thumbnail"] = "UnregisterThumbnail.ps1",
     };
-    private static readonly Dictionary<string, string[]> ServiceProcessNames = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["RegistrationCenterService"] = ["RegWindowsService"],
-        ["CVMainService_x64"] = ["CVMainWindowsService_x64"],
-        ["CVMainService_dev"] = ["CVMainWindowsService_dev"],
-        ["CVArchService"] = ["RegWindowsService"],
-        ["MySQL"] = ["mysqld"],
-        ["MySQL57"] = ["mysqld"],
-        ["MySQL80"] = ["mysqld"],
-        ["mosquitto"] = ["mosquitto"],
-    };
     private static readonly Dictionary<string, string[]> ServiceExecutableNames = new(StringComparer.OrdinalIgnoreCase)
     {
         ["RegistrationCenterService"] = ["RegWindowsService.exe"],
         ["CVMainService_x64"] = ["CVMainWindowsService_x64.exe"],
         ["CVMainService_dev"] = ["CVMainWindowsService_dev.exe"],
-        ["CVArchService"] = ["RegWindowsService.exe"],
+        ["CVArchService"] = ["ArchivedWindowsService.exe", "RegWindowsService.exe"],
         ["MySQL"] = ["mysqld.exe"],
         ["MySQL57"] = ["mysqld.exe"],
         ["MySQL80"] = ["mysqld.exe"],
@@ -101,7 +90,8 @@ internal sealed class ServiceHostCommandHandler
                 "service-start" => StartWindowsService(request),
                 "service-stop" => StopWindowsService(request),
                 "service-restart" => RestartWindowsService(request),
-                "service-terminate" => TerminateWindowsService(request),
+                "service-terminate" => ProcessCommandService.TerminateService(request),
+                "process-terminate" => ProcessCommandService.Terminate(request),
                 "com0com-status" => Com0ComCommandService.GetStatus(request, includePairs: false),
                 "com0com-list" => Com0ComCommandService.GetStatus(request, includePairs: true),
                 "com0com-create-pair" => Com0ComCommandService.CreatePair(request),
@@ -137,6 +127,7 @@ internal sealed class ServiceHostCommandHandler
             identity = WindowsIdentity.GetCurrent().Name,
             isElevated = IsElevated(),
             is64BitProcess = Environment.Is64BitProcess,
+            supportsProcessTermination = true,
             baseDirectory = AppContext.BaseDirectory,
             logFile = ServiceHostLog.LogFilePath,
         };
@@ -731,41 +722,6 @@ internal sealed class ServiceHostCommandHandler
         });
     }
 
-    private static ServiceHostResponse TerminateWindowsService(ServiceHostRequest request)
-    {
-        string serviceName = ResolveRequestedServiceName(request);
-        if (!IsAllowedServiceName(serviceName))
-            return ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported service name: {serviceName}");
-
-        int timeoutSeconds = Math.Clamp(GetOptionalDataInt(request, "timeoutSeconds", 20), 5, 180);
-        List<string> steps = [];
-
-        if (ServiceExists(serviceName))
-            StopServiceIfExists(serviceName, Math.Min(timeoutSeconds, 30), steps);
-        else
-            steps.Add($"Service not installed: {serviceName}");
-
-        string? executablePath = request.Data?["executablePath"]?.ToString();
-        HashSet<string> processNames = ResolveAllowedProcessNames(serviceName, executablePath);
-        if (processNames.Count == 0)
-            return ServiceHostResponse.FromObject(request.RequestId, false, $"No allowed process name was found for service: {serviceName}", new { serviceName, steps });
-
-        int killed = KillProcessesByName(processNames, steps);
-        bool running = IsServiceRunning(serviceName);
-        bool processStillExists = AnyProcessExists(processNames);
-        bool success = !running && !processStillExists;
-
-        return ServiceHostResponse.FromObject(request.RequestId, success, success ? "service terminated" : "service terminate incomplete", new
-        {
-            serviceName,
-            processNames,
-            killed,
-            running,
-            processStillExists,
-            steps,
-        });
-    }
-
     private static ServiceHostResponse InstallWindowsService(ServiceHostRequest request)
     {
         string serviceName = ResolveRequestedServiceName(request);
@@ -921,9 +877,10 @@ internal sealed class ServiceHostCommandHandler
                 try
                 {
                     steps.Add($"Killing process: {process.ProcessName} ({process.Id})");
-                    process.Kill(entireProcessTree: true);
-                    process.WaitForExit(3000);
-                    killed++;
+                    if (ProcessCommandService.TerminateProcess(process, entireProcessTree: true, timeoutMilliseconds: 3000))
+                        killed++;
+                    else
+                        steps.Add($"Process did not exit: {processName} ({process.Id})");
                 }
                 catch (Exception ex)
                 {
@@ -1241,79 +1198,27 @@ internal sealed class ServiceHostCommandHandler
         return serviceName;
     }
 
-    private static bool IsAllowedServiceName(string serviceName)
+    internal static bool IsAllowedServiceName(string serviceName)
     {
         return ServiceExecutableNames.ContainsKey(serviceName);
     }
 
-    private static bool IsAllowedServiceExecutable(string serviceName, string executablePath)
+    internal static bool IsAllowedServiceExecutable(string serviceName, string executablePath)
     {
         return ServiceExecutableNames.TryGetValue(serviceName, out string[]? allowedNames)
             && allowedNames.Contains(Path.GetFileName(executablePath), StringComparer.OrdinalIgnoreCase);
     }
 
+    internal static bool IsAllowedProcessExecutableName(string executableName)
+    {
+        return executableName.Equals("ColorVision.exe", StringComparison.OrdinalIgnoreCase)
+            || executableName.Equals("mysql.exe", StringComparison.OrdinalIgnoreCase)
+            || ServiceExecutableNames.Values.Any(names => names.Contains(executableName, StringComparer.OrdinalIgnoreCase));
+    }
+
     private static bool IsAllowedMySqlServiceName(string serviceName)
     {
         return serviceName is "MySQL" or "MySQL57" or "MySQL80";
-    }
-
-    private static HashSet<string> ResolveAllowedProcessNames(string serviceName, string? executablePath)
-    {
-        HashSet<string> processNames = new(StringComparer.OrdinalIgnoreCase);
-
-        TryAddProcessNameFromPath(processNames, GetServiceInstallPath(serviceName));
-        TryAddProcessNameFromPath(processNames, executablePath);
-
-        if (ServiceProcessNames.TryGetValue(serviceName, out string[]? knownNames))
-        {
-            foreach (string knownName in knownNames)
-            {
-                if (IsSafeProcessName(knownName))
-                    processNames.Add(knownName);
-            }
-        }
-
-        return processNames;
-    }
-
-    private static void TryAddProcessNameFromPath(HashSet<string> processNames, string? executablePath)
-    {
-        if (string.IsNullOrWhiteSpace(executablePath))
-            return;
-
-        string processName = Path.GetFileNameWithoutExtension(ExtractExecutablePath(executablePath) ?? executablePath.Trim());
-        if (IsSafeProcessName(processName))
-            processNames.Add(processName);
-    }
-
-    private static bool IsSafeProcessName(string processName)
-    {
-        return !string.IsNullOrWhiteSpace(processName)
-            && processName.Length <= 128
-            && processName.IndexOfAny(['\\', '/', '"', ':']) < 0
-            && !processName.Any(char.IsControl);
-    }
-
-    private static bool AnyProcessExists(IEnumerable<string> processNames)
-    {
-        foreach (string processName in processNames)
-        {
-            Process[] processes = Process.GetProcessesByName(processName);
-            try
-            {
-                if (processes.Length > 0)
-                    return true;
-            }
-            finally
-            {
-                foreach (Process process in processes)
-                {
-                    process.Dispose();
-                }
-            }
-        }
-
-        return false;
     }
 
     private static bool LooksLikeMySqlServerExecutable(string filePath)
@@ -1349,7 +1254,7 @@ internal sealed class ServiceHostCommandHandler
         }
     }
 
-    private static bool IsServiceRunning(string serviceName)
+    internal static bool IsServiceRunning(string serviceName)
     {
         try
         {
@@ -1440,7 +1345,7 @@ internal sealed class ServiceHostCommandHandler
         }
     }
 
-    private static string? GetServiceInstallPath(string serviceName)
+    internal static string? GetServiceInstallPath(string serviceName)
     {
         try
         {

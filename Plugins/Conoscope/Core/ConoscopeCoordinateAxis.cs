@@ -60,6 +60,10 @@ namespace Conoscope.Core
         public double ConoscopeCoefficient { get => _ConoscopeCoefficient; set { _ConoscopeCoefficient = value; OnPropertyChanged(); } }
         private double _ConoscopeCoefficient;
 
+        [Browsable(false), JsonIgnore]
+        public ConoscopeCoordinateSystem CoordinateSystem { get => _CoordinateSystem; set { _CoordinateSystem = value; OnPropertyChanged(); } }
+        private ConoscopeCoordinateSystem _CoordinateSystem;
+
         [Display(Name = "Con_Axis_CenterX", GroupName = "Con_Category_CoordAxis", ResourceType = typeof(Properties.Resources))]
         public double CenterX { get => _CenterX; set { _CenterX = value; OnPropertyChanged(); } }
         private double _CenterX;
@@ -217,15 +221,40 @@ namespace Conoscope.Core
             Pen referencePen = new Pen(Attribute.ReferenceBrush, Attribute.ReferenceLineWidth / ratio);
             Point center = Center;
 
-            DrawMask(dc, center);
-            DrawConcentricCircles(dc, center, axisPen);
-            DrawAzimuthLines(dc, center, axisPen);
-            DrawReference(dc, center, referencePen);
+            if (ConoscopeHorizontalVerticalProjection.IsProjectedCoordinateSystem(Attribute.CoordinateSystem))
+            {
+                StreamGeometry domain = CreateHorizontalVerticalDomainGeometry(center);
+                DrawMask(dc, domain);
+                dc.PushClip(domain);
+                DrawHorizontalVerticalGrid(dc, center, axisPen);
+                DrawHorizontalVerticalReference(dc, center, referencePen);
+                dc.Pop();
+                DrawHorizontalVerticalLabels(dc, center);
+            }
+            else
+            {
+                DrawMask(dc, new EllipseGeometry(center, AxisRadius, AxisRadius));
+                DrawConcentricCircles(dc, center, axisPen);
+                DrawAzimuthLines(dc, center, axisPen);
+                DrawReference(dc, center, referencePen);
+            }
         }
 
         public bool ContainsInteractivePoint(Point point)
         {
             double tolerance = HitTolerance / Math.Max(Ratio, 1);
+            if (ConoscopeHorizontalVerticalProjection.IsProjectedCoordinateSystem(Attribute.CoordinateSystem))
+            {
+                return TryGetHorizontalVerticalAngles(point, tolerance, out double horizontalAngle, out double verticalAngle)
+                    && ConoscopeHorizontalVerticalProjection.TryConvertHorizontalVerticalToPolar(
+                        Attribute.CoordinateSystem,
+                        horizontalAngle,
+                        verticalAngle,
+                        Attribute.MaxAngle,
+                        out _,
+                        out _);
+            }
+
             return (point - Center).Length <= AxisRadius + tolerance;
         }
 
@@ -236,9 +265,31 @@ namespace Conoscope.Core
                 return false;
             }
 
+            double angle;
+            double radiusAngle;
+            if (ConoscopeHorizontalVerticalProjection.IsProjectedCoordinateSystem(Attribute.CoordinateSystem))
+            {
+                if (!TryGetHorizontalVerticalAngles(point, 0, out double horizontalAngle, out double verticalAngle)
+                    || !ConoscopeHorizontalVerticalProjection.TryConvertHorizontalVerticalToPolar(
+                        Attribute.CoordinateSystem,
+                        horizontalAngle,
+                        verticalAngle,
+                        Attribute.MaxAngle,
+                        out radiusAngle,
+                        out angle))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                angle = GetAzimuthAngle(Center, point);
+                radiusAngle = Clamp((point - Center).Length / AxisRadius * Attribute.MaxAngle, 0, Attribute.MaxAngle);
+            }
+
             if (Attribute.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
             {
-                double angle = GetAzimuthAngle(Center, point);
+                angle = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(angle);
                 if (Math.Abs(Attribute.ReferenceAngle - angle) < 0.05)
                 {
                     return false;
@@ -248,7 +299,6 @@ namespace Conoscope.Core
                 return true;
             }
 
-            double radiusAngle = Clamp((point - Center).Length / AxisRadius * Attribute.MaxAngle, 0, Attribute.MaxAngle);
             if (Math.Abs(Attribute.ReferenceRadiusAngle - radiusAngle) < 0.05)
             {
                 return false;
@@ -270,7 +320,7 @@ namespace Conoscope.Core
             return (positive, negative);
         }
 
-        private void DrawMask(DrawingContext dc, Point center)
+        private void DrawMask(DrawingContext dc, Geometry innerGeometry)
         {
             if (!Attribute.IsMaskVisible)
             {
@@ -278,13 +328,164 @@ namespace Conoscope.Core
             }
 
             RectangleGeometry outerRect = new RectangleGeometry(new Rect(-5, -5, ActualWidth + 10, ActualHeight + 10));
-            EllipseGeometry innerCircle = new EllipseGeometry(center, AxisRadius, AxisRadius);
             GeometryGroup maskGeometry = new GeometryGroup { FillRule = FillRule.EvenOdd };
             maskGeometry.Children.Add(outerRect);
-            maskGeometry.Children.Add(innerCircle);
+            maskGeometry.Children.Add(innerGeometry);
 
             SolidColorBrush maskBrush = new SolidColorBrush(Color.FromArgb(Attribute.MaskOpacity, Attribute.MaskColor.R, Attribute.MaskColor.G, Attribute.MaskColor.B));
             dc.DrawGeometry(maskBrush, null, maskGeometry);
+        }
+
+        private StreamGeometry CreateHorizontalVerticalDomainGeometry(Point center)
+        {
+            StreamGeometry geometry = new StreamGeometry();
+            using (StreamGeometryContext context = geometry.Open())
+            {
+                const int sampleCount = 360;
+                for (int index = 0; index <= sampleCount; index++)
+                {
+                    double azimuthAngle = index * 360.0 / sampleCount;
+                    Point point = GetHorizontalVerticalPoint(center, Attribute.MaxAngle, azimuthAngle);
+                    if (index == 0)
+                    {
+                        context.BeginFigure(point, isFilled: true, isClosed: true);
+                    }
+                    else
+                    {
+                        context.LineTo(point, isStroked: true, isSmoothJoin: true);
+                    }
+                }
+            }
+
+            geometry.Freeze();
+            return geometry;
+        }
+
+        private void DrawHorizontalVerticalGrid(DrawingContext dc, Point center, Pen axisPen)
+        {
+            double step = Math.Max(1, Attribute.PolarStep);
+            for (double angle = -Attribute.MaxAngle; angle <= Attribute.MaxAngle + 0.001; angle += step)
+            {
+                double offset = AxisRadius * angle / Attribute.MaxAngle;
+                dc.DrawLine(axisPen, new Point(center.X + offset, center.Y - AxisRadius), new Point(center.X + offset, center.Y + AxisRadius));
+                dc.DrawLine(axisPen, new Point(center.X - AxisRadius, center.Y - offset), new Point(center.X + AxisRadius, center.Y - offset));
+            }
+        }
+
+        private void DrawHorizontalVerticalReference(DrawingContext dc, Point center, Pen referencePen)
+        {
+            StreamGeometry geometry = new StreamGeometry();
+            using (StreamGeometryContext context = geometry.Open())
+            {
+                if (Attribute.ReferenceMode == ConoscopeCoordinateReferenceMode.PolarCircle)
+                {
+                    const int sampleCount = 360;
+                    for (int index = 0; index <= sampleCount; index++)
+                    {
+                        Point point = GetHorizontalVerticalPoint(center, Attribute.ReferenceRadiusAngle, index * 360.0 / sampleCount);
+                        if (index == 0)
+                        {
+                            context.BeginFigure(point, isFilled: false, isClosed: true);
+                        }
+                        else
+                        {
+                            context.LineTo(point, isStroked: true, isSmoothJoin: true);
+                        }
+                    }
+                }
+                else
+                {
+                    const int sampleCount = 240;
+                    for (int index = 0; index <= sampleCount; index++)
+                    {
+                        double signedPolarAngle = -Attribute.MaxAngle + index * Attribute.MaxAngle * 2 / sampleCount;
+                        double azimuthAngle = signedPolarAngle < 0 ? Attribute.ReferenceAngle + 180 : Attribute.ReferenceAngle;
+                        Point point = GetHorizontalVerticalPoint(center, Math.Abs(signedPolarAngle), azimuthAngle);
+                        if (index == 0)
+                        {
+                            context.BeginFigure(point, isFilled: false, isClosed: false);
+                        }
+                        else
+                        {
+                            context.LineTo(point, isStroked: true, isSmoothJoin: true);
+                        }
+                    }
+                }
+            }
+
+            geometry.Freeze();
+            dc.DrawGeometry(null, referencePen, geometry);
+        }
+
+        private void DrawHorizontalVerticalLabels(DrawingContext dc, Point center)
+        {
+            if (!Attribute.IsTextVisible)
+            {
+                return;
+            }
+
+            double ratio = Math.Max(Ratio, 1);
+            double step = Math.Max(1, Attribute.PolarStep);
+            for (double angle = -Attribute.MaxAngle; angle <= Attribute.MaxAngle + 0.001; angle += step)
+            {
+                if (Math.Abs(angle) < 0.001)
+                {
+                    continue;
+                }
+
+                double offset = AxisRadius * angle / Attribute.MaxAngle;
+                string text = $"{angle:F0}°";
+                FormattedText formattedText = CreateFormattedText(text, Attribute.TextBrush);
+                DrawOutlinedTextClamped(
+                    dc,
+                    text,
+                    new Point(center.X + offset - formattedText.Width / 2, center.Y + 4 / ratio),
+                    formattedText);
+                DrawOutlinedTextClamped(
+                    dc,
+                    text,
+                    new Point(center.X + 4 / ratio, center.Y - offset - formattedText.Height / 2),
+                    formattedText);
+            }
+
+            DrawOutlinedText(dc, "H", new Point(center.X + AxisRadius - 22 / ratio, center.Y - 26 / ratio), Attribute.TextBrush);
+            DrawOutlinedText(dc, "V", new Point(center.X - 26 / ratio, center.Y - AxisRadius + 4 / ratio), Attribute.TextBrush);
+        }
+
+        private void DrawOutlinedTextClamped(DrawingContext dc, string text, Point desiredOrigin, FormattedText formattedText)
+        {
+            double margin = 3 / Math.Max(Ratio, 1);
+            Point origin = new Point(
+                Clamp(desiredOrigin.X, margin, Math.Max(margin, ActualWidth - formattedText.Width - margin)),
+                Clamp(desiredOrigin.Y, margin, Math.Max(margin, ActualHeight - formattedText.Height - margin)));
+            DrawOutlinedText(dc, text, origin, Attribute.TextBrush);
+        }
+
+        private Point GetHorizontalVerticalPoint(Point center, double polarAngle, double azimuthAngle)
+        {
+            if (!ConoscopeHorizontalVerticalProjection.TryConvertPolarToHorizontalVertical(
+                Attribute.CoordinateSystem,
+                polarAngle,
+                azimuthAngle,
+                Attribute.MaxAngle,
+                out double horizontalAngle,
+                out double verticalAngle))
+            {
+                return center;
+            }
+
+            return new Point(
+                center.X + horizontalAngle / Attribute.MaxAngle * AxisRadius,
+                center.Y - verticalAngle / Attribute.MaxAngle * AxisRadius);
+        }
+
+        private bool TryGetHorizontalVerticalAngles(Point point, double tolerance, out double horizontalAngle, out double verticalAngle)
+        {
+            horizontalAngle = (point.X - Center.X) / AxisRadius * Attribute.MaxAngle;
+            verticalAngle = (Center.Y - point.Y) / AxisRadius * Attribute.MaxAngle;
+            double angularTolerance = tolerance / AxisRadius * Attribute.MaxAngle;
+            return Math.Abs(horizontalAngle) <= Attribute.MaxAngle + angularTolerance
+                && Math.Abs(verticalAngle) <= Attribute.MaxAngle + angularTolerance;
         }
 
         private void DrawConcentricCircles(DrawingContext dc, Point center, Pen axisPen)

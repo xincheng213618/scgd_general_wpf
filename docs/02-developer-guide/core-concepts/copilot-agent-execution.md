@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "Copilot 请求调度、工具筛选、审批、只读委派与执行证据闭环。"
 aliases: ["为什么 Copilot 没调用工具","子 Agent 有哪些权限","CopilotAgentTaskHost","CopilotToolRegistry","CopilotAgentExecutionContract"]
-code_paths: ["ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs","ColorVision/Copilot/Agent/CopilotProviderRetryChatClient.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.AgentStreamingLoop.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.FrameworkSupport.cs","ColorVision/Copilot/Agent/CopilotAnthropicHttpErrorHandler.cs","ColorVision/Copilot/Agent/CopilotContextWindowRecoveryChatClient.cs","ColorVision/Copilot/CopilotChatService.Streaming.cs","ColorVision/Copilot/CopilotChatService.RequestPipeline.cs","ColorVision/Copilot/Agent/CopilotToolRegistry.cs","ColorVision/Copilot/Agent/CopilotAgentExecutionContract.cs","ColorVision/Copilot/Agent/CopilotToolExecution.cs","ColorVision/Copilot/Agent/CopilotAgentAccessModels.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.ApprovalRouting.cs","ColorVision/Copilot/Presentation/CopilotHostedTurnCompletion.cs","ColorVision/Copilot/CopilotConversationUsageDiagnostics.cs","ColorVision/Copilot/CopilotConversationStatistics.cs","ColorVision/Copilot/Agent/CopilotOpenAiAgentChatClientFactory.cs","ColorVision/Copilot/Agent/CopilotCancellationGuardChatClient.cs","ColorVision/Copilot/Agent/CopilotOpenAiRequestIdChatClient.cs","ColorVision/Copilot/CopilotProviderRequestId.cs","ColorVision/Copilot/Context/CopilotConversationCompactionPlanner.cs","ColorVision/Copilot/Context/CopilotConversationCompactionPrompt.cs","ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotAgentTaskHostQueueDispatchTests.cs","Test/ColorVision.Copilot.Tests/CopilotAnthropicProviderFailureTests.cs","Test/ColorVision.Copilot.Tests/CopilotAnthropicHttpFailureTests.cs","Test/ColorVision.Copilot.Tests/CopilotAnthropicHttpErrorBoundaryTests.cs","Test/ColorVision.Copilot.Tests/CopilotHostedTurnCompletionTests.cs","Test/ColorVision.Copilot.Tests/CopilotHostedTurnUsageTests.cs","Test/ColorVision.Copilot.Tests/CopilotProviderPayloadErrorTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentExecutionContractRetryTests.cs","Test/ColorVision.Copilot.Tests/CopilotCodexApprovalsReviewerTests.cs","Test/ColorVision.Copilot.Tests/CopilotOpenAiProviderRetryTests.cs","Test/ColorVision.Copilot.Tests/CopilotProviderStreamCleanupTests.cs","Test/ColorVision.Copilot.Tests/CopilotProviderStreamCleanupTimeoutTests.cs","Test/ColorVision.Copilot.Tests/CopilotOpenAiRequestIdTests.cs","Test/ColorVision.Copilot.Tests/CopilotContextWindowRecoveryCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotCompactionTerminalEvidenceRequestTests.cs","Test/ColorVision.Copilot.Tests/CopilotConversationCompactionIntegrityTests.cs"]
+code_paths: ["ColorVision/Copilot/Agent/Tools/Files/CopilotWorkspaceValidationTool.cs","ColorVision/Copilot/Agent/CopilotToolIntentPolicy.cs","ColorVision/Copilot/Agent/CopilotToolIntentPolicy.Local.cs","ColorVision/Copilot/Agent/CopilotAgentRequestFactory.cs","ColorVision/Copilot/Agent/Tools/Files/CopilotWorkspacePatchEnvelopeTools.cs","ColorVision/Copilot/Agent/Tools/Files/CopilotReadLocalFileTool.cs","ColorVision/Copilot/Agent/Tools/Files/CopilotListDirectoryTool.cs","ColorVision/Copilot/Agent/Tools/Search/CopilotSearchFilesTool.cs","ColorVision/Copilot/Agent/Tools/Search/CopilotGrepTextTool.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotFlowGraphTools.cs","ColorVision/Copilot/Agent/CopilotAgentTaskHost.cs","ColorVision/Copilot/Agent/CopilotProviderRetryChatClient.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.AgentStreamingLoop.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.FrameworkSupport.cs","ColorVision/Copilot/Agent/CopilotAnthropicHttpErrorHandler.cs","ColorVision/Copilot/Agent/CopilotContextWindowRecoveryChatClient.cs","ColorVision/Copilot/CopilotChatService.Streaming.cs","ColorVision/Copilot/CopilotChatService.RequestPipeline.cs","ColorVision/Copilot/Agent/CopilotToolRegistry.cs","ColorVision/Copilot/Agent/CopilotAgentExecutionContract.cs","ColorVision/Copilot/Agent/CopilotToolExecution.cs","ColorVision/Copilot/Agent/CopilotAgentAccessModels.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.ApprovalRouting.cs","ColorVision/Copilot/Presentation/CopilotHostedTurnCompletion.cs","ColorVision/Copilot/CopilotConversationUsageDiagnostics.cs","ColorVision/Copilot/CopilotConversationStatistics.cs","ColorVision/Copilot/Agent/CopilotOpenAiAgentChatClientFactory.cs","ColorVision/Copilot/Agent/CopilotCancellationGuardChatClient.cs","ColorVision/Copilot/Agent/CopilotOpenAiRequestIdChatClient.cs","ColorVision/Copilot/CopilotProviderRequestId.cs","ColorVision/Copilot/Context/CopilotConversationCompactionPlanner.cs","ColorVision/Copilot/Context/CopilotConversationCompactionPrompt.cs","ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotWorkspaceValidationAdmissionTests.cs","Test/ColorVision.Copilot.Tests/CopilotPatchToolAvailabilityTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentTaskHostQueueDispatchTests.cs","Test/ColorVision.Copilot.Tests/CopilotAnthropicProviderFailureTests.cs","Test/ColorVision.Copilot.Tests/CopilotAnthropicHttpFailureTests.cs","Test/ColorVision.Copilot.Tests/CopilotAnthropicHttpErrorBoundaryTests.cs","Test/ColorVision.Copilot.Tests/CopilotHostedTurnCompletionTests.cs","Test/ColorVision.Copilot.Tests/CopilotHostedTurnUsageTests.cs","Test/ColorVision.Copilot.Tests/CopilotProviderPayloadErrorTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentExecutionContractRetryTests.cs","Test/ColorVision.Copilot.Tests/CopilotCodexApprovalsReviewerTests.cs","Test/ColorVision.Copilot.Tests/CopilotOpenAiProviderRetryTests.cs","Test/ColorVision.Copilot.Tests/CopilotProviderStreamCleanupTests.cs","Test/ColorVision.Copilot.Tests/CopilotProviderStreamCleanupTimeoutTests.cs","Test/ColorVision.Copilot.Tests/CopilotOpenAiRequestIdTests.cs","Test/ColorVision.Copilot.Tests/CopilotContextWindowRecoveryCancellationTests.cs","Test/ColorVision.Copilot.Tests/CopilotCompactionTerminalEvidenceRequestTests.cs","Test/ColorVision.Copilot.Tests/CopilotConversationCompactionIntegrityTests.cs","Test/ColorVision.Copilot.Tests/CopilotLocalReadFollowUpAdmissionTests.cs"]
 related: ["copilot.runtime","copilot.tool-contracts","copilot.lifecycle","copilot.interactions","copilot.session-tools"]
 ---
 
@@ -43,9 +43,19 @@ CopilotToolRegistry
   -> 完成后序列化 AgentSession 到当前会话检查点
 ```
 
+## 工具可见性与任务意图
+
+工具可见性表示本轮可以向模型提供哪些能力，不代表用户要求执行全部能力。工作区的 `PreviewWorkspacePatchEnvelope`、`ApplyWorkspacePatchEnvelope` 和 `RollbackWorkspacePatchEnvelope` 按冻结的可写路径、模式、sandbox 与明确禁止修改的要求开放，不再依赖“请修改”“应用补丁”等动作词。其读取文件、搜索文本与目录发现工具同步可用，仍遵守精确文件范围和委派限制；项目指令也随可写能力加载，但不把普通应用任务强制改判为源码检查。附加只读目录不会成为可写目录或可信项目指令根，显式外部目录仍沿用原有范围准入规则。
+
+Flow patch 仍要求当前请求或上下文与流程相关；修改工具不因“改成”等同义表达或附带“解释为什么”而隐藏。Plan、Review、Diagnose、Chat、只读 sandbox、空请求和明确禁止修改仍阻止 patch；实际应用继续经过原生审批及路径、文件指纹或 Flow revision 复核。`NeedsWorkspaceEdit/Create/Rollback` 等任务意图判断仍用于执行证据要求，不能因为工具可见就强制进行修改。`CopilotPatchToolAvailabilityTests` 覆盖真实表达、读取能力、指令加载、范围隔离和执行前写入拒绝。
+
+`RunWorkspaceValidation` 在有可写根目录、允许修改且非只读 sandbox 的请求中稳定提供，不要求请求同时命中修改／创建关键词，也不因可见就增加必须运行验证的完成条件。只有单个文件的写权限不足以运行构建；Review 仍只开放用户明确要求的有界验证。执行前保留原生审批和目标根范围复核，批准不会授权根外项目。`CopilotWorkspaceValidationAdmissionTests` 使用正式验证服务和受控进程 runner 验证可见性、批准前零启动及批准后的构建参数。
+
 ## 运行时选择与临时授权
 
 `CopilotAgentRuntimeRouter` 将配置完整的 OpenAI-compatible 和 Anthropic-compatible Profile 送入 Agent Framework。运行时不会在失败后自动切换执行器，也不会重放已经产生文本或工具调用的请求，避免写操作被重复执行。模型设置不暴露运行时开关。输入框的访问状态通过同一个可变 `CopilotAgentAccessContext` 进入 `CopilotTurnRequest`、`CopilotAgentRequest` 和正在运行的 Framework Session，但不会写入会话状态。
+
+官方 `api.openai.com` Profile 的普通 Chat、图片理解、连接诊断、标题／压缩辅助请求和 Agent 均统一使用 Responses API；第三方 OpenAI-compatible Profile 仍走 Chat Completions，Anthropic-compatible Profile 仍走 Messages。原始 Chat 请求使用 `/responses`、`instructions`、`input`、`max_output_tokens` 与 `store=false`，图片块使用 `input_image` 数据 URL；GPT-6 Astra 不发送 `temperature`，推理通过 `reasoning.effort` 发送。流式读取识别 `response.output_text.delta`、`response.completed` 和 `response.incomplete`，并从完成事件内的 `response.usage` 合并用量；非流式读取只收集 `output` 中的 `output_text`。完成事件的整份正文不会在已发布 delta 后重复追加。
 
 Anthropic 官方适配器的 `AnthropicSseException` 进入同一供应商错误处理边界。尚未输出内容或工具调用时，只有 SDK 明确分类的 `overloaded_error`、`rate_limit_error`、`api_error` 和 `timeout_error` 可按现有次数／退避限制重试；认证、请求及未知错误不自动重试。SSE 错误不是 HTTP 错误状态，重试诊断保留固定错误类型，不伪造 429 等状态码。已经产生正文或工具执行记录后，任何该类 SSE 中断都保留进展，以 `ProviderFailure` 完成账本与检查点收尾，不重发已产生内容的调用。`CopilotAnthropicProviderFailureTests` 使用安装版本的正式适配器和受控 SSE，覆盖错误分类、正文后不重发、实际工具完成后的恢复，以及严格 Turn 终态；失败流未由适配器发布正式 usage 时仍按预算估算处理，不把底层 `message_start` 字段冒充已返回的完整用量。
 
@@ -61,7 +71,7 @@ Anthropic 官方适配器的 `AnthropicSseException` 进入同一供应商错误
 
 ### OpenAI HTTP 重试预算
 
-`CopilotOpenAiAgentChatClientFactory` 为 Chat Completions 和 Responses 共用的 `OpenAIClientOptions` 设置 `ClientRetryPolicy(0)`，关闭 SDK 内部重试。重试只由 ColorVision 的供应商重试层执行，因此一次预算尝试对应一次 HTTP 请求，不会被 SDK 再放大为四次。429/503 等瞬态失败按宿主上限重试，401 等永久失败不重试；正文、推理内容或工具调用已经发布后，不重放这一模型调用。已完成工具后发起的下一次模型调用可以在尚无新输出时有限重试，但不会重新执行此前工具。`CopilotOpenAiProviderRetryTests` 使用正式工厂、正式适配器和受控回环 HTTP，核验两条路由的实际请求数、`ProviderCalls`、估算用量及工具完成后的 `ProviderFailure` 检查点，不连接真实供应商账户。
+`CopilotOpenAiAgentChatClientFactory` 为第三方 Chat Completions 和官方 Responses 共用的 `OpenAIClientOptions` 设置 `ClientRetryPolicy(0)`，关闭 SDK 内部重试。重试只由 ColorVision 的供应商重试层执行，因此一次预算尝试对应一次 HTTP 请求，不会被 SDK 再放大为四次。429/503 等瞬态失败按宿主上限重试，401 等永久失败不重试；正文、推理内容或工具调用已经发布后，不重放这一模型调用。已完成工具后发起的下一次模型调用可以在尚无新输出时有限重试，但不会重新执行此前工具。`CopilotOpenAiProviderRetryTests` 使用正式工厂、正式适配器和受控回环 HTTP，核验两条路由的实际请求数、`ProviderCalls`、估算用量及工具完成后的 `ProviderFailure` 检查点，不连接真实供应商账户。
 
 `CopilotOpenAiRequestIdChatClient` 为两条路由补充同一次失败响应的请求 ID：只读取 SDK 异常中的 `x-request-id`、`request-id` 或 `x-amzn-requestid` 响应头，使用创建客户端时与凭据相同的 API key 快照去除凭据回显，再规范化并保存到原异常的安全元数据。它不读取错误正文，不更改 SDK 异常类型、原始响应或 `Retry-After`，也不保存全局“最近请求 ID”。重试事件使用对应尝试的 ID；已有工具进展后的中断诊断附加最后失败尝试的 ID，不误用前一次重试的 ID。头缺失或读取失败时仍保留原错误。`CopilotOpenAiRequestIdTests` 通过正式工厂和受控 HTTP 核验两路头名、长凭据脱敏、创建后的配置变化、并发隔离、退避和终态诊断。
 
@@ -87,7 +97,9 @@ Anthropic 非成功 HTTP 响应同样进入供应商错误收尾。生产适配�
 
 ## 稳定只读工具与动态暴露
 
-`Auto` 模式只要拥有当前解决方案的搜索根，就稳定提供 `SearchFiles`、`GrepText`、`ReadLocalFile` 和 `ListDirectory`。它们不再按当前句子的关键词裁剪；模型依据名称、描述和 JSON Schema 自主决定是否调用，因此普通概念问答仍可不执行搜索。搜索发现的根目录内文件可以在同一 Agent 运行中继续读取，不要求文件路径必须在发送问题前已经显式出现；读取和列目录仍做规范化根边界检查，并拒绝经重解析目录越界。公开网页/最新信息与直接 URL 仍分别控制 `WebSearch` 和 `FetchUrl` 的动态暴露。数据库、日志、流程统计、系统诊断和通用 Shell 同样属于稳定内置能力。外部 MCP 中名称或描述可识别为文件搜索、网页搜索和 URL 读取的工具仍服从对应意图门槛，其他设备、状态与业务工具继续按自身运行时可用性判断。
+`Auto` 模式的 `SearchFiles`、`GrepText`、`ReadLocalFile` 和 `ListDirectory` 按本地证据需求、可写工作区能力或有界续问记录开放；仅有搜索根并不保证所有只读短句都展示这些工具。存在会话历史，且有效 checkpoint 中的最近一轮包含对应已完成工具调用时，“继续”等短追问可保留该读取能力，失败调用之后的重试也遵循同一规则。当前文件或目录范围、精确单文件限制、模式和委派边界仍须满足；旧轮次、过期记录或新话题不能借用续问记录扩大能力。`CopilotLocalReadFollowUpAdmissionTests` 覆盖真实注册表和检查点的这些条件。
+
+模型依据名称、描述和 JSON Schema 决定是否调用可用工具，普通概念问答可不执行搜索。搜索发现的根目录内文件可以在同一 Agent 运行中继续读取，不要求文件路径必须在发送问题前已经显式出现；读取和列目录仍做规范化根边界检查，并拒绝经重解析目录越界。公开网页/最新信息与直接 URL 仍分别控制 `WebSearch` 和 `FetchUrl` 的动态暴露。数据库、日志、流程统计、系统诊断和通用 Shell 同样属于稳定内置能力。外部 MCP 中名称或描述可识别为文件搜索、网页搜索和 URL 读取的工具仍服从对应意图门槛，其他设备、状态与业务工具继续按自身运行时可用性判断。
 
 ## 只读子 Agent 与隔离
 
@@ -101,7 +113,7 @@ Anthropic 非成功 HTTP 响应同样进入供应商错误收尾。生产适配�
 
 ## 短追问与能力续租
 
-稳定的内置 Agent 能力不依赖上一轮关键词，因此“现在呢”“再检查一遍”等短追问仍能看到相同 Schema，并由模型结合会话历史重新发起结构化调用。动态或意图作用域工具仍可续租最近一轮真正成功执行过、只读、幂等且无需审批的能力；写工具和通用 Shell 不通过续租获得额外授权。checkpoint 恢复后也会用当前能力目录重新规划，不把旧调用参数当成授权。
+稳定的内置 Agent 能力不依赖上一轮关键词，因此“现在呢”“再检查一遍”等短追问仍能看到相同 Schema，并由模型结合会话历史重新发起结构化调用。动态或意图作用域工具仍可续租最近一轮已记录完成事件（包括失败结果）、只读、幂等且无需审批的能力；写工具和通用 Shell 不通过续租获得额外授权。checkpoint 恢复后也会用当前能力目录重新规划，不把旧调用参数当成授权。
 
 ## 何时强制联网证据
 

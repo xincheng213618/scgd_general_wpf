@@ -1,4 +1,4 @@
-using ColorVision.UI.LogImp;
+using ColorVision.Themes;
 using System.Diagnostics.CodeAnalysis;
 using System.Windows;
 
@@ -7,24 +7,23 @@ namespace WindowsServicePlugin.ServiceManager
     /// <summary>
     /// ServiceInstallWindow.xaml 的交互逻辑
     /// </summary>
-    [SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "WPF window releases the log binder in OnClosed.")]
+    [SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "The window releases log capture in OnClosed.")]
     public partial class ServiceInstallWindow : Window
     {
         public ServiceInstallViewModel ViewModel { get; }
-        private ModuleLogViewerBinder? _logBinder;
 
         public ServiceInstallWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
             ViewModel = new ServiceInstallViewModel();
             DataContext = ViewModel;
-            _logBinder = new ModuleLogViewerBinder(LogViewer, "WindowsServicePlugin.ServiceManager");
+            OperationLog.StartCapture();
         }
 
         protected override void OnClosed(EventArgs e)
         {
-            _logBinder?.Dispose();
-            _logBinder = null;
+            OperationLog.Dispose();
             base.OnClosed(e);
         }
     }

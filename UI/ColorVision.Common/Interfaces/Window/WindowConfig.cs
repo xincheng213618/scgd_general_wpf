@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Interop;
 using System.Windows.Media;
 
 namespace ColorVision.UI
@@ -26,26 +27,37 @@ namespace ColorVision.UI
         // 入口：在窗口构造后调用
         public void SetWindow(Window window)
         {
-            // 在 SourceInitialized 之后恢复（此时有 CompositionTarget，可用于 DPI 转换）
             window.SourceInitialized -= OnSourceInitialized;
-            window.SourceInitialized += OnSourceInitialized;
-
             window.Closing -= Window_Closing;
-            window.Closing += Window_Closing;
-
             window.SizeChanged -= Window_LocationOrSizeChanged;
-            window.SizeChanged += Window_LocationOrSizeChanged;
-
             window.LocationChanged -= Window_LocationOrSizeChanged;
-            window.LocationChanged += Window_LocationOrSizeChanged;
+
+            // HWND creation can raise LocationChanged before SourceInitialized. Keep the saved
+            // bounds intact until restoration finishes, and never create a handle just to inspect it.
+            if (new WindowInteropHelper(window).Handle == IntPtr.Zero)
+                window.SourceInitialized += OnSourceInitialized;
+            else
+                TrackWindowChanges(window);
         }
 
         private void OnSourceInitialized(object? sender, EventArgs e)
         {
             if (sender is Window window)
             {
+                window.SourceInitialized -= OnSourceInitialized;
                 RestoreWindow(window);
+                TrackWindowChanges(window);
             }
+        }
+
+        private void TrackWindowChanges(Window window)
+        {
+            window.Closing -= Window_Closing;
+            window.Closing += Window_Closing;
+            window.SizeChanged -= Window_LocationOrSizeChanged;
+            window.SizeChanged += Window_LocationOrSizeChanged;
+            window.LocationChanged -= Window_LocationOrSizeChanged;
+            window.LocationChanged += Window_LocationOrSizeChanged;
         }
 
         private void Window_LocationOrSizeChanged(object? sender, EventArgs e)
@@ -173,8 +185,7 @@ namespace ColorVision.UI
         private static IEnumerable<DipScreen> GetDipScreens(Visual visual)
         {
             // 将 WinForms 的像素矩形转换成 WPF 的 DIP 矩形
-            var source = PresentationSource.FromVisual(visual);
-            var tf = source?.CompositionTarget?.TransformFromDevice ?? Matrix.Identity;
+            var tf = GetTransformFromDevice(visual);
 
             foreach (var s in Screen.AllScreens)
             {
@@ -233,8 +244,7 @@ namespace ColorVision.UI
 
         private static DipScreen GetPrimaryDipScreen(Visual visual)
         {
-            var source = PresentationSource.FromVisual(visual);
-            var tf = source?.CompositionTarget?.TransformFromDevice ?? Matrix.Identity;
+            var tf = GetTransformFromDevice(visual);
 
             var p = Screen.PrimaryScreen;
             var waTL = tf.Transform(new System.Windows.Point(p.WorkingArea.Left, p.WorkingArea.Top));
@@ -248,6 +258,21 @@ namespace ColorVision.UI
                 WorkingArea = new Rect(waTL, waBR),
                 Bounds = new Rect(bTL, bBR)
             };
+        }
+
+        private static Matrix GetTransformFromDevice(Visual visual)
+        {
+            var target = PresentationSource.FromVisual(visual)?.CompositionTarget;
+            if (target == null && visual is Window window)
+            {
+                // EnsureHandle raises SourceInitialized before attaching the window's root visual.
+                // Reuse the existing source without creating a handle as a side effect of reading geometry.
+                var handle = new WindowInteropHelper(window).Handle;
+                if (handle != IntPtr.Zero)
+                    target = HwndSource.FromHwnd(handle)?.CompositionTarget;
+            }
+
+            return target?.TransformFromDevice ?? Matrix.Identity;
         }
 
         private static double Clamp(double value, double min, double max)

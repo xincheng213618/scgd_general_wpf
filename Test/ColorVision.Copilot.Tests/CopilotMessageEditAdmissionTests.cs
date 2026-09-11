@@ -30,7 +30,9 @@ public sealed class CopilotMessageEditAdmissionTests
         StaTest.Run(() =>
         {
             using var fixture = new Fixture();
-            using var context = new PausedAdmissionContext();
+            using var context = new CopilotPausedAdmissionContext(
+                TestTimeout,
+                "The edited send did not finish after image admission.");
             var previousContext = SynchronizationContext.Current;
             Task? send = null;
             try
@@ -293,32 +295,39 @@ public sealed class CopilotMessageEditAdmissionTests
         Assert.InRange(stream.Length, 1, CopilotImagePayloadLoader.MaximumImageBytes);
     }
 
-    private sealed class PausedAdmissionContext : SynchronizationContext, IDisposable
+}
+
+internal sealed class CopilotPausedAdmissionContext(
+    TimeSpan timeout,
+    string timeoutMessage) : SynchronizationContext, IDisposable
+{
+    private readonly ConcurrentQueue<(SendOrPostCallback Callback, object? State)> _callbacks = new();
+    private readonly AutoResetEvent _posted = new(false);
+
+    public override void Post(SendOrPostCallback callback, object? state)
     {
-        private readonly ConcurrentQueue<(SendOrPostCallback Callback, object? State)> _callbacks = new();
-        private readonly AutoResetEvent _posted = new(false);
-        public override void Post(SendOrPostCallback callback, object? state)
-        {
-            _callbacks.Enqueue((callback, state));
-            _posted.Set();
-        }
-        public bool WaitForCallback(TimeSpan timeout) => _posted.WaitOne(timeout);
-        public void Complete(Task operation)
-        {
-            var deadline = DateTime.UtcNow + TestTimeout;
-            var waits = new[] { _posted, ((IAsyncResult)operation).AsyncWaitHandle };
-            while (!operation.IsCompleted)
-            {
-                if (_callbacks.TryDequeue(out var callback))
-                {
-                    callback.Callback(callback.State);
-                    continue;
-                }
-                var remaining = deadline - DateTime.UtcNow;
-                Assert.True(remaining > TimeSpan.Zero, "The edited send did not finish after image admission.");
-                Assert.NotEqual(WaitHandle.WaitTimeout, WaitHandle.WaitAny(waits, remaining));
-            }
-        }
-        public void Dispose() => _posted.Dispose();
+        _callbacks.Enqueue((callback, state));
+        _posted.Set();
     }
+
+    public bool WaitForCallback(TimeSpan waitTimeout) => _posted.WaitOne(waitTimeout);
+
+    public void Complete(Task operation)
+    {
+        var deadline = DateTime.UtcNow + timeout;
+        var waits = new[] { _posted, ((IAsyncResult)operation).AsyncWaitHandle };
+        while (!operation.IsCompleted)
+        {
+            if (_callbacks.TryDequeue(out var callback))
+            {
+                callback.Callback(callback.State);
+                continue;
+            }
+            var remaining = deadline - DateTime.UtcNow;
+            Assert.True(remaining > TimeSpan.Zero, timeoutMessage);
+            Assert.NotEqual(WaitHandle.WaitTimeout, WaitHandle.WaitAny(waits, remaining));
+        }
+    }
+
+    public void Dispose() => _posted.Dispose();
 }

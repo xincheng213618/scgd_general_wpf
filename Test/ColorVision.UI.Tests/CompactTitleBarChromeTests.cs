@@ -14,6 +14,117 @@ namespace ColorVision.UI.Tests;
 /// <summary>Exercises isolated synthetic windows; never constructs MainWindow or loads device/workspace configuration.</summary>
 public sealed class CompactTitleBarChromeTests
 {
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference CreateClosedEarlyChromeReference(ChromeHost host, double titleContentHeight)
+    {
+        double originalTopMargin = host.ContentRoot.Margin.Top;
+        host.TitleBar.Children.Remove(host.CaptionButtonsPlaceholder);
+        host.ContentRoot.Children.Clear();
+        host.TitleBar.Background = Brushes.Beige;
+        // The taller case acquires its height from content during the first measure;
+        // ActualHeight is still zero when SourceInitialized attaches the controller.
+        host.TitleBar.Children.Add(new Border { Height = titleContentHeight });
+        var topBar = new Grid();
+        topBar.ColumnDefinitions.Add(new ColumnDefinition());
+        topBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        topBar.Children.Add(host.TitleBar);
+        Grid.SetColumn(host.CaptionButtonsPlaceholder, 1);
+        host.CaptionButtonsPlaceholder.IsHitTestVisible = false;
+        topBar.Children.Add(host.CaptionButtonsPlaceholder);
+        host.ContentRoot.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        host.ContentRoot.RowDefinitions.Add(new RowDefinition());
+        host.ContentRoot.Children.Add(topBar);
+        var body = new Border { Background = Brushes.White };
+        Grid.SetRow(body, 1);
+        host.ContentRoot.Children.Add(body);
+
+        var controller = host.CreateController();
+        int sourceInitializedCount = 0;
+        int contentRenderedCount = 0;
+        bool attached = false;
+        void OnSourceInitialized(object? sender, EventArgs args)
+        {
+            host.Window.SourceInitialized -= OnSourceInitialized;
+            sourceInitializedCount++;
+            IntPtr createdHandle = new WindowInteropHelper(host.Window).Handle;
+            Assert.NotEqual(IntPtr.Zero, createdHandle);
+            HwndSource source = Assert.IsType<HwndSource>(HwndSource.FromHwnd(createdHandle));
+            Assert.Null(source.RootVisual);
+            Assert.Null(PresentationSource.FromVisual(host.Window));
+            Assert.NotNull(source.CompositionTarget);
+            Assert.True(source.CompositionTarget.TransformFromDevice.M11 > 0);
+            Assert.True(GetWindowRect(createdHandle, out NativeRect bounds));
+            Assert.True(bounds.Right > bounds.Left && bounds.Bottom > bounds.Top);
+            Assert.False(host.Window.IsLoaded);
+            Assert.Equal(0, host.TitleBar.ActualHeight);
+
+            attached = AttachForCurrentSystem(host, controller);
+            Assert.Null(source.RootVisual);
+        }
+        void OnContentRendered(object? sender, EventArgs args) => contentRenderedCount++;
+
+        host.Window.SourceInitialized += OnSourceInitialized;
+        host.Window.ContentRendered += OnContentRendered;
+        try
+        {
+            IntPtr handle = new WindowInteropHelper(host.Window).EnsureHandle();
+            Assert.Equal(1, sourceInitializedCount);
+            Assert.Equal(0, contentRenderedCount);
+            Assert.False(host.Window.IsLoaded);
+            Assert.False(host.Window.IsVisible);
+            Assert.False(IsWindowVisible(handle));
+
+            host.Window.Show();
+            Assert.True(SetWindowPos(handle, new IntPtr(1), 0, 0, 0, 0, 0x0013)); // HWND_BOTTOM; NOSIZE|NOMOVE|NOACTIVATE
+            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+            host.Window.UpdateLayout();
+            Assert.Equal(1, sourceInitializedCount);
+            Assert.Equal(1, contentRenderedCount);
+            Assert.True(host.Window.IsLoaded);
+            Assert.Same(host.Window, HwndSource.FromHwnd(handle).RootVisual);
+            Assert.True(host.ContentRoot.ActualWidth > 0 && body.ActualHeight > 0);
+
+            if (attached)
+            {
+                WindowChrome chrome = Assert.IsType<WindowChrome>(WindowChrome.GetWindowChrome(host.Window));
+                Assert.True(host.TitleBar.ActualHeight >= titleContentHeight);
+                Assert.Equal(host.TitleBar.ActualHeight + originalTopMargin, chrome.CaptionHeight, precision: 3);
+                Assert.Equal(chrome.ResizeBorderThickness.Top + chrome.CaptionHeight, chrome.GlassFrameThickness.Top, precision: 3);
+                Assert.Same(Brushes.Transparent, host.Window.Background);
+                Assert.Null(host.CaptionButtonsPlaceholder.Background);
+
+                Rect titleBounds = host.TitleBar.TransformToAncestor(host.ContentRoot).TransformBounds(new Rect(host.TitleBar.RenderSize));
+                Rect placeholderBounds = host.CaptionButtonsPlaceholder.TransformToAncestor(host.ContentRoot).TransformBounds(new Rect(host.CaptionButtonsPlaceholder.RenderSize));
+                Rect bodyBounds = body.TransformToAncestor(host.ContentRoot).TransformBounds(new Rect(body.RenderSize));
+                Assert.True(placeholderBounds.Width > 0);
+                Assert.True(titleBounds.Right <= placeholderBounds.Left + 0.01);
+                Assert.True(placeholderBounds.Bottom <= bodyBounds.Top + 0.01);
+                Assert.True(placeholderBounds.Right <= host.ContentRoot.ActualWidth + 0.01);
+                Assert.Equal(2, NativeHitTest(handle, host.TitleBar.PointToScreen(new Point(host.TitleBar.ActualWidth * .35, host.TitleBar.ActualHeight - 1))));
+                Assert.Equal(1, NativeHitTest(handle, body.PointToScreen(new Point(body.ActualWidth * .35, 1))));
+            }
+
+            // Let any metric refresh finish; it must not manufacture a second first-render event.
+            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+            Assert.Equal(1, contentRenderedCount);
+            host.Window.Close();
+            Assert.False(controller.IsAttached);
+            if (attached)
+                Assert.False(controller.TryAttach());
+            return new WeakReference(controller);
+        }
+        finally
+        {
+            host.Window.SourceInitialized -= OnSourceInitialized;
+            host.Window.ContentRendered -= OnContentRendered;
+            host.Window.Close();
+            // On the supported path Close owns cleanup; only clean up explicitly
+            // when setup/assertions failed before the controller could attach.
+            if (!attached)
+                controller.Dispose();
+        }
+    }
+
     [Fact]
     public void AttachBeforeHandleCreationDoesNotCreateAHandleOrChangeTheWindow()
     {
@@ -439,10 +550,14 @@ public sealed class CompactTitleBarChromeTests
             {
                 [ChromeHost.BackgroundResourceKey] = Brushes.Beige
             });
-            // A real Loaded visual tree is needed for WPF's dynamic-resource invalidation walk.
-            host.Window.Show();
             using var controller = host.CreateController();
-            if (!AttachForCurrentSystem(host, controller))
+            bool attached = false;
+            host.Window.SourceInitialized += (_, _) => attached = AttachForCurrentSystem(host, controller);
+            host.Window.Show();
+            // Match the production SourceInitialized -> Loaded -> resource refresh order.
+            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+            Assert.True(host.Window.IsLoaded);
+            if (!attached)
                 return;
             WindowChrome chrome = WindowChrome.GetWindowChrome(host.Window);
 
@@ -469,6 +584,38 @@ public sealed class CompactTitleBarChromeTests
             controller.SetFullScreen(false);
             Assert.Same(Brushes.Transparent, host.Window.Background);
             controller.Dispose();
+            Assert.Same(Brushes.White, host.Window.Background);
+        });
+    }
+
+    [Fact]
+    public void BackgroundInvalidationCannotCoverNativeButtonsWhileChromeIsActive()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var host = new ChromeHost();
+            host.Window.Show();
+            using var controller = host.CreateController();
+            if (!AttachForCurrentSystem(host, controller))
+                return;
+            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+            WindowChrome chrome = WindowChrome.GetWindowChrome(host.Window);
+
+            // WPF can discard SetCurrentValue's override while the resource expression
+            // remains attached, without any CurrentUIThemeChanged notification.
+            host.Window.InvalidateProperty(Window.BackgroundProperty);
+
+            Assert.Same(Brushes.Transparent, host.Window.Background);
+            Assert.Same(chrome, WindowChrome.GetWindowChrome(host.Window));
+            controller.SetFullScreen(true);
+            Assert.Same(Brushes.Beige, host.Window.Background);
+            host.Window.Resources[ChromeHost.BackgroundResourceKey] = Brushes.Black;
+            Assert.Same(Brushes.Black, host.Window.Background);
+            controller.SetFullScreen(false);
+            host.Window.InvalidateProperty(Window.BackgroundProperty);
+            Assert.Same(Brushes.Transparent, host.Window.Background);
+            controller.Dispose();
+            host.Window.Resources[ChromeHost.BackgroundResourceKey] = Brushes.White;
             Assert.Same(Brushes.White, host.Window.Background);
         });
     }

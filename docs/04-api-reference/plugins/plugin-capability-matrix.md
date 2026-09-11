@@ -22,7 +22,7 @@ related: ["plugins.index","plugins.model","plugins.getting-started","plugins.con
 | [Conoscope](./standard-plugins/conoscope.md) · `Plugins/Conoscope/` | VAM/锥镜图像、关注点、参考轴、预处理、色域与对比度分析 | 工具 → VAM；符合条件的 ImageEditor 右键入口；视图 → MVSVideo | 本地 CVCIE、Engine 测量采集和 MVS 观察相机是三种来源；MVS 另需海康驱动及 `MvCameraControl.dll`，采集可能操作设备与数据库 |
 | [Spectrum](./standard-plugins/spectrum.md) · `Plugins/Spectrum/` | 光谱测量、标定分组、EQE、CIE 与结果导出 | 工具中的光谱窗口；窗口菜单与状态栏 | 光谱仪、快门/滤光轮/SMU、串口、native DLL 和许可证；测量及校零会操作设备，结果保存到 SQLite |
 | [SystemMonitor](./standard-plugins/system-monitor.md) · `Plugins/SystemMonitor/` | CPU/RAM、磁盘、网络、进程、GPU 和缓存信息 | 工具 → 系统监控；同名设置页；可选状态栏项 | Windows 性能计数器、CUDA 信息和网卡；缓存统计与清理范围不同，清理会删除文件 |
-| [WindowsServicePlugin](./standard-plugins/windows-service.md) · `Plugins/WindowsServicePlugin/` | 本机服务管理、在线选包、安装、数据库与配置迁移 | 应用与工具 → 内部工具 → 服务管理器；安装向导 | Windows 服务、MySQL、MQTT、服务包及权限代理；安装/恢复会改文件、数据库、服务与进程 |
+| [WindowsServicePlugin](./standard-plugins/windows-service.md) · `Plugins/WindowsServicePlugin/` | 本机服务管理、在线选包、安装、数据库与配置迁移 | 帮助 → 服务管理器；应用与工具 → 内部工具 → 服务管理器；安装向导 | Windows 服务、MySQL、MQTT、服务包及权限代理；安装/恢复会改文件、数据库、服务与进程 |
 
 应用内角色、Windows 权限和设备条件是不同前提。`ServiceManagerAppProvider` 声明应用内 `Administrator` 权限，但服务管理器还存在向导及旧工具入口；实际服务操作需要兼容的权限代理和目标资源权限。其余插件也不能仅凭窗口可打开就推断设备、路径或许可证已就绪。
 
@@ -36,7 +36,7 @@ related: ["plugins.index","plugins.model","plugins.getting-started","plugins.con
 | 宿主设置页 | `SystemMonitorProvider : IConfigSettingProvider` | 设置页与菜单窗口共用 `SystemMonitorControl`；插件持有 `IConfig` 对象不等于注册了独立设置页 |
 | ImageEditor 右键 | `ConoscopeImageViewContextMenu : IIEditorToolContextMenu` | 由 `ConoscopeModuleService` 检查当前文件与通道条件后显示入口 |
 | 图卡扩展与启动 | Pattern 的 `IPattern` 发现、`PatternFeatureLauncher` | 从已装载程序集发现图卡；窗口可调用 `OpenImageProjectorCommand` 打开投影工具 |
-| 应用工具与向导 | `ServiceManagerAppProvider`、`InstallServiceManager` | 前者提供非模态窗口，后者是模态向导步骤；旧 `InstallTool` 仍声明 `ServiceLog` 菜单位置并实现主窗口初始化器 |
+| 帮助菜单、应用工具与向导 | `MenuServiceManager`、`ServiceManagerAppProvider`、`InstallServiceManager` | 前两者打开同一非模态服务管理窗口并要求应用内 Administrator 权限，后者是模态向导步骤；旧 `InstallTool` 仍声明 `ServiceLog` 菜单位置并实现主窗口初始化器 |
 | Socket 与调度 | Spectrum 的五个 `ISocketJsonHandler` 和 `Job/` 测量/校零任务 | 复用测量 Manager；传输服务与业务指令见 [Spectrum Socket](./standard-plugins/spectrum-socket.md)，需要服务启用与相应设备条件 |
 
 Conoscope 的 `ConoscopeViewState` / `ConoscopeDocument` 属于标签页和文档状态；全局配置、参考存储与窗口工作副本见[配置与持久化](./standard-plugins/conoscope.md#配置-working-copy、参考与持久化)。Pattern、ImageProjector、Spectrum 和服务管理器的配置也由各模块维护，不能把配置类型列表当作宿主设置页列表。

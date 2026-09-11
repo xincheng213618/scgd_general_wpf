@@ -2690,6 +2690,24 @@ public static string Conoscope_AllFocusPoints {
                 return ResourceManager.GetString("MsgFocusPointsUnavailable", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 H/V 预览暂不转换关注点，请先清空关注点后再切换。 的本地化字符串。
+        /// </summary>
+        public static string MsgHorizontalVerticalFocusPointsUnsupported {
+            get {
+                return ResourceManager.GetString("MsgHorizontalVerticalFocusPointsUnsupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 H/V 预览暂不支持关注点编辑 的本地化字符串。
+        /// </summary>
+        public static string TipHorizontalVerticalFocusPointsUnsupported {
+            get {
+                return ResourceManager.GetString("TipHorizontalVerticalFocusPointsUnsupported", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 创建 POI 模板失败。 的本地化字符串。

@@ -23,7 +23,7 @@ namespace ProjectARVRPro.Process.OpticCenter
             {
                 log?.Info("光轴校准(Dynamic)");
 
-                var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                var values = ctx.GetMeasureResults();
                 if (values.Count > 0)
                 {
                     string? fileUrl = values[0].FileUrl;

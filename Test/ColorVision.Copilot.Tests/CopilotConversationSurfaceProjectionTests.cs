@@ -4,6 +4,47 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotConversationSurfaceProjectionTests
 {
+    [Theory]
+    [InlineData(0, false, 0)]
+    [InlineData(1, false, 1)]
+    [InlineData(2, true, 1)]
+    [InlineData(3, true, 2)]
+    [InlineData(-1, true, 2)]
+    public void HistoryBoundsKeepStopBeforeSemanticsAcrossTheCompactionBoundary(int stopIndex, bool hasSummary, int expectedCount)
+    {
+        var conversation = new CopilotConversationRecord();
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "First"));
+        var boundary = new CopilotChatMessage(CopilotChatRole.Assistant, "Boundary");
+        conversation.Messages.Add(boundary);
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Recent visible") { RequestContent = "Recent model" });
+        conversation.Compaction = new CopilotConversationCompaction
+        {
+            StrategyVersion = CopilotConversationCompaction.CurrentStrategyVersion,
+            Summary = "Carried history",
+            ThroughMessageId = boundary.Id,
+        };
+        var stopBefore = stopIndex < 0
+            ? new CopilotChatMessage(CopilotChatRole.User, "Not a member")
+            : stopIndex < conversation.Messages.Count ? conversation.Messages[stopIndex] : null;
+
+        var surface = CopilotConversationCompactionContext.CaptureSurface(conversation, stopBefore);
+        var model = CopilotConversationCompactionContext.Build(conversation, stopBefore, useModelContent: true);
+        var visible = CopilotConversationCompactionContext.Build(conversation, stopBefore, useModelContent: false);
+
+        Assert.Equal(hasSummary, surface.HasCompactionSummary);
+        Assert.Equal(expectedCount, model.Count);
+        Assert.Equal(expectedCount, visible.Count);
+        if (hasSummary)
+            Assert.Contains("Carried history", model[0].Content, StringComparison.Ordinal);
+        if (expectedCount == 2)
+        {
+            Assert.Equal("Recent model", model[1].Content);
+            Assert.Equal("Recent visible", visible[1].Content);
+        }
+        if (!hasSummary && expectedCount == 1)
+            Assert.Equal("First", model[0].Content);
+    }
+
     [Fact]
     public void ProjectionSeparatesCurrentShadowedAndLogOnlyMessages()
     {

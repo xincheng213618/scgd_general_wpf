@@ -1,135 +1,187 @@
 ﻿<Window x:Class="ColorVision.Scheduler.TaskViewerWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.Scheduler"
-        xmlns:properties="clr-namespace:ColorVision.Scheduler.Properties"
-        mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance local:QuartzSchedulerManager}"
-        Title="{x:Static properties:Resources.TaskViewerWindow}" Height="768" Width="1024" Background="{StaticResource GlobalBackground}">
-    <Grid>
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ColorVision.Scheduler" xmlns:properties="clr-namespace:ColorVision.Scheduler.Properties"
+        Title="{x:Static properties:Resources.TaskViewerWindow}" Width="840" MinWidth="740" MinHeight="340" SizeToContent="Height"
+        Background="{DynamicResource CV.Surface.Window}" Foreground="{DynamicResource CV.Text.Primary}"
+        UseLayoutRounding="True" Loaded="Window_Loaded">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Presentation/SchedulerStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="TaskCard" TargetType="ListViewItem">
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="Margin" Value="0,0,0,10"/>
+                <Setter Property="Padding" Value="18,14"/>
+                <Setter Property="Background" Value="{DynamicResource CV.Surface.Control}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource CV.Border.Weak}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListViewItem">
+                            <Border x:Name="Card" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                                <ContentPresenter/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource CV.Accent.Primary}"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource CV.Accent.Primary}"/>
+                                    <Setter TargetName="Card" Property="Background" Value="{DynamicResource CV.Surface.Alternate}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Grid Margin="24,20,24,14">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        
-        <!-- Top toolbar -->
-        <DockPanel Grid.Row="0">
-            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.CreateTask}" FontWeight="Bold" Click="CreateTaskButton_Click" Padding="10,5" Margin="5"/>
-            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
-                <Button Content="{x:Static properties:Resources.Sched_ExecHistory}" Click="ViewAllHistory_Click" Margin="5" ToolTip="{x:Static properties:Resources.Sched_ExecHistoryTooltip}"/>
-                <Button Content="{x:Static properties:Resources.Sched_ExportCsv}" Click="ExportCSV_Click" Margin="5" ToolTip="{x:Static properties:Resources.Sched_ExportCsvTooltip}"/>
-                <Button Content="{x:Static properties:Resources.Sched_ExportJson}" Click="ExportJSON_Click" Margin="5" ToolTip="{x:Static properties:Resources.Sched_ExportJsonTooltip}"/>
-                <Button Content="{x:Static properties:Resources.Sched_ExportReport}" Click="ExportReport_Click" Margin="5" ToolTip="{x:Static properties:Resources.Sched_ExportReportTooltip}"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal">
-                <Button  Content="{x:Static properties:Resources.PauseAll}" Command="{Binding PauseAllCommand}"  Margin="5"/>
-                <Button  Content="{x:Static properties:Resources.ResumeAll}" Command="{Binding ResumeAllCommand}"  Margin="5"/>
+        <DockPanel Margin="0,0,0,18">
+            <Button x:Name="CreateButton" DockPanel.Dock="Right" Content="{x:Static properties:Resources.CreateTask}"
+                    Style="{StaticResource SchedulerPrimaryAction}" Click="CreateTaskButton_Click" VerticalAlignment="Center" Margin="18,0,0,0"/>
+            <StackPanel>
+                <TextBlock Text="{x:Static properties:Resources.TaskViewerWindow}" FontSize="23" FontWeight="SemiBold"/>
+                <TextBlock x:Name="OverviewText" Text="{x:Static properties:Resources.Sched_OverviewHint}" Style="{StaticResource SchedulerSecondaryText}" Margin="0,6,0,0"/>
             </StackPanel>
         </DockPanel>
-
-        <ListView x:Name="ListViewTask" Grid.Row="2" Background="Transparent" Margin="5,0,5,5" Padding="2" SelectionMode="Extended" SelectionChanged="ListViewTask_SelectionChanged">
-            <ListView.View>
-                <GridView>
-                    <GridView.ColumnHeaderContainerStyle>
-                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
-                            <Setter Property="Visibility" Value="Visible"/>
-                            <Setter Property="Background" Value="Transparent"/>
-                        </Style>
-                    </GridView.ColumnHeaderContainerStyle>
-                    <GridViewColumn Header="{x:Static properties:Resources.GroupName}">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
-                                <TextBlock Text="{Binding GroupName}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="{x:Static properties:Resources.JobName}">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
-                                <TextBlock Text="{Binding JobName}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="{x:Static properties:Resources.RunCount}">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
-                                <TextBlock Text="{Binding RunCount}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="{x:Static properties:Resources.Sched_SuccessFail}">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
-                                <TextBlock>
-                                    <Run Text="{Binding SuccessCount, Mode=OneWay}" />
-                                    <Run Text="/"/>
-                                    <Run Text="{Binding FailureCount, Mode=OneWay}" Foreground="Red"/>
+        <DockPanel Grid.Row="1" Margin="0,0,0,12" IsEnabled="{Binding ElementName=CreateButton, Path=IsEnabled}">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button Content="{x:Static properties:Resources.Sched_ExecHistory}" Style="{StaticResource SchedulerAction}" Click="ViewAllHistory_Click"/>
+                <Button Content="{x:Static properties:Resources.Sched_Export}" Style="{StaticResource SchedulerAction}" Click="OpenButtonMenu_Click" Margin="8,0,0,0">
+                    <Button.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="{x:Static properties:Resources.Sched_ExportCsv}" Click="ExportCSV_Click"/>
+                            <MenuItem Header="{x:Static properties:Resources.Sched_ExportJson}" Click="ExportJSON_Click"/>
+                            <MenuItem Header="{x:Static properties:Resources.Sched_ExportReport}" Click="ExportReport_Click"/>
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+            </StackPanel>
+            <StackPanel x:Name="TaskActions" Orientation="Horizontal" IsEnabled="{Binding ElementName=ListViewTask, Path=HasItems}">
+                <Button Content="{x:Static properties:Resources.PauseAll}" Style="{StaticResource SchedulerAction}" Click="PauseAll_Click" ToolTip="{x:Static properties:Resources.Sched_PauseHint}"/>
+                <Button Content="{x:Static properties:Resources.ResumeAll}" Style="{StaticResource SchedulerAction}" Click="ResumeAll_Click" Margin="8,0,0,0"/>
+            </StackPanel>
+        </DockPanel>
+        <ListView x:Name="ListViewTask" Grid.Row="2" IsEnabled="{Binding ElementName=CreateButton, Path=IsEnabled}" Background="Transparent" BorderThickness="0" Padding="0"
+                  ItemContainerStyle="{StaticResource TaskCard}" SelectionMode="Extended"
+                  ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                  SelectionChanged="ListViewTask_SelectionChanged" PreviewMouseRightButtonDown="ListViewTask_PreviewMouseRightButtonDown">
+            <ListView.Template>
+                <ControlTemplate TargetType="ListView">
+                    <ScrollViewer Focusable="False" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" CanContentScroll="False">
+                        <ItemsPresenter/>
+                    </ScrollViewer>
+                </ControlTemplate>
+            </ListView.Template>
+            <ListView.ItemsPanel>
+                <ItemsPanelTemplate><StackPanel/></ItemsPanelTemplate>
+            </ListView.ItemsPanel>
+            <ListView.ItemTemplate>
+                <DataTemplate DataType="{x:Type local:SchedulerInfo}">
+                    <StackPanel>
+                        <DockPanel>
+                            <Border DockPanel.Dock="Right" Style="{StaticResource CV.Tag.Border}" VerticalAlignment="Top" Margin="14,0,0,0">
+                                <TextBlock Text="{Binding Status, Converter={StaticResource SchedulerDisplay}, ConverterParameter=Status}" FontSize="12" Foreground="{DynamicResource CV.Tag.Foreground}"/>
+                            </Border>
+                            <TextBlock Text="{Binding JobName}" FontWeight="SemiBold" FontSize="16" TextTrimming="CharacterEllipsis" ToolTip="{Binding JobName}"/>
+                        </DockPanel>
+                        <Grid Margin="0,8,0,0">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="260"/></Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,18,0">
+                                <TextBlock Style="{StaticResource SchedulerSecondaryText}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" ToolTip="{Binding GroupName}">
+                                    <Run Text="{Binding JobType, Converter={StaticResource SchedulerDisplay}, ConverterParameter=Type, Mode=OneWay}"/>
+                                    <Run Text=" · "/><Run Text="{Binding GroupName, Mode=OneWay}"/>
                                 </TextBlock>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="{x:Static properties:Resources.Sched_Priority}">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
-                                <TextBlock Text="{Binding Priority}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="{x:Static properties:Resources.Sched_ExecTimeMs}">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
-                                <TextBlock Text="{Binding LastExecutionTimeMs}" ToolTip="{Binding AverageExecutionTimeMs, StringFormat='Avg: {0}ms'}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="{x:Static properties:Resources.Sched_LastResult}">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
-                                <TextBlock Text="{Binding LastExecutionResult}" ToolTip="{Binding LastExecutionMessage}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="{x:Static properties:Resources.Status}">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
-                                <TextBlock Text="{Binding Status}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="{x:Static properties:Resources.NextFireTime}">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
-                                <TextBlock Text="{Binding NextFireTime}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="{x:Static properties:Resources.PreviousFireTime}">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
-                                <TextBlock Text="{Binding PreviousFireTime}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                </GridView>
-            </ListView.View>
+                                <TextBlock Margin="0,7,0,0" TextWrapping="Wrap">
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{StaticResource SchedulerScheduleSummary}" Mode="OneWay">
+                                            <Binding/><Binding Path="Mode"/><Binding Path="RepeatMode"/><Binding Path="RepeatCount"/>
+                                            <Binding Path="Interval"/><Binding Path="IsDelayed"/><Binding Path="Delay"/><Binding Path="CronExpression"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <DockPanel>
+                                    <TextBlock Text="{x:Static properties:Resources.Sched_NextRun}" Style="{StaticResource SchedulerSecondaryText}" Width="72"/>
+                                    <TextBlock Text="{Binding NextFireTime, Converter={StaticResource SchedulerDisplay}, ConverterParameter=Time}" FontSize="12"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,7,0,0">
+                                    <TextBlock Text="{x:Static properties:Resources.Sched_LastRun}" Style="{StaticResource SchedulerSecondaryText}" Width="72"/>
+                                    <TextBlock Text="{Binding PreviousFireTime, Converter={StaticResource SchedulerDisplay}, ConverterParameter=Time}" FontSize="12"/>
+                                </DockPanel>
+                            </StackPanel>
+                        </Grid>
+                        <Border Height="1" Background="{DynamicResource CV.Border.Weak}" Margin="0,12,0,10"/>
+                        <DockPanel>
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="12,0,0,0">
+                                <Button Content="{x:Static properties:Resources.Sched_RunNow}" Style="{StaticResource SchedulerAction}" Click="MenuTrigger_Click"/>
+                                <Button Content="{x:Static properties:Resources.Sched_EditTask}" Style="{StaticResource SchedulerAction}" Click="MenuEdit_Click" Margin="6,0,0,0"/>
+                                <Button Click="TogglePause_Click" Margin="6,0,0,0" ToolTip="{x:Static properties:Resources.Sched_PauseHint}">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource SchedulerAction}">
+                                            <Setter Property="Content" Value="{x:Static properties:Resources.Sched_PauseTask}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Status}" Value="{x:Static local:SchedulerStatus.Paused}">
+                                                    <Setter Property="Content" Value="{x:Static properties:Resources.Sched_ResumeTask}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <Button Content="•••" AutomationProperties.Name="{x:Static properties:Resources.Sched_More}" ToolTip="{x:Static properties:Resources.Sched_More}"
+                                        Style="{StaticResource SchedulerAction}" Click="TaskMore_Click" Margin="6,0,0,0"/>
+                            </StackPanel>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Style="{StaticResource SchedulerSecondaryText}">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="{x:Static properties:Resources.Sched_RunStats}">
+                                            <Binding Path="RunCount"/><Binding Path="SuccessCount"/><Binding Path="FailureCount"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <TextBlock ToolTip="{Binding LastExecutionMessage}" FontSize="12" TextTrimming="CharacterEllipsis" Margin="0,3,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{DynamicResource CV.Text.Secondary}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding RunCount}" Value="0"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                    <Run Text="{Binding LastExecutionResult, Mode=OneWay}"/><Run Text=" · "/>
+                                    <Run Text="{Binding LastExecutionTimeMs, Mode=OneWay}"/><Run Text=" ms"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
+                </DataTemplate>
+            </ListView.ItemTemplate>
         </ListView>
-        <StackPanel Grid.Row="2" Panel.ZIndex="1" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <StackPanel.Style>
-                <Style TargetType="StackPanel">
+        <Border Grid.Row="2" MinHeight="195" Padding="24" Background="{DynamicResource CV.Surface.Control}"
+                BorderBrush="{DynamicResource CV.Border.Weak}" BorderThickness="1" CornerRadius="8" Margin="0,0,0,10">
+            <Border.Style>
+                <Style TargetType="Border">
                     <Setter Property="Visibility" Value="Collapsed"/>
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding ElementName=ListViewTask, Path=HasItems}" Value="False">
-                            <Setter Property="Visibility" Value="Visible"/>
-                        </DataTrigger>
+                        <DataTrigger Binding="{Binding ElementName=ListViewTask, Path=HasItems}" Value="False"><Setter Property="Visibility" Value="Visible"/></DataTrigger>
                     </Style.Triggers>
                 </Style>
-            </StackPanel.Style>
-            <TextBlock Text="{x:Static properties:Resources.Sched_EmptyTasks}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-            <TextBlock Text="{x:Static properties:Resources.Sched_EmptyTasksHint}" Foreground="Gray" Margin="0,8,0,12" HorizontalAlignment="Center"/>
-            <Button Content="{x:Static properties:Resources.CreateTask}" Click="CreateTaskButton_Click" Padding="14,6" HorizontalAlignment="Center"/>
-        </StackPanel>
+            </Border.Style>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE787;" FontSize="28" Foreground="{DynamicResource CV.Accent.Primary}" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                <TextBlock Text="{x:Static properties:Resources.Sched_EmptyTasks}" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                <TextBlock Text="{x:Static properties:Resources.Sched_EmptyTasksHint}" Style="{StaticResource SchedulerSecondaryText}" Margin="0,6,0,14" HorizontalAlignment="Center"/>
+                <Button Content="{x:Static properties:Resources.CreateTask}" Click="CreateTaskButton_Click" Style="{StaticResource SchedulerPrimaryAction}" HorizontalAlignment="Center"
+                        IsEnabled="{Binding ElementName=CreateButton, Path=IsEnabled}"/>
+            </StackPanel>
+        </Border>
+        <TextBlock x:Name="OperationError" Grid.Row="3" Foreground="{DynamicResource CV.Status.Error}" TextWrapping="Wrap" Visibility="Collapsed" Margin="0,4,0,4"/>
     </Grid>
 </Window>

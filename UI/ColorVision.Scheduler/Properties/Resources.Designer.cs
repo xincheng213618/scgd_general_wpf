@@ -151,6 +151,15 @@ namespace ColorVision.Scheduler.Properties {
         }
         
         /// <summary>
+        ///   查找类似 追加次数 的本地化字符串。
+        /// </summary>
+        public static string Sched_AdditionalRuns {
+            get {
+                return ResourceManager.GetString("Sched_AdditionalRuns", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 高级设置 的本地化字符串。
         /// </summary>
         public static string Sched_Advanced {
@@ -196,6 +205,15 @@ namespace ColorVision.Scheduler.Properties {
         }
         
         /// <summary>
+        ///   查找类似 按日历日重复，间隔为 1 天 的本地化字符串。
+        /// </summary>
+        public static string Sched_CalendarHint {
+            get {
+                return ResourceManager.GetString("Sched_CalendarHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 取消 的本地化字符串。
         /// </summary>
         public static string Sched_Cancel {
@@ -232,6 +250,15 @@ namespace ColorVision.Scheduler.Properties {
         }
         
         /// <summary>
+        ///   查找类似 无法加载任务参数：{0} 的本地化字符串。
+        /// </summary>
+        public static string Sched_ConfigFailed {
+            get {
+                return ResourceManager.GetString("Sched_ConfigFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 确定要清理90天前的历史记录吗？ 的本地化字符串。
         /// </summary>
         public static string Sched_ConfirmClear90 {
@@ -258,6 +285,15 @@ namespace ColorVision.Scheduler.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 选择任务内容，再设置执行时间 的本地化字符串。
+        /// </summary>
+        public static string Sched_CreateHint {
+            get {
+                return ResourceManager.GetString("Sched_CreateHint", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 创建任务失败: {0} 的本地化字符串。
         /// </summary>
@@ -304,6 +340,15 @@ namespace ColorVision.Scheduler.Properties {
         }
 
         /// <summary>
+        ///   查找类似 延迟 {0} 开始 的本地化字符串。
+        /// </summary>
+        public static string Sched_DelaySummary {
+            get {
+                return ResourceManager.GetString("Sched_DelaySummary", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 删除任务 的本地化字符串。
         /// </summary>
         public static string Sched_DeleteTask {
@@ -321,6 +366,15 @@ namespace ColorVision.Scheduler.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 调整任务内容和执行计划 的本地化字符串。
+        /// </summary>
+        public static string Sched_EditHint {
+            get {
+                return ResourceManager.GetString("Sched_EditHint", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 编辑任务 的本地化字符串。
         /// </summary>
@@ -366,6 +420,15 @@ namespace ColorVision.Scheduler.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 每个日历日执行一次 的本地化字符串。
+        /// </summary>
+        public static string Sched_EveryCalendarDay {
+            get {
+                return ResourceManager.GetString("Sched_EveryCalendarDay", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 失败 的本地化字符串。
         /// </summary>
@@ -420,6 +483,15 @@ namespace ColorVision.Scheduler.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 导出 的本地化字符串。
+        /// </summary>
+        public static string Sched_Export {
+            get {
+                return ResourceManager.GetString("Sched_Export", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 导出CSV 的本地化字符串。
         /// </summary>
@@ -520,6 +592,15 @@ namespace ColorVision.Scheduler.Properties {
         }
         
         /// <summary>
+        ///   查找类似 每 {0} · 持续重复 的本地化字符串。
+        /// </summary>
+        public static string Sched_ForeverSummary {
+            get {
+                return ResourceManager.GetString("Sched_ForeverSummary", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 分组 的本地化字符串。
         /// </summary>
         public static string Sched_Group {
@@ -537,6 +618,15 @@ namespace ColorVision.Scheduler.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 保存后即可按计划触发任务 的本地化字符串。
+        /// </summary>
+        public static string Sched_ImmediateHint {
+            get {
+                return ResourceManager.GetString("Sched_ImmediateHint", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 间隔时间 的本地化字符串。
         /// </summary>
@@ -556,6 +646,15 @@ namespace ColorVision.Scheduler.Properties {
         }
         
         /// <summary>
+        ///   查找类似 请检查标红的输入；时间使用 hh:mm:ss，次数和秒数使用整数。 的本地化字符串。
+        /// </summary>
+        public static string Sched_InvalidInput {
+            get {
+                return ResourceManager.GetString("Sched_InvalidInput", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 最后结果 的本地化字符串。
         /// </summary>
         public static string Sched_LastResult {
@@ -564,6 +663,15 @@ namespace ColorVision.Scheduler.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 上次执行 的本地化字符串。
+        /// </summary>
+        public static string Sched_LastRun {
+            get {
+                return ResourceManager.GetString("Sched_LastRun", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 为保证安全，旧版本的“每日间隔 + 永久”任务已暂停。本版本会按配置的间隔重复执行，而不是每天只执行一次。请检查后手动恢复：
         ///{0} 的本地化字符串。
@@ -583,6 +691,15 @@ namespace ColorVision.Scheduler.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 更多 的本地化字符串。
+        /// </summary>
+        public static string Sched_More {
+            get {
+                return ResourceManager.GetString("Sched_More", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 多次 的本地化字符串。
         /// </summary>
@@ -611,6 +728,15 @@ namespace ColorVision.Scheduler.Properties {
         }
         
         /// <summary>
+        ///   查找类似 下次执行 的本地化字符串。
+        /// </summary>
+        public static string Sched_NextRun {
+            get {
+                return ResourceManager.GetString("Sched_NextRun", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 0 = 无限制 的本地化字符串。
         /// </summary>
         public static string Sched_NoLimit {
@@ -619,6 +745,15 @@ namespace ColorVision.Scheduler.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 暂未发现可用任务类型 的本地化字符串。
+        /// </summary>
+        public static string Sched_NoTaskTypes {
+            get {
+                return ResourceManager.GetString("Sched_NoTaskTypes", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 调度器未初始化 的本地化字符串。
         /// </summary>
@@ -637,6 +772,24 @@ namespace ColorVision.Scheduler.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 {0} 个任务 · {1} 个执行中 · {2} 个已暂停 的本地化字符串。
+        /// </summary>
+        public static string Sched_Overview {
+            get {
+                return ResourceManager.GetString("Sched_Overview", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 查看执行计划，管理每一项任务 的本地化字符串。
+        /// </summary>
+        public static string Sched_OverviewHint {
+            get {
+                return ResourceManager.GetString("Sched_OverviewHint", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 第 1 页 的本地化字符串。
         /// </summary>
@@ -665,6 +818,24 @@ namespace ColorVision.Scheduler.Properties {
         }
         
         /// <summary>
+        ///   查找类似 已暂停 的本地化字符串。
+        /// </summary>
+        public static string Sched_Paused {
+            get {
+                return ResourceManager.GetString("Sched_Paused", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 暂停只影响后续触发，正在执行的任务会继续运行 的本地化字符串。
+        /// </summary>
+        public static string Sched_PauseHint {
+            get {
+                return ResourceManager.GetString("Sched_PauseHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 暂停任务 的本地化字符串。
         /// </summary>
         public static string Sched_PauseTask {
@@ -673,6 +844,15 @@ namespace ColorVision.Scheduler.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 计划预览 的本地化字符串。
+        /// </summary>
+        public static string Sched_PlanPreview {
+            get {
+                return ResourceManager.GetString("Sched_PlanPreview", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 上一页 的本地化字符串。
         /// </summary>
@@ -710,6 +890,15 @@ namespace ColorVision.Scheduler.Properties {
         }
         
         /// <summary>
+        ///   查找类似 就绪 的本地化字符串。
+        /// </summary>
+        public static string Sched_Ready {
+            get {
+                return ResourceManager.GetString("Sched_Ready", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 刷新 的本地化字符串。
         /// </summary>
         public static string Sched_Refresh {
@@ -728,6 +917,15 @@ namespace ColorVision.Scheduler.Properties {
         }
         
         /// <summary>
+        ///   查找类似 在首次执行后追加；填 2 表示共执行 3 次 的本地化字符串。
+        /// </summary>
+        public static string Sched_RepeatHint {
+            get {
+                return ResourceManager.GetString("Sched_RepeatHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 重复次数必须大于0 的本地化字符串。
         /// </summary>
         public static string Sched_RepeatInvalid {
@@ -736,6 +934,24 @@ namespace ColorVision.Scheduler.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 重复方式 的本地化字符串。
+        /// </summary>
+        public static string Sched_RepeatMode {
+            get {
+                return ResourceManager.GetString("Sched_RepeatMode", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 每 {0} · 共执行 {1} 次 的本地化字符串。
+        /// </summary>
+        public static string Sched_RepeatSummary {
+            get {
+                return ResourceManager.GetString("Sched_RepeatSummary", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 以下任务未能恢复: {0} 的本地化字符串。
         /// </summary>
@@ -773,6 +989,15 @@ namespace ColorVision.Scheduler.Properties {
         }
         
         /// <summary>
+        ///   查找类似 执行中 的本地化字符串。
+        /// </summary>
+        public static string Sched_Running {
+            get {
+                return ResourceManager.GetString("Sched_Running", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 立即执行 的本地化字符串。
         /// </summary>
         public static string Sched_RunNow {
@@ -781,6 +1006,33 @@ namespace ColorVision.Scheduler.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 执行一次 的本地化字符串。
+        /// </summary>
+        public static string Sched_RunOnce {
+            get {
+                return ResourceManager.GetString("Sched_RunOnce", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 执行 {0} 次 · 成功 {1} · 失败 {2} 的本地化字符串。
+        /// </summary>
+        public static string Sched_RunStats {
+            get {
+                return ResourceManager.GetString("Sched_RunStats", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 保存修改 的本地化字符串。
+        /// </summary>
+        public static string Sched_SaveChanges {
+            get {
+                return ResourceManager.GetString("Sched_SaveChanges", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 保存任务配置失败: {0} 的本地化字符串。
         /// </summary>
@@ -796,6 +1048,15 @@ namespace ColorVision.Scheduler.Properties {
         public static string Sched_ScheduleMode {
             get {
                 return ResourceManager.GetString("Sched_ScheduleMode", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 选择要执行的任务类型 的本地化字符串。
+        /// </summary>
+        public static string Sched_SelectTaskType {
+            get {
+                return ResourceManager.GetString("Sched_SelectTaskType", resourceCulture);
             }
         }
 
@@ -854,6 +1115,15 @@ namespace ColorVision.Scheduler.Properties {
         }
         
         /// <summary>
+        ///   查找类似 任务参数 的本地化字符串。
+        /// </summary>
+        public static string Sched_TaskConfiguration {
+            get {
+                return ResourceManager.GetString("Sched_TaskConfiguration", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 任务: 的本地化字符串。
         /// </summary>
         public static string Sched_TaskLabel {
@@ -877,6 +1147,15 @@ namespace ColorVision.Scheduler.Properties {
         public static string Sched_TaskType {
             get {
                 return ResourceManager.GetString("Sched_TaskType", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 格式：hh:mm:ss，例如 00:05:00 的本地化字符串。
+        /// </summary>
+        public static string Sched_TimeFormat {
+            get {
+                return ResourceManager.GetString("Sched_TimeFormat", resourceCulture);
             }
         }
 
@@ -961,6 +1240,15 @@ namespace ColorVision.Scheduler.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 正在保存… 的本地化字符串。
+        /// </summary>
+        public static string Sched_Working {
+            get {
+                return ResourceManager.GetString("Sched_Working", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 关闭 的本地化字符串。
         /// </summary>

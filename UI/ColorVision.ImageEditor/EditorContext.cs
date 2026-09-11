@@ -31,6 +31,7 @@ namespace ColorVision.ImageEditor
             DrawEditorContext = drawEditorContext ?? throw new ArgumentNullException(nameof(drawEditorContext));
             ProcessingContext = processingContext ?? throw new ArgumentNullException(nameof(processingContext));
             DrawEditorContext.ProcessingContext = ProcessingContext;
+            DrawCanvas.Calibration = Config.Calibration;
             _textEditorOverlay = textEditorOverlay ?? CreateFallbackTextEditorOverlay();
         }
 

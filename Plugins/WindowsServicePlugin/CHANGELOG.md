@@ -1,5 +1,40 @@
 # CHANGELOG
 
+## 1.4.3.31 - 2026-09-11
+
+### Fixed
+
+- Synchronized the registration center monitor list with the database during service updates, retaining `CVArchService` only when it is installed.
+
+## 1.4.3.30 - 2026-09-07
+
+### Changed
+
+- Restored the themed secondary-button treatment in the service installation window instead of falling back to gray hard-edged buttons.
+- Tightened the primary install action while retaining the default checkbox selection visuals.
+
+## 1.4.3.29 - 2026-09-06
+
+### Changed
+
+- Rebuilt the service manager for the ColorVision 1.4.14.15 release, retaining the existing service-termination client API that routes to the shared process-termination implementation in the updated service host.
+
+## 1.4.3.28 - 2026-09-06
+
+### Changed
+
+- Refreshed the service manager, setup choice and installation windows with consistent light and dark themes and simpler service actions.
+- Moved service logs to the last manager tab after MQTT, while preserving log capture across tab changes and simplifying installation-directory access.
+- Kept installation packages, configuration and backup options visible together with the installation log and progress.
+
+## 1.4.3.27 - 2026-09-04
+
+### Fixed
+
+- Restored the frequently used service manager shortcut under the Help menu
+  while keeping the existing Applications and Tools entry and administrator
+  permission requirement.
+
 ## 1.4.3.26 - 2026-08-19
 
 ### Changed

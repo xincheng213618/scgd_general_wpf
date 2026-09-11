@@ -52,7 +52,9 @@ namespace ColorVision.Copilot
             LocalCommandResultTitle = "无法附加当前文件";
             LocalCommandResultText = "当前文件已关闭、已移动或不再可读取。";
             _activeDocumentPath = TryGetActiveDocumentPath();
+            _ = CaptureHostedTurnSnapshot(Array.Empty<CopilotAttachmentItem>());
             OnActiveDocumentStateChanged();
+            RefreshComposerTokenEstimate();
         }
 
         public int AddFileAttachments(IEnumerable<string>? filePaths)

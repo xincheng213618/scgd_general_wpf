@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 
 namespace ColorVision.Copilot
@@ -17,7 +18,7 @@ namespace ColorVision.Copilot
         Interrupted,
     }
 
-    public sealed class CopilotAgentTaskSummary
+    public sealed class CopilotAgentTaskSummary : INotifyPropertyChanged
     {
         internal CopilotAgentTaskSummary(
             CopilotConversationRecord conversation,
@@ -33,7 +34,17 @@ namespace ColorVision.Copilot
 
         public CopilotChatMessage Message { get; }
 
-        public CopilotAgentTaskAttentionKind AttentionKind { get; }
+        public CopilotAgentTaskAttentionKind AttentionKind { get; private set; }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        internal void RefreshPresentation(CopilotAgentTaskAttentionKind attentionKind)
+        {
+            AttentionKind = attentionKind;
+            // The projected values read the source conversation and message. Refresh bindings
+            // without retaining another copy of their mutable recovery state.
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
+        }
 
         public string ConversationId => Conversation.Id;
 

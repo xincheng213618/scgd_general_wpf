@@ -26,12 +26,21 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotChatViewModel
     {
-        private Task SendAsync() => SendAsync(null, null, null);
+        private Task SendAsync() => SendRequestAsync(null, null, null, _dispatchingQueuedLocalCommand);
 
-        private async Task SendAsync(
+        private Task SendAsync(
             string? directPrompt,
             CopilotAgentMode? directMode,
-            string? directRequestContent = null)
+            string? directRequestContent = null) =>
+            SendRequestAsync(directPrompt, directMode, directRequestContent, _dispatchingQueuedLocalCommand);
+
+        private async Task SendRequestAsync(
+            string? directPrompt,
+            CopilotAgentMode? directMode,
+            string? directRequestContent,
+            QueuedLocalCommandExecutionContext? queuedCommandExecution,
+            bool useQueuedComposerInputs = false,
+            CopilotWorkspaceReviewTargetContext? queuedReviewTarget = null)
         {
             if (directPrompt == null && IsPromptHistorySearchOpen)
             {
@@ -40,7 +49,6 @@ namespace ColorVision.Copilot
             }
 
             var isDirectSubmission = directPrompt != null;
-            var queuedCommandExecution = _queuedLocalCommandExecution;
             var composerCapture = isDirectSubmission ? null : _composerSession.Capture();
             var recoveryRequest = isDirectSubmission ? null : CapturePendingAgentRecoveryRequest(composerCapture!);
             var prompt = (directPrompt ?? composerCapture!.Text).Trim();
@@ -61,7 +69,10 @@ namespace ColorVision.Copilot
             var requestMode = directMode
                 ?? composerCapture?.RequestMode
                 ?? CopilotAgentMode.Auto;
-            if (!CanScheduleComposerRequest(requestMode))
+            if (!CanScheduleConversationRequest(
+                    queuedCommandExecution?.Conversation.Id ?? SelectedConversation?.Id,
+                    requestMode,
+                    queuedCommandExecution))
                 return;
 
             var queuedFollowUp = queuedCommandExecution?.QueuedFollowUp;
@@ -72,7 +83,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var requestAttachments = isDirectSubmission
+            var requestAttachments = isDirectSubmission && !useQueuedComposerInputs
                 ? Array.Empty<CopilotAttachmentItem>()
                 : queuedCommandExecution?.QueuedFollowUp.SubmissionContext.Attachments
                     .Select(attachment => attachment.CreateSnapshot())
@@ -81,7 +92,7 @@ namespace ColorVision.Copilot
             if (!TryValidateComposerAttachments(requestAttachments, selectedProfile))
                 return;
 
-            var conversation = EnsureConversation();
+            var conversation = queuedCommandExecution?.Conversation ?? EnsureConversation();
             var replacedUserIndex = -1;
             CopilotChatMessage replacedUserMessage = null!;
             CopilotChatMessage? replacedAssistantMessage = null;
@@ -112,7 +123,9 @@ namespace ColorVision.Copilot
                 : isReplacingTurn
                     ? CaptureHostedTurnSnapshot(conversation, replacedUserMessage, conversation.Attachments)
                     : CaptureHostedTurnSnapshot(conversation, attachmentOverride: requestAttachments);
-            var agentSkillReference = isDirectSubmission
+            var agentSkillReference = useQueuedComposerInputs
+                ? queuedFollowUp?.AgentSkillReference?.CreateSnapshot()
+                : isDirectSubmission
                 ? null
                 : composerCapture?.AgentSkillReference;
             if (!TryPrepareExplicitSkillMcpDependencies(
@@ -128,20 +141,20 @@ namespace ColorVision.Copilot
             var requestProfile = queuedFollowUp?.Profile.Clone() ?? CreateConversationRequestProfile(
                 selectedProfile,
                 conversation,
-                requestMode,
                 turnSnapshot.ProjectInstructionDiscoveryOptions);
             if (!TryValidatePromptBudget(
                 modelPrompt,
                 requestMode,
                 requestProfile,
                 turnSnapshot.ProjectInstructionDiscoveryOptions,
-                agentDefaultsSnapshot))
+                agentDefaultsSnapshot,
+                conversation))
             {
                 return;
             }
             var admittedAttachments = await TryPersistImageAttachmentsAsync(turnSnapshot.Attachments);
             if (admittedAttachments == null
-                || !CanContinueConversationRequestPreparation(conversation, requestMode)
+                || !CanContinueConversationRequestPreparation(conversation, requestMode, queuedCommandExecution)
                 || !IsCapturedMessageEditCurrent())
                 return;
             turnSnapshot = turnSnapshot.WithAttachments(admittedAttachments);
@@ -152,7 +165,7 @@ namespace ColorVision.Copilot
                 turnSnapshot.ProjectInstructionDiscoveryOptions,
                 agentDefaultsSnapshot);
             if (automaticCompaction == CopilotAutomaticCompactionOutcome.Failed
-                || !CanContinueConversationRequestPreparation(conversation, requestMode)
+                || !CanContinueConversationRequestPreparation(conversation, requestMode, queuedCommandExecution)
                 || !IsCapturedMessageEditCurrent())
                 return;
             if (automaticCompaction == CopilotAutomaticCompactionOutcome.Applied)
@@ -163,9 +176,9 @@ namespace ColorVision.Copilot
                         isReplacingTurn ? replacedUserMessage : null));
             }
 
-            conversation.ProfileId = requestProfile.Id;
-            conversation.ProfileDisplayName = requestProfile.DisplayLabel;
-            var workspaceReviewTarget = isDirectSubmission
+            var workspaceReviewTarget = useQueuedComposerInputs
+                ? queuedReviewTarget?.CreateSnapshot() ?? queuedFollowUp?.CreateWorkspaceReviewTargetSnapshot()
+                : isDirectSubmission
                 ? null
                 : composerCapture?.WorkspaceReviewTarget;
             if (workspaceReviewTarget == null
@@ -251,7 +264,7 @@ namespace ColorVision.Copilot
             }
             if (queuedCommandExecution != null)
             {
-                if (!isDirectSubmission)
+                if (!isDirectSubmission || useQueuedComposerInputs)
                     queuedCommandExecution.QueuedAttachmentsConsumedBySuccessor = true;
             }
 

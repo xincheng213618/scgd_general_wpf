@@ -43,9 +43,9 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Orientation="Vertical">
-                        <TextBlock x:Name="ServerStatusText" Text="● 服务器未启动" Foreground="Gray" VerticalAlignment="Center" FontWeight="Bold"/>
-                        <TextBlock x:Name="FlowStatusText" Text="● Flow未连接" Foreground="Gray" VerticalAlignment="Center" Margin="0,2,0,0"/>
-                        <TextBlock x:Name="ClientStatusText" Text="● 外部Client未连接" Foreground="Gray" VerticalAlignment="Center" Margin="0,2,0,0"/>
+                        <TextBlock x:Name="ServerStatusText" Text="● 服务器未启动" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" FontWeight="Bold"/>
+                        <TextBlock x:Name="FlowStatusText" Text="● Flow未连接" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" Margin="0,2,0,0"/>
+                        <TextBlock x:Name="ClientStatusText" Text="● 外部Client未连接" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" Margin="0,2,0,0"/>
                     </StackPanel>
                     <CheckBox Grid.Column="1" x:Name="AutoStartCheckBox" Content="自动启动" VerticalAlignment="Center" Margin="0,0,10,0"
                               Checked="AutoStartCheckBox_Changed" Unchecked="AutoStartCheckBox_Changed"/>
@@ -120,7 +120,7 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock x:Name="StatusText" Text="就绪" VerticalAlignment="Center" Foreground="Gray"/>
+            <TextBlock x:Name="StatusText" Text="就绪" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
             <Button Grid.Column="2" Content="清除日志" Click="ClearLog_Click" Padding="8,2"/>
         </Grid>
     </Grid>

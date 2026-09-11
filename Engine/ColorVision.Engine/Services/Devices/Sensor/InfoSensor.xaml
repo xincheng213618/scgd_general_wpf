@@ -27,11 +27,8 @@
             </Style.Triggers>
         </Style>
     </UserControl.Resources>
-    <Grid>
-        <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
-        <ScrollViewer Margin="5"  HorizontalScrollBarVisibility="Disabled">
-            <UniformGrid x:Name="CommandGrid" Margin="5" VerticalAlignment="Top">
-            </UniformGrid>
-        </ScrollViewer>
-    </Grid>
+    <ScrollViewer Background="{DynamicResource RegionBrush}" Padding="0"
+                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <UniformGrid x:Name="CommandGrid" Margin="0" VerticalAlignment="Top" />
+    </ScrollViewer>
 </UserControl>

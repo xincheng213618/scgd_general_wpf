@@ -36,6 +36,10 @@ related: ["projects.index","projects.capabilities"]
 
 `ProjectKBWindow` 初始化 FlowEngine；选择 Flow 模板时，用模板名调用 `RecipeManager.SetCurrentTemplate(Name)`。`AutoModbusConnect` 打开时，窗口启动后连接 Modbus 并订阅 `StatusChanged`。PLC 把寄存器写为 `1` 后触发 `RunTemplate()`；SN 为空且启用 `IgnoreAutoRunWhenSnEmpty` 时，本次自动触发会被忽略并写回 `0`。Flow 完成后 `Processing()` 读取 `KB`/`KB_Raw` 和 `POI_Y`/`POI_Y_V2`，计算每个按键亮度、局部对比度、均匀性和不良点，保存数据库、txt、summary、CSV，最后 Modbus 写回 `0`，必要时调用 MES `Collect_test`。
 
+## 界面主题
+
+主界面的分隔线、搜索框边框和测试按钮，以及 Recipe、登录和密码窗口的操作按钮，使用 [ColorVision.Themes](../ui-components/ColorVision.Themes.md) 的主题样式与动态画刷。Recipe 已配置提示在窗口打开期间随黑白主题更新。PASS/FAIL、权限状态和键位图像标记保留原有业务颜色；主题配色不改变检测判定或标记含义。
+
 ## 外部集成
 
 | 通道 | 关键点 |

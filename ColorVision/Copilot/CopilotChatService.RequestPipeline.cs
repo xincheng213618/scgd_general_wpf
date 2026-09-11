@@ -563,6 +563,35 @@ namespace ColorVision.Copilot
                 if (CopilotReasoningRequestMapper.ShouldIncludeTemperature(config))
                     payload["temperature"] = config.Temperature;
             }
+            else if (CopilotOpenAiRequestPolicy.UsesResponsesApi(config))
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.ApiKey);
+
+                var systemPrompt = BuildEffectiveSystemPrompt(
+                    config.EffectiveSystemPrompt,
+                    requestSystemContext);
+                payload = new Dictionary<string, object?>
+                {
+                    ["model"] = config.Model,
+                    ["store"] = false,
+                    ["stream"] = true,
+                    ["input"] = messages.Select((message, index) => new Dictionary<string, object?>
+                    {
+                        ["role"] = message.Role,
+                        ["content"] = index == lastUserMessageIndex
+                            ? BuildOpenAiResponsesMessageContent(message.Content, imagePayloads)
+                            : message.Content,
+                    }).ToArray(),
+                    ["max_output_tokens"] = config.MaxTokens,
+                };
+                if (!string.IsNullOrWhiteSpace(systemPrompt))
+                    payload["instructions"] = systemPrompt;
+                var safetyIdentifier = CopilotOpenAiSafetyIdentifier.GetCurrent();
+                if (safetyIdentifier.Length > 0)
+                    payload["safety_identifier"] = safetyIdentifier;
+                if (CopilotReasoningRequestMapper.ShouldIncludeTemperature(config))
+                    payload["temperature"] = config.Temperature;
+            }
             else
             {
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.ApiKey);
@@ -684,6 +713,31 @@ namespace ColorVision.Copilot
                         url = $"data:{image.MediaType};base64,{image.Base64Data}",
                         detail = "auto",
                     },
+                });
+            }
+            return content;
+        }
+
+        private static object BuildOpenAiResponsesMessageContent(
+            string? text,
+            IReadOnlyList<CopilotImagePayload> images)
+        {
+            if (images.Count == 0)
+                return text ?? string.Empty;
+
+            var content = new List<object>();
+            if (!string.IsNullOrWhiteSpace(text))
+                content.Add(new { type = "input_text", text });
+            var preparationNotice = BuildImagePreparationNotice(images);
+            if (preparationNotice.Length > 0)
+                content.Add(new { type = "input_text", text = preparationNotice });
+            foreach (var image in images)
+            {
+                content.Add(new
+                {
+                    type = "input_image",
+                    image_url = $"data:{image.MediaType};base64,{image.Base64Data}",
+                    detail = "auto",
                 });
             }
             return content;

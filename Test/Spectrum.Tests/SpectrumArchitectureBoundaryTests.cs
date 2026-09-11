@@ -1,11 +1,32 @@
 #pragma warning disable CA1707
+using ColorVision.UI;
 using System.IO;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace Spectrum.Tests;
 
 public sealed class SpectrumArchitectureBoundaryTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CompactTitleBarSelectionFollowsOperatingSystemSupport(bool operatingSystemSupported)
+    {
+        Assert.Equal(operatingSystemSupported, MainWindow.ShouldUseCompactTitleBar(operatingSystemSupported));
+    }
+
+    [Fact]
+    public void CompactTitleBarIsNotExposedAsASpectrumSetting()
+    {
+        PropertyInfo[] exposedSettings = typeof(MainWindowConfig).GetProperties()
+            .Where(property => property.GetCustomAttribute<ConfigSettingAttribute>() != null)
+            .ToArray();
+
+        Assert.DoesNotContain(exposedSettings, property => property.Name == "UseCompactTitleBar");
+        Assert.Null(typeof(MainWindowConfig).GetProperty("UseCompactTitleBar"));
+    }
+
     [Fact]
     public void SpectrometerManager_DoesNotOwnDialogsWindowsOrSynchronousUiDispatch()
     {

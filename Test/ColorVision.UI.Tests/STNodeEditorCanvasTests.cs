@@ -781,6 +781,70 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void PortLabels_HideSingleInputsAndAllOutputs_ButKeepMultipleInputs()
+        {
+            StaTest.Run(() =>
+            {
+                using var editor = new TestNodeEditor
+                {
+                    ShowBorder = false,
+                    ShowNodeShadow = false
+                };
+                var singleInputNode = new PortLabelTrackingNode(["IN"], ["OUT_A", "OUT_B"])
+                {
+                    Left = 20,
+                    Top = 20
+                };
+                singleInputNode.Create();
+                editor.Nodes.Add(singleInputNode);
+
+                var multipleInputNode = new PortLabelTrackingNode(["IN_A", "IN_B"], ["OUT"])
+                {
+                    Left = 220,
+                    Top = 20
+                };
+                multipleInputNode.Create();
+                editor.Nodes.Add(multipleInputNode);
+
+                using var bitmap = editor.RenderNodes(new System.Drawing.Rectangle(0, 0, 500, 180));
+
+                Assert.Equal(1, singleInputNode.InputDotDrawCount);
+                Assert.Equal(2, singleInputNode.OutputDotDrawCount);
+                Assert.Equal(0, singleInputNode.InputTextDrawCount);
+                Assert.Equal(0, singleInputNode.OutputTextDrawCount);
+                Assert.Equal(2, multipleInputNode.InputDotDrawCount);
+                Assert.Equal(1, multipleInputNode.OutputDotDrawCount);
+                Assert.Equal(2, multipleInputNode.InputTextDrawCount);
+                Assert.Equal(0, multipleInputNode.OutputTextDrawCount);
+            });
+        }
+
+        [Fact]
+        public void AutoSize_IgnoresLabelsThatAreNotDrawn()
+        {
+            StaTest.Run(() =>
+            {
+                using var bitmap = new System.Drawing.Bitmap(1, 1);
+                using System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(bitmap);
+                var baselineNode = new PortLabelTrackingNode(["IN"], ["OUT"]);
+                var hiddenLongLabelsNode = new PortLabelTrackingNode(
+                    ["A_SINGLE_INPUT_LABEL_THAT_IS_NOT_DRAWN"],
+                    ["A_LONG_OUTPUT_LABEL_THAT_IS_NOT_DRAWN", "ANOTHER_HIDDEN_OUTPUT"]);
+                var multipleInputNode = new PortLabelTrackingNode(
+                    ["A_LONG_MULTI_INPUT_LABEL_THAT_IS_DRAWN", "IN_B"],
+                    ["OUT"]);
+                baselineNode.Create();
+                hiddenLongLabelsNode.Create();
+                multipleInputNode.Create();
+
+                int baselineWidth = baselineNode.MeasureDefaultSize(graphics).Width;
+
+                Assert.Equal(baselineWidth, hiddenLongLabelsNode.MeasureDefaultSize(graphics).Width);
+                Assert.True(multipleInputNode.MeasureDefaultSize(graphics).Width > baselineWidth);
+            });
+        }
+
+        [Fact]
         public void NodeTitleProgress_FillsOnlyTheRequestedWidth()
         {
             StaTest.Run(() =>
@@ -1029,6 +1093,58 @@ namespace ColorVision.UI.Tests
             {
                 DrawCount++;
                 base.OnDrawNode(dt);
+            }
+        }
+
+        private sealed class PortLabelTrackingNode(string[] inputLabels, string[] outputLabels) : STNode
+        {
+            public int InputDotDrawCount { get; private set; }
+            public int OutputDotDrawCount { get; private set; }
+            public int InputTextDrawCount { get; private set; }
+            public int OutputTextDrawCount { get; private set; }
+
+            protected override void OnCreate()
+            {
+                Title = "Ports";
+                foreach (string label in inputLabels)
+                {
+                    InputOptions.Add(label, typeof(string), bSingle: true);
+                }
+                foreach (string label in outputLabels)
+                {
+                    OutputOptions.Add(label, typeof(string), bSingle: false);
+                }
+            }
+
+            protected override void OnDrawOptionDot(DrawingTools dt, STNodeOption op)
+            {
+                if (op.IsInput)
+                {
+                    InputDotDrawCount++;
+                }
+                else
+                {
+                    OutputDotDrawCount++;
+                }
+                base.OnDrawOptionDot(dt, op);
+            }
+
+            protected override void OnDrawOptionText(DrawingTools dt, STNodeOption op)
+            {
+                if (op.IsInput)
+                {
+                    InputTextDrawCount++;
+                }
+                else
+                {
+                    OutputTextDrawCount++;
+                }
+                base.OnDrawOptionText(dt, op);
+            }
+
+            public System.Drawing.Size MeasureDefaultSize(System.Drawing.Graphics graphics)
+            {
+                return GetDefaultNodeSize(graphics);
             }
         }
     }

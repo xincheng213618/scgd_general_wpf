@@ -121,6 +121,17 @@
 
         <Grid x:Name="ImageViewHost" Grid.Column="0" Background="{DynamicResource TransparentGridBrush}">
             <local:ConoscopeImageHost x:Name="ImageView" />
+            <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10" Padding="8,5" Background="#DD1E1E1E" BorderBrush="#66FFFFFF" BorderThickness="1" CornerRadius="5">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{x:Static properties:Resources.Con_Category_CoordAxis}" Foreground="White" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                    <ComboBox x:Name="cbImageCoordinateSystem" Width="126" Height="26" SelectedIndex="0" SelectionChanged="cbImageCoordinateSystem_SelectionChanged">
+                        <ComboBoxItem Content="{x:Static properties:Resources.BtnPolarCoord}" Tag="Polar"/>
+                        <ComboBoxItem Content="H/V" Tag="HorizontalVertical"/>
+                        <ComboBoxItem Content="North Polar" Tag="NorthPolar"/>
+                        <ComboBoxItem Content="East Polar" Tag="EastPolar"/>
+                    </ComboBox>
+                </StackPanel>
+            </Border>
             <Border x:Name="PseudoColorLegendPanel" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" Padding="8" Background="#DD1E1E1E" BorderBrush="#66FFFFFF" BorderThickness="1" CornerRadius="6" Visibility="Collapsed" IsHitTestVisible="False">
                 <StackPanel>
                     <TextBlock x:Name="tbPseudoColorLegendTitle" Foreground="White" FontWeight="SemiBold" Text="Y" HorizontalAlignment="Center" />
@@ -134,7 +145,7 @@
             <Border x:Name="CoordinateDragOverlay" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed" IsHitTestVisible="False" Background="#CC202020" BorderBrush="#FFFFD400" BorderThickness="1" CornerRadius="4" Padding="8,4">
                 <TextBlock x:Name="CoordinateDragOverlayText" Foreground="White" FontWeight="SemiBold" />
             </Border>
-            <Border HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,8" Padding="3" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" CornerRadius="6">
+            <Border x:Name="FocusToolbarPanel" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,8" Padding="3" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" CornerRadius="6">
                 <ToolBar ToolBarTray.IsLocked="True" Background="Transparent" BorderThickness="0" Padding="0">
                     <ToggleButton x:Name="tglFocusCircleMode" Style="{StaticResource OverlayToolToggleStyle}" ToolTip="{x:Static properties:Resources.TbEditFocusPointTip}" Checked="tglFocusCircleMode_Checked" Unchecked="tglFocusCircleMode_Unchecked" />
                     <ToggleButton x:Name="tglFocusCircleDrawTool" Style="{StaticResource OverlayToolToggleStyle}" ToolTip="{x:Static properties:Resources.TbCircleTip}" IsChecked="False" Checked="tglFocusCircleDrawTool_Checked" Unchecked="tglFocusCircleDrawTool_Unchecked" />

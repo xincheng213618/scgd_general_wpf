@@ -2,11 +2,11 @@
 knowledge_id: "platform.runtime"
 knowledge_type: "topic"
 status: "current"
-summary: "启动顺序与故障恢复：初始化进度和ready不代表全部成功，运行期维护区分浏览、禁用、文档准备与重启，一次性插件跳过不绕过真实故障。"
-aliases: ["启动链路", "App.xaml.cs", "启动恢复", "故障恢复", "初始化向导", "安全启动", "启动进度", "初始化失败", "StartupRegistryChecker", "StartupMaintenanceController", "StartupMaintenanceSearchProvider", "StartupRecoveryWindow", "StartupRecoveryPluginScanner", "StartupInitializersCompleted", "MainWindowInitializer", "MainWindowFactory", "CompactMainWindow", "UseCompactMainWindow", "LoadingPlugin", "startup-maintenance", "startup-skip-plugins", "wait-for-process", "safe-start", "skip-plugins", "验证并回退"]
-code_paths: ["ColorVision/EntryClass.cs", "ColorVision/App.xaml.cs", "ColorVision/BuiltInModules.cs", "ColorVision/ProgramTimer.cs", "ColorVision/StartWindow.xaml.cs", "ColorVision/MainWindow.xaml.cs", "ColorVision/MainWindowFactory.cs", "ColorVision/CompactMainWindow.cs", "ColorVision/MainWindowConfig.cs", "ColorVision/SingleInstanceStartupPolicy.cs", "ColorVision/StartupFileOpenPolicy.cs", "ColorVision/OperationsApplicationRestartController.cs", "ColorVision/App.StartupMaintenance.cs", "ColorVision/Recovery", "UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs", "Test/ColorVision.UI.Tests/StartupRecoveryPluginScannerTests.cs", "Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs", "Test/ColorVision.UI.Tests/StartupMaintenanceWindowTests.cs", "Test/ColorVision.UI.Tests/WizardWindowRuntimeTests.cs", "Test/ColorVision.UI.Tests/StartupRecoveryWindowRuntimeTests.cs", "Test/ColorVision.Copilot.Tests/CopilotBackgroundShellMaintenanceGuardTests.cs", "Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs", "Test/ColorVision.UI.Tests/StartupRegistryCheckerTests.cs"]
-related: ["platform.architecture", "platform.startup-integrity", "delivery.update", "plugins.model", "ui.discovery", "ui.wizards", "ui.localization", "ui.search", "operations.main-window", "engine.rc-registration", "flow.architecture"]
+summary: "启动顺序与故障恢复：软件渲染兼容参数在 WPF 窗口前生效；初始化进度和ready不代表全部成功，一次性插件跳过不绕过真实故障。"
+aliases: ["启动链路", "App.xaml.cs", "启动界面", "启动动画", "StartWindow", "StartupScene", "StartupUiTrace", "COLORVISION_STARTUP_TRACE", "StopAndReport", "首帧耗时", "首次使用耗时", "启动恢复", "故障恢复", "初始化向导", "安全启动", "启动进度", "初始化失败", "StartupRegistryChecker", "StartupMaintenanceController", "StartupMaintenanceSearchProvider", "StartupRecoveryWindow", "StartupRecoveryPluginScanner", "StartupInitializersCompleted", "MainWindowInitializer", "MainWindowFactory", "CompactMainWindow", "UseCompactMainWindow", "LoadingPlugin", "startup-maintenance", "startup-skip-plugins", "wait-for-process", "safe-start", "skip-plugins", "software-rendering", "StartupRenderingMode", "WPF软件渲染", "ToDesk白屏", "验证并回退"]
+code_paths: ["ColorVision/EntryClass.cs", "ColorVision/App.xaml.cs", "ColorVision/Startup/StartupRenderingMode.cs", "ColorVision/BuiltInModules.cs", "ColorVision/ProgramTimer.cs", "ColorVision/StartWindow.xaml", "ColorVision/StartWindow.xaml.cs", "ColorVision/StartWindow.Presentation.cs", "ColorVision/StartupScene.cs", "ColorVision/StartupUiTrace.cs", "ColorVision/Startup/StartupText.cs", "ColorVision/Startup/StartupResources.resx", "ColorVision/Startup/StartupResources.en.resx", "ColorVision/Startup/StartupResources.zh-Hant.resx", "ColorVision/MainWindow.xaml.cs", "ColorVision/MainWindowFactory.cs", "ColorVision/CompactMainWindow.cs", "ColorVision/MainWindowConfig.cs", "ColorVision/SingleInstanceStartupPolicy.cs", "ColorVision/SingleInstanceStartupCoordinator.cs", "ColorVision/SingleInstanceStartupWindow.xaml", "ColorVision/SingleInstanceStartupWindow.xaml.cs", "UI/ColorVision.UI/Update/ApplicationUpdateProcessCoordinator.Startup.cs", "ColorVision/StartupFileOpenPolicy.cs", "ColorVision/OperationsApplicationRestartController.cs", "ColorVision/App.StartupMaintenance.cs", "ColorVision/Recovery", "UI/ColorVision.UI/Plugins/PluginLoader.cs", "UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/StartupRenderingModeTests.cs", "Test/ColorVision.UI.Tests/StartupInitializerSequenceTests.cs", "Test/ColorVision.UI.Tests/StartupUiTraceTests.cs", "Test/ColorVision.UI.Tests/StartupThemeBootstrapTests.cs", "Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs", "Test/ColorVision.UI.Tests/SingleInstanceStartupCoordinatorTests.cs", "Test/ColorVision.UI.Tests/SingleInstanceStartupWindowTests.cs", "Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs", "Test/ColorVision.UI.Tests/StartupPresentationTests.cs", "Test/ColorVision.UI.Tests/StartupSceneLifecycleTests.cs", "Test/ColorVision.UI.Tests/StartupRecoveryPluginScannerTests.cs", "Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs", "Test/ColorVision.UI.Tests/StartupMaintenanceWindowTests.cs", "Test/ColorVision.UI.Tests/WizardWindowRuntimeTests.cs", "Test/ColorVision.UI.Tests/StartupRecoveryWindowRuntimeTests.cs", "Test/ColorVision.Copilot.Tests/CopilotBackgroundShellMaintenanceGuardTests.cs", "Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs", "Test/ColorVision.UI.Tests/StartupRegistryCheckerTests.cs"]
+related: ["platform.architecture", "platform.startup-integrity", "delivery.update", "plugins.model", "ui.discovery", "ui.wizards", "ui.localization", "ui.themes", "ui.search", "operations.main-window", "engine.devices", "engine.rc-registration", "flow.architecture"]
 ---
 
 # 启动、初始化与故障恢复
@@ -19,7 +19,7 @@ related: ["platform.architecture", "platform.startup-integrity", "delivery.updat
 
 | 阶段 | 行为与分支 |
 | --- | --- |
-| 进程入口 | 消费故障重启参数及 `--wait-for-process`，等待原进程退出后才创建 App、读取应用配置或获取单实例锁；随后建立计时、参数和早期日志 |
+| 进程入口 | 消费故障重启参数及 `--wait-for-process`，等待原进程退出后才读取一次性渲染参数；`--software-rendering` 在创建 App 和任何 WPF 窗口之前设置进程渲染模式，随后建立计时、其余参数和早期日志 |
 | 更新交接 | App 先检查同安装目录的活动更新；已有交接可推迟本次启动。解析维护参数后，将当前工作目录设为应用基础目录，再处理 `input` 中的更新包 |
 | 本次启动记录 | `StartupRegistryChecker.CheckAndSet()` 收集未完成尝试并创建当前记录；此时还没有加载主配置和内置模块 |
 | 基础装配 | 配置维护重置规则，创建 `ModuleCatalog`，由 `BuiltInModules.Register` 显式登记内置模块；随后加载主配置、暂关自动保存，应用日志、主题和界面语言 |
@@ -28,25 +28,78 @@ related: ["platform.architecture", "platform.startup-integrity", "delivery.updat
 | 恢复选择 | 上次尝试未完成，或显式请求 `recovery` 时，在外部插件装载前显示恢复窗口；退出则不继续，继续时采用用户选定的插件跳过和向导策略 |
 | 外部扩展与窗口 | 装载允许的插件，或记录 `PluginsSkipped`；封存模块目录，初始化 WinForms 视觉样式，再显示 `WizardWindow` 或 `StartWindow` |
 
-单实例判断使用 `Debugger.IsAttached` 和 `APPConfig.IsMute`（“允许多实例”）。未附加调试器且不允许多实例时，会尝试关闭同会话、同安装路径的较早实例，不限于异常进程；`--debug` 不参与这个判断。旧实例退出后重载最终配置失败，会保留自动保存关闭并记录错误。真实启动可能更改配置、替换旧实例并按设置启动功能，文档核验不需要执行它。
+单实例判断使用 `Debugger.IsAttached` 和 `APPConfig.AllowMultipleInstances`（“允许程序多开”，默认 `false`）。旧的 `IsMute` 持久化键不迁移，升级后按默认关闭多开并在下次保存时写入语义明确的新键。未附加调试器且不允许多实例时，新启动会直接强制结束同会话、同安装路径的较早实例，不限于异常进程；`--debug` 不参与这个判断。`SingleInstanceStartupWindow` 展示退出进度，`SingleInstanceStartupCoordinator` 在失败后等待用户重试、仅本次直接多开或取消；[单实例启动恢复](../../00-getting-started/first-steps.md#旧进程未退出时重新启动)维护完整操作契约。取消或直接打开会先取消并等待当前结束操作收尾，避免新实例启动后继续结束其它旧进程。窗口期间临时使用显式关闭模式，返回时恢复原有 MainWindow 与 ShutdownMode，防止辅助窗口关闭导致整个应用退出。确认旧实例退出并取得单实例锁后才重载磁盘配置；重载失败保留自动保存关闭并记录错误。直接打开分支不要求取得单实例锁，也不改写多实例设置。旧版命名管道关闭协议继续保留兼容入口，普通窗口关闭仍使用既有流程。真实启动可能更改配置、替换旧实例并按设置启动功能，文档核验不需要执行它。
 
 普通启动在 `WizardCompletionKey=false` 时进入向导；维护请求或恢复选择也可要求显示向导。向导步骤、保存与重启见[配置向导](../../04-api-reference/ui-components/wizards.md)。启动语言读取及设置中更换语言的区别见[界面语言](../../04-api-reference/ui-components/localization.md)。
+
+单实例直接结束遇到访问拒绝时，调用 `IColorVisionServiceHostClient.TerminateProcessAsync` 复用权限服务；服务检查目标程序白名单及 PID、启动时间和实际路径，旧实例范围与多开决策仍由启动调用方承担。白名单包括 `ColorVision.exe`，不固定安装目录。服务接入、旧版自更新和请求期限见[权限代理契约](../components/service-host.md#通用进程终止)。
+
+## 启动界面与动画边界
+
+`StartWindow.xaml` 以 `820 × 460` WPF 逻辑单位为设计尺寸居中显示，以光线、光谱曲面、轨道与扫描线组成全景光场，不显示品牌大图或滚动日志。窗口采用不透明背景和 `WindowChrome`，整个窗口区域可拖动，不允许手动调整大小，不单独显示任务栏按钮。`MaxWidth`、`MaxHeight` 按 `SystemParameters.WorkArea` 限制窗口尺寸，外层 `Uniform` Viewbox 同时等比缩放背景、文字与进度条，以适应高 DPI 或较小工作区。
+
+`StartWindow.Presentation.cs` 在构造时捕获 `ThemeConfig.StartupTheme`，默认固定深色；只有选择 `FollowApplication` 才读取 App 在前序阶段已应用的 `ThemeManager.Current.CurrentUITheme` 并跟随后续实际配色变化。固定深浅忽略应用主题变更，设置中的新选择留到下次启动读取。配置默认值、旧配置兼容和设置入口见[启动页主题](../../04-api-reference/ui-components/ColorVision.Themes.md#启动页主题)。这只决定启动窗口呈现，不改变 App 应用主题或初始化流程。
+
+深色采用 `#080E19`，浅色采用 `#F4F5F7`；文字、边界、进度条及光场场景同步配色。窗口没有主题切换按钮，不重新加载或写入配置。现有 `SystemThemeChanged` 仅维护启动图标，不决定窗口背景；跟随软件通过实际 UI 主题事件更新，不直接跟随 Windows 配色。呈现层同时监听高对比度变更，使用系统背景、文字和进度色并隐藏装饰光场；关闭时从最初订阅的主题发布者解绑，并移除系统设置订阅。
+
+界面保留版本、单行状态和细进度条；默认状态为“正在准备工作空间”，初始化循环结束时显示“正在打开工作空间”。运行中按当前初始化器显示连接基础服务、载入工作空间、加载检测模板、装配设备面板、准备计算资源或加载扩展组件六类状态。状态复用 `UpdateStartupProgress` 的 Dispatcher 调度，仅在文字变化时更新同一个元素，不追加日志、不增加独立计时器。阶段更新与 `CompleteStartupProgressAsync` 的最终状态、进度完成操作都按 `Normal` 优先级投递，保持先入先出的顺序，防止此前排队的阶段状态覆盖“正在打开工作空间”。
+
+标题、主句候选、能力说明、阶段状态和进度辅助功能名称由 `StartupText` 与独立的 `StartupResources.resx`、`.en.resx`、`.zh-Hant.resx` 提供。每次构造启动窗口时，从当前界面语言的六条主句中等概率选择一条；候选均采用视觉标题格式，不保留句末句号。其余构造期界面文案通过 `x:Static` 读取 `CultureInfo.CurrentUICulture`，运行阶段在原有状态更新入口读取对应属性；`GetStage` 只按初始化器类型名选择文本，未知类型仍显示加载扩展组件。中文文化使用简繁父文化回退，其他文化仅在启动组件内回退英文，不修改全局语言、格式文化或语言配置，也不添加即时语言切换事件。资源读取和主句选择不改变初始化器排序、执行或进度完成语义。
+
+`StartupScene.cs` 是纯 WPF 绘制控件，不依赖视频或外部位图素材。普通深浅模式建立五个 `DrawingLayer`，各层的 `DrawingGroup`、`StreamGeometry`、画笔和画刷冻结后复用，并分别使用 `BitmapCache` 缓存绘图。光场摆动、轨道旋转和扫描平移三个动画变换置于各层缓存外，通过 `RenderTransform` 移动已缓存的内容，目标帧率为 `30`，避免因为层内元素移动而逐帧重建整个场景缓存。没有逐帧回调、逐帧几何重建或布局动画。`IsDark` 或高对比度变化时停止动画、移除旧层与缓存，再重建配色并按当前状态恢复动画；高对比度仅保留一个系统背景层。系统关闭客户端区域动画或 WPF 渲染等级为 Tier 0 时显示静态画面；隐藏或 `Unloaded` 时停止动画，卸载时同时解除系统设置与渲染等级事件订阅。
+
+这些约束减少启动界面本身的分配、布局与日志文本刷新开销，不改变 initializer 的工作量。初始化器仍可通过 UI Dispatcher 同步构造控件，例如 `ServiceInitializer` 中的设备显示面板装配；这段工作会占用 UI 线程，因此目标帧率不保证启动全程流畅，也不代表实际启动耗时已经缩短。视觉预览应只承载 `StartupScene` 或隔离的窗口视觉，不触发真实 `StartWindow.ContentRendered` 初始化链。
+
+启动进度继续按步骤和历史耗时权重估算，具体完成语义见下节。窗口初始化时摘除并关闭 `ProgramTimer.InitAppender` 的早期内存缓冲，不附加 UI 日志 appender；文件日志沿用既有 log4net 配置，定位方式见[日志来源与读取](../../01-user-guide/interface/log-viewer.md)。单项初始化失败仍记录后继续，启动链或主窗口创建的外层异常记录完整错误并保留错误弹窗；界面不显示日志不等于没有诊断记录。
 
 ## 初始化完成不等于所有功能就绪
 
 | 路径 | 执行与完成含义 |
 | --- | --- |
-| `StartWindow` 的 `IInitializer` | 首次渲染后在后台发现并构造实例；按 `--skip` 中逗号分隔的精确 Name 排除，再按 Order、Name 排序执行。单项 InitializeAsync 异常记录后继续，循环结束记录 `StartupInitializersCompleted`；这不表示每项成功 |
+| `StartWindow` 的 `IInitializer` | 首次渲染后在后台发现并构造实例；按 `--skip` 中逗号分隔的精确 Name 排除，再按 Order、Name 排序。已知内置前置链满足下述精确形状时分三路执行并在模板前汇合，其余初始化器保持排序后的串行执行。单项 InitializeAsync 异常记录后继续，循环结束记录 `StartupInitializersCompleted`；这不表示每项成功 |
 | 功能启动器 | `--feature` 先按 Header、再按类型名匹配 `IFeatureLauncher`；匹配后执行并清理启动记录，未找到则交给主窗口工厂。Execute 返回不证明该功能后续的异步业务完成 |
-| 主窗口选择 | 未指定 `--feature` 或未匹配功能时，`MainWindowFactory.Create` 按 `MainWindowConfig.UseCompactMainWindow` 创建 `CompactMainWindow` 或普通 `MainWindow`；新开关默认开启，只在本次创建时选择，不原地切换现有窗口；旧 `UseCompactTitleBar` 字段不读取或迁移，新字段已保存的 false/true 则保留 |
+| 主窗口选择 | 未指定 `--feature` 或未匹配功能时，`MainWindowFactory.Create` 先检查 Windows build 22000 门禁：低版本无论 `MainWindowConfig.UseCompactMainWindow` 的值为何都创建普通 `MainWindow`；门禁通过后才按该配置创建 `CompactMainWindow` 或普通 `MainWindow`。新开关默认开启，只在本次创建时选择，不原地切换现有窗口；旧 `UseCompactTitleBar` 字段不读取或迁移，新字段已保存的 false/true 则保留 |
 | 主窗口初始化 | 主窗口通过 Dispatcher 调用 `IMainWindowInitialized`，按 Order 执行并记录单项异常；该异步链和首次渲染各有完成入口 |
 | 启动健康标记 | 主窗口首次 `ContentRendered`、主窗口初始化链结束、功能启动器返回等路径均可调用 `StartupRegistryChecker.Clear()`。首次呈现可以先于某些异步初始化完成，因此 ready 不是设备、数据库或插件业务逐项验收 |
 
 `IInitializer` 的实例构造发生在 `--skip` 过滤之前，跳过其 InitializeAsync 不保证没有构造副作用。程序集过滤、provider 构造及各消费者缓存见[扩展发现与排查](../../04-api-reference/ui-components/ui-runtime-handoff.md)；插件的清单、条件依赖预检和装载失败规则只在[插件装载](../../02-developer-guide/plugin-development/overview.md)中维护。
 
-普通 `MainWindow` 保留原生外观；`CompactMainWindow : MainWindow` 继承同一份工作区 XAML 和初始化链，只增加标题栏适配，不第二次构造工作区。新建配置或缺少 `UseCompactMainWindow` 的升级配置默认选择紧凑主窗口，包括仅有旧字段的配置；在设置中关闭新开关并重启仍可选择旧 `MainWindow`。紧凑外观仅在满足 Windows 11 等门禁后附加，不支持或初始化失败时在该实例回退原生外观，不再创建第二个普通主窗口；这样不会重复改写全局工作区、文档宿主和快捷键注册。设置入口、重启与恢复方式、全屏订阅顺序及验证边界见[主窗口与入口装配](../../01-user-guide/interface/main-window.md)。已经匹配的功能启动器、独立文件路由、单实例交接和恢复门禁不由这个开关改变。
+启动器只在排序结果中连续出现 `MySqlInitializer`、`SolutionManagerInitializer`、`MqttInitializer`、`RCInitializer`、`TemplateInitializer` 时启用前置并行。第一路只执行 MySQL；第二路执行方案管理器，并等待它先前以 `Normal` 优先级投递的工作区 UI 回调完成；第三路严格按 MQTT 后 RC 的顺序执行，因为 RC 复用 MQTT 连接。三路全部完成后才进入 `TemplateInitializer`，随后数据库模板、设备服务及其余 Engine 初始化仍按原顺序串行执行。任一位置插入未知或插件初始化器都会关闭该优化并回退完整串行顺序，避免跨过未声明的依赖。各路中的单项失败仍沿用记录异常后继续的启动策略。
+
+方案 UI 屏障只确认该初始化器在屏障之前投递的 Dispatcher 回调已经完成，不表示工作区发起的其它独立异步任务全部完成。它与三路汇合一起防止把已知方案构造债务藏到模板或主窗口之后；模板和服务仍可自行执行或等待 UI 工作。
+
+初始化器发现完成后，以及循环中满足 `180 ms` 让出间隔时，启动链仍等待一次 `Background` 优先级的 Dispatcher 回调。这不是固定时长的休眠，也不表示工作区恢复、服务响应等其他异步任务全部完成。真正依赖 UI 的初始化继续由各初始化器显式调度。
+
+普通 `MainWindow` 保留原生外观；`CompactMainWindow : MainWindow` 继承同一份工作区 XAML 和初始化链，只增加标题栏适配，不第二次构造工作区。在 Windows build 22000 或更高版本，新建配置或缺少 `UseCompactMainWindow` 的升级配置默认选择紧凑主窗口，包括仅有旧字段的配置；在设置中关闭新开关并重启仍可选择旧 `MainWindow`。低于 build 22000 时不显示该设置，工厂直接创建普通 `MainWindow`，不会先构造紧凑类型再回退。门禁通过后，`CompactTitleBarChrome.TryAttach` 仍重复检查系统版本，并检查 DWM、窗口样式等运行条件；除版本外的条件不满足或初始化失败时，才在已有紧凑实例恢复原生外观，不再创建第二个普通主窗口。这样不会重复改写全局工作区、文档宿主和快捷键注册。设置入口、重启与恢复方式、全屏订阅顺序及验证边界见[主窗口与入口装配](../../01-user-guide/interface/main-window.md)。已经匹配的功能启动器、独立文件路由、单实例交接和恢复门禁不由这个开关改变。
 
 启动进度依据步骤和历史耗时估算，不是健康检查结果。定位“进度结束但功能不可用”时，先查具体 initializer 的日志，再查该能力的前提，不能仅依据 `PluginsLoaded`、`StartupInitializersCompleted` 或 ready 排除故障。
+
+### 启动耗时与首次使用计时
+
+设备详情内容采用[设备详情视图按需初始化](../../04-api-reference/engine-components/device-service-chain.md#设备详情视图按需初始化)契约。分析性能时分别记录主窗口首帧、设备卡片装配和详情首次使用，不能把延后执行的工作算作已消除。
+
+| 日志计时 | 覆盖范围与限制 |
+| --- | --- |
+| `Startup to first render completed` | 由 `ProgramTimer.StopAndReport` 输出；正常主程序路径从 `ProgramTimer.Start` 计时，到主窗口首次 `ContentRendered` 停止，包含基础装配、实例交接、插件、初始化器和首帧前 UI 工作，不代表所有异步主窗口初始化器或隐藏详情已经完成 |
+| `Startup core setup completed` | 覆盖启动参数、启动记录、内置模块、主配置、日志、主题与语言的基础装配；更新交接或独立文件提前返回时可能没有该日志 |
+| `Startup RBAC, MCP and LAN host setup` / `Startup plugin loading` | 分别覆盖运行宿主装配和外部插件加载；插件逐项日志保留英文动作，插件名称按清单原文输出，不强制翻译 |
+| `Slow startup initializer … completed` | 只输出耗时至少 `100 ms` 的 `IInitializer`；短初始化器不再逐项写开始、线程、队列和完成日志，失败仍单独记录 Error |
+| `Device display controls generated` | `Creation` 是当前显示卡片生成调用的时间，`PanelBuild` 是替换显示集合的时间；未在该调用内初始化的详情内容不计入这两个值 |
+| `Device view initialized. View=…, Duration=…ms.` | 一种详情实例首次成功创建 XAML 和初始化内容的时间；可能发生在首帧前，也可能由首次切换详情或收到结果触发，应同时核对它与 `StopAndReport` 的先后 |
+| `Startup initializers completed … Summed=…, ParallelOverlap=…` | `completed` 是整个初始化器调度墙钟时间，`Summed` 是单项耗时之和，`ParallelOverlap` 是两者的非负差；UI 检查点和调度间隙只进入墙钟时间，因此该差值用于定位并行，不等于首帧节省量 |
+| `Main window XAML construction` / `Main window initialized event completed` | 前者包含 Initialized 事件；后者覆盖停靠面板、工作区、布局、主题、菜单、热键和右侧入口的共同装配。日常日志不再输出这些内部子步骤及各 provider 的成功耗时 |
+| `Main window creation and Show` / `Compact title bar attachment completed` | 前者覆盖工厂创建与 `Show` 返回，后者只覆盖紧凑标题栏附加；返回均不代表 `ContentRendered` 已发生 |
+| `Slow main-window initializer … completed` / `Main window initializers completed` | 单项只记录至少 `100 ms` 的主窗口初始化器，名称使用类型名；总日志记录墙钟时间、数量和捕获失败数。0 次捕获失败不证明外部设备或服务业务健康 |
+
+默认启动日志采用上述摘要、慢项、业务健康结果和失败记录；启动页队列、Dispatcher 检查点、前置并行 lane 的开始/结束、短初始化器、布局成功、面板成功注册和 ColorVision 调度器包装层的重复成功信息不再写入 Info。第三方组件可继续输出自身日志。需要线程和 Dispatcher 级细分时使用下述显式启动跟踪，而不是恢复常驻噪声日志。
+
+`ContentRendered` 是 WPF 派发的事件入口，通常以 `Input` 优先级运行；它是统一比较启动的代理指标，不是显示器或 GPU 实际呈现的时间戳。提高回调优先级、改变排队顺序或把工作移到回调之后，不能单独作为启动提速的证据。
+
+需要细分主窗口构造至该事件入口时，可为测试进程设置 `COLORVISION_STARTUP_TRACE=1`。`StartupUiTrace` 最多保留 2048 个 Dispatcher 操作，记录工厂返回、Show 返回、Loaded、事件入口，以及队列和执行耗时。事件入口先冻结记录并卸除 Hooks，`StopAndReport` 后才序列化写文件；默认不创建跟踪对象或订阅 Hooks。`COLORVISION_STARTUP_TRACE_FILE` 指定输出 JSON，未指定时写入临时目录的 `ColorVisionStartupTrace-{进程ID}.json`。创建窗口失败或窗口提前关闭会清理订阅，文件写入失败不阻断启动。
+
+诊断报告中的执行区间可能因嵌套 Dispatcher 重叠；尾段覆盖率使用区间并集，未覆盖时间不能直接归因为空闲或 GPU。Hooks 不覆盖 `OperationCompleted` 之后的任务 continuation、原生消息或订阅前开始的操作；晚到的 Posted 事件不生成负排队时间，超限丢弃量单独报告。跟踪开启时也细分紧凑标题栏设置步骤。Hooks、锁和诊断日志都有观察开销，因此诊断样本与关闭跟踪后的正式性能对照分别记录。
+
+比较启动版本应使用相同配置、资源和启动入口，观察多次运行，并同时检查具体阶段及首次打开详情的成本。队列等待已经包含在覆盖其区间的总耗时内；总计时、父阶段和子阶段不能重复相加，分段相加应先选择互不重叠的边界。日志相邻时间戳的间隙只定位两条记录之间的区间；例如插件末条日志到启动窗口 Initialized 之间还包含插件收尾和窗口构造，没有更细计时就不能全归因于 UI、网络、文件读取或 JIT。构建成功、静态视觉预览或动画目标帧率也不证明实际启动提速。
 
 ## 启动记录与恢复判断
 
@@ -104,18 +157,19 @@ related: ["platform.architecture", "platform.startup-integrity", "delivery.updat
 
 已提交的维护退出不附带安装预取更新，即使创建新进程失败也如此。正常退出时的更新交接仍按更新主题处理。
 
-### 一次性维护参数
+### 一次性启动参数
 
-参数由维护流程生成，无需用户在重启后重复选择；它们不修改向导完成标记、多实例设置，也不伪造启动失败记录。
+渲染兼容参数可由用户快捷方式显式传入；其余参数由维护流程生成，无需用户在重启后重复选择。这些参数不修改向导完成标记、多实例设置，也不伪造启动失败记录。
 
 | 参数值 | 行为 |
 | --- | --- |
+| `--software-rendering` | 在 `App` 构造和资源初始化前将当前进程的 `RenderOptions.ProcessRenderMode` 设为 `SoftwareOnly`；不写注册表或配置，普通启动仍使用 WPF 默认的硬件优先模式。用户入口与远程白屏判断见[主程序启动](../../00-getting-started/first-steps.md#远程白屏时使用软件渲染兼容模式) |
 | `--startup-maintenance safe-start` | 本次跳过全部外部插件 |
 | `--startup-maintenance skip-plugins` 与 `--startup-skip-plugins` | 后者为一个 JSON 字符串数组参数，保留精确插件键；解析失败或空列表改走恢复页，不静默加载全部插件 |
 | `--startup-maintenance setup` / `recovery` | 兼容的显式向导 / 恢复启动分支 |
 | `--wait-for-process` | 在入口消费并等待指定旧进程，最多 30 秒；超时退出，后续常规启动不继续 |
 
-真实的未完成启动记录仍会触发恢复页，safe-start / skip-plugins 不绕过它；非空跳过键按插件加载器的匹配规则处理。参数只是本机启动意图，不是远程维护授权或新进程健康凭据。
+真实的未完成启动记录仍会触发恢复页，safe-start / skip-plugins 不绕过它；非空跳过键按插件加载器的匹配规则处理。软件渲染只改变 WPF 当前进程的呈现路径，不改变插件、初始化、设备或业务完成语义。参数只是本机启动意图，不是远程维护授权或新进程健康凭据。
 
 ## 进入业务后的排查
 
@@ -129,6 +183,11 @@ related: ["platform.architecture", "platform.startup-integrity", "delivery.updat
 
 ## 验证入口与缺口
 
+- 初始化器调度：`StartupInitializerSequenceTests` 使用可控的内置初始化器子类检查 MySQL、方案管理器和 MQTT 同时开始，RC 只在 MQTT 返回后开始，Template 等待三路完成，Service 等待 Template；在已知链之间插入未知初始化器时检查完整串行回退。替身不连接真实数据库、MQTT、RC 或设备，实际耗时与外部服务健康仍需独立 Release 启动测量。
+- UI 调度诊断：`StartupUiTraceTests` 使用实际 Dispatcher 与屏幕外合成窗口，检查默认关闭、真实 `ContentRendered` 的 Input 操作关联、合法 JSON 输出、停止后 Hooks 与窗口订阅可被回收，以及 Abort、提前关窗和输出失败的清理。受控跨线程投递验证 Started 之后才到达的 Posted 不产生负队列耗时；不覆盖记录上限、所有嵌套 Dispatcher 情形、真实主窗口完整启动性能或 GPU 呈现。
+- 启动窗口生命周期：`StartWindowThemeLifecycleTests` 在 STA WPF 宿主中构造并关闭窗口，检查早期日志缓冲释放、其他 appender 保留、`SystemThemeChanged` 与 `CurrentUIThemeChanged` 订阅恢复及窗口可被 GC；不显示窗口、不执行真实初始化。
+- 启动界面呈现：`StartupPresentationTests` 在显示前移除真实 `ContentRendered` 初始化处理器，再将产品窗口显示到屏幕外；覆盖默认深色、固定浅色独立于应用，以及跟随软件策略下的简英繁与明确深浅主题组合、英文 UseSystem 的两种解析结果。固定策略案例验证配置修改不改变当前窗口，关闭重开后读取新策略。检查后续应用主题变化、英文文字与较长阶段状态布局、辅助名称、无切换按钮、调色不改进度和关闭后主题订阅恢复。阶段文本测试检查类型名映射及未知扩展回退；不执行真实初始化、设备连接或启动流程。配置兼容及设置行验证由[启动页主题测试](../../04-api-reference/ui-components/ColorVision.Themes.md#包入口与验证范围)维护。
+- 动画生命周期：`StartupSceneLifecycleTests` 将场景承载到真实的屏幕外 WPF 窗口，经历浅色、深色、再浅色及隐藏重显，检查层数、上下边缘像素、旧层脱离，以及关闭后场景和被替换层可被 GC。高对比度断言依据测试机器当前设置，不主动切换系统高对比度；不覆盖实际帧率、整体画面效果或全部静态降级组合。
 - 启动分支：`SingleInstanceStartupTests` 检查决策、替换响应及安装范围锁名；`StartupFileOpenPolicyTests` 检查独立文件路由；`StartupRegistryCheckerTests` 使用临时注册表项检查未完成尝试回收。
 - 恢复列表：`StartupRecoveryPluginScannerTests` 使用临时清单和无效 DLL 字节，检查记录匹配、旧式和损坏清单目录；不构成真实插件装载或完整备份恢复测试。
 - 维护交接：`StartupMaintenanceLifecycleTests` 检查参数、确认、关窗取消、保存失败和失败收尾；`StartupMaintenanceWindowTests`、`WizardWindowRuntimeTests`、`StartupRecoveryWindowRuntimeTests` 用隔离窗口与替身检查 Owner、动作、向导初始化和准备顺序。

@@ -105,14 +105,17 @@ python .\Scripts\package_cvxp.py --project-file .\Plugins\SystemMonitor\SystemMo
 
 `PluginRecoveryBackupService` 默认存放在 `Environments.DirLocalAppData/PluginRecovery`，按精确安装目录和插件身份隔离；不是主程序可选完整快照，也不是更新临时目录里的 rollback。
 
-新建备份时，服务比较复制前后源目录和副本的内容目录，记录逐文件 SHA-256、文件数/总字节数及 manifest 元数据，通过校验后才把 `.creating` 目录变为完成备份。备份按 manifest 元数据复用，可能不包含同版本目录后续的文件改动。完成新备份后尝试保留最近三个已验证备份；删除失败只记录警告，因此实际数量可能更多。损坏或 `.creating` 条目不会作为普通旧备份自动删除。
+主窗口首次呈现后，后台按软件版本和各插件 manifest 判断是否需要备份：软件版本变化时为各插件创建一次新备份，单个插件更新时只为该插件创建一次；首次安装、备份缺失或旧备份未记录软件版本时补建一次。后续版本不变的启动只读取清单和完成备份元数据，不扫描源文件或校验 payload，也不输出备份完成日志。备份失败不会记为完成，后续启动可重试。这里沿用主窗口的启动完成边界，不代表设备或插件业务逐项验收。
+
+新建备份时，服务比较复制前后源目录和副本的内容目录，记录软件版本、逐文件 SHA-256、文件数/总字节数及 manifest 元数据，通过校验后才把 `.creating` 目录变为完成备份。备份按软件版本和 manifest 元数据复用，可能不包含两者未变时目录后续的文件改动。旧格式备份仍可验证和还原。完成新备份后尝试保留最近三个已验证备份；删除失败只记录警告，因此实际数量可能更多。损坏或 `.creating` 条目不会作为普通旧备份自动删除。
 
 ### 备份复用与校验时机
 
 | API / 阶段 | 实际校验 |
 | --- | --- |
-| `EnsureCurrentVersionBackup` 命中本进程已准备备份 | 检查备份目录仍存在、manifest 元数据匹配；不重新扫描源目录或校验备份 payload |
-| `EnsureCurrentVersionBackup` 从磁盘查找备份 | 经 `GetAvailableBackup` 校验备份后，再按当前 manifest 元数据决定复用；没有合适备份才新建 |
+| 正常启动后台备份 | 只检查完成备份元数据中的软件版本和 manifest；匹配即跳过，不把候选放入已验证缓存；需新建时执行完整复制和校验 |
+| `EnsureCurrentVersionBackup` 命中本进程已准备备份 | 检查备份目录仍存在、软件版本和 manifest 元数据匹配；不重新扫描源目录或校验备份 payload |
+| `EnsureCurrentVersionBackup` 从磁盘查找备份 | 经 `GetAvailableBackup` 校验备份后，再按当前软件版本和 manifest 元数据决定复用；没有合适备份才新建 |
 | `GetRecoveryBackupCandidate` / `GetRecoveryBackupCandidates` | 只读取候选元数据；损坏或被占用的 payload 也可能出现在列表 |
 | `GetAvailableBackup` / `GetAvailableBackups`、`ReadBackupMetadata` / `TryReadBackupMetadata` | 读取元数据并验证 payload 的内容与 manifest；后两个方法也不是仅仅读元数据 |
 | `RestoreAsync` | 重新验证 payload、复制并复核暂存内容，只允许恢复到当前运行的同一安装位置，再交给外部目录替换脚本 |
@@ -161,7 +164,7 @@ Spectrum 的独立 ZIP + `.cvxp` 有专用双通道发布入口，主程序使�
 - `Scripts/tests/test_package_cvxp.py`：manifest 身份/路径、DLL 版本同步、包根目录、私有依赖保留及默认共享清单漂移阻断。
 - `MarketplacePackageDownloadServiceTests`：通过替身验证下载/摘要失败及 ID 预检阻止安装调用；不执行真实安装。
 - `PluginUpdaterBatchTests`：暂存目录归一、重复 ID/坏包拒绝、manifest/legacy 分离和生成脚本文本；回滚分支存在不等于故障注入已覆盖。
-- `PluginRecoveryBackupServiceTests`：备份内容、损坏识别、候选与已验证备份区别、安装隔离、保留策略和恢复脚本生成。
+- `PluginRecoveryBackupServiceTests`：备份内容、软件或插件更新后仅备份一次、重启后跳过且不读取被占用的源文件和 payload、失败重试、旧格式兼容、损坏识别、候选与已验证备份区别、安装隔离、保留策略和恢复脚本生成。
 - `UpdaterBatchExecutionTests`：在隔离临时目录执行脚本，覆盖完整插件目录替换、旧文件移除、其它插件保留与 legacy 布局；不是正式安装目录验收。
 
 这些测试分别覆盖包结构、流程调用和隔离目录中的脚本执行，不证明真实安装成功。HostCopy 双配置复制、真实文件占用/UAC、崩溃中断、回退失败及 `PluginExtractor` 的清单/路径风险仍需专项验证。

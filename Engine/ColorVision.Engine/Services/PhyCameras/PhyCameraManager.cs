@@ -33,12 +33,6 @@ namespace ColorVision.Engine.Services.PhyCameras
         public string DisplayName => $"{CameraCode} / {RelativePath}";
     }
 
-    public class PhyCameraManagerConfig : ViewModelBase, IConfig
-    {
-
-    }
-
-
     public class PhyCameraManager:ViewModelBase
     {
         private static PhyCameraManager _instance;
@@ -49,11 +43,8 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand SearchCameraCommand { get; set; }
 
         public RelayCommand ImportCommand { get; set; }
-        public RelayCommand EditCofigCommand { get; set; }
         public RelayCommand OpenDeviceManagerCommand { get; set; }
         public RelayCommand OpenLicenseManagerCommand { get; set; }
-
-        public PhyCameraManagerConfig Config { get; set; } = ConfigService.Instance.GetRequiredService<PhyCameraManagerConfig>();
 
         public PhyCameraManager()
         {
@@ -61,7 +52,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             SearchCameraCommand = new RelayCommand(a => SearchCameraIds());
             ImportCommand = new RelayCommand(a => Import());
 
-            EditCofigCommand = new RelayCommand(a => EditCofig());
             OpenDeviceManagerCommand = new RelayCommand(a => OpenDeviceManager());
             OpenLicenseManagerCommand = new RelayCommand(a => OpenLicenseManager());
 
@@ -132,12 +122,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
-        }
-
-        public void EditCofig()
-        {
-            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            propertyEditorWindow.ShowDialog();
         }
 
         public void OpenDeviceManager()
@@ -433,9 +417,14 @@ namespace ColorVision.Engine.Services.PhyCameras
             UpdateLicenseModel(licenseModel);
         }
 
-        private static LicenseModel GetOrCreateLicenseModel(string macAddress, List<LicenseModel> licenses)
+        internal static LicenseModel GetOrCreateLicenseModel(string macAddress, List<LicenseModel> licenses)
         {
-            var licenseModel = licenses.Find(a => a.MacAddress == macAddress) ?? new LicenseModel { MacAddress = macAddress };
+            var licenseModel = licenses.Find(a => string.Equals(a.MacAddress, macAddress, StringComparison.OrdinalIgnoreCase));
+            if (licenseModel == null)
+            {
+                licenseModel = new LicenseModel { MacAddress = macAddress };
+                licenses.Add(licenseModel);
+            }
             return licenseModel;
         }
 
@@ -446,39 +435,48 @@ namespace ColorVision.Engine.Services.PhyCameras
             licenseModel.ExpiryDate = licenseModel.ColorVisionLicense.ExpiryDateTime;
 
             int ret = PhyLicenseDao.Instance.Save(licenseModel);
+            if (ret == -1)
+            {
+                return;
+            }
+
+            var phyCamera = PhyCameras.FirstOrDefault(a => string.Equals(a.Code, licenseModel.MacAddress, StringComparison.OrdinalIgnoreCase));
+            if (phyCamera != null)
+            {
+                phyCamera.CameraLicenseModel = licenseModel;
+            }
 
             UpdateSysResource(licenseModel);
         }
 
         private  void UpdateSysResource(LicenseModel licenseModel)
         {
-            var sysDictionaryModel = SysResourceDao.Instance.GetAll().Find(a => a.Code == licenseModel.MacAddress);
-            if (sysDictionaryModel == null)
+            var sysDictionaryModel = FindPhysicalCameraResource(SysResourceDao.Instance.GetAll(), licenseModel.MacAddress);
+            if (!RequiresPhysicalCameraCreation(sysDictionaryModel))
             {
-                sysDictionaryModel = new SysResourceModel
-                {
-                    Code = licenseModel.MacAddress,
-                    Type = (int)ServiceTypes.PhyCamera,
-                    Value = JsonConvert.SerializeObject(new ConfigPhyCamera())
-                };
+                return;
+            }
 
-                int ret = SysResourceDao.Instance.Save(sysDictionaryModel);
-                if(ret != -1 && sysDictionaryModel.Code !=null)
-                {
-                    CreatePhysicalCameraFloder(sysDictionaryModel.Code);
-                }
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{licenseModel.MacAddress} {(ret == -1 ? Properties.Resources.AddPhysicalCameraFailed : Properties.Resources.AddPhysicalCameraSuccess)}", Properties.Resources.PhysicalCameraManager);
-            }
-            else
+            sysDictionaryModel ??= new SysResourceModel
             {
-                sysDictionaryModel.Value = JsonConvert.SerializeObject(new ConfigPhyCamera());
-                int ret= SysResourceDao.Instance.Save(sysDictionaryModel);
-                if (ret != -1 && sysDictionaryModel.Code != null)
-                {
-                    CreatePhysicalCameraFloder(sysDictionaryModel.Code);
-                }
+                Code = licenseModel.MacAddress,
+                Type = (int)ServiceTypes.PhyCamera
+            };
+            sysDictionaryModel.Value = JsonConvert.SerializeObject(new ConfigPhyCamera());
+
+            int ret = SysResourceDao.Instance.Save(sysDictionaryModel);
+            if(ret != -1 && sysDictionaryModel.Code !=null)
+            {
+                CreatePhysicalCameraFloder(sysDictionaryModel.Code);
             }
+            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{licenseModel.MacAddress} {(ret == -1 ? Properties.Resources.AddPhysicalCameraFailed : Properties.Resources.AddPhysicalCameraSuccess)}", Properties.Resources.PhysicalCameraManager);
         }
+
+        internal static SysResourceModel? FindPhysicalCameraResource(IEnumerable<SysResourceModel> resources, string? cameraCode) =>
+            resources.FirstOrDefault(a => a.Type == (int)ServiceTypes.PhyCamera && string.Equals(a.Code, cameraCode, StringComparison.OrdinalIgnoreCase));
+
+        internal static bool RequiresPhysicalCameraCreation(SysResourceModel? resource) =>
+            resource == null || string.IsNullOrWhiteSpace(resource.Value);
 
         public void CreatePhysicalCameraFloder(string cameraID)
         {

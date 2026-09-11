@@ -38,6 +38,12 @@ namespace ColorVision.Copilot
             return NeedsLocalEvidence(request) && !HasBoundedExplicitFileScope(request);
         }
 
+        internal static bool CanUseWorkspaceEvidence(CopilotAgentRequest? request) =>
+            NeedsLocalEvidence(request) || CanUseWorkspacePatch(request);
+
+        internal static bool CanDiscoverWorkspace(CopilotAgentRequest? request) =>
+            CanUseWorkspaceEvidence(request) && !HasBoundedExplicitFileScope(request);
+
         internal static bool HasBoundedExplicitFileScope(CopilotAgentRequest? request)
         {
             if (!IsAgentRequest(request)
@@ -59,6 +65,16 @@ namespace ColorVision.Copilot
             return !ContainsAny(intentText, WorkspaceDiscoveryMarkers)
                 && !ContainsAny(intentText, DelegatedWorkspaceEvidenceMarkers)
                 && !ContainsAny(intentText, ExternalLocalSearchMarkers);
+        }
+
+        internal static bool CanUseWorkspacePatch(CopilotAgentRequest? request)
+        {
+            // Tool availability follows the frozen scope; intent markers still drive execution requirements.
+            return IsAgentRequest(request)
+                && !string.IsNullOrWhiteSpace(request!.UserText)
+                && !ExplicitlyDisallowsWriteAccess(request)
+                && (request.WritableLocalRootPaths.Count > 0 || request.WritableLocalFilePaths.Count > 0)
+                && !ContainsAny(request.UserText, WorkspaceEditOptOutMarkers);
         }
 
         public static bool NeedsWorkspaceEdit(CopilotAgentRequest? request)

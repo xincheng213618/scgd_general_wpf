@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
 using System.ComponentModel;
 using System.Windows.Media;
 
@@ -32,6 +32,14 @@ namespace ColorVision.ImageEditor
         [Category("Msg"),Browsable(false)]
         public string? Msg { get => _Msg; set { _Msg = value; OnPropertyChanged(); } }
         private string? _Msg;
+
+        [Browsable(false), Newtonsoft.Json.JsonIgnore]
+        public bool IsMeasurementMessage { get; set; }
+
+        public void InvalidateMeasurementMessage()
+        {
+            if (IsMeasurementMessage) { IsMeasurementMessage = false; Msg = null; }
+        }
 
         [Category("Param"), Browsable(false)]
         public object? Param { get => _Param; set { _Param = value; } }

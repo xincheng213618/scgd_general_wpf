@@ -10,8 +10,8 @@ namespace ColorVision.Copilot
             CopilotProfileConfig profile)
         {
             ArgumentNullException.ThrowIfNull(profile);
-            return UsesOfficialOpenAiApi(profile)
-                ? "max_completion_tokens"
+            return UsesResponsesApi(profile)
+                ? "max_output_tokens"
                 : "max_tokens";
         }
 
@@ -67,7 +67,7 @@ namespace ColorVision.Copilot
                     StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool IsOfficialOpenAiReasoningModel(
+        internal static bool IsOfficialOpenAiReasoningModel(
             CopilotProfileConfig profile)
         {
             if (!UsesOfficialOpenAiApi(profile))
@@ -100,6 +100,16 @@ namespace ColorVision.Copilot
                 index++;
             }
             return hasDigit && majorVersion >= 5;
+        }
+
+        internal static bool IsGpt6Astra(CopilotProfileConfig profile)
+        {
+            ArgumentNullException.ThrowIfNull(profile);
+            return UsesOfficialOpenAiApi(profile)
+                && string.Equals(
+                    profile.Model?.Trim(),
+                    "gpt-6-astra",
+                    StringComparison.OrdinalIgnoreCase);
         }
     }
 }

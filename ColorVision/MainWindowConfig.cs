@@ -3,6 +3,7 @@ using ColorVision.FloatingBall;
 using ColorVision.UI;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
+using ColorVision.Windowing;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -25,11 +26,9 @@ namespace ColorVision
         public bool UseCompactMainWindow { get => _useCompactMainWindow; set { _useCompactMainWindow = value; OnPropertyChanged(); } }
         private bool _useCompactMainWindow = true;
 
-        /// <summary>
-        /// 记录上次打开时的应用版本，用于在更新后首次启动时显示变更日志。
-        /// </summary>
-        public string LastOpenedVersion { get => _LastOpenedVersion; set { _LastOpenedVersion = value; OnPropertyChanged(); } }
-        private string _LastOpenedVersion;
+        [Browsable(false)]
+        public bool HasShownNewUserGuide { get => _hasShownNewUserGuide; set { _hasShownNewUserGuide = value; OnPropertyChanged(); } }
+        private bool _hasShownNewUserGuide;
 
         [JsonIgnore]
         public bool IsFull { get => _IsFull; set { _IsFull = value; OnPropertyChanged(); } }
@@ -98,28 +97,33 @@ namespace ColorVision
                     ViewType = typeof(DesktopPetSettingsControl),
                     Order = 20,
                 },
-                new ConfigSettingMetadata
-                {
-                    BindingName = nameof(IsRestoreWindow),
-                    Source = Instance
-                },
-                new ConfigSettingMetadata
-                {
-                    BindingName = nameof(UseCompactMainWindow),
-                    Source = Instance
-                }
             };
 
-            if (Tool.IsWin11)
-            {
-                list.Add(new ConfigSettingMetadata
-                {
-                    BindingName = nameof(IsWindows10ContextMenu),
-                    Source = Instance,
-                });
-            }
+            list.AddRange(CreateWindowAppearanceSettings(Instance,
+                ShouldShowCompactMainWindowSetting(CompactTitleBarChrome.IsSupportedOperatingSystem), Tool.IsWin11));
             return list;
         }
+
+        internal static IEnumerable<ConfigSettingMetadata> CreateWindowAppearanceSettings(
+            MainWindowConfig source, bool showCompactMainWindow, bool showWindows10ContextMenu)
+        {
+            yield return CreateAppearanceSetting(nameof(IsRestoreWindow), source, -20);
+            if (showCompactMainWindow)
+                yield return CreateAppearanceSetting(nameof(UseCompactMainWindow), source, -10);
+            if (showWindows10ContextMenu)
+                yield return CreateAppearanceSetting(nameof(IsWindows10ContextMenu), source, 0);
+        }
+
+        private static ConfigSettingMetadata CreateAppearanceSetting(string bindingName, MainWindowConfig source, int order) => new()
+        {
+            BindingName = bindingName,
+            Source = source,
+            Section = ConfigSettingConstants.SectionAppearance,
+            Order = order,
+        };
+
+        internal static bool ShouldShowCompactMainWindowSetting(bool operatingSystemSupported) =>
+            operatingSystemSupported;
     }
 
     public class ExportMenuViewStatusBar : MenuItemBase,IHotKey

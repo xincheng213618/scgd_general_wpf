@@ -262,7 +262,7 @@ namespace ProjectARVRPro
         public double CycleTimeMilliseconds => Math.Max(0, (EndTime - StartTime).TotalMilliseconds);
         public string ExecutionText => $"第 {ExecutionIndex} 次";
         public string CycleTimeText => ResultStatisticsCalculator.FormatMilliseconds(CycleTimeMilliseconds);
-        public string FlowCountText => FlowCount > 0 ? $"{FlowCount} 个" : "-";
+        public string FlowCountText => FlowCount > 0 ? FlowCount.ToString(CultureInfo.InvariantCulture) : "-";
         public string FlowRunTimeText => FlowCount > 0 ? ResultStatisticsCalculator.FormatMilliseconds(FlowRunTimeMilliseconds) : "-";
         public string ResultText => Result ? "PASS" : "FAIL";
     }

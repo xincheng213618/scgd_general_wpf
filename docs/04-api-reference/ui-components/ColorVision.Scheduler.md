@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "任务计划程序的状态栏入口、创建步骤、调度参数、启动恢复和执行历史；暂停只限制后续触发，重启按保存的定义重新调度。"
 aliases: ["任务计划程序","创建任务","间隔/重复","执行历史","定时任务为什么不执行","任务暂停后仍然执行","重启后一次性任务又执行","ColorVision.Scheduler","QuartzSchedulerManager","InitializationTask","scheduler_tasks.json","SchedulerHistory.db","SchedulerInfo","TaskExecutionListener","TimeoutSeconds","DisallowConcurrentExecution"]
-code_paths: ["UI/ColorVision.Scheduler/README.md","UI/ColorVision.Scheduler/ColorVision.Scheduler.csproj","UI/ColorVision.Scheduler/QuartzSchedulerManager.cs","UI/ColorVision.Scheduler/MenuTaskViewer.cs","UI/ColorVision.Scheduler/SchedulerStatusBarProvider.cs","UI/ColorVision.Scheduler/SchedulerInfo.cs","UI/ColorVision.Scheduler/SchedulerTriggerFactory.cs","UI/ColorVision.Scheduler/SchedulerTaskSerializer.cs","UI/ColorVision.Scheduler/TaskExecutionListener.cs","UI/ColorVision.Scheduler/Data/SchedulerDbManager.cs","UI/ColorVision.Scheduler/TaskViewerWindow.xaml.cs","UI/ColorVision.Scheduler/CreateTask.xaml.cs","UI/ColorVision.Scheduler/CreateTask.xaml","UI/ColorVision.Scheduler/TaskViewerWindow.xaml","UI/ColorVision.Scheduler/Properties/Resources.resx","UI/ColorVision.Scheduler/ExecutionHistoryWindow.xaml.cs","UI/ColorVision.UI/Environments.cs","Engine/ColorVision.Engine/Services/Devices/ScheduledDeviceJobHelper.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Job/CameraCaptureJob.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/HeadlessFlowJob.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/SchedulerTriggerFactoryTests.cs","Test/ColorVision.UI.Tests/SchedulerTaskSerializationTests.cs","Test/ColorVision.UI.Tests/SchedulerHistoryQueryTests.cs","Test/ColorVision.UI.Tests/ScheduledDeviceJobHelperTests.cs"]
+code_paths: ["UI/ColorVision.Scheduler/README.md","UI/ColorVision.Scheduler/ColorVision.Scheduler.csproj","UI/ColorVision.Scheduler/QuartzSchedulerManager.cs","UI/ColorVision.Scheduler/MenuTaskViewer.cs","UI/ColorVision.Scheduler/SchedulerStatusBarProvider.cs","UI/ColorVision.Scheduler/SchedulerInfo.cs","UI/ColorVision.Scheduler/SchedulerTriggerFactory.cs","UI/ColorVision.Scheduler/SchedulerTaskSerializer.cs","UI/ColorVision.Scheduler/TaskExecutionListener.cs","UI/ColorVision.Scheduler/Data/SchedulerDbManager.cs","UI/ColorVision.Scheduler/TaskViewerWindow.xaml.cs","UI/ColorVision.Scheduler/CreateTask.xaml.cs","UI/ColorVision.Scheduler/CreateTask.xaml","UI/ColorVision.Scheduler/TaskViewerWindow.xaml","UI/ColorVision.Scheduler/Properties/Resources.resx","UI/ColorVision.Scheduler/Presentation/SchedulerPresentation.cs","UI/ColorVision.Scheduler/Presentation/SchedulerStyles.xaml","UI/ColorVision.Scheduler/Presentation/SchedulerTaskExporter.cs","UI/ColorVision.Scheduler/ExecutionHistoryWindow.xaml.cs","UI/ColorVision.UI/Environments.cs","Engine/ColorVision.Engine/Services/Devices/ScheduledDeviceJobHelper.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Job/CameraCaptureJob.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/HeadlessFlowJob.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/SchedulerWindowTests.cs","Test/ColorVision.UI.Tests/SchedulerTriggerFactoryTests.cs","Test/ColorVision.UI.Tests/SchedulerTaskSerializationTests.cs","Test/ColorVision.UI.Tests/SchedulerHistoryQueryTests.cs","Test/ColorVision.UI.Tests/ScheduledDeviceJobHelperTests.cs"]
 related: ["ui.index","ui.status-bar","ui.configuration","flow.templates","flow.headless"]
 ---
 
@@ -15,11 +15,11 @@ related: ["ui.index","ui.status-bar","ui.configuration","flow.templates","flow.h
 
 ## 创建和管理任务
 
-1. 点击主程序状态栏的**时钟图标（任务计划程序）**打开任务列表。图标显示设置见[状态栏](./status-bar.md)。
-2. 点击 **创建任务**，选择任务类型，核对任务名称、分组及该类型的配置。
-3. 设置执行计划、重复方式和间隔；需要稍后开始时，选中 **延迟启动** 并填写正的时间间隔，例如 `00:05:00`。
-4. 点击 **创建**。提交成功后窗口关闭，任务按计划参与调度；校验或保存失败时窗口保留并显示错误。
-5. 在任务行右键菜单中编辑、暂停、恢复、立即执行或查看该任务的**执行历史**；顶部历史入口查看所有任务的记录。
+1. 点击主程序状态栏的**时钟图标（任务计划程序）**打开任务卡片列表。图标显示设置见[状态栏](./status-bar.md)。
+2. 点击 **创建任务**，选择任务类型，核对任务名称、分组及该类型的参数。只有一个可用类型时自动选中；切换类型会更新建议名称，但保留用户手填的名称和分组。
+3. 设置执行计划、重复方式和间隔，核对实时**计划预览**；“多次”的**追加次数**不包含首次执行。需要稍后开始时选中 **延迟启动**，未设置过延迟时预填 `00:05:00`，可继续修改。
+4. 优先级与超时在**高级设置**中，默认折叠；编辑含非默认高级参数的任务时自动展开。点击 **创建任务**或**保存修改**，成功后窗口关闭；输入格式、参数生成、校验或保存失败会在窗口内显示错误并保留表单。
+5. 每张卡片直接提供**立即执行、编辑任务、暂停/继续任务**。**更多（•••）**和右键菜单保留任务历史、属性与删除入口；顶部历史查看全部记录，**导出**菜单提供 CSV、JSON 和报告。
 
 默认“间隔/重复 + 一次”计划可在创建后立即执行。调度器首次访问也会恢复已保存任务；涉及相机、光谱仪或流程的任务，应先确认设备和业务配置适合运行。暂停、立即执行和关闭窗口的具体效果见[暂停与关闭](#暂停、取消、超时和关闭)。
 
@@ -33,6 +33,14 @@ related: ["ui.index","ui.status-bar","ui.configuration","flow.templates","flow.h
 | 超时（秒） | 0；由具体 Job 决定是否使用该值，调度器没有统一终止所有 Job 的超时层 |
 
 任务名称和分组共同组成 `JobKey`。编辑调度参数应使用**编辑任务**入口；修改身份会影响统计归属，见[修改完成与回退](#修改完成、回退与界面边界)。
+
+## 窗口布局与代码边界
+
+任务窗口以少量任务为主要使用场景：卡片聚合名称、分组/类型、计划、状态、前后触发时间、运行计数及最后结果/耗时，窗口高度随内容调整；达到工作区高度上限后滚动。创建窗口也按内容调整高度，参数较多或窗口缩小时滚动表单，底部操作始终留在滚动区域之外。两种窗口使用主题动态资源，保留浅色/深色切换。
+
+`TaskViewerWindow` 负责选择、窗口操作及 Copilot 上下文；`CreateTask` 负责编辑草稿、属性编辑器和提交。`Presentation/SchedulerPresentation.cs` 投影计划/状态文案，`SchedulerStyles.xaml` 共享样式，`SchedulerTaskExporter.cs` 生成导出快照；展示字段不写入 `SchedulerInfo`。`ISchedulerService`、公开窗口构造与 `SchedulerInfo` 属性、任务定义和序列化格式保持兼容，内部构造允许注入服务以隔离界面验证。
+
+正常窗口等待管理器的 `InitializationTask` 后启用操作。创建表单提交前检查当前可见输入的绑定转换错误及调度参数，避免非法时间或整数仍以旧解析值提交；保存期间禁用重复提交与关闭。窗口不再设置全局集合视图的无条件过滤器，也不在暂停/删除后重复修改由管理器维护的状态或集合。关闭窗口解除订阅，初始化晚到或执行回调不会再更新已关闭窗口。
 
 ## 首次访问和恢复顺序
 
@@ -81,7 +89,7 @@ JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`，加载�
 
 同身份编辑会在替换前合并最新运行统计，防止编辑期间完成的执行被旧副本覆盖。改任务名或分组则被视为新统计身份，列表计数归零；旧 SQLite 历史仍保留在旧键下。删除任务不删除历史。直接修改 `SchedulerInfo` 属性、调用 `SaveTasks` 或 `LoadTasks` 不能替代 `CreateJob/UpdateJob` 的 Quartz 注册流程。
 
-`IConfigurableJob` 只定义配置类型与默认配置工厂，`CreateTask.RenderConfigurationEditor` 会实例化 Job 并生成属性编辑器；类型被发现不代表构造、配置或运行必然成功。管理器默认只向 JobDataMap 写入 `SchedulerInfo`。要求额外键的 `HeadlessFlowJob` 不能仅因出现在类型列表就视为已配置可运行；它的 FlowKey、StartNode 与独立超时契约见[无界面流程执行](../algorithms/templates/flow-engine.md)，传统 `FlowJob` 的批次/最终完成链见[流程模板与执行](../engine-components/template-flow-chain.md)。
+`IConfigurableJob` 只定义配置类型与默认配置工厂，`CreateTask.RenderConfigurationEditor` 会实例化 Job 并通过 `PropertyEditorHelper` 生成元数据属性编辑器；构造或生成参数失败时显示错误并阻止提交，切换执行计划不会重建任务参数。类型被发现不代表构造、配置或运行必然成功。管理器默认只向 JobDataMap 写入 `SchedulerInfo`。要求额外键的 `HeadlessFlowJob` 不能仅因出现在类型列表就视为已配置可运行；它的 FlowKey、StartNode 与独立超时契约见[无界面流程执行](../algorithms/templates/flow-engine.md)，传统 `FlowJob` 的批次/最终完成链见[流程模板与执行](../engine-components/template-flow-chain.md)。
 
 ## 暂停、取消、超时和关闭
 
@@ -113,6 +121,7 @@ JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`，加载�
 
 ## 验证范围与缺口
 
+- `SchedulerWindowTests` 在 WPF 宿主中注入替代服务，检查卡片操作对象、任务类型切换与手填名称、计划预览、非法输入阻止提交、编辑身份、失败提示和初始化未完成时关闭；不加载保存任务、不启动 Quartz 或操作真实设备。
 - `SchedulerTriggerFactoryTests` 检查触发器类型、追加次数、日历间隔、Cron、延迟及非法值；其中 Quartz RAM scheduler 用例只验证替换行为，不启动真实 Job，也不覆盖 `QuartzSchedulerManager` 的 JSON 失败补偿链。
 - `SchedulerTaskSerializationTests` 验证旧多态 JSON、定义版本与替换备份；不验证管理器启动时的旧 Interval/Forever 暂停迁移或坏主文件恢复。
 - `SchedulerHistoryQueryTests` 使用隔离临时 SQLite，验证筛选/分页统计、稳定排序与显式失败；不覆盖真实历史库初始化失败、执行监听写入或清理。

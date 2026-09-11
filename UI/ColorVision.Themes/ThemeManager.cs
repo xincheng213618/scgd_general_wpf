@@ -1,269 +1,194 @@
-﻿#pragma warning disable CA1707
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Runtime.InteropServices;
+using System.ComponentModel;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.Themes
+namespace ColorVision.Themes;
+
+public delegate void ThemeChangedHandler(Theme newtheme);
+
+public partial class ThemeManager : IDisposable
 {
+    public static ThemeManager Current { get; set; } = new();
+    public static ReadOnlyCollection<Theme> SupportedThemes { get; } = Array.AsReadOnly(new[] { Theme.UseSystem, Theme.Light, Theme.Dark });
+    public static Theme NormalizeTheme(Theme theme) => theme is Theme.UseSystem or Theme.Light or Theme.Dark ? theme : Theme.UseSystem;
 
-    public delegate void ThemeChangedHandler(Theme newtheme);
-
-    public class ThemeManager
+    // Kept for existing package hosts. List changes take effect on the next resource application.
+    public static List<string> ResourceDictionaryBase { get; set; } = new()
     {
-        public static ThemeManager Current { get; set; } = new ThemeManager();
+        "/ColorVision.Themes;component/Themes/Base.xaml",
+        "/ColorVision.Themes;component/Themes/Menu.xaml",
+        "/ColorVision.Themes;component/Themes/GroupBox.xaml",
+        "/ColorVision.Themes;component/Themes/Icons.xaml",
+        "/ColorVision.Themes;component/Themes/Window/BaseWindow.xaml"
+    };
+    public static List<string> ResourceDictionaryDark { get; set; } = new()
+    {
+        "/HandyControl;component/Themes/basic/colors/colorsdark.xaml",
+        "/HandyControl;component/Themes/Theme.xaml",
+        "/ColorVision.Themes;component/Themes/Dark.xaml"
+    };
+    public static List<string> ResourceDictionaryWhite { get; set; } = new()
+    {
+        "/HandyControl;component/Themes/basic/colors/colors.xaml",
+        "/HandyControl;component/Themes/Theme.xaml",
+        "/ColorVision.Themes;component/Themes/White.xaml"
+    };
 
-        public static ReadOnlyCollection<Theme> SupportedThemes { get; } = Array.AsReadOnly(new[]
+    private readonly CancellationTokenSource monitorCancellation = new();
+    private Application? application;
+    private ThemeResourceDictionary? appliedResources;
+    private bool monitoring;
+    private bool monitorScheduled;
+    private bool disposed;
+
+    /// <summary>The requested policy. Resources are applied before either theme notification is published.</summary>
+    public Theme? CurrentTheme { get; private set; } = Theme.Light;
+    public Theme CurrentUITheme { get; private set; } = Theme.Light;
+    public event ThemeChangedHandler? CurrentThemeChanged;
+    public event ThemeChangedHandler? CurrentUIThemeChanged;
+    public event ThemeChangedHandler? AppsThemeChanged;
+    public event ThemeChangedHandler? SystemThemeChanged;
+
+    private Theme appsTheme = AppsUseLightTheme() ? Theme.Light : Theme.Dark;
+    public Theme AppsTheme
+    {
+        get => appsTheme;
+        set => Dispatch(() =>
         {
-            Theme.UseSystem,
-            Theme.Light,
-            Theme.Dark
+            if (appsTheme == value) return;
+            appsTheme = value;
+            if (CurrentTheme == Theme.UseSystem && application != null)
+                ApplyCore(application, Theme.UseSystem, false, false);
+            AppsThemeChanged?.Invoke(value);
         });
-
-        public static Theme NormalizeTheme(Theme theme) => theme is Theme.UseSystem or Theme.Light or Theme.Dark ? theme : Theme.UseSystem;
-
-        public ThemeManager()
+    }
+    private Theme systemTheme = SystemUsesLightTheme() ? Theme.Light : Theme.Dark;
+    public Theme SystemTheme
+    {
+        get => systemTheme;
+        set => Dispatch(() =>
         {
-            DelayedInitialize();
-            AppsThemeChanged += (e) =>
+            if (systemTheme == value) return;
+            systemTheme = value;
+            SystemThemeChanged?.Invoke(value);
+        });
+    }
+
+    public void ApplyTheme(Application app, Theme theme) => app.Dispatcher.Invoke(() => ApplyCore(app, theme, true, false));
+    /// <summary>Refresh resources, resolving UseSystem, without changing the selected policy.</summary>
+    public void ApplyThemeChanged(Application app, Theme theme) => app.Dispatcher.Invoke(() => ApplyCore(app, theme, false, true));
+
+    private void ApplyCore(Application app, Theme requested, bool updateSelection, bool force)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        requested = NormalizeTheme(requested);
+        Theme resolved = requested == Theme.UseSystem ? (AppsTheme == Theme.Dark ? Theme.Dark : Theme.Light) : requested;
+        var dictionaries = app.Resources.MergedDictionaries;
+        if (force || appliedResources == null || appliedResources.AppliedTheme != resolved || !dictionaries.Contains(appliedResources))
+        {
+            // Loading can throw. Keep active resources and published state until preparation succeeds.
+            var replacement = new ThemeResourceDictionary(resolved);
+            int first = -1;
+            for (int i = 0; i < dictionaries.Count; i++)
+                if (ThemeResourceDictionary.IsThemeResource(dictionaries[i]) && first < 0) first = i;
+            if (first < 0)
+                dictionaries.Insert(0, replacement);
+            else
             {
-                if (CurrentTheme == Theme.UseSystem)
-                {
-                    ApplyActTheme(Application.Current, e);
-                }
-            };
-        }
-        /// <summary>
-        /// 这里加载需要500ms，放在启动时太浪费时间，所以延迟加载
-        /// </summary>
-        private async void DelayedInitialize()
-        {
-            // 延迟 1 秒（根据需要调整时间）
-            await Task.Delay(10000);
-            SystemEvents.UserPreferenceChanged += (s, e) =>
-            {
-                AppsTheme = AppsUseLightTheme() ? Theme.Light : Theme.Dark;
-                SystemTheme = SystemUsesLightTheme() ? Theme.Light : Theme.Dark;
-            };
-            SystemParameters.StaticPropertyChanged += (s, e) =>
-            {
-                AppsTheme = AppsUseLightTheme() ? Theme.Light : Theme.Dark;
-                SystemTheme = SystemUsesLightTheme() ? Theme.Light : Theme.Dark;
-            };
-        }
-
-
-
-        public void ApplyTheme(Application app, Theme theme)
-        {
-            theme = NormalizeTheme(theme);
-            if (CurrentTheme == theme)
-                return;
-            CurrentTheme = theme;
-            if (theme == Theme.UseSystem)
-                theme = AppsTheme;
-            ApplyActTheme(app, theme);
-        }
-
-        public static List<string> ResourceDictionaryBase { get; set; } = new List<string>()
-        {
-            "/ColorVision.Themes;component/Themes/Base.xaml",
-            "/ColorVision.Themes;component/Themes/Menu.xaml",
-            "/ColorVision.Themes;component/Themes/GroupBox.xaml" ,
-            "/ColorVision.Themes;component/Themes/Icons.xaml",
-            "/ColorVision.Themes;component/Themes/Window/BaseWindow.xaml"
-        };
-
-        public static List<string> ResourceDictionaryDark { get; set; } = new List<string>()
-        {
-            "/HandyControl;component/themes/basic/colors/colorsdark.xaml",
-            "/HandyControl;component/Themes/Theme.xaml",
-            "/ColorVision.Themes;component/Themes/Dark.xaml",
-        };
-
-        public static List<string> ResourceDictionaryWhite { get; set; } = new List<string>()
-        {
-            "/HandyControl;component/Themes/basic/colors/colors.xaml",
-            "/HandyControl;component/Themes/Theme.xaml",
-            "/ColorVision.Themes;component/Themes/White.xaml",
-        };
-
-        private void ApplyActTheme(Application app, Theme theme)
-        {
-            if (CurrentUITheme == theme) return;
-            ApplyThemeChanged(app, theme);
-        }
-
-        public void ApplyThemeChanged(Application app, Theme theme)
-        {
-            theme = NormalizeTheme(theme);
-            switch (theme)
-            {
-                case Theme.Light:
-                    foreach (var item in ResourceDictionaryWhite)
-                    {
-                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
-                        app.Resources.MergedDictionaries.Add(dictionary);
-                    }
-                    foreach (var item in ResourceDictionaryBase)
-                    {
-                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
-                        app.Resources.MergedDictionaries.Add(dictionary);
-                    }
-                    break;
-                case Theme.Dark:
-                    foreach (var item in ResourceDictionaryDark)
-                    {
-                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
-                        app.Resources.MergedDictionaries.Add(dictionary);
-                    }
-                    foreach (var item in ResourceDictionaryBase)
-                    {
-                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
-                        app.Resources.MergedDictionaries.Add(dictionary);
-                    }
-                    break;
-                case Theme.UseSystem:
-                    break;
-                default:
-                    break;
+                dictionaries[first] = replacement;
+                for (int i = dictionaries.Count - 1; i > first; i--)
+                    if (ThemeResourceDictionary.IsThemeResource(dictionaries[i])) dictionaries.RemoveAt(i);
             }
-
-            CurrentUITheme = theme;
+            appliedResources = replacement;
         }
-
-
-
-        /// <summary>
-        /// 选择的主题，存在三种情况：
-        /// </summary>
-        public Theme? CurrentTheme
+        if (application != app)
         {
-            get => _CurrentTheme; private set
+            if (application != null) application.Exit -= Application_Exit;
+            application = app;
+            app.Exit += Application_Exit;
+        }
+        bool selectionChanged = updateSelection && CurrentTheme != requested;
+        bool actualChanged = CurrentUITheme != resolved;
+        if (updateSelection) CurrentTheme = requested;
+        CurrentUITheme = resolved;
+        if (!monitorScheduled)
+        {
+            monitorScheduled = true;
+            _ = InitializeMonitoringAsync();
+        }
+        if (selectionChanged) CurrentThemeChanged?.Invoke(requested);
+        if (actualChanged) CurrentUIThemeChanged?.Invoke(resolved);
+    }
+
+    private void Dispatch(Action action)
+    {
+        var dispatcher = application?.Dispatcher ?? Application.Current?.Dispatcher;
+        if (dispatcher == null || dispatcher.CheckAccess()) action();
+        else if (!dispatcher.HasShutdownStarted) dispatcher.Invoke(action);
+    }
+
+    private async Task InitializeMonitoringAsync()
+    {
+        try
+        {
+            // SystemEvents initialization is deferred to keep it off the startup path.
+            await Task.Delay(TimeSpan.FromSeconds(10), monitorCancellation.Token).ConfigureAwait(false);
+            Dispatch(() =>
             {
-                if (value == _CurrentTheme) return; _CurrentTheme = value;
-                if (_CurrentTheme != null)
-                    CurrentThemeChanged?.Invoke((Theme)_CurrentTheme);
-            }
+                if (disposed) return;
+                SystemEvents.UserPreferenceChanged += UserPreferenceChanged;
+                SystemParameters.StaticPropertyChanged += SystemPropertyChanged;
+                monitoring = true;
+                RefreshSystemThemes();
+            });
         }
-        private Theme? _CurrentTheme = Theme.Light;
+        catch (OperationCanceledException) { }
+    }
 
-        //这里是两种
-        public Theme CurrentUITheme { get => _CurrentUITheme; private set { if (value == _CurrentUITheme) return; _CurrentUITheme = value; CurrentUIThemeChanged?.Invoke(value); } }
-        private Theme _CurrentUITheme = Theme.Light;
-
-
-        public event ThemeChangedHandler? CurrentThemeChanged;
-        public event ThemeChangedHandler? CurrentUIThemeChanged;
-
-
-        /// <summary>
-        /// Windows应用的主题
-        /// </summary>
-        public Theme AppsTheme { get => _AppsTheme; set { if (value == _AppsTheme) return; AppsThemeChanged?.Invoke(value); _AppsTheme = value; } }
-        private Theme _AppsTheme = AppsUseLightTheme() ? Theme.Light : Theme.Dark;
-
-        /// <summary>
-        /// 任务栏的主题，这里Win10和Win11的表现不一样
-        /// </summary>
-        public Theme SystemTheme { get => _SystemTheme; set { if (value == _SystemTheme) return; SystemThemeChanged?.Invoke(value); _SystemTheme = value; } }
-        private Theme _SystemTheme = SystemUsesLightTheme() ? Theme.Light : Theme.Dark;
-
-
-        public static bool AppsUseLightTheme()
+    private void UserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e) => QueueSystemRefresh();
+    private void SystemPropertyChanged(object? sender, PropertyChangedEventArgs e) => QueueSystemRefresh();
+    private void QueueSystemRefresh()
+    {
+        var dispatcher = application?.Dispatcher ?? Application.Current?.Dispatcher;
+        if (dispatcher != null && !dispatcher.HasShutdownStarted)
+            dispatcher.BeginInvoke(() => { if (!disposed) RefreshSystemThemes(); });
+    }
+    private void RefreshSystemThemes()
+    {
+        AppsTheme = AppsUseLightTheme() ? Theme.Light : Theme.Dark;
+        SystemTheme = SystemUsesLightTheme() ? Theme.Light : Theme.Dark;
+    }
+    public static bool AppsUseLightTheme() => ReadLightTheme("AppsUseLightTheme");
+    public static bool SystemUsesLightTheme() => ReadLightTheme("SystemUsesLightTheme");
+    private static bool ReadLightTheme(string valueName)
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+        return key?.GetValue(valueName) is not int value || value > 0;
+    }
+    private void Application_Exit(object sender, ExitEventArgs e) => Dispose();
+    public void Dispose()
+    {
+        Dispatch(() =>
         {
-
-            const string RegistryKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
-            const string RegistryValueName = "AppsUseLightTheme";
-
-            // 这里也可能是LocalMachine(HKEY_LOCAL_MACHINE)
-            // see "https://www.addictivetips.com/windows-tips/how-to-enable-the-dark-theme-in-windows-10/"
-            object registryValueObject = Registry.CurrentUser.OpenSubKey(RegistryKeyPath)?.GetValue(RegistryValueName);
-            if (registryValueObject is null) return true;
-            return (int)registryValueObject > 0;
-        }
-
-        public static bool SystemUsesLightTheme()
-        {
-            const string RegistryKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
-            const string RegistryValueName = "SystemUsesLightTheme";
-            // 这里也可能是LocalMachine(HKEY_LOCAL_MACHINE)
-            // see "https://www.addictivetips.com/windows-tips/how-to-enable-the-dark-theme-in-windows-10/"
-            object registryValueObject = Registry.CurrentUser.OpenSubKey(RegistryKeyPath)?.GetValue(RegistryValueName);
-            if (registryValueObject is null) return true;
-            return (int)registryValueObject > 0;
-        }
-
-
-        public event ThemeChangedHandler? SystemThemeChanged;
-
-        public event ThemeChangedHandler? AppsThemeChanged;
-
-        public static void SetWindowTitleBarColor(IntPtr hwnd, Theme theme)
-        {
-            uint attribute;
-            uint attributeSize = (uint)Marshal.SizeOf<uint>();
-
-            switch (theme)
+            if (disposed) return;
+            disposed = true;
+            monitorCancellation.Cancel();
+            if (monitoring)
             {
-                case Theme.Dark:
-                    // Reset caption color to system default
-                    ResetCaptionColor(hwnd);
-
-                    // Enable dark mode
-                    attribute = 1;
-                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ref attribute, attributeSize);
-                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, ref attribute, attributeSize);
-                    break;
-
-                case Theme.Light:
-                case Theme.UseSystem:
-                default:
-                    // Reset caption color to system default
-                    ResetCaptionColor(hwnd);
-
-                    // Disable dark mode
-                    attribute = 0;
-                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ref attribute, attributeSize);
-                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, ref attribute, attributeSize);
-                    break;
+                SystemEvents.UserPreferenceChanged -= UserPreferenceChanged;
+                SystemParameters.StaticPropertyChanged -= SystemPropertyChanged;
+                monitoring = false;
             }
-        }
-
-        private static void ResetCaptionColor(IntPtr hwnd)
-        {
-            ///DWMWA_COLOR_DEFAULT 
-            uint attribute = 0xFFFFFFFF;
-            uint attributeSize = (uint)Marshal.SizeOf<uint>();
-            //Specifying DWMWA_COLOR_DEFAULT (value 0xFFFFFFFF) for the color will reset the window back to using the system's default behavior for the caption color.
-            _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_CAPTION_COLOR, ref attribute, attributeSize);
-            //Specifying DWMWA_COLOR_NONE (value 0xFFFFFFFE) for the color will suppress the drawing of the window border. This makes it possible to have a rounded window with no border.
-            _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_BORDER_COLOR, ref attribute, attributeSize);
-        }
-
-        [DllImport("dwmapi.dll")]
-        private static extern int DwmSetWindowAttribute(IntPtr hwnd, DWMWINDOWATTRIBUTE attribute, ref uint pvAttribute, uint cbAttribute);
-
-        [DllImport("dwmapi.dll")]
-        private static extern int DwmSetWindowAttribute(IntPtr hwnd, DWMWINDOWATTRIBUTE attribute, IntPtr pvAttribute, uint cbAttribute);
-
-        [Flags]
-        public enum DWMWINDOWATTRIBUTE : uint
-        {
-            //沉浸式暗模式20H1
-            DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19,
-            //沉浸式暗模式
-            DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
-            ///Might require Windows SDK 10.0.22000.0 (aka first Windows 11 SDK)
-            //设置窗口边框颜色
-            DWMWA_BORDER_COLOR = 34,
-            //设置窗口标题栏颜色。
-            DWMWA_CAPTION_COLOR = 35,
-            //设置窗口标题栏文本颜色。
-            DWMWA_TEXT_COLOR = 36,
-        }
+            if (application != null) application.Exit -= Application_Exit;
+            application = null;
+            appliedResources = null;
+            monitorCancellation.Dispose();
+        });
+        GC.SuppressFinalize(this);
     }
 }

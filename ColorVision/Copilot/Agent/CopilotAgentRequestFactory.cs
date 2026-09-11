@@ -409,8 +409,12 @@ namespace ColorVision.Copilot
                 || CopilotToolIntentPolicy.NeedsWorkspaceEdit(intentProbe)
                 ? requestedWritableLocalRootPaths
                 : workspaceWritableLocalRootPaths;
+            // Exposed patch tools need project instructions without reclassifying application tasks as source inspection.
+            var includeWorkspaceInstructions = requiresWorkspaceEvidence
+                || CopilotToolIntentPolicy.CanUseWorkspacePatch(intentProbe)
+                    && (writableLocalRootPaths.Count > 0 || writableLocalFilePaths.Length > 0);
             var projectInstructions = mode == CopilotAgentMode.Chat
-                || !requiresWorkspaceEvidence
+                || !includeWorkspaceInstructions
                 ? Array.Empty<CopilotProjectInstructionDocument>()
                 : CopilotAgentProjectInstructions.DiscoverWithGlobal(
                     trustedProjectRootPaths,

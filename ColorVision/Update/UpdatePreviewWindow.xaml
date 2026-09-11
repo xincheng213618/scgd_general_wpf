@@ -12,19 +12,25 @@
        Title="{x:Static properties:Resources.CheckForUpdates}"
         ResizeMode="NoResize"
         SizeToContent="Manual"
-        Background="{DynamicResource UpdateDialog.WindowBorder}"
+        Background="{DynamicResource CV.Border.Window}"
         SnapsToDevicePixels="True"
         UseLayoutRounding="True"
+        KeyboardNavigation.TabNavigation="Cycle"
         mc:Ignorable="d">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="UpdateDialogTheme.xaml" />
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Components/Dialog.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="UpdatePreviewActionButtonStyle"
+                   TargetType="{x:Type Button}"
+                   BasedOn="{StaticResource CV.Button.Text}">
+                <Setter Property="Foreground" Value="{DynamicResource CV.Action.Foreground}" />
+            </Style>
         </ResourceDictionary>
     </Window.Resources>
 
-    <Border  Background="{DynamicResource UpdateDialog.Background}" SnapsToDevicePixels="True">
+    <Border  Background="{DynamicResource CV.Surface.Window}" SnapsToDevicePixels="True">
         <Grid Margin="30,30,30,22">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -43,13 +49,13 @@
                 <StackPanel>
                     <TextBlock FontSize="30"
                                FontWeight="SemiBold"
-                               Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                               Foreground="{DynamicResource CV.Text.Primary}"
                                Text="{Binding Heading}"
                                TextWrapping="Wrap" />
                     <TextBlock Margin="0,10,0,0"
                                MaxWidth="640"
                                FontSize="14"
-                               Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                               Foreground="{DynamicResource CV.Text.Secondary}"
                                Opacity="0.74"
                                Text="{Binding HeaderSummaryText}"
                                TextWrapping="Wrap"  HorizontalAlignment="Left" />
@@ -64,18 +70,18 @@
                             HorizontalAlignment="Right"
                             Click="ChangelogButton_Click"
                             Content="{x:Static properties:Resources.ChangeLog}"
-                            Style="{StaticResource UpdateDialogTextButtonStyle}" />
+                            Style="{StaticResource UpdatePreviewActionButtonStyle}" />
                     <Button Margin="0,0,0,4"
                             HorizontalAlignment="Right"
                             Click="ApplicationSnapshotsButton_Click"
                             Content="{x:Static properties:Resources.UpdatePreviewApplicationSnapshotsLink}"
                             IsEnabled="{Binding CanCancel}"
-                            Style="{StaticResource UpdateDialogTextButtonStyle}" />
+                            Style="{StaticResource UpdatePreviewActionButtonStyle}" />
                 </StackPanel>
             </Grid>
 
             <Border Grid.Row="1"
-                    Background="{DynamicResource UpdateDialog.WeakBorder}" />
+                    Background="{DynamicResource CV.Border.Weak}" />
 
             <Grid Grid.Row="2">
                 <Grid Margin="0,0,0,0"
@@ -93,26 +99,26 @@
                             <Border Width="40"
                                     Height="40"
                                     VerticalAlignment="Center"
-                                    Background="{DynamicResource UpdateDialog.SurfaceAlt}"
-                                    BorderBrush="{DynamicResource UpdateDialog.WeakBorder}"
+                                    Background="{DynamicResource CV.Surface.Alternate}"
+                                    BorderBrush="{DynamicResource CV.Border.Weak}"
                                     BorderThickness="1"
                                     CornerRadius="8">
                                 <TextBlock HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
                                            FontFamily="Segoe MDL2 Assets"
                                            FontSize="18"
-                                           Foreground="{DynamicResource UpdateDialog.Accent}"
+                                           Foreground="{DynamicResource CV.Accent.Primary}"
                                            Text="{Binding StateGlyph}" />
                             </Border>
 
                             <StackPanel Grid.Column="1" Margin="14,0,0,0">
                                 <TextBlock FontSize="24"
                                            FontWeight="SemiBold"
-                                           Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                                           Foreground="{DynamicResource CV.Text.Primary}"
                                            Text="{Binding CheckingTitle}" />
                                 <TextBlock Margin="0,8,0,0"
                                            FontSize="14"
-                                           Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                                           Foreground="{DynamicResource CV.Text.Secondary}"
                                            Opacity="0.74"
                                            Text="{Binding CheckingSummary}"
                                            TextWrapping="Wrap" />
@@ -124,8 +130,8 @@
                                      Margin="54,22,0,0"
                                      HorizontalAlignment="Left"
                                      IsIndeterminate="True"
-                                     Background="{DynamicResource UpdateDialog.SurfaceAlt}"
-                                     Foreground="{DynamicResource UpdateDialog.Accent}" />
+                                     Background="{DynamicResource CV.Surface.Alternate}"
+                                     Foreground="{DynamicResource CV.Accent.Primary}" />
                     </StackPanel>
                 </Grid>
 
@@ -144,26 +150,26 @@
                             <Border Width="40"
                                     Height="40"
                                     VerticalAlignment="Top"
-                                    Background="{DynamicResource UpdateDialog.SurfaceAlt}"
-                                    BorderBrush="{DynamicResource UpdateDialog.WeakBorder}"
+                                    Background="{DynamicResource CV.Surface.Alternate}"
+                                    BorderBrush="{DynamicResource CV.Border.Weak}"
                                     BorderThickness="1"
                                     CornerRadius="8">
                                 <TextBlock HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
                                            FontFamily="Segoe MDL2 Assets"
                                            FontSize="18"
-                                           Foreground="{DynamicResource UpdateDialog.Accent}"
+                                           Foreground="{DynamicResource CV.Accent.Primary}"
                                            Text="{Binding StateGlyph}" />
                             </Border>
 
                             <StackPanel Grid.Column="1" Margin="14,0,0,0">
                                 <TextBlock FontSize="24"
                                            FontWeight="SemiBold"
-                                           Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                                           Foreground="{DynamicResource CV.Text.Primary}"
                                            Text="{Binding EmptyStateTitle}" />
                                 <TextBlock Margin="0,10,0,0"
                                            FontSize="14"
-                                           Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                                           Foreground="{DynamicResource CV.Text.Secondary}"
                                            Opacity="0.76"
                                            Text="{Binding EmptyStateMessage}"
                                            TextWrapping="Wrap" />
@@ -187,7 +193,7 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type local:UpdatePreviewItem}">
                                 <Border Opacity="{Binding ItemOpacity}"
-                                        Style="{StaticResource UpdateDialogCardStyle}">
+                                        Style="{StaticResource CV.Card}">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="56" />
@@ -206,10 +212,10 @@
                                                     HorizontalAlignment="Left"
                                                     VerticalAlignment="Top"
                                                     Visibility="{Binding RequiredTagVisibility}"
-                                                    Style="{StaticResource UpdateDialogTagBorderStyle}">
+                                                    Style="{StaticResource CV.Tag.Border}">
                                                 <TextBlock FontSize="11"
                                                            FontWeight="SemiBold"
-                                                           Foreground="{DynamicResource UpdateDialog.TagForeground}"
+                                                           Foreground="{DynamicResource CV.Tag.Foreground}"
                                                            Text="{x:Static properties:Resources.UpdatePreviewRequiredBadge}" />
                                             </Border>
                                         </Grid>
@@ -217,13 +223,13 @@
                                         <StackPanel Grid.Column="1" Margin="0,0,24,0">
                                             <TextBlock FontSize="22"
                                                        FontWeight="SemiBold"
-                                                       Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                                                       Foreground="{DynamicResource CV.Text.Primary}"
                                                        Text="{Binding Name}"
                                                        TextTrimming="CharacterEllipsis"
                                                        TextWrapping="NoWrap" />
                                             <TextBlock Margin="0,4,0,0"
                                                        FontSize="13"
-                                                       Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                                                       Foreground="{DynamicResource CV.Text.Secondary}"
                                                        Opacity="0.74"
                                                        Text="{Binding SecondaryLabel}"
                                                        TextTrimming="CharacterEllipsis"
@@ -231,7 +237,7 @@
                                                        Visibility="{Binding SecondaryLabelVisibility}" />
                                             <TextBlock Margin="0,12,0,0"
                                                        FontSize="16"
-                                                       Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                                                       Foreground="{DynamicResource CV.Text.Primary}"
                                                        Text="{Binding VersionTransitionText}"
                                                        TextTrimming="CharacterEllipsis"
                                                        TextWrapping="NoWrap" />
@@ -239,13 +245,13 @@
                                                        MaxHeight="42"
                                                        FontSize="14"
                                                        LineHeight="20"
-                                                       Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                                                       Foreground="{DynamicResource CV.Text.Primary}"
                                                        Opacity="0.88"
                                                        Text="{Binding Summary}"
                                                        TextWrapping="Wrap" />
                                             <TextBlock Margin="0,10,0,0"
                                                        FontSize="13"
-                                                       Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                                                       Foreground="{DynamicResource CV.Text.Secondary}"
                                                        Opacity="0.78"
                                                        Text="{Binding SelectionLockMessage}"
                                                        TextWrapping="Wrap"
@@ -255,29 +261,29 @@
 
                                         <Border Grid.Column="2"
                                                 Padding="16,14,16,14"
-                                                Background="{DynamicResource UpdateDialog.SurfaceAlt}"
-                                                BorderBrush="{DynamicResource UpdateDialog.WeakBorder}"
+                                                Background="{DynamicResource CV.Surface.Alternate}"
+                                                BorderBrush="{DynamicResource CV.Border.Weak}"
                                                 BorderThickness="1"
                                                 CornerRadius="8">
                                             <StackPanel>
                                                 <Border HorizontalAlignment="Left"
-                                                        Style="{StaticResource UpdateDialogTagBorderStyle}"
+                                                        Style="{StaticResource CV.Tag.Border}"
                                                         Visibility="{Binding CategoryBadgeVisibility}">
                                                     <TextBlock FontSize="11"
                                                                FontWeight="Normal"
-                                                               Foreground="{DynamicResource UpdateDialog.TagForeground}"
+                                                               Foreground="{DynamicResource CV.Tag.Foreground}"
                                                                Text="{Binding Category}" />
                                                 </Border>
                                                 <TextBlock Margin="0,14,0,0"
                                                            FontSize="13"
-                                                           Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                                                           Foreground="{DynamicResource CV.Text.Secondary}"
                                                            Opacity="0.78"
                                                            Text="{Binding HostRequirementText}"
                                                            TextWrapping="Wrap"
                                                            Visibility="{Binding HostRequirementVisibility}" />
                                                 <TextBlock Margin="0,0,0,0"
                                                            FontSize="12"
-                                                           Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                                                           Foreground="{DynamicResource CV.Text.Secondary}"
                                                            Opacity="0.78"
                                                            Text="{x:Static properties:Resources.UpdatePreviewApplicationUpdateModeLabel}"
                                                            Visibility="{Binding ApplicationUpdateModeSelectorVisibility}" />
@@ -301,7 +307,7 @@
             </Grid>
 
             <Border Grid.Row="3"
-                    Background="{DynamicResource UpdateDialog.WeakBorder}" />
+                    Background="{DynamicResource CV.Border.Weak}" />
 
             <Grid Grid.Row="4" Margin="0,18,0,0">
                 <Grid.ColumnDefinitions>
@@ -314,7 +320,7 @@
                     <TextBlock MaxWidth="560"
                                VerticalAlignment="Center"
                                FontSize="13"
-                               Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                               Foreground="{DynamicResource CV.Text.Secondary}"
                                Opacity="0.74"
                                Text="{Binding SelectionSummary}"
                                TextTrimming="CharacterEllipsis"
@@ -326,23 +332,26 @@
                             Content="{x:Static properties:Resources.UpdatePreviewReinstall}"
                             IsEnabled="{Binding CanReinstall}"
                             Visibility="{Binding EmptyStateCenteredVisibility}"
-                            Style="{StaticResource UpdateDialogTextButtonStyle}"
+                            Style="{StaticResource UpdatePreviewActionButtonStyle}"
                             ToolTip="{x:Static properties:Resources.UpdatePreviewReinstallDescription}" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="1"
                             Orientation="Horizontal"
                             HorizontalAlignment="Right">
-                    <Button Margin="0,0,12,0"
+                    <Button x:Name="CancelButton" Margin="0,0,12,0"
+                            IsCancel="True"
+                            IsDefault="{Binding IsCloseDefault}"
                             Click="CancelButton_Click"
                             Content="{Binding CancelButtonText}"
                             IsEnabled="{Binding CanCancel}"
-                            Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
-                    <Button Click="ConfirmButton_Click"
+                            Style="{StaticResource CV.Button.Secondary}" />
+                    <Button x:Name="ConfirmButton" Click="ConfirmButton_Click"
+                            IsDefault="{Binding CanConfirm}"
                             Content="{Binding ConfirmButtonText}"
                             IsEnabled="{Binding CanConfirm}"
                             Visibility="{Binding ConfirmButtonVisibility}"
-                            Style="{StaticResource UpdateDialogPrimaryButtonStyle}" />
+                            Style="{StaticResource CV.Button.Primary}" />
                 </StackPanel>
             </Grid>
         </Grid>

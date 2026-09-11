@@ -19,6 +19,10 @@ namespace ColorVision.Solution.Editor.AvalonEditor
         private IHighlightingDefinition? _highlightingDefinition;
         private ThemeAwareHighlightingColorizer? _colorizer;
         private bool _disposed;
+        private bool _active;
+        public bool BoldKeywords { get; set; }
+        public IHighlightingDefinition? HighlightingDefinition => _highlightingDefinition;
+        public event EventHandler? ColorsChanged;
 
         public AvalonEditorThemeController(ICSharpCode.AvalonEdit.TextEditor editor)
         {
@@ -46,8 +50,19 @@ namespace ColorVision.Solution.Editor.AvalonEditor
                 "EditorLinkBrush");
 
             _themeChangedHandler = _ => RefreshTheme();
-            ThemeManager.Current.CurrentUIThemeChanged += _themeChangedHandler;
             RefreshTheme();
+        }
+
+        public void SetActive(bool active)
+        {
+            if (_disposed || _active == active) return;
+            _active = active;
+            if (active)
+            {
+                ThemeManager.Current.CurrentUIThemeChanged += _themeChangedHandler;
+                RefreshTheme();
+            }
+            else ThemeManager.Current.CurrentUIThemeChanged -= _themeChangedHandler;
         }
 
         public void SetHighlighting(IHighlightingDefinition? highlightingDefinition)
@@ -56,7 +71,7 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             InstallThemeAwareColorizer();
         }
 
-        private void RefreshTheme()
+        public void RefreshTheme()
         {
             if (_disposed)
                 return;
@@ -70,6 +85,7 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             _editor.TextArea.Caret.CaretBrush = FindBrush("EditorCaretBrush", Brushes.Black);
             InstallThemeAwareColorizer();
             _editor.TextArea.TextView.Redraw();
+            ColorsChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void InstallThemeAwareColorizer()
@@ -87,7 +103,8 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             {
                 _colorizer = new ThemeAwareHighlightingColorizer(
                     _highlightingDefinition,
-                    resourceKey => _editor.TryFindResource(resourceKey) as Brush);
+                    resourceKey => _editor.TryFindResource(resourceKey) as Brush,
+                    BoldKeywords);
                 _editor.TextArea.TextView.LineTransformers.Add(_colorizer);
             }
         }
@@ -104,6 +121,7 @@ namespace ColorVision.Solution.Editor.AvalonEditor
 
             _disposed = true;
             ThemeManager.Current.CurrentUIThemeChanged -= _themeChangedHandler;
+            ColorsChanged = null;
             if (_colorizer != null)
             {
                 _editor.TextArea.TextView.LineTransformers.Remove(_colorizer);
@@ -115,12 +133,15 @@ namespace ColorVision.Solution.Editor.AvalonEditor
     internal sealed class ThemeAwareHighlightingColorizer : HighlightingColorizer
     {
         private readonly Dictionary<string, Brush> _brushes;
+        private readonly bool _boldKeywords;
 
         public ThemeAwareHighlightingColorizer(
             IHighlightingDefinition highlightingDefinition,
-            Func<string, Brush?> findBrush)
+            Func<string, Brush?> findBrush,
+            bool boldKeywords = false)
             : base(highlightingDefinition)
         {
+            _boldKeywords = boldKeywords;
             string[] resourceKeys =
             [
                 "EditorForegroundBrush",
@@ -148,6 +169,12 @@ namespace ColorVision.Solution.Editor.AvalonEditor
         protected override void ApplyColorToElement(VisualLineElement element, HighlightingColor color)
         {
             base.ApplyColorToElement(element, color);
+
+            if (!_boldKeywords && GetForegroundBrushResourceKey(color) == "EditorSyntaxKeywordBrush")
+            {
+                var typeface = element.TextRunProperties.Typeface;
+                element.TextRunProperties.SetTypeface(new Typeface(typeface.FontFamily, typeface.Style, FontWeights.Normal, typeface.Stretch));
+            }
 
             string? resourceKey = GetForegroundBrushResourceKey(color);
             if (resourceKey != null && _brushes.TryGetValue(resourceKey, out Brush? brush))

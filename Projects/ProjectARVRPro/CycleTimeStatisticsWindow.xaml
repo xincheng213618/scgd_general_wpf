@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ProjectARVRPro"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
         Title="结果统计"
@@ -22,28 +23,10 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Grid Margin="24,20,24,18">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        <Grid Margin="0,0,0,20">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <StackPanel>
-                <TextBlock Text="结果统计" FontSize="25" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}"/>
-                <TextBlock Text="按自然周期查看产量、批次记录与流程执行结果。" Margin="0,5,0,0" FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}"/>
-            </StackPanel>
-            <Border Grid.Column="1" Padding="12,7" CornerRadius="8" Background="{DynamicResource Statistics.Surface}" VerticalAlignment="Center"
-                    ToolTip="同一次软件运行内保留查询条件；软件重启后，所有页面恢复按天查询今天。">
-                <TextBlock Text="查询条件仅本次运行记忆" Foreground="{DynamicResource SecondaryTextBrush}"/>
-            </Border>
-        </Grid>
-        <TabControl x:Name="StatisticsTabs" Grid.Row="1" Background="Transparent" BorderThickness="0" SelectionChanged="StatisticsTabs_SelectionChanged">
+    <Grid Margin="18,8,18,14">
+        <TabControl x:Name="StatisticsTabs" Background="Transparent" BorderThickness="0" SelectionChanged="StatisticsTabs_SelectionChanged">
             <TabItem Header="首页">
-                <Grid Margin="0,14,0,0">
+                <Grid Margin="0,10,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -160,13 +143,13 @@
             </TabItem>
 
             <TabItem Header="批次记录">
-                <Grid Margin="0,14,0,0">
+                <Grid Margin="0,10,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <Border Margin="0,0,0,14" Style="{StaticResource StatisticsCard}">
+                    <Border Margin="0,0,0,10" Style="{StaticResource StatisticsCard}">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -264,13 +247,13 @@
                                         </ContextMenu>
                                     </DataGrid.ContextMenu>
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="SN" Binding="{Binding SN}" Width="190"/>
-                                        <DataGridTextColumn Header="第几次测试" Binding="{Binding ExecutionText}" Width="82"/>
-                                        <DataGridTextColumn Header="结束时间" Binding="{Binding EndTime, StringFormat=MM/dd HH:mm:ss}" Width="118"/>
-                                        <DataGridTextColumn Header="整组 CT" Binding="{Binding CycleTimeText}" Width="88"/>
-                                        <DataGridTextColumn Header="流程数" Binding="{Binding FlowCountText}" Width="64"/>
-                                        <DataGridTextColumn Header="流程总耗时" Binding="{Binding FlowRunTimeText}" Width="96"/>
+                                        <DataGridTextColumn Header="SN" Binding="{Binding SN}" Width="*" MinWidth="150"/>
+                                        <DataGridTextColumn Header="整组 CT" Binding="{Binding CycleTimeText}" Width="82"/>
+                                        <DataGridTextColumn Header="运行时间" Binding="{Binding FlowRunTimeText}" Width="82"/>
+                                        <DataGridTextColumn Header="结束时间" Binding="{Binding EndTime, StringFormat=MM/dd HH:mm:ss}" Width="112"/>
+                                        <DataGridTextColumn Header="流程数" Binding="{Binding FlowCountText}" Width="54"/>
                                         <DataGridTextColumn Header="结果" Binding="{Binding ResultText}" Width="62"/>
+                                        <DataGridTextColumn Header="第几次测试" Binding="{Binding ExecutionText}" Width="82"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </GroupBox>
@@ -300,39 +283,152 @@
                             <GroupBox.Header>
                                 <TextBlock x:Name="DetailHeader" Text="流程 CT 明细"/>
                             </GroupBox.Header>
-                            <ListView x:Name="DetailList"
-                                      Background="{DynamicResource Statistics.Background}"
-                                      BorderThickness="0"
-                                      Padding="0"
-                                      SelectionMode="Extended">
-                                <ListView.ItemContainerStyle>
-                                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}"/>
-                                </ListView.ItemContainerStyle>
-                                <ListView.View>
-                                    <GridView>
-                                        <GridViewColumn Header="Id" Width="52" DisplayMemberBinding="{Binding Id}"/>
-                                        <GridViewColumn Header="状态" Width="72" DisplayMemberBinding="{Binding FlowStatus}"/>
-                                        <GridViewColumn Header="PASS" Width="48" DisplayMemberBinding="{Binding Result}"/>
-                                        <GridViewColumn Header="Model" Width="145" DisplayMemberBinding="{Binding Model}"/>
-                                        <GridViewColumn Header="时间" Width="118" DisplayMemberBinding="{Binding CreateTime, StringFormat=MM/dd HH:mm:ss}"/>
-                                        <GridViewColumn Header="耗时(ms)" Width="82" DisplayMemberBinding="{Binding RunTime}"/>
-                                        <GridViewColumn Header="RunMsg" Width="180" DisplayMemberBinding="{Binding Msg}"/>
-                                    </GridView>
-                                </ListView.View>
-                            </ListView>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="3*"/>
+                                    <RowDefinition Height="6"/>
+                                    <RowDefinition Height="2*" MinHeight="170"/>
+                                </Grid.RowDefinitions>
+                                <ListView x:Name="DetailList"
+                                          Background="{DynamicResource Statistics.Background}"
+                                          BorderThickness="0"
+                                          Padding="0"
+                                          SelectionMode="Extended">
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                                            <Setter Property="MinHeight" Value="24"/>
+                                            <Setter Property="Padding" Value="2,0"/>
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Header="Id" Width="48" DisplayMemberBinding="{Binding Id}"/>
+                                            <GridViewColumn Header="状态" Width="68" DisplayMemberBinding="{Binding FlowStatus}"/>
+                                            <GridViewColumn Header="PASS" Width="46" DisplayMemberBinding="{Binding Result}"/>
+                                            <GridViewColumn Header="Model" Width="145" DisplayMemberBinding="{Binding Model}"/>
+                                            <GridViewColumn Header="时间" Width="112" DisplayMemberBinding="{Binding CreateTime, StringFormat=MM/dd HH:mm:ss}"/>
+                                            <GridViewColumn Header="耗时(ms)" Width="76" DisplayMemberBinding="{Binding RunTime}"/>
+                                            <GridViewColumn Header="RunMsg" Width="160" DisplayMemberBinding="{Binding Msg}"/>
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+
+                                <GridSplitter Grid.Row="1" Height="4" Margin="0,1" Background="Transparent" HorizontalAlignment="Stretch" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"/>
+
+                                <Border x:Name="TimelinePanel" Grid.Row="2" Padding="8,6,8,4" CornerRadius="8"
+                                        Background="{DynamicResource Statistics.Background}" BorderBrush="{DynamicResource Statistics.Border}" BorderThickness="1">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <WrapPanel Margin="0,0,0,3">
+                                            <TextBlock Text="整组时间轴" Margin="0,0,12,0" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                            <Border Width="9" Height="9" Margin="0,2,4,0" CornerRadius="2" Background="{DynamicResource Statistics.TimelineSwitch}"/>
+                                            <TextBlock Text="PG应答/切图" Margin="0,0,9,0" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                            <Border Width="9" Height="9" Margin="0,2,4,0" CornerRadius="2" Background="{DynamicResource Statistics.TimelinePrepare}"/>
+                                            <TextBlock Text="准备" Margin="0,0,9,0" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                            <Border Width="9" Height="9" Margin="0,2,4,0" CornerRadius="2" Background="{DynamicResource Statistics.TimelineFlow}"/>
+                                            <TextBlock Text="执行" Margin="0,0,9,0" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                            <Border Width="9" Height="9" Margin="0,2,4,0" CornerRadius="2" Background="{DynamicResource Statistics.TimelineProcess}"/>
+                                            <TextBlock Text="执行后" Margin="0,0,9,0" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                            <Border Width="9" Height="9" Margin="0,2,4,0" CornerRadius="2" Background="{DynamicResource Statistics.TimelineUnknown}"/>
+                                            <TextBlock Text="未归因" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                        </WrapPanel>
+                                        <TextBlock Grid.Row="1" Text="{Binding SummaryText}" Margin="0,0,0,3" FontSize="11" Foreground="{DynamicResource GlobalTextBrush}" TextTrimming="CharacterEllipsis"/>
+                                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                            <ItemsControl ItemsSource="{Binding Rows}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid Height="22">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="124"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="58"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Text="{Binding Label}" ToolTip="{Binding FlowName}" Margin="0,0,6,0" VerticalAlignment="Center"
+                                                                       FontSize="11" Foreground="{DynamicResource GlobalTextBrush}" TextTrimming="CharacterEllipsis"/>
+                                                            <Border Grid.Column="1" Height="12" CornerRadius="3" VerticalAlignment="Center" ClipToBounds="True"
+                                                                    Background="{DynamicResource Statistics.TimelineTrack}">
+                                                                <Viewbox Stretch="Fill" StretchDirection="Both">
+                                                                    <ItemsControl Width="1000" Height="12" ItemsSource="{Binding Segments}">
+                                                                        <ItemsControl.ItemsPanel>
+                                                                            <ItemsPanelTemplate>
+                                                                                <Canvas Width="1000" Height="12"/>
+                                                                            </ItemsPanelTemplate>
+                                                                        </ItemsControl.ItemsPanel>
+                                                                        <ItemsControl.ItemContainerStyle>
+                                                                            <Style TargetType="ContentPresenter">
+                                                                                <Setter Property="Canvas.Left" Value="{Binding StartUnits}"/>
+                                                                                <Setter Property="Canvas.Top" Value="0"/>
+                                                                            </Style>
+                                                                        </ItemsControl.ItemContainerStyle>
+                                                                        <ItemsControl.ItemTemplate>
+                                                                            <DataTemplate>
+                                                                                <Border Width="{Binding WidthUnits}" Height="12" ToolTip="{Binding ToolTip}">
+                                                                                    <Border.Style>
+                                                                                        <Style TargetType="Border">
+                                                                                            <Setter Property="Background" Value="{DynamicResource Statistics.TimelineUnknown}"/>
+                                                                                            <Style.Triggers>
+                                                                                                <DataTrigger Binding="{Binding Kind}" Value="{x:Static local:ResultTimelinePhaseKind.ExternalPictureSwitch}">
+                                                                                                    <Setter Property="Background" Value="{DynamicResource Statistics.TimelineSwitch}"/>
+                                                                                                </DataTrigger>
+                                                                                                <DataTrigger Binding="{Binding Kind}" Value="{x:Static local:ResultTimelinePhaseKind.DevicePictureSwitch}">
+                                                                                                    <Setter Property="Background" Value="{DynamicResource Statistics.TimelineSwitch}"/>
+                                                                                                </DataTrigger>
+                                                                                                <DataTrigger Binding="{Binding Kind}" Value="{x:Static local:ResultTimelinePhaseKind.PreProcessing}">
+                                                                                                    <Setter Property="Background" Value="{DynamicResource Statistics.TimelinePrepare}"/>
+                                                                                                </DataTrigger>
+                                                                                                <DataTrigger Binding="{Binding Kind}" Value="{x:Static local:ResultTimelinePhaseKind.FlowPreparation}">
+                                                                                                    <Setter Property="Background" Value="{DynamicResource Statistics.TimelinePrepare}"/>
+                                                                                                </DataTrigger>
+                                                                                                <DataTrigger Binding="{Binding Kind}" Value="{x:Static local:ResultTimelinePhaseKind.FlowExecution}">
+                                                                                                    <Setter Property="Background" Value="{DynamicResource Statistics.TimelineFlow}"/>
+                                                                                                </DataTrigger>
+                                                                                                <DataTrigger Binding="{Binding Kind}" Value="{x:Static local:ResultTimelinePhaseKind.ResultProcessing}">
+                                                                                                    <Setter Property="Background" Value="{DynamicResource Statistics.TimelineProcess}"/>
+                                                                                                </DataTrigger>
+                                                                                            </Style.Triggers>
+                                                                                        </Style>
+                                                                                    </Border.Style>
+                                                                                </Border>
+                                                                            </DataTemplate>
+                                                                        </ItemsControl.ItemTemplate>
+                                                                    </ItemsControl>
+                                                                </Viewbox>
+                                                            </Border>
+                                                            <TextBlock Grid.Column="2" Text="{Binding ExecutionTimeText}" Margin="5,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                                                       FontSize="10" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                        <Grid Grid.Row="3" Margin="124,1,58,0">
+                                            <TextBlock Text="{Binding StartTimeText}" HorizontalAlignment="Left" FontSize="9" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                            <TextBlock Text="{Binding MiddleTimeText}" HorizontalAlignment="Center" FontSize="9" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                            <TextBlock Text="{Binding EndTimeText}" HorizontalAlignment="Right" FontSize="9" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                        </Grid>
+                                        <TextBlock Grid.Row="4" Text="{Binding NoteText}" Margin="0,3,0,0" FontSize="10" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap"/>
+                                    </Grid>
+                                </Border>
+                            </Grid>
                         </GroupBox>
                     </Grid>
                 </Grid>
             </TabItem>
 
             <TabItem x:Name="FlowQueryTab" Header="流程查询">
-                <Grid Margin="0,14,0,0">
+                <Grid Margin="0,10,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <Border Margin="0,0,0,14" Style="{StaticResource StatisticsCard}">
+                    <Border Margin="0,0,0,10" Style="{StaticResource StatisticsCard}">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>

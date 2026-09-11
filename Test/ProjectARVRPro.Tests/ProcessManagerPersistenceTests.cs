@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.Black;
 using ProjectARVRPro.Recipe;
@@ -16,6 +17,34 @@ public sealed class ProcessManagerPersistenceTestGroup
 [Collection(ProcessManagerPersistenceTestGroup.Name)]
 public sealed class ProcessManagerPersistenceTests
 {
+    [Fact]
+    public void CameraOverrideMappingRequiresOneProcessForTheFlowTemplate()
+    {
+        RunInTemporaryPersistenceDirectory(() =>
+        {
+            var manager = new ProcessManager();
+            ProcessGroup group = Assert.Single(manager.ProcessGroups);
+            var first = new ProcessMeta
+            {
+                Name = "First",
+                FlowTemplate = "SharedFlow",
+                Process = new BlackProcess()
+            };
+            group.ProcessMetas.Add(first);
+
+            Assert.Same(first, manager.FindUniqueProcessMetaForTemplate("sharedflow"));
+
+            group.ProcessMetas.Add(new ProcessMeta
+            {
+                Name = "Second",
+                FlowTemplate = "SharedFlow",
+                Process = new BlackProcess()
+            });
+
+            Assert.Null(manager.FindUniqueProcessMetaForTemplate("SharedFlow"));
+        });
+    }
+
     [Fact]
     public void DuplicateMetaCreatesIndependentConfiguredCopyAfterSource()
     {
@@ -37,6 +66,12 @@ public sealed class ProcessManagerPersistenceTests
                     IsEnabled = true,
                     SendCommand = "PIC9",
                     SuccessDelayMs = 900
+                },
+                FlowCameraParameterOverrideConfig = new FlowCameraParameterOverrideConfig
+                {
+                    IsEnabled = true,
+                    ExposureTimeMs = 15.5f,
+                    CalibrationTemplateName = "CalibrationA"
                 }
             };
             group.ProcessMetas.Add(source);
@@ -59,11 +94,19 @@ public sealed class ProcessManagerPersistenceTests
             Assert.True(copy.PictureSwitchConfig.IsEnabled);
             Assert.Equal("PIC9", copy.PictureSwitchConfig.SendCommand);
             Assert.Equal(900, copy.PictureSwitchConfig.SuccessDelayMs);
+            Assert.NotSame(source.FlowCameraParameterOverrideConfig, copy.FlowCameraParameterOverrideConfig);
+            Assert.True(copy.FlowCameraParameterOverrideConfig.IsEnabled);
+            Assert.Equal(15.5f, copy.FlowCameraParameterOverrideConfig.ExposureTimeMs);
+            Assert.Equal("CalibrationA", copy.FlowCameraParameterOverrideConfig.CalibrationTemplateName);
 
             copiedProcess.Config.RecipeConfig.FOFOContrast.Min = 456;
             copy.PictureSwitchConfig.SendCommand = "PICA";
+            copy.FlowCameraParameterOverrideConfig.ExposureTimeMs = 88f;
+            copy.FlowCameraParameterOverrideConfig.CalibrationTemplateName = "CalibrationB";
             Assert.Equal(123, sourceProcess.Config.RecipeConfig.FOFOContrast.Min);
             Assert.Equal("PIC9", source.PictureSwitchConfig.SendCommand);
+            Assert.Equal(15.5f, source.FlowCameraParameterOverrideConfig.ExposureTimeMs);
+            Assert.Equal("CalibrationA", source.FlowCameraParameterOverrideConfig.CalibrationTemplateName);
         });
     }
 
@@ -103,7 +146,13 @@ public sealed class ProcessManagerPersistenceTests
                 Name = "Source",
                 FlowTemplate = "SourceTemplate",
                 Process = source,
-                ConfigJson = JsonConvert.SerializeObject(new BlackProcessConfig())
+                ConfigJson = JsonConvert.SerializeObject(new BlackProcessConfig()),
+                FlowCameraParameterOverrideConfig = new FlowCameraParameterOverrideConfig
+                {
+                    IsEnabled = true,
+                    ExposureTimeMs = 25f,
+                    CalibrationTemplateName = "CalibrationA"
+                }
             });
 
             manager.DuplicateGroupCommand.Execute(null);
@@ -121,8 +170,10 @@ public sealed class ProcessManagerPersistenceTests
 
             var reloaded = new ProcessManager();
             Assert.Equal(2, reloaded.ProcessGroups.Count);
-            BlackProcess restoredSource = Assert.IsType<BlackProcess>(Assert.Single(reloaded.ProcessGroups[0].ProcessMetas).Process);
-            BlackProcess restoredCopy = Assert.IsType<BlackProcess>(Assert.Single(reloaded.ProcessGroups[1].ProcessMetas).Process);
+            ProcessMeta restoredSourceMeta = Assert.Single(reloaded.ProcessGroups[0].ProcessMetas);
+            ProcessMeta restoredCopyMeta = Assert.Single(reloaded.ProcessGroups[1].ProcessMetas);
+            BlackProcess restoredSource = Assert.IsType<BlackProcess>(restoredSourceMeta.Process);
+            BlackProcess restoredCopy = Assert.IsType<BlackProcess>(restoredCopyMeta.Process);
             BlackProcess restoredParser = Assert.IsType<BlackProcess>(Assert.Single(reloaded.ResultParserMetas).Process);
 
             Assert.Equal(111, restoredSource.Config.RecipeConfig.FOFOContrast.Min);
@@ -131,6 +182,69 @@ public sealed class ProcessManagerPersistenceTests
             Assert.NotSame(restoredSource.Config.RecipeConfig, restoredCopy.Config.RecipeConfig);
             Assert.NotSame(restoredSource.Config.RecipeConfig.FOFOContrast, restoredCopy.Config.RecipeConfig.FOFOContrast);
             Assert.NotSame(restoredSource.Config.RecipeConfig, restoredParser.Config.RecipeConfig);
+            Assert.NotSame(restoredSourceMeta.FlowCameraParameterOverrideConfig, restoredCopyMeta.FlowCameraParameterOverrideConfig);
+            Assert.True(restoredSourceMeta.FlowCameraParameterOverrideConfig.IsEnabled);
+            Assert.True(restoredCopyMeta.FlowCameraParameterOverrideConfig.IsEnabled);
+            Assert.Equal(25f, restoredSourceMeta.FlowCameraParameterOverrideConfig.ExposureTimeMs);
+            Assert.Equal(25f, restoredCopyMeta.FlowCameraParameterOverrideConfig.ExposureTimeMs);
+            Assert.Equal("CalibrationA", restoredSourceMeta.FlowCameraParameterOverrideConfig.CalibrationTemplateName);
+            Assert.Equal("CalibrationA", restoredCopyMeta.FlowCameraParameterOverrideConfig.CalibrationTemplateName);
+        });
+    }
+
+    [Fact]
+    public void ReloadingConfigurationWithoutCameraOverrideCreatesDisabledDefaults()
+    {
+        RunInTemporaryPersistenceDirectory(() =>
+        {
+            Directory.CreateDirectory(ViewResultManager.DirectoryPath);
+            string filePath = Path.Combine(ViewResultManager.DirectoryPath, "ProcessGroups.json");
+            var process = new BlackProcess();
+            var legacyRoot = new ProcessGroupsRoot
+            {
+                Version = 3,
+                Groups = new List<ProcessGroupPersist>
+                {
+                    new()
+                    {
+                        Name = "Legacy",
+                        Metas = new List<ProcessMetaPersist>
+                        {
+                            new()
+                            {
+                                Name = "LegacyStep",
+                                FlowTemplate = "LegacyFlow",
+                                ProcessTypeFullName = typeof(BlackProcess).FullName!,
+                                IsEnabled = true,
+                                ConfigJson = JsonConvert.SerializeObject(process.Config)
+                            }
+                        }
+                    }
+                }
+            };
+            string currentJson = JsonConvert.SerializeObject(
+                legacyRoot,
+                new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All, Formatting = Formatting.Indented });
+            JObject legacyJson = JObject.Parse(currentJson);
+            foreach (JProperty property in legacyJson
+                .DescendantsAndSelf()
+                .OfType<JObject>()
+                .Select(value => value.Property(nameof(ProcessMetaPersist.FlowCameraParameterOverrideConfig)))
+                .Where(property => property != null)
+                .Cast<JProperty>()
+                .ToArray())
+            {
+                property.Remove();
+            }
+            File.WriteAllText(filePath, legacyJson.ToString(Formatting.Indented));
+
+            var reloaded = new ProcessManager();
+
+            ProcessMeta restored = Assert.Single(Assert.Single(reloaded.ProcessGroups).ProcessMetas);
+            Assert.NotNull(restored.FlowCameraParameterOverrideConfig);
+            Assert.False(restored.FlowCameraParameterOverrideConfig.IsEnabled);
+            Assert.Equal(100, restored.FlowCameraParameterOverrideConfig.ExposureTimeMs);
+            Assert.Equal(string.Empty, restored.FlowCameraParameterOverrideConfig.CalibrationTemplateName);
         });
     }
 

@@ -1746,7 +1746,7 @@
                         VerticalAlignment="Bottom"
                         AutomationProperties.Name="回到最新消息"
                         Click="ScrollToLatestButton_Click"
-                        Content="↓  下方有新内容"
+                        Content="↓  回到最新消息"
                         Style="{StaticResource CopilotPrimaryButtonStyle}"
                         ToolTip="回到最新消息"
                         Visibility="Collapsed" />

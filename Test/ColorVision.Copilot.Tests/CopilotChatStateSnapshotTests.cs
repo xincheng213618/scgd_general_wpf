@@ -43,6 +43,25 @@ public class CopilotChatStateSnapshotTests
         firstConversation.Title = "First";
         firstConversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Question"));
         firstConversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.Assistant, "Answer"));
+        firstConversation.DraftText = "Preserved draft";
+        firstConversation.HasResponsePersonalityOverride = true;
+        firstConversation.Attachments.Add(CopilotAttachmentItem.CreateContext("Draft attachment"));
+        firstConversation.AdditionalReadRootPaths.Add(Path.GetTempPath());
+        firstConversation.PendingSteeringRecoveries.Add(new CopilotPendingSteeringRecoveryRecord
+        {
+            TaskId = "task-1",
+            MessageId = "steering-1",
+            Text = "Keep the captured constraint",
+            AcceptedAtUtc = DateTimeOffset.UtcNow,
+        });
+        firstConversation.AgentSessionCheckpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "profile",
+            SerializedSessionJson = "{\"content\":\"" + new string('x', 8_000) + "\"}",
+            ConversationMemory = [new CopilotRequestMessage("user", "Checkpoint memory")],
+            AvailableToolNames = ["read_file", "list_directory"],
+        };
+        firstConversation.PrepareFullAccessGrant(Path.GetTempPath(), "task-1", DateTimeOffset.UtcNow.AddMinutes(1));
         var secondConversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
         secondConversation.Title = "Second";
         var state = new CopilotChatState
@@ -77,7 +96,75 @@ public class CopilotChatStateSnapshotTests
         var actual = JObject.Parse(store.Serialize(capture.Complete()));
 
         Assert.True(JToken.DeepEquals(expected, actual));
-        Assert.Equal(3, chunkCount);
+        Assert.True(chunkCount > state.Conversations.Count + state.QueuedFollowUpRecoveries.Count);
+        Assert.Null(actual[nameof(CopilotChatState.Conversations)]![0]![nameof(CopilotConversationRecord.AccessMode)]);
+        Assert.Contains(CopilotAgentSessionCheckpoint.CompressedSerializedSessionPrefix, store.Serialize(capture.Complete()), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LargeSingleConversationYieldsBetweenMessagesAndKeepsTheSynchronousContract()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        for (var index = 0; index < 600; index++)
+        {
+            conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User,
+                $"Message {index}: \"quoted\" \\ 中文\n" + new string('x', 512))
+            {
+                RequestContent = index % 100 == 0 ? new string('r', 8_000) : string.Empty,
+            });
+        }
+        var state = new CopilotChatState { Conversations = [conversation] };
+        var store = new CopilotChatStateStore(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")));
+        var expected = JObject.Parse(JsonConvert.SerializeObject(state, SerializerSettings));
+        var capture = store.BeginSnapshot(state);
+
+        Assert.True(capture.CaptureNextChunk());
+        Assert.False(capture.IsComplete);
+        var chunkCount = 1;
+        while (capture.CaptureNextChunk())
+            chunkCount++;
+
+        Assert.Equal(conversation.Messages.Count + 1, chunkCount);
+        var incremental = JObject.Parse(store.Serialize(capture.Complete()));
+        Assert.True(JToken.DeepEquals(expected, incremental));
+        Assert.True(JToken.DeepEquals(incremental, JObject.Parse(store.Serialize(state))));
+    }
+
+    [Fact]
+    public void DeferredMessageCollectionsKeepTheirStartedMembershipAndAlreadyCapturedValues()
+    {
+        var first = new CopilotChatMessage(CopilotChatRole.User, "First at capture");
+        var second = new CopilotChatMessage(CopilotChatRole.Assistant, "Second initially");
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Title = "Title at capture";
+        conversation.Messages = [first, second];
+        conversation.Attachments.Add(CopilotAttachmentItem.CreateContext("Started attachment"));
+        var state = new CopilotChatState { Conversations = [conversation] };
+        var store = new CopilotChatStateStore(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")));
+        var capture = store.BeginSnapshot(state);
+
+        Assert.True(capture.CaptureNextChunk()); // Metadata and collection membership.
+        conversation.Title = "Later title";
+        conversation.Messages.Remove(second);
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Later member"));
+        conversation.Attachments.Clear();
+        Assert.True(capture.CaptureNextChunk()); // First message.
+        first.Content = "Changed after its chunk";
+        second.Content = "Changed before its chunk";
+        Assert.True(capture.CaptureNextChunk()); // Second captured member, even though removed.
+        second.Content = "Changed after its chunk";
+        while (capture.CaptureNextChunk())
+        {
+        }
+
+        var document = JObject.Parse(store.Serialize(capture.Complete()));
+        var savedConversation = document[nameof(CopilotChatState.Conversations)]![0]!;
+        var messages = Assert.IsType<JArray>(savedConversation[nameof(CopilotConversationRecord.Messages)]);
+        Assert.Equal(2, messages.Count);
+        Assert.Equal("Title at capture", savedConversation[nameof(CopilotConversationRecord.Title)]!.Value<string>());
+        Assert.Equal("First at capture", messages[0]![nameof(CopilotChatMessage.Content)]!.Value<string>());
+        Assert.Equal("Changed before its chunk", messages[1]![nameof(CopilotChatMessage.Content)]!.Value<string>());
+        Assert.Single(Assert.IsType<JArray>(savedConversation[nameof(CopilotConversationRecord.Attachments)]));
     }
 
     [Fact]

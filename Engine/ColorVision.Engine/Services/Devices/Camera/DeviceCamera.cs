@@ -13,6 +13,7 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras.Calibration;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.RC;
@@ -55,7 +56,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private readonly Lazy<ViewCamera> _view;
         private int _disposeState;
         private bool IsDisposed => Volatile.Read(ref _disposeState) != 0;
-        public ViewCamera View => _view.Value;
+        internal ViewCamera ViewShell => Application.Current.Dispatcher.CheckAccess()
+            ? _view.Value : Application.Current.Dispatcher.Invoke(() => _view.Value);
+        public ViewCamera View
+        {
+            get
+            {
+                ViewCamera view = ViewShell;
+                view.EnsureInitialized();
+                return view;
+            }
+        }
         public MQTTCamera DService { get; set; }
         public RelayCommand FetchLatestTemperatureCommand { get; set; }
 
@@ -70,9 +81,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             LocalCameraSession = new LocalCameraSession(this);
             LocalCalibrationCacheManager = new LocalCalibrationCacheManager(Config.Code);
             DService = new MQTTCamera(this);
-            _view = new Lazy<ViewCamera>(() => Application.Current.Dispatcher.CheckAccess()
-                ? new ViewCamera(this)
-                : Application.Current.Dispatcher.Invoke(() => new ViewCamera(this)));
+            _view = new Lazy<ViewCamera>(() => new ViewCamera(this, true));
             this.SetIconResource("DrawingImageCamera");
 
             EditCommand = new RelayCommand(a => EditCameraAction(), b => AccessControl.Check(EditCameraAction));
@@ -94,6 +103,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditCameraExpousureCommand = new RelayCommand(A => EditCameraExpousure());
             EditRealtimeCameraConfigCommand = new RelayCommand(_ => EditRealtimeCameraConfig());
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
+            UserCalibrationCommand = new RelayCommand(_ => LumFourColorCalibrationWorkflowWindow.ShowWindow(camera: this));
             OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog());
             ReleaseLocalCalibrationCacheCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
 
@@ -156,6 +166,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
         [Category("CalibrationCorrection")]
         [Description("CommandCameraCalibrationHint")]
         public RelayCommand EditCalibrationCommand { get; set; }
+
+        [CommandDisplay("用户校正", Order = 2, CategoryOrder = 1)]
+        [Category("CalibrationCorrection")]
+        [Description("使用单点或 RGBW 测量修正校正文件")]
+        public RelayCommand UserCalibrationCommand { get; set; }
 
         public void EditCalibration()
         {
@@ -395,7 +410,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     continue;
                 }
 
-                CalibrationResource? resource = slot.GroupGetter(groupResource);
+                CalibrationResource? resource = GetCalibrationTemplateResource(param, slot);
                 if (resource == null || !TryResolveCalibrationFilePath(resource, out string fullPath, out string relativePath))
                 {
                     string displayName = resource?.Name ?? slot.Key;
@@ -413,6 +428,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             calibrationFiles = resolvedFiles;
             return true;
+        }
+
+        internal CalibrationResource? GetCalibrationTemplateResource(CalibrationParam param, CalibrationSlotDefinition slot)
+        {
+            if (PhyCamera == null) return null;
+            var resources = PhyCamera.VisualChildren.OfType<CalibrationResource>()
+                .Concat(PhyCamera.VisualChildren.OfType<GroupResource>().SelectMany(group => group.VisualChildren.OfType<CalibrationResource>()));
+            return slot.FindTemplateResource(param, resources);
         }
 
         internal bool TryResolveCalibrationFilePath(CalibrationResource resource, out string fullPath, out string relativePath)

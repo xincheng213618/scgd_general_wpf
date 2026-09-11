@@ -154,41 +154,62 @@ internal sealed class ResultImagePlaceholderCache
 
 internal static class ResultImageDimensions
 {
-    public static bool TryReadFromMeasureResults(int batchId, string? expectedFilePath, out int width, out int height)
+    internal static bool TryPopulate(
+        ProjectARVRReuslt result,
+        Func<int, List<MeasureResultImgModel>>? measureResultLoader = null)
     {
-        width = 0;
-        height = 0;
-        if (batchId <= 0)
+        ArgumentNullException.ThrowIfNull(result);
+        if (result.ImageWidth is > 0 && result.ImageHeight is > 0)
+            return true;
+        if (result.BatchId <= 0)
             return false;
 
         try
         {
-            List<MeasureResultImgModel> images = MeasureImgResultDao.Instance.GetAllByBatchId(batchId);
-            MeasureResultImgModel? exact = images.FirstOrDefault(item => PathsEqual(item.FileUrl, expectedFilePath));
-            if (exact != null && TryReadFrameInfo(exact.ImgFrameInfo, out width, out height))
-                return true;
-
-            (int Width, int Height)[] sizes = images
-                .Select(item => TryReadFrameInfo(item.ImgFrameInfo, out int itemWidth, out int itemHeight)
-                    ? (Width: itemWidth, Height: itemHeight)
-                    : (Width: 0, Height: 0))
-                .Where(size => size.Width > 0 && size.Height > 0)
-                .Distinct()
-                .ToArray();
-
-            if (sizes.Length != 1)
+            measureResultLoader ??= batchId => MeasureImgResultDao.Instance.GetAllByBatchId(batchId);
+            List<MeasureResultImgModel> images = measureResultLoader(result.BatchId) ?? [];
+            if (!TryReadFromMeasureResults(images, result.FileName, out int width, out int height))
                 return false;
 
-            width = sizes[0].Width;
-            height = sizes[0].Height;
+            result.ImageWidth = width;
+            result.ImageHeight = height;
             return true;
         }
         catch
         {
-            width = 0;
-            height = 0;
             return false;
         }
+    }
+
+    internal static bool TryReadFromMeasureResults(
+        IReadOnlyList<MeasureResultImgModel> images,
+        string? expectedFilePath,
+        out int width,
+        out int height)
+    {
+        width = 0;
+        height = 0;
+        if (images == null || images.Count == 0)
+            return false;
+
+        MeasureResultImgModel? exact = images.FirstOrDefault(item => PathsEqual(item.FileUrl, expectedFilePath));
+        if (exact != null && TryReadFrameInfo(exact.ImgFrameInfo, out width, out height))
+            return true;
+
+        (int Width, int Height)[] sizes = images
+            .Select(item => TryReadFrameInfo(item.ImgFrameInfo, out int itemWidth, out int itemHeight)
+                ? (Width: itemWidth, Height: itemHeight)
+                : (Width: 0, Height: 0))
+            .Where(size => size.Width > 0 && size.Height > 0)
+            .Distinct()
+            .ToArray();
+
+        if (sizes.Length != 1)
+            return false;
+
+        width = sizes[0].Width;
+        height = sizes[0].Height;
+        return true;
     }
 
     public static bool TryReadFrameInfo(string? json, out int width, out int height)

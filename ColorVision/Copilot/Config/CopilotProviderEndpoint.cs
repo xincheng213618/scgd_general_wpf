@@ -16,13 +16,26 @@ namespace ColorVision.Copilot
         public static CopilotProviderEndpointValidation Validate(CopilotProfileConfig profile)
         {
             ArgumentNullException.ThrowIfNull(profile);
-            return Validate(profile.BaseUrl, profile.ProviderType, profile.AllowInsecureHttp);
+            return Validate(
+                profile.BaseUrl,
+                profile.ProviderType,
+                profile.AllowInsecureHttp,
+                CopilotOpenAiRequestPolicy.UsesResponsesApi(profile));
         }
 
         public static CopilotProviderEndpointValidation Validate(
             string? baseUrl,
             CopilotProviderType providerType,
             bool allowInsecureHttp)
+        {
+            return Validate(baseUrl, providerType, allowInsecureHttp, useResponsesApi: false);
+        }
+
+        private static CopilotProviderEndpointValidation Validate(
+            string? baseUrl,
+            CopilotProviderType providerType,
+            bool allowInsecureHttp,
+            bool useResponsesApi)
         {
             var normalizedBaseUrl = (baseUrl ?? string.Empty).Trim();
             if (normalizedBaseUrl.Length == 0)
@@ -56,7 +69,7 @@ namespace ColorVision.Copilot
             {
                 var builder = new UriBuilder(baseUri)
                 {
-                    Path = BuildEndpointPath(baseUri.AbsolutePath, providerType),
+                    Path = BuildEndpointPath(baseUri.AbsolutePath, providerType, useResponsesApi),
                     Query = string.Empty,
                     Fragment = string.Empty,
                 };
@@ -76,9 +89,25 @@ namespace ColorVision.Copilot
             return validation.Endpoint!;
         }
 
-        private static string BuildEndpointPath(string absolutePath, CopilotProviderType providerType)
+        private static string BuildEndpointPath(
+            string absolutePath,
+            CopilotProviderType providerType,
+            bool useResponsesApi)
         {
             var path = "/" + (absolutePath ?? string.Empty).Trim('/');
+            if (useResponsesApi)
+            {
+                if (path == "/")
+                    return "/v1/responses";
+                if (path.EndsWith("/responses", StringComparison.OrdinalIgnoreCase))
+                    return path;
+                if (path.EndsWith("/chat/completions", StringComparison.OrdinalIgnoreCase))
+                    return path[..^"/chat/completions".Length] + "/responses";
+                return IsOpenAiApiRoot(path)
+                    ? path + "/responses"
+                    : path + "/v1/responses";
+            }
+
             if (path == "/")
             {
                 return providerType == CopilotProviderType.AnthropicCompatible

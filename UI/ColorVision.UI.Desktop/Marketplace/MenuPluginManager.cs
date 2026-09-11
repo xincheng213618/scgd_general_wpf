@@ -9,7 +9,7 @@ namespace ColorVision.UI.Desktop.Marketplace
     {
         public override string OwnerGuid => MenuItemConstants.Help;
         public override int Order => 9000;
-        public override string Header => Resources.Marketplace;
+        public override string Header => $"{Resources.Marketplace}(_P)";
 
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()

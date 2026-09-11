@@ -1,6 +1,7 @@
 #pragma warning disable CA1852,CA1863
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
+using ColorVision.UI.LogImp;
 using ColorVision.UI.Marketplace;
 using log4net;
 using Microsoft.Win32;
@@ -309,6 +310,54 @@ namespace ColorVision.UI.Desktop.Feedback
             await AddLogPackageAttachmentAsync();
         }
 
+        private async void ClearDiagnostics_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBoxResult confirmation = MessageBox.Show(
+                this,
+                Properties.Resources.ClearDiagnosticsConfirm,
+                Properties.Resources.ClearDiagnosticsTitle,
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning,
+                MessageBoxResult.No);
+            if (confirmation != MessageBoxResult.Yes)
+                return;
+
+            List<IFeedbackDiagnosticCleanupSource> sources = _collectorItems
+                .Select(item => item.Collector)
+                .OfType<IFeedbackDiagnosticCleanupSource>()
+                .ToList();
+            if (sources.Count == 0)
+            {
+                StatusText.Text = Properties.Resources.ClearDiagnosticsNone;
+                return;
+            }
+
+            SetInputEnabled(false);
+            StatusText.Text = Properties.Resources.ClearingDiagnostics;
+            try
+            {
+                DateTime preserveFromUtc = DateTime.UtcNow;
+                DiagnosticFileCleanupResult result = await Task.Run(() =>
+                    DiagnosticFileCleanupService.Cleanup(sources, preserveFromUtc));
+                StatusText.Text = result.DeletedFileCount == 0 && result.FailedFileCount == 0
+                    ? Properties.Resources.ClearDiagnosticsNone
+                    : string.Format(
+                        Properties.Resources.ClearDiagnosticsCompleted,
+                        result.DeletedFileCount,
+                        FormatFileSize(result.ReleasedBytes),
+                        result.FailedFileCount);
+            }
+            catch (Exception ex)
+            {
+                log.Error("Historical diagnostic cleanup failed.", ex);
+                StatusText.Text = string.Format(Properties.Resources.SendFailed, ex.Message);
+            }
+            finally
+            {
+                SetInputEnabled(true);
+            }
+        }
+
         private async Task<bool> AddLogPackageAttachmentAsync(bool manageButtonState = true)
         {
             var selectedCollectors = _collectorItems.Where(c => c.IsChecked).Select(c => c.Collector).ToList();
@@ -582,10 +631,25 @@ namespace ColorVision.UI.Desktop.Feedback
         {
             SendButton.IsEnabled = isEnabled;
             PackLogsButton.IsEnabled = isEnabled;
+            ClearDiagnosticsButton.IsEnabled = isEnabled;
             AddFileButton.IsEnabled = isEnabled;
             AddScreenshotButton.IsEnabled = isEnabled;
             CollectorsList.IsEnabled = isEnabled;
             AttachmentsList.IsEnabled = isEnabled;
+        }
+
+        private static string FormatFileSize(long bytes)
+        {
+            string[] units = ["B", "KB", "MB", "GB"];
+            double value = Math.Max(0, bytes);
+            int unitIndex = 0;
+            while (value >= 1024 && unitIndex < units.Length - 1)
+            {
+                value /= 1024;
+                unitIndex++;
+            }
+
+            return unitIndex == 0 ? $"{value:F0} {units[unitIndex]}" : $"{value:F1} {units[unitIndex]}";
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)

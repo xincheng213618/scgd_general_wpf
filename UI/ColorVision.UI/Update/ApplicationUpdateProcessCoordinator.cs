@@ -13,13 +13,14 @@ namespace ColorVision.Update
         Rejected,
         Unavailable,
         Indeterminate,
+        TimedOut,
     }
 
     /// <summary>
     /// Closes every running application process that belongs to the current installation
     /// before an external updater starts replacing files.
     /// </summary>
-    public static class ApplicationUpdateProcessCoordinator
+    public static partial class ApplicationUpdateProcessCoordinator
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ApplicationUpdateProcessCoordinator));
         private static readonly TimeSpan DefaultGracefulShutdownTimeout = TimeSpan.FromSeconds(15);
@@ -44,7 +45,13 @@ namespace ColorVision.Update
         }
 
         public static int CloseEarlierApplicationProcesses(
-            Func<int, SingleInstanceCloseRequestResult> requestClose)
+            Func<int, SingleInstanceCloseRequestResult> requestClose) =>
+            CloseEarlierApplicationProcesses(requestClose, confirmTermination: null);
+
+        // Retain the original public entry point for callers that only allow graceful replacement.
+        public static int CloseEarlierApplicationProcesses(
+            Func<int, SingleInstanceCloseRequestResult> requestClose,
+            Func<int, bool>? confirmTermination)
         {
             ArgumentNullException.ThrowIfNull(requestClose);
             string executablePath = Environment.ProcessPath
@@ -56,7 +63,8 @@ namespace ColorVision.Update
                 currentProcess.SessionId,
                 currentProcess.StartTime.ToUniversalTime(),
                 DefaultGracefulShutdownTimeout,
-                requestClose);
+                requestClose,
+                confirmTermination);
         }
 
         internal static int CloseOtherApplicationProcesses(
@@ -161,13 +169,61 @@ namespace ColorVision.Update
             int currentProcessSessionId,
             DateTime currentProcessStartTimeUtc,
             TimeSpan gracefulShutdownTimeout,
-            Func<int, SingleInstanceCloseRequestResult> requestClose)
+            Func<int, SingleInstanceCloseRequestResult> requestClose,
+            Func<int, bool>? confirmTermination = null)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(executablePath);
             ArgumentOutOfRangeException.ThrowIfLessThan(gracefulShutdownTimeout, TimeSpan.Zero);
             ArgumentNullException.ThrowIfNull(requestClose);
 
             string normalizedExecutablePath = Path.GetFullPath(executablePath);
+            var targetProcesses = FindEarlierApplicationProcesses(
+                normalizedExecutablePath, currentProcessId, currentProcessSessionId, currentProcessStartTimeUtc);
+
+            try
+            {
+                if (targetProcesses.Count == 0)
+                    return 0;
+
+                foreach (Process process in targetProcesses)
+                {
+                    if (!IsRunning(process))
+                        continue;
+                    using var replacementSignal = new EventWaitHandle(false, EventResetMode.ManualReset, CreateReplacementSignalName(process.Id));
+                    log.Info($"Requesting replacement shutdown from earlier ColorVision process {process.Id}.");
+                    SingleInstanceCloseRequestResult closeResult = requestClose(process.Id);
+                    log.Info($"Earlier ColorVision process {process.Id} shutdown response: {closeResult}.");
+                    if (closeResult == SingleInstanceCloseRequestResult.Rejected)
+                        throw new InvalidOperationException($"Earlier ColorVision process {process.Id} declined the shutdown request.");
+
+                    if (closeResult == SingleInstanceCloseRequestResult.Unavailable && !RequestWindowClose(process) && IsRunning(process))
+                    {
+                        RecoverUnresponsiveProcess(process, confirmTermination, $"Earlier ColorVision process {process.Id} has no safe close endpoint.");
+                        continue;
+                    }
+
+                    if (closeResult == SingleInstanceCloseRequestResult.TimedOut)
+                    {
+                        RecoverUnresponsiveProcess(process, confirmTermination, $"Earlier ColorVision process {process.Id} did not answer the shutdown request.");
+                        continue;
+                    }
+
+                    if (WaitForExit([process], gracefulShutdownTimeout).Count > 0)
+                        RecoverUnresponsiveProcess(process, confirmTermination, $"Earlier ColorVision process {process.Id} did not exit after the safe shutdown request.");
+                }
+
+                log.Info($"Closed {targetProcesses.Count} earlier ColorVision process(es) from '{normalizedExecutablePath}'.");
+                return targetProcesses.Count;
+            }
+            finally
+            {
+                DisposeProcesses(targetProcesses);
+            }
+        }
+
+        private static List<Process> FindEarlierApplicationProcesses(
+            string normalizedExecutablePath, int currentProcessId, int currentProcessSessionId, DateTime currentProcessStartTimeUtc)
+        {
             string processName = Path.GetFileNameWithoutExtension(normalizedExecutablePath);
             if (string.IsNullOrWhiteSpace(processName))
                 throw new InvalidOperationException("Unable to resolve the current ColorVision process name.");
@@ -233,59 +289,62 @@ namespace ColorVision.Update
                     $"Unable to verify earlier ColorVision process(es): {string.Join(", ", unresolvedProcessIds)}. Close them manually and retry.");
             }
 
+            targetProcesses.Sort(CompareProcessStartOrder);
+            return targetProcesses;
+        }
+
+        private static bool RequestWindowClose(Process process)
+        {
+            try { return process.HasExited || process.CloseMainWindow(); }
+            catch (InvalidOperationException) { return true; }
+        }
+
+        private static void RecoverUnresponsiveProcess(Process process, Func<int, bool>? confirmTermination, string failureMessage)
+        {
+            if (!IsRunning(process))
+                return;
+            if (confirmTermination == null)
+                throw new InvalidOperationException(failureMessage);
+
+            if (!PinEarlierProcess(process))
+                return;
+            if (!confirmTermination(process.Id))
+                throw new OperationCanceledException($"Recovery of earlier ColorVision process {process.Id} was canceled.");
+
             try
             {
-                if (targetProcesses.Count == 0)
-                    return 0;
-
-                targetProcesses.Sort(CompareProcessStartOrder);
-                foreach (Process process in targetProcesses)
+                if (!process.HasExited)
                 {
-                    using var replacementSignal = new EventWaitHandle(
-                        initialState: false,
-                        EventResetMode.ManualReset,
-                        CreateReplacementSignalName(process.Id));
-                    SingleInstanceCloseRequestResult closeResult = requestClose(process.Id);
-                    if (closeResult == SingleInstanceCloseRequestResult.Rejected)
-                    {
-                        throw new InvalidOperationException(
-                            $"Earlier ColorVision process {process.Id} declined the shutdown request.");
-                    }
-
-                    if (closeResult == SingleInstanceCloseRequestResult.Unavailable)
-                    {
-                        bool closeRequested;
-                        try
-                        {
-                            closeRequested = process.HasExited || process.CloseMainWindow();
-                        }
-                        catch (InvalidOperationException)
-                        {
-                            closeRequested = true;
-                        }
-
-                        if (!closeRequested && IsRunning(process))
-                        {
-                            throw new InvalidOperationException(
-                                $"Earlier ColorVision process {process.Id} has no safe close endpoint.");
-                        }
-                    }
-
-                    if (WaitForExit([process], gracefulShutdownTimeout).Count > 0)
-                    {
-                        throw new InvalidOperationException(
-                            $"Earlier ColorVision process {process.Id} did not exit after the safe shutdown request.");
-                    }
+                    log.Warn($"User confirmed termination of earlier ColorVision process {process.Id}. {failureMessage}");
+                    process.Kill();
                 }
-
-                log.Info(
-                    $"Closed {targetProcesses.Count} earlier ColorVision process(es) from '{normalizedExecutablePath}'.");
-                return targetProcesses.Count;
             }
-            finally
+            catch (InvalidOperationException) when (!IsRunning(process))
             {
-                DisposeProcesses(targetProcesses);
             }
+
+            if (WaitForExit([process], DefaultForcedShutdownTimeout).Count > 0)
+                throw new InvalidOperationException($"Earlier ColorVision process {process.Id} did not exit after confirmed termination.");
+        }
+
+        private static bool PinEarlierProcess(Process process)
+        {
+            // StartTime was captured during discovery. Pin that process before checking PID reuse.
+            DateTime expectedStartTimeUtc = process.StartTime.ToUniversalTime();
+            try
+            {
+                _ = process.SafeHandle;
+                if (process.HasExited)
+                    return false;
+                using Process identity = Process.GetProcessById(process.Id);
+                if (identity.StartTime.ToUniversalTime() != expectedStartTimeUtc)
+                    throw new InvalidOperationException($"Earlier ColorVision process {process.Id} changed identity before recovery.");
+            }
+            catch (Exception ex) when ((ex is InvalidOperationException or ArgumentException) && !IsRunning(process))
+            {
+                return false;
+            }
+            return true;
         }
 
         public static bool IsSingleInstanceReplacementRequested(int processId)

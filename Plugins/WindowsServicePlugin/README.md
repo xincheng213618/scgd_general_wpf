@@ -4,6 +4,10 @@ Windows/x64 WPF plugin for the ColorVision in-app service manager. The manifest
 loads `WindowsServicePlugin.dll`; the project depends on matching ColorVision
 Engine/UI assemblies and currently targets `net10.0-windows`.
 
+The service manager is available from both `Help > Service Manager` and
+`Applications and Tools > Internal Tools`; both entry points require the
+ColorVision Administrator permission.
+
 Use the canonical [package selection, local installation, database migration,
 and recovery contract](../../docs/04-api-reference/plugins/standard-plugins/windows-service.md).
 The [CVWindowsService Backend contract](../../docs/02-developer-guide/backend/cvwindowsservice.md)

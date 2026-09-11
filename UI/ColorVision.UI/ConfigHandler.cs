@@ -243,7 +243,8 @@ namespace ColorVision.UI
         {
             try
             {
-                if (jsonObject.TryGetValue(type.Name, out JToken? configToken))
+                if (jsonObject.TryGetValue(type.FullName!, out JToken? configToken)
+                    || jsonObject.TryGetValue(type.Name, out configToken))
                 {
                     var config = configToken.ToObject(type, JsonSerializer.Create(JsonSerializerSettings)) as IConfig;
                     if (config != null)
@@ -435,7 +436,7 @@ namespace ColorVision.UI
                     log.Info(configPair.Key);
                     log.Error(ex);
                     errors.Add(new InvalidOperationException(
-                        $"Configuration '{configPair.Key.Name}' could not be serialized.",
+                        $"Configuration '{configPair.Key.FullName}' could not be serialized.",
                         ex));
                 }
             }
@@ -452,8 +453,12 @@ namespace ColorVision.UI
 
         private static void SaveConfig(JObject jObject, Type configType, IConfig config, JsonSerializer serializer)
         {
+            string sectionName = configType.FullName!;
+            if (jObject.ContainsKey(sectionName))
+                throw new InvalidOperationException($"Multiple configuration types map to section '{sectionName}'. The configuration snapshot cannot be saved.");
+
             InvokeOnApplicationDispatcher(() =>
-                WriteConfigToken(jObject, configType.Name, config, serializer));
+                WriteConfigToken(jObject, sectionName, config, serializer));
         }
 
         private static void InvokeOnApplicationDispatcher(Action action)
@@ -787,7 +792,7 @@ namespace ColorVision.UI
             out string errorMessage) where T1 : IConfig
         {
             var type = typeof(T1);
-            var configName = type.Name;
+            var configName = type.FullName!;
             JToken? candidateToken = null;
 
             if (_savePublicationScope.Value)

@@ -10,6 +10,7 @@ using log4net;
 using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -29,6 +30,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AlgorithmView));
         private bool _isInitialized;
+        private bool _isInitializing;
         private bool _isDisposed;
         private bool _messageSubscribed;
         private IDisposable? _localResultSubscription;
@@ -46,13 +48,70 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
         }
 
-        public AlgorithmView(DeviceAlgorithm? device)
+        public AlgorithmView(DeviceAlgorithm? device) : this(device, deferInitialization: false)
         {
-            Device = device;
-            InitializeComponent();
-            CommandBindings.Add(new CommandBinding(AlgorithmResultDataSaver.SaveCommand, SaveSideDataCommand_Executed, SaveSideDataCommand_CanExecute));
         }
 
+        internal AlgorithmView(DeviceAlgorithm? device, bool deferInitialization)
+        {
+            Device = device;
+            if (Device != null)
+            {
+                Device.DService.MsgReturnReceived += DeviceService_OnMessageRecved;
+                _messageSubscribed = true;
+                _localResultSubscription = ResultMessageBus.Default.Subscribe(LocalResultPublished);
+            }
+
+            if (deferInitialization)
+            {
+                Loaded += View_Loaded;
+                IsVisibleChanged += View_IsVisibleChanged;
+            }
+            else
+                EnsureInitialized();
+        }
+
+        private void View_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (IsVisible)
+                EnsureInitialized();
+        }
+
+        private void View_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (IsLoaded && IsVisible)
+                EnsureInitialized();
+        }
+
+        internal void EnsureInitialized()
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(EnsureInitialized);
+                return;
+            }
+
+            if (_isInitialized || _isInitializing || _isDisposed)
+                return;
+
+            _isInitializing = true;
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            try
+            {
+                InitializeComponent();
+                // A deferred shell may already have raised WPF Initialized before its XAML was loaded.
+                UserControl_Initialized(this, EventArgs.Empty);
+                CommandBindings.Add(new CommandBinding(AlgorithmResultDataSaver.SaveCommand, SaveSideDataCommand_Executed, SaveSideDataCommand_CanExecute));
+                Loaded -= View_Loaded;
+                IsVisibleChanged -= View_IsVisibleChanged;
+                stopwatch.Stop();
+                log.Info($"Device view initialized. View={nameof(AlgorithmView)}, Duration={stopwatch.ElapsedMilliseconds}ms.");
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+        }
         public ViewAlgorithmConfig Config => ViewAlgorithmConfig.Instance;
 
 
@@ -63,12 +122,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 return;
 
             _isInitialized = true;
-            if (Device != null)
-            {
-                Device.DService.MsgReturnReceived += DeviceService_OnMessageRecved;
-                _messageSubscribed = true;
-                _localResultSubscription = ResultMessageBus.Default.Subscribe(LocalResultPublished);
-            }
             this.DataContext = Config;
             ImageView = new ImageView();
             ListView = listViewSide;
@@ -172,6 +225,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
             if (!_isDisposed && result != null)
             {
+                EnsureInitialized();
                 ViewResultAlg ViewResultAlg = new ViewResultAlg(result);
 
                 if (Config.InsertAtBeginning)
@@ -237,6 +291,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (_isDisposed)
                 return;
 
+            EnsureInitialized();
             if (listView1.Items.Count > 0) listView1.SelectedIndex = Config.InsertAtBeginning? 0: listView1.Items.Count - 1;
             listView1.ScrollIntoView(listView1.SelectedItem);
         }
@@ -373,6 +428,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public void SideSave(ViewResultAlg result,string selectedPath)
         {
+            EnsureInitialized();
             AlgorithmResultDataSaver.Save(ViewResultContext, result, selectedPath);
         }
 
@@ -411,6 +467,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 return;
 
             _isDisposed = true;
+            Loaded -= View_Loaded;
+            IsVisibleChanged -= View_IsVisibleChanged;
 
             if (_messageSubscribed && Device != null)
             {
@@ -420,13 +478,20 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             _localResultSubscription?.Dispose();
             _localResultSubscription = null;
 
-            listView1.SelectionChanged -= listView1_SelectionChanged;
-            listView1.PreviewKeyDown -= listView1_PreviewKeyDown;
-            listView1.ItemsSource = null;
-            listView1.CommandBindings.Clear();
-            listViewSide.ItemsSource = null;
-            ImageView.Dispose();
-            Grid1.Children.Remove(ImageView);
+            if (listView1 != null)
+            {
+                listView1.SelectionChanged -= listView1_SelectionChanged;
+                listView1.PreviewKeyDown -= listView1_PreviewKeyDown;
+                listView1.ItemsSource = null;
+                listView1.CommandBindings.Clear();
+            }
+            if (listViewSide != null)
+                listViewSide.ItemsSource = null;
+            if (ImageView != null)
+            {
+                ImageView.Dispose();
+                Grid1?.Children.Remove(ImageView);
+            }
             DataContext = null;
 
             GC.SuppressFinalize(this);

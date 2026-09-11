@@ -41,7 +41,7 @@ namespace ColorVision.Copilot
             if (profile == null || !HasConfigurableReasoning)
                 return false;
 
-            var normalized = CopilotReasoningCapabilities.Normalize(profile.VendorType, mode);
+            var normalized = CopilotReasoningCapabilities.Normalize(profile, mode);
             if (profile.ReasoningMode == normalized)
                 return true;
 
@@ -247,7 +247,7 @@ namespace ColorVision.Copilot
             var input = InputText ?? string.Empty;
             var refreshLocalCommands = input.TrimStart().StartsWith('$');
             var refreshReferences = _currentCodexConfigOptions.ConfiguredMentionsV2Enabled
-                && CopilotComposerReferenceCatalog.TryParseMention(input, out _);
+                && TryParseComposerReferenceMention(out _);
             if (!refreshLocalCommands && !refreshReferences)
                 return;
 

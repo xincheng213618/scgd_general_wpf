@@ -10,6 +10,7 @@ namespace ColorVision.ImageEditor.Draw.Annotations
     {
         internal static void CopyBaseProperties(BaseProperties properties, AnnotationItem item)
         {
+            if (properties is RegionProperties region) item.Rotation = region.Rotation;
             item.Id = properties.Id;
             item.Name = properties.Name;
             item.Msg = properties.Msg;
@@ -17,6 +18,7 @@ namespace ColorVision.ImageEditor.Draw.Annotations
 
         internal static void ApplyBaseProperties(AnnotationItem item, BaseProperties properties)
         {
+            if (properties is RegionProperties region) region.Rotation = item.Rotation;
             properties.Id = item.Id;
             properties.Name = item.Name ?? string.Empty;
             properties.Msg = item.Msg;

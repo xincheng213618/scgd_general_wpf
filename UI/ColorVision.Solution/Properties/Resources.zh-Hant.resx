@@ -783,4 +783,6 @@
   <data name="Sol_UserCenter_LastLaunch" xml:space="preserve"><value>最近啟動</value></data>
   <data name="Sol_UserCenter_ActivityLess" xml:space="preserve"><value>少</value></data>
   <data name="Sol_UserCenter_ActivityMore" xml:space="preserve"><value>多</value></data>
+  <data name="Sol_DocumentTabPin" xml:space="preserve"><value>固定索引標籤</value></data>
+  <data name="Sol_DocumentTabUnpin" xml:space="preserve"><value>取消固定索引標籤</value></data>
 </root>

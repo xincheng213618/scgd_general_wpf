@@ -155,7 +155,7 @@ namespace ColorVision.Solution.Explorer
             }
             catch (Exception ex)
             {
-                Logger.Warn($"缓存初始化失败，使用文件系统加载: {ex.Message}");
+                Logger.Warn($"Solution cache initialization failed; falling back to the file system: {ex.Message}");
                 Cache = null;
             }
 
@@ -167,7 +167,7 @@ namespace ColorVision.Solution.Explorer
             ReconcileExplicitProjects();
             EnsureStartupProject();
             stopwatch.Stop();
-            Logger.Info($"工程初始化时间: {stopwatch.Elapsed.TotalSeconds} 秒");
+            Logger.Info($"Solution workspace initialized in {stopwatch.Elapsed.TotalMilliseconds:0.###} ms.");
 
             // Rebuild cache in background after loading if it was empty
             if (Cache != null && !Cache.HasCache())
@@ -177,11 +177,10 @@ namespace ColorVision.Solution.Explorer
                     try
                     {
                         Cache.RebuildCache(DirectoryInfo.FullName);
-                        Logger.Info("后台缓存构建完成");
                     }
                     catch (Exception ex)
                     {
-                        Logger.Warn($"后台缓存构建失败: {ex.Message}");
+                        Logger.Warn($"Background solution cache build failed: {ex.Message}");
                     }
                 });
             }

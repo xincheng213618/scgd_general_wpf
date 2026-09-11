@@ -428,4 +428,100 @@
   <data name="Sched_ExecFail" xml:space="preserve">
     <value>Failed</value>
   </data>
+  <data name="Sched_EveryCalendarDay" xml:space="preserve">
+    <value>Once every calendar day</value>
+  </data>
+  <data name="Sched_RunOnce" xml:space="preserve">
+    <value>Run once</value>
+  </data>
+  <data name="Sched_RepeatSummary" xml:space="preserve">
+    <value>Every {0} · {1} runs in total</value>
+  </data>
+  <data name="Sched_ForeverSummary" xml:space="preserve">
+    <value>Every {0} · Repeat continuously</value>
+  </data>
+  <data name="Sched_DelaySummary" xml:space="preserve">
+    <value>Start after {0}</value>
+  </data>
+  <data name="Sched_Running" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="Sched_Paused" xml:space="preserve">
+    <value>Paused</value>
+  </data>
+  <data name="Sched_Ready" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="Sched_SelectTaskType" xml:space="preserve">
+    <value>Choose a task type</value>
+  </data>
+  <data name="Sched_Overview" xml:space="preserve">
+    <value>{0} tasks · {1} running · {2} paused</value>
+  </data>
+  <data name="Sched_OverviewHint" xml:space="preserve">
+    <value>Review schedules and manage your tasks</value>
+  </data>
+  <data name="Sched_More" xml:space="preserve">
+    <value>More</value>
+  </data>
+  <data name="Sched_Export" xml:space="preserve">
+    <value>Export</value>
+  </data>
+  <data name="Sched_NextRun" xml:space="preserve">
+    <value>Next run</value>
+  </data>
+  <data name="Sched_LastRun" xml:space="preserve">
+    <value>Last run</value>
+  </data>
+  <data name="Sched_RunStats" xml:space="preserve">
+    <value>{0} runs · {1} succeeded · {2} failed</value>
+  </data>
+  <data name="Sched_TaskConfiguration" xml:space="preserve">
+    <value>Task parameters</value>
+  </data>
+  <data name="Sched_CreateHint" xml:space="preserve">
+    <value>Choose what to run, then set its schedule</value>
+  </data>
+  <data name="Sched_EditHint" xml:space="preserve">
+    <value>Update the task and its schedule</value>
+  </data>
+  <data name="Sched_SaveChanges" xml:space="preserve">
+    <value>Save changes</value>
+  </data>
+  <data name="Sched_RepeatMode" xml:space="preserve">
+    <value>Repetition</value>
+  </data>
+  <data name="Sched_AdditionalRuns" xml:space="preserve">
+    <value>Additional runs</value>
+  </data>
+  <data name="Sched_RepeatHint" xml:space="preserve">
+    <value>Runs after the first; 2 means 3 runs in total</value>
+  </data>
+  <data name="Sched_TimeFormat" xml:space="preserve">
+    <value>Format: hh:mm:ss, e.g. 00:05:00</value>
+  </data>
+  <data name="Sched_CalendarHint" xml:space="preserve">
+    <value>Repeat every 1 calendar day</value>
+  </data>
+  <data name="Sched_PlanPreview" xml:space="preserve">
+    <value>Schedule preview</value>
+  </data>
+  <data name="Sched_ImmediateHint" xml:space="preserve">
+    <value>The task can trigger as soon as it is saved</value>
+  </data>
+  <data name="Sched_InvalidInput" xml:space="preserve">
+    <value>Check the highlighted fields. Use hh:mm:ss for durations and integers for counts and seconds.</value>
+  </data>
+  <data name="Sched_ConfigFailed" xml:space="preserve">
+    <value>Unable to load task parameters: {0}</value>
+  </data>
+  <data name="Sched_NoTaskTypes" xml:space="preserve">
+    <value>No task types are available</value>
+  </data>
+  <data name="Sched_Working" xml:space="preserve">
+    <value>Saving…</value>
+  </data>
+  <data name="Sched_PauseHint" xml:space="preserve">
+    <value>Pausing prevents future triggers; running tasks continue</value>
+  </data>
 </root>

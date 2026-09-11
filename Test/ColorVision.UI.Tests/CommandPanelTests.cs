@@ -31,6 +31,9 @@ public sealed class CommandPanelTests
                 Assert.Equal("执行操作", AutomationProperties.GetName(fixture.Buttons[1]));
                 Assert.Equal("操作说明", AutomationProperties.GetHelpText(fixture.Buttons[1]));
                 Assert.Contains("操作说明", fixture.Buttons[1].ToolTip.ToString());
+                var visibleContent = Assert.IsType<StackPanel>(fixture.Buttons[1].Content);
+                Assert.Single(visibleContent.Children);
+                Assert.Equal("执行操作", Assert.IsType<TextBlock>(visibleContent.Children[0]).Text);
                 Assert.Equal(0, source.ExecutionCount);
             }
             finally
@@ -82,9 +85,55 @@ public sealed class CommandPanelTests
             PropertyEditorHelper.GenCommand(new UncategorizedCommands(), fixture.Host);
             var content = Assert.IsType<StackPanel>(Assert.Single(fixture.Groups).Child);
             Assert.Single(content.Children.Cast<UIElement>());
-            Assert.IsType<UniformGrid>(content.Children[0]);
+            Assert.IsType<Grid>(content.Children[0]);
             Assert.Single(fixture.Buttons);
         });
+    }
+
+    [Fact]
+    public void CategoryLayout_FillsOddRowsAndStacksAtNarrowWidths()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var fixture = new Fixture();
+            PropertyEditorHelper.GenCommand(new ThreeCommands(), fixture.Host);
+            var grid = ((StackPanel)fixture.Groups[0].Child).Children.OfType<Grid>().Single();
+            fixture.Host.Measure(new Size(600, 1000));
+            fixture.Host.Arrange(new Rect(0, 0, 600, fixture.Host.DesiredSize.Height));
+            fixture.Host.UpdateLayout();
+            Assert.Equal(2, grid.ColumnDefinitions.Count);
+            Assert.Equal(2, Grid.GetColumnSpan(fixture.Buttons[2]));
+            fixture.Host.Measure(new Size(300, 1000));
+            fixture.Host.Arrange(new Rect(0, 0, 300, fixture.Host.DesiredSize.Height));
+            fixture.Host.UpdateLayout();
+            Assert.Single(grid.ColumnDefinitions);
+            Assert.Equal(3, grid.RowDefinitions.Count);
+        });
+    }
+
+    [Fact]
+    public void StandardMode_UsesProminentHeadingsAndCompactActions()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var fixture = new Fixture();
+            PropertyEditorHelper.GenCommand(new Commands(), fixture.Host);
+            fixture.Host.Measure(new Size(600, 1000));
+            fixture.Host.Arrange(new Rect(0, 0, 600, fixture.Host.DesiredSize.Height));
+            fixture.Host.UpdateLayout();
+
+            var heading = Assert.IsType<TextBlock>(((StackPanel)fixture.Groups[0].Child).Children[0]);
+            Assert.Equal(15, heading.FontSize);
+            Assert.All(fixture.Buttons, button => Assert.Equal(40, button.MinHeight));
+            Assert.All(fixture.Buttons, button => Assert.Equal(12, Assert.IsType<TextBlock>(Assert.IsType<StackPanel>(button.Content).Children[0]).FontSize));
+        });
+    }
+
+    private sealed class ThreeCommands
+    {
+        [CommandDisplay("First")] public RelayCommand First { get; } = new(_ => { });
+        [CommandDisplay("Second")] public RelayCommand Second { get; } = new(_ => { });
+        [CommandDisplay("Third")] public RelayCommand Third { get; } = new(_ => { });
     }
 
     private sealed class Fixture : IDisposable
@@ -92,7 +141,7 @@ public sealed class CommandPanelTests
         private readonly ResourceDictionary savedResources = Application.Current.Resources;
         public UniformGrid Host { get; } = new();
         public List<Border> Groups => ((StackPanel)Host.Children[0]).Children.OfType<Border>().ToList();
-        public List<Button> Buttons => Groups.SelectMany(group => ((StackPanel)group.Child).Children.OfType<UniformGrid>().Single().Children.OfType<Button>()).ToList();
+        public List<Button> Buttons => Groups.SelectMany(group => ((StackPanel)group.Child).Children.OfType<Grid>().Single().Children.OfType<Button>()).ToList();
 
         public Fixture()
         {

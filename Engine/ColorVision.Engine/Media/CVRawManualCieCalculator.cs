@@ -285,7 +285,7 @@ namespace ColorVision.Engine.Media
             return result;
         }
 
-        private static bool TryParseLumFourColorConfig(JObject root, out CVRawManualCieConfig config, out string? errorMessage)
+        internal static bool TryParseLumFourColorConfig(JObject root, out CVRawManualCieConfig config, out string? errorMessage)
         {
             config = CVRawManualCieConfig.CreateFactoryDefaults();
             errorMessage = null;

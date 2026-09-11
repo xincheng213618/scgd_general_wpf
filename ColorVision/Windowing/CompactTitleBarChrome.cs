@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
@@ -17,6 +18,16 @@ namespace ColorVision.Windowing
     /// </summary>
     public sealed class CompactTitleBarChrome : IDisposable
     {
+        private static readonly Version MinimumSupportedWindowsVersion = new(10, 0, 22000);
+        private static readonly DependencyPropertyDescriptor BackgroundDescriptor =
+            CreateBackgroundDescriptor();
+
+        internal static bool IsSupportedOperatingSystem =>
+            OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
+
+        internal static bool IsSupportedOperatingSystemVersion(Version version) =>
+            version >= MinimumSupportedWindowsVersion;
+
         private readonly Window window;
         private readonly FrameworkElement titleBar;
         private readonly FrameworkElement captionButtonsPlaceholder;
@@ -69,16 +80,26 @@ namespace ColorVision.Windowing
                 return false;
             if (IsAttached)
                 return true;
-            if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000) || window.AllowsTransparency ||
+            if (!IsSupportedOperatingSystem || window.AllowsTransparency ||
                 window.WindowStyle != WindowStyle.SingleBorderWindow || WindowChrome.GetWindowChrome(window) != null)
                 return false;
 
+            Stopwatch? trace = Environment.GetEnvironmentVariable("COLORVISION_STARTUP_TRACE") == "1"
+                ? Stopwatch.StartNew()
+                : null;
             handle = new WindowInteropHelper(window).Handle;
             if (handle == IntPtr.Zero || DwmIsCompositionEnabled(out bool compositionEnabled) != 0 || !compositionEnabled)
+            {
+                TraceStartupPhase(trace, "HWND and composition checks");
                 return false;
+            }
             source = HwndSource.FromHwnd(handle);
             if (source == null || source.IsDisposed)
+            {
+                TraceStartupPhase(trace, "HWND and composition checks");
                 return false;
+            }
+            TraceStartupPhase(trace, "HWND and composition checks");
 
             originalTitleBarMinHeight = titleBar.MinHeight;
             originalPlaceholderWidth = captionButtonsPlaceholder.Width;
@@ -93,27 +114,60 @@ namespace ColorVision.Windowing
                     converter.ConvertTo(originalBackgroundValue, typeof(MarkupExtension)) is DynamicResourceExtension resource)
                     originalBackgroundResourceKey = resource.ResourceKey;
             }
+            TraceStartupPhase(trace, "background resource converter");
             IsAttached = true;
             window.Loaded += OnLoaded;
             window.StateChanged += OnStateChanged;
             window.Closed += OnClosed;
             titleBar.SizeChanged += OnTitleBarSizeChanged;
+            BackgroundDescriptor.AddValueChanged(window, OnWindowBackgroundChanged);
+            TraceStartupPhase(trace, "event subscriptions");
 
             UpdateMetrics();
+            TraceStartupPhase(trace, "UpdateMetrics");
             window.SetCurrentValue(Window.BackgroundProperty, Brushes.Transparent);
+            TraceStartupPhase(trace, "background SetCurrentValue");
             WindowChrome.SetWindowChrome(window, chrome);
+            TraceStartupPhase(trace, "WindowChrome.SetWindowChrome");
             // HwndSource invokes the newest hook first. Only the small client-band
             // correction below precedes WindowChrome's native hit testing.
             source.AddHook(WindowProc);
+            TraceStartupPhase(trace, "message hook attach");
             visibilityGuard = new CompactTitleBarVisibilityGuard(window, handle, chrome);
-            if (!visibilityGuard.TryAttach())
+            bool visibilityGuardAttached = visibilityGuard.TryAttach();
+            TraceStartupPhase(trace, "visibility guard attach");
+            if (!visibilityGuardAttached)
             {
                 Dispose();
                 return false;
             }
             ApplyNativeTheme();
+            TraceStartupPhase(trace, "ApplyNativeTheme");
             QueueRefresh();
+            TraceStartupPhase(trace, "QueueRefresh submission");
             return true;
+        }
+
+        private static DependencyPropertyDescriptor CreateBackgroundDescriptor()
+        {
+            Stopwatch? trace = Environment.GetEnvironmentVariable("COLORVISION_STARTUP_TRACE") == "1"
+                ? Stopwatch.StartNew()
+                : null;
+            DependencyPropertyDescriptor descriptor = DependencyPropertyDescriptor.FromProperty(Window.BackgroundProperty, typeof(Window));
+            TraceStartupPhase(trace, "BackgroundDescriptor initialization");
+            return descriptor;
+        }
+
+        private static void TraceStartupPhase(Stopwatch? trace, string phase)
+        {
+            if (trace == null)
+                return;
+
+            trace.Stop();
+            log4net.LogManager.GetLogger(typeof(CompactTitleBarChrome))
+                .Info($"Startup trace compact chrome {phase} took {trace.Elapsed.TotalMilliseconds:0.###} ms.");
+            // Keep writing this phase's diagnostic record out of the next phase.
+            trace.Restart();
         }
 
         public void ApplyTheme(bool dark)
@@ -164,6 +218,16 @@ namespace ColorVision.Windowing
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e) => QueueRefresh();
+
+        private void OnWindowBackgroundChanged(object? sender, EventArgs e)
+        {
+            // WPF property/resource invalidation can discard SetCurrentValue even
+            // when the theme has not changed. Restore transparency before rendering
+            // so the window background cannot paint over DWM's caption buttons.
+            if (IsAttached && !isFullScreen && !isDisposed && !ReferenceEquals(window.Background, Brushes.Transparent))
+                window.SetCurrentValue(Window.BackgroundProperty, Brushes.Transparent);
+        }
+
         private void OnStateChanged(object? sender, EventArgs e)
         {
             // WM_SIZE raises StateChanged before HwndSource lays out the new client
@@ -355,6 +419,7 @@ namespace ColorVision.Windowing
             window.StateChanged -= OnStateChanged;
             window.Closed -= OnClosed;
             titleBar.SizeChanged -= OnTitleBarSizeChanged;
+            BackgroundDescriptor.RemoveValueChanged(window, OnWindowBackgroundChanged);
             if (source != null && !source.IsDisposed)
                 source.RemoveHook(WindowProc);
             source = null;

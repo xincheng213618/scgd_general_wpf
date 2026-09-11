@@ -2,9 +2,9 @@
 knowledge_id: "flow.node-extension"
 knowledge_type: "guide"
 status: "current"
-summary: "说明服务节点基类、请求与响应扩展点、属性编辑和流程完成的边界。"
-aliases: ["如何新增Flow节点","CVCommonNode","CVBaseServerNode","getBaseEventData","CVEndNode"]
-code_paths: ["Engine/FlowEngineLib/Base/CVCommonNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs"]
+summary: "说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。"
+aliases: ["如何新增Flow节点","CVCommonNode","CVBaseServerNode","LocalFlowNodeBase","CVStartCFC输入快照","getBaseEventData","CVEndNode"]
+code_paths: ["Engine/FlowEngineLib/Base/CVCommonNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs","Test/ColorVision.UI.Tests/LocalFlowNodePortTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs"]
 related: ["platform.extensibility","flow.index","flow.runtime","ui.property-grid"]
 ---
@@ -19,6 +19,7 @@ Flow 节点建立在 `STNode` 和 `FlowEngineLib` 基类上。服务节点负责
 | --- | --- | --- |
 | `CVCommonNode` | 节点公共属性、控件和节点事件 | `Engine/FlowEngineLib/Base/CVCommonNode.cs` |
 | `CVBaseServerNode` | 输入输出、MQTT 请求、超时及响应处理 | `Engine/FlowEngineLib/Base/CVBaseServerNode.cs` |
+| `LocalFlowNodeBase` | Engine 本地异步执行、多输入汇合及分支输入快照 | `Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs` |
 | `BaseStartNode` | 创建 `CVStartCFC`、维护运行状态及启动动作 | `Engine/FlowEngineLib/Start/BaseStartNode.cs` |
 | `CVEndNode` | 完成流程并发布终态 | `Engine/FlowEngineLib/End/CVEndNode.cs` |
 
@@ -33,6 +34,8 @@ Flow 节点建立在 `STNode` 和 `FlowEngineLib` 基类上。服务节点负责
 5. 核对 `GetSendTopic()`、`GetRecvTopic()`、`operatorCode` 和 `FlowServiceManager` 中的服务配置，并使用目标协议样例验证请求与响应。
 
 `Engine/FlowEngineLib/Algorithm/AlgorithmNode.cs` 是服务节点示例：它收集模板、颜色和图像路径等参数，生成发往算法服务的请求。`[STNode("...")]` 决定节点树分类，扩展时采用相邻节点的实际分组。
+
+Engine 本地节点由 `LocalFlowNodeBase` 在输入到达时捕获 `CVStartCFC` 快照，再把快照副本交给异步执行。Start 的同一个动作可以扇出到多条并行分支，但各节点不得直接修改这份共享输入；单输入和多输入节点都通过各自的快照传递 `MasterId`、`MasterResultType` 与 `MasterValue`。运行资源仍由同一次流程共享并按其资源生命周期管理，分支结果字段则保存在独立的 `Data` 字典中。
 
 ## 流程完成与节点完成
 

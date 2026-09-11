@@ -32,7 +32,7 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
                 bool calculateUniformityFromCorrectedPoi = Config.CalculateUniformityFromCorrectedPoi;
                 string luminanceUniformityResultName = Config.GetLuminanceUniformityResultName();
                 string colorUniformityResultName = Config.GetColorUniformityResultName();
-                var images = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                var images = ctx.GetMeasureResults();
                 if (images.Count > 0)
                     ctx.Result.FileName = images[0].FileUrl;
 

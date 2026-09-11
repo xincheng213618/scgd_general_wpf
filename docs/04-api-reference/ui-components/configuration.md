@@ -3,9 +3,9 @@ knowledge_id: "ui.configuration"
 knowledge_type: "topic"
 status: "current"
 summary: "ConfigHandler的配置路径、延迟实例、文件合并保存和重载契约；单文件替换不等于内存发布成功，重载会使旧配置引用失效。"
-aliases: ["配置文件在哪里","改了配置文件为什么没生效","配置导出缺少项目","配置重载旧引用","保存后发布失败","ConfigHandler","ConfigService","SaveConfigs","Reload","ReloadFromDisk","ConfigsReloaded","TrySaveAndPublish","PersistedButPublishFailed","IConfigSecure"]
+aliases: ["配置文件在哪里","改了配置文件为什么没生效","配置导出缺少项目","配置重载旧引用","保存后发布失败","配置同名覆盖","完整类型名配置","ConfigHandler","ConfigService","SaveConfigs","Reload","ReloadFromDisk","ConfigsReloaded","TrySaveAndPublish","PersistedButPublishFailed","IConfigSecure"]
 code_paths: ["UI/ColorVision.UI/ConfigHandler.cs","UI/ColorVision.Common/Interfaces/Config/IConfig.cs","UI/ColorVision.Common/Interfaces/Config/IConfigSecure.cs","UI/ColorVision.Common/Interfaces/Config/IConfigService.cs","UI/ColorVision.Common/Interfaces/Config/ConfigService.cs","UI/ColorVision.UI/ConfigSetting/ConfigServiceAdapters.cs","UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ConfigHandlerPersistenceTests.cs","Test/ColorVision.UI.Tests/ConfigServiceAdaptersTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ConfigHandlerPersistenceTests.cs","Test/ColorVision.UI.Tests/ConfigTypeNamePersistenceTests.cs","Test/ColorVision.UI.Tests/ConfigServiceAdaptersTests.cs"]
 related: ["ui.framework","ui.settings","ui.wizards","ui.menus","ui.property-grid","operations.exports","operations.device-configuration"]
 ---
 
@@ -34,7 +34,11 @@ related: ["ui.framework","ui.settings","ui.wizards","ui.menus","ui.property-grid
 
 `IConfig` 是标记接口，不要求配置类实现 `Load` / `Save`。`ConfigHandler` 用 `ConcurrentDictionary<Type,IConfig> Configs` 缓存已取得的对象；读取正常 JSON 后，先保留 `JObject`，等 `GetRequiredService(type)` 才按需反序列化。
 
-内存键是 `Type`，JSON 节名却是 `type.Name`，不是完整命名空间。两个同名配置类型会指向相同 JSON 节；类型改名也不会自动迁移旧节。缺少该节或反序列化/解密失败时尝试无参默认构造，失败的反序列化会记日志；默认构造自身失败仍可能抛出。
+内存键是 `Type`，新写入的 JSON 节名统一使用 `type.FullName`，包括命名空间，且不包含程序集版本。例如主程序与 Spectrum 分别使用 `ColorVision.MainWindowConfig` 和 `Spectrum.MainWindowConfig`，不会因类名相同而互相覆盖。读取优先使用完整类型名；仅在该键不存在时，才回退到旧的 `type.Name` 节，以保留旧数据库连接等配置。完整键已存在但值为空、无效或无法反序列化时，不再用旧键覆盖它，而是进入原有默认回退。类型改名、命名空间改名不自动迁移旧的完整键。
+
+单节、全量、备份和导出保存都只写完整键，并继续保留目标文件中未覆盖的节，包括旧短键和未实例化插件节；不会把旧字段批量删除。新旧键同时存在时始终优先读取完整键。已有旧同名节中被覆盖的值无法自动还原；尚未分别保存的同名类型仍可能从同一个旧节取得初始值，各自保存后使用独立完整键。全量快照若仍遇到相同完整键（例如不同程序集定义了相同命名空间和类名），会报告冲突并拒绝整次写入，不静默覆盖。
+
+缺少可读取的节或反序列化/解密失败时尝试无参默认构造，失败的反序列化会记日志；默认构造自身失败仍可能抛出。
 
 `ConfigService.SetInstance` 只替换服务引用，不加载文件或迁移旧对象。不同实现不能混用持久化假设：
 
@@ -76,7 +80,7 @@ related: ["ui.framework","ui.settings","ui.wizards","ui.menus","ui.property-grid
 
 任一已实例化节序列化失败，`CreateConfigSnapshot` 汇总错误并抛出，不写部分成功节。已有目标文件若不是一个完整 JSON 对象，保存会拒绝覆盖；尾随其它内容也视为无效。目标不存在时才从空对象开始。
 
-`TrySave<T>(candidate)` 同样先移除过期节，再只把 `typeof(T).Name` 对应节合并到主文件，保留其它目标节；它既不把 candidate 自动注册进 `Configs`，也不更新内部 `jsonObject`。另建候选对象保存成功后，已有缓存可能仍旧；尚未实例化的类型也可能继续从旧加载快照取值。运行期发布应由调用方明确完成，不能假设保存方法已重绑所有消费者。
+`TrySave<T>(candidate)` 同样先移除过期节，再只把 `typeof(T).FullName` 对应节合并到主文件，保留其它目标节；它既不把 candidate 自动注册进 `Configs`，也不更新内部 `jsonObject`。另建候选对象保存成功后，已有缓存可能仍旧；尚未实例化的类型也可能继续从旧加载快照取值。运行期发布应由调用方明确完成，不能假设保存方法已重绑所有消费者。
 
 ## 单文件写入、锁和事务版本
 
@@ -125,7 +129,7 @@ related: ["ui.framework","ui.settings","ui.wizards","ui.menus","ui.property-grid
 
 ## 验证入口与缺口
 
-`ConfigHandlerPersistenceTests` 覆盖重载对象替换及通知顺序、坏文件拒绝、同/不同 handler 并发保存保留其它节、旧快照重试、落盘/发布失败区分、同步与异步上下文重入拒绝、写入/序列化失败不改旧字节、加密失败不改 candidate，以及有效备份回退。这些不同 handler 测试仍运行在同一测试进程，不等于真实多进程故障验收。
+`ConfigHandlerPersistenceTests` 覆盖重载对象替换及通知顺序、坏文件拒绝、同/不同 handler 并发保存保留其它节、旧快照重试、落盘/发布失败区分、同步与异步上下文重入拒绝、写入/序列化失败不改旧字节、加密失败不改 candidate，以及有效备份回退。`ConfigTypeNamePersistenceTests` 使用真实主窗口配置和链接的 Spectrum 配置源码，在两个确定的枚举顺序下检查单节、发布、全量和备份保存与重载后的引导标记；还覆盖旧 MySQL 配置和加密密码的读取/另存/重载、完整键优先级，以及主窗口重置同时清除新旧键但保留 Spectrum 完整键。这些不同 handler 测试仍运行在同一测试进程，不等于真实多进程故障验收。
 
 `ConfigServiceAdaptersTests` 覆盖静态实例解析、显式注册优先/替换、容器解析和错误。名称含 `ConfigSettingManager_WorksWith...` 的用例只模拟其 `GetRequiredService` 调用，不是完整设置页面发现、重载或绑定集成测试。
 

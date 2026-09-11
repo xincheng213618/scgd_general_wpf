@@ -31,14 +31,23 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         public PhyCamera? PhyCamera { get => PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode); }
 
         private readonly Lazy<ViewCalibration> _view;
-        public ViewCalibration View => _view.Value;
+        internal ViewCalibration ViewShell => Application.Current.Dispatcher.CheckAccess()
+            ? _view.Value
+            : Application.Current.Dispatcher.Invoke(() => _view.Value);
+        public ViewCalibration View
+        {
+            get
+            {
+                ViewCalibration view = ViewShell;
+                view.EnsureInitialized();
+                return view;
+            }
+        }
 
         public DeviceCalibration(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTCalibration(Config);
-            _view = new Lazy<ViewCalibration>(() => Application.Current.Dispatcher.CheckAccess()
-                ? new ViewCalibration(this)
-                : Application.Current.Dispatcher.Invoke(() => new ViewCalibration(this)));
+            _view = new Lazy<ViewCalibration>(() => new ViewCalibration(this, deferInitialization: true));
             this.SetIconResource("DICalibrationIcon");;
 
             EditCommand = new RelayCommand(a =>

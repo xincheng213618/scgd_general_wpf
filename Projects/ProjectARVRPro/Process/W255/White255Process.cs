@@ -29,7 +29,7 @@ namespace ProjectARVRPro.Process.W255
 
             try
             {
-                var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                var values = ctx.GetMeasureResults();
                 bool calculateUniformityFromCorrectedPoi = Config.CalculateUniformityFromCorrectedPoi;
                 string luminanceUniformityResultName = Config.GetLuminanceUniformityResultName();
                 string colorUniformityResultName = Config.GetColorUniformityResultName();

@@ -1,6 +1,8 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Newtonsoft.Json;
+using System.ComponentModel.DataAnnotations;
+using ColorVision.ImageEditor.Settings;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;
@@ -51,6 +53,7 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
 
+        [Display(Name = nameof(SettingsText.FontSize), ResourceType = typeof(SettingsText))]
         public double FontSize
         {
             get => _fontSize;
@@ -67,6 +70,7 @@ namespace ColorVision.ImageEditor.Draw
         private double _fontSize = 10;
 
         [JsonIgnore]
+        [Display(Name = nameof(SettingsText.Brush), ResourceType = typeof(SettingsText))]
         public Brush Brush
         {
             get => TextStyleSerialization.DeserializeBrush(SerializedBrush, Brushes.SaddleBrown);
@@ -92,6 +96,7 @@ namespace ColorVision.ImageEditor.Draw
         private string _serializedBrush = TextStyleSerialization.SerializeBrush(Brushes.SaddleBrown);
 
         [JsonIgnore]
+        [Display(Name = nameof(SettingsText.FontFamily), ResourceType = typeof(SettingsText))]
         public FontFamily FontFamily
         {
             get => TextStyleSerialization.DeserializeFontFamily(SerializedFontFamily, new FontFamily("Arial"));
@@ -117,6 +122,7 @@ namespace ColorVision.ImageEditor.Draw
         private string _serializedFontFamily = "Arial";
 
         [JsonIgnore]
+        [Display(Name = nameof(SettingsText.FontStyle), ResourceType = typeof(SettingsText))]
         public FontStyle FontStyle
         {
             get => TextStyleSerialization.DeserializeFontStyle(SerializedFontStyle, FontStyles.Normal);
@@ -142,6 +148,7 @@ namespace ColorVision.ImageEditor.Draw
         private string _serializedFontStyle = FontStyles.Normal.ToString();
 
         [JsonIgnore]
+        [Display(Name = nameof(SettingsText.FontWeight), ResourceType = typeof(SettingsText))]
         public FontWeight FontWeight
         {
             get => TextStyleSerialization.DeserializeFontWeight(SerializedFontWeight, FontWeights.Normal);
@@ -167,6 +174,7 @@ namespace ColorVision.ImageEditor.Draw
         private int _serializedFontWeight = FontWeights.Normal.ToOpenTypeWeight();
 
         [JsonIgnore]
+        [Display(Name = nameof(SettingsText.FontStretch), ResourceType = typeof(SettingsText))]
         public FontStretch FontStretch
         {
             get => TextStyleSerialization.DeserializeFontStretch(SerializedFontStretch, FontStretches.Normal);
@@ -192,6 +200,7 @@ namespace ColorVision.ImageEditor.Draw
         private string _serializedFontStretch = FontStretches.Normal.ToString();
 
         [JsonIgnore]
+        [Display(Name = nameof(SettingsText.FlowDirection), ResourceType = typeof(SettingsText))]
         public FlowDirection FlowDirection
         {
             get => TextStyleSerialization.DeserializeFlowDirection(SerializedFlowDirection, FlowDirection.LeftToRight);

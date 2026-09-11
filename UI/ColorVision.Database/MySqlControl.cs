@@ -199,7 +199,7 @@ namespace ColorVision.Database
                 var newConn = new MySqlConnection() { ConnectionString = connStr };
                 newConn.Open();
 
-                log.Info($"数据库连接成功:{GetConnectionSummary(Config)}");
+                log.Info($"MySQL connection succeeded: {GetConnectionSummary(Config)}");
                 using var  _DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = GetConnectionString(Config), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
                 // 检查数据库名是否为空
@@ -210,11 +210,7 @@ namespace ColorVision.Database
                 {
                     // 不支持则设置为 1
                     _DB.Ado.ExecuteCommand("SET GLOBAL local_infile = 1;");
-                    log.Info("local_infile 已设置为 1");
-                }
-                else
-                {
-                    log.Info("local_infile 已经支持");
+                    log.Info("MySQL local_infile was enabled for bulk imports.");
                 }
                 IsConnect = true;
                 newConn.Close();
@@ -227,19 +223,19 @@ namespace ColorVision.Database
                 IsConnect = false;
                 string detailMsg = ex.Number switch
                 {
-                    1045 => "账号或密码错误",
-                    1049 => "指定的数据库不存在",
-                    2003 => "无法连接到MySQL服务器，可能是端口未打开或网络不可达",
-                    _ => $"MySqlException 错误码: {ex.Number}，错误信息: {ex.Message}"
+                    1045 => "the account name or password is invalid",
+                    1049 => "the configured database does not exist",
+                    2003 => "the MySQL server is unreachable or its port is closed",
+                    _ => $"MySQL error {ex.Number}: {ex.Message}"
                 };
-                log.Error($"数据库连接失败: {detailMsg}. 连接: {GetConnectionSummary(Config)}");
+                log.Error($"MySQL connection failed: {detailMsg}. Connection: {GetConnectionSummary(Config)}");
                 log.Error(ex);
                 return Task.FromResult(false);
             }
             catch (Exception ex)
             {
                 IsConnect = false;
-                log.Error($"数据库连接发生未知异常: {ex.Message}. 连接: {GetConnectionSummary(Config)}");
+                log.Error($"Unexpected MySQL connection failure: {ex.Message}. Connection: {GetConnectionSummary(Config)}");
                 log.Error(ex);
                 return Task.FromResult(false);
             }

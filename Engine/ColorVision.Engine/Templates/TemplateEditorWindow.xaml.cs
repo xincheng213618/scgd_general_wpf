@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
@@ -46,7 +46,7 @@ namespace ColorVision.Engine.Templates
             this.ApplyCaption();
             MainGrid.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => New(), (s, e) => e.CanExecute = true));
             MainGrid.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => {
-                ITemplate.Save();
+                if (!TrySaveEditor()) return;
                 HandyControl.Controls.Growl.SuccessGlobal(string.Format(Properties.Resources.TemplateEditor_SaveSuccess, Title));
             }, (s, e) => e.CanExecute = true));
             MainGrid.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
@@ -365,10 +365,20 @@ namespace ColorVision.Engine.Templates
         }
 
         private int LastSelectedIndex = -1;
+        private bool _restoringSelection;
+
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (_restoringSelection) return;
             if (sender is ListView)
             {
+                if (GridProperty.Children.OfType<ITemplateEditorValidation>().Any(editor => !editor.TryCommitPendingEdits()))
+                {
+                    _restoringSelection = true;
+                    try { ListView1.SelectedItem = e.RemovedItems.Count > 0 ? e.RemovedItems[0] : null; }
+                    finally { _restoringSelection = false; }
+                    return;
+                }
                 int selectedIndex = GetSelectedTemplateSourceIndex();
                 if (selectedIndex < 0)
                     return;
@@ -397,8 +407,16 @@ namespace ColorVision.Engine.Templates
 
         private void Button_Save_Click(object sender, RoutedEventArgs e)
         {
+            if (TrySaveEditor()) Close();
+        }
+
+        private bool TrySaveEditor()
+        {
+            var editors = GridProperty.Children.OfType<ITemplateEditorValidation>().ToArray();
+            if (editors.Any(editor => !editor.TryCommitPendingEdits())) return false;
             ITemplate.Save();
-            Close();
+            foreach (var editor in editors) editor.AcceptSavedChanges();
+            return true;
         }
 
         private void New()

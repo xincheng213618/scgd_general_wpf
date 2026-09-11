@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Windows;
@@ -114,10 +114,12 @@ namespace ColorVision.ImageEditor.Draw
             if (Attribute.Rect.IsEmpty || !ShapeGeometry.IsFinite(Attribute.Rect))
                 return;
 
+            dc.PushTransform(RegionGeometry.Transform(Attribute));
             dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);
+            dc.Pop();
 
             double size = 0;
-            if (Attribute.IsShowText)
+            if (Attribute.IsShowText && !(Attribute.IsMeasurementMessage && IsMessageVisible && !string.IsNullOrWhiteSpace(Attribute.Msg)))
             {
                 string textToDraw = Attribute.IsShowText ? TextAttribute.Text : string.Empty;
                 if (!string.IsNullOrEmpty(textToDraw))
@@ -166,7 +168,9 @@ namespace ColorVision.ImageEditor.Draw
             if (IsMessageVisible && !string.IsNullOrWhiteSpace(Attribute.Msg))
             {
                 FormattedText formattedText = CreateFormattedText(Attribute.Msg);
-                dc.DrawText(formattedText, new Point(Attribute.Rect.X + size + Attribute.Rect.Width / 2 + Attribute.Pen.Thickness, Attribute.Rect.Y + Attribute.Rect.Height / 2 - formattedText.Height / 2));
+                formattedText.TextAlignment = Attribute.IsMeasurementMessage ? TextAlignment.Center : TextAlignment.Left;
+                double x = Attribute.IsMeasurementMessage ? Attribute.Rect.X + Attribute.Rect.Width / 2 : Attribute.Rect.X + size + Attribute.Rect.Width / 2 + Attribute.Pen.Thickness;
+                dc.DrawText(formattedText, new Point(x, Attribute.Rect.Y + Attribute.Rect.Height / 2 - formattedText.Height / 2));
             }
         }
 
@@ -182,14 +186,14 @@ namespace ColorVision.ImageEditor.Draw
                 TextRenderCore.NormalizePixelsPerDip(VisualTreeHelper.GetDpi(this).PixelsPerDip));
         }
 
-        public override Rect GetRect()
-        {
-            return Rect.IsEmpty || ShapeGeometry.IsFinite(Rect) ? Rect : System.Windows.Rect.Empty;
-        }
+        public override Rect GetRect() => RegionGeometry.Bounds(Attribute);
+
         public override void SetRect(Rect rect)
         {
             if (!rect.IsEmpty && !ShapeGeometry.IsFinite(rect))
                 return;
+
+            rect = RegionGeometry.ResizeLocalBounds(Attribute, rect);
 
             bool wasDeferred = _deferAttributeRender;
             _deferAttributeRender = true;
@@ -210,6 +214,7 @@ namespace ColorVision.ImageEditor.Draw
         {
             return new CompactInspectorItem[]
             {
+                new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Rotation), Label = "θ°", ShowLabel = true, Width = 65, Order = 45, EditorKind = CompactInspectorEditorKind.Number, ToolTip = "旋转角度" },
                 new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Brush), Order = 10, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_Fill },
                 new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.Text), Icon = CompactInspectorIcons.CreateText("T"), Order = 20, Width = 120, EditorKind = CompactInspectorEditorKind.Text, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_Text },
                 new CompactInspectorPropertyItem { Source = Attribute, PropertyName = nameof(Attribute.FontSize), Icon = CompactInspectorIcons.CreateText("A"), Width = 56, Order = 30, EditorKind = CompactInspectorEditorKind.Number, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_FontSize },

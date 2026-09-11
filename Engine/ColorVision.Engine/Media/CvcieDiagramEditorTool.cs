@@ -48,12 +48,7 @@ namespace ColorVision.Engine.Media
                 {
                     CvcieMouseProbeOptions probeSettings = _getProbeSettings();
                     PoiMeasurementResult measurement = _calculatePoi(
-                        new PoiMeasurementPoint(
-                            pixelSample.PixelX,
-                            pixelSample.PixelY,
-                            Math.Max(1, probeSettings.RectWidth),
-                            Math.Max(1, probeSettings.RectHeight),
-                            PoiMeasurementShape.Rect)).Result;
+                        probeSettings.CreateMeasurementPoint(pixelSample.PixelX, pixelSample.PixelY)).Result;
 
                     _windowCie?.ChangeSelect(measurement.ChromaX, measurement.ChromaY);
                 };

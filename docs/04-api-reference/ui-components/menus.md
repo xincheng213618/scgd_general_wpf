@@ -5,11 +5,28 @@ status: "current"
 summary: "菜单管理器的可见性（Visible）、位置、排序和全目标重置（Reset）；插件 DLL 发现、类型缓存、父子树和管理提交；IHotKey 提示随运行时键位更新，隐藏不禁用快捷键，Apply 成功提示不保证配置落盘，菜单入口不构成统一鉴权。"
 aliases: ["菜单", "菜单管理", "菜单管理器", "菜单排序", "菜单恢复默认", "Restore Default Position", "Restore Default Order", "OrderOverride", "OwnerGuidOverride", "菜单发现", "菜单隐藏", "菜单父子关系", "菜单重建", "菜单权限", "快捷键提示", "MenuManager", "IMenuItem", "IMenuItemProvider", "MenuItemBase", "MenuItemAttribute", "MenuItemMetadata", "MenuItemScopeKey", "OwnerGuid", "GuidId", "InputGestureText", "HotkeyMenuGestureBinding", "MenuService", "MenuItemManagerService", "MenuItemManagerWindow", "MenuSearchProvider"]
 code_paths: ["UI/ColorVision.UI/Menus", "UI/ColorVision.Common/Interfaces/Menus", "UI/ColorVision.UI.Desktop/MenuItemManager", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.Common/MVVM/RelayCommand.cs", "UI/ColorVision.UI/Serach/MenuSearchProvider.cs", "UI/ColorVision.UI/Serach/SearchControl.xaml.cs", "UI/ColorVision.UI/HotKey/HotkeyService.cs", "ColorVision/MainWindow.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/MenuDiscoveryExclusionTests.cs", "Test/ColorVision.UI.Tests/MenuItemManagerServiceTests.cs", "Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs", "Test/ColorVision.UI.Tests/SearchManagerTests.cs", "Test/ColorVision.UI.Tests/SearchPaletteTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs","Test/ColorVision.UI.Tests/MenuDiscoveryExclusionTests.cs", "Test/ColorVision.UI.Tests/MenuItemManagerServiceTests.cs", "Test/ColorVision.UI.Tests/HotkeyMenuBindingTests.cs", "Test/ColorVision.UI.Tests/SearchManagerTests.cs", "Test/ColorVision.UI.Tests/SearchPaletteTests.cs"]
 related: ["ui.framework", "ui.discovery", "ui.common", "ui.desktop", "ui.settings", "ui.configuration", "ui.hotkeys", "ui.search", "platform.security", "algorithms.template-menus"]
 ---
 
 # 菜单：发现、显示、执行与管理提交
+
+## 帮助菜单的键盘入口
+
+按 `Alt+H` 展开帮助菜单，再按下表中的访问键。也可使用方向键选择、Enter 打开、Esc 返回；这些访问键属于菜单本身，不新增全局热键，也不覆盖用户保存的组合键配置。
+
+| 入口 | 访问键 |
+| --- | --- |
+| 检查更新 | U |
+| 关于 | A |
+| 日志 | L |
+| 原生日志 | N |
+| 插件市场 | P |
+| 发送反馈 | F |
+| ColorVision Service Host | S |
+| 网络通信 | C |
+
+“网络通信”是菜单中的短名称，打开后的窗口仍使用完整标题“Socket 连接管理器”。独立日志窗口的 Esc 先退出搜索，再关闭窗口；插件市场的 Esc 先收起详情，再关闭窗口；网络通信窗口的 Esc 先清除筛选，再关闭窗口。进入反馈窗口后可直接输入正文，多行输入保留 Enter 换行；关于窗口支持 Enter 确认关闭。检查更新的默认操作与忙碌门禁见[更新窗口](../../02-developer-guide/deployment/auto-update.md)。
 
 菜单接口在 `ColorVision.Common`，`UI/ColorVision.UI/Menus/MenuManager.cs` 为调用方提供的 WPF `Menu` 装配菜单树；`UI/ColorVision.UI.Desktop/MenuItemManager/` 管理显示覆盖。三者分别负责扩展声明、运行时呈现和配置编辑，不接管菜单背后的设备、文件或业务事务。
 

@@ -630,4 +630,11 @@
   <data name="SettingsSectionUpdates" xml:space="preserve"><value>更新与网络</value></data>
   <data name="SettingsSectionDiagnostics" xml:space="preserve"><value>日志与诊断</value></data>
   <data name="CommandOtherActions" xml:space="preserve"><value>其他操作</value></data>
+  <data name="StartupTheme" xml:space="preserve"><value>启动页主题</value></data>
+  <data name="StartupThemeDescription" xml:space="preserve"><value>选择启动页的颜色主题，下次启动生效。</value></data>
+  <data name="StartupThemeDark" xml:space="preserve"><value>深色</value></data>
+  <data name="StartupThemeLight" xml:space="preserve"><value>浅色</value></data>
+  <data name="StartupThemeFollowApplication" xml:space="preserve"><value>跟随软件主题</value></data>
+  <data name="DisplayPin" xml:space="preserve"><value>置顶</value></data>
+  <data name="DisplayUnpin" xml:space="preserve"><value>取消置顶</value></data>
 </root>

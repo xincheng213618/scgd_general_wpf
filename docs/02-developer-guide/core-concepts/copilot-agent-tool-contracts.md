@@ -5,7 +5,7 @@ status: "current"
 summary: "Copilot 工具结果、事件、审批恢复和 Flow 编辑必须遵守的执行契约。"
 aliases: ["工具返回成功是否代表任务完成","审批和恢复怎样绑定调用","临时授权能自动运行Shell吗","自动审查拒绝后如何重试","模板补丁会自动保存吗","CopilotToolExecutionContracts","CopilotToolRegistry","CopilotAgentAccessContext","CopilotAgentTaskEventJournalRegistry","CopilotAutomaticApprovalReviewer","approvals_reviewer","/approve","TemplatePatch","ApplyTemplatePatch","preview_id","current_json","InspectFlowGraph","SearchFlowNodeCatalog","PreviewFlowPatch","ApplyFlowPatch","colorvision-flow-authoring"]
 code_paths: ["ColorVision/Copilot/Agent/CopilotToolExecutionContracts.cs","ColorVision/Copilot/Agent/CopilotToolExecution.cs","ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.cs","ColorVision/Copilot/Agent/CopilotAgentTaskEventJournalRegistry.cs","ColorVision/Copilot/Agent/CopilotUserQuestion.cs","ColorVision/Copilot/Agent/CopilotAgentAccessModels.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.ApprovalRouting.cs","ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge.ApprovalExecution.cs","ColorVision/Copilot/Agent/CopilotFrameworkApproval.cs","ColorVision/Copilot/Runtime/CopilotAutomaticApprovalReviewer.cs","ColorVision/Copilot/Runtime/CopilotAutomaticApprovalOverrideStore.cs","ColorVision/Copilot/CopilotChatViewModel.LocalCommandWorkflows.cs","ColorVision/Copilot/CopilotChatViewModel.Permissions.cs","ColorVision/Copilot/Agent/CopilotSharedCapabilityCatalog.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotFlowGraphTools.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.FlowPatch.cs","ColorVision/Copilot/Skills/colorvision-flow-authoring","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.TemplatePatch.cs","ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.TemplatePatchSupport.cs","ColorVision/Copilot/Mcp/CopilotMcpToolModels.cs","Engine/ColorVision.Engine/Templates/Jsons/EditTemplateJson.xaml.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotToolResultContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotTurnEventProtocolTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs","Test/ColorVision.Copilot.Tests/CopilotCodexApprovalsReviewerTests.cs","Test/ColorVision.Copilot.Tests/CopilotAutomaticApprovalOverrideTests.cs","Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotPlanModeTests.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotWriteToolAdmissionTests.cs","Test/ColorVision.Copilot.Tests/CopilotToolResultContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotTurnEventProtocolTests.cs","Test/ColorVision.Copilot.Tests/CopilotAgentTaskEventJournalIntegrityTests.cs","Test/ColorVision.Copilot.Tests/CopilotCodexApprovalsReviewerTests.cs","Test/ColorVision.Copilot.Tests/CopilotAutomaticApprovalOverrideTests.cs","Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs","Test/ColorVision.Copilot.Tests/CopilotPlanModeTests.cs"]
 related: ["copilot.runtime","copilot.execution","copilot.session-tools","copilot.interactions","copilot.extensions","copilot.view-model"]
 ---
 
@@ -71,6 +71,8 @@ Agent、外部 MCP、审批与审计共享不可变的 `CopilotExecutionScope`�
 普通工具执行从 `FunctionInvokingChatClient.CurrentContext.CallContent` 读取 provider 原始 CallId；Schema 拒绝、并发只读执行、原生审批、未知函数、trace、审计和任务事件因此使用同一个关联 ID。上下文由框架通过 AsyncLocal 隔离，并发函数不会互相串号；只有脱离 FunctionInvokingChatClient 的直接测试或业务调用才生成本地 CallId。并发调度不再复制第二套 ToolRuntime：框架负责保持 provider 提交顺序与 CallId/result 配对，`CopilotToolExecutionGate` 只负责最多 4 路共享读取、同资源互斥和全局写屏障；契约测试以反序完成的工具锁定提交顺序，防止依赖升级造成漂移。
 
 外部 MCP 工具通过 `CopilotMcpClientCapabilityPolicy` 从本地信任配置生成同一 Descriptor：显式 `read-only` 映射为低风险、幂等共享读取，默认 `approval` 映射为高风险、每次审批、非幂等独占写入。两者均使用 `NamesOnly` 审计模式，只记录参数名而不持久化第三方 Schema 中含义未知的值。
+
+写工具在 `CopilotToolExecutor` 的不可替换内置前置守卫中，重新使用目录的 `IsAllowedForMode` 规则检查本次请求。Plan、Review、Diagnose 和明确只读请求不能仅靠绕过发现目录、直接传入工具或已有批准进入写工具体；Review 的显式有界工作区验证仍是原有例外。Plan／Review 保留各自失败码，其余只读拒绝为 `request_write_access_denied`。`CopilotWriteToolAdmissionTests` 用真实目录与执行器同时验证无审批写工具、已批准受保护写工具的拒绝以及允许写入的对照。
 
 ## 能力目录与来源版本
 
@@ -149,6 +151,8 @@ Agent Framework 是唯一运行路径，不再是 Profile 可选项。内置受�
 `CopilotSharedCapabilityInputContractTests` 验证预览参数和 `preview_id` 经包装器传给共享能力；`CopilotPlanModeTests` 验证 Plan 模式保留预览而拒绝应用。这些测试不是实际 WPF 编辑器冲突、应用失败、取消或数据库未写入的端到端验证，也不表示本轮已运行测试。
 
 ## Flow 图语义与受保护编辑
+
+Flow patch 的可见性由流程相关上下文与当前写入约束决定；动作同义表达或同时要求解释不会隐藏工具。可见性与任务意图、只读模式及原生审批的分工见[工具可见性与任务意图](./copilot-agent-execution.md#工具可见性与任务意图)。
 
 `.stn` 是带自定义头和 GZip 内容的二进制画布格式，不交给模型按文本读取。`InspectFlowGraph` 从活动编辑器生成 `colorvision.flow-graph.v1`：包含基于节点 Guid 的稳定 instance id、保存时使用的精确 `module|runtime type` 键、结构化输入/输出端口、边、位置和确定性 SHA-256 revision；属性值只有显式请求时才返回并经过脱敏。输出限制最多 200 个节点，避免大型流程无界占用上下文。
 

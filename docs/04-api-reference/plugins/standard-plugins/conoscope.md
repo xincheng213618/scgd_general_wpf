@@ -2,10 +2,10 @@
 knowledge_id: "plugins.conoscope"
 knowledge_type: "topic"
 status: "current"
-summary: "Conoscope 的采集、CVCIE 首屏/XYZ 就绪、Mat 与分析快照契约；按钮成功不代表文档加载完成，联合灰尘预处理不走 Y-first。"
-aliases: ["锥镜图像怎么看","Conoscope 依赖哪些 DLL","锥镜采集完成没有图像","Conoscope","VAM","ConoscopeCaptureWorkflow","ConoscopeFlowCaptureResult","ConoscopeCameraCaptureResult","ConoscopeDocument","ConoscopeDocumentChangeKind","ConoscopeView","ConoscopeViewState","ConoscopeImageHost","ConoscopeAnalysisSession","MeasurementCaptureAlignment","ConoscopeConfigWindow","ConoscopeGlobalReferenceStore","FocusPoiTemplateRepository","CONOSCOPE_REAL_SAMPLE"]
-code_paths: ["Plugins/Conoscope/README.md","Plugins/Conoscope/Docs/ARCHITECTURE.md","Plugins/Conoscope/Conoscope.csproj","Engine/cvColorVision/cvColorVision.csproj","Plugins/Conoscope/manifest.json","Plugins/Conoscope/Core/ConoscopeModuleService.cs","Plugins/Conoscope/ConoscopeWindow.xaml","Plugins/Conoscope/ConoscopeWindow.xaml.cs","Plugins/Conoscope/Application/Capture/ConoscopeCaptureWorkflow.cs","Plugins/Conoscope/ConoscopeDocument.cs","Plugins/Conoscope/ConoscopeView.xaml.cs","Plugins/Conoscope/ConoscopeImageHost.xaml.cs","Plugins/Conoscope/Application/Preprocess/ConoscopePreprocessPipeline.cs","Plugins/Conoscope/Processing/Preprocess/","Plugins/Conoscope/Application/Analysis/ConoscopeAnalysisSession.cs","Plugins/Conoscope/Application/Analysis/FocusPointMeasurementService.cs","Plugins/Conoscope/Analysis/MeasurementCaptureModels.cs","Plugins/Conoscope/Analysis/AnalysisResultCsvExporter.cs","Plugins/Conoscope/Application/FocusPoiTemplateRepository.cs","Plugins/Conoscope/Core/ConoscopeConfig.cs","Plugins/Conoscope/Core/ConoscopeConfigWindow.xaml.cs","Plugins/Conoscope/ConoscopePreprocessSettingsControl.xaml","Plugins/Conoscope/Core/ConoscopeGlobalReferenceStore.cs","Plugins/Conoscope/Core/ConoscopeReferenceMatSerializer.cs","Plugins/Conoscope/Core/ConoscopeExportService.cs","Plugins/Conoscope/MVS/","PluginProject.HostCopy.targets"]
-test_paths: ["Test/Conoscope.Tests/Conoscope.Tests.csproj","Test/Conoscope.Tests/ConoscopeDocumentTests.cs","Test/Conoscope.Tests/CvcieChannelReaderTests.cs","Test/Conoscope.Tests/ConoscopeViewBoundaryTests.cs","Test/Conoscope.Tests/ConoscopeAnalysisSessionTests.cs","Test/Conoscope.Tests/ConoscopeColorimetryTests.cs","Test/Conoscope.Tests/MvsCaptureSessionTests.cs","Test/Conoscope.Tests/ArchitectureSmokeTests.cs","Test/Conoscope.Tests/AdvancedExportSettingsTests.cs"]
+summary: "Conoscope 的采集、CVCIE 首屏/XYZ 就绪、Polar 与三种 H/V 显示、Mat 与分析快照契约；按钮成功不代表文档加载完成。"
+aliases: ["锥镜图像怎么看","Conoscope 依赖哪些 DLL","锥镜采集完成没有图像","Conoscope","VAM","H/V 坐标","Horizontal-Vertical Coordinates","笛卡尔角度坐标","North Polar","East Polar","HV North Polar","HV East Polar","ConoscopeCaptureWorkflow","ConoscopeFlowCaptureResult","ConoscopeCameraCaptureResult","ConoscopeDocument","ConoscopeDocumentChangeKind","ConoscopeView","ConoscopeViewState","ConoscopeImageHost","ConoscopeHorizontalVerticalProjection","ConoscopeAnalysisSession","MeasurementCaptureAlignment","ConoscopeConfigWindow","ConoscopeGlobalReferenceStore","FocusPoiTemplateRepository","CONOSCOPE_REAL_SAMPLE"]
+code_paths: ["Plugins/Conoscope/README.md","Plugins/Conoscope/Docs/ARCHITECTURE.md","Plugins/Conoscope/Conoscope.csproj","Engine/cvColorVision/cvColorVision.csproj","Plugins/Conoscope/manifest.json","Plugins/Conoscope/Core/ConoscopeModuleService.cs","Plugins/Conoscope/ConoscopeWindow.xaml","Plugins/Conoscope/ConoscopeWindow.xaml.cs","Plugins/Conoscope/Application/Capture/ConoscopeCaptureWorkflow.cs","Plugins/Conoscope/ConoscopeDocument.cs","Plugins/Conoscope/ConoscopeView.xaml","Plugins/Conoscope/ConoscopeView.xaml.cs","Plugins/Conoscope/ConoscopeImageHost.xaml.cs","Plugins/Conoscope/Core/ConoscopeCoordinateAxis.cs","Plugins/Conoscope/Core/ConoscopeHorizontalVerticalProjection.cs","Plugins/Conoscope/Core/ConoscopePseudoColorRenderer.cs","Plugins/Conoscope/Application/Preprocess/ConoscopePreprocessPipeline.cs","Plugins/Conoscope/Processing/Preprocess/","Plugins/Conoscope/Application/Analysis/ConoscopeAnalysisSession.cs","Plugins/Conoscope/Application/Analysis/FocusPointMeasurementService.cs","Plugins/Conoscope/Analysis/MeasurementCaptureModels.cs","Plugins/Conoscope/Analysis/AnalysisResultCsvExporter.cs","Plugins/Conoscope/Application/FocusPoiTemplateRepository.cs","Plugins/Conoscope/Core/ConoscopeConfig.cs","Plugins/Conoscope/Core/ConoscopeConfigWindow.xaml.cs","Plugins/Conoscope/ConoscopePreprocessSettingsControl.xaml","Plugins/Conoscope/Core/ConoscopeGlobalReferenceStore.cs","Plugins/Conoscope/Core/ConoscopeReferenceMatSerializer.cs","Plugins/Conoscope/Core/ConoscopeExportService.cs","Plugins/Conoscope/MVS/","PluginProject.HostCopy.targets"]
+test_paths: ["Test/Conoscope.Tests/Conoscope.Tests.csproj","Test/Conoscope.Tests/ConoscopeDocumentTests.cs","Test/Conoscope.Tests/CvcieChannelReaderTests.cs","Test/Conoscope.Tests/ConoscopeViewBoundaryTests.cs","Test/Conoscope.Tests/ConoscopeHorizontalVerticalProjectionTests.cs","Test/Conoscope.Tests/ConoscopeAnalysisSessionTests.cs","Test/Conoscope.Tests/ConoscopeColorimetryTests.cs","Test/Conoscope.Tests/MvsCaptureSessionTests.cs","Test/Conoscope.Tests/ArchitectureSmokeTests.cs","Test/Conoscope.Tests/AdvancedExportSettingsTests.cs"]
 related: ["plugins.index","plugins.capabilities","engine.file-io","flow.session","operations.camera","ui.configuration","plugins.getting-started","engine.native-bindings"]
 ---
 
@@ -85,6 +85,31 @@ Flow 路径先用返回结果的 `SerialNumber` 查询批次，找不到则回�
 
 测量与分析使用 Document 当前 XYZ 数值，不从伪彩/缩放后的屏幕像素反算；若已经预处理，这些数值也已处理，不能把“数值计算”误写成总是原文件未处理数据。
 
+## Polar 与三种 H/V 图像坐标
+
+图像区左上角的坐标 ComboBox 提供 `Polar`、`H/V`、`North Polar` 与 `East Polar`；这是单 View 的显示状态，不写回型号配置。后三项都是 Horizontal-Vertical 角度坐标，不是把图像像素简单改名为平面 x/y。`H/V` 对应 EZCom 手册所称 Azimuthal，另外两项采用不同的顺序旋转定义。
+
+`ConoscopeHorizontalVerticalProjection` 先把源极坐标写成方向分量 `x = sin(theta) cos(phi)`、`y = sin(theta) sin(phi)`、`z = cos(theta)`，再按目标系统计算 H/V；反算通过方向分量和 `atan2` 保留完整象限：
+
+```text
+H/V (Azimuthal): H = atan2(x, z), V = atan2(y, z)
+North Polar:      H = atan2(x, z), V = asin(y)
+East Polar:       H = asin(x),     V = atan2(y, z)
+
+North inverse: x = cos(V) sin(H), y = sin(V),        z = cos(V) cos(H)
+East inverse:  x = sin(H),        y = cos(H) sin(V), z = cos(H) cos(V)
+theta = atan2(sqrt(x^2 + y^2), z), phi = atan2(y, x)
+```
+
+只有 `theta <= MaxAngle` 的目标像素有效，所以三种 H/V 的四角都显示为黑色；Azimuthal 与 North/East 的有效域和内部形变并不相同，North 与 East 互为不同旋转顺序而不是图片整体旋转。当前显示路径先按原始全分辨率通道确定伪彩范围，再以双线性插值生成最长边不超过 `2049px` 的方形预览；缓存的是当前坐标系统约 2049² 的反向映射，不复制或替换 Document 持有的全分辨率 XYZ。切换通道、伪彩和参考线复用该映射；切换坐标系统、换文件、改变 FOV/计算直径/手动系数或释放 View 时销毁并按需重建映射。
+
+三种投影网格的横轴均为 H、纵轴均为 V。鼠标悬停先按当前系统从 H/V 位置反算源图坐标，再读取原始 XYZ，并同时显示系统名、H/V 与极角/方位角；右侧方位直径和极角圆周参考曲线仍在源数据上采样，叠加到图上的红色参考线按当前系统的角度关系弯曲。此版本只解决预览、坐标轴、探针和已有参考曲线的一致性：
+
+- 三种 H/V 模式均不转换圆形关注点。存在关注点时拒绝切换，进入任一投影模式后关注点工具栏禁用；返回 Polar 后恢复。
+- 现有方位、极角和高级导出仍是源 Polar 数据语义，没有新增固定 H、固定 V 截线或 H/V 栅格导出。
+- 3D 视图仍使用源通道与 Polar 圆形掩膜，不把 H/V 预览当测量数据输入。
+- 几何精度仍受当前型号的中心、`MaxAngle` 与线性像素/度系数约束；CVCIE 文件本身没有在此层提供独立镜头畸变标定时，H/V 变换不能替代现场标定。
+
 ## 配置 working copy、参考与持久化
 
 `ConoscopeConfig` 持有全局默认值和型号配置；单 View 的 State 是当前文档状态。`ConoscopeConfigWindow` 复制可编辑设置为 working copy，预处理控件直接绑定该副本，恢复默认也只先修改副本。取消或未应用即关闭不会主动提交这些编辑。
@@ -144,6 +169,7 @@ wrapper 会构建、校验、上传并清理本地 `.cvxp`；不把它当本地�
 | `ConoscopeDocumentTests` | 无联合预处理路径的 Y→XYZ事件、latest-wins、观察者异常隔离和失败元数据；不证明所有预处理路径均有 Y-first |
 | `CvcieChannelReaderTests` | 内嵌通道选择、越界通道拒绝和按需大图读取 |
 | `ConoscopeViewBoundaryTests` | State通知与 Y/XYZ/Contrast/色差参考的能力判定，不是完整 WPF交互验证 |
+| `ConoscopeHorizontalVerticalProjectionTests` | Azimuthal、North Polar、East Polar 与 Polar 的手册公式、往返象限、不同有效域、预览上限、中心反查和小图重映射；不代替真实镜头标定或完整 WPF 输入测试 |
 | `ConoscopeAnalysisSessionTests` | 按名称对齐的对比度、单点广播和缺槽位错误；不证明物理位置自动匹配 |
 | `ConoscopeColorimetryTests`、`AdvancedExportSettingsTests` | 色度/色差/对比度矩阵规则，以及导出设置兼容，不代表所有最终导出文件已验收 |
 | `MvsCaptureSessionTests` | 观察相机会话启动/停止、代次与延迟清理等边界，不替代 Engine Flow/DeviceCamera测量或真机验证 |

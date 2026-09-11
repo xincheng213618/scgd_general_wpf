@@ -86,7 +86,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             UpdateCalibrationTemplates();
             Device.ConfigChanged += Device_ConfigChanged;
             PhyCameraManager.GetInstance().Loaded += PhyCameraManager_Loaded;
-            this.AddViewConfig(View, DisPlayName);
+            this.AddViewConfig(Device.ViewShell, DisPlayName);
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
             ImageFile.TextChanged += ImageFile_TextChanged;

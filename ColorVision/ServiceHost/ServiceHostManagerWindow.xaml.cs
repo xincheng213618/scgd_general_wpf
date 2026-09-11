@@ -50,6 +50,11 @@ namespace ColorVision.ServiceHost
         {
             InitializeComponent();
             this.ApplyCaption();
+            WindowKeyboardNavigation.Attach(this, RefreshButton, () =>
+            {
+                if (!_isBusy)
+                    Close();
+            });
             _logBinder = new ModuleLogViewerBinder(LogViewer, "ColorVision.ServiceHost");
             _logRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
             _logRefreshTimer.Tick += LogRefreshTimer_Tick;

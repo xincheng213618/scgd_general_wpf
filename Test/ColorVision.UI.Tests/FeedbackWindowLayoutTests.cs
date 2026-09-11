@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using DesktopResources = ColorVision.UI.Desktop.Properties.Resources;
@@ -19,15 +20,33 @@ public sealed class FeedbackWindowLayoutTests
         {
             Assert.False(Element<Expander>(window, "DiagnosticsExpander").IsExpanded);
             Assert.False(string.IsNullOrWhiteSpace(Element<TextBlock>(window, "MessageLabel").Text));
-            Assert.Equal(DesktopResources.FeedbackPlaceholder, Element<TextBox>(window, "MessageTextBox").Text);
+            TextBox message = Element<TextBox>(window, "MessageTextBox");
+            Assert.Same(message, FocusManager.GetFocusedElement(window));
+            Assert.Equal(string.Empty, message.Text);
             Assert.Equal(Visibility.Visible, Element<TextBlock>(window, "EmptyAttachmentsText").Visibility);
             Assert.Equal(DesktopResources.FeedbackDiagnosticsHint, Element<TextBlock>(window, "DiagnosticsHintText").Text);
             AssertSummaryMatchesSelection(window);
 
-            foreach (string name in new[] { "PackLogsButton", "AddFileButton", "AddScreenshotButton", "SendButton" })
+            foreach (string name in new[] { "ClearDiagnosticsButton", "PackLogsButton", "AddFileButton", "AddScreenshotButton", "SendButton" })
                 Assert.True(Element<Button>(window, name).IsEnabled);
 
             Assert.True(Element<Button>(window, "SendButton").IsDefault);
+        });
+    }
+
+    [Fact]
+    public void EmptyMessageRestoresPlaceholderWhenFocusLeavesAndClearsItOnReturn()
+    {
+        WithWindow(window =>
+        {
+            TextBox message = Element<TextBox>(window, "MessageTextBox");
+            Assert.Equal(string.Empty, message.Text);
+
+            message.RaiseEvent(new RoutedEventArgs(UIElement.LostFocusEvent));
+            Assert.Equal(DesktopResources.FeedbackPlaceholder, message.Text);
+
+            message.RaiseEvent(new RoutedEventArgs(UIElement.GotFocusEvent));
+            Assert.Equal(string.Empty, message.Text);
         });
     }
 

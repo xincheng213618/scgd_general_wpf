@@ -1,0 +1,193 @@
+<UserControl x:Class="ColorVision.Guidance.NewUserGuideOverlay"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="1280"
+             d:DesignHeight="720"
+             Focusable="True"
+             IsHitTestVisible="False"
+             PreviewKeyDown="GuideOverlay_PreviewKeyDown">
+    <UserControl.Resources>
+        <Style x:Key="GuideNavigationButtonStyle" TargetType="Button">
+            <Setter Property="MinWidth" Value="68"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="12,4"/>
+            <Setter Property="Margin" Value="8,0,0,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style x:Key="GuidePrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource GuideNavigationButtonStyle}">
+            <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style x:Key="GuideCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="20"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="28" Direction="270" ShadowDepth="6" Opacity="0.3"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid x:Name="OverlayRoot">
+        <Border x:Name="FullShade" Background="#B8000000"/>
+
+        <Canvas x:Name="TourCanvas" Visibility="Collapsed">
+            <Border x:Name="TopMask" Background="#B8000000"/>
+            <Border x:Name="LeftMask" Background="#B8000000"/>
+            <Border x:Name="RightMask" Background="#B8000000"/>
+            <Border x:Name="BottomMask" Background="#B8000000"/>
+            <Border x:Name="SpotlightBorder"
+                    BorderBrush="#8B6CFF"
+                    BorderThickness="3"
+                    CornerRadius="9"
+                    IsHitTestVisible="False">
+                <Border.Effect>
+                    <DropShadowEffect Color="#7C5CFC" BlurRadius="18" ShadowDepth="0" Opacity="0.9"/>
+                </Border.Effect>
+            </Border>
+
+            <Border x:Name="TourCard"
+                    Width="332"
+                    Style="{StaticResource GuideCardStyle}"
+                    AutomationProperties.LiveSetting="Polite"
+                    KeyboardNavigation.TabNavigation="Cycle">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <DockPanel Margin="0,0,0,8">
+                        <Border DockPanel.Dock="Left" Padding="7,2" CornerRadius="9" Background="#207C5CFC">
+                            <TextBlock x:Name="StepProgressText"
+                                       Foreground="{DynamicResource PrimaryBrush}"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"/>
+                        </Border>
+                        <Button DockPanel.Dock="Right"
+                                Width="28" Height="28" Padding="0" Margin="8,-6,-6,0"
+                                Background="Transparent" BorderThickness="0"
+                                Click="SkipButton_Click"
+                                AutomationProperties.Name="Close">
+                            <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
+                        </Button>
+                    </DockPanel>
+                    <TextBlock x:Name="StepTitleText"
+                               Grid.Row="1"
+                               Foreground="{DynamicResource GlobalTextBrush}"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"/>
+                    <TextBlock x:Name="StepDescriptionText"
+                               Grid.Row="2"
+                               Margin="0,8,0,18"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
+                               FontSize="13"
+                               LineHeight="20"
+                               TextWrapping="Wrap"/>
+                    <DockPanel Grid.Row="3" LastChildFill="False">
+                        <Button x:Name="SkipButton"
+                                DockPanel.Dock="Left"
+                                Margin="0"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Foreground="{DynamicResource SecondaryTextBrush}"
+                                Click="SkipButton_Click"/>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button x:Name="PreviousButton"
+                                    Style="{StaticResource GuideNavigationButtonStyle}"
+                                    Click="PreviousButton_Click"/>
+                            <Button x:Name="NextButton"
+                                    Style="{StaticResource GuidePrimaryButtonStyle}"
+                                    Click="NextButton_Click"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Grid>
+            </Border>
+        </Canvas>
+
+        <Border x:Name="WelcomeCard"
+                Width="420"
+                MaxWidth="420"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Style="{StaticResource GuideCardStyle}"
+                KeyboardNavigation.TabNavigation="Cycle">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Border Width="44" Height="44" CornerRadius="12" HorizontalAlignment="Left" Background="{DynamicResource PrimaryBrush}">
+                    <TextBlock Text="CV" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="White" FontWeight="Bold" FontSize="16"/>
+                </Border>
+                <TextBlock x:Name="WelcomeTitleText"
+                           Grid.Row="1"
+                           Margin="0,14,0,0"
+                           Foreground="{DynamicResource GlobalTextBrush}"
+                           FontSize="24"
+                           FontWeight="SemiBold"/>
+                <TextBlock x:Name="WelcomeDescriptionText"
+                           Grid.Row="2"
+                           Margin="0,8,0,20"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           FontSize="14"
+                           LineHeight="21"
+                           TextWrapping="Wrap"/>
+                <StackPanel Grid.Row="3" HorizontalAlignment="Right" Orientation="Horizontal">
+                    <Button x:Name="DismissWelcomeButton"
+                            Style="{StaticResource GuideNavigationButtonStyle}"
+                            Click="DismissWelcomeButton_Click"/>
+                    <Button x:Name="StartTourButton"
+                            Style="{StaticResource GuidePrimaryButtonStyle}"
+                            Click="StartTourButton_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border x:Name="CompletionCard"
+                Width="360"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Style="{StaticResource GuideCardStyle}"
+                Visibility="Collapsed"
+                KeyboardNavigation.TabNavigation="Cycle">
+            <StackPanel>
+                <Border Width="48" Height="48" CornerRadius="24" HorizontalAlignment="Center" Background="{DynamicResource PrimaryBrush}">
+                    <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="21"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White"/>
+                </Border>
+                <TextBlock x:Name="CompletionTitleText"
+                           Margin="0,14,0,0"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource GlobalTextBrush}"
+                           FontSize="21"
+                           FontWeight="SemiBold"/>
+                <TextBlock x:Name="CompletionDescriptionText"
+                           Margin="0,8,0,18"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           FontSize="14"
+                           LineHeight="22"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"/>
+                <Button x:Name="CompleteButton"
+                        HorizontalAlignment="Center"
+                        Style="{StaticResource GuidePrimaryButtonStyle}"
+                        Click="CompleteButton_Click"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

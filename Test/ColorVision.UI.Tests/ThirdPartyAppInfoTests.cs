@@ -1,6 +1,7 @@
 using ColorVision.Common.ThirdPartyApps;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Desktop.MenuItemManager;
+using ColorVision.UI.Menus;
 using ColorVision.UI.Menus.Base.Edit;
 using ColorVision.UI.Menus.Base.File;
 
@@ -79,6 +80,30 @@ namespace ColorVision.UI.Tests
             Assert.Equal(PermissionMode.Administrator, app.RequiredPermission);
             Assert.Equal(ThirdPartyAppIconGlyphs.MenuManager, app.IconGlyph);
             Assert.NotNull(app.LaunchAction);
+        }
+
+        [Fact]
+        public void ServiceManagerMenuIsAvailableUnderHelpForAdministrators()
+        {
+            Authorization previousAuthorization = Authorization.Instance;
+            try
+            {
+                var authorization = new Authorization { PermissionMode = PermissionMode.User };
+                Authorization.Instance = authorization;
+                var menu = new WindowsServicePlugin.ServiceManager.MenuServiceManager();
+
+                Assert.Equal(MenuItemConstants.Help, menu.OwnerGuid);
+                Assert.Equal("ServiceManager", menu.GuidId);
+                Assert.Equal(0, menu.Order);
+                Assert.False(menu.Command!.CanExecute(null));
+
+                authorization.PermissionMode = PermissionMode.Administrator;
+                Assert.True(menu.Command!.CanExecute(null));
+            }
+            finally
+            {
+                Authorization.Instance = previousAuthorization;
+            }
         }
 
         [Fact]

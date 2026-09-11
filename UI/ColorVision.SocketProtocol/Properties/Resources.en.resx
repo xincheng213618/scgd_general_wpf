@@ -156,6 +156,9 @@
   <data name="SocketManagementWindow" xml:space="preserve">
     <value>Socket Connection Manager</value>
   </data>
+  <data name="MenuNetworkCommunication" xml:space="preserve">
+    <value>Network _Communication</value>
+  </data>
   <data name="Query" xml:space="preserve">
     <value>Query</value>
   </data>

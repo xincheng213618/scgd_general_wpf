@@ -23,8 +23,8 @@ namespace ProjectLUX
         public DateTime CreateTime { get; set; } = DateTime.Now;
         public DateTime UpdateTime { get; set; } = DateTime.Now;
 
-        [SugarColumn(ColumnDataType = "TEXT", IsNullable = true)]
-        public string ObjectiveTestResultJson { get; set; } = string.Empty;
+        [SugarColumn(IsIgnore = true)]
+        public string? ObjectiveTestResultJson { get; set; }
 
         public static ObjectiveTestResultRecord Create(ProjectLUXReuslt result, ObjectiveTestResult objectiveTestResult)
         {

@@ -19,37 +19,66 @@ namespace ColorVision.Themes
 
         public static void ApplyCaption(this Window window, bool Icon = true)
         {
-            RoutedEventHandler routedEventHandler = null;
-            ThemeChangedHandler themeChangedHandler = null;
+            window.Dispatcher.VerifyAccess();
+            if (window.GetValue(CaptionSubscriptionProperty) == null)
+                window.SetValue(CaptionSubscriptionProperty, new CaptionSubscription(window, Icon));
+        }
 
-            routedEventHandler = (s, e) =>
+        private static readonly DependencyProperty CaptionSubscriptionProperty = DependencyProperty.RegisterAttached(
+            "CaptionSubscription", typeof(CaptionSubscription), typeof(ThemeManagerExtensions));
+
+        private sealed class CaptionSubscription
+        {
+            private readonly Window window;
+            private readonly bool useDefaultIcon;
+            private ThemeManager? publisher;
+            private BitmapImage? packageIcon;
+            private IntPtr hwnd;
+            private bool closed;
+
+            internal CaptionSubscription(Window window, bool useDefaultIcon)
             {
-                IntPtr hwnd = new WindowInteropHelper(window).Handle;
-                BitmapImage? packageIcon = TryLoadPackageIcon(window);
-                if (packageIcon != null)
-                    window.Icon = packageIcon;
+                this.window = window;
+                this.useDefaultIcon = useDefaultIcon;
+                window.Closed += Closed;
+                if (window.IsLoaded) Initialize();
+                else window.Loaded += Loaded;
+            }
 
-                themeChangedHandler = theme =>
+            private void Loaded(object sender, RoutedEventArgs e) => Initialize();
+
+            private void Initialize()
+            {
+                window.Loaded -= Loaded;
+                hwnd = new WindowInteropHelper(window).Handle;
+                packageIcon = TryLoadPackageIcon(window);
+                if (packageIcon != null) window.Icon = packageIcon;
+                publisher = ThemeManager.Current;
+                publisher.CurrentUIThemeChanged += Apply;
+                Apply(publisher.CurrentUITheme);
+            }
+
+            private void Apply(Theme theme)
+            {
+                if (!window.Dispatcher.CheckAccess())
                 {
-                    if (Icon && packageIcon == null)
-                        window.Icon = CreateDefaultIcon(theme);
-                    ThemeManager.SetWindowTitleBarColor(hwnd, theme);
-                };
-                ThemeManager.Current.CurrentThemeChanged += themeChangedHandler;
+                    if (!window.Dispatcher.HasShutdownStarted) window.Dispatcher.BeginInvoke(() => Apply(theme));
+                    return;
+                }
+                if (closed) return;
+                if (useDefaultIcon && packageIcon == null) window.Icon = CreateDefaultIcon(theme);
+                ThemeManager.SetWindowTitleBarColor(hwnd, theme);
+            }
 
-                if (Icon && packageIcon == null)
-                    window.Icon = CreateDefaultIcon(ThemeManager.Current.CurrentUITheme);
-
-                ThemeManager.SetWindowTitleBarColor(hwnd, ThemeManager.Current.CurrentUITheme);
-
-                window.Loaded -= routedEventHandler;
-                window.Closed += (sender2, e2) =>
-                {
-                    if (themeChangedHandler != null)
-                        ThemeManager.Current.CurrentThemeChanged -= themeChangedHandler;
-                };
-            };
-            window.Loaded += routedEventHandler;
+            private void Closed(object? sender, EventArgs e)
+            {
+                closed = true;
+                window.Loaded -= Loaded;
+                window.Closed -= Closed;
+                if (publisher != null) publisher.CurrentUIThemeChanged -= Apply;
+                publisher = null;
+                window.ClearValue(CaptionSubscriptionProperty);
+            }
         }
 
         private static BitmapImage CreateDefaultIcon(Theme theme) => new(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{(theme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));

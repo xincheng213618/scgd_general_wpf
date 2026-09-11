@@ -137,7 +137,6 @@ namespace ColorVision.Engine.Services
                         title,
                         PanelPosition.Bottom,
                         isDefaultVisible: false);
-                    log.Info($"Registered service log panel: {title} -> {logPath}");
                 }
                 catch (Exception ex)
                 {

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace ColorVision.UI
@@ -53,5 +54,17 @@ namespace ColorVision.UI
         /// Directory containing the source logs, when available.
         /// </summary>
         string? LogDirectory { get; }
+    }
+
+    /// <summary>
+    /// Optional capability for collectors that own diagnostic files which can be removed safely.
+    /// Implementations must return files only, never directories, and must exclude active files.
+    /// </summary>
+    public interface IFeedbackDiagnosticCleanupSource
+    {
+        /// <summary>
+        /// Returns diagnostic files last updated before <paramref name="preserveFromUtc"/>.
+        /// </summary>
+        IEnumerable<string> GetHistoricalDiagnosticFiles(DateTime preserveFromUtc);
     }
 }

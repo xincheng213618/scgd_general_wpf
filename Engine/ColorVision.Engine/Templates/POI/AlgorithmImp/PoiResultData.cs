@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1859,CA2249,CS8602,CS8604,CS8629
+#pragma warning disable CA1859,CA2249,CS8602,CS8604,CS8629
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI;
@@ -278,7 +278,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
         public string PixelSize => string.Format("{0},{1}", Point.Width, Point.Height);
 
-        public string Shapes => Point.PointType switch
+        public string Shapes => Point.RegionShapeName ?? (Point.PointType switch
         {
             PoiShape.None => "None",
             PoiShape.Point or PoiShape.LegacySolidPoint => "点",
@@ -286,6 +286,6 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             PoiShape.Polygon => "多边形",
             PoiShape.Quadrilateral => "四边形",
             PoiShape.Circle or _ => "圆形 ",
-        };
+        });
     }
 }

@@ -92,7 +92,7 @@ namespace ProjectARVRPro.Process.Demura
 
             try
             {
-                testResult.PreviewImageFile = FindPreviewImageFile(ctx.Batch.Id);
+                testResult.PreviewImageFile = FindPreviewImageFile(ctx);
                 var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 var candidates = CollectImageConvertCandidates(masters, Config.ImageConvertResultType);
 
@@ -855,9 +855,9 @@ flash_address = 0x00003000
                    value.Contains(keyword, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string FindPreviewImageFile(int batchId)
+        private static string FindPreviewImageFile(IProcessExecutionContext ctx)
         {
-            var images = MeasureImgResultDao.Instance.GetAllByBatchId(batchId);
+            var images = ctx.GetMeasureResults();
             foreach (var image in images)
             {
                 if (!string.IsNullOrWhiteSpace(image.FileUrl))

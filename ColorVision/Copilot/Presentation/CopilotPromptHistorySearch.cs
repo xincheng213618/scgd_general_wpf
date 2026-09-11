@@ -31,8 +31,8 @@ namespace ColorVision.Copilot
             string? query)
         {
             var entries = (messages ?? Array.Empty<CopilotChatMessage>())
-                .Where(message => message != null)
-                .Select(message => new SearchEntry(message, string.Empty));
+                .Where(message => message?.IsUser == true && !string.IsNullOrWhiteSpace(message.Content))
+                .Select(message => new SearchEntry(message, ConversationTitle: null));
             return SearchEntries(entries, query);
         }
 
@@ -43,14 +43,9 @@ namespace ColorVision.Copilot
             var entries = (conversations ?? Array.Empty<CopilotConversationRecord>())
                 .Where(conversation => conversation != null)
                 .SelectMany(conversation => (conversation.Messages ?? [])
-                    .Where(message => message != null)
-                    .Select(message => new
-                    {
-                        Message = message,
-                        SourceSummary = BuildSourceSummary(conversation.Title, message.CreatedAt),
-                    }))
-                .OrderBy(entry => entry.Message.CreatedAt)
-                .Select(entry => new SearchEntry(entry.Message, entry.SourceSummary));
+                    .Where(message => message?.IsUser == true && !string.IsNullOrWhiteSpace(message.Content))
+                    .Select(message => new SearchEntry(message, conversation.Title ?? string.Empty)))
+                .OrderBy(entry => entry.Message.CreatedAt);
             return SearchEntries(entries, query);
         }
 
@@ -60,35 +55,44 @@ namespace ColorVision.Copilot
         {
             var normalizedQuery = Normalize(query, MaximumQueryCharacters);
             var seen = new HashSet<string>(StringComparer.Ordinal);
-            var candidates = entries
-                .Select((entry, index) => (entry, index))
-                .Where(item => item.entry.Message.IsUser
-                    && !string.IsNullOrWhiteSpace(item.entry.Message.Content))
+            var newestEntries = entries
+                .Select((entry, index) => (Entry: entry, Index: index))
                 .Reverse()
+                .Select(item => (item.Entry, item.Index, Text: item.Entry.Message.Content.Trim()))
+                .Where(item => seen.Add(item.Text));
+            if (normalizedQuery.Length == 0)
+            {
+                return newestEntries
+                    .Take(MaximumResults)
+                    .Select(item => CreateResult(item.Text, Normalize(item.Text, int.MaxValue), item.Entry))
+                    .ToArray();
+            }
+
+            return newestEntries
                 .Select(item =>
                 {
-                    var text = item.entry.Message.Content.Trim();
-                    var searchable = Normalize(text, int.MaxValue);
+                    var searchable = Normalize(item.Text, int.MaxValue);
                     return new
                     {
-                        Text = text,
+                        item.Text,
                         Searchable = searchable,
                         Score = Score(searchable, normalizedQuery),
-                        item.entry.SourceSummary,
-                        item.index,
+                        item.Entry,
+                        item.Index,
                     };
                 })
-                .Where(item => seen.Add(item.Text) && item.Score >= 0)
+                .Where(item => item.Score >= 0)
                 .OrderByDescending(item => item.Score)
-                .ThenByDescending(item => item.index)
+                .ThenByDescending(item => item.Index)
                 .Take(MaximumResults)
-                .Select(item => new CopilotPromptHistorySearchItem(
-                    item.Text,
-                    BuildPreview(item.Searchable),
-                    item.SourceSummary))
+                .Select(item => CreateResult(item.Text, item.Searchable, item.Entry))
                 .ToArray();
-            return candidates;
         }
+
+        private static CopilotPromptHistorySearchItem CreateResult(string text, string searchable, SearchEntry entry) =>
+            new(text, BuildPreview(searchable), entry.ConversationTitle == null
+                ? string.Empty
+                : BuildSourceSummary(entry.ConversationTitle, entry.Message.CreatedAt));
 
         private static string BuildSourceSummary(string? conversationTitle, DateTime createdAt)
         {
@@ -194,6 +198,6 @@ namespace ColorVision.Copilot
 
         private sealed record SearchEntry(
             CopilotChatMessage Message,
-            string SourceSummary);
+            string? ConversationTitle);
     }
 }

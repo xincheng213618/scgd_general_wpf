@@ -783,4 +783,6 @@
   <data name="Sol_UserCenter_LastLaunch" xml:space="preserve"><value>Last launch</value></data>
   <data name="Sol_UserCenter_ActivityLess" xml:space="preserve"><value>Less</value></data>
   <data name="Sol_UserCenter_ActivityMore" xml:space="preserve"><value>More</value></data>
+  <data name="Sol_DocumentTabPin" xml:space="preserve"><value>Pin tab</value></data>
+  <data name="Sol_DocumentTabUnpin" xml:space="preserve"><value>Unpin tab</value></data>
 </root>

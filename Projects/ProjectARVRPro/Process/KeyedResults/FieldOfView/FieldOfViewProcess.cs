@@ -26,7 +26,7 @@ namespace ProjectARVRPro.Process.KeyedResults.FieldOfView
             try
             {
                 var testResult = new FieldOfViewViewTestResult();
-                var images = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                var images = ctx.GetMeasureResults();
                 string? fileUrl = images.FirstOrDefault()?.FileUrl;
                 if (!string.IsNullOrWhiteSpace(fileUrl))
                     ctx.Result.FileName = fileUrl;

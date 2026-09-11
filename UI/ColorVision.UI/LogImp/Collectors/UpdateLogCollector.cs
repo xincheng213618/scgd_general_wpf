@@ -7,7 +7,7 @@ namespace ColorVision.UI.LogImp
     /// Collects per-installation updater logs so feedback packages retain failures that happen
     /// while the main application is not running.
     /// </summary>
-    public sealed class UpdateLogCollector : IFeedbackLogCollector, IFeedbackLogTimeRangeCollector
+    public sealed class UpdateLogCollector : IFeedbackLogCollector, IFeedbackLogTimeRangeCollector, IFeedbackDiagnosticCleanupSource
     {
         private const long MaxFileBytes = 10L * 1024 * 1024;
         private static readonly ILog log = LogManager.GetLogger(typeof(UpdateLogCollector));
@@ -41,6 +41,27 @@ namespace ColorVision.UI.LogImp
             }
 
             return results;
+        }
+
+        public IEnumerable<string> GetHistoricalDiagnosticFiles(DateTime preserveFromUtc)
+        {
+            string stateRoot = GetUpdateStateRoot();
+            if (!Directory.Exists(stateRoot))
+                return [];
+
+            try
+            {
+                return new DirectoryInfo(stateRoot)
+                    .EnumerateFiles("update.log", SearchOption.AllDirectories)
+                    .Where(file => file.LastWriteTimeUtc < preserveFromUtc)
+                    .Select(file => file.FullName)
+                    .ToArray();
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"Could not enumerate historical update logs in {stateRoot}: {ex.Message}");
+                return [];
+            }
         }
 
         internal static IReadOnlyList<FileInfo> GetRecentUpdateLogs(string stateRoot, int recentDays, DateTime utcNow)

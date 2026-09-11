@@ -376,12 +376,8 @@ namespace ProjectARVRPro
             if (item == null) return;
 
             bool isNew = item.Id <= 0;
-            if (isNew
-                && ResultImageDimensions.TryReadFromMeasureResults(item.BatchId, item.FileName, out int width, out int height))
-            {
-                item.ImageWidth = width;
-                item.ImageHeight = height;
-            }
+            if (isNew)
+                ResultImageDimensions.TryPopulate(item);
 
             bool savePayload = item.ViewResultJson != null;
             ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
@@ -413,6 +409,21 @@ namespace ProjectARVRPro
 
             if (isNew || !ViewResluts.Any(x => ReferenceEquals(x, item) || x.Id == item.Id))
                 AddViewResult(item);
+        }
+
+        internal bool MarkResultProcessingCompleted(ProjectARVRReuslt item, DateTime completedAt)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            item.ResultProcessingCompletedAt = completedAt;
+            if (item.Id <= 0)
+                return false;
+
+            int updatedRows = ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
+                _db.Updateable<ProjectARVRReuslt>()
+                    .SetColumns(result => result.ResultProcessingCompletedAt == completedAt)
+                    .Where(result => result.Id == item.Id)
+                    .ExecuteCommand());
+            return updatedRows > 0;
         }
 
         internal bool UpdateSavedImagePaths(

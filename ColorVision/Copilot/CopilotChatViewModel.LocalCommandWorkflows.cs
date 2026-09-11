@@ -26,7 +26,10 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotChatViewModel
     {
-        private bool TryExecuteLocalCommand(string prompt, bool clearComposer = true)
+        private bool TryExecuteLocalCommand(
+            string prompt,
+            bool clearComposer = true,
+            QueuedLocalCommandExecutionContext? queuedCommandExecution = null)
         {
             var invocation = CopilotLocalCommandCatalog.Parse(prompt);
             if (invocation == null)
@@ -117,7 +120,7 @@ namespace ColorVision.Copilot
                     OpenSettingsFromCommand(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.InitializeProject:
-                    StartProjectInitialization(command);
+                    StartProjectInitialization(command, queuedCommandExecution);
                     break;
                 case CopilotLocalCommandKind.Hooks:
                     ShowLocalCommandResult(command, BuildHookDiagnosticsReport());
@@ -138,16 +141,24 @@ namespace ColorVision.Copilot
                     RollbackWorkspaceFromCommand(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.Compact:
-                    RunUiOperation(() => CompactConversationAsync(command, invocation.Arguments), "压缩上下文");
+                    var queuedCompaction = queuedCommandExecution;
+                    RunUiOperation(() => CompactConversationAsync(
+                        command,
+                        invocation.Arguments,
+                        agentDefaults: queuedCompaction?.QueuedFollowUp.RuntimeConfigSnapshot.CreateAgentDefaultsSnapshot(),
+                        codexConfigOptions: queuedCompaction?.QueuedFollowUp.SubmissionContext.ProjectInstructionDiscoveryOptions,
+                        targetConversation: queuedCompaction?.Conversation,
+                        requestProfile: queuedCompaction?.QueuedFollowUp.Profile,
+                        queuedCommandExecution: queuedCompaction), "压缩上下文", queuedCommandExecution: queuedCompaction);
                     break;
                 case CopilotLocalCommandKind.Review:
-                    StartWorkspaceReview(command, invocation.Arguments);
+                    StartWorkspaceReview(command, invocation.Arguments, queuedCommandExecution);
                     break;
                 case CopilotLocalCommandKind.Verify:
-                    StartWorkspaceVerification(command, invocation.Arguments);
+                    StartWorkspaceVerification(command, invocation.Arguments, queuedCommandExecution);
                     break;
                 case CopilotLocalCommandKind.Plan:
-                    StartPlanRequest(command, invocation.Arguments);
+                    StartPlanRequest(command, invocation.Arguments, queuedCommandExecution);
                     break;
                 case CopilotLocalCommandKind.ViewPlan:
                     ViewLatestCompletedPlan(command);
@@ -202,7 +213,7 @@ namespace ColorVision.Copilot
                     ChangeFollowUpBehavior(command, invocation.Arguments);
                     break;
                 case CopilotLocalCommandKind.RetryResponse:
-                    RetryLatestResponse(command, invocation.Arguments);
+                    RetryLatestResponse(command, invocation.Arguments, queuedCommandExecution);
                     break;
                 case CopilotLocalCommandKind.CopyResponse:
                     CopyAssistantResponse(command, invocation.Arguments);

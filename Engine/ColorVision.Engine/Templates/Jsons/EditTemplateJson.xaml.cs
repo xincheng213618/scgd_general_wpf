@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1805,CS8601,CS8604,CS8625
+#pragma warning disable CA1805,CS8601,CS8604,CS8625
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using ColorVision.UI.Utilities;
@@ -49,7 +49,7 @@ namespace ColorVision.Engine.Templates.Jsons
         };
     }
 
-    public partial class EditTemplateJson : UserControl, ITemplateUserControl
+    public partial class EditTemplateJson : UserControl, ITemplateUserControl, ITemplateEditorValidation
     {
         private const int MaxCopilotJsonChars = 16000;
         private const string CopilotExplainTemplatePrompt =
@@ -74,10 +74,12 @@ namespace ColorVision.Engine.Templates.Jsons
         public EditTemplateJson(string description)
         {
             InitializeComponent();
-            this.Width = EditTemplateJsonConfig.Instance.Width;
+            PropertyModeButton.GroupName = TextModeButton.GroupName = _copilotContextSourceId;
+            this.Width = double.IsNaN(EditTemplateJsonConfig.Instance.Width) ? 740 : Math.Max(480, EditTemplateJsonConfig.Instance.Width);
             this.SizeChanged += (s, e) =>
             {
                 EditTemplateJsonConfig.Instance.Width = this.ActualWidth;
+                FuncStackPanel.MaxWidth = Math.Max(160, ActualWidth - 250);
             };
             textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.DefaultIndentationStrategy();
             textEditor.ShowLineNumbers = true;
@@ -85,11 +87,12 @@ namespace ColorVision.Engine.Templates.Jsons
 
             // Set initial mode from config
             _isInPropertyEditorMode = EditTemplateJsonConfig.Instance.UsePropertyEditor;
-            EditorModeToggle.IsChecked = _isInPropertyEditorMode;
             UpdateEditorMode();
 
             // Subscribe to property editor changes
             propertyEditor.JsonValueChanged += PropertyEditor_JsonValueChanged;
+            propertyEditor.ValidationStateChanged += (_, _) => UpdateStatus();
+            InitializeTextTools();
 
             Loaded += EditTemplateJson_Loaded;
             Unloaded += EditTemplateJson_Unloaded;
@@ -98,6 +101,8 @@ namespace ColorVision.Engine.Templates.Jsons
 
         private void EditTemplateJson_Loaded(object sender, RoutedEventArgs e)
         {
+            ColorVision.Themes.ThemeManager.Current.CurrentUIThemeChanged += EditorThemeChanged;
+            EditorThemeChanged(ColorVision.Themes.ThemeManager.Current.CurrentUITheme);
             RegisterCopilotEditor();
             RegisterCopilotAgentExtension();
             PublishCopilotContext();
@@ -105,6 +110,7 @@ namespace ColorVision.Engine.Templates.Jsons
 
         private void EditTemplateJson_Unloaded(object sender, RoutedEventArgs e)
         {
+            ColorVision.Themes.ThemeManager.Current.CurrentUIThemeChanged -= EditorThemeChanged;
             UnregisterCopilotAgentExtension();
             UnregisterCopilotEditor();
             CopilotLiveContextRegistry.Clear(_copilotContextSourceId);
@@ -118,22 +124,17 @@ namespace ColorVision.Engine.Templates.Jsons
 
         private void TextEditor_TextChanged(object? sender, EventArgs e)
         {
-            DebounceTimer.AddOrResetTimer("EditTemplateJsonChanged", 50, EditTemplateJsonChanged);
+            if (_isSyncingFromPropertyEditor) return;
+            EditTemplateJsonChanged();
         }
 
         public void EditTemplateJsonChanged()
         {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                if (IEditTemplateJson != null)
-                {
-                    IEditTemplateJson.JsonValue = textEditor.Text;
-                }
-
-                PublishCopilotContext();
-            });
+            if (IEditTemplateJson != null && TryReadDraft(out _, out _))
+                IEditTemplateJson.JsonValue = textEditor.Text;
+            UpdateStatus();
+            PublishCopilotContext();
         }
-
 
         private IEditTemplateJson IEditTemplateJson;
 
@@ -146,34 +147,31 @@ namespace ColorVision.Engine.Templates.Jsons
                 this.DataContext = param; 
                 if (IEditTemplateJson !=null)
                     IEditTemplateJson.JsonValueChanged -= IEditTemplateJson_JsonValueChanged;
+                if (!ReferenceEquals(IEditTemplateJson, editTemplateJson)) propertyEditor.ResetNavigation();
                 IEditTemplateJson = editTemplateJson;
                 _schemaInfo = TryLoadTemplateSchema(GetTemplateCode(editTemplateJson));
                 _loadedJsonSnapshot = IEditTemplateJson.JsonValue ?? string.Empty;
-                textEditor.Text = IEditTemplateJson.JsonValue;
+                SetTextSilently(IEditTemplateJson.JsonValue);
                 IEditTemplateJson.JsonValueChanged += IEditTemplateJson_JsonValueChanged;
-
-                textEditor.TextChanged -= TextEditor_TextChanged;
-                textEditor.TextChanged += TextEditor_TextChanged;
-
-                // If in property editor mode, refresh the property editor with new data
                 if (_isInPropertyEditorMode)
                 {
-                    try
-                    {
-                        SetPropertyEditorJson(IEditTemplateJson.JsonValue);
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Error refreshing property editor: {ex.Message}");
-                    }
+                    SetPropertyEditorJson(textEditor.Text);
+                    if (!propertyEditor.CanEdit) _isInPropertyEditorMode = false;
                 }
+                EditorTitleText.Text = GetCurrentTemplateName();
+                EditorSubtitleText.Text = _schemaInfo == null ? "模板参数" : $"{_schemaInfo.Title}  ·  {_schemaInfo.Code}";
+                EditorSubtitleText.ToolTip = _schemaInfo?.SchemaPath;
+                UpdateEditorMode();
+                UpdateStatus();
             }
             PublishCopilotContext();
         }
 
         private void IEditTemplateJson_JsonValueChanged(object? sender, EventArgs e)
         {
-            textEditor.Text = IEditTemplateJson.JsonValue;
+            SetTextSilently(IEditTemplateJson.JsonValue);
+            if (_isInPropertyEditorMode) SetPropertyEditorJson(textEditor.Text);
+            UpdateStatus();
             PublishCopilotContext();
         }
 
@@ -345,123 +343,68 @@ namespace ColorVision.Engine.Templates.Jsons
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
+            if (!TryCommitPendingEdits()) return;
             Process.Start(new ProcessStartInfo
             {
                 FileName = "https://www.json.cn/",
                 UseShellExecute = true
             });
-            Common.Clipboard.SetText(IEditTemplateJson.JsonValue);
+            Common.Clipboard.SetText(textEditor.Text);
         }
 
-        private void EditorModeToggle_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is ToggleButton toggleButton)
-            {
-                _isInPropertyEditorMode = toggleButton.IsChecked == true;
-                EditTemplateJsonConfig.Instance.UsePropertyEditor = _isInPropertyEditorMode;
-
-                if (_isInPropertyEditorMode)
-                {
-                    // Switch to property editor mode
-                    SwitchToPropertyEditorMode();
-                }
-                else
-                {
-                    // Switch back to text mode
-                    SwitchToTextMode();
-                }
-            }
-        }
+        private void PropertyMode_Click(object sender, RoutedEventArgs e) => SwitchToPropertyEditorMode();
+        private void TextMode_Click(object sender, RoutedEventArgs e) => SwitchToTextMode();
 
         private void SwitchToPropertyEditorMode()
         {
-            try
+            if (_isInPropertyEditorMode) return;
+            if (!TryReadDraft(out var rootKind, out var error) || rootKind != JsonValueKind.Object)
             {
-                // Load current JSON into property editor
-                SetPropertyEditorJson(textEditor.Text);
-
-                // Show property editor, hide text editor
-                textEditor.Visibility = Visibility.Collapsed;
-                propertyEditor.Visibility = Visibility.Visible;
-
-                // Update toggle button text
-                EditorModeToggle.Content = ColorVision.Engine.Properties.Resources.TextEdit;
-                PublishCopilotContext();
+                ShowStatusError(error.Length > 0 ? error : "顶层数组请在 JSON 视图编辑。");
+                UpdateEditorMode();
+                return;
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show(string.Format(Properties.Resources.Copilot_PropertyEditorSwitchFailed, ex.Message), Properties.Resources.Error, MessageBoxButton.OK, MessageBoxImage.Error);
-                
-                // Revert toggle state
-                EditorModeToggle.IsChecked = false;
-                _isInPropertyEditorMode = false;
-            }
+            SetPropertyEditorJson(textEditor.Text);
+            if (!propertyEditor.CanEdit) { UpdateEditorMode(); return; }
+            _isInPropertyEditorMode = true;
+            EditTemplateJsonConfig.Instance.UsePropertyEditor = true;
+            UpdateEditorMode();
+            UpdateStatus();
+            PublishCopilotContext();
         }
 
         private void SwitchToTextMode()
         {
-            try
+            if (_isInPropertyEditorMode && !propertyEditor.ValidateJson())
             {
-                // Get JSON from property editor
-                var json = propertyEditor.GetJson();
-                if (!string.IsNullOrEmpty(json))
-                {
-                    // Update text editor
-                    textEditor.TextChanged -= TextEditor_TextChanged;
-                    textEditor.Text = json;
-                    textEditor.TextChanged += TextEditor_TextChanged;
-                }
-
-                // Show text editor, hide property editor
-                textEditor.Visibility = Visibility.Visible;
-                propertyEditor.Visibility = Visibility.Collapsed;
-
-                // Update toggle button text
-                EditorModeToggle.Content = ColorVision.Engine.Properties.Resources.PropertyEdit;
-                PublishCopilotContext();
+                ShowStatusError("请先修正错误输入，再切换到 JSON。");
+                UpdateEditorMode();
+                return;
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show(string.Format(Properties.Resources.Copilot_TextEditorSwitchFailed, ex.Message), Properties.Resources.Error, MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            _isInPropertyEditorMode = false;
+            EditTemplateJsonConfig.Instance.UsePropertyEditor = false;
+            UpdateEditorMode();
+            UpdateStatus();
+            PublishCopilotContext();
         }
 
         private void UpdateEditorMode()
         {
-            if (_isInPropertyEditorMode)
-            {
-                textEditor.Visibility = Visibility.Collapsed;
-                propertyEditor.Visibility = Visibility.Visible;
-                EditorModeToggle.Content = ColorVision.Engine.Properties.Resources.TextEdit;
-            }
-            else
-            {
-                textEditor.Visibility = Visibility.Visible;
-                propertyEditor.Visibility = Visibility.Collapsed;
-                EditorModeToggle.Content = ColorVision.Engine.Properties.Resources.PropertyEdit;
-            }
+            textEditor.Visibility = _isInPropertyEditorMode ? Visibility.Collapsed : Visibility.Visible;
+            propertyEditor.Visibility = _isInPropertyEditorMode ? Visibility.Visible : Visibility.Collapsed;
+            PropertyModeButton.IsChecked = _isInPropertyEditorMode;
+            TextModeButton.IsChecked = !_isInPropertyEditorMode;
+            FormatButton.Visibility = SearchButton.Visibility = _isInPropertyEditorMode ? Visibility.Collapsed : Visibility.Visible;
+            PositionText.Visibility = _isInPropertyEditorMode ? Visibility.Collapsed : Visibility.Visible;
         }
 
         private void PropertyEditor_JsonValueChanged(object? sender, string json)
         {
-            if (_isSyncingFromPropertyEditor)
-                return;
-
-            _isSyncingFromPropertyEditor = true;
-            try
-            {
-                // Update the IEditTemplateJson value when property editor changes
-                if (IEditTemplateJson != null)
-                {
-                    IEditTemplateJson.JsonValue = json;
-                }
-
-                PublishCopilotContext();
-            }
-            finally
-            {
-                _isSyncingFromPropertyEditor = false;
-            }
+            if (_isSyncingFromPropertyEditor) return;
+            SetTextSilently(json);
+            if (IEditTemplateJson != null) IEditTemplateJson.JsonValue = json;
+            UpdateStatus();
+            PublishCopilotContext();
         }
 
         private void AskCopilotButton_Click(object sender, RoutedEventArgs e)
@@ -641,6 +584,8 @@ namespace ColorVision.Engine.Templates.Jsons
             if (IEditTemplateJson == null)
                 return CopilotTemplateJsonPatchApplyResult.Fail("template_context_unavailable", "The active template editor has no editable JSON context.");
 
+            if (_isInPropertyEditorMode && propertyEditor.HasValidationErrors)
+                return CopilotTemplateJsonPatchApplyResult.Fail("invalid_active_template_json", "Correct the property inputs before applying a patch.");
             var currentJson = GetCurrentJsonForCopilot();
             if (!TryNormalizeJson(currentJson, out var normalizedCurrentJson, out var currentError))
                 return CopilotTemplateJsonPatchApplyResult.Fail("invalid_active_template_json", $"The active template JSON is invalid: {currentError}");
@@ -669,6 +614,7 @@ namespace ColorVision.Engine.Templates.Jsons
             }
 
             PublishCopilotContext();
+            UpdateStatus();
             return CopilotTemplateJsonPatchApplyResult.Ok("Template JSON patch applied to the active editor. Review and save from ColorVision when ready.");
         }
 

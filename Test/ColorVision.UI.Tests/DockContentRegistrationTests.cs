@@ -1,6 +1,7 @@
 using AvalonDock;
 using AvalonDock.Layout;
 using ColorVision.Solution.Workspace;
+using ColorVision.UI.Docking;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Windows;
@@ -86,6 +87,25 @@ public class DockContentRegistrationTests
 
         if (failure != null)
             ExceptionDispatchInfo.Capture(failure).Throw();
+    }
+
+    [Fact]
+    public void FactoryHost_ForwardsTitleActionsFromTheMaterializedPanelControl()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            DockContentRegistration registration = DockContentRegistration.FromFactory("panel", () => new DisPlayControlPanel());
+            var deferredContent = Assert.IsType<DeferredDockContent>(registration.GetForLayout(_ => { }, _ => { }));
+            IDockPanelTitleActionProvider provider = deferredContent;
+
+            Assert.Empty(provider.TitleActions);
+            deferredContent.Materialize();
+
+            DockPanelTitleAction action = Assert.Single(provider.TitleActions);
+            Assert.Same(DisPlayManager.CreateGroupCommand, action.Command);
+            Assert.Equal("\uE710", action.Glyph);
+            Assert.Equal("新建分组", action.ToolTip);
+        });
     }
 
     [Fact]

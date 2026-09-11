@@ -390,8 +390,13 @@ namespace ColorVision.Copilot
             if (!_isApplyingPromptHistory)
                 _promptHistoryNavigator.Reset();
             if (IsPromptHistorySearchOpen)
+            {
                 RefreshPromptHistorySearchResults();
-            else if (synchronizeDraft)
+                OnPropertyChanged(nameof(IsInputEmpty));
+                CommandManager.InvalidateRequerySuggested();
+                return;
+            }
+            if (synchronizeDraft)
                 SynchronizeSelectedConversationComposerDraft();
             OnPropertyChanged(nameof(IsInputEmpty));
             RefreshLocalCommandSuggestions();

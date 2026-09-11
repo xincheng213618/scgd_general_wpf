@@ -55,7 +55,7 @@
                     <Button Content="删除选中" Padding="8 3" Command="{Binding RemoveMetaCommand}"/>
                     <Button Content="上移" Padding="8 3" Margin="6 0 0 0" Command="{Binding MoveUpCommand}"/>
                     <Button Content="下移" Padding="8 3" Margin="6 0 0 0" Command="{Binding MoveDownCommand}"/>
-                    <TextBlock Text="(双击重命名)" VerticalAlignment="Center" Margin="8 0 0 0" Foreground="Gray"/>
+                    <TextBlock Text="(双击重命名)" VerticalAlignment="Center" Margin="8 0 0 0" Foreground="{DynamicResource SecondaryTextBrush}"/>
                 </StackPanel>
 
                 <ListView Grid.Row="1" ItemsSource="{Binding ProcessMetas}" SelectedItem="{Binding SelectedProcessMeta}" x:Name="lvMetas" SelectionChanged="ListView_SelectionChanged">
@@ -192,7 +192,7 @@
                     </Border>
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="5">
                         <StackPanel x:Name="RecipePanel">
-                            <TextBlock Text="请选择一个处理项" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"/>
+                            <TextBlock Text="请选择一个处理项" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center" Margin="0,20,0,0"/>
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>
@@ -217,7 +217,7 @@
                     </Border>
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="5">
                         <StackPanel x:Name="FixPanel">
-                            <TextBlock Text="请选择一个处理项" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"/>
+                            <TextBlock Text="请选择一个处理项" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center" Margin="0,20,0,0"/>
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>
@@ -242,7 +242,7 @@
                     </Border>
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="5">
                         <StackPanel x:Name="ProcessPanel">
-                            <TextBlock Text="请选择一个处理项" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"/>
+                            <TextBlock Text="请选择一个处理项" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center" Margin="0,20,0,0"/>
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>

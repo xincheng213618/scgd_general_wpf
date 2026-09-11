@@ -9,5 +9,6 @@ namespace ProjectARVRPro.Process
         public bool IsEnabled { get; set; } = true;
         public string ConfigJson { get; set; }
         public PictureSwitchConfig PictureSwitchConfig { get; set; }
+        public FlowCameraParameterOverrideConfig FlowCameraParameterOverrideConfig { get; set; }
     }
 }

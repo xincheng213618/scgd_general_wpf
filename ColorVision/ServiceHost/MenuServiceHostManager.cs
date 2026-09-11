@@ -9,7 +9,7 @@ namespace ColorVision.ServiceHost
     {
         public override string OwnerGuid => MenuItemConstants.Help;
 
-        public override string Header => "ColorVision Service Host";
+        public override string Header => "ColorVision Service Host(_S)";
 
         public override int Order => 1003;
 

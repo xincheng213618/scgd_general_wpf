@@ -20,6 +20,7 @@ namespace ColorVision.Database
         private readonly IDatabaseCleanupBackupProvider? _backupProvider;
         private readonly IDatabaseCleanupMaintenanceProvider? _maintenanceProvider;
         private readonly IDatabaseCleanupMigrationProvider? _migrationProvider;
+        private readonly IDatabaseCleanupOptimizationProvider? _optimizationProvider;
 
         private string _description = string.Empty;
         private string _keepMonthsText = "3";
@@ -35,6 +36,7 @@ namespace ColorVision.Database
             _backupProvider = provider as IDatabaseCleanupBackupProvider;
             _maintenanceProvider = provider as IDatabaseCleanupMaintenanceProvider;
             _migrationProvider = provider as IDatabaseCleanupMigrationProvider;
+            _optimizationProvider = provider as IDatabaseCleanupOptimizationProvider;
             _description = provider.Description;
             _backupBeforeCleanup = false;
 
@@ -46,6 +48,7 @@ namespace ColorVision.Database
             CleanupHistoryCommand = new RelayCommand(_ => ExecuteCleanupHistory(), _ => !IsBusy && ExistingTableCount > 0);
             CleanupAllCommand = new RelayCommand(_ => ExecuteCleanupAll(), _ => !IsBusy && ExistingTableCount > 0);
             MigrationCommand = new RelayCommand(_ => ExecuteMigration(), _ => !IsBusy && SupportsMigration && ExistingTableCount > 0);
+            OptimizationCommand = new RelayCommand(_ => ExecuteOptimization(), _ => !IsBusy && SupportsOptimization && ExistingTableCount > 0);
         }
 
         public string SourceId => _provider.Id;
@@ -54,7 +57,9 @@ namespace ColorVision.Database
         public bool SupportsTableCleanup => _selectionProvider != null;
         public bool SupportsBackup => _backupProvider != null;
         public bool SupportsMigration => _migrationProvider != null;
+        public bool SupportsOptimization => _optimizationProvider != null;
         public string MigrationActionName => _migrationProvider?.MigrationActionName ?? string.Empty;
+        public string OptimizationActionName => _optimizationProvider?.OptimizationActionName ?? string.Empty;
         public ObservableCollection<DatabaseCleanupTableInfo> Tables { get; } = new();
 
         public RelayCommand RefreshCommand { get; }
@@ -65,6 +70,7 @@ namespace ColorVision.Database
         public RelayCommand CleanupHistoryCommand { get; }
         public RelayCommand CleanupAllCommand { get; }
         public RelayCommand MigrationCommand { get; }
+        public RelayCommand OptimizationCommand { get; }
 
         public string Description
         {
@@ -275,11 +281,33 @@ namespace ColorVision.Database
                 forceBackup: true);
         }
 
+        private void ExecuteOptimization()
+        {
+            if (_optimizationProvider == null)
+                return;
+
+            string confirmMessage =
+                _optimizationProvider.OptimizationConfirmationMessage + Environment.NewLine + Environment.NewLine +
+                EngineLocalization.Get("此操作不会删除业务数据，也不会自动创建完整备份。") + Environment.NewLine + Environment.NewLine +
+                EngineLocalization.Get("是否继续？");
+            if (!ConfirmCleanup(confirmMessage, MessageBoxImage.Warning))
+                return;
+
+            _ = ExecuteCleanupAsync(
+                _optimizationProvider.ExecuteOptimization,
+                EngineLocalization.Format($"正在执行 {DisplayName} 索引优化..."),
+                "索引优化",
+                allowOptionalBackup: false,
+                refreshTables: false);
+        }
+
         private async Task ExecuteCleanupAsync(
             Func<DatabaseCleanupExecutionResult> action,
             string busyStatus,
             string operationName = "清理",
-            bool forceBackup = false)
+            bool forceBackup = false,
+            bool allowOptionalBackup = true,
+            bool refreshTables = true)
         {
             if (IsBusy)
                 return;
@@ -291,7 +319,7 @@ namespace ColorVision.Database
 
             try
             {
-                if ((forceBackup || BackupBeforeCleanup) && _backupProvider != null)
+                if ((forceBackup || (allowOptionalBackup && BackupBeforeCleanup)) && _backupProvider != null)
                 {
                     if (_maintenanceProvider != null)
                     {
@@ -347,15 +375,18 @@ namespace ColorVision.Database
                 }
 
                 Exception? refreshError = null;
-                try
+                if (refreshTables)
                 {
-                    SetDescription(_provider.Description);
-                    var snapshot = await Task.Run(_provider.LoadTables).ConfigureAwait(false);
-                    ApplySnapshot(snapshot, GetSelectedTableNames().ToHashSet(StringComparer.OrdinalIgnoreCase));
-                }
-                catch (Exception ex)
-                {
-                    refreshError = ex;
+                    try
+                    {
+                        SetDescription(_provider.Description);
+                        var snapshot = await Task.Run(_provider.LoadTables).ConfigureAwait(false);
+                        ApplySnapshot(snapshot, GetSelectedTableNames().ToHashSet(StringComparer.OrdinalIgnoreCase));
+                    }
+                    catch (Exception ex)
+                    {
+                        refreshError = ex;
+                    }
                 }
 
                 string status = backup == null

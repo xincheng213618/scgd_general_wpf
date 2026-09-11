@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        xmlns:ui="clr-namespace:ColorVision.UI;assembly=ColorVision.UI"
         xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
         mc:Ignorable="d"
         Title="ColorVision Engine"
@@ -49,14 +50,14 @@
                                                    CanClose="True"
                                                    CanFloat="True"
                                                    ContentId="AcquirePanel">
-                                <ScrollViewer x:Name="ScrollViewerDisplay"
-                                              Background="{DynamicResource GlobalBorderBrush1}"
-                                              HorizontalScrollBarVisibility="Disabled"
-                                              VerticalScrollBarVisibility="Auto">
+                                <ui:DisPlayControlPanel x:Name="ScrollViewerDisplay"
+                                                       Background="{DynamicResource GlobalBorderBrush1}"
+                                                       HorizontalScrollBarVisibility="Disabled"
+                                                       VerticalScrollBarVisibility="Auto">
                                     <StackPanel x:Name="StackPanelSPD"
                                                 Width="{Binding ViewportWidth, ElementName=ScrollViewerDisplay}"
                                                 Margin="-2,5,0,0" />
-                                </ScrollViewer>
+                                </ui:DisPlayControlPanel>
                             </xcad:LayoutAnchorable>
                         </xcad:LayoutAnchorablePane>
                     </xcad:LayoutAnchorablePaneGroup>
