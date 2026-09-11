@@ -4397,9 +4397,14 @@
         "多边形POI",
         "自由套索",
         "旋转区域",
-        "DecimalPlaces"
+        "DecimalPlaces",
+        "回显字段勾选",
+        "CvcieTemplatePropertiesEditor"
       ],
       "code_paths": [
+        "Engine/ColorVision.Engine/Media/CvcieTemplatePropertiesEditor.cs",
+        "Engine/ColorVision.Engine/Media/CvcieTemplateDraft.cs",
+        "Engine/ColorVision.Engine/Media/CvcieTemplateWindow.xaml",
         "Engine/ColorVision.Engine/Media/CvcieMouseProbeOptions.cs",
         "UI/ColorVision.ImageEditor/Draw/ClosedPixelRegion.cs",
         "Engine/ColorVision.Engine/Media/WindowCVCIE.xaml.cs",
@@ -4412,6 +4417,7 @@
         "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ViewHanlePOIY.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CvcieTemplateEditorTests.cs",
         "Test/ColorVision.UI.Tests/CvcieRegionTests.cs",
         "Test/ColorVision.UI.Tests/CvcieResultValueTests.cs",
         "Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"

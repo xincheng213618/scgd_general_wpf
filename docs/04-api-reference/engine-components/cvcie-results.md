@@ -3,9 +3,9 @@ knowledge_id: "engine.cvcie-results"
 knowledge_type: "topic"
 status: "current"
 summary: "ImageView 封闭区域 POI、椭圆探针、结果显示精度与非正值重算；保留传统节点和导出边界。"
-aliases: ["CVCIE计算负值", "CVCIEShowConfig", "WindowCVCIE", "启用非正值替换", "ClampNonPositiveValues", "MinimumValue", "0.0001", "POI负值", "CVCIE最小值", "CVCIE色温", "CVCIE主波长", "XYZ重算", "结果数值替换", "NormalizeXyz", "CalculateColorMetrics", "椭圆POI", "多边形POI", "自由套索", "旋转区域", "DecimalPlaces"]
-code_paths: ["Engine/ColorVision.Engine/Media/CvcieMouseProbeOptions.cs", "UI/ColorVision.ImageEditor/Draw/ClosedPixelRegion.cs", "Engine/ColorVision.Engine/Media/WindowCVCIE.xaml.cs", "Engine/ColorVision.Engine/Media/WindowCVCIE.xaml", "Engine/ColorVision.Engine/Media/CVRawOpen.cs", "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiResultCIExyuvData.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiResultData.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ViewHanlePOIXZY.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ViewHanlePOIY.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CvcieRegionTests.cs", "Test/ColorVision.UI.Tests/CvcieResultValueTests.cs", "Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"]
+aliases: ["CVCIE计算负值", "CVCIEShowConfig", "WindowCVCIE", "启用非正值替换", "ClampNonPositiveValues", "MinimumValue", "0.0001", "POI负值", "CVCIE最小值", "CVCIE色温", "CVCIE主波长", "XYZ重算", "结果数值替换", "NormalizeXyz", "CalculateColorMetrics", "椭圆POI", "多边形POI", "自由套索", "旋转区域", "DecimalPlaces", "回显字段勾选", "CvcieTemplatePropertiesEditor"]
+code_paths: ["Engine/ColorVision.Engine/Media/CvcieTemplatePropertiesEditor.cs", "Engine/ColorVision.Engine/Media/CvcieTemplateDraft.cs", "Engine/ColorVision.Engine/Media/CvcieTemplateWindow.xaml", "Engine/ColorVision.Engine/Media/CvcieMouseProbeOptions.cs", "UI/ColorVision.ImageEditor/Draw/ClosedPixelRegion.cs", "Engine/ColorVision.Engine/Media/WindowCVCIE.xaml.cs", "Engine/ColorVision.Engine/Media/WindowCVCIE.xaml", "Engine/ColorVision.Engine/Media/CVRawOpen.cs", "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiResultCIExyuvData.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiResultData.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ViewHanlePOIXZY.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ViewHanlePOIY.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CvcieTemplateEditorTests.cs", "Test/ColorVision.UI.Tests/CvcieRegionTests.cs", "Test/ColorVision.UI.Tests/CvcieResultValueTests.cs", "Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"]
 related: ["engine.file-io", "algorithms.poi-routes", "engine.opencv-helper-api", "engine.results", "ui.property-grid", "ui.configuration"]
 ---
 
@@ -22,6 +22,15 @@ related: ["engine.file-io", "algorithms.poi-routes", "engine.opencv-helper-api",
 - 结果表和统计默认 `F3`，工具栏可选择 0–9 位小数；列按内容适配，悬停查看完整值。亮度摘要横向排列，均匀性和中心色度可展开查看。仅改变显示，不修改计算值或 CSV 格式。选中一行或多行后可用 **复制选中行 / Ctrl+C** 复制带表头的制表符文本，遵循可见列顺序与显示精度，便于粘贴到 Excel；Ctrl+A 全选。右键统计数值可复制该值或全部统计。
 - 本次测量回显居中并替代图形名称，名称本身保留。默认标记使用 `X Y Z x y u′ v′ CCT λd` 简写，可通过显示模板调整；结果表保留 CIE 标准名称及说明。移动、缩放、旋转或改变闭合状态时清除本次测量文字，重新计算后更新，手工消息不因此被清除。
 - 自定义节点与 `EditPoiParam` 模板仍只保存传统圆、矩形参数，忽略旋转与多边形；在 ImageView 中直接计算不受该模板格式限制。CSV 的字段、顺序及数值格式保持原约定；显示精度不参与导出。
+
+## 编辑图形回显内容
+
+在结果窗口进入 **设置 → 图形回显 → 显示内容 → 选择字段**。选择 X、Y、Z、x、y、u′、v′、CCT、主波长，并为每个字段选择 0–9 位小数；预览使用明确标注的示例数值，不代表当前测量。勾选模式按 XYZ、xy、u′v′、色温/主波长分行，回显使用简写。取消全部字段生成空模板。
+
+**高级 · 自定义模板** 保留文字、单位、字段顺序和换行的手写入口，例如 `Y:@Y:F1`。多行编辑框把换行保存为原来的 `\n` 形式，仍使用 `CVRawOpen.FormatMessage` 渲染。原有模板打开时保持原文，关闭或取消不写回；修改勾选或小数位才按标准分组重新生成，存在自定义排版时会显示提示。高级编辑会同步字段选中状态和预览，格式异常会阻止应用。
+
+点击 **应用** 才把草稿写回宿主配置；随后父属性窗口仍遵循其直接编辑/工作副本模式和应用配置保存规则。修改只作用于下一次三通道 POI 图形回显，不重新计算已打开的结果，也不改变单通道固定 Y 回显、表格精度和 CSV。窗口通过 `PropertyEditorType` 仅为 `Template` 配置专用编辑器，不全局替换字符串编辑器；`EditCommand` 不作为可编辑属性显示。
+
 ## 调整结果数值
 
 前提是图像视图已经加载可测量的 CIE 数据。打开与通道选择见 [CV 文件读取](./ColorVision.FileIO.md)；单纯的显示底图不保证存在测量缓冲。

@@ -22,21 +22,24 @@ using System.Windows.Documents;
 
 namespace ColorVision.Engine.Media
 {
+    [DisplayName("CVCIE 结果设置")]
     public class CVCIEShowConfig : ViewModelBase, IConfig
     {
         private static readonly CVCIEShowConfig DefaultConfig = new();
         public static CVCIEShowConfig Instance => ConfigService.Instance?.GetRequiredService<CVCIEShowConfig>() ?? DefaultConfig;
+        [Browsable(false)]
         public RelayCommand EditCommand { get; set; }
 
         public CVCIEShowConfig()
         {
-            EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) { Title = "CVCIE 结果设置", Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
-        [Display(Name = "Engine_PG_ShowRecordData", ResourceType = typeof(Properties.Resources))]
+        [Category("图形回显"), DisplayName("显示测量结果")]
+        [Description("在图形中央显示计算结果；修改后重新计算 POI 生效。")]
         public bool IsShowString { get => _IsShowString; set { _IsShowString = value; OnPropertyChanged(); } }
         private bool _IsShowString = true;
 
-        [Category("结果显示"), DisplayName("小数位数")]
+        [Category("结果显示"), DisplayName("表格与统计小数位数")]
         [Description("仅控制界面显示，不改变计算值及 CSV 导出。")]
         public int DecimalPlaces
         {
@@ -44,7 +47,9 @@ namespace ColorVision.Engine.Media
             set { if (value < 0 || value > 9 || value == _decimalPlaces) return; _decimalPlaces = value; OnPropertyChanged(); }
         }
         private int _decimalPlaces = 3;
-        [Display(Name = "Engine_PG_DataDisplayTemplate", ResourceType = typeof(Properties.Resources))]
+        [Category("图形回显"), DisplayName("显示内容")]
+        [Description("勾选回显字段并分别设置小数位；高级模板保留自定义排版。仅影响三通道图形回显，重新计算 POI 生效。")]
+        [PropertyEditorType(typeof(CvcieTemplatePropertiesEditor))]
         public string Template { get => _Template;set { _Template = value;  OnPropertyChanged(); } }
         private string _Template = "X:@X:F3  Y:@Y:F3  Z:@Z:F3\\nx:@x:F3  y:@y:F3\\nu′:@u:F3  v′:@v:F3\\nCCT:@CCT:F3 K  λd:@Wave:F3 nm";
 
