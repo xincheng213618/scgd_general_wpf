@@ -9640,6 +9640,7 @@
       "test_paths": [
         "Test/ColorVision.UI.Tests/MarketplacePackageDownloadServiceTests.cs",
         "Test/ColorVision.UI.Tests/FeedbackWindowLayoutTests.cs",
+        "Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs",
         "Test/ColorVision.UI.Tests/NetworkAdapterPriorityServiceTests.cs"
       ],
       "related": [

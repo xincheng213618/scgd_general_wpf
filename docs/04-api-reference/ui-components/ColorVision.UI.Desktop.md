@@ -5,7 +5,7 @@ status: "current"
 summary: "桌面辅助壳层而非产品主入口：定位设置、市场下载、第三方工具、反馈和特权崩溃诊断。"
 aliases: ["设置窗口和插件市场在哪里","ColorVision.UI.Desktop","SettingWindow","MarketplacePackageDownloadService"]
 code_paths: ["UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj","UI/ColorVision.UI.Desktop/App.xaml","UI/ColorVision.UI.Desktop/App.xaml.cs","UI/ColorVision.UI.Desktop/MainWindow.xaml","UI/ColorVision.UI.Desktop/MainWindow.xaml.cs","UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml.cs","UI/ColorVision.UI.Desktop/Marketplace","UI/ColorVision.UI.Desktop/Download","UI/ColorVision.UI.Desktop/Wizards","UI/ColorVision.UI.Desktop/ThirdPartyApps","UI/ColorVision.UI.Desktop/Diagnostics","UI/ColorVision.UI.Desktop/Feedback","UI/ColorVision.UI.Desktop/README.md"]
-test_paths: ["Test/ColorVision.UI.Tests/MarketplacePackageDownloadServiceTests.cs","Test/ColorVision.UI.Tests/FeedbackWindowLayoutTests.cs","Test/ColorVision.UI.Tests/NetworkAdapterPriorityServiceTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/MarketplacePackageDownloadServiceTests.cs","Test/ColorVision.UI.Tests/FeedbackWindowLayoutTests.cs","Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs","Test/ColorVision.UI.Tests/NetworkAdapterPriorityServiceTests.cs"]
 related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.configuration","ui.database","plugins.getting-started","platform.runtime"]
 ---
 
@@ -38,7 +38,7 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 | 第三方应用 | `SystemAppProvider`、`CustomAppProvider`、`ThirdPartyAppsWindow` | 系统工具、自定义应用和磁盘 Treemap 入口 |
 | 主程序工具贡献 | `ColorVision/ToolPlugins/ThirdPartyApps/` | 通过 `IThirdPartyAppProvider` 向第三方应用窗口补充主程序工具；“上网网卡选择”可读取 IPv4、DNS、网关和 Metric，修改所选接口的 Metric，或将 DNS 设为 `114.114.114.114` 后刷新缓存 |
 | 崩溃诊断 | `Diagnostics/CrashDumpSettingsControl`、`CrashDumpConfiguration` | 通过通用属性反射生成 WER LocalDumps 设置，由后台特权服务写入 HKLM；支持手动保存当前进程 Dump 和反馈包收集 |
-| 反馈诊断 | `Feedback/`、`Feedback/Collectors/WindowsEventLogCollector` | 打包应用日志、系统信息、Dump 和 Windows Application/System 警告或错误 |
+| 反馈诊断 | `Feedback/`、`Feedback/Collectors/WindowsEventLogCollector`、`ColorVision.UI/LogImp/Collectors/ConfigurationSnapshotCollector` | 打包应用日志、系统信息、脱敏配置快照、Dump 和 Windows Application/System 警告或错误 |
 | 诊断窗口 | `ViewDllVersionsWindow` | 查看已加载程序集版本、产品版本和路径 |
 
 应用与工具窗口使用与更新、恢复窗口一致的主题资源，顶部提供搜索、添加应用、添加快捷脚本和刷新入口；分类以可换行的标签展示，应用以图标与名称组成的紧凑卡片展示。双击启动、右键操作、分类过滤与权限过滤沿用原入口；深浅主题同时覆盖窗口背景、文字和选择状态。
@@ -54,11 +54,13 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 | 市场链 | `MarketplaceWindow` -> `MarketplaceClient` -> Markdown/WebView2 -> 下载/安装服务 |
 | 下载链 | `DownloadWindow` -> `Aria2cDownloadManager` -> `aria2c.exe` / RPC daemon |
 | 崩溃诊断链 | `SettingWindow` -> `CrashDumpSettingsProvider` -> 通用属性编辑器 -> `ColorVisionServiceHost` / WER LocalDumps / `DumpHelper` |
-| 反馈收集链 | `FeedbackWindow` -> `IFeedbackLogCollector` -> 应用日志、系统信息、Dump、Windows 事件日志 |
+| 反馈收集链 | `FeedbackWindow` -> `IFeedbackLogCollector` -> 应用日志、系统信息、脱敏配置快照、Dump、Windows 事件日志 |
 | 菜单管理链 | [MenuItemManagerWindow → 草稿 → CommitEditingSnapshot → 运行时覆盖/重建 → 尝试保存](./menus.md) |
 | DLL 诊断链 | `ViewDllVersionsWindow` |
 
 反馈窗口从帮助菜单、启动恢复或 Copilot `/feedback` 打开时均使用非模态 `Show()`，保留 Owner 与居中定位。打包和上传期间可最小化反馈窗口、切回其他窗口继续操作；打包仍在后台任务中执行，HTTP 上传仍异步等待。Copilot 附带的临时会话文件保留到反馈窗口关闭，不能在 `Show()` 返回时提前清理。
+
+默认选中的配置收集器把当前 `ConfigHandler.ConfigFilePath` 读取为 JSON，在反馈 ZIP 中写为 `Config/ColorVisionConfig.json`。它保留 `MainWindowConfig` 等诊断字段，但递归遮盖名称表示密码、Token、Secret、API Key、连接字符串、凭据或 Cookie 的值；原始配置文件不直接进入反馈包。
 
 ## 新增功能检查
 
@@ -108,6 +110,6 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 
 ## 验证入口与缺口
 
-关联测试：`Test/ColorVision.UI.Tests/MarketplacePackageDownloadServiceTests.cs`、`Test/ColorVision.UI.Tests/FeedbackWindowLayoutTests.cs`、`Test/ColorVision.UI.Tests/NetworkAdapterPriorityServiceTests.cs`。
+关联测试：`Test/ColorVision.UI.Tests/MarketplacePackageDownloadServiceTests.cs`、`Test/ColorVision.UI.Tests/FeedbackWindowLayoutTests.cs`、`Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs`、`Test/ColorVision.UI.Tests/NetworkAdapterPriorityServiceTests.cs`。
 
 自动化测试只覆盖各自受测服务；联网下载、HKLM 写入、DNS 修改和反馈上传都需明确授权，不能作为默认文档验证步骤。

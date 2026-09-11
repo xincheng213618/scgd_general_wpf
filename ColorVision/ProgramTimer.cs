@@ -386,11 +386,11 @@ namespace ColorVision
             if (_stopwatch != null)
             {
                 _stopwatch.Stop();
-                log.Info($"StopAndReport: {_stopwatch.Elapsed.TotalSeconds} s");
+                log.Info($"Startup to first render completed in {_stopwatch.Elapsed.TotalSeconds:0.###} s.");
             }
             else
             {
-                log.Info("StopAndReport");
+                log.Warn("Startup timer was not available when first render completed.");
             }
         }
     }

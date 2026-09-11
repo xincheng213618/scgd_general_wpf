@@ -10,7 +10,6 @@ using log4net.Repository.Hierarchy;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -28,6 +27,7 @@ namespace ColorVision
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(StartWindow));
         private const int StartupUiYieldIntervalMs = 180;
+        private const long SlowInitializerLogThresholdMs = 100;
         private const double DefaultStartupStepWeight = 1d;
         private const double MinimumProfiledStepWeightMs = 20d;
         private const double MaximumProfiledStepWeightMs = 12000d;
@@ -47,13 +47,6 @@ namespace ColorVision
         private void Window_Initialized(object sender, EventArgs e)
         {
             labelVersion.Text = Assembly.GetExecutingAssembly().GetName().Version?.ToString();
-
-#if (DEBUG == true)
-            string info= $"{(DebugBuild(Assembly.GetExecutingAssembly()) ? "(Debug) " : "(Release)")}{(Debugger.IsAttached ? ColorVision.Properties.Resources.Debugging : "")} ({(IntPtr.Size == 4 ? "32" : "64")} {ColorVision.Properties.Resources.Bit} - {Assembly.GetExecutingAssembly().GetName().Version} - .NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy.MM.dd}";
-#else
-            string info= $"{(DebugBuild(Assembly.GetExecutingAssembly()) ? "(Debug)" : "")}{(Debugger.IsAttached ? ColorVision.Properties.Resources.Debugging : "")}{(IntPtr.Size == 4 ? "32" : "64")} {ColorVision.Properties.Resources.Bit} -  {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} - .NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy/MM/dd}";
-#endif
-            log.Info(info);
             if (ProgramTimer.InitAppender is { } startupAppender)
             {
                 ((Hierarchy)LogManager.GetRepository()).Root.RemoveAppender(startupAppender);
@@ -88,22 +81,12 @@ namespace ColorVision
         private async void StartWindow_ContentRendered(object? sender, EventArgs e)
         {
             ContentRendered -= StartWindow_ContentRendered;
-            log.Info("Startup splash ContentRendered.");
-            Stopwatch handoffStopwatch = Stopwatch.StartNew();
             await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
-            log.Info($"Startup splash ApplicationIdle handoff took {handoffStopwatch.ElapsedMilliseconds} ms.");
             try
             {
-                handoffStopwatch.Restart();
-                await Task.Run(() =>
-                {
-                    log.Info($"Startup worker queue took {handoffStopwatch.ElapsedMilliseconds} ms. UI={Dispatcher.CheckAccess()}.");
-                    return RunStartupAsync();
-                });
-                handoffStopwatch.Restart();
+                await Task.Run(RunStartupAsync);
                 await Dispatcher.InvokeAsync(() =>
                 {
-                    log.Info($"Startup main window queue took {handoffStopwatch.ElapsedMilliseconds} ms.");
                     ShowMainWindowAndClose();
                 }, DispatcherPriority.ContextIdle);
             }
@@ -120,13 +103,11 @@ namespace ColorVision
 
         private async Task RunStartupAsync()
         {
-            Stopwatch discoveryStopwatch = Stopwatch.StartNew();
             _IComponentInitializers = CreateSortedInitializers();
-            log.Info($"Startup initializer discovery took {discoveryStopwatch.ElapsedMilliseconds} ms. Count={_IComponentInitializers.Count}.");
             _startupTotalSteps = _IComponentInitializers.Count;
             LoadStartupProgressProfile();
             UpdateStartupProgress(0);
-            await YieldToUiAsync("discovery");
+            await YieldToUiAsync();
             await InitializedOver();
         }
 
@@ -176,7 +157,6 @@ namespace ColorVision
             }
 
             _startupTotalWeight = Math.Max(_startupStepWeights.Values.Sum(), DefaultStartupStepWeight);
-            log.Info($"Startup progress profile loaded. Steps={_startupTotalSteps}, Weight={_startupTotalWeight:0.##}");
         }
 
         private void SaveStartupProgressProfile()
@@ -282,19 +262,6 @@ namespace ColorVision
             startupProgressBar.Value += Math.Sign(delta) * Math.Min(Math.Abs(delta), step);
         }
 
-
-        private static bool DebugBuild(Assembly assembly)
-        {
-            foreach (object attribute in assembly.GetCustomAttributes(false))
-            {
-                if (attribute is DebuggableAttribute _attribute)
-                {
-                    return _attribute.IsJITTrackingEnabled;
-                }
-            }   
-            return false;
-        }
-
         private static string GetStartupStage(IInitializer initializer) => StartupText.GetStage(initializer.GetType().Name);
 
         private sealed record StartupInitializerResult(IInitializer Initializer, long ElapsedMilliseconds);
@@ -317,7 +284,6 @@ namespace ColorVision
         private async Task<StartupInitializerResult> RunInitializerAsync(IInitializer initializer)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
-            log.Info($"{Properties.Resources.Initializer} {initializer.GetType().Name}. UI={Dispatcher.CheckAccess()}.");
             try
             {
                 await initializer.InitializeAsync().ConfigureAwait(false);
@@ -328,20 +294,18 @@ namespace ColorVision
             }
 
             stopwatch.Stop();
-            log.Info($"Initializer {initializer.GetType().Name} took {stopwatch.ElapsedMilliseconds} ms.");
+            if (stopwatch.ElapsedMilliseconds >= SlowInitializerLogThresholdMs)
+                log.Info($"Slow startup initializer {initializer.GetType().Name} completed in {stopwatch.ElapsedMilliseconds} ms.");
             return new StartupInitializerResult(initializer, stopwatch.ElapsedMilliseconds);
         }
 
         private async Task<IReadOnlyList<StartupInitializerResult>> RunConnectivityInitializersAsync(
             IReadOnlyList<IInitializer> initializers)
         {
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            log.Info($"Startup connectivity initializer lane started. Count={initializers.Count}.");
             List<StartupInitializerResult> results = new(initializers.Count);
             foreach (IInitializer initializer in initializers)
                 results.Add(await RunInitializerAsync(initializer).ConfigureAwait(false));
 
-            log.Info($"Startup connectivity initializer lane completed in {stopwatch.ElapsedMilliseconds} ms.");
             return results;
         }
 
@@ -351,9 +315,7 @@ namespace ColorVision
             if (Dispatcher.HasShutdownStarted)
                 return result;
 
-            long queuedAt = Stopwatch.GetTimestamp();
             await Dispatcher.InvokeAsync(static () => { }, DispatcherPriority.Normal).Task.ConfigureAwait(false);
-            log.Info($"Startup workspace UI barrier took {Stopwatch.GetElapsedTime(queuedAt).TotalMilliseconds:0.###} ms.");
             return result;
         }
 
@@ -383,7 +345,7 @@ namespace ColorVision
                 summedInitializerMilliseconds += result.ElapsedMilliseconds;
                 completedWeight += GetStartupStepWeight(initializer);
                 UpdateStartupProgress(completedWeight);
-                await YieldToUiIfDueAsync(initializer.Name);
+                await YieldToUiIfDueAsync();
             }
 
             for (int index = 0; index < _IComponentInitializers.Count; index++)
@@ -404,8 +366,6 @@ namespace ColorVision
                             + connectivityInitializers.Sum(GetStartupStepWeight),
                         stage: GetStartupStage(initializer));
 
-                    Stopwatch laneStopwatch = Stopwatch.StartNew();
-                    log.Info($"Startup prerequisite lanes started. Component={component}.");
                     Task<StartupInitializerResult> databaseTask = Task.Run(() => RunInitializerAsync(initializer));
                     Task<StartupInitializerResult> workspaceTask = Task.Run(() => RunWorkspaceInitializerAsync(workspaceInitializer));
                     Task<IReadOnlyList<StartupInitializerResult>> connectivityTask =
@@ -419,7 +379,6 @@ namespace ColorVision
                         await RecordCompletionAsync(result);
                     foreach (StartupInitializerResult result in connectivityResults)
                         await RecordCompletionAsync(result);
-                    log.Info($"Startup prerequisite lanes completed in {laneStopwatch.ElapsedMilliseconds} ms.");
 
                     index += 3;
                     continue;
@@ -462,7 +421,7 @@ namespace ColorVision
             }, DispatcherPriority.Normal).Task;
         }
 
-        private async Task YieldToUiIfDueAsync(string initializerName)
+        private async Task YieldToUiIfDueAsync()
         {
             long now = Stopwatch.GetTimestamp();
             if (_lastStartupYieldTimestamp != 0)
@@ -475,10 +434,10 @@ namespace ColorVision
             }
 
             _lastStartupYieldTimestamp = now;
-            await YieldToUiAsync(initializerName);
+            await YieldToUiAsync();
         }
 
-        private static Task YieldToUiAsync(string stage)
+        private static Task YieldToUiAsync()
         {
             var dispatcher = Application.Current?.Dispatcher;
             if (dispatcher == null || dispatcher.HasShutdownStarted)
@@ -486,11 +445,7 @@ namespace ColorVision
                 return Task.CompletedTask;
             }
 
-            long queuedAt = Stopwatch.GetTimestamp();
-            return dispatcher.InvokeAsync(() =>
-            {
-                log.Info($"Startup UI checkpoint '{stage}' queue took {Stopwatch.GetElapsedTime(queuedAt).TotalMilliseconds:0.###} ms.");
-            }, DispatcherPriority.Background).Task;
+            return dispatcher.InvokeAsync(static () => { }, DispatcherPriority.Background).Task;
         }
 
         private void ShowMainWindowAndClose()
@@ -555,11 +510,9 @@ namespace ColorVision
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 Window mainWindow = MainWindowFactory.Create(MainWindowConfig.Instance.UseCompactMainWindow);
                 trace?.Observe(mainWindow);
-                log.Info($"Main window factory construction took {stopwatch.ElapsedMilliseconds} ms.");
-                stopwatch.Restart();
                 mainWindow.Show();
                 trace?.MarkShowReturned();
-                log.Info($"Main window Show took {stopwatch.ElapsedMilliseconds} ms (before ContentRendered).");
+                log.Info($"Main window creation and Show completed in {stopwatch.ElapsedMilliseconds} ms (before ContentRendered).");
             }
             catch
             {

@@ -41,6 +41,7 @@ namespace ColorVision
     public partial class MainWindow : Window
     {
         private const double RightMenuGlyphFontSize = 15;
+        private const long SlowInitializationLogThresholdMs = 100;
         private const string PinDocumentTabMenuUid = "ColorVision.PinDocumentTab";
         private const string OpenDocumentFolderMenuUid = "ColorVision.OpenDocumentFolder";
         private const string OpenDocumentFolderSeparatorUid = "ColorVision.OpenDocumentFolder.Separator";
@@ -58,11 +59,8 @@ namespace ColorVision
             Stopwatch constructionStopwatch = Stopwatch.StartNew();
             InitializeComponent();
             log.Info($"Main window XAML construction took {constructionStopwatch.ElapsedMilliseconds} ms (includes Initialized event).");
-            constructionStopwatch.Restart();
             DockingManager1.PreviewMouseRightButtonDown += DockingManager1_PreviewMouseRightButtonDown;
             Config.SetWindow(this);
-            log.Info($"Main window saved geometry setup took {constructionStopwatch.ElapsedMilliseconds} ms.");
-            constructionStopwatch.Restart();
 
             var IsAdministrator = Tool.IsAdministrator();
             //Title += $"- {(IsAdministrator ? Properties.Resources.RunAsAdmin : Properties.Resources.NotRunAsAdmin)}";
@@ -74,7 +72,6 @@ namespace ColorVision
             }
             HookUpdateNotification();
             PreviewKeyDown += MainWindow_NewUserGuidePreviewKeyDown;
-            log.Info($"Main window remaining constructor setup took {constructionStopwatch.ElapsedMilliseconds} ms.");
             
         }
 
@@ -175,7 +172,6 @@ namespace ColorVision
         private void Window_Initialized(object sender, EventArgs e)
         {
             Stopwatch initializationStopwatch = Stopwatch.StartNew();
-            Stopwatch phaseStopwatch = Stopwatch.StartNew();
             this.SizeChanged += (s, e) =>
             {
                 UpdateRightMenuVisibility();
@@ -210,7 +206,6 @@ namespace ColorVision
             foreach (var provider in AssemblyHandler.GetInstance().LoadImplementations<IDockPanelProvider>()
                 .OrderBy(p => p.Order))
             {
-                Stopwatch providerStopwatch = Stopwatch.StartNew();
                 try
                 {
                     provider.RegisterPanels();
@@ -219,16 +214,9 @@ namespace ColorVision
                 {
                     log.Warn($"IDockPanelProvider {provider.GetType().Name} failed: {ex.Message}");
                 }
-                finally
-                {
-                    providerStopwatch.Stop();
-                    log.Info($"Dock panel provider {provider.GetType().Name} took {providerStopwatch.ElapsedMilliseconds} ms.");
-                }
             }
-            log.Info($"Main window dock panel registration took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
             // 初始化 DockViewManagerHost，注册 AvalonDock 回调等
-            phaseStopwatch.Restart();
             DockViewManagerHost.Initialize();
 
             // 初始化解决方案项目面板
@@ -238,21 +226,15 @@ namespace ColorVision
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
 
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
-            log.Info($"Main window project tree and device panel attachment took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
             // 加载已保存的布局
-            phaseStopwatch.Restart();
             if (!layoutManager.LoadLayout())
                 layoutManager.ResetLayout();
-            log.Info($"Main window layout restore took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
             // 重新应用主题以修复 AvalonDock 问题，确保所有切换元素使用正确的主题
-            phaseStopwatch.Restart();
             ApplyAvalonDockTheme(ThemeManager.Current.CurrentUITheme);
-            log.Info($"Main window dock theme application took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
             // 将所有已注册的视图显示为文档标签页
-            phaseStopwatch.Restart();
             DockViewManager.ShowAllViews();
 
             HookTerminalPanelActivation();
@@ -263,20 +245,15 @@ namespace ColorVision
                 action();
             }
             WorkspaceManager.DealyLoad.Clear();
-            log.Info($"Main window view activation took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
             CommandBindings.Add(CreateCloseDocumentBinding(DockingManager1));
 
-            phaseStopwatch.Restart();
             MenuManager.GetInstance().LoadMenuForWindow(MenuItemConstants.MainWindowTarget, Menu1);
-            log.Info($"Main window menu phase took {phaseStopwatch.ElapsedMilliseconds} ms.");
-            phaseStopwatch.Restart();
             this.LoadHotKeyFromAssembly();
             _ = new RoutedCommandHotkeyGuard(this, HotkeyService.GetInstance(),
                 [ApplicationCommands.Open, ApplicationCommands.Save, ApplicationCommands.SaveAs,
                  ApplicationCommands.Close, SolutionWorkspaceCommands.OpenFolder],
                 [new Hotkey(Key.F, ModifierKeys.Control)]);
-            log.Info($"Main window hotkey phase took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
             // 监听 DockingManager 活动文档切换和状态变化，更新视图管理器并通知视图变更
             DockingManager1.ActiveContentChanged += (s, e) =>
@@ -303,9 +280,7 @@ namespace ColorVision
                 Interaction.GetBehaviors(StackPanelSPD).Add(fluidMoveBehavior);
             }));
 
-            phaseStopwatch.Restart();
             InitRightMenuItemPanel();
-            log.Info($"Main window right-side menu phase took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
             this.AllowDrop = true;
             this.Drop += MainWindow_Drop;
@@ -467,10 +442,7 @@ namespace ColorVision
                 ApplicationSnapshotService.Instance.ScheduleHealthyStartupAutomaticSnapshot();
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
-                Stopwatch stopwatch = Stopwatch.StartNew();
                 StatusBarManager.GetInstance().Init(StatusBarGrid, MenuItemConstants.MainWindowTarget);
-                stopwatch.Stop();
-                log.Info($"Main window status bar materialized in {stopwatch.ElapsedMilliseconds} ms after first render.");
             }), DispatcherPriority.Background);
             ScheduleNewUserGuideAfterFirstRender();
         }
@@ -479,7 +451,6 @@ namespace ColorVision
         {
             Stopwatch totalStopwatch = Stopwatch.StartNew();
             List<IMainWindowInitialized> initializers = AssemblyHandler.GetInstance().LoadImplementations<IMainWindowInitialized>();
-            log.Info($"Main window initializer discovery took {totalStopwatch.ElapsedMilliseconds} ms. Count={initializers.Count}.");
             int failures = 0;
             foreach (var componentInitialize in initializers.OrderBy(a => a.Order))
             {
@@ -497,7 +468,8 @@ namespace ColorVision
                 finally
                 {
                     stopwatch.Stop();
-                    log.Info($"Main window initializer {componentInitialize.Name} took {stopwatch.ElapsedMilliseconds} ms.");
+                    if (stopwatch.ElapsedMilliseconds >= SlowInitializationLogThresholdMs)
+                        log.Info($"Slow main-window initializer {componentInitialize.GetType().Name} completed in {stopwatch.ElapsedMilliseconds} ms.");
                 }
             }
             log.Info($"Main window initializers completed in {totalStopwatch.ElapsedMilliseconds} ms. Count={initializers.Count}, Failures={failures}.");

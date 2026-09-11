@@ -80,21 +80,18 @@ related: ["platform.architecture", "platform.startup-integrity", "delivery.updat
 
 | 日志计时 | 覆盖范围与限制 |
 | --- | --- |
-| `StopAndReport` | 正常主程序路径从 `ProgramTimer.Start` 计时，到主窗口首次 `ContentRendered` 停止；包含启动窗口之前的基础装配、实例交接和插件阶段，也包含 UI 调度与首帧前执行的工作，不代表所有异步主窗口初始化器或隐藏详情已经完成 |
-| `Initializer … took … ms` | 当前初始化器的等待与执行时间；不覆盖初始化器发现、构造及所有步骤之间的工作，不能直接相加替代总首帧时间 |
+| `Startup to first render completed` | 由 `ProgramTimer.StopAndReport` 输出；正常主程序路径从 `ProgramTimer.Start` 计时，到主窗口首次 `ContentRendered` 停止，包含基础装配、实例交接、插件、初始化器和首帧前 UI 工作，不代表所有异步主窗口初始化器或隐藏详情已经完成 |
+| `Startup core setup completed` | 覆盖启动参数、启动记录、内置模块、主配置、日志、主题与语言的基础装配；更新交接或独立文件提前返回时可能没有该日志 |
+| `Startup RBAC, MCP and LAN host setup` / `Startup plugin loading` | 分别覆盖运行宿主装配和外部插件加载；插件逐项日志保留英文动作，插件名称按清单原文输出，不强制翻译 |
+| `Slow startup initializer … completed` | 只输出耗时至少 `100 ms` 的 `IInitializer`；短初始化器不再逐项写开始、线程、队列和完成日志，失败仍单独记录 Error |
 | `Device display controls generated` | `Creation` 是当前显示卡片生成调用的时间，`PanelBuild` 是替换显示集合的时间；未在该调用内初始化的详情内容不计入这两个值 |
 | `Device view initialized. View=…, Duration=…ms.` | 一种详情实例首次成功创建 XAML 和初始化内容的时间；可能发生在首帧前，也可能由首次切换详情或收到结果触发，应同时核对它与 `StopAndReport` 的先后 |
-| `Startup … took … ms` | 分别记录 App 构造与应用资源加载、基础配置、主题、语言、单实例协调、运维宿主、插件、WinForms、启动窗口构造与 Show；只记录边界内工作，启动恢复对话框及进程进入托管入口前的工作需另行区分 |
-| `Startup splash ContentRendered` / `Startup splash ApplicationIdle handoff` | 前者标记启动窗口的首次呈现事件；后者记录事件处理器等待 `ApplicationIdle` 后恢复执行的时间。它们不是主窗口首帧或初始化器执行时间 |
-| `Startup worker queue` | 从提交 `Task.Run` 到后台委托开始的等待，不包含随后发现、构造或执行初始化器的时间。此处及单项初始化开始日志中的 `UI` 表示当前入口是否位于 UI 线程，不表示初始化器内部没有 Dispatcher 调用 |
-| `Startup prerequisite lanes started/completed` | 标记 MySQL、方案管理器、MQTT→RC 三路前置工作的共同边界；完成耗时包含三路汇合后按需执行的进度 UI 检查点，不能与各路或单项耗时重复相加 |
-| `Startup connectivity initializer lane` / `Startup workspace UI barrier` | 前者覆盖 MQTT 后 RC 的顺序执行，后者只记录方案初始化器返回后等待既有 `Normal` Dispatcher 回调的时间；两者均不是设备或工作区业务就绪证明 |
 | `Startup initializers completed … Summed=…, ParallelOverlap=…` | `completed` 是整个初始化器调度墙钟时间，`Summed` 是单项耗时之和，`ParallelOverlap` 是两者的非负差；UI 检查点和调度间隙只进入墙钟时间，因此该差值用于定位并行，不等于首帧节省量 |
-| `Startup UI checkpoint '…' queue` | 从投递 `Background` 回调到该 UI 回调进入时的等待；不包含回调完成后后台 continuation 恢复的时间，也不证明队列外的异步任务完成 |
-| `Startup main window queue` | 从投递 `ContextIdle` 回调到该 UI 回调进入时的等待，不包含随后主窗口的构造、Show 和首次呈现 |
-| 主窗口构造分段 | `Main window XAML construction` 包含 Initialized 事件；后者另有停靠登记、项目树/设备挂载、布局、主题、视图、菜单等子段。`saved geometry setup` 只记录窗口几何事件登记，实际恢复发生在 Show 内的 SourceInitialized；`remaining constructor setup` 定位构造尾部。父子段不可重复相加 |
-| `Main window Show` / `Compact title bar …` | Show 内包含创建 HWND、SourceInitialized 和紧凑标题栏附加；返回不代表 ContentRendered 已发生。标题栏日志细分原生附加与完整处理，不能把此前所有等待归给标题栏 |
-| `Main window initializers completed … Count=…, Failures=…` | 异步主窗口初始化链的实际结束与捕获失败数，包含发现和串行等待时间；可早于或晚于首帧。0 次捕获失败不证明外部设备或服务业务健康 |
+| `Main window XAML construction` / `Main window initialized event completed` | 前者包含 Initialized 事件；后者覆盖停靠面板、工作区、布局、主题、菜单、热键和右侧入口的共同装配。日常日志不再输出这些内部子步骤及各 provider 的成功耗时 |
+| `Main window creation and Show` / `Compact title bar attachment completed` | 前者覆盖工厂创建与 `Show` 返回，后者只覆盖紧凑标题栏附加；返回均不代表 `ContentRendered` 已发生 |
+| `Slow main-window initializer … completed` / `Main window initializers completed` | 单项只记录至少 `100 ms` 的主窗口初始化器，名称使用类型名；总日志记录墙钟时间、数量和捕获失败数。0 次捕获失败不证明外部设备或服务业务健康 |
+
+默认启动日志采用上述摘要、慢项、业务健康结果和失败记录；启动页队列、Dispatcher 检查点、前置并行 lane 的开始/结束、短初始化器、布局成功、面板成功注册和 ColorVision 调度器包装层的重复成功信息不再写入 Info。第三方组件可继续输出自身日志。需要线程和 Dispatcher 级细分时使用下述显式启动跟踪，而不是恢复常驻噪声日志。
 
 `ContentRendered` 是 WPF 派发的事件入口，通常以 `Input` 优先级运行；它是统一比较启动的代理指标，不是显示器或 GPU 实际呈现的时间戳。提高回调优先级、改变排队顺序或把工作移到回调之后，不能单独作为启动提速的证据。
 

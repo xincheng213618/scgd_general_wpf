@@ -35,7 +35,6 @@ namespace ColorVision.Scheduler.Data
 
                 using var db = CreateClient();
                 db.CodeFirst.InitTables<JobExecutionRecord>();
-                _logger.Info($"Scheduler database initialized: {DbPath}");
             }
             catch (Exception ex)
             {

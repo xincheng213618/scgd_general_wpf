@@ -172,7 +172,7 @@ namespace ColorVision.UI.Plugins
                         if (string.IsNullOrWhiteSpace(manifest.Id))
                         {
                             RecordLoadFailure();
-                            log.Warn(string.Format(Properties.Resources.PluginMissingId, directory));
+                            log.Warn($"Plugin manifest is missing an Id: '{manifestPath}'.");
                             continue;
                         }
 
@@ -245,7 +245,7 @@ namespace ColorVision.UI.Plugins
                                             if (!File.Exists(expectedDll))
                                             {
                                                 depsOk = false;
-                                                log.Warn(string.Format(Properties.Resources.DependencyDllNotFound, dep.Key, expectedDll));
+                                                log.Warn($"Plugin dependency '{dep.Key}' was not found at '{expectedDll}'.");
                                                 break;
                                             }
 
@@ -259,7 +259,7 @@ namespace ColorVision.UI.Plugins
                                                 if (actualVersion == null || actualVersion < requiredVersion)
                                                 {
                                                     depsOk = false;
-                                                    log.ErrorExt(string.Format(Properties.Resources.DependencyVersionInsufficient, dep.Key, requiredVersion, actualVersion));
+                                                    log.ErrorExt($"Plugin dependency '{dep.Key}' requires version {requiredVersion}, but version {actualVersion} is installed.");
                                                     MessageBox.Show(string.Format(Properties.Resources.DependencyVersionInsufficient, dep.Key, requiredVersion, actualVersion));
                                                     break;
                                                 }
@@ -267,7 +267,7 @@ namespace ColorVision.UI.Plugins
                                             catch (Exception ex)
                                             {
                                                 depsOk = false;
-                                                log.Warn(string.Format(Properties.Resources.DependencyCheckException, dep.Key, ex.Message));
+                                                log.Warn($"Plugin dependency '{dep.Key}' could not be inspected: {ex.Message}");
                                                 MessageBox.Show(string.Format(Properties.Resources.DependencyCheckException, dep.Key, ex.Message));
                                                 break;
                                             }
@@ -285,7 +285,7 @@ namespace ColorVision.UI.Plugins
                       
                         if (IsPluginAssemblyAvailable(dllPath))
                         {
-                            log.Info(string.Format(Properties.Resources.LoadingPlugin, manifest.Name));
+                            log.Info($"Loading plugin: {manifest.Name}");
 
                             pluginInfo.Assembly = Assembly.LoadFrom(dllPath);
                             moduleCatalog?.AddPlugin(manifest.Id, pluginInfo.Assembly);
@@ -306,7 +306,7 @@ namespace ColorVision.UI.Plugins
                         else
                         {
                             RecordLoadFailure();
-                            log.Warn(string.Format(Properties.Resources.PluginDllNotFound, dllPath));
+                            log.Warn($"Plugin assembly was not found: '{dllPath}'.");
                         }
                     }
                     else
@@ -316,12 +316,12 @@ namespace ColorVision.UI.Plugins
                         {
                             Assembly assembly = Assembly.LoadFrom(dllPath);
                             moduleCatalog?.AddPlugin(dirName, assembly);
-                            log.Info(string.Format(Properties.Resources.LoadedPluginWithoutManifest, dllPath));
+                            log.Info($"Loaded plugin without a manifest: {dllPath}");
                         }
                         else
                         {
                             RecordLoadFailure();
-                            log.Warn(string.Format(Properties.Resources.PluginDllNotFound, dllPath));
+                            log.Warn($"Plugin assembly was not found: '{dllPath}'.");
                         }
                     }
                 }

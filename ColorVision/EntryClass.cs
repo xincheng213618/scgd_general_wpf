@@ -58,12 +58,8 @@ namespace ColorVision
             }
 
             App app;
-            Stopwatch applicationStopwatch = Stopwatch.StartNew();
             app = new App();
-            log.Info($"Startup application construction took {applicationStopwatch.ElapsedMilliseconds} ms.");
-            applicationStopwatch.Restart();
             app.InitializeComponent();
-            log.Info($"Startup application resources took {applicationStopwatch.ElapsedMilliseconds} ms.");
             app.Run();
         }
 

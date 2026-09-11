@@ -23,8 +23,6 @@ namespace ColorVision.UI.CUDA
             Config.IsCudaSupported = CheckCudaSupport();
             if (Config.IsCudaSupported)
             {
-                log.Info(Properties.Resources.CheckingCUDASupport);
-
                 Config.DeviceNames = new string[Config.DeviceCount];
                 Config.ComputeCapabilities = new (int Major, int Minor)[Config.DeviceCount];
                 Config.TotalMemories = new ulong[Config.DeviceCount];
@@ -46,16 +44,15 @@ namespace ColorVision.UI.CUDA
                 {
                     for (int i = 0; i < Config.DeviceCount; i++)
                     {
-                        log.Info($"Device {i}:");
-                        log.Info($"Name: {Config.DeviceNames[i]}");
-                        log.Info($"Compute Capability: {Config.ComputeCapabilities[i].Major}.{Config.ComputeCapabilities[i].Minor}");
-                        log.Info($"Total Memory: {Config.TotalMemories[i] / (1024.0 * 1024.0 * 1024.0):F0} GB");
+                        log.Info($"CUDA device detected. Index={i}; Name={Config.DeviceNames[i]}; " +
+                            $"ComputeCapability={Config.ComputeCapabilities[i].Major}.{Config.ComputeCapabilities[i].Minor}; " +
+                            $"TotalMemory={Config.TotalMemories[i] / (1024.0 * 1024.0 * 1024.0):F0} GB.");
                     }
                 }
             }
             else
             {
-                log.Info("CUDA is either not supported or not enabled.");
+                log.Info("CUDA is not available.");
             }
 
         }

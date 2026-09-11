@@ -18,10 +18,7 @@ namespace ColorVision.Engine.MQTT
         public override int Order => 2;
         public override async Task InitializeAsync()
         {
-            log.Info("Checking the MQTT server connection.");
-
             bool isConnect = await MQTTControl.GetInstance().Connect();
-            log.Info($"MQTT server connection {(MQTTControl.GetInstance().IsConnect ? "succeeded" : "failed")}.");
             if (isConnect) return;
 
             if (MQTTControl.Config.Host == "127.0.0.1" || MQTTControl.Config.Host == "localhost")

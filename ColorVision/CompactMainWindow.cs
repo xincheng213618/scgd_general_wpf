@@ -70,7 +70,6 @@ public sealed class CompactMainWindow : MainWindow
             }
 
             _compactTitleBar = chrome;
-            log.Info($"Compact title bar native setup took {stopwatch.ElapsedMilliseconds} ms.");
             // The normal shell deliberately overlaps its menu row by 3 DIP. A glass caption
             // needs a strict content boundary so the workspace cannot paint over native buttons.
             DockingManager1.Margin = new Thickness(0);
@@ -84,7 +83,6 @@ public sealed class CompactMainWindow : MainWindow
             foreach (Button button in RightMenuItemPanel.Children.OfType<Button>())
                 CompactTitleBarActions.ConfigureButton(button, actionStyle);
             Loaded += CompactTitleBarLoaded;
-            log.Info("Compact title bar attached with native caption buttons.");
         }
         catch (Exception ex)
         {

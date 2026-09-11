@@ -1,11 +1,40 @@
 using ColorVision.Engine.Services;
 using ColorVision.UI.LogImp;
+using Newtonsoft.Json.Linq;
 using System.IO;
 
 namespace ColorVision.UI.Tests
 {
     public sealed class FeedbackLogCollectorTests
     {
+        [Fact]
+        public void ConfigurationSnapshotCollectorRedactsSecretsAndKeepsGuideState()
+        {
+            JObject source = JObject.Parse("""
+            {
+              "MainWindowConfig": { "HasShownNewUserGuide": true },
+              "CopilotConfig": { "ApiKey": "api-secret", "RequestTokenBudget": 1048576, "McpBearerToken": "bearer-secret" },
+              "MySqlConfig": { "Host": "127.0.0.1", "UserPwd": "db-secret" },
+              "RCServiceConfig": { "AppSecret": "app-secret", "ServiceToken": "service-secret" },
+              "DownloadFileConfig": { "Authorization": "user:password" },
+              "Nested": [{ "ConnectionString": "server=secret" }]
+            }
+            """);
+
+            JObject snapshot = ConfigurationSnapshotCollector.CreateRedactedSnapshot(source);
+
+            Assert.True(snapshot["MainWindowConfig"]!.Value<bool>("HasShownNewUserGuide"));
+            Assert.Equal(1048576, snapshot["CopilotConfig"]!.Value<int>("RequestTokenBudget"));
+            Assert.Equal("127.0.0.1", snapshot["MySqlConfig"]!.Value<string>("Host"));
+            Assert.Equal("[REDACTED]", snapshot["CopilotConfig"]!.Value<string>("ApiKey"));
+            Assert.Equal("[REDACTED]", snapshot["CopilotConfig"]!.Value<string>("McpBearerToken"));
+            Assert.Equal("[REDACTED]", snapshot["MySqlConfig"]!.Value<string>("UserPwd"));
+            Assert.Equal("[REDACTED]", snapshot["RCServiceConfig"]!.Value<string>("AppSecret"));
+            Assert.Equal("[REDACTED]", snapshot["RCServiceConfig"]!.Value<string>("ServiceToken"));
+            Assert.Equal("[REDACTED]", snapshot["DownloadFileConfig"]!.Value<string>("Authorization"));
+            Assert.Equal("[REDACTED]", snapshot["Nested"]![0]!.Value<string>("ConnectionString"));
+        }
+
         [Fact]
         public void AppLogCollectorDefaultsToSevenDays()
         {

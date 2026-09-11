@@ -13,7 +13,6 @@ namespace ColorVision
 
         public override Task Initialize()
         {
-            log.Info("CommadnInitialized");
             try
             {
                 var parser = ArgumentParser.GetInstance();
