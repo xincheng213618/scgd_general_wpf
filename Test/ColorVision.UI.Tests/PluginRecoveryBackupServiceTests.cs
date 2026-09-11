@@ -3,6 +3,7 @@ using ColorVision.UI.Plugins;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace ColorVision.UI.Tests
 {
@@ -67,6 +68,101 @@ namespace ColorVision.UI.Tests
 
             Assert.Equal(first.BackupDirectory, second.BackupDirectory);
             Assert.Single(Directory.EnumerateDirectories(Path.GetDirectoryName(first.BackupDirectory)!, "*", SearchOption.TopDirectoryOnly));
+        }
+
+        [Fact]
+        public void UnchangedStartupSkipsBackupAcrossProcessesWithoutOpeningPayloadFiles()
+        {
+            string pluginDirectory = CreatePlugin(Path.Combine(_tempDirectory, "Install"), "third.party", "1.0", "payload");
+            string backupRoot = Path.Combine(_tempDirectory, "Backups");
+            PluginRecoveryBackupService service = new(backupRoot, "1.4.14.48");
+            Assert.True(service.TryCreateHealthyStartupBackup("third.party", pluginDirectory));
+            PluginRecoveryBackupInfo backup = service.GetAvailableBackup("third.party", pluginDirectory)!;
+
+            using FileStream lockedSource = new(Path.Combine(pluginDirectory, "payload.txt"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            using FileStream lockedBackup = new(Path.Combine(backup.PayloadDirectory, "payload.txt"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            PluginRecoveryBackupService restartedService = new(backupRoot, "1.4.14.48");
+
+            Assert.False(restartedService.TryCreateHealthyStartupBackup("third.party", pluginDirectory));
+            Assert.Single(Directory.EnumerateDirectories(Path.GetDirectoryName(backup.BackupDirectory)!));
+        }
+
+        [Theory]
+        [InlineData("1.4.14.49", "1.0")]
+        [InlineData("1.4.14.48", "2.0")]
+        [InlineData("1.4.14.49", "2.0")]
+        public void ApplicationOrPluginUpdateCreatesOneNewBackup(string applicationVersion, string pluginVersion)
+        {
+            string programDirectory = Path.Combine(_tempDirectory, "Install");
+            string pluginDirectory = CreatePlugin(programDirectory, "third.party", "1.0", "before update");
+            string backupRoot = Path.Combine(_tempDirectory, "Backups");
+            PluginRecoveryBackupService service = new(backupRoot, "1.4.14.48");
+            Assert.True(service.TryCreateHealthyStartupBackup("third.party", pluginDirectory));
+
+            CreatePlugin(programDirectory, "third.party", pluginVersion, "after update");
+            PluginRecoveryBackupService updatedService = new(backupRoot, applicationVersion);
+            Assert.True(updatedService.TryCreateHealthyStartupBackup("third.party", pluginDirectory));
+            PluginRecoveryBackupInfo backup = updatedService.GetAvailableBackup("third.party", pluginDirectory)!;
+            Assert.Equal(applicationVersion, backup.ApplicationVersion);
+            Assert.Equal(pluginVersion, backup.Version);
+            Assert.Equal("after update", File.ReadAllText(Path.Combine(backup.PayloadDirectory, "payload.txt")));
+
+            PluginRecoveryBackupService restartedService = new(backupRoot, applicationVersion);
+            Assert.False(restartedService.TryCreateHealthyStartupBackup("third.party", pluginDirectory));
+            Assert.Equal(2, Directory.EnumerateDirectories(Path.GetDirectoryName(backup.BackupDirectory)!).Count());
+        }
+
+        [Fact]
+        public void SkippedStartupDoesNotTreatCorruptCandidateAsVerifiedForUpdate()
+        {
+            string pluginDirectory = CreatePlugin(Path.Combine(_tempDirectory, "Install"), "third.party", "1.0", "payload");
+            string backupRoot = Path.Combine(_tempDirectory, "Backups");
+            PluginRecoveryBackupService service = new(backupRoot, "1.4.14.48");
+            PluginRecoveryBackupInfo original = service.CreateVerifiedBackup("third.party", pluginDirectory)!;
+            File.WriteAllText(Path.Combine(original.PayloadDirectory, "payload.txt"), "corrupted");
+
+            PluginRecoveryBackupService restartedService = new(backupRoot, "1.4.14.48");
+            Assert.False(restartedService.TryCreateHealthyStartupBackup("third.party", pluginDirectory));
+            Assert.Null(restartedService.GetAvailableBackup("third.party", pluginDirectory));
+            PluginRecoveryBackupInfo replacement = restartedService.EnsureCurrentVersionBackup("third.party", pluginDirectory)!;
+            Assert.NotEqual(original.BackupDirectory, replacement.BackupDirectory);
+            Assert.Equal("payload", File.ReadAllText(Path.Combine(replacement.PayloadDirectory, "payload.txt")));
+        }
+
+        [Fact]
+        public void LegacyBackupRemainsReadableAndGetsOneApplicationVersionBaseline()
+        {
+            string pluginDirectory = CreatePlugin(Path.Combine(_tempDirectory, "Install"), "third.party", "1.0", "payload");
+            string backupRoot = Path.Combine(_tempDirectory, "Backups");
+            PluginRecoveryBackupService service = new(backupRoot, "1.4.14.48");
+            PluginRecoveryBackupInfo original = service.CreateVerifiedBackup("third.party", pluginDirectory)!;
+            string metadataPath = Path.Combine(original.BackupDirectory, "backup.json");
+            JsonObject metadata = JsonNode.Parse(File.ReadAllText(metadataPath))!.AsObject();
+            Assert.True(metadata.Remove("ApplicationVersion"));
+            File.WriteAllText(metadataPath, metadata.ToJsonString());
+
+            PluginRecoveryBackupService restartedService = new(backupRoot, "1.4.14.48");
+            Assert.Equal(string.Empty, restartedService.ReadBackupMetadata(original.BackupDirectory).ApplicationVersion);
+            Assert.True(restartedService.TryCreateHealthyStartupBackup("third.party", pluginDirectory));
+            Assert.False(new PluginRecoveryBackupService(backupRoot, "1.4.14.48").TryCreateHealthyStartupBackup("third.party", pluginDirectory));
+            Assert.Equal(2, Directory.EnumerateDirectories(Path.GetDirectoryName(original.BackupDirectory)!).Count());
+        }
+
+        [Fact]
+        public void FailedStartupBackupCanBeRetriedAfterRestart()
+        {
+            string pluginDirectory = CreatePlugin(Path.Combine(_tempDirectory, "Install"), "third.party", "1.0", "payload");
+            string backupRoot = Path.Combine(_tempDirectory, "Backups");
+            PluginRecoveryBackupService service = new(backupRoot, "1.4.14.48");
+            using (FileStream lockedSource = new(Path.Combine(pluginDirectory, "payload.txt"), FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                Assert.Throws<IOException>(() => service.TryCreateHealthyStartupBackup("third.party", pluginDirectory));
+                Assert.Null(service.GetRecoveryBackupCandidate("third.party", pluginDirectory));
+            }
+
+            PluginRecoveryBackupService restartedService = new(backupRoot, "1.4.14.48");
+            Assert.True(restartedService.TryCreateHealthyStartupBackup("third.party", pluginDirectory));
+            Assert.NotNull(restartedService.GetAvailableBackup("third.party", pluginDirectory));
         }
 
         [Fact]

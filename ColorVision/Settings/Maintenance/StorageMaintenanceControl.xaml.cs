@@ -4,6 +4,9 @@ using ColorVision.Solution.MultiImageViewer;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
+using ColorVision.UI.HotKey;
+using ColorVision.UI.Languages;
+using ColorVision.UI.Serach;
 using ColorVision.Update;
 using System;
 using System.Collections.Generic;
@@ -21,8 +24,8 @@ public partial class StorageMaintenanceControl : UserControl
 {
     public static IReadOnlyList<string> ResetSectionNames { get; } = Array.AsReadOnly(new[]
     {
-        "ThemeConfig", "LanguageConfig", "MainWindowConfig", "HotKeyConfig", "SearchConfig", "MultiImageViewerConfig"
-    });
+        typeof(ThemeConfig), typeof(LanguageConfig), typeof(MainWindowConfig), typeof(HotKeyConfig), typeof(SearchConfig), typeof(MultiImageViewerConfig)
+    }.SelectMany(type => new[] { type.FullName!, type.Name }).Distinct(StringComparer.Ordinal).ToArray());
     public StorageMaintenanceViewModel ViewModel { get; }
     private readonly ConfigHandler? _configHandler;
     private Window? _owner;

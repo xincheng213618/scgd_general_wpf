@@ -70,7 +70,7 @@ public partial class MainWindow
                 if (!configHandler.TrySave(Config, out string errorMessage))
                     throw new InvalidOperationException(errorMessage);
 
-                log.Info($"Automatic new-user guide state persisted; showing welcome. ConfigPath='{configHandler.ConfigFilePath}'; HasShownNewUserGuide={Config.HasShownNewUserGuide}.");
+                log.Info($"Automatic new-user guide state persisted; showing welcome. ConfigPath='{configHandler.ConfigFilePath}'; Section='{typeof(MainWindowConfig).FullName}'; HasShownNewUserGuide={Config.HasShownNewUserGuide}.");
                 ShowNewUserGuide();
             }
             catch (Exception ex)

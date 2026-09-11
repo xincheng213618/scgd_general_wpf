@@ -398,6 +398,24 @@
   <data name="PackLogs" xml:space="preserve">
     <value>打包日志</value>
   </data>
+  <data name="ClearDiagnostics" xml:space="preserve">
+    <value>清理历史文件</value>
+  </data>
+  <data name="ClearDiagnosticsConfirm" xml:space="preserve">
+    <value>将清理旧的 ColorVision 应用日志、更新日志、服务日志和崩溃转储。当前正在使用的日志以及配置、数据库和附件不会删除。是否继续？</value>
+  </data>
+  <data name="ClearDiagnosticsTitle" xml:space="preserve">
+    <value>清理历史诊断文件</value>
+  </data>
+  <data name="ClearingDiagnostics" xml:space="preserve">
+    <value>正在清理历史诊断文件...</value>
+  </data>
+  <data name="ClearDiagnosticsCompleted" xml:space="preserve">
+    <value>已清理 {0} 个历史诊断文件，释放 {1}；跳过 {2} 个正在使用或无权限的文件。</value>
+  </data>
+  <data name="ClearDiagnosticsNone" xml:space="preserve">
+    <value>没有可清理的历史诊断文件。</value>
+  </data>
   <data name="ScreenshotCaptured" xml:space="preserve">
     <value>截图已添加</value>
   </data>

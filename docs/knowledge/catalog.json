@@ -9381,6 +9381,8 @@
         "配置导出缺少项目",
         "配置重载旧引用",
         "保存后发布失败",
+        "配置同名覆盖",
+        "完整类型名配置",
         "ConfigHandler",
         "ConfigService",
         "SaveConfigs",
@@ -9402,6 +9404,7 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ConfigHandlerPersistenceTests.cs",
+        "Test/ColorVision.UI.Tests/ConfigTypeNamePersistenceTests.cs",
         "Test/ColorVision.UI.Tests/ConfigServiceAdaptersTests.cs"
       ],
       "related": [

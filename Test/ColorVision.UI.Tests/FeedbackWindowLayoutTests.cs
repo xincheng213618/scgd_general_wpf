@@ -27,7 +27,7 @@ public sealed class FeedbackWindowLayoutTests
             Assert.Equal(DesktopResources.FeedbackDiagnosticsHint, Element<TextBlock>(window, "DiagnosticsHintText").Text);
             AssertSummaryMatchesSelection(window);
 
-            foreach (string name in new[] { "PackLogsButton", "AddFileButton", "AddScreenshotButton", "SendButton" })
+            foreach (string name in new[] { "ClearDiagnosticsButton", "PackLogsButton", "AddFileButton", "AddScreenshotButton", "SendButton" })
                 Assert.True(Element<Button>(window, name).IsEnabled);
 
             Assert.True(Element<Button>(window, "SendButton").IsDefault);

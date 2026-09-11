@@ -5,7 +5,7 @@ namespace ColorVision.UI.Desktop.Diagnostics
     /// <summary>
     /// Adds recent WER dump files to the feedback diagnostics package only when explicitly selected.
     /// </summary>
-    public sealed class CrashDumpFileCollector : IFeedbackLogCollector
+    public sealed class CrashDumpFileCollector : IFeedbackLogCollector, IFeedbackDiagnosticCleanupSource
     {
         private const long MaxDumpFileSize = 100L * 1024 * 1024;
 
@@ -53,6 +53,35 @@ namespace ColorVision.UI.Desktop.Diagnostics
             }
 
             return results;
+        }
+
+        public IEnumerable<string> GetHistoricalDiagnosticFiles(DateTime preserveFromUtc)
+        {
+            CrashDumpConfiguration configuration = new();
+            if (string.IsNullOrWhiteSpace(configuration.DumpFolder) || !Directory.Exists(configuration.DumpFolder))
+                return [];
+
+            try
+            {
+                return new DirectoryInfo(configuration.DumpFolder)
+                    .EnumerateFiles("*.dmp", SearchOption.TopDirectoryOnly)
+                    .Where(file => file.LastWriteTimeUtc < preserveFromUtc)
+                    .Where(file => IsColorVisionDump(file.Name, configuration.ProcessExecutableName))
+                    .Select(file => file.FullName)
+                    .ToArray();
+            }
+            catch
+            {
+                return [];
+            }
+        }
+
+        private static bool IsColorVisionDump(string fileName, string processExecutableName)
+        {
+            string processName = Path.GetFileNameWithoutExtension(processExecutableName);
+            return fileName.StartsWith($"{processExecutableName}.", StringComparison.OrdinalIgnoreCase)
+                || fileName.StartsWith($"{processName}_", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(fileName, $"{processName}.dmp", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

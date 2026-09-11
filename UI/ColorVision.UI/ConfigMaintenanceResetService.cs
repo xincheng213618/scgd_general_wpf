@@ -212,8 +212,9 @@ public sealed class ConfigMaintenanceResetService
         foreach (string section in sections)
         {
             if (string.IsNullOrEmpty(section) || section.Length > 128
-                || !(char.IsAsciiLetter(section[0]) || section[0] == '_')
-                || section.Any(c => !(char.IsAsciiLetterOrDigit(c) || c == '_')))
+                || section.Split('.', '+').Any(part => part.Length == 0
+                    || !(char.IsAsciiLetter(part[0]) || part[0] == '_')
+                    || part.Any(c => !(char.IsAsciiLetterOrDigit(c) || c == '_'))))
                 throw new ArgumentException("Reset entries must be explicit configuration section names, not paths or patterns.", nameof(sectionNames));
         }
         return sections;

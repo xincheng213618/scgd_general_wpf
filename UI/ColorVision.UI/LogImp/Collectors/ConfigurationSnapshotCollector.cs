@@ -84,6 +84,10 @@ namespace ColorVision.UI.LogImp
 
         private static bool IsSensitivePropertyName(string propertyName)
         {
+            // Also recognize qualified section names without weakening dotted secret names.
+            int separator = propertyName.LastIndexOf('.');
+            if (separator >= 0 && IsSensitivePropertyName(propertyName[(separator + 1)..]))
+                return true;
             string normalized = new(propertyName
                 .Where(char.IsLetterOrDigit)
                 .Select(char.ToLowerInvariant)

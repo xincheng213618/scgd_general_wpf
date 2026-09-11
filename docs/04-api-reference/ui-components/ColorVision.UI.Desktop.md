@@ -38,7 +38,7 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 | 第三方应用 | `SystemAppProvider`、`CustomAppProvider`、`ThirdPartyAppsWindow` | 系统工具、自定义应用和磁盘 Treemap 入口 |
 | 主程序工具贡献 | `ColorVision/ToolPlugins/ThirdPartyApps/` | 通过 `IThirdPartyAppProvider` 向第三方应用窗口补充主程序工具；“上网网卡选择”可读取 IPv4、DNS、网关和 Metric，修改所选接口的 Metric，或将 DNS 设为 `114.114.114.114` 后刷新缓存 |
 | 崩溃诊断 | `Diagnostics/CrashDumpSettingsControl`、`CrashDumpConfiguration` | 通过通用属性反射生成 WER LocalDumps 设置，由后台特权服务写入 HKLM；支持手动保存当前进程 Dump 和反馈包收集 |
-| 反馈诊断 | `Feedback/`、`Feedback/Collectors/WindowsEventLogCollector`、`ColorVision.UI/LogImp/Collectors/ConfigurationSnapshotCollector` | 打包应用日志、系统信息、脱敏配置快照、Dump 和 Windows Application/System 警告或错误 |
+| 反馈诊断 | `Feedback/`、`Feedback/Collectors/WindowsEventLogCollector`、`ColorVision.UI/LogImp/Collectors/ConfigurationSnapshotCollector` | 打包应用日志、系统信息、脱敏配置快照、Dump 和 Windows Application/System 警告或错误；可从反馈窗口清理旧的应用、更新、服务日志和 ColorVision Dump |
 | 诊断窗口 | `ViewDllVersionsWindow` | 查看已加载程序集版本、产品版本和路径 |
 
 应用与工具窗口使用与更新、恢复窗口一致的主题资源，顶部提供搜索、添加应用、添加快捷脚本和刷新入口；分类以可换行的标签展示，应用以图标与名称组成的紧凑卡片展示。双击启动、右键操作、分类过滤与权限过滤沿用原入口；深浅主题同时覆盖窗口背景、文字和选择状态。
@@ -62,6 +62,8 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 
 默认选中的配置收集器把当前 `ConfigHandler.ConfigFilePath` 读取为 JSON，在反馈 ZIP 中写为 `Config/ColorVisionConfig.json`。它保留 `MainWindowConfig` 等诊断字段，但递归遮盖名称表示密码、Token、Secret、API Key、连接字符串、凭据或 Cookie 的值；原始配置文件不直接进入反馈包。
 
+“清理历史文件”先要求用户确认，再调用实现 `IFeedbackDiagnosticCleanupSource` 的诊断来源。应用和服务日志保留各活动目录中最新的文件，其他来源只返回点击清理前已经存在的历史文件；删除失败的占用或无权限文件会计入跳过数量。清理仅删除来源明确声明的文件，不删除目录、配置、数据库、反馈附件或已经打包的 ZIP；共享的 WER Dump 目录中也只匹配当前 ColorVision 进程命名的 `.dmp`。
+
 ## 新增功能检查
 
 窗口能打开只证明入口可用，不等于[配置已持久化和发布](./configuration.md)、[安装替换成功](../../02-developer-guide/plugin-development/getting-started.md)或插件已加载。观察下载日志、目标路径和包版本是诊断；下载替换、安装更新、修改配置和系统状态需要相应授权，不因为“验证”而自动执行。
@@ -73,6 +75,7 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 | 新增市场/下载能力 | 核对任务结果、目标文件及服务提供的完整性/版本校验；下载成功不等于宿主已加载插件，装载问题继续查 PluginLoader 与 manifest。WebView2、Markdown CSS、`aria2c.exe`、目录权限和错误提示分别验证 |
 | 新增第三方应用入口 | 路径、权限、图标、分组、右键入口和不存在时的提示都验证 |
 | 修改崩溃诊断 | 普通用户通过 `ColorVisionServiceHost` 写入/清除 HKLM；手动保存不提权；反馈包只收集大小和时间范围内的文件 |
+| 修改反馈文件清理 | 每个来源只枚举自己拥有的普通文件，保留活动日志并限制 Dump 的进程名前缀；验证去重、释放空间统计、占用/权限跳过和最小窗口布局 |
 
 ## 发布验收
 

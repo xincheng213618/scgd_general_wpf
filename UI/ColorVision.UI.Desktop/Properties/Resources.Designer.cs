@@ -340,6 +340,60 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 清理历史文件 的本地化字符串。
+        /// </summary>
+        public static string ClearDiagnostics {
+            get {
+                return ResourceManager.GetString("ClearDiagnostics", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已清理 {0} 个历史诊断文件，释放 {1}；跳过 {2} 个正在使用或无权限的文件。 的本地化字符串。
+        /// </summary>
+        public static string ClearDiagnosticsCompleted {
+            get {
+                return ResourceManager.GetString("ClearDiagnosticsCompleted", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 将清理旧的 ColorVision 应用日志、更新日志、服务日志和崩溃转储。当前正在使用的日志以及配置、数据库和附件不会删除。是否继续？ 的本地化字符串。
+        /// </summary>
+        public static string ClearDiagnosticsConfirm {
+            get {
+                return ResourceManager.GetString("ClearDiagnosticsConfirm", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 没有可清理的历史诊断文件。 的本地化字符串。
+        /// </summary>
+        public static string ClearDiagnosticsNone {
+            get {
+                return ResourceManager.GetString("ClearDiagnosticsNone", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 清理历史诊断文件 的本地化字符串。
+        /// </summary>
+        public static string ClearDiagnosticsTitle {
+            get {
+                return ResourceManager.GetString("ClearDiagnosticsTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 正在清理历史诊断文件... 的本地化字符串。
+        /// </summary>
+        public static string ClearingDiagnostics {
+            get {
+                return ResourceManager.GetString("ClearingDiagnostics", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 清除全部记录 的本地化字符串。
         /// </summary>
         public static string ClearRecords {

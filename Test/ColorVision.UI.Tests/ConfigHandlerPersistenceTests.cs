@@ -128,9 +128,9 @@ namespace ColorVision.UI.Tests
             Assert.True(saved, errorMessage);
             Assert.Equal(string.Empty, errorMessage);
             JObject persisted = JObject.Parse(File.ReadAllText(configFilePath));
-            Assert.Equal("after", persisted[nameof(FirstConfig)]![nameof(FirstConfig.Value)]);
-            Assert.Equal("after-item", persisted[nameof(FirstConfig)]![nameof(FirstConfig.Items)]![0]);
-            Assert.Equal("keep-second", persisted[nameof(SecondConfig)]![nameof(SecondConfig.Value)]);
+            Assert.Equal("after", persisted[typeof(FirstConfig).FullName!]![nameof(FirstConfig.Value)]);
+            Assert.Equal("after-item", persisted[typeof(FirstConfig).FullName!]![nameof(FirstConfig.Items)]![0]);
+            Assert.Equal("keep-second", persisted[typeof(SecondConfig).FullName!]![nameof(SecondConfig.Value)]);
             AssertNoTemporaryFiles();
         }
 
@@ -168,8 +168,8 @@ namespace ColorVision.UI.Tests
 
                 Assert.All(results, result => Assert.True(result.Saved, result.ErrorMessage));
                 JObject persisted = JObject.Parse(File.ReadAllText(configFilePath));
-                Assert.Equal(firstValue, persisted[nameof(FirstConfig)]![nameof(FirstConfig.Value)]);
-                Assert.Equal(secondValue, persisted[nameof(SecondConfig)]![nameof(SecondConfig.Value)]);
+                Assert.Equal(firstValue, persisted[typeof(FirstConfig).FullName!]![nameof(FirstConfig.Value)]);
+                Assert.Equal(secondValue, persisted[typeof(SecondConfig).FullName!]![nameof(SecondConfig.Value)]);
             }
 
             AssertNoTemporaryFiles();
@@ -213,8 +213,8 @@ namespace ColorVision.UI.Tests
 
                 Assert.All(results, result => Assert.True(result.Saved, result.ErrorMessage));
                 JObject persisted = JObject.Parse(File.ReadAllText(configFilePath));
-                Assert.Equal(firstValue, persisted[nameof(FirstConfig)]![nameof(FirstConfig.Value)]);
-                Assert.Equal(secondValue, persisted[nameof(SecondConfig)]![nameof(SecondConfig.Value)]);
+                Assert.Equal(firstValue, persisted[typeof(FirstConfig).FullName!]![nameof(FirstConfig.Value)]);
+                Assert.Equal(secondValue, persisted[typeof(SecondConfig).FullName!]![nameof(SecondConfig.Value)]);
             }
 
             AssertNoTemporaryFiles();
@@ -228,7 +228,7 @@ namespace ColorVision.UI.Tests
                 configFilePath,
                 new JObject
                 {
-                    [nameof(ReentrantSaveConfig)] = JObject.FromObject(new { Value = "old" }),
+                    [typeof(ReentrantSaveConfig).FullName!] = JObject.FromObject(new { Value = "old" }),
                 }.ToString());
             var liveConfig = new ReentrantSaveConfig("old");
             var configHandler = new ConfigHandler { ConfigFilePath = configFilePath };
@@ -248,7 +248,7 @@ namespace ColorVision.UI.Tests
             Assert.Equal(ConfigSavePublicationStatus.PersistedAndPublished, nestedStatus);
             Assert.Equal(string.Empty, nestedErrorMessage);
             JObject persisted = JObject.Parse(File.ReadAllText(configFilePath));
-            Assert.Equal("new", persisted[nameof(ReentrantSaveConfig)]![nameof(ReentrantSaveConfig.Value)]);
+            Assert.Equal("new", persisted[typeof(ReentrantSaveConfig).FullName!]![nameof(ReentrantSaveConfig.Value)]);
             Assert.Equal("new", liveConfig.Value);
             AssertNoTemporaryFiles();
         }
@@ -261,7 +261,7 @@ namespace ColorVision.UI.Tests
                 configFilePath,
                 new JObject
                 {
-                    [nameof(ReentrantSaveConfig)] = JObject.FromObject(new { Value = "reloaded" }),
+                    [typeof(ReentrantSaveConfig).FullName!] = JObject.FromObject(new { Value = "reloaded" }),
                 }.ToString());
             var liveConfig = new ReentrantSaveConfig("stale");
             var configHandler = new ConfigHandler { ConfigFilePath = configFilePath };
@@ -276,7 +276,7 @@ namespace ColorVision.UI.Tests
                 configHandler.SaveConfigs();
 
                 JObject persisted = JObject.Parse(File.ReadAllText(configFilePath));
-                Assert.Equal("reloaded", persisted[nameof(ReentrantSaveConfig)]![nameof(ReentrantSaveConfig.Value)]);
+                Assert.Equal("reloaded", persisted[typeof(ReentrantSaveConfig).FullName!]![nameof(ReentrantSaveConfig.Value)]);
                 Assert.Equal("reloaded", configHandler.GetRequiredService<ReentrantSaveConfig>().Value);
                 Assert.Equal(1, reloadNotificationCount);
                 AssertNoTemporaryFiles();
@@ -302,8 +302,8 @@ namespace ColorVision.UI.Tests
             Assert.Equal(ConfigSavePublicationStatus.PersistedButPublishFailed, status);
             Assert.Contains("Runtime publication failed", errorMessage, StringComparison.Ordinal);
             JObject persisted = JObject.Parse(File.ReadAllText(configFilePath));
-            Assert.Equal("persisted", persisted[nameof(FirstConfig)]![nameof(FirstConfig.Value)]);
-            Assert.Equal("keep-second", persisted[nameof(SecondConfig)]![nameof(SecondConfig.Value)]);
+            Assert.Equal("persisted", persisted[typeof(FirstConfig).FullName!]![nameof(FirstConfig.Value)]);
+            Assert.Equal("keep-second", persisted[typeof(SecondConfig).FullName!]![nameof(SecondConfig.Value)]);
             AssertNoTemporaryFiles();
         }
 
@@ -328,8 +328,8 @@ namespace ColorVision.UI.Tests
             Assert.False(nestedSaved);
             Assert.Contains("reentrantly", nestedErrorMessage, StringComparison.OrdinalIgnoreCase);
             JObject persisted = JObject.Parse(File.ReadAllText(configFilePath));
-            Assert.Equal("persisted", persisted[nameof(FirstConfig)]![nameof(FirstConfig.Value)]);
-            Assert.Equal("keep-second", persisted[nameof(SecondConfig)]![nameof(SecondConfig.Value)]);
+            Assert.Equal("persisted", persisted[typeof(FirstConfig).FullName!]![nameof(FirstConfig.Value)]);
+            Assert.Equal("keep-second", persisted[typeof(SecondConfig).FullName!]![nameof(SecondConfig.Value)]);
             AssertNoTemporaryFiles();
         }
 
@@ -363,8 +363,8 @@ namespace ColorVision.UI.Tests
             Assert.False(nestedResult.Saved);
             Assert.Contains("reentrantly", nestedResult.ErrorMessage, StringComparison.OrdinalIgnoreCase);
             JObject persisted = JObject.Parse(File.ReadAllText(configFilePath));
-            Assert.Equal("persisted", persisted[nameof(FirstConfig)]![nameof(FirstConfig.Value)]);
-            Assert.Equal("keep-second", persisted[nameof(SecondConfig)]![nameof(SecondConfig.Value)]);
+            Assert.Equal("persisted", persisted[typeof(FirstConfig).FullName!]![nameof(FirstConfig.Value)]);
+            Assert.Equal("keep-second", persisted[typeof(SecondConfig).FullName!]![nameof(SecondConfig.Value)]);
             AssertNoTemporaryFiles();
         }
 
@@ -497,7 +497,7 @@ namespace ColorVision.UI.Tests
             Assert.Equal("backup", restoredConfig.Value);
             Assert.Equal(["backup-item"], restoredConfig.Items);
             Assert.Equal("backup-second", configHandler.GetRequiredService<SecondConfig>().Value);
-            Assert.Equal("backup", JObject.Parse(File.ReadAllText(configFilePath))[nameof(FirstConfig)]![nameof(FirstConfig.Value)]);
+            Assert.Equal("backup", JObject.Parse(File.ReadAllText(configFilePath))[typeof(FirstConfig).FullName!]![nameof(FirstConfig.Value)]);
         }
 
         [Fact]
@@ -564,12 +564,12 @@ namespace ColorVision.UI.Tests
         {
             var config = new JObject
             {
-                [nameof(FirstConfig)] = JObject.FromObject(new FirstConfig
+                [typeof(FirstConfig).FullName!] = JObject.FromObject(new FirstConfig
                 {
                     Value = firstValue,
                     Items = [item],
                 }),
-                [nameof(SecondConfig)] = JObject.FromObject(new SecondConfig { Value = secondValue }),
+                [typeof(SecondConfig).FullName!] = JObject.FromObject(new SecondConfig { Value = secondValue }),
             };
             File.WriteAllText(fileName, config.ToString());
         }

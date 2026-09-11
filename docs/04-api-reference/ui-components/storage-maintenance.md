@@ -72,12 +72,12 @@ related: ["ui.settings", "ui.configuration", "operations.logs", "delivery.update
 | 页面选项 | 配置节 | 初始选择 |
 | --- | --- | --- |
 | 外观与语言 | `ThemeConfig`、`LanguageConfig` | 勾选 |
-| 主窗口偏好 | `MainWindowConfig` | 勾选 |
+| 主窗口偏好 | `ColorVision.MainWindowConfig`、旧 `MainWindowConfig` | 勾选 |
 | 快捷键 | `HotKeyConfig` | 未勾选 |
 | 搜索 | `SearchConfig` | 未勾选 |
 | 图像浏览 | `MultiImageViewerConfig` | 未勾选 |
 
-主程序在创建 `ConfigHandler` 之前通过 `ConfigureMaintenanceResetSections(sectionNames, startupAdmission)` 注册白名单和启动准入回调，启动后冻结策略。重置不能接受目录、通配符或任意插件配置节。设备、数据库连接、授权及未选配置保持原值；这不是凭文件名全量清空配置。主窗口选项只重置 `MainWindowConfig` 偏好，不是清空完整停靠布局。
+主程序在创建 `ConfigHandler` 之前通过 `ConfigureMaintenanceResetSections(sectionNames, startupAdmission)` 注册白名单和启动准入回调，启动后冻结策略。以上每种配置都同时选择完整类型名和对应旧短类名，避免删除新键后又回退读到旧值。完整键支持命名空间分隔符 `.` 和嵌套类型分隔符 `+`，每一段仍须是非空标识符；重置不能接受路径、通配符或任意插件配置节。设备、数据库连接、授权及未选配置保持原值；这不是凭文件名全量清空配置。主窗口选项不清除 `Spectrum.MainWindowConfig`，也不清空完整停靠布局。
 
 管理员确认后，页面先保存当前配置，再由 `Prepare`/`Schedule` 写入 `<配置路径>.maintenance-reset.json` 意图文件。当前运行中的配置实例不替换、不热重置；正常退出前的保存仍可继续，实际重置在下次启动 `ConfigHandler.Load` 读取配置、创建实例之前执行。待执行计划可以取消；取消只删除意图文件，不修改配置或已有备份。
 

@@ -33,7 +33,7 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 
 ## 新手引导
 
-主窗口使用 `NewUserGuideOverlay` 提供轻量产品导览。自动导览由 `MainWindowConfig.HasShownNewUserGuide` 布尔值控制：程序在首帧后显示欢迎卡片之前先把它设为 `true` 并保存，后续启动和正常升级不再自动显示。重置 `MainWindowConfig` 会同时重置该状态；帮助菜单入口始终保留，可随时从欢迎页手动开始导览。
+主窗口使用 `NewUserGuideOverlay` 提供轻量产品导览。自动导览由 `MainWindowConfig.HasShownNewUserGuide` 布尔值控制：程序在首帧后显示欢迎卡片之前先把它设为 `true`，确认保存成功后才显示，并记录配置路径和节名。主程序保存到 `ColorVision.MainWindowConfig`，Spectrum 保存到 `Spectrum.MainWindowConfig`；读取旧短键的兼容规则见[配置持久化](../../04-api-reference/ui-components/configuration.md)。后续启动和正常升级不再自动显示。重置主窗口偏好会清除新旧配置节并重置该状态；帮助菜单入口始终保留，可随时从欢迎页手动开始导览。
 
 导览步骤只提供“上一步/下一步”和界面说明，不把点击高亮区域当作完成条件。遮罩由目标四周的独立区域组成，高亮孔内仍可点击原控件；目标因布局或可见性无法解析时，退化为全屏遮罩和居中说明，不阻止退出。当前步骤仅定位主窗口视觉树中的稳定区域，不跨 AvalonDock 浮动窗口、右键菜单、下拉弹层或其它独立窗口。
 

@@ -91,7 +91,7 @@ public sealed class CopilotChatConfigPersistenceTests : IDisposable
         Assert.DoesNotContain("已设置", viewModel.LocalCommandResultText, StringComparison.Ordinal);
         var persisted = JObject.Parse(File.ReadAllText(configFilePath));
         Assert.Equal((int)CopilotReasoningMode.High,
-            (int)persisted[nameof(CopilotConfig)]![nameof(CopilotConfig.Profiles)]![0]![nameof(CopilotProfileConfig.ReasoningMode)]!);
+            (int)persisted[typeof(CopilotConfig).FullName!]![nameof(CopilotConfig.Profiles)]![0]![nameof(CopilotProfileConfig.ReasoningMode)]!);
         AssertNoTemporaryFiles();
     }
 
@@ -223,7 +223,7 @@ public sealed class CopilotChatConfigPersistenceTests : IDisposable
         var persisted = JObject.Parse(File.ReadAllText(configFilePath));
         Assert.Equal(
             (int)CopilotReasoningMode.High,
-            (int)persisted[nameof(CopilotConfig)]![nameof(CopilotConfig.Profiles)]![0]![nameof(CopilotProfileConfig.ReasoningMode)]!);
+            (int)persisted[typeof(CopilotConfig).FullName!]![nameof(CopilotConfig.Profiles)]![0]![nameof(CopilotProfileConfig.ReasoningMode)]!);
         AssertNoTemporaryFiles();
     }
 

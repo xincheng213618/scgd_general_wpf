@@ -4,6 +4,7 @@ using log4net;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -58,6 +59,8 @@ namespace ColorVision.UI.Plugins
 
         public required DateTimeOffset CreatedUtc { get; init; }
 
+        public string ApplicationVersion { get; init; } = string.Empty;
+
         public required string DirectoryHash { get; init; }
 
         public required int FileCount { get; init; }
@@ -90,6 +93,7 @@ namespace ColorVision.UI.Plugins
         };
 
         private readonly string _backupRootDirectory;
+        private readonly string _applicationVersion;
         private readonly ConcurrentDictionary<string, PluginRecoveryBackupInfo> _preparedBackups = new(StringComparer.OrdinalIgnoreCase);
         private readonly ConcurrentDictionary<string, object> _pluginBackupLocks = new(StringComparer.OrdinalIgnoreCase);
         private int _healthyStartupBackupScheduled;
@@ -99,6 +103,13 @@ namespace ColorVision.UI.Plugins
         public string BackupRootDirectory => _backupRootDirectory;
 
         public PluginRecoveryBackupService(string? backupRootDirectory = null)
+            : this(backupRootDirectory, Assembly.GetEntryAssembly()?.GetName().Version?.ToString()
+                ?? typeof(PluginRecoveryBackupService).Assembly.GetName().Version?.ToString()
+                ?? "unknown")
+        {
+        }
+
+        internal PluginRecoveryBackupService(string? backupRootDirectory, string applicationVersion)
         {
             string configuredBackupRoot = backupRootDirectory ?? Path.Combine(
                 Environments.DirLocalAppData,
@@ -106,6 +117,7 @@ namespace ColorVision.UI.Plugins
             if (!Path.IsPathFullyQualified(configuredBackupRoot))
                 throw new ArgumentException("Plugin recovery backup root must be an absolute path.", nameof(backupRootDirectory));
             _backupRootDirectory = Path.GetFullPath(configuredBackupRoot);
+            _applicationVersion = applicationVersion;
         }
 
         public void ScheduleHealthyStartupBackups()
@@ -145,6 +157,7 @@ namespace ColorVision.UI.Plugins
                 if (currentManifest != null
                     && _preparedBackups.TryGetValue(preparedBackupKey, out PluginRecoveryBackupInfo? preparedBackup)
                     && Directory.Exists(preparedBackup.BackupDirectory)
+                    && string.Equals(preparedBackup.ApplicationVersion, _applicationVersion, StringComparison.Ordinal)
                     && ManifestMetadataMatches(preparedBackup.Manifest, currentManifest))
                 {
                     log.Info($"Reused healthy-start plugin recovery backup for '{pluginId}': {preparedBackup.BackupDirectory}");
@@ -154,6 +167,7 @@ namespace ColorVision.UI.Plugins
                 PluginRecoveryBackupInfo? availableBackup = GetAvailableBackup(pluginId, pluginDirectory);
                 if (currentManifest != null
                     && availableBackup != null
+                    && string.Equals(availableBackup.ApplicationVersion, _applicationVersion, StringComparison.Ordinal)
                     && ManifestMetadataMatches(availableBackup.Manifest, currentManifest))
                 {
                     _preparedBackups[preparedBackupKey] = availableBackup;
@@ -210,6 +224,7 @@ namespace ColorVision.UI.Plugins
                     ProgramDirectory = location.ProgramDirectory,
                     InstallationKey = location.InstallationKey,
                     CreatedUtc = createdUtc,
+                    ApplicationVersion = _applicationVersion,
                     DirectoryHash = backupCatalog.DirectoryHash,
                     FileCount = backupCatalog.Files.Count,
                     TotalBytes = backupCatalog.Files.Sum(file => file.Length),
@@ -659,6 +674,7 @@ namespace ColorVision.UI.Plugins
                 PayloadDirectory = payloadDirectory,
                 InstallationKey = metadata.InstallationKey,
                 CreatedUtc = metadata.CreatedUtc,
+                ApplicationVersion = metadata.ApplicationVersion,
                 DirectoryHash = metadata.DirectoryHash,
                 FileCount = metadata.FileCount,
                 TotalBytes = metadata.TotalBytes,
@@ -752,11 +768,35 @@ namespace ColorVision.UI.Plugins
             }
         }
 
+        internal bool TryCreateHealthyStartupBackup(string pluginId, string pluginDirectory)
+        {
+            PluginLocation location = ResolvePluginLocation(pluginId, pluginDirectory);
+            object backupLock = _pluginBackupLocks.GetOrAdd(GetPreparedBackupKey(location), static _ => new object());
+            lock (backupLock)
+            {
+                PluginRecoveryManifestMetadata? manifest = TryReadManifestMetadata(Path.Combine(location.PluginDirectory, "manifest.json"));
+                if (manifest == null || !string.Equals(manifest.Id, pluginId, StringComparison.OrdinalIgnoreCase))
+                    return false;
+
+                // Completed metadata is enough to decide whether this version was backed up.
+                // Do not cache this candidate as verified: update and restore still validate payloads.
+                PluginRecoveryBackupInfo? candidate = GetRecoveryBackupCandidate(pluginId, pluginDirectory);
+                if (candidate != null
+                    && string.Equals(candidate.ApplicationVersion, _applicationVersion, StringComparison.Ordinal)
+                    && ManifestMetadataMatches(candidate.Manifest, manifest))
+                {
+                    return false;
+                }
+
+                return CreateVerifiedBackup(pluginId, pluginDirectory) != null;
+            }
+        }
+
         private void PrepareHealthyStartupBackups()
         {
             Thread.Sleep(HealthyStartupBackupDelay);
             Stopwatch stopwatch = Stopwatch.StartNew();
-            int preparedCount = 0;
+            int createdCount = 0;
             try
             {
                 string pluginsDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins");
@@ -775,8 +815,9 @@ namespace ColorVision.UI.Plugins
 
                     try
                     {
-                        if (EnsureCurrentVersionBackup(manifest.Id, pluginDirectory) != null)
-                            preparedCount++;
+                        if (!TryCreateHealthyStartupBackup(manifest.Id, pluginDirectory))
+                            continue;
+                        createdCount++;
                     }
                     catch (Exception ex)
                     {
@@ -793,7 +834,8 @@ namespace ColorVision.UI.Plugins
             finally
             {
                 stopwatch.Stop();
-                log.Info($"Healthy-start plugin recovery backup preparation completed for {preparedCount} plugin(s) in {stopwatch.ElapsedMilliseconds} ms.");
+                if (createdCount > 0)
+                    log.Info($"Healthy-start plugin recovery backups created for {createdCount} plugin(s) in {stopwatch.ElapsedMilliseconds} ms.");
             }
         }
 
@@ -1133,6 +1175,8 @@ namespace ColorVision.UI.Plugins
             public string InstallationKey { get; set; } = string.Empty;
 
             public DateTimeOffset CreatedUtc { get; set; }
+
+            public string ApplicationVersion { get; set; } = string.Empty;
 
             public string DirectoryHash { get; set; } = string.Empty;
 

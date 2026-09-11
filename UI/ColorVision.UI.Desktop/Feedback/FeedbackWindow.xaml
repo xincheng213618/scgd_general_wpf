@@ -238,9 +238,14 @@
                         </Expander>
                         <TextBlock x:Name="DiagnosticsHintText" Grid.Row="1" Margin="0,10,16,0"
                                    Style="{StaticResource FeedbackSecondaryTextBlockStyle}"/>
-                        <Button x:Name="PackLogsButton" Grid.Row="1" Grid.Column="1"
-                                Content="{x:Static properties:Resources.PackLogs}"
-                                Click="PackLogs_Click" Padding="12,5" Margin="0,10,0,0"/>
+                        <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button x:Name="ClearDiagnosticsButton"
+                                    Content="{x:Static properties:Resources.ClearDiagnostics}"
+                                    Click="ClearDiagnostics_Click" Padding="12,5" Margin="0,0,8,0"/>
+                            <Button x:Name="PackLogsButton"
+                                    Content="{x:Static properties:Resources.PackLogs}"
+                                    Click="PackLogs_Click" Padding="12,5"/>
+                        </StackPanel>
                     </Grid>
                 </Border>
             </StackPanel>
