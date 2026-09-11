@@ -5,6 +5,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:input="clr-namespace:System.Windows.Input;assembly=netstandard"
+        xmlns:guidance="clr-namespace:ColorVision.Guidance"
         xmlns:local="clr-namespace:ColorVision"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:ColorVision.Properties"
@@ -172,6 +173,9 @@
             </xcad:LayoutRoot>
         </xcad:DockingManager>
         <Grid x:Name="StatusBarGrid" Grid.Row="2" Background="{DynamicResource GlobalBackground}" Visibility="{Binding IsOpenStatusBar, Converter={StaticResource bool2VisibilityConverter}}" />
-
+        <guidance:NewUserGuideOverlay x:Name="NewUserGuideOverlay"
+                                      Grid.RowSpan="3"
+                                      Panel.ZIndex="1000"
+                                      Visibility="Collapsed" />
     </Grid>
 </Window>

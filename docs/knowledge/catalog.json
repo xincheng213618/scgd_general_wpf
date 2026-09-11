@@ -6971,11 +6971,18 @@
         "ToolTabStrip",
         "工具标题命令",
         "IDockPanelTitleActionProvider",
-        "DockPanelTitleAction"
+        "DockPanelTitleAction",
+        "新手引导",
+        "产品导览",
+        "首次欢迎",
+        "NewUserGuideOverlay",
+        "LastSeenNewUserGuideVersion"
       ],
       "code_paths": [
         "ColorVision/MainWindow.xaml",
         "ColorVision/MainWindow.xaml.cs",
+        "ColorVision/MainWindow.NewUserGuide.cs",
+        "ColorVision/Guidance",
         "ColorVision/MainWindow.Hotkeys.cs",
         "ColorVision/CompactMainWindow.cs",
         "ColorVision/MainWindowFactory.cs",
@@ -7013,6 +7020,7 @@
         "Test/ColorVision.UI.Tests/AvalonDockThemeBindingTests.cs",
         "Test/ColorVision.UI.Tests/MenuThemeTests.cs",
         "Test/ColorVision.UI.Tests/MainWindowSearchShellTests.cs",
+        "Test/ColorVision.UI.Tests/NewUserGuideTests.cs",
         "Test/ColorVision.UI.Tests/WindowResizeDiagnosticsContractTests.cs",
         "Test/ColorVision.UI.Tests/CompactTitleBarChromeTests.cs",
         "Test/ColorVision.UI.Tests/CompactTitleBarIntegrationContractTests.cs",
@@ -7035,6 +7043,7 @@
       ],
       "code_scopes": [
         "ColorVision",
+        "ColorVision/Guidance",
         "ColorVision/Themes",
         "ColorVision/Windowing",
         "UI/ColorVision.Solution",

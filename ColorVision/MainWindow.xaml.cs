@@ -73,6 +73,8 @@ namespace ColorVision
                 this.SetWindowFull(Config);
             }
             HookUpdateNotification();
+            NewUserGuideOverlay.GuideDismissed += NewUserGuideOverlay_GuideDismissed;
+            PreviewKeyDown += MainWindow_NewUserGuidePreviewKeyDown;
             log.Info($"Main window remaining constructor setup took {constructionStopwatch.ElapsedMilliseconds} ms.");
             
         }
@@ -471,6 +473,7 @@ namespace ColorVision
                 stopwatch.Stop();
                 log.Info($"Main window status bar materialized in {stopwatch.ElapsedMilliseconds} ms after first render.");
             }), DispatcherPriority.Background);
+            ScheduleNewUserGuideAfterFirstRender();
         }
 
         public static async void LoadIMainWindowInitialized()

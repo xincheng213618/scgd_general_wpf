@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="MenuHeader" xml:space="preserve"><value>新手導覽(_N)</value></data>
+  <data name="WelcomeTitle" xml:space="preserve"><value>歡迎使用 ColorVision</value></data>
+  <data name="WelcomeDescription" xml:space="preserve"><value>用一分鐘瞭解 ColorVision 的核心介面，快速找到裝置、解決方案與工作區。</value></data>
+  <data name="DismissWelcomeAction" xml:space="preserve"><value>稍後瞭解</value></data>
+  <data name="StartTourAction" xml:space="preserve"><value>開始導覽</value></data>
+  <data name="StepProgressFormat" xml:space="preserve"><value>第 {0} 步，共 {1} 步</value></data>
+  <data name="SkipAction" xml:space="preserve"><value>略過導覽</value></data>
+  <data name="PreviousAction" xml:space="preserve"><value>上一步</value></data>
+  <data name="NextAction" xml:space="preserve"><value>下一步</value></data>
+  <data name="FinishAction" xml:space="preserve"><value>完成</value></data>
+  <data name="CompleteAction" xml:space="preserve"><value>開始使用</value></data>
+  <data name="MenuStepTitle" xml:space="preserve"><value>頂部選單</value></data>
+  <data name="MenuStepDescription" xml:space="preserve"><value>透過頂部選單存取檔案、範本、工具、檢視等功能。目前高亮區域可直接操作。</value></data>
+  <data name="ExplorerStepTitle" xml:space="preserve"><value>裝置與解決方案</value></data>
+  <data name="ExplorerStepDescription" xml:space="preserve"><value>左側面板可在「裝置控制」與「方案總管」之間切換。前者用於檢視和操作裝置，後者用於瀏覽專案、流程與檔案。</value></data>
+  <data name="WorkspaceStepTitle" xml:space="preserve"><value>主要工作區</value></data>
+  <data name="WorkspaceStepDescription" xml:space="preserve"><value>工作流程、相機、演算法與校正以分頁呈現。切換分頁即可進入對應的設定與操作介面。</value></data>
+  <data name="StatusStepTitle" xml:space="preserve"><value>執行狀態</value></data>
+  <data name="StatusStepDescription" xml:space="preserve"><value>底部狀態列顯示目前解決方案與執行狀態，並提供背景工作和資料狀態入口。</value></data>
+  <data name="CompletionTitle" xml:space="preserve"><value>導覽完成</value></data>
+  <data name="CompletionDescription" xml:space="preserve"><value>你已瞭解 ColorVision 的主要介面。需要時，可從「說明 → 新手導覽」再次查看。</value></data>
+</root>

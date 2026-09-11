@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="MenuHeader" xml:space="preserve"><value>Product tour (_T)</value></data>
+  <data name="WelcomeTitle" xml:space="preserve"><value>Welcome to ColorVision</value></data>
+  <data name="WelcomeDescription" xml:space="preserve"><value>Take one minute to learn the core interface and quickly find devices, solutions, and your workspace.</value></data>
+  <data name="DismissWelcomeAction" xml:space="preserve"><value>Maybe later</value></data>
+  <data name="StartTourAction" xml:space="preserve"><value>Start tour</value></data>
+  <data name="StepProgressFormat" xml:space="preserve"><value>Step {0} of {1}</value></data>
+  <data name="SkipAction" xml:space="preserve"><value>Skip tour</value></data>
+  <data name="PreviousAction" xml:space="preserve"><value>Back</value></data>
+  <data name="NextAction" xml:space="preserve"><value>Next</value></data>
+  <data name="FinishAction" xml:space="preserve"><value>Finish</value></data>
+  <data name="CompleteAction" xml:space="preserve"><value>Start using ColorVision</value></data>
+  <data name="MenuStepTitle" xml:space="preserve"><value>Top menu</value></data>
+  <data name="MenuStepDescription" xml:space="preserve"><value>Access files, templates, tools, views, and other features from the top menu. The highlighted area remains interactive.</value></data>
+  <data name="ExplorerStepTitle" xml:space="preserve"><value>Devices and solutions</value></data>
+  <data name="ExplorerStepDescription" xml:space="preserve"><value>Switch the left panel between Device Control and Solution Explorer. Use the first to view and operate devices, and the second to browse projects, flows, and files.</value></data>
+  <data name="WorkspaceStepTitle" xml:space="preserve"><value>Main workspace</value></data>
+  <data name="WorkspaceStepDescription" xml:space="preserve"><value>Flows, cameras, algorithms, and calibration open as tabs. Switch tabs to enter the corresponding configuration and operation view.</value></data>
+  <data name="StatusStepTitle" xml:space="preserve"><value>Runtime status</value></data>
+  <data name="StatusStepDescription" xml:space="preserve"><value>The status bar shows the active solution and runtime state, with access to background tasks and data status.</value></data>
+  <data name="CompletionTitle" xml:space="preserve"><value>Tour complete</value></data>
+  <data name="CompletionDescription" xml:space="preserve"><value>You now know the main ColorVision interface. Open Help → Product tour whenever you need this introduction again.</value></data>
+</root>

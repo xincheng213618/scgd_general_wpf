@@ -32,6 +32,10 @@ namespace ColorVision
         public string LastOpenedVersion { get => _LastOpenedVersion; set { _LastOpenedVersion = value; OnPropertyChanged(); } }
         private string _LastOpenedVersion;
 
+        [Browsable(false)]
+        public int LastSeenNewUserGuideVersion { get => _lastSeenNewUserGuideVersion; set { _lastSeenNewUserGuideVersion = value; OnPropertyChanged(); } }
+        private int _lastSeenNewUserGuideVersion;
+
         [JsonIgnore]
         public bool IsFull { get => _IsFull; set { _IsFull = value; OnPropertyChanged(); } }
         private bool _IsFull;
