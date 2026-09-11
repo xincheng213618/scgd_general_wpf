@@ -13,6 +13,7 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras.Calibration;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.RC;
@@ -102,6 +103,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditCameraExpousureCommand = new RelayCommand(A => EditCameraExpousure());
             EditRealtimeCameraConfigCommand = new RelayCommand(_ => EditRealtimeCameraConfig());
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
+            UserCalibrationCommand = new RelayCommand(_ => LumFourColorCalibrationWorkflowWindow.ShowWindow(camera: this));
             OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog());
             ReleaseLocalCalibrationCacheCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
 
@@ -164,6 +166,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
         [Category("CalibrationCorrection")]
         [Description("CommandCameraCalibrationHint")]
         public RelayCommand EditCalibrationCommand { get; set; }
+
+        [CommandDisplay("用户校正", Order = 2, CategoryOrder = 1)]
+        [Category("CalibrationCorrection")]
+        [Description("使用单点或 RGBW 测量修正校正文件")]
+        public RelayCommand UserCalibrationCommand { get; set; }
 
         public void EditCalibration()
         {

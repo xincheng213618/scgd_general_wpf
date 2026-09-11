@@ -73,19 +73,33 @@ public sealed class LumFourColorFileCompatibilityTests
         });
     }
 
-    [Fact]
-    public void RgbwPaUsesOriginalMatrixAndWhiteLuminanceInsteadOfPythonRgbOnlyTransform()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RgbwMatchesExecutedMatlabAndUsesOriginalMatrixAndWhiteLuminance(bool multiColor)
     {
-        WithSource(CreateSource(true), (path, _) =>
+        WithSource(CreateSource(multiColor), (path, _) =>
         {
             var pa = LumFourColorSourceSnapshot.Load(path);
             LumFourColorCorrectionMeasurements measurements = Measurements();
             var result = LumFourColorCorrectionCalculator.CorrectFourColor(pa.Config, measurements);
+            // Executed the supplied MATLAB solveFourColorCal with the same RGBW measurements.
+            AssertMatrix(result,
+            [
+                1.0117830453313152, -.0792292563629565, .15349540225513708,
+                -.0016949652932371332, .893269111147705, .022592983843453044,
+                .10415761828633169, -.21017934427856971, 2.6246770080677657,
+            ]);
             var doubleWhite = LumFourColorCorrectionCalculator.CorrectFourColor(pa.Config, measurements with
             {
                 White = measurements.White with { Reference = measurements.White.Reference with { Y = measurements.White.Reference.Y * 2 } },
             });
             AssertMatrix(doubleWhite, Matrix(result).Select(value => value * 2).ToArray());
+            var doubleRed = LumFourColorCorrectionCalculator.CorrectFourColor(pa.Config, measurements with
+            {
+                Red = measurements.Red with { Reference = measurements.Red.Reference with { Y = measurements.Red.Reference.Y * 2 } },
+            });
+            AssertMatrix(doubleRed, Matrix(result));
 
             // Each sample must meet its reference chromaticity, and W sets brightness.
             foreach (var sample in new[] { measurements.Red, measurements.Green, measurements.Blue, measurements.White })
@@ -101,82 +115,6 @@ public sealed class LumFourColorFileCompatibilityTests
             }
         });
     }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void PythonRgbMatchesExecutedFunctionAndExportsIndependentTransform(bool pa)
-    {
-        WithSource(CreateSource(pa), (path, destination) =>
-        {
-            string originalText = File.ReadAllText(path);
-            var snapshot = LumFourColorSourceSnapshot.Load(path);
-            // The Python mode must work even if the original coefficient matrix is singular.
-            snapshot.Config.A = snapshot.Config.B = snapshot.Config.C = 0;
-            snapshot.Config.D = snapshot.Config.E = snapshot.Config.F = 0;
-            snapshot.Config.G = snapshot.Config.H = snapshot.Config.I = 0;
-            var session = new LumFourColorCalibrationSession();
-            session.SetMode(LumFourColorCorrectionMode.PythonRgb);
-            var m = Measurements();
-            ColorCorrectionMeasurement[] input = [m.Red, m.Green, m.Blue];
-            Assert.Equal(3, session.Samples.Count);
-            Assert.DoesNotContain(session.Samples, sample => sample.Target == LumFourColorCorrectionTarget.White);
-            for (int i = 0; i < 3; i++)
-            {
-                var sample = session.Samples[i];
-                sample.CameraYInput = Number(input[i].Camera.Y);
-                sample.CameraCieXInput = Number(input[i].Camera.CieX);
-                sample.CameraCieYInput = Number(input[i].Camera.CieY);
-                sample.ReferenceYInput = Number(input[i].Reference.Y);
-                sample.ReferenceCieXInput = Number(input[i].Reference.CieX);
-                sample.ReferenceCieYInput = Number(input[i].Reference.CieY);
-            }
-            Assert.True(session.IsComplete);
-            var result = session.Calculate(snapshot.Config);
-            // Captured by executing calibration_pro/main.py run_fr_adv with WRGB rows.
-            AssertMatrix(result,
-            [
-                .7435388988926279, -.11367119035782369, .07864101675620451,
-                .011643824876943987, .6773224151797252, .016680600244944208,
-                .12622989349511685, -.28212859304236043, 1.1567916288159468,
-            ]);
-            foreach (var sample in input)
-            {
-                double[] measured = Xyz(sample.Camera), reference = Xyz(sample.Reference), matrix = Matrix(result);
-                for (int row = 0; row < 3; row++)
-                    Assert.Equal(reference[row], Enumerable.Range(0, 3).Sum(col => matrix[row * 3 + col] * measured[col]), 9);
-            }
-            Assert.Throws<InvalidOperationException>(() => snapshot.SaveCopy(path, result, session.Mode));
-            snapshot.SaveCopy(destination, result, session.Mode);
-            JObject exported = JObject.Parse(File.ReadAllText(destination));
-            Assert.False(exported.ContainsKey("pa"));
-            Assert.False(exported.ContainsKey("Gain"));
-            Assert.False(exported.ContainsKey("device"));
-            foreach (string gain in new[] { "Gain_x", "Gain_y", "Gain_z" }) Assert.Equal(1, (double)exported[gain]!);
-            foreach (string exposure in new[] { "Texp_x", "Texp_y", "Texp_z" }) Assert.Equal(0, (double)exported[exposure]!);
-            AssertMatrix(LumFourColorSourceSnapshot.Load(destination).Config, Matrix(result));
-            Assert.Equal(originalText, File.ReadAllText(path));
-            string saved = File.ReadAllText(destination);
-            File.AppendAllText(path, " ");
-            Assert.Throws<InvalidOperationException>(() => snapshot.SaveCopy(destination, result, session.Mode));
-            Assert.Equal(saved, File.ReadAllText(destination));
-            session.SetMode(LumFourColorCorrectionMode.MatlabRgbw);
-            Assert.Equal(4, session.Samples.Count);
-            Assert.False(session.IsComplete);
-        });
-    }
-
-    [Fact]
-    public void PythonRgbRejectsSingularMeasurementsAndInvalidChromaticity()
-    {
-        var m = Measurements();
-        Assert.Throws<InvalidOperationException>(() => LumFourColorCorrectionCalculator.CorrectPythonRgb(m.Red, m.Red, m.Red));
-        Assert.Throws<InvalidOperationException>(() => LumFourColorCorrectionCalculator.CorrectPythonRgb(m.Red with { Camera = new(1, .2, 0) }, m.Green, m.Blue));
-        Assert.Throws<InvalidOperationException>(() => LumFourColorCorrectionCalculator.CorrectPythonRgb(m.Red, m.Green with { Reference = new(double.NaN, .2, .3) }, m.Blue));
-        Assert.Throws<InvalidOperationException>(() => LumFourColorCorrectionCalculator.CorrectPythonRgb(m.Red, m.Green, m.Blue with { Camera = new(double.MaxValue, double.MaxValue, .01) }));
-    }
-
-    private static string Number(double value) => value.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
 
     [Theory]
     [InlineData("short-pa")]

@@ -12,6 +12,9 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.FileIO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -711,7 +714,7 @@ public sealed class LumFourColorWorkflowSafetyTests
     }
 
     [Fact]
-    public void PythonRgbModeUsesThreeRowsAndInvalidatesResultsWhenSwitchingModes()
+    public void TwoModesRequireWhiteForRgbwAndInvalidateResultsWhenSwitched()
     {
         string path = Path.GetTempFileName();
         WriteSource(path);
@@ -719,62 +722,214 @@ public sealed class LumFourColorWorkflowSafetyTests
         {
             WithTheme(() =>
             {
-                var window = new LumFourColorCalibrationWorkflowWindow(Array.Empty<DeviceCamera>(), Array.Empty<DeviceSpectrum>(), path);
-                var manual = new LumFourColorCorrectionWindow(path, LumFourColorCorrectionMode.PythonRgb);
+                var workflow = new LumFourColorCalibrationWorkflowWindow(Array.Empty<DeviceCamera>(), Array.Empty<DeviceSpectrum>(), path);
+                var manual = new LumFourColorCorrectionWindow(path);
                 try
                 {
-                    Control<RadioButton>(window, "PythonRgbMode").IsChecked = true;
-                    var list = Control<ListBox>(window, "SampleList");
-                    Assert.Equal(new[] { "R", "G", "B" }, list.Items.Cast<LumFourColorCalibrationSample>().Select(sample => sample.Name));
-                    Assert.Equal("导出 XYZ 矩阵", Control<Button>(window, "SaveButton").Content);
-                    Assert.False(Control<Button>(window, "CalculateButton").IsEnabled);
-                    int id = 0;
-                    foreach (var sample in list.Items.Cast<LumFourColorCalibrationSample>())
+                    var samples = Control<ListBox>(workflow, "SampleList").Items.Cast<LumFourColorCalibrationSample>().ToArray();
+                    Assert.Equal(new[] { "R", "G", "B", "W" }, samples.Select(sample => sample.Name));
+                    float[] x = [.64f, .3f, .15f, .31f], y = [.33f, .6f, .06f, .32f];
+                    for (int i = 0; i < 4; i++)
                     {
-                        FillSample(sample, LumFourColorSourceSnapshot.ComputeHash(path), ++id);
-                        float x = id == 1 ? .64f : id == 2 ? .3f : .15f;
-                        float y = id == 1 ? .33f : id == 2 ? .6f : .06f;
-                        sample.SetCameraMeasurement(new(0, 0, 1, 1, PoiMeasurementShape.Rect), new(2 * x / y, 2, 2 * (1 - x - y) / y, x, y, 0, 0, 0, 0));
-                        sample.SetSpectrumMeasurement(new(new(2, x, y), [new(400, 1), new(500, 2)], id, DateTimeOffset.Now) { PeakAd = 32767, Source = "test" });
+                        if (i == 3) Assert.False(Control<Button>(workflow, "CalculateButton").IsEnabled);
+                        FillSample(samples[i], LumFourColorSourceSnapshot.ComputeHash(path), i + 1);
+                        samples[i].SetCameraMeasurement(new(0, 0, 1, 1, PoiMeasurementShape.Rect), new(2 * x[i] / y[i], 2, 2 * (1 - x[i] - y[i]) / y[i], x[i], y[i], 0, 0, 0, 0));
+                        samples[i].SetSpectrumMeasurement(new(new(2, x[i], y[i]), [new(400, 1)], i + 1, DateTimeOffset.Now) { PeakAd = 32767, Source = "test" });
                     }
-                    Invoke(window, "RefreshSelectedSample");
-                    Assert.True(Control<Button>(window, "CalculateButton").IsEnabled);
-                    Click(window, "CalculateButton");
-                    Assert.True(Control<Button>(window, "SaveButton").IsEnabled);
-                    Render(window, 1076, 656, "workflow-python-rgb");
-                    Assert.False(Control<Button>(window, "ReplaceButton").IsEnabled);
-                    Invoke(window, "SetBusy", true, "");
-                    Assert.False(Control<RadioButton>(window, "PythonRgbMode").IsEnabled);
-                    Invoke(window, "SetBusy", false, "");
-                    Control<RadioButton>(window, "FourColorMode").IsChecked = true;
-                    Assert.Equal(4, list.Items.Count);
-                    Assert.False(Control<Button>(window, "SaveButton").IsEnabled);
-                    Assert.All(list.Items.Cast<LumFourColorCalibrationSample>(), sample => Assert.False(sample.IsComplete));
+                    Click(workflow, "CalculateButton");
+                    Assert.True(Control<Button>(workflow, "SaveButton").IsEnabled);
+                    Assert.True(Control<Button>(workflow, "ReplaceButton").IsEnabled);
+                    Render(workflow, 1076, 656, "workflow-rgbw-two-modes");
+                    Control<RadioButton>(workflow, "SinglePointMode").IsChecked = true;
+                    Assert.Single(Control<ListBox>(workflow, "SampleList").Items);
+                    Assert.False(Control<Button>(workflow, "SaveButton").IsEnabled);
+                    Assert.False(Control<Button>(workflow, "ReplaceButton").IsEnabled);
+                    Control<RadioButton>(workflow, "FourColorMode").IsChecked = true;
+                    Assert.Equal(4, Control<ListBox>(workflow, "SampleList").Items.Count);
+                    Assert.False(Control<Button>(workflow, "CalculateButton").IsEnabled);
 
-                    Assert.True(Control<RadioButton>(manual, "PythonRgbMode").IsChecked);
                     var grid = Control<DataGrid>(manual, "MeasurementsGrid");
-                    Assert.Equal(3, grid.Items.Count);
-                    manual.PasteMeasurements("2\t0.64\t0.33\t2\t0.64\t0.33\n2\t0.3\t0.6\t2\t0.3\t0.6\n2\t0.15\t0.06\t2\t0.15\t0.06");
+                    Assert.Equal(new[] { "R", "G", "B", "W" }, grid.Items.Cast<CorrectionMeasurementRow>().Select(row => row.Target));
+                    string rgb = "2\t0.64\t0.33\t2\t0.64\t0.33\n2\t0.3\t0.6\t2\t0.3\t0.6\n2\t0.15\t0.06\t2\t0.15\t0.06";
+                    manual.PasteMeasurements(rgb);
                     Control<CheckBox>(manual, "ManualDataConfirmed").IsChecked = true;
-                    Invoke(manual, "Calculate_Click", manual, new RoutedEventArgs());
-                    Assert.True(Control<Button>(manual, "SaveButton").IsEnabled);
-                    Assert.False(Control<Button>(manual, "ReplaceButton").IsEnabled);
-                    Assert.Equal("XYZ 修正矩阵", Control<TextBlock>(manual, "ResultTitle").Text);
-                    Render(manual, 1076, 576, "manual-python-rgb");
-                    ((CorrectionMeasurementRow)grid.Items[0]).CameraYChromaticity = "0";
+                    Click(manual, "CalculateButton");
                     Assert.False(Control<Button>(manual, "SaveButton").IsEnabled);
+                    manual.PasteMeasurements(rgb + "\n2\t0.31\t0.32\t2\t0.31\t0.32");
                     Control<CheckBox>(manual, "ManualDataConfirmed").IsChecked = true;
-                    Invoke(manual, "Calculate_Click", manual, new RoutedEventArgs());
+                    Click(manual, "CalculateButton");
+                    Assert.True(Control<Button>(manual, "SaveButton").IsEnabled);
+                    Assert.True(Control<Button>(manual, "ReplaceButton").IsEnabled);
+                    Render(manual, 1076, 576, "manual-rgbw-two-modes");
+                    Control<RadioButton>(manual, "SinglePointMode").IsChecked = true;
+                    Assert.Single(grid.Items);
+                    Assert.False(Control<CheckBox>(manual, "ManualDataConfirmed").IsChecked);
                     Assert.False(Control<Button>(manual, "SaveButton").IsEnabled);
                     Assert.Empty(Control<TextBox>(manual, "ResultPreview").Text);
                     Control<RadioButton>(manual, "FourColorMode").IsChecked = true;
                     Assert.Equal(4, grid.Items.Count);
-                    Assert.False(Control<CheckBox>(manual, "ManualDataConfirmed").IsChecked);
+                    Assert.All(grid.Items.Cast<CorrectionMeasurementRow>(), row => Assert.Empty(row.CameraY));
                 }
-                finally { manual.Close(); window.Close(); }
+                finally { manual.Close(); workflow.Close(); }
             });
         }
         finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public void SessionRejectsUnknownModeAndIncompleteRgbwCollection()
+    {
+        var session = new LumFourColorCalibrationSession();
+        session.SetMode(LumFourColorCorrectionMode.MatlabRgbw);
+        Assert.Throws<ArgumentOutOfRangeException>(() => session.SetMode((LumFourColorCorrectionMode)2));
+        Assert.Equal(4, session.Samples.Count);
+        session.Samples.RemoveAt(3);
+        int id = 0;
+        foreach (var sample in session.Samples) FillSample(sample, "hash", ++id);
+        Assert.False(session.IsComplete);
+        Assert.Throws<InvalidOperationException>(() => session.Calculate(Identity()));
+    }
+
+    [Fact]
+    public void RecentImagesUseCurrentCameraAndNeverFallBackAfterFailedLatestImport()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "user-calibration-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        string source = Path.Combine(directory, "source.dat"), ciePath = Path.Combine(directory, "latest.cvcie");
+        WriteSource(source);
+        var frame = SyntheticFrame(956, 654);
+        using (var file = new CVCIEFile { Version = 1, Cols = frame.Width, Rows = frame.Height, Bpp = 32, Channels = 3, Gain = 1, Exp = [1, 1, 1], Data = frame.Data })
+            Assert.True(CVFileUtil.WriteCIEFile(ciePath, file));
+        try
+        {
+            WithTheme(() =>
+            {
+                DeviceCamera camera = TestCamera("CAM-A"), other = TestCamera("CAM-B");
+                var records = new[]
+                {
+                    new MeasureResultImgModel { Id = 1, DeviceCode = "CAM-A", CreateDate = new DateTime(2026, 9, 11, 10, 0, 0), FileUrl = ciePath },
+                    new MeasureResultImgModel { Id = 2, DeviceCode = "CAM-A", CreateDate = new DateTime(2026, 9, 11, 11, 0, 0), FileUrl = ciePath },
+                    new MeasureResultImgModel { Id = 3, DeviceCode = "CAM-B", CreateDate = new DateTime(2026, 9, 11, 12, 0, 0), FileUrl = ciePath },
+                };
+                bool queryFails = false;
+                var window = new LumFourColorCalibrationWorkflowWindow([camera, other], [], source, recentImages: code =>
+                    queryFails ? Task.FromException<IReadOnlyList<LumFourColorRecentImage>>(new IOException("数据库读取失败"))
+                    : Task.FromResult(LumFourColorRecentImages.CreateList(records, code)));
+                try
+                {
+                    window.SelectCamera(camera);
+                    Assert.Same(camera, Control<ComboBox>(window, "CameraCombo").SelectedItem);
+                    CompleteOnDispatcher(window.RefreshRecentImagesAsync());
+                    var combo = Control<ComboBox>(window, "RecentImagesCombo");
+                    Assert.Equal(new[] { 2, 1 }, combo.Items.Cast<LumFourColorRecentImage>().Select(row => row.Id));
+                    Assert.Equal(-1, combo.SelectedIndex);
+                    Assert.False(Control<Button>(window, "ImportRecentImageButton").IsEnabled);
+                    var poi = new PoiParam { Id = -1, Width = 956, Height = 654 };
+                    poi.PoiPoints.Add(new PoiPoint { PointType = PoiShape.Circle, PixX = 478, PixY = 327, PixWidth = 100, PixHeight = 100 });
+                    Control<ComboBox>(window, "PoiTemplateCombo").ItemsSource = new[] { new TemplateModel<PoiParam>("中心圆", poi) };
+                    Control<ComboBox>(window, "PoiTemplateCombo").SelectedIndex = 0;
+                    var sample = (LumFourColorCalibrationSample)Control<ListBox>(window, "SampleList").Items[0];
+                    sample.SetSpectrumMeasurement(Spectrum(55));
+                    Task importing = window.ImportLatestImageAsync();
+                    Assert.False(Control<Button>(window, "LoadLatestImageButton").IsEnabled);
+                    Assert.False(Control<Button>(window, "ImportRecentImageButton").IsEnabled);
+                    CompleteOnDispatcher(importing);
+                    Assert.Equal(2, ((LumFourColorRecentImage)combo.SelectedItem).Id);
+                    Assert.True(sample.HasCameraMeasurement);
+                    Assert.Contains("#2", sample.CameraSource);
+                    Assert.Null(sample.Frame!.CalibrationHash);
+                    Assert.Equal(PoiMeasurementShape.Circle, sample.Poi!.Value.Shape);
+                    Render(window, 1556, 976, "user-calibration-recent");
+                    Render(window, 1076, 656, "user-calibration-recent-compact");
+                    combo.SelectedIndex = 1;
+                    CompleteOnDispatcher(window.ImportRecentImageAsync());
+                    Assert.Contains("#1", sample.CameraSource);
+                    records[1].FileUrl = Path.Combine(directory, "missing.cvcie");
+                    CompleteOnDispatcher(window.ImportLatestImageAsync());
+                    Assert.Equal(2, ((LumFourColorRecentImage)combo.SelectedItem).Id);
+                    Assert.False(sample.HasCameraMeasurement);
+                    Assert.False(sample.HasImage);
+                    Assert.True(sample.HasSpectrumMeasurement);
+                    Assert.Contains("不存在", Control<TextBlock>(window, "StatusText").Text);
+                    FillSample(sample, "old", 56);
+                    queryFails = true;
+                    CompleteOnDispatcher(window.ImportLatestImageAsync());
+                    Assert.Empty(combo.Items);
+                    Assert.False(sample.HasCameraMeasurement);
+                    Assert.Contains("数据库读取失败", Control<TextBlock>(window, "StatusText").Text);
+                    queryFails = false;
+                    CompleteOnDispatcher(window.RefreshRecentImagesAsync());
+                    window.SelectCamera(other);
+                    Assert.Empty(combo.Items);
+                    Assert.False(Control<Button>(window, "ImportRecentImageButton").IsEnabled);
+                    Assert.Equal("用户校正", window.Title);
+                }
+                finally { window.Close(); }
+            });
+        }
+        finally { Directory.Delete(directory, true); }
+    }
+
+    [Fact]
+    public void RecentImagesRejectOtherCamerasFailedCapturesAndRawPreviewData()
+    {
+        string rawPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cvraw");
+        try
+        {
+            using var raw = new CVCIEFile { Version = 1, Cols = 1, Rows = 1, Bpp = 32, Channels = 3, Exp = [1, 1, 1], Data = new byte[12] };
+            Assert.True(CVFileUtil.WriteCIEFile(rawPath, raw));
+            var row = new LumFourColorRecentImage(1, "A", DateTime.Now, rawPath, 0);
+            Assert.Contains("当前相机", Assert.Throws<InvalidOperationException>(() => LumFourColorRecentImages.Load(row, "B")).Message);
+            Assert.Contains("拍摄失败", Assert.Throws<InvalidOperationException>(() => LumFourColorRecentImages.Load(row with { ResultCode = 1 }, "A")).Message);
+            Assert.Contains("XYZ", Assert.Throws<InvalidOperationException>(() => LumFourColorRecentImages.Load(row, "A")).Message);
+            var items = LumFourColorRecentImages.CreateList([new MeasureResultImgModel { Id = 1, DeviceCode = "A", FileUrl = "preview.png", RawFile = "result.cvcie" }], "A");
+            Assert.Equal("result.cvcie", Assert.Single(items).FilePath);
+            Assert.Empty(LumFourColorRecentImages.CreateList([new MeasureResultImgModel { DeviceCode = "B" }], "A"));
+        }
+        finally { File.Delete(rawPath); }
+    }
+
+    private static DeviceCamera TestCamera(string code)
+    {
+        var camera = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        camera.Config = new ConfigCamera { Code = code };
+        camera.SysResourceModel = new SysResourceModel { Name = code };
+        return camera;
+    }
+
+    [Fact]
+    public void CameraPropertiesExposeUserCalibrationInTheCalibrationGroup()
+    {
+        WithTheme(() =>
+        {
+            var camera = TestCamera("VAM");
+            camera.EditCalibrationCommand = new ColorVision.Common.MVVM.RelayCommand(_ => { });
+            camera.ReleaseLocalCalibrationCacheCommand = new ColorVision.Common.MVVM.RelayCommand(_ => { });
+            camera.UserCalibrationCommand = new ColorVision.Common.MVVM.RelayCommand(_ => { });
+            var commands = new System.Windows.Controls.Primitives.UniformGrid();
+            PropertyEditorHelper.GenCommand(camera, commands);
+            var groups = Assert.IsType<StackPanel>(Assert.Single(commands.Children));
+            var group = Assert.IsType<StackPanel>(Assert.IsType<Border>(Assert.Single(groups.Children)).Child);
+            var buttons = Assert.IsType<Grid>(group.Children[1]).Children.OfType<Button>().ToArray();
+            var button = Assert.Single(buttons.Where(item => ((PropertyInfo)item.Tag).Name == nameof(DeviceCamera.UserCalibrationCommand)));
+            Assert.Equal("用户校正", System.Windows.Automation.AutomationProperties.GetName(button));
+            Assert.Same(camera.UserCalibrationCommand, button.Command);
+            var content = new UserControl { Content = new ScrollViewer { Content = commands, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };
+            var window = new ColorVision.Engine.Services.DevicePropertyWindow(null, "VAM", "DEV.Camera.Default", content);
+            try { Render(window, 760, 440, "user-calibration-camera-entry"); }
+            finally { window.Close(); }
+        });
+    }
+
+    private static void CompleteOnDispatcher(Task task)
+    {
+        if (!task.IsCompleted)
+        {
+            var frame = new DispatcherFrame();
+            task.GetAwaiter().OnCompleted(() => frame.Continue = false);
+            Dispatcher.PushFrame(frame);
+        }
+        task.GetAwaiter().GetResult();
     }
 
     [Theory]
@@ -826,7 +981,7 @@ public sealed class LumFourColorWorkflowSafetyTests
                     foreach (string name in new[] { "SaveButton", "ReplaceButton", "CalculateButton", "CloseButton" })
                         Assert.False(Control<Button>(window, name).IsEnabled);
                     Assert.False(Control<TextBox>(window, "SourcePathBox").IsEnabled);
-                    Assert.False(Control<RadioButton>(window, "PythonRgbMode").IsEnabled);
+                    Assert.False(Control<RadioButton>(window, "FourColorMode").IsEnabled);
                     window.Close();
                     Assert.True(window.IsVisible);
                     if (restartFails) restart.SetException(new IOException("测试服务不可用"));

@@ -17,7 +17,7 @@ public sealed class LumFourColorReplacementTests
         var source = LumFourColorSourceSnapshot.Load(files.Path);
         var corrected = LumFourColorCorrectionCalculator.CorrectSinglePoint(source.Config, new(new(2, .2, .3), new(4, .2, .3)));
         int restarts = 0;
-        var result = await LumFourColorCalibrationReplacement.ReplaceAndRestartAsync(source, corrected, LumFourColorCorrectionMode.SinglePoint, () =>
+        var result = await LumFourColorCalibrationReplacement.ReplaceAndRestartAsync(source, corrected, () =>
         {
             restarts++;
             Assert.Equal(original, File.ReadAllBytes(Assert.Single(Directory.GetFiles(files.Directory, "*_backup.dat"))));
@@ -35,7 +35,7 @@ public sealed class LumFourColorReplacementTests
             Assert.True(JToken.DeepEquals(property.Value, saved[property.Name]), property.Name);
         Assert.Equal(multiColor, saved.ContainsKey("pa"));
         Assert.Throws<InvalidOperationException>(source.EnsureUnchanged);
-        var second = LumFourColorSourceSnapshot.Load(files.Path).ReplaceOriginal(source.Config, LumFourColorCorrectionMode.MatlabRgbw);
+        var second = LumFourColorSourceSnapshot.Load(files.Path).ReplaceOriginal(source.Config);
         Assert.NotEqual(result.BackupPath, second);
         Assert.Equal(corrected.A, LumFourColorSourceSnapshot.Load(second).Config.A);
         Assert.Equal(original, File.ReadAllBytes(result.BackupPath));
@@ -45,7 +45,6 @@ public sealed class LumFourColorReplacementTests
     [Theory]
     [InlineData("changed")]
     [InlineData("invalid")]
-    [InlineData("python")]
     [InlineData("locked")]
     public async Task InvalidOrUnwritableReplacementNeverRestartsOrChangesOriginal(string failure)
     {
@@ -57,7 +56,6 @@ public sealed class LumFourColorReplacementTests
         using var fileLock = failure == "locked" ? File.Open(files.Path, FileMode.Open, FileAccess.Read, FileShare.Read) : null;
         int restarts = 0;
         await Assert.ThrowsAnyAsync<Exception>(() => LumFourColorCalibrationReplacement.ReplaceAndRestartAsync(source, corrected,
-            failure == "python" ? LumFourColorCorrectionMode.PythonRgb : LumFourColorCorrectionMode.SinglePoint,
             () => { restarts++; return Task.CompletedTask; }));
         Assert.Equal(0, restarts);
         Assert.Equal(original, File.ReadAllBytes(files.Path));
@@ -74,14 +72,14 @@ public sealed class LumFourColorReplacementTests
         var corrected = new CVRawManualCieConfig { A = 2, E = 2, I = 2 };
         var failure = new IOException("test service unavailable");
         var result = await LumFourColorCalibrationReplacement.ReplaceAndRestartAsync(source, corrected,
-            LumFourColorCorrectionMode.SinglePoint, () => Task.FromException(failure));
+            () => Task.FromException(failure));
         Assert.Same(failure, result.RestartError);
         Assert.Equal(2, LumFourColorSourceSnapshot.Load(files.Path).Config.A);
         Assert.Equal(original, File.ReadAllBytes(result.BackupPath));
         Assert.Contains("文件已替换", result.Message);
         Assert.Contains("服务重启失败", result.Message);
         var retry = await LumFourColorCalibrationReplacement.ReplaceAndRestartAsync(LumFourColorSourceSnapshot.Load(files.Path), source.Config,
-            LumFourColorCorrectionMode.SinglePoint, () => Task.CompletedTask);
+            () => Task.CompletedTask);
         Assert.Null(retry.RestartError);
     }
 
@@ -94,11 +92,11 @@ public sealed class LumFourColorReplacementTests
         var other = LumFourColorSourceSnapshot.Load(second.Path);
         var pending = new TaskCompletionSource();
         Task<LumFourColorReplacementResult> operation = LumFourColorCalibrationReplacement.ReplaceAndRestartAsync(source, source.Config,
-            LumFourColorCorrectionMode.SinglePoint, () => pending.Task);
+            () => pending.Task);
         try
         {
             await Assert.ThrowsAsync<InvalidOperationException>(() => LumFourColorCalibrationReplacement.ReplaceAndRestartAsync(other, other.Config,
-                LumFourColorCorrectionMode.SinglePoint, () => throw new Exception("must not restart")));
+                () => throw new Exception("must not restart")));
             other.EnsureUnchanged();
             Assert.Single(Directory.GetFiles(second.Directory));
         }

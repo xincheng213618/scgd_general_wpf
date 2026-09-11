@@ -56,11 +56,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 throw new InvalidOperationException("原校正文件已被修改或移除，请重新选择文件并采集，避免使用旧数据。");
         }
 
-        public string ReplaceOriginal(CVRawManualCieConfig corrected, LumFourColorCorrectionMode mode)
+        public string ReplaceOriginal(CVRawManualCieConfig corrected)
         {
-            if (!Enum.IsDefined(mode)) throw new ArgumentOutOfRangeException(nameof(mode));
-            if (mode == LumFourColorCorrectionMode.PythonRgb)
-                throw new InvalidOperationException("Python RGB 输出独立 XYZ 矩阵，请使用导出，不能直接替换原校正文件。");
             EnsureUnchanged();
             string temporary = Path + "." + Guid.NewGuid().ToString("N") + ".tmp";
             string directory = System.IO.Path.GetDirectoryName(Path)!;
@@ -86,9 +83,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             }
         }
 
-        public void SaveCopy(string destination, CVRawManualCieConfig corrected, LumFourColorCorrectionMode mode = LumFourColorCorrectionMode.MatlabRgbw)
+        public void SaveCopy(string destination, CVRawManualCieConfig corrected)
         {
-            if (!Enum.IsDefined(mode)) throw new ArgumentOutOfRangeException(nameof(mode));
             string fullPath = System.IO.Path.GetFullPath(destination);
             if (string.Equals(fullPath, Path, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("请选择新的文件名，保留原校正文件。");
@@ -96,9 +92,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             string temporary = fullPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
             try
             {
-                string contents = mode == LumFourColorCorrectionMode.PythonRgb
-                    ? LumFourColorCorrectionCalculator.SerializeCalibrationFile(corrected)
-                    : CalibrationFile.SerializeCorrection(corrected);
+                string contents = CalibrationFile.SerializeCorrection(corrected);
                 File.WriteAllText(temporary, contents, new UTF8Encoding(false));
                 _ = Load(temporary);
                 EnsureUnchanged();

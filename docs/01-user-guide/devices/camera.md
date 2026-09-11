@@ -21,6 +21,7 @@ related: ["engine.devices","operations.device-configuration","operations.physica
 | 设备右键菜单 `Local`，或本地相机节点的“相机管理” | 打开 `CameraLocalWindow` 本地相机管理；在本进程连接、测量，并直接显示内存图像 |
 | 相机控制面板的“视频模式” | `DisplayCamera` 用独立句柄打开 Live/8-bit 相机，显示连续回调帧 |
 | 流程节点“本地相机取图” | `LocalCameraNode` 取得本地测量帧，保存结果主记录，再交给流程下游 |
+| 相机属性 → 校准与校正 → 用户校正 | 带入当前相机，选择最近拍摄图像、导入文件或取图后进行单点 / RGBW 修正；见[用户校正](./calibration.md#四色校正采集) |
 | 设备结果视图 | `ViewCamera` 展示结果记录，选择记录后按 `FileUrl` 打开图像文件 |
 
 相机卡片和结果详情的登记、首次显示、首结果及提前释放边界见[设备详情视图按需初始化](../../04-api-reference/engine-components/device-service-chain.md#设备详情视图按需初始化)。

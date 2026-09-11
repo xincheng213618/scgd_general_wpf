@@ -18,14 +18,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
         public static async Task<LumFourColorReplacementResult> ReplaceAndRestartAsync(
             LumFourColorSourceSnapshot source, CVRawManualCieConfig corrected,
-            LumFourColorCorrectionMode mode, Func<Task> restartServices)
+            Func<Task> restartServices)
         {
             ArgumentNullException.ThrowIfNull(restartServices);
             if (!Gate.Wait(0)) throw new InvalidOperationException("已有校正文件正在替换并重启服务，请稍后再试。");
             try
             {
                 // A write/backup failure must never interrupt services. A restart failure must not disguise a completed write.
-                string backup = source.ReplaceOriginal(corrected, mode);
+                string backup = source.ReplaceOriginal(corrected);
                 try
                 {
                     await restartServices();

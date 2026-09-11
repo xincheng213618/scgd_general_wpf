@@ -85,7 +85,7 @@
                     </Grid>
                     <StackPanel Grid.Column="3" Orientation="Horizontal">
                         <Button Style="{StaticResource IconActionButtonStyle}" Content="&#xE898;" AutomationProperties.Name="上传校正文件" Command="{Binding Group.UploadCalibrationItemCommand}" CommandParameter="{Binding SlotKey}" ToolTip="上传此类型的校正文件" />
-                        <Button Content="&#xE9D2;" ToolTip="四色校正采集" AutomationProperties.Name="四色校正采集" Click="CorrectFourColor_Click">
+                        <Button Content="&#xE9D2;" ToolTip="用户校正" AutomationProperties.Name="用户校正" Click="CorrectFourColor_Click">
                             <Button.Style>
                                 <Style TargetType="Button" BasedOn="{StaticResource IconActionButtonStyle}">
                                     <Style.Triggers>
@@ -120,7 +120,7 @@
                 <Button Style="{StaticResource UpdateDialogTextButtonStyle}" Margin="0,0,8,0"
                         Click="Export_Click" Content="导出" />
                 <Button Style="{StaticResource UpdateDialogTextButtonStyle}" Margin="0,0,8,0"
-                        Click="LaunchFourColorCorrection_Click" Content="四色校正" />
+                        Click="LaunchFourColorCorrection_Click" Content="用户校正" />
                 <Button Style="{StaticResource UpdateDialogSecondaryButtonStyle}"
                         Command="{Binding OepnCalibrationToolCommand}" Content="创建校正" />
             </StackPanel>

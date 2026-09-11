@@ -498,7 +498,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         public ObservableCollection<LumFourColorCalibrationSample> Samples { get; } = new();
         public LumFourColorCorrectionMode Mode { get; private set; }
         public bool IsSinglePoint => Mode == LumFourColorCorrectionMode.SinglePoint;
-        public bool IsComplete => Samples.Count > 0 && Samples.All(sample => sample.IsComplete);
+        public bool IsComplete => Samples.Count == (IsSinglePoint ? 1 : 4) && Samples.All(sample => sample.IsComplete);
 
         public void SetMode(LumFourColorCorrectionMode mode)
         {
@@ -514,8 +514,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             Samples.Add(new LumFourColorCalibrationSample(LumFourColorCorrectionTarget.Red));
             Samples.Add(new LumFourColorCalibrationSample(LumFourColorCorrectionTarget.Green));
             Samples.Add(new LumFourColorCalibrationSample(LumFourColorCorrectionTarget.Blue));
-            if (mode == LumFourColorCorrectionMode.MatlabRgbw)
-                Samples.Add(new LumFourColorCalibrationSample(LumFourColorCorrectionTarget.White));
+            Samples.Add(new LumFourColorCalibrationSample(LumFourColorCorrectionTarget.White));
         }
 
         public CVRawManualCieConfig Calculate(CVRawManualCieConfig source)
@@ -532,9 +531,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             if (IsSinglePoint)
                 return LumFourColorCorrectionCalculator.CorrectSinglePoint(source, Samples[0].CreateMeasurement());
 
-            if (Mode == LumFourColorCorrectionMode.PythonRgb)
-                return LumFourColorCorrectionCalculator.CorrectPythonRgb(Samples[0].CreateMeasurement(), Samples[1].CreateMeasurement(), Samples[2].CreateMeasurement());
-
             return LumFourColorCorrectionCalculator.CorrectFourColor(source, new LumFourColorCorrectionMeasurements(
                 Samples[0].CreateMeasurement(),
                 Samples[1].CreateMeasurement(),
@@ -547,13 +543,15 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
     {
         public static LumFourColorCieCapture Load(string filePath)
         {
-            if (!CVFileUtil.IsCIEFile(filePath))
-                throw new InvalidOperationException("请选择 CVCIE 文件。");
+            if (!string.Equals(System.IO.Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase) || !CVFileUtil.IsCIEFile(filePath))
+                throw new InvalidOperationException("请选择含 XYZ 数据的 CVCIE 图像，RAW 或普通预览图不能用于用户校正。");
 
             if (!CVFileUtil.Read(filePath, out CVCIEFile file))
                 throw new InvalidOperationException("无法读取 CVCIE 文件。");
             using (file)
             {
+                if (!CvcieSrgbRenderer.Supports(file.Channels, file.Bpp))
+                    throw new InvalidOperationException("用户校正需要三通道浮点 XYZ 图像。");
                 byte[] data = file.Data?.ToArray() ?? throw new InvalidOperationException("CVCIE 文件没有图像数据。");
                 return new LumFourColorCieCapture(data, file.Cols, file.Rows, file.Bpp, file.Channels, file.Gain, file.Exp?.ToArray() ?? Array.Empty<float>()) { Source = System.IO.Path.GetFullPath(filePath) };
             }

@@ -3,7 +3,7 @@ knowledge_id: "operations.calibration"
 knowledge_type: "topic"
 status: "current"
 summary: "校准服务绑定物理相机并执行本地文件或MQTT校正；模板按Native执行链选用存在的校正文件，输出、显示、落库与缓存删除是不同完成边界。"
-aliases: ["校准服务","本地校正","标定资源","校准模板打不开","校正参数设置","四色校正采集","LumFourColorCalibrationSession","CalibrationControl","CalibrationSlotDefinitions","清理校准缓存","UseLocalCalibration","DeviceCalibration","LocalFileCalibrationService","MQTTCalibration"]
+aliases: ["用户校正", "导入最新图像", "最近拍摄图像", "校准服务","本地校正","标定资源","校准模板打不开","校正参数设置","四色校正采集","LumFourColorCalibrationSession","CalibrationControl","CalibrationSlotDefinitions","清理校准缓存","UseLocalCalibration","DeviceCalibration","LocalFileCalibrationService","MQTTCalibration"]
 code_paths: ["Engine/ColorVision.Engine/Services/Devices/Calibration/DeviceCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/ConfigCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DisplayCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/LocalFileCalibrationService.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/MQTTCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/Views/ViewCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/InfoCalibration.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationParam.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationSlotDefinitions.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorPoiEditor.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheManagerWindow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs","Test/ColorVision.UI.Tests/CalibrationEditorInteractionTests.cs","Test/ColorVision.UI.Tests/LumFourColorWorkflowSafetyTests.cs"]
 related: ["engine.devices","operations.device-configuration","operations.physical-camera","flow.session"]
@@ -27,24 +27,24 @@ related: ["engine.devices","operations.device-configuration","operations.physica
 
 成像校正的显示、分组保存与 Native 加载共用 `CalibrationSlotDefinitions.NormalSlots`，顺序表示实际执行链而不是 `CalibrationType` 枚举编号：`DarkNoise → DefectPoint → DSNU → Uniformity → ColorShift → Distortion → LineArity → ColorDiff → AngleShift`。Native `CalibrationContext` 按加载顺序执行非色度项，并把互斥的亮度/色度转换延迟到最后；亮度与四色优先显示，单色和多色弱化显示但仍可选择。
 
-## 四色校正采集
+## 用户校正 {#四色校正采集}
 
-“四色校正”默认使用较大的窗口（1600×1060，受屏幕工作区限制），图像与光谱参考并排显示，相机测量值放在侧栏，为 9566×6548 等横向图像保留显示空间。图像等比缩放，横向色块列出两侧状态。单点只需一组；默认“RGBW（MATLAB）”需要四组；“RGB（Python）”只需 R/G/B 三组，采集顺序不限。
+相机属性的“校准与校正”分组提供“用户校正”，打开时带入当前相机；也可从校正文件管理或“应用与工具”进入。“用户校正”默认使用较大的窗口（1600×1060，受屏幕工作区限制），图像与光谱参考并排显示，相机测量值放在侧栏，为 9566×6548 等横向图像保留显示空间。图像等比缩放，横向色块列出两侧状态。计算模式为“单点”和“RGBW 四色”，单点只需一组；默认 RGBW 需要 R/G/B/W 四组，W 必须有有效数据，采集顺序不限。两种模式都基于原校正矩阵生成完整校正系数。
 
 1. 选择相机和校正模板时，模板中配置的四色校正文件会自动填入原文件栏；模板启用多色校正时带入对应的多色文件。也可点击“选择文件”手动指定。文件不存在或无法读取会提示，不能静默使用之前模板带入的文件。多设备时不默认选择第一台，模板需显式选择；真机取图要求模板启用与文件格式匹配的四色或多色校正。
-2. 选中色块，点击“相机取图”或“选择 CIE”。图像使用 `ImageView`，默认圆形 POI，可切换矩形；拖动绘制后自动读取原始 XYZ/x/y。选中区域后可拖动位置、调整尺寸，通过右键“编辑”设置位置和尺寸，或使用图像内的尺寸面板。“绘制 POI”保留手动画点，每个色块只保留一个区域。选择“POI 模板”并点击“应用”可带入模板的第一个点；后续取图也使用已选模板，仍可手动调整，不修改原模板。模板明确记录的图像尺寸必须匹配，第一个点须为圆形或矩形，不自动跳过无效点。形状及绘图默认尺寸通过 `LumFourColorPoiOptions` 保存；区域超出图像或尺寸无效时清除旧测量并提示调整。
+2. 选中色块，点击“相机取图”或“图像导入”。“导入最新图像”直接读取当前相机最新一条拍摄记录；“最近图像”点击“刷新”后可从列表选择并“导入”。列表来自与 POI 编辑器相同的拍摄结果表，按时间和 ID 倒序显示当前相机最近 100 条记录，不默认选中。最新记录缺文件、拍摄失败或没有 CVCIE XYZ 数据时提示失败，不自动换成旧图。文件夹导入继续保留。图像使用 `ImageView`，默认圆形 POI，可切换矩形；拖动绘制后自动读取原始 XYZ/x/y。选中区域后可拖动位置、调整尺寸，通过右键“编辑”设置位置和尺寸，或使用图像内的尺寸面板。“绘制 POI”保留手动画点，每个色块只保留一个区域。选择“POI 模板”并点击“应用”可带入模板的第一个点；后续取图也使用已选模板，仍可手动调整，不修改原模板。模板明确记录的图像尺寸必须匹配，第一个点须为圆形或矩形，不自动跳过无效点。形状及绘图默认尺寸通过 `LumFourColorPoiOptions` 保存；区域超出图像或尺寸无效时清除旧测量并提示调整。
 3. “测量数据”中相机、光谱各有 Y、CIE x、CIE y，共六个可编辑值，可直接录入或修改已有测量值。光谱也可点击“采集光谱”，或在“选择已有…”中选择当前光谱仪最近 100 条亮度测量中的一条。历史列表按时间、ID、Y/x/y、IP 和 ND 展示，不默认选中记录；导入前后都限定设备归属，光通量 / EQE 数据不能作为亮度 Y。
-4. 当前模式的数据齐全后点击上方“计算校正”。通过核对或明确确认待复核项后，单点与 RGBW 可在底部“另存为”，或点击“替换当前文件并重启服务”；Python RGB 使用“导出 XYZ 矩阵”。
+4. 当前模式的数据齐全后点击右侧测量面板底部的“计算校正”（位于保存按钮上方）。通过核对或明确确认待复核项后，可在底部“另存为”，或点击“替换当前文件并重启服务”。
 
 单点和 RGBW 两种模式都自动识别 `a…i` 及 `Gain/pa` 两种 JSON 校正文件，界面显示读到的格式。另存与替换都保持原格式、增益、曝光、位深及其他字段，只替换矩阵系数；“另存为”保留原文件。`pa` 需要九个有限系数，`Gain` 至少三个有限值且前三项非零。含两套矩阵、重复字段、缺项或非法数值的文件会报错，旧版非 JSON 文本暂不支持。格式与对应模板类型见[校正文件兼容契约](../../04-api-reference/engine-components/ColorVision.FileIO.md#四色校正系数转换)。
 
-“RGB（Python）”复现提供的 Python 多色计算：使用 R/G/B 两侧的 Y/x/y，求出从相机 XYZ 到参考 XYZ 的修正矩阵，不使用 W，也不与原校正矩阵合成。原文件仍作为取图和来源核对的依据。导出为独立的 `a…i` JSON，增益为 1、曝光为 0，与 Python 输出一致；即使原文件是 `Gain/pa` 也采用此格式，默认文件名带 `_PythonRGB_XYZ`，不能作为已合成的 RGBW 校正文件直接替换。计算器不依赖 Python 运行环境；零 CIE y、非有限数值和不可逆 RGB 实测矩阵仍会拒绝，不沿用 Python 的零分母补值。
+RGBW 使用四组参考色度和 W 的参考亮度确定新矩阵；文件格式自动识别，不需要选择另一种算法。历史版本导出的 `_PythonRGB_XYZ` 文件是独立 XYZ→XYZ 变换，不能当作完整校正文件替换使用，应以原校正文件及完整 RGBW 测量重新计算。
 
 手动录入或修改后，该侧标为“手动值”，并在计算前集中复核。两侧的“恢复”分别恢复原始 POI 或光谱测量值；重新绘制 POI、取图或选择光谱会替换对应侧的手动值。每个色块保存自己的六项输入，未填完整或包含无效数值时不能计算；已有全部数值时不要求图像或设备连接。相机手动值按 Yxy 换算 XYZ，恢复时保留原始 POI 的精确 XYZ；手动光谱参考不虚构曲线。编辑不写回设备、数据库、源图或源记录。
 
 主界面保留输入、采集按钮、简短状态和完成数量；“测量详情”默认折叠，内含图像来源、POI、曝光、原始光谱结果 ID、时间、IP 与波形。原始记录仅供核对，不能证明手动修改后的值已通过质量验证。
 
-光谱 IP 使用原始峰值 AD / 65535 × 100%，工艺范围为 **30%～95%，含端点**。低于范围提示增加积分时间或调整 ND，高于范围提示降低积分时间或调整 ND；缺失 IP 标为无法判断，不补 0 或视为合格。真实取图记录所用四色校正文件的内容指纹，计算时与原文件核对；导入 CVCIE 不含校正模板身份，显示“模板待核对”。范围异常、缺失 IP / 采集时间和模板未核实 / 不一致在计算前集中确认一次，默认取消；选择继续仅表示操作员接受本次风险，不表示程序已验证数据正确。自动亮度预览不能判断相机过曝，仍须核对原图曝光、当前色块、测量位置和 ND。
+光谱 IP 使用原始峰值 AD / 65535 × 100%，工艺范围为 **30%～95%，含端点**。低于范围提示增加积分时间或调整 ND，高于范围提示降低积分时间或调整 ND；缺失 IP 标为无法判断，不补 0 或视为合格。真实取图记录所用四色校正文件的内容指纹，计算时与原文件核对；文件夹及最近记录导入的 CVCIE 不含校正模板身份，显示“模板待核对”。最近记录还保留设备、结果 ID、拍摄时间和路径供核对；有记录不表示校正来源已验证。RAW、普通预览图、非三通道浮点图像不能作为 XYZ 测量输入。范围异常、缺失 IP / 采集时间和模板未核实 / 不一致在计算前集中确认一次，默认取消；选择继续仅表示操作员接受本次风险，不表示程序已验证数据正确。自动亮度预览不能判断相机过曝，仍须核对原图曝光、当前色块、测量位置和 ND。
 
 NaN/Infinity、零 CIE y、XYZ 换算溢出、采集/导入中的非法峰值 AD、空光谱、波长重复 / 倒序，以及多组未修改参考值重复使用同一设备同一结果 ID 会阻止完成或计算。有限负 XYZ、Y/x/y、光谱和矩阵系数原样保留。重采 / 重选一侧会先撤销该侧旧值；失败后不能回用。重画开始即清除旧 POI 读数。更换原文件、相机或相机模板清空相机侧；更换光谱仪清空光谱侧；另一侧保留。切换任一计算模式都会清空测量值、重建会话。任一输入改变或计算失败都会使旧结果失效。
 
@@ -52,7 +52,7 @@ NaN/Infinity、零 CIE y、XYZ 换算溢出、采集/导入中的非法峰值 AD
 
 “替换当前文件并重启服务”直接操作上方显示的原文件，使用前须确认该路径就是要更新的文件，并安排好服务中断。程序先验证临时结果，再在原目录创建带日期、时间、唯一标识及 `_backup` 后缀的备份，保留原扩展名；备份逐字节内容指纹一致且原文件未变化后，才原子替换原文件并调用现有 ColorVision 服务重启流程。备份或写入失败不会重启服务；重启失败会明确提示文件已替换、需检查服务后手动重启，不自动回滚文件。底部显示备份路径，悬停可查看完整路径。
 
-替换期间禁止重复提交、修改当前窗口和关闭窗口。替换完成后，采集窗口清除旧相机数据并保留光谱参考，手工窗口清空测量表和确认状态，均需重新测量并计算。Python RGB 的独立 XYZ 矩阵不能直接替换原文件，该模式禁用替换按钮。保存不会修改模板指向、上传资源或切换 PG / ND；服务重启完成不等于实际相机取图验收。
+替换期间禁止重复提交、修改当前窗口和关闭窗口。替换完成后，采集窗口清除旧相机数据并保留光谱参考，手工窗口清空测量表和确认状态，均需重新测量并计算。保存不会修改模板指向、上传资源或切换 PG / ND；服务重启完成不等于实际相机取图验收。
 
 “手工数值”使用按单元格选择的 DataGrid：从起始单元格 Ctrl+V 可粘贴 Excel 连续区域，Ctrl+C 复制所选单元格，“复制全部”包含表头与目标名称。数值列按相机 Y/x/y、光谱 Y/x/y 排列，可带相同表头及目标列；带目标时必须与当前行色块一致。超出范围、列数不一致或包含非有限数值时整次拒绝；空单元格用于清空数值，不能直接计算。操作员须先核对色块、原文件和 IP；修改数值或文件路径会撤销确认和旧结果。该入口没有原始采集元数据，不能代替采集窗口的自动核对。
 

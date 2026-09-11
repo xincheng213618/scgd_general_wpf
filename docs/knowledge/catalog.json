@@ -4618,6 +4618,8 @@
       "status": "current",
       "summary": "CVRAW/CVCIE 读取、内嵌 XYZ 真彩显示与原图回退、四色校正采集与数值校验，以及版本写回和失败边界。",
       "aliases": [
+        "用户校正",
+        "LumFourColorRecentImages",
         "CVCIE文件为什么打不开",
         "ColorVision.FileIO",
         "CVFileUtil",
@@ -4666,6 +4668,7 @@
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorSpectrumSelectionWindow.xaml",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorSpectrumSelectionWindow.xaml.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorRecentImages.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml.cs",
         "Engine/ColorVision.Engine/Media/CVRawManualCieWindow.xaml.cs",
         "UI/ColorVision.ImageEditor/Settings/ImageViewSettingsWindow.xaml.cs",
@@ -6275,6 +6278,9 @@
       "status": "current",
       "summary": "校准服务绑定物理相机并执行本地文件或MQTT校正；模板按Native执行链选用存在的校正文件，输出、显示、落库与缓存删除是不同完成边界。",
       "aliases": [
+        "用户校正",
+        "导入最新图像",
+        "最近拍摄图像",
         "校准服务",
         "本地校正",
         "标定资源",

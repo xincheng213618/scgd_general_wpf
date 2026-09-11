@@ -37,8 +37,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         private CVRawManualCieConfig? correctedConfig;
         private LumFourColorSourceSnapshot? sourceSnapshot;
         private bool busy;
-        private LumFourColorCorrectionMode SelectedMode => SinglePointMode.IsChecked == true ? LumFourColorCorrectionMode.SinglePoint
-            : PythonRgbMode.IsChecked == true ? LumFourColorCorrectionMode.PythonRgb : LumFourColorCorrectionMode.MatlabRgbw;
+        private LumFourColorCorrectionMode SelectedMode => SinglePointMode.IsChecked == true ? LumFourColorCorrectionMode.SinglePoint : LumFourColorCorrectionMode.MatlabRgbw;
 
         public LumFourColorCorrectionWindow(string? sourcePath = null, LumFourColorCorrectionMode mode = LumFourColorCorrectionMode.MatlabRgbw)
         {
@@ -119,7 +118,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             {
                 LumFourColorCorrectionMode.SinglePoint => SinglePointMode,
                 LumFourColorCorrectionMode.MatlabRgbw => FourColorMode,
-                LumFourColorCorrectionMode.PythonRgb => PythonRgbMode,
                 _ => throw new ArgumentOutOfRangeException(nameof(mode)),
             };
             option.IsChecked = true;
@@ -127,11 +125,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
         private void ShowMeasurementRows()
         {
-            SaveButton.Content = SelectedMode == LumFourColorCorrectionMode.PythonRgb ? "导出 XYZ 矩阵" : "另存为";
-            ResultTitle.Text = SelectedMode == LumFourColorCorrectionMode.PythonRgb ? "XYZ 修正矩阵" : "计算结果";
-            ReplaceButton.ToolTip = SelectedMode == LumFourColorCorrectionMode.PythonRgb
-                ? "Python RGB 输出独立 XYZ 矩阵，请使用导出，不能直接替换原校正文件。"
-                : "备份原校正文件后替换，并重启 ColorVision 服务。";
             rows.Clear();
             if (SelectedMode == LumFourColorCorrectionMode.SinglePoint)
             {
@@ -141,8 +134,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             rows.Add(new CorrectionMeasurementRow { Target = "R" });
             rows.Add(new CorrectionMeasurementRow { Target = "G" });
             rows.Add(new CorrectionMeasurementRow { Target = "B" });
-            if (SelectedMode == LumFourColorCorrectionMode.MatlabRgbw)
-                rows.Add(new CorrectionMeasurementRow { Target = "W" });
+            rows.Add(new CorrectionMeasurementRow { Target = "W" });
         }
 
         private void GridPreviewExecuted(object sender, ExecutedRoutedEventArgs e)
@@ -216,11 +208,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 {
                     correctedConfig = LumFourColorCorrectionCalculator.CorrectSinglePoint(source, CreateMeasurement(rows[0]));
                 }
-                else if (SelectedMode == LumFourColorCorrectionMode.PythonRgb)
-                {
-                    if (rows.Count != 3) throw new InvalidOperationException("Python RGB 需要 R、G、B 三组测量值。");
-                    correctedConfig = LumFourColorCorrectionCalculator.CorrectPythonRgb(CreateMeasurement(rows[0]), CreateMeasurement(rows[1]), CreateMeasurement(rows[2]));
-                }
                 else
                 {
                     if (rows.Count != 4)
@@ -234,9 +221,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 }
 
                 ResultPreview.Text = FormatMatrix(correctedConfig);
-                StatusText.Text = SelectedMode == LumFourColorCorrectionMode.PythonRgb ? "XYZ 修正矩阵已计算" : "计算完成";
+                StatusText.Text = "计算完成";
                 SaveButton.IsEnabled = true;
-                ReplaceButton.IsEnabled = SelectedMode != LumFourColorCorrectionMode.PythonRgb;
+                ReplaceButton.IsEnabled = true;
             }
             catch (Exception ex)
             {
@@ -258,10 +245,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
             SaveFileDialog dialog = new()
             {
-                Title = SelectedMode == LumFourColorCorrectionMode.PythonRgb ? "导出 Python RGB 的 XYZ 修正矩阵" : "保存修正后的校正文件（保持原格式）",
+                Title = "保存修正后的校正文件（保持原格式）",
                 Filter = "校正文件 (*.dat)|*.dat|JSON 文件 (*.json)|*.json|所有文件 (*.*)|*.*",
                 InitialDirectory = Directory.Exists(sourceDirectory) ? sourceDirectory : Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-                FileName = SelectedMode == LumFourColorCorrectionMode.PythonRgb ? $"{sourceName}_PythonRGB_XYZ.dat" : $"{sourceName}_Corrected{extension}",
+                FileName = $"{sourceName}_Corrected{extension}",
                 AddExtension = true,
                 DefaultExt = extension.TrimStart('.'),
             };
@@ -270,7 +257,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
             try
             {
-                sourceSnapshot!.SaveCopy(dialog.FileName, correctedConfig, SelectedMode);
+                sourceSnapshot!.SaveCopy(dialog.FileName, correctedConfig);
                 StatusText.Text = $"已保存：{dialog.FileName}";
             }
             catch (Exception ex)
@@ -288,7 +275,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             StatusText.Text = "正在替换文件并重启服务…";
             try
             {
-                var result = await LumFourColorCalibrationReplacement.ReplaceAndRestartAsync(sourceSnapshot, correctedConfig, SelectedMode, restartServices);
+                var result = await LumFourColorCalibrationReplacement.ReplaceAndRestartAsync(sourceSnapshot, correctedConfig, restartServices);
                 // Reusing the same manual data against the replaced matrix would apply the correction twice.
                 ShowMeasurementRows();
                 ResetResult();
@@ -306,7 +293,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             SourcePanel.IsEnabled = ModePanel.IsEnabled = MeasurementPanel.IsEnabled = CalculationActions.IsEnabled = !value;
             CloseButton.IsEnabled = !value;
             SaveButton.IsEnabled = !value && correctedConfig != null;
-            ReplaceButton.IsEnabled = !value && correctedConfig != null && SelectedMode != LumFourColorCorrectionMode.PythonRgb;
+            ReplaceButton.IsEnabled = !value && correctedConfig != null;
         }
 
         private static ColorCorrectionMeasurement CreateMeasurement(CorrectionMeasurementRow row)
@@ -383,7 +370,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         {
             yield return new ThirdPartyAppInfo
             {
-                Name = "四色校正采集",
+                Name = "用户校正",
                 Group = "ColorVision",
                 Category = ThirdPartyAppCategory.Internal,
                 RequiredPermission = PermissionMode.Administrator,

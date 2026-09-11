@@ -34,6 +34,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         private bool sourceFromTemplate;
         private bool busy;
         private bool replacing;
+        private readonly Func<string, Task<IReadOnlyList<LumFourColorRecentImage>>> queryRecentImages;
 
         private LumFourColorCalibrationSample? SelectedSample => SampleList.SelectedItem as LumFourColorCalibrationSample;
 
@@ -48,8 +49,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         internal LumFourColorCalibrationWorkflowWindow(
             IEnumerable<DeviceCamera> cameras,
             IEnumerable<DeviceSpectrum> spectrums,
-            string? sourcePath = null, LumFourColorPoiOptions? options = null)
+            string? sourcePath = null, LumFourColorPoiOptions? options = null,
+            Func<string, Task<IReadOnlyList<LumFourColorRecentImage>>>? recentImages = null)
         {
+            queryRecentImages = recentImages ?? LumFourColorRecentImages.QueryAsync;
             poiOptions = options ?? new LumFourColorPoiOptions();
             InitializeComponent();
             Width = Math.Min(Width, SystemParameters.WorkArea.Width * 0.96);
@@ -69,13 +72,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             SetMode(LumFourColorCorrectionMode.MatlabRgbw);
         }
 
-        public static void ShowWindow(string? sourcePath = null)
+        public static void ShowWindow(string? sourcePath = null, DeviceCamera? camera = null)
         {
             LumFourColorCalibrationWorkflowWindow? existing = Application.Current.Windows
                 .OfType<LumFourColorCalibrationWorkflowWindow>()
                 .FirstOrDefault();
             if (existing != null)
             {
+                if (!existing.busy && camera != null) existing.SelectCamera(camera);
                 if (!existing.busy && !string.IsNullOrWhiteSpace(sourcePath))
                 {
                     existing.sourceFromTemplate = false;
@@ -93,8 +97,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 Owner = owner,
                 WindowStartupLocation = owner == null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner,
             };
+            if (camera != null) window.SelectCamera(camera);
             window.Show();
         }
+
+        internal void SelectCamera(DeviceCamera camera) => CameraCombo.SelectedItem = CameraCombo.Items.Cast<DeviceCamera>()
+            .FirstOrDefault(item => string.Equals(item.Config.Code, camera.Config.Code, StringComparison.Ordinal));
 
         private void BrowseSource_Click(object sender, RoutedEventArgs e)
         {
@@ -148,8 +156,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         {
             if (!IsInitialized || SampleList == null)
                 return;
-            SetMode(SinglePointMode.IsChecked == true ? LumFourColorCorrectionMode.SinglePoint
-                : PythonRgbMode.IsChecked == true ? LumFourColorCorrectionMode.PythonRgb : LumFourColorCorrectionMode.MatlabRgbw);
+            SetMode(SinglePointMode.IsChecked == true ? LumFourColorCorrectionMode.SinglePoint : LumFourColorCorrectionMode.MatlabRgbw);
         }
 
         private void SetMode(LumFourColorCorrectionMode mode)
@@ -163,10 +170,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             InvalidateCalculation();
             SampleList.SelectedIndex = 0;
             StatusText.Text = "";
-            SaveButton.Content = mode == LumFourColorCorrectionMode.PythonRgb ? "导出 XYZ 矩阵" : "另存为";
-            ReplaceButton.ToolTip = mode == LumFourColorCorrectionMode.PythonRgb
-                ? "Python RGB 输出独立 XYZ 矩阵，请使用导出，不能直接替换原校正文件。"
-                : "备份原校正文件后替换，并重启 ColorVision 服务。";
             RefreshSelectedSample();
         }
 
@@ -176,6 +179,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 return;
             if (sourceFromTemplate) SourcePathBox.Text = string.Empty;
             sourceFromTemplate = false;
+            RecentImagesCombo.ItemsSource = null;
             DeviceCamera? camera = CameraCombo.SelectedItem as DeviceCamera;
             CalibrationCombo.ItemsSource = camera?.PhyCamera?.CalibrationParams;
             // A template must be selected deliberately; the first item may belong to a different calibration group.
@@ -358,13 +362,20 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             if (dialog.ShowDialog(this) != true)
                 return;
 
+            await ImportImageAsync(() => LumFourColorCieService.Load(dialog.FileName));
+        }
+
+        private async Task ImportImageAsync(Func<LumFourColorCieCapture> load)
+        {
+            if (busy || closed || SelectedSample is not { } sample) return;
             SetBusy(true, "加载图像…");
             try
             {
                 CancelDrawMode();
                 sample.ClearCamera();
                 RefreshSelectedSample();
-                LumFourColorCieCapture frame = LumFourColorCieService.Load(dialog.FileName);
+                LumFourColorCieCapture frame = await Task.Run(load);
+                if (closed) return;
                 sample.SetFrame(frame, LumFourColorCieService.Render(frame));
                 InvalidateCalculation();
                 StatusText.Text = "";
@@ -373,9 +384,54 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             }
             catch (Exception ex)
             {
-                ShowError(ex.Message);
+                if (!closed) ShowError(ex.Message);
             }
             finally { if (!closed) SetBusy(false, null); }
+        }
+
+        private void RecentImages_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshActions();
+        private async void RefreshRecentImages_Click(object sender, RoutedEventArgs e) => await RefreshRecentImagesAsync();
+
+        internal async Task RefreshRecentImagesAsync()
+        {
+            if (busy || closed || CameraCombo.SelectedItem is not DeviceCamera camera) return;
+            RecentImagesCombo.ItemsSource = null;
+            SetBusy(true, "读取最近图像…");
+            try
+            {
+                var images = await queryRecentImages(camera.Config.Code);
+                if (closed) return;
+                RecentImagesCombo.ItemsSource = images.Where(image => string.Equals(image.DeviceCode, camera.Config.Code, StringComparison.Ordinal)).ToArray();
+                RecentImagesCombo.SelectedIndex = -1;
+                StatusText.Text = RecentImagesCombo.Items.Count == 0 ? "当前相机暂无拍摄记录" : "";
+            }
+            catch (Exception ex) { if (!closed) StatusText.Text = ex.Message; }
+            finally { if (!closed) SetBusy(false, null); }
+        }
+
+        private async void LoadLatestImage_Click(object sender, RoutedEventArgs e) => await ImportLatestImageAsync();
+
+        internal async Task ImportLatestImageAsync()
+        {
+            if (busy || closed || CameraCombo.SelectedItem == null) return;
+            CancelDrawMode();
+            SelectedSample?.ClearCamera();
+            InvalidateCalculation();
+            RefreshSelectedSample();
+            await RefreshRecentImagesAsync();
+            if (closed || RecentImagesCombo.Items.Count == 0) return;
+            RecentImagesCombo.SelectedIndex = 0;
+            await ImportRecentImageAsync();
+        }
+
+        private async void ImportRecentImage_Click(object sender, RoutedEventArgs e) => await ImportRecentImageAsync();
+
+        internal Task ImportRecentImageAsync()
+        {
+            if (CameraCombo.SelectedItem is not DeviceCamera camera || RecentImagesCombo.SelectedItem is not LumFourColorRecentImage image)
+                return Task.CompletedTask;
+            string code = camera.Config.Code;
+            return ImportImageAsync(() => LumFourColorRecentImages.Load(image, code));
         }
 
         private void DrawPoi_Click(object sender, RoutedEventArgs e)
@@ -471,7 +527,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                 sourceSnapshot.EnsureUnchanged();
                 correctedConfig = session.Calculate(sourceSnapshot.Config);
                 RefreshActions();
-                StatusText.Text = session.Mode == LumFourColorCorrectionMode.PythonRgb ? "XYZ 修正矩阵已计算" : "计算完成";
+                StatusText.Text = "计算完成";
             }
             catch (Exception ex)
             {
@@ -493,10 +549,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
             SaveFileDialog dialog = new()
             {
-                Title = session.Mode == LumFourColorCorrectionMode.PythonRgb ? "导出 Python RGB 的 XYZ 修正矩阵" : "保存修正后的校正文件（保持原格式）",
+                Title = "保存修正后的校正文件（保持原格式）",
                 Filter = "校正文件 (*.dat)|*.dat|JSON 文件 (*.json)|*.json|所有文件 (*.*)|*.*",
                 InitialDirectory = Directory.Exists(sourceDirectory) ? sourceDirectory : Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-                FileName = session.Mode == LumFourColorCorrectionMode.PythonRgb ? $"{sourceName}_PythonRGB_XYZ.dat" : $"{sourceName}_Corrected{extension}",
+                FileName = $"{sourceName}_Corrected{extension}",
                 AddExtension = true,
                 DefaultExt = extension.TrimStart('.'),
             };
@@ -505,7 +561,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
             try
             {
-                sourceSnapshot!.SaveCopy(dialog.FileName, correctedConfig, session.Mode);
+                sourceSnapshot!.SaveCopy(dialog.FileName, correctedConfig);
                 StatusText.Text = $"已保存：{dialog.FileName}";
             }
             catch (Exception ex)
@@ -524,7 +580,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             SetBusy(true, "正在替换文件并重启服务…");
             try
             {
-                var result = await LumFourColorCalibrationReplacement.ReplaceAndRestartAsync(sourceSnapshot, correctedConfig, session.Mode, restartServices);
+                var result = await LumFourColorCalibrationReplacement.ReplaceAndRestartAsync(sourceSnapshot, correctedConfig, restartServices);
                 // The old camera values were measured against the previous matrix, even if restarting failed.
                 ReloadSource();
                 BackupPathText.Text = $"备份：{result.BackupPath}";
@@ -564,6 +620,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             LumFourColorCalibrationSample? sample = SelectedSample;
             CaptureCameraButton.IsEnabled = !busy && sourceSnapshot != null && sample != null && CameraCombo.SelectedItem != null && CalibrationCombo.SelectedItem != null;
             LoadCieButton.IsEnabled = !busy && sourceSnapshot != null && sample != null;
+            bool canReadRecent = !busy && CameraCombo.SelectedItem != null;
+            RecentImagesCombo.IsEnabled = canReadRecent;
+            RefreshRecentImagesButton.IsEnabled = canReadRecent;
+            LoadLatestImageButton.IsEnabled = canReadRecent && sourceSnapshot != null && sample != null;
+            ImportRecentImageButton.IsEnabled = LoadLatestImageButton.IsEnabled && RecentImagesCombo.SelectedItem != null;
             DrawPoiButton.IsEnabled = !busy && sample?.HasImage == true;
             CaptureSpectrumButton.IsEnabled = !busy && sample != null && SpectrumCombo.SelectedItem != null;
             SelectSpectrumButton.IsEnabled = !busy && sample != null && SpectrumCombo.SelectedItem != null;
@@ -573,7 +634,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             NextSampleButton.IsEnabled = !busy && session.Samples.Any(item => item != sample && !item.IsComplete);
             CalculateButton.IsEnabled = !busy && session.IsComplete && sourceSnapshot != null;
             SaveButton.IsEnabled = !busy && correctedConfig != null;
-            ReplaceButton.IsEnabled = !busy && correctedConfig != null && session.Mode != LumFourColorCorrectionMode.PythonRgb;
+            ReplaceButton.IsEnabled = !busy && correctedConfig != null;
             int complete = session.Samples.Count(item => item.IsComplete);
             ProgressText.Text = $"已完成 {complete} / {session.Samples.Count}";
         }
@@ -582,7 +643,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
         {
             busy = value;
             FourColorMode.IsEnabled = !value;
-            PythonRgbMode.IsEnabled = !value;
             SinglePointMode.IsEnabled = !value;
             CameraCombo.IsEnabled = !value;
             CalibrationCombo.IsEnabled = !value;
