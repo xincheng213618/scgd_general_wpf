@@ -32,5 +32,19 @@ namespace WindowsServicePlugin.ServiceManager
                 menu.IsOpen = true;
             }
         }
+
+        private void ClearCurrentLogRecords_Click(object sender, RoutedEventArgs e)
+        {
+            OperationLog.Clear();
+        }
+
+        private async void ClearAllServiceLogs_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not ServiceManagerViewModel viewModel || viewModel.IsBusy)
+                return;
+
+            if (await viewModel.ClearAllServiceLogsAsync().ConfigureAwait(true))
+                OperationLog.Clear();
+        }
     }
 }

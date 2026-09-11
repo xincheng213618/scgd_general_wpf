@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
@@ -844,6 +845,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                         if (Code == SysResourceModel.Code)
                         {
                             CameraLicenseModel = PhyLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
+                            string? previousLicenseValue = CameraLicenseModel?.LicenseValue;
                             if (CameraLicenseModel == null)
                                 CameraLicenseModel = new LicenseModel();
                             CameraLicenseModel.LiceType = 0;
@@ -860,11 +862,14 @@ namespace ColorVision.Engine.Services.PhyCameras
                             if(ret == 1)
                             {
                                 RefreshLicense();
-                                DeviceCalibration?.RestartRCService();
-                                DeviceCamera?.RestartRCService();
                             }
 
                             MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? Properties.Resources.AddFailed : Properties.Resources.AddSuccess)}", Properties.Resources.ModifyLicense);
+                            if (ShouldRestartServicesAfterLicenseUpdate(previousLicenseValue, CameraLicenseModel.LicenseValue, ret)
+                                && MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.Camera_ConfirmRestartService, Properties.Resources.ModifyLicense, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                            {
+                                MqttRCService.GetInstance().RestartServices();
+                            }
                             if (ret == -1)
                             {
                                 return false;
@@ -885,6 +890,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 if (Code == SysResourceModel.Code)
                 {
                     CameraLicenseModel = PhyLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
+                    string? previousLicenseValue = CameraLicenseModel?.LicenseValue;
                     if (CameraLicenseModel == null)
                         CameraLicenseModel = new LicenseModel();
                     CameraLicenseModel.LiceType = 0;
@@ -898,10 +904,13 @@ namespace ColorVision.Engine.Services.PhyCameras
                     if (ret == 1)
                     {
                         RefreshLicense();
-                        DeviceCalibration?.RestartRCService();
-                        DeviceCamera?.RestartRCService();
                     }
                     MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? Properties.Resources.AddFailed : Properties.Resources.UpdateSuccess)}", Properties.Resources.ModifyLicense);
+                    if (ShouldRestartServicesAfterLicenseUpdate(previousLicenseValue, CameraLicenseModel.LicenseValue, ret)
+                        && MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.Camera_ConfirmRestartService, Properties.Resources.ModifyLicense, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                    {
+                        MqttRCService.GetInstance().RestartServices();
+                    }
                     if (ret == -1)
                     {
                         return false;
@@ -918,6 +927,14 @@ namespace ColorVision.Engine.Services.PhyCameras
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.UnsupportedLicenseFileExtension, Properties.Resources.ModifyLicense);
             }
             return false;
+        }
+
+        internal static bool ShouldRestartServicesAfterLicenseUpdate(string? previousLicenseValue, string? currentLicenseValue, int saveResult)
+        {
+            if (saveResult != 1)
+                return false;
+
+            return !string.Equals(previousLicenseValue?.Trim(), currentLicenseValue?.Trim(), StringComparison.Ordinal);
         }
 
         public void CopyLicense()

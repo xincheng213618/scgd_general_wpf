@@ -489,4 +489,16 @@
   <data name="PackageNotSelected" xml:space="preserve">
     <value>No package selected</value>
   </data>
+  <data name="ClearCurrentLogRecords" xml:space="preserve">
+    <value>Clear current records</value>
+  </data>
+  <data name="ClearServiceLogs" xml:space="preserve">
+    <value>Clear this service log</value>
+  </data>
+  <data name="ClearAllServiceLogs" xml:space="preserve">
+    <value>Clear all service logs</value>
+  </data>
+  <data name="ClearAllServiceLogsToolTip" xml:space="preserve">
+    <value>Clear all CVWindowsService logs; running services are briefly stopped and restored</value>
+  </data>
 </root>

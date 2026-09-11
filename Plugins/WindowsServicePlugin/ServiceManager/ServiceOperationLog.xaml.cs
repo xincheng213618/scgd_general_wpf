@@ -15,6 +15,8 @@ public partial class ServiceOperationLog : UserControl, IDisposable
         _logBinder ??= new ModuleLogViewerBinder(LogViewer, "WindowsServicePlugin.ServiceManager");
     }
 
+    public void Clear() => LogViewer.Clear();
+
     public void Dispose()
     {
         _logBinder?.Dispose();

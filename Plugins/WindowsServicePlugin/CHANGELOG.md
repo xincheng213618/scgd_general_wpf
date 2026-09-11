@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.4.3.31 - 2026-09-11
+
+### Fixed
+
+- Synchronized the registration center monitor list with the database during service updates, retaining `CVArchService` only when it is installed.
+
 ## 1.4.3.30 - 2026-09-07
 
 ### Changed

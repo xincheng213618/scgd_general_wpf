@@ -151,6 +151,42 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
+        ///   查找类似 一键清空服务日志 的本地化字符串。
+        /// </summary>
+        public static string ClearAllServiceLogs {
+            get {
+                return ResourceManager.GetString("ClearAllServiceLogs", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 清空全部 CVWindowsService 日志；运行中的服务会短暂停止并恢复 的本地化字符串。
+        /// </summary>
+        public static string ClearAllServiceLogsToolTip {
+            get {
+                return ResourceManager.GetString("ClearAllServiceLogsToolTip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 清空当前记录 的本地化字符串。
+        /// </summary>
+        public static string ClearCurrentLogRecords {
+            get {
+                return ResourceManager.GetString("ClearCurrentLogRecords", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 清空该服务日志 的本地化字符串。
+        /// </summary>
+        public static string ClearServiceLogs {
+            get {
+                return ResourceManager.GetString("ClearServiceLogs", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 连接与数据库设置 的本地化字符串。
         /// </summary>
         public static string ConnectionSettings {

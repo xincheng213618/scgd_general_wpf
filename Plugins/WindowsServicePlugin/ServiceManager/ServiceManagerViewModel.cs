@@ -54,6 +54,7 @@ namespace WindowsServicePlugin.ServiceManager
         public RelayCommand SetBasePathCommand { get; }
         public RelayCommand OpenBaseLocationCommand { get; }
         public RelayCommand OpenFolderCommand { get; }
+        public RelayCommand ClearServiceLogsCommand { get; }
         public RelayCommand ServiceInstallCommand { get; }
         public RelayCommand ServiceUninstallCommand { get; }
         public RelayCommand ServiceStartCommand { get; }
@@ -88,6 +89,7 @@ namespace WindowsServicePlugin.ServiceManager
             SetBasePathCommand = new RelayCommand(a => SetBasePath());
             OpenBaseLocationCommand = new RelayCommand(a => OpenBaseLocation());
             OpenFolderCommand = new RelayCommand(a => OpenServiceFolder(a as ServiceEntry));
+            ClearServiceLogsCommand = new RelayCommand(a => _ = ClearServiceLogsAsync(a as ServiceEntry), a => !IsBusy && a is ServiceEntry entry && ServiceLogCleanup.ResolveLogDirectory(entry, Config.BaseLocation) != null);
             ServiceInstallCommand = new RelayCommand(a => _ = InstallManagedServiceAsync(a as ServiceEntry), a => !IsBusy && a is ServiceEntry entry && !entry.IsInstalled && HasResolvableServiceExecutable(entry));
             ServiceUninstallCommand = new RelayCommand(a => _ = UninstallManagedServiceAsync(a as ServiceEntry), a => !IsBusy && a is ServiceEntry { IsInstalled: true });
             ServiceStartCommand = new RelayCommand(a => _ = ControlManagedServiceAsync(a as ServiceEntry, ServiceHostServiceOperation.Start), a => !IsBusy && a is ServiceEntry { IsInstalled: true, IsRunning: false });

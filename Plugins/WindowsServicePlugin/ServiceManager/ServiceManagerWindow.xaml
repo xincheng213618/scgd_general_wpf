@@ -83,6 +83,8 @@
                                                         <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
                                                             <MenuItem Header="{x:Static res:Resources.OpenFolder}" Command="{Binding OpenFolderCommand}"
                                                                       CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                            <MenuItem Header="{x:Static res:Resources.ClearServiceLogs}" Command="{Binding ClearServiceLogsCommand}"
+                                                                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                                                             <Separator />
                                                             <MenuItem Header="{x:Static res:Resources.Install}" Command="{Binding ServiceInstallCommand}"
                                                                       CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
@@ -226,7 +228,18 @@
                 </ScrollViewer>
             </TabItem>
             <TabItem Header="{x:Static res:Resources.ServiceLog}">
-                <local:ServiceOperationLog x:Name="OperationLog" Margin="0,18,0,0" />
+                <Grid Margin="0,18,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
+                        <Button Content="{x:Static res:Resources.ClearCurrentLogRecords}" Click="ClearCurrentLogRecords_Click" />
+                        <Button Content="{x:Static res:Resources.ClearAllServiceLogs}" Click="ClearAllServiceLogs_Click"
+                                Margin="8,0,0,0" ToolTip="{x:Static res:Resources.ClearAllServiceLogsToolTip}" />
+                    </StackPanel>
+                    <local:ServiceOperationLog x:Name="OperationLog" Grid.Row="1" />
+                </Grid>
             </TabItem>
         </TabControl>
 

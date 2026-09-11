@@ -26,12 +26,6 @@ namespace ColorVision
         public bool UseCompactMainWindow { get => _useCompactMainWindow; set { _useCompactMainWindow = value; OnPropertyChanged(); } }
         private bool _useCompactMainWindow = true;
 
-        /// <summary>
-        /// 记录上次打开时的应用版本，用于在更新后首次启动时显示变更日志。
-        /// </summary>
-        public string LastOpenedVersion { get => _LastOpenedVersion; set { _LastOpenedVersion = value; OnPropertyChanged(); } }
-        private string _LastOpenedVersion;
-
         [Browsable(false)]
         public int LastSeenNewUserGuideVersion { get => _lastSeenNewUserGuideVersion; set { _lastSeenNewUserGuideVersion = value; OnPropertyChanged(); } }
         private int _lastSeenNewUserGuideVersion;

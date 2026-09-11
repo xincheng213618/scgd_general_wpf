@@ -51,4 +51,15 @@ public sealed class PhyCameraLicenseImportPolicyTests
         Assert.Same(existing, match);
         Assert.Single(licenses);
     }
+
+    [Theory]
+    [InlineData("old-license", "new-license", 1, true)]
+    [InlineData("same-license", "same-license", 1, false)]
+    [InlineData("same-license\r\n", " same-license ", 1, false)]
+    [InlineData("old-license", "new-license", 0, false)]
+    [InlineData("old-license", "new-license", -1, false)]
+    public void ServiceRestartIsOfferedOnlyAfterAChangedLicenseWasSaved(string? previousValue, string? currentValue, int saveResult, bool expected)
+    {
+        Assert.Equal(expected, PhyCamera.ShouldRestartServicesAfterLicenseUpdate(previousValue, currentValue, saveResult));
+    }
 }
