@@ -7233,7 +7233,6 @@
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManager.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs",
-        "Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraRestoreArchive.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadRunner.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadWorkspace.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml",
@@ -7244,18 +7243,21 @@
         "Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml",
         "Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationEdit.xaml",
         "Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationEdit.xaml.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationArchivePlanBuilder.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationExportArchive.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml",
+        "Engine/ColorVision.Engine/CalFile/CVXFileProcess.cs",
         "Engine/ColorVision.Engine/Services/RC/RCFileUpload.cs",
         "Engine/cvColorVision/Camera/cvCameraCSLib.Discovery.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/PhyCameraLicenseImportPolicyTests.cs",
-        "Test/ColorVision.UI.Tests/PhyCameraRestoreArchiveTests.cs",
         "Test/ColorVision.UI.Tests/CalibrationUploadRunnerTests.cs",
         "Test/ColorVision.UI.Tests/CalibrationUploadWorkspaceTests.cs",
         "Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs",
-        "Test/ColorVision.UI.Tests/CalibrationEditorInteractionTests.cs"
+        "Test/ColorVision.UI.Tests/CalibrationEditorInteractionTests.cs",
+        "Test/ColorVision.UI.Tests/CalibrationExportArchiveTests.cs"
       ],
       "related": [
         "operations.camera",
