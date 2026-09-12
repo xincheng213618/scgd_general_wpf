@@ -1085,6 +1085,12 @@
             },
             {
               "text": {
+                "root": "本地 FOV V2"
+              },
+              "link": "/04-api-reference/algorithms/detectors/fov-v2-local"
+            },
+            {
+              "text": {
                 "root": "本地点阵畸变 V2"
               },
               "link": "/04-api-reference/algorithms/detectors/grid-distortion-v2"
@@ -1244,6 +1250,12 @@
                 "root": "发光区定位：远端模板与本地 V2"
               },
               "link": "/04-api-reference/algorithms/templates/find-light-area"
+            },
+            {
+              "text": {
+                "root": "本地 FOV V2"
+              },
+              "link": "/04-api-reference/algorithms/detectors/fov-v2-local"
             },
             {
               "text": {
@@ -2264,6 +2276,12 @@
                 "root": "FocusPoints 关注点模板"
               },
               "link": "/04-api-reference/algorithms/templates/focus-points-template"
+            },
+            {
+              "text": {
+                "root": "本地 FOV V2"
+              },
+              "link": "/04-api-reference/algorithms/detectors/fov-v2-local"
             },
             {
               "text": {

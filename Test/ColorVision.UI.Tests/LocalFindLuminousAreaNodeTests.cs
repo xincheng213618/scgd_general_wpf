@@ -676,6 +676,41 @@ public sealed class LocalFindLuminousAreaNodeTests
     }
 
     [Fact]
+    public void UntransformedMemoryFramePersistsKnownSourceFilePath()
+    {
+        const string sourcePath = @"C:\capture\White51.png";
+        CVStartCFC action = CreateRawAction("known-source", sourcePath);
+        LocalFindLuminousAreaPersistenceRequest? persisted = null;
+        FakeNodeServices services = new()
+        {
+            DetectHandler = (_, _, _) => CreateSuccessfulDetection(),
+            PersistHandler = request =>
+            {
+                persisted = request;
+                return 80;
+            }
+        };
+        LocalFindLuminousAreaNode node = new(services);
+        try
+        {
+            LocalFindLuminousAreaNodeResultData result = node.ExecuteSynchronously(action);
+
+            Assert.NotNull(persisted);
+            Assert.Equal(sourcePath, persisted!.ImageFilePath);
+            Assert.Equal(sourcePath, result.ImageFilePath);
+            JObject parameters = JObject.FromObject(persisted.Parameters);
+            Assert.Equal(sourcePath, parameters.Value<string>("ImageFilePath"));
+            Assert.Equal(sourcePath, parameters.Value<string>("SourceFilePath"));
+            Assert.False(parameters.Value<bool>("ImageRead"));
+            Assert.False(parameters.Value<bool>("MemoryOnly"));
+        }
+        finally
+        {
+            action.RuntimeResources.Dispose();
+        }
+    }
+
+    [Fact]
     public void UpstreamCieExecutionPassesYPlaneToDetectorAndPreservesSourceMaster()
     {
         const int width = 7;
@@ -954,7 +989,7 @@ public sealed class LocalFindLuminousAreaNodeTests
         new(9.8, 70.3)
     ];
 
-    private static CVStartCFC CreateRawAction(string serialNumber)
+    private static CVStartCFC CreateRawAction(string serialNumber, string sourceFilePath = "")
     {
         const int width = 8;
         const int height = 6;
@@ -965,6 +1000,7 @@ public sealed class LocalFindLuminousAreaNodeTests
                 Height = height,
                 SourceBpp = 8,
                 Channels = 1,
+                SourceFilePath = sourceFilePath,
                 PrimaryBufferKind = LocalFrameBufferKind.CvRaw
             },
             rawLength: width * height,

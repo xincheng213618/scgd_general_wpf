@@ -24,6 +24,7 @@ namespace Conoscope.Presentation
         private bool initialized;
         private bool closed;
         private int nextColorIndex;
+        private bool isDirty;
         internal bool KeepSessionOnClose { get; set; }
 
         protected override void OnClosing(CancelEventArgs e)
@@ -54,6 +55,7 @@ namespace Conoscope.Presentation
             SnapshotRow row = new(snapshot, nextColorIndex++);
             row.PropertyChanged += SnapshotRow_PropertyChanged;
             rows.Add(row);
+            isDirty = true;
             SnapshotList.SelectedItem = row;
             SnapshotList.ScrollIntoView(row);
         }
@@ -62,6 +64,7 @@ namespace Conoscope.Presentation
 
         private void SnapshotRow_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
+            if (e.PropertyName is nameof(SnapshotRow.Name) or nameof(SnapshotRow.IsShown)) isDirty = true;
             if (e.PropertyName == nameof(SnapshotRow.Name)) RefreshPlot(false);
             if (e.PropertyName == nameof(SnapshotRow.IsShown)) RefreshPlot(true);
         }
@@ -79,6 +82,7 @@ namespace Conoscope.Presentation
             int index = rows.IndexOf(selected);
             selected.PropertyChanged -= SnapshotRow_PropertyChanged;
             rows.Remove(selected);
+            isDirty = true;
             if (rows.Count > 0) SnapshotList.SelectedIndex = Math.Min(index, rows.Count - 1);
             RefreshPlot(true);
         }
@@ -98,14 +102,79 @@ namespace Conoscope.Presentation
             if (dialog.ShowDialog(this) != true) return;
             try
             {
-                using StreamWriter writer = new(dialog.FileName, false, new UTF8Encoding(true));
-                selected.Snapshot.WriteCsv(writer);
+                ConoscopeAtomicFile.Write(dialog.FileName, selected.Snapshot.WriteCsv);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(this, CompositeFormatCache.Format(Properties.Resources.MsgExportFailed, ex.Message),
                     Properties.Resources.TitleCurveSnapshots, MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        internal ConoscopeCurveSession CaptureSession()
+        {
+            SnapshotName.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+            return new(rows.Select(row => new ConoscopeCurveSessionEntry(row.Snapshot, row.IsShown, row.ColorIndex)).ToArray(), SnapshotList.SelectedIndex);
+        }
+
+        internal void ImportSession(ConoscopeCurveSession session)
+        {
+            int offset = rows.Count;
+            foreach (ConoscopeCurveSessionEntry entry in session.Entries)
+            {
+                SnapshotRow row = new(entry.Snapshot, entry.ColorIndex) { IsShown = entry.IsShown };
+                row.PropertyChanged += SnapshotRow_PropertyChanged;
+                rows.Add(row);
+            }
+            nextColorIndex = rows.Count;
+            if (session.Entries.Count > 0)
+            {
+                SnapshotList.SelectedIndex = offset + Math.Max(0, session.SelectedIndex);
+                isDirty = true;
+            }
+            RefreshPlot(true);
+        }
+
+        private void ImportSession_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog dialog = new() { Filter = Properties.Resources.CurveSessionFilter };
+            if (dialog.ShowDialog(this) != true) return;
+            try
+            {
+                // Fully validate before appending; existing work is never replaced by import.
+                ImportSession(ConoscopeCurveSessionFile.Load(dialog.FileName));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, CompositeFormatCache.Format(Properties.Resources.CurveSessionLoadFailed, ex.Message), Title, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void SaveSession_Click(object sender, RoutedEventArgs e) => SaveSession(this);
+
+        private bool SaveSession(Window owner)
+        {
+            SaveFileDialog dialog = new() { Filter = Properties.Resources.CurveSessionFilter, DefaultExt = ".conocurves", AddExtension = true, FileName = "Conoscope.conocurves" };
+            if (dialog.ShowDialog(owner) != true) return false;
+            try
+            {
+                ConoscopeCurveSessionFile.Save(dialog.FileName, CaptureSession());
+                isDirty = false;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(owner, CompositeFormatCache.Format(Properties.Resources.MsgExportFailed, ex.Message), Title, MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+        }
+
+        internal bool ConfirmDiscardOrSave(Window owner)
+        {
+            SnapshotName.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+            if (!isDirty) return true;
+            MessageBoxResult result = MessageBox.Show(owner, Properties.Resources.CurveSessionUnsaved, Title, MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+            return result == MessageBoxResult.No || (result == MessageBoxResult.Yes && SaveSession(owner));
         }
 
         private void RefreshPlot(bool autoScale)
@@ -133,7 +202,7 @@ namespace Conoscope.Presentation
             foreach (SnapshotRow row in visible)
             {
                 var scatter = SnapshotPlot.Plot.Add.Scatter(row.Snapshot.Positions.ToArray(), row.Snapshot.Values.ToArray());
-                scatter.LegendText = $"{row.Name} · {row.Snapshot.ChannelLabel}";
+                scatter.LegendText = $"{row.Name} · {row.Snapshot.SourceName} · {row.Snapshot.ChannelLabel}";
                 scatter.LineWidth = 1.6f;
                 scatter.MarkerSize = 0;
                 Color color = row.ColorBrush.Color;
@@ -178,6 +247,7 @@ namespace Conoscope.Presentation
             private static readonly string[] LightColors = { "#23856C", "#3D7CBB", "#A67116", "#9466B4", "#BD4A69", "#25869D" };
             private static readonly string[] DarkColors = { "#6DCAAA", "#80B7EE", "#E3B65D", "#C69DE4", "#E994A7", "#6AC6DD" };
             private readonly int colorIndex;
+            public int ColorIndex => colorIndex;
             private bool isShown = true;
             public event PropertyChangedEventHandler? PropertyChanged;
             public ConoscopeCurveSnapshot Snapshot { get; private set; }
@@ -210,7 +280,7 @@ namespace Conoscope.Presentation
                 }
             }
 
-            public string Description => $"{Snapshot.ChannelLabel} · {Snapshot.ReferenceDescription}";
+            public string Description => $"{Snapshot.SourceName} · {Snapshot.ChannelLabel} · {Snapshot.ReferenceDescription}";
 
             public SolidColorBrush ColorBrush
             {
@@ -231,6 +301,7 @@ namespace Conoscope.Presentation
                 {
                     StringBuilder text = new();
                     Add(Properties.Resources.SnapshotSource, Snapshot.SourceName);
+                    if (!string.IsNullOrEmpty(Snapshot.SourcePath)) Add(Properties.Resources.CurveSourcePath, Snapshot.SourcePath);
                     Add(Properties.Resources.Con_Category_Model, Snapshot.ModelName);
                     Add(Properties.Resources.SnapshotCoordinates, Snapshot.CoordinateSystemName);
                     Add(Properties.Resources.SnapshotReference, Snapshot.ReferenceDescription);

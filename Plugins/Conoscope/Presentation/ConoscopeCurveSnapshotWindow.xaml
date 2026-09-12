@@ -14,16 +14,18 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <DockPanel Margin="0,0,0,12">
-            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+        <StackPanel Margin="0,0,0,12">
+            <WrapPanel>
+                <Button Content="{x:Static properties:Resources.CurveSessionImport}" Padding="12,6" Margin="0,0,8,8" Click="ImportSession_Click"/>
+                <Button Content="{x:Static properties:Resources.CurveSessionSave}" Padding="12,6" Margin="0,0,16,8" Click="SaveSession_Click"/>
                 <Button x:Name="DeleteSnapshotButton" Content="{x:Static properties:Resources.SnapshotDeleteSelected}"
-                        Padding="12,6" Margin="0,0,8,0" IsEnabled="False" Click="DeleteSnapshot_Click"/>
+                        Padding="12,6" Margin="0,0,8,8" IsEnabled="False" Click="DeleteSnapshot_Click"/>
                 <Button x:Name="ExportSnapshotButton" Content="{x:Static properties:Resources.SnapshotExportSelected}"
-                        Padding="12,6" IsEnabled="False" Click="ExportSnapshot_Click"/>
-            </StackPanel>
+                        Padding="12,6" Margin="0,0,0,8" IsEnabled="False" Click="ExportSnapshot_Click"/>
+            </WrapPanel>
             <TextBlock Text="{x:Static properties:Resources.SnapshotSessionHint}" TextWrapping="Wrap"
                        Margin="0,0,16,0" VerticalAlignment="Center" Foreground="{DynamicResource CV.Text.Secondary}"/>
-        </DockPanel>
+        </StackPanel>
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>

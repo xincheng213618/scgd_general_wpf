@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:schema id="root">
     <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -633,16 +633,16 @@
     <value>請輸入文件前綴</value>
   </data>
   <data name="MsgInvalidAzimuthStep" xml:space="preserve">
-    <value>方位角步進必須是0.01-180之間的數值</value>
+    <value>方位角步進必須是0.1-180之間的數值</value>
   </data>
   <data name="MsgInvalidRadialStep" xml:space="preserve">
-    <value>徑向採樣步進必須是0.01-80之間的數值</value>
+    <value>徑向採樣步進必須是0.1-80之間的數值</value>
   </data>
   <data name="MsgInvalidRingStep" xml:space="preserve">
-    <value>圓環步進必須是0.01-80之間的數值</value>
+    <value>圓環步進必須是0.1-80之間的數值</value>
   </data>
   <data name="MsgInvalidCircularStep" xml:space="preserve">
-    <value>圓周角步進必須是0.01-360之間的數值</value>
+    <value>圓周角步進必須是0.1-360之間的數值</value>
   </data>
   <data name="MsgInvalidAzimuthSection" xml:space="preserve">
     <value>方位角截面角度必須是0-180之間的數值</value>
@@ -669,7 +669,7 @@
     <value>取消勾選後，CSV 將直接輸出帶單位的列頭和資料，不再寫入頂部說明行。</value>
   </data>
   <data name="MsgInvalidSamplingInterval" xml:space="preserve">
-    <value>採樣間隔必須是 0.01 到 360 之間的數值</value>
+    <value>採樣間隔必須是 0.1 到 360 之間的數值</value>
   </data>
   <data name="GroupBoxPreprocessSettings" xml:space="preserve">
     <value>預處理設定</value>
@@ -1159,7 +1159,7 @@
     <value>打開 3D 視圖失敗: {0}</value>
   </data>
   <data name="TbEditFocusPointTip" xml:space="preserve">
-    <value>開啓後進入關注點工具模式...</value>
+    <value>編輯關注點；開啟時按 Ctrl 拖動平移，關閉時直接拖動平移</value>
   </data>
   <data name="TbCircleTip" xml:space="preserve">
     <value>僅繪製新的關注點圓</value>
@@ -1198,7 +1198,7 @@
     <value>固定角度 {0}° 的 H/V 截線已匯出。</value>
   </data>
   <data name="SnapshotSessionHint" xml:space="preserve">
-    <value>快照保留擷取時的數值。關閉此視窗可再次開啟；關閉文件會清空，請先匯出。</value>
+    <value>所有文件共用此工作階段；關閉影像仍保留快照。匯入會追加曲線，儲存可供下次還原。</value>
   </data>
   <data name="SnapshotCompatibilityHint" xml:space="preserve">
     <value>僅比較橫軸含義和單位相同的曲線。</value>
@@ -1245,4 +1245,59 @@
   <data name="SnapshotRenameHint" xml:space="preserve">
     <value>編輯名稱後按 Enter 或移開焦點確認。</value>
   </data>
+  <data name="CurveSessionFilter" xml:space="preserve">
+    <value>Conoscope 曲線工作階段 (*.conocurves)|*.conocurves</value>
+  </data>
+  <data name="CurveSessionImport" xml:space="preserve">
+    <value>匯入工作階段</value>
+  </data>
+  <data name="CurveSessionSave" xml:space="preserve">
+    <value>儲存工作階段</value>
+  </data>
+  <data name="CurveSessionLoadFailed" xml:space="preserve">
+    <value>無法匯入工作階段：{0}</value>
+  </data>
+  <data name="CurveSessionUnsaved" xml:space="preserve">
+    <value>曲線工作階段有未儲存的修改。關閉工作區前是否儲存？
+選擇「否」將放棄修改，選擇「取消」返回工作區。</value>
+  </data>
+  <data name="CurveSourcePath" xml:space="preserve">
+    <value>來源檔案路徑</value>
+  </data>
+  <data name="ExportRunning" xml:space="preserve">
+    <value>正在匯出 CSV</value>
+  </data>
+  <data name="ExportCompleted" xml:space="preserve">
+    <value>匯出完成</value>
+  </data>
+  <data name="ExportCancelled" xml:space="preserve">
+    <value>匯出已取消</value>
+  </data>
+  <data name="ExportCancelling" xml:space="preserve">
+    <value>正在取消…</value>
+  </data>
+  <data name="ExportCancelHint" xml:space="preserve">
+    <value>取消會保留已完成的檔案；目前未完成的檔案不會取代原檔案。</value>
+  </data>
+  <data name="ExportProgressFormat" xml:space="preserve">
+    <value>檔案 {0}/{1} · 目前檔案 {2:N0}/{3:N0} 個取樣值</value>
+  </data>
+  <data name="ExportFilesCompleted" xml:space="preserve">
+    <value>已完成 {0}/{1} 個檔案。</value>
+  </data>
+  <data name="ExportEstimateFormat" xml:space="preserve">
+    <value>約 {0:N0} 個取樣值，CSV 大小估計 {1:N1} MiB（實際大小隨數值變化）。</value>
+  </data>
+  <data name="ExportEstimateInvalid" xml:space="preserve">
+    <value>輸入有效步長後顯示匯出規模。</value>
+  </data>
+  <data name="ExportInvalidPrefix" xml:space="preserve">
+    <value>請輸入有效的檔名前綴，不要包含路徑或檔名非法字元。</value>
+  </data>
+  <data name="LoadYOnly" xml:space="preserve"><value>僅 Y 可用 · X/Z 載入失敗</value></data>
+  <data name="LoadFailedStatus" xml:space="preserve"><value>文件載入失敗</value></data>
+  <data name="LoadingXz" xml:space="preserve"><value>正在載入 X/Z…</value></data>
+  <data name="LoadingDocument" xml:space="preserve"><value>正在載入文件…</value></data>
+  <data name="RetryDocumentLoad" xml:space="preserve"><value>重新載入</value></data>
+  <data name="RetryDocumentLoadTip" xml:space="preserve"><value>按開啟時的處理參數重新讀取全部通道；曲線快照保留。</value></data>
 </root>

@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="Conoscope.ConoscopeView"
+<UserControl x:Class="Conoscope.ConoscopeView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -153,7 +153,7 @@
             </Border>
             <Border x:Name="FocusToolbarPanel" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,8" Padding="3" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" CornerRadius="6">
                 <ToolBar ToolBarTray.IsLocked="True" Background="Transparent" BorderThickness="0" Padding="0">
-                    <ToggleButton x:Name="tglFocusCircleMode" ContentTemplate="{StaticResource ConoscopeIcon.Pan}" Style="{StaticResource OverlayToolToggleStyle}" ToolTip="{x:Static properties:Resources.TbEditFocusPointTip}" Checked="tglFocusCircleMode_Checked" Unchecked="tglFocusCircleMode_Unchecked" />
+                    <ToggleButton x:Name="tglFocusCircleMode" ContentTemplate="{StaticResource ConoscopeIcon.Select}" AutomationProperties.Name="{x:Static properties:Resources.TbEditFocusPointTip}" Style="{StaticResource OverlayToolToggleStyle}" ToolTip="{x:Static properties:Resources.TbEditFocusPointTip}" Checked="tglFocusCircleMode_Checked" Unchecked="tglFocusCircleMode_Unchecked" />
                     <ToggleButton x:Name="tglFocusCircleDrawTool" ContentTemplate="{StaticResource ConoscopeIcon.Circle}" Style="{StaticResource OverlayToolToggleStyle}" ToolTip="{x:Static properties:Resources.TbCircleTip}" IsChecked="False" Checked="tglFocusCircleDrawTool_Checked" Unchecked="tglFocusCircleDrawTool_Unchecked" />
                     <ToggleButton x:Name="tglFocusCircleSelectTool" Style="{StaticResource OverlayToolToggleStyle}" Content="{x:Static properties:Resources.TbEdit}" ToolTip="{x:Static properties:Resources.TbEditTip}" Checked="tglFocusCircleSelectTool_Checked" Unchecked="tglFocusCircleSelectTool_Unchecked" Visibility="Collapsed" />
                     <ToggleButton x:Name="tglFocusCircleEraseTool" ContentTemplate="{StaticResource ConoscopeIcon.Eraser}" Style="{StaticResource OverlayToolToggleStyle}" ToolTip="{x:Static properties:Resources.TbEraserTip}" Checked="tglFocusCircleEraseTool_Checked" Unchecked="tglFocusCircleEraseTool_Unchecked" />
@@ -182,8 +182,8 @@
                 <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="8,5">
                     <DockPanel LastChildFill="True">
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="8,0,0,0">
-                            <Button x:Name="btnCaptureCurve" ContentTemplate="{StaticResource ConoscopeIcon.Save}" ToolTip="{x:Static properties:Resources.BtnCaptureCurve}" AutomationProperties.Name="{x:Static properties:Resources.BtnCaptureCurve}" Click="btnCaptureCurve_Click" Style="{StaticResource OverlayToolButtonStyle}" Margin="0,0,4,0"/>
-                            <Button x:Name="btnShowSnapshots" ContentTemplate="{StaticResource ConoscopeIcon.Calculate}" ToolTip="{x:Static properties:Resources.TitleCurveSnapshots}" AutomationProperties.Name="{x:Static properties:Resources.TitleCurveSnapshots}" Click="btnShowSnapshots_Click" Style="{StaticResource OverlayToolButtonStyle}" Margin="0,0,8,0"/>
+                            <Button x:Name="btnCaptureCurve" ContentTemplate="{StaticResource ConoscopeIcon.CaptureCurve}" ToolTip="{x:Static properties:Resources.BtnCaptureCurve}" AutomationProperties.Name="{x:Static properties:Resources.BtnCaptureCurve}" Click="btnCaptureCurve_Click" Style="{StaticResource OverlayToolButtonStyle}" Margin="0,0,4,0"/>
+                            <Button x:Name="btnShowSnapshots" ContentTemplate="{StaticResource ConoscopeIcon.Curves}" ToolTip="{x:Static properties:Resources.TitleCurveSnapshots}" AutomationProperties.Name="{x:Static properties:Resources.TitleCurveSnapshots}" Click="btnShowSnapshots_Click" Style="{StaticResource OverlayToolButtonStyle}" Margin="0,0,8,0"/>
                             <ToggleButton x:Name="tglReferencePolarMode" Content="{x:Static properties:Resources.BtnPolarCoord}" Style="{StaticResource PanelSurfaceToggleStyle}" Checked="tglReferencePolarMode_Checked" Unchecked="tglReferencePolarMode_Unchecked" Margin="0,0,8,0"/>
                             <Button Content="{x:Static properties:Resources.BtnExportCurrent}" Click="btnExportCurrentReference_Click" Style="{StaticResource PanelSurfaceButtonStyle}"/>
                         </StackPanel>

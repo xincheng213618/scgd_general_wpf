@@ -106,6 +106,44 @@ public sealed class LuminousAreaNativeInteropTests
     }
 
     [NativeV2Fact]
+    public void GeometricFovPipelineIsRepeatableWithRealV2Localization()
+    {
+        using LuminousFixture fixture = LuminousFixture.Create();
+        FovMeasurement? first = null;
+
+        for (int iteration = 0; iteration < 5; iteration++)
+        {
+            FovCalculationResult result = FovCalculator.DetectAndCalculate(
+                fixture.Image,
+                fixture.Region,
+                9410,
+                74.2,
+                minimumConfidence: 0.2,
+                luminanceBoundaryRatio: 0.5);
+
+            Assert.False(result.UsedProvidedCorners);
+            Assert.Null(result.CoarseDetection);
+            Assert.Equal("RobustV2", result.Detection?.Algorithm);
+            Assert.Equal(result.Detection!.Corners, result.Measurement.Corners);
+            AssertCornersNear(result.Measurement.Corners, fixture.ExpectedFullImageCorners, tolerance: 6);
+            Assert.True(double.IsFinite(result.Measurement.DiagonalFovDegrees));
+            if (first == null)
+                first = result.Measurement;
+            else
+            {
+                Assert.Equal(first.Corners.ToArray(), result.Measurement.Corners.ToArray());
+                Assert.Equal(first.DiagonalFovDegrees, result.Measurement.DiagonalFovDegrees);
+                Assert.Equal(first.HorizontalFovDegrees, result.Measurement.HorizontalFovDegrees);
+                Assert.Equal(first.VerticalFovDegrees, result.Measurement.VerticalFovDegrees);
+                Assert.Equal(first.DirectionalHorizontalFovDegrees, result.Measurement.DirectionalHorizontalFovDegrees);
+                Assert.Equal(first.DirectionalVerticalFovDegrees, result.Measurement.DirectionalVerticalFovDegrees);
+                Assert.Equal(first.LeftDownToRightUpDegrees, result.Measurement.LeftDownToRightUpDegrees);
+                Assert.Equal(first.LeftUpToRightDownDegrees, result.Measurement.LeftUpToRightDownDegrees);
+            }
+        }
+    }
+
+    [NativeV2Fact]
     public void UniformImageFailureIsConsistentAcrossImageEditorAndPoiDefaults()
     {
         using PinnedUShortImage image = PinnedUShortImage.CreateUniform(480, 360, 2400);

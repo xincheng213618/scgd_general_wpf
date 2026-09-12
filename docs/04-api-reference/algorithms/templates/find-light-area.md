@@ -98,6 +98,8 @@ V2 将输入归一化，在多尺度、多阈值候选中寻找四边形，再�
 
 内存所有权和 ABI 约定见 [OpenCV 和 native 集成](../../../02-developer-guide/engine-development/opencv-integration.md)。ImageEditor、POI 的配置对象默认使用 `RobustV2`，旧配置缺少 `Algorithm` 字段时也保持此默认值；显式选择经典兼容模式才显示 `Threshold`、`UseRotatedRect`。本地 V2 Flow 节点固定使用 RobustV2。
 
+ImageEditor、POI 还可显式选择 `FovLuminanceBoundary`（界面名 **实验：中心亮度比例边界（非几何 FOV）**）。它先调用 `RobustV2`，再以中心亮度乘 `LuminanceBoundaryRatio`（默认 `0.5`）寻找亮度交点并拟合四边。内部暗角和渐变可能使角点明显内缩，该实验方法不代表标准有效视场。普通发光区和独立 FOV 均默认使用 `RobustV2` 几何边缘；FOV 有上游四角时直接复用，不调用此实验算法。
+
 ## 历史结果与 CSV
 
 `ViewHandleFindLightArea` 接受 `LightArea`、`FindLightArea` 两种结果。`AlgResultLightAreaModel` 将 `PosX`、`PosY` 和父结果 `Pid` 保存到 `t_scgd_algorithm_result_detail_light_area`；明细仅在 `ViewResults == null` 时加载，已有集合会复用。

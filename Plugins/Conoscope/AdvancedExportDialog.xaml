@@ -9,7 +9,8 @@
         Title="{x:Static properties:Resources.TitleAdvancedExport}"
         Height="650" Width="820" MinHeight="570" MinWidth="720"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource GlobalBackground}">
+        Background="{DynamicResource GlobalBackground}"
+        Foreground="{DynamicResource GlobalTextBrush}">
     <Grid Margin="14">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -120,12 +121,12 @@
                                     <TextBlock Text="{x:Static properties:Resources.LabelAzimuthStep}" VerticalAlignment="Center" Margin="0,0,6,7"/>
                                     <TextBox x:Name="txtAzimuthStep" Grid.Column="1" MinHeight="27" Margin="0,0,0,7"
                                              automation:AutomationProperties.Name="{x:Static properties:Resources.LabelAzimuthStep}"/>
-                                    <TextBlock Grid.Column="2" Text="0.01–180" Foreground="Gray" VerticalAlignment="Center" Margin="7,0,0,7"/>
+                                    <TextBlock Grid.Column="2" Text="0.1–180" Foreground="Gray" VerticalAlignment="Center" Margin="7,0,0,7"/>
 
                                     <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.LabelRadialStep}" VerticalAlignment="Center"/>
                                     <TextBox x:Name="txtRadialStep" Grid.Row="1" Grid.Column="1" MinHeight="27"
                                              automation:AutomationProperties.Name="{x:Static properties:Resources.LabelRadialStep}"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="2" Text="0.01–80" Foreground="Gray" VerticalAlignment="Center" Margin="7,0,0,0"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="2" Text="0.1–80" Foreground="Gray" VerticalAlignment="Center" Margin="7,0,0,0"/>
                                 </Grid>
                             </Border>
 
@@ -142,12 +143,12 @@
                                 <TextBlock Text="{x:Static properties:Resources.LabelRingStep}" VerticalAlignment="Center" Margin="0,0,6,7"/>
                                 <TextBox x:Name="txtPolarStep" Grid.Column="1" MinHeight="27" Margin="0,0,0,7"
                                          automation:AutomationProperties.Name="{x:Static properties:Resources.LabelRingStep}"/>
-                                <TextBlock Grid.Column="2" Text="0.01–80" Foreground="Gray" VerticalAlignment="Center" Margin="7,0,0,7"/>
+                                <TextBlock Grid.Column="2" Text="0.1–80" Foreground="Gray" VerticalAlignment="Center" Margin="7,0,0,7"/>
 
                                 <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.LabelCircularStep}" VerticalAlignment="Center"/>
                                 <TextBox x:Name="txtCircumferentialStep" Grid.Row="1" Grid.Column="1" MinHeight="27"
                                          automation:AutomationProperties.Name="{x:Static properties:Resources.LabelCircularStep}"/>
-                                <TextBlock Grid.Row="1" Grid.Column="2" Text="0.01–360" Foreground="Gray" VerticalAlignment="Center" Margin="7,0,0,0"/>
+                                <TextBlock Grid.Row="1" Grid.Column="2" Text="0.1–360" Foreground="Gray" VerticalAlignment="Center" Margin="7,0,0,0"/>
                             </Grid>
                         </StackPanel>
                     </GroupBox>

@@ -56,9 +56,9 @@ Flow 路径先用返回结果的 `SerialNumber` 查询批次，找不到则回�
 | 无需联合预处理 | 读内嵌 Y，完成适用的单通道处理后提交 Y，发布 `InitialDisplayReady`；随后顺序读取 X、Z并补齐，发布 `DeferredChannelsReady` |
 | `applyPreprocess && DustRemovalEnabled` | 先读 Y 但不发布首屏；读取 X/Z并联合预处理后一次提交 XYZ，只发布 `InitialDisplayReady` |
 | 首屏前失败 | 通过 `LoadFailed(exception, initialDisplayCompleted: false)` 报告，View 显示打开错误 |
-| Y 首屏已提交、后续 X/Z失败 | 保留已提交 Y，报告后台失败；View 不再用首屏错误弹窗重复提示，完整 XYZ 能力仍未就绪 |
+| Y 首屏已提交、后续 X/Z失败 | 保留已提交 Y，状态栏显示“仅 Y 可用”及重新加载入口，悬停可看错误原因；完整 XYZ 能力仍未就绪 |
 
-`InitialDisplayReady` 表示对应数据已提交，不证明 WPF 渲染成功。View 收到该事件才调用 `RefreshDisplayedImage`；渲染异常另记录日志并提示。Document 对 `Changed` / `LoadFailed` 逐订阅者隔离异常。加载内部捕获取消和一般异常，因此等待 `OpenAsync` Task 正常返回也不证明成功；调用方应结合事件及 `HasDisplayData / HasXyzData`，不能等待一个所有路径都会发出的 `DeferredChannelsReady`。
+`InitialDisplayReady` 表示对应数据已提交，不证明 WPF 渲染成功。View 收到该事件才调用 `RefreshDisplayedImage`；渲染异常另记录日志并提示。Document 对 `Changed` / `LoadFailed` / `LoadStateChanged` 逐订阅者隔离异常。状态栏跟随活动文档显示加载过程及失败状态。`RetryLoadAsync` 仅在失败且无在途加载时生效，保留打开时的处理参数并重读全部通道，避免将旧 Y 与磁盘上已修复或替换文件的新 X/Z 混合。重试会重置当前预览和关注点；已捕获曲线快照保留，成功后清除错误状态。加载内部捕获取消和一般异常，因此等待 `OpenAsync` Task 正常返回也不证明成功；调用方应结合事件及 `HasDisplayData / HasXyzData`，不能等待一个所有路径都会发出的 `DeferredChannelsReady`。
 
 资源约束属于 Document，而不是窗口状态：
 
@@ -83,7 +83,7 @@ Flow 路径先用返回结果的 `SerialNumber` 查询批次，找不到则回�
 
 通道能力由同一套检查用于显示、参考曲线及导出：Y只要求 Y；Contrast 要求 Y与同尺寸的对应参考 Y；X/Z/CIE和色差要求完整 XYZ，色差的自定义/参考图模式还需各自有效参考。衍生 Mat 生成失败不能用 Y冒充目标通道。方位、极角导出沿用当前显示通道；高级导出也须通过对应通道检查。
 
-`ConoscopeImageHost` 不创建完整 `ImageView`，但仍拥有 `DrawEditorContext`、选择 visual、Zoombox 和 DrawCanvas。内部 `FocusCircleEditor` 管理圆形 visual、选择/绘制/擦除、菜单、边界和延迟刷新；`FocusCircleInteractionMode` 表达互斥交互状态。
+`ConoscopeImageHost` 不创建完整 `ImageView`，但仍拥有 `DrawEditorContext`、选择 visual、Zoombox 和 DrawCanvas。内部 `FocusCircleEditor` 管理圆形 visual、选择/绘制/擦除、菜单、边界和延迟刷新；`FocusCircleInteractionMode` 表达互斥交互状态。悬浮工具首个选择箭头开关控制关注点编辑：开启时按 Ctrl 拖动平移，关闭时直接拖动平移；工具提示和辅助功能名称明确该语义。
 
 - 新文档使用 `ResetDocument`，清除旧关注点和编辑状态。
 - 同文档换通道或伪彩使用 `ReplaceDisplayedImage`，在清理画布时保留关注点与交互模式。
@@ -120,7 +120,11 @@ theta = atan2(sqrt(x^2 + y^2), z), phi = atan2(y, x)
 
 参考曲线右上角的保留按钮冻结当时的横轴位置和通道数值；快照列表按钮打开命名、显示勾选、比较、删除与 CSV 导出窗口。`ConoscopeCurveSnapshot` 复制数组，只持有数值与元信息，不持有 Mat 或回调；拖动、换通道、重新预处理不改写旧快照。比较以选中快照为基准，只叠加变化角度含义（H/V 包含投影定义）与单位兼容的曲线，并提示不兼容数量。方位直径与圆周快照仍标识源 Polar 横轴，不因图像投影改变而冒充 H/V。快照 CSV 用 `R` 精度输出捕获的数值，不重新采样；当前截线 CSV 按所选步长重新采样并采用所选小数位。
 
-快照只保存在当前文档会话内。关闭快照窗口仅隐藏，重新打开保留名称、勾选和曲线；关闭文档释放全部快照，应提前导出。尚无跨文档合并、快照文件导入、启动恢复或持久化会话。Manual EZCom Software 第 109/111 页按线条横竖命名 Marker，第 110/112 页按固定角度命名截线；第 52 页描述跟踪，第 122–123 页明确是 VT 比较。通用命名快照是本产品的扩展，不应把这些手册章节解读成完整的通用快照生命周期定义。
+快照由 `ConoscopeWindow` 的工作区持有，全部文档共享同一个列表；主页“曲线快照”入口在关闭全部图像后仍可使用。关闭快照窗口仅隐藏，关闭源文档也保留曲线及来源信息；退出工作区时，未保存修改会提示保存、放弃或取消。源文件完整路径区分同名文件，路径只是来源元信息，恢复时不读取它，也不会随源文件更新重算快照。
+
+“保存会话”写入版本 1 的 `.conocurves` JSON 文件，保留名称、来源、捕获 UTC 时间、投影与横轴语义、通道、单位、处理元信息、完整精度位置/数值、勾选、颜色与当前选择。非有限数值以 JSON `null` 保存为断口，恢复为 NaN。“导入会话”先验证整份文件，再追加到当前列表，不覆盖现有曲线；重启后可从主页手动导入，不自动加载上次会话。文件上限 128 MiB、每个会话合计最多 2,000,000 个采样值，避免无界反序列化；未知版本、缺失关键字段和不等长数组会拒绝导入。保存使用同目录临时文件，成功后才替换目标。
+
+Manual EZCom Software 第 109/111 页按线条横竖命名 Marker，第 110/112 页按固定角度命名截线；第 52 页描述跟踪，第 122–123 页明确是 VT 比较。通用命名快照是本产品的扩展，不应把这些手册章节解读成完整的通用快照生命周期定义。
 
 边界如下：
 
@@ -129,6 +133,13 @@ theta = atan2(sqrt(x^2 + y^2), z), phi = atan2(y, x)
 - 3D 视图仍使用源通道与 Polar 圆形掩膜，不把 H/V 预览当测量数据输入。
 
 `ConoscopeView.CreateExportContext` 使用源 XYZ 的 `sourceImageCenter` / `sourcePixelsPerDegree`，不使用 H/V 预览的中心与比例。圆截面、直径截面及矩阵导出因此保持源 Polar 采样位置，不随显示投影改变。固定逗号分隔的 CSV 对角度行列头、通道值及数值元信息统一使用 `InvariantCulture`，不随 Windows 小数分隔符改变列结构；既有字段名、顺序和精度设置保留。`ConoscopeExportGeometryTests` 验证不同投影下的源图采样，`ConoscopeExportCultureTests` 验证小数逗号区域设置下的圆与线输出。
+
+方位/极角矩阵导出逐行取样并直接写 CSV，仅保存两个角度轴和文件缓冲，不再分配完整采样矩阵。原始角度累加、端点容差、最近像素取样、行列顺序和数值精度保持不变。矩阵及当前截线导出的最小采样步长统一为 0.1°，默认仍为 1°；旧配置中的更小步长读取时提升到 0.1°，其他配置与旧字段保留，非有限步长回退到默认值。直接调用导出服务时拒绝小于 0.1° 的步长。VA60 方位/径向均为 0.1° 时为 2,161,800 个采样值。快照 CSV 保留捕获位置，不重采样。高级导出允许仅选截面，并按当前视场和所选步长显示采样值数量与估计文件大小；文件大小随数值位数变化，不是磁盘空间保证。
+
+简单矩阵导出及高级导出的全部文件在后台串行执行；1.5 秒内完成时不显示进度窗，超过该时间才显示当前文件和采样进度并支持取消。成功自动关闭进度窗，当前截线成功也不再弹确认框；失败仍明确显示，取消的批次保留已完成文件数量供查看。取消与失败保留已完成文件，当前文件用同目录临时文件写入，结束前不替换已有目标。原有截线导出同样使用原子写入。`ConoscopeExportProgressWindow` 持有导出数据直到后台任务结束，强制关闭拥有者时也先取消任务；`ConoscopeExportSource` 在 UI 线程保留当前原始 XYZ 和参考图的 OpenCV 引用计数头，并固定型号、几何、参考模式与参考数值。后台回调不读取 View/Config，不克隆完整 XYZ。此方式依赖已发布通道只读：预处理和参考更新必须生成新 Mat 后替换，不能原地改写被导出持有的缓冲区。
+
+导出回归入口包括 `ConoscopeStreamingExportTests`（旧采样/格式、进度、取消和失败原子性）、`ConoscopeExportSourceTests`（源释放及预处理后旧缓冲仍有效）、`ConoscopeCurveSessionTests`（会话完整精度往返、来源、断口和无效文件）。还应操作两个源文档捕获兼容曲线，关闭源文档、保存会话、重建窗口并导入，确认名称、勾选与比较结果；界面夹具应验证后台导出成功和取消时既有目标文件保留。最小步长全量导出、多通道批次与目标磁盘耗时应在受控样本上测量；界面夹具还应核对快速导出静默、延迟显示进度、成功自动关闭和失败重试。`ConoscopeExportSettingsTests` 检查最小步长、非有限配置与旧配置往返。
+
 - 几何精度仍受当前型号的中心、`MaxAngle` 与线性像素/度系数约束；CVCIE 文件本身没有在此层提供独立镜头畸变标定时，H/V 变换不能替代现场标定。
 
 固定 H/V 的回归入口为 `ConoscopeHorizontalVerticalCrossSectionTests`（三投影、非零固定角、双线性、有效域、方向及原分辨率）、`ConoscopeCoordinateAxisInteractionTests`（真实坐标图元与交互）、`ConoscopeCrossSectionWorkflowTests`（View 到快照/CSV 的值和模式契约）、`ConoscopeCurveSnapshotTests`（不可变性、比较语义和完整精度 CSV）。界面还应使用实际样本检查 H 竖线、V 横线、曲线跟踪、三投影切换、Polar 回退及快照窗口关闭重开；仅构建通过不能替代这些操作验收。

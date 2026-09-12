@@ -584,7 +584,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             imageFile = null;
             if (action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) && currentFrame != null)
             {
-                imageFile = ResolveFrameFile(currentFrame);
+                imageFile = currentFrame.ResolveResultImageFilePath();
                 return currentFrame;
             }
 
@@ -660,14 +660,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             {
                 return -1;
             }
-        }
-
-        private static string? ResolveFrameFile(LocalFlowFrame frame)
-        {
-            string file = frame.Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvCie
-                ? frame.CvCieFilePath
-                : frame.CvRawFilePath;
-            return NullIfWhiteSpace(file);
         }
 
         private static string? NullIfWhiteSpace(string? value) =>

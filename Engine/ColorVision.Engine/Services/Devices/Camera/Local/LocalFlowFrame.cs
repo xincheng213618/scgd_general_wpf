@@ -335,6 +335,27 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             return action.RuntimeResources.TryGet(GetFrameResourceKey(frameId), out frame);
         }
 
+        /// <summary>
+        /// Returns a file that represents the pixels and geometry of the frame's
+        /// current primary buffer. The original source is safe only before any
+        /// calibration or mirror transform changes that buffer.
+        /// </summary>
+        public static string? ResolveResultImageFilePath(this LocalFlowFrame frame)
+        {
+            ArgumentNullException.ThrowIfNull(frame);
+            string primaryFile = frame.Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvCie
+                ? frame.CvCieFilePath
+                : frame.CvRawFilePath;
+            if (!string.IsNullOrWhiteSpace(primaryFile)) return primaryFile;
+
+            bool sourceStillMatchesPrimary = frame.Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvRaw
+                && frame.Metadata.FlipMode == CVImageFlipMode.None
+                && string.IsNullOrWhiteSpace(frame.Metadata.CalibrationTemplate);
+            return sourceStillMatchesPrimary && !string.IsNullOrWhiteSpace(frame.Metadata.SourceFilePath)
+                ? frame.Metadata.SourceFilePath
+                : null;
+        }
+
         public static string GetPoiResultResourceKey(Guid frameId) => PoiResultResourceKeyPrefix + frameId.ToString("N");
 
         private static string GetFrameResourceKey(Guid frameId) => FrameResourceKeyPrefix + frameId.ToString("N");

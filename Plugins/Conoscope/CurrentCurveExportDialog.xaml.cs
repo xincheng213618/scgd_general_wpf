@@ -23,7 +23,7 @@ namespace Conoscope
         {
             if (!double.TryParse(txtStepDegrees.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double stepDegrees)
                 || !double.IsFinite(stepDegrees)
-                || stepDegrees < 0.01
+                || stepDegrees < 0.1
                 || stepDegrees > 360)
             {
                 MessageBox.Show(Properties.Resources.MsgInvalidSamplingInterval, Properties.Resources.TitleCurrentCurveExport, MessageBoxButton.OK, MessageBoxImage.Warning);

@@ -12,6 +12,7 @@ namespace Conoscope.Core
     {
         public string Name { get; }
         public string SourceName { get; }
+        public string SourcePath { get; }
         public string ModelName { get; }
         public string CoordinateSystemName { get; }
         public string ReferenceDescription { get; }
@@ -27,6 +28,15 @@ namespace Conoscope.Core
         public ConoscopeCurveSnapshot(string name, string sourceName, string modelName, string coordinateSystemName,
             string referenceDescription, string axisLabel, string channelLabel, string unitLabel,
             IReadOnlyList<double> positions, IReadOnlyList<double> values, string? metadata = null, string? axisKey = null)
+            : this(name, sourceName, modelName, coordinateSystemName, referenceDescription, axisLabel, channelLabel,
+                unitLabel, positions, values, DateTimeOffset.UtcNow, string.Empty, metadata, axisKey)
+        {
+        }
+
+        public ConoscopeCurveSnapshot(string name, string sourceName, string modelName, string coordinateSystemName,
+            string referenceDescription, string axisLabel, string channelLabel, string unitLabel,
+            IReadOnlyList<double> positions, IReadOnlyList<double> values, DateTimeOffset capturedAtUtc,
+            string sourcePath, string? metadata = null, string? axisKey = null)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(name);
             ArgumentNullException.ThrowIfNull(positions);
@@ -39,6 +49,7 @@ namespace Conoscope.Core
 
             Name = name.Trim();
             SourceName = sourceName ?? string.Empty;
+            SourcePath = sourcePath ?? string.Empty;
             ModelName = modelName ?? string.Empty;
             CoordinateSystemName = coordinateSystemName ?? string.Empty;
             ReferenceDescription = referenceDescription ?? string.Empty;
@@ -47,7 +58,7 @@ namespace Conoscope.Core
             ChannelLabel = channelLabel ?? string.Empty;
             UnitLabel = unitLabel ?? string.Empty;
             Metadata = metadata;
-            CapturedAtUtc = DateTimeOffset.UtcNow;
+            CapturedAtUtc = capturedAtUtc.ToUniversalTime();
             Positions = new ReadOnlyCollection<double>(copiedPositions);
             Values = new ReadOnlyCollection<double>(values.ToArray());
         }
@@ -57,6 +68,7 @@ namespace Conoscope.Core
             ArgumentException.ThrowIfNullOrWhiteSpace(name);
             Name = name.Trim();
             SourceName = source.SourceName;
+            SourcePath = source.SourcePath;
             ModelName = source.ModelName;
             CoordinateSystemName = source.CoordinateSystemName;
             ReferenceDescription = source.ReferenceDescription;
@@ -85,6 +97,7 @@ namespace Conoscope.Core
             ArgumentNullException.ThrowIfNull(writer);
             WriteRow(writer, "# Name", Name);
             WriteRow(writer, "# Source", SourceName);
+            if (!string.IsNullOrEmpty(SourcePath)) WriteRow(writer, "# SourcePath", SourcePath);
             WriteRow(writer, "# Model", ModelName);
             WriteRow(writer, "# CoordinateSystem", CoordinateSystemName);
             WriteRow(writer, "# Reference", ReferenceDescription);

@@ -197,6 +197,13 @@
                                                     <TextBlock Text="CIE" Style="{StaticResource RibbonTallCaptionStyle}"/>
                                                 </StackPanel>
                                             </Button>
+                                            <Button x:Name="btnCurveWorkspace" Click="ShowCurveWorkspace_Click" Style="{StaticResource RibbonTallButtonStyle}"
+                                                    ToolTip="{x:Static properties:Resources.TitleCurveSnapshots}">
+                                                <StackPanel Orientation="Vertical">
+                                                    <ContentControl ContentTemplate="{StaticResource ConoscopeIcon.Curves}" Style="{StaticResource RibbonVectorIconStyle}"/>
+                                                    <TextBlock Text="{x:Static properties:Resources.TitleCurveSnapshots}" Style="{StaticResource RibbonTallCaptionStyle}"/>
+                                                </StackPanel>
+                                            </Button>
                                         </StackPanel>
                                         <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupDescription}" Style="{StaticResource RibbonGroupHeaderStyle}"/>
                                     </Grid>
@@ -764,6 +771,12 @@
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Margin="12,0,5,0" Text="{x:Static properties:Resources.ObservationCameraStatus}"/>
                     <TextBlock x:Name="tbObservationCameraStatus" Text="{x:Static properties:Resources.NotOpened}" Foreground="{DynamicResource CV.Text.Secondary}" FontWeight="SemiBold"/>
+                </StackPanel>
+            </StatusBarItem>
+            <StatusBarItem x:Name="documentLoadStatusItem" Visibility="Collapsed">
+                <StackPanel Orientation="Horizontal" Margin="12,0,0,0">
+                    <TextBlock x:Name="tbDocumentLoadStatus" VerticalAlignment="Center" Foreground="{DynamicResource CV.Text.Secondary}"/>
+                    <Button x:Name="btnRetryDocumentLoad" Content="{x:Static properties:Resources.RetryDocumentLoad}" ToolTip="{x:Static properties:Resources.RetryDocumentLoadTip}" Click="btnRetryDocumentLoad_Click" Margin="8,0,0,0" Padding="6,0" Height="22"/>
                 </StackPanel>
             </StatusBarItem>
         </StatusBar>

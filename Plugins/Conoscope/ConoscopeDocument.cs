@@ -41,7 +41,9 @@ namespace Conoscope
 
     /// <summary>
     /// Owns one CVCIE document and its Mat lifetime. Loading remains latest-wins and
-    /// publishes Y before X/Z whenever preprocessing allows it.
+    /// publishes Y before X/Z whenever preprocessing allows it. Published buffers are
+    /// read-only: preprocessing must replace them, since background exports can retain
+    /// OpenCV headers after this document releases its own references.
     /// </summary>
     internal sealed class ConoscopeDocument : IDisposable
     {
@@ -51,6 +53,7 @@ namespace Conoscope
         private CancellationTokenSource? loadCancellation;
         private int loadVersion;
         private int dataVersion;
+        private OpenRequest? lastOpen;
 
         public ConoscopeDocument(ILog log)
         {
@@ -66,9 +69,13 @@ namespace Conoscope
         public bool HasXyzData => X != null && Y != null && Z != null;
         public int DataVersion => Volatile.Read(ref dataVersion);
         public string ProcessingDescription { get; private set; } = string.Empty;
+        public bool IsLoading { get; private set; }
+        public Exception? LoadError { get; private set; }
+        public bool CanRetryLoad => !IsLoading && LoadError != null && lastOpen != null;
 
         public event EventHandler<ConoscopeDocumentChangedEventArgs>? Changed;
         public event EventHandler<ConoscopeDocumentLoadFailedEventArgs>? LoadFailed;
+        public event EventHandler? LoadStateChanged;
 
         public Task OpenAsync(
             string fileName,
@@ -84,7 +91,17 @@ namespace Conoscope
             FileName = string.Empty;
             ExposureSummary = null;
             ProcessingDescription = $"InitialPreprocess={applyPreprocess}; Options={Newtonsoft.Json.JsonConvert.SerializeObject(options)}";
+            lastOpen = new(fileName, requestedExposureSummary, options, applyPreprocess);
+            SetLoadState(true, null);
             return LoadAsync(fileName, requestedExposureSummary, options, applyPreprocess, request);
+        }
+
+        public Task RetryLoadAsync()
+        {
+            if (!CanRetryLoad || lastOpen is not { } request) return Task.CompletedTask;
+            // Reload all channels with the original options; never combine retained Y
+            // with X/Z from a file that may have been repaired or replaced on disk.
+            return OpenAsync(request.FileName, request.ExposureSummary, request.Options, request.ApplyPreprocess);
         }
 
         public void Reload(ConoscopePreprocessOptions options)
@@ -176,6 +193,7 @@ namespace Conoscope
         public void Dispose()
         {
             CancelPendingLoad();
+            lastOpen = null;
             ClearData(cancelPendingLoad: false);
         }
 
@@ -271,6 +289,7 @@ namespace Conoscope
                     log.Error($"打开Conoscope图像失败: {ex.Message}", ex);
                 }
 
+                SetLoadState(true, ex);
                 PublishLoadFailed(ex, initialDisplayCompleted);
             }
             finally
@@ -280,6 +299,7 @@ namespace Conoscope
                     loadGate.Release();
                 }
 
+                if (IsCurrent(request)) SetLoadState(false, LoadError);
                 Release(request);
             }
         }
@@ -593,6 +613,19 @@ namespace Conoscope
                 loadCancellation?.Cancel();
                 loadCancellation = null;
             }
+            SetLoadState(false, null);
+        }
+
+        private void SetLoadState(bool loading, Exception? error)
+        {
+            IsLoading = loading;
+            LoadError = error;
+            if (LoadStateChanged == null) return;
+            foreach (EventHandler observer in LoadStateChanged.GetInvocationList())
+            {
+                try { observer(this, EventArgs.Empty); }
+                catch (Exception ex) { log.Error("Conoscope load-state observer failed", ex); }
+            }
         }
 
         private void Release(LoadRequest request)
@@ -625,6 +658,7 @@ namespace Conoscope
         }
 
         private sealed record LoadRequest(int Version, CancellationTokenSource Cancellation);
+        private sealed record OpenRequest(string FileName, string? ExposureSummary, ConoscopePreprocessOptions Options, bool ApplyPreprocess);
 
         private sealed record InitialLoadResult(
             Mat Y,

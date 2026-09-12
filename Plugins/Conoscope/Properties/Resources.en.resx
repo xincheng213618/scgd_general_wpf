@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:schema id="root">
     <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -531,7 +531,7 @@
     <value>Failed to open 3D view: {0}</value>
   </data>
   <data name="TbEditFocusPointTip" xml:space="preserve">
-    <value>Enter focus point tool mode when enabled...</value>
+    <value>Edit focus points; hold Ctrl and drag to pan while enabled, or drag directly while disabled</value>
   </data>
   <data name="TbCircleTip" xml:space="preserve">
     <value>Draw new focus point circles only</value>
@@ -729,16 +729,16 @@
     <value>Please enter a file prefix</value>
   </data>
   <data name="MsgInvalidAzimuthStep" xml:space="preserve">
-    <value>Azimuth step must be between 0.01 and 180</value>
+    <value>Azimuth step must be between 0.1 and 180</value>
   </data>
   <data name="MsgInvalidRadialStep" xml:space="preserve">
-    <value>Radial sampling step must be between 0.01 and 80</value>
+    <value>Radial sampling step must be between 0.1 and 80</value>
   </data>
   <data name="MsgInvalidRingStep" xml:space="preserve">
-    <value>Ring step must be between 0.01 and 80</value>
+    <value>Ring step must be between 0.1 and 80</value>
   </data>
   <data name="MsgInvalidCircularStep" xml:space="preserve">
-    <value>Circular angle step must be between 0.01 and 360</value>
+    <value>Circular angle step must be between 0.1 and 360</value>
   </data>
   <data name="MsgInvalidAzimuthSection" xml:space="preserve">
     <value>Azimuth section angle must be between 0 and 180</value>
@@ -765,7 +765,7 @@
     <value>When unchecked, CSV outputs column headers with units and data directly without top description rows.</value>
   </data>
   <data name="MsgInvalidSamplingInterval" xml:space="preserve">
-    <value>Sampling interval must be between 0.01 and 360</value>
+    <value>Sampling interval must be between 0.1 and 360</value>
   </data>
   <data name="GroupBoxPreprocessSettings" xml:space="preserve">
     <value>Preprocess Settings</value>
@@ -1197,7 +1197,7 @@ Source: {2}</value>
     <value>The H/V cross section at {0}° has been exported.</value>
   </data>
   <data name="SnapshotSessionHint" xml:space="preserve">
-    <value>Captured values are frozen. Reopen this window at any time; export before closing the document.</value>
+    <value>All documents share this session. Closing an image keeps its snapshots. Import appends curves; save to restore later.</value>
   </data>
   <data name="SnapshotCompatibilityHint" xml:space="preserve">
     <value>Compare curves with the same horizontal axis meaning and units.</value>
@@ -1244,4 +1244,59 @@ Source: {2}</value>
   <data name="SnapshotRenameHint" xml:space="preserve">
     <value>Press Enter or leave the field to confirm a name.</value>
   </data>
+  <data name="CurveSessionFilter" xml:space="preserve">
+    <value>Conoscope curve session (*.conocurves)|*.conocurves</value>
+  </data>
+  <data name="CurveSessionImport" xml:space="preserve">
+    <value>Import session</value>
+  </data>
+  <data name="CurveSessionSave" xml:space="preserve">
+    <value>Save session</value>
+  </data>
+  <data name="CurveSessionLoadFailed" xml:space="preserve">
+    <value>Cannot import session: {0}</value>
+  </data>
+  <data name="CurveSessionUnsaved" xml:space="preserve">
+    <value>This curve session has unsaved changes. Save before closing the workspace?
+Choose No to discard changes, or Cancel to return.</value>
+  </data>
+  <data name="CurveSourcePath" xml:space="preserve">
+    <value>Source file path</value>
+  </data>
+  <data name="ExportRunning" xml:space="preserve">
+    <value>Exporting CSV</value>
+  </data>
+  <data name="ExportCompleted" xml:space="preserve">
+    <value>Export completed</value>
+  </data>
+  <data name="ExportCancelled" xml:space="preserve">
+    <value>Export cancelled</value>
+  </data>
+  <data name="ExportCancelling" xml:space="preserve">
+    <value>Cancelling…</value>
+  </data>
+  <data name="ExportCancelHint" xml:space="preserve">
+    <value>Cancellation keeps completed files. The unfinished file will not replace an existing file.</value>
+  </data>
+  <data name="ExportProgressFormat" xml:space="preserve">
+    <value>File {0}/{1} · {2:N0}/{3:N0} samples in this file</value>
+  </data>
+  <data name="ExportFilesCompleted" xml:space="preserve">
+    <value>Completed {0}/{1} files.</value>
+  </data>
+  <data name="ExportEstimateFormat" xml:space="preserve">
+    <value>About {0:N0} samples, estimated CSV size {1:N1} MiB (depends on values).</value>
+  </data>
+  <data name="ExportEstimateInvalid" xml:space="preserve">
+    <value>Enter valid steps to estimate the export size.</value>
+  </data>
+  <data name="ExportInvalidPrefix" xml:space="preserve">
+    <value>Enter a valid file-name prefix without paths or invalid file-name characters.</value>
+  </data>
+  <data name="LoadYOnly" xml:space="preserve"><value>Y only · X/Z failed to load</value></data>
+  <data name="LoadFailedStatus" xml:space="preserve"><value>Document failed to load</value></data>
+  <data name="LoadingXz" xml:space="preserve"><value>Loading X/Z…</value></data>
+  <data name="LoadingDocument" xml:space="preserve"><value>Loading document…</value></data>
+  <data name="RetryDocumentLoad" xml:space="preserve"><value>Reload</value></data>
+  <data name="RetryDocumentLoadTip" xml:space="preserve"><value>Reload all channels using the original processing options. Curve snapshots are retained.</value></data>
 </root>

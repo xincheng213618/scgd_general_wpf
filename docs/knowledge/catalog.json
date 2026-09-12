@@ -392,6 +392,49 @@
       "searchable": true
     },
     {
+      "knowledge_id": "algorithms.fov-local",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "本地 FOV V2 的相机标定参数、角点复用与自动定位、视场角公式、ImageView 叠图和 FOV 2.0 结果兼容契约。",
+      "aliases": [
+        "本地FOV计算(V2)",
+        "FOV 计算 (V2)",
+        "FovDist",
+        "cameraDegrees",
+        "LocalFovNode",
+        "FovCalculator",
+        "FovImageViewRunner",
+        "HorizontalFieldOfViewAngle",
+        "DiagonalFieldOfViewAngle"
+      ],
+      "code_paths": [
+        "UI/ColorVision.Core/FovCalculation.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFovNode.cs",
+        "Engine/ColorVision.Engine/PropertyEditor/CameraDegreesPropertiesEditor.cs",
+        "Engine/ColorVision.Engine/Templates/Jsons/FOV2",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/FovCalculationTests.cs"
+      ],
+      "related": [
+        "algorithms.find-light-area",
+        "algorithms.roi-routes",
+        "engine.results",
+        "flow.node-extension"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine",
+        "UI/ColorVision.Core",
+        "UI/ColorVision.ImageEditor"
+      ],
+      "domain": "algorithms",
+      "title": "本地 FOV V2",
+      "source": "docs/04-api-reference/algorithms/detectors/fov-v2-local.md",
+      "url": "/04-api-reference/algorithms/detectors/fov-v2-local",
+      "searchable": true
+    },
+    {
       "knowledge_id": "algorithms.frequency-spectrum",
       "knowledge_type": "reference",
       "status": "current",

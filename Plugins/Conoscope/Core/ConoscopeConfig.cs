@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using ColorVision.Core;
 using Newtonsoft.Json;
@@ -208,13 +208,13 @@ namespace Conoscope.Core
         }
         private AdvancedExportSettings _AdvancedExport = new();
 
-        [Display(Name = "Con_Cfg_SampleInterval", GroupName = "Con_Category_Export", Description = "当前曲线 CSV 导出的默认采样间隔，范围 0.01 到 360 度。", ResourceType = typeof(Properties.Resources))]
+        [Display(Name = "Con_Cfg_SampleInterval", GroupName = "Con_Category_Export", Description = "当前曲线 CSV 导出的默认采样间隔，范围 0.1 到 360 度。", ResourceType = typeof(Properties.Resources))]
         public double CurrentCurveExportStepDegrees
         {
             get => _CurrentCurveExportStepDegrees;
             set
             {
-                double normalized = Math.Max(0.01, Math.Min(value, 360));
+                double normalized = AdvancedExportSettings.NormalizeStep(value, 360);
                 if (Math.Abs(_CurrentCurveExportStepDegrees - normalized) < 0.000001) return;
                 _CurrentCurveExportStepDegrees = normalized;
                 OnPropertyChanged();
@@ -279,6 +279,9 @@ namespace Conoscope.Core
     /// </summary>
     public sealed class AdvancedExportSettings
     {
+        internal static double NormalizeStep(double value, double maximum)
+            => double.IsFinite(value) ? Math.Clamp(value, ConoscopeExportService.MinimumStepDegrees, maximum) : 1;
+
         public string FilePrefix { get; set; } = "Conoscope_Export";
 
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
@@ -286,10 +289,30 @@ namespace Conoscope.Core
 
         public bool ExportAzimuth { get; set; } = true;
         public bool ExportPolar { get; set; }
-        public double AzimuthStep { get; set; } = 1;
-        public double RadialStep { get; set; } = 1;
-        public double PolarStep { get; set; } = 1;
-        public double CircumferentialStep { get; set; } = 1;
+        public double AzimuthStep
+        {
+            get => _AzimuthStep;
+            set => _AzimuthStep = NormalizeStep(value, 180);
+        }
+        private double _AzimuthStep = 1;
+        public double RadialStep
+        {
+            get => _RadialStep;
+            set => _RadialStep = NormalizeStep(value, 80);
+        }
+        private double _RadialStep = 1;
+        public double PolarStep
+        {
+            get => _PolarStep;
+            set => _PolarStep = NormalizeStep(value, 80);
+        }
+        private double _PolarStep = 1;
+        public double CircumferentialStep
+        {
+            get => _CircumferentialStep;
+            set => _CircumferentialStep = NormalizeStep(value, 360);
+        }
+        private double _CircumferentialStep = 1;
 
         public int DecimalPlaces
         {

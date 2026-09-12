@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1822
+#pragma warning disable CA1822
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.FlowProcessing;
@@ -37,6 +37,7 @@ using Conoscope.Presentation.Helpers;
 using Conoscope.Analysis;
 using Conoscope.ApplicationServices.Analysis;
 using Conoscope.Presentation.Docking;
+using Conoscope.Presentation;
 #pragma warning disable CS8602
 
 namespace Conoscope
@@ -78,6 +79,23 @@ namespace Conoscope
         private double operationExpectedDurationMs;
 
         private MVSViewWindow? observationCameraWindow;
+        private ConoscopeCurveSnapshotWindow? curveWorkspace;
+
+        private void ShowCurveWorkspace(ConoscopeCurveSnapshot? snapshot)
+        {
+            curveWorkspace ??= new ConoscopeCurveSnapshotWindow { Owner = this, KeepSessionOnClose = true };
+            if (snapshot != null) curveWorkspace.AddSnapshot(snapshot);
+            curveWorkspace.Show();
+            curveWorkspace.Activate();
+        }
+
+        private void ShowCurveWorkspace_Click(object sender, RoutedEventArgs e) => ShowCurveWorkspace(null);
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            base.OnClosing(e);
+            if (!e.Cancel && curveWorkspace != null && !curveWorkspace.ConfirmDiscardOrSave(this)) e.Cancel = true;
+        }
 
         public ConoscopeWindow()
         {
@@ -170,6 +188,14 @@ namespace Conoscope
             ConoscopeView? activeView = ActiveView;
             btnApplyPreprocessToActiveView.IsEnabled = !isRunningOperation && activeView != null;
             RefreshRibbonState(activeView);
+            if (documentLoadStatusItem != null)
+            {
+                string status = activeView?.DocumentLoadStatus ?? string.Empty;
+                documentLoadStatusItem.Visibility = status.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
+                tbDocumentLoadStatus.Text = status;
+                tbDocumentLoadStatus.ToolTip = activeView?.DocumentLoadError;
+                btnRetryDocumentLoad.Visibility = activeView?.CanRetryDocumentLoad == true ? Visibility.Visible : Visibility.Collapsed;
+            }
 
             if (tbExposureStatus == null)
             {
@@ -475,6 +501,12 @@ namespace Conoscope
             }
 
             disposed = true;
+            if (curveWorkspace != null)
+            {
+                curveWorkspace.KeepSessionOnClose = false;
+                curveWorkspace.Close();
+                curveWorkspace = null;
+            }
             ConoscopeManager.Instance.Config.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             ConoscopeManager.Instance.Config.PropertyChanged -= ConoscopeConfig_PropertyChanged;
             ConoscopeManager.Instance.GlobalReferences.Changed -= GlobalReferences_Changed;
@@ -536,7 +568,7 @@ namespace Conoscope
                 }
             }
 
-            ConoscopeView view = new ConoscopeView();
+            ConoscopeView view = new ConoscopeView { SnapshotRequested = ShowCurveWorkspace };
             if (!string.IsNullOrWhiteSpace(filePath))
             {
                 view.OpenConoscope(filePath, exposureSummary);
@@ -1566,6 +1598,7 @@ namespace Conoscope
             if (subscribedActiveViewControlView != null)
             {
                 subscribedActiveViewControlView.State.PropertyChanged -= ActiveViewState_PropertyChanged;
+                subscribedActiveViewControlView.StatusBarItemsChanged -= ActiveViewStatusBarItemsChanged;
                 subscribedActiveViewControlView.State.CoordinateAxis.PropertyChanged -= ActiveCoordinateAxis_PropertyChanged;
             }
 
@@ -1574,6 +1607,7 @@ namespace Conoscope
             if (subscribedActiveViewControlView != null)
             {
                 subscribedActiveViewControlView.State.PropertyChanged += ActiveViewState_PropertyChanged;
+                subscribedActiveViewControlView.StatusBarItemsChanged += ActiveViewStatusBarItemsChanged;
                 subscribedActiveViewControlView.State.CoordinateAxis.PropertyChanged += ActiveCoordinateAxis_PropertyChanged;
             }
         }
@@ -1586,8 +1620,19 @@ namespace Conoscope
             }
 
             subscribedActiveViewControlView.State.PropertyChanged -= ActiveViewState_PropertyChanged;
+            subscribedActiveViewControlView.StatusBarItemsChanged -= ActiveViewStatusBarItemsChanged;
             subscribedActiveViewControlView.State.CoordinateAxis.PropertyChanged -= ActiveCoordinateAxis_PropertyChanged;
             subscribedActiveViewControlView = null;
+        }
+
+        private void btnRetryDocumentLoad_Click(object sender, RoutedEventArgs e) => ActiveView?.RetryDocumentLoad();
+
+        private void ActiveViewStatusBarItemsChanged(object? sender, EventArgs e)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (ReferenceEquals(sender, ActiveView)) RefreshActiveViewUi();
+            }));
         }
 
         private void ActiveViewState_PropertyChanged(object? sender, PropertyChangedEventArgs e)

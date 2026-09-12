@@ -59,6 +59,51 @@ public sealed class ConoscopeDocumentTests
     }
 
     [Fact]
+    public async Task DeferredFailureKeepsYAndRetryReloadsAllChannelsFromRepairedFile()
+    {
+        string directory = CreateSampleDirectory();
+        string filePath = Path.Combine(directory, "retry.cvcie");
+        WriteSample(filePath, offset: 0);
+        try
+        {
+            using ConoscopeDocument document = new(LogManager.GetLogger(typeof(ConoscopeDocumentTests)));
+            bool damageSource = true;
+            List<(bool Loading, bool Retry)> states = [];
+            document.LoadStateChanged += (_, _) => states.Add((document.IsLoading, document.CanRetryLoad));
+            document.Changed += (_, args) =>
+            {
+                if (damageSource && args.Kind == ConoscopeDocumentChangeKind.InitialDisplayReady)
+                {
+                    damageSource = false;
+                    File.WriteAllBytes(filePath, []);
+                }
+            };
+            await document.OpenAsync(filePath, "original exposure", NoPreprocess, false);
+            Assert.NotNull(document.LoadError);
+            Assert.True(document.CanRetryLoad);
+            Assert.False(document.IsLoading);
+            Assert.True(document.HasDisplayData);
+            Assert.False(document.HasXyzData);
+            Assert.Equal(200f, document.Y!.At<float>(0, 0));
+
+            WriteSample(filePath, offset: 1000);
+            await document.RetryLoadAsync();
+            Assert.Null(document.LoadError);
+            Assert.False(document.IsLoading);
+            Assert.False(document.CanRetryLoad);
+            Assert.True(document.HasXyzData);
+            Assert.Equal(1100f, document.X!.At<float>(0, 0));
+            Assert.Equal(1200f, document.Y!.At<float>(0, 0));
+            Assert.Equal(1300f, document.Z!.At<float>(0, 0));
+            Assert.Equal("original exposure", document.ExposureSummary);
+            Assert.Contains((true, false), states);
+            Assert.Contains((false, true), states);
+            Assert.Equal((false, false), states[^1]);
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [Fact]
     public async Task NewerOpenRequestWinsAndCanceledDataIsNeverPublished()
     {
         string directory = CreateSampleDirectory();

@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1822
+#pragma warning disable CA1822
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.Themes;
@@ -14,6 +14,7 @@ using System.IO;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -272,6 +273,10 @@ namespace Conoscope
         public IEnumerable<StatusBarMeta> GetActiveStatusBarItems()
         {
             List<StatusBarMeta> items = new();
+            if (!string.IsNullOrEmpty(DocumentLoadStatus))
+                items.Add(new StatusBarMeta { Id = "ConoscopeLoadStatus", Name = DocumentLoadStatus,
+                    Description = DocumentLoadError ?? string.Empty, Type = StatusBarType.Text,
+                    Alignment = StatusBarAlignment.Right, Order = 99, Source = this });
             if (YMat != null)
             {
                 items.Add(new StatusBarMeta
@@ -322,6 +327,7 @@ namespace Conoscope
             InitializeComponent();
             document.Changed += Document_Changed;
             document.LoadFailed += Document_LoadFailed;
+            document.LoadStateChanged += Document_LoadStateChanged;
             InitializeLocalViewStateFromDefaults();
             viewThemeManager.CurrentUIThemeChanged += CurrentUIThemeChanged;
             ImageView.FocusCircleCalculationRequested += ImageView_FocusCircleCalculationRequested;
@@ -331,6 +337,18 @@ namespace Conoscope
         }
 
         public void OpenConoscope(string filename, string? exposureSummary = null)
+        {
+            PrepareDocumentForLoad();
+            _ = document.OpenAsync(
+                filename,
+                exposureSummary,
+                CreatePreprocessOptions(),
+                State.ApplyFilterOnOpen && HasPreprocessEnabled());
+            RefreshChannelAvailability();
+            StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void PrepareDocumentForLoad()
         {
             PrepareDisplayStateForNewImage();
             HideCoordinateDragOverlay();
@@ -348,11 +366,23 @@ namespace Conoscope
             tglFocusCircleMode.IsChecked = false;
             SetFocusCircleToolSelection(FocusCircleInteractionMode.Select);
             UpdateFocusCircleModeState();
-            _ = document.OpenAsync(
-                filename,
-                exposureSummary,
-                CreatePreprocessOptions(),
-                State.ApplyFilterOnOpen && HasPreprocessEnabled());
+        }
+
+        internal string DocumentLoadStatus => document.LoadError != null
+            ? (document.HasDisplayData ? Properties.Resources.LoadYOnly : Properties.Resources.LoadFailedStatus)
+            : document.IsLoading ? (document.HasDisplayData ? Properties.Resources.LoadingXz : Properties.Resources.LoadingDocument) : string.Empty;
+        internal string? DocumentLoadError => document.LoadError?.Message;
+        internal bool CanRetryDocumentLoad => document.CanRetryLoad;
+
+        internal void RetryDocumentLoad()
+        {
+            if (!document.CanRetryLoad) return;
+            PrepareDocumentForLoad();
+            _ = document.RetryLoadAsync();
+        }
+
+        private void Document_LoadStateChanged(object? sender, EventArgs e)
+        {
             RefreshChannelAvailability();
             StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
         }
@@ -714,6 +744,7 @@ namespace Conoscope
             pendingModelProfileRefreshOperation = null;
             document.Changed -= Document_Changed;
             document.LoadFailed -= Document_LoadFailed;
+            document.LoadStateChanged -= Document_LoadStateChanged;
             ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             if (subscribedModelProfile != null)
             {
@@ -727,6 +758,7 @@ namespace Conoscope
             ImageView.FocusCircleSelectionChanged -= ImageView_FocusCircleSelectionChanged;
             cieWindow?.Close();
             cieWindow = null;
+            SnapshotRequested = null;
             if (snapshotWindow != null)
             {
                 snapshotWindow.KeepSessionOnClose = false;
@@ -3366,7 +3398,7 @@ namespace Conoscope
             }
         }
 
-        public void ExportAngleMode()
+        public async void ExportAngleMode()
         {
             try
             {
@@ -3375,8 +3407,8 @@ namespace Conoscope
                     return;
                 }
 
-                ConoscopeExportService.ExportAngleModeToCsv(filePath!, channel, CreateExportContext(), ConoscopeManager.Instance.Config.ExportDecimalPlaces);
-                OnExportSuccess(filePath!);
+                int digits = ConoscopeManager.Instance.Config.ExportDecimalPlaces;
+                await RunExportJobsAsync(new[] { new ConoscopeExportJob(filePath!, (path, context) => ConoscopeExportService.ExportAngleModeToCsv(path, channel, context, digits)) });
             }
             catch (Exception ex)
             {
@@ -3385,7 +3417,7 @@ namespace Conoscope
             }
         }
 
-        public void ExportCircleMode()
+        public async void ExportCircleMode()
         {
             try
             {
@@ -3394,8 +3426,8 @@ namespace Conoscope
                     return;
                 }
 
-                ConoscopeExportService.ExportCircleModeToCsv(filePath!, channel, CreateExportContext(), ConoscopeManager.Instance.Config.ExportDecimalPlaces);
-                OnExportSuccess(filePath!);
+                int digits = ConoscopeManager.Instance.Config.ExportDecimalPlaces;
+                await RunExportJobsAsync(new[] { new ConoscopeExportJob(filePath!, (path, context) => ConoscopeExportService.ExportCircleModeToCsv(path, channel, context, digits)) });
             }
             catch (Exception ex)
             {
@@ -3425,12 +3457,6 @@ namespace Conoscope
             string fileName = $"{filePrefix}{channel}_{suffixPart}{DateTime.Now:yyyyMMdd_HHmmss}.csv";
             filePath = TrySelectCsvSavePath(fileName);
             return filePath != null;
-        }
-
-        private void OnExportSuccess(string filePath)
-        {
-            MessageBox.Show(CompositeFormatCache.Format(Properties.Resources.MsgExportSuccess, filePath), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
-            log.Info($"导出成功: {filePath}");
         }
 
         private ExportChannel GetSelectedCurrentCurveChannel() => GetSelectedDisplayChannel();
@@ -3584,6 +3610,19 @@ namespace Conoscope
             return saveFileDialog.ShowDialog() == true ? saveFileDialog.FileName : null;
         }
 
+        private async Task RunExportJobsAsync(IReadOnlyList<ConoscopeExportJob> jobs)
+        {
+            if (YMat == null) throw new InvalidOperationException(Properties.Resources.XYZDataNotLoaded);
+            double scale = sourcePixelsPerDegree > 0 ? sourcePixelsPerDegree : CurrentModelProfile.GetConoscopeCoefficient(YMat.Width, YMat.Height);
+            ContrastReferenceKind kind = GetRequiredContrastReferenceKind();
+            ConoscopeExportSource source = new(ConoscopeConfig.CurrentModel.ToString(), sourceImageCenter, MaxAngle, scale,
+                XMat, YMat, ZMat, GetSelectedColorDifferenceReferenceMode(), TryResolvePointColorDifferenceReference(),
+                GlobalReferences.ColorDifferenceReferenceUMat, GlobalReferences.ColorDifferenceReferenceVMat,
+                kind, GlobalReferences.GetContrastReferenceYMat(kind));
+            Exception? error = await ConoscopeExportProgressWindow.ExecuteAsync(source, jobs, Window.GetWindow(this));
+            if (error != null) log.Error("CSV export failed", error);
+        }
+
         private ConoscopeExportContext CreateExportContext()
         {
             if (YMat == null)
@@ -3622,7 +3661,7 @@ namespace Conoscope
             };
         }
 
-        public void AdvancedExport()
+        public async void AdvancedExport()
         {
             try
             {
@@ -3633,7 +3672,7 @@ namespace Conoscope
                 }
 
                 ConoscopeConfig config = ConoscopeManager.Instance.Config;
-                AdvancedExportDialog dialog = new AdvancedExportDialog(config.AdvancedExport) { Owner = Window.GetWindow(this) };
+                AdvancedExportDialog dialog = new AdvancedExportDialog(config.AdvancedExport, config.ExportDecimalPlaces) { Owner = Window.GetWindow(this), ExportMaxAngle = MaxAngle };
                 if (dialog.ShowDialog() == true)
                 {
                     AdvancedExportSettings settings = dialog.Settings;
@@ -3644,7 +3683,7 @@ namespace Conoscope
                         return;
                     }
 
-                    PerformAdvancedExport(settings);
+                    await PerformAdvancedExportAsync(settings);
                 }
             }
             catch (Exception ex)
@@ -3669,87 +3708,43 @@ namespace Conoscope
             }
         }
 
-        private void PerformAdvancedExport(AdvancedExportSettings settings)
+        private async Task PerformAdvancedExportAsync(AdvancedExportSettings settings)
         {
-            try
+            using System.Windows.Forms.FolderBrowserDialog folderDialog = new()
             {
-                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                int filesExported = 0;
-
-                using System.Windows.Forms.FolderBrowserDialog folderDialog = new System.Windows.Forms.FolderBrowserDialog();
-                folderDialog.Description = Properties.Resources.MsgSelectExportFolder;
-                folderDialog.ShowNewFolderButton = true;
-
-                if (folderDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
-                {
-                    return;
-                }
-
-                string outputFolder = folderDialog.SelectedPath;
-                ConoscopeExportContext exportContext = CreateExportContext();
-
+                Description = Properties.Resources.MsgSelectExportFolder, ShowNewFolderButton = true
+            };
+            if (folderDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
+            string model = ConoscopeConfig.CurrentModel.ToString();
+            List<ConoscopeExportJob> jobs = new();
+            foreach (ExportChannel channel in settings.Channels)
+            {
                 if (settings.ExportAzimuth)
-                {
-                    foreach (ExportChannel channel in settings.Channels)
-                    {
-                        string filename = $"{settings.FilePrefix}_Azimuth_{channel}_{timestamp}.csv";
-                        string filePath = Path.Combine(outputFolder, filename);
-                        ConoscopeExportService.ExportAzimuthWithStep(filePath, channel, exportContext, settings.AzimuthStep, settings.RadialStep, settings.DecimalPlaces);
-                        filesExported++;
-                        log.Info($"方位角导出成功: {filePath}");
-                    }
-                }
-
+                    jobs.Add(new(Path.Combine(folderDialog.SelectedPath, $"{settings.FilePrefix}_Azimuth_{channel}_{timestamp}.csv"),
+                        (path, context) => ConoscopeExportService.ExportAzimuthWithStep(path, channel, context, settings.AzimuthStep, settings.RadialStep, settings.DecimalPlaces)));
                 if (settings.ExportPolar)
-                {
-                    foreach (ExportChannel channel in settings.Channels)
-                    {
-                        string filename = $"{settings.FilePrefix}_Polar_{channel}_{ConoscopeConfig.CurrentModel}_{timestamp}.csv";
-                        string filePath = Path.Combine(outputFolder, filename);
-                        ConoscopeExportService.ExportPolarWithStep(filePath, channel, exportContext, settings.PolarStep, settings.CircumferentialStep, settings.DecimalPlaces);
-                        filesExported++;
-                        log.Info($"极角导出成功: {filePath}");
-                    }
-                }
-
+                    jobs.Add(new(Path.Combine(folderDialog.SelectedPath, $"{settings.FilePrefix}_Polar_{channel}_{model}_{timestamp}.csv"),
+                        (path, context) => ConoscopeExportService.ExportPolarWithStep(path, channel, context, settings.PolarStep, settings.CircumferentialStep, settings.DecimalPlaces)));
                 if (settings.EnableCrossSection)
                 {
-                    ConoscopeCrossSectionExportOptions exportOptions = new ConoscopeCrossSectionExportOptions
+                    bool azimuth = settings.CrossSectionType == CrossSectionType.Azimuth;
+                    string sectionType = azimuth ? "Azimuth" : "Polar";
+                    ConoscopeCrossSectionExportOptions options = new()
                     {
-                        StepDegrees = settings.CrossSectionType == CrossSectionType.Azimuth
-                            ? settings.RadialStep
-                            : settings.CircumferentialStep,
-                        IncludeMetadata = true,
-                        DecimalPlaces = settings.DecimalPlaces
+                        StepDegrees = azimuth ? settings.RadialStep : settings.CircumferentialStep,
+                        IncludeMetadata = true, DecimalPlaces = settings.DecimalPlaces
                     };
-                    string sectionType = settings.CrossSectionType == CrossSectionType.Azimuth ? "Azimuth" : "Polar";
-                    foreach (ExportChannel channel in settings.Channels)
-                    {
-                        string filename = $"{settings.FilePrefix}_CrossSection_{sectionType}_{settings.CrossSectionAngle}deg_{channel}_{timestamp}.csv";
-                        string filePath = Path.Combine(outputFolder, filename);
-
-                        if (settings.CrossSectionType == CrossSectionType.Azimuth)
+                    string angle = settings.CrossSectionAngle.ToString(CultureInfo.InvariantCulture);
+                    jobs.Add(new(Path.Combine(folderDialog.SelectedPath, $"{settings.FilePrefix}_CrossSection_{sectionType}_{angle}deg_{channel}_{timestamp}.csv"),
+                        (path, context) =>
                         {
-                            ConoscopeExportService.ExportAzimuthCrossSection(filePath, channel, exportContext, settings.CrossSectionAngle, exportOptions);
-                        }
-                        else
-                        {
-                            ConoscopeExportService.ExportPolarCrossSection(filePath, channel, exportContext, settings.CrossSectionAngle, exportOptions);
-                        }
-
-                        filesExported++;
-                        log.Info($"截面导出成功: {filePath}");
-                    }
+                            if (azimuth) ConoscopeExportService.ExportAzimuthCrossSection(path, channel, context, settings.CrossSectionAngle, options);
+                            else ConoscopeExportService.ExportPolarCrossSection(path, channel, context, settings.CrossSectionAngle, options);
+                        }));
                 }
-
-                MessageBox.Show(CompositeFormatCache.Format(Properties.Resources.MsgExportDone, filesExported, outputFolder), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
-                log.Info($"高级导出完成: {filesExported} 个文件");
             }
-            catch (Exception ex)
-            {
-                log.Error($"高级导出执行失败: {ex.Message}", ex);
-                MessageBox.Show(CompositeFormatCache.Format(Properties.Resources.MsgExportFailed, ex.Message), Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            await RunExportJobsAsync(jobs);
         }
 
         private void btnExportCurrentReference_Click(object sender, RoutedEventArgs e)
@@ -3797,7 +3792,6 @@ namespace Conoscope
             TryExportCurrentCrossSection(
                 "Azimuth",
                 selectedPolarLine.Angle,
-                Properties.Resources.MsgAzimuthExportSuccess,
                 (filePath, channel, context, angle, options) =>
                     ConoscopeExportService.ExportAzimuthCrossSection(filePath, channel, context, angle, options));
         }
@@ -3813,7 +3807,6 @@ namespace Conoscope
             TryExportCurrentCrossSection(
                 "Polar",
                 selectedCircleLine.RadiusAngle,
-                Properties.Resources.MsgPolarExportSuccess,
                 (filePath, channel, context, angle, options) =>
                     ConoscopeExportService.ExportPolarCrossSection(filePath, channel, context, angle, options));
         }
@@ -3821,7 +3814,6 @@ namespace Conoscope
         private void TryExportCurrentCrossSection(
             string sectionLabel,
             double angle,
-            string successMessageResource,
             Action<string, ExportChannel, ConoscopeExportContext, double, ConoscopeCrossSectionExportOptions> exportAction)
         {
             try
@@ -3851,7 +3843,6 @@ namespace Conoscope
                 }
 
                 exportAction(filePath, channel, CreateExportContext(), angle, exportOptions);
-                MessageBox.Show(CompositeFormatCache.Format(successMessageResource, angle), Properties.Resources.TitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
 
                 ConoscopeConfig exportConfig = ConoscopeManager.Instance.Config;
                 exportConfig.CurrentCurveExportStepDegrees = exportOptions.StepDegrees;
@@ -3981,6 +3972,7 @@ namespace Conoscope
         private const double LiveCrossSectionStep = 0.1;
         private IReadOnlyList<ConoscopeHorizontalVerticalSample> horizontalVerticalReferenceSamples = Array.Empty<ConoscopeHorizontalVerticalSample>();
         private ConoscopeCurveSnapshotWindow? snapshotWindow;
+        internal Action<ConoscopeCurveSnapshot?>? SnapshotRequested { get; set; }
         private int snapshotNumber;
 
         private bool IsHorizontalVerticalReference => State.CoordinateAxis.ReferenceMode is
@@ -4113,12 +4105,17 @@ namespace Conoscope
             string reference = $"{tbReferenceMode.Text} {GetReferenceValueText(State.CoordinateAxis.ReferenceMode, State.CoordinateAxis.ReferenceAngle, State.CoordinateAxis.ReferenceRadiusAngle)}";
             return new ConoscopeCurveSnapshot($"{reference} · {++snapshotNumber}", Path.GetFileName(FileName),
                 ConoscopeConfig.CurrentModel.ToString(), GetCoordinateSystemDisplayName(State.CoordinateSystem), reference,
-                axisLabel, ConoscopeChannelDisplayFormatter.GetLabel(channel), GetCurveUnit(channel), positions, values,
+                axisLabel, ConoscopeChannelDisplayFormatter.GetLabel(channel), GetCurveUnit(channel), positions, values, DateTimeOffset.UtcNow, FileName,
                 $"{sampling}; {GetCurveMetadata()}", axisKey);
         }
 
         private void ShowSnapshotWindow()
         {
+            if (SnapshotRequested != null)
+            {
+                SnapshotRequested(null);
+                return;
+            }
             if (snapshotWindow == null)
             {
                 snapshotWindow = new ConoscopeCurveSnapshotWindow { Owner = Window.GetWindow(this), KeepSessionOnClose = true };
@@ -4139,14 +4136,18 @@ namespace Conoscope
                 MessageBox.Show(Properties.Resources.MsgNoValidCurve, Properties.Resources.TitleCurveSnapshots, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-            ShowSnapshotWindow();
-            snapshotWindow!.AddSnapshot(snapshot);
+            if (SnapshotRequested != null) SnapshotRequested(snapshot);
+            else
+            {
+                ShowSnapshotWindow();
+                snapshotWindow!.AddSnapshot(snapshot);
+            }
         }
 
         private void ExportCurrentHorizontalVerticalReference()
         {
             TryExportCurrentCrossSection(FixedAxis == ConoscopeFixedAxis.Horizontal ? "FixedH" : "FixedV", FixedAngle,
-                Properties.Resources.MsgFixedCrossSectionExportSuccess, WriteHorizontalVerticalCsv);
+                WriteHorizontalVerticalCsv);
         }
 
         private void WriteHorizontalVerticalCsv(string filePath, ExportChannel channel, ConoscopeExportContext context, double angle, ConoscopeCrossSectionExportOptions options)

@@ -14,7 +14,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
     /// Helpers for transient algorithm result overlays. Tagged overlays are intentionally
     /// kept out of the annotation/undo stream and can be replaced independently.
     /// </summary>
-    internal static class AlgorithmResultOverlay
+    public static class AlgorithmResultOverlay
     {
         private sealed class RequestState
         {
@@ -26,6 +26,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
         public const string FindCrossTag = "ImageView.FindCrossLocal.Result";
         public const string FindLuminousAreaTag = "ImageView.FindLuminousArea.Result";
         public const string GridDistortionTag = "ImageView.GridDistortionV2.Result";
+        public const string FovTag = "ImageView.FOV2.Result";
 
         public static void ClearTagged(DrawEditorContext drawContext, string tag)
         {
@@ -135,7 +136,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
                 {
                     AlgorithmResultOverlay.FindCrossTag,
                     AlgorithmResultOverlay.FindLuminousAreaTag,
-                    AlgorithmResultOverlay.GridDistortionTag
+                    AlgorithmResultOverlay.GridDistortionTag,
+                    AlgorithmResultOverlay.FovTag
                 })
                 {
                     AlgorithmResultOverlay.InvalidateRequest(drawContext, tag);
