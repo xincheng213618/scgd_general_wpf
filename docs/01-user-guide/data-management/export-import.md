@@ -2,9 +2,9 @@
 knowledge_id: "operations.exports"
 knowledge_type: "guide"
 status: "current"
-summary: "按配置备份、流程、图像和项目结果定位入口，说明文件验收与迁移边界。"
-aliases: ["导入导出","CSV","Excel","cvsettings","导出图片","SaveSnapshotExportsAsync","配置备份","打开配置文件夹"]
-code_paths: ["UI/ColorVision.UI/ConfigHandler.cs","Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs","UI/ColorVision.ImageEditor/ImageView.Snapshot.cs"]
+summary: "按软件设置备份、流程、图像和项目结果定位导入导出入口，说明备份恢复范围、文件验收与迁移边界。"
+aliases: ["导入导出","CSV","Excel","cvsettings","导出图片","SaveSnapshotExportsAsync","配置备份","设置备份","配置恢复点","MaintenanceBackups","打开配置文件夹"]
+code_paths: ["UI/ColorVision.UI/ConfigHandler.cs","UI/ColorVision.UI/ConfigMaintenanceResetService.cs","ColorVision/Settings/Maintenance/StorageMaintenanceControl.xaml.cs","Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs","UI/ColorVision.ImageEditor/ImageView.Snapshot.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs","Test/ColorVision.UI.Tests/ConfigHandlerPersistenceTests.cs","Test/ColorVision.UI.Tests/ImageViewSnapshotSaveTests.cs"]
 related: ["operations.data","ui.configuration","ui.storage-maintenance","engine.results","flow.templates","ui.image-editor","engine.cv-image-export","delivery.file-transfer"]
 ---
@@ -19,7 +19,7 @@ related: ["operations.data","ui.configuration","ui.storage-maintenance","engine.
 
 | 对象 | 当前入口与实现 | 能力边界 |
 | --- | --- | --- |
-| 软件配置与备份 | “存储与维护”的配置/备份目录入口；配置服务提供保存、备份与重载 | 设置窗口不提供 `.cvsettings` 导入/导出；配置备份不包含全部数据库与结果图 |
+| 软件配置与备份 | “存储与维护”中的“配置恢复点”提供创建备份和打开备份文件夹；配置服务另有滚动备份与重载接口 | 设置窗口不提供 `.cvsettings` 导入/导出或通用恢复按钮；两种备份独立，均不等于全部数据库与结果图的备份 |
 | 单流程及关联模板 `.cvflow` | `TemplateFlow` 调用 `FlowPackageHelper` | 带关联模板及引用处理；包兼容与导入规则见[模板与 Flow 链路](../../04-api-reference/engine-components/template-flow-chain.md) |
 | 多选流程 | `TemplateFlow` 多选导出 | 当前是 zip 内多个 `.stn`，不能等同于多个完整 `.cvflow` 包 |
 | 数据库记录 | 所属业务结果页或实体通用查询 | 用于确认源记录和范围，不能据此推断存在通用数据库迁移向导 |
@@ -31,7 +31,9 @@ related: ["operations.data","ui.configuration","ui.storage-maintenance","engine.
 
 ## 配置文件与备份
 
-在[存储与维护](../../04-api-reference/ui-components/storage-maintenance.md)中定位配置和备份目录。配置服务管理主文件的保存、备份与重载；已有 `.cvsettings` 文件不能通过设置窗口直接导入。
+在[存储与维护](../../04-api-reference/ui-components/storage-maintenance.md)的“配置恢复点”中，管理员可创建备份或打开 `MaintenanceBackups` 文件夹。创建备份先保存当前设置，再备份完整主文件；该目录不参与配置服务的 `Backup` 滚动备份自动回退，也没有通用的一键恢复按钮。已有 `.cvsettings` 文件不能通过设置窗口直接导入。
+
+查找“打开配置文件夹”入口时，应先核对 `ConfigHandler.ConfigFilePath` 指向的主配置路径；“配置恢复点”的“打开文件夹”仅定位维护备份，不能把它当作主配置目录。
 
 `ConfigHandler.SaveConfigs(fileName)` 仍是底层保存接口：序列化当前已实例化的配置对象，并合并目标文件已有节。新目标可能缺少从未实例化的节，已有目标也可能保留其它旧节；该接口不构成全项目备份。保存校验、备份回退、重载通知与旧对象引用的边界统一见[配置持久化与重载](../../04-api-reference/ui-components/configuration.md)。
 

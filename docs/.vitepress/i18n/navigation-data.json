@@ -677,6 +677,12 @@
                 "root": "存储清理与选择性设置重置"
               },
               "link": "/04-api-reference/ui-components/storage-maintenance"
+            },
+            {
+              "text": {
+                "root": "设置、流程与结果的导入导出边界"
+              },
+              "link": "/01-user-guide/data-management/export-import"
             }
           ]
         },
@@ -2423,7 +2429,7 @@
             },
             {
               "text": {
-                "root": "Flow 启动、停止与最终化"
+                "root": "流程执行：启动、停止与最终化"
               },
               "link": "/01-user-guide/workflow/execution"
             },
@@ -2435,7 +2441,7 @@
             },
             {
               "text": {
-                "root": "Flow 编辑工作区与文档命令"
+                "root": "流程编辑器：画布与工作区文档命令"
               },
               "link": "/01-user-guide/workflow/design"
             },

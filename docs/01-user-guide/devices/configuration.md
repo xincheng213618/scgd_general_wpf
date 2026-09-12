@@ -2,7 +2,7 @@
 knowledge_id: "operations.device-configuration"
 knowledge_type: "topic"
 status: "current"
-summary: "终端与设备配置引用、创建、保存、重启和删除清理；未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。"
+summary: "终端与设备配置引用、创建、保存、重启和删除清理；保存不保证远端已应用配置，未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。"
 aliases: ["添加设备","保存设备","删除设备","设备配置引用","通信订阅清理","设备Code","设备配置保存失败","RestartRCService","SaveConfig","DeviceService","DeviceServiceConfig","DeviceServiceCreateContext","TryDeserializeConfig","txt_value","SQL修改设备配置"]
 code_paths: ["Engine/ColorVision.Engine/Dao/SysResourceModel.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Services/Core/ServiceObjectBaseExtensions.cs","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceConfig.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs","Engine/ColorVision.Engine/Services/Devices/SMU/DeviceSMU.cs","Engine/ColorVision.Engine/Services/Devices/SMU/MQTTSMU.cs","Engine/ColorVision.Engine/Services/Type/CreateType.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/CreateTerminal.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/TerminalService.cs","Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs"]
 test_paths: []

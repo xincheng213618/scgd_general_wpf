@@ -749,6 +749,11 @@
     {"query":"有哪些默认启用的本地图像算法","expected_any":["algorithms.platform"],"include_planned":false},
     {"query":"轮廓提取有源码为什么菜单没有","expected_any":["algorithms.contour-analysis","algorithms.platform"],"include_planned":false},
     {"query":"更新窗口为什么找不到更新前创建程序快照选项","expected_any":["delivery.update"],"include_planned":false},
-    {"query":"POINode 运行时要选择哪些 POI 模板","expected_any":["algorithms.poi-template"],"include_planned":false}
+    {"query":"POINode 运行时要选择哪些 POI 模板","expected_any":["algorithms.poi-template"],"include_planned":false},
+    {"query":"相机没有图像","expected_any":["operations.camera"],"include_planned":false},
+    {"query":"增加一个属性编辑器","expected_any":["ui.property-grid"],"include_planned":false},
+    {"query":"画好流程以后从哪里开始执行","expected_any":["flow.session"],"include_planned":false},
+    {"query":"流程卡住后怎样安全停下来","expected_any":["flow.session"],"include_planned":false},
+    {"query":"软件设置改坏了怎么用备份恢复","expected_any":["ui.configuration","operations.exports"],"include_planned":false}
   ]
 }

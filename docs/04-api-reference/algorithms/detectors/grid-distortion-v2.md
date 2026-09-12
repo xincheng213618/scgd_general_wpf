@@ -5,7 +5,7 @@ status: "current"
 summary: "本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。"
 aliases: ["点阵畸变分析(V2)","本地点阵畸变(V2)","漏光畸变失败","7x7畸变","GridDistortionAnalysis","LocalGridDistortionNode","M_CalDistortionGridV2","HorizontalTVDistortion","VerticalTVDistortion","Optic_Distortion","KeystoneHoriz","KeystoneVert","DIFF_H","DIFF_V"]
 code_paths: ["Native/opencv_helper/algorithm/distortion","Native/include/opencv_media_export.h","Native/opencv_helper/opencv_media_export.cpp","UI/ColorVision.Core/GridDistortion.cs","UI/ColorVision.Core/GridDistortionAnalysis.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/GridDistortion","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalGridDistortionNode.cs","Engine/ColorVision.Engine/Templates/ARVR/Distortion/ViewHandleDistortion.cs","Engine/ColorVision.Engine/Templates/Jsons/Distortion2","Projects/ProjectARVRPro/Process/Distortion"]
-test_paths: ["Test/opencv_helper_test/test_grid_distortion_v2.cpp","Test/opencv_helper_test/benchmark_grid_distortion.py","Test/ColorVision.UI.Tests/GridDistortionTests.cs","Test/ColorVision.UI.Tests/GridDistortionAnalysisTests.cs","Test/ColorVision.UI.Tests/GridDistortionRealSampleTests.cs","Test/ColorVision.UI.Tests/LocalGridDistortionNodeTests.cs"]
+test_paths: ["Test/opencv_helper_test/test_grid_distortion_v2.cpp","Test/opencv_helper_test/benchmark_grid_distortion.py","Test/opencv_helper_test/benchmark_public_grid_distortion.py","Test/ColorVision.UI.Tests/GridDistortionTests.cs","Test/ColorVision.UI.Tests/GridDistortionAnalysisTests.cs","Test/ColorVision.UI.Tests/GridDistortionRealSampleTests.cs","Test/ColorVision.UI.Tests/LocalGridDistortionNodeTests.cs"]
 related: ["algorithms.arvr","algorithms.find-light-area","algorithms.find-cross","engine.native-integration","engine.results","flow.node-extension"]
 ---
 
@@ -20,6 +20,8 @@ V2 用一次点阵定位得到完整点位，再由 `GridDistortionAnalysis.Calc
 ### ImageView
 
 打开图像，在整图或矩形区域的右键 **算法调用 → 点阵畸变分析(V2)...** 设置行列数等参数并计算。菜单通过 `IIEditorToolContextMenu` 发现，无需在 `ImageView.xaml` 硬编码。结果窗口包含多口径指标、光学估计及 JSON，可复制分析结果；图上显示点位及代表九点。图像被替换或较新任务启动后，过期计算不能覆盖当前叠图。
+
+图像分析和流程节点均提供 **亮点模式**：默认勾选，检测暗背景上的亮点，适用于发光屏幕；取消勾选，检测亮背景上的暗点，适用于暗点反射图卡。`BrightTarget` 只改变背景残差与圆心提取的亮暗方向，有序圆心之后共用相同几何计算。模式随配置和运行参数保存；未包含该字段的旧节点配置仍按亮点运行。光晕、漏光、印刷反射与照明不均会影响圆心提取，暗点照片通过不能替代发光屏幕的实拍验证。
 
 原有 **9点畸变分析** 保留原行为。它的原生 `M_CalDistortionP9` 使用阈值分割和尺寸筛选，指标函数只处理九点；直接将旧配置改为 7×7 不能获得有效的 49 点畸变指标。
 
@@ -65,15 +67,17 @@ V2 用一次点阵定位得到完整点位，再由 `GridDistortionAnalysis.Calc
 
 V2 先缩小图像作粗定位，通过局部背景扣除与局部对比归一化减轻漏光及高亮反光影响，生成圆点候选；结合行列拓扑和拟合残差选择完整点阵，再在原图局部窗口细化点中心。全局亮度阈值和固定像素面积不再是唯一选点条件，仍保留明确的对比度和几何质量门限。过强非投影变形、遮挡或缺点仍可能拒绝，质量分数不是正确率概率。
 
+候选提取保留外框、圆环内部的独立前景点，排除孔洞轮廓，避免框住整张图时漏掉内部圆点。聚类排序失败时，使用 OpenCV 基于邻接图的排序假设，两者都必须通过相同的完整点数、几何残差和原图精修校验。额外点只有在竞争已占用格点，或紧邻行列至少三个不同格点形成扩展时才判为歧义；孤立远点偶然落在无限延伸的整数网格上，不足以否定当前点阵。该检查不保证识别相距较远的多套图卡，多个完整图卡同框时应通过搜索区域明确目标。
+
 | Core 参数 | 默认值 | 范围 |
 | --- | --- | --- |
 | `ExpectedRows` / `ExpectedCols` | 3 / 3 | 3～15 的奇数 |
-| `BrightTarget` | true | 亮点或暗点 |
+| `BrightTarget` | true | “亮点模式”勾选为亮点，取消为暗点 |
 | `MaxProcessingSize` | 1600 | 256～4096 px |
 | `MinimumContrast` | 0.02 | 0～1 |
 | `MaximumGridResidualFraction` | 0.3 | 大于 0 且不超过 1，相对网格间距 |
 
-Flow 当前直接开放行列数、搜索区域和最小对比度，其他检测参数使用 Core 默认值。原生导出 `M_CalDistortionGridV2` 接收 `HImage`、`RoiRect` 和 UTF-8 JSON，返回 JSON 缓冲区并由 `FreeResult` 释放。原有 P9 ABI 保持独立；调用 V2 需要同时交付具有新导出的 `opencv_helper.dll`。包装层校验结果完整性和有限值，DLL、入口、解析及释放错误返回失败，不能作为有效的零畸变。
+Flow 当前直接开放行列数、亮点模式、搜索区域和最小对比度，其他检测参数使用 Core 默认值。原生导出 `M_CalDistortionGridV2` 接收 `HImage`、`RoiRect` 和 UTF-8 JSON，返回 JSON 缓冲区并由 `FreeResult` 释放。原有 P9 ABI 保持独立；调用 V2 需要同时交付具有新导出的 `opencv_helper.dll`。包装层校验结果完整性和有限值，DLL、入口、解析及释放错误返回失败，不能作为有效的零畸变。
 
 ## 验证和复现
 
@@ -84,11 +88,15 @@ Flow 当前直接开放行列数、搜索区域和最小对比度，其他检测
 ```powershell
 python .\Test\opencv_helper_test\benchmark_grid_distortion.py --dll .\x64\Release\opencv_helper.dll --sample C:\Samples\distortion.cvraw --output .\artifacts\grid-distortion-benchmark
 
+python .\Test\opencv_helper_test\benchmark_public_grid_distortion.py --dll .\x64\Release\opencv_helper.dll --dataset C:\Samples\opencv-circles --output .\artifacts\grid-distortion-public
+
 $env:COLORVISION_GRID_DISTORTION_SAMPLE = 'C:\Samples\distortion.cvraw'
 $env:COLORVISION_GRID_DISTORTION_EVIDENCE_DIR = '.\artifacts\grid-distortion-evidence'
 dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --filter 'FullyQualifiedName~GridDistortion'
 ```
 
 真实样本检查默认按 3×3 运行；未指定样本时，可设置 `COLORVISION_RUN_GRID_DISTORTION_NATIVE_TESTS=1` 运行固定合成 7×7 及实际 WPF 结果窗口渲染。普通托管测试默认跳过该原生集成项。窗口证据是测试自行创建的 WPF 内容，不是现有用户窗口截图。
+
+公开图脚本读取已准备好的 OpenCV `opencv_extra/testdata/cv/cameracalibration/circles` 中 14 对 `circlesN.png` 和 `circles_cornersN.dat`，不自动下载。使用固定 7×7、暗点和整图配置，同时比较新旧原生接口与 OpenCV 默认检测；输出目录必须为空，记录输入、参考和 DLL 哈希。参考点来自 OpenCV 回归数据，允许未标方向正方点阵的八种整体对称对齐，不做任意点重排或坐标拟合。参考差异用于回归比较，不代表有独立计量真值；用于修复的公开图应视为开发回归集，不能再作为未见数据的通过率证明。
 
 合成正确性门限同时要求完整行列对应、最大点误差不超过 1 px、有效跨度、按各自公式计算的最大指标误差不超过 0.1 个百分点；不能只数 `success=true`。性能包含原生调用、JSON 字节复制和释放，不含读图、JSON 解析、派生分析、UI 或数据库。单张实图和合成扰动只能验证这些案例，不能推算量产失败率或承诺固定加速倍数。

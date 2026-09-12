@@ -186,6 +186,101 @@ test('current search preserves code symbols; planned/historical are opt-in and l
   assert.match(JSON.stringify(createNavigationData(catalog)), /\[历史\]/u)
 })
 
+test('Chinese subject evidence locates the named subject without overriding exact identities or symbols', () => {
+  const base = { status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const catalog = { entries: [
+    { ...base, knowledge_id: 'ui.a', title: '图像查看', aliases: ['没有图像'], code_paths: ['src/FrameStore.cs'] },
+    { ...base, knowledge_id: 'ui.z', title: '打印机连接' },
+  ] }
+  const query = '打印机没有图像'
+  const ranked = searchCatalog(catalog, query)
+  assert.equal(ranked[0].knowledge_id, 'ui.z')
+  assert.ok(ranked[0].score < ranked[1].score, 'subject evidence is separate from lexical score')
+  assert.deepEqual(searchCatalog(catalog, query, { limit: 1 }), ranked.slice(0, 1))
+  assert.deepEqual(searchCatalog(catalog, `${query} ${query}`), ranked, 'repeated context adds no evidence')
+  assert.equal(searchCatalog(catalog, `src/FrameStore.cs ${query}`)[0].knowledge_id, 'ui.a')
+  catalog.entries[0].aliases.push(query)
+  assert.equal(searchCatalog(catalog, query)[0].knowledge_id, 'ui.a')
+})
+
+test('quantified Chinese requests prefer the longest named subject and its title owner', () => {
+  const base = { status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const catalog = { entries: [
+    { ...base, knowledge_id: 'ui.a', title: '工具入口', aliases: ['字段编辑器'] },
+    { ...base, knowledge_id: 'ui.short', title: '字段目录', summary: '字段编辑器' },
+    { ...base, knowledge_id: 'ui.z', title: '字段编辑契约', aliases: ['字段编辑器'] },
+  ] }
+  for (const query of ['添加一个字段编辑器', '如何创建一种字段编辑器？', '字段编辑器无法加载']) {
+    assert.deepEqual(searchCatalog(catalog, query).slice(0, 2).map((entry) => entry.knowledge_id), ['ui.z', 'ui.a'], query)
+  }
+  catalog.entries = [
+    { ...base, knowledge_id: 'ui.a', title: '窗口参数', summary: '窗口快照无法下载' },
+    { ...base, knowledge_id: 'ui.z', title: '后台工具', aliases: ['窗口快照'] },
+  ]
+  assert.equal(searchCatalog(catalog, '窗口快照无法下载')[0].knowledge_id, 'ui.z', 'a generic title prefix must not displace the more specific alias')
+})
+
+test('Chinese subject prefixes cannot stand in for a compound object or an unfinished request', () => {
+  const base = { status: 'current', aliases: [], source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  for (const [query, title, aliases] of [
+    ['打印机配置改坏了怎么恢复', '打印机连接', []],
+    ['窗口布局无法保存', '窗口主题', ['窗口']],
+    ['添加一个字段编辑器设置', '字段编辑契约', ['字段编辑器']],
+    ['日志目录清理失败', '日志显示', []],
+  ]) {
+    const catalog = { entries: [
+      { ...base, knowledge_id: 'ui.a', title, aliases, summary: '' },
+      { ...base, knowledge_id: 'ui.z', title: '参考', summary: query },
+    ] }
+    assert.equal(searchCatalog(catalog, query)[0].knowledge_id, 'ui.z', query)
+  }
+})
+
+test('Chinese subject routing falls back for alias questions, title action lists and complex queries', () => {
+  const base = { status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  for (const title of ['参数：编辑与关闭', '参数、输出关闭', '参数（关闭说明）']) {
+    const query = '关闭终端后数据还在吗'
+    const catalog = { entries: [
+      { ...base, knowledge_id: 'ui.a', title, aliases: ['关闭入口'] },
+      { ...base, knowledge_id: 'ui.z', title: '终端进程', summary: query },
+    ] }
+    assert.equal(searchCatalog(catalog, query)[0].knowledge_id, 'ui.z', title)
+  }
+  for (const query of ['打印机先准备，再显示图像吗', '怎么设置打印机参数']) {
+    const catalog = { entries: [
+      { ...base, knowledge_id: 'ui.a', title: '打印机设置', aliases: ['怎么设置'] },
+      { ...base, knowledge_id: 'ui.z', title: '参考', summary: query },
+    ] }
+    assert.equal(searchCatalog(catalog, query)[0].knowledge_id, 'ui.z', query)
+  }
+})
+
+test('Chinese subject matching respects query and title word boundaries', () => {
+  const base = { status: 'current', aliases: [], source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  for (const [query, title] of [['控制没有响应', '控制台设置'], ['控制台没有响应', '控制设置']]) {
+    const catalog = { entries: [
+      { ...base, knowledge_id: 'ui.a', title, summary: '' },
+      { ...base, knowledge_id: 'ui.z', title: '参考', summary: query },
+    ] }
+    assert.equal(searchCatalog(catalog, query)[0].knowledge_id, 'ui.z', `${query}: ${title}`)
+  }
+})
+
+test('Chinese subject evidence uses only searchable entries in the requested statuses', () => {
+  const base = { status: 'current', aliases: [], summary: '', source: 'docs/fixture.md', code_paths: [], test_paths: [] }
+  const query = '打印机没有图像'
+  const catalog = { entries: [
+    { ...base, knowledge_id: 'ui.a', title: '参考', summary: query },
+    { ...base, knowledge_id: 'ui.z', title: 'Fixture', aliases: ['打印机'] },
+    { ...base, knowledge_id: 'ui.hidden', title: '打印机连接', searchable: false },
+  ] }
+  assert.equal(searchCatalog(catalog, query)[0].knowledge_id, 'ui.a', 'hidden title evidence cannot promote an alias')
+  catalog.entries.push({ ...base, knowledge_id: 'ui.future', title: '打印机连接', status: 'planned' })
+  assert.equal(searchCatalog(catalog, query)[0].knowledge_id, 'ui.a', 'planned title evidence is opt-in')
+  assert.equal(searchCatalog(catalog, query, { all: true })[0].knowledge_id, 'ui.future')
+  assert.ok(!searchCatalog(catalog, query, { all: true }).some((entry) => entry.knowledge_id === 'ui.hidden'))
+})
+
 test('search finds code symbols touching Chinese text without spaces', async (t) => {
   const root = await fixture(t)
   const catalog = await buildCatalog(root)

@@ -133,13 +133,13 @@ next: false
 - [Flow 隔离无界面执行](../../04-api-reference/algorithms/templates/flow-engine.md) — `flow.headless`
   隔离STN流程的加载、起始节点就绪、执行超时与诊断收尾；停止请求不证明设备停稳，默认执行不限时，批次与前后处理由调用方负责。
 
-- [Flow 启动、停止与最终化](../../01-user-guide/workflow/execution.md) — `flow.session`
-  流程启动、分阶段停止与后处理完成判据；区分当前画布、诊断快照、执行耗时和结果落库。
+- [流程执行：启动、停止与最终化](../../01-user-guide/workflow/execution.md) — `flow.session`
+  从工作流程面板或流程编辑器开始执行；说明流程卡住时的分阶段停止、取消与前后处理收尾，区分当前画布、诊断快照、执行耗时和结果落库；停止请求不保证设备停稳。
 
 - [Flow 模板、持久化与流程包](../../04-api-reference/engine-components/template-flow-chain.md) — `flow.templates`
   Flow 模板的保存基线、导出/删除勾选范围、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。
 
-- [Flow 编辑工作区与文档命令](../../01-user-guide/workflow/design.md) — `flow.workspace`
+- [流程编辑器：画布与工作区文档命令](../../01-user-guide/workflow/design.md) — `flow.workspace`
   流程编辑器的打开与保存步骤、导出/删除范围、切换提示和工作区隔离；区分当前画布与已保存模板。
 
 - [校准服务、本地文件校正与结果持久化](../../01-user-guide/devices/calibration.md) — `operations.calibration`
@@ -152,7 +152,7 @@ next: false
   相机参数的编辑入口、同步覆盖与保存；物理配置同步保留本地CameraID，路径移动失败或被拒绝不等于取消路径变更。
 
 - [设备资源配置、保存与重启](../../01-user-guide/devices/configuration.md) — `operations.device-configuration`
-  终端与设备配置引用、创建、保存、重启和删除清理；未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。
+  终端与设备配置引用、创建、保存、重启和删除清理；保存不保证远端已应用配置，未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。
 
 - [FileServer 设备配置与实现边界](../../01-user-guide/devices/file-server.md) — `operations.file-server`
   FileServer 工厂存在但默认类型树过滤；当前仅有配置与通用 MQTT 包装，未实现远端文件列表、上传或下载操作。
@@ -218,7 +218,7 @@ next: false
   按交付范围验收启动、设备、流程、数据和外部协议；明确通过、失败、未测和不适用，记录同一轮证据及回退材料与演练状态。
 
 - [设置、流程与结果的导入导出边界](../../01-user-guide/data-management/export-import.md) — `operations.exports`
-  按配置备份、流程、图像和项目结果定位入口，说明文件验收与迁移边界。
+  按软件设置备份、流程、图像和项目结果定位导入导出入口，说明备份恢复范围、文件验收与迁移边界。
 
 - [主程序启动与最小图像验证](../../00-getting-started/first-steps.md) — `operations.first-run`
   主程序启动的配置、实例和服务副作用，远程白屏的软件渲染兼容入口，以及隔离测试环境中的最小本地图像验证。

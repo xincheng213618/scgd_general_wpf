@@ -540,6 +540,7 @@
       "test_paths": [
         "Test/opencv_helper_test/test_grid_distortion_v2.cpp",
         "Test/opencv_helper_test/benchmark_grid_distortion.py",
+        "Test/opencv_helper_test/benchmark_public_grid_distortion.py",
         "Test/ColorVision.UI.Tests/GridDistortionTests.cs",
         "Test/ColorVision.UI.Tests/GridDistortionAnalysisTests.cs",
         "Test/ColorVision.UI.Tests/GridDistortionRealSampleTests.cs",
@@ -6011,14 +6012,21 @@
       "knowledge_id": "flow.session",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "流程启动、分阶段停止与后处理完成判据；区分当前画布、诊断快照、执行耗时和结果落库。",
+      "summary": "从工作流程面板或流程编辑器开始执行；说明流程卡住时的分阶段停止、取消与前后处理收尾，区分当前画布、诊断快照、执行耗时和结果落库；停止请求不保证设备停稳。",
       "aliases": [
+        "工作流程",
+        "流程编辑器",
+        "流程启动",
         "流程运行",
+        "流程卡住",
         "流程没结束",
         "执行流程",
         "停止流程",
+        "已经取消执行",
         "执行耗时",
         "流程后处理",
+        "RunFlowCommand",
+        "StopFlowCommand",
         "RunFinalized",
         "执行调试",
         "StopFlow",
@@ -6027,6 +6035,9 @@
         "FlowJob"
       ],
       "code_paths": [
+        "Engine/ColorVision.Engine/FlowProcessing/Runtime/DisplayFlow.xaml",
+        "Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml",
+        "Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunExecutor.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs",
@@ -6049,7 +6060,7 @@
         "Engine/ColorVision.Engine"
       ],
       "domain": "flow",
-      "title": "Flow 启动、停止与最终化",
+      "title": "流程执行：启动、停止与最终化",
       "source": "docs/01-user-guide/workflow/execution.md",
       "url": "/01-user-guide/workflow/execution",
       "searchable": true
@@ -6161,7 +6172,7 @@
         "Engine/ColorVision.Engine"
       ],
       "domain": "flow",
-      "title": "Flow 编辑工作区与文档命令",
+      "title": "流程编辑器：画布与工作区文档命令",
       "source": "docs/01-user-guide/workflow/design.md",
       "url": "/01-user-guide/workflow/design",
       "searchable": true
@@ -6631,7 +6642,7 @@
       "knowledge_id": "operations.device-configuration",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "终端与设备配置引用、创建、保存、重启和删除清理；未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。",
+      "summary": "终端与设备配置引用、创建、保存、重启和删除清理；保存不保证远端已应用配置，未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。",
       "aliases": [
         "添加设备",
         "保存设备",
@@ -6685,7 +6696,7 @@
       "knowledge_id": "operations.exports",
       "knowledge_type": "guide",
       "status": "current",
-      "summary": "按配置备份、流程、图像和项目结果定位入口，说明文件验收与迁移边界。",
+      "summary": "按软件设置备份、流程、图像和项目结果定位导入导出入口，说明备份恢复范围、文件验收与迁移边界。",
       "aliases": [
         "导入导出",
         "CSV",
@@ -6694,10 +6705,15 @@
         "导出图片",
         "SaveSnapshotExportsAsync",
         "配置备份",
+        "设置备份",
+        "配置恢复点",
+        "MaintenanceBackups",
         "打开配置文件夹"
       ],
       "code_paths": [
         "UI/ColorVision.UI/ConfigHandler.cs",
+        "UI/ColorVision.UI/ConfigMaintenanceResetService.cs",
+        "ColorVision/Settings/Maintenance/StorageMaintenanceControl.xaml.cs",
         "Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs",
         "UI/ColorVision.ImageEditor/ImageView.Snapshot.cs"
       ],
@@ -6717,6 +6733,7 @@
         "delivery.file-transfer"
       ],
       "code_scopes": [
+        "ColorVision/Settings",
         "Engine/ColorVision.Engine",
         "UI/ColorVision.ImageEditor",
         "UI/ColorVision.UI"
@@ -9453,8 +9470,12 @@
       "knowledge_id": "ui.configuration",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "ConfigHandler的配置路径、延迟实例、文件合并保存和重载契约；单文件替换不等于内存发布成功，重载会使旧配置引用失效。",
+      "summary": "应用设置 JSON 的备份恢复、配置路径、延迟实例、合并保存与重载；ConfigHandler单文件替换不等于内存发布成功，重载会使旧配置引用失效。",
       "aliases": [
+        "应用设置",
+        "软件设置",
+        "设置备份",
+        "备份恢复",
         "配置文件在哪里",
         "改了配置文件为什么没生效",
         "配置导出缺少项目",
@@ -9465,6 +9486,9 @@
         "ConfigHandler",
         "ConfigService",
         "SaveConfigs",
+        "BackupConfigs",
+        "LoadConfigs",
+        "LoadDefaultConfigs",
         "Reload",
         "ReloadFromDisk",
         "ConfigsReloaded",
@@ -9492,6 +9516,7 @@
         "ui.wizards",
         "ui.menus",
         "ui.property-grid",
+        "ui.storage-maintenance",
         "operations.exports",
         "operations.device-configuration"
       ],

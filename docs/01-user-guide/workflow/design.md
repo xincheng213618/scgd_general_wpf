@@ -9,7 +9,7 @@ test_paths: ["Test/ColorVision.UI.Tests/FlowTemplateWorkspaceControllerTests.cs"
 related: ["flow.architecture","flow.editor","flow.templates","flow.session","flow.headless","ui.property-grid"]
 ---
 
-# Flow 编辑工作区与文档命令
+# 流程编辑器：画布与工作区文档命令
 
 使用流程编辑器创建节点图、配置参数、保存流程或打开本地画布。先确认编辑对象是数据库模板还是本地文件，再执行保存、刷新和导出。
 
@@ -23,6 +23,8 @@ related: ["flow.architecture","flow.editor","flow.templates","flow.session","flo
 2. 在画布空白处右击添加节点，或选择“导入模板为模块”插入已有流程的节点图。选中节点后编辑属性，再核对端口连接、设备 Code 和模板绑定。
 3. 用“自动对齐”（画布内 Ctrl+L）整理位置，用“适应全部节点”查看完整图。布局和视口调整不会代替保存。
 4. 核对窗口标题及下表中的保存目标，点击“保存”。需要保留修改时，先保存成功，再切换模板、刷新或导出；这些操作没有统一的自动保存行为。
+
+编辑完成后要运行当前画布，使用同一编辑器工具栏中工具提示为“执行流程”的按钮。“工作流程”面板也提供同名按钮。启动前提、停止行为和最终状态见[流程执行](./execution.md)；保存流程与执行流程是两个命令，执行不会替代保存。
 
 ## 保存目标与命令范围
 

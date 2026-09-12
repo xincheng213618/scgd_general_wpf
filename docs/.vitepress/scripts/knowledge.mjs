@@ -384,6 +384,48 @@ function qualifiedSearchOwners(symbol) {
   return [...new Set([owner, localOwner].filter((value) => /[a-z_]/u.test(value)))]
 }
 
+function chineseSubjectEvidence(entries, query) {
+  let subject = query.trim().replace(/[。！？!?]+$/u, '')
+  // Mixed symbols and multi-clause questions retain their existing evidence.
+  // A quantified creation request names its object after the classifier;
+  // do not strip arbitrary verbs from questions such as "怎么设置...".
+  if (!/^[\p{Script=Han}\s]+$/u.test(subject)) return new Map()
+  const object = subject.replace(/^(?:(?:请问?|帮我|如何|怎么|怎样|我想要?|想要)\s*)*(?:新增|增加|添加|创建|实现|自定义)(?:一个|一种|一项|一套|一组)\s*/u, '')
+  const quantifiedRequest = object !== subject
+  subject = object
+  // Only an explicit predicate or the end of a quantified request establishes
+  // the object's end. A matched prefix followed by another noun is not enough.
+  const predicate = /(?:(?:一直|始终|仍然|仍|还)?(?:没有|无法|不能)|是否|能否|可否|为何|为什么|如何|怎么|怎样)/u.exec(subject)
+  if (predicate) subject = subject.slice(0, predicate.index).trim()
+  else if (!quantifiedRequest) return new Map()
+  const segmenter = new Intl.Segmenter('zh-CN', { granularity: 'word' })
+  const prefixes = [...segmenter.segment(subject)].map((part) => subject.slice(0, part.index + part.segment.length))
+    .filter((prefix) => /^[\p{Script=Han}]{2,}$/u.test(prefix)).reverse()
+  if (!prefixes.length) return new Map()
+  const matchPrefix = (value) => {
+    const boundaries = new Set([0, value.length])
+    for (const part of segmenter.segment(value)) {
+      boundaries.add(part.index)
+      boundaries.add(part.index + part.segment.length)
+    }
+    return prefixes.find((prefix) => {
+      for (let index = value.indexOf(prefix); index >= 0; index = value.indexOf(prefix, index + 1)) {
+        if (boundaries.has(index) && boundaries.has(index + prefix.length)) return true
+      }
+      return false
+    })?.length ?? 0
+  }
+  const matches = entries.map((entry) => {
+    // Later title sections often enumerate actions (edit/close), not subjects.
+    const titleLength = matchPrefix(entry.title.split(/[：:、，,；;（(]/u)[0])
+    return { entry, titleLength, length: Math.max(titleLength, ...entry.aliases.map(matchPrefix)) }
+  })
+  // Aliases may themselves be questions. Require a title to corroborate the
+  // subject. Candidates must name the complete object, not a shorter prefix.
+  if (!matches.some((match) => match.titleLength)) return new Map()
+  return new Map(matches.filter((match) => match.length === subject.length).map((match) => [match.entry, match.titleLength]))
+}
+
 export function searchCatalog(catalog, query, { all = false, limit = 12 } = {}) {
   const normalized = query.replace(/\\/gu, '/').toLocaleLowerCase().trim()
   if (!normalized) throw new Error('search requires a query')
@@ -399,6 +441,7 @@ export function searchCatalog(catalog, query, { all = false, limit = 12 } = {}) 
     owners: qualifiedSearchOwners(symbol).map(searchSymbolPattern),
   }))
   const entries = catalog.entries.filter((entry) => entry.searchable !== false && (all || entry.status === 'current'))
+  const subjects = chineseSubjectEvidence(entries, normalized)
   // Infer code spelling from the catalog, not query casing: StateStore should
   // rank identically when typed as statestore. Single words/acronyms such as
   // Save, backup and ID remain lexical; camel/Pascal boundaries and snake_case
@@ -459,7 +502,7 @@ export function searchCatalog(catalog, query, { all = false, limit = 12 } = {}) 
     let score = exactMatch * 100 + ownerMatches * 5
     for (const term of terms) if (fields.includes(term)) score += tokens.includes(term) ? 10 : 1
     return { entry, score, exactMatch, fullMatches, namedFullMatches, ownerMatches, ownerSpecificity, describedOwners,
-      bareMatches, namedBareMatches, describedBareMatches }
+      bareMatches, namedBareMatches, describedBareMatches, subjectMatch: Number(subjects.has(entry)), subjectTitleLength: subjects.get(entry) ?? 0 }
   }).filter((result) => result.score > 0)
     // score is the lexical tie-break, not the final rank. Preserve this order
     // when consuming results: named qualified symbols outrank equally complete
@@ -468,6 +511,7 @@ export function searchCatalog(catalog, query, { all = false, limit = 12 } = {}) 
       || b.ownerMatches - a.ownerMatches
       || b.ownerSpecificity - a.ownerSpecificity || b.describedOwners - a.describedOwners
       || b.bareMatches - a.bareMatches || b.namedBareMatches - a.namedBareMatches || b.describedBareMatches - a.describedBareMatches
+      || b.subjectMatch - a.subjectMatch || b.subjectTitleLength - a.subjectTitleLength
       || b.score - a.score || a.entry.knowledge_id.localeCompare(b.entry.knowledge_id, 'en'))
     .slice(0, limit).map(({ entry, score, exactMatch, fullMatches, ownerMatches, bareMatches }) => ({
       ...entry, score,

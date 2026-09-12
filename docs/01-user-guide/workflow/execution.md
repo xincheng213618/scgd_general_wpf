@@ -2,14 +2,14 @@
 knowledge_id: "flow.session"
 knowledge_type: "topic"
 status: "current"
-summary: "流程启动、分阶段停止与后处理完成判据；区分当前画布、诊断快照、执行耗时和结果落库。"
-aliases: ["流程运行","流程没结束","执行流程","停止流程","执行耗时","流程后处理","RunFinalized","执行调试","StopFlow","CVBaseServerNode","FlowExecutionSession","FlowJob"]
-code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunExecutor.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowControl.cs","Engine/ColorVision.Engine/FlowProcessing/PostProcess/PostProcessExecution.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/FlowJob.cs"]
+summary: "从工作流程面板或流程编辑器开始执行；说明流程卡住时的分阶段停止、取消与前后处理收尾，区分当前画布、诊断快照、执行耗时和结果落库；停止请求不保证设备停稳。"
+aliases: ["工作流程","流程编辑器","流程启动","流程运行","流程卡住","流程没结束","执行流程","停止流程","已经取消执行","执行耗时","流程后处理","RunFlowCommand","StopFlowCommand","RunFinalized","执行调试","StopFlow","CVBaseServerNode","FlowExecutionSession","FlowJob"]
+code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/DisplayFlow.xaml","Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml","Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunExecutor.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowControl.cs","Engine/ColorVision.Engine/FlowProcessing/PostProcess/PostProcessExecution.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/FlowJob.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/FlowFinalizedExecutionApiTests.cs","Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs"]
 related: ["flow.architecture","flow.templates","flow.workspace","flow.headless","flow.diagnostics"]
 ---
 
-# Flow 启动、停止与最终化
+# 流程执行：启动、停止与最终化
 
 从“工作流程”面板或“流程编辑器”点击“执行流程”，运行对应工作区的节点图。本页说明启动前提、停止行为，以及如何区分引擎结束、后处理完成和结果落库。共享业务链由 `FlowExecutionSession` 编排；项目窗口直接持有 `FlowControl` 的入口可能使用自己的完成规则。
 
@@ -34,11 +34,13 @@ related: ["flow.architecture","flow.templates","flow.workspace","flow.headless",
 2. 需要按保存版本复现时，先确认保存成功。UI 手动运行可使用未保存的画布；`FlowJob` 使用主工作区，不跟随任意独立窗口的激活状态。完整输入差异见[当前画布与已保存版本](./design.md#当前画布与已保存版本)。
 3. 点击“执行流程”，记录实际生成的 SN、批次和开始时间。进度及当前节点用于定位阶段，不作为成功凭据。
 4. 等待共享链最终化，再核对最终状态、后处理结果和本流程负责的输出。API 调用方使用 `RunFlowAndWaitForFinalizationAsync()`；事件订阅方使用 `RunFinalized`。
-5. 需要中止时点击“停止流程”，按下节确认后续状态；不要仅凭取消提示判断设备停稳或数据写入已停止。
+5. 节点图运行中需要中止时点击“停止流程”，按下节确认后续状态；不要仅凭取消提示判断设备停稳或数据写入已停止。
 
 ## 停止后会发生什么
 
 `StopFlow()` 请求取消活动生命周期的 token，并更新界面摘要。取消在不同阶段产生不同结果：
+
+“停止流程”按钮跟随节点图的 `FlowControl.IsFlowRun` 标记显示，不跟随完整执行生命周期；启动准备、前处理和图结束后的后处理阶段可能没有该按钮。下表描述 `StopFlow()` 被调用时的阶段行为，不表示各阶段都有可点击的停止按钮。
 
 | 请求停止时的阶段 | 后续行为 |
 | --- | --- |
