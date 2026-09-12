@@ -10086,6 +10086,10 @@
         "Test/ColorVision.UI.Tests/EditorToolFactoryLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/VideoLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/HeightMapPixelSamplerTests.cs",
+        "Test/ColorVision.UI.Tests/HeightMapDxGeometryTests.cs",
+        "Test/ColorVision.UI.Tests/HeightMapOrbitCameraTests.cs",
+        "Test/ColorVision.UI.Tests/HeightMapModelExporterTests.cs",
+        "Test/HeightMap.Validation/Program.cs",
         "Test/ColorVision.UI.Tests/ModelViewer3DStateTests.cs",
         "Test/ColorVision.UI.Tests/ModelViewer3DModelTests.cs"
       ],

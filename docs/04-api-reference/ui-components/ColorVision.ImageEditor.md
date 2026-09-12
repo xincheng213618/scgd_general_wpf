@@ -5,7 +5,7 @@ status: "current"
 summary: "图像/视频打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。"
 aliases: ["打开图像","看图","视频模式","标注","撤销标注","自由套索","闭合多边形","图形旋转","绘图连续模式","绘图锁定","紧凑属性条","CompactInspector","保存原图还是截图","图像叠加层为什么没有显示","像素数字显示","PixelValueOverlay","ColorVision.ImageEditor","ImageView","OpenImage","ImageSourceLoaded","ExternalRenderCompleted","TIFF","Gray32Float","ImageViewSnapshot","AlgorithmOverlayManager","3D高度图","3D模型查看器","ModelViewer3D","ModelViewer3DControl","ModelViewer3DModel","Window3D","HeightMapPixelSampler"]
 code_paths: ["UI/ColorVision.ImageEditor/ImageView.xaml","UI/ColorVision.ImageEditor/ImageView.xaml.cs","UI/ColorVision.ImageEditor/ImageViewLifecycleEventArgs.cs","UI/ColorVision.ImageEditor/ImageView.Snapshot.cs","UI/ColorVision.ImageEditor/EditorContext.cs","UI/ColorVision.ImageEditor/EditorToolFactory.cs","UI/ColorVision.ImageEditor/CompactInspector.cs","UI/ColorVision.ImageEditor/DrawCanvas.cs","UI/ColorVision.ImageEditor/Draw/SelectEditorVisual.cs","UI/ColorVision.ImageEditor/Draw/RegionProperties.cs","UI/ColorVision.ImageEditor/Draw/Polygon","UI/ColorVision.ImageEditor/Draw/Circle/CircleManager.cs","UI/ColorVision.ImageEditor/Draw/Rectangle/RectangleManager.cs","UI/ColorVision.ImageEditor/Draw/Annotations/AnnotationMapper.cs","UI/ColorVision.ImageEditor/Tif","UI/ColorVision.ImageEditor/Video/VideoOpen.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs","UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj","Engine/ColorVision.Engine/Media/CVRawOpen.cs","UI/ColorVision.ImageEditor/README.md","UI/ColorVision.ImageEditor/EditorTools/ThreeD","UI/ColorVision.ImageEditor/PixelValueOverlay.cs","UI/ColorVision.ImageEditor/Settings/DefaultImageViewDisplayConfig.cs","UI/ColorVision.ImageEditor/Settings/ImageViewSettingsWindow.xaml.cs","UI/ColorVision.ImageEditor/Settings/ImageViewSettingsEntry.cs","Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs","Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs","Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs","Test/ColorVision.UI.Tests/ImageViewSnapshotSaveTests.cs","Test/ColorVision.UI.Tests/ImageViewContextMenuTests.cs","Test/ColorVision.UI.Tests/EraseManagerUndoTests.cs","Test/ColorVision.UI.Tests/DrawShapeCompatibilityTests.cs","Test/ColorVision.UI.Tests/EditorToolFactoryLifecycleTests.cs","Test/ColorVision.UI.Tests/VideoLifecycleTests.cs","Test/ColorVision.UI.Tests/HeightMapPixelSamplerTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DStateTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DModelTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs","Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs","Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs","Test/ColorVision.UI.Tests/ImageViewSnapshotSaveTests.cs","Test/ColorVision.UI.Tests/ImageViewContextMenuTests.cs","Test/ColorVision.UI.Tests/EraseManagerUndoTests.cs","Test/ColorVision.UI.Tests/DrawShapeCompatibilityTests.cs","Test/ColorVision.UI.Tests/EditorToolFactoryLifecycleTests.cs","Test/ColorVision.UI.Tests/VideoLifecycleTests.cs","Test/ColorVision.UI.Tests/HeightMapPixelSamplerTests.cs","Test/ColorVision.UI.Tests/HeightMapDxGeometryTests.cs","Test/ColorVision.UI.Tests/HeightMapOrbitCameraTests.cs","Test/ColorVision.UI.Tests/HeightMapModelExporterTests.cs","Test/HeightMap.Validation/Program.cs","Test/ColorVision.UI.Tests/ModelViewer3DStateTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DModelTests.cs"]
 related: ["ui.discovery","ui.image-editor-context","ui.property-grid","engine.results","algorithms.platform","algorithms.local-native-analysis","operations.first-run","ui.publishing"]
 ---
 
@@ -89,14 +89,36 @@ CVCIE 的全局默认显示在“图像设置 → 文件打开 → CVCIE”中�
 - 音频由独立 WPF `MediaPlayer` 播放，静音和同步修正有实现；不能承诺每个文件都有音轨、所有编码可播或严格音画同步。
 - 自动隐藏只调整播放工具栏透明度，不折叠布局。换文件、`Clear`、`Dispose` 通过配置清理触发 `CloseVideo`，释放原生句柄、音频、定时器和事件；单纯控件 `Unloaded` 不能替代释放。
 
-## 3D：高度曲面与模型场景不是同一条链
+## 3D：亮度高度图与模型场景
 
-- 图像高度曲面由 `EditorTools/ThreeD/Window3D.xaml.cs` 使用 WPF Helix 与 `Viewport3DHelper` 呈现。`HeightMapPixelSampler.Sample()` 先转 `Bgra32`，按目标尺寸双线性采样为 byte 灰度/alpha，再生成网格；可打开 RGB48 不等于高度值仍是原始高位深测量数据。代码列出 24 个 colormap 名称，资源加载失败的项会被跳过。高度缩放、伪彩、视角和截图是可视化操作，不构成物理高度校准。
+### 图像亮度高度图
+
+“图像 → 3D 视图”把当前 `DrawCanvas.Source` 的 `WriteableBitmap` 交给 `Window3D`。高度定义保持为 `Z = byte灰度 / 255 × 显示高度`，默认显示高度为 100。它表达当前显示图像的亮度，不是物理深度、原始 RGB48/Gray16/Gray32Float 测量值，也不从亮度重建真实物体。切换源图层或改变上游显示映射可能改变输入亮度。
+
+`HeightMapPixelSampler` 保留端点对齐的双线性采样：先对每个邻点按 `0.114B + 0.587G + 0.299R` 四舍五入为 byte，再插值并舍入。Gray8/Bgr24/Bgr32/Bgra32 可直接读取，其他格式沿用 WPF 到 Bgra32 的显示转换；灰度和 straight alpha 独立插值。透明阈值仍为 `alpha > 127`，一个格子的四角均有效才生成两三角；交互粗网格还检查细网格内部的透明点，避免跨洞连接。浮点 NaN/Infinity 沿用 WPF 的显示转换，并未新增物理测量有效性判断。采样使用有界行/条带缓冲，不额外复制整张 BGRA 大图；源属于 UI Dispatcher，数值网格和上传集合的构建在后台进行。
+
+`HeightMapDxRenderer` 复用项目现有 HelixToolkit.Wpf.SharpDX / DirectX 11 依赖。静止与交互网格的顶点、索引常驻缓存，旋转/缩放只更新相机，高度只更新 Z 变换；伪彩色切换只替换 256 项 LUT 纹理。`HeightMapDxGeometry` 的网格射线遍历用于悬停命中，避免对所有三角形逐个测试。24 个伪彩色资源名称保持可用；光照影响曲面明暗，图例始终表示未加光照的 0–255 LUT。
+
+| 设置/操作 | 行为 |
+| --- | --- |
+| `DetailResolution` | 静止网格最长边，默认 1536，可设 128–2048；按图像比例采样且不放大超过源尺寸（单像素维度复制成两点供网格使用） |
+| `TargetPixelsX` / `TargetPixelsY` | 保留旧配置键，作为缓存交互网格的 X/Y 上限；默认 512，设置界面允许 128–1024 |
+| `AdaptiveDetail` | 默认开启，拖动/相机平滑期间显示较低细节，停止约 160 ms 后恢复；关闭后始终显示细网格。较低性能显卡可先用静止 768 / 交互 256 |
+| 显示高度 | 仅调整显示比例；渲染质量设置不改变 XY 尺度（以原图适配 512×512 的默认平面为基准）。不静默平滑灰度、不抹掉峰值；有限采样仍可能遗漏原图细节 |
+| 左键 / 右键或中键 / 滚轮 | 围绕稳定目标旋转 / 在相机平面平移 / 缩放；Shift+左键也可平移。`HeightMapOrbitCamera` 按经过的时间平滑趋向目标 |
+| Home、重置、双击 | 在完整网格就绪后按高度包围盒八角与真实视图区比例重新取景，并恢复默认方向；俯视提供正面查看。初始取景和重置使用同一逻辑 |
+| 悬停读数 | 底栏显示源图映射坐标、最近细网格采样灰度、该灰度对应 Z，以及插值曲面交点 Z；采样值不能冒充源像素的原始测量读数 |
+| 截图 / 导出 | 截图用 DirectX 视口读取 PNG/JPEG/BMP；模型导出由 `HeightMapModelExporter` 在后台流式输出完整细节和当前高度的 OBJ（MTL/256 项 PNG）或二进制 STL；OBJ 附带伪彩材质和纹理并保留隐藏纹理文件设置，STL 只含几何，二者均不包含相机方向。导出开始后固定网格/LUT/高度快照，后续视角或采样变化不会混入文件 |
+
+侧栏、视图区、图例和读数底栏各占布局区域，控制内容可滚动。首次取景等网格准备完成后才执行，不在只有坐标轴时调用加载自动缩放。保持完整取景状态时，窗口比例和显示高度改变会重新适配；用户手动旋转/平移/缩放后保留其观察位置，Home 可再次完整取景。关闭会取消未完成构建并释放视口/GPU资源，不强制对整个进程执行 GC。
+
+### OBJ/STL 模型场景
+
 - `ModelViewer3DControl` / `ModelViewer3DModel` 是 SharpDX/Assimp 的 OBJ/STL 模型查看链，支持场景树、可见性和隔离状态。线框由 `MeshNode.RenderWireframe` 控制，不能照旧说明把它写成 `FindEdges` 加边圆柱，或把高度曲面的 WPF 工具链直接套过来。
 - 界面 `ExportModel_Click` 调用 `ModelViewer3DLoader.ExportAsync(model.FilePath, ...)`，导出时重新由 `Importer` 读取源文件，再交给 `Exporter`，不是序列化当前显示场景。因此隐藏/隔离、线框与窗口变换不构成模型导出内容；源文件后续变化也可能影响输出。`ModelViewer3DModel.ExportToFile()` 则是另一条对已有场景操作的 API，不能因其存在就推断界面使用了它。
 - 模型导出会写入用户选择的目标；格式支持、材质/纹理、配套文件和输出保真须按实际导出器及样本核验，不能笼统承诺 OBJ/STL 都完整保留材质和纹理。导出接口返回成功不替代重新导入检查。
 
-相关测试为 `HeightMapPixelSamplerTests`、`ModelViewer3DStateTests` 和 `ModelViewer3DModelTests`，分别涉及像素采样/网格、可见性/加载状态以及材质范围/重读源文件导出。它们不覆盖所有模型格式、驱动或真实窗口交互。
+相关确定性测试为 `HeightMapPixelSamplerTests`、`HeightMapDxGeometryTests`、`HeightMapOrbitCameraTests`、`HeightMapModelExporterTests`，分别覆盖显示采样契约、网格/透明洞/射线命中、取景和按时间平滑，以及 OBJ/STL 流式导出、取消和 Assimp 重导入。`Test/HeightMap.Validation` 可在独立配置中运行旧/新窗口并记录真实图像的采样、构网格、进程 CPU 和 CompositionTarget 回调间隔；回调间隔不是 GPU 帧时间或呈现延迟，不能据此宣称渲染倍率。`ModelViewer3DStateTests` 和 `ModelViewer3DModelTests` 继续覆盖模型可见性/加载状态及重读源文件导出。这些检查不覆盖所有格式、显卡驱动或低配机器。
 
 ## 入口缺失与失败定位
 
