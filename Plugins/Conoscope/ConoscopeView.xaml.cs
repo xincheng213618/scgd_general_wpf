@@ -1,6 +1,8 @@
 ﻿#pragma warning disable CA1822
 using ColorVision.ImageEditor;
 using ColorVision.UI;
+using ColorVision.Themes;
+using Conoscope.Presentation;
 using ColorVision.Core;
 using log4net;
 using Microsoft.Win32;
@@ -9,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Windows;
@@ -161,6 +164,8 @@ namespace Conoscope
         private double appliedProfileCalculationDiameterPixels = double.NaN;
         private double appliedProfileManualCoefficient = double.NaN;
         private bool disposed;
+        private DispatcherOperation? pendingThemeRefreshOperation;
+        private readonly ThemeManager viewThemeManager = ThemeManager.Current;
         private const float MinPositiveXyzValue = 0.000001f;
         private const double Conoscope3DInitialHeightScale = 160.0;
         private ConoscopeImageZoomMode imageZoomMode = ConoscopeImageZoomMode.Fit;
@@ -317,8 +322,8 @@ namespace Conoscope
             InitializeComponent();
             document.Changed += Document_Changed;
             document.LoadFailed += Document_LoadFailed;
-            InitializeFocusToolbarIcons();
             InitializeLocalViewStateFromDefaults();
+            viewThemeManager.CurrentUIThemeChanged += CurrentUIThemeChanged;
             ImageView.FocusCircleCalculationRequested += ImageView_FocusCircleCalculationRequested;
             ImageView.FocusCircleEditRequested += ImageView_FocusCircleEditRequested;
             ImageView.FocusCirclesChanged += ImageView_FocusCirclesChanged;
@@ -420,32 +425,6 @@ namespace Conoscope
             }
         }
 
-        private void InitializeFocusToolbarIcons()
-        {
-            SetFocusToolbarIcon(tglFocusCircleMode, "DrawingImagedrag");
-            SetFocusToolbarIcon(tglFocusCircleDrawTool, "DrawingImageCircle");
-            SetFocusToolbarIcon(tglFocusCircleEraseTool, "DrawingImageeraser");
-            SetFocusToolbarIcon(btnCircleFit, "DrawingImage1_1");
-            SetFocusToolbarIcon(btnCalculateFocusCircles, "DrawingImageAlgorithm");
-            SetFocusToolbarIcon(btnSaveFocusPoiTemplate, "DrawingImageSave");
-        }
-
-        private static void SetFocusToolbarIcon(ContentControl? control, string resourceKey)
-        {
-            if (control == null)
-            {
-                return;
-            }
-
-            Image icon = IEditorToolFactory.TryFindResource(resourceKey);
-            if (Application.Current.TryFindResource("ToolBarImage") is Style toolBarImageStyle)
-            {
-                icon.Style = toolBarImageStyle;
-            }
-
-            control.Content = icon;
-        }
-
         private void ImageView_FocusCirclesChanged(object? sender, EventArgs e)
         {
             UpdateFocusCircleToolbarState();
@@ -534,6 +513,10 @@ namespace Conoscope
             State.CoordinateAxis.LineWidth = source.LineWidth;
             State.CoordinateAxis.AxisBrush = source.AxisBrush;
             State.CoordinateAxis.ReferenceMode = preserveReferenceState ? referenceMode : source.ReferenceMode;
+            if (State.CoordinateSystem == ConoscopeCoordinateSystem.Polar && IsHorizontalVerticalReference)
+                State.CoordinateAxis.ReferenceMode = ConoscopeCoordinateReferenceMode.AzimuthLine;
+            State.CoordinateAxis.ReferenceHorizontalAngle = Math.Clamp(preserveReferenceState ? State.CoordinateAxis.ReferenceHorizontalAngle : source.ReferenceHorizontalAngle, -source.MaxAngle, source.MaxAngle);
+            State.CoordinateAxis.ReferenceVerticalAngle = Math.Clamp(preserveReferenceState ? State.CoordinateAxis.ReferenceVerticalAngle : source.ReferenceVerticalAngle, -source.MaxAngle, source.MaxAngle);
             State.CoordinateAxis.ReferenceAngle = preserveReferenceState ? referenceAngle : source.ReferenceAngle;
             State.CoordinateAxis.ReferenceRadiusAngle = preserveReferenceState
                 ? Math.Max(0, Math.Min(referenceRadiusAngle, source.MaxAngle))
@@ -566,6 +549,32 @@ namespace Conoscope
             UpdatePseudoColorMapPreview();
             InitializeFocusPointTools();
             UpdatePanModeState();
+        }
+
+        private void CurrentUIThemeChanged(Theme theme)
+        {
+            if (disposed)
+            {
+                return;
+            }
+
+            pendingThemeRefreshOperation?.Abort();
+            pendingThemeRefreshOperation = Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+            {
+                pendingThemeRefreshOperation = null;
+                if (disposed)
+                {
+                    return;
+                }
+
+                // Theme replacement must not discard the user's chart zoom or reload image data.
+                var limits = wpfPlotReference.Plot.Axes.GetLimits();
+                ConoscopePlotTheme.ApplyCartesian(wpfPlotReference, this);
+                polarPlotReference.RefreshTheme();
+                UpdateReferencePlot();
+                wpfPlotReference.Plot.Axes.SetLimits(limits);
+                wpfPlotReference.Refresh();
+            }));
         }
 
         private void ImageView_ZoomChanged(object? sender, EventArgs e)
@@ -698,6 +707,9 @@ namespace Conoscope
             }
 
             disposed = true;
+            viewThemeManager.CurrentUIThemeChanged -= CurrentUIThemeChanged;
+            pendingThemeRefreshOperation?.Abort();
+            pendingThemeRefreshOperation = null;
             pendingModelProfileRefreshOperation?.Abort();
             pendingModelProfileRefreshOperation = null;
             document.Changed -= Document_Changed;
@@ -715,6 +727,12 @@ namespace Conoscope
             ImageView.FocusCircleSelectionChanged -= ImageView_FocusCircleSelectionChanged;
             cieWindow?.Close();
             cieWindow = null;
+            if (snapshotWindow != null)
+            {
+                snapshotWindow.KeepSessionOnClose = false;
+                snapshotWindow.Close();
+            }
+            snapshotWindow = null;
             document.Dispose();
             DisposePseudoColorRangeMasks();
             DisposeHorizontalVerticalProjection();
@@ -980,7 +998,10 @@ namespace Conoscope
             }
 
             ConoscopeCoordinateSystem previousSystem = State.CoordinateSystem;
+            ConoscopeCoordinateReferenceMode previousReferenceMode = State.CoordinateAxis.ReferenceMode;
             State.CoordinateSystem = requestedSystem;
+            if (requestedSystem == ConoscopeCoordinateSystem.Polar && IsHorizontalVerticalReference)
+                State.CoordinateAxis.ReferenceMode = ConoscopeCoordinateReferenceMode.AzimuthLine;
             isFocusCircleModeEnabled = false;
             if (tglFocusCircleMode != null)
             {
@@ -1003,6 +1024,7 @@ namespace Conoscope
             {
                 log.Error($"切换 Conoscope 坐标显示失败: {ex.Message}", ex);
                 State.CoordinateSystem = previousSystem;
+                State.CoordinateAxis.ReferenceMode = previousReferenceMode;
                 isUpdatingCoordinateSystemControl = true;
                 try
                 {
@@ -1813,7 +1835,9 @@ namespace Conoscope
             }
 
             if (e.PropertyName == nameof(ConoscopeCoordinateAxisParam.ReferenceAngle)
-                || e.PropertyName == nameof(ConoscopeCoordinateAxisParam.ReferenceRadiusAngle))
+                || e.PropertyName == nameof(ConoscopeCoordinateAxisParam.ReferenceRadiusAngle)
+                || e.PropertyName == nameof(ConoscopeCoordinateAxisParam.ReferenceHorizontalAngle)
+                || e.PropertyName == nameof(ConoscopeCoordinateAxisParam.ReferenceVerticalAngle))
             {
                 if (coordinateAxisController?.IsUpdatingReference != true)
                 {
@@ -1837,7 +1861,11 @@ namespace Conoscope
                 return;
             }
 
-            if (e.Mode == ConoscopeCoordinateReferenceMode.AzimuthLine)
+            if (IsHorizontalVerticalReference)
+            {
+                UpdateHorizontalVerticalReference();
+            }
+            else if (e.Mode == ConoscopeCoordinateReferenceMode.AzimuthLine)
             {
                 UpdateCoordinateAxisAzimuth(e.Angle);
             }
@@ -2010,7 +2038,12 @@ namespace Conoscope
                 return;
             }
 
-            if (coordinateAxisController.Axis.Attribute.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
+            UpdateReferencePlotDisplayMode();
+            if (IsHorizontalVerticalReference)
+            {
+                UpdateHorizontalVerticalReference();
+            }
+            else if (coordinateAxisController.Axis.Attribute.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
             {
                 UpdateCoordinateAxisAzimuth(coordinateAxisController.Axis.Attribute.ReferenceAngle);
             }
@@ -2081,6 +2114,7 @@ namespace Conoscope
 
             selectedReferenceCurve = null;
             coordinateAxisReferenceCurve = null;
+            horizontalVerticalReferenceSamples = Array.Empty<ConoscopeHorizontalVerticalSample>();
         }
 
         private void CreateAndAnalyzePolarLines()
@@ -2165,8 +2199,7 @@ namespace Conoscope
             plot.Plot.Axes.Left.Label.FontName = ScottPlot.Fonts.Detect(fontSample);
             plot.Plot.Axes.Bottom.Label.FontName = ScottPlot.Fonts.Detect(fontSample);
 
-            plot.Plot.Grid.MajorLineColor = ScottPlot.Color.FromColor(System.Drawing.Color.LightGray);
-            plot.Plot.Grid.MajorLineWidth = 1;
+            ConoscopePlotTheme.ApplyCartesian(plot, this);
             plot.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
 
             plot.Refresh();
@@ -2174,7 +2207,8 @@ namespace Conoscope
 
         private void UpdateReferencePlotDisplayMode()
         {
-            bool isPolar = referencePlotDisplayMode == ReferencePlotDisplayMode.Polar;
+            bool isPolar = !IsHorizontalVerticalReference && referencePlotDisplayMode == ReferencePlotDisplayMode.Polar;
+            if (tglReferencePolarMode != null) tglReferencePolarMode.IsEnabled = !IsHorizontalVerticalReference;
 
             if (wpfPlotReference != null)
             {
@@ -2209,20 +2243,30 @@ namespace Conoscope
         private void UpdateReferencePlotHeader()
         {
             ConoscopeCoordinateAxisParam axisParam = State.CoordinateAxis;
-            tbReferenceMode.Text = axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine ? Properties.Resources.RefAzimuthLine : Properties.Resources.RefPolarCircle;
+            tbReferenceMode.Text = axisParam.ReferenceMode switch
+            {
+                ConoscopeCoordinateReferenceMode.FixedHorizontal => Properties.Resources.Con_Axis_FixedH,
+                ConoscopeCoordinateReferenceMode.FixedVertical => Properties.Resources.Con_Axis_FixedV,
+                ConoscopeCoordinateReferenceMode.AzimuthLine => Properties.Resources.RefAzimuthLine,
+                _ => Properties.Resources.RefPolarCircle
+            };
             tbReferenceValue.Text = GetReferenceValueText(axisParam.ReferenceMode, axisParam.ReferenceAngle, axisParam.ReferenceRadiusAngle);
         }
 
-        private static string GetReferenceValueText(ConoscopeCoordinateReferenceMode mode, double angle, double radiusAngle)
+        private string GetReferenceValueText(ConoscopeCoordinateReferenceMode mode, double angle, double radiusAngle)
         {
-            return mode == ConoscopeCoordinateReferenceMode.AzimuthLine
-                ? $"{angle:F2}°"
-                : $"R={radiusAngle:F2}°";
+            return mode switch
+            {
+                ConoscopeCoordinateReferenceMode.FixedHorizontal => $"H={State.CoordinateAxis.ReferenceHorizontalAngle:F2}°",
+                ConoscopeCoordinateReferenceMode.FixedVertical => $"V={State.CoordinateAxis.ReferenceVerticalAngle:F2}°",
+                ConoscopeCoordinateReferenceMode.AzimuthLine => $"{angle:F2}°",
+                _ => $"θ={radiusAngle:F2}°"
+            };
         }
 
         private void SetReferencePlotLimits()
         {
-            if (State.CoordinateAxis.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
+            if (State.CoordinateAxis.ReferenceMode != ConoscopeCoordinateReferenceMode.PolarCircle)
             {
                 wpfPlotReference.Plot.Axes.SetLimitsX(-MaxAngle, MaxAngle);
             }
@@ -2234,28 +2278,18 @@ namespace Conoscope
 
         private void UpdateReferencePlot()
         {
+            if (IsHorizontalVerticalReference)
+            {
+                UpdateHorizontalVerticalReferencePlot();
+                return;
+            }
             ReferenceCurve? curve = State.CoordinateAxis.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine
                 ? selectedPolarLine
                 : selectedCircleLine;
             UpdateReferenceCurvePlot(curve);
         }
 
-        private static SolidColorBrush GetChannelPlotBrush(ExportChannel channel)
-        {
-            return channel switch
-            {
-                ExportChannel.X => Brushes.Gold,
-                ExportChannel.Y => Brushes.LimeGreen,
-                ExportChannel.Z => Brushes.Violet,
-                ExportChannel.CieX => Brushes.OrangeRed,
-                ExportChannel.CieY => Brushes.SeaGreen,
-                ExportChannel.CieU => Brushes.DodgerBlue,
-                ExportChannel.CieV => Brushes.MediumPurple,
-                ExportChannel.ColorDifference => Brushes.Crimson,
-                ExportChannel.Contrast => Brushes.DeepSkyBlue,
-                _ => Brushes.LimeGreen
-            };
-        }
+        private SolidColorBrush GetChannelPlotBrush(ExportChannel channel) => ConoscopePlotTheme.GetChannelBrush(channel, this);
 
         private static double GetNicePolarReferenceRadiusMaximum(double maxValue)
         {
@@ -2330,21 +2364,10 @@ namespace Conoscope
                 closePath);
         }
 
-        private static ScottPlot.Color GetPlotColor(ExportChannel channel)
+        private ScottPlot.Color GetPlotColor(ExportChannel channel)
         {
-            return channel switch
-            {
-                ExportChannel.X => ScottPlot.Color.FromColor(System.Drawing.Color.Gold),
-                ExportChannel.Y => ScottPlot.Color.FromColor(System.Drawing.Color.LimeGreen),
-                ExportChannel.Z => ScottPlot.Color.FromColor(System.Drawing.Color.Violet),
-                ExportChannel.CieX => ScottPlot.Color.FromColor(System.Drawing.Color.OrangeRed),
-                ExportChannel.CieY => ScottPlot.Color.FromColor(System.Drawing.Color.SeaGreen),
-                ExportChannel.CieU => ScottPlot.Color.FromColor(System.Drawing.Color.DodgerBlue),
-                ExportChannel.CieV => ScottPlot.Color.FromColor(System.Drawing.Color.MediumPurple),
-                ExportChannel.ColorDifference => ScottPlot.Color.FromColor(System.Drawing.Color.Crimson),
-                ExportChannel.Contrast => ScottPlot.Color.FromColor(System.Drawing.Color.DeepSkyBlue),
-                _ => ScottPlot.Color.FromColor(System.Drawing.Color.LimeGreen)
-            };
+            Color color = GetChannelPlotBrush(channel).Color;
+            return new ScottPlot.Color(color.R, color.G, color.B, color.A);
         }
 
         private void ExtractRgbAlongLine(PolarAngleLine curve, Point start, Point end)
@@ -2473,12 +2496,13 @@ namespace Conoscope
                 ScottPlot.Plottables.Scatter scatter = wpfPlotReference.Plot.Add.Scatter(positions, values);
                 scatter.Color = GetPlotColor(channel);
                 scatter.LineWidth = 2;
+                scatter.MarkerSize = 0;
                 scatter.LegendText = ConoscopeChannelDisplayFormatter.GetLabel(channel);
 
                 string channelLabel = ConoscopeChannelDisplayFormatter.GetLabel(channel);
                 string title = curve is ConcentricCircleLine circle
-                    ? string.Format(Properties.Resources.Conoscope_CircleDistributionTitle, circle.RadiusAngle, channelLabel)
-                    : string.Format(Properties.Resources.Conoscope_PolarDistributionTitle, ((PolarAngleLine)curve).Angle, channelLabel);
+                    ? string.Format(Properties.Resources.Conoscope_CircleDistributionTitle, circle.RadiusAngle.ToString("F2"), channelLabel)
+                    : string.Format(Properties.Resources.Conoscope_PolarDistributionTitle, ((PolarAngleLine)curve).Angle.ToString("F2"), channelLabel);
                 wpfPlotReference.Plot.Title(title);
                 wpfPlotReference.Plot.XLabel(curve.IsClosed ? Properties.Resources.Conoscope_CircleAngleDegrees : Properties.Resources.Conoscope_AngleDegrees);
                 wpfPlotReference.Plot.YLabel(ConoscopeChannelDisplayFormatter.GetAxisLabel(channel));
@@ -3567,8 +3591,9 @@ namespace Conoscope
                 throw new InvalidOperationException(Properties.Resources.XYZDataNotLoaded);
             }
 
-            double pixelsPerDegree = currentPixelsPerDegree > 0
-                ? currentPixelsPerDegree
+            // All readers below address the original XYZ matrices, regardless of the preview projection.
+            double pixelsPerDegree = sourcePixelsPerDegree > 0
+                ? sourcePixelsPerDegree
                 : CurrentModelProfile.GetConoscopeCoefficient(YMat.Width, YMat.Height);
 
             return new ConoscopeExportContext
@@ -3576,7 +3601,7 @@ namespace Conoscope
                 ModelName = ConoscopeConfig.CurrentModel.ToString(),
                 ImageWidth = YMat.Width,
                 ImageHeight = YMat.Height,
-                Center = currentImageCenter,
+                Center = sourceImageCenter,
                 MaxAngle = MaxAngle,
                 PixelsPerDegree = pixelsPerDegree,
                 ReadXyz = (ix, iy) =>
@@ -3729,7 +3754,11 @@ namespace Conoscope
 
         private void btnExportCurrentReference_Click(object sender, RoutedEventArgs e)
         {
-            if (State.CoordinateAxis.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
+            if (IsHorizontalVerticalReference)
+            {
+                ExportCurrentHorizontalVerticalReference();
+            }
+            else if (State.CoordinateAxis.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
             {
                 btnExportCurrentAzimuth_Click(sender, e);
             }
@@ -3895,6 +3924,8 @@ namespace Conoscope
 
         internal void SetReferenceMode(ConoscopeCoordinateReferenceMode mode)
         {
+            if (!Enum.IsDefined(mode) || (State.CoordinateSystem == ConoscopeCoordinateSystem.Polar
+                && mode is ConoscopeCoordinateReferenceMode.FixedHorizontal or ConoscopeCoordinateReferenceMode.FixedVertical)) return;
             ConoscopeCoordinateAxisParam axisParam = State.CoordinateAxis;
             if (axisParam.ReferenceMode == mode)
             {
@@ -3921,8 +3952,17 @@ namespace Conoscope
 
         internal void SetReferenceValue(double value)
         {
+            if (!double.IsFinite(value)) return;
             ConoscopeCoordinateAxisParam axisParam = State.CoordinateAxis;
-            if (axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
+            if (axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.FixedHorizontal)
+            {
+                axisParam.ReferenceHorizontalAngle = Math.Clamp(value, -MaxAngle, MaxAngle);
+            }
+            else if (axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.FixedVertical)
+            {
+                axisParam.ReferenceVerticalAngle = Math.Clamp(value, -MaxAngle, MaxAngle);
+            }
+            else if (axisParam.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
             {
                 axisParam.ReferenceAngle = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(value);
             }
@@ -3936,6 +3976,204 @@ namespace Conoscope
                 NotifyReferenceStateChanged();
                 ApplyCoordinateAxisReference();
             }
+        }
+
+        private const double LiveCrossSectionStep = 0.1;
+        private IReadOnlyList<ConoscopeHorizontalVerticalSample> horizontalVerticalReferenceSamples = Array.Empty<ConoscopeHorizontalVerticalSample>();
+        private ConoscopeCurveSnapshotWindow? snapshotWindow;
+        private int snapshotNumber;
+
+        private bool IsHorizontalVerticalReference => State.CoordinateAxis.ReferenceMode is
+            ConoscopeCoordinateReferenceMode.FixedHorizontal or ConoscopeCoordinateReferenceMode.FixedVertical;
+        private ConoscopeFixedAxis FixedAxis => State.CoordinateAxis.ReferenceMode == ConoscopeCoordinateReferenceMode.FixedHorizontal
+            ? ConoscopeFixedAxis.Horizontal : ConoscopeFixedAxis.Vertical;
+        private double FixedAngle => FixedAxis == ConoscopeFixedAxis.Horizontal
+            ? State.CoordinateAxis.ReferenceHorizontalAngle : State.CoordinateAxis.ReferenceVerticalAngle;
+        private string VariableAxisLabel => FixedAxis == ConoscopeFixedAxis.Horizontal ? "V (°)" : "H (°)";
+
+        private void UpdateHorizontalVerticalReference()
+        {
+            horizontalVerticalReferenceSamples = YMat != null && ConoscopeHorizontalVerticalProjection.IsProjectedCoordinateSystem(State.CoordinateSystem)
+                ? ConoscopeHorizontalVerticalCrossSection.Sample(CreateExportContext(), State.CoordinateSystem, FixedAxis, FixedAngle, LiveCrossSectionStep)
+                : Array.Empty<ConoscopeHorizontalVerticalSample>();
+            UpdateReferencePlotHeader();
+            UpdateHorizontalVerticalReferencePlot();
+        }
+
+        private void UpdateHorizontalVerticalReferencePlot()
+        {
+            ExportChannel channel = GetSelectedDisplayChannel();
+            wpfPlotReference.Plot.Clear();
+            polarPlotReference.Clear();
+            if (horizontalVerticalReferenceSamples.Count > 0)
+            {
+                var scatter = wpfPlotReference.Plot.Add.Scatter(
+                    horizontalVerticalReferenceSamples.Select(sample => sample.PositionDegrees).ToArray(),
+                    horizontalVerticalReferenceSamples.Select(sample => GetHorizontalVerticalValue(sample, channel)).ToArray());
+                scatter.Color = GetPlotColor(channel);
+                scatter.LineWidth = 1.6f;
+                scatter.MarkerSize = 0;
+                scatter.LegendText = ConoscopeChannelDisplayFormatter.GetLabel(channel);
+                wpfPlotReference.Plot.Axes.AutoScale();
+            }
+            wpfPlotReference.Plot.Title($"{GetCoordinateSystemDisplayName(State.CoordinateSystem)} · {GetReferenceValueText(State.CoordinateAxis.ReferenceMode, 0, 0)}");
+            wpfPlotReference.Plot.XLabel(VariableAxisLabel);
+            wpfPlotReference.Plot.YLabel(ConoscopeChannelDisplayFormatter.GetAxisLabel(channel));
+            wpfPlotReference.Plot.Legend.IsVisible = horizontalVerticalReferenceSamples.Count > 0;
+            SetReferencePlotLimits();
+            wpfPlotReference.Refresh();
+        }
+
+        private double GetHorizontalVerticalValue(ConoscopeHorizontalVerticalSample sample, ExportChannel channel)
+        {
+            if (!sample.IsValid) return double.NaN;
+            ConoscopeXyzValue xyz = sample.Xyz;
+            if (channel is not (ExportChannel.X or ExportChannel.Y or ExportChannel.Z or ExportChannel.Contrast)
+                && (!double.IsFinite(xyz.X) || !double.IsFinite(xyz.Y) || !double.IsFinite(xyz.Z))) return double.NaN;
+            if (channel == ExportChannel.ColorDifference)
+            {
+                if (GetSelectedColorDifferenceReferenceMode() == ColorDifferenceReferenceMode.ReferenceImage)
+                {
+                    double u = ReadReferenceBilinear(GlobalReferences.ColorDifferenceReferenceUMat, sample);
+                    double v = ReadReferenceBilinear(GlobalReferences.ColorDifferenceReferenceVMat, sample);
+                    return double.IsFinite(u) && double.IsFinite(v)
+                        ? ConoscopeColorimetry.CalculateColorDifference(xyz.X, xyz.Y, xyz.Z, u, v) : double.NaN;
+                }
+                ConoscopeUvReference? reference = TryResolvePointColorDifferenceReference();
+                return reference is { } uv
+                    ? ConoscopeColorimetry.CalculateColorDifference(xyz.X, xyz.Y, xyz.Z, uv.U, uv.V) : double.NaN;
+            }
+            if (channel == ExportChannel.Contrast)
+            {
+                ContrastReferenceKind kind = GetRequiredContrastReferenceKind();
+                double referenceY = ReadReferenceBilinear(GlobalReferences.GetContrastReferenceYMat(kind), sample);
+                return double.IsFinite(xyz.Y) && double.IsFinite(referenceY)
+                    ? ConoscopeColorimetry.CalculateContrast(xyz.Y, referenceY, kind) : double.NaN;
+            }
+            double value = ConoscopeColorimetry.GetChannelValue(xyz.X, xyz.Y, xyz.Z, channel);
+            return double.IsFinite(value) ? value : double.NaN;
+        }
+
+        private double ReadReferenceBilinear(OpenCvSharp.Mat? reference, ConoscopeHorizontalVerticalSample sample)
+        {
+            if (reference == null || YMat == null || reference.Width != YMat.Width || reference.Height != YMat.Height)
+                return double.NaN;
+            int left = (int)Math.Floor(sample.SourceX), top = (int)Math.Floor(sample.SourceY);
+            int right = Math.Min(left + 1, reference.Width - 1), bottom = Math.Min(top + 1, reference.Height - 1);
+            double fx = sample.SourceX - left, fy = sample.SourceY - top;
+            double upper = reference.At<float>(top, left);
+            if (fx > 0) upper = upper * (1 - fx) + reference.At<float>(top, right) * fx;
+            if (fy == 0) return upper;
+            double lower = reference.At<float>(bottom, left);
+            if (fx > 0) lower = lower * (1 - fx) + reference.At<float>(bottom, right) * fx;
+            return upper * (1 - fy) + lower * fy;
+        }
+
+        private static string GetCurveUnit(ExportChannel channel) => channel switch
+        {
+            ExportChannel.X or ExportChannel.Y or ExportChannel.Z => "cd/m²",
+            ExportChannel.CieX or ExportChannel.CieY => "CIE xy",
+            ExportChannel.CieU or ExportChannel.CieV => "CIE u′v′",
+            ExportChannel.ColorDifference => "Δu′v′",
+            ExportChannel.Contrast => "ratio",
+            _ => channel.ToString()
+        };
+
+        private string GetCurveMetadata()
+        {
+            ConoscopeUvReference? uv = TryResolvePointColorDifferenceReference();
+            return FormattableString.Invariant($"DataVersion={document.DataVersion}; SourceSize={YMat?.Width}x{YMat?.Height}; Center=({sourceImageCenter.X:R},{sourceImageCenter.Y:R}); PixelsPerDegree={sourcePixelsPerDegree:R}; MaxAngle={MaxAngle:R}; Exposure={document.ExposureSummary}; Processing={document.ProcessingDescription}; ColorDifferenceReference={State.ColorDifferenceReferenceMode}; ReferenceUV=({uv?.U:R},{uv?.V:R}); ColorReferenceSource={Path.GetFileName(GlobalReferences.ColorDifferenceReferenceFileName)}; ContrastKind={GetRequiredContrastReferenceKind()}; ContrastSource={Path.GetFileName(GlobalReferences.GetContrastReferenceFileName(GetRequiredContrastReferenceKind()))}");
+        }
+
+        internal ConoscopeCurveSnapshot? CreateCurrentCurveSnapshot()
+        {
+            if (YMat == null) return null;
+            ExportChannel channel = GetSelectedDisplayChannel();
+            double[] positions, values;
+            string axisLabel, axisKey, sampling;
+            if (IsHorizontalVerticalReference)
+            {
+                positions = horizontalVerticalReferenceSamples.Select(sample => sample.PositionDegrees).ToArray();
+                values = horizontalVerticalReferenceSamples.Select(sample => GetHorizontalVerticalValue(sample, channel)).ToArray();
+                axisLabel = VariableAxisLabel;
+                axisKey = $"{State.CoordinateSystem}:{(FixedAxis == ConoscopeFixedAxis.Horizontal ? "V" : "H")}-degrees";
+                sampling = "SourceXYZ=Bilinear; ReferenceImages=Bilinear; DerivedChannels=AfterInterpolation; StepDegrees=0.1; Invalid=NaN";
+            }
+            else
+            {
+                ReferenceCurve? curve = State.CoordinateAxis.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine ? selectedPolarLine : selectedCircleLine;
+                if (curve == null) return null;
+                positions = curve.Samples.Select(sample => sample.Position).ToArray();
+                values = curve.Samples.Select(sample => GetChannelValue(sample, channel)).ToArray();
+                axisLabel = curve.IsClosed ? Properties.Resources.Conoscope_CircleAngleDegrees : Properties.Resources.Conoscope_AngleDegrees;
+                axisKey = curve.IsClosed ? "polar-circumference-angle" : "polar-diameter-angle";
+                sampling = "SourceXYZ=LegacyNearestPixel; Samples=CapturedLiveCurve; ReferenceCoordinates=SourcePolar";
+            }
+            if (positions.Length == 0 || !values.Any(double.IsFinite)) return null;
+            string reference = $"{tbReferenceMode.Text} {GetReferenceValueText(State.CoordinateAxis.ReferenceMode, State.CoordinateAxis.ReferenceAngle, State.CoordinateAxis.ReferenceRadiusAngle)}";
+            return new ConoscopeCurveSnapshot($"{reference} · {++snapshotNumber}", Path.GetFileName(FileName),
+                ConoscopeConfig.CurrentModel.ToString(), GetCoordinateSystemDisplayName(State.CoordinateSystem), reference,
+                axisLabel, ConoscopeChannelDisplayFormatter.GetLabel(channel), GetCurveUnit(channel), positions, values,
+                $"{sampling}; {GetCurveMetadata()}", axisKey);
+        }
+
+        private void ShowSnapshotWindow()
+        {
+            if (snapshotWindow == null)
+            {
+                snapshotWindow = new ConoscopeCurveSnapshotWindow { Owner = Window.GetWindow(this), KeepSessionOnClose = true };
+                snapshotWindow.Closed += (_, _) => snapshotWindow = null;
+            }
+            snapshotWindow.Show();
+            snapshotWindow.Activate();
+        }
+
+        private void btnShowSnapshots_Click(object sender, RoutedEventArgs e) => ShowSnapshotWindow();
+
+        private void btnCaptureCurve_Click(object sender, RoutedEventArgs e)
+        {
+            if (!EnsureExportChannelReady(GetSelectedDisplayChannel())) return;
+            ConoscopeCurveSnapshot? snapshot = CreateCurrentCurveSnapshot();
+            if (snapshot == null)
+            {
+                MessageBox.Show(Properties.Resources.MsgNoValidCurve, Properties.Resources.TitleCurveSnapshots, MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            ShowSnapshotWindow();
+            snapshotWindow!.AddSnapshot(snapshot);
+        }
+
+        private void ExportCurrentHorizontalVerticalReference()
+        {
+            TryExportCurrentCrossSection(FixedAxis == ConoscopeFixedAxis.Horizontal ? "FixedH" : "FixedV", FixedAngle,
+                Properties.Resources.MsgFixedCrossSectionExportSuccess, WriteHorizontalVerticalCsv);
+        }
+
+        private void WriteHorizontalVerticalCsv(string filePath, ExportChannel channel, ConoscopeExportContext context, double angle, ConoscopeCrossSectionExportOptions options)
+        {
+            IReadOnlyList<ConoscopeHorizontalVerticalSample> samples = ConoscopeHorizontalVerticalCrossSection.Sample(context, State.CoordinateSystem, FixedAxis, angle, options.StepDegrees);
+            using StreamWriter writer = new(filePath, false, new UTF8Encoding(true));
+            if (options.IncludeMetadata)
+            {
+                WriteMetadata("Source", Path.GetFileName(FileName));
+                WriteMetadata("Model", context.ModelName);
+                WriteMetadata("CoordinateSystem", State.CoordinateSystem.ToString());
+                WriteMetadata("FixedCoordinate", FormattableString.Invariant($"{(FixedAxis == ConoscopeFixedAxis.Horizontal ? "H" : "V")}={angle:R} degrees"));
+                WriteMetadata("Channel", channel.ToString());
+                WriteMetadata("Unit", GetCurveUnit(channel));
+                WriteMetadata("Sampling", FormattableString.Invariant($"StepDegrees={options.StepDegrees:R}; SourceXYZ=Bilinear; ReferenceImages=Bilinear; DerivedChannels=AfterInterpolation; Invalid=NaN; FinalEndpointIncluded=True"));
+                WriteMetadata("Context", GetCurveMetadata());
+            }
+            writer.WriteLine("H (degrees),V (degrees),Value,Valid,SourceX,SourceY");
+            string format = $"F{Math.Clamp(options.DecimalPlaces, 0, 8)}";
+            foreach (ConoscopeHorizontalVerticalSample sample in samples)
+            {
+                double value = GetHorizontalVerticalValue(sample, channel);
+                writer.WriteLine(string.Join(",", sample.HorizontalAngle.ToString("R", CultureInfo.InvariantCulture), sample.VerticalAngle.ToString("R", CultureInfo.InvariantCulture),
+                    value.ToString(format, CultureInfo.InvariantCulture), sample.IsValid && double.IsFinite(value) ? "1" : "0",
+                    sample.SourceX.ToString("R", CultureInfo.InvariantCulture), sample.SourceY.ToString("R", CultureInfo.InvariantCulture)));
+            }
+            void WriteMetadata(string key, string value) => writer.WriteLine($"# {key},\"{value.Replace("\"", "\"\"")}\"");
         }
 
     }

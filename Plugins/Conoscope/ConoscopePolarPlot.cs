@@ -9,6 +9,8 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
+using Conoscope.Core;
+using Conoscope.Presentation;
 
 namespace Conoscope
 {
@@ -16,16 +18,10 @@ namespace Conoscope
 
     internal sealed class ConoscopePolarPlot : FrameworkElement
     {
-        private static readonly Brush LabelBrush = CreateBrush(Color.FromRgb(102, 102, 102));
-        private static readonly Brush AxisLabelBrush = CreateBrush(Color.FromRgb(76, 76, 76));
-        private static readonly Brush EmptyStateBrush = CreateBrush(Color.FromRgb(136, 136, 136));
-        private static readonly Pen MajorGridPen = CreatePen(Color.FromRgb(210, 210, 210), 1.0);
-        private static readonly Pen OuterGridPen = CreatePen(Color.FromRgb(176, 176, 176), 1.2);
         private static readonly Typeface PlotTypeface = new Typeface("Segoe UI");
-        private static readonly Brush DefaultSeriesBrush = CreateBrush(Colors.LimeGreen);
 
         private IReadOnlyList<PolarPlotPoint> points = Array.Empty<PolarPlotPoint>();
-        private Brush seriesBrush = DefaultSeriesBrush;
+        private Brush? seriesBrush;
         private string radialAxisLabel = string.Empty;
         private double radialMaximum = 1;
         private bool closePath;
@@ -61,7 +57,7 @@ namespace Conoscope
         public void UpdatePlot(IReadOnlyList<PolarPlotPoint>? newPoints, Brush? strokeBrush, string? axisLabel, double maxRadius, bool shouldClosePath)
         {
             points = newPoints ?? Array.Empty<PolarPlotPoint>();
-            seriesBrush = strokeBrush ?? DefaultSeriesBrush;
+            seriesBrush = strokeBrush;
             radialAxisLabel = axisLabel ?? string.Empty;
             radialMaximum = double.IsFinite(maxRadius) && maxRadius > 0 ? maxRadius : 1;
             closePath = shouldClosePath;
@@ -70,8 +66,10 @@ namespace Conoscope
 
         public void Clear()
         {
-            UpdatePlot(Array.Empty<PolarPlotPoint>(), DefaultSeriesBrush, string.Empty, 1, false);
+            UpdatePlot(Array.Empty<PolarPlotPoint>(), null, string.Empty, 1, false);
         }
+
+        public void RefreshTheme() => InvalidateVisual();
 
         private void ConoscopePolarPlot_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
@@ -183,7 +181,8 @@ namespace Conoscope
                 return;
             }
 
-            drawingContext.DrawRectangle(Brushes.Transparent, null, new Rect(0, 0, ActualWidth, ActualHeight));
+            ConoscopePlotTheme theme = ConoscopePlotTheme.Resolve(this);
+            drawingContext.DrawRectangle(theme.Background, null, new Rect(0, 0, ActualWidth, ActualHeight));
 
             const double sidePadding = 46;
             const double topPadding = 28;
@@ -207,53 +206,59 @@ namespace Conoscope
                 return;
             }
 
-            DrawAxisLabel(drawingContext, plotBounds);
-            DrawGrid(drawingContext, center, plotRadius);
-            DrawSeries(drawingContext, center, plotRadius);
+            DrawAxisLabel(drawingContext, plotBounds, theme);
+            DrawGrid(drawingContext, center, plotRadius, theme);
+            DrawSeries(drawingContext, center, plotRadius, theme);
         }
 
-        private void DrawAxisLabel(DrawingContext drawingContext, Rect plotBounds)
+        private void DrawAxisLabel(DrawingContext drawingContext, Rect plotBounds, ConoscopePlotTheme theme)
         {
             if (string.IsNullOrWhiteSpace(radialAxisLabel))
             {
                 return;
             }
 
-            DrawText(drawingContext, radialAxisLabel, new Point(plotBounds.Left, 4), AxisLabelBrush, 12, centered: false);
+            DrawText(drawingContext, radialAxisLabel, new Point(plotBounds.Left, 4), theme.Foreground, 12, centered: false);
         }
 
-        private void DrawGrid(DrawingContext drawingContext, Point center, double plotRadius)
+        private void DrawGrid(DrawingContext drawingContext, Point center, double plotRadius, ConoscopePlotTheme theme)
         {
             const int ringCount = 6;
             const double radialLabelAngle = 82.5;
             int angleStep = plotRadius >= 125 ? 15 : 30;
+            Pen gridPen = CreatePen(theme.Grid, 0.75);
+            Pen minorGridPen = CreatePen(theme.MinorGrid, 0.75);
+            Pen outerGridPen = CreatePen(theme.Grid, 1.0);
+
+            // Draw spokes before labels so the grid never cuts through a radial value.
+            for (int angle = 0; angle < 360; angle += angleStep)
+            {
+                Point spokeEnd = ToScreenPoint(center, plotRadius, angle);
+                drawingContext.DrawLine(angle % 30 == 0 ? gridPen : minorGridPen, center, spokeEnd);
+                if (angle % 30 == 0)
+                {
+                    Point labelPoint = ToScreenPoint(center, plotRadius + 16, angle);
+                    DrawText(drawingContext, $"{angle}°", labelPoint, theme.MutedForeground, 11, centered: true);
+                }
+            }
 
             for (int ringIndex = 1; ringIndex <= ringCount; ringIndex++)
             {
                 double radius = plotRadius * ringIndex / ringCount;
-                Pen pen = ringIndex == ringCount ? OuterGridPen : MajorGridPen;
+                Pen pen = ringIndex == ringCount ? outerGridPen : gridPen;
                 drawingContext.DrawEllipse(null, pen, center, radius, radius);
 
                 double value = radialMaximum * ringIndex / ringCount;
                 // Put radial values between the 75° and 90° spokes. Keeping them off the
                 // horizontal axis prevents the outer value from colliding with the 90° label.
                 Point labelPoint = ToScreenPoint(center, Math.Max(0, radius - 9), radialLabelAngle);
-                DrawText(drawingContext, FormatTickValue(value), labelPoint, LabelBrush, 11, centered: true);
+                DrawText(drawingContext, FormatTickValue(value), labelPoint, theme.MutedForeground, 11, centered: true, background: theme.Background);
             }
 
-            DrawText(drawingContext, "0", new Point(center.X + 4, center.Y - 8), LabelBrush, 11, centered: false);
-
-            for (int angle = 0; angle < 360; angle += angleStep)
-            {
-                Point spokeEnd = ToScreenPoint(center, plotRadius, angle);
-                drawingContext.DrawLine(MajorGridPen, center, spokeEnd);
-
-                Point labelPoint = ToScreenPoint(center, plotRadius + 16, angle);
-                DrawText(drawingContext, angle.ToString(CultureInfo.InvariantCulture), labelPoint, LabelBrush, 11, centered: true);
-            }
+            DrawText(drawingContext, "0", new Point(center.X + 4, center.Y - 8), theme.MutedForeground, 11, centered: false, background: theme.Background);
         }
 
-        private void DrawSeries(DrawingContext drawingContext, Point center, double plotRadius)
+        private void DrawSeries(DrawingContext drawingContext, Point center, double plotRadius, ConoscopePlotTheme theme)
         {
             List<Point> screenPoints = points
                 .Where(point => double.IsFinite(point.AngleDegrees) && double.IsFinite(point.Radius))
@@ -263,7 +268,7 @@ namespace Conoscope
 
             if (screenPoints.Count == 0)
             {
-                DrawText(drawingContext, "No data", center, EmptyStateBrush, 13, centered: true);
+                DrawText(drawingContext, "No data", center, theme.MutedForeground, 13, centered: true, background: theme.Background);
                 return;
             }
 
@@ -279,7 +284,12 @@ namespace Conoscope
 
             geometry.Freeze();
 
-            Pen seriesPen = new Pen(seriesBrush, 2.0);
+            Pen seriesPen = new Pen(seriesBrush ?? ConoscopePlotTheme.GetChannelBrush(ExportChannel.Y, this), 2.0)
+            {
+                LineJoin = PenLineJoin.Round,
+                StartLineCap = PenLineCap.Round,
+                EndLineCap = PenLineCap.Round
+            };
             if (seriesPen.CanFreeze)
             {
                 seriesPen.Freeze();
@@ -288,7 +298,7 @@ namespace Conoscope
             drawingContext.DrawGeometry(null, seriesPen, geometry);
         }
 
-        private void DrawText(DrawingContext drawingContext, string text, Point origin, Brush brush, double fontSize, bool centered)
+        private void DrawText(DrawingContext drawingContext, string text, Point origin, Brush brush, double fontSize, bool centered, Brush? background = null)
         {
             FormattedText formattedText = new FormattedText(
                 text,
@@ -303,6 +313,10 @@ namespace Conoscope
                 ? new Point(origin.X - formattedText.Width / 2.0, origin.Y - formattedText.Height / 2.0)
                 : origin;
 
+            if (background != null)
+            {
+                drawingContext.DrawRectangle(background, null, new Rect(drawPoint.X - 2, drawPoint.Y, formattedText.Width + 4, formattedText.Height));
+            }
             drawingContext.DrawText(formattedText, drawPoint);
         }
 
@@ -357,7 +371,7 @@ namespace Conoscope
             DrawingVisual snapshotVisual = new DrawingVisual();
             using (DrawingContext context = snapshotVisual.RenderOpen())
             {
-                context.DrawRectangle(ResolveSnapshotBackground(), null, new Rect(0, 0, ActualWidth, ActualHeight));
+                context.DrawRectangle(ConoscopePlotTheme.Resolve(this).Background, null, new Rect(0, 0, ActualWidth, ActualHeight));
                 context.DrawRectangle(new VisualBrush(this), null, new Rect(0, 0, ActualWidth, ActualHeight));
             }
 
@@ -370,27 +384,6 @@ namespace Conoscope
 
             bitmap.Render(snapshotVisual);
             return bitmap;
-        }
-
-        private Brush ResolveSnapshotBackground()
-        {
-            DependencyObject? current = this;
-            while (current != null)
-            {
-                switch (current)
-                {
-                    case Panel panel when panel.Background != null:
-                        return panel.Background;
-                    case Border border when border.Background != null:
-                        return border.Background;
-                    case Control control when control.Background != null:
-                        return control.Background;
-                }
-
-                current = VisualTreeHelper.GetParent(current);
-            }
-
-            return Brushes.White;
         }
 
         private static BitmapEncoder CreateBitmapEncoder(string extension)
@@ -432,20 +425,9 @@ namespace Conoscope
             return niceNormalized * magnitude * ringCount;
         }
 
-        private static Brush CreateBrush(Color color)
+        private static Pen CreatePen(Brush brush, double thickness)
         {
-            SolidColorBrush brush = new SolidColorBrush(color);
-            if (brush.CanFreeze)
-            {
-                brush.Freeze();
-            }
-
-            return brush;
-        }
-
-        private static Pen CreatePen(Color color, double thickness)
-        {
-            Pen pen = new Pen(CreateBrush(color), thickness);
+            Pen pen = new Pen(brush, thickness);
             if (pen.CanFreeze)
             {
                 pen.Freeze();

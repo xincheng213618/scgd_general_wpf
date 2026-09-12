@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:schema id="root">
     <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -1163,5 +1163,86 @@
   </data>
   <data name="TbCircleTip" xml:space="preserve">
     <value>僅繪製新的關注點圓</value>
+  </data>
+
+  <data name="RibbonCollapseCommands" xml:space="preserve"><value>收合功能區</value></data>
+  <data name="RibbonExpandCommands" xml:space="preserve"><value>展開功能區</value></data>
+  <data name="Con_Axis_FixedH" xml:space="preserve">
+    <value>固定 H</value>
+  </data>
+  <data name="Con_Axis_FixedV" xml:space="preserve">
+    <value>固定 V</value>
+  </data>
+  <data name="Con_Axis_RefH" xml:space="preserve">
+    <value>固定 H 角度</value>
+  </data>
+  <data name="Con_Axis_RefV" xml:space="preserve">
+    <value>固定 V 角度</value>
+  </data>
+  <data name="TipFixedHorizontal" xml:space="preserve">
+    <value>固定 H（豎線，沿 V 取樣）</value>
+  </data>
+  <data name="TipFixedVertical" xml:space="preserve">
+    <value>固定 V（橫線，沿 H 取樣）</value>
+  </data>
+  <data name="TitleCurveSnapshots" xml:space="preserve">
+    <value>曲線快照</value>
+  </data>
+  <data name="BtnCaptureCurve" xml:space="preserve">
+    <value>保留目前曲線</value>
+  </data>
+  <data name="MsgNoValidCurve" xml:space="preserve">
+    <value>目前曲線沒有有效數值，無法保留快照。</value>
+  </data>
+  <data name="MsgFixedCrossSectionExportSuccess" xml:space="preserve">
+    <value>固定角度 {0}° 的 H/V 截線已匯出。</value>
+  </data>
+  <data name="SnapshotSessionHint" xml:space="preserve">
+    <value>快照保留擷取時的數值。關閉此視窗可再次開啟；關閉文件會清空，請先匯出。</value>
+  </data>
+  <data name="SnapshotCompatibilityHint" xml:space="preserve">
+    <value>僅比較橫軸含義和單位相同的曲線。</value>
+  </data>
+  <data name="SnapshotEmptyHint" xml:space="preserve">
+    <value>請先從參考曲線保留一個快照。</value>
+  </data>
+  <data name="SnapshotVisible" xml:space="preserve">
+    <value>顯示</value>
+  </data>
+  <data name="SnapshotExportSelected" xml:space="preserve">
+    <value>匯出選取快照 CSV</value>
+  </data>
+  <data name="SnapshotDeleteSelected" xml:space="preserve">
+    <value>刪除選取快照</value>
+  </data>
+  <data name="SnapshotSource" xml:space="preserve">
+    <value>來源</value>
+  </data>
+  <data name="SnapshotCoordinates" xml:space="preserve">
+    <value>座標系</value>
+  </data>
+  <data name="SnapshotReference" xml:space="preserve">
+    <value>參考位置</value>
+  </data>
+  <data name="SnapshotChannel" xml:space="preserve">
+    <value>通道</value>
+  </data>
+  <data name="SnapshotUnit" xml:space="preserve">
+    <value>單位</value>
+  </data>
+  <data name="SnapshotCapturedAt" xml:space="preserve">
+    <value>擷取時間</value>
+  </data>
+  <data name="SnapshotSamples" xml:space="preserve">
+    <value>樣本數</value>
+  </data>
+  <data name="SnapshotMetadata" xml:space="preserve">
+    <value>附加資訊</value>
+  </data>
+  <data name="SnapshotComparisonSummary" xml:space="preserve">
+    <value>已顯示 {0} 條曲線，另有 {1} 條因橫軸或單位不同暫不顯示。</value>
+  </data>
+  <data name="SnapshotRenameHint" xml:space="preserve">
+    <value>編輯名稱後按 Enter 或移開焦點確認。</value>
   </data>
 </root>

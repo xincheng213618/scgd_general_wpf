@@ -115,6 +115,15 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
+        ///   查找类似 保留当前曲线 的本地化字符串。
+        /// </summary>
+        public static string BtnCaptureCurve {
+            get {
+                return ResourceManager.GetString("BtnCaptureCurve", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 拍照 的本地化字符串。
         /// </summary>
         public static string BtnCapturePhoto {
@@ -817,6 +826,24 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
+        ///   查找类似 固定 H 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_FixedH {
+            get {
+                return ResourceManager.GetString("Con_Axis_FixedH", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 固定 V 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_FixedV {
+            get {
+                return ResourceManager.GetString("Con_Axis_FixedV", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 线宽 的本地化字符串。
         /// </summary>
         public static string Con_Axis_LineWidth {
@@ -898,6 +925,15 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
+        ///   查找类似 固定 H 角度 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_RefH {
+            get {
+                return ResourceManager.GetString("Con_Axis_RefH", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 参考线宽 的本地化字符串。
         /// </summary>
         public static string Con_Axis_RefLineWidth {
@@ -924,6 +960,15 @@ namespace Conoscope.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 固定 V 角度 的本地化字符串。
+        /// </summary>
+        public static string Con_Axis_RefV {
+            get {
+                return ResourceManager.GetString("Con_Axis_RefV", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 显示遮罩 的本地化字符串。
         /// </summary>
@@ -1431,7 +1476,7 @@ namespace Conoscope.Properties {
         /// <summary>
         ///   查找类似 全部关注点 的本地化字符串。
         /// </summary>
-public static string Conoscope_AllFocusPoints {
+        public static string Conoscope_AllFocusPoints {
             get {
                 return ResourceManager.GetString("Conoscope_AllFocusPoints", resourceCulture);
             }
@@ -2638,6 +2683,15 @@ public static string Conoscope_AllFocusPoints {
         }
         
         /// <summary>
+        ///   查找类似 固定角度 {0}° 的 H/V 截线已导出。 的本地化字符串。
+        /// </summary>
+        public static string MsgFixedCrossSectionExportSuccess {
+            get {
+                return ResourceManager.GetString("MsgFixedCrossSectionExportSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 流程执行完成，但结果中没有找到 .cvcie 文件 的本地化字符串。
         /// </summary>
         public static string MsgFlowCvcieNotFoundDetail {
@@ -2688,24 +2742,6 @@ public static string Conoscope_AllFocusPoints {
         public static string MsgFocusPointsUnavailable {
             get {
                 return ResourceManager.GetString("MsgFocusPointsUnavailable", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 H/V 预览暂不转换关注点，请先清空关注点后再切换。 的本地化字符串。
-        /// </summary>
-        public static string MsgHorizontalVerticalFocusPointsUnsupported {
-            get {
-                return ResourceManager.GetString("MsgHorizontalVerticalFocusPointsUnsupported", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   查找类似 H/V 预览暂不支持关注点编辑 的本地化字符串。
-        /// </summary>
-        public static string TipHorizontalVerticalFocusPointsUnsupported {
-            get {
-                return ResourceManager.GetString("TipHorizontalVerticalFocusPointsUnsupported", resourceCulture);
             }
         }
         
@@ -2763,6 +2799,15 @@ public static string Conoscope_AllFocusPoints {
             }
         }
         
+        /// <summary>
+        ///   查找类似 H/V 预览暂不转换关注点，请先清空关注点后再切换。 的本地化字符串。
+        /// </summary>
+        public static string MsgHorizontalVerticalFocusPointsUnsupported {
+            get {
+                return ResourceManager.GetString("MsgHorizontalVerticalFocusPointsUnsupported", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 当前图像尺寸与色差基准图不一致，无法逐点计算 的本地化字符串。
         /// </summary>
@@ -2962,6 +3007,15 @@ public static string Conoscope_AllFocusPoints {
             }
         }
         
+        /// <summary>
+        ///   查找类似 当前曲线没有有效数值，无法保留快照。 的本地化字符串。
+        /// </summary>
+        public static string MsgNoValidCurve {
+            get {
+                return ResourceManager.GetString("MsgNoValidCurve", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 已打开 的本地化字符串。
         /// </summary>
@@ -3307,6 +3361,24 @@ public static string Conoscope_AllFocusPoints {
         }
         
         /// <summary>
+        ///   查找类似 收起功能区 的本地化字符串。
+        /// </summary>
+        public static string RibbonCollapseCommands {
+            get {
+                return ResourceManager.GetString("RibbonCollapseCommands", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 展开功能区 的本地化字符串。
+        /// </summary>
+        public static string RibbonExpandCommands {
+            get {
+                return ResourceManager.GetString("RibbonExpandCommands", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 {0}尺寸与当前图像不一致 的本地化字符串。
         /// </summary>
         public static string SizeMismatchFormat {
@@ -3333,6 +3405,150 @@ public static string Conoscope_AllFocusPoints {
             }
         }
         
+        /// <summary>
+        ///   查找类似 捕获时间 的本地化字符串。
+        /// </summary>
+        public static string SnapshotCapturedAt {
+            get {
+                return ResourceManager.GetString("SnapshotCapturedAt", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 通道 的本地化字符串。
+        /// </summary>
+        public static string SnapshotChannel {
+            get {
+                return ResourceManager.GetString("SnapshotChannel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已显示 {0} 条曲线，另有 {1} 条因横轴或单位不同暂不显示。 的本地化字符串。
+        /// </summary>
+        public static string SnapshotComparisonSummary {
+            get {
+                return ResourceManager.GetString("SnapshotComparisonSummary", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 仅比较横轴含义和单位相同的曲线。 的本地化字符串。
+        /// </summary>
+        public static string SnapshotCompatibilityHint {
+            get {
+                return ResourceManager.GetString("SnapshotCompatibilityHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 坐标系 的本地化字符串。
+        /// </summary>
+        public static string SnapshotCoordinates {
+            get {
+                return ResourceManager.GetString("SnapshotCoordinates", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 删除选中快照 的本地化字符串。
+        /// </summary>
+        public static string SnapshotDeleteSelected {
+            get {
+                return ResourceManager.GetString("SnapshotDeleteSelected", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 请先从参考曲线保留一个快照。 的本地化字符串。
+        /// </summary>
+        public static string SnapshotEmptyHint {
+            get {
+                return ResourceManager.GetString("SnapshotEmptyHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 导出选中快照 CSV 的本地化字符串。
+        /// </summary>
+        public static string SnapshotExportSelected {
+            get {
+                return ResourceManager.GetString("SnapshotExportSelected", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 附加信息 的本地化字符串。
+        /// </summary>
+        public static string SnapshotMetadata {
+            get {
+                return ResourceManager.GetString("SnapshotMetadata", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 参考位置 的本地化字符串。
+        /// </summary>
+        public static string SnapshotReference {
+            get {
+                return ResourceManager.GetString("SnapshotReference", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 编辑名称后按 Enter 或移开焦点确认。 的本地化字符串。
+        /// </summary>
+        public static string SnapshotRenameHint {
+            get {
+                return ResourceManager.GetString("SnapshotRenameHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 样本数 的本地化字符串。
+        /// </summary>
+        public static string SnapshotSamples {
+            get {
+                return ResourceManager.GetString("SnapshotSamples", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 快照保留捕获时的数值。关闭此窗口可再次打开；关闭文档会清空，请先导出。 的本地化字符串。
+        /// </summary>
+        public static string SnapshotSessionHint {
+            get {
+                return ResourceManager.GetString("SnapshotSessionHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 来源 的本地化字符串。
+        /// </summary>
+        public static string SnapshotSource {
+            get {
+                return ResourceManager.GetString("SnapshotSource", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 单位 的本地化字符串。
+        /// </summary>
+        public static string SnapshotUnit {
+            get {
+                return ResourceManager.GetString("SnapshotUnit", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 显示 的本地化字符串。
+        /// </summary>
+        public static string SnapshotVisible {
+            get {
+                return ResourceManager.GetString("SnapshotVisible", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 {0} 标准色域面积无效 的本地化字符串。
         /// </summary>
@@ -3748,6 +3964,24 @@ public static string Conoscope_AllFocusPoints {
         }
         
         /// <summary>
+        ///   查找类似 固定 H（竖线，沿 V 采样） 的本地化字符串。
+        /// </summary>
+        public static string TipFixedHorizontal {
+            get {
+                return ResourceManager.GetString("TipFixedHorizontal", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 固定 V（横线，沿 H 采样） 的本地化字符串。
+        /// </summary>
+        public static string TipFixedVertical {
+            get {
+                return ResourceManager.GetString("TipFixedVertical", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 关注点 POI 模板 的本地化字符串。
         /// </summary>
         public static string TipFocusPoiTemplate {
@@ -3774,6 +4008,15 @@ public static string Conoscope_AllFocusPoints {
             }
         }
         
+        /// <summary>
+        ///   查找类似 H/V 预览暂不支持关注点编辑 的本地化字符串。
+        /// </summary>
+        public static string TipHorizontalVerticalFocusPointsUnsupported {
+            get {
+                return ResourceManager.GetString("TipHorizontalVerticalFocusPointsUnsupported", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 管理 POI 模板 的本地化字符串。
         /// </summary>
@@ -4045,6 +4288,15 @@ public static string Conoscope_AllFocusPoints {
         }
         
         /// <summary>
+        ///   查找类似 曲线快照 的本地化字符串。
+        /// </summary>
+        public static string TitleCurveSnapshots {
+            get {
+                return ResourceManager.GetString("TitleCurveSnapshots", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 错误 的本地化字符串。
         /// </summary>
         public static string TitleError {
@@ -4245,7 +4497,7 @@ public static string Conoscope_AllFocusPoints {
         /// <summary>
         ///   查找类似 u 基准图 的本地化字符串。
         /// </summary>
-public static string UReferenceImage {
+        public static string UReferenceImage {
             get {
                 return ResourceManager.GetString("UReferenceImage", resourceCulture);
             }

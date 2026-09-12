@@ -65,6 +65,7 @@ namespace Conoscope
         public bool HasDisplayData => Y != null;
         public bool HasXyzData => X != null && Y != null && Z != null;
         public int DataVersion => Volatile.Read(ref dataVersion);
+        public string ProcessingDescription { get; private set; } = string.Empty;
 
         public event EventHandler<ConoscopeDocumentChangedEventArgs>? Changed;
         public event EventHandler<ConoscopeDocumentLoadFailedEventArgs>? LoadFailed;
@@ -82,6 +83,7 @@ namespace Conoscope
             ClearData(cancelPendingLoad: false);
             FileName = string.Empty;
             ExposureSummary = null;
+            ProcessingDescription = $"InitialPreprocess={applyPreprocess}; Options={Newtonsoft.Json.JsonConvert.SerializeObject(options)}";
             return LoadAsync(fileName, requestedExposureSummary, options, applyPreprocess, request);
         }
 
@@ -134,6 +136,7 @@ namespace Conoscope
                 X = x;
                 Y = y;
                 Z = z;
+                ProcessingDescription = $"ReloadedSource; ClampNonPositive={options.ClampNonPositiveXyz}; Options={Newtonsoft.Json.JsonConvert.SerializeObject(options)}";
                 x = null;
                 y = null;
                 z = null;
@@ -156,6 +159,7 @@ namespace Conoscope
             try
             {
                 ConoscopePreprocessPipeline.Apply(ref x, ref y, ref z, options, log);
+                ProcessingDescription = $"AppliedPreprocess; Options={Newtonsoft.Json.JsonConvert.SerializeObject(options)}";
             }
             finally
             {

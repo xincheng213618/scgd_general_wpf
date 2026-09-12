@@ -22,6 +22,7 @@ namespace Conoscope
         private void btnExport_Click(object sender, RoutedEventArgs e)
         {
             if (!double.TryParse(txtStepDegrees.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double stepDegrees)
+                || !double.IsFinite(stepDegrees)
                 || stepDegrees < 0.01
                 || stepDegrees > 360)
             {
