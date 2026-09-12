@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | 已发布插件的旧浏览器注册兼容 | `Compatibility/LegacyDatabaseBrowserRegistration.cs`（无操作，不访问数据库） | [数据库连接与兼容边界](../../docs/04-api-reference/ui-components/ColorVision.Database.md) |
 | 实体字段条件、查询、结果集合与会话 | `GenericQueryWindow`、`GenericQueryConditionSupport`、`GenericQuerySessionStore` | [通用查询与整表操作](../../docs/04-api-reference/ui-components/database-query.md) |
-| MySQL 配置、连接和 DAO | `MySqlControl`、`MySqlConnect`、`BaseTableDao`、`IEntity` | [连接和 DAO 边界](../../docs/04-api-reference/ui-components/ColorVision.Database.md) |
+| MySQL 配置、连接和 DAO | `MySqlControl`、`MySqlSetting`、`BaseTableDao`、`IEntity` | [连接和 DAO 边界](../../docs/04-api-reference/ui-components/ColorVision.Database.md) |
 | gzip 正文读写、旧 TEXT 迁移、备份及空间回收 | `GzipTextPayloadCodec`、`SqliteGzipTextPayloadStore`、`SqliteGzipTextMigration`、`SqliteFileMaintenance` | [SQLite 存储与维护](../../docs/04-api-reference/ui-components/sqlite-storage.md) |
 | 数据文件与业务所有者 | Socket、Engine、插件和项目各自的管理器 | [数据责任地图](../../docs/01-user-guide/data-management/README.md) |
 

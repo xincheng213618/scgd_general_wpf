@@ -29,6 +29,8 @@ related: ["ui.database-query", "ui.sqlite-storage", "engine.database-maintenance
 
 `MySqlControl.GetConnectionString` 使用配置中的 Host/Port/UserName/UserPwd/Database，统一 `utf8mb4`，默认连接超时 1 秒，测试连接使用 2 秒；这不是查询执行超时。当前字符串明确 `SSL Mode=None`、开启连接池及本地 infile 选项，不能宣传成默认加密连接。配置保存使用 `IConfigSecure` 的密码加解密钩子，不是外部凭据保险库，连接字符串和配置导出仍应视为敏感数据。
 
+默认连接窗口和状态栏入口由 Engine 宿主，源码位于 `Engine/ColorVision.Engine/Mysql/MySqlConnect.xaml` 与 `MySqlSettingProvider.cs`；Database 只保留共享配置、连接状态和 DAO 能力。窗口暂时保留 `ColorVision.Database.MySqlConnect` 类型名，供现有 Engine 及插件源码继续使用，不代表窗口仍由 Database 程序集实现。
+
 几个容易混淆的入口要分开：
 
 - `TestConnect(config)` 真实联网打开连接，再用参数化查询检查库是否存在；成功不验证全部表权限或业务读写，也不会调用全局 local_infile 修改。

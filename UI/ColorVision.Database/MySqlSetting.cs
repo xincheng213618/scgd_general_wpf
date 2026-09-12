@@ -1,45 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Windows;
 
 namespace ColorVision.Database
 {
-    public class MySqlSettingProvider : IStatusBarProviderUpdatable
-    {
-        public event EventHandler StatusBarItemsChanged;
-
-        public MySqlSettingProvider()
-        {
-            MySqlControl.GetInstance().MySqlConnectChanged += (s, e) =>
-                StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
-        {
-            bool isConnected = MySqlControl.GetInstance().IsConnect;
-            RelayCommand relayCommand = new RelayCommand(a => new MySqlConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
-            return new List<StatusBarMeta>
-            {
-                new StatusBarMeta()
-                {
-                    Id = "MySQL",
-                    Name = Properties.Resources.EnableDatabase,
-                    Description = isConnected ? "MySQL Connected" : "MySQL Disconnected",
-                    Order = 999,
-                    Type = StatusBarType.Icon,
-                    IconResourceKey = isConnected ? "DrawingImageMysql" : "DrawingImageMysqlRed",
-                    Source = MySqlSetting.Instance,
-                    Command = relayCommand
-                }
-            };
-        }
-
-    }
-
     public class MySqlSetting : ViewModelBase , IConfigSecure
     {
 

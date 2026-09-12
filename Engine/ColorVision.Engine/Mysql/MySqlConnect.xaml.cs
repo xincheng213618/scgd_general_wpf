@@ -10,7 +10,7 @@ using System.Windows.Input;
 namespace ColorVision.Database
 {
     /// <summary>
-    /// MySqlConnect.xaml 的交互逻辑
+    /// Engine 默认 MySQL 连接窗口的交互逻辑
     /// </summary>
     public partial class MySqlConnect : Window
     {
