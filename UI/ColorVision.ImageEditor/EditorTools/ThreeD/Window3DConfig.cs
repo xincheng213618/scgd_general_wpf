@@ -17,6 +17,14 @@ namespace ColorVision.ImageEditor
         public int TargetPixelsY { get => _TargetPixelsY; set { _TargetPixelsY = value; OnPropertyChanged(); } }
         private int _TargetPixelsY = 512;
 
+        // Existing X/Y preferences now bound the cached interaction mesh. Detail has an
+        // independent budget, so an older saved 512 preference still gains a detailed view.
+        public int DetailResolution { get => _DetailResolution; set { _DetailResolution = System.Math.Clamp(value, 128, 2048); OnPropertyChanged(); } }
+        private int _DetailResolution = 1536;
+
+        public bool AdaptiveDetail { get => _AdaptiveDetail; set { _AdaptiveDetail = value; OnPropertyChanged(); } }
+        private bool _AdaptiveDetail = true;
+
         public string SelectedColormap { get => _SelectedColormap; set { _SelectedColormap = value; OnPropertyChanged(); } }
         private string _SelectedColormap = "jet";
     }

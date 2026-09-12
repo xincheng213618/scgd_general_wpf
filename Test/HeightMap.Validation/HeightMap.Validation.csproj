@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFrameworks />
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <OutputPath Condition="'$(ValidationOutputPath)' != ''">$(ValidationOutputPath)</OutputPath>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(LegacyBinaryDirectory)' == ''">
+    <ProjectReference Include="../../UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj" />
+    <ProjectReference Include="../../Engine/ColorVision.FileIO/ColorVision.FileIO.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(LegacyBinaryDirectory)' != ''">
+    <Reference Include="$(LegacyBinaryDirectory)/ColorVision*.dll" />
+    <Reference Include="$(LegacyBinaryDirectory)/OpenCvSharp*.dll" />
+    <Reference Include="$(LegacyBinaryDirectory)/HelixToolkit*.dll" />
+    <Reference Include="$(LegacyBinaryDirectory)/SharpDX*.dll" />
+    <Reference Include="$(LegacyBinaryDirectory)/log4net.dll" />
+    <Reference Include="$(LegacyBinaryDirectory)/Newtonsoft.Json.dll" />
+    <Content Include="$(LegacyBinaryDirectory)/runtimes/win-x64/native/OpenCvSharpExtern.dll" Link="OpenCvSharpExtern.dll" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
