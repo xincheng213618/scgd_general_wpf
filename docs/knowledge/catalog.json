@@ -1226,7 +1226,9 @@
         "ColorVision/Copilot/Agent/Tools/Application/CopilotConvertBatchImagesTool.cs",
         "ColorVision/Copilot/Agent/Tools/Application/CopilotOpenBatchImageProcessingTool.cs",
         "ColorVision/Copilot/Skills/colorvision-batch-image-conversion",
-        "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs"
+        "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs",
+        "UI/ColorVision.ImageEditor/Operations/ImageOperationCoordinator.cs",
+        "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs",
@@ -5333,7 +5335,8 @@
         "UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs",
         "UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs",
         "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs",
-        "UI/ColorVision.ImageEditor/ImageView.xaml.cs"
+        "UI/ColorVision.ImageEditor/ImageView.xaml.cs",
+        "UI/ColorVision.ImageEditor/Operations/ImageOperationCoordinator.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs",
@@ -6378,7 +6381,9 @@
         "本地帧租约",
         "流程帧内存",
         "SaveFiles=false",
-        "CIE重新分配"
+        "CIE重新分配",
+        "CameraFocusFrameProcessor",
+        "CameraRealtimeFramePipeline"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs",
@@ -6387,7 +6392,7 @@
         "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Video/CameraRealtimeFramePipeline.cs",
-        "Engine/ColorVision.Engine/Services/Devices/Camera/Video/VideoFrameProcessor.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Video/CameraFocusFrameProcessor.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml",
@@ -6403,27 +6408,32 @@
         "Engine/FlowEngineLib/Base/FlowRuntimeResources.cs",
         "Engine/FlowEngineLib/Base/CVStartCFC.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs",
-        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameCalibrationService.cs"
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameCalibrationService.cs",
+        "UI/ColorVision.ImageEditor/Realtime/RealtimeFramePresenter.cs",
+        "UI/ColorVision.ImageEditor/Presentation/ImageStreamPresentation.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/CameraViewLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs",
-        "Test/ColorVision.UI.Tests/RealtimePseudoColorServiceTests.cs",
+        "Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs",
         "Test/ColorVision.UI.Tests/VideoProcessorResilienceTests.cs",
         "Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs",
         "Test/ColorVision.UI.Tests/LocalFlowNodePortTests.cs",
-        "Test/ColorVision.UI.Tests/LocalFrameMirrorTests.cs"
+        "Test/ColorVision.UI.Tests/LocalFrameMirrorTests.cs",
+        "Test/ColorVision.UI.Tests/ImageStreamPresentationTests.cs"
       ],
       "related": [
         "engine.devices",
         "operations.device-configuration",
         "operations.physical-camera",
         "operations.camera-configuration",
-        "engine.camera-preview-plan"
+        "engine.camera-preview-plan",
+        "ui.image-editor-context"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine",
-        "Engine/FlowEngineLib"
+        "Engine/FlowEngineLib",
+        "UI/ColorVision.ImageEditor"
       ],
       "domain": "operations",
       "title": "相机服务、采集与结果视图",
@@ -10047,7 +10057,12 @@
         "ModelViewer3DControl",
         "ModelViewer3DModel",
         "Window3D",
-        "HeightMapPixelSampler"
+        "HeightMapPixelSampler",
+        "ImageGroupNavigation",
+        "VideoPlaybackSession",
+        "ImageSnapshotCapture",
+        "ImageDrawingPresentation",
+        "ImageContextMenuComposer"
       ],
       "code_paths": [
         "UI/ColorVision.ImageEditor/Cie",
@@ -10079,7 +10094,17 @@
         "UI/ColorVision.ImageEditor/Settings/DefaultImageViewDisplayConfig.cs",
         "UI/ColorVision.ImageEditor/Settings/ImageViewSettingsWindow.xaml.cs",
         "UI/ColorVision.ImageEditor/Settings/ImageViewSettingsEntry.cs",
-        "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs"
+        "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs",
+        "UI/ColorVision.ImageEditor/ImageEditorSession.cs",
+        "UI/ColorVision.ImageEditor/Documents",
+        "UI/ColorVision.ImageEditor/Presentation",
+        "UI/ColorVision.ImageEditor/Output",
+        "UI/ColorVision.ImageEditor/Navigation",
+        "UI/ColorVision.ImageEditor/Draw/ImageDrawingPresentation.cs",
+        "UI/ColorVision.ImageEditor/Tooling/ImageContextMenuComposer.cs",
+        "UI/ColorVision.ImageEditor/Video/VideoPlaybackSession.cs",
+        "UI/ColorVision.ImageEditor/Video/VideoPlaybackBackend.cs",
+        "UI/ColorVision.ImageEditor/Video/VideoAudioTrack.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/CieWindowCompositionTests.cs",
@@ -10099,7 +10124,10 @@
         "Test/ColorVision.UI.Tests/HeightMapDxGeometryTests.cs",
         "Test/ColorVision.UI.Tests/HeightMapOrbitCameraTests.cs",
         "Test/ColorVision.UI.Tests/HeightMapModelExporterTests.cs",
-        "Test/HeightMap.Validation/Program.cs"
+        "Test/HeightMap.Validation/Program.cs",
+        "Test/ColorVision.UI.Tests/ImageGroupNavigationTests.cs",
+        "Test/ColorVision.UI.Tests/VideoPlaybackSessionTests.cs",
+        "Test/ColorVision.UI.Tests/DrawCanvasTests.cs"
       ],
       "related": [
         "ui.discovery",
@@ -10125,9 +10153,11 @@
       "knowledge_id": "ui.image-editor-context",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "ImageEditor 的状态归属、扩展构造、工具刷新与临时 ROI 有效期；手动选区支持白色/矢量画布，像素算法仍需真实图像。",
+      "summary": "ImageView 的文档、会话、显示、算法协调和扩展所有权；说明源提交、连续帧有界处理、工具生命周期及临时 ROI 有效期。",
       "aliases": [
         "图像编辑器上下文",
+        "ImageView重构",
+        "状态归属",
         "工具栏刷新",
         "配置作用域",
         "临时ROI",
@@ -10138,6 +10168,14 @@
         "矢量画布布点",
         "EditorContext",
         "ImageProcessingContext",
+        "ImageDocument",
+        "ImageEditorSession",
+        "ImagePresentation",
+        "ImageStreamPresentation",
+        "ImageDisplayEffects",
+        "ImageShaderPresentation",
+        "ImageOperationCoordinator",
+        "CommitSourcePixels",
         "ImageViewConfig",
         "ImageViewPropertyScope",
         "IEditorToolFactory",
@@ -10150,7 +10188,14 @@
       ],
       "code_paths": [
         "UI/ColorVision.ImageEditor/ARCHITECTURE.md",
-        "UI/ColorVision.ImageEditor/Abstractions/IRealtimePseudoColorService.cs",
+        "UI/ColorVision.ImageEditor/Documents",
+        "UI/ColorVision.ImageEditor/ImageEditorSession.cs",
+        "UI/ColorVision.ImageEditor/Presentation",
+        "UI/ColorVision.ImageEditor/Operations",
+        "UI/ColorVision.ImageEditor/Output",
+        "UI/ColorVision.ImageEditor/Tooling",
+        "UI/ColorVision.ImageEditor/Navigation",
+        "UI/ColorVision.ImageEditor/Abstractions/PseudoColorFrameRequest.cs",
         "UI/ColorVision.ImageEditor/EditorContext.cs",
         "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs",
         "UI/ColorVision.ImageEditor/ImageViewConfig.cs",
@@ -10159,11 +10204,16 @@
         "UI/ColorVision.ImageEditor/ImageView.xaml.cs",
         "UI/ColorVision.ImageEditor/TransientRoiSelectionSession.cs",
         "UI/ColorVision.ImageEditor/EditorTools/PseudoColor",
-        "UI/ColorVision.UI/AssemblyHandler.cs"
+        "UI/ColorVision.UI/AssemblyHandler.cs",
+        "UI/ColorVision.ImageEditor/Draw/ImageDrawingPresentation.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/ImageDocumentPresentationTests.cs",
+        "Test/ColorVision.UI.Tests/ImageStreamPresentationTests.cs",
+        "Test/ColorVision.UI.Tests/ImageAlgorithmPreviewSessionTests.cs",
+        "Test/ColorVision.UI.Tests/ImageGroupNavigationTests.cs",
         "Test/ColorVision.UI.Tests/EditorToolFactoryLifecycleTests.cs",
-        "Test/ColorVision.UI.Tests/RealtimePseudoColorServiceTests.cs",
+        "Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs",
         "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs"
       ],
       "related": [
@@ -10214,13 +10264,15 @@
         "UI/ColorVision.UI/PropertyEditor/SettingsPropertyPresenter.cs",
         "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs",
         "Engine/ColorVision.Engine/Media/CvcieMouseProbeSettingProvider.cs",
-        "Engine/ColorVision.Engine/Media/CvcieMouseProbeOptions.cs"
+        "Engine/ColorVision.Engine/Media/CvcieMouseProbeOptions.cs",
+        "UI/ColorVision.ImageEditor/Presentation/ImageShaderPresentation.cs",
+        "UI/ColorVision.ImageEditor/Presentation/ImageDisplayEffects.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ImageSettingsScopeTests.cs",
         "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs",
         "Test/ColorVision.UI.Tests/DrawingVisualScaleHostTests.cs",
-        "Test/ColorVision.UI.Tests/RealtimePseudoColorServiceTests.cs",
+        "Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs",
         "Test/ColorVision.UI.Tests/SelectEditorRenderOptimizationTests.cs"
       ],
       "related": [
@@ -10258,17 +10310,23 @@
         "HImageExtension",
         "ForHImage",
         "ToHImage",
-        "NotifySourcePixelsChanged"
+        "NotifySourcePixelsChanged",
+        "ImageDocument",
+        "CommitSourcePixels"
       ],
       "code_paths": [
         "UI/ColorVision.Core/SourceImageFrame.cs",
         "UI/ColorVision.Core/HImage.cs",
         "UI/ColorVision.Core/HImageExtension.cs",
-        "UI/ColorVision.ImageEditor/ImageView.xaml.cs"
+        "UI/ColorVision.ImageEditor/ImageView.xaml.cs",
+        "UI/ColorVision.ImageEditor/Documents/ImageDocument.cs",
+        "UI/ColorVision.ImageEditor/Presentation/ImageStreamPresentation.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ImageFrameOwnerTests.cs",
-        "Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs"
+        "Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs",
+        "Test/ColorVision.UI.Tests/ImageDocumentPresentationTests.cs",
+        "Test/ColorVision.UI.Tests/ImageStreamPresentationTests.cs"
       ],
       "related": [
         "ui.core",

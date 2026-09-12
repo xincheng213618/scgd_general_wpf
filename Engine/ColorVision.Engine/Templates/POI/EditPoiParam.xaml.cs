@@ -671,45 +671,41 @@ namespace ColorVision.Engine.Templates.POI
                                 ints[2 * i] = (int)PoiParam.PoiPoints[i].PixX;
                                 ints[2 * i + 1] = (int)PoiParam.PoiPoints[i].PixY;
                             }
-                            Application.Current.Dispatcher.Invoke(() =>
+                            ImageView.Dispatcher.Invoke(() =>
                             {
-                                if (ImageShow.Source is BitmapImage bitmapSource)
+                                var source = ImageView.Presentation.DisplaySource;
+                                if (source is not BitmapImage && source is not WriteableBitmap) return;
+                                using HImage hImage = source is BitmapImage bitmapSource
+                                    ? bitmapSource.ToHImage() : ((WriteableBitmap)source).ToHImage();
+                                HImage hImageProcessed = default;
+                                try
                                 {
-                                    using HImage hImage = bitmapSource.ToHImage();
-                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiConfig.DefaultCircleRadius, ints, ints.Length, PoiConfig.Thickness);
-                                    Application.Current.Dispatcher.Invoke(() =>
+                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out hImageProcessed, PoiConfig.DefaultCircleRadius, ints, ints.Length, PoiConfig.Thickness);
+                                    if (ret != 0) return;
+
+                                    WriteableBitmap? image = null;
+                                    bool replacesSource = false;
+                                    if (source is WriteableBitmap writeable)
                                     {
-                                        if (ret == 0)
+                                        // Retain the former compatible-buffer source-edit contract without mutating a published frame.
+                                        image = writeable.Clone();
+                                        HImage borrowedOutput = hImageProcessed;
+                                        borrowedOutput.isDispose = true;
+                                        if (HImageExtension.UpdateWriteableBitmap(image, borrowedOutput))
                                         {
-                                            var image = hImageProcessed.ToWriteableBitmapAndDispose();
-
-                                            ImageShow.Source = image;
-
+                                            replacesSource = ReferenceEquals(ImageView.ViewBitmapSource, source);
                                         }
-                                        else
-                                        {
-                                            hImageProcessed.Dispose();
-                                        }
-                                    });
+                                        else image = null;
+                                    }
+
+                                    image ??= hImageProcessed.ToWriteableBitmap();
+                                    image.Freeze();
+                                    if (replacesSource) ImageView.CommitSourcePixels(image);
+                                    else ImageView.Presentation.Publish(image, image);
                                 }
-
-                                else if (ImageShow.Source is WriteableBitmap writeable)
+                                finally
                                 {
-                                    using HImage hImage = writeable.ToHImage();
-                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiConfig.DefaultCircleRadius, ints, ints.Length , PoiConfig.Thickness);
-                                    Application.Current.Dispatcher.Invoke(() =>
-                                    {
-                                        if (ret != 0)
-                                        {
-                                            hImageProcessed.Dispose();
-                                        }
-                                        else if (!HImageExtension.UpdateWriteableBitmap(ImageShow.Source, hImageProcessed))
-                                        {
-                                            var image = hImageProcessed.ToWriteableBitmapAndDispose();
-
-                                            ImageShow.Source = image;
-                                        }
-                                    });
+                                    hImageProcessed.Dispose();
                                 }
                             });
 

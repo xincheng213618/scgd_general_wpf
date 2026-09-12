@@ -2,6 +2,8 @@ using ColorVision.Algorithms;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Operations;
+using ColorVision.ImageEditor.Presentation;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -21,14 +23,7 @@ namespace ColorVision.ImageEditor
     public sealed class ImageProcessingContext
     {
         private readonly ImageProcessingContextBinding _binding;
-        private readonly AlgorithmRuntime _algorithmRuntime;
-        private readonly AlgorithmInvocationCoordinator _algorithmInvocationCoordinator;
-        private readonly AlgorithmOverlayManager _algorithmOverlayManager;
-        private readonly object _algorithmPreviewSync = new();
-        private AlgorithmInvocationClaim? _activeAlgorithmPreviewClaim;
-        private Action? _activeAlgorithmPreviewRestore;
-        private long _algorithmClaimSequence;
-        private long _algorithmPreviewGeneration;
+        private readonly ImageOperationCoordinator _operations;
 
         internal ImageProcessingContext(
             ImageViewConfig config,
@@ -44,17 +39,25 @@ namespace ColorVision.ImageEditor
             DrawCanvas imageShow,
             Dispatcher dispatcher,
             ImageProcessingContextBinding binding,
-            AlgorithmRuntime algorithmRuntime)
+            AlgorithmRuntime algorithmRuntime,
+            ImagePresentation? presentation = null)
         {
             ArgumentNullException.ThrowIfNull(algorithmRuntime);
             Config = config;
             ImageShow = imageShow;
             Dispatcher = dispatcher;
             _binding = binding;
-            _algorithmRuntime = algorithmRuntime;
-            _algorithmInvocationCoordinator = _algorithmRuntime.InvocationCoordinator;
-            _algorithmOverlayManager = new AlgorithmOverlayManager(imageShow);
+            Presentation = presentation ?? new ImagePresentation(imageShow, binding);
+            _operations = new ImageOperationCoordinator(this, algorithmRuntime, binding);
+            DisplayEffects = new ImageDisplayEffects(this);
+            StreamPresentation = new ImageStreamPresentation(this);
         }
+
+        public ImagePresentation Presentation { get; }
+
+        public ImageDisplayEffects DisplayEffects { get; }
+
+        public ImageStreamPresentation StreamPresentation { get; }
 
         public ImageViewConfig Config { get; }
 
@@ -62,9 +65,9 @@ namespace ColorVision.ImageEditor
 
         public Dispatcher Dispatcher { get; }
 
-        public AlgorithmRuntime AlgorithmRuntime => _algorithmRuntime;
+        public AlgorithmRuntime AlgorithmRuntime => _operations.Runtime;
 
-        public AlgorithmOverlayStore AlgorithmOverlays => _algorithmOverlayManager.Artifacts;
+        public AlgorithmOverlayStore AlgorithmOverlays => _operations.AlgorithmOverlays;
 
         public bool IsInitialized => _binding.IsInitialized();
 
@@ -91,11 +94,17 @@ namespace ColorVision.ImageEditor
             _binding.NotifySourcePixelsChanged();
         }
 
+        /// <summary>Commits replacement pixels without reopening the source or resetting view preferences.</summary>
+        public void CommitSourcePixels(ImageSource source)
+        {
+            _binding.CommitSourcePixels(source);
+        }
+
         public ImageSource FunctionImage
         {
-            get => _binding.GetFunctionImage()!;
+            get => Presentation.FunctionImage!;
             [param: AllowNull]
-            set => _binding.SetFunctionImage(value);
+            set => Presentation.FunctionImage = value;
         }
 
         public ImageSource ViewBitmapSource
@@ -116,511 +125,83 @@ namespace ColorVision.ImageEditor
         }
 
         internal bool TryBeginAlgorithmPreviewSession(
-            Guid sessionId,
-            Guid documentInstanceId,
-            long sourceRevision,
-            out AlgorithmInvocationClaim claim)
-            => TryClaimAlgorithmInvocation(
-                new AlgorithmInvocationScope(documentInstanceId, sourceRevision),
-                sessionId,
-                sessionId,
-                cancellation: null,
-                isPreview: true,
-                previewRestore: null,
-                onAccepted: null,
-                out claim);
+            Guid sessionId, Guid documentInstanceId, long sourceRevision, out AlgorithmInvocationClaim claim)
+            => _operations.TryBeginAlgorithmPreviewSession(sessionId, documentInstanceId, sourceRevision, out claim);
 
         internal bool TryBeginAlgorithmPreviewSession(
-            Guid sessionId,
-            Guid documentInstanceId,
-            long sourceRevision,
-            Action previewRestore,
-            Action previewPublication,
-            out AlgorithmInvocationClaim claim)
-        {
-            ArgumentNullException.ThrowIfNull(previewRestore);
-            ArgumentNullException.ThrowIfNull(previewPublication);
-            return TryClaimAlgorithmInvocation(
-                new AlgorithmInvocationScope(documentInstanceId, sourceRevision),
-                sessionId,
-                sessionId,
-                cancellation: null,
-                isPreview: true,
-                previewRestore,
-                _ => previewPublication(),
-                out claim);
-        }
+            Guid sessionId, Guid documentInstanceId, long sourceRevision,
+            Action previewRestore, Action previewPublication, out AlgorithmInvocationClaim claim)
+            => _operations.TryBeginAlgorithmPreviewSession(sessionId, documentInstanceId, sourceRevision, previewRestore, previewPublication, out claim);
 
         internal bool TryBeginAlgorithmPreviewInvocation(
-            Guid sessionId,
-            Guid documentInstanceId,
-            long sourceRevision,
-            Guid invocationId,
-            CancellationTokenSource cancellation,
-            out AlgorithmInvocationClaim claim)
-            => TryBeginAlgorithmPreviewInvocation(
-                sessionId,
-                documentInstanceId,
-                sourceRevision,
-                invocationId,
-                cancellation,
-                previewRestore: null,
-                out claim);
+            Guid sessionId, Guid documentInstanceId, long sourceRevision, Guid invocationId,
+            CancellationTokenSource cancellation, out AlgorithmInvocationClaim claim)
+            => _operations.TryBeginAlgorithmPreviewInvocation(sessionId, documentInstanceId, sourceRevision, invocationId, cancellation, out claim);
 
         internal bool TryBeginAlgorithmPreviewInvocation(
-            Guid sessionId,
-            Guid documentInstanceId,
-            long sourceRevision,
-            Guid invocationId,
-            CancellationTokenSource cancellation,
-            Action? previewRestore,
-            out AlgorithmInvocationClaim claim)
-        {
-            ArgumentNullException.ThrowIfNull(cancellation);
-            return TryClaimAlgorithmInvocation(
-                new AlgorithmInvocationScope(documentInstanceId, sourceRevision),
-                sessionId,
-                invocationId,
-                cancellation,
-                isPreview: true,
-                previewRestore,
-                onAccepted: null,
-                out claim);
-        }
+            Guid sessionId, Guid documentInstanceId, long sourceRevision, Guid invocationId,
+            CancellationTokenSource cancellation, Action? previewRestore, out AlgorithmInvocationClaim claim)
+            => _operations.TryBeginAlgorithmPreviewInvocation(sessionId, documentInstanceId, sourceRevision, invocationId, cancellation, previewRestore, out claim);
 
         internal bool TryBeginAlgorithmAnalysisInvocation(
-            Guid ownerId,
-            Guid documentInstanceId,
-            long sourceRevision,
-            Guid invocationId,
-            CancellationTokenSource cancellation,
-            out AlgorithmInvocationClaim claim)
-            => TryBeginAlgorithmAnalysisInvocation(
-                ownerId,
-                documentInstanceId,
-                sourceRevision,
-                invocationId,
-                cancellation,
-                onAccepted: null,
-                out claim);
+            Guid ownerId, Guid documentInstanceId, long sourceRevision, Guid invocationId,
+            CancellationTokenSource cancellation, out AlgorithmInvocationClaim claim)
+            => _operations.TryBeginAlgorithmAnalysisInvocation(ownerId, documentInstanceId, sourceRevision, invocationId, cancellation, out claim);
 
         internal bool TryBeginAlgorithmAnalysisInvocation(
-            Guid ownerId,
-            Guid documentInstanceId,
-            long sourceRevision,
-            Guid invocationId,
-            CancellationTokenSource cancellation,
-            Action<AlgorithmInvocationClaim>? onAccepted,
-            out AlgorithmInvocationClaim claim)
-        {
-            ArgumentNullException.ThrowIfNull(cancellation);
-            return TryClaimAlgorithmInvocation(
-                new AlgorithmInvocationScope(documentInstanceId, sourceRevision),
-                ownerId,
-                invocationId,
-                cancellation,
-                isPreview: false,
-                previewRestore: null,
-                onAccepted,
-                out claim);
-        }
+            Guid ownerId, Guid documentInstanceId, long sourceRevision, Guid invocationId,
+            CancellationTokenSource cancellation, Action<AlgorithmInvocationClaim>? onAccepted, out AlgorithmInvocationClaim claim)
+            => _operations.TryBeginAlgorithmAnalysisInvocation(ownerId, documentInstanceId, sourceRevision, invocationId, cancellation, onAccepted, out claim);
 
         internal bool IsCurrentAlgorithmInvocation(AlgorithmInvocationClaim claim)
-            => _algorithmInvocationCoordinator.IsCurrent(claim);
+            => _operations.IsCurrentAlgorithmInvocation(claim);
 
-        internal bool CompleteAlgorithmInvocationRun(
-            AlgorithmInvocationClaim claim,
-            CancellationTokenSource cancellation)
-            => _algorithmInvocationCoordinator.CompleteRun(claim, cancellation);
+        internal bool CompleteAlgorithmInvocationRun(AlgorithmInvocationClaim claim, CancellationTokenSource cancellation)
+            => _operations.CompleteAlgorithmInvocationRun(claim, cancellation);
 
         internal bool TryReleaseAlgorithmInvocation(AlgorithmInvocationClaim claim)
-            => _algorithmInvocationCoordinator.TryRelease(claim);
+            => _operations.TryReleaseAlgorithmInvocation(claim);
 
-        internal bool HasActiveAlgorithmPreview
+        internal bool HasActiveAlgorithmPreview => _operations.HasActiveAlgorithmPreview;
+
+        internal void SupersedePreviewForDisplaySelection()
         {
-            get
-            {
-                AlgorithmInvocationClaim? claim;
-                lock (_algorithmPreviewSync) claim = _activeAlgorithmPreviewClaim;
-                return claim.HasValue && _algorithmInvocationCoordinator.IsCurrent(claim.Value);
-            }
+            DisplayEffects.Invalidate();
+            _operations.SupersedePreviewForDisplaySelection();
         }
 
-        internal long AlgorithmPreviewGeneration
-        {
-            get
-            {
-                lock (_algorithmPreviewSync) return _algorithmPreviewGeneration;
-            }
-        }
+        internal long AlgorithmPreviewGeneration => _operations.AlgorithmPreviewGeneration;
 
         internal bool OwnsAlgorithmPreviewClaim(AlgorithmInvocationClaim claim)
-        {
-            lock (_algorithmPreviewSync) return _activeAlgorithmPreviewClaim == claim;
-        }
+            => _operations.OwnsAlgorithmPreviewClaim(claim);
 
         internal bool TryPublishAlgorithmPreview(AlgorithmInvocationClaim claim, Action publication)
-        {
-            ArgumentNullException.ThrowIfNull(publication);
-            return InvokeOnDispatcher(() =>
-            {
-                bool published = false;
-                bool current = _algorithmInvocationCoordinator.TryMutateCurrent(claim, () =>
-                {
-                    long expectedClaimSequence;
-                    long expectedGeneration;
-                    Action? expectedRestore;
-                    lock (_algorithmPreviewSync)
-                    {
-                        if (_activeAlgorithmPreviewClaim != claim || !IsCurrentScope(claim.Scope)) return;
-                        expectedClaimSequence = _algorithmClaimSequence;
-                        expectedGeneration = _algorithmPreviewGeneration;
-                        expectedRestore = _activeAlgorithmPreviewRestore;
-                    }
-
-                    AlgorithmHostState host = CaptureHostState();
-                    try
-                    {
-                        _binding.BeforeAlgorithmPreviewPublication?.Invoke(claim);
-                        if (!CanRollbackHostState(claim, expectedClaimSequence, expectedGeneration, claim, expectedRestore))
-                            return;
-                        publication();
-                        published = true;
-                    }
-                    catch
-                    {
-                        if (CanRollbackHostState(claim, expectedClaimSequence, expectedGeneration, claim, expectedRestore))
-                            RestoreHostState(host);
-                        throw;
-                    }
-                });
-                return current && published;
-            });
-        }
+            => _operations.TryPublishAlgorithmPreview(claim, publication);
 
         internal bool TryCompleteAlgorithmPreview(
-            AlgorithmInvocationClaim claim,
-            Action? publication = null,
-            Action? afterConsumption = null)
-            => TryConsumeAlgorithmPreview(claim, publication, restoreCanonical: false, afterConsumption);
+            AlgorithmInvocationClaim claim, Action? publication = null, Action? afterConsumption = null)
+            => _operations.TryCompleteAlgorithmPreview(claim, publication, afterConsumption);
 
         internal void BeforeAlgorithmPreviewCommit(AlgorithmInvocationClaim claim)
-            => _binding.BeforeAlgorithmPreviewCommit?.Invoke(claim);
+            => _operations.BeforeAlgorithmPreviewCommit(claim);
 
         internal bool TryCancelAlgorithmPreview(AlgorithmInvocationClaim claim, Action? cancellationPublication = null)
-            => TryConsumeAlgorithmPreview(claim, cancellationPublication, restoreCanonical: true, afterConsumption: null);
+            => _operations.TryCancelAlgorithmPreview(claim, cancellationPublication);
 
-        private bool TryConsumeAlgorithmPreview(
-            AlgorithmInvocationClaim claim,
-            Action? publication,
-            bool restoreCanonical,
-            Action? afterConsumption)
-        {
-            return InvokeOnDispatcher(() =>
-            {
-                Action? restore;
-                Action? expectedRestore;
-                long expectedClaimSequence;
-                long expectedGeneration;
-                lock (_algorithmPreviewSync)
-                {
-                    if (_activeAlgorithmPreviewClaim != claim) return false;
-                    expectedRestore = _activeAlgorithmPreviewRestore;
-                    restore = restoreCanonical ? expectedRestore : null;
-                    expectedClaimSequence = _algorithmClaimSequence;
-                    expectedGeneration = _algorithmPreviewGeneration;
-                }
+        internal void InvalidateForDocumentMutation(ImageDocumentMutationKind mutationKind, long previousRevision, long currentRevision)
+            => _operations.InvalidateForDocumentMutation(mutationKind, previousRevision, currentRevision);
 
-                AlgorithmHostState host = CaptureHostState();
-                bool mutated = false;
-                bool released = _algorithmInvocationCoordinator.TryRelease(claim, () =>
-                {
-                    lock (_algorithmPreviewSync)
-                    {
-                        if (_activeAlgorithmPreviewClaim != claim)
-                            throw new InvalidOperationException("Preview ownership changed during publication.");
-                    }
-
-                    try
-                    {
-                        restore?.Invoke();
-                        publication?.Invoke();
-                        lock (_algorithmPreviewSync)
-                        {
-                            if (_activeAlgorithmPreviewClaim != claim
-                                || _algorithmClaimSequence != expectedClaimSequence
-                                || _algorithmPreviewGeneration != expectedGeneration)
-                            {
-                                throw new InvalidOperationException("Preview ownership changed during publication.");
-                            }
-                            _activeAlgorithmPreviewClaim = null;
-                            _activeAlgorithmPreviewRestore = null;
-                            _algorithmPreviewGeneration++;
-                        }
-                        mutated = true;
-                    }
-                    catch
-                    {
-                        if (CanRollbackHostState(claim, expectedClaimSequence, expectedGeneration, claim, expectedRestore))
-                            RestoreHostState(host);
-                        throw;
-                    }
-                });
-                bool consumed = released && mutated;
-                if (consumed) afterConsumption?.Invoke();
-                return consumed;
-            });
-        }
-
-        internal void InvalidateForDocumentMutation(
-            ImageDocumentMutationKind mutationKind,
-            long previousRevision,
-            long currentRevision)
-        {
-            InvokeOnDispatcher(() =>
-            {
-                Guid documentInstanceId = DocumentInstanceId;
-                bool preservesNewerPreview;
-                lock (_algorithmPreviewSync)
-                {
-                    preservesNewerPreview = _activeAlgorithmPreviewClaim is AlgorithmInvocationClaim active
-                        && active.Scope.DocumentInstanceId == documentInstanceId
-                        && active.Scope.SourceRevision >= currentRevision;
-                    if (!preservesNewerPreview)
-                    {
-                        _algorithmPreviewGeneration++;
-                        _activeAlgorithmPreviewClaim = null;
-                        _activeAlgorithmPreviewRestore = null;
-                    }
-                }
-
-                Action finishAnalysisInvalidation = ImageAlgorithmAnalysisSession.DetachForDocumentMutation(
-                    this,
-                    documentInstanceId,
-                    currentRevision);
-
-                if (mutationKind == ImageDocumentMutationKind.SourcePixelsChanged)
-                {
-                    // In-place producers (video/realtime/native commit) have already updated
-                    // ViewBitmapSource. Publish that canonical source while invalidating the old
-                    // revision so a stale preview cannot remain visible or republish later.
-                    if (!preservesNewerPreview)
-                    {
-                        ImageShow.Source = ViewBitmapSource;
-                        _binding.SetFunctionImage(null);
-                    }
-                    _algorithmOverlayManager.OnSourceRevisionChanged(documentInstanceId, ImageRevision);
-                }
-                else
-                {
-                    _algorithmOverlayManager.ClearDocumentBeforeRevision(documentInstanceId, currentRevision);
-                }
-
-                // Remove every old-revision claim only after the host/session state has been
-                // invalidated. Cancellation callbacks are synchronous and may legitimately
-                // install a claim for the already-advanced source revision; no old-generation
-                // cleanup is allowed to run after those callbacks.
-                _algorithmInvocationCoordinator.InvalidateDocumentRevisionsBefore(documentInstanceId, currentRevision);
-                finishAnalysisInvalidation();
-                DocumentScopeChanged?.Invoke(this, EventArgs.Empty);
-                return true;
-            });
-        }
+        internal void NotifyDocumentScopeChanged() => DocumentScopeChanged?.Invoke(this, EventArgs.Empty);
 
         internal bool TryRegisterAlgorithmOverlay(
-            AlgorithmOverlayArtifact artifact,
-            Visual visual,
-            Guid documentInstanceId,
-            long sourceRevision,
+            AlgorithmOverlayArtifact artifact, Visual visual, Guid documentInstanceId, long sourceRevision,
             [NotNullWhen(true)] out IAlgorithmOverlayRegistration? registration)
-        {
-            Dispatcher.VerifyAccess();
-            registration = null;
-            if (DocumentInstanceId != documentInstanceId || !IsCurrentImageRevision(sourceRevision) || IsDisposed)
-                return false;
-
-            registration = _algorithmOverlayManager.Register(
-                artifact,
-                visual,
-                documentInstanceId,
-                sourceRevision);
-            return true;
-        }
+            => _operations.TryRegisterAlgorithmOverlay(artifact, visual, documentInstanceId, sourceRevision, out registration);
 
         internal IReadOnlyList<AlgorithmOverlayRegistrationSnapshot> SnapshotAlgorithmOverlayRegistrations()
-            => _algorithmOverlayManager.SnapshotRegistrations();
+            => _operations.SnapshotAlgorithmOverlayRegistrations();
 
-        internal void DisposeAlgorithmOverlays() => _algorithmOverlayManager.Dispose();
-
-        private bool TryClaimAlgorithmInvocation(
-            AlgorithmInvocationScope scope,
-            Guid ownerId,
-            Guid invocationId,
-            CancellationTokenSource? cancellation,
-            bool isPreview,
-            Action? previewRestore,
-            Action<AlgorithmInvocationClaim>? onAccepted,
-            out AlgorithmInvocationClaim claim)
-        {
-            if (!Dispatcher.CheckAccess())
-            {
-                (bool Accepted, AlgorithmInvocationClaim Claim) result = Dispatcher.Invoke(() =>
-                {
-                    bool accepted = TryClaimAlgorithmInvocation(
-                        scope,
-                        ownerId,
-                        invocationId,
-                        cancellation,
-                        isPreview,
-                        previewRestore,
-                        onAccepted,
-                        out AlgorithmInvocationClaim dispatcherClaim);
-                    return (accepted, dispatcherClaim);
-                });
-                claim = result.Claim;
-                return result.Accepted;
-            }
-
-            claim = default;
-            if (!IsCurrentScope(scope)) return false;
-
-            bool accepted = _algorithmInvocationCoordinator.TryClaim(
-                scope,
-                ownerId,
-                invocationId,
-                cancellation,
-                candidate =>
-                {
-                    if (!IsCurrentScope(scope)) return false;
-                    _binding.BeforeAlgorithmClaimStateUpdate?.Invoke(candidate);
-                    if (!IsCurrentScope(scope)) return false;
-
-                    AlgorithmInvocationClaim? previousPreviewClaim;
-                    Action? previousPreviewRestore;
-                    long previousClaimSequence;
-                    long previousGeneration;
-                    lock (_algorithmPreviewSync)
-                    {
-                        if (candidate.Sequence <= _algorithmClaimSequence || !IsCurrentScope(scope)) return false;
-                        previousPreviewClaim = _activeAlgorithmPreviewClaim;
-                        previousPreviewRestore = _activeAlgorithmPreviewRestore;
-                        previousClaimSequence = _algorithmClaimSequence;
-                        previousGeneration = _algorithmPreviewGeneration;
-                    }
-
-                    bool previewOwnerChanged = previousPreviewClaim.HasValue
-                        && previousPreviewClaim.Value.Scope == scope
-                        && (!isPreview || previousPreviewClaim.Value.OwnerId != ownerId);
-                    AlgorithmHostState host = CaptureHostState();
-                    try
-                    {
-                        if (previewOwnerChanged) previousPreviewRestore?.Invoke();
-                        onAccepted?.Invoke(candidate);
-
-                        lock (_algorithmPreviewSync)
-                        {
-                            if (_algorithmClaimSequence != previousClaimSequence
-                                || _algorithmPreviewGeneration != previousGeneration
-                                || _activeAlgorithmPreviewClaim != previousPreviewClaim
-                                || !ReferenceEquals(_activeAlgorithmPreviewRestore, previousPreviewRestore)
-                                || !IsCurrentScope(scope))
-                            {
-                                throw new InvalidOperationException("Algorithm host state changed during claim acceptance.");
-                            }
-
-                            _algorithmClaimSequence = candidate.Sequence;
-                            if (isPreview)
-                            {
-                                bool ownerChanged = !previousPreviewClaim.HasValue
-                                    || previousPreviewClaim.Value.Scope != scope
-                                    || previousPreviewClaim.Value.OwnerId != ownerId;
-                                _activeAlgorithmPreviewClaim = candidate;
-                                _activeAlgorithmPreviewRestore = previewRestore;
-                                if (ownerChanged) _algorithmPreviewGeneration++;
-                            }
-                            else if (previewOwnerChanged)
-                            {
-                                _activeAlgorithmPreviewClaim = null;
-                                _activeAlgorithmPreviewRestore = null;
-                                _algorithmPreviewGeneration++;
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        if (CanRollbackHostState(
-                                candidate,
-                                previousClaimSequence,
-                                previousGeneration,
-                                previousPreviewClaim,
-                                previousPreviewRestore))
-                        {
-                            RestoreHostState(host);
-                        }
-                        throw;
-                    }
-                    return true;
-                },
-                out claim);
-            if (accepted)
-            {
-                try
-                {
-                    ImageAlgorithmAnalysisSession.ObserveClaim(this, claim);
-                    if (isPreview) _binding.AfterAlgorithmPreviewClaimAccepted?.Invoke(claim);
-                }
-                catch
-                {
-                    // Post-acceptance notifications are part of the host transaction. Release
-                    // only this ticket: a re-entrant callback may already have installed a newer
-                    // owner, which must remain untouched.
-                    if (isPreview) TryCancelAlgorithmPreview(claim);
-                    else _algorithmInvocationCoordinator.TryRelease(claim);
-                    throw;
-                }
-            }
-            return accepted;
-        }
-
-        private bool CanRollbackHostState(
-            AlgorithmInvocationClaim candidate,
-            long expectedClaimSequence,
-            long expectedGeneration,
-            AlgorithmInvocationClaim? expectedPreviewClaim,
-            Action? expectedPreviewRestore)
-        {
-            if (!_algorithmInvocationCoordinator.IsCurrent(candidate)) return false;
-            lock (_algorithmPreviewSync)
-            {
-                return _algorithmClaimSequence == expectedClaimSequence
-                    && _algorithmPreviewGeneration == expectedGeneration
-                    && _activeAlgorithmPreviewClaim == expectedPreviewClaim
-                    && ReferenceEquals(_activeAlgorithmPreviewRestore, expectedPreviewRestore);
-            }
-        }
-
-        private AlgorithmHostState CaptureHostState()
-            => new(ViewBitmapSource, ImageShow.Source, FunctionImage);
-
-        private void RestoreHostState(AlgorithmHostState state)
-        {
-            ViewBitmapSource = state.ViewBitmapSource!;
-            ImageShow.Source = state.DisplaySource;
-            FunctionImage = state.FunctionImage!;
-        }
-
-        private T InvokeOnDispatcher<T>(Func<T> action)
-            => Dispatcher.CheckAccess() ? action() : Dispatcher.Invoke(action);
-
-        private bool IsCurrentScope(AlgorithmInvocationScope scope)
-            => !IsDisposed
-                && DocumentInstanceId == scope.DocumentInstanceId
-                && IsCurrentImageRevision(scope.SourceRevision);
-
-        private readonly record struct AlgorithmHostState(
-            ImageSource? ViewBitmapSource,
-            ImageSource? DisplaySource,
-            ImageSource? FunctionImage);
+        internal void DisposeAlgorithmOverlays() => _operations.DisposeAlgorithmOverlays();
 
         public void UpdateZoomAndScale()
         {
@@ -644,9 +225,7 @@ namespace ColorVision.ImageEditor
 
         public required Action NotifySourcePixelsChanged { get; init; }
 
-        public required Func<ImageSource?> GetFunctionImage { get; init; }
-
-        public required Action<ImageSource?> SetFunctionImage { get; init; }
+        public required Action<ImageSource> CommitSourcePixels { get; init; }
 
         public required Func<ImageSource?> GetViewBitmapSource { get; init; }
 

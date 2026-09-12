@@ -116,16 +116,13 @@ public class ImageAlgorithmPreviewSessionTests
             WriteableBitmap source = CreateBitmap(original);
             DrawCanvas imageShow = new() { Source = source };
             ImageSource? viewSource = source;
-            ImageSource? functionImage = null;
             long revision = 1;
             ImageProcessingContext context = CreateContext(
                 imageShow,
                 () => revision,
                 value => value == revision,
                 () => viewSource,
-                value => viewSource = value,
-                () => functionImage,
-                value => functionImage = value);
+                value => viewSource = value);
             object session = StartSession(context);
 
             Apply(session, mat => mat.SetTo(Scalar.All(200)));
@@ -139,7 +136,7 @@ public class ImageAlgorithmPreviewSessionTests
             Assert.False(invoked);
             Assert.Same(source, viewSource);
             Assert.Same(source, imageShow.Source);
-            Assert.Null(functionImage);
+            Assert.Null(context.Presentation.FunctionImage);
             imageShow.Dispose();
         });
     }
@@ -153,16 +150,13 @@ public class ImageAlgorithmPreviewSessionTests
             WriteableBitmap newerSource = CreateBitmap(Enumerable.Repeat((byte)42, 40).ToArray());
             DrawCanvas imageShow = new() { Source = source };
             ImageSource? viewSource = source;
-            ImageSource? functionImage = null;
             long revision = 1;
             ImageProcessingContext context = CreateContext(
                 imageShow,
                 () => revision,
                 value => value == revision,
                 () => viewSource,
-                value => viewSource = value,
-                () => functionImage,
-                value => functionImage = value);
+                value => viewSource = value);
             object session = StartSession(context);
 
             Apply(session, mat => mat.SetTo(Scalar.All(200)));
@@ -174,7 +168,7 @@ public class ImageAlgorithmPreviewSessionTests
 
             Assert.Same(newerSource, viewSource);
             Assert.Same(newerSource, imageShow.Source);
-            Assert.Null(functionImage);
+            Assert.Null(context.Presentation.FunctionImage);
             imageShow.Dispose();
         });
     }
@@ -212,9 +206,7 @@ public class ImageAlgorithmPreviewSessionTests
         Func<long> getRevision,
         Func<long, bool> isCurrentRevision,
         Func<ImageSource?> getViewSource,
-        Action<ImageSource?> setViewSource,
-        Func<ImageSource?> getFunctionImage,
-        Action<ImageSource?> setFunctionImage)
+        Action<ImageSource?> setViewSource)
     {
         Guid documentInstanceId = Guid.NewGuid();
         Type bindingType = typeof(ImageProcessingContext).Assembly.GetType(
@@ -244,8 +236,7 @@ public class ImageAlgorithmPreviewSessionTests
         bindingType.GetProperty("NotifySourcePixelsChanged")!.SetValue(binding, (Action)(() => { }));
         bindingType.GetProperty("GetViewBitmapSource")!.SetValue(binding, getViewSource);
         bindingType.GetProperty("SetViewBitmapSource")!.SetValue(binding, setViewSource);
-        bindingType.GetProperty("GetFunctionImage")!.SetValue(binding, getFunctionImage);
-        bindingType.GetProperty("SetFunctionImage")!.SetValue(binding, setFunctionImage);
+        bindingType.GetProperty("CommitSourcePixels")!.SetValue(binding, (Action<ImageSource>)(value => setViewSource(value)));
         bindingType.GetProperty("GetSelectedLayerSourceChannelIndex")!.SetValue(binding, (Func<int>)(() => 0));
         bindingType.GetProperty("SetImageSource")!.SetValue(binding, (Action<ImageSource>)(value => setViewSource(value)));
         bindingType.GetProperty("UpdateZoomAndScale")!.SetValue(binding, (Action)(() => { }));

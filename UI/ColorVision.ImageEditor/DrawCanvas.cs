@@ -41,6 +41,9 @@ namespace ColorVision.ImageEditor
 
     public class DrawCanvas : Image,IDisposable
     {
+        // The image has its own rendering surface. Annotation collections, selection and
+        // undo history contain only editor visuals, while Image still owns layout/stretch.
+        private readonly DrawingVisual imageVisual = new();
         // 使用只读集合，防止外部直接修改
         private readonly List<Visual> visuals = new();
         private readonly HashSet<Visual> visualSet = new();
@@ -50,6 +53,7 @@ namespace ColorVision.ImageEditor
 
         public DrawCanvas()
         {
+            AddVisualChild(imageVisual);
             this.Focusable = true;
             this.MouseLeftButtonDown += OnMouseLeftButtonDown;
             PreviewMouseDown += (s, e) => Focus();
@@ -185,8 +189,14 @@ namespace ColorVision.ImageEditor
         #endregion
 
 
-        protected override Visual GetVisualChild(int index) => visuals[index];
-        protected override int VisualChildrenCount => visuals.Count;
+        protected override Visual GetVisualChild(int index) => index == 0 ? imageVisual : visuals[index - 1];
+        protected override int VisualChildrenCount => visuals.Count + 1;
+
+        protected override void OnRender(DrawingContext drawingContext)
+        {
+            using DrawingContext imageContext = imageVisual.RenderOpen();
+            base.OnRender(imageContext);
+        }
 
         public bool ContainsVisual(Visual visual) => visualSet.Contains(visual);
 
@@ -542,6 +552,7 @@ namespace ColorVision.ImageEditor
         public TVisual? GetVisual<TVisual>(Point point) where TVisual : Visual
         {
             var hitResult = VisualTreeHelper.HitTest(this, point);
+            if (ReferenceEquals(hitResult?.VisualHit, imageVisual)) return this as TVisual;
             return hitResult?.VisualHit as TVisual;
         }
 
@@ -559,6 +570,7 @@ namespace ColorVision.ImageEditor
         {
             if (result is GeometryHitTestResult geometryResult
                 && geometryResult.VisualHit is DrawingVisual visual
+                && !ReferenceEquals(visual, imageVisual)
                 && geometryResult.IntersectionDetail == IntersectionDetail.FullyInside)
             {
                 hits.Add(visual);

@@ -115,6 +115,8 @@ FileIO 不负责 OpenCV/WPF 显示转换。`MediaHelper.ToMat` 可能借用 Data
 
 `CVRawOpen` 和 `CvRawLayerController` 为 Engine 图像打开器提供 **真彩 sRGB（XYZ）** 模式。它读取 CVCIE 文件自身连续存储的 X、Y、Z 三个平面，不跟随 `SrcFileName` 来构造真彩。**FileIO 的 `ReadCVCIE`、`OpenLocalCVFile` 和文件写入语义没有因此改变**；其它直接使用这些 API 的消费方不会自动启用真彩。
 
+打开器将完整源替换交给 `SetImageSource`。复用同尺寸位图的原位更新分支先更新像素元数据，通过 `Presentation.Publish` 恢复此次源显示，再以 `CommitSourcePixels` 登记像素变更，最后通知 `ImageSourceLoaded`；不能将兼容源 setter 当成版本提交。`MediaHelper.MatUpdateWriteableBitmap` 对冻结目标返回 `false`，打开器据此分配新位图，不写入先前的视频或实时帧。源、显示和完成信号的责任见[编辑器上下文](../ui-components/image-editor-context.md)与[图像打开契约](../ui-components/ColorVision.ImageEditor.md#打开图像与完成信号)，FileIO 本身不持有编辑器状态。
+
 全局持久设置位于 **图像设置 → 文件打开 → CVCIE**，配置 `CvcieDisplayConfig` 和两个显示枚举归属 `Engine/ColorVision.Engine/Media/`。Engine 的 `CvcieDisplaySettingProvider` 实现 `IImageComponent`，通过 `ImageView.RegisterSettings` 注册全局配置与保存委托；加载 Engine 后即可在文件打开页看到此组，不要求先打开 CVCIE。ImageEditor 只提供通用设置宿主与属性编辑器，FileIO 不承载显示偏好或新增 UI 依赖。点击保存或完成/关闭设置窗口时只保存发生改动的配置目标；当前图层调整不写全局默认，详见[图像设置的保存语义](../../02-developer-guide/core-concepts/image-editor-settings-plan.md)：
 
 | 设置 | 默认值与生效含义 |
@@ -125,7 +127,7 @@ FileIO 不负责 OpenCV/WPF 显示转换。`MediaHelper.ToMat` 可能借用 Data
 
 `65535` 只是未配置参考白时的软件初始值，不是 sRGB 标准规定的参考白，也不说明 XYZ 与 16 位 RAW 具有相同数值尺度；实际固定参考白应根据输入 Y 的单位和比较要求设置。默认亮度模式仍为 `Auto`，不使用此值；已保存的参考白不会被初始值覆盖。
 
-启用开关通过 `DisplayMode` 持久化：`Source` 为关闭，`Srgb` 为开启。配置服务按类名 `CvcieDisplayConfig` 读写，移动命名空间不改变配置键；旧配置无需迁移且不会产生两个互相矛盾的默认设置。
+启用开关通过 `DisplayMode` 持久化：`Source` 为关闭，`Srgb` 为开启。配置服务使用配置类型的完整名称作为持久键，并兼容读取短类名键；保留现有配置类型身份，避免产生两份默认设置。
 
 图层下拉框中的 `Composite`、`真彩 sRGB（XYZ）` 和 X/Y/Z 可临时切换当前视图，不回写全局启用开关；再次选择真彩图层时读取当前全局亮度参数。设置修改不会主动重新渲染所有已打开图片。header 声明三通道、每采样 32 位 float 或 64 位 double 时提供真彩图层，实际渲染还需通过完整数据校验；单通道文件提供亮度显示。
 

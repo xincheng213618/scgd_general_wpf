@@ -1,30 +1,23 @@
-#pragma warning disable CA1806
 using ColorVision.Core;
 using ColorVision.ImageEditor.Abstractions;
-using log4net;
+using ColorVision.ImageEditor.Documents;
 using System;
 using System.ComponentModel;
 using System.IO;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace ColorVision.ImageEditor.Video
 {
     [FileExtension(".mp4|.avi|.mkv|.mov|.wmv|.flv|.webm")]
-    public record class VideoOpen(EditorContext EditorContext) : IImageOpen
+    public record class VideoOpen(EditorContext EditorContext) : IImageOpen, IImageOpenEditorToolLifecycle, IDisposable
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(VideoOpen));
-
-        private int _videoHandle = -1;
-        private OpenCVMediaHelper.VideoInfo _videoInfo;
+        private VideoPlaybackSession? _session;
         private WriteableBitmap? _writeableBitmap;
-        private bool _isPlaying;
         private Slider? _progressSlider;
         private Button? _playPauseButton;
         private Button? _stopButton;
@@ -35,82 +28,50 @@ namespace ColorVision.ImageEditor.Video
         private TextBlock? _frameInfoTextBlock;
         private ToolBar? _videoToolBar;
         private bool _isDragging;
-        private ImageView? _imageView;
-
-        // Audio playback via WPF MediaPlayer (handles audio from the same video file)
-        private MediaPlayer? _mediaPlayer;
-        private string? _currentFilePath;
-        private double _currentSpeed = 1.0;
-        private bool _isMuted;
-
-        // Must keep delegate references alive to prevent GC collection during callbacks
-        private OpenCVMediaHelper.VideoFrameCallback? _frameCallbackDelegate;
-        private OpenCVMediaHelper.VideoStatusCallback? _statusCallbackDelegate;
-
-        // Frame dropping and UI throttling for high-resolution video (e.g. 8K@60fps)
-        private int _isProcessingFrame; // 0 = idle, 1 = processing (atomic via Interlocked)
-        private int _uiUpdateCounter;   // throttle slider/time updates
-
-        // Auto-hide toolbar
+        private bool _mutePreference;
+        private Guid _streamSessionId;
         private DispatcherTimer? _mouseIdleTimer;
         private bool _autoHideEnabled = true;
         private CheckBox? _autoHideCheckBox;
         private DateTime _lastMouseMoveTime = DateTime.Now;
         private const double MouseIdleTimeoutSeconds = 3.0;
-        private const double AudioSyncDriftThresholdSeconds = 0.5;
-
-        // Audio sync drift correction
-        private int _droppedFrameCount;
-
-        // Current resize scale
-        private double _currentResizeScale = 1.0;
+        private OpenCVMediaHelper.VideoInfo VideoInfo => _session?.Info ?? default;
 
         public void OpenImage(EditorContext context, string? filePath)
         {
             if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return;
-
-            // Close any previous video
-            CloseVideo();
-
-            FileInfo fileInfo = new FileInfo(filePath);
+            Close();
+            FileInfo fileInfo = new(filePath);
             context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSource, filePath, nameof(VideoOpen), "打开器接收到的视频源路径");
             context.Config.SetImageMetadata(ImageViewPropertyKeys.FileName, fileInfo.Name, nameof(VideoOpen), "当前视频文件名");
             context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSize, fileInfo.Length, nameof(VideoOpen), "当前视频文件大小（字节）");
 
-            // Open video via native opencv_helper
-            int handle = OpenCVMediaHelper.M_VideoOpen(filePath, out var info);
-            if (handle <= 0)
+            _session = new VideoPlaybackSession(context.ProcessingContext.Dispatcher, frame => PublishFrame(context.ProcessingContext, frame));
+            _session.SetMuted(_mutePreference);
+            _session.StateChanged += OnPlaybackStateChanged;
+            try
             {
-                MessageBox.Show($"Failed to open video file: {filePath}");
-                return;
+                if (!_session.Open(filePath))
+                {
+                    Close();
+                    MessageBox.Show($"Failed to open video file: {filePath}");
+                    return;
+                }
+                OpenCVMediaHelper.VideoInfo info = _session.Info;
+                context.Config.SetImageMetadata(ImageViewPropertyKeys.VideoWidth, info.width, nameof(VideoOpen), "视频帧宽度");
+                context.Config.SetImageMetadata(ImageViewPropertyKeys.VideoHeight, info.height, nameof(VideoOpen), "视频帧高度");
+                context.Config.SetImageMetadata(ImageViewPropertyKeys.VideoFPS, info.fps, nameof(VideoOpen), "视频帧率");
+                context.Config.SetImageMetadata(ImageViewPropertyKeys.VideoTotalFrames, info.totalFrames, nameof(VideoOpen), "视频总帧数");
+                double fps = info.fps > 0 ? info.fps : 30.0;
+                context.Config.SetImageMetadata(ImageViewPropertyKeys.VideoDuration, TimeSpan.FromSeconds(info.totalFrames / fps).ToString(@"hh\:mm\:ss"), nameof(VideoOpen), "视频总时长");
+                SetupVideoControls(context);
+                RefreshPlaybackControls();
             }
-
-            _videoHandle = handle;
-            _videoInfo = info;
-            _imageView = context.ImageView;
-            _currentFilePath = filePath;
-
-            context.Config.SetImageMetadata(ImageViewPropertyKeys.VideoWidth, info.width, nameof(VideoOpen), "视频帧宽度");
-            context.Config.SetImageMetadata(ImageViewPropertyKeys.VideoHeight, info.height, nameof(VideoOpen), "视频帧高度");
-            context.Config.SetImageMetadata(ImageViewPropertyKeys.VideoFPS, info.fps, nameof(VideoOpen), "视频帧率");
-            context.Config.SetImageMetadata(ImageViewPropertyKeys.VideoTotalFrames, info.totalFrames, nameof(VideoOpen), "视频总帧数");
-            double fps = info.fps > 0 ? info.fps : 30.0;
-            context.Config.SetImageMetadata(ImageViewPropertyKeys.VideoDuration, TimeSpan.FromSeconds(info.totalFrames / fps).ToString(@"hh\:mm\:ss"), nameof(VideoOpen), "视频总时长");
-
-            // Read first frame and display
-            int ret = OpenCVMediaHelper.M_VideoReadFrame(handle, out HImage firstFrame);
-            if (ret == 0)
+            catch
             {
-                _writeableBitmap = firstFrame.ToWriteableBitmapAndDispose();
-                context.ImageView.SetImageSource(_writeableBitmap);
-                context.ImageView.UpdateZoomAndScale();
+                Close();
+                throw;
             }
-
-            // Seek back to start
-            OpenCVMediaHelper.M_VideoSeek(handle, 0);
-
-            // Setup video playback controls in bottom toolbar
-            SetupVideoControls(context);
         }
 
         private void SetupVideoControls(EditorContext context)
@@ -118,11 +79,8 @@ namespace ColorVision.ImageEditor.Video
             var imageView = context.ImageView;
             _videoToolBar = imageView.ToolBarAl;
 
-            Application.Current.Dispatcher.Invoke(() =>
+            context.ProcessingContext.Dispatcher.Invoke(() =>
             {
-                // Initialize audio player on UI thread (MediaPlayer requires STA)
-                InitAudioPlayer();
-
                 // Play/Pause button
                 _playPauseButton = new Button
                 {
@@ -139,7 +97,7 @@ namespace ColorVision.ImageEditor.Video
                 _progressSlider = new Slider
                 {
                     Minimum = 0,
-                    Maximum = _videoInfo.totalFrames > 0 ? _videoInfo.totalFrames - 1 : 0,
+                    Maximum = VideoInfo.totalFrames > 0 ? VideoInfo.totalFrames - 1 : 0,
                     Value = 0,
                     Width = 300,
                     Height = 20,
@@ -152,11 +110,11 @@ namespace ColorVision.ImageEditor.Video
                 _progressSlider.AddHandler(Thumb.DragCompletedEvent, new DragCompletedEventHandler(Slider_DragCompleted));
                 _progressSlider.PreviewMouseLeftButtonUp += ProgressSlider_PreviewMouseLeftButtonUp;
 
-                double displayFps = _videoInfo.fps > 0 ? _videoInfo.fps : 30.0;
+                double displayFps = VideoInfo.fps > 0 ? VideoInfo.fps : 30.0;
                 // Time display
                 _timeTextBlock = new TextBlock
                 {
-                    Text = "00:00:00 / " + TimeSpan.FromSeconds(_videoInfo.totalFrames / displayFps).ToString(@"hh\:mm\:ss"),
+                    Text = "00:00:00 / " + TimeSpan.FromSeconds(VideoInfo.totalFrames / displayFps).ToString(@"hh\:mm\:ss"),
                     VerticalAlignment = VerticalAlignment.Center,
                     Margin = new Thickness(5, 0, 0, 0),
                     FontSize = 11
@@ -165,7 +123,7 @@ namespace ColorVision.ImageEditor.Video
                 // Frame info display (shows original source dimensions)
                 _frameInfoTextBlock = new TextBlock
                 {
-                    Text = $"0/{_videoInfo.totalFrames} [{_videoInfo.width}x{_videoInfo.height}]",
+                    Text = $"0/{VideoInfo.totalFrames} [{VideoInfo.width}x{VideoInfo.height}]",
                     VerticalAlignment = VerticalAlignment.Center,
                     Margin = new Thickness(5, 0, 0, 0),
                     FontSize = 10,
@@ -263,10 +221,13 @@ namespace ColorVision.ImageEditor.Video
             });
 
             // Closing through the config event also covers opening another file.
+            context.Config.Cleared -= OnConfigCleared;
             context.Config.Cleared += OnConfigCleared;
+            context.ProcessingContext.StreamPresentation.FramePresented -= OnFramePresented;
+            context.ProcessingContext.StreamPresentation.FramePresented += OnFramePresented;
         }
 
-        private void SetupAutoHideTimer(ImageView imageView)
+        private void SetupAutoHideTimer(FrameworkElement imageView)
         {
             _lastMouseMoveTime = DateTime.Now;
 
@@ -276,7 +237,7 @@ namespace ColorVision.ImageEditor.Video
             };
             _mouseIdleTimer.Tick += (s, e) =>
             {
-                if (!_autoHideEnabled || !_isPlaying) return;
+                if (!_autoHideEnabled || _session?.IsPlaying != true) return;
 
                 double idleSeconds = (DateTime.Now - _lastMouseMoveTime).TotalSeconds;
                 if (idleSeconds > MouseIdleTimeoutSeconds)
@@ -300,236 +261,56 @@ namespace ColorVision.ImageEditor.Video
 
         private void ProgressSlider_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            // Click-to-seek: when user clicks (not drags) the slider, seek to that position
-            if (!_isDragging && _videoHandle > 0 && _progressSlider != null)
-            {
-                int targetFrame = (int)_progressSlider.Value;
-                OpenCVMediaHelper.M_VideoSeek(_videoHandle, targetFrame);
-                SyncAudioSeek(targetFrame);
-            }
-        }
-
-        private void InitAudioPlayer()
-        {
-            if (string.IsNullOrEmpty(_currentFilePath)) return;
-
-            try
-            {
-                _mediaPlayer = new MediaPlayer();
-                _mediaPlayer.Open(new Uri(_currentFilePath, UriKind.Absolute));
-                _mediaPlayer.SpeedRatio = _currentSpeed;
-                _mediaPlayer.IsMuted = _isMuted;
-                // Pause immediately — audio starts only when user clicks Play
-                _mediaPlayer.Pause();
-            }
-            catch (Exception ex)
-            {
-                log.Warn("Could not initialize audio player", ex);
-                _mediaPlayer = null;
-            }
+            if (!_isDragging && _progressSlider != null) Seek((int)_progressSlider.Value);
         }
 
         private void MuteButton_Click(object sender, RoutedEventArgs e)
         {
-            _isMuted = !_isMuted;
-            if (_mediaPlayer != null)
-            {
-                _mediaPlayer.IsMuted = _isMuted;
-            }
-            if (_muteButton != null)
-            {
-                _muteButton.Content = _isMuted ? "🔇" : "🔊";
-            }
+            if (_session != null) _session.SetMuted(!_session.IsMuted);
         }
 
-        private void OnConfigCleared(object? sender, EventArgs e)
-        {
-            CloseVideo();
-        }
+        private void OnConfigCleared(object? sender, EventArgs e) => Close();
 
         private void PlayPauseButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_videoHandle <= 0) return;
-
-            if (_isPlaying)
-            {
-                PauseVideo();
-            }
-            else
-            {
-                PlayVideo();
-            }
+            if (_session?.IsPlaying == true) _session.Pause();
+            else _session?.Play();
         }
 
         private void StopButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_videoHandle <= 0) return;
-
-            PauseVideo();
-            OpenCVMediaHelper.M_VideoSeek(_videoHandle, 0);
-            UpdateSliderPosition(0);
-
-            // Stop and reset audio
-            SyncAudioSeek(0);
+            EditorContext.ProcessingContext.StreamPresentation.ResetSource(_streamSessionId);
+            _session?.Stop();
         }
 
-        private void PlayVideo()
+        private void Seek(int frameIndex)
         {
-            if (_videoHandle <= 0 || _isPlaying) return;
-
-            _droppedFrameCount = 0;
-
-            _frameCallbackDelegate = OnFrameReceived;
-            _statusCallbackDelegate = OnStatusChanged;
-
-            int ret = OpenCVMediaHelper.M_VideoPlay(_videoHandle, _frameCallbackDelegate, _statusCallbackDelegate, IntPtr.Zero);
-            if (ret != 0)
-            {
-                _isPlaying = false;
-                _frameCallbackDelegate = null;
-                _statusCallbackDelegate = null;
-                UpdatePlayPauseButton(false);
-                log.Warn($"Failed to start video playback. Native return code: {ret}");
-                return;
-            }
-
-            _isPlaying = true;
-            UpdatePlayPauseButton(true);
-
-            // Start audio playback in sync
-            SyncAudioPlay();
+            EditorContext.ProcessingContext.StreamPresentation.ResetSource(_streamSessionId);
+            _session?.Seek(frameIndex);
         }
 
-        private void PauseVideo()
+        private void PublishFrame(ImageProcessingContext context, VideoFrameDelivery frame)
         {
-            if (_videoHandle <= 0 || !_isPlaying) return;
-
-            OpenCVMediaHelper.M_VideoPause(_videoHandle);
-            _isPlaying = false;
-            UpdatePlayPauseButton(false);
-
-            // Show toolbar when paused
-            if (_videoToolBar != null)
-                _videoToolBar.Opacity = 0.8;
-
-            // Pause audio
-            SyncAudioPause();
-        }
-
-        private void OnFrameReceived(int handle, ref HImage frame, int currentFrame, int totalFrames, IntPtr userData)
-        {
-            if (handle <= 0 || handle != _videoHandle)
+            _streamSessionId = frame.SessionId;
+            HImage image = frame.Image;
+            if (_writeableBitmap != null && _writeableBitmap.PixelWidth == image.cols && _writeableBitmap.PixelHeight == image.rows)
             {
-                frame.Dispose();
-                return;
-            }
-
-            // Frame dropping: if previous frame is still being processed by UI, skip this frame
-            if (Interlocked.CompareExchange(ref _isProcessingFrame, 1, 0) != 0)
-            {
-                Interlocked.Increment(ref _droppedFrameCount);
-                frame.Dispose();
-                return;
-            }
-
-            HImage localFrame = frame;
-            int localCurrentFrame = currentFrame;
-
-            try
-            {
-                var dispatcher = Application.Current?.Dispatcher;
-                if (dispatcher == null)
-                {
-                    localFrame.Dispose();
-                    Interlocked.Exchange(ref _isProcessingFrame, 0);
-                    return;
-                }
-
-                // Native now passes an owned HImage buffer. Queue UI work asynchronously
-                // so M_VideoClose never blocks behind a synchronous Dispatcher.Invoke.
-                dispatcher.BeginInvoke(new Action(() =>
-                {
-                    try
-                    {
-                        if (handle == _videoHandle)
-                        {
-                            UpdateFrameDisplay(localFrame);
-
-                            // Throttle slider/time updates to reduce UI overhead
-                            int count = Interlocked.Increment(ref _uiUpdateCounter);
-                            if (count % 10 == 0)
-                            {
-                                if (!_isDragging)
-                                {
-                                    UpdateSliderPosition(localCurrentFrame);
-                                }
-
-                                UpdateTimeDisplay(localCurrentFrame);
-                                UpdateFrameInfoDisplay(localCurrentFrame, localFrame);
-
-                                // Audio-video sync correction when frames are dropped
-                                CorrectAudioSync(localCurrentFrame);
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Error("Error while rendering video frame", ex);
-                    }
-                    finally
-                    {
-                        localFrame.Dispose();
-                        Interlocked.Exchange(ref _isProcessingFrame, 0);
-                    }
-                }));
-            }
-            catch (Exception ex)
-            {
-                localFrame.Dispose();
-                Interlocked.Exchange(ref _isProcessingFrame, 0);
-                log.Error("Error in video frame callback", ex);
-            }
-        }
-
-        private void CorrectAudioSync(int currentFrame)
-        {
-            var player = _mediaPlayer;
-            if (player == null || !_isPlaying) return;
-
-            try
-            {
-                double fps = _videoInfo.fps > 0 ? _videoInfo.fps : 30.0;
-                double videoTimeSeconds = currentFrame / fps;
-                double audioTimeSeconds = player.Position.TotalSeconds;
-                double drift = Math.Abs(videoTimeSeconds - audioTimeSeconds);
-
-                // If drift exceeds threshold, re-sync audio position
-                if (drift > AudioSyncDriftThresholdSeconds)
-                {
-                    var position = TimeSpan.FromSeconds(videoTimeSeconds);
-                    player.Position = position;
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Warn("Audio sync correction failed", ex);
-            }
-        }
-
-        private void UpdateFrameDisplay(HImage frame)
-        {
-            if (_writeableBitmap != null &&
-                _writeableBitmap.PixelWidth == frame.cols &&
-                _writeableBitmap.PixelHeight == frame.rows)
-            {
-                // Fast path: reuse the existing WriteableBitmap.
-                UpdateWriteableBitmapFast(_writeableBitmap, frame);
-                _imageView?.NotifySourcePixelsChanged();
+                UpdateWriteableBitmapFast(_writeableBitmap, image);
             }
             else
             {
-                _writeableBitmap = frame.ToWriteableBitmap();
-                _imageView?.SetImageSource(_writeableBitmap);
+                _writeableBitmap = image.ToWriteableBitmap();
+            }
+            if (frame.IsInitialFrame)
+            {
+                WriteableBitmap source = _writeableBitmap.Clone();
+                source.Freeze();
+                context.SetImageSource(source);
+                context.UpdateZoomAndScale();
+            }
+            else
+            {
+                context.StreamPresentation.Submit(_writeableBitmap, frame.SessionId);
             }
         }
 
@@ -590,290 +371,101 @@ namespace ColorVision.ImageEditor.Video
             }
         }
 
-        private void OnStatusChanged(int handle, int status, IntPtr userData)
+        private void OnPlaybackStateChanged(object? sender, EventArgs e)
         {
-            if (handle <= 0 || handle != _videoHandle) return;
-
-            try
+            if (_session != null && _streamSessionId != _session.SessionId)
             {
-                Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    try
-                    {
-                        if (handle != _videoHandle) return;
-
-                        switch (status)
-                        {
-                            case 0: // Paused
-                                _isPlaying = false;
-                                UpdatePlayPauseButton(false);
-                                SyncAudioPause();
-                                break;
-                            case 1: // Playing
-                                _isPlaying = true;
-                                UpdatePlayPauseButton(true);
-                                break;
-                            case 2: // Ended
-                                _isPlaying = false;
-                                UpdatePlayPauseButton(false);
-                                SyncAudioPause();
-                                // Reset to beginning
-                                if (_videoHandle > 0)
-                                {
-                                    OpenCVMediaHelper.M_VideoSeek(_videoHandle, 0);
-                                    UpdateSliderPosition(0);
-                                    SyncAudioSeek(0);
-                                }
-                                break;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Error("Error while handling video status", ex);
-                    }
-                }));
+                EditorContext.ProcessingContext.StreamPresentation.ResetSource(_streamSessionId);
+                _streamSessionId = _session.SessionId;
             }
-            catch (Exception ex)
+            RefreshPlaybackControls();
+        }
+
+        private void OnFramePresented(Guid sourceId, WriteableBitmap source)
+        {
+            if (sourceId == _streamSessionId && ReferenceEquals(EditorContext.ProcessingContext.ViewBitmapSource, source))
+                ImageSourceMetadata.TryApply(source, EditorContext.Config);
+        }
+
+        private void RefreshPlaybackControls()
+        {
+            VideoPlaybackSession? session = _session;
+            if (session == null) return;
+            if (_playPauseButton != null) _playPauseButton.Content = session.IsPlaying ? "⏸" : "▶";
+            if (_muteButton != null) _muteButton.Content = session.IsMuted ? "🔇" : "🔊";
+            if (!session.IsPlaying && _videoToolBar != null) _videoToolBar.Opacity = 0.8;
+            if (!_isDragging && _progressSlider != null) _progressSlider.Value = session.CurrentFrame;
+            OpenCVMediaHelper.VideoInfo info = session.Info;
+            double fps = info.fps > 0 ? info.fps : 30.0;
+            TimeSpan current = TimeSpan.FromSeconds(session.CurrentFrame / fps);
+            TimeSpan total = TimeSpan.FromSeconds(info.totalFrames / fps);
+            if (_timeTextBlock != null) _timeTextBlock.Text = $"{current:hh\\:mm\\:ss} / {total:hh\\:mm\\:ss}";
+            if (_frameInfoTextBlock != null)
             {
-                log.Error("Error in video status callback", ex);
+                string text = $"{session.CurrentFrame}/{info.totalFrames} [{info.width}x{info.height}]";
+                if (session.ResizeScale < 1.0) text += $" @{session.ResizeScale:0.###}x";
+                if (session.DroppedFrameCount > 0) text += $" D:{session.DroppedFrameCount}";
+                _frameInfoTextBlock.Text = text;
             }
         }
 
-        private void UpdatePlayPauseButton(bool isPlaying)
-        {
-            if (_playPauseButton == null) return;
-            if (_playPauseButton.Dispatcher.CheckAccess())
-            {
-                _playPauseButton.Content = isPlaying ? "⏸" : "▶";
-            }
-            else
-            {
-                Application.Current?.Dispatcher.Invoke(() =>
-                {
-                    _playPauseButton.Content = isPlaying ? "⏸" : "▶";
-                });
-            }
-        }
-
-        private void UpdateSliderPosition(int frameIndex)
-        {
-            if (_progressSlider == null || _isDragging) return;
-            if (_progressSlider.Dispatcher.CheckAccess())
-            {
-                _progressSlider.Value = frameIndex;
-            }
-            else
-            {
-                Application.Current?.Dispatcher.Invoke(() =>
-                {
-                    _progressSlider.Value = frameIndex;
-                });
-            }
-        }
-
-        private void UpdateTimeDisplay(int currentFrame)
-        {
-            if (_timeTextBlock == null) return;
-            double fps = _videoInfo.fps > 0 ? _videoInfo.fps : 30.0;
-            var current = TimeSpan.FromSeconds(currentFrame / fps);
-            var total = TimeSpan.FromSeconds(_videoInfo.totalFrames / fps);
-            if (_timeTextBlock.Dispatcher.CheckAccess())
-            {
-                _timeTextBlock.Text = $"{current:hh\\:mm\\:ss} / {total:hh\\:mm\\:ss}";
-            }
-            else
-            {
-                Application.Current?.Dispatcher.Invoke(() =>
-                {
-                    _timeTextBlock.Text = $"{current:hh\\:mm\\:ss} / {total:hh\\:mm\\:ss}";
-                });
-            }
-        }
-
-        private void UpdateFrameInfoDisplay(int currentFrame, HImage frame)
-        {
-            if (_frameInfoTextBlock == null) return;
-            // Always show original source dimensions for consistency
-            string info = $"{currentFrame}/{_videoInfo.totalFrames} [{_videoInfo.width}x{_videoInfo.height}]";
-            if (_currentResizeScale < 1.0)
-                info += $" @{_currentResizeScale:0.###}x";
-            if (_droppedFrameCount > 0)
-                info += $" D:{_droppedFrameCount}";
-            if (_frameInfoTextBlock.Dispatcher.CheckAccess())
-            {
-                _frameInfoTextBlock.Text = info;
-            }
-            else
-            {
-                Application.Current?.Dispatcher.Invoke(() =>
-                {
-                    _frameInfoTextBlock.Text = info;
-                });
-            }
-        }
-
-        private void Slider_DragStarted(object sender, DragStartedEventArgs e)
-        {
-            _isDragging = true;
-        }
+        private void Slider_DragStarted(object sender, DragStartedEventArgs e) => _isDragging = true;
 
         private void Slider_DragCompleted(object sender, DragCompletedEventArgs e)
         {
             _isDragging = false;
-            if (_videoHandle <= 0 || _progressSlider == null) return;
-            int targetFrame = (int)_progressSlider.Value;
-            OpenCVMediaHelper.M_VideoSeek(_videoHandle, targetFrame);
-            SyncAudioSeek(targetFrame);
+            if (_progressSlider != null) Seek((int)_progressSlider.Value);
         }
 
         private void SpeedComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_videoHandle <= 0 || _speedComboBox == null) return;
-
-            if (_speedComboBox.SelectedItem is ComboBoxItem item && item.Tag is double speed)
-            {
-                _currentSpeed = speed;
-                OpenCVMediaHelper.M_VideoSetPlaybackSpeed(_videoHandle, speed);
-                SyncAudioSpeed(speed);
-            }
+            if (_speedComboBox?.SelectedItem is ComboBoxItem { Tag: double speed }) _session?.SetPlaybackSpeed(speed);
         }
 
         private void ResizeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_videoHandle <= 0 || _resizeComboBox == null) return;
-
-            if (_resizeComboBox.SelectedItem is ComboBoxItem item && item.Tag is double scale)
+            if (_resizeComboBox?.SelectedItem is ComboBoxItem { Tag: double scale })
             {
-                _currentResizeScale = scale;
-                OpenCVMediaHelper.M_VideoSetResizeScale(_videoHandle, scale);
-                // Force WriteableBitmap re-creation on next frame
+                _session?.SetResizeScale(scale);
                 _writeableBitmap = null;
             }
         }
 
-        // --- Audio sync helpers ---
+        public void OnEditorToolsActivated(EditorContext context) { }
+        public void OnEditorToolsDeactivated(EditorContext context) => Close();
 
-        private void SyncAudioPlay()
+        public void Close()
         {
-            var player = _mediaPlayer;
-            if (player == null) return;
+            Dispatcher dispatcher = EditorContext.ProcessingContext.Dispatcher;
+            if (!dispatcher.CheckAccess())
+            {
+                dispatcher.Invoke(Close);
+                return;
+            }
+
+            VideoPlaybackSession? session = _session;
+            _session = null;
+            if (session != null)
+            {
+                EditorContext.ProcessingContext.StreamPresentation.ResetSource(_streamSessionId);
+                _mutePreference = session.IsMuted;
+                session.StateChanged -= OnPlaybackStateChanged;
+            }
             try
             {
-                if (player.Dispatcher.CheckAccess())
-                {
-                    player.Play();
-                }
-                else
-                {
-                    Application.Current?.Dispatcher.Invoke(() => player.Play());
-                }
+                session?.Dispose();
             }
-            catch (Exception ex) { log.Warn("Audio play failed", ex); }
-        }
-
-        private void SyncAudioPause()
-        {
-            var player = _mediaPlayer;
-            if (player == null) return;
-            try
+            finally
             {
-                if (player.Dispatcher.CheckAccess())
-                {
-                    player.Pause();
-                }
-                else
-                {
-                    Application.Current?.Dispatcher.Invoke(() => player.Pause());
-                }
-            }
-            catch (Exception ex) { log.Warn("Audio pause failed", ex); }
-        }
-
-        private void SyncAudioSeek(int frameIndex)
-        {
-            var player = _mediaPlayer;
-            if (player == null) return;
-            try
-            {
-                double fps = _videoInfo.fps > 0 ? _videoInfo.fps : 30.0;
-                var position = TimeSpan.FromSeconds(frameIndex / fps);
-                if (player.Dispatcher.CheckAccess())
-                {
-                    player.Position = position;
-                }
-                else
-                {
-                    Application.Current?.Dispatcher.Invoke(() => player.Position = position);
-                }
-            }
-            catch (Exception ex) { log.Warn("Audio seek failed", ex); }
-        }
-
-        private void SyncAudioSpeed(double speed)
-        {
-            var player = _mediaPlayer;
-            if (player == null) return;
-            try
-            {
-                if (player.Dispatcher.CheckAccess())
-                {
-                    player.SpeedRatio = speed;
-                }
-                else
-                {
-                    Application.Current?.Dispatcher.Invoke(() => player.SpeedRatio = speed);
-                }
-            }
-            catch (Exception ex) { log.Warn("Audio speed change failed", ex); }
-        }
-
-        private void CloseVideo()
-        {
-            // Stop auto-hide timer
-            if (_mouseIdleTimer != null)
-            {
-                _mouseIdleTimer.Stop();
+                _mouseIdleTimer?.Stop();
                 _mouseIdleTimer = null;
-            }
-
-            // Remove mouse event handlers
-            if (_imageView != null)
-            {
-                _imageView.Config.Cleared -= OnConfigCleared;
-                _imageView.MouseMove -= OnImageViewMouseMove;
-                _imageView.MouseEnter -= OnImageViewMouseMove;
-            }
-
-            int videoHandle = _videoHandle;
-            _videoHandle = -1;
-            if (videoHandle > 0)
-            {
-                if (_isPlaying)
-                {
-                    OpenCVMediaHelper.M_VideoPause(videoHandle);
-                }
-
-                OpenCVMediaHelper.M_VideoClose(videoHandle);
-            }
-            _isPlaying = false;
-
-            // Close audio player
-            Application.Current?.Dispatcher.Invoke(() =>
-            {
-                if (_mediaPlayer != null)
-                {
-                    _mediaPlayer.Stop();
-                    _mediaPlayer.Close();
-                    _mediaPlayer = null;
-                }
-            });
-
-            // Clean up UI controls
-            Application.Current?.Dispatcher.Invoke(() =>
-            {
+                EditorContext.Config.Cleared -= OnConfigCleared;
+                EditorContext.ProcessingContext.StreamPresentation.FramePresented -= OnFramePresented;
+                EditorContext.ImageView.MouseMove -= OnImageViewMouseMove;
+                EditorContext.ImageView.MouseEnter -= OnImageViewMouseMove;
                 if (_videoToolBar != null)
                 {
-                    // Remove only video-specific controls; other workflow components may share this toolbar.
+                    // Other workflow components may share this toolbar.
                     if (_playPauseButton != null) _videoToolBar.Items.Remove(_playPauseButton);
                     if (_stopButton != null) _videoToolBar.Items.Remove(_stopButton);
                     if (_muteButton != null) _videoToolBar.Items.Remove(_muteButton);
@@ -883,29 +475,24 @@ namespace ColorVision.ImageEditor.Video
                     if (_speedComboBox != null) _videoToolBar.Items.Remove(_speedComboBox);
                     if (_resizeComboBox != null) _videoToolBar.Items.Remove(_resizeComboBox);
                     if (_autoHideCheckBox != null) _videoToolBar.Items.Remove(_autoHideCheckBox);
-
-                    // Restore toolbar opacity
                     _videoToolBar.Opacity = 0.8;
                 }
-            });
-
-            _frameCallbackDelegate = null;
-            _statusCallbackDelegate = null;
-            _writeableBitmap = null;
-            _progressSlider = null;
-            _playPauseButton = null;
-            _stopButton = null;
-            _muteButton = null;
-            _speedComboBox = null;
-            _resizeComboBox = null;
-            _timeTextBlock = null;
-            _frameInfoTextBlock = null;
-            _videoToolBar = null;
-            _autoHideCheckBox = null;
-            _mediaPlayer = null;
-            _imageView = null;
-            _currentFilePath = null;
-            _isDragging = false;
+                _writeableBitmap = null;
+                _streamSessionId = Guid.Empty;
+                _progressSlider = null;
+                _playPauseButton = null;
+                _stopButton = null;
+                _muteButton = null;
+                _speedComboBox = null;
+                _resizeComboBox = null;
+                _timeTextBlock = null;
+                _frameInfoTextBlock = null;
+                _videoToolBar = null;
+                _autoHideCheckBox = null;
+                _isDragging = false;
+            }
         }
+
+        public void Dispose() => Close();
     }
 }

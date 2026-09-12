@@ -178,7 +178,7 @@ namespace ColorVision.ImageEditor.Tif
             PixelFormat pixelFormat,
             BitmapPalette? palette)
         {
-            if (currentBitmap != null &&
+            if (currentBitmap != null && !currentBitmap.IsFrozen &&
                 currentBitmap.PixelWidth == width &&
                 currentBitmap.PixelHeight == height &&
                 currentBitmap.Format == pixelFormat &&

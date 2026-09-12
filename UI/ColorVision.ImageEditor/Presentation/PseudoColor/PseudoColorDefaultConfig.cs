@@ -3,6 +3,7 @@ using ColorVision.Core;
 using ColorVision.UI;
 using System.ComponentModel;
 
+// ConfigHandler persists Type.FullName; keep this identity so saved defaults remain readable.
 namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 {
     public class PseudoColorDefaultConfig : ViewModelBase, IConfig

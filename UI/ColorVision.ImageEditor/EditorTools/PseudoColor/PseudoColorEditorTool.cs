@@ -3,22 +3,19 @@ using System;
 using System.Windows;
 using System.Windows.Input;
 using ColorVision.ImageEditor.Abstractions;
+using ColorVision.ImageEditor.Presentation;
+using ColorVision.ImageEditor.Presentation.PseudoColor;
 
 namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 {
     public class PseudoColorEditorTool : IEditorCustomControlTool, IDisposable
     {
-        private readonly PseudoColorController _controller;
-        private readonly PseudoColorToolState _state;
+        private readonly ImageDisplayEffects _effects;
         private PseudoColorToolControl? _toolControl;
 
         public PseudoColorEditorTool(EditorContext editorContext)
         {
-            _state = new PseudoColorToolState();
-            _state.ApplyDefaults(PseudoColorDefaultConfig.Current);
-
-            _controller = new PseudoColorController(editorContext.ProcessingContext, _state);
-            _controller.RefreshPreview();
+            _effects = editorContext.ProcessingContext.DisplayEffects;
         }
 
         public ToolBarLocal ToolBarLocal => ToolBarLocal.Right;
@@ -26,25 +23,25 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
         public int Order => 40;
         public object? Icon => null;
         public ICommand? Command => null;
-        internal PseudoColorToolState State => _state;
-        public IRealtimePseudoColorService RealtimeService => _controller;
+        internal PseudoColorState State => _effects.PseudoColor;
 
-        public void ConfigureForImage() => _controller.ConfigureForImage();
-        public void Invalidate() => _controller.Invalidate();
-        public void Reset() => _controller.Reset();
+        public void ConfigureForImage() => _effects.ConfigureForImage();
+        public void Invalidate() => _effects.Invalidate();
+        public void Reset() => _effects.ResetForSourceChange();
 
         public FrameworkElement CreateToolControl()
         {
             _toolControl ??= new PseudoColorToolControl
             {
-                DataContext = _state,
+                DataContext = State,
             };
             return _toolControl;
         }
 
         public void Dispose()
         {
-            _controller.Dispose();
+            if (_toolControl != null) _toolControl.DataContext = null;
+            _toolControl = null;
         }
     }
 }

@@ -4,7 +4,6 @@ using System;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media.Effects;
 
 namespace ColorVision.ImageEditor.EditorTools.Filters
 {
@@ -12,12 +11,9 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
     {
         private static bool s_environmentNoticeShown;
         private readonly EditorContext _context;
-        private readonly DisplayShaderFilterEffect? _effect;
         private readonly string _saveDebounceKey = $"{nameof(DisplayShaderFilterEditorTool)}_{Guid.NewGuid():N}";
         private DisplayShaderFilterState? _persistenceState;
         private Action? _saveAction;
-        private Effect? _previousEffect;
-        private bool _effectAttached;
         private bool _isApplyingPersistenceState;
         private bool _disposed;
         private int _persistenceGeneration;
@@ -27,17 +23,10 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
         public DisplayShaderFilterEditorTool(EditorContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
-            State = new DisplayShaderFilterState();
-            State.CopyFrom(DisplayShaderFilterDefaultConfig.Current.State);
+            State = context.ProcessingContext.DisplayEffects.Shader.State;
             OpenSettingsCommand = new RelayCommand(_ => OpenSettings());
             State.PropertyChanged += State_PropertyChanged;
-            if (DisplayShaderFilterEnvironment.Current.CanUseShaderFilter)
-            {
-                _effect = new DisplayShaderFilterEffect();
-                _effect.Apply(State);
-            }
-
-            UpdateEffectAttachment();
+            RefreshPixelOverlay();
         }
 
         public DisplayShaderFilterState State { get; }
@@ -71,7 +60,6 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
 
         private void State_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            _effect?.Apply(State);
             if (!_isApplyingPersistenceState)
             {
                 StateChanged?.Invoke(this, EventArgs.Empty);
@@ -85,44 +73,13 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
                     ShowEnvironmentNotice(false);
                 }
 
-                UpdateEffectAttachment();
+                RefreshPixelOverlay();
             }
         }
 
-        private void UpdateEffectAttachment()
+        private void RefreshPixelOverlay()
         {
-            if (State.IsEnabled && _effect != null)
-            {
-                if (!_effectAttached)
-                {
-                    _previousEffect = _context.DrawCanvas.Effect;
-                    _effectAttached = true;
-                }
-
-                _context.DrawCanvas.Effect = _effect;
-            }
-            else
-            {
-                DetachEffect();
-            }
-
             _context.ImageView.SchedulePixelValueOverlayRefresh();
-        }
-
-        private void DetachEffect()
-        {
-            if (!_effectAttached)
-            {
-                return;
-            }
-
-            if (_context.DrawCanvas.Effect == _effect)
-            {
-                _context.DrawCanvas.Effect = _previousEffect;
-            }
-
-            _previousEffect = null;
-            _effectAttached = false;
         }
 
         public void OpenSettingsWindow()
@@ -169,8 +126,7 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
             try
             {
                 State.CopyFrom(_persistenceState);
-                _effect?.Apply(State);
-                UpdateEffectAttachment();
+                RefreshPixelOverlay();
             }
             finally
             {
@@ -227,7 +183,6 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
                 _persistenceGeneration++;
                 DebounceTimer.Cancel(_saveDebounceKey);
                 State.PropertyChanged -= State_PropertyChanged;
-                DetachEffect();
                 GC.SuppressFinalize(this);
             }
         }

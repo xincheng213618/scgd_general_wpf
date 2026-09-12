@@ -867,9 +867,9 @@ namespace ColorVision.Engine.Media
                                 context.Config.SetImageMetadata(ImageViewPropertyKeys.Stride, displayStride, nameof(CVRawOpen), "当前显示位图行跨度");
                                 context.Config.SetImageMetadata(ImageViewPropertyKeys.DpiX, writeableBitmap.DpiX, nameof(CVRawOpen), "当前 CVCIE 图像水平 DPI");
                                 context.Config.SetImageMetadata(ImageViewPropertyKeys.DpiY, writeableBitmap.DpiY, nameof(CVRawOpen), "当前 CVCIE 图像垂直 DPI");
-                                //这里需要强制切换过来
-                                context.ImageView.ImageShow.Source = writeableBitmap;
-                                context.ImageView.NotifySourcePixelsChanged();
+                                // Publish the reused source before revision callbacks observe the update.
+                                context.ProcessingContext.Presentation.Publish(writeableBitmap, context.FunctionImage);
+                                context.CommitSourcePixels(writeableBitmap);
                                 context.ImageView.NotifyImageSourceLoaded();
                             }
                         }

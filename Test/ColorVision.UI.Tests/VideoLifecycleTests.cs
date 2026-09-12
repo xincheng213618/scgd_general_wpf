@@ -1,8 +1,6 @@
-using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Video;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -13,8 +11,6 @@ namespace ColorVision.UI.Tests;
 public class VideoLifecycleTests
 {
     private static readonly MethodInfo SetupControlsMethod = GetMethod("SetupVideoControls");
-    private static readonly MethodInfo FrameCallbackMethod = GetMethod("OnFrameReceived");
-    private static readonly MethodInfo StatusCallbackMethod = GetMethod("OnStatusChanged");
 
     private static readonly string[] ControlFieldNames =
     [
@@ -34,16 +30,15 @@ public class VideoLifecycleTests
         .. ControlFieldNames,
         "_videoToolBar",
         "_mouseIdleTimer",
-        "_mediaPlayer",
         "_writeableBitmap",
-        "_imageView",
-        "_frameCallbackDelegate",
-        "_statusCallbackDelegate",
-        "_currentFilePath"
+        "_session"
     ];
 
-    [Fact]
-    public void ClearPropertiesReleasesVideoUiAndKeepsSharedToolbarItems()
+    [Theory]
+    [InlineData("config")]
+    [InlineData("close")]
+    [InlineData("deactivate")]
+    public void VideoClosePathsReleaseUiAndKeepSharedToolbarItems(string closePath)
     {
         WpfTestHost.Invoke(() =>
         {
@@ -56,14 +51,18 @@ public class VideoLifecycleTests
 
             try
             {
-                SetField(videoOpen, "_imageView", imageView);
                 SetupControlsMethod.Invoke(videoOpen, [context]);
                 object[] videoControls = ControlFieldNames.Select(name => GetField(videoOpen, name)!).ToArray();
                 DispatcherTimer timer = Assert.IsType<DispatcherTimer>(GetField(videoOpen, "_mouseIdleTimer"));
                 Assert.True(timer.IsEnabled);
                 Assert.All(videoControls, control => Assert.True(imageView.ToolBarAl.Items.Contains(control)));
 
-                context.Config.ClearProperties();
+                switch (closePath)
+                {
+                    case "config": context.Config.ClearProperties(); break;
+                    case "close": videoOpen.Close(); break;
+                    case "deactivate": videoOpen.OnEditorToolsDeactivated(context); break;
+                }
 
                 Assert.False(timer.IsEnabled);
                 Assert.True(imageView.ToolBarAl.Items.Contains(sharedItem));
@@ -84,116 +83,6 @@ public class VideoLifecycleTests
         });
     }
 
-    [Fact]
-    public void StaleStatusAtCallbackEntryDoesNotChangePlaybackState()
-    {
-        VideoOpen videoOpen = new(null!);
-        SetField(videoOpen, "_videoHandle", 41);
-        SetField(videoOpen, "_isPlaying", false);
-
-        StatusCallbackMethod.Invoke(videoOpen, [40, 1, IntPtr.Zero]);
-
-        Assert.False(GetField<bool>(videoOpen, "_isPlaying"));
-    }
-
-    [Fact]
-    public void QueuedStatusForFormerHandleDoesNotChangePlaybackState()
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            VideoOpen videoOpen = new(null!);
-            SetField(videoOpen, "_videoHandle", 41);
-            SetField(videoOpen, "_isPlaying", false);
-
-            StatusCallbackMethod.Invoke(videoOpen, [41, 1, IntPtr.Zero]);
-            SetField(videoOpen, "_videoHandle", 42);
-            PumpDispatcher();
-
-            Assert.False(GetField<bool>(videoOpen, "_isPlaying"));
-        });
-    }
-
-    [Fact]
-    public void StaleFrameAtCallbackEntryIsDisposed()
-    {
-        VideoOpen videoOpen = new(null!);
-        SetField(videoOpen, "_videoHandle", 41);
-        IntPtr pixels = Marshal.AllocCoTaskMem(3);
-        object?[] arguments =
-        [
-            40,
-            new HImage
-            {
-                rows = 1,
-                cols = 1,
-                channels = 3,
-                depth = 8,
-                stride = 3,
-                pData = pixels
-            },
-            0,
-            1,
-            IntPtr.Zero
-        ];
-
-        try
-        {
-            FrameCallbackMethod.Invoke(videoOpen, arguments);
-            HImage disposedFrame = Assert.IsType<HImage>(arguments[1]);
-            Assert.Equal(IntPtr.Zero, disposedFrame.pData);
-            Assert.Equal(0, GetField<int>(videoOpen, "_isProcessingFrame"));
-            pixels = IntPtr.Zero;
-        }
-        finally
-        {
-            if (pixels != IntPtr.Zero) Marshal.FreeCoTaskMem(pixels);
-        }
-    }
-
-    [Fact]
-    public void QueuedFrameForFormerHandleIsNotRendered()
-    {
-        WpfTestHost.Invoke(() =>
-        {
-            VideoOpen videoOpen = new(null!);
-            SetField(videoOpen, "_videoHandle", 41);
-            IntPtr pixels = Marshal.AllocCoTaskMem(3);
-            Marshal.Copy(new byte[] { 10, 20, 30 }, 0, pixels, 3);
-            object?[] arguments =
-            [
-                41,
-                new HImage
-                {
-                    rows = 1,
-                    cols = 1,
-                    channels = 3,
-                    depth = 8,
-                    stride = 3,
-                    isDispose = true,
-                    pData = pixels
-                },
-                0,
-                1,
-                IntPtr.Zero
-            ];
-
-            try
-            {
-                FrameCallbackMethod.Invoke(videoOpen, arguments);
-                Assert.Equal(1, GetField<int>(videoOpen, "_isProcessingFrame"));
-                SetField(videoOpen, "_videoHandle", 42);
-                PumpDispatcher();
-
-                Assert.Equal(0, GetField<int>(videoOpen, "_isProcessingFrame"));
-                Assert.Null(GetField(videoOpen, "_writeableBitmap"));
-            }
-            finally
-            {
-                Marshal.FreeCoTaskMem(pixels);
-            }
-        });
-    }
-
     private static MethodInfo GetMethod(string name)
     {
         return typeof(VideoOpen).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)
@@ -205,11 +94,6 @@ public class VideoLifecycleTests
         return GetFieldInfo(name).GetValue(videoOpen);
     }
 
-    private static T GetField<T>(VideoOpen videoOpen, string name)
-    {
-        return Assert.IsType<T>(GetField(videoOpen, name));
-    }
-
     private static void SetField(VideoOpen videoOpen, string name, object? value)
     {
         GetFieldInfo(name).SetValue(videoOpen, value);
@@ -219,18 +103,6 @@ public class VideoLifecycleTests
     {
         return typeof(VideoOpen).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new MissingFieldException(typeof(VideoOpen).FullName, name);
-    }
-
-    private static void PumpDispatcher()
-    {
-        DispatcherFrame frame = new();
-        Dispatcher.CurrentDispatcher.BeginInvoke(
-            // Video callbacks are queued at Normal priority. A same-priority FIFO
-            // barrier drains them without waiting for ContextIdle, which can be
-            // starved by unrelated work left on the shared WPF dispatcher.
-            DispatcherPriority.Normal,
-            new Action(() => frame.Continue = false));
-        Dispatcher.PushFrame(frame);
     }
 
     private static void EnsureImageViewTestResources()

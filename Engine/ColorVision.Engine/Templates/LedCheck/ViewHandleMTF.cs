@@ -90,23 +90,25 @@ namespace ColorVision.Engine.Templates.LedCheck
                 ints[2 * z + 1] = (int)points[i].Y;
                 z += 1;
             }
-            Application.Current.Dispatcher.Invoke(() =>
+            ctx.ImageView.Dispatcher.Invoke(() =>
             {
                 BitmapImage bitmapImage = new BitmapImage(new Uri(result.FilePath));
-                HImage hImage = bitmapImage.ToHImage();
-
-                int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, (int)radius, ints, ints.Length, 1);
-                if (ret == 0)
+                using HImage hImage = bitmapImage.ToHImage();
+                HImage hImageProcessed = default;
+                try
                 {
-                    if (!HImageExtension.UpdateWriteableBitmap(ctx.ImageView.FunctionImage, hImageProcessed))
+                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out hImageProcessed, (int)radius, ints, ints.Length, 1);
+                    if (ret == 0)
                     {
-                        var image = hImageProcessed.ToWriteableBitmapAndDispose();
-
-                        ctx.ImageView.FunctionImage = image;
+                        var image = hImageProcessed.ToWriteableBitmap();
+                        image.Freeze();
+                        ctx.ImageView.Presentation.Publish(image, image);
                     }
-                    ctx.ImageView.ImageShow.Source = ctx.ImageView.FunctionImage;
                 }
-                hImage.Dispose();
+                finally
+                {
+                    hImageProcessed.Dispose();
+                }
             });
 
             if (ctx.ListView.View is GridView gridView)

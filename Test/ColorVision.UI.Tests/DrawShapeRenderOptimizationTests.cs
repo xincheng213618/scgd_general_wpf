@@ -23,7 +23,8 @@ public sealed class DrawShapeRenderOptimizationTests
             circle.SetRect(rect);
             Assert.Equal(circleRenderCount + 1, circle.RenderCount);
             Assert.Equal(new Point(60, 60), circle.Center);
-            Assert.Equal(30, circle.Radius);
+            Assert.Equal(40, circle.Radius);
+            Assert.Equal(30, circle.Attribute.RadiusY);
 
             CountingCircle subscribedCircle = new();
             subscribedCircle.SetRect(rect);
@@ -101,9 +102,9 @@ public sealed class DrawShapeRenderOptimizationTests
             CircleProperties newDatumCircle = new();
             datumCircle.Attribute = newDatumCircle;
             Assert.Equal(2, datumCircle.RenderCount);
-            newDatumCircle.Radius = 14;
+            newDatumCircle.Center = new Point(14, 20);
             Assert.Equal(3, datumCircle.RenderCount);
-            oldDatumCircle.Radius = 15;
+            oldDatumCircle.Center = new Point(15, 21);
             Assert.Equal(3, datumCircle.RenderCount);
 
             CountingRectangle rectangle = new();

@@ -1,11 +1,12 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
+using ColorVision.ImageEditor.EditorTools.PseudoColor;
 using System.ComponentModel;
 using System.Windows.Media;
 
-namespace ColorVision.ImageEditor.EditorTools.PseudoColor
+namespace ColorVision.ImageEditor.Presentation.PseudoColor
 {
-    public class PseudoColorToolState : ViewModelBase
+    public class PseudoColorState : ViewModelBase
     {
         [DisplayName("启用伪彩色")]
         public bool IsEnabled

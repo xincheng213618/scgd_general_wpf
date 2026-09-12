@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 
-namespace ColorVision.ImageEditor.EditorTools.PseudoColor
+namespace ColorVision.ImageEditor.Presentation.PseudoColor
 {
     internal readonly record struct PseudoColorPreviewRequest(
         int Version,
@@ -21,17 +21,18 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
         bool IsEnabled,
         PseudoColorFrameRequest? Request);
 
-    internal sealed class PseudoColorController : IRealtimePseudoColorService, IDisposable
+    internal sealed class PseudoColorController : IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PseudoColorController));
 
         private readonly ImageProcessingContext _owner;
-        private readonly PseudoColorToolState _state;
+        private readonly PseudoColorState _state;
         private readonly string _renderTaskKey = $"{nameof(PseudoColorController)}_{Guid.NewGuid():N}";
         private ImageAlgorithmPreviewSession? _previewSession;
         private int _renderVersion;
+        private bool _disposed;
 
-        public PseudoColorController(ImageProcessingContext owner, PseudoColorToolState state)
+        public PseudoColorController(ImageProcessingContext owner, PseudoColorState state)
         {
             _owner = owner;
             _state = state;
@@ -79,6 +80,13 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 
         public void RequestRender(int throttleDelayMs = 0)
         {
+            if (_owner.StreamPresentation.IsActive)
+            {
+                Invalidate();
+                DisposePreviewSession();
+                _owner.StreamPresentation.RefreshCurrent();
+                return;
+            }
             var request = CapturePreviewRequest();
             TaskConflator.RunOrUpdate(_renderTaskKey, async () =>
             {
@@ -103,11 +111,11 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
             });
         }
 
-        private bool TryCreateFrameRequest(out PseudoColorFrameRequest request, int? channelOverride = null)
+        private bool TryCreateFrameRequest(out PseudoColorFrameRequest request)
         {
             var snapshot = InvokeOnUiThread(() =>
             {
-                var channel = channelOverride ?? GetSelectedChannel();
+                var channel = GetSelectedChannel();
                 return (IsEnabled: IsEnabledCore(), Request: CaptureFrameRequest(channel));
             });
 
@@ -115,58 +123,32 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
             return snapshot.IsEnabled;
         }
 
-        public bool TryCreateRequest(out RealtimePseudoColorRequest request, int? channelOverride = null)
+        public bool TryCaptureFrameRequest(out PseudoColorFrameRequest request)
         {
             var snapshot = InvokeOnUiThread(() =>
             {
-                int channel = channelOverride ?? GetSelectedChannel();
+                int channel = GetSelectedChannel();
                 return (
                     IsEnabled: IsEnabledCore(),
                     HasSource: _owner.ViewBitmapSource != null,
-                    Generation: Volatile.Read(ref _renderVersion),
                     FrameRequest: CaptureFrameRequest(channel));
             });
 
-            request = new RealtimePseudoColorRequest(snapshot.Generation, snapshot.FrameRequest);
+            request = snapshot.FrameRequest;
             return snapshot.IsEnabled && snapshot.HasSource;
-        }
-
-        public void ApplyProcessedImage(RealtimePseudoColorRequest request, HImage pseudoImage)
-        {
-            if (!_owner.Dispatcher.CheckAccess())
-            {
-                _owner.Dispatcher.BeginInvoke(() => ApplyProcessedImage(request, pseudoImage));
-                return;
-            }
-
-            if (!IsEnabledCore() || request.Generation != Volatile.Read(ref _renderVersion))
-            {
-                pseudoImage.Dispose();
-                return;
-            }
-
-            DisposePreviewSession();
-            if (!HImageExtension.UpdateWriteableBitmap(_owner.FunctionImage, pseudoImage))
-            {
-                _owner.FunctionImage = pseudoImage.ToWriteableBitmapAndDispose();
-            }
-
-            if (IsEnabledCore() && request.Generation == Volatile.Read(ref _renderVersion))
-            {
-                _owner.ImageShow.Source = _owner.FunctionImage;
-            }
         }
 
         public void RestoreSource()
         {
             bool restoredOwnedPreview = DisposePreviewSession();
             if (restoredOwnedPreview || _owner.HasActiveAlgorithmPreview) return;
-            _owner.ImageShow.Source = _owner.ViewBitmapSource;
-            _owner.FunctionImage = null;
+            _owner.Presentation.RestoreSource();
         }
 
         public void Dispose()
         {
+            if (_disposed) return;
+            _disposed = true;
             Invalidate();
             DisposePreviewSession();
             _state.PropertyChanged -= State_PropertyChanged;
@@ -207,17 +189,17 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
         {
             switch (e.PropertyName)
             {
-                case nameof(PseudoColorToolState.ColormapTypes):
+                case nameof(PseudoColorState.ColormapTypes):
                     OnColormapTypesChanged();
                     break;
-                case nameof(PseudoColorToolState.IsAutoSetRange):
+                case nameof(PseudoColorState.IsAutoSetRange):
                     OnAutoSetRangeChanged();
                     break;
-                case nameof(PseudoColorToolState.IsEnabled):
+                case nameof(PseudoColorState.IsEnabled):
                     OnPseudoToggleChanged();
                     break;
-                case nameof(PseudoColorToolState.SliderValueStart):
-                case nameof(PseudoColorToolState.SliderValueEnd):
+                case nameof(PseudoColorState.SliderValueStart):
+                case nameof(PseudoColorState.SliderValueEnd):
                     OnSliderValueChanged();
                     break;
             }
@@ -236,7 +218,7 @@ namespace ColorVision.ImageEditor.EditorTools.PseudoColor
 
         private bool IsEnabledCore()
         {
-            return _state.IsEnabled;
+            return !_disposed && !_owner.IsDisposed && _state.IsEnabled;
         }
 
         private void TryApplyAutoRange()

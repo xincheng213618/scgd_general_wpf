@@ -1,5 +1,6 @@
 #pragma warning disable CA1510,CS8625
 using ColorVision.Core;
+using log4net;
 using System;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -11,6 +12,7 @@ namespace ColorVision.ImageEditor.Realtime
 {
     public sealed class RealtimeFramePresenter : IDisposable
     {
+        private static readonly ILog Log = LogManager.GetLogger(typeof(RealtimeFramePresenter));
         public const int TransformNone = 0;
         public const int TransformFlipX = 1;
         public const int TransformFlipY = 2;
@@ -24,7 +26,9 @@ namespace ColorVision.ImageEditor.Realtime
             PixelFormat Format,
             int Transform);
 
-        private readonly ImageView _imageView;
+        private readonly ImageProcessingContext _context;
+        private readonly Action _refreshPixelOverlay;
+        private Guid _sourceId = Guid.NewGuid();
         private readonly object _gate = new();
         private byte[]? _latestPixels;
         private byte[]? _drawingPixels;
@@ -34,11 +38,17 @@ namespace ColorVision.ImageEditor.Realtime
         private bool _disposed;
         private bool _hasRenderedFrame;
         private WriteableBitmap? _bitmap;
+        private WriteableBitmap? _lastPresentedSource;
+        private ImageSource? _lastPresentedDisplay;
+        private long _lastPresentedRevision;
 
         public RealtimeFramePresenter(ImageView imageView, RealtimeFrameOptions? options = null)
         {
-            _imageView = imageView ?? throw new ArgumentNullException(nameof(imageView));
+            ArgumentNullException.ThrowIfNull(imageView);
+            _context = imageView.EditorContext.ProcessingContext;
+            _refreshPixelOverlay = imageView.SchedulePixelValueOverlayRefresh;
             Options = options ?? new RealtimeFrameOptions();
+            _context.StreamPresentation.FramePresented += OnFramePresented;
         }
 
         public RealtimeFrameOptions Options { get; private set; }
@@ -86,12 +96,22 @@ namespace ColorVision.ImageEditor.Realtime
                 _renderQueued = true;
             }
 
-            if (queueRender) _imageView.Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(RenderLatestFrame));
-            return true;
+            return !queueRender || QueueRender();
         }
 
         public void Reset(bool clearImageSource = false)
         {
+            if (!_context.Dispatcher.CheckAccess())
+            {
+                _context.Dispatcher.Invoke(() => Reset(clearImageSource));
+                return;
+            }
+            bool ownsCurrentDisplay = _lastPresentedSource != null
+                && _context.ImageRevision == _lastPresentedRevision
+                && ReferenceEquals(_context.ViewBitmapSource, _lastPresentedSource)
+                && ReferenceEquals(_context.Presentation.DisplaySource, _lastPresentedDisplay);
+            _context.StreamPresentation.ResetSource(_sourceId);
+            _sourceId = Guid.NewGuid();
             lock (_gate)
             {
                 _hasLatestFrame = false;
@@ -100,16 +120,11 @@ namespace ColorVision.ImageEditor.Realtime
                 _drawingPixels = null;
             }
 
-            WriteableBitmap? previousBitmap = _bitmap;
             _bitmap = null;
+            _lastPresentedSource = null;
+            _lastPresentedDisplay = null;
 
-            if (clearImageSource)
-            {
-                _imageView.Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    if (_imageView.ImageShow.Source == previousBitmap) _imageView.ImageShow.Source = null;
-                }));
-            }
+            if (clearImageSource && ownsCurrentDisplay) _context.Presentation.Publish(null, null);
         }
 
         private bool CanAcceptFrame(int width, int height, PixelFormat format, ref int stride, ref int length)
@@ -141,20 +156,47 @@ namespace ColorVision.ImageEditor.Realtime
                 _hasLatestFrame = false;
             }
 
-            if (pixels != null) RenderFrame(pixels, frame);
-
-            bool queueAgain;
-            lock (_gate)
+            try
             {
-                queueAgain = _hasLatestFrame && !_disposed;
-                _renderQueued = queueAgain;
+                if (pixels != null) RenderFrame(pixels, frame);
             }
+            catch (Exception ex)
+            {
+                Log.Warn("Unable to present a realtime frame.", ex);
+            }
+            finally
+            {
+                bool queueAgain;
+                lock (_gate)
+                {
+                    queueAgain = _hasLatestFrame && !_disposed;
+                    _renderQueued = queueAgain;
+                }
+                if (queueAgain) QueueRender();
+            }
+        }
 
-            if (queueAgain) _imageView.Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(RenderLatestFrame));
+        private bool QueueRender()
+        {
+            try
+            {
+                if (!_context.Dispatcher.HasShutdownStarted)
+                {
+                    DispatcherOperation operation = _context.Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(RenderLatestFrame));
+                    if (operation.Status != DispatcherOperationStatus.Aborted) return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Unable to queue a realtime frame.", ex);
+            }
+            lock (_gate) _renderQueued = false;
+            return false;
         }
 
         private void RenderFrame(byte[] pixels, FrameInfo frame)
         {
+            if (Options.IsFrozen || _disposed || _context.IsDisposed) return;
             if (frame.Length < GetRequiredBufferSize(frame.Width, frame.Height, frame.Format, frame.Stride)) return;
 
             EnsureBitmap(frame);
@@ -175,9 +217,7 @@ namespace ColorVision.ImageEditor.Realtime
                 return;
             }
 
-            _imageView.NotifySourcePixelsChanged();
-            _hasRenderedFrame = true;
-            _imageView.SchedulePixelValueOverlayRefresh();
+            _context.StreamPresentation.Submit(_bitmap!, _sourceId, () => !Options.IsFrozen && !_disposed);
         }
 
         private void EnsureBitmap(FrameInfo frame)
@@ -187,20 +227,25 @@ namespace ColorVision.ImageEditor.Realtime
                 && _bitmap.PixelHeight == frame.Height
                 && _bitmap.Format == frame.Format)
             {
-                if (_imageView.ImageShow.Source != _bitmap) _imageView.ImageShow.Source = _bitmap;
                 return;
             }
 
             _bitmap = new WriteableBitmap(frame.Width, frame.Height, 96, 96, frame.Format, null);
-            _imageView.ViewBitmapSource = _bitmap;
-            _imageView.FunctionImage = null;
-            _imageView.ImageShow.Source = _bitmap;
-            UpdateImageMetadata(frame);
+        }
 
-            if (Options.AutoZoomOnFirstFrame || !_hasRenderedFrame)
-            {
-                _imageView.UpdateZoomAndScale();
-            }
+        private void OnFramePresented(Guid sourceId, WriteableBitmap source)
+        {
+            if (_disposed || sourceId != _sourceId || !ReferenceEquals(_context.ViewBitmapSource, source)) return;
+            bool geometryChanged = !_hasRenderedFrame || _lastPresentedSource == null
+                || _lastPresentedSource.Width != source.Width || _lastPresentedSource.Height != source.Height;
+            _lastPresentedSource = source;
+            _lastPresentedDisplay = _context.Presentation.DisplaySource;
+            _lastPresentedRevision = _context.ImageRevision;
+            UpdateImageMetadata(new FrameInfo(source.PixelWidth, source.PixelHeight,
+                source.BackBufferStride, 0, source.Format, TransformNone));
+            if (Options.AutoZoomOnFirstFrame && geometryChanged) _context.UpdateZoomAndScale();
+            _hasRenderedFrame = true;
+            _refreshPixelOverlay();
         }
 
         private unsafe bool WriteTransformedPixels(byte[] pixels, FrameInfo frame)
@@ -258,12 +303,12 @@ namespace ColorVision.ImageEditor.Realtime
 
             int channels = GetChannelCount(frame.Format);
             int depth = channels > 0 ? frame.Format.BitsPerPixel / channels : frame.Format.BitsPerPixel;
-            _imageView.Config.SetImageMetadata(ImageViewPropertyKeys.PixelFormat, frame.Format, nameof(RealtimeFramePresenter), "实时图像像素格式");
-            _imageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, frame.Width, nameof(RealtimeFramePresenter), "实时图像列数");
-            _imageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, frame.Height, nameof(RealtimeFramePresenter), "实时图像行数");
-            _imageView.Config.SetImageMetadata(ImageViewPropertyKeys.Channel, channels, nameof(RealtimeFramePresenter), "实时图像通道数");
-            _imageView.Config.SetImageMetadata(ImageViewPropertyKeys.Depth, depth, nameof(RealtimeFramePresenter), "实时图像位深");
-            _imageView.Config.SetImageMetadata(ImageViewPropertyKeys.Stride, frame.Stride, nameof(RealtimeFramePresenter), "实时图像 stride");
+            _context.Config.SetImageMetadata(ImageViewPropertyKeys.PixelFormat, frame.Format, nameof(RealtimeFramePresenter), "实时图像像素格式");
+            _context.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, frame.Width, nameof(RealtimeFramePresenter), "实时图像列数");
+            _context.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, frame.Height, nameof(RealtimeFramePresenter), "实时图像行数");
+            _context.Config.SetImageMetadata(ImageViewPropertyKeys.Channel, channels, nameof(RealtimeFramePresenter), "实时图像通道数");
+            _context.Config.SetImageMetadata(ImageViewPropertyKeys.Depth, depth, nameof(RealtimeFramePresenter), "实时图像位深");
+            _context.Config.SetImageMetadata(ImageViewPropertyKeys.Stride, frame.Stride, nameof(RealtimeFramePresenter), "实时图像 stride");
         }
 
         public static int GetDefaultStride(int width, PixelFormat pixelFormat)
@@ -328,8 +373,17 @@ namespace ColorVision.ImageEditor.Realtime
                 _renderQueued = false;
                 _latestPixels = null;
                 _drawingPixels = null;
-                _bitmap = null;
             }
+            void Detach()
+            {
+                _bitmap = null;
+                _lastPresentedSource = null;
+                _lastPresentedDisplay = null;
+                _context.StreamPresentation.FramePresented -= OnFramePresented;
+                _context.StreamPresentation.ResetSource(_sourceId);
+            }
+            if (_context.Dispatcher.CheckAccess()) Detach();
+            else if (!_context.Dispatcher.HasShutdownStarted) _context.Dispatcher.BeginInvoke(Detach);
         }
     }
 }

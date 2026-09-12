@@ -113,13 +113,11 @@ namespace ColorVision.ImageEditor.Algorithms
                         previewRestore: () =>
                         {
                             if (image.IsDisposed || image.DocumentInstanceId != documentInstanceId) return;
-                            image.ImageShow.Source = image.ViewBitmapSource;
-                            image.FunctionImage = null;
+                            image.Presentation.RestoreSource();
                         },
                         previewPublication: () =>
                         {
-                            image.FunctionImage = preview;
-                            image.ImageShow.Source = preview;
+                            image.Presentation.Publish(preview, preview);
                         },
                         out AlgorithmInvocationClaim initialClaim))
                 {
@@ -318,8 +316,7 @@ namespace ColorVision.ImageEditor.Algorithms
                     if (!IsCurrent(invocation.InvocationId)) return;
                     PreviewBitmap = ImageAlgorithmInputFactory.ToWriteableBitmap(imageArtifact.Image);
                     _needsRestore = true;
-                    _image.FunctionImage = PreviewBitmap;
-                    _image.ImageShow.Source = PreviewBitmap;
+                    _image.Presentation.Publish(PreviewBitmap, PreviewBitmap);
                     wrotePreview = true;
                 });
                 displayed &= wrotePreview;
@@ -368,8 +365,7 @@ namespace ColorVision.ImageEditor.Algorithms
             bool committed = _image.TryCompleteAlgorithmPreview(claim.Value, () =>
             {
                 _image.ViewBitmapSource = preview;
-                _image.ImageShow.Source = preview;
-                _image.FunctionImage = null;
+                _image.Presentation.Publish(preview, null);
                 lock (_sync)
                 {
                     if (_latestClaim != claim)
@@ -527,8 +523,7 @@ namespace ColorVision.ImageEditor.Algorithms
         private void RestoreCanonicalHost()
         {
             if (_image == null || _image.IsDisposed || _image.DocumentInstanceId != _documentInstanceId) return;
-            _image.ImageShow.Source = _image.ViewBitmapSource;
-            _image.FunctionImage = null;
+            _image.Presentation.RestoreSource();
         }
 
         private void RestoreOriginal()
@@ -559,8 +554,7 @@ namespace ColorVision.ImageEditor.Algorithms
             _needsRestore = false;
             if (_image != null && IsCurrent(_latestInvocationId))
             {
-                _image.FunctionImage = PreviewBitmap;
-                _image.ImageShow.Source = PreviewBitmap;
+                _image.Presentation.Publish(PreviewBitmap, PreviewBitmap);
             }
         }
 

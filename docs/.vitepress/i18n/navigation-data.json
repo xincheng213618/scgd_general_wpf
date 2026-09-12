@@ -1271,6 +1271,12 @@
             },
             {
               "text": {
+                "root": "相机服务、采集与结果视图"
+              },
+              "link": "/01-user-guide/devices/camera"
+            },
+            {
+              "text": {
                 "root": "系统职责与跨模块边界"
               },
               "link": "/03-architecture/overview/system-overview"

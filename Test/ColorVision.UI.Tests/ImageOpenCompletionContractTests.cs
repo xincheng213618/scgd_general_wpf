@@ -14,6 +14,80 @@ namespace ColorVision.UI.Tests;
 public sealed class ImageOpenCompletionContractTests
 {
     [Theory]
+    [InlineData(".png")]
+    [InlineData(".tiff")]
+    [InlineData(".cvraw")]
+    public async Task OpenImage_ReplacesMatchingFrozenStreamSourceWithoutChangingOldPixels(string extension)
+    {
+        string filePath = Path.Combine(Path.GetTempPath(), $"{nameof(ImageOpenCompletionContractTests)}-{Guid.NewGuid():N}{extension}");
+        ImageView? imageView = null;
+        WriteableBitmap? frozenSource = null;
+        TaskCompletionSource completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        int completionCount = 0;
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                if (extension == ".cvraw") WriteCvRaw(filePath, 200);
+                else
+                {
+                    BitmapSource source = BitmapSource.Create(2, 3, 96, 96, PixelFormats.Gray8, null,
+                        Enumerable.Repeat((byte)200, 6).ToArray(), 2);
+                    BitmapEncoder encoder = extension == ".png" ? new PngBitmapEncoder() : new TiffBitmapEncoder();
+                    encoder.Frames.Add(BitmapFrame.Create(source));
+                    using FileStream file = new(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                    encoder.Save(file);
+                }
+
+                imageView = new ImageView { EnableEditorImageServices = false };
+                imageView.IEditorToolFactory.IEditorTools.Clear();
+                if (extension == ".cvraw")
+                    imageView.IEditorToolFactory.IImageOpens[extension] = new ColorVision.Engine.Media.CVRawOpen(imageView.EditorContext);
+                imageView.EditorContext.ProcessingContext.DisplayEffects.PseudoColor.IsEnabled = false;
+                WriteableBitmap scratch = new(2, 3, 96, 96, PixelFormats.Gray8, null);
+                scratch.WritePixels(new Int32Rect(0, 0, 2, 3), Enumerable.Repeat((byte)10, 6).ToArray(), 2, 0);
+                imageView.EditorContext.ProcessingContext.StreamPresentation.Submit(scratch, Guid.NewGuid());
+                frozenSource = Assert.IsType<WriteableBitmap>(imageView.ViewBitmapSource);
+                Assert.True(frozenSource.IsFrozen);
+                imageView.ImageSourceLoaded += (_, _) =>
+                {
+                    completionCount++;
+                    completion.TrySetResult();
+                };
+
+                imageView.OpenImage(filePath);
+            });
+
+            await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+            WpfTestHost.Invoke(() =>
+            {
+                WriteableBitmap replacement = Assert.IsType<WriteableBitmap>(imageView!.ViewBitmapSource);
+                Assert.NotSame(frozenSource, replacement);
+                Assert.False(replacement.IsFrozen);
+                Assert.Equal(frozenSource!.PixelWidth, replacement.PixelWidth);
+                Assert.Equal(frozenSource.PixelHeight, replacement.PixelHeight);
+                Assert.Equal(frozenSource.Format, replacement.Format);
+                byte[] oldPixels = new byte[6];
+                byte[] newPixels = new byte[6];
+                frozenSource.CopyPixels(oldPixels, 2, 0);
+                replacement.CopyPixels(newPixels, 2, 0);
+                Assert.Equal(Enumerable.Repeat((byte)10, 6), oldPixels);
+                Assert.Equal(Enumerable.Repeat((byte)200, 6), newPixels);
+                Assert.Same(replacement, imageView.Presentation.DisplaySource);
+                Assert.Equal(filePath, imageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath));
+                Assert.Equal(1, completionCount);
+            });
+        }
+        finally
+        {
+            if (imageView != null) WpfTestHost.Invoke(imageView.Dispose);
+            if (File.Exists(filePath)) File.Delete(filePath);
+        }
+    }
+
+    [Theory]
     [InlineData(".png", typeof(CommonImageOpen))]
     [InlineData(".tiff", typeof(Opentif))]
     public async Task OpenImage_SuccessRaisesOneCompletionWithFinalState(
