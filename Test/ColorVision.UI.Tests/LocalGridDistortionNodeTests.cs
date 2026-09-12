@@ -1,6 +1,7 @@
 using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -12,7 +13,9 @@ using FlowEngineLib.Base;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
@@ -32,6 +35,7 @@ public sealed class LocalGridDistortionNodeTests
         Assert.Equal(["OUT"], node.GetAllOutputOptions().Select(option => option.Text));
         Assert.Equal(3, node.ExpectedRows);
         Assert.Equal(3, node.ExpectedCols);
+        Assert.True(node.BrightTarget);
         Assert.Equal(0.02, node.MinimumContrast);
         Assert.Equal(GridTvFormula.Standard, node.TvFormula);
         Assert.Equal(GridPoint9Formula.OppositeEdgeMean, node.Point9Formula);
@@ -39,6 +43,7 @@ public sealed class LocalGridDistortionNodeTests
         Assert.Equal(Int32Rect.Empty, node.SearchRegion);
         node.ExpectedRows = 7;
         node.ExpectedCols = 9;
+        node.BrightTarget = false;
         node.MinimumContrast = 0.04;
         node.ImageFilePath = @"C:\images\dots.cvraw";
         node.SearchRegion = new Int32Rect(10, 20, 400, 300);
@@ -51,6 +56,7 @@ public sealed class LocalGridDistortionNodeTests
         restored.OnLoadNode(ParseState(node.GetSaveData()));
         Assert.Equal(node.ExpectedRows, restored.ExpectedRows);
         Assert.Equal(node.ExpectedCols, restored.ExpectedCols);
+        Assert.False(restored.BrightTarget);
         Assert.Equal(node.MinimumContrast, restored.MinimumContrast);
         Assert.Equal(node.ImageFilePath, restored.ImageFilePath);
         Assert.Equal(node.SearchRegion, restored.SearchRegion);
@@ -58,6 +64,33 @@ public sealed class LocalGridDistortionNodeTests
         Assert.Equal(node.TvFormula, restored.TvFormula);
         Assert.Equal(node.Point9Formula, restored.Point9Formula);
         Assert.Equal(node.PublishOpticalEstimate, restored.PublishOpticalEstimate);
+    }
+
+    [Fact]
+    public void LegacyNodeStateWithoutTargetPolarityDefaultsToBrightScreen()
+    {
+        LocalGridDistortionNode original = new() { BrightTarget = false };
+        original.Create();
+        Dictionary<string, byte[]> state = ParseState(original.GetSaveData());
+        Assert.True(state.Remove(nameof(LocalGridDistortionNode.BrightTarget)));
+        LocalGridDistortionNode restored = new();
+        restored.Create();
+        restored.OnLoadNode(state);
+        Assert.True(restored.BrightTarget);
+    }
+
+    [Fact]
+    public void TargetPolarityUsesVisibleBooleanEditorAndSameExplanationAsImageView()
+    {
+        PropertyInfo nodeProperty = typeof(LocalGridDistortionNode).GetProperty(nameof(LocalGridDistortionNode.BrightTarget))!;
+        PropertyInfo imageProperty = typeof(GridDistortionOptions).GetProperty(nameof(GridDistortionOptions.BrightTarget))!;
+        var metadata = FlowNodePropertyMetadataProvider.Instance;
+        Assert.Equal(typeof(bool), nodeProperty.PropertyType);
+        Assert.True(metadata.IsPropertyManaged(nodeProperty));
+        Assert.True(metadata.IsBrowsable(nodeProperty));
+        Assert.False(FlowNodePropertyMetadataProvider.AdvancedOptions.IsAdvancedProperty(nodeProperty));
+        Assert.Equal(imageProperty.GetCustomAttribute<DisplayNameAttribute>()!.DisplayName, metadata.GetDisplayName(nodeProperty));
+        Assert.Equal(imageProperty.GetCustomAttribute<DescriptionAttribute>()!.Description, metadata.GetDescription(nodeProperty));
     }
 
     [Fact]
@@ -83,8 +116,10 @@ public sealed class LocalGridDistortionNodeTests
                 Assert.Equal(48, image.rows);
                 Assert.Equal(7, options.ExpectedRows);
                 Assert.Equal(7, options.ExpectedCols);
+                Assert.False(options.BrightTarget);
                 Assert.Equal(0, roi.Width);
                 node!.ExpectedRows = 9;
+                node.BrightTarget = true;
                 node.MinimumContrast = 0.9;
                 node.ResultDirectory = @"C:\changed";
                 node.TvFormula = GridTvFormula.Standard;
@@ -109,7 +144,7 @@ public sealed class LocalGridDistortionNodeTests
         };
         node = new(services)
         {
-            ExpectedRows = 7, ExpectedCols = 7, ImageFilePath = @"C:\missing-file.cvraw", ResultDirectory = @"C:\initial",
+            ExpectedRows = 7, ExpectedCols = 7, BrightTarget = false, ImageFilePath = @"C:\missing-file.cvraw", ResultDirectory = @"C:\initial",
             TvFormula = GridTvFormula.Half, Point9Formula = GridPoint9Formula.LegacyThreeSpanMean, PublishOpticalEstimate = true
         };
         try
@@ -122,6 +157,7 @@ public sealed class LocalGridDistortionNodeTests
             Assert.Equal(@"C:\initial", persisted!.ResultDirectory);
             JObject parameters = JObject.FromObject(persisted.Parameters);
             Assert.Equal(7, parameters["Options"]!.Value<int>("ExpectedRows"));
+            Assert.False(parameters["Options"]!.Value<bool>("BrightTarget"));
             Assert.Equal(0.02, parameters["Options"]!.Value<double>("MinimumContrast"));
             Assert.True(parameters.Value<bool>("MemoryOnly"));
             Assert.False(parameters.Value<bool>("ImageRead"));

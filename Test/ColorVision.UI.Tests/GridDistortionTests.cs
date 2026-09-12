@@ -19,8 +19,22 @@ public sealed class GridDistortionTests
         Assert.Equal(7, document.RootElement.GetProperty("expectedRows").GetInt32());
         Assert.Equal(7, document.RootElement.GetProperty("expectedCols").GetInt32());
         Assert.Equal(1600, document.RootElement.GetProperty("maxProcessingSize").GetInt32());
+        Assert.True(options.BrightTarget);
+        Assert.True(document.RootElement.GetProperty("brightTarget").GetBoolean());
         Assert.False(document.RootElement.TryGetProperty("ExpectedRows", out _));
         Assert.Equal(6, document.RootElement.EnumerateObject().Count());
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void OptionsPassExplicitTargetPolarityToNativeJson(bool brightTarget)
+    {
+        GridDistortionOptions options = new() { BrightTarget = brightTarget };
+        using JsonDocument document = JsonDocument.Parse(options.ToJson());
+        Assert.Equal(brightTarget, document.RootElement.GetProperty("brightTarget").GetBoolean());
+        Assert.Equal(3, document.RootElement.GetProperty("expectedRows").GetInt32());
+        Assert.Equal(3, document.RootElement.GetProperty("expectedCols").GetInt32());
     }
 
     [Theory]

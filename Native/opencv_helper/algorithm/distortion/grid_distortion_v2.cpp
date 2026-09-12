@@ -58,11 +58,17 @@ std::vector<Candidate> detectCandidates(const cv::Mat& gray8, double threshold, 
     cv::Mat mask;
     cv::threshold(gray8, mask, threshold, 255, cv::THRESH_BINARY);
     std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    std::vector<cv::Vec4i> hierarchy;
+    // Keep foreground components inside a surrounding frame or ring. CCOMP
+    // promotes these islands to the top level and keeps hole boundaries below
+    // their component, so a ring's inner edge cannot become a second dot.
+    cv::findContours(mask, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
     std::vector<Candidate> candidates;
     const double maxWidth = gray8.cols * 0.75 / std::max(2, options.cols - 1);
     const double maxHeight = gray8.rows * 0.75 / std::max(2, options.rows - 1);
-    for (const auto& contour : contours) {
+    for (size_t i = 0; i < contours.size(); ++i) {
+        if (hierarchy[i][3] >= 0) continue;
+        const auto& contour = contours[i];
         const cv::Rect bounds = cv::boundingRect(contour);
         if (bounds.width < 3 || bounds.height < 3 || bounds.width > maxWidth || bounds.height > maxHeight) continue;
         if (bounds.x <= 0 || bounds.y <= 0 || bounds.br().x >= gray8.cols || bounds.br().y >= gray8.rows) continue;
@@ -167,11 +173,16 @@ bool orderCandidates(const std::vector<Candidate>& candidates, const Options& op
                 if (validateGrid(ordered, options, residual, homography)) return true;
             }
         }
-        const bool found = cv::findCirclesGrid(input, cv::Size(options.cols, options.rows), ordered,
-            cv::CALIB_CB_SYMMETRIC_GRID | cv::CALIB_CB_CLUSTERING, nullptr);
-        if (!found || ordered.size() != static_cast<size_t>(expected)) return false;
-        orientGrid(ordered, options.rows, options.cols);
-        return validateGrid(ordered, options, residual, homography);
+        // Clustering tolerates perspective well but can lose an otherwise complete
+        // grid beside one extra dot. The graph-based finder supplies an independent
+        // ordering hypothesis; both must pass the same measured-geometry checks.
+        for (const int flags : { cv::CALIB_CB_SYMMETRIC_GRID | cv::CALIB_CB_CLUSTERING, static_cast<int>(cv::CALIB_CB_SYMMETRIC_GRID) }) {
+            const bool found = cv::findCirclesGrid(input, cv::Size(options.cols, options.rows), ordered, flags, nullptr);
+            if (!found || ordered.size() != static_cast<size_t>(expected)) continue;
+            orientGrid(ordered, options.rows, options.cols);
+            if (validateGrid(ordered, options, residual, homography)) return true;
+        }
+        return false;
     };
     // Local contrast normalization can expose many tiny noise components. Search
     // coherent size populations, each of which must form a complete valid grid.
@@ -199,17 +210,42 @@ bool orderCandidates(const std::vector<Candidate>& candidates, const Options& op
         const double typicalArea = median(selectedAreas);
         std::vector<cv::Point2f> lattice;
         cv::perspectiveTransform(points, lattice, homography.inv());
+        std::array<std::vector<bool>, 4> extensions = {
+            std::vector<bool>(options.cols), std::vector<bool>(options.cols),
+            std::vector<bool>(options.rows), std::vector<bool>(options.rows)
+        };
         for (size_t i = 0; i < points.size(); ++i) {
             if (candidates[i].area < typicalArea * 0.125 || candidates[i].area > typicalArea * 4.0) continue;
             bool selected = false;
             for (const auto& p : ordered) if (cv::norm(p - points[i]) < 0.1) { selected = true; break; }
             if (selected) continue;
             const cv::Point2f p = lattice[i];
-            if (std::isfinite(p.x) && std::isfinite(p.y)
-                && std::abs(p.x - std::round(p.x)) < 0.20 && std::abs(p.y - std::round(p.y)) < 0.20) {
+            // A distant background dot can coincide with an integer coordinate
+            // of the infinitely extended lattice. Only local topology is evidence
+            // of an undersized chart configuration, not that coincidence alone.
+            if (!std::isfinite(p.x) || !std::isfinite(p.y)
+                || p.x < -1.20 || p.x > options.cols + 0.20 || p.y < -1.20 || p.y > options.rows + 0.20
+                || std::abs(p.x - std::round(p.x)) >= 0.20 || std::abs(p.y - std::round(p.y)) >= 0.20) continue;
+            const int col = static_cast<int>(std::round(p.x));
+            const int row = static_cast<int>(std::round(p.y));
+            if (col >= 0 && col < options.cols && row >= 0 && row < options.rows) {
                 ambiguous = true;
                 return false;
             }
+            if (col >= 0 && col < options.cols) {
+                if (row == -1) extensions[0][col] = true;
+                if (row == options.rows) extensions[1][col] = true;
+            }
+            if (row >= 0 && row < options.rows) {
+                if (col == -1) extensions[2][row] = true;
+                if (col == options.cols) extensions[3][row] = true;
+            }
+        }
+        // Require three distinct aligned grid positions to establish a neighboring
+        // row or column, including an incomplete extension with gaps. An isolated
+        // adjacent reflection is not another grid.
+        for (const auto& edge : extensions) {
+            if (std::count(edge.begin(), edge.end(), true) >= 3) { ambiguous = true; return false; }
         }
     }
     return true;

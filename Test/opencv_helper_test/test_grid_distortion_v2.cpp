@@ -251,6 +251,13 @@ bool RunGridDistortionV2Tests()
     }
     check(rejected(run(extraRow, config7)), "complete adjacent extra row rejected");
     check(rejected(run(extraColumn, config7)), "complete adjacent extra column rejected");
+    cv::Mat partialRow = regular7.image.clone(), sparseColumn = regular7.image.clone();
+    for (const int col : {2, 3, 4})
+        cv::circle(partialRow, regularCenter(7, col), 14, cv::Scalar(160), cv::FILLED, cv::LINE_8);
+    for (const int row : {0, 3, 6})
+        cv::circle(sparseColumn, regularCenter(row, 7), 14, cv::Scalar(160), cv::FILLED, cv::LINE_8);
+    check(rejected(run(partialRow, config7)), "three consecutive points in adjacent extra row rejected");
+    check(rejected(run(sparseColumn, config7)), "three separated points in adjacent extra column rejected");
     check(rejected(run(regular7.image)), "regular 7x7 cannot masquerade as 3x3");
 
     cv::Mat ringClutter = regular7.image.clone();

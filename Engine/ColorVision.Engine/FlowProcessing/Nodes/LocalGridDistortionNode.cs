@@ -265,6 +265,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     private Int32Rect searchRegion = Int32Rect.Empty;
     private int expectedRows = 3;
     private int expectedCols = 3;
+    private bool brightTarget = true;
     private double minimumContrast = 0.02;
     private GridTvFormula tvFormula;
     private GridPoint9Formula point9Formula;
@@ -282,6 +283,10 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     [Category("本地点阵畸变")]
     [STNodeProperty("图卡列数", "点阵列数，支持 3 到 15 的奇数；7×7 图卡填 7。", true)]
     public int ExpectedCols { get => expectedCols; set { expectedCols = value; OnPropertyChanged(); } }
+
+    [Category("本地点阵畸变")]
+    [STNodeProperty("亮点模式", "默认勾选：亮点、暗背景（发光屏幕）；取消勾选：暗点、亮背景（反射图卡）。两种模式共用几何与畸变计算口径。", true)]
+    public bool BrightTarget { get => brightTarget; set { brightTarget = value; OnPropertyChanged(); } }
 
     [Category("本地点阵畸变")]
     [STNodeProperty("搜索区域", "ROI（X,Y,Width,Height）；0,0,0,0 表示整图。点坐标始终使用整图坐标。", true, DescriptorType = typeof(Int32RectNodePropertyDescriptor))]
@@ -322,7 +327,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     {
         ArgumentNullException.ThrowIfNull(action);
         // Snapshot editable settings so one run has one auditable configuration.
-        GridDistortionOptions options = new() { ExpectedRows = ExpectedRows, ExpectedCols = ExpectedCols, MinimumContrast = MinimumContrast };
+        GridDistortionOptions options = new() { ExpectedRows = ExpectedRows, ExpectedCols = ExpectedCols, BrightTarget = BrightTarget, MinimumContrast = MinimumContrast };
         if (!options.TryValidate(out string optionsError)) throw new InvalidOperationException(optionsError);
         Int32Rect configuredRegion = SearchRegion;
         string configuredImageFile = ImageFilePath;
@@ -429,7 +434,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     protected override string BuildRunPayload(CVStartCFC action) => JsonConvert.SerializeObject(new
     {
         ServiceName = NodeName, EventName = OperatorCode, action.SerialNumber,
-        ImageFilePath, SearchRegion, ExpectedRows, ExpectedCols, MinimumContrast, ResultDirectory,
+        ImageFilePath, SearchRegion, ExpectedRows, ExpectedCols, BrightTarget, MinimumContrast, ResultDirectory,
         TvFormula, Point9Formula, PublishOpticalEstimate, Algorithm = "GridDistortionV2"
     });
 

@@ -13,7 +13,7 @@ namespace ColorVision.Core
         public int ExpectedRows { get; set; } = 3;
         [Category("图卡"), DisplayName("点阵列数"), Description("完整图卡的列数，必须是 3 到 15 的奇数。")]
         public int ExpectedCols { get; set; } = 3;
-        [Category("图卡"), DisplayName("亮点暗背景")]
+        [Category("图卡"), DisplayName("亮点模式"), Description("默认勾选：亮点、暗背景（发光屏幕）；取消勾选：暗点、亮背景（反射图卡）。两种模式共用几何与畸变计算口径。")]
         public bool BrightTarget { get; set; } = true;
         [Category("检测"), DisplayName("粗定位最大边长 (px)")]
         public int MaxProcessingSize { get; set; } = 1600;
