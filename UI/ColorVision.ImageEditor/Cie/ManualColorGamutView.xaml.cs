@@ -89,6 +89,12 @@ namespace ColorVision.ImageEditor.Cie
             UpdateResult();
         }
 
+        private void ButtonFit_Click(object sender, RoutedEventArgs e) => CieDiagram.ZoomUniform();
+
+        private void ButtonZoomIn_Click(object sender, RoutedEventArgs e) => CieDiagram.Zoom(1.25);
+
+        private void ButtonZoomOut_Click(object sender, RoutedEventArgs e) => CieDiagram.Zoom(0.8);
+
         private void ButtonExport_Click(object sender, RoutedEventArgs e)
         {
             ExportResults();
@@ -174,7 +180,7 @@ namespace ColorVision.ImageEditor.Cie
                     ? "-"
                     : $"{resultRows.Min(item => item.Result.CoveragePercent):F2}% - {resultRows.Max(item => item.Result.CoveragePercent):F2}%";
                 TextBlockStatus.Foreground = Brushes.Gray;
-                TextBlockStatus.Text = "计算完成。表格按标准色域逐行显示面积比，导出会包含当前全部结果。";
+                TextBlockStatus.Text = "已自动更新 xy 平面面积比；导出保留全部结果与 RGB 坐标。";
                 ButtonExport.IsEnabled = resultRows.Count > 0;
                 RenderDiagram(results, standards);
             }
@@ -285,7 +291,6 @@ namespace ColorVision.ImageEditor.Cie
             CieDiagram.SetGamuts(gamuts);
             CieDiagram.SetMarkers(markers);
             CieDiagram.ClearSelection();
-            CieDiagram.ZoomUniform();
         }
 
         private void ExportResults()

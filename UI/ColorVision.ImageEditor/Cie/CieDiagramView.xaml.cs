@@ -21,12 +21,17 @@ namespace ColorVision.ImageEditor.Cie
         private CieMarker? _selectedMarker;
         private bool _showCctReference = true;
         private bool _showDaylightReference = true;
+        private bool _autoFit = true;
+        private bool _isFitting;
+        private DispatcherOperation? _pendingFit;
 
         public CieDiagramView()
         {
             InitializeComponent();
 
             Loaded += CieDiagramView_Loaded;
+            Unloaded += CieDiagramView_Unloaded;
+            ZoomBox.SizeChanged += (_, _) => QueueFit();
             DiagramCanvas.SizeChanged += DiagramCanvas_SizeChanged;
             DiagramCanvas.MouseLeave += DiagramCanvas_MouseLeave;
             DiagramCanvas.MouseMove += DiagramCanvas_MouseMove;
@@ -85,11 +90,7 @@ namespace ColorVision.ImageEditor.Cie
             EnsureOverlayVisual();
             RenderOverlay();
 
-            Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
-            {
-                ZoomBox.ZoomUniform();
-                RenderOverlay();
-            }));
+            ZoomUniform();
         }
 
         public void SetGamuts(IEnumerable<CieGamut> gamuts)
@@ -173,18 +174,46 @@ namespace ColorVision.ImageEditor.Cie
 
         public void ZoomUniform()
         {
-            ZoomBox.ZoomUniform();
+            _autoFit = true;
+            QueueFit();
+        }
+
+        public void Zoom(double factor) => ZoomBox.Zoom(factor);
+
+        private void QueueFit()
+        {
+            if (!_autoFit || !IsLoaded || !IsVisible || _pendingFit?.Status == DispatcherOperationStatus.Pending)
+                return;
+            _pendingFit = Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+            {
+                _pendingFit = null;
+                if (!_autoFit || !IsLoaded || !IsVisible || ZoomBox.ActualWidth <= 0 || ZoomBox.ActualHeight <= 0)
+                    return;
+                ZoomBox.UpdateLayout();
+                if (!DiagramCanvas.IsArrangeValid || DiagramCanvas.DesiredSize.Width <= 0 || DiagramCanvas.DesiredSize.Height <= 0)
+                    return;
+                _isFitting = true;
+                try { ZoomBox.ZoomUniform(); }
+                finally { _isFitting = false; }
+            }));
+        }
+
+        private void CieDiagramView_Unloaded(object sender, RoutedEventArgs e)
+        {
+            _pendingFit?.Abort();
+            _pendingFit = null;
         }
 
         private void CieDiagramView_Loaded(object sender, RoutedEventArgs e)
         {
             EnsureOverlayVisual();
-            ZoomBox.ZoomUniform();
+            QueueFit();
             RenderOverlay();
         }
 
         private void DiagramCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
         {
+            QueueFit();
             RenderOverlay();
         }
 
@@ -200,6 +229,7 @@ namespace ColorVision.ImageEditor.Cie
 
         private void ZoomBox_ContentMatrixChanged(object? sender, EventArgs e)
         {
+            if (!_isFitting) _autoFit = false;
             RenderOverlay();
         }
 

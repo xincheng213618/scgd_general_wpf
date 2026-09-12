@@ -1043,4 +1043,9 @@ Double-click object: Focus</value>
   <data name="Algorithm_FilterCategory" xml:space="preserve">
     <value>Filtering</value>
   </data>
+  <data name="Cie_Chromaticity" xml:space="preserve"><value>Chromaticity</value></data>
+  <data name="Cie_GamutCalculation" xml:space="preserve"><value>Gamut calculation</value></data>
+  <data name="Cie_DisplayOptions" xml:space="preserve"><value>Overlays</value></data>
+  <data name="Cie_Parameters" xml:space="preserve"><value>Inputs</value></data>
+  <data name="Cie_Results" xml:space="preserve"><value>Results</value></data>
 </root>

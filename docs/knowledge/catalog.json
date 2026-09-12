@@ -6991,6 +6991,7 @@
         "HasShownNewUserGuide"
       ],
       "code_paths": [
+        "ColorVision/MainWindow.FullScreen.cs",
         "ColorVision/MainWindow.xaml",
         "ColorVision/MainWindow.xaml.cs",
         "ColorVision/MainWindow.NewUserGuide.cs",
@@ -7028,6 +7029,7 @@
         "UI/ColorVision.Solution/Workspace/DocumentTabPinManager.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/WindowFullScreenTests.cs",
         "Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs",
         "Test/ColorVision.UI.Tests/AvalonDockThemeBindingTests.cs",
         "Test/ColorVision.UI.Tests/MenuThemeTests.cs",
@@ -9345,6 +9347,7 @@
         "UI/ColorVision.Rbac/Services/PermissionChecker.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/WindowFullScreenTests.cs",
         "Test/ColorVision.UI.Tests/ThirdPartyAppInfoTests.cs",
         "Test/ColorVision.UI.Tests/ModuleCatalogTests.cs",
         "Test/ColorVision.UI.Tests/ConfigHandlerPersistenceTests.cs",
@@ -10047,6 +10050,9 @@
         "HeightMapPixelSampler"
       ],
       "code_paths": [
+        "UI/ColorVision.ImageEditor/Cie",
+        "UI/ColorVision.ImageEditor/Zoombox.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/FullScreen",
         "UI/ColorVision.ImageEditor/ImageView.xaml",
         "UI/ColorVision.ImageEditor/ImageView.xaml.cs",
         "UI/ColorVision.ImageEditor/ImageViewLifecycleEventArgs.cs",
@@ -10076,6 +10082,8 @@
         "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CieWindowCompositionTests.cs",
+        "Test/ColorVision.UI.Tests/WindowFullScreenTests.cs",
         "Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs",
         "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs",

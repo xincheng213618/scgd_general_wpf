@@ -126,4 +126,10 @@
   <data name="Common_AdminRestartFailed" xml:space="preserve">
     <value>無法以管理員權限重新啟動程式：</value>
   </data>
+  <data name="FullScreenExitHint" xml:space="preserve">
+    <value>按 Esc 或 F11 退出全螢幕</value>
+  </data>
+  <data name="ExitFullScreen" xml:space="preserve">
+    <value>退出全螢幕</value>
+  </data>
 </root>

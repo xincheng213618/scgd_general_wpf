@@ -126,4 +126,10 @@
   <data name="Common_AdminRestartFailed" xml:space="preserve">
     <value>Failed to restart with administrator privileges:</value>
   </data>
+  <data name="FullScreenExitHint" xml:space="preserve">
+    <value>Press Esc or F11 to exit full screen</value>
+  </data>
+  <data name="ExitFullScreen" xml:space="preserve">
+    <value>Exit full screen</value>
+  </data>
 </root>

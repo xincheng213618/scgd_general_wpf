@@ -81,6 +81,10 @@ namespace ColorVision.UI
 
         private void UpdateFromWindow(Window window)
         {
+            // Full screen is temporary presentation, not the next startup placement.
+            if (ColorVision.Common.Utilities.WindowFullScreenSession.GetIsActive(window))
+                return;
+
             // 在最大化/最小化时用 RestoreBounds 保存“正常状态”的尺寸和位置
             Rect bounds = window.WindowState == WindowState.Normal
                 ? new Rect(window.Left, window.Top, window.Width, window.Height)

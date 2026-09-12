@@ -2,104 +2,75 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:cie="clr-namespace:ColorVision.ImageEditor.Cie"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties"
-        mc:Ignorable="d"
         Title="{x:Static properties:Resources.Cie_Title}"
-        Height="760"
-        Width="1080"
-        MinHeight="580"
-        MinWidth="860"
-        Background="{DynamicResource GlobalBackground}"
+        Width="860" Height="680" MinWidth="720" MinHeight="520"
+        Background="White" UseLayoutRounding="True"
         Icon="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy.ico"
         Initialized="Window_Initialized">
     <Window.Resources>
-        <Style TargetType="{x:Type TextBlock}">
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-
-        <Style x:Key="PanelGroupBox" TargetType="{x:Type GroupBox}">
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-            <Setter Property="Padding" Value="8" />
-            <Setter Property="Margin" Value="0,0,0,10" />
-        </Style>
-
-        <Style x:Key="OptionCheckBox" TargetType="{x:Type CheckBox}">
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-            <Setter Property="Margin" Value="0,3,10,3" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-        </Style>
-
-        <Style x:Key="PanelButton" TargetType="{x:Type Button}">
-            <Setter Property="MinHeight" Value="26" />
-            <Setter Property="Padding" Value="8,2" />
-            <Setter Property="Margin" Value="0,0,6,6" />
-        </Style>
-
-        <Style x:Key="ReadoutText" TargetType="{x:Type TextBlock}">
-            <Setter Property="FontFamily" Value="Consolas" />
-            <Setter Property="Margin" Value="0,2,0,2" />
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="CieWorkspaceStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+            <Style x:Key="PanelGroupBox" TargetType="GroupBox" BasedOn="{StaticResource CieSection}" />
+            <Style x:Key="OptionCheckBox" TargetType="CheckBox">
+                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+                <Setter Property="Margin" Value="0,3,8,3" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+            </Style>
+            <Style x:Key="PanelButton" TargetType="Button" BasedOn="{StaticResource CieAction}">
+                <Setter Property="Margin" Value="0,0,4,4" />
+                <Setter Property="Background" Value="#100078D4" />
+            </Style>
+            <Style x:Key="ReadoutText" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="Consolas" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="Margin" Value="0,2" />
+                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            </Style>
+        </ResourceDictionary>
     </Window.Resources>
-
-    <TabControl x:Name="CieTabs"
-                BorderThickness="0"
-                Background="{DynamicResource GlobalBackground}">
-        <TabItem Header="色度图">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-
-        <Border Grid.Row="0"
-                Padding="10,8"
-                Background="{DynamicResource GlobalBackgroundBrush}"
-                BorderBrush="{DynamicResource BorderBrush}"
-                BorderThickness="0,0,0,1">
-            <DockPanel LastChildFill="True">
-                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Margin="0,0,8,0" Text="{x:Static properties:Resources.Cie_CoordinateSystem}" />
-                    <ComboBox x:Name="ComboBoxDiagram"
-                              Width="150"
-                              SelectedIndex="0"
-                              SelectionChanged="ComboBoxDiagram_SelectionChanged">
-                        <ComboBoxItem Content="CIE 1931 xy" />
-                        <ComboBoxItem Content="CIE 1960 uv" />
-                        <ComboBoxItem Content="CIE 1976 u'v'" />
-                    </ComboBox>
-                    <Button Margin="8,0,0,0"
-                            Padding="10,2"
-                            Click="ButtonFit_Click"
-                            Content="{x:Static properties:Resources.Cie_Fit}" />
-                </StackPanel>
-                <TextBlock x:Name="TextBlockDiagramSummary"
-                           Margin="16,0,0,0"
-                           HorizontalAlignment="Right"
-                           FontWeight="SemiBold" />
-            </DockPanel>
-        </Border>
-
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="286" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-
-            <Border Grid.Column="0"
-                    Padding="10"
-                    Background="{DynamicResource GlobalBackgroundBrush}"
-                    BorderBrush="{DynamicResource BorderBrush}"
-                    BorderThickness="0,0,1,0">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel>
-                        <GroupBox Header="{x:Static properties:Resources.Cie_DisplayPresets}" Style="{StaticResource PanelGroupBox}">
+    <TabControl x:Name="CieTabs" Style="{StaticResource CieWorkspaceTabs}">
+        <TabItem Header="{x:Static properties:Resources.Cie_Chromaticity}">
+            <Grid Background="White" ClipToBounds="True">
+                <cie:CieDiagramView x:Name="CieView">
+                    <cie:CieDiagramView.Style>
+                        <Style TargetType="cie:CieDiagramView">
+                            <Setter Property="Margin" Value="8,58,8,44" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsChecked, ElementName=ShowDisplayOptions}" Value="True">
+                                    <Setter Property="Margin" Value="8,58,306,44" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </cie:CieDiagramView.Style>
+                </cie:CieDiagramView>
+                <Border Style="{StaticResource CieFloatingCard}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12" Panel.ZIndex="10">
+                    <StackPanel Orientation="Horizontal">
+                        <ComboBox x:Name="ComboBoxDiagram" Width="144" MinHeight="30" Margin="0,0,4,0"
+                                  ToolTip="{x:Static properties:Resources.Cie_CoordinateSystem}"
+                                  SelectedIndex="0" SelectionChanged="ComboBoxDiagram_SelectionChanged">
+                            <ComboBoxItem Content="CIE 1931 xy" />
+                            <ComboBoxItem Content="CIE 1960 uv" />
+                            <ComboBoxItem Content="CIE 1976 u′v′" />
+                        </ComboBox>
+                        <Button Content="−" Style="{StaticResource CieAction}" Click="ButtonZoomOut_Click" ToolTip="{x:Static properties:Resources.ZoomOut}" AutomationProperties.Name="{x:Static properties:Resources.ZoomOut}" />
+                        <Button Content="+" Style="{StaticResource CieAction}" Click="ButtonZoomIn_Click" ToolTip="{x:Static properties:Resources.ZoomIn}" AutomationProperties.Name="{x:Static properties:Resources.ZoomIn}" />
+                        <Button Content="{x:Static properties:Resources.Cie_Fit}" Style="{StaticResource CieAction}" Click="ButtonFit_Click" />
+                        <ToggleButton x:Name="ShowDisplayOptions" Content="{x:Static properties:Resources.Cie_DisplayOptions}" Style="{StaticResource CieToggle}" />
+                    </StackPanel>
+                </Border>
+                <Grid Margin="0,64,12,48" HorizontalAlignment="Right" Width="280"
+                      Visibility="{Binding IsChecked, ElementName=ShowDisplayOptions, Converter={StaticResource CieBoolVisibility}}">
+                    <Border x:Name="DisplayOptionsPanel" Style="{StaticResource CieFloatingCard}" Padding="14">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel>
+<GroupBox Header="{x:Static properties:Resources.Cie_DisplayPresets}" Style="{StaticResource PanelGroupBox}">
                             <UniformGrid Columns="2">
                                 <Button Content="{x:Static properties:Resources.Cie_Display}"
                                         Click="PresetButton_Click"
@@ -119,8 +90,7 @@
                                         Tag="Clear" />
                             </UniformGrid>
                         </GroupBox>
-
-                        <GroupBox Header="{x:Static properties:Resources.Cie_ColorGamut}" Style="{StaticResource PanelGroupBox}">
+<GroupBox Header="{x:Static properties:Resources.Cie_ColorGamut}" Style="{StaticResource PanelGroupBox}">
                             <UniformGrid Columns="2">
                                 <CheckBox x:Name="CheckBoxSRgb"
                                           Content="sRGB"
@@ -180,8 +150,7 @@
                                           Unchecked="GamutCheckBox_Changed" />
                             </UniformGrid>
                         </GroupBox>
-
-                        <GroupBox Header="{x:Static properties:Resources.Cie_WhitePointLightSource}" Style="{StaticResource PanelGroupBox}">
+<GroupBox Header="{x:Static properties:Resources.Cie_WhitePointLightSource}" Style="{StaticResource PanelGroupBox}">
                             <UniformGrid Columns="2">
                                 <CheckBox x:Name="CheckBoxD65"
                                           Content="D65"
@@ -196,7 +165,7 @@
                                           Unchecked="IlluminantCheckBox_Changed" />
                                 <CheckBox x:Name="CheckBoxD50"
                                           Content="D50"
-                                          IsChecked="True"
+                                          IsChecked="False"
                                           Style="{StaticResource OptionCheckBox}"
                                           Checked="IlluminantCheckBox_Changed"
                                           Unchecked="IlluminantCheckBox_Changed" />
@@ -217,81 +186,60 @@
                                           Unchecked="IlluminantCheckBox_Changed" />
                                 <CheckBox x:Name="CheckBoxA"
                                           Content="A"
-                                          IsChecked="True"
+                                          IsChecked="False"
                                           Style="{StaticResource OptionCheckBox}"
                                           Checked="IlluminantCheckBox_Changed"
                                           Unchecked="IlluminantCheckBox_Changed" />
                                 <CheckBox x:Name="CheckBoxD75"
                                           Content="D75"
-                                          IsChecked="True"
+                                          IsChecked="False"
                                           Style="{StaticResource OptionCheckBox}"
                                           Checked="IlluminantCheckBox_Changed"
                                           Unchecked="IlluminantCheckBox_Changed" />
                             </UniformGrid>
                         </GroupBox>
-
-                        <GroupBox Header="{x:Static properties:Resources.Cie_ReferenceLines}" Style="{StaticResource PanelGroupBox}">
+<GroupBox Header="{x:Static properties:Resources.Cie_ReferenceLines}" Style="{StaticResource PanelGroupBox}">
                             <StackPanel>
                                 <CheckBox x:Name="CheckBoxCct"
                                           Content="Tc(K)"
-                                          IsChecked="True"
+                                          IsChecked="False"
                                           Style="{StaticResource OptionCheckBox}"
                                           Checked="CctCheckBox_Changed"
                                           Unchecked="CctCheckBox_Changed" />
                                 <CheckBox x:Name="CheckBoxDaylight"
                                           Content="D locus"
-                                          IsChecked="True"
+                                          IsChecked="False"
                                           Style="{StaticResource OptionCheckBox}"
                                           Checked="DaylightCheckBox_Changed"
                                           Unchecked="DaylightCheckBox_Changed" />
                             </StackPanel>
                         </GroupBox>
-
-                        <GroupBox Header="{x:Static properties:Resources.Cie_CurrentPoint}" Style="{StaticResource PanelGroupBox}">
-                            <StackPanel>
-                                <TextBlock x:Name="TextBlockSelectedXy"
-                                           Style="{StaticResource ReadoutText}"
-                                           Text="xy: --" />
-                                <TextBlock x:Name="TextBlockSelectedUv1960"
-                                           Style="{StaticResource ReadoutText}"
-                                           Text="uv: --" />
-                                <TextBlock x:Name="TextBlockSelectedUv1976"
-                                           Style="{StaticResource ReadoutText}"
-                                           Text="CIE 1976 u′v′: --" />
-                                <TextBlock x:Name="TextBlockSelectedCct"
-                                           Style="{StaticResource ReadoutText}"
-                                           Text="相关色温 CCT: --" />
                             </StackPanel>
-                        </GroupBox>
-                    </StackPanel>
-                </ScrollViewer>
-            </Border>
-
-            <GridSplitter Grid.Column="1"
-                          Width="4"
-                          HorizontalAlignment="Stretch"
-                          VerticalAlignment="Stretch"
-                          Background="{DynamicResource BorderBrush}" />
-
-            <Border Grid.Column="2" Background="#1E1E1E">
-                <cie:CieDiagramView x:Name="CieView" />
-            </Border>
-        </Grid>
-
-        <Border Grid.Row="2"
-                MinHeight="28"
-                Padding="10,4"
-                Background="{DynamicResource GlobalBackgroundBrush}"
-                BorderBrush="{DynamicResource BorderBrush}"
-                BorderThickness="0,1,0,0">
-            <TextBlock x:Name="TextBlockCursor"
-                       FontFamily="Consolas"
-                       Foreground="{DynamicResource GlobalTextBrush}"
-                       Text="Cursor: --" />
-        </Border>
-    </Grid>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+                <Border Style="{StaticResource CieFloatingCard}" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12" Padding="8,5" MaxWidth="370">
+                    <Expander x:Name="SelectedPointDetails">
+                        <Expander.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{x:Static properties:Resources.Cie_CurrentPoint}" Margin="0,0,8,0" />
+                                <TextBlock x:Name="TextBlockSelectedXy" Style="{StaticResource ReadoutText}" Text="xy: --" />
+                            </StackPanel>
+                        </Expander.Header>
+                        <StackPanel Margin="24,5,0,0">
+                            <TextBlock x:Name="TextBlockSelectedUv1960" Style="{StaticResource ReadoutText}" Text="uv: --" />
+                            <TextBlock x:Name="TextBlockSelectedUv1976" Style="{StaticResource ReadoutText}" Text="CIE 1976 u′v′: --" />
+                            <TextBlock x:Name="TextBlockSelectedCct" Style="{StaticResource ReadoutText}" Text="CCT: --" />
+                        </StackPanel>
+                    </Expander>
+                </Border>
+                <TextBlock x:Name="TextBlockCursor" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                           Margin="390,0,14,18" MaxWidth="580" FontFamily="Consolas" FontSize="11"
+                           Foreground="#60656D" TextTrimming="CharacterEllipsis"
+                           ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+            </Grid>
         </TabItem>
-        <TabItem Header="色域计算">
+        <TabItem Header="{x:Static properties:Resources.Cie_GamutCalculation}">
             <cie:ManualColorGamutView />
         </TabItem>
     </TabControl>

@@ -33,6 +33,8 @@ namespace ColorVision.ImageEditor
             UpdateDiagramKind();
             UpdateDisplayedGamuts();
             UpdateDisplayedIlluminants();
+            CieView.ShowCctReference = CheckBoxCct.IsChecked == true;
+            CieView.ShowDaylightReference = CheckBoxDaylight.IsChecked == true;
             UpdateDiagramSummary();
             UpdateSelectedReadout();
             CieView.ZoomUniform();
@@ -167,13 +169,17 @@ namespace ColorVision.ImageEditor
 
         private void CieView_CursorTextChanged(object? sender, string text)
         {
-            TextBlockCursor.Text = string.IsNullOrWhiteSpace(text) ? "Cursor: --" : text;
+            TextBlockCursor.Text = text;
         }
 
         private void ButtonFit_Click(object sender, RoutedEventArgs e)
         {
             CieView.ZoomUniform();
         }
+
+        private void ButtonZoomIn_Click(object sender, RoutedEventArgs e) => CieView.Zoom(1.25);
+
+        private void ButtonZoomOut_Click(object sender, RoutedEventArgs e) => CieView.Zoom(0.8);
 
         private void PresetButton_Click(object sender, RoutedEventArgs e)
         {
@@ -199,7 +205,7 @@ namespace ColorVision.ImageEditor
 
         private void UpdateDiagramSummary()
         {
-            TextBlockDiagramSummary.Text = CieView.Profile.Name;
+            ComboBoxDiagram.ToolTip = CieView.Profile.Name;
         }
 
         private void UpdateDisplayedGamuts()

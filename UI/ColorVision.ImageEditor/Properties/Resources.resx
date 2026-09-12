@@ -1043,4 +1043,9 @@
   <data name="Algorithm_FilterCategory" xml:space="preserve">
     <value>滤波</value>
   </data>
+  <data name="Cie_Chromaticity" xml:space="preserve"><value>色度图</value></data>
+  <data name="Cie_GamutCalculation" xml:space="preserve"><value>色域计算</value></data>
+  <data name="Cie_DisplayOptions" xml:space="preserve"><value>显示选项</value></data>
+  <data name="Cie_Parameters" xml:space="preserve"><value>参数</value></data>
+  <data name="Cie_Results" xml:space="preserve"><value>计算结果</value></data>
 </root>

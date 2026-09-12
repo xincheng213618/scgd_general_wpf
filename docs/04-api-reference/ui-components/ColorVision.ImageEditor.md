@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "图像/视频打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。"
 aliases: ["打开图像","看图","视频模式","标注","撤销标注","自由套索","闭合多边形","图形旋转","绘图连续模式","绘图锁定","紧凑属性条","CompactInspector","保存原图还是截图","图像叠加层为什么没有显示","像素数字显示","PixelValueOverlay","ColorVision.ImageEditor","ImageView","OpenImage","ImageSourceLoaded","ExternalRenderCompleted","TIFF","Gray32Float","ImageViewSnapshot","AlgorithmOverlayManager","3D高度图","3D模型查看器","ModelViewer3D","ModelViewer3DControl","ModelViewer3DModel","Window3D","HeightMapPixelSampler"]
-code_paths: ["UI/ColorVision.ImageEditor/ImageView.xaml","UI/ColorVision.ImageEditor/ImageView.xaml.cs","UI/ColorVision.ImageEditor/ImageViewLifecycleEventArgs.cs","UI/ColorVision.ImageEditor/ImageView.Snapshot.cs","UI/ColorVision.ImageEditor/EditorContext.cs","UI/ColorVision.ImageEditor/EditorToolFactory.cs","UI/ColorVision.ImageEditor/CompactInspector.cs","UI/ColorVision.ImageEditor/DrawCanvas.cs","UI/ColorVision.ImageEditor/Draw/SelectEditorVisual.cs","UI/ColorVision.ImageEditor/Draw/RegionProperties.cs","UI/ColorVision.ImageEditor/Draw/Polygon","UI/ColorVision.ImageEditor/Draw/Circle/CircleManager.cs","UI/ColorVision.ImageEditor/Draw/Rectangle/RectangleManager.cs","UI/ColorVision.ImageEditor/Draw/Annotations/AnnotationMapper.cs","UI/ColorVision.ImageEditor/Tif","UI/ColorVision.ImageEditor/Video/VideoOpen.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs","UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj","Engine/ColorVision.Engine/Media/CVRawOpen.cs","UI/ColorVision.ImageEditor/README.md","UI/ColorVision.ImageEditor/EditorTools/ThreeD","UI/ColorVision.ImageEditor/PixelValueOverlay.cs","UI/ColorVision.ImageEditor/Settings/DefaultImageViewDisplayConfig.cs","UI/ColorVision.ImageEditor/Settings/ImageViewSettingsWindow.xaml.cs","UI/ColorVision.ImageEditor/Settings/ImageViewSettingsEntry.cs","Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs","Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs","Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs","Test/ColorVision.UI.Tests/ImageViewSnapshotSaveTests.cs","Test/ColorVision.UI.Tests/ImageViewContextMenuTests.cs","Test/ColorVision.UI.Tests/EraseManagerUndoTests.cs","Test/ColorVision.UI.Tests/DrawShapeCompatibilityTests.cs","Test/ColorVision.UI.Tests/EditorToolFactoryLifecycleTests.cs","Test/ColorVision.UI.Tests/VideoLifecycleTests.cs","Test/ColorVision.UI.Tests/HeightMapPixelSamplerTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DStateTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DModelTests.cs"]
+code_paths: ["UI/ColorVision.ImageEditor/Cie","UI/ColorVision.ImageEditor/Zoombox.cs","UI/ColorVision.ImageEditor/EditorTools/FullScreen","UI/ColorVision.ImageEditor/ImageView.xaml","UI/ColorVision.ImageEditor/ImageView.xaml.cs","UI/ColorVision.ImageEditor/ImageViewLifecycleEventArgs.cs","UI/ColorVision.ImageEditor/ImageView.Snapshot.cs","UI/ColorVision.ImageEditor/EditorContext.cs","UI/ColorVision.ImageEditor/EditorToolFactory.cs","UI/ColorVision.ImageEditor/CompactInspector.cs","UI/ColorVision.ImageEditor/DrawCanvas.cs","UI/ColorVision.ImageEditor/Draw/SelectEditorVisual.cs","UI/ColorVision.ImageEditor/Draw/RegionProperties.cs","UI/ColorVision.ImageEditor/Draw/Polygon","UI/ColorVision.ImageEditor/Draw/Circle/CircleManager.cs","UI/ColorVision.ImageEditor/Draw/Rectangle/RectangleManager.cs","UI/ColorVision.ImageEditor/Draw/Annotations/AnnotationMapper.cs","UI/ColorVision.ImageEditor/Tif","UI/ColorVision.ImageEditor/Video/VideoOpen.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs","UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj","Engine/ColorVision.Engine/Media/CVRawOpen.cs","UI/ColorVision.ImageEditor/README.md","UI/ColorVision.ImageEditor/EditorTools/ThreeD","UI/ColorVision.ImageEditor/PixelValueOverlay.cs","UI/ColorVision.ImageEditor/Settings/DefaultImageViewDisplayConfig.cs","UI/ColorVision.ImageEditor/Settings/ImageViewSettingsWindow.xaml.cs","UI/ColorVision.ImageEditor/Settings/ImageViewSettingsEntry.cs","Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CieWindowCompositionTests.cs","Test/ColorVision.UI.Tests/WindowFullScreenTests.cs","Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs","Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs","Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs","Test/ColorVision.UI.Tests/ImageViewSnapshotSaveTests.cs","Test/ColorVision.UI.Tests/ImageViewContextMenuTests.cs","Test/ColorVision.UI.Tests/EraseManagerUndoTests.cs","Test/ColorVision.UI.Tests/DrawShapeCompatibilityTests.cs","Test/ColorVision.UI.Tests/EditorToolFactoryLifecycleTests.cs","Test/ColorVision.UI.Tests/VideoLifecycleTests.cs","Test/ColorVision.UI.Tests/HeightMapPixelSamplerTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DStateTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DModelTests.cs"]
 related: ["ui.discovery","ui.image-editor-context","ui.property-grid","engine.results","algorithms.platform","algorithms.local-native-analysis","operations.first-run","ui.publishing"]
 ---
 
@@ -14,6 +14,28 @@ related: ["ui.discovery","ui.image-editor-context","ui.property-grid","engine.re
 `ImageView` 承载当前图像、缩放画布、工具和绘图对象；`EditorContext` 将这些状态及打开器、处理上下文交给扩展。创建控件会装配工具、菜单和服务，不是无副作用的轻量图片框；运行主程序仍先遵守[启动前提](../../00-getting-started/first-steps.md)。
 
 客户 OK/NG、MES 字段及业务导出不属于此模块；历史结果与中立算法的分界见[结果展示链](../engine-components/result-handoff-chain.md)。
+
+## 图像全屏与恢复
+
+图像顶部工具栏的全屏按钮只展示当前图像及其工具栏。进入后按新视口等比例适配图像；再次点击该按钮、按 F11 / Esc，或点击顶部退出按钮，恢复原文档位置和进入前的缩放、平移，并同步更新倍率显示与绘图缩放。鼠标移到屏幕顶边时显示退出按钮，进入时短暂显示按键提示。
+
+`ImageFullScreenMode` 暂时将图像内容移到宿主窗口，退出时恢复原父容器及子项顺序。窗口边框、显示器边界和原窗口状态由 Common 的 `WindowFullScreenSession` 负责；紧凑标题栏在改变窗口样式之前暂停，不能让标题拖动区截获图像顶部工具栏的鼠标命中。窗口尺寸改变和图像缩放是两个独立状态。
+
+图像预览有键盘焦点或鼠标位于预览内时，F11 与图像工具栏全屏按钮效果相同，适用于主窗口中的图像和独立 ImageView 宿主。未由图像处理的 F11 才在冒泡阶段进入[主窗口全屏](../../01-user-guide/interface/main-window.md#全屏与最大化)。若先进入主窗口全屏，再通过图像按钮进入图像全屏，第一次 F11 / Esc 只返回全屏工作区，第二次才恢复普通窗口。已处理的按键、带修饰键的 F11 和长按重复事件不再次切换。
+
+`WindowFullScreenTests` 覆盖窗口及紧凑 chrome 往返、显示器边界、顶部原生鼠标命中、父容器顺序、嵌套退出和启动位置保护；真实图像工具栏与缩放仍需结合 WPF 预览检查。
+
+## CIE 色度图与手动色域计算
+
+图像右侧的 CIE 入口打开紧凑的独立窗口，继续接收图像取样点。默认窗口为 860 × 680 DIP，色度图占主体；模式切换与坐标系、缩放、适应和显示选项浮在图上。画布留白与图表底色统一为白色，不以黑色边带填补宽高比差异，也不拉伸坐标轴比例。
+
+“色度图”支持 CIE 1931 xy、CIE 1960 uv 和 CIE 1976 u′v′。默认显示 sRGB 与 D65，其余色域、白点、色温线和日光轨迹可从“显示选项”展开；展开时图表避让面板。当前点的 xy 常驻左下角，展开可看 uv、u′v′、CCT 和 Duv；图上游标读数显示在右下角。显示选项只控制参考叠加，不改变图像测量结果。
+
+“色域计算”保留 RGB xy 输入、多标准选择、自动计算和原 CSV 导出。右侧参数可收起，底部结果可折叠，结果表按内容增高并在上限内滚动；表格优先显示标准、面积比、样品面积和标准面积，RGB 坐标保留在输入区与完整导出中。这里计算的是 xy 平面三角形面积比，不是相交覆盖率，也不是三维色域体积。
+
+`CieDiagramView` 在可见且完成布局后合并适配请求，打开、坐标系切换和适应模式下的视口改变会保持等比例居中。滚轮、平移或缩放按钮进入手动视图状态；修改计算输入和窗口布局不覆盖手动视图，点击“适应”恢复自动适配。未加载和不可见的页不持续排队缩放，卸载会取消待执行请求。计算页和色度图页分别保留自己的叠加与输入状态。
+
+入口与实现位于 `UI/ColorVision.ImageEditor/Cie/`。`CieWindowCompositionTests` 检查窗口组合、坐标系/视口适配、面板避让、计算与视图状态；最终文字、配色和面板展开效果仍需用真实 WPF 窗口确认。
 
 ## 打开图像与完成信号
 

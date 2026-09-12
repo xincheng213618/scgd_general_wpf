@@ -71,6 +71,7 @@ namespace ColorVision.ImageEditor
         private RealtimeFramePresenter? _realtime;
         public RealtimeFramePresenter Realtime => _realtime ??= new RealtimeFramePresenter(this);
         private ImageFullScreenMode? _fullScreenMode;
+        private Matrix _windowedImageMatrix;
         private WpfWindow? _shortcutWindow;
 
         public event EventHandler ClearImageEventHandler;
@@ -404,9 +405,9 @@ namespace ColorVision.ImageEditor
 
         private void ImageView_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key != Key.F11) return;
-            ToggleFullScreen();
+            if (e.Handled || e.Key != Key.F11 || Keyboard.Modifiers != ModifierKeys.None) return;
             e.Handled = true;
+            if (!e.IsRepeat) ToggleFullScreen();
         }
 
         private void ImageView_Loaded(object sender, RoutedEventArgs e)
@@ -427,15 +428,26 @@ namespace ColorVision.ImageEditor
 
         private void ShortcutWindow_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key != Key.F11 || (!IsKeyboardFocusWithin && !IsMouseOver)) return;
-            ToggleFullScreen();
+            if (e.Handled || e.Key != Key.F11 || Keyboard.Modifiers != ModifierKeys.None ||
+                WindowFullScreenSession.GetIsActive((WpfWindow)sender) || (!IsKeyboardFocusWithin && !IsMouseOver)) return;
             e.Handled = true;
+            if (!e.IsRepeat) ToggleFullScreen();
         }
 
         public void ToggleFullScreen()
         {
             ImageContentGrid.DataContext = this;
-            (_fullScreenMode ??= new ImageFullScreenMode(ImageContentGrid)).ToggleFullScreen();
+            if (_fullScreenMode == null)
+            {
+                _fullScreenMode = new ImageFullScreenMode(ImageContentGrid);
+                _fullScreenMode.FullScreenChanged += (_, _) =>
+                {
+                    if (_fullScreenMode.IsMax) Zoombox1.ZoomUniform();
+                    else Zoombox1.RestoreView(_windowedImageMatrix);
+                };
+            }
+            if (!_fullScreenMode.IsMax) _windowedImageMatrix = Zoombox1.ContentMatrix;
+            _fullScreenMode.ToggleFullScreen();
         }
 
         private void MoveView(double x, double y)

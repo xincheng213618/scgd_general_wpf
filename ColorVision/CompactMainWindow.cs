@@ -159,7 +159,7 @@ public sealed class CompactMainWindow : MainWindow
         {
             // Registered before SetWindowFull: remove chrome before that helper sets WindowStyle.None.
             _compactTitleBar.SetFullScreen(true);
-            DockingManager1.Margin = _ordinaryDockingMargin;
+            DockingManager1.Margin = new Thickness(0);
             SetCompactHeaderAlignment(false);
             CompactDragRegion.Visibility = Visibility.Collapsed;
             UpdateRightMenuVisibility();
