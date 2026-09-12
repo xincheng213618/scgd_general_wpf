@@ -25,6 +25,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
 
         public const string FindCrossTag = "ImageView.FindCrossLocal.Result";
         public const string FindLuminousAreaTag = "ImageView.FindLuminousArea.Result";
+        public const string GridDistortionTag = "ImageView.GridDistortionV2.Result";
 
         public static void ClearTagged(DrawEditorContext drawContext, string tag)
         {
@@ -133,7 +134,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
                 foreach (string tag in new[]
                 {
                     AlgorithmResultOverlay.FindCrossTag,
-                    AlgorithmResultOverlay.FindLuminousAreaTag
+                    AlgorithmResultOverlay.FindLuminousAreaTag,
+                    AlgorithmResultOverlay.GridDistortionTag
                 })
                 {
                     AlgorithmResultOverlay.InvalidateRequest(drawContext, tag);

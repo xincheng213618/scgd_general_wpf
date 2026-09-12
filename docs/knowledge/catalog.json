@@ -58,6 +58,7 @@
         "algorithms.json-templates",
         "algorithms.template-menus",
         "algorithms.find-cross",
+        "algorithms.grid-distortion",
         "engine.results"
       ],
       "code_scopes": [
@@ -500,6 +501,70 @@
       "title": "Ghost1.0 鬼影检测",
       "source": "docs/04-api-reference/algorithms/detectors/ghost-detection.md",
       "url": "/04-api-reference/algorithms/detectors/ghost-detection",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "algorithms.grid-distortion",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。",
+      "aliases": [
+        "点阵畸变分析(V2)",
+        "本地点阵畸变(V2)",
+        "漏光畸变失败",
+        "7x7畸变",
+        "GridDistortionAnalysis",
+        "LocalGridDistortionNode",
+        "M_CalDistortionGridV2",
+        "HorizontalTVDistortion",
+        "VerticalTVDistortion",
+        "Optic_Distortion",
+        "KeystoneHoriz",
+        "KeystoneVert",
+        "DIFF_H",
+        "DIFF_V"
+      ],
+      "code_paths": [
+        "Native/opencv_helper/algorithm/distortion",
+        "Native/include/opencv_media_export.h",
+        "Native/opencv_helper/opencv_media_export.cpp",
+        "UI/ColorVision.Core/GridDistortion.cs",
+        "UI/ColorVision.Core/GridDistortionAnalysis.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/GridDistortion",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalGridDistortionNode.cs",
+        "Engine/ColorVision.Engine/Templates/ARVR/Distortion/ViewHandleDistortion.cs",
+        "Engine/ColorVision.Engine/Templates/Jsons/Distortion2",
+        "Projects/ProjectARVRPro/Process/Distortion"
+      ],
+      "test_paths": [
+        "Test/opencv_helper_test/test_grid_distortion_v2.cpp",
+        "Test/opencv_helper_test/benchmark_grid_distortion.py",
+        "Test/ColorVision.UI.Tests/GridDistortionTests.cs",
+        "Test/ColorVision.UI.Tests/GridDistortionAnalysisTests.cs",
+        "Test/ColorVision.UI.Tests/GridDistortionRealSampleTests.cs",
+        "Test/ColorVision.UI.Tests/LocalGridDistortionNodeTests.cs"
+      ],
+      "related": [
+        "algorithms.arvr",
+        "algorithms.find-light-area",
+        "algorithms.find-cross",
+        "engine.native-integration",
+        "engine.results",
+        "flow.node-extension"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine",
+        "Native/include",
+        "Native/opencv_helper",
+        "Projects/ProjectARVRPro",
+        "UI/ColorVision.Core",
+        "UI/ColorVision.ImageEditor"
+      ],
+      "domain": "algorithms",
+      "title": "本地点阵畸变 V2",
+      "source": "docs/04-api-reference/algorithms/detectors/grid-distortion-v2.md",
+      "url": "/04-api-reference/algorithms/detectors/grid-distortion-v2",
       "searchable": true
     },
     {
@@ -5819,7 +5884,8 @@
         "flow.workspace",
         "flow.headless",
         "flow.conversion-calibration",
-        "algorithms.find-cross"
+        "algorithms.find-cross",
+        "algorithms.grid-distortion"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine",

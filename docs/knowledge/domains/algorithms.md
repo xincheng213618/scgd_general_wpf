@@ -38,6 +38,9 @@ next: false
 - [Ghost1.0 鬼影检测](../../04-api-reference/algorithms/detectors/ghost-detection.md) — `algorithms.ghost`
   Ghost1.0 鬼影检测的模板、颜色和请求入口；说明数据库明细、首条结果叠图、全部明细 CSV 追加导出及读取失败边界。
 
+- [本地点阵畸变 V2](../../04-api-reference/algorithms/detectors/grid-distortion-v2.md) — `algorithms.grid-distortion`
+  本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。
+
 - [ImageCropping 图像裁剪模板](../../04-api-reference/algorithms/templates/image-cropping-template.md) — `algorithms.image-cropping`
   区分强类型 ImageCropping 的持久参数、运行时四点 ROI、Flow 双输入和图像结果。
 

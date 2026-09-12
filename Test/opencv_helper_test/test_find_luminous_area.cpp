@@ -47,6 +47,7 @@ bool RunP2AlgorithmTests();
 bool RunNativeLoggingTests();
 bool RunPseudoColorTests();
 bool RunFindCrossLocalSyntheticTests();
+bool RunGridDistortionV2Tests();
 int RunFindCrossLocalCvRawCommand(int argc, char* argv[]);
 bool ReadCIEFile(const std::string& filePath, CVCIEFile& fileInfo);
 
@@ -3567,6 +3568,9 @@ void testWithRealImage(const std::string& imagePath)
 
 int main(int argc, char* argv[])
 {
+    if (argc == 2 && std::string(argv[1]) == "--grid-distortion-v2") {
+        return RunGridDistortionV2Tests() ? 0 : 1;
+    }
     if (argc == 2 && std::string(argv[1]) == "--surface-defect-equivalence") {
         return runSurfaceDefectEquivalenceTests() ? 0 : 1;
     }

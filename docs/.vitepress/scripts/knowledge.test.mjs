@@ -613,7 +613,7 @@ async function lookupCliFixture(t) {
   const entry = catalog.entries[0]
   catalog.entries = Array.from({ length: 14 }, (_, index) => ({ ...entry,
     knowledge_id: `ui.fixture-${String(index).padStart(2, '0')}`,
-    status: index === 13 ? 'planned' : 'current', aliases: ['CLIStore', '--all', '--limit', '--help'],
+    status: index === 13 ? 'planned' : 'current', aliases: ['CLIStore', '--all', '--limit', '--help', '--json'],
   }))
   const catalogPath = path.join(root, 'docs/knowledge/catalog.json')
   await fs.mkdir(path.dirname(catalogPath), { recursive: true })
@@ -655,7 +655,7 @@ test('search CLI combines all-status lookup with limits and preserves literal op
   assert.equal(result.status, 0, result.stderr)
   assert.deepEqual(ids(result.stdout), searchCatalog(catalog, 'CLIStore', { all: true, limit: 14 }).map((entry) => entry.knowledge_id))
   assert.match(result.stdout, /\[planned\] ui.fixture-13/u)
-  for (const literal of ['--all', '--limit', '--help']) {
+  for (const literal of ['--all', '--limit', '--help', '--json']) {
     const result = run('search', '--limit', '2', '--', literal)
     assert.equal(result.status, 0, result.stderr)
     assert.deepEqual(ids(result.stdout), searchCatalog(catalog, literal, { limit: 2 }).map((entry) => entry.knowledge_id))
@@ -687,6 +687,92 @@ test('search CLI rejects invalid limits and unknown options instead of changing 
   assert.match(empty.stderr, /search requires a query/u)
 })
 
+test('search JSON exposes only the documented fields and round-trips Unicode and escaped text', async (t) => {
+  const { catalog, catalogPath, run } = await lookupCliFixture(t)
+  catalog.entries[0].title = '结果 "示例"\\位置\n下一行'
+  catalog.entries[0].summary = '中文摘要\t带 "引号"'
+  await fs.writeFile(catalogPath, JSON.stringify(catalog))
+  const result = run('search', 'CLIStore', '--json')
+  assert.equal(result.status, 0, result.stderr)
+  assert.equal(result.stderr, '')
+  const output = JSON.parse(result.stdout)
+  assert.deepEqual(Object.keys(output).sort(), ['matches', 'total'])
+  assert.equal(output.total, 13)
+  assert.equal(output.matches.length, 12)
+  assert.deepEqual(output.matches[0], {
+    knowledge_id: 'ui.fixture-00', status: 'current', title: catalog.entries[0].title,
+    source: 'docs/example.md', summary: catalog.entries[0].summary, match_kind: 'exact',
+  })
+  for (const match of output.matches) {
+    assert.deepEqual(Object.keys(match).sort(), ['knowledge_id', 'match_kind', 'source', 'status', 'summary', 'title'])
+    assert.ok(Object.values(match).every((value) => typeof value === 'string'))
+  }
+})
+
+test('search JSON keeps ranked windows, total counts, and match kinds consistent with text output', async (t) => {
+  const { catalog, catalogPath, run, ids } = await lookupCliFixture(t)
+  const context = '保存配置失败后如何恢复原始内容并重新加载'
+  for (const entry of catalog.entries) entry.summary = context
+  catalog.entries[5].aliases = ['CLIStore.Save']
+  catalog.entries[5].summary = 'Member contract.'
+  await fs.writeFile(catalogPath, JSON.stringify(catalog))
+  const query = 'CLIStore.Save' + context
+  const full = ids(run('search', query, '--limit=100').stdout)
+  assert.equal(full[0], 'ui.fixture-05')
+  for (const [options, count] of [[[], 12], [['--limit', '3'], 3], [['--limit=3'], 3], [['--limit=100'], 13]]) {
+    const result = run('search', '--json', ...options, query)
+    assert.equal(result.status, 0, result.stderr)
+    assert.equal(result.stderr, '')
+    const output = JSON.parse(result.stdout)
+    assert.equal(output.total, 13)
+    assert.equal(output.matches.length, count)
+    assert.deepEqual(output.matches.map((match) => match.knowledge_id), full.slice(0, count))
+    assert.equal(output.matches[0].match_kind, 'qualified-symbol')
+    assert.equal(output.matches[1].match_kind, 'owner-fallback')
+  }
+  const empty = run('search', 'DefinitelyAbsentSymbol_297abc', '--json', '--limit=1')
+  assert.equal(empty.status, 0, empty.stderr)
+  assert.equal(empty.stderr, '')
+  assert.deepEqual(JSON.parse(empty.stdout), { total: 0, matches: [] })
+})
+
+test('search JSON combines all-status filtering and limits while excluding hidden topics', async (t) => {
+  const { catalog, catalogPath, run } = await lookupCliFixture(t)
+  catalog.entries.push({ ...catalog.entries[0], knowledge_id: 'ui.history', status: 'historical' },
+    { ...catalog.entries[0], knowledge_id: 'ui.hidden', searchable: false })
+  await fs.writeFile(catalogPath, JSON.stringify(catalog))
+  for (const [options, total, count] of [[[], 13, 12], [['--all'], 15, 12], [['--all', '--limit=100'], 15, 15]]) {
+    const result = run('search', '--json', 'CLIStore', ...options)
+    assert.equal(result.status, 0, result.stderr)
+    const output = JSON.parse(result.stdout)
+    assert.equal(output.total, total)
+    assert.equal(output.matches.length, count)
+    assert.ok(output.matches.every((match) => match.knowledge_id !== 'ui.hidden'))
+    if (total === 13) assert.ok(output.matches.every((match) => match.status === 'current'))
+    if (count === 15) assert.deepEqual([...new Set(output.matches.map((match) => match.status))].sort(), ['current', 'historical', 'planned'])
+  }
+})
+
+test('search JSON respects literal options and preserves argument error channels', async (t) => {
+  const { run } = await lookupCliFixture(t)
+  const literal = run('search', '--json', '--limit=1', '--', '--json')
+  assert.equal(literal.status, 0, literal.stderr)
+  const output = JSON.parse(literal.stdout)
+  assert.equal(output.total, 13)
+  assert.equal(output.matches.length, 1)
+  assert.equal(output.matches[0].match_kind, 'exact')
+  assert.equal(run('search', 'CLIStore', '--json', '--json').stdout, run('search', 'CLIStore', '--json').stdout)
+  for (const args of [[], ['   '], ['CLIStore', '--limit=0'], ['CLIStore', '--limit'],
+    ['CLIStore', '--limit=2', '--limit=3'], ['CLIStore', '--limt'], ['CLIStore', '--json=true']]) {
+    const normal = run('search', ...args)
+    const json = run('search', '--json', ...args)
+    assert.equal(json.status, 1)
+    assert.equal(json.stdout, '')
+    assert.notEqual(json.stderr, '')
+    assert.equal(json.stderr, normal.stderr)
+  }
+})
+
 test('impact CLI remains exhaustive and rejects search options and multiple paths', async (t) => {
   const { catalog, catalogPath, run, ids } = await lookupCliFixture(t)
   const result = run('impact', 'src/example.cs')
@@ -694,7 +780,7 @@ test('impact CLI remains exhaustive and rejects search options and multiple path
   assert.equal(ids(result.stdout).length, 14)
   assert.match(result.stdout, /\[planned\]/u)
   assert.match(result.stdout, /mapped: src\/example\.cs/u)
-  for (const args of [['src/example.cs', '--limit', '2'], ['src/example.cs', '--all']]) {
+  for (const args of [['src/example.cs', '--limit', '2'], ['src/example.cs', '--all'], ['src/example.cs', '--json']]) {
     const result = run('impact', ...args)
     assert.equal(result.status, 1)
     assert.match(result.stderr, /Unknown impact option/u)
@@ -716,6 +802,7 @@ test('lookup CLI stays dependency-free and read-only while help needs no catalog
   await fs.writeFile(path.join(root, 'docs/example.md'), '---\ninvalid metadata')
   await fs.unlink(path.join(root, 'src/example.cs'))
   assert.equal(run('search', 'CLIStore', '--limit', '1').status, 0)
+  assert.equal(run('search', 'CLIStore', '--limit', '1', '--json').status, 0)
   assert.equal(run('impact', 'src/example.cs').status, 0)
   assert.equal(await fs.readFile(catalogPath, 'utf8'), before)
   await assert.rejects(fs.stat(path.join(root, 'node_modules')), { code: 'ENOENT' })
@@ -724,10 +811,19 @@ test('lookup CLI stays dependency-free and read-only while help needs no catalog
     const result = run(...args)
     assert.equal(result.status, 0, result.stderr)
     assert.match(result.stdout, /--limit/u)
+    assert.match(result.stdout, /--json/u)
     assert.match(result.stdout, /impact/u)
     assert.equal(result.stderr, '')
   }
-  assert.equal(run('search', 'CLIStore').status, 1)
+  for (const invalidCatalog of [null, '{ invalid JSON']) {
+    if (invalidCatalog !== null) await fs.writeFile(catalogPath, invalidCatalog)
+    const normal = run('search', 'CLIStore')
+    const json = run('search', 'CLIStore', '--json')
+    assert.equal(json.status, 1)
+    assert.equal(json.stdout, '')
+    assert.notEqual(json.stderr, '')
+    assert.equal(json.stderr, normal.stderr)
+  }
 })
 
 test('website search text retains underscores and generic code identifiers', () => {

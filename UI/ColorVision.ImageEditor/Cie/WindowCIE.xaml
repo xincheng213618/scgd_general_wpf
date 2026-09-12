@@ -70,150 +70,150 @@
                     <Border x:Name="DisplayOptionsPanel" Style="{StaticResource CieFloatingCard}" Padding="14">
                         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                             <StackPanel>
-<GroupBox Header="{x:Static properties:Resources.Cie_DisplayPresets}" Style="{StaticResource PanelGroupBox}">
-                            <UniformGrid Columns="2">
-                                <Button Content="{x:Static properties:Resources.Cie_Display}"
-                                        Click="PresetButton_Click"
-                                        Style="{StaticResource PanelButton}"
-                                        Tag="Display" />
-                                <Button Content="{x:Static properties:Resources.Cie_Cinema}"
-                                        Click="PresetButton_Click"
-                                        Style="{StaticResource PanelButton}"
-                                        Tag="Cinema" />
-                                <Button Content="{x:Static properties:Resources.Cie_SelectAll}"
-                                        Click="PresetButton_Click"
-                                        Style="{StaticResource PanelButton}"
-                                        Tag="All" />
-                                <Button Content="{x:Static properties:Resources.Cie_Clear}"
-                                        Click="PresetButton_Click"
-                                        Style="{StaticResource PanelButton}"
-                                        Tag="Clear" />
-                            </UniformGrid>
-                        </GroupBox>
-<GroupBox Header="{x:Static properties:Resources.Cie_ColorGamut}" Style="{StaticResource PanelGroupBox}">
-                            <UniformGrid Columns="2">
-                                <CheckBox x:Name="CheckBoxSRgb"
-                                          Content="sRGB"
-                                          IsChecked="True"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="GamutCheckBox_Changed"
-                                          Unchecked="GamutCheckBox_Changed" />
-                                <CheckBox x:Name="CheckBoxRec709"
-                                          Content="BT.709"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="GamutCheckBox_Changed"
-                                          Unchecked="GamutCheckBox_Changed" />
-                                <CheckBox x:Name="CheckBoxAdobeRgb"
-                                          Content="Adobe RGB"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="GamutCheckBox_Changed"
-                                          Unchecked="GamutCheckBox_Changed" />
-                                <CheckBox x:Name="CheckBoxDisplayP3"
-                                          Content="Display P3"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="GamutCheckBox_Changed"
-                                          Unchecked="GamutCheckBox_Changed" />
-                                <CheckBox x:Name="CheckBoxNtsc"
-                                          Content="NTSC 1953"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="GamutCheckBox_Changed"
-                                          Unchecked="GamutCheckBox_Changed" />
-                                <CheckBox x:Name="CheckBoxDciP3"
-                                          Content="DCI-P3"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="GamutCheckBox_Changed"
-                                          Unchecked="GamutCheckBox_Changed" />
-                                <CheckBox x:Name="CheckBoxRec2020"
-                                          Content="BT.2020"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="GamutCheckBox_Changed"
-                                          Unchecked="GamutCheckBox_Changed" />
-                                <CheckBox x:Name="CheckBoxPal"
-                                          Content="EBU/PAL"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="GamutCheckBox_Changed"
-                                          Unchecked="GamutCheckBox_Changed" />
-                                <CheckBox x:Name="CheckBoxSmpteC"
-                                          Content="SMPTE-C"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="GamutCheckBox_Changed"
-                                          Unchecked="GamutCheckBox_Changed" />
-                                <CheckBox x:Name="CheckBoxProPhoto"
-                                          Content="ProPhoto"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="GamutCheckBox_Changed"
-                                          Unchecked="GamutCheckBox_Changed" />
-                                <CheckBox x:Name="CheckBoxAcesCg"
-                                          Content="ACEScg"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="GamutCheckBox_Changed"
-                                          Unchecked="GamutCheckBox_Changed" />
-                            </UniformGrid>
-                        </GroupBox>
-<GroupBox Header="{x:Static properties:Resources.Cie_WhitePointLightSource}" Style="{StaticResource PanelGroupBox}">
-                            <UniformGrid Columns="2">
-                                <CheckBox x:Name="CheckBoxD65"
-                                          Content="D65"
-                                          IsChecked="True"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="IlluminantCheckBox_Changed"
-                                          Unchecked="IlluminantCheckBox_Changed" />
-                                <CheckBox x:Name="CheckBoxE"
-                                          Content="E"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="IlluminantCheckBox_Changed"
-                                          Unchecked="IlluminantCheckBox_Changed" />
-                                <CheckBox x:Name="CheckBoxD50"
-                                          Content="D50"
-                                          IsChecked="False"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="IlluminantCheckBox_Changed"
-                                          Unchecked="IlluminantCheckBox_Changed" />
-                                <CheckBox x:Name="CheckBoxD55"
-                                          Content="D55"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="IlluminantCheckBox_Changed"
-                                          Unchecked="IlluminantCheckBox_Changed" />
-                                <CheckBox x:Name="CheckBoxD60"
-                                          Content="D60"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="IlluminantCheckBox_Changed"
-                                          Unchecked="IlluminantCheckBox_Changed" />
-                                <CheckBox x:Name="CheckBoxC"
-                                          Content="C"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="IlluminantCheckBox_Changed"
-                                          Unchecked="IlluminantCheckBox_Changed" />
-                                <CheckBox x:Name="CheckBoxA"
-                                          Content="A"
-                                          IsChecked="False"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="IlluminantCheckBox_Changed"
-                                          Unchecked="IlluminantCheckBox_Changed" />
-                                <CheckBox x:Name="CheckBoxD75"
-                                          Content="D75"
-                                          IsChecked="False"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="IlluminantCheckBox_Changed"
-                                          Unchecked="IlluminantCheckBox_Changed" />
-                            </UniformGrid>
-                        </GroupBox>
-<GroupBox Header="{x:Static properties:Resources.Cie_ReferenceLines}" Style="{StaticResource PanelGroupBox}">
-                            <StackPanel>
-                                <CheckBox x:Name="CheckBoxCct"
-                                          Content="Tc(K)"
-                                          IsChecked="False"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="CctCheckBox_Changed"
-                                          Unchecked="CctCheckBox_Changed" />
-                                <CheckBox x:Name="CheckBoxDaylight"
-                                          Content="D locus"
-                                          IsChecked="False"
-                                          Style="{StaticResource OptionCheckBox}"
-                                          Checked="DaylightCheckBox_Changed"
-                                          Unchecked="DaylightCheckBox_Changed" />
-                            </StackPanel>
-                        </GroupBox>
+                                <GroupBox Header="{x:Static properties:Resources.Cie_DisplayPresets}" Style="{StaticResource PanelGroupBox}">
+                                    <UniformGrid Columns="2">
+                                        <Button Content="{x:Static properties:Resources.Cie_Display}"
+                                                Click="PresetButton_Click"
+                                                Style="{StaticResource PanelButton}"
+                                                Tag="Display" />
+                                        <Button Content="{x:Static properties:Resources.Cie_Cinema}"
+                                                Click="PresetButton_Click"
+                                                Style="{StaticResource PanelButton}"
+                                                Tag="Cinema" />
+                                        <Button Content="{x:Static properties:Resources.Cie_SelectAll}"
+                                                Click="PresetButton_Click"
+                                                Style="{StaticResource PanelButton}"
+                                                Tag="All" />
+                                        <Button Content="{x:Static properties:Resources.Cie_Clear}"
+                                                Click="PresetButton_Click"
+                                                Style="{StaticResource PanelButton}"
+                                                Tag="Clear" />
+                                    </UniformGrid>
+                                </GroupBox>
+                                <GroupBox Header="{x:Static properties:Resources.Cie_ColorGamut}" Style="{StaticResource PanelGroupBox}">
+                                    <UniformGrid Columns="2">
+                                        <CheckBox x:Name="CheckBoxSRgb"
+                                                  Content="sRGB"
+                                                  IsChecked="True"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="GamutCheckBox_Changed"
+                                                  Unchecked="GamutCheckBox_Changed" />
+                                        <CheckBox x:Name="CheckBoxRec709"
+                                                  Content="BT.709"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="GamutCheckBox_Changed"
+                                                  Unchecked="GamutCheckBox_Changed" />
+                                        <CheckBox x:Name="CheckBoxAdobeRgb"
+                                                  Content="Adobe RGB"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="GamutCheckBox_Changed"
+                                                  Unchecked="GamutCheckBox_Changed" />
+                                        <CheckBox x:Name="CheckBoxDisplayP3"
+                                                  Content="Display P3"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="GamutCheckBox_Changed"
+                                                  Unchecked="GamutCheckBox_Changed" />
+                                        <CheckBox x:Name="CheckBoxNtsc"
+                                                  Content="NTSC 1953"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="GamutCheckBox_Changed"
+                                                  Unchecked="GamutCheckBox_Changed" />
+                                        <CheckBox x:Name="CheckBoxDciP3"
+                                                  Content="DCI-P3"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="GamutCheckBox_Changed"
+                                                  Unchecked="GamutCheckBox_Changed" />
+                                        <CheckBox x:Name="CheckBoxRec2020"
+                                                  Content="BT.2020"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="GamutCheckBox_Changed"
+                                                  Unchecked="GamutCheckBox_Changed" />
+                                        <CheckBox x:Name="CheckBoxPal"
+                                                  Content="EBU/PAL"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="GamutCheckBox_Changed"
+                                                  Unchecked="GamutCheckBox_Changed" />
+                                        <CheckBox x:Name="CheckBoxSmpteC"
+                                                  Content="SMPTE-C"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="GamutCheckBox_Changed"
+                                                  Unchecked="GamutCheckBox_Changed" />
+                                        <CheckBox x:Name="CheckBoxProPhoto"
+                                                  Content="ProPhoto"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="GamutCheckBox_Changed"
+                                                  Unchecked="GamutCheckBox_Changed" />
+                                        <CheckBox x:Name="CheckBoxAcesCg"
+                                                  Content="ACEScg"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="GamutCheckBox_Changed"
+                                                  Unchecked="GamutCheckBox_Changed" />
+                                    </UniformGrid>
+                                </GroupBox>
+                                <GroupBox Header="{x:Static properties:Resources.Cie_WhitePointLightSource}" Style="{StaticResource PanelGroupBox}">
+                                    <UniformGrid Columns="2">
+                                        <CheckBox x:Name="CheckBoxD65"
+                                                  Content="D65"
+                                                  IsChecked="True"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="IlluminantCheckBox_Changed"
+                                                  Unchecked="IlluminantCheckBox_Changed" />
+                                        <CheckBox x:Name="CheckBoxE"
+                                                  Content="E"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="IlluminantCheckBox_Changed"
+                                                  Unchecked="IlluminantCheckBox_Changed" />
+                                        <CheckBox x:Name="CheckBoxD50"
+                                                  Content="D50"
+                                                  IsChecked="False"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="IlluminantCheckBox_Changed"
+                                                  Unchecked="IlluminantCheckBox_Changed" />
+                                        <CheckBox x:Name="CheckBoxD55"
+                                                  Content="D55"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="IlluminantCheckBox_Changed"
+                                                  Unchecked="IlluminantCheckBox_Changed" />
+                                        <CheckBox x:Name="CheckBoxD60"
+                                                  Content="D60"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="IlluminantCheckBox_Changed"
+                                                  Unchecked="IlluminantCheckBox_Changed" />
+                                        <CheckBox x:Name="CheckBoxC"
+                                                  Content="C"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="IlluminantCheckBox_Changed"
+                                                  Unchecked="IlluminantCheckBox_Changed" />
+                                        <CheckBox x:Name="CheckBoxA"
+                                                  Content="A"
+                                                  IsChecked="False"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="IlluminantCheckBox_Changed"
+                                                  Unchecked="IlluminantCheckBox_Changed" />
+                                        <CheckBox x:Name="CheckBoxD75"
+                                                  Content="D75"
+                                                  IsChecked="False"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="IlluminantCheckBox_Changed"
+                                                  Unchecked="IlluminantCheckBox_Changed" />
+                                    </UniformGrid>
+                                </GroupBox>
+                                <GroupBox Header="{x:Static properties:Resources.Cie_ReferenceLines}" Style="{StaticResource PanelGroupBox}">
+                                    <StackPanel>
+                                        <CheckBox x:Name="CheckBoxCct"
+                                                  Content="Tc(K)"
+                                                  IsChecked="False"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="CctCheckBox_Changed"
+                                                  Unchecked="CctCheckBox_Changed" />
+                                        <CheckBox x:Name="CheckBoxDaylight"
+                                                  Content="D locus"
+                                                  IsChecked="False"
+                                                  Style="{StaticResource OptionCheckBox}"
+                                                  Checked="DaylightCheckBox_Changed"
+                                                  Unchecked="DaylightCheckBox_Changed" />
+                                    </StackPanel>
+                                </GroupBox>
                             </StackPanel>
                         </ScrollViewer>
                     </Border>

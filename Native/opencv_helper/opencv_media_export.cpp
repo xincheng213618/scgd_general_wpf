@@ -3,6 +3,7 @@
 #include "opencv_media_export.h"
 #include "algorithm.h"
 #include "algorithm/distortion/distortion_p9.h"
+#include "algorithm/distortion/grid_distortion_v2.h"
 #include "algorithm/luminous_area/luminous_area_v2.h"
 #include "algorithm/sfr/sfr_bmw4.h"
 #include "algorithm/surface_defect/surface_defect.h"
@@ -1616,6 +1617,29 @@ COLORVISIONCORE_API int M_CalSFRBmw4In1(HImage img, RoiRect roi, const char* con
 		}
 
 		return CopyJsonResult(outputJson, result);
+	});
+}
+
+COLORVISIONCORE_API int M_CalDistortionGridV2(HImage img, RoiRect roi, const char* config, char** result)
+{
+	return GuardIntExport([&]() -> int {
+		if (result == nullptr) return ExportInvalidArgument;
+		*result = nullptr;
+		json options = json::object();
+		if (config != nullptr && config[0] != '\0' && !TryParseJson(config, options)) return ExportInvalidJson;
+		cv::Mat image = CreateMatView(img);
+		const bool fullImage = roi.x == 0 && roi.y == 0 && roi.width == 0 && roi.height == 0;
+		const bool validRoi = fullImage || (roi.x >= 0 && roi.y >= 0 && roi.width > 0 && roi.height > 0
+			&& static_cast<int64_t>(roi.x) + roi.width <= image.cols && static_cast<int64_t>(roi.y) + roi.height <= image.rows);
+		if (!validRoi) {
+			json rejected = cvcore::distortion::calculateGridDistortionV2(cv::Mat(), options);
+			rejected["statusCode"] = "invalid_roi";
+			rejected["message"] = "ROI must be entirely within the image, or all zero for the full image.";
+			return CopyJsonResult(rejected, result);
+		}
+		const cv::Point origin = fullImage ? cv::Point() : cv::Point(roi.x, roi.y);
+		if (!fullImage && !image.empty()) image = image(cv::Rect(roi.x, roi.y, roi.width, roi.height));
+		return CopyJsonResult(cvcore::distortion::calculateGridDistortionV2(image, options, origin), result);
 	});
 }
 

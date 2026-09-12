@@ -80,12 +80,12 @@
                         <Setter.Value>
                             <ControlTemplate TargetType="TabItem">
                                 <Border Background="{TemplateBinding Background}" CornerRadius="5" Padding="{TemplateBinding Padding}">
-                                    <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" />
+                                    <ContentPresenter x:Name="HeaderPresenter" ContentSource="Header" RecognizesAccessKey="True" />
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsSelected" Value="True">
                                         <Setter Property="Background" Value="#200078D4" />
-                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                        <Setter TargetName="HeaderPresenter" Property="TextElement.FontWeight" Value="SemiBold" />
                                     </Trigger>
                                     <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#180078D4" /></Trigger>
                                 </ControlTemplate.Triggers>

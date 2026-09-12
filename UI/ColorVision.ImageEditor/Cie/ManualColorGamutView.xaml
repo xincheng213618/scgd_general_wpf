@@ -70,64 +70,67 @@
                 <Border x:Name="ParameterPanel" Style="{StaticResource CieFloatingCard}" Padding="14">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel>
-<GroupBox Header="RGB CIE 1931 xy 坐标" Style="{StaticResource PanelGroupBox}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="54" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
+                            <GroupBox Header="RGB CIE 1931 xy 坐标" Style="{StaticResource PanelGroupBox}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="54" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="0" Grid.Column="1" Text="x" HorizontalAlignment="Center" />
-                            <TextBlock Grid.Row="0" Grid.Column="2" Text="y" HorizontalAlignment="Center" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="x" HorizontalAlignment="Center" />
+                                    <TextBlock Grid.Row="0" Grid.Column="2" Text="y" HorizontalAlignment="Center" />
 
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="R" Style="{StaticResource LabelText}" />
-                            <TextBox x:Name="TextBoxRedX" Grid.Row="1" Grid.Column="1" TextChanged="CoordinateTextBox_TextChanged" />
-                            <TextBox x:Name="TextBoxRedY" Grid.Row="1" Grid.Column="2" TextChanged="CoordinateTextBox_TextChanged" />
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="R" Style="{StaticResource LabelText}" />
+                                    <TextBox x:Name="TextBoxRedX" Grid.Row="1" Grid.Column="1" TextChanged="CoordinateTextBox_TextChanged" />
+                                    <TextBox x:Name="TextBoxRedY" Grid.Row="1" Grid.Column="2" TextChanged="CoordinateTextBox_TextChanged" />
 
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="G" Style="{StaticResource LabelText}" />
-                            <TextBox x:Name="TextBoxGreenX" Grid.Row="2" Grid.Column="1" TextChanged="CoordinateTextBox_TextChanged" />
-                            <TextBox x:Name="TextBoxGreenY" Grid.Row="2" Grid.Column="2" TextChanged="CoordinateTextBox_TextChanged" />
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="G" Style="{StaticResource LabelText}" />
+                                    <TextBox x:Name="TextBoxGreenX" Grid.Row="2" Grid.Column="1" TextChanged="CoordinateTextBox_TextChanged" />
+                                    <TextBox x:Name="TextBoxGreenY" Grid.Row="2" Grid.Column="2" TextChanged="CoordinateTextBox_TextChanged" />
 
-                            <TextBlock Grid.Row="3" Grid.Column="0" Text="B" Style="{StaticResource LabelText}" />
-                            <TextBox x:Name="TextBoxBlueX" Grid.Row="3" Grid.Column="1" TextChanged="CoordinateTextBox_TextChanged" />
-                            <TextBox x:Name="TextBoxBlueY" Grid.Row="3" Grid.Column="2" TextChanged="CoordinateTextBox_TextChanged" />
-                        </Grid>
-                    </GroupBox>
-<GroupBox Header="标准色域" Style="{StaticResource PanelGroupBox}">
-                        <StackPanel>
-                            <ListBox x:Name="ListBoxStandards"
-                                     MinHeight="170"
-                                     MaxHeight="190"
-                                     BorderBrush="{DynamicResource BorderBrush}"
-                                     SelectionChanged="ListBoxStandards_SelectionChanged">
-                                <ListBox.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate></ListBox.ItemsPanel><ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <CheckBox Content="{Binding Standard.Name}"
-                                                  IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                  Checked="StandardCheckBox_Changed"
-                                                  Unchecked="StandardCheckBox_Changed" />
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
-                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                <Button Content="全选" Click="ButtonSelectAll_Click" />
-                                <Button Content="清空" Click="ButtonClearSelection_Click" />
-                            </StackPanel>
-                        </StackPanel>
-                    </GroupBox>
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="B" Style="{StaticResource LabelText}" />
+                                    <TextBox x:Name="TextBoxBlueX" Grid.Row="3" Grid.Column="1" TextChanged="CoordinateTextBox_TextChanged" />
+                                    <TextBox x:Name="TextBoxBlueY" Grid.Row="3" Grid.Column="2" TextChanged="CoordinateTextBox_TextChanged" />
+                                </Grid>
+                            </GroupBox>
                             <WrapPanel Margin="0,0,0,10">
                                 <Button Content="套用标准值" Click="ButtonApplyStandard_Click" />
                                 <Button Content="计算" Click="ButtonCalculate_Click" />
                                 <Button x:Name="ButtonExport" Content="导出" Click="ButtonExport_Click" IsEnabled="False" />
                             </WrapPanel>
-                            <TextBlock x:Name="TextBlockStatus" TextWrapping="Wrap" FontSize="12" Foreground="Gray" />
+                            <TextBlock x:Name="TextBlockStatus" TextWrapping="Wrap" Margin="0,0,0,10" FontSize="12" Foreground="Gray" />
+                            <GroupBox Header="标准色域" Style="{StaticResource PanelGroupBox}">
+                                <StackPanel>
+                                    <ListBox x:Name="ListBoxStandards"
+                                             MinHeight="0"
+                                             MaxHeight="190"
+                                             BorderBrush="{DynamicResource BorderBrush}"
+                                             SelectionChanged="ListBoxStandards_SelectionChanged">
+                                        <ListBox.ItemsPanel>
+                                            <ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate>
+                                        </ListBox.ItemsPanel>
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <CheckBox Content="{Binding Standard.Name}"
+                                                          IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                          Checked="StandardCheckBox_Changed"
+                                                          Unchecked="StandardCheckBox_Changed" />
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                        <Button Content="全选" Click="ButtonSelectAll_Click" />
+                                        <Button Content="清空" Click="ButtonClearSelection_Click" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </GroupBox>
                         </StackPanel>
                     </ScrollViewer>
                 </Border>

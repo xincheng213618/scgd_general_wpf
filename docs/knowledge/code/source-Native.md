@@ -30,6 +30,9 @@ next: false
 - [发光区定位：远端模板与本地 V2](../../04-api-reference/algorithms/templates/find-light-area.md) — `algorithms.find-light-area`
   发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布，并说明模板字典恢复不一致。
 
+- [本地点阵畸变 V2](../../04-api-reference/algorithms/detectors/grid-distortion-v2.md) — `algorithms.grid-distortion`
+  本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。
+
 - [本地灯珠与 P2 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
   ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合的操作、参数与结果；灯珠暗区候选不完整，P2 运行失败后复制结果可能仍取上次 JSON。
 
@@ -57,6 +60,9 @@ next: false
 
 - [发光区定位：远端模板与本地 V2](../../04-api-reference/algorithms/templates/find-light-area.md) — `algorithms.find-light-area`
   发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布，并说明模板字典恢复不一致。
+
+- [本地点阵畸变 V2](../../04-api-reference/algorithms/detectors/grid-distortion-v2.md) — `algorithms.grid-distortion`
+  本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。
 
 - [本地灯珠与 P2 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
   ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合的操作、参数与结果；灯珠暗区候选不完整，P2 运行失败后复制结果可能仍取上次 JSON。

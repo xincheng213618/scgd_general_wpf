@@ -1079,6 +1079,12 @@
             },
             {
               "text": {
+                "root": "本地点阵畸变 V2"
+              },
+              "link": "/04-api-reference/algorithms/detectors/grid-distortion-v2"
+            },
+            {
+              "text": {
                 "root": "本地灯珠与 P2 分析"
               },
               "link": "/04-api-reference/algorithms/local-native-analysis"
@@ -1232,6 +1238,12 @@
                 "root": "发光区定位：远端模板与本地 V2"
               },
               "link": "/04-api-reference/algorithms/templates/find-light-area"
+            },
+            {
+              "text": {
+                "root": "本地点阵畸变 V2"
+              },
+              "link": "/04-api-reference/algorithms/detectors/grid-distortion-v2"
             },
             {
               "text": {
@@ -2255,6 +2267,12 @@
             },
             {
               "text": {
+                "root": "本地点阵畸变 V2"
+              },
+              "link": "/04-api-reference/algorithms/detectors/grid-distortion-v2"
+            },
+            {
+              "text": {
                 "root": "ImageCropping 图像裁剪模板"
               },
               "link": "/04-api-reference/algorithms/templates/image-cropping-template"
@@ -2963,6 +2981,12 @@
             },
             {
               "text": {
+                "root": "本地点阵畸变 V2"
+              },
+              "link": "/04-api-reference/algorithms/detectors/grid-distortion-v2"
+            },
+            {
+              "text": {
                 "root": "本地灯珠与 P2 分析"
               },
               "link": "/04-api-reference/algorithms/local-native-analysis"
@@ -3026,6 +3050,12 @@
                 "root": "发光区定位：远端模板与本地 V2"
               },
               "link": "/04-api-reference/algorithms/templates/find-light-area"
+            },
+            {
+              "text": {
+                "root": "本地点阵畸变 V2"
+              },
+              "link": "/04-api-reference/algorithms/detectors/grid-distortion-v2"
             },
             {
               "text": {
@@ -3311,6 +3341,12 @@
                 "root": "数据所有者与存储定位"
               },
               "link": "/01-user-guide/data-management/README"
+            },
+            {
+              "text": {
+                "root": "本地点阵畸变 V2"
+              },
+              "link": "/04-api-reference/algorithms/detectors/grid-distortion-v2"
             },
             {
               "text": {

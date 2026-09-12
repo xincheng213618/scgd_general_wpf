@@ -199,6 +199,7 @@
     <ClInclude Include="algorithm\poi\poi_batch.h" />
     <ClInclude Include="algorithm\binocular\binocular_fusion.h" />
     <ClInclude Include="algorithm\distortion\distortion_p9.h" />
+    <ClInclude Include="algorithm\distortion\grid_distortion_v2.h" />
     <ClInclude Include="algorithm\find_cross\find_cross.h" />
     <ClInclude Include="algorithm\find_cross\pattern_cross.h" />
     <ClInclude Include="algorithm\ghost\ghost_detection.h" />
@@ -239,6 +240,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="algorithm\distortion\distortion_p9.cpp" />
+    <ClCompile Include="algorithm\distortion\grid_distortion_v2.cpp" />
     <ClCompile Include="algorithm\find_cross\find_cross.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>

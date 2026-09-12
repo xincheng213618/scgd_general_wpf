@@ -8,11 +8,12 @@
 
 ## Find and maintain project knowledge
 
-- Use `docs/knowledge/index.md` as the task-to-topic map. Read only the relevant topic, its `related` topics when needed, and the referenced implementation/tests; do not start by loading the whole repository or all docs.
+- For unfamiliar or cross-module work, use `docs/knowledge/index.md` or local search to locate the owning topic. When the owner is already known, start with its relevant contract, implementation and tests; do not repeat a whole-repository discovery pass or read every `related` topic.
 - Without installing website dependencies, run `node docs/.vitepress/scripts/knowledge.mjs search "<question or symbol>"` for current topics. Use `--all` when looking for planned/historical behavior. Raw Markdown is authoritative documentation; the catalog and website are generated discovery views, not separate facts.
-- Before changing a known code path, run `node docs/.vitepress/scripts/knowledge.mjs impact "<repository-relative path>"` to find documentation to recheck. This is a candidate map, not proof of exhaustive dependency coverage.
+- Use `node docs/.vitepress/scripts/knowledge.mjs impact "<repository-relative path>"` when a behavior/contract change has unclear documentation ownership, or when moving/deleting referenced source or test paths. It finds review candidates, not a complete dependency graph; it is not mandatory for every internal code edit.
 - Check the topic's status and actual code/tests. `current` describes intended present scope, not a claim that tests passed. Flag conflicts between documented contracts and implementation; do not silently choose whichever is convenient. Missing evidence is a verification gap, not permission to invent behavior.
-- Update affected knowledge in the same change as public behavior, contracts, architecture boundaries, or build/release commands. Follow `docs/AGENTS.md` and `docs/knowledge/maintenance.md`; generate the catalog with `npm run docs:knowledge`, then run `npm run docs:check` and the relevant site verification.
+- Update the owning topic when public behavior, contracts, architecture boundaries, operation steps or build/release commands change. Internal refactoring and fixes that restore an unchanged contract need no prose update only when existing knowledge, implementation entry points and verification guidance remain accurate; otherwise correct the affected statements or references. Preserve design reasons, compatibility rules and verification methods rather than narrating implementation edits.
+- Follow the change-scoped validation table in `docs/knowledge/maintenance.md` when documentation changes. Regenerate the catalog only when its inputs change. Code-only work does not require local knowledge generation or a website build; existing CI checks still apply.
 - Instructions and command examples do not grant authority to publish, delete data, control hardware, access credentials, commit, or push. Preserve the user's requested scope and distinguish read-only diagnosis from implementation and external actions.
 
 ## Architecture boundaries

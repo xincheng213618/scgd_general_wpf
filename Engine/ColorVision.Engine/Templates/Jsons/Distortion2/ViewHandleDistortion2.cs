@@ -6,6 +6,8 @@ using ColorVision.Database;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI.Extension;
 using log4net;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -64,7 +66,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
                 sb.AppendLine(string.Join(",",
                     writeTime,
                     res.DistortionReslut.OpticDistortion?.OpticRatio.ToString() ?? "",
-                    res.DistortionReslut.OpticDistortion?.T.ToString() ?? "",
+                    GetOpticTText(res),
                     EscapeCsv(res.DistortionReslut.OpticDistortion?.Message),
                     res.DistortionReslut.OpticDistortion?.MaxErrPoint?.X.ToString() ?? "",
                     res.DistortionReslut.OpticDistortion?.MaxErrPoint?.Y.ToString() ?? "",
@@ -149,10 +151,39 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
             }
 
             ctx.SideTextBox.Visibility = System.Windows.Visibility.Visible;
-            ctx.SideTextBox.Text = result.ViewResults.ToSpecificViewResults<Distortion2View>()[0].DistortionReslut.ToJsonN();
+            ctx.SideTextBox.Text = BuildResultText(result);
         }
 
 
+        internal static string BuildResultText(ViewResultAlg result)
+        {
+            var results = result.ViewResults?.ToSpecificViewResults<Distortion2View>();
+            if (results?.Count > 0 && results[0].DistortionReslut != null)
+                return string.IsNullOrWhiteSpace(results[0].Result)
+                    ? results[0].DistortionReslut.ToJsonN()
+                    : results[0].Result;
+            return $"{result.ResultDesc}{Environment.NewLine}{result.AlgResultMasterModel?.Params}".Trim();
+        }
+
+        internal static string GetOpticTText(Distortion2View result)
+        {
+            if (result.DistortionReslut?.OpticDistortion == null) return string.Empty;
+            if (!string.IsNullOrWhiteSpace(result.Result))
+            {
+                try
+                {
+                    JObject raw = JObject.Parse(result.Result);
+                    if (raw.Value<string>("Algorithm") == "GridDistortionV2"
+                        && raw["Optic_Distortion"] is JObject optic && optic.Property("t") == null)
+                        return string.Empty;
+                }
+                catch (JsonException)
+                {
+                    // Preserve legacy exports when only the typed result is available.
+                }
+            }
+            return result.DistortionReslut.OpticDistortion.T.ToString();
+        }
 
     }
 }

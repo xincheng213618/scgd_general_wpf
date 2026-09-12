@@ -502,11 +502,12 @@ export function validateRetrievalCases(catalog, fixture) {
   return results
 }
 
-const cliUsage = 'Usage: node docs/.vitepress/scripts/knowledge.mjs generate|check|search "query" [--all] [--limit N]|impact "path"\nSearch defaults to 12 results; --all includes planned/historical topics. Use -- before literal option text.\nImpact takes one repository-relative path and always lists every mapped topic. Use --help for this message.'
+const cliUsage = 'Usage: node docs/.vitepress/scripts/knowledge.mjs generate|check|search "query" [--all] [--limit N] [--json]|impact "path"\nSearch defaults to 12 results; --all includes planned/historical topics; --json emits {total, matches}. Use -- before literal option text.\nImpact takes one repository-relative path and always lists every mapped topic. Use --help for this message.'
 
 function parseLookupArguments(command, args) {
   const values = []
   let all = false
+  let json = false
   let limit = 12
   let limitSeen = false
   let literal = false
@@ -515,6 +516,7 @@ function parseLookupArguments(command, args) {
     if (literal) values.push(arg)
     else if (arg === '--') literal = true
     else if (command === 'search' && arg === '--all') all = true
+    else if (command === 'search' && arg === '--json') json = true
     else if (command === 'search' && (arg === '--limit' || arg.startsWith('--limit='))) {
       if (limitSeen) throw new Error('--limit may only be supplied once')
       limitSeen = true
@@ -529,7 +531,7 @@ function parseLookupArguments(command, args) {
   if (command === 'impact' && values.length !== 1) throw new Error('impact requires exactly one repository-relative path; quote paths containing spaces')
   const value = values.join(' ').trim()
   if (!value) throw new Error(`${command} requires ${command === 'search' ? 'a query' : 'a repository-relative path'}`)
-  return { value, all, limit }
+  return { value, all, limit, json }
 }
 
 async function main() {
@@ -553,12 +555,19 @@ async function main() {
     return
   }
   if (command === 'search' || command === 'impact') {
-    const { value, all, limit } = parseLookupArguments(command, args)
+    const { value, all, limit, json } = parseLookupArguments(command, args)
     const catalog = JSON.parse(await fs.readFile(path.join(repoRoot, 'docs/knowledge/catalog.json'), 'utf8'))
     // Ranking already considers the full catalog. Slice only the printed window
     // so a smaller response does not change order or conceal the total count.
     const candidates = command === 'search' ? searchCatalog(catalog, value, { all, limit: catalog.entries.length }) : impactCatalog(catalog, value)
     const matches = command === 'search' ? candidates.slice(0, limit) : candidates
+    if (json) {
+      // Keep the wire contract to the human-visible fields, not ranking internals.
+      console.log(JSON.stringify({ total: candidates.length, matches: matches.map(({ knowledge_id, status, title, source, summary, match_kind }) => ({
+        knowledge_id, status, title, source, summary, match_kind,
+      })) }, null, 2))
+      return
+    }
     for (const entry of matches) {
       console.log(`[${entry.status}] ${entry.knowledge_id} — ${entry.title}\n  ${entry.source}\n  ${entry.summary}`)
       if (command === 'impact') console.log(`  mapped: ${entry.matched_paths.join(', ')}`)

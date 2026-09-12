@@ -186,6 +186,14 @@ extern "C" COLORVISIONCORE_API int M_CalDistortionP9(
     const char* config,
     char** result);
 
+// Complete odd 3..15 row/column circle-grid measurement, version 2.
+// UTF-8 JSON; positive return is the allocated byte count, not measurement success.
+// Inspect success/statusCode; rejected measurements have metrics=null. Point
+// coordinates are full-image coordinates. All-zero ROI means the full image;
+// other ROIs must be positive and fully within the image. Release with FreeResult.
+extern "C" COLORVISIONCORE_API int M_CalDistortionGridV2(
+    HImage image, RoiRect roi, const char* config, char** result);
+
 // Process-local calibration pipeline. The opaque context owns parsed files,
 // large gain/offset tables and precomputed OpenCV maps across frames.
 // Mutating/execution functions use the C calling convention and return 1 on
