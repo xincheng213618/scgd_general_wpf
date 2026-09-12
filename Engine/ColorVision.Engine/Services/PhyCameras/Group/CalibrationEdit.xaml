@@ -12,7 +12,7 @@
         Width="1100" Height="780" MinWidth="980" MinHeight="620"
         Background="{DynamicResource UpdateDialog.Background}"
         Foreground="{DynamicResource UpdateDialog.TextPrimary}"
-        Closed="Window_Closed" Initialized="Window_Initialized">
+        Closed="Window_Closed" Closing="Window_Closing" Initialized="Window_Initialized">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -101,7 +101,8 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Grid Margin="16">
+    <Grid>
+    <Grid x:Name="EditorContent" Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -117,7 +118,7 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                 <Button Style="{StaticResource UpdateDialogTextButtonStyle}" Margin="0,0,8,0"
                         Command="{Binding UploadCalibrationCommand}" Content="上传校正组" />
-                <Button Style="{StaticResource UpdateDialogTextButtonStyle}" Margin="0,0,8,0"
+                <Button x:Name="ExportButton" Style="{StaticResource UpdateDialogTextButtonStyle}" Margin="0,0,8,0"
                         Click="Export_Click" Content="导出" />
                 <Button Style="{StaticResource UpdateDialogTextButtonStyle}" Margin="0,0,8,0"
                         Click="LaunchFourColorCorrection_Click" Content="用户校正" />
@@ -282,5 +283,23 @@
                 </ScrollViewer>
             </Grid>
         </Grid>
+    </Grid>
+        <Border x:Name="ExportBusyOverlay" Panel.ZIndex="100" Background="#66000000"
+                Visibility="Collapsed">
+            <Border Width="360" Padding="24" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Style="{StaticResource UpdateDialogCardStyle}">
+                <StackPanel>
+                    <TextBlock Text="正在导出校正文件" FontSize="17" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" />
+                    <ProgressBar x:Name="ExportProgressBar" Height="5" Margin="0,18,0,12"
+                                 Minimum="0" Maximum="100" Foreground="{DynamicResource PrimaryBrush}" />
+                    <TextBlock x:Name="ExportStatusText" Text="正在准备导出…" FontSize="12"
+                               HorizontalAlignment="Center" Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                               AutomationProperties.LiveSetting="Polite" />
+                    <TextBlock Text="文件较大时可能需要一些时间，请勿关闭窗口" FontSize="11" Margin="0,6,0,0"
+                               HorizontalAlignment="Center" Foreground="{DynamicResource UpdateDialog.TextSecondary}" />
+                </StackPanel>
+            </Border>
+        </Border>
     </Grid>
 </Window>

@@ -12,6 +12,7 @@
 		<PackageReadmeFile></PackageReadmeFile>
 		<UIProjectPackageVersion>*</UIProjectPackageVersion>
 		<NoWarn>WFO1000</NoWarn>
+		<ExcludeSevenZipAssemblies>true</ExcludeSevenZipAssemblies>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -22,9 +23,15 @@
 		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260627" />
 		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260627" />
 		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260627" />
+		<PackageReference Include="SharpSevenZip.StrongName" Version="2.0.122" GeneratePathProperty="true" />
 		<PackageReference Include="SqlSugarCore" Version="5.1.4.217" />
 		<PackageReference Include="System.IO.Ports" Version="10.0.11" />
 		<PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.11" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="$(PkgSharpSevenZip_StrongName)\build\x64\7z.dll" Link="x64\7z.dll"
+			  CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
 	</ItemGroup>
 
 
