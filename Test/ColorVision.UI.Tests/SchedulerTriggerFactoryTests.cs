@@ -1,7 +1,5 @@
 using ColorVision.Scheduler;
 using Quartz;
-using Quartz.Impl;
-using System.Collections.Specialized;
 
 namespace ColorVision.UI.Tests
 {
@@ -154,7 +152,8 @@ namespace ColorVision.UI.Tests
         [Fact]
         public async Task QuartzBulkReplace_ReplacesSameIdentityWithoutDuplicatingTrigger()
         {
-            IScheduler scheduler = await CreateRamScheduler();
+            await using StandaloneSchedulerFactory factory = CreateRamSchedulerFactory();
+            IScheduler scheduler = await factory.GetScheduler();
             var jobKey = new JobKey("replace-job", "replace-group");
             var triggerKey = new TriggerKey("replace-job-trigger", "replace-group");
             try
@@ -167,7 +166,7 @@ namespace ColorVision.UI.Tests
                     .WithIdentity(triggerKey)
                     .ForJob(jobKey)
                     .StartAt(DateTimeOffset.UtcNow.AddHours(1))
-                    .WithSimpleSchedule(schedule => schedule.WithIntervalInMinutes(10).RepeatForever())
+                    .WithSimpleSchedule(schedule => schedule.WithInterval(TimeSpan.FromMinutes(10)).RepeatForever())
                     .Build();
                 await scheduler.ScheduleJob(originalJob, originalTrigger);
 
@@ -180,10 +179,10 @@ namespace ColorVision.UI.Tests
                     .ForJob(jobKey)
                     .StartAt(DateTimeOffset.UtcNow.AddHours(2))
                     .WithPriority(9)
-                    .WithSimpleSchedule(schedule => schedule.WithIntervalInMinutes(30).RepeatForever())
+                    .WithSimpleSchedule(schedule => schedule.WithInterval(TimeSpan.FromMinutes(30)).RepeatForever())
                     .Build();
 
-                await scheduler.ScheduleJob(replacementJob, [replacementTrigger], replace: true);
+                await scheduler.ScheduleJob(replacementJob, [replacementTrigger], ScheduleJobOptions.Replacing);
 
                 IJobDetail? storedJob = await scheduler.GetJobDetail(jobKey);
                 IReadOnlyCollection<ITrigger> storedTriggers = await scheduler.GetTriggersOfJob(jobKey);
@@ -203,7 +202,8 @@ namespace ColorVision.UI.Tests
         [Fact]
         public async Task QuartzBulkReplace_WhenReplacementIsInvalid_KeepsExistingSchedule()
         {
-            IScheduler scheduler = await CreateRamScheduler();
+            await using StandaloneSchedulerFactory factory = CreateRamSchedulerFactory();
+            IScheduler scheduler = await factory.GetScheduler();
             var jobKey = new JobKey("rollback-job", "rollback-group");
             var triggerKey = new TriggerKey("rollback-job-trigger", "rollback-group");
             try
@@ -228,11 +228,11 @@ namespace ColorVision.UI.Tests
                     .WithIdentity(triggerKey)
                     .ForJob(jobKey)
                     .StartAt(DateTimeOffset.UtcNow.AddHours(2))
-                    .ModifiedByCalendar("missing-calendar")
+                    .WithCalendarName("missing-calendar")
                     .Build();
 
                 await Assert.ThrowsAnyAsync<Exception>(
-                    () => scheduler.ScheduleJob(replacementJob, [replacementTrigger], replace: true));
+                    () => scheduler.ScheduleJob(replacementJob, [replacementTrigger], ScheduleJobOptions.Replacing).AsTask());
 
                 IJobDetail? storedJob = await scheduler.GetJobDetail(jobKey);
                 IReadOnlyCollection<ITrigger> storedTriggers = await scheduler.GetTriggersOfJob(jobKey);
@@ -248,17 +248,15 @@ namespace ColorVision.UI.Tests
             }
         }
 
-        private static async Task<IScheduler> CreateRamScheduler()
+        private static StandaloneSchedulerFactory CreateRamSchedulerFactory()
         {
-            var properties = new NameValueCollection
+            return QuartzSchedulerBuilder.Create(builder =>
             {
-                ["quartz.scheduler.instanceName"] = $"scheduler-tests-{Guid.NewGuid():N}",
-                ["quartz.scheduler.instanceId"] = "AUTO",
-                ["quartz.threadPool.type"] = "Quartz.Simpl.DefaultThreadPool, Quartz",
-                ["quartz.threadPool.threadCount"] = "1",
-                ["quartz.jobStore.type"] = "Quartz.Simpl.RAMJobStore, Quartz",
-            };
-            return await new StdSchedulerFactory(properties).GetScheduler();
+                builder.ConfigureScheduler(options =>
+                    options.InstanceName = $"scheduler-tests-{Guid.NewGuid():N}");
+                builder.UseDefaultThreadPool(1);
+                builder.UseInMemoryStore(_ => { });
+            }).Build();
         }
 
         private static SchedulerInfo CreateInfo()
@@ -276,9 +274,9 @@ namespace ColorVision.UI.Tests
 
         private sealed class TestJob : IJob
         {
-            public Task Execute(IJobExecutionContext context)
+            public ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
             {
-                return Task.CompletedTask;
+                return ValueTask.CompletedTask;
             }
         }
     }

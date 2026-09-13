@@ -2,6 +2,7 @@ using cvColorVision;
 using log4net;
 using Quartz;
 using System.ComponentModel;
+using System.Threading;
 
 namespace Spectrum.Job
 {
@@ -14,7 +15,7 @@ namespace Spectrum.Job
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SpectrumDarkCalibrationJob));
 
-        public async Task Execute(IJobExecutionContext context)
+        public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
         {
             var manager = SpectrometerManager.Instance;
 
@@ -28,7 +29,7 @@ namespace Spectrum.Job
 
             int ret = await manager.PerformDarkCalibrationAsync(
                 requireShutter: true,
-                cancellationToken: context.CancellationToken);
+                cancellationToken: cancellationToken);
 
             if (ret == SpectrometerManager.OperationBusy)
             {

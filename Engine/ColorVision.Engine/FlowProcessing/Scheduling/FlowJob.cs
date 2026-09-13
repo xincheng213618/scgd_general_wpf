@@ -5,6 +5,7 @@ using log4net;
 using Quartz;
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 
@@ -33,7 +34,7 @@ namespace ColorVision.Engine.FlowProcessing.Scheduling
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowJob));
 
-        public async Task Execute(IJobExecutionContext context)
+        public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
         {
             log.Info($"FlowJob 开始执行: {context.JobDetail.Key.Name}");
 

@@ -1,14 +1,13 @@
 using ColorVision.Scheduler.Data;
 using log4net;
 using Quartz;
-using Quartz.Listener;
 using System.Collections.Concurrent;
 using System.Windows;
 using System.Windows.Threading;
 
 namespace ColorVision.Scheduler
 {
-    public class TaskExecutionListener : JobListenerSupport
+    public class TaskExecutionListener : IJobListener
     {
         private readonly QuartzSchedulerManager _schedulerManager;
         private static readonly ILog _logger = LogManager.GetLogger(typeof(TaskExecutionListener));
@@ -21,14 +20,12 @@ namespace ColorVision.Scheduler
             _schedulerManager = schedulerManager;
         }
 
-        public override string Name => "TaskExecutionListener";
+        public string Name => "TaskExecutionListener";
 
         public event Action<IJobExecutionContext>? JobExecutedEvent;
 
-        public override async Task JobToBeExecuted(IJobExecutionContext context, CancellationToken cancellationToken = default)
+        public async ValueTask JobToBeExecuted(IJobExecutionContext context, CancellationToken cancellationToken = default)
         {
-            await base.JobToBeExecuted(context, cancellationToken);
-
             JobKey jobKey = context.JobDetail.Key;
             // Register the fire before awaiting the UI dispatcher. Another
             // execution of the same JobKey can finish while this callback is
@@ -56,13 +53,16 @@ namespace ColorVision.Scheduler
             _activeExecutions[context.FireInstanceId] = new ExecutionState(jobKey, DateTime.Now);
         }
 
-        public override async Task JobWasExecuted(
+        public ValueTask JobExecutionVetoed(IJobExecutionContext context, CancellationToken cancellationToken = default)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        public async ValueTask JobWasExecuted(
             IJobExecutionContext context,
             JobExecutionException? jobException,
             CancellationToken cancellationToken = default)
         {
-            await base.JobWasExecuted(context, jobException, cancellationToken);
-
             JobKey jobKey = context.JobDetail.Key;
             DateTime endTime = DateTime.Now;
             DateTime startTime = endTime - context.JobRunTime;

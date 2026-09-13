@@ -29,9 +29,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Job
             return config;
         }
 
-        public async Task Execute(IJobExecutionContext context)
+        public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
         {
-            CancellationToken cancellationToken = context.CancellationToken;
             cancellationToken.ThrowIfCancellationRequested();
 
             SchedulerInfo schedulerInfo = ScheduledDeviceJobHelper.GetSchedulerInfo(context);

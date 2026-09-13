@@ -3,6 +3,7 @@ using log4net;
 using Quartz;
 using System;
 using System.Globalization;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ColorVision.Engine.FlowProcessing.Scheduling;
@@ -26,7 +27,7 @@ public sealed class HeadlessFlowJob : IJob
     private static readonly ILog log =
         LogManager.GetLogger(typeof(HeadlessFlowJob));
 
-    public async Task Execute(IJobExecutionContext context)
+    public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(context);
         string flowKey = string.Empty;
@@ -61,7 +62,7 @@ public sealed class HeadlessFlowJob : IJob
                         MqttRCService.GetInstance().ServiceTokens,
                         readinessTimeout,
                         executionTimeout,
-                        context.CancellationToken);
+                        cancellationToken);
             context.Result = new FlowJobResult
             {
                 Success = result.Succeeded,

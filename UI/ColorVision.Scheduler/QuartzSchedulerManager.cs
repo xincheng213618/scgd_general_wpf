@@ -5,7 +5,6 @@ using ColorVision.Scheduler.Data;
 using ColorVision.UI;
 using log4net;
 using Quartz;
-using Quartz.Impl;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
@@ -45,6 +44,7 @@ namespace ColorVision.Scheduler
         private static QuartzSchedulerManager _instance;
         private static readonly object _locker = new();
         private readonly SemaphoreSlim _mutationGate = new(1, 1);
+        private StandaloneSchedulerFactory? _schedulerFactory;
         public static QuartzSchedulerManager GetInstance() { lock (_locker) { return _instance ??= new QuartzSchedulerManager(); } }
         private static readonly string ConfigFile = Path.Combine(Environments.DirStateScheduler, "scheduler_tasks.json");
        
@@ -104,13 +104,16 @@ namespace ColorVision.Scheduler
                     NextFireTime = task.NextFireTime,
                 })
                 .ToArray();
-            var schedulerState = Scheduler == null
-                ? "Initializing"
-                : Scheduler.IsShutdown
-                    ? "Shutdown"
-                    : Scheduler.InStandbyMode
-                        ? "Standby"
-                        : Scheduler.IsStarted ? "Started" : "Ready";
+            var schedulerState = Scheduler?.Status switch
+            {
+                null => "Initializing",
+                Quartz.SchedulerStatus.Created => "Ready",
+                Quartz.SchedulerStatus.Running => "Started",
+                Quartz.SchedulerStatus.Standby => "Standby",
+                Quartz.SchedulerStatus.ShuttingDown => "ShuttingDown",
+                Quartz.SchedulerStatus.Shutdown => "Shutdown",
+                _ => "Unknown"
+            };
 
             return new CopilotSchedulerContextSnapshot
             {
@@ -388,7 +391,13 @@ namespace ColorVision.Scheduler
         {
             try
             {
-                Scheduler = await StdSchedulerFactory.GetDefaultScheduler();
+                _schedulerFactory = QuartzSchedulerBuilder.Create(builder =>
+                {
+                    builder.ConfigureScheduler(options => options.InstanceName = "DefaultQuartzScheduler");
+                    builder.UseDefaultThreadPool(options => options.MaxConcurrency = 10);
+                    builder.UseInMemoryStore(options => options.MisfireThreshold = TimeSpan.FromSeconds(60));
+                }).Build();
+                Scheduler = await _schedulerFactory.GetScheduler();
                 PauseAllCommand = new RelayCommand(async _ =>
                 {
                     try
@@ -400,7 +409,7 @@ namespace ColorVision.Scheduler
                         _logger.Error("Failed to pause all scheduler jobs.", ex);
                         MessageBox.Show(ex.Message, Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
                     }
-                }, _ => Scheduler.IsStarted);
+                }, _ => Scheduler.Status is Quartz.SchedulerStatus.Running);
                 ResumeAllCommand = new RelayCommand(async _ =>
                 {
                     try
@@ -412,13 +421,13 @@ namespace ColorVision.Scheduler
                         _logger.Error("Failed to resume all scheduler jobs.", ex);
                         MessageBox.Show(ex.Message, Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
                     }
-                }, _ => Scheduler.IsStarted);
+                }, _ => Scheduler.Status is Quartz.SchedulerStatus.Running);
                 StartCommand = new RelayCommand(
                     async _ => await StartScheduler(),
-                    _ => Scheduler != null && !Scheduler.IsStarted && !Scheduler.IsShutdown);
+                    _ => Scheduler?.Status is Quartz.SchedulerStatus.Created);
                 ShutdownCommand = new RelayCommand(
                     async _ => await Shutdown(),
-                    _ => Scheduler != null && Scheduler.IsStarted && !Scheduler.IsShutdown);
+                    _ => Scheduler?.Status is Quartz.SchedulerStatus.Running or Quartz.SchedulerStatus.Standby);
 
                 Listener = new TaskExecutionListener(this);
                 Scheduler.ListenerManager.AddJobListener(Listener);
@@ -493,7 +502,7 @@ namespace ColorVision.Scheduler
             {
                 _logger.Info($"Stopping job: {jobName}({groupName})");
                 JobKey jobKey = new JobKey(jobName, groupName);
-                if (await Scheduler.CheckExists(jobKey))
+                if (await Scheduler.Exists(jobKey))
                 {
                     SchedulerInfo? info = TaskInfos.FirstOrDefault(x => x.JobName == jobName && x.GroupName == groupName);
                     SchedulerStatus previousStatus = info?.Status ?? SchedulerStatus.Ready;
@@ -539,7 +548,7 @@ namespace ColorVision.Scheduler
                     ? Array.Empty<ITrigger>()
                     : await Scheduler.GetTriggersOfJob(jobKey);
 
-                if (await Scheduler.CheckExists(jobKey))
+                if (await Scheduler.Exists(jobKey))
                 {
                     await Scheduler.DeleteJob(jobKey);
                 }
@@ -583,7 +592,7 @@ namespace ColorVision.Scheduler
             {
                 _logger.Info($"Resuming job: {jobName}({groupName})");
                 JobKey jobKey = new JobKey(jobName, groupName);
-                if (await Scheduler.CheckExists(jobKey))
+                if (await Scheduler.Exists(jobKey))
                 {
                     SchedulerInfo? info = TaskInfos.FirstOrDefault(x => x.JobName == jobName && x.GroupName == groupName);
                     SchedulerStatus previousStatus = info?.Status ?? SchedulerStatus.Ready;
@@ -760,8 +769,9 @@ namespace ColorVision.Scheduler
             bool identityChanged = originalJobKey != updatedJobKey;
             try
             {
-                IReadOnlyCollection<IJobExecutionContext> runningJobs = await scheduler.GetCurrentlyExecutingJobs();
-                if (runningJobs.Any(context => context.JobDetail.Key.Equals(originalJobKey)))
+                PagedResult<FireInstance> runningJobs = await scheduler.QueryFireInstances(
+                    new FireInstanceQuery { Job = originalJobKey });
+                if (runningJobs.Items.Count > 0)
                 {
                     return SchedulerOperationResult.Failed(
                         SchedulerOperationError.Conflict,
@@ -785,7 +795,7 @@ namespace ColorVision.Scheduler
                 bool schedulerConflict;
                 try
                 {
-                    schedulerConflict = await scheduler.CheckExists(updatedJobKey);
+                    schedulerConflict = await scheduler.Exists(updatedJobKey);
                 }
                 catch (Exception ex)
                 {
@@ -853,7 +863,7 @@ namespace ColorVision.Scheduler
                 }
                 else
                 {
-                    await scheduler.ScheduleJob(job, [trigger], replace: true);
+                    await scheduler.ScheduleJob(job, [trigger], ScheduleJobOptions.Replacing);
                     scheduleMutated = true;
                 }
 
@@ -885,7 +895,7 @@ namespace ColorVision.Scheduler
                         persistenceError);
                 }
                 _logger.Info($"Job updated successfully: {schedulerInfo.JobName}({schedulerInfo.GroupName})");
-                return SchedulerOperationResult.Completed(trigger.GetNextFireTimeUtc());
+                return SchedulerOperationResult.Completed(trigger.NextFireTimeUtc);
             }
             catch (ObjectAlreadyExistsException ex)
             {
@@ -912,7 +922,8 @@ namespace ColorVision.Scheduler
 
         private static IJobDetail BuildJobDetail(SchedulerInfo schedulerInfo)
         {
-            IJobDetail job = JobBuilder.Create(schedulerInfo.JobType!)
+            IJobDetail job = JobBuilder.Create()
+                .OfType(schedulerInfo.JobType!)
                 .WithIdentity(schedulerInfo.JobName, schedulerInfo.GroupName)
                 .Build();
             job.JobDataMap["SchedulerInfo"] = schedulerInfo;
@@ -922,7 +933,7 @@ namespace ColorVision.Scheduler
         private static void UpdateNextFireTime(SchedulerInfo schedulerInfo, ITrigger trigger)
         {
             schedulerInfo.NextFireTime =
-                trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
+                trigger.NextFireTimeUtc?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
         }
 
         private static void MergeRuntimeStateForUpdate(
@@ -1002,11 +1013,11 @@ namespace ColorVision.Scheduler
 
                 if (originalTriggers.Count > 0)
                 {
-                    await scheduler.ScheduleJob(originalJob, originalTriggers, replace: true);
+                    await scheduler.ScheduleJob(originalJob, originalTriggers, ScheduleJobOptions.Replacing);
                 }
                 else
                 {
-                    await scheduler.AddJob(originalJob, true, true);
+                    await scheduler.AddJob(originalJob, AddJobOptions.ReplacingAndStoringNonDurable);
                 }
 
                 if (wasPaused)
@@ -1064,16 +1075,21 @@ namespace ColorVision.Scheduler
         public async Task Shutdown()
         {
             using IDisposable mutation = await EnterMutationAsync();
-            if (Scheduler != null)
+            if (Scheduler != null && Scheduler.Status is not Quartz.SchedulerStatus.ShuttingDown and not Quartz.SchedulerStatus.Shutdown)
             {
                 await Scheduler.Shutdown();
+            }
+            if (_schedulerFactory != null)
+            {
+                await _schedulerFactory.DisposeAsync();
+                _schedulerFactory = null;
             }
         }
 
         private async Task StartScheduler()
         {
             using IDisposable mutation = await EnterMutationAsync();
-            if (Scheduler != null && !Scheduler.IsShutdown)
+            if (Scheduler != null && Scheduler.Status is not Quartz.SchedulerStatus.ShuttingDown and not Quartz.SchedulerStatus.Shutdown)
             {
                 await Scheduler.Start();
             }
@@ -1113,10 +1129,7 @@ namespace ColorVision.Scheduler
 
             public static async Task<SchedulerStandbyLease> AcquireAsync(IScheduler scheduler)
             {
-                bool restartOnDispose =
-                    scheduler.IsStarted &&
-                    !scheduler.InStandbyMode &&
-                    !scheduler.IsShutdown;
+                bool restartOnDispose = scheduler.Status is Quartz.SchedulerStatus.Running;
                 if (restartOnDispose)
                     await scheduler.Standby();
 
@@ -1125,7 +1138,7 @@ namespace ColorVision.Scheduler
 
             public async ValueTask DisposeAsync()
             {
-                if (_restartOnDispose && !_scheduler.IsShutdown)
+                if (_restartOnDispose && _scheduler.Status is not Quartz.SchedulerStatus.ShuttingDown and not Quartz.SchedulerStatus.Shutdown)
                     await _scheduler.Start();
             }
         }

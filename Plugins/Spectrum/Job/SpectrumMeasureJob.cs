@@ -2,6 +2,7 @@ using ColorVision.Scheduler;
 using log4net;
 using Quartz;
 using System.ComponentModel;
+using System.Threading;
 
 namespace Spectrum.Job
 {
@@ -18,7 +19,7 @@ namespace Spectrum.Job
 
         public IJobConfig CreateDefaultConfig() => new SpectrumMeasureJobConfig();
 
-        public async Task Execute(IJobExecutionContext context)
+        public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
         {
             SpectrometerManager manager = SpectrometerManager.Instance;
             if (!manager.IsConnected)
@@ -41,12 +42,12 @@ namespace Spectrum.Job
 
             for (int i = 0; i < measureCount; i++)
             {
-                SpectrumMeasurementResult result = await manager.MeasureAsync(context.CancellationToken);
+                SpectrumMeasurementResult result = await manager.MeasureAsync(cancellationToken);
                 if (!result.IsSuccess)
                     throw new JobExecutionException(result.ErrorMessage ?? "光谱测量失败");
 
                 if (i < measureCount - 1)
-                    await Task.Delay(measureInterval, context.CancellationToken);
+                    await Task.Delay(measureInterval, cancellationToken);
             }
 
             log.Info("光谱测量任务执行完成");
