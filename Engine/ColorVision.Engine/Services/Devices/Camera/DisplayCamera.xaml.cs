@@ -1527,22 +1527,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public IntPtr m_hCamHandle;
         public string strPathSysCfg = "cfg\\sys.cfg";
-        private static System.Windows.Media.PixelFormat GetPixelFormat(int channels, int bpp)
-        {
-            if (channels == 3)
-            {
-                return bpp == 16
-                    ? System.Windows.Media.PixelFormats.Rgb48
-                    : System.Windows.Media.PixelFormats.Bgr24;
-            }
-            else
-            {
-                return bpp == 16
-                    ? System.Windows.Media.PixelFormats.Gray16
-                    : System.Windows.Media.PixelFormats.Gray8;
-            }
-        }
-
         private TimedButtonOperationRegistry EnsureTimedButtonOperations()
         {
             TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(BuildButtonOperationKey);
@@ -1614,7 +1598,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return 0;
             }
 
-            var pixelFormat = GetPixelFormat(channels, bpp);
+            var pixelFormat = RealtimeFramePresenter.GetPixelFormat(channels, bpp);
             int sourceStride = RealtimeFramePresenter.GetDefaultStride(width, pixelFormat);
             int frameBytes = sourceStride * height;
 

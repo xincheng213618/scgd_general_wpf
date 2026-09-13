@@ -24,15 +24,22 @@ public sealed class ImageSettingsScopeTests
         var a = first.IEditorToolFactory.GetIEditorTool<DisplayShaderFilterEditorTool>()!;
         var b = second.IEditorToolFactory.GetIEditorTool<DisplayShaderFilterEditorTool>()!;
         double original = b.State.Brightness;
+        DisplayShaderChannelOrder originalOrder = b.State.ChannelOrder;
+        Assert.Equal(DisplayShaderChannelOrder.Rgb, originalOrder);
         a.State.Brightness = 0.25;
+        a.State.ChannelOrder = DisplayShaderChannelOrder.Brg;
         a.Save();
         Assert.Equal(original, b.State.Brightness);
+        Assert.Equal(originalOrder, b.State.ChannelOrder);
         Assert.Equal(original, DisplayShaderFilterDefaultConfig.Current.State.Brightness);
+        Assert.Equal(originalOrder, DisplayShaderFilterDefaultConfig.Current.State.ChannelOrder);
         Assert.Empty(service.SavedTypes);
         a.SaveAsDefault();
         using ImageView third = new();
         Assert.Equal(0.25, third.IEditorToolFactory.GetIEditorTool<DisplayShaderFilterEditorTool>()!.State.Brightness);
+        Assert.Equal(DisplayShaderChannelOrder.Brg, third.IEditorToolFactory.GetIEditorTool<DisplayShaderFilterEditorTool>()!.State.ChannelOrder);
         Assert.Equal(original, b.State.Brightness);
+        Assert.Equal(originalOrder, b.State.ChannelOrder);
         Assert.Equal(new[] { typeof(DisplayShaderFilterDefaultConfig) }, service.SavedTypes);
     });
 
@@ -233,7 +240,12 @@ public sealed class ImageSettingsScopeTests
                 var content = (ContentControl)window.FindName("SettingsContent");
                 Assert.DoesNotContain(LogicalDescendants(content).OfType<TextBlock>(), text => text.Text.StartsWith(SettingsText.Unavailable));
             }
-            ((TextBox)window.FindName("SearchBox")).Text = SettingsText.IsLayoutUpdated;
+            TextBox searchBox = (TextBox)window.FindName("SearchBox");
+            searchBox.Text = SettingsText.ChannelOrder;
+            var filterContent = (ContentControl)window.FindName("SettingsContent");
+            Assert.Single(LogicalDescendants(filterContent).OfType<TextBlock>(), text => text.Text == SettingsText.ChannelOrder);
+
+            searchBox.Text = SettingsText.IsLayoutUpdated;
             var selectedContent = (ContentControl)window.FindName("SettingsContent");
             Assert.Single(LogicalDescendants(selectedContent).OfType<TextBlock>(), text => text.Text == SettingsText.IsLayoutUpdated);
         }

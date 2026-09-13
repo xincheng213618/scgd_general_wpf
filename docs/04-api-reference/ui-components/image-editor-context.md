@@ -59,7 +59,7 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 伪彩换图保留配色与自动范围偏好，关闭效果并重新计算图像相关范围；自动范围在新源赋值后计算。`Presentation/PseudoColor` 持有伪彩控制器、`PseudoColorState` 和默认配置，`PseudoColorEditorTool` 仅绑定控件及操作同一能力；释放工具不释放 controller。连续帧通过 `DisplayEffects.TryCapturePseudoColorRequest` 取得参数，并统一由 `StreamPresentation` 提交源与显示结果，不提供另一条外部处理结果发布路径。默认配置类型保留原完整类型名作为已有用户配置的稳定持久键，运行状态不依赖工具实例。静态图预览、连续帧 native 处理和显示 shader 保持各自输入与数值契约，不能因同属“效果”就视为等价算法。
 
-`ImageShaderPresentation` 拥有独立滤镜状态和 effect 附着，工具负责界面与显式持久化。滤镜沿用完整画布的 `SceneEffect` 范围，包含图像和叠加内容；没有静默缩小成只处理底图。关闭时仅在当前 effect 仍是自身对象时恢复先前 effect。
+`ImageShaderPresentation` 拥有独立滤镜状态和 effect 附着，工具负责界面与显式持久化。滤镜的通道顺序默认 `Rgb`，可在当前视图实时切换为 `Brg`；该变化不提交或改写源像素。滤镜沿用完整画布的 `SceneEffect` 范围，包含图像和叠加内容；没有静默缩小成只处理底图。关闭时仅在当前 effect 仍是自身对象时恢复先前 effect。
 
 ### 连续帧显示
 
