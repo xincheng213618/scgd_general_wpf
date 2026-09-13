@@ -68,7 +68,6 @@
   <data name="PseudoHint" xml:space="preserve"><value>配色与自动范围偏好保留在此视图。切换图像后重新计算范围，伪彩效果需重新启用。</value></data>
   <data name="IsEnabled" xml:space="preserve"><value>启用滤镜</value></data>
   <data name="ChannelMode" xml:space="preserve"><value>显示通道</value></data>
-  <data name="ChannelOrder" xml:space="preserve"><value>通道顺序</value></data>
   <data name="Temperature" xml:space="preserve"><value>色温调整</value></data>
   <data name="Tint" xml:space="preserve"><value>色调（绿–洋红）</value></data>
   <data name="RedGain" xml:space="preserve"><value>红色增益</value></data>

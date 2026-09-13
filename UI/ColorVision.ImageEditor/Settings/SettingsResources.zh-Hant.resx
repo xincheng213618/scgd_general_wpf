@@ -68,7 +68,6 @@
   <data name="PseudoHint" xml:space="preserve"><value>配色與自動範圍偏好保留在此視圖。切換圖像後重新計算範圍，偽彩效果需重新啟用。</value></data>
   <data name="IsEnabled" xml:space="preserve"><value>啟用濾鏡</value></data>
   <data name="ChannelMode" xml:space="preserve"><value>顯示通道</value></data>
-  <data name="ChannelOrder" xml:space="preserve"><value>通道順序</value></data>
   <data name="Temperature" xml:space="preserve"><value>色溫調整</value></data>
   <data name="Tint" xml:space="preserve"><value>色調（綠–洋紅）</value></data>
   <data name="RedGain" xml:space="preserve"><value>紅色增益</value></data>

@@ -5,7 +5,6 @@ using ColorVision.UI;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace ColorVision.UI.Tests;
 
@@ -30,7 +29,6 @@ public sealed class EditorToolbarComposerTests
                 // remain an interactive UI concern rather than part of this lifecycle test.
                 state.IsEnabled = true;
                 state.Brightness = 0.25;
-                state.ChannelOrder = DisplayShaderChannelOrder.Brg;
                 var effect = view.Presentation.SceneEffect;
                 if (DisplayShaderFilterEnvironment.Current.CanUseShaderFilter)
                     Assert.IsType<DisplayShaderFilterEffect>(effect);
@@ -48,41 +46,17 @@ public sealed class EditorToolbarComposerTests
                 Assert.True(state.IsEnabled);
                 Assert.Same(effect, view.Presentation.SceneEffect);
                 if (effect is DisplayShaderFilterEffect filter)
-                {
                     Assert.Equal(0.6, filter.Brightness);
-                    Assert.Equal(Color.FromScRgb(1, 0, 0, 1), filter.ChannelOrderRed);
-                    Assert.Equal(Color.FromScRgb(1, 1, 0, 0), filter.ChannelOrderGreen);
-                    Assert.Equal(Color.FromScRgb(1, 0, 1, 0), filter.ChannelOrderBlue);
-                }
 
                 using DisplayShaderFilterEditorTool replacement = new(view.EditorContext);
                 Assert.Same(state, replacement.State);
                 Assert.Equal(0.6, replacement.State.Brightness);
-                Assert.Equal(DisplayShaderChannelOrder.Brg, replacement.State.ChannelOrder);
                 replacement.Dispose();
                 state.IsEnabled = false;
                 Assert.Null(view.Presentation.SceneEffect);
             });
         }
         finally { ConfigService.SetInstance(previousConfigService!); }
-    }
-
-    [Theory]
-    [InlineData(DisplayShaderChannelOrder.Rgb, 0, 1, 2)]
-    [InlineData(DisplayShaderChannelOrder.Rbg, 0, 2, 1)]
-    [InlineData(DisplayShaderChannelOrder.Grb, 1, 0, 2)]
-    [InlineData(DisplayShaderChannelOrder.Gbr, 1, 2, 0)]
-    [InlineData(DisplayShaderChannelOrder.Brg, 2, 0, 1)]
-    [InlineData(DisplayShaderChannelOrder.Bgr, 2, 1, 0)]
-    public void ShaderChannelOrderSupportsEveryRgbPermutation(DisplayShaderChannelOrder order, int red, int green, int blue)
-    {
-        Assert.Equal((red, green, blue), order.GetChannelIndices());
-    }
-
-    [Fact]
-    public void OriginalBrgSettingValueRemainsCompatible()
-    {
-        Assert.Equal(1, (int)DisplayShaderChannelOrder.Brg);
     }
 
     [Fact]

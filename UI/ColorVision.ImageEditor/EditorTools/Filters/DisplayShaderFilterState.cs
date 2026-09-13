@@ -8,7 +8,6 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
     {
         private bool _isEnabled;
         private DisplayShaderChannelMode _channelMode = DisplayShaderChannelMode.Rgb;
-        private DisplayShaderChannelOrder _channelOrder = DisplayShaderChannelOrder.Rgb;
         private double _temperature;
         private double _tint;
         private double _redGain = 1;
@@ -45,13 +44,6 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
         {
             get => _channelMode;
             set => SetProperty(ref _channelMode, value);
-        }
-
-        [Display(Name = nameof(SettingsText.ChannelOrder), ResourceType = typeof(SettingsText))]
-        public DisplayShaderChannelOrder ChannelOrder
-        {
-            get => _channelOrder;
-            set => SetProperty(ref _channelOrder, value);
         }
 
         [Range(-1d, 1d)]
@@ -220,7 +212,6 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
         public void Reset()
         {
             ChannelMode = DisplayShaderChannelMode.Rgb;
-            ChannelOrder = DisplayShaderChannelOrder.Rgb;
             Temperature = 0;
             Tint = 0;
             RedGain = 1;
@@ -255,7 +246,6 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
 
             IsEnabled = source.IsEnabled;
             ChannelMode = source.ChannelMode;
-            ChannelOrder = source.ChannelOrder;
             Temperature = source.Temperature;
             Tint = source.Tint;
             RedGain = source.RedGain;

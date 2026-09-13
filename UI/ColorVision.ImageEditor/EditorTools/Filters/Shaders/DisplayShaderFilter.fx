@@ -31,9 +31,6 @@ float HighlightOpacity : register(c18);
 float PseudoColorMode : register(c19);
 float PseudoMin : register(c20);
 float PseudoMax : register(c21);
-float4 ChannelOrderRed : register(c22);
-float4 ChannelOrderGreen : register(c23);
-float4 ChannelOrderBlue : register(c24);
 
 float LumaValue(float3 rgb)
 {
@@ -64,17 +61,9 @@ float3 ChannelSelect(float3 rgb)
     return luma.xxx;
 }
 
-float3 ApplyChannelOrder(float3 rgb)
-{
-    return float3(
-        dot(rgb, ChannelOrderRed.rgb),
-        dot(rgb, ChannelOrderGreen.rgb),
-        dot(rgb, ChannelOrderBlue.rgb));
-}
-
 float3 ApplyBasicFilter(float3 sourceRgb)
 {
-    float3 rgb = ChannelSelect(ApplyChannelOrder(sourceRgb));
+    float3 rgb = ChannelSelect(sourceRgb);
 
     rgb = rgb * float3(RedGain, GreenGain, BlueGain) + float3(RedOffset, GreenOffset, BlueOffset);
     rgb = saturate(rgb);

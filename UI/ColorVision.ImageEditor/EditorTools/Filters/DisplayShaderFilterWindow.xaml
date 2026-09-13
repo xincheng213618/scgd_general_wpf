@@ -60,21 +60,6 @@
                             </ComboBox>
                         </DockPanel>
 
-                        <DockPanel Margin="0,0,0,6">
-                            <TextBlock Width="96"
-                                       Style="{StaticResource RowText}"
-                                       Text="Channel order" />
-                            <ComboBox SelectedValue="{Binding ChannelOrder, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                      SelectedValuePath="Tag">
-                                <ComboBoxItem Content="RGB" Tag="{x:Static local:DisplayShaderChannelOrder.Rgb}" />
-                                <ComboBoxItem Content="RBG" Tag="{x:Static local:DisplayShaderChannelOrder.Rbg}" />
-                                <ComboBoxItem Content="GRB" Tag="{x:Static local:DisplayShaderChannelOrder.Grb}" />
-                                <ComboBoxItem Content="GBR" Tag="{x:Static local:DisplayShaderChannelOrder.Gbr}" />
-                                <ComboBoxItem Content="BRG" Tag="{x:Static local:DisplayShaderChannelOrder.Brg}" />
-                                <ComboBoxItem Content="BGR" Tag="{x:Static local:DisplayShaderChannelOrder.Bgr}" />
-                            </ComboBox>
-                        </DockPanel>
-
                         <Grid Style="{StaticResource SliderRow}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="96" />

@@ -68,7 +68,6 @@
   <data name="PseudoHint" xml:space="preserve"><value>Palette and auto-range preferences stay with this view. Image changes reset the range and disable the effect.</value></data>
   <data name="IsEnabled" xml:space="preserve"><value>Enable filter</value></data>
   <data name="ChannelMode" xml:space="preserve"><value>Display channel</value></data>
-  <data name="ChannelOrder" xml:space="preserve"><value>Channel order</value></data>
   <data name="Temperature" xml:space="preserve"><value>Temperature</value></data>
   <data name="Tint" xml:space="preserve"><value>Tint (green–magenta)</value></data>
   <data name="RedGain" xml:space="preserve"><value>Red gain</value></data>
