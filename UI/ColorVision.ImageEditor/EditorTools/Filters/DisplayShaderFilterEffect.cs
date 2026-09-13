@@ -58,7 +58,9 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
         public static readonly DependencyProperty PseudoColorModeProperty = RegisterShaderDouble(nameof(PseudoColorMode), 19, 0);
         public static readonly DependencyProperty PseudoMinProperty = RegisterShaderDouble(nameof(PseudoMin), 20, 0);
         public static readonly DependencyProperty PseudoMaxProperty = RegisterShaderDouble(nameof(PseudoMax), 21, 1);
-        public static readonly DependencyProperty ChannelOrderProperty = RegisterShaderDouble(nameof(ChannelOrder), 22, 0);
+        public static readonly DependencyProperty ChannelOrderRedProperty = RegisterShaderColor(nameof(ChannelOrderRed), 22, CreateChannelSelector(0));
+        public static readonly DependencyProperty ChannelOrderGreenProperty = RegisterShaderColor(nameof(ChannelOrderGreen), 23, CreateChannelSelector(1));
+        public static readonly DependencyProperty ChannelOrderBlueProperty = RegisterShaderColor(nameof(ChannelOrderBlue), 24, CreateChannelSelector(2));
 
         public DisplayShaderFilterEffect()
         {
@@ -212,20 +214,33 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
             set => SetValue(PseudoMaxProperty, value);
         }
 
-        public double ChannelOrder
+        public Color ChannelOrderRed
         {
-            get => (double)GetValue(ChannelOrderProperty);
-            set => SetValue(ChannelOrderProperty, value);
+            get => (Color)GetValue(ChannelOrderRedProperty);
+            set => SetValue(ChannelOrderRedProperty, value);
+        }
+
+        public Color ChannelOrderGreen
+        {
+            get => (Color)GetValue(ChannelOrderGreenProperty);
+            set => SetValue(ChannelOrderGreenProperty, value);
+        }
+
+        public Color ChannelOrderBlue
+        {
+            get => (Color)GetValue(ChannelOrderBlueProperty);
+            set => SetValue(ChannelOrderBlueProperty, value);
         }
 
         public void Apply(DisplayShaderFilterState state)
         {
             ApplyShaderVariant(state);
             ChannelMode = (double)state.ChannelMode;
-            ChannelOrder = (double)state.ChannelOrder;
-            RedGain = state.RedGain;
-            GreenGain = state.GreenGain;
-            BlueGain = state.BlueGain;
+            ApplyChannelOrder(state.ChannelOrder);
+            (double red, double green, double blue) = DisplayShaderWhiteBalance.GetGains(state.Temperature, state.Tint);
+            RedGain = state.RedGain * red;
+            GreenGain = state.GreenGain * green;
+            BlueGain = state.BlueGain * blue;
             RedOffset = state.RedOffset;
             GreenOffset = state.GreenOffset;
             BlueOffset = state.BlueOffset;
@@ -322,7 +337,9 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
             UpdateShaderValue(PseudoColorModeProperty);
             UpdateShaderValue(PseudoMinProperty);
             UpdateShaderValue(PseudoMaxProperty);
-            UpdateShaderValue(ChannelOrderProperty);
+            UpdateShaderValue(ChannelOrderRedProperty);
+            UpdateShaderValue(ChannelOrderGreenProperty);
+            UpdateShaderValue(ChannelOrderBlueProperty);
         }
 
         private static DependencyProperty RegisterShaderDouble(string name, int constantRegister, double defaultValue)
@@ -332,6 +349,34 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
                 typeof(double),
                 typeof(DisplayShaderFilterEffect),
                 new UIPropertyMetadata(defaultValue, PixelShaderConstantCallback(constantRegister)));
+        }
+
+        private static DependencyProperty RegisterShaderColor(string name, int constantRegister, Color defaultValue)
+        {
+            return DependencyProperty.Register(
+                name,
+                typeof(Color),
+                typeof(DisplayShaderFilterEffect),
+                new UIPropertyMetadata(defaultValue, PixelShaderConstantCallback(constantRegister)));
+        }
+
+        private void ApplyChannelOrder(DisplayShaderChannelOrder channelOrder)
+        {
+            (int red, int green, int blue) = channelOrder.GetChannelIndices();
+            ChannelOrderRed = CreateChannelSelector(red);
+            ChannelOrderGreen = CreateChannelSelector(green);
+            ChannelOrderBlue = CreateChannelSelector(blue);
+        }
+
+        private static Color CreateChannelSelector(int channel)
+        {
+            return channel switch
+            {
+                0 => Color.FromScRgb(1, 1, 0, 0),
+                1 => Color.FromScRgb(1, 0, 1, 0),
+                2 => Color.FromScRgb(1, 0, 0, 1),
+                _ => Colors.Transparent
+            };
         }
 
         private static ImageBrush CreateLutBrush()

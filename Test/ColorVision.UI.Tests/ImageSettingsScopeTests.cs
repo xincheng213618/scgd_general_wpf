@@ -28,6 +28,8 @@ public sealed class ImageSettingsScopeTests
         Assert.Equal(DisplayShaderChannelOrder.Rgb, originalOrder);
         a.State.Brightness = 0.25;
         a.State.ChannelOrder = DisplayShaderChannelOrder.Brg;
+        a.State.Temperature = 0.2;
+        a.State.Tint = 0.3;
         a.Save();
         Assert.Equal(original, b.State.Brightness);
         Assert.Equal(originalOrder, b.State.ChannelOrder);
@@ -38,6 +40,8 @@ public sealed class ImageSettingsScopeTests
         using ImageView third = new();
         Assert.Equal(0.25, third.IEditorToolFactory.GetIEditorTool<DisplayShaderFilterEditorTool>()!.State.Brightness);
         Assert.Equal(DisplayShaderChannelOrder.Brg, third.IEditorToolFactory.GetIEditorTool<DisplayShaderFilterEditorTool>()!.State.ChannelOrder);
+        Assert.Equal(0.2, third.IEditorToolFactory.GetIEditorTool<DisplayShaderFilterEditorTool>()!.State.Temperature);
+        Assert.Equal(0.3, third.IEditorToolFactory.GetIEditorTool<DisplayShaderFilterEditorTool>()!.State.Tint);
         Assert.Equal(original, b.State.Brightness);
         Assert.Equal(originalOrder, b.State.ChannelOrder);
         Assert.Equal(new[] { typeof(DisplayShaderFilterDefaultConfig) }, service.SavedTypes);

@@ -5,6 +5,7 @@ using ColorVision.UI;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.UI.Tests;
 
@@ -49,7 +50,9 @@ public sealed class EditorToolbarComposerTests
                 if (effect is DisplayShaderFilterEffect filter)
                 {
                     Assert.Equal(0.6, filter.Brightness);
-                    Assert.Equal((double)DisplayShaderChannelOrder.Brg, filter.ChannelOrder);
+                    Assert.Equal(Color.FromScRgb(1, 0, 0, 1), filter.ChannelOrderRed);
+                    Assert.Equal(Color.FromScRgb(1, 1, 0, 0), filter.ChannelOrderGreen);
+                    Assert.Equal(Color.FromScRgb(1, 0, 1, 0), filter.ChannelOrderBlue);
                 }
 
                 using DisplayShaderFilterEditorTool replacement = new(view.EditorContext);
@@ -62,6 +65,38 @@ public sealed class EditorToolbarComposerTests
             });
         }
         finally { ConfigService.SetInstance(previousConfigService!); }
+    }
+
+    [Theory]
+    [InlineData(DisplayShaderChannelOrder.Rgb, 0, 1, 2)]
+    [InlineData(DisplayShaderChannelOrder.Rbg, 0, 2, 1)]
+    [InlineData(DisplayShaderChannelOrder.Grb, 1, 0, 2)]
+    [InlineData(DisplayShaderChannelOrder.Gbr, 1, 2, 0)]
+    [InlineData(DisplayShaderChannelOrder.Brg, 2, 0, 1)]
+    [InlineData(DisplayShaderChannelOrder.Bgr, 2, 1, 0)]
+    public void ShaderChannelOrderSupportsEveryRgbPermutation(DisplayShaderChannelOrder order, int red, int green, int blue)
+    {
+        Assert.Equal((red, green, blue), order.GetChannelIndices());
+    }
+
+    [Fact]
+    public void OriginalBrgSettingValueRemainsCompatible()
+    {
+        Assert.Equal(1, (int)DisplayShaderChannelOrder.Brg);
+    }
+
+    [Fact]
+    public void WhiteBalanceControlsHaveNeutralDefaultsAndExpectedDirections()
+    {
+        Assert.Equal((1, 1, 1), DisplayShaderWhiteBalance.GetGains(0, 0));
+
+        (double warmRed, double warmGreen, double warmBlue) = DisplayShaderWhiteBalance.GetGains(1, 0);
+        Assert.True(warmRed > warmGreen);
+        Assert.True(warmGreen > warmBlue);
+
+        (double magentaRed, double magentaGreen, double magentaBlue) = DisplayShaderWhiteBalance.GetGains(0, 1);
+        Assert.True(magentaRed > magentaGreen);
+        Assert.Equal(magentaRed, magentaBlue, 12);
     }
 
     [Fact]

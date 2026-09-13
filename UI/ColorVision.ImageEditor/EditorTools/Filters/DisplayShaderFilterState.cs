@@ -9,6 +9,8 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
         private bool _isEnabled;
         private DisplayShaderChannelMode _channelMode = DisplayShaderChannelMode.Rgb;
         private DisplayShaderChannelOrder _channelOrder = DisplayShaderChannelOrder.Rgb;
+        private double _temperature;
+        private double _tint;
         private double _redGain = 1;
         private double _greenGain = 1;
         private double _blueGain = 1;
@@ -50,6 +52,22 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
         {
             get => _channelOrder;
             set => SetProperty(ref _channelOrder, value);
+        }
+
+        [Range(-1d, 1d)]
+        [Display(Name = nameof(SettingsText.Temperature), ResourceType = typeof(SettingsText))]
+        public double Temperature
+        {
+            get => _temperature;
+            set => SetProperty(ref _temperature, value);
+        }
+
+        [Range(-1d, 1d)]
+        [Display(Name = nameof(SettingsText.Tint), ResourceType = typeof(SettingsText))]
+        public double Tint
+        {
+            get => _tint;
+            set => SetProperty(ref _tint, value);
         }
 
         [Display(Name = nameof(SettingsText.RedGain), ResourceType = typeof(SettingsText))]
@@ -203,6 +221,8 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
         {
             ChannelMode = DisplayShaderChannelMode.Rgb;
             ChannelOrder = DisplayShaderChannelOrder.Rgb;
+            Temperature = 0;
+            Tint = 0;
             RedGain = 1;
             GreenGain = 1;
             BlueGain = 1;
@@ -236,6 +256,8 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
             IsEnabled = source.IsEnabled;
             ChannelMode = source.ChannelMode;
             ChannelOrder = source.ChannelOrder;
+            Temperature = source.Temperature;
+            Tint = source.Tint;
             RedGain = source.RedGain;
             GreenGain = source.GreenGain;
             BlueGain = source.BlueGain;
