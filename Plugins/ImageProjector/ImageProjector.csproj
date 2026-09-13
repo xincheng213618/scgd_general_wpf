@@ -6,7 +6,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
-		<VersionPrefix>1.4.8.1</VersionPrefix>
+		<VersionPrefix>1.4.8.2</VersionPrefix>
 		<AssemblyOriginatorKeyFile>..\..\ColorVision.snk</AssemblyOriginatorKeyFile>
 		<SignAssembly Condition="Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
 		<CETCompat>false</CETCompat>

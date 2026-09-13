@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-09-12T08:40:19.972006+00:00",
+  "generated_at": "2026-09-13T11:06:07.165347+00:00",
   "shared_files": [
     "Anthropic.dll",
     "Assets/InstallTool/Everything-1.4.1.1032.x64-Setup.exe",
@@ -132,6 +132,8 @@
     "Microsoft.Extensions.DependencyInjection.Abstractions.dll",
     "Microsoft.Extensions.DependencyInjection.dll",
     "Microsoft.Extensions.Diagnostics.Abstractions.dll",
+    "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions.dll",
+    "Microsoft.Extensions.Diagnostics.HealthChecks.dll",
     "Microsoft.Extensions.Diagnostics.dll",
     "Microsoft.Extensions.FileProviders.Abstractions.dll",
     "Microsoft.Extensions.FileProviders.Physical.dll",
@@ -228,6 +230,7 @@
     "SharpDX.Direct3D11.dll",
     "SharpDX.Direct3D9.dll",
     "SharpDX.dll",
+    "SharpSevenZip.dll",
     "SkiaSharp.HarfBuzz.dll",
     "SkiaSharp.Views.Desktop.Common.dll",
     "SkiaSharp.Views.WPF.dll",
@@ -448,6 +451,7 @@
     "toupcam.dll",
     "tr/Microsoft.CodeAnalysis.CSharp.resources.dll",
     "tr/Microsoft.CodeAnalysis.resources.dll",
+    "x64/7z.dll",
     "xGCOM64.dll",
     "xGUSB64.dll",
     "xserial64.dll",
