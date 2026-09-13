@@ -106,6 +106,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             SelectFirstAvailableDevice<DeviceCamera>();
         }
 
+        protected override string GetCompactSummaryValue() => CompactValueOrDash(CalibTempName);
+
         private protected LocalCalibrationExecution ExecuteCalibration(CVStartCFC action)
         {
             LocalFlowFrame sourceFrame;
@@ -350,11 +352,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         protected static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
-    [STNode("Flow_CustomNodes", "本地校正")]
+    [STNode("Flow_CustomNodes", "校正")]
     [FlowNodePropertyEditorAttribute(nameof(CalibTempName), typeof(FlowCalibrationTemplateEditor))]
     public sealed class LocalCalibrationNode : LocalCalibrationNodeBase
     {
-        public LocalCalibrationNode() : base("本地校正", "LocalCalibration", "Calibration")
+        public LocalCalibrationNode() : base("校正", "LocalCalibration", "Calibration")
         {
         }
 

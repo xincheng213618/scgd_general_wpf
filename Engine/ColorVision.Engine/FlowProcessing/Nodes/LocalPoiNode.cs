@@ -23,7 +23,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public object? POIResult { get; init; }
     }
 
-    [STNode("Flow_CustomNodes", "本地 POI")]
+    [STNode("Flow_CustomNodes", "POI")]
     [FlowNodePropertyEditorAttribute(nameof(POITempName), typeof(FlowPoiTemplateEditor))]
     public sealed class LocalPoiNode : LocalFlowNodeBase
     {
@@ -41,10 +41,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [Browsable(false)]
         public string POIReviseTempName { get => _POIReviseTempName; set { _POIReviseTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
-        public LocalPoiNode() : base("本地 POI", "POI", "Calculate")
+        public LocalPoiNode() : base("POI", "POI", "Calculate")
         {
             SelectFirstAvailableDevice<DeviceAlgorithm>();
         }
+
+        protected override string GetCompactSummaryValue() => CompactValueOrDash(POITempName);
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {

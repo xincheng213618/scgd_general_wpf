@@ -3541,7 +3541,7 @@ Please close camera or other programs using this serial port, or check device co
     <value>File Path</value>
   </data>
   <data name="Engine_PG_LocalImage" xml:space="preserve">
-    <value>Local Image</value>
+    <value>Load Image</value>
   </data>
 
   <data name="Engine_PG_Ratio" xml:space="preserve">
@@ -4251,6 +4251,14 @@ Please close camera or other programs using this serial port, or check device co
   <data name="本地相机取图" xml:space="preserve"><value>Local Camera Capture</value></data>
   <data name="本地相机" xml:space="preserve"><value>Local Camera</value></data>
   <data name="本地 POI" xml:space="preserve"><value>Local POI</value></data>
+  <data name="关注点布点(Re)" xml:space="preserve"><value>POI Layout (Remap)</value></data>
+  <data name="关注点布点(参数)" xml:space="preserve"><value>POI Layout (Parameters)</value></data>
+  <data name="校正+实时 POI" xml:space="preserve"><value>Calibration + Real-time POI</value></data>
+  <data name="相机取图" xml:space="preserve"><value>Camera Capture</value></data>
+  <data name="十字定位" xml:space="preserve"><value>Crosshair Detection</value></data>
+  <data name="FOV计算" xml:space="preserve"><value>FOV Calculation</value></data>
+  <data name="点阵畸变" xml:space="preserve"><value>Grid Distortion</value></data>
+  <data name="全图" xml:space="preserve"><value>Full Image</value></data>
   <data name="实时 POI" xml:space="preserve"><value>Real-time POI</value></data>
   <data name="备用图像文件" xml:space="preserve"><value>Fallback Image File</value></data>
   <data name="POI 模板" xml:space="preserve"><value>POI Template</value></data>

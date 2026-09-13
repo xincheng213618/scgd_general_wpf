@@ -42,7 +42,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public string? CvCieFilePath { get; init; }
     }
 
-    [STNode("Flow_CustomNodes", "本地相机取图")]
+    [STNode("Flow_CustomNodes", "相机取图")]
     [FlowNodeDocumentation(
         "Flow_LocalCamera_Summary",
         Usage = "Flow_LocalCamera_Usage",
@@ -103,12 +103,14 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [Description("查看已缓存的校正文件、内存占用，并可释放本机校正缓存")]
         public RelayCommand OpenLocalCalibrationCacheManagerCommand { get; }
 
-        public LocalCameraNode() : base("本地相机取图", "Camera", "GetData")
+        public LocalCameraNode() : base("相机取图", "Camera", "GetData")
         {
             OpenLocalCameraManagerCommand = new RelayCommand(_ => OpenLocalCameraManager());
             OpenLocalCalibrationCacheManagerCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
             SelectFirstAvailableDevice<DeviceCamera>();
         }
+
+        protected override string GetCompactSummaryValue() => $"{ExpTime:0.###} ms";
 
         private void OpenLocalCameraManager()
         {

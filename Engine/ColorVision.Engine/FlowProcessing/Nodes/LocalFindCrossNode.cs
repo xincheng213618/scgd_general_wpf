@@ -430,7 +430,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
     }
 
-    [STNode("Flow_CustomNodes", "本地十字定位")]
+    [STNode("Flow_CustomNodes", "十字定位")]
     public sealed class LocalFindCrossNode : LocalFlowNodeBase
     {
         internal const int DetectionFailureResultCode = -1;
@@ -505,11 +505,13 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
 
         internal LocalFindCrossNode(ILocalFindCrossNodeServices services)
-            : base("本地十字定位", "LocalFindCross", "FindCross")
+            : base("十字定位", "LocalFindCross", "FindCross")
         {
             this.services = services ?? throw new ArgumentNullException(nameof(services));
             SelectFirstAvailableDevice<DeviceAlgorithm>();
         }
+
+        protected override string GetCompactSummaryValue() => FormatCompactRegion(SearchRegion);
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action) =>
             new() { Data = ExecuteSynchronously(action) };

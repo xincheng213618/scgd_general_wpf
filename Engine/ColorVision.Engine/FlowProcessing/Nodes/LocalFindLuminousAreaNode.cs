@@ -203,7 +203,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     }
 
-    [STNode("Flow_CustomNodes", "本地发光区定位(V2)")]
+    [STNode("Flow_CustomNodes", "发光区定位")]
     [FlowNodePropertyEditorAttribute(nameof(SavePOITempName), typeof(FlowPoiTemplateEditor))]
     public sealed class LocalFindLuminousAreaNode : LocalFlowNodeBase
     {
@@ -271,11 +271,13 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
 
         internal LocalFindLuminousAreaNode(ILocalFindLuminousAreaNodeServices services)
-            : base("本地发光区定位(V2)", "LocalFindLuminousAreaV2", "FindLightArea")
+            : base("发光区定位", "LocalFindLuminousAreaV2", "FindLightArea")
         {
             this.services = services ?? throw new ArgumentNullException(nameof(services));
             SelectFirstAvailableDevice<DeviceAlgorithm>();
         }
+
+        protected override string GetCompactSummaryValue() => $"{MinimumConfidence:0.###}";
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {

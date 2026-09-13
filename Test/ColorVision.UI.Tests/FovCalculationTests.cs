@@ -143,7 +143,7 @@ public sealed class FovCalculationTests
         node.Create();
 
         Assert.Equal("LocalFOV", node.NodeType);
-        Assert.Equal("本地FOV计算(V2)", node.Title);
+        Assert.Equal("FOV计算", node.Title);
         Assert.Equal(["IN"], node.GetAllInputOptions().Select(option => option.Text));
         Assert.Equal(["OUT"], node.GetAllOutputOptions().Select(option => option.Text));
         Assert.Equal(9410, node.FovDist);

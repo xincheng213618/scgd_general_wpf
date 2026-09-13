@@ -57,6 +57,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             SelectFirstAvailableDevice<DeviceCamera>();
         }
 
+        protected override string GetCompactSummaryValue() => CompactValueOrDash(Path.GetFileName(ImageFileUrl));
+
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
             string fileUrl = ResolveFileUrl();

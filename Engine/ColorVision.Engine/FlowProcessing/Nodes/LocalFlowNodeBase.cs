@@ -5,20 +5,43 @@ using FlowEngineLib.Base;
 using FlowEngineLib.PropertyEditor;
 using log4net;
 using Newtonsoft.Json;
+using ST.Library.UI;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Drawing.Drawing2D;
+using System.Drawing.Text;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes
 {
     public abstract class LocalFlowNodeBase : CVCommonNode
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(LocalFlowNodeBase));
+        private static readonly IReadOnlyDictionary<string, string> LegacyDefaultTitles = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["本地关注点布点(Re)"] = "关注点布点(Re)",
+            ["本地关注点布点(参数)"] = "关注点布点(参数)",
+            ["本地校正"] = "校正",
+            ["本地校正+实时 POI"] = "校正+实时 POI",
+            ["本地相机取图"] = "相机取图",
+            ["本地十字定位"] = "十字定位",
+            ["本地发光区定位(V2)"] = "发光区定位",
+            ["本地FOV计算(V2)"] = "FOV计算",
+            ["本地点阵畸变(V2)"] = "点阵畸变",
+            ["本地 POI"] = "POI",
+            ["Local POI Layout (Remap)"] = "关注点布点(Re)",
+            ["Local POI Layout (Parameters)"] = "关注点布点(参数)",
+            ["Local Calibration"] = "校正",
+            ["Local Calibration + Real-time POI"] = "校正+实时 POI",
+            ["Local Camera Capture"] = "相机取图",
+            ["Local POI"] = "POI"
+        };
 
         private sealed class LocalFlowInputSnapshot
         {
@@ -100,6 +123,19 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
         }
 
+        public override void OnLoadNode(Dictionary<string, byte[]> dic)
+        {
+            base.OnLoadNode(dic);
+            if (LegacyDefaultTitles.TryGetValue(Title, out string? currentTitle))
+            {
+                Title = Lang.Get(currentTitle);
+            }
+            else if (Title is "本地图片" or "Local Image")
+            {
+                Title = Properties.Resources.Engine_PG_LocalImage;
+            }
+        }
+
         protected override void OnCreate()
         {
             base.OnCreate();
@@ -121,6 +157,65 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         protected static string GetFirstAvailableDeviceCode<TDevice>() where TDevice : DeviceService
         {
             return ServiceManager.Current?.DeviceServices.OfType<TDevice>().FirstOrDefault()?.Code ?? string.Empty;
+        }
+
+        protected static string CompactValueOrDash(string? value) =>
+            string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();
+
+        protected static string FormatCompactRegion(Int32Rect region) =>
+            region.IsEmpty || region.Width <= 0 || region.Height <= 0
+                ? Lang.Get("全图")
+                : $"{region.Width}×{region.Height}";
+
+        protected virtual IReadOnlyList<string> GetCompactSummaryLines() => [GetCompactSummaryValue()];
+
+        protected override void DrawCompactSummary(DrawingTools dt, string label, string value)
+        {
+            string[] lines = GetCompactSummaryLines()
+                .Where(line => !string.IsNullOrWhiteSpace(line))
+                .Take(2)
+                .ToArray();
+            if (lines.Length == 0) return;
+
+            const int horizontalPadding = 14;
+            System.Drawing.Rectangle rectangle = new(
+                Left + horizontalPadding,
+                Top + TitleHeight,
+                Math.Max(0, Width - horizontalPadding * 2),
+                CompactSummaryHeight * lines.Length);
+            System.Drawing.Graphics graphics = dt.Graphics;
+            GraphicsState state = graphics.Save();
+            System.Drawing.StringAlignment alignment = m_sf.Alignment;
+            System.Drawing.StringAlignment lineAlignment = m_sf.LineAlignment;
+            System.Drawing.StringFormatFlags formatFlags = m_sf.FormatFlags;
+            System.Drawing.StringTrimming trimming = m_sf.Trimming;
+            try
+            {
+                graphics.SetClip(rectangle, CombineMode.Intersect);
+                graphics.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+                dt.SolidBrush.Color = ForeColor;
+                m_sf.Alignment = System.Drawing.StringAlignment.Center;
+                m_sf.LineAlignment = System.Drawing.StringAlignment.Center;
+                m_sf.FormatFlags |= System.Drawing.StringFormatFlags.NoWrap;
+                m_sf.Trimming = System.Drawing.StringTrimming.EllipsisCharacter;
+                for (int index = 0; index < lines.Length; index++)
+                {
+                    System.Drawing.Rectangle lineRectangle = new(
+                        rectangle.X,
+                        rectangle.Y + CompactSummaryHeight * index,
+                        rectangle.Width,
+                        CompactSummaryHeight);
+                    graphics.DrawString(lines[index], Font, dt.SolidBrush, lineRectangle, m_sf);
+                }
+            }
+            finally
+            {
+                m_sf.Alignment = alignment;
+                m_sf.LineAlignment = lineAlignment;
+                m_sf.FormatFlags = formatFlags;
+                m_sf.Trimming = trimming;
+                graphics.Restore(state);
+            }
         }
 
         protected string ResolveAvailableDeviceCode<TDevice>() where TDevice : DeviceService

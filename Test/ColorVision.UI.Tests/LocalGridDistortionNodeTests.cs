@@ -30,7 +30,7 @@ public sealed class LocalGridDistortionNodeTests
         LocalGridDistortionNode node = new();
         node.Create();
         Assert.Equal("LocalGridDistortion", node.NodeType);
-        Assert.Equal("本地点阵畸变(V2)", node.Title);
+        Assert.Equal("点阵畸变", node.Title);
         Assert.Equal(["IN"], node.GetAllInputOptions().Select(option => option.Text));
         Assert.Equal(["OUT"], node.GetAllOutputOptions().Select(option => option.Text));
         Assert.Equal(3, node.ExpectedRows);

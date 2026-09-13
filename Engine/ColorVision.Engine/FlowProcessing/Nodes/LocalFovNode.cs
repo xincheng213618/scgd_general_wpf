@@ -335,7 +335,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
     }
 
-    [STNode("Flow_CustomNodes", "本地FOV计算(V2)")]
+    [STNode("Flow_CustomNodes", "FOV计算")]
     [FlowNodePropertyEditor(nameof(CameraDegrees), typeof(CameraDegreesPropertiesEditor))]
     public sealed class LocalFovNode : LocalFlowNodeBase
     {
@@ -375,11 +375,19 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
 
         internal LocalFovNode(ILocalFovNodeServices services)
-            : base("本地FOV计算(V2)", "LocalFOV", "FOV")
+            : base("FOV计算", "LocalFOV", "FOV")
         {
             this.services = services ?? throw new ArgumentNullException(nameof(services));
             SelectFirstAvailableDevice<DeviceAlgorithm>();
         }
+
+        protected override string GetCompactSummaryValue() => $"{FovDist:0.##}";
+
+        protected override IReadOnlyList<string> GetCompactSummaryLines() =>
+        [
+            GetCompactSummaryValue(),
+            $"{CameraDegrees:0.##}°"
+        ];
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action) =>
             new() { Data = ExecuteSynchronously(action) };

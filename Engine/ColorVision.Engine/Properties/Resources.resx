@@ -323,7 +323,7 @@
     <value>文件路径</value>
   </data>
   <data name="Engine_PG_LocalImage" xml:space="preserve">
-    <value>本地图片</value>
+    <value>加载图片</value>
   </data>
 
   <data name="Engine_PG_Ratio" xml:space="preserve">

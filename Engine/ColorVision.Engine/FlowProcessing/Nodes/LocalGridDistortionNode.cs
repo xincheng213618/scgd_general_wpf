@@ -255,7 +255,7 @@ internal static class LocalGridDistortionResultPersistence
     }
 }
 
-[STNode("Flow_CustomNodes", "本地点阵畸变(V2)")]
+[STNode("Flow_CustomNodes", "点阵畸变")]
 public sealed class LocalGridDistortionNode : LocalFlowNodeBase
 {
     internal const int DetectionFailureResultCode = -1;
@@ -315,11 +315,13 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     public LocalGridDistortionNode() : this(LocalGridDistortionNodeServices.Instance) { }
 
     internal LocalGridDistortionNode(ILocalGridDistortionNodeServices services)
-        : base("本地点阵畸变(V2)", "LocalGridDistortion", "Distortion")
+        : base("点阵畸变", "LocalGridDistortion", "Distortion")
     {
         this.services = services ?? throw new ArgumentNullException(nameof(services));
         SelectFirstAvailableDevice<DeviceAlgorithm>();
     }
+
+    protected override string GetCompactSummaryValue() => $"{ExpectedRows}×{ExpectedCols}";
 
     protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action) => new() { Data = ExecuteSynchronously(action) };
 

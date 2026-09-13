@@ -27,7 +27,7 @@ public sealed class LocalFindLuminousAreaNodeTests
         node.Create();
 
         Assert.Equal("LocalFindLuminousAreaV2", node.NodeType);
-        Assert.Equal("本地发光区定位(V2)", node.Title);
+        Assert.Equal("发光区定位", node.Title);
         Assert.Equal(["IN"], node.GetAllInputOptions().Select(option => option.Text));
         Assert.Equal(["OUT"], node.GetAllOutputOptions().Select(option => option.Text));
         Assert.Equal(string.Empty, node.ImageFilePath);

@@ -115,7 +115,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private static int? Offset(int? value, int offset) => value.HasValue ? checked(value.Value - offset) : null;
     }
 
-    [STNode("Flow_CustomNodes", "本地校正+实时 POI")]
+    [STNode("Flow_CustomNodes", "校正+实时 POI")]
     [FlowNodePropertyEditorAttribute(nameof(CalibTempName), typeof(FlowCalibrationTemplateEditor))]
     [FlowNodePropertyEditorAttribute(nameof(POITempName), typeof(FlowPoiTemplateEditor))]
     public sealed class LocalCalibrationRealPoiNode : LocalCalibrationNodeBase
@@ -193,7 +193,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [STNodeProperty("使用 ROI", "输入 POI 为全幅坐标且当前图像来自物理相机 ROI 时，将 POI 临时转换为 ROI 图像坐标；全幅或历史图像保持关闭", true)]
         public bool UseROI { get => useROI; set { useROI = value; OnPropertyChanged(); } }
 
-        public LocalCalibrationRealPoiNode() : base("本地校正+实时 POI", "LocalCalibrationRealPOI", "Real_POI", InputPortNames)
+        public LocalCalibrationRealPoiNode() : base("校正+实时 POI", "LocalCalibrationRealPOI", "Real_POI", InputPortNames)
         {
         }
 

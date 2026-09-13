@@ -173,7 +173,7 @@ public class CVCommonNode : STNode
 		return !ShowControls && InputOptionsCount < 2 && !string.IsNullOrEmpty(GetCompactSummaryValue());
 	}
 
-	private void DrawCompactSummary(DrawingTools dt, string label, string value)
+	protected virtual void DrawCompactSummary(DrawingTools dt, string label, string value)
 	{
 		Rectangle rectangle = new Rectangle(
 			Left + StandardNodeContentPadding,

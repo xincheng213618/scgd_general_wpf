@@ -20,7 +20,7 @@ public sealed class LocalFindCrossNodeTests
         node.Create();
 
         Assert.Equal("LocalFindCross", node.NodeType);
-        Assert.Equal("本地十字定位", node.Title);
+        Assert.Equal("十字定位", node.Title);
         Assert.Equal(["IN"], node.GetAllInputOptions().Select(option => option.Text));
         Assert.Equal(["OUT"], node.GetAllOutputOptions().Select(option => option.Text));
         Assert.Equal(string.Empty, node.ImageFilePath);

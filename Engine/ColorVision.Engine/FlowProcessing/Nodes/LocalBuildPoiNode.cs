@@ -29,7 +29,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public int TotalTime { get; init; }
     }
 
-    [STNode("Flow_CustomNodes", "本地关注点布点(Re)")]
+    [STNode("Flow_CustomNodes", "关注点布点(Re)")]
     [FlowNodePropertyEditorAttribute(nameof(LayoutROITemplateName), typeof(FlowPoiTemplateEditor))]
     [FlowNodePropertyEditorAttribute(nameof(RePOITemplateName), typeof(FlowPoiTemplateEditor))]
     public sealed class LocalBuildPoiNode : LocalFlowNodeBase
@@ -74,10 +74,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
         }
 
-        public LocalBuildPoiNode() : base("本地关注点布点(Re)", "LocalBuildPOI", "BuildPOI")
+        public LocalBuildPoiNode() : base("关注点布点(Re)", "LocalBuildPOI", "BuildPOI")
         {
             SelectFirstAvailableDevice<DeviceAlgorithm>();
         }
+
+        protected override string GetCompactSummaryValue() => CompactValueOrDash(RePOITemplateName);
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
@@ -199,7 +201,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
     }
 
-    [STNode("Flow_CustomNodes", "本地关注点布点(参数)")]
+    [STNode("Flow_CustomNodes", "关注点布点(参数)")]
     [FlowNodePropertyEditorAttribute(nameof(ParameterTemplateName), typeof(FlowBuildPoiTemplateEditor))]
     [FlowNodePropertyEditorAttribute(nameof(LayoutROITemplateName), typeof(FlowPoiTemplateEditor))]
     public sealed class LocalBuildPoiByTemplateNode : LocalFlowNodeBase
@@ -231,10 +233,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
         }
 
-        public LocalBuildPoiByTemplateNode() : base("本地关注点布点(参数)", "LocalBuildPOICommon", "BuildPOI")
+        public LocalBuildPoiByTemplateNode() : base("关注点布点(参数)", "LocalBuildPOICommon", "BuildPOI")
         {
             SelectFirstAvailableDevice<DeviceAlgorithm>();
         }
+
+        protected override string GetCompactSummaryValue() => CompactValueOrDash(ParameterTemplateName);
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {

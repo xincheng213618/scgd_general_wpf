@@ -2254,7 +2254,7 @@
     <value>File Path</value>
   </data>
   <data name="Engine_PG_LocalImage" xml:space="preserve">
-    <value>Local Image</value>
+    <value>載入圖片</value>
   </data>
 
   <data name="Engine_PG_Ratio" xml:space="preserve">
