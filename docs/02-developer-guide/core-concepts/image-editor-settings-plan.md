@@ -39,9 +39,9 @@ related: ["ui.image-editor", "ui.image-editor-context", "ui.configuration", "ui.
 
 每视图的 `ImageDisplayEffects.Shader`（`ImageShaderPresentation`）在创建时复制 `DisplayShaderFilterDefaultConfig.State`，并负责 effect 附着与释放。`DisplayShaderFilterEditorTool` 引用同一局部状态，负责界面和显式持久化，工具释放不释放显示能力。调节、普通窗口关闭和工具释放都不会自动写入全局默认值；`SaveAsDefault` 才显式复制并保存。修改默认值只影响后续创建的视图，已有视图通过 `RestoreDefaults` 主动应用。
 
-`ChannelOrder`（通道顺序）默认 `Rgb`；选择 `Brg` 时，Shader 把当前显示的 `(R,G,B)` 实时排列为 `(B,R,G)`。该排列用于修正部分 16 位三通道文件与本地相机预览的观感差异，先于显示通道选择、增益、偏移、亮度及伪彩计算生效。当前不在相机回调或文件打开链路增加专用通道重排配置；如真实设备验证后仍需要固定入口纠正，再单独引入并明确其与 Shader 的互斥关系。
+`Temperature` 和 `Tint` 是默认值均为 `0`、范围为 `-1..1` 的显示白平衡快捷控制。正色温提高红色并降低蓝色，正色调提高红蓝并降低绿色；负值方向相反。它们在 C# 侧转换成保持几何平均值为 1 的 RGB 增益，再与手动 RGB 增益相乘，因此不增加 Pixel Shader 2.0 的指令数。当前不在相机回调、文件打开链路或显示滤镜中提供通道重排；如真实设备验证后仍需要固定入口纠正，再单独引入配置。
 
-显示滤镜保留 `ImagePresentation.SceneEffect` 的完整画布作用范围，图像与叠加内容一起受影响；通道顺序变化通过现有 Shader 状态立即重绘，不提交源像素，也不保证后台 source 输出包含该效果。图像/叠加承载与输出限制见[ImageEditor](../../04-api-reference/ui-components/ColorVision.ImageEditor.md)。
+显示滤镜保留 `ImagePresentation.SceneEffect` 的完整画布作用范围，图像与叠加内容一起受影响；滤镜状态变化会立即重绘，不提交源像素，也不保证后台 source 输出包含该效果。图像/叠加承载与输出限制见[ImageEditor](../../04-api-reference/ui-components/ColorVision.ImageEditor.md)。
 
 工具栏设置按钮打开统一图像设置窗口的滤镜页。旧 `DisplayShaderFilterWindow` 类型保留给兼容调用方，但不再是这个工具的默认入口。
 
@@ -110,6 +110,6 @@ new ImageViewSettingsEntry(SettingsText.FileOpening, "CVCIE", config,
 
 ## 验证
 
-`ImageSettingsScopeTests` 覆盖双视图 Shader/标定隔离、通道顺序显式默认值、来源切换、探针/伪彩换图、仅保存改动、失败重试、无修改关闭零写入、注册注销及配置实例替换。`CvcieDisplaySettingsTests` 覆盖无图可见、共享全局对象和文件打开页归属。
+`ImageSettingsScopeTests` 覆盖双视图 Shader/标定隔离、白平衡默认值持久化、来源切换、探针/伪彩换图、仅保存改动、失败重试、无修改关闭零写入、注册注销及配置实例替换。`CvcieDisplaySettingsTests` 覆盖无图可见、共享全局对象和文件打开页归属。
 
 相邻回归入口是比例尺弱事件、尺子渲染、实时伪彩 generation、打开完成及工具工厂生命周期测试。控件布局和主题需使用实际 WPF 资源验证；输出更高 DPI 的截图不等同于跨显示器 DPI 运行验收，真实设备图像与外部二进制宿主也需分别验证。

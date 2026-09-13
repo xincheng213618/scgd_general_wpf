@@ -80,7 +80,8 @@ namespace ColorVision.ImageEditor.Settings
         public static string PseudoHint => Get(nameof(PseudoHint));
         public static string IsEnabled => Get(nameof(IsEnabled));
         public static string ChannelMode => Get(nameof(ChannelMode));
-        public static string ChannelOrder => Get(nameof(ChannelOrder));
+        public static string Temperature => Get(nameof(Temperature));
+        public static string Tint => Get(nameof(Tint));
         public static string RedGain => Get(nameof(RedGain));
         public static string GreenGain => Get(nameof(GreenGain));
         public static string BlueGain => Get(nameof(BlueGain));

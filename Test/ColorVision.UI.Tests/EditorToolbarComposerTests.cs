@@ -29,7 +29,6 @@ public sealed class EditorToolbarComposerTests
                 // remain an interactive UI concern rather than part of this lifecycle test.
                 state.IsEnabled = true;
                 state.Brightness = 0.25;
-                state.ChannelOrder = DisplayShaderChannelOrder.Brg;
                 var effect = view.Presentation.SceneEffect;
                 if (DisplayShaderFilterEnvironment.Current.CanUseShaderFilter)
                     Assert.IsType<DisplayShaderFilterEffect>(effect);
@@ -47,21 +46,31 @@ public sealed class EditorToolbarComposerTests
                 Assert.True(state.IsEnabled);
                 Assert.Same(effect, view.Presentation.SceneEffect);
                 if (effect is DisplayShaderFilterEffect filter)
-                {
                     Assert.Equal(0.6, filter.Brightness);
-                    Assert.Equal((double)DisplayShaderChannelOrder.Brg, filter.ChannelOrder);
-                }
 
                 using DisplayShaderFilterEditorTool replacement = new(view.EditorContext);
                 Assert.Same(state, replacement.State);
                 Assert.Equal(0.6, replacement.State.Brightness);
-                Assert.Equal(DisplayShaderChannelOrder.Brg, replacement.State.ChannelOrder);
                 replacement.Dispose();
                 state.IsEnabled = false;
                 Assert.Null(view.Presentation.SceneEffect);
             });
         }
         finally { ConfigService.SetInstance(previousConfigService!); }
+    }
+
+    [Fact]
+    public void WhiteBalanceControlsHaveNeutralDefaultsAndExpectedDirections()
+    {
+        Assert.Equal((1, 1, 1), DisplayShaderWhiteBalance.GetGains(0, 0));
+
+        (double warmRed, double warmGreen, double warmBlue) = DisplayShaderWhiteBalance.GetGains(1, 0);
+        Assert.True(warmRed > warmGreen);
+        Assert.True(warmGreen > warmBlue);
+
+        (double magentaRed, double magentaGreen, double magentaBlue) = DisplayShaderWhiteBalance.GetGains(0, 1);
+        Assert.True(magentaRed > magentaGreen);
+        Assert.Equal(magentaRed, magentaBlue, 12);
     }
 
     [Fact]

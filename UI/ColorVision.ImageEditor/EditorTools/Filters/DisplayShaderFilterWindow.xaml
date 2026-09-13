@@ -60,16 +60,26 @@
                             </ComboBox>
                         </DockPanel>
 
-                        <DockPanel Margin="0,0,0,6">
-                            <TextBlock Width="96"
-                                       Style="{StaticResource RowText}"
-                                       Text="Channel order" />
-                            <ComboBox SelectedValue="{Binding ChannelOrder, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                      SelectedValuePath="Tag">
-                                <ComboBoxItem Content="RGB" Tag="{x:Static local:DisplayShaderChannelOrder.Rgb}" />
-                                <ComboBoxItem Content="BRG" Tag="{x:Static local:DisplayShaderChannelOrder.Brg}" />
-                            </ComboBox>
-                        </DockPanel>
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="Temperature" />
+                            <Slider Grid.Column="1" Minimum="-1" Maximum="1" Value="{Binding Temperature, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding Temperature, StringFormat=F2}" />
+                        </Grid>
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="Tint" />
+                            <Slider Grid.Column="1" Minimum="-1" Maximum="1" Value="{Binding Tint, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding Tint, StringFormat=F2}" />
+                        </Grid>
 
                         <Grid Style="{StaticResource SliderRow}">
                             <Grid.ColumnDefinitions>

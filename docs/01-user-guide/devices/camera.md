@@ -115,7 +115,7 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 | CSV 导出 | 先选择一条记录；只导出该记录。保存对话框确认后代码会追加 `.csv`，文件名无需再次填写此后缀 |
 | 清空列表或删除选中行 | 只移除当前视图集合中的行，不删除数据库记录或图像文件 |
 
-选择结果后的显示链是 `ViewResultImage.FileUrl → OpenImage(string?) → ImageView.OpenImage(filePath)`，空路径会清空图像。本地流程通知也先按 `MasterId` 查主记录，尚未把流程内存帧送入设备结果视图。因此 `SaveFiles=false` 的流程帧可供下游算法使用，但不能据此在 `ViewCamera` 预览或重新打开无文件历史结果；直接显示内存图像的是前述本地相机管理窗口。若 16 位三通道文件与本地相机预览的颜色观感不同，在“图像设置 → 当前视图 → 显示滤镜”启用滤镜并将“通道顺序”设为 `Brg`，可实时把 `(R,G,B)` 显示为 `(B,R,G)`。相机回调通过通用 `RealtimeFramePresenter.GetPixelFormat` 选择像素格式并直接提交 SDK 原始帧，不在设备侧额外交换通道；文件打开也不提供专用的“本地相机顺序”开关。如后续需要在数据入口固定纠正，应基于真实设备样本另行增加配置。设备级无文件预览见[待实施设计](../../02-developer-guide/engine-development/local-camera-memory-preview.md)。
+选择结果后的显示链是 `ViewResultImage.FileUrl → OpenImage(string?) → ImageView.OpenImage(filePath)`，空路径会清空图像。本地流程通知也先按 `MasterId` 查主记录，尚未把流程内存帧送入设备结果视图。因此 `SaveFiles=false` 的流程帧可供下游算法使用，但不能据此在 `ViewCamera` 预览或重新打开无文件历史结果；直接显示内存图像的是前述本地相机管理窗口。若 16 位三通道文件与本地相机预览的颜色观感不同，可在“图像设置 → 当前视图 → 显示滤镜”实时纠正：整体偏绿或偏洋红使用“色调”，冷暖偏移使用“色温”。相机回调通过通用 `RealtimeFramePresenter.GetPixelFormat` 选择像素格式并直接提交 SDK 原始帧，不执行 `CvtColor` 或逐像素交换；显示滤镜也不提供通道重排。如后续确认真实数据的通道位置错误，应基于设备样本在数据入口另行增加配置。设备级无文件预览见[待实施设计](../../02-developer-guide/engine-development/local-camera-memory-preview.md)。
 
 有记录但无图时，先检查选中行、`FileUrl` 和文件加载；出现其它相机记录时，核对是否执行过全表查询。设备右键菜单 `CameraLog` 从配置的主服务目录查找最新相机日志，可结合命令终态及错误消息定位远程失败。
 
