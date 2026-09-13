@@ -422,25 +422,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _localRealtimePipeline.Start(ImageView);
         }
 
-        private static System.Windows.Media.PixelFormat GetPixelFormat(int channels, int bpp)
-        {
-            if (channels == 3)
-            {
-                return bpp == 16
-                    ? System.Windows.Media.PixelFormats.Rgb48
-                    : System.Windows.Media.PixelFormats.Bgr24;
-            }
-            else
-            {
-                return bpp == 16
-                    ? System.Windows.Media.PixelFormats.Gray16
-                    : System.Windows.Media.PixelFormats.Gray8;
-            }
-        }
-
         ulong QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
         {
-            var pixelFormat = GetPixelFormat(channels, bpp);
+            var pixelFormat = RealtimeFramePresenter.GetPixelFormat(channels, bpp);
             int stride = RealtimeFramePresenter.GetDefaultStride(width, pixelFormat);
             int frameBytes = stride * height;
             _localRealtimePipeline.SubmitFrame(pData, frameBytes, width, height, channels, bpp, stride);
@@ -1004,7 +988,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private static unsafe WriteableBitmap CreateDisplayBitmap(byte[] data, int bpp, int channels, int width, int height)
         {
-            var pixelFormat = GetPixelFormat(channels, bpp);
+            var pixelFormat = RealtimeFramePresenter.GetPixelFormat(channels, bpp);
 
             WriteableBitmap writeableBitmap = new WriteableBitmap(width, height, 96, 96, pixelFormat, null);
             writeableBitmap.Lock();

@@ -58,6 +58,7 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
         public static readonly DependencyProperty PseudoColorModeProperty = RegisterShaderDouble(nameof(PseudoColorMode), 19, 0);
         public static readonly DependencyProperty PseudoMinProperty = RegisterShaderDouble(nameof(PseudoMin), 20, 0);
         public static readonly DependencyProperty PseudoMaxProperty = RegisterShaderDouble(nameof(PseudoMax), 21, 1);
+        public static readonly DependencyProperty ChannelOrderProperty = RegisterShaderDouble(nameof(ChannelOrder), 22, 0);
 
         public DisplayShaderFilterEffect()
         {
@@ -211,10 +212,17 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
             set => SetValue(PseudoMaxProperty, value);
         }
 
+        public double ChannelOrder
+        {
+            get => (double)GetValue(ChannelOrderProperty);
+            set => SetValue(ChannelOrderProperty, value);
+        }
+
         public void Apply(DisplayShaderFilterState state)
         {
             ApplyShaderVariant(state);
             ChannelMode = (double)state.ChannelMode;
+            ChannelOrder = (double)state.ChannelOrder;
             RedGain = state.RedGain;
             GreenGain = state.GreenGain;
             BlueGain = state.BlueGain;
@@ -314,6 +322,7 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
             UpdateShaderValue(PseudoColorModeProperty);
             UpdateShaderValue(PseudoMinProperty);
             UpdateShaderValue(PseudoMaxProperty);
+            UpdateShaderValue(ChannelOrderProperty);
         }
 
         private static DependencyProperty RegisterShaderDouble(string name, int constantRegister, double defaultValue)
