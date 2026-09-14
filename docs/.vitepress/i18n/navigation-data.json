@@ -734,6 +734,12 @@
                 "root": "开发工具管理：检测与安装 Python、Node.js"
               },
               "link": "/02-developer-guide/core-concepts/developer-tools-manager"
+            },
+            {
+              "text": {
+                "root": "配置向导：步骤、应用与完成边界"
+              },
+              "link": "/04-api-reference/ui-components/wizards"
             }
           ]
         },
@@ -2582,6 +2588,12 @@
                 "root": "SQLite 正文存储、迁移与文件维护"
               },
               "link": "/04-api-reference/ui-components/sqlite-storage"
+            },
+            {
+              "text": {
+                "root": "配置向导：步骤、应用与完成边界"
+              },
+              "link": "/04-api-reference/ui-components/wizards"
             },
             {
               "text": {

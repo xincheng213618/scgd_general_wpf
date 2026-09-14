@@ -11791,9 +11791,13 @@
         "UI/ColorVision.Common/Interfaces/Window/WindowConfig.cs",
         "UI/ColorVision.UI/AssemblyHandler.cs",
         "ColorVision/App.xaml.cs",
-        "ColorVision/Wizards/RecommendedSoftwareWizardStep.cs"
+        "ColorVision/Wizards/RecommendedSoftwareWizardStep.cs",
+        "ColorVision/Wizards/CameraDriverWizardStep.cs",
+        "ColorVision/ToolPlugins/CameraDriver",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/CameraDriverInstallationService.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CameraDriverWizardStepTests.cs",
         "Test/ColorVision.UI.Tests/RecommendedSoftwareWizardStepTests.cs",
         "Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/WizardWindowRuntimeTests.cs"
@@ -11807,7 +11811,9 @@
       ],
       "code_scopes": [
         "ColorVision",
+        "ColorVision/ToolPlugins",
         "ColorVision/Wizards",
+        "Engine/ColorVision.Engine",
         "UI/ColorVision.Common",
         "UI/ColorVision.UI",
         "UI/ColorVision.UI.Desktop"

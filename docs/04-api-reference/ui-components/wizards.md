@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "配置向导的步骤发现、初始化时序、前进应用和完成标记；关闭不回滚，完成标记不证明组件健康或重启成功。"
 aliases: ["设置向导", "首次启动向导", "向导步骤", "向导初始化", "向导完成", "WizardWindow", "WizardManager", "WizardWindowConfig", "WizardCompletionKey", "IWizardStep", "WizardStepBase", "IWizardInitializer", "RunsBeforeInitializers", "RequestSkipWizard"]
-code_paths: ["UI/ColorVision.UI.Desktop/Wizards/WizardWindow.xaml", "UI/ColorVision.UI.Desktop/Wizards/WizardWindow.xaml.cs", "UI/ColorVision.UI.Desktop/Wizards/WizardWindowConfig.cs", "UI/ColorVision.Common/Interfaces/IWizardStep.cs", "UI/ColorVision.Common/Interfaces/Window/WindowConfig.cs", "UI/ColorVision.UI/AssemblyHandler.cs", "ColorVision/App.xaml.cs", "ColorVision/Wizards/RecommendedSoftwareWizardStep.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/RecommendedSoftwareWizardStepTests.cs","Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs","Test/ColorVision.UI.Tests/WizardWindowRuntimeTests.cs"]
+code_paths: ["UI/ColorVision.UI.Desktop/Wizards/WizardWindow.xaml", "UI/ColorVision.UI.Desktop/Wizards/WizardWindow.xaml.cs", "UI/ColorVision.UI.Desktop/Wizards/WizardWindowConfig.cs", "UI/ColorVision.Common/Interfaces/IWizardStep.cs", "UI/ColorVision.Common/Interfaces/Window/WindowConfig.cs", "UI/ColorVision.UI/AssemblyHandler.cs", "ColorVision/App.xaml.cs", "ColorVision/Wizards/RecommendedSoftwareWizardStep.cs", "ColorVision/Wizards/CameraDriverWizardStep.cs", "ColorVision/ToolPlugins/CameraDriver", "Engine/ColorVision.Engine/Services/Devices/Camera/CameraDriverInstallationService.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CameraDriverWizardStepTests.cs","Test/ColorVision.UI.Tests/RecommendedSoftwareWizardStepTests.cs","Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs","Test/ColorVision.UI.Tests/WizardWindowRuntimeTests.cs"]
 related: ["ui.desktop", "operations.first-run", "platform.runtime", "ui.configuration", "ui.discovery"]
 ---
 
@@ -52,6 +52,16 @@ related: ["ui.desktop", "operations.first-run", "platform.runtime", "ui.configur
 
 例如，`ColorVision/Wizards/RecommendedSoftwareWizardStep.ApplyAsync` 会安装选中的推荐软件；全部取消选择也允许该步骤完成。AI 不能为了查看后一页而默认执行“下一步”，更不能将前进或后退当作安装事务的提交/撤销。
 
+`CameraDriverWizardStep` 是推荐软件之后、initializer 之前的可选相机驱动步骤。进入时异步检查 Windows 已登记的 ColorVision 相机 INF 及系统目录内 FW/IO 两个驱动文件的版本，不要求相机已经连接；卸载注册表项只作为残留安装线索，不能单独证明安装完成。检查范围是此驱动家族的安装信息，不验证签名、当前设备绑定、固件启动或采集，也不因检测到旧版驱动就自动升级。
+
+“驱动安装与修复”打开 `ColorVision/ToolPlugins/CameraDriver/CameraDriverWindow`，常用工具中也有“相机驱动”入口。窗口显示系统登记、FW 与 IO 驱动版本，提供重新检测以及“下载并安装／下载并重新安装”；检测到已安装仍允许显式重装，以便处理设备无法识别的情况，不主动卸载或删除系统驱动。
+
+安装和重装均通过现有 `IDownloadService` 打开下载管理器，使用工具包缓存与配置的下载认证，从软件下载服务器 `Tool/ColorVisionDriver/ColorVisionDriver240301win10.exe` 下载完整 EXE；`/browse/Tool/ColorVisionDriver` 是浏览页，文件使用 `/download/Tool/ColorVisionDriver/ColorVisionDriver240301win10.exe` 地址。主程序不捆绑该 EXE。当前选择固定为 240301 版，下载后检查文件路径与已核对的 SHA-256；以后更新制品时同步核对 URL、文件名、哈希及驱动身份，不从目录中自动执行任意 EXE。
+
+用户应先断开相机 USB，再点击下载并安装/重装。下载完成且窗口仍打开时，以管理员权限启动原厂完整安装包，保留交互窗口，禁止外层安装器自动重启；安装日志写到当前用户的 `LocalApplicationData/ColorVision/Logs/DriverInstallation/`。进程退出后重新检测，退出码为零但安装文件不完整仍显示失败，3010 提示重启，取消管理员授权不记为安装成功。操作期间阻止窗口内重复下载/安装；关闭窗口会取消后续自动安装，但不会杀掉已经启动的系统安装器，也不会删除或停止下载管理器中的任务。
+
+该步骤的“下一步”明确表示跳过可选安装，只将本次步骤标为已处理，不启动安装器；远程客户端和暂不接相机的部署可因此继续 initializer。即使显示驱动已安装，也应在主程序内连接相机并验证采集。
+
 ## 完成标记、文件保存和重启是三个结果
 
 `ConfigurationComplete_Click` 按以下顺序处理：
@@ -87,5 +97,7 @@ related: ["ui.desktop", "operations.first-run", "platform.runtime", "ui.configur
 | 有副作用的步骤示例 | `ColorVision/Wizards/RecommendedSoftwareWizardStep.cs` |
 
 `RecommendedSoftwareWizardStepTests` 只有三个假服务用例：缺失软件默认选中、全部取消选择时不安装也可完成、按 Everything/WinRAR 顺序调用安装服务。它们没有真实安装，也不覆盖通用向导导航、保存或重启。
+
+`CameraDriverWizardStepTests` 覆盖 INF 身份及版本解析、卸载记录或单个驱动文件不足以判定安装、向导跳过及管理窗口返回后复查、安装与重装均走下载服务、错误路径/损坏下载阻止执行、下载失败、窗口关闭后的延迟回调、取消、退出后复查及重启状态。用例使用假下载与安装服务，损坏文件测试在进程启动前失败，不运行真实驱动安装器或操作相机；下载管理器的真实网络过程、原厂子安装器交互和设备兼容性需在获准测试机验证。
 
 `WizardWindowRuntimeTests` 使用隔离发现、假步骤与临时配置，覆盖原构造的 initializer 时序、运行期跳过 initializer、Refresh/Apply、Apply 失败不前进、普通关闭不改完成标记，以及非主窗口完成只关窗。发现失败、真实保存失败和启动主窗口重启交接仍未覆盖；底层配置测试和文档校验不能替代这些集成检查。需要实际安装、配置写入或服务操作时仍须单独确认授权。
