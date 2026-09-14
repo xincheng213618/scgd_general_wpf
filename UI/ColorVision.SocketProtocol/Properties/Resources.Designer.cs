@@ -77,7 +77,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("AllowFirewall", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 为当前程序创建专用网络入站允许规则。 的本地化字符串。
         /// </summary>
@@ -86,7 +86,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("AllowPrivateFirewallTooltip", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 为当前程序创建公用网络入站允许规则。 的本地化字符串。
         /// </summary>
@@ -95,7 +95,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("AllowPublicFirewallTooltip", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 自动滚动 的本地化字符串。
         /// </summary>
@@ -176,7 +176,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("ContentLoadFailedFormat", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 复制 的本地化字符串。
         /// </summary>
@@ -203,7 +203,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("CopyRaw", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 数据库清理 的本地化字符串。
         /// </summary>
@@ -212,7 +212,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("DatabaseCleanup", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前未加载数据库清理组件，请从完整 ColorVision 程序打开此窗口。 的本地化字符串。
         /// </summary>
@@ -221,7 +221,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("DatabaseCleanupUnavailable", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 删除 的本地化字符串。
         /// </summary>
@@ -284,7 +284,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("FilteredMessageCountFormat", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 接收 的本地化字符串。
         /// </summary>
@@ -311,7 +311,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("FirewallPrivate", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 防火墙 · 公用 的本地化字符串。
         /// </summary>
@@ -320,7 +320,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("FirewallPublic", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 IP地址 的本地化字符串。
         /// </summary>
@@ -365,13 +365,22 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("KeyboardShortcutsHint", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 监听地址 的本地化字符串。
         /// </summary>
         public static string ListenAddress {
             get {
                 return ResourceManager.GetString("ListenAddress", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 网络通信(_C) 的本地化字符串。
+        /// </summary>
+        public static string MenuNetworkCommunication {
+            get {
+                return ResourceManager.GetString("MenuNetworkCommunication", resourceCulture);
             }
         }
         
@@ -383,7 +392,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("MessageBody", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 {0} 条消息 的本地化字符串。
         /// </summary>
@@ -410,7 +419,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("MessageId", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 消息日志 的本地化字符串。
         /// </summary>
@@ -437,7 +446,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("NoContentPreview", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 无 的本地化字符串。
         /// </summary>
@@ -455,7 +464,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("NoMatchingMessages", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请调整关键词或收发方向，或重置筛选查看全部记录。 的本地化字符串。
         /// </summary>
@@ -464,7 +473,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("NoMatchingMessagesHint", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 没有可显示的消息正文 的本地化字符串。
         /// </summary>
@@ -473,7 +482,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("NoMessageContent", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 消息的时间、方向和客户端信息仍可在上方查看。 的本地化字符串。
         /// </summary>
@@ -482,7 +491,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("NoMessageContentHint", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 暂无消息 的本地化字符串。
         /// </summary>
@@ -491,7 +500,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("NoMessages", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 接收到的消息和发送记录会显示在这里，也可以查询历史消息。 的本地化字符串。
         /// </summary>
@@ -500,7 +509,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("NoMessagesHint", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 打开数据库 的本地化字符串。
         /// </summary>
@@ -590,7 +599,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("ResetFilters", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 响应码: 的本地化字符串。
         /// </summary>
@@ -617,7 +626,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("SearchPlaceholder", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 按客户端、事件名、MsgID、响应码或内容过滤 的本地化字符串。
         /// </summary>
@@ -635,7 +644,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("SelectMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 查看消息正文、客户端与请求信息，支持 JSON 格式化和复制。 的本地化字符串。
         /// </summary>
@@ -644,7 +653,7 @@ namespace ColorVision.SocketProtocol.Properties {
                 return ResourceManager.GetString("SelectMessageHint", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 端口 的本地化字符串。
         /// </summary>
@@ -735,15 +744,6 @@ namespace ColorVision.SocketProtocol.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 网络通信(_C) 的本地化字符串。
-        /// </summary>
-        public static string MenuNetworkCommunication {
-            get {
-                return ResourceManager.GetString("MenuNetworkCommunication", resourceCulture);
-            }
-        }
-
         /// <summary>
         ///   查找类似 Socket 连接管理器 的本地化字符串。
         /// </summary>

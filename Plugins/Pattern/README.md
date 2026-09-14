@@ -1,10 +1,10 @@
-# Pattern — 图卡生成工具
+# Pattern — 图卡生成与图片投影工具
 
-Pattern 是 ColorVision 的 Windows x64 / .NET 10 WPF 插件，同时保留独立 `Pattern.exe` 入口。程序集和插件 ID 均为 `Pattern`，版本由 `Pattern.csproj` 的 `VersionPrefix` 管理。
+Pattern 是 ColorVision 的 Windows x64 / .NET 10 WPF 插件，同时保留独立 `Pattern.exe` 入口。图卡生成与图片投影作为同一插件交付，程序集和插件 ID 均为 `Pattern`，版本由 `Pattern.csproj` 的 `VersionPrefix` 管理。
 
-提供纯色、隔行点亮、环形、线对 MTF、九点、点阵、十字网格、十字、棋盘格、噪声和四象限线栅。四象限线栅默认 2×2，可按行列数量或单元格像素宽高排列，并设置线宽、三种颜色及视场。颜色编辑器提供 R/G/B/W/K 快选。
+提供纯色、隔行点亮、环形、线对 MTF、九点、点阵、十字网格、十字、棋盘格、噪声和四象限线栅。四象限线栅默认 2×2，可按行列数量或单元格像素宽高排列，并设置线宽、三种颜色及视场。颜色编辑器提供 R/G/B/W/K 快选。内置图片投影功能支持图片列表、显示器选择、全屏投影和四种显示方式。
 
-依赖同版本源码构建的 ColorVision UI/ImageEditor 与 OpenCV runtime；`ImageProjector.dll` 是私有项目依赖，不能因宿主共享依赖剔除而遗漏。普通构建不会复制到主程序输出，也不会发布。正式插件包不是完整的独立应用发行包。
+依赖同版本源码构建的 ColorVision UI/ImageEditor 与 OpenCV runtime。投影源码位于 `Projection/`，保留 `ImageProjector` 命名空间以兼容已有配置，但不再产生或发布独立 `ImageProjector.dll`。普通构建不会复制到主程序输出，也不会发布。正式插件包不是完整的独立应用发行包。
 
 在仓库根目录构建：
 
@@ -12,7 +12,7 @@ Pattern 是 ColorVision 的 Windows x64 / .NET 10 WPF 插件，同时保留独�
 dotnet build .\Plugins\Pattern\Pattern.csproj -c Release -p:Platform=x64
 ```
 
-从“工具 → 图卡生成工具”打开窗口。设置参数后点击“生成图卡”，再保存图片；参数修改或重置不会自动刷新已生成图片。“保存到默认”写入该类型的默认 JSON，点击“重置”才读取；普通图案切换不会自动载入它。
+从“工具 → 图卡生成工具”打开生成窗口，或从“工具 → 图片投影工具”直接打开投影窗口；生成窗口内也保留投影入口。设置参数后点击“生成图卡”，再保存图片；参数修改或重置不会自动刷新已生成图片。“保存到默认”写入该类型的默认 JSON，点击“重置”才读取；普通图案切换不会自动载入它。
 
 模板默认在用户文档的 `ColorVision\Pattern`，用户默认值固定在文档 `ColorVision\Pattern\UserDefaults`，不随自定义模板路径移动。导入 ZIP 和“清空模板列表”会删除模板目录内容，默认位置下包括用户默认文件；操作前核对目录并备份。搜索后的模板复制、删除、重命名存在视图索引与原集合不一致的风险，先清除筛选并核对真实文件。
 

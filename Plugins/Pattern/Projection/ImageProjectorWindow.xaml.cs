@@ -6,6 +6,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using Screen = System.Windows.Forms.Screen;
 
 namespace ImageProjector
 {

@@ -50,6 +50,28 @@ namespace ProjectARVRPro.Process
             return FindMapping(result.Model, legacyProcessMetas)?.Process;
         }
 
+        /// <summary>
+        /// Resolves the process used to draw a persisted result. When the active configuration
+        /// still maps the same flow to the same process type, presentation-only settings should
+        /// follow that current process instead of the immutable execution snapshot.
+        /// </summary>
+        public static IProcess? ResolveForRender(
+            ProjectARVRReuslt result,
+            IEnumerable<IProcess> processTemplates,
+            IEnumerable<ProcessMeta> currentProcessMetas)
+        {
+            ArgumentNullException.ThrowIfNull(currentProcessMetas);
+
+            ProcessMeta[] currentMappings = currentProcessMetas as ProcessMeta[] ?? currentProcessMetas.ToArray();
+            IProcess? snapshotProcess = Resolve(result, processTemplates, currentMappings);
+            IProcess? currentProcess = FindMapping(result.Model, currentMappings)?.Process;
+            return snapshotProcess != null
+                && currentProcess != null
+                && currentProcess.GetType() == snapshotProcess.GetType()
+                    ? currentProcess
+                    : snapshotProcess;
+        }
+
         public static ProcessMeta? FindMapping(
             string flowTemplate,
             IEnumerable<ProcessMeta> primaryMappings,

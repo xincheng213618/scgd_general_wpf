@@ -19,7 +19,7 @@ namespace Pattern.Ring
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
-            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(Config));
+            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(Config, showCategoryHeader: false));
         }
     }
 }

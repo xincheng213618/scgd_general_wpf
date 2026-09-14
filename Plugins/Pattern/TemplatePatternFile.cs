@@ -17,9 +17,9 @@ namespace Pattern
             SelectCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(FilePath));
 
             ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = "复制", Command = ApplicationCommands.Copy });
-            ContextMenu.Items.Add(new MenuItem() { Header = "删除", Command = ApplicationCommands.Delete });
-            ContextMenu.Items.Add(new MenuItem() { Header = "选中", Command = SelectCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = PatternText.Get("Copy"), Command = ApplicationCommands.Copy });
+            ContextMenu.Items.Add(new MenuItem() { Header = PatternText.Get("Delete"), Command = ApplicationCommands.Delete });
+            ContextMenu.Items.Add(new MenuItem() { Header = PatternText.Get("Select"), Command = SelectCommand });
 
         }
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }

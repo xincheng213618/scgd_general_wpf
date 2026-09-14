@@ -124,7 +124,7 @@ namespace ProjectARVRPro
 
         [DisplayName("结果文字字号"), Category("结果图层")]
         public double ResultOverlayFontSize { get => _ResultOverlayFontSize; set { _ResultOverlayFontSize = Math.Max(0, value); OnPropertyChanged(); } }
-        private double _ResultOverlayFontSize = 8;
+        private double _ResultOverlayFontSize = 80;
 
         [DisplayName("结果图层自动刷新"), Category("结果图层")]
         public bool ResultOverlayAutoRefresh { get => _ResultOverlayAutoRefresh; set { _ResultOverlayAutoRefresh = value; OnPropertyChanged(); } }

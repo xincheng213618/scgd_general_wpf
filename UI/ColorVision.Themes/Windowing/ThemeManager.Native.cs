@@ -8,19 +8,12 @@ public partial class ThemeManager
 {
         public static void SetWindowTitleBarColor(IntPtr hwnd, Theme theme)
         {
-            uint attribute;
-            uint attributeSize = (uint)Marshal.SizeOf<uint>();
-
             switch (theme)
             {
                 case Theme.Dark:
                     // Reset caption color to system default
                     ResetCaptionColor(hwnd);
-
-                    // Enable dark mode
-                    attribute = 1;
-                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ref attribute, attributeSize);
-                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, ref attribute, attributeSize);
+                    SetImmersiveDarkMode(hwnd, true);
                     break;
 
                 case Theme.Light:
@@ -28,13 +21,20 @@ public partial class ThemeManager
                 default:
                     // Reset caption color to system default
                     ResetCaptionColor(hwnd);
-
-                    // Disable dark mode
-                    attribute = 0;
-                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ref attribute, attributeSize);
-                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, ref attribute, attributeSize);
+                    SetImmersiveDarkMode(hwnd, false);
                     break;
             }
+        }
+
+        private static void SetImmersiveDarkMode(IntPtr hwnd, bool enabled)
+        {
+            uint attribute = enabled ? 1u : 0u;
+            uint attributeSize = (uint)Marshal.SizeOf<uint>();
+            int result = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, ref attribute, attributeSize);
+            // Attribute 19 was used by older Windows 10 builds before 20 became the supported value.
+            // Only try the legacy value when the current attribute is rejected; setting both can mutate an unrelated attribute on newer systems.
+            if (result < 0)
+                _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ref attribute, attributeSize);
         }
 
         private static void ResetCaptionColor(IntPtr hwnd)

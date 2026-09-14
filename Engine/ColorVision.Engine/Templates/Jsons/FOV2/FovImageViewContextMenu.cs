@@ -213,50 +213,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
 
         internal static void Render(ImageProcessingContext imageContext, DrawEditorContext drawContext, FovMeasurement measurement)
         {
-            AlgorithmResultOverlay.ClearTagged(drawContext, AlgorithmResultOverlay.FovTag);
-            double scaleX = GetPixelToDipScale(imageContext.Config.GetProperties<double>(ImageViewPropertyKeys.DpiX));
-            double scaleY = GetPixelToDipScale(imageContext.Config.GetProperties<double>(ImageViewPropertyKeys.DpiY));
-            Point Position(LuminousAreaPoint point) => new(point.X * scaleX, point.Y * scaleY);
-            Point[] corners = measurement.Corners.Select(Position).ToArray();
-            Point left = Midpoint(corners[0], corners[3]);
-            Point right = Midpoint(corners[1], corners[2]);
-            Point up = Midpoint(corners[0], corners[1]);
-            Point down = Midpoint(corners[3], corners[2]);
-            Point center = new(corners.Average(point => point.X), corners.Average(point => point.Y));
-            double zoom = AlgorithmResultOverlay.GetZoom(drawContext);
-
-            AlgorithmResultOverlay.AddPolygon(
-                drawContext,
-                corners,
-                new Pen(Brushes.DeepSkyBlue, 2 / zoom),
-                AlgorithmResultOverlay.FovTag);
-            AlgorithmResultOverlay.AddLine(drawContext, left, right, new Pen(Brushes.Orange, 1.5 / zoom), AlgorithmResultOverlay.FovTag);
-            AlgorithmResultOverlay.AddLine(drawContext, up, down, new Pen(Brushes.LimeGreen, 1.5 / zoom), AlgorithmResultOverlay.FovTag);
-            Pen diagonalPen = new(Brushes.MediumPurple, 1 / zoom) { DashStyle = DashStyles.Dash };
-            AlgorithmResultOverlay.AddLine(drawContext, corners[3], corners[1], diagonalPen, AlgorithmResultOverlay.FovTag);
-            AlgorithmResultOverlay.AddLine(drawContext, corners[0], corners[2], diagonalPen.CloneCurrentValue(), AlgorithmResultOverlay.FovTag);
-
-            string[] names = ["LT", "RT", "RB", "LB"];
-            for (int index = 0; index < corners.Length; index++)
-                AlgorithmResultOverlay.AddLabel(drawContext, corners[index], names[index], Brushes.DeepSkyBlue, AlgorithmResultOverlay.FovTag);
-            AlgorithmResultOverlay.AddLabel(
-                drawContext,
-                Interpolate(left, right, 0.25),
-                $"H {measurement.DirectionalHorizontalFovDegrees:F4}°",
-                Brushes.Orange,
-                AlgorithmResultOverlay.FovTag);
-            AlgorithmResultOverlay.AddLabel(
-                drawContext,
-                Interpolate(up, down, 0.25),
-                $"V {measurement.DirectionalVerticalFovDegrees:F4}°",
-                Brushes.LimeGreen,
-                AlgorithmResultOverlay.FovTag);
-            AlgorithmResultOverlay.AddLabel(
-                drawContext,
-                center,
-                $"D {measurement.DiagonalFovDegrees:F4}°",
-                Brushes.MediumPurple,
-                AlgorithmResultOverlay.FovTag);
+            FovOverlayRenderer.Render(imageContext, drawContext, measurement);
         }
 
         internal static string BuildResultMessage(FovImageViewRunResult result)
@@ -382,14 +339,6 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
             }
         }
 
-        private static Point Midpoint(Point first, Point second) =>
-            new((first.X + second.X) / 2, (first.Y + second.Y) / 2);
-
-        private static Point Interpolate(Point start, Point end, double amount) =>
-            new(start.X + (end.X - start.X) * amount, start.Y + (end.Y - start.Y) * amount);
-
-        private static double GetPixelToDipScale(double dpi) =>
-            double.IsFinite(dpi) && dpi > 0 ? 96 / dpi : 1;
     }
 
     public sealed class CMFovV2(EditorContext editorContext) : IIEditorToolContextMenu

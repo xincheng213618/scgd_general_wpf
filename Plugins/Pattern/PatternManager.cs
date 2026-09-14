@@ -98,14 +98,16 @@ namespace Pattern
                         var browsable = type.GetCustomAttribute<BrowsableAttribute>()?.Browsable ?? true;
                         if (!browsable) continue;
 
-                        var displayName = type.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? type.Name;
-                        var description = type.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "";
-                        var category = type.GetCustomAttribute<CategoryAttribute>()?.Category ?? "";
+                        var resourceManager = PropertyEditorHelper.GetResourceManager(type);
+                        var displayName = PropertyEditorHelper.GetLocalizedString(resourceManager, type.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? type.Name);
+                        var description = PropertyEditorHelper.GetLocalizedString(resourceManager, type.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "");
+                        var category = PropertyEditorHelper.GetLocalizedString(resourceManager, type.GetCustomAttribute<CategoryAttribute>()?.Category ?? "");
                         IPattern pattern = (IPattern)Activator.CreateInstance(type);
                         if (pattern != null)
                         {
                             var patternMeta = new PatternMeta
                             {
+                                Id = type.FullName ?? type.Name,
                                 Name = displayName,
                                 Description = description,
                                 Category = category,
@@ -151,7 +153,7 @@ namespace Pattern
             {
                 SaveFileDialog saveFileDialog = new SaveFileDialog
                 {
-                    Filter = "Zip 文件 (*.zip)|*.zip",
+                    Filter = PatternText.Get("ZipFileFilter"),
                     FileName = "Pattern.zip"
                 };
                 if (saveFileDialog.ShowDialog() != true) return;
@@ -167,14 +169,14 @@ namespace Pattern
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MessageBox.Show("导出成功！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(PatternText.Get("ExportSucceeded"), PatternText.Get("InformationTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
                 });
             }
             catch (Exception ex)
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MessageBox.Show($"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(PatternText.Format("ExportFailedFormat", ex.Message), PatternText.Get("ErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
                 });
             }
         }
@@ -188,7 +190,7 @@ namespace Pattern
             {
                 OpenFileDialog openFileDialog = new OpenFileDialog
                 {
-                    Filter = "Zip 文件 (*.zip)|*.zip"
+                    Filter = PatternText.Get("ZipFileFilter")
                 };
                 if (openFileDialog.ShowDialog() != true) return;
 
@@ -204,7 +206,7 @@ namespace Pattern
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MessageBox.Show("导入成功！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(PatternText.Get("ImportSucceeded"), PatternText.Get("InformationTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
                     // 重新加载模板文件
                     TemplatePatternFiles.Clear();
                     foreach (var item in Directory.GetFiles(PatternPath))
@@ -220,7 +222,7 @@ namespace Pattern
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MessageBox.Show($"导入失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(PatternText.Format("ImportFailedFormat", ex.Message), PatternText.Get("ErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
                 });
             }
         }
@@ -242,7 +244,7 @@ namespace Pattern
         {
             if (Directory.Exists(Config.SaveFilePath))
             {
-                var confirmResult = MessageBox.Show("确定要清空内容吗？", "清空确认", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                var confirmResult = MessageBox.Show(PatternText.Get("ConfirmClearOutput"), PatternText.Get("ClearConfirmationTitle"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
                 if (confirmResult != MessageBoxResult.Yes)
                 {
                     return;
@@ -252,16 +254,16 @@ namespace Pattern
                     Directory.Delete(Config.SaveFilePath, true);
                     if (!Directory.Exists(Config.SaveFilePath))
                         Directory.CreateDirectory(Config.SaveFilePath);
-                    MessageBox.Show("清空成功！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(PatternText.Get("ClearSucceeded"), PatternText.Get("InformationTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"清空失败：{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(PatternText.Format("ClearFailedFormat", ex.Message), PatternText.Get("ErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             else
             {
-                MessageBox.Show("目录不存在！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(PatternText.Get("DirectoryNotFound"), PatternText.Get("InformationTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 

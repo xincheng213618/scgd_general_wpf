@@ -1,6 +1,7 @@
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.Themes;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -53,7 +54,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
             _blinkTimer = new DispatcherTimer();
             try
             {
-                InitializeComponent();
+            InitializeComponent();
+            this.ApplyCaption();
                 _blinkTimer.Interval = TimeSpan.FromMilliseconds(BlinkInterval.Value);
                 _blinkTimer.Tick += (_, _) => ToggleBlink();
                 SplitReference.Source = _reference;

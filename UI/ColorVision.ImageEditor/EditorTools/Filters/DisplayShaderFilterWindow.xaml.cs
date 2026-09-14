@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using ColorVision.Themes;
 
 namespace ColorVision.ImageEditor.EditorTools.Filters
 {
@@ -11,6 +12,7 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
         {
             _state = state ?? throw new ArgumentNullException(nameof(state));
             InitializeComponent();
+            this.ApplyCaption();
             DataContext = _state;
         }
 

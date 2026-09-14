@@ -29,6 +29,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -121,6 +122,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private const double CorrectionWavelengthTolerance = 1e-6;
         private const int CalibrationRestartDebounceMilliseconds = 1000;
         private const int CalibrationRestartCooldownMilliseconds = 4000;
+        internal const string SpectrumDriverToolSha256 = "4B7C58696B7A809525F6ABCEA9B3E9C1BF91518EBDC0D19AF31E219654074342";
         private readonly object calibrationRestartSync = new object();
         private readonly SemaphoreSlim calibrationRestartGate = new SemaphoreSlim(1, 1);
         private readonly SemaphoreSlim correctionExecutionGate = new SemaphoreSlim(1, 1);
@@ -151,6 +153,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         [Category("DeviceConnection")]
         [Description("SpectrumRefreshHint")]
         public RelayCommand RefreshDeviceIdCommand { get; set; }
+
+        [CommandDisplay("SpectrumDriverTool", Order = 2, CategoryOrder = 0)]
+        [Category("DeviceConnection")]
+        [Description("SpectrumDriverToolHint")]
+        public RelayCommand OpenSpectrumDriverToolCommand { get; set; }
 
         [CommandDisplay("UploadLic", Order = 2, CategoryOrder = 4)]
         [Category("MaintenanceDiagnostics")]
@@ -231,6 +238,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             DisplayLazy = new Lazy<DisplaySpectrum>(() => new DisplaySpectrum(this));
 
             RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
+            OpenSpectrumDriverToolCommand = new RelayCommand(a => OpenSpectrumDriverTool());
             UploadLincenseCommand = new RelayCommand(a => UploadLincense());
 
             SelfAdaptionInitDarkCommand = new RelayCommand(a => SelfAdaptionInitDark());
@@ -1142,6 +1150,68 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 GetSpectrSerialNumberCommand.RaiseCanExecuteChanged();
             }
         }
+
+        internal static string GetSpectrumDriverToolPath(string baseDirectory) =>
+            Path.Combine(baseDirectory, "Tools", "Spectrum", "zadig-2.4.exe");
+
+        internal static bool HasExpectedSpectrumDriverToolHash(string filePath)
+        {
+            using FileStream stream = File.OpenRead(filePath);
+            return Convert.ToHexString(SHA256.HashData(stream)).Equals(SpectrumDriverToolSha256, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void OpenSpectrumDriverTool()
+        {
+            Window? owner = Application.Current.GetActiveWindow();
+            string title = GetSpectrumDriverToolText("SpectrumDriverTool", "光谱仪驱动工具");
+            string toolPath = GetSpectrumDriverToolPath(AppContext.BaseDirectory);
+            if (!File.Exists(toolPath))
+            {
+                MessageBox.Show(owner, string.Format(GetSpectrumDriverToolText("SpectrumDriverToolMissing", "未找到光谱仪驱动工具：{0}"), toolPath), title,
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                if (!HasExpectedSpectrumDriverToolHash(toolPath))
+                {
+                    MessageBox.Show(owner, GetSpectrumDriverToolText("SpectrumDriverToolInvalid", "光谱仪驱动工具校验失败，请重新安装或修复 ColorVision。"), title,
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("校验光谱仪驱动工具失败", ex);
+                MessageBox.Show(owner, string.Format(GetSpectrumDriverToolText("SpectrumDriverToolOpenFailed", "无法打开光谱仪驱动工具：{0}"), ex.Message), title,
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (MessageBox.Show(owner, GetSpectrumDriverToolText("SpectrumDriverToolWarning",
+                    "请仅选择 GCS Spectrameter，并确认目标驱动为 libusb-win32。不要选择键盘、鼠标、接收器、摄像头或 USB Hub。是否继续？"),
+                    title, MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK)
+                return;
+
+            try
+            {
+                Process.Start(new ProcessStartInfo(toolPath)
+                {
+                    UseShellExecute = true,
+                    WorkingDirectory = Path.GetDirectoryName(toolPath) ?? AppContext.BaseDirectory,
+                });
+            }
+            catch (Exception ex)
+            {
+                log.Error("打开光谱仪驱动工具失败", ex);
+                MessageBox.Show(owner, string.Format(GetSpectrumDriverToolText("SpectrumDriverToolOpenFailed", "无法打开光谱仪驱动工具：{0}"), ex.Message), title,
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private static string GetSpectrumDriverToolText(string key, string fallback) =>
+            Properties.Resources.ResourceManager.GetString(key) ?? fallback;
 
         public void SelfAdaptionInitDark()
         {

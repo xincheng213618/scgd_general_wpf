@@ -50,7 +50,9 @@ public RelayCommand RefreshDeviceIdCommand { get; set; }
 
 ## 设置行呈现
 
-`SettingsPropertyPresenter.Create` 为设置页面复用现有 PropertyEditor，保留原编辑器绑定、验证和 `PropertyVisibility`，将名称/说明放在左侧、控件放在右侧。支持属性白名单及 `Display` 本地化元数据，后者优先于旧 `DisplayName / Description`。单控件的外边距和最小宽度由行容器统一处理，避免下拉框边框被固定列裁剪。
+`SettingsPropertyPresenter.Create` 为设置页面复用现有 PropertyEditor，保留原编辑器绑定、验证和 `PropertyVisibility`，将名称/说明放在左侧、控件放在右侧。支持属性白名单及 `Display` 本地化元数据，后者优先于旧 `DisplayName / Description`；本地化 `Display.GroupName`（没有时回退 `Category`）生成组标题。单控件的外边距和最小宽度由行容器统一处理，避免下拉框边框被固定列裁剪。
+
+`SliderPropertiesEditor` 面向具有 `RangeAttribute` 的数值设置：同一行同时生成滑块和精确文本框，二者通过原属性的双向绑定保持同步。是否使用滑块仍由属性上的 `PropertyEditorTypeAttribute` 显式声明，未提供有效范围时回退普通属性编辑器，避免把任意数值字段误设为相同区间。
 
 该呈现器只负责布局，不负责配置保存或作用范围。当前用于[图像设置](../../02-developer-guide/core-concepts/image-editor-settings-plan.md)；Desktop 设置仍使用自己的呈现逻辑。
 

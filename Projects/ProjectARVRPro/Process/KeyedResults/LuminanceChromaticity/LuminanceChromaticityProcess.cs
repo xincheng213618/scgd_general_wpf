@@ -198,7 +198,7 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
 
             foreach (var poi in testResult.ViewPoixyuvDatas)
             {
-                PoiOverlayRenderer.Add(ctx.ImageView, poi.Point, CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poi));
+                PoiOverlayRenderer.Add(ctx.ImageView, poi.Point, CVRawOpen.FormatMessage(Config.DisplayTemplate, poi));
             }
         }
 

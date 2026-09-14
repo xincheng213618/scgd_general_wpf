@@ -16,6 +16,12 @@ namespace ColorVision.ImageEditor.Draw
 
         public bool IsShowText { get; set; } = true;
 
+        [Browsable(false), JsonIgnore]
+        public bool ScaleRadiusWithFontSize { get; set; }
+
+        [Browsable(false), JsonIgnore]
+        public double RadiusToFontSizeRatio { get; set; } = 0.5;
+
         [Category("Attribute"), DisplayName("Text")]
         public string Text { get => TextAttribute.Text; set { TextAttribute.Text = value;  OnPropertyChanged(); } }
 
@@ -95,16 +101,34 @@ namespace ColorVision.ImageEditor.Draw
 
         public void ApplyLayoutScale(DrawingVisualScaleContext context)
         {
+            bool radiusChanged = false;
+            bool layoutChanged;
             bool wasDeferred = _deferAttributeRender;
             _deferAttributeRender = true;
             try
             {
-                ApplyLayoutScaleCore(context, Pen, value => Pen = value, TextAttribute.FontSize, value => TextAttribute.FontSize = value);
+                if (Attribute.ScaleRadiusWithFontSize)
+                {
+                    double ratio = double.IsFinite(Attribute.RadiusToFontSizeRatio) && Attribute.RadiusToFontSizeRatio > 0
+                        ? Attribute.RadiusToFontSizeRatio
+                        : 0.5;
+                    double targetRadius = Math.Max(1, ResolveLayoutFontSize(context, TextAttribute.FontSize) * ratio);
+                    if (Attribute.Radius != targetRadius || Attribute.RadiusY != targetRadius)
+                    {
+                        Attribute.Radius = targetRadius;
+                        radiusChanged = true;
+                    }
+                }
+
+                layoutChanged = ApplyLayoutScaleCore(context, Pen, value => Pen = value, TextAttribute.FontSize, value => TextAttribute.FontSize = value);
             }
             finally
             {
                 _deferAttributeRender = wasDeferred;
             }
+
+            if (radiusChanged && !layoutChanged && !wasDeferred)
+                Render();
         }
 
 

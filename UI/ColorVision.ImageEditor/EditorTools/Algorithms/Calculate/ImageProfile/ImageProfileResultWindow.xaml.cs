@@ -1,6 +1,7 @@
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.Themes;
 using Microsoft.Win32;
 using ScottPlot;
 using System;
@@ -37,7 +38,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
             _result = result;
             try
             {
-                InitializeComponent();
+            InitializeComponent();
+            this.ApplyCaption();
                 int[] previewRows = PreviewIndices(samples.Rows.Count, MaximumPreviewRows);
                 int[] chartRows = PreviewIndices(samples.Rows.Count, MaximumChartPoints);
                 SamplesGrid.ItemsSource = ToTable(samples, previewRows).DefaultView;

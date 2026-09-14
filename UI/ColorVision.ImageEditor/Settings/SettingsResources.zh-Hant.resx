@@ -66,6 +66,11 @@
   <data name="FilePath" xml:space="preserve"><value>完整路徑</value></data>
   <data name="Technical" xml:space="preserve"><value>技術詳細資料</value></data>
   <data name="PseudoHint" xml:space="preserve"><value>配色與自動範圍偏好保留在此視圖。切換圖像後重新計算範圍，偽彩效果需重新啟用。</value></data>
+  <data name="FilterBasics" xml:space="preserve"><value>基礎顯示</value></data>
+  <data name="FilterWhiteBalance" xml:space="preserve"><value>白平衡與通道</value></data>
+  <data name="FilterTone" xml:space="preserve"><value>色調調整</value></data>
+  <data name="FilterThreshold" xml:space="preserve"><value>閾值與高亮</value></data>
+  <data name="FilterPseudoColor" xml:space="preserve"><value>濾鏡偽彩</value></data>
   <data name="IsEnabled" xml:space="preserve"><value>啟用濾鏡</value></data>
   <data name="ChannelMode" xml:space="preserve"><value>顯示通道</value></data>
   <data name="Temperature" xml:space="preserve"><value>色溫調整</value></data>

@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "本地 FOV V2 的相机标定参数、角点复用与自动定位、视场角公式、ImageView 叠图和 FOV 2.0 结果兼容契约。"
 aliases: ["本地FOV计算(V2)","FOV 计算 (V2)","FovDist","cameraDegrees","LocalFovNode","FovCalculator","FovImageViewRunner","HorizontalFieldOfViewAngle","DiagonalFieldOfViewAngle"]
-code_paths: ["UI/ColorVision.Core/FovCalculation.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFovNode.cs","Engine/ColorVision.Engine/PropertyEditor/CameraDegreesPropertiesEditor.cs","Engine/ColorVision.Engine/Templates/Jsons/FOV2","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FovCalculationTests.cs"]
+code_paths: ["UI/ColorVision.Core/FovCalculation.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFovNode.cs","Engine/ColorVision.Engine/PropertyEditor/CameraDegreesPropertiesEditor.cs","Engine/ColorVision.Engine/Templates/Jsons/FOV2","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs","UI/ColorVision.ImageEditor/Draw/FovOverlayRenderer.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/FovCalculationTests.cs","Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs"]
 related: ["algorithms.find-light-area","algorithms.roi-routes","engine.results","flow.node-extension"]
 ---
 
@@ -51,6 +51,8 @@ cameraDegrees = 2\arctan\left(\frac{SensorLength}{2FocalLength}\right)
 - 橙色水平中轴、绿色垂直中轴；
 - 两条紫色虚线对角线；
 - H、V、D 三项角度标签。
+
+FOV 标签圆的直径与当前结果文字字号一致；修改固定结果字号时圆和文字同步缩放，启用图层自动刷新时二者也随视图缩放保持一致。该规则只用于 FOV 结果标签，不改变普通测量圆的几何半径。
 
 新的 FOV 运行会清除上一组 FOV 叠图，打开新图也会清除旧结果。若当前图像能关联到已有测量批次，ImageView 同时写入相同的 FOV 2.0 数据库结果；普通磁盘图片仍可计算和绘制，但结果窗口会明确提示没有关联批次，因此未写数据库。
 

@@ -86,7 +86,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
             Point center,
             string message,
             Brush brush,
-            string tag)
+            string tag,
+            bool scaleRadiusWithFontSize = false)
         {
             if (!IsFinite(center) || string.IsNullOrWhiteSpace(message)) return;
 
@@ -95,6 +96,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
             {
                 Center = center,
                 Radius = 6 / zoom,
+                ScaleRadiusWithFontSize = scaleRadiusWithFontSize,
                 Brush = Brushes.Transparent,
                 Pen = new Pen(brush, 1.5 / zoom),
                 Foreground = brush,

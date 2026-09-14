@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-09-13T11:06:07.165347+00:00",
+  "generated_at": "2026-09-14T04:58:31.871709+00:00",
   "shared_files": [
     "Anthropic.dll",
     "Assets/InstallTool/Everything-1.4.1.1032.x64-Setup.exe",
@@ -248,6 +248,8 @@
     "Tasks/RegisterFileAssociations.ps1",
     "Tasks/RegisterThumbnail.ps1",
     "Tasks/UnregisterThumbnail.ps1",
+    "Tools/Spectrum/zadig-2.4.exe",
+    "Tools/Spectrum/zadig-NOTICE.txt",
     "USB_Driver.dll",
     "WpfHexEditor.ColorPicker.dll",
     "WpfHexEditor.Core.BinaryAnalysis.dll",

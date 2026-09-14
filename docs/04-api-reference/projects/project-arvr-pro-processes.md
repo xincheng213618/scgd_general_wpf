@@ -5,7 +5,7 @@ status: "current"
 summary: "配置 ARVRPro 流程组、流程解析映射、实例 Recipe、外部相机参数与雷鸟切图，说明运行时覆盖、结果快照、配置保存和有效迁移规则。"
 aliases: ["ARVR 流程组", "流程解析映射", "ARVR Recipe", "实例 Recipe", "外部相机参数", "相机参数覆盖", "FlowCameraParameterOverrideConfig", "ReadCanvasSnapshot", "雷鸟切图", "PictureSwitchConfig", "ProcessWithRecipeBase", "ResultParserMetas", "ResultProcessResolver", "ProcessGroups.json", "MTFH07", "MTFV07", "MTFHV048", "W25", "导入旧版Recipe"]
 code_paths: ["Projects/ProjectARVRPro/Process/", "Projects/ProjectARVRPro/Recipe/", "Projects/ProjectARVRPro/Services/PictureSwitchService.cs", "Projects/ProjectARVRPro/ARVRWindow.xaml.cs", "Engine/ST.Library.UI/NodeEditor/STNodeCanvasSnapshot.cs"]
-test_paths: ["Test/ProjectARVRPro.Tests/FlowCameraParameterOverrideServiceTests.cs", "Test/ProjectARVRPro.Tests/ProcessManagerPersistenceTests.cs", "Test/ProjectARVRPro.Tests/EmbeddedRecipeConfigTests.cs", "Test/ProjectARVRPro.Tests/LegacyRecipeImporterTests.cs", "Test/ProjectARVRPro.Tests/ProcessStepProjectionTests.cs", "Test/ProjectARVRPro.Tests/MTF07DynamicResultBuilderTests.cs"]
+test_paths: ["Test/ProjectARVRPro.Tests/FlowCameraParameterOverrideServiceTests.cs", "Test/ProjectARVRPro.Tests/ProcessManagerPersistenceTests.cs", "Test/ProjectARVRPro.Tests/EmbeddedRecipeConfigTests.cs", "Test/ProjectARVRPro.Tests/LegacyRecipeImporterTests.cs", "Test/ProjectARVRPro.Tests/ProcessStepProjectionTests.cs", "Test/ProjectARVRPro.Tests/MTF07DynamicResultBuilderTests.cs", "Test/ProjectARVRPro.Tests/ProcessOverlayDisplayConfigTests.cs"]
 related: ["projects.arvr-pro", "projects.arvr-pro-demura", "flow.templates", "ui.property-grid"]
 ---
 
@@ -25,7 +25,7 @@ ARVRPro 用流程组组织测试顺序，用处理类型解释 Engine 输出，�
 
 `FindProcessMetaForTemplate` 先在活动组查找，再查流程解析映射，模板名忽略大小写，取首个具有处理实例的匹配项。该查找不检查 `IsEnabled`；步骤是否执行与能否作为解析映射命中是不同判断。
 
-运行中的结果优先使用该次启动选定的处理实例。历史记录优先根据保存的处理类型和配置快照恢复实例，不能假设修改今天的 Recipe 就会重新解释全部历史结果。
+运行中的结果优先使用该次启动选定的处理实例。历史记录的解析、判定和导出优先根据保存的处理类型和配置快照恢复实例，不能假设修改今天的 Recipe 就会重新解释全部历史结果；结果图片回看在当前流程仍映射到相同处理类型时，使用当前实例的显示配置，使绘制开关和标签模板可以立即调整。
 
 ## 配置一个测试方案
 
@@ -34,7 +34,7 @@ ARVRPro 用流程组组织测试顺序，用处理类型解释 Engine 输出，�
 1. 在流程管理中选择或新增流程组，按产品或场景命名。
 2. 新增步骤，选择 Flow 模板与处理类型。名称用于识别步骤，`FlowTemplate` 用于绑定引擎模板，两者各有用途。
 3. 需要让操作员在 Flow 外调整单相机曝光或校正模板时，在流程模板下勾选 **覆盖相机参数**。界面会从当前模板同步节点值，再显示可编辑项。
-4. 在 **Process** 中配置解析 Key、输出 Key 及该处理类型的行为参数，在 **Recipe** 中填写限值和修正系数。
+4. 在 **Process** 中配置解析 Key、输出 Key、结果图显示内容及该处理类型的行为参数，在 **Recipe** 中填写限值和修正系数。
 5. 需要执行前切图时，在 **切图** 中启用并配置串口指令、期望返回值、超时和稳定时间。
 6. 用启用框决定 RunAll 是否包含该步骤；通过上移、下移或拖动调整顺序。复制步骤或流程组后重新核对模板、外部相机值、Key 和切图指令。
 7. 需要独立的模板解析规则时，切到 **流程解析映射** 添加映射，并编辑其自己的 Process/Recipe。不要用增加执行步骤的方式代替解析映射。
@@ -79,6 +79,14 @@ Flow 执行、项目解析和最终判定分别有状态。`IProcess.Execute` �
 例如同一 `MTFH07Process` 用于两个画面时，为两个步骤分别设置输出 `Key` 与 Recipe；修改其中一个实例不应更改另一个实例的阈值。历史结果保存的配置快照也包括内嵌 Recipe。
 
 共享 `ProcessBase<TConfig, TRecipeConfig>` 与根 `RecipeConfig` 容器仍是兼容接口；内置流程不使用这个共享基类。独立的 [ProjectLUX](./project-lux.md) 采用自身的 Recipe/Fix 管理器，不能套用本页的实例存储规则。
+
+## 结果图显示配置
+
+结果图的内容选择属于每个处理实例，保存在该步骤或解析映射的 `ConfigJson` 中，不读取 CVCIE 全局显示配置。回看历史结果时，若当前流程仍映射到相同处理类型，图层绘制读取当前实例的显示配置；历史解析、判定和导出仍读取执行快照。`BlackProcess`、`PoiDynamicProcess`、`White255Process`、按 Key 亮色度、YW 亮色度和两种棋盘格处理在 **Process > 显示配置 > 显示内容** 中复用 CVCIE 字段选择器，可选 XYZ、xy、u′v′、CCT、主波长及各自小数位。空模板表示不绘制详细数据，不改变点位名称的全局开关。
+
+旧配置没有 `DisplayTemplate` 时保持原显示口径：普通亮色度关注点默认显示全部 CIE 字段且保留原小数位；YW 与棋盘格默认仅显示 `Y` 两位小数。MTF、畸变和缺陷图层使用自身数值与几何显示配置，不套用 CIE 字段模板。
+
+`White51Process` 不需要中心点解析 Key；它按结果类型读取 FOV 和四个发光区角点。**绘制FOV** 默认开启，直接使用已保存的 H/V/D 结果绘制四边形、中轴与对角线，不重新运行 FOV 或发光区算法；关闭时只绘制发光区边界。
 
 ## 选择处理类型
 

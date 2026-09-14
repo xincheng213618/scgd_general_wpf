@@ -2073,7 +2073,7 @@ namespace ProjectARVRPro
                 if (result.FlowStatus != FlowStatus.Completed)
                     return;
 
-                IProcess? process = ResultProcessResolver.Resolve(result, ProcessManager.Processes, ProcessManager.GetResultProcessMappings());
+                IProcess? process = ResultProcessResolver.ResolveForRender(result, ProcessManager.Processes, ProcessManager.GetResultProcessMappings());
                 if (process == null)
                     return;
 

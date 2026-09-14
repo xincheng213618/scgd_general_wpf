@@ -7,6 +7,17 @@ namespace ProjectARVRPro.Tests;
 public sealed class ViewResultManagerConfigTests
 {
     [Fact]
+    public void ProjectResultOverlayDefaultsMatchProductionDisplay()
+    {
+        ProjectARVRProConfig config = new();
+
+        Assert.True(config.ResultOverlayShowName);
+        Assert.True(config.ResultOverlayShowDetail);
+        Assert.Equal(80, config.ResultOverlayFontSize);
+        Assert.False(config.ResultOverlayAutoRefresh);
+    }
+
+    [Fact]
     public void ImageExportSettings_DefaultToIndependentDisabledLanes()
     {
         ViewResultManagerConfig config = new();

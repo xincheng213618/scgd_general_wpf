@@ -29,7 +29,7 @@ related: ["ui.image-editor", "ui.image-editor-context", "ui.configuration", "ui.
 
 窗口按稳定页面 ID 导航，只有旧兼容条目回退到分组文本。搜索匹配页面、条目和可编辑属性名称。普通页面使用一个主滚动容器；当前值与默认值不依据“恰有两个条目”自动左右并排。
 
-`SettingsPropertyPresenter` 位于 `ColorVision.UI`，沿用现有属性编辑器、验证和可见性绑定，提供统一说明和紧凑控件列；同时读取 `Display` 资源元数据及 `DisplayName / Description`。ImageEditor 不依赖 Desktop 或 Engine。主应用设置尚未迁移到这个公共行呈现器。
+`SettingsPropertyPresenter` 位于 `ColorVision.UI`，沿用现有属性编辑器、验证和可见性绑定，提供统一说明和紧凑控件列；同时读取 `Display` 资源元数据及 `DisplayName / Description`。属性可通过本地化 `Display.GroupName`（没有时回退 `Category`）形成分区；带 `Range` 且显式选择 `SliderPropertiesEditor` 的数值项同时提供滑动调节和精确文本输入。ImageEditor 不依赖 Desktop 或 Engine。主应用设置尚未迁移到这个公共行呈现器。
 
 ## 局部状态和默认值
 
@@ -38,6 +38,8 @@ related: ["ui.image-editor", "ui.image-editor-context", "ui.configuration", "ui.
 ### 显示滤镜
 
 每视图的 `ImageDisplayEffects.Shader`（`ImageShaderPresentation`）在创建时复制 `DisplayShaderFilterDefaultConfig.State`，并负责 effect 附着与释放。`DisplayShaderFilterEditorTool` 引用同一局部状态，负责界面和显式持久化，工具释放不释放显示能力。调节、普通窗口关闭和工具释放都不会自动写入全局默认值；`SaveAsDefault` 才显式复制并保存。修改默认值只影响后续创建的视图，已有视图通过 `RestoreDefaults` 主动应用。
+
+统一滤镜页把“应用默认值”和“将当前设为默认”放在参数卡片之前，避免长参数列表把动作隐藏到滚动区域底部。参数按基础显示、白平衡与通道、色调调整、阈值与高亮、滤镜伪彩分区；有界数值在滑块拖动时立即更新当前视图，右侧文本框保留键盘精确输入。
 
 `Temperature` 和 `Tint` 是默认值均为 `0`、范围为 `-1..1` 的显示白平衡快捷控制。正色温提高红色并降低蓝色，正色调提高红蓝并降低绿色；负值方向相反。它们在 C# 侧转换成保持几何平均值为 1 的 RGB 增益，再与手动 RGB 增益相乘，因此不增加 Pixel Shader 2.0 的指令数。当前不在相机回调、文件打开链路或显示滤镜中提供通道重排；如真实设备验证后仍需要固定入口纠正，再单独引入配置。
 

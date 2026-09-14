@@ -259,6 +259,44 @@ public sealed class ImageSettingsScopeTests
         Assert.Equal(new[] { typeof(DisplayShaderFilterDefaultConfig) }, service.SavedTypes);
     });
 
+    [Fact]
+    public void FilterSettingsKeepDefaultActionsAboveSectionedSliderEditors() => Run(_ =>
+    {
+        using ImageView view = new();
+        ImageViewSettingsWindow window = new(view, ImageSettingsCategories.Filters);
+        try
+        {
+            var content = (ContentControl)window.FindName("SettingsContent");
+            var page = Assert.IsType<StackPanel>(content.Content);
+            var section = Assert.IsType<StackPanel>(Assert.Single(page.Children));
+            var actions = Assert.Single(section.Children.OfType<WrapPanel>());
+            var card = Assert.Single(section.Children.OfType<Border>());
+            Assert.True(section.Children.IndexOf(actions) < section.Children.IndexOf(card));
+
+            string[] expectedGroups =
+            {
+                SettingsText.FilterBasics,
+                SettingsText.FilterWhiteBalance,
+                SettingsText.FilterTone,
+                SettingsText.FilterThreshold,
+                SettingsText.FilterPseudoColor
+            };
+            var labels = LogicalDescendants(card).OfType<TextBlock>().Select(text => text.Text).ToArray();
+            Assert.All(expectedGroups, group => Assert.Contains(group, labels));
+
+            var sliders = LogicalDescendants(card).OfType<Slider>().ToArray();
+            Assert.Equal(20, sliders.Length);
+            Slider gamma = Assert.Single(sliders, slider => slider.GetBindingExpression(Slider.ValueProperty)?.ParentBinding.Path.Path == nameof(DisplayShaderFilterState.Gamma));
+            Assert.Equal(0.1, gamma.Minimum);
+            Assert.Equal(4, gamma.Maximum);
+
+            Slider brightness = Assert.Single(sliders, slider => slider.GetBindingExpression(Slider.ValueProperty)?.ParentBinding.Path.Path == nameof(DisplayShaderFilterState.Brightness));
+            brightness.Value = 0.37;
+            Assert.Equal(0.37, view.IEditorToolFactory.GetIEditorTool<DisplayShaderFilterEditorTool>()!.State.Brightness);
+        }
+        finally { window.Close(); }
+    });
+
     private static IEnumerable<DependencyObject> LogicalDescendants(DependencyObject parent)
     {
         foreach (DependencyObject child in LogicalTreeHelper.GetChildren(parent).OfType<DependencyObject>())

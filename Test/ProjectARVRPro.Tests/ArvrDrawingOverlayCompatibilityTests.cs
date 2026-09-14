@@ -7,6 +7,7 @@ using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.Distortion;
 using ProjectARVRPro.Process.MTF;
 using ProjectARVRPro.Process.ScreenDefects;
+using ProjectARVRPro.Process.W51;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,6 +20,50 @@ namespace ProjectARVRPro.Tests;
 public sealed class ArvrDrawingOverlayCompatibilityTests
 {
     private static readonly Lazy<Dispatcher> WpfDispatcher = new(CreateWpfDispatcher);
+
+    [Fact]
+    public void W51FovOverlayUsesSavedCornersAndCanBeDisabled()
+    {
+        RunOnStaThread(() =>
+        {
+            using ImageView imageView = new();
+            IProcessExecutionContext context = new()
+            {
+                ImageView = imageView,
+                Result = new ProjectARVRReuslt
+                {
+                    ViewResultJson = JsonConvert.SerializeObject(new W51ViewTestResult
+                    {
+                        AlgResultLightAreaModels =
+                        [
+                            new() { PosX = 210, PosY = 120 },
+                            new() { PosX = 10, PosY = 20 },
+                            new() { PosX = 10, PosY = 120 },
+                            new() { PosX = 210, PosY = 20 }
+                        ],
+                        HorizontalFieldOfViewAngle = new ObjectiveTestItem { Value = 24.2096 },
+                        VerticalFieldOfViewAngle = new ObjectiveTestItem { Value = 9.8688 },
+                        DiagonalFieldOfViewAngle = new ObjectiveTestItem { Value = 26.0354 }
+                    })
+                }
+            };
+            White51Process process = new();
+
+            Assert.True(process.Config.DrawFovOverlay);
+            process.Render(context);
+
+            Assert.Single(imageView.ImageShow.Visuals.OfType<DVPolygon>());
+            Assert.Equal(4, imageView.ImageShow.Visuals.OfType<DVLine>().Count());
+            Assert.Equal(7, imageView.ImageShow.Visuals.OfType<DVCircleText>().Count());
+
+            process.Config.DrawFovOverlay = false;
+            process.Render(context);
+
+            Assert.Single(imageView.ImageShow.Visuals.OfType<DVPolygon>());
+            Assert.Empty(imageView.ImageShow.Visuals.OfType<DVLine>());
+            Assert.Empty(imageView.ImageShow.Visuals.OfType<DVCircleText>());
+        });
+    }
 
     [Fact]
     public void InvalidBusinessCoordinatesAreSkippedInsteadOfCreatingDefaultOverlays()

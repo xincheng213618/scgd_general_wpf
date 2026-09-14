@@ -15,6 +15,7 @@ using ImwriteFlags = OpenCvSharp.ImwriteFlags;
 using ColorConversionCodes = OpenCvSharp.ColorConversionCodes;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Windows;
@@ -100,10 +101,13 @@ namespace Pattern
         ImageView imgDisplay { get; set; }
 
         private ListCollectionView? _templateFilesView;
+        private bool _synchronizingResolution;
 
         public PatternWindow()
         {
             InitializeComponent();
+            Width = Math.Min(Width, SystemParameters.WorkArea.Width);
+            Height = Math.Min(Height, SystemParameters.WorkArea.Height);
             this.ApplyCaption();
             this.Title += "-" + Assembly.GetAssembly(typeof(PatternWindow))?.GetName().Version?.ToString() ?? "";
 
@@ -116,7 +120,8 @@ namespace Pattern
 
             ListViewPattern.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) =>
             {
-                var selectedFilePath = PatternManager.TemplatePatternFiles[ListViewPattern.SelectedIndex].FilePath;
+                if (ListViewPattern.SelectedItem is not TemplatePatternFile selectedFile) return;
+                var selectedFilePath = selectedFile.FilePath;
                 StringCollection paths = new StringCollection();
                 paths.Add(selectedFilePath);
                 Clipboard.SetFileDropList(paths);
@@ -125,9 +130,9 @@ namespace Pattern
 
             ListViewPattern.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) =>
             {
-                var index = PatternManager.TemplatePatternFiles[ListViewPattern.SelectedIndex];
-                PatternManager.TemplatePatternFiles.RemoveAt(ListViewPattern.SelectedIndex);
-                File.Delete(index.FilePath);
+                if (ListViewPattern.SelectedItem is not TemplatePatternFile selectedFile) return;
+                File.Delete(selectedFile.FilePath);
+                PatternManager.TemplatePatternFiles.Remove(selectedFile);
             }, (s, e) => { e.CanExecute = ListViewPattern.SelectedIndex > -1; }));
 
             ListViewPattern.CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) => ReName(), (s, e) => e.CanExecute = ListViewPattern.SelectedIndex > -1));
@@ -154,7 +159,7 @@ namespace Pattern
 
         public void ReName()
         {
-            if (ListViewPattern.SelectedIndex > -1 && TemplatePatternFiles[ListViewPattern.SelectedIndex] is TemplatePatternFile templateModelBase)
+            if (ListViewPattern.SelectedItem is TemplatePatternFile templateModelBase)
             {
                 templateModelBase.IsEditMode = true;
             }
@@ -171,14 +176,15 @@ namespace Pattern
 
             //DisplayGrid.Children.Add(imgDisplay);
             DisplayGrid.Child = imgDisplay;
+            InitializePreviewLayout();
             this.Closed += (s, e) => Dispose();
             cmbFormat.ItemsSource = Enum.GetValues(typeof(PatternFormat))
                 .Cast<PatternFormat>()
                 .Select(f => new KeyValuePair<string, PatternFormat>(GetPatternFormatDescription(f), f));
             cmbFormat.SelectedValue = PatternManager.Config.PatternFormat;
             cmbResolution.ItemsSource = Array.ConvertAll(commonResolutions, t => t.Item1);
-            cmbResolution.SelectedIndex = 4; // 默认640x480
-
+            SynchronizeResolutionPreset();
+            PropertyChangedEventManager.AddHandler(Config, ResolutionConfigChanged, string.Empty);
             cmbResolution.SelectionChanged += CmbResolution_SelectionChanged;
 
             cmbPattern1.SelectionChanged += (s, e) =>
@@ -201,6 +207,36 @@ namespace Pattern
             // Initialize theme icon based on current theme
             UpdateThemeIcon();
         }
+
+        private void OpenActions_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button { ContextMenu: { } menu } button)
+            {
+                menu.PlacementTarget = button;
+                menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                menu.IsOpen = true;
+            }
+        }
+
+        private void ResolutionConfigChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName is nameof(PatternWindowConfig.Width) or nameof(PatternWindowConfig.Height))
+                SynchronizeResolutionPreset();
+        }
+
+        private void SynchronizeResolutionPreset()
+        {
+            if (_synchronizingResolution) return;
+            _synchronizingResolution = true;
+            try
+            {
+                cmbResolution.SelectedIndex = Array.FindIndex(commonResolutions, resolution => resolution.Item2 == Config.Width && resolution.Item3 == Config.Height);
+            }
+            finally
+            {
+                _synchronizingResolution = false;
+            }
+        }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             new PropertyEditorWindow(Patterns[cmbPattern1.SelectedIndex].Pattern.GetConfig()).ShowDialog();
@@ -215,6 +251,7 @@ namespace Pattern
 
                 imgDisplay.OpenImage(currentMat.ToWriteableBitmap());
                 imgDisplay.Zoombox1.ZoomUniform();
+                SaveImageButton.IsEnabled = true;
 
             }
             catch(Exception ex)
@@ -228,11 +265,20 @@ namespace Pattern
 
         private void CmbResolution_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
+            if (_synchronizingResolution) return;
             int idx = cmbResolution.SelectedIndex;
             if (idx >= 0 && idx < commonResolutions.Length)
             {
-                Config.Width = commonResolutions[idx].Item2;
-                Config.Height = commonResolutions[idx].Item3;
+                _synchronizingResolution = true;
+                try
+                {
+                    Config.Width = commonResolutions[idx].Item2;
+                    Config.Height = commonResolutions[idx].Item3;
+                }
+                finally
+                {
+                    _synchronizingResolution = false;
+                }
             }
         }
 
@@ -242,13 +288,13 @@ namespace Pattern
         {
             if (currentMat == null)
             {
-                System.Windows.MessageBox.Show("请先生成图案");
+                System.Windows.MessageBox.Show(PatternText.Get("GeneratePatternFirst"));
                 return;
             }
 
             if (PatternMeta == null)
             {
-                System.Windows.MessageBox.Show("请先选择图案");
+                System.Windows.MessageBox.Show(PatternText.Get("SelectPatternFirst"));
                 return;
             }
 
@@ -267,7 +313,7 @@ namespace Pattern
             if (dlg.ShowDialog() == true)
             {
                 SavePatternImage(currentMat, dlg.FileName, PatternManager.Config.PatternFormat);
-                System.Windows.MessageBox.Show("保存成功: " + dlg.FileName);
+                System.Windows.MessageBox.Show(PatternText.Format("ImageSavedFormat", dlg.FileName));
             }
         }
 
@@ -275,7 +321,7 @@ namespace Pattern
         {
             var field = typeof(PatternFormat).GetField(format.ToString());
             var attr = field?.GetCustomAttribute<System.ComponentModel.DescriptionAttribute>();
-            return attr?.Description ?? format.ToString();
+            return PatternText.Get(attr?.Description ?? format.ToString());
         }
 
         private static string GetFileExtension(PatternFormat format)
@@ -294,13 +340,13 @@ namespace Pattern
         {
             return string.Join("|", new[]
             {
-                "单色位图 (*.bmp;*.dib)|*.bmp;*.dib",
-                "16色位图 (*.bmp;*.dib)|*.bmp;*.dib",
-                "256色位图 (*.bmp;*.dib)|*.bmp;*.dib",
-                "24位位图 (*.bmp;*.dib)|*.bmp;*.dib",
-                "PNG (*.png)|*.png",
-                "JPEG (*.jpg)|*.jpg",
-                "TIFF (*.tif)|*.tif"
+                $"{GetPatternFormatDescription(PatternFormat.bmp1)}|*.bmp;*.dib",
+                $"{GetPatternFormatDescription(PatternFormat.bmp4)}|*.bmp;*.dib",
+                $"{GetPatternFormatDescription(PatternFormat.bmp8)}|*.bmp;*.dib",
+                $"{GetPatternFormatDescription(PatternFormat.bmp24)}|*.bmp;*.dib",
+                $"{GetPatternFormatDescription(PatternFormat.png)}|*.png",
+                $"{GetPatternFormatDescription(PatternFormat.jpg)}|*.jpg",
+                $"{GetPatternFormatDescription(PatternFormat.tif)}|*.tif"
             });
         }
 
@@ -431,6 +477,8 @@ namespace Pattern
         public void Dispose()
         {
             GC.SuppressFinalize(this);
+            DisposePreviewLayout();
+            PropertyChangedEventManager.RemoveHandler(Config, ResolutionConfigChanged, string.Empty);
             currentMat?.Dispose();
             imgDisplay?.Dispose();
         }
@@ -465,7 +513,7 @@ namespace Pattern
             catch (Exception ex)
             {
                 log.Error($"Failed to reset pattern: {ex.Message}", ex);
-                MessageBox.Show($"重置失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(PatternText.Format("ResetFailedFormat", ex.Message), PatternText.Get("ErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         private void ResetSaveAsDefault_Click(object sender, RoutedEventArgs e)
@@ -488,7 +536,7 @@ namespace Pattern
             catch (Exception ex)
             {
                 log.Error($"Failed to reset pattern: {ex.Message}", ex);
-                MessageBox.Show($"重置失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(PatternText.Format("ResetFailedFormat", ex.Message), PatternText.Get("ErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -499,11 +547,11 @@ namespace Pattern
             try
             {
                 PatternUserDefaultManager.SaveUserDefault(PatternMeta.Pattern);
-                MessageBox.Show("当前配置已保存为默认值", "保存成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(PatternText.Get("CurrentConfigSavedAsDefault"), PatternText.Get("SaveSucceededTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"保存失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(PatternText.Format("SaveFailedFormat", ex.Message), PatternText.Get("ErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -513,10 +561,14 @@ namespace Pattern
             {
                 string pattern = File.ReadAllText(templatePath);
                 TemplatePattern templatePattern = JsonConvert.DeserializeObject<TemplatePattern>(pattern);
-                PatternMeta = Patterns.FirstOrDefault(p => p.Name == templatePattern.PatternName);
+                PatternMeta = Patterns.FirstOrDefault(p =>
+                    p.Id == templatePattern.PatternName ||
+                    p.Pattern.GetType().Name == templatePattern.PatternName ||
+                    p.Name == templatePattern.PatternName ||
+                    p.Pattern.GetType().GetCustomAttribute<System.ComponentModel.DisplayNameAttribute>()?.DisplayName == templatePattern.PatternName);
                 if (PatternMeta == null)
                 {
-                    System.Windows.MessageBox.Show("未找到对应的图案类型: " + templatePattern.PatternName);
+                    System.Windows.MessageBox.Show(PatternText.Format("PatternTypeNotFoundFormat", templatePattern.PatternName));
                     return;
                 }
                 Config.Width = templatePattern.PatternWindowConfig.Width;
@@ -537,6 +589,7 @@ namespace Pattern
 
                     imgDisplay.SetImageSource(currentMat.ToWriteableBitmap());
                     imgDisplay.Zoombox1.ZoomUniform();
+                    SaveImageButton.IsEnabled = true;
                 }
             }
             catch (Exception ex)
@@ -550,7 +603,7 @@ namespace Pattern
             string json = Path.Combine(PatternManager.GetInstance().PatternPath, Config.Width + "x" + Config.Height + "_" + PatternMeta.Pattern.GetTemplateName() + ".json");
             if (File.Exists(json))
             {
-               if (MessageBox.Show(Application.Current.GetActiveWindow(), "是否替换模板", "Pattern", MessageBoxButton.YesNo) == MessageBoxResult.No)
+               if (MessageBox.Show(Application.Current.GetActiveWindow(), PatternText.Get("ReplaceTemplatePrompt"), "Pattern", MessageBoxButton.YesNo) == MessageBoxResult.No)
                 {
                     json = Path.Combine(PatternManager.GetInstance().PatternPath, Config.Width + "x" + Config.Height + "_" + PatternMeta.Pattern.GetTemplateName() + $"{DateTime.UtcNow.Ticks}"+ ".json");
                 }
@@ -564,7 +617,7 @@ namespace Pattern
             }
           
             TemplatePattern templatePattern = new TemplatePattern();
-            templatePattern.PatternName = PatternMeta.Name;
+            templatePattern.PatternName = PatternMeta.Id;
             templatePattern.PatternWindowConfig = Config;
             templatePattern.Config = Patterns[cmbPattern1.SelectedIndex].Pattern.GetConfig().ToJsonN();
             templatePattern.ToJsonNFile(json);

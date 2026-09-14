@@ -1,6 +1,7 @@
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.Themes;
 using Microsoft.Win32;
 using ScottPlot;
 using System;
@@ -32,7 +33,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
             _result = result;
             try
             {
-                InitializeComponent();
+            InitializeComponent();
+            this.ApplyCaption();
                 SummaryGrid.ItemsSource = ToTable(summary).DefaultView;
                 HistogramGrid.ItemsSource = ToTable(histogram).DefaultView;
                 CandidatesGrid.ItemsSource = ToTable(candidates).DefaultView;

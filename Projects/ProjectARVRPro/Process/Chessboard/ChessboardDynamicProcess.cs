@@ -183,7 +183,7 @@ namespace ProjectARVRPro.Process.Chessboard
             foreach (var poiResultCIExyuvData in testResult.ChessboardViewTestResult.PoixyuvDatas)
             {
                 var item = poiResultCIExyuvData.Point;
-                PoiOverlayRenderer.Add(ctx.ImageView, item, CVRawOpen.FormatMessage("Y:@Y:F2", poiResultCIExyuvData));
+                PoiOverlayRenderer.Add(ctx.ImageView, item, CVRawOpen.FormatMessage(Config.DisplayTemplate, poiResultCIExyuvData));
             }
         }
 

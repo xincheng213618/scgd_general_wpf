@@ -4944,6 +4944,12 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SpectrumSearchDevices" xml:space="preserve"><value>Find spectrometers</value></data>
   <data name="SpectrumSearchHint" xml:space="preserve"><value>Search all supported drivers</value></data>
   <data name="SpectrumRefreshHint" xml:space="preserve"><value>Refresh service devices and licenses</value></data>
+  <data name="SpectrumDriverTool" xml:space="preserve"><value>Spectrometer driver tool</value></data>
+  <data name="SpectrumDriverToolHint" xml:space="preserve"><value>Open Zadig to configure the GCS spectrometer libusb-win32 driver</value></data>
+  <data name="SpectrumDriverToolWarning" xml:space="preserve"><value>Select only GCS Spectrameter and confirm that the target driver is libusb-win32.&#xA;&#xA;Do not select a keyboard, mouse, receiver, camera, or USB hub. Continue opening the driver tool?</value></data>
+  <data name="SpectrumDriverToolMissing" xml:space="preserve"><value>The spectrometer driver tool was not found:&#xA;{0}&#xA;&#xA;Reinstall or repair ColorVision.</value></data>
+  <data name="SpectrumDriverToolInvalid" xml:space="preserve"><value>The spectrometer driver tool failed integrity verification. Reinstall or repair ColorVision.</value></data>
+  <data name="SpectrumDriverToolOpenFailed" xml:space="preserve"><value>Unable to open the spectrometer driver tool: {0}</value></data>
   <data name="SpectrumLicenseHint" xml:space="preserve"><value>Import local license files</value></data>
   <data name="CalibrationGroup" xml:space="preserve"><value>Calibration groups</value></data>
   <data name="ApplyCalibrationGroup" xml:space="preserve"><value>Apply active group</value></data>

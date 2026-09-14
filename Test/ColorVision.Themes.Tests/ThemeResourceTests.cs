@@ -8,6 +8,7 @@ using System.Windows.Threading;
 using System.IO;
 using System.Reflection;
 using System.Windows.Input;
+using System.Windows.Interop;
 
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
 
@@ -277,6 +278,27 @@ public class ThemeResourceTests
             window.Show(); window.ApplyCaption(false);
             Assert.Equal(1, Count());
             ThemeManager.Current = saved;
+            window.Close();
+            Assert.Equal(0, Count());
+        }
+        finally { window.Close(); ThemeManager.Current = saved; }
+    });
+
+    [Fact]
+    public void CaptionSubscribesAsSoonAsTheNativeWindowSourceExists() => Run((app, manager) =>
+    {
+        ThemeManager saved = ThemeManager.Current;
+        var eventField = typeof(ThemeManager).GetField("CurrentUIThemeChanged", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        int Count() => ((Delegate?)eventField.GetValue(manager))?.GetInvocationList().Length ?? 0;
+        ThemeManager.Current = manager;
+        var window = new Window { Width = 200, Height = 200, Left = -10000, Top = -10000, ShowInTaskbar = false };
+        try
+        {
+            window.ApplyCaption(false);
+            Assert.Equal(IntPtr.Zero, new WindowInteropHelper(window).Handle);
+            _ = new WindowInteropHelper(window).EnsureHandle();
+            Assert.False(window.IsLoaded);
+            Assert.Equal(1, Count());
             window.Close();
             Assert.Equal(0, Count());
         }

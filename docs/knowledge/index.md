@@ -26,7 +26,7 @@ next: false
 | [UI](./code/source-UI.md) | 14 | 105 |
 | [Engine](./code/source-Engine.md) | 6 | 91 |
 | [Native](./code/source-Native.md) | 4 | 10 |
-| [Plugins](./code/source-Plugins.md) | 7 | 14 |
+| [Plugins](./code/source-Plugins.md) | 6 | 14 |
 | [Projects](./code/source-Projects.md) | 5 | 14 |
 | [Web](./code/source-Web.md) | 3 | 21 |
 | [Scripts](./code/source-Scripts.md) | 2 | 12 |

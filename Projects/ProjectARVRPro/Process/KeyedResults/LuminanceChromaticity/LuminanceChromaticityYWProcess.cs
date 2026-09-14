@@ -1,6 +1,7 @@
 #pragma warning disable CS8601,CS8602
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
@@ -221,14 +222,14 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
                 return;
 
             foreach (PoiResultCIExyuvData poi in testResult.ViewPoixyuvDatas12X7)
-                PoiOverlayRenderer.Add(ctx.ImageView, CreateLuminanceDisplayPoint(poi));
+                PoiOverlayRenderer.Add(ctx.ImageView, CreateDisplayPoint(poi, Config.DisplayTemplate));
         }
 
-        internal static PoiPoint CreateLuminanceDisplayPoint(PoiResultCIExyuvData poi)
+        internal static PoiPoint CreateDisplayPoint(PoiResultCIExyuvData poi, string template)
         {
             ArgumentNullException.ThrowIfNull(poi);
             PoiPoint source = poi.Point;
-            return new PoiPoint(source.Id, source.Pid, $"Y:{poi.Y:F2}", source.PointType, source.PixelX, source.PixelY, source.Width, source.Height);
+            return new PoiPoint(source.Id, source.Pid, CVRawOpen.FormatMessage(template, poi), source.PointType, source.PixelX, source.PixelY, source.Width, source.Height);
         }
 
         public override void GenText(IProcessExecutionContext ctx, Paragraph paragraph, Brush foreground, double fontSize)

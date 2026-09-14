@@ -82,7 +82,7 @@ namespace ProjectARVRPro.Process.POI
             foreach (var poiResultCIExyuvData in testResult.ViewPoixyuvDatas)
             {
                 var item = poiResultCIExyuvData.Point;
-                PoiOverlayRenderer.Add(ctx.ImageView, item, CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData));
+                PoiOverlayRenderer.Add(ctx.ImageView, item, CVRawOpen.FormatMessage(Config.DisplayTemplate, poiResultCIExyuvData));
             }
         }
 

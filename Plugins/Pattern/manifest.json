@@ -1,9 +1,9 @@
 {
   "manifest_version": 1,
   "Id": "Pattern",
-  "name": "图卡生成工具",
-  "version": "1.5.1.6",
-  "description": "图卡生成工具",
+  "name": "图卡生成与图片投影工具",
+  "version": "1.5.1.7",
+  "description": "图卡生成、模板管理与多显示器图片投影工具",
   "dllpath": "Pattern.dll",
   "requires": "1.4.14.1"
 }

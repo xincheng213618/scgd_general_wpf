@@ -167,7 +167,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("CompactTitleBarMoreActions", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 COM 注册失败，请确认已授予管理员权限。 的本地化字符串。
         /// </summary>
@@ -302,7 +302,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ConfigUseCompactMainWindow", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 将菜单与快捷入口合并到标题栏，保留系统按钮和边框。全新安装或首次升级到此开关时默认开启，重启生效；关闭并重启可恢复旧主窗口，之后保留该选择。仅在兼容的 Windows 11 环境启用，不支持时保留原生标题栏。 的本地化字符串。
         /// </summary>
@@ -311,7 +311,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ConfigUseCompactMainWindowDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 是否更新 的本地化字符串。
         /// </summary>
@@ -1210,6 +1210,24 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 启动时恢复窗口 的本地化字符串。
+        /// </summary>
+        public static string StartRecoverUILayout {
+            get {
+                return ResourceManager.GetString("StartRecoverUILayout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 启动时恢复上次保存的主窗口位置、大小和状态。 的本地化字符串。
+        /// </summary>
+        public static string StartRecoverUILayoutDescription {
+            get {
+                return ResourceManager.GetString("StartRecoverUILayoutDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 开机启动(可能会不成功) 的本地化字符串。
         /// </summary>
         public static string TbSettingsStartBoot {
@@ -1514,7 +1532,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("UpdatePreviewNoInternetConnectionMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 没有可更新的插件。 的本地化字符串。
         /// </summary>
@@ -1550,7 +1568,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("UpdatePreviewPackageDownloadFailed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 完整安装包更新时，本轮不合并插件更新。 的本地化字符串。
         /// </summary>
@@ -1559,7 +1577,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("UpdatePreviewPluginDeferredByFullApplicationUpdate", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 插件下载未成功完成，请稍后重试。 的本地化字符串。
         /// </summary>
@@ -1568,7 +1586,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("UpdatePreviewPluginDownloadFailed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 插件更新 的本地化字符串。
         /// </summary>
@@ -1685,7 +1703,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("UpdatePreviewServerUnavailableHeading", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 已尝试连接更新服务器，但未能取得版本信息。请检查网络或代理设置后重试。 的本地化字符串。
         /// </summary>
@@ -1694,7 +1712,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("UpdatePreviewServerUnavailableMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 未能获取主程序、插件和主题的最新版本信息。 的本地化字符串。
         /// </summary>
@@ -1703,7 +1721,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("UpdatePreviewServerUnavailableSummary", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前主程序和插件都已经是最新版本。 的本地化字符串。
         /// </summary>

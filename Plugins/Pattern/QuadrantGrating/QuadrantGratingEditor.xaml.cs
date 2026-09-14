@@ -16,7 +16,7 @@ namespace Pattern.QuadrantGrating
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Config;
-            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(Config));
+            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(Config, showCategoryHeader: false));
         }
     }
 }

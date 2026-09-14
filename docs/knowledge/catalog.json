@@ -412,10 +412,12 @@
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFovNode.cs",
         "Engine/ColorVision.Engine/PropertyEditor/CameraDegreesPropertiesEditor.cs",
         "Engine/ColorVision.Engine/Templates/Jsons/FOV2",
-        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs"
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs",
+        "UI/ColorVision.ImageEditor/Draw/FovOverlayRenderer.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/FovCalculationTests.cs"
+        "Test/ColorVision.UI.Tests/FovCalculationTests.cs",
+        "Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs"
       ],
       "related": [
         "algorithms.find-light-area",
@@ -8182,8 +8184,7 @@
         "Plugins/Spectrum",
         "Plugins/SystemMonitor",
         "Plugins/WindowsServicePlugin",
-        "Plugins/Pattern",
-        "Plugins/ImageProjector"
+        "Plugins/Pattern"
       ],
       "test_paths": [],
       "related": [
@@ -8198,7 +8199,6 @@
       ],
       "code_scopes": [
         "Plugins/Conoscope",
-        "Plugins/ImageProjector",
         "Plugins/Pattern",
         "Plugins/Spectrum",
         "Plugins/SystemMonitor",
@@ -8483,7 +8483,7 @@
       "knowledge_id": "plugins.pattern",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Pattern 图卡、用户默认值与模板文件管理，以及 ImageProjector 预览、全屏切换和独立交付；区分当前参数、已生成图片和实际投影。",
+      "summary": "Pattern 图卡、用户默认值、模板文件管理，以及内置图片投影的预览和全屏切换；区分当前参数、已生成图片和实际投影。",
       "aliases": [
         "Pattern",
         "ImageProjector",
@@ -8507,7 +8507,6 @@
       ],
       "code_paths": [
         "Plugins/Pattern",
-        "Plugins/ImageProjector",
         "scgd_general_wpf.sln"
       ],
       "test_paths": [
@@ -8523,7 +8522,6 @@
       ],
       "code_scopes": [
         ".",
-        "Plugins/ImageProjector",
         "Plugins/Pattern"
       ],
       "domain": "plugins",
@@ -9048,7 +9046,8 @@
         "Test/ProjectARVRPro.Tests/EmbeddedRecipeConfigTests.cs",
         "Test/ProjectARVRPro.Tests/LegacyRecipeImporterTests.cs",
         "Test/ProjectARVRPro.Tests/ProcessStepProjectionTests.cs",
-        "Test/ProjectARVRPro.Tests/MTF07DynamicResultBuilderTests.cs"
+        "Test/ProjectARVRPro.Tests/MTF07DynamicResultBuilderTests.cs",
+        "Test/ProjectARVRPro.Tests/ProcessOverlayDisplayConfigTests.cs"
       ],
       "related": [
         "projects.arvr-pro",

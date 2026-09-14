@@ -82,11 +82,11 @@ related: ["ui.index","ui.settings","ui.property-grid","ui.configuration","platfo
 
 ## 窗口外观与生命周期
 
-`window.ApplyCaption(Icon: true)` 按窗口幂等接入：尚未加载时等待 Loaded，已加载时立即取得 HWND；后续订阅 `CurrentUIThemeChanged`，并切回窗口 Dispatcher。关闭时向保存的发布者解绑，包括全局管理器被替换的情况。它只处理原生标题栏与图标，不接管 BaseWindow 的 WPF 标题按钮或紧凑主窗口布局。
+`window.ApplyCaption(Icon: true)` 按窗口幂等接入：原生窗口源尚未建立时等待 `SourceInitialized`，已有 HWND 时立即初始化，不等待内容 `Loaded`；后续订阅 `CurrentUIThemeChanged`，并切回窗口 Dispatcher。关闭时向保存的发布者解绑，包括全局管理器被替换的情况。默认图标资源缺失或解码失败不会阻断标题栏初始化。它只处理原生标题栏与图标，不接管 BaseWindow 的 WPF 标题按钮或紧凑主窗口布局。
 
 `ThemeManagerExtensions.TryLoadPackageIcon(Window)` 从窗口类型所在程序集目录读取 `PackageIcon.png`，用 OnLoad 解码并冻结后返回。路径、文件或解码不可用时返回 null；方法自身不赋值图标、不订阅主题、不调用 DWM。ApplyCaption 找到包图标时优先采用它，包括 Icon=false；该参数仅禁用默认图标回退。默认图标是 `Assets/Image/ColorVision.ico` / `ColorVision1.ico`。
 
-`SetWindowTitleBarColor` 恢复 DWM 默认 caption/border 色，再尝试旧/新沉浸式暗色属性；返回码仍不作为生效保证。Windows 版本与原生属性支持范围需要实际窗口验证。
+`SetWindowTitleBarColor` 恢复 DWM 默认 caption/border 色，先写当前 `DWMWA_USE_IMMERSIVE_DARK_MODE`（20），仅在调用失败时回退旧 Windows 10 使用的属性值 19；返回码仍不作为生效保证。Windows 版本与原生属性支持范围需要实际窗口验证。
 
 BaseWindow 拥有自己的 WindowChrome、窗口命令及 WPF 标题按钮。默认样式缺失时从兼容入口局部加载，不在类型初始化期间追加 Application 字典。启用 `IsBlurEnabled` 后首次 Loaded 初始化背景效果，订阅实际主题，并在关闭时向同一个管理器解绑、移除 HWND hook。Loaded 后改变该属性仍不自动初始化模糊。
 

@@ -3069,6 +3069,12 @@
   <data name="SpectrumSearchDevices" xml:space="preserve"><value>搜尋光譜儀</value></data>
   <data name="SpectrumSearchHint" xml:space="preserve"><value>遍歷所有支援的連線方式</value></data>
   <data name="SpectrumRefreshHint" xml:space="preserve"><value>重新整理服務端裝置與授權</value></data>
+  <data name="SpectrumDriverTool" xml:space="preserve"><value>光譜儀驅動程式工具</value></data>
+  <data name="SpectrumDriverToolHint" xml:space="preserve"><value>開啟 Zadig 設定 GCS 光譜儀的 libusb-win32 驅動程式</value></data>
+  <data name="SpectrumDriverToolWarning" xml:space="preserve"><value>請僅選擇 GCS Spectrameter，並確認目標驅動程式為 libusb-win32。&#xA;&#xA;請勿選擇鍵盤、滑鼠、接收器、攝影機或 USB Hub。是否繼續開啟驅動程式工具？</value></data>
+  <data name="SpectrumDriverToolMissing" xml:space="preserve"><value>找不到光譜儀驅動程式工具：&#xA;{0}&#xA;&#xA;請重新安裝或修復 ColorVision。</value></data>
+  <data name="SpectrumDriverToolInvalid" xml:space="preserve"><value>光譜儀驅動程式工具完整性驗證失敗，請重新安裝或修復 ColorVision。</value></data>
+  <data name="SpectrumDriverToolOpenFailed" xml:space="preserve"><value>無法開啟光譜儀驅動程式工具：{0}</value></data>
   <data name="SpectrumLicenseHint" xml:space="preserve"><value>匯入本機授權檔案</value></data>
   <data name="CalibrationGroup" xml:space="preserve"><value>標定分組</value></data>
   <data name="ApplyCalibrationGroup" xml:space="preserve"><value>套用目前分組</value></data>

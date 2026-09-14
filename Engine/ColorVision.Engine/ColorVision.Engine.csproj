@@ -32,6 +32,12 @@
 	<ItemGroup>
 		<None Include="$(PkgSharpSevenZip_StrongName)\build\x64\7z.dll" Link="x64\7z.dll"
 			  CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+		<None Update="Services\Devices\Spectrum\Tools\zadig-2.4.exe"
+			  CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"
+			  TargetPath="Tools\Spectrum\zadig-2.4.exe" />
+		<None Update="Services\Devices\Spectrum\Tools\zadig-NOTICE.txt"
+			  CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"
+			  TargetPath="Tools\Spectrum\zadig-NOTICE.txt" />
 	</ItemGroup>
 
 

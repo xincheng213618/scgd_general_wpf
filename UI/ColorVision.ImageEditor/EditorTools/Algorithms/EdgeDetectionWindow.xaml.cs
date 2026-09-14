@@ -1,6 +1,7 @@
 using ColorVision.Algorithms;
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Algorithms;
+using ColorVision.Themes;
 using log4net;
 using System;
 using System.Windows;
@@ -17,6 +18,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         public EdgeDetectionWindow(ImageProcessingContext image)
         {
             InitializeComponent();
+            this.ApplyCaption();
             _preview = ImageAlgorithmPreviewSession.Start(image);
             Threshold1Slider.Value = _parameters.LowThreshold;
             Threshold2Slider.Value = _parameters.HighThreshold;

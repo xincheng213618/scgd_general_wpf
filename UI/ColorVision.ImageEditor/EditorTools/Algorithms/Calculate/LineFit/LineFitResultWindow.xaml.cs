@@ -1,6 +1,7 @@
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.Themes;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -24,6 +25,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.LineFit
             AlgorithmTableArtifact points = result.GetArtifact<AlgorithmTableArtifact>("line-fit-points")
                 ?? throw new ArgumentException("The result has no line-fit point table.", nameof(result));
             InitializeComponent();
+            this.ApplyCaption();
             _result = result;
             _overlaySession = AlgorithmOverlayRenderer.Apply(image, draw, result);
             PointsGrid.ItemsSource = ToTable(points).DefaultView;

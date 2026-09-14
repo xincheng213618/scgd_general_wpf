@@ -132,15 +132,15 @@ public sealed class PatternMigrationTests
     }
 
     [Fact]
-    public void MigrationRetainsAssembliesEntryPointsConfigTypesAndDefaultDirectories()
+    public void MergedPluginRetainsEntryPointConfigTypesResourcesAndDefaultDirectories()
     {
         Assert.Equal("Pattern", typeof(PatternQuadrantGrating).Assembly.GetName().Name);
-        Assert.Equal("ImageProjector", typeof(ImageProjectorConfig).Assembly.GetName().Name);
+        Assert.Equal("Pattern", typeof(ImageProjectorConfig).Assembly.GetName().Name);
         Assert.NotNull(typeof(Pattern.App).Assembly.EntryPoint);
-        Assert.NotNull(typeof(ImageProjector.App).Assembly.EntryPoint);
         Assert.Equal("Pattern.PatternManagerConfig", typeof(PatternManagerConfig).FullName);
         Assert.Equal("ImageProjector.ImageProjectorConfig", typeof(ImageProjectorConfig).FullName);
         Assert.Equal("ColorVision", typeof(Pattern.App).Assembly.GetCustomAttribute<AssemblyCompanyAttribute>()!.Company);
+        Assert.False(string.IsNullOrWhiteSpace(new MenuImageProjector().Header));
         var config = new PatternManagerConfig();
         Assert.Equal(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "Pattern"), config.PatternPath);
         Assert.Equal(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Pattern"), config.SaveFilePath);

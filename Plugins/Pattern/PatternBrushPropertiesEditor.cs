@@ -13,13 +13,13 @@ namespace Pattern
 {
     public sealed class PatternBrushPropertiesEditor : IPropertyEditor
     {
-        private static readonly (string Tag, string Name, SolidColorBrush Brush)[] Presets =
+        private static readonly (string Tag, string NameKey, SolidColorBrush Brush)[] Presets =
         [
-            ("R", "红色", Brushes.Red),
-            ("G", "绿色", Brushes.Lime),
-            ("B", "蓝色", Brushes.Blue),
-            ("W", "白色", Brushes.White),
-            ("K", "黑色", Brushes.Black)
+            ("R", "Red", Brushes.Red),
+            ("G", "Green", Brushes.Lime),
+            ("B", "Blue", Brushes.Blue),
+            ("W", "White", Brushes.White),
+            ("K", "Black", Brushes.Black)
         ];
 
         public DockPanel GenProperties(PropertyInfo property, object obj)
@@ -30,9 +30,10 @@ namespace Pattern
             panel.Children.Add(label);
 
             var colors = new UniformGrid { Rows = 1, Columns = 6, Margin = new Thickness(5, 0, 0, 0) };
-            var swatch = new Button { Height = 24, Padding = new Thickness(0), Margin = new Thickness(0, 0, 2, 0), ToolTip = "选择颜色" };
+            string selectColor = PatternText.Get("SelectColor");
+            var swatch = new Button { Height = 24, Padding = new Thickness(0), Margin = new Thickness(0, 0, 2, 0), ToolTip = selectColor };
             swatch.SetBinding(Control.BackgroundProperty, new Binding(property.Name) { Source = obj, Mode = BindingMode.OneWay });
-            AutomationProperties.SetName(swatch, $"{label.Text}：选择颜色");
+            AutomationProperties.SetName(swatch, $"{label.Text}: {selectColor}");
             swatch.Click += (_, _) =>
             {
                 var picker = new HandyControl.Controls.ColorPicker
@@ -63,8 +64,9 @@ namespace Pattern
 
             foreach (var preset in Presets)
             {
-                var button = new Button { Content = preset.Tag, Height = 24, Padding = new Thickness(0), Margin = new Thickness(2, 0, 0, 0), ToolTip = preset.Name };
-                AutomationProperties.SetName(button, $"{label.Text}：{preset.Name}");
+                string presetName = PatternText.Get(preset.NameKey);
+                var button = new Button { Content = preset.Tag, Height = 24, Padding = new Thickness(0), Margin = new Thickness(2, 0, 0, 0), ToolTip = presetName };
+                AutomationProperties.SetName(button, $"{label.Text}: {presetName}");
                 button.Click += (_, _) => property.SetValue(obj, preset.Brush);
                 colors.Children.Add(button);
             }

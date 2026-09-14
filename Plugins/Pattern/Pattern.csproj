@@ -3,9 +3,11 @@
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<Nullable>enable</Nullable>
-		<ImplicitUsings>enable</ImplicitUsings>
+		<ImplicitUsings>disable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.5.1.6</VersionPrefix>
+		<UseWindowsForms>true</UseWindowsForms>
+		<DefaultItemExcludes>$(DefaultItemExcludes);Projection\bin\**;Projection\obj\**</DefaultItemExcludes>
+		<VersionPrefix>1.5.1.7</VersionPrefix>
 		<AssemblyOriginatorKeyFile>..\..\ColorVision.snk</AssemblyOriginatorKeyFile>
 		<SignAssembly Condition="Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
 		<CETCompat>false</CETCompat>
@@ -20,7 +22,6 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
 		<ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
-		<ProjectReference Include="..\ImageProjector\ImageProjector.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -50,6 +51,11 @@
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>Resources.resx</DependentUpon>
 		</Compile>
+		<Compile Update="Projection\Properties\Resources.Designer.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>Resources.resx</DependentUpon>
+		</Compile>
 		<Compile Update="Ring\RingEditor.xaml.cs">
 			<SubType>Code</SubType>
 		</Compile>
@@ -62,6 +68,15 @@
 	  <EmbeddedResource Update="Properties\Resources.resx">
 	    <Generator>PublicResXFileCodeGenerator</Generator>
 	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+	  </EmbeddedResource>
+	  <!-- Preserve the historical resource base name after merging ImageProjector into Pattern. -->
+	  <EmbeddedResource Update="Projection\Properties\Resources.resx">
+	    <Generator>PublicResXFileCodeGenerator</Generator>
+	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+	    <ManifestResourceName>ImageProjector.Properties.Resources</ManifestResourceName>
+	  </EmbeddedResource>
+	  <EmbeddedResource Update="Projection\Properties\Resources.*.resx">
+	    <ManifestResourceName>ImageProjector.Properties.%(Filename)</ManifestResourceName>
 	  </EmbeddedResource>
 	</ItemGroup>
 
@@ -77,7 +92,7 @@
 	  </None>
 	</ItemGroup>
 
-	<!-- Referenced executables also publish README/manifest files. Always restore this package's identity. -->
+	<!-- Always keep the Pattern package identity in the build output. -->
 	<Target Name="RestorePatternPackageMetadata" AfterTargets="CopyFilesToOutputDirectory">
 		<Copy SourceFiles="manifest.json;README.md;CHANGELOG.md" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
 	</Target>
@@ -89,8 +104,8 @@
 			<_PatternHostDirectory>$(SolutionDir)ColorVision\bin\x64\$(Configuration)\net10.0-windows\Plugins\Pattern\</_PatternHostDirectory>
 		</PropertyGroup>
 		<ItemGroup>
-			<_PatternHostFile Include="$(TargetDir)Pattern.dll;$(TargetDir)ImageProjector.dll;$(MSBuildProjectDirectory)\manifest.json;$(MSBuildProjectDirectory)\README.md;$(MSBuildProjectDirectory)\CHANGELOG.md" />
-			<_PatternHostResource Include="$(TargetDir)**\Pattern.resources.dll;$(TargetDir)**\ImageProjector.resources.dll" />
+			<_PatternHostFile Include="$(TargetDir)Pattern.dll;$(MSBuildProjectDirectory)\manifest.json;$(MSBuildProjectDirectory)\README.md;$(MSBuildProjectDirectory)\CHANGELOG.md" />
+			<_PatternHostResource Include="$(TargetDir)**\Pattern.resources.dll" />
 		</ItemGroup>
 		<Copy SourceFiles="@(_PatternHostFile)" DestinationFolder="$(_PatternHostDirectory)" SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(_PatternHostResource)" DestinationFiles="@(_PatternHostResource->'$(_PatternHostDirectory)%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />

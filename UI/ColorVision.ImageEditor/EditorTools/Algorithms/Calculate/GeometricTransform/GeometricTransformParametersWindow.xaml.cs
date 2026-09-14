@@ -1,5 +1,6 @@
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
+using ColorVision.Themes;
 using ColorVision.UI;
 using Microsoft.Win32;
 using System;
@@ -23,6 +24,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GeometricTran
         {
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             InitializeComponent();
+            this.ApplyCaption();
             UpdateSummary();
         }
 

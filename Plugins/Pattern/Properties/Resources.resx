@@ -123,4 +123,234 @@
   <data name="ChartGenerationTool" xml:space="preserve">
     <value>图卡生成工具</value>
   </data>
+  <data name="TemplateFolder" xml:space="preserve"><value>模板文件夹</value></data>
+  <data name="OpenTemplateFolder" xml:space="preserve"><value>打开模板文件夹</value></data>
+  <data name="OpenTemplateFolderTooltip" xml:space="preserve"><value>打开模板存储目录</value></data>
+  <data name="Export" xml:space="preserve"><value>导出</value></data>
+  <data name="ExportAllTemplatesZip" xml:space="preserve"><value>将所有模板导出为 ZIP 文件</value></data>
+  <data name="Import" xml:space="preserve"><value>导入</value></data>
+  <data name="ImportTemplateZip" xml:space="preserve"><value>导入 ZIP 模板组</value></data>
+  <data name="ProjectionTool" xml:space="preserve"><value>投影工具</value></data>
+  <data name="OpenProjectionTool" xml:space="preserve"><value>打开图片投影工具</value></data>
+  <data name="GenerateAllTemplateImages" xml:space="preserve"><value>生成所有模板图片</value></data>
+  <data name="GenerateAllTemplateImagesTooltip" xml:space="preserve"><value>批量生成所有模板图片</value></data>
+  <data name="OpenOutputFolder" xml:space="preserve"><value>打开输出文件夹</value></data>
+  <data name="OpenImageOutputFolderTooltip" xml:space="preserve"><value>打开图片输出目录</value></data>
+  <data name="Clear" xml:space="preserve"><value>清空</value></data>
+  <data name="ClearOutputDirectory" xml:space="preserve"><value>清空输出目录</value></data>
+  <data name="SwitchTheme" xml:space="preserve"><value>切换主题</value></data>
+  <data name="ClearTemplateList" xml:space="preserve"><value>清空模板列表</value></data>
+  <data name="EditSettings" xml:space="preserve"><value>编辑配置</value></data>
+  <data name="FileName" xml:space="preserve"><value>文件名</value></data>
+  <data name="EditPatternParameters" xml:space="preserve"><value>编辑模板参数</value></data>
+  <data name="ResetFactoryDefaults" xml:space="preserve"><value>重置默认配置</value></data>
+  <data name="ResetFactoryDefaultsTooltip" xml:space="preserve"><value>重置到类默认值并保存为用户默认值</value></data>
+  <data name="Reset" xml:space="preserve"><value>重置</value></data>
+  <data name="ResetTooltip" xml:space="preserve"><value>重置到用户默认值（如果有），否则重置到类默认值</value></data>
+  <data name="SaveToTemplate" xml:space="preserve"><value>保存到模板</value></data>
+  <data name="SaveCurrentParametersToTemplate" xml:space="preserve"><value>保存当前参数到模板</value></data>
+  <data name="SaveAsDefault" xml:space="preserve"><value>保存到默认</value></data>
+  <data name="SaveCurrentParametersAsDefault" xml:space="preserve"><value>将当前参数保存为默认值</value></data>
+  <data name="GeneratePattern" xml:space="preserve"><value>生成图卡</value></data>
+  <data name="GenerateCurrentPattern" xml:space="preserve"><value>生成当前图卡</value></data>
+  <data name="SaveAs" xml:space="preserve"><value>另存为</value></data>
+  <data name="SaveAsImageFile" xml:space="preserve"><value>另存为图片文件</value></data>
+  <data name="Copy" xml:space="preserve"><value>复制</value></data>
+  <data name="Delete" xml:space="preserve"><value>删除</value></data>
+  <data name="Select" xml:space="preserve"><value>选中</value></data>
+  <data name="SelectColor" xml:space="preserve"><value>选择颜色</value></data>
+  <data name="Red" xml:space="preserve"><value>红色</value></data>
+  <data name="Green" xml:space="preserve"><value>绿色</value></data>
+  <data name="Blue" xml:space="preserve"><value>蓝色</value></data>
+  <data name="White" xml:space="preserve"><value>白色</value></data>
+  <data name="Black" xml:space="preserve"><value>黑色</value></data>
+  <data name="ZipFileFilter" xml:space="preserve"><value>ZIP 文件 (*.zip)|*.zip</value></data>
+  <data name="ExportSucceeded" xml:space="preserve"><value>导出成功！</value></data>
+  <data name="ImportSucceeded" xml:space="preserve"><value>导入成功！</value></data>
+  <data name="InformationTitle" xml:space="preserve"><value>提示</value></data>
+  <data name="ErrorTitle" xml:space="preserve"><value>错误</value></data>
+  <data name="ExportFailedFormat" xml:space="preserve"><value>导出失败：{0}</value></data>
+  <data name="ImportFailedFormat" xml:space="preserve"><value>导入失败：{0}</value></data>
+  <data name="ConfirmClearOutput" xml:space="preserve"><value>确定要清空内容吗？</value></data>
+  <data name="ClearConfirmationTitle" xml:space="preserve"><value>清空确认</value></data>
+  <data name="ClearSucceeded" xml:space="preserve"><value>清空成功！</value></data>
+  <data name="ClearFailedFormat" xml:space="preserve"><value>清空失败：{0}</value></data>
+  <data name="DirectoryNotFound" xml:space="preserve"><value>目录不存在！</value></data>
+  <data name="GeneratePatternFirst" xml:space="preserve"><value>请先生成图案</value></data>
+  <data name="SelectPatternFirst" xml:space="preserve"><value>请先选择图案</value></data>
+  <data name="ImageSavedFormat" xml:space="preserve"><value>保存成功：{0}</value></data>
+  <data name="ResetFailedFormat" xml:space="preserve"><value>重置失败：{0}</value></data>
+  <data name="CurrentConfigSavedAsDefault" xml:space="preserve"><value>当前配置已保存为默认值</value></data>
+  <data name="SaveSucceededTitle" xml:space="preserve"><value>保存成功</value></data>
+  <data name="SaveFailedFormat" xml:space="preserve"><value>保存失败：{0}</value></data>
+  <data name="PatternTypeNotFoundFormat" xml:space="preserve"><value>未找到对应的图案类型：{0}</value></data>
+  <data name="ReplaceTemplatePrompt" xml:space="preserve"><value>是否替换模板？</value></data>
+
+  <data name="主色" xml:space="preserve"><value>主色</value></data>
+  <data name="副色" xml:space="preserve"><value>副色</value></data>
+  <data name="尺寸模式" xml:space="preserve"><value>尺寸模式</value></data>
+  <data name="视场系数X" xml:space="preserve"><value>视场系数 X</value></data>
+  <data name="视场系数Y" xml:space="preserve"><value>视场系数 Y</value></data>
+  <data name="像素宽度" xml:space="preserve"><value>像素宽度</value></data>
+  <data name="像素高度" xml:space="preserve"><value>像素高度</value></data>
+  <data name="模板路径" xml:space="preserve"><value>模板路径</value></data>
+  <data name="图卡生成路径" xml:space="preserve"><value>图卡生成路径</value></data>
+  <data name="切换模板后创建图像" xml:space="preserve"><value>切换模板后创建图像</value></data>
+  <data name="保存格式" xml:space="preserve"><value>保存格式</value></data>
+  <data name="绘制模式" xml:space="preserve"><value>绘制模式</value></data>
+  <data name="视场背景" xml:space="preserve"><value>视场背景</value></data>
+  <data name="线条颜色" xml:space="preserve"><value>线条颜色</value></data>
+  <data name="背景色" xml:space="preserve"><value>背景色</value></data>
+  <data name="间隔颜色" xml:space="preserve"><value>间隔颜色</value></data>
+  <data name="线宽（像素）" xml:space="preserve"><value>线宽（像素）</value></data>
+  <data name="排列模式" xml:space="preserve"><value>排列模式</value></data>
+  <data name="列数" xml:space="preserve"><value>列数</value></data>
+  <data name="行数" xml:space="preserve"><value>行数</value></data>
+  <data name="单元格宽度（像素）" xml:space="preserve"><value>单元格宽度（像素）</value></data>
+  <data name="单元格高度（像素）" xml:space="preserve"><value>单元格高度（像素）</value></data>
+  <data name="水平线条数" xml:space="preserve"><value>水平线条数</value></data>
+  <data name="垂直线条数" xml:space="preserve"><value>垂直线条数</value></data>
+  <data name="水平间隔" xml:space="preserve"><value>水平间隔</value></data>
+  <data name="垂直间隔" xml:space="preserve"><value>垂直间隔</value></data>
+  <data name="水平线宽度" xml:space="preserve"><value>水平线宽度</value></data>
+  <data name="垂直线宽度" xml:space="preserve"><value>垂直线宽度</value></data>
+  <data name="绘制边缘线" xml:space="preserve"><value>绘制边缘线</value></data>
+  <data name="边缘偏移量" xml:space="preserve"><value>边缘偏移量</value></data>
+  <data name="边缘线宽度" xml:space="preserve"><value>边缘线宽度</value></data>
+  <data name="噪声类型" xml:space="preserve"><value>噪声类型</value></data>
+  <data name="噪声颜色" xml:space="preserve"><value>噪声颜色</value></data>
+  <data name="噪声强度" xml:space="preserve"><value>噪声强度</value></data>
+  <data name="噪声密度" xml:space="preserve"><value>噪声密度</value></data>
+  <data name="随机种子" xml:space="preserve"><value>随机种子</value></data>
+  <data name="半径模式" xml:space="preserve"><value>半径模式</value></data>
+  <data name="像素半径列表" xml:space="preserve"><value>像素半径列表</value></data>
+  <data name="比例系数列表" xml:space="preserve"><value>比例系数列表</value></data>
+  <data name="自定义圆心" xml:space="preserve"><value>自定义圆心</value></data>
+  <data name="圆心X坐标" xml:space="preserve"><value>圆心 X 坐标</value></data>
+  <data name="圆心Y坐标" xml:space="preserve"><value>圆心 Y 坐标</value></data>
+  <data name="是否绘制中心线" xml:space="preserve"><value>绘制中心线</value></data>
+  <data name="中心线宽度" xml:space="preserve"><value>中心线宽度</value></data>
+  <data name="图像类型" xml:space="preserve"><value>图像类型</value></data>
+  <data name="高斯噪声的标准差 (0-255)" xml:space="preserve"><value>高斯噪声的标准差（0-255）</value></data>
+  <data name="椒盐噪声的像素比例 (0.0-1.0)" xml:space="preserve"><value>椒盐噪声的像素比例（0.0-1.0）</value></data>
+  <data name="用于生成可重复的噪声 (-1 表示随机)" xml:space="preserve"><value>用于生成可重复噪声的种子（-1 表示随机）</value></data>
+  <data name="按行列数量或单元格像素尺寸交替绘制水平和垂直等宽线栅" xml:space="preserve"><value>按行列数量或单元格像素尺寸交替绘制水平和垂直等宽线栅</value></data>
+  <data name="按数量" xml:space="preserve"><value>按数量</value></data>
+  <data name="按间隔" xml:space="preserve"><value>按间隔</value></data>
+  <data name="高斯噪声" xml:space="preserve"><value>高斯噪声</value></data>
+  <data name="椒盐噪声" xml:space="preserve"><value>椒盐噪声</value></data>
+  <data name="均匀噪声" xml:space="preserve"><value>均匀噪声</value></data>
+  <data name="单色位图 (*.bmp;*.dib)" xml:space="preserve"><value>单色位图 (*.bmp;*.dib)</value></data>
+  <data name="16色位图 (*.bmp;*.dib)" xml:space="preserve"><value>16 色位图 (*.bmp;*.dib)</value></data>
+  <data name="256色位图 (*.bmp;*.dib)" xml:space="preserve"><value>256 色位图 (*.bmp;*.dib)</value></data>
+  <data name="24位位图 (*.bmp;*.dib)" xml:space="preserve"><value>24 位位图 (*.bmp;*.dib)</value></data>
+
+  <data name="GridX" xml:space="preserve"><value>水平网格数</value></data>
+  <data name="GridY" xml:space="preserve"><value>垂直网格数</value></data>
+  <data name="CellW" xml:space="preserve"><value>单元格宽度</value></data>
+  <data name="CellH" xml:space="preserve"><value>单元格高度</value></data>
+  <data name="HorizontalWidth" xml:space="preserve"><value>水平线宽度</value></data>
+  <data name="VerticalWidth" xml:space="preserve"><value>垂直线宽度</value></data>
+  <data name="HorizontalLength" xml:space="preserve"><value>水平线长度</value></data>
+  <data name="VerticalLength" xml:space="preserve"><value>垂直线长度</value></data>
+  <data name="FieldX" xml:space="preserve"><value>视场 X 坐标列表</value></data>
+  <data name="FieldY" xml:space="preserve"><value>视场 Y 坐标列表</value></data>
+  <data name="XIndex" xml:space="preserve"><value>X 起始索引</value></data>
+  <data name="YIndex" xml:space="preserve"><value>Y 起始索引</value></data>
+  <data name="Spacing" xml:space="preserve"><value>间距</value></data>
+  <data name="Radius" xml:space="preserve"><value>半径</value></data>
+  <data name="Rows" xml:space="preserve"><value>行数</value></data>
+  <data name="Cols" xml:space="preserve"><value>列数</value></data>
+  <data name="UseRectangle" xml:space="preserve"><value>使用矩形</value></data>
+  <data name="RectWidth" xml:space="preserve"><value>矩形宽度</value></data>
+  <data name="RectHeight" xml:space="preserve"><value>矩形高度</value></data>
+  <data name="MarginRatioX" xml:space="preserve"><value>水平边距比例</value></data>
+  <data name="MarginRatioY" xml:space="preserve"><value>垂直边距比例</value></data>
+  <data name="LineThickness" xml:space="preserve"><value>线条宽度</value></data>
+  <data name="LineLength" xml:space="preserve"><value>线条长度</value></data>
+  <data name="Angle" xml:space="preserve"><value>角度</value></data>
+  <data name="DotFitType" xml:space="preserve"><value>圆点适配方式</value></data>
+  <data name="RingWidth" xml:space="preserve"><value>圆环宽度</value></data>
+  <data name="StripeMode" xml:space="preserve"><value>条纹方向</value></data>
+  <data name="HorizontalSpacing" xml:space="preserve"><value>水平间距</value></data>
+  <data name="VerticalSpacing" xml:space="preserve"><value>垂直间距</value></data>
+
+  <data name="棋盘格" xml:space="preserve"><value>棋盘格</value></data>
+  <data name="十字网格" xml:space="preserve"><value>十字网格</value></data>
+  <data name="点阵" xml:space="preserve"><value>点阵</value></data>
+  <data name="十字" xml:space="preserve"><value>十字</value></data>
+  <data name="九点" xml:space="preserve"><value>九点</value></data>
+  <data name="MTF" xml:space="preserve"><value>MTF</value></data>
+  <data name="噪点" xml:space="preserve"><value>噪点</value></data>
+  <data name="四象限线栅" xml:space="preserve"><value>四象限线栅</value></data>
+  <data name="Ring" xml:space="preserve"><value>圆环</value></data>
+  <data name="纯色" xml:space="preserve"><value>纯色</value></data>
+  <data name="隔行点亮" xml:space="preserve"><value>隔行点亮</value></data>
+
+  <data name="PatternManagerConfig" xml:space="preserve"><value>图卡生成配置</value></data>
+  <data name="PatternCheckerboardConfig" xml:space="preserve"><value>棋盘格参数</value></data>
+  <data name="PatternCrossGridConfig" xml:space="preserve"><value>十字网格参数</value></data>
+  <data name="PatternCrossConfig" xml:space="preserve"><value>十字参数</value></data>
+  <data name="PatternDotConfig" xml:space="preserve"><value>点阵参数</value></data>
+  <data name="PatternLinePairMTFConfig" xml:space="preserve"><value>MTF 参数</value></data>
+  <data name="PatternNineDotConfig" xml:space="preserve"><value>九点参数</value></data>
+  <data name="PatternNoiseConfig" xml:space="preserve"><value>噪点参数</value></data>
+  <data name="PatternQuadrantGratingConfig" xml:space="preserve"><value>四象限线栅参数</value></data>
+  <data name="PatternRingConfig" xml:space="preserve"><value>圆环参数</value></data>
+  <data name="PatternSolodConfig" xml:space="preserve"><value>纯色参数</value></data>
+  <data name="PatternStripeConfig" xml:space="preserve"><value>隔行点亮参数</value></data>
+
+  <data name="ByFieldOfView" xml:space="preserve"><value>按视场系数</value></data>
+  <data name="ByPixelSize" xml:space="preserve"><value>按像素尺寸</value></data>
+  <data name="ByGridCount" xml:space="preserve"><value>按网格数量</value></data>
+  <data name="ByCellSize" xml:space="preserve"><value>按单元格尺寸</value></data>
+  <data name="ByCount" xml:space="preserve"><value>按数量</value></data>
+  <data name="BySpacing" xml:space="preserve"><value>按间隔</value></data>
+  <data name="FourLinePair" xml:space="preserve"><value>四线对</value></data>
+  <data name="RotatedRect" xml:space="preserve"><value>斜方块</value></data>
+  <data name="BMW" xml:space="preserve"><value>宝马图</value></data>
+  <data name="Gaussian" xml:space="preserve"><value>高斯噪声</value></data>
+  <data name="SaltAndPepper" xml:space="preserve"><value>椒盐噪声</value></data>
+  <data name="Center" xml:space="preserve"><value>居中原样</value></data>
+  <data name="Inscribed" xml:space="preserve"><value>内切</value></data>
+  <data name="Circumscribed" xml:space="preserve"><value>外切</value></data>
+  <data name="Horizontal" xml:space="preserve"><value>水平</value></data>
+  <data name="Vertical" xml:space="preserve"><value>垂直</value></data>
+  <data name="ByPixelRadius" xml:space="preserve"><value>按像素半径</value></data>
+  <data name="ByRadiusRatio" xml:space="preserve"><value>按比例系数</value></data>
+  <data name="bmp1" xml:space="preserve"><value>单色位图 (*.bmp;*.dib)</value></data>
+  <data name="bmp4" xml:space="preserve"><value>16 色位图 (*.bmp;*.dib)</value></data>
+  <data name="bmp8" xml:space="preserve"><value>256 色位图 (*.bmp;*.dib)</value></data>
+  <data name="bmp24" xml:space="preserve"><value>24 位位图 (*.bmp;*.dib)</value></data>
+  <data name="tif" xml:space="preserve"><value>TIFF (*.tif)</value></data>
+  <data name="png" xml:space="preserve"><value>PNG (*.png)</value></data>
+  <data name="jpg" xml:space="preserve"><value>JPEG (*.jpg)</value></data>
+  <data name="TemplateLibrary" xml:space="preserve"><value>模板库</value></data>
+  <data name="TemplateActions" xml:space="preserve"><value>模板管理</value></data>
+  <data name="PatternSettings" xml:space="preserve"><value>图卡参数</value></data>
+  <data name="PatternActions" xml:space="preserve"><value>参数操作</value></data>
+  <data name="OutputSize" xml:space="preserve"><value>输出尺寸</value></data>
+  <data name="ResolutionPreset" xml:space="preserve"><value>常用分辨率</value></data>
+  <data name="ImageWidth" xml:space="preserve"><value>宽度</value></data>
+  <data name="ImageHeight" xml:space="preserve"><value>高度</value></data>
+  <data name="PatternType" xml:space="preserve"><value>图案类型</value></data>
+  <data name="Preview" xml:space="preserve"><value>图像预览</value></data>
+  <data name="PreviewEmptyTitle" xml:space="preserve"><value>预览你的图卡</value></data>
+  <data name="PreviewEmptyHint" xml:space="preserve"><value>选择模板，或调整参数后点击“生成图卡”</value></data>
+  <data name="NoTemplatesFound" xml:space="preserve"><value>没有可显示的模板</value></data>
+  <data name="SearchTemplates" xml:space="preserve"><value>搜索模板名称</value></data>
+  <data name="GenerateHint" xml:space="preserve"><value>修改参数后，重新生成以更新图像</value></data>
+  <data name="ImageOutput" xml:space="preserve"><value>图片输出</value></data>
+  <data name="图片列表" xml:space="preserve"><value>图片列表</value></data>
+  <data name="上次选中索引" xml:space="preserve"><value>上次选中索引</value></data>
+  <data name="上次选中的显示器" xml:space="preserve"><value>上次选中的显示器</value></data>
+  <data name="图片显示模式" xml:space="preserve"><value>图片显示模式</value></data>
+  <data name="适应" xml:space="preserve"><value>适应</value></data>
+  <data name="拉伸" xml:space="preserve"><value>拉伸</value></data>
+  <data name="居中" xml:space="preserve"><value>居中</value></data>
+  <data name="填充" xml:space="preserve"><value>填充</value></data>
+  <data name="ImageProjectorConfig" xml:space="preserve"><value>图片投影配置</value></data>
+  <data name="PatternWindowConfig" xml:space="preserve"><value>图卡输出尺寸</value></data>
+  <data name="Width" xml:space="preserve"><value>宽度</value></data>
+  <data name="Height" xml:space="preserve"><value>高度</value></data>
 </root>
