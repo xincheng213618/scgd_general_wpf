@@ -61,7 +61,7 @@
   <data name="MenuFile" xml:space="preserve">
     <value>_File</value>
   </data>  <data name="MenuTool" xml:space="preserve">
-    <value>_Tool</value>
+    <value>_Tools</value>
   </data>
   <data name="MenuHelp" xml:space="preserve">
     <value>_Help</value>

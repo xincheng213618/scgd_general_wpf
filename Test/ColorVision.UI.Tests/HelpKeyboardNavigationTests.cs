@@ -28,18 +28,24 @@ public sealed class HelpKeyboardNavigationTests
             try
             {
                 CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(cultureName);
-                IMenuItem[] entries = [new MenuCheckAndUpdateV1(), new AboutMsgExport(),
-                    new ColorVision.UI.LogImp.MenuLogWindow(), new NativeLogging.MenuNativeLog(),
-                    new ColorVision.ServiceHost.MenuServiceHostManager(), new ColorVision.UI.Desktop.Feedback.MenuSendFeedback(),
-                    new ColorVision.UI.Desktop.Marketplace.MenuPluginManager(), new ColorVision.SocketProtocol.MenuProjectManager()];
+                IMenuItem[] entries = [new WindowsServicePlugin.ServiceManager.MenuServiceManager(), new WindowsServicePlugin.Menus.ServiceLog(),
+                    new Guidance.MenuNewUserGuide(), new ServiceHost.MenuServiceHostManager(),
+                    new ColorVision.UI.Desktop.Feedback.MenuSendFeedback(), new ColorVision.UI.Desktop.Marketplace.MenuPluginManager(),
+                    new ColorVision.SocketProtocol.MenuProjectManager(), new MenuCheckAndUpdateV1(),
+                    new ColorVision.UI.LogImp.MenuLogWindow(), new NativeLogging.MenuNativeLog(), new AboutMsgExport()];
                 char[] keys = entries.Select(entry => char.ToUpperInvariant(new AccessText { Text = entry.Header }.AccessKey)).ToArray();
                 Assert.DoesNotContain('\0', keys);
                 Assert.Equal(keys.Length, keys.Distinct().Count());
-                Assert.Equal('U', keys[0]);
-                Assert.Equal('C', keys[^1]);
                 Assert.Contains("Socket", ColorVision.SocketProtocol.Properties.Resources.SocketManagementWindow);
                 if (cultureName == "zh-CN")
-                    Assert.Equal("网络通信(_C)", entries[^1].Header);
+                    Assert.Equal("网络通信(_C)", entries[6].Header);
+                else if (cultureName == "en")
+                {
+                    Assert.Equal(["Service _manager", "Ser_vice logs", "Product _tour", "ColorVision _Service Host",
+                        "Send _feedback...", "Market_place", "Network _communication", "Check for _updates",
+                        "_Log", "_Native logs", "_About ColorVision"], entries.Select(entry => entry.Header));
+                    Assert.Equal("_Tools", ColorVision.UI.Properties.Resources.MenuTool);
+                }
             }
             finally { CultureInfo.CurrentUICulture = previous; }
         });

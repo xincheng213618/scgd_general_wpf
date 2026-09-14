@@ -39,7 +39,7 @@ namespace WindowsServicePlugin.ServiceManager
         public override string OwnerGuid => MenuItemConstants.Help;
         public override string GuidId => "ServiceManager";
         public override int Order => 0;
-        public override string Header => WindowsServicePlugin.Properties.Resources.ServiceManager;
+        public override string Header => LocalizedMenuAccessKey.Format(WindowsServicePlugin.Properties.Resources.ServiceManager, 'M');
 
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute() => ServiceManagerAppProvider.OpenServiceManagerWindow();

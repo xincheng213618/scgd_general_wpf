@@ -377,7 +377,7 @@
     <value>Failed to load marketplace</value>
   </data>
   <data name="SendFeedback" xml:space="preserve">
-    <value>Send Feedback</value>
+    <value>Send feedback</value>
   </data>
   <data name="FeedbackMessageLabel" xml:space="preserve">
     <value>Problem description</value>
