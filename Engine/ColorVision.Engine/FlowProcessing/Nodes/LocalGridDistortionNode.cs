@@ -1,3 +1,4 @@
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm;
@@ -350,9 +351,9 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             if (!lease.IsFlipApplied)
                 throw new InvalidOperationException("当前图像的方向变换尚未完成，无法计算点阵畸变。");
             RoiRect roi = LocalFindLuminousAreaNode.ResolveRoi(configuredRegion, lease.Metadata.Width, lease.Metadata.Height);
-            HImage image = LocalFindLuminousAreaNode.CreateBorrowedImage(lease);
+            HImage image = FlowNodeTiming.Run("PrepareImage", () => LocalFindLuminousAreaNode.CreateBorrowedImage(lease));
             Stopwatch stopwatch = Stopwatch.StartNew();
-            GridDistortionResult detection = services.Detect(image, roi, options);
+            GridDistortionResult detection = FlowNodeTiming.Run("Algorithm", () => services.Detect(image, roi, options));
             stopwatch.Stop();
             int totalTime = (int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue);
             var parameters = Newtonsoft.Json.Linq.JObject.FromObject(new
@@ -391,17 +392,17 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             }
             catch (Exception validationException) when (validationException is InvalidOperationException or ArgumentException)
             {
-                LocalGridDistortionPersistenceResult failed = services.Persist(request with
+                LocalGridDistortionPersistenceResult failed = FlowNodeTiming.Run("PersistResult", () => services.Persist(request with
                 {
                     ResultCode = DetectionFailureResultCode, ResultDescription = validationException.Message
-                });
+                }));
                 if (failed.MasterId <= 0) throw new InvalidOperationException("点阵畸变失败持久化返回了无效主表 ID。");
-                services.Publish(new() { DeviceCode = algorithmDeviceCode, SerialNumber = action.SerialNumber, NodeId = nodeId, ZIndex = zIndex, MasterId = failed.MasterId });
+                FlowNodeTiming.Run("PublishResult", () => services.Publish(new() { DeviceCode = algorithmDeviceCode, SerialNumber = action.SerialNumber, NodeId = nodeId, ZIndex = zIndex, MasterId = failed.MasterId }));
                 throw new InvalidOperationException(validationException.Message, validationException);
             }
 
             parameters["Analysis"] = Newtonsoft.Json.Linq.JObject.FromObject(analysis);
-            LocalGridDistortionPersistenceResult persisted = services.Persist(request with { Result = detection, Analysis = analysis });
+            LocalGridDistortionPersistenceResult persisted = FlowNodeTiming.Run("PersistResult", () => services.Persist(request with { Result = detection, Analysis = analysis }));
             if (persisted.MasterId <= 0 || string.IsNullOrWhiteSpace(persisted.ResultFilePath))
                 throw new InvalidOperationException("点阵畸变持久化未返回有效主表 ID 和结果文件。");
             if (ownedFrame != null)
@@ -423,7 +424,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             action.Data["LocalGridDistortionKeystoneHorizontalPercent"] = selectedPoint9.KeystoneHorizontalPercent;
             action.Data["LocalGridDistortionKeystoneVerticalPercent"] = selectedPoint9.KeystoneVerticalPercent;
             action.MasterValue(null, persisted.MasterId, (int)ViewResultAlgType.Distortion);
-            services.Publish(new() { DeviceCode = algorithmDeviceCode, SerialNumber = action.SerialNumber, NodeId = nodeId, ZIndex = zIndex, MasterId = persisted.MasterId });
+            FlowNodeTiming.Run("PublishResult", () => services.Publish(new() { DeviceCode = algorithmDeviceCode, SerialNumber = action.SerialNumber, NodeId = nodeId, ZIndex = zIndex, MasterId = persisted.MasterId }));
             return new()
             {
                 MasterId = persisted.MasterId, SourceMasterId = lease.MasterId, FrameId = lease.FrameId.ToString("N"),
@@ -481,6 +482,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
         imageFile = null;
         if (action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) && currentFrame != null)
         {
+            FlowNodeTiming.Skip("OpenImage");
             string file = currentFrame.Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvCie ? currentFrame.CvCieFilePath : currentFrame.CvRawFilePath;
             imageFile = string.IsNullOrWhiteSpace(file) ? null : file;
             return currentFrame;
@@ -498,15 +500,18 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             if (masterId <= 0) throw new InvalidOperationException("流程中没有可用内存帧或图像结果；请连接本地取图/校正节点，或配置图像文件。");
             if (masterResultType is not (int)CVCommCore.CVResultType.Camera_Img and not (int)CVCommCore.CVResultType.Algorithm_Calibration)
                 throw new InvalidOperationException($"IN 不是图像结果：MasterId={masterId}，ResultType={masterResultType}。");
-            MeasureResultImgModel input = services.GetImageResult(masterId) ?? throw new InvalidOperationException($"找不到 IN 图像结果：{masterId}。");
+            MeasureResultImgModel input = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId)) ?? throw new InvalidOperationException($"找不到 IN 图像结果：{masterId}。");
             sourceMasterId = masterId;
             string[] candidates = new[] { input.FileUrl, input.RawFile }.Where(value => !string.IsNullOrWhiteSpace(value))
                 .Select(value => Path.GetFullPath(value.Trim())).ToArray();
             fallbackFile = candidates.FirstOrDefault(File.Exists) ?? candidates.FirstOrDefault();
         }
-        if (string.IsNullOrWhiteSpace(fallbackFile) || !File.Exists(fallbackFile))
-            throw new FileNotFoundException("点阵畸变图像文件不存在。", fallbackFile);
-        ownedFrame = services.LoadFrame(fallbackFile);
+        ownedFrame = FlowNodeTiming.Run("OpenImage", () =>
+        {
+            if (string.IsNullOrWhiteSpace(fallbackFile) || !File.Exists(fallbackFile))
+                throw new FileNotFoundException("点阵畸变图像文件不存在。", fallbackFile);
+            return services.LoadFrame(fallbackFile);
+        });
         if (sourceMasterId > 0) ownedFrame.MasterId = sourceMasterId;
         imageFile = fallbackFile;
         return ownedFrame;

@@ -5,6 +5,7 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using System;
 using System.Linq;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local;
 
@@ -19,7 +20,7 @@ internal sealed class LocalLvCameraServices : ILocalLvCameraServices
 {
     public LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request)
     {
-        request.Device.EnsureLocalMeasurementConnected(autoConnect: true);
+        FlowNodeTiming.Run("ConnectCamera", () => request.Device.EnsureLocalMeasurementConnected(autoConnect: true));
         return LocalCameraCaptureService.Capture(request);
     }
 
@@ -45,6 +46,7 @@ internal sealed class LocalLvCameraExecution : FlowLocalExecution
     private bool frameTransferred;
     private bool disposed;
     private bool commandReleased;
+    private readonly FlowNodeTiming timing = new();
 
     internal static FlowLocalExecution? Create(CVMQTTRequest request)
     {
@@ -99,6 +101,7 @@ internal sealed class LocalLvCameraExecution : FlowLocalExecution
 
     public override void Execute()
     {
+        using var activation = timing.Activate();
         try { capture = services.Capture(captureRequest); }
         finally { ReleaseCommand(); }
     }
@@ -112,26 +115,28 @@ internal sealed class LocalLvCameraExecution : FlowLocalExecution
 
     public override object Complete(CVStartCFC action)
     {
+        using var activation = timing.Activate();
         if (capture == null) throw new InvalidOperationException("本地相机未返回取图结果。");
         if (action.RuntimeResources.IsDisposed || action.IsDel || action.TryGetStopStatus(out _))
             throw new OperationCanceledException("流程已停止，本地取图结果不再交接。");
         if (!string.Equals(action.SerialNumber, serialNumber, StringComparison.Ordinal))
             throw new InvalidOperationException("本地取图结果与当前流程批次不匹配。");
-        MeasureResultImgModel model = services.Save(action, zIndex, captureRequest, capture);
+        MeasureResultImgModel model = FlowNodeTiming.Run("PersistResult", () => services.Save(action, zIndex, captureRequest, capture));
         if (model.Id <= 0) throw new InvalidOperationException("保存本地相机结果记录失败。");
         LocalFlowFrame frame = capture.Frame;
         frame.MasterId = model.Id;
         action.SetCurrentFrame(frame);
         frameTransferred = true;
         action.MasterValue(null, model.Id, 100);
-        services.Publish(action, nodeId, zIndex, captureRequest, capture, model);
+        FlowNodeTiming.Run("PublishResult", () => services.Publish(action, nodeId, zIndex, captureRequest, capture, model));
         return new
         {
             MasterId = model.Id, MasterResultType = 100, MasterValue = (string?)null,
             FrameId = frame.FrameId.ToString("N"), frame.HasRaw, frame.HasCie,
             frame.CvRawFilePath, frame.CvCieFilePath,
             TotalTime = capture.TotalTimeMs, CaptureTime = capture.CaptureTimeMs,
-            CalibrationTime = capture.CalibrationTimeMs, SaveTime = capture.SaveTimeMs
+            CalibrationTime = capture.CalibrationTimeMs, SaveTime = capture.SaveTimeMs,
+            Timing = timing.Finish()
         };
     }
 

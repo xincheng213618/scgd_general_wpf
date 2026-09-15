@@ -1,3 +1,4 @@
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using System.Reflection;
 using System.ComponentModel;
 using ColorVision.Engine.PropertyEditor;
@@ -612,6 +613,8 @@ public sealed class LocalFindLuminousAreaNodeTests
     [Fact]
     public void InputImageResultFallsBackToPersistedFileWhenMemoryFrameIsUnavailable()
     {
+        var timing = new FlowNodeTiming();
+        using var activation = timing.Activate();
         string filePath = Path.Combine(Path.GetTempPath(), $"ColorVision-LuminousArea-Input-{Guid.NewGuid():N}.png");
         CVStartCFC action = new("input-image-result");
         try
@@ -632,6 +635,15 @@ public sealed class LocalFindLuminousAreaNodeTests
             LocalFindLuminousAreaNode node = new(services);
 
             LocalFindLuminousAreaNodeResultData result = node.ExecuteSynchronously(action);
+            var stages = timing.Finish().Stages;
+            var open = Assert.Single(stages, stage => stage.Name == "OpenImage");
+            Assert.Equal("Completed", open.Status);
+            Assert.Contains(stages, stage => stage.Name == "ReadImageHeader" && stage.ParentId == open.Id);
+            Assert.Contains(stages, stage => stage.Name == "DecodeImage" && stage.ParentId == open.Id);
+            Assert.Contains(stages, stage => stage.Name == "Algorithm" && stage.Status == "Completed");
+            Assert.Contains(stages, stage => stage.Name == "PersistResult" && stage.Status == "Completed");
+            Assert.Contains("OpenImage", timing.SerializePayload(result));
+
 
             Assert.Equal(1, services.GetImageResultCount);
             Assert.Equal(1, services.LoadCount);
@@ -649,6 +661,8 @@ public sealed class LocalFindLuminousAreaNodeTests
     [Fact]
     public void UpstreamFrameTakesPriorityOverConfiguredFallbackFile()
     {
+        var timing = new FlowNodeTiming();
+        using var activation = timing.Activate();
         CVStartCFC action = CreateRawAction("upstream-priority");
         Assert.True(action.TryGetCurrentFrame(out LocalFlowFrame? expectedFrame));
         FakeNodeServices services = new()
@@ -663,6 +677,12 @@ public sealed class LocalFindLuminousAreaNodeTests
         try
         {
             LocalFindLuminousAreaNodeResultData result = node.ExecuteSynchronously(action);
+            var stages = timing.Finish().Stages;
+            var open = Assert.Single(stages, stage => stage.Name == "OpenImage");
+            Assert.Equal("Skipped", open.Status);
+            Assert.Equal(0, open.ElapsedMs);
+            Assert.DoesNotContain(stages, stage => stage.Name == "DecodeImage" || stage.Name == "ReadImageData");
+
 
             Assert.Equal(0, services.LoadCount);
             Assert.True(action.TryGetCurrentFrame(out LocalFlowFrame? actualFrame));
@@ -825,6 +845,8 @@ public sealed class LocalFindLuminousAreaNodeTests
     [Fact]
     public void PersistenceFailureDoesNotPublishOrExposeUncommittedMaster()
     {
+        var timing = new FlowNodeTiming();
+        using var activation = timing.Activate();
         CVStartCFC action = CreateRawAction("persistence-failure");
         FakeNodeServices services = new()
         {
@@ -837,6 +859,10 @@ public sealed class LocalFindLuminousAreaNodeTests
             InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => node.ExecuteSynchronously(action));
 
             Assert.Equal("transaction crashed", exception.Message);
+            var stages = timing.Finish().Stages;
+            Assert.Contains(stages, stage => stage.Name == "Algorithm" && stage.Status == "Completed");
+            Assert.Contains(stages, stage => stage.Name == "PersistResult" && stage.Status == "Failed");
+
             Assert.Equal(1, services.PersistCount);
             Assert.Equal(0, services.PublishCount);
             Assert.False(action.Data.ContainsKey("MasterId"));

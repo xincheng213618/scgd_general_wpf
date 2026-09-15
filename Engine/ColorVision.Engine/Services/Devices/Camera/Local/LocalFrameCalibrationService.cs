@@ -1,3 +1,4 @@
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using cvColorVision;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using System;
@@ -41,6 +42,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             LocalCalibrationRoi calibrationRoi,
             IReadOnlyList<float>? zeroExposureFallback = null)
         {
+            using var calibrationStage = FlowNodeTiming.Measure("Calibration");
             ArgumentNullException.ThrowIfNull(frame);
             ArgumentNullException.ThrowIfNull(cacheManager);
             ArgumentNullException.ThrowIfNull(calibrationFiles);
@@ -80,7 +82,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     lease.MarkBufferFlipApplied(LocalFrameBufferKind.CvCie);
                 }
             }
-            LocalFrameMirrorService.ApplyPending(frame);
+            FlowNodeTiming.Run("MirrorImage", () => LocalFrameMirrorService.ApplyPending(frame));
+            calibrationStage?.Complete();
         }
 
         public static int GetRequiredCieLength(

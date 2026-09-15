@@ -1,4 +1,5 @@
 using ColorVision.Engine.Services;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.Services.Devices;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -363,19 +364,21 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         private void ExecuteCore(CVTransAction transaction)
         {
+            var timing = new FlowNodeTiming();
+            using var activation = timing.Activate();
             try
             {
-                LocalNodeExecutionResult result = ExecuteLocal(transaction.trans_action);
+                LocalNodeExecutionResult result = FlowNodeTiming.Run("ExecuteLocal", () => ExecuteLocal(transaction.trans_action));
                 CVServerResponse response = new(transaction.trans_action.SerialNumber, ActionStatusEnum.Finish, result.Message, OperatorCode, result.Data);
                 transaction.trans_action.AddResult(GetLocalNodeName(), response, transaction.startTime);
-                TransferEnd(transaction, response, 0);
+                TransferEnd(transaction, response, 0, timing);
             }
             catch (Exception ex)
             {
                 CVStartCFC action = transaction.trans_action;
                 action.Failed(ex.Message, GetLocalNodeName(), transaction.startTime, NodeID);
                 CVServerResponse response = new(action.SerialNumber, ActionStatusEnum.Failed, ex.Message, OperatorCode, null);
-                TransferEnd(transaction, response, -1);
+                TransferEnd(transaction, response, -1, timing);
             }
             finally
             {
@@ -383,7 +386,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
         }
 
-        private void TransferEnd(CVTransAction transaction, CVServerResponse response, int statusCode)
+        private void TransferEnd(CVTransAction transaction, CVServerResponse response, int statusCode, FlowNodeTiming timing)
         {
             PublishNodeEnd(new FlowEngineNodeEndEventArgs
             {
@@ -393,7 +396,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 RecvEventName = response.EventName,
                 RecvStatusCode = statusCode,
                 RecvStatusMessage = response.Message,
-                RecvPayload = response.Data == null ? null : JsonConvert.SerializeObject(response.Data)
+                RecvPayload = timing.SerializePayload(response.Data)
             });
             flowOutputOption.TransferData(transaction.trans_action);
         }

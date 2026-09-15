@@ -74,7 +74,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         _session.CapturedAt);
 
             NodeTitleText.Text = string.IsNullOrWhiteSpace(_record.NodeName) ? EngineLocalization.Get("未知节点") : _record.NodeName;
-            NodeSubtitleText.Text = EngineLocalization.Format($"Batch {_record.BatchId} · {_record.NodeType ?? EngineLocalization.Get("未知类型")} · {_record.StartTime:yyyy/MM/dd HH:mm:ss.fff}");
+            NodeSubtitleText.Text = _record.StartTime.ToString("yyyy/MM/dd");
             NodeElapsedText.Text = elapsedMs.HasValue
                 ? FlowExecutionAnalysisPresentation.FormatDuration(elapsedMs.Value)
                 : "—";

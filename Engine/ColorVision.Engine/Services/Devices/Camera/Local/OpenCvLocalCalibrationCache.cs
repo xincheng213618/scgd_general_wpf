@@ -1,4 +1,5 @@
 using ColorVision.Core;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
@@ -35,9 +36,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             ArgumentNullException.ThrowIfNull(exposure);
             if (rawPointer == IntPtr.Zero) throw new ArgumentException("RAW pointer is null.", nameof(rawPointer));
 
-            CachedContext cachedContext = Prepare(layout, calibrationFiles, ciePointer);
+            CachedContext cachedContext = FlowNodeTiming.Run("LoadCalibrationResources", () => Prepare(layout, calibrationFiles, ciePointer));
             CalibrationExecutionOptionsV1 options = CreateExecutionOptions(exposure, calibrationRoi);
             (ulong rawByteLength, ulong cieFloatCount) = GetBufferLengths(layout, cachedContext.Files);
+            using var computeStage = FlowNodeTiming.Measure("CalibrationAlgorithm");
             int result = OpenCVCalibration.M_CalibrationExecute(
                 cachedContext.Context,
                 checked((uint)layout.Width),
@@ -53,6 +55,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 throw CreateNativeException("执行本地校正失败", result, cachedContext.Context);
             }
+            computeStage?.Complete();
         }
 
         internal static CalibrationExecutionOptionsV1 CreateExecutionOptions(float[] exposure, LocalCalibrationRoi calibrationRoi)

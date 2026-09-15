@@ -409,7 +409,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                                 _session.SerialNumber)),
                         ClearCurrentNodeRecords);
                     UpdateHeader(
-                        string.IsNullOrWhiteSpace(record.NodeName) ? "节点分析" : record.NodeName,
+                        "流程执行分析",
                         "流程概览 / 节点分析",
                         BuildRunSubtitle(_session));
                     break;

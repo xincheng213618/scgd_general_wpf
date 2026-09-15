@@ -1,3 +1,4 @@
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using cvColorVision;
@@ -51,10 +52,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public static LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
-            CaptureLock.Wait();
+            FlowNodeTiming.Run("WaitCamera", CaptureLock.Wait);
             try
             {
-                return request.Device.LocalCameraSession.UseOpened(handle => CaptureCore(request, handle));
+                return FlowNodeTiming.Run("CapturePipeline", () => request.Device.LocalCameraSession.UseOpened(handle => CaptureCore(request, handle)));
             }
             finally
             {
@@ -88,10 +89,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             int saveTimeMs = 0;
             try
             {
-                _ = cvCameraCSLib.CM_SetGain(cameraHandle, cameraParameters.Gain);
-                if (!device.Config.IsExpThree) _ = cvCameraCSLib.CM_SetExpTime(cameraHandle, cameraParameters.ExpTime);
+                _ = FlowNodeTiming.Run("SetGain", () => cvCameraCSLib.CM_SetGain(cameraHandle, cameraParameters.Gain));
+                if (!device.Config.IsExpThree) _ = FlowNodeTiming.Run("SetExposure", () => cvCameraCSLib.CM_SetExpTime(cameraHandle, cameraParameters.ExpTime));
 
-                if (request.IsAutoExposure) LocalCameraAutoExposure.Measure(device, cameraHandle, cameraParameters);
+                if (request.IsAutoExposure) FlowNodeTiming.Run("AutoExposure", () => LocalCameraAutoExposure.Measure(device, cameraHandle, cameraParameters));
+                else FlowNodeTiming.Skip("AutoExposure");
                 string captureJson = BuildRawCaptureJson(device, cameraParameters, false);
                 uint width = 0, height = 0, sourceBpp = 0, channels = 0;
                 if (cvCameraCSLib.CM_GetSrcFrameInfo(cameraHandle, ref width, ref height, ref sourceBpp, ref channels) == 0
@@ -126,7 +128,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     FlipMode = request.FlipMode,
                     IsMirrorReady = calibrationFiles.Count > 0
                 };
-                frame = LocalFlowFrame.Allocate(metadata, rawLength, cieLength);
+                frame = FlowNodeTiming.Run("AllocateFrame", () => LocalFlowFrame.Allocate(metadata, rawLength, cieLength));
 
                 using (LocalFlowFrameLease lease = frame.Acquire())
                 {
@@ -135,6 +137,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     // CM_GetFrame is retained for its CFW and averaging acquisition pipeline.
                     // Auto-exposure was resolved above so metadata and calibration use the actual exposure. BuildRawCaptureJson deliberately supplies no
                     // calibration items; all calibration runs once below on these buffers.
+                    using var captureStage = FlowNodeTiming.Measure("CaptureFrame");
                     int captureResult = cvCameraCSLib.CM_GetFrame(
                         cameraHandle,
                         captureJson,
@@ -151,6 +154,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     {
                         throw CreateNativeException("本地相机取图失败", captureResult);
                     }
+                    captureStage?.Complete();
 
                 }
 
@@ -166,6 +170,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     calibrationStopwatch.Stop();
                     calibrationTimeMs = ToMilliseconds(calibrationStopwatch.ElapsedMilliseconds);
                 }
+                else FlowNodeTiming.Skip("Calibration");
 
                 if (request.SaveFiles)
                 {
@@ -174,6 +179,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     saveStopwatch.Stop();
                     saveTimeMs = ToMilliseconds(saveStopwatch.ElapsedMilliseconds);
                 }
+                else FlowNodeTiming.Skip("SaveImage");
 
                 stopwatch.Stop();
                 LocalFlowFrame completedFrame = frame;

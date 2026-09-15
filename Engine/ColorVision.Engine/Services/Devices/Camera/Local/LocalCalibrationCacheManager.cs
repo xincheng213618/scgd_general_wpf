@@ -1,3 +1,4 @@
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
 using cvColorVision;
 using log4net;
@@ -85,7 +86,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             ArgumentNullException.ThrowIfNull(exposure);
             if (rawPointer == IntPtr.Zero) throw new ArgumentException("RAW 指针为空。", nameof(rawPointer));
 
-            SemaphoreSlim executionGate = EnterExecution();
+            SemaphoreSlim executionGate = FlowNodeTiming.Run("WaitCalibration", EnterExecution);
             try
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
@@ -119,20 +120,20 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
                 foreach (CachedCalibrationFile file in files)
                 {
-                    EnsureLoaded(file);
+                    FlowNodeTiming.Run("LoadCalibrationResource", () => EnsureLoaded(file));
                 }
 
                 CachedCalibrationFile[] normalFiles = files.Where(file => !IsColorCalibration(file.CalibrationType)).ToArray();
                 int lineArityIndex = Array.FindIndex(normalFiles, file => file.CalibrationType == CalibrationType.LineArity);
                 if (lineArityIndex < 0)
                 {
-                    ExecuteRoutine(layout, normalFiles, rawPointer);
+                    FlowNodeTiming.Run("CalibrationAlgorithm", () => ExecuteRoutine(layout, normalFiles, rawPointer));
                 }
                 else
                 {
-                    ExecuteRoutine(layout, normalFiles.Take(lineArityIndex).ToArray(), rawPointer);
-                    ExecuteLineArity(layout, rawPointer);
-                    ExecuteRoutine(layout, normalFiles.Skip(lineArityIndex + 1).ToArray(), rawPointer);
+                    FlowNodeTiming.Run("CalibrationAlgorithm", () => ExecuteRoutine(layout, normalFiles.Take(lineArityIndex).ToArray(), rawPointer));
+                    FlowNodeTiming.Run("CalibrationAlgorithm", () => ExecuteLineArity(layout, rawPointer));
+                    FlowNodeTiming.Run("CalibrationAlgorithm", () => ExecuteRoutine(layout, normalFiles.Skip(lineArityIndex + 1).ToArray(), rawPointer));
                 }
 
                 if (colorFiles.Length == 1)

@@ -1,3 +1,4 @@
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Core;
 using ColorVision.Database;
@@ -298,20 +299,20 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     throw new InvalidOperationException("当前图像的方向变换尚未完成，无法生成可供后续映射使用的发光区角点。");
 
                 RoiRect roi = ResolveRoi(SearchRegion, lease.Metadata.Width, lease.Metadata.Height);
-                HImage image = CreateBorrowedImage(lease);
+                HImage image = FlowNodeTiming.Run("PrepareImage", () => CreateBorrowedImage(lease));
                 Stopwatch stopwatch = Stopwatch.StartNew();
-                LuminousAreaDetectionResult detection = services.Detect(image, roi, MinimumConfidence);
+                LuminousAreaDetectionResult detection = FlowNodeTiming.Run("Algorithm", () => services.Detect(image, roi, MinimumConfidence));
                 stopwatch.Stop();
                 int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
                 string algorithmDeviceCode = ResolveAvailableDeviceCode<DeviceAlgorithm>();
                 LocalLuminousAreaCorner[] corners;
                 try
                 {
-                    corners = ValidateDetection(detection, MinimumConfidence);
+                    corners = FlowNodeTiming.Run("ValidateResult", () => ValidateDetection(detection, MinimumConfidence));
                 }
                 catch (InvalidOperationException validationException)
                 {
-                    int failedMasterId = services.Persist(new LocalFindLuminousAreaPersistenceRequest
+                    int failedMasterId = FlowNodeTiming.Run("PersistResult", () => services.Persist(new LocalFindLuminousAreaPersistenceRequest
                     {
                         Action = action,
                         Algorithm = detection.Algorithm,
@@ -346,8 +347,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                             ImageRead = loadedFromFile,
                             MemoryOnly = string.IsNullOrWhiteSpace(imageFile)
                         }
-                    });
-                    services.Publish(new LocalFindLuminousAreaPublishRequest
+                    }));
+                    FlowNodeTiming.Run("PublishResult", () => services.Publish(new LocalFindLuminousAreaPublishRequest
                     {
                         DeviceCode = algorithmDeviceCode,
                         OperatorCode = OperatorCode,
@@ -355,15 +356,15 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         NodeId = NodeID,
                         ZIndex = ZIndex,
                         MasterId = failedMasterId
-                    });
+                    }));
                     throw;
                 }
                 double confidence = detection.Confidence!.Value;
                 string? savePoiTemplateName = string.IsNullOrWhiteSpace(SavePOITempName) ? null : SavePOITempName.Trim();
                 LocalLuminousAreaPoiTemplateShape? savePoiTemplateShape = savePoiTemplateName == null
                     ? null
-                    : services.UpdatePoiTemplate(savePoiTemplateName, corners);
-                int masterId = services.Persist(new LocalFindLuminousAreaPersistenceRequest
+                    : FlowNodeTiming.Run("UpdatePoiTemplate", () => services.UpdatePoiTemplate(savePoiTemplateName, corners));
+                int masterId = FlowNodeTiming.Run("PersistResult", () => services.Persist(new LocalFindLuminousAreaPersistenceRequest
                 {
                     Action = action,
                     Algorithm = detection.Algorithm,
@@ -400,7 +401,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         MemoryOnly = string.IsNullOrWhiteSpace(imageFile)
                     },
                     Corners = corners
-                });
+                }));
                 if (ownedFrame != null)
                 {
                     action.SetCurrentFrame(ownedFrame);
@@ -415,7 +416,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     action.Data["LocalLuminousAreaSavePOITemplateShape"] = savePoiTemplateShape!.Value.ToString();
                 }
                 action.MasterValue(null, masterId, (int)ViewResultAlgType.FindLightArea);
-                services.Publish(new LocalFindLuminousAreaPublishRequest
+                FlowNodeTiming.Run("PublishResult", () => services.Publish(new LocalFindLuminousAreaPublishRequest
                 {
                     DeviceCode = algorithmDeviceCode,
                     OperatorCode = OperatorCode,
@@ -423,7 +424,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     NodeId = NodeID,
                     ZIndex = ZIndex,
                     MasterId = masterId
-                });
+                }));
                 return new LocalFindLuminousAreaNodeResultData
                 {
                     MasterId = masterId,
@@ -586,6 +587,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             imageFile = null;
             if (action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) && currentFrame != null)
             {
+                FlowNodeTiming.Skip("OpenImage");
                 imageFile = currentFrame.ResolveResultImageFilePath();
                 return currentFrame;
             }
@@ -593,8 +595,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             string? fallbackFile = ResolveFallbackFile(action, out int sourceMasterId);
             if (fallbackFile != null)
             {
-                if (!File.Exists(fallbackFile)) throw new FileNotFoundException("发光区定位图像文件不存在。", fallbackFile);
-                ownedFrame = services.LoadFrame(fallbackFile);
+                ownedFrame = FlowNodeTiming.Run("OpenImage", () =>
+                {
+                    if (!File.Exists(fallbackFile)) throw new FileNotFoundException("发光区定位图像文件不存在。", fallbackFile);
+                    return services.LoadFrame(fallbackFile);
+                });
                 if (sourceMasterId > 0) ownedFrame.MasterId = sourceMasterId;
                 imageFile = fallbackFile;
                 return ownedFrame;
@@ -623,7 +628,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     $"IN 接收到的不是图像结果：MasterId={masterId}，ResultType={masterResultType}。请将图像或本地校正节点连接到 IN。");
             }
 
-            MeasureResultImgModel imageResult = services.GetImageResult(masterId)
+            MeasureResultImgModel imageResult = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId))
                 ?? throw new InvalidOperationException($"找不到 IN 图像结果：MasterId={masterId}。");
             sourceMasterId = masterId;
             string? firstCandidate = null;

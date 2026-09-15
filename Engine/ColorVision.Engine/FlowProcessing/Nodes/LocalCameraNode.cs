@@ -1,3 +1,4 @@
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
@@ -133,7 +134,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             CalibrationParam? calibration = ResolveCalibration(device);
             if (CalibrationGroupGainResolver.TryResolve(calibration, device.PhyCamera?.VisualChildren.OfType<GroupResource>() ?? Enumerable.Empty<GroupResource>(), out float calibrationGain, out _))
                 cameraParameters.Gain = calibrationGain;
-            device.EnsureLocalMeasurementConnected(AutoConnect);
+            FlowNodeTiming.Run("ConnectCamera", () => device.EnsureLocalMeasurementConnected(AutoConnect));
             LocalCameraCaptureResult capture = LocalCameraCaptureService.Capture(new LocalCameraCaptureRequest
             {
                 Device = device,
@@ -147,15 +148,15 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             LocalFlowFrame frame = capture.Frame;
             try
             {
-                MeasureResultImgModel persistedResult = LocalCameraResultService.SaveFlowModel(action, ZIndex, frame, capture, cameraParameters, calibration, IsAutoExp);
+                MeasureResultImgModel persistedResult = FlowNodeTiming.Run("PersistResult", () => LocalCameraResultService.SaveFlowModel(action, ZIndex, frame, capture, cameraParameters, calibration, IsAutoExp));
                 int masterId = persistedResult.Id;
                 frame.MasterId = masterId;
                 action.MasterValue(null, masterId, CameraMasterResultType);
-                device.PublishLocalPreview(frame, persistedResult, forceDisplay: false);
+                FlowNodeTiming.Run("PublishPreview", () => device.PublishLocalPreview(frame, persistedResult, forceDisplay: false));
                 action.SetCurrentFrame(frame);
                 LocalFlowFrame currentFrame = frame;
                 frame = null!;
-                ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, persistedResult.DeviceCode ?? string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, CameraMasterResultType);
+                FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, persistedResult.DeviceCode ?? string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, CameraMasterResultType));
                 LocalCameraNodeResultData result = new()
                 {
                     FrameId = currentFrame.FrameId.ToString("N"),

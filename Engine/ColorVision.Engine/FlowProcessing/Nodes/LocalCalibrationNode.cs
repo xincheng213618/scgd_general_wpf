@@ -1,3 +1,4 @@
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
@@ -116,6 +117,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             bool loadedFromFile;
             if (action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) && currentFrame != null)
             {
+                FlowNodeTiming.Skip("OpenImage");
                 sourceFrame = currentFrame;
                 ownsSourceFrame = false;
                 loadedFromFile = false;
@@ -127,7 +129,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 {
                     throw new InvalidOperationException("输入端没有本地图像内存帧，也没有可读取的图像结果。请连接相机取图或图像节点。");
                 }
-                sourceFrame = LocalFrameFileService.Load(sourceFilePath);
+                sourceFrame = FlowNodeTiming.Run("OpenImage", () => LocalFrameFileService.Load(sourceFilePath));
                 ownsSourceFrame = true;
                 loadedFromFile = true;
             }
@@ -216,7 +218,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private protected MeasureResultImgModel SaveCalibrationResult(CVStartCFC action, LocalCalibrationExecution execution)
         {
             LocalFlowFrame frame = execution.Frame;
-            MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber)
+            MeasureBatchModel batch = FlowNodeTiming.Run("ResolveBatch", () => BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber))
                 ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
             string? rawFilePath = NullIfEmpty(frame.CvRawFilePath);
             string? cieFilePath = NullIfEmpty(frame.CvCieFilePath);
@@ -271,7 +273,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 DeviceCode = ResolveDeviceCode(frame.Metadata.DeviceCode),
                 CreateDate = DateTime.Now
             };
-            int masterId = MeasureImgResultDao.Instance.SaveAndReturnId(model);
+            int masterId = FlowNodeTiming.Run("PersistResult", () => MeasureImgResultDao.Instance.SaveAndReturnId(model));
             if (masterId <= 0) throw new InvalidOperationException("保存本地校正图像结果失败。");
             model.Id = masterId;
             return model;
@@ -372,7 +374,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             action.MasterValue(null, masterId, (int)ViewResultAlgType.Calibration);
             execution.TransferFrameTo(action);
             (string route, string deviceCode) = ResolveCalibrationResultTarget(persistedResult.DeviceCode ?? string.Empty);
-            ResultMessageBus.Default.PublishPersisted(route, ResultKinds.Image, deviceCode, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)ViewResultAlgType.Calibration);
+            FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.PublishPersisted(route, ResultKinds.Image, deviceCode, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)ViewResultAlgType.Calibration));
             return new LocalNodeExecutionResult
             {
                 Data = new LocalCalibrationNodeResultData

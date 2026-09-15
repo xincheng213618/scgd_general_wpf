@@ -3,9 +3,9 @@ knowledge_id: "flow.diagnostics"
 knowledge_type: "topic"
 status: "current"
 summary: "Flow本地诊断SQLite快照、节点尝试与Incident事件列表的读写边界；快照不保证包含未保存画布，终态持久化与业务结果分开，中断恢复不续跑节点，心跳不是判死条件。"
-aliases: ["流程运行诊断","流程 Incident 管理","复制稳定标识","定位当前画布节点","NodeExecutionFailed","NodeTimeout","PostProcessFailed","流程诊断快照","FlowTemplateSnapshotFactory","进程中断恢复","流程心跳","节点执行尝试","诊断记录未完成","Incident确认关闭","异常事件管理","FlowExecutionJournal","FlowExecutionJournalCoordinator","FlowExecutionJournalScope","FlowRunRecord","FlowNodeAttempt","FlowTemplateSnapshot","FlowIncidentService","FlowIncidentManagementWindow","FlowOwnerProcessState","RunRecovered"]
-code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionJournal.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/IFlowExecutionJournal.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionJournalCoordinator.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionRecovery.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowIncidentService.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowIncidentManagementWindow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowIncidentManagementWindow.xaml","Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowDiagnosticsSchemaMigrator.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeRecordConfig.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowTemplateSnapshot.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowTemplateSnapshotFactory.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowTemplateWorkspaceController.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowRunRecord.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionEvent.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeAttempt.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowIncident.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FlowExecutionJournalTests.cs","Test/ColorVision.UI.Tests/FlowExecutionJournalCoordinatorTests.cs","Test/ColorVision.UI.Tests/FlowExecutionRecoveryTests.cs","Test/ColorVision.UI.Tests/FlowIncidentServiceTests.cs","Test/ColorVision.UI.Tests/FlowDiagnosticsSchemaTests.cs","Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs"]
+aliases: ["流程运行诊断","流程 Incident 管理","复制稳定标识","定位当前画布节点","NodeExecutionFailed","NodeTimeout","PostProcessFailed","流程诊断快照","FlowTemplateSnapshotFactory","进程中断恢复","流程心跳","节点执行尝试","诊断记录未完成","Incident确认关闭","异常事件管理","FlowExecutionJournal","FlowExecutionJournalCoordinator","FlowExecutionJournalScope","FlowRunRecord","FlowNodeAttempt","FlowTemplateSnapshot","FlowIncidentService","FlowIncidentManagementWindow","FlowOwnerProcessState","RunRecovered","流程执行分析","阶段耗时","FlowNodeTiming"]
+code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionJournal.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/IFlowExecutionJournal.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionJournalCoordinator.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionRecovery.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowIncidentService.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowIncidentManagementWindow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowIncidentManagementWindow.xaml","Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowDiagnosticsSchemaMigrator.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeRecordConfig.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowTemplateSnapshot.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowTemplateSnapshotFactory.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowTemplateWorkspaceController.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowRunRecord.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionEvent.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeAttempt.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowIncident.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeAnalysisPage.xaml","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeAnalysisPage.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeTiming.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/FlowExecutionJournalTests.cs","Test/ColorVision.UI.Tests/FlowExecutionJournalCoordinatorTests.cs","Test/ColorVision.UI.Tests/FlowExecutionRecoveryTests.cs","Test/ColorVision.UI.Tests/FlowIncidentServiceTests.cs","Test/ColorVision.UI.Tests/FlowDiagnosticsSchemaTests.cs","Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs","Test/ColorVision.UI.Tests/FlowNodeTimingTests.cs","Test/ColorVision.UI.Tests/FlowNodeAnalysisPageTests.cs","Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs"]
 related: ["flow.session","flow.templates","flow.headless","operations.data","ui.sqlite-storage"]
 ---
 
@@ -41,6 +41,31 @@ related: ["flow.session","flow.templates","flow.headless","operations.data","ui.
 | 打开运行分析 | 有正数 `Run.BatchId` 时打开旧节点耗时分析，传入 BatchId、SN 和 NodeId；没有关联批次时提示并显示稳定标识 |
 | 定位当前画布节点 | 当前流程与记录的 FlowKey 相同，或正 TemplateId 相同后，尝试按 NodeId 定位；不会切换模板、加载诊断快照或比较版本/hash。定位成功也不能证明画布就是运行时版本 |
 | 复制稳定标识 | 复制 IncidentId、RunRecordId、RunKey、FlowKey、TemplateId、NodeId；不包含快照正文或 SN |
+
+## 节点耗时与消息明细
+
+在“流程执行分析”的概览中打开节点，选择本次执行的一条消息，在接收 Payload 中直接查看 `Timing` JSON。消息列表按内容收紧，较多消息可滚动；右侧历史列表用于切换执行记录。没有增加单独的阶段图表。
+
+`LocalFlowNodeBase` 为每次执行单独创建内存计时上下文；成功和异常完成消息均追加 `Timing`，保留已经完成或失败的阶段。相机取图、打开本地图片、校正、发光区定位、FindCross、FOV、点阵畸变的主要路径已接入。其他本地节点至少记录 `ExecuteLocal` 总体阶段，新增明细须在所属实现的实际操作处接入。L/BV 相机转发在本地成功响应中附带同结构计时；其执行异常仍沿用服务节点错误响应，不保证包含阶段明细。远端服务内部未提供的计时不能由客户端补造。
+
+| JSON 字段 | 含义 |
+| --- | --- |
+| `Timing.Version` / `Unit` | 当前格式版本 1；时间单位 `ms`，小数保留至微秒量级，不代表硬件精度 |
+| `Timing.TotalMs` | 通用本地节点从进入执行方法到序列化完成消息前的时间，含输入处理、算法及结果交接；不含后台任务排队、诊断 JSON 序列化及随后日志落盘。L/BV 转发从创建本地执行对象计时，跨取图与 Complete 交接，包含两者之间的等待 |
+| `Stages[].Name` | 稳定操作名，如 `OpenImage`、`Algorithm`、`PersistResult` |
+| `Id` / `ParentId` / `StartMs` | 阶段身份、父阶段及相对执行起点的开始偏移。父阶段耗时包含子阶段，不能把所有行直接相加 |
+| `ElapsedMs` / `Status` | 阶段实际墙钟耗时，以及 `Completed`、`Failed`、`Canceled`、`Skipped`；若在阶段尚未结束时取得快照，则为 `Running`。0 ms 不等于未执行，跳过操作由 `Skipped` 表示 |
+| `OmittedStages` | 每次最多记录 256 个阶段，超过上限只累计省略数；用于限制日志体积，不中断业务 |
+
+**图像输入与算法耗时：**发光区定位、FindCross、FOV 和点阵畸变优先使用上游内存帧，此时 `OpenImage` 为 `Skipped`；没有内存帧、回退到文件时，`OpenImage` 包含文件存在性检查及实际加载。共享文件加载器进一步记录 `ReadImageHeader`、`ReadImageData`（CVRAW/CVCIE）或 `DecodeImage`（位图）及缓冲区复制。`Algorithm` 单独记录算法调用；模板更新、结果持久化和发布分别记录为 `UpdatePoiTemplate`、`PersistResult`、`PublishResult`。异常阶段会保留失败状态；后续未执行的操作不会补写为 0。
+
+**相机与校正：**本地相机记录连接、锁等待、参数设置、自动曝光、帧分配、SDK 取图等边界。`CaptureFrame` 是整个 SDK 调用，不能进一步推断实际曝光、读出与传输。校正记录资源加载/缓存检查和算法执行；存图记录数据复制及 RAW/CIE 文件写入。`PublishPreview` / `PublishResult` 表示向界面或结果链提交的调用，不是屏幕实际绘制完成时间。
+
+原有 `TotalTime`、`CaptureTime`、`CalibrationTime`、`SaveTime` 的含义和业务结果结构保持兼容。例如发光区节点原有 `TotalTime` 仍是算法耗时，打开文件时间查看新 `Timing`；不能把两者相加。`Timing` 为完成日志保留字段，扩展本地节点时不要将其用作业务结果字段。
+
+计时只在已激活的执行上下文中收集时间戳和有限条目，使用完成消息一次性保存，经[SQLite Payload 存储](../ui-components/sqlite-storage.md)压缩并按所选消息惰性读取。不逐阶段写文件/数据库，不在像素循环中打点，不全量读取历史 Payload；旧日志没有阶段数据时不会回填。
+
+`FlowNodeTimingTests` 验证并发执行隔离、父子阶段、失败/取消、条目上限以及真实本地节点完成事件中的 JSON。`LocalFindLuminousAreaNodeTests` 用临时位图与替代算法/持久化服务验证文件回退、内存复用和保存失败阶段。`FlowNodeAnalysisPageTests` 用脱离窗口的真实 WPF 页面验证深浅主题、小窗口和 JSON 切换；不启动设备或读取真实历史数据库。可设置 `COLORVISION_ANALYSIS_PREVIEW_DIR` 输出页面预览。
 
 ## 确认和关闭
 

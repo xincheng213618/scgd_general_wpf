@@ -5803,7 +5803,10 @@
         "FlowIncidentService",
         "FlowIncidentManagementWindow",
         "FlowOwnerProcessState",
-        "RunRecovered"
+        "RunRecovered",
+        "流程执行分析",
+        "阶段耗时",
+        "FlowNodeTiming"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionJournal.cs",
@@ -5824,7 +5827,13 @@
         "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeAttempt.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowIncident.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs"
+        "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeAnalysisPage.xaml",
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeAnalysisPage.xaml.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeTiming.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/FlowExecutionJournalTests.cs",
@@ -5832,7 +5841,10 @@
         "Test/ColorVision.UI.Tests/FlowExecutionRecoveryTests.cs",
         "Test/ColorVision.UI.Tests/FlowIncidentServiceTests.cs",
         "Test/ColorVision.UI.Tests/FlowDiagnosticsSchemaTests.cs",
-        "Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs"
+        "Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs",
+        "Test/ColorVision.UI.Tests/FlowNodeTimingTests.cs",
+        "Test/ColorVision.UI.Tests/FlowNodeAnalysisPageTests.cs",
+        "Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs"
       ],
       "related": [
         "flow.session",

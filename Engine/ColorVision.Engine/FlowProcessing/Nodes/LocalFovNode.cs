@@ -1,3 +1,4 @@
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.PropertyEditor;
@@ -424,7 +425,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 }
 
                 string? sourceCameraDeviceCode = FirstNonEmpty(frameCameraDeviceCode, input.ImageResult?.DeviceCode);
-                FovCameraCalibration calibration = services.ResolveCalibration(sourceCameraDeviceCode);
+                FovCameraCalibration calibration = FlowNodeTiming.Run("ResolveCalibration", () => services.ResolveCalibration(sourceCameraDeviceCode));
                 double selectedFovDist = configuredFovDist;
                 MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber)
                     ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
@@ -436,12 +437,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 FovCalculationResult calculation;
                 try
                 {
-                    calculation = services.DetectAndCalculate(
+                    calculation = FlowNodeTiming.Run("Algorithm", () => services.DetectAndCalculate(
                         lease == null ? new HImage() : LocalFindLuminousAreaNode.CreateBorrowedImage(lease),
                         new RoiRect(),
                         selectedFovDist,
                         selectedCameraDegrees,
-                        input.Corners);
+                        input.Corners));
                     stopwatch.Stop();
                 }
                 catch (Exception calculationException) when (calculationException is InvalidOperationException or ArgumentException)
@@ -450,7 +451,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     int failedTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
                     int sourceMasterId = input.SourceMasterId > 0 ? input.SourceMasterId : frameMasterId;
                     object failedParameters = BuildParameters(input, sourceMasterId, frameId, imageFile, calibration, selectedFovDist, selectedCameraDegrees, null, calculationException.Message);
-                    LocalFovPersistenceResult failed = services.Persist(new LocalFovPersistenceRequest
+                    LocalFovPersistenceResult failed = FlowNodeTiming.Run("PersistResult", () => services.Persist(new LocalFovPersistenceRequest
                     {
                         BatchId = batch.Id,
                         ImageFilePath = imageFile,
@@ -460,22 +461,22 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         ResultCode = CalculationFailureResultCode,
                         ResultDescription = calculationException.Message,
                         Parameters = failedParameters
-                    });
-                    services.Publish(new LocalFovPublishRequest
+                    }));
+                    FlowNodeTiming.Run("PublishResult", () => services.Publish(new LocalFovPublishRequest
                     {
                         DeviceCode = algorithmDeviceCode,
                         SerialNumber = action.SerialNumber,
                         NodeId = nodeId,
                         ZIndex = zIndex,
                         MasterId = failed.MasterId
-                    });
+                    }));
                     throw new InvalidOperationException(calculationException.Message, calculationException);
                 }
 
                 int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
                 int successfulSourceMasterId = input.SourceMasterId > 0 ? input.SourceMasterId : frameMasterId;
                 object parameters = BuildParameters(input, successfulSourceMasterId, frameId, imageFile, calibration, selectedFovDist, selectedCameraDegrees, calculation, null);
-                LocalFovPersistenceResult persisted = services.Persist(new LocalFovPersistenceRequest
+                LocalFovPersistenceResult persisted = FlowNodeTiming.Run("PersistResult", () => services.Persist(new LocalFovPersistenceRequest
                 {
                     BatchId = batch.Id,
                     ImageFilePath = imageFile,
@@ -484,7 +485,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     TotalTime = totalTime,
                     Parameters = parameters,
                     Measurement = calculation.Measurement
-                });
+                }));
                 if (persisted.MasterId <= 0 || string.IsNullOrWhiteSpace(persisted.ResultFilePath))
                     throw new InvalidOperationException("FOV 持久化未返回有效主表 ID 和结果文件。");
 
@@ -497,14 +498,14 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 action.Data["LocalFovCorners"] = calculation.Measurement.Corners;
                 action.Data["LocalFovResultFile"] = persisted.ResultFilePath;
                 action.MasterValue(null, persisted.MasterId, (int)ViewResultAlgType.FOV);
-                services.Publish(new LocalFovPublishRequest
+                FlowNodeTiming.Run("PublishResult", () => services.Publish(new LocalFovPublishRequest
                 {
                     DeviceCode = algorithmDeviceCode,
                     SerialNumber = action.SerialNumber,
                     NodeId = nodeId,
                     ZIndex = zIndex,
                     MasterId = persisted.MasterId
-                });
+                }));
                 return new LocalFovNodeResultData
                 {
                     MasterId = persisted.MasterId,
@@ -545,7 +546,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
             if (masterResultType is (int)CVCommCore.CVResultType.Camera_Img or (int)CVCommCore.CVResultType.Algorithm_Calibration)
             {
-                MeasureResultImgModel imageResult = services.GetImageResult(masterId)
+                MeasureResultImgModel imageResult = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId))
                     ?? throw new InvalidOperationException($"找不到 IN 图像结果：MasterId={masterId}。");
                 return new LocalFovInputContext
                 {
@@ -559,15 +560,15 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             if (masterResultType == (int)ViewResultAlgType.FindLightArea
                 || masterResultType == (int)ViewResultAlgType.LightArea)
             {
-                AlgResultMasterModel areaResult = services.GetAlgorithmResult(masterId)
+                AlgResultMasterModel areaResult = FlowNodeTiming.Run("ResolveAlgorithmResult", () => services.GetAlgorithmResult(masterId))
                     ?? throw new InvalidOperationException($"找不到 IN 发光区结果：MasterId={masterId}。");
-                IReadOnlyList<LuminousAreaPoint> corners = services.GetLightAreaCorners(masterId);
+                IReadOnlyList<LuminousAreaPoint> corners = FlowNodeTiming.Run("LoadCorners", () => services.GetLightAreaCorners(masterId));
                 if (corners.Count != 4)
                     throw new InvalidOperationException($"IN 发光区结果必须包含 4 个角点，当前为 {corners.Count} 个。");
                 int sourceMasterId = ReadSourceMasterId(areaResult.Params);
                 MeasureResultImgModel? imageResult = sourceMasterId > 0
-                    ? services.GetImageResult(sourceMasterId)
-                    : services.FindImageResult(areaResult.ImgFile);
+                    ? FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(sourceMasterId))
+                    : FlowNodeTiming.Run("ResolveImageResult", () => services.FindImageResult(areaResult.ImgFile));
                 return new LocalFovInputContext
                 {
                     InputMasterId = masterId,
@@ -594,6 +595,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             imageFile = null;
             if (action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) && currentFrame != null)
             {
+                FlowNodeTiming.Skip("OpenImage");
                 imageFile = currentFrame.ResolveResultImageFilePath();
                 return currentFrame;
             }
@@ -601,8 +603,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             string? fallbackFile = ResolveImageFile(input);
             if (fallbackFile == null)
                 throw new InvalidOperationException("流程中没有可用图像；请连接本地图像、取图、校正或发光区定位节点。");
-            if (!File.Exists(fallbackFile)) throw new FileNotFoundException("FOV 图像文件不存在。", fallbackFile);
-            ownedFrame = services.LoadFrame(fallbackFile);
+            ownedFrame = FlowNodeTiming.Run("OpenImage", () =>
+            {
+                if (!File.Exists(fallbackFile)) throw new FileNotFoundException("FOV 图像文件不存在。", fallbackFile);
+                return services.LoadFrame(fallbackFile);
+            });
             if (input.SourceMasterId > 0) ownedFrame.MasterId = input.SourceMasterId;
             imageFile = fallbackFile;
             return ownedFrame;

@@ -1,3 +1,4 @@
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 #pragma warning disable CA1861
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -68,7 +69,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 throw new FileNotFoundException(string.Format(Properties.Resources.LocalImage_FileNotFound, fileUrl), fileUrl);
 
             string batchName = action.SerialNumber;
-            MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(batchName)
+            MeasureBatchModel batch = FlowNodeTiming.Run("ResolveBatch", () => BatchResultMasterDao.Instance.GetByNameOrCode(batchName))
                 ?? throw new InvalidOperationException(string.Format(Properties.Resources.Flow_BatchNotFound, batchName));
             if (batch.Id <= 0)
                 throw new InvalidOperationException(string.Format(Properties.Resources.Flow_BatchNotFound, batchName));
@@ -76,9 +77,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             LocalFlowFrame? frame = null;
             try
             {
-                frame = LocalFrameFileService.Load(fileUrl);
-                MeasureResultImgModel model = BuildMeasureResultImgModel(batch.Id, fileUrl);
-                int masterId = MeasureImgResultDao.Instance.SaveAndReturnId(model);
+                frame = FlowNodeTiming.Run("OpenImage", () => LocalFrameFileService.Load(fileUrl));
+                MeasureResultImgModel model = FlowNodeTiming.Run("BuildImageResult", () => BuildMeasureResultImgModel(batch.Id, fileUrl));
+                int masterId = FlowNodeTiming.Run("PersistResult", () => MeasureImgResultDao.Instance.SaveAndReturnId(model));
                 if (masterId <= 0)
                     throw new InvalidOperationException(string.Format(Properties.Resources.LocalImage_WriteResultFailed, fileUrl));
                 model.Id = masterId;
@@ -88,7 +89,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 LocalFlowFrame currentFrame = frame;
                 frame = null;
                 action.MasterValue(null, masterId, LocalImageMasterResultType);
-                ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, model.DeviceCode ?? string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, LocalImageMasterResultType);
+                FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, model.DeviceCode ?? string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, LocalImageMasterResultType));
                 return new LocalNodeExecutionResult
                 {
                     Data = new LocalImageResultData
