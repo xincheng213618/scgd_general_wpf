@@ -132,6 +132,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 ?? throw new InvalidOperationException($"找不到本地相机设备：{DeviceCode}");
             CameraRunParam cameraParameters = BuildCameraParameters();
             CalibrationParam? calibration = ResolveCalibration(device);
+            if (CalibrationGroupGainResolver.TryResolve(calibration, device.PhyCamera?.VisualChildren.OfType<GroupResource>() ?? Enumerable.Empty<GroupResource>(), out float calibrationGain, out _))
+                cameraParameters.Gain = calibrationGain;
             if (AutoConnect)
                 EnsureCameraConnected(device);
             LocalCameraCaptureResult capture = LocalCameraCaptureService.Capture(new LocalCameraCaptureRequest

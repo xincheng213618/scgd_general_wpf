@@ -144,6 +144,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public float Gain { get => _Gain; set { _Gain = value; OnPropertyChanged(); } }
         private float _Gain = 10;
 
+        [Browsable(false), JsonIgnore]
+        public bool IsGainControlledByCalibrationGroup { get => _IsGainControlledByCalibrationGroup; set { if (_IsGainControlledByCalibrationGroup == value) return; _IsGainControlledByCalibrationGroup = value; OnPropertyChanged(); } }
+        private bool _IsGainControlledByCalibrationGroup;
+
+        [Browsable(false), JsonIgnore]
+        public string GainSourceHint { get => _GainSourceHint; set { if (_GainSourceHint == value) return; _GainSourceHint = value; OnPropertyChanged(); } }
+        private string _GainSourceHint = string.Empty;
+
         public CVImageFlipMode FlipMode { get => _FlipMode; set { _FlipMode = value; OnPropertyChanged(); } }
         private CVImageFlipMode _FlipMode = CVImageFlipMode.None;
 
@@ -336,6 +344,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
             ComboxCalibrationTemplate.SelectedIndex = 0;
+        }
+
+        private void ComboxCalibrationTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            IEnumerable<GroupResource> groups = Device.PhyCamera?.VisualChildren.OfType<GroupResource>() ?? Enumerable.Empty<GroupResource>();
+            CalibrationGroupGainResolver.Synchronize(DisplayCameraConfig, ComboxCalibrationTemplate.SelectedValue as CalibrationParam, groups);
         }
 
         private void BindAutoExpTimeTemplateSources()

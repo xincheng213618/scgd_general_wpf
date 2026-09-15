@@ -1222,6 +1222,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void ComboxCalibrationTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            IEnumerable<GroupResource> groups = Device.PhyCamera?.VisualChildren.OfType<GroupResource>() ?? Enumerable.Empty<GroupResource>();
+            CalibrationGroupGainResolver.Synchronize(Device.DisplayConfig, ComboxCalibrationTemplate.SelectedValue as CalibrationParam, groups);
             Device.DisplayConfig.CalibrationTemplateIndex = ComboxCalibrationTemplate.SelectedIndex;
             UpdateNodeSettingsFromWindow();
             SaveDisplayConfig();

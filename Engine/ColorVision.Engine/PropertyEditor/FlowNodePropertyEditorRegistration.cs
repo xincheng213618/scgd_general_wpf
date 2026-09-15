@@ -60,6 +60,7 @@ namespace ColorVision.Engine.PropertyEditor
                 return;
 
             FlowPropertyEditorRegistry.Register<FlowDeviceNameEditor>((property, obj) => new DeviceNameEditor().GenProperties(property, obj));
+            FlowPropertyEditorRegistry.Register<FlowCameraCalibrationGainEditor>(CameraCalibrationGainPropertiesEditor.Create);
             FlowPropertyEditorRegistry.Register<FlowCalibrationTemplateEditor>((property, obj) => CreateTemplateEditor(
                 property,
                 obj,

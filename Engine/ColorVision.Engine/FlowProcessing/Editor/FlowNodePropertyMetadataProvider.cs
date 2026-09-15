@@ -67,6 +67,9 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         public Type? GetEditorType(PropertyInfo propertyInfo)
         {
+            if (CameraCalibrationGainPropertiesEditor.IsSupported(propertyInfo))
+                return typeof(FlowCameraCalibrationGainEditor);
+
             var nodeType = propertyInfo.ReflectedType ?? propertyInfo.DeclaringType;
             if (nodeType != null && FlowNodePropertyEditorAttribute.Resolve(nodeType, propertyInfo.Name) != null)
                 return typeof(FlowNodePropertyEditorSelector);
